@@ -75,8 +75,8 @@ void __fastcall TSynchronizeProgressForm::Stop()
   UpdateTimer->Enabled = false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeProgressForm::SetData(const AnsiString LocalDirectory,
-  const AnsiString RemoteDirectory, bool & Continue)
+void __fastcall TSynchronizeProgressForm::SetData(const UnicodeString LocalDirectory,
+  const UnicodeString RemoteDirectory, bool & Continue)
 {
   assert(FStarted);
   LocalDirectoryLabel->Caption = LocalDirectory;

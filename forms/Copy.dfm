@@ -15,7 +15,7 @@ object CopyDialog: TCopyDialog
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
@@ -37,7 +37,6 @@ object CopyDialog: TCopyDialog
     Height = 21
     AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 13
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
     OnChange = ControlChange
@@ -49,7 +48,6 @@ object CopyDialog: TCopyDialog
     Height = 21
     AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 13
     MaxLength = 1000
     TabOrder = 2
     Text = 'RemoteDirectoryEdit'
@@ -140,6 +138,7 @@ object CopyDialog: TCopyDialog
     Caption = 'Transfer settin&gs...'
     TabOrder = 8
     OnClick = TransferSettingsButtonClick
+    OnDropDownClick = TransferSettingsButtonDropDownClick
   end
   object CopyParamGroup: TGroupBox
     Left = 8
@@ -148,8 +147,8 @@ object CopyDialog: TCopyDialog
     Height = 50
     Caption = 'Transfer settings'
     TabOrder = 3
+    OnClick = CopyParamGroupClick
     OnContextPopup = CopyParamGroupContextPopup
-    OnDblClick = CopyParamGroupDblClick
     DesignSize = (
       496
       50)
@@ -162,7 +161,7 @@ object CopyDialog: TCopyDialog
       AutoSize = False
       Caption = 'CopyParamLabel'
       WordWrap = True
-      OnDblClick = CopyParamGroupDblClick
+      OnClick = CopyParamGroupClick
     end
   end
 end

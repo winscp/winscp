@@ -20,8 +20,8 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-TSessionData * GetLoginData(AnsiString SessionName, TOptions * Options,
-  AnsiString & DownloadFile, bool & Url)
+TSessionData * GetLoginData(UnicodeString SessionName, TOptions * Options,
+  UnicodeString & DownloadFile, bool & Url)
 {
   bool DefaultsOnly;
   TSessionData * Data;
@@ -43,7 +43,7 @@ TSessionData * GetLoginData(AnsiString SessionName, TOptions * Options,
 //---------------------------------------------------------------------------
 void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaults)
 {
-  AnsiString TargetDirectory;
+  UnicodeString TargetDirectory;
   TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
 
   TargetDirectory = UnixIncludeTrailingBackslash(Terminal->CurrentDirectory);
@@ -60,10 +60,10 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaul
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall Download(TTerminal * Terminal, const AnsiString FileName,
+void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
   bool UseDefaults)
 {
-  AnsiString TargetDirectory;
+  UnicodeString TargetDirectory;
   TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
   TStrings * FileList = NULL;
 
@@ -76,7 +76,7 @@ void __fastcall Download(TTerminal * Terminal, const AnsiString FileName,
       throw Exception(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
     }
     FileList->AddObject(FileName, File);
-    AnsiString LocalDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
+    UnicodeString LocalDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
     if (LocalDirectory.IsEmpty())
     {
       ::SpecialFolderLocation(CSIDL_PERSONAL, LocalDirectory);
@@ -100,7 +100,7 @@ void __fastcall Download(TTerminal * Terminal, const AnsiString FileName,
 //---------------------------------------------------------------------------
 void __fastcall SynchronizeDirectories(TTerminal * Terminal,
   TStrings * CommandParams,
-  AnsiString & LocalDirectory, AnsiString & RemoteDirectory)
+  UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory)
 {
   if (CommandParams->Count >= 1)
   {
@@ -128,8 +128,8 @@ void __fastcall SynchronizeDirectories(TTerminal * Terminal,
 void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
   TStrings * CommandParams, bool UseDefaults)
 {
-  AnsiString LocalDirectory;
-  AnsiString RemoteDirectory;
+  UnicodeString LocalDirectory;
+  UnicodeString RemoteDirectory;
 
   SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
 
@@ -155,13 +155,91 @@ void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * S
 void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
   TStrings * CommandParams, bool UseDefaults)
 {
-  AnsiString LocalDirectory;
-  AnsiString RemoteDirectory;
+  UnicodeString LocalDirectory;
+  UnicodeString RemoteDirectory;
 
   SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
 
   ScpExplorer->DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, UseDefaults);
   Abort();
+}
+//---------------------------------------------------------------------------
+void __fastcall RecordWrapperVersions(UnicodeString ConsoleVersion, UnicodeString DotNetVersion)
+{
+  TUpdatesConfiguration Updates = WinConfiguration->Updates;
+  if (!DotNetVersion.IsEmpty())
+  {
+    Updates.DotNetVersion = DotNetVersion;
+  }
+  if (!ConsoleVersion.IsEmpty())
+  {
+    Updates.ConsoleVersion = ConsoleVersion;
+  }
+  WinConfiguration->Updates = Updates;
+
+  if (Configuration->Storage == stNul)
+  {
+    Configuration->SetDefaultStorage();
+    try
+    {
+      THierarchicalStorage * Storage = Configuration->CreateScpStorage(false);
+      try
+      {
+        Storage->AccessMode = smReadWrite;
+        if (Storage->OpenSubKey(Configuration->ConfigurationSubKey, true) &&
+            Storage->OpenSubKey(L"Interface\\Updates", true, true))
+        {
+          if (!DotNetVersion.IsEmpty())
+          {
+            Storage->WriteString(L"DotNetVersion", DotNetVersion);
+          }
+          if (!ConsoleVersion.IsEmpty())
+          {
+            Storage->WriteString(L"ConsoleVersion", ConsoleVersion);
+          }
+        }
+      }
+      __finally
+      {
+        delete Storage;
+      }
+    }
+    __finally
+    {
+      Configuration->SetNulStorage();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall UpdateStaticUsage()
+{
+  Configuration->Usage->Inc(L"Runs");
+
+  Configuration->Usage->UpdateCurrentVersion();
+
+  UnicodeString WindowsVersion = FORMAT("%d.%d.%d %s", (Win32MajorVersion, Win32MinorVersion, Win32BuildNumber, Win32CSDVersion));
+  Configuration->Usage->Set(L"WindowsVersion", (WindowsVersion));
+  Configuration->Usage->Set(L"WindowsProductName", (WindowsProductName()));
+  Configuration->Usage->Set(L"DefaultLocale",
+    IntToHex(static_cast<int>(GetDefaultLCID()), 4));
+  Configuration->Usage->Set(L"Locale",
+    IntToHex(static_cast<int>(WinConfiguration->Locale), 4));
+
+  UnicodeString ProgramsFolder;
+  ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
+  ProgramsFolder = IncludeTrailingBackslash(ExpandFileName(ProgramsFolder));
+  UnicodeString ExeName = ExpandFileName(Application->ExeName);
+  bool InProgramFiles = AnsiSameText(ExeName.SubString(1, ProgramsFolder.Length()), ProgramsFolder);
+  Configuration->Usage->Set(L"InProgramFiles", InProgramFiles);
+
+  StoredSessions->UpdateStaticUsage();
+  WinConfiguration->UpdateStaticUsage();
+
+}
+//---------------------------------------------------------------------------
+void __fastcall MaintenanceTask()
+{
+  CoreMaintenanceTask();
 }
 //---------------------------------------------------------------------------
 int __fastcall Execute()
@@ -177,15 +255,30 @@ int __fastcall Execute()
   CreateMutex(NULL, False, AppName.c_str());
   bool OnlyInstance = (GetLastError() == 0);
 
-  AnsiString KeyFile;
-  if (Params->FindSwitch("PrivateKey", KeyFile))
+  UpdateStaticUsage();
+
+  UnicodeString KeyFile;
+  if (Params->FindSwitch(L"PrivateKey", KeyFile))
   {
     WinConfiguration->DefaultKeyFile = KeyFile;
   }
 
-  bool Help = Params->FindSwitch("help") || Params->FindSwitch("h") || Params->FindSwitch("?");
-  if (Help || Params->FindSwitch("Console") || Params->FindSwitch("script") ||
-      Params->FindSwitch("command"))
+  UnicodeString ConsoleVersion;
+  UnicodeString DotNetVersion;
+  Params->FindSwitch(L"Console", ConsoleVersion);
+  Params->FindSwitch(L"DotNet", DotNetVersion);
+  if (!ConsoleVersion.IsEmpty() || !DotNetVersion.IsEmpty())
+  {
+    RecordWrapperVersions(ConsoleVersion, DotNetVersion);
+  }
+  if (!DotNetVersion.IsEmpty())
+  {
+    Configuration->Usage->Inc(L"ConsoleDotNet");
+  }
+
+  bool Help = Params->FindSwitch(L"help") || Params->FindSwitch(L"h") || Params->FindSwitch(L"?");
+  if (Help || Params->FindSwitch(L"Console") || Params->FindSwitch(L"script") ||
+      Params->FindSwitch(L"command"))
   {
     return Console(Help);
   }
@@ -197,7 +290,7 @@ int __fastcall Execute()
   try
   {
     TerminalManager = TTerminalManager::Instance();
-    HINSTANCE ResourceModule = GUIConfiguration->ChangeResourceModule(NULL);
+    HANDLE ResourceModule = GUIConfiguration->ChangeResourceModule(NULL);
     try
     {
       GlyphsModule = new TGlyphsModule(Application);
@@ -212,12 +305,12 @@ int __fastcall Execute()
 
     Application->HintHidePause = 3000;
 
-    AnsiString Value;
+    UnicodeString Value;
 
-    AnsiString IniFileName = Params->SwitchValue("ini");
+    UnicodeString IniFileName = Params->SwitchValue(L"ini");
     if (!IniFileName.IsEmpty())
     {
-      AnsiString IniFileNameExpanded = ExpandEnvironmentVariables(IniFileName);
+      UnicodeString IniFileNameExpanded = ExpandEnvironmentVariables(IniFileName);
       if (!FileExists(IniFileNameExpanded))
       {
         // this should be displayed rather at the very beginning.
@@ -226,28 +319,32 @@ int __fastcall Execute()
       }
     }
 
-    if (Params->FindSwitch("UninstallCleanup"))
+    if (Params->FindSwitch(L"UninstallCleanup"))
     {
+      MaintenanceTask();
       // The innosetup cannot skip UninstallCleanup run task for silent uninstalls,
       // workaround is that we create mutex in uninstaller, if it runs silent, and
       // ignore the UninstallCleanup, when the mutex exists.
-      if ((OpenMutex(SYNCHRONIZE, false, "WinSCPSilentUninstall") == NULL) &&
+      if ((OpenMutex(SYNCHRONIZE, false, L"WinSCPSilentUninstall") == NULL) &&
           (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
             qaYes | qaNo, HELP_UNINSTALL_CLEANUP) == qaYes))
       {
         DoCleanupDialog(StoredSessions, Configuration);
       }
     }
-    else if (Params->FindSwitch("RegisterAsUrlHandler"))
+    else if (Params->FindSwitch(L"RegisterAsUrlHandler"))
     {
+      MaintenanceTask();
       RegisterAsUrlHandler();
     }
-    else if (Params->FindSwitch("AddSearchPath"))
+    else if (Params->FindSwitch(L"AddSearchPath"))
     {
+      MaintenanceTask();
       AddSearchPath(ExtractFilePath(Application->ExeName));
     }
-    else if (Params->FindSwitch("RemoveSearchPath"))
+    else if (Params->FindSwitch(L"RemoveSearchPath"))
     {
+      MaintenanceTask();
       try
       {
         RemoveSearchPath(ExtractFilePath(Application->ExeName));
@@ -260,8 +357,9 @@ int __fastcall Execute()
         // always for non-priviledged user)
       }
     }
-    else if (Params->FindSwitch("Update"))
+    else if (Params->FindSwitch(L"Update"))
     {
+      MaintenanceTask();
       CheckForUpdates(false);
     }
     else
@@ -269,8 +367,8 @@ int __fastcall Execute()
       TSessionData * Data;
       enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize } ParamCommand;
       ParamCommand = pcNone;
-      AnsiString AutoStartSession;
-      AnsiString DownloadFile;
+      UnicodeString AutoStartSession;
+      UnicodeString DownloadFile;
       bool UseDefaults = false;
 
       // do not check for temp dirs for service tasks (like RegisterAsUrlHandler)
@@ -284,12 +382,12 @@ int __fastcall Execute()
 
       if (!Params->Empty)
       {
-        if (Params->FindSwitch("Defaults"))
+        if (Params->FindSwitch(L"Defaults"))
         {
           UseDefaults = true;
         }
 
-        if (Params->FindSwitch("Upload", CommandParams))
+        if (Params->FindSwitch(L"Upload", CommandParams))
         {
           ParamCommand = pcUpload;
           if (CommandParams->Count == 0)
@@ -297,18 +395,18 @@ int __fastcall Execute()
             throw Exception(NO_UPLOAD_LIST_ERROR);
           }
         }
-        if (Params->FindSwitch("UploadIfAny", CommandParams))
+        if (Params->FindSwitch(L"UploadIfAny", CommandParams))
         {
           if (CommandParams->Count > 0)
           {
             ParamCommand = pcUpload;
           }
         }
-        else if (Params->FindSwitch("Synchronize", CommandParams, 2))
+        else if (Params->FindSwitch(L"Synchronize", CommandParams, 2))
         {
           ParamCommand = pcFullSynchronize;
         }
-        else if (Params->FindSwitch("KeepUpToDate", CommandParams, 2))
+        else if (Params->FindSwitch(L"KeepUpToDate", CommandParams, 2))
         {
           ParamCommand = pcSynchronize;
         }
@@ -318,6 +416,7 @@ int __fastcall Execute()
       {
         AutoStartSession = Params->Param[1];
         Params->ParamsProcessed(1, 1);
+        Configuration->Usage->Inc(L"CommandLineSession");
       }
       else if (WinConfiguration->EmbeddedSessions && StoredSessions->Count)
       {
@@ -339,11 +438,11 @@ int __fastcall Execute()
         Data = GetLoginData(AutoStartSession, Params, DownloadFile, Url);
         if (Data)
         {
-          if (Url || Params->FindSwitch("Unsafe"))
+          if (Url || Params->FindSwitch(L"Unsafe"))
           {
             // prevent any automatic action when URL is provided on
             // command-line (the check is duplicated in Console())
-            if (UseDefaults || Params->FindSwitch("Log"))
+            if (UseDefaults || Params->FindSwitch(L"Log") || Params->FindSwitch(L"XmlLog"))
             {
               MessageDialog(LoadStr(UNSAFE_ACTIONS_DISABLED), qtWarning, qaOK);
             }
@@ -351,10 +450,14 @@ int __fastcall Execute()
           }
           else
           {
-            AnsiString LogFile;
-            if (Params->FindSwitch("Log", LogFile))
+            UnicodeString LogFile;
+            if (Params->FindSwitch(L"Log", LogFile))
             {
               Configuration->TemporaryLogging(LogFile);
+            }
+            if (Params->FindSwitch(L"XmlLog", LogFile))
+            {
+              Configuration->TemporaryActionsLogging(LogFile);
             }
           }
 
@@ -386,6 +489,12 @@ int __fastcall Execute()
               {
                 // moved inside try .. __finally, because it can fail as well
                 TerminalManager->ScpExplorer = ScpExplorer;
+
+                if ((ParamCommand != pcNone) || !DownloadFile.IsEmpty())
+                {
+                  Configuration->Usage->Inc(L"CommandLineOperation");
+                }
+
                 if (ParamCommand == pcUpload)
                 {
                   Upload(TerminalManager->ActiveTerminal, CommandParams, UseDefaults);

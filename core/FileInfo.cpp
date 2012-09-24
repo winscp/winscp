@@ -20,7 +20,7 @@ struct VS_VERSION_INFO_STRUCT32
   WCHAR szKey[1];
 };
 //---------------------------------------------------------------------------
-unsigned int VERSION_GetFileVersionInfo_PE(const char * FileName, unsigned int DataSize, void * Data)
+unsigned int VERSION_GetFileVersionInfo_PE(const wchar_t * FileName, unsigned int DataSize, void * Data)
 {
   unsigned int Len;
 
@@ -38,7 +38,7 @@ unsigned int VERSION_GetFileVersionInfo_PE(const char * FileName, unsigned int D
   {
     try
     {
-      HANDLE Rsrc = FindResource(Module, MAKEINTRESOURCE(VS_VERSION_INFO),
+      HRSRC Rsrc = FindResource(Module, MAKEINTRESOURCE(VS_VERSION_INFO),
         MAKEINTRESOURCE(VS_FILE_INFO));
       if (Rsrc == NULL)
       {
@@ -72,7 +72,7 @@ unsigned int VERSION_GetFileVersionInfo_PE(const char * FileName, unsigned int D
                 }
                 if (Len > 0)
                 {
-                  memcpy(Data, VersionInfo, Len);
+                  memmove(Data, VersionInfo, Len);
                 }
               }
             }
@@ -96,7 +96,7 @@ unsigned int VERSION_GetFileVersionInfo_PE(const char * FileName, unsigned int D
   return Len;
 }
 //---------------------------------------------------------------------------
-unsigned int GetFileVersionInfoSizeFix(const char * FileName, unsigned long * Handle)
+unsigned int GetFileVersionInfoSizeFix(const wchar_t * FileName, unsigned long * Handle)
 {
   unsigned int Len;
   if (IsWin7())
@@ -111,13 +111,13 @@ unsigned int GetFileVersionInfoSizeFix(const char * FileName, unsigned long * Ha
   }
   else
   {
-    Len = GetFileVersionInfoSize((char *)FileName, Handle);
+    Len = GetFileVersionInfoSize(FileName, Handle);
   }
 
   return Len;
 }
 //---------------------------------------------------------------------------
-bool GetFileVersionInfoFix(const char * FileName, unsigned long Handle,
+bool GetFileVersionInfoFix(const wchar_t * FileName, unsigned long Handle,
   unsigned int DataSize, void * Data)
 {
   bool Result;
@@ -139,20 +139,20 @@ bool GetFileVersionInfoFix(const char * FileName, unsigned long Handle,
       if (DataSize >= BufSize)
       {
         ConvBuf = DataSize - VersionInfo->wLength;
-        memcpy(((char*)(Data)) + VersionInfo->wLength, Signature, ConvBuf > 4 ? 4 : ConvBuf );
+        memmove(((char*)(Data)) + VersionInfo->wLength, Signature, ConvBuf > 4 ? 4 : ConvBuf );
       }
     }
   }
   else
   {
-    Result = GetFileVersionInfo((char *)FileName, Handle, DataSize, Data);
+    Result = GetFileVersionInfo(FileName, Handle, DataSize, Data);
   }
 
   return Result;
 }
 //---------------------------------------------------------------------------
 // Return pointer to file version info block
-void * __fastcall CreateFileInfo(AnsiString FileName)
+void * __fastcall CreateFileInfo(UnicodeString FileName)
 {
   unsigned long Handle;
   unsigned int Size;
@@ -192,18 +192,18 @@ PVSFixedFileInfo __fastcall GetFixedFileInfo(void * FileInfo)
 {
   UINT Len;
   PVSFixedFileInfo Result;
-  if (!VerQueryValue(FileInfo, "\\", (void**)&Result, &Len))
-    throw Exception("Fixed file info not available");
+  if (!VerQueryValue(FileInfo, L"\\", (void**)&Result, &Len))
+    throw Exception(L"Fixed file info not available");
   return Result;
-};
+}
 //---------------------------------------------------------------------------
 // Return number of available file version info translations
 unsigned __fastcall GetTranslationCount(void * FileInfo)
 {
   PTranslations P;
   UINT Len;
-  if (!VerQueryValue(FileInfo, "\\VarFileInfo\\Translation", (void**)&P, &Len))
-    throw Exception("File info translations not available");
+  if (!VerQueryValue(FileInfo, L"\\VarFileInfo\\Translation", (void**)&P, &Len))
+    throw Exception(L"File info translations not available");
   return Len / 4;
 }
 //---------------------------------------------------------------------------
@@ -213,44 +213,44 @@ TTranslation __fastcall GetTranslation(void * FileInfo, unsigned i)
   PTranslations P;
   UINT Len;
 
-  if (!VerQueryValue(FileInfo, "\\VarFileInfo\\Translation", (void**)&P, &Len))
-    throw Exception("File info translations not available");
+  if (!VerQueryValue(FileInfo, L"\\VarFileInfo\\Translation", (void**)&P, &Len))
+    throw Exception(L"File info translations not available");
   if (i * sizeof(TTranslation) >= Len)
-    throw Exception("Specified translation not available");
+    throw Exception(L"Specified translation not available");
   return P[i];
-};
+}
 //---------------------------------------------------------------------------
 // Return the name of the specified language
-AnsiString __fastcall GetLanguage(Word Language)
+UnicodeString __fastcall GetLanguage(Word Language)
 {
   UINT Len;
-  Char P[256];
+  wchar_t P[256];
 
-  Len = VerLanguageName(Language, P, sizeof(P));
-  if (Len > sizeof(P))
-    throw Exception("Language not available");
-  return AnsiString(P, Len);
-};
+  Len = VerLanguageName(Language, P, LENOF(P));
+  if (Len > LENOF(P))
+    throw Exception(L"Language not available");
+  return UnicodeString(P, Len);
+}
 //---------------------------------------------------------------------------
 // Return the value of the specified file version info string using the
 // specified translation
-AnsiString __fastcall GetFileInfoString(void * FileInfo,
-  TTranslation Translation, AnsiString StringName)
+UnicodeString __fastcall GetFileInfoString(void * FileInfo,
+  TTranslation Translation, UnicodeString StringName)
 {
-  PChar P;
+  wchar_t * P;
   UINT Len;
 
-  if (!VerQueryValue(FileInfo, (AnsiString("\\StringFileInfo\\") +
+  if (!VerQueryValue(FileInfo, (UnicodeString(L"\\StringFileInfo\\") +
     IntToHex(Translation.Language, 4) +
     IntToHex(Translation.CharSet, 4) +
-    "\\" + StringName).c_str(), (void**)&P, &Len))
+    L"\\" + StringName).c_str(), (void**)&P, &Len))
   {
     throw Exception("Specified file info string not available");
   }
-  // c_str() makes sure that returned string has only necessary bytes allocated
-  AnsiString Result = AnsiString(P, Len).c_str();
+  UnicodeString Result = UnicodeString(P, Len);
+  PackStr(Result);
   return Result;
-};
+}
 //---------------------------------------------------------------------------
 int __fastcall CalculateCompoundVersion(int MajorVer,
   int MinorVer, int Release, int Build)

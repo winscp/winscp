@@ -13,20 +13,20 @@ class TScriptCommands;
 class TStoredSessionList;
 class TTerminalList;
 //---------------------------------------------------------------------------
-typedef void __fastcall (__closure *TScriptPrintEvent)(TScript * Script, const AnsiString Str);
+typedef void __fastcall (__closure *TScriptPrintEvent)(TScript * Script, const UnicodeString Str);
 typedef void __fastcall (__closure *TScriptSynchronizeStartStop)(TScript * Script,
-  const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   const TCopyParamType & CopyParam, int SynchronizeParams);
 //---------------------------------------------------------------------------
 class TScriptProcParams : public TOptions
 {
 public:
-  __fastcall TScriptProcParams(AnsiString ParamsStr);
+  __fastcall TScriptProcParams(UnicodeString ParamsStr);
 
-  __property AnsiString ParamsStr = { read = FParamsStr };
+  __property UnicodeString ParamsStr = { read = FParamsStr };
 
 private:
-  AnsiString FParamsStr;
+  UnicodeString FParamsStr;
 };
 //---------------------------------------------------------------------------
 class TScript
@@ -37,11 +37,12 @@ public:
   __fastcall TScript(bool LimitedOutput);
   virtual __fastcall ~TScript();
 
-  void __fastcall Command(AnsiString Cmd);
+  void __fastcall Command(UnicodeString Cmd);
   void __fastcall Log(TLogLineType Type, AnsiString Str);
+  void __fastcall PrintLine(const UnicodeString Str);
 
-  void __fastcall Synchronize(const AnsiString LocalDirectory,
-    const AnsiString RemoteDirectory, const TCopyParamType & CopyParam,
+  void __fastcall Synchronize(const UnicodeString LocalDirectory,
+    const UnicodeString RemoteDirectory, const TCopyParamType & CopyParam,
     int SynchronizeParams, TSynchronizeChecklist ** Checklist);
 
   __property TScriptPrintEvent OnPrint = { read = FOnPrint, write = FOnPrint };
@@ -52,6 +53,7 @@ public:
   __property int SynchronizeParams = { read = FSynchronizeParams, write = SetSynchronizeParams };
   __property TBatchMode Batch = { read = FBatch };
   __property TTerminal * Terminal = { read = FTerminal };
+  __property bool Groups = { read = FGroups, write = FGroups };
 
 protected:
   TTerminal * FTerminal;
@@ -61,21 +63,23 @@ protected:
   TSynchronizeDirectory FOnTerminalSynchronizeDirectory;
   TScriptSynchronizeStartStop FOnSynchronizeStartStop;
   TCopyParamType FCopyParam;
+  bool FIncludeFileMaskOptionUsed;
   TBatchMode FBatch;
   bool FConfirm;
   bool FEcho;
   int FSynchronizeParams;
   int FSynchronizeMode;
   bool FKeepingUpToDate;
-  AnsiString FSynchronizeIntro;
+  UnicodeString FSynchronizeIntro;
   bool FLimitedOutput;
   int FSessionReopenTimeout;
+  bool FGroups;
 
   virtual void __fastcall ResetTransfer();
   virtual void __fastcall ConnectTerminal(TTerminal * Terminal);
-  bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
-  void __fastcall Print(const AnsiString Str);
-  void __fastcall PrintLine(const AnsiString Str);
+  bool __fastcall EnsureCommandSessionFallback(
+    TFSCapability Capability, TSessionAction & Action);
+  void __fastcall Print(const UnicodeString Str);
   void __fastcall CheckSession();
   void __fastcall CheckParams(TScriptProcParams * Parameters);
   void __fastcall CopyParamParams(TCopyParamType & CopyParam, TScriptProcParams * Parameters);
@@ -111,23 +115,26 @@ protected:
   void __fastcall BinaryProc(TScriptProcParams * Parameters);
   void __fastcall SynchronizeProc(TScriptProcParams * Parameters);
   void __fastcall KeepUpToDateProc(TScriptProcParams * Parameters);
+  void __fastcall EchoProc(TScriptProcParams * Parameters);
+  void __fastcall StatProc(TScriptProcParams * Parameters);
 
-  void __fastcall OptionImpl(AnsiString OptionName, AnsiString ValueName);
+  void __fastcall OptionImpl(UnicodeString OptionName, UnicodeString ValueName);
   void __fastcall SynchronizeDirectories(TScriptProcParams * Parameters,
-    AnsiString & LocalDirectory, AnsiString & RemoteDirectory, int FirstParam);
+    UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory, int FirstParam);
   virtual bool __fastcall HandleExtendedException(Exception * E,
     TTerminal * Terminal = NULL);
-  void __fastcall TerminalCaptureLog(const AnsiString & AddedLine, bool StdError);
+  void __fastcall TerminalCaptureLog(const UnicodeString & AddedLine, bool StdError);
 
 private:
   void __fastcall Init();
   void __fastcall SetCopyParam(const TCopyParamType & value);
   void __fastcall SetSynchronizeParams(int value);
+  TTransferMode __fastcall ParseTransferModeName(UnicodeString Name);
 };
 //---------------------------------------------------------------------------
-typedef void __fastcall (__closure *TScriptInputEvent)(TScript * Script, const AnsiString Prompt, AnsiString & Str);
+typedef void __fastcall (__closure *TScriptInputEvent)(TScript * Script, const UnicodeString Prompt, UnicodeString & Str);
 typedef void __fastcall (__closure *TScriptQueryCancelEvent)(TScript * Script, bool & Cancel);
-typedef void __fastcall (__closure *TScriptPrintProgressEvent)(TScript * Script, bool First, const AnsiString Str);
+typedef void __fastcall (__closure *TScriptPrintProgressEvent)(TScript * Script, bool First, const UnicodeString Str);
 //---------------------------------------------------------------------------
 class TManagementScript : public TScript
 {
@@ -135,7 +142,7 @@ public:
   __fastcall TManagementScript(TStoredSessionList * StoredSessions, bool LimitedOutput);
   virtual __fastcall ~TManagementScript();
 
-  void __fastcall Connect(const AnsiString Session, TOptions * Options, bool CheckParams);
+  void __fastcall Connect(const UnicodeString Session, TOptions * Options, bool CheckParams);
 
   __property TScriptInputEvent OnInput = { read = FOnInput, write = FOnInput };
   __property TScriptQueryCancelEvent OnQueryCancel = { read = FOnQueryCancel, write = FOnQueryCancel };
@@ -152,34 +159,34 @@ protected:
   TScriptPrintProgressEvent FOnPrintProgress;
   TStoredSessionList * FStoredSessions;
   TTerminalList * FTerminalList;
-  AnsiString FLastProgressFile;
-  AnsiString FLastProgressMessage;
+  UnicodeString FLastProgressFile;
+  UnicodeString FLastProgressMessage;
   time_t FLastProgressTime;
   bool FContinue;
 
   virtual void __fastcall ResetTransfer();
-  void __fastcall Input(const AnsiString Prompt, AnsiString & Str, bool AllowEmpty);
-  void __fastcall TerminalInformation(TTerminal * Terminal, const AnsiString & Str,
-    bool Status, bool Active);
+  void __fastcall Input(const UnicodeString Prompt, UnicodeString & Str, bool AllowEmpty);
+  void __fastcall TerminalInformation(TTerminal * Terminal, const UnicodeString & Str,
+    bool Status, int Phase);
   void __fastcall TerminalOperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);
   void __fastcall TerminalOperationFinished(TFileOperation Operation, TOperationSide Side,
-    bool Temp, const AnsiString & FileName, Boolean Success,
+    bool Temp, const UnicodeString & FileName, Boolean Success,
     TOnceDoneOperation & OnceDoneOperation);
 
   void __fastcall PrintActiveSession();
-  TTerminal * __fastcall FindSession(const AnsiString Index);
+  TTerminal * __fastcall FindSession(const UnicodeString Index);
   void __fastcall FreeTerminal(TTerminal * Terminal);
-  void __fastcall PrintProgress(bool First, const AnsiString Str);
+  void __fastcall PrintProgress(bool First, const UnicodeString Str);
   bool __fastcall QueryCancel();
-  void __fastcall TerminalSynchronizeDirectory(const AnsiString LocalDirectory,
-    const AnsiString RemoteDirectory, bool & Continue, bool Collect);
-  void __fastcall DoChangeLocalDirectory(AnsiString Directory);
+  void __fastcall TerminalSynchronizeDirectory(const UnicodeString LocalDirectory,
+    const UnicodeString RemoteDirectory, bool & Continue, bool Collect);
+  void __fastcall DoChangeLocalDirectory(UnicodeString Directory);
   void __fastcall DoClose(TTerminal * Terminal);
   virtual bool __fastcall HandleExtendedException(Exception * E,
     TTerminal * Terminal = NULL);
   void __fastcall TerminalPromptUser(TTerminal * Terminal, TPromptKind Kind,
-    AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+    UnicodeString Name, UnicodeString Instructions, TStrings * Prompts,
     TStrings * Results, bool & Result, void * Arg);
   inline bool __fastcall Synchronizing();
   inline void __fastcall ShowPendingProgress();

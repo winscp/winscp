@@ -348,10 +348,12 @@ enum SocketState
 	attached
 };
 
+#ifndef MPEXT
 #ifdef _UNICODE
 #define _sntprintf _snwprintf
 #else
 #define _sntprintf _snprintf
+#endif
 #endif
 
 inline TCHAR* Inet6AddrToString(in6_addr& addr)

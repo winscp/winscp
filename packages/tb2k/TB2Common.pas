@@ -317,7 +317,7 @@ begin
   Result := S;
   I := 1;
   while I <= Length(Result) do begin
-    if not(Result[I] in LeadBytes) then begin
+    if not CharInSet(Result[I], LeadBytes) then begin
       if Result[I] = '&' then
         System.Delete(Result, I, 1);
       Inc(I);
@@ -335,7 +335,7 @@ begin
   Result := S;
   I := 1;
   while I <= Length(Result) do begin
-    if not(Result[I] in LeadBytes) then begin
+    if not CharInSet(Result[I], LeadBytes) then begin
       if Result[I] = '&' then begin
         Inc(I);
         Insert('&', Result, I);
@@ -672,8 +672,8 @@ end;
 
 type
   HMONITOR = type Integer;
-  PMonitorInfoA = ^TMonitorInfoA;
-  TMonitorInfoA = record
+  PMonitorInfo = ^TMonitorInfo;
+  TMonitorInfo = record
     cbSize: DWORD;
     rcMonitor: TRect;
     rcWork: TRect;
@@ -686,7 +686,7 @@ type
     funcMonitorFromRect: function(lprcScreenCoords: PRect; dwFlags: DWORD): HMONITOR; stdcall;
     funcMonitorFromPoint: function(ptScreenCoords: TPoint; dwFlags: DWORD): HMONITOR; stdcall;
     funcMonitorFromWindow: function(hWnd: HWND; dwFlags: DWORD): HMONITOR; stdcall;
-    funcGetMonitorInfoA: function(hMonitor: HMONITOR; lpMonitorInfo: PMonitorInfoA): BOOL; stdcall;
+    funcGetMonitorInfoW: function(hMonitor: HMONITOR; lpMonitorInfo: PMonitorInfo): BOOL; stdcall;
   end;
 
 { Under D4 I could be using the MultiMon unit for the multiple monitor
@@ -701,9 +701,9 @@ begin
   Apis.funcMonitorFromRect := GetProcAddress(User32Handle, 'MonitorFromRect');
   Apis.funcMonitorFromPoint := GetProcAddress(User32Handle, 'MonitorFromPoint');
   Apis.funcMonitorFromWindow := GetProcAddress(User32Handle, 'MonitorFromWindow');
-  Apis.funcGetMonitorInfoA := GetProcAddress(User32Handle, 'GetMonitorInfoA');
+  Apis.funcGetMonitorInfoW := GetProcAddress(User32Handle, 'GetMonitorInfoW');
   Result := Assigned(Apis.funcMonitorFromRect) and
-    Assigned(Apis.funcMonitorFromPoint) and Assigned(Apis.funcGetMonitorInfoA);
+    Assigned(Apis.funcMonitorFromPoint) and Assigned(Apis.funcGetMonitorInfoW);
 end;
 
 function GetRectOfMonitorContainingRect(const R: TRect;
@@ -713,12 +713,12 @@ function GetRectOfMonitorContainingRect(const R: TRect;
 var
   Apis: TMultiMonApis;
   M: HMONITOR;
-  MonitorInfo: TMonitorInfoA;
+  MonitorInfo: TMonitorInfo;
 begin
   if UsingMultipleMonitors and InitMultiMonApis(Apis) then begin
     M := Apis.funcMonitorFromRect(@R, MONITOR_DEFAULTTONEAREST);
     MonitorInfo.cbSize := SizeOf(MonitorInfo);
-    if Apis.funcGetMonitorInfoA(M, @MonitorInfo) then begin
+    if Apis.funcGetMonitorInfoW(M, @MonitorInfo) then begin
       if not WorkArea then
         Result := MonitorInfo.rcMonitor
       else
@@ -736,12 +736,12 @@ function GetRectOfMonitorContainingPoint(const P: TPoint;
 var
   Apis: TMultiMonApis;
   M: HMONITOR;
-  MonitorInfo: TMonitorInfoA;
+  MonitorInfo: TMonitorInfo;
 begin
   if UsingMultipleMonitors and InitMultiMonApis(Apis) then begin
     M := Apis.funcMonitorFromPoint(P, MONITOR_DEFAULTTONEAREST);
     MonitorInfo.cbSize := SizeOf(MonitorInfo);
-    if Apis.funcGetMonitorInfoA(M, @MonitorInfo) then begin
+    if Apis.funcGetMonitorInfoW(M, @MonitorInfo) then begin
       if not WorkArea then
         Result := MonitorInfo.rcMonitor
       else
@@ -757,12 +757,12 @@ function GetRectOfMonitorContainingWindow(const W: HWND;
 var
   Apis: TMultiMonApis;
   M: HMONITOR;
-  MonitorInfo: TMonitorInfoA;
+  MonitorInfo: TMonitorInfo;
 begin
   if UsingMultipleMonitors and InitMultiMonApis(Apis) then begin
     M := Apis.funcMonitorFromWindow(W, MONITOR_DEFAULTTONEAREST);
     MonitorInfo.cbSize := SizeOf(MonitorInfo);
-    if Apis.funcGetMonitorInfoA(M, @MonitorInfo) then begin
+    if Apis.funcGetMonitorInfoW(M, @MonitorInfo) then begin
       if not WorkArea then
         Result := MonitorInfo.rcMonitor
       else
@@ -921,7 +921,7 @@ begin
   I := 1;
   if (AFormat and DT_NOPREFIX) <> DT_NOPREFIX then
     while I <= Length(AText) do begin
-      if AText[I] in LeadBytes then
+      if CharInSet(AText[I], LeadBytes) then
         Inc(I)
       else if AText[I] = '&' then begin
         Delete(AText, I, 1);

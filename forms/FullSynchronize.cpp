@@ -22,7 +22,7 @@
 #endif
 //---------------------------------------------------------------------------
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
-  AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
+  UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode, int Options,
   const TUsableCopyParamAttrs & CopyParamAttrs)
 {
@@ -69,6 +69,7 @@ __fastcall TFullSynchronizeDialog::TFullSynchronizeDialog(TComponent* Owner)
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   FSynchronizeBySizeCaption = SynchronizeBySizeCheck->Caption;
+  HotTrackLabel(CopyParamLabel);
 }
 //---------------------------------------------------------------------------
 __fastcall TFullSynchronizeDialog::~TFullSynchronizeDialog()
@@ -106,13 +107,17 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
   EnableControl(OkButton, !LocalDirectoryEdit->Text.IsEmpty() &&
     !RemoteDirectoryEdit->Text.IsEmpty());
 
-  AnsiString InfoStr = FCopyParams.GetInfoStr("; ", ActualCopyParamAttrs());
+  UnicodeString InfoStr = FCopyParams.GetInfoStr(L"; ", ActualCopyParamAttrs());
   CopyParamLabel->Caption = InfoStr;
   CopyParamLabel->Hint = InfoStr;
   CopyParamLabel->ShowHint =
     (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
   SynchronizeBySizeCheck->Caption = SynchronizeTimestampsButton->Checked ?
-    LoadStr(SYNCHRONIZE_SAME_SIZE) : FSynchronizeBySizeCaption;
+    LoadStr(SYNCHRONIZE_SAME_SIZE) : UnicodeString(FSynchronizeBySizeCaption);
+
+  TransferSettingsButton->Style =
+    FLAGCLEAR(Options, fsoDoNotUsePresets) ?
+      TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
 }
 //---------------------------------------------------------------------------
 int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
@@ -120,7 +125,7 @@ int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
   int Result;
   if (SynchronizeTimestampsButton->Checked)
   {
-    Result = cpaExcludeMaskOnly;
+    Result = cpaIncludeMaskOnly;
   }
   else
   {
@@ -156,35 +161,35 @@ bool __fastcall TFullSynchronizeDialog::Execute()
 {
   // at start assume that copy param is current preset
   FPreset = GUIConfiguration->CopyParamCurrent;
-  LocalDirectoryEdit->Items = CustomWinConfiguration->History["LocalDirectory"];
-  RemoteDirectoryEdit->Items = CustomWinConfiguration->History["RemoteDirectory"];
+  LocalDirectoryEdit->Items = CustomWinConfiguration->History[L"LocalDirectory"];
+  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
     LocalDirectoryEdit->SaveToHistory();
-    CustomWinConfiguration->History["LocalDirectory"] = LocalDirectoryEdit->Items;
+    CustomWinConfiguration->History[L"LocalDirectory"] = LocalDirectoryEdit->Items;
     RemoteDirectoryEdit->SaveToHistory();
-    CustomWinConfiguration->History["RemoteDirectory"] = RemoteDirectoryEdit->Items;
+    CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::SetRemoteDirectory(const AnsiString value)
+void __fastcall TFullSynchronizeDialog::SetRemoteDirectory(const UnicodeString value)
 {
   RemoteDirectoryEdit->Text = value;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TFullSynchronizeDialog::GetRemoteDirectory()
+UnicodeString __fastcall TFullSynchronizeDialog::GetRemoteDirectory()
 {
   return RemoteDirectoryEdit->Text;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::SetLocalDirectory(const AnsiString value)
+void __fastcall TFullSynchronizeDialog::SetLocalDirectory(const UnicodeString value)
 {
   LocalDirectoryEdit->Text = value;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TFullSynchronizeDialog::GetLocalDirectory()
+UnicodeString __fastcall TFullSynchronizeDialog::GetLocalDirectory()
 {
   return LocalDirectoryEdit->Text;
 }
@@ -270,7 +275,7 @@ int __fastcall TFullSynchronizeDialog::GetParams()
 void __fastcall TFullSynchronizeDialog::LocalDirectoryBrowseButtonClick(
       TObject * /*Sender*/)
 {
-  AnsiString Directory = LocalDirectoryEdit->Text;
+  UnicodeString Directory = LocalDirectoryEdit->Text;
   if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), false))
   {
     LocalDirectoryEdit->Text = Directory;
@@ -301,18 +306,27 @@ void __fastcall TFullSynchronizeDialog::SetOptions(int value)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::CopyParamListPopup(TPoint P, int AdditionalOptions)
+{
+  // We pass in FCopyParams, although it may not be the exact copy param
+  // that will be used (because of Preservetime). The reason is to
+  // display checkbox next to user-selected preset
+  ::CopyParamListPopup(
+    P, FPresetsMenu, FCopyParams, FPreset, CopyParamClick, cplCustomize | AdditionalOptions);
+}
+//---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::TransferSettingsButtonClick(
   TObject * /*Sender*/)
 {
-  if (FLAGCLEAR(FOptions, fsoDoNotUsePresets))
+  if (FLAGCLEAR(FOptions, fsoDoNotUsePresets) && !SupportsSplitButton())
   {
     CopyParamListPopup(
       TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
-      FPresetsMenu, FCopyParams, FPreset, CopyParamClick, cplCustomize);
+      0);
   }
   else
   {
-    CopyParamGroupDblClick(NULL);
+    CopyParamGroupClick(NULL);
   }
 }
 //---------------------------------------------------------------------------
@@ -378,20 +392,16 @@ void __fastcall TFullSynchronizeDialog::CopyParamGroupContextPopup(
 {
   if (FLAGCLEAR(FOptions, fsoDoNotUsePresets))
   {
-    // We pass in FCopyParams, although it may not be the exact copy param
-    // that will be used (because of Preservetime). The reason is to
-    // display checkbox next to user-selected preset
-    CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), FPresetsMenu,
-      FCopyParams, FPreset, CopyParamClick, cplCustomize | cplCustomizeDefault);
+    CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), cplCustomizeDefault);
     Handled = true;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::CopyParamGroupDblClick(
+void __fastcall TFullSynchronizeDialog::CopyParamGroupClick(
   TObject * /*Sender*/)
 {
   // PreserveTime is forced for some settings, but avoid hard-setting it until
-  // user really confirms it on cutom dialog
+  // user really confirms it on custom dialog
   TCopyParamType ACopyParams = CopyParams;
   if (DoCopyParamCustomDialog(ACopyParams, ActualCopyParamAttrs()))
   {
@@ -403,5 +413,12 @@ void __fastcall TFullSynchronizeDialog::CopyParamGroupDblClick(
 void __fastcall TFullSynchronizeDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::TransferSettingsButtonDropDownClick(TObject * /*Sender*/)
+{
+  CopyParamListPopup(
+    TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
+    cplCustomizeDefault);
 }
 //---------------------------------------------------------------------------

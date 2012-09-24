@@ -5,11 +5,12 @@ interface
 {$R DirImg.res}
 
 {$WARN UNIT_PLATFORM OFF}
+{$WARN SYMBOL_PLATFORM OFF}
 
 uses
   Windows, Messages, Classes, Graphics, Controls,
   Forms, ComCtrls, ShellAPI, ComObj, ShlObj, Dialogs,
-  ActiveX, CommCtrl, Extctrls, ImgList, Menus,
+  ActiveX, CommCtrl, Extctrls, ImgList, Menus, FileCtrl,
   PIDL, BaseUtils, DragDrop, DragDropFilesEx, IEDriveInfo,
   IEListView, PathLabel, SysUtils, PasTools;
 
@@ -72,7 +73,7 @@ type
   TDDOnDragEnter = procedure(Sender: TObject; DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: Longint; var Accept: Boolean) of object;
   TDDOnDragLeave = procedure(Sender: TObject) of object;
   TDDOnDragOver = procedure(Sender: TObject; grfKeyState: Longint; Point: TPoint; var dwEffect: Longint) of object;
-  TDDOnDrop = procedure(Sender: TObject; DataObj: IDataObject; grfKeyState: Longint;  Point: TPoint; var dwEffect: Longint) of object;
+  TDDOnDrop = procedure(Sender: TObject; DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: Longint) of object;
   TDDOnQueryContinueDrag = procedure(Sender: TObject; FEscapePressed: BOOL; grfKeyState: Longint; var Result: HResult) of object;
   TDDOnGiveFeedback = procedure(Sender: TObject; dwEffect: Longint; var Result: HResult) of object;
   TDDOnChooseEffect = procedure(Sender: TObject; grfKeyState: Longint; var dwEffect: Longint) of object;
@@ -90,7 +91,7 @@ type
 
   TDirViewExecFileEvent = procedure(Sender: TObject; Item: TListItem; var AllowExec: Boolean) of object;
   TRenameEvent = procedure(Sender: TObject; Item: TListItem; NewName: string) of object;
-  TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Size: Int64; Masks: string; var Matches: Boolean) of object;
+  TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; var Matches: Boolean) of object;
   TDirViewGetOverlayEvent = procedure(Sender: TObject; Item: TListItem; var Indexes: Word) of object;
   TDirViewUpdateStatusBarEvent = procedure(Sender: TObject; const FileInfo: TStatusFileInfo) of object;
 
@@ -132,8 +133,8 @@ type
     FAddParentDir: Boolean;
     FDimmHiddenFiles: Boolean;
     FShowDirectories: Boolean;
-    FDirsOnTop: Boolean;
     FShowSubDirSize: Boolean;
+    FFormatSizeBytes: Boolean;
     FSortByExtension: Boolean;
     FWantUseDragImages: Boolean;
     FCanUseDragImages: Boolean;
@@ -205,8 +206,10 @@ type
     FMask: string;
     FScrollOnDragOver: TListViewScrollOnDragOver;
     FStatusFileInfo: TStatusFileInfo;
+    FDoubleBufferedScrollingWorkaround: Boolean;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
+    procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
     procedure WMContextMenu(var Message: TWMContextMenu); message WM_CONTEXTMENU;
@@ -215,6 +218,7 @@ type
     procedure WMXButtonUp(var Message: TWMXMouse); message _WM_XBUTTONUP;
     procedure WMAppCommand(var Message: TMessage); message _WM_APPCOMMAND;
     procedure CMColorChanged(var Message: TMessage); message CM_COLORCHANGED;
+    procedure LVMSetExtendedListViewStyle(var Message: TMessage); message LVM_SETEXTENDEDLISTVIEWSTYLE;
 
     procedure DumbCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
@@ -253,7 +257,7 @@ type
     procedure ClearItems; override;
     function GetDirOK: Boolean; virtual; abstract;
     procedure DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint; DragStatus: TDragDetectStatus); virtual;
-    procedure DDDragEnter(DataObj: IDataObject; KeyState: Longint; Point: TPoint; var Effect: longint; var Accept: Boolean);
+    procedure DDDragEnter(DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: longint; var Accept: Boolean);
     procedure DDDragLeave;
     procedure DDDragOver(grfKeyState: Longint; Point: TPoint; var dwEffect: Longint);
     procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer); virtual;
@@ -269,12 +273,13 @@ type
       grfKeyState: Longint; var Result: HResult); virtual;
     procedure DDSpecifyDropTarget(Sender: TObject; DragDropHandler: Boolean;
       Point: TPoint; var pidlFQ : PItemIDList; var Filename: string); virtual;
-    procedure GetDisplayInfo(ListItem: TListItem; var DispInfo: TLVItemA); virtual;
+    procedure GetDisplayInfo(ListItem: TListItem; var DispInfo: TLVItem); virtual;
     function GetDragSourceEffects: TDropEffectSet; virtual;
     function GetPathName: string; virtual; abstract;
     function GetFilesCount: Integer; virtual;
     procedure ColClick(Column: TListColumn); override;
     procedure CreateWnd; override;
+    procedure DestroyWnd; override;
     function CustomCreateFileList(Focused, OnlyFocused: Boolean;
       FullPath: Boolean; FileList: TStrings = nil; ItemObject: Boolean = False): TStrings;
     function CustomDrawItem(Item: TListItem; State: TCustomDrawState;
@@ -297,7 +302,6 @@ type
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
     function ItemColor(Item: TListItem): TColor; virtual;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
-    function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; virtual; abstract;
     // ItemIsDirectory and ItemFullFileName is in public block
     function ItemIsRecycleBin(Item: TListItem): Boolean; virtual;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
@@ -314,7 +318,6 @@ type
     procedure SetAddParentDir(Value: Boolean); virtual;
     procedure SetDimmHiddenFiles(Value: Boolean); virtual;
     procedure SetShowDirectories(Value: Boolean); virtual;
-    procedure SetDirsOnTop(Value: Boolean);
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); virtual; abstract;
     procedure SetLoadEnabled(Enabled : Boolean); virtual;
     procedure SetMultiSelect(Value: Boolean); override;
@@ -333,13 +336,14 @@ type
     procedure SetSortByExtension(Value: Boolean);
     procedure SetShowHiddenFiles(Value: Boolean); virtual;
     procedure SetShowSubDirSize(Value: Boolean); virtual;
+    procedure SetFormatSizeBytes(Value: Boolean);
     procedure SetViewStyle(Value: TViewStyle); override;
     procedure SetWatchForChanges(Value: Boolean); virtual;
     function TargetHasDropHandler(Item: TListItem; Effect: Integer): Boolean; virtual;
     procedure UpdatePathLabel; dynamic;
     procedure UpdateStatusBar; dynamic;
     procedure WndProc(var Message: TMessage); override;
-    function FileNameMatchesMasks(FileName: string; Directory: Boolean; Size: Int64; Masks: string): Boolean;
+    function FileNameMatchesMasks(FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string): Boolean;
     function EnableDragOnClick: Boolean; override;
     procedure SetMask(Value: string); virtual;
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
@@ -370,6 +374,7 @@ type
     function ItemFullFileName(Item: TListItem): string; virtual; abstract;
     function ItemFileName(Item: TListItem): string; virtual; abstract;
     function ItemFileSize(Item: TListItem): Int64; virtual; abstract;
+    function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; virtual; abstract;
     procedure ReloadDirectory; virtual; abstract;
     procedure DisplayPropertiesMenu; virtual; abstract;
     function CreateChangedFileList(DirView: TCustomDirView; FullPath: Boolean;
@@ -391,9 +396,9 @@ type
     property AddParentDir: Boolean read FAddParentDir write SetAddParentDir default False;
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
     property ShowDirectories: Boolean read FShowDirectories write SetShowDirectories default True;
-    property DirsOnTop: Boolean read FDirsOnTop write SetDirsOnTop default True;
     property DragDropFilesEx: TCustomizableDragDropFilesEx read FDragDropFilesEx;
     property ShowSubDirSize: Boolean read FShowSubDirSize write SetShowSubDirSize default False;
+    property FormatSizeBytes: Boolean read FFormatSizeBytes write SetFormatSizeBytes default False;
     property SortByExtension: Boolean read FSortByExtension write SetSortByExtension default False;
     property WantUseDragImages: Boolean read FWantUseDragImages write FWantUseDragImages default True;
     property UseDragImages: Boolean read GetUseDragImages stored False;
@@ -641,7 +646,6 @@ var
   PF: IPersistFile;   // Interface for PersistentFile
   SRec: TWIN32FINDDATA; // SearchRec of targetfile
   TargetDir: array[1..Max_Path] of Char; // Working directory of targetfile
-  PSource: WideString;    // Widestring(Source)
   Flags: DWORD;
 begin
   Result := '';
@@ -650,8 +654,7 @@ begin
   SL := IUnk as IShellLink;
   PF := IUnk as IPersistFile;
 
-  PSource := SourceFile;
-  HRes := PF.Load(PWideChar(PSource), STGM_READ);
+  HRes := PF.Load(PChar(SourceFile), STGM_READ);
   if Succeeded(Hres) then
   begin
     if not ShowDialog then Flags := SLR_NOUPDATE or (1500 shl 8) or SLR_NO_UI
@@ -673,14 +676,11 @@ var
   Hres: HRESULT;
   ShellLink: IShellLink;   // Interface to ShellLink
   IPFile: IPersistFile; // Interface to PersistentFile
-  WideStr: WideString;
   TargetFile: string;
 begin
   Result := False;
   if Target = '' then TargetFile := SourceFile + '.lnk'
     else TargetFile := Target;
-
-  WideStr := TargetFile;
 
   IUnk := CreateComObject(CLSID_ShellLink);
   ShellLink := IUnk as IShellLink;
@@ -688,7 +688,7 @@ begin
 
   if FileExists(TargetFile) and UpdateIfExists then
   begin
-    HRes := IPFile.Load(PWChar(WideStr), 0);
+    HRes := IPFile.Load(PChar(TargetFile), 0);
     if not Succeeded(HRes) then Exit;
   end;
 
@@ -703,7 +703,7 @@ begin
 
   if Succeeded(Hres) then
   begin
-    HRes := IPFile.Save(PWChar(WideStr),False);
+    HRes := IPFile.Save(PChar(TargetFile),False);
     if Succeeded(HRes) then Result := True;
   end;
 end; {CreateShortCut}
@@ -742,7 +742,7 @@ begin
     case Str.uType of
       STRRET_WSTR: Name := WideCharToString(Str.pOleStr);
       STRRET_OFFSET: Name := PChar(UINT(IDList) + Str.uOffset);
-      STRRET_CSTR: Name := Str.cStr;
+      STRRET_CSTR: Name := string(Str.cStr);
       else Result := False;
     end;
   end
@@ -750,8 +750,8 @@ begin
 end; {GetShellDisplayName}
 
 function COMCTL32OK: Boolean;
-{Returs, wether COMCTL32 supports the extended display properties:
- COMCTL32.DLL version 4.70 or higher ist required. Version 4.70 is
+{Returs, whether COMCTL32 supports the extended display properties:
+ COMCTL32.DLL version 4.70 or higher is required. Version 4.70 is
  included in Internet Explorer 4 with Active Desktop.
  Updates of COMCTL32.DLL are available at:
  http://msdn.microsoft.com/developer/downloads/files/40Comupd.htm }
@@ -867,8 +867,8 @@ begin
   FDimmHiddenFiles := True;
   FShowHiddenFiles := True;
   FShowDirectories := True;
-  FDirsOnTop := True;
   FShowSubDirSize := False;
+  FFormatSizeBytes := False;
   FWantUseDragImages := True;
   FCanUseDragImages := (Win32PlatForm = VER_PLATFORM_WIN32_NT) or (WinVer.dwMinorVersion > 0);
   FAddParentDir := False;
@@ -907,6 +907,7 @@ begin
   FDragDrive := #0;
   FExeDrag := False;
   FMask := '';
+  FDoubleBufferedScrollingWorkaround := not IsVista();
 
   FOnHistoryChange := nil;
   FOnPathChange := nil;
@@ -976,7 +977,7 @@ end;
 
 procedure TCustomDirView.CNNotify(var Message: TWMNotify);
 
-  procedure DrawOverlayImage(Image: Integer);
+  procedure DrawOverlayImage(DC: HDC; Image: Integer);
   var
     ImageList: TCustomImageList;
     Point: TPoint;
@@ -1000,8 +1001,10 @@ procedure TCustomDirView.CNNotify(var Message: TWMNotify);
     end;
 
     if 8 + ImageList.Width <= Columns[0].Width then
-      ImageList_Draw(ImageList.Handle, Index, Self.Canvas.Handle,
+    begin
+      ImageList_Draw(ImageList.Handle, Index, DC,
         Point.X, Point.Y, ILD_TRANSPARENT);
+    end;
   end;
 
 var
@@ -1069,21 +1072,21 @@ begin
 
   if (Message.NMHdr.code = NM_CUSTOMDRAW) and
      HasExtendedCOMCTL32 and Valid and (not Loading) then
-    with PNMCustomDraw(Message.NMHdr)^ do
+    with PNMLVCustomDraw(Message.NMHdr)^ do
       try
         Message.Result := Message.Result or CDRF_NOTIFYPOSTPAINT;
-        if (dwDrawStage = CDDS_ITEMPOSTPAINT) and
-           ((dwDrawStage and CDDS_SUBITEM) = 0) and
+        if (nmcd.dwDrawStage = CDDS_ITEMPOSTPAINT) and
+           ((nmcd.dwDrawStage and CDDS_SUBITEM) = 0) and
            Assigned(Columns[0]) and (Columns[0].Width > 0) then
         begin
-          Assert(Assigned(Items[dwItemSpec]));
-          OverlayIndexes := ItemOverlayIndexes(Items[dwItemSpec]);
+          Assert(Assigned(Items[nmcd.dwItemSpec]));
+          OverlayIndexes := ItemOverlayIndexes(Items[nmcd.dwItemSpec]);
           OverlayIndex := 1;
           while OverlayIndexes > 0 do
           begin
             if (OverlayIndex and OverlayIndexes) <> 0 then
             begin
-              DrawOverlayImage(OverlayIndex);
+              DrawOverlayImage(nmcd.hdc, OverlayIndex);
               Dec(OverlayIndexes, OverlayIndex);
             end;
             OverlayIndex := OverlayIndex shl 1;
@@ -1096,11 +1099,11 @@ begin
 end;
 
 function TCustomDirView.FileNameMatchesMasks(FileName: string;
-  Directory: Boolean; Size: Int64; Masks: string): Boolean;
+  Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string): Boolean;
 begin
   Result := False;
   if Assigned(OnMatchMask) then
-    OnMatchMask(Self, FileName, Directory, Size, Masks, Result)
+    OnMatchMask(Self, FileName, Directory, Size, Modification, Masks, Result)
 end;
 
 procedure TCustomDirView.SetAddParentDir(Value: Boolean);
@@ -1148,16 +1151,6 @@ begin
   end;
 end; {SetShowDirectories}
 
-procedure TCustomDirView.SetDirsOnTop(Value: Boolean);
-begin
-  if Value <> FDirsOnTop then
-  begin
-    FDirsOnTop := Value;
-    if ShowDirectories then
-      SortItems;
-  end;
-end; {SetDirsOnTop}
-
 procedure TCustomDirView.SetShowHiddenFiles(Value: Boolean);
 begin
   if ShowHiddenFiles <> Value then
@@ -1171,6 +1164,15 @@ procedure TCustomDirView.SetShowSubDirSize(Value: Boolean);
 begin
   if Value <> FShowSubDirSize then
     FShowSubDirSize := Value;
+end; {SetShowSubDirSize}
+
+procedure TCustomDirView.SetFormatSizeBytes(Value: Boolean);
+begin
+  if Value <> FFormatSizeBytes then
+  begin
+    FFormatSizeBytes := Value;
+    Self.Repaint;
+  end;
 end; {SetShowSubDirSize}
 
 procedure TCustomDirView.SetSortByExtension(Value: Boolean);
@@ -1205,9 +1207,42 @@ begin
     PopupMenu.Autopopup := False;
   FDragDropFilesEx.DragDropControl := Self;
 
-  FImageList16 := OverlayImageList(16);
-  FImageList32 := OverlayImageList(32);
+  if not Assigned(FImageList16) then
+    FImageList16 := OverlayImageList(16);
+  if not Assigned(FImageList32) then
+    FImageList32 := OverlayImageList(32);
   IconsSetImageList;
+end;
+
+procedure TCustomDirView.LVMSetExtendedListViewStyle(var Message: TMessage);
+// Only TWinControl.DoubleBuffered actually prevents flicker
+// on Win7 when moving mouse over list view, not LVS_EX_DOUBLEBUFFER.
+// But LVS_EX_DOUBLEBUFFER brings nice alpha blended marquee selection.
+// Double buffering introduces artefacts when scrolling using
+// keyboard (Page-up/Down). This gets fixed by LVS_EX_TRANSPARENTBKGND,
+// but that works on Vista and newer only. See WMKeyDown
+// for workaround on earlier systems.
+const
+  RequiredStyles = LVS_EX_DOUBLEBUFFER or LVS_EX_TRANSPARENTBKGND;
+begin
+  // This prevents TCustomListView.ResetExStyles resetting our styles
+  if (Message.WParam = 0) and
+     ((Message.LParam and RequiredStyles) <> RequiredStyles) then
+  begin
+    ListView_SetExtendedListViewStyle(Handle, Message.LParam or RequiredStyles);
+  end
+    else
+  begin
+    inherited;
+  end;
+end;
+
+procedure TCustomDirView.DestroyWnd;
+begin
+  // to force drag&drop re-registration when recreating handle
+  // (occurs when changing ViewStyle)
+  FDragDropFilesEx.DragDropControl := nil;
+  inherited;
 end;
 
 function TCustomDirView.CustomDrawItem(Item: TListItem; State: TCustomDrawState;
@@ -1228,14 +1263,14 @@ end;
 function TCustomDirView.CustomDrawSubItem(Item: TListItem; SubItem: Integer;
   State: TCustomDrawState; Stage: TCustomDrawStage): Boolean;
 var
-  FColor: TColor;
+  FItemColor: TColor;
 begin
-  if (Stage = cdPrePaint) and (SubItem > 0) and
-     (ItemColor(Item) <> clDefaultItemColor) then
+  if Stage = cdPrePaint then
   begin
-    FColor := GetSysColor(COLOR_WINDOWTEXT);
-    if Canvas.Font.Color <> FColor then
-      Canvas.Font.Color := FColor;
+    FItemColor := ItemColor(Item);
+    if (FItemColor <> clDefaultItemColor) and
+       (Canvas.Font.Color <> FItemColor) then
+         Canvas.Font.Color := FItemColor;
   end;
   Result := inherited CustomDrawSubItem(Item, SubItem, State, Stage);
 end;
@@ -1398,6 +1433,29 @@ begin
     OnGetOverlay(Self, Item, Result);
 end;
 
+procedure TCustomDirView.WMKeyDown(var Message: TWMKeyDown);
+begin
+  if DoubleBuffered and (Message.CharCode in [VK_PRIOR, VK_NEXT]) and
+     FDoubleBufferedScrollingWorkaround then
+  begin
+    // WORKAROUND
+    // When scrolling with double-buffering enabled, ugly artefacts
+    // are shown temporarily.
+    // LVS_EX_TRANSPARENTBKGND fixes is on Vista and newer
+    SendMessage(Handle, WM_SETREDRAW, 0, 0);
+    try
+      inherited;
+    finally
+      SendMessage(Handle, WM_SETREDRAW, 1, 0);
+    end;
+    Repaint;
+  end
+    else
+  begin
+    inherited;
+  end;
+end;
+
 procedure TCustomDirView.KeyDown(var Key: Word; Shift: TShiftState);
 begin
   if Valid and (not IsEditing) and (not Loading) then
@@ -1418,6 +1476,18 @@ begin
        (not IsRoot) then
     begin
       Key := 0;
+      ExecuteParentDirectory;
+    end
+      else
+    if ((Key = VK_UP) and (ssAlt in Shift)) and
+       (not IsRoot) then
+    begin
+      Key := 0;
+      // U+25D8 is 'INVERSE BULLET', what is glyph representing '\x8' (or '\b')
+      // ('up' key is the '8' key on numeric pad)
+      // We could obtain the value programatically using
+      // MultiByteToWideChar(CP_OEMCP, MB_USEGLYPHCHARS, "\x8", 1, ...)
+      FNextCharToIgnore := $25D8;
       ExecuteParentDirectory;
     end
       else
@@ -1919,6 +1989,9 @@ begin
     FNotifyEnabled := False;
     inherited;
     FNotifyEnabled := True;
+    // this is workaround for bug in TCustomNortonLikeListView
+    // that clears Items on recreating wnd (caused by change to ViewStyle)
+    Reload(True);
   end;
 end;
 
@@ -1972,8 +2045,8 @@ begin
   GlobalDragImageList.ShowDragImage;
 end;
 
-procedure TCustomDirView.DDDragEnter(DataObj: IDataObject; KeyState: Longint;
-  Point: TPoint; var Effect: longint; var Accept: Boolean);
+procedure TCustomDirView.DDDragEnter(DataObj: IDataObject; grfKeyState: Longint;
+  Point: TPoint; var dwEffect: longint; var Accept: Boolean);
 var
   Index: Integer;
 begin
@@ -2006,7 +2079,7 @@ begin
   FScrollOnDragOver.StartDrag;
 
   if Assigned(FOnDDDragEnter) then
-    FOnDDDragEnter(Self, DataObj, KeyState, Point, Effect, Accept);
+    FOnDDDragEnter(Self, DataObj, grfKeyState, Point, dwEffect, Accept);
 end;
 
 procedure TCustomDirView.DDDragLeave;
@@ -2091,7 +2164,8 @@ begin
     if DragDropFilesEx.OwnerIsSource and (dwEffect = DropEffect_Move) and
       (not Assigned(DropTarget)) then dwEffect := DropEffect_None
       else
-    if Assigned(DropTarget) and ItemIsRecycleBin(DropTarget) Then
+    if Assigned(DropTarget) and ItemIsRecycleBin(DropTarget) and
+       (dwEffect <> DropEffect_None) then
       dwEffect := DropEffect_Move;
   end;
 end;
@@ -2173,7 +2247,7 @@ begin
   if Result = DRAGDROP_S_DROP then
   begin
     GetSystemTimeAsFileTime(KnowTime);
-    if ((Int64(KnowTime) - INT64(FDragStartTime)) <= DDDragStartDelay) then
+    if ((Int64(KnowTime) - Int64(FDragStartTime)) <= DDDragStartDelay) then
       Result := DRAGDROP_S_CANCEL;
   end;
 
@@ -2407,7 +2481,7 @@ begin
 end;
 
 procedure TCustomDirView.GetDisplayInfo(ListItem: TListItem;
-  var DispInfo: TLVItemA);
+  var DispInfo: TLVItem);
 begin
   // Nothing
 end;
@@ -2447,7 +2521,6 @@ var
   ItemPos: TPoint;
   DragText: string;
   ClientPoint: TPoint;
-  OldCursor: TCursor;
   FileListCreated: Boolean;
   AvoidDragImage: Boolean;
   DataObject: TDataObject;
@@ -2508,75 +2581,69 @@ begin
 
     if DragDropFilesEx.FileList.Count > 0 then
     begin
-      OldCursor := Screen.Cursor;
-      Screen.Cursor := crHourGlass;
-      try
-        FDragEnabled := False;
-        {Create the dragimage:}
-        GlobalDragImageList := DragImageList;
-        if UseDragImages and (not AvoidDragImage) then
+      FDragEnabled := False;
+      {Create the dragimage:}
+      GlobalDragImageList := DragImageList;
+      if UseDragImages and (not AvoidDragImage) then
+      begin
+        ImageListHandle := ListView_CreateDragImage(Handle, FirstItem.Index, Spot);
+        ItemPos := ClientToScreen(FirstItem.DisplayRect(drBounds).TopLeft);
+        if ImageListHandle <> Invalid_Handle_Value then
         begin
-          ImageListHandle := ListView_CreateDragImage(Handle, FirstItem.Index, Spot);
-          ItemPos := ClientToScreen(FirstItem.DisplayRect(drBounds).TopLeft);
-          if ImageListHandle <> Invalid_Handle_Value then
+          GlobalDragImageList.Handle := ImageListHandle;
+          if FilesCount + DirsCount = 1 then
           begin
-            GlobalDragImageList.Handle := ImageListHandle;
-            if FilesCount + DirsCount = 1 then
+            ItemPos := ClientToScreen(FirstItem.DisplayRect(drBounds).TopLeft);
+            GlobalDragImageList.SetDragImage(0,
+              DetectStart.X - ItemPos.X, DetectStart.Y - ItemPos.Y);
+          end
+            else
+          begin
+            GlobalDragImageList.Clear;
+            GlobalDragImageList.Width := 32;
+            GlobalDragImageList.Height := 32;
+            if GlobalDragImageList.GetResource(rtBitMap, 'DRAGFILES', 0,
+              [lrTransparent], $FFFFFF) Then
             begin
-              ItemPos := ClientToScreen(FirstItem.DisplayRect(drBounds).TopLeft);
-              GlobalDragImageList.SetDragImage(0,
-                DetectStart.X - ItemPos.X, DetectStart.Y - ItemPos.Y);
-            end
-              else
-            begin
-              GlobalDragImageList.Clear;
-              GlobalDragImageList.Width := 32;
-              GlobalDragImageList.Height := 32;
-              if GlobalDragImageList.GetResource(rtBitMap, 'DRAGFILES', 0,
-                [lrTransparent], $FFFFFF) Then
-              begin
-                Bitmap := TBitmap.Create;
+              Bitmap := TBitmap.Create;
+              try
                 try
-                  try
-                    GlobalDragImageList.GetBitmap(0, Bitmap);
-                    Bitmap.Canvas.Font.Assign(Self.Font);
-                    DragText := '';
+                  GlobalDragImageList.GetBitmap(0, Bitmap);
+                  Bitmap.Canvas.Font.Assign(Self.Font);
+                  DragText := '';
+                  if FilesCount > 0 then
+                    DragText := Format(STextFiles, [FilesCount]);
+                  if DirsCount > 0 then
+                  begin
                     if FilesCount > 0 then
-                      DragText := Format(STextFiles, [FilesCount]);
-                    if DirsCount > 0 then
-                    begin
-                      if FilesCount > 0 then
-                        DragText := DragText + ', ';
-                      DragText := DragText + Format(STextDirectories, [DirsCount]);
-                    end;
-                    Bitmap.Width := 33 + Bitmap.Canvas.TextWidth(DragText);
-                    Bitmap.TransparentMode := tmAuto;
-                    Bitmap.Canvas.TextOut(33,
-                      Max(24 - Abs(Canvas.Font.Height), 0), DragText);
-                    GlobalDragImageList.Clear;
-                    GlobalDragImageList.Width := Bitmap.Width;
-                    GlobalDragImageList.AddMasked(Bitmap,
-                      Bitmap.Canvas.Pixels[0, 0]);
-                    GlobalDragImageList.SetDragImage(0, 25, 20);
-                  except
-                    if GlobalDragImageList.GetResource(rtBitMap, 'DRAGFILES',
-                      0, [lrTransparent], $FFFFFF) then
-                        GlobalDragImageList.SetDragImage(0, 25, 20);
+                      DragText := DragText + ', ';
+                    DragText := DragText + Format(STextDirectories, [DirsCount]);
                   end;
-                finally
-                  Bitmap.Free;
+                  Bitmap.Width := 33 + Bitmap.Canvas.TextWidth(DragText);
+                  Bitmap.TransparentMode := tmAuto;
+                  Bitmap.Canvas.TextOut(33,
+                    Max(24 - Abs(Canvas.Font.Height), 0), DragText);
+                  GlobalDragImageList.Clear;
+                  GlobalDragImageList.Width := Bitmap.Width;
+                  GlobalDragImageList.AddMasked(Bitmap,
+                    Bitmap.Canvas.Pixels[0, 0]);
+                  GlobalDragImageList.SetDragImage(0, 25, 20);
+                except
+                  if GlobalDragImageList.GetResource(rtBitMap, 'DRAGFILES',
+                    0, [lrTransparent], $FFFFFF) then
+                      GlobalDragImageList.SetDragImage(0, 25, 20);
                 end;
+              finally
+                Bitmap.Free;
               end;
             end;
-            ClientPoint := ParentForm.ScreenToClient(Point);
-            GlobalDragImageList.BeginDrag(ParentForm.Handle,
-              ClientPoint.X, ClientPoint.Y);
-            GlobalDragImageList.HideDragImage;
-            ShowCursor(True);
           end;
+          ClientPoint := ParentForm.ScreenToClient(Point);
+          GlobalDragImageList.BeginDrag(ParentForm.Handle,
+            ClientPoint.X, ClientPoint.Y);
+          GlobalDragImageList.HideDragImage;
+          ShowCursor(True);
         end;
-      finally
-        Screen.Cursor := OldCursor;
       end;
 
       FContextMenu := False;

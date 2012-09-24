@@ -2,7 +2,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
   Left = 296
   Top = 235
   HelpType = htKeyword
-  HelpKeyword = 'task_move_duplicate'
+  HelpKeyword = 'ui_duplicate'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'RemoteTransferDialog'
@@ -11,7 +11,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
@@ -32,7 +32,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
     object SessionLabel: TLabel
       Left = 11
       Top = 16
-      Width = 72
+      Width = 74
       Height = 13
       Caption = 'Target &session:'
       FocusControl = SessionCombo
@@ -40,7 +40,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
     object Label2: TLabel
       Left = 11
       Top = 64
-      Width = 112
+      Width = 119
       Height = 13
       Caption = 'Target remote &directory:'
       FocusControl = DirectoryEdit
@@ -52,7 +52,6 @@ object RemoteTransferDialog: TRemoteTransferDialog
       Height = 21
       Style = csDropDownList
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       MaxLength = 250
       TabOrder = 0
       OnChange = SessionComboChange
@@ -64,7 +63,6 @@ object RemoteTransferDialog: TRemoteTransferDialog
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       MaxLength = 250
       TabOrder = 1
       OnChange = ControlChange

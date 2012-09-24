@@ -76,7 +76,7 @@ type
     property OnPathClick: TPathLabelPathClickEvent read FOnPathClick write FOnPathClick;
     property HotTrack: Boolean read FHotTrack write FHotTrack default False;
     property Mask: string read FMask write SetMask;
-    property AutoSizeVertical: Boolean read FAutoSizeVertical write SetAutoSizeVertical;
+    property AutoSizeVertical: Boolean read FAutoSizeVertical write SetAutoSizeVertical default False;
 
     property FocusControl;
     property Caption;
@@ -136,7 +136,7 @@ implementation
 
 uses
   { SysUtils must overload deprecated FileCtrl (implements MinimizeName) }
-  FileCtrl, SysUtils;
+  FileCtrl, SysUtils, Math;
 
 procedure Register;
 begin
@@ -229,7 +229,7 @@ end;
 
 procedure TCustomPathLabel.SetColors(Index: integer; Value: TColor);
 begin
-  Assert(Index in [0..3]);
+  Assert(Index in [0..5]);
   if FColors[Index] <> Value then
   begin
     FColors[Index] := Value;
@@ -274,6 +274,8 @@ var
   Width: Integer;
   WidthMask: Integer;
   WidthPath: Integer;
+  HotTrackOffset: Integer;
+  HotTrackBottom: Integer;
   Separator: string;
   Str: string;
 begin
@@ -375,10 +377,21 @@ begin
       Canvas.Font.Color := FColors[4 + Integer(FIsActive)];
       DrawText(Canvas.Handle, PChar(FDisplayHotTrack), Length(FDisplayHotTrack), Rect, Flags);
       Canvas.Font.Color := StandardColor;
-      Inc(Rect.Left, Canvas.TextWidth(FDisplayHotTrack));
+      HotTrackOffset := Canvas.TextWidth(FDisplayHotTrack);
+      Inc(Rect.Left, HotTrackOffset);
       Delete(Str, 1, Length(FDisplayHotTrack));
+      HotTrackBottom := Rect.Bottom;
+    end
+      else
+    begin
+      HotTrackOffset := 0;
+      HotTrackBottom := 0;
     end;
+
     DrawText(Canvas.Handle, PChar(Str), Length(Str), Rect, Flags);
+
+    Dec(Rect.Left, HotTrackOffset);
+    Rect.Bottom := Max(Rect.Bottom, HotTrackBottom);
   end;
 end;
 
@@ -422,7 +435,7 @@ end;
 
 function TCustomPathLabel.GetColors(Index: Integer): TColor;
 begin
-  Assert(Index in [0..3]);
+  Assert(Index in [0..5]);
   Result := FColors[Index];
 end; { GetColors }
 

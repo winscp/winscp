@@ -285,6 +285,10 @@ static int dss_verifysig(void *key, char *sig, int siglen,
 
     ret = !bignum_cmp(v, r);
 
+    #ifdef MPEXT
+    freebn(u1);
+    freebn(u2);
+    #endif
     freebn(w);
     freebn(sha);
     freebn(gu1p);

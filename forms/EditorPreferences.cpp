@@ -104,15 +104,15 @@ bool __fastcall TEditorPreferencesDialog::Execute(TEditorData * Editor, bool & R
   EditorInternalButton->Checked = (Editor->Editor == edInternal);
   EditorExternalButton->Checked = (Editor->Editor == edExternal);
   EditorOpenButton->Checked = (Editor->Editor == edOpen);
-  AnsiString ExternalEditor = Editor->ExternalEditor;
+  UnicodeString ExternalEditor = Editor->ExternalEditor;
   if (!ExternalEditor.IsEmpty())
   {
     ReformatFileNameCommand(ExternalEditor);
   }
   ExternalEditorEdit->Text = ExternalEditor;
-  ExternalEditorEdit->Items = CustomWinConfiguration->History["ExternalEditor"];
+  ExternalEditorEdit->Items = CustomWinConfiguration->History[L"ExternalEditor"];
   MaskEdit->Text = Editor->FileMask.Masks;
-  MaskEdit->Items = CustomWinConfiguration->History["Mask"];
+  MaskEdit->Items = CustomWinConfiguration->History[L"Mask"];
   ExternalEditorTextCheck->Checked = Editor->ExternalEditorText;
   SDIExternalEditorCheck->Checked = Editor->SDIExternalEditor;
   RememberCheck->Checked = Remember;
@@ -136,10 +136,10 @@ bool __fastcall TEditorPreferencesDialog::Execute(TEditorData * Editor, bool & R
     }
     Editor->ExternalEditor = ExternalEditorEdit->Text;
     ExternalEditorEdit->SaveToHistory();
-    CustomWinConfiguration->History["ExternalEditor"] = ExternalEditorEdit->Items;
+    CustomWinConfiguration->History[L"ExternalEditor"] = ExternalEditorEdit->Items;
     Editor->FileMask = MaskEdit->Text;
     MaskEdit->SaveToHistory();
-    CustomWinConfiguration->History["Mask"] = MaskEdit->Items;
+    CustomWinConfiguration->History[L"Mask"] = MaskEdit->Items;
     Editor->ExternalEditorText = ExternalEditorTextCheck->Checked;
     Editor->SDIExternalEditor = SDIExternalEditorCheck->Checked;
     Remember = RememberCheck->Checked;
@@ -155,7 +155,7 @@ void __fastcall TEditorPreferencesDialog::ExternalEditorEditExit(
   THistoryComboBox * FilenameEdit = dynamic_cast<THistoryComboBox *>(Sender);
   try
   {
-    AnsiString Filename = FilenameEdit->Text;
+    UnicodeString Filename = FilenameEdit->Text;
     if (!Filename.IsEmpty())
     {
       ReformatFileNameCommand(Filename);

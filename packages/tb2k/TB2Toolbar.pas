@@ -146,7 +146,6 @@ type
     procedure DoContextPopup(MousePos: TPoint; var Handled: Boolean); override;
     {$ENDIF}
     procedure GetBaseSize(var ASize: TPoint); override;
-    procedure GetChildren(Proc: TGetChildProc; Root: TComponent); override;
     procedure GetMinBarSize(var MinimumSize: TPoint);
     procedure GetMinShrinkSize(var AMinimumSize: Integer); override;
     function GetShrinkMode: TTBShrinkMode; override;
@@ -178,6 +177,7 @@ type
     function KeyboardOpen(Key: Char; RequirePrimaryAccel: Boolean): Boolean;
     procedure ReadPositionData(const Data: TTBReadPositionData); override;
     procedure WritePositionData(const Data: TTBWritePositionData); override;
+    procedure GetChildren(Proc: TGetChildProc; Root: TComponent); override;
 
     property ChevronHint: String read GetChevronHint write SetChevronHint stored IsChevronHintStored;
     property ChevronMoveItems: Boolean read FChevronMoveItems write SetChevronMoveItems default True;
@@ -791,32 +791,12 @@ begin
 end;
 
 procedure TTBCustomToolbar.WMSysCommand(var Message: TWMSysCommand);
-var
-  AnsiKey: Char;
 begin
   if FMenuBar and Enabled and Showing then
     with Message do
       if (CmdType and $FFF0 = SC_KEYMENU) and (Key <> VK_SPACE) and
          (GetCapture = 0) then begin
-        if Win32Platform = VER_PLATFORM_WIN32_NT then begin
-          { On Windows NT 4/2000/XP, Key is a wide character, so we have to
-            convert it. Pressing Alt+N in a Russian input locale, for example,
-            results in a Key value of $0442.
-            This could perhaps be considered a bug in Windows NT since the
-            character codes in other messages such as WM_SYSCHAR aren't left
-            in Unicode form.
-            The conversion isn't done with the system code page, but rather
-            with the code page of the currently active input locale, like
-            Windows does when sending WM_(SYS)CHAR messages. }
-          if WideCharToMultiByte(GetInputLocaleCodePage, 0, @WideChar(Key), 1,
-             @AnsiKey, 1, nil, nil) <> 1 then
-            Exit;  { shouldn't fail, but if it does, we can't continue }
-        end
-        else begin
-          { On Windows 95/98/Me, Key is not a wide character. }
-          AnsiKey := Char(Key);
-        end;
-        if not KeyboardOpen(AnsiKey, False) then begin
+        if not KeyboardOpen(Char(Key), False) then begin
           if Key = Ord('-') then Exit;
           MessageBeep(0);
         end;

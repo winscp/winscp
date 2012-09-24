@@ -2,16 +2,14 @@
 #ifndef CreateDirectoryH
 #define CreateDirectoryH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <ExtCtrls.hpp>
-
+#include "Rights.h"
+#include "RightsExt.h"
+#include <System.Classes.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.Forms.hpp>
+#include <Vcl.StdCtrls.hpp>
+//----------------------------------------------------------------------------
 #include <Bookmarks.h>
 #include "RightsExt.h"
 #include "Rights.h"
@@ -39,7 +37,7 @@ public:
   __fastcall TCreateDirectoryDialog(TComponent* AOwner);
   virtual __fastcall ~TCreateDirectoryDialog();
 
-  bool __fastcall Execute(AnsiString & Directory, TRemoteProperties * Properties,
+  bool __fastcall Execute(UnicodeString & Directory, TRemoteProperties * Properties,
     bool & SaveSettings);
 
 protected:

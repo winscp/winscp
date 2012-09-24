@@ -29,12 +29,12 @@ struct TMessageParams
   unsigned int Params;
   unsigned int Timer;
   TQueryParamsTimerEvent TimerEvent;
-  AnsiString TimerMessage;
+  UnicodeString TimerMessage;
   unsigned int TimerAnswers;
   unsigned int Timeout;
   unsigned int TimeoutAnswer;
-  AnsiString NewerAskAgainTitle;
-  int NewerAskAgainAnswer;
+  UnicodeString NewerAskAgainTitle;
+  unsigned int NewerAskAgainAnswer;
   bool NewerAskAgainCheckedInitially;
   bool AllowHelp;
 
@@ -49,18 +49,18 @@ void __fastcall ConfigureInterface();
 
 void __fastcall DoProductLicense();
 
-extern const AnsiString AppName;
+extern const UnicodeString AppName;
 
 void __fastcall SetOnForeground(bool OnForeground);
 void __fastcall FlashOnBackground();
 
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal, Exception * E);
 void __fastcall FormHelp(TForm * Form);
-void __fastcall SearchHelp(const AnsiString & Message);
-void __fastcall MessageWithNoHelp(const AnsiString & Message);
+void __fastcall SearchHelp(const UnicodeString & Message);
+void __fastcall MessageWithNoHelp(const UnicodeString & Message);
 
-AnsiString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent);
-void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, AnsiString LayoutStr);
+UnicodeString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent);
+void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, UnicodeString LayoutStr);
 
 namespace Tb2item { class TTBCustomItem; }
 void __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Menu);
@@ -70,31 +70,31 @@ void __fastcall InitializeWinHelp();
 void __fastcall FinalizeWinHelp();
 
 // windows\WinInterface.cpp
-int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
-  int Answers, AnsiString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
-int __fastcall MessageDialog(int Ident, TQueryType Type,
-  int Answers, AnsiString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
-int __fastcall SimpleErrorDialog(const AnsiString Msg, const AnsiString MoreMessages = "");
+unsigned int __fastcall MessageDialog(const UnicodeString Msg, TQueryType Type,
+  unsigned int Answers, UnicodeString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
+unsigned int __fastcall MessageDialog(int Ident, TQueryType Type,
+  unsigned int Answers, UnicodeString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
+unsigned int __fastcall SimpleErrorDialog(const UnicodeString Msg, const UnicodeString MoreMessages = L"");
 
-int __fastcall MoreMessageDialog(const AnsiString Message,
-  TStrings * MoreMessages, TQueryType Type, int Answers,
-    AnsiString HelpKeyword, const TMessageParams * Params = NULL);
+unsigned int __fastcall MoreMessageDialog(const UnicodeString Message,
+  TStrings * MoreMessages, TQueryType Type, unsigned int Answers,
+    UnicodeString HelpKeyword, const TMessageParams * Params = NULL);
 
-int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
-  const AnsiString MessageFormat = "", int Answers = qaOK,
-  AnsiString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
-int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
-  int SessionReopenTimeout, const AnsiString MessageFormat = "", int Answers = qaOK,
-  AnsiString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
+unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
+  const UnicodeString MessageFormat = L"", unsigned int Answers = qaOK,
+  UnicodeString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
+unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
+  int SessionReopenTimeout, const UnicodeString MessageFormat = L"", unsigned int Answers = qaOK,
+  UnicodeString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
 
 // forms\Custom.cpp
-bool __fastcall DoSaveSessionDialog(AnsiString & SessionName,
-  bool * SavePassword, TSessionData * OriginalSession);
-void __fastcall SessionNameValidate(const AnsiString & Text,
+bool __fastcall DoSaveSessionDialog(UnicodeString & SessionName,
+  bool * SavePassword, TSessionData * OriginalSession, bool NotRecommendedSavingPassword);
+void __fastcall SessionNameValidate(const UnicodeString & Text,
   TSessionData * RenamingSession = NULL);
 class TShortCuts;
 bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
-  const TShortCuts & ShortCuts, AnsiString HelpKeyword);
+  const TShortCuts & ShortCuts, UnicodeString HelpKeyword);
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();
@@ -110,8 +110,8 @@ struct TInputDialogData
 };
 typedef void __fastcall (__closure *TInputDialogInitialize)
   (TObject * Sender, TInputDialogData * Data);
-bool __fastcall InputDialog(const AnsiString ACaption,
-  const AnsiString APrompt, AnsiString & Value, AnsiString HelpKeyword = HELP_NONE,
+bool __fastcall InputDialog(const UnicodeString ACaption,
+  const UnicodeString APrompt, UnicodeString & Value, UnicodeString HelpKeyword = HELP_NONE,
   TStrings * History = NULL, bool PathInput = false,
   TInputDialogInitialize OnInitialize = NULL);
 
@@ -119,9 +119,9 @@ bool __fastcall InputDialog(const AnsiString ACaption,
 struct TRegistration
 {
   bool Registered;
-  AnsiString Subject;
+  UnicodeString Subject;
   int Licenses;
-  AnsiString ProductId;
+  UnicodeString ProductId;
   bool NeverExpires;
   TDateTime Expiration;
   bool EduLicense;
@@ -137,7 +137,7 @@ bool __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
 
 // forms\Console.cpp
 void __fastcall DoConsoleDialog(TTerminal * Terminal,
-    const AnsiString Command = "", const TStrings * Log = NULL);
+    const UnicodeString Command = L"", const TStrings * Log = NULL);
 
 // forms\Copy.cpp
 const coTemp                = 0x001;
@@ -154,12 +154,12 @@ const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
 bool __fastcall DoCopyDialog(bool ToRemote,
-  bool Move, TStrings * FileList, AnsiString & TargetDirectory,
+  bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
   int * OutputOptions);
 
 // forms\CreateDirectory.cpp
-bool __fastcall DoCreateDirectoryDialog(AnsiString & Directory,
+bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
   TRemoteProperties * Properties, bool & SaveSettings);
 
 // forms\ImportSessions.cpp
@@ -190,12 +190,12 @@ bool __fastcall DoLoginDialog(TStoredSessionList * SessionList,
 // forms\OpenDirectory.cpp
 enum TOpenDirectoryMode { odBrowse, odAddBookmark };
 bool __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
-  AnsiString & Directory, TStrings * Directories, TTerminal * Terminal,
+  UnicodeString & Directory, TStrings * Directories, TTerminal * Terminal,
   bool AllowSwitch);
 
 // forms\LocatinoProfiles.cpp
 bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
-  TOperationSide Side, AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
+  TOperationSide Side, UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TStrings * LocalDirectories, TStrings * RemoteDirectories, TTerminal * Terminal);
 
 // forms\Preferences.cpp
@@ -243,29 +243,32 @@ typedef void __fastcall (__closure *TCalculateSizeEvent)
   (TStrings * FileList, __int64 & Size, TCalculateSizeStats & Stats,
    bool & Close);
 typedef void __fastcall (__closure *TCalculatedChecksumCallbackEvent)(
-  const AnsiString & FileName, const AnsiString & Alg, const AnsiString & Hash);
+  const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Hash);
 typedef void __fastcall (__closure *TCalculateChecksumEvent)
-  (const AnsiString & Alg, TStrings * FileList,
+  (const UnicodeString & Alg, TStrings * FileList,
    TCalculatedChecksumCallbackEvent OnCalculatedChecksum, bool & Close);
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
-    const AnsiString Directory, const TRemoteTokenList * GroupList,
+    const UnicodeString Directory, const TRemoteTokenList * GroupList,
     const TRemoteTokenList * UserList, TRemoteProperties * Properties,
     int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
 
-bool __fastcall DoRemoteMoveDialog(AnsiString & Target, AnsiString & FileMask);
+bool __fastcall DoRemoteMoveDialog(UnicodeString & Target, UnicodeString & FileMask);
 enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession };
 bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
-  TDirectRemoteCopy AllowDirectCopy, void *& Session, AnsiString & Target, AnsiString & FileMask,
+  TDirectRemoteCopy AllowDirectCopy, void *& Session, UnicodeString & Target, UnicodeString & FileMask,
   bool & DirectCopy);
 
 // forms\SelectMask.cpp
-#ifdef CustomDirViewHPP
+#ifdef CustomdirviewHPP
 bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
     TFileFilter * Filter, TConfiguration * Configuration);
 bool __fastcall DoFilterMaskDialog(TCustomDirView * Parent,
   TFileFilter * Filter);
 #endif
+
+// forms\EditMask.cpp
+bool __fastcall DoEditMaskDialog(TFileMasks & Mask);
 
 const spDelete = 0x01;
 const spNoConfirmation = 0x02;
@@ -295,7 +298,7 @@ const fsoDisableTimestamp = 0x01;
 const fsoDoNotUsePresets =  0x02;
 const fsoAllowSelectedOnly = 0x04;
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
-  AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
+  UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode,
   int Options, const TUsableCopyParamAttrs & CopyParamAttrs);
 
@@ -305,16 +308,18 @@ typedef void __fastcall (__closure *TCustomCommandMenuEvent)
   (TObject * Sender, const TPoint & MousePos, TStrings * LocalFileList, TStrings * RemoteFileList);
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
-  const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu);
 
 // forms\Editor.cpp
-TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
-  TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TNotifyEvent OnClose,
-  const AnsiString Caption = "");
+typedef void __fastcall (__closure *TFileClosedEvent)
+  (TObject * Sender, bool Forced);
+TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TCustomForm * ParentForm,
+  TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
+  const UnicodeString Caption = L"");
 void __fastcall ReconfigureEditorForm(TForm * Form);
 
-bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
+bool __fastcall DoSymlinkDialog(UnicodeString & FileName, UnicodeString & PointTo,
   TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic);
 
 // forms\FileSystemInfo.cpp
@@ -322,13 +327,13 @@ struct TSpaceAvailable;
 struct TFileSystemInfo;
 struct TSessionInfo;
 typedef void __fastcall (__closure *TGetSpaceAvailable)
-  (const AnsiString Path, TSpaceAvailable & ASpaceAvailable, bool & Close);
+  (const UnicodeString Path, TSpaceAvailable & ASpaceAvailable, bool & Close);
 void __fastcall DoFileSystemInfoDialog(
   const TSessionInfo & SessionInfo, const TFileSystemInfo & FileSystemInfo,
-  AnsiString SpaceAvailablePath, TGetSpaceAvailable OnGetSpaceAvailable);
+  UnicodeString SpaceAvailablePath, TGetSpaceAvailable OnGetSpaceAvailable);
 
 // forms\MessageDlg.cpp
-TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
+TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
   TQueryButtonAlias * Aliases = NULL, unsigned int AliasesCount = 0,
   TMsgDlgBtn TimeoutResult = mbHelp, TButton ** TimeoutButton = NULL);
@@ -344,20 +349,20 @@ bool __fastcall DoEditorPreferencesDialog(TEditorData * Editor,
 
 // forms\Find.cpp
 typedef void __fastcall (__closure *TFindEvent)
-  (AnsiString Directory, const TFileMasks & FileMask,
+  (UnicodeString Directory, const TFileMasks & FileMask,
    TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
-bool __fastcall DoFileFindDialog(AnsiString Directory,
-  TFindEvent OnFind, AnsiString & Path);
+bool __fastcall DoFileFindDialog(UnicodeString Directory,
+  TFindEvent OnFind, UnicodeString & Path);
 
 const int cplNone =             0x00;
 const int cplCustomize =        0x01;
 const int cplCustomizeDefault = 0x02;
 const int cplSaveSettings =     0x04;
 void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
-  const TCopyParamType & Param, AnsiString Preset, TNotifyEvent OnClick,
+  const TCopyParamType & Param, UnicodeString Preset, TNotifyEvent OnClick,
   int Options, bool * SaveSettings = NULL);
 bool __fastcall CopyParamListPopupClick(TObject * Sender,
-  TCopyParamType & Param, AnsiString & Preset, int CopyParamAttrs);
+  TCopyParamType & Param, UnicodeString & Preset, int CopyParamAttrs);
 
 void __fastcall MenuPopup(TPopupMenu * Menu, TPoint Point, TComponent * PopupComponent);
 void __fastcall MenuPopup(TPopupMenu * Menu, TButtonControl * Button);
@@ -368,10 +373,9 @@ void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
 void __fastcall SetGlobalMinimizeHandler(TNotifyEvent OnMinimize);
 TNotifyEvent __fastcall GetGlobalMinimizeHandler();
 bool __fastcall IsGlobalMinimizeHandler();
-LCID __fastcall GetDefaultLCID();
 void __fastcall WinInitialize();
 
-void __fastcall ShowNotification(TTerminal * Terminal, const AnsiString & Str,
+void __fastcall ShowNotification(TTerminal * Terminal, const UnicodeString & Str,
   TQueryType Type);
 
 void __fastcall InitializeShortCutCombo(TComboBox * ComboBox,
@@ -384,14 +388,14 @@ class TWinInteractiveCustomCommand : public TInteractiveCustomCommand
 {
 public:
   TWinInteractiveCustomCommand(TCustomCommand * ChildCustomCommand,
-    const AnsiString CustomCommandName);
+    const UnicodeString CustomCommandName);
 
 protected:
-  virtual void __fastcall Prompt(int Index, const AnsiString & Prompt,
-    AnsiString & Value);
+  virtual void __fastcall Prompt(int Index, const UnicodeString & Prompt,
+    UnicodeString & Value);
 
 private:
-  AnsiString FCustomCommandName;
+  UnicodeString FCustomCommandName;
 };
 //---------------------------------------------------------------------------
 struct TNotifyIconData5;
@@ -404,13 +408,13 @@ public:
 
   static bool __fastcall SupportsBalloons();
 
-  void __fastcall PopupBalloon(AnsiString Title, const AnsiString & Str,
+  void __fastcall PopupBalloon(UnicodeString Title, const UnicodeString & Str,
     TQueryType QueryType, unsigned int Timeout);
   void __fastcall CancelBalloon();
 
   __property bool Visible = { read = FVisible, write = SetVisible };
   __property TNotifyEvent OnClick = { read = FOnClick, write = FOnClick };
-  __property AnsiString Hint = { read = GetHint, write = SetHint };
+  __property UnicodeString Hint = { read = GetHint, write = SetHint };
 
 protected:
   void __fastcall Update();
@@ -420,11 +424,12 @@ private:
   bool FVisible;
   TNotifyIconData5 * FTrayIcon;
   TNotifyEvent FOnClick;
+  UINT FTaskbarCreatedMsg;
 
   void __fastcall WndProc(TMessage & Message);
   void __fastcall SetVisible(bool value);
-  AnsiString __fastcall GetHint();
-  void __fastcall SetHint(AnsiString value);
+  UnicodeString __fastcall GetHint();
+  void __fastcall SetHint(UnicodeString value);
 };
 //---------------------------------------------------------------------------
 #endif // WinInterfaceH

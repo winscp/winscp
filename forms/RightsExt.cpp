@@ -42,7 +42,7 @@ void __fastcall TRightsExtFrame::ForceUpdate()
 {
   TRightsFrame::ForceUpdate();
   TRights R = Rights;
-  OctalEdit->Text = R.IsUndef ? AnsiString() : R.Octal;
+  OctalEdit->Text = R.IsUndef ? UnicodeString() : R.Octal;
   OctalEdit->Modified = false;
   OctalEdit->SelectAll();
 }

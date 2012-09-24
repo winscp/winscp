@@ -19,7 +19,7 @@ enum TLogLineType {llOutput, llInput, llStdError, llMessage, llException};
 #endif
 typedef Set<TLogLineType, llOutput, llException> TLogLineTypes;
 //---------------------------------------------------------------------------
-#define DEFAULT_LOGMEMO_FONT "Courier New"
+#define DEFAULT_LOGMEMO_FONT L"Courier New"
 #define DEFAULT_LOGMEMO_SHOWTYPES (TLogLineTypes() << llOutput << llInput << \
   llStdError << llMessage << llException)
 class PACKAGE TLogMemo : public TCustomRichEdit
@@ -60,6 +60,7 @@ protected:
   void __fastcall WMKeyDown(TWMKeyDown & Message);
   __property int Indexes[Integer Index] = { read = GetIndexes };
 
+  #pragma warn -8118
   #pragma warn -inl
   virtual void __fastcall Dispatch(void *Message) {
     if (Parent)
@@ -71,7 +72,8 @@ protected:
     VCL_MESSAGE_HANDLER(WM_PAINT, TWMPaint, WMPaint)
     VCL_MESSAGE_HANDLER(WM_LOG_UPDATE, TMessage, WMLogUpdate)
   END_MESSAGE_MAP(TCustomRichEdit)
-  #pragma warn +inl
+  #pragma warn .inl
+  #pragma warn .8118
 public:
   virtual __fastcall ~TLogMemo();
   __fastcall TLogMemo(TComponent* Owner);

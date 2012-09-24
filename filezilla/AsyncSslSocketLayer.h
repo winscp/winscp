@@ -228,7 +228,7 @@ private:
 	CAsyncSslSocketLayer * m_Main;
 
 	//Data channels for encrypted/unencrypted data
-	BIO* m_nbio;	//Network side, sends/received encrypted data
+	BIO* m_nbio;	//Network side, sends/receives encrypted data
 	BIO* m_ibio;	//Internal side, won't be used directly
 	BIO* m_sslbio;	//The data to encrypt / the decrypted data has to go though this bio
 

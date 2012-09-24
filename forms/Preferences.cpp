@@ -4,6 +4,7 @@
 
 #include <StrUtils.hpp>
 #include <Common.h>
+#include <math.h>
 
 #include "Preferences.h"
 
@@ -24,6 +25,7 @@
 #pragma link "LogSettings"
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
+#pragma link "ComboEdit"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
@@ -32,7 +34,7 @@ bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   TPreferencesDialogData * DialogData)
 {
   bool Result;
-  TPreferencesDialog * PreferencesDialog = new TPreferencesDialog(Application);
+  TPreferencesDialog * PreferencesDialog = new TPreferencesDialog(GetFormOwner());
   try
   {
     PreferencesDialog->PreferencesMode = APreferencesMode;
@@ -51,7 +53,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   SetCorrectFormParent(this);
 
   FNoUpdate = 0;
-  FPreferencesMode = pmDefault;
+  FPreferencesMode = ::pmDefault;
   FEditorFont = new TFont();
   FEditorFont->Color = clWindowText;
   // color tends to reset in object inspector
@@ -70,12 +72,18 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView2, true);
 
   ComboAutoSwitchInitialize(UpdatesBetaVersionsCombo);
+  EnableControl(UpdatesBetaVersionsCombo, !WinConfiguration->IsBeta);
+  EnableControl(UpdatesBetaVersionsLabel, UpdatesBetaVersionsCombo->Enabled);
 
   LoggingFrame->Init();
   InstallPathWordBreakProc(RandomSeedFileEdit);
   InstallPathWordBreakProc(DDTemporaryDirectoryEdit);
   InstallPathWordBreakProc(PuttyPathEdit);
   HintLabel(ShellIconsText);
+  HotTrackLabel(CopyParamLabel);
+
+  EditorEncodingCombo->Items->Add(DefaultEncodingName());
+  EditorEncodingCombo->Items->Add(LoadStr(UTF8_NAME));
 }
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
@@ -93,11 +101,9 @@ bool __fastcall TPreferencesDialog::Execute(TPreferencesDialogData * DialogData)
 {
   FDialogData = DialogData;
   LoadConfiguration();
-  CopyParamsFrame->BeforeExecute();
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
-    CopyParamsFrame->AfterExecute();
     SaveConfiguration();
   }
   return Result;
@@ -127,7 +133,7 @@ void __fastcall TPreferencesDialog::PrepareNavigationTree(TTreeView * Tree)
             if (!PageControl->Pages[pi]->Hint.IsEmpty())
             {
               Tree->Items->Item[i]->Text = PageControl->Pages[pi]->Hint;
-              PageControl->Pages[pi]->Hint = "";
+              PageControl->Pages[pi]->Hint = L"";
             }
           }
           else
@@ -160,6 +166,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(DDTransferConfirmation);
     BOOLPROP(DDWarnLackOfTempSpace);
     BOOLPROP(ShowHiddenFiles);
+    BOOLPROP(FormatSizeBytes);
     BOOLPROP(RenameWholeName);
     BOOLPROP(ShowInaccesibleDirectories);
     BOOLPROP(CopyOnDoubleClickConfirmation);
@@ -179,9 +186,10 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(TemporaryDirectoryAppendPath);
     BOOLPROP(TemporaryDirectoryCleanup);
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
+    BOOLPROP(FullRowSelect);
 
     BeepOnFinishAfterEdit->AsInteger =
-      static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * (24*60*60);
+      int(static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * SecsPerDay);
     BOOLPROP(BalloonNotifications);
 
     CompareByTimeCheck->Checked = WinConfiguration->ScpCommander.CompareByTime;
@@ -219,18 +227,25 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       WinConfiguration->ScpCommander.PreserveLocalDirectory;
     SwappedPanelsCheck->Checked =
       WinConfiguration->ScpCommander.SwappedPanels;
-    FullRowSelectCheck->Checked = WinConfiguration->ScpCommander.FullRowSelect;
     TreeOnLeftCheck->Checked = WinConfiguration->ScpCommander.TreeOnLeft;
     ShowFullAddressCheck->Checked =
       WinConfiguration->ScpExplorer.ShowFullAddress;
     RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
-    IniFileStorageButton2->Checked = (Configuration->Storage == stIniFile);
+    IniFileStorageButton2->Checked = (Configuration->Storage != stRegistry);
 
     RandomSeedFileEdit->Text = Configuration->RandomSeedFile;
 
     // editor
     EditorWordWrapCheck->Checked = WinConfiguration->Editor.WordWrap;
     EditorTabSizeEdit->AsInteger = WinConfiguration->Editor.TabSize;
+    if (WinConfiguration->Editor.Encoding == CP_UTF8)
+    {
+      EditorEncodingCombo->ItemIndex = 1;
+    }
+    else
+    {
+      EditorEncodingCombo->ItemIndex = 0;
+    }
     FEditorFont->Name = WinConfiguration->Editor.FontName;
     FEditorFont->Height = WinConfiguration->Editor.FontHeight;
     FEditorFont->Charset = (TFontCharset)WinConfiguration->Editor.FontCharset;
@@ -238,7 +253,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     (*FEditorList) = *WinConfiguration->EditorList;
     UpdateEditorListView();
 
-    CopyParamsFrame->Params = GUIConfiguration->DefaultCopyParam;
+    FCopyParams = GUIConfiguration->DefaultCopyParam;
     ResumeOnButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOn;
     ResumeSmartButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsSmart;
     ResumeOffButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOff;
@@ -246,8 +261,11 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     SessionReopenAutoCheck->Checked = (Configuration->SessionReopenAuto > 0);
     SessionReopenAutoIdleCheck->Checked = (GUIConfiguration->SessionReopenAutoIdle > 0);
     SessionReopenAutoEdit->Value = (Configuration->SessionReopenAuto > 0 ?
-      (Configuration->SessionReopenAuto / 1000) : 5);
-    SessionReopenTimeoutEdit->Value = (Configuration->SessionReopenTimeout / 1000);
+      (Configuration->SessionReopenAuto / MSecsPerSec) : 5);
+    SessionReopenAutoStallCheck->Checked = (Configuration->SessionReopenAutoStall > 0);
+    SessionReopenAutoStallEdit->Value = (Configuration->SessionReopenAutoStall > 0 ?
+      (Configuration->SessionReopenAutoStall / MSecsPerSec) : SecsPerMin);
+    SessionReopenTimeoutEdit->Value = (Configuration->SessionReopenTimeout / MSecsPerSec);
 
     TransferSheet->Enabled = WinConfiguration->ExpertMode;
     GeneralSheet->Enabled = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
@@ -270,6 +288,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     // Queue
     QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
+    EnableQueueByDefaultCheck->Checked = WinConfiguration->EnableQueueByDefault;
     QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
     QueueCheck->Checked = GUIConfiguration->DefaultCopyParam.Queue;
     QueueIndividuallyCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueIndividually;
@@ -306,25 +325,30 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     // panels
     DoubleClickActionCombo->ItemIndex = WinConfiguration->DoubleClickAction;
     BOOLPROP(AutoReadDirectoryAfterOp);
+    BOOLPROP(RefreshRemotePanel);
+    RefreshRemotePanelIntervalEdit->Value =
+      int(static_cast<double>(WinConfiguration->RefreshRemotePanelInterval) * SecsPerDay);
 
     // updates
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
     if (int(Updates.Period) <= 0)
     {
-      UpdatesNeverButton->Checked = true;
+      UpdatesPeriodCombo->ItemIndex = 0;
     }
     else if (int(Updates.Period) <= 1)
     {
-      UpdatesDailyButton->Checked = true;
+      UpdatesPeriodCombo->ItemIndex = 1;
     }
     else if (int(Updates.Period) <= 7)
     {
-      UpdatesWeeklyButton->Checked = true;
+      UpdatesPeriodCombo->ItemIndex = 2;
     }
     else
     {
-      UpdatesMonthlyButton->Checked = true;
+      UpdatesPeriodCombo->ItemIndex = 3;
     }
+
+    CollectUsageCheck->Checked = Configuration->CollectUsage;
 
     ComboAutoSwitchLoad(UpdatesBetaVersionsCombo, Updates.BetaVersions);
 
@@ -353,11 +377,11 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(CopyParamAutoSelectNotice);
 
     // interface
-    if (WinConfiguration->Theme == "OfficeXP")
+    if (WinConfiguration->Theme == L"OfficeXP")
     {
       ThemeCombo->ItemIndex = 1;
     }
-    else if (WinConfiguration->Theme == "Office2003")
+    else if (WinConfiguration->Theme == L"Office2003")
     {
       ThemeCombo->ItemIndex = 2;
     }
@@ -368,6 +392,11 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     // security
     UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
+
+    // network
+    RetrieveExternalIpAddressButton->Checked = Configuration->ExternalIpAddress.IsEmpty();
+    CustomExternalIpAddressButton->Checked = !RetrieveExternalIpAddressButton->Checked;
+    CustomExternalIpAddressEdit->Text = Configuration->ExternalIpAddress;
 
     #undef BOOLPROP
   }
@@ -398,6 +427,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(DDTransferConfirmation);
     BOOLPROP(DDWarnLackOfTempSpace);
     BOOLPROP(ShowHiddenFiles);
+    BOOLPROP(FormatSizeBytes);
     BOOLPROP(RenameWholeName);
     BOOLPROP(ShowInaccesibleDirectories);
     BOOLPROP(CopyOnDoubleClickConfirmation);
@@ -417,9 +447,10 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(TemporaryDirectoryAppendPath);
     BOOLPROP(TemporaryDirectoryCleanup);
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
+    BOOLPROP(FullRowSelect);
 
     GUIConfiguration->BeepOnFinishAfter =
-      static_cast<double>(BeepOnFinishAfterEdit->Value / (24*60*60));
+      static_cast<double>(BeepOnFinishAfterEdit->Value / SecsPerDay);
     BOOLPROP(BalloonNotifications);
 
     WinConfiguration->ScpCommander.CompareByTime = CompareByTimeCheck->Checked;
@@ -429,7 +460,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     if (DDSystemTemporaryDirectoryButton->Checked)
     {
-      WinConfiguration->DDTemporaryDirectory = "";
+      WinConfiguration->DDTemporaryDirectory = L"";
     }
     else
     {
@@ -453,7 +484,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     }
     ScpCommander.PreserveLocalDirectory = PreserveLocalDirectoryCheck->Checked;
     ScpCommander.SwappedPanels = SwappedPanelsCheck->Checked;
-    ScpCommander.FullRowSelect = FullRowSelectCheck->Checked;
     ScpCommander.TreeOnLeft = TreeOnLeftCheck->Checked;
     WinConfiguration->ScpCommander = ScpCommander;
 
@@ -466,6 +496,16 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     // editor
     WinConfiguration->Editor.WordWrap = EditorWordWrapCheck->Checked;
     WinConfiguration->Editor.TabSize = EditorTabSizeEdit->AsInteger;
+    switch (EditorEncodingCombo->ItemIndex)
+    {
+      case 1:
+        WinConfiguration->Editor.Encoding = CP_UTF8;
+        break;
+
+      default:
+        WinConfiguration->Editor.Encoding = CP_ACP;
+        break;
+    }
     WinConfiguration->Editor.FontName = FEditorFont->Name;
     WinConfiguration->Editor.FontHeight = FEditorFont->Height;
     WinConfiguration->Editor.FontCharset = FEditorFont->Charset;
@@ -473,17 +513,19 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->EditorList = FEditorList;
 
     // overwrites only TCopyParamType fields
-    CopyParam = CopyParamsFrame->Params;
+    CopyParam = FCopyParams;
     if (ResumeOnButton->Checked) CopyParam.ResumeSupport = rsOn;
     if (ResumeSmartButton->Checked) CopyParam.ResumeSupport = rsSmart;
     if (ResumeOffButton->Checked) CopyParam.ResumeSupport = rsOff;
-    CopyParam.ResumeThreshold = ResumeThresholdEdit->Value * 1024;
+    CopyParam.ResumeThreshold = ResumeThresholdEdit->AsInteger * 1024;
 
     Configuration->SessionReopenAuto =
-      (SessionReopenAutoCheck->Checked ? (SessionReopenAutoEdit->Value * 1000) : 0);
+      (SessionReopenAutoCheck->Checked ? (SessionReopenAutoEdit->AsInteger * MSecsPerSec) : 0);
     GUIConfiguration->SessionReopenAutoIdle =
-      (SessionReopenAutoIdleCheck->Checked ? (SessionReopenAutoEdit->Value * 1000) : 0);
-    Configuration->SessionReopenTimeout = (SessionReopenTimeoutEdit->Value * 1000);
+      (SessionReopenAutoIdleCheck->Checked ? (SessionReopenAutoEdit->AsInteger * MSecsPerSec) : 0);
+    Configuration->SessionReopenAutoStall =
+      (SessionReopenAutoStallCheck->Checked ? (SessionReopenAutoStallEdit->AsInteger * MSecsPerSec) : 0);
+    Configuration->SessionReopenTimeout = (SessionReopenTimeoutEdit->AsInteger * MSecsPerSec);
 
     WinConfiguration->CustomCommandList = FCustomCommandList;
 
@@ -494,6 +536,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     // Queue
     GUIConfiguration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
+    WinConfiguration->EnableQueueByDefault = EnableQueueByDefaultCheck->Checked;
     GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
     CopyParam.Queue = QueueCheck->Checked;
     CopyParam.QueueIndividually = QueueIndividuallyCheck->Checked;
@@ -533,18 +576,21 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     // panels
     WinConfiguration->DoubleClickAction = (TDoubleClickAction)DoubleClickActionCombo->ItemIndex;
     BOOLPROP(AutoReadDirectoryAfterOp);
+    BOOLPROP(RefreshRemotePanel);
+    WinConfiguration->RefreshRemotePanelInterval =
+      static_cast<double>(RefreshRemotePanelIntervalEdit->Value / SecsPerDay);
 
     // updates
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
-    if (UpdatesNeverButton->Checked)
+    if (UpdatesPeriodCombo->ItemIndex == 0)
     {
       Updates.Period = 0;
     }
-    else if (UpdatesDailyButton->Checked)
+    else if (UpdatesPeriodCombo->ItemIndex == 1)
     {
       Updates.Period = 1;
     }
-    else if (UpdatesWeeklyButton->Checked)
+    else if (UpdatesPeriodCombo->ItemIndex == 2)
     {
       Updates.Period = 7;
     }
@@ -552,6 +598,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     {
       Updates.Period = 30;
     }
+
+    Configuration->CollectUsage = CollectUsageCheck->Checked;
 
     Updates.BetaVersions = ComboAutoSwitchSave(UpdatesBetaVersionsCombo);
 
@@ -586,16 +634,21 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     // interface
     if (ThemeCombo->ItemIndex == 1)
     {
-      WinConfiguration->Theme = "OfficeXP";
+      WinConfiguration->Theme = L"OfficeXP";
     }
     else if (ThemeCombo->ItemIndex == 2)
     {
-      WinConfiguration->Theme = "Office2003";
+      WinConfiguration->Theme = L"Office2003";
     }
     else
     {
-      WinConfiguration->Theme = "Default";
+      WinConfiguration->Theme = L"Default";
     }
+
+    // network
+    Configuration->ExternalIpAddress =
+      (CustomExternalIpAddressButton->Checked ? CustomExternalIpAddressEdit->Text : UnicodeString());
+
     #undef BOOLPROP
   }
   __finally
@@ -638,17 +691,17 @@ void __fastcall TPreferencesDialog::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TPreferencesDialog::TabSample(AnsiString Values)
+UnicodeString __fastcall TPreferencesDialog::TabSample(UnicodeString Values)
 {
-  AnsiString Result;
+  UnicodeString Result;
   for (int Index = 1; Index <= Values.Length(); Index++)
   {
     if (Index > 1)
     {
-      Result += ' ';
+      Result += L' ';
       if (EditorTabSizeEdit->AsInteger > 2)
       {
-        Result += AnsiString::StringOfChar(' ', EditorTabSizeEdit->AsInteger - 2);
+        Result += UnicodeString::StringOfChar(L' ', EditorTabSizeEdit->AsInteger - 2);
       }
     }
 
@@ -663,7 +716,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
   {
     EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
     EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
-    EnableControl(BalloonNotificationsCheck, TTrayIcon::SupportsBalloons());
+    EnableControl(BalloonNotificationsCheck, ::TTrayIcon::SupportsBalloons());
 
     EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
     EnableControl(ResumeThresholdUnitLabel, ResumeThresholdEdit->Enabled);
@@ -671,18 +724,24 @@ void __fastcall TPreferencesDialog::UpdateControls()
       SessionReopenAutoCheck->Checked || SessionReopenAutoIdleCheck->Checked);
     EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
     EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
-    EnableControl(SessionReopenTimeoutEdit, SessionReopenAutoEdit->Enabled);
-    EnableControl(SessionReopenTimeoutLabel, SessionReopenAutoEdit->Enabled);
-    EnableControl(SessionReopenTimeoutSecLabel, SessionReopenAutoEdit->Enabled);
+    EnableControl(SessionReopenAutoStallEdit, SessionReopenAutoStallCheck->Checked);
+    EnableControl(SessionReopenAutoStallLabel, SessionReopenAutoStallEdit->Enabled);
+    EnableControl(SessionReopenAutoStallSecLabel, SessionReopenAutoStallEdit->Enabled);
+    EnableControl(SessionReopenTimeoutEdit,
+      SessionReopenAutoEdit->Enabled || SessionReopenAutoStallCheck->Checked);
+    EnableControl(SessionReopenTimeoutLabel, SessionReopenTimeoutEdit->Enabled);
+    EnableControl(SessionReopenTimeoutSecLabel,SessionReopenTimeoutEdit->Enabled);
 
     EnableControl(CopyOnDoubleClickConfirmationCheck,
       (DoubleClickActionCombo->ItemIndex == 1) && ConfirmTransferringCheck->Checked);
+    EnableControl(RefreshRemotePanelIntervalEdit, RefreshRemotePanelCheck->Checked);
+    EnableControl(RefreshRemoteDirectoryUnitLabel, RefreshRemotePanelCheck->Checked);
 
-    AnsiString EditorFontLabelText;
+    UnicodeString EditorFontLabelText;
     EditorFontLabelText = FMTLOAD(EDITOR_FONT_FMT,
-      (FEditorFont->Name, FEditorFont->Size)) + "\n\n";
-    EditorFontLabelText += TabSample("ABCD") + "\n";
-    EditorFontLabelText += TabSample("1234");
+      (FEditorFont->Name, FEditorFont->Size)) + L"\n\n";
+    EditorFontLabelText += TabSample(L"ABCD") + L"\n";
+    EditorFontLabelText += TabSample(L"1234");
     EditorFontLabel->Caption = EditorFontLabelText;
     EditorFontLabel->Font = FEditorFont;
 
@@ -714,7 +773,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
       TemporaryDirectoryCleanupCheck->Checked);
     IniFileStorageButton2->Caption =
-      AnsiReplaceStr(IniFileStorageButton2->Caption, "winscp.ini",
+      AnsiReplaceStr(IniFileStorageButton2->Caption, L"winscp.ini",
         ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName)));
 
     EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
@@ -726,6 +785,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(DownEditorButton, EditorSelected &&
       (EditorListView2->ItemIndex < EditorListView2->Items->Count - 1));
 
+    EnableControl(UsageViewButton, CollectUsageCheck->Checked);
     EnableControl(UpdatesProxyHostEdit, UpdatesProxyCheck->Checked);
     EnableControl(UpdatesProxyHostLabel, UpdatesProxyHostEdit->Enabled);
     EnableControl(UpdatesProxyPortEdit, UpdatesProxyCheck->Checked);
@@ -736,6 +796,16 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(TelnetForFtpInPuttyCheck, PuttyPasswordCheck2->Enabled);
 
     EnableControl(SetMasterPasswordButton, WinConfiguration->UseMasterPassword);
+
+    // network
+    EnableControl(CustomExternalIpAddressEdit, CustomExternalIpAddressButton->Checked);
+
+    // transfer
+    UnicodeString InfoStr = FCopyParams.GetInfoStr(L"; ", 0);
+    CopyParamLabel->Caption = InfoStr;
+    CopyParamLabel->Hint = InfoStr;
+    CopyParamLabel->ShowHint =
+      (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
   }
 }
 //---------------------------------------------------------------------------
@@ -744,43 +814,6 @@ void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
   if (FontDialog(FEditorFont))
   {
     UpdateControls();
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::FilenameEditExit(TObject * Sender)
-{
-  // duplicated in TExternalEditorDialog::FilenameEditExit
-  THistoryComboBox * FilenameEdit = dynamic_cast<THistoryComboBox *>(Sender);
-  try
-  {
-    AnsiString Filename = FilenameEdit->Text;
-    if (!Filename.IsEmpty())
-    {
-      ReformatFileNameCommand(Filename);
-      FilenameEdit->Text = Filename;
-    }
-    ControlChange(Sender);
-  }
-  catch(...)
-  {
-    FilenameEdit->SelectAll();
-    FilenameEdit->SetFocus();
-    throw;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::FilenameEditChange(
-  TObject * Sender)
-{
-  // duplicated in TExternalEditorDialog::FilenameEditChange
-  if (FAfterFilenameEditDialog)
-  {
-    FAfterFilenameEditDialog = false;
-    FilenameEditExit(Sender);
-  }
-  else
-  {
-    ControlChange(Sender);
   }
 }
 //---------------------------------------------------------------------------
@@ -795,7 +828,7 @@ void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 {
-  AnsiString IconName, Params;
+  UnicodeString IconName, Params;
   int SpecialFolder;
 
   if (Sender == DesktopIconButton)
@@ -828,11 +861,11 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
       {
         IconName = FMTLOAD(SENDTO_HOOK_NAME, (AppName));
         SpecialFolder = CSIDL_SENDTO;
-        Params = "/upload";
+        Params = L"/upload";
       }
       else if (Sender == QuickLaunchIconButton)
       {
-        IconName = "Microsoft\\Internet Explorer\\Quick Launch\\" +
+        IconName = L"Microsoft\\Internet Explorer\\Quick Launch\\" +
           AppName;
         SpecialFolder = CSIDL_APPDATA;
       }
@@ -844,7 +877,7 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
   }
 
   CreateDesktopShortCut(IconName,
-    Application->ExeName, Params, "", SpecialFolder);
+    Application->ExeName, Params, L"", SpecialFolder);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
@@ -854,10 +887,10 @@ void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
   int Index = Item->Index;
   assert(Index >= 0 && Index <= FCustomCommandList->Count);
   const TCustomCommandType * Command = FCustomCommandList->Commands[Index];
-  AnsiString Caption = StripHotkey(Command->Name);
+  UnicodeString Caption = StripHotkey(Command->Name);
   if (Command->ShortCut != 0)
   {
-    Caption = FORMAT("%s (%s)", (Caption, ShortCutToText(Command->ShortCut)));
+    Caption = FORMAT(L"%s (%s)", (Caption, ShortCutToText(Command->ShortCut)));
   }
   Item->Caption = Caption;
   assert(!Item->SubItems->Count);
@@ -865,10 +898,10 @@ void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
   int Params = Command->Params;
   Item->SubItems->Add(LoadStr(
     FLAGSET(Params, ccLocal) ? CUSTOM_COMMAND_LOCAL : CUSTOM_COMMAND_REMOTE));
-  AnsiString ParamsStr;
+  UnicodeString ParamsStr;
   #define ADDPARAM(PARAM, STR) \
     if (FLAGSET(Params, PARAM)) \
-      ParamsStr += (ParamsStr.IsEmpty() ? "" : "/") + LoadStr(STR);
+      ParamsStr += (ParamsStr.IsEmpty() ? L"" : L"/") + LoadStr(STR);
   ADDPARAM(ccApplyToDirectories, CUSTOM_COMMAND_DIRECTORIES);
   ADDPARAM(ccRecursive, CUSTOM_COMMAND_RECURSE);
   #undef ADDPARAM
@@ -1402,7 +1435,7 @@ void __fastcall TPreferencesDialog::DDExtLabelClick(TObject * Sender)
 void __fastcall TPreferencesDialog::AddSearchPathButtonClick(
   TObject * /*Sender*/)
 {
-  AnsiString AppPath = ExtractFilePath(Application->ExeName);
+  UnicodeString AppPath = ExtractFilePath(Application->ExeName);
   if (MessageDialog(FMTLOAD(CONFIRM_ADD_SEARCH_PATH, (AppPath)),
         qtConfirmation, qaYes | qaNo, HELP_ADD_SEARCH_PATH) == qaYes)
   {
@@ -1433,16 +1466,16 @@ void __fastcall TPreferencesDialog::CopyParamListViewData(TObject * /*Sender*/,
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CopyParamListViewInfoTip(
-  TObject * /*Sender*/, TListItem * Item, AnsiString & InfoTip)
+  TObject * /*Sender*/, TListItem * Item, UnicodeString & InfoTip)
 {
   int Index = Item->Index;
   assert(Index >= 0 && Index <= FCopyParamList->Count);
   const TCopyParamType * CopyParam = FCopyParamList->CopyParams[Index];
   const TCopyParamRule * Rule = FCopyParamList->Rules[Index];
-  InfoTip = CopyParam->GetInfoStr("; ", 0);
+  InfoTip = CopyParam->GetInfoStr(L"; ", 0);
   if (Rule != NULL)
   {
-    InfoTip += "\n-\n" + Rule->GetInfoStr("; ");
+    InfoTip += L"\n-\n" + Rule->GetInfoStr(L"; ");
   }
 }
 //---------------------------------------------------------------------------
@@ -1466,25 +1499,25 @@ void __fastcall TPreferencesDialog::PuttyPathResetButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::ExportButtonClick(TObject * /*Sender*/)
 {
-  AnsiString PersonalDirectory;
+  UnicodeString PersonalDirectory;
   ::SpecialFolderLocation(CSIDL_PERSONAL, PersonalDirectory);
-  AnsiString FileName = IncludeTrailingBackslash(PersonalDirectory) +
+  UnicodeString FileName = IncludeTrailingBackslash(PersonalDirectory) +
     ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName));
-  if (SaveDialog(LoadStr(EXPORT_CONF_TITLE), LoadStr(EXPORT_CONF_FILTER), "ini", FileName))
+  if (SaveDialog(LoadStr(EXPORT_CONF_TITLE), LoadStr(EXPORT_CONF_FILTER), L"ini", FileName))
   {
     Configuration->Export(FileName);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PathEditBeforeDialog(
-  TObject * /*Sender*/, AnsiString & Name, bool & /*Action*/)
+  TObject * /*Sender*/, UnicodeString & Name, bool & /*Action*/)
 {
   FBeforeDialogPath = Name;
   Name = ExpandEnvironmentVariables(Name);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PathEditAfterDialog(
-  TObject * /*Sender*/, AnsiString & Name, bool & /*Action*/)
+  TObject * /*Sender*/, UnicodeString & Name, bool & /*Action*/)
 {
   if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
   {
@@ -1509,11 +1542,11 @@ void __fastcall TPreferencesDialog::RandomSeedFileEditCreateEditDialog(
 {
   USEDPARAM(DialogKind);
   assert(DialogKind == dkOpen);
-  Dialog = CreateOpenDialog(dynamic_cast<TComponent *>(Sender));
+  Dialog = new TOpenDialog(dynamic_cast<TComponent *>(Sender));
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::SessionReopenTimeoutEditSetValue(
-  TObject * /*Sender*/, Extended Value, AnsiString & Text, bool & Handled)
+  TObject * /*Sender*/, Extended Value, UnicodeString & Text, bool & Handled)
 {
   if (Value == 0)
   {
@@ -1523,7 +1556,7 @@ void __fastcall TPreferencesDialog::SessionReopenTimeoutEditSetValue(
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::SessionReopenTimeoutEditGetValue(
-  TObject * /*Sender*/, AnsiString Text, Extended & Value, bool & Handled)
+  TObject * /*Sender*/, UnicodeString Text, Extended & Value, bool & Handled)
 {
   if (AnsiSameText(Text, LoadStr(PREFERENCES_RECONNECT_TIMEOUT_UNLIMITED)))
   {
@@ -1569,6 +1602,30 @@ void __fastcall TPreferencesDialog::SetMasterPasswordButtonClick(
   if (DoChangeMasterPasswordDialog())
   {
     MessageDialog(LoadStr(MASTER_PASSWORD_CHANGED), qtInformation, qaOK, HELP_MASTER_PASSWORD);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CopyParamGroupClick(TObject * /*Sender*/)
+{
+  if (DoCopyParamCustomDialog(FCopyParams, 0))
+  {
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UsageViewButtonClick(TObject * /*Sender*/)
+{
+  TStrings * Data = new TStringList();
+  try
+  {
+    Data->Text = GetUsageData();
+    UnicodeString Message =
+      LoadStr(Data->Text.IsEmpty() ? USAGE_DATA_NONE : USAGE_DATA);
+    MoreMessageDialog(Message, Data, qtInformation, qaOK, HELP_USAGE);
+  }
+  __finally
+  {
+    delete Data;
   }
 }
 //---------------------------------------------------------------------------

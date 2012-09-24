@@ -298,6 +298,7 @@ CAsyncSslSocketLayer::CAsyncSslSocketLayer()
 	m_nNetworkSendBufferMaxLen = 0;
 	m_pNetworkSendBuffer = NULL;
 	m_pRetrySendBuffer = 0;
+	m_nRetrySendBufferLen = 0;
 	m_nNetworkError = 0;
 	m_nShutDown = 0;
 
@@ -1552,7 +1553,6 @@ void CAsyncSslSocketLayer::UnloadSSL()
 		FreeLibrary(m_hSslDll1);
 	if (m_hSslDll2)
 	{
-		FreeLibrary(m_hSslDll2);
 		FreeLibrary(m_hSslDll2);
 	}
 	m_hSslDll1 = NULL;

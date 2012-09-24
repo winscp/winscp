@@ -1,15 +1,15 @@
 object CustomScpExplorerForm: TCustomScpExplorerForm
   Left = 251
   Top = 166
-  Width = 636
-  Height = 470
   Caption = 'CustomScpExplorerForm'
+  ClientHeight = 432
+  ClientWidth = 620
   Color = clBtnFace
   ParentFont = True
   KeyPreview = True
   OldCreateOrder = False
-  Position = poDefaultPosOnly
   OnActivate = FormActivate
+  OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnConstrainedResize = FormConstrainedResize
   OnShow = FormShow
@@ -37,25 +37,25 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   end
   object RemotePanel: TPanel
     Left = 0
-    Top = 9
+    Top = 30
     Width = 620
-    Height = 280
+    Height = 259
     Align = alClient
     BevelOuter = bvNone
+    Color = clWindow
+    ParentBackground = False
     TabOrder = 0
     object RemotePanelSplitter: TSplitter
       Left = 169
       Top = 0
-      Width = 3
-      Height = 261
-      Cursor = crHSplit
+      Height = 240
       AutoSnap = False
       MinSize = 70
       ResizeStyle = rsUpdate
     end
     object RemoteStatusBar: TTBXStatusBar
       Left = 0
-      Top = 261
+      Top = 240
       Width = 620
       Height = 19
       Panels = <>
@@ -68,10 +68,12 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Left = 172
       Top = 0
       Width = 448
-      Height = 261
+      Height = 240
       Align = alClient
+      DoubleBuffered = True
       FullDrag = True
       HideSelection = False
+      ParentDoubleBuffered = False
       PopupMenu = NonVisualDataModule.RemoteDirViewPopup
       TabOrder = 1
       ViewStyle = vsReport
@@ -83,6 +85,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       UnixColProperties.TypeVisible = False
       OnDDDragFileName = RemoteFileControlDDDragFileName
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
+      OnSelectItem = DirViewSelectItem
       OnLoaded = DirViewLoaded
       OnExecFile = DirViewExecFile
       OnMatchMask = DirViewMatchMask
@@ -100,12 +103,13 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnContextPopup = RemoteDirViewContextPopup
       OnHistoryChange = DirViewHistoryChange
       OnDisplayProperties = RemoteDirViewDisplayProperties
+      OnRead = RemoteDirViewRead
     end
     object RemoteDriveView: TUnixDriveView
       Left = 0
       Top = 0
       Width = 169
-      Height = 261
+      Height = 240
       DirView = RemoteDirView
       OnDDDragFileName = RemoteFileControlDDDragFileName
       OnDDEnd = RemoteFileControlDDEnd
@@ -120,8 +124,11 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnDDCreateDragFileList = RemoteFileControlDDCreateDragFileList
       OnDDCreateDataObject = RemoteFileControlDDCreateDataObject
       Align = alLeft
+      DoubleBuffered = True
+      HideSelection = False
       Indent = 19
       ParentColor = False
+      ParentDoubleBuffered = False
       ReadOnly = True
       TabOrder = 2
       OnEnter = RemoteDriveViewEnter
@@ -201,6 +208,11 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
+        object QueueEnableItem: TTBXItem
+          Action = NonVisualDataModule.QueueEnableAction
+        end
+        object TBXSeparatorItem203: TTBXSeparatorItem
+        end
         object TBXItem201: TTBXItem
           Action = NonVisualDataModule.QueueItemQueryAction
         end
@@ -252,6 +264,26 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
           Action = NonVisualDataModule.QueuePreferencesAction
         end
       end
+    end
+  end
+  object SessionsPageControl: TPageControl
+    Left = 0
+    Top = 9
+    Width = 620
+    Height = 21
+    ActivePage = TabSheet1
+    Align = alTop
+    DoubleBuffered = True
+    ParentDoubleBuffered = False
+    PopupMenu = NonVisualDataModule.SessionsPopup
+    TabOrder = 3
+    TabStop = False
+    OnChange = SessionsPageControlChange
+    OnDragDrop = SessionsPageControlDragDrop
+    OnDragOver = SessionsPageControlDragOver
+    OnMouseDown = SessionsPageControlMouseDown
+    object TabSheet1: TTabSheet
+      Caption = 'TabSheet1'
     end
   end
 end

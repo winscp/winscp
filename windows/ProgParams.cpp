@@ -43,9 +43,9 @@ TProgramParams * __fastcall TProgramParams::Instance()
 //---------------------------------------------------------------------------
 TProgramParams::TProgramParams()
 {
-  AnsiString CommandLine = CmdLine;
+  UnicodeString CommandLine = CmdLine;
 
-  AnsiString Param;
+  UnicodeString Param;
   CutToken(CommandLine, Param);
   while (CutToken(CommandLine, Param))
   {

@@ -328,7 +328,11 @@ begin
   FDragDropFilesEx.DragDropControl := Self;
   FParentForm := GetParentForm(Self);
 
-  FImageList := OverlayImageList(16);
+  if not Assigned(FImageList) then
+    FImageList := OverlayImageList(16);
+
+  if TreeView_GetItemHeight(Handle) < 18 then
+    TreeView_SetItemHeight(Handle, 18);
 end;
 
 procedure TCustomDriveView.Notification(AComponent: TComponent; Operation: TOperation);
@@ -1055,7 +1059,7 @@ var
 begin
   Result := False;
   if Assigned(ParentNode) and
-     TreeView_SortChildren(Self.Handle, ParentNode.ItemID, 0) then
+     TreeView_SortChildren(Self.Handle, ParentNode.ItemID, LongBool(0)) then
   begin
     Result := True;
     if Recurse then

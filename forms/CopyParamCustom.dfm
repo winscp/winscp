@@ -6,8 +6,8 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Transfer settings'
-  ClientHeight = 391
-  ClientWidth = 377
+  ClientHeight = 446
+  ClientWidth = 420
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,16 +15,16 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   DesignSize = (
-    377
-    391)
+    420
+    446)
   PixelsPerInch = 96
   TextHeight = 13
   object OkButton: TButton
-    Left = 125
-    Top = 358
+    Left = 168
+    Top = 413
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -34,8 +34,8 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
     TabOrder = 1
   end
   object CancelButton: TButton
-    Left = 209
-    Top = 358
+    Left = 252
+    Top = 413
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -47,14 +47,14 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
   inline CopyParamsFrame: TCopyParamsFrame
     Left = 0
     Top = 0
-    Width = 377
-    Height = 355
+    Width = 420
+    Height = 409
     HelpType = htKeyword
     TabOrder = 0
   end
   object HelpButton: TButton
-    Left = 293
-    Top = 358
+    Left = 336
+    Top = 413
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

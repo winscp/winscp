@@ -2,14 +2,16 @@
 #ifndef CommonH
 #define CommonH
 //---------------------------------------------------------------------------
-#define EXCEPTION throw ExtException(NULL, "")
+#define EXCEPTION throw ExtException(NULL, L"")
 #define THROWOSIFFALSE(C) if (!(C)) RaiseLastOSError();
-#define SCOPY(dest, source) \
-  strncpy(dest, source, sizeof(dest)); \
-  dest[sizeof(dest)-1] = '\0'
 #define SAFE_DESTROY_EX(CLASS, OBJ) { CLASS * PObj = OBJ; OBJ = NULL; delete PObj; }
 #define SAFE_DESTROY(OBJ) SAFE_DESTROY_EX(TObject, OBJ)
-#define ASCOPY(dest, source) SCOPY(dest, source.c_str())
+#define ASCOPY(dest, source) \
+  { \
+    AnsiString CopyBuf = source; \
+    strncpy(dest, CopyBuf.c_str(), LENOF(dest)); \
+    dest[LENOF(dest)-1] = '\0'; \
+  }
 #define FORMAT(S, F) Format(S, ARRAYOFCONST(F))
 #define FMTLOAD(I, F) FmtLoadStr(I, ARRAYOFCONST(F))
 #define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
@@ -19,70 +21,83 @@
 #define SWAP(TYPE, FIRST, SECOND) \
   { TYPE __Backup = FIRST; FIRST = SECOND; SECOND = __Backup; }
 //---------------------------------------------------------------------------
-extern const char EngShortMonthNames[12][4];
+extern const wchar_t EngShortMonthNames[12][4];
+extern const char Bom[3];
+extern const wchar_t TokenPrefix;
+extern const wchar_t NoReplacement;
+extern const wchar_t TokenReplacement;
+extern const UnicodeString LocalInvalidChars;
 //---------------------------------------------------------------------------
-AnsiString ReplaceChar(AnsiString Str, Char A, Char B);
-AnsiString DeleteChar(AnsiString Str, Char C);
-void PackStr(AnsiString &Str);
-AnsiString MakeValidFileName(AnsiString FileName);
-AnsiString RootKeyToStr(HKEY RootKey);
-AnsiString BooleanToStr(bool B);
-AnsiString BooleanToEngStr(bool B);
-AnsiString DefaultStr(const AnsiString & Str, const AnsiString & Default);
-AnsiString CutToChar(AnsiString &Str, Char Ch, bool Trim);
-AnsiString CopyToChars(const AnsiString & Str, int & From, AnsiString Chs, bool Trim,
-  char * Delimiter = NULL);
-AnsiString DelimitStr(AnsiString Str, AnsiString Chars);
-AnsiString ShellDelimitStr(AnsiString Str, char Quote);
-void __fastcall OemToAnsi(AnsiString & Str);
-void __fastcall AnsiToOem(AnsiString & Str);
-AnsiString ExceptionLogString(Exception *E);
-bool IsNumber(const AnsiString Str);
-AnsiString __fastcall SystemTemporaryDirectory();
-AnsiString __fastcall GetShellFolderPath(int CSIdl);
-AnsiString __fastcall StripPathQuotes(const AnsiString Path);
-AnsiString __fastcall AddPathQuotes(AnsiString Path);
-void __fastcall SplitCommand(AnsiString Command, AnsiString &Program,
-  AnsiString & Params, AnsiString & Dir);
-AnsiString __fastcall ExtractProgram(AnsiString Command);
-AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params);
-AnsiString __fastcall ExpandFileNameCommand(const AnsiString Command,
-  const AnsiString FileName);
-void __fastcall ReformatFileNameCommand(AnsiString & Command);
-AnsiString __fastcall EscapePuttyCommandParam(AnsiString Param);
-AnsiString __fastcall ExpandEnvironmentVariables(const AnsiString & Str);
-bool __fastcall ComparePaths(const AnsiString & Path1, const AnsiString & Path2);
-bool __fastcall CompareFileName(const AnsiString & Path1, const AnsiString & Path2);
-bool __fastcall IsReservedName(AnsiString FileName);
-AnsiString __fastcall DisplayableStr(const AnsiString Str);
-AnsiString __fastcall CharToHex(char Ch, bool UpperCase = true);
-AnsiString __fastcall StrToHex(const AnsiString Str, bool UpperCase = true, char Separator = '\0');
-AnsiString __fastcall HexToStr(const AnsiString Hex);
-unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars = 0);
-char __fastcall HexToChar(const AnsiString Hex, int MinChars = 0);
-AnsiString __fastcall DecodeUrlChars(AnsiString S);
-AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore = "");
-AnsiString __fastcall EncodeUrlString(AnsiString S);
-bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
-int __fastcall CancelAnswer(int Answers);
-int __fastcall AbortAnswer(int Answers);
-int __fastcall ContinueAnswer(int Answers);
-AnsiString __fastcall LoadStr(int Ident, unsigned int MaxLength);
-AnsiString __fastcall LoadStrPart(int Ident, int Part);
-AnsiString __fastcall EscapeHotkey(const AnsiString & Caption);
-bool __fastcall CutToken(AnsiString & Str, AnsiString & Token);
-void __fastcall AddToList(AnsiString & List, const AnsiString & Value, char Delimiter);
+UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B);
+UnicodeString DeleteChar(UnicodeString Str, wchar_t C);
+void PackStr(UnicodeString &Str);
+void PackStr(RawByteString &Str);
+void __fastcall Shred(UnicodeString & Str);
+UnicodeString MakeValidFileName(UnicodeString FileName);
+UnicodeString RootKeyToStr(HKEY RootKey);
+UnicodeString BooleanToStr(bool B);
+UnicodeString BooleanToEngStr(bool B);
+UnicodeString DefaultStr(const UnicodeString & Str, const UnicodeString & Default);
+UnicodeString CutToChar(UnicodeString &Str, wchar_t Ch, bool Trim);
+UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString Chs, bool Trim,
+  wchar_t * Delimiter = NULL, bool DoubleDelimiterEscapes = false);
+UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars);
+UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote);
+UnicodeString ExceptionLogString(Exception *E);
+bool IsNumber(const UnicodeString Str);
+UnicodeString __fastcall SystemTemporaryDirectory();
+UnicodeString __fastcall GetShellFolderPath(int CSIdl);
+UnicodeString __fastcall StripPathQuotes(const UnicodeString Path);
+UnicodeString __fastcall AddPathQuotes(UnicodeString Path);
+void __fastcall SplitCommand(UnicodeString Command, UnicodeString &Program,
+  UnicodeString & Params, UnicodeString & Dir);
+UnicodeString __fastcall ValidLocalFileName(UnicodeString FileName);
+UnicodeString __fastcall ValidLocalFileName(
+  UnicodeString FileName, wchar_t InvalidCharsReplacement,
+  const UnicodeString & TokenizibleChars, const UnicodeString & LocalInvalidChars);
+UnicodeString __fastcall ExtractProgram(UnicodeString Command);
+UnicodeString __fastcall FormatCommand(UnicodeString Program, UnicodeString Params);
+UnicodeString __fastcall ExpandFileNameCommand(const UnicodeString Command,
+  const UnicodeString FileName);
+void __fastcall ReformatFileNameCommand(UnicodeString & Command);
+UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
+UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
+bool __fastcall ComparePaths(const UnicodeString & Path1, const UnicodeString & Path2);
+bool __fastcall CompareFileName(const UnicodeString & Path1, const UnicodeString & Path2);
+bool __fastcall IsReservedName(UnicodeString FileName);
+UnicodeString __fastcall DisplayableStr(const RawByteString & Str);
+UnicodeString __fastcall ByteToHex(unsigned char B, bool UpperCase = true);
+UnicodeString __fastcall BytesToHex(const unsigned char * B, size_t Length, bool UpperCase = true, wchar_t Separator = L'\0');
+UnicodeString __fastcall BytesToHex(RawByteString Str, bool UpperCase = true, wchar_t Separator = L'\0');
+UnicodeString __fastcall CharToHex(wchar_t Ch, bool UpperCase = true);
+RawByteString __fastcall HexToBytes(const UnicodeString Hex);
+unsigned char __fastcall HexToByte(const UnicodeString Hex);
+UnicodeString __fastcall DecodeUrlChars(UnicodeString S);
+UnicodeString __fastcall EncodeUrlChars(UnicodeString S, UnicodeString Ignore = L"");
+UnicodeString __fastcall EncodeUrlString(UnicodeString S);
+bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin);
+unsigned int __fastcall CancelAnswer(unsigned int Answers);
+unsigned int __fastcall AbortAnswer(unsigned int Answers);
+unsigned int __fastcall ContinueAnswer(unsigned int Answers);
+UnicodeString __fastcall LoadStr(int Ident, unsigned int MaxLength);
+UnicodeString __fastcall LoadStrPart(int Ident, int Part);
+UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption);
+bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token);
+void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 bool __fastcall Is2000();
 bool __fastcall IsWin7();
 bool __fastcall IsExactly2008R2();
-struct TPasLibModule;
-TPasLibModule * __fastcall FindModule(void * Instance);
+TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
+bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime);
+LCID __fastcall GetDefaultLCID();
+UnicodeString __fastcall DefaultEncodingName();
+UnicodeString __fastcall WindowsProductName();
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
-  (const AnsiString FileName, const TSearchRec Rec, void * Param);
-bool __fastcall FileSearchRec(const AnsiString FileName, TSearchRec & Rec);
-void __fastcall ProcessLocalDirectory(AnsiString DirName,
+  (const UnicodeString FileName, const TSearchRec Rec, void * Param);
+bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec);
+void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
 //---------------------------------------------------------------------------
 enum TDSTMode
@@ -104,37 +119,19 @@ __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
 TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime);
 __int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
   TDSTMode DSTMode);
-AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format);
+UnicodeString __fastcall FixedLenDateTimeFormat(const UnicodeString & Format);
+UnicodeString __fastcall StandardTimestamp(const TDateTime & DateTime);
+UnicodeString __fastcall StandardTimestamp();
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
 //---------------------------------------------------------------------------
 template<class MethodT>
-void __fastcall MakeMethod(void * Data, void * Code, MethodT & Method)
+MethodT __fastcall MakeMethod(void * Data, void * Code)
 {
+  MethodT Method;
   ((TMethod*)&Method)->Data = Data;
   ((TMethod*)&Method)->Code = Code;
-}
-//---------------------------------------------------------------------------
-TMethod __fastcall MakeMethod(void * Data, void * Code)
-{
-  TMethod Method = { Data, Code };
   return Method;
 }
-//---------------------------------------------------------------------------
-class TCriticalSection
-{
-public:
-  __fastcall TCriticalSection();
-  __fastcall ~TCriticalSection();
-
-  void __fastcall Enter();
-  void __fastcall Leave();
-
-  __property int Acquired = { read = FAcquired };
-
-private:
-  TRTLCriticalSection FSection;
-  int FAcquired;
-};
 //---------------------------------------------------------------------------
 class TGuard
 {
@@ -156,25 +153,17 @@ private:
   TCriticalSection * FCriticalSection;
 };
 //---------------------------------------------------------------------------
-// C++B TLibModule is invalid (differs from PAS definition)
-struct TPasLibModule
-{
-  TPasLibModule * Next;
-  void * Instance;
-  void * CodeInstance;
-  void * DataInstance;
-  void * ResInstance;
-};
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #include <assert.h>
 #ifndef _DEBUG
 #undef assert
 #define assert(p)   ((void)0)
 #define CHECK(p) p
+#define FAIL
 #else
 #define CHECK(p) { bool __CHECK_RESULT__ = (p); assert(__CHECK_RESULT__); }
+#define FAIL assert(false)
 #endif
-#define USEDPARAM(p) ((p) == (p))
+#define USEDPARAM(p) ((&p) == (&p))
 //---------------------------------------------------------------------------
 #endif

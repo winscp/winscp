@@ -14,19 +14,19 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-bool __fastcall FindFile(AnsiString & Path)
+bool __fastcall FindFile(UnicodeString & Path)
 {
   bool Result = FileExists(Path);
   if (!Result)
   {
-    int Len = GetEnvironmentVariable("PATH", NULL, 0);
+    int Len = GetEnvironmentVariable(L"PATH", NULL, 0);
     if (Len > 0)
     {
-      AnsiString Paths;
+      UnicodeString Paths;
       Paths.SetLength(Len - 1);
-      GetEnvironmentVariable("PATH", Paths.c_str(), Len);
+      GetEnvironmentVariable(L"PATH", Paths.c_str(), Len);
 
-      AnsiString NewPath = FileSearch(ExtractFileName(Path), Paths);
+      UnicodeString NewPath = FileSearch(ExtractFileName(Path), Paths);
       Result = !NewPath.IsEmpty();
       if (Result)
       {
@@ -37,20 +37,20 @@ bool __fastcall FindFile(AnsiString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall FileExistsEx(AnsiString Path)
+bool __fastcall FileExistsEx(UnicodeString Path)
 {
   return FindFile(Path);
 }
 //---------------------------------------------------------------------------
-void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
-  TSessionData * SessionData, AnsiString Password)
+void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
+  TSessionData * SessionData, UnicodeString Password)
 {
-  AnsiString Program, Params, Dir;
+  UnicodeString Program, Params, Dir;
   SplitCommand(PuttyPath, Program, Params, Dir);
   Program = ExpandEnvironmentVariables(Program);
   if (FindFile(Program))
   {
-    AnsiString SessionName;
+    UnicodeString SessionName;
     TRegistryStorage * Storage = NULL;
     TSessionData * ExportData = NULL;
     TRegistryStorage * SourceStorage = NULL;
@@ -60,6 +60,7 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
       Storage->AccessMode = smReadWrite;
       // make it compatible with putty
       Storage->MungeStringValues = false;
+      Storage->ForceAnsi = true;
       if (Storage->OpenRootKey(true))
       {
         if (Storage->KeyExists(SessionData->StorageKey))
@@ -70,6 +71,7 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
         {
           SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
           SourceStorage->MungeStringValues = false;
+          SourceStorage->ForceAnsi = true;
           if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
               Storage->OpenSubKey(GUIConfiguration->PuttySession, true))
           {
@@ -77,11 +79,11 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
             Storage->CloseSubKey();
           }
 
-          ExportData = new TSessionData("");
+          ExportData = new TSessionData(L"");
           ExportData->Assign(SessionData);
           ExportData->Modified = true;
           ExportData->Name = GUIConfiguration->PuttySession;
-          ExportData->Password = "";
+          ExportData->Password = L"";
 
           if (SessionData->FSProtocol == fsFTP)
           {
@@ -90,7 +92,7 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
               ExportData->Protocol = ptTelnet;
               ExportData->PortNumber = 23;
               // PuTTY  does not allow -pw for telnet
-              Password = "";
+              Password = L"";
             }
             else
             {
@@ -113,13 +115,13 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
 
     if (!Params.IsEmpty())
     {
-      Params += " ";
+      Params += L" ";
     }
     if (!Password.IsEmpty())
     {
-      Params += FORMAT("-pw %s ", (EscapePuttyCommandParam(Password)));
+      Params += FORMAT(L"-pw %s ", (EscapePuttyCommandParam(Password)));
     }
-    Params += FORMAT("-load %s", (EscapePuttyCommandParam(SessionName)));
+    Params += FORMAT(L"-load %s", (EscapePuttyCommandParam(SessionName)));
 
     if (!ExecuteShell(Program, Params))
     {
@@ -132,24 +134,24 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params)
+bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params)
 {
-  return ((int)ShellExecute(NULL, "open", (char*)Path.data(),
-    (char*)Params.data(), NULL, SW_SHOWNORMAL) > 32);
+  return ((int)ShellExecute(NULL, L"open", (wchar_t*)Path.data(),
+    (wchar_t*)Params.data(), NULL, SW_SHOWNORMAL) > 32);
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params,
+bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle)
 {
   bool Result;
 
-  TShellExecuteInfo ExecuteInfo;
+  TShellExecuteInfoW ExecuteInfo;
   memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
   ExecuteInfo.cbSize = sizeof(ExecuteInfo);
   ExecuteInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
   ExecuteInfo.hwnd = Application->Handle;
-  ExecuteInfo.lpFile = (char*)Path.data();
-  ExecuteInfo.lpParameters = (char*)Params.data();
+  ExecuteInfo.lpFile = (wchar_t*)Path.data();
+  ExecuteInfo.lpParameters = (wchar_t*)Params.data();
   ExecuteInfo.nShow = SW_SHOW;
 
   Result = (ShellExecuteEx(&ExecuteInfo) != 0);
@@ -160,18 +162,18 @@ bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params,
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Path,
-  const AnsiString Params, TProcessMessagesEvent ProcessMessages)
+bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
+  const UnicodeString Params, TProcessMessagesEvent ProcessMessages)
 {
   bool Result;
 
-  TShellExecuteInfo ExecuteInfo;
+  TShellExecuteInfoW ExecuteInfo;
   memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
   ExecuteInfo.cbSize = sizeof(ExecuteInfo);
   ExecuteInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
   ExecuteInfo.hwnd = Handle;
-  ExecuteInfo.lpFile = (char*)Path.data();
-  ExecuteInfo.lpParameters = (char*)Params.data();
+  ExecuteInfo.lpFile = (wchar_t*)Path.data();
+  ExecuteInfo.lpParameters = (wchar_t*)Params.data();
   ExecuteInfo.nShow = SW_SHOW;
 
   Result = (ShellExecuteEx(&ExecuteInfo) != 0);
@@ -199,31 +201,31 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Path,
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Command,
+bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
   TProcessMessagesEvent ProcessMessages)
 {
-  AnsiString Program, Params, Dir;
+  UnicodeString Program, Params, Dir;
   SplitCommand(Command, Program, Params, Dir);
   return ExecuteShellAndWait(Handle, Program, Params, ProcessMessages);
 }
 //---------------------------------------------------------------------------
-bool __fastcall SpecialFolderLocation(int PathID, AnsiString & Path)
+bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path)
 {
   LPITEMIDLIST Pidl;
-  char Buf[256];
+  wchar_t Buf[256];
   if (SHGetSpecialFolderLocation(NULL, PathID, &Pidl) == NO_ERROR &&
       SHGetPathFromIDList(Pidl, Buf))
   {
-    Path = AnsiString(Buf);
+    Path = UnicodeString(Buf);
     return true;
   }
   return false;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
-  const AnsiString MultiItemsFormat, int Count, const AnsiString FirstItem)
+UnicodeString __fastcall ItemsFormatString(const UnicodeString SingleItemFormat,
+  const UnicodeString MultiItemsFormat, int Count, const UnicodeString FirstItem)
 {
-  AnsiString Result;
+  UnicodeString Result;
   if (Count == 1)
   {
     Result = FORMAT(SingleItemFormat, (FirstItem));
@@ -235,18 +237,18 @@ AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
-  const AnsiString MultiItemsFormat, TStrings * Items)
+UnicodeString __fastcall ItemsFormatString(const UnicodeString SingleItemFormat,
+  const UnicodeString MultiItemsFormat, TStrings * Items)
 {
   return ItemsFormatString(SingleItemFormat, MultiItemsFormat,
-    Items->Count, (Items->Count > 0 ? Items->Strings[0] : AnsiString()));
+    Items->Count, (Items->Count > 0 ? Items->Strings[0] : UnicodeString()));
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
-  const AnsiString MultiFilesFormat, TStrings * Files, bool Remote)
+UnicodeString __fastcall FileNameFormatString(const UnicodeString SingleFileFormat,
+  const UnicodeString MultiFilesFormat, TStrings * Files, bool Remote)
 {
   assert(Files != NULL);
-  AnsiString Item;
+  UnicodeString Item;
   if (Files->Count > 0)
   {
     Item = Remote ? UnixExtractFileName(Files->Strings[0]) :
@@ -255,41 +257,22 @@ AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
   return ItemsFormatString(SingleFileFormat, MultiFilesFormat,
     Files->Count, Item);
 }
-//---------------------------------------------------------------------
-AnsiString __fastcall FormatBytes(__int64 Bytes, bool UseOrders)
-{
-  AnsiString Result;
-
-  if (!UseOrders || (Bytes < __int64(100*1024)))
-  {
-    Result = FormatFloat("#,##0 \"B\"", Bytes);
-  }
-  else if (Bytes < __int64(100*1024*1024))
-  {
-    Result = FormatFloat("#,##0 \"KiB\"", Bytes / 1024);
-  }
-  else
-  {
-    Result = FormatFloat("#,##0 \"MiB\"", Bytes / (1024*1024));
-  }
-  return Result;
-}
 //---------------------------------------------------------------------------
-AnsiString __fastcall UniqTempDir(const AnsiString BaseDir, const AnsiString Identity,
+UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeString Identity,
   bool Mask)
 {
-  AnsiString TempDir;
+  UnicodeString TempDir;
   do
   {
     TempDir = BaseDir.IsEmpty() ? SystemTemporaryDirectory() : BaseDir;
     TempDir = IncludeTrailingBackslash(TempDir) + Identity;
     if (Mask)
     {
-      TempDir += "?????";
+      TempDir += L"?????";
     }
     else
     {
-      TempDir += IncludeTrailingBackslash(FormatDateTime("nnzzz", Now()));
+      TempDir += IncludeTrailingBackslash(FormatDateTime(L"nnzzz", Now()));
     };
   }
   while (!Mask && DirectoryExists(TempDir));
@@ -297,20 +280,20 @@ AnsiString __fastcall UniqTempDir(const AnsiString BaseDir, const AnsiString Ide
   return TempDir;
 }
 //---------------------------------------------------------------------------
-bool __fastcall DeleteDirectory(const AnsiString DirName)
+bool __fastcall DeleteDirectory(const UnicodeString DirName)
 {
   TSearchRec sr;
   bool retval = true;
-  if (FindFirst(DirName + "\\*", faAnyFile, sr) == 0) // VCL Function
+  if (FindFirst(DirName + L"\\*", faAnyFile, sr) == 0) // VCL Function
   {
     if (FLAGSET(sr.Attr, faDirectory))
     {
-      if (sr.Name != "." && sr.Name != "..")
-        retval = DeleteDirectory(DirName + "\\" + sr.Name);
+      if (sr.Name != L"." && sr.Name != L"..")
+        retval = DeleteDirectory(DirName + L"\\" + sr.Name);
     }
     else
     {
-      retval = DeleteFile(DirName + "\\" + sr.Name);
+      retval = DeleteFile(DirName + L"\\" + sr.Name);
     }
 
     if (retval)
@@ -319,12 +302,12 @@ bool __fastcall DeleteDirectory(const AnsiString DirName)
       { // VCL Function
         if (FLAGSET(sr.Attr, faDirectory))
         {
-          if (sr.Name != "." && sr.Name != "..")
-            retval = DeleteDirectory(DirName + "\\" + sr.Name);
+          if (sr.Name != L"." && sr.Name != L"..")
+            retval = DeleteDirectory(DirName + L"\\" + sr.Name);
         }
         else
         {
-          retval = DeleteFile(DirName + "\\" + sr.Name);
+          retval = DeleteFile(DirName + L"\\" + sr.Name);
         }
 
         if (!retval) break;
@@ -336,12 +319,12 @@ bool __fastcall DeleteDirectory(const AnsiString DirName)
   return retval;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall FormatDateTimeSpan(const AnsiString TimeFormat, TDateTime DateTime)
+UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime)
 {
-  AnsiString Result;
+  UnicodeString Result;
   if (int(DateTime) > 0)
   {
-    Result = IntToStr(int(DateTime)) + ", ";
+    Result = IntToStr(int(DateTime)) + L", ";
   }
   // days are decremented, because when there are to many of them,
   // "integer overflow" error occurs
@@ -354,23 +337,23 @@ TLocalCustomCommand::TLocalCustomCommand()
 }
 //---------------------------------------------------------------------------
 TLocalCustomCommand::TLocalCustomCommand(const TCustomCommandData & Data,
-    const AnsiString & Path) :
+    const UnicodeString & Path) :
   TFileCustomCommand(Data, Path)
 {
 }
 //---------------------------------------------------------------------------
 TLocalCustomCommand::TLocalCustomCommand(const TCustomCommandData & Data,
-  const AnsiString & Path, const AnsiString & FileName,
-  const AnsiString & LocalFileName, const AnsiString & FileList) :
+  const UnicodeString & Path, const UnicodeString & FileName,
+  const UnicodeString & LocalFileName, const UnicodeString & FileList) :
   TFileCustomCommand(Data, Path, FileName, FileList)
 {
   FLocalFileName = LocalFileName;
 }
 //---------------------------------------------------------------------------
-int __fastcall TLocalCustomCommand::PatternLen(int Index, char PatternCmd)
+int __fastcall TLocalCustomCommand::PatternLen(int Index, wchar_t PatternCmd)
 {
   int Len;
-  if (PatternCmd == '^')
+  if (PatternCmd == L'^')
   {
     Len = 3;
   }
@@ -382,10 +365,10 @@ int __fastcall TLocalCustomCommand::PatternLen(int Index, char PatternCmd)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TLocalCustomCommand::PatternReplacement(int Index,
-  const AnsiString & Pattern, AnsiString & Replacement, bool & Delimit)
+  const UnicodeString & Pattern, UnicodeString & Replacement, bool & Delimit)
 {
   bool Result;
-  if (Pattern == "!^!")
+  if (Pattern == L"!^!")
   {
     Replacement = FLocalFileName;
     Result = true;
@@ -398,17 +381,17 @@ bool __fastcall TLocalCustomCommand::PatternReplacement(int Index,
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocalCustomCommand::DelimitReplacement(
-  AnsiString & /*Replacement*/, char /*Quote*/)
+  UnicodeString & /*Replacement*/, wchar_t /*Quote*/)
 {
   // never delimit local commands
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLocalCustomCommand::HasLocalFileName(const AnsiString & Command)
+bool __fastcall TLocalCustomCommand::HasLocalFileName(const UnicodeString & Command)
 {
-  return FindPattern(Command, '^');
+  return FindPattern(Command, L'^');
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLocalCustomCommand::IsFileCommand(const AnsiString & Command)
+bool __fastcall TLocalCustomCommand::IsFileCommand(const UnicodeString & Command)
 {
   return TFileCustomCommand::IsFileCommand(Command) || HasLocalFileName(Command);
 }

@@ -50,6 +50,9 @@
 #define CSMODE_MKDIR			0x0800
 #define CSMODE_RENAME			0x1000
 #define CSMODE_CHMOD			0x2000
+#ifdef MPEXT
+#define CSMODE_LISTFILE			0x4000
+#endif
 
 typedef struct
 {
@@ -83,7 +86,10 @@ public:
 
 	//Operations
 	virtual void Connect(t_server &server)=0;
-	virtual void List(BOOL bFinish, int nError=0, CServerPath path=CServerPath(), CString subdir="", int nListMode = 0)=0;
+	virtual void List(BOOL bFinish, int nError=0, CServerPath path=CServerPath(), CString subdir=_MPT(""), int nListMode = 0)=0;
+#ifdef MPEXT
+	virtual void ListFile(CServerPath path=CServerPath(), CString fileName = _MPT(""))=0;
+#endif
 	virtual void FtpCommand(LPCTSTR pCommand)=0;
 	virtual void Disconnect()=0;
 	virtual void FileTransfer(t_transferfile *transferfile = 0, BOOL bFinish = FALSE, int nError = 0)=0;
@@ -108,7 +114,7 @@ public:
 
 	virtual int OnLayerCallback(std::list<t_callbackMsg>& callbacks);
 protected:
-	
+
 	void Close();
 	BOOL Connect(CString hostAddress, UINT nHostPort);
 	CString ConvertDomainName(CString domain);
@@ -150,7 +156,7 @@ protected:
 	//End Speed limit
 	
 	virtual void LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat);
-	
+
 public:
 	struct t_operation
 	{

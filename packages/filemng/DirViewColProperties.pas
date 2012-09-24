@@ -45,9 +45,7 @@ type
     function StoreAlignment(Index: Integer): Boolean;
     function StoreCaption(Index: Integer): Boolean;
     function StoreWidth(Index: Integer): Boolean;
-    function GetDirOrder(Index: Integer): TDirViewCol;
     function GetSortDirColumn: TDirViewCol;
-    procedure SetDirOrder(Index: Integer; Value: TDirViewCol);
     procedure SetSortDirColumn(Value: TDirViewCol);
   public
     constructor Create(DirView: TCustomListView);
@@ -88,20 +86,13 @@ type
     property ExtWidth: Integer index dvExt read GetWidths write SetWidths stored StoreWidth;
     property ExtVisible: Boolean index dvExt read GetVisible write SetVisible default True;
     property ExtAlignment: TAlignment index dvExt read GetAlignments write SetAlignments stored StoreAlignment;
-
-    property Column1: TDirViewCol index 0 read GetDirOrder write SetDirOrder default dvName;
-    property Column2: TDirViewCol index 1 read GetDirOrder write SetDirOrder default dvSize;
-    property Column3: TDirViewCol index 2 read GetDirOrder write SetDirOrder default dvType;
-    property Column4: TDirViewCol index 3 read GetDirOrder write SetDirOrder default dvChanged;
-    property Column5: TDirViewCol index 4 read GetDirOrder write SetDirOrder default dvAttr;
-    property Column6: TDirViewCol index 5 read GetDirOrder write SetDirOrder default dvExt;
   end; { TDirViewColProperties }
 
 
 implementation
 
 uses
-  SysUtils, CommCtrl, ListViewColProperties, CustomDirView;
+  SysUtils, CommCtrl, ListViewColProperties, CustomDirView, PasTools;
 
   { TCustomDirViewColProperties }
 
@@ -143,17 +134,6 @@ begin
     Widths[Index] := DefaultDirViewWidths[Index];
     Alignments[Index] := DefaultDirViewAlignments[Index];
   end;
-end;
-
-function TDirViewColProperties.GetDirOrder(Index: Integer): TDirViewCol;
-begin
-  Result := TDirViewCol(GetOrder(Index));
-end;
-
-procedure TDirViewColProperties.SetDirOrder(Index: Integer;
-  Value: TDirViewCol);
-begin
-  SetOrder(Index, Integer(Value));
 end;
 
 procedure TDirViewColProperties.SetSortDirColumn(Value: TDirViewCol);

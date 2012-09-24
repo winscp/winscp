@@ -330,13 +330,13 @@ end;
 
 function TUpDownEdit.IsValidChar(Key: Char): Boolean;
 var
-  ValidChars: set of Char;
+  ValidChars: TSysCharSet;
 begin
   ValidChars := ['+', '-', '0'..'9'];
   if ValueType = vtFloat then
   begin
-    if Pos(DecimalSeparator, Text) = 0 then
-      ValidChars := ValidChars + [DecimalSeparator];
+    if Pos(FormatSettings.DecimalSeparator, Text) = 0 then
+      ValidChars := ValidChars + [FormatSettings.DecimalSeparator];
     if Pos('E', AnsiUpperCase(Text)) = 0 then
       ValidChars := ValidChars + ['e', 'E'];
   end
@@ -345,7 +345,7 @@ begin
   begin
     ValidChars := ValidChars + ['A'..'F', 'a'..'f'];
   end;
-  Result := (Key in ValidChars) or (Key < #32);
+  Result := CharInSet(Key, ValidChars) or (Key < #32);
   if not FEditorEnabled and Result and ((Key >= #32) or
     (Key = Char(VK_BACK)) or (Key = Char(VK_DELETE))) then Result := False;
 end;

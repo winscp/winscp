@@ -49,12 +49,13 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CopyParamGroupContextPopup(TObject *Sender,
           TPoint &MousePos, bool &Handled);
-  void __fastcall CopyParamGroupDblClick(TObject *Sender);
+  void __fastcall CopyParamGroupClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall LogViewKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
+  void __fastcall TransferSettingsButtonDropDownClick(TObject *Sender);
 
 private:
   TSynchronizeParamType FParams;
@@ -69,7 +70,7 @@ private:
   bool FStartImmediatelly;
   TCopyParamType FCopyParams;
   TPopupMenu * FPresetsMenu;
-  AnsiString FPreset;
+  UnicodeString FPreset;
   TSynchronizeOptions * FSynchronizeOptions;
   static const MaxLogItems;
 
@@ -85,7 +86,7 @@ protected:
   void __fastcall DoStartStop(bool Start, bool Synchronize);
   void __fastcall DoAbort(TObject * Sender, bool Close);
   void __fastcall DoLog(TSynchronizeController * Controller, TSynchronizeLogEntry Entry,
-    const AnsiString Message);
+    const UnicodeString Message);
   void __fastcall OnlyStop();
   void __fastcall Stop();
   virtual void __fastcall Dispatch(void * Message);
@@ -95,6 +96,7 @@ protected:
   int __fastcall ActualCopyParamAttrs();
   void __fastcall GlobalMinimize(TObject * Sender);
   void __fastcall MinimizeApp();
+  void __fastcall CopyParamListPopup(TPoint P, int AdditionalOptions);
 
 public:
   __fastcall TSynchronizeDialog(TComponent * Owner,

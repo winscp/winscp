@@ -464,7 +464,7 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
 	    if ((err = p_getaddrinfo(host, NULL, &hints, &ret->ais)) == 0)
 	    {
 		ret->resolved = TRUE;
-	    }
+	    }	
 	} else
 #endif
 	{
@@ -837,7 +837,8 @@ Socket sk_register(void *sock, Plug plug)
 
 static DWORD try_connect(Actual_Socket sock,
 #ifdef MPEXT
-                         int timeout
+                         int timeout,
+                         int sndbuf
 #endif
 )
 {
@@ -902,12 +903,10 @@ static DWORD try_connect(Actual_Socket sock,
 	p_setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (void *) &b, sizeof(b));
     }
 
-#ifdef MPEXT2
+    if (sndbuf > 0)
     {
-	int bufsize = 262144;
-	p_setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *) &bufsize, sizeof(bufsize));
+	p_setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *) &sndbuf, sizeof(sndbuf));
     }
-#endif
 
     /*
      * Bind to local address.
@@ -1087,7 +1086,8 @@ static DWORD try_connect(Actual_Socket sock,
 Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 	      int nodelay, int keepalive, Plug plug,
 #ifdef MPEXT
-	      int timeout
+	      int timeout,
+	      int sndbuf
 #endif
 	      )
 {
@@ -1138,7 +1138,7 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 #endif
         err = try_connect(ret
 #ifdef MPEXT
-            , timeout
+            , timeout, sndbuf
 #endif
         );
     } while (err && sk_nextaddr(ret->addr, &ret->step));
@@ -1502,9 +1502,9 @@ int select_result(WPARAM wParam, LPARAM lParam)
 	    while (s->addr && sk_nextaddr(s->addr, &s->step)) {
 		err = try_connect(s
 #ifdef MPEXT
-		    , 0
+		    , 0, 0
 #endif
-                );
+		);
 	    }
 	}
 	if (err != 0)

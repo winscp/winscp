@@ -4,14 +4,12 @@
 
 #include <Common.h>
 #include "Editor.h"
-#include "WinInterface.h"
 #include "TextsWin.h"
 #include "Tools.h"
 #include <CoreMain.h>
 #include "VCLCommon.h"
 #include "WinConfiguration.h"
 #include "HelpWin.h"
-#include <CommDlg.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "TB2Dock"
@@ -23,9 +21,9 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
-  TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TNotifyEvent OnClose,
-  const AnsiString Caption)
+TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TCustomForm * ParentForm,
+  TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
+  const UnicodeString Caption)
 {
   TEditorForm * Dialog = new TEditorForm(Application);
   try
@@ -64,11 +62,13 @@ class TRichEdit20 : public TRichEdit
 public:
   virtual __fastcall TRichEdit20(TComponent * AOwner);
 
-  void __fastcall SetFormat(AnsiString FontName, int FontHeight,
+  void __fastcall LoadFromStream(TStream * Stream, TEncoding * Encoding);
+
+  void __fastcall SetFormat(UnicodeString FontName, int FontHeight,
     TFontCharset FontCharset, TFontStyles FontStyles, unsigned int TabSize,
     bool AWordWrap);
   void __fastcall ResetFormat();
-  int __fastcall FindText(const AnsiString SearchStr, int StartPos, int Length,
+  int __fastcall FindText(const UnicodeString SearchStr, int StartPos, int Length,
     TSearchTypes Options, bool Down);
   void __fastcall Redo();
 
@@ -76,12 +76,17 @@ public:
   __property bool CanRedo = { read = GetCanRedo };
 
 protected:
+  friend unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead);
+
   virtual void __fastcall CreateParams(TCreateParams & Params);
   virtual void __fastcall DestroyWnd();
   void __fastcall Dispatch(void * Message);
   bool __fastcall GetCanRedo();
   void __fastcall SetTabSize(unsigned int TabSize);
   void __fastcall WMPaste();
+  void __fastcall EMStreamIn(TMessage & Message);
+  bool __stdcall StreamLoad(TRichEditStreamInfo * StreamInfo,
+    unsigned char * Buff, long Read, long & WasRead);
 
 private:
   HINSTANCE FLibrary;
@@ -89,6 +94,7 @@ private:
   bool FWordWrap;
   unsigned int FTabSize;
   bool FInitialized;
+  bool FStreamLoadEncodingError;
 };
 //---------------------------------------------------------------------------
 __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
@@ -101,7 +107,7 @@ __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::SetFormat(AnsiString FontName, int FontHeight,
+void __fastcall TRichEdit20::SetFormat(UnicodeString FontName, int FontHeight,
   TFontCharset FontCharset, TFontStyles FontStyles, unsigned int TabSize,
   bool AWordWrap)
 {
@@ -163,7 +169,7 @@ void __fastcall TRichEdit20::ResetFormat()
   SetTabSize(FTabSize);
 }
 //---------------------------------------------------------------------------
-int __fastcall TRichEdit20::FindText(const AnsiString SearchStr, int StartPos,
+int __fastcall TRichEdit20::FindText(const UnicodeString SearchStr, int StartPos,
   int /*Length*/, TSearchTypes Options, bool Down)
 {
   int Result;
@@ -173,11 +179,11 @@ int __fastcall TRichEdit20::FindText(const AnsiString SearchStr, int StartPos,
     memset(&Find, 0, sizeof(Find));
     Find.chrg.cpMin = StartPos;
     Find.chrg.cpMax = -1;
-    Find.lpstrText = SearchStr.c_str();
+    Find.lpstrText = UnicodeString(SearchStr).c_str();
 
     unsigned int Flags =
-      FLAGMASK(Options.Contains(stWholeWord), FT_WHOLEWORD) |
-      FLAGMASK(Options.Contains(stMatchCase), FT_MATCHCASE) |
+      FLAGMASK(Options.Contains(stWholeWord), FR_WHOLEWORD) |
+      FLAGMASK(Options.Contains(stMatchCase), FR_MATCHCASE) |
       FLAGMASK(Down, FR_DOWN);
     Result = SendMessage(Handle, EM_FINDTEXTEX, Flags, (LPARAM)&Find);
   }
@@ -197,7 +203,7 @@ void __fastcall TRichEdit20::Redo()
 //---------------------------------------------------------------------------
 void __fastcall TRichEdit20::CreateParams(TCreateParams & Params)
 {
-  const char RichEditModuleName[] = "RICHED20.DLL";
+  const wchar_t RichEditModuleName[] = L"RICHED20.DLL";
   long int OldError;
 
   OldError = SetErrorMode(SEM_NOOPENFILEERRORBOX);
@@ -235,14 +241,14 @@ void __fastcall TRichEdit20::DestroyWnd()
 void __fastcall TRichEdit20::WMPaste()
 {
   // override default pasting to prevent inserting formatted text (RTF).
-  const char * Text = NULL;
+  const wchar_t * Text = NULL;
   HANDLE Handle = OpenTextFromClipboard(Text);
   if (Handle != NULL)
   {
     try
     {
       // replacement for EM_PASTESPECIAL,
-      // which ignores trailing line end for some rea
+      // which ignores trailing line end for some reason
       Perform(EM_REPLACESEL, true, reinterpret_cast<int>(Text));
     }
     __finally
@@ -252,6 +258,83 @@ void __fastcall TRichEdit20::WMPaste()
   }
 }
 //---------------------------------------------------------------------------
+// Copy from Vcl.ComCtrls.pas
+static int __fastcall AdjustLineBreaks(unsigned char * Dest, const TBytes & Source, int Start, int Len)
+{
+  unsigned char * P = Dest;
+  int I = Start; // Position in Source
+
+  while (I < (Len - 1))
+  {
+    if ((Source[I] == 10) && (Source[I + 1] == 0))
+    {
+      // Convert #10 to #13#10
+      *P = 13;
+      P++;
+      *P = 0;
+      P++;
+      *P = 10;
+      P++;
+      *P = 0;
+      P++;
+    }
+    else
+    {
+      *P = Source[I];
+      P++;
+      *P = Source[I + 1];
+      P++;
+      if ((Source[I] == 13) && (Source[I + 1] == 0))
+      {
+        // Convert #13 to #13#10
+        *P = 10;
+        P++;
+        *P = 0;
+        P++;
+        // Skip #10 if preceeded by #13
+        if ((Source[I + 2] == 10) && (Source[I + 3] == 0))
+        {
+          I += 2;
+        }
+      }
+    }
+
+    I += 2;
+  }
+  if (I == Len - 1)
+  {
+    *P = Source[I];
+    P++;
+  }
+  return (P - Dest);
+}
+//---------------------------------------------------------------------------
+struct TStreamLoadInfo
+{
+  TRichEditStreamInfo * StreamInfo;
+  TRichEdit20 * RichEdit;
+};
+//---------------------------------------------------------------------------
+// Copy from Vcl.ComCtrls.pas,
+/// WORKAROUND for bug in BCB XE2 VCL
+// Fixes conversion from UTF-8, when read buffer ends in the middle of UTF-8 char
+static unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead)
+{
+  TStreamLoadInfo * LoadInfo = reinterpret_cast<TStreamLoadInfo *>(Cookie);
+  return LoadInfo->RichEdit->StreamLoad(LoadInfo->StreamInfo, Buff, Read, *WasRead) ? 0 : 1;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::EMStreamIn(TMessage & Message)
+{
+  TEditStream * EditStream = reinterpret_cast<TEditStream *>(Message.LParam);
+  EditStream->pfnCallback = &::StreamLoad;
+  TStreamLoadInfo LoadInfo;
+  LoadInfo.StreamInfo = reinterpret_cast<TRichEditStreamInfo *>(EditStream->dwCookie);
+  LoadInfo.RichEdit = this;
+  EditStream->dwCookie = reinterpret_cast<DWORD_PTR>(&LoadInfo);
+  TRichEdit::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TRichEdit20::Dispatch(void * Message)
 {
   TMessage * M = static_cast<TMessage *>(Message);
@@ -259,6 +342,10 @@ void __fastcall TRichEdit20::Dispatch(void * Message)
   {
     case WM_PASTE:
       WMPaste();
+      break;
+
+    case EM_STREAMIN:
+      EMStreamIn(*M);
       break;
 
     default:
@@ -284,7 +371,7 @@ void __fastcall TRichEdit20::SetTabSize(unsigned int TabSize)
   int LogPixelsX = GetDeviceCaps(DC, LOGPIXELSX);
 
   SIZE Size;
-  GetTextExtentPoint(DC, AnsiString::StringOfChar('X', TabSize).c_str(),
+  GetTextExtentPoint(DC, UnicodeString::StringOfChar(L'X', TabSize).c_str(),
     TabSize, &Size);
 
   RestoreDC(DC, -1);
@@ -315,6 +402,91 @@ void __fastcall TRichEdit20::SetTabSize(unsigned int TabSize)
 
   // restore selection
   SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRange);
+}
+//---------------------------------------------------------------------------
+bool __stdcall TRichEdit20::StreamLoad(
+  TRichEditStreamInfo * StreamInfo, unsigned char * Buff, long Read, long & WasRead)
+{
+  WasRead = 0;
+
+  try
+  {
+    if (StreamInfo->Converter != NULL)
+    {
+      TBytes Buffer;
+      Buffer.Length = Read + 1;
+      Read = Read / 2;
+      if ((Read % 2) > 0)
+      {
+        Read--;
+      }
+
+      WasRead = StreamInfo->Converter->ConvertReadStream(StreamInfo->Stream, Buffer, Read);
+
+      if (WasRead > 0)
+      {
+        Buffer[WasRead] = 0;
+        if (Buffer[WasRead - 1] == 13)
+        {
+          Buffer[WasRead - 1] = 0;
+          WasRead--;
+        }
+
+        int StartIndex = 0;
+        // Convert from desired Encoding to Unicode
+        if (StreamInfo->PlainText)
+        {
+          if (StreamInfo->Encoding == NULL)
+          {
+            Buffer = TEncoding::Convert(TEncoding::Default, TEncoding::Unicode, Buffer, 0, WasRead);
+            WasRead = Buffer.Length;
+          }
+          else
+          {
+            if (!TEncoding::Unicode->Equals(StreamInfo->Encoding))
+            {
+              int MaxTries = StreamInfo->Encoding->GetMaxByteCount(1);
+              while ((WasRead > 0) &&
+                     (StreamInfo->Encoding->GetCharCount(Buffer, 0, WasRead)  == 0))
+              {
+                WasRead--;
+                StreamInfo->Stream->Seek(-1, soFromCurrent);
+                MaxTries--;
+                if (MaxTries == 0)
+                {
+                  FStreamLoadEncodingError = true;
+                  Abort();
+                }
+              }
+              Buffer = TEncoding::Convert(StreamInfo->Encoding, TEncoding::Unicode, Buffer, 0, WasRead);
+              WasRead = Buffer.Length;
+            }
+            // If Unicode preamble is present, set StartIndex to skip over it
+            TBytes Preamble = TEncoding::Unicode->GetPreamble();
+            if ((WasRead >= 2) && (Buffer[0] == Preamble[0]) && (Buffer[1] == Preamble[1]))
+            {
+              StartIndex = 2;
+            }
+          }
+        }
+
+        WasRead = AdjustLineBreaks(Buff, Buffer, StartIndex, WasRead);
+      }
+    }
+
+    return true;
+  }
+  catch (...)
+  {
+    return false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::LoadFromStream(TStream * Stream, TEncoding * Encoding)
+{
+  FStreamLoadEncodingError = false;
+  Lines->LoadFromStream(Stream, Encoding);
+  // TODO Use FStreamLoadEncodingError to let user know
 }
 //---------------------------------------------------------------------------
 class TFindDialogEx : public TFindDialog
@@ -403,6 +575,9 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   FReplaceDialog = new TReplaceDialogEx(this);
   FReplaceDialog->OnFind = FindDialogFind;
   FReplaceDialog->OnReplace = FindDialogFind;
+  FEncoding = NULL;
+
+  InitCodePage();
 
   UseSystemSettings(this);
 }
@@ -413,7 +588,7 @@ __fastcall TEditorForm::~TEditorForm()
   FInstances--;
   if (FInstance == 0)
   {
-    AnsiString WindowParams = StoreForm(this);
+    UnicodeString WindowParams = StoreForm(this);
     // this is particularly to prevent saving the form state
     // for the first time, keeping default positioning by a system
     if (!FWindowParams.IsEmpty() && (FWindowParams != WindowParams))
@@ -427,15 +602,35 @@ __fastcall TEditorForm::~TEditorForm()
   // see FormClose for explanation
   if (!FCloseAnnounced)
   {
-    DoWindowClose();
+    BackupSave();
+    DoWindowClose(true);
   }
+
   if (Application->OnHint == ApplicationHint)
   {
     Application->OnHint = NULL;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorForm::SetFileName(const AnsiString value)
+UnicodeString __fastcall TEditorForm::GetCodePageName(TEncoding * Encoding)
+{
+  if (Encoding == TEncoding::UTF8)
+  {
+    return LoadStr(UTF8_NAME);
+  }
+  else
+  {
+    return DefaultEncodingName();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::InitCodePage()
+{
+  DefaultEncodingAction->Caption = DefaultEncodingName();
+  DefaultEncodingAction->Hint = FORMAT(DefaultEncodingAction->Hint, (DefaultEncodingName()));
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::SetFileName(const UnicodeString value)
 {
   if (value != FFileName)
   {
@@ -483,6 +678,16 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   {
     ((TAction *)Action)->Enabled = true;
   }
+  else if (Action == DefaultEncodingAction)
+  {
+    DefaultEncodingAction->Enabled = true;
+    DefaultEncodingAction->Checked = (FEncoding == TEncoding::Default);
+  }
+  else if (Action == UTF8EncodingAction)
+  {
+    UTF8EncodingAction->Enabled = true;
+    UTF8EncodingAction->Checked = (FEncoding == TEncoding::UTF8);
+  }
   else
   {
     Handled = false;
@@ -496,7 +701,7 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   if (Action == SaveAction)
   {
     assert(!FFileName.IsEmpty());
-    EditorMemo->Lines->SaveToFile(FFileName);
+    EditorMemo->Lines->SaveToFile(FFileName, FEncoding);
     if (FOnFileChanged)
     {
       FOnFileChanged(this);
@@ -540,9 +745,49 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   {
     FormHelp(this);
   }
+  else if (Action == DefaultEncodingAction)
+  {
+    ChangeEncoding(TEncoding::Default);
+  }
+  else if (Action == UTF8EncodingAction)
+  {
+    ChangeEncoding(TEncoding::UTF8);
+  }
   else
   {
     Handled = false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::BackupSave()
+{
+  if (EditorMemo->Modified)
+  {
+    int Uniq = 0;
+    while (true)
+    {
+      UnicodeString FileName = FFileName + L".bak" + (Uniq == 0 ? UnicodeString() : IntToStr(Uniq));
+      if (!FileExists(FileName))
+      {
+        EditorMemo->Lines->SaveToFile(FileName, FEncoding);
+        break;
+      }
+      Uniq++;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::ChangeEncoding(TEncoding * Encoding)
+{
+  if (FEncoding != Encoding)
+  {
+    if (!EditorMemo->Modified ||
+        (MessageDialog(LoadStr(EDITOR_MODIFIED_ENCODING), qtConfirmation,
+          qaOK | qaCancel) != qaCancel))
+    {
+      FEncoding = Encoding;
+      LoadFile();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -552,7 +797,7 @@ void __fastcall TEditorForm::FormCloseQuery(TObject * /*Sender*/,
   if (EditorMemo->Modified)
   {
     SetFocus();
-    int Answer = MessageDialog(LoadStr(SAVE_CHANGES), qtConfirmation,
+    unsigned int Answer = MessageDialog(LoadStr(SAVE_CHANGES), qtConfirmation,
       qaYes | qaNo | qaCancel);
     CanClose = (Answer != qaCancel);
     if (Answer == qaYes)
@@ -593,22 +838,64 @@ void __fastcall TEditorForm::UpdateControls()
       int Count = EditorMemo->Lines->Count;
       StatusBar->Panels->Items[0]->Caption = FMTLOAD(EDITOR_LINE_STATUS,
         ((int)FCaretPos.y+1, Count));
-      StatusBar->Panels->Items[1]->Caption = FMTLOAD(EDITOR_COLUMN_STATUS,
-        ((int)FCaretPos.x+1));
-      AnsiString Character;
+      int Column = 0;
+      UnicodeString Character;
       if (FCaretPos.y >= 0 && FCaretPos.y < EditorMemo->Lines->Count)
       {
-        AnsiString Line = EditorMemo->Lines->Strings[FCaretPos.y];
+        UnicodeString Line = EditorMemo->Lines->Strings[FCaretPos.y];
+        int TabSize = WinConfiguration->Editor.TabSize;
+        for (int Index = 1; Index <= FCaretPos.x + 1; Index++)
+        {
+          if ((Index - 1 >= 1) && (Index - 1 <= Line.Length()) && (Line[Index - 1] == L'\t') &&
+              (TabSize > 0)) // sanity check
+          {
+            Column = (((Column / TabSize) + 1) * TabSize) + 1;
+          }
+          else
+          {
+            Column++;
+          }
+        }
+
         if (FCaretPos.x+1 <= Line.Length())
         {
-          Character = FMTLOAD(EDITOR_CHARACTER_STATUS2,
-            (int((unsigned char)Line[FCaretPos.x+1]), int((unsigned char)Line[FCaretPos.x+1])));
+          int Code;
+          wchar_t Ch = Line[FCaretPos.x + 1];
+          if (FEncoding == TEncoding::Default)
+          {
+            char Buf[10];
+            BOOL UsedDefaultChar = FALSE;
+            int Conversion =
+              WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, &Ch, 1,
+                Buf, sizeof(Buf), NULL, &UsedDefaultChar);
+            // actually with multibyte encoding it may be > 1,
+            if ((Conversion == 1) && !UsedDefaultChar)
+            {
+              Code = static_cast<int>(static_cast<unsigned char>(Buf[0]));
+            }
+            else
+            {
+              Code = -1;
+            }
+          }
+          else
+          {
+            Code = static_cast<int>(Ch);
+          }
+
+          if (Code >= 0)
+          {
+            Character = FMTLOAD(EDITOR_CHARACTER_STATUS2, (Code, Code));
+          }
         }
       }
+      StatusBar->Panels->Items[1]->Caption =
+        (Column > 0) ? FMTLOAD(EDITOR_COLUMN_STATUS, (Column)) : UnicodeString();
       StatusBar->Panels->Items[2]->Caption = Character;
     }
-    StatusBar->Panels->Items[3]->Caption =
-      (EditorMemo->Modified ? LoadStr(EDITOR_MODIFIED) : AnsiString(""));
+    StatusBar->Panels->Items[3]->Caption = FMTLOAD(EDITOR_ENCODING_STATUS, (FEncodingName));
+    StatusBar->Panels->Items[4]->Caption =
+      (EditorMemo->Modified ? LoadStr(EDITOR_MODIFIED) : UnicodeString(L""));
     StatusBar->SimplePanel = false;
   }
 
@@ -732,10 +1019,93 @@ void __fastcall TEditorForm::FormShow(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+// copy from ComCtrls.pas
+bool __fastcall TEditorForm::ContainsPreamble(TStream * Stream, const TBytes & Signature)
+{
+  bool Result;
+  TBytes Buffer;
+  int LBufLen;
+  int LSignatureLen = Signature.Length;
+  __int64 LPosition = Stream->Position;
+  try
+  {
+    Buffer.Length = LSignatureLen;
+    LBufLen = Stream->Read(&Buffer[0], LSignatureLen);
+  }
+  __finally
+  {
+    Stream->Position = LPosition;
+  }
+
+  if (LBufLen == LSignatureLen)
+  {
+    Result = true;
+    for (int I = 1; I <= LSignatureLen; I++)
+    {
+      if (Buffer[I - 1] != Signature[I - 1])
+      {
+        Result = false;
+        break;
+      }
+    }
+  }
+  else
+  {
+    Result = false;
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::LoadFromFile()
+{
+  TStream * Stream = new TFileStream(FFileName, fmOpenRead | fmShareDenyWrite);
+  try
+  {
+    if (FEncoding == NULL)
+    {
+      int Encoding;
+      if (ContainsPreamble(Stream, TEncoding::UTF8->GetPreamble()))
+      {
+        Encoding = CP_UTF8;
+      }
+      else
+      {
+        Encoding = WinConfiguration->Editor.Encoding;
+      }
+
+      switch (Encoding)
+      {
+        case CP_UTF8:
+          FEncoding = TEncoding::UTF8;
+          break;
+
+        default:
+          FAIL;
+          // fallthru
+
+        case CP_ACP:
+          FEncoding = TEncoding::Default;
+          break;
+      }
+    }
+
+    FEncodingName = GetCodePageName(FEncoding);
+
+    EditorMemo->LoadFromStream(Stream, FEncoding);
+  }
+  __finally
+  {
+    delete Stream;
+  }
+
+  SendMessage(EditorMemo->Handle, EM_EXLIMITTEXT, 0, 0x7FFFFFF0);
+}
+//---------------------------------------------------------------------------
 void __fastcall TEditorForm::LoadFile()
 {
   HandleNeeded();
-  EditorMemo->Lines->LoadFromFile(FFileName);
+  LoadFromFile();
   EditorMemo->ResetFormat();
   EditorMemo->Modified = false;
   FCaretPos.x = -1;
@@ -746,12 +1116,12 @@ void __fastcall TEditorForm::LoadFile()
 bool __fastcall TEditorForm::CursorInUpperPart()
 {
   HFONT OldFont;
-  void *DC;
+  HDC DC;
   TTextMetric TM;
   TRect Rect;
 
   DC = GetDC(EditorMemo->Handle);
-  OldFont = SelectObject(DC, EditorMemo->Font->Handle);
+  OldFont = (HFONT)SelectObject(DC, EditorMemo->Font->Handle);
 
   try
   {
@@ -785,7 +1155,7 @@ void __fastcall TEditorForm::PositionFindDialog(bool VerticalOnly)
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::StartFind(bool Find)
 {
-  AnsiString Text = EditorMemo->SelText;
+  UnicodeString Text = EditorMemo->SelText;
   TFindOptions Options;
   Options << frShowHelp;
   if (Text.IsEmpty())
@@ -833,7 +1203,7 @@ void __fastcall TEditorForm::StartFind(bool Find)
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::GoToLine()
 {
-  AnsiString Str;
+  UnicodeString Str;
   if (InputDialog(LoadStr(EDITOR_GO_TO_LINE), LoadStr(EDITOR_LINE_NUMBER), Str))
   {
     int Line = StrToIntDef(Str, -1);
@@ -857,18 +1227,18 @@ void __fastcall TEditorForm::FormClose(TObject * /*Sender*/,
   // application closure).
   // However FormClose is not called when form is closed due to
   // application exit, so there is last resort call from destructor.
-  DoWindowClose();
+  DoWindowClose(false);
   FCloseAnnounced = true;
   Action = caFree;
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorForm::DoWindowClose()
+void __fastcall TEditorForm::DoWindowClose(bool Forced)
 {
   if (FOnWindowClose != NULL)
   {
     try
     {
-      FOnWindowClose(this);
+      FOnWindowClose(this, Forced);
     }
     catch(Exception & E)
     {
@@ -887,7 +1257,7 @@ void __fastcall TEditorForm::CreateParams(TCreateParams & Params)
     FInstances++;
 
     FFormRestored = true;
-    AnsiString WindowParams = WinConfiguration->Editor.WindowParams;
+    UnicodeString WindowParams = WinConfiguration->Editor.WindowParams;
 
     if ((FInstance == 0) && !WindowParams.IsEmpty())
     {
@@ -916,15 +1286,15 @@ void __fastcall TEditorForm::Reload()
 void __fastcall TEditorForm::ApplicationHint(TObject * /*Sender*/)
 {
   assert(Application);
-  AnsiString AHint = GetLongHint(Application->Hint);
+  UnicodeString AHint = GetLongHint(Application->Hint);
   FShowStatusBarHint = Active && !AHint.IsEmpty();
   if (FShowStatusBarHint)
   {
-    FStatusBarHint = AHint != "E" ? AHint : AnsiString("");
+    FStatusBarHint = AHint != L"E" ? AHint : UnicodeString(L"");
   }
   else
   {
-    FStatusBarHint = "";
+    FStatusBarHint = L"";
   }
   UpdateControls();
 }

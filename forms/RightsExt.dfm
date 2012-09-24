@@ -4,7 +4,7 @@ inherited RightsExtFrame: TRightsExtFrame
   object OctalLabel: TLabel [6]
     Left = 4
     Top = 68
-    Width = 28
+    Width = 29
     Height = 13
     Caption = 'O&ctal:'
     FocusControl = OctalEdit

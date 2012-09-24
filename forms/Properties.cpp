@@ -12,6 +12,7 @@
 #include <GUITools.h>
 #include <CoreMain.h>
 #include <Tools.h>
+#include <BaseUtils.hpp>
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "Rights"
@@ -21,7 +22,7 @@
 #endif
 //---------------------------------------------------------------------
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
-  const AnsiString Directory, const TRemoteTokenList * GroupList,
+  const UnicodeString Directory, const TRemoteTokenList * GroupList,
   const TRemoteTokenList * UserList, TRemoteProperties * Properties,
   int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
   TCalculateChecksumEvent OnCalculateChecksum)
@@ -42,7 +43,7 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
 }
 //---------------------------------------------------------------------
 __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
-  TStrings * FileList,const AnsiString Directory,
+  TStrings * FileList, const UnicodeString Directory,
   const TRemoteTokenList * GroupList, const TRemoteTokenList * UserList,
   int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
   TCalculateChecksumEvent OnCalculateChecksum)
@@ -53,6 +54,7 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   RightsFrame->OnChange = ControlChange;
 
   FShellImageList = SharedSystemImageList(true);
+  FShellImageList->DrawingStyle = dsTransparent;
 
   FFileList = new TStringList();
   FFileList->Assign(FileList);
@@ -111,21 +113,21 @@ bool __fastcall TPropertiesDialog::Execute(TRemoteProperties & Properties)
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TPropertiesDialog::LoadRemoteToken(
+UnicodeString __fastcall TPropertiesDialog::LoadRemoteToken(
   const TRemoteToken & Token)
 {
-  AnsiString Result;
+  UnicodeString Result;
   if (FUserGroupByID)
   {
     if (Token.IDValid)
     {
       if (Token.NameValid)
       {
-        Result = FORMAT("%s [%d]", (Token.Name, int(Token.ID)));
+        Result = FORMAT(L"%s [%d]", (Token.Name, int(Token.ID)));
       }
       else
       {
-        Result = FORMAT("[%d]", (int(Token.ID)));
+        Result = FORMAT(L"[%d]", (int(Token.ID)));
       }
     }
     else
@@ -151,7 +153,7 @@ void __fastcall TPropertiesDialog::LoadRemoteToken(
   }
   else
   {
-    ComboBox->Text = "";
+    ComboBox->Text = L"";
   }
 }
 //---------------------------------------------------------------------------
@@ -280,8 +282,8 @@ void __fastcall TPropertiesDialog::LoadInfo()
 void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
   const TCalculateSizeStats & Stats)
 {
-  AnsiString SizeStr;
-  AnsiString FilesStr;
+  UnicodeString SizeStr;
+  UnicodeString FilesStr;
   if (FStatsNotCalculated)
   {
     SizeStr = LoadStr(PROPERTIES_UNKNOWN_SIZE);
@@ -289,10 +291,10 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
   else
   {
     SizeStr = FormatBytes(FilesSize);
-    AnsiString SizeUnorderedStr = FormatBytes(FilesSize, false);
+    UnicodeString SizeUnorderedStr = FormatBytes(FilesSize, false);
     if (SizeStr != SizeUnorderedStr)
     {
-      SizeStr = FORMAT("%s (%s)", (SizeStr, SizeUnorderedStr));
+      SizeStr = FORMAT(L"%s (%s)", (SizeStr, SizeUnorderedStr));
     }
   }
 
@@ -310,7 +312,7 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
         FMTLOAD(PROPERTIES_FILES, (Stats.Files));
       if (Stats.Directories > 0)
       {
-        FilesStr = FORMAT("%s, ", (FilesStr));
+        FilesStr = FORMAT(L"%s, ", (FilesStr));
       }
     }
     if (Stats.Directories > 0)
@@ -320,10 +322,10 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
     }
     if (Stats.SymLinks > 0)
     {
-      AnsiString SymLinksStr;
+      UnicodeString SymLinksStr;
       SymLinksStr = (Stats.SymLinks == 1) ? FMTLOAD(PROPERTIES_SYMLINK, (Stats.SymLinks)) :
         FMTLOAD(PROPERTIES_SYMLINKS, (Stats.SymLinks));
-      FilesStr = FORMAT("%s (%s)", (FilesStr, SymLinksStr));
+      FilesStr = FORMAT(L"%s (%s)", (FilesStr, SymLinksStr));
     }
   }
 
@@ -358,7 +360,7 @@ void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & v
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::StoreRemoteToken(unsigned int ID,
-  const AnsiString & Text, const TRemoteTokenList * List, TRemoteToken & Result)
+  const UnicodeString & Text, const TRemoteTokenList * List, TRemoteToken & Result)
 {
   assert(List != NULL);
   const TRemoteToken * Token = List->Find(ID);
@@ -374,7 +376,7 @@ void __fastcall TPropertiesDialog::StoreRemoteToken(unsigned int ID,
 }
 //---------------------------------------------------------------------------
 TRemoteToken __fastcall TPropertiesDialog::StoreRemoteToken(const TRemoteToken & Orig,
-  AnsiString Text, int Message, const TRemoteTokenList * List)
+  UnicodeString Text, int Message, const TRemoteTokenList * List)
 {
   TRemoteToken Result;
   Text = Text.Trim();
@@ -383,11 +385,11 @@ TRemoteToken __fastcall TPropertiesDialog::StoreRemoteToken(const TRemoteToken &
     if (FUserGroupByID)
     {
       assert(List != NULL);
-      int IDStart = Text.LastDelimiter("[");
-      if (!Text.IsEmpty() && (IDStart >= 0) && (Text[Text.Length()] == ']'))
+      int IDStart = Text.LastDelimiter(L"[");
+      if (!Text.IsEmpty() && (IDStart >= 0) && (Text[Text.Length()] == L']'))
       {
         int ID;
-        AnsiString IDStr = Text.SubString(IDStart + 1, Text.Length() - IDStart - 1);
+        UnicodeString IDStr = Text.SubString(IDStart + 1, Text.Length() - IDStart - 1);
         if (!TryStrToInt(IDStr, ID))
         {
           throw Exception(Message);
@@ -437,7 +439,7 @@ void __fastcall TPropertiesDialog::StoreRemoteToken(TComboBox * ComboBox,
   TRemoteToken & Token, int Message, const TRemoteTokenList * List,
   TRemoteProperties & Properties)
 {
-  AnsiString Text = ComboBox->Text.Trim();
+  UnicodeString Text = ComboBox->Text.Trim();
   if (FLAGSET(FAllowedChanges, ChangeFlag))
   {
     Token = StoreRemoteToken(Orig, Text, Message, List);
@@ -591,8 +593,8 @@ void __fastcall TPropertiesDialog::CalculateChecksum()
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::CalculatedChecksum(
-  const AnsiString & FileName, const AnsiString & /*Alg*/,
-  const AnsiString & Hash)
+  const UnicodeString & FileName, const UnicodeString & /*Alg*/,
+  const UnicodeString & Hash)
 {
   if (FMultipleChecksum)
   {
@@ -644,15 +646,15 @@ void __fastcall TPropertiesDialog::CopyClick(TObject * /*Sender*/)
   assert(ListView != NULL);
 
   int Count = 0;
-  AnsiString SingleText;
-  AnsiString Text;
+  UnicodeString SingleText;
+  UnicodeString Text;
   TListItem * Item = ListView->GetNextItem(NULL, sdAll, TItemStates() << isSelected);
   while (Item != NULL)
   {
     assert(Item->Selected);
 
     SingleText = Item->SubItems->Strings[0];
-    Text += FORMAT("%s = %s\r\n", (Item->Caption, Item->SubItems->Strings[0]));
+    Text += FORMAT(L"%s = %s\r\n", (Item->Caption, Item->SubItems->Strings[0]));
     Count++;
 
     Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);

@@ -21,7 +21,7 @@ bool __fastcall DoCopyParamCustomDialog(TCopyParamType & CopyParam,
 {
   bool Result;
   TCopyParamCustomDialog * Dialog = new TCopyParamCustomDialog(
-    Application, CopyParamAttrs, 0);
+    GetFormOwner(), CopyParamAttrs, 0);
   try
   {
     Result = Dialog->Execute(CopyParam);

@@ -34,7 +34,7 @@ Unit ShellDialogs;
 {------------------------------------------------------------------
  You must pass fully qualified path names to all of these functions.
  If you are calling for a subdirectory (i.e. no filename), it is your
- responsibility to insure that subdirectories contain !!NO!! trailing
+ responsibility to insure that subdirectories contain !NO! trailing
  backslash. Root-directories must be passed as 'C:\'.
 
  ShellDisplayContextMenu displays the right click menu for the given file or
@@ -254,9 +254,9 @@ Begin
       Begin
         SetLength(Verb, 255);
         If Assigned(ContextMenu2) then
-          ContextMenu2.GetCommandString(Cardinal(MakeIntResource(Cmd-1)), GCS_VERB, NIL,PChar(Verb), Length(Verb))
+          ContextMenu2.GetCommandString(Cardinal(MakeIntResource(Cmd-1)), GCS_VERB, NIL,PAnsiChar(PChar(Verb)), Length(Verb))
         Else
-          ContextMenu.GetCommandString(Cardinal(MakeIntResource(Cmd-1)),GCS_VERB, NIL, PChar(Verb), Length(Verb));
+          ContextMenu.GetCommandString(Cardinal(MakeIntResource(Cmd-1)),GCS_VERB, NIL, PAnsiChar(PChar(Verb)), Length(Verb));
 
         SetLength(Verb, strlen(PChar(Verb)));
         Verb := LowerCase(Verb);
@@ -266,7 +266,7 @@ Begin
           FillChar(ICM,SizeOf(TCMInvokeCommandInfo),#0);
           ICM.cbSize := Sizeof(TCMInvokeCommandInfo);
           ICM.hwnd   := Handle;
-          ICM.lpVerb := MakeIntResource(Cmd-1);
+          ICM.lpVerb := LPCSTR(MakeIntResource(Cmd-1));
           ICM.nShow  := SW_SHOWNORMAL;
           Try
             If Assigned(ContextMenu2) Then
@@ -378,7 +378,7 @@ End; {ShellDisplayContextMenu (TStringList) }
 
 
 Function ShellExecuteContextCommand(Handle: THandle; Command: String; ShellFolder: IShellFolder; PIDLCount: Integer; Var PIDL: PItemIDList): Boolean;
-Var ICM         : TCMInvokeCommandInfo;
+Var ICM         : TCMInvokeCommandInfoEx;
     ContextMenu : IContextMenu;
     ContextMenu2: IContextMenu2;
     Popup       : HMenu;
@@ -395,7 +395,11 @@ Begin
     ICM.cbSize := SizeOf(TCMInvokeCommandInfo);
     ICM.nShow  := SW_SHOWNORMAL;
     IF Command <> shcDefault Then
-    ICM.lpVerb := PChar(Command)
+    begin
+      ICM.fMask := CMIC_MASK_UNICODE;
+      ICM.lpVerb := PAnsiChar(AnsiString(Command));
+      ICM.lpVerbW := PChar(Command);
+    end
     Else
     Begin
       {Locate the menuitem for the default action:}
@@ -413,7 +417,7 @@ Begin
         Begin
           MenuCmd := GetMenuDefaultItem(Popup, 0, 0);
           If MenuCmd <> $FFFFFFFF then
-            ICM.lpVerb := MakeIntResource(MenuCmd-1)
+            ICM.lpVerb := LPCSTR(MakeIntResource(MenuCmd-1))
           Else
             ICM.lpVerb := NIL;
         end;
@@ -424,9 +428,9 @@ Begin
 
     Try
       If Assigned(ContextMenu2) then
-        Result := Succeeded(ContextMenu2.InvokeCommand(ICM))
+        Result := Succeeded(ContextMenu2.InvokeCommand(PCMInvokeCommandInfo(@ICM)^))
       Else
-        Result := Succeeded(ContextMenu.InvokeCommand(ICM));
+        Result := Succeeded(ContextMenu.InvokeCommand(PCMInvokeCommandInfo(@ICM)^));
     Except
       // eat any dammned shell exceptions.
     End;

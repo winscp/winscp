@@ -40,40 +40,46 @@ public:
   __fastcall TAuthenticateForm(TComponent * Owner);
   virtual __fastcall ~TAuthenticateForm();
 
-  void __fastcall Init(TSessionData * SessionData);
+  void __fastcall Init(TTerminal * Terminal);
   void __fastcall ShowAsModal();
   void __fastcall HideAsModal();
-  void __fastcall Log(const AnsiString Message);
-  bool __fastcall PromptUser(TPromptKind Kind, AnsiString Name, AnsiString Instructions,
+  void __fastcall Log(const UnicodeString Message);
+  bool __fastcall PromptUser(TPromptKind Kind, UnicodeString Name, UnicodeString Instructions,
     TStrings * Prompts, TStrings * Results, bool ForceLog, bool StoredCredentialsTried);
-  void __fastcall Banner(const AnsiString & Banner, bool & NeverShowAgain,
+  void __fastcall Banner(const UnicodeString & Banner, bool & NeverShowAgain,
     int Options);
+
+  __property TTerminal * Terminal = { read = FTerminal };
+  __property TNotifyEvent OnCancel = { read = FOnCancel, write = FOnCancel };
 
 protected:
   void __fastcall ClearLog();
   void __fastcall AdjustControls();
-  bool __fastcall Execute(AnsiString Status, TPanel * Panel,
+  bool __fastcall Execute(UnicodeString Status, TPanel * Panel,
     TWinControl * FocusControl, TButton * DefaultButton, TButton * CancelButton,
     bool FixHeight, bool Zoom, bool ForceLog);
   virtual void __fastcall CreateParams(TCreateParams & Params);
   virtual void __fastcall Dispatch(void * AMessage);
   void __fastcall WMNCCreate(TWMNCCreate & Message);
-  TLabel * __fastcall GenerateLabel(int Current, AnsiString Caption);
+  TLabel * __fastcall GenerateLabel(int Current, UnicodeString Caption);
   TCustomEdit * __fastcall GenerateEdit(int Current, bool Echo, int MaxLen);
-  TList * __fastcall GeneratePrompt(AnsiString Instructions, TStrings * Prompts,
+  TList * __fastcall GeneratePrompt(UnicodeString Instructions, TStrings * Prompts,
     TStrings * Results);
+  void __fastcall DoCancel();
 
 private:
   void * FShowAsModalStorage;
   TWinControl * FFocusControl;
   TSessionData * FSessionData;
-  AnsiString FStatus;
+  TTerminal * FTerminal;
+  UnicodeString FStatus;
   TWinControl * FPromptParent;
   int FPromptLeft;
   int FPromptTop;
   int FPromptRight;
   int FPromptEditGap;
   int FPromptsGap;
+  TNotifyEvent FOnCancel;
 };
 //---------------------------------------------------------------------------
 #endif

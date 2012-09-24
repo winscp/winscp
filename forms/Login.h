@@ -2,24 +2,21 @@
 #ifndef LoginH
 #define LoginH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <ComCtrls.hpp>
-#include <Mask.hpp>
-#include <ComboEdit.hpp>
-#include <ActnList.hpp>
-#include <UpDownEdit.hpp>
-#include <PasswordEdit.hpp>
-#include <Menus.hpp>
-#include <ImgList.hpp>
+#include "ComboEdit.hpp"
+#include "GeneralSettings.h"
+#include "LogSettings.h"
+#include "PasswordEdit.hpp"
+#include "UpDownEdit.hpp"
+#include <System.Classes.hpp>
+#include <Vcl.ActnList.hpp>
+#include <Vcl.ComCtrls.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.Forms.hpp>
+#include <Vcl.ImgList.hpp>
+#include <Vcl.Mask.hpp>
+#include <Vcl.Menus.hpp>
+#include <Vcl.StdCtrls.hpp>
 //----------------------------------------------------------------------------
 #include <Configuration.h>
 #include <SessionData.h>
@@ -139,7 +136,6 @@ __published:
   TButton *ShellIconsButton;
   TAction *DesktopIconAction;
   TGroupBox *EnvironmentGroup;
-  TGroupBox *TransferProtocolGroup;
   TPopupMenu *IconsPopupMenu;
   TMenuItem *Desktopicon1;
   TAction *SendToHookAction;
@@ -174,7 +170,6 @@ __published:
   TGroupBox *DSTModeGroup;
   TRadioButton *DSTModeUnixCheck;
   TRadioButton *DSTModeWinCheck;
-  TCheckBox *AuthGSSAPICheck2;
   TGroupBox *ScpLsOptionsGroup;
   TCheckBox *IgnoreLsWarningsCheck;
   TCheckBox *SCPLsFullTimeAutoCheck;
@@ -235,9 +230,6 @@ __published:
   TLabel *Label21;
   TComboBox *TunnelLocalPortNumberEdit;
   TRadioButton *DSTModeKeepCheck;
-  TComboBox *TransferProtocolCombo;
-  TLabel *Label22;
-  TCheckBox *AllowScpFallbackCheck;
   TGroupBox *ConnectionGroup;
   TCheckBox *FtpPasvModeCheck;
   TTabSheet *RecycleBinSheet;
@@ -246,7 +238,6 @@ __published:
   TCheckBox *DeleteToRecycleBinCheck;
   TCheckBox *OverwrittenToRecycleBinCheck;
   TEdit *RecycleBinPathEdit;
-  TStaticText *RecycleBinLinkLabel;
   TLabel *EOLTypeLabel;
   TComboBox *EOLTypeCombo;
   TLabel *UtfLabel;
@@ -256,7 +247,6 @@ __published:
   TLabel *TimeDifferenceHoursLabel;
   TUpDownEdit *TimeDifferenceMinutesEdit;
   TLabel *TimeDifferenceMinutesLabel;
-  TLabel *EnvironmentOtherLabel;
   TAction *ShellIconSessionAction;
   TLabel *Label9;
   TComboBox *ListingCommandEdit;
@@ -288,10 +278,27 @@ __published:
   TMemo *PostLoginCommandsMemo;
   TLabel *BugMaxPkt2Label;
   TComboBox *BugMaxPkt2Combo;
-  TComboBox *FtpsCombo;
   TLabel *Label5;
   TComboBox *FtpListAllCombo;
   TCheckBox *FtpForcePasvIpCheck;
+  TLabel *Label22;
+  TComboBox *TransferProtocolCombo;
+  TComboBox *FtpsCombo;
+  TCheckBox *AllowScpFallbackCheck;
+  TLabel *FtpsLabel;
+  TEdit *FtpAccountEdit;
+  TLabel *FtpAccountLabel;
+  TCheckBox *AnonymousLoginCheck;
+  TCheckBox *BufferSizeCheck;
+  TCheckBox *SynchronizeBrowsingCheck;
+  TGroupBox *GSSAPIGroup;
+  TCheckBox *AuthGSSAPICheck3;
+  TCheckBox *GSSAPIFwdTGTCheck;
+  TLabel *BugIgnore2Label;
+  TComboBox *BugIgnore2Combo;
+  TPopupMenu *SaveDropDownMenu;
+  TMenuItem *Save1;
+  TMenuItem *Setdefaults1;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -322,27 +329,26 @@ __published:
   void __fastcall SendToHookActionExecute(TObject *Sender);
   void __fastcall CheckForUpdatesActionExecute(TObject *Sender);
   void __fastcall LanguagesButtonClick(TObject *Sender);
-  void __fastcall AuthGSSAPICheck2Click(TObject *Sender);
+  void __fastcall AuthGSSAPICheck3Click(TObject *Sender);
   void __fastcall KexButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall PrivateKeyEditAfterDialog(TObject *Sender,
-    AnsiString &Name, bool &Action);
+    UnicodeString &Name, bool &Action);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall ColorButtonClick(TObject *Sender);
   void __fastcall ColorDefaultItemClick(TObject *Sender);
   void __fastcall PickColorItemClick(TObject *Sender);
   void __fastcall RenameSessionActionExecute(TObject * Sender);
-  void __fastcall PathEditBeforeDialog(TObject *Sender, AnsiString &Name,
+  void __fastcall PathEditBeforeDialog(TObject *Sender, UnicodeString &Name,
     bool &Action);
   void __fastcall TransferProtocolComboChange(TObject *Sender);
   void __fastcall NavigationTreeCollapsing(TObject *Sender,
     TTreeNode *Node, bool &AllowCollapse);
-  void __fastcall RecycleBinLinkLabelClick(TObject *Sender);
   void __fastcall ShellIconSessionActionExecute(TObject *Sender);
   void __fastcall ProxyLocalCommandBrowseButtonClick(TObject *Sender);
   void __fastcall SessionTreeChange(TObject *Sender, TTreeNode *Node);
   void __fastcall SessionTreeEdited(TObject *Sender, TTreeNode *Node,
-    AnsiString &S);
+    UnicodeString &S);
   void __fastcall SessionTreeEditing(TObject *Sender, TTreeNode *Node,
     bool &AllowEdit);
   void __fastcall SessionTreeCustomDrawItem(TCustomTreeView *Sender,
@@ -359,6 +365,8 @@ __published:
           int X, int Y);
   void __fastcall SessionTreeEndDrag(TObject *Sender, TObject *Target,
           int X, int Y);
+  void __fastcall AnonymousLoginCheckClick(TObject *Sender);
+  void __fastcall SaveButtonDropDownClick(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -368,17 +376,15 @@ private:
   int FAlgDragSource, FAlgDragDest;
   int FOptions;
   TPopupMenu * FLanguagesPopupMenu;
-  AnsiString FOrigCaption;
   bool FInitialized;
   TTabSheet * FSavedTab;
   int FSavedSession;
   bool FLocaleChanging;
   void * FSystemSettings;
-  AnsiString FCurrentSessionName;
+  UnicodeString FCurrentSessionName;
   TColor FColor;
-  AnsiString FBeforeDialogPath;
+  UnicodeString FBeforeDialogPath;
   TStringList * FTreeLabels;
-  bool FRecycleBinSheetVisible;
   TWndMethod FOldSessionTreeProc;
   TTreeNode * FHintNode;
   TTreeViewScrollOnDragOver * FScrollOnDragOver;
@@ -403,19 +409,23 @@ private:
   void __fastcall UpdateTree(TTreeNode * ANode, bool Recursive);
   void __fastcall UpdateFolderNode(TTreeNode * Node);
   TTreeNode * __fastcall AddSession(TSessionData * Data);
-  TTreeNode * __fastcall AddSessionPath(AnsiString Path);
+  TTreeNode * __fastcall AddSessionPath(UnicodeString Path, bool CanCreate = true);
   void __fastcall DestroySession(TSessionData * Data);
-  void __fastcall CheckDuplicateFolder(TTreeNode * Parent, AnsiString Text,
+  void __fastcall CheckDuplicateFolder(TTreeNode * Parent, UnicodeString Text,
     TTreeNode * Node);
   void __fastcall NewSessionFolderInputDialogInitialize(
     TObject * Sender, TInputDialogData * Data);
-  AnsiString __fastcall SessionNodePath(TTreeNode * Node);
+  UnicodeString __fastcall SessionNodePath(TTreeNode * Node);
   TTreeNode * __fastcall SessionFolderNode(TTreeNode * Node);
   TTreeNode * __fastcall CurrentSessionFolderNode();
   void __fastcall SessionTreeProc(TMessage & Message);
   bool __fastcall SessionAllowDrop(TTreeNode * DropTarget);
   int __fastcall DefaultPort();
   void __fastcall MasterPasswordRecrypt(TObject * Sender);
+  void __fastcall SaveOpenedStoredSessionFolders(
+    TTreeNode * Node, TStrings * OpenedStoredSessionFolders);
+  void __fastcall LoadOpenedStoredSessionFolders(
+    TTreeNode * Node, TStrings * OpenedStoredSessionFolders);
 
 protected:
   void __fastcall Default();
@@ -432,7 +442,7 @@ protected:
   void __fastcall LocaleGetClick(TObject * Sender);
   void __fastcall Init();
   void __fastcall InitControls();
-  void __fastcall VerifyKey(AnsiString FileName, bool TypeOnly);
+  void __fastcall VerifyKey(UnicodeString FileName, bool TypeOnly);
   void __fastcall EditSession();
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
 

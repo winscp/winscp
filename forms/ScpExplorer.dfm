@@ -1,22 +1,22 @@
 inherited ScpExplorerForm: TScpExplorerForm
   Left = 239
   Top = 148
-  Width = 648
-  Height = 513
   HelpType = htKeyword
   HelpKeyword = 'ui_explorer'
   ActiveControl = RemoteDirView
   Caption = 'ScpExplorerForm'
+  ClientHeight = 475
+  ClientWidth = 632
   OldCreateOrder = True
   PixelsPerInch = 96
   TextHeight = 13
   inherited QueueSplitter: TSplitter
-    Top = 336
-    Width = 640
+    Top = 332
+    Width = 632
   end
   inherited TopDock: TTBXDock
-    Width = 640
-    Height = 205
+    Width = 632
+    Height = 209
     object MenuToolbar: TTBXToolbar
       Left = 0
       Top = 0
@@ -138,6 +138,9 @@ inherited ScpExplorerForm: TScpExplorerForm
           HelpKeyword = 'ui_queue#managing_the_queue'
           Hint = 'Queue list commands'
           OnPopup = QueueSubmenuItemPopup
+          object QueueEnableItem2: TTBXItem
+            Action = NonVisualDataModule.QueueEnableAction
+          end
           object TBXItem46: TTBXItem
             Action = NonVisualDataModule.QueueGoToAction
           end
@@ -265,14 +268,14 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem29: TTBXSeparatorItem
           Hint = 'E'
         end
+        object TBXItem115: TTBXItem
+          Action = NonVisualDataModule.CloseSessionAction
+        end
         object TBXSubmenuItem21: TTBXSubmenuItem
           Action = NonVisualDataModule.OpenedSessionsAction
         end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction
-        end
-        object TBXItem115: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction
         end
       end
       object TBXSubmenuItem1: TTBXSubmenuItem
@@ -316,6 +319,9 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXItem92: TTBXItem
             Action = NonVisualDataModule.LockToolbarsAction
           end
+        end
+        object SessionsTabsAction3: TTBXItem
+          Action = NonVisualDataModule.SessionsTabsAction
         end
         object TBXItem13: TTBXItem
           Action = NonVisualDataModule.StatusBarAction
@@ -510,7 +516,6 @@ inherited ScpExplorerForm: TScpExplorerForm
           end
           object SessionColorPalette: TTBXColorPalette
             PaletteOptions = [tpoCustomImages]
-            OnChange = SessionColorPaletteChange
           end
           object TBXSeparatorItem51: TTBXSeparatorItem
             Hint = 'E'
@@ -567,7 +572,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object ButtonsToolbar: TTBXToolbar
       Left = 0
-      Top = 49
+      Top = 52
       Caption = 'Commands'
       DockPos = -8
       DockRow = 2
@@ -642,7 +647,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object SelectionToolbar: TTBXToolbar
       Left = 0
-      Top = 75
+      Top = 78
       Caption = 'Selection'
       DockPos = -4
       DockRow = 3
@@ -673,39 +678,28 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object SessionToolbar: TTBXToolbar
       Left = 0
-      Top = 101
+      Top = 104
       Caption = 'Session'
-      DockMode = dmCannotFloat
       DockPos = -4
       DockRow = 4
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = True
-      Stretch = True
       TabOrder = 4
-      OnResize = ToolBarResize
-      OnGetBaseSize = ToolbarGetBaseSize
       object TBXItem123: TTBXItem
         Action = NonVisualDataModule.NewSessionAction
-      end
-      object TBXItem137: TTBXItem
-        Action = NonVisualDataModule.DuplicateSessionAction
-      end
-      object TBXSeparatorItem34: TTBXSeparatorItem
-      end
-      object SessionCombo: TTBXComboBoxItem
-        EditWidth = 114
-        DropDownList = True
-        MaxVisibleItems = 15
-      end
-      object TBXItem124: TTBXItem
-        Action = NonVisualDataModule.CloseSessionAction
-      end
-      object TBXSeparatorItem35: TTBXSeparatorItem
       end
       object TBXSubmenuItem23: TTBXSubmenuItem
         Action = NonVisualDataModule.SavedSessionsAction
         Options = [tboDropdownArrow]
+      end
+      object TBXSeparatorItem34: TTBXSeparatorItem
+      end
+      object TBXItem124: TTBXItem
+        Action = NonVisualDataModule.CloseSessionAction
+      end
+      object TBXItem137: TTBXItem
+        Action = NonVisualDataModule.DuplicateSessionAction
       end
       object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction
@@ -713,7 +707,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object PreferencesToolbar: TTBXToolbar
       Left = 0
-      Top = 127
+      Top = 130
       Caption = 'Preferences'
       DockPos = -4
       DockRow = 5
@@ -767,7 +761,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object SortToolbar: TTBXToolbar
       Left = 0
-      Top = 153
+      Top = 156
       Caption = 'Sort'
       DockPos = 0
       DockRow = 6
@@ -808,7 +802,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object AddressToolbar: TTBXToolbar
       Left = 0
-      Top = 23
+      Top = 25
       Caption = 'Address'
       DockableTo = [dpTop, dpBottom]
       DockMode = dmCannotFloat
@@ -843,10 +837,13 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXItem22: TTBXItem
         Action = NonVisualDataModule.RemoteOpenDirAction
       end
+      object TBXItem229: TTBXItem
+        Action = NonVisualDataModule.RemoteFilterAction
+      end
     end
     object UpdatesToolbar: TTBXToolbar
       Left = 0
-      Top = 179
+      Top = 182
       Caption = 'Updates'
       DockPos = -7
       DockRow = 7
@@ -887,8 +884,8 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
     end
     object TransferToolbar: TTBXToolbar
-      Left = 46
-      Top = 179
+      Left = 40
+      Top = 182
       Caption = 'Transfer settings'
       DockMode = dmCannotFloat
       DockPos = 44
@@ -922,7 +919,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object CustomCommandsToolbar: TTBXToolbar
       Left = 193
-      Top = 179
+      Top = 182
       Caption = 'Custom Commands'
       DockPos = 193
       DockRow = 7
@@ -935,20 +932,20 @@ inherited ScpExplorerForm: TScpExplorerForm
   end
   inherited RemotePanel: TPanel
     Left = 9
-    Top = 205
-    Width = 622
-    Height = 131
+    Top = 230
+    Width = 614
+    Height = 102
     Constraints.MinHeight = 100
     Constraints.MinWidth = 210
     inherited RemotePanelSplitter: TSplitter
-      Height = 100
+      Height = 71
       Hint = 
         'Drag to resize directory tree. Double click to hide directory tr' +
         'ee.'
     end
     inherited RemoteStatusBar: TTBXStatusBar
-      Top = 109
-      Width = 622
+      Top = 80
+      Width = 614
       Height = 22
       Images = GlyphsModule.SessionImages
       Panels = <
@@ -991,46 +988,51 @@ inherited ScpExplorerForm: TScpExplorerForm
       OnPanelDblClick = StatusBarPanelDblClick
     end
     inherited RemoteDirView: TUnixDirView
-      Width = 450
-      Height = 100
+      Width = 442
+      Height = 71
       OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
       OnPathChange = RemoteDirViewPathChange
     end
     inherited RemoteDriveView: TUnixDriveView
-      Height = 100
+      Height = 71
       Constraints.MinWidth = 40
     end
     object BottomDock: TTBXDock
       Left = 0
-      Top = 100
-      Width = 622
+      Top = 71
+      Width = 614
       Height = 9
+      Color = clBtnFace
       FixAlign = True
       Position = dpBottom
     end
   end
   inherited QueuePanel: TPanel
-    Top = 339
-    Width = 640
+    Top = 335
+    Width = 632
     inherited QueueView2: TListView
-      Width = 640
+      Width = 632
     end
     inherited QueueDock: TTBXDock
-      Width = 640
+      Width = 632
     end
+  end
+  inherited SessionsPageControl: TPageControl
+    Top = 209
+    Width = 632
   end
   object LeftDock: TTBXDock
     Left = 0
-    Top = 205
+    Top = 230
     Width = 9
-    Height = 131
+    Height = 102
     Position = dpLeft
   end
   object RightDock: TTBXDock
-    Left = 631
-    Top = 205
+    Left = 623
+    Top = 230
     Width = 9
-    Height = 131
+    Height = 102
     Position = dpRight
   end
 end

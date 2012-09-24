@@ -137,7 +137,8 @@ SockAddr sk_addr_dup(SockAddr addr);
 Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 	      int nodelay, int keepalive, Plug p,
 #ifdef MPEXT
-              int timeout
+              int timeout,
+              int sndbuf
 #endif
 	      );
 

@@ -40,6 +40,8 @@ void __fastcall TSynchronizeController::StartStop(TObject * Sender,
 {
   if (Start)
   {
+    Configuration->Usage->Inc(L"KeepUpToDates");
+
     try
     {
       assert(OnSynchronizeLog != NULL);
@@ -105,16 +107,16 @@ void __fastcall TSynchronizeController::StartStop(TObject * Sender,
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::SynchronizeChange(
-  TObject * /*Sender*/, const AnsiString Directory, bool & SubdirsChanged)
+  TObject * /*Sender*/, const UnicodeString Directory, bool & SubdirsChanged)
 {
   try
   {
-    AnsiString RemoteDirectory;
-    AnsiString RootLocalDirectory;
+    UnicodeString RemoteDirectory;
+    UnicodeString RootLocalDirectory;
     RootLocalDirectory = IncludeTrailingBackslash(FSynchronizeParams.LocalDirectory);
     RemoteDirectory = UnixIncludeTrailingBackslash(FSynchronizeParams.RemoteDirectory);
 
-    AnsiString LocalDirectory = IncludeTrailingBackslash(Directory);
+    UnicodeString LocalDirectory = IncludeTrailingBackslash(Directory);
 
     assert(LocalDirectory.SubString(1, RootLocalDirectory.Length()) ==
       RootLocalDirectory);
@@ -191,10 +193,10 @@ void __fastcall TSynchronizeController::SynchronizeAbort(bool Close)
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::LogOperation(TSynchronizeOperation Operation,
-  const AnsiString FileName)
+  const UnicodeString FileName)
 {
   TSynchronizeLogEntry Entry;
-  AnsiString Message;
+  UnicodeString Message;
   switch (Operation)
   {
     case soDelete:
@@ -215,7 +217,7 @@ void __fastcall TSynchronizeController::LogOperation(TSynchronizeOperation Opera
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::SynchronizeLog(TSynchronizeLogEntry Entry,
-  const AnsiString Message)
+  const UnicodeString Message)
 {
   if (FSynchronizeLog != NULL)
   {
@@ -224,7 +226,7 @@ void __fastcall TSynchronizeController::SynchronizeLog(TSynchronizeLogEntry Entr
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::SynchronizeFilter(TObject * /*Sender*/,
-  const AnsiString DirectoryName, bool & Add)
+  const UnicodeString DirectoryName, bool & Add)
 {
   if ((FOptions != NULL) && (FOptions->Filter != NULL))
   {
@@ -235,12 +237,12 @@ void __fastcall TSynchronizeController::SynchronizeFilter(TObject * /*Sender*/,
       Add = FOptions->Filter->Find(ExtractFileName(DirectoryName), FoundIndex);
     }
   }
-  TFileMasks::TParams MaskParams; // size does not matter for directories
+  TFileMasks::TParams MaskParams; // size/time does not matter for directories
   Add = Add && FCopyParam.AllowTransfer(DirectoryName, osLocal, true, MaskParams);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::SynchronizeInvalid(
-  TObject * /*Sender*/, const AnsiString Directory, const AnsiString ErrorStr)
+  TObject * /*Sender*/, const UnicodeString Directory, const UnicodeString ErrorStr)
 {
   if (FOnSynchronizeInvalid != NULL)
   {

@@ -65,10 +65,10 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
   unsigned long Speed = 1024;
   while (Speed >= 8)
   {
-    Strings->Add(IntToStr(Speed));
+    Strings->Add(IntToStr(int(Speed)));
     Speed = Speed / 2;
   }
-  FHistory->AddObject("SpeedLimit", Strings);
+  FHistory->AddObject(L"SpeedLimit", Strings);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::Default()
@@ -78,11 +78,11 @@ void __fastcall TCustomWinConfiguration::Default()
   FShowAdvancedLoginOptions = FDefaultShowAdvancedLoginOptions;
   FInterface = FDefaultInterface;
   FLogView = lvNone;
-  FSynchronizeChecklist.WindowParams = "0;-1;-1;600;450;0";
-  FSynchronizeChecklist.ListParams = "1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1|0;1;2;3;4;5;6;7";
-  FFindFile.WindowParams = "646,481";
-  FFindFile.ListParams = "3;1|125,1;181,1;80,1;122,1|0;1;2;3";
-  FConsoleWin.WindowSize = "570,430";
+  FSynchronizeChecklist.WindowParams = L"0;-1;-1;600;450;0";
+  FSynchronizeChecklist.ListParams = L"1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1|0;1;2;3;4;5;6;7";
+  FFindFile.WindowParams = L"646,481";
+  FFindFile.ListParams = L"3;1|125,1;181,1;80,1;122,1|0;1;2;3";
+  FConsoleWin.WindowSize = L"570,430";
   FConfirmExitOnCompletion = true;
   FOperationProgressOnTop = true;
 
@@ -104,27 +104,27 @@ void __fastcall TCustomWinConfiguration::Saved()
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
 #define LASTELEM(ELEM) \
-  ELEM.SubString(ELEM.LastDelimiter(".>")+1, ELEM.Length() - ELEM.LastDelimiter(".>"))
+  ELEM.SubString(ELEM.LastDelimiter(L".>")+1, ELEM.Length() - ELEM.LastDelimiter(L".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
   if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
 #define REGCONFIG(CANCREATE) \
-  BLOCK("Interface", CANCREATE, \
+  BLOCK(L"Interface", CANCREATE, \
     KEY(Integer,  Interface); \
     KEY(Bool,     ShowAdvancedLoginOptions); \
     KEY(Bool,     ConfirmExitOnCompletion); \
   ) \
-  BLOCK("Logging", CANCREATE, \
+  BLOCK(L"Logging", CANCREATE, \
     KEY(Integer, LogView); \
   ) \
-  BLOCK("Interface\\SynchronizeChecklist", CANCREATE, \
+  BLOCK(L"Interface\\SynchronizeChecklist", CANCREATE, \
     KEY(String,   SynchronizeChecklist.WindowParams); \
     KEY(String,   SynchronizeChecklist.ListParams); \
   ); \
-  BLOCK("Interface\\FindFile", CANCREATE, \
+  BLOCK(L"Interface\\FindFile", CANCREATE, \
     KEY(String,   FindFile.WindowParams); \
     KEY(String,   FindFile.ListParams); \
   ); \
-  BLOCK("Interface\\ConsoleWin", CANCREATE, \
+  BLOCK(L"Interface\\ConsoleWin", CANCREATE, \
     KEY(String,   ConsoleWin.WindowSize); \
   ); \
 //---------------------------------------------------------------------------
@@ -134,13 +134,13 @@ void __fastcall TCustomWinConfiguration::SaveData(
   TGUIConfiguration::SaveData(Storage, All);
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) Storage->Write ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
+  #define KEY(TYPE, VAR) Storage->Write ## TYPE(LASTELEM(UnicodeString(TEXT(#VAR))), VAR)
   REGCONFIG(true);
   #undef KEY
 
   if (FHistory->Count > 0)
   {
-    if (Storage->OpenSubKey("History", true))
+    if (Storage->OpenSubKey(L"History", true))
     {
       try
       {
@@ -171,7 +171,7 @@ void __fastcall TCustomWinConfiguration::SaveData(
       }
     }
 
-    if (Storage->OpenSubKey("HistoryParams", true))
+    if (Storage->OpenSubKey(L"HistoryParams", true))
     {
       try
       {
@@ -225,14 +225,14 @@ void __fastcall TCustomWinConfiguration::LoadData(
   TGUIConfiguration::LoadData(Storage);
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
+  #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(UnicodeString(TEXT(#VAR))), VAR)
   #pragma warn -eas
   REGCONFIG(false);
   #pragma warn +eas
   #undef KEY
 
   DefaultHistory();
-  if (Storage->OpenSubKey("History", false))
+  if (Storage->OpenSubKey(L"History", false))
   {
     TStrings * Names = NULL;
     try
@@ -275,7 +275,7 @@ void __fastcall TCustomWinConfiguration::LoadData(
     }
   }
 
-  if (Storage->OpenSubKey("HistoryParams", false))
+  if (Storage->OpenSubKey(L"HistoryParams", false))
   {
     try
     {
@@ -314,8 +314,8 @@ void __fastcall TCustomWinConfiguration::LoadData(
 void __fastcall TCustomWinConfiguration::LoadAdmin(THierarchicalStorage * Storage)
 {
   TGUIConfiguration::LoadAdmin(Storage);
-  FDefaultInterface = TInterface(Storage->ReadInteger("DefaultInterfaceInterface", FDefaultInterface));
-  FDefaultShowAdvancedLoginOptions = Storage->ReadBool("DefaultInterfaceShowAdvancedLoginOptions", FDefaultShowAdvancedLoginOptions);
+  FDefaultInterface = TInterface(Storage->ReadInteger(L"DefaultInterfaceInterface", FDefaultInterface));
+  FDefaultShowAdvancedLoginOptions = Storage->ReadBool(L"DefaultInterfaceShowAdvancedLoginOptions", FDefaultShowAdvancedLoginOptions);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::RecryptPasswords()
@@ -350,7 +350,7 @@ void __fastcall TCustomWinConfiguration::SetInterface(TInterface value)
   SET_CONFIG_PROPERTY(Interface);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomWinConfiguration::SetHistory(const AnsiString Index,
+void __fastcall TCustomWinConfiguration::SetHistory(const UnicodeString Index,
   TStrings * value)
 {
   int I = FHistory->IndexOf(Index);
@@ -388,7 +388,7 @@ void __fastcall TCustomWinConfiguration::SetHistory(const AnsiString Index,
   }
 }
 //---------------------------------------------------------------------------
-TStrings * __fastcall TCustomWinConfiguration::GetHistory(const AnsiString Index)
+TStrings * __fastcall TCustomWinConfiguration::GetHistory(const UnicodeString Index)
 {
   int I = FHistory->IndexOf(Index);
   return I >= 0 ? dynamic_cast<TStrings *>(FHistory->Objects[I]) : FEmptyHistory;

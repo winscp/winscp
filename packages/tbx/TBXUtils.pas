@@ -173,7 +173,7 @@ type
     V3: TShadow;
     H3: TShadow;
   public
-    constructor Create(R1, R2: TRect; Size: Integer; Opacity: Byte; LoColor: Boolean);
+    constructor Create(R1, R2: TRect; TheSize: Integer; Opacity: Byte; LoColor: Boolean);
     destructor Destroy; override;
     procedure Show(ParentHandle: HWND);
     property SaveBits: Boolean read FSaveBits write SetSaveBits;
@@ -1634,7 +1634,7 @@ procedure TShadow.Render;
 var
   DstDC: HDC;
   SrcPos, DstPos: TPoint;
-  Size: TSize;
+  TheSize: TSize;
   BlendFunc: TBlendFunction;
 begin
   if FStyle <> ssLayered then Exit;
@@ -1647,8 +1647,8 @@ begin
     with BoundsRect do
     begin
       DstPos := Point(Left, Top);
-      Size.cx := Right - Left;
-      Size.cy := Bottom - Top;
+      TheSize.cx := Right - Left;
+      TheSize.cy := Bottom - Top;
     end;
     BlendFunc.BlendOp := 0;
     BlendFunc.BlendFlags := 0;
@@ -1657,8 +1657,8 @@ begin
 
     FBuffer := TBitmap.Create;
     FBuffer.PixelFormat := pf32bit;
-    FBuffer.Width := Size.cx;
-    FBuffer.Height := Size.cy;
+    FBuffer.Width := TheSize.cx;
+    FBuffer.Height := TheSize.cy;
 
     FillBuffer;
 
@@ -1666,7 +1666,7 @@ begin
       Handle,
       DstDC,
       @DstPos,
-      @Size,
+      @TheSize,
       FBuffer.Canvas.Handle,
       @SrcPos,
       0,
@@ -1689,7 +1689,7 @@ end;
 procedure TShadow.WMEraseBkgnd(var Message: TWMEraseBkgnd);
 var
   SrcPos, DstPos: TPoint;
-  Size: TSize;
+  TheSize: TSize;
   BlendFunc: TBlendFunction;
 begin
   if FStyle = ssAlphaBlend then
@@ -1703,14 +1703,14 @@ begin
     with BoundsRect do
     begin
       DstPos := Point(Left, Top);
-      Size.cx := Right - Left;
-      Size.cy := Bottom - Top;
+      TheSize.cx := Right - Left;
+      TheSize.cy := Bottom - Top;
     end;
 
     FBuffer := TBitmap.Create;
     FBuffer.PixelFormat := pf32bit;
-    FBuffer.Width := Size.cx;
-    FBuffer.Height := Size.cy;
+    FBuffer.Width := TheSize.cx;
+    FBuffer.Height := TheSize.cy;
 
     FillBuffer;
 
@@ -1719,8 +1719,8 @@ begin
     BlendFunc.BlendFlags := 0;
     BlendFunc.SourceConstantAlpha := FOpacity;
     BlendFunc.AlphaFormat := 1;
-    AlphaBlend(Message.DC, 0, 0, Size.cx, Size.cy,
-      FBuffer.Canvas.Handle, 0, 0, Size.cx, Size.cy, BlendFunc);
+    AlphaBlend(Message.DC, 0, 0, TheSize.cx, TheSize.cy,
+      FBuffer.Canvas.Handle, 0, 0, TheSize.cx, TheSize.cy, BlendFunc);
     FBuffer.Free;
 
     Message.Result := 1;
@@ -1804,7 +1804,7 @@ end;
 
 { TShadows }
 
-constructor TShadows.Create(R1, R2: TRect; Size: Integer; Opacity: Byte; LoColor: Boolean);
+constructor TShadows.Create(R1, R2: TRect; TheSize: Integer; Opacity: Byte; LoColor: Boolean);
 var
   R: TRect;
   R1Valid, R2Valid: Boolean;
@@ -1812,7 +1812,7 @@ begin
   if LoColor or
     ((@UpdateLayeredWindow = nil) and (@AlphaBlend = nil)) then
   begin
-    Size := Size div 2;
+    TheSize := TheSize div 2;
   end;
 
   R1Valid := not IsRectEmpty(R1);
@@ -1825,8 +1825,8 @@ begin
     if R1Valid then R := R1 else R:= R2;
     with R do
     begin
-      V1 := TVertShadow.Create(Rect(Right, Top + Size, Right + Size, Bottom), Opacity, LoColor, [seTopLeft]);
-      H1 := THorzShadow.Create(Rect(Left + Size, Bottom, Right + Size, Bottom + Size), Opacity, LoColor, [seTopLeft, seBottomRight])
+      V1 := TVertShadow.Create(Rect(Right, Top + TheSize, Right + TheSize, Bottom), Opacity, LoColor, [seTopLeft]);
+      H1 := THorzShadow.Create(Rect(Left + TheSize, Bottom, Right + TheSize, Bottom + TheSize), Opacity, LoColor, [seTopLeft, seBottomRight])
     end;
   end
   else
@@ -1840,16 +1840,16 @@ begin
         R2 := R1;
         R1 := R;
       end;
-      if R1.Left + Size < R2.Left then
-        H1 := THorzShadow.Create(Rect(R1.Left + Size, R1.Bottom, R2.Left, R1.Bottom + Size), Opacity, LoColor, [seTopLeft]);
-      H2 := THorzShadow.Create(Rect(R2.Left + Size, R2.Bottom, R2.Right + Size, R2.Bottom + Size), Opacity, LoColor, [seTopLeft, seBottomRight]);
-      V1 := TVertShadow.Create(Rect(R1.Right, R1.Top + Size, R1.Right + Size, R1.Bottom), Opacity, LoColor, [seTopLeft]);
+      if R1.Left + TheSize < R2.Left then
+        H1 := THorzShadow.Create(Rect(R1.Left + TheSize, R1.Bottom, R2.Left, R1.Bottom + TheSize), Opacity, LoColor, [seTopLeft]);
+      H2 := THorzShadow.Create(Rect(R2.Left + TheSize, R2.Bottom, R2.Right + TheSize, R2.Bottom + TheSize), Opacity, LoColor, [seTopLeft, seBottomRight]);
+      V1 := TVertShadow.Create(Rect(R1.Right, R1.Top + TheSize, R1.Right + TheSize, R1.Bottom), Opacity, LoColor, [seTopLeft]);
       if R1.Right > R2.Right then
-        H3 := THorzShadow.Create(Rect(R2.Right, R1.Bottom, R1.Right + Size, R1.Bottom + Size), Opacity, LoColor, [seTopLeft, seBottomRight]);
-      if R1.Right + Size < R2.Right then
-        V2 := TVertShadow.Create(Rect(R2.Right, R2.Top + Size, R2.Right + Size, R2.Bottom), Opacity, LoColor, [seTopLeft])
+        H3 := THorzShadow.Create(Rect(R2.Right, R1.Bottom, R1.Right + TheSize, R1.Bottom + TheSize), Opacity, LoColor, [seTopLeft, seBottomRight]);
+      if R1.Right + TheSize < R2.Right then
+        V2 := TVertShadow.Create(Rect(R2.Right, R2.Top + TheSize, R2.Right + TheSize, R2.Bottom), Opacity, LoColor, [seTopLeft])
       else
-        V2 := TVertShadow.Create(Rect(R2.Right, R2.Top + 1, R2.Right + Size, R2.Bottom), Opacity, LoColor, []);
+        V2 := TVertShadow.Create(Rect(R2.Right, R2.Top + 1, R2.Right + TheSize, R2.Bottom), Opacity, LoColor, []);
     end
     else if (R1.Right <= R2.Left + 2) or (R1.Left >= R2.Right - 2) then
     begin
@@ -1859,16 +1859,16 @@ begin
         R2 := R1;
         R1 := R;
       end;
-      if R1.Top + Size < R2.Top then
-        V1 := TVertShadow.Create(Rect(R1.Right, R1.Top + Size, R1.Right + Size, R2.Top), Opacity, LoColor, [seTopLeft]);
-      V2 := TVertShadow.Create(Rect(R2.Right, R2.Top + Size, R2.Right + Size, R2.Bottom + Size), Opacity, LoColor, [seTopLeft, seBottomRight]);
-      H1 := THorzShadow.Create(Rect(R1.Left + Size, R1.Bottom, R1.Right, R1.Bottom + Size), Opacity, LoColor, [seTopLeft]);
+      if R1.Top + TheSize < R2.Top then
+        V1 := TVertShadow.Create(Rect(R1.Right, R1.Top + TheSize, R1.Right + TheSize, R2.Top), Opacity, LoColor, [seTopLeft]);
+      V2 := TVertShadow.Create(Rect(R2.Right, R2.Top + TheSize, R2.Right + TheSize, R2.Bottom + TheSize), Opacity, LoColor, [seTopLeft, seBottomRight]);
+      H1 := THorzShadow.Create(Rect(R1.Left + TheSize, R1.Bottom, R1.Right, R1.Bottom + TheSize), Opacity, LoColor, [seTopLeft]);
       if R1.Bottom > R2.Bottom then
-        V3 := TVertShadow.Create(Rect(R1.Right, R2.Bottom, R1.Right + Size, R1.Bottom + Size), Opacity, LoColor, [seTopLeft, seBottomRight]);
-      if R1.Bottom + Size < R2.Bottom then
-        H2 := THorzShadow.Create(Rect(R2.Left + Size, R2.Bottom, R2.Right, R2.Bottom + Size), Opacity, LoColor, [seTopLeft])
+        V3 := TVertShadow.Create(Rect(R1.Right, R2.Bottom, R1.Right + TheSize, R1.Bottom + TheSize), Opacity, LoColor, [seTopLeft, seBottomRight]);
+      if R1.Bottom + TheSize < R2.Bottom then
+        H2 := THorzShadow.Create(Rect(R2.Left + TheSize, R2.Bottom, R2.Right, R2.Bottom + TheSize), Opacity, LoColor, [seTopLeft])
       else
-        H2 := THorzShadow.Create(Rect(R2.Left, R2.Bottom, R2.Right, R2.Bottom + Size), Opacity, LoColor, []);
+        H2 := THorzShadow.Create(Rect(R2.Left, R2.Bottom, R2.Right, R2.Bottom + TheSize), Opacity, LoColor, []);
     end;
   end;
 

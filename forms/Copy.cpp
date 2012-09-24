@@ -21,7 +21,7 @@
 #endif
 //---------------------------------------------------------------------------
 bool __fastcall DoCopyDialog(bool ToRemote,
-  bool Move, TStrings * FileList, AnsiString & TargetDirectory,
+  bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs, int * OutputOptions)
 {
   bool Result;
@@ -77,6 +77,8 @@ __fastcall TCopyDialog::TCopyDialog(TComponent* Owner)
   FCopyParamAttrs = 0;
   FPresetsMenu = new TPopupMenu(this);
 
+  HotTrackLabel(CopyParamLabel);
+
   UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
@@ -91,10 +93,10 @@ void __fastcall TCopyDialog::AdjustTransferControls()
   {
     if (!ToRemote && !Move && FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
-      AnsiString Label;
+      UnicodeString Label;
       if (FileList->Count == 1)
       {
-        AnsiString FileName;
+        UnicodeString FileName;
         if (!ToRemote) FileName = UnixExtractFileName(FFileList->Strings[0]);
           else FileName = ExtractFileName(FFileList->Strings[0]);
         Label = FMTLOAD(REMOTE_COPY_FILE, (FileName));
@@ -108,16 +110,16 @@ void __fastcall TCopyDialog::AdjustTransferControls()
     }
     else
     {
-      AnsiString TransferStr = LoadStr(!Move ? COPY_COPY : COPY_MOVE);
+      UnicodeString TransferStr = LoadStr(!Move ? COPY_COPY : COPY_MOVE);
       // currently the copy dialog is shown when downloading to temp folder
       // only for drag&drop downloads, for we dare to display d&d specific prompt
-      AnsiString DirectionStr =
+      UnicodeString DirectionStr =
         LoadStr(((Options & coTemp) != 0) ? COPY_TODROP :
           (RemotePaths() ? COPY_TOREMOTE : COPY_TOLOCAL));
 
       if (FileList->Count == 1)
       {
-        AnsiString FileName;
+        UnicodeString FileName;
         if (!ToRemote) FileName = UnixExtractFileName(FFileList->Strings[0]);
           else FileName = ExtractFileName(FFileList->Strings[0]);
         DirectoryLabel->Caption = FMTLOAD(COPY_FILE,
@@ -168,7 +170,7 @@ void __fastcall TCopyDialog::AdjustControls()
   EnableControl(LocalDirectoryBrowseButton, DirectoryEdit->Enabled);
   DirectoryLabel->FocusControl = DirectoryEdit;
 
-  AnsiString QueueLabel = LoadStr(COPY_BACKGROUND);
+  UnicodeString QueueLabel = LoadStr(COPY_BACKGROUND);
   if (FLAGCLEAR(Options, coNoQueue))
   {
     QueueLabel = FMTLOAD(COPY_QUEUE, (QueueLabel));
@@ -188,7 +190,7 @@ void __fastcall TCopyDialog::SetToRemote(bool value)
 {
   if (FToRemote != value)
   {
-    AnsiString ADirectory = DirectoryEdit->Text;
+    UnicodeString ADirectory = DirectoryEdit->Text;
     FToRemote = value;
     DirectoryEdit->Text = ADirectory;
 
@@ -243,7 +245,7 @@ bool __fastcall TCopyDialog::RemotePaths()
   return (ToRemote || FLAGSET(FOutputOptions, cooRemoteTransfer));
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TCopyDialog::GetFileMask()
+UnicodeString __fastcall TCopyDialog::GetFileMask()
 {
   return ExtractFileName(DirectoryEdit->Text, RemotePaths());
 }
@@ -270,21 +272,21 @@ TGUICopyParamType __fastcall TCopyDialog::GetParams()
   return FParams;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyDialog::SetDirectory(AnsiString value)
+void __fastcall TCopyDialog::SetDirectory(UnicodeString value)
 {
   if (!value.IsEmpty())
   {
     value = RemotePaths() ?
-      UnixIncludeTrailingBackslash(value) : IncludeTrailingBackslash(value);
+      UnicodeString(UnixIncludeTrailingBackslash(value)) : IncludeTrailingBackslash(value);
   }
   DirectoryEdit->Text = value + GetFileMask();
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TCopyDialog::GetDirectory()
+UnicodeString __fastcall TCopyDialog::GetDirectory()
 {
   assert(DirectoryEdit);
 
-  AnsiString Result = DirectoryEdit->Text;
+  UnicodeString Result = DirectoryEdit->Text;
   if (RemotePaths())
   {
     Result = UnixExtractFilePath(Result);
@@ -317,8 +319,8 @@ void __fastcall TCopyDialog::UpdateControls()
 {
   if (!ToRemote && FLAGSET(Options, coAllowRemoteTransfer))
   {
-    AnsiString Directory = DirectoryEdit->Text;
-    bool RemoteTransfer = !Directory.IsEmpty() && ExtractFileDrive(Directory).IsEmpty();
+    UnicodeString Directory = DirectoryEdit->Text;
+    bool RemoteTransfer = (Directory.Pos(L"\\") == 0) && (Directory.Pos(L"/") > 0);
     if (RemoteTransfer != FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
       FOutputOptions =
@@ -328,7 +330,7 @@ void __fastcall TCopyDialog::UpdateControls()
     }
   }
 
-  AnsiString InfoStr = FCopyParams.GetInfoStr("; ", CopyParamAttrs);
+  UnicodeString InfoStr = FCopyParams.GetInfoStr(L"; ", CopyParamAttrs);
   CopyParamLabel->Caption = InfoStr;
   CopyParamLabel->Hint = InfoStr;
   CopyParamLabel->ShowHint =
@@ -340,6 +342,10 @@ void __fastcall TCopyDialog::UpdateControls()
   EnableControl(QueueIndividuallyCheck,
     QueueCheck2->Enabled && QueueCheck2->Checked &&
     FileList && (FileList->Count > 1));
+
+  TransferSettingsButton->Style =
+    FLAGCLEAR(Options, coDoNotUsePresets) ?
+      TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::SetMove(bool value)
@@ -373,7 +379,7 @@ bool __fastcall TCopyDialog::Execute()
   // at start assume that copy param is current preset
   FPreset = GUIConfiguration->CopyParamCurrent;
   DirectoryEdit->Items = CustomWinConfiguration->History[
-    ToRemote ? "RemoteTarget" : "LocalTarget"];
+    ToRemote ? L"RemoteTarget" : L"LocalTarget"];
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
@@ -387,7 +393,7 @@ bool __fastcall TCopyDialog::Execute()
       }
       DirectoryEdit->SaveToHistory();
       CustomWinConfiguration->History[ToRemote ?
-        "RemoteTarget" : "LocalTarget"] = DirectoryEdit->Items;
+        L"RemoteTarget" : L"LocalTarget"] = DirectoryEdit->Items;
     }
     __finally
     {
@@ -404,8 +410,8 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
   {
     if (!RemotePaths() && ((Options & coTemp) == 0))
     {
-      AnsiString Dir = Directory;
-      AnsiString Drive = ExtractFileDrive(Dir);
+      UnicodeString Dir = Directory;
+      UnicodeString Drive = ExtractFileDrive(Dir);
       if (!DirectoryExists(Dir))
       {
         if (MessageDialog(FMTLOAD(CREATE_LOCAL_DIRECTORY, (Dir)),
@@ -441,7 +447,7 @@ void __fastcall TCopyDialog::LocalDirectoryBrowseButtonClick(
   TObject * /*Sender*/)
 {
   assert(!ToRemote);
-  AnsiString ADirectory;
+  UnicodeString ADirectory;
   // if we are duplicating, we have remote path there
   if (!RemotePaths())
   {
@@ -463,7 +469,7 @@ void __fastcall TCopyDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
 {
-  if (FLAGCLEAR(Options, coDoNotUsePresets))
+  if (FLAGCLEAR(Options, coDoNotUsePresets) && !SupportsSplitButton())
   {
     CopyParamListPopup(
       TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
@@ -471,7 +477,7 @@ void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
   }
   else
   {
-    CopyParamGroupDblClick(NULL);
+    CopyParamGroupClick(NULL);
   }
 }
 //---------------------------------------------------------------------------
@@ -489,7 +495,7 @@ void __fastcall TCopyDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyDialog::CopyParamGroupDblClick(TObject * /*Sender*/)
+void __fastcall TCopyDialog::CopyParamGroupClick(TObject * /*Sender*/)
 {
   if (CopyParamGroup->Enabled)
   {
@@ -521,3 +527,11 @@ void __fastcall TCopyDialog::CopyParamListPopup(TPoint P, int AdditionalOptions)
         cplSaveSettings),
     &FSaveSettings);
 }
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::TransferSettingsButtonDropDownClick(TObject * /*Sender*/)
+{
+  CopyParamListPopup(
+    TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
+    cplCustomizeDefault);
+}
+//---------------------------------------------------------------------------

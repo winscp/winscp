@@ -18,7 +18,7 @@
 #endif
 //---------------------------------------------------------------------------
 bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
-  TDirectRemoteCopy AllowDirectCopy, void *& Session, AnsiString & Target, AnsiString & FileMask,
+  TDirectRemoteCopy AllowDirectCopy, void *& Session, UnicodeString & Target, UnicodeString & FileMask,
   bool & DirectCopy)
 {
   bool Result;
@@ -55,8 +55,8 @@ void __fastcall TRemoteTransferDialog::Init(TStrings * Sessions,
   FAllowDirectCopy = AllowDirectCopy;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TRemoteTransferDialog::Execute(void *& Session, AnsiString & Target,
-  AnsiString & FileMask, bool & DirectCopy)
+bool __fastcall TRemoteTransferDialog::Execute(void *& Session, UnicodeString & Target,
+  UnicodeString & FileMask, bool & DirectCopy)
 {
   FCurrentSession = -1;
   for (int Index = 0; Index < SessionCombo->Items->Count; Index++)
@@ -69,7 +69,7 @@ bool __fastcall TRemoteTransferDialog::Execute(void *& Session, AnsiString & Tar
     }
   }
   assert(FCurrentSession >= 0);
-  DirectoryEdit->Items = CustomWinConfiguration->History["RemoteTarget"];
+  DirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteTarget"];
   DirectoryEdit->Text = UnixIncludeTrailingBackslash(Target) + FileMask;
   FDirectCopy = DirectCopy;
   NotDirectCopyCheck->Checked = !DirectCopy;
@@ -77,7 +77,7 @@ bool __fastcall TRemoteTransferDialog::Execute(void *& Session, AnsiString & Tar
   if (Result)
   {
     Session = SessionCombo->Items->Objects[SessionCombo->ItemIndex];
-    CustomWinConfiguration->History["RemoteTarget"] = DirectoryEdit->Items;
+    CustomWinConfiguration->History[L"RemoteTarget"] = DirectoryEdit->Items;
     Target = UnixExtractFilePath(DirectoryEdit->Text);
     FileMask = UnixExtractFileName(DirectoryEdit->Text);
     DirectCopy = !NotDirectCopyCheck->Checked;
@@ -136,7 +136,7 @@ void __fastcall TRemoteTransferDialog::FormCloseQuery(TObject * /*Sender*/,
         GUIConfiguration->ConfirmCommandSession)
     {
       TMessageParams Params(mpNeverAskAgainCheck);
-      int Answer = MessageDialog(LoadStr(REMOTE_COPY_COMMAND_SESSION),
+      unsigned int Answer = MessageDialog(LoadStr(REMOTE_COPY_COMMAND_SESSION),
         qtConfirmation, qaOK | qaCancel, HelpKeyword, &Params);
       if (Answer == qaNeverAskAgain)
       {

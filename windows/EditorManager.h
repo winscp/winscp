@@ -9,25 +9,25 @@ class TTerminalQueue;
 //---------------------------------------------------------------------------
 struct TEditedFileData
 {
-  AnsiString LocalRootDirectory;
-  AnsiString RemoteDirectory;
+  UnicodeString LocalRootDirectory;
+  UnicodeString RemoteDirectory;
   bool ForceText;
   TTerminal * Terminal;
   TTerminalQueue * Queue;
-  AnsiString SessionName;
-  AnsiString OriginalFileName;
-  AnsiString Command;
+  UnicodeString SessionName;
+  UnicodeString OriginalFileName;
+  UnicodeString Command;
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileChangedEvent)
-  (const AnsiString FileName, const TEditedFileData & Data, HANDLE CompleteEvent);
+  (const UnicodeString FileName, const TEditedFileData & Data, HANDLE CompleteEvent);
 typedef void __fastcall (__closure * TEditedFileReloadEvent)
-  (const AnsiString FileName, const TEditedFileData & Data);
+  (const UnicodeString FileName, const TEditedFileData & Data);
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
   (const TEditedFileData & Data, bool & KeepOpen);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileProcessEvent)
-  (const AnsiString FileName, TEditedFileData & Data, TObject * Token, void * Arg);
+  (const UnicodeString FileName, TEditedFileData & Data, TObject * Token, void * Arg);
 //---------------------------------------------------------------------------
 class TEditorManager
 {
@@ -36,23 +36,23 @@ public:
   __fastcall ~TEditorManager();
 
   bool __fastcall Empty(bool IgnoreClosed);
-  bool __fastcall CanAddFile(const AnsiString RemoteDirectory,
-    const AnsiString OriginalFileName, const AnsiString SessionName,
-    TObject *& Token, AnsiString & ExistingLocalRootDirectory,
-    AnsiString & ExistingLocalDirectory);
+  bool __fastcall CanAddFile(const UnicodeString RemoteDirectory,
+    const UnicodeString OriginalFileName, const UnicodeString SessionName,
+    TObject *& Token, UnicodeString & ExistingLocalRootDirectory,
+    UnicodeString & ExistingLocalDirectory);
   bool __fastcall CloseInternalEditors(TNotifyEvent CloseCallback);
   bool __fastcall CloseExternalFilesWithoutProcess();
 
-  void __fastcall AddFileInternal(const AnsiString FileName,
+  void __fastcall AddFileInternal(const UnicodeString FileName,
     const TEditedFileData & Data, TObject * Token);
-  void __fastcall AddFileExternal(const AnsiString FileName,
+  void __fastcall AddFileExternal(const UnicodeString FileName,
     const TEditedFileData & Data, HANDLE Process);
 
   void __fastcall Check();
 
   void __fastcall FileChanged(TObject * Token);
   void __fastcall FileReload(TObject * Token);
-  void __fastcall FileClosed(TObject * Token);
+  void __fastcall FileClosed(TObject * Token, bool Forced);
 
   void __fastcall ProcessFiles(TEditedFileProcessEvent Callback, void * Arg);
 
@@ -63,17 +63,18 @@ public:
 private:
   struct TFileData
   {
-    AnsiString FileName;
+    UnicodeString FileName;
     HANDLE Monitor;
     bool External;
     HANDLE Process;
     TObject * Token;
-    int Timestamp;
+    TDateTime Timestamp;
     TEditedFileData Data;
     bool Closed;
     HANDLE UploadCompleteEvent;
     TDateTime Opened;
     bool Reupload;
+    unsigned int Saves;
   };
 
   std::vector<TFileData> FFiles;

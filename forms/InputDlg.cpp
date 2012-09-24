@@ -28,8 +28,8 @@ void __fastcall InputDialogShow(void * Data, TObject * Sender)
   Token.OnInitialize(Sender, &Token.Data);
 }
 //---------------------------------------------------------------------------
-bool __fastcall InputDialog(const AnsiString ACaption,
-  const AnsiString APrompt, AnsiString & Value, AnsiString HelpKeyword,
+bool __fastcall InputDialog(const UnicodeString ACaption,
+  const UnicodeString APrompt, UnicodeString & Value, UnicodeString HelpKeyword,
   TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize)
 {
   TForm * Form;
@@ -40,11 +40,11 @@ bool __fastcall InputDialog(const AnsiString ACaption,
   int ButtonTop, ButtonWidth, ButtonHeight;
   bool Result = False;
   TInputDialogToken Token;
-  Form = new TForm(Application, 0); // bypass the VCL streaming (for Salamander)
+  Form = new TForm(GetFormOwner(), 0); // bypass the VCL streaming (for Salamander)
   try
   {
     // salam needs to override this in UseSystemSettings
-    Form->Position = poMainFormCenter;
+    Form->Position = poOwnerFormCenter;
     SetCorrectFormParent(Form);
     UseSystemSettingsPre(Form);
     if (OnInitialize != NULL)
@@ -124,14 +124,14 @@ bool __fastcall InputDialog(const AnsiString ACaption,
     TButton * Button;
     Button = new TButton(Form);
     Button->Parent = Form;
-    Button->Caption = Consts_SMsgDlgOK;
+    Button->Caption = Vcl_Consts_SMsgDlgOK;
     Button->ModalResult = mrOk;
     Button->Default = True;
     Button->SetBounds(ButtonsStart, ButtonTop, ButtonWidth, ButtonHeight);
 
     Button = new TButton(Form);
     Button->Parent = Form;
-    Button->Caption = Consts_SMsgDlgCancel;
+    Button->Caption = Vcl_Consts_SMsgDlgCancel;
     Button->ModalResult = mrCancel;
     Button->Cancel = True;
     Button->SetBounds(ButtonsStart + ButtonWidth + ButtonSpace, ButtonTop,
@@ -141,7 +141,7 @@ bool __fastcall InputDialog(const AnsiString ACaption,
     {
       Button = new TButton(Form);
       Button->Parent = Form;
-      Button->Caption = Consts_SMsgDlgHelp;
+      Button->Caption = Vcl_Consts_SMsgDlgHelp;
       Button->ModalResult = mrNone;
       Button->SetBounds(ButtonsStart + 2 * (ButtonWidth + ButtonSpace), ButtonTop,
         ButtonWidth, ButtonHeight);

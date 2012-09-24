@@ -145,6 +145,7 @@ type
     property ColumnClick default True;
     property Constraints;
     property Ctl3D;
+    property DoubleBuffered;
     property Enabled;
     property Font;
     property FlatScrollBars;
@@ -158,6 +159,7 @@ type
     property RowSelect;
     property ParentBiDiMode;
     property ParentColor default False;
+    property ParentDoubleBuffered;
     property ParentFont;
     property ParentShowHint;
     property PopupMenu;
@@ -309,6 +311,9 @@ var
 procedure Register;
 
 implementation
+
+uses
+  PasTools;
 
 const HDF_SORTUP = $400;
 const HDF_SORTDOWN = $200;
@@ -616,7 +621,7 @@ begin
           Invalidate;
           Exit;
         end;
-       HDN_ENDTRACK, HDN_ENDTRACKW:
+       HDN_ENDTRACKA, HDN_ENDTRACKW:
          begin
            SetColumnImages;
            FColumnIconPainted := False;
@@ -626,7 +631,7 @@ begin
              FOnHeaderEndTrack(Self);
            Exit;
          end;
-       HDN_DIVIDERDBLCLICK, HDN_DIVIDERDBLCLICKW:
+       HDN_DIVIDERDBLCLICKA, HDN_DIVIDERDBLCLICKW:
          {Due to a bug in D4 (until Update Pack 3) the column property is
           not updated by this message:}
          begin
@@ -741,33 +746,33 @@ procedure TCustomIEListView.SetDateTimeFormatString;
 var
   ShortDate: string;
 begin
-  ShortDate := UpperCase(ShortDateFormat);
+  ShortDate := UpperCase(FormatSettings.ShortDateFormat);
   {Create DateTime format string:}
   if (Pos('YYYY', UpperCase(ShortDate)) = 0) and
      (Pos('YY', UpperCase(ShortDate)) <> 0) then
   begin
     if Copy(UpperCase(ShortDate), Length(ShortDate) - 1, 2) = 'YY' then
     begin
-      FDateTimeFormatStr := ShortDateFormat + 'yy'
+      FDateTimeFormatStr := FormatSettings.ShortDateFormat + 'yy'
     end
       else
     if Copy(UpperCase(ShortDate), 1, 2) = 'YY' then
     begin
-      FDateTimeFormatStr := 'yy' + ShortDateFormat;
+      FDateTimeFormatStr := 'yy' + FormatSettings.ShortDateFormat;
     end
   end
     else
   begin
-    FDateTimeFormatStr := ShortDateFormat;
+    FDateTimeFormatStr := FormatSettings.ShortDateFormat;
   end;
 
   FDateFormatStr := FDateTimeFormatStr;
 
   if FDateTimeDisplay = dtdDateTimeSec then
-      FDateTimeFormatStr := FDateTimeFormatStr + '  ' + LongTimeFormat
+      FDateTimeFormatStr := FDateTimeFormatStr + '  ' + FormatSettings.LongTimeFormat
     else
   if fDateTimeDisplay = dtdDateTime then
-    FDateTimeFormatStr := FDateTimeFormatStr + '  ' + ShortTimeFormat;
+    FDateTimeFormatStr := FDateTimeFormatStr + '  ' + FormatSettings.ShortTimeFormat;
 end; {SetDateTimeFormatString}
 
 procedure TCustomIEListView.SortItems;

@@ -198,7 +198,7 @@ type
 
 implementation
 
-uses ImgList, TBXUxThemes;
+uses ImgList, UxTheme;
 
 var
   DefaultColorSet: TTBXCustomColorSet;

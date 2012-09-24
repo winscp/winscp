@@ -93,13 +93,13 @@ DWORD __fastcall TFileBuffer::LoadStream(TStream * Stream, const DWORD Len, bool
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,
-  bool & /*Token*/)
+  bool & Token)
 {
   assert(strlen(Source) <= 2);
   assert(strlen(Dest) <= 2);
 
   if (FLAGSET(Params, cpRemoveBOM) && (Size >= 3) &&
-      (memcmp(Data, "\xEF\xBB\xBF", 3) == 0))
+      (memcmp(Data, Bom, sizeof(Bom)) == 0))
   {
     Delete(0, 3);
   }
@@ -119,11 +119,8 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,
   // one character source EOL
   if (!Source[1])
   {
-    // Disabled, not worth risking it is not safe enough, for the bugfix release
-    #if 0
     bool PrevToken = Token;
     Token = false;
-    #endif
 
     for (int Index = 0; Index < Size; Index++)
     {
@@ -133,7 +130,6 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,
         Index++;
         Ptr++;
       }
-      #if 0
       // last buffer ended with the first char of wanted EOL format,
       // which got expanded to wanted format.
       // now we got the second char, so get rid of it.
@@ -141,15 +137,12 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,
       {
         Delete(Index, 1);
       }
-      #endif
       else if (*Ptr == Source[0])
       {
-        #if 0
         if ((*Ptr == Dest[0]) && (Index == Size - 1))
         {
           Token = true;
         }
-        #endif
 
         *Ptr = Dest[0];
         if (Dest[1])
@@ -259,4 +252,4 @@ int __fastcall TSafeHandleStream::Write(const void * Buffer, int Count)
     RaiseLastOSError();
   }
   return Result;
-};
+}

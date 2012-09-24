@@ -11,7 +11,7 @@ object PropertiesDialog: TPropertiesDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
@@ -48,7 +48,6 @@ object PropertiesDialog: TPropertiesDialog
     Height = 374
     ActivePage = CommonSheet
     Anchors = [akLeft, akTop, akRight, akBottom]
-    TabIndex = 0
     TabOrder = 0
     OnChange = PageControlChange
     object CommonSheet: TTabSheet
@@ -108,7 +107,6 @@ object PropertiesDialog: TPropertiesDialog
         UnixPath = True
         IndentHorizontal = 0
         IndentVertical = 0
-        AutoSizeVertical = False
         Align = alNone
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
@@ -152,7 +150,6 @@ object PropertiesDialog: TPropertiesDialog
         UnixPath = True
         IndentHorizontal = 0
         IndentVertical = 0
-        AutoSizeVertical = False
         Align = alNone
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
@@ -168,7 +165,7 @@ object PropertiesDialog: TPropertiesDialog
       object Label3: TLabel
         Left = 8
         Top = 203
-        Width = 58
+        Width = 59
         Height = 13
         Caption = 'Permissions:'
         FocusControl = RightsFrame
@@ -184,7 +181,7 @@ object PropertiesDialog: TPropertiesDialog
       object Label4: TLabel
         Left = 8
         Top = 138
-        Width = 32
+        Width = 33
         Height = 13
         Caption = 'Group:'
         FocusControl = GroupComboBox
@@ -192,7 +189,7 @@ object PropertiesDialog: TPropertiesDialog
       object Label5: TLabel
         Left = 8
         Top = 166
-        Width = 34
+        Width = 36
         Height = 13
         Caption = 'Owner:'
         FocusControl = OwnerComboBox
@@ -223,7 +220,6 @@ object PropertiesDialog: TPropertiesDialog
         Top = 135
         Width = 161
         Height = 21
-        ItemHeight = 13
         MaxLength = 50
         TabOrder = 1
         Text = 'GroupComboBox'
@@ -235,7 +231,6 @@ object PropertiesDialog: TPropertiesDialog
         Top = 163
         Width = 161
         Height = 21
-        ItemHeight = 13
         MaxLength = 50
         TabOrder = 2
         Text = 'OwnerComboBox'
@@ -272,7 +267,7 @@ object PropertiesDialog: TPropertiesDialog
       object Label6: TLabel
         Left = 13
         Top = 13
-        Width = 46
+        Width = 49
         Height = 13
         Caption = '&Algorithm:'
         FocusControl = ChecksumAlgEdit
@@ -312,7 +307,6 @@ object PropertiesDialog: TPropertiesDialog
         Height = 21
         AutoComplete = False
         Anchors = [akLeft, akTop, akRight]
-        ItemHeight = 13
         MaxLength = 250
         TabOrder = 0
         OnChange = ChecksumAlgEditChange

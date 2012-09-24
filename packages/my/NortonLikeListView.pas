@@ -10,6 +10,7 @@ type
   TCustomNortonLikeListView = class;
   TSelectMode = (smAll, smNone, smInvert);
   TNortonLikeMode = (nlOn, nlOff, nlKeyboard);
+  TSelectMethod = (smNoneYet, smMouse, smKeyboard);
   TSelectByMaskEvent = procedure(Control: TCustomNortonLikeListView; Select: Boolean) of object;
 
   TCustomNortonLikeListView = class(TCustomListView)
@@ -33,6 +34,7 @@ type
     FAnyAndAllSelectedImplicitly: Boolean;
     FLButtonDownShiftState: TShiftState;
     FLButtonDownPos: TPoint;
+    FLastSelectMethod: TSelectMethod;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
@@ -52,7 +54,9 @@ type
     { Protected declarations }
     FClearingItems: Boolean;
     FUpdatingSelection: Integer;
+    FNextCharToIgnore: Word;
     procedure CreateWnd; override;
+    procedure DestroyWnd; override;
     procedure BeginSelectionUpdate; virtual;
     procedure EndSelectionUpdate; virtual;
     function CanChangeSelection(Item: TListItem; Select: Boolean): Boolean; virtual;
@@ -91,6 +95,7 @@ type
     property MarkedCount: Integer read GetMarkedCount;
     property MarkedFile: TListItem read GetMarkedFile;
     property Valid: Boolean read GetValid;
+    property LastSelectMethod: TSelectMethod read FLastSelectMethod;
   end;
 
 type
@@ -203,6 +208,7 @@ begin
   FLastDeletedItem := nil;
   FUpdatingSelection := 0;
   FFocusingItem := False;
+  FLastSelectMethod := smNoneYet;
   // On Windows Vista, native GetNextItem for selection stops working once we
   // disallow deselecting any item (see ExCanChange).
   // So we need to manage selection state ourselves
@@ -219,6 +225,7 @@ begin
   FForceUpdateOnItemUnfocus :=
     (Win32MajorVersion > 6) or
     ((Win32MajorVersion = 6) and (Win32MinorVersion >= 1));
+  FNextCharToIgnore := 0;
 end;
 
 destructor TCustomNortonLikeListView.Destroy;
@@ -405,7 +412,7 @@ begin
   // disallow resizing of "invisible" (width=0) columns
   with PHDNotify(Message.NMHdr)^ do
     case Hdr.code of
-      HDN_BEGINTRACK, HDN_TRACK, HDN_BEGINTRACKW, HDN_TRACKW:
+      HDN_BEGINTRACKA, HDN_TRACKA, HDN_BEGINTRACKW, HDN_TRACKW:
         if not ColProperties.Visible[Item] then
         begin
           Message.Result := 1;
@@ -495,9 +502,11 @@ end;
 
 procedure TCustomNortonLikeListView.WMKeyDown(var Message: TWMKeyDown);
 var
+  PLastSelectMethod: TSelectMethod;
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
 begin
+  FNextCharToIgnore := 0;
   if (NortonLike <> nlOff) and (Message.CharCode = VK_INSERT) then
   begin
     if Items.Count > 0 then
@@ -507,16 +516,22 @@ begin
     end;
   end
     else
-  {if (NortonLike <> nlOff) and (Message.CharCode = VK_MULTIPLY) then
+  if Message.CharCode = VK_ADD then
   begin
-    SelectAll(smInvert)
-    Message.Result := 1;
+    FNextCharToIgnore := Word('+');
+    inherited;
   end
-    else }
-  if (Message.CharCode = VK_ADD) or (Message.CharCode = VK_SUBTRACT) then
+    else
+  if Message.CharCode = VK_SUBTRACT then
   begin
-    if DoSelectByMask((Message.CharCode = VK_ADD)) then
-      Message.Result := 1;
+    FNextCharToIgnore := Word('-');
+    inherited;
+  end
+    else
+  if Message.CharCode = VK_MULTIPLY then
+  begin
+    FNextCharToIgnore := Word('*');
+    inherited;
   end
     else
   if (NortonLike <> nlOff) and (Message.CharCode in [VK_LEFT, VK_RIGHT]) and
@@ -537,8 +552,10 @@ begin
   if (Message.CharCode in [VK_SPACE, VK_PRIOR, VK_NEXT, VK_END, VK_HOME, VK_LEFT,
     VK_UP, VK_RIGHT, VK_DOWN, VK_SELECT]) then
   begin
+    PLastSelectMethod := FLastSelectMethod;
     PDontSelectItem := FDontSelectItem;
     PDontUnSelectItem := FDontUnSelectItem;
+    FLastSelectMethod := smKeyboard;
     FDontSelectItem := FDontSelectItem or
       ((NortonLike <> nlOff) and
        ((KeyDataToShiftState(Message.KeyData) * [ssShift]) = []));
@@ -551,6 +568,7 @@ begin
     finally
       FDontSelectItem := PDontSelectItem;
       FDontUnSelectItem := PDontUnSelectItem;
+      FLastSelectMethod := PLastSelectMethod;
     end;
   end
     else inherited;
@@ -558,10 +576,11 @@ end;
 
 procedure TCustomNortonLikeListView.WMChar(var Message: TWMChar);
 var
+  PLastSelectMethod: TSelectMethod;
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
 begin
-  if Message.CharCode in [Word('+'), Word('-'), Word('*')] then
+  if Message.CharCode = FNextCharToIgnore then
   begin
     // ugly fix to avoid Windows beeping when these keys are processed by
     // WMKeyDown instead of here (WMChar)
@@ -579,9 +598,11 @@ begin
   end
     else
   begin
+    PLastSelectMethod := FLastSelectMethod;
     PDontSelectItem := FDontSelectItem;
     PDontUnSelectItem := FDontUnSelectItem;
     FDontSelectItem := FDontSelectItem or (NortonLike <> nlOff);
+    FLastSelectMethod := smKeyboard;
     FDontUnSelectItem :=
       FDontUnSelectItem or
       (NortonLike = nlOn) or
@@ -589,10 +610,12 @@ begin
     try
       inherited;
     finally
+      FLastSelectMethod := PLastSelectMethod;
       FDontSelectItem := PDontSelectItem;
       FDontUnSelectItem := PDontUnSelectItem;
     end;
   end;
+  FNextCharToIgnore := 0;
 end;
 
 procedure TCustomNortonLikeListView.FocusSomething;
@@ -615,6 +638,7 @@ end;
 procedure TCustomNortonLikeListView.FocusItem(Item: TListItem);
 var
   P: TPoint;
+  PLastSelectMethod: TSelectMethod;
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
   AParent: TWinControl;
@@ -623,8 +647,10 @@ begin
   if Focused then
   begin
     P := Item.GetPosition;
+    PLastSelectMethod := FLastSelectMethod;
     PDontSelectItem := FDontSelectItem;
     PDontUnSelectItem := FDontUnSelectItem;
+    FLastSelectMethod := smNoneYet;
     FDontSelectItem := True;
     FDontUnSelectItem := True;
     FFocusingItem := True;
@@ -638,6 +664,7 @@ begin
       SendMessage(AParent.Handle, WM_LBUTTONUP, MK_LBUTTON, MAKELPARAM(P.X, P.Y));
     finally
       FFocusingItem := False;
+      FLastSelectMethod := PLastSelectMethod;
       FDontSelectItem := PDontSelectItem;
       FDontUnSelectItem := PDontUnSelectItem;
     end;
@@ -677,6 +704,7 @@ end;
 
 procedure TCustomNortonLikeListView.WMLButtonDown(var Message: TWMLButtonDown);
 var
+  PLastSelectMethod: TSelectMethod;
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
   PSelectingImplicitly: Boolean;
@@ -685,9 +713,11 @@ var
   Item: TListItem;
 begin
   Shift := KeysToShiftState(Message.Keys);
+  PLastSelectMethod := FLastSelectMethod;
   PDontSelectItem := FDontSelectItem;
   PDontUnSelectItem := FDontUnSelectItem;
   PSelectingImplicitly := FSelectingImplicitly;
+  FLastSelectMethod := smMouse;
   FDontSelectItem := FDontSelectItem or ((NortonLike = nlOn) and ((Shift * [ssCtrl, ssShift]) = []));
   FDontUnSelectItem := FDontUnSelectItem or ((NortonLike = nlOn) and ((Shift * [ssCtrl]) = []));
   SelectingImplicitly := ((Shift * [ssCtrl, ssShift]) = []);
@@ -708,6 +738,7 @@ begin
   try
     inherited;
   finally
+    FLastSelectMethod := PLastSelectMethod;
     FDontSelectItem := PDontSelectItem;
     FDontUnSelectItem := PDontUnSelectItem;
     FSelectingImplicitly := PSelectingImplicitly;
@@ -716,6 +747,7 @@ end;
 
 procedure TCustomNortonLikeListView.WMRButtonDown(var Message: TWMRButtonDown);
 var
+  PLastSelectMethod: TSelectMethod;
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
   PSelectingImplicitly: Boolean;
@@ -723,9 +755,11 @@ var
   Shift: TShiftState;
 begin
   Shift := KeysToShiftState(Message.Keys);
+  PLastSelectMethod := FLastSelectMethod;
   PDontSelectItem := FDontSelectItem;
   PDontUnSelectItem := FDontUnSelectItem;
   PSelectingImplicitly := FSelectingImplicitly;
+  FLastSelectMethod := smMouse;
   FDontSelectItem := FDontSelectItem or (NortonLike = nlOn);
   FDontUnSelectItem := FDontUnSelectItem or (NortonLike = nlOn);
   SelectingImplicitly := ((Shift * [ssCtrl, ssShift]) = []);
@@ -735,6 +769,7 @@ begin
   try
     inherited;
   finally
+    FLastSelectMethod := PLastSelectMethod;
     FDontSelectItem := PDontSelectItem;
     FDontUnSelectItem := PDontUnSelectItem;
     FSelectingImplicitly := PSelectingImplicitly;
@@ -917,10 +952,23 @@ end; { EndUpdatingSelection }
 
 procedure TCustomNortonLikeListView.CreateWnd;
 begin
-  inherited;
+  try
+    Assert(ColProperties <> nil);
+    inherited;
 
-  Assert(ColProperties <> nil);
-  ColProperties.ListViewWndCreated;
+    ColProperties.ListViewWndCreated;
+  finally
+  end;
+end;
+
+procedure TCustomNortonLikeListView.DestroyWnd;
+begin
+  ColProperties.ListViewWndDestroying;
+  try
+    inherited;
+  finally
+    ColProperties.ListViewWndDestroyed;
+  end;
 end;
 
 procedure TCustomNortonLikeListView.LVMEditLabel(var Message: TMessage);
@@ -942,7 +990,7 @@ begin
   begin
     Delta := N - FFocused;
     // it takes little more than 500ms to trigger editing after click
-    Result := Delta > (750.0/(24*60*60*1000));
+    Result := Delta > (750.0/MSecsPerDay);
   end;
   FFocused := 0;
 end;

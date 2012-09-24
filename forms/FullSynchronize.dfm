@@ -15,7 +15,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
@@ -59,7 +59,6 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       MaxLength = 1000
       TabOrder = 2
       Text = 'RemoteDirectoryEdit'
@@ -72,7 +71,6 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       MaxLength = 1000
       TabOrder = 0
       Text = 'LocalDirectoryEdit'
@@ -164,6 +162,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     Caption = 'Transfer settin&gs...'
     TabOrder = 7
     OnClick = TransferSettingsButtonClick
+    OnDropDownClick = TransferSettingsButtonDropDownClick
   end
   object DirectionGroup: TGroupBox
     Left = 8
@@ -242,8 +241,8 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     Height = 50
     Caption = 'Transfer settings'
     TabOrder = 6
+    OnClick = CopyParamGroupClick
     OnContextPopup = CopyParamGroupContextPopup
-    OnDblClick = CopyParamGroupDblClick
     DesignSize = (
       417
       50)
@@ -256,7 +255,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       AutoSize = False
       Caption = 'CopyParamLabel'
       WordWrap = True
-      OnDblClick = CopyParamGroupDblClick
+      OnClick = CopyParamGroupClick
     end
   end
   object HelpButton: TButton

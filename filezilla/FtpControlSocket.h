@@ -22,6 +22,7 @@
 #include "structures.h"	// Hinzugefügt von der Klassenansicht
 #include "StdAfx.h"	// Hinzugefügt von der Klassenansicht
 #include "FileZillaApi.h"
+#include "FileZillaIntf.h"
 #include "ControlSocket.h"
 #if _MSC_VER > 1000
 #pragma once
@@ -52,7 +53,10 @@ public:
 	virtual void Connect(t_server &server);
 	virtual void OnTimer();
 	virtual BOOL IsReady();
-	virtual void List(BOOL bFinish, int nError=0, CServerPath path=CServerPath(), CString subdir="", int nListMode = 0);
+	virtual void List(BOOL bFinish, int nError=0, CServerPath path=CServerPath(), CString subdir=_MPT(""), int nListMode = 0);
+#ifdef MPEXT
+	virtual void ListFile(CServerPath path=CServerPath(), CString fileName="");
+#endif
 	virtual void FtpCommand(LPCTSTR pCommand);
 	virtual void Disconnect();
 	virtual void FileTransfer(t_transferfile *transferfile = 0, BOOL bFinish = FALSE, int nError = 0);
@@ -138,6 +142,7 @@ protected:
 	CString m_ServerName;
 	std::list<CStringA> m_RecvBuffer;
 	CTime m_LastRecvTime;
+	class CLogonData;
 	class CListData;
 	class CFileTransferData;
 	class CMakeDirData;
@@ -153,6 +158,8 @@ protected:
 	bool m_hasClntCmd;
 #ifdef MPEXT
 	bool m_hasMfmtCmd;
+	TFTPServerCapabilities m_serverCapabilities;
+	CStringA m_ListFile;
 #endif
 	bool m_isFileZilla;
 

@@ -26,7 +26,20 @@ Boolean __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList)
     ImportSessionList = new TStoredSessionList(true);
     ImportSessionList->DefaultSettings = SessionList->DefaultSettings;
 
-    ImportSessionList->Load(Configuration->PuttySessionsKey, true);
+    TRegistryStorage * Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
+    try
+    {
+      Storage->ForceAnsi = true;
+      if (Storage->OpenRootKey(false))
+      {
+        ImportSessionList->Load(Storage, false, true);
+      }
+    }
+    __finally
+    {
+      delete Storage;
+    }
+
     TSessionData * PuttySession =
       (TSessionData *)ImportSessionList->FindByName(GUIConfiguration->PuttySession);
     if (PuttySession != NULL)
@@ -43,8 +56,8 @@ Boolean __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList)
       if (ImportSessionsDialog->ImportKeys)
       {
         TStoredSessionList::ImportHostKeys(
-          Configuration->RegistryStorageKey + "\\" + Configuration->SshHostKeysSubKey,
-          Configuration->PuttyRegistryStorageKey + "\\" + Configuration->SshHostKeysSubKey,
+          Configuration->RegistryStorageKey + L"\\" + Configuration->SshHostKeysSubKey,
+          Configuration->PuttyRegistryStorageKey + L"\\" + Configuration->SshHostKeysSubKey,
           ImportSessionsDialog->SessionList, true);
       }
     }
@@ -111,7 +124,7 @@ void __fastcall TImportSessionsDialog::FormClose(TObject * /*Sender*/,
 }
 //---------------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::SessionListViewInfoTip(
-      TObject * /*Sender*/, TListItem * Item, AnsiString & InfoTip)
+      TObject * /*Sender*/, TListItem * Item, UnicodeString & InfoTip)
 {
   InfoTip = ((TSessionData*)Item->Data)->InfoTip;
 }

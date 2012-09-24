@@ -51,7 +51,7 @@ BOOL PASCAL GetStatus64(LPCTSTR lpszFileName, CFileStatus64& rStatus)
 	// attempt to fully qualify path first
 	if (!AfxFullPath(rStatus.m_szFullName, lpszFileName))
 	{
-		rStatus.m_szFullName[0] = '\0';
+		rStatus.m_szFullName[0] = _MPT('\0');
 		return FALSE;
 	}
 

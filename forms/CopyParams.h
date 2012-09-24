@@ -37,16 +37,16 @@ __published:
   TCheckBox *ReplaceInvalidCharsCheck;
   TCheckBox *CommonCalculateSizeCheck;
   TGroupBox *OtherGroup;
-  TLabel *ExclusionFileMaskLabel;
-  THistoryComboBox *ExcludeFileMaskCombo;
+  TLabel *IncludeFileMaskLabel;
+  THistoryComboBox *IncludeFileMaskCombo;
   TRadioButton *CCLowerCaseShortButton;
-  TComboBox *NegativeExcludeCombo;
   TComboEdit *RightsEdit;
   TCheckBox *IgnorePermErrorsCheck;
   TCheckBox *ClearArchiveCheck;
-  TStaticText *ExcludeFileMaskHintText;
+  TStaticText *IncludeFileMaskHintText;
   TLabel *SpeedLabel2;
   THistoryComboBox *SpeedCombo;
+  TButton *IncludeFileMaskButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ValidateMaskComboExit(TObject *Sender);
   void __fastcall RightsEditButtonClick(TObject *Sender);
@@ -54,8 +54,9 @@ __published:
   void __fastcall RightsEditContextPopup(TObject *Sender, TPoint &MousePos,
           bool &Handled);
   void __fastcall SpeedComboExit(TObject *Sender);
+  void __fastcall IncludeFileMaskButtonClick(TObject *Sender);
 private:
-  AnsiString FOrigMasks;
+  UnicodeString FOrigMasks;
   TCopyParamType * FParams;
   int FCopyParamAttrs;
   TRightsExtFrame * FRightsFrame;

@@ -38,9 +38,7 @@ function DirExists(Dir: string; var Attrs: Integer): Boolean; overload;
 function DiskSize(Drive: Byte): Int64;
 function ExtractFileNameOnly(Name: string): string;
 function FileOrDirExists(FileName: string): Boolean;
-function FormatSize(Size: Integer): string; overload;
-function FormatSize(Size: Cardinal): string; overload;
-function FormatSize(Size: Int64): string; overload;
+function FormatBytes(Bytes: Int64; UseOrders: Boolean = True; UseUnitsForBytes: Boolean = True): string;
 procedure FreePIDL(var PIDL: PItemIDList);
 function StrContains(Str1, Str2: string): Boolean;
 procedure StrTranslate(var Str: string; Code: string);
@@ -182,42 +180,21 @@ begin
     Delete(Result, Length(Result)-Length(Ext)+1, Length(Ext));
 end; {ExtractFileNameOnly}
 
-function FormatSize(Size: Integer): string;
+function FormatBytes(Bytes: Int64; UseOrders: Boolean; UseUnitsForBytes: Boolean): string;
 begin
-  Result := FormatSize(Cardinal(Abs(Size)));
-end; {FormatSize}
-
-function FormatSize(Size: Cardinal): string;
-var
-  i: Integer;
-  p: Integer;
-begin
-  p := 0;
-  i := 3;
-  Result := IntToStr(Size);
-  while i + p < Length(Result) do
+  if (not UseOrders) or (Bytes < Int64(100*1024)) then
   begin
-    Insert(ThousandSeparator, Result, Length(Result) - (i + p)+ 1);
-    Inc(p);
-    INC(i, 3);
-  end;
-end; {FormatSize}
-
-function FormatSize(Size: Int64): String;
-var
-  i: Integer;
-  p: Integer;
-begin
-  p := 0;
-  i := 3;
-  Result := IntToStr(Size);
-  while i + p < Length(Result) do
-  begin
-    Insert(ThousandSeparator, Result, Length(Result) - (i + p)+ 1);
-    Inc(p);
-    Inc(i, 3);
-  end;
-end; {FormatSize}
+    if UseUnitsForBytes then
+      Result := FormatFloat('#,##0 "B"', Bytes)
+    else
+      Result := FormatFloat('#,##0', Bytes)
+  end
+    else
+  if Bytes < Int64(100*1024*1024) then
+    Result := FormatFloat('#,##0 "KiB"', Bytes / 1024)
+  else
+    Result := FormatFloat('#,##0 "MiB"', Bytes / (1024*1024));
+end;
 
 procedure FreePIDL(var PIDL: PItemIDList);
 begin
@@ -262,7 +239,7 @@ begin
     Dir := Directory
   else
     Dir := nil;
-  Result := GetDiskFreeSpaceA(Dir, SectorsPerCluster, BytesPerSector,
+  Result := GetDiskFreeSpace(Dir, SectorsPerCluster, BytesPerSector,
     FreeClusters, TotalClusters);
   Temp := SectorsPerCluster * BytesPerSector;
   FreeAvailable := Temp * FreeClusters;
@@ -283,7 +260,7 @@ var
 begin
   Kernel := GetModuleHandle(Windows.Kernel32);
   if Kernel <> 0 then
-    @GetDiskFreeSpaceEx := GetProcAddress(Kernel, 'GetDiskFreeSpaceExA');
+    @GetDiskFreeSpaceEx := GetProcAddress(Kernel, 'GetDiskFreeSpaceExW');
   if not Assigned(GetDiskFreeSpaceEx) then
     GetDiskFreeSpaceEx := @BackfillGetDiskFreeSpaceEx;
 end;

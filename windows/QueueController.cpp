@@ -8,6 +8,7 @@
 #include <TextsWin.h>
 #include <GUITools.h>
 #include "QueueController.h"
+#include <BaseUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -248,7 +249,7 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
   assert((Item->Data == NULL) || (Item->Data == QueueItem));
   Item->Data = QueueItem;
 
-  AnsiString ProgressStr;
+  UnicodeString ProgressStr;
   int State = -1;
 
   switch (QueueItem->Status)
@@ -284,10 +285,10 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
 
   bool BlinkHide = QueueItemNeedsFrequentRefresh(QueueItem) &&
     !QueueItem->ProcessingUserAction &&
-    ((GetTickCount() % 1000) >= 500);
+    ((GetTickCount() % MSecsPerSec) >= (MSecsPerSec/2));
 
   int Image = -1;
-  AnsiString Values[5];
+  UnicodeString Values[5];
   TFileOperationProgressType * ProgressData = QueueItem->ProgressData;
   TQueueItem::TInfo * Info = QueueItem->Info;
 
@@ -326,7 +327,7 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
 
         if (ProgressStr.IsEmpty())
         {
-          ProgressStr = FORMAT("%d%%", (ProgressData->OverallProgress()));
+          ProgressStr = FORMAT(L"%d%%", (ProgressData->OverallProgress()));
         }
       }
       else if (ProgressData->Operation == foCalculateSize)
@@ -352,8 +353,8 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       if (ProgressData->Operation == Info->Operation)
       {
         Values[2] = FormatBytes(ProgressData->TransferedSize);
-        Values[3] = FORMAT("%s/s", (FormatBytes(ProgressData->CPS())));
-        Values[4] = FORMAT("%d%%", (ProgressData->TransferProgress()));
+        Values[3] = FORMAT(L"%s/s", (FormatBytes(ProgressData->CPS())));
+        Values[4] = FORMAT(L"%d%%", (ProgressData->TransferProgress()));
       }
     }
     else
@@ -364,9 +365,9 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
 
   Item->StateIndex = (!BlinkHide ? State : -1);
   Item->ImageIndex = (!BlinkHide ? Image : -1);
-  for (int Index = 0; Index < LENOF(Values); Index++)
+  for (size_t Index = 0; Index < LENOF(Values); Index++)
   {
-    if (Index < Item->SubItems->Count)
+    if (Index < static_cast<size_t>(Item->SubItems->Count))
     {
       Item->SubItems->Strings[Index] = Values[Index];
     }

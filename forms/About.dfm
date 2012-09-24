@@ -15,7 +15,7 @@ object AboutDialog: TAboutDialog
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = True
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   DesignSize = (
     388
     484)
@@ -3552,7 +3552,7 @@ object AboutDialog: TAboutDialog
     object Label7: TLabel
       Left = 8
       Top = 8
-      Width = 272
+      Width = 251
       Height = 41
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
@@ -3658,6 +3658,7 @@ object AboutDialog: TAboutDialog
       Caption = 'Copyright '#169' xxxx The OpenSSL Project'
     end
     object PuttyLicenseLabel: TStaticText
+      Tag = 1
       Left = 8
       Top = 80
       Width = 74
@@ -3688,9 +3689,9 @@ object AboutDialog: TAboutDialog
     object TBXHomepageLabel: TStaticText
       Left = 8
       Top = 341
-      Width = 122
+      Width = 142
       Height = 17
-      Caption = 'http://www.g32.org/tbx/'
+      Caption = 'http://indasoftware.com/tbx/'
       TabOrder = 5
       TabStop = True
     end
@@ -3761,7 +3762,7 @@ object AboutDialog: TAboutDialog
     object RegistrationSubjectLabel: TLabel
       Left = 8
       Top = 8
-      Width = 289
+      Width = 285
       Height = 65
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False

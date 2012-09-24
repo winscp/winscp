@@ -2,22 +2,18 @@
 #ifndef PreferencesH
 #define PreferencesH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <ComCtrls.hpp>
-#include <Comboedit.hpp>
-#include <Mask.hpp>
-#include <ComboEdit.hpp>
-
-#include "CopyParams.h"
+#include "ComboEdit.hpp"
+#include "GeneralSettings.h"
+#include "LogSettings.h"
+#include "UpDownEdit.hpp"
+#include <System.Classes.hpp>
+#include <Vcl.ComCtrls.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.Forms.hpp>
+#include <Vcl.Mask.hpp>
+#include <Vcl.StdCtrls.hpp>
+//----------------------------------------------------------------------------
 #include "GeneralSettings.h"
 #include "LogSettings.h"
 #include "UpDownEdit.hpp"
@@ -66,7 +62,6 @@ __published:
   TGroupBox *GroupBox2;
   TCheckBox *ShowFullAddressCheck;
   TTabSheet *TransferSheet;
-  TCopyParamsFrame *CopyParamsFrame;
   TTabSheet *EditorSheet;
   TGroupBox *EditorPreferenceGroup;
   TGroupBox *InternalEditorGroup;
@@ -149,10 +144,6 @@ __published:
   TRadioButton *PathInCaptionNoneButton;
   TTabSheet *UpdatesSheet;
   TGroupBox *UpdatesGroup;
-  TRadioButton *UpdatesNeverButton;
-  TRadioButton *UpdatesDailyButton;
-  TRadioButton *UpdatesWeeklyButton;
-  TRadioButton *UpdatesMonthlyButton;
   TGroupBox *UpdatesProxyGroup;
   TLabel *UpdatesProxyHostLabel;
   TLabel *UpdatesProxyPortLabel;
@@ -215,8 +206,6 @@ __published:
   TUpDownEdit *EditorTabSizeEdit;
   TCheckBox *ConfirmTransferringCheck;
   TGroupBox *UpdatesOptionsGroup;
-  TLabel *Label10;
-  TComboBox *UpdatesBetaVersionsCombo;
   TCheckBox *QueueIndividuallyCheck;
   TCheckBox *SessionReopenAutoIdleCheck;
   TCheckBox *RenameWholeNameCheck;
@@ -230,11 +219,35 @@ __published:
   TGroupBox *MasterPasswordGroup;
   TButton *SetMasterPasswordButton;
   TCheckBox *UseMasterPasswordCheck;
+  TTabSheet *NetworkSheet;
+  TGroupBox *ExternalIpAddressGroupBox;
+  TRadioButton *RetrieveExternalIpAddressButton;
+  TRadioButton *CustomExternalIpAddressButton;
+  TEdit *CustomExternalIpAddressEdit;
+  TCheckBox *FormatSizeBytesCheck;
+  TCheckBox *SessionReopenAutoStallCheck;
+  TLabel *SessionReopenAutoStallLabel;
+  TUpDownEdit *SessionReopenAutoStallEdit;
+  TLabel *SessionReopenAutoStallSecLabel;
+  TCheckBox *EnableQueueByDefaultCheck;
+  TLabel *Label11;
+  TComboBox *EditorEncodingCombo;
+  TGroupBox *CopyParamGroup;
+  TLabel *CopyParamLabel;
+  TButton *TransferSettingsButton;
+  TCheckBox *RefreshRemotePanelCheck;
+  TUpDownEdit *RefreshRemotePanelIntervalEdit;
+  TLabel *RefreshRemoteDirectoryUnitLabel;
+  TLabel *Label12;
+  TComboBox *UpdatesPeriodCombo;
+  TLabel *UpdatesBetaVersionsLabel;
+  TComboBox *UpdatesBetaVersionsCombo;
+  TCheckBox *CollectUsageCheck;
+  TButton *UsageViewButton;
+  TTabSheet *PanelRemoteSheet;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
-  void __fastcall FilenameEditExit(TObject *Sender);
-  void __fastcall FilenameEditChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall IconButtonClick(TObject *Sender);
   void __fastcall CustomCommandsViewData(TObject *Sender, TListItem *Item);
@@ -260,7 +273,7 @@ __published:
   void __fastcall EditorFontLabelDblClick(TObject *Sender);
   void __fastcall CopyParamListViewData(TObject *Sender, TListItem *Item);
   void __fastcall CopyParamListViewInfoTip(TObject *Sender,
-          TListItem *Item, AnsiString &InfoTip);
+          TListItem *Item, UnicodeString &InfoTip);
   void __fastcall CopyParamListViewDragDrop(TObject *Sender,
           TObject *Source, int X, int Y);
   void __fastcall UpDownCopyParamButtonClick(TObject *Sender);
@@ -283,9 +296,9 @@ __published:
   void __fastcall PuttyPathResetButtonClick(TObject *Sender);
   void __fastcall ExportButtonClick(TObject *Sender);
   void __fastcall PathEditBeforeDialog(TObject *Sender,
-          AnsiString &Name, bool &Action);
+          UnicodeString &Name, bool &Action);
   void __fastcall PathEditAfterDialog(TObject *Sender,
-          AnsiString &Name, bool &Action);
+          UnicodeString &Name, bool &Action);
   void __fastcall NavigationTreeCollapsing(TObject *Sender,
           TTreeNode *Node, bool &AllowCollapse);
   void __fastcall ListViewEndDrag(TObject *Sender,
@@ -293,11 +306,15 @@ __published:
   void __fastcall RandomSeedFileEditCreateEditDialog(TObject *Sender,
           TFileDialogKind DialogKind, TOpenDialog *&Dialog);
   void __fastcall SessionReopenTimeoutEditSetValue(TObject *Sender,
-          Extended Value, AnsiString &Text, bool &Handed);
+          Extended Value, UnicodeString &Text, bool &Handed);
   void __fastcall SessionReopenTimeoutEditGetValue(TObject *Sender,
-          AnsiString Text, Extended &Value, bool &Handed);
+          UnicodeString Text, Extended &Value, bool &Handed);
   void __fastcall UseMasterPasswordCheckClick(TObject *Sender);
   void __fastcall SetMasterPasswordButtonClick(TObject *Sender);
+  void __fastcall CopyParamGroupClick(TObject *Sender);
+  void __fastcall UsageViewButtonClick(TObject *Sender);
+
+
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
@@ -309,7 +326,8 @@ private:
   int FListViewDragSource;
   int FListViewDragDest;
   TPreferencesDialogData * FDialogData;
-  AnsiString FBeforeDialogPath;
+  UnicodeString FBeforeDialogPath;
+  TCopyParamType FCopyParams;
   TListViewScrollOnDragOver * FCustomCommandsScrollOnDragOver;
   TListViewScrollOnDragOver * FCopyParamScrollOnDragOver;
   TListViewScrollOnDragOver * FEditorScrollOnDragOver;
@@ -317,7 +335,7 @@ private:
   void __fastcall SetPreferencesMode(TPreferencesMode value);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
-  AnsiString __fastcall TabSample(AnsiString Values);
+  UnicodeString __fastcall TabSample(UnicodeString Values);
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);

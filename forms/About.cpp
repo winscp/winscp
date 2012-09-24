@@ -41,12 +41,12 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   UseSystemSettings(this);
   LinkLabel(HomepageLabel, LoadStr(HOMEPAGE_URL));
   LinkLabel(ForumUrlLabel, LoadStr(FORUM_URL));
-  LinkLabel(PuttyLicenseLabel, "", FirstScrollingControlEnter);
+  LinkLabel(PuttyLicenseLabel, L"", FirstScrollingControlEnter);
   LinkLabel(PuttyHomepageLabel, LoadStr(PUTTY_URL));
   LinkLabel(FileZillaHomepageLabel, LoadStr(FILEZILLA_URL));
   LinkLabel(OpenSSLHomepageLabel, LoadStr(OPENSSL_URL));
   LinkLabel(Toolbar2000HomepageLabel);
-  LinkLabel(TBXHomepageLabel, "", LastScrollingControlEnter);
+  LinkLabel(TBXHomepageLabel, L"", LastScrollingControlEnter);
   ApplicationLabel->ParentFont = true;
   ApplicationLabel->Font->Style = ApplicationLabel->Font->Style << fsBold;
   ApplicationLabel->Caption = AppName;
@@ -57,7 +57,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   OpenSSLVersionLabel->Caption = FMTLOAD(OPENSSL_BASED_ON, (LoadStr(OPENSSL_VERSION)));
   OpenSSLCopyrightLabel->Caption = LoadStr(OPENSSL_COPYRIGHT);
   WinSCPCopyrightLabel->Caption = LoadStr(WINSCP_COPYRIGHT);
-  AnsiString Translator = LoadStr(TRANSLATOR_INFO);
+  UnicodeString Translator = LoadStr(TRANSLATOR_INFO);
 
   if (Registration == NULL)
   {
@@ -71,14 +71,14 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     RegistrationSubjectLabel->Caption = Registration->Subject;
     if (Registration->Registered)
     {
-      AnsiString Text;
+      UnicodeString Text;
       Text = FORMAT(LoadStrPart(ABOUT_REGISTRATION_LICENSES, 1),
         (Registration->Licenses >= 0 ? IntToStr(Registration->Licenses) :
-          LoadStrPart(ABOUT_REGISTRATION_LICENSES, 2)));
+          UnicodeString(LoadStrPart(ABOUT_REGISTRATION_LICENSES, 2))));
       if (!Registration->NeverExpires)
       {
         Text = FMTLOAD(ABOUT_REGISTRATION_EXPIRES,
-          (Text, FormatDateTime("ddddd", Registration->Expiration)));
+          (Text, FormatDateTime(L"ddddd", Registration->Expiration)));
       }
       RegistrationLicensesLabel->Caption = Text;
       Text = FMTLOAD(ABOUT_REGISTRATION_PRODUCTID, (Registration->ProductId));
@@ -95,7 +95,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
       RegistrationLicensesLabel->Visible = false;
       FOnRegistrationLink = Registration->OnRegistrationLink;
       RegistrationProductIdLabel->Caption = LoadStr(ABOUT_REGISTRATION_LINK);
-      LinkLabel(RegistrationProductIdLabel, "");
+      LinkLabel(RegistrationProductIdLabel, L"");
     }
   }
 
@@ -109,7 +109,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   else
   {
     TranslatorLabel->Caption = LoadStr(TRANSLATOR_INFO);
-    AnsiString TranslatorUrl = LoadStr(TRANSLATOR_URL);
+    UnicodeString TranslatorUrl = LoadStr(TRANSLATOR_URL);
     if (!TranslatorUrl.IsEmpty())
     {
       LinkLabel(TranslatorUrlLabel, TranslatorUrl);
@@ -167,7 +167,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LoadData()
 {
-  AnsiString Version = FConfiguration->VersionStr;
+  UnicodeString Version = FConfiguration->VersionStr;
   if (!FConfiguration->ProductName.IsEmpty() &&
       (FConfiguration->Version != FConfiguration->ProductVersion))
   {

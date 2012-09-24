@@ -1,12 +1,12 @@
 object LogForm: TLogForm
   Left = 356
   Top = 178
-  Width = 467
-  Height = 341
   HelpType = htKeyword
   HelpKeyword = 'ui_log'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   Caption = 'Log'
+  ClientHeight = 303
+  ClientWidth = 451
   Color = clBtnFace
   Constraints.MinHeight = 170
   Constraints.MinWidth = 250
@@ -51,14 +51,13 @@ object LogForm: TLogForm
     0007E8000007E8000007F0000007E8000007E8000007F0000007E8000007E800
     0007F0000007F8000007F800000FFFFFFFFFFFFFFFFF}
   OldCreateOrder = False
-  Position = poDefaultPosOnly
   OnClose = FormClose
   PixelsPerInch = 96
   TextHeight = 13
   object StatusBar: TTBXStatusBar
     Left = 0
-    Top = 288
-    Width = 459
+    Top = 284
+    Width = 451
     Height = 19
     Panels = <
       item
@@ -73,7 +72,7 @@ object LogForm: TLogForm
   object TopDock: TTBXDock
     Left = 0
     Top = 0
-    Width = 459
+    Width = 451
     Height = 26
     AllowDrag = False
     object Toolbar: TTBXToolbar

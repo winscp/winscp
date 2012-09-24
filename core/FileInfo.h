@@ -6,7 +6,7 @@ struct TTranslation {
 };
 
 // Return pointer to file version info block
-void * __fastcall CreateFileInfo(AnsiString FileName);
+void * __fastcall CreateFileInfo(UnicodeString FileName);
 
 // Free file version info block memory
 void __fastcall FreeFileInfo(void * FileInfo);
@@ -21,12 +21,12 @@ unsigned __fastcall GetTranslationCount(void * FileInfo);
 TTranslation __fastcall GetTranslation(void * FileInfo, unsigned i);
 
 // Return the name of the specified language
-AnsiString __fastcall GetLanguage(Word Language);
+UnicodeString __fastcall GetLanguage(Word Language);
 
 // Return the value of the specified file version info string using the
 // specified translation
-AnsiString __fastcall GetFileInfoString(void * FileInfo,
-  TTranslation Translation, AnsiString StringName);
+UnicodeString __fastcall GetFileInfoString(void * FileInfo,
+  TTranslation Translation, UnicodeString StringName);
 
 int __fastcall CalculateCompoundVersion(int MajorVer,
   int MinorVer, int Release, int Build);

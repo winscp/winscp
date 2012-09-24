@@ -9,7 +9,6 @@ enum TQueueOperation { qoNone, qoGoTo, qoPreferences, qoItemUserAction,
   qoItemUp, qoItemDown, qoItemPause, qoItemResume, qoItemSpeed, qoPauseAll, qoResumeAll,
   qoOnceEmpty };
 class TCustomListView;
-class TCriticalSection;
 class TQueueItemProxy;
 class TTerminalQueueStatus;
 //---------------------------------------------------------------------------

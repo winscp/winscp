@@ -49,10 +49,10 @@ type
     Procedure DoOnSignalDelete;
   public
     constructor Create(Files: TstringList; TimeOut : DWord; SignalProc : TFileDeleteEvent);
-    Property Terminated;
-  Published
-    Property OnSignalDelete : TFileDeleteEvent Read fOnSignalDelete
-                                                     Write fOnSignalDelete;
+    property Terminated;
+  published
+    property OnSignalDelete : TFileDeleteEvent read fOnSignalDelete
+                                                     write fOnSignalDelete;
   end;
 
 

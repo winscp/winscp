@@ -15,7 +15,7 @@ object CustomCommandDialog: TCustomCommandDialog
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   DesignSize = (
     396
@@ -75,7 +75,6 @@ object CustomCommandDialog: TCustomCommandDialog
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       MaxLength = 250
       TabOrder = 1
       OnChange = ControlChange
@@ -153,7 +152,6 @@ object CustomCommandDialog: TCustomCommandDialog
       Top = 200
       Width = 184
       Height = 21
-      ItemHeight = 13
       TabOrder = 9
     end
   end

@@ -19,6 +19,7 @@ public:
 
 protected:
   HANDLE FThread;
+  TThreadID FThreadId;
   bool FFinished;
 
   virtual void __fastcall Execute() = 0;
@@ -38,17 +39,17 @@ protected:
   HANDLE FEvent;
   bool FTerminated;
 
-  __fastcall TSignalThread();
+  __fastcall TSignalThread(bool LowPriority);
   virtual __fastcall ~TSignalThread();
 
   bool __fastcall WaitForEvent();
+  int __fastcall WaitForEvent(unsigned int Timeout);
   virtual void __fastcall Execute();
   virtual void __fastcall ProcessEvent() = 0;
 };
 //---------------------------------------------------------------------------
 class TTerminal;
 class TQueueItem;
-class TCriticalSection;
 class TTerminalQueue;
 class TQueueItemProxy;
 class TTerminalQueueStatus;
@@ -76,6 +77,7 @@ public:
 
   __property bool IsEmpty = { read = GetIsEmpty };
   __property int TransfersLimit = { read = FTransfersLimit, write = SetTransfersLimit };
+  __property bool Enabled = { read = FEnabled, write = SetEnabled };
   __property TQueryUserEvent OnQueryUser = { read = FOnQueryUser, write = FOnQueryUser };
   __property TPromptUserEvent OnPromptUser = { read = FOnPromptUser, write = FOnPromptUser };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
@@ -103,9 +105,11 @@ protected:
   TCriticalSection * FItemsSection;
   int FFreeTerminals;
   TList * FTerminals;
+  TList * FForcedItems;
   int FTemporaryTerminals;
   int FOverallTerminals;
   int FTransfersLimit;
+  bool FEnabled;
   TDateTime FIdleInterval;
   TDateTime FLastIdle;
 
@@ -125,19 +129,12 @@ protected:
   void __fastcall TerminalFinished(TTerminalItem * TerminalItem);
   bool __fastcall TerminalFree(TTerminalItem * TerminalItem);
 
-  void __fastcall DoQueryUser(TObject * Sender, const AnsiString Query,
-    TStrings * MoreMessages, int Answers, const TQueryParams * Params, int & Answer,
-    TQueryType Type, void * Arg);
-  void __fastcall DoPromptUser(TTerminal * Terminal, TPromptKind Kind,
-    AnsiString Name, AnsiString Instructions, TStrings * Prompts,
-    TStrings * Results, bool & Result, void * Arg);
-  void __fastcall DoShowExtendedException(TTerminal * Terminal,
-    Exception * E, void * Arg);
   void __fastcall DoQueueItemUpdate(TQueueItem * Item);
   void __fastcall DoListUpdate();
   void __fastcall DoEvent(TQueueEvent Event);
 
   void __fastcall SetTransfersLimit(int value);
+  void __fastcall SetEnabled(bool value);
   bool __fastcall GetIsEmpty();
 };
 //---------------------------------------------------------------------------
@@ -154,10 +151,10 @@ public:
   {
     TFileOperation Operation;
     TOperationSide Side;
-    AnsiString Source;
-    AnsiString Destination;
-    AnsiString ModifiedLocal;
-    AnsiString ModifiedRemote;
+    UnicodeString Source;
+    UnicodeString Destination;
+    UnicodeString ModifiedLocal;
+    UnicodeString ModifiedRemote;
   };
 
   static bool __fastcall IsUserActionStatus(TStatus Status);
@@ -185,7 +182,7 @@ protected:
   void __fastcall SetProgress(TFileOperationProgressType & ProgressData);
   void __fastcall GetData(TQueueItemProxy * Proxy);
   void __fastcall SetCPSLimit(unsigned long CPSLimit);
-  virtual AnsiString __fastcall StartupDirectory() = 0;
+  virtual UnicodeString __fastcall StartupDirectory() = 0;
 };
 //---------------------------------------------------------------------------
 class TQueueItemProxy
@@ -196,7 +193,7 @@ friend class TTerminalQueue;
 
 public:
   bool __fastcall Update();
-  bool __fastcall ProcessUserAction(void * Arg = NULL);
+  bool __fastcall ProcessUserAction();
   bool __fastcall Move(bool Sooner);
   bool __fastcall Move(TQueueItemProxy * BeforeItem);
   bool __fastcall ExecuteNow();
@@ -264,23 +261,23 @@ protected:
   __fastcall TLocatedQueueItem(TTerminal * Terminal);
 
   virtual void __fastcall DoExecute(TTerminal * Terminal);
-  virtual AnsiString __fastcall StartupDirectory();
+  virtual UnicodeString __fastcall StartupDirectory();
 
 private:
-  AnsiString FCurrentDir;
+  UnicodeString FCurrentDir;
 };
 //---------------------------------------------------------------------------
 class TTransferQueueItem : public TLocatedQueueItem
 {
 public:
   __fastcall TTransferQueueItem(TTerminal * Terminal,
-    TStrings * FilesToCopy, const AnsiString & TargetDir,
+    TStrings * FilesToCopy, const UnicodeString & TargetDir,
     const TCopyParamType * CopyParam, int Params, TOperationSide Side);
   virtual __fastcall ~TTransferQueueItem();
 
 protected:
   TStrings * FFilesToCopy;
-  AnsiString FTargetDir;
+  UnicodeString FTargetDir;
   TCopyParamType * FCopyParam;
   int FParams;
 };
@@ -289,7 +286,7 @@ class TUploadQueueItem : public TTransferQueueItem
 {
 public:
   __fastcall TUploadQueueItem(TTerminal * Terminal,
-    TStrings * FilesToCopy, const AnsiString & TargetDir,
+    TStrings * FilesToCopy, const UnicodeString & TargetDir,
     const TCopyParamType * CopyParam, int Params);
 
 protected:
@@ -300,11 +297,88 @@ class TDownloadQueueItem : public TTransferQueueItem
 {
 public:
   __fastcall TDownloadQueueItem(TTerminal * Terminal,
-    TStrings * FilesToCopy, const AnsiString & TargetDir,
+    TStrings * FilesToCopy, const UnicodeString & TargetDir,
     const TCopyParamType * CopyParam, int Params);
 
 protected:
   virtual void __fastcall DoExecute(TTerminal * Terminal);
+};
+//---------------------------------------------------------------------------
+class TUserAction;
+class TTerminalThread : public TSignalThread
+{
+public:
+  __fastcall TTerminalThread(TTerminal * Terminal);
+  virtual __fastcall ~TTerminalThread();
+
+  void __fastcall TerminalOpen();
+  void __fastcall TerminalReopen();
+
+  void __fastcall Cancel();
+  void __fastcall Idle();
+
+  __property TNotifyEvent OnIdle = { read = FOnIdle, write = FOnIdle };
+  __property bool Cancelling = { read = FCancel };
+
+protected:
+  virtual void __fastcall ProcessEvent();
+
+private:
+  TTerminal * FTerminal;
+
+  TInformationEvent FOnInformation;
+  TQueryUserEvent FOnQueryUser;
+  TPromptUserEvent FOnPromptUser;
+  TExtendedExceptionEvent FOnShowExtendedException;
+  TDisplayBannerEvent FOnDisplayBanner;
+  TNotifyEvent FOnChangeDirectory;
+  TReadDirectoryEvent FOnReadDirectory;
+  TNotifyEvent FOnStartReadDirectory;
+  TReadDirectoryProgressEvent FOnReadDirectoryProgress;
+
+  TNotifyEvent FOnIdle;
+
+  TNotifyEvent FAction;
+  HANDLE FActionEvent;
+  TUserAction * FUserAction;
+
+  Exception * FException;
+  Exception * FIdleException;
+  bool FCancel;
+  bool FCancelled;
+  bool FPendingIdle;
+
+  DWORD FMainThread;
+  TCriticalSection * FSection;
+
+  void __fastcall WaitForUserAction(TUserAction * UserAction);
+  void __fastcall RunAction(TNotifyEvent Action);
+
+  static void __fastcall SaveException(Exception & E, Exception *& Exception);
+  static void __fastcall Rethrow(Exception *& Exception);
+  void __fastcall FatalAbort();
+  void __fastcall CheckCancel();
+
+  void __fastcall TerminalOpenEvent(TObject * Sender);
+  void __fastcall TerminalReopenEvent(TObject * Sender);
+
+  void __fastcall TerminalInformation(
+    TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase);
+  void __fastcall TerminalQueryUser(TObject * Sender,
+    const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
+    const TQueryParams * Params, unsigned int & Answer, TQueryType Type, void * Arg);
+  void __fastcall TerminalPromptUser(TTerminal * Terminal, TPromptKind Kind,
+    UnicodeString Name, UnicodeString Instructions,
+    TStrings * Prompts, TStrings * Results, bool & Result, void * Arg);
+  void __fastcall TerminalShowExtendedException(TTerminal * Terminal,
+    Exception * E, void * Arg);
+  void __fastcall TerminalDisplayBanner(TTerminal * Terminal,
+    UnicodeString SessionName, const UnicodeString & Banner,
+    bool & NeverShowAgain, int Options);
+  void __fastcall TerminalChangeDirectory(TObject * Sender);
+  void __fastcall TerminalReadDirectory(TObject * Sender, Boolean ReloadOnly);
+  void __fastcall TerminalStartReadDirectory(TObject * Sender);
+  void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress, bool & Cancel);
 };
 //---------------------------------------------------------------------------
 #endif

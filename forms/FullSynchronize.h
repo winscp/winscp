@@ -50,8 +50,9 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CopyParamGroupContextPopup(TObject *Sender,
           TPoint &MousePos, bool &Handled);
-  void __fastcall CopyParamGroupDblClick(TObject *Sender);
+  void __fastcall CopyParamGroupClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall TransferSettingsButtonDropDownClick(TObject *Sender);
 
 private:
   int FParams;
@@ -61,12 +62,12 @@ private:
   TUsableCopyParamAttrs FCopyParamAttrs;
   TCopyParamType FCopyParams;
   TPopupMenu * FPresetsMenu;
-  AnsiString FPreset;
-  AnsiString FSynchronizeBySizeCaption;
-  void __fastcall SetRemoteDirectory(const AnsiString value);
-  AnsiString __fastcall GetRemoteDirectory();
-  void __fastcall SetLocalDirectory(const AnsiString value);
-  AnsiString __fastcall GetLocalDirectory();
+  UnicodeString FPreset;
+  UnicodeString FSynchronizeBySizeCaption;
+  void __fastcall SetRemoteDirectory(const UnicodeString value);
+  UnicodeString __fastcall GetRemoteDirectory();
+  void __fastcall SetLocalDirectory(const UnicodeString value);
+  UnicodeString __fastcall GetLocalDirectory();
   void __fastcall SetMode(TSynchronizeMode value);
   TSynchronizeMode __fastcall GetMode();
   void __fastcall SetParams(int value);
@@ -77,7 +78,8 @@ private:
   void __fastcall SetCopyParams(const TCopyParamType & value);
   TCopyParamType __fastcall GetCopyParams();
   void __fastcall CopyParamClick(TObject * Sender);
-   int __fastcall ActualCopyParamAttrs();
+  int __fastcall ActualCopyParamAttrs();
+  void __fastcall CopyParamListPopup(TPoint P, int AdditionalOptions);
 
 public:
   __fastcall TFullSynchronizeDialog(TComponent* Owner);
@@ -85,8 +87,8 @@ public:
 
   bool __fastcall Execute();
 
-  __property AnsiString RemoteDirectory = { read = GetRemoteDirectory, write = SetRemoteDirectory };
-  __property AnsiString LocalDirectory = { read = GetLocalDirectory, write = SetLocalDirectory };
+  __property UnicodeString RemoteDirectory = { read = GetRemoteDirectory, write = SetRemoteDirectory };
+  __property UnicodeString LocalDirectory = { read = GetLocalDirectory, write = SetLocalDirectory };
   __property int Params = { read = GetParams, write = SetParams };
   __property TSynchronizeMode Mode = { read = GetMode, write = SetMode };
   __property bool SaveSettings = { read = GetSaveSettings, write = SetSaveSettings };

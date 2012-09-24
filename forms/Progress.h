@@ -2,21 +2,15 @@
 #ifndef ProgressH
 #define ProgressH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <ComCtrls.hpp>
-#include <PathLabel.hpp>
-
-#include <FileOperationProgress.h>
 #include "HistoryComboBox.hpp"
+#include "PathLabel.hpp"
+#include <System.Classes.hpp>
+#include <Vcl.ComCtrls.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.StdCtrls.hpp>
+//----------------------------------------------------------------------------
+#include <FileOperationProgress.h>
 //----------------------------------------------------------------------------
 class TProgressForm : public TForm
 {
@@ -55,9 +49,10 @@ __published:
   void __fastcall MinimizeButtonClick(TObject *Sender);
   void __fastcall SpeedComboExit(TObject *Sender);
   void __fastcall SpeedComboSelect(TObject *Sender);
-  void __fastcall SpeedComboKeyPress(TObject *Sender, char &Key);
+  void __fastcall SpeedComboKeyPress(TObject *Sender, wchar_t &Key);
   void __fastcall OnceDoneOperationComboSelect(TObject *Sender);
   void __fastcall OnceDoneOperationComboCloseUp(TObject *Sender);
+
 private:
   TCancelStatus FCancel;
   TFileOperationProgressType FData;
@@ -91,7 +86,7 @@ protected:
   void __fastcall ResetOnceDoneOperation();
 
 public:
-  static AnsiString __fastcall OperationName(TFileOperation Operation);
+  static UnicodeString __fastcall OperationName(TFileOperation Operation);
 
   virtual __fastcall ~TProgressForm();
   void __fastcall SetProgressData(TFileOperationProgressType & AData);

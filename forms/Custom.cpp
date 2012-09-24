@@ -14,13 +14,13 @@
 
 #include "Custom.h"
 //---------------------------------------------------------------------
-#ifndef NO_RESOURCES
 #pragma link "PasswordEdit"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
-__fastcall TCustomDialog::TCustomDialog(AnsiString AHelpKeyword)
-  : TForm(Application)
+__fastcall TCustomDialog::TCustomDialog(UnicodeString AHelpKeyword)
+  : TForm(GetFormOwner())
 {
   UseSystemSettings(this);
 
@@ -101,7 +101,7 @@ void __fastcall TCustomDialog::AddWinControl(TWinControl * Control)
   FCount++;
 }
 //---------------------------------------------------------------------------
-TLabel * __fastcall TCustomDialog::CreateLabel(AnsiString Label)
+TLabel * __fastcall TCustomDialog::CreateLabel(UnicodeString Label)
 {
   TLabel * Result = new TLabel(this);
   Result->Caption = Label;
@@ -186,9 +186,9 @@ void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
 class TSaveSessionDialog : public TCustomDialog
 {
 public:
-  __fastcall TSaveSessionDialog(TSessionData * OriginalSession, bool CanSavePassword);
+  __fastcall TSaveSessionDialog(TSessionData * OriginalSession, bool CanSavePassword, bool NotRecommendedSavingPassword);
 
-  bool __fastcall Execute(AnsiString & SessionName, bool & SavePassword);
+  bool __fastcall Execute(UnicodeString & SessionName, bool & SavePassword);
 
 protected:
   DYNAMIC void __fastcall DoShow();
@@ -202,7 +202,7 @@ private:
 };
 //---------------------------------------------------------------------------
 __fastcall TSaveSessionDialog::TSaveSessionDialog(
-    TSessionData * OriginalSession, bool CanSavePassword) :
+    TSessionData * OriginalSession, bool CanSavePassword, bool NotRecommendedSavingPassword) :
   TCustomDialog(HELP_SESSION_SAVE),
   FOriginalSession(OriginalSession)
 {
@@ -232,13 +232,14 @@ __fastcall TSaveSessionDialog::TSaveSessionDialog(
 
   SavePasswordCheck = new TCheckBox(this);
   SavePasswordCheck->Caption = LoadStr(
-    CustomWinConfiguration->UseMasterPassword ? SAVE_SESSION_PASSWORD_MASTER : SAVE_SESSION_PASSWORD);
+    NotRecommendedSavingPassword ? SAVE_SESSION_PASSWORD :
+      (CustomWinConfiguration->UseMasterPassword ? SAVE_SESSION_PASSWORD_MASTER : SAVE_SESSION_PASSWORD_RECOMMENDED));
   AddButtonControl(SavePasswordCheck);
 
   EnableControl(SavePasswordCheck, CanSavePassword);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSaveSessionDialog::Execute(AnsiString & SessionName, bool & SavePassword)
+bool __fastcall TSaveSessionDialog::Execute(UnicodeString & SessionName, bool & SavePassword)
 {
   SessionNameCombo->Text = SessionName;
   SavePasswordCheck->Checked = SavePassword;
@@ -253,7 +254,7 @@ bool __fastcall TSaveSessionDialog::Execute(AnsiString & SessionName, bool & Sav
 //---------------------------------------------------------------------------
 void __fastcall TSaveSessionDialog::DoShow()
 {
-  int P = SessionNameCombo->Text.LastDelimiter("/");
+  int P = SessionNameCombo->Text.LastDelimiter(L"/");
   if (P > 0)
   {
     SessionNameCombo->SetFocus();
@@ -280,12 +281,12 @@ void __fastcall TSaveSessionDialog::DoChange(bool & CanSubmit)
   TCustomDialog::DoChange(CanSubmit);
 }
 //---------------------------------------------------------------------------
-bool __fastcall DoSaveSessionDialog(AnsiString & SessionName,
-  bool * SavePassword, TSessionData * OriginalSession)
+bool __fastcall DoSaveSessionDialog(UnicodeString & SessionName,
+  bool * SavePassword, TSessionData * OriginalSession, bool NotRecommendedSavingPassword)
 {
   bool Result;
   TSaveSessionDialog * Dialog = new TSaveSessionDialog(
-    OriginalSession, (SavePassword != NULL));
+    OriginalSession, (SavePassword != NULL), NotRecommendedSavingPassword);
   try
   {
     bool Dummy = false;
@@ -302,7 +303,7 @@ bool __fastcall DoSaveSessionDialog(AnsiString & SessionName,
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall SessionNameValidate(const AnsiString & Text,
+void __fastcall SessionNameValidate(const UnicodeString & Text,
   TSessionData * RenamingSession)
 {
   TSessionData::ValidatePath(Text);
@@ -327,7 +328,7 @@ void __fastcall SessionNameValidate(const AnsiString & Text,
 class TShortCutDialog : public TCustomDialog
 {
 public:
-  __fastcall TShortCutDialog(const TShortCuts & ShortCuts, AnsiString HelpKeyword);
+  __fastcall TShortCutDialog(const TShortCuts & ShortCuts, UnicodeString HelpKeyword);
 
   bool __fastcall Execute(TShortCut & ShortCut);
 
@@ -335,7 +336,7 @@ private:
   TComboBox * ShortCutCombo;
 };
 //---------------------------------------------------------------------------
-__fastcall TShortCutDialog::TShortCutDialog(const TShortCuts & ShortCuts, AnsiString HelpKeyword) :
+__fastcall TShortCutDialog::TShortCutDialog(const TShortCuts & ShortCuts, UnicodeString HelpKeyword) :
   TCustomDialog(HelpKeyword)
 {
   Caption = LoadStr(SHORTCUT_CAPTION);
@@ -357,7 +358,7 @@ bool __fastcall TShortCutDialog::Execute(TShortCut & ShortCut)
 }
 //---------------------------------------------------------------------------
 bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
-  const TShortCuts & ShortCuts, AnsiString HelpKeyword)
+  const TShortCuts & ShortCuts, UnicodeString HelpKeyword)
 {
   bool Result;
   TShortCutDialog * Dialog = new TShortCutDialog(ShortCuts, HelpKeyword);

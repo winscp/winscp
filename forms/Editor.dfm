@@ -1,12 +1,12 @@
 object EditorForm: TEditorForm
   Left = 315
   Top = 186
-  Width = 625
-  Height = 419
   HelpType = htKeyword
   HelpKeyword = 'ui_editor'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   Caption = 'EditorForm'
+  ClientHeight = 381
+  ClientWidth = 609
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -26,7 +26,6 @@ object EditorForm: TEditorForm
     000000070000000700000003000000030000000100000021000000730000}
   KeyPreview = True
   OldCreateOrder = False
-  Position = poDefaultPosOnly
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
@@ -36,7 +35,7 @@ object EditorForm: TEditorForm
   object TopDock: TTBXDock
     Left = 0
     Top = 0
-    Width = 617
+    Width = 609
     Height = 26
     AllowDrag = False
     object ToolBar: TTBXToolbar
@@ -97,6 +96,18 @@ object EditorForm: TEditorForm
       end
       object TBXSeparatorItem4: TTBXSeparatorItem
       end
+      object Encoding: TTBXSubmenuItem
+        Caption = 'Encoding'
+        Hint = 'Change file encoding'
+        object DefaultEncoding: TTBXItem
+          Action = DefaultEncodingAction
+          RadioItem = True
+        end
+        object UTF8Encoding: TTBXItem
+          Action = UTF8EncodingAction
+          RadioItem = True
+        end
+      end
       object TBXItem13: TTBXItem
         Action = PreferencesAction
       end
@@ -109,12 +120,12 @@ object EditorForm: TEditorForm
   end
   object StatusBar: TTBXStatusBar
     Left = 0
-    Top = 363
-    Width = 617
+    Top = 359
+    Width = 609
     Panels = <
       item
         Caption = 'Line: 2000/20000'
-        Size = 130
+        Size = 150
         Tag = 0
       end
       item
@@ -125,6 +136,12 @@ object EditorForm: TEditorForm
       end
       item
         Caption = 'Character: 132 (0x56)'
+        ViewPriority = 90
+        Size = 150
+        Tag = 0
+      end
+      item
+        Caption = 'Encoding: UTF-8 X'
         ViewPriority = 90
         Size = 150
         Tag = 0
@@ -250,12 +267,20 @@ object EditorForm: TEditorForm
       ImageIndex = 15
       ShortCut = 16466
     end
+    object DefaultEncodingAction: TAction
+      Caption = 'AnsiX'
+      Hint = 'Default|Default system encoding (%s)'
+    end
+    object UTF8EncodingAction: TAction
+      Caption = 'UTF-8'
+      Hint = 'UTF-8|UTF-8 encoding'
+    end
   end
   object EditorImages: TImageList
     Left = 536
     Top = 56
     Bitmap = {
-      494C010111001300040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010111001300200010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000005000000001002000000000000050
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

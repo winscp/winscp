@@ -1,24 +1,29 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
+
 USEFORM("forms\CustomScpExplorer.cpp", CustomScpExplorerForm);
 USEFORM("forms\NonVisual.cpp", NonVisualDataModule); /* TDataModule: File Type */
 USEFORM("forms\ScpCommander.cpp", ScpCommanderForm);
 USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
+USEFORM("forms\Glyphs.cpp", GlyphsModule); /* TDataModule: File Type */
 //---------------------------------------------------------------------------
 #include <CoreMain.h>
 #include <WinInterface.h>
 #include <ProgParams.h>
 #include <VCLCommon.h>
+#include <Setup.h>
 //---------------------------------------------------------------------------
-WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
   int Result = 0;
   try
   {
     WinInitialize();
     Application->Initialize();
-    SetEnvironmentVariable("WINSCP_PATH",
+    Application->MainFormOnTaskBar = true;
+    Application->ModalPopupMode = pmAuto;
+    SetEnvironmentVariable(L"WINSCP_PATH",
       ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName)).c_str());
     CoreInitialize();
     InitializeWinHelp();
@@ -27,6 +32,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     try
     {
       ConfigureInterface();
+      SetupInitialize();
 
       Application->Title = AppName;
       Result = Execute();

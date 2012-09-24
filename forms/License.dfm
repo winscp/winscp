@@ -10,7 +10,7 @@ object LicenseDialog: TLicenseDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   DesignSize = (
     504
     320)

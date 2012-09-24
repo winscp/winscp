@@ -1,20 +1,19 @@
 inherited ScpCommanderForm: TScpCommanderForm
   Left = 162
   Top = 0
-  Width = 845
-  Height = 708
   HelpType = htKeyword
   HelpKeyword = 'ui_commander'
   Caption = 'ScpCommanderForm'
+  ClientHeight = 670
+  ClientWidth = 829
   OldCreateOrder = True
   PixelsPerInch = 96
   TextHeight = 13
   object Splitter: TSplitter [0]
     Left = 313
-    Top = 209
+    Top = 229
     Width = 5
-    Height = 267
-    Cursor = crHSplit
+    Height = 247
     Hint = 
       '|Drag to change ratio of file panels. Double click to make width' +
       ' of file panels equal.'
@@ -28,7 +27,7 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   inherited TopDock: TTBXDock
     Width = 829
-    Height = 209
+    Height = 208
     object MenuToolbar: TTBXToolbar
       Left = 0
       Top = 0
@@ -295,6 +294,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           HelpKeyword = 'ui_queue#managing_the_queue'
           Hint = 'Queue list commands'
           OnPopup = QueueSubmenuItemPopup
+          object QueueEnableItem2: TTBXItem
+            Action = NonVisualDataModule.QueueEnableAction
+          end
           object TBXItem46: TTBXItem
             Action = NonVisualDataModule.QueueGoToAction
           end
@@ -393,14 +395,14 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXSeparatorItem29: TTBXSeparatorItem
           Hint = 'E'
         end
+        object TBXItem115: TTBXItem
+          Action = NonVisualDataModule.CloseSessionAction
+        end
         object TBXSubmenuItem21: TTBXSubmenuItem
           Action = NonVisualDataModule.OpenedSessionsAction
         end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction
-        end
-        object TBXItem115: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction
         end
       end
       object TBXSubmenuItem9: TTBXSubmenuItem
@@ -497,6 +499,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXSeparatorItem20: TTBXSeparatorItem
           Hint = 'E'
         end
+        object SessionsTabsAction3: TTBXItem
+          Action = NonVisualDataModule.SessionsTabsAction
+        end
         object TBXItem73: TTBXItem
           Action = NonVisualDataModule.CommandLinePanelAction
         end
@@ -568,7 +573,6 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object SessionColorPalette: TTBXColorPalette
             PaletteOptions = [tpoCustomImages]
-            OnChange = SessionColorPaletteChange
           end
           object TBXSeparatorItem51: TTBXSeparatorItem
             Hint = 'E'
@@ -759,7 +763,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object SelectionToolbar: TTBXToolbar
       Left = 0
-      Top = 78
+      Top = 77
       Caption = 'Selection'
       DockPos = 0
       DockRow = 3
@@ -790,7 +794,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object PreferencesToolbar: TTBXToolbar
       Left = 0
-      Top = 52
+      Top = 51
       Caption = 'Preferences'
       DockPos = 0
       DockRow = 2
@@ -827,37 +831,26 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 25
       Caption = 'Session'
-      DockMode = dmCannotFloat
       DockPos = 0
       DockRow = 1
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = True
-      Stretch = True
       TabOrder = 0
-      OnResize = ToolBarResize
-      OnGetBaseSize = ToolbarGetBaseSize
       object TBXItem123: TTBXItem
         Action = NonVisualDataModule.NewSessionAction
-      end
-      object TBXItem219: TTBXItem
-        Action = NonVisualDataModule.DuplicateSessionAction
-      end
-      object TBXSeparatorItem34: TTBXSeparatorItem
-      end
-      object SessionCombo: TTBXComboBoxItem
-        EditWidth = 114
-        DropDownList = True
-        MaxVisibleItems = 15
-      end
-      object TBXItem124: TTBXItem
-        Action = NonVisualDataModule.CloseSessionAction
-      end
-      object TBXSeparatorItem35: TTBXSeparatorItem
       end
       object TBXSubmenuItem23: TTBXSubmenuItem
         Action = NonVisualDataModule.SavedSessionsAction
         Options = [tboDropdownArrow]
+      end
+      object TBXSeparatorItem34: TTBXSeparatorItem
+      end
+      object TBXItem124: TTBXItem
+        Action = NonVisualDataModule.CloseSessionAction
+      end
+      object TBXItem219: TTBXItem
+        Action = NonVisualDataModule.DuplicateSessionAction
       end
       object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction
@@ -865,7 +858,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object CommandToolbar: TTBXToolbar
       Left = 0
-      Top = 104
+      Top = 103
       Caption = 'Standard'
       DockPos = -5
       DockRow = 4
@@ -907,7 +900,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object SortToolbar: TTBXToolbar
       Left = 0
-      Top = 130
+      Top = 129
       Caption = 'Sort'
       DockPos = -8
       DockRow = 5
@@ -947,7 +940,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object CommandsToolbar: TTBXToolbar
       Left = 0
-      Top = 156
+      Top = 155
       Caption = 'Commands'
       DockPos = 0
       DockRow = 6
@@ -983,7 +976,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object UpdatesToolbar: TTBXToolbar
       Left = 0
-      Top = 182
+      Top = 181
       Caption = 'Updates'
       DockPos = -7
       DockRow = 7
@@ -1025,7 +1018,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object TransferToolbar: TTBXToolbar
       Left = 40
-      Top = 182
+      Top = 181
       Caption = 'Transfer settings'
       DockMode = dmCannotFloat
       DockPos = 44
@@ -1059,7 +1052,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object UploadDownloadToolbar: TTBXToolbar
       Left = 170
-      Top = 182
+      Top = 181
       Caption = 'Upload/Download'
       DockPos = 170
       DockRow = 7
@@ -1077,7 +1070,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object CustomCommandsToolbar: TTBXToolbar
       Left = 226
-      Top = 182
+      Top = 181
       Caption = 'Custom Commands'
       DockPos = 225
       DockRow = 7
@@ -1090,9 +1083,9 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   inherited RemotePanel: TPanel
     Left = 318
-    Top = 209
+    Top = 229
     Width = 511
-    Height = 267
+    Height = 247
     Constraints.MinHeight = 220
     Constraints.MinWidth = 185
     TabOrder = 1
@@ -1102,11 +1095,12 @@ inherited ScpCommanderForm: TScpCommanderForm
       Width = 511
       Height = 15
       UnixPath = True
+      AutoSizeVertical = True
       HotTrack = True
       OnGetStatus = RemotePathLabelGetStatus
       OnPathClick = RemotePathLabelPathClick
       AutoSize = False
-      AutoSizeVertical = True
+      Transparent = False
       OnDblClick = PathLabelDblClick
     end
     inherited RemotePanelSplitter: TSplitter
@@ -1121,7 +1115,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Align = alTop
     end
     inherited RemoteStatusBar: TTBXStatusBar
-      Top = 248
+      Top = 228
       Width = 511
       SimplePanel = True
     end
@@ -1129,7 +1123,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 142
       Width = 511
-      Height = 97
+      Height = 77
       Constraints.MinHeight = 70
       NortonLike = nlOn
       OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
@@ -1145,7 +1139,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 45
       Align = alTop
       Constraints.MinHeight = 30
-      HideSelection = False
       TabStop = False
     end
     object RemoteTopDock: TTBXDock
@@ -1153,6 +1146,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 0
       Width = 511
       Height = 79
+      Color = clBtnFace
       FixAlign = True
       object RemoteHistoryToolbar: TTBXToolbar
         Left = 0
@@ -1230,13 +1224,17 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem169: TTBXItem
           Action = NonVisualDataModule.RemoteOpenDirAction
         end
+        object TBXItem229: TTBXItem
+          Action = NonVisualDataModule.RemoteFilterAction
+        end
       end
     end
     object RemoteBottomDock: TTBXDock
       Left = 0
-      Top = 239
+      Top = 219
       Width = 511
       Height = 9
+      Color = clBtnFace
       FixAlign = True
       Position = dpBottom
     end
@@ -1245,7 +1243,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Top = 532
     Width = 829
     Height = 116
-    TabOrder = 3
+    TabOrder = 2
     inherited QueueView2: TListView
       Width = 829
       Height = 90
@@ -1255,27 +1253,34 @@ inherited ScpCommanderForm: TScpCommanderForm
       Width = 829
     end
   end
+  inherited SessionsPageControl: TPageControl
+    Top = 208
+    Width = 829
+  end
   object LocalPanel: TPanel
     Left = 0
-    Top = 209
+    Top = 229
     Width = 313
-    Height = 267
+    Height = 247
     Align = alLeft
     BevelOuter = bvNone
+    Color = clWindow
     Constraints.MinHeight = 220
     Constraints.MinWidth = 185
+    ParentBackground = False
     TabOrder = 0
     object LocalPathLabel: TPathLabel
       Left = 0
       Top = 79
       Width = 313
       Height = 15
+      AutoSizeVertical = True
       HotTrack = True
       OnGetStatus = LocalPathLabelGetStatus
       OnPathClick = LocalPathLabelPathClick
       AutoSize = False
-      AutoSizeVertical = True
       PopupMenu = NonVisualDataModule.LocalPanelPopup
+      Transparent = False
       OnDblClick = PathLabelDblClick
     end
     object LocalPanelSplitter: TSplitter
@@ -1294,7 +1299,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalStatusBar: TTBXStatusBar
       Left = 0
-      Top = 248
+      Top = 228
       Width = 313
       Height = 19
       Panels = <>
@@ -1308,11 +1313,13 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 142
       Width = 313
-      Height = 97
+      Height = 77
       Align = alClient
       Constraints.MinHeight = 70
+      DoubleBuffered = True
       FullDrag = True
       HideSelection = False
+      ParentDoubleBuffered = False
       PopupMenu = NonVisualDataModule.LocalDirViewPopup
       TabOrder = 1
       ViewStyle = vsReport
@@ -1325,6 +1332,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
       HeaderImages = GlyphsModule.ArrowImages
       AddParentDir = True
+      OnSelectItem = DirViewSelectItem
       OnLoaded = DirViewLoaded
       OnDDDragEnter = LocalFileControlDDDragEnter
       OnDDDragLeave = FileControlDDDragLeave
@@ -1347,6 +1355,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 0
       Width = 313
       Height = 79
+      Color = clBtnFace
       FixAlign = True
       object LocalHistoryToolbar: TTBXToolbar
         Left = 0
@@ -1422,6 +1431,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem163: TTBXItem
           Action = NonVisualDataModule.LocalOpenDirAction
         end
+        object TBXItem228: TTBXItem
+          Action = NonVisualDataModule.LocalFilterAction
+        end
       end
     end
     object LocalDriveView: TDriveView
@@ -1439,18 +1451,21 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnDDMenuPopup = LocalFileControlDDMenuPopup
       Align = alTop
       Constraints.MinHeight = 30
+      DoubleBuffered = True
       HideSelection = False
       Indent = 19
       ParentColor = False
+      ParentDoubleBuffered = False
       TabOrder = 2
       TabStop = False
       OnEnter = LocalDriveViewEnter
     end
     object LocalBottomDock: TTBXDock
       Left = 0
-      Top = 239
+      Top = 219
       Width = 313
       Height = 9
+      Color = clBtnFace
       FixAlign = True
       Position = dpBottom
     end

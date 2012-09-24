@@ -67,7 +67,7 @@ private:
   TButton * FDefaultButton;
   TButton * FCancelButton;
   bool FPopingContextMenu;
-  AnsiString FAddXToDirectoriesSuffix;
+  UnicodeString FAddXToDirectoriesSuffix;
   bool FInitialized;
 
   void __fastcall CycleRights(int Group);
@@ -81,8 +81,8 @@ private:
   void __fastcall SetAllowUndef(bool value);
   void __fastcall SetRights(const TRights & value);
   void __fastcall SetStates(TRights::TRight Right, TRights::TState value);
-  AnsiString __fastcall GetText();
-  void __fastcall SetText(AnsiString value);
+  UnicodeString __fastcall GetText();
+  void __fastcall SetText(UnicodeString value);
 
 public:
   virtual __fastcall ~TRightsFrame();
@@ -96,7 +96,7 @@ public:
   __property TCheckBox * Checks[TRights::TRight Right] = { read = GetChecks };
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property TRights Rights = { read = GetRights, write = SetRights };
-  __property AnsiString Text = { read = GetText, write = SetText };
+  __property UnicodeString Text = { read = GetText, write = SetText };
   __property bool Popup = { read = FPopup, write = SetPopup };
   __property TWinControl * PopupParent = { read = FPopupParent, write = FPopupParent };
 

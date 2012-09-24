@@ -2,25 +2,17 @@
 #ifndef SynchronizeChecklistH
 #define SynchronizeChecklistH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <ComCtrls.hpp>
-#include <HistoryComboBox.hpp>
-#include <PathLabel.hpp>
-
-#include <Terminal.h>
-#include <ImgList.hpp>
-#include <Menus.hpp>
 #include "IEListView.hpp"
 #include "NortonLikeListView.hpp"
+#include <System.Classes.hpp>
+#include <Vcl.ComCtrls.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.ImgList.hpp>
+#include <Vcl.Menus.hpp>
+#include <Vcl.StdCtrls.hpp>
+//----------------------------------------------------------------------------
+#include <Terminal.h>
 //----------------------------------------------------------------------------
 class TSynchronizeChecklistDialog : public TForm
 {
@@ -46,10 +38,6 @@ __published:
   TButton *CustomCommandsButton;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
-  void __fastcall ListViewAdvancedCustomDrawSubItem(
-    TCustomListView * Sender, TListItem * Item, int SubItem,
-    TCustomDrawState State, TCustomDrawStage Stage,
-    bool & DefaultDraw);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
           TStatusPanel *Panel, const TRect &Rect);
   void __fastcall StatusBarMouseMove(TObject *Sender, TShiftState Shift,
@@ -74,11 +62,14 @@ __published:
   void __fastcall ListViewContextPopup(TObject *Sender, TPoint &MousePos,
           bool &Handled);
   void __fastcall CustomCommandsButtonClick(TObject *Sender);
+  void __fastcall ListViewAdvancedCustomDrawSubItem(TCustomListView *Sender, TListItem *Item,
+          int SubItem, TCustomDrawState State, TCustomDrawStage Stage, bool &DefaultDraw);
+
 
 public:
   __fastcall TSynchronizeChecklistDialog(TComponent * AOwner,
-    TSynchronizeMode Mode, int Params, const AnsiString LocalDirectory,
-    const AnsiString RemoteDirectory, TCustomCommandMenuEvent OnCustomCommandMenu);
+    TSynchronizeMode Mode, int Params, const UnicodeString LocalDirectory,
+    const UnicodeString RemoteDirectory, TCustomCommandMenuEvent OnCustomCommandMenu);
   virtual __fastcall ~TSynchronizeChecklistDialog();
 
   bool __fastcall Execute(TSynchronizeChecklist * Checklist);
@@ -88,8 +79,8 @@ protected:
   TSynchronizeChecklist * FChecklist;
   TSynchronizeMode FMode;
   int FParams;
-  AnsiString FLocalDirectory;
-  AnsiString FRemoteDirectory;
+  UnicodeString FLocalDirectory;
+  UnicodeString FRemoteDirectory;
   TImageList * FSystemImageList;
   TWndMethod FOrigListViewWindowProc;
   int FTotals[1 + TSynchronizeChecklist::ActionCount];
@@ -98,7 +89,7 @@ protected:
   bool FChangingItemChecked;
   bool FChangingItemIgnore;
   bool FChangingItemMass;
-  AnsiString FGeneralHint;
+  UnicodeString FGeneralHint;
   TCustomCommandMenuEvent FOnCustomCommandMenu;
 
   void __fastcall UpdateControls();

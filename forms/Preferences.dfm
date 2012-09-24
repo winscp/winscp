@@ -11,7 +11,7 @@ object PreferencesDialog: TPreferencesDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
@@ -214,13 +214,13 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
           object BeepOnFinishAfterEdit: TUpDownEdit
-            Left = 283
-            Top = 18
+            Left = 282
+            Top = 19
             Width = 57
             Height = 21
             Alignment = taRightJustify
-            Increment = 15
-            MaxValue = 999
+            Increment = 15.000000000000000000
+            MaxValue = 999.000000000000000000
             MaxLength = 3
             TabOrder = 1
             OnChange = ControlChange
@@ -252,27 +252,12 @@ object PreferencesDialog: TPreferencesDialog
           Left = 5
           Top = 5
           Width = 372
-          Height = 273
+          Height = 309
           Anchors = [akLeft, akTop, akRight]
           TabOrder = 0
           DesignSize = (
             372
-            273)
-          inherited LoggingGroup: TGroupBox
-            Width = 357
-            DesignSize = (
-              357
-              198)
-            inherited LogFileNameEdit2: TFilenameEdit
-              Width = 303
-            end
-            inherited LogFilePanel: TPanel
-              Width = 305
-            end
-          end
-          inherited LogGroup: TGroupBox
-            Width = 357
-          end
+            309)
         end
       end
       object GeneralSheet: TTabSheet
@@ -327,7 +312,7 @@ object PreferencesDialog: TPreferencesDialog
           object Label7: TLabel
             Left = 16
             Top = 23
-            Width = 77
+            Width = 82
             Height = 13
             Caption = 'Interface &theme:'
             FocusControl = ThemeCombo
@@ -339,7 +324,6 @@ object PreferencesDialog: TPreferencesDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
             TabOrder = 0
             Items.Strings = (
               'System'
@@ -359,49 +343,17 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object PanelsRemoteDirectoryGroup: TGroupBox
-          Left = 8
-          Top = 231
-          Width = 357
-          Height = 73
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'Remote directory'
-          TabOrder = 2
-          DesignSize = (
-            357
-            73)
-          object ShowInaccesibleDirectoriesCheck: TCheckBox
-            Left = 16
-            Top = 21
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Show in&accesible directories'
-            TabOrder = 0
-            OnClick = ControlChange
-          end
-          object AutoReadDirectoryAfterOpCheck: TCheckBox
-            Left = 16
-            Top = 44
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Auto&matically refresh directory after operation (Ctrl+Alt+R)'
-            TabOrder = 1
-            OnClick = ControlChange
-          end
-        end
         object PanelsCommonGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
-          Height = 142
+          Height = 195
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             357
-            142)
+            195)
           object ShowHiddenFilesCheck: TCheckBox
             Left = 16
             Top = 21
@@ -414,7 +366,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DefaultDirIsHomeCheck: TCheckBox
             Left = 16
-            Top = 67
+            Top = 69
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -424,7 +376,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DeleteToRecycleBinCheck: TCheckBox
             Left = 16
-            Top = 44
+            Top = 45
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -434,7 +386,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object PreservePanelStateCheck: TCheckBox
             Left = 16
-            Top = 90
+            Top = 93
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -444,7 +396,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RenameWholeNameCheck: TCheckBox
             Left = 16
-            Top = 113
+            Top = 117
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -452,29 +404,49 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 4
             OnClick = ControlChange
           end
+          object FormatSizeBytesCheck: TCheckBox
+            Left = 16
+            Top = 141
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Show file sizes in short &format'
+            TabOrder = 5
+            OnClick = ControlChange
+          end
+          object FullRowSelectCheck: TCheckBox
+            Left = 16
+            Top = 165
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Full row select'
+            TabOrder = 6
+            OnClick = ControlChange
+          end
         end
         object DoubleClickGroup: TGroupBox
           Left = 8
-          Top = 154
+          Top = 208
           Width = 357
-          Height = 72
+          Height = 74
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Double-click'
           TabOrder = 1
           DesignSize = (
             357
-            72)
+            74)
           object DoubleClickActionLabel: TLabel
             Left = 16
             Top = 21
-            Width = 174
+            Width = 179
             Height = 13
             Caption = '&Operation to perform on double-click:'
             FocusControl = DoubleClickActionCombo
           end
           object CopyOnDoubleClickConfirmationCheck: TCheckBox
             Left = 32
-            Top = 44
+            Top = 45
             Width = 308
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -489,7 +461,6 @@ object PreferencesDialog: TPreferencesDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
             TabOrder = 0
             OnChange = ControlChange
             Items.Strings = (
@@ -524,17 +495,17 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 38
           Width = 357
-          Height = 147
+          Height = 123
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Panels'
           TabOrder = 0
           DesignSize = (
             357
-            147)
+            123)
           object Label8: TLabel
             Left = 16
             Top = 21
-            Width = 110
+            Width = 116
             Height = 13
             Caption = '&Explorer-style selection:'
             FocusControl = NortonLikeModeCombo
@@ -566,7 +537,6 @@ object PreferencesDialog: TPreferencesDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
             TabOrder = 0
             OnChange = ControlChange
             Items.Strings = (
@@ -574,30 +544,20 @@ object PreferencesDialog: TPreferencesDialog
               'Mouse only'
               'Mouse and Keyboard')
           end
-          object FullRowSelectCheck: TCheckBox
+          object TreeOnLeftCheck: TCheckBox
             Left = 16
             Top = 93
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Full row select'
-            TabOrder = 3
-            OnClick = ControlChange
-          end
-          object TreeOnLeftCheck: TCheckBox
-            Left = 16
-            Top = 117
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
             Caption = 'Show &directory tree left of file list'
-            TabOrder = 4
+            TabOrder = 3
             OnClick = ControlChange
           end
         end
         object CommanderMiscGroup: TGroupBox
           Left = 8
-          Top = 194
+          Top = 170
           Width = 357
           Height = 53
           Anchors = [akLeft, akTop, akRight]
@@ -619,7 +579,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object CompareCriterionsGroup: TGroupBox
           Left = 8
-          Top = 257
+          Top = 233
           Width = 357
           Height = 74
           Anchors = [akLeft, akTop, akRight]
@@ -702,14 +662,37 @@ object PreferencesDialog: TPreferencesDialog
         Caption = 'Tran'
         ImageIndex = 6
         TabVisible = False
-        inline CopyParamsFrame: TCopyParamsFrame
-          Left = 0
-          Top = 0
-          Width = 529
-          Height = 353
-          HelpType = htKeyword
-          AutoScroll = False
+        object CopyParamGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 357
+          Height = 94
+          Caption = 'Transfer settings'
           TabOrder = 0
+          OnClick = CopyParamGroupClick
+          DesignSize = (
+            357
+            94)
+          object CopyParamLabel: TLabel
+            Left = 7
+            Top = 15
+            Width = 343
+            Height = 70
+            Anchors = [akLeft, akTop, akRight, akBottom]
+            AutoSize = False
+            Caption = 'CopyParamLabel'
+            WordWrap = True
+            OnClick = CopyParamGroupClick
+          end
+        end
+        object TransferSettingsButton: TButton
+          Left = 8
+          Top = 108
+          Width = 87
+          Height = 25
+          Caption = '&Edit...'
+          TabOrder = 1
+          OnClick = CopyParamGroupClick
         end
       end
       object EditorSheet: TTabSheet
@@ -727,62 +710,81 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 205
           Width = 357
-          Height = 130
+          Height = 146
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Internal editor options'
           TabOrder = 1
           DesignSize = (
             357
-            130)
+            146)
           object EditorFontLabel: TLabel
-            Left = 149
-            Top = 19
+            Left = 148
+            Top = 49
             Width = 199
-            Height = 98
+            Height = 88
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 'EditorFontLabel'
             Color = clBtnFace
             ParentColor = False
+            Transparent = False
             OnDblClick = EditorFontLabelDblClick
           end
           object Label9: TLabel
             Left = 16
-            Top = 79
-            Width = 69
+            Top = 47
+            Width = 71
             Height = 13
             Caption = '&Tabulator size:'
             FocusControl = EditorTabSizeEdit
           end
-          object EditorFontButton: TButton
+          object Label11: TLabel
             Left = 16
+            Top = 95
+            Width = 85
+            Height = 13
+            Caption = 'Default &encoding:'
+            FocusControl = EditorEncodingCombo
+          end
+          object EditorFontButton: TButton
+            Left = 148
             Top = 18
             Width = 105
             Height = 25
             Anchors = [akTop, akRight]
             Caption = '&Select font...'
-            TabOrder = 0
+            TabOrder = 3
             OnClick = EditorFontButtonClick
           end
           object EditorWordWrapCheck: TCheckBox
             Left = 16
-            Top = 52
+            Top = 20
             Width = 126
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Wrap long lines'
-            TabOrder = 1
+            TabOrder = 0
             OnClick = ControlChange
           end
           object EditorTabSizeEdit: TUpDownEdit
             Left = 16
-            Top = 96
+            Top = 64
             Width = 89
             Height = 21
             Alignment = taRightJustify
-            MaxValue = 99
-            MinValue = 1
-            Value = 1
+            MaxValue = 99.000000000000000000
+            MinValue = 1.000000000000000000
+            Value = 1.000000000000000000
+            MaxLength = 2
+            TabOrder = 1
+            OnChange = ControlChange
+          end
+          object EditorEncodingCombo: TComboBox
+            Left = 16
+            Top = 112
+            Width = 113
+            Height = 21
+            Style = csDropDownList
             MaxLength = 2
             TabOrder = 2
             OnChange = ControlChange
@@ -1221,14 +1223,14 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 357
-          Height = 174
+          Height = 198
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Background transfers'
           TabOrder = 0
           object Label5: TLabel
             Left = 16
             Top = 25
-            Width = 214
+            Width = 224
             Height = 13
             Caption = '&Maximal number of transfers at the same time:'
             FocusControl = QueueTransferLimitEdit
@@ -1239,56 +1241,64 @@ object PreferencesDialog: TPreferencesDialog
             Width = 73
             Height = 21
             Alignment = taRightJustify
-            MaxValue = 9
-            MinValue = 1
-            Value = 1
+            MaxValue = 9.000000000000000000
+            MinValue = 1.000000000000000000
+            Value = 1.000000000000000000
             MaxLength = 1
             TabOrder = 0
           end
           object QueueAutoPopupCheck: TCheckBox
             Left = 16
-            Top = 122
-            Width = 337
-            Height = 17
-            Caption = '&Automatically popup prompts of background transfers when idle'
-            TabOrder = 4
-          end
-          object QueueCheck: TCheckBox
-            Left = 16
-            Top = 50
-            Width = 337
-            Height = 17
-            Caption = '&Transfer on background by default'
-            TabOrder = 1
-          end
-          object RememberPasswordCheck: TCheckBox
-            Left = 16
             Top = 146
             Width = 337
             Height = 17
-            Caption = 'Remember &password of main session for background transfers'
+            Caption = '&Automatically popup prompts of background transfers when idle'
             TabOrder = 5
           end
-          object QueueNoConfirmationCheck: TCheckBox
-            Left = 16
-            Top = 98
-            Width = 337
-            Height = 17
-            Caption = '&No confirmations for background transfers'
-            TabOrder = 3
-          end
-          object QueueIndividuallyCheck: TCheckBox
+          object QueueCheck: TCheckBox
             Left = 16
             Top = 74
             Width = 337
             Height = 17
-            Caption = '&Transfer each file individually on background by default'
+            Caption = 'Transfer on &background by default'
             TabOrder = 2
+          end
+          object RememberPasswordCheck: TCheckBox
+            Left = 16
+            Top = 170
+            Width = 337
+            Height = 17
+            Caption = 'Remember &password of main session for background transfers'
+            TabOrder = 6
+          end
+          object QueueNoConfirmationCheck: TCheckBox
+            Left = 16
+            Top = 122
+            Width = 337
+            Height = 17
+            Caption = '&No confirmations for background transfers'
+            TabOrder = 4
+          end
+          object QueueIndividuallyCheck: TCheckBox
+            Left = 16
+            Top = 98
+            Width = 337
+            Height = 17
+            Caption = '&Transfer each file individually on background by default'
+            TabOrder = 3
+          end
+          object EnableQueueByDefaultCheck: TCheckBox
+            Left = 16
+            Top = 50
+            Width = 337
+            Height = 17
+            Caption = '&Enable queue processing by default'
+            TabOrder = 1
           end
         end
         object QueueViewGroup: TGroupBox
           Left = 8
-          Top = 188
+          Top = 212
           Width = 357
           Height = 99
           Anchors = [akLeft, akTop, akRight]
@@ -1467,7 +1477,7 @@ object PreferencesDialog: TPreferencesDialog
           object RandomSeedFileLabel: TLabel
             Left = 16
             Top = 24
-            Width = 85
+            Width = 86
             Height = 13
             Caption = '&Random seed file:'
             FocusControl = RandomSeedFileEdit
@@ -1515,7 +1525,7 @@ object PreferencesDialog: TPreferencesDialog
           object ResumeThresholdUnitLabel: TLabel
             Left = 136
             Top = 71
-            Width = 16
+            Width = 14
             Height = 13
             Caption = 'KiB'
             FocusControl = ResumeThresholdEdit
@@ -1553,8 +1563,8 @@ object PreferencesDialog: TPreferencesDialog
             Width = 84
             Height = 21
             Alignment = taRightJustify
-            Increment = 10
-            MaxValue = 4194304
+            Increment = 10.000000000000000000
+            MaxValue = 4194304.000000000000000000
             TabOrder = 2
             OnClick = ControlChange
           end
@@ -1563,14 +1573,14 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 139
           Width = 357
-          Height = 128
+          Height = 176
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Automatic reconnect'
           TabOrder = 1
           object SessionReopenAutoLabel: TLabel
             Left = 34
             Top = 72
-            Width = 80
+            Width = 82
             Height = 13
             Caption = '&Reconnect after:'
             FocusControl = SessionReopenAutoEdit
@@ -1578,26 +1588,42 @@ object PreferencesDialog: TPreferencesDialog
           object SessionReopenAutoSecLabel: TLabel
             Left = 254
             Top = 72
-            Width = 40
+            Width = 39
             Height = 13
             Caption = 'seconds'
             FocusControl = SessionReopenAutoEdit
           end
           object SessionReopenTimeoutLabel: TLabel
-            Left = 34
-            Top = 100
-            Width = 108
+            Left = 16
+            Top = 149
+            Width = 110
             Height = 13
             Caption = '&Keep reconnecting for:'
             FocusControl = SessionReopenTimeoutEdit
           end
           object SessionReopenTimeoutSecLabel: TLabel
             Left = 254
-            Top = 100
-            Width = 40
+            Top = 149
+            Width = 39
             Height = 13
             Caption = 'seconds'
             FocusControl = SessionReopenTimeoutEdit
+          end
+          object SessionReopenAutoStallLabel: TLabel
+            Left = 34
+            Top = 122
+            Width = 82
+            Height = 13
+            Caption = 'Re&connect after:'
+            FocusControl = SessionReopenAutoStallEdit
+          end
+          object SessionReopenAutoStallSecLabel: TLabel
+            Left = 254
+            Top = 122
+            Width = 39
+            Height = 13
+            Caption = 'seconds'
+            FocusControl = SessionReopenAutoStallEdit
           end
           object SessionReopenAutoCheck: TCheckBox
             Left = 16
@@ -1614,10 +1640,10 @@ object PreferencesDialog: TPreferencesDialog
             Width = 81
             Height = 21
             Alignment = taRightJustify
-            Increment = 5
-            MaxValue = 300
-            MinValue = 1
-            Value = 5
+            Increment = 5.000000000000000000
+            MaxValue = 300.000000000000000000
+            MinValue = 1.000000000000000000
+            Value = 5.000000000000000000
             MaxLength = 3
             TabOrder = 2
           end
@@ -1632,16 +1658,38 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenTimeoutEdit: TUpDownEdit
             Left = 168
-            Top = 95
+            Top = 144
             Width = 81
             Height = 21
             Alignment = taRightJustify
-            Increment = 30
-            MaxValue = 86400
+            Increment = 30.000000000000000000
+            MaxValue = 86400.000000000000000000
             MaxLength = 5
-            TabOrder = 3
+            TabOrder = 5
             OnGetValue = SessionReopenTimeoutEditGetValue
             OnSetValue = SessionReopenTimeoutEditSetValue
+          end
+          object SessionReopenAutoStallCheck: TCheckBox
+            Left = 16
+            Top = 95
+            Width = 337
+            Height = 17
+            Caption = 'Automatically reconnect session, if it &stalls'
+            TabOrder = 3
+            OnClick = ControlChange
+          end
+          object SessionReopenAutoStallEdit: TUpDownEdit
+            Left = 168
+            Top = 117
+            Width = 81
+            Height = 21
+            Alignment = taRightJustify
+            Increment = 5.000000000000000000
+            MaxValue = 300.000000000000000000
+            MinValue = 1.000000000000000000
+            Value = 5.000000000000000000
+            MaxLength = 3
+            TabOrder = 4
           end
         end
       end
@@ -1660,50 +1708,39 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 357
-          Height = 123
+          Height = 51
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Automatically check for application updates'
+          Caption = 'Automatic check for application updates'
           TabOrder = 0
-          object UpdatesNeverButton: TRadioButton
+          DesignSize = (
+            357
+            51)
+          object Label12: TLabel
             Left = 16
-            Top = 21
-            Width = 329
-            Height = 17
-            Caption = '&Never'
+            Top = 23
+            Width = 115
+            Height = 13
+            Caption = 'Automatic check &period:'
+            FocusControl = UpdatesPeriodCombo
+          end
+          object UpdatesPeriodCombo: TComboBox
+            Left = 256
+            Top = 18
+            Width = 88
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
             TabOrder = 0
-            OnClick = ControlChange
-          end
-          object UpdatesDailyButton: TRadioButton
-            Left = 16
-            Top = 45
-            Width = 156
-            Height = 17
-            Caption = '&Daily'
-            TabOrder = 1
-            OnClick = ControlChange
-          end
-          object UpdatesWeeklyButton: TRadioButton
-            Left = 16
-            Top = 69
-            Width = 156
-            Height = 17
-            Caption = '&Weekly'
-            TabOrder = 2
-            OnClick = ControlChange
-          end
-          object UpdatesMonthlyButton: TRadioButton
-            Left = 16
-            Top = 93
-            Width = 156
-            Height = 17
-            Caption = '&Monthly'
-            TabOrder = 3
-            OnClick = ControlChange
+            Items.Strings = (
+              'Never'
+              'Daily'
+              'Weekly'
+              'Monthly')
           end
         end
         object UpdatesProxyGroup: TGroupBox
           Left = 8
-          Top = 198
+          Top = 152
           Width = 357
           Height = 142
           Anchors = [akLeft, akTop, akRight]
@@ -1715,7 +1752,7 @@ object PreferencesDialog: TPreferencesDialog
           object UpdatesProxyHostLabel: TLabel
             Left = 34
             Top = 91
-            Width = 81
+            Width = 85
             Height = 13
             Caption = 'Proxy &host name:'
             FocusControl = UpdatesProxyHostEdit
@@ -1723,7 +1760,7 @@ object PreferencesDialog: TPreferencesDialog
           object UpdatesProxyPortLabel: TLabel
             Left = 252
             Top = 91
-            Width = 60
+            Width = 63
             Height = 13
             Anchors = [akTop, akRight]
             Caption = 'Po&rt number:'
@@ -1735,9 +1772,9 @@ object PreferencesDialog: TPreferencesDialog
             Width = 94
             Height = 21
             Alignment = taRightJustify
-            MaxValue = 65535
-            MinValue = 1
-            Value = 1
+            MaxValue = 65535.000000000000000000
+            MinValue = 1.000000000000000000
+            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             TabOrder = 4
           end
@@ -1781,32 +1818,49 @@ object PreferencesDialog: TPreferencesDialog
         end
         object UpdatesOptionsGroup: TGroupBox
           Left = 8
-          Top = 139
+          Top = 65
           Width = 357
-          Height = 51
+          Height = 81
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Options'
           TabOrder = 1
           DesignSize = (
             357
-            51)
-          object Label10: TLabel
-            Left = 18
-            Top = 22
-            Width = 115
+            81)
+          object UpdatesBetaVersionsLabel: TLabel
+            Left = 16
+            Top = 23
+            Width = 118
             Height = 13
             Caption = 'Check for &beta versions:'
             FocusControl = UpdatesBetaVersionsCombo
           end
           object UpdatesBetaVersionsCombo: TComboBox
-            Left = 285
-            Top = 17
-            Width = 61
+            Left = 256
+            Top = 18
+            Width = 88
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
             TabOrder = 0
+          end
+          object CollectUsageCheck: TCheckBox
+            Left = 16
+            Top = 49
+            Width = 234
+            Height = 17
+            Caption = 'Allow &anonymous usage statistics'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+          object UsageViewButton: TButton
+            Left = 255
+            Top = 45
+            Width = 90
+            Height = 25
+            Caption = 'View &statistics'
+            TabOrder = 2
+            OnClick = UsageViewButtonClick
           end
         end
       end
@@ -2084,7 +2138,7 @@ object PreferencesDialog: TPreferencesDialog
           object Label2: TLabel
             Left = 16
             Top = 21
-            Width = 61
+            Width = 59
             Height = 13
             Caption = '&PuTTY path:'
             FocusControl = PuttyPathEdit
@@ -2145,6 +2199,126 @@ object PreferencesDialog: TPreferencesDialog
           end
         end
       end
+      object NetworkSheet: TTabSheet
+        Tag = 20
+        Hint = 'Network'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_network'
+        Caption = 'Network'
+        ImageIndex = 20
+        TabVisible = False
+        DesignSize = (
+          373
+          353)
+        object ExternalIpAddressGroupBox: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 357
+          Height = 98
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'External IP address'
+          TabOrder = 0
+          object RetrieveExternalIpAddressButton: TRadioButton
+            Left = 16
+            Top = 21
+            Width = 329
+            Height = 17
+            Caption = 'Retrieve external IP address from &operating system'
+            TabOrder = 0
+            OnClick = ControlChange
+          end
+          object CustomExternalIpAddressButton: TRadioButton
+            Left = 16
+            Top = 45
+            Width = 233
+            Height = 17
+            Caption = 'Use &following external IP address:'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+          object CustomExternalIpAddressEdit: TEdit
+            Left = 45
+            Top = 67
+            Width = 108
+            Height = 21
+            TabOrder = 2
+            OnClick = ControlChange
+          end
+        end
+      end
+      object PanelRemoteSheet: TTabSheet
+        Tag = 21
+        Hint = 'Remote'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_panels_remote'
+        Caption = 'PanRemote'
+        ImageIndex = 20
+        TabVisible = False
+        DesignSize = (
+          373
+          353)
+        object PanelsRemoteDirectoryGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 357
+          Height = 99
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Remote panel'
+          TabOrder = 0
+          DesignSize = (
+            357
+            99)
+          object RefreshRemoteDirectoryUnitLabel: TLabel
+            Left = 336
+            Top = 69
+            Width = 5
+            Height = 13
+            Caption = 's'
+          end
+          object ShowInaccesibleDirectoriesCheck: TCheckBox
+            Left = 16
+            Top = 21
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Show in&accessible directories'
+            TabOrder = 0
+            OnClick = ControlChange
+          end
+          object AutoReadDirectoryAfterOpCheck: TCheckBox
+            Left = 16
+            Top = 45
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Auto&matically refresh directory after operation (Ctrl+Alt+R)'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+          object RefreshRemotePanelCheck: TCheckBox
+            Left = 16
+            Top = 69
+            Width = 234
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Refresh remote panel &every'
+            TabOrder = 2
+            OnClick = ControlChange
+          end
+          object RefreshRemotePanelIntervalEdit: TUpDownEdit
+            Left = 256
+            Top = 67
+            Width = 75
+            Height = 21
+            Alignment = taRightJustify
+            Increment = 15.000000000000000000
+            MaxValue = 9999.000000000000000000
+            MaxLength = 3
+            TabOrder = 3
+            OnChange = ControlChange
+          end
+        end
+      end
     end
     object LeftPanel: TPanel
       Left = 0
@@ -2163,39 +2337,53 @@ object PreferencesDialog: TPreferencesDialog
         Width = 116
         Height = 353
         Anchors = [akLeft, akTop, akRight, akBottom]
+        DoubleBuffered = True
         HideSelection = False
         HotTrack = True
         Indent = 19
+        ParentDoubleBuffered = False
         ReadOnly = True
         ShowButtons = False
         ShowRoot = False
         TabOrder = 0
         OnChange = NavigationTreeChange
         OnCollapsing = NavigationTreeCollapsing
-        Items.Data = {
-          09000000250000000000000001000000FFFFFFFFFFFFFFFF0000000005000000
-          0C456E7669726F6E6D656E7458230000000000000003000000FFFFFFFFFFFFFF
-          FF00000000000000000A496E7465726661636558200000000000000011000000
-          FFFFFFFFFFFFFFFF00000000000000000757696E646F77582000000000000000
-          04000000FFFFFFFFFFFFFFFF00000000000000000750616E656C735823000000
-          0000000005000000FFFFFFFFFFFFFFFF00000000000000000A436F6D6D616E64
-          657258220000000000000006000000FFFFFFFFFFFFFFFF000000000000000009
-          4578706C6F72657258200000000000000008000000FFFFFFFFFFFFFFFF000000
-          000000000007456469746F7258220000000000000007000000FFFFFFFFFFFFFF
-          FF0000000004000000095472616E7366657258210000000000000010000000FF
-          FFFFFFFFFFFFFF00000000000000000850726573657473582200000000000000
-          0B000000FFFFFFFFFFFFFFFF0000000000000000094472616744726F70582400
-          0000000000000C000000FFFFFFFFFFFFFFFF00000000000000000B4261636B67
-          726F756E645820000000000000000E000000FFFFFFFFFFFFFFFF000000000000
-          000007526573756D6558220000000000000013000000FFFFFFFFFFFFFFFF0000
-          00000000000009536563757269747958210000000000000002000000FFFFFFFF
-          FFFFFFFF0000000000000000084C6F6767696E67582500000000000000090000
-          00FFFFFFFFFFFFFFFF00000000010000000C496E746567726174696F6E582600
-          00000000000012000000FFFFFFFFFFFFFFFF00000000000000000D4170706C69
-          636174696F6E735822000000000000000A000000FFFFFFFFFFFFFFFF00000000
-          0000000009436F6D6D616E64735821000000000000000D000000FFFFFFFFFFFF
-          FFFF00000000000000000853746F726167655821000000000000000F000000FF
-          FFFFFFFFFFFFFF0000000000000000085570646174657358}
+        Items.NodeData = {
+          030A000000360000000000000001000000FFFFFFFFFFFFFFFF00000000000000
+          0005000000010C45006E007600690072006F006E006D0065006E007400580032
+          0000000000000003000000FFFFFFFFFFFFFFFF00000000000000000000000001
+          0A49006E00740065007200660061006300650058002C00000000000000110000
+          00FFFFFFFFFFFFFFFF0000000000000000000000000107570069006E0064006F
+          00770058002C0000000000000004000000FFFFFFFFFFFFFFFF00000000000000
+          00010000000107500061006E0065006C00730058002C00000000000000150000
+          00FFFFFFFFFFFFFFFF0000000000000000000000000107520065006D006F0074
+          0065005800320000000000000005000000FFFFFFFFFFFFFFFF00000000000000
+          0000000000010A43006F006D006D0061006E0064006500720058003000000000
+          00000006000000FFFFFFFFFFFFFFFF0000000000000000000000000109450078
+          0070006C006F0072006500720058002C0000000000000008000000FFFFFFFFFF
+          FFFFFF000000000000000000000000010745006400690074006F007200580030
+          0000000000000007000000FFFFFFFFFFFFFFFF00000000000000000400000001
+          095400720061006E00730066006500720058002E0000000000000010000000FF
+          FFFFFFFFFFFFFF00000000000000000000000001085000720065007300650074
+          007300580030000000000000000B000000FFFFFFFFFFFFFFFF00000000000000
+          000000000001094400720061006700440072006F007000580034000000000000
+          000C000000FFFFFFFFFFFFFFFF000000000000000000000000010B4200610063
+          006B00670072006F0075006E00640058002C000000000000000E000000FFFFFF
+          FFFFFFFFFF000000000000000000000000010752006500730075006D00650058
+          002E0000000000000014000000FFFFFFFFFFFFFFFF0000000000000000000000
+          0001084E006500740077006F0072006B005800300000000000000013000000FF
+          FFFFFFFFFFFFFF00000000000000000000000001095300650063007500720069
+          007400790058002E0000000000000002000000FFFFFFFFFFFFFFFF0000000000
+          0000000000000001084C006F006700670069006E006700580036000000000000
+          0009000000FFFFFFFFFFFFFFFF000000000000000001000000010C49006E0074
+          006500670072006100740069006F006E005800380000000000000012000000FF
+          FFFFFFFFFFFFFF000000000000000000000000010D4100700070006C00690063
+          006100740069006F006E007300580030000000000000000A000000FFFFFFFFFF
+          FFFFFF000000000000000000000000010943006F006D006D0061006E00640073
+          0058002E000000000000000D000000FFFFFFFFFFFFFFFF000000000000000000
+          0000000108530074006F00720061006700650058002E000000000000000F0000
+          00FFFFFFFFFFFFFFFF0000000000000000000000000108550070006400610074
+          00650073005800}
       end
     end
   end

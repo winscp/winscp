@@ -18,7 +18,7 @@
 #endif
 //---------------------------------------------------------------------
 bool __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
-  AnsiString & Directory, TStrings * Directories, TTerminal * Terminal,
+  UnicodeString & Directory, TStrings * Directories, TTerminal * Terminal,
   bool AllowSwitch)
 {
   bool Result;
@@ -76,7 +76,7 @@ void __fastcall TOpenDirectoryDialog::SetOperationSide(TOperationSide value)
 {
   if (OperationSide != value)
   {
-    AnsiString ADirectory = Directory;
+    UnicodeString ADirectory = Directory;
     FOperationSide = value;
     Directory = ADirectory;
     RemoteDirectoryEdit->Visible = False;
@@ -87,7 +87,7 @@ void __fastcall TOpenDirectoryDialog::SetOperationSide(TOperationSide value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TOpenDirectoryDialog::SetDirectory(AnsiString value)
+void __fastcall TOpenDirectoryDialog::SetDirectory(UnicodeString value)
 {
   if (OperationSide == osRemote)
   {
@@ -100,7 +100,7 @@ void __fastcall TOpenDirectoryDialog::SetDirectory(AnsiString value)
   DirectoryEditChange(NULL);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TOpenDirectoryDialog::GetDirectory()
+UnicodeString __fastcall TOpenDirectoryDialog::GetDirectory()
 {
   if (OperationSide == osRemote)
     return UnixExcludeTrailingBackslash(RemoteDirectoryEdit->Text);
@@ -185,17 +185,17 @@ TStrings * __fastcall TOpenDirectoryDialog::GetDirectories()
   return RemoteDirectoryEdit->Items;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TOpenDirectoryDialog::BookmarkDirectory(TBookmark * Bookmark)
+UnicodeString __fastcall TOpenDirectoryDialog::BookmarkDirectory(TBookmark * Bookmark)
 {
   return OperationSide == osLocal ? Bookmark->Local : Bookmark->Remote;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TOpenDirectoryDialog::BookmarkText(TBookmark * Bookmark)
+UnicodeString __fastcall TOpenDirectoryDialog::BookmarkText(TBookmark * Bookmark)
 {
-  AnsiString Result = BookmarkDirectory(Bookmark);
+  UnicodeString Result = BookmarkDirectory(Bookmark);
   if (!Result.IsEmpty() && (Bookmark->ShortCut != 0))
   {
-    Result = FORMAT("%s (%s)", (Result, ShortCutToText(Bookmark->ShortCut)));
+    Result = FORMAT(L"%s (%s)", (Result, ShortCutToText(Bookmark->ShortCut)));
   }
   return Result;
 }
@@ -217,14 +217,16 @@ void __fastcall TOpenDirectoryDialog::LoadBookmarks(TListBox * ListBox,
     BookmarkList->Clear();
   }
 
+  Configuration->Usage->SetMax(L"MaxBookmarks", BookmarkList->Count);
+
   ListBox->Items->Clear();
   for (int i = 0; i < BookmarkList->Count; i++)
   {
     TBookmark * Bookmark = BookmarkList->Bookmarks[i];
-    AnsiString Directory = BookmarkDirectory(Bookmark);
+    UnicodeString Directory = BookmarkDirectory(Bookmark);
     if (!Directory.IsEmpty() && (FindBookmark(ListBox, Directory) < 0))
     {
-      AnsiString Text = BookmarkText(Bookmark);
+      UnicodeString Text = BookmarkText(Bookmark);
       ListBox->Items->AddObject(Text, Bookmark);
     }
   }
@@ -233,7 +235,7 @@ void __fastcall TOpenDirectoryDialog::LoadBookmarks(TListBox * ListBox,
 bool __fastcall TOpenDirectoryDialog::Execute()
 {
   bool Result;
-  AnsiString SessionKey;
+  UnicodeString SessionKey;
   if (Terminal)
   {
     // cache session key, in case terminal is closed while the window is open
@@ -312,7 +314,7 @@ void __fastcall TOpenDirectoryDialog::AddAsBookmark(TObject * Sender)
 
   // would alway be equal to Directory atm,
   // as only difference can be a shorcut, which is not set
-  AnsiString Text = BookmarkText(Bookmark);
+  UnicodeString Text = BookmarkText(Bookmark);
 
   if (BookmarksList->ItemIndex >= 0)
   {
@@ -364,7 +366,7 @@ void __fastcall TOpenDirectoryDialog::RemoveBookmarkButtonClick(TObject * Sender
   RemoveBookmark(Sender);
 }
 //---------------------------------------------------------------------------
-Integer __fastcall TOpenDirectoryDialog::FindBookmark(TListBox * BookmarksList, const AnsiString Bookmark)
+Integer __fastcall TOpenDirectoryDialog::FindBookmark(TListBox * BookmarksList, const UnicodeString Bookmark)
 {
   if (OperationSide == osRemote)
   {
@@ -528,7 +530,7 @@ void __fastcall TOpenDirectoryDialog::BookmarksListKeyDown(TObject * Sender,
 void __fastcall TOpenDirectoryDialog::LocalDirectoryBrowseButtonClick(
   TObject * /*Sender*/)
 {
-  AnsiString Directory = LocalDirectoryEdit->Text;
+  UnicodeString Directory = LocalDirectoryEdit->Text;
   if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
   {
     LocalDirectoryEdit->Text = Directory;

@@ -45,6 +45,10 @@ static char THIS_FILE[] = __FILE__;
 CMainThread::CMainThread()
 {
 	m_hOwnerWnd = 0;
+	m_nReplyMessageID = 0;
+	m_nInternalMessageID = 0;
+	m_pPostKeepAliveCommand = 0;
+	m_nTimerID = 0;
 	m_pControlSocket = NULL;
 	m_pFtpControlSocket = NULL;
 #ifndef MPEXT_NO_SFTP
@@ -210,6 +214,10 @@ BOOL CMainThread::OnThreadMessage(UINT Msg, WPARAM wParam, LPARAM lParam)
 					ASSERT(m_pControlSocket);
 					m_pControlSocket->List(FALSE, 0, pCommand->path, pCommand->param1, pCommand->param4);
 					break;
+				case FZ_COMMAND_LISTFILE:
+					ASSERT(m_pControlSocket);
+					m_pControlSocket->ListFile(pCommand->path, pCommand->param1);
+					break;
 				case FZ_COMMAND_FILETRANSFER:
 					ASSERT(m_pControlSocket);
 					m_pControlSocket->FileTransfer(&pCommand->transferfile);
@@ -305,7 +313,7 @@ void CMainThread::Command(const t_command &command)
 	*pCommand=command;
 	VERIFY(PostThreadMessage(m_nInternalMessageID,FZAPI_THREADMSG_COMMAND,(LPARAM)pCommand));
 	m_LastCommand=command;
-	LCS;	
+	LCS;
 }
 
 BOOL CMainThread::LastOperationSuccessful()

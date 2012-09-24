@@ -11,7 +11,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnClose = FormClose
   OnShow = FormShow
   DesignSize = (

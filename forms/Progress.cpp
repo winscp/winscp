@@ -10,22 +10,24 @@
 #include <VCLCommon.h>
 #include <CustomWinConfiguration.h>
 #include <GUITools.h>
+#include <BaseUtils.hpp>
+#include <DateUtils.hpp>
 
 #include "Progress.h"
 //---------------------------------------------------------------------
-#pragma link "PathLabel"
 #pragma link "HistoryComboBox"
+#pragma link "PathLabel"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
-AnsiString __fastcall TProgressForm::OperationName(TFileOperation Operation)
+UnicodeString __fastcall TProgressForm::OperationName(TFileOperation Operation)
 {
   static const int Captions[] = { PROGRESS_COPY, PROGRESS_MOVE, PROGRESS_DELETE,
     PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE,
     PROGRESS_REMOTE_MOVE, PROGRESS_REMOTE_COPY, PROGRESS_GETPROPERTIES,
     PROGRESS_CALCULATE_CHECKSUM };
-  assert((int)Operation >= 1 && ((int)Operation - 1) < LENOF(Captions));
+  assert((unsigned int)Operation >= 1 && ((unsigned int)Operation - 1) < LENOF(Captions));
   return LoadStr(Captions[(int)Operation - 1]);
 }
 //---------------------------------------------------------------------
@@ -120,7 +122,7 @@ void __fastcall TProgressForm::UpdateControls()
 
         case foSetProperties:
         case foGetProperties:
-          ShellModule = SafeLoadLibrary("shell32.dll");
+          ShellModule = SafeLoadLibrary(L"shell32.dll");
           if (!ShellModule)
           {
             Abort();
@@ -198,8 +200,8 @@ void __fastcall TProgressForm::UpdateControls()
   }
   int OverallProgress = FData.OverallProgress();
   FOperationProgress->Position = OverallProgress;
-  FOperationProgress->Hint = FORMAT("%d%%", (OverallProgress));
-  Caption = FORMAT("%d%% %s", (OverallProgress, OperationName(FData.Operation)));
+  FOperationProgress->Hint = FORMAT(L"%d%%", (OverallProgress));
+  Caption = FORMAT(L"%d%% %s", (OverallProgress, OperationName(FData.Operation)));
 
   if (TransferOperation)
   {
@@ -220,9 +222,9 @@ void __fastcall TProgressForm::UpdateControls()
     }
     TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
     BytesTransferedLabel->Caption = FormatBytes(FData.TotalTransfered);
-    CPSLabel->Caption = FORMAT("%s/s", (FormatBytes(FData.CPS())));
+    CPSLabel->Caption = FORMAT(L"%s/s", (FormatBytes(FData.CPS())));
     FFileProgress->Position = FData.TransferProgress();
-    FFileProgress->Hint = FORMAT("%d%%", (FFileProgress->Position));
+    FFileProgress->Hint = FORMAT(L"%d%%", (FFileProgress->Position));
   }
 }
 //---------------------------------------------------------------------
@@ -266,7 +268,7 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
     Application->ProcessMessages();
   }
   TDateTime N = Now();
-  static double UpdateInterval = double(1)/(24*60*60*5);  // 1/5 sec
+  static double UpdateInterval = static_cast<double>(OneSecond*5);  // 1/5 sec
   if ((FUpdateCounter % 5 == 0) ||
       (double(N) - double(FLastUpdate) > UpdateInterval))
   {
@@ -287,7 +289,7 @@ void __fastcall TProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
 void __fastcall TProgressForm::FormShow(TObject * /*Sender*/)
 {
   UpdateTimer->Enabled = true;
-  SpeedCombo->Items = CustomWinConfiguration->History["SpeedLimit"];
+  SpeedCombo->Items = CustomWinConfiguration->History[L"SpeedLimit"];
   if (FDataReceived) UpdateControls();
   FLastUpdate = 0;
 }
@@ -298,7 +300,7 @@ void __fastcall TProgressForm::FormHide(TObject * /*Sender*/)
   // TTerminalManager::ApplicationShowHint.
   // Because if form disappears on its own, hint is not hidden.
   Application->CancelHint();
-  CustomWinConfiguration->History["SpeedLimit"] = SpeedCombo->Items;
+  CustomWinConfiguration->History[L"SpeedLimit"] = SpeedCombo->Items;
   UpdateTimer->Enabled = false;
 }
 //---------------------------------------------------------------------------
@@ -445,13 +447,13 @@ void __fastcall TProgressForm::SpeedComboSelect(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::SpeedComboKeyPress(TObject * /*Sender*/,
-  char & Key)
+  wchar_t & Key)
 {
   // using OnKeyPress instead of OnKeyDown to catch "enter" prevents
   // system beep for unhandled key
-  if (Key == '\r')
+  if (Key == L'\r')
   {
-    Key = '\0';
+    Key = L'\0';
     ApplyCPSLimit();
   }
 }
@@ -488,3 +490,4 @@ void __fastcall TProgressForm::OnceDoneOperationComboCloseUp(TObject * /*Sender*
   CancelButton->SetFocus();
 }
 //---------------------------------------------------------------------------
+#pragma warn -8080

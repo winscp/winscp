@@ -41,7 +41,7 @@ __published:
 private:
   TCustomCommandsMode FMode;
   int FParams;
-  AnsiString FOrigDescription;
+  UnicodeString FOrigDescription;
   const TCustomCommandList * FCustomCommandList;
   TCustomCommandValidate FOnValidate;
 

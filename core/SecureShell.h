@@ -49,22 +49,22 @@ private:
   unsigned PendLen;
   unsigned PendSize;
   unsigned OutLen;
-  char * OutPtr;
-  char * Pending;
+  unsigned char * OutPtr;
+  unsigned char * Pending;
   TSessionLog * FLog;
   TConfiguration * FConfiguration;
   bool FAuthenticating;
   bool FAuthenticated;
-  AnsiString FStdErrorTemp;
-  AnsiString FStdError;
-  AnsiString FCWriteTemp;
-  AnsiString FAuthenticationLog;
-  AnsiString FLastTunnelError;
-  AnsiString FUserName;
+  UnicodeString FStdErrorTemp;
+  UnicodeString FStdError;
+  UnicodeString FCWriteTemp;
+  UnicodeString FAuthenticationLog;
+  UnicodeString FLastTunnelError;
+  UnicodeString FUserName;
 
   static TCipher __fastcall FuncToSsh1Cipher(const void * Cipher);
   static TCipher __fastcall FuncToSsh2Cipher(const void * Cipher);
-  AnsiString __fastcall FuncToCompression(int SshVersion, const void * Compress) const;
+  UnicodeString __fastcall FuncToCompression(int SshVersion, const void * Compress) const;
   void __fastcall Init();
   void __fastcall SetActive(bool value);
   void inline __fastcall CheckConnection(int Message = -1);
@@ -73,7 +73,7 @@ private:
   void __fastcall FreeBackend();
   void __fastcall PoolForData(WSANETWORKEVENTS & Events, unsigned int & Result);
   inline void __fastcall CaptureOutput(TLogLineType Type,
-    const AnsiString & Line);
+    const UnicodeString & Line);
   void __fastcall ResetConnection();
   void __fastcall ResetSessionInfo();
   void __fastcall SocketEventSelect(SOCKET Socket, HANDLE Event, bool Startup);
@@ -86,21 +86,21 @@ private:
   bool __fastcall GetReady();
   void __fastcall DispatchSendBuffer(int BufSize);
   void __fastcall SendBuffer(unsigned int & Result);
-  int __fastcall TimeoutPrompt(TQueryParamsTimerEvent PoolEvent);
+  unsigned int __fastcall TimeoutPrompt(TQueryParamsTimerEvent PoolEvent);
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;
 
   void __fastcall GotHostKey();
   int __fastcall TranslatePuttyMessage(const TPuttyTranslation * Translation,
-    size_t Count, AnsiString & Message);
-  int __fastcall TranslateAuthenticationMessage(AnsiString & Message);
-  int __fastcall TranslateErrorMessage(AnsiString & Message);
-  void __fastcall AddStdError(AnsiString Str);
-  void __fastcall AddStdErrorLine(const AnsiString & Str);
-  void __fastcall FatalError(Exception * E, AnsiString Msg);
-  void __fastcall inline LogEvent(const AnsiString & Str);
-  void __fastcall FatalError(AnsiString Error);
+    size_t Count, UnicodeString & Message);
+  int __fastcall TranslateAuthenticationMessage(UnicodeString & Message);
+  int __fastcall TranslateErrorMessage(UnicodeString & Message);
+  void __fastcall AddStdError(UnicodeString Str);
+  void __fastcall AddStdErrorLine(const UnicodeString & Str);
+  void __fastcall FatalError(Exception * E, UnicodeString Msg);
+  void __fastcall inline LogEvent(const UnicodeString & Str);
+  void __fastcall FatalError(UnicodeString Error);
   static void __fastcall ClearConfig(Config * cfg);
   static void __fastcall StoreToConfig(TSessionData * Data, Config * cfg, bool Simple);
 
@@ -111,15 +111,15 @@ public:
   void __fastcall Open();
   void __fastcall Close();
   void __fastcall KeepAlive();
-  int __fastcall Receive(char * Buf, int Len);
-  bool __fastcall Peek(char *& Buf, int Len);
-  AnsiString __fastcall ReceiveLine();
-  void __fastcall Send(const char * Buf, int Len);
-  void __fastcall SendStr(AnsiString Str);
+  int __fastcall Receive(unsigned char * Buf, int Len);
+  bool __fastcall Peek(unsigned char *& Buf, int Len);
+  UnicodeString __fastcall ReceiveLine();
+  void __fastcall Send(const unsigned char * Buf, int Len);
+  void __fastcall SendStr(UnicodeString Str);
   void __fastcall SendSpecial(int Code);
   void __fastcall Idle(unsigned int MSec = 0);
   void __fastcall SendEOF();
-  void __fastcall SendLine(AnsiString Line);
+  void __fastcall SendLine(UnicodeString Line);
   void __fastcall SendNull();
 
   const TSessionInfo & __fastcall GetSessionInfo();
@@ -134,27 +134,27 @@ public:
   // interface to PuTTY core
   void __fastcall UpdateSocket(SOCKET value, bool Startup);
   void __fastcall UpdatePortFwdSocket(SOCKET value, bool Startup);
-  void __fastcall PuttyFatalError(AnsiString Error);
+  void __fastcall PuttyFatalError(UnicodeString Error);
   bool __fastcall PromptUser(bool ToServer,
-    AnsiString AName, bool NameRequired,
-    AnsiString Instructions, bool InstructionsRequired,
+    UnicodeString AName, bool NameRequired,
+    UnicodeString Instructions, bool InstructionsRequired,
     TStrings * Prompts, TStrings * Results);
-  void __fastcall FromBackend(bool IsStdErr, const char * Data, int Length);
+  void __fastcall FromBackend(bool IsStdErr, const unsigned char * Data, int Length);
   void __fastcall CWrite(const char * Data, int Length);
-  const AnsiString & __fastcall GetStdError();
-  void __fastcall VerifyHostKey(AnsiString Host, int Port,
-    const AnsiString KeyType, AnsiString KeyStr, const AnsiString Fingerprint);
-  void __fastcall AskAlg(const AnsiString AlgType, const AnsiString AlgName);
-  void __fastcall DisplayBanner(const AnsiString & Banner);
+  const UnicodeString & __fastcall GetStdError();
+  void __fastcall VerifyHostKey(UnicodeString Host, int Port,
+    const UnicodeString KeyType, UnicodeString KeyStr, const UnicodeString Fingerprint);
+  void __fastcall AskAlg(const UnicodeString AlgType, const UnicodeString AlgName);
+  void __fastcall DisplayBanner(const UnicodeString & Banner);
   void __fastcall OldKeyfileWarning();
-  void __fastcall PuttyLogEvent(const AnsiString & Str);
+  void __fastcall PuttyLogEvent(const UnicodeString & Str);
 
   __property bool Active = { read = FActive, write = SetActive };
   __property bool Ready = { read = GetReady };
   __property TCaptureOutputEvent OnCaptureOutput = { read = FOnCaptureOutput, write = FOnCaptureOutput };
   __property TDateTime LastDataSent = { read = FLastDataSent };
-  __property AnsiString LastTunnelError = { read = FLastTunnelError };
-  __property AnsiString UserName = { read = FUserName };
+  __property UnicodeString LastTunnelError = { read = FLastTunnelError };
+  __property UnicodeString UserName = { read = FUserName };
   __property bool Simple = { read = FSimple, write = FSimple };
 };
 //---------------------------------------------------------------------------

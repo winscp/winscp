@@ -17,13 +17,13 @@ public:
   __fastcall TCustomUnixDriveView(TComponent * Owner);
   virtual __fastcall ~TCustomUnixDriveView();
 
-  virtual AnsiString __fastcall NodePathName(TTreeNode * Node);
+  virtual UnicodeString __fastcall NodePathName(TTreeNode * Node);
   TStrings * __fastcall DragFileList();
   void __fastcall UpdateDropTarget();
   void __fastcall UpdateDropSource();
 
   __property TUnixDirView * DirView = { read = FDirView, write = SetDirView };
-  __property AnsiString RootName = { read = FRootName, write = FRootName, stored = IsRootNameStored };
+  __property UnicodeString RootName = { read = FRootName, write = FRootName, stored = IsRootNameStored };
   __property bool DDAllowMove = { read = FDDAllowMove, write = FDDAllowMove, default = False };
   __property TDDDragFileName OnDDDragFileName = { read = FOnDDDragFileName, write = FOnDDDragFileName};
   __property bool ShowInaccesibleDirectories = { read=FShowInaccesibleDirectories, write=SetShowInaccesibleDirectories, default=true  };
@@ -34,9 +34,9 @@ protected:
   virtual void __fastcall CreateWnd();
 
   void __fastcall LoadDirectory();
-  TTreeNode * __fastcall LoadPath(AnsiString Path);
+  TTreeNode * __fastcall LoadPath(UnicodeString Path);
   TTreeNode * __fastcall LoadPathEasy(TTreeNode * Parent,
-    AnsiString Path, TRemoteFile * File);
+    UnicodeString Path, TRemoteFile * File);
   void __fastcall UpdatePath(TTreeNode * Node, bool Force, bool CanLoad = false);
   void __fastcall CheckPendingDeletes();
 
@@ -58,12 +58,12 @@ protected:
   virtual bool __fastcall DragCompleteFileList();
   virtual TDropEffectSet __fastcall DDSourceEffects();
 
-  TTreeNode * __fastcall FindNodeToPath(AnsiString Path);
-  virtual AnsiString __fastcall NodePath(TTreeNode * Node);
+  TTreeNode * __fastcall FindNodeToPath(UnicodeString Path);
+  virtual UnicodeString __fastcall NodePath(TTreeNode * Node);
   virtual bool __fastcall NodeIsRecycleBin(TTreeNode * Node);
   virtual bool __fastcall NodePathExists(TTreeNode * Node);
   virtual TColor __fastcall NodeColor(TTreeNode * Node);
-  virtual TTreeNode * __fastcall FindPathNode(AnsiString Path);
+  virtual TTreeNode * __fastcall FindPathNode(UnicodeString Path);
   virtual void __fastcall GetImageIndex(TTreeNode * Node);
   virtual Word __fastcall NodeOverlayIndexes(TTreeNode * Node);
   virtual void __fastcall ClearDragFileList(TFileList * FileList);
@@ -87,7 +87,7 @@ protected:
 private:
   TTerminal * FTerminal;
   TUnixDirView * FDirView;
-  AnsiString FRootName;
+  UnicodeString FRootName;
   bool FDirectoryLoaded;
   bool FIgnoreChange;
   TTreeNode * FPrevSelected;
@@ -142,6 +142,7 @@ __published:
   __property Color;
   __property Ctl3D;
   __property Constraints;
+  __property DoubleBuffered;
   __property DragKind;
   __property DragCursor;
   __property DragMode = { default = dmAutomatic };
@@ -155,6 +156,7 @@ __published:
   __property ParentBiDiMode;
   __property ParentColor;
   __property ParentCtl3D;
+  __property ParentDoubleBuffered;
   __property ParentFont;
   __property ParentShowHint;
   __property PopupMenu;

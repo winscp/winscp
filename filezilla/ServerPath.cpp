@@ -53,7 +53,7 @@ CServerPath::CServerPath(CString path)
 	m_nServerType = FZ_SERVERTYPE_FTP;
 	path.TrimLeft( _T(" ") );
 	path.TrimRight( _T(" ") );
-	if (path == "")
+	if (path == _MPT(""))
 	{
 		m_bEmpty = TRUE;
 		return;
@@ -62,15 +62,15 @@ CServerPath::CServerPath(CString path)
 		m_bEmpty = FALSE;
 
 	int pos1 = path.Find( _T(":[") );
-	if (pos1 != -1 && path.Right(1) == "]" && pos1 != (path.GetLength()-1))
+	if (pos1 != -1 && path.Right(1) == _MPT("]") && pos1 != (path.GetLength()-1))
 		m_nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
-	else if (path.GetLength() >= 3 && _istalpha(path[0]) && path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
+	else if (path.GetLength() >= 3 && _istalpha(path[0]) && path[1] == _MPT(':') && (path[2] == _MPT('\\') || path[2] == _MPT('/')))
 		m_nServerType |= FZ_SERVERTYPE_SUB_FTP_WINDOWS;
 	else if (path[0] == FTP_MVS_DOUBLE_QUOTA && path[path.GetLength() - 1] == FTP_MVS_DOUBLE_QUOTA)
 		m_nServerType |= FZ_SERVERTYPE_SUB_FTP_MVS;
-	else if (path.GetLength() > 2 && path[0] == '\'' && path.Right(1) == _T("'") && path.Find('/') == -1 && path.Find('\\') == -1)
+	else if (path.GetLength() > 2 && path[0] == _MPT('\'') && path.Right(1) == _T("'") && path.Find(_MPT('/')) == -1 && path.Find(_MPT('\\')) == -1)
 		m_nServerType |= FZ_SERVERTYPE_SUB_FTP_MVS;
-	else if (path.GetLength() >= 2 && path[0] != '/' && path.Right(1) == _T("."))
+	else if (path.GetLength() >= 2 && path[0] != _MPT('/') && path.Right(1) == _T("."))
 		m_nServerType |= FZ_SERVERTYPE_SUB_FTP_UNKNOWN;
 
 	*this = CServerPath(path, m_nServerType);
@@ -81,14 +81,14 @@ CServerPath::CServerPath(CString path, int nServerType)
 	m_nServerType = nServerType;
 	path.TrimLeft( _T(" ") );
 	path.TrimRight( _T(" ") );
-	if (path == "")
+	if (path == _MPT(""))
 	{
 		m_bEmpty = TRUE;
 		return;
 	}
 	else
 		m_bEmpty = FALSE;
-	
+
 	switch (m_nServerType&FZ_SERVERTYPE_HIGHMASK)
 	{
 	case FZ_SERVERTYPE_FTP:
@@ -99,9 +99,9 @@ CServerPath::CServerPath(CString path, int nServerType)
 			{
 				path.TrimLeft(FTP_MVS_DOUBLE_QUOTA);
 				path.TrimRight(FTP_MVS_DOUBLE_QUOTA);
-				path.TrimLeft('\'');
-				path.TrimRight('\'');
-				path.TrimLeft('.');
+				path.TrimLeft(_MPT('\''));
+				path.TrimRight(_MPT('\''));
+				path.TrimLeft(_MPT('.'));
 				while (path.Replace(_T(".."), _T(".")));
 
 				int pos = path.Find(_T("."));
@@ -137,12 +137,12 @@ CServerPath::CServerPath(CString path, int nServerType)
 					path = path.Mid(pos+1);
 					pos = path.Find( _T(".") );
 				}
-				if (path != "")
+				if (path != _MPT(""))
 					m_Segments.push_back(path);
 			}
 			break;
 		case FZ_SERVERTYPE_SUB_FTP_UNKNOWN:
-			while (path.Replace('.', '/'));
+			while (path.Replace(_MPT('.'), _MPT('/')));
 		default:
 			path.Replace( _T("\\"), _T("/") );
 			while (path.Replace( _T("//"), _T("/") ));
@@ -155,7 +155,7 @@ CServerPath::CServerPath(CString path, int nServerType)
 				path = path.Mid(pos+1);
 				pos = path.Find( _T("/") );
 			}
-			if (path != "")
+			if (path != _MPT(""))
 				m_Segments.push_back(path);
 			break;
 		}
@@ -180,13 +180,13 @@ CServerPath::CServerPath(CString path, int nServerType)
 				path=path.Mid(pos + 1);
 				pos=path.Find( _T("\\") );
 			}
-			if (path != "")
-				m_Segments.push_back(path);			
+			if (path != _MPT(""))
+				m_Segments.push_back(path);
 		}
 		break;
 	default:
 		ASSERT(FALSE);
-	}	
+	}
 }
 
 CServerPath::CServerPath(const CServerPath &path)
@@ -214,7 +214,7 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 
 	path.TrimLeft( _T(" ") );
 	path.TrimRight( _T(" ") );
-	if (path != "")
+	if (path != _MPT(""))
 		m_bEmpty = FALSE;
 	else
 		m_bEmpty = TRUE;
@@ -230,15 +230,15 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 			else if (bIsFile && path.ReverseFind(']')>(pos1+1))
 				m_nServerType|=FZ_SERVERTYPE_SUB_FTP_VMS;
 		}
-		if (newpath.GetLength() >= 3 && _istalpha(newpath[0]) && newpath[1] == ':' && (newpath[2] == '\\' || newpath[2] == '/'))
+		if (newpath.GetLength() >= 3 && _istalpha(newpath[0]) && newpath[1] == _MPT(':') && (newpath[2] == _MPT('\\') || newpath[2] == _MPT('/')))
 			m_nServerType |= FZ_SERVERTYPE_SUB_FTP_WINDOWS;
 		else if (path[0] == FTP_MVS_DOUBLE_QUOTA && path[path.GetLength() - 1] == FTP_MVS_DOUBLE_QUOTA)
 			m_nServerType |= FZ_SERVERTYPE_SUB_FTP_MVS;
-		else if (path.GetLength() >= 2 && path[0] != '/' && path.Right(1) == _T("."))
+		else if (path.GetLength() >= 2 && path[0] != _MPT('/') && path.Right(1) == _T("."))
 			m_nServerType |= FZ_SERVERTYPE_SUB_FTP_UNKNOWN;
 	}
 	m_Segments.clear();
-	m_Prefix = "";
+	m_Prefix = _MPT("");
 	switch (m_nServerType&FZ_SERVERTYPE_HIGHMASK)
 	{
 		case FZ_SERVERTYPE_FTP:
@@ -249,9 +249,9 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 				{
 					path.TrimLeft(FTP_MVS_DOUBLE_QUOTA);
 					path.TrimRight(FTP_MVS_DOUBLE_QUOTA);
-					path.TrimLeft('\'');
-					path.TrimRight('\'');
-					path.TrimLeft('.');
+					path.TrimLeft(_MPT('\''));
+					path.TrimRight(_MPT('\''));
+					path.TrimLeft(_MPT('.'));
 					while (path.Replace(_T(".."), _T(".")));
 
 					int pos = path.Find(_T("."));
@@ -261,7 +261,7 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 						path = path.Mid(pos + 1);
 						pos = path.Find( _T(".") );
 					}
-					if (path != "")
+					if (path != _MPT(""))
 						m_Segments.push_back(path);
 					else
 						m_Prefix = _T(".");
@@ -276,8 +276,8 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 						if (file.Right(1) == _T("."))
 							return FALSE;
 
-						int pos = file.Find('(');
-						int pos2 = file.Find(')');
+						int pos = file.Find(_MPT('('));
+						int pos2 = file.Find(_MPT(')'));
 						if (pos != -1)
 						{
 							if (!pos || pos2 != file.GetLength() - 2)
@@ -298,7 +298,7 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 						return FALSE;
 					if (bIsFile)
 					{
-						int rpos=path.ReverseFind(']');
+						int rpos=path.ReverseFind(_MPT(']'));
 						if (rpos==-1)
 							return FALSE;
 						else if (rpos!=(path.GetLength()-1) )
@@ -309,7 +309,7 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 						else
 							return FALSE;
 					}
-					if (path.Right(1)!="]")
+					if (path.Right(1)!=_MPT("]"))
 						return FALSE;
 					path.TrimRight( _T("]") );
 					if (pos1)
@@ -322,12 +322,12 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 						path=path.Mid(pos+1);
 						pos=path.Find( _T(".") );
 					}
-					if (path!="")
+					if (path!=_MPT(""))
 						m_Segments.push_back(path);
 				}
 				break;
 			case FZ_SERVERTYPE_SUB_FTP_UNKNOWN:
-				while (path.Replace('.', '/'));
+				while (path.Replace(_MPT('.'), _MPT('/')));
 			default:
 				path.Replace( _T("\\"), _T("/") );
 				while(path.Replace( _T("//"), _T("/") ));
@@ -336,7 +336,7 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 				{
 					if (path.Right(1)!= _T("/") )
 					{
-						int rpos=path.ReverseFind('/');
+						int rpos=path.ReverseFind(_MPT('/'));
 						if (rpos==-1)
 						{
 							newpath=path;
@@ -357,7 +357,7 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 					path=path.Mid(pos+1);
 					pos=path.Find( _T("/") );
 				}
-				if (path!="")
+				if (path!=_MPT(""))
 					m_Segments.push_back(path);
 				break;
 			}
@@ -368,7 +368,7 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 			{
 				if (path.Right(1)!= _T("\\") )
 				{
-					int rpos=path.ReverseFind('\\');
+					int rpos=path.ReverseFind(_MPT('\\'));
 					if (rpos==-1)
 						return FALSE;
 					
@@ -395,8 +395,8 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 				path=path.Mid(pos+1);
 				pos=path.Find( _T("\\") );
 			}
-			if (path!="")
-				m_Segments.push_back(path);			
+			if (path!=_MPT(""))
+				m_Segments.push_back(path);
 		}
 		break;
 	}
@@ -408,7 +408,7 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
 const CString CServerPath::GetPath() const
 {
 	if (m_bEmpty)
-		return "";
+		return _MPT("");
 	CString path;
 	tConstIter iter;
 	switch (m_nServerType&FZ_SERVERTYPE_HIGHMASK)
@@ -418,21 +418,21 @@ const CString CServerPath::GetPath() const
 		{
 		case FZ_SERVERTYPE_SUB_FTP_MVS:
 		case FZ_SERVERTYPE_SUB_FTP_BS2000:
-			path = "'";
+			path = _MPT("'");
 			for (iter = m_Segments.begin(); iter != m_Segments.end(); iter++)
 			{
 				if (iter != m_Segments.begin())
 					path += _T(".");
 				path += *iter;
 			}
-			path += m_Prefix + "'";
+			path += m_Prefix + _MPT("'");
 			break;
 		case FZ_SERVERTYPE_SUB_FTP_VMS:
-			path = m_Prefix + "[";
+			path = m_Prefix + _MPT("[");
 			for (iter = m_Segments.begin(); iter != m_Segments.end(); iter++)
 				path += *iter + _T(".");
 			path.TrimRight( _T(".") );
-			path += "]";
+			path += _MPT("]");
 			break;
 		case FZ_SERVERTYPE_SUB_FTP_UNKNOWN:
 			for (iter=m_Segments.begin(); iter!=m_Segments.end(); iter++)
@@ -440,7 +440,7 @@ const CString CServerPath::GetPath() const
 			break;
 		default:
 			if (!(m_nServerType & FZ_SERVERTYPE_SUB_FTP_WINDOWS))
-				path="/";
+				path=_MPT("/");
 			for (iter=m_Segments.begin(); iter!=m_Segments.end(); iter++)
 				path+=*iter + _T("/");
 			break;
@@ -449,10 +449,10 @@ const CString CServerPath::GetPath() const
 	case FZ_SERVERTYPE_LOCAL:
 		path=m_Prefix;
 		if (!m_Segments.empty())
-			path+="\\";
+			path+=_MPT("\\");
 		for (iter=m_Segments.begin(); iter!=m_Segments.end(); iter++)
 			path+=*iter + _T("\\");
-				
+
 		break;
 	default:
 		ASSERT(FALSE);
@@ -560,7 +560,7 @@ BOOL CServerPath::IsSubdirOf(const CServerPath &path, BOOL bCompareNoCase /*=FAL
 		return FALSE;
 	if (m_nServerType!=path.m_nServerType)
 		return FALSE;
-	
+
 	tConstIter iter1 = m_Segments.begin();
 	tConstIter iter2 = path.m_Segments.begin();
 	while (iter1 != m_Segments.end())
@@ -601,7 +601,7 @@ const BOOL CServerPath::IsEmpty() const
 BOOL CServerPath::SetSafePath(CString path)
 {
 	m_bEmpty = TRUE;
-	m_Prefix = "";
+	m_Prefix = _MPT("");
 	m_Segments.clear();
 
 	int pos1 = path.Find( _T(" ") );
@@ -610,7 +610,7 @@ BOOL CServerPath::SetSafePath(CString path)
 		return FALSE;
 	m_nServerType = _ttoi(path.Mid(pos2,pos1));
 	pos2 = pos1 + 1;
-	
+
 	pos1=path.Find(_T(" "), pos2);
 	if (pos1<=pos2)
 		return FALSE;
@@ -647,8 +647,8 @@ CString CServerPath::GetSafePath() const
 
 	CString safepath;
 	safepath.Format(_T("%d %d "), m_nServerType, m_Prefix.GetLength());
-	if (m_Prefix!="")
-		safepath+=m_Prefix+" ";
+	if (m_Prefix!=_MPT(""))
+		safepath+=m_Prefix+_MPT(" ");
 	tConstIter iter = m_Segments.begin();
 	while(iter!=m_Segments.end())
 	{
@@ -658,7 +658,7 @@ CString CServerPath::GetSafePath() const
 		safepath+=*iter;
 		iter++;
 		if (iter!=m_Segments.end())
-			safepath+=" ";
+			safepath+=_MPT(" ");
 	}
 	return safepath;
 }
@@ -707,7 +707,7 @@ BOOL CServerPath::AddSubdirs(CString subdirs)
 	{
 		if (m_Segments.back().Right(1) == _T("."))
 		{
-			m_Segments.back().TrimRight('.');
+			m_Segments.back().TrimRight(_MPT('.'));
 			m_Prefix = _T(".");
 		}
 		else
@@ -721,7 +721,7 @@ BOOL CServerPath::AddSubdir(CString subdir)
 {
 	subdir.TrimLeft( _T(" ") );
 	subdir.TrimRight( _T(" ") );
-	if (subdir == "")
+	if (subdir == _MPT(""))
 		return FALSE;
 
 	if (m_nServerType & (FZ_SERVERTYPE_SUB_FTP_MVS | FZ_SERVERTYPE_SUB_FTP_BS2000) && m_Prefix != _T("."))
@@ -733,7 +733,7 @@ BOOL CServerPath::AddSubdir(CString subdir)
 	{
 		if (m_Segments.back().Right(1) == _T("."))
 		{
-			m_Segments.back().TrimRight('.');
+			m_Segments.back().TrimRight(_MPT('.'));
 			m_Prefix = _T(".");
 		}
 		else
@@ -775,9 +775,9 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
 				subdir.TrimLeft(FTP_MVS_DOUBLE_QUOTA);
 				subdir.TrimRight(FTP_MVS_DOUBLE_QUOTA);
 
-				if (subdir.Left(1) == "'")
+				if (subdir.Left(1) == _MPT("'"))
 				{
-					if (subdir.Right(1) == "'")
+					if (subdir.Right(1) == _MPT("'"))
 					{
 					   	if (!SetPath(subdir))
 							m_bEmpty = true;
@@ -785,7 +785,7 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
 					else
 						m_bEmpty = true;
 				}
-				else if (subdir.Right(1) == "'")
+				else if (subdir.Right(1) == _MPT("'"))
 					m_bEmpty = true;
 				else if (!m_bEmpty)
 				{
@@ -793,10 +793,10 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
 						m_bEmpty  = true;
 					else
 					{
-						subdir.TrimLeft('.');
+						subdir.TrimLeft(_MPT('.'));
 						while (subdir.Replace(_T(".."), _T(".")));
 
-						int pos = subdir.Find('.');
+						int pos = subdir.Find(_MPT('.'));
 						while (pos != -1)
 						{
 							m_Segments.push_back(subdir.Left(pos));
@@ -823,13 +823,13 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
 				}
 				else
 				{
-					if (subdir.Right(1)!="]")
+					if (subdir.Right(1)!=_MPT("]"))
 						ASSERT(FALSE);
 					subdir=subdir.Left(subdir.GetLength()-1);
 					if (pos1)
 						m_Prefix=subdir.Left(pos1);
 					else
-						m_Prefix="";
+						m_Prefix=_MPT("");
 					m_Segments.clear();
 					subdir=subdir.Mid(pos1+1);
 
@@ -845,7 +845,7 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
 					subdir=subdir.Mid(pos+1);
 					pos=subdir.Find( _T(".") );
 				}
-				if (subdir!="")
+				if (subdir!=_MPT(""))
 					m_Segments.push_back(subdir);
 			}
 			break;
@@ -853,13 +853,13 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
 			{
 				subdir.Replace( _T("\\"), _T("/") );
 				while(subdir.Replace( _T("//"), _T("/") ));
-				if (subdir.GetLength() >= 2 && subdir[1] == ':')
+				if (subdir.GetLength() >= 2 && subdir[1] == _MPT(':'))
 					m_Segments.clear();
-				else if (subdir[0]=='/')
+				else if (subdir[0]==_MPT('/'))
 				{
 					CString firstSegment;
 					if (m_Segments.empty())
-						firstSegment = "C:";
+						firstSegment = _MPT("C:");
 					else
 						firstSegment = m_Segments.front();
 					m_Segments.clear();
@@ -874,16 +874,16 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
 					subdir=subdir.Mid(pos+1);
 					pos=subdir.Find( _T("/") );
 				}
-				if (subdir!="")
+				if (subdir!=_MPT(""))
 					m_Segments.push_back(subdir);
 				break;
 			}
 		case FZ_SERVERTYPE_SUB_FTP_UNKNOWN:
-			subdir.Replace('.', '/');
+			subdir.Replace(_MPT('.'), _MPT('/'));
 		default:
 			subdir.Replace( _T("\\"), _T("/") );
 			while(subdir.Replace( _T("//"), _T("/") ));
-			if (subdir[0]=='/')
+			if (subdir[0]==_MPT('/'))
 			{
 				m_Segments.clear();
 				subdir.TrimLeft( _T("/") );
@@ -896,7 +896,7 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
 				subdir=subdir.Mid(pos+1);
 				pos=subdir.Find( _T("/") );
 			}
-			if (subdir!="")
+			if (subdir!=_MPT(""))
 				m_Segments.push_back(subdir);
 			break;
 		}
@@ -907,7 +907,7 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
 			while (subdir.Replace( _T("\\\\"), _T("\\") ));
 			subdir.TrimLeft( _T("\\") );
 			int pos=subdir.Find( _T(":") );
-		
+
 			if (pos==1) //subdir is absolute path
 			{
 				m_Segments.clear();
@@ -970,25 +970,25 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 			subdir.TrimLeft(FTP_MVS_DOUBLE_QUOTA);
 			subdir.TrimRight(FTP_MVS_DOUBLE_QUOTA);
 
-			if (subdir.Left(1) == "'")
+			if (subdir.Left(1) == _MPT("'"))
 			{
-				if (subdir.Right(1) != "'")
+				if (subdir.Right(1) != _MPT("'"))
 					return FALSE;
 
 				if (!newpath.SetPath(subdir, bIsFile))
 					return FALSE;
 			}
-			else if (subdir.Right(1) == "'")
+			else if (subdir.Right(1) == _MPT("'"))
 				return FALSE;
 			else if (!newpath.IsEmpty())
 			{
 				if (m_Prefix != _T("."))
 					return FALSE;
-				
-				subdir.TrimLeft('.');
+
+				subdir.TrimLeft(_MPT('.'));
 				while (subdir.Replace(_T(".."), _T(".")));
 
-				int pos = subdir.Find('.');
+				int pos = subdir.Find(_MPT('.'));
 				while (pos != -1)
 				{
 					newpath.m_Segments.push_back(subdir.Left(pos));
@@ -1012,8 +1012,8 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 					subdir = newpath.m_Segments.back();
 					newpath.m_Segments.pop_back();
 
-					int pos = subdir.Find('(');
-					int pos2 = subdir.Find(')');
+					int pos = subdir.Find(_MPT('('));
+					int pos2 = subdir.Find(_MPT(')'));
 					if (pos != -1)
 					{
 						if (!pos || pos2 != subdir.GetLength() - 2)
@@ -1035,7 +1035,7 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 				int pos1=dir.Find( _T("[") );
 				if (pos1==-1)
 				{
-					int pos2=dir.ReverseFind(']');
+					int pos2=dir.ReverseFind(_MPT(']'));
 					if (pos2!=-1)
 						return FALSE;
 					if (bIsFile)
@@ -1050,7 +1050,7 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 				}
 				else
 				{
-					int pos2=dir.ReverseFind(']');
+					int pos2=dir.ReverseFind(_MPT(']'));
 					if (pos2==-1)
 						return FALSE;
 					if (bIsFile && pos2==(dir.GetLength()-1))
@@ -1065,7 +1065,7 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 					if (pos1)
 						newpath.m_Prefix=dir.Left(pos1);
 					else
-						newpath.m_Prefix="";
+						newpath.m_Prefix=_MPT("");
 					newpath.m_Segments.clear();
 					dir=dir.Mid(pos1+1);
 					pos1=dir.Find( _T("[") );
@@ -1080,7 +1080,7 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 					dir=dir.Mid(pos+1);
 					pos=dir.Find( _T(".") );
 				}
-				if (dir!="")
+				if (dir!=_MPT(""))
 					newpath.m_Segments.push_back(dir);
 			}
 			break;
@@ -1088,13 +1088,13 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 			{
 				dir.Replace( _T("\\"), _T("/") );
 				while(dir.Replace( _T("//"), _T("/") ));
-				if (dir.GetLength() >= 2 && dir[1] == ':')
+				if (dir.GetLength() >= 2 && dir[1] == _MPT(':'))
 					newpath.m_Segments.clear();
-				else if (dir[0]=='/')
+				else if (dir[0]==_MPT('/'))
 				{
 					CString firstSegment;
 					if (newpath.m_Segments.empty())
-						firstSegment = "C:";
+						firstSegment = _MPT("C:");
 					else
 						firstSegment = newpath.m_Segments.front();
 					newpath.m_Segments.clear();
@@ -1109,7 +1109,7 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 					return FALSE;
 				dir.TrimRight( _T("/") );
 
-				int pos=dir.ReverseFind('/');
+				int pos=dir.ReverseFind(_MPT('/'));
 				if (bIsFile)
 					if (pos==-1)
 					{
@@ -1132,17 +1132,17 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 					dir=dir.Mid(pos+1);
 					pos=dir.Find( _T("/") );
 				}
-				if (dir!="")
+				if (dir!=_MPT(""))
 					newpath.m_Segments.push_back(dir);
 				break;
 			}
 		case FZ_SERVERTYPE_SUB_FTP_UNKNOWN:
-			dir.Replace('.', '/');
+			dir.Replace(_MPT('.'), _MPT('/'));
 			dir = _T("/") + dir;
 		default:
 			dir.Replace( _T("\\"), _T("/") );
 			while(dir.Replace( _T("//"), _T("/") ));
-			if (dir[0]=='/')
+			if (dir[0]==_MPT('/'))
 			{
 				newpath.m_Segments.clear();
 				if (dir!="/")
@@ -1155,7 +1155,7 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 				return FALSE;
 			dir.TrimRight( _T("/") );
 
-			int pos=dir.ReverseFind('/');
+			int pos=dir.ReverseFind(_MPT('/'));
 			if (bIsFile)
 				if (pos==-1)
 				{
@@ -1178,7 +1178,7 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 				dir=dir.Mid(pos+1);
 				pos=dir.Find( _T("/") );
 			}
-			if (dir!="")
+			if (dir!=_MPT(""))
 				newpath.m_Segments.push_back(dir);
 			break;
 		}
@@ -1197,7 +1197,7 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 			dir.TrimLeft( _T("\\") );
 			if (bIsFile)
 			{
-				int pos=dir.ReverseFind('\\');
+				int pos=dir.ReverseFind(_MPT('\\'));
 				if (pos==-1)
 				{
 					if (dir.Find( _T(":") )!=-1)
@@ -1235,8 +1235,8 @@ BOOL CServerPath::ChangePath(CString &subdir, BOOL bIsFile /*=FALSE*/)
 					dir=dir.Mid(pos+1);
 					pos=dir.Find( _T("\\") );
 				}
-				if (dir!="")
-					newpath.m_Segments.push_back(dir);			
+				if (dir!=_MPT(""))
+					newpath.m_Segments.push_back(dir);
 			}
 			else
 				return FALSE;
@@ -1291,8 +1291,8 @@ CString CServerPath::FormatFilename(CString fn, bool omitPath /*=false*/) const
 	if (m_bEmpty)
 		return fn;
 
-	if (fn == "")
-		return "";
+	if (fn == _MPT(""))
+		return _MPT("");
 
 	CString path;
 	tConstIter iter;
@@ -1306,27 +1306,27 @@ CString CServerPath::FormatFilename(CString fn, bool omitPath /*=false*/) const
 			if (omitPath && m_Prefix == _T("."))
 				return fn;
 
-			path = "'";
+			path = _MPT("'");
 			for (iter = m_Segments.begin(); iter != m_Segments.end(); iter++)
 				path += *iter + _T(".");
 			if (m_Prefix != _T("."))
 			{
-				path.TrimRight('.');
+				path.TrimRight(_MPT('.'));
 				path += _T("(") + fn + _T(")");
 			}
 			else
 				path += fn;
-			path += "'";
+			path += _MPT("'");
 			break;
 		case FZ_SERVERTYPE_SUB_FTP_VMS:
 			if (omitPath)
 				return fn;
 
-			path = m_Prefix + "[";
+			path = m_Prefix + _MPT("[");
 			for (iter = m_Segments.begin(); iter != m_Segments.end(); iter++)
 				path += *iter + _T(".");
 			path.TrimRight( _T(".") );
-			path += "]";
+			path += _MPT("]");
 			path += fn;
 			break;
 		case FZ_SERVERTYPE_SUB_FTP_UNKNOWN:
@@ -1340,7 +1340,7 @@ CString CServerPath::FormatFilename(CString fn, bool omitPath /*=false*/) const
 			if (omitPath)
 				return fn;
 			if (!(m_nServerType & FZ_SERVERTYPE_SUB_FTP_WINDOWS))
-				path="/";
+				path=_MPT("/");
 			for (iter = m_Segments.begin(); iter != m_Segments.end(); iter++)
 				path+=*iter + _T("/");
 			path += fn;
@@ -1352,10 +1352,10 @@ CString CServerPath::FormatFilename(CString fn, bool omitPath /*=false*/) const
 			return fn;
 		path=m_Prefix;
 		if (!m_Segments.empty())
-			path+="\\";
+			path+=_MPT("\\");
 		for (iter=m_Segments.begin(); iter!=m_Segments.end(); iter++)
 			path+=*iter + _T("\\");
-		path += fn;				
+		path += fn;
 		break;
 	default:
 		ASSERT(FALSE);

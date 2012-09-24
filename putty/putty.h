@@ -670,6 +670,7 @@ struct config_tag {
 
     #ifdef MPEXT
     int connect_timeout;
+    int sndbuf;
     #endif
 };
 

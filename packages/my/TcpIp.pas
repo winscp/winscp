@@ -14,12 +14,7 @@ uses
   Sysutils,
   Classes,
   Winsock,
-{$ifdef ver80}
-  Winprocs,
-  Wintypes;
-{$else}
   Windows;
-{$endif}
 
 type
   TSocketState = (invalid, valid, connected, state_unknown);
@@ -97,8 +92,7 @@ type
     FContentPost: string;
     FRedirect: Boolean;
 
-    procedure GetHead;
-    procedure GetBody;
+    procedure GetBody(Post: Boolean);
     procedure SendRequest(const Method, Version: string);
     procedure GetAnswer;
     procedure ReportStatusError;
@@ -147,13 +141,6 @@ function LookupHostname(const Hostname: string): LongInt;
 var
   RemoteHost: PHostEnt; // no, don't free it!
   IpAddress: LongInt;
-{$ifdef ver80 }
-  S: string;
-{$else}
-{$ifopt h-}
-  S: string;
-{$endif}
-{$endif}
 begin
   IpAddress:=INVALID_IP_ADDRESS;
   try
@@ -164,31 +151,11 @@ begin
     end
       else
     begin
-{$ifdef ver80}
-      S := Hostname + #0;
       // try a xxx.xxx.xxx.xx first
-      IpAddress := Winsock.Inet_Addr(PChar(@s[1]));
-{$else}
- {$ifopt h-}
-      S := Hostname + #0;
-      // try a xxx.xxx.xxx.xx first
-      IpAddress := Winsock.Inet_Addr(PChar(@s[1]));
- {$else}
-      // try a xxx.xxx.xxx.xx first
-      IpAddress := Winsock.Inet_Addr(PChar(Hostname));
- {$endif}
-{$endif}
+      IpAddress := Winsock.Inet_Addr(PAnsiChar(AnsiString(Hostname)));
       if IpAddress = SOCKET_ERROR then
       begin
-{$ifdef ver80}
-        RemoteHost := Winsock.GetHostByName(PChar(@s[1]));
-{$else}
- {$ifopt h-}
-        RemoteHost := Winsock.GetHostByName(PChar(@s[1]));
- {$else}
-        RemoteHost := Winsock.GetHostByName(PChar(Hostname));
- {$endif}
-{$endif}
+        RemoteHost := Winsock.GetHostByName(PAnsiChar(AnsiString(Hostname)));
         if (RemoteHost = nil) or (RemoteHost^.h_length <= 0) then
         begin
           Result := IpAddress;
@@ -570,15 +537,7 @@ var
   s: string;
 begin
   s := service + #0;
-{$ifdef ver80}
-  ServiceEntry := Winsock.GetServByName(pchar(@s[1]), 'tcp');
-{$else}
- {$ifopt h-}
-  ServiceEntry := Winsock.GetServByName(pchar(@s[1]), 'tcp');
- {$else}
-  ServiceEntry := Winsock.GetServByName(pchar(s), 'tcp');
- {$endif}
-{$endif}
+   ServiceEntry := Winsock.GetServByName(pansichar(AnsiString(s)), 'tcp');
   if ServiceEntry = nil then
     Result := 0
   else
@@ -663,9 +622,9 @@ end;
 
 function TTcpIp.ReadLine(Socket: TSocket): string;
 var
-  x: Char;
+  x: AnsiChar;
   Ok: Integer;
-  s: string;
+  s: UTF8String;
 begin
   s := '';
   repeat
@@ -683,10 +642,10 @@ begin
     end
       else
     begin
-      s := s + x;
+      s := s + UTF8String(x);
     end;
   until Eof(Socket);
-  Result := s;
+  Result := string(s);
 end;
 
 procedure TTcpIp.WriteBuf(Socket: TSocket; const Buf; var Size: Integer);
@@ -699,16 +658,18 @@ end;
 
 procedure TTcpIp.WriteStr(Socket: TSocket; const s: string);
 var
+  u: UTF8String;
   l: Integer;
 begin
-  l := Length(s);
+  u := UTF8String(s);
+  l := Length(u);
 {$ifdef ver80}
-  WriteBuf(Socket, PChar(@s[1])^, l);
+  WriteBuf(Socket, PAnsiChar(@u[1])^, l);
 {$else}
 {$ifopt h-}
-  WriteBuf(Socket, PChar(@s[1])^, l);
+  WriteBuf(Socket, PAnsiChar(@u[1])^, l);
 {$else}
-  WriteBuf(Socket, PChar(s)^, l);
+  WriteBuf(Socket, PAnsiChar(u)^, l);
 {$endif}
 {$endif}
 end;
@@ -840,9 +801,17 @@ begin
 end;
 
 procedure THttp.Action;
+begin
+  GetBody(False);
+end;
+
+procedure THttp.GetBody(Post: Boolean);
 var
   Proto, User, Pass, Host, Port, Path: string;
+  Method: string;
   Redirects: Integer;
+  p: Pointer;
+  ok, ok2: Integer;
 begin
   // parse url and proxy to FHostname, FPath and FSocketNumber
   if FProxy <> '' then
@@ -870,100 +839,52 @@ begin
     Inc(Redirects);
     if Redirects > MaxRedirects then
       raise ETcpIpError.Create(Format(SRedirectLimitError, [MaxRedirects]));
-    // do directly GetBody, instead of GetHead first.
+    // do directly GET/POST, instead of HEAD first.
     // currently we use this for updates only and the potentional overhead
-    // of GetBody on redirect answer is smaller then two requests per each check
+    // of GET/POST on redirect answer is smaller then two requests per each check
     // (especially for the server itself)
-    GetBody;
+    Login;
+    if Post then Method := 'POST'
+      else Method := 'GET';
+    SendRequest(Method, '1.1');
+    if Post then
+    begin
+      // Send the data
+      TMemoryStream(FStream).Seek(0, 0);
+      ok := 1;
+      while ok > 0 do
+      begin
+        ok := FStream.Read(FBuffer^, BufSize);
+        WriteBuf(FSocket, FBuffer^, ok);
+      end;
+    end;
+    GetAnswer;
+    // read the data
+    if not FRedirect then
+    begin
+      TMemoryStream(FStream).Clear;
+      while not Eof(FSocket) do
+      begin
+        ReadVar(FSocket, FBuffer^, BufSize, Ok);
+        p := FBuffer;
+        while ok > 0 do
+        begin
+          // just to be sure everything goes into the stream
+          ok2 := FStream.Write(p^, ok);
+          Dec(ok, ok2);
+          p := Pointer(LongInt(p) + ok2);
+        end;
+      end;
+      FStream.Seek(0,0); // set the stream back to start
+    end;
+    Logout;
   until not FRedirect;
   if FStatusNr <> 200 then ReportStatusError;
 end;
 
-procedure THttp.GetHead;
-begin
-  Login;
-  SendRequest('HEAD', '1.1');
-  GetAnswer;
-  Logout;
-end;
-
-procedure THttp.GetBody;
-var
-  p: Pointer;
-  ok, ok2: Integer;
-begin
-  Login;
-  SendRequest('GET', '1.1');
-  GetAnswer;
-  // read the data
-  TMemoryStream(FStream).Clear;
-  while not Eof(FSocket) do
-  begin
-    ReadVar(FSocket, FBuffer^, BufSize, Ok);
-    p := FBuffer;
-    while ok > 0 do
-    begin
-      // just to be sure everything goes into the stream
-      ok2 := FStream.Write(p^, ok);
-      Dec(ok, ok2);
-      p := Pointer(LongInt(p) + ok2);
-    end;
-  end;
-  FStream.Seek(0,0); // set the stream back to start
-  Logout;
-end;
-
 procedure THttp.Post;
-var
-  p: Pointer;
-  ok, ok2: Integer;
-  Proto, User, Pass, Host, Port, Path: string;
 begin
-  // parse url and proxy to FHostname, FPath and FSocketNumber
-  if FProxy <> '' then
-  begin
-    ParseUrl(FProxy, Proto, User, Pass, Host, Port, Path);
-    FPath := FUrl;
-    if Port = '' then Port := '8080';
-  end
-    else
-  begin
-    ParseUrl(FUrl, Proto, User, Pass, Host, Port, FPath);
-    if Port = '' then Port := '80';
-  end;
-  if Proto = '' then Proto := 'http';
-  if Path = '' then Path := '/';
-
-  FHostname := Host;
-  FSocketNumber := StrToInt(Port);
-
-  Login;
-  SendRequest('POST', '1.1');
-  // Send the data
-  TMemoryStream(FStream).Seek(0, 0);
-  ok := 1;
-  while ok > 0 do
-  begin
-    ok := FStream.Read(FBuffer^, BufSize);
-    WriteBuf(FSocket, FBuffer^, ok);
-  end;
-  GetAnswer;
-  // read in the response body
-  TMemoryStream(FStream).Clear;
-  while not Eof(FSocket) do
-  begin
-    ReadVar(FSocket, FBuffer^, BufSize, ok);
-    p := FBuffer;
-    while ok > 0 do
-    begin
-      // just to be sure everything goes into the stream
-      ok2 := FStream.Write(p^, ok);
-      Dec(ok, ok2);
-      p := Pointer(LongInt(p) + ok2);
-    end;
-  end;
-  FStream.Seek(0,0); // set the stream back to start
-  Logout;
+  GetBody(True);
 end;
 
 procedure Register;

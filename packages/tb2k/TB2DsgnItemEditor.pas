@@ -30,12 +30,14 @@ interface
 
 {$I TB2Ver.inc}
 
+{$IFDEF MPDESIGNEDITORS}
+
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, ExtCtrls, Buttons, ComCtrls, ImgList, Menus,
   TB2Item, TB2Toolbar, TB2Dock,
   {$IFDEF JR_D6}
-    DesignIntf, DesignWindows, DesignEditors;
+    DesignWindows, DesignEditors;
   {$ELSE}
     DsgnIntf, DsgnWnds, LibIntf;
   {$ENDIF}
@@ -158,7 +160,11 @@ type
 procedure TBRegisterDsgnEditorHook(Hook: TTBDsgnEditorHook);
 procedure TBUnregisterDsgnEditorHook(Hook: TTBDsgnEditorHook);
 
+{$ENDIF}
+
 implementation
+
+{$IFDEF MPDESIGNEDITORS}
 
 {$R *.DFM}
 
@@ -944,14 +950,14 @@ begin
     GetPropList(SelItem.ClassInfo, [tkMethod], Props);
     for I := PropCount-1 downto 0 do begin
       PropInfo := Props[I];
-      if CompareText(PropInfo.Name, 'OnClick') = 0 then begin
+      if CompareText({MP}string(PropInfo.Name), 'OnClick') = 0 then begin
         Method := GetMethodProp(SelItem, PropInfo);
         MethodName := Designer.GetMethodName(Method);
         if MethodName = '' then begin
           MethodName := SelItem.Name + 'Click';
           Method := Designer.CreateMethod(MethodName, GetTypeData(PropInfo.PropType^));
           SetMethodProp(SelItem,
-            {$IFDEF JR_D5} PropInfo.Name {$ELSE} PropInfo {$ENDIF},
+            {$IFDEF JR_D5} {MP}string(PropInfo.Name) {$ELSE} PropInfo {$ENDIF},
             Method);
           Designer.Modified;
         end;
@@ -1004,7 +1010,7 @@ end;
 
 procedure TTBItemEditForm.TreeViewKeyPress(Sender: TObject; var Key: Char);
 begin
-  if Key in [#33..#126] then begin
+  if {MP} CharInSet(Key, [#33..#126]) then begin
     ActivateInspector(Key);
     Key := #0;
   end
@@ -1018,7 +1024,7 @@ begin
     NewSepButtonClick(Sender);
     Key := #0;
   end
-  else if Key in [#33..#126] then begin
+  else if {MP} CharInSet(Key, [#33..#126]) then begin
     ActivateInspector(Key);
     Key := #0;
   end;
@@ -1398,4 +1404,5 @@ finalization
   FreeItemClasses;
   FreeAndNil(ItemImageList);
   FreeAndNil(EditFormHooks);
+{$ENDIF}
 end.

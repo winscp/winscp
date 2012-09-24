@@ -19,7 +19,7 @@ __published:
   TGroupBox *LoggingGroup;
   TLabel *LogWindowLinesText;
   TCheckBox *LogToFileCheck;
-  TFilenameEdit *LogFileNameEdit2;
+  TFilenameEdit *LogFileNameEdit3;
   TCheckBox *LogShowWindowCheck;
   TRadioButton *LogWindowCompleteButton;
   TRadioButton *LogWindowLinesButton;
@@ -27,27 +27,24 @@ __published:
   TPanel *LogFilePanel;
   TRadioButton *LogFileAppendButton;
   TRadioButton *LogFileOverwriteButton;
-  TLabel *LogProtocolLabel;
   TComboBox *LogProtocolCombo;
   TStaticText *LogFileNameHintText;
-  TGroupBox *LogGroup;
-  TRadioButton *LoggingOffButton;
-  TRadioButton *LoggingOnButton;
-  TRadioButton *LoggingActionsButton;
-  void __fastcall LogToFileCheckChange(TObject *Sender);
+  TGroupBox *ActionsLoggingGroup;
+  TFilenameEdit *ActionsLogFileNameEdit;
+  TStaticText *ActionsLogFileNameHintText;
+  TCheckBox *EnableActionsLoggingCheck;
+  TCheckBox *EnableLoggingCheck;
   void __fastcall DataChange(TObject *Sender);
-  void __fastcall LogFileNameEdit2BeforeDialog(TObject *Sender,
-          AnsiString &Name, bool &Action);
-  void __fastcall LogFileNameEdit2AfterDialog(TObject *Sender,
-          AnsiString &Name, bool &Action);
-  void __fastcall LogFileNameEdit2CreateEditDialog(TObject *Sender,
+  void __fastcall LogFileNameEditBeforeDialog(TObject *Sender,
+          UnicodeString &Name, bool &Action);
+  void __fastcall LogFileNameEditAfterDialog(TObject *Sender,
+          UnicodeString &Name, bool &Action);
+  void __fastcall LogFileNameEditCreateEditDialog(TObject *Sender,
           TFileDialogKind DialogKind, TOpenDialog *&Dialog);
-  void __fastcall LoggingButtonClick(TObject *Sender);
 private:
   bool FEnableLogWindow;
-  AnsiString FBeforeDialogPath;
+  UnicodeString FBeforeDialogPath;
 
-  AnsiString __fastcall GetLogFileExt();
   void __fastcall SetEnableLogWindow(bool value);
 public:
   __fastcall TLoggingFrame(TComponent* Owner);

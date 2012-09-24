@@ -1,6 +1,6 @@
 object FileSystemInfoDialog: TFileSystemInfoDialog
-  Left = 165
-  Top = 69
+  Left = 320
+  Top = 130
   HelpType = htKeyword
   HelpKeyword = 'ui_fsinfo'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
@@ -11,7 +11,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
     371
@@ -48,7 +48,6 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     ActivePage = ProtocolSheet
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
-    TabIndex = 0
     TabOrder = 0
     OnChange = PageControlChange
     object ProtocolSheet: TTabSheet
@@ -89,16 +88,12 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
+            AutoSize = True
             Caption = 'Item'
-            Width = -2
-            WidthType = (
-              -2)
           end
           item
+            AutoSize = True
             Caption = 'Value'
-            Width = -2
-            WidthType = (
-              -2)
           end>
         ColumnClick = False
         MultiSelect = True
@@ -189,16 +184,12 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
+            AutoSize = True
             Caption = 'Item'
-            Width = -2
-            WidthType = (
-              -2)
           end
           item
+            AutoSize = True
             Caption = 'Value'
-            Width = -2
-            WidthType = (
-              -2)
           end>
         ColumnClick = False
         MultiSelect = True
@@ -219,7 +210,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       object Label1: TLabel
         Left = 13
         Top = 13
-        Width = 25
+        Width = 26
         Height = 13
         Caption = '&Path:'
         FocusControl = SpaceAvailablePathEdit
@@ -232,16 +223,12 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
+            AutoSize = True
             Caption = 'Item'
-            Width = -2
-            WidthType = (
-              -2)
           end
           item
+            AutoSize = True
             Caption = 'Value'
-            Width = -2
-            WidthType = (
-              -2)
           end>
         ColumnClick = False
         MultiSelect = True

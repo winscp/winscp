@@ -39,9 +39,12 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   Params = DefParams;
 
   InstallPathWordBreakProc(AsciiFileMaskCombo);
-  InstallPathWordBreakProc(ExcludeFileMaskCombo);
-  HintLabel(ExcludeFileMaskHintText,
-    FORMAT("%s\n \n%s",(LoadStr(MASK_HINT2), LoadStr(PATH_MASK_HINT))));
+  InstallPathWordBreakProc(IncludeFileMaskCombo);
+  HintLabel(IncludeFileMaskHintText,
+    FORMAT(L"%s\n \n%s\n \n%s\n \n%s\n \n%s\n \n%s", (LoadStr(MASK_HINT2),
+      LoadStr(FILE_MASK_EX_HINT), LoadStr(COMBINING_MASKS_HINT),
+      LoadStr(PATH_MASK_HINT2),
+      LoadStr(DIRECTORY_MASK_HINT), LoadStr(MASK_HELP))));
 }
 //---------------------------------------------------------------------------
 __fastcall TCopyParamsFrame::~TCopyParamsFrame()
@@ -82,8 +85,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
 
   CommonCalculateSizeCheck->Checked = value.CalculateSize;
 
-  NegativeExcludeCombo->ItemIndex = (value.NegativeExclude ? 1 : 0);
-  ExcludeFileMaskCombo->Text = value.ExcludeFileMask.Masks;
+  IncludeFileMaskCombo->Text = value.IncludeFileMask.Masks;
   ClearArchiveCheck->Checked = value.ClearArchive;
 
   SpeedCombo->Text = SetSpeedLimit(value.CPSLimit);
@@ -124,8 +126,7 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
 
   Result.CalculateSize = CommonCalculateSizeCheck->Checked;
 
-  Result.ExcludeFileMask.Masks = ExcludeFileMaskCombo->Text;
-  Result.NegativeExclude = (NegativeExcludeCombo->ItemIndex == 1);
+  Result.IncludeFileMask.Masks = IncludeFileMaskCombo->Text;
 
   Result.ClearArchive = ClearArchiveCheck->Checked;
 
@@ -136,39 +137,38 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::UpdateControls()
 {
-  EnableControl(CommonPropertiesGroup, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
-  EnableControl(LocalPropertiesGroup, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
-  EnableControl(RemotePropertiesGroup, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
+  EnableControl(CommonPropertiesGroup, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
+  EnableControl(LocalPropertiesGroup, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
+  EnableControl(RemotePropertiesGroup, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(TransferModeGroup,
     FLAGCLEAR(CopyParamAttrs, cpaNoTransferMode) &&
-    FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
+    FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(AsciiFileMaskLabel,
     TransferModeGroup->Enabled && TMAutomaticButton->Checked);
   EnableControl(AsciiFileMaskCombo,
     TransferModeGroup->Enabled && TMAutomaticButton->Checked);
-  EnableControl(PreserveRightsCheck, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) &&
+  EnableControl(PreserveRightsCheck, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) &&
     FLAGCLEAR(CopyParamAttrs, cpaNoRights) && Enabled);
   EnableControl(RightsEdit, PreserveRightsCheck->Checked &&
     PreserveRightsCheck->Enabled);
   EnableControl(FRightsFrame, RightsEdit->Enabled);
-  EnableControl(PreserveReadOnlyCheck, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) &&
+  EnableControl(PreserveReadOnlyCheck, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) &&
     FLAGCLEAR(CopyParamAttrs, cpaNoPreserveReadOnly) && Enabled);
-  EnableControl(ExcludeFileMaskCombo,
-    (FLAGCLEAR(CopyParamAttrs, cpaNoExcludeMask) ||
-     FLAGSET(CopyParamAttrs, cpaExcludeMaskOnly)) &&
+  EnableControl(IncludeFileMaskCombo,
+    (FLAGCLEAR(CopyParamAttrs, cpaNoIncludeMask) ||
+     FLAGSET(CopyParamAttrs, cpaIncludeMaskOnly)) &&
     Enabled);
-  EnableControl(ExclusionFileMaskLabel, ExcludeFileMaskCombo->Enabled);
-  EnableControl(NegativeExcludeCombo, ExcludeFileMaskCombo->Enabled);
+  EnableControl(IncludeFileMaskLabel, IncludeFileMaskCombo->Enabled);
   EnableControl(ClearArchiveCheck, FLAGCLEAR(CopyParamAttrs, cpaNoClearArchive) &&
-    FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
+    FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(PreserveTimeCheck, FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTime) &&
-    FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
-  EnableControl(ChangeCaseGroup, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
+    FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
+  EnableControl(ChangeCaseGroup, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(IgnorePermErrorsCheck,
     ((PreserveRightsCheck->Enabled && PreserveRightsCheck->Checked) ||
      (PreserveTimeCheck->Enabled && PreserveTimeCheck->Checked)) &&
     FLAGCLEAR(CopyParamAttrs, cpaNoIgnorePermErrors) &&
-    FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly));
+    FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::ControlChange(TObject * /*Sender*/)
@@ -178,29 +178,29 @@ void __fastcall TCopyParamsFrame::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::BeforeExecute()
 {
-  // only now is ExcludeFileMaskHintText->Width updated to match actual caption
+  // only now is IncludeFileMaskHintText->Width updated to match actual caption
   // (localised one)
-  TPoint P(ExcludeFileMaskCombo->Width, 0);
-  P = ExcludeFileMaskHintText->ScreenToClient(ExcludeFileMaskCombo->ClientToScreen(P));
-  ExcludeFileMaskHintText->Left = ExcludeFileMaskHintText->Left + P.x - ExcludeFileMaskHintText->Width;
+  TPoint P(IncludeFileMaskCombo->Width, 0);
+  P = IncludeFileMaskHintText->ScreenToClient(IncludeFileMaskCombo->ClientToScreen(P));
+  IncludeFileMaskHintText->Left = IncludeFileMaskHintText->Left + P.x - IncludeFileMaskHintText->Width;
 
   // adding TRightsFrame on run-time corrupts the tab order, fix it
   TransferModeGroup->TabOrder = 0;
   assert(CustomWinConfiguration);
-  AsciiFileMaskCombo->Items = CustomWinConfiguration->History["Mask"];
-  ExcludeFileMaskCombo->Items = CustomWinConfiguration->History["ExcludeMask"];
-  SpeedCombo->Items = CustomWinConfiguration->History["SpeedLimit"];
+  AsciiFileMaskCombo->Items = CustomWinConfiguration->History[L"Mask"];
+  IncludeFileMaskCombo->Items = CustomWinConfiguration->History[L"IncludeMask"];
+  SpeedCombo->Items = CustomWinConfiguration->History[L"SpeedLimit"];
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::AfterExecute()
 {
   assert(CustomWinConfiguration);
   AsciiFileMaskCombo->SaveToHistory();
-  CustomWinConfiguration->History["Mask"] = AsciiFileMaskCombo->Items;
-  ExcludeFileMaskCombo->SaveToHistory();
-  CustomWinConfiguration->History["ExcludeMask"] = ExcludeFileMaskCombo->Items;
+  CustomWinConfiguration->History[L"Mask"] = AsciiFileMaskCombo->Items;
+  IncludeFileMaskCombo->SaveToHistory();
+  CustomWinConfiguration->History[L"IncludeMask"] = IncludeFileMaskCombo->Items;
   SpeedCombo->SaveToHistory();
-  CustomWinConfiguration->History["SpeedLimit"] = SpeedCombo->Items;
+  CustomWinConfiguration->History[L"SpeedLimit"] = SpeedCombo->Items;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetCopyParamAttrs(int value)
@@ -289,6 +289,15 @@ void __fastcall TCopyParamsFrame::SpeedComboExit(TObject * /*Sender*/)
     SpeedCombo->SetFocus();
     SpeedCombo->SelectAll();
     Abort();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyParamsFrame::IncludeFileMaskButtonClick(TObject * /*Sender*/)
+{
+  TFileMasks Masks = IncludeFileMaskCombo->Text;
+  if (DoEditMaskDialog(Masks))
+  {
+    IncludeFileMaskCombo->Text = Masks.Masks;
   }
 }
 //---------------------------------------------------------------------------

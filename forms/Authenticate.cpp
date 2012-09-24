@@ -18,13 +18,14 @@
 #endif
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::TAuthenticateForm(TComponent * Owner)
-  : TForm(Owner), FSessionData(NULL)
+  : TForm(Owner), FSessionData(NULL), FTerminal(NULL)
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::Init(TSessionData * SessionData)
+void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
 {
-  FSessionData = SessionData;
+  FTerminal = Terminal;
+  FSessionData = Terminal->SessionData;
 
   UseSystemSettings(this);
   FShowAsModalStorage = NULL;
@@ -64,12 +65,25 @@ void __fastcall TAuthenticateForm::WMNCCreate(TWMNCCreate & Message)
   DefaultHandler(&Message);
 }
 //---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::DoCancel()
+{
+  if (FOnCancel != NULL)
+  {
+    FOnCancel(this);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::Dispatch(void * AMessage)
 {
   TMessage & Message = *reinterpret_cast<TMessage *>(AMessage);
   if (Message.Msg == WM_NCCREATE)
   {
     WMNCCreate(*reinterpret_cast<TWMNCCreate *>(AMessage));
+  }
+  else if (Message.Msg == WM_CLOSE)
+  {
+    DoCancel();
+    TForm::Dispatch(AMessage);
   }
   else
   {
@@ -105,7 +119,7 @@ void __fastcall TAuthenticateForm::ClearLog()
   LogView->Items->Clear();
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::Log(const AnsiString Message)
+void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
 {
   TListItem * Item = LogView->Items->Add();
   Item->Caption = Message;
@@ -121,11 +135,11 @@ void __fastcall TAuthenticateForm::AdjustControls()
   }
   else
   {
-    Caption = FORMAT("%s - %s", (FStatus, FSessionData->SessionName));
+    Caption = FORMAT(L"%s - %s", (FStatus, FSessionData->SessionName));
   }
 }
 //---------------------------------------------------------------------------
-TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, AnsiString Caption)
+TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString Caption)
 {
   TLabel * Result = new TLabel(this);
   Result->Parent = FPromptParent;
@@ -159,7 +173,7 @@ TCustomEdit * __fastcall TAuthenticateForm::GenerateEdit(int Current, bool Echo,
   return Result;
 }
 //---------------------------------------------------------------------------
-TList * __fastcall TAuthenticateForm::GeneratePrompt(AnsiString Instructions,
+TList * __fastcall TAuthenticateForm::GeneratePrompt(UnicodeString Instructions,
   TStrings * Prompts, TStrings * Results)
 {
   while (FPromptParent->ControlCount > 0)
@@ -199,8 +213,8 @@ TList * __fastcall TAuthenticateForm::GeneratePrompt(AnsiString Instructions,
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, AnsiString Name,
-  AnsiString Instructions, TStrings * Prompts, TStrings * Results, bool ForceLog,
+bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Name,
+  UnicodeString Instructions, TStrings * Prompts, TStrings * Results, bool ForceLog,
   bool StoredCredentialsTried)
 {
 
@@ -214,10 +228,9 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, AnsiString Name,
     if (((Kind == pkPassword) || (Kind == pkTIS) || (Kind == pkCryptoCard) ||
          (Kind == pkKeybInteractive)) &&
         (Prompts->Count == 1) && !bool(Prompts->Objects[0]) &&
-        !FSessionData->Name.IsEmpty() &&
         StoredCredentialsTried)
     {
-      Data = dynamic_cast<TSessionData *>(StoredSessions->FindByName(FSessionData->Name));
+      Data = StoredSessions->FindSame(FSessionData);
       ShowSavePasswordPanel = (Data != NULL) && !Data->Password.IsEmpty();
     }
 
@@ -269,7 +282,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, AnsiString Name,
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::Banner(const AnsiString & Banner,
+void __fastcall TAuthenticateForm::Banner(const UnicodeString & Banner,
   bool & NeverShowAgain, int Options)
 {
   BannerMemo->Lines->Text = Banner;
@@ -283,7 +296,7 @@ void __fastcall TAuthenticateForm::Banner(const AnsiString & Banner,
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TPanel * Panel,
+bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
   TWinControl * FocusControl, TButton * DefaultButton, TButton * CancelButton,
   bool FixHeight, bool Zoom, bool ForceLog)
 {
@@ -393,11 +406,18 @@ bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TPanel * Panel,
     Panel->Align = Align;
     DefaultButton->Default = false;
     CancelButton->Cancel = false;
-    FStatus = "";
+    FStatus = L"";
     AdjustControls();
   }
 
-  return (ModalResult != mrCancel);
+  bool Result = (ModalResult != mrCancel);
+
+  if (!Result)
+  {
+    DoCancel();
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::HelpButtonClick(TObject * /*Sender*/)

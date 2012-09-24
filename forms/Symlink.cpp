@@ -14,7 +14,7 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
+bool __fastcall DoSymlinkDialog(UnicodeString & FileName, UnicodeString & PointTo,
   TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic)
 {
   bool Result;
@@ -62,22 +62,22 @@ void __fastcall TSymlinkDialog::UpdateControls()
   EnableControl(OkButton, !FileName.IsEmpty() && !PointTo.IsEmpty());
 }
 //---------------------------------------------------------------------------
-void __fastcall TSymlinkDialog::SetFileName(AnsiString value)
+void __fastcall TSymlinkDialog::SetFileName(UnicodeString value)
 {
   FileNameEdit->Text = value;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSymlinkDialog::GetFileName()
+UnicodeString __fastcall TSymlinkDialog::GetFileName()
 {
   return FileNameEdit->Text;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSymlinkDialog::SetPointTo(AnsiString value)
+void __fastcall TSymlinkDialog::SetPointTo(UnicodeString value)
 {
   PointToEdit->Text = value;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSymlinkDialog::GetPointTo()
+UnicodeString __fastcall TSymlinkDialog::GetPointTo()
 {
   return PointToEdit->Text;
 }

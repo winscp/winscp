@@ -34,8 +34,7 @@ typedef unsigned long long BignumDblInt;
     __asm__("div %2" : \
 	    "=d" (r), "=a" (q) : \
 	    "r" (w), "d" (hi), "a" (lo))
-// MPEXT: Borland does not support inline assembly in IDE
-#elif (defined _MSC_VER && defined _M_IX86) || (defined(MPEXT) && !defined(IDE))
+#elif (defined _MSC_VER && defined _M_IX86) || defined(MPEXT)
 typedef unsigned __int32 BignumInt;
 typedef unsigned __int64 BignumDblInt;
 #define BIGNUM_INT_MASK  0xFFFFFFFFUL

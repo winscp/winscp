@@ -23,11 +23,13 @@ public:
 
   TColor Color;
   bool SynchronizeBrowsing;
-  AnsiString LocalDirectory;
-  AnsiString RemoteDirectory;
+  UnicodeString LocalDirectory;
+  UnicodeString RemoteDirectory;
   TObject * LocalExplorerState;
   TObject * RemoteExplorerState;
   TDateTime ReopenStart;
+  TDateTime DirectoryLoaded;
+  TTerminalThread * TerminalThread;
 };
 //---------------------------------------------------------------------------
 class TTerminalManager : public TTerminalList
@@ -41,24 +43,26 @@ public:
 
   virtual TTerminal * __fastcall NewTerminal(TSessionData * Data);
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
+  void __fastcall Move(TTerminal * Source, TTerminal * Target);
   bool __fastcall ConnectActiveTerminal();
   void __fastcall DisconnectActiveTerminal();
   void __fastcall ReconnectActiveTerminal();
   void __fastcall FreeActiveTerminal();
   void __fastcall CycleTerminals(bool Forward);
   static void ConnectTerminal(TTerminal * Terminal, bool Reopen);
-  AnsiString __fastcall UpdateAppTitle();
+  void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
   bool __fastcall NewSession();
   void __fastcall Idle();
-  AnsiString __fastcall TerminalTitle(TTerminal * Terminal);
+  UnicodeString __fastcall TerminalTitle(TTerminal * Terminal);
+  void __fastcall HandleException(Exception * E);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
   __property TTerminalQueue * ActiveQueue = { read = GetActiveQueue };
   __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex, write = SetActiveTerminalIndex };
-  __property AnsiString ActiveTerminalTitle = { read = GetActiveTerminalTitle };
+  __property UnicodeString ActiveTerminalTitle = { read = GetActiveTerminalTitle };
   __property TStrings * TerminalList = { read = GetTerminalList };
   __property TLogMemo * LogMemo = { read = FLogMemo };
   __property TNotifyEvent OnLastTerminalClosed = { read = FOnLastTerminalClosed, write = FOnLastTerminalClosed };
@@ -79,7 +83,7 @@ private:
   TStrings * FTerminalList;
   TList * FQueues;
   TStrings * FTerminationMessages;
-  AnsiString FProgressTitle;
+  UnicodeString FProgressTitle;
   TDateTime FDirectoryReadingStart;
   TAuthenticateForm * FAuthenticateForm;
   TCriticalSection * FQueueSection;
@@ -87,6 +91,7 @@ private:
   TQueueEvent FQueueEvent;
   unsigned int FTaskbarButtonCreatedMessage;
   ITaskbarList3 * FTaskbarList;
+  int FAuthenticating;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   TTerminalQueue * __fastcall NewQueue(TTerminal * Terminal);
@@ -97,43 +102,42 @@ private:
   void __fastcall SetLogMemo(TLogMemo * value);
   void __fastcall UpdateAll();
   void __fastcall ApplicationException(TObject * Sender, Exception * E);
-  void __fastcall ApplicationShowHint(AnsiString & HintStr, bool & CanShow,
+  void __fastcall ApplicationShowHint(UnicodeString & HintStr, bool & CanShow,
     THintInfo & HintInfo);
-  void __fastcall ApplicationActivate(TObject * Sender);
   void __fastcall ApplicationMessage(TMsg & Msg, bool & Handled);
   void __fastcall ConfigurationChange(TObject * Sender);
   void __fastcall TerminalUpdateStatus(TTerminal * Terminal, bool Active);
   void __fastcall TerminalQueryUser(TObject * Sender,
-    const AnsiString Query, TStrings * MoreMessages, int Answers,
-    const TQueryParams * Params, int & Answer, TQueryType Type, void * Arg);
+    const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
+    const TQueryParams * Params, unsigned int & Answer, TQueryType Type, void * Arg);
   void __fastcall TerminalPromptUser(TTerminal * Terminal,
-    TPromptKind Kind, AnsiString Name, AnsiString Instructions, TStrings * Prompt,
+    TPromptKind Kind, UnicodeString Name, UnicodeString Instructions, TStrings * Prompt,
     TStrings * Results, bool & Result, void * Arg);
   void __fastcall TerminalDisplayBanner(TTerminal * Terminal,
-    AnsiString SessionName, const AnsiString & Banner, bool & NeverShowAgain,
+    UnicodeString SessionName, const UnicodeString & Banner, bool & NeverShowAgain,
     int Options);
   void __fastcall TerminalShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress,
     bool & Cancel);
-  void __fastcall TerminalInformation(TTerminal * Terminal, const AnsiString & Str,
-    bool Status, bool Active);
+  void __fastcall TerminalInformation(TTerminal * Terminal, const UnicodeString & Str,
+    bool Status, int Phase);
   void __fastcall FreeAll();
   void __fastcall TerminalReady();
   TStrings * __fastcall GetTerminalList();
   int __fastcall GetActiveTerminalIndex();
-  AnsiString __fastcall GetActiveTerminalTitle();
+  UnicodeString __fastcall GetActiveTerminalTitle();
   TTerminalQueue * __fastcall GetActiveQueue();
   void __fastcall SaveTerminal(TTerminal * Terminal);
   void __fastcall SetActiveTerminalIndex(int value);
   void __fastcall OperationFinished(::TFileOperation Operation, TOperationSide Side,
-    bool Temp, const AnsiString & FileName, bool Success,
+    bool Temp, const UnicodeString & FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);
-  void __fastcall DeleteLocalFile(const AnsiString FileName, bool Alternative);
+  void __fastcall DeleteLocalFile(const UnicodeString FileName, bool Alternative);
   void __fastcall QueueEvent(TTerminalQueue * Queue, TQueueEvent Event);
-  TAuthenticateForm * __fastcall MakeAuthenticateForm(TSessionData * Data);
+  TAuthenticateForm * __fastcall MakeAuthenticateForm(TTerminal * Terminal);
   void __fastcall MasterPasswordPrompt();
   void __fastcall FileNameInputDialogInitializeRenameBaseName(
     TObject * Sender, TInputDialogData * Data);
@@ -141,6 +145,9 @@ private:
   void __fastcall ReleaseTaskbarList();
   void __fastcall CreateTaskbarList();
   void __fastcall UpdateTaskbarList();
+  void __fastcall AuthenticateFormCancel(TObject * Sender);
+  void __fastcall DoTerminalListChanged();
+  static void __fastcall TerminalThreadIdle(void * Data, TObject * Sender);
 };
 //---------------------------------------------------------------------------
 #endif

@@ -17,24 +17,24 @@ int __fastcall NamedObjectSortProc(void * Item1, void * Item2)
   return AnsiCompareStr(((TNamedObject *)Item1)->Name, ((TNamedObject *)Item2)->Name);
 }
 //--- TNamedObject ----------------------------------------------------------
-__fastcall TNamedObject::TNamedObject(AnsiString AName)
+__fastcall TNamedObject::TNamedObject(UnicodeString AName)
 {
   Name = AName;
 }
 //---------------------------------------------------------------------------
-void __fastcall TNamedObject::SetName(AnsiString value)
+void __fastcall TNamedObject::SetName(UnicodeString value)
 {
   FHidden = (value.SubString(1, TNamedObjectList::HiddenPrefix.Length()) == TNamedObjectList::HiddenPrefix);
   FName = value;
 }
 //---------------------------------------------------------------------------
-Integer __fastcall TNamedObject::CompareName(AnsiString aName,
+Integer __fastcall TNamedObject::CompareName(UnicodeString aName,
   Boolean CaseSensitive)
 {
   if (CaseSensitive)
-    return Name.AnsiCompare(aName);
+    return Name.Compare(aName);
   else
-    return Name.AnsiCompareIC(aName);
+    return Name.CompareIC(aName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNamedObject::MakeUniqueIn(TNamedObjectList * List)
@@ -45,17 +45,22 @@ void __fastcall TNamedObject::MakeUniqueIn(TNamedObjectList * List)
     {
       Integer N = 0, P;
       // If name already contains number parenthesis remove it (and remember it)
-      if ((Name[Name.Length()] == ')') && ((P = Name.LastDelimiter('(')) > 0))
-        try {
+      if ((Name[Name.Length()] == L')') && ((P = Name.LastDelimiter(L'(')) > 0))
+        try
+        {
           N = StrToInt(Name.SubString(P + 1, Name.Length() - P - 1));
           Name.Delete(P, Name.Length() - P + 1);
           Name = Name.TrimRight();
-        } catch (Exception &E) { N = 0; };
-      Name += " (" + IntToStr(N+1) + ")";
+        }
+        catch (Exception &E)
+        {
+          N = 0;
+        }
+      Name += L" (" + IntToStr(N+1) + L")";
     }
 }
 //--- TNamedObjectList ------------------------------------------------------
-const AnsiString TNamedObjectList::HiddenPrefix = "_!_";
+const UnicodeString TNamedObjectList::HiddenPrefix = L"_!_";
 //---------------------------------------------------------------------------
 __fastcall TNamedObjectList::TNamedObjectList():
   TObjectList()
@@ -87,7 +92,7 @@ void __fastcall TNamedObjectList::Notify(void *Ptr, TListNotification Action)
   Recount();
 }
 //---------------------------------------------------------------------------
-TNamedObject * __fastcall TNamedObjectList::FindByName(AnsiString Name,
+TNamedObject * __fastcall TNamedObjectList::FindByName(UnicodeString Name,
   Boolean CaseSensitive)
 {
   for (Integer Index = 0; Index < TObjectList::Count; Index++)

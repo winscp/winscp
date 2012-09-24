@@ -17,6 +17,7 @@
 #include "TBXThemes.hpp"
 #include "TBXOfficeXPTheme.hpp"
 #include "TBXOffice2003Theme.hpp"
+#include "PasswordEdit.hpp"
 #include "ProgParams.h"
 #include "Tools.h"
 #include "Custom.h"
@@ -24,18 +25,25 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-const AnsiString AppName = "WinSCP";
+const UnicodeString AppName = L"WinSCP";
 //---------------------------------------------------------------------------
 TConfiguration * __fastcall CreateConfiguration()
 {
   TConfiguration * Configuration = new TWinConfiguration();
 
   TProgramParams * Params = TProgramParams::Instance();
-  AnsiString IniFileName = Params->SwitchValue("ini");
+  UnicodeString IniFileName = Params->SwitchValue(L"ini");
   if (!IniFileName.IsEmpty())
   {
-    IniFileName = ExpandFileName(ExpandEnvironmentVariables(IniFileName));
-    Configuration->IniFileStorageName = IniFileName;
+    if (AnsiSameText(IniFileName, L"nul"))
+    {
+      Configuration->SetNulStorage();
+    }
+    else
+    {
+      IniFileName = ExpandFileName(ExpandEnvironmentVariables(IniFileName));
+      Configuration->IniFileStorageName = IniFileName;
+    }
   }
 
   return Configuration;
@@ -52,23 +60,22 @@ TCustomScpExplorerForm * __fastcall CreateScpExplorer()
   {
     ScpExplorer = SafeFormCreate<TScpCommanderForm>();
   }
-  ScpExplorer->Icon->Assign(Application->Icon);
   return ScpExplorer;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall SshVersionString()
+UnicodeString __fastcall SshVersionString()
 {
-  return FORMAT("WinSCP-release-%s", (Configuration->Version));
+  return FORMAT(L"WinSCP-release-%s", (Configuration->Version));
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall AppNameString()
+UnicodeString __fastcall AppNameString()
 {
-  return "WinSCP";
+  return L"WinSCP";
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall GetRegistryKey()
+UnicodeString __fastcall GetRegistryKey()
 {
-  return "Software\\Martin Prikryl\\WinSCP 2";
+  return L"Software\\Martin Prikryl\\WinSCP 2";
 }
 //---------------------------------------------------------------------------
 static bool ForcedOnForeground = false;
@@ -99,111 +106,122 @@ void __fastcall ShowExtendedException(Exception * E)
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   Exception * E)
 {
-  AnsiString Message; // not used
-  if (ExceptionMessage(E, Message))
+  UnicodeString Message; // not used
+  bool Show = ExceptionMessage(E, Message);
+
+  TTerminalManager * Manager = TTerminalManager::Instance(false);
+
+  TQueryType Type;
+  ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
+  bool CloseOnCompletion = (Terminate != NULL);
+  Type = CloseOnCompletion ? qtInformation : qtError;
+  bool ConfirmExitOnCompletion =
+    CloseOnCompletion &&
+    (Terminate->Operation == odoDisconnect) &&
+    WinConfiguration->ConfirmExitOnCompletion;
+
+  if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
+      (Manager != NULL) && (Manager->ActiveTerminal == Terminal))
   {
-    TTerminalManager * Manager = TTerminalManager::Instance(false);
-
-    TQueryType Type;
-    ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
-    bool CloseOnCompletion = (Terminate != NULL);
-    Type = CloseOnCompletion ? qtInformation : qtError;
-    bool ConfirmExitOnCompletion =
-      CloseOnCompletion &&
-      (Terminate->Operation == odoDisconnect) &&
-      WinConfiguration->ConfirmExitOnCompletion;
-
-    if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
-        (Manager != NULL) && (Manager->ActiveTerminal == Terminal))
+    if (CloseOnCompletion)
     {
-      if (CloseOnCompletion)
-      {
-        Manager->DisconnectActiveTerminal();
-      }
+      Manager->DisconnectActiveTerminal();
+    }
 
-      int SessionReopenTimeout = 0;
-      TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-      if ((ManagedTerminal != NULL) &&
-          ((Configuration->SessionReopenTimeout == 0) ||
-           ((double)ManagedTerminal->ReopenStart == 0) ||
-           (int(double(Now() - ManagedTerminal->ReopenStart) * 24*60*60*1000) < Configuration->SessionReopenTimeout)))
-      {
-        SessionReopenTimeout = GUIConfiguration->SessionReopenAutoIdle;
-      }
+    int SessionReopenTimeout = 0;
+    TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
+    if ((ManagedTerminal != NULL) &&
+        ((Configuration->SessionReopenTimeout == 0) ||
+         ((double)ManagedTerminal->ReopenStart == 0) ||
+         (int(double(Now() - ManagedTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
+    {
+      SessionReopenTimeout = GUIConfiguration->SessionReopenAutoIdle;
+    }
 
-      int Result;
-      if (CloseOnCompletion)
+    unsigned int Result;
+    if (CloseOnCompletion)
+    {
+      assert(Show);
+      if (ConfirmExitOnCompletion)
       {
-        if (ConfirmExitOnCompletion)
-        {
-          TMessageParams Params(mpNeverAskAgainCheck);
-          Result = FatalExceptionMessageDialog(E, Type, 0,
-            (Manager->Count > 1) ?
-              FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
-              LoadStr(EXIT_ON_COMPLETION),
-            qaYes | qaNo, HELP_NONE, &Params);
+        TMessageParams Params(mpNeverAskAgainCheck);
+        Result = FatalExceptionMessageDialog(E, Type, 0,
+          (Manager->Count > 1) ?
+            FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
+            LoadStr(EXIT_ON_COMPLETION),
+          qaYes | qaNo, HELP_NONE, &Params);
 
-          if (Result == qaNeverAskAgain)
-          {
-            Result = qaYes;
-            WinConfiguration->ConfirmExitOnCompletion = false;
-          }
-        }
-        else
+        if (Result == qaNeverAskAgain)
         {
           Result = qaYes;
+          WinConfiguration->ConfirmExitOnCompletion = false;
         }
       }
       else
       {
-        Result = FatalExceptionMessageDialog(E, Type, SessionReopenTimeout);
-      }
-
-      if (Result == qaYes)
-      {
-        assert(Terminate != NULL);
-        assert(Terminate->Operation != odoIdle);
-        Application->Terminate();
-
-        switch (Terminate->Operation)
-        {
-          case odoDisconnect:
-            break;
-
-          case odoShutDown:
-            ShutDownWindows();
-            break;
-
-          default:
-            assert(false);
-        }
-      }
-      else if (Result == qaRetry)
-      {
-        Manager->ReconnectActiveTerminal();
-      }
-      else
-      {
-        Manager->FreeActiveTerminal();
+        Result = qaYes;
       }
     }
     else
     {
-      // this should not happen as we never use Terminal->CloseOnCompletion
-      // on inactive terminal
-      if (CloseOnCompletion)
+      if (Show)
       {
-        if (ConfirmExitOnCompletion)
-        {
-          TMessageParams Params(mpNeverAskAgainCheck);
-          if (ExceptionMessageDialog(E, Type, "", qaOK, HELP_NONE, &Params) ==
-                qaNeverAskAgain)
-          {
-            WinConfiguration->ConfirmExitOnCompletion = false;
-          }
-        }
+        Result = FatalExceptionMessageDialog(E, Type, SessionReopenTimeout);
       }
       else
+      {
+        Result = qaOK;
+      }
+    }
+
+    if (Result == qaYes)
+    {
+      assert(Terminate != NULL);
+      assert(Terminate->Operation != odoIdle);
+      Application->Terminate();
+
+      switch (Terminate->Operation)
+      {
+        case odoDisconnect:
+          break;
+
+        case odoShutDown:
+          ShutDownWindows();
+          break;
+
+        default:
+          assert(false);
+      }
+    }
+    else if (Result == qaRetry)
+    {
+      Manager->ReconnectActiveTerminal();
+    }
+    else
+    {
+      Manager->FreeActiveTerminal();
+    }
+  }
+  else
+  {
+    // this should not happen as we never use Terminal->CloseOnCompletion
+    // on inactive terminal
+    if (CloseOnCompletion)
+    {
+      assert(Show);
+      if (ConfirmExitOnCompletion)
+      {
+        TMessageParams Params(mpNeverAskAgainCheck);
+        if (ExceptionMessageDialog(E, Type, L"", qaOK, HELP_NONE, &Params) ==
+              qaNeverAskAgain)
+        {
+          WinConfiguration->ConfirmExitOnCompletion = false;
+        }
+      }
+    }
+    else
+    {
+      if (Show)
       {
         ExceptionMessageDialog(E, Type);
       }
@@ -211,7 +229,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall ShowNotification(TTerminal * Terminal, const AnsiString & Str,
+void __fastcall ShowNotification(TTerminal * Terminal, const UnicodeString & Str,
   TQueryType Type)
 {
   TTerminalManager * Manager = TTerminalManager::Instance(false);
@@ -222,7 +240,7 @@ void __fastcall ShowNotification(TTerminal * Terminal, const AnsiString & Str,
 //---------------------------------------------------------------------------
 void __fastcall ConfigureInterface()
 {
-  AnsiString S;
+  UnicodeString S;
   S = LoadStr(MIDDLE_EAST);
   if (!S.IsEmpty())
   {
@@ -253,8 +271,8 @@ void __fastcall ConfigureInterface()
 // dummy function to force linking of TBXOfficeXPTheme.pas
 void __fastcall CreateThemes()
 {
-  new TTBXOfficeXPTheme("OfficeXP");
-  new TTBXOffice2003Theme("Office2003");
+  new TTBXOfficeXPTheme(L"OfficeXP");
+  new TTBXOffice2003Theme(L"Office2003");
 }
 //---------------------------------------------------------------------------
 void __fastcall DoAboutDialog(TConfiguration *Configuration)
@@ -267,12 +285,12 @@ void __fastcall DoProductLicense()
   DoLicenseDialog(lcWinScp);
 }
 //---------------------------------------------------------------------
-static inline void __fastcall GetToolbarKey(const AnsiString & ToolbarName,
-  const AnsiString & Value, AnsiString & ToolbarKey)
+static inline void __fastcall GetToolbarKey(const UnicodeString & ToolbarName,
+  const UnicodeString & Value, UnicodeString & ToolbarKey)
 {
   int ToolbarNameLen;
   if ((ToolbarName.Length() > 7) &&
-      (ToolbarName.SubString(ToolbarName.Length() - 7 + 1, 7) == "Toolbar"))
+      (ToolbarName.SubString(ToolbarName.Length() - 7 + 1, 7) == L"Toolbar"))
   {
     ToolbarNameLen = ToolbarName.Length() - 7;
   }
@@ -280,21 +298,21 @@ static inline void __fastcall GetToolbarKey(const AnsiString & ToolbarName,
   {
     ToolbarNameLen = ToolbarName.Length();
   }
-  ToolbarKey = ToolbarName.SubString(1, ToolbarNameLen) + "_" + Value;
+  ToolbarKey = ToolbarName.SubString(1, ToolbarNameLen) + L"_" + Value;
 }
 //---------------------------------------------------------------------------
-static int __fastcall ToolbarReadInt(const AnsiString ToolbarName,
-  const AnsiString Value, const int Default, const void * ExtraData)
+static int __fastcall ToolbarReadInt(const UnicodeString ToolbarName,
+  const UnicodeString Value, const int Default, const void * ExtraData)
 {
   int Result;
-  if (Value == "Rev")
+  if (Value == L"Rev")
   {
     Result = 2000;
   }
   else
   {
     TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
-    AnsiString ToolbarKey;
+    UnicodeString ToolbarKey;
     GetToolbarKey(ToolbarName, Value, ToolbarKey);
     if (Storage->IndexOfName(ToolbarKey) >= 0)
     {
@@ -308,12 +326,12 @@ static int __fastcall ToolbarReadInt(const AnsiString ToolbarName,
   return Result;
 }
 //---------------------------------------------------------------------------
-static AnsiString __fastcall ToolbarReadString(const AnsiString ToolbarName,
-  const AnsiString Value, const AnsiString Default, const void * ExtraData)
+static UnicodeString __fastcall ToolbarReadString(const UnicodeString ToolbarName,
+  const UnicodeString Value, const UnicodeString Default, const void * ExtraData)
 {
-  AnsiString Result;
+  UnicodeString Result;
   TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
-  AnsiString ToolbarKey;
+  UnicodeString ToolbarKey;
   GetToolbarKey(ToolbarName, Value, ToolbarKey);
   if (Storage->IndexOfName(ToolbarKey) >= 0)
   {
@@ -326,32 +344,32 @@ static AnsiString __fastcall ToolbarReadString(const AnsiString ToolbarName,
   return Result;
 }
 //---------------------------------------------------------------------------
-static void __fastcall ToolbarWriteInt(const AnsiString ToolbarName,
-  const AnsiString Value, const int Data, const void * ExtraData)
+static void __fastcall ToolbarWriteInt(const UnicodeString ToolbarName,
+  const UnicodeString Value, const int Data, const void * ExtraData)
 {
-  if (Value != "Rev")
+  if (Value != L"Rev")
   {
     TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
-    AnsiString ToolbarKey;
+    UnicodeString ToolbarKey;
     GetToolbarKey(ToolbarName, Value, ToolbarKey);
     assert(Storage->IndexOfName(ToolbarKey) < 0);
     Storage->Values[ToolbarKey] = IntToStr(Data);
   }
 }
 //---------------------------------------------------------------------------
-static void __fastcall ToolbarWriteString(const AnsiString ToolbarName,
-  const AnsiString Value, const AnsiString Data, const void * ExtraData)
+static void __fastcall ToolbarWriteString(const UnicodeString ToolbarName,
+  const UnicodeString Value, const UnicodeString Data, const void * ExtraData)
 {
   TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
-  AnsiString ToolbarKey;
+  UnicodeString ToolbarKey;
   GetToolbarKey(ToolbarName, Value, ToolbarKey);
   assert(Storage->IndexOfName(ToolbarKey) < 0);
   Storage->Values[ToolbarKey] = Data;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent)
+UnicodeString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent)
 {
-  AnsiString Result;
+  UnicodeString Result;
   TStrings * Storage = new TStringList();
   try
   {
@@ -366,7 +384,7 @@ AnsiString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, AnsiString LayoutStr)
+void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, UnicodeString LayoutStr)
 {
   TStrings * Storage = new TStringList();
   try
@@ -384,16 +402,17 @@ void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, AnsiStr
 void __fastcall AddMenuSeparator(TTBCustomItem * Menu)
 {
   TTBXSeparatorItem * Item = new TTBXSeparatorItem(Menu);
-  Item->Caption = "-";
-  Item->Hint = "E";
+  Item->Caption = L"-";
+  Item->Hint = L"E";
   Menu->Add(Item);
 }
+//---------------------------------------------------------------------------
+static TComponent * LastPopupComponent = NULL;
+static TDateTime LastCloseUp;
 //---------------------------------------------------------------------------
 void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
   TComponent * PopupComponent)
 {
-  static TComponent * LastPopupComponent = NULL;
-  static TDateTime LastCloseUp;
 
   // pressing the same button within 200ms after closing its popup menu
   // does nothing.
@@ -422,7 +441,7 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
         assert(AItem->Count == 0);
 
         // see TB2DsgnConverter.pas DoConvert
-        if (AItem->Caption == "-")
+        if (AItem->Caption == L"-")
         {
           Item = new TTBXSeparatorItem(Menu);
         }
@@ -484,7 +503,7 @@ static int __fastcall ThreadProc(void * AParam)
 //---------------------------------------------------------------------------
 int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
   TThreadFunc ThreadFunc, void * Parameter, unsigned CreationFlags,
-  unsigned & ThreadId)
+  TThreadID & ThreadId)
 {
   TThreadParam * Param = new TThreadParam;
   Param->ThreadFunc = ThreadFunc;
@@ -493,10 +512,10 @@ int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
     CreationFlags, ThreadId);
 }
 //---------------------------------------------------------------------------
-static TShortCut FirstCtrlNumberShortCut = ShortCut('0', TShiftState() << ssCtrl);
-static TShortCut LastCtrlNumberShortCut = ShortCut('9', TShiftState() << ssCtrl);
-static TShortCut FirstShiftCtrlAltLetterShortCut = ShortCut('A', TShiftState() << ssShift << ssCtrl << ssAlt);
-static TShortCut LastShiftCtrlAltLetterShortCut = ShortCut('Z', TShiftState() << ssShift << ssCtrl << ssAlt);
+static TShortCut FirstCtrlNumberShortCut = ShortCut(L'0', TShiftState() << ssCtrl);
+static TShortCut LastCtrlNumberShortCut = ShortCut(L'9', TShiftState() << ssCtrl);
+static TShortCut FirstShiftCtrlAltLetterShortCut = ShortCut(L'A', TShiftState() << ssShift << ssCtrl << ssAlt);
+static TShortCut LastShiftCtrlAltLetterShortCut = ShortCut(L'Z', TShiftState() << ssShift << ssCtrl << ssAlt);
 //---------------------------------------------------------------------------
 void __fastcall InitializeShortCutCombo(TComboBox * ComboBox,
   const TShortCuts & ShortCuts)
@@ -704,7 +723,7 @@ bool __fastcall DoChangeMasterPasswordDialog()
   return DoMasterPasswordDialog(false);
 }
 //---------------------------------------------------------------------------
-void __fastcall MessageWithNoHelp(const AnsiString & Message)
+void __fastcall MessageWithNoHelp(const UnicodeString & Message)
 {
   TMessageParams Params;
   Params.AllowHelp = false; // to avoid recursion

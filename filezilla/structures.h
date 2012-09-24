@@ -48,8 +48,9 @@ public:
 		{
 		public:
 			t_date();
-			int year,month,day,hour,minute;
+			int year,month,day,hour,minute,second;
 			bool hastime;
+			bool hasseconds;
 			bool hasdate;
 		} date;
 		CTime EntryTime;

@@ -17,7 +17,7 @@ object AuthenticateForm: TAuthenticateForm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
@@ -33,9 +33,10 @@ object AuthenticateForm: TAuthenticateForm
         WidthType = (
           -1)
       end>
-    Items.Data = {
-      2E0000000100000000000000FFFFFFFFFFFFFFFF000000000000000011417574
-      686E657469636174696E672E2E2E}
+    Items.ItemData = {
+      033C0000000100000000000000FFFFFFFFFFFFFFFF00000000FFFFFFFF000000
+      001141007500740068006E0065007400690063006100740069006E0067002E00
+      2E002E00}
     ReadOnly = True
     RowSelect = True
     ShowColumnHeaders = False

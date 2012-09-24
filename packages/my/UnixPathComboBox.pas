@@ -10,13 +10,13 @@ type
   TUnixPathComboBox = class(TCustomComboBox)
   private
     { Private declarations }
-    FUnixPath: AnsiString;
-    FRootName: AnsiString;
+    FUnixPath: string;
+    FRootName: string;
     FImageList: TImageList;
     FNotifyChange: boolean;
     F_NotifyChange: boolean;
-    procedure SetUnixPath(AUnixPath: AnsiString);
-    procedure SetRootName(ARootName: AnsiString);
+    procedure SetUnixPath(AUnixPath: string);
+    procedure SetRootName(ARootName: string);
     procedure UpdateItems;
     procedure CNDrawItem(var Message: TWMDrawItem); message CN_DrawItem;
     procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
@@ -65,8 +65,8 @@ type
     property OnKeyUp;
     property OnStartDrag;
 
-    property UnixPath: AnsiString read FUnixPath write SetUnixPath;
-    property RootName: AnsiString read FRootName write SetRootName;
+    property UnixPath: string read FUnixPath write SetUnixPath;
+    property RootName: string read FRootName write SetRootName;
   end;
 
 procedure Register;
@@ -98,7 +98,7 @@ begin
   F_NotifyChange := True;
 end;
 
-procedure TUnixPathComboBox.SetUnixPath(AUnixPath: AnsiString);
+procedure TUnixPathComboBox.SetUnixPath(AUnixPath: string);
 begin
   if FUnixPath <> AUnixPath then
   begin
@@ -136,7 +136,7 @@ begin
   end;
 end;
 
-procedure TUnixPathComboBox.SetRootName(ARootName: AnsiString);
+procedure TUnixPathComboBox.SetRootName(ARootName: string);
 begin
   if FRootName <> ARootName then
   begin
@@ -146,7 +146,7 @@ begin
   end;
 end;
 
-function GetIconIndex(AFile: AnsiString; Attrs, Attrs2: Cardinal): Integer;
+function GetIconIndex(AFile: string; Attrs, Attrs2: Cardinal): Integer;
 var
   SFI: TSHFileInfo;
 begin
@@ -247,7 +247,7 @@ end;
 
 procedure TUnixPathComboBox.Click;
 var
-  NewPath: AnsiString;
+  NewPath: string;
   i: Integer;
 begin
   inherited Click;

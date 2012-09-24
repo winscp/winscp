@@ -17,12 +17,13 @@
 #include "TBX.hpp"
 #include "TB2ExtItems.hpp"
 #include "TBXExtItems.hpp"
+#include <ShellAnimations.hpp>
+#include "TBXToolPals.hpp"
 //---------------------------------------------------------------------------
 #define fcStatusBar        0x01
 #define fcToolBar          0x02
 #define fcLocalStatusBar   0x12
 #define fcRemoteStatusBar  0x14
-#define fcSessionCombo     0x15
 #define fcRemotePopup      0x17
 #define fcCommandLinePanel 0x18
 #define fcQueueView        0x19
@@ -36,6 +37,7 @@
 #define fcTransferDropDown 0x22
 #define fcTransferList     0x23
 #define fcTransferLabel    0x24
+#define fcSessionsTabs     0x25
 
 #define fcExplorerMenuBand        0x31
 #define fcExplorerAddressBand     0x32
@@ -105,6 +107,7 @@ __published:    // IDE-managed Components
   TAction *RemoteRefreshAction;
   TAction *AboutAction;
   TAction *StatusBarAction;
+  TAction *SessionsTabsAction;
   TAction *ExplorerAddressBandAction;
   TAction *ExplorerMenuBandAction;
   TAction *ExplorerToolbarBandAction;
@@ -213,6 +216,7 @@ __published:    // IDE-managed Components
   TAction *RemoteMoveToFocusedAction;
   TAction *SelectOneAction;
   TAction *ShowHiddenFilesAction;
+  TAction *FormatSizeBytesAction;
   TAction *CommandLinePanelAction;
   TAction *LocalPathToClipboardAction;
   TAction *RemotePathToClipboardAction;
@@ -368,6 +372,7 @@ __published:    // IDE-managed Components
   TTBXItem *Permissions1;
   TTBXItem *Owner2;
   TTBXItem *Group2;
+  TTBXPopupMenu *SessionsPopup;
   TTBXPopupMenu *QueuePopup;
   TTBXItem *ShowQuery1;
   TTBXItem *ShowError1;
@@ -378,6 +383,7 @@ __published:    // IDE-managed Components
   TTBXSeparatorItem *N54;
   TTBXItem *MoveUp1;
   TTBXItem *MoveDown1;
+  TTBXItem *QueueEnableItem;
   TTBXSeparatorItem *N67;
   TTBXSubmenuItem *Queue2;
   TTBXItem *Show4;
@@ -407,7 +413,9 @@ __published:    // IDE-managed Components
   TTBXItem *Customize5;
   TTBXItem *Tree4;
   TTBXItem *RemoteSortByExtColumnPopupItem;
+  TTBXItem *RemoteFormatSizeBytesPopupItem;
   TTBXItem *LocalSortByExtColumnPopupItem;
+  TTBXItem *LocalFormatSizeBytesPopupItem;
   TAction *FileListFromClipboardAction;
   TAction *ShowHideRemoteLinkTargetColumnAction;
   TTBXItem *TBXItem1;
@@ -437,6 +445,7 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem10;
   TAction *QueuePauseAllAction;
   TAction *QueueResumeAllAction;
+  TAction *QueueEnableAction;
   TTBXSubmenuItem *TBXSubmenuItem1;
   TTBXItem *TBXItem11;
   TTBXItem *TBXItem12;
@@ -502,6 +511,14 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem32;
   TTBXItem *TBXItem33;
   TTBXItem *TBXItem34;
+  TTBXItem *TBXItem35;
+  TTBXItem *TBXItem36;
+  TTBXItem *TBXItem37;
+  TTBXItem *TBXItem38;
+  TShellResources *ShellResources;
+  TTBXColorItem *ColorMenuItem;
+  TTBXColorPalette *SessionColorPalette;
+  TAction *CurrentEditInternalAction;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -510,7 +527,8 @@ __published:    // IDE-managed Components
   void __fastcall QueuePopupPopup(TObject *Sender);
   void __fastcall QueuePopupSpeedComboBoxItemItemClick(TObject *Sender);
   void __fastcall QueueSpeedComboBoxItemAcceptText(TObject *Sender,
-          AnsiString &NewText, bool &Accept);
+          UnicodeString &NewText, bool &Accept);
+  void __fastcall SessionColorPaletteChange(TObject * Sender);
 private:
   TListColumn * FListColumn;
   TCustomScpExplorerForm * FScpExplorer;
@@ -534,7 +552,7 @@ protected:
   inline void __fastcall ShowUpdatesUpdate();
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
   void __fastcall CustomCommandsLastUpdate(TAction * Action);
-  AnsiString __fastcall QueueItemSpeed(const AnsiString & Text,
+  UnicodeString __fastcall QueueItemSpeed(const UnicodeString & Text,
     TTBXComboBoxItem * Item);
   void __fastcall InitMenuItem(TTBCustomItem * Item);
   void __fastcall CycleQueueOnceEmptyAction();

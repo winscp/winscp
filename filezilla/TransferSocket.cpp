@@ -58,10 +58,6 @@ CTransferSocket::CTransferSocket(CFtpControlSocket *pOwner, int nMode)
 	m_pBuffer2 = 0;
 #endif
 	m_bufferpos = 0;
-	m_ReadPos = 0;
-	m_ReadBuffer = 0;
-	m_ReadSize = 0;
-	m_cLastChar = 0;
 	m_pFile = 0;
 	m_bListening = FALSE;
 	m_bSentClose = FALSE;
@@ -110,11 +106,6 @@ CTransferSocket::~CTransferSocket()
 #ifndef MPEXT_NO_ZLIB
 	delete [] m_pBuffer2;
 #endif
-	if (m_ReadBuffer)
-	{
-		delete [] m_ReadBuffer;
-		m_ReadBuffer = 0;
-	}
 	PostMessage(m_pOwner->m_pOwner->m_hOwnerWnd, m_pOwner->m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_TRANSFERSTATUS, 0), 0);
 	Close();
 	RemoveAllLayers();
@@ -211,9 +202,9 @@ void CTransferSocket::OnReceive(int nErrorCode)
 			CTimeSpan timespan = CTime::GetCurrentTime() - m_StartTime;
 			int elapsed = (int)timespan.GetTotalSeconds();
 			//TODO
-			//There are servers which report the total number of 
+			//There are servers which report the total number of
 			//bytes in the list response message, but yet it is not supported by FZ.
-			/*double leftmodifier=(transfersize-transferstart-transferleft); 
+			/*double leftmodifier=(transfersize-transferstart-transferleft);
 			leftmodifier*=100;
 			leftmodifier/=(transfersize-transferstart);
 			if (leftmodifier==0)
@@ -342,7 +333,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
 			UpdateStatusBar(false);
 			return;
 		}
-		
+
 		int written = 0;
 		m_LastActiveTime = CTime::GetCurrentTime();
 		UpdateRecvLed();
@@ -413,7 +404,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
 	}
 }
 
-void CTransferSocket::OnAccept(int nErrorCode) 
+void CTransferSocket::OnAccept(int nErrorCode)
 {
 	LogMessage(__FILE__, __LINE__, this,FZ_LOG_DEBUG, _T("OnAccept(%d)"), nErrorCode);
 	m_bListening=FALSE;
@@ -424,15 +415,17 @@ void CTransferSocket::OnAccept(int nErrorCode)
 	
 	Attach(socket);
 
-	/* Set internal socket send buffer to twice the programs buffer size
+	/* Set internal socket send buffer
 	 * this should fix the speed problems some users have reported
 	 */
 	DWORD value;
 	int len = sizeof(value);
 	GetSockOpt(SO_SNDBUF, &value, &len);
-	if (value < (BUFSIZE*2))
+	// MPEXT
+	int sndbuf = COptions::GetOptionVal(OPTION_MPEXT_SNDBUF);
+	if (value < sndbuf)
 	{
-		value = BUFSIZE * 2;
+		value = sndbuf;
 		SetSockOpt(SO_SNDBUF, &value, sizeof(value));
 	}
 
@@ -452,7 +445,7 @@ void CTransferSocket::OnAccept(int nErrorCode)
 #endif
 			if (res == SSL_FAILURE_INITSSL)
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, 1);
-					
+
 			if (res)
 			{
 				Close();
@@ -479,13 +472,13 @@ void CTransferSocket::OnAccept(int nErrorCode)
 	}
 }
 
-void CTransferSocket::OnConnect(int nErrorCode) 
+void CTransferSocket::OnConnect(int nErrorCode)
 {
 	LogMessage(__FILE__, __LINE__, this,FZ_LOG_DEBUG, _T("OnConnect(%d)"), nErrorCode);
 	if (nErrorCode)
 	{
 		TCHAR buffer[1000];
-		memset(buffer,0,1000);
+		memset(buffer, 0, sizeof(buffer));
 		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, nErrorCode, 0, buffer, 999, 0);
 		CString str;
 		str.Format(IDS_ERRORMSG_CANTOPENTRANSFERCHANNEL,buffer);
@@ -502,15 +495,17 @@ void CTransferSocket::OnConnect(int nErrorCode)
 	}
 	else
 	{
-		/* Set internal socket send buffer to twice the programs buffer size
+		/* Set internal socket send buffer
 		 * this should fix the speed problems some users have reported
 		 */
 		DWORD value;
 		int len = sizeof(value);
 		GetSockOpt(SO_SNDBUF, &value, &len);
-		if (value < (BUFSIZE*2))
+		// MPEXT
+		int sndbuf = COptions::GetOptionVal(OPTION_MPEXT_SNDBUF);
+		if (value < sndbuf)
 		{
-			value = BUFSIZE * 2;
+			value = sndbuf;
 			SetSockOpt(SO_SNDBUF, &value, sizeof(value));
 		}
 	}
@@ -619,7 +614,7 @@ void CTransferSocket::SetActive()
 		OnClose(0);
 }
 
-void CTransferSocket::OnSend(int nErrorCode) 
+void CTransferSocket::OnSend(int nErrorCode)
 {
 	if (m_nTransferState == STATE_WAITING)
 	{
@@ -679,7 +674,7 @@ void CTransferSocket::OnSend(int nErrorCode)
 						return;
 					}
 
-					m_transferdata.transferleft -= numread;					
+					m_transferdata.transferleft -= numread;
 					m_zlibStream.next_in = (Bytef *)m_pBuffer2;
 					m_zlibStream.avail_in = numread;
 
@@ -776,7 +771,7 @@ void CTransferSocket::OnSend(int nErrorCode)
 			m_bufferpos += numsent;
 
 			UpdateStatusBar(false);
-			
+
 			if (!m_zlibStream.avail_in && !m_pFile && m_zlibStream.avail_out &&
 				m_zlibStream.avail_out + m_bufferpos == BUFSIZE && res == Z_STREAM_END)
 			{
@@ -1411,7 +1406,7 @@ bool CTransferSocket::InitZlib(int level)
 		res = deflateInit2(&m_zlibStream, level, Z_DEFLATED, 15, 8, Z_DEFAULT_STRATEGY);
 	else
 		res = inflateInit2(&m_zlibStream, 15);
-	
+
 	if (res == Z_OK)
 		m_useZlib = true;
 
@@ -1423,44 +1418,21 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
 {
 	TRY
 	{
-#ifndef MPEXT
-		if (!m_transferdata.bType)
-#endif
-			return m_pFile->Read(buffer, len);
-#ifndef MPEXT
-		else
-		{   //Read the file as ASCII file with CRLF line end
-			if (!m_ReadBuffer)
-				m_ReadBuffer = new char[BUFSIZE];
-			if (!m_ReadSize)
-				m_ReadSize = m_pFile->Read(m_ReadBuffer, len);
-			int numread = 0;
-			while (numread < len)
+		// Comparing to Filezilla 2, we do not do any translation locally,
+		// leaving it onto the server (what Filezilla 3 seems to do too)
+		const char Bom[3] = "\xEF\xBB\xBF";
+		int read = m_pFile->Read(buffer, len);
+		if (m_transferdata.bType && (read >= sizeof(Bom)) && (memcmp(buffer, Bom, sizeof(Bom)) == 0))
+		{
+			memcpy(buffer, buffer + sizeof(Bom), read - sizeof(Bom));
+			read -= sizeof(Bom);
+			int read2 = m_pFile->Read(buffer + read, sizeof(Bom));
+			if (read2 > 0)
 			{
-				if (m_ReadPos >= m_ReadSize)
-				{
-					m_ReadSize = m_pFile->Read(m_ReadBuffer, len);
-					m_ReadPos = 0;
-					if (!m_ReadSize)
-					    break;
-				}
-				if (m_ReadBuffer[m_ReadPos] == '\n' && m_cLastChar != '\r')
-				{
-					buffer[numread++] = '\r';
-					m_cLastChar = '\r';
-					if (numread == len)
-					    break;
-				}
-
-				buffer[numread] = m_ReadBuffer[m_ReadPos];
-				m_cLastChar = buffer[numread];
-				numread++;
-				m_ReadPos++;
+				read += read2;
 			}
-			ASSERT(numread <= len);
-			return numread;
 		}
-#endif
+		return read;
 	}
 	CATCH_ALL(e)
 	{

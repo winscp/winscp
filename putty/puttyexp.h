@@ -82,4 +82,8 @@ void call_aes_decrypt(void * ctx, unsigned int * block);
 
 void call_sha1_key_internal(void * handle, unsigned char * key, int len);
 
+// from winmisc.c
+
+void win_misc_cleanup();
+
 #endif

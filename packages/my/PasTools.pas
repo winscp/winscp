@@ -3,13 +3,17 @@ unit PasTools;
 interface
 
 uses
-  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls;
+  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs;
 
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 
 function IsVista: Boolean;
 
 function IsExactly2008R2: Boolean;
+
+function CutToChar(var Str: string; Ch: Char; Trim: Boolean): string;
+
+procedure FilterToFileTypes(Filter: string; FileTypes: TFileTypeItems);
 
 type
   TControlScrollBeforeUpdate = procedure(ObjectToValidate: TObject) of object;
@@ -132,6 +136,36 @@ begin
           Result := False;
       end;
     end;
+  end;
+end;
+
+function CutToChar(var Str: string; Ch: Char; Trim: Boolean): string;
+var
+  P: Integer;
+begin
+  P := Pos(Ch, Str);
+  if P > 0 then
+  begin
+    Result := Copy(Str, 1, P-1);
+    Delete(Str, 1, P);
+  end
+    else
+  begin
+    Result := Str;
+    Str := '';
+  end;
+  if Trim then Result := SysUtils.Trim(Result);
+end;
+
+procedure FilterToFileTypes(Filter: string; FileTypes: TFileTypeItems);
+var
+  Item: TFileTypeItem;
+begin
+  while Filter <> '' do
+  begin
+    Item := FileTypes.Add();
+    Item.DisplayName := CutToChar(Filter, '|', True);
+    Item.FileMask := CutToChar(Filter, '|', True);
   end;
 end;
 

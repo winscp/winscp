@@ -32,9 +32,11 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Dialogs, ActnList, ImgList,
-  {$IFDEF JR_D6} DesignIntf, DesignEditors, VCLEditors, {$ELSE} DsgnIntf, {$ENDIF}
+  {$IFDEF MPDESIGNEDITORS} {$IFDEF JR_D6} DesignIntf, DesignEditors, VCLEditors, {$ELSE} DsgnIntf, {$ENDIF} {$ENDIF}
   TB2Toolbar, {$IFNDEF MPEXCLUDE}TB2ToolWindow,{$ENDIF} TB2Dock, TB2Item, TB2ExtItems, {$IFNDEF MPEXCLUDE} TB2MRU, TB2MDI, {$ENDIF}
   TB2DsgnItemEditor;
+
+{$IFDEF MPDESIGNEDITORS}
 
 {$IFDEF JR_D5}
 
@@ -70,12 +72,18 @@ type
 
 {$ENDIF}
 
+{$ENDIF}
+
 procedure Register;
 
 implementation
 
+{$IFDEF MPDESIGNEDITORS}
 uses
   ImgEdit;
+{$ENDIF}
+
+{$IFDEF MPDESIGNEDITORS}
 
 {$IFDEF JR_D5}
 
@@ -213,6 +221,7 @@ begin
     Result := '';
 end;
 
+{$ENDIF}
 
 procedure Register;
 begin
@@ -228,6 +237,8 @@ begin
   RegisterClasses([TTBItem, TTBGroupItem, TTBSubmenuItem, TTBSeparatorItem,
     TTBEditItem, {$IFNDEF MPEXCLUDE}TTBMRUListItem,{$ENDIF} TTBControlItem{$IFNDEF MPEXCLUDE}, TTBMDIWindowItem,
     TTBVisibilityToggleItem{$ENDIF}]);
+
+  {$IFDEF MPDESIGNEDITORS}
 
   RegisterComponentEditor(TTBCustomToolbar, TTBItemsEditor);
   RegisterComponentEditor(TTBItemContainer, TTBItemsEditor);
@@ -253,6 +264,8 @@ begin
   TBRegisterItemClass(TTBMRUListItem, 'New &MRU List Item', HInstance);
   TBRegisterItemClass(TTBMDIWindowItem, 'New MDI &Windows List', HInstance);
   TBRegisterItemClass(TTBVisibilityToggleItem, 'New &Visibility-Toggle Item', HInstance);
+  {$ENDIF}
+
   {$ENDIF}
 end;
 

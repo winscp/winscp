@@ -16,7 +16,7 @@ object SynchronizeDialog: TSynchronizeDialog
   Font.Style = []
   KeyPreview = True
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
@@ -61,7 +61,6 @@ object SynchronizeDialog: TSynchronizeDialog
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       MaxLength = 1000
       TabOrder = 2
       Text = 'RemoteDirectoryEdit'
@@ -74,7 +73,6 @@ object SynchronizeDialog: TSynchronizeDialog
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       MaxLength = 1000
       TabOrder = 0
       Text = 'LocalDirectoryEdit'
@@ -208,6 +206,7 @@ object SynchronizeDialog: TSynchronizeDialog
     Caption = 'Transfer settin&gs...'
     TabOrder = 2
     OnClick = TransferSettingsButtonClick
+    OnDropDownClick = TransferSettingsButtonDropDownClick
   end
   object CopyParamGroup: TGroupBox
     Left = 8
@@ -216,8 +215,8 @@ object SynchronizeDialog: TSynchronizeDialog
     Height = 50
     Caption = 'Transfer settings'
     TabOrder = 7
+    OnClick = CopyParamGroupClick
     OnContextPopup = CopyParamGroupContextPopup
-    OnDblClick = CopyParamGroupDblClick
     DesignSize = (
       381
       50)
@@ -230,7 +229,7 @@ object SynchronizeDialog: TSynchronizeDialog
       AutoSize = False
       Caption = 'CopyParamLabel'
       WordWrap = True
-      OnDblClick = CopyParamGroupDblClick
+      OnClick = CopyParamGroupClick
     end
   end
   object HelpButton: TButton
@@ -271,9 +270,10 @@ object SynchronizeDialog: TSynchronizeDialog
           WidthType = (
             -1)
         end>
-      Items.Data = {
-        3A0000000100000000000000FFFFFFFFFFFFFFFF01000000000000000B32303A
-        33303A343520504D0F4465746563746564206368616E6765FFFF}
+      Items.ItemData = {
+        03510000000100000000000000FFFFFFFFFFFFFFFF01000000FFFFFFFF000000
+        000B320030003A00330030003A0034003500200050004D000F44006500740065
+        00630074006500640020006300680061006E0067006500FFFF}
       ReadOnly = True
       RowSelect = True
       ShowColumnHeaders = False

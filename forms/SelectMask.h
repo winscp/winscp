@@ -20,7 +20,7 @@ __published:
   TGroupBox *MaskGroup;
   TLabel *Label3;
   THistoryComboBox *MaskEdit;
-  TCheckBox *IncludingDirectoriesCheck;
+  TCheckBox *ApplyToDirectoriesCheck;
   TButton *HelpButton;
   TStaticText *HintText;
   TButton *ClearButton;

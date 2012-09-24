@@ -3,6 +3,7 @@ unit CompThread;
 interface
 
 {$WARN SYMBOL_DEPRECATED OFF}
+{$WARN SYMBOL_PLATFORM OFF}
 
 uses
   Classes, Windows;
@@ -14,7 +15,7 @@ type
   TCompThread = class
   private
     FHandle: THandle;
-    FThreadID: THandle;
+    FThreadID: TThreadID;
     FTerminated: Boolean;
     FSuspended: Boolean;
     FFreeOnTerminate: Boolean;
@@ -44,7 +45,7 @@ type
     property Handle: THandle read FHandle;
     property Priority: TThreadPriority read GetPriority write SetPriority;
     property Suspended: Boolean read FSuspended write SetSuspended;
-    property ThreadID: THandle read FThreadID;
+    property ThreadID: TThreadID read FThreadID;
     property OnTerminate: TNotifyEvent read FOnTerminate write FOnTerminate;
   end;
 
@@ -241,6 +242,7 @@ begin
     Thread.DoTerminate;
     if FreeThread then Thread.Free;
     EndThread(Result);
+    // it should not get past EndThread
   end;
 end;
 

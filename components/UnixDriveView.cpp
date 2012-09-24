@@ -9,6 +9,7 @@
 #ifndef DESIGN_ONLY
 #include <Terminal.h>
 #include <RemoteFiles.h>
+#include <VCLCommon.h>
 #endif
 
 #pragma package(smart_init)
@@ -23,7 +24,7 @@ namespace Unixdriveview
   void __fastcall PACKAGE Register()
   {
     TComponentClass classes[1] = {__classid(TUnixDriveView)};
-    RegisterComponents("Scp", classes, 0);
+    RegisterComponents(L"Scp", classes, 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -36,7 +37,7 @@ struct TNodeData
 {
   TRemoteFileList * FileList;
   TRemoteFile * File;
-  AnsiString Directory;
+  UnicodeString Directory;
 };
 //---------------------------------------------------------------------------
 __fastcall TCustomUnixDriveView::TCustomUnixDriveView(TComponent* Owner) :
@@ -167,7 +168,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
 {
   #ifndef DESIGN_ONLY
   TNodeData * Data = NodeData(Node);
-  AnsiString Path = Data->Directory;
+  UnicodeString Path = Data->Directory;
 
   if (FTerminal->DirectoryFileList(Path, Data->FileList, CanLoad) ||
       ((Data->FileList != NULL) && Force))
@@ -210,7 +211,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
           }
           else
           {
-            AnsiString ChildPath = UnixIncludeTrailingBackslash(Path) + File->FileName;
+            UnicodeString ChildPath = UnixIncludeTrailingBackslash(Path) + File->FileName;
             assert(!IsUnixRootPath(ChildPath));
 
             LoadPathEasy(Node, ChildPath, File);
@@ -251,16 +252,20 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
       ChildNode = PrevChildNode;
     }
   }
+  #else
+  USEDPARAM(Node);
+  USEDPARAM(Force);
+  USEDPARAM(CanLoad);
   #endif
 }
 //---------------------------------------------------------------------------
 TTreeNode * __fastcall TCustomUnixDriveView::LoadPathEasy(TTreeNode * Parent,
-  AnsiString Path, TRemoteFile * File)
+  UnicodeString Path, TRemoteFile * File)
 {
   #ifndef DESIGN_ONLY
   assert(Path == UnixExcludeTrailingBackslash(Path));
 
-  AnsiString DirName;
+  UnicodeString DirName;
   if (IsUnixRootPath(Path))
   {
     DirName = RootName;
@@ -281,11 +286,13 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPathEasy(TTreeNode * Parent,
 
   return Node;
   #else
+  USEDPARAM(Parent);
+  USEDPARAM(File);
   return NULL;
   #endif
 }
 //---------------------------------------------------------------------------
-TTreeNode * __fastcall TCustomUnixDriveView::LoadPath(AnsiString Path)
+TTreeNode * __fastcall TCustomUnixDriveView::LoadPath(UnicodeString Path)
 {
   #ifndef DESIGN_ONLY
 
@@ -438,7 +445,8 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
   {
     // During D&D Selected is set to NULL and then back to previous selection,
     // prevent actually changing directory in such case
-    if (FIgnoreChange || (Node == NULL) || (Node == FPrevSelected))
+    if (Reading || ControlState.Contains(csRecreating) ||
+        FIgnoreChange || (Node == NULL) || (Node == FPrevSelected))
     {
       TCustomDriveView::Change(Node);
     }
@@ -457,7 +465,11 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
       FDirectoryLoaded = false;
       try
       {
-        Terminal->ChangeDirectory(NodePathName(Node));
+        APPLICATION_EXCEPTION_HACK_BEGIN
+        {
+          Terminal->ChangeDirectory(NodePathName(Node));
+        }
+        APPLICATION_EXCEPTION_HACK_END;
         TCustomDriveView::Change(Node);
       }
       __finally
@@ -517,8 +529,8 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
     assert(DragDropFilesEx->FileList->Count > 0);
     assert(Node != NULL);
 
-    AnsiString SourceDirectory;
-    AnsiString TargetDirectory;
+    UnicodeString SourceDirectory;
+    UnicodeString TargetDirectory;
 
     SourceDirectory = ExtractFilePath(DragDropFilesEx->FileList->Items[0]->Name);
     TargetDirectory = NodeData(Node)->Directory;
@@ -604,7 +616,7 @@ TDropEffectSet __fastcall TCustomUnixDriveView::DDSourceEffects()
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TCustomUnixDriveView::NodePathName(TTreeNode * Node)
+UnicodeString __fastcall TCustomUnixDriveView::NodePathName(TTreeNode * Node)
 {
   // same as NodePath
   return NodeData(Node)->Directory;
@@ -624,7 +636,7 @@ void __fastcall TCustomUnixDriveView::ClearDragFileList(TFileList * FileList)
 void __fastcall TCustomUnixDriveView::AddToDragFileList(TFileList * FileList,
   TTreeNode * Node)
 {
-  AnsiString FileName = NodePathName(Node);
+  UnicodeString FileName = NodePathName(Node);
   TRemoteFile * File = NodeFileForce(Node);
 
   if (OnDDDragFileName != NULL)
@@ -634,7 +646,7 @@ void __fastcall TCustomUnixDriveView::AddToDragFileList(TFileList * FileList,
   FileList->AddItem(NULL, FileName);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TCustomUnixDriveView::NodePath(TTreeNode * Node)
+UnicodeString __fastcall TCustomUnixDriveView::NodePath(TTreeNode * Node)
 {
   // same as NodePathName
   return NodeData(Node)->Directory;
@@ -662,6 +674,8 @@ TColor __fastcall TCustomUnixDriveView::NodeColor(TTreeNode * Node)
       Result = clGrayText;
     }
   }
+  #else
+  USEDPARAM(Node);
   #endif
   return Result;
 }
@@ -683,6 +697,7 @@ Word __fastcall TCustomUnixDriveView::NodeOverlayIndexes(TTreeNode * Node)
   }
   return Result;
 #else
+  USEDPARAM(Node);
   return 0;
 #endif
 }
@@ -694,7 +709,7 @@ void __fastcall TCustomUnixDriveView::GetImageIndex(TTreeNode * Node)
   Node->SelectedIndex = StdDirSelIcon;
 }
 //---------------------------------------------------------------------------
-TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(AnsiString Path)
+TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(UnicodeString Path)
 {
   TTreeNode * Result;
   #ifndef DESIGN_ONLY
@@ -714,14 +729,14 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(AnsiString Path)
 
     if ((Parent != NULL) && (Parent->getFirstChild() != NULL))
     {
-      AnsiString DirName = UnixExtractFileName(Path);
+      UnicodeString DirName = UnixExtractFileName(Path);
       int StartIndex = 0;
       int EndIndex = Parent->Count - 1;
 
       while (true)
       {
         int Index = (StartIndex + EndIndex) / 2;
-        AnsiString NodeDir = Parent->Item[Index]->Text;
+        UnicodeString NodeDir = Parent->Item[Index]->Text;
         // lstrcmp is used by AlphaSort()
         int C = lstrcmp(DirName.c_str(), NodeDir.c_str());
         if (C == 0)
@@ -754,7 +769,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(AnsiString Path)
   return Result;
 }
 //---------------------------------------------------------------------------
-TTreeNode * __fastcall TCustomUnixDriveView::FindPathNode(AnsiString Path)
+TTreeNode * __fastcall TCustomUnixDriveView::FindPathNode(UnicodeString Path)
 {
   TTreeNode * Result = NULL;
 

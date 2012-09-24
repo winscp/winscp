@@ -81,7 +81,7 @@ var
   Buffer: array[0..1023] of Char;
 begin
   Buffer[0] := #0;
-  SetString(Result, Buffer, GetLocaleInfoA(ID, Flag, Buffer, SizeOf(Buffer)) - 1);
+  SetString(Result, Buffer, GetLocaleInfo(ID, Flag, Buffer, Length(Buffer)) - 1);
 end;
 
 { TLanguagesDEPfix }

@@ -9,7 +9,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   DesignSize = (
     370
     127)
@@ -18,14 +18,14 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   object Label1: TLabel
     Left = 8
     Top = 9
-    Width = 29
+    Width = 28
     Height = 13
     Caption = 'Local:'
   end
   object Label2: TLabel
     Left = 8
     Top = 29
-    Width = 40
+    Width = 41
     Height = 13
     Caption = 'Remote:'
   end
@@ -63,7 +63,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   object Label4: TLabel
     Left = 8
     Top = 49
-    Width = 47
+    Width = 51
     Height = 13
     Caption = 'Start time:'
   end

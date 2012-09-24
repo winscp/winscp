@@ -67,11 +67,11 @@ inline void TMessageParams::Reset()
   AliasesCount = 0;
   Timer = 0;
   TimerEvent = NULL;
-  TimerMessage = "";
+  TimerMessage = L"";
   TimerAnswers = 0;
   Timeout = 0;
   TimeoutAnswer = 0;
-  NewerAskAgainTitle = "";
+  NewerAskAgainTitle = L"";
   NewerAskAgainAnswer = 0;
   NewerAskAgainCheckedInitially = false;
   AllowHelp = true;
@@ -118,7 +118,7 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
     else
     {
       TModalResult PositiveAnswers[] = { mrYes, mrOk, mrYesToAll };
-      for (int i = 0; i < LENOF(PositiveAnswers); i++)
+      for (size_t i = 0; i < LENOF(PositiveAnswers); i++)
       {
         for (int ii = 0; ii < Dialog->ControlCount; ii++)
         {
@@ -154,7 +154,7 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
   }
 }
 //---------------------------------------------------------------------------
-int MapResult(int Result, unsigned int Answers)
+unsigned int MapResult(unsigned int Result, unsigned int Answers)
 {
   int Answer;
 
@@ -193,8 +193,8 @@ int MapResult(int Result, unsigned int Answers)
   return Answer;
 }
 //---------------------------------------------------------------------------
-TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
-  TStrings * MoreMessages, TQueryType Type, int Answers, AnsiString HelpKeyword,
+TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
+  TStrings * MoreMessages, TQueryType Type, unsigned int Answers, UnicodeString HelpKeyword,
   const TMessageParams * Params, TButton *& TimeoutButton)
 {
   TMsgDlgBtn TimeoutResult = mbHelp;
@@ -301,13 +301,13 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
       }
 
       TCheckBox * NeverAskAgainCheck = new TCheckBox(Dialog);
-      NeverAskAgainCheck->Name = "NeverAskAgainCheck";
+      NeverAskAgainCheck->Name = L"NeverAskAgainCheck";
       NeverAskAgainCheck->Parent = Dialog;
       NeverAskAgainCheck->BoundsRect =  TRect(60, Dialog->ClientHeight - 27,
         Dialog->ClientWidth - 10, Dialog->ClientHeight - 5);
       NeverAskAgainCheck->Caption =
         !Params->NewerAskAgainTitle.IsEmpty() ?
-          Params->NewerAskAgainTitle :
+          (UnicodeString)Params->NewerAskAgainTitle :
           // qaOK | qaIgnore is used, when custom "non-answer" button is required
           LoadStr(((Answers == qaOK) || (Answers == (qaOK | qaIgnore))) ?
             NEVER_SHOW_AGAIN : NEVER_ASK_AGAIN);
@@ -338,15 +338,15 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
   return Dialog;
 }
 //---------------------------------------------------------------------------
-int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageParams * Params)
+unsigned int __fastcall ExecuteMessageDialog(TForm * Dialog, unsigned int Answers, const TMessageParams * Params)
 {
   FlashOnBackground();
-  int Answer = MapResult(Dialog->ShowModal(), Answers);
+  unsigned int Answer = MapResult(Dialog->ShowModal(), Answers);
 
   if ((Params != NULL) && (Params->Params & mpNeverAskAgainCheck))
   {
     TCheckBox * NeverAskAgainCheck =
-      dynamic_cast<TCheckBox *>(Dialog->FindComponent("NeverAskAgainCheck"));
+      dynamic_cast<TCheckBox *>(Dialog->FindComponent(L"NeverAskAgainCheck"));
     assert(NeverAskAgainCheck);
 
     if (NeverAskAgainCheck->Checked)
@@ -407,7 +407,7 @@ public:
 protected:
   unsigned int FTimeout;
   TButton * FButton;
-  AnsiString FOrigCaption;
+  UnicodeString FOrigCaption;
 
   void __fastcall DoTimer(TObject * Sender);
   void __fastcall UpdateButton();
@@ -418,7 +418,7 @@ __fastcall TMessageTimeout::TMessageTimeout(TComponent * AOwner,
   TTimer(AOwner), FTimeout(Timeout), FButton(Button)
 {
   OnTimer = DoTimer;
-  Interval = 1000;
+  Interval = MSecsPerSec;
   FOrigCaption = FButton->Caption;
   UpdateButton();
 }
@@ -426,12 +426,12 @@ __fastcall TMessageTimeout::TMessageTimeout(TComponent * AOwner,
 void __fastcall TMessageTimeout::UpdateButton()
 {
   assert(FButton != NULL);
-  FButton->Caption = FMTLOAD(TIMEOUT_BUTTON, (FOrigCaption, int(FTimeout / 1000)));
+  FButton->Caption = FMTLOAD(TIMEOUT_BUTTON, (FOrigCaption, int(FTimeout / MSecsPerSec)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
 {
-  if (FTimeout <= 1000)
+  if (FTimeout <= MSecsPerSec)
   {
     assert(FButton != NULL);
     TForm * Dialog = dynamic_cast<TForm *>(FButton->Parent);
@@ -441,21 +441,21 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
   }
   else
   {
-    FTimeout -= 1000;
+    FTimeout -= MSecsPerSec;
     UpdateButton();
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessages,
-  TQueryType Type, int Answers, AnsiString HelpKeyword, const TMessageParams * Params)
+unsigned int __fastcall MoreMessageDialog(const UnicodeString Message, TStrings * MoreMessages,
+  TQueryType Type, unsigned int Answers, UnicodeString HelpKeyword, const TMessageParams * Params)
 {
-  int Result;
+  unsigned int Result;
   TForm * Dialog = NULL;
   TMessageTimer * Timer = NULL;
   TMessageTimeout * Timeout = NULL;
   try
   {
-    AnsiString AMessage = Message;
+    UnicodeString AMessage = Message;
 
     if ((Params != NULL) && (Params->Timer > 0))
     {
@@ -505,15 +505,15 @@ int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessag
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
-  int Answers, AnsiString HelpKeyword, const TMessageParams * Params)
+unsigned int __fastcall MessageDialog(const UnicodeString Msg, TQueryType Type,
+  unsigned int Answers, UnicodeString HelpKeyword, const TMessageParams * Params)
 {
   return MoreMessageDialog(Msg, NULL, Type, Answers, HelpKeyword, Params);
 }
 //---------------------------------------------------------------------------
-int __fastcall SimpleErrorDialog(const AnsiString Msg, const AnsiString MoreMessages)
+unsigned int __fastcall SimpleErrorDialog(const UnicodeString Msg, const UnicodeString MoreMessages)
 {
-  int Result;
+  unsigned int Result;
   TStrings * More = NULL;
   try
   {
@@ -531,8 +531,8 @@ int __fastcall SimpleErrorDialog(const AnsiString Msg, const AnsiString MoreMess
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
-  const AnsiString MessageFormat, int Answers, AnsiString HelpKeyword,
+unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
+  const UnicodeString MessageFormat, unsigned int Answers, UnicodeString HelpKeyword,
   const TMessageParams * Params)
 {
   TStrings * MoreMessages = NULL;
@@ -547,19 +547,19 @@ int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
       HelpKeyword = EE->HelpKeyword;
     }
   }
-  AnsiString Message;
+  UnicodeString Message;
   // this is always called from within ExceptionMessage check,
   // so it should never fail here
   CHECK(ExceptionMessage(E, Message));
 
   return MoreMessageDialog(
-    FORMAT(MessageFormat.IsEmpty() ? AnsiString("%s") : MessageFormat, (Message)),
+    FORMAT(MessageFormat.IsEmpty() ? UnicodeString(L"%s") : MessageFormat, (Message)),
     MoreMessages, Type, Answers, HelpKeyword, Params);
 }
 //---------------------------------------------------------------------------
-int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
-  int SessionReopenTimeout, const AnsiString MessageFormat, int Answers,
-  AnsiString HelpKeyword, const TMessageParams * Params)
+unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
+  int SessionReopenTimeout, const UnicodeString MessageFormat, unsigned int Answers,
+  UnicodeString HelpKeyword, const TMessageParams * Params)
 {
   assert(FLAGCLEAR(Answers, qaRetry));
   Answers |= qaRetry;
@@ -619,16 +619,16 @@ static void __fastcall CopyParamListSaveSettingsClick(TMenuItem * Item)
   Item->Checked = *SaveSettings;
 }
 //---------------------------------------------------------------------------
-bool __fastcall DoRemoteMoveDialog(AnsiString & Target, AnsiString & FileMask)
+bool __fastcall DoRemoteMoveDialog(UnicodeString & Target, UnicodeString & FileMask)
 {
-  AnsiString Value = UnixIncludeTrailingBackslash(Target) + FileMask;
-  TStrings * History = CustomWinConfiguration->History["RemoteTarget"];
+  UnicodeString Value = UnixIncludeTrailingBackslash(Target) + FileMask;
+  TStrings * History = CustomWinConfiguration->History[L"RemoteTarget"];
   bool Result = InputDialog(
     LoadStr(REMOTE_MOVE_TITLE), LoadStr(REMOTE_TRANSFER_PROMPT),
     Value, HELP_REMOTE_MOVE, History, true);
   if (Result)
   {
-    CustomWinConfiguration->History["RemoteTarget"] = History;
+    CustomWinConfiguration->History[L"RemoteTarget"] = History;
     Target = UnixExtractFilePath(Value);
     FileMask = UnixExtractFileName(Value);
   }
@@ -636,7 +636,7 @@ bool __fastcall DoRemoteMoveDialog(AnsiString & Target, AnsiString & FileMask)
 }
 //---------------------------------------------------------------------------
 void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
-  const TCopyParamType & Param, AnsiString Preset, TNotifyEvent OnClick,
+  const TCopyParamType & Param, UnicodeString Preset, TNotifyEvent OnClick,
   int Options, bool * SaveSettings)
 {
   Menu->Items->Clear();
@@ -646,7 +646,7 @@ void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
   Item->Caption = LoadStr(COPY_PARAM_DEFAULT);
   Item->Tag = -1;
   Item->Checked =
-    Preset.IsEmpty() && (GUIConfiguration->CopyParamPreset[""] == Param);
+    Preset.IsEmpty() && (GUIConfiguration->CopyParamPreset[L""] == Param);
   AnyChecked = AnyChecked || Item->Checked;
   Item->OnClick = OnClick;
   Menu->Items->Add(Item);
@@ -655,7 +655,7 @@ void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
   for (int i = 0; i < CopyParamList->Count; i++)
   {
     Item = new TMenuItem(Menu);
-    AnsiString Name = CopyParamList->Names[i];
+    UnicodeString Name = CopyParamList->Names[i];
     Item->Caption = Name;
     Item->Tag = i;
     Item->Checked =
@@ -694,7 +694,7 @@ void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
   }
 
   Item = new TMenuItem(Menu);
-  Item->Caption = "-";
+  Item->Caption = L"-";
   Menu->Items->Add(Item);
 
   Item = new TMenuItem(Menu);
@@ -707,7 +707,7 @@ void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
 }
 //---------------------------------------------------------------------------
 bool __fastcall CopyParamListPopupClick(TObject * Sender,
-  TCopyParamType & Param, AnsiString & Preset, int CopyParamAttrs)
+  TCopyParamType & Param, UnicodeString & Preset, int CopyParamAttrs)
 {
   TComponent * Item = dynamic_cast<TComponent *>(Sender);
   assert(Item != NULL);
@@ -716,8 +716,13 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
   bool Result;
   if (Item->Tag == -2)
   {
+    bool MatchedPreset = (GUIConfiguration->CopyParamPreset[Preset] == Param);
     DoPreferencesDialog(pmPresets);
-    Result = false;
+    Result = (MatchedPreset && GUIConfiguration->HasCopyParamPreset[Preset]);
+    if (Result)
+    {
+      Param = GUIConfiguration->CopyParamPreset[Preset];
+    }
   }
   else if (Item->Tag == -3)
   {
@@ -726,7 +731,7 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
   else
   {
     Preset = (Item->Tag >= 0) ?
-      GUIConfiguration->CopyParamList->Names[Item->Tag] : AnsiString();
+      GUIConfiguration->CopyParamList->Names[Item->Tag] : UnicodeString();
     Param = GUIConfiguration->CopyParamPreset[Preset];
     Result = true;
   }
@@ -734,25 +739,25 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
 }
 //---------------------------------------------------------------------------
 TWinInteractiveCustomCommand::TWinInteractiveCustomCommand(
-  TCustomCommand * ChildCustomCommand, const AnsiString CustomCommandName) :
+  TCustomCommand * ChildCustomCommand, const UnicodeString CustomCommandName) :
   TInteractiveCustomCommand(ChildCustomCommand)
 {
   FCustomCommandName = StripHotkey(CustomCommandName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinInteractiveCustomCommand::Prompt(int /*Index*/,
-  const AnsiString & Prompt, AnsiString & Value)
+  const UnicodeString & Prompt, UnicodeString & Value)
 {
-  AnsiString APrompt = Prompt;
+  UnicodeString APrompt = Prompt;
   if (APrompt.IsEmpty())
   {
     APrompt = FMTLOAD(CUSTOM_COMMANDS_PARAM_PROMPT, (FCustomCommandName));
   }
-  TStrings * History = CustomWinConfiguration->History["CustomCommandParam"];
+  TStrings * History = CustomWinConfiguration->History[L"CustomCommandParam"];
   if (InputDialog(FMTLOAD(CUSTOM_COMMANDS_PARAM_TITLE, (FCustomCommandName)),
         APrompt, Value, HELP_CUSTOM_COMMAND_PARAM, History))
   {
-    CustomWinConfiguration->History["CustomCommandParam"] = History;
+    CustomWinConfiguration->History[L"CustomCommandParam"] = History;
   }
   else
   {
@@ -767,7 +772,7 @@ static unsigned int __fastcall ShellDllVersion()
   if (Result == 0)
   {
     Result = 4;
-    HINSTANCE ShellDll = LoadLibrary("shell32.dll");
+    HINSTANCE ShellDll = LoadLibrary(L"shell32.dll");
     if (ShellDll != NULL)
     {
       try
@@ -840,15 +845,10 @@ bool __fastcall IsGlobalMinimizeHandler()
   return (GlobalOnMinimize != NULL);
 }
 //---------------------------------------------------------------------------
-LCID __fastcall GetDefaultLCID()
+UnicodeString __fastcall TranslateDateFormat(UnicodeString FormatStr)
 {
-  return Is2000() ? GetUserDefaultLCID() : GetThreadLocale();
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TranslateDateFormat(AnsiString FormatStr)
-{
-  AnsiString Result;
-  CALTYPE CalendarType = StrToIntDef(GetLocaleStr(GetDefaultLCID(), LOCALE_ICALENDARTYPE, "1"), 1);
+  UnicodeString Result;
+  CALTYPE CalendarType = StrToIntDef(GetLocaleStr(GetDefaultLCID(), LOCALE_ICALENDARTYPE, L"1"), 1);
   if ((CalendarType != CAL_JAPAN) && (CalendarType != CAL_TAIWAN) && (CalendarType != CAL_KOREA))
   {
     bool RemoveEra =
@@ -860,7 +860,7 @@ AnsiString __fastcall TranslateDateFormat(AnsiString FormatStr)
       int I = 1;
       while (I <= FormatStr.Length())
       {
-        if ((FormatStr[I] != 'g') && (FormatStr[I] != 'G'))
+        if ((FormatStr[I] != L'g') && (FormatStr[I] != L'G'))
         {
           Result += FormatStr[I];
         }
@@ -877,7 +877,7 @@ AnsiString __fastcall TranslateDateFormat(AnsiString FormatStr)
     int I = 1;
     while (I <= FormatStr.Length())
     {
-      if (FormatStr.IsLeadByte(I))
+      if (FormatStr.IsLeadSurrogate(I))
       {
         int L = CharLength(FormatStr, I);
         Result += FormatStr.SubString(I, L);
@@ -885,24 +885,24 @@ AnsiString __fastcall TranslateDateFormat(AnsiString FormatStr)
       }
       else
       {
-        if (StrLIComp(FormatStr.c_str() + I - 1, "gg", 2) == 0)
+        if (StrLIComp(FormatStr.c_str() + I - 1, L"gg", 2) == 0)
         {
-          Result += "ggg";
+          Result += L"ggg";
           I++;
         }
-        else if (StrLIComp(FormatStr.c_str() + I - 1, "yyyy", 4) == 0)
+        else if (StrLIComp(FormatStr.c_str() + I - 1, L"yyyy", 4) == 0)
         {
-          Result += "eeee";
+          Result += L"eeee";
           I += 4 - 1;
         }
-        else if (StrLIComp(FormatStr.c_str() + I - 1, "yy", 2) == 0)
+        else if (StrLIComp(FormatStr.c_str() + I - 1, L"yy", 2) == 0)
         {
-          Result += "ee";
+          Result += L"ee";
           I += 2 - 1;
         }
-        else if ((FormatStr[I] == 'y') || (FormatStr[I] == 'Y'))
+        else if ((FormatStr[I] == L'y') || (FormatStr[I] == L'Y'))
         {
-          Result += "e";
+          Result += L"e";
         }
         else
         {
@@ -921,42 +921,45 @@ void __fastcall GetFormatSettingsFix()
   // todo GetMonthDayNames
   // todo GetEraNamesAndYearOffsets
   LCID DefaultLCID = GetDefaultLCID();
-  CurrencyString = GetLocaleStr(DefaultLCID, LOCALE_SCURRENCY, "");
-  CurrencyFormat = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ICURRENCY, "0"), 0);
-  NegCurrFormat = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_INEGCURR, "0"), 0);
-  ThousandSeparator = GetLocaleChar(DefaultLCID, LOCALE_STHOUSAND, ',');
-  DecimalSeparator = GetLocaleChar(DefaultLCID, LOCALE_SDECIMAL, '.');
-  CurrencyDecimals = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ICURRDIGITS, "0"), 0);
-  DateSeparator = GetLocaleChar(DefaultLCID, LOCALE_SDATE, '/');
-  ShortDateFormat = TranslateDateFormat(GetLocaleStr(DefaultLCID, LOCALE_SSHORTDATE, "m/d/yy"));
-  LongDateFormat = TranslateDateFormat(GetLocaleStr(DefaultLCID, LOCALE_SLONGDATE, "mmmm d, yyyy"));
-  TimeSeparator = GetLocaleChar(DefaultLCID, LOCALE_STIME, ':');
-  TimeAMString = GetLocaleStr(DefaultLCID, LOCALE_S1159, "am");
-  TimePMString = GetLocaleStr(DefaultLCID, LOCALE_S2359, "pm");
-  AnsiString HourFormat;
-  if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITLZERO, "0"), 0) == 0)
+  FormatSettings = TFormatSettings::Create(DefaultLCID);
+#pragma warn -8111
+  CurrencyString = GetLocaleStr(DefaultLCID, LOCALE_SCURRENCY, L"");
+  CurrencyFormat = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ICURRENCY, L"0"), 0);
+  NegCurrFormat = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_INEGCURR, L"0"), 0);
+  ThousandSeparator = GetLocaleChar(DefaultLCID, LOCALE_STHOUSAND, L',');
+  DecimalSeparator = GetLocaleChar(DefaultLCID, LOCALE_SDECIMAL, L'.');
+  CurrencyDecimals = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ICURRDIGITS, L"0"), 0);
+  DateSeparator = GetLocaleChar(DefaultLCID, LOCALE_SDATE, L'/');
+  ShortDateFormat = TranslateDateFormat(GetLocaleStr(DefaultLCID, LOCALE_SSHORTDATE, L"m/d/yy"));
+  LongDateFormat = TranslateDateFormat(GetLocaleStr(DefaultLCID, LOCALE_SLONGDATE, L"mmmm d, yyyy"));
+  TimeSeparator = GetLocaleChar(DefaultLCID, LOCALE_STIME, L':');
+  TimeAMString = GetLocaleStr(DefaultLCID, LOCALE_S1159, L"am");
+  TimePMString = GetLocaleStr(DefaultLCID, LOCALE_S2359, L"pm");
+  UnicodeString HourFormat;
+  if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITLZERO, L"0"), 0) == 0)
   {
-    HourFormat = "h";
+    HourFormat = L"h";
   }
   else
   {
-    HourFormat = "hh";
+    HourFormat = L"hh";
   }
-  AnsiString TimePrefix, TimePostfix;
-  if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITIME, "0"), 0) == 0)
+  UnicodeString TimePrefix, TimePostfix;
+  if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITIME, L"0"), 0) == 0)
   {
-    if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITIMEMARKPOSN, "0"), 0) == 0)
+    if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITIMEMARKPOSN, L"0"), 0) == 0)
     {
-      TimePostfix = " AMPM";
+      TimePostfix = L" AMPM";
     }
     else
     {
-      TimePrefix = "AMPM ";
+      TimePrefix = L"AMPM ";
     }
   }
-  ShortTimeFormat = TimePrefix + HourFormat + ":mm" + TimePostfix;
-  LongTimeFormat = TimePrefix + HourFormat + ":mm:ss" + TimePostfix;
-  ListSeparator = GetLocaleChar(DefaultLCID, LOCALE_SLIST, ',');
+  ShortTimeFormat = TimePrefix + HourFormat + L":mm" + TimePostfix;
+  LongTimeFormat = TimePrefix + HourFormat + L":mm:ss" + TimePostfix;
+  ListSeparator = GetLocaleChar(DefaultLCID, LOCALE_SLIST, L',');
+#pragma warn .8111
 }
 //---------------------------------------------------------------------------
 void __fastcall WinInitialize()
@@ -966,6 +969,8 @@ void __fastcall WinInitialize()
     GetFormatSettingsFix();
   }
 
+#pragma warn -8111
+#pragma warn .8111
 
 }
 //---------------------------------------------------------------------------
@@ -977,22 +982,22 @@ struct TNotifyIconData5
   UINT uFlags;
   UINT uCallbackMessage;
   HICON hIcon;
-  CHAR szTip[128];
+  TCHAR szTip[128];
   DWORD dwState;
   DWORD dwStateMask;
-  CHAR szInfo[256];
+  TCHAR szInfo[256];
   union {
     UINT uTimeout;
     UINT uVersion;
   } DUMMYUNIONNAME;
-  CHAR szInfoTitle[64];
+  TCHAR szInfoTitle[64];
   DWORD dwInfoFlags;
 };
 //---------------------------------------------------------------------------
 #undef NOTIFYICONDATA_V1_SIZE
 #define NOTIFYICONDATA_V1_SIZE FIELD_OFFSET(TNotifyIconData5, szTip[64])
 //---------------------------------------------------------------------------
-__fastcall TTrayIcon::TTrayIcon(unsigned int Id)
+__fastcall ::TTrayIcon::TTrayIcon(unsigned int Id)
 {
   FVisible = false;
   FOnClick = NULL;
@@ -1005,9 +1010,11 @@ __fastcall TTrayIcon::TTrayIcon(unsigned int Id)
   FTrayIcon->uID = Id;
   FTrayIcon->hWnd = AllocateHWnd(WndProc);
   FTrayIcon->uCallbackMessage = WM_TRAY_ICON;
+
+  FTaskbarCreatedMsg = RegisterWindowMessage(L"TaskbarCreated");
 }
 //---------------------------------------------------------------------------
-__fastcall TTrayIcon::~TTrayIcon()
+__fastcall ::TTrayIcon::~TTrayIcon()
 {
   // make sure we hide icon even in case it was shown just to pop up the balloon
   // (in which case Visible == false)
@@ -1017,13 +1024,13 @@ __fastcall TTrayIcon::~TTrayIcon()
   delete FTrayIcon;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTrayIcon::SupportsBalloons()
+bool __fastcall ::TTrayIcon::SupportsBalloons()
 {
   return (ShellDllVersion() >= 5);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTrayIcon::PopupBalloon(AnsiString Title,
-  const AnsiString & Str, TQueryType QueryType, unsigned int Timeout)
+void __fastcall ::TTrayIcon::PopupBalloon(UnicodeString Title,
+  const UnicodeString & Str, TQueryType QueryType, unsigned int Timeout)
 {
   if (SupportsBalloons())
   {
@@ -1034,9 +1041,9 @@ void __fastcall TTrayIcon::PopupBalloon(AnsiString Title,
       Timeout = 30000;
     }
     FTrayIcon->uFlags |= NIF_INFO;
-    Title = FORMAT("%s - %s", (Title, AppNameString()));
-    StrPLCopy(FTrayIcon->szInfoTitle, Title, sizeof(FTrayIcon->szInfoTitle) - 1);
-    StrPLCopy(FTrayIcon->szInfo, Str, sizeof(FTrayIcon->szInfo) - 1);
+    Title = FORMAT(L"%s - %s", (Title, AppNameString()));
+    StrPLCopy(FTrayIcon->szInfoTitle, Title, LENOF(FTrayIcon->szInfoTitle) - 1);
+    StrPLCopy(FTrayIcon->szInfo, Str, LENOF(FTrayIcon->szInfo) - 1);
     FTrayIcon->uTimeout = Timeout;
     switch (QueryType)
     {
@@ -1079,7 +1086,7 @@ void __fastcall TTrayIcon::PopupBalloon(AnsiString Title,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTrayIcon::CancelBalloon()
+void __fastcall ::TTrayIcon::CancelBalloon()
 {
   if (SupportsBalloons())
   {
@@ -1087,7 +1094,7 @@ void __fastcall TTrayIcon::CancelBalloon()
     if (Visible)
     {
       FTrayIcon->uFlags |= NIF_INFO;
-      FTrayIcon->szInfo[0] = '\0';
+      FTrayIcon->szInfo[0] = L'\0';
       Update();
       FTrayIcon->uFlags = FTrayIcon->uFlags & ~NIF_INFO;
     }
@@ -1098,7 +1105,7 @@ void __fastcall TTrayIcon::CancelBalloon()
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTrayIcon::Notify(unsigned int Message)
+bool __fastcall ::TTrayIcon::Notify(unsigned int Message)
 {
   bool Result = SUCCEEDED(Shell_NotifyIcon(Message, (NOTIFYICONDATA*)FTrayIcon));
   if (Result && (Message == NIM_ADD))
@@ -1117,7 +1124,7 @@ bool __fastcall TTrayIcon::Notify(unsigned int Message)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTrayIcon::Update()
+void __fastcall ::TTrayIcon::Update()
 {
   if (Visible)
   {
@@ -1125,7 +1132,7 @@ void __fastcall TTrayIcon::Update()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTrayIcon::SetVisible(bool value)
+void __fastcall ::TTrayIcon::SetVisible(bool value)
 {
   if (Visible != value)
   {
@@ -1142,7 +1149,7 @@ void __fastcall TTrayIcon::SetVisible(bool value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTrayIcon::WndProc(TMessage & Message)
+void __fastcall ::TTrayIcon::WndProc(TMessage & Message)
 {
   try
   {
@@ -1184,6 +1191,15 @@ void __fastcall TTrayIcon::WndProc(TMessage & Message)
       // sanity check
       Notify(NIM_DELETE);
     }
+    else if (Message.Msg == FTaskbarCreatedMsg)
+    {
+      if (Visible)
+      {
+        // force recreation
+        Visible = false;
+        Visible = true;
+      }
+    }
     else
     {
       Message.Result = DefWindowProc(FTrayIcon->hWnd, Message.Msg, Message.WParam, Message.LParam);
@@ -1195,16 +1211,16 @@ void __fastcall TTrayIcon::WndProc(TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TTrayIcon::GetHint()
+UnicodeString __fastcall ::TTrayIcon::GetHint()
 {
   return FTrayIcon->szTip;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTrayIcon::SetHint(AnsiString value)
+void __fastcall ::TTrayIcon::SetHint(UnicodeString value)
 {
   if (Hint != value)
   {
-    unsigned int Max = ((ShellDllVersion() >= 5) ? sizeof(FTrayIcon->szTip) : 64);
+    unsigned int Max = ((ShellDllVersion() >= 5) ? LENOF(FTrayIcon->szTip) : 64);
     StrPLCopy(FTrayIcon->szTip, value, Max - 1);
     Update();
   }

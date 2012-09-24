@@ -205,7 +205,7 @@ implementation
 type TWinBool = (winFalse, winTrue);
 function FixFindFirstChangeNotification(const lpPathName: PChar;
   bWatchSubtree: TWinBool; dwNotifyFilter: DWORD): THandle stdcall;
-  external kernel32 name 'FindFirstChangeNotificationA';
+  external kernel32 name 'FindFirstChangeNotificationW';
 {$ENDIF}
 
 procedure AddDirectory(Dirs: TStrings; Directory: string;

@@ -7,6 +7,7 @@
 #include <TextsWin.h>
 #include "WinConfiguration.h"
 #include "EditorManager.h"
+#include <algorithm>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -57,10 +58,10 @@ bool __fastcall TEditorManager::Empty(bool IgnoreClosed)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory,
-  const AnsiString OriginalFileName, const AnsiString SessionName,
-  TObject *& Token, AnsiString & ExistingLocalRootDirectory,
-  AnsiString & ExistingLocalDirectory)
+bool __fastcall TEditorManager::CanAddFile(const UnicodeString RemoteDirectory,
+  const UnicodeString OriginalFileName, const UnicodeString SessionName,
+  TObject *& Token, UnicodeString & ExistingLocalRootDirectory,
+  UnicodeString & ExistingLocalDirectory)
 {
   bool Result = true;
 
@@ -184,7 +185,7 @@ bool __fastcall TEditorManager::CloseExternalFilesWithoutProcess()
   return true;
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::AddFileInternal(const AnsiString FileName,
+void __fastcall TEditorManager::AddFileInternal(const UnicodeString FileName,
   const TEditedFileData & Data, TObject * Token)
 {
   TFileData FileData;
@@ -198,7 +199,7 @@ void __fastcall TEditorManager::AddFileInternal(const AnsiString FileName,
   AddFile(FileData);
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::AddFileExternal(const AnsiString FileName,
+void __fastcall TEditorManager::AddFileExternal(const UnicodeString FileName,
   const TEditedFileData & Data, HANDLE Process)
 {
   TFileData FileData;
@@ -236,7 +237,7 @@ void __fastcall TEditorManager::Check()
       if (Index >= 0)
       {
         // let the editor finish writting to the file
-        // (first to avoid uploading particually saved file, second
+        // (first to avoid uploading partially saved file, second
         // because the timestamp may change more than once during saving)
         Sleep(GUIConfiguration->KeepUpToDateChangeDelay);
 
@@ -333,10 +334,10 @@ void __fastcall TEditorManager::FileReload(TObject * Token)
   assert(!FileData->External);
 
   OnFileReload(FileData->FileName, FileData->Data);
-  FileData->Timestamp = FileAge(FileData->FileName);
+  FileAge(FileData->FileName, FileData->Timestamp);
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::FileClosed(TObject * Token)
+void __fastcall TEditorManager::FileClosed(TObject * Token, bool Forced)
 {
   int Index = FindFile(Token);
 
@@ -344,16 +345,17 @@ void __fastcall TEditorManager::FileClosed(TObject * Token)
   assert(!FFiles[Index].External);
 
   CheckFileChange(Index, false);
-  CloseFile(Index, false, true);
+  CloseFile(Index, false, !Forced);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::AddFile(TFileData & FileData)
 {
-  FileData.Timestamp = FileAge(FileData.FileName);
+  FileAge(FileData.FileName, FileData.Timestamp);
   FileData.Closed = false;
   FileData.UploadCompleteEvent = INVALID_HANDLE_VALUE;
   FileData.Opened = Now();
   FileData.Reupload = false;
+  FileData.Saves = 0;
 
   FFiles.push_back(FileData);
 }
@@ -411,8 +413,8 @@ void __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
   }
   else
   {
-    AnsiString FileName = FileData->FileName;
-    AnsiString LocalRootDirectory = FileData->Data.LocalRootDirectory;
+    UnicodeString FileName = FileData->FileName;
+    UnicodeString LocalRootDirectory = FileData->Data.LocalRootDirectory;
 
     FFiles.erase(FFiles.begin() + Index);
 
@@ -431,7 +433,8 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
 {
   TFileData * FileData = &FFiles[Index];
 
-  int NewTimestamp = FileAge(FileData->FileName);
+  TDateTime NewTimestamp;
+  FileAge(FileData->FileName, NewTimestamp);
   if (Force || (FileData->Timestamp != NewTimestamp))
   {
     if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
@@ -443,6 +446,12 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
     FUploadCompleteEvents.push_back(FileData->UploadCompleteEvent);
 
     FileData->Timestamp = NewTimestamp;
+    FileData->Saves++;
+    if (FileData->Saves == 1)
+    {
+      Configuration->Usage->Inc(L"RemoteFilesSaved");
+    }
+    Configuration->Usage->Inc(L"RemoteFileSaves");
 
     try
     {

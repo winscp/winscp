@@ -11,7 +11,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
     405
@@ -21,7 +21,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   object EditLabel: TLabel
     Left = 8
     Top = 8
-    Width = 72
+    Width = 76
     Height = 13
     Caption = '&Open directory:'
   end
@@ -31,7 +31,6 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Width = 308
     Height = 21
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 13
     TabOrder = 1
     Text = 'LocalDirectoryEdit'
     OnChange = DirectoryEditChange
@@ -42,7 +41,6 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Width = 389
     Height = 21
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 13
     MaxLength = 1000
     TabOrder = 0
     Text = 'RemoteDirectoryEdit'
@@ -77,7 +75,6 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Height = 235
     ActivePage = SessionBookmarksSheet
     Anchors = [akLeft, akTop, akRight, akBottom]
-    TabIndex = 0
     TabOrder = 3
     OnChange = PageControlChange
     object SessionBookmarksSheet: TTabSheet

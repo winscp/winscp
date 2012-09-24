@@ -5,47 +5,48 @@
 #include <comctrls.hpp>
 #include <WinInterface.h>
 #include <HelpIntfs.hpp>
-#include <WinHelpViewer.hpp>
+#include <stdio.h>
 //---------------------------------------------------------------------------
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn);
-bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Params);
-bool __fastcall ExecuteShellAndWait(const AnsiString Command);
-void __fastcall CreateDesktopShortCut(const AnsiString &Name,
-  const AnsiString &File, const AnsiString & Params, const AnsiString & Description,
-  int SpecialFolder = -1);
-AnsiString __fastcall GetListViewStr(TListView * ListView);
-void __fastcall LoadListViewStr(TListView * ListView, AnsiString LayoutStr);
-void __fastcall RestoreForm(AnsiString Data, TForm * Form);
-AnsiString __fastcall StoreForm(TCustomForm * Form);
-void __fastcall RestoreFormSize(AnsiString Data, TForm * Form);
-AnsiString __fastcall StoreFormSize(TForm * Form);
+bool __fastcall ExecuteShellAndWait(const UnicodeString Path, const UnicodeString Params);
+bool __fastcall ExecuteShellAndWait(const UnicodeString Command);
+IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString &Name,
+  const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
+  int SpecialFolder = -1, bool Return = false);
+IShellLink * __fastcall CreateDesktopSessionShortCut(TSessionData * Session,
+  const UnicodeString & Name, const UnicodeString & AdditionalParams,
+  int SpecialFolder = -1, bool Return = false);
+UnicodeString __fastcall GetListViewStr(TListView * ListView);
+void __fastcall LoadListViewStr(TListView * ListView, UnicodeString LayoutStr);
+void __fastcall RestoreForm(UnicodeString Data, TForm * Form);
+UnicodeString __fastcall StoreForm(TCustomForm * Form);
+void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form);
+UnicodeString __fastcall StoreFormSize(TForm * Form);
 TFontStyles __fastcall IntToFontStyles(int value);
 int __fastcall FontStylesToInt(const TFontStyles value);
 void __fastcall ValidateMaskEdit(TComboBox * Edit);
 void __fastcall ValidateMaskEdit(TEdit * Edit);
-void __fastcall OpenBrowser(AnsiString URL);
+void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory);
+void __fastcall OpenBrowser(UnicodeString URL);
 bool __fastcall IsFormatInClipboard(unsigned int Format);
-bool __fastcall TextFromClipboard(AnsiString & Text);
-HANDLE __fastcall OpenTextFromClipboard(const char *& Text);
+bool __fastcall TextFromClipboard(UnicodeString & Text);
+HANDLE __fastcall OpenTextFromClipboard(const wchar_t *& Text);
 void __fastcall CloseTextFromClipboard(HANDLE Handle);
 void __fastcall ExitActiveControl(TForm * Form);
-AnsiString __fastcall ReadResource(const AnsiString ResName);
-bool __fastcall DumpResourceToFile(const AnsiString ResName,
-  const AnsiString FileName);
-TOpenDialog * __fastcall CreateOpenDialog(TComponent * AOwner);
-void __fastcall BrowseForExecutable(TEdit * Control, AnsiString Title,
-  AnsiString Filter, bool FileNameCommand, bool Escape);
-void __fastcall BrowseForExecutable(TComboBox * Control, AnsiString Title,
-  AnsiString Filter, bool FileNameCommand, bool Escape);
+UnicodeString __fastcall ReadResource(const UnicodeString ResName);
+bool __fastcall DumpResourceToFile(const UnicodeString ResName,
+  const UnicodeString FileName);
+void __fastcall BrowseForExecutable(TEdit * Control, UnicodeString Title,
+  UnicodeString Filter, bool FileNameCommand, bool Escape);
+void __fastcall BrowseForExecutable(TComboBox * Control, UnicodeString Title,
+  UnicodeString Filter, bool FileNameCommand, bool Escape);
 bool __fastcall FontDialog(TFont * Font);
-bool __fastcall SaveDialog(AnsiString Title, AnsiString Filter,
-  AnsiString DefaultExt, AnsiString & FileName);
-bool __fastcall AutodetectProxyUrl(AnsiString & Proxy);
+bool __fastcall SaveDialog(UnicodeString Title, UnicodeString Filter,
+  UnicodeString DefaultExt, UnicodeString & FileName);
+bool __fastcall AutodetectProxyUrl(UnicodeString & Proxy);
 bool __fastcall IsWin64();
-void __fastcall CopyToClipboard(AnsiString Text);
+void __fastcall CopyToClipboard(UnicodeString Text);
 void __fastcall CopyToClipboard(TStrings * Strings);
-AnsiString __fastcall VersionStrFromCompoundVersion(int Version);
-AnsiString __fastcall CampaignUrl(AnsiString URL);
 void __fastcall ShutDownWindows();
 void __fastcall EditSelectBaseName(HWND Edit);
 //---------------------------------------------------------------------------

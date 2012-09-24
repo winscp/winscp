@@ -23,14 +23,14 @@ TQueryButtonAlias::TQueryButtonAlias()
   OnClick = NULL;
 }
 //---------------------------------------------------------------------------
-TQueryParams::TQueryParams(unsigned int AParams, AnsiString AHelpKeyword)
+TQueryParams::TQueryParams(unsigned int AParams, UnicodeString AHelpKeyword)
 {
   Params = AParams;
   Aliases = NULL;
   AliasesCount = 0;
   Timer = 0;
   TimerEvent = NULL;
-  TimerMessage = "";
+  TimerMessage = L"";
   TimerAnswers = 0;
   Timeout = 0;
   TimeoutAnswer = 0;
@@ -113,5 +113,10 @@ void CoreSetResourceModule(void * ResourceHandle)
   #else
   USEDPARAM(ResourceHandle);
   #endif
+}
+//---------------------------------------------------------------------------
+void CoreMaintenanceTask()
+{
+  DontSaveRandomSeed();
 }
 //---------------------------------------------------------------------------

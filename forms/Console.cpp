@@ -18,7 +18,7 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
-void __fastcall DoConsoleDialog(TTerminal * Terminal, const AnsiString Command,
+void __fastcall DoConsoleDialog(TTerminal * Terminal, const UnicodeString Command,
   const TStrings * Log)
 {
   TConsoleDialog * Dialog = new TConsoleDialog(Application);
@@ -48,7 +48,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   UseSystemSettings(this);
   try
   {
-    OutputMemo->Font->Name = "Courier New";
+    OutputMemo->Font->Name = L"Courier New";
   }
   catch(...)
   {
@@ -115,17 +115,17 @@ void __fastcall TConsoleDialog::DoChangeDirectory(TObject * Sender)
 //---------------------------------------------------------------------
 void __fastcall TConsoleDialog::UpdateControls()
 {
-  DirectoryLabel->Caption = (FTerminal ? FTerminal->CurrentDirectory : AnsiString());
+  DirectoryLabel->Caption = (FTerminal ? FTerminal->CurrentDirectory : UnicodeString());
   EnableControl(ExecuteButton,
     (FTerminal != NULL) ? FTerminal->AllowedAnyCommand(CommandEdit->Text) : false);
 }
 //---------------------------------------------------------------------
-bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
+bool __fastcall TConsoleDialog::Execute(const UnicodeString Command,
   const TStrings * Log)
 {
   try
   {
-    CommandEdit->Items = CustomWinConfiguration->History["Commands"];
+    CommandEdit->Items = CustomWinConfiguration->History[L"Commands"];
 
     if (Log != NULL)
     {
@@ -165,7 +165,7 @@ bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
     if (FTerminal)
     {
       CommandEdit->SaveToHistory();
-      CustomWinConfiguration->History["Commands"] = CommandEdit->Items;
+      CustomWinConfiguration->History[L"Commands"] = CommandEdit->Items;
     }
   }
   return true;
@@ -193,9 +193,10 @@ void __fastcall TConsoleDialog::DoExecuteCommand()
   FClearExceptionOnFail = true;
   try
   {
-    AnsiString Command = CommandEdit->Text;
-    OutputMemo->Lines->Add(FORMAT("%s$ %s", (FTerminal->CurrentDirectory, Command)));
+    UnicodeString Command = CommandEdit->Text;
+    OutputMemo->Lines->Add(FORMAT(L"%s$ %s", (FTerminal->CurrentDirectory, Command)));
     FAnyCommandExecuted = true;
+    Configuration->Usage->Inc(L"RemoteCommandExecutions");
     FTerminal->AnyCommand(Command, AddLine);
   }
   __finally
@@ -231,7 +232,7 @@ void __fastcall TConsoleDialog::CommandEditChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleDialog::AddLine(const AnsiString & Line, bool /*StdError*/)
+void __fastcall TConsoleDialog::AddLine(const UnicodeString & Line, bool /*StdError*/)
 {
   OutputMemo->Lines->Add(Line);
 }
@@ -250,8 +251,8 @@ void __fastcall TConsoleDialog::HelpButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::DoAdjustWindow()
 {
-  HFONT OldFont;
-  void * DC;
+  HGDIOBJ OldFont;
+  HDC DC;
   TTextMetric TM;
   TRect Rect;
 
@@ -316,7 +317,7 @@ void __fastcall TConsoleDialog::ActionListUpdate(TBasicAction * Action,
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::FormShow(TObject * /*Sender*/)
 {
-  UpdateFormPosition(this, poMainFormCenter);
+  UpdateFormPosition(this, poOwnerFormCenter);
   RestoreFormSize(CustomWinConfiguration->ConsoleWin.WindowSize, this);
   FAutoBounds = BoundsRect;
 }

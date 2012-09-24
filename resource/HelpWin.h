@@ -44,5 +44,6 @@
 #define HELP_MASTER_PASSWORD_CHANGE  "ui_master_password_change"
 #define HELP_MASTER_PASSWORD         "master_password"
 #define HELP_MASTER_PASSWORD_SIMPLE  HELP_MASTER_PASSWORD
+#define HELP_USAGE                   "usagestatistics"
 
 #endif // TextsWin

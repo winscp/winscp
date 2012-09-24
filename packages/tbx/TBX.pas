@@ -637,7 +637,7 @@ implementation
 {$R tbx_glyphs.res}
 
 uses
-  TBXExtItems, TBXLists, TB2Common, TBXUxThemes, MultiMon, TBXDefaultTheme,
+  TBXExtItems, TBXLists, TB2Common, UxTheme, MultiMon, TBXDefaultTheme,
   {ComCtrls, Menus;} {vb-}
   ComCtrls, Menus, MMSystem; {vb+}
 
@@ -3712,7 +3712,7 @@ procedure TTBXDock.TBMGetEffectiveColor(var Message: TMessage);
 begin
   if Color <> clNone then Message.WParam := Color
   else if Parent <> nil then Message.WParam := GetEffectiveColor(Parent)
-  else Message.WParam := clBtnFace;
+  else Message.WParam := WPARAM(clBtnFace);
   Message.Result := 1;
 end;
 
@@ -3852,7 +3852,7 @@ begin
 end;
 
 procedure FixPlaySoundDelay;
-var ThreadId: Cardinal;
+var ThreadId: TThreadID;
 begin
   if (Win32Platform = VER_PLATFORM_WIN32_NT) and CheckWin32Version(5) and
     (FixPlaySoundThreadHandle = 0) then

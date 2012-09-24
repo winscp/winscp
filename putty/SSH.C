@@ -6236,10 +6236,18 @@ static int do_ssh2_transport(Ssh ssh, void *vin, int inlen,
 	memset(keyspace, 0, sizeof(keyspace));
     }
 
+    #ifdef _DEBUG
+	// To suppress CodeGuard warning
+    logeventf(ssh, "Initialised %s client->server encryption",
+	      ssh->cscipher->text_name);
+    logeventf(ssh, "Initialised %s client->server MAC algorithm",
+	      ssh->csmac->text_name);
+    #else
     logeventf(ssh, "Initialised %.200s client->server encryption",
 	      ssh->cscipher->text_name);
     logeventf(ssh, "Initialised %.200s client->server MAC algorithm",
 	      ssh->csmac->text_name);
+    #endif
     if (ssh->cscomp->text_name)
 	logeventf(ssh, "Initialised %s compression",
 		  ssh->cscomp->text_name);
@@ -6301,10 +6309,18 @@ static int do_ssh2_transport(Ssh ssh, void *vin, int inlen,
 	ssh->scmac->setkey(ssh->sc_mac_ctx, keyspace);
 	memset(keyspace, 0, sizeof(keyspace));
     }
+    #ifdef _DEBUG
+	// To suppress CodeGuard warning
+    logeventf(ssh, "Initialised %s server->client encryption",
+	      ssh->sccipher->text_name);
+    logeventf(ssh, "Initialised %s server->client MAC algorithm",
+	      ssh->scmac->text_name);
+    #else
     logeventf(ssh, "Initialised %.200s server->client encryption",
 	      ssh->sccipher->text_name);
     logeventf(ssh, "Initialised %.200s server->client MAC algorithm",
 	      ssh->scmac->text_name);
+    #endif
     if (ssh->sccomp->text_name)
 	logeventf(ssh, "Initialised %s decompression",
 		  ssh->sccomp->text_name);
@@ -7895,6 +7911,9 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 					     GET_32BIT(s->ret + 5));
 			    ssh2_pkt_send(ssh, s->pktout);
 			    s->type = AUTH_TYPE_PUBLICKEY;
+			    #ifdef MPEXT
+			    sfree(s->ret);
+			    #endif
 			} else {
 			    /* FIXME: less drastic response */
 			    bombout(("Pageant failed to answer challenge"));
@@ -8456,7 +8475,12 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		s->cur_prompt = new_prompts(ssh->frontend);
 		s->cur_prompt->to_server = TRUE;
 		s->cur_prompt->name = dupstr("SSH password");
+		#ifdef _DEBUG
+		// To suppress CodeGuard warning
+		add_prompt(s->cur_prompt, dupprintf("%s@%s's password: ",
+		#else
 		add_prompt(s->cur_prompt, dupprintf("%.90s@%.90s's password: ",
+		#endif
 						    s->username,
 						    ssh->savedhost),
 			   FALSE, SSH_MAX_PASSWORD_LEN);

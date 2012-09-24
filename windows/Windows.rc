@@ -10,7 +10,3 @@
 
 LICENSE RCDATA "License.txt"
 LICENSE_PUTTY RCDATA "LicensePuTTY.txt"
-
-#ifndef IDE
-MAINICON ICON DISCARDABLE "..\\resource\\Icon32.ico"
-#endif

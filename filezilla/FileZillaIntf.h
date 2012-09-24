@@ -2,6 +2,8 @@
 #ifndef FileZillaIntfH
 #define FileZillaIntfH
 //---------------------------------------------------------------------------
+#include <map>
+
 #include <time.h>
 #include <FileZillaOpt.h>
 //---------------------------------------------------------------------------
@@ -10,9 +12,9 @@ class TFileZillaIntern;
 //---------------------------------------------------------------------------
 struct TListDataEntry
 {
-  const char * Name;
-  const char * Permissions;
-  const char * OwnerGroup;
+  const wchar_t * Name;
+  const wchar_t * Permissions;
+  const wchar_t * OwnerGroup;
   __int64 Size;
   bool Dir;
   bool Link;
@@ -21,23 +23,25 @@ struct TListDataEntry
   int Day;
   int Hour;
   int Minute;
+  int Second;
   bool HasTime;
+  bool HasSeconds;
   bool HasDate;
-  const char * LinkTarget;
+  const wchar_t * LinkTarget;
 };
 //---------------------------------------------------------------------------
 struct TFtpsCertificateData
 {
   struct TContact
   {
-    const char * Organization;
-    const char * Unit;
-    const char * CommonName;
-    const char * Mail;
-    const char * Country;
-    const char * StateProvince;
-    const char * Town;
-    const char * Other;
+    const wchar_t * Organization;
+    const wchar_t * Unit;
+    const wchar_t * CommonName;
+    const wchar_t * Mail;
+    const wchar_t * Country;
+    const wchar_t * StateProvince;
+    const wchar_t * Town;
+    const wchar_t * Other;
   };
 
   TContact Subject;
@@ -63,7 +67,13 @@ struct TFtpsCertificateData
   int VerificationDepth;
 };
 //---------------------------------------------------------------------------
+struct TNeedPassRequestData
+{
+    wchar_t * Password;
+};
+//---------------------------------------------------------------------------
 class t_server;
+class TFTPServerCapabilities;
 //---------------------------------------------------------------------------
 class TFileZillaIntf
 {
@@ -136,33 +146,36 @@ public:
   bool __fastcall Init();
   void __fastcall Destroying();
 
-  bool __fastcall SetCurrentPath(const char * Path);
-  bool __fastcall GetCurrentPath(char * Path, size_t MaxLen);
+  bool __fastcall SetCurrentPath(const wchar_t * Path);
+  bool __fastcall GetCurrentPath(wchar_t * Path, size_t MaxLen);
 
   bool __fastcall Cancel();
 
-  bool __fastcall Connect(const char * Host, int Port, const char * User,
-    const char * Pass, const char * Account, bool FwByPass,
-    const char * Path, int ServerType, int Pasv, int TimeZoneOffset, int UTF8,
+  bool __fastcall Connect(const wchar_t * Host, int Port, const wchar_t * User,
+    const wchar_t * Pass, const wchar_t * Account, bool FwByPass,
+    const wchar_t * Path, int ServerType, int Pasv, int TimeZoneOffset, int UTF8,
     int iForcePasvIp);
   bool __fastcall Close();
 
   bool __fastcall List();
-  bool __fastcall List(const char * Path);
+  bool __fastcall List(const wchar_t * Path);
+#ifdef MPEXT
+  bool __fastcall ListFile(const wchar_t * FullFileName);
+#endif
 
-  bool __fastcall CustomCommand(const char * Command);
+  bool __fastcall CustomCommand(const wchar_t * Command);
 
-  bool __fastcall MakeDir(const char* Path);
-  bool __fastcall Chmod(int Value, const char* FileName, const char* Path);
-  bool __fastcall Delete(const char* FileName, const char* Path);
-  bool __fastcall RemoveDir(const char* FileName, const char* Path);
-  bool __fastcall Rename(const char* OldName, const char* NewName,
-    const char* Path, const char* NewPath);
+  bool __fastcall MakeDir(const wchar_t* Path);
+  bool __fastcall Chmod(int Value, const wchar_t* FileName, const wchar_t* Path);
+  bool __fastcall Delete(const wchar_t* FileName, const wchar_t* Path);
+  bool __fastcall RemoveDir(const wchar_t* FileName, const wchar_t* Path);
+  bool __fastcall Rename(const wchar_t* OldName, const wchar_t* NewName,
+    const wchar_t* Path, const wchar_t* NewPath);
 
-  bool __fastcall FileTransfer(const char * LocalFile, const char * RemoteFile,
-    const char * RemotePath, bool Get, __int64 Size, int Type, void * UserData);
+  bool __fastcall FileTransfer(const wchar_t * LocalFile, const wchar_t * RemoteFile,
+    const wchar_t * RemotePath, bool Get, __int64 Size, int Type, void * UserData);
 
-  virtual const char * __fastcall Option(int OptionID) const = 0;
+  virtual const wchar_t * __fastcall Option(int OptionID) const = 0;
   virtual int __fastcall OptionVal(int OptionID) const = 0;
 
   void __fastcall SetDebugLevel(TLogLevel Level);
@@ -172,29 +185,91 @@ protected:
   bool __fastcall PostMessage(WPARAM wParam, LPARAM lParam);
   virtual bool __fastcall DoPostMessage(TMessageType Type, WPARAM wParam, LPARAM lParam) = 0;
 
-  virtual bool __fastcall HandleStatus(const char * Status, int Type) = 0;
+  virtual bool __fastcall HandleStatus(const wchar_t * Status, int Type) = 0;
   virtual bool __fastcall HandleAsynchRequestOverwrite(
-    char * FileName1, size_t FileName1Len, const char * FileName2,
-    const char * Path1, const char * Path2,
+    wchar_t * FileName1, size_t FileName1Len, const wchar_t * FileName2,
+    const wchar_t * Path1, const wchar_t * Path2,
     __int64 Size1, __int64 Size2, time_t Time1, time_t Time2,
     bool HasTime1, bool HasTime2, void * UserData, int & RequestResult) = 0;
   virtual bool __fastcall HandleAsynchRequestVerifyCertificate(
     const TFtpsCertificateData & Data, int & RequestResult) = 0;
-  virtual bool __fastcall HandleListData(const char * Path, const TListDataEntry * Entries,
+  virtual bool __fastcall HandleAsynchRequestNeedPass(
+    struct TNeedPassRequestData & Data, int & RequestResult) = 0;
+  virtual bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries,
     unsigned int Count) = 0;
   virtual bool __fastcall HandleTransferStatus(bool Valid, __int64 TransferSize,
     __int64 Bytes, int Percent, int TimeElapsed, int TimeLeft, int TransferRate,
     bool FileTransfer) = 0;
   virtual bool __fastcall HandleReply(int Command, unsigned int Reply) = 0;
-  virtual bool __fastcall HandleCapabilities(bool Mfmt) = 0;
-  virtual bool __fastcall CheckError(int ReturnCode, const char * Context);
+  virtual bool __fastcall HandleCapabilities(TFTPServerCapabilities * ServerCapabilities) = 0;
+  virtual bool __fastcall CheckError(int ReturnCode, const wchar_t * Context);
 
-  inline bool __fastcall Check(int ReturnCode, const char * Context, int Expected = -1);
+  inline bool __fastcall Check(int ReturnCode, const wchar_t * Context, int Expected = -1);
 
 private:
   CFileZillaApi * FFileZillaApi;
   TFileZillaIntern * FIntern;
   t_server * FServer;
 };
+//---------------------------------------------------------------------------
+#ifdef MPEXT
+//---------------------------------------------------------------------------
+enum ftp_capabilities_t
+{
+  unknown,
+  yes,
+  no
+};
+//---------------------------------------------------------------------------
+enum ftp_capability_names_t
+{
+  syst_command = 1, // reply of SYST command as option
+  feat_command,
+  clnt_command, // set to 'yes' if CLNT should be sent
+  utf8_command, // set to 'yes' if OPTS UTF8 ON should be sent
+  mlsd_command,
+  opts_mlst_command, // Arguments for OPTS MLST command
+  mfmt_command,
+  pret_command,
+  mdtm_command,
+  size_command,
+  mode_z_support,
+  tvfs_support, // Trivial virtual file store (RFC 3659)
+  list_hidden_support, // LIST -a command
+  rest_stream, // supports REST+STOR in addition to APPE
+};
+//---------------------------------------------------------------------------
+class TFTPServerCapabilities
+{
+public:
+  ftp_capabilities_t GetCapability(ftp_capability_names_t Name);
+  ftp_capabilities_t GetCapabilityString(ftp_capability_names_t Name, std::string * Option = NULL);
+  void SetCapability(ftp_capability_names_t Name, ftp_capabilities_t Cap);
+  void SetCapability(ftp_capability_names_t Name, ftp_capabilities_t Cap, const std::string & Option);
+  void Clear() { FCapabilityMap.clear(); }
+  void Assign(TFTPServerCapabilities * Source)
+  {
+    FCapabilityMap.clear();
+    if (Source != NULL)
+    {
+      FCapabilityMap = Source->FCapabilityMap;
+    }
+  }
+protected:
+  struct t_cap
+  {
+    t_cap() :
+      cap(unknown),
+      option(),
+      number(0)
+    {}
+    ftp_capabilities_t cap;
+    std::string option;
+    int number;
+  };
+
+  std::map<ftp_capability_names_t, t_cap> FCapabilityMap;
+};
+#endif
 //---------------------------------------------------------------------------
 #endif // FileZillaIntfH

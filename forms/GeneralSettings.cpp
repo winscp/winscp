@@ -32,8 +32,13 @@ void __fastcall TGeneralSettingsFrame::ExplorerClick(TObject * /*Sender*/)
 void __fastcall TGeneralSettingsFrame::SaveConfiguration()
 {
   assert(CustomWinConfiguration);
-  CustomWinConfiguration->Interface = CommanderInterfaceButton2->Checked ?
-    ifCommander : ifExplorer;
+  TInterface NewInterface =
+    CommanderInterfaceButton2->Checked ? ifCommander : ifExplorer;
+  if (NewInterface != CustomWinConfiguration->Interface)
+  {
+    Configuration->Usage->Inc(L"InterfaceChanges");
+  }
+  CustomWinConfiguration->Interface = NewInterface;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGeneralSettingsFrame::LoadConfiguration()

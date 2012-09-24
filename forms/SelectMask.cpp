@@ -76,7 +76,9 @@ __fastcall TSelectMaskDialog::TSelectMaskDialog(TComponent* Owner)
   SetFileFilter(FFileFilter);
   UseSystemSettings(this);
   InstallPathWordBreakProc(MaskEdit);
-  HintLabel(HintText, LoadStr(MASK_HINT2));
+  HintLabel(HintText,
+    FORMAT(L"%s\n \n%s\n \n%s\n \n%s", (LoadStr(MASK_HINT2), LoadStr(FILE_MASK_EX_HINT),
+      LoadStr(COMBINING_MASKS_HINT), LoadStr(MASK_HELP))));
 }
 //---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::Init(TMode Mode)
@@ -96,8 +98,8 @@ void __fastcall TSelectMaskDialog::Init(TMode Mode)
 
     case smFilter:
       CaptionStr = FILTER_MASK_CAPTION;
-      IncludingDirectoriesCheck->Hide();
-      HelpKeyword = "ui_filter";
+      ApplyToDirectoriesCheck->Hide();
+      HelpKeyword = L"ui_filter";
       break;
   }
   Caption = LoadStr(CaptionStr);
@@ -117,13 +119,13 @@ void __fastcall TSelectMaskDialog::FormCloseQuery(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 bool __fastcall TSelectMaskDialog::Execute()
 {
-  MaskEdit->Items = WinConfiguration->History["Mask"];
+  MaskEdit->Items = WinConfiguration->History[L"Mask"];
   ActiveControl = MaskEdit;
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
     MaskEdit->SaveToHistory();
-    WinConfiguration->History["Mask"] = MaskEdit->Items;
+    WinConfiguration->History[L"Mask"] = MaskEdit->Items;
   }
   return Result;
 } /* TSelectMaskDialog::Execute */
@@ -131,14 +133,14 @@ bool __fastcall TSelectMaskDialog::Execute()
 void __fastcall TSelectMaskDialog::SetFileFilter(TFileFilter value)
 {
   FFileFilter = value;
-  IncludingDirectoriesCheck->Checked = FFileFilter.Directories;
+  ApplyToDirectoriesCheck->Checked = FFileFilter.Directories;
   MaskEdit->Text = FFileFilter.Masks;
 } /* TSelectMaskDialog::SetFileFilter */
 //---------------------------------------------------------------------------
 TFileFilter __fastcall TSelectMaskDialog::GetFileFilter()
 {
   TFileFilter Result = FFileFilter;
-  Result.Directories = IncludingDirectoriesCheck->Checked;
+  Result.Directories = ApplyToDirectoriesCheck->Checked;
   Result.Masks = MaskEdit->Text;
   return Result;
 } /* TSelectMaskDialog::GetFileFilter */
@@ -155,6 +157,6 @@ void __fastcall TSelectMaskDialog::HelpButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::ClearButtonClick(TObject * /*Sender*/)
 {
-  MaskEdit->Text = "";
+  MaskEdit->Text = L"";
 }
 //---------------------------------------------------------------------------

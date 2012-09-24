@@ -11,6 +11,7 @@ object SelectMaskDialog: TSelectMaskDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
+  Position = poDesigned
   OnCloseQuery = FormCloseQuery
   DesignSize = (
     361
@@ -35,12 +36,12 @@ object SelectMaskDialog: TSelectMaskDialog
       Caption = 'File &mask:'
       FocusControl = MaskEdit
     end
-    object IncludingDirectoriesCheck: TCheckBox
+    object ApplyToDirectoriesCheck: TCheckBox
       Left = 16
       Top = 63
       Width = 217
       Height = 17
-      Caption = 'Including &directories'
+      Caption = 'Apply to &directories'
       TabOrder = 2
     end
     object MaskEdit: THistoryComboBox
@@ -49,7 +50,7 @@ object SelectMaskDialog: TSelectMaskDialog
       Width = 313
       Height = 21
       AutoComplete = False
-      ItemHeight = 13
+      Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 0
       Text = '*.*'
@@ -105,7 +106,7 @@ object SelectMaskDialog: TSelectMaskDialog
     Top = 109
     Width = 75
     Height = 25
-    Anchors = [akTop, akRight]
+    Anchors = [akRight, akBottom]
     Caption = '&Clear'
     ModalResult = 1
     TabOrder = 1

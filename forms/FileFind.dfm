@@ -1,12 +1,12 @@
 object FileFindDialog: TFileFindDialog
   Left = 367
   Top = 198
-  Width = 578
-  Height = 455
   HelpType = htKeyword
   HelpKeyword = 'ui_find'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   Caption = 'FindX'
+  ClientHeight = 417
+  ClientWidth = 562
   Color = clBtnFace
   Constraints.MinHeight = 240
   Constraints.MinWidth = 350
@@ -17,25 +17,25 @@ object FileFindDialog: TFileFindDialog
   Font.Style = []
   KeyPreview = True
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
   DesignSize = (
-    570
-    421)
+    562
+    417)
   PixelsPerInch = 96
   TextHeight = 13
   object FilterGroup: TGroupBox
     Left = 8
     Top = 6
-    Width = 467
+    Width = 461
     Height = 127
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Filter'
     TabOrder = 0
     DesignSize = (
-      467
+      461
       127)
     object MaskLabel: TLabel
       Left = 11
@@ -56,24 +56,22 @@ object FileFindDialog: TFileFindDialog
     object RemoteDirectoryEdit: THistoryComboBox
       Left = 11
       Top = 87
-      Width = 445
+      Width = 439
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       MaxLength = 1000
-      TabOrder = 2
+      TabOrder = 3
       Text = 'RemoteDirectoryEdit'
       OnChange = ControlChange
     end
     object MaskEdit: THistoryComboBox
       Left = 11
       Top = 36
-      Width = 445
+      Width = 361
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       MaxLength = 1000
       TabOrder = 0
       Text = 'MaskEdit'
@@ -81,8 +79,8 @@ object FileFindDialog: TFileFindDialog
       OnExit = MaskEditExit
     end
     object MaskHintText: TStaticText
-      Left = 359
-      Top = 64
+      Left = 275
+      Top = 59
       Width = 97
       Height = 17
       Alignment = taRightJustify
@@ -92,9 +90,19 @@ object FileFindDialog: TFileFindDialog
       TabOrder = 1
       TabStop = True
     end
+    object MaskButton: TButton
+      Left = 378
+      Top = 33
+      Width = 72
+      Height = 25
+      Anchors = [akTop, akRight]
+      Caption = '&Edit...'
+      TabOrder = 2
+      OnClick = MaskButtonClick
+    end
   end
   object CancelButton: TButton
-    Left = 482
+    Left = 476
     Top = 43
     Width = 80
     Height = 25
@@ -105,7 +113,7 @@ object FileFindDialog: TFileFindDialog
     TabOrder = 2
   end
   object StartStopButton: TButton
-    Left = 482
+    Left = 476
     Top = 11
     Width = 80
     Height = 25
@@ -116,7 +124,7 @@ object FileFindDialog: TFileFindDialog
     OnClick = StartStopButtonClick
   end
   object HelpButton: TButton
-    Left = 482
+    Left = 476
     Top = 75
     Width = 80
     Height = 25
@@ -128,7 +136,7 @@ object FileFindDialog: TFileFindDialog
   object FileView: TIEListView
     Left = 8
     Top = 142
-    Width = 467
+    Width = 461
     Height = 252
     Anchors = [akLeft, akTop, akRight, akBottom]
     ColumnClick = False
@@ -162,8 +170,8 @@ object FileFindDialog: TFileFindDialog
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 402
-    Width = 570
+    Top = 398
+    Width = 562
     Height = 19
     Panels = <>
     ParentShowHint = False
@@ -171,7 +179,7 @@ object FileFindDialog: TFileFindDialog
     SimplePanel = True
   end
   object FocusButton: TButton
-    Left = 482
+    Left = 476
     Top = 142
     Width = 80
     Height = 25
@@ -182,7 +190,7 @@ object FileFindDialog: TFileFindDialog
     OnClick = FocusButtonClick
   end
   object MinimizeButton: TButton
-    Left = 482
+    Left = 476
     Top = 43
     Width = 80
     Height = 25

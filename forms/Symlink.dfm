@@ -15,7 +15,7 @@ object SymlinkDialog: TSymlinkDialog
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
     396

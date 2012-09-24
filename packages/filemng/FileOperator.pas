@@ -145,6 +145,7 @@ Type
     Procedure ReadData( Reader :TReader );
     Procedure WriteData( Writer :TWriter );
     Procedure SwapStringList(Var FromL, ToL : TStringList);
+    Function  GetOperationAborted: Bool;
 
 {==============================================================}
   protected
@@ -154,8 +155,7 @@ Type
 {==============================================================}
   public
 {==============================================================}
-    Property NameMappings     : Pointer     Read FData.hNameMappings;
-    Property OperationAborted : Bool        Read FData.fAnyOperationsAborted;
+    Property OperationAborted : Bool        Read GetOperationAborted;
     Property OperandFrom      : TStringList Read fFrom Write fFrom;
     Property OperandTo        : TStringList Read FTo   Write fTo;
     Property CanUndo          : Boolean     Read fCanUndo;
@@ -323,8 +323,8 @@ End; {ConvertOperand}
 begin {Execute}
   SFrom := ConvertOperand(FFrom);
   STo   := ConvertOperand(FTo);
-  FData.pFrom := PAnsiChar( SFrom );
-  FData.pTo := PAnsiChar( STo );
+  FData.pFrom := PChar( SFrom );
+  FData.pTo := PChar( STo );
   IF (FOwner is TWinControl) And TWinControl(FOwner).HandleAllocated Then
     FData.Wnd := GetParentForm(TWinControl(FOwner)).Handle
   Else
@@ -395,6 +395,10 @@ Begin
     ToL   := StrL;
 End; {SwapStringList}
 
+Function  TFileOperator.GetOperationAborted: Bool;
+Begin
+  Result := FData.fAnyOperationsAborted;
+End;
 
 Function TFileOperator.UndoExecute : Boolean;
 Var SaveFlags : TFileOperationFlags;

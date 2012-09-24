@@ -15,7 +15,7 @@
 class TMessageForm : public TForm
 {
 public:
-  static TForm * __fastcall Create(const AnsiString & Msg, TStrings * MoreMessages,
+  static TForm * __fastcall Create(const UnicodeString & Msg, TStrings * MoreMessages,
     TMsgDlgType DlgType, TMsgDlgButtons Buttons,
     TQueryButtonAlias * Aliases, unsigned int AliasesCount,
     TMsgDlgBtn TimeoutResult, TButton ** TimeoutButton);
@@ -24,7 +24,7 @@ protected:
   __fastcall TMessageForm(TComponent * AOwner);
 
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
-  AnsiString __fastcall GetFormText();
+  UnicodeString __fastcall GetFormText();
   virtual void __fastcall CreateParams(TCreateParams & Params);
   DYNAMIC void __fastcall DoShow();
 
@@ -45,7 +45,7 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
   {
     Font->Handle = CreateFontIndirect(&NonClientMetrics.lfMessageFont);
   }
-  Position = poMainFormCenter;
+  Position = poOwnerFormCenter;
   UseSystemSettingsPre(this);
 }
 //---------------------------------------------------------------------------
@@ -57,10 +57,10 @@ void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
   }
   else
   {
-    AnsiString Text = Message->Caption;
+    UnicodeString Text = Message->Caption;
     if (MessageMemo != NULL)
     {
-      Text += "\n" + MessageMemo->Text;
+      Text += L"\n" + MessageMemo->Text;
     }
     MessageWithNoHelp(Text);
   }
@@ -68,36 +68,36 @@ void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::KeyDown(Word & Key, TShiftState Shift)
 {
-  if (Shift.Contains(ssCtrl) && (Key == 'C'))
+  if (Shift.Contains(ssCtrl) && (Key == L'C'))
   {
     CopyToClipboard(GetFormText());
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TMessageForm::GetFormText()
+UnicodeString __fastcall TMessageForm::GetFormText()
 {
-  AnsiString DividerLine, ButtonCaptions;
+  UnicodeString DividerLine, ButtonCaptions;
 
-  DividerLine = AnsiString::StringOfChar('-', 27) + sLineBreak;
+  DividerLine = UnicodeString::StringOfChar(L'-', 27) + sLineBreak;
   for (int i = 0; i < ComponentCount - 1; i++)
   {
     if (dynamic_cast<TButton*>(Components[i]) != NULL)
     {
       ButtonCaptions += dynamic_cast<TButton*>(Components[i])->Caption +
-        AnsiString::StringOfChar(' ', 3);
+        UnicodeString::StringOfChar(L' ', 3);
     }
   }
-  ButtonCaptions = StringReplace(ButtonCaptions, "&", "",
+  ButtonCaptions = StringReplace(ButtonCaptions, L"&", L"",
     TReplaceFlags() << rfReplaceAll);
-  AnsiString MoreMessages;
+  UnicodeString MoreMessages;
   if (MessageMemo != NULL)
   {
     MoreMessages = MessageMemo->Text + DividerLine;
   }
-  AnsiString MessageCaption;
-  MessageCaption = StringReplace(Message->Caption, "\r", "", TReplaceFlags() << rfReplaceAll);
-  MessageCaption = StringReplace(MessageCaption, "\n", "\r\n", TReplaceFlags() << rfReplaceAll);
-  AnsiString Result = FORMAT("%s%s%s%s%s%s%s%s%s%s%s", (DividerLine, Caption, sLineBreak,
+  UnicodeString MessageCaption;
+  MessageCaption = StringReplace(Message->Caption, L"\r", L"", TReplaceFlags() << rfReplaceAll);
+  MessageCaption = StringReplace(MessageCaption, L"\n", L"\r\n", TReplaceFlags() << rfReplaceAll);
+  UnicodeString Result = FORMAT(L"%s%s%s%s%s%s%s%s%s%s%s", (DividerLine, Caption, sLineBreak,
     DividerLine, MessageCaption, sLineBreak, DividerLine, MoreMessages,
     ButtonCaptions, sLineBreak, DividerLine));
   return Result;
@@ -122,12 +122,12 @@ void __fastcall TMessageForm::DoShow()
 //---------------------------------------------------------------------------
 const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
   &_SMsgDlgConfirm, NULL };
-const char * IconIDs[] = { IDI_EXCLAMATION, IDI_HAND, IDI_ASTERISK,
+const wchar_t * IconIDs[] = { IDI_EXCLAMATION, IDI_HAND, IDI_ASTERISK,
   IDI_QUESTION, NULL };
 const int ButtonCount = 11;
-const AnsiString ButtonNames[ButtonCount] = {
-  "Yes", "No", "OK", "Cancel", "Abort", "Retry", "Ignore", "All", "NoToAll",
-  "YesToAll", "Help" };
+const UnicodeString ButtonNames[ButtonCount] = {
+  L"Yes", L"No", L"OK", L"Cancel", L"Abort", L"Retry", L"Ignore", L"All", L"NoToAll",
+  L"YesToAll", L"Help" };
 const ResourceString * ButtonCaptions[ButtonCount] = {
   &_SMsgDlgYes, &_SMsgDlgNo, &_SMsgDlgOK, &_SMsgDlgCancel, &_SMsgDlgAbort,
   &_SMsgDlgRetry, &_SMsgDlgIgnore, &_SMsgDlgAll, &_SMsgDlgNoToAll, &_SMsgDlgYesToAll,
@@ -145,7 +145,7 @@ const int mcButtonSpacing = 4;
 const int mcMoreMessageWidth = 320;
 const int mcMoreMessageHeight = 80;
 //---------------------------------------------------------------------------
-TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
+TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
   TQueryButtonAlias * Aliases, unsigned int AliasesCount,
   TMsgDlgBtn TimeoutResult, TButton ** TimeoutButton)
@@ -208,17 +208,17 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
     if (Buttons.Contains(TMsgDlgBtn(B)))
     {
       TextRect = Rect(0,0,0,0);
-      AnsiString Caption = LoadResourceString(ButtonCaptions[B]);
+      UnicodeString Caption = LoadResourceString(ButtonCaptions[B]);
 
       // temporary fix of accelerators (&Abort vs. &All/Yes to &All)
       // must be removed
-      if (Caption == "&All")
+      if (Caption == L"&All")
       {
-        Caption = "A&ll";
+        Caption = L"A&ll";
       }
-      else if (Caption == "Yes to &All")
+      else if (Caption == L"Yes to &All")
       {
-        Caption = "Yes to A&ll";
+        Caption = L"Yes to A&ll";
       }
 
       TNotifyEvent OnClick = NULL;
@@ -237,15 +237,15 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
 
       TButton * Button = new TButton(Result);
 
-      AnsiString MeasureCaption = Caption;
-      if ((TimeoutButton != NULL) && (B == TimeoutResult))
+      UnicodeString MeasureCaption = Caption;
+      if ((TimeoutButton != NULL) && (B == static_cast<unsigned int>(TimeoutResult)))
       {
         MeasureCaption = FMTLOAD(TIMEOUT_BUTTON, (MeasureCaption, 99));
         *TimeoutButton = Button;
       }
 
       DrawText(Result->Canvas->Handle,
-        MeasureCaption.c_str(), -1,
+        UnicodeString(MeasureCaption).c_str(), -1,
         &TextRect, DT_CALCRECT | DT_LEFT | DT_SINGLELINE |
         Result->DrawTextBiDiModeFlagsReadingOnly());
       int CurButtonWidth = TextRect.Right - TextRect.Left + 8;
@@ -264,8 +264,8 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
       else
       {
         Button->ModalResult = ModalResults[B];
-        Button->Default = (B == DefaultButton);
-        Button->Cancel = (B == CancelButton);
+        Button->Default = (B == static_cast<unsigned int>(DefaultButton));
+        Button->Cancel = (B == static_cast<unsigned int>(CancelButton));
       }
       if (MoreMessages != NULL)
       {
@@ -293,7 +293,7 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
     // this will truncate the text, we should implement something smarter eventually
     TextRect.right = MaxWidth;
   }
-  const char * IconID = IconIDs[DlgType];
+  const wchar_t * IconID = IconIDs[DlgType];
   int IconTextWidth = TextRect.Right;
   int IconTextHeight = TextRect.Bottom;
   if (IconID != NULL)
@@ -352,7 +352,7 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
   if (IconID != NULL)
   {
     TImage * Image = new TImage(Result);
-    Image->Name = "Image";
+    Image->Name = L"Image";
     Image->Parent = Result;
     Image->Picture->Icon->Handle = LoadIcon(0, IconID);
     Image->SetBounds(HorzMargin, VertMargin, 32, 32);
@@ -360,7 +360,7 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
 
   TLabel * Message = new TLabel(Result);
   Result->Message = Message;
-  Message->Name = "Message";
+  Message->Name = L"Message";
   Message->Parent = Result;
   Message->WordWrap = true;
   Message->Caption = Msg;
@@ -398,7 +398,7 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
   return Result;
 }
 //---------------------------------------------------------------------------
-TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
+TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
   TQueryButtonAlias * Aliases, unsigned int AliasesCount,
   TMsgDlgBtn TimeoutResult, TButton ** TimeoutButton)

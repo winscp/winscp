@@ -35,9 +35,7 @@ type
     function StoreAlignment(Index: Integer): Boolean;
     function StoreCaption(Index: Integer): Boolean;
     function StoreWidth(Index: Integer): Boolean;
-    function GetDirOrder(Index: Integer): TUnixDirViewCol;
     function GetSortDirColumn: TUnixDirViewCol;
-    procedure SetDirOrder(Index: Integer; Value: TUnixDirViewCol);
     procedure SetSortDirColumn(Value: TUnixDirViewCol);
   protected
   public
@@ -94,16 +92,6 @@ type
     property TypeWidth: Integer index uvType read GetWidths write SetWidths stored StoreWidth;
     property TypeVisible: Boolean index uvType read GetVisible write SetVisible default True;
     property TypeAlignment: TAlignment index uvType read GetAlignments write SetAlignments stored StoreAlignment;
-
-    property Column1: TUnixDirViewCol index 0 read GetDirOrder write SetDirOrder default uvName;
-    property Column2: TUnixDirViewCol index 1 read GetDirOrder write SetDirOrder default uvSize;
-    property Column3: TUnixDirViewCol index 2 read GetDirOrder write SetDirOrder default uvChanged;
-    property Column4: TUnixDirViewCol index 3 read GetDirOrder write SetDirOrder default uvRights;
-    property Column5: TUnixDirViewCol index 4 read GetDirOrder write SetDirOrder default uvOwner;
-    property Column6: TUnixDirViewCol index 5 read GetDirOrder write SetDirOrder default uvGroup;
-    property Column7: TUnixDirViewCol index 6 read GetDirOrder write SetDirOrder default uvExt;
-    property Column8: TUnixDirViewCol index 7 read GetDirOrder write SetDirOrder default uvLinkTarget;
-    property Column9: TUnixDirViewCol index 8 read GetDirOrder write SetDirOrder default uvType;
   end; { TDirViewColProperties }
 
 
@@ -127,17 +115,6 @@ begin
     Widths[Index] := DefaultUnixDirViewWidths[Index];
     Alignments[Index] := DefaultUnixDirViewAlignments[Index];
   end;
-end;
-
-function TUnixDirViewColProperties.GetDirOrder(Index: Integer): TUnixDirViewCol;
-begin
-  Result := TUnixDirViewCol(GetOrder(Index));
-end;
-
-procedure TUnixDirViewColProperties.SetDirOrder(Index: Integer;
-  Value: TUnixDirViewCol);
-begin
-  SetOrder(Index, Integer(Value));
 end;
 
 procedure TUnixDirViewColProperties.SetSortDirColumn(Value: TUnixDirViewCol);

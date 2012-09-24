@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <tchar.h>
+#include <shlobj.h>
 #include <Common.h>
 #include <CoreMain.h>
 #include <Exceptions.h>
@@ -28,16 +29,16 @@
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
 #define AUTOEXEC_PATH _T("c:\\autoexec.bat")
-#define AUTOEXEC_INTRO "rem ***** The following line was added by " \
-                       APP_NAME " *****"
+#define AUTOEXEC_INTRO _T("rem ***** The following line was added by " \
+                       APP_NAME " *****")
 #ifdef USE_QUOTES
-#  define AUTOEXEC_CMD "set PATH=%%PATH%%;\"%s\""
+#  define AUTOEXEC_CMD _T("set PATH=%%PATH%%;\"%s\"")
 #else
-#  define AUTOEXEC_CMD "set PATH=%%PATH%%;%s"
+#  define AUTOEXEC_CMD _T("set PATH=%%PATH%%;%s")
 #endif
 
 /* Command line options. */
-AnsiString LastPathError;
+UnicodeString LastPathError;
 //---------------------------------------------------------------------------
 #define verb_out(msg) ((void)0)
 #define verb_out_param(msg, param) ((void)0)
@@ -52,13 +53,13 @@ void err_out(LPCTSTR err_msg)
 // identified by "sys_err".
 void err_out_sys(LPCTSTR base_err_msg, LONG sys_err)
 {
-  LastPathError = FORMAT("%s %s", (base_err_msg, SysErrorMessage(sys_err)));
+  LastPathError = FORMAT(L"%s %s", (base_err_msg, SysErrorMessage(sys_err)));
 }
 //---------------------------------------------------------------------------
 // Works as "strcmp" but the comparison is not case sensitive.
 int tcharicmp(LPCTSTR str1, LPCTSTR str2){
     for (; tolower(*str1) == tolower(*str2); ++str1, ++str2)
-        if (*str1 == '\0')
+        if (*str1 == L'\0')
             return 0;
     return tolower(*str1) - tolower(*str2);
 }
@@ -71,7 +72,7 @@ LPTSTR unquote(LPCTSTR str){
     size_t new_len;
 
     last_pos = _tcslen(str) - 1;
-    if (last_pos != -1 && str[0] == '"' && str[last_pos] == '"'){
+    if (last_pos != -1 && str[0] == L'"' && str[last_pos] == L'"'){
         new_len= (_tcslen(str) - 1);
         ret = (LPTSTR)malloc(new_len * sizeof(TCHAR));
         lstrcpyn(ret, &str[1], new_len);
@@ -126,7 +127,7 @@ void path_reg_propagate()
 {
   DWORD send_message_result;
   LONG ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
-                           (LPARAM)"Environment", SMTO_ABORTIFHUNG,
+                           (LPARAM)_T("Environment"), SMTO_ABORTIFHUNG,
                            5000, &send_message_result);
   if (ret != ERROR_SUCCESS && GetLastError() != 0)
   {
@@ -134,7 +135,7 @@ void path_reg_propagate()
                 _T("other processes. The new value will be ")
                 _T("avaible after a reboot."), GetLastError());
     SimpleErrorDialog(LastPathError);
-    LastPathError = "";
+    LastPathError = L"";
   }
 }
 //---------------------------------------------------------------------------
@@ -256,7 +257,6 @@ BOOL remove_path_reg(LPCTSTR path){
 }
 //---------------------------------------------------------------------------
 /* Can this program run under Win9x if compiled with unicode support? */
-#if !defined _UNICODE
 //---------------------------------------------------------------------------
 // Add "path" to "autoexec.bat". Return "TRUE" if the path has been added or
 // was already in the file, "FALSE" otherwise.
@@ -272,7 +272,7 @@ BOOL add_path_autoexec(LPCTSTR long_path){
     BOOL found;
     BOOL func_ret = TRUE;
 
-    file = _tfopen(AUTOEXEC_PATH, _T("r+"));
+    file = _wfopen(AUTOEXEC_PATH, _T("r+"));
     if (!file){
         err_out(_T("Cannot open \"autoexec.bat\"."));
         return FALSE;
@@ -339,7 +339,7 @@ BOOL remove_path_autoexec(LPTSTR long_path){
     size_t fread_ret;
     BOOL func_ret = TRUE;
 
-    file = _tfopen(AUTOEXEC_PATH, _T("rb"));
+    file = _wfopen(AUTOEXEC_PATH, _T("rb"));
     if (!file){
         err_out(_T("Cannot open \"autoexec.bat\" for reading."));
         return FALSE;
@@ -373,7 +373,7 @@ BOOL remove_path_autoexec(LPTSTR long_path){
 
     begin_pos = _tcsstr(data, expected_text);
     if (begin_pos){
-        file = _tfopen(AUTOEXEC_PATH, _T("wb"));
+        file = _wfopen(AUTOEXEC_PATH, _T("wb"));
         if (!file){
             err_out(_T("Cannot open \"autoexec.bat\" for writing."));
             func_ret = FALSE;
@@ -400,9 +400,7 @@ BOOL remove_path_autoexec(LPTSTR long_path){
     return func_ret;
 }
 //---------------------------------------------------------------------------
-#endif /* #if !defined _UNICODE */
-//---------------------------------------------------------------------------
-void __fastcall AddSearchPath(const AnsiString Path)
+void __fastcall AddSearchPath(const UnicodeString Path)
 {
   bool Result;
   if (Win32Platform == VER_PLATFORM_WIN32_NT)
@@ -420,7 +418,7 @@ void __fastcall AddSearchPath(const AnsiString Path)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall RemoveSearchPath(const AnsiString Path)
+void __fastcall RemoveSearchPath(const UnicodeString Path)
 {
   bool Result;
   if (Win32Platform == VER_PLATFORM_WIN32_NT)
@@ -455,34 +453,34 @@ void __fastcall RegisterAsUrlHandler()
         try
         {
           assert(Configuration != NULL);
-          AnsiString FileName = Application->ExeName;
-          AnsiString BaseKey;
+          UnicodeString FileName = Application->ExeName;
+          UnicodeString BaseKey;
 
           Registry->Access = KEY_WRITE;
           if (User)
           {
             Registry->RootKey = HKEY_CURRENT_USER;
-            BaseKey = "Software\\Classes\\";
+            BaseKey = _T("Software\\Classes\\");
           }
           else
           {
             Registry->RootKey = HKEY_CLASSES_ROOT;
-            BaseKey = "";
+            BaseKey = _T("");
           }
 
-          AnsiString Protocol;
+          UnicodeString Protocol;
           for (int Index = 0; Index <= 1; Index++)
           {
-            Protocol = (Index == 0) ? "SCP" : "SFTP";
+            Protocol = (Index == 0) ? L"SCP" : L"SFTP";
             if (Registry->OpenKey(BaseKey + Protocol, true))
             {
-              Registry->WriteString("", FMTLOAD(PROTOCOL_URL_DESC, (Protocol)));
-              Registry->WriteString("URL Protocol", "");
-              Registry->WriteInteger("EditFlags", 0x02);
-              Registry->WriteInteger("BrowserFlags", 0x08);
-              if (Registry->OpenKey("DefaultIcon", true))
+              Registry->WriteString(L"", FMTLOAD(PROTOCOL_URL_DESC, (Protocol)));
+              Registry->WriteString(L"URL Protocol", L"");
+              Registry->WriteInteger(L"EditFlags", 0x02);
+              Registry->WriteInteger(L"BrowserFlags", 0x08);
+              if (Registry->OpenKey(L"DefaultIcon", true))
               {
-                Registry->WriteString("", FORMAT("\"%s\",0", (FileName)));
+                Registry->WriteString(L"", FORMAT(L"\"%s\",0", (FileName)));
                 Registry->CloseKey();
               }
               else
@@ -496,11 +494,11 @@ void __fastcall RegisterAsUrlHandler()
             }
 
             if (Registry->OpenKey(BaseKey + Protocol, false) &&
-                Registry->OpenKey("shell", true) &&
-                Registry->OpenKey("open", true) &&
-                Registry->OpenKey("command", true))
+                Registry->OpenKey(L"shell", true) &&
+                Registry->OpenKey(L"open", true) &&
+                Registry->OpenKey(L"command", true))
             {
-              Registry->WriteString("", FORMAT("\"%s\" /unsafe \"%%1\"", (FileName)));
+              Registry->WriteString(L"", FORMAT(L"\"%s\" /unsafe \"%%1\"", (FileName)));
               Registry->CloseKey();
             }
             else
@@ -547,7 +545,7 @@ void __fastcall TemporaryDirectoryCleanup()
         Params.Aliases = Aliases;
         Params.AliasesCount = LENOF(Aliases);
 
-        int Answer = MoreMessageDialog(
+        unsigned int Answer = MoreMessageDialog(
           FMTLOAD(CLEANTEMP_CONFIRM, (Folders->Count)), Folders,
           qtWarning, qaYes | qaNo | qaRetry, HELP_CLEAN_TEMP_CONFIRM, &Params);
 
@@ -585,18 +583,57 @@ void __fastcall TemporaryDirectoryCleanup()
     delete Folders;
   }
 }
+//-------------------------------------------- -------------------------------
+UnicodeString __fastcall VersionStrFromCompoundVersion(int Version)
+{
+  int MajorVer = Version / (10000*100*100);
+  int MinorVer = (Version % (10000*100*100)) / (10000*100);
+  int Release = (Version % (10000*100)) / (10000);
+  UnicodeString Result;
+  if (Release > 0)
+  {
+    Result = FORMAT(L"%d.%d.%d", (MajorVer, MinorVer, Release));
+  }
+  else
+  {
+    Result = FORMAT(L"%d.%d", (MajorVer, MinorVer));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall CampaignUrl(UnicodeString URL)
+{
+  if (URL.Pos(L"?") == 0)
+  {
+    URL += L"?";
+  }
+  else
+  {
+    URL += L"&";
+  }
+
+  int CurrentCompoundVer = Configuration->CompoundVersion;
+  AnsiString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
+  URL += FORMAT(L"utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
+  return URL;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetUsageData()
+{
+  return Configuration->Usage->Serialize();
+}
 //---------------------------------------------------------------------------
 void __fastcall QueryUpdates()
 {
   bool Complete = false;
   try
   {
-    AnsiString Response;
+    UnicodeString Response;
 
     TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
     int CurrentCompoundVer = Configuration->CompoundVersion;
-    AnsiString CurrentVersionStr =
-      FORMAT("%d.%d.%d.%d",
+    UnicodeString CurrentVersionStr =
+      FORMAT(L"%d.%d.%d.%d",
         (HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
          HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS)));
 
@@ -604,29 +641,38 @@ void __fastcall QueryUpdates()
     THttp * CheckForUpdatesHTTP = new THttp(Application);
     try
     {
-      AnsiString URL = LoadStr(UPDATES_URL) +
-        FORMAT("?v=%s&lang=%s", (CurrentVersionStr,
+      UnicodeString URL = LoadStr(UPDATES_URL) +
+        FORMAT(L"?v=%s&lang=%s", (CurrentVersionStr,
           IntToHex(__int64(GUIConfiguration->Locale), 4)));
       bool Beta;
-      switch (Updates.BetaVersions)
+      if (WinConfiguration->IsBeta)
       {
-        case asAuto:
-          Beta = WinConfiguration->AnyBetaInVersionHistory;
-          break;
+        Beta = true;
+      }
+      else
+      {
+        switch (Updates.BetaVersions)
+        {
+          case asAuto:
+            Beta = WinConfiguration->AnyBetaInVersionHistory;
+            break;
 
-        case asOn:
-          Beta = true;
-          break;
+          case asOn:
+            Beta = true;
+            break;
 
-        default:
-          Beta = false;
-          break;
+          default:
+            Beta = false;
+            break;
+        }
       }
       if (Beta)
       {
-        URL += "&beta=1";
+        URL += L"&beta=1";
       }
-      AnsiString Proxy;
+      URL += L"&dotnet=" + Updates.DotNetVersion;
+      URL += L"&console=" + Updates.ConsoleVersion;
+      UnicodeString Proxy;
       switch (Updates.ConnectionType)
       {
         case ctAuto:
@@ -634,19 +680,30 @@ void __fastcall QueryUpdates()
           break;
 
         case ctProxy:
-          Proxy = FORMAT("%s:%d", (Updates.ProxyHost, Updates.ProxyPort));
+          Proxy = FORMAT(L"%s:%d", (Updates.ProxyHost, Updates.ProxyPort));
           break;
       }
       CheckForUpdatesHTTP->Proxy = Proxy;
       CheckForUpdatesHTTP->URL = URL;
-      CheckForUpdatesHTTP->Action();
+      if (Configuration->CollectUsage)
+      {
+        UTF8String UtfUsage = UTF8String(GetUsageData());
+        CheckForUpdatesHTTP->Stream->Write(UtfUsage.c_str(), UtfUsage.Length());
+        CheckForUpdatesHTTP->Post();
+      }
+      else
+      {
+        CheckForUpdatesHTTP->Action();
+      }
       // sanity check
       if (CheckForUpdatesHTTP->Stream->Size > 102400)
       {
         Abort();
       }
-      Response.SetLength(static_cast<int>(CheckForUpdatesHTTP->Stream->Size));
-      CheckForUpdatesHTTP->Stream->Read(Response.c_str(), Response.Length());
+      UTF8String UtfResponse;
+      UtfResponse.SetLength(static_cast<int>(CheckForUpdatesHTTP->Stream->Size));
+      CheckForUpdatesHTTP->Stream->Read(UtfResponse.c_str(), UtfResponse.Length());
+      Response = UnicodeString(UtfResponse);
     }
     __finally
     {
@@ -662,14 +719,14 @@ void __fastcall QueryUpdates()
 
     while (!Response.IsEmpty())
     {
-      AnsiString Line = ::CutToChar(Response, '\n', false);
-      AnsiString Name = ::CutToChar(Line, '=', false);
+      UnicodeString Line = ::CutToChar(Response, L'\n', false);
+      UnicodeString Name = ::CutToChar(Line, L'=', false);
       if (AnsiSameText(Name, "Version"))
       {
-        int MajorVer = StrToInt(::CutToChar(Line, '.', false));
-        int MinorVer = StrToInt(::CutToChar(Line, '.', false));
-        int Release = StrToInt(::CutToChar(Line, '.', false));
-        int Build = StrToInt(::CutToChar(Line, '.', false));
+        int MajorVer = StrToInt(::CutToChar(Line, L'.', false));
+        int MinorVer = StrToInt(::CutToChar(Line, L'.', false));
+        int Release = StrToInt(::CutToChar(Line, L'.', false));
+        int Build = StrToInt(::CutToChar(Line, L'.', false));
         int NewVersion = CalculateCompoundVersion(MajorVer, MinorVer, Release, Build);
         Changed |= (NewVersion != PrevResults.Version);
         if (NewVersion <= CurrentCompoundVer)
@@ -679,35 +736,35 @@ void __fastcall QueryUpdates()
         Updates.Results.Version = NewVersion;
         Complete = true;
       }
-      else if (AnsiSameText(Name, "Message"))
+      else if (AnsiSameText(Name, L"Message"))
       {
         Changed |= (PrevResults.Message != Line);
         Updates.Results.Message = Line;
       }
-      else if (AnsiSameText(Name, "Critical"))
+      else if (AnsiSameText(Name, L"Critical"))
       {
         bool NewCritical = (StrToIntDef(Line, 0) != 0);
         Changed |= (PrevResults.Critical != NewCritical);
         Updates.Results.Critical = NewCritical;
       }
-      else if (AnsiSameText(Name, "Release"))
+      else if (AnsiSameText(Name, L"Release"))
       {
         Changed |= (PrevResults.Release != Line);
         Updates.Results.Release = Line;
       }
-      else if (AnsiSameText(Name, "Disabled"))
+      else if (AnsiSameText(Name, L"Disabled"))
       {
         bool NewDisabled = (StrToIntDef(Line, 0) != 0);
         Changed |= (PrevResults.Disabled != NewDisabled);
         Updates.Results.Disabled = NewDisabled;
         Complete = true;
       }
-      else if (AnsiSameText(Name, "Url"))
+      else if (AnsiSameText(Name, L"Url"))
       {
         Changed |= (PrevResults.Url != Line);
         Updates.Results.Url = Line;
       }
-      else if (AnsiSameText(Name, "UrlButton"))
+      else if (AnsiSameText(Name, L"UrlButton"))
       {
         Changed |= (PrevResults.UrlButton != Line);
         Updates.Results.UrlButton = Line;
@@ -726,13 +783,17 @@ void __fastcall QueryUpdates()
     throw ExtException(&E, LoadStr(CHECK_FOR_UPDATES_ERROR));
   }
 
-  if (!Complete)
+  if (Complete)
+  {
+    Configuration->Usage->Reset();
+  }
+  else
   {
     throw Exception(LoadStr(CHECK_FOR_UPDATES_ERROR));
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall GetUpdatesMessage(AnsiString & Message, bool & New,
+void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
   TQueryType & Type, bool Force)
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -743,7 +804,7 @@ void __fastcall GetUpdatesMessage(AnsiString & Message, bool & New,
     {
       if (Force)
       {
-        Message = LoadStr(UPDATE_DISABLED)+"%s";
+        Message = LoadStr(UPDATE_DISABLED)+L"%s";
       }
     }
     else
@@ -751,16 +812,16 @@ void __fastcall GetUpdatesMessage(AnsiString & Message, bool & New,
       New = (Updates.Results.Version > 0);
       if (New)
       {
-        AnsiString Version = VersionStrFromCompoundVersion(Updates.Results.Version);
+        UnicodeString Version = VersionStrFromCompoundVersion(Updates.Results.Version);
         if (!Updates.Results.Release.IsEmpty())
         {
-          Version = FORMAT("%s %s", (Version, Updates.Results.Release));
+          Version = FORMAT(L"%s %s", (Version, Updates.Results.Release));
         }
-        Message = FMTLOAD(NEW_VERSION3, (Version, "%s"));
+        Message = FMTLOAD(NEW_VERSION3, (Version, L"%s"));
       }
       else
       {
-        Message = LoadStr(NO_NEW_VERSION) + "%s";
+        Message = LoadStr(NO_NEW_VERSION) + L"%s";
       }
     }
 
@@ -768,11 +829,11 @@ void __fastcall GetUpdatesMessage(AnsiString & Message, bool & New,
     {
       Message = FORMAT(Message,
         (FMTLOAD(UPDATE_MESSAGE,
-          (StringReplace(Updates.Results.Message, "|", "\n", TReplaceFlags() << rfReplaceAll)))));
+          (StringReplace(Updates.Results.Message, L"|", L"\n", TReplaceFlags() << rfReplaceAll)))));
     }
     else
     {
-      Message = FORMAT(Message, (""));
+      Message = FORMAT(Message, (L""));
     }
     Type = (Updates.Results.Critical ? qtWarning : qtInformation);
   }
@@ -805,7 +866,7 @@ void __fastcall CheckForUpdates(bool CachedResults)
       if (!Cached)
       {
         QueryUpdates();
-        // reread enw data
+        // reread new data
         Updates = WinConfiguration->Updates;
       }
       Again = false;
@@ -817,10 +878,23 @@ void __fastcall CheckForUpdates(bool CachedResults)
       }
       assert(Updates.HaveResults);
 
-      AnsiString Message;
+      UnicodeString Message;
       bool New;
       TQueryType Type;
       GetUpdatesMessage(Message, New, Type, true);
+
+      if (Updates.HaveResults)
+      {
+        Message += L"\n\n" +
+          FMTLOAD(UPDATE_LAST,
+            (FormatDateTime("ddddd", Updates.LastCheck)));
+
+        if (double(Updates.Period) > 0)
+        {
+          Message += L"\n" +
+            FMTLOAD(UPDATE_NEXT, (FormatDateTime("ddddd", Updates.LastCheck + Updates.Period)));
+        }
+      }
 
       // add FLAGMASK(Cached, qaRetry) to enable "check again" button
       // for cached results
@@ -848,7 +922,7 @@ void __fastcall CheckForUpdates(bool CachedResults)
       Params.Aliases = Aliases;
       // alias "ok" button to "download" only if we have new version
       Params.AliasesCount = (New ? 4 : 3);
-      int Answer =
+      unsigned int Answer =
         MessageDialog(Message, Type,
           Answers, HELP_UPDATES, &Params);
       switch (Answer)
@@ -929,5 +1003,124 @@ void __fastcall StopUpdateThread()
   if (UpdateThread != NULL)
   {
     SAFE_DESTROY(UpdateThread);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall SetupInitialize()
+{
+  WinConfiguration->UpdateJumpList();
+}
+//---------------------------------------------------------------------------
+void __fastcall UpdateJumpList(TStrings * SessionNames)
+{
+  ICustomDestinationList * DestinationList = NULL;
+  IObjectArray * RemovedArray = NULL;
+  TStringList * Removed = NULL;
+  IObjectCollection * Collection = NULL;
+  try
+  {
+    if (SUCCEEDED(CoCreateInstance(CLSID_DestinationList, NULL,
+          CLSCTX_INPROC_SERVER, IID_ICustomDestinationList, (void**)&DestinationList)))
+    {
+
+      unsigned int MinSlots;
+      if (SUCCEEDED(DestinationList->BeginList(&MinSlots, IID_IObjectArray, (void**)&RemovedArray)))
+      {
+        Removed = new TStringList();
+
+        unsigned int RemovedCount;
+        if (FAILED(RemovedArray->GetCount(&RemovedCount)))
+        {
+          RemovedCount = 0;
+        }
+
+        for (unsigned int Index = 0; Index < RemovedCount; Index++)
+        {
+          IShellLink * Link;
+          wchar_t Desc[2048];
+          if (SUCCEEDED(RemovedArray->GetAt(Index, IID_IShellLink, (void**)&Link)) &&
+              SUCCEEDED(Link->GetDescription(Desc, sizeof(Desc) - 1)))
+          {
+            Removed->Add(Desc);
+          }
+        }
+
+        if (SUCCEEDED(CoCreateInstance(CLSID_EnumerableObjectCollection, NULL,
+              CLSCTX_INPROC_SERVER, IID_IObjectCollection, (void**)&Collection)))
+        {
+          int Count = 0;
+          for (int Index = 0; Index < SessionNames->Count; Index++)
+          {
+            IShellLink * Link;
+            bool DefaultsOnly;
+            TSessionData * SessionData =
+              StoredSessions->ParseUrl(SessionNames->Strings[Index], NULL, DefaultsOnly);
+            try
+            {
+              Link =
+                CreateDesktopSessionShortCut(
+                  SessionData, SessionData->LocalName, L"/UploadIfAny", -1, true);
+            }
+            __finally
+            {
+              delete SessionData;
+            }
+
+            wchar_t Desc[2048];
+            if (SUCCEEDED(Link->GetDescription(Desc, sizeof(Desc) - 1)))
+            {
+              if (Removed->IndexOf(Desc) < 0)
+              {
+                try
+                {
+                  CHECK(SUCCEEDED(Collection->AddObject(Link)));
+                  Count++;
+                }
+                __finally
+                {
+                  Link->Release();
+                }
+              }
+              else
+              {
+                SessionNames->Delete(Index);
+                Index--;
+              }
+            }
+          }
+
+          if (Count > 0)
+          {
+            IObjectArray * Array;
+            if (SUCCEEDED(Collection->QueryInterface(IID_IObjectArray, (void**)&Array)))
+            {
+              DestinationList->AppendCategory(LoadStr(JUMPLIST_RECENT).c_str(), Array);
+              Array->Release();
+            }
+          }
+
+          Collection->Release();
+          Collection = NULL;
+
+          DestinationList->CommitList();
+        }
+      }
+    }
+  }
+  __finally
+  {
+    if (Collection != NULL)
+    {
+      Collection->Release();
+    }
+    if (RemovedArray != NULL)
+    {
+      RemovedArray->Release();
+    }
+    if (DestinationList != NULL)
+    {
+      DestinationList->Release();
+    }
+    delete Removed;
   }
 }

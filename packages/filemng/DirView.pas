@@ -55,7 +55,9 @@ const
   msThreadChangeDelay = 10; {TDiscMonitor: change delay}
   MaxWaitTimeOut = 10; {TFileDeleteThread: wait nn seconds for deleting files or directories}
 {$ENDIF}
+{$WARN SYMBOL_DEPRECATED OFF}
   FileAttr = SysUtils.faAnyFile and (not SysUtils.faVolumeID);
+{$WARN SYMBOL_DEPRECATED ON}
   SpecialExtensions = 'EXE,LNK,ICO,ANI,CUR,PIF,JOB,CPL';
   ExeExtension = 'EXE';
   MinDate = $21;    {01.01.1980}
@@ -100,7 +102,7 @@ type
   PInfoCache = ^TInfoCache;
   TInfoCache = record
     FileExt: string;
-    TypeName: ShortString;
+    TypeName: string;
     ImageIndex: Integer;
   end;
 
@@ -265,7 +267,7 @@ type
     {Shell namespace functions:}
     function GetShellFolder(Dir: string): iShellFolder;
     function GetDirOK: Boolean; override;
-    procedure GetDisplayInfo(ListItem: TListItem; var DispInfo: TLVItemA); override;
+    procedure GetDisplayInfo(ListItem: TListItem; var DispInfo: TLVItem); override;
 
     procedure DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint;
       DragStatus: TDragDetectStatus); override;
@@ -303,7 +305,6 @@ type
     function ItemDisplayName(FileName: string): string; virtual;
     function ItemFileExt(Item: TListItem): string;
     function ItemFileNameOnly(Item: TListItem): string;
-    function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; override;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; override;
     function ItemIsFile(Item: TListItem): Boolean; override;
     function ItemIsRecycleBin(Item: TListItem): Boolean; override;
@@ -329,8 +330,6 @@ type
     {Linked component TDriveView:}
     property DriveView: TObject read FDriveView write FDriveView;
     {$ENDIF}
-    {It is not required to store the items edited at designtime:}
-    property Items stored False;
     { required, otherwise AV generated, when dragging columns}
     property Columns stored False;
     property ParentFolder: IShellFolder read FParentFolder;
@@ -354,6 +353,7 @@ type
     function ItemIsParentDirectory(Item: TListItem): Boolean; override;
     function ItemFileName(Item: TListItem): string; override;
     function ItemFileSize(Item: TListItem): Int64; override;
+    function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; override;
 
     {$IFNDEF NO_THREADS}
     {Thread handling: }
@@ -390,7 +390,7 @@ type
 
     {Populate / repopulate the filelist:}
     procedure Load; override;
-    procedure ReLoad(CacheIcons : Boolean); override;
+    procedure Reload(CacheIcons : Boolean); override;
     procedure Reload2;
 
     function FormatFileTime(FileTime: TFileTime): string; virtual;
@@ -439,7 +439,6 @@ type
     property DimmHiddenFiles;
     property ShowDirectories;
     property ShowHiddenFiles;
-    property DirsOnTop;
     property ShowSubDirSize;
     property SingleClickToExec;
     property WantUseDragImages;
@@ -484,7 +483,7 @@ type
       read FSortAfterUpdate write FSortAfterUpdate default True;
     {Reload the directory after only the interval:}
     property ChangeInterval: Cardinal
-      read FChangeInterval write SetChangeInterval default 1000;
+      read FChangeInterval write SetChangeInterval default MSecsPerSec;
     {Fetch shell icons by thread:}
     property UseIconUpdateThread: Boolean
       read FUseIconUpdateThread write FUseIconUpdateThread default False;
@@ -533,6 +532,10 @@ type
     property ColumnClick;
     property MultiSelect;
     property ReadOnly;
+
+    // The only way to make Items stored automatically and survive handle recreation.
+    // Though we should implement custom persisting to avoid publishing this
+    property Items;
   end; {Type TDirView}
 
 procedure Register;
@@ -794,7 +797,6 @@ procedure TIconUpdateThread.Execute;
 var
   FileInfo: TShFileInfo;
   Count: Integer;
-  WStr: WideString;
   Eaten: ULONG;
   ShAttr: ULONG;
   FileIconForName: string;
@@ -828,9 +830,8 @@ begin
 
         if not Assigned(CurrentItemData.PIDL) then
         begin
-          WStr := CurrentFilePath;
           FOwner.FDesktopFolder.ParseDisplayName(FOwner.ParentForm.Handle, nil,
-            PWideChar(WStr), Eaten, CurrentItemData.PIDL, ShAttr);
+            PChar(CurrentFilePath), Eaten, CurrentItemData.PIDL, ShAttr);
         end;
 
         if (not ForceByName) and Assigned(CurrentItemData.PIDL) then
@@ -950,7 +951,7 @@ begin
   FSubDirScanner := TList.Create;
 
   {ChangeTimer: }
-  if FChangeInterval = 0 then FChangeInterval := 1000;
+  if FChangeInterval = 0 then FChangeInterval := MSecsPerSec;
   FChangeTimer := TTimer.Create(Self);
   FChangeTimer.Interval := FChangeInterval;
   FChangeTimer.Enabled := False;
@@ -993,6 +994,7 @@ begin
   FChangeTimer.Free;
 
   inherited Destroy;
+  FPath := '';
 end; {Destroy}
 
 procedure TDirView.WMDestroy(var Msg: TWMDestroy);
@@ -1340,12 +1342,18 @@ begin
            FSize := SizeFromSRec(SRec);
            FileSel :=
             FileSel and
-            ((Mask = '') or FileNameMatchesMasks(DisplayName, False, FSize, Mask)) and
+            ((Mask = '') or
+             FileNameMatchesMasks(
+               DisplayName, False, FSize,
+               FileTimeToDateTime(SRec.FindData.ftLastWriteTime),
+               Mask)) and
             (FSize >= FSelFileSizeFrom) and
             ((FSelFileSizeTo = 0) or
              (FSize <= FSelFileSizeTo)) and
+{$WARN SYMBOL_DEPRECATED OFF}
             (LongWord(SRec.Time) >= FileTimeFrom) and
             (LongWord(SRec.Time) <= FileTimeTo);
+{$WARN SYMBOL_DEPRECATED ON}
          end;
 
          if Assigned(FOnAddFile) then
@@ -1397,7 +1405,6 @@ end; {LoadFromRecycleBin}
 
 function TDirView.GetShellFolder(Dir: string): iShellFolder;
 var
-  WDir: WideString;
   Eaten: ULONG;
   Attr: ULONG;
   NewPIDL: PItemIDList;
@@ -1406,11 +1413,10 @@ begin
   if not Assigned(FDesktopFolder) then
     ShGetDesktopFolder(FDesktopFolder);
 
-  WDir := Dir;
   if Assigned(FDesktopFolder) then
   begin
     if Succeeded(FDesktopFolder.ParseDisplayName(
-         ParentForm.Handle, nil, PWideChar(WDir), Eaten, NewPIDL, Attr)) then
+         ParentForm.Handle, nil, PChar(Dir), Eaten, NewPIDL, Attr)) then
     begin
       try
         assert(Assigned(NewPIDL));
@@ -1447,7 +1453,7 @@ end;
 function TDirView.ItemIsRecycleBin(Item: TListItem): Boolean;
 begin
   Result := (Assigned(Item) and Assigned(Item.Data) and
-    PFileRec(Item)^.IsRecycleBin);
+    PFileRec(Item.Data)^.IsRecycleBin);
 end;
 
 function TDirView.ItemMatchesFilter(Item: TListItem; const Filter: TFileFilter): Boolean;
@@ -1465,14 +1471,16 @@ begin
   Result :=
     ((FileRec^.Attr and Filter.IncludeAttr) = Filter.IncludeAttr) and
     ((FileRec^.Attr and Filter.ExcludeAttr) = 0) and
-    ((not FileRec^.IsDirectory) or Filter.Directories) and
     ((Filter.FileSizeFrom = 0) or (FileRec^.Size >= Filter.FileSizeFrom)) and
     ((Filter.FileSizeTo = 0) or (FileRec^.Size <= Filter.FileSizeTo)) and
     ((Filter.ModificationFrom = 0) or (Modification >= Filter.ModificationFrom)) and
     ((Filter.ModificationTo = 0) or (Modification <= Filter.ModificationTo)) and
     ((Filter.Masks = '') or
      FileNameMatchesMasks(FileRec^.FileName, FileRec^.IsDirectory,
-       FileRec^.Size, Filter.Masks));
+       FileRec^.Size, FileTimeToDateTime(FileRec^.FileTime), Filter.Masks) or
+     (FileRec^.IsDirectory and Filter.Directories and
+      FileNameMatchesMasks(FileRec^.FileName, False,
+       FileRec^.Size, FileTimeToDateTime(FileRec^.FileTime), Filter.Masks)));
 end;
 
 function TDirView.ItemOverlayIndexes(Item: TListItem): Word;
@@ -1606,11 +1614,16 @@ begin
               FileSel := ((AttrExcludeMask and Srec.Attr) = 0);
 
             if FileSel and
-              ((Mask = '') or FileNameMatchesMasks(SRec.Name, False, FSize, Mask)) and
+              ((Mask = '') or
+                FileNameMatchesMasks(
+                  SRec.Name, False, FSize,
+                  FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask)) and
               (FSize >= FSelFileSizeFrom) and
               ((FSelFileSizeTo = 0) or (FSize <= FSelFileSizeTo)) and
+{$WARN SYMBOL_DEPRECATED OFF}
               (LongWord(SRec.Time) >= FileTimeFrom) and
               (LongWord(SRec.Time) <= FileTimeTo) then
+{$WARN SYMBOL_DEPRECATED ON}
             begin
               if Assigned(OnAddFile) then
                 FOnAddFile(Self, SRec, FileSel);
@@ -1847,11 +1860,16 @@ begin
               FSize := SizeFromSRec(SRec);
               FileSel :=
                 FileSel and
-                ((Mask = '') or FileNameMatchesMasks(SRec.Name, False, FSize, Mask)) and
+                ((Mask = '') or
+                  FileNameMatchesMasks(
+                    SRec.Name, False, FSize,
+                    FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask)) and
                 (FSize >= FSelFileSizeFrom) and
                 ((FSelFileSizeTo = 0) or (FSize <= FSelFileSizeTo)) and
+{$WARN SYMBOL_DEPRECATED OFF}
                 (LongWord(SRec.Time) >= FileTimeFrom) and
                 (LongWord(SRec.Time) <= FileTimeTo);
+{$WARN SYMBOL_DEPRECATED ON}
 
               if FileSel then
               begin
@@ -2122,7 +2140,6 @@ var
   CacheItem: TInfoCache;
   IsSpecialExt: Boolean;
   ForceByName: Boolean;
-  WStr: WideString;
   Eaten: ULONG;
   shAttr: ULONG;
   FileIconForName, FullName: string;
@@ -2154,9 +2171,8 @@ begin
         if not Assigned(PIDL) and IsSpecialExt then
         begin
           try
-            WStr := FPath + '\' + FileName;
             FDesktopFolder.ParseDisplayName(ParentForm.Handle, nil,
-              PWideChar(WStr), Eaten, PIDL, ShAttr);
+              PChar(FPath + '\' + FileName), Eaten, PIDL, ShAttr);
 
             {Retrieve the shell display attributes for directories:}
             if IsDirectory and Assigned(PIDL) then
@@ -2181,17 +2197,23 @@ begin
             try
               {Retrieve icon and typename for the directory}
               if Assigned(PIDL) then
-                  SHGetFileInfo(PChar(PIDL), 0, FileInfo, SizeOf(FileInfo),
-                    SHGFI_TYPENAME or SHGFI_SYSICONINDEX or SHGFI_PIDL)
-              else
+              begin
+                SHGetFileInfo(PChar(PIDL), 0, FileInfo, SizeOf(FileInfo),
+                  SHGFI_TYPENAME or SHGFI_SYSICONINDEX or SHGFI_PIDL)
+              end
+                else
+              begin
                 SHGetFileInfo(PChar(FPath + '\' + FileName), 0, FileInfo, SizeOf(FileInfo),
                   SHGFI_TYPENAME or SHGFI_SYSICONINDEX);
+              end;
 
               if (FileInfo.iIcon <= 0) or (FileInfo.iIcon > SmallImages.Count) then
+              begin
                 {Invalid icon returned: retry with access file attribute flag:}
                 SHGetFileInfo(PChar(fPath + '\' + FileName), FILE_ATTRIBUTE_DIRECTORY,
                   FileInfo, SizeOf(FileInfo),
                   SHGFI_TYPENAME or SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES);
+              end;
               TypeName := FileInfo.szTypeName;
               if FetchIcon then
               begin
@@ -2263,10 +2285,10 @@ begin
       begin
         try
           if IsDirectory then
-            shGetFileInfo(PChar(fPath), FILE_ATTRIBUTE_DIRECTORY, FileInfo, SizeOf(FileInfo),
+            shGetFileInfo(PChar(FPath), FILE_ATTRIBUTE_DIRECTORY, FileInfo, SizeOf(FileInfo),
             SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES)
             else
-          shGetFileInfo(PChar(fPath + '\' + FileName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
+          shGetFileInfo(PChar(FPath + '\' + FileName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
             SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES);
           TypeName := FileInfo.szTypeName;
         except
@@ -2466,14 +2488,12 @@ begin
       if P1.isDirectory then
       begin
         Result := fLess;
-        if AOwner.DirsOnTop then
-          Exit;
+        Exit;
       end
         else
       begin
         Result := fGreater;
-        if AOwner.DirsOnTop then
-          Exit;
+        Exit;
       end;
     end
       else Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
@@ -2513,12 +2533,12 @@ begin
       if P1.isDirectory then
       begin
         Result := fLess;
-        if AOwner.DirsOnTop then Exit;
+        Exit;
       end
         else
       begin
         Result := fGreater;
-        if AOwner.DirsOnTop then Exit;
+        Exit;
       end;
     end
       else
@@ -2565,14 +2585,12 @@ begin
       if P1.isDirectory then
       begin
         Result := fLess;
-        if AOwner.DirsOnTop then
-          Exit;
+        Exit;
       end
         else
       begin
         Result := fGreater;
-        if AOwner.DirsOnTop then
-          Exit;
+        Exit;
       end;
     end
       else
@@ -2619,19 +2637,24 @@ begin
       if P1.isDirectory then
       begin
         Result := fLess;
-        if AOwner.DirsOnTop then
-          Exit;
+        Exit;
       end
         else
       begin
         Result := fGreater;
-        if AOwner.DirsOnTop then
-          Exit;
+        Exit;
       end;
     end
       else
-    Result := lstrcmpi(PChar(P1.FileExt + ' ' + P1.DisplayName),
-                       PChar(P2.FileExt + ' ' + P2.DisplayName));
+    if P1.isDirectory then
+    begin
+      Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
+    end
+      else
+    begin
+      Result := lstrcmpi(PChar(P1.FileExt + ' ' + P1.DisplayName),
+                         PChar(P2.FileExt + ' ' + P2.DisplayName));
+    end;
   end;
   if not AOwner.SortAscending then
     Result := -Result;
@@ -2667,14 +2690,12 @@ begin
       if P1.isDirectory then
       begin
         Result := fLess;
-        if AOwner.DirsOnTop then
-          Exit;
+        Exit;
       end
         else
       begin
         Result := fGreater;
-        if AOwner.DirsOnTop then
-          Exit;
+        Exit;
       end;
     end
       else
@@ -2721,14 +2742,12 @@ begin
       if P1.isDirectory then
       begin
         Result := fLess;
-        if AOwner.DirsOnTop then
-          Exit;
+        Exit;
       end
         else
       begin
         Result := fGreater;
-        if AOwner.DirsOnTop then
-          Exit;
+        Exit;
       end;
     end
       else
@@ -3179,7 +3198,7 @@ begin
           dvSize: {Size:     }
             if not IsDirectory or
                (IsDirectory and ShowSubDirSize and (Size >= 0)) then
-                 StrPLCopy(pszText, FormatSize(Size), cchTextMax);
+                 StrPLCopy(pszText, FormatBytes(Size, FormatSizeBytes, FormatSizeBytes), cchTextMax);
           dvType: {FileType: }
             if SortByExtension and (not IsDirectory) then
             begin
@@ -3574,7 +3593,10 @@ begin
       end;
     end
       else
-    if not FileExists(FileName) then Exit;
+    if not FileExists(FileName) then
+    begin
+      Exit;
+    end;
   end;
 
   GetDir(0, DefDir);
@@ -3640,7 +3662,7 @@ end;
 
 procedure TDirView.Delete(Item: TListItem);
 begin
-  if Assigned(Item) and Assigned(Item.Data) then
+  if Assigned(Item) and Assigned(Item.Data) and not (csRecreating in ControlState) then
     with PFileRec(Item.Data)^ do
     begin
       SetLength(FileName, 0);
@@ -3895,7 +3917,7 @@ begin
 end;
 
 procedure TDirView.DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint;
-  DragStatus:TDragDetectStatus);
+  DragStatus: TDragDetectStatus);
 {$IFNDEF NO_THREADS}
 var
   WasWatchThreadActive: Boolean;

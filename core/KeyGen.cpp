@@ -339,7 +339,7 @@ AnsiString __fastcall TKeyGenerator::GetPublicKey()
     *p = '\0';
     FPublicKey = buffer;
     sfree(pub_blob);
-    delete buffer;
+    delete [] buffer;
   }
   return FPublicKey;
 }

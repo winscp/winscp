@@ -88,6 +88,7 @@ void __fastcall TScpExplorerForm::RestoreParams()
   RemoteDirView->UnixColProperties->ExtVisible = false; // just to make sure
   RemoteDirView->ViewStyle = (TViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
   LoadToolbarsLayoutStr(WinConfiguration->ScpExplorer.ToolbarsLayout);
+  SessionsPageControl->Visible = WinConfiguration->ScpExplorer.SessionsTabs;
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
   RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
   RemoteDriveView->Width = WinConfiguration->ScpExplorer.DriveViewWidth;
@@ -101,6 +102,7 @@ void __fastcall TScpExplorerForm::StoreParams()
   try
   {
     WinConfiguration->ScpExplorer.ToolbarsLayout = GetToolbarsLayoutStr();
+    WinConfiguration->ScpExplorer.SessionsTabs = SessionsPageControl->Visible;
     WinConfiguration->ScpExplorer.StatusBar = RemoteStatusBar->Visible;
 
     WinConfiguration->ScpExplorer.WindowParams = StoreForm(this);
@@ -118,7 +120,7 @@ void __fastcall TScpExplorerForm::StoreParams()
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, Boolean Temp, TStrings * FileList,
-  AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
+  UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
   bool DragDrop)
 {
   // Temp means d&d here so far, may change in future!
@@ -164,7 +166,6 @@ bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed
 TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
 {
   switch (Component) {
-    case fcSessionCombo: return reinterpret_cast<TControl*>(SessionCombo);
     case fcSessionToolbar: return SessionToolbar;
     case fcCustomCommandsBand: return CustomCommandsToolbar;
     case fcColorMenu: return reinterpret_cast<TControl*>(ColorMenuItem);
@@ -189,8 +190,8 @@ TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::SynchronizeDirectories()
 {
-  AnsiString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
-  AnsiString RemoteDirectory = RemoteDirView->PathName;
+  UnicodeString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+  UnicodeString RemoteDirectory = RemoteDirView->PathName;
   if (DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, false))
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
@@ -199,8 +200,8 @@ void __fastcall TScpExplorerForm::SynchronizeDirectories()
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
 {
-  AnsiString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
-  AnsiString RemoteDirectory = RemoteDirView->PathName;
+  UnicodeString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+  UnicodeString RemoteDirectory = RemoteDirView->PathName;
   bool SaveMode = true;
   TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
   if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode,
@@ -255,9 +256,9 @@ void __fastcall TScpExplorerForm::UnixPathComboBoxBeginEdit(
   InstallPathWordBreakProc(EditControl);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TScpExplorerForm::RemotePathComboBoxText()
+UnicodeString __fastcall TScpExplorerForm::RemotePathComboBoxText()
 {
-  AnsiString Result;
+  UnicodeString Result;
 
   if (WinConfiguration->ScpExplorer.ShowFullAddress)
   {
@@ -276,7 +277,7 @@ AnsiString __fastcall TScpExplorerForm::RemotePathComboBoxText()
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::UnixPathComboBoxAcceptText(
-  TObject * /*Sender*/, AnsiString & NewText, bool & /*Accept*/)
+  TObject * /*Sender*/, UnicodeString & NewText, bool & /*Accept*/)
 {
   if (RemoteDirView->Path != NewText)
   {

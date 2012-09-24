@@ -1,7 +1,5 @@
 object NonVisualDataModule: TNonVisualDataModule
   OldCreateOrder = False
-  Left = 263
-  Top = 156
   Height = 502
   Width = 624
   object LogActions: TActionList
@@ -438,13 +436,19 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&About...'
       HelpKeyword = 'ui_about'
       Hint = 'About|Show About box'
-      ImageIndex = 17
+      ImageIndex = 65
     end
     object StatusBarAction: TAction
       Tag = 15
       Category = 'View'
       Caption = 'Status &Bar'
       Hint = 'Hide/show status bar'
+    end
+    object SessionsTabsAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = 'Sessions Tabs'
+      Hint = 'Hide/show sessions tabs'
     end
     object ExplorerAddressBandAction: TAction
       Tag = 7
@@ -1437,6 +1441,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Toggle showing hidden files in panel(s)'
       ShortCut = 49224
     end
+    object FormatSizeBytesAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = 'Short &Files Sizes'
+      HelpKeyword = 'ui_file_panel#short_format'
+      Hint = 'Show files sizes in short format (KiB, MiB, etc)'
+    end
     object LocalPathToClipboardAction: TAction
       Tag = 15
       Category = 'Local Directory'
@@ -1753,6 +1764,17 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Resume all suspended queue items'
       ImageIndex = 85
     end
+    object QueueEnableAction: TAction
+      Tag = 15
+      Category = 'Queue'
+      Caption = '&Process Queue'
+      HelpKeyword = 'ui_queue#managing_the_queue'
+      Hint = 
+        'Enable queue processing|Enable queue processing (pending queue i' +
+        'tems will not start, when queue processing is disabled)'
+      ImageIndex = 96
+      ShortCut = 24657
+    end
     object QueueDisconnectOnceEmptyAction: TAction
       Tag = 12
       Category = 'Queue'
@@ -1841,6 +1863,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Find files|Find files and directories'
       ImageIndex = 95
     end
+    object CurrentEditInternalAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Internal editor'
+      HelpKeyword = 'task_edit'
+      Hint = 'Edit (internal)|Edit selected file(s) using internal editor'
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -1877,6 +1906,9 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = LockToolbarsAction
     end
     object N5: TTBXSeparatorItem
+    end
+    object SessionsTabsAction2: TTBXItem
+      Action = SessionsTabsAction
     end
     object StatusBar2: TTBXItem
       Action = StatusBarAction
@@ -1959,6 +1991,9 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = LockToolbarsAction
     end
     object N26: TTBXSeparatorItem
+    end
+    object SessionsTabsAction1: TTBXItem
+      Action = SessionsTabsAction
     end
     object CommandLine2: TTBXItem
       Action = CommandLinePanelAction
@@ -2068,6 +2103,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object NavigationButtons5: TTBXItem
       Action = CommanderRemoteNavigationBandAction
     end
+    object TBXItem37: TTBXItem
+      Action = LockToolbarsAction
+    end
     object N28: TTBXSeparatorItem
     end
     object Tree5: TTBXItem
@@ -2106,6 +2144,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object NavigationButtons6: TTBXItem
       Action = CommanderLocalNavigationBandAction
     end
+    object TBXItem38: TTBXItem
+      Action = LockToolbarsAction
+    end
     object N29: TTBXSeparatorItem
     end
     object Tree6: TTBXItem
@@ -2129,6 +2170,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object LocalSortByExtColumnPopupItem: TTBXItem
       Action = LocalSortByExtAction
+    end
+    object LocalFormatSizeBytesPopupItem: TTBXItem
+      Action = FormatSizeBytesAction
     end
     object Hidecolumn1: TTBXItem
       Action = HideColumnAction
@@ -2170,6 +2214,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object RemoteSortByExtColumnPopupItem: TTBXItem
       Action = RemoteSortByExtAction
+    end
+    object RemoteFormatSizeBytesPopupItem: TTBXItem
+      Action = FormatSizeBytesAction
     end
     object Hidecolumn2: TTBXItem
       Action = HideColumnAction
@@ -2247,6 +2294,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N67: TTBXSeparatorItem
     end
+    object QueueEnableItem: TTBXItem
+      Action = QueueEnableAction
+    end
     object TBXSubmenuItem1: TTBXSubmenuItem
       Caption = '&All'
       HelpKeyword = 'ui_queue#managing_the_queue'
@@ -2303,6 +2353,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
   end
   object RemoteDirViewPopup: TTBXPopupMenu
+    AutoPopup = False
     Images = GlyphsModule.ExplorerImages
     Left = 360
     Top = 400
@@ -2339,6 +2390,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object AddToBookmarks4: TTBXItem
       Action = RemoteAddBookmarkAction
     end
+    object TBXItem35: TTBXItem
+      Action = RemoteFilterAction
+    end
     object CopyPathtoClipboard6: TTBXItem
       Action = RemotePathToClipboardAction
     end
@@ -2360,6 +2414,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
   end
   object LocalDirViewPopup: TTBXPopupMenu
+    AutoPopup = False
     Images = GlyphsModule.ExplorerImages
     Left = 480
     Top = 400
@@ -2395,6 +2450,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object Refresh5: TTBXItem
       Action = LocalRefreshAction
+    end
+    object TBXItem36: TTBXItem
+      Action = LocalFilterAction
     end
     object AddToBookmarks5: TTBXItem
       Action = LocalAddBookmarkAction
@@ -2448,5 +2506,59 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = RemoteForwardAction
       end
     end
+  end
+  object SessionsPopup: TTBXPopupMenu
+    Images = GlyphsModule.ExplorerImages
+    Left = 480
+    Top = 176
+    object TBXItem124: TTBXItem
+      Action = CloseSessionAction
+    end
+    object TBXItem219: TTBXItem
+      Action = DuplicateSessionAction
+    end
+    object TBXItem125: TTBXItem
+      Action = SaveCurrentSessionAction
+    end
+    object TBXSeparatorItem34: TTBXSeparatorItem
+    end
+    object TBXItem123: TTBXItem
+      Action = NewSessionAction
+    end
+    object TBXSubmenuItem23: TTBXSubmenuItem
+      Action = SavedSessionsAction
+      Options = [tboDropdownArrow]
+    end
+    object TBXSeparatorItem52: TTBXSeparatorItem
+    end
+    object ColorMenuItem: TTBXColorItem
+      Action = ColorMenuAction
+      Color = clNone
+      object TBXItem216: TTBXItem
+        Action = ColorDefaultAction
+      end
+      object TBXSeparatorItem50: TTBXSeparatorItem
+        Blank = True
+      end
+      object SessionColorPalette: TTBXColorPalette
+        PaletteOptions = [tpoCustomImages]
+        OnChange = SessionColorPaletteChange
+      end
+      object TBXSeparatorItem51: TTBXSeparatorItem
+        Hint = 'E'
+      end
+      object TBXItem217: TTBXItem
+        Action = ColorPickAction
+      end
+    end
+    object TBXSeparatorItem35: TTBXSeparatorItem
+    end
+    object SessionsTabsAction4: TTBXItem
+      Action = SessionsTabsAction
+    end
+  end
+  object ShellResources: TShellResources
+    Left = 48
+    Top = 424
   end
 end

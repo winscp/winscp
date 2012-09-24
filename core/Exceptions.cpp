@@ -8,7 +8,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-bool __fastcall ExceptionMessage(Exception * E, AnsiString & Message)
+bool __fastcall ExceptionMessage(Exception * E, UnicodeString & Message)
 {
   bool Result = true;
   if (dynamic_cast<EAbort *>(E) != NULL)
@@ -33,7 +33,7 @@ bool __fastcall ExceptionMessage(Exception * E, AnsiString & Message)
 TStrings * ExceptionToMoreMessages(Exception * E)
 {
   TStrings * Result = NULL;
-  AnsiString Message;
+  UnicodeString Message;
   if (ExceptionMessage(E, Message))
   {
     Result = new TStringList();
@@ -53,13 +53,13 @@ __fastcall ExtException::ExtException(Exception * E) :
   AddMoreMessages(E);
 }
 //---------------------------------------------------------------------------
-__fastcall ExtException::ExtException(Exception* E, AnsiString Msg):
+__fastcall ExtException::ExtException(Exception* E, UnicodeString Msg):
   Exception(Msg)
 {
   AddMoreMessages(E);
 }
 //---------------------------------------------------------------------------
-__fastcall ExtException::ExtException(AnsiString Msg, Exception* E) :
+__fastcall ExtException::ExtException(UnicodeString Msg, Exception* E) :
   Exception("")
 {
   // "copy exception"
@@ -82,8 +82,8 @@ __fastcall ExtException::ExtException(AnsiString Msg, Exception* E) :
   }
 }
 //---------------------------------------------------------------------------
-__fastcall ExtException::ExtException(AnsiString Msg, AnsiString MoreMessages,
-    AnsiString HelpKeyword) :
+__fastcall ExtException::ExtException(UnicodeString Msg, UnicodeString MoreMessages,
+    UnicodeString HelpKeyword) :
   Exception(Msg),
   FHelpKeyword(HelpKeyword)
 {
@@ -94,9 +94,10 @@ __fastcall ExtException::ExtException(AnsiString Msg, AnsiString MoreMessages,
   }
 }
 //---------------------------------------------------------------------------
-__fastcall ExtException::ExtException(AnsiString Msg, TStrings* MoreMessages,
-  bool Own) :
-  Exception(Msg)
+__fastcall ExtException::ExtException(UnicodeString Msg, TStrings* MoreMessages,
+  bool Own, UnicodeString HelpKeyword) :
+  Exception(Msg),
+  FHelpKeyword(HelpKeyword)
 {
   if (Own)
   {
@@ -135,7 +136,7 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
       }
     }
 
-    AnsiString Msg;
+    UnicodeString Msg;
     ExceptionMessage(E, Msg);
 
     // new exception does not have own message, this is in fact duplication of
@@ -162,23 +163,28 @@ __fastcall ExtException::~ExtException()
   delete FMoreMessages;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall LastSysErrorMessage()
+ExtException * __fastcall ExtException::Clone()
+{
+  return new ExtException(this, L"");
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall LastSysErrorMessage()
 {
   int LastError = GetLastError();
-  AnsiString Result;
+  UnicodeString Result;
   if (LastError != 0)
   {
-    Result = FORMAT(Sysconst_SOSError, (LastError, SysErrorMessage(LastError)));
+    Result = FORMAT(System_Sysconst_SOSError, (LastError, SysErrorMessage(LastError)));
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-__fastcall EOSExtException::EOSExtException(AnsiString Msg) :
+__fastcall EOSExtException::EOSExtException(UnicodeString Msg) :
   ExtException(Msg, LastSysErrorMessage())
 {
 }
 //---------------------------------------------------------------------------
-__fastcall EFatal::EFatal(Exception* E, AnsiString Msg) :
+__fastcall EFatal::EFatal(Exception* E, UnicodeString Msg) :
   ExtException(Msg, E),
   FReopenQueried(false)
 {
@@ -186,5 +192,60 @@ __fastcall EFatal::EFatal(Exception* E, AnsiString Msg) :
   if (F != NULL)
   {
     FReopenQueried = F->ReopenQueried;
+  }
+}
+//---------------------------------------------------------------------------
+ExtException * __fastcall EFatal::Clone()
+{
+  return new EFatal(this, L"");
+}
+//---------------------------------------------------------------------------
+ExtException * __fastcall ESshTerminate::Clone()
+{
+  return new ESshTerminate(this, L"", Operation);
+}
+//---------------------------------------------------------------------------
+__fastcall ECallbackGuardAbort::ECallbackGuardAbort() : EAbort(L"callback abort")
+{
+}
+//---------------------------------------------------------------------------
+Exception * __fastcall CloneException(Exception * E)
+{
+  ExtException * Ext = dynamic_cast<ExtException *>(E);
+  if (Ext != NULL)
+  {
+    return Ext->Clone();
+  }
+  else if (dynamic_cast<ECallbackGuardAbort *>(E) != NULL)
+  {
+    return new ECallbackGuardAbort();
+  }
+  else if (dynamic_cast<EAbort *>(E) != NULL)
+  {
+    return new EAbort(E->Message);
+  }
+  else
+  {
+    return new Exception(E->Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall RethrowException(Exception * E)
+{
+  if (dynamic_cast<EFatal *>(E) != NULL)
+  {
+    throw EFatal(E, L"");
+  }
+  else if (dynamic_cast<ECallbackGuardAbort *>(E) != NULL)
+  {
+    throw ECallbackGuardAbort();
+  }
+  else if (dynamic_cast<EAbort *>(E) != NULL)
+  {
+    throw EAbort(E->Message);
+  }
+  else
+  {
+    throw ExtException(E, L"");
   }
 }

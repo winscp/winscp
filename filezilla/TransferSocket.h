@@ -112,10 +112,6 @@ protected:
 	void UpdateSendLed();
 	void UpdateStatusBar(bool forceUpdate);
 	BOOL m_bSentClose;
-	char m_cLastChar;
-	int m_ReadSize;
-	int m_ReadPos;
-	char *m_ReadBuffer;
 	int m_bufferpos;
 	char *m_pBuffer;
 #ifndef MPEXT_NO_ZLIB

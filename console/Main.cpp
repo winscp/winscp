@@ -7,8 +7,11 @@
 #include "Console.h"
 #define MAX_ATTEMPTS 10
 //---------------------------------------------------------------------------
+#define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
+//---------------------------------------------------------------------------
 using namespace std;
 HANDLE ConsoleInput = NULL;
+HANDLE ConsoleOutput = NULL;
 HANDLE Child = NULL;
 HANDLE CancelEvent = NULL;
 HANDLE InputTimerEvent = NULL;
@@ -16,7 +19,7 @@ unsigned int OutputType = FILE_TYPE_UNKNOWN;
 unsigned int InputType = FILE_TYPE_UNKNOWN;
 enum { RESULT_GLOBAL_ERROR = 1, RESULT_INIT_ERROR = 2, RESULT_PROCESSING_ERROR = 3,
   RESULT_UNKNOWN_ERROR = 4 };
-const char * CONSOLE_CHILD_PARAM = "consolechild";
+const wchar_t* CONSOLE_CHILD_PARAM = L"consolechild";
 //---------------------------------------------------------------------------
 inline TConsoleCommStruct* GetCommStruct(HANDLE FileMapping)
 {
@@ -35,13 +38,13 @@ inline void FreeCommStruct(TConsoleCommStruct* CommStruct)
   UnmapViewOfFile(CommStruct);
 }
 //---------------------------------------------------------------------------
-void InitializeConsole(char* InstanceName, HANDLE& RequestEvent, HANDLE& ResponseEvent,
+void InitializeConsole(wchar_t* InstanceName, HANDLE& RequestEvent, HANDLE& ResponseEvent,
   HANDLE& CancelEvent, HANDLE& FileMapping, HANDLE& Job)
 {
   unsigned int Process = GetCurrentProcessId();
 
   int Attempts = 0;
-  char Name[MAX_PATH];
+  wchar_t Name[MAX_PATH];
   bool UniqEvent;
 
   do
@@ -57,8 +60,8 @@ void InitializeConsole(char* InstanceName, HANDLE& RequestEvent, HANDLE& Respons
     #else
     InstanceNumber = random(1000);
     #endif
-    sprintf(InstanceName, "_%u_%d", Process, InstanceNumber);
-    sprintf(Name, "%s%s", CONSOLE_EVENT_REQUEST, InstanceName);
+    swprintf(InstanceName, L"_%u_%d", Process, InstanceNumber);
+    swprintf(Name, L"%s%s", CONSOLE_EVENT_REQUEST, InstanceName);
     HANDLE EventHandle = OpenEvent(EVENT_ALL_ACCESS, false, Name);
     UniqEvent = (EventHandle == NULL);
     if (!UniqEvent)
@@ -75,21 +78,21 @@ void InitializeConsole(char* InstanceName, HANDLE& RequestEvent, HANDLE& Respons
     throw runtime_error("Cannot create request event object.");
   }
 
-  sprintf(Name, "%s%s", CONSOLE_EVENT_RESPONSE, InstanceName);
+  swprintf(Name, L"%s%s", CONSOLE_EVENT_RESPONSE, InstanceName);
   ResponseEvent = CreateEvent(NULL, false, false, Name);
   if (ResponseEvent == NULL)
   {
     throw runtime_error("Cannot create response event object.");
   }
 
-  sprintf(Name, "%s%s", CONSOLE_EVENT_CANCEL, InstanceName);
+  swprintf(Name, L"%s%s", CONSOLE_EVENT_CANCEL, InstanceName);
   CancelEvent = CreateEvent(NULL, false, false, Name);
   if (CancelEvent == NULL)
   {
     throw runtime_error("Cannot create cancel event object.");
   }
 
-  sprintf(Name, "%s%s", CONSOLE_MAPPING, InstanceName);
+  swprintf(Name, L"%s%s", CONSOLE_MAPPING, InstanceName);
   FileMapping = CreateFileMapping((HANDLE)0xFFFFFFFF, NULL, PAGE_READWRITE,
     0, sizeof(TConsoleCommStruct), Name);
   if (FileMapping == NULL)
@@ -101,14 +104,14 @@ void InitializeConsole(char* InstanceName, HANDLE& RequestEvent, HANDLE& Respons
   typedef HANDLE WINAPI (*TSetInformationJobObject)(HANDLE Job, JOBOBJECTINFOCLASS JobObjectInformationClass,
     LPVOID JobObjectInformation, DWORD JobObjectInformationLength);
 
-  HANDLE Kernel32 = GetModuleHandle("kernel32");
+  HANDLE Kernel32 = GetModuleHandle(L"kernel32");
   TCreateJobObject CreateJobObject =
-    (TCreateJobObject)GetProcAddress(Kernel32, "CreateJobObjectA");
+    (TCreateJobObject)GetProcAddress(Kernel32, "CreateJobObjectW");
   TSetInformationJobObject SetInformationJobObject =
     (TSetInformationJobObject)GetProcAddress(Kernel32, "SetInformationJobObject");
   if ((CreateJobObject != NULL) && (SetInformationJobObject != NULL))
   {
-    sprintf(Name, "%s%s", CONSOLE_JOB, InstanceName);
+    swprintf(Name, L"%s%s", CONSOLE_JOB, InstanceName);
     Job = CreateJobObject(NULL, Name);
     if (Job == NULL)
     {
@@ -139,15 +142,15 @@ void InitializeConsole(char* InstanceName, HANDLE& RequestEvent, HANDLE& Respons
 }
 //---------------------------------------------------------------------------
 // duplicated in Common.cpp
-bool __fastcall CutToken(const char *& Str, char * Token)
+bool __fastcall CutToken(const wchar_t*& Str, wchar_t* Token)
 {
   bool Result;
 
   // inspired by Putty's sftp_getcmd() from PSFTP.C
-  int Length = strlen(Str);
+  int Length = wcslen(Str);
   int Index = 0;
   while ((Index < Length) &&
-    ((Str[Index] == ' ') || (Str[Index] == '\t')))
+    ((Str[Index] == L' ') || (Str[Index] == L'\t')))
   {
     Index++;
   }
@@ -158,18 +161,18 @@ bool __fastcall CutToken(const char *& Str, char * Token)
 
     while (Index < Length)
     {
-      if (!Quoting && ((Str[Index] == ' ') || (Str[Index] == '\t')))
+      if (!Quoting && ((Str[Index] == L' ') || (Str[Index] == L'\t')))
       {
         break;
       }
-      else if ((Str[Index] == '"') && (Index + 1 < Length) &&
-        (Str[Index + 1] == '"'))
+      else if ((Str[Index] == L'"') && (Index + 1 < Length) &&
+        (Str[Index + 1] == L'"'))
       {
         Index += 2;
-        *Token = '"';
+        *Token = L'"';
         Token++;
       }
-      else if (Str[Index] == '"')
+      else if (Str[Index] == L'"')
       {
         Index++;
         Quoting = !Quoting;
@@ -197,70 +200,116 @@ bool __fastcall CutToken(const char *& Str, char * Token)
     Str += Length;
   }
 
-  *Token = '\0';
+  *Token = L'\0';
 
   return Result;
 }
 //---------------------------------------------------------------------------
-void InitializeChild(const char* CommandLine, const char* InstanceName, HANDLE& Child)
+void GetProductVersion(wchar_t* ProductVersion)
+{
+  wchar_t Buffer[MAX_PATH];
+  DWORD ModuleNameLen = GetModuleFileName(NULL, Buffer, MAX_PATH);
+  if ((ModuleNameLen == 0) || (ModuleNameLen == MAX_PATH))
+  {
+    throw runtime_error("Error retrieving executable name.");
+  }
+  ProductVersion[0] = '\0';
+  unsigned long Handle;
+  unsigned int Size = GetFileVersionInfoSize(Buffer, &Handle);
+  if (Size > 0)
+  {
+    void * VersionInfo = new char[Size];
+    VS_FIXEDFILEINFO* FixedFileInfo;
+    unsigned int Length;
+    if (GetFileVersionInfo(Buffer, Handle, Size, VersionInfo))
+    {
+      if (VerQueryValue(VersionInfo, L"\\", (void**)&FixedFileInfo, &Length))
+      {
+        int ProductMajor = HIWORD(FixedFileInfo->dwProductVersionMS);
+        int ProductMinor = LOWORD(FixedFileInfo->dwProductVersionMS);
+        int ProductBuild = HIWORD(FixedFileInfo->dwProductVersionLS);
+        if ((ProductMajor >= 0) && (ProductMajor <= 9) &&
+            (ProductMinor >= 0) && (ProductMinor <= 9) &&
+            (ProductBuild >= 0) && (ProductBuild <= 9))
+        {
+          ProductVersion[0] = static_cast<wchar_t>(L'0' + ProductMajor);
+          ProductVersion[1] = static_cast<wchar_t>(L'0' + ProductMinor);
+          ProductVersion[2] = static_cast<wchar_t>(L'0' + ProductBuild);
+          ProductVersion[3] = L'\0';
+        }
+      }
+    }
+    delete[] VersionInfo;
+  }
+
+  if (ProductVersion[0] == L'\0')
+  {
+    throw runtime_error("Error retrieving product version.");
+  }
+}
+//---------------------------------------------------------------------------
+void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HANDLE& Child)
 {
   int SkipParam = 0;
-  char ChildPath[MAX_PATH] = "";
+  wchar_t ChildPath[MAX_PATH] = L"";
 
-  size_t CommandLineLen = strlen(CommandLine);
-  char* Buffer = new char[(CommandLineLen > MAX_PATH ? CommandLineLen : MAX_PATH) + 1];
+  size_t CommandLineLen = wcslen(CommandLine);
+  wchar_t* Buffer = new wchar_t[(CommandLineLen > MAX_PATH ? CommandLineLen : MAX_PATH) + 1];
 
   int Count = 0;
-  const char * P = CommandLine;
+  const wchar_t* P = CommandLine;
   while (CutToken(P, Buffer))
   {
-    if ((strchr("-/", Buffer[0]) != NULL) &&
-        (strncmpi(Buffer + 1, CONSOLE_CHILD_PARAM, strlen(CONSOLE_CHILD_PARAM)) == 0) &&
-        (Buffer[strlen(CONSOLE_CHILD_PARAM) + 1] == '='))
+    if ((wcschr(L"-/", Buffer[0]) != NULL) &&
+        (wcsncmpi(Buffer + 1, CONSOLE_CHILD_PARAM, wcslen(CONSOLE_CHILD_PARAM)) == 0) &&
+        (Buffer[wcslen(CONSOLE_CHILD_PARAM) + 1] == L'='))
     {
       SkipParam = Count;
-      strcpy(ChildPath, Buffer + 1 + strlen(CONSOLE_CHILD_PARAM) + 1);
+      wcscpy(ChildPath, Buffer + 1 + wcslen(CONSOLE_CHILD_PARAM) + 1);
     }
     ++Count;
   }
 
-  if (strlen(ChildPath) == 0)
+  if (wcslen(ChildPath) == 0)
   {
     DWORD ModuleNameLen = GetModuleFileName(NULL, Buffer, MAX_PATH);
     if ((ModuleNameLen == 0) || (ModuleNameLen == MAX_PATH))
     {
       throw runtime_error("Error retrieving executable name.");
     }
-    const char* LastDelimiter = strrchr(Buffer, '\\');
-    const char* AppFileName;
+    const wchar_t* LastDelimiter = wcsrchr(Buffer, L'\\');
+    const wchar_t* AppFileName;
     if (LastDelimiter != NULL)
     {
-      strncpy(ChildPath, Buffer, LastDelimiter - Buffer + 1);
-      ChildPath[LastDelimiter - Buffer + 1] = '\0';
+      wcsncpy(ChildPath, Buffer, LastDelimiter - Buffer + 1);
+      ChildPath[LastDelimiter - Buffer + 1] = L'\0';
       AppFileName = LastDelimiter + 1;
     }
     else
     {
-      ChildPath[0] = '\0';
+      ChildPath[0] = L'\0';
       AppFileName = Buffer;
     }
 
-    const char* ExtensionStart = strrchr(AppFileName, '.');
+    const wchar_t* ExtensionStart = wcsrchr(AppFileName, L'.');
     if (ExtensionStart != NULL)
     {
-      char* End = ChildPath + strlen(ChildPath);
-      strncpy(End, AppFileName, ExtensionStart - AppFileName);
-      *(End + (ExtensionStart - AppFileName)) = '\0';
+      wchar_t* End = ChildPath + wcslen(ChildPath);
+      wcsncpy(End, AppFileName, ExtensionStart - AppFileName);
+      *(End + (ExtensionStart - AppFileName)) = L'\0';
     }
     else
     {
-      strcat(ChildPath, AppFileName);
+      wcscat(ChildPath, AppFileName);
     }
-    strcat(ChildPath, ".exe");
+    wcscat(ChildPath, L".exe");
   }
 
-  char* Parameters = new char[(CommandLineLen * 2) + 100 + (Count * 3) + 1];
-  sprintf(Parameters, "\"%s\" /console /consoleinstance=%s ", ChildPath, InstanceName);
+  wchar_t ProductVersion[4];
+  GetProductVersion(ProductVersion);
+
+  wchar_t* Parameters = new wchar_t[(CommandLineLen * 2) + 100 + (Count * 3) + 1];
+  wsprintf(Parameters, L"\"%s\" /console=%s /consoleinstance=%s ", ChildPath, ProductVersion, InstanceName);
   P = CommandLine;
   // skip executable path
   CutToken(P, Buffer);
@@ -269,23 +318,23 @@ void InitializeChild(const char* CommandLine, const char* InstanceName, HANDLE& 
   {
     if (i != SkipParam)
     {
-      strcat(Parameters, "\"");
-      char* P2 = Parameters + strlen(Parameters);
-      const char* P3 = Buffer;
-      const char* BufferEnd = Buffer + strlen(Buffer) + 1;
+      wcscat(Parameters, L"\"");
+      wchar_t* P2 = Parameters + wcslen(Parameters);
+      const wchar_t* P3 = Buffer;
+      const wchar_t* BufferEnd = Buffer + wcslen(Buffer) + 1;
       while (P3 != BufferEnd)
       {
         *P2 = *P3;
         ++P2;
-        if (*P3 == '"')
+        if (*P3 == L'"')
         {
-          *P2 = '"';
+          *P2 = L'"';
           ++P2;
         }
         ++P3;
       }
 
-      strcat(Parameters, "\" ");
+      wcscat(Parameters, L"\" ");
     }
     ++i;
   }
@@ -320,7 +369,7 @@ void FinalizeChild(HANDLE Child)
   }
 }
 //---------------------------------------------------------------------------
-void FinalizeConsole(const char* /*InstanceName*/, HANDLE RequestEvent,
+void FinalizeConsole(const wchar_t* /*InstanceName*/, HANDLE RequestEvent,
   HANDLE ResponseEvent, HANDLE CancelEvent, HANDLE FileMapping, HANDLE Job)
 {
   CloseHandle(RequestEvent);
@@ -330,7 +379,7 @@ void FinalizeConsole(const char* /*InstanceName*/, HANDLE RequestEvent,
   CloseHandle(Job);
 }
 //---------------------------------------------------------------------------
-static char LastFromBeginning[sizeof(TConsoleCommStruct::TPrintEvent)] = "";
+static wchar_t LastFromBeginning[sizeof(TConsoleCommStruct::TPrintEvent)] = L""; //???
 //---------------------------------------------------------------------------
 inline void Flush()
 {
@@ -340,41 +389,65 @@ inline void Flush()
   }
 }
 //---------------------------------------------------------------------------
-void Print(bool FromBeginning, const char * Message)
+void Print(const wchar_t* Message)
+{
+  int Size = WideCharToMultiByte(CP_UTF8, 0, Message, -1, 0, 0, 0, 0);
+  if (Size > 0)
+  {
+    char* Buffer = new char[(Size * 2) + 1];
+    if (WideCharToMultiByte(CP_UTF8, 0, Message, -1, Buffer, Size, 0, 0) > 0)
+    {
+      Buffer[Size] = '\0';
+      char* Ptr = Buffer;
+      while ((Ptr = strchr(Ptr, '\n')) != NULL)
+      {
+        memmove(Ptr + 1, Ptr, strlen(Ptr) + 1);
+        *Ptr = '\r';
+        Ptr += 2;
+      }
+      unsigned long Written;
+      WriteFile(ConsoleOutput, Buffer, strlen(Buffer), &Written, NULL);
+    }
+    delete[] Buffer;
+  }
+}
+//---------------------------------------------------------------------------
+void Print(bool FromBeginning, const wchar_t* Message)
 {
   if ((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE))
   {
-    if (FromBeginning && (Message[0] != '\n'))
+    if (FromBeginning && (Message[0] != L'\n'))
     {
-      strcpy(LastFromBeginning, Message);
+      wcscpy(LastFromBeginning, Message);
     }
     else
     {
-      if (LastFromBeginning[0] != '\0')
+      if (LastFromBeginning[0] != L'\0')
       {
-        printf("%s", LastFromBeginning);
-        LastFromBeginning[0] = '\0';
+        Print(LastFromBeginning);
+        LastFromBeginning[0] = L'\0';
       }
 
-      if (FromBeginning && (Message[0] == '\n'))
+      if (FromBeginning && (Message[0] == L'\n'))
       {
-        printf("\n");
-        strcpy(LastFromBeginning, Message + 1);
+        Print(L"\n");
+        wcscpy(LastFromBeginning, Message + 1);
       }
       else
       {
-        printf("%s", Message);
+        Print(Message);
       }
       Flush();
     }
   }
   else
   {
+    unsigned long Written;
     if (FromBeginning)
     {
-      printf("\r");
+      WriteConsole(ConsoleOutput, L"\r", 1, &Written, NULL);
     }
-    printf("%s", Message);
+    WriteConsole(ConsoleOutput, Message, wcslen(Message), &Written, NULL);
   }
 }
 //---------------------------------------------------------------------------
@@ -396,7 +469,7 @@ void BreakInput()
   InputRecord.EventType = KEY_EVENT;
   InputRecord.Event.KeyEvent.bKeyDown = true;
   InputRecord.Event.KeyEvent.wRepeatCount = 1;
-  InputRecord.Event.KeyEvent.uChar.AsciiChar = '\r';
+  InputRecord.Event.KeyEvent.uChar.UnicodeChar = L'\r';
 
   unsigned long Written;
   WriteConsoleInput(ConsoleInput, &InputRecord, 1, &Written);
@@ -404,7 +477,7 @@ void BreakInput()
   CancelInput();
 }
 //---------------------------------------------------------------------------
-DWORD WINAPI InputTimerThreadProc(void * Parameter)
+DWORD WINAPI InputTimerThreadProc(void* Parameter)
 {
   unsigned int Timer = reinterpret_cast<unsigned int>(Parameter);
 
@@ -420,26 +493,30 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
 {
   if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
   {
-    unsigned long Len = 0;
+    unsigned long Bytes = 0;
     unsigned long Read;
-    char Ch;
     bool Result;
+    char Ch;
+    char Buf[LENOF(Event.Str) * 3];
 
     while (((Result = (ReadFile(ConsoleInput, &Ch, 1, &Read, NULL) != 0)) != false) &&
-           (Read > 0) && (Len < sizeof(Event.Str) - 1) && (Ch != '\n'))
+           (Read > 0) && (Bytes < LENOF(Buf) - 1) && (Ch != '\n'))
     {
       if (Ch != '\r')
       {
-        Event.Str[Len] = Ch;
-        Len++;
+        Buf[Bytes] = Ch;
+        Bytes++;
       }
     }
-    Event.Str[Len] = '\0';
+    Buf[Bytes] = L'\0';
+
+    MultiByteToWideChar(CP_UTF8, 0, Buf, -1, Event.Str, LENOF(Event.Str) - 1);
+    Event.Str[LENOF(Event.Str) - 1] = L'\0';
 
     Print(false, Event.Str);
-    Print(false, "\n");
+    Print(false, L"\n");
 
-    Event.Result = ((Result && (Read > 0)) || (Len > 0));
+    Event.Result = ((Result && (Read > 0)) || (Bytes > 0));
   }
   else
   {
@@ -469,13 +546,13 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
       }
 
       unsigned long Read;
-      Event.Result = ReadConsole(ConsoleInput, Event.Str, sizeof(Event.Str) - 1, &Read, NULL);
-      Event.Str[Read] = '\0';
+      Event.Result = ReadConsole(ConsoleInput, Event.Str, LENOF(Event.Str) - 1, &Read, NULL);
+      Event.Str[Read] = L'\0';
 
       bool PendingCancel = (WaitForSingleObject(CancelEvent, 0) == WAIT_OBJECT_0);
       if (PendingCancel || !Event.Echo)
       {
-        printf("\n");
+        WriteFile(ConsoleOutput, "\n", 1, NULL, NULL);
         Flush();
       }
 
@@ -545,22 +622,22 @@ void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
             else if ((Record.EventType == KEY_EVENT) &&
                      Record.Event.KeyEvent.bKeyDown)
             {
-              char CStr[2];
+              wchar_t CStr[2];
               CStr[0] = Record.Event.KeyEvent.uChar.AsciiChar;
-              CStr[1] = '\0';
+              CStr[1] = L'\0';
               CharUpperBuff(CStr, 1);
-              char C = CStr[0];
+              wchar_t C = CStr[0];
               if (C == 27)
               {
                 Event.Result = Event.Cancel;
               }
-              else if ((strchr(Event.Options, C) != NULL) &&
+              else if ((wcschr(Event.Options, C) != NULL) &&
                        ((Record.Event.KeyEvent.dwControlKeyState &
                          (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED |
-                         RIGHT_CTRL_PRESSED)) == 0))
+                         RIGHT_ALT_PRESSED)) == 0))
 
               {
-                Event.Result = strchr(Event.Options, C) - Event.Options + 1;
+                Event.Result = wcschr(Event.Options, C) - Event.Options + 1;
               }
             }
           }
@@ -613,7 +690,7 @@ void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
   {
     if (CommStruct->Version != TConsoleCommStruct::CurrentVersionConfirmed)
     {
-      throw logic_error("Incompatible console protocol version");
+      throw runtime_error("Incompatible console protocol version");
     }
 
     switch (CommStruct->Event)
@@ -669,7 +746,7 @@ BOOL WINAPI HandlerRoutine(DWORD CtrlType)
 }
 //---------------------------------------------------------------------------
 #pragma argsused
-int main(int /*argc*/, char* /*argv*/[])
+int wmain(int /*argc*/, wchar_t* /*argv*/[])
 {
   unsigned long Result = RESULT_UNKNOWN_ERROR;
 
@@ -677,20 +754,53 @@ int main(int /*argc*/, char* /*argv*/[])
   {
     randomize();
 
+    OSVERSIONINFO VersionInfo;
+    VersionInfo.dwOSVersionInfoSize = sizeof(VersionInfo);
+    GetVersionEx(&VersionInfo);
+
     ConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
     InputType = GetFileType(ConsoleInput);
     SetConsoleCtrlHandler(HandlerRoutine, true);
 
-    HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    unsigned int SavedConsoleCP = GetConsoleCP();
+    unsigned int SavedConsoleOutputCP = GetConsoleOutputCP();
+
+    ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
     OutputType = GetFileType(ConsoleOutput);
 
-    char InstanceName[MAX_PATH];
+
+    bool SupportsUtf8ConsoleOutput =
+      (VersionInfo.dwMajorVersion == 6) &&
+      (VersionInfo.dwMinorVersion == 1);
+
+    if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE) ||
+        SupportsUtf8ConsoleOutput)
+    {
+      SetConsoleCP(CP_UTF8);
+    }
+    else
+    {
+      SetConsoleCP(CP_ACP);
+    }
+
+    if ((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE) ||
+        SupportsUtf8ConsoleOutput)
+    {
+      SetConsoleOutputCP(CP_UTF8);
+    }
+    else
+    {
+      SetConsoleOutputCP(CP_ACP);
+    }
+
+
+    wchar_t InstanceName[MAX_PATH];
     HANDLE RequestEvent, ResponseEvent, FileMapping, Job;
     InitializeConsole(InstanceName, RequestEvent, ResponseEvent,
       CancelEvent, FileMapping, Job);
 
-    char SavedTitle[512];
-    GetConsoleTitle(SavedTitle, sizeof(SavedTitle));
+    wchar_t SavedTitle[512];
+    GetConsoleTitle(SavedTitle, LENOF(SavedTitle));
 
     try
     {
@@ -735,7 +845,7 @@ int main(int /*argc*/, char* /*argv*/[])
         while (Continue);
 
         // flush pending progress message
-        Print(false, "");
+        Print(false, L"");
       }
       catch(const exception& e)
       {
@@ -748,6 +858,9 @@ int main(int /*argc*/, char* /*argv*/[])
       #endif
 
       SetConsoleTitle(SavedTitle);
+
+      SetConsoleCP(SavedConsoleCP);
+      SetConsoleOutputCP(SavedConsoleOutputCP);
     }
     catch(const exception& e)
     {

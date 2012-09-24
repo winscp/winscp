@@ -25,7 +25,7 @@ namespace Logmemo
   void __fastcall PACKAGE Register()
   {
     TComponentClass classes[1] = {__classid(TLogMemo)};
-    RegisterComponents("Scp", classes, 0);
+    RegisterComponents(L"Scp", classes, 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -74,7 +74,7 @@ bool __fastcall TLogMemo::IsFontStored()
     (Font->Charset != DEFAULT_CHARSET) ||
     (Font->Color != clWindowText) ||
     (Font->Height != -11) ||
-    (Font->Pitch != fpDefault) ||
+    (Font->Pitch != TFontPitch::fpDefault) ||
     (Font->Size != 8) ||
     (Font->Style != TFontStyles());
 }
@@ -100,8 +100,8 @@ void __fastcall TLogMemo::SetSessionLog(TSessionLog * value)
 //---------------------------------------------------------------------------
 void __fastcall TLogMemo::SessionLogChange(TObject * Sender)
 {
-#ifndef DESIGN_ONLY
   USEDPARAM(Sender);
+#ifndef DESIGN_ONLY
   assert(Sender && (Sender == (TObject*)SessionLog));
 #endif
   if (HandleAllocated())
@@ -175,9 +175,9 @@ void __fastcall TLogMemo::UpdateFromLog()
               // new line is being added (control has no parent)
               if (Parent)
               {
-                if (SessionLog->Line[LastIndex].Pos("\r"))
+                if (SessionLog->Line[LastIndex].Pos(L"\r"))
                 {
-                  Lines->Add(StringReplace(SessionLog->Line[LastIndex], "\r", "",
+                  Lines->Add(StringReplace(SessionLog->Line[LastIndex], L"\r", L"",
                     TReplaceFlags() << rfReplaceAll));
                 }
                 else
@@ -364,12 +364,12 @@ void __fastcall TLogMemo::WMPaint(TWMPaint & Message)
 int __fastcall TLogMemo::GetLinesVisible()
 {
   HFONT OldFont;
-  void *DC;
-  TTextMetric TM;
+  HDC DC;
+  TTextMetricW TM;
   TRect Rect;
 
-  DC = GetDC(Handle);
-  OldFont = SelectObject(DC, Font->Handle);
+  DC = GetDC((HWND)Handle);
+  OldFont = (HFONT)SelectObject(DC, (HWND)Font->Handle);
 
   try
   {

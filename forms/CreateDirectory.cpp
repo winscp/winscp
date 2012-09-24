@@ -19,7 +19,7 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
-bool __fastcall DoCreateDirectoryDialog(AnsiString & Directory,
+bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
   TRemoteProperties * Properties, bool & SaveSettings)
 {
   bool Result;
@@ -60,7 +60,7 @@ void __fastcall TCreateDirectoryDialog::UpdateControls()
   EnableControl(RightsFrame, SetRightsCheck->Checked);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCreateDirectoryDialog::Execute(AnsiString & Directory,
+bool __fastcall TCreateDirectoryDialog::Execute(UnicodeString & Directory,
   TRemoteProperties * Properties, bool & SaveSettings)
 {
   DirectoryEdit->Text = Directory;

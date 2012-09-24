@@ -770,7 +770,6 @@ type
     {$IFNDEF JR_D5}
     procedure DoPopup(Sender: TObject);
     {$ENDIF}
-    procedure GetChildren(Proc: TGetChildProc; Root: TComponent); override;
     function GetRootItemClass: TTBRootItemClass; dynamic;
     procedure SetChildOrder(Child: TComponent; Order: Integer); override;
   public
@@ -779,6 +778,7 @@ type
     function IsShortCut(var Message: TWMKey): Boolean; override;
     procedure Popup(X, Y: Integer); override;
     function PopupEx(X, Y: Integer; ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
+    procedure GetChildren(Proc: TGetChildProc; Root: TComponent); override;
   published
     property Images: TCustomImageList read GetImages write SetImages;
     property Items: TTBRootItem read FItem;
@@ -986,7 +986,7 @@ begin
     tbdaNone: ;
     tbdaClickItem: begin
         if DoneActionData.Sound and NeedToPlaySound('MenuCommand') then
-          PlaySound('MenuCommand', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
+          PlaySoundA('MenuCommand', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
         Result := DoneActionData.ClickItem;
         if not ReturnClickedItemOnly then
           Result.PostClick;
@@ -1004,7 +1004,7 @@ begin
       end;
     { MP }
     tbdaHelpKeyword: begin
-        Application.HelpKeyword(DoneActionData.HelpKeyword);
+        Application.HelpKeyword(string(DoneActionData.HelpKeyword));
       end;
     { /MP }
   end;
@@ -2078,10 +2078,10 @@ begin
         PlayedSound := True;
         Result.Visible := True;
         Result.Update;
-        PlaySound('MenuPopup', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
+        PlaySoundA('MenuPopup', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
       end
       else begin
-        PlaySound('MenuPopup', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
+        PlaySoundA('MenuPopup', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
         Result.Visible := True;
       end;
     end;
@@ -5725,7 +5725,7 @@ var
   RootView: TTBView;
 begin
   RootView := GetRootView;
-  RootView.FDoneActionData.HelpKeyword := HelpKeyword;
+  RootView.FDoneActionData.HelpKeyword := ShortString(HelpKeyword);
   RootView.FDoneActionData.DoneAction := tbdaHelpKeyword;
 end;
 { /MP }
@@ -6317,7 +6317,9 @@ begin
         DispatchMessage(Msg);
       end;
       if not ContinueLoop then
+      begin
         Exit;
+      end;
       if LastPos.X = Low(LastPos.X) then begin
         LastPos := SmallPointToPoint(TSmallPoint(GetMessagePos()));
         MouseMoved;

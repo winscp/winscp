@@ -37,9 +37,10 @@ __published:
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
-  void __fastcall CopyParamGroupDblClick(TObject *Sender);
+  void __fastcall CopyParamGroupClick(TObject *Sender);
   void __fastcall CopyParamGroupContextPopup(TObject *Sender,
           TPoint &MousePos, bool &Handled);
+  void __fastcall TransferSettingsButtonDropDownClick(TObject *Sender);
 private:
   bool FDefaultToRemote;
   bool FToRemote;
@@ -49,19 +50,19 @@ private:
   int FOutputOptions;
   TGUICopyParamType FParams;
   TPopupMenu * FPresetsMenu;
-  AnsiString FPreset;
+  UnicodeString FPreset;
   TCopyParamType FCopyParams;
   int FCopyParamAttrs;
   bool FSaveSettings;
-  AnsiString __fastcall GetDirectory();
+  UnicodeString __fastcall GetDirectory();
   void __fastcall SetToRemote(bool value);
   THistoryComboBox * __fastcall GetDirectoryEdit();
   void __fastcall SetParams(const TGUICopyParamType & value);
   TGUICopyParamType __fastcall GetParams();
-  void __fastcall SetDirectory(AnsiString value);
+  void __fastcall SetDirectory(UnicodeString value);
   void __fastcall SetFileList(TStrings * value);
   void __fastcall SetMove(bool value);
-  AnsiString __fastcall GetFileMask();
+  UnicodeString __fastcall GetFileMask();
   void __fastcall SetOptions(int value);
   void __fastcall SetOutputOptions(int value);
   int __fastcall GetOutputOptions();
@@ -80,7 +81,7 @@ public:
   bool __fastcall Execute();
 
   __property bool ToRemote = { read = FToRemote, write = SetToRemote };
-  __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
+  __property UnicodeString Directory = { read = GetDirectory, write = SetDirectory };
   __property THistoryComboBox * DirectoryEdit = { read = GetDirectoryEdit };
   __property TStrings * FileList = { read = FFileList, write = SetFileList };
   __property TGUICopyParamType Params = { read = GetParams, write = SetParams };

@@ -91,7 +91,9 @@ CAsyncSocketExLayer::CAsyncSocketExLayer()
 	m_nPendingEvents = 0;
 
 	m_nFamily = AF_UNSPEC;
+	m_lEvent = 0;
 	m_lpszSocketAddress = 0;
+	m_nSocketPort = 0;
 
 	m_nextAddr = 0;
 	m_addrInfo = 0;
@@ -306,7 +308,7 @@ BOOL CAsyncSocketExLayer::ConnectNext(LPCTSTR lpszHostAddress, UINT nHostPort)
 {
 	ASSERT(GetLayerState()==unconnected);
 	ASSERT(m_pOwnerSocket);
-	BOOL res;
+	BOOL res = FALSE;
 	if (m_pNextLayer)
 		res = m_pNextLayer->Connect(lpszHostAddress, nHostPort);
 	else if (m_nFamily == AF_INET)
@@ -1005,7 +1007,7 @@ bool CAsyncSocketExLayer::TryNextProtocol()
 }
 
 void CAsyncSocketExLayer::LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat)
-{ 
+{
 	if (m_pPrevLayer)
 		m_pPrevLayer->LogSocketMessage(nMessageType, pMsgFormat);
 	else

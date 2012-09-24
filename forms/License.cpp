@@ -15,7 +15,7 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-AnsiString LicenseStr[2] = { "LICENSE", "LICENSE_PUTTY" };
+UnicodeString LicenseStr[2] = { L"LICENSE", L"LICENSE_PUTTY" };
 //---------------------------------------------------------------------------
 void __fastcall DoLicenseDialog(TLicense License)
 {

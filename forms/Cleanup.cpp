@@ -88,7 +88,7 @@ void __fastcall TCleanupDialog::InitControls()
   while (I < DataListView->Items->Count)
   {
     TListItem *Item = DataListView->Items->Item[I];
-    AnsiString Location;
+    UnicodeString Location;
     Item->Caption = LoadStr(Captions[Item->ImageIndex - 1]);
     switch (Item->ImageIndex) {
       case wdConfiguration: Location = Configuration->ConfigurationSubKey; break;
@@ -97,13 +97,13 @@ void __fastcall TCleanupDialog::InitControls()
       case wdConfigurationIniFile: Location = ExpandEnvironmentVariables(Configuration->IniFileStorageName); break;
       case wdRandomSeedFile: Location = ExpandEnvironmentVariables(Configuration->RandomSeedFile); break;
       case wdTemporaryFolders: Location = WinConfiguration->TemporaryDir(true); break;
-      default: Location = ""; break;
+      default: Location = L""; break;
     }
 
     if (Item->ImageIndex < wdConfigurationIniFile)
     {
-      Location = Configuration->RootKeyStr + '\\' +
-        Configuration->RegistryStorageKey + '\\' + Location;
+      Location = Configuration->RootKeyStr + L'\\' +
+        Configuration->RegistryStorageKey + L'\\' + Location;
     }
 
     Item->SubItems->Add(Location);
@@ -142,9 +142,9 @@ void __fastcall TCleanupDialog::CheckAllButtonClick(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TCleanupDialog::DataListViewInfoTip(TObject * /*Sender*/,
-      TListItem * Item, AnsiString & InfoTip)
+      TListItem * Item, UnicodeString & InfoTip)
 {
-  InfoTip = Format("%s\nLocation: %s",
+  InfoTip = Format(L"%s\nLocation: %s",
     ARRAYOFCONST((Item->Caption, Item->SubItems->Strings[0])));
 }
 //---------------------------------------------------------------------------

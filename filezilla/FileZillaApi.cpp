@@ -123,15 +123,15 @@ int CFileZillaApi::IsBusy()
 int CFileZillaApi::Connect(const t_server &server)
 {
 	//Check parameters
-	if (server.host=="" || server.port<1 || server.port>65535)
+	if (server.host==_MPT("") || server.port<1 || server.port>65535)
 		return FZ_REPLY_INVALIDPARAM;
-	
+
 #ifndef MPEXT_NO_GSS
 	BOOL bUseGSS = FALSE;
 	if (COptions::GetOptionVal(OPTION_USEGSS))
 	{
 		USES_CONVERSION;
-		
+
 		CString GssServers = COptions::GetOption(OPTION_GSSSERVERS);
 		hostent *fullname = gethostbyname(T2CA(server.host));
 		CString host;
@@ -143,7 +143,7 @@ int CFileZillaApi::Connect(const t_server &server)
 		int i;
 		while ((i=GssServers.Find( _T(";") ))!=-1)
 		{
-			if (("."+GssServers.Left(i))==host.Right(GssServers.Left(i).GetLength()+1) || GssServers.Left(i)==host)
+			if ((_MPT(".")+GssServers.Left(i))==host.Right(GssServers.Left(i).GetLength()+1) || GssServers.Left(i)==host)
 			{
 				bUseGSS = TRUE;
 				break;
@@ -151,10 +151,10 @@ int CFileZillaApi::Connect(const t_server &server)
 			GssServers = GssServers.Mid(i+1);
 		}
 	}
-	if (!bUseGSS && server.user == "")
+	if (!bUseGSS && server.user == _MPT(""))
 		return FZ_REPLY_INVALIDPARAM;
-#endif    
-		
+#endif
+
 	if (!(server.nServerType&FZ_SERVERTYPE_HIGHMASK))
 		return FZ_REPLY_INVALIDPARAM;
 
@@ -299,7 +299,7 @@ int CFileZillaApi::Command(t_command *pCommand)
 	switch(pCommand->id)
 	{
 	case FZ_COMMAND_LIST:
-		if (pCommand->param1!="")
+		if (pCommand->param1!=_MPT(""))
 			return List(pCommand->path,pCommand->param1,pCommand->param4);
 		else if (!pCommand->path.IsEmpty())
 			return List(pCommand->path,pCommand->param4);
@@ -417,7 +417,7 @@ int CFileZillaApi::List(const CServerPath& parent, CString dirname, int nListMod
 	if (nListMode&FZ_LIST_FORCECACHE)
 		nListMode|=FZ_LIST_USECACHE;
 #endif
-	if (dirname=="" || parent.IsEmpty())
+	if (dirname==_MPT("") || parent.IsEmpty())
 		return FZ_REPLY_INVALIDPARAM;
 
 #ifndef MPEXT_NO_CACHE
@@ -472,6 +472,31 @@ int CFileZillaApi::List(const CServerPath& parent, CString dirname, int nListMod
 		return m_pMainThread->LastOperationSuccessful()?FZ_REPLY_OK:FZ_REPLY_ERROR;
 }
 
+#ifdef MPEXT
+int CFileZillaApi::ListFile(const CServerPath& path, const CString& fileName)
+{
+	//Check if call allowed
+	if (!m_bInitialized)
+		return FZ_REPLY_NOTINITIALIZED;
+	if (IsConnected()==FZ_REPLY_NOTCONNECTED)
+		return FZ_REPLY_NOTCONNECTED;
+	if (fileName.IsEmpty())
+		return FZ_REPLY_INVALIDPARAM;
+	
+	if (m_pMainThread->IsBusy())
+		return FZ_REPLY_BUSY;
+	t_command command;
+	command.id=FZ_COMMAND_LISTFILE;
+	command.path=path;
+	command.param1=fileName;
+	m_pMainThread->Command(command);
+	if (m_hOwnerWnd)
+		return FZ_REPLY_WOULDBLOCK;
+	else
+		return m_pMainThread->LastOperationSuccessful()?FZ_REPLY_OK:FZ_REPLY_ERROR;
+}
+#endif
+
 int CFileZillaApi::FileTransfer(const t_transferfile &TransferFile)
 {
 	//Check if call allowed
@@ -479,7 +504,7 @@ int CFileZillaApi::FileTransfer(const t_transferfile &TransferFile)
 		return FZ_REPLY_NOTINITIALIZED;
 	if (IsConnected()==FZ_REPLY_NOTCONNECTED)
 		return FZ_REPLY_NOTCONNECTED;
-	if (TransferFile.remotefile=="" || TransferFile.localfile=="" || TransferFile.remotepath.IsEmpty())
+	if (TransferFile.remotefile==_MPT("") || TransferFile.localfile==_MPT("") || TransferFile.remotepath.IsEmpty())
 		return FZ_REPLY_INVALIDPARAM;
 	if (IsBusy()==FZ_REPLY_BUSY)
 		return FZ_REPLY_BUSY;
@@ -546,7 +571,7 @@ int CFileZillaApi::CustomCommand(CString CustomCommand)
 	if (server.nServerType&FZ_SERVERTYPE_SUB_FTP_SFTP)
 		return FZ_REPLY_NOTSUPPORTED;
 #endif
-	if (CustomCommand=="")
+	if (CustomCommand==_MPT(""))
 		return FZ_REPLY_INVALIDPARAM;
 
 	t_command command;
@@ -600,7 +625,7 @@ int CFileZillaApi::RemoveDir(CString DirName, const CServerPath &path /*=CServer
 		return FZ_REPLY_NOTCONNECTED;
 	if (IsBusy()==FZ_REPLY_BUSY)
 		return FZ_REPLY_BUSY;
-	if (DirName=="")
+	if (DirName==_MPT(""))
 		return FZ_REPLY_INVALIDPARAM;
 
 	CServerPath path2=path;
@@ -620,7 +645,7 @@ int CFileZillaApi::RemoveDir(CString DirName, const CServerPath &path /*=CServer
 		return FZ_REPLY_WOULDBLOCK;
 	else
 		return m_pMainThread->LastOperationSuccessful()?FZ_REPLY_OK:FZ_REPLY_ERROR;
-	
+
 	return FZ_REPLY_ERROR;
 }
 
@@ -657,7 +682,7 @@ int CFileZillaApi::Rename(CString oldName, CString newName, const CServerPath &p
 		return FZ_REPLY_NOTCONNECTED;
 	if (IsBusy()==FZ_REPLY_BUSY)
 		return FZ_REPLY_BUSY;
-	if (oldName=="" || newName=="")
+	if (oldName==_MPT("") || newName==_MPT(""))
 		return FZ_REPLY_INVALIDPARAM;
 
 	CServerPath path2 = path;
@@ -715,6 +740,8 @@ int CFileZillaApi::SetAsyncRequestResult(int nAction, CAsyncRequestData *pData)
 		}
 		break;
 #endif
+	case FZ_ASYNCREQUEST_NEEDPASS:
+		break;
 #ifndef MPEXT_NO_GSS
 	case FZ_ASYNCREQUEST_GSS_AUTHFAILED:
 	case FZ_ASYNCREQUEST_GSS_NEEDUSER:
@@ -785,7 +812,7 @@ int CFileZillaApi::Chmod(int nValue, CString FileName, const CServerPath &path /
 		return FZ_REPLY_NOTCONNECTED;
 	if (IsBusy()==FZ_REPLY_BUSY)
 		return FZ_REPLY_BUSY;
-	if (FileName=="")
+	if (FileName==_MPT(""))
 		return FZ_REPLY_INVALIDPARAM;
 
 	t_command command;
@@ -822,14 +849,19 @@ BOOL CFileZillaApi::DumpDirectoryCache(LPCTSTR pFileName)
 //CAsyncRequestData derived classes
 CAsyncRequestData::CAsyncRequestData()
 {
+	nRequestType = 0;
+	nRequestID = 0;
+	nRequestResult = 0;
 }
 
 CAsyncRequestData::~CAsyncRequestData()
 {
 }
-	
+
 COverwriteRequestData::COverwriteRequestData()
 {
+	size1 = 0;
+	size2 = 0;
 	nRequestType=FZ_ASYNCREQUEST_OVERWRITE;
 	time1=0;
 	time2=0;
@@ -855,6 +887,16 @@ CVerifyCertRequestData::~CVerifyCertRequestData()
 	delete pCertData;
 }
 #endif
+
+CNeedPassRequestData::CNeedPassRequestData()
+{
+	nRequestType=FZ_ASYNCREQUEST_NEEDPASS;
+	nOldOpState=0;
+}
+
+CNeedPassRequestData::~CNeedPassRequestData()
+{
+}
 
 #ifndef MPEXT_NO_GSS
 CGssNeedPassRequestData::CGssNeedPassRequestData()

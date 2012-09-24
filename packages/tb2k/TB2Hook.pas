@@ -1,5 +1,9 @@
 unit TB2Hook;
 
+// Workaround for bug in C++Builder XE2 that makes threadvar's in this unit
+// overwrite each other when optimization is enabled
+{$O-}
+
 {
   Toolbar2000
   Copyright (C) 1998-2005 by Jordan Russell
@@ -214,7 +218,9 @@ var
 label 1;
 begin
   if HookProcList = nil then
+  begin
     HookProcList := TList.Create;
+  end;
   Found := False;
   UserData := nil;  { avoid warning }
   for I := 0 to HookProcList.Count-1 do begin

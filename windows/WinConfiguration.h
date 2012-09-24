@@ -6,27 +6,28 @@
 #include "CustomDirView.hpp"
 //---------------------------------------------------------------------------
 enum TEditor { edInternal, edExternal, edOpen };
-extern const char ShellCommandFileNamePattern[];
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TScpExplorerConfiguration {
-  AnsiString WindowParams;
-  AnsiString DirViewParams;
-  AnsiString ToolbarsLayout;
+  UnicodeString WindowParams;
+  UnicodeString DirViewParams;
+  UnicodeString ToolbarsLayout;
+  bool SessionsTabs;
   bool StatusBar;
-  AnsiString LastLocalTargetDirectory;
+  UnicodeString LastLocalTargetDirectory;
   int ViewStyle;
   bool ShowFullAddress;
   bool DriveView;
   int DriveViewWidth;
   bool __fastcall operator !=(TScpExplorerConfiguration & rhc)
-    { return C(WindowParams) C(DirViewParams) C(ToolbarsLayout) C(StatusBar)
+    { return C(WindowParams) C(DirViewParams) C(ToolbarsLayout)
+        C(SessionsTabs) C(StatusBar)
         C(LastLocalTargetDirectory) C(ViewStyle) C(ShowFullAddress)
         C(DriveView) C(DriveViewWidth) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderPanelConfiguration {
-  AnsiString DirViewParams;
+  UnicodeString DirViewParams;
   bool StatusBar;
   bool DriveView;
   int DriveViewHeight;
@@ -37,9 +38,10 @@ struct TScpCommanderPanelConfiguration {
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderConfiguration {
-  AnsiString WindowParams;
-  float LocalPanelWidth;
-  AnsiString ToolbarsLayout;
+  UnicodeString WindowParams;
+  double LocalPanelWidth;
+  UnicodeString ToolbarsLayout;
+  bool SessionsTabs;
   bool StatusBar;
   TOperationSide CurrentPanel;
   TNortonLikeMode NortonLikeMode;
@@ -49,14 +51,14 @@ struct TScpCommanderConfiguration {
   bool CompareByTime;
   bool CompareBySize;
   bool SwappedPanels;
-  bool FullRowSelect;
   bool TreeOnLeft;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
-    { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(StatusBar)
+    { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout)
+      C(SessionsTabs) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel)
       C(NortonLikeMode) C(PreserveLocalDirectory)
       C(CompareBySize) C(CompareByTime) C(SwappedPanels)
-      C(FullRowSelect) C(TreeOnLeft) 0; };
+      C(TreeOnLeft) 0; };
 
   TCompareCriterias __fastcall CompareCriterias()
   {
@@ -74,13 +76,13 @@ struct TScpCommanderConfiguration {
 };
 //---------------------------------------------------------------------------
 struct TEditorConfiguration {
-  AnsiString FontName;
+  UnicodeString FontName;
   int FontHeight;
   int FontCharset;
   int FontStyle;
   bool WordWrap;
-  AnsiString FindText;
-  AnsiString ReplaceText;
+  UnicodeString FindText;
+  UnicodeString ReplaceText;
   bool FindMatchCase;
   bool FindWholeWord;
   bool FindDown;
@@ -88,18 +90,20 @@ struct TEditorConfiguration {
   unsigned int MaxEditors;
   unsigned int EarlyClose;
   bool SDIShellEditor;
-  AnsiString WindowParams;
+  UnicodeString WindowParams;
+  int Encoding;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
     { return C(FontName) C(FontHeight)
       C(FontCharset) C(FontStyle) C(WordWrap) C(FindText) C(ReplaceText)
       C(FindMatchCase) C(FindWholeWord) C(FindDown) C(TabSize)
-      C(MaxEditors) C(EarlyClose) C(SDIShellEditor) C(WindowParams) 0; };
+      C(MaxEditors) C(EarlyClose) C(SDIShellEditor) C(WindowParams)
+      C(Encoding) 0; };
 };
 //---------------------------------------------------------------------------
 enum TQueueViewShow { qvShow, qvHideWhenEmpty, qvHide };
 struct TQueueViewConfiguration {
   int Height;
-  AnsiString Layout;
+  UnicodeString Layout;
   TQueueViewShow Show;
   TQueueViewShow LastHideShow;
   bool ToolBar;
@@ -111,12 +115,12 @@ struct TUpdatesData
 {
   int ForVersion;
   int Version;
-  AnsiString Message;
+  UnicodeString Message;
   bool Critical;
-  AnsiString Release;
+  UnicodeString Release;
   bool Disabled;
-  AnsiString Url;
-  AnsiString UrlButton;
+  UnicodeString Url;
+  UnicodeString UrlButton;
   bool __fastcall operator !=(TUpdatesData & rhc)
     { return C(ForVersion) C(Version) C(Message) C(Critical) C(Release)
              C(Disabled) C(Url) C(UrlButton) 0; };
@@ -124,12 +128,12 @@ struct TUpdatesData
   {
     ForVersion = 0;
     Version = 0;
-    Message = "";
+    Message = L"";
     Critical = false;
-    Release = "";
+    Release = L"";
     Disabled = false;
-    Url = "";
-    UrlButton = "";
+    Url = L"";
+    UrlButton = L"";
   }
 };
 //---------------------------------------------------------------------------
@@ -140,15 +144,18 @@ struct TUpdatesConfiguration
   TDateTime Period;
   TDateTime LastCheck;
   TConnectionType ConnectionType;
-  AnsiString ProxyHost;
+  UnicodeString ProxyHost;
   int ProxyPort;
   TAutoSwitch BetaVersions;
   bool HaveResults;
   bool ShownResults;
+  UnicodeString DotNetVersion;
+  UnicodeString ConsoleVersion;
   TUpdatesData Results;
   bool __fastcall operator !=(TUpdatesConfiguration & rhc)
     { return C(Period) C(LastCheck) C(ConnectionType) C(ProxyHost) C(ProxyPort)
-        C(BetaVersions) C(HaveResults) C(ShownResults) C(Results)  0; };
+        C(BetaVersions) C(HaveResults) C(ShownResults) C(DotNetVersion)
+        C(ConsoleVersion) C(Results)  0; };
 };
 //---------------------------------------------------------------------------
 struct TEditorData
@@ -158,7 +165,7 @@ struct TEditorData
 
   TFileMasks FileMask;
   TEditor Editor;
-  AnsiString ExternalEditor;
+  UnicodeString ExternalEditor;
   bool ExternalEditorText;
   bool SDIExternalEditor;
   bool DetectMDIExternalEditor;
@@ -173,7 +180,7 @@ class TEditorPreferences
 public:
   __fastcall TEditorPreferences();
   __fastcall TEditorPreferences(const TEditorData & Data);
-  bool __fastcall Matches(const AnsiString FileName, bool Local,
+  bool __fastcall Matches(const UnicodeString FileName, bool Local,
     const TFileMasks::TParams & Params) const;
   void __fastcall Load(THierarchicalStorage * Storage, bool Legacy);
   void __fastcall Save(THierarchicalStorage * Storage) const;
@@ -182,15 +189,15 @@ public:
   bool __fastcall operator ==(const TEditorPreferences & rhp) const;
 
   __property const TEditorData * Data = { read = GetConstData };
-  __property AnsiString Name = { read = GetName };
+  __property UnicodeString Name = { read = GetName };
 
   TEditorData * __fastcall GetData();
 
 private:
   TEditorData FData;
-  mutable AnsiString FName;
+  mutable UnicodeString FName;
 
-  AnsiString __fastcall GetName() const;
+  UnicodeString __fastcall GetName() const;
   const TEditorData * __fastcall GetConstData() const { return &FData; };
 };
 //---------------------------------------------------------------------------
@@ -200,13 +207,13 @@ public:
   __fastcall TEditorList();
   virtual __fastcall ~TEditorList();
 
-  const TEditorPreferences * __fastcall Find(const AnsiString FileName,
+  const TEditorPreferences * __fastcall Find(const UnicodeString FileName,
     bool Local, const TFileMasks::TParams & Params) const;
 
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage) const;
 
-  void __fastcall operator=(const TEditorList & rhl);
+  TEditorList & __fastcall operator=(const TEditorList & rhl);
   bool __fastcall operator==(const TEditorList & rhl) const;
 
   void __fastcall Clear();
@@ -244,7 +251,7 @@ typedef void __fastcall (__closure *TMasterPasswordPromptEvent)();
 class TWinConfiguration : public TCustomWinConfiguration
 {
 private:
-  AnsiString FAutoStartSession;
+  UnicodeString FAutoStartSession;
   TDoubleClickAction FDoubleClickAction;
   bool FCopyOnDoubleClickConfirmation;
   bool FDDAllowMove;
@@ -254,32 +261,34 @@ private:
   bool FDimmHiddenFiles;
   bool FRenameWholeName;
   bool FLogWindowOnStartup;
-  AnsiString FLogWindowParams;
+  UnicodeString FLogWindowParams;
   TScpCommanderConfiguration FScpCommander;
   TScpExplorerConfiguration FScpExplorer;
   bool FSelectDirectories;
-  AnsiString FSelectMask;
+  UnicodeString FSelectMask;
   bool FShowHiddenFiles;
+  bool FFormatSizeBytes;
   bool FShowInaccesibleDirectories;
   bool FConfirmTransferring;
   bool FConfirmDeleting;
   bool FConfirmRecycling;
   bool FUseLocationProfiles;
   bool FUseSharedBookmarks;
-  AnsiString FDDTemporaryDirectory;
+  UnicodeString FDDTemporaryDirectory;
   bool FDDWarnLackOfTempSpace;
   bool FDDExtEnabled;
   int FDDExtInstalled;
   int FDDExtTimeout;
   bool FConfirmClosingSession;
   double FDDWarnLackOfTempSpaceRatio;
-  AnsiString FTemporarySessionFile;
-  AnsiString FTemporaryKeyFile;
+  UnicodeString FTemporarySessionFile;
+  UnicodeString FTemporaryKeyFile;
   TBookmarks * FBookmarks;
   TCustomCommandList * FCustomCommandList;
   bool FCustomCommandsDefaults;
   TEditorConfiguration FEditor;
   TQueueViewConfiguration FQueueView;
+  bool FEnableQueueByDefault;
   bool FEmbeddedSessions;
   bool FExpertMode;
   bool FDisableOpenEdit;
@@ -289,31 +298,35 @@ private:
   bool FTemporaryDirectoryAppendPath;
   bool FTemporaryDirectoryCleanup;
   bool FConfirmTemporaryDirectoryCleanup;
-  AnsiString FDefaultTranslationFile;
-  AnsiString FInvalidDefaultTranslationMessage;
+  UnicodeString FDefaultTranslationFile;
+  UnicodeString FInvalidDefaultTranslationMessage;
   bool FPreservePanelState;
-  AnsiString FTheme;
+  UnicodeString FTheme;
+  UnicodeString FLastStoredSession;
   TPathInCaption FPathInCaption;
   bool FMinimizeToTray;
   bool FBalloonNotifications;
   unsigned int FNotificationsTimeout;
   unsigned int FNotificationsStickTime;
   TUpdatesConfiguration FUpdates;
-  AnsiString FVersionHistory;
+  UnicodeString FVersionHistory;
   bool FCopyParamAutoSelectNotice;
-  bool FSessionToolbarAutoShown;
   bool FLockToolbars;
   TEditorList * FEditorList;
   TEditorPreferences * FLegacyEditor;
-  AnsiString FDefaultKeyFile;
+  UnicodeString FDefaultKeyFile;
   bool FAutoOpenInPutty;
-  bool FTelnetForFtpInPutty;
   TDateTime FDefaultUpdatesPeriod;
+  bool FRefreshRemotePanel;
+  TDateTime FRefreshRemotePanelInterval;
+  bool FFullRowSelect;
   bool FUseMasterPassword;
-  AnsiString FPlainMasterPasswordEncrypt;
-  AnsiString FPlainMasterPasswordDecrypt;
-  AnsiString FMasterPasswordVerifier;
+  UnicodeString FPlainMasterPasswordEncrypt;
+  UnicodeString FPlainMasterPasswordDecrypt;
+  UnicodeString FMasterPasswordVerifier;
   TMasterPasswordPromptEvent FOnMasterPasswordPrompt;
+  UnicodeString FOpenedStoredSessionFolders;
+  int FDontDecryptPasswords;
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -324,39 +337,42 @@ private:
   void __fastcall SetDimmHiddenFiles(bool value);
   void __fastcall SetRenameWholeName(bool value);
   void __fastcall SetLogWindowOnStartup(bool value);
-  void __fastcall SetLogWindowParams(AnsiString value);
+  void __fastcall SetLogWindowParams(UnicodeString value);
   void __fastcall SetScpCommander(TScpCommanderConfiguration value);
   void __fastcall SetScpExplorer(TScpExplorerConfiguration value);
   void __fastcall SetSelectDirectories(bool value);
   void __fastcall SetShowHiddenFiles(bool value);
+  void __fastcall SetFormatSizeBytes(bool value);
   void __fastcall SetShowInaccesibleDirectories(bool value);
   void __fastcall SetConfirmTransferring(bool value);
   void __fastcall SetConfirmDeleting(bool value);
   void __fastcall SetConfirmRecycling(bool value);
   void __fastcall SetUseLocationProfiles(bool value);
   void __fastcall SetUseSharedBookmarks(bool value);
-  void __fastcall SetDDTemporaryDirectory(AnsiString value);
+  void __fastcall SetDDTemporaryDirectory(UnicodeString value);
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
   void __fastcall SetDDExtEnabled(bool value);
   void __fastcall SetDDExtTimeout(int value);
   void __fastcall SetConfirmClosingSession(bool value);
   void __fastcall SetDDWarnLackOfTempSpaceRatio(double value);
-  void __fastcall SetBookmarks(AnsiString Key, TBookmarkList * value);
-  TBookmarkList * __fastcall GetBookmarks(AnsiString Key);
+  void __fastcall SetBookmarks(UnicodeString Key, TBookmarkList * value);
+  TBookmarkList * __fastcall GetBookmarks(UnicodeString Key);
   void __fastcall SetSharedBookmarks(TBookmarkList * value);
   TBookmarkList * __fastcall GetSharedBookmarks();
-  void __fastcall SetAutoStartSession(AnsiString value);
+  void __fastcall SetAutoStartSession(UnicodeString value);
   void __fastcall SetExpertMode(bool value);
   void __fastcall SetDefaultDirIsHome(bool value);
   void __fastcall SetEditor(TEditorConfiguration value);
   void __fastcall SetQueueView(TQueueViewConfiguration value);
+  void __fastcall SetEnableQueueByDefault(bool value);
   void __fastcall SetCustomCommandList(TCustomCommandList * value);
   void __fastcall SetTemporaryDirectoryAppendSession(bool value);
   void __fastcall SetTemporaryDirectoryAppendPath(bool value);
   void __fastcall SetTemporaryDirectoryCleanup(bool value);
   void __fastcall SetConfirmTemporaryDirectoryCleanup(bool value);
   void __fastcall SetPreservePanelState(bool value);
-  void __fastcall SetTheme(AnsiString value);
+  void __fastcall SetTheme(UnicodeString value);
+  void __fastcall SetLastStoredSession(UnicodeString value);
   void __fastcall SetPathInCaption(TPathInCaption value);
   void __fastcall SetMinimizeToTray(bool value);
   void __fastcall SetBalloonNotifications(bool value);
@@ -366,19 +382,24 @@ private:
   void __fastcall SetSessionToolbarAutoShown(bool value);
   TUpdatesConfiguration __fastcall GetUpdates();
   void __fastcall SetUpdates(TUpdatesConfiguration value);
-  void __fastcall SetVersionHistory(AnsiString value);
+  void __fastcall SetVersionHistory(UnicodeString value);
   void __fastcall SetLockToolbars(bool value);
   const TEditorList * __fastcall GetEditorList();
   void __fastcall SetEditorList(const TEditorList * value);
   void __fastcall SetAutoOpenInPutty(bool value);
-  void __fastcall SetTelnetForFtpInPutty(bool value);
+  void __fastcall SetRefreshRemotePanel(bool value);
+  void __fastcall SetRefreshRemotePanelInterval(TDateTime value);
+  void __fastcall SetFullRowSelect(bool value);
   void __fastcall SetLastMonitor(int value);
   int __fastcall GetLastMonitor();
+  void __fastcall SetOpenedStoredSessionFolders(UnicodeString value);
+  bool __fastcall GetIsBeta();
 
   bool __fastcall GetDDExtInstalled();
-  void __fastcall AddVersionToHistory(AnsiString & VersionHistory);
+  void __fastcall AddVersionToHistory();
   bool __fastcall GetAnyBetaInVersionHistory();
-  void __fastcall PurgePassword(AnsiString & Password);
+  void __fastcall PurgePassword(UnicodeString & Password);
+  void __fastcall UpdateSessionInJumpList(UnicodeString SessionName, bool Add);
 
 protected:
   virtual TStorage __fastcall GetStorage();
@@ -386,24 +407,26 @@ protected:
   virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
   virtual void __fastcall LoadData(THierarchicalStorage * Storage);
   virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
-  virtual AnsiString __fastcall GetDefaultKeyFile();
+  virtual void __fastcall CopyData(THierarchicalStorage * Source, THierarchicalStorage * Target);
+  virtual UnicodeString __fastcall GetDefaultKeyFile();
   virtual void __fastcall Saved();
   void __fastcall RecryptPasswords();
   virtual bool __fastcall GetUseMasterPassword();
   bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2);
-  bool __fastcall InternalReloadComponentRes(const AnsiString ResName,
+  bool __fastcall InternalReloadComponentRes(const UnicodeString ResName,
     HINSTANCE HInst, TComponent * Instance);
   bool __fastcall InitComponent(TComponent * Instance,
     TClass RootAncestor, TClass ClassType);
   virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
-    AnsiString * FileName = NULL);
+    UnicodeString * FileName = NULL);
   virtual void __fastcall SetResourceModule(HINSTANCE Instance);
   virtual LCID __fastcall GetLocale();
-  void __fastcall CheckTranslationVersion(const AnsiString FileName,
+  void __fastcall CheckTranslationVersion(const UnicodeString FileName,
     bool InternalLocaleOnError);
   virtual void __fastcall DefaultLocalized();
   bool __fastcall DetectRegistryStorage(HKEY RootKey);
   bool __fastcall CanWriteToStorage();
+  bool __fastcall DoIsBeta(const UnicodeString & ReleaseType);
 
 public:
   __fastcall TWinConfiguration();
@@ -411,31 +434,38 @@ public:
   virtual void __fastcall Default();
   void __fastcall ClearTemporaryLoginData();
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
-  AnsiString __fastcall TemporaryDir(bool Mask = false);
+  UnicodeString __fastcall TemporaryDir(bool Mask = false);
   TStrings * __fastcall FindTemporaryFolders();
   void __fastcall CleanupTemporaryFolders(TStrings * Folders = NULL);
   void __fastcall CheckDefaultTranslation();
   const TEditorPreferences * __fastcall DefaultEditorForFile(
-    const AnsiString FileName, bool Local, const TFileMasks::TParams & MaskParams);
-  virtual AnsiString __fastcall DecryptPassword(AnsiString Password, AnsiString Key);
-  virtual AnsiString __fastcall StronglyRecryptPassword(AnsiString Password, AnsiString Key);
-  void __fastcall SetMasterPassword(AnsiString value);
-  bool __fastcall ValidateMasterPassword(AnsiString value);
+    const UnicodeString FileName, bool Local, const TFileMasks::TParams & MaskParams);
+  virtual UnicodeString __fastcall DecryptPassword(RawByteString Password, UnicodeString Key);
+  virtual RawByteString __fastcall StronglyRecryptPassword(RawByteString Password, UnicodeString Key);
+  void __fastcall SetMasterPassword(UnicodeString value);
+  bool __fastcall ValidateMasterPassword(UnicodeString value);
   void __fastcall ClearMasterPassword();
   virtual void __fastcall AskForMasterPasswordIfNotSet();
+  void __fastcall AddSessionToJumpList(UnicodeString SessionName);
+  void __fastcall DeleteSessionFromJumpList(UnicodeString SessionName);
+  void __fastcall UpdateJumpList();
+  virtual void __fastcall UpdateStaticUsage();
 
   __property TScpCommanderConfiguration ScpCommander = { read = FScpCommander, write = SetScpCommander };
   __property TScpExplorerConfiguration ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property bool SelectDirectories = { read = FSelectDirectories, write = SetSelectDirectories };
-  __property AnsiString SelectMask = { read = FSelectMask, write = FSelectMask };
+  __property UnicodeString SelectMask = { read = FSelectMask, write = FSelectMask };
   __property bool ShowHiddenFiles = { read = FShowHiddenFiles, write = SetShowHiddenFiles };
+  __property bool FormatSizeBytes = { read = FFormatSizeBytes, write = SetFormatSizeBytes };
   __property bool ShowInaccesibleDirectories = { read = FShowInaccesibleDirectories, write = SetShowInaccesibleDirectories };
   __property TEditorConfiguration Editor = { read = FEditor, write = SetEditor };
   __property TQueueViewConfiguration QueueView = { read = FQueueView, write = SetQueueView };
+  __property bool EnableQueueByDefault = { read = FEnableQueueByDefault, write = SetEnableQueueByDefault };
   __property TUpdatesConfiguration Updates = { read = GetUpdates, write = SetUpdates };
-  __property AnsiString VersionHistory = { read = FVersionHistory, write = SetVersionHistory };
+  __property UnicodeString VersionHistory = { read = FVersionHistory, write = SetVersionHistory };
   __property bool AnyBetaInVersionHistory = { read = GetAnyBetaInVersionHistory };
-  __property AnsiString AutoStartSession = { read = FAutoStartSession, write = SetAutoStartSession };
+  __property bool IsBeta = { read = GetIsBeta };
+  __property UnicodeString AutoStartSession = { read = FAutoStartSession, write = SetAutoStartSession };
   __property TDoubleClickAction DoubleClickAction = { read = FDoubleClickAction, write = SetDoubleClickAction };
   __property bool CopyOnDoubleClickConfirmation = { read = FCopyOnDoubleClickConfirmation, write = SetCopyOnDoubleClickConfirmation };
   __property bool DDAllowMove = { read = FDDAllowMove, write = SetDDAllowMove };
@@ -445,20 +475,20 @@ public:
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool DimmHiddenFiles = { read = FDimmHiddenFiles, write = SetDimmHiddenFiles };
   __property bool RenameWholeName = { read = FRenameWholeName, write = SetRenameWholeName };
-  __property AnsiString LogWindowParams = { read = FLogWindowParams, write = SetLogWindowParams };
+  __property UnicodeString LogWindowParams = { read = FLogWindowParams, write = SetLogWindowParams };
   __property bool ConfirmTransferring = { read = FConfirmTransferring, write = SetConfirmTransferring};
   __property bool ConfirmDeleting = { read = FConfirmDeleting, write = SetConfirmDeleting};
   __property bool ConfirmRecycling = { read = FConfirmRecycling, write = SetConfirmRecycling};
   __property bool UseLocationProfiles = { read = FUseLocationProfiles, write = SetUseLocationProfiles};
   __property bool UseSharedBookmarks = { read = FUseSharedBookmarks, write = SetUseSharedBookmarks};
-  __property AnsiString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
+  __property UnicodeString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
   __property bool DDWarnLackOfTempSpace  = { read=FDDWarnLackOfTempSpace, write=SetDDWarnLackOfTempSpace };
   __property bool DDExtEnabled = { read=FDDExtEnabled, write=SetDDExtEnabled };
   __property bool DDExtInstalled = { read=GetDDExtInstalled };
   __property int DDExtTimeout = { read=FDDExtTimeout, write=SetDDExtTimeout };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };
   __property double DDWarnLackOfTempSpaceRatio  = { read=FDDWarnLackOfTempSpaceRatio, write=SetDDWarnLackOfTempSpaceRatio };
-  __property TBookmarkList * Bookmarks[AnsiString Key] = { read = GetBookmarks, write = SetBookmarks };
+  __property TBookmarkList * Bookmarks[UnicodeString Key] = { read = GetBookmarks, write = SetBookmarks };
   __property TBookmarkList * SharedBookmarks = { read = GetSharedBookmarks, write = SetSharedBookmarks };
   __property bool EmbeddedSessions = { read = FEmbeddedSessions };
   __property bool ExpertMode = { read = FExpertMode, write = SetExpertMode };
@@ -471,20 +501,24 @@ public:
   __property bool TemporaryDirectoryCleanup = { read = FTemporaryDirectoryCleanup, write = SetTemporaryDirectoryCleanup };
   __property bool ConfirmTemporaryDirectoryCleanup = { read = FConfirmTemporaryDirectoryCleanup, write = SetConfirmTemporaryDirectoryCleanup };
   __property bool PreservePanelState = { read = FPreservePanelState, write = SetPreservePanelState };
-  __property AnsiString Theme = { read = FTheme, write = SetTheme };
+  __property UnicodeString Theme = { read = FTheme, write = SetTheme };
+  __property UnicodeString LastStoredSession = { read = FLastStoredSession, write = SetLastStoredSession };
   __property TPathInCaption PathInCaption = { read = FPathInCaption, write = SetPathInCaption };
   __property bool MinimizeToTray = { read = FMinimizeToTray, write = SetMinimizeToTray };
   __property bool BalloonNotifications = { read = FBalloonNotifications, write = SetBalloonNotifications };
   __property unsigned int NotificationsTimeout = { read = FNotificationsTimeout, write = SetNotificationsTimeout };
   __property unsigned int NotificationsStickTime = { read = FNotificationsStickTime, write = SetNotificationsStickTime };
-  __property AnsiString DefaultTranslationFile = { read = FDefaultTranslationFile };
+  __property UnicodeString DefaultTranslationFile = { read = FDefaultTranslationFile };
   __property bool CopyParamAutoSelectNotice = { read = FCopyParamAutoSelectNotice, write = SetCopyParamAutoSelectNotice };
-  __property bool SessionToolbarAutoShown = { read = FSessionToolbarAutoShown, write = SetSessionToolbarAutoShown };
   __property bool LockToolbars = { read = FLockToolbars, write = SetLockToolbars };
   __property bool AutoOpenInPutty = { read = FAutoOpenInPutty, write = SetAutoOpenInPutty };
+  __property bool RefreshRemotePanel = { read = FRefreshRemotePanel, write = SetRefreshRemotePanel };
+  __property TDateTime RefreshRemotePanelInterval = { read = FRefreshRemotePanelInterval, write = SetRefreshRemotePanelInterval };
+  __property bool FullRowSelect = { read = FFullRowSelect, write = SetFullRowSelect };
   __property int LastMonitor = { read = GetLastMonitor, write = SetLastMonitor };
   __property const TEditorList * EditorList = { read = GetEditorList, write = SetEditorList };
-  __property AnsiString DefaultKeyFile = { read = GetDefaultKeyFile, write = FDefaultKeyFile };
+  __property UnicodeString DefaultKeyFile = { read = GetDefaultKeyFile, write = FDefaultKeyFile };
+  __property UnicodeString OpenedStoredSessionFolders = { read = FOpenedStoredSessionFolders, write = SetOpenedStoredSessionFolders };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
 };
 //---------------------------------------------------------------------------
@@ -497,14 +531,14 @@ public:
   TCustomCommandType & operator=(const TCustomCommandType & Other);
   bool __fastcall Equals(const TCustomCommandType * Other) const;
 
-  __property AnsiString Name = { read = FName, write = FName };
-  __property AnsiString Command = { read = FCommand, write = FCommand };
+  __property UnicodeString Name = { read = FName, write = FName };
+  __property UnicodeString Command = { read = FCommand, write = FCommand };
   __property int Params = { read = FParams, write = FParams };
   __property TShortCut ShortCut = { read = FShortCut, write = FShortCut };
 
 private:
-  AnsiString FName;
-  AnsiString FCommand;
+  UnicodeString FName;
+  UnicodeString FCommand;
   int FParams;
   TShortCut FShortCut;
 };
@@ -521,14 +555,14 @@ public:
   void __fastcall Modify();
 
   void __fastcall Clear();
-  void __fastcall Add(const AnsiString Name, const AnsiString Command, int Params);
+  void __fastcall Add(const UnicodeString Name, const UnicodeString Command, int Params);
   void __fastcall Add(TCustomCommandType * Command);
   void __fastcall Insert(int Index, TCustomCommandType * Command);
   void __fastcall Change(int Index, TCustomCommandType * Command);
   void __fastcall Move(int CurIndex, int NewIndex);
   void __fastcall Delete(int Index);
 
-  const TCustomCommandType * Find(const AnsiString Name) const;
+  const TCustomCommandType * Find(const UnicodeString Name) const;
   const TCustomCommandType * Find(TShortCut ShortCut) const;
 
   bool __fastcall Equals(const TCustomCommandList * Other) const;

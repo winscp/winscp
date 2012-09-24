@@ -2,19 +2,18 @@
 #ifndef PropertiesH
 #define PropertiesH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <ComCtrls.hpp>
-#include <PathLabel.hpp>
-
+#include "PathLabel.hpp"
+#include "Rights.h"
+#include "RightsExt.h"
+#include <System.Classes.hpp>
+#include <Vcl.ComCtrls.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.Forms.hpp>
+#include <Vcl.Graphics.hpp>
+#include <Vcl.Menus.hpp>
+#include <Vcl.StdCtrls.hpp>
+//----------------------------------------------------------------------------
 #include "Rights.h"
 #include "RightsExt.h"
 #include <Menus.hpp>
@@ -94,22 +93,22 @@ private:
   bool __fastcall ChecksumSupported();
   void __fastcall ResetChecksum();
   void __fastcall CalculatedChecksum(
-    const AnsiString & FileName, const AnsiString & Alg, const AnsiString & Hash);
+    const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Hash);
   void __fastcall SetFileProperties(const TRemoteProperties & value);
   TRemoteProperties __fastcall GetFileProperties();
 
 protected:
   void __fastcall LoadInfo();
   void __fastcall LoadRemoteTokens(TComboBox * ComboBox, const TRemoteTokenList * List);
-  AnsiString __fastcall LoadRemoteToken(const TRemoteToken & Token);
+  UnicodeString __fastcall LoadRemoteToken(const TRemoteToken & Token);
   void __fastcall LoadRemoteToken(TComboBox * ComboBox, bool Valid, const TRemoteToken & Token);
   TRemoteToken __fastcall StoreRemoteToken(const TRemoteToken & Orig,
-    AnsiString Text, int Message, const TRemoteTokenList * List);
+    UnicodeString Text, int Message, const TRemoteTokenList * List);
   void __fastcall StoreRemoteToken(TComboBox * ComboBox,
     int ChangeFlag, TValidProperty PropertyFlag, const TRemoteToken & Orig,
     TRemoteToken & Token, int Message, const TRemoteTokenList * List,
     TRemoteProperties & Properties);
-  void __fastcall StoreRemoteToken(unsigned int ID, const AnsiString & Text,
+  void __fastcall StoreRemoteToken(unsigned int ID, const UnicodeString & Text,
     const TRemoteTokenList * List, TRemoteToken & Result);
   void __fastcall ResolveRemoteToken(
     const TRemoteToken & Orig, int Message, TComboBox * ComboBox,
@@ -119,7 +118,7 @@ protected:
 
 public:
   virtual __fastcall TPropertiesDialog(TComponent * AOwner,
-    TStrings * FileList, const AnsiString Directory,
+    TStrings * FileList, const UnicodeString Directory,
     const TRemoteTokenList * GroupList, const TRemoteTokenList * UserList,
     int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);

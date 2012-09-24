@@ -2,9 +2,9 @@
 #ifndef DragExtH
 #define DragExtH
 //---------------------------------------------------------------------------
-#define DRAG_EXT_MAPPING "WinSCPDragExtMapping"
-#define DRAG_EXT_MUTEX "WinSCPDragExtMutex"
-#define DRAG_EXT_DUMMY_DIR_PREFIX "scp"
+#define DRAG_EXT_MAPPING L"WinSCPDragExtMapping"
+#define DRAG_EXT_MUTEX L"WinSCPDragExtMutex"
+#define DRAG_EXT_DUMMY_DIR_PREFIX L"scp"
 #define DRAG_EXT_DUMMY_DIR_PREFIX_LEN 3
 //---------------------------------------------------------------------------
 DEFINE_GUID(CLSID_ShellExtension, 0xe15e1d68, 0x0d1c, 0x49f7,
@@ -16,14 +16,15 @@ struct TDragExtCommStruct
   enum TVersion
   {
     Version0 = 0,
-    CurrentVersion = Version0,
-    MinVersion = Version0,
+    Version1 = 1,
+    CurrentVersion = Version1,
+    MinVersion = Version1,
     MaxVersion = CurrentVersion
   };
 
   int Version;
   bool Dragging;
-  char DropDest[MAX_PATH];
+  wchar_t DropDest[MAX_PATH];
 };
 #pragma pack(pop)
 //---------------------------------------------------------------------------

@@ -2,18 +2,11 @@
 #ifndef OpenDirectoryH
 #define OpenDirectoryH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <Mask.hpp>
-#include <ComboEdit.hpp>
+#include "IEComboBox.hpp"
+#include <System.Classes.hpp>
+#include <Vcl.ComCtrls.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.StdCtrls.hpp>
 
 #include <FileOperationProgress.h>
 #include <Terminal.h>
@@ -78,7 +71,7 @@ public:
 
   bool __fastcall Execute();
 
-  __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
+  __property UnicodeString Directory = { read = GetDirectory, write = SetDirectory };
   __property TOperationSide OperationSide = { read = FOperationSide, write = SetOperationSide };
   __property TStrings * Directories  = { read=GetDirectories, write=SetDirectories };
   __property TOpenDirectoryMode Mode = { read = FMode, write = SetMode };
@@ -88,7 +81,7 @@ public:
 protected:
   bool __fastcall AllowBookmarkDrag(TObject * Sender, int X, int Y);
   void __fastcall BookmarkMove(TObject * Sender, int Source, int Dest);
-  Integer __fastcall FindBookmark(TListBox * BookmarksList, const AnsiString Bookmark);
+  Integer __fastcall FindBookmark(TListBox * BookmarksList, const UnicodeString Bookmark);
   void __fastcall UpdateControls(bool ListBoxUpdate = false);
   void __fastcall AddAsBookmark(TObject * Sender);
   void __fastcall RemoveBookmark(TObject * Sender);
@@ -105,8 +98,8 @@ private:
   TListBoxScrollOnDragOver * FSessionScrollOnDragOver;
   TListBoxScrollOnDragOver * FSharedScrollOnDragOver;
 
-  void __fastcall SetDirectory(AnsiString value);
-  AnsiString __fastcall GetDirectory();
+  void __fastcall SetDirectory(UnicodeString value);
+  UnicodeString __fastcall GetDirectory();
   TWinControl * __fastcall GetCurrentEdit();
   void __fastcall SetOperationSide(TOperationSide value);
   void __fastcall SetDirectories(TStrings * value);
@@ -124,8 +117,8 @@ private:
     TButton * UpBookmarkButton, TButton * DownBookmarkButton,
     TListBox * BookmarksList, bool ListBoxUpdate);
   void __fastcall BookmarkSelected(TObject * Sender);
-  inline AnsiString __fastcall BookmarkDirectory(TBookmark * Bookmark);
-  AnsiString __fastcall BookmarkText(TBookmark * Bookmark);
+  inline UnicodeString __fastcall BookmarkDirectory(TBookmark * Bookmark);
+  UnicodeString __fastcall BookmarkText(TBookmark * Bookmark);
   inline TBookmark * __fastcall GetBookmark(TListBox * BookmarksList, int Index);
 };
 //----------------------------------------------------------------------------

@@ -38,6 +38,7 @@ CApiLog::CApiLog()
 	m_hTargetWnd=0;
 	m_pApiLogParent=0;
 	m_nDebugLevel=0;
+	m_nLogMessage=0;
 }
 
 CApiLog::~CApiLog()
@@ -68,7 +69,7 @@ BOOL CApiLog::InitLog(HWND hTargetWnd, int nLogMessage)
 
 void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
 {
-	ASSERT(nMessageType>=0 || nMessageType<=8);
+	ASSERT(nMessageType>=0 && nMessageType<=8);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
 		return;
@@ -89,7 +90,7 @@ void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
 
 void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
 {
-	ASSERT(nMessageType>=0 || nMessageType<=8);
+	ASSERT(nMessageType>=0 && nMessageType<=8);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
 		return;
@@ -103,7 +104,7 @@ void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
 
 void CApiLog::LogMessage(int nMessageType, UINT nFormatID, ...) const
 {
-	ASSERT(nMessageType>=0 || nMessageType<=8);
+	ASSERT(nMessageType>=0 && nMessageType<=8);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
 		return;
@@ -127,15 +128,15 @@ void CApiLog::LogMessage(int nMessageType, UINT nFormatID, ...) const
 
 void CApiLog::LogMessage(CString SourceFile, int nSourceLine, void *pInstance, int nMessageType, LPCTSTR pMsgFormat, ...) const
 {
-	ASSERT(nMessageType>=4 || nMessageType<=8);
+	ASSERT(nMessageType>=4 && nMessageType<=8);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	ASSERT(nSourceLine>0);
 
 
-	int pos=SourceFile.ReverseFind('\\');
+	int pos=SourceFile.ReverseFind(_MPT('\\'));
 	if (pos!=-1)
 		SourceFile=SourceFile.Mid(pos+1);
-	
+
 	va_list ap;
     
 	va_start(ap, pMsgFormat);
@@ -163,11 +164,11 @@ BOOL CApiLog::PostMessage(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) con
 
 void CApiLog::LogMessageRaw(CString SourceFile, int nSourceLine, void *pInstance, int nMessageType, LPCTSTR pMsg) const
 {
-	ASSERT(nMessageType>=4 || nMessageType<=8);
+	ASSERT(nMessageType>=4 && nMessageType<=8);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	ASSERT(nSourceLine>0);
 
-	int pos=SourceFile.ReverseFind('\\');
+	int pos=SourceFile.ReverseFind(_MPT('\\'));
 	if (pos!=-1)
 		SourceFile=SourceFile.Mid(pos+1);
 	

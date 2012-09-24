@@ -51,9 +51,7 @@ __published:
   TTBXToolbar *SessionToolbar;
   TTBXItem *TBXItem123;
   TTBXSeparatorItem *TBXSeparatorItem34;
-  TTBXComboBoxItem *SessionCombo;
   TTBXItem *TBXItem124;
-  TTBXSeparatorItem *TBXSeparatorItem35;
   TTBXSubmenuItem *TBXSubmenuItem23;
   TTBXItem *TBXItem125;
   TTBXToolbar *PreferencesToolbar;
@@ -171,6 +169,7 @@ __published:
   TTBXItem *TBXItem45;
   TTBXSubmenuItem *QueueSubmenuItem;
   TTBXItem *TBXItem46;
+  TTBXItem *QueueEnableItem2;
   TTBXSeparatorItem *TBXSeparatorItem10;
   TTBXItem *TBXItem47;
   TTBXItem *TBXItem48;
@@ -381,6 +380,8 @@ __published:
   TTBXItem *TBXItem224;
   TTBXItem *TBXItem210;
   TTBXItem *TBXItem227;
+  TTBXItem *TBXItem228;
+  TTBXItem *TBXItem229;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -394,10 +395,10 @@ __published:
   void __fastcall LocalFileControlDDDragOver(TObject *Sender, int grfKeyState,
     TPoint &Point, int &dwEffect);
   void __fastcall LocalFileControlDDFileOperation(TObject *Sender,
-    int dwEffect, AnsiString SourcePath, AnsiString TargetPath,
+    int dwEffect, UnicodeString SourcePath, UnicodeString TargetPath,
     bool &DoOperation);
   void __fastcall RemoteFileControlDDFileOperationExecuted(TObject *Sender,
-    int dwEffect, AnsiString SourcePath, AnsiString TargetPath);
+    int dwEffect, UnicodeString SourcePath, UnicodeString TargetPath);
   void __fastcall LocalDirViewDDTargetHasDropHandler(TObject *Sender,
     TListItem *Item, int &Effect, bool &DropHandler);
   void __fastcall LocalFileControlDDMenuPopup(TObject *Sender, HMENU AMenu,
@@ -410,11 +411,11 @@ __published:
     bool &Active);
   void __fastcall LocalDriveViewEnter(TObject *Sender);
   void __fastcall LocalPathLabelPathClick(TCustomPathLabel *Sender,
-    AnsiString Path);
+    UnicodeString Path);
   void __fastcall RemotePathLabelPathClick(TCustomPathLabel *Sender,
-    AnsiString Path);
+    UnicodeString Path);
   void __fastcall LocalDirViewFileIconForName(TObject *Sender,
-          TListItem *Item, AnsiString &FileName);
+          TListItem *Item, UnicodeString &FileName);
   void __fastcall LocalDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
@@ -424,7 +425,7 @@ __published:
   void __fastcall LocalDirViewPathChange(TCustomDirView *Sender);
   void __fastcall LocalPathComboBoxCancel(TObject *Sender);
   void __fastcall LocalPathComboBoxAdjustImageIndex(
-    TTBXComboBoxItem * Sender, const AnsiString AText, int AIndex, int & ImageIndex);
+    TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
   void __fastcall LocalPathComboBoxItemClick(TObject * Sender);
   void __fastcall CommandLineComboPopup(TTBCustomItem *Sender,
           bool FromLink);
@@ -437,15 +438,16 @@ __published:
           bool &Cancel);
 
 private:
-  float FLastLeftPanelWidth;
-  float FLeftPanelWidth;
+  bool FConstructed;
+  double FLastLeftPanelWidth;
+  double FLeftPanelWidth;
   int FNormalPanelsWidth;
   int FLastWidth;
   bool FSynchronisingBrowse;
   TStrings * FInternalDDDownloadList;
-  AnsiString FPrevPath[2];
+  UnicodeString FPrevPath[2];
   bool FFirstTerminal;
-  AnsiString FDDExtTarget;
+  UnicodeString FDDExtTarget;
   bool FCommandLineComboPopulated;
   TStrings* FLocalPathComboBoxPaths;
   unsigned int FSpecialFolders;
@@ -453,8 +455,8 @@ private:
   TWndMethod FToolbarEditOldWndProc;
   bool FPanelsRestored;
 
-  void __fastcall SetLeftPanelWidth(float value);
-  float __fastcall GetLeftPanelWidth();
+  void __fastcall SetLeftPanelWidth(double value);
+  double __fastcall GetLeftPanelWidth();
   inline TPanel * __fastcall Panel(bool Left);
   TPanel * __fastcall CurrentPanel();
   void __fastcall CommandLineComboEditWndProc(TMessage & Message);
@@ -463,7 +465,7 @@ private:
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
-    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
+    UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   TControl * __fastcall GetComponent(Byte Component);
@@ -478,8 +480,8 @@ protected:
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode,
     TOperationSide Side);
-  bool __fastcall InternalDDDownload(AnsiString & TargetDirectory);
-  virtual bool __fastcall DDGetTarget(AnsiString & Directory);
+  bool __fastcall InternalDDDownload(UnicodeString & TargetDirectory);
+  virtual bool __fastcall DDGetTarget(UnicodeString & Directory, bool & Internal);
   virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
   virtual void __fastcall SideEnter(TOperationSide Side);
   void __fastcall SaveCommandLine();
@@ -495,23 +497,23 @@ protected:
   virtual void __fastcall BatchStart(void *& Storage);
   virtual void __fastcall BatchEnd(void * Storage);
   virtual bool __fastcall IsFileControl(TObject * Control, TOperationSide Side);
-  virtual void __fastcall ReloadLocalDirectory(const AnsiString Directory = "");
+  virtual void __fastcall ReloadLocalDirectory(const UnicodeString Directory = L"");
   virtual bool __fastcall PanelOperation(TOperationSide Side, bool DragDrop);
   virtual void __fastcall DoDirViewLoaded(TCustomDirView * Sender);
   virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
   virtual void __fastcall UpdateSessionData(TSessionData * Data);
   void __fastcall SynchronizeBrowsing(TCustomDirView * ADirView);
-  void __fastcall SynchronizeBrowsing(TCustomDirView * ADirView, AnsiString PrevPath,
-    AnsiString & NewPath, bool Create);
-  void __fastcall SynchronizeBrowsingLocal(AnsiString PrevPath, AnsiString & NewPath, bool Create);
-  void __fastcall SynchronizeBrowsingRemote(AnsiString PrevPath, AnsiString & NewPath, bool Create);
+  void __fastcall SynchronizeBrowsing(TCustomDirView * ADirView, UnicodeString PrevPath,
+    UnicodeString & NewPath, bool Create);
+  void __fastcall SynchronizeBrowsingLocal(UnicodeString PrevPath, UnicodeString & NewPath, bool Create);
+  void __fastcall SynchronizeBrowsingRemote(UnicodeString PrevPath, UnicodeString & NewPath, bool Create);
   void __fastcall LocalPathComboUpdateDrives();
   void __fastcall LocalPathComboUpdate();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
-  void __fastcall DoOpenBookmark(AnsiString Local, AnsiString Remote);
-  virtual bool __fastcall OpenBookmark(AnsiString Local, AnsiString Remote);
-  virtual void __fastcall DoFocusRemotePath(AnsiString Path);
-  AnsiString __fastcall ChangeFilePath(AnsiString Path, TOperationSide Side);
+  void __fastcall DoOpenBookmark(UnicodeString Local, UnicodeString Remote);
+  virtual bool __fastcall OpenBookmark(UnicodeString Local, UnicodeString Remote);
+  virtual void __fastcall DoFocusRemotePath(UnicodeString Path);
+  UnicodeString __fastcall ChangeFilePath(UnicodeString Path, TOperationSide Side);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
@@ -528,13 +530,13 @@ public:
   virtual void __fastcall ExploreLocalDirectory();
   virtual void __fastcall GoToCommandLine();
   virtual void __fastcall GoToTree();
-  virtual void __fastcall OpenConsole(AnsiString Command = "");
-  virtual AnsiString __fastcall PathForCaption();
+  virtual void __fastcall OpenConsole(UnicodeString Command = L"");
+  virtual UnicodeString __fastcall PathForCaption();
   virtual void __fastcall BeforeAction();
   virtual void __fastcall HomeDirectory(TOperationSide Side);
   virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
 
-  __property float LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
+  __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };
 //---------------------------------------------------------------------------
 #endif

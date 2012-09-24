@@ -22,8 +22,8 @@
 #endif
 //---------------------------------------------------------------------
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
-  TSynchronizeMode Mode, int Params, const AnsiString LocalDirectory,
-  const AnsiString RemoteDirectory, TCustomCommandMenuEvent OnCustomCommandMenu)
+  TSynchronizeMode Mode, int Params, const UnicodeString LocalDirectory,
+  const UnicodeString RemoteDirectory, TCustomCommandMenuEvent OnCustomCommandMenu)
 {
   bool Result;
   TSynchronizeChecklistDialog * Dialog = new TSynchronizeChecklistDialog(
@@ -41,7 +41,7 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   TComponent * AOwner, TSynchronizeMode Mode, int Params,
-  const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu)
   : TForm(AOwner)
 {
@@ -98,15 +98,15 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
       CustomWinConfiguration->SynchronizeChecklist;
     FormConfiguration.ListParams = ListView->ColProperties->ParamsStr;
 
-    AnsiString WindowParams = FormConfiguration.WindowParams;
+    UnicodeString WindowParams = FormConfiguration.WindowParams;
     // if there is no main window, keep previous "custom pos" indication,
-    bool CustomPos = (StrToIntDef(::CutToChar(WindowParams, ';', true), 0) != 0);
+    bool CustomPos = (StrToIntDef(::CutToChar(WindowParams, L';', true), 0) != 0);
     if (Application->MainForm != NULL)
     {
       CustomPos = (Application->MainForm->BoundsRect != BoundsRect);
     }
     FormConfiguration.WindowParams =
-      FORMAT("%d;%s", ((CustomPos ? 1 : 0), StoreForm(this)));
+      FORMAT(L"%d;%s", ((CustomPos ? 1 : 0), StoreForm(this)));
 
     CustomWinConfiguration->SynchronizeChecklist = FormConfiguration;
   }
@@ -166,8 +166,8 @@ void __fastcall TSynchronizeChecklistDialog::CreateParams(TCreateParams & Params
   if (!FFormRestored)
   {
     FFormRestored = True;
-    AnsiString WindowParams = CustomWinConfiguration->SynchronizeChecklist.WindowParams;
-    bool CustomPos = (StrToIntDef(::CutToChar(WindowParams, ';', true), 0) != 0);
+    UnicodeString WindowParams = CustomWinConfiguration->SynchronizeChecklist.WindowParams;
+    bool CustomPos = (StrToIntDef(::CutToChar(WindowParams, L';', true), 0) != 0);
 
     if (!CustomPos && (Application->MainForm != NULL))
     {
@@ -188,7 +188,7 @@ void __fastcall TSynchronizeChecklistDialog::HelpButtonClick(TObject * /*Sender*
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
 {
-  AnsiString S;
+  UnicodeString S;
   const TSynchronizeChecklist::TItem * ChecklistItem = FChecklist->Item[Item->Index];
   Item->Data = const_cast<TSynchronizeChecklist::TItem *>(ChecklistItem);
   Item->Checked = ChecklistItem->Checked;
@@ -211,16 +211,16 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
 
   if (ChecklistItem->Action == TSynchronizeChecklist::saDeleteRemote)
   {
-    Item->SubItems->Add("");
-    Item->SubItems->Add("");
-    Item->SubItems->Add("");
+    Item->SubItems->Add(L"");
+    Item->SubItems->Add(L"");
+    Item->SubItems->Add(L"");
   }
   else
   {
     S = ChecklistItem->Local.Directory;
     if (AnsiSameText(FLocalDirectory, S.SubString(1, FLocalDirectory.Length())))
     {
-      S[1] = '.';
+      S[1] = L'.';
       S.Delete(2, FLocalDirectory.Length() - 1);
     }
     else
@@ -230,38 +230,38 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     Item->SubItems->Add(S);
     if (ChecklistItem->Action == TSynchronizeChecklist::saDownloadNew)
     {
-      Item->SubItems->Add("");
-      Item->SubItems->Add("");
+      Item->SubItems->Add(L"");
+      Item->SubItems->Add(L"");
     }
     else
     {
       if (ChecklistItem->IsDirectory)
       {
-        Item->SubItems->Add("");
+        Item->SubItems->Add(L"");
       }
       else
       {
-        Item->SubItems->Add(FormatFloat("#,##0", ChecklistItem->Local.Size));
+        Item->SubItems->Add(FormatFloat(L"#,##0", ChecklistItem->Local.Size));
       }
       Item->SubItems->Add(UserModificationStr(ChecklistItem->Local.Modification,
         ChecklistItem->Local.ModificationFmt));
     }
   }
 
-  Item->SubItems->Add("");
+  Item->SubItems->Add(L"");
 
   if (ChecklistItem->Action == TSynchronizeChecklist::saDeleteLocal)
   {
-    Item->SubItems->Add("");
-    Item->SubItems->Add("");
-    Item->SubItems->Add("");
+    Item->SubItems->Add(L"");
+    Item->SubItems->Add(L"");
+    Item->SubItems->Add(L"");
   }
   else
   {
     S = ChecklistItem->Remote.Directory;
     if (AnsiSameText(FRemoteDirectory, S.SubString(1, FRemoteDirectory.Length())))
     {
-      S[1] = '.';
+      S[1] = L'.';
       S.Delete(2, FRemoteDirectory.Length() - 1);
     }
     else
@@ -271,18 +271,18 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     Item->SubItems->Add(S);
     if (ChecklistItem->Action == TSynchronizeChecklist::saUploadNew)
     {
-      Item->SubItems->Add("");
-      Item->SubItems->Add("");
+      Item->SubItems->Add(L"");
+      Item->SubItems->Add(L"");
     }
     else
     {
       if (ChecklistItem->IsDirectory)
       {
-        Item->SubItems->Add("");
+        Item->SubItems->Add(L"");
       }
       else
       {
-        Item->SubItems->Add(FormatFloat("#,##0", ChecklistItem->Remote.Size));
+        Item->SubItems->Add(FormatFloat(L"#,##0", ChecklistItem->Remote.Size));
       }
       Item->SubItems->Add(UserModificationStr(ChecklistItem->Remote.Modification,
         ChecklistItem->Remote.ModificationFmt));
@@ -351,41 +351,36 @@ void __fastcall TSynchronizeChecklistDialog::ListViewWindowProc(TMessage & Messa
         reinterpret_cast<TNMLVCustomDraw *>(NotifyMessage.NMHdr);
       if (FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_ITEM) &&
           FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_SUBITEM) &&
-          FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_ITEMPOSTPAINT))
+          FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_ITEMPOSTPAINT) &&
+          (CustomDraw->iSubItem == 4) &&
+          (ActionImages->Width <= ListView->Columns->Items[CustomDraw->iSubItem]->Width))
       {
         TListItem * Item = ListView->Items->Item[CustomDraw->nmcd.dwItemSpec];
-        bool DefaultDraw = true; // not used
-        // do not know how to convert CustomDraw->nmcd.uItemState to TCustomDrawState
-        ListViewAdvancedCustomDrawSubItem(ListView, Item, CustomDraw->iSubItem,
-          TCustomDrawState(), cdPostPaint, DefaultDraw);
+        const TSynchronizeChecklist::TItem * ChecklistItem =
+          static_cast<const TSynchronizeChecklist::TItem *>(Item->Data);
+        TRect R = Item->DisplayRect(drBounds);
+        for (int Index = 0; Index < CustomDraw->iSubItem; Index++)
+        {
+          R.Left += ListView->Columns->Items[Index]->Width;
+        }
+        R.Left +=
+          (ListView->Columns->Items[CustomDraw->iSubItem]->Width - ActionImages->Width) / 2;
+        // doing this from ListViewAdvancedCustomDraw corrupts list view on Windows 7
+        ImageList_Draw(reinterpret_cast<HIMAGELIST>(ActionImages->Handle),
+          int(ChecklistItem->Action), CustomDraw->nmcd.hdc,
+          R.Left, R.Top, ILD_TRANSPARENT);
       }
     }
   }
+
   FOrigListViewWindowProc(Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::ListViewAdvancedCustomDrawSubItem(
-  TCustomListView * /*Sender*/, TListItem * Item, int SubItem,
-  TCustomDrawState /*State*/, TCustomDrawStage Stage, bool & /*DefaultDraw*/)
+  TCustomListView * /*Sender*/, TListItem * /*Item*/, int /*SubItem*/,
+  TCustomDrawState /*State*/, TCustomDrawStage /*Stage*/, bool & /*DefaultDraw*/)
 {
-  if ((SubItem == 4) && (Stage == cdPostPaint))
-  {
-    if (ActionImages->Width <= ListView->Columns->Items[SubItem]->Width)
-    {
-      const TSynchronizeChecklist::TItem * ChecklistItem =
-        static_cast<const TSynchronizeChecklist::TItem *>(Item->Data);
-      TRect R = Item->DisplayRect(drBounds);
-      for (int Index = 0; Index < SubItem; Index++)
-      {
-        R.Left += ListView->Columns->Items[Index]->Width;
-      }
-      R.Left +=
-        (ListView->Columns->Items[SubItem]->Width - ActionImages->Width) / 2;
-      ImageList_Draw(reinterpret_cast<HIMAGELIST>(ActionImages->Handle),
-        int(ChecklistItem->Action), ListView->Canvas->Handle,
-        R.Left, R.Top, ILD_TRANSPARENT);
-    }
-  }
+  // this is just fake handler that makes the list view request custom draw notification above
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
@@ -438,12 +433,12 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
   }
 
   int ImageIndex = Panel->Index;
-  AnsiString PanelText;
+  UnicodeString PanelText;
   if (Possible)
   {
     PanelText = FORMAT(LoadStrPart(SYNCHRONIZE_SELECTED_ACTIONS, 1),
-      (FormatFloat("#,##0", FChecked[Panel->Index]),
-       FormatFloat("#,##0", FTotals[Panel->Index])));
+      (FormatFloat(L"#,##0", FChecked[Panel->Index]),
+       FormatFloat(L"#,##0", FTotals[Panel->Index])));
   }
   else
   {
@@ -471,7 +466,7 @@ int __fastcall TSynchronizeChecklistDialog::PanelAt(int X)
 void __fastcall TSynchronizeChecklistDialog::StatusBarMouseMove(
   TObject * /*Sender*/, TShiftState /*Shift*/, int X, int /*Y*/)
 {
-  AnsiString Hint;
+  UnicodeString Hint;
   int IPanel = PanelAt(X);
 
   if (IPanel >= 0)
@@ -479,7 +474,7 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarMouseMove(
     Hint = StatusBar->Panels->Items[IPanel]->Text;
     if (IPanel > 0)
     {
-      Hint = FORMAT("%s\n%s", (Hint, FGeneralHint));
+      Hint = FORMAT(L"%s\n%s", (Hint, FGeneralHint));
     }
   }
 
@@ -697,7 +692,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
   switch (ColProperties->SortColumn)
   {
     case 0: // name
-      Compare = CompareText(ChecklistItem1->GetFileName(), ChecklistItem2->GetFileName());
+      Compare = AnsiCompareText(ChecklistItem1->GetFileName(), ChecklistItem2->GetFileName());
       break;
 
     // sorting by local and remote dir is the same
@@ -733,17 +728,17 @@ void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
   {
     if (!ChecklistItem1->Local.Directory.IsEmpty())
     {
-      Compare = CompareText(ChecklistItem1->Local.Directory, ChecklistItem2->Local.Directory);
+      Compare = AnsiCompareText(ChecklistItem1->Local.Directory, ChecklistItem2->Local.Directory);
     }
     else
     {
       assert(!ChecklistItem1->Remote.Directory.IsEmpty());
-      Compare = CompareText(ChecklistItem1->Remote.Directory, ChecklistItem2->Remote.Directory);
+      Compare = AnsiCompareText(ChecklistItem1->Remote.Directory, ChecklistItem2->Remote.Directory);
     }
 
     if (Compare == 0)
     {
-      Compare = CompareText(ChecklistItem1->GetFileName(), ChecklistItem2->GetFileName());
+      Compare = AnsiCompareText(ChecklistItem1->GetFileName(), ChecklistItem2->GetFileName());
     }
   }
 
@@ -794,13 +789,13 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsButtonClick(
              (ChecklistItem->Action == TSynchronizeChecklist::saDownloadUpdate));
       assert(ChecklistItem->RemoteFile != NULL);
 
-      AnsiString LocalPath =
+      UnicodeString LocalPath =
         IncludeTrailingBackslash(ChecklistItem->Local.Directory) +
         ChecklistItem->Local.FileName;
 
       LocalFileList->Add(LocalPath);
 
-      AnsiString RemotePath =
+      UnicodeString RemotePath =
         UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) +
         ChecklistItem->Remote.FileName;
 

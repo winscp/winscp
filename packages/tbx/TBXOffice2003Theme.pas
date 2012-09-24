@@ -30,7 +30,7 @@ interface
 //{$DEFINE DOCKPANELGRADIENTCAPTION}
 
 uses
-  Windows, Messages, Graphics, Classes, TBXThemes, ImgList, TBXUxThemes;
+  Windows, Messages, Graphics, Classes, TBXThemes, ImgList, UxTheme;
 
 type
   TItemPart = (ipBody, ipText, ipFrame);

@@ -30,6 +30,7 @@ __published:
   TButton *FocusButton;
   TButton *MinimizeButton;
   TStaticText *MaskHintText;
+  TButton *MaskButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall StartStopButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);
@@ -44,12 +45,13 @@ __published:
   void __fastcall FocusButtonClick(TObject *Sender);
   void __fastcall FileViewSelectItem(TObject *Sender, TListItem *Item,
           bool Selected);
+  void __fastcall MaskButtonClick(TObject *Sender);
 
 public:
   __fastcall TFileFindDialog(TComponent * Owner, TFindEvent OnFind);
   virtual __fastcall ~TFileFindDialog();
 
-  bool __fastcall Execute(AnsiString Directory, AnsiString & Path);
+  bool __fastcall Execute(UnicodeString Directory, UnicodeString & Path);
 
 protected:
   void __fastcall Clear();
@@ -64,14 +66,14 @@ protected:
 private:
   enum { ffInit, ffFinding, ffAborting, ffAborted, ffDone } FState;
   bool FMinimizedByMe;
-  AnsiString FFindingInDirectory;
-  AnsiString FDirectory;
+  UnicodeString FFindingInDirectory;
+  UnicodeString FDirectory;
   TFindEvent FOnFind;
   TImageList * FSystemImageList;
 
   void __fastcall FileFound(TTerminal * Terminal,
-    const AnsiString FileName, const TRemoteFile * File, bool & Cancel);
-  void __fastcall FindingFile(TTerminal * Terminal, const AnsiString Directory,
+    const UnicodeString FileName, const TRemoteFile * File, bool & Cancel);
+  void __fastcall FindingFile(TTerminal * Terminal, const UnicodeString Directory,
     bool & Cancel);
 };
 //---------------------------------------------------------------------------

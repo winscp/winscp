@@ -15,7 +15,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   DesignSize = (
     403
@@ -83,7 +83,6 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       TabOrder = 2
       Text = 'ExternalEditorEdit'
       OnChange = ControlChange
@@ -134,7 +133,6 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
       MaxLength = 1000
       TabOrder = 0
       Text = '*.*'

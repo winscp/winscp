@@ -140,7 +140,7 @@
 //---------------------------------------------------------------------------
 const int SFTPMinVersion = 0;
 const int SFTPMaxVersion = 5;
-const int SFTPNoMessageNumber = -1;
+const unsigned int SFTPNoMessageNumber = static_cast<unsigned int>(-1);
 
 const int asNo =            0;
 const int asOK =            1 << SSH_FX_OK;
@@ -230,7 +230,7 @@ public:
     ChangeType(AType);
   }
 
-  TSFTPPacket(const char * Source, unsigned int Len)
+  TSFTPPacket(const unsigned char * Source, unsigned int Len)
   {
     Init();
     FLength = Len;
@@ -238,7 +238,7 @@ public:
     memcpy(Data, Source, Len);
   }
 
-  TSFTPPacket(const AnsiString & Source)
+  TSFTPPacket(const RawByteString & Source)
   {
     Init();
     FLength = Source.Length();
@@ -307,18 +307,23 @@ public:
     Add(Data, ALength);
   }
 
-  void AddString(const AnsiString Value)
+  void AddString(const RawByteString & Value)
   {
     AddCardinal(Value.Length());
     Add(Value.c_str(), Value.Length());
   }
 
-  inline void AddUtfString(const AnsiString Value)
+  inline void AddUtfString(const UTF8String & Value)
   {
-    AddString(EncodeUTF(Value));
+    AddString(Value);
   }
 
-  inline void AddString(const AnsiString Value, bool Utf)
+  inline void AddUtfString(const UnicodeString & Value)
+  {
+    AddUtfString(UTF8String(Value));
+  }
+
+  inline void AddString(const UnicodeString Value, bool Utf)
   {
     if (Utf)
     {
@@ -326,12 +331,12 @@ public:
     }
     else
     {
-      AddString(Value);
+      AddString(AnsiString(Value));
     }
   }
 
   // now purposeless alias to AddString
-  inline void AddPathString(const AnsiString Value, bool Utf)
+  inline void AddPathString(const UnicodeString & Value, bool Utf)
   {
     AddString(Value, Utf);
   }
@@ -432,7 +437,7 @@ public:
     unsigned short BaseRights, bool IsDirectory, int Version, bool Utf,
     TChmodSessionAction * Action)
   {
-    enum { valNone = 0, valRights = 0x01, valOwner = 0x02, valGroup = 0x04,
+    enum TValid { valNone = 0, valRights = 0x01, valOwner = 0x02, valGroup = 0x04,
       valMTime = 0x08, valATime = 0x10 } Valid = valNone;
     unsigned short RightsNum = 0;
     TRemoteToken Owner;
@@ -444,19 +449,19 @@ public:
     {
       if (Properties->Valid.Contains(vpGroup))
       {
-        Valid |= valGroup;
+        Valid = (TValid)(Valid | valGroup);
         Group = Properties->Group;
       }
 
       if (Properties->Valid.Contains(vpOwner))
       {
-        Valid |= valOwner;
+        Valid = (TValid)(Valid | valOwner);
         Owner = Properties->Owner;
       }
 
       if (Properties->Valid.Contains(vpRights))
       {
-        Valid |= valRights;
+        Valid = (TValid)(Valid | valRights);
         TRights Rights = BaseRights;
         Rights |= Properties->Rights.NumberSet;
         Rights &= (unsigned short)~Properties->Rights.NumberUnset;
@@ -474,13 +479,13 @@ public:
 
       if (Properties->Valid.Contains(vpLastAccess))
       {
-        Valid |= valATime;
+        Valid = (TValid)(Valid | valATime);
         ATime = Properties->LastAccess;
       }
 
       if (Properties->Valid.Contains(vpModification))
       {
-        Valid |= valMTime;
+        Valid = (TValid)(Valid | valMTime);
         MTime = Properties->Modification;
       }
     }
@@ -494,10 +499,10 @@ public:
       NULL, IsDirectory, Version, Utf);
   }
 
-  char GetByte()
+  unsigned char GetByte()
   {
-    Need(sizeof(char));
-    char Result = FData[FPosition];
+    Need(sizeof(unsigned char));
+    unsigned char Result = FData[FPosition];
     FPosition++;
     return Result;
   }
@@ -527,9 +532,9 @@ public:
     return (Hi << 32) + Lo;
   }
 
-  AnsiString GetString()
+  RawByteString GetRawByteString()
   {
-    AnsiString Result;
+    RawByteString Result;
     unsigned long Len = GetCardinal();
     Need(Len);
     // cannot happen anyway as Need() would raise exception
@@ -540,13 +545,26 @@ public:
     return Result;
   }
 
-  inline AnsiString GetUtfString()
+  inline UnicodeString GetUtfString()
   {
-    AnsiString Result = DecodeUTF(GetString());
-    return Result;
+    return UnicodeString(UTF8String(GetRawByteString().c_str()));
   }
 
-  inline AnsiString GetString(bool Utf)
+  // For reading string that are character strings (not byte strings as
+  // as file handles), and SFTP spec does not say explicitly that they
+  // are in UTF. For most of them it actually does not matter as
+  // the content should be pure ASCII (e.g. extension names, etc.)
+  inline UnicodeString GetAnsiString()
+  {
+    return UnicodeString(AnsiString(GetRawByteString().c_str()));
+  }
+
+  inline RawByteString GetFileHandle()
+  {
+    return GetRawByteString();
+  }
+
+  inline UnicodeString GetString(bool Utf)
   {
     if (Utf)
     {
@@ -554,12 +572,12 @@ public:
     }
     else
     {
-      return GetString();
+      return GetAnsiString();
     }
   }
 
-  // now purposeless alias to GetString
-  inline AnsiString GetPathString(bool Utf)
+  // now purposeless alias to GetString(bool)
+  inline UnicodeString GetPathString(bool Utf)
   {
     return GetString(Utf);
   }
@@ -568,7 +586,7 @@ public:
   {
     assert(File);
     unsigned int Flags;
-    AnsiString ListingStr;
+    UnicodeString ListingStr;
     unsigned long Permissions = 0;
     bool ParsingFailed = false;
     if (Type != SSH_FXP_ATTRS)
@@ -576,20 +594,20 @@ public:
       File->FileName = GetPathString(Utf);
       if (Version < 4)
       {
-        ListingStr = GetString();
+        ListingStr = GetAnsiString();
       }
     }
     Flags = GetCardinal();
     if (Version >= 4)
     {
-      char FXType = GetByte();
+      unsigned char FXType = GetByte();
       // -:regular, D:directory, L:symlink, S:special, U:unknown
       // O:socket, C:char devide, B:block device, F:fifo
 
       // SSH-2.0-cryptlib returns file type 0 in response to SSH_FXP_LSTAT,
       // handle this undefined value as "unknown"
-      static char* Types = "U-DLSUOCBF";
-      if (FXType < 0 || FXType > (char)strlen(Types))
+      static wchar_t * Types = L"U-DLSUOCBF";
+      if (FXType > (unsigned char)wcslen(Types))
       {
         throw Exception(FMTLOAD(SFTP_UNKNOWN_FILE_TYPE, (int(FXType))));
       }
@@ -670,7 +688,7 @@ public:
 
     if (Flags & SSH_FILEXFER_ATTR_ACL)
     {
-      GetString();
+      GetRawByteString();
     }
 
     if (Flags & SSH_FILEXFER_ATTR_BITS)
@@ -702,7 +720,7 @@ public:
 
     if (Type == SSH_FXP_ATTRS || Version >= 4 || ParsingFailed)
     {
-      Char Type = '-';
+      wchar_t Type = L'-';
       if (FLAGSET(Flags, SSH_FILEXFER_ATTR_PERMISSIONS))
       {
         File->Rights->Number = (unsigned short)(Permissions & TRights::rfAllSpecials);
@@ -723,8 +741,8 @@ public:
       unsigned int ExtendedCount = GetCardinal();
       for (unsigned int Index = 0; Index < ExtendedCount; Index++)
       {
-        GetString(); // skip extended_type
-        GetString(); // skip extended_data
+        GetRawByteString(); // skip extended_type
+        GetRawByteString(); // skip extended_data
       }
     }
 
@@ -734,7 +752,7 @@ public:
     }
   }
 
-  char * GetNextData(unsigned int Size = 0)
+  unsigned char * GetNextData(unsigned int Size = 0)
   {
     if (Size > 0)
     {
@@ -758,14 +776,14 @@ public:
     }
   }
 
-  void LoadFromFile(const AnsiString FileName)
+  void LoadFromFile(const UnicodeString FileName)
   {
     TStringList * DumpLines = new TStringList();
-    AnsiString Dump;
+    RawByteString Dump;
     try
     {
       DumpLines->LoadFromFile(FileName);
-      Dump = DumpLines->Text;
+      Dump = AnsiString(DumpLines->Text);
     }
     __finally
     {
@@ -773,7 +791,7 @@ public:
     }
 
     Capacity = 20480;
-    char Byte[3];
+    unsigned char Byte[3];
     memset(Byte, '\0', sizeof(Byte));
     int Index = 1;
     unsigned int Length = 0;
@@ -790,7 +808,7 @@ public:
         {
           Byte[1] = C;
           assert(Length < Capacity);
-          Data[Length] = static_cast<unsigned char>(HexToInt(Byte));
+          Data[Length] = HexToByte(UnicodeString(reinterpret_cast<char *>(Byte)));
           Length++;
           memset(Byte, '\0', sizeof(Byte));
         }
@@ -800,15 +818,15 @@ public:
     DataUpdated(Length);
   }
 
-  AnsiString __fastcall Dump() const
+  UnicodeString __fastcall Dump() const
   {
-    AnsiString Result;
+    UnicodeString Result;
     for (unsigned int Index = 0; Index < Length; Index++)
     {
-      Result += CharToHex(Data[Index]) + ",";
+      Result += ByteToHex(Data[Index]) + L",";
       if (((Index + 1) % 25) == 0)
       {
-        Result += "\n";
+        Result += L"\n";
       }
     }
     return Result;
@@ -825,18 +843,18 @@ public:
 
   __property unsigned int Length = { read = FLength };
   __property unsigned int RemainingLength = { read = GetRemainingLength };
-  __property char * Data = { read = FData };
-  __property char * SendData = { read = GetSendData };
+  __property unsigned char * Data = { read = FData };
+  __property unsigned char * SendData = { read = GetSendData };
   __property unsigned int SendLength = { read = GetSendLength };
   __property unsigned int Capacity = { read = FCapacity, write = SetCapacity };
   __property unsigned char Type = { read = FType };
   __property unsigned char RequestType = { read = GetRequestType };
   __property unsigned int MessageNumber = { read = FMessageNumber, write = FMessageNumber };
   __property TSFTPFileSystem * ReservedBy = { read = FReservedBy, write = FReservedBy };
-  __property AnsiString TypeName = { read = GetTypeName };
+  __property UnicodeString TypeName = { read = GetTypeName };
 
 private:
-  char * FData;
+  unsigned char * FData;
   unsigned int FLength;
   unsigned int FCapacity;
   unsigned int FPosition;
@@ -897,7 +915,7 @@ private:
       FCapacity = ACapacity;
       if (FCapacity > 0)
       {
-        char * NData = (new char[FCapacity + FSendPrefixLen]) + FSendPrefixLen;
+        unsigned char * NData = (new unsigned char[FCapacity + FSendPrefixLen]) + FSendPrefixLen;
         if (FData)
         {
           memcpy(NData - FSendPrefixLen, FData - FSendPrefixLen,
@@ -915,9 +933,9 @@ private:
     }
   }
 
-  AnsiString GetTypeName() const
+  UnicodeString GetTypeName() const
   {
-    #define TYPE_CASE(TYPE) case TYPE: return #TYPE
+    #define TYPE_CASE(TYPE) case TYPE: return TEXT(#TYPE)
     switch (Type) {
       TYPE_CASE(SSH_FXP_INIT);
       TYPE_CASE(SSH_FXP_VERSION);
@@ -947,13 +965,13 @@ private:
       TYPE_CASE(SSH_FXP_EXTENDED);
       TYPE_CASE(SSH_FXP_EXTENDED_REPLY);
       default:
-        return FORMAT("Unknown message (%d)", (int(Type)));
+        return FORMAT(L"Unknown message (%d)", (int(Type)));
     }
   }
 
-  char * GetSendData() const
+  unsigned char * GetSendData() const
   {
-    char * Result = FData - FSendPrefixLen;
+    unsigned char * Result = FData - FSendPrefixLen;
     // this is not strictly const-object operation
     PUT_32BIT(Result, Length);
     return Result;
@@ -1041,12 +1059,12 @@ public:
       {
         if (FFileSystem->FTerminal->Active)
         {
-          FFileSystem->FTerminal->LogEvent("Error while disposing the SFTP queue.");
+          FFileSystem->FTerminal->LogEvent(L"Error while disposing the SFTP queue.");
           FFileSystem->FTerminal->Log->AddException(&E);
         }
         else
         {
-          FFileSystem->FTerminal->LogEvent("Fatal error while disposing the SFTP queue.");
+          FFileSystem->FTerminal->LogEvent(L"Fatal error while disposing the SFTP queue.");
           throw;
         }
       }
@@ -1277,7 +1295,7 @@ public:
   {
   }
 
-  bool __fastcall Init(int QueueLen, const AnsiString AHandle, __int64 ATransfered,
+  bool __fastcall Init(int QueueLen, const RawByteString & AHandle,__int64 ATransfered,
     TFileOperationProgressType * AOperationProgress)
   {
     FHandle = AHandle;
@@ -1328,7 +1346,7 @@ protected:
 private:
   TFileOperationProgressType * OperationProgress;
   __int64 FTransfered;
-  AnsiString FHandle;
+  RawByteString FHandle;
 };
 //---------------------------------------------------------------------------
 class TSFTPUploadQueue : public TSFTPAsynchronousQueue
@@ -1349,9 +1367,9 @@ public:
     delete FStream;
   }
 
-  bool __fastcall Init(const AnsiString AFileName,
+  bool __fastcall Init(const UnicodeString AFileName,
     HANDLE AFile, TFileOperationProgressType * AOperationProgress,
-    const AnsiString AHandle, __int64 ATransfered)
+    const RawByteString AHandle, __int64 ATransfered)
   {
     FFileName = AFileName;
     FStream = new TSafeHandleStream((THandle)AFile);
@@ -1382,7 +1400,7 @@ protected:
       Result = !FEnd;
       if (Result)
       {
-        OperationProgress->AddLocalyUsed(BlockBuf.Size);
+        OperationProgress->AddLocallyUsed(BlockBuf.Size);
 
         // We do ASCII transfer: convert EOL of current block
         if (OperationProgress->AsciiTransfer)
@@ -1397,7 +1415,7 @@ protected:
 
         if (FFileSystem->FTerminal->Configuration->ActualLogProtocol >= 1)
         {
-          FFileSystem->FTerminal->LogEvent(FORMAT("Write request offset: %d, len: %d",
+          FFileSystem->FTerminal->LogEvent(FORMAT(L"Write request offset: %d, len: %d",
             (int(FTransfered), int(BlockBuf.Size))));
         }
 
@@ -1444,11 +1462,11 @@ protected:
 private:
   TStream * FStream;
   TFileOperationProgressType * OperationProgress;
-  AnsiString FFileName;
+  UnicodeString FFileName;
   unsigned long FLastBlockSize;
   bool FEnd;
   __int64 FTransfered;
-  AnsiString FHandle;
+  RawByteString FHandle;
   bool FConvertToken;
 };
 //---------------------------------------------------------------------------
@@ -1538,7 +1556,7 @@ public:
     FIndex = 0;
   }
 
-  bool __fastcall Init(int QueueLen, const AnsiString & Alg, TStrings * FileList)
+  bool __fastcall Init(int QueueLen, const UnicodeString & Alg, TStrings * FileList)
   {
     FAlg = Alg;
     FFileList = FileList;
@@ -1606,7 +1624,7 @@ protected:
   }
 
 private:
-  AnsiString FAlg;
+  UnicodeString FAlg;
   TStrings * FFileList;
   int FIndex;
 };
@@ -1635,7 +1653,7 @@ private:
 struct TOpenRemoteFileParams
 {
   int LocalFileAttrs;
-  AnsiString RemoteFileName;
+  UnicodeString RemoteFileName;
   TFileOperationProgressType * OperationProgress;
   const TCopyParamType * CopyParam;
   int Params;
@@ -1643,14 +1661,14 @@ struct TOpenRemoteFileParams
   bool Resuming;
   TSFTPOverwriteMode OverwriteMode;
   __int64 DestFileSize; // output
-  AnsiString RemoteFileHandle; // output
+  RawByteString RemoteFileHandle; // output
   TOverwriteFileParams * FileParams;
   bool Confirmed;
 };
 //---------------------------------------------------------------------------
 struct TSinkFileParams
 {
-  AnsiString TargetDir;
+  UnicodeString TargetDir;
   const TCopyParamType * CopyParam;
   int Params;
   TFileOperationProgressType * OperationProgress;
@@ -1712,41 +1730,41 @@ const TFileSystemInfo & __fastcall TSFTPFileSystem::GetFileSystemInfo(bool /*Ret
 {
   if (!FFileSystemInfoValid)
   {
-    FFileSystemInfo.AdditionalInfo = "";
+    FFileSystemInfo.AdditionalInfo = L"";
 
     if (!IsCapable(fcRename))
     {
-      FFileSystemInfo.AdditionalInfo += LoadStr(FS_RENAME_NOT_SUPPORTED) + "\r\n\r\n";
+      FFileSystemInfo.AdditionalInfo += LoadStr(FS_RENAME_NOT_SUPPORTED) + L"\r\n\r\n";
     }
 
     if (FExtensions->Count > 0)
     {
-      AnsiString Name;
-      AnsiString Value;
-      AnsiString Line;
-      FFileSystemInfo.AdditionalInfo += LoadStr(SFTP_EXTENSION_INFO) + "\r\n";
+      UnicodeString Name;
+      UnicodeString Value;
+      UnicodeString Line;
+      FFileSystemInfo.AdditionalInfo += LoadStr(SFTP_EXTENSION_INFO) + L"\r\n";
       for (int Index = 0; Index < FExtensions->Count; Index++)
       {
-        AnsiString Name = FExtensions->Names[Index];
-        AnsiString Value = FExtensions->Values[Name];
-        AnsiString Line;
+        UnicodeString Name = FExtensions->Names[Index];
+        UnicodeString Value = FExtensions->Values[Name];
+        UnicodeString Line;
         if (Value.IsEmpty())
         {
           Line = Name;
         }
         else
         {
-          Line = FORMAT("%s=%s", (Name, DisplayableStr(Value)));
+          Line = FORMAT(L"%s=%s", (Name, Value));
         }
-        FFileSystemInfo.AdditionalInfo += FORMAT("  %s\r\n", (Line));
+        FFileSystemInfo.AdditionalInfo += FORMAT(L"  %s\r\n", (Line));
       }
     }
     else
     {
-      FFileSystemInfo.AdditionalInfo += LoadStr(SFTP_NO_EXTENSION_INFO) + "\r\n";
+      FFileSystemInfo.AdditionalInfo += LoadStr(SFTP_NO_EXTENSION_INFO) + L"\r\n";
     }
 
-    FFileSystemInfo.ProtocolBaseName = "SFTP";
+    FFileSystemInfo.ProtocolBaseName = L"SFTP";
     FFileSystemInfo.ProtocolName = FMTLOAD(SFTP_PROTOCOL_NAME2, (FVersion));
     for (int Index = 0; Index < fcCount; Index++)
     {
@@ -1759,7 +1777,7 @@ const TFileSystemInfo & __fastcall TSFTPFileSystem::GetFileSystemInfo(bool /*Ret
   return FFileSystemInfo;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSFTPFileSystem::TemporaryTransferFile(const AnsiString & FileName)
+bool __fastcall TSFTPFileSystem::TemporaryTransferFile(const UnicodeString & FileName)
 {
   return AnsiSameText(UnixExtractFileExt(FileName), PARTIAL_EXT);
 }
@@ -1769,7 +1787,7 @@ bool __fastcall TSFTPFileSystem::GetStoredCredentialsTried()
   return FSecureShell->GetStoredCredentialsTried();
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSFTPFileSystem::GetUserName()
+UnicodeString __fastcall TSFTPFileSystem::GetUserName()
 {
   return FSecureShell->UserName;
 }
@@ -1784,7 +1802,7 @@ void __fastcall TSFTPFileSystem::Idle()
         FSecureShell->Ready)
     {
       TSFTPPacket Packet(SSH_FXP_REALPATH);
-      Packet.AddPathString("/", FUtfStrings);
+      Packet.AddPathString(L"/", FUtfStrings);
       SendPacketAndReceiveResponse(&Packet, &Packet);
     }
     else
@@ -1879,7 +1897,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSFTPFileSystem::SupportsExtension(const AnsiString & Extension) const
+bool __fastcall TSFTPFileSystem::SupportsExtension(const UnicodeString & Extension) const
 {
   return FSupport->Loaded && (FSupport->Extensions->IndexOf(Extension) >= 0);
 }
@@ -1962,7 +1980,7 @@ unsigned long __fastcall TSFTPFileSystem::TransferBlockSize(unsigned long Overhe
   return Result;
 }
 //---------------------------------------------------------------------------
-unsigned long __fastcall TSFTPFileSystem::UploadBlockSize(const AnsiString & Handle,
+unsigned long __fastcall TSFTPFileSystem::UploadBlockSize(const RawByteString & Handle,
   TFileOperationProgressType * OperationProgress)
 {
   // handle length + offset + data size
@@ -1997,11 +2015,11 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
       {
         if (FNotLoggedPackets)
         {
-          FTerminal->LogEvent(FORMAT("%d skipped SSH_FXP_WRITE, SSH_FXP_READ, SSH_FXP_DATA and SSH_FXP_STATUS packets.",
+          FTerminal->LogEvent(FORMAT(L"%d skipped SSH_FXP_WRITE, SSH_FXP_READ, SSH_FXP_DATA and SSH_FXP_STATUS packets.",
             (FNotLoggedPackets)));
           FNotLoggedPackets = 0;
         }
-        FTerminal->Log->Add(llInput, FORMAT("Type: %s, Size: %d, Number: %d",
+        FTerminal->Log->Add(llInput, FORMAT(L"Type: %s, Size: %d, Number: %d",
           (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
         if (FTerminal->Configuration->ActualLogProtocol >= 2)
         {
@@ -2069,34 +2087,36 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     {
       Message = Messages[Code];
     }
-    AnsiString MessageStr = LoadStr(Message);
-    AnsiString ServerMessage;
-    AnsiString LanguageTag;
+    UnicodeString MessageStr = LoadStr(Message);
+    UnicodeString ServerMessage;
+    UnicodeString LanguageTag;
     if ((FVersion >= 3) ||
         // if version is not decided yet (i.e. this is status response
-        // to the init request), go on only if there are any more data
+        // to the init request), go on, only if there are any more data
         ((FVersion < 0) && (Packet->RemainingLength > 0)))
     {
       // message is in UTF only since SFTP specification 01 (specification 00
       // is also version 3)
-      // (in other words, always use UTF unless server is know to be buggy)
+      // (in other words, always use UTF unless server is known to be buggy)
       ServerMessage = Packet->GetString(!FUtfNever);
-      // SSH-2.0-Maverick_SSHD omits the language tag
-      // and I believe I've seen one more server doind the same.
-      // On the next instance, we should probably already implement workround.
-      LanguageTag = Packet->GetString();
-      if ((FVersion >= 5) && (Message == SFTP_STATUS_UNKNOWN_PRINCIPAL))
+      // SSH-2.0-Maverick_SSHD and SSH-2.0-CIGNA SFTP Server Ready! omit the language tag
+      // and I believe I've seen one more server doing the same.
+      if (Packet->RemainingLength > 0)
       {
-        AnsiString Principals;
-        while (Packet->GetNextData() != NULL)
+        LanguageTag = Packet->GetAnsiString();
+        if ((FVersion >= 5) && (Message == SFTP_STATUS_UNKNOWN_PRINCIPAL))
         {
-          if (!Principals.IsEmpty())
+          UnicodeString Principals;
+          while (Packet->GetNextData() != NULL)
           {
-            Principals += ", ";
+            if (!Principals.IsEmpty())
+            {
+              Principals += L", ";
+            }
+            Principals += Packet->GetAnsiString();
           }
-          Principals += Packet->GetString();
+          MessageStr = FORMAT(MessageStr, (Principals));
         }
-        MessageStr = FORMAT(MessageStr, (Principals));
       }
     }
     else
@@ -2105,14 +2125,14 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     }
     if (FTerminal->Log->Logging)
     {
-      FTerminal->Log->Add(llOutput, FORMAT("Status code: %d, Message: %d, Server: %s, Language: %s ",
+      FTerminal->Log->Add(llOutput, FORMAT(L"Status code: %d, Message: %d, Server: %s, Language: %s ",
         (int(Code), (int)Packet->MessageNumber, ServerMessage, LanguageTag)));
     }
     if (!LanguageTag.IsEmpty())
     {
-      LanguageTag = FORMAT(" (%s)", (LanguageTag));
+      LanguageTag = FORMAT(L" (%s)", (LanguageTag));
     }
-    AnsiString Error = FMTLOAD(SFTP_ERROR_FORMAT2, (MessageStr,
+    UnicodeString Error = FMTLOAD(SFTP_ERROR_FORMAT2, (MessageStr,
       int(Code), LanguageTag, ServerMessage, int(Packet->RequestType)));
     FTerminal->TerminalError(NULL, Error);
     return 0;
@@ -2121,7 +2141,7 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
   {
     if (!FNotLoggedPackets || Code)
     {
-      FTerminal->Log->Add(llOutput, FORMAT("Status code: %d", ((int)Code)));
+      FTerminal->Log->Add(llOutput, FORMAT(L"Status code: %d", ((int)Code)));
     }
     return Code;
   }
@@ -2142,16 +2162,16 @@ void __fastcall TSFTPFileSystem::RemoveReservation(int Reservation)
   FPacketReservations->Delete(Reservation);
 }
 //---------------------------------------------------------------------------
-inline int __fastcall TSFTPFileSystem::PacketLength(char * LenBuf, int ExpectedType)
+inline int __fastcall TSFTPFileSystem::PacketLength(unsigned char * LenBuf, int ExpectedType)
 {
   int Length = GET_32BIT(LenBuf);
   if (Length > SFTP_MAX_PACKET_LEN)
   {
-    AnsiString Message = FMTLOAD(SFTP_PACKET_TOO_BIG, (
+    UnicodeString Message = FMTLOAD(SFTP_PACKET_TOO_BIG, (
       int(Length), SFTP_MAX_PACKET_LEN));
     if (ExpectedType == SSH_FXP_VERSION)
     {
-      AnsiString LenString(LenBuf, 4);
+      RawByteString LenString(reinterpret_cast<char *>(LenBuf), 4);
       Message = FMTLOAD(SFTP_PACKET_TOO_BIG_INIT_EXPLAIN,
         (Message, DisplayableStr(LenString)));
     }
@@ -2163,7 +2183,7 @@ inline int __fastcall TSFTPFileSystem::PacketLength(char * LenBuf, int ExpectedT
 bool __fastcall TSFTPFileSystem::PeekPacket()
 {
   bool Result;
-  char * Buf;
+  unsigned char * Buf;
   Result = FSecureShell->Peek(Buf, 4);
   if (Result)
   {
@@ -2189,7 +2209,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
       IsReserved = false;
 
       assert(Packet);
-      char LenBuf[4];
+      unsigned char LenBuf[4];
       FSecureShell->Receive(LenBuf, sizeof(LenBuf));
       int Length = PacketLength(LenBuf, ExpectedType);
       Packet->Capacity = Length;
@@ -2205,11 +2225,11 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
         {
           if (FNotLoggedPackets)
           {
-            FTerminal->LogEvent(FORMAT("%d skipped SSH_FXP_WRITE, SSH_FXP_READ, SSH_FXP_DATA and SSH_FXP_STATUS packets.",
+            FTerminal->LogEvent(FORMAT(L"%d skipped SSH_FXP_WRITE, SSH_FXP_READ, SSH_FXP_DATA and SSH_FXP_STATUS packets.",
               (FNotLoggedPackets)));
             FNotLoggedPackets = 0;
           }
-          FTerminal->Log->Add(llOutput, FORMAT("Type: %s, Size: %d, Number: %d",
+          FTerminal->Log->Add(llOutput, FORMAT(L"Type: %s, Size: %d, Number: %d",
             (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
           if (FTerminal->Configuration->ActualLogProtocol >= 2)
           {
@@ -2236,12 +2256,12 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
             IsReserved = true;
             if (ReservedPacket)
             {
-              FTerminal->LogEvent("Storing reserved response");
+              FTerminal->LogEvent(L"Storing reserved response");
               *ReservedPacket = *Packet;
             }
             else
             {
-              FTerminal->LogEvent("Discarding reserved response");
+              FTerminal->LogEvent(L"Discarding reserved response");
               RemoveReservation(Index);
               if ((Reservation >= 0) && (Reservation > Index))
               {
@@ -2364,11 +2384,11 @@ int __fastcall TSFTPFileSystem::SendPacketAndReceiveResponse(
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSFTPFileSystem::RealPath(const AnsiString Path)
+UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
 {
   try
   {
-    FTerminal->LogEvent(FORMAT("Getting real path for '%s'",
+    FTerminal->LogEvent(FORMAT(L"Getting real path for '%s'",
       (Path)));
 
     TSFTPPacket Packet(SSH_FXP_REALPATH);
@@ -2379,10 +2399,10 @@ AnsiString __fastcall TSFTPFileSystem::RealPath(const AnsiString Path)
       FTerminal->FatalError(NULL, LoadStr(SFTP_NON_ONE_FXP_NAME_PACKET));
     }
 
-    AnsiString RealDir = UnixExcludeTrailingBackslash(Packet.GetPathString(FUtfStrings));
+    UnicodeString RealDir = UnixExcludeTrailingBackslash(Packet.GetPathString(FUtfStrings));
     // ignore rest of SSH_FXP_NAME packet
 
-    FTerminal->LogEvent(FORMAT("Real path is '%s'", (RealDir)));
+    FTerminal->LogEvent(FORMAT(L"Real path is '%s'", (RealDir)));
 
     return RealDir;
   }
@@ -2399,10 +2419,10 @@ AnsiString __fastcall TSFTPFileSystem::RealPath(const AnsiString Path)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSFTPFileSystem::RealPath(const AnsiString Path,
-  const AnsiString BaseDir)
+UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path,
+  const UnicodeString BaseDir)
 {
-  AnsiString APath;
+  UnicodeString APath;
 
   if (TTerminal::IsAbsolutePath(Path))
   {
@@ -2420,12 +2440,12 @@ AnsiString __fastcall TSFTPFileSystem::RealPath(const AnsiString Path,
       }
       APath = APath + Path;
     }
-    if (APath.IsEmpty()) APath = UnixIncludeTrailingBackslash(".");
+    if (APath.IsEmpty()) APath = UnixIncludeTrailingBackslash(L".");
   }
   return RealPath(APath);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSFTPFileSystem::LocalCanonify(const AnsiString & Path)
+UnicodeString __fastcall TSFTPFileSystem::LocalCanonify(const UnicodeString & Path)
 {
   // TODO: improve (handle .. etc.)
   if (TTerminal::IsAbsolutePath(Path) ||
@@ -2439,11 +2459,11 @@ AnsiString __fastcall TSFTPFileSystem::LocalCanonify(const AnsiString & Path)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSFTPFileSystem::Canonify(AnsiString Path)
+UnicodeString __fastcall TSFTPFileSystem::Canonify(UnicodeString Path)
 {
   // inspired by canonify() from PSFTP.C
-  AnsiString Result;
-  FTerminal->LogEvent(FORMAT("Canonifying: \"%s\"", (Path)));
+  UnicodeString Result;
+  FTerminal->LogEvent(FORMAT(L"Canonifying: \"%s\"", (Path)));
   Path = LocalCanonify(Path);
   bool TryParent = false;
   try
@@ -2464,15 +2484,15 @@ AnsiString __fastcall TSFTPFileSystem::Canonify(AnsiString Path)
 
   if (TryParent)
   {
-    AnsiString APath = UnixExcludeTrailingBackslash(Path);
-    AnsiString Name = UnixExtractFileName(APath);
-    if (Name == "." || Name == "..")
+    UnicodeString APath = UnixExcludeTrailingBackslash(Path);
+    UnicodeString Name = UnixExtractFileName(APath);
+    if (Name == L"." || Name == L"..")
     {
       Result = Path;
     }
     else
     {
-      AnsiString FPath = UnixExtractFilePath(APath);
+      UnicodeString FPath = UnixExtractFilePath(APath);
       try
       {
         Result = RealPath(FPath);
@@ -2492,12 +2512,12 @@ AnsiString __fastcall TSFTPFileSystem::Canonify(AnsiString Path)
     }
   }
 
-  FTerminal->LogEvent(FORMAT("Canonified: \"%s\"", (Result)));
+  FTerminal->LogEvent(FORMAT(L"Canonified: \"%s\"", (Result)));
 
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSFTPFileSystem::AbsolutePath(AnsiString Path, bool Local)
+UnicodeString __fastcall TSFTPFileSystem::AbsolutePath(UnicodeString Path, bool Local)
 {
   if (Local)
   {
@@ -2509,11 +2529,11 @@ AnsiString __fastcall TSFTPFileSystem::AbsolutePath(AnsiString Path, bool Local)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSFTPFileSystem::GetHomeDirectory()
+UnicodeString __fastcall TSFTPFileSystem::GetHomeDirectory()
 {
   if (FHomeDirectory.IsEmpty())
   {
-    FHomeDirectory = RealPath(".");
+    FHomeDirectory = RealPath(L".");
   }
   return FHomeDirectory;
 }
@@ -2526,7 +2546,7 @@ void __fastcall TSFTPFileSystem::LoadFile(TRemoteFile * File, TSFTPPacket * Pack
 }
 //---------------------------------------------------------------------------
 TRemoteFile * __fastcall TSFTPFileSystem::LoadFile(TSFTPPacket * Packet,
-  TRemoteFile * ALinkedByFile, const AnsiString FileName,
+  TRemoteFile * ALinkedByFile, const UnicodeString FileName,
   TRemoteFileList * TempFileList, bool Complete)
 {
   TRemoteFile * File = new TRemoteFile(ALinkedByFile);
@@ -2550,7 +2570,7 @@ TRemoteFile * __fastcall TSFTPFileSystem::LoadFile(TSFTPPacket * Packet,
   return File;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSFTPFileSystem::GetCurrentDirectory()
+UnicodeString __fastcall TSFTPFileSystem::GetCurrentDirectory()
 {
   return FCurrentDirectory;
 }
@@ -2578,7 +2598,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
   }
 
   FVersion = Packet.GetCardinal();
-  FTerminal->LogEvent(FORMAT("SFTP version %d negotiated.", (FVersion)));
+  FTerminal->LogEvent(FORMAT(L"SFTP version %d negotiated.", (FVersion)));
   if (FVersion < SFTPMinVersion || FVersion > SFTPMaxVersion)
   {
     FTerminal->FatalError(NULL, FMTLOAD(SFTP_VERSION_NOT_SUPPORTED,
@@ -2594,14 +2614,14 @@ void __fastcall TSFTPFileSystem::DoStartup()
   {
     while (Packet.GetNextData() != NULL)
     {
-      AnsiString ExtensionName = Packet.GetString();
-      AnsiString ExtensionData = Packet.GetString();
-      AnsiString ExtensionDisplayData = DisplayableStr(ExtensionData);
+      UnicodeString ExtensionName = Packet.GetAnsiString();
+      RawByteString ExtensionData = Packet.GetRawByteString();
+      UnicodeString ExtensionDisplayData = DisplayableStr(ExtensionData);
 
       if (ExtensionName == SFTP_EXT_NEWLINE)
       {
-        FEOL = ExtensionData;
-        FTerminal->LogEvent(FORMAT("Server requests EOL sequence %s.",
+        FEOL = AnsiString(ExtensionData.c_str());
+        FTerminal->LogEvent(FORMAT(L"Server requests EOL sequence %s.",
           (ExtensionDisplayData)));
         if (FEOL.Length() < 1 || FEOL.Length() > 2)
         {
@@ -2624,7 +2644,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
         {
           while (SupportedStruct.GetNextData() != NULL)
           {
-            FSupport->Extensions->Add(SupportedStruct.GetString());
+            FSupport->Extensions->Add(SupportedStruct.GetAnsiString());
           }
         }
         else
@@ -2635,21 +2655,21 @@ void __fastcall TSFTPFileSystem::DoStartup()
           ExtensionCount = SupportedStruct.GetCardinal();
           for (unsigned int i = 0; i < ExtensionCount; i++)
           {
-            FSupport->AttribExtensions->Add(SupportedStruct.GetString());
+            FSupport->AttribExtensions->Add(SupportedStruct.GetAnsiString());
           }
           ExtensionCount = SupportedStruct.GetCardinal();
           for (unsigned int i = 0; i < ExtensionCount; i++)
           {
-            FSupport->Extensions->Add(SupportedStruct.GetString());
+            FSupport->Extensions->Add(SupportedStruct.GetAnsiString());
           }
         }
 
         if (FTerminal->Log->Logging)
         {
           FTerminal->LogEvent(FORMAT(
-            "Server support information:\n"
-            "  Attribute mask: %x, Attribute bits: %x, Open flags: %x\n"
-            "  Access mask: %x, Open block masks: %x, Block masks: %x, Max read size: %d\n",
+            L"Server support information:\n"
+             "  Attribute mask: %x, Attribute bits: %x, Open flags: %x\n"
+             "  Access mask: %x, Open block masks: %x, Block masks: %x, Max read size: %d\n",
             (int(FSupport->AttributeMask),
              int(FSupport->AttributeBits),
              int(FSupport->OpenFlags),
@@ -2657,33 +2677,33 @@ void __fastcall TSFTPFileSystem::DoStartup()
              int(FSupport->OpenBlockMasks),
              int(FSupport->BlockMasks),
              int(FSupport->MaxReadSize))));
-          FTerminal->LogEvent(FORMAT(   "  Attribute extensions (%d)\n", (FSupport->AttribExtensions->Count)));
+          FTerminal->LogEvent(FORMAT(L"  Attribute extensions (%d)\n", (FSupport->AttribExtensions->Count)));
           for (int Index = 0; Index < FSupport->AttribExtensions->Count; Index++)
           {
             FTerminal->LogEvent(
-              FORMAT("    %s", (FSupport->AttribExtensions->Strings[Index])));
+              FORMAT(L"    %s", (FSupport->AttribExtensions->Strings[Index])));
           }
-          FTerminal->LogEvent(FORMAT(   "  Extensions (%d)\n", (FSupport->Extensions->Count)));
+          FTerminal->LogEvent(FORMAT(L"  Extensions (%d)\n", (FSupport->Extensions->Count)));
           for (int Index = 0; Index < FSupport->Extensions->Count; Index++)
           {
             FTerminal->LogEvent(
-              FORMAT("    %s", (FSupport->Extensions->Strings[Index])));
+              FORMAT(L"    %s", (FSupport->Extensions->Strings[Index])));
           }
         }
       }
       else if (ExtensionName == SFTP_EXT_VENDOR_ID)
       {
         TSFTPPacket VendorIdStruct(ExtensionData);
-        AnsiString VendorName(VendorIdStruct.GetString());
-        AnsiString ProductName(VendorIdStruct.GetString());
-        AnsiString ProductVersion(VendorIdStruct.GetString());
+        UnicodeString VendorName(VendorIdStruct.GetAnsiString());
+        UnicodeString ProductName(VendorIdStruct.GetAnsiString());
+        UnicodeString ProductVersion(VendorIdStruct.GetAnsiString());
         __int64 ProductBuildNumber = VendorIdStruct.GetInt64();
-        FTerminal->LogEvent(FORMAT("Server software: %s %s (%d) by %s",
+        FTerminal->LogEvent(FORMAT(L"Server software: %s %s (%d) by %s",
           (ProductName, ProductVersion, int(ProductBuildNumber), VendorName)));
       }
       else if (ExtensionName == SFTP_EXT_FSROOTS)
       {
-        FTerminal->LogEvent("File system roots:\n");
+        FTerminal->LogEvent(L"File system roots:\n");
         assert(FFixedPaths == NULL);
         FFixedPaths = new TStringList();
         try
@@ -2698,17 +2718,17 @@ void __fastcall TSFTPFileSystem::DoStartup()
             }
             else
             {
-              char Drive = RootsPacket.GetByte();
-              char MaybeType = RootsPacket.GetByte();
-              FTerminal->LogEvent(FORMAT("  %s: (type %d)", (Drive, (int)MaybeType)));
-              FFixedPaths->Add(FORMAT("%s:", (Drive)));
+              unsigned char Drive = RootsPacket.GetByte();
+              unsigned char MaybeType = RootsPacket.GetByte();
+              FTerminal->LogEvent(FORMAT(L"  %s: (type %d)", (static_cast<char>(Drive), (int)MaybeType)));
+              FFixedPaths->Add(FORMAT(L"%s:", (static_cast<char>(Drive))));
             }
           }
         }
         catch(Exception & E)
         {
           FFixedPaths->Clear();
-          FTerminal->LogEvent(FORMAT("Failed to decode %s extension",
+          FTerminal->LogEvent(FORMAT(L"Failed to decode %s extension",
             (SFTP_EXT_FSROOTS)));
           FTerminal->HandleException(&E);
         }
@@ -2720,27 +2740,27 @@ void __fastcall TSFTPFileSystem::DoStartup()
           // first try legacy decoding according to incorrect encoding
           // (structure-like) as of VShell.
           TSFTPPacket VersionsPacket(ExtensionData);
-          AnsiString Versions = VersionsPacket.GetString();
+          UnicodeString Versions = VersionsPacket.GetAnsiString();
           if (VersionsPacket.GetNextData() != NULL)
           {
             Abort();
           }
-          FTerminal->LogEvent(FORMAT("SFTP versions supported by the server (VShell format): %s",
+          FTerminal->LogEvent(FORMAT(L"SFTP versions supported by the server (VShell format): %s",
             (Versions)));
         }
         catch(...)
         {
           // if that fails, fallback to proper decoding
-          FTerminal->LogEvent(FORMAT("SFTP versions supported by the server: %s",
-            (ExtensionData)));
+          FTerminal->LogEvent(FORMAT(L"SFTP versions supported by the server: %s",
+            (AnsiString(ExtensionData.c_str()))));
         }
       }
       else
       {
-        FTerminal->LogEvent(FORMAT("Unknown server extension %s=%s",
+        FTerminal->LogEvent(FORMAT(L"Unknown server extension %s=%s",
           (ExtensionName, ExtensionDisplayData)));
       }
-      FExtensions->Values[ExtensionName] = ExtensionData;
+      FExtensions->Values[ExtensionName] = ExtensionDisplayData;
     }
 
     if (SupportsExtension(SFTP_EXT_VENDOR_ID))
@@ -2764,7 +2784,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
       (FTerminal->SessionData->SFTPBug[sbSignedTS] == asAuto);
     if (FSignedTS)
     {
-      FTerminal->LogEvent("We believe the server has signed timestamps bug");
+      FTerminal->LogEvent(L"We believe the server has signed timestamps bug");
     }
   }
   else
@@ -2774,7 +2794,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
 
   // use UTF when forced or ...
   // when "auto" and version is at least 4 and the server is not know not to use UTF
-  FUtfNever = (GetSessionInfo().SshImplementation.Pos("Foxit-WAC-Server") == 1) ||
+  FUtfNever = (GetSessionInfo().SshImplementation.Pos(L"Foxit-WAC-Server") == 1) ||
     (FTerminal->SessionData->NotUtf == asOn);
   FUtfStrings =
     (FTerminal->SessionData->NotUtf == asOff) ||
@@ -2783,21 +2803,21 @@ void __fastcall TSFTPFileSystem::DoStartup()
 
   if (FUtfStrings)
   {
-    FTerminal->LogEvent("We will use UTF-8 strings when appropriate");
+    FTerminal->LogEvent(L"We will use UTF-8 strings when appropriate");
   }
   else if (FUtfNever)
   {
-    FTerminal->LogEvent("We will never use UTF-8 strings");
+    FTerminal->LogEvent(L"We will never use UTF-8 strings");
   }
   else
   {
-    FTerminal->LogEvent("We will use UTF-8 strings for status messages only");
+    FTerminal->LogEvent(L"We will use UTF-8 strings for status messages only");
   }
 
   FOpenSSH =
     // Sun SSH is based on OpenSSH (suffers the same bugs)
-    (GetSessionInfo().SshImplementation.Pos("OpenSSH") == 1) ||
-    (GetSessionInfo().SshImplementation.Pos("Sun_SSH") == 1);
+    (GetSessionInfo().SshImplementation.Pos(L"OpenSSH") == 1) ||
+    (GetSessionInfo().SshImplementation.Pos(L"Sun_SSH") == 1);
 
   FMaxPacketSize = FTerminal->SessionData->SFTPMaxPacketSize;
   if (FMaxPacketSize == 0)
@@ -2805,15 +2825,15 @@ void __fastcall TSFTPFileSystem::DoStartup()
     if (FOpenSSH && (FVersion == 3) && !FSupport->Loaded)
     {
       FMaxPacketSize = 4 + (256 * 1024); // len + 256kB payload
-      FTerminal->LogEvent(FORMAT("Limiting packet size to OpenSSH sftp-server limit of %d bytes",
+      FTerminal->LogEvent(FORMAT(L"Limiting packet size to OpenSSH sftp-server limit of %d bytes",
         (int(FMaxPacketSize))));
     }
     // full string is "1.77 sshlib: Momentum SSH Server",
     // possibly it is sshlib-related
-    else if (GetSessionInfo().SshImplementation.Pos("Momentum SSH Server") != 0)
+    else if (GetSessionInfo().SshImplementation.Pos(L"Momentum SSH Server") != 0)
     {
       FMaxPacketSize = 4 + (32 * 1024);
-      FTerminal->LogEvent(FORMAT("Limiting packet size to Momentum sftp-server limit of %d bytes",
+      FTerminal->LogEvent(FORMAT(L"Limiting packet size to Momentum sftp-server limit of %d bytes",
         (int(FMaxPacketSize))));
     }
   }
@@ -2841,9 +2861,9 @@ void __fastcall TSFTPFileSystem::LookupUsersGroups()
 
   TSFTPPacket * Packets[] = { &PacketOwners, &PacketGroups };
   TRemoteTokenList * Lists[] = { &FTerminal->FUsers, &FTerminal->FGroups };
-  char ListTypes[] = { OGQ_LIST_OWNERS, OGQ_LIST_GROUPS };
+  wchar_t ListTypes[] = { OGQ_LIST_OWNERS, OGQ_LIST_GROUPS };
 
-  for (int Index = 0; Index < LENOF(Packets); Index++)
+  for (size_t Index = 0; Index < LENOF(Packets); Index++)
   {
     TSFTPPacket * Packet = Packets[Index];
     Packet->AddString(SFTP_EXT_OWNER_GROUP);
@@ -2852,16 +2872,16 @@ void __fastcall TSFTPFileSystem::LookupUsersGroups()
     ReserveResponse(Packet, Packet);
   }
 
-  for (int Index = 0; Index < LENOF(Packets); Index++)
+  for (size_t Index = 0; Index < LENOF(Packets); Index++)
   {
     TSFTPPacket * Packet = Packets[Index];
 
     ReceiveResponse(Packet, Packet, SSH_FXP_EXTENDED_REPLY, asOpUnsupported);
 
     if ((Packet->Type != SSH_FXP_EXTENDED_REPLY) ||
-        (Packet->GetString() != SFTP_EXT_OWNER_GROUP_REPLY))
+        (Packet->GetAnsiString() != SFTP_EXT_OWNER_GROUP_REPLY))
     {
-      FTerminal->LogEvent(FORMAT("Invalid response to %s", (SFTP_EXT_OWNER_GROUP)));
+      FTerminal->LogEvent(FORMAT(L"Invalid response to %s", (SFTP_EXT_OWNER_GROUP)));
     }
     else
     {
@@ -2887,7 +2907,7 @@ void __fastcall TSFTPFileSystem::ReadCurrentDirectory()
   if (!FDirectoryToChangeTo.IsEmpty())
   {
     FCurrentDirectory = FDirectoryToChangeTo;
-    FDirectoryToChangeTo = "";
+    FDirectoryToChangeTo = L"";
   }
   else if (FCurrentDirectory.IsEmpty())
   {
@@ -2901,9 +2921,9 @@ void __fastcall TSFTPFileSystem::HomeDirectory()
   ChangeDirectory(GetHomeDirectory());
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::TryOpenDirectory(const AnsiString Directory)
+void __fastcall TSFTPFileSystem::TryOpenDirectory(const UnicodeString Directory)
 {
-  FTerminal->LogEvent(FORMAT("Trying to open directory \"%s\".", (Directory)));
+  FTerminal->LogEvent(FORMAT(L"Trying to open directory \"%s\".", (Directory)));
   TRemoteFile * File;
   CustomReadFile(Directory, File, SSH_FXP_LSTAT, NULL, asOpUnsupported);
   if (File == NULL)
@@ -2915,7 +2935,7 @@ void __fastcall TSFTPFileSystem::TryOpenDirectory(const AnsiString Directory)
     TSFTPPacket Packet(SSH_FXP_OPENDIR);
     Packet.AddPathString(UnixExcludeTrailingBackslash(Directory), FUtfStrings);
     SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_HANDLE);
-    AnsiString Handle = Packet.GetString();
+    RawByteString Handle = Packet.GetFileHandle();
     Packet.ChangeType(SSH_FXP_CLOSE);
     Packet.AddString(Handle);
     SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS, asAll);
@@ -2930,9 +2950,9 @@ void __fastcall TSFTPFileSystem::AnnounceFileListOperation()
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::ChangeDirectory(const AnsiString Directory)
+void __fastcall TSFTPFileSystem::ChangeDirectory(const UnicodeString Directory)
 {
-  AnsiString Path, Current;
+  UnicodeString Path, Current;
 
   Current = !FDirectoryToChangeTo.IsEmpty() ? FDirectoryToChangeTo : FCurrentDirectory;
   Path = RealPath(Directory, Current);
@@ -2945,7 +2965,7 @@ void __fastcall TSFTPFileSystem::ChangeDirectory(const AnsiString Directory)
   FDirectoryToChangeTo = Path;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::CachedChangeDirectory(const AnsiString Directory)
+void __fastcall TSFTPFileSystem::CachedChangeDirectory(const UnicodeString Directory)
 {
   FDirectoryToChangeTo = UnixExcludeTrailingBackslash(Directory);
 }
@@ -2954,16 +2974,16 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 {
   assert(FileList && !FileList->Directory.IsEmpty());
 
-  AnsiString Directory;
+  UnicodeString Directory;
   Directory = UnixExcludeTrailingBackslash(LocalCanonify(FileList->Directory));
-  FTerminal->LogEvent(FORMAT("Listing directory \"%s\".", (Directory)));
+  FTerminal->LogEvent(FORMAT(L"Listing directory \"%s\".", (Directory)));
 
   // moved before SSH_FXP_OPENDIR, so directory listing does not retain
   // old data (e.g. parent directory) when reading fails
   FileList->Clear();
 
   TSFTPPacket Packet(SSH_FXP_OPENDIR);
-  AnsiString Handle;
+  RawByteString Handle;
 
   try
   {
@@ -2971,7 +2991,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
     SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_HANDLE);
 
-    Handle = Packet.GetString();
+    Handle = Packet.GetFileHandle();
   }
   catch(...)
   {
@@ -3011,10 +3031,10 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
         for (unsigned long Index = 0; !isEOF && (Index < Count); Index++)
         {
-          File = LoadFile(&ListingPacket, NULL, "", FileList);
+          File = LoadFile(&ListingPacket, NULL, L"", FileList);
           if (FTerminal->Configuration->ActualLogProtocol >= 1)
           {
-            FTerminal->LogEvent(FORMAT("Read file '%s' from listing", (File->FileName)));
+            FTerminal->LogEvent(FORMAT(L"Read file '%s' from listing", (File->FileName)));
           }
           FileList->AddFile(File);
           Total++;
@@ -3031,7 +3051,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
         if (Count == 0)
         {
-          FTerminal->LogEvent("Empty directory listing packet. Aborting directory reading.");
+          FTerminal->LogEvent(L"Empty directory listing packet. Aborting directory reading.");
           isEOF = true;
         }
       }
@@ -3123,7 +3143,7 @@ void __fastcall TSFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
 
   // need to use full filename when resolving links within subdirectory
   // (i.e. for download)
-  AnsiString FileName = LocalCanonify(
+  UnicodeString FileName = LocalCanonify(
     SymlinkFile->Directory != NULL ? SymlinkFile->FullFileName : SymlinkFile->FileName);
 
   TSFTPPacket ReadLinkPacket(SSH_FXP_READLINK);
@@ -3155,13 +3175,13 @@ void __fastcall TSFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
     UnixExtractFileName(SymlinkFile->LinkTo));
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::ReadFile(const AnsiString FileName,
+void __fastcall TSFTPFileSystem::ReadFile(const UnicodeString FileName,
   TRemoteFile *& File)
 {
   CustomReadFile(FileName, File, SSH_FXP_LSTAT);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSFTPFileSystem::RemoteFileExists(const AnsiString FullPath,
+bool __fastcall TSFTPFileSystem::RemoteFileExists(const UnicodeString FullPath,
   TRemoteFile ** File)
 {
   bool Result;
@@ -3194,19 +3214,8 @@ bool __fastcall TSFTPFileSystem::RemoteFileExists(const AnsiString FullPath,
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::SendCustomReadFile(TSFTPPacket * Packet,
-  TSFTPPacket * Response, const AnsiString FileName, unsigned long Flags)
+  TSFTPPacket * Response, unsigned long Flags)
 {
-  if ((Packet->Type == SSH_FXP_STAT) || (Packet->Type == SSH_FXP_LSTAT))
-  {
-    Packet->AddPathString(LocalCanonify(FileName), FUtfStrings);
-  }
-  else
-  {
-    assert(Packet->Type == SSH_FXP_FSTAT);
-    // actualy handle, not filename
-    Packet->AddString(FileName);
-  }
-
   if (FVersion >= 4)
   {
     Packet->AddCardinal(Flags);
@@ -3215,15 +3224,16 @@ void __fastcall TSFTPFileSystem::SendCustomReadFile(TSFTPPacket * Packet,
   ReserveResponse(Packet, Response);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::CustomReadFile(const AnsiString FileName,
-  TRemoteFile *& File, char Type, TRemoteFile * ALinkedByFile,
+void __fastcall TSFTPFileSystem::CustomReadFile(const UnicodeString FileName,
+  TRemoteFile *& File, unsigned char Type, TRemoteFile * ALinkedByFile,
   int AllowStatus)
 {
   unsigned long Flags = SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS |
     SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_MODIFYTIME |
     SSH_FILEXFER_ATTR_OWNERGROUP;
   TSFTPPacket Packet(Type);
-  SendCustomReadFile(&Packet, &Packet, FileName, Flags);
+  Packet.AddPathString(LocalCanonify(FileName), FUtfStrings);
+  SendCustomReadFile(&Packet, &Packet, Flags);
   ReceiveResponse(&Packet, &Packet, SSH_FXP_ATTRS, AllowStatus);
 
   if (Packet.Type == SSH_FXP_ATTRS)
@@ -3237,18 +3247,18 @@ void __fastcall TSFTPFileSystem::CustomReadFile(const AnsiString FileName,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::DoDeleteFile(const AnsiString FileName, char Type)
+void __fastcall TSFTPFileSystem::DoDeleteFile(const UnicodeString FileName, unsigned char Type)
 {
   TSFTPPacket Packet(Type);
-  AnsiString RealFileName = LocalCanonify(FileName);
+  UnicodeString RealFileName = LocalCanonify(FileName);
   Packet.AddPathString(RealFileName, FUtfStrings);
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::DeleteFile(const AnsiString FileName,
+void __fastcall TSFTPFileSystem::DeleteFile(const UnicodeString FileName,
   const TRemoteFile * File, int Params, TRmSessionAction & Action)
 {
-  char Type;
+  unsigned char Type;
   if (File && File->IsDirectory && !File->IsSymLink)
   {
     if (FLAGCLEAR(Params, dfNoRecursive))
@@ -3273,13 +3283,13 @@ void __fastcall TSFTPFileSystem::DeleteFile(const AnsiString FileName,
   DoDeleteFile(FileName, Type);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::RenameFile(const AnsiString FileName,
-  const AnsiString NewName)
+void __fastcall TSFTPFileSystem::RenameFile(const UnicodeString FileName,
+  const UnicodeString NewName)
 {
   TSFTPPacket Packet(SSH_FXP_RENAME);
-  AnsiString RealName = LocalCanonify(FileName);
+  UnicodeString RealName = LocalCanonify(FileName);
   Packet.AddPathString(RealName, FUtfStrings);
-  AnsiString TargetName;
+  UnicodeString TargetName;
   if (UnixExtractFilePath(NewName).IsEmpty())
   {
     // rename case (TTerminal::RenameFile)
@@ -3297,23 +3307,23 @@ void __fastcall TSFTPFileSystem::RenameFile(const AnsiString FileName,
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::CopyFile(const AnsiString /*FileName*/,
-  const AnsiString /*NewName*/)
+void __fastcall TSFTPFileSystem::CopyFile(const UnicodeString /*FileName*/,
+  const UnicodeString /*NewName*/)
 {
   assert(false);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::CreateDirectory(const AnsiString DirName)
+void __fastcall TSFTPFileSystem::CreateDirectory(const UnicodeString DirName)
 {
   TSFTPPacket Packet(SSH_FXP_MKDIR);
-  AnsiString CanonifiedName = Canonify(DirName);
+  UnicodeString CanonifiedName = Canonify(DirName);
   Packet.AddPathString(CanonifiedName, FUtfStrings);
   Packet.AddProperties(NULL, 0, true, FVersion, FUtfStrings, NULL);
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::CreateLink(const AnsiString FileName,
-  const AnsiString PointTo, bool Symbolic)
+void __fastcall TSFTPFileSystem::CreateLink(const UnicodeString FileName,
+  const UnicodeString PointTo, bool Symbolic)
 {
   USEDPARAM(Symbolic);
   assert(Symbolic); // only symlinks are supported by SFTP
@@ -3330,14 +3340,14 @@ void __fastcall TSFTPFileSystem::CreateLink(const AnsiString FileName,
   }
   else
   {
-    FTerminal->LogEvent("We believe the server has SFTP symlink bug");
+    FTerminal->LogEvent(L"We believe the server has SFTP symlink bug");
     Packet.AddPathString(PointTo, FUtfStrings);
     Packet.AddPathString(Canonify(FileName), FUtfStrings);
   }
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::ChangeFileProperties(const AnsiString FileName,
+void __fastcall TSFTPFileSystem::ChangeFileProperties(const UnicodeString FileName,
   const TRemoteFile * /*File*/, const TRemoteProperties * AProperties,
   TChmodSessionAction & Action)
 {
@@ -3345,7 +3355,7 @@ void __fastcall TSFTPFileSystem::ChangeFileProperties(const AnsiString FileName,
 
   TRemoteFile * File;
 
-  AnsiString RealFileName = LocalCanonify(FileName);
+  UnicodeString RealFileName = LocalCanonify(FileName);
   ReadFile(RealFileName, File);
 
   try
@@ -3420,8 +3430,8 @@ bool __fastcall TSFTPFileSystem::LoadFilesProperties(TStrings * FileList)
           assert((Packet.Type == SSH_FXP_ATTRS) || (Packet.Type == SSH_FXP_STATUS));
           if (Packet.Type == SSH_FXP_ATTRS)
           {
-            Progress.SetFile(File->FileName);
             assert(File != NULL);
+            Progress.SetFile(File->FileName);
             LoadFile(File, &Packet);
             Result = true;
             TOnceDoneOperation OnceDoneOperation;
@@ -3448,7 +3458,7 @@ bool __fastcall TSFTPFileSystem::LoadFilesProperties(TStrings * FileList)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(const AnsiString & Alg,
+void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(const UnicodeString & Alg,
   TStrings * FileList, TStrings * Checksums,
   TCalculatedChecksumEvent OnCalculatedChecksum,
   TFileOperationProgressType * OperationProgress, bool FirstLevel)
@@ -3516,8 +3526,8 @@ void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(const AnsiString & Alg
       do
       {
         bool Success = false;
-        AnsiString Alg;
-        AnsiString Checksum;
+        UnicodeString Alg;
+        UnicodeString Checksum;
         TRemoteFile * File = NULL;
 
         try
@@ -3529,8 +3539,8 @@ void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(const AnsiString & Alg
 
             OperationProgress->SetFile(File->FileName);
 
-            Alg = Packet.GetString();
-            Checksum = StrToHex(AnsiString(Packet.GetNextData(Packet.RemainingLength), Packet.RemainingLength));
+            Alg = Packet.GetAnsiString();
+            Checksum = BytesToHex(reinterpret_cast<const unsigned char*>(Packet.GetNextData(Packet.RemainingLength)), Packet.RemainingLength);
             OnCalculatedChecksum(File->FileName, Alg, Checksum);
 
             Success = true;
@@ -3538,14 +3548,14 @@ void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(const AnsiString & Alg
           catch (Exception & E)
           {
             FTerminal->CommandError(&E, FMTLOAD(CHECKSUM_ERROR,
-              (File != NULL ? File->FullFileName : AnsiString(""))));
+              (File != NULL ? File->FullFileName : UnicodeString(L""))));
             // TODO: retries? resume?
             Next = false;
           }
 
           if (Checksums != NULL)
           {
-            Checksums->Add("");
+            Checksums->Add(L"");
           }
         }
         __finally
@@ -3571,7 +3581,7 @@ void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(const AnsiString & Alg
   // queue is discarded here
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::CalculateFilesChecksum(const AnsiString & Alg,
+void __fastcall TSFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Alg,
   TStrings * FileList, TStrings * Checksums,
   TCalculatedChecksumEvent OnCalculatedChecksum)
 {
@@ -3592,22 +3602,22 @@ void __fastcall TSFTPFileSystem::CalculateFilesChecksum(const AnsiString & Alg,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::CustomCommandOnFile(const AnsiString /*FileName*/,
-    const TRemoteFile * /*File*/, AnsiString /*Command*/, int /*Params*/,
+void __fastcall TSFTPFileSystem::CustomCommandOnFile(const UnicodeString /*FileName*/,
+    const TRemoteFile * /*File*/, UnicodeString /*Command*/, int /*Params*/,
     TCaptureOutputEvent /*OutputEvent*/)
 {
   assert(false);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::AnyCommand(const AnsiString /*Command*/,
+void __fastcall TSFTPFileSystem::AnyCommand(const UnicodeString /*Command*/,
   TCaptureOutputEvent /*OutputEvent*/)
 {
   assert(false);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSFTPFileSystem::FileUrl(const AnsiString FileName)
+UnicodeString __fastcall TSFTPFileSystem::FileUrl(const UnicodeString FileName)
 {
-  return FTerminal->FileUrl("sftp", FileName);
+  return FTerminal->FileUrl(L"sftp", FileName);
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TSFTPFileSystem::GetFixedPaths()
@@ -3615,7 +3625,7 @@ TStrings * __fastcall TSFTPFileSystem::GetFixedPaths()
   return FFixedPaths;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::SpaceAvailable(const AnsiString Path,
+void __fastcall TSFTPFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & ASpaceAvailable)
 {
   TSFTPPacket Packet(SSH_FXP_EXTENDED);
@@ -3632,14 +3642,14 @@ void __fastcall TSFTPFileSystem::SpaceAvailable(const AnsiString Path,
 // transfer protocol
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
-  const AnsiString TargetDir, const TCopyParamType * CopyParam,
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam,
   int Params, TFileOperationProgressType * OperationProgress,
   TOnceDoneOperation & OnceDoneOperation)
 {
   assert(FilesToCopy && OperationProgress);
 
-  AnsiString FileName, FileNameOnly;
-  AnsiString FullTargetDir = UnixIncludeTrailingBackslash(TargetDir);
+  UnicodeString FileName, FileNameOnly;
+  UnicodeString FullTargetDir = UnixIncludeTrailingBackslash(TargetDir);
   int Index = 0;
   while (Index < FilesToCopy->Count && !OperationProgress->Cancel)
   {
@@ -3673,7 +3683,7 @@ void __fastcall TSFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
           if (!FTerminal->HandleException(&E))
           {
             throw;
-          };
+          }
         );
       }
     }
@@ -3686,12 +3696,12 @@ void __fastcall TSFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(AnsiString & FileName,
+void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(UnicodeString & FileName,
   int Params, TFileOperationProgressType * OperationProgress,
   TSFTPOverwriteMode & OverwriteMode, const TOverwriteFileParams * FileParams)
 {
   bool CanAppend = (FVersion < 4) || !OperationProgress->AsciiTransfer;
-  int Answer;
+  unsigned int Answer;
   SUSPEND_OPERATION
   (
     int Answers = qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll | qaAll | qaIgnore;
@@ -3778,7 +3788,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(AnsiString & FileName,
   }
   else if (Answer == qaIgnore)
   {
-    if (FTerminal->PromptUser(FTerminal->SessionData, pkFileName, LoadStr(RENAME_TITLE), "",
+    if (FTerminal->PromptUser(FTerminal->SessionData, pkFileName, LoadStr(RENAME_TITLE), L"",
           LoadStr(RENAME_PROMPT2), true, 0, FileName))
     {
       OverwriteMode = omOverwrite;
@@ -3811,14 +3821,14 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(AnsiString & FileName,
   }
 }
 //---------------------------------------------------------------------------
-bool TSFTPFileSystem::SFTPConfirmResume(const AnsiString DestFileName,
+bool TSFTPFileSystem::SFTPConfirmResume(const UnicodeString DestFileName,
   bool PartialBiggerThanSource, TFileOperationProgressType * OperationProgress)
 {
   bool ResumeTransfer;
   assert(OperationProgress);
   if (PartialBiggerThanSource)
   {
-    int Answer;
+    unsigned int Answer;
     SUSPEND_OPERATION
     (
       TQueryParams Params(qpAllowContinueOnError, HELP_PARTIAL_BIGGER_THAN_SOURCE);
@@ -3839,7 +3849,7 @@ bool TSFTPFileSystem::SFTPConfirmResume(const AnsiString DestFileName,
   }
   else if (FTerminal->Configuration->ConfirmResume)
   {
-    int Answer;
+    unsigned int Answer;
     SUSPEND_OPERATION
     (
       TQueryParams Params(qpAllowContinueOnError | qpNeverAskAgainCheck,
@@ -3877,14 +3887,14 @@ bool TSFTPFileSystem::SFTPConfirmResume(const AnsiString DestFileName,
   return ResumeTransfer;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::SFTPSourceRobust(const AnsiString FileName,
-  const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
+void __fastcall TSFTPFileSystem::SFTPSourceRobust(const UnicodeString FileName,
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   // the same in TFTPFileSystem
   bool Retry;
 
-  TUploadSessionAction Action(FTerminal->Log);
+  TUploadSessionAction Action(FTerminal->ActionLog);
 
   do
   {
@@ -3923,12 +3933,12 @@ void __fastcall TSFTPFileSystem::SFTPSourceRobust(const AnsiString FileName,
   while (Retry);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
-  const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
+void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, unsigned int Flags,
   TUploadSessionAction & Action, bool & ChildError)
 {
-  FTerminal->LogEvent(FORMAT("File: \"%s\"", (FileName)));
+  FTerminal->LogEvent(FORMAT(L"File: \"%s\"", (FileName)));
 
   Action.FileName(ExpandUNCFileName(FileName));
 
@@ -3936,7 +3946,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
   if (!FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
   {
-    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+    FTerminal->LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
     THROW_SKIP_FILE_NULL;
   }
 
@@ -3967,10 +3977,10 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       // File is regular file (not directory)
       assert(File);
 
-      AnsiString DestFileName = CopyParam->ChangeFileName(ExtractFileName(FileName),
+      UnicodeString DestFileName = CopyParam->ChangeFileName(ExtractFileName(FileName),
         osLocal, FLAGSET(Flags, tfFirstLevel));
-      AnsiString DestFullName = LocalCanonify(TargetDir + DestFileName);
-      AnsiString DestPartinalFullName;
+      UnicodeString DestFullName = LocalCanonify(TargetDir + DestFileName);
+      UnicodeString DestPartialFullName;
       bool ResumeAllowed;
       bool ResumeTransfer = false;
       bool DestFileExists = false;
@@ -3978,7 +3988,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
       __int64 ResumeOffset;
 
-      FTerminal->LogEvent(FORMAT("Copying \"%s\" to remote directory started.", (FileName)));
+      FTerminal->LogEvent(FORMAT(L"Copying \"%s\" to remote directory started.", (FileName)));
 
       OperationProgress->SetLocalSize(Size);
 
@@ -3987,14 +3997,17 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       OperationProgress->SetTransferSize(OperationProgress->LocalSize);
       OperationProgress->TransferingFile = false;
 
+      TDateTime Modification = UnixToDateTime(MTime, FTerminal->SessionData->DSTMode);
+
       // Will we use ASCII of BINARY file tranfer?
       TFileMasks::TParams MaskParams;
       MaskParams.Size = Size;
+      MaskParams.Modification = Modification;
       OperationProgress->SetAsciiTransfer(
         CopyParam->UseAsciiTransfer(FileName, osLocal, MaskParams));
       FTerminal->LogEvent(
-        AnsiString((OperationProgress->AsciiTransfer ? "Ascii" : "Binary")) +
-          " transfer mode selected.");
+        UnicodeString((OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary")) +
+          L" transfer mode selected.");
 
       // should we check for interrupted transfer?
       ResumeAllowed = !OperationProgress->AsciiTransfer &&
@@ -4004,16 +4017,15 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
       TOverwriteFileParams FileParams;
       FileParams.SourceSize = OperationProgress->LocalSize;
-      FileParams.SourceTimestamp = UnixToDateTime(MTime,
-        FTerminal->SessionData->DSTMode);
+      FileParams.SourceTimestamp = Modification;
 
       if (ResumeAllowed)
       {
-        DestPartinalFullName = DestFullName + FTerminal->Configuration->PartialExt;
+        DestPartialFullName = DestFullName + FTerminal->Configuration->PartialExt;
 
         if (FLAGCLEAR(Flags, tfNewDirectory))
         {
-          FTerminal->LogEvent("Checking existence of file.");
+          FTerminal->LogEvent(L"Checking existence of file.");
           TRemoteFile * File = NULL;
           DestFileExists = RemoteFileExists(DestFullName, &File);
           if (DestFileExists)
@@ -4044,8 +4056,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
           if (ResumeAllowed)
           {
-            FTerminal->LogEvent("Checking existence of partially transfered file.");
-            if (RemoteFileExists(DestPartinalFullName, &File))
+            FTerminal->LogEvent(L"Checking existence of partially transfered file.");
+            if (RemoteFileExists(DestPartialFullName, &File))
             {
               ResumeOffset = File->Size;
               delete File;
@@ -4065,11 +4077,11 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
               if (!ResumeTransfer)
               {
-                DoDeleteFile(DestPartinalFullName, SSH_FXP_REMOVE);
+                DoDeleteFile(DestPartialFullName, SSH_FXP_REMOVE);
               }
               else
               {
-                FTerminal->LogEvent("Resuming file transfer.");
+                FTerminal->LogEvent(L"Resuming file transfer.");
               }
             }
             else
@@ -4077,15 +4089,15 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
               // partial upload file does not exists, check for full file
               if (DestFileExists)
               {
-                AnsiString PrevDestFileName = DestFileName;
+                UnicodeString PrevDestFileName = DestFileName;
                 SFTPConfirmOverwrite(DestFileName,
                   Params, OperationProgress, OpenParams.OverwriteMode, &FileParams);
                 if (PrevDestFileName != DestFileName)
                 {
                   // update paths in case user changes the file name
                   DestFullName = LocalCanonify(TargetDir + DestFileName);
-                  DestPartinalFullName = DestFullName + FTerminal->Configuration->PartialExt;
-                  FTerminal->LogEvent("Checking existence of new file.");
+                  DestPartialFullName = DestFullName + FTerminal->Configuration->PartialExt;
+                  FTerminal->LogEvent(L"Checking existence of new file.");
                   DestFileExists = RemoteFileExists(DestFullName, NULL);
                 }
               }
@@ -4097,7 +4109,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       // will the transfer be resumable?
       bool DoResume = (ResumeAllowed && (OpenParams.OverwriteMode == omOverwrite));
 
-      AnsiString RemoteFileName = DoResume ? DestPartinalFullName : DestFullName;
+      UnicodeString RemoteFileName = DoResume ? DestPartialFullName : DestFullName;
       OpenParams.RemoteFileName = RemoteFileName;
       OpenParams.Resume = DoResume;
       OpenParams.Resuming = ResumeTransfer;
@@ -4107,7 +4119,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       OpenParams.FileParams = &FileParams;
       OpenParams.Confirmed = false;
 
-      FTerminal->LogEvent("Opening remote file.");
+      FTerminal->LogEvent(L"Opening remote file.");
       FTerminal->FileOperationLoop(SFTPOpenRemote, OperationProgress, true,
         FMTLOAD(SFTP_CREATE_FILE_ERROR, (OpenParams.RemoteFileName)),
         &OpenParams);
@@ -4117,7 +4129,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
         assert(!DoResume);
         assert(UnixExtractFilePath(OpenParams.RemoteFileName) == UnixExtractFilePath(RemoteFileName));
         DestFullName = OpenParams.RemoteFileName;
-        AnsiString NewFileName = UnixExtractFileName(DestFullName);
+        UnicodeString NewFileName = UnixExtractFileName(DestFullName);
         assert(DestFileName != NewFileName);
         DestFileName = NewFileName;
       }
@@ -4160,14 +4172,14 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       {
         if (OpenParams.OverwriteMode == omAppend)
         {
-          FTerminal->LogEvent("Appending file.");
+          FTerminal->LogEvent(L"Appending file.");
           DestWriteOffset = OpenParams.DestFileSize;
         }
         else if (ResumeTransfer || (OpenParams.OverwriteMode == omResume))
         {
           if (OpenParams.OverwriteMode == omResume)
           {
-            FTerminal->LogEvent("Resuming file transfer (append style).");
+            FTerminal->LogEvent(L"Resuming file transfer (append style).");
             ResumeOffset = OpenParams.DestFileSize;
           }
           FileSeek((THandle)File, ResumeOffset, 0);
@@ -4192,7 +4204,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
           // send close request before waiting for pending read responses
           SFTPCloseRemote(OpenParams.RemoteFileHandle, DestFileName,
             OperationProgress, false, true, &CloseRequest);
-          OpenParams.RemoteFileHandle = "";
+          OpenParams.RemoteFileHandle = L"";
 
           // when resuming is disabled, we can send "set properties"
           // request before waiting for pending read/close responses
@@ -4241,7 +4253,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
           FILE_OPERATION_LOOP(FMTLOAD(DELETE_ON_RESUME_ERROR,
               (UnixExtractFileName(DestFullName), DestFullName)),
 
-            if (FTerminal->SessionData->OverwrittenToRecycleBin)
+            if (FTerminal->SessionData->OverwrittenToRecycleBin &&
+                !FTerminal->SessionData->RecycleBinPath.IsEmpty())
             {
               FTerminal->RecycleFile(DestFullName, NULL);
             }
@@ -4265,7 +4278,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
         std::auto_ptr<TTouchSessionAction> TouchAction;
         if (CopyParam->PreserveTime)
         {
-          TouchAction.reset(new TTouchSessionAction(FTerminal->Log, DestFullName,
+          TouchAction.reset(new TTouchSessionAction(FTerminal->ActionLog, DestFullName,
             UnixToDateTime(MTime, FTerminal->SessionData->DSTMode)));
         }
         std::auto_ptr<TChmodSessionAction> ChmodAction;
@@ -4274,7 +4287,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
         // of overwritten file to new file
         if (CopyParam->PreserveRights)
         {
-          ChmodAction.reset(new TChmodSessionAction(FTerminal->Log, DestFullName, Rights));
+          ChmodAction.reset(new TChmodSessionAction(FTerminal->ActionLog, DestFullName, Rights));
         }
         try
         {
@@ -4285,19 +4298,35 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
           }
           bool Resend = false;
           FILE_OPERATION_LOOP(FMTLOAD(PRESERVE_TIME_PERM_ERROR, (DestFileName)),
-            TSFTPPacket DummyResponse;
-            TSFTPPacket * Response = &PropertiesResponse;
-            if (Resend)
+            try
             {
-              PropertiesRequest.Reuse();
-              SendPacket(&PropertiesRequest);
-              // ReceiveResponse currently cannot receive twice into same packet,
-              // so DummyResponse is temporary workaround
-              Response = &DummyResponse;
+              TSFTPPacket DummyResponse;
+              TSFTPPacket * Response = &PropertiesResponse;
+              if (Resend)
+              {
+                PropertiesRequest.Reuse();
+                SendPacket(&PropertiesRequest);
+                // ReceiveResponse currently cannot receive twice into same packet,
+                // so DummyResponse is temporary workaround
+                Response = &DummyResponse;
+              }
+              Resend = true;
+              ReceiveResponse(&PropertiesRequest, Response, SSH_FXP_STATUS,
+                asOK | FLAGMASK(CopyParam->IgnorePermErrors, asPermDenied));
             }
-            Resend = true;
-            ReceiveResponse(&PropertiesRequest, Response, SSH_FXP_STATUS,
-              asOK | FLAGMASK(CopyParam->IgnorePermErrors, asPermDenied));
+            catch (...)
+            {
+              if (FTerminal->Active &&
+                  (!CopyParam->PreserveRights && !CopyParam->PreserveTime))
+              {
+                assert(DoResume);
+                FTerminal->LogEvent(L"Ignoring error preserving permissions of overwritten file");
+              }
+              else
+              {
+                throw;
+              }
+            }
           );
         }
         catch(Exception & E)
@@ -4342,8 +4371,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TSFTPFileSystem::SFTPOpenRemoteFile(
-  const AnsiString & FileName, unsigned int OpenType, __int64 Size)
+RawByteString __fastcall TSFTPFileSystem::SFTPOpenRemoteFile(
+  const UnicodeString & FileName, unsigned int OpenType, __int64 Size)
 {
   TSFTPPacket Packet(SSH_FXP_OPEN);
 
@@ -4393,7 +4422,7 @@ AnsiString __fastcall TSFTPFileSystem::SFTPOpenRemoteFile(
 
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_HANDLE);
 
-  return Packet.GetString();
+  return Packet.GetFileHandle();
 }
 //---------------------------------------------------------------------------
 int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Param2*/)
@@ -4448,8 +4477,9 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
         try
         {
           TRemoteFile * File;
-          AnsiString RealFileName = LocalCanonify(OpenParams->RemoteFileName);
+          UnicodeString RealFileName = LocalCanonify(OpenParams->RemoteFileName);
           ReadFile(RealFileName, File);
+          assert(File);
           OpenParams->DestFileSize = File->Size;
           if (OpenParams->FileParams != NULL)
           {
@@ -4457,7 +4487,6 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
             OpenParams->FileParams->DestSize = OpenParams->DestFileSize;
           }
           // file exists (otherwise exception was thrown)
-          assert(File);
           SAFE_DESTROY(File);
         }
         catch(...)
@@ -4482,7 +4511,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
         if (ConfirmOverwriting)
         {
           // confirmation duplicated in SFTPSource for resumable file transfers.
-          AnsiString RemoteFileNameOnly = UnixExtractFileName(OpenParams->RemoteFileName);
+          UnicodeString RemoteFileNameOnly = UnixExtractFileName(OpenParams->RemoteFileName);
           SFTPConfirmOverwrite(RemoteFileNameOnly,
             OpenParams->Params, OperationProgress, OpenParams->OverwriteMode, OpenParams->FileParams);
           if (RemoteFileNameOnly != UnixExtractFileName(OpenParams->RemoteFileName))
@@ -4498,7 +4527,8 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
         }
 
         if ((OpenParams->OverwriteMode == omOverwrite) &&
-            FTerminal->SessionData->OverwrittenToRecycleBin)
+            FTerminal->SessionData->OverwrittenToRecycleBin &&
+            !FTerminal->SessionData->RecycleBinPath.IsEmpty())
         {
           FTerminal->RecycleFile(OpenParams->RemoteFileName, NULL);
         }
@@ -4516,7 +4546,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
           try
           {
             TRemoteFile * File;
-            AnsiString RealFileName = LocalCanonify(OpenParams->RemoteFileName);
+            UnicodeString RealFileName = LocalCanonify(OpenParams->RemoteFileName);
             ReadFile(RealFileName, File);
             SAFE_DESTROY(File);
           }
@@ -4559,8 +4589,8 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
   return 0;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::SFTPCloseRemote(const AnsiString Handle,
-  const AnsiString FileName, TFileOperationProgressType * OperationProgress,
+void __fastcall TSFTPFileSystem::SFTPCloseRemote(const RawByteString Handle,
+  const UnicodeString FileName, TFileOperationProgressType * OperationProgress,
   bool TransferFinished, bool Request, TSFTPPacket * Packet)
 {
   // Moving this out of SFTPSource() fixed external exception 0xC0000029 error
@@ -4593,14 +4623,14 @@ void __fastcall TSFTPFileSystem::SFTPCloseRemote(const AnsiString Handle,
   );
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryName,
-  const AnsiString TargetDir, int Attrs, const TCopyParamType * CopyParam,
+void __fastcall TSFTPFileSystem::SFTPDirectorySource(const UnicodeString DirectoryName,
+  const UnicodeString TargetDir, int Attrs, const TCopyParamType * CopyParam,
   int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
-  AnsiString DestDirectoryName = CopyParam->ChangeFileName(
+  UnicodeString DestDirectoryName = CopyParam->ChangeFileName(
     ExtractFileName(ExcludeTrailingBackslash(DirectoryName)), osLocal,
     FLAGSET(Flags, tfFirstLevel));
-  AnsiString DestFullName = UnixIncludeTrailingBackslash(TargetDir + DestDirectoryName);
+  UnicodeString DestFullName = UnixIncludeTrailingBackslash(TargetDir + DestDirectoryName);
 
   OperationProgress->SetFile(DirectoryName);
 
@@ -4640,7 +4670,7 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryN
   bool FindOK;
 
   FILE_OPERATION_LOOP (FMTLOAD(LIST_DIR_ERROR, (DirectoryName)),
-    FindOK = (bool)(FindFirst(DirectoryName + "*.*",
+    FindOK = (bool)(FindFirst(DirectoryName + L"*.*",
       FindAttrs, SearchRec) == 0);
   );
 
@@ -4648,10 +4678,10 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryN
   {
     while (FindOK && !OperationProgress->Cancel)
     {
-      AnsiString FileName = DirectoryName + SearchRec.Name;
+      UnicodeString FileName = DirectoryName + SearchRec.Name;
       try
       {
-        if ((SearchRec.Name != ".") && (SearchRec.Name != ".."))
+        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
         {
           SFTPSourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
             Flags & ~tfFirstLevel);
@@ -4696,14 +4726,14 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryN
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
-  const AnsiString TargetDir, const TCopyParamType * CopyParam,
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam,
   int Params, TFileOperationProgressType * OperationProgress,
   TOnceDoneOperation & OnceDoneOperation)
 {
   assert(FilesToCopy && OperationProgress);
 
-  AnsiString FileName;
-  AnsiString FullTargetDir = IncludeTrailingBackslash(TargetDir);
+  UnicodeString FileName;
+  UnicodeString FullTargetDir = IncludeTrailingBackslash(TargetDir);
   const TRemoteFile * File;
   bool Success;
   int Index = 0;
@@ -4745,15 +4775,15 @@ void __fastcall TSFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::SFTPSinkRobust(const AnsiString FileName,
-  const TRemoteFile * File, const AnsiString TargetDir,
+void __fastcall TSFTPFileSystem::SFTPSinkRobust(const UnicodeString FileName,
+  const TRemoteFile * File, const UnicodeString TargetDir,
   const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   // the same in TFTPFileSystem
   bool Retry;
 
-  TDownloadSessionAction Action(FTerminal->Log);
+  TDownloadSessionAction Action(FTerminal->ActionLog);
 
   do
   {
@@ -4793,8 +4823,8 @@ void __fastcall TSFTPFileSystem::SFTPSinkRobust(const AnsiString FileName,
   while (Retry);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
-  const TRemoteFile * File, const AnsiString TargetDir,
+void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
+  const TRemoteFile * File, const UnicodeString TargetDir,
   const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, unsigned int Flags,
   TDownloadSessionAction & Action, bool & ChildError)
@@ -4802,25 +4832,26 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
 
   Action.FileName(FileName);
 
-  AnsiString OnlyFileName = UnixExtractFileName(FileName);
+  UnicodeString OnlyFileName = UnixExtractFileName(FileName);
 
   TFileMasks::TParams MaskParams;
+  assert(File);
   MaskParams.Size = File->Size;
+  MaskParams.Modification = File->Modification;
 
   if (!CopyParam->AllowTransfer(FileName, osRemote, File->IsDirectory, MaskParams))
   {
-    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+    FTerminal->LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
     THROW_SKIP_FILE_NULL;
   }
 
-  assert(File);
-  FTerminal->LogEvent(FORMAT("File: \"%s\"", (FileName)));
+  FTerminal->LogEvent(FORMAT(L"File: \"%s\"", (FileName)));
 
   OperationProgress->SetFile(OnlyFileName);
 
-  AnsiString DestFileName = CopyParam->ChangeFileName(OnlyFileName,
+  UnicodeString DestFileName = CopyParam->ChangeFileName(OnlyFileName,
     osRemote, FLAGSET(Flags, tfFirstLevel));
-  AnsiString DestFullName = TargetDir + DestFileName;
+  UnicodeString DestFullName = TargetDir + DestFileName;
 
   if (File->IsDirectory)
   {
@@ -4862,9 +4893,9 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
   }
   else
   {
-    FTerminal->LogEvent(FORMAT("Copying \"%s\" to local directory started.", (FileName)));
+    FTerminal->LogEvent(FORMAT(L"Copying \"%s\" to local directory started.", (FileName)));
 
-    AnsiString DestPartinalFullName;
+    UnicodeString DestPartialFullName;
     bool ResumeAllowed;
     bool ResumeTransfer = false;
     __int64 ResumeOffset;
@@ -4872,7 +4903,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
     // Will we use ASCII of BINARY file tranfer?
     OperationProgress->SetAsciiTransfer(
       CopyParam->UseAsciiTransfer(FileName, osRemote, MaskParams));
-    FTerminal->LogEvent(AnsiString((OperationProgress->AsciiTransfer ? "Ascii" : "Binary")) +
+    FTerminal->LogEvent(UnicodeString((OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary")) +
       " transfer mode selected.");
 
     // Suppose same data size to transfer as to write
@@ -4897,21 +4928,21 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
     HANDLE LocalHandle = NULL;
     TStream * FileStream = NULL;
     bool DeleteLocalFile = false;
-    AnsiString RemoteHandle;
-    AnsiString LocalFileName = DestFullName;
+    RawByteString RemoteHandle;
+    UnicodeString LocalFileName = DestFullName;
     TSFTPOverwriteMode OverwriteMode = omOverwrite;
 
     try
     {
       if (ResumeAllowed)
       {
-        DestPartinalFullName = DestFullName + FTerminal->Configuration->PartialExt;
-        LocalFileName = DestPartinalFullName;
+        DestPartialFullName = DestFullName + FTerminal->Configuration->PartialExt;
+        LocalFileName = DestPartialFullName;
 
-        FTerminal->LogEvent("Checking existence of partially transfered file.");
-        if (FileExists(DestPartinalFullName))
+        FTerminal->LogEvent(L"Checking existence of partially transfered file.");
+        if (FileExists(DestPartialFullName))
         {
-          FTerminal->OpenLocalFile(DestPartinalFullName, GENERIC_WRITE,
+          FTerminal->OpenLocalFile(DestPartialFullName, GENERIC_WRITE,
             NULL, &LocalHandle, NULL, NULL, NULL, &ResumeOffset);
 
           bool PartialBiggerThanSource = (ResumeOffset > OperationProgress->TransferSize);
@@ -4929,16 +4960,63 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
           {
             CloseHandle(LocalHandle);
             LocalHandle = NULL;
-            FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestPartinalFullName)),
-              THROWOSIFFALSE(Sysutils::DeleteFile(DestPartinalFullName));
+            FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestPartialFullName)),
+              THROWOSIFFALSE(Sysutils::DeleteFile(DestPartialFullName));
             )
           }
           else
           {
-            FTerminal->LogEvent("Resuming file transfer.");
+            FTerminal->LogEvent(L"Resuming file transfer.");
             FileSeek((THandle)LocalHandle, ResumeOffset, 0);
             OperationProgress->AddResumed(ResumeOffset);
           }
+        }
+      }
+
+      // first open source file, not to loose the destination file,
+      // if we cannot open the source one in the first place
+      FTerminal->LogEvent(L"Opening remote file.");
+      FILE_OPERATION_LOOP (FMTLOAD(SFTP_OPEN_FILE_ERROR, (FileName)),
+        int OpenType = SSH_FXF_READ;
+        if ((FVersion >= 4) && OperationProgress->AsciiTransfer)
+        {
+          OpenType |= SSH_FXF_TEXT;
+        }
+        RemoteHandle = SFTPOpenRemoteFile(FileName, OpenType);
+      );
+
+      TDateTime Modification;
+      FILETIME AcTime;
+      FILETIME WrTime;
+
+      TSFTPPacket RemoteFilePacket(SSH_FXP_FSTAT);
+      RemoteFilePacket.AddString(RemoteHandle);
+      SendCustomReadFile(&RemoteFilePacket, &RemoteFilePacket,
+        SSH_FILEXFER_ATTR_MODIFYTIME);
+      ReceiveResponse(&RemoteFilePacket, &RemoteFilePacket);
+
+      const TRemoteFile * AFile = File;
+      try
+      {
+        // ignore errors
+        if (RemoteFilePacket.Type == SSH_FXP_ATTRS)
+        {
+          // load file, avoid completion (resolving symlinks) as we do not need that
+          AFile = LoadFile(&RemoteFilePacket, NULL, UnixExtractFileName(FileName),
+            NULL, false);
+        }
+
+        Modification = AFile->Modification;
+        AcTime = DateTimeToFileTime(AFile->LastAccess,
+          FTerminal->SessionData->DSTMode);
+        WrTime = DateTimeToFileTime(AFile->Modification,
+          FTerminal->SessionData->DSTMode);
+      }
+      __finally
+      {
+        if (AFile != File)
+        {
+          delete AFile;
         }
       }
 
@@ -4949,28 +5027,28 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
         FTerminal->OpenLocalFile(DestFullName, GENERIC_WRITE,
           NULL, &LocalHandle, NULL, &MTime, NULL, &DestFileSize, false);
 
-        FTerminal->LogEvent("Confirming overwriting of file.");
+        FTerminal->LogEvent(L"Confirming overwriting of file.");
         TOverwriteFileParams FileParams;
         FileParams.SourceSize = OperationProgress->TransferSize;
-        FileParams.SourceTimestamp = File->Modification;
+        FileParams.SourceTimestamp = Modification;
         FileParams.DestTimestamp = UnixToDateTime(MTime,
           FTerminal->SessionData->DSTMode);
         FileParams.DestSize = DestFileSize;
-        AnsiString PrevDestFileName = DestFileName;
+        UnicodeString PrevDestFileName = DestFileName;
         SFTPConfirmOverwrite(DestFileName, Params, OperationProgress, OverwriteMode, &FileParams);
         if (PrevDestFileName != DestFileName)
         {
           DestFullName = TargetDir + DestFileName;
-          DestPartinalFullName = DestFullName + FTerminal->Configuration->PartialExt;
+          DestPartialFullName = DestFullName + FTerminal->Configuration->PartialExt;
           if (ResumeAllowed)
           {
-            if (FileExists(DestPartinalFullName))
+            if (FileExists(DestPartialFullName))
             {
-              FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestPartinalFullName)),
-                THROWOSIFFALSE(Sysutils::DeleteFile(DestPartinalFullName));
+              FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestPartialFullName)),
+                THROWOSIFFALSE(Sysutils::DeleteFile(DestPartialFullName));
               )
             }
-            LocalFileName = DestPartinalFullName;
+            LocalFileName = DestPartialFullName;
           }
           else
           {
@@ -5000,16 +5078,18 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
           FileSeek((THandle)LocalHandle, DestFileSize, 0);
           if (OverwriteMode == omAppend)
           {
-            FTerminal->LogEvent("Appending to file.");
+            FTerminal->LogEvent(L"Appending to file.");
           }
           else
           {
-            FTerminal->LogEvent("Resuming file transfer (append style).");
+            FTerminal->LogEvent(L"Resuming file transfer (append style).");
             assert(OverwriteMode == omResume);
             OperationProgress->AddResumed(DestFileSize);
           }
         }
       }
+
+      Action.Destination(ExpandUNCFileName(DestFullName));
 
       // if not already opened (resume, append...), create new empty file
       if (!LocalHandle)
@@ -5022,26 +5102,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
       }
       assert(LocalHandle);
 
-      Action.Destination(ExpandUNCFileName(DestFullName));
-
       DeleteLocalFile = true;
-
-      FTerminal->LogEvent("Opening remote file.");
-      FILE_OPERATION_LOOP (FMTLOAD(SFTP_OPEN_FILE_ERROR, (FileName)),
-        int OpenType = SSH_FXF_READ;
-        if ((FVersion >= 4) && OperationProgress->AsciiTransfer)
-        {
-          OpenType |= SSH_FXF_TEXT;
-        }
-        RemoteHandle = SFTPOpenRemoteFile(FileName, OpenType);
-      );
-
-      TSFTPPacket RemoteFilePacket(SSH_FXP_FSTAT);
-      if (CopyParam->PreserveTime)
-      {
-        SendCustomReadFile(&RemoteFilePacket, &RemoteFilePacket, RemoteHandle,
-          SSH_FILEXFER_ATTR_MODIFYTIME);
-      }
 
       FileStream = new TSafeHandleStream((THandle)LocalHandle);
 
@@ -5096,7 +5157,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
               // close file right away, before waiting for pending responses
               SFTPCloseRemote(RemoteHandle, DestFileName, OperationProgress,
                 true, true, NULL);
-              RemoteHandle = ""; // do not close file again in __finally block
+              RemoteHandle = L""; // do not close file again in __finally block
             }
 
             if (!Eof)
@@ -5110,8 +5171,8 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
                 // listing and server returns less bytes than requested and
                 // file has some special file size.
                 FTerminal->LogEvent(FORMAT(
-                  "Received incomplete data packet before end of file, "
-                  "offset: %s, size: %d, requested: %d",
+                  L"Received incomplete data packet before end of file, "
+                   "offset: %s, size: %d, requested: %d",
                   (IntToStr(OperationProgress->TransferedSize), int(DataLen),
                   int(BlockSize))));
                 FTerminal->TerminalError(NULL, LoadStr(SFTP_INCOMPLETE_BEFORE_EOF));
@@ -5148,7 +5209,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
               }
 
               assert(DataLen <= BlockSize);
-              BlockBuf.Insert(0, DataPacket.GetNextData(DataLen), DataLen);
+              BlockBuf.Insert(0, reinterpret_cast<const char *>(DataPacket.GetNextData(DataLen)), DataLen);
               OperationProgress->AddTransfered(DataLen);
 
               if (OperationProgress->AsciiTransfer)
@@ -5165,7 +5226,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
                 BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
               );
 
-              OperationProgress->AddLocalyUsed(BlockBuf.Size);
+              OperationProgress->AddLocallyUsed(BlockBuf.Size);
             }
 
             if (OperationProgress->Cancel == csCancel)
@@ -5177,7 +5238,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
           if (GapCount > 0)
           {
             FTerminal->LogEvent(FORMAT(
-              "%d requests to fill %d data gaps were issued.",
+              L"%d requests to fill %d data gaps were issued.",
               (GapFillCount, GapCount)));
           }
         }
@@ -5190,32 +5251,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
 
       if (CopyParam->PreserveTime)
       {
-        ReceiveResponse(&RemoteFilePacket, &RemoteFilePacket);
-
-        const TRemoteFile * AFile = File;
-        try
-        {
-          // ignore errors
-          if (RemoteFilePacket.Type == SSH_FXP_ATTRS)
-          {
-            // load file, avoid completion (resolving symlinks) as we do not need that
-            AFile = LoadFile(&RemoteFilePacket, NULL, UnixExtractFileName(FileName),
-              NULL, false);
-          }
-
-          FILETIME AcTime = DateTimeToFileTime(AFile->LastAccess,
-            FTerminal->SessionData->DSTMode);
-          FILETIME WrTime = DateTimeToFileTime(AFile->Modification,
-            FTerminal->SessionData->DSTMode);
-          SetFileTime(LocalHandle, NULL, &AcTime, &WrTime);
-        }
-        __finally
-        {
-          if (AFile != File)
-          {
-            delete AFile;
-          }
-        }
+        SetFileTime(LocalHandle, NULL, &AcTime, &WrTime);
       }
 
       CloseHandle(LocalHandle);
@@ -5224,13 +5260,13 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
       if (ResumeAllowed)
       {
         FILE_OPERATION_LOOP(FMTLOAD(RENAME_AFTER_RESUME_ERROR,
-            (ExtractFileName(DestPartinalFullName), DestFileName)),
+            (ExtractFileName(DestPartialFullName), DestFileName)),
 
           if (FileExists(DestFullName))
           {
             THROWOSIFFALSE(Sysutils::DeleteFile(DestFullName));
           }
-          if (!Sysutils::RenameFile(DestPartinalFullName, DestFullName))
+          if (!Sysutils::RenameFile(DestPartialFullName, DestFullName))
           {
             RaiseLastOSError();
           }
@@ -5256,7 +5292,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
     {
       if (LocalHandle) CloseHandle(LocalHandle);
       if (FileStream) delete FileStream;
-      if (DeleteLocalFile && (!ResumeAllowed || OperationProgress->LocalyUsed == 0) &&
+      if (DeleteLocalFile && (!ResumeAllowed || OperationProgress->LocallyUsed == 0) &&
           (OverwriteMode == omOverwrite))
       {
         FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (LocalFileName)),
@@ -5286,7 +5322,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::SFTPSinkFile(AnsiString FileName,
+void __fastcall TSFTPFileSystem::SFTPSinkFile(UnicodeString FileName,
   const TRemoteFile * File, void * Param)
 {
   TSinkFileParams * Params = (TSinkFileParams *)Param;

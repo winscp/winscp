@@ -1,12 +1,12 @@
 object ConsoleDialog: TConsoleDialog
   Left = 349
   Top = 169
-  Width = 567
-  Height = 431
   HelpType = htKeyword
   HelpKeyword = 'ui_console'
   BorderIcons = [biSystemMenu, biMaximize, biHelp]
   Caption = 'Console'
+  ClientHeight = 393
+  ClientWidth = 551
   Color = clBtnFace
   Constraints.MinHeight = 250
   Constraints.MinWidth = 380
@@ -14,14 +14,14 @@ object ConsoleDialog: TConsoleDialog
   OldCreateOrder = True
   OnShow = FormShow
   DesignSize = (
-    559
-    397)
+    551
+    393)
   PixelsPerInch = 96
   TextHeight = 13
   object Bevel1: TBevel
     Left = 0
     Top = 0
-    Width = 559
+    Width = 551
     Height = 78
     Align = alTop
     Shape = bsBottomLine
@@ -29,7 +29,7 @@ object ConsoleDialog: TConsoleDialog
   object Label1: TLabel
     Left = 13
     Top = 13
-    Width = 77
+    Width = 78
     Height = 13
     Caption = 'Enter &command:'
     FocusControl = CommandEdit
@@ -37,7 +37,7 @@ object ConsoleDialog: TConsoleDialog
   object Label2: TLabel
     Left = 13
     Top = 56
-    Width = 80
+    Width = 87
     Height = 13
     Caption = 'Current directory:'
   end
@@ -64,8 +64,8 @@ object ConsoleDialog: TConsoleDialog
   object OutputMemo: TMemo
     Left = 0
     Top = 78
-    Width = 559
-    Height = 319
+    Width = 551
+    Height = 315
     TabStop = False
     Align = alClient
     Color = clBtnFace
@@ -94,7 +94,6 @@ object ConsoleDialog: TConsoleDialog
     Height = 21
     AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 13
     MaxLength = 250
     TabOrder = 0
     OnChange = CommandEditChange
@@ -124,7 +123,7 @@ object ConsoleDialog: TConsoleDialog
     Left = 456
     Top = 160
     Bitmap = {
-      494C010103000400040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000400100010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

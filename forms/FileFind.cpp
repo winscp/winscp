@@ -5,7 +5,7 @@
 #include <Common.h>
 #include <WinInterface.h>
 #include <VCLCommon.h>
-#include <TextsWin1.h>
+#include <TextsWin.h>
 #include <WinConfiguration.h>
 #include <CoreMain.h>
 #include <Tools.h>
@@ -19,8 +19,8 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-bool __fastcall DoFileFindDialog(AnsiString Directory,
-  TFindEvent OnFind, AnsiString & Path)
+bool __fastcall DoFileFindDialog(UnicodeString Directory,
+  TFindEvent OnFind, UnicodeString & Path)
 {
   bool Result;
   TFileFindDialog * Dialog = new TFileFindDialog(Application, OnFind);
@@ -48,7 +48,11 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner, TFindEvent OnFin
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   FixComboBoxResizeBug(MaskEdit);
   FixComboBoxResizeBug(RemoteDirectoryEdit);
-  HintLabel(MaskHintText, LoadStr(MASK_HINT2));
+  HintLabel(MaskHintText,
+    FORMAT(L"%s\n \n%s\n \n%s\n \n%s\n \n%s\n \n%s", (LoadStr(MASK_HINT2),
+      LoadStr(FILE_MASK_EX_HINT), LoadStr(COMBINING_MASKS_HINT),
+      LoadStr(PATH_MASK_HINT2), LoadStr(DIRECTORY_MASK_HINT),
+      LoadStr(MASK_HELP))));
 
   FSystemImageList = SharedSystemImageList(false);
   FileView->SmallImages = FSystemImageList;
@@ -79,7 +83,7 @@ void __fastcall TFileFindDialog::UpdateControls()
 {
   bool Finding = IsFinding();
   Caption = LoadStr(Finding ? FIND_FILE_FINDING : FIND_FILE_TITLE);
-  AnsiString StartStopCaption;
+  UnicodeString StartStopCaption;
   if (Finding)
   {
     EnableControl(StartStopButton, true);
@@ -98,7 +102,7 @@ void __fastcall TFileFindDialog::UpdateControls()
   switch (FState)
   {
     case ffInit:
-      StatusBar->SimpleText = "";
+      StatusBar->SimpleText = L"";
 
     case ffFinding:
     case ffAborting:
@@ -108,7 +112,7 @@ void __fastcall TFileFindDialog::UpdateControls()
       }
       else
       {
-        StatusBar->SimpleText = "";
+        StatusBar->SimpleText = L"";
       }
       break;
 
@@ -131,14 +135,14 @@ void __fastcall TFileFindDialog::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileFindDialog::Execute(AnsiString Directory, AnsiString & Path)
+bool __fastcall TFileFindDialog::Execute(UnicodeString Directory, UnicodeString & Path)
 {
   MaskEdit->Text = WinConfiguration->SelectMask;
   RemoteDirectoryEdit->Text = UnixExcludeTrailingBackslash(Directory);
 
   // have to set history after value, to prevent autocompletition
-  MaskEdit->Items = WinConfiguration->History["Mask"];
-  RemoteDirectoryEdit->Items = CustomWinConfiguration->History["RemoteDirectory"];
+  MaskEdit->Items = WinConfiguration->History[L"Mask"];
+  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
 
   bool Result = (ShowModal() != mrCancel);
   if (Result)
@@ -175,9 +179,9 @@ void __fastcall TFileFindDialog::Start()
   }
 
   RemoteDirectoryEdit->SaveToHistory();
-  CustomWinConfiguration->History["RemoteDirectory"] = RemoteDirectoryEdit->Items;
+  CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
   MaskEdit->SaveToHistory();
-  WinConfiguration->History["Mask"] = MaskEdit->Items;
+  WinConfiguration->History[L"Mask"] = MaskEdit->Items;
   WinConfiguration->SelectMask = MaskEdit->Text;
 
   assert(FState != ffFinding);
@@ -196,7 +200,7 @@ void __fastcall TFileFindDialog::Start()
   __finally
   {
     Busy(false);
-    FFindingInDirectory = "";
+    FFindingInDirectory = L"";
     if (FState == ffFinding)
     {
       FState = ffDone;
@@ -215,24 +219,24 @@ void __fastcall TFileFindDialog::Start()
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
-  const AnsiString FileName, const TRemoteFile * AFile, bool & Cancel)
+  const UnicodeString FileName, const TRemoteFile * AFile, bool & Cancel)
 {
   TListItem * Item = FileView->Items->Add();
   TRemoteFile * File = AFile->Duplicate(true);
   Item->Data = File;
 
   Item->ImageIndex = File->IconIndex;
-  AnsiString Caption = File->FileName;
+  UnicodeString Caption = File->FileName;
   if (File->IsDirectory)
   {
     Caption = UnixIncludeTrailingBackslash(Caption);
   }
   Item->Caption = Caption;
 
-  AnsiString Directory = UnixExtractFilePath(File->FullFileName);
+  UnicodeString Directory = UnixExtractFilePath(File->FullFileName);
   if (AnsiSameText(FDirectory, Directory.SubString(1, FDirectory.Length())))
   {
-    Directory[1] = '.';
+    Directory[1] = L'.';
     Directory.Delete(2, FDirectory.Length() - 1);
   }
   else
@@ -243,11 +247,11 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
 
   if (File->IsDirectory)
   {
-    Item->SubItems->Add("");
+    Item->SubItems->Add(L"");
   }
   else
   {
-    Item->SubItems->Add(FormatFloat("#,##0", File->Size));
+    Item->SubItems->Add(FormatFloat(L"#,##0", File->Size));
   }
   Item->SubItems->Add(UserModificationStr(File->Modification, File->ModificationFmt));
 
@@ -257,7 +261,7 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FindingFile(TTerminal * /*Terminal*/,
-  const AnsiString Directory, bool & Cancel)
+  const UnicodeString Directory, bool & Cancel)
 {
   if (!Directory.IsEmpty() && (FFindingInDirectory != Directory))
   {
@@ -315,7 +319,7 @@ void __fastcall TFileFindDialog::MinimizeApp()
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FormShow(TObject * /*Sender*/)
 {
-  UpdateFormPosition(this, poMainFormCenter);
+  UpdateFormPosition(this, poOwnerFormCenter);
   RestoreFormSize(CustomWinConfiguration->FindFile.WindowParams, this);
   FileView->ColProperties->ParamsStr = CustomWinConfiguration->FindFile.ListParams;
   UpdateControls();
@@ -374,5 +378,14 @@ void __fastcall TFileFindDialog::FileViewSelectItem(TObject * /*Sender*/,
   TListItem * /*Item*/, bool /*Selected*/)
 {
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::MaskButtonClick(TObject * /*Sender*/)
+{
+  TFileMasks Masks = MaskEdit->Text;
+  if (DoEditMaskDialog(Masks))
+  {
+    MaskEdit->Text = Masks.Masks;
+  }
 }
 //---------------------------------------------------------------------------

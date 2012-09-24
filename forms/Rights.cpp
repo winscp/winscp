@@ -19,7 +19,7 @@
 __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
         : TFrame(Owner)
 {
-  FAddXToDirectoriesSuffix = "+x";
+  FAddXToDirectoriesSuffix = L"+x";
   FOnChange = NULL;
   FAllowAddXToDirectories = true;
   FPopup = false;
@@ -316,7 +316,7 @@ void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
     }
     else if (Action == PasteAction)
     {
-      AnsiString S;
+      UnicodeString S;
       if (TextFromClipboard(S))
       {
         Text = S;
@@ -570,21 +570,21 @@ void __fastcall TRightsFrame::CloseUp()
   FPopupParent->SetFocus();
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TRightsFrame::GetText()
+UnicodeString __fastcall TRightsFrame::GetText()
 {
-  AnsiString Result = Rights.Text;
+  UnicodeString Result = Rights.Text;
   if (AllowAddXToDirectories && DirectoriesXEffective() && AddXToDirectories)
   {
-    Result = FORMAT("%s (%s)", (Result, FAddXToDirectoriesSuffix));
+    Result = FORMAT(L"%s (%s)", (Result, FAddXToDirectoriesSuffix));
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::SetText(AnsiString value)
+void __fastcall TRightsFrame::SetText(UnicodeString value)
 {
   if (Text != value)
   {
-    AnsiString RightsStr = value;
+    UnicodeString RightsStr = value;
 
     int P = RightsStr.LowerCase().Pos(FAddXToDirectoriesSuffix);
     bool AAddXToDirectories = (P > 0);
@@ -592,7 +592,7 @@ void __fastcall TRightsFrame::SetText(AnsiString value)
     {
       RightsStr.Delete(P, FAddXToDirectoriesSuffix.Length());
     }
-    RightsStr = DeleteChar(DeleteChar(RightsStr, '('), ')').Trim();
+    RightsStr = DeleteChar(DeleteChar(RightsStr, L'('), L')').Trim();
     TRights R = Rights;
     if (((RightsStr.Length() == 3) || (RightsStr.Length() == 4)) &&
         IsNumber(RightsStr))

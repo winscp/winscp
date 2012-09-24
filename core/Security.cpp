@@ -10,7 +10,7 @@
 #define PWALG_SIMPLE_INTERNAL 0x00
 #define PWALG_SIMPLE_EXTERNAL 0x01
 //---------------------------------------------------------------------------
-AnsiString SimpleEncryptChar(unsigned char Ch)
+RawByteString SimpleEncryptChar(unsigned char Ch)
 {
   Ch = (unsigned char)((~Ch) ^ PWALG_SIMPLE_MAGIC);
   return
@@ -18,7 +18,7 @@ AnsiString SimpleEncryptChar(unsigned char Ch)
     PWALG_SIMPLE_STRING.SubString(((Ch & 0x0F) >> 0) + 1, 1);
 }
 //---------------------------------------------------------------------------
-unsigned char SimpleDecryptNextChar(AnsiString &Str)
+unsigned char SimpleDecryptNextChar(RawByteString &Str)
 {
   if (Str.Length() > 0)
   {
@@ -31,19 +31,22 @@ unsigned char SimpleDecryptNextChar(AnsiString &Str)
   else return 0x00;
 }
 //---------------------------------------------------------------------------
-AnsiString EncryptPassword(AnsiString Password, AnsiString Key, Integer /* Algorithm */)
+RawByteString EncryptPassword(UnicodeString UnicodePassword, UnicodeString UnicodeKey, Integer /* Algorithm */)
 {
-  AnsiString Result("");
+  UTF8String Password = UnicodePassword;
+  UTF8String Key = UnicodeKey;
+
+  RawByteString Result("");
   int Shift, Index;
 
   if (!RandSeed) Randomize();
   Password = Key + Password;
   Shift = (Password.Length() < PWALG_SIMPLE_MAXLEN) ?
     (unsigned char)random(PWALG_SIMPLE_MAXLEN - Password.Length()) : 0;
-  Result += SimpleEncryptChar((Char)PWALG_SIMPLE_FLAG); // Flag
-  Result += SimpleEncryptChar((Char)PWALG_SIMPLE_INTERNAL); // Dummy
-  Result += SimpleEncryptChar((Char)Password.Length());
-  Result += SimpleEncryptChar((Char)Shift);
+  Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_FLAG); // Flag
+  Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_INTERNAL); // Dummy
+  Result += SimpleEncryptChar((unsigned char)Password.Length());
+  Result += SimpleEncryptChar((unsigned char)Shift);
   for (Index = 0; Index < Shift; Index++)
     Result += SimpleEncryptChar((unsigned char)random(256));
   for (Index = 0; Index < Password.Length(); Index++)
@@ -53,9 +56,10 @@ AnsiString EncryptPassword(AnsiString Password, AnsiString Key, Integer /* Algor
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString DecryptPassword(AnsiString Password, AnsiString Key, Integer /* Algorithm */)
+UnicodeString DecryptPassword(RawByteString Password, UnicodeString UnicodeKey, Integer /* Algorithm */)
 {
-  AnsiString Result("");
+  UTF8String Key = UnicodeKey;
+  UTF8String Result("");
   Integer Index;
   unsigned char Length, Flag;
 
@@ -74,26 +78,26 @@ AnsiString DecryptPassword(AnsiString Password, AnsiString Key, Integer /* Algor
     if (Result.SubString(1, Key.Length()) != Key) Result = "";
       else Result.Delete(1, Key.Length());
   }
-  return Result;
+  return UnicodeString(Result);
 }
 //---------------------------------------------------------------------------
-AnsiString SetExternalEncryptedPassword(AnsiString Password)
+RawByteString SetExternalEncryptedPassword(RawByteString Password)
 {
-  AnsiString Result;
-  Result += SimpleEncryptChar((Char)PWALG_SIMPLE_FLAG);
-  Result += SimpleEncryptChar((Char)PWALG_SIMPLE_EXTERNAL);
-  Result += StrToHex(Password);
+  RawByteString Result;
+  Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_FLAG);
+  Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_EXTERNAL);
+  Result += UTF8String(BytesToHex(reinterpret_cast<const unsigned char *>(Password.c_str()), Password.Length()));
   return Result;
 }
 //---------------------------------------------------------------------------
-bool GetExternalEncryptedPassword(AnsiString Encrypted, AnsiString & Password)
+bool GetExternalEncryptedPassword(RawByteString Encrypted, RawByteString & Password)
 {
   bool Result =
     (SimpleDecryptNextChar(Encrypted) == PWALG_SIMPLE_FLAG) &&
     (SimpleDecryptNextChar(Encrypted) == PWALG_SIMPLE_EXTERNAL);
   if (Result)
   {
-    Password = HexToStr(Encrypted);
+    Password = HexToBytes(UnicodeString(UTF8String(Encrypted.c_str(), Encrypted.Length())));
   }
   return Result;
 }

@@ -1,0 +1,288 @@
+	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{E82E93A5-709F-4C7A-918F-811A5F660941}</ProjectGuid>
+			<ProjectVersion>13.4</ProjectVersion>
+			<Config Condition="'$(Config)'==''">Release</Config>
+			<FrameworkType>None</FrameworkType>
+			<Base>True</Base>
+			<Platform Condition="'$(Platform)'==''">Win32</Platform>
+			<TargetedPlatforms>1</TargetedPlatforms>
+			<AppType>StaticLibrary</AppType>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+			<Base_Win32>true</Base_Win32>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+			<Cfg_1>true</Cfg_1>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+			<Cfg_2>true</Cfg_2>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base)'!=''">
+			<AllPackageLibs>rtl.lib</AllPackageLibs>
+			<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
+			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+			<BCC_wamb>true</BCC_wamb>
+			<BCC_wamp>true</BCC_wamp>
+			<BCC_wasm>true</BCC_wasm>
+			<BCC_waus>false</BCC_waus>
+			<BCC_wbbf>true</BCC_wbbf>
+			<BCC_wccc>false</BCC_wccc>
+			<BCC_wcln>true</BCC_wcln>
+			<BCC_wcsu>false</BCC_wcsu>
+			<BCC_wdef>true</BCC_wdef>
+			<BCC_weff>false</BCC_weff>
+			<BCC_wexc>true</BCC_wexc>
+			<BCC_wimp>true</BCC_wimp>
+			<BCC_wnak>true</BCC_wnak>
+			<BCC_wnod>true</BCC_wnod>
+			<BCC_wntn>true</BCC_wntn>
+			<BCC_wpad>true</BCC_wpad>
+			<BCC_wpar>false</BCC_wpar>
+			<BCC_wpch>false</BCC_wpch>
+			<BCC_wpia>false</BCC_wpia>
+			<BCC_wrch>false</BCC_wrch>
+			<BCC_wrvl>false</BCC_wrvl>
+			<BCC_wstl>true</BCC_wstl>
+			<BCC_wstv>true</BCC_wstv>
+			<BCC_wsus>false</BCC_wsus>
+			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+			<Defines>NO_STRICT;SECURITY_WIN32;MPEXT;_WINDOWS;$(Defines)</Defines>
+			<ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<IncludePath>putty\;putty\CHARSET\;putty\WINDOWS\;$(BDS)\include;$(IncludePath)</IncludePath>
+			<Manifest_File>None</Manifest_File>
+			<Multithreaded>true</Multithreaded>
+			<OutputExt>lib</OutputExt>
+			<ProjectType>CppStaticLibrary</ProjectType>
+			<TLIB_PageSize>64</TLIB_PageSize>
+			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+			<VerInfo_Locale>1033</VerInfo_Locale>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base_Win32)'!=''">
+			<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+			<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+			<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+			<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+			<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+			<BCC_StackFrames>true</BCC_StackFrames>
+			<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+			<DCC_Define>DEBUG</DCC_Define>
+			<DCC_Optimize>false</DCC_Optimize>
+			<Defines>_DEBUG;$(Defines)</Defines>
+			<FinalOutputDir>$(INTERM_PATH)\Debug</FinalOutputDir>
+			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+			<ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<IntermediateOutputDir>$(INTERM_PATH)\Debug</IntermediateOutputDir>
+			<TASM_Debugging>Full</TASM_Debugging>
+			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<Defines>NDEBUG;$(Defines)</Defines>
+			<FinalOutputDir>$(INTERM_PATH)\Release</FinalOutputDir>
+			<ILINK_LibraryPath>$(BDS)\lib\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<IntermediateOutputDir>$(INTERM_PATH)\Release</IntermediateOutputDir>
+			<TASM_Debugging>None</TASM_Debugging>
+		</PropertyGroup>
+		<ItemGroup>
+			<CppCompile Include="putty\CHARSET\UTF8.C">
+				<BuildOrder>80</BuildOrder>
+				<BuildOrder>0</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\CPROXY.C">
+				<BuildOrder>5</BuildOrder>
+				<BuildOrder>25</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\INT64.C">
+				<BuildOrder>8</BuildOrder>
+				<BuildOrder>24</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\LOGGING.C">
+				<BuildOrder>27</BuildOrder>
+				<BuildOrder>11</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\MISC.C">
+				<BuildOrder>26</BuildOrder>
+				<BuildOrder>14</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\PGSSAPI.C">
+				<BuildOrder>37</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\PORTFWD_.C">
+				<BuildOrder>23</BuildOrder>
+				<BuildOrder>17</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\PROXY.C">
+				<BuildOrder>20</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSH_.C">
+				<BuildOrder>23</BuildOrder>
+				<BuildOrder>19</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHAES_.C">
+				<BuildOrder>26</BuildOrder>
+				<BuildOrder>22</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHARCF.C">
+				<BuildOrder>29</BuildOrder>
+				<BuildOrder>21</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHBLOWF.C">
+				<BuildOrder>34</BuildOrder>
+				<BuildOrder>32</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHBN.C">
+				<BuildOrder>35</BuildOrder>
+				<BuildOrder>33</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHCRC.C">
+				<BuildOrder>38</BuildOrder>
+				<BuildOrder>36</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHCRCDA.C">
+				<BuildOrder>41</BuildOrder>
+				<BuildOrder>35</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHDES.C">
+				<BuildOrder>44</BuildOrder>
+				<BuildOrder>32</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHDH.C">
+				<BuildOrder>47</BuildOrder>
+				<BuildOrder>29</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHDSS.C">
+				<BuildOrder>50</BuildOrder>
+				<BuildOrder>28</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHGSSC.C">
+				<BuildOrder>38</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHMD5.C">
+				<BuildOrder>53</BuildOrder>
+				<BuildOrder>31</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHPUBK.C">
+				<BuildOrder>56</BuildOrder>
+				<BuildOrder>30</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHRAND.C">
+				<BuildOrder>59</BuildOrder>
+				<BuildOrder>18</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHRSA.C">
+				<BuildOrder>62</BuildOrder>
+				<BuildOrder>6</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHSH256.C">
+				<BuildOrder>65</BuildOrder>
+				<BuildOrder>5</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHSH512.C">
+				<BuildOrder>8</BuildOrder>
+				<BuildOrder>68</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHSHA_.C">
+				<BuildOrder>71</BuildOrder>
+				<BuildOrder>7</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\SSHZLIB.C">
+				<BuildOrder>74</BuildOrder>
+				<BuildOrder>4</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\TREE234.C">
+				<BuildOrder>77</BuildOrder>
+				<BuildOrder>1</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WILDCARD.C">
+				<BuildOrder>83</BuildOrder>
+				<BuildOrder>3</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WINDOWS\WINGSS.C">
+				<BuildOrder>86</BuildOrder>
+				<BuildOrder>2</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WINDOWS\WINHANDL.C">
+				<BuildOrder>89</BuildOrder>
+				<BuildOrder>15</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WINDOWS\WINMISC.C">
+				<BuildOrder>92</BuildOrder>
+				<BuildOrder>14</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WINDOWS\WINNET.C">
+				<BuildOrder>95</BuildOrder>
+				<BuildOrder>17</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WINDOWS\WINNOISE.C">
+				<BuildOrder>98</BuildOrder>
+				<BuildOrder>16</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WINDOWS\WINNOJMP.C">
+				<BuildOrder>39</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WINDOWS\WINPGNTC.C">
+				<BuildOrder>13</BuildOrder>
+				<BuildOrder>101</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WINDOWS\WINPROXY.C">
+				<BuildOrder>104</BuildOrder>
+				<BuildOrder>10</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WINDOWS\WINSTORE_.C">
+				<BuildOrder>9</BuildOrder>
+				<BuildOrder>107</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\WINDOWS\WINTIME.C">
+				<BuildOrder>12</BuildOrder>
+				<BuildOrder>110</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\X11FWD.C">
+				<BuildOrder>113</BuildOrder>
+				<BuildOrder>11</BuildOrder>
+			</CppCompile>
+			<BuildConfiguration Include="Base">
+				<Key>Base</Key>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Debug">
+				<Key>Cfg_1</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Release">
+				<Key>Cfg_2</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+		</ItemGroup>
+		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
+		<ProjectExtensions>
+			<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+			<Borland.ProjectType>CppStaticLibrary</Borland.ProjectType>
+			<BorlandProject>
+				<CPlusPlusBuilder.Personality>
+					<ProjectProperties>
+						<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+						<ProjectProperties Name="ManagePaths">True</ProjectProperties>
+						<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+					</ProjectProperties>
+				</CPlusPlusBuilder.Personality>
+				<Platforms>
+					<Platform value="Win32">True</Platform>
+				</Platforms>
+			</BorlandProject>
+			<ProjectFileVersion>12</ProjectFileVersion>
+		</ProjectExtensions>
+		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+	</Project>

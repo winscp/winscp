@@ -10,6 +10,7 @@
 #include "TextsCore.h"
 #include "TextsWin.h"
 #include "GUITools.h"
+#include <BaseUtils.hpp>
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #ifndef NO_RESOURCES
@@ -18,7 +19,7 @@
 //---------------------------------------------------------------------
 void __fastcall DoFileSystemInfoDialog(
   const TSessionInfo & SessionInfo, const TFileSystemInfo & FileSystemInfo,
-  AnsiString SpaceAvailablePath, TGetSpaceAvailable OnGetSpaceAvailable)
+  UnicodeString SpaceAvailablePath, TGetSpaceAvailable OnGetSpaceAvailable)
 {
   TFileSystemInfoDialog * Dialog = new TFileSystemInfoDialog(Application,
     OnGetSpaceAvailable);
@@ -50,7 +51,7 @@ __fastcall TFileSystemInfoDialog::TFileSystemInfoDialog(TComponent * AOwner,
 }
 //---------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::Execute(const TSessionInfo & SessionInfo,
-  const TFileSystemInfo & FileSystemInfo, AnsiString SpaceAvailablePath)
+  const TFileSystemInfo & FileSystemInfo, UnicodeString SpaceAvailablePath)
 {
   FSessionInfo = SessionInfo;
   FFileSystemInfo = FileSystemInfo;
@@ -59,20 +60,20 @@ void __fastcall TFileSystemInfoDialog::Execute(const TSessionInfo & SessionInfo,
   ShowModal();
 }
 //---------------------------------------------------------------------
-AnsiString __fastcall TFileSystemInfoDialog::CapabilityStr(TFSCapability Capability)
+UnicodeString __fastcall TFileSystemInfoDialog::CapabilityStr(TFSCapability Capability)
 {
   return BooleanToStr(FFileSystemInfo.IsCapable[Capability]);
 }
 //---------------------------------------------------------------------
-AnsiString __fastcall TFileSystemInfoDialog::CapabilityStr(TFSCapability Capability1,
+UnicodeString __fastcall TFileSystemInfoDialog::CapabilityStr(TFSCapability Capability1,
   TFSCapability Capability2)
 {
-  return FORMAT("%s/%s", (CapabilityStr(Capability1), CapabilityStr(Capability2)));
+  return FORMAT(L"%s/%s", (CapabilityStr(Capability1), CapabilityStr(Capability2)));
 }
 //---------------------------------------------------------------------
-AnsiString __fastcall TFileSystemInfoDialog::SpaceStr(__int64 Bytes)
+UnicodeString __fastcall TFileSystemInfoDialog::SpaceStr(__int64 Bytes)
 {
-  AnsiString Result;
+  UnicodeString Result;
   if (Bytes == 0)
   {
     Result = LoadStr(FSINFO_BYTES_UNKNOWN);
@@ -80,10 +81,10 @@ AnsiString __fastcall TFileSystemInfoDialog::SpaceStr(__int64 Bytes)
   else
   {
     Result = FormatBytes(Bytes);
-    AnsiString SizeUnorderedStr = FormatBytes(Bytes, false);
+    UnicodeString SizeUnorderedStr = FormatBytes(Bytes, false);
     if (Result != SizeUnorderedStr)
     {
-      Result = FORMAT("%s (%s)", (Result, SizeUnorderedStr));
+      Result = FORMAT(L"%s (%s)", (Result, SizeUnorderedStr));
     }
   }
   return Result;
@@ -95,17 +96,17 @@ void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
   AddItem(ServerView, FSINFO_SESSION_PROTOCOL, FSessionInfo.ProtocolName);
   AddItem(ServerView, FSINFO_SSH_IMPLEMENTATION, FSessionInfo.SshImplementation);
 
-  AnsiString Str = FSessionInfo.CSCipher;
+  UnicodeString Str = FSessionInfo.CSCipher;
   if (FSessionInfo.CSCipher != FSessionInfo.SCCipher)
   {
-    Str += FORMAT("/%s", (FSessionInfo.SCCipher));
+    Str += FORMAT(L"/%s", (FSessionInfo.SCCipher));
   }
   AddItem(ServerView, FSINFO_CIPHER, Str);
 
   Str = DefaultStr(FSessionInfo.CSCompression, LoadStr(NO_STR));
   if (FSessionInfo.CSCompression != FSessionInfo.SCCompression)
   {
-    Str += FORMAT("/%s", (DefaultStr(FSessionInfo.SCCompression, LoadStr(NO_STR))));
+    Str += FORMAT(L"/%s", (DefaultStr(FSessionInfo.SCCompression, LoadStr(NO_STR))));
   }
   AddItem(ServerView, FSINFO_COMPRESSION, Str);
   if (FSessionInfo.ProtocolName != FFileSystemInfo.ProtocolName)
@@ -118,7 +119,7 @@ void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
 
   AddItem(ProtocolView, FSINFO_MODE_CHANGING, CapabilityStr(fcModeChanging));
   AddItem(ProtocolView, FSINFO_OWNER_GROUP_CHANGING, CapabilityStr(fcGroupChanging));
-  AnsiString AnyCommand;
+  UnicodeString AnyCommand;
   if (!FFileSystemInfo.IsCapable[fcShellAnyCommand] &&
       FFileSystemInfo.IsCapable[fcAnyCommand])
   {
@@ -146,7 +147,7 @@ void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
 }
 //---------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::ControlsAddItem(TControl * Control,
-  int Label, AnsiString Value)
+  int Label, UnicodeString Value)
 {
   if (FLastFeededControl != Control)
   {
@@ -224,7 +225,7 @@ void __fastcall TFileSystemInfoDialog::HelpButtonClick(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::ClipboardAddItem(TControl * Control,
-  int Label, AnsiString Value)
+  int Label, UnicodeString Value)
 {
   if (Control->Enabled && !Value.IsEmpty())
   {
@@ -232,7 +233,7 @@ void __fastcall TFileSystemInfoDialog::ClipboardAddItem(TControl * Control,
     {
       if (FLastFeededControl != NULL)
       {
-        FClipboard += AnsiString::StringOfChar('-', 60) + "\r\n";
+        FClipboard += UnicodeString::StringOfChar(L'-', 60) + L"\r\n";
       }
       FLastFeededControl = Control;
     }
@@ -241,16 +242,16 @@ void __fastcall TFileSystemInfoDialog::ClipboardAddItem(TControl * Control,
     {
       TGroupBox * Group = dynamic_cast<TGroupBox *>(Control->Parent);
       assert(Group != NULL);
-      if ((Value.Length() >= 2) && (Value.SubString(Value.Length() - 1, 2) == "\r\n"))
+      if ((Value.Length() >= 2) && (Value.SubString(Value.Length() - 1, 2) == L"\r\n"))
       {
         Value.SetLength(Value.Length() - 2);
       }
-      FClipboard += FORMAT("%s\r\n%s\r\n", (Group->Caption, Value));
+      FClipboard += FORMAT(L"%s\r\n%s\r\n", (Group->Caption, Value));
     }
     else
     {
       assert(dynamic_cast<TListView *>(Control) != NULL);
-      FClipboard += FORMAT("%s = %s\r\n", (LoadStr(Label), Value));
+      FClipboard += FORMAT(L"%s = %s\r\n", (LoadStr(Label), Value));
     }
   }
 }
@@ -260,7 +261,7 @@ void __fastcall TFileSystemInfoDialog::ClipboardButtonClick(
 {
   NeedSpaceAvailable();
   FLastFeededControl = NULL;
-  FClipboard = "";
+  FClipboard = L"";
   Feed(ClipboardAddItem);
   CopyToClipboard(FClipboard);
 }
@@ -274,13 +275,13 @@ void __fastcall TFileSystemInfoDialog::CopyClick(TObject * Sender)
   TListView * ListView = dynamic_cast<TListView *>(PopupMenu->PopupComponent);
   assert(ListView != NULL);
 
-  AnsiString Text;
+  UnicodeString Text;
   for (int Index = 0; Index < ListView->Items->Count; Index++)
   {
     TListItem * Item = ListView->Items->Item[Index];
     if (Item->Selected)
     {
-      Text += FORMAT("%s = %s\r\n", (Item->Caption, Item->SubItems->Strings[0]));
+      Text += FORMAT(L"%s = %s\r\n", (Item->Caption, Item->SubItems->Strings[0]));
     }
   }
   CopyToClipboard(Text);

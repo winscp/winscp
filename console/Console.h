@@ -2,18 +2,19 @@
 #ifndef ConsoleH
 #define ConsoleH
 //---------------------------------------------------------------------------
-#define CONSOLE_MAPPING "WinSCPConsoleMapping"
-#define CONSOLE_EVENT_REQUEST "WinSCPConsoleEventRequest"
-#define CONSOLE_EVENT_RESPONSE "WinSCPConsoleEventResponse"
-#define CONSOLE_EVENT_CANCEL "WinSCPConsoleEventCancel"
-#define CONSOLE_JOB "WinSCPConsoleJob"
+#define CONSOLE_MAPPING L"WinSCPConsoleMapping"
+#define CONSOLE_EVENT_REQUEST L"WinSCPConsoleEventRequest"
+#define CONSOLE_EVENT_RESPONSE L"WinSCPConsoleEventResponse"
+#define CONSOLE_EVENT_CANCEL L"WinSCPConsoleEventCancel"
+#define CONSOLE_JOB L"WinSCPConsoleJob"
 //---------------------------------------------------------------------------
 struct TConsoleCommStruct
 {
   enum TVersion
   {
-    CurrentVersion =          0x0004,
-    CurrentVersionConfirmed = 0x0104
+    // Version 5 was actually mistake and there's no difference to version 4
+    CurrentVersion =          0x0005,
+    CurrentVersionConfirmed = 0x0105
   };
 
   struct TInitEvent
@@ -24,7 +25,7 @@ struct TConsoleCommStruct
 
   struct TPrintEvent
   {
-    char Message[10240];
+    wchar_t Message[10240]; // wide since version 4
     bool FromBeginning;
   };
 
@@ -32,29 +33,30 @@ struct TConsoleCommStruct
   {
     bool Echo;
     bool Result;
-    char Str[10240];
-    unsigned int Timer; // since Version2
+    wchar_t Str[10240]; // wide since version 4
+    unsigned int Timer; // since version 2
   };
 
   struct TChoiceEvent
   {
-    char Options[64];
+    wchar_t Options[64]; // wide since version 4
     int Cancel;
     int Break;
     int Result;
-    int Timeouted; // since Version2
-    unsigned int Timer; // since Version2
-    bool Timeouting; // since Version4
+    int Timeouted; // since version 2
+    unsigned int Timer; // since version 2
+    bool Timeouting; // since version 4
   };
 
   struct TTitleEvent
   {
-    char Title[10240];
+    wchar_t Title[10240]; // wide since version 4
   };
 
   size_t Size;
   int Version;
   enum { NONE, PRINT, INPUT, CHOICE, TITLE, INIT } Event;
+
   union
   {
     TPrintEvent PrintEvent;

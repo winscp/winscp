@@ -32,8 +32,8 @@ public:
 
   void __fastcall Init(TStrings * Sessions, TStrings * Directories,
     TDirectRemoteCopy AllowDirectCopy);
-  bool __fastcall Execute(void *& Session, AnsiString & Target,
-    AnsiString & FileMask, bool & DirectCopy);
+  bool __fastcall Execute(void *& Session, UnicodeString & Target,
+    UnicodeString & FileMask, bool & DirectCopy);
 
 protected:
   void __fastcall UpdateControls();

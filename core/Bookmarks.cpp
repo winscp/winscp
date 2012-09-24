@@ -12,7 +12,7 @@
 //---------------------------------------------------------------------------
 __fastcall TBookmarks::TBookmarks(): TObject()
 {
-  FSharedKey = TNamedObjectList::HiddenPrefix + "shared";
+  FSharedKey = TNamedObjectList::HiddenPrefix + L"shared";
   FBookmarkLists = new TStringList();
   FBookmarkLists->Sorted = true;
   FBookmarkLists->CaseSensitive = false;
@@ -34,7 +34,7 @@ void __fastcall TBookmarks::Clear()
   FBookmarkLists->Clear();
 }
 //---------------------------------------------------------------------------
-AnsiString TBookmarks::Keys[] = { "Local", "Remote", "ShortCuts", "Options" };
+UnicodeString TBookmarks::Keys[] = { L"Local", L"Remote", L"ShortCuts", L"Options" };
 //---------------------------------------------------------------------------
 void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
 {
@@ -48,7 +48,7 @@ void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
         Storage->GetSubKeyNames(BookmarkKeys);
         for (int Index = 0; Index < BookmarkKeys->Count; Index++)
         {
-          AnsiString Key = BookmarkKeys->Strings[Index];
+          UnicodeString Key = BookmarkKeys->Strings[Index];
           if (Storage->OpenSubKey(Key, false))
           {
             TBookmarkList * BookmarkList = Bookmarks[Key];
@@ -59,7 +59,7 @@ void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
             }
             if (i < 3)
             {
-              LoadLevel(Storage, "", i, BookmarkList);
+              LoadLevel(Storage, L"", i, BookmarkList);
             }
             else
             {
@@ -80,15 +80,15 @@ void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
   ModifyAll(false);
 }
 //---------------------------------------------------------------------------
-void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const AnsiString Key,
+void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const UnicodeString Key,
   int Index, TBookmarkList * BookmarkList)
 {
   TStrings * Names = new TStringList();
   try
   {
     Storage->GetValueNames(Names);
-    AnsiString Name;
-    AnsiString Directory;
+    UnicodeString Name;
+    UnicodeString Directory;
     TShortCut ShortCut;
     for (int i = 0; i < Names->Count; i++)
     {
@@ -96,11 +96,11 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Ansi
       bool IsDirectory = (Index == 0) || (Index == 1);
       if (IsDirectory)
       {
-        Directory = Storage->ReadString(Name, "");
+        Directory = Storage->ReadString(Name, L"");
       }
       else
       {
-        Directory = ""; // use only in cased of malformed config
+        Directory = L""; // use only in cased of malformed config
         ShortCut = (TShortCut)Storage->ReadInteger(Name, 0);
       }
       TBookmark * Bookmark;
@@ -147,7 +147,7 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Ansi
       Name = Names->Strings[i];
       if (Storage->OpenSubKey(Name, false))
       {
-        LoadLevel(Storage, Key + (Key.IsEmpty() ? "" : "/") + Name, Index, BookmarkList);
+        LoadLevel(Storage, Key + (Key.IsEmpty() ? L"" : L"/") + Name, Index, BookmarkList);
         Storage->CloseSubKey();
       }
     }
@@ -169,7 +169,7 @@ void __fastcall TBookmarks::Save(THierarchicalStorage * Storage, bool All)
         TBookmarkList * BookmarkList = dynamic_cast<TBookmarkList *>(FBookmarkLists->Objects[Index]);
         if (All || BookmarkList->Modified)
         {
-          AnsiString Key;
+          UnicodeString Key;
           Key = FBookmarkLists->Strings[Index];
           Storage->RecursiveDeleteSubKey(Key);
           if (Storage->OpenSubKey(Key, true))
@@ -239,7 +239,7 @@ void __fastcall TBookmarks::ModifyAll(bool Modify)
   }
 }
 //---------------------------------------------------------------------------
-TBookmarkList * __fastcall TBookmarks::GetBookmarks(AnsiString Index)
+TBookmarkList * __fastcall TBookmarks::GetBookmarks(UnicodeString Index)
 {
   int I = FBookmarkLists->IndexOf(Index);
   if (I >= 0)
@@ -252,7 +252,7 @@ TBookmarkList * __fastcall TBookmarks::GetBookmarks(AnsiString Index)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TBookmarks::SetBookmarks(AnsiString Index, TBookmarkList * value)
+void __fastcall TBookmarks::SetBookmarks(UnicodeString Index, TBookmarkList * value)
 {
   int I = FBookmarkLists->IndexOf(Index);
   if (I >= 0)
@@ -331,12 +331,12 @@ void __fastcall TBookmarkList::Assign(TPersistent * Source)
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::LoadOptions(THierarchicalStorage * Storage)
 {
-  FOpenedNodes->CommaText = Storage->ReadString("OpenedNodes", "");
+  FOpenedNodes->CommaText = Storage->ReadString(L"OpenedNodes", L"");
 }
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::SaveOptions(THierarchicalStorage * Storage)
 {
-  Storage->WriteString("OpenedNodes", FOpenedNodes->CommaText);
+  Storage->WriteString(L"OpenedNodes", FOpenedNodes->CommaText);
 }
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::Add(TBookmark * Bookmark)
@@ -416,7 +416,7 @@ void __fastcall TBookmarkList::KeyChanged(int Index)
   FBookmarks->Strings[Index] = Bookmark->Key;
 }
 //---------------------------------------------------------------------------
-TBookmark * __fastcall TBookmarkList::FindByName(const AnsiString Node, const AnsiString Name)
+TBookmark * __fastcall TBookmarkList::FindByName(const UnicodeString Node, const UnicodeString Name)
 {
   int I = FBookmarks->IndexOf(TBookmark::BookmarkKey(Node, Name));
   TBookmark * Bookmark = I >= 0 ? dynamic_cast<TBookmark *>(FBookmarks->Objects[I]) : NULL;
@@ -448,12 +448,12 @@ TBookmark * __fastcall TBookmarkList::GetBookmarks(int Index)
   return Bookmark;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TBookmarkList::GetNodeOpened(AnsiString Index)
+bool __fastcall TBookmarkList::GetNodeOpened(UnicodeString Index)
 {
   return (FOpenedNodes->IndexOf(Index) >= 0);
 }
 //---------------------------------------------------------------------------
-void __fastcall TBookmarkList::SetNodeOpened(AnsiString Index, bool value)
+void __fastcall TBookmarkList::SetNodeOpened(UnicodeString Index, bool value)
 {
   int I = FOpenedNodes->IndexOf(Index);
   if ((I >= 0) != value)
@@ -506,12 +506,12 @@ void __fastcall TBookmark::Assign(TPersistent * Source)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TBookmark::SetName(const AnsiString value)
+void __fastcall TBookmark::SetName(const UnicodeString value)
 {
   if (Name != value)
   {
     int OldIndex = FOwner ? FOwner->IndexOf(this) : -1;
-    AnsiString OldName = FName;
+    UnicodeString OldName = FName;
     FName = value;
     try
     {
@@ -525,7 +525,7 @@ void __fastcall TBookmark::SetName(const AnsiString value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TBookmark::SetLocal(const AnsiString value)
+void __fastcall TBookmark::SetLocal(const UnicodeString value)
 {
   if (Local != value)
   {
@@ -534,7 +534,7 @@ void __fastcall TBookmark::SetLocal(const AnsiString value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TBookmark::SetRemote(const AnsiString value)
+void __fastcall TBookmark::SetRemote(const UnicodeString value)
 {
   if (Remote != value)
   {
@@ -543,7 +543,7 @@ void __fastcall TBookmark::SetRemote(const AnsiString value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TBookmark::SetNode(const AnsiString value)
+void __fastcall TBookmark::SetNode(const UnicodeString value)
 {
   if (Node != value)
   {
@@ -574,12 +574,12 @@ void __fastcall TBookmark::Modify(int OldIndex)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TBookmark::BookmarkKey(const AnsiString Node, const AnsiString Name)
+UnicodeString __fastcall TBookmark::BookmarkKey(const UnicodeString Node, const UnicodeString Name)
 {
-  return FORMAT("%s\1%s", (Node, Name));
+  return FORMAT(L"%s\1%s", (Node, Name));
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TBookmark::GetKey()
+UnicodeString __fastcall TBookmark::GetKey()
 {
   return BookmarkKey(Node, Name);
 }

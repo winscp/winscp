@@ -2,18 +2,12 @@
 #ifndef LocationProfilesH
 #define LocationProfilesH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <Mask.hpp>
-#include <ComboEdit.hpp>
+#include "IEComboBox.hpp"
+#include <System.Classes.hpp>
+#include <Vcl.ComCtrls.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.ImgList.hpp>
+#include <Vcl.StdCtrls.hpp>
 
 #include <FileOperationProgress.h>
 #include <Terminal.h>
@@ -83,7 +77,7 @@ __published:
   void __fastcall ProfilesViewCollapsed(TObject *Sender, TTreeNode *Node);
   void __fastcall ProfilesViewExpanded(TObject *Sender, TTreeNode *Node);
   void __fastcall ProfilesViewEdited(TObject * Sender, TTreeNode * Node,
-    AnsiString & S);
+    UnicodeString & S);
   void __fastcall ProfilesViewEditing(TObject * Sender, TTreeNode * Node,
     bool & AllowEdit);
   void __fastcall ProfilesViewEndDrag(TObject *Sender, TObject *Target,
@@ -96,8 +90,8 @@ public:
 
   bool __fastcall Execute();
 
-  __property AnsiString LocalDirectory = { read = GetLocalDirectory, write = SetLocalDirectory };
-  __property AnsiString RemoteDirectory = { read = GetRemoteDirectory, write = SetRemoteDirectory };
+  __property UnicodeString LocalDirectory = { read = GetLocalDirectory, write = SetLocalDirectory };
+  __property UnicodeString RemoteDirectory = { read = GetRemoteDirectory, write = SetRemoteDirectory };
   __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
   __property TOperationSide OperationSide = { read = FOperationSide, write = FOperationSide };
   __property TStrings * RemoteDirectories  = { read=GetRemoteDirectories, write=SetRemoteDirectories };
@@ -120,15 +114,15 @@ private:
   TTreeNode * FBookmarkDragSource;
   TBookmarkList * FSessionBookmarkList;
   TBookmarkList * FSharedBookmarkList;
-  AnsiString FLocalDirectory;
-  AnsiString FRemoteDirectory;
+  UnicodeString FLocalDirectory;
+  UnicodeString FRemoteDirectory;
   TTreeViewScrollOnDragOver * FSessionScrollOnDragOver;
   TTreeViewScrollOnDragOver * FSharedScrollOnDragOver;
 
-  void __fastcall SetLocalDirectory(AnsiString value);
-  AnsiString __fastcall GetLocalDirectory();
-  void __fastcall SetRemoteDirectory(AnsiString value);
-  AnsiString __fastcall GetRemoteDirectory();
+  void __fastcall SetLocalDirectory(UnicodeString value);
+  UnicodeString __fastcall GetLocalDirectory();
+  void __fastcall SetRemoteDirectory(UnicodeString value);
+  UnicodeString __fastcall GetRemoteDirectory();
   void __fastcall SetOperationSide(TOperationSide value);
   void __fastcall FindProfile();
   void __fastcall SetRemoteDirectories(TStrings * value);
@@ -153,7 +147,7 @@ private:
     TTreeView * ProfilesView, TStringList * Folders, TBookmarkList * BookmarkList,
     TBookmarkList * Source);
   bool __fastcall ProfileMatch(TTreeNode * Node);
-  AnsiString __fastcall BookmarkText(TBookmark * Bookmark);
+  UnicodeString __fastcall BookmarkText(TBookmark * Bookmark);
 };
 //----------------------------------------------------------------------------
 #endif

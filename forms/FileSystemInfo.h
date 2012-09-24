@@ -2,21 +2,14 @@
 #ifndef FileSystemInfoH
 #define FileSystemInfoH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <ComCtrls.hpp>
-#include <Menus.hpp>
+#include <System.Classes.hpp>
+#include <Vcl.ComCtrls.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.Menus.hpp>
+#include <Vcl.StdCtrls.hpp>
 //----------------------------------------------------------------------------
 typedef void __fastcall (__closure *TFeedFileSystemData)
-  (TControl * Control, int Label, AnsiString Value);
+  (TControl * Control, int Label, UnicodeString Value);
 //----------------------------------------------------------------------------
 class TFileSystemInfoDialog : public TForm
 {
@@ -60,11 +53,11 @@ public:
     TGetSpaceAvailable OnGetSpaceAvailable);
 
   void __fastcall Execute(const TSessionInfo & SessionInfo,
-    const TFileSystemInfo & FileSystemInfo, AnsiString SpaceAvailablePath);
+    const TFileSystemInfo & FileSystemInfo, UnicodeString SpaceAvailablePath);
 
 private:
   TControl * FLastFeededControl;
-  AnsiString FClipboard;
+  UnicodeString FClipboard;
   TGetSpaceAvailable FOnGetSpaceAvailable;
   bool FSpaceAvailableLoaded;
   TSpaceAvailable FSpaceAvailable;
@@ -74,12 +67,12 @@ private:
 
   void __fastcall Feed(TFeedFileSystemData AddItem);
   void __fastcall UpdateControls();
-  AnsiString __fastcall CapabilityStr(TFSCapability Capability);
-  AnsiString __fastcall CapabilityStr(TFSCapability Capability1,
+  UnicodeString __fastcall CapabilityStr(TFSCapability Capability);
+  UnicodeString __fastcall CapabilityStr(TFSCapability Capability1,
     TFSCapability Capability2);
-  AnsiString __fastcall SpaceStr(__int64 Bytes);
-  void __fastcall ControlsAddItem(TControl * Control, int Label, AnsiString Value);
-  void __fastcall ClipboardAddItem(TControl * Control, int Label, AnsiString Value);
+  UnicodeString __fastcall SpaceStr(__int64 Bytes);
+  void __fastcall ControlsAddItem(TControl * Control, int Label, UnicodeString Value);
+  void __fastcall ClipboardAddItem(TControl * Control, int Label, UnicodeString Value);
   void __fastcall CheckSpaceAvailable();
   void __fastcall NeedSpaceAvailable();
   bool __fastcall SpaceAvailableSupported();

@@ -11,7 +11,7 @@ object ProgressForm: TProgressForm
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnHide = FormHide
   OnShow = FormShow
   DesignSize = (
@@ -22,7 +22,7 @@ object ProgressForm: TProgressForm
   object OnceDoneOperationLabel: TLabel
     Left = 322
     Top = 88
-    Width = 68
+    Width = 69
     Height = 13
     Caption = 'Once &finished:'
     FocusControl = OnceDoneOperationCombo
@@ -32,7 +32,6 @@ object ProgressForm: TProgressForm
     Top = 5
     Width = 301
     Height = 60
-    Active = False
     Anchors = [akLeft, akTop, akRight]
     AutoSize = False
     StopFrame = 23
@@ -72,7 +71,7 @@ object ProgressForm: TProgressForm
     object Label1: TLabel
       Left = 0
       Top = 7
-      Width = 19
+      Width = 20
       Height = 13
       Caption = 'File:'
     end
@@ -90,7 +89,7 @@ object ProgressForm: TProgressForm
     object TargetLabel: TLabel
       Left = 0
       Top = 23
-      Width = 34
+      Width = 36
       Height = 13
       Caption = 'Target:'
     end
@@ -101,6 +100,7 @@ object ProgressForm: TProgressForm
       Height = 13
       IndentHorizontal = 0
       IndentVertical = 0
+      AutoSizeVertical = False
       Align = alNone
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
@@ -111,8 +111,6 @@ object ProgressForm: TProgressForm
       Width = 301
       Height = 16
       Anchors = [akLeft, akTop, akRight]
-      Min = 0
-      Max = 100
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
@@ -150,7 +148,7 @@ object ProgressForm: TProgressForm
     object TimeLeftLabelLabel: TLabel
       Left = 0
       Top = 2
-      Width = 43
+      Width = 45
       Height = 13
       Caption = 'Time left:'
     end
@@ -194,14 +192,14 @@ object ProgressForm: TProgressForm
     object StartTimeLabelLabel: TLabel
       Left = 0
       Top = 2
-      Width = 47
+      Width = 51
       Height = 13
       Caption = 'Start time:'
     end
     object Label4: TLabel
       Left = 0
       Top = 18
-      Width = 82
+      Width = 89
       Height = 13
       Caption = 'Bytes transferred:'
     end
@@ -219,8 +217,6 @@ object ProgressForm: TProgressForm
       Width = 301
       Height = 16
       Anchors = [akLeft, akTop, akRight]
-      Min = 0
-      Max = 100
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
@@ -237,7 +233,7 @@ object ProgressForm: TProgressForm
     object SpeedLabel2: TLabel
       Left = 8
       Top = 0
-      Width = 69
+      Width = 68
       Height = 13
       Caption = '&Speed (KiB/s):'
       FocusControl = SpeedCombo
@@ -248,7 +244,6 @@ object ProgressForm: TProgressForm
       Width = 80
       Height = 21
       AutoComplete = False
-      ItemHeight = 13
       TabOrder = 0
       Text = 'SpeedCombo'
       OnExit = SpeedComboExit
@@ -273,7 +268,6 @@ object ProgressForm: TProgressForm
     Height = 21
     AutoComplete = False
     Style = csDropDownList
-    ItemHeight = 13
     TabOrder = 5
     OnCloseUp = OnceDoneOperationComboCloseUp
     OnSelect = OnceDoneOperationComboSelect

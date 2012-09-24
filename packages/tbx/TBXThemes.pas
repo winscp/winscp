@@ -437,14 +437,14 @@ function GetTBXDragHandleSize(const ToolbarInfo: TTBXToolbarInfo): Integer;
 implementation
 
 uses
-  SysUtils, TBXUtils, TBXUxThemes;
+  SysUtils, TBXUtils, UxTheme;
 
 const
   SPI_GETFLATMENU = $1022;
 
 type
   TThemeInfo = record
-    Name: ShortString;
+    Name: {MP}string;
     ThemeClass: TTBXThemeClass;
     ThemeInstance: TTBXTheme;
     RefCount: Integer;
@@ -452,6 +452,7 @@ type
 
 var
   Themes: array of TThemeInfo;
+  InitedThemeLibrary: Boolean;
 
 { TTBXThemeManager }
 
@@ -840,7 +841,11 @@ begin
     Close(STATUSBAR_THEME);
     Close(SPIN_THEME);
   end;
-  FreeXPThemes;
+  if InitedThemeLibrary then
+  begin
+    InitedThemeLibrary := False;
+    FreeThemeLibrary;
+  end;
 end;
 
 procedure TTBXThemeManager.VisualStylesOpen;
@@ -849,8 +854,8 @@ begin
   if (Win32Platform = VER_PLATFORM_WIN32_NT) and ((Win32MajorVersion > 5) or
      ((Win32MajorVersion = 5) and (Win32MinorVersion >= 1))) and EnableVisualStyles then
   begin
-    InitXPThemes;
-    USE_THEMES := CanUseXPThemes;
+    InitedThemeLibrary := InitThemeLibrary;
+    USE_THEMES := UseThemes;
     try
       BUTTON_THEME := OpenThemeData(FWindowHandle, 'BUTTON');
       SCROLLBAR_THEME := OpenThemeData(FWindowHandle, 'SCROLLBAR');

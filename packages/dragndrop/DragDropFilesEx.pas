@@ -190,7 +190,7 @@ type PByte=^byte;
 
 // some local functions --------------------------------------------------------
 
-procedure CopyHDropToFilelist(var List:TFileList; HDropPtr:PChar; HDropSize:longint);
+procedure CopyHDropToFilelist(var List: TFileList; HDropPtr: PAnsiChar; HDropSize: LongInt);
 var s:string;
     DropFiles: PDropFiles;
     ws: WideString;
@@ -198,7 +198,7 @@ var s:string;
 begin
      if (HDropPtr<>nil) and (HDropSize>0) then
      begin
-          PChar(DropFiles):=HDropPtr;
+          PAnsiChar(DropFiles):=HDropPtr;
           inc(HDropPtr,DropFiles^.pFiles);
           if DropFiles^.FWide then
           begin
@@ -213,7 +213,7 @@ begin
           begin
                while HDropPtr^<>#0 do
                begin
-                    s:=StrPas(HDropPtr);
+                    s:=string(StrPas(HDropPtr));
                     inc(HDropPtr, Length(s)+1);
                     List.AddItem(nil,s);
                end;
@@ -281,7 +281,7 @@ begin
                begin // is an item pidl ...
                     if AddToList then
                        List.AddItem(PIDL_Concatenate(pidlRoot,pidl),'')
-                    // PIDL_Concatenate --> waste of memory!!!
+                    // PIDL_Concatenate --> waste of memory
                     else List.Items[Idx]^.pidlFQ:=PIDL_Concatenate(pidlRoot,pidl);
                     inc(Idx);
                     inc(LIPtr);
@@ -389,7 +389,7 @@ end;
 function TFileList.RenderPIDLs:boolean;
 var i:integer;
     piDesktop: IShellFolder;
-    olePath: array[1..Max_Path] of TOleChar;
+    olePath: WideString;
     ulEaten, ulAttribs:ULong;
 begin
      if Failed(SHGetDesktopFolder(piDesktop)) then
@@ -405,9 +405,9 @@ begin
                  if Items[i]^.Name='' then Result:=false
                  else
                  begin
-                      MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED,
-                         PChar(Items[i]^.Name), -1, @olePath, sizeof(olepath));
-                      if Failed(piDesktop.ParseDisplayName(0, nil, @OlePath, ulEaten,
+                      olePath := Items[i]^.Name;
+                      ulAttribs := 0;
+                      if Failed(piDesktop.ParseDisplayName(0, nil, POleStr(olePath), ulEaten,
                          Items[i]^.pidlFQ, ulAttribs)) then Result:=false;
                  end;
             end;
@@ -448,14 +448,15 @@ end;
 
 // TDataObjectFilesEx -------------------------------------------------------------
 
-constructor TDataObjectFilesEx.Create(AFileList:TFileList; RenderPIDL, RenderFilename: boolean);
-var i:DWORD;
-    FE:TFormatEtc;
-    SM:TStgMedium;
-    LastpidlRoot, pidlRoot, pidlItem:PItemIDList;
-    Pos:DWORD;
-    df:TDropFiles;
-    pc:array[0..1024] of char;
+constructor TDataObjectFilesEx.Create(AFileList: TFileList; RenderPIDL, RenderFilename: Boolean);
+var
+  i: DWORD;
+  FE: TFormatEtc;
+  SM: TStgMedium;
+  LastpidlRoot, pidlRoot, pidlItem: PItemIDList;
+  Pos: DWORD;
+  df: TDropFiles;
+  pc: array[0..1024] of Char;
 begin
      inherited Create;
      pidlStream:=TMemoryStream.Create;
@@ -517,7 +518,7 @@ begin
                pt.x:=0;
                pt.y:=0;
                longint(fnc) := 0;
-               longint(Fwide) := 0;
+               longint(Fwide) := 1;
           end;
           HDropStream.Write(df,sizeof(df));
           for i:=0 to AFileList.count-1 do
@@ -528,7 +529,7 @@ begin
                     break;
                end;
                strPcopy(pc,AFileList.Items[i]^.Name+#0);
-               HDropStream.Write(pc,length(AFileList.Items[i]^.Name)+1);
+               HDropStream.Write(pc,(length(AFileList.Items[i]^.Name)+1) * sizeof(pc[0]));
                FilenameMapList.Add(AFileList.Items[i]^.MappedName);
                if FilenameMapList[i]<>'' then FilenamesAreMapped:=true;
           end;
@@ -544,7 +545,7 @@ begin
                end;
                SetData(FE,SM,false);
                pc[0]:=#0;
-               HDropStream.Write(pc,1);
+               HDropStream.Write(pc,sizeof(pc[0]));
           end;
           if FilenamesAreMapped then
           begin
@@ -960,7 +961,7 @@ begin
                          in the documentation, that you can define drag-and-drop
                          handlers for the system-folder "printers". Till now, it
                          doesn't make sense to me. Therefore, I haven't implemented
-                         it!!! }
+                         it }
                        if Reg.OpenKey('Folder\ShellEx\DragDropHandlers\'+
                           StringList[StringList.Count-1], false) then
                        begin
@@ -998,7 +999,7 @@ begin
                      FillChar(ICM,SizeOf(TCMInvokeCommandInfo),#0);
                      ICM.cbSize:=SizeOf(TCMInvokeCommandInfo);
                      ICM.hwnd:=DragDropControl.Handle;
-                     ICM.lpVerb:=MakeIntResource(Command-CMListItem^.FirstCmd);
+                     ICM.lpVerb:=MakeIntResourceA(Command-CMListItem^.FirstCmd);
                      ICM.nShow:=SW_SHOWNORMAL;
                      Result:=CMListItem^.CM.InvokeCommand(ICM)=NOERROR;
                      break;

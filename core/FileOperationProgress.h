@@ -18,7 +18,7 @@ typedef void __fastcall (__closure *TFileOperationProgressEvent)
   (TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
 typedef void __fastcall (__closure *TFileOperationFinished)
   (TFileOperation Operation, TOperationSide Side, bool Temp,
-    const AnsiString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
+    const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
 //---------------------------------------------------------------------------
 class TFileOperationProgressType
 {
@@ -45,15 +45,15 @@ public:
   TFileOperation Operation;
   // on what side if operation being processed (local/remote), source of copy
   TOperationSide Side;
-  AnsiString FileName;
-  AnsiString Directory;
+  UnicodeString FileName;
+  UnicodeString Directory;
   bool AsciiTransfer;
   bool TransferingFile;
   bool Temp;
 
   // file size to read/write
   __int64 LocalSize;
-  __int64 LocalyUsed;
+  __int64 LocallyUsed;
   __int64 TransferSize;
   __int64 TransferedSize;
   __int64 SkippedSize;
@@ -81,17 +81,17 @@ public:
   __fastcall TFileOperationProgressType(
     TFileOperationProgressEvent AOnProgress, TFileOperationFinished AOnFinished);
   __fastcall ~TFileOperationProgressType();
-  void __fastcall AddLocalyUsed(__int64 ASize);
+  void __fastcall AddLocallyUsed(__int64 ASize);
   void __fastcall AddTransfered(__int64 ASize, bool AddToTotals = true);
   void __fastcall AddResumed(__int64 ASize);
   void __fastcall Clear();
   unsigned int __fastcall CPS();
-  void __fastcall Finish(AnsiString FileName, bool Success,
+  void __fastcall Finish(UnicodeString FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
   unsigned long __fastcall LocalBlockSize();
-  bool __fastcall IsLocalyDone();
+  bool __fastcall IsLocallyDone();
   bool __fastcall IsTransferDone();
-  void __fastcall SetFile(AnsiString AFileName, bool AFileInProgress = true);
+  void __fastcall SetFile(UnicodeString AFileName, bool AFileInProgress = true);
   void __fastcall SetFileInProgress();
   int __fastcall OperationProgress();
   unsigned long __fastcall TransferBlockSize();
@@ -108,7 +108,7 @@ public:
   void __fastcall SetTotalSize(__int64 ASize);
   void __fastcall Start(TFileOperation AOperation, TOperationSide ASide, int ACount);
   void __fastcall Start(TFileOperation AOperation,
-    TOperationSide ASide, int ACount, bool ATemp, const AnsiString ADirectory,
+    TOperationSide ASide, int ACount, bool ATemp, const UnicodeString ADirectory,
     unsigned long ACPSLimit);
   void __fastcall Stop();
   void __fastcall Suspend();

@@ -455,7 +455,7 @@ Socket new_connection(SockAddr addr, char *hostname,
 				 privport, oobinline,
 				 nodelay, keepalive, (Plug) pplug,
 				 #ifdef MPEXT
-				 cfg->connect_timeout
+				 cfg->connect_timeout, cfg->sndbuf
 				 #endif
 				 );
 	if (sk_socket_error(ret->sub_socket) != NULL)
@@ -471,7 +471,7 @@ Socket new_connection(SockAddr addr, char *hostname,
     /* no proxy, so just return the direct socket */
     return sk_new(addr, port, privport, oobinline, nodelay, keepalive, plug,
       #ifdef MPEXT
-      cfg->connect_timeout
+      cfg->connect_timeout, cfg->sndbuf
       #endif
       );
 }

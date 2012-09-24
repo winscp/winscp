@@ -136,6 +136,9 @@ void SHA_Bytes(SHA_State * s, void *p, int len)
 	    SHATransform(s->h, wordblock);
 	    s->blkused = 0;
 	}
+#ifdef MPEXT
+	if (len > 0)
+#endif
 	memcpy(s->block, q, len);
 	s->blkused = len;
     }

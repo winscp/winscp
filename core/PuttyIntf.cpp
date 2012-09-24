@@ -32,10 +32,10 @@ void __fastcall PuttyInitialize()
   sk_init();
 
   AnsiString VersionString = SshVersionString();
-  assert(!VersionString.IsEmpty() && (VersionString.Length() < sizeof(sshver)));
+  assert(!VersionString.IsEmpty() && (static_cast<size_t>(VersionString.Length()) < LENOF(sshver)));
   strcpy(sshver, VersionString.c_str());
   AnsiString AppName = AppNameString();
-  assert(!AppName.IsEmpty() && (AppName.Length() < sizeof(appname_)));
+  assert(!AppName.IsEmpty() && (static_cast<size_t>(AppName.Length()) < LENOF(appname_)));
   strcpy(appname_, AppName.c_str());
 }
 //---------------------------------------------------------------------------
@@ -48,6 +48,7 @@ void __fastcall PuttyFinalize()
   random_unref();
 
   sk_cleanup();
+  win_misc_cleanup();
   DeleteCriticalSection(&noise_section);
 }
 //---------------------------------------------------------------------------
@@ -62,7 +63,7 @@ extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
 
   if (!is_ssh(plug) && !is_pfwd(plug))
   {
-    // If it is not SSH/PFwd plug, them it must be Proxy plug.
+    // If it is not SSH/PFwd plug, then it must be Proxy plug.
     // Get SSH/PFwd plug which it wraps.
     Proxy_Socket ProxySocket = ((Proxy_Plug)plug)->proxy_socket;
     plug = ProxySocket->plug;
@@ -96,7 +97,7 @@ int from_backend(void * frontend, int is_stderr, const char * data, int datalen)
   if (is_stderr >= 0)
   {
     assert((is_stderr == 0) || (is_stderr == 1));
-    ((TSecureShell *)frontend)->FromBackend((is_stderr == 1), data, datalen);
+    ((TSecureShell *)frontend)->FromBackend((is_stderr == 1), reinterpret_cast<const unsigned char *>(data), datalen);
   }
   else
   {
@@ -128,7 +129,7 @@ int get_userpass_input(prompts_t * p, unsigned char * /*in*/, int /*inlen*/)
     {
       prompt_t * Prompt = p->prompts[Index];
       Prompts->AddObject(Prompt->prompt, (TObject *)Prompt->echo);
-      Results->AddObject("", (TObject *)Prompt->result_len);
+      Results->AddObject(L"", (TObject *)Prompt->result_len);
     }
 
     if (SecureShell->PromptUser(p->to_server, p->name, p->name_reqd,
@@ -137,7 +138,7 @@ int get_userpass_input(prompts_t * p, unsigned char * /*in*/, int /*inlen*/)
       for (int Index = 0; Index < int(p->n_prompts); Index++)
       {
         prompt_t * Prompt = p->prompts[Index];
-        strncpy(Prompt->result, Results->Strings[Index].c_str(), Prompt->result_len);
+        strncpy(Prompt->result, AnsiString(Results->Strings[Index]).c_str(), Prompt->result_len);
         Prompt->result[Prompt->result_len - 1] = '\0';
       }
       Result = 1;
@@ -177,8 +178,8 @@ void connection_fatal(void * frontend, char * fmt, ...)
   va_list Param;
   char Buf[200];
   va_start(Param, fmt);
-  vsnprintf(Buf, sizeof(Buf), fmt, Param); \
-  Buf[sizeof(Buf) - 1] = '\0'; \
+  vsnprintf(Buf, LENOF(Buf), fmt, Param); \
+  Buf[LENOF(Buf) - 1] = '\0'; \
   va_end(Param);
 
   assert(frontend != NULL);
@@ -214,15 +215,15 @@ void old_keyfile_warning(void)
 void display_banner(void * frontend, const char * banner, int size)
 {
   assert(frontend);
-  AnsiString Banner(banner, size);
+  UnicodeString Banner(banner, size);
   ((TSecureShell *)frontend)->DisplayBanner(Banner);
 }
 //---------------------------------------------------------------------------
 static void SSHFatalError(const char * Format, va_list Param)
 {
   char Buf[200];
-  vsnprintf(Buf, sizeof(Buf), Format, Param);
-  Buf[sizeof(Buf) - 1] = '\0';
+  vsnprintf(Buf, LENOF(Buf), Format, Param);
+  Buf[LENOF(Buf) - 1] = '\0';
 
   // Only few calls from putty\winnet.c might be connected with specific
   // TSecureShell. Otherwise called only for really fatal errors
@@ -343,13 +344,13 @@ static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool Can
   assert(Key == HKEY_CURRENT_USER);
   USEDPARAM(Key);
 
-  AnsiString RegKey = SubKey;
+  UnicodeString RegKey = SubKey;
   int PuttyKeyLen = Configuration->PuttyRegistryStorageKey.Length();
   assert(RegKey.SubString(1, PuttyKeyLen) == Configuration->PuttyRegistryStorageKey);
   RegKey = RegKey.SubString(PuttyKeyLen + 1, RegKey.Length() - PuttyKeyLen);
   if (!RegKey.IsEmpty())
   {
-    assert(RegKey[1] == '\\');
+    assert(RegKey[1] == L'\\');
     RegKey.Delete(1, 1);
   }
 
@@ -361,13 +362,13 @@ static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool Can
   else
   {
     // we expect this to be called only from verify_host_key() or store_host_key()
-    assert(RegKey == "SshHostKeys");
+    assert(RegKey == L"SshHostKeys");
 
     THierarchicalStorage * Storage = Configuration->CreateScpStorage(false);
     Storage->AccessMode = (CanCreate ? smReadWrite : smRead);
     if (Storage->OpenSubKey(RegKey, CanCreate))
     {
-      *Result = static_cast<HKEY>(Storage);
+      *Result = reinterpret_cast<HKEY>(Storage);
       R = ERROR_SUCCESS;
     }
     else
@@ -396,11 +397,11 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
   long R;
   assert(Configuration != NULL);
 
-  THierarchicalStorage * Storage = static_cast<THierarchicalStorage *>(Key);
+  THierarchicalStorage * Storage = reinterpret_cast<THierarchicalStorage *>(Key);
   AnsiString Value;
   if (Storage == NULL)
   {
-    if (AnsiString(ValueName) == "RandSeedFile")
+    if (UnicodeString(ValueName) == L"RandSeedFile")
     {
       Value = Configuration->RandomSeedFileName;
       R = ERROR_SUCCESS;
@@ -415,7 +416,7 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
   {
     if (Storage->ValueExists(ValueName))
     {
-      Value = Storage->ReadStringRaw(ValueName, "");
+      Value = Storage->ReadStringRaw(ValueName, L"");
       R = ERROR_SUCCESS;
     }
     else
@@ -444,11 +445,11 @@ long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long /*R
 
   assert(Type == REG_SZ);
   USEDPARAM(Type);
-  THierarchicalStorage * Storage = static_cast<THierarchicalStorage *>(Key);
+  THierarchicalStorage * Storage = reinterpret_cast<THierarchicalStorage *>(Key);
   assert(Storage != NULL);
   if (Storage != NULL)
   {
-    AnsiString Value(reinterpret_cast<const char*>(Data), DataSize - 1);
+    UnicodeString Value(reinterpret_cast<const char*>(Data), DataSize - 1);
     Storage->WriteStringRaw(ValueName, Value);
   }
 
@@ -459,7 +460,7 @@ long reg_close_winscp_key(HKEY Key)
 {
   assert(Configuration != NULL);
 
-  THierarchicalStorage * Storage = static_cast<THierarchicalStorage *>(Key);
+  THierarchicalStorage * Storage = reinterpret_cast<THierarchicalStorage *>(Key);
   if (Storage != NULL)
   {
     delete Storage;
@@ -468,7 +469,7 @@ long reg_close_winscp_key(HKEY Key)
   return ERROR_SUCCESS;
 }
 //---------------------------------------------------------------------------
-TKeyType KeyType(AnsiString FileName)
+TKeyType KeyType(UnicodeString FileName)
 {
   assert(ktUnopenable == SSH_KEYTYPE_UNOPENABLE);
   assert(ktSSHCom == SSH_KEYTYPE_SSHCOM);
@@ -477,116 +478,15 @@ TKeyType KeyType(AnsiString FileName)
   return (TKeyType)key_type(&KeyFile);
 }
 //---------------------------------------------------------------------------
-AnsiString KeyTypeName(TKeyType KeyType)
+UnicodeString KeyTypeName(TKeyType KeyType)
 {
   return key_type_to_str(KeyType);
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-struct TUnicodeEmitParams
+__int64 __fastcall ParseSize(UnicodeString SizeStr)
 {
-  WideString Buffer;
-  int Pos;
-  int Len;
-};
-//---------------------------------------------------------------------------
-extern "C" void UnicodeEmit(void * AParams, long int Output)
-{
-  if (Output == 0xFFFFL) // see Putty's charset\internal.h
-  {
-    throw Exception(LoadStr(DECODE_UTF_ERROR));
-  }
-  TUnicodeEmitParams * Params = (TUnicodeEmitParams *)AParams;
-  if (Params->Pos >= Params->Len)
-  {
-    Params->Len += 50;
-    Params->Buffer.SetLength(Params->Len);
-  }
-  Params->Pos++;
-  Params->Buffer[Params->Pos] = (wchar_t)Output;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall DecodeUTF(const AnsiString UTF)
-{
-  charset_state State;
-  char * Str;
-  TUnicodeEmitParams Params;
-  AnsiString Result;
-
-  State.s0 = 0;
-  Str = UTF.c_str();
-  Params.Pos = 0;
-  Params.Len = UTF.Length();
-  Params.Buffer.SetLength(Params.Len);
-
-  while (*Str)
-  {
-    read_utf8(NULL, (unsigned char)*Str, &State, UnicodeEmit, &Params);
-    Str++;
-  }
-  Params.Buffer.SetLength(Params.Pos);
-
-  return Params.Buffer;
-}
-//---------------------------------------------------------------------------
-struct TUnicodeEmitParams2
-{
-  AnsiString Buffer;
-  int Pos;
-  int Len;
-};
-//---------------------------------------------------------------------------
-extern "C" void UnicodeEmit2(void * AParams, long int Output)
-{
-  if (Output == 0xFFFFL) // see Putty's charset\internal.h
-  {
-    throw Exception(LoadStr(DECODE_UTF_ERROR));
-  }
-  TUnicodeEmitParams2 * Params = (TUnicodeEmitParams2 *)AParams;
-  if (Params->Pos >= Params->Len)
-  {
-    Params->Len += 50;
-    Params->Buffer.SetLength(Params->Len);
-  }
-  Params->Pos++;
-  Params->Buffer[Params->Pos] = (unsigned char)Output;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall EncodeUTF(const WideString Source)
-{
-  // WideString::c_bstr() returns NULL for empty strings
-  // (as opposite to AnsiString::c_str() which returns "")
-  if (Source.IsEmpty())
-  {
-    return "";
-  }
-  else
-  {
-    charset_state State;
-    wchar_t * Str;
-    TUnicodeEmitParams2 Params;
-    AnsiString Result;
-
-    State.s0 = 0;
-    Str = Source.c_bstr();
-    Params.Pos = 0;
-    Params.Len = Source.Length();
-    Params.Buffer.SetLength(Params.Len);
-
-    while (*Str)
-    {
-      write_utf8(NULL, (wchar_t)*Str, &State, UnicodeEmit2, &Params);
-      Str++;
-    }
-    Params.Buffer.SetLength(Params.Pos);
-
-    return Params.Buffer;
-  }
-}
-//---------------------------------------------------------------------------
-__int64 __fastcall ParseSize(AnsiString SizeStr)
-{
-  return parse_blocksize(SizeStr.c_str());
+  AnsiString AnsiSizeStr = SizeStr;
+  return parse_blocksize(AnsiSizeStr.c_str());
 }
 //---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI()

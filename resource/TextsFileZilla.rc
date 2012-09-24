@@ -70,6 +70,13 @@ END
 
 STRINGTABLE
 BEGIN
+  IDS_ERRORMSG_CANTGETLISTFILE, "Could not retrieve file information"
+  IDS_STATUSMSG_LISTFILESUCCESSFUL, "Retrieving file information successful"
+  IDS_STATUSMSG_RETRIEVINGLISTFILE, "Retrieving file information..."
+END
+
+STRINGTABLE
+BEGIN
   IDS_ERRORMSG_SETFILEPOINTER, "Could not set file pointer"
   IDS_ERRORMSG_UNKNOWNSSLERROR, "Unknown error in SSL layer"
   IDS_ERRORMSG_SSLCERTIFICATEERROR, "Could not verify SSL certificate"

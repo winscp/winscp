@@ -1,0 +1,117 @@
+	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{414309A3-9B7C-4261-9989-4BC118D3A1C0}</ProjectGuid>
+			<ProjectVersion>13.4</ProjectVersion>
+			<Config Condition="'$(Config)'==''">Release</Config>
+			<FrameworkType>None</FrameworkType>
+			<Base>True</Base>
+			<Platform Condition="'$(Platform)'==''">Win32</Platform>
+			<TargetedPlatforms>1</TargetedPlatforms>
+			<AppType>Library</AppType>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+			<Cfg_1>true</Cfg_1>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+			<Cfg_2>true</Cfg_2>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base)'!=''">
+			<_TCHARMapping>wchar_t</_TCHARMapping>
+			<BCC_AllWarnings>true</BCC_AllWarnings>
+			<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
+			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+			<BCC_wdlx>false</BCC_wdlx>
+			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+			<Defines>NO_STRICT;$(Defines)</Defines>
+			<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
+			<ILINK_LibraryPath>dragext\;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<IncludePath>dragext\;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+			<Manifest_File>None</Manifest_File>
+			<Multithreaded>true</Multithreaded>
+			<NoVCL>true</NoVCL>
+			<OutputExt>dll</OutputExt>
+			<PackageImports>rtl.bpi;$(PackageImports)</PackageImports>
+			<ProjectType>CppDynamicLibrary</ProjectType>
+			<VerInfo_DLL>true</VerInfo_DLL>
+			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Drag&amp;Drop shell extension for WinSCP (32-bit);FileVersion=1.2.0.0;InternalName=dragext32;LegalCopyright=(c) 2000-2012 Martin Prikryl;LegalTrademarks=;OriginalFilename=dragext.dll;ProductName=WinSCP;ProductVersion=5.1.0.0;ReleaseType=stable;WWW=http://winscp.net/</VerInfo_Keys>
+			<VerInfo_Locale>1033</VerInfo_Locale>
+			<VerInfo_MinorVer>2</VerInfo_MinorVer>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+			<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+			<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+			<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+			<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+			<BCC_StackFrames>true</BCC_StackFrames>
+			<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+			<DCC_Define>DEBUG</DCC_Define>
+			<DCC_Optimize>false</DCC_Optimize>
+			<Defines>_DEBUG;$(Defines)</Defines>
+			<FinalOutputDir>$(FINAL_PATH)\Debug</FinalOutputDir>
+			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+			<ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<IntermediateOutputDir>$(INTERM_PATH)\Debug</IntermediateOutputDir>
+			<TASM_Debugging>Full</TASM_Debugging>
+			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<Defines>NDEBUG;$(Defines)</Defines>
+			<FinalOutputDir>$(FINAL_PATH)\Release</FinalOutputDir>
+			<ILINK_LibraryPath>$(BDS)\lib\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<IntermediateOutputDir>$(INTERM_PATH)\Release</IntermediateOutputDir>
+			<TASM_Debugging>None</TASM_Debugging>
+		</PropertyGroup>
+		<ItemGroup>
+			
+			<CppCompile Include="dragext\DragExt.cpp">
+				<BuildOrder>5</BuildOrder>
+				<BuildOrder>1</BuildOrder>
+			</CppCompile>
+			<BuildConfiguration Include="Base">
+				<Key>Base</Key>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Debug">
+				<Key>Cfg_1</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Release">
+				<Key>Cfg_2</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+		</ItemGroup>
+		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
+		<PropertyGroup Condition="'$(FileToCompile)'==''">
+			<PostBuildEvent>if "1"=="$(WITH_DRAGEXT64)" (
+if exist "$(FinalOutputDir)\DragExt.dll" "$(BDS)\Bin\make.exe" -fmakefile.dragext64 -DDRAGEXT64OUTPUTPATH=$(FinalOutputDir)
+)</PostBuildEvent>
+		</PropertyGroup>
+		<ProjectExtensions>
+			<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+			<Borland.ProjectType>CppDynamicLibrary</Borland.ProjectType>
+			<BorlandProject>
+				<CPlusPlusBuilder.Personality>
+					<ProjectProperties>
+						<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+						<ProjectProperties Name="ManagePaths">True</ProjectProperties>
+						<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+					</ProjectProperties>
+				</CPlusPlusBuilder.Personality>
+				<Platforms>
+					<Platform value="Win32">True</Platform>
+				</Platforms>
+			</BorlandProject>
+			<ProjectFileVersion>12</ProjectFileVersion>
+		</ProjectExtensions>
+		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+	</Project>

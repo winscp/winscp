@@ -105,6 +105,15 @@ BOOL init_winver(void)
     return GetVersionEx ( (OSVERSIONINFO *) &osVersion);
 }
 
+#ifdef MPEXT
+static char *sysdir = NULL;
+
+void win_misc_cleanup()
+{
+  sfree(sysdir);
+}
+#endif
+
 HMODULE load_system32_dll(const char *libname)
 {
     /*
@@ -113,7 +122,9 @@ HMODULE load_system32_dll(const char *libname)
      * attack is possible by placing a substitute DLL earlier on that
      * path.)
      */
+#ifndef MPEXT
     static char *sysdir = NULL;
+#endif
     char *fullpath;
     HMODULE ret;
 

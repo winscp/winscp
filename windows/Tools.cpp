@@ -6,17 +6,19 @@
 #include <Consts.hpp>
 #include <shlobj.h>
 #include <stdio.h>
+#define INITGUID
+#include <propkey.h>
 
 #include <Common.h>
 #include <TextsWin.h>
 #include <Exceptions.h>
-#include <Configuration.h>
-#include <CoreMain.h>
 
 #include "GUITools.h"
 #include "VCLCommon.h"
 #include "Setup.h"
 #include "Tools.h"
+#include <WinHelpViewer.hpp>
+#include <PasTools.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -55,41 +57,41 @@ void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn)
   Form->Top = ScreenPoint.y + (CenterOn->Height / 2) - (Form->Height / 2);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall GetListViewStr(TListView * ListView)
+UnicodeString __fastcall GetListViewStr(TListView * ListView)
 {
-  AnsiString Result;
+  UnicodeString Result;
   for (int Index = 0; Index < ListView->Columns->Count; Index++)
   {
     if (!Result.IsEmpty())
     {
-      Result += ",";
+      Result += L",";
     }
     Result += IntToStr(ListView->Column[Index]->Width);
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadListViewStr(TListView * ListView, AnsiString LayoutStr)
+void __fastcall LoadListViewStr(TListView * ListView, UnicodeString LayoutStr)
 {
   int Index = 0;
   while (!LayoutStr.IsEmpty() && (Index < ListView->Columns->Count))
   {
     ListView->Column[Index]->Width = StrToIntDef(
-      CutToChar(LayoutStr, ',', true), ListView->Column[Index]->Width);
+      ::CutToChar(LayoutStr, L',', true), ListView->Column[Index]->Width);
     Index++;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall RestoreForm(AnsiString Data, TForm * Form)
+void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
 {
   assert(Form);
   if (!Data.IsEmpty())
   {
-    TMonitor * Monitor = FormMonitor(Form);
+    Forms::TMonitor * Monitor = FormMonitor(Form);
 
     TRect Bounds = Form->BoundsRect;
-    int Left = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Left);
-    int Top = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Top);
+    int Left = StrToIntDef(::CutToChar(Data, L';', true), Bounds.Left);
+    int Top = StrToIntDef(::CutToChar(Data, L';', true), Bounds.Top);
     bool DefaultPos = (Left == -1) && (Top == -1);
     if (!DefaultPos)
     {
@@ -101,9 +103,9 @@ void __fastcall RestoreForm(AnsiString Data, TForm * Form)
       Bounds.Left = 0;
       Bounds.Top = 0;
     }
-    Bounds.Right = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Right);
-    Bounds.Bottom = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Bottom);
-    TWindowState State = (TWindowState)StrToIntDef(::CutToChar(Data, ';', true), (int)wsNormal);
+    Bounds.Right = StrToIntDef(::CutToChar(Data, L';', true), Bounds.Right);
+    Bounds.Bottom = StrToIntDef(::CutToChar(Data, L';', true), Bounds.Bottom);
+    TWindowState State = (TWindowState)StrToIntDef(::CutToChar(Data, L';', true), (int)wsNormal);
     Form->WindowState = State;
     if (State == wsNormal)
     {
@@ -135,7 +137,7 @@ void __fastcall RestoreForm(AnsiString Data, TForm * Form)
           }
           else
           {
-            Form->Position = poMainFormCenter;
+            Form->Position = poOwnerFormCenter;
           }
           Form->Width = Bounds.Width();
           Form->Height = Bounds.Height();
@@ -171,12 +173,12 @@ void __fastcall RestoreForm(AnsiString Data, TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall StoreForm(TCustomForm * Form)
+UnicodeString __fastcall StoreForm(TCustomForm * Form)
 {
   assert(Form);
   TRect Bounds = Form->BoundsRect;
   OffsetRect(Bounds, -Form->Monitor->Left, -Form->Monitor->Top);
-  return FORMAT("%d;%d;%d;%d;%d", ((int)Bounds.Left, (int)Bounds.Top,
+  return FORMAT(L"%d;%d;%d;%d;%d", ((int)Bounds.Left, (int)Bounds.Top,
     (int)Bounds.Right, (int)Bounds.Bottom,
     // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
     // note that WindowState is wsNormal when window in minimized for some reason.
@@ -184,39 +186,39 @@ AnsiString __fastcall StoreForm(TCustomForm * Form)
     (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState)));
 }
 //---------------------------------------------------------------------------
-void __fastcall RestoreFormSize(AnsiString Data, TForm * Form)
+void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form)
 {
-  int Width = StrToIntDef(CutToChar(Data, ',', true), Form->Width);
-  int Height = StrToIntDef(CutToChar(Data, ',', true), Form->Height);
+  int Width = StrToIntDef(::CutToChar(Data, L',', true), Form->Width);
+  int Height = StrToIntDef(::CutToChar(Data, L',', true), Form->Height);
   ResizeForm(Form, Width, Height);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall StoreFormSize(TForm * Form)
+UnicodeString __fastcall StoreFormSize(TForm * Form)
 {
-  return FORMAT("%d,%d", (Form->Width, Form->Height));
+  return FORMAT(L"%d,%d", (Form->Width, Form->Height));
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Params)
+bool __fastcall ExecuteShellAndWait(const UnicodeString Path, const UnicodeString Params)
 {
   return ExecuteShellAndWait(Application->Handle, Path, Params,
     &Application->ProcessMessages);
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(const AnsiString Command)
+bool __fastcall ExecuteShellAndWait(const UnicodeString Command)
 {
   return ExecuteShellAndWait(Application->Handle, Command,
     &Application->ProcessMessages);
 }
 //---------------------------------------------------------------------------
-void __fastcall CreateDesktopShortCut(const AnsiString & Name,
-  const AnsiString &File, const AnsiString & Params, const AnsiString & Description,
-  int SpecialFolder)
+IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
+  const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
+  int SpecialFolder, bool Return)
 {
-  IShellLink* pLink;
+  IShellLink* pLink = NULL;
   IPersistFile* pPersistFile;
   LPMALLOC      ShellMalloc;
   LPITEMIDLIST  DesktopPidl;
-  char DesktopDir[MAX_PATH];
+  wchar_t DesktopDir[MAX_PATH];
 
   if (SpecialFolder < 0)
   {
@@ -225,81 +227,104 @@ void __fastcall CreateDesktopShortCut(const AnsiString & Name,
 
   try
   {
-    if (FAILED(SHGetMalloc(&ShellMalloc))) throw Exception("");
+    if (FAILED(SHGetMalloc(&ShellMalloc))) throw Exception(L"");
 
     if (FAILED(SHGetSpecialFolderLocation(NULL, SpecialFolder, &DesktopPidl)))
     {
-      throw Exception("");
+      throw Exception(L"");
     }
 
     if (!SHGetPathFromIDList(DesktopPidl, DesktopDir))
     {
       ShellMalloc->Free(DesktopPidl);
       ShellMalloc->Release();
-      throw Exception("");
+      throw Exception(L"");
     }
 
     ShellMalloc->Free(DesktopPidl);
     ShellMalloc->Release();
 
-    if (SUCCEEDED(CoInitialize(NULL)))
+    if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
+         IID_IShellLink, (void **) &pLink)))
     {
-      if(SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
-          IID_IShellLink, (void **) &pLink)))
+      try
       {
-        try
+        pLink->SetPath(File.c_str());
+        pLink->SetDescription(Description.c_str());
+        pLink->SetArguments(Params.c_str());
+        pLink->SetShowCmd(SW_SHOW);
+        // Explicitly setting icon file,
+        // without this icons are not shown at least in Windows 7 jumplist
+        pLink->SetIconLocation(File.c_str(), 0);
+
+        if (!Return &&
+            SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
         {
-          pLink->SetPath(File.c_str());
-          pLink->SetDescription(Description.c_str());
-          pLink->SetArguments(Params.c_str());
-          pLink->SetShowCmd(SW_SHOW);
-
-          // if there's .ico file with the same name as the .exe,
-          // use it for shortcut (so ours 128px icons is used, when available,
-          // instead of the 32px embedded one)
-          AnsiString IconFile = ChangeFileExt(File, ".ico");
-          if (FileExists(IconFile))
+          try
           {
-            pLink->SetIconLocation(IconFile.c_str(), 0);
+            WideString strShortCutLocation(DesktopDir);
+            // Name can contain even path (e.g. to create quick launch icon)
+            strShortCutLocation += UnicodeString(L"\\") + Name + L".lnk";
+            if (!SUCCEEDED(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE)))
+            {
+              RaiseLastOSError();
+            }
           }
-
-          if (SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
+          __finally
           {
-            try
-            {
-              WideString strShortCutLocation(DesktopDir);
-              // Name can contain even path (e.g. to create quick launch icon)
-              strShortCutLocation += AnsiString("\\") + Name + ".lnk";
-              if (!SUCCEEDED(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE)))
-              {
-                RaiseLastOSError();
-              }
-            }
-            __finally
-            {
-              pPersistFile->Release();
-            }
+            pPersistFile->Release();
           }
         }
-        __finally
+
+        // this is necessary for Windows 7 taskbar jump list links
+        IPropertyStore * PropertyStore;
+        if (SUCCEEDED(pLink->QueryInterface(IID_IPropertyStore, (void**)&PropertyStore)))
         {
-          pLink->Release();
+          PROPVARIANT Prop;
+          Prop.vt = VT_LPWSTR;
+          Prop.pwszVal = Name.c_str();
+          PropertyStore->SetValue(PKEY_Title, Prop);
+          PropertyStore->Commit();
+          PropertyStore->Release();
         }
       }
-      CoUninitialize();
+      catch(...)
+      {
+        pLink->Release();
+        throw;
+      }
+
+      if (!Return)
+      {
+        pLink->Release();
+        pLink = NULL;
+      }
     }
   }
   catch(Exception & E)
   {
     throw ExtException(&E, LoadStr(CREATE_SHORTCUT_ERROR));
   }
+
+  return pLink;
+}
+//---------------------------------------------------------------------------
+IShellLink * __fastcall CreateDesktopSessionShortCut(TSessionData * Session,
+  const UnicodeString & Name, const UnicodeString & AdditionalParams,
+  int SpecialFolder, bool Return)
+{
+  return
+    CreateDesktopShortCut(ValidLocalFileName(Name), Application->ExeName,
+      FORMAT(L"\"%s\"%s%s", (Session->SessionName, (AdditionalParams.IsEmpty() ? L"" : L" "), AdditionalParams)),
+      FMTLOAD(SHORTCUT_INFO_TIP, (Session->SessionName, Session->InfoTip)),
+      SpecialFolder, Return);
 }
 //---------------------------------------------------------------------------
 template<class TEditControl>
-void __fastcall ValidateMaskEditT(TEditControl * Edit)
+void __fastcall ValidateMaskEditT(TEditControl * Edit, int ForceDirectoryMasks)
 {
   assert(Edit != NULL);
-  TFileMasks Masks;
+  TFileMasks Masks(ForceDirectoryMasks);
   try
   {
     Masks = Edit->Text;
@@ -316,12 +341,17 @@ void __fastcall ValidateMaskEditT(TEditControl * Edit)
 //---------------------------------------------------------------------------
 void __fastcall ValidateMaskEdit(TComboBox * Edit)
 {
-  ValidateMaskEditT(Edit);
+  ValidateMaskEditT(Edit, -1);
 }
 //---------------------------------------------------------------------------
 void __fastcall ValidateMaskEdit(TEdit * Edit)
 {
-  ValidateMaskEditT(Edit);
+  ValidateMaskEditT(Edit, -1);
+}
+//---------------------------------------------------------------------------
+void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory)
+{
+  ValidateMaskEditT(Edit, Directory ? 1 : 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall ExitActiveControl(TForm * Form)
@@ -336,14 +366,14 @@ void __fastcall ExitActiveControl(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall OpenBrowser(AnsiString URL)
+void __fastcall OpenBrowser(UnicodeString URL)
 {
-  AnsiString HomePageUrl = LoadStr(HOMEPAGE_URL);
-  if (AnsiSameText(URL.SubString(1, HomePageUrl.Length()), HomePageUrl))
+  UnicodeString HomePageUrl = LoadStr(HOMEPAGE_URL);
+  if (SameText(URL.SubString(1, HomePageUrl.Length()), HomePageUrl))
   {
     URL = CampaignUrl(URL);
   }
-  ShellExecute(Application->Handle, "open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsFormatInClipboard(unsigned int Format)
@@ -357,15 +387,16 @@ bool __fastcall IsFormatInClipboard(unsigned int Format)
   return Result;
 }
 //---------------------------------------------------------------------------
-HANDLE __fastcall OpenTextFromClipboard(const char *& Text)
+HANDLE __fastcall OpenTextFromClipboard(const wchar_t *& Text)
 {
   HANDLE Result = NULL;
   if (OpenClipboard(0))
   {
-    Result = GetClipboardData(CF_TEXT);
+    // Check also for CF_TEXT?
+    Result = GetClipboardData(CF_UNICODETEXT);
     if (Result != NULL)
     {
-      Text = static_cast<const char*>(GlobalLock(Result));
+      Text = static_cast<const wchar_t*>(GlobalLock(Result));
     }
     else
     {
@@ -384,9 +415,9 @@ void __fastcall CloseTextFromClipboard(HANDLE Handle)
   CloseClipboard();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TextFromClipboard(AnsiString & Text)
+bool __fastcall TextFromClipboard(UnicodeString & Text)
 {
-  const char * AText = NULL;
+  const wchar_t * AText = NULL;
   HANDLE Handle = OpenTextFromClipboard(AText);
   bool Result = (Handle != NULL);
   if (Result)
@@ -397,42 +428,8 @@ bool __fastcall TextFromClipboard(AnsiString & Text)
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall VersionStrFromCompoundVersion(int Version)
-{
-  int MajorVer = Version / (10000*100*100);
-  int MinorVer = (Version % (10000*100*100)) / (10000*100);
-  int Release = (Version % (10000*100)) / (10000);
-  AnsiString Result;
-  if (Release > 0)
-  {
-    Result = FORMAT("%d.%d.%d", (MajorVer, MinorVer, Release));
-  }
-  else
-  {
-    Result = FORMAT("%d.%d", (MajorVer, MinorVer));
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall CampaignUrl(AnsiString URL)
-{
-  if (URL.Pos("?") == 0)
-  {
-    URL += "?";
-  }
-  else
-  {
-    URL += "&";
-  }
-
-  int CurrentCompoundVer = Configuration->CompoundVersion;
-  AnsiString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
-  URL += FORMAT("utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
-  return URL;
-}
-//---------------------------------------------------------------------------
 static bool __fastcall GetResource(
-  const AnsiString ResName, void *& Content, unsigned long & Size)
+  const UnicodeString ResName, void *& Content, unsigned long & Size)
 {
   HRSRC Resource = FindResourceEx(HInstance, RT_RCDATA, ResName.c_str(),
     MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
@@ -442,27 +439,27 @@ static bool __fastcall GetResource(
     Size = SizeofResource(HInstance, Resource);
     if (!Size)
     {
-      throw Exception(FORMAT("Cannot get size of resource %s", (ResName)));
+      throw Exception(FORMAT(L"Cannot get size of resource %s", (ResName)));
     }
 
     Content = LoadResource(HInstance, Resource);
     if (!Content)
     {
-      throw Exception(FORMAT("Cannot read resource %s", (ResName)));
+      throw Exception(FORMAT(L"Cannot read resource %s", (ResName)));
     }
 
     Content = LockResource(Content);
     if (!Content)
     {
-      throw Exception(FORMAT("Cannot lock resource %s", (ResName)));
+      throw Exception(FORMAT(L"Cannot lock resource %s", (ResName)));
     }
   }
 
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall DumpResourceToFile(const AnsiString ResName,
-  const AnsiString FileName)
+bool __fastcall DumpResourceToFile(const UnicodeString ResName,
+  const UnicodeString FileName)
 {
   void * Content;
   unsigned long Size;
@@ -470,14 +467,14 @@ bool __fastcall DumpResourceToFile(const AnsiString ResName,
 
   if (Result)
   {
-    FILE * f = fopen(FileName.c_str(), "wb");
+    FILE * f = _wfopen(FileName.c_str(), L"wb");
     if (!f)
     {
-      throw Exception(FORMAT("Cannot create file %s", (FileName)));
+      throw Exception(FORMAT(L"Cannot create file %s", (FileName)));
     }
     if (fwrite(Content, 1, Size, f) != Size)
     {
-      throw Exception(FORMAT("Cannot write to file %s", (FileName)));
+      throw Exception(FORMAT(L"Cannot write to file %s", (FileName)));
     }
     fclose(f);
   }
@@ -485,75 +482,25 @@ bool __fastcall DumpResourceToFile(const AnsiString ResName,
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall ReadResource(const AnsiString ResName)
+UnicodeString __fastcall ReadResource(const UnicodeString ResName)
 {
   void * Content;
   unsigned long Size;
-  AnsiString Result;
+  UnicodeString Result;
 
   if (GetResource(ResName, Content, Size))
   {
-    Result = AnsiString(static_cast<char*>(Content), Size);
+    Result = UnicodeString(UTF8String(static_cast<char*>(Content), Size));
   }
 
   return Result;
 }
 //---------------------------------------------------------------------------
 template <class T>
-class TChildCommonDialog : public T
+void __fastcall BrowseForExecutableT(T * Control, UnicodeString Title,
+  UnicodeString Filter, bool FileNameCommand, bool Escape)
 {
-public:
-  __fastcall TChildCommonDialog(TComponent * AOwner) :
-    T(AOwner)
-  {
-  }
-
-protected:
-  // all common-dialog structures we use (save, open, font) start like this:
-  typedef struct
-  {
-      DWORD        lStructSize;
-      HWND         hwndOwner;
-  } COMMONDLG;
-
-  virtual BOOL __fastcall TaskModalDialog(void * DialogFunc, void * DialogData)
-  {
-    COMMONDLG * CommonDlg = static_cast<COMMONDLG *>(DialogData);
-    HWND Parent = GetCorrectFormParent();
-    if (Parent != NULL)
-    {
-      CommonDlg->hwndOwner = Parent;
-    }
-
-    return T::TaskModalDialog(DialogFunc, DialogData);
-  }
-};
-//---------------------------------------------------------------------------
-// without this intermediate class, failure occurs during construction in release version
-#define CHILDCOMMONDIALOG(DIALOG) \
-  class TChild ## DIALOG ## Dialog : public TChildCommonDialog<T ## DIALOG ## Dialog> \
-  { \
-    public: \
-      __fastcall TChild ## DIALOG ## Dialog(TComponent * AOwner) : \
-        TChildCommonDialog<T ## DIALOG ## Dialog>(AOwner) \
-      { \
-      } \
-  }
-//---------------------------------------------------------------------------
-CHILDCOMMONDIALOG(Open);
-CHILDCOMMONDIALOG(Save);
-CHILDCOMMONDIALOG(Font);
-//---------------------------------------------------------------------------
-TOpenDialog * __fastcall CreateOpenDialog(TComponent * AOwner)
-{
-  return new TChildOpenDialog(AOwner);
-}
-//---------------------------------------------------------------------------
-template <class T>
-void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
-  AnsiString Filter, bool FileNameCommand, bool Escape)
-{
-  AnsiString Executable, Program, Params, Dir;
+  UnicodeString Executable, Program, Params, Dir;
   Executable = Control->Text;
   if (FileNameCommand)
   {
@@ -561,15 +508,20 @@ void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
   }
   SplitCommand(Executable, Program, Params, Dir);
 
-  TOpenDialog * FileDialog = CreateOpenDialog(Application);
+  TOpenDialog * FileDialog = new TOpenDialog(Application);
   try
   {
     if (Escape)
     {
-      Program = StringReplace(Program, "\\\\", "\\", TReplaceFlags() << rfReplaceAll);
+      Program = StringReplace(Program, L"\\\\", L"\\", TReplaceFlags() << rfReplaceAll);
     }
-    AnsiString ExpandedProgram = ExpandEnvironmentVariables(Program);
+    UnicodeString ExpandedProgram = ExpandEnvironmentVariables(Program);
     FileDialog->FileName = ExpandedProgram;
+    UnicodeString InitialDir = ExtractFilePath(ExpandedProgram);
+    if (!InitialDir.IsEmpty())
+    {
+      FileDialog->InitialDir = InitialDir;
+    }
     FileDialog->Filter = Filter;
     FileDialog->Title = Title;
 
@@ -585,7 +537,7 @@ void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
           Program = FileDialog->FileName;
           if (Escape)
           {
-            Program = StringReplace(Program, "\\", "\\\\", TReplaceFlags() << rfReplaceAll);
+            Program = StringReplace(Program, L"\\", L"\\\\", TReplaceFlags() << rfReplaceAll);
           }
         }
         Control->Text = FormatCommand(Program, Params);
@@ -607,14 +559,14 @@ void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall BrowseForExecutable(TEdit * Control, AnsiString Title,
-  AnsiString Filter, bool FileNameCommand, bool Escape)
+void __fastcall BrowseForExecutable(TEdit * Control, UnicodeString Title,
+  UnicodeString Filter, bool FileNameCommand, bool Escape)
 {
   BrowseForExecutableT(Control, Title, Filter, FileNameCommand, Escape);
 }
 //---------------------------------------------------------------------------
-void __fastcall BrowseForExecutable(TComboBox * Control, AnsiString Title,
-  AnsiString Filter, bool FileNameCommand, bool Escape)
+void __fastcall BrowseForExecutable(TComboBox * Control, UnicodeString Title,
+  UnicodeString Filter, bool FileNameCommand, bool Escape)
 {
   BrowseForExecutableT(Control, Title, Filter, FileNameCommand, Escape);
 }
@@ -622,7 +574,7 @@ void __fastcall BrowseForExecutable(TComboBox * Control, AnsiString Title,
 bool __fastcall FontDialog(TFont * Font)
 {
   bool Result;
-  TFontDialog * Dialog = new TChildFontDialog(Application);
+  TFontDialog * Dialog = new TFontDialog(Application);
   try
   {
     Dialog->Device = fdScreen;
@@ -641,17 +593,48 @@ bool __fastcall FontDialog(TFont * Font)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall SaveDialog(AnsiString Title, AnsiString Filter,
-  AnsiString DefaultExt, AnsiString & FileName)
+bool __fastcall SaveDialog(UnicodeString Title, UnicodeString Filter,
+  UnicodeString DefaultExt, UnicodeString & FileName)
 {
   bool Result;
-  TSaveDialog * Dialog = new TChildSaveDialog(Application);
+  #if 0
+  TFileSaveDialog * Dialog = new TFileSaveDialog(Application);
+  try
+  {
+    Dialog->Title = Title;
+    FilterToFileTypes(Filter, Dialog->FileTypes);
+    Dialog->DefaultExtension = DefaultExt;
+    Dialog->FileName = FileName;
+    UnicodeString DefaultFolder = ExtractFilePath(FileName);
+    if (!DefaultFolder.IsEmpty())
+    {
+      Dialog->DefaultFolder = DefaultFolder;
+    }
+    Dialog->Options = Dialog->Options << fdoOverWritePrompt << fdoForceFileSystem <<
+      fdoPathMustExist << fdoNoReadOnlyReturn;
+    Result = Dialog->Execute();
+    if (Result)
+    {
+      FileName = Dialog->FileName;
+    }
+  }
+  __finally
+  {
+    delete Dialog;
+  }
+  #else
+  TSaveDialog * Dialog = new TSaveDialog(Application);
   try
   {
     Dialog->Title = Title;
     Dialog->Filter = Filter;
     Dialog->DefaultExt = DefaultExt;
     Dialog->FileName = FileName;
+    UnicodeString InitialDir = ExtractFilePath(FileName);
+    if (!InitialDir.IsEmpty())
+    {
+      Dialog->InitialDir = InitialDir;
+    }
     Dialog->Options = Dialog->Options << ofOverwritePrompt << ofPathMustExist <<
       ofNoReadOnlyReturn;
     Result = Dialog->Execute();
@@ -664,10 +647,11 @@ bool __fastcall SaveDialog(AnsiString Title, AnsiString Filter,
   {
     delete Dialog;
   }
+  #endif
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyToClipboard(AnsiString Text)
+void __fastcall CopyToClipboard(UnicodeString Text)
 {
   HANDLE Data;
   void * DataPtr;
@@ -676,15 +660,16 @@ void __fastcall CopyToClipboard(AnsiString Text)
   {
     try
     {
-      Data = GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, Text.Length() + 1);
+      size_t Size = (Text.Length() + 1) * sizeof(wchar_t);
+      Data = GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, Size);
       try
       {
         DataPtr = GlobalLock(Data);
         try
         {
-          memcpy(DataPtr, Text.c_str(), Text.Length() + 1);
+          memcpy(DataPtr, Text.c_str(), Size);
           EmptyClipboard();
-          SetClipboardData(CF_TEXT, Data);
+          SetClipboardData(CF_UNICODETEXT, Data);
         }
         __finally
         {
@@ -704,7 +689,7 @@ void __fastcall CopyToClipboard(AnsiString Text)
   }
   else
   {
-    throw Exception(Consts_SCannotOpenClipboard);
+    throw Exception(Vcl_Consts_SCannotOpenClipboard);
   }
 }
 //---------------------------------------------------------------------------
@@ -778,11 +763,11 @@ void __fastcall ShutDownWindows()
 //---------------------------------------------------------------------------
 void __fastcall EditSelectBaseName(HWND Edit)
 {
-  AnsiString Text;
+  UnicodeString Text;
   Text.SetLength(GetWindowTextLength(Edit) + 1);
   GetWindowText(Edit, Text.c_str(), Text.Length());
 
-  int P = Text.LastDelimiter(".");
+  int P = Text.LastDelimiter(L".");
   if (P > 0)
   {
     // SendMessage does not work, if edit control is not fully
@@ -819,7 +804,7 @@ typedef BOOL (*WINHTTPGETDEFAULTPROXYCONFIGURATION)(WINHTTP_PROXY_INFO * pProxyI
 typedef BOOL (*WINHTTPGETIEPROXYCONFIGFORCURRENTUSER)(
   WINHTTP_CURRENT_USER_IE_PROXY_CONFIG * pProxyConfig);
 //---------------------------------------------------------------------------
-bool __fastcall AutodetectProxyUrl(AnsiString & Proxy)
+bool __fastcall AutodetectProxyUrl(UnicodeString & Proxy)
 {
   static HMODULE WinHTTP = NULL;
   static WINHTTPGETDEFAULTPROXYCONFIGURATION WinHttpGetDefaultProxyConfiguration = NULL;
@@ -841,7 +826,7 @@ bool __fastcall AutodetectProxyUrl(AnsiString & Proxy)
      use the WinHTTP functions instead */
   if (WinHTTP == NULL)
   {
-    if ((WinHTTP = LoadLibrary("WinHTTP.dll")) == NULL)
+    if ((WinHTTP = LoadLibrary(L"WinHTTP.dll")) == NULL)
     {
       Result = false;
     }
@@ -927,180 +912,108 @@ bool __fastcall AutodetectProxyUrl(AnsiString & Proxy)
 class TWinHelpTester : public TInterfacedObject, public IWinHelpTester
 {
 public:
-  virtual __fastcall ~TWinHelpTester();
-  virtual bool __fastcall CanShowALink(const AnsiString ALink, const AnsiString FileName);
-  virtual bool __fastcall CanShowTopic(const AnsiString Topic, const AnsiString FileName);
-  virtual bool __fastcall CanShowContext(const int Context, const AnsiString FileName);
-  virtual TStringList * __fastcall GetHelpStrings(const AnsiString ALink);
-  virtual AnsiString __fastcall GetHelpPath();
-  virtual AnsiString __fastcall GetDefaultHelpFile();
+  virtual bool __fastcall CanShowALink(const UnicodeString ALink, const UnicodeString FileName);
+  virtual bool __fastcall CanShowTopic(const UnicodeString Topic, const UnicodeString FileName);
+  virtual bool __fastcall CanShowContext(const int Context, const UnicodeString FileName);
+  virtual TStringList * __fastcall GetHelpStrings(const UnicodeString ALink);
+  virtual UnicodeString __fastcall GetHelpPath();
+  virtual UnicodeString __fastcall GetDefaultHelpFile();
 
   IUNKNOWN
 };
 //---------------------------------------------------------------------------
-ICustomHelpViewer * CustomHelpViewer = NULL;
-_di_IHelpManager * PHelpManager = NULL;
-IUnknown * HelpManagerUnknown = NULL;
-TObjectList * ViewerList = NULL;
-ICustomHelpViewer * WinHelpViewer = NULL;
-//---------------------------------------------------------------------------
-static int __fastcall ViewerID(int Index)
+class TCustomHelpSelector : public TInterfacedObject, public IHelpSelector
 {
-  // 8 is offset from THelpViewerNode to THelpViewerNode::FViewer
-  return
-    *reinterpret_cast<int *>(reinterpret_cast<char *>(ViewerList->Items[Index])
-    + 8);
-}
+public:
+  __fastcall TCustomHelpSelector(const UnicodeString & Name);
+
+  virtual int __fastcall SelectKeyword(TStrings * Keywords);
+  virtual int __fastcall TableOfContents(TStrings * Contents);
+
+  IUNKNOWN
+
+private:
+  UnicodeString FName;
+};
 //---------------------------------------------------------------------------
-static void __fastcall InternalShutdown(int Index)
+void __fastcall AssignHelpSelector(IHelpSelector * HelpSelector)
 {
-  assert(PHelpManager != NULL);
-  if (PHelpManager != NULL)
+  _di_IHelpSystem HelpSystem;
+  if (GetHelpSystem(HelpSystem))
   {
-    // override conflict of two Release() methods by getting
-    // IHelpManager explicitly using operator *
-    (**PHelpManager).Release(ViewerID(Index));
-    // registration to help manager increases refcount by 2, but deregistration
-    // by one only
-    CustomHelpViewer->Release();
+    HelpSystem->AssignHelpSelector(HelpSelector);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall InitializeCustomHelp(ICustomHelpViewer * HelpViewer)
 {
-  assert(PHelpManager == NULL);
+  _di_IHelpManager HelpManager;
+  RegisterViewer(HelpViewer, HelpManager);
 
-  CustomHelpViewer = HelpViewer;
-
-  // workaround
-  // _di_IHelpManager cannot be instantiated due to either bug in compiler or
-  // VCL code
-  PHelpManager = (_di_IHelpManager*)malloc(sizeof(_di_IHelpManager));
-  // our own reference
-  CustomHelpViewer->AddRef();
-  RegisterViewer(CustomHelpViewer, *PHelpManager);
-  HelpManagerUnknown = dynamic_cast<IUnknown *>(&**PHelpManager);
-
-  // 40 is offset from IHelpManager to THelpManager
-  // 16 is offset from THelpManager to THelpManager::FViewerList
-  ViewerList =
-    *reinterpret_cast<TObjectList **>(reinterpret_cast<char *>(&**PHelpManager)
-    - 40 + 16);
-  assert(ViewerList->Count == 2);
-
-  // gross hack
-  // Due to major bugs in VCL help system, unregister winhelp at all.
-  // To do this we must call RegisterViewer first to get HelpManager.
-  // Due to another bug, viewers must be unregistred in order reversed to
-  // registration order, so we must unregister our help viewer first
-  // and register it again at the end
-  InternalShutdown(1);
-  assert(ViewerList->Count == 1);
-  int WinHelpViewerID = ViewerID(0);
-  // 4 is offset from THelpViewerNode to THelpViewerNode::FViewer
-  WinHelpViewer =
-    *reinterpret_cast<_di_ICustomHelpViewer *>(reinterpret_cast<char *>(ViewerList->Items[0])
-    + 4);
-  // our reference
-  // we cannot release win help viewer completelly here as finalization code of
-  // WinHelpViewer expect it to exist
-  WinHelpViewer->AddRef();
-  (**PHelpManager).Release(WinHelpViewerID);
-  // remove forgoten 3 references of manager
-  WinHelpViewer->Release();
-  WinHelpViewer->Release();
-  WinHelpViewer->Release();
-  assert(ViewerList->Count == 0);
-  // this clears reference to manager in TWinHelpViewer::FHelpManager,
-  // preventing call to TWinHelpViewer::InternalShutdown from finalization code
-  // of WinHelpViewer
-  WinHelpViewer->ShutDown();
-
-  RegisterViewer(CustomHelpViewer, *PHelpManager);
-  // we've got second reference to the same pointer here, release it
-  HelpManagerUnknown->Release();
-  assert(ViewerList->Count == 1);
-
-  // now when winhelp is not registered, the tester is not used anyway
-  // for any real work, but we use it as a hook to be called after
-  // finalization of WinHelpViewer (see its finalization section)
+  // Register dummy tester that disables win help
   WinHelpTester = new TWinHelpTester();
+
+  AssignHelpSelector(new TCustomHelpSelector(HelpViewer->GetViewerName()));
 }
 //---------------------------------------------------------------------------
 void __fastcall FinalizeCustomHelp()
 {
-  if (CustomHelpViewer != NULL)
-  {
-    // unregister ourselves to release both references
-    InternalShutdown(0);
-    // our own reference
-    CustomHelpViewer->Release();
-  }
-
-  if (PHelpManager != NULL)
-  {
-    assert(ViewerList->Count == 0);
-
-    // our reference
-    HelpManagerUnknown->Release();
-    free(PHelpManager);
-    PHelpManager = NULL;
-    HelpManagerUnknown = NULL;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall CleanUpWinHelp()
-{
-  // WinHelpViewer finalization code should have been called by now already,
-  // so we can safely remove the last reference to destroy it
-  assert(WinHelpViewer != NULL);
-  WinHelpViewer->Release();
+  AssignHelpSelector(NULL);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TWinHelpTester::~TWinHelpTester()
+bool __fastcall TWinHelpTester::CanShowALink(const UnicodeString ALink,
+  const UnicodeString FileName)
 {
-  CleanUpWinHelp();
-}
-//---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowALink(const AnsiString ALink,
-  const AnsiString FileName)
-{
-  assert(false);
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowTopic(const AnsiString Topic,
-  const AnsiString FileName)
+bool __fastcall TWinHelpTester::CanShowTopic(const UnicodeString Topic,
+  const UnicodeString FileName)
 {
   assert(false);
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinHelpTester::CanShowContext(const int /*Context*/,
-  const AnsiString FileName)
+  const UnicodeString FileName)
 {
   assert(false);
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
-TStringList * __fastcall TWinHelpTester::GetHelpStrings(const AnsiString ALink)
+TStringList * __fastcall TWinHelpTester::GetHelpStrings(const UnicodeString ALink)
 {
   assert(false);
   TStringList * Result = new TStringList();
-  Result->Add(ViewerName + ": " + ALink);
+  Result->Add(ViewerName + L": " + ALink);
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TWinHelpTester::GetHelpPath()
+UnicodeString __fastcall TWinHelpTester::GetHelpPath()
 {
-  assert(false);
   // never called on windows anyway
   return ExtractFilePath(Application->HelpFile);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TWinHelpTester::GetDefaultHelpFile()
+UnicodeString __fastcall TWinHelpTester::GetDefaultHelpFile()
 {
-  assert(false);
   return Application->HelpFile;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TCustomHelpSelector::TCustomHelpSelector(const UnicodeString & Name) :
+  FName(Name)
+{
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomHelpSelector::SelectKeyword(TStrings * /*Keywords*/)
+{
+  FAIL;
+  return 0;
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomHelpSelector::TableOfContents(TStrings * Contents)
+{
+  return Contents->IndexOf(FName);
 }

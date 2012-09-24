@@ -6,38 +6,42 @@
 #include <Tools.h>
 #include <TextsWin.h>
 #include <CoreMain.h>
+#include <HelpIntfs.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 class TWebHelpSystem : public TInterfacedObject, public ICustomHelpViewer
 {
 public:
-  __fastcall TWebHelpSystem(const AnsiString & Version);
-  virtual int __fastcall UnderstandsKeyword(const AnsiString HelpString);
-  virtual TStringList * __fastcall GetHelpStrings(const AnsiString HelpString);
+  __fastcall TWebHelpSystem(const UnicodeString & Version, const UnicodeString & Language);
+  virtual int __fastcall UnderstandsKeyword(const UnicodeString HelpString);
+  virtual TStringList * __fastcall GetHelpStrings(const UnicodeString HelpString);
   virtual void __fastcall NotifyID(const int ViewerID);
   virtual void __fastcall SoftShutDown();
   virtual void __fastcall ShutDown();
-  virtual AnsiString __fastcall GetViewerName();
+  virtual UnicodeString __fastcall GetViewerName();
   virtual bool __fastcall CanShowTableOfContents();
   virtual void __fastcall ShowTableOfContents();
-  virtual void __fastcall ShowHelp(const AnsiString HelpString);
+  virtual void __fastcall ShowHelp(const UnicodeString HelpString);
 
   IUNKNOWN
 
 private:
-  AnsiString FVersion;
+  UnicodeString FVersion;
+  UnicodeString FLanguage;
 };
 //---------------------------------------------------------------------------
-void __fastcall SearchHelp(const AnsiString & Message)
+void __fastcall SearchHelp(const UnicodeString & Message)
 {
-  OpenBrowser(FMTLOAD(DOCUMENTATION_SEARCH_URL,
-    (EncodeUrlString(UTF8Encode(Message)), Configuration->ProductVersion)));
+  OpenBrowser(FMTLOAD(DOCUMENTATION_SEARCH_URL2,
+    (EncodeUrlString(Message), Configuration->ProductVersion,
+     IntToHex(__int64(GUIConfiguration->Locale), 4))));
 }
 //---------------------------------------------------------------------------
 void __fastcall InitializeWinHelp()
 {
-  InitializeCustomHelp(new TWebHelpSystem(Configuration->ProductVersion));
+  InitializeCustomHelp(new TWebHelpSystem(
+      Configuration->ProductVersion, IntToHex(__int64(GUIConfiguration->Locale), 4)));
 }
 //---------------------------------------------------------------------------
 void __fastcall FinalizeWinHelp()
@@ -45,21 +49,22 @@ void __fastcall FinalizeWinHelp()
   FinalizeCustomHelp();
 }
 //---------------------------------------------------------------------------
-__fastcall TWebHelpSystem::TWebHelpSystem(const AnsiString & Version) :
-  FVersion(Version)
+__fastcall TWebHelpSystem::TWebHelpSystem(
+  const UnicodeString & Version, const UnicodeString & Language) :
+  FVersion(Version), FLanguage(Language)
 {
 }
 //---------------------------------------------------------------------------
-int __fastcall TWebHelpSystem::UnderstandsKeyword(const AnsiString HelpString)
+int __fastcall TWebHelpSystem::UnderstandsKeyword(const UnicodeString HelpString)
 {
   // pretend that we know everything
   return 1;
 }
 //---------------------------------------------------------------------------
-TStringList * __fastcall TWebHelpSystem::GetHelpStrings(const AnsiString HelpString)
+TStringList * __fastcall TWebHelpSystem::GetHelpStrings(const UnicodeString HelpString)
 {
   TStringList * Result = new TStringList();
-  Result->Add(GetViewerName() + " : " + HelpString);
+  Result->Add(GetViewerName() + L" : " + HelpString);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -75,9 +80,9 @@ void __fastcall TWebHelpSystem::ShutDown()
 {
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TWebHelpSystem::GetViewerName()
+UnicodeString __fastcall TWebHelpSystem::GetViewerName()
 {
-  return "Web";
+  return L"Web";
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWebHelpSystem::CanShowTableOfContents()
@@ -87,10 +92,10 @@ bool __fastcall TWebHelpSystem::CanShowTableOfContents()
 //---------------------------------------------------------------------------
 void __fastcall TWebHelpSystem::ShowTableOfContents()
 {
-  OpenBrowser(FMTLOAD(DOCUMENTATION_URL, (FVersion)));
+  OpenBrowser(FMTLOAD(DOCUMENTATION_URL2, (FVersion, FLanguage)));
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebHelpSystem::ShowHelp(const AnsiString HelpString)
+void __fastcall TWebHelpSystem::ShowHelp(const UnicodeString HelpString)
 {
-  OpenBrowser(FMTLOAD(DOCUMENTATION_KEYWORD_URL, (HelpString, FVersion)));
+  OpenBrowser(FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpString, FVersion, FLanguage)));
 }

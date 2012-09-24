@@ -20,7 +20,7 @@
 #endif
 //---------------------------------------------------------------------
 bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
-  TOperationSide Side, AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
+  TOperationSide Side, UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TStrings * LocalDirectories, TStrings * RemoteDirectories, TTerminal * Terminal)
 {
   bool Result;
@@ -50,7 +50,7 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-void __fastcall BookmarkNameValidateName(const AnsiString Name)
+void __fastcall BookmarkNameValidateName(const UnicodeString Name)
 {
   if (Name.IsEmpty() || IsNumber(Name))
   {
@@ -58,10 +58,10 @@ void __fastcall BookmarkNameValidateName(const AnsiString Name)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall BookmarkFolderValidateName(const AnsiString Name,
+void __fastcall BookmarkFolderValidateName(const UnicodeString Name,
   bool AllowEmpty)
 {
-  if ((!AllowEmpty && Name.IsEmpty()) || Name.Pos("\\"))
+  if ((!AllowEmpty && Name.IsEmpty()) || Name.Pos(L"\\"))
   {
     throw Exception(FMTLOAD(BOOKMARK_FOLDER_INVALID_NAME, (Name)));
   }
@@ -73,7 +73,7 @@ class TBookmarkNameDialog : public TCustomDialog
 public:
   __fastcall TBookmarkNameDialog(TStrings * PeerBookmarks, bool AllowShared);
 
-  bool __fastcall Execute(AnsiString & Name, bool & Shared);
+  bool __fastcall Execute(UnicodeString & Name, bool & Shared);
 
 protected:
   virtual void __fastcall DoValidate();
@@ -115,7 +115,7 @@ void __fastcall TBookmarkNameDialog::DoValidate()
   TCustomDialog::DoValidate();
 }
 //---------------------------------------------------------------------
-bool __fastcall TBookmarkNameDialog::Execute(AnsiString & Name, bool & Shared)
+bool __fastcall TBookmarkNameDialog::Execute(UnicodeString & Name, bool & Shared)
 {
   NameCombo->Text = Name;
   if (SharedCheck != NULL)
@@ -140,7 +140,7 @@ class TBookmarkFolderDialog : public TCustomDialog
 public:
   __fastcall TBookmarkFolderDialog(TStrings * Folders);
 
-  bool __fastcall Execute(AnsiString & Name);
+  bool __fastcall Execute(UnicodeString & Name);
 
 protected:
   virtual void __fastcall DoValidate();
@@ -166,7 +166,7 @@ void __fastcall TBookmarkFolderDialog::DoValidate()
   TCustomDialog::DoValidate();
 }
 //---------------------------------------------------------------------
-bool __fastcall TBookmarkFolderDialog::Execute(AnsiString & Name)
+bool __fastcall TBookmarkFolderDialog::Execute(UnicodeString & Name)
 {
   NameCombo->Text = Name;
   bool Result = TCustomDialog::Execute();
@@ -216,7 +216,7 @@ __fastcall TLocationProfilesDialog::~TLocationProfilesDialog()
   SAFE_DESTROY(FSessionFolders);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLocationProfilesDialog::SetLocalDirectory(AnsiString value)
+void __fastcall TLocationProfilesDialog::SetLocalDirectory(UnicodeString value)
 {
   if (LocalDirectory != value)
   {
@@ -226,12 +226,12 @@ void __fastcall TLocationProfilesDialog::SetLocalDirectory(AnsiString value)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TLocationProfilesDialog::GetLocalDirectory()
+UnicodeString __fastcall TLocationProfilesDialog::GetLocalDirectory()
 {
   return ExcludeTrailingBackslash(LocalDirectoryEdit->Text);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLocationProfilesDialog::SetRemoteDirectory(AnsiString value)
+void __fastcall TLocationProfilesDialog::SetRemoteDirectory(UnicodeString value)
 {
   if (RemoteDirectory != value)
   {
@@ -241,7 +241,7 @@ void __fastcall TLocationProfilesDialog::SetRemoteDirectory(AnsiString value)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TLocationProfilesDialog::GetRemoteDirectory()
+UnicodeString __fastcall TLocationProfilesDialog::GetRemoteDirectory()
 {
   return UnixExcludeTrailingBackslash(RemoteDirectoryEdit->Text);
 }
@@ -369,6 +369,8 @@ void __fastcall TLocationProfilesDialog::LoadBookmarks(
     BookmarkList->Clear();
   }
 
+  Configuration->Usage->SetMax(L"MaxBookmarks", BookmarkList->Count);
+
   assert(BookmarkList != NULL);
 
   Folders->Clear();
@@ -409,7 +411,7 @@ void __fastcall TLocationProfilesDialog::LoadBookmarks(
 bool __fastcall TLocationProfilesDialog::Execute()
 {
   bool Result;
-  AnsiString SessionKey;
+  UnicodeString SessionKey;
   if (Terminal)
   {
     // cache session key, in case terminal is closed while the window is open
@@ -478,7 +480,7 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool In
   assert(!LocalDirectory.IsEmpty() || !RemoteDirectory.IsEmpty());
 
   bool Result;
-  AnsiString BookmarkName;
+  UnicodeString BookmarkName;
   if ((OperationSide == osLocal && !LocalDirectory.IsEmpty()) ||
       RemoteDirectory.IsEmpty())
   {
@@ -491,7 +493,7 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool In
 
   TTreeNode * Selected = ProfilesView->Selected;
   TBookmark * SelectedBookmark = NULL;
-  AnsiString SelectedNode;
+  UnicodeString SelectedNode;
   if (Selected != NULL)
   {
     assert(!Initial);
@@ -653,7 +655,7 @@ void __fastcall TLocationProfilesDialog::BookmarkMove(TObject * Sender,
 
   if (!Dest || !Dest->Data)
   {
-    Bookmark->Node = Dest ? Dest->Text : AnsiString("");
+    Bookmark->Node = Dest ? Dest->Text : UnicodeString();
     BookmarkList->MoveTo(BookmarkList->Bookmarks[BookmarkList->Count - 1],
       Bookmark, false);
     ProfilesView->Selected->MoveTo(Dest, naAddChild);
@@ -841,7 +843,7 @@ void __fastcall TLocationProfilesDialog::BookmarkMoveToButtonClick(TObject * Sen
   TBookmarkFolderDialog * Dialog = new TBookmarkFolderDialog(Folders);
   try
   {
-    AnsiString NodeName = Bookmark->Node;
+    UnicodeString NodeName = Bookmark->Node;
     if (Dialog->Execute(NodeName) &&
         (NodeName != Bookmark->Node))
     {
@@ -921,7 +923,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewGetSelectedIndex(
 void __fastcall TLocationProfilesDialog::LocalDirectoryBrowseButtonClick(
   TObject * /*Sender*/)
 {
-  AnsiString Directory = LocalDirectoryEdit->Text;
+  UnicodeString Directory = LocalDirectoryEdit->Text;
   if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
   {
     LocalDirectoryEdit->Text = Directory;
@@ -956,7 +958,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewExpanded(
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::ProfilesViewEdited(
-  TObject * Sender, TTreeNode * Node, AnsiString & S)
+  TObject * Sender, TTreeNode * Node, UnicodeString & S)
 {
   TTreeView * ProfilesView = GetProfilesView(Sender);
   TStringList * Folders = GetFolders(Sender);
@@ -1061,12 +1063,12 @@ void __fastcall TLocationProfilesDialog::ShortCutBookmarkButtonClick(
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TLocationProfilesDialog::BookmarkText(TBookmark * Bookmark)
+UnicodeString __fastcall TLocationProfilesDialog::BookmarkText(TBookmark * Bookmark)
 {
-  AnsiString Result = Bookmark->Name;
+  UnicodeString Result = Bookmark->Name;
   if (!Result.IsEmpty() && (Bookmark->ShortCut != 0))
   {
-    Result = FORMAT("%s (%s)", (Result, ShortCutToText(Bookmark->ShortCut)));
+    Result = FORMAT(L"%s (%s)", (Result, ShortCutToText(Bookmark->ShortCut)));
   }
   return Result;
 }

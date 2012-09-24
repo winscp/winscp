@@ -81,7 +81,7 @@ function PIDL_GetNextItem(PIDL: PItemIDList):PItemIDList;
 //  PARAMETERS:
 //      pidl - Pointer to an ITEMIDLIST to walk through
 begin
-     if PIDL<>nil then Result:=PItemIDList(PChar(PIDL)+PIDL^.mkid.cb)
+     if PIDL<>nil then Result:=PItemIDList(PAnsiChar(PIDL)+PIDL^.mkid.cb)
      else Result:=nil
 end;
 
@@ -131,7 +131,7 @@ begin
      if Result<>nil then
      begin
           if pidl1<>nil then CopyMemory(Result,pidl1,cb1);
-          CopyMemory(PChar(Result)+cb1,pidl2,cb2);
+          CopyMemory(PAnsiChar(Result)+cb1,pidl2,cb2);
      end;
 end;
 
@@ -177,11 +177,11 @@ begin
      begin
           case Str.uType of
                STRRET_WSTR:
-                  WideCharToMultiByte(CP_ACP, 0, str.pOleStr, -1, pszName, cchMax, nil, nil);
+                  lstrcpyn(pszName, str.pOleStr, cchMax);
                STRRET_OFFSET:
-                  lstrcpyn(pszName, PChar(pidl)+str.uOffset, cchMax);
+                  MultiByteToWideChar(CP_ACP, 0, PAnsiChar(pidl)+str.uOffset, -1, pszName, cchMax);
                STRRET_CSTR:
-                  lstrcpyn(pszName, str.cStr, cchMax);
+                  MultiByteToWideChar(CP_ACP, 0, str.cStr, -1, pszName, cchMax);
                else Result := FALSE;
           end;
      end
@@ -254,14 +254,12 @@ function PIDL_GetFromPath(pszFile: PChar): PItemIDList;
 //  RETURN VALUE:
 //      Returns a fully qualified ITEMIDLIST, or NULL if an error occurs.
 var piDesktop: IShellFolder;
-    olePath: array[1..Max_Path] of TOleChar;
     ulEaten, ulAttribs:ULong;
 begin
      Result:=nil;
      if Failed(SHGetDesktopFolder(piDesktop)) then exit;
      piDesktop._AddRef;
-     MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, pszFile, -1, @olePath, sizeof(olepath));
-     if Failed(piDesktop.ParseDisplayName(0, nil, @OlePath, ulEaten,
+     if Failed(piDesktop.ParseDisplayName(0, nil, pszFile, ulEaten,
         Result, ulAttribs)) then Result:=nil;
      // piDesktop._Release; -> automaticly done by D4
 end;
@@ -294,15 +292,13 @@ function PIDL_GetFromParentFolder(pParentFolder: IShellFolder; pszFile: PChar): 
 //      pszFile       - file name in the folder.
 //  RETURN VALUE:
 //      Returns a relative ITEMIDLIST, or NULL if an error occurs.
-var olePath: array[1..Max_Path] of TOleChar;
-    chEaten, dwAttributes: ULONG;
+var chEaten, dwAttributes: ULONG;
     NotResult: Boolean;
     ErrorMode: Word;
 begin
-     MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, pszFile, -1, @olePath, sizeOf(olePath));
      ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
      try
-       NotResult := Failed(pParentFolder.ParseDisplayName(0, nil, @olePath, chEaten, Result,
+       NotResult := Failed(pParentFolder.ParseDisplayName(0, nil, pszFile, chEaten, Result,
           dwAttributes));
      finally
        SetErrorMode(ErrorMode);

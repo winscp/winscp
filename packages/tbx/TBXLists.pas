@@ -13,7 +13,7 @@ interface
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, Forms, Graphics, TB2Item, TBX,
-  TBXThemes, TBXUxThemes, ImgList;
+  TBXThemes, UxTheme, ImgList;
 
 type
   { TTBXScrollBar }

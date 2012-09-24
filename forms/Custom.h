@@ -2,18 +2,11 @@
 #ifndef CustomH
 #define CustomH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
+#include <System.Classes.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.StdCtrls.hpp>
+//----------------------------------------------------------------------------
 #include <Windows.h>
-#include "PasswordEdit.hpp"
 //----------------------------------------------------------------------------
 class TCustomDialog : public TForm
 {
@@ -39,9 +32,9 @@ protected:
   virtual void __fastcall DoValidate();
 
 public:
-  __fastcall TCustomDialog(AnsiString HelpKeyword);
+  __fastcall TCustomDialog(UnicodeString HelpKeyword);
 
-  TLabel * __fastcall CreateLabel(AnsiString Label);
+  TLabel * __fastcall CreateLabel(UnicodeString Label);
   void __fastcall AddEditLikeControl(TWinControl * Edit, TLabel * Label);
   void __fastcall AddEdit(TCustomEdit * Edit, TLabel * Label);
   void __fastcall AddComboBox(TCustomCombo * Combo, TLabel * Label);

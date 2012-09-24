@@ -20,7 +20,7 @@ bool __fastcall DoCopyParamPresetDialog(TCopyParamList * CopyParamList,
   int & Index, TCopyParamPresetMode Mode, TCopyParamRuleData * CurrentRuleData)
 {
   bool Result;
-  TCopyParamPresetDialog * Dialog = new TCopyParamPresetDialog(Application, Mode, CurrentRuleData);
+  TCopyParamPresetDialog * Dialog = new TCopyParamPresetDialog(GetFormOwner() , Mode, CurrentRuleData);
   try
   {
     Result = Dialog->Execute(CopyParamList, Index);
@@ -45,7 +45,8 @@ __fastcall TCopyParamPresetDialog::TCopyParamPresetDialog(TComponent * Owner,
   InstallPathWordBreakProc(UserNameEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
-  HintLabel(RuleMaskHintText, LoadStr(MASK_HINT2));
+  HintLabel(RuleMaskHintText,
+    FORMAT(L"%s\n \n%s",(LoadStr(MASK_HINT2), LoadStr(COMBINING_MASKS_HINT))));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamPresetDialog::UpdateControls()
@@ -76,7 +77,7 @@ bool __fastcall TCopyParamPresetDialog::Execute(TCopyParamList * CopyParamList,
     }
     else
     {
-      DescriptionEdit->Text = "";
+      DescriptionEdit->Text = L"";
       FIndex = -1; // never used
       Index = FCopyParamList->Count;
     }
@@ -89,7 +90,7 @@ bool __fastcall TCopyParamPresetDialog::Execute(TCopyParamList * CopyParamList,
   }
   else
   {
-    DescriptionEdit->Text = "";
+    DescriptionEdit->Text = L"";
     TCopyParamType Default;
     CopyParamsFrame->Params = Default;
     HasRuleCheck->Checked = false;
@@ -107,7 +108,7 @@ bool __fastcall TCopyParamPresetDialog::Execute(TCopyParamList * CopyParamList,
   {
     CopyParamsFrame->AfterExecute();
 
-    AnsiString Name;
+    UnicodeString Name;
     TCopyParamType * CopyParam = NULL;
     TCopyParamRule * Rule = NULL;
     try
@@ -169,7 +170,7 @@ void __fastcall TCopyParamPresetDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult != mrCancel)
   {
-    AnsiString Description = DescriptionEdit->Text;
+    UnicodeString Description = DescriptionEdit->Text;
     TCopyParamList::ValidateName(Description);
 
     TCopyParamRule * Rule = GetRule();

@@ -11,7 +11,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
@@ -22,7 +22,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
   object EditLabel: TLabel
     Left = 8
     Top = 8
-    Width = 83
+    Width = 85
     Height = 13
     Caption = 'New &folder name:'
   end

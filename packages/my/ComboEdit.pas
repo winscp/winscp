@@ -401,9 +401,9 @@ var
   I: Integer;
 begin
   I := Pos;
-  while (I <= Length(S)) and not (S[I] in Delims) do Inc(I);
+  while (I <= Length(S)) and not CharInSet(S[I], Delims) do Inc(I);
   Result := Copy(S, Pos, I - Pos);
-  if (I <= Length(S)) and (S[I] in Delims) then Inc(I);
+  if (I <= Length(S)) and CharInSet(S[I], Delims) then Inc(I);
   Pos := I;
 end;
 

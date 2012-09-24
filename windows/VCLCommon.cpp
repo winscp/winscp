@@ -12,13 +12,10 @@
 #include <Tools.h>
 
 #include <FileCtrl.hpp>
-#include <ThemeMgr.hpp>
 #include <PathLabel.hpp>
 #include <PasTools.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-//---------------------------------------------------------------------------
-static TThemeManager * ThemeManager = NULL;
 //---------------------------------------------------------------------------
 void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount, int RightPad)
 {
@@ -67,32 +64,7 @@ void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount, int Ri
 //---------------------------------------------------------------------------
 static void __fastcall SetParentColor(TControl * Control)
 {
-  TColor Color;
-  assert(ThemeManager != NULL);
-  if (ThemeManager->ThemesEnabled)
-  {
-    bool OnTabSheet = false;
-    TWinControl * Parent = Control->Parent;
-    while ((Parent != NULL) && !OnTabSheet)
-    {
-      TTabSheet * TabSheet = dynamic_cast<TTabSheet *>(Parent);
-      OnTabSheet = (TabSheet != NULL) && TabSheet->TabVisible;
-      Parent = Parent->Parent;
-    }
-
-    if (OnTabSheet)
-    {
-      Color = ThemeManager->GetColor(teTab, ::TABP_BODY, 0, ::TMT_FILLCOLORHINT);
-    }
-    else
-    {
-      Color = ThemeManager->GetColor(teWindow, ::WP_DIALOG, 0, ::TMT_FILLCOLOR);
-    }
-  }
-  else
-  {
-    Color = clBtnFace;
-  }
+  TColor Color = clBtnFace;
 
   ((TEdit*)Control)->Color = Color;
 }
@@ -147,21 +119,10 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
 struct TSavedSystemSettings
 {
   TCustomForm * Form;
-  AnsiString FontName;
+  UnicodeString FontName;
   bool Flipped;
   TWndMethod OldWndProc;
 };
-//---------------------------------------------------------------------------
-static void __fastcall ThemeManagerAllowSubclassing(void * /*Data*/,
-  TThemeManager * /*Sender*/, TControl * Control, bool & Allow)
-{
-  TPathLabel * PathLabel = dynamic_cast<TPathLabel *>(Control);
-  // intent is to only exclude path labels on the main window
-  if ((PathLabel != NULL) && (PathLabel->FocusControl != NULL))
-  {
-    Allow = false;
-  }
-}
 //---------------------------------------------------------------------------
 class TPublicControl : public TWinControl
 {
@@ -174,7 +135,7 @@ TWndMethod __fastcall ControlWndProc(TWinControl * Control)
   return &PublicControl->WndProc;
 }
 //---------------------------------------------------------------------------
-static TMonitor * LastMonitor = NULL;
+static Forms::TMonitor * LastMonitor = NULL;
 //---------------------------------------------------------------------------
 inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   TMessage & Message)
@@ -195,6 +156,11 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
         // explorer)
         ((Application->MainForm != NULL) && !Application->MainForm->Visible))
     {
+      if (Form->Showing)
+      {
+        SendMessage(Form->Handle, WM_SETICON, ICON_BIG, reinterpret_cast<long>(Application->Icon->Handle));
+      }
+
       if (!Form->Showing)
       {
         // when closing main form, remember its monitor,
@@ -206,6 +172,7 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
       {
         // would actually always be poScreenCenter, see _SafeFormCreate
         if ((AForm->Position == poMainFormCenter) ||
+            (AForm->Position == poOwnerFormCenter) ||
             (AForm->Position == poScreenCenter))
         {
           // this would typically be an authentication dialog,
@@ -229,18 +196,21 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
         TForm * AForm = dynamic_cast<TForm *>(Form);
         assert(AForm != NULL);
         // otherwise it would not get centered
-        if (AForm->Position == poMainFormCenter)
+        if ((AForm->Position == poMainFormCenter) ||
+            (AForm->Position == poOwnerFormCenter))
         {
           AForm->Position = poScreenCenter;
         }
       }
     }
-    bool WasMainFormCenter = (AForm->Position == poMainFormCenter);
+    bool WasFormCenter =
+      (AForm->Position == poMainFormCenter) ||
+      (AForm->Position == poOwnerFormCenter);
     WndProc(Message);
     // Make sure dialogs are shown on-screen even if center of the main window
     // is off-screen. Occurs e.g. if you move the main window so that
     // only window title is visible above taksbar.
-    if (Form->Showing && WasMainFormCenter && (AForm->Position == poDesigned))
+    if (Form->Showing && WasFormCenter && (AForm->Position == poDesigned))
     {
       TRect Rect;
       // Reading Form.Left/Form.Top instead here does not work, likely due to some
@@ -295,27 +265,10 @@ static void __fastcall FormWindowProcEx(void * Data, TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall InitializeSystemSettings()
 {
-  if (ThemeManager == NULL)
-  {
-    ThemeManager = new TThemeManager(Application);
-    ThemeManager->Name = "ThemeManager";
-    // ListView subclassing breaks TDirView
-    ThemeManager->Options = (ThemeManager->Options >> toSubclassListView);
-    // Speed Button subclassing on rights frame does not work somehow
-    // and they are not used elsewhere
-    ThemeManager->Options = (ThemeManager->Options >> toSubclassSpeedButtons);
-    TAllowSubclassingEvent OnAllowSubclassing;
-    ((TMethod*)&OnAllowSubclassing)->Code = ThemeManagerAllowSubclassing;
-    ThemeManager->OnAllowSubclassing = OnAllowSubclassing;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall FinalizeSystemSettings()
 {
-  if (ThemeManager != NULL)
-  {
-    SAFE_DESTROY(ThemeManager);
-  }
 }
 //---------------------------------------------------------------------------
 // Settings that must be set as soon as possible.
@@ -346,18 +299,12 @@ void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings)
   Control->WindowProc = WindowProc;
 
   assert(Control && Control->Font);
-  Control->Font->Name = "MS Shell Dlg";
+  Control->Font->Name = L"MS Shell Dlg";
 
   if (Control->HelpKeyword.IsEmpty())
   {
     // temporary help keyword to enable F1 key in all forms
-    Control->HelpKeyword = "start";
-  }
-
-  // especially on login dialog, we need to reapply themes with language change
-  if ((ThemeManager != NULL) && ThemeManager->ThemesEnabled)
-  {
-    ThemeManager->CollectForms(Control);
+    Control->HelpKeyword = L"start";
   }
 };
 //---------------------------------------------------------------------------
@@ -365,7 +312,7 @@ void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings)
 void __fastcall UseSystemSettingsPost(TCustomForm * Control, void * Settings)
 {
   bool Flip;
-  AnsiString FlipStr = LoadStr(FLIP_CHILDREN);
+  UnicodeString FlipStr = LoadStr(FLIP_CHILDREN);
   Flip = !FlipStr.IsEmpty() && static_cast<bool>(StrToInt(FlipStr));
 
   if (Settings != NULL)
@@ -421,19 +368,9 @@ friend void __fastcall HideAsModal(TForm * Form, void *& Storage);
 struct TShowAsModalStorage
 {
   void * FocusWindowList;
-  void * FocusActiveWindow;
+  HWND FocusActiveWindow;
   TFocusState FocusState;
 };
-//---------------------------------------------------------------------------
-static TCustomForm ** __fastcall FocusedForm()
-{
-  return reinterpret_cast<TCustomForm **>(reinterpret_cast<char *>(Screen) + 0x78);
-}
-//---------------------------------------------------------------------------
-static TList * __fastcall SaveFocusedList()
-{
-  return *reinterpret_cast<TList **>(reinterpret_cast<char *>(Screen) + 0x7C);
-}
 //---------------------------------------------------------------------------
 void __fastcall ShowAsModal(TForm * Form, void *& Storage)
 {
@@ -447,8 +384,8 @@ void __fastcall ShowAsModal(TForm * Form, void *& Storage)
 
   AStorage->FocusActiveWindow = GetActiveWindow();
   AStorage->FocusState = SaveFocusState();
-  SaveFocusedList()->Insert(0, *FocusedForm());
-  *FocusedForm() = Form;
+  Screen->SaveFocusedList->Insert(0, Screen->FocusedForm);
+  Screen->FocusedForm = Form;
   AStorage->FocusWindowList = DisableTaskWindows(0);
   Form->Show();
   SendMessage(Form->Handle, CM_ACTIVATE, 0, 0);
@@ -471,16 +408,14 @@ void __fastcall HideAsModal(TForm * Form, void *& Storage)
 
   EnableTaskWindows(AStorage->FocusWindowList);
 
-  TList * ASaveFocusedList = SaveFocusedList();
-  TCustomForm ** AFocusedForm = FocusedForm();
-  if (ASaveFocusedList->Count > 0)
+  if (Screen->SaveFocusedList->Count > 0)
   {
-    *AFocusedForm = static_cast<TCustomForm *>(ASaveFocusedList->First());
-    ASaveFocusedList->Remove(*AFocusedForm);
+    Screen->FocusedForm = static_cast<TCustomForm *>(Screen->SaveFocusedList->First());
+    Screen->SaveFocusedList->Remove(Screen->FocusedForm);
   }
   else
   {
-    *AFocusedForm = NULL;
+    Screen->FocusedForm = NULL;
   }
 
   if (AStorage->FocusActiveWindow != 0)
@@ -503,7 +438,7 @@ void __fastcall ReleaseAsModal(TForm * Form, void *& Storage)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall SelectDirectory(AnsiString & Path, const AnsiString Prompt,
+bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,
   bool PreserveFileName)
 {
   bool Result;
@@ -512,8 +447,8 @@ bool __fastcall SelectDirectory(AnsiString & Path, const AnsiString Prompt,
 
   try
   {
-    AnsiString Directory;
-    AnsiString FileName;
+    UnicodeString Directory;
+    UnicodeString FileName;
     if (!PreserveFileName || DirectoryExists(Path))
     {
       Directory = Path;
@@ -523,7 +458,7 @@ bool __fastcall SelectDirectory(AnsiString & Path, const AnsiString Prompt,
       Directory = ExtractFilePath(Path);
       FileName = ExtractFileName(Path);
     }
-    Result = SelectDirectory(Prompt, "", Directory);
+    Result = SelectDirectory(Prompt, L"", Directory);
     if (Result)
     {
       Path = Directory;
@@ -646,28 +581,15 @@ TAutoSwitch __fastcall CheckBoxAutoSwitchSave(TCheckBox * CheckBox)
 //       right(right(current) + 1)
 // left:
 //   right(left(current) + 1)
-int CALLBACK PathWordBreakProc(char * Ch, int Current, int Len, int Code)
+int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
 {
-  char Delimiters[] = "\\/ ;,.";
+  wchar_t Delimiters[] = L"\\/ ;,.";
   int Result;
-  AnsiString ACh;
-  // stupid unicode autodetection
-  // (on WinXP (or rather for RichEdit 2.0) we get unicode on input)
-  if ((Len > 1) && (Ch[1] == '\0'))
-  {
-    // this convertes the unicode to ansi
-    ACh = (wchar_t*)Ch;
-  }
-  else
-  {
-    ACh = Ch;
-  }
-  // it may not be NULL terminated
-  ACh.SetLength(Len);
+  UnicodeString ACh(Ch, Len);
   if (Code == WB_ISDELIMITER)
   {
     // we return negacy of what WinAPI docs says
-    Result = (strchr(Delimiters, ACh[Current + 1]) == NULL);
+    Result = (wcschr(Delimiters, ACh[Current + 1]) == NULL);
   }
   else if (Code == WB_LEFT)
   {
@@ -682,7 +604,7 @@ int CALLBACK PathWordBreakProc(char * Ch, int Current, int Len, int Code)
     }
     else
     {
-      const char * P = strpbrk(ACh.c_str() + Current - 1, Delimiters);
+      const wchar_t * P = wcspbrk(ACh.c_str() + Current - 1, Delimiters);
       if (P == NULL)
       {
         Result = Len;
@@ -833,11 +755,11 @@ void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count)
 TPoint __fastcall GetAveCharSize(TCanvas* Canvas)
 {
   Integer I;
-  Char Buffer[52];
+  wchar_t Buffer[52];
   TSize Result;
-  for (I = 0; I <= 25; I++) Buffer[I] = (Char)('A' + I);
-  for (I = 0; I <= 25; I++) Buffer[I+26] = (Char)('a' + I);
-  GetTextExtentPoint(Canvas->Handle, Buffer, 52, &Result);
+  for (I = 0; I <= 25; I++) Buffer[I] = (wchar_t)(L'A' + I);
+  for (I = 0; I <= 25; I++) Buffer[I+26] = (wchar_t)(L'a' + I);
+  GetTextExtentPoint32(Canvas->Handle, Buffer, 52, &Result);
   return TPoint(Result.cx / 52, Result.cy);
 }
 //---------------------------------------------------------------------------
@@ -958,53 +880,22 @@ void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height)
   Form->SetBounds(Left, Top, Width, Height);
 }
 //---------------------------------------------------------------------------
-HWND __fastcall GetCorrectFormParent()
+TComponent * __fastcall GetFormOwner()
 {
-  HWND Result = NULL;
-  // Kind of hack (i do not understand this much).
-  // Rationale: for example when the preferences window is opened from login dialog
-  // settings Parent to Screen->ActiveForm leads to "cannot focus disabled control",
-  // so we set Parent only when absolutelly necessary
-  // (dialog opened from log window or editor)
-  // TODO: does not work for dialogs opened from preferences dialog
-  if ((Application->MainForm != NULL) &&
-      (Application->MainForm != Screen->ActiveForm))
+  if (Screen->ActiveForm != NULL)
   {
-    if (Screen->ActiveForm != NULL)
-    {
-      // the case when we are invoking dialog from (e.g. prefences) dialog
-      // invokend form non modal window (e.g. editor)
-      if (Screen->ActiveForm->ParentWindow != NULL)
-      {
-        Result = Screen->ActiveForm->Handle;
-      }
-      // this should better be check for modal form
-      else if (Screen->ActiveForm->BorderStyle != bsDialog)
-      {
-        Result = Screen->ActiveForm->Handle;
-      }
-    }
+    return Screen->ActiveForm;
   }
-  return Result;
+  else
+  {
+    return Application;
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall SetCorrectFormParent(TForm * Form)
+void __fastcall SetCorrectFormParent(TForm * /*Form*/)
 {
-  try
-  {
-    HWND Parent = GetCorrectFormParent();
-    if (Parent != NULL)
-    {
-      Form->ParentWindow = Parent;
-    }
-  }
-  catch(...)
-  {
-    // avoid any errors, however we want to know about this in debug version.
-    #ifdef _DEBUG
-    throw;
-    #endif
-  }
+  // noop
+  // remove
 }
 //---------------------------------------------------------------------------
 void __fastcall InvokeHelp(TWinControl * Control)
@@ -1033,7 +924,7 @@ static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
 
     R = StaticText->ClientRect;
 
-    AnsiString Caption = StaticText->Caption;
+    UnicodeString Caption = StaticText->Caption;
     bool AccelChar = false;
     if (StaticText->ShowAccelChar)
     {
@@ -1102,7 +993,7 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
   }
   else if (Message.Msg == WM_CHAR)
   {
-    if (reinterpret_cast<TWMChar &>(Message).CharCode == ' ')
+    if (reinterpret_cast<TWMChar &>(Message).CharCode == L' ')
     {
       Clicked = true;
       Message.Result = 1;
@@ -1294,7 +1185,7 @@ static void __fastcall HintLabelWindowProc(void * Data, TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall HintLabel(TStaticText * StaticText, AnsiString Hint)
+void __fastcall HintLabel(TStaticText * StaticText, UnicodeString Hint)
 {
   StaticText->ParentFont = true;
   if (!Hint.IsEmpty())
@@ -1323,7 +1214,7 @@ static void __fastcall ComboBoxFixWindowProc(void * Data, TMessage & Message)
   TComboBox * ComboBox = static_cast<TComboBox *>(Data);
   if (Message.Msg == WM_SIZE)
   {
-    AnsiString Text = ComboBox->Text;
+    UnicodeString Text = ComboBox->Text;
     try
     {
       ControlWndProc(ComboBox)(Message);
@@ -1363,10 +1254,10 @@ static void __fastcall LinkLabelClick(TStaticText * StaticText)
   }
   else
   {
-    AnsiString Url = StaticText->Caption;
-    if (!AnsiSameText(Url.SubString(1, 4), "http") && (Url.Pos("@") > 0))
+    UnicodeString Url = StaticText->Caption;
+    if (!SameText(Url.SubString(1, 4), L"http") && (Url.Pos(L"@") > 0))
     {
-      Url = "mailto:" + Url;
+      Url = L"mailto:" + Url;
     }
     OpenBrowser(Url);
   }
@@ -1393,7 +1284,7 @@ static void __fastcall LinkLabelWindowProc(void * Data, TMessage & Message)
   else if (Message.Msg == WM_KEYDOWN)
   {
     TWMKey & Key = reinterpret_cast<TWMKey &>(Message);
-    if ((GetKeyState(VK_CONTROL) < 0) && (Key.CharCode == 'C'))
+    if ((GetKeyState(VK_CONTROL) < 0) && (Key.CharCode == L'C'))
     {
       CopyToClipboard(StaticText->Caption);
       Message.Result = 1;
@@ -1434,9 +1325,10 @@ static void __fastcall LinkLabelContextMenuClick(void * Data, TObject * Sender)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall LinkLabel(TStaticText * StaticText, AnsiString Url,
+void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
   TNotifyEvent OnEnter)
 {
+  StaticText->Transparent = false;
   StaticText->ParentFont = true;
   StaticText->Font->Style = StaticText->Font->Style << fsUnderline;
   StaticText->Font->Color = clBlue;
@@ -1462,14 +1354,14 @@ void __fastcall LinkLabel(TStaticText * StaticText, AnsiString Url,
       Item = new TMenuItem(StaticText->PopupMenu);
       Item->Caption = LoadStr(URL_LINK_OPEN);
       Item->Tag = 0;
-      Item->ShortCut = ShortCut(' ', TShiftState());
+      Item->ShortCut = ShortCut(L' ', TShiftState());
       Item->OnClick = ContextMenuOnClick;
       StaticText->PopupMenu->Items->Add(Item);
 
       Item = new TMenuItem(StaticText->PopupMenu);
       Item->Caption = LoadStr(URL_LINK_COPY);
       Item->Tag = 1;
-      Item->ShortCut = ShortCut('C', TShiftState() << ssCtrl);
+      Item->ShortCut = ShortCut(L'C', TShiftState() << ssCtrl);
       Item->OnClick = ContextMenuOnClick;
       StaticText->PopupMenu->Items->Add(Item);
     }
@@ -1487,9 +1379,28 @@ void __fastcall LinkLabel(TStaticText * StaticText, AnsiString Url,
   StaticText->WindowProc = WindowProc;
 }
 //---------------------------------------------------------------------------
-TMonitor *  __fastcall FormMonitor(TCustomForm * Form)
+static void __fastcall HotTrackLabelMouseEnter(void * /*Data*/, TObject * Sender)
 {
-  TMonitor * Result;
+  reinterpret_cast<TLabel *>(Sender)->Font->Color = clBlue;
+}
+//---------------------------------------------------------------------------
+static void __fastcall HotTrackLabelMouseLeave(void * /*Data*/, TObject * Sender)
+{
+  reinterpret_cast<TLabel *>(Sender)->ParentFont = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall HotTrackLabel(TLabel * Label)
+{
+  assert(Label->OnMouseEnter == NULL);
+  assert(Label->OnMouseLeave == NULL);
+
+  Label->OnMouseEnter = MakeMethod<TNotifyEvent>(NULL, HotTrackLabelMouseEnter);
+  Label->OnMouseLeave = MakeMethod<TNotifyEvent>(NULL, HotTrackLabelMouseLeave);
+}
+//---------------------------------------------------------------------------
+Forms::TMonitor *  __fastcall FormMonitor(TCustomForm * Form)
+{
+  Forms::TMonitor * Result;
   if ((Application->MainForm != NULL) && (Application->MainForm != Form))
   {
     Result = Application->MainForm->Monitor;
@@ -1537,13 +1448,12 @@ void __fastcall SetLastMonitor(int MonitorNum)
 //---------------------------------------------------------------------------
 TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
 {
-  // we do ignore owner atm, as we do not know how to set it,
-  // but it should not cause any problems as we always manage memory
-  // destruction ourselves
-  assert(Owner == Application);
-  USEDPARAM(Owner);
-
   TForm * Form;
+
+  if (Owner == NULL)
+  {
+    Owner = GetFormOwner();
+  }
 
   // if there is no main form yet, make this one main.
   // this, among other, makes other forms (dialogs invoked from this one),
@@ -1556,7 +1466,7 @@ TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
   }
   else
   {
-    Form = dynamic_cast<TForm *>(Construct(FormClass, Application));
+    Form = dynamic_cast<TForm *>(Construct(FormClass, Owner));
     assert(Form != NULL);
   }
 
@@ -1567,7 +1477,7 @@ TImageList * __fastcall SharedSystemImageList(bool Large)
 {
   TSHFileInfo FileInfo;
   TImageList * Result = new TImageList(Application);
-  int ImageListHandle = SHGetFileInfo("", 0, &FileInfo, sizeof(FileInfo),
+  int ImageListHandle = SHGetFileInfo(L"", 0, &FileInfo, sizeof(FileInfo),
     SHGFI_SYSICONINDEX | (Large ? SHGFI_LARGEICON : SHGFI_SMALLICON));
   if (ImageListHandle != 0)
   {
@@ -1575,4 +1485,9 @@ TImageList * __fastcall SharedSystemImageList(bool Large)
     Result->Handle = ImageListHandle;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall SupportsSplitButton()
+{
+  return (Win32MajorVersion >= 6);
 }

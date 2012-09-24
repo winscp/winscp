@@ -164,6 +164,9 @@ void random_add_noise(void *noise, int length)
 	pool.incomingpos = 0;
     }
 
+#ifdef MPEXT
+    if (length > 0)
+#endif
     memcpy(pool.incomingb + pool.incomingpos, p, length);
     pool.incomingpos += length;
 }

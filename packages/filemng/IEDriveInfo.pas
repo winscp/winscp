@@ -282,7 +282,7 @@ end; {TDriveInfo.GetLongPrettyName}
 
 function TDriveInfo.GetData(Drive: TDrive): PDriveInfoRec;
 begin
-  if not (Upcase(Drive) in ['A'..'Z']) then
+  if not CharInSet(Upcase(Drive), ['A'..'Z']) then
     raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
 
   Result := @FData[Upcase(Drive)];
@@ -295,7 +295,6 @@ var
   FileSystemNameBuffer: string;
   DriveID: string;
   CPos: Integer;
-  WStr: WideString;
   Eaten: ULONG;
   ShAttr: ULONG;
 begin
@@ -318,8 +317,7 @@ begin
     begin
       if (not Assigned(PIDL)) and (Drive >= FirstFixedDrive) then
       begin
-        WStr := Drive + ':\';
-        FDesktop.ParseDisplayName(Application.Handle, nil, PWideChar(WStr), Eaten, PIDL, ShAttr);
+        FDesktop.ParseDisplayName(Application.Handle, nil, PChar(Drive + ':\'), Eaten, PIDL, ShAttr);
       end;
 
       {Read driveStatus:}
@@ -507,13 +505,11 @@ var
 function GetNetWorkConnected(Drive: Char): Boolean;
 var
   BufPtr: LPBYTE;
-  Use: WideString;
   NetResult: Integer;
 begin
   if Assigned(NetUseGetInfo) then
   begin
-    Use := Drive + ':';
-    NetResult := NetUseGetInfo(nil, PWideChar(Use), 1, BufPtr);
+    NetResult := NetUseGetInfo(nil, PChar(Drive + ':'), 1, BufPtr);
     if NetResult = 0 then
     begin
       Result := (PUSE_INFO_1(BufPtr)^.ui1_status = USE_OK);

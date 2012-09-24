@@ -63,6 +63,7 @@ __published:
   TTBXItem *TBXItem43;
   TTBXItem *TBXItem44;
   TTBXSubmenuItem *QueueSubmenuItem;
+  TTBXItem *QueueEnableItem2;
   TTBXItem *TBXItem46;
   TTBXSeparatorItem *TBXSeparatorItem10;
   TTBXItem *TBXItem47;
@@ -193,9 +194,7 @@ __published:
   TTBXToolbar *SessionToolbar;
   TTBXItem *TBXItem123;
   TTBXSeparatorItem *TBXSeparatorItem34;
-  TTBXComboBoxItem *SessionCombo;
   TTBXItem *TBXItem124;
-  TTBXSeparatorItem *TBXSeparatorItem35;
   TTBXSubmenuItem *TBXSubmenuItem23;
   TTBXItem *TBXItem125;
   TTBXToolbar *PreferencesToolbar;
@@ -291,19 +290,19 @@ __published:
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
           TTBEditItemViewer *Viewer, TEdit *EditControl);
   void __fastcall UnixPathComboBoxAcceptText(TObject *Sender,
-          AnsiString &NewText, bool &Accept);
+          UnicodeString &NewText, bool &Accept);
   void __fastcall RemoteDirViewPathChange(TCustomDirView *Sender);
   void __fastcall QueueSubmenuItemPopup(TTBCustomItem *Sender,
           bool FromLink);
 private:
-  AnsiString FStatusBarFileText;
+  UnicodeString FStatusBarFileText;
 
   void __fastcall RemotePanelSplitterDblClick(TObject * Sender);
 
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
-    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
+    UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
@@ -314,7 +313,7 @@ protected:
   virtual void __fastcall UpdateStatusPanelText(TTBXStatusPanel * Panel);
   virtual void __fastcall UpdateRemotePathComboBox(
     TTBXComboBoxItem * RemotePathComboBox, bool TextOnly);
-  AnsiString __fastcall RemotePathComboBoxText();
+  UnicodeString __fastcall RemotePathComboBoxText();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
 
 public:

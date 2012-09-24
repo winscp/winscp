@@ -9,7 +9,7 @@ object CustomDialog: TCustomDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   DesignSize = (
     326
     41)

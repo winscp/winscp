@@ -60,7 +60,7 @@ public:
 	void SendToMessageLog(HWND hWnd, UINT nMsg);
 	void AddData(char *data,int size);
 	CFtpListResult(t_server server, bool *bUTF8 = 0);
-	~CFtpListResult();
+	virtual ~CFtpListResult();
 	t_directory::t_direntry *getList(int &num, CTime EntryTime);
 
 private:
@@ -71,6 +71,7 @@ private:
 
 	BOOL parseAsVMS(const char *line, const int linelen, t_directory::t_direntry &direntry);
 	BOOL parseAsEPLF(const char *line, const int linelen, t_directory::t_direntry &direntry);
+	BOOL parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry);
 	BOOL parseAsUnix(const char *line, const int linelen, t_directory::t_direntry &direntry);
 	BOOL parseAsDos(const char *line, const int linelen, t_directory::t_direntry &direntry);
 	BOOL parseAsOther(const char *line, const int linelen, t_directory::t_direntry &direntry);
@@ -85,7 +86,9 @@ private:
 	bool ParseShortDate(const char *str, int len, t_directory::t_direntry::t_date &date) const;
 	bool parseTime(const char *str, int len, t_directory::t_direntry::t_date &date) const;
 	bool ParseSize(const char* str, int len, __int64 &size) const;
-	
+
+	bool parseMlsdDateTime(const CString value, t_directory::t_direntry &direntry) const;
+
 	int pos;
 	struct t_list
 	{

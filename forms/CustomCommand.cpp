@@ -25,7 +25,7 @@ bool __fastcall DoCustomCommandDialog(TCustomCommandType & Command,
 {
   bool Result;
   TCustomCommandDialog * Dialog = new TCustomCommandDialog(
-    Application, CustomCommandList, Mode, Options, OnValidate, ShortCuts);
+    GetFormOwner(), CustomCommandList, Mode, Options, OnValidate, ShortCuts);
   try
   {
     Result = Dialog->Execute(Command);
@@ -103,7 +103,7 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner,
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::UpdateControls()
 {
-  AnsiString Command = CommandEdit->Text;
+  UnicodeString Command = CommandEdit->Text;
   EnableControl(OkButton, !Command.IsEmpty() && !DescriptionEdit->Text.IsEmpty());
 
   bool RemoteCommand = RemoteCommandButton->Checked;
@@ -117,7 +117,7 @@ void __fastcall TCustomCommandDialog::UpdateControls()
       (RemoteCommand ? &RemoteCustomCommand : &LocalCustomCommand);
 
     TInteractiveCustomCommand InteractiveCustomCommand(FileCustomCommand);
-    AnsiString Cmd = InteractiveCustomCommand.Complete(Command, false);
+    UnicodeString Cmd = InteractiveCustomCommand.Complete(Command, false);
     bool FileCommand = FileCustomCommand->IsFileCommand(Cmd);
     AllowRecursive = FileCommand && !FileCustomCommand->IsFileListCommand(Cmd);
     if (AllowRecursive && !RemoteCommand)
@@ -165,7 +165,7 @@ void __fastcall TCustomCommandDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 bool __fastcall TCustomCommandDialog::Execute(TCustomCommandType & Command)
 {
-  CommandEdit->Items = CustomWinConfiguration->History["CustomCommand"];
+  CommandEdit->Items = CustomWinConfiguration->History[L"CustomCommand"];
   if (CommandEdit->Items->Count == 0)
   {
     for (int i = 0; i < FCustomCommandList->Count; i++)
@@ -189,7 +189,7 @@ bool __fastcall TCustomCommandDialog::Execute(TCustomCommandType & Command)
     GetCommand(Command);
 
     CommandEdit->SaveToHistory();
-    CustomWinConfiguration->History["CustomCommand"] = CommandEdit->Items;
+    CustomWinConfiguration->History[L"CustomCommand"] = CommandEdit->Items;
   }
   return Result;
 }
@@ -201,12 +201,12 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
   {
     if ((FMode == ccmAdd) || (FMode == ccmEdit))
     {
-      AnsiString Desc = DescriptionEdit->Text;
+      UnicodeString Desc = DescriptionEdit->Text;
 
-      if (Desc.Pos("=") > 0)
+      if (Desc.Pos(L"=") > 0)
       {
         DescriptionEdit->SetFocus();
-        throw Exception(FMTLOAD(CUSTOM_COMMAND_INVALID, ("=")));
+        throw Exception(FMTLOAD(CUSTOM_COMMAND_INVALID, (L"=")));
       }
 
       if (((FMode == ccmAdd) || ((FMode == ccmEdit) && (Desc != FOrigDescription))) &&
@@ -228,7 +228,7 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
 
       TInteractiveCustomCommand InteractiveCustomCommand(FileCustomCommand);
 
-      AnsiString Command = CommandEdit->Text;
+      UnicodeString Command = CommandEdit->Text;
       InteractiveCustomCommand.Validate(Command);
       Command = InteractiveCustomCommand.Complete(Command, false);
       FileCustomCommand->Validate(Command);

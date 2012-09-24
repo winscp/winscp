@@ -14,8 +14,8 @@
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration
 {
-  AnsiString WindowParams;
-  AnsiString ListParams;
+  UnicodeString WindowParams;
+  UnicodeString ListParams;
   bool __fastcall operator !=(TSynchronizeChecklistConfiguration & rhc)
     { return C(WindowParams) C(ListParams) 0; };
 };
@@ -23,7 +23,7 @@ typedef TSynchronizeChecklistConfiguration TFindFileConfiguration;
 //---------------------------------------------------------------------------
 struct TConsoleWinConfiguration
 {
-  AnsiString WindowSize;
+  UnicodeString WindowSize;
   bool __fastcall operator !=(TConsoleWinConfiguration & rhc)
     { return C(WindowSize) 0; };
 };
@@ -49,8 +49,8 @@ private:
   void __fastcall SetInterface(TInterface value);
   void __fastcall SetLogView(TLogView value);
   void __fastcall SetShowAdvancedLoginOptions(bool value);
-  void __fastcall SetHistory(const AnsiString Index, TStrings * value);
-  TStrings * __fastcall GetHistory(const AnsiString Index);
+  void __fastcall SetHistory(const UnicodeString Index, TStrings * value);
+  TStrings * __fastcall GetHistory(const UnicodeString Index);
   void __fastcall SetSynchronizeChecklist(TSynchronizeChecklistConfiguration value);
   void __fastcall SetFindFile(TFindFileConfiguration value);
   void __fastcall SetConsoleWin(TConsoleWinConfiguration value);
@@ -75,7 +75,7 @@ public:
   __property TLogView LogView = { read = FLogView, write = SetLogView };
   __property TInterface Interface = { read = FInterface, write = SetInterface };
   __property bool ShowAdvancedLoginOptions = { read = FShowAdvancedLoginOptions, write = SetShowAdvancedLoginOptions};
-  __property TStrings * History[AnsiString Name] = { read = GetHistory, write = SetHistory };
+  __property TStrings * History[UnicodeString Name] = { read = GetHistory, write = SetHistory };
   __property TSynchronizeChecklistConfiguration SynchronizeChecklist = { read = FSynchronizeChecklist, write = SetSynchronizeChecklist };
   __property TFindFileConfiguration FindFile = { read = FFindFile, write = SetFindFile };
   __property TConsoleWinConfiguration ConsoleWin = { read = FConsoleWin, write = SetConsoleWin };

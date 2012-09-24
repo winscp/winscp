@@ -19,6 +19,8 @@
 #include "TB2Item.hpp"
 #include "TB2Toolbar.hpp"
 #include "TBXStatusBars.hpp"
+#include "WinConfiguration.h"
+#include "WinInterface.h"
 //---------------------------------------------------------------------------
 class TRichEdit20;
 //---------------------------------------------------------------------------
@@ -29,7 +31,7 @@ __published:
   TImageList *EditorImages;
   TAction *SaveAction;
   TTBXDock *TopDock;
-  TTBXToolbar *ToolBar;
+  TTBXToolbar *Toolbar;
   TTBXStatusBar *StatusBar;
   TEditCut *EditCut;
   TEditCopy *EditCopy;
@@ -43,23 +45,6 @@ __published:
   TAction *ReplaceAction;
   TAction *FindNextAction;
   TAction *GoToLineAction;
-  TTBXItem *TBXItem1;
-  TTBXItem *TBXItem2;
-  TTBXSeparatorItem *TBXSeparatorItem1;
-  TTBXItem *TBXItem3;
-  TTBXItem *TBXItem4;
-  TTBXItem *TBXItem5;
-  TTBXItem *TBXItem6;
-  TTBXItem *TBXItem7;
-  TTBXItem *TBXItem8;
-  TTBXSeparatorItem *TBXSeparatorItem2;
-  TTBXItem *TBXItem9;
-  TTBXSeparatorItem *TBXSeparatorItem3;
-  TTBXItem *TBXItem10;
-  TTBXItem *TBXItem11;
-  TTBXItem *TBXItem12;
-  TTBXSeparatorItem *TBXSeparatorItem4;
-  TTBXItem *TBXItem13;
   TTBXPopupMenu *EditorPopup;
   TTBXItem *Undo1;
   TTBXSeparatorItem *N1;
@@ -74,16 +59,17 @@ __published:
   TTBXItem *Replace1;
   TTBXItem *Findnext1;
   TTBXItem *Gotolinenumber1;
-  TTBXSeparatorItem *TBXSeparatorItem5;
-  TTBXItem *TBXItem14;
   TAction *HelpAction;
   TTBXSeparatorItem *TBXSeparatorItem6;
   TTBXItem *TBXItem15;
   TAction *ReloadAction;
-  TTBXItem *TBXItem16;
   TAction *EditRedo;
-  TTBXItem *TBXItem17;
   TTBXItem *TBXItem18;
+  TTBXSubmenuItem *Encoding;
+  TTBXItem *DefaultEncoding;
+  TTBXItem *UTF8Encoding;
+  TAction *DefaultEncodingAction;
+  TAction *UTF8EncodingAction;
   void __fastcall EditorActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall EditorActionsExecute(TBasicAction *Action,
           bool &Handled);
@@ -98,10 +84,10 @@ __published:
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
   void __fastcall FormActivate(TObject *Sender);
 private:
-  AnsiString FFileName;
+  UnicodeString FFileName;
   TNotifyEvent FOnFileChanged;
   TNotifyEvent FOnFileReload;
-  TNotifyEvent FOnWindowClose;
+  TFileClosedEvent FOnWindowClose;
   TCustomForm * FParentForm;
   TFindDialog * FLastFindDialog;
   TPoint FCaretPos;
@@ -110,13 +96,15 @@ private:
   bool FCloseAnnounced;
   TRichEdit20 * EditorMemo;
   bool FShowStatusBarHint;
-  AnsiString FStatusBarHint;
+  UnicodeString FStatusBarHint;
   bool FFormRestored;
-  AnsiString FWindowParams;
+  UnicodeString FWindowParams;
   unsigned int FInstance;
+  TEncoding * FEncoding;
+  UnicodeString FEncodingName;
 
   static unsigned int FInstances;
-  void __fastcall SetFileName(const AnsiString value);
+  void __fastcall SetFileName(const UnicodeString value);
   void __fastcall SetParentForm(TCustomForm * value);
   void __fastcall ApplicationHint(TObject * Sender);
 public:
@@ -124,10 +112,10 @@ public:
   virtual __fastcall ~TEditorForm();
   void __fastcall ApplyConfiguration();
   void __fastcall LoadFile();
-  __property AnsiString FileName = { read = FFileName, write = SetFileName };
+  __property UnicodeString FileName = { read = FFileName, write = SetFileName };
   __property TNotifyEvent OnFileChanged = { read = FOnFileChanged, write = FOnFileChanged };
   __property TNotifyEvent OnFileReload = { read = FOnFileReload, write = FOnFileReload };
-  __property TNotifyEvent OnWindowClose = { read = FOnWindowClose, write = FOnWindowClose };
+  __property TFileClosedEvent OnWindowClose = { read = FOnWindowClose, write = FOnWindowClose };
   __property TCustomForm * ParentForm = { read = FParentForm, write = SetParentForm };
 protected:
   bool __fastcall CursorInUpperPart();
@@ -136,9 +124,15 @@ protected:
   void __fastcall PositionFindDialog(bool VerticalOnly);
   void __fastcall StartFind(bool Find);
   void __fastcall UpdateControls();
-  void __fastcall DoWindowClose();
+  void __fastcall DoWindowClose(bool Forced);
   void __fastcall Reload();
   virtual void __fastcall CreateParams(TCreateParams & Params);
+  void __fastcall LoadFromFile();
+  bool __fastcall ContainsPreamble(TStream * Stream, const TBytes & Signature);
+  void __fastcall ChangeEncoding(TEncoding * Encoding);
+  void __fastcall InitCodePage();
+  UnicodeString __fastcall GetCodePageName(TEncoding * Encoding);
+  void __fastcall BackupSave();
 };
 //---------------------------------------------------------------------------
 #endif

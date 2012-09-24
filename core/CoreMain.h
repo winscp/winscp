@@ -12,5 +12,6 @@ extern TStoredSessionList *StoredSessions;
 void CoreInitialize();
 void CoreFinalize();
 void CoreSetResourceModule(void * ResourceHandle);
+void CoreMaintenanceTask();
 //---------------------------------------------------------------------------
 #endif

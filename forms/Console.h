@@ -2,23 +2,16 @@
 #ifndef ConsoleH
 #define ConsoleH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <ComCtrls.hpp>
-#include <HistoryComboBox.hpp>
-#include <PathLabel.hpp>
-#include <ImgList.hpp>
-#include <Menus.hpp>
-#include <ActnList.hpp>
-#include <StdActns.hpp>
+#include "HistoryComboBox.hpp"
+#include "PathLabel.hpp"
+#include <System.Classes.hpp>
+#include <Vcl.ActnList.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.ImgList.hpp>
+#include <Vcl.Menus.hpp>
+#include <Vcl.StdActns.hpp>
+#include <Vcl.StdCtrls.hpp>
 //----------------------------------------------------------------------------
 #include "WinInterface.h"
 #include <Terminal.h>
@@ -68,7 +61,7 @@ private:
   void __fastcall ExecuteCommand();
   void __fastcall SetTerminal(TTerminal * value);
   void __fastcall TerminalClose(TObject * Sender);
-  void __fastcall AddLine(const AnsiString & Line, bool StdError);
+  void __fastcall AddLine(const UnicodeString & Line, bool StdError);
 
 protected:
   void __fastcall DoChangeDirectory(TObject * Sender);
@@ -79,7 +72,7 @@ protected:
 public:
   virtual __fastcall ~TConsoleDialog();
     virtual __fastcall TConsoleDialog(TComponent* AOwner);
-  bool __fastcall Execute(const AnsiString Command = "",
+  bool __fastcall Execute(const UnicodeString Command = L"",
     const TStrings * Log = NULL);
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
 };

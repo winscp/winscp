@@ -173,7 +173,7 @@ procedure TBStartAnimation(const AWnd: HWND; const ABlend: Boolean;
 var
   ZeroPt: TPoint;
   R: TRect;
-  ThreadID: DWORD;
+  ThreadID: TThreadID;
   Blend: TBlendFunction;
   Rgn: HRGN;
 begin

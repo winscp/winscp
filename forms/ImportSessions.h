@@ -2,18 +2,11 @@
 #ifndef ImportSessionsH
 #define ImportSessionsH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <ComCtrls.hpp>
-
+#include <System.Classes.hpp>
+#include <Vcl.ComCtrls.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.StdCtrls.hpp>
+//---------------------------------------------------------------------
 #include <SessionData.h>
 //---------------------------------------------------------------------
 class TImportSessionsDialog : public TForm
@@ -28,7 +21,7 @@ __published:
   TButton *HelpButton;
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
   void __fastcall SessionListViewInfoTip(TObject *Sender,
-    TListItem *Item, AnsiString &InfoTip);
+    TListItem *Item, UnicodeString &InfoTip);
   void __fastcall SessionListViewMouseDown(TObject *Sender,
     TMouseButton Button, TShiftState Shift, int X, int Y);
   void __fastcall SessionListViewKeyUp(TObject *Sender, WORD &Key,

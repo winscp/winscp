@@ -17,7 +17,7 @@ class TRemoteProperties;
 enum TTransferDirection { tdToRemote, tdToLocal };
 enum TTransferType { ttCopy, ttMove };
 typedef void __fastcall (__closure *TDDDragFileName)
-  (TObject * Sender, TRemoteFile * File, AnsiString & FileName);
+  (TObject * Sender, TRemoteFile * File, UnicodeString & FileName);
 //---------------------------------------------------------------------------
 class PACKAGE TUnixDirView : public TCustomUnixDirView
 {
@@ -34,6 +34,7 @@ private:
   TDDDragFileName FOnDDDragFileName;
   bool __fastcall GetActive();
   TCustomUnixDriveView * FDriveView;
+  TNotifyEvent FOnRead;
   void __fastcall SetDDAllowMove(bool value);
   void __fastcall SetTerminal(TTerminal *value);
   void __fastcall SetShowInaccesibleDirectories(bool value);
@@ -46,28 +47,29 @@ protected:
   void __fastcall DisplayContextMenu(const TPoint &Where);
   void __fastcall DoChangeDirectory(TObject * Sender);
   void __fastcall DoReadDirectory(TObject * Sender, bool ReloadOnly);
+  void __fastcall DoReadDirectoryImpl(TObject * Sender, bool ReloadOnly);
   void __fastcall DoStartReadDirectory(TObject * Sender);
   virtual void __fastcall ExecuteFile(TListItem * Item);
   virtual bool __fastcall GetDirOK();
-  virtual void __fastcall GetDisplayInfo(TListItem * ListItem, tagLVITEMA &DispInfo);
+  virtual void __fastcall GetDisplayInfo(TListItem * ListItem, tagLVITEMW &DispInfo);
   virtual TDropEffectSet __fastcall GetDragSourceEffects();
   virtual bool __fastcall GetIsRoot();
-  virtual AnsiString __fastcall GetPath();
-  virtual AnsiString __fastcall GetPathName();
-  void __fastcall ChangeDirectory(AnsiString Path);
-  virtual void __fastcall InternalEdit(const tagLVITEMA & HItem);
+  virtual UnicodeString __fastcall GetPath();
+  virtual UnicodeString __fastcall GetPathName();
+  void __fastcall ChangeDirectory(UnicodeString Path);
+  virtual void __fastcall InternalEdit(const tagLVITEMW & HItem);
   virtual TColor __fastcall ItemColor(TListItem * Item);
-  virtual AnsiString __fastcall ItemFileName(TListItem * Item);
+  virtual UnicodeString __fastcall ItemFileName(TListItem * Item);
   virtual int __fastcall ItemImageIndex(TListItem * Item, bool Cache);
   virtual bool __fastcall ItemIsFile(TListItem * Item);
   virtual bool __fastcall ItemMatchesFilter(TListItem * Item, const TFileFilter &Filter);
   virtual Word __fastcall ItemOverlayIndexes(TListItem * Item);
   virtual void __fastcall LoadFiles();
-  virtual AnsiString __fastcall MinimizePath(AnsiString Path, int Length);
+  virtual UnicodeString __fastcall MinimizePath(UnicodeString Path, int Length);
   virtual void __fastcall PerformItemDragDropOperation(TListItem * Item, int Effect);
   virtual void __fastcall SetAddParentDir(bool Value);
   virtual void __fastcall SetItemImageIndex(TListItem * Item, int Index);
-  virtual void __fastcall SetPath(AnsiString Value);
+  virtual void __fastcall SetPath(UnicodeString Value);
   virtual void __fastcall SortItems();
   virtual bool __fastcall TargetHasDropHandler(TListItem * Item, int Effect);
   virtual TDateTime __fastcall ItemFileTime(TListItem * Item,
@@ -83,8 +85,8 @@ protected:
 public:
   __fastcall TUnixDirView(TComponent* Owner);
   virtual __fastcall ~TUnixDirView();
-  virtual void __fastcall CreateDirectory(AnsiString DirName);
-  void __fastcall CreateDirectoryEx(AnsiString DirName, const TRemoteProperties * Properties);
+  virtual void __fastcall CreateDirectory(UnicodeString DirName);
+  void __fastcall CreateDirectoryEx(UnicodeString DirName, const TRemoteProperties * Properties);
   virtual void __fastcall DisplayPropertiesMenu();
   virtual void __fastcall ExecuteHomeDirectory();
   virtual void __fastcall ExecuteParentDirectory();
@@ -92,9 +94,9 @@ public:
   virtual void __fastcall ReloadDirectory();
   virtual bool __fastcall ItemIsDirectory(TListItem * Item);
   virtual bool __fastcall ItemIsParentDirectory(TListItem * Item);
-  virtual AnsiString __fastcall ItemFullFileName(TListItem * Item);
+  virtual UnicodeString __fastcall ItemFullFileName(TListItem * Item);
   virtual __int64 __fastcall ItemFileSize(TListItem * Item);
-  virtual bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "");
+  virtual bool __fastcall PasteFromClipBoard(UnicodeString TargetPath = L"");
   void __fastcall UpdateFiles();
 
   __property bool Active = { read = GetActive };
@@ -116,7 +118,6 @@ __published:
   __property AddParentDir;
   __property DimmHiddenFiles;
   __property ShowDirectories;
-  __property DirsOnTop;
   __property ShowSubDirSize;
   __property ShowHiddenFiles;
   __property SingleClickToExec;
@@ -159,6 +160,11 @@ __published:
   __property TNotifyEvent OnDisplayProperties = { read = FOnDisplayProperties, write = FOnDisplayProperties };
   __property ReadOnly;
   __property HeaderImages;
+  __property TNotifyEvent OnRead = { read = FOnRead, write = FOnRead };
+
+  // The only way to make Items stored automatically and survive handle recreation.
+  // Though we should implement custom persisting to avoid publishing this
+  __property Items;
 };
 //---------------------------------------------------------------------------
 #endif

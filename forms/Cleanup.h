@@ -2,17 +2,10 @@
 #ifndef CleanupH
 #define CleanupH
 //----------------------------------------------------------------------------
-#include <vcl\System.hpp>
-#include <vcl\Windows.hpp>
-#include <vcl\SysUtils.hpp>
-#include <vcl\Classes.hpp>
-#include <vcl\Graphics.hpp>
-#include <vcl\StdCtrls.hpp>
-#include <vcl\Forms.hpp>
-#include <vcl\Controls.hpp>
-#include <vcl\Buttons.hpp>
-#include <vcl\ExtCtrls.hpp>
-#include <ComCtrls.hpp>
+#include <System.Classes.hpp>
+#include <Vcl.ComCtrls.hpp>
+#include <Vcl.Controls.hpp>
+#include <Vcl.StdCtrls.hpp>
 //----------------------------------------------------------------------------
 #include <Configuration.h>
 #include <SessionData.h>
@@ -37,7 +30,7 @@ __published:
   void __fastcall FormShow(TObject *Sender);
   void __fastcall CheckAllButtonClick(TObject *Sender);
   void __fastcall DataListViewInfoTip(TObject *Sender,
-    TListItem *Item, AnsiString &InfoTip);
+    TListItem *Item, UnicodeString &InfoTip);
   void __fastcall HelpButtonClick(TObject *Sender);
 private:
   TStoredSessionList *FSessionList;

@@ -27,10 +27,10 @@ private:
   bool FAllowSymbolic;
   bool FEdit;
   TOperationSide FSide;
-  void __fastcall SetFileName(AnsiString value);
-  AnsiString __fastcall GetFileName();
-  void __fastcall SetPointTo(AnsiString value);
-  AnsiString __fastcall GetPointTo();
+  void __fastcall SetFileName(UnicodeString value);
+  UnicodeString __fastcall GetFileName();
+  void __fastcall SetPointTo(UnicodeString value);
+  UnicodeString __fastcall GetPointTo();
   void __fastcall SetSymbolicLink(bool value);
   bool __fastcall GetSymbolicLink();
   void __fastcall SetAllowSymbolic(bool value);
@@ -41,8 +41,8 @@ public:
   __fastcall TSymlinkDialog(TComponent* Owner);
   __property bool AllowSymbolic = { read = FAllowSymbolic, write = SetAllowSymbolic };
   __property bool Edit = { read = FEdit, write = SetEdit };
-  __property AnsiString FileName = { read = GetFileName, write = SetFileName };
-  __property AnsiString PointTo = { read = GetPointTo, write = SetPointTo };
+  __property UnicodeString FileName = { read = GetFileName, write = SetFileName };
+  __property UnicodeString PointTo = { read = GetPointTo, write = SetPointTo };
   __property TOperationSide Side = { read = FSide, write = SetSide };
   __property bool SymbolicLink = { read = GetSymbolicLink, write = SetSymbolicLink };
 protected:

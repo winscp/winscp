@@ -438,7 +438,7 @@ const CmdAbort = 0;
       CmdSeparator = 4;
       MinCustCmd = 10;
 
-var DDM_ProcessDropped:DWord; // Never change its value!!!
+var DDM_ProcessDropped:DWord; // Never change its value
     MouseHookHandle:HHook;
     MouseHookDragDrop:TDragDrop;
     GInternalSource:TDragDrop;
@@ -1724,8 +1724,11 @@ begin
      end;
      if FRegistered or (FTargetEffects=0) or (FDragDropControl=nil) then exit;
      try
+        // CoLockObjectExternal crashes debugging intermittently in C++ Builder 2010
+        {$IFNDEF IDE}
         // Ensure that drag-and-drop interface stays in memory
         CoLockObjectExternal(FDropTarget, True, False);
+        {$ENDIF}
         if RegisterDragDrop(FDragDropControl.Handle, IDropTarget(FDropTarget))=S_OK then
         begin
              Result:=True;

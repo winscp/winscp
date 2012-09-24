@@ -189,7 +189,7 @@ struct X11Display *x11_setup_display(char *display, int authtype,
 	    const struct plug_function_table *dummy = &dummy_plug;
 	    Socket s = sk_new(sk_addr_dup(ux), 0, 0, 0, 0, 0, (Plug)&dummy,
 	    #ifdef MPEXT
-	    0
+	    0, 0
 	    #endif
 	    );
 	    err = sk_socket_error(s);

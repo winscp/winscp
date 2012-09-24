@@ -10,14 +10,14 @@ TConfiguration * __fastcall CreateConfiguration();
 
 void __fastcall ShowExtendedException(Exception * E);
 
-AnsiString __fastcall GetRegistryKey();
+UnicodeString __fastcall GetRegistryKey();
 void __fastcall Busy(bool Start);
-AnsiString __fastcall AppNameString();
-AnsiString __fastcall SshVersionString();
-void __fastcall CopyToClipboard(AnsiString Text);
+UnicodeString __fastcall AppNameString();
+UnicodeString __fastcall SshVersionString();
+void __fastcall CopyToClipboard(UnicodeString Text);
 int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
   TThreadFunc ThreadFunc, void * Parameter, unsigned CreationFlags,
-  unsigned & ThreadId);
+  TThreadID & ThreadId);
 
 const unsigned int qaYes =      0x00000001;
 const unsigned int qaNo =       0x00000002;
@@ -44,7 +44,7 @@ struct TQueryButtonAlias
   TQueryButtonAlias();
 
   unsigned int Button;
-  AnsiString Alias;
+  UnicodeString Alias;
   TNotifyEvent OnClick;
 };
 
@@ -52,19 +52,19 @@ typedef void __fastcall (__closure *TQueryParamsTimerEvent)(unsigned int & Resul
 
 struct TQueryParams
 {
-  TQueryParams(unsigned int AParams = 0, AnsiString AHelpKeyword = HELP_NONE);
+  TQueryParams(unsigned int AParams = 0, UnicodeString AHelpKeyword = HELP_NONE);
 
   const TQueryButtonAlias * Aliases;
   unsigned int AliasesCount;
   unsigned int Params;
   unsigned int Timer;
   TQueryParamsTimerEvent TimerEvent;
-  AnsiString TimerMessage;
+  UnicodeString TimerMessage;
   unsigned int TimerAnswers;
   unsigned int Timeout;
   unsigned int TimeoutAnswer;
   unsigned int NoBatchAnswers;
-  AnsiString HelpKeyword;
+  UnicodeString HelpKeyword;
 };
 
 enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };
@@ -85,9 +85,9 @@ enum TPromptKind
 bool __fastcall IsAuthenticationPrompt(TPromptKind Kind);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TFileFoundEvent)
-  (TTerminal * Terminal, const AnsiString FileName, const TRemoteFile * File,
+  (TTerminal * Terminal, const UnicodeString FileName, const TRemoteFile * File,
    bool & Cancel);
 typedef void __fastcall (__closure *TFindingFileEvent)
-  (TTerminal * Terminal, const AnsiString Directory, bool & Cancel);
+  (TTerminal * Terminal, const UnicodeString Directory, bool & Cancel);
 //---------------------------------------------------------------------------
 #endif

@@ -34,8 +34,8 @@ public:
 
   void __fastcall Start();
   void __fastcall Stop();
-  void __fastcall SetData(const AnsiString LocalDirectory,
-    const AnsiString RemoteDirectory, bool & Continue);
+  void __fastcall SetData(const UnicodeString LocalDirectory,
+    const UnicodeString RemoteDirectory, bool & Continue);
 
   __property bool Started = { read = FStarted };
 
