@@ -1186,7 +1186,7 @@ __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   return Result;
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
+static TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
 {
 
   const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
@@ -1199,6 +1199,27 @@ TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
   {
     const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
     DateTime += CurrentParams->CurrentDaylightDifference;
+  }
+
+  return DateTime;
+}
+//---------------------------------------------------------------------------
+TDateTime __fastcall ConvertFileTimestampFromUTC(TDateTime DateTime)
+{
+
+  const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
+  DateTime -=
+    (IsDateInDST(DateTime) ?
+      // Note the difference to ConvertTimestampToUTC()
+      // This is to compensate CTime::GetGmtTm for MFMT FTP conversion
+      Params->DaylightDifference : -Params->DaylightDifference);
+
+  DateTime -= Params->BaseDifference;
+
+  if (Params->DaylightHack)
+  {
+    const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
+    DateTime -= CurrentParams->CurrentDaylightDifference;
   }
 
   return DateTime;
@@ -1310,6 +1331,40 @@ UnicodeString __fastcall FixedLenDateTimeFormat(const UnicodeString & Format)
     }
   }
 
+  return Result;
+}
+//---------------------------------------------------------------------------
+static UnicodeString __fastcall FormatTimeZone(long Sec)
+{
+  TTimeSpan Span = TTimeSpan::FromSeconds(Sec);
+  UnicodeString Str;
+  if ((Span.Seconds == 0) && (Span.Minutes == 0))
+  {
+    Str = FORMAT(L"%d", (-Span.Hours));
+  }
+  else if (Span.Seconds == 0)
+  {
+    Str = FORMAT(L"%d:%2.2d", (-Span.Hours, abs(Span.Minutes)));
+  }
+  else
+  {
+    Str = FORMAT(L"%d:%2.2d:%2.2d", (-Span.Hours, abs(Span.Minutes), abs(Span.Seconds)));
+  }
+  Str = ((Span <= TTimeSpan::Zero) ? L"+" : L"") + Str;
+  return Str;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetTimeZoneLogString()
+{
+  const TDateTimeParams * Params = GetDateTimeParams(0);
+
+  UnicodeString Result =
+    FORMAT("Current: GMT%s, Standard: GMT%s, DST: GMT%s, DST Start: %s, DST End: %s",
+      (FormatTimeZone(Params->CurrentDifferenceSec),
+       FormatTimeZone(Params->BaseDifferenceSec + Params->StandardDifferenceSec),
+       FormatTimeZone(Params->BaseDifferenceSec + Params->DaylightDifferenceSec),
+       Params->DaylightDate.DateString(),
+       Params->StandardDate.DateString()));
   return Result;
 }
 //---------------------------------------------------------------------------

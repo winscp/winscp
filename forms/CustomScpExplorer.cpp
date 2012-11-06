@@ -4546,12 +4546,12 @@ void __fastcall TCustomScpExplorerForm::ExecuteCurrentFileWith()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TerminalClosed(TObject * Sender)
+void __fastcall TCustomScpExplorerForm::TerminalRemoved(TObject * Sender)
 {
-  FEditorManager->ProcessFiles(FileTerminalClosed, Sender);
+  FEditorManager->ProcessFiles(FileTerminalRemoved, Sender);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::FileTerminalClosed(const UnicodeString FileName,
+void __fastcall TCustomScpExplorerForm::FileTerminalRemoved(const UnicodeString FileName,
   TEditedFileData & Data, TObject * /*Token*/, void * Arg)
 {
   TTerminal * Terminal = static_cast<TTerminal *>(Arg);

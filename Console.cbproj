@@ -41,7 +41,7 @@
 			<PackageImports>rtl.bpi;$(PackageImports)</PackageImports>
 			<ProjectType>CppConsoleApplication</ProjectType>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Console interface for WinSCP;FileVersion=3.2.1.0;InternalName=console;LegalCopyright=(c) 2000-2012 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.com;ProductName=WinSCP;ProductVersion=5.1.0.0;ReleaseType=stable;WWW=http://winscp.net/</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Console interface for WinSCP;FileVersion=3.2.1.0;InternalName=console;LegalCopyright=(c) 2000-2012 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.com;ProductName=WinSCP;ProductVersion=5.1.1.0;ReleaseType=stable;WWW=http://winscp.net/</VerInfo_Keys>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_MajorVer>3</VerInfo_MajorVer>
 			<VerInfo_MinorVer>2</VerInfo_MinorVer>

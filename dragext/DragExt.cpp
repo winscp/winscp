@@ -434,9 +434,12 @@ bool UnregisterServer(bool AllUsers)
   if (RegOpenKeyEx(RootKey, DRAG_EXT_REG_KEY, 0, KEY_WRITE, &HKey) ==
         ERROR_SUCCESS)
   {
-    unsigned long Value = 0;
-    RegSetValueEx(HKey, L"Enable", 0, REG_DWORD,
-      reinterpret_cast<unsigned char*>(&Value), sizeof(Value));
+    // Previously we were setting the value explicitly to 0,
+    // but doing that for both HKLM and HKCU.
+    // While on register, we set it to 1 for HKLM only,
+    // what makes the extension disabled effectivelly,
+    // as KHCU value 0, is kept even after re-registration
+    RegDeleteValue(HKey, L"Enable");
 
     RegCloseKey(HKey);
 

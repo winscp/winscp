@@ -220,6 +220,7 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FFileList(NULL),
   FFileListCache(NULL),
   FActive(false),
+  FOpening(false),
   FWaitingForReply(false),
   FIgnoreFileList(false),
   FOnCaptureOutput(NULL),
@@ -429,6 +430,8 @@ void __fastcall TFTPFileSystem::Open()
     }
 
     FPasswordFailed = false;
+    FOpening = true;
+    TBoolRestorer OpeningRestorer(FOpening);
 
     FActive = FFileZillaIntf->Connect(
       HostName.c_str(), Data->PortNumber, UserName.c_str(),
@@ -471,16 +474,23 @@ void __fastcall TFTPFileSystem::Open()
 void __fastcall TFTPFileSystem::Close()
 {
   assert(FActive);
-  if (FFileZillaIntf->Close())
+  bool Result;
+  if (FFileZillaIntf->Close(FOpening))
   {
     CHECK(FLAGSET(WaitForCommandReply(false), TFileZillaIntf::REPLY_DISCONNECTED));
-    assert(FActive);
-    Discard();
-    FTerminal->Closed();
+    Result = true;
   }
   else
   {
-    assert(false);
+    // See TFileZillaIntf::Close
+    Result = FOpening;
+  }
+
+  if (Result)
+  {
+    assert(FActive);
+    Discard();
+    FTerminal->Closed();
   }
 }
 //---------------------------------------------------------------------------
@@ -1781,74 +1791,87 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 {
-  bool GotNoFilesForAll = false;
-  bool Repeat;
-
-  do
+  // whole below "-a" logic is for LIST,
+  // if we know we are going to use MLSD, skip it
+  if (FServerCapabilities->GetCapability(mlsd_command) == yes)
   {
-    Repeat = false;
-    try
-    {
-      FDoListAll = (FListAll == asAuto) || (FListAll == asOn);
-      DoReadDirectory(FileList);
+    DoReadDirectory(FileList);
+  }
+  else
+  {
+    bool GotNoFilesForAll = false;
+    bool Repeat;
 
-      // We got no files with "-a", but again no files w/o "-a",
-      // so it was not "-a"'s problem, revert to auto and let it decide the next time
-      if (GotNoFilesForAll && (FileList->Count == 0))
+    do
+    {
+      Repeat = false;
+      try
       {
-        assert(FListAll == asOff);
-        FListAll = asAuto;
-      }
-      else if (FListAll == asAuto)
-      {
-        // some servers take "-a" as a mask and return empty directory listing
-        // (note that it's actually never empty here, there's always at least parent directory,
-        // added explicitly by DoReadDirectory)
-        if ((FileList->Count == 0) ||
-            ((FileList->Count == 1) && FileList->Files[0]->IsParentDirectory))
+        FDoListAll = (FListAll == asAuto) || (FListAll == asOn);
+        DoReadDirectory(FileList);
+
+        // We got no files with "-a", but again no files w/o "-a",
+        // so it was not "-a"'s problem, revert to auto and let it decide the next time
+        if (GotNoFilesForAll && (FileList->Count == 0))
         {
-          Repeat = true;
+          assert(FListAll == asOff);
+          FListAll = asAuto;
+        }
+        else if (FListAll == asAuto)
+        {
+          // some servers take "-a" as a mask and return empty directory listing
+          // (note that it's actually never empty here, there's always at least parent directory,
+          // added explicitly by DoReadDirectory)
+          if ((FileList->Count == 0) ||
+              ((FileList->Count == 1) && FileList->Files[0]->IsParentDirectory))
+          {
+            Repeat = true;
+            FListAll = asOff;
+            GotNoFilesForAll = true;
+          }
+          else
+          {
+            // reading first directory has succeeded, always use "-a"
+            FListAll = asOn;
+          }
+        }
+
+        // use "-a" even for implicit directory reading by FZAPI?
+        // (e.g. before file transfer)
+        FDoListAll = (FListAll == asOn);
+      }
+      catch(Exception & E)
+      {
+        FDoListAll = false;
+        // reading the first directory has failed,
+        // further try without "-a" only as the server may not support it
+        if (FListAll == asAuto)
+        {
+          if (!FTerminal->Active)
+          {
+            FTerminal->Reopen(ropNoReadDirectory);
+          }
+
           FListAll = asOff;
-          GotNoFilesForAll = true;
+          Repeat = true;
         }
         else
         {
-          // reading first directory has succeeded, always use "-a"
-          FListAll = asOn;
+          throw;
         }
       }
-
-      // use "-a" even for implicit directory reading by FZAPI?
-      // (e.g. before file transfer)
-      FDoListAll = (FListAll == asOn);
     }
-    catch(Exception & E)
-    {
-      FDoListAll = false;
-      // reading the first directory has failed,
-      // further try without "-a" only as the server may not support it
-      if (FListAll == asAuto)
-      {
-        if (!FTerminal->Active)
-        {
-          FTerminal->Reopen(ropNoReadDirectory);
-        }
-
-        FListAll = asOff;
-        Repeat = true;
-      }
-      else
-      {
-        throw;
-      }
-    }
+    while (Repeat);
   }
-  while (Repeat);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoReadFile(const UnicodeString & FileName,
   TRemoteFile *& AFile)
 {
+  // end-user has right to expect that client current directory is really
+  // current directory for the server
+  EnsureLocation();
+
   TRemoteFileList * FileList = new TRemoteFileList();
   try
   {
@@ -1856,7 +1879,7 @@ void __fastcall TFTPFileSystem::DoReadFile(const UnicodeString & FileName,
     FFileZillaIntf->ListFile(FileName.c_str());
 
     GotReply(WaitForCommandReply(), REPLY_2XX_CODE | REPLY_ALLOW_CANCEL);
-    TRemoteFile * File = FileList->FindFile(FileName);
+    TRemoteFile * File = FileList->FindFile(UnixExtractFileName(FileName));
     if (File != NULL)
     {
       AFile = File->Duplicate();
@@ -2148,8 +2171,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_DEBUGSHOWLISTING:
-      // Listing is logged on FZAPI level 5 (what is strangely LOG_APIERROR)
-      Result = (FTerminal->Configuration->ActualLogProtocol >= 1);
+      Result = true;
       break;
 
     case OPTION_PASV:
@@ -3366,6 +3388,12 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
             File->Modification = Modification;
             File->ModificationFmt = mfMDY;
           }
+
+          if (Entry->Utc)
+          {
+            File->Modification = ConvertFileTimestampFromUTC(File->Modification);
+          }
+
         }
         else
         {

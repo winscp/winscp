@@ -209,7 +209,7 @@ void __fastcall TFileFindDialog::Start()
     {
       FState = ffAborted;
     }
-    if (IsIconic(Application->Handle) && FMinimizedByMe)
+    if (IsApplicationMinimized() && FMinimizedByMe)
     {
       ShowNotification(NULL, LoadStr(BALLOON_OPERATION_COMPLETE), qtInformation);
       FMinimizedByMe = false;

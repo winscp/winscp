@@ -952,6 +952,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     ADF(L"Local account: %s", (UserName));
     ADF(L"Working directory: %s", (GetCurrentDir()));
     ADF(L"Command-line: %s", (CmdLine));
+    ADF(L"Time zone: %s", (GetTimeZoneLogString()));
     ADF(L"Login time: %s", (FormatDateTime(L"dddddd tt", Now())));
     AddSeparator();
     ADF(L"Session name: %s (%s)", (Data->SessionName, Data->Source));

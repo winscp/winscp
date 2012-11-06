@@ -1014,6 +1014,11 @@ begin
   StopSubDirScanner;
   StopIconUpdateThread;
   StopWatchThread;
+  if Assigned(FDiscMonitor) then
+  begin
+    FDiscMonitor.Free;
+    FDiscMonitor := nil;
+  end;
 end; {TerminateThreads}
 
 {$ENDIF}
@@ -3343,8 +3348,7 @@ procedure TDirView.StopWatchThread;
 begin
   if Assigned(FDiscMonitor) then
   begin
-    FDiscMonitor.Free;
-    FDiscMonitor := nil;
+    FDiscMonitor.Enabled := False;
   end;
 end; {StopWatchThread}
 
@@ -3370,7 +3374,7 @@ begin
       else
     begin
       FDiscMonitor.SetDirectory(PathName);
-      FDiscMonitor.Open;
+      FDiscMonitor.Enabled := True;
     end;
   end;
 end; {StartWatchThread}

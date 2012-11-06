@@ -112,6 +112,9 @@ void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList,
   FStoredSessions = SessionList;
   LoadSessions();
   FOptions = Options;
+  UnicodeString Dummy;
+  PageantAction->Visible = FindTool(PageantTool, Dummy);
+  PuttygenAction->Visible = FindTool(PuttygenTool, Dummy);
   UpdateControls();
 }
 //---------------------------------------------------------------------
@@ -2874,5 +2877,25 @@ void __fastcall TLoginDialog::AnonymousLoginCheckClick(TObject * /*Sender*/)
 void __fastcall TLoginDialog::SaveButtonDropDownClick(TObject * /*Sender*/)
 {
   MenuPopup(SaveDropDownMenu, SaveButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ExecuteTool(const UnicodeString & Name)
+{
+  UnicodeString Path;
+  if (!FindTool(Name, Path) ||
+      !ExecuteShell(Path, L""))
+  {
+    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Name)));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::PageantActionExecute(TObject * /*Sender*/)
+{
+  ExecuteTool(PageantTool);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::PuttygenActionExecute(TObject * /*Sender*/)
+{
+  ExecuteTool(PuttygenTool);
 }
 //---------------------------------------------------------------------------

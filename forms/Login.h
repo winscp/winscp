@@ -299,6 +299,12 @@ __published:
   TPopupMenu *SaveDropDownMenu;
   TMenuItem *Save1;
   TMenuItem *Setdefaults1;
+  TMenuItem *N1;
+  TMenuItem *N2;
+  TMenuItem *Pageant1;
+  TMenuItem *Puttygen1;
+  TAction *PageantAction;
+  TAction *PuttygenAction;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -367,6 +373,8 @@ __published:
           int X, int Y);
   void __fastcall AnonymousLoginCheckClick(TObject *Sender);
   void __fastcall SaveButtonDropDownClick(TObject *Sender);
+  void __fastcall PageantActionExecute(TObject *Sender);
+  void __fastcall PuttygenActionExecute(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -426,6 +434,7 @@ private:
     TTreeNode * Node, TStrings * OpenedStoredSessionFolders);
   void __fastcall LoadOpenedStoredSessionFolders(
     TTreeNode * Node, TStrings * OpenedStoredSessionFolders);
+  void __fastcall ExecuteTool(const UnicodeString & Name);
 
 protected:
   void __fastcall Default();

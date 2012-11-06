@@ -26,7 +26,7 @@ object CopyParamsFrame: TCopyParamsFrame
     object PreserveTimeCheck: TCheckBox
       Left = 16
       Top = 21
-      Width = 184
+      Width = 175
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'Preserve timesta&mp'
@@ -38,7 +38,7 @@ object CopyParamsFrame: TCopyParamsFrame
     object CommonCalculateSizeCheck: TCheckBox
       Left = 16
       Top = 46
-      Width = 184
+      Width = 175
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Calculate total size'
@@ -212,7 +212,7 @@ object CopyParamsFrame: TCopyParamsFrame
     object AsciiFileMaskLabel: TLabel
       Left = 16
       Top = 100
-      Width = 175
+      Width = 181
       Height = 13
       Anchors = [akLeft, akTop, akRight]
       Caption = 'Transfer following &files in text mode:'

@@ -382,7 +382,7 @@ protected:
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params);
   bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
   bool __fastcall CommandSessionFallback();
-  void __fastcall FileTerminalClosed(const UnicodeString FileName,
+  void __fastcall FileTerminalRemoved(const UnicodeString FileName,
     TEditedFileData & Data, TObject * Token, void * Arg);
   void __fastcall FileConfigurationChanged(const UnicodeString FileName,
     TEditedFileData & Data, TObject * Token, void * Arg);
@@ -521,7 +521,7 @@ public:
   bool __fastcall GetQueueEnabled();
   void __fastcall ToggleQueueEnabled();
   void __fastcall LastTerminalClosed(TObject * Sender);
-  void __fastcall TerminalClosed(TObject * Sender);
+  void __fastcall TerminalRemoved(TObject * Sender);
   void __fastcall TerminalListChanged(TObject * Sender);
   void __fastcall ApplicationTitleChanged();
   unsigned int __fastcall MoreMessageDialog(const UnicodeString Message,

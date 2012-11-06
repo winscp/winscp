@@ -50,7 +50,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Top = 0
       Height = 240
       AutoSnap = False
+      Color = clBtnFace
       MinSize = 70
+      ParentColor = False
       ResizeStyle = rsUpdate
     end
     object RemoteStatusBar: TTBXStatusBar

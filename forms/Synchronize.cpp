@@ -399,7 +399,7 @@ void __fastcall TSynchronizeDialog::Stop()
   OnlyStop();
   UpdateControls();
   Repaint();
-  if (IsIconic(Application->Handle) && FMinimizedByMe)
+  if (IsApplicationMinimized() && FMinimizedByMe)
   {
     FMinimizedByMe = false;
     Application->Restore();

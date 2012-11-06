@@ -216,6 +216,7 @@ private:
   TRemoteFileList * FFileListCache;
   UnicodeString FFileListCachePath;
   bool FActive;
+  bool FOpening;
   bool FWaitingForReply;
   enum { ftaNone, ftaSkip, ftaCancel } FFileTransferAbort;
   bool FIgnoreFileList;

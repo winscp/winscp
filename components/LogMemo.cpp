@@ -44,6 +44,7 @@ __fastcall TLogMemo::TLogMemo(TComponent* Owner)
   WantReturns = false;
   WordWrap = false;
   ScrollBars = ssBoth;
+  FThread = GetCurrentThreadId();
 }
 //---------------------------------------------------------------------------
 __fastcall TLogMemo::~TLogMemo()
@@ -107,7 +108,8 @@ void __fastcall TLogMemo::SessionLogChange(TObject * Sender)
   if (HandleAllocated())
   {
     unsigned int Ticks = GetTickCount();
-    if ((FLastUpdate == 0) || (Ticks < FLastUpdate) || (Ticks - FLastUpdate > 200))
+    if (((FLastUpdate == 0) || (Ticks < FLastUpdate) || (Ticks - FLastUpdate > 200)) &&
+        (FThread == GetCurrentThreadId()))
     {
       // forced update
       UpdateFromLog();

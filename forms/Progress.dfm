@@ -100,7 +100,6 @@ object ProgressForm: TProgressForm
       Height = 13
       IndentHorizontal = 0
       IndentVertical = 0
-      AutoSizeVertical = False
       Align = alNone
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False

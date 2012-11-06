@@ -373,6 +373,7 @@ void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
 void __fastcall SetGlobalMinimizeHandler(TNotifyEvent OnMinimize);
 TNotifyEvent __fastcall GetGlobalMinimizeHandler();
 bool __fastcall IsGlobalMinimizeHandler();
+bool __fastcall IsApplicationMinimized();
 void __fastcall WinInitialize();
 
 void __fastcall ShowNotification(TTerminal * Terminal, const UnicodeString & Str,

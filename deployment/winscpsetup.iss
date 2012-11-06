@@ -72,8 +72,9 @@
 #define ChromeAdFile "chromead.bmp"
 #define ChromeGcApiDllFile "gcapi_dll.dll"
 #define ChromeCheckerFile "chromech.exe"
-#define ChromeInstallerFile "GoogleChromeInstaller.exe"
-#define ChromeBrandCode "LHNE"
+#define ChromeInstallerFile "WinSCP-Chrome-Win78.exe"
+#define ChromeBrandCode1 "WSCA"
+#define ChromeBrandCode2 "WSCB"
 #include "chrome\texts.iss"
 #endif
 
@@ -204,11 +205,12 @@ Name: enableupdates\enablecollectusage; Description: {cm:EnableCollectUsage}
 ; Windows integration
 Name: desktopicon; Description: {cm:DesktopIconTask}
 Name: desktopicon\user; Description: {cm:DesktopIconUserTask}; \
-  Flags: exclusive
-Name: desktopicon\common; Description: {cm:DesktopIconCommonTask}; \
   Flags: exclusive unchecked
+Name: desktopicon\common; Description: {cm:DesktopIconCommonTask}; \
+  Flags: exclusive
+; No Quick Launch on Win7
 Name: quicklaunchicon; Description: {cm:QuickLaunchIconTask}; \
-  Flags: unchecked
+  Flags: unchecked; OnlyBelowVersion: 0,6.1.7600
 Name: sendtohook; Description: {cm:SendToHookTask}
 Name: urlhandler; Description: {cm:RegisterAsUrlHandler}
 Name: searchpath; Description: {cm:AddSearchPath}; \
@@ -218,13 +220,16 @@ Name: searchpath; Description: {cm:AddSearchPath}; \
 ; This is created always (unless user checks Don't create a Start menu folder,
 ; Setup\AllowNoIcons=yes)
 Name: "{group}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
-  Comment: "{cm:ProgramComment}"
+  Comment: "{cm:ProgramComment}"; Check: not IsWin8
 ; This is created when pageant/puttygen component is selected (unless user
 ; checks Don't create a Start menu folder, Setup\AllowNoIcons=yes).
 Name: "{group}\{cm:RSAKeyTools}\PuTTYgen"; \
-  Filename: "{app}\PuTTY\puttygen.exe"; Components: puttygen
+  Filename: "{app}\PuTTY\puttygen.exe"; Components: puttygen; Check: not IsWin8
 Name: "{group}\{cm:RSAKeyTools}\Pageant"; \
-  Filename: "{app}\PuTTY\pageant.exe"; Components: pageant
+  Filename: "{app}\PuTTY\pageant.exe"; Components: pageant; Check: not IsWin8
+; On Windows 8, create just top-level icon
+Name: "{commonstartmenu}\Programs\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
+  Comment: "{cm:ProgramComment}"; Check: IsWin8
 ; This is created when desktopicon task is selected
 Name: "{userdesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
   Tasks: desktopicon\user
@@ -269,11 +274,11 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/AddSearchPath"; \
   StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
 #ifdef Chrome
 Filename: "{tmp}\{#ChromeInstallerFile}"; \
-  Parameters: "/brandcode:{#ChromeBrandCode} /default:true"; \
+  Parameters: "/r1:{#ChromeBrandCode1} /r2:{#ChromeBrandCode2} /b:1"; \
   StatusMsg: {cm:ChromeInstalling}; \
   Check: IsChromeSelected and IsChromeDefaultSelected
 Filename: "{tmp}\{#ChromeInstallerFile}"; \
-  Parameters: "/brandcode:{#ChromeBrandCode}"; \
+  Parameters: "/r1:{#ChromeBrandCode1} /r2:{#ChromeBrandCode2} /b:0"; \
   StatusMsg: {cm:ChromeInstalling}; \
   Check: IsChromeSelected and (not IsChromeDefaultSelected)
 #endif
@@ -469,6 +474,17 @@ end;
 function IsLang(Lang: string): Boolean;
 begin
   Result := (Lang = ActiveLanguage);
+end;
+
+function IsWin8: Boolean;
+var
+  Version: TWindowsVersion;
+begin
+  GetWindowsVersionEx(Version);
+
+  Result :=
+    (Version.Major > 6) or
+    ((Version.Major = 6) and (Version.Minor >= 2));
 end;
 
 function UpdatesEnabled: Boolean;
@@ -1087,6 +1103,11 @@ begin
   WizardForm.NoRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   UpdatePostInstallRunCheckboxes(nil);
 
+  if IsWin8 then
+  begin
+    WizardForm.NoIconsCheck.Checked := True;
+  end;
+
 #ifdef OpenCandy
   OpenCandyInit('{#OC_STR_MY_PRODUCT_NAME}', '{#OC_STR_KEY}', '{#OC_STR_SECRET}',
     ExpandConstant('{cm:LanguageISOCode}'), {#OC_INIT_MODE_NORMAL});
@@ -1317,7 +1338,7 @@ begin
       WinHttpReq.Open('GET', ReportUrl, False);
       WinHttpReq.Send('');
 
-      Log('Installation report send result: ' + WinHttpReq.Status + ' ' + WinHttpReq.StatusText);
+      Log('Installation report send result: ' + IntToStr(WinHttpReq.Status) + ' ' + WinHttpReq.StatusText);
     except
       Log('Error sending installation report: ' + GetExceptionMessage);
     end;
@@ -1421,7 +1442,8 @@ begin
      ((PageID = wpSelectDir) or (PageID = wpSelectComponents) or
       (PageID = wpSelectProgramGroup) or (PageID = wpSelectTasks) or
       { Hide Interface page for upgrades only, show for fresh installs }
-      ((PageID = wpInterface) and Upgrade)));
+      ((PageID = wpInterface) and Upgrade))) or
+    (IsWin8 and (PageID = wpSelectProgramGroup));
 end;
 
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,

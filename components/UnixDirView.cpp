@@ -599,6 +599,8 @@ void __fastcall TUnixDirView::DoReadDirectoryImpl(TObject * /*Sender*/, bool Rel
 #ifndef DESIGN_ONLY
   if (Terminal->Active)
   {
+    CancelEdit();
+
     if (ReloadOnly)
     {
       Reload(false);

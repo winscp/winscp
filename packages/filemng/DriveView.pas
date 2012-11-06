@@ -2286,8 +2286,8 @@ begin
   begin
     if not Assigned(DiscMonitor) then
       CreateWatchThread(Drive);
-    if Assigned(DiscMonitor) and not DiscMonitor.Active then
-      DiscMonitor.Open;
+    if Assigned(DiscMonitor) and not DiscMonitor.Enabled then
+      DiscMonitor.Enabled := True;
   end;
 end; {StartWatchThread}
 
@@ -2296,7 +2296,7 @@ begin
   if Assigned(Selected) then
     with DriveStatus[GetDriveToNode(Selected)] do
       if Assigned(DiscMonitor) then
-        DiscMonitor.Close;
+        DiscMonitor.Enabled := False;
 end; {StopWatchThread}
 
 procedure TDriveView.TerminateWatchThread(Drive: TDrive);

@@ -52,6 +52,7 @@ public:
 			bool hastime;
 			bool hasseconds;
 			bool hasdate;
+			bool utc;
 		} date;
 		CTime EntryTime;
 		CString linkTarget;

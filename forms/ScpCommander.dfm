@@ -1294,7 +1294,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         'rectory trees equal.'
       Align = alTop
       AutoSnap = False
+      Color = clBtnFace
       MinSize = 70
+      ParentColor = False
       ResizeStyle = rsUpdate
     end
     object LocalStatusBar: TTBXStatusBar

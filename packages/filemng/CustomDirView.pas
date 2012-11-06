@@ -254,6 +254,7 @@ type
     procedure AddToDragFileList(FileList: TFileList; Item: TListItem); virtual;
     function CanEdit(Item: TListItem): Boolean; override;
     function CanChangeSelection(Item: TListItem; Select: Boolean): Boolean; override;
+    procedure CancelEdit;
     procedure ClearItems; override;
     function GetDirOK: Boolean; virtual; abstract;
     procedure DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint; DragStatus: TDragDetectStatus); virtual;
@@ -965,6 +966,7 @@ end;
 
 procedure TCustomDirView.ClearItems;
 begin
+  CancelEdit;
   if Assigned(DropTarget) then DropTarget := nil;
   try
     inherited;
@@ -1713,6 +1715,16 @@ begin
   end;
 end;
 
+procedure TCustomDirView.CancelEdit;
+begin
+  // if editing, it has to be focused item
+  if IsEditing and Assigned(ItemFocused) then
+  begin
+    ItemFocused.CancelEdit;
+    FLoadEnabled := True;
+  end;
+end;
+
 procedure TCustomDirView.Reload(CacheIcons: Boolean);
 var
   OldSelection: TStringList;
@@ -1730,12 +1742,7 @@ var
 begin
   if Path <> '' then
   begin
-    // if editing, it has to be focused item
-    if IsEditing and Assigned(ItemFocused) then
-    begin
-      ItemFocused.CancelEdit;
-      FLoadEnabled := True;
-    end;
+    CancelEdit;
     OldSelection := nil;
     IconCache := nil;
     Items.BeginUpdate;

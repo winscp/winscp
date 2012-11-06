@@ -27,6 +27,7 @@ struct TListDataEntry
   bool HasTime;
   bool HasSeconds;
   bool HasDate;
+  bool Utc;
   const wchar_t * LinkTarget;
 };
 //---------------------------------------------------------------------------
@@ -155,7 +156,7 @@ public:
     const wchar_t * Pass, const wchar_t * Account, bool FwByPass,
     const wchar_t * Path, int ServerType, int Pasv, int TimeZoneOffset, int UTF8,
     int iForcePasvIp);
-  bool __fastcall Close();
+  bool __fastcall Close(bool AllowBusy);
 
   bool __fastcall List();
   bool __fastcall List(const wchar_t * Path);

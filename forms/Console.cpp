@@ -183,6 +183,9 @@ void __fastcall TConsoleDialog::TerminalClose(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::ExecuteButtonClick(TObject * /*Sender*/)
 {
+  // When pressing "Enter" key, focus is not lst and
+  // the command is not saved (as oppisute to clicking the button by mouse)
+  CommandEdit->SaveToHistory();
   ExecuteCommand();
 }
 //---------------------------------------------------------------------------

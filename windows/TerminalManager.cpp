@@ -457,6 +457,11 @@ void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
 {
   try
   {
+    if (ScpExplorer != NULL)
+    {
+      ScpExplorer->TerminalRemoved(Terminal);
+    }
+
     if (Terminal->Active)
     {
       Terminal->Close();
@@ -1365,7 +1370,10 @@ void __fastcall TTerminalManager::MasterPasswordPrompt()
 void __fastcall TTerminalManager::Move(TTerminal * Source, TTerminal * Target)
 {
   FTerminalList->Clear();
-  TTerminalList::Move(IndexOf(Source), IndexOf(Target));
+  int SourceIndex = IndexOf(Source);
+  int TargetIndex = IndexOf(Target);
+  TTerminalList::Move(SourceIndex, TargetIndex);
+  FQueues->Move(SourceIndex, TargetIndex);
   DoTerminalListChanged();
   // when there are indexed sessions with the same name,
   // the index may change when reordering the sessions

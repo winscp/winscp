@@ -34,6 +34,7 @@ private:
   bool FWantScrollToEnd;
   bool FNeedsRepaint;
   unsigned int FLastUpdate;
+  DWORD FThread;
 
   void __fastcall CMShowingChanged(TMessage & Message);
   void CMVisibleChanged(TMessage & Message);

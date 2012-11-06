@@ -2348,7 +2348,7 @@ void CFtpControlSocket::ListFile(CServerPath path /*=CServerPath()*/, CString fi
 			m_pDirectoryListing=0;
 		}
 		m_Operation.nOpState = LIST_LISTFILE;
-		cmd = _T("MLST ") + pData->fileName;
+		cmd = _T("MLST ") + path.FormatFilename(fileName);
 		if (!Send(cmd))
 			return;
 		pData->ListStartTime=CTime::GetCurrentTime();
@@ -2390,6 +2390,7 @@ void CFtpControlSocket::ListFile(CServerPath path /*=CServerPath()*/, CString fi
 			pData->pDirectoryListing->server = m_CurrentServer;
 			pData->pDirectoryListing->path.SetServer(pData->pDirectoryListing->server);
 			pData->pDirectoryListing->path = m_pOwner->GetCurrentPath();
+			delete pListResult;
 
 			ShowStatus(IDS_STATUSMSG_LISTFILESUCCESSFUL,0);
 			SetDirectoryListing(pData->pDirectoryListing);
@@ -6277,7 +6278,7 @@ bool CFtpControlSocket::CheckForcePasvIp(CString & host)
 			if (!GetPeerName(ahost, tmpPort))
 			{
 			    // this is not failure in "auto" mode
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Error retrieving server address"));
+				LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Error retrieving server address, cannot test if address is routable"));
 			}
 			else if (!IsRoutableAddress(host) && IsRoutableAddress(ahost))
 			{

@@ -142,6 +142,7 @@ private:
   UnicodeString FTunnelPublicKeyFile;
   int FTunnelLocalPortNumber;
   UnicodeString FTunnelPortFwd;
+  UnicodeString FTunnelHostKey;
   bool FFtpPasvMode;
   TAutoSwitch FFtpForcePasvIp;
   UnicodeString FFtpAccount;
@@ -282,6 +283,7 @@ private:
   void __fastcall SetTunnelPortFwd(UnicodeString value);
   void __fastcall SetTunnelLocalPortNumber(int value);
   bool __fastcall GetTunnelAutoassignLocalPortNumber();
+  void __fastcall SetTunnelHostKey(UnicodeString value);
   void __fastcall SetFtpPasvMode(bool value);
   void __fastcall SetFtpForcePasvIp(TAutoSwitch value);
   void __fastcall SetFtpAccount(UnicodeString value);
@@ -434,6 +436,7 @@ public:
   __property bool TunnelAutoassignLocalPortNumber = { read = GetTunnelAutoassignLocalPortNumber };
   __property int TunnelLocalPortNumber = { read = FTunnelLocalPortNumber, write = SetTunnelLocalPortNumber };
   __property UnicodeString TunnelPortFwd = { read = FTunnelPortFwd, write = SetTunnelPortFwd };
+  __property UnicodeString TunnelHostKey = { read = FTunnelHostKey, write = SetTunnelHostKey };
   __property bool FtpPasvMode = { read = FFtpPasvMode, write = SetFtpPasvMode };
   __property TAutoSwitch FtpForcePasvIp = { read = FFtpForcePasvIp, write = SetFtpForcePasvIp };
   __property UnicodeString FtpAccount = { read = FFtpAccount, write = SetFtpAccount };

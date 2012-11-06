@@ -845,6 +845,16 @@ bool __fastcall IsGlobalMinimizeHandler()
   return (GlobalOnMinimize != NULL);
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsApplicationMinimized()
+{
+  // VCL help recommends handling Application->OnMinimize/OnRestore
+  // for tracking state, but OnRestore is actually not called
+  // (OnMinimize is), when app is minimized from e.g. Progress window
+  bool AppMinimized = IsIconic(Application->Handle);
+  bool MainFormMinimized = IsIconic(Application->MainFormHandle);
+  return AppMinimized || MainFormMinimized;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TranslateDateFormat(UnicodeString FormatStr)
 {
   UnicodeString Result;

@@ -874,6 +874,7 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->PublicKeyFile = FSessionData->TunnelPublicKeyFile;
     FTunnelData->TunnelPortFwd = FORMAT(L"L%d\t%s:%d",
       (FTunnelLocalPortNumber, FSessionData->HostName, FSessionData->PortNumber));
+    FTunnelData->HostKey = FTunnelData->TunnelHostKey;
     FTunnelData->ProxyMethod = FSessionData->ProxyMethod;
     FTunnelData->ProxyHost = FSessionData->ProxyHost;
     FTunnelData->ProxyPort = FSessionData->ProxyPort;

@@ -1385,8 +1385,12 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 
 	CString fileName;
 	copyStr(fileName, 0, str, tokenlen, true);
-	CServerPath path(fileName);
+	CServerPath path(fileName, m_server.nServerType);
 	direntry.name = path.GetLastSegment();
+	if (direntry.name.IsEmpty())
+	{
+		direntry.name = fileName;
+	}
 	return TRUE;
 }
 
@@ -1419,8 +1423,8 @@ bool CFtpListResult::parseMlsdDateTime(const CString value, t_directory::t_diren
 		direntry.date.hour = Hours;
 		direntry.date.minute = Minutes;
 		direntry.date.second = Seconds;
+		direntry.date.utc = TRUE;
 		CTime dateTime(Year, Month, Day, Hours, Minutes, Seconds);
-		// direntry.EntryTime = dateTime.FromTimezone(GMT0);
 		direntry.EntryTime = dateTime;
 	}
 	return result;

@@ -2626,6 +2626,16 @@ object LoginDialog: TLoginDialog
       Caption = 'Ne&w folder...'
       OnExecute = NewSessionFolderActionExecute
     end
+    object PageantAction: TAction
+      Category = 'Other'
+      Caption = '&Pageant'
+      OnExecute = PageantActionExecute
+    end
+    object PuttygenAction: TAction
+      Category = 'Other'
+      Caption = 'PuTTY&gen'
+      OnExecute = PuttygenActionExecute
+    end
   end
   object ToolsPopupMenu: TPopupMenu
     Left = 48
@@ -2635,6 +2645,18 @@ object LoginDialog: TLoginDialog
     end
     object Cleanup1: TMenuItem
       Action = CleanUpAction
+    end
+    object N2: TMenuItem
+      Caption = '-'
+    end
+    object Pageant1: TMenuItem
+      Action = PageantAction
+    end
+    object Puttygen1: TMenuItem
+      Action = PuttygenAction
+    end
+    object N1: TMenuItem
+      Caption = '-'
     end
     object CheckForUpdates1: TMenuItem
       Action = CheckForUpdatesAction

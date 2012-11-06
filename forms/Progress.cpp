@@ -76,7 +76,7 @@ __fastcall TProgressForm::~TProgressForm()
     SetGlobalMinimizeHandler(NULL);
   }
 
-  if (IsIconic(Application->Handle) && FMinimizedByMe)
+  if (IsApplicationMinimized() && FMinimizedByMe)
   {
     ShowNotification(NULL, LoadStr(BALLOON_OPERATION_COMPLETE), qtInformation);
   }

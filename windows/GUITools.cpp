@@ -14,6 +14,9 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+extern const UnicodeString PageantTool = L"pageant.exe";
+extern const UnicodeString PuttygenTool = L"puttygen.exe";
+//---------------------------------------------------------------------------
 bool __fastcall FindFile(UnicodeString & Path)
 {
   bool Result = FileExists(Path);
@@ -132,6 +135,26 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   {
     throw Exception(FMTLOAD(FILE_NOT_FOUND, (Program)));
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path)
+{
+  UnicodeString AppPath = IncludeTrailingBackslash(ExtractFilePath(Application->ExeName));
+  Path = AppPath + Name;
+  bool Result = true;
+  if (!FileExists(Path))
+  {
+    Path = AppPath + L"PuTTY\\" + Name;
+    if (!FileExists(Path))
+    {
+      Path = Name;
+      if (!FindFile(Path))
+      {
+        Result = false;
+      }
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params)

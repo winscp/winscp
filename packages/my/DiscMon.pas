@@ -76,19 +76,22 @@ type
     FDirectories: TStrings;
     FFilters: DWORD;
     FDestroyEvent,
-    FChangeEvent: THandle;
+    FChangeEvent,
+    FChangedEvent: THandle;
     FSubTree: Boolean;
     FChangeDelay: Integer;  {ie01}
     FNotifiedDirectory: string;
     FSubdirsChanged: Boolean;
     FInvalidMessage: string;
     FNotifiedDirectories: Integer;
+    FEnabled: Boolean;
     procedure InformChange;
     procedure InformInvalid;
     procedure InformDirectoriesChange;
     procedure SetDirectories(const Value: TStrings);
     procedure SetFilters(Value: DWORD);
-    procedure SetSubTree(Value: boolean);
+    procedure SetSubTree(Value: Boolean);
+    procedure SetEnabled(Value: Boolean);
     procedure SaveOSError;
   protected
     procedure Execute; override;
@@ -114,6 +117,7 @@ type
     // specify, how long the thread should wait, before the event OnChange is fired:
     property ChangeDelay: Integer read FChangeDelay write FChangeDelay
       default 500;
+    property Enabled: Boolean read FEnabled write SetEnabled;
   end;
 
   //===================== DISC MONITORING COMPONENT ==============================
@@ -144,10 +148,12 @@ type
     FMaxDirectories: Integer;
     function GetDirectories: TStrings;
     function GetSubTree: Boolean;
+    function GetEnabled: Boolean;
     procedure SetActive(Value: Boolean);
     procedure SetDirectories(Value: TStrings);
     procedure SetFilters(Value: TMonitorFilters);
     procedure SetSubTree(Value: Boolean);
+    procedure SetEnabled(Value: Boolean);
     function  GetChangeDelay: Integer;
     procedure SetChangeDelay(Value: Integer);
   protected
@@ -192,6 +198,7 @@ type
     // specify, how long the thread should wait, before the event OnChange is fired:
     property ChangeDelay: Integer read GetChangeDelay write SetChangeDelay
       default 500;
+    property Enabled: Boolean read GetEnabled write SetEnabled default True;
   end;
 
 procedure Register;
@@ -286,8 +293,10 @@ begin
   (FDirectories as TStringList).Sorted := True;
   FDestroyEvent := CreateEvent(nil, True,  False, nil);
   FChangeEvent  := CreateEvent(nil, False, False, nil);
+  FChangedEvent := CreateEvent(nil, False, False, nil);
   FOnFilter := nil;
   FOnDirectoriesChange := nil;
+  FEnabled := True;
 end;
 
 // close OnXXXXX links, signal the thread that it is to close down
@@ -358,6 +367,15 @@ begin
   end
 end;
 
+procedure TDiscMonitorThread.SetEnabled(Value: Boolean);
+begin
+  if Value <> FEnabled then
+  begin
+    FEnabled := Value;
+    Update;
+  end
+end;
+
 function TDiscMonitor.GetChangeDelay: Integer;  {ie01}
 begin
   Result := FMonitor.ChangeDelay;
@@ -373,7 +391,11 @@ end;
 procedure TDiscMonitorThread.Update;
 begin
   if not Suspended then
-    SetEvent(FChangeEvent)
+  begin
+    ResetEvent(FChangedEvent);
+    SetEvent(FChangeEvent);
+    WaitForSingleObject(FChangedEvent, INFINITE);
+  end;
 end;
 
 procedure TDiscMonitorThread.DoSynchronize(Method: TThreadMethod);
@@ -403,6 +425,7 @@ procedure TDiscMonitorThread.Execute;
 var
   // used to give the handles to WaitFor...
   Handles: PWOHandleArray;
+  BaseHandles: Word;
   SysHandles: Word;
   Count: Word;
 
@@ -601,8 +624,10 @@ var
   WaitCount: Word;
   I: Integer;
   Result: Cardinal;
+  WasEnabled: Boolean;
 begin {Execute}
-  SysHandles := 2;
+  BaseHandles := 2;
+  SysHandles := BaseHandles;
   Count := SysHandles + FDirectories.Count;
   HierMode := (Count > MAXIMUM_WAIT_OBJECTS);
   if HierMode then
@@ -617,22 +642,31 @@ begin {Execute}
 
     repeat
 
-      if HierMode then
-      begin
-        // expect that the first directory is the top level one
-        Handles^[HierNotifySlot] := StartMonitor(FDirectories[0], True);
-        if Handles^[HierNotifySlot] = INVALID_HANDLE_VALUE then Exit;
-      end;
+      WasEnabled := Enabled;
 
-      for I := SysHandles to Count - 1 do
+      if WasEnabled then
       begin
-        Handles^[I] := StartMonitor(FDirectories[I - SysHandles], False);
-        if Handles^[I] = INVALID_HANDLE_VALUE then Exit;
+        if HierMode then
+        begin
+          // expect that the first directory is the top level one
+          Handles^[HierNotifySlot] := StartMonitor(FDirectories[0], True);
+          if Handles^[HierNotifySlot] = INVALID_HANDLE_VALUE then Exit;
+        end;
+
+        for I := SysHandles to Count - 1 do
+        begin
+          Handles^[I] := StartMonitor(FDirectories[I - SysHandles], False);
+          if Handles^[I] = INVALID_HANDLE_VALUE then Exit;
+        end;
       end;
 
       repeat
-        if HierMode then WaitCount := SysHandles
-          else WaitCount := Count;
+        if WasEnabled then
+        begin
+          if HierMode then WaitCount := SysHandles
+            else WaitCount := Count;
+        end
+          else WaitCount := BaseHandles;
 
         // wait for any of the change notification, destroy or
         // change events to be signalled
@@ -663,28 +697,34 @@ begin {Execute}
             Handles^[Result - WAIT_OBJECT_0]);
           if Result = WAIT_OBJECT_0 then Result := WAIT_TIMEOUT;
         end;
-      // note that WaitCount can be differen here than when
+      // note that WaitCount can be different here than when
       // WaitForMultipleObjects  was called, but it should not matter as it is
       until (Result = WAIT_FAILED) or (Result = WAIT_OBJECT_0 + DestroySlot) or
         (Result = WAIT_OBJECT_0 + ChangeSlot) or
         ((Result >= WAIT_ABANDONED_0) and (Result < WAIT_ABANDONED_0 + WaitCount));
 
-      if HierMode then
+      if WasEnabled then
       begin
-        FindCloseChangeNotification(Handles^[HierNotifySlot]);
+        if HierMode then
+        begin
+          FindCloseChangeNotification(Handles^[HierNotifySlot]);
+        end;
+
+        for I := SysHandles to Count - 1 do
+        begin
+          FindCloseChangeNotification(Handles^[I]);
+        end;
       end;
 
-      for I := SysHandles to Count - 1 do
-      begin
-        FindCloseChangeNotification(Handles^[I]);
-      end;
+      SetEvent(FChangedEvent);
 
       // loop back to restart if ChangeEvent was signalled
     until (Result - WAIT_OBJECT_0 <> ChangeSlot) or Self.Terminated;
 
     // closing down so chuck the two events
     CloseHandle(FChangeEvent);
-    CloseHandle(FDestroyEvent)
+    CloseHandle(FDestroyEvent);
+    CloseHandle(FChangedEvent);
   finally
     FreeMem(Handles);
   end;
@@ -794,6 +834,11 @@ begin
   Result := FMonitor.SubTree;
 end;
 
+function TDiscMonitor.GetEnabled: Boolean;
+begin
+  Result := FMonitor.Enabled;
+end;
+
 // set the directory to monitor
 procedure TDiscMonitor.SetDirectories(Value: TStrings);
 begin
@@ -882,6 +927,11 @@ end;
 procedure TDiscMonitor.SetSubTree(Value: Boolean);
 begin
   FMonitor.SubTree := Value;
+end;
+
+procedure TDiscMonitor.SetEnabled(Value: Boolean);
+begin
+  FMonitor.Enabled := Value;
 end;
 
 procedure Register;
