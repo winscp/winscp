@@ -72,7 +72,7 @@
 #define ChromeAdFile "chromead.bmp"
 #define ChromeGcApiDllFile "gcapi_dll.dll"
 #define ChromeCheckerFile "chromech.exe"
-#define ChromeInstallerFile "WinSCP-Chrome-Win78.exe"
+#define ChromeInstallerFile "WinSCP_Chrome.exe"
 #define ChromeBrandCode1 "WSCA"
 #define ChromeBrandCode2 "WSCB"
 #include "chrome\texts.iss"

@@ -28,6 +28,7 @@ __fastcall TUsage::~TUsage()
 //---------------------------------------------------------------------------
 void __fastcall TUsage::Default()
 {
+  TGuard Guard(FCriticalSection);
   FPeriodCounters.clear();
   FLifetimeCounters.clear();
   FValues->Clear();
@@ -42,6 +43,7 @@ void __fastcall TUsage::Default()
 //---------------------------------------------------------------------------
 void __fastcall TUsage::Load(THierarchicalStorage * Storage)
 {
+  TGuard Guard(FCriticalSection);
   Default();
 
   if (Storage->OpenSubKey(L"Values", false))
@@ -93,6 +95,7 @@ void __fastcall TUsage::Load(THierarchicalStorage * Storage,
 //---------------------------------------------------------------------------
 void __fastcall TUsage::Save(THierarchicalStorage * Storage) const
 {
+  TGuard Guard(FCriticalSection);
   if (Storage->OpenSubKey(L"Values", true))
   {
     Storage->ClearValues();
@@ -142,7 +145,9 @@ void __fastcall TUsage::Set(const UnicodeString & Key, bool Value)
 UnicodeString __fastcall TUsage::Get(const UnicodeString & Key)
 {
   TGuard Guard(FCriticalSection);
-  return FValues->Values[Key];
+  UnicodeString Result = FValues->Values[Key];
+  Result.Unique();
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TUsage::UpdateLastReport()
@@ -159,21 +164,22 @@ void __fastcall TUsage::Reset()
 //---------------------------------------------------------------------------
 void __fastcall TUsage::UpdateCurrentVersion()
 {
+  TGuard Guard(FCriticalSection);
   int CompoundVersion = FConfiguration->CompoundVersion;
-  int PrevVersion = StrToIntDef(Configuration->Usage->Get(L"CurrentVersion"), 0);
+  int PrevVersion = StrToIntDef(Get(L"CurrentVersion"), 0);
   if (PrevVersion != CompoundVersion)
   {
-    Configuration->Usage->Set(L"Installed", StandardTimestamp());
+    Set(L"Installed", StandardTimestamp());
   }
   if (PrevVersion != 0)
   {
     if (PrevVersion < CompoundVersion)
     {
-      Configuration->Usage->Inc(L"Upgrades");
+      Inc(L"Upgrades");
     }
     else if (PrevVersion > CompoundVersion)
     {
-      Configuration->Usage->Inc(L"Downgrades");
+      Inc(L"Downgrades");
     }
   }
   Set(L"CurrentVersion", CompoundVersion);
@@ -250,6 +256,7 @@ void __fastcall TUsage::SetCollect(bool value)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TUsage::Serialize() const
 {
+  TGuard Guard(FCriticalSection);
   UnicodeString Result;
 
   AddToList(Result, FValues->DelimitedText, L"&");

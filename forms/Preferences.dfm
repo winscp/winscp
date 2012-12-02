@@ -209,7 +209,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 260
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Beep when work finishes, if it lasted more then'
+            Caption = '&Beep when work finishes, if it lasted more than'
             TabOrder = 0
             OnClick = ControlChange
           end

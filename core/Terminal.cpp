@@ -2287,9 +2287,14 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
       {
         DoReadDirectoryProgress(-1, Cancel);
         FReadingCurrentDirectory = false;
-        delete FFiles;
+        TRemoteDirectory * OldFiles = FFiles;
         FFiles = Files;
         DoReadDirectory(ReloadOnly);
+        // delete only after loading new files to dir view,
+        // not to destroy the fil objects that the view holds
+        // (can be issue in multi threaded environment, such as when the
+        // terminal is reconnecting in the terminal thread)
+        delete OldFiles;
         if (Active)
         {
           if (SessionData->CacheDirectories)

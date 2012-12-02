@@ -257,6 +257,9 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
+  // this has to be one of the very first things to do
+  StopUpdateThread();
+
   SessionsPageControl->Images = NULL;
   SAFE_DESTROY(FSessionColors);
   SAFE_DESTROY(FSessionsDragDropFilesEx);
@@ -331,7 +334,6 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
   SAFE_DESTROY(FHistoryMenu[1][0]);
   SAFE_DESTROY(FHistoryMenu[1][1]);
 
-  StopUpdateThread();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetTerminal(TTerminal * value)
@@ -3327,7 +3329,7 @@ void __fastcall TCustomScpExplorerForm::ApplicationRestore(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateTrayIcon()
 {
-  FTrayIcon->Hint = Application->Title;
+  FTrayIcon->Hint = Caption;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ApplicationTitleChanged()

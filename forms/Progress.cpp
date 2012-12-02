@@ -253,13 +253,18 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
   }
 
   FData = AData;
-  if (!FDataReceived)
+  // delay showing the progress until the application is restored,
+  // otherwise the form popups up unminimized
+  if (!FDataReceived && !IsApplicationMinimized())
   {
     FDataReceived = true;
     // CPS limit is set set only once from TFileOperationProgressType::Start
     FCPSLimit = AData.CPSLimit;
     SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
     ShowAsModal(this, FShowAsModalStorage);
+    // particularly needed for the case, when we are showing the form delayed
+    // because application was minimized when operation started
+    InstantUpdate = true;
   }
 
   if (InstantUpdate)

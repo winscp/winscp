@@ -806,6 +806,10 @@ void __fastcall TPreferencesDialog::UpdateControls()
     CopyParamLabel->Hint = InfoStr;
     CopyParamLabel->ShowHint =
       (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
+
+    // integration
+    // There's no quick launch in Windows 7
+    EnableControl(QuickLaunchIconButton, !IsWin7());
   }
 }
 //---------------------------------------------------------------------------

@@ -76,8 +76,7 @@ type
     FDirectories: TStrings;
     FFilters: DWORD;
     FDestroyEvent,
-    FChangeEvent,
-    FChangedEvent: THandle;
+    FChangeEvent: THandle;
     FSubTree: Boolean;
     FChangeDelay: Integer;  {ie01}
     FNotifiedDirectory: string;
@@ -293,7 +292,6 @@ begin
   (FDirectories as TStringList).Sorted := True;
   FDestroyEvent := CreateEvent(nil, True,  False, nil);
   FChangeEvent  := CreateEvent(nil, False, False, nil);
-  FChangedEvent := CreateEvent(nil, False, False, nil);
   FOnFilter := nil;
   FOnDirectoriesChange := nil;
   FEnabled := True;
@@ -392,9 +390,7 @@ procedure TDiscMonitorThread.Update;
 begin
   if not Suspended then
   begin
-    ResetEvent(FChangedEvent);
     SetEvent(FChangeEvent);
-    WaitForSingleObject(FChangedEvent, INFINITE);
   end;
 end;
 
@@ -716,15 +712,12 @@ begin {Execute}
         end;
       end;
 
-      SetEvent(FChangedEvent);
-
       // loop back to restart if ChangeEvent was signalled
     until (Result - WAIT_OBJECT_0 <> ChangeSlot) or Self.Terminated;
 
     // closing down so chuck the two events
     CloseHandle(FChangeEvent);
     CloseHandle(FDestroyEvent);
-    CloseHandle(FChangedEvent);
   finally
     FreeMem(Handles);
   end;

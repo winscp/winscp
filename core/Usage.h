@@ -16,7 +16,6 @@ public:
   void __fastcall Set(const UnicodeString & Key, const UnicodeString & Value);
   void __fastcall Set(const UnicodeString & Key, int Value);
   void __fastcall Set(const UnicodeString & Key, bool Value);
-  UnicodeString __fastcall Get(const UnicodeString & Key);
   void __fastcall Inc(const UnicodeString & Key);
   void __fastcall SetMax(const UnicodeString & Key, int Value);
 
@@ -39,6 +38,7 @@ private:
   TStringList * FValues;
   bool FCollect;
 
+  UnicodeString __fastcall Get(const UnicodeString & Key);
   void __fastcall SetCollect(bool value);
   void __fastcall UpdateLastReport();
   void __fastcall Load(THierarchicalStorage * Storage,

@@ -65,7 +65,16 @@ void __fastcall TSynchronizeProgressForm::Start()
   UpdateTimer->Enabled = true;
   StartTimeLabel->Caption = FStartTime.TimeString();
   Caption = LoadStr(FCompareOnly ? SYNCHRONIZE_PROGRESS_COMPARE : SYNCHRONIZE_PROGRESS_SYNCHRONIZE);
-  ShowAsModal(this, FShowAsModalStorage);
+  if (!IsApplicationMinimized())
+  {
+    // Do not showing the progress when the application is minimized,
+    // otherwise the form popups up unminimized.
+    // Quick as dirty hack: with this form, we do not support showing it
+    // once the application restores,
+    // otherwise we would have to synchronize it somehow with the TProgressForm,
+    // not to show it over the TProgressForm
+    ShowAsModal(this, FShowAsModalStorage);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::Stop()

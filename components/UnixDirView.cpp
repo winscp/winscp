@@ -19,7 +19,10 @@
 #pragma package(smart_init)
 #ifndef DESIGN_ONLY
 #define ITEMFILE ((TRemoteFile *)(Item->Data))
-#define ASSERT_VALID_ITEM assert(Item && Item->Data && Terminal); assert(Terminal->Files->IndexOf(ITEMFILE) >= 0)
+// noop, previously this tested that the file was in terminal's file listing,
+// but that cannot be safely checked not the terminal is used in multithreaded
+// environment
+#define ASSERT_VALID_ITEM
 #endif
 //---------------------------------------------------------------------------
 static inline void ValidCtrCheck(TUnixDirView *)
