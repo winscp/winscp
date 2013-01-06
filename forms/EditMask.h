@@ -37,6 +37,7 @@ __published:
   void __fastcall DirectoryMasksMemoExit(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall FormShow(TObject *Sender);
 
 
 public:
@@ -48,7 +49,6 @@ protected:
   void __fastcall LoadFileMasks(const TFileMasks & Mask);
   void __fastcall SaveFileMasks(TFileMasks & Mask);
   void __fastcall LoadFileMasks(TMemo * Memo, TStrings * MasksStr);
-  TStrings * __fastcall GetFileMasks(TMemo * Memo);
   void __fastcall UpdateControls();
 };
 //---------------------------------------------------------------------------

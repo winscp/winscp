@@ -1649,7 +1649,8 @@ UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption)
 }
 //---------------------------------------------------------------------------
 // duplicated in console's Main.cpp
-bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token)
+bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
+  UnicodeString * RawToken)
 {
   bool Result;
 
@@ -1689,6 +1690,11 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token)
         Token += Str[Index];
         Index++;
       }
+    }
+
+    if (RawToken != NULL)
+    {
+      (*RawToken) = Str.SubString(1, Index - 1);
     }
 
     if (Index <= Str.Length())

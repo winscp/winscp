@@ -37,6 +37,7 @@ __published:
     Pointer & Data);
   void __fastcall CommandEditSetData(THistoryComboBox *Sender,
     Pointer Data);
+  void __fastcall FormShow(TObject *Sender);
 
 private:
   TCustomCommandsMode FMode;

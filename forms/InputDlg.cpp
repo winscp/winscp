@@ -14,6 +14,8 @@ struct TInputDialogToken
 {
   TInputDialogInitialize OnInitialize;
   TInputDialogData Data;
+  TWinControl * EditControl;
+  bool PathInput;
 };
 //---------------------------------------------------------------------------
 void __fastcall InputDialogHelp(void * /*Data*/, TObject * Sender)
@@ -25,7 +27,16 @@ void __fastcall InputDialogHelp(void * /*Data*/, TObject * Sender)
 void __fastcall InputDialogShow(void * Data, TObject * Sender)
 {
   TInputDialogToken & Token = *static_cast<TInputDialogToken *>(Data);
-  Token.OnInitialize(Sender, &Token.Data);
+
+  if (Token.OnInitialize != NULL)
+  {
+    Token.OnInitialize(Sender, &Token.Data);
+  }
+
+  if (Token.PathInput)
+  {
+    InstallPathWordBreakProc(Token.EditControl);
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall InputDialog(const UnicodeString ACaption,
@@ -47,14 +58,15 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
     Form->Position = poOwnerFormCenter;
     SetCorrectFormParent(Form);
     UseSystemSettingsPre(Form);
-    if (OnInitialize != NULL)
-    {
-      Token.OnInitialize = OnInitialize;
-      TNotifyEvent OnShow;
-      ((TMethod *)&OnShow)->Data = &Token;
-      ((TMethod *)&OnShow)->Code = InputDialogShow;
-      Form->OnShow = OnShow;
-    }
+
+    Token.OnInitialize = OnInitialize;
+    Token.PathInput = PathInput;
+
+    TNotifyEvent OnShow;
+    ((TMethod *)&OnShow)->Data = &Token;
+    ((TMethod *)&OnShow)->Code = InputDialogShow;
+    Form->OnShow = OnShow;
+
     Form->Canvas->Font = Form->Font;
     DialogUnits = GetAveCharSize(Form->Canvas);
     Form->BorderStyle = bsDialog;
@@ -75,7 +87,6 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
     Prompt->Top = MulDiv(8, DialogUnits.y, 8);
     Prompt->Caption = APrompt;
 
-    TWinControl * EditControl;
     if (History == NULL)
     {
       Edit = new TEdit(Form);
@@ -84,7 +95,7 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
       Edit->SelectAll();
       Edit->MaxLength = 255;
       Token.Data.Edit = Edit;
-      EditControl = Edit;
+      Token.EditControl = Edit;
     }
     else
     {
@@ -95,17 +106,13 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
       HistoryCombo->Items = History;
       HistoryCombo->MaxLength = 255;
       HistoryCombo->AutoComplete = false;
-      EditControl = HistoryCombo;
+      Token.EditControl = HistoryCombo;
     }
-    EditControl->Left = Prompt->Left;
-    EditControl->Top = MulDiv(19, DialogUnits.y, 8);
-    EditControl->Width = MulDiv(204, DialogUnits.x, 4);
-    if (PathInput)
-    {
-      InstallPathWordBreakProc(EditControl);
-    }
+    Token.EditControl->Left = Prompt->Left;
+    Token.EditControl->Top = MulDiv(19, DialogUnits.y, 8);
+    Token.EditControl->Width = MulDiv(204, DialogUnits.x, 4);
 
-    Prompt->FocusControl = EditControl;
+    Prompt->FocusControl = Token.EditControl;
 
     ButtonTop = MulDiv(41, DialogUnits.y, 8);
     ButtonWidth = MulDiv(50, DialogUnits.x, 4);

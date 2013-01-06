@@ -17,6 +17,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
+  OnShow = FormShow
   DesignSize = (
     403
     359)

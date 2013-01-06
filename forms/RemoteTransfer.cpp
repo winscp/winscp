@@ -41,8 +41,6 @@ __fastcall TRemoteTransferDialog::TRemoteTransferDialog(TComponent * Owner)
   UseSystemSettings(this);
 
   Caption = LoadStr(REMOTE_COPY_TITLE);
-
-  InstallPathWordBreakProc(DirectoryEdit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteTransferDialog::Init(TStrings * Sessions,
@@ -100,6 +98,8 @@ void __fastcall TRemoteTransferDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TRemoteTransferDialog::FormShow(TObject * /*Sender*/)
 {
+  InstallPathWordBreakProc(DirectoryEdit);
+
   UpdateControls();
   DirectoryEdit->SetFocus();
 }

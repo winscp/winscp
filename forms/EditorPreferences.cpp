@@ -41,8 +41,6 @@ __fastcall TEditorPreferencesDialog::TEditorPreferencesDialog(
 {
   SetCorrectFormParent(this);
   UseSystemSettings(this);
-
-  InstallPathWordBreakProc(ExternalEditorEdit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::Init(TEditorPreferencesMode Mode, bool MayRemote)
@@ -211,5 +209,10 @@ void __fastcall TEditorPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
 void __fastcall TEditorPreferencesDialog::MaskEditExit(TObject * /*Sender*/)
 {
   ValidateMaskEdit(MaskEdit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorPreferencesDialog::FormShow(TObject * /*Sender*/)
+{
+  InstallPathWordBreakProc(ExternalEditorEdit);
 }
 //---------------------------------------------------------------------------

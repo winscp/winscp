@@ -952,6 +952,7 @@ private:
   unsigned int InputTimeout();
   void __fastcall TimerTimer(TObject * Sender);
   UnicodeString ExpandCommand(UnicodeString Command, TStrings * ScriptParameters);
+  void __fastcall Failed(bool & AnyError);
 };
 //---------------------------------------------------------------------------
 TConsoleRunner::TConsoleRunner(TConsole * Console) :
@@ -1675,6 +1676,15 @@ UnicodeString TConsoleRunner::ExpandCommand(UnicodeString Command, TStrings * Sc
   return Command;
 }
 //---------------------------------------------------------------------------
+void __fastcall TConsoleRunner::Failed(bool & AnyError)
+{
+  if (FScript != NULL)
+  {
+    FScript->Log(llMessage, L"Failed");
+  }
+  AnyError = true;
+}
+//---------------------------------------------------------------------------
 int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Options,
   TStrings * ScriptCommands, TStrings * ScriptParameters)
 {
@@ -1707,6 +1717,10 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
       if (!Session.IsEmpty())
       {
         FScript->Connect(Session, Options, false);
+        if (FCommandError)
+        {
+          Failed(AnyError);
+        }
       }
 
       FScript->Groups = Options->SwitchValue(L"xmlgroups", true, false);
@@ -1739,8 +1753,7 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
 
           if (FCommandError)
           {
-            FScript->Log(llMessage, L"Failed");
-            AnyError = true;
+            Failed(AnyError);
             if (FScript->Batch == TScript::BatchAbort)
             {
               Result = false;
@@ -1757,12 +1770,8 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
     }
     catch(Exception & E)
     {
-      if (FScript != NULL)
-      {
-        FScript->Log(llMessage, L"Failed");
-      }
+      Failed(AnyError);
       ShowException(&E);
-      AnyError = true;
     }
 
     ExitCode = AnyError ? RESULT_ANY_ERROR : RESULT_SUCCESS;

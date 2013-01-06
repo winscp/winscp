@@ -44,7 +44,6 @@ __fastcall TFileSystemInfoDialog::TFileSystemInfoDialog(TComponent * AOwner,
 
   CertificateGroup->Top = HostKeyGroup->Top;
 
-  InstallPathWordBreakProc(SpaceAvailablePathEdit);
   ReadOnlyControl(HostKeyFingerprintEdit);
   ReadOnlyControl(CertificateFingerprintEdit);
   ReadOnlyControl(InfoMemo);
@@ -289,6 +288,8 @@ void __fastcall TFileSystemInfoDialog::CopyClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::FormShow(TObject * /*Sender*/)
 {
+  InstallPathWordBreakProc(SpaceAvailablePathEdit);
+
   PageControl->ActivePage = ProtocolSheet;
   FeedControls();
 }

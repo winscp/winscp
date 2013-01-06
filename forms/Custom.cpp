@@ -211,8 +211,6 @@ __fastcall TSaveSessionDialog::TSaveSessionDialog(
   SessionNameCombo = new TComboBox(this);
   SessionNameCombo->AutoComplete = false;
   AddComboBox(SessionNameCombo, CreateLabel(LoadStr(SAVE_SESSION_PROMPT)));
-  // parent has to be set before following
-  InstallPathWordBreakProc(SessionNameCombo);
   SessionNameCombo->Items->BeginUpdate();
   try
   {
@@ -254,6 +252,8 @@ bool __fastcall TSaveSessionDialog::Execute(UnicodeString & SessionName, bool & 
 //---------------------------------------------------------------------------
 void __fastcall TSaveSessionDialog::DoShow()
 {
+  InstallPathWordBreakProc(SessionNameCombo);
+
   int P = SessionNameCombo->Text.LastDelimiter(L"/");
   if (P > 0)
   {

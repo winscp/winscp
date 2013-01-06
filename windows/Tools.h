@@ -49,6 +49,7 @@ void __fastcall CopyToClipboard(UnicodeString Text);
 void __fastcall CopyToClipboard(TStrings * Strings);
 void __fastcall ShutDownWindows();
 void __fastcall EditSelectBaseName(HWND Edit);
+TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo);
 //---------------------------------------------------------------------------
 #define IUNKNOWN \
   virtual HRESULT __stdcall QueryInterface(const GUID& IID, void **Obj) \

@@ -19,6 +19,7 @@
 #include "Tools.h"
 #include <WinHelpViewer.hpp>
 #include <PasTools.hpp>
+#include <System.Win.ComObj.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -215,10 +216,6 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
   int SpecialFolder, bool Return)
 {
   IShellLink* pLink = NULL;
-  IPersistFile* pPersistFile;
-  LPMALLOC      ShellMalloc;
-  LPITEMIDLIST  DesktopPidl;
-  wchar_t DesktopDir[MAX_PATH];
 
   if (SpecialFolder < 0)
   {
@@ -227,23 +224,6 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
 
   try
   {
-    if (FAILED(SHGetMalloc(&ShellMalloc))) throw Exception(L"");
-
-    if (FAILED(SHGetSpecialFolderLocation(NULL, SpecialFolder, &DesktopPidl)))
-    {
-      throw Exception(L"");
-    }
-
-    if (!SHGetPathFromIDList(DesktopPidl, DesktopDir))
-    {
-      ShellMalloc->Free(DesktopPidl);
-      ShellMalloc->Release();
-      throw Exception(L"");
-    }
-
-    ShellMalloc->Free(DesktopPidl);
-    ShellMalloc->Release();
-
     if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
          IID_IShellLink, (void **) &pLink)))
     {
@@ -257,18 +237,34 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
         // without this icons are not shown at least in Windows 7 jumplist
         pLink->SetIconLocation(File.c_str(), 0);
 
+        IPersistFile* pPersistFile;
         if (!Return &&
             SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
         {
           try
           {
+            LPMALLOC      ShellMalloc;
+            LPITEMIDLIST  DesktopPidl;
+            wchar_t DesktopDir[MAX_PATH];
+
+            OleCheck(SHGetMalloc(&ShellMalloc));
+
+            try
+            {
+              OleCheck(SHGetSpecialFolderLocation(NULL, SpecialFolder, &DesktopPidl));
+
+              OleCheck(SHGetPathFromIDList(DesktopPidl, DesktopDir));
+            }
+            __finally
+            {
+              ShellMalloc->Free(DesktopPidl);
+              ShellMalloc->Release();
+            }
+
             WideString strShortCutLocation(DesktopDir);
             // Name can contain even path (e.g. to create quick launch icon)
             strShortCutLocation += UnicodeString(L"\\") + Name + L".lnk";
-            if (!SUCCEEDED(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE)))
-            {
-              RaiseLastOSError();
-            }
+            OleCheck(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE));
           }
           __finally
           {
@@ -321,18 +317,20 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(TSessionData * Session,
 }
 //---------------------------------------------------------------------------
 template<class TEditControl>
-void __fastcall ValidateMaskEditT(TEditControl * Edit, int ForceDirectoryMasks)
+void __fastcall ValidateMaskEditT(const UnicodeString & Mask, TEditControl * Edit, int ForceDirectoryMasks)
 {
   assert(Edit != NULL);
   TFileMasks Masks(ForceDirectoryMasks);
   try
   {
-    Masks = Edit->Text;
+    Masks = Mask;
   }
   catch(EFileMasksException & E)
   {
     ShowExtendedException(&E);
     Edit->SetFocus();
+    // This does not work for TEdit and TMemo (descendants of TCustomEdit) anymore,
+    // as it re-selects whole text on exception in TCustomEdit.CMExit
     Edit->SelStart = E.ErrorStart - 1;
     Edit->SelLength = E.ErrorLen;
     Abort();
@@ -341,17 +339,27 @@ void __fastcall ValidateMaskEditT(TEditControl * Edit, int ForceDirectoryMasks)
 //---------------------------------------------------------------------------
 void __fastcall ValidateMaskEdit(TComboBox * Edit)
 {
-  ValidateMaskEditT(Edit, -1);
+  ValidateMaskEditT(Edit->Text, Edit, -1);
 }
 //---------------------------------------------------------------------------
 void __fastcall ValidateMaskEdit(TEdit * Edit)
 {
-  ValidateMaskEditT(Edit, -1);
+  ValidateMaskEditT(Edit->Text, Edit, -1);
 }
 //---------------------------------------------------------------------------
 void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory)
 {
-  ValidateMaskEditT(Edit, Directory ? 1 : 0);
+  UnicodeString Mask = TFileMasks::ComposeMaskStr(GetUnwrappedMemoLines(Edit), Directory);
+  ValidateMaskEditT(Mask, Edit, Directory ? 1 : 0);
+}
+//---------------------------------------------------------------------------
+TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo)
+{
+  TStrings * Result = new TStringList();
+  // This removes soft linebreakes when text in memo wraps
+  // (Memo->Lines includes soft linebreaks, while Memo->Text does not)
+  Result->Text = Memo->Text;
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall ExitActiveControl(TForm * Form)

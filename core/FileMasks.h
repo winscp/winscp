@@ -33,9 +33,10 @@ public:
   static UnicodeString __fastcall ComposeMaskStr(
     TStrings * IncludeFileMasksStr, TStrings * ExcludeFileMasksStr,
     TStrings * IncludeDirectoryMasksStr, TStrings * ExcludeDirectoryMasksStr);
+  static UnicodeString __fastcall ComposeMaskStr(TStrings * MasksStr, bool Directory);
 
   __fastcall TFileMasks();
-  __fastcall TFileMasks(int ForceDirectoryMasks, bool NoImplicitMatch);
+  __fastcall TFileMasks(int ForceDirectoryMasks);
   __fastcall TFileMasks(const TFileMasks & Source);
   __fastcall TFileMasks(const UnicodeString & AMasks);
   __fastcall ~TFileMasks();
@@ -65,7 +66,6 @@ public:
 
 private:
   int FForceDirectoryMasks;
-  bool FNoImplicitMatch;
   UnicodeString FStr;
 
   struct TMaskMask
@@ -117,7 +117,6 @@ private:
     const UnicodeString Path, const TParams * Params, const TMasks & Masks, bool Recurse);
   static inline bool __fastcall MatchesMaskMask(const TMaskMask & MaskMask, const UnicodeString & Str);
   static inline bool __fastcall IsAnyMask(const UnicodeString & Mask);
-  static UnicodeString __fastcall ComposeMaskStr(TStrings * MasksStr, bool Directory);
   void __fastcall ThrowError(int Start, int End);
 };
 //---------------------------------------------------------------------------

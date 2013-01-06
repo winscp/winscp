@@ -41,10 +41,6 @@ __fastcall TCopyParamPresetDialog::TCopyParamPresetDialog(TComponent * Owner,
   FMode = Mode;
   FCurrentRuleData = CurrentRuleData;
   Caption = LoadStr(Mode == cpmEdit ? COPY_PARAM_EDIT : COPY_PARAM_ADD);
-  InstallPathWordBreakProc(HostNameEdit);
-  InstallPathWordBreakProc(UserNameEdit);
-  InstallPathWordBreakProc(RemoteDirectoryEdit);
-  InstallPathWordBreakProc(LocalDirectoryEdit);
   HintLabel(RuleMaskHintText,
     FORMAT(L"%s\n \n%s",(LoadStr(MASK_HINT2), LoadStr(COMBINING_MASKS_HINT))));
 }
@@ -162,6 +158,11 @@ TCopyParamRule * __fastcall TCopyParamPresetDialog::GetRule()
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamPresetDialog::FormShow(TObject * /*Sender*/)
 {
+  InstallPathWordBreakProc(HostNameEdit);
+  InstallPathWordBreakProc(UserNameEdit);
+  InstallPathWordBreakProc(RemoteDirectoryEdit);
+  InstallPathWordBreakProc(LocalDirectoryEdit);
+
   UpdateControls();
 }
 //---------------------------------------------------------------------------

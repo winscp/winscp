@@ -66,8 +66,6 @@ __fastcall TFullSynchronizeDialog::TFullSynchronizeDialog(TComponent* Owner)
   FSaveMode = false;
   FOptions = 0;
   FPresetsMenu = new TPopupMenu(this);
-  InstallPathWordBreakProc(LocalDirectoryEdit);
-  InstallPathWordBreakProc(RemoteDirectoryEdit);
   FSynchronizeBySizeCaption = SynchronizeBySizeCheck->Caption;
   HotTrackLabel(CopyParamLabel);
 }
@@ -346,6 +344,9 @@ void __fastcall TFullSynchronizeDialog::CopyParamClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::FormShow(TObject * /*Sender*/)
 {
+  InstallPathWordBreakProc(LocalDirectoryEdit);
+  InstallPathWordBreakProc(RemoteDirectoryEdit);
+
   UpdateControls();
 }
 //---------------------------------------------------------------------------

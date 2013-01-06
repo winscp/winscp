@@ -73,8 +73,6 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner,
   FSynchronizeOptions = NULL;
   FStartImmediatelly = StartImmediatelly;
 
-  InstallPathWordBreakProc(LocalDirectoryEdit);
-  InstallPathWordBreakProc(RemoteDirectoryEdit);
   HotTrackLabel(CopyParamLabel);
 
   if (!IsGlobalMinimizeHandler())
@@ -435,6 +433,9 @@ bool __fastcall TSynchronizeDialog::GetSaveSettings()
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::FormShow(TObject * /*Sender*/)
 {
+  InstallPathWordBreakProc(LocalDirectoryEdit);
+  InstallPathWordBreakProc(RemoteDirectoryEdit);
+
   // OnShow gets called more than once sometimes
   if (!FSynchronizing)
   {

@@ -1614,49 +1614,72 @@ function TDriveView.FindNodeToPath(Path: string): TTreeNode;
 var
   Drive: Char;
 
-  function SearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode;
+  function SearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode; forward;
+
+  function DoSearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode;
   var
     i: Integer;
     Node: TTreeNode;
     Dir: string;
   begin
+    {Extract first directory from path:}
+    i := Pos('\', Path);
+
+    if i = 0 then
+      i := Length(Path);
+
+    Dir := System.Copy(Path, 1, i);
+    System.Delete(Path, 1, i);
+
+    if Dir[Length(Dir)] = '\' then
+      SetLength(Dir, Pred(Length(Dir)));
+
+    Node := ParentNode.GetFirstChild;
+    if not Assigned(Node) then
+    begin
+      ValidateDirectoryEx(ParentNode, rsRecursiveExisting, True);
+      Node := ParentNode.GetFirstChild;
+    end;
+
+    Result := nil;
+    while Assigned(Node) do
+    begin
+      if (UpperCase(GetDirName(Node)) = Dir) or (TNodeData(Node.Data).ShortName = Dir) then
+      begin
+        if Length(Path) > 0 then
+          Result := SearchSubDirs(Node, Path)
+        else
+          Result := Node;
+        Exit;
+      end;
+      Node := ParentNode.GetNextChild(Node);
+    end;
+  end;
+
+  function SearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode;
+  var
+    Read: Boolean;
+  begin
     Result := nil;
     if Length(Path) > 0 then
     begin
-      {Extract first directory from path:}
-      i := Pos('\', Path);
-
-      if i = 0 then
-        i := Length(Path);
-
-      Dir := System.Copy(Path, 1, i);
-      System.Delete(Path, 1, i);
-
-      if Dir[Length(Dir)] = '\' then
-        SetLength(Dir, Pred(Length(Dir)));
+      Read := False;
 
       if not TNodeData(ParentNode.Data).Scanned then
+      begin
         ReadSubDirs(ParentNode, GetDriveTypetoNode(ParentNode));
-
-      Result := nil;
-      Node := ParentNode.GetFirstChild;
-      if not Assigned(Node) then
-      Begin
-        ValidateDirectoryEx(ParentNode, rsRecursiveExisting, True);
-        Node := ParentNode.GetFirstChild;
+        Read := True;
       end;
 
-      while Assigned(Node) do
+      Result := DoSearchSubDirs(ParentNode, Path);
+
+      // reread subfolders, just in case the directory we look for was just created
+      // (as can happen when navigating to new remote directory with synchronized
+      // browsing enabled and opting to create the non-existing local directory)
+      if (not Assigned(Result)) and (not Read) then
       begin
-        if (UpperCase(GetDirName(Node)) = Dir) or (TNodeData(Node.Data).ShortName = Dir) then
-        begin
-          if Length(Path) > 0 then
-            Result := SearchSubDirs(Node, Path)
-          else
-            Result := Node;
-          Exit;
-        end;
-        Node := ParentNode.GetNextChild(Node);
+        ValidateDirectoryEx(ParentNode, rsNoRecursive, True);
+        Result := DoSearchSubDirs(ParentNode, Path);
       end;
     end;
   end; {SearchSubDirs}
@@ -1665,6 +1688,10 @@ begin {FindNodeToPath}
   Result := nil;
   if Length(Path) < 3 then
     Exit;
+
+  // Particularly when used by TDirView to delegate browsing to
+  // hidden drive view, the handle may not be created
+  HandleNeeded;
 
   Drive := Upcase(Path[1]);
   if (Drive < FirstDrive) or (Drive > LastDrive) then

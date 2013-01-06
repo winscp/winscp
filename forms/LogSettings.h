@@ -54,6 +54,7 @@ public:
   __property bool EnableLogWindow = { read = FEnableLogWindow, write = SetEnableLogWindow };
 protected:
   void __fastcall UpdateControls();
+  virtual void __fastcall CreateWnd();
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TLoggingFrame *LoggingFrame;

@@ -17,6 +17,7 @@ object CustomCommandDialog: TCustomCommandDialog
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
+  OnShow = FormShow
   DesignSize = (
     396
     282)

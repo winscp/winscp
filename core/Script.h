@@ -21,6 +21,8 @@ typedef void __fastcall (__closure *TScriptSynchronizeStartStop)(TScript * Scrip
 class TScriptProcParams : public TOptions
 {
 public:
+  friend class TManagementScript;
+
   __fastcall TScriptProcParams(UnicodeString ParamsStr);
 
   __property UnicodeString ParamsStr = { read = FParamsStr };
@@ -124,6 +126,8 @@ protected:
   virtual bool __fastcall HandleExtendedException(Exception * E,
     TTerminal * Terminal = NULL);
   void __fastcall TerminalCaptureLog(const UnicodeString & AddedLine, bool StdError);
+  virtual UnicodeString __fastcall GetLogCmd(const UnicodeString & FullCommand,
+    const UnicodeString & Command, const UnicodeString & Params);
 
 private:
   void __fastcall Init();
@@ -190,6 +194,8 @@ protected:
     TStrings * Results, bool & Result, void * Arg);
   inline bool __fastcall Synchronizing();
   inline void __fastcall ShowPendingProgress();
+  virtual UnicodeString __fastcall GetLogCmd(const UnicodeString & FullCommand,
+    const UnicodeString & Command, const UnicodeString & Params);
 
   void __fastcall ExitProc(TScriptProcParams * Parameters);
   void __fastcall OpenProc(TScriptProcParams * Parameters);

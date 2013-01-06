@@ -38,8 +38,6 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   TCopyParamType DefParams;
   Params = DefParams;
 
-  InstallPathWordBreakProc(AsciiFileMaskCombo);
-  InstallPathWordBreakProc(IncludeFileMaskCombo);
   HintLabel(IncludeFileMaskHintText,
     FORMAT(L"%s\n \n%s\n \n%s\n \n%s\n \n%s\n \n%s", (LoadStr(MASK_HINT2),
       LoadStr(FILE_MASK_EX_HINT), LoadStr(COMBINING_MASKS_HINT),
@@ -298,6 +296,20 @@ void __fastcall TCopyParamsFrame::IncludeFileMaskButtonClick(TObject * /*Sender*
   if (DoEditMaskDialog(Masks))
   {
     IncludeFileMaskCombo->Text = Masks.Masks;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyParamsFrame::CreateWnd()
+{
+  TFrame::CreateWnd();
+
+  if (AsciiFileMaskCombo != NULL)
+  {
+    InstallPathWordBreakProc(AsciiFileMaskCombo);
+  }
+  if (IncludeFileMaskCombo != NULL)
+  {
+    InstallPathWordBreakProc(IncludeFileMaskCombo);
   }
 }
 //---------------------------------------------------------------------------

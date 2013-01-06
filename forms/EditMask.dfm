@@ -15,6 +15,7 @@ object EditMaskDialog: TEditMaskDialog
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
+  OnShow = FormShow
   DesignSize = (
     425
     484)

@@ -75,7 +75,6 @@ __fastcall TSelectMaskDialog::TSelectMaskDialog(TComponent* Owner)
   DefaultFileFilter(FFileFilter);
   SetFileFilter(FFileFilter);
   UseSystemSettings(this);
-  InstallPathWordBreakProc(MaskEdit);
   HintLabel(HintText,
     FORMAT(L"%s\n \n%s\n \n%s\n \n%s", (LoadStr(MASK_HINT2), LoadStr(FILE_MASK_EX_HINT),
       LoadStr(COMBINING_MASKS_HINT), LoadStr(MASK_HELP))));
@@ -158,5 +157,10 @@ void __fastcall TSelectMaskDialog::HelpButtonClick(TObject * /*Sender*/)
 void __fastcall TSelectMaskDialog::ClearButtonClick(TObject * /*Sender*/)
 {
   MaskEdit->Text = L"";
+}
+//---------------------------------------------------------------------------
+void __fastcall TSelectMaskDialog::FormShow(TObject * /*Sender*/)
+{
+  InstallPathWordBreakProc(MaskEdit);
 }
 //---------------------------------------------------------------------------

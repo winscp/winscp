@@ -848,7 +848,13 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 			pData->nRequestType=FZ_ASYNCREQUEST_GSS_AUTHFAILED;
 			pData->nRequestID=m_pOwner->GetNextAsyncRequestID();
 			if (!PostMessage(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_ASYNCREQUEST, FZ_ASYNCREQUEST_GSS_AUTHFAILED), (LPARAM)pData))
+			{
 				delete pData;
+			}
+			else
+			{
+				m_bCheckForTimeout = FALSE;
+			}
 		}
 		else
 		{
@@ -869,7 +875,13 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 			pData->nRequestType = FZ_ASYNCREQUEST_GSS_AUTHFAILED;
 			pData->nRequestID = m_pOwner->GetNextAsyncRequestID();
 			if (!PostMessage(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_ASYNCREQUEST, FZ_ASYNCREQUEST_GSS_AUTHFAILED), (LPARAM)pData))
+			{
 				delete pData;
+			}
+			else
+			{
+				m_bCheckForTimeout = FALSE;
+			}
 			return;
 		}
 		else
@@ -941,7 +953,13 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 				pData->nOldOpState = m_Operation.nOpState;
 				m_Operation.nOpState = CONNECT_GSS_NEEDUSER;
 				if (!PostMessage(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_ASYNCREQUEST, FZ_ASYNCREQUEST_GSS_NEEDUSER), (LPARAM)pData))
+				{
 					delete pData;
+				}
+				else
+				{
+					m_bCheckForTimeout = FALSE;
+				}
 				return;
 			}
 		}
@@ -952,7 +970,13 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 			pData->nOldOpState = m_Operation.nOpState;
 			m_Operation.nOpState = CONNECT_GSS_NEEDPASS;
 			if (!PostMessage(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_ASYNCREQUEST, FZ_ASYNCREQUEST_GSS_NEEDPASS), (LPARAM)pData))
+			{
 				delete pData;
+			}
+			else
+			{
+				m_bCheckForTimeout = FALSE;
+			}
 			return;
 		}
 	}
@@ -975,6 +999,10 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 				{
 					delete pNeedPassRequestData;
 					ResetOperation(FZ_REPLY_ERROR);
+				}
+				else
+				{
+					m_bCheckForTimeout = FALSE;
 				}
 				pData->waitForAsyncRequest = true;
 				return;
@@ -1026,6 +1054,10 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 				{
 					delete pNeedPassRequestData;
 					ResetOperation(FZ_REPLY_ERROR);
+				}
+				else
+				{
+					m_bCheckForTimeout = FALSE;
 				}
 				pData->waitForAsyncRequest = true;
 				return;
@@ -5808,6 +5840,7 @@ void CFtpControlSocket::SetAsyncRequestResult(int nAction, CAsyncRequestData *pD
 		}
 		else
 		{
+			m_bCheckForTimeout = TRUE;
 			m_CurrentServer.pass=((CNeedPassRequestData *)pData)->Password;
 			m_Operation.nOpState=((CNeedPassRequestData *)pData)->nOldOpState;
 			CLogonData *pLogonData = static_cast<CLogonData *>(m_Operation.pData);
@@ -5831,6 +5864,7 @@ void CFtpControlSocket::SetAsyncRequestResult(int nAction, CAsyncRequestData *pD
 			ShowStatus(IDS_ERRORMSG_INTERRUPTED,1);
 			break;
 		}
+		m_bCheckForTimeout = TRUE;
 		m_Operation.nOpState=-1;
 		LogOnToServer(TRUE);
 		break;
@@ -5851,6 +5885,7 @@ void CFtpControlSocket::SetAsyncRequestResult(int nAction, CAsyncRequestData *pD
 		}
 		else
 		{
+			m_bCheckForTimeout = TRUE;
 			m_CurrentServer.pass=((CGssNeedPassRequestData *)pData)->pass;
 			m_Operation.nOpState=((CGssNeedPassRequestData *)pData)->nOldOpState;
 			LogOnToServer(TRUE);
@@ -5873,6 +5908,7 @@ void CFtpControlSocket::SetAsyncRequestResult(int nAction, CAsyncRequestData *pD
 		}
 		else
 		{
+			m_bCheckForTimeout = TRUE;
 			m_CurrentServer.user = ((CGssNeedUserRequestData *)pData)->user;
 			m_Operation.nOpState=((CGssNeedUserRequestData *)pData)->nOldOpState;
 			LogOnToServer(TRUE);
@@ -5964,12 +6000,15 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 
 						pRequestData->pCertData = pData;
 
-						m_bCheckForTimeout = FALSE;
 						if (!PostMessage(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_ASYNCREQUEST, FZ_ASYNCREQUEST_VERIFYCERT), (LPARAM)pRequestData))
 						{
 							delete pRequestData->pCertData;
 							delete pRequestData;
 							ResetOperation(FZ_REPLY_ERROR);
+						}
+						else
+						{
+							m_bCheckForTimeout = FALSE;
 						}
 						delete [] iter->str;
 						continue;

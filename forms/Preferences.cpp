@@ -76,9 +76,6 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   EnableControl(UpdatesBetaVersionsLabel, UpdatesBetaVersionsCombo->Enabled);
 
   LoggingFrame->Init();
-  InstallPathWordBreakProc(RandomSeedFileEdit);
-  InstallPathWordBreakProc(DDTemporaryDirectoryEdit);
-  InstallPathWordBreakProc(PuttyPathEdit);
   HintLabel(ShellIconsText);
   HotTrackLabel(CopyParamLabel);
 
@@ -670,6 +667,10 @@ void __fastcall TPreferencesDialog::SetPreferencesMode(TPreferencesMode value)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
 {
+  InstallPathWordBreakProc(RandomSeedFileEdit);
+  InstallPathWordBreakProc(DDTemporaryDirectoryEdit);
+  InstallPathWordBreakProc(PuttyPathEdit);
+
   PrepareNavigationTree(NavigationTree);
 
   switch (PreferencesMode) {

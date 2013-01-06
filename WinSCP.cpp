@@ -31,11 +31,21 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 
     try
     {
-      ConfigureInterface();
-      SetupInitialize();
+      try
+      {
+        ConfigureInterface();
+        SetupInitialize();
 
-      Application->Title = AppName;
-      Result = Execute();
+        Application->Title = AppName;
+        Result = Execute();
+      }
+      catch (Exception & E)
+      {
+        // Capture most errors before Usage class is released,
+        // so that we can count them
+        Configuration->Usage->Inc(L"GlobalFailures");
+        ShowExtendedException(&E);
+      }
     }
     __finally
     {

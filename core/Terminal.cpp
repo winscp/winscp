@@ -874,7 +874,7 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->PublicKeyFile = FSessionData->TunnelPublicKeyFile;
     FTunnelData->TunnelPortFwd = FORMAT(L"L%d\t%s:%d",
       (FTunnelLocalPortNumber, FSessionData->HostName, FSessionData->PortNumber));
-    FTunnelData->HostKey = FTunnelData->TunnelHostKey;
+    FTunnelData->HostKey = FSessionData->TunnelHostKey;
     FTunnelData->ProxyMethod = FSessionData->ProxyMethod;
     FTunnelData->ProxyHost = FSessionData->ProxyHost;
     FTunnelData->ProxyPort = FSessionData->ProxyPort;
@@ -4663,9 +4663,9 @@ void __fastcall TTerminal::FileFind(UnicodeString FileName,
     MaskParams.Modification = File->Modification;
 
     UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
-    bool ImplicitMatch;
+    bool ImplicitMatch = false;
     if (AParams->FileMask.Matches(FullFileName, false,
-         File->IsDirectory, &MaskParams, ImplicitMatch))
+         File->IsDirectory, &MaskParams))
     {
       if (!ImplicitMatch)
       {

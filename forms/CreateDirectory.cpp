@@ -40,8 +40,6 @@ __fastcall TCreateDirectoryDialog::TCreateDirectoryDialog(TComponent * AOwner):
 {
   UseSystemSettings(this);
 
-  InstallPathWordBreakProc(DirectoryEdit);
-
   RightsFrame->AllowAddXToDirectories = false;
 }
 //---------------------------------------------------------------------
@@ -101,6 +99,8 @@ void __fastcall TCreateDirectoryDialog::DirectoryEditChange(TObject * /*Sender*/
 //---------------------------------------------------------------------------
 void __fastcall TCreateDirectoryDialog::FormShow(TObject * /*Sender*/)
 {
+  InstallPathWordBreakProc(DirectoryEdit);
+
   UpdateControls();
 }
 //---------------------------------------------------------------------------

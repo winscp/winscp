@@ -28,6 +28,7 @@ __published:
   void __fastcall MaskEditExit(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall ClearButtonClick(TObject *Sender);
+  void __fastcall FormShow(TObject *Sender);
 private:
   TFileFilter FFileFilter;
   void __fastcall SetFileFilter(TFileFilter value);

@@ -36,10 +36,6 @@ __fastcall TEditMaskDialog::TEditMaskDialog(TComponent* Owner)
         : TForm(Owner)
 {
   UseSystemSettings(this);
-  InstallPathWordBreakProc(IncludeFileMasksMemo);
-  InstallPathWordBreakProc(ExcludeFileMasksMemo);
-  InstallPathWordBreakProc(IncludeDirectoryMasksMemo);
-  InstallPathWordBreakProc(ExcludeDirectoryMasksMemo);
   HintLabel(MaskHintText,
     FORMAT(L"%s\n \n%s\n \n%s\n \n%s", (LoadStr(MASK_HINT2), LoadStr(FILE_MASK_EX_HINT), LoadStr(PATH_MASK_HINT2), LoadStr(MASK_HELP))));
   ReadOnlyControl(MaskMemo);
@@ -87,10 +83,10 @@ void __fastcall TEditMaskDialog::SaveFileMasks(TFileMasks & Mask)
   TStrings * ExcludeDirectoryMasks = NULL;
   try
   {
-    IncludeFileMasks = GetFileMasks(IncludeFileMasksMemo);
-    ExcludeFileMasks = GetFileMasks(ExcludeFileMasksMemo);
-    IncludeDirectoryMasks = GetFileMasks(IncludeDirectoryMasksMemo);
-    ExcludeDirectoryMasks = GetFileMasks(ExcludeDirectoryMasksMemo);
+    IncludeFileMasks = GetUnwrappedMemoLines(IncludeFileMasksMemo);
+    ExcludeFileMasks = GetUnwrappedMemoLines(ExcludeFileMasksMemo);
+    IncludeDirectoryMasks = GetUnwrappedMemoLines(IncludeDirectoryMasksMemo);
+    ExcludeDirectoryMasks = GetUnwrappedMemoLines(ExcludeDirectoryMasksMemo);
 
     Mask =
       TFileMasks::ComposeMaskStr(
@@ -104,15 +100,6 @@ void __fastcall TEditMaskDialog::SaveFileMasks(TFileMasks & Mask)
     delete IncludeDirectoryMasks;
     delete ExcludeDirectoryMasks;
   }
-}
-//---------------------------------------------------------------------------
-TStrings * __fastcall TEditMaskDialog::GetFileMasks(TMemo * Memo)
-{
-  TStrings * Result = new TStringList();
-  // This removes soft linebreakes when text in memo wraps
-  // (Memo->Lines includes soft linebreaks, while Memo->Text does not)
-  Result->Text = Memo->Text;
-  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditMaskDialog::HelpButtonClick(TObject * /*Sender*/)
@@ -171,5 +158,13 @@ void __fastcall TEditMaskDialog::FormKeyDown(
     ModalResult = mrOk;
     Key = 0;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditMaskDialog::FormShow(TObject * /*Sender*/)
+{
+  InstallPathWordBreakProc(IncludeFileMasksMemo);
+  InstallPathWordBreakProc(ExcludeFileMasksMemo);
+  InstallPathWordBreakProc(IncludeDirectoryMasksMemo);
+  InstallPathWordBreakProc(ExcludeDirectoryMasksMemo);
 }
 //---------------------------------------------------------------------------

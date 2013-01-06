@@ -68,6 +68,7 @@ protected:
   void __fastcall UpdateControls();
   virtual void __fastcall SetEnabled(Boolean Value);
   void __fastcall UpdateRightsByStr();
+  virtual void __fastcall CreateWnd();
 
 public:
   __fastcall TCopyParamsFrame(TComponent* Owner);

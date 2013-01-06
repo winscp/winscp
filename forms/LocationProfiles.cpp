@@ -201,9 +201,6 @@ __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner)
   FSharedScrollOnDragOver = new TTreeViewScrollOnDragOver(SharedProfilesView, true);
 
   UseSystemSettings(this);
-
-  InstallPathWordBreakProc(LocalDirectoryEdit);
-  InstallPathWordBreakProc(RemoteDirectoryEdit);
 }
 //---------------------------------------------------------------------
 __fastcall TLocationProfilesDialog::~TLocationProfilesDialog()
@@ -769,6 +766,9 @@ void __fastcall TLocationProfilesDialog::ProfilesViewDblClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::FormShow(TObject * /*Sender*/)
 {
+  InstallPathWordBreakProc(LocalDirectoryEdit);
+  InstallPathWordBreakProc(RemoteDirectoryEdit);
+
   FindProfile();
   if (OperationSide == osLocal)
   {

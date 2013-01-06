@@ -47,7 +47,6 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner,
   FCustomCommandList = CustomCommandList;
   FMode = Mode;
   FOnValidate = OnValidate;
-  InstallPathWordBreakProc(CommandEdit);
   HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT2));
 
   int CaptionRes;
@@ -278,5 +277,10 @@ void __fastcall TCustomCommandDialog::GetCommand(TCustomCommandType & Command)
   {
     Command.ShortCut = GetShortCutCombo(ShortCutCombo);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandDialog::FormShow(TObject * /*Sender*/)
+{
+  InstallPathWordBreakProc(CommandEdit);
 }
 //---------------------------------------------------------------------------

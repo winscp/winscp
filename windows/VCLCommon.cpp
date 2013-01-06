@@ -630,6 +630,10 @@ friend void __fastcall InstallPathWordBreakProc(TWinControl * Control);
 //---------------------------------------------------------------------------
 void __fastcall InstallPathWordBreakProc(TWinControl * Control)
 {
+  // Since we are setting Application->ModalPopupMode = pmAuto,
+  // this has to be called from OnShow, not from constructor anymore,
+  // to have any effect
+
   HWND Wnd;
   if (dynamic_cast<TCustomCombo*>(Control) != NULL)
   {

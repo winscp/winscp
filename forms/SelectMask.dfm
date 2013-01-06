@@ -13,6 +13,7 @@ object SelectMaskDialog: TSelectMaskDialog
   OldCreateOrder = True
   Position = poDesigned
   OnCloseQuery = FormCloseQuery
+  OnShow = FormShow
   DesignSize = (
     361
     142)

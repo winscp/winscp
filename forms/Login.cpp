@@ -140,11 +140,6 @@ void __fastcall TLoginDialog::InitControls()
 
   ComboAutoSwitchInitialize(FtpListAllCombo);
 
-  InstallPathWordBreakProc(RemoteDirectoryEdit);
-  InstallPathWordBreakProc(LocalDirectoryEdit);
-  InstallPathWordBreakProc(PrivateKeyEdit);
-  InstallPathWordBreakProc(RecycleBinPathEdit);
-
   TunnelLocalPortNumberEdit->Items->BeginUpdate();
   try
   {
@@ -194,6 +189,11 @@ void __fastcall TLoginDialog::Init()
     UseSystemSettings(this, &FSystemSettings);
   }
   FInitialized = true;
+
+  InstallPathWordBreakProc(RemoteDirectoryEdit);
+  InstallPathWordBreakProc(LocalDirectoryEdit);
+  InstallPathWordBreakProc(PrivateKeyEdit);
+  InstallPathWordBreakProc(RecycleBinPathEdit);
 
   Caption = FORMAT(L"%s %s", (AppName, Caption));
 

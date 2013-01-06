@@ -44,8 +44,6 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner, TFindEvent OnFin
   FState = ffInit;
   FMinimizedByMe = false;
 
-  InstallPathWordBreakProc(MaskEdit);
-  InstallPathWordBreakProc(RemoteDirectoryEdit);
   FixComboBoxResizeBug(MaskEdit);
   FixComboBoxResizeBug(RemoteDirectoryEdit);
   HintLabel(MaskHintText,
@@ -319,6 +317,9 @@ void __fastcall TFileFindDialog::MinimizeApp()
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FormShow(TObject * /*Sender*/)
 {
+  InstallPathWordBreakProc(MaskEdit);
+  InstallPathWordBreakProc(RemoteDirectoryEdit);
+
   UpdateFormPosition(this, poOwnerFormCenter);
   RestoreFormSize(CustomWinConfiguration->FindFile.WindowParams, this);
   FileView->ColProperties->ParamsStr = CustomWinConfiguration->FindFile.ListParams;

@@ -5,12 +5,30 @@
 #include "Common.h"
 #include "Exceptions.h"
 #include "TextsCore.h"
+#include "Configuration.h"
+#include "CoreMain.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 bool __fastcall ExceptionMessage(Exception * E, UnicodeString & Message)
 {
   bool Result = true;
+  if (Configuration->Usage != NULL)
+  {
+    if (dynamic_cast<EAccessViolation*>(E) != NULL)
+    {
+      Configuration->Usage->Inc(L"AccessViolations");
+    }
+    else if (dynamic_cast<EExternal*>(E) != NULL)
+    {
+      Configuration->Usage->Inc(L"ExternalExceptions");
+    }
+    else if (dynamic_cast<EHeapException*>(E) != NULL)
+    {
+      Configuration->Usage->Inc(L"HeapExceptions");
+    }
+  }
+
   if (dynamic_cast<EAbort *>(E) != NULL)
   {
     Result = false;

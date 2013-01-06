@@ -47,9 +47,6 @@ __fastcall TSymlinkDialog::TSymlinkDialog(TComponent* Owner)
 {
   UseSystemSettings(this);
   FSide = osLocal;
-
-  InstallPathWordBreakProc(PointToEdit);
-  InstallPathWordBreakProc(FileNameEdit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSymlinkDialog::UpdateControls()
@@ -122,6 +119,9 @@ bool __fastcall TSymlinkDialog::Execute()
 //---------------------------------------------------------------------------
 void __fastcall TSymlinkDialog::FormShow(TObject * /*Sender*/)
 {
+  InstallPathWordBreakProc(PointToEdit);
+  InstallPathWordBreakProc(FileNameEdit);
+
   Caption = LoadStr(Edit ? LINK_EDIT_CAPTION : LINK_ADD_CAPTION);
   UpdateControls();
 }

@@ -29,9 +29,7 @@ __fastcall TLoggingFrame::TLoggingFrame(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::Init()
 {
-  InstallPathWordBreakProc(LogFileNameEdit3);
   HintLabel(LogFileNameHintText, LoadStr(LOG_FILE_HINT2));
-  InstallPathWordBreakProc(ActionsLogFileNameEdit);
   HintLabel(ActionsLogFileNameHintText, LoadStr(LOG_FILE_HINT2));
 
   // anchors does not apply for some reason to this particular control
@@ -146,5 +144,19 @@ void __fastcall TLoggingFrame::LogFileNameEditCreateEditDialog(
   USEDPARAM(DialogKind);
   assert(DialogKind == dkOpen);
   Dialog = new TOpenDialog(dynamic_cast<TComponent *>(Sender));
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoggingFrame::CreateWnd()
+{
+  TFrame::CreateWnd();
+
+  if (LogFileNameEdit3 != NULL)
+  {
+    InstallPathWordBreakProc(LogFileNameEdit3);
+  }
+  if (ActionsLogFileNameEdit != NULL)
+  {
+    InstallPathWordBreakProc(ActionsLogFileNameEdit);
+  }
 }
 //---------------------------------------------------------------------------

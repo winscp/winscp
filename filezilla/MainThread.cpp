@@ -445,7 +445,8 @@ void CMainThread::SetWorkingDir(t_directory *pWorkingDir)
 	{
 		t_directory *pDirectoryToSend=new t_directory;
 		*pDirectoryToSend=*pWorkingDir;
-		PostMessage(m_hOwnerWnd, m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_LISTDATA, 0), (LPARAM)pDirectoryToSend);
+		if (!PostMessage(m_hOwnerWnd, m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_LISTDATA, 0), (LPARAM)pDirectoryToSend))
+			delete pDirectoryToSend;
 	}
 
 	return;

@@ -43,6 +43,7 @@ public:
   virtual __fastcall ~TScriptCommands();
 
   void __fastcall Execute(const UnicodeString & Command, const UnicodeString & Params);
+  UnicodeString __fastcall ResolveCommand(const UnicodeString & Command);
 
   void __fastcall Register(const wchar_t * Command,
     const UnicodeString Description, const UnicodeString Help, TCommandProc Proc,
@@ -246,6 +247,20 @@ void __fastcall TScriptCommands::CheckParams(TOptions * Parameters,
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TScriptCommands::ResolveCommand(const UnicodeString & Command)
+{
+  UnicodeString Matches;
+  int Index = FindCommand(this, Command, &Matches);
+  if (Index >= 0)
+  {
+    return Strings[Index];
+  }
+  else
+  {
+    return UnicodeString();
+  }
+}
+//---------------------------------------------------------------------------
 // parameters are by purpose passed by (constant) reference.
 // because if passed by value (copy), UnicodeString reference is not for some reason
 // decreased on exit by exception, leading to memory leak
@@ -373,27 +388,34 @@ void __fastcall TScript::Log(TLogLineType Type, AnsiString Str)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TScript::GetLogCmd(const UnicodeString & FullCommand,
+  const UnicodeString & /*Command*/, const UnicodeString & /*Params*/)
+{
+  return FullCommand;
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::Command(UnicodeString Cmd)
 {
   try
   {
     if (!Cmd.Trim().IsEmpty() && (Cmd[1] != L';') && (Cmd[1] != L'#'))
     {
-      Log(llInput, Cmd);
-
-      if (FEcho)
-      {
-        PrintLine(Cmd);
-      }
-
       UnicodeString FullCmd = Cmd;
       UnicodeString Command;
       if (CutToken(Cmd, Command))
       {
+        UnicodeString LogCmd = GetLogCmd(FullCmd, Command, Cmd);
+        Log(llInput, LogCmd);
+
+        if (FEcho)
+        {
+          PrintLine(LogCmd);
+        }
+
         TTerminal * BeforeGroupTerminal = FGroups ? Terminal : NULL;
         if (BeforeGroupTerminal != NULL)
         {
-          BeforeGroupTerminal->ActionLog->BeginGroup(FullCmd);
+          BeforeGroupTerminal->ActionLog->BeginGroup(LogCmd);
         }
         int ASessionReopenTimeout = Configuration->SessionReopenTimeout;
         try
@@ -423,7 +445,7 @@ void __fastcall TScript::Command(UnicodeString Cmd)
             // this happens for "open" command
             if (AfterGroupTerminal != BeforeGroupTerminal)
             {
-              AfterGroupTerminal->ActionLog->BeginGroup(FullCmd);
+              AfterGroupTerminal->ActionLog->BeginGroup(LogCmd);
             }
             AfterGroupTerminal->ActionLog->EndGroup();
           }
@@ -1837,6 +1859,49 @@ bool __fastcall TManagementScript::HandleExtendedException(Exception * E,
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TManagementScript::GetLogCmd(const UnicodeString & FullCommand,
+  const UnicodeString & Command, const UnicodeString & Params)
+{
+  UnicodeString Result = FullCommand;
+  if (SameText(FCommands->ResolveCommand(Command), L"open"))
+  {
+    UnicodeString AParams = Params;
+    std::auto_ptr<TScriptProcParams> Parameters(new TScriptProcParams(L""));
+
+    UnicodeString MaskedParams;
+    UnicodeString Param;
+    UnicodeString RawParam;
+    while ((Parameters->ParamCount == 0) && CutToken(AParams, Param, &RawParam))
+    {
+      Parameters->Add(Param);
+      if (Parameters->ParamCount == 0)
+      {
+        AddToList(MaskedParams, RawParam, L" ");
+      }
+    }
+
+    if (Parameters->ParamCount > 0)
+    {
+      UnicodeString Session = Parameters->Param[1];
+
+      UnicodeString MaskedUrl;
+      bool DefaultsOnly;
+
+      std::auto_ptr<TSessionData> Data(
+        FStoredSessions->ParseUrl(Session, Parameters.get(), DefaultsOnly, NULL, NULL, &MaskedUrl));
+      if (Session != MaskedUrl)
+      {
+        // todo: quote, if necessary
+        AddToList(MaskedParams, MaskedUrl, L" ");
+        AddToList(MaskedParams, AParams, L" ");
+        Result = MaskedParams;
+      }
+    }
+  }
+
+  return TScript::GetLogCmd(Result, Command, Params);
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::Connect(const UnicodeString Session,

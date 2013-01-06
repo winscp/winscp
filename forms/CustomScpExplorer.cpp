@@ -131,8 +131,7 @@ public:
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FFormRestored(false),
-    TForm(Owner),
-    FDirViewMatchMask(-1, true)
+    TForm(Owner)
 {
   FCurrentSide = osRemote;
   FDocks = new TList();
@@ -5907,7 +5906,10 @@ void __fastcall TCustomScpExplorerForm::DirViewMatchMask(
   MaskParams.Modification = Modification;
   // this does not re-parse the mask if it is the same as the last time
   FDirViewMatchMask = Masks;
-  Matches = FDirViewMatchMask.Matches(FileName, Directory, UnicodeString(L""), &MaskParams);
+  bool ImplicitMatch;
+  Matches =
+    FDirViewMatchMask.Matches(FileName, Directory, UnicodeString(L""), &MaskParams, ImplicitMatch) &&
+    !ImplicitMatch;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDirViewGetOverlay(

@@ -956,9 +956,19 @@ void __fastcall TSessionData::Remove()
   }
 }
 //---------------------------------------------------------------------
+inline void __fastcall MoveStr(UnicodeString & Source, UnicodeString * Dest, int Count)
+{
+  if (Dest != NULL)
+  {
+    (*Dest) += Source.SubString(1, Count);
+  }
+
+  Source.Delete(1, Count);
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
-  bool * AProtocolDefined)
+  bool * AProtocolDefined, UnicodeString * MaskedUrl)
 {
   bool ProtocolDefined = false;
   bool PortNumberDefined = false;
@@ -969,14 +979,14 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   {
     AFSProtocol = fsSCPonly;
     APortNumber = SshPortNumber;
-    Url.Delete(1, 4);
+    MoveStr(Url, MaskedUrl, 4);
     ProtocolDefined = true;
   }
   else if (Url.SubString(1, 5).LowerCase() == L"sftp:")
   {
     AFSProtocol = fsSFTPonly;
     APortNumber = SshPortNumber;
-    Url.Delete(1, 5);
+    MoveStr(Url, MaskedUrl, 5);
     ProtocolDefined = true;
   }
   else if (Url.SubString(1, 4).LowerCase() == L"ftp:")
@@ -984,7 +994,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     AFSProtocol = fsFTP;
     Ftps = ftpsNone;
     APortNumber = FtpPortNumber;
-    Url.Delete(1, 4);
+    MoveStr(Url, MaskedUrl, 4);
     ProtocolDefined = true;
   }
   else if (Url.SubString(1, 5).LowerCase() == L"ftps:")
@@ -992,13 +1002,13 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     AFSProtocol = fsFTP;
     AFtps = ftpsImplicit;
     APortNumber = FtpsImplicitPortNumber;
-    Url.Delete(1, 5);
+    MoveStr(Url, MaskedUrl, 5);
     ProtocolDefined = true;
   }
 
   if (ProtocolDefined && (Url.SubString(1, 2) == L"//"))
   {
-    Url.Delete(1, 2);
+    MoveStr(Url, MaskedUrl, 2);
   }
 
   if (AProtocolDefined != NULL)
@@ -1045,6 +1055,11 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         // only modified, implicit
         StoredSessions->Save(false, false);
       }
+
+      if (MaskedUrl != NULL)
+      {
+        (*MaskedUrl) += Url;
+      }
     }
     else
     {
@@ -1074,6 +1089,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         HostInfo = ConnectInfo;
       }
 
+      UnicodeString OrigHostInfo = HostInfo;
       if ((HostInfo.Length() >= 2) && (HostInfo[1] == L'[') && ((P = HostInfo.Pos(L"]")) > 0))
       {
         HostName = HostInfo.SubString(2, P - 2);
@@ -1104,10 +1120,22 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         Ftps = AFtps;
       }
 
-      UserName = DecodeUrlChars(CutToChar(UserInfo, L':', false));
+      UnicodeString RawUserName = CutToChar(UserInfo, L':', false);
+      UserName = DecodeUrlChars(RawUserName);
+
       Password = DecodeUrlChars(UserInfo);
 
       ARemoteDirectory = Url.SubString(PSlash, Url.Length() - PSlash + 1);
+
+      if (MaskedUrl != NULL)
+      {
+        (*MaskedUrl) += RawUserName;
+        if (!UserInfo.IsEmpty())
+        {
+          (*MaskedUrl) += L":***";
+        }
+        (*MaskedUrl) += L"@" + OrigHostInfo + ARemoteDirectory;
+      }
     }
 
     if (!ARemoteDirectory.IsEmpty() && (ARemoteDirectory != L"/"))
@@ -2609,12 +2637,12 @@ void __fastcall TStoredSessionList::ImportHostKeys(const UnicodeString TargetKey
 //---------------------------------------------------------------------------
 TSessionData * __fastcall TStoredSessionList::ParseUrl(UnicodeString Url,
   TOptions * Options, bool & DefaultsOnly, UnicodeString * FileName,
-  bool * AProtocolDefined)
+  bool * AProtocolDefined, UnicodeString * MaskedUrl)
 {
   TSessionData * Data = new TSessionData(L"");
   try
   {
-    Data->ParseUrl(Url, Options, this, DefaultsOnly, FileName, AProtocolDefined);
+    Data->ParseUrl(Url, Options, this, DefaultsOnly, FileName, AProtocolDefined, MaskedUrl);
   }
   catch(...)
   {

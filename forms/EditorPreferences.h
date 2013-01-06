@@ -33,6 +33,7 @@ __published:
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall MaskEditExit(TObject *Sender);
+  void __fastcall FormShow(TObject *Sender);
 
 public:
   virtual __fastcall TEditorPreferencesDialog(TComponent * Owner);
