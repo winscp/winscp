@@ -660,8 +660,7 @@ void __fastcall TTerminal::ResetConnection()
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Open()
 {
-  FLog->ReflectSettings();
-  FActionLog->ReflectSettings();
+  ReflectSettings();
   try
   {
     DoInformation(L"", true, 1);
@@ -1994,14 +1993,27 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(const UnicodeString File
         break;
 
       case boOlder:
-        Result =
-          ((FileParams != NULL) &&
-           (CompareFileTime(
-             ReduceDateTimePrecision(FileParams->SourceTimestamp,
-               LessDateTimePrecision(FileParams->SourcePrecision, FileParams->DestPrecision)),
-             ReduceDateTimePrecision(FileParams->DestTimestamp,
-               LessDateTimePrecision(FileParams->SourcePrecision, FileParams->DestPrecision))) > 0)) ?
-          qaYes : qaNo;
+        if (FileParams == NULL)
+        {
+          Result = qaNo;
+        }
+        else
+        {
+          TModificationFmt Precision = LessDateTimePrecision(FileParams->SourcePrecision, FileParams->DestPrecision);
+          TDateTime ReducedSourceTimestamp =
+            ReduceDateTimePrecision(FileParams->SourceTimestamp, Precision);
+          TDateTime ReducedDestTimestamp =
+            ReduceDateTimePrecision(FileParams->DestTimestamp, Precision);
+
+          Result =
+            (CompareFileTime(ReducedSourceTimestamp, ReducedDestTimestamp) > 0) ?
+            qaYes : qaNo;
+
+          LogEvent(FORMAT(L"Source file timestamp is [%s], destination timestamp is [%s], will%s overwrite",
+            (StandardTimestamp(ReducedSourceTimestamp),
+             StandardTimestamp(ReducedDestTimestamp),
+             ((Result == qaYes) ? L"" : L" not"))));
+        }
         break;
 
       case boAlternateResume:
@@ -2311,6 +2323,14 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::LogFile(TRemoteFile * File)
+{
+  LogEvent(FORMAT(L"%s;%s;%d;%s;%s;%s;%s;%d",
+    (File->FileName, File->Type, File->Size, StandardTimestamp(File->Modification),
+     File->Owner.LogText, File->Group.LogText, File->Rights->Text,
+     File->Attr)));
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
 {
   assert(FileList);
@@ -2321,11 +2341,7 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
   {
     for (int Index = 0; Index < FileList->Count; Index++)
     {
-      TRemoteFile * File = FileList->Files[Index];
-      LogEvent(FORMAT(L"%s;%s;%d;%s;%s;%s;%s;%d",
-        (File->FileName, File->Type, File->Size, StandardTimestamp(File->Modification),
-         File->Owner.LogText, File->Group.LogText, File->Rights->Text,
-         File->Attr)));
+      LogFile(FileList->Files[Index]);
     }
   }
 
@@ -2544,6 +2560,7 @@ void __fastcall TTerminal::ReadFile(const UnicodeString FileName,
     LogEvent(FORMAT(L"Listing file \"%s\".", (FileName)));
     FFileSystem->ReadFile(FileName, File);
     ReactOnCommand(fsListFile);
+    LogFile(File);
   }
   catch (Exception &E)
   {
@@ -4663,9 +4680,9 @@ void __fastcall TTerminal::FileFind(UnicodeString FileName,
     MaskParams.Modification = File->Modification;
 
     UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
-    bool ImplicitMatch = false;
+    bool ImplicitMatch;
     if (AParams->FileMask.Matches(FullFileName, false,
-         File->IsDirectory, &MaskParams))
+         File->IsDirectory, &MaskParams, ImplicitMatch))
     {
       if (!ImplicitMatch)
       {
@@ -4972,6 +4989,15 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::ReflectSettings()
+{
+  assert(FLog != NULL);
+  FLog->ReflectSettings();
+  assert(FActionLog != NULL);
+  FActionLog->ReflectSettings();
+  // also FTunnelLog ?
 }
 //---------------------------------------------------------------------------
 __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,

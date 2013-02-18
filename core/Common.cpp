@@ -1186,7 +1186,7 @@ __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   return Result;
 }
 //---------------------------------------------------------------------------
-static TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
+TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
 {
 
   const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
@@ -1204,16 +1204,13 @@ static TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
   return DateTime;
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall ConvertFileTimestampFromUTC(TDateTime DateTime)
+TDateTime __fastcall ConvertTimestampFromUTC(TDateTime DateTime)
 {
 
   const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
   DateTime -=
     (IsDateInDST(DateTime) ?
-      // Note the difference to ConvertTimestampToUTC()
-      // This is to compensate CTime::GetGmtTm for MFMT FTP conversion
-      Params->DaylightDifference : -Params->DaylightDifference);
-
+      Params->DaylightDifference : Params->StandardDifference);
   DateTime -= Params->BaseDifference;
 
   if (Params->DaylightHack)
@@ -1404,6 +1401,16 @@ int __fastcall CompareFileTime(TDateTime T1, TDateTime T2)
     Result = 0;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TimeToMSec(TDateTime T)
+{
+  return int(Round(double(T) * double(MSecsPerDay)));
+}
+//---------------------------------------------------------------------------
+int __fastcall TimeToMinutes(TDateTime T)
+{
+  return TimeToMSec(T) / MSecsPerSec / SecsPerMin;
 }
 //---------------------------------------------------------------------------
 bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin)

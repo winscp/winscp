@@ -59,7 +59,7 @@ CFileZillaApi::~CFileZillaApi()
 #ifndef MPEXT
 int CFileZillaApi::Init(HWND hOwnerWnd, int nReplyMessageID /*=0*/)
 #else
-int CFileZillaApi::Init(CApiLog * pParent)
+int CFileZillaApi::Init(CApiLog * pParent, CFileZillaTools * pTools)
 #endif
 {
 	//Check parameters
@@ -86,6 +86,8 @@ int CFileZillaApi::Init(CApiLog * pParent)
 	m_pMainThread->m_nInternalMessageID=m_nInternalMessageID;
 	m_pMainThread->m_nReplyMessageID=m_nReplyMessageID;
 	m_pMainThread->m_hOwnerWnd=m_hOwnerWnd;
+	m_pMainThread->m_hOwnerWnd=m_hOwnerWnd;
+	m_pMainThread->m_pTools=pTools;
 
 #ifndef MPEXT
 	m_pMainThread->InitLog(m_hOwnerWnd, m_nReplyMessageID);
@@ -863,16 +865,15 @@ COverwriteRequestData::COverwriteRequestData()
 	size1 = 0;
 	size2 = 0;
 	nRequestType=FZ_ASYNCREQUEST_OVERWRITE;
-	time1=0;
-	time2=0;
+	localtime=0;
+	remotetime.hasdate = false;
 	pTransferFile=0;
 }
 
 COverwriteRequestData::~COverwriteRequestData()
 {
 	delete pTransferFile;
-	delete time1;
-	delete time2;
+	delete localtime;
 }
 
 #ifndef MPEXT_NO_SSL

@@ -1076,7 +1076,8 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     ADF(L"Cache directory changes: %s, Permanent: %s",
       (BooleanToEngStr(Data->CacheDirectoryChanges),
        BooleanToEngStr(Data->PreserveDirectoryChanges)));
-    ADF(L"DST mode: %d", (int(Data->DSTMode)));
+    int TimeDifferenceMin = TimeToMinutes(Data->TimeDifference);
+    ADF(L"DST mode: %d; Timezone offset: %dh %dm", (int(Data->DSTMode), (TimeDifferenceMin / MinsPerHour), (TimeDifferenceMin % MinsPerHour)));
 
     AddSeparator();
 
@@ -1236,7 +1237,11 @@ void __fastcall TActionLog::ReflectSettings()
     {
       EndGroup();
     }
-    Add(L"</session>");
+    // do not try to close the file, if it has not been opened, to avoid recursion
+    if (FFile != NULL)
+    {
+      Add(L"</session>");
+    }
     CloseLogFile();
     FLogging = false;
   }
@@ -1310,7 +1315,12 @@ void __fastcall TActionLog::EndGroup()
   FInGroup = false;
   assert(FIndent == L"    ");
   FIndent = L"  ";
-  AddIndented("</group>");
+  // this is called from ReflectSettings that in turn is called when logging fails,
+  // so do not try to close the group, if it has not been opened, to avoid recursion
+  if (FFile != NULL)
+  {
+    AddIndented("</group>");
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TActionLog::SetEnabled(bool value)

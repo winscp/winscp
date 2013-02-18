@@ -371,14 +371,17 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged()
 {
   RemoteDirView->Terminal = Terminal;
   NonVisualDataModule->ResetQueueOnceEmptyOperation();
-  if (Terminal)
+
+  TManagedTerminal * ManagedTerminal = NULL;
+
+  if (Terminal != NULL)
   {
     if (Terminal->Active)
     {
       Terminal->RefreshDirectory();
     }
 
-    TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
+    ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
     assert(ManagedTerminal != NULL);
 
     if (WinConfiguration->PreservePanelState)
@@ -393,11 +396,18 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged()
       }
     }
 
-    SessionColor = ManagedTerminal->Color;
-
     InitStatusBar();
   }
+
   TerminalListChanged(NULL);
+
+  if (ManagedTerminal != NULL)
+  {
+    // this has to be set only after the tab is switched from TerminalListChanged,
+    // otherwise we are changing color of wrong tab
+    SessionColor = ManagedTerminal->Color;
+  }
+
   UpdateTransferList();
 }
 //---------------------------------------------------------------------------
@@ -442,7 +452,7 @@ void __fastcall TCustomScpExplorerForm::QueueView2Deletion(TObject * /*Sender*/,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::UpdateQueueStatus(bool AppIdle, bool QueueChanging)
+void __fastcall TCustomScpExplorerForm::UpdateQueueStatus(bool QueueChanging)
 {
   {
     TGuard Guard(FQueueStatusSection);
@@ -478,7 +488,7 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueStatus(bool AppIdle, bool Que
       FQueue->Enabled = false;
     }
 
-    if ((OnceDoneOperation != odoIdle) && AppIdle)
+    if ((OnceDoneOperation != odoIdle) && !NonVisualDataModule->Busy)
     {
       Terminal->CloseOnCompletion(OnceDoneOperation, LoadStr(CLOSED_ON_QUEUE_EMPTY));
     }
@@ -500,7 +510,7 @@ void __fastcall TCustomScpExplorerForm::QueueChanged()
     delete FQueueStatus;
     FQueueStatus = NULL;
   }
-  UpdateQueueStatus(false, true);
+  UpdateQueueStatus(true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::QueueListUpdate(TTerminalQueue * Queue)
@@ -540,7 +550,7 @@ void __fastcall TCustomScpExplorerForm::QueueItemUpdate(TTerminalQueue * Queue,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RefreshQueueItems(bool AppIdle)
+void __fastcall TCustomScpExplorerForm::RefreshQueueItems()
 {
   if (FQueueStatus != NULL)
   {
@@ -559,7 +569,7 @@ void __fastcall TCustomScpExplorerForm::RefreshQueueItems(bool AppIdle)
       Update = false;
       QueueItem = FQueueStatus->Items[Index];
       WasUserAction = TQueueItem::IsUserActionStatus(QueueItem->Status);
-      if (AppIdle && QueueAutoPopup && WasUserAction &&
+      if (!NonVisualDataModule->Busy && QueueAutoPopup && WasUserAction &&
           (FPendingQueueActionItem == NULL))
       {
         FPendingQueueActionItem = QueueItem;
@@ -1249,7 +1259,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
       UnicodeString Command = InteractiveCustomCommand.Complete(ACommand.Command, false);
 
-      Configuration->Usage->Inc(L"LocalCustomCommandRuns");
+      Configuration->Usage->Inc(L"RemoteCustomCommandRuns2");
 
       bool Capture = FLAGSET(ACommand.Params, ccShowResults) || FLAGSET(ACommand.Params, ccCopyResults);
       TCaptureOutputEvent OutputEvent = NULL;
@@ -1301,7 +1311,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
     UnicodeString Command = InteractiveCustomCommand.Complete(ACommand.Command, false);
 
-    Configuration->Usage->Inc(L"RemoteCustomCommandRuns");
+    Configuration->Usage->Inc(L"LocalCustomCommandRuns2");
 
     if (!LocalCustomCommand.IsFileCommand(Command))
     {
@@ -1578,10 +1588,12 @@ void __fastcall TCustomScpExplorerForm::BatchStart(void *& /*Storage*/)
   {
     FErrorList = new TStringList();
   }
+  NonVisualDataModule->StartBusy();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::BatchEnd(void * /*Storage*/)
 {
+  NonVisualDataModule->EndBusy();
   if (FErrorList)
   {
     HandleErrorList(FErrorList);
@@ -3220,8 +3232,9 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusPanelText(TTBXStatusPanel * 
   Panel->Caption = L"";
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::Idle(bool AppIdle)
+void __fastcall TCustomScpExplorerForm::Idle()
 {
+
   if (FShowing)
   {
     FEditorManager->Check();
@@ -3230,7 +3243,7 @@ void __fastcall TCustomScpExplorerForm::Idle(bool AppIdle)
     // that needs to know if queue view is visible (and it may be closed after queue update)
     TTerminalManager::Instance()->Idle();
 
-    if (AppIdle)
+    if (!NonVisualDataModule->Busy)
     {
       if (FRefreshRemoteDirectory)
       {
@@ -3261,15 +3274,16 @@ void __fastcall TCustomScpExplorerForm::Idle(bool AppIdle)
 
     if (FQueueStatusInvalidated)
     {
-      UpdateQueueStatus(AppIdle, false);
+      UpdateQueueStatus(false);
     }
 
-    RefreshQueueItems(AppIdle);
+    RefreshQueueItems();
 
     UpdateStatusBar();
   }
 
   FIgnoreNextSysCommand = false;
+
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UserActionTimer(TObject * /*Sender*/)

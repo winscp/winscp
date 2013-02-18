@@ -43,7 +43,7 @@ uses
   Windows, ShlObj, ComCtrls, CompThread, CustomDirView, ListExt,
   ExtCtrls, Graphics, FileOperator, DiscMon, Classes, DirViewColProperties,
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
-  FileCtrl, SysUtils, BaseUtils;
+  FileCtrl, SysUtils, BaseUtils, Controls;
 
 {$I ResStrings.pas }
 
@@ -319,6 +319,7 @@ type
     {$ENDIF}
     procedure SetShowHiddenFiles(Value: Boolean); override;
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
+    procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     function SecondaryColumnHeader(Index: Integer; var AliasOnly: Boolean): Integer; override;
     function HiddenCount: Integer; override;
     function FilteredCount: Integer; override;
@@ -553,7 +554,7 @@ uses
 {$IFDEF USE_DRIVEVIEW}
   DriveView,
 {$ENDIF}
-  PIDL, Forms, Dialogs, Controls,
+  PIDL, Forms, Dialogs,
   ShellAPI, ComObj,
   ActiveX, ImgList,
   ShellDialogs, IEDriveInfo,
@@ -1006,6 +1007,15 @@ begin
 {$ENDIF}
   inherited;
 end; {WMDestroy}
+
+procedure TDirView.CMRecreateWnd(var Message: TMessage);
+begin
+  // see comment in TDirView.StopSubDirScanner
+  if not (csRecreating in ControlState) then
+  begin
+    inherited;
+  end;
+end;
 
 {$IFNDEF NO_THREADS}
 
@@ -3307,7 +3317,14 @@ begin
         Resume;
         Terminate;
       end;
-  Application.ProcessMessages;
+
+  // Not really sure why this is here, but definitelly, when recreating
+  // the dir view, it may cause recursion calls back to destryed dir view,
+  // causing AVs
+  // May not be necessary anymore after the recursion check in
+  // TDirView.CMRecreateWnd
+  if not (csRecreating in ControlState) then
+    Application.ProcessMessages;
 end; {StopSubDirScanner}
 
 procedure TDirView.StopIconUpdateThread;
@@ -3328,7 +3345,9 @@ begin
       while not FIUThreadFinished do
       begin
         Sleep(10);
-        Application.ProcessMessages;
+        // See comment in StopSubDirScanner
+        if not (csRecreating in ControlState) then
+          Application.ProcessMessages;
         Inc(Counter);
         {Raise an exception after 2 second, if the thread has not terminated:}
         if Counter = 200 then

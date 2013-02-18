@@ -6,18 +6,13 @@
 
 #include <time.h>
 #include <FileZillaOpt.h>
+#include <FileZillaTools.h>
 //---------------------------------------------------------------------------
 class CFileZillaApi;
 class TFileZillaIntern;
 //---------------------------------------------------------------------------
-struct TListDataEntry
+struct TRemoteFileTime
 {
-  const wchar_t * Name;
-  const wchar_t * Permissions;
-  const wchar_t * OwnerGroup;
-  __int64 Size;
-  bool Dir;
-  bool Link;
   int Year;
   int Month;
   int Day;
@@ -28,6 +23,17 @@ struct TListDataEntry
   bool HasSeconds;
   bool HasDate;
   bool Utc;
+};
+//---------------------------------------------------------------------------
+struct TListDataEntry
+{
+  const wchar_t * Name;
+  const wchar_t * Permissions;
+  const wchar_t * OwnerGroup;
+  __int64 Size;
+  bool Dir;
+  bool Link;
+  TRemoteFileTime Time;
   const wchar_t * LinkTarget;
 };
 //---------------------------------------------------------------------------
@@ -76,7 +82,7 @@ struct TNeedPassRequestData
 class t_server;
 class TFTPServerCapabilities;
 //---------------------------------------------------------------------------
-class TFileZillaIntf
+class TFileZillaIntf : public CFileZillaTools
 {
 friend class TFileZillaIntern;
 
@@ -103,10 +109,12 @@ public:
   enum
   {
     FILEEXISTS_OVERWRITE = 0,
-    FILEEXISTS_OVERWRITEIFNEWER = 1,
+    // 1 is FILEEXISTS_OVERWRITEIFNEWER what we do not use
     FILEEXISTS_RESUME = 2,
     FILEEXISTS_RENAME = 3,
     FILEEXISTS_SKIP = 4,
+    // 5 is FILEEXISTS_RESUME_ASKONFAIL what we do not use
+    FILEEXISTS_COMPLETE = 6,
   };
 
   enum
@@ -190,8 +198,8 @@ protected:
   virtual bool __fastcall HandleAsynchRequestOverwrite(
     wchar_t * FileName1, size_t FileName1Len, const wchar_t * FileName2,
     const wchar_t * Path1, const wchar_t * Path2,
-    __int64 Size1, __int64 Size2, time_t Time1, time_t Time2,
-    bool HasTime1, bool HasTime2, void * UserData, int & RequestResult) = 0;
+    __int64 Size1, __int64 Size2, time_t LocalTime,
+    bool HasLocalTime1, const TRemoteFileTime & RemoteTime, void * UserData, int & RequestResult) = 0;
   virtual bool __fastcall HandleAsynchRequestVerifyCertificate(
     const TFtpsCertificateData & Data, int & RequestResult) = 0;
   virtual bool __fastcall HandleAsynchRequestNeedPass(

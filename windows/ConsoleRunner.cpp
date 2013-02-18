@@ -953,6 +953,7 @@ private:
   void __fastcall TimerTimer(TObject * Sender);
   UnicodeString ExpandCommand(UnicodeString Command, TStrings * ScriptParameters);
   void __fastcall Failed(bool & AnyError);
+  void __fastcall ConfigurationChange(TObject * Sender);
 };
 //---------------------------------------------------------------------------
 TConsoleRunner::TConsoleRunner(TConsole * Console) :
@@ -971,12 +972,16 @@ TConsoleRunner::TConsoleRunner(TConsole * Console) :
   Timer->Enabled = true;
   assert(WinConfiguration->OnMasterPasswordPrompt == NULL);
   WinConfiguration->OnMasterPasswordPrompt = MasterPasswordPrompt;
+  assert(Configuration->OnChange == NULL);
+  Configuration->OnChange = ConfigurationChange;
 }
 //---------------------------------------------------------------------------
 TConsoleRunner::~TConsoleRunner()
 {
   assert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
   WinConfiguration->OnMasterPasswordPrompt = NULL;
+  assert(Configuration->OnChange == ConfigurationChange);
+  Configuration->OnChange = NULL;
   delete Timer;
 }
 //---------------------------------------------------------------------------
@@ -1802,6 +1807,14 @@ void __fastcall TConsoleRunner::UpdateTitle()
     NewTitle = AppName;
   }
   FConsole->SetTitle(NewTitle);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleRunner::ConfigurationChange(TObject * /*Sender*/)
+{
+  if (FScript != NULL)
+  {
+    FScript->ReflectSettings();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)

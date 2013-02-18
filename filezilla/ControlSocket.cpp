@@ -61,10 +61,11 @@ CCriticalSection CControlSocket::m_SpeedLimitSync;
 // Konstruktion/Destruktion
 //////////////////////////////////////////////////////////////////////
 
-CControlSocket::CControlSocket(CMainThread *pMainThread)
+CControlSocket::CControlSocket(CMainThread *pMainThread, CFileZillaTools * pTools)
 {
 	ASSERT(pMainThread);
 	m_pOwner=pMainThread;
+	m_pTools=pTools;
 
 	m_Operation.nOpMode=0;
 	m_Operation.nOpState=-1;

@@ -421,11 +421,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
         UtfCombo->ItemIndex = 0;
         break;
     }
-    int TimeDifferenceMin = DateTimeToTimeStamp(aSessionData->TimeDifference).Time / (SecsPerMin * MSecsPerSec);
-    if (double(aSessionData->TimeDifference) < 0)
-    {
-      TimeDifferenceMin = -TimeDifferenceMin;
-    }
+    int TimeDifferenceMin = TimeToMinutes(aSessionData->TimeDifference);
     TimeDifferenceEdit->AsInteger = TimeDifferenceMin / MinsPerHour;
     TimeDifferenceMinutesEdit->AsInteger = TimeDifferenceMin % MinsPerHour;
 

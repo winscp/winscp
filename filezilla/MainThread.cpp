@@ -45,6 +45,7 @@ static char THIS_FILE[] = __FILE__;
 CMainThread::CMainThread()
 {
 	m_hOwnerWnd = 0;
+	m_pTools = NULL;
 	m_nReplyMessageID = 0;
 	m_nInternalMessageID = 0;
 	m_pPostKeepAliveCommand = 0;
@@ -97,7 +98,7 @@ BOOL CMainThread::InitInstance()
 		res=FALSE;
 	}
 	
-	m_pFtpControlSocket=new CFtpControlSocket(this);
+	m_pFtpControlSocket=new CFtpControlSocket(this, m_pTools);
 #ifndef MPEXT_NO_SFTP
 	m_pSFtpControlSocket=new CSFtpControlSocket(this);
 #endif

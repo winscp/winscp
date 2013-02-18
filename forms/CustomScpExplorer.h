@@ -358,8 +358,8 @@ protected:
     TStringList * ExportData);
   void __fastcall QueueListUpdate(TTerminalQueue * Queue);
   void __fastcall QueueItemUpdate(TTerminalQueue * Queue, TQueueItem * Item);
-  void __fastcall UpdateQueueStatus(bool AppIdle, bool QueueChanging);
-  void __fastcall RefreshQueueItems(bool AppIdle);
+  void __fastcall UpdateQueueStatus(bool QueueChanging);
+  void __fastcall RefreshQueueItems();
   virtual int __fastcall GetStaticComponentsHeight();
   void __fastcall FillQueueViewItem(TListItem * Item,
     TQueueItemProxy * QueueItem, bool Detail);
@@ -495,7 +495,7 @@ public:
   void __fastcall OpenDirectory(TOperationSide Side);
   virtual void __fastcall HomeDirectory(TOperationSide Side);
   void __fastcall OpenStoredSession(TSessionData * Data);
-  void __fastcall Idle(bool AppIdle);
+  void __fastcall Idle();
   __fastcall TCustomScpExplorerForm(TComponent* Owner);
   void __fastcall SaveCurrentSession();
   virtual void __fastcall CompareDirectories();

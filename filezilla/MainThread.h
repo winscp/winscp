@@ -84,6 +84,7 @@ public:
 	void Command(const t_command& command);
 	BOOL IsBusy();
 	HWND m_hOwnerWnd;
+	CFileZillaTools * m_pTools;
 	BOOL m_bBusy;
 	unsigned int m_nReplyMessageID;
 	unsigned int m_nInternalMessageID;

@@ -111,7 +111,8 @@ bool __fastcall UsesDaylightHack();
 TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day);
 TDateTime __fastcall EncodeTimeVerbose(Word Hour, Word Min, Word Sec, Word MSec);
 TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode);
-TDateTime __fastcall ConvertFileTimestampFromUTC(TDateTime DateTime);
+TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime);
+TDateTime __fastcall ConvertTimestampFromUTC(TDateTime DateTime);
 FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime, TDSTMode DSTMode);
 TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, TDSTMode DSTMode);
 void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTime2);
@@ -125,6 +126,8 @@ UnicodeString __fastcall StandardTimestamp(const TDateTime & DateTime);
 UnicodeString __fastcall StandardTimestamp();
 UnicodeString __fastcall GetTimeZoneLogString();
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
+int __fastcall TimeToMSec(TDateTime T);
+int __fastcall TimeToMinutes(TDateTime T);
 //---------------------------------------------------------------------------
 template<class MethodT>
 MethodT __fastcall MakeMethod(void * Data, void * Code)
@@ -155,6 +158,19 @@ private:
   TCriticalSection * FCriticalSection;
 };
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#include <assert.h>
+#ifndef _DEBUG
+#undef assert
+#define assert(p)   ((void)0)
+#define CHECK(p) p
+#define FAIL
+#else
+#define CHECK(p) { bool __CHECK_RESULT__ = (p); assert(__CHECK_RESULT__); }
+#define FAIL assert(false)
+#endif
+#define USEDPARAM(p) ((&p) == (&p))
+//---------------------------------------------------------------------------
 template<class T>
 class TValueRestorer
 {
@@ -170,9 +186,9 @@ public:
     FTarget = FValue;
   }
 
-private:
+protected:
   T & FTarget;
-  const T & FValue;
+  T FValue;
 };
 //---------------------------------------------------------------------------
 class TBoolRestorer : TValueRestorer<bool>
@@ -184,17 +200,20 @@ public:
   }
 };
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-#include <assert.h>
-#ifndef _DEBUG
-#undef assert
-#define assert(p)   ((void)0)
-#define CHECK(p) p
-#define FAIL
-#else
-#define CHECK(p) { bool __CHECK_RESULT__ = (p); assert(__CHECK_RESULT__); }
-#define FAIL assert(false)
-#endif
-#define USEDPARAM(p) ((&p) == (&p))
+class TAutoNestingCounter : TValueRestorer<int>
+{
+public:
+  __fastcall TAutoNestingCounter(int & Target) :
+    TValueRestorer<int>(Target, Target)
+  {
+    assert(Target >= 0);
+    ++Target;
+  }
+
+  __fastcall ~TAutoNestingCounter()
+  {
+    assert(FTarget == (FValue + 1));
+  }
+};
 //---------------------------------------------------------------------------
 #endif

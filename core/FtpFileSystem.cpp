@@ -45,8 +45,8 @@ protected:
   virtual bool __fastcall HandleAsynchRequestOverwrite(
     wchar_t * FileName1, size_t FileName1Len, const wchar_t * FileName2,
     const wchar_t * Path1, const wchar_t * Path2,
-    __int64 Size1, __int64 Size2, time_t Time1, time_t Time2,
-    bool HasTime1, bool HasTime2, void * UserData, int & RequestResult);
+    __int64 Size1, __int64 Size2, time_t LocalTime,
+    bool HasLocalTime, const TRemoteFileTime & RemoteTime, void * UserData, int & RequestResult);
   virtual bool __fastcall HandleAsynchRequestVerifyCertificate(
     const TFtpsCertificateData & Data, int & RequestResult);
   virtual bool __fastcall HandleAsynchRequestNeedPass(
@@ -59,6 +59,9 @@ protected:
   virtual bool __fastcall HandleReply(int Command, unsigned int Reply);
   virtual bool __fastcall HandleCapabilities(TFTPServerCapabilities * ServerCapabilities);
   virtual bool __fastcall CheckError(int ReturnCode, const wchar_t * Context);
+
+  virtual void PreserveDownloadFileTime(HANDLE Handle, void * UserData);
+  virtual bool GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time);
 
 private:
   TFTPFileSystem * FFileSystem;
@@ -93,12 +96,12 @@ bool __fastcall TFileZillaImpl::HandleStatus(const wchar_t * Status, int Type)
 bool __fastcall TFileZillaImpl::HandleAsynchRequestOverwrite(
   wchar_t * FileName1, size_t FileName1Len, const wchar_t * FileName2,
   const wchar_t * Path1, const wchar_t * Path2,
-  __int64 Size1, __int64 Size2, time_t Time1, time_t Time2,
-  bool HasTime1, bool HasTime2, void * UserData, int & RequestResult)
+  __int64 Size1, __int64 Size2, time_t LocalTime,
+  bool HasLocalTime, const TRemoteFileTime & RemoteTime, void * UserData, int & RequestResult)
 {
   return FFileSystem->HandleAsynchRequestOverwrite(
-    FileName1, FileName1Len, FileName2, Path1, Path2, Size1, Size2, Time1, Time2,
-    HasTime1, HasTime2, UserData, RequestResult);
+    FileName1, FileName1Len, FileName2, Path1, Path2, Size1, Size2, LocalTime,
+    HasLocalTime, RemoteTime, UserData, RequestResult);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaImpl::HandleAsynchRequestVerifyCertificate(
@@ -142,6 +145,16 @@ bool __fastcall TFileZillaImpl::CheckError(int ReturnCode, const wchar_t * Conte
   return FFileSystem->CheckError(ReturnCode, Context);
 }
 //---------------------------------------------------------------------------
+void TFileZillaImpl::PreserveDownloadFileTime(HANDLE Handle, void * UserData)
+{
+  return FFileSystem->PreserveDownloadFileTime(Handle, UserData);
+}
+//---------------------------------------------------------------------------
+bool TFileZillaImpl::GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time)
+{
+  return FFileSystem->GetFileModificationTimeInUtc(FileName, Time);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 class TMessageQueue : public std::list<std::pair<WPARAM, LPARAM> >
 {
@@ -163,6 +176,7 @@ struct TFileTransferData
   bool AutoResume;
   int OverwriteResult;
   const TCopyParamType * CopyParam;
+  TDateTime Modification;
 };
 //---------------------------------------------------------------------------
 const int tfFirstLevel = 0x01;
@@ -364,7 +378,7 @@ void __fastcall TFTPFileSystem::Open()
       break;
   }
   int Pasv = (Data->FtpPasvMode ? 1 : 2);
-  int TimeZoneOffset = int(double(Data->TimeDifference) * MinsPerDay);
+  int TimeZoneOffset = TimeToMinutes(Data->TimeDifference);
   int UTF8 = 0;
   switch (Data->NotUtf)
   {
@@ -755,19 +769,27 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(UnicodeString & FileName,
 {
   bool Result;
   bool CanAutoResume = FLAGSET(Params, cpNoConfirmation) && AutoResume;
+  bool DestIsSmaller = (FileParams != NULL) && (FileParams->DestSize < FileParams->SourceSize);
+  bool DestIsSame = (FileParams != NULL) && (FileParams->DestSize == FileParams->SourceSize);
   // when resuming transfer after interrupted connection,
   // do nothing (dummy resume) when the files has the same size.
   // this is workaround for servers that strangely fails just after successful
   // upload.
   bool CanResume =
-    (FileParams != NULL) &&
-    (((FileParams->DestSize < FileParams->SourceSize)) ||
-     ((FileParams->DestSize == FileParams->SourceSize) && CanAutoResume));
+    (DestIsSmaller || (DestIsSame && CanAutoResume));
 
   unsigned int Answer;
   if (CanAutoResume && CanResume)
   {
-    Answer = qaRetry;
+    if (DestIsSame)
+    {
+      assert(CanAutoResume);
+      Answer = qaSkip;
+    }
+    else
+    {
+      Answer = qaRetry;
+    }
   }
   else
   {
@@ -844,6 +866,10 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(UnicodeString & FileName,
     case qaNo:
       FFileTransferAbort = ftaSkip;
       Result = false;
+      break;
+
+    case qaSkip:
+      OverwriteMode = omComplete;
       break;
 
     default:
@@ -1153,6 +1179,7 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
       UserData.Params = Params;
       UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
       UserData.CopyParam = CopyParam;
+      UserData.Modification = File->Modification;
       FileTransfer(FileName, DestFullName, OnlyFileName,
         FilePath, true, File->Size, TransferType, UserData, OperationProgress);
     }
@@ -1398,6 +1425,7 @@ void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
       UserData.Params = Params;
       UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
       UserData.CopyParam = CopyParam;
+      UserData.Modification = Modification;
       FileTransfer(FileName, FileName, DestFileName,
         TargetDir, false, Size, TransferType, UserData, OperationProgress);
     }
@@ -1639,7 +1667,7 @@ void __fastcall TFTPFileSystem::DoStartup()
       {
         FFileZillaIntf->CustomCommand(Command.c_str());
 
-        GotReply(WaitForCommandReply(), REPLY_2XX_CODE);
+        GotReply(WaitForCommandReply(), REPLY_2XX_CODE | REPLY_3XX_CODE);
       }
     }
   }
@@ -2891,43 +2919,11 @@ TDateTime __fastcall TFTPFileSystem::ConvertLocalTimestamp(time_t Time)
   return UnixToDateTime(Timestamp, dstmUnix);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::ConvertRemoteTimestamp(
-  time_t Time, bool HasTime, TDateTime & DateTime, TModificationFmt & ModificationFmt)
-{
-  tm * Tm = localtime(&Time);
-  if (Tm != NULL)
-  {
-    // should be the same as HandleListData
-    DateTime = EncodeDateVerbose(
-      static_cast<unsigned short>(Tm->tm_year + 1900),
-      static_cast<unsigned short>(Tm->tm_mon + 1),
-      static_cast<unsigned short>(Tm->tm_mday));
-    if (HasTime)
-    {
-      DateTime += EncodeTimeVerbose(
-        static_cast<unsigned short>(Tm->tm_hour),
-        static_cast<unsigned short>(Tm->tm_min),
-        static_cast<unsigned short>(Tm->tm_sec), 0);
-      ModificationFmt = (Tm->tm_sec != 0 ? mfFull : mfMDHM);
-    }
-    else
-    {
-      ModificationFmt = mfMDY;
-    }
-  }
-  else
-  {
-    // incorrect, but at least something
-    DateTime = UnixToDateTime(Time, dstmUnix);
-    ModificationFmt = (HasTime ? mfMDHM : mfMDY);
-  }
-}
-//---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
   wchar_t * FileName1, size_t FileName1Len, const wchar_t * /*FileName2*/,
   const wchar_t * /*Path1*/, const wchar_t * /*Path2*/,
-  __int64 Size1, __int64 Size2, time_t Time1, time_t Time2,
-  bool HasTime1, bool HasTime2, void * AUserData, int & RequestResult)
+  __int64 Size1, __int64 Size2, time_t LocalTime,
+  bool /*HasLocalTime*/, const TRemoteFileTime & RemoteTime, void * AUserData, int & RequestResult)
 {
   if (!FActive)
   {
@@ -2949,8 +2945,8 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
       TOverwriteMode OverwriteMode = omOverwrite;
       TOverwriteFileParams FileParams;
       bool NoFileParams =
-        (Size1 < 0) || (Time1 == 0) ||
-        (Size2 < 0) || (Time2 == 0);
+        (Size1 < 0) || (LocalTime == 0) ||
+        (Size2 < 0) || !RemoteTime.HasDate;
       if (!NoFileParams)
       {
         FileParams.SourceSize = Size2;
@@ -2958,15 +2954,13 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
 
         if (OperationProgress->Side == osLocal)
         {
-          FileParams.SourceTimestamp = ConvertLocalTimestamp(Time2);
-          ConvertRemoteTimestamp(Time1, HasTime1,
-            FileParams.DestTimestamp, FileParams.DestPrecision);
+          FileParams.SourceTimestamp = ConvertLocalTimestamp(LocalTime);
+          RemoteFileTimeToDateTimeAndPrecision(RemoteTime, FileParams.DestTimestamp, FileParams.DestPrecision);
         }
         else
         {
-          ConvertRemoteTimestamp(Time2, HasTime2,
-            FileParams.SourceTimestamp, FileParams.SourcePrecision);
-          FileParams.DestTimestamp = ConvertLocalTimestamp(Time1);
+          FileParams.DestTimestamp = ConvertLocalTimestamp(LocalTime);
+          RemoteFileTimeToDateTimeAndPrecision(RemoteTime, FileParams.SourceTimestamp, FileParams.SourcePrecision);
         }
       }
 
@@ -2992,6 +2986,11 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
 
           case omResume:
             RequestResult = TFileZillaIntf::FILEEXISTS_RESUME;
+            break;
+
+          case omComplete:
+            FTerminal->LogEvent(L"File transfer was completed before disconnect");
+            RequestResult = TFileZillaIntf::FILEEXISTS_COMPLETE;
             break;
 
           default:
@@ -3166,8 +3165,8 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
     FSessionInfo.Certificate =
       FMTLOAD(CERT_TEXT, (
-        FormatContact(Data.Subject),
         FormatContact(Data.Issuer),
+        FormatContact(Data.Subject),
         FormatValidityTime(Data.ValidFrom),
         FormatValidityTime(Data.ValidUntil),
         FSessionInfo.CertificateFingerprint,
@@ -3294,6 +3293,43 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestNeedPass(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::RemoteFileTimeToDateTimeAndPrecision(const TRemoteFileTime & Source, TDateTime & DateTime, TModificationFmt & ModificationFmt)
+{
+  // ModificationFmt must be set after Modification
+  if (Source.HasDate)
+  {
+    DateTime =
+      EncodeDateVerbose((unsigned short)Source.Year, (unsigned short)Source.Month,
+        (unsigned short)Source.Day);
+    if (Source.HasTime)
+    {
+      DateTime = DateTime +
+        EncodeTimeVerbose((unsigned short)Source.Hour, (unsigned short)Source.Minute,
+          (unsigned short)Source.Second, 0);
+      // not exact as we got year as well, but it is most probably
+      // guessed by FZAPI anyway
+      ModificationFmt = Source.HasSeconds ? mfFull : mfMDHM;
+    }
+    else
+    {
+      ModificationFmt = mfMDY;
+    }
+
+    if (Source.Utc)
+    {
+      DateTime = ConvertTimestampFromUTC(DateTime);
+    }
+
+  }
+  else
+  {
+    // With SCP we estimate date to be today, if we have at least time
+
+    DateTime = double(0);
+    ModificationFmt = mfNone;
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
   const TListDataEntry * Entries, unsigned int Count)
 {
@@ -3367,41 +3403,11 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
           File->Type = L'-';
         }
 
-        // ModificationFmt must be set after Modification
-        if (Entry->HasDate)
-        {
-          // should be the same as ConvertRemoteTimestamp
-          TDateTime Modification =
-            EncodeDateVerbose((unsigned short)Entry->Year, (unsigned short)Entry->Month,
-              (unsigned short)Entry->Day);
-          if (Entry->HasTime)
-          {
-            File->Modification = Modification +
-              EncodeTimeVerbose((unsigned short)Entry->Hour, (unsigned short)Entry->Minute,
-                (unsigned short)Entry->Second, 0);
-            // not exact as we got year as well, but it is most probably
-            // guessed by FZAPI anyway
-            File->ModificationFmt = Entry->HasSeconds ? mfFull : mfMDHM;
-          }
-          else
-          {
-            File->Modification = Modification;
-            File->ModificationFmt = mfMDY;
-          }
-
-          if (Entry->Utc)
-          {
-            File->Modification = ConvertFileTimestampFromUTC(File->Modification);
-          }
-
-        }
-        else
-        {
-          // With SCP we estimate date to be today, if we have at least time
-
-          File->Modification = double(0);
-          File->ModificationFmt = mfNone;
-        }
+        TDateTime Modification;
+        TModificationFmt ModificationFmt;
+        RemoteFileTimeToDateTimeAndPrecision(Entry->Time, Modification, ModificationFmt);
+        File->Modification = Modification;
+        File->ModificationFmt = ModificationFmt;
         File->LastAccess = File->Modification;
 
         File->LinkTo = Entry->LinkTarget;
@@ -3414,9 +3420,9 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
         UnicodeString EntryData =
           FORMAT(L"%s/%s/%s/%s/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d",
             (Entry->Name, Entry->Permissions, Entry->OwnerGroup, IntToStr(Entry->Size),
-             int(Entry->Dir), int(Entry->Link), Entry->Year, Entry->Month, Entry->Day,
-             Entry->Hour, Entry->Minute, int(Entry->HasTime),
-             int(Entry->HasSeconds), int(Entry->HasDate)));
+             int(Entry->Dir), int(Entry->Link), Entry->Time.Year, Entry->Time.Month, Entry->Time.Day,
+             Entry->Time.Hour, Entry->Time.Minute, int(Entry->Time.HasTime),
+             int(Entry->Time.HasSeconds), int(Entry->Time.HasDate)));
         throw ETerminal(&E, FMTLOAD(LIST_LINE_ERROR, (EntryData)));
       }
 
@@ -3579,6 +3585,66 @@ bool __fastcall TFTPFileSystem::Unquote(UnicodeString & Str)
   }
 
   return (State == DONE);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::PreserveDownloadFileTime(HANDLE Handle, void * UserData)
+{
+  TFileTransferData * Data = static_cast<TFileTransferData *>(UserData);
+  FILETIME WrTime = DateTimeToFileTime(Data->Modification, dstmUnix);
+  SetFileTime(Handle, NULL, NULL, &WrTime);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFTPFileSystem::GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time)
+{
+  bool Result;
+  try
+  {
+    // error-handling-free and DST-mode-inaware copy of TTerminal::OpenLocalFile
+    HANDLE Handle = CreateFile(FileName, GENERIC_READ,
+      FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, 0);
+    if (Handle == INVALID_HANDLE_VALUE)
+    {
+      Result = false;
+    }
+    else
+    {
+      FILETIME MTime;
+      if (!GetFileTime(Handle, NULL, NULL, &MTime))
+      {
+        Result = false;
+      }
+      else
+      {
+        TDateTime Modification = ConvertTimestampToUTC(FileTimeToDateTime(MTime));
+
+        unsigned short Year;
+        unsigned short Month;
+        unsigned short Day;
+        Modification.DecodeDate(&Year, &Month, &Day);
+        Time.tm_year = Year - 1900;
+        Time.tm_mon = Month - 1;
+        Time.tm_mday = Day;
+
+        unsigned short Hour;
+        unsigned short Min;
+        unsigned short Sec;
+        unsigned short MSec;
+        Modification.DecodeTime(&Hour, &Min, &Sec, &MSec);
+        Time.tm_hour = Hour;
+        Time.tm_min = Min;
+        Time.tm_sec = Sec;
+
+        Result = true;
+      }
+
+      CloseHandle(Handle);
+    }
+  }
+  catch (...)
+  {
+    Result = false;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 #endif NO_FILEZILLA

@@ -344,6 +344,7 @@ protected:
   TRemoteFileList * __fastcall DoReadDirectoryListing(UnicodeString Directory, bool UseCache);
   RawByteString __fastcall EncryptPassword(const UnicodeString & Password);
   UnicodeString __fastcall DecryptPassword(const RawByteString & Password);
+  void __fastcall LogFile(TRemoteFile * File);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -438,6 +439,7 @@ public:
     TFileOperationProgressType * OperationProgress);
   UnicodeString __fastcall PeekCurrentDirectory();
   void __fastcall FatalAbort();
+  void __fastcall ReflectSettings();
 
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);

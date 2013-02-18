@@ -2204,3 +2204,11 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TManagementScript::ReflectSettings()
+{
+  for (int i = 0; i < FTerminalList->Count; i++)
+  {
+    FTerminalList->Terminals[i]->ReflectSettings();
+  }
+}
+//---------------------------------------------------------------------------

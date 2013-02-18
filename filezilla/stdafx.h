@@ -57,6 +57,7 @@ const int FILEEXISTS_RESUME = 2;
 const int FILEEXISTS_RENAME = 3;
 const int FILEEXISTS_SKIP = 4;
 const int FILEEXISTS_RESUME_ASKONFAIL = 5; // Used by queue for automatic resuming. If APPE failes, ask what to do instead.
+const int FILEEXISTS_COMPLETE = 6;
 //---------------------------------------------------------------------------
 class t_ffam_statusmessage
 {

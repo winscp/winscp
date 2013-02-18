@@ -69,13 +69,14 @@ class CAsyncSslSocketLayer;
 class CAsyncGssSocketLayer;
 #endif
 class CTransferSocket;
+class CFileZillaTools;
 
 #define BUFSIZE                             16384
 
 class CControlSocket : public CAsyncSocketEx, public CApiLog
 {
 public:
-	CControlSocket(CMainThread *pMainThread);
+	CControlSocket(CMainThread *pMainThread, CFileZillaTools * pTools);
 	virtual ~CControlSocket();
 
 	enum transferDirection
@@ -123,6 +124,7 @@ protected:
 	t_directory *m_pDirectoryListing;
 
 	CMainThread *m_pOwner;
+	CFileZillaTools * m_pTools;
 #ifndef MPEXT_NO_IDENT
 	CIdentServerControl *m_pIdentControl;
 #endif

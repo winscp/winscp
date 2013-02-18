@@ -15,6 +15,7 @@ struct TOverwriteFileParams;
 struct TListDataEntry;
 struct TFileTransferData;
 struct TFtpsCertificateData;
+struct TRemoteFileTime;
 //---------------------------------------------------------------------------
 class TFTPFileSystem : public TCustomFileSystem
 {
@@ -81,7 +82,7 @@ public:
   virtual UnicodeString __fastcall GetUserName();
 
 protected:
-  enum TOverwriteMode { omOverwrite, omResume };
+  enum TOverwriteMode { omOverwrite, omResume, omComplete };
 
   virtual UnicodeString __fastcall GetCurrentDirectory();
 
@@ -118,8 +119,8 @@ protected:
   bool __fastcall HandleAsynchRequestOverwrite(
     wchar_t * FileName1, size_t FileName1Len, const wchar_t * FileName2,
     const wchar_t * Path1, const wchar_t * Path2,
-    __int64 Size1, __int64 Size2, time_t Time1, time_t Time2,
-    bool HasTime1, bool HasTime2, void * UserData, int & RequestResult);
+    __int64 Size1, __int64 Size2, time_t LocalTime,
+    bool HasLocalTime, const TRemoteFileTime & RemoteTime, void * UserData, int & RequestResult);
   bool __fastcall HandleAsynchRequestVerifyCertificate(
     const TFtpsCertificateData & Data, int & RequestResult);
   bool __fastcall HandleAsynchRequestNeedPass(
@@ -132,6 +133,8 @@ protected:
   bool __fastcall HandleReply(int Command, unsigned int Reply);
   bool __fastcall HandleCapabilities(TFTPServerCapabilities * ServerCapabilities);
   bool __fastcall CheckError(int ReturnCode, const wchar_t * Context);
+  void __fastcall PreserveDownloadFileTime(HANDLE Handle, void * UserData);
+  bool __fastcall GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time);
   void __fastcall EnsureLocation();
   UnicodeString __fastcall ActualCurrentDirectory();
   void __fastcall Discard();
@@ -173,7 +176,8 @@ protected:
     __int64 Size, int Type, TFileTransferData & UserData,
     TFileOperationProgressType * OperationProgress);
   TDateTime __fastcall ConvertLocalTimestamp(time_t Time);
-  void __fastcall ConvertRemoteTimestamp(time_t Time, bool HasTime, TDateTime & DateTime, TModificationFmt & ModificationFmt);
+  void __fastcall RemoteFileTimeToDateTimeAndPrecision(const TRemoteFileTime & Source,
+    TDateTime & DateTime, TModificationFmt & ModificationFmt);
   void __fastcall SetLastCode(int Code);
 
   static bool __fastcall Unquote(UnicodeString & Str);

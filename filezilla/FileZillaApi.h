@@ -28,6 +28,7 @@
 #endif // _MSC_VER > 1000
 
 #include "FzApiStructures.h"
+#include "structures.h"
 #ifndef MPEXT_NO_SSL
 #include "AsyncSslSocketLayer.h"
 #endif
@@ -147,8 +148,8 @@ public:
 	CString path1,path2;
 	__int64 size1;
 	__int64 size2;
-	CTime *time1;
-	CTime *time2;
+	CTime *localtime;
+	t_directory::t_direntry::t_date remotetime;
 	const t_transferfile *pTransferFile;
 };
 
@@ -296,6 +297,7 @@ public:
 #define FZ_LOG_DEBUG 8
 
 class CMainThread;
+class CFileZillaTools;
 class CFileZillaApi  
 {
 public:
@@ -329,7 +331,7 @@ public:
 #ifndef MPEXT
 	int Init(HWND hOwnerWnd, int nReplyMessageID = 0);
 #else
-	int Init(CApiLog * pParent);
+	int Init(CApiLog * pParent, CFileZillaTools * pTools);
 #endif
 	unsigned int GetMessageID();
 

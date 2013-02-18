@@ -55,7 +55,7 @@ public:
 		nGotTransferEndReply=0;
 		nWaitNextOpState=0;
 		nMKDOpState=-1;
-		pFileTime=0;
+		hasRemoteDate = false;
 		pFileSize=0;
 		bUseAbsolutePaths = FALSE;
 		bTriedPortPasvOnce = FALSE;
@@ -67,7 +67,6 @@ public:
 			delete pDirectoryListing;
 		pDirectoryListing=0;
 		delete pFileSize;
-		delete pFileTime;
 	};
 	CString rawpwd;
 	t_transferfile transferfile;
@@ -82,7 +81,9 @@ public:
 	std::list<CString> MKDSegments;
 	int nMKDOpState;
 	CTime ListStartTime;
-	CTime *pFileTime; //Used when downloading and OPTION_PRESERVEDOWNLOADFILETIME is set or when LIST fails
+	bool hasRemoteDate;
+	t_directory::t_direntry::t_date remoteDate;
+	//CTime *pFileTime; //Used when downloading and OPTION_PRESERVEDOWNLOADFILETIME is set or when LIST fails
 	_int64 *pFileSize; //Used when LIST failes
 	BOOL bUseAbsolutePaths;
 	BOOL bTriedPortPasvOnce;
@@ -157,7 +158,7 @@ public:
 /////////////////////////////////////////////////////////////////////////////
 // CFtpControlSocket
 
-CFtpControlSocket::CFtpControlSocket(CMainThread *pMainThread) : CControlSocket(pMainThread)
+CFtpControlSocket::CFtpControlSocket(CMainThread *pMainThread, CFileZillaTools * pTools) : CControlSocket(pMainThread, pTools)
 {
 	ASSERT(pMainThread);
 	m_Operation.nOpMode=0;
@@ -3533,24 +3534,17 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 							}
 							if (M>0 && M<=12 && d>0 && d<=31 && h>=0 && h<24 && m>=0 && m<60)
 							{
-								if (pData->pFileTime)
-									delete pData->pFileTime;
-								TRY
-								{
-									pData->pFileTime = new CTime(y, M, d, h, m, 0);
-								}
-								CATCH_ALL(e)
-								{
-									TCHAR buffer[1024];
-									CString str =_T("Exception creating CTime object: ");
-									if (e->GetErrorMessage(buffer, 1024, NULL))
-										str += buffer;
-									else
-									str += _T("Unknown exception");
-									LogMessageRaw(__FILE__, __LINE__, this, FZ_LOG_WARNING, str);
-									pData->pFileTime = 0;
-								}
-								END_CATCH_ALL;
+							    pData->hasRemoteDate = true;
+							    pData->remoteDate.year = y;
+							    pData->remoteDate.month = M;
+							    pData->remoteDate.day = d;
+							    pData->remoteDate.hour = h;
+							    pData->remoteDate.minute = m;
+							    pData->remoteDate.second = 0;
+							    pData->remoteDate.hastime = true;
+							    pData->remoteDate.hasseconds = false;
+							    pData->remoteDate.hasdate = true;
+							    pData->remoteDate.utc = true;
 							}
 						}
 					}
@@ -3795,40 +3789,8 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 						{
 							if (m_pDirectoryListing->direntry[i].name==remotefile)
 							{
-								if (pData->pFileTime)
-								{
-									delete pData->pFileTime;
-									pData->pFileTime = 0;
-								}
-								t_directory::t_direntry::t_date *pDate=&m_pDirectoryListing->direntry[i].date;
-								if (pDate->hasdate)
-								{
-									TRY
-									{
-										if (pDate->hastime)
-											pData->pFileTime = new CTime(pDate->year, pDate->month, pDate->day, pDate->hour, pDate->minute, pDate->second);
-										else
-											pData->pFileTime = new CTime(pDate->year, pDate->month, pDate->day, 0, 0, 0);
-
-										TIME_ZONE_INFORMATION tzInfo = {0};
-										BOOL res = GetTimeZoneInformation(&tzInfo);
-										CTimeSpan span(0, 0, tzInfo.Bias + ((res == TIME_ZONE_ID_DAYLIGHT) ? tzInfo.DaylightBias : tzInfo.StandardBias), 0);
-										*pData->pFileTime += span;
-									}
-									CATCH_ALL(e)
-									{
-										TCHAR buffer[1024];
-										CString str =_T("Exception creating CTime object: ");
-										if (e->GetErrorMessage(buffer, 1024, NULL))
-											str += buffer;
-										else
-										str += _T("Unknown exception");
-										LogMessageRaw(__FILE__, __LINE__, this, FZ_LOG_WARNING, str);
-										pData->pFileTime = 0;
-									}
-									END_CATCH_ALL;
-								}
-
+							    pData->hasRemoteDate = true;
+							    pData->remoteDate = m_pDirectoryListing->direntry[i].date;
 								pData->transferdata.transfersize=m_pDirectoryListing->direntry[i].size;
 							}
 						}
@@ -3991,43 +3953,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 			}
 			if (pData->nGotTransferEndReply==3)
 			{
-				if (COptions::GetOptionVal(OPTION_PRESERVEDOWNLOADFILETIME) && m_pDataFile)
-				{
-					if (pData->pFileTime)
-					{
-						SYSTEMTIME stime;
-						FILETIME ftime;
-						if (pData->pFileTime->GetAsSystemTime(stime))
-							if (SystemTimeToFileTime(&stime, &ftime))
-								SetFileTime((HANDLE)m_pDataFile->m_hFile, &ftime, &ftime, &ftime);
-					}
-				}
-#ifdef MPEXT
-				if (!pData->transferfile.get &&
-						COptions::GetOptionVal(OPTION_MPEXT_PRESERVEUPLOADFILETIME) && m_pDataFile &&
-						m_hasMfmtCmd)
-				{
-					CString filename =
-						pData->transferfile.remotepath.FormatFilename(pData->transferfile.remotefile, !pData->bUseAbsolutePaths);
-					CFileStatus64 status;
-					if (GetStatus64(pData->transferfile.localfile, status) &&
-							status.m_has_mtime)
-					{
-						struct tm tm;
-						status.m_mtime.GetGmtTm(&tm);
-						CString timestr;
-						timestr.Format(L"%02d%02d%02d%02d%02d%02d",
-							1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-						if (Send( _T("MFMT ") + timestr + _T(" ") + filename))
-						{
-							m_Operation.nOpState = FILETRANSFER_MFMT;
-							return;
-						}
-					}
-				}
-#endif
-				//Transfer successful
-				ResetOperation(FZ_REPLY_OK);
+			    TransferFinished();
 				return;
 			}
 			break;
@@ -4571,6 +4497,51 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 		ResetOperation(FZ_REPLY_ERROR);
 		return;
 	}
+}
+
+void CFtpControlSocket::TransferFinished()
+{
+	CFileTransferData *pData=static_cast<CFileTransferData *>(m_Operation.pData);
+
+	if (COptions::GetOptionVal(OPTION_PRESERVEDOWNLOADFILETIME) && m_pDataFile)
+	{
+		#ifdef MPEXT
+		m_pTools->PreserveDownloadFileTime(
+			(HANDLE)m_pDataFile->m_hFile, reinterpret_cast<void *>(pData->transferfile.nUserData));
+		#else
+		if (pData->pFileTime)
+		{
+			SYSTEMTIME stime;
+			FILETIME ftime;
+			if (pData->pFileTime->GetAsSystemTime(stime))
+				if (SystemTimeToFileTime(&stime, &ftime))
+					SetFileTime((HANDLE)m_pDataFile->m_hFile, &ftime, &ftime, &ftime);
+		}
+		#endif
+	}
+#ifdef MPEXT
+	if (!pData->transferfile.get &&
+			COptions::GetOptionVal(OPTION_MPEXT_PRESERVEUPLOADFILETIME) && m_pDataFile &&
+			m_hasMfmtCmd)
+	{
+		CString filename =
+			pData->transferfile.remotepath.FormatFilename(pData->transferfile.remotefile, !pData->bUseAbsolutePaths);
+		struct tm tm;
+		if (m_pTools->GetFileModificationTimeInUtc((LPCTSTR)pData->transferfile.localfile, tm))
+		{
+			CString timestr;
+			timestr.Format(L"%02d%02d%02d%02d%02d%02d",
+				1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+			if (Send( _T("MFMT ") + timestr + _T(" ") + filename))
+			{
+				m_Operation.nOpState = FILETRANSFER_MFMT;
+				return;
+			}
+		}
+	}
+#endif
+	//Transfer successful
+	ResetOperation(FZ_REPLY_OK);
 }
 
 void CFtpControlSocket::Cancel(BOOL bQuit/*=FALSE*/)
@@ -5135,7 +5106,7 @@ int CFtpControlSocket::CheckOverwriteFile()
 			END_CATCH_ALL;
 			BOOL bRemoteFileExists = FALSE;
 			__int64 remotesize = -1;
-			CTime *remotetime = 0;
+			t_directory::t_direntry::t_date remotetime;
 			if (m_pDirectoryListing)
 			{
 				for (int i=0; i<m_pDirectoryListing->num; i++)
@@ -5144,45 +5115,20 @@ int CFtpControlSocket::CheckOverwriteFile()
 					if (m_pDirectoryListing->direntry[i].name == remotefile)
 					{
 						remotesize = m_pDirectoryListing->direntry[i].size;
-						if (m_pDirectoryListing->direntry[i].date.hasdate)
-						{
-							TRY
-							{
-								remotetime = new CTime(m_pDirectoryListing->direntry[i].date.year,
-									m_pDirectoryListing->direntry[i].date.month,
-									m_pDirectoryListing->direntry[i].date.day,
-									m_pDirectoryListing->direntry[i].date.hastime?m_pDirectoryListing->direntry[i].date.hour:0,
-									m_pDirectoryListing->direntry[i].date.hastime?m_pDirectoryListing->direntry[i].date.minute:0,
-									m_pDirectoryListing->direntry[i].date.hastime?m_pDirectoryListing->direntry[i].date.second:0,
-									-1);
-							}
-							CATCH_ALL(e)
-							{
-								TCHAR buffer[1024];
-								CString str =_T("Exception creating CTime object: ");
-								if (e->GetErrorMessage(buffer, 1024, NULL))
-									str += buffer;
-								else
-									str += _T("Unknown exception");
-								LogMessageRaw(__FILE__, __LINE__, this, FZ_LOG_WARNING, str);
-								remotetime = NULL;
-							}
-							END_CATCH_ALL;
-						}
+						remotetime = m_pDirectoryListing->direntry[i].date;
 						bRemoteFileExists = TRUE;
 						break;
 					}
 				}
 			}
+			if (!bRemoteFileExists && pData->hasRemoteDate)
+			{
+				remotetime = pData->remoteDate;
+				bRemoteFileExists = TRUE;
+			}
 			if (remotesize == -1 && pData->pFileSize)
 			{
 				remotesize = *pData->pFileSize;
-				bRemoteFileExists = TRUE;
-			}
-			if (!remotetime && pData->pFileTime)
-			{
-				remotetime = new CTime;
-				*remotetime = *pData->pFileTime;
 				bRemoteFileExists = TRUE;
 			}
 
@@ -5202,8 +5148,6 @@ int CFtpControlSocket::CheckOverwriteFile()
 					pOverwriteData->path2 = pData->transferfile.remotepath.GetPath();
 					pOverwriteData->size1 = localsize;
 					pOverwriteData->size2 = remotesize;
-					pOverwriteData->time1 = localtime;
-					pOverwriteData->time2 = remotetime;
 				}
 				else
 				{
@@ -5215,9 +5159,9 @@ int CFtpControlSocket::CheckOverwriteFile()
 					pOverwriteData->path2 = pData->transferfile.localfile.Left(pos+1);
 					pOverwriteData->size1 = remotesize;
 					pOverwriteData->size2 = localsize;
-					pOverwriteData->time1 = remotetime;
-					pOverwriteData->time2 = localtime;
 				}
+				pOverwriteData->localtime = localtime;
+				pOverwriteData->remotetime = remotetime;
 				pOverwriteData->nRequestID = m_pOwner->GetNextAsyncRequestID();
 				if (!PostMessage(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_ASYNCREQUEST, FZ_ASYNCREQUEST_OVERWRITE), (LPARAM)pOverwriteData))
 				{
@@ -5234,7 +5178,6 @@ int CFtpControlSocket::CheckOverwriteFile()
 			{
 				m_Operation.nOpState = FILETRANSFER_TYPE;
 				delete localtime;
-				delete remotetime;
 			}
 		}
 	}
@@ -5267,12 +5210,9 @@ void CFtpControlSocket::SetFileExistsAction(int nAction, COverwriteRequestData *
 		pTransferData->nWaitNextOpState = FILETRANSFER_TYPE;
 		break;
 	case FILEEXISTS_OVERWRITEIFNEWER:
-		if ( !pData->time1 || !pData->time2 )
-			pTransferData->nWaitNextOpState = FILETRANSFER_TYPE;
-		else if (*pData->time2 <= *pData->time1)
-			nReplyError = FZ_REPLY_OK;
-		else
-			pTransferData->nWaitNextOpState = FILETRANSFER_TYPE;
+		// MPEXT
+		ASSERT(FALSE);
+		nReplyError = FZ_REPLY_OK;
 		break;
 	case FILEEXISTS_RENAME:
 		if (pTransferData->transferfile.get)
@@ -5324,7 +5264,12 @@ void CFtpControlSocket::SetFileExistsAction(int nAction, COverwriteRequestData *
 		}
 		pTransferData->nWaitNextOpState = FILETRANSFER_TYPE;
 		break;
+	#ifdef MPEXT
+	case FILEEXISTS_COMPLETE:
+		TransferFinished();
+		break;
 	}
+	#endif
 	if (nReplyError == FZ_REPLY_OK)
 		ResetOperation(FZ_REPLY_OK);
 	else if (nReplyError)

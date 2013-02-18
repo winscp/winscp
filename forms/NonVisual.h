@@ -533,9 +533,11 @@ private:
   TListColumn * FListColumn;
   TCustomScpExplorerForm * FScpExplorer;
   bool FSessionIdleTimerExecuting;
-  int FIdle;
+  int FBusy;
 
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
+  bool __fastcall GetBusy() { return FBusy > 0; }
+
 protected:
   void __fastcall CreateSessionListMenu(TAction * Action);
   void __fastcall CreateSessionListMenuLevel(TTBCustomItem * Menu, int Index, int Level);
@@ -575,9 +577,12 @@ public:
   void __fastcall InitMenus(TComponent * Component);
   TOnceDoneOperation __fastcall CurrentQueueOnceEmptyOperation();
   void __fastcall ResetQueueOnceEmptyOperation();
+  void __fastcall StartBusy();
+  void __fastcall EndBusy();
 
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
+  __property bool Busy = { read = GetBusy };
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TNonVisualDataModule *NonVisualDataModule;

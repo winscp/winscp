@@ -130,6 +130,7 @@ SSLOBJ=$(OBJ_D)\s2_meth.obj \
     $(OBJ_D)\s2_enc.obj $(OBJ_D)\s2_pkt.obj $(OBJ_D)\s3_meth.obj \
     $(OBJ_D)\s3_srvr.obj $(OBJ_D)\s3_clnt.obj $(OBJ_D)\s3_lib.obj \
     $(OBJ_D)\s3_enc.obj $(OBJ_D)\s3_pkt.obj $(OBJ_D)\s3_both.obj \
+    $(OBJ_D)\s3_cbc.obj \
     $(OBJ_D)\s23_meth.obj $(OBJ_D)\s23_srvr.obj $(OBJ_D)\s23_clnt.obj \
     $(OBJ_D)\s23_lib.obj $(OBJ_D)\s23_pkt.obj $(OBJ_D)\t1_meth.obj \
     $(OBJ_D)\t1_srvr.obj $(OBJ_D)\t1_clnt.obj $(OBJ_D)\t1_lib.obj \
@@ -665,6 +666,9 @@ $(OBJ_D)\s3_pkt.obj: $(SRC_D)\ssl\s3_pkt.c
 
 $(OBJ_D)\s3_both.obj: $(SRC_D)\ssl\s3_both.c
     $(CC) -o$(OBJ_D)\s3_both.obj  $(LIB_CFLAGS) -c $(SRC_D)\ssl\s3_both.c
+
+$(OBJ_D)\s3_cbc.obj: $(SRC_D)\ssl\s3_cbc.c
+    $(CC) -o$(OBJ_D)\s3_cbc.obj  $(LIB_CFLAGS) -c $(SRC_D)\ssl\s3_cbc.c
 
 $(OBJ_D)\s23_meth.obj: $(SRC_D)\ssl\s23_meth.c
     $(CC) -o$(OBJ_D)\s23_meth.obj  $(LIB_CFLAGS) -c $(SRC_D)\ssl\s23_meth.c

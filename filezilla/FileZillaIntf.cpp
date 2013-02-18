@@ -55,7 +55,7 @@ bool __fastcall TFileZillaIntf::Init()
 
   FFileZillaApi = new CFileZillaApi();
 
-  bool Result = Check(FFileZillaApi->Init(FIntern), L"init");
+  bool Result = Check(FFileZillaApi->Init(FIntern, this), L"init");
 
   if (!Result)
   {
@@ -296,6 +296,20 @@ void __fastcall CopyValidityTime(TFtpsCertificateData::TValidityTime & Dest,
   Dest.Sec = Source.s;
 }
 //---------------------------------------------------------------------------
+void __fastcall CopyFileTime(TRemoteFileTime & Dest, const t_directory::t_direntry::t_date & Source)
+{
+  Dest.Year = Source.year;
+  Dest.Month = Source.month;
+  Dest.Day = Source.day;
+  Dest.Hour = Source.hour;
+  Dest.Minute = Source.minute;
+  Dest.Second = Source.second;
+  Dest.HasTime = Source.hastime;
+  Dest.HasDate = Source.hasdate;
+  Dest.HasSeconds = Source.hasseconds;
+  Dest.Utc = Source.utc;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
 {
   bool Result;
@@ -327,13 +341,14 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
           ASSERT(Data != NULL);
           wcsncpy(FileName1, Data->FileName1, LENOF(FileName1));
           FileName1[LENOF(FileName1) - 1] = L'\0';
+          TRemoteFileTime RemoteTime;
+          CopyFileTime(RemoteTime, Data->remotetime);
           Result = HandleAsynchRequestOverwrite(
             FileName1, LENOF(FileName1), Data->FileName2, Data->path1, Data->path2,
             Data->size1, Data->size2,
-            (Data->time1 != NULL) ? Data->time1->GetTime() : 0,
-            (Data->time2 != NULL) ? Data->time2->GetTime() : 0,
-            (Data->time1 != NULL) && ((Data->time1->GetHour() != 0) || (Data->time1->GetMinute() != 0)),
-            (Data->time2 != NULL) && ((Data->time2->GetHour() != 0) || (Data->time2->GetMinute() != 0)),
+            (Data->localtime != NULL) ? Data->localtime->GetTime() : 0,
+            (Data->localtime != NULL) && ((Data->localtime->GetHour() != 0) || (Data->localtime->GetMinute() != 0)),
+            RemoteTime,
             reinterpret_cast<void*>(Data->pTransferFile->nUserData), RequestResult);
         }
         catch(...)
@@ -436,16 +451,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
           Dest.Size = Source.size;
           Dest.Dir = Source.dir;
           Dest.Link = Source.bLink;
-          Dest.Year = Source.date.year;
-          Dest.Month = Source.date.month;
-          Dest.Day = Source.date.day;
-          Dest.Hour = Source.date.hour;
-          Dest.Minute = Source.date.minute;
-          Dest.Second = Source.date.second;
-          Dest.HasTime = Source.date.hastime;
-          Dest.HasDate = Source.date.hasdate;
-          Dest.HasSeconds = Source.date.hasseconds;
-          Dest.Utc = Source.date.utc;
+          CopyFileTime(Dest.Time, Source.date);
           Dest.LinkTarget = Source.linkTarget;
         }
 

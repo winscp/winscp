@@ -87,7 +87,7 @@ __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
 {
   FListColumn = NULL;
   FSessionIdleTimerExecuting = false;
-  FIdle = 0;
+  FBusy = 0;
 
   QueueSpeedComboBoxItem(QueuePopupSpeedComboBoxItem);
   InitMenus(this);
@@ -115,10 +115,10 @@ void __fastcall TNonVisualDataModule::LogActionsUpdate(
 void __fastcall TNonVisualDataModule::LogActionsExecute(
       TBasicAction *Action, bool &Handled)
 {
-  FIdle--;
 
-  try
   {
+    TAutoNestingCounter Counter(FBusy);
+
     TLogMemo * LogMemo = TTerminalManager::Instance()->LogMemo;
     assert(LogMemo && LogMemo->Parent);
     EXE(LogClearAction, LogMemo->SessionLog->Clear())
@@ -128,11 +128,6 @@ void __fastcall TNonVisualDataModule::LogActionsExecute(
     EXE(LogCloseAction, WinConfiguration->LogView = lvNone)
     EXE(LogPreferencesAction, PreferencesDialog(pmLogging));
     ;
-  }
-  __finally
-  {
-    assert(FIdle < 0);
-    FIdle++;
   }
 
   DoIdle();
@@ -465,9 +460,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     }
     ScpExplorer->BeforeAction();
 
-    FIdle--;
-    try
+
     {
+      TAutoNestingCounter Counter(FBusy);
       // focused operation
       EXE(CurrentCopyFocusedAction, ScpExplorer->ExecuteFileOperationCommand(foCopy, osCurrent, true))
       EXE(CurrentMoveFocusedAction, ScpExplorer->ExecuteFileOperationCommand(foMove, osCurrent, true))
@@ -724,11 +719,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       EXE(QueueItemSpeedAction, )
       ;
     }
-    __finally
-    {
-      assert(FIdle < 0);
-      FIdle++;
-    }
 
     DoIdle();
   }
@@ -877,7 +867,7 @@ void __fastcall TNonVisualDataModule::DoIdle()
     try
     {
       assert(ScpExplorer);
-      ScpExplorer->Idle(FIdle >= 0);
+      ScpExplorer->Idle();
     }
     __finally
     {
@@ -1524,4 +1514,14 @@ void __fastcall TNonVisualDataModule::SessionColorPaletteChange(
   TTBXColorPalette * ColorPalette = dynamic_cast<TTBXColorPalette *>(Sender);
   assert(ColorPalette != NULL);
   ScpExplorer->SessionColor = (ColorPalette->Color != clNone ? ColorPalette->Color : (TColor)0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::StartBusy()
+{
+  FBusy++;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::EndBusy()
+{
+  FBusy--;
 }

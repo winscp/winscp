@@ -147,6 +147,7 @@ public:
   virtual __fastcall ~TManagementScript();
 
   void __fastcall Connect(const UnicodeString Session, TOptions * Options, bool CheckParams);
+  void __fastcall ReflectSettings();
 
   __property TScriptInputEvent OnInput = { read = FOnInput, write = FOnInput };
   __property TScriptQueryCancelEvent OnQueryCancel = { read = FOnQueryCancel, write = FOnQueryCancel };
