@@ -1,9 +1,14 @@
-                    GNU GENERAL PUBLIC LICENSE
-                       Version 3, 29 June 2007
+  A. GNU General Public License
+  B. License of WinSCP Icon Set
+  C. Privacy Policy
 
- Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
- Everyone is permitted to copy and distribute verbatim copies
- of this license document, but changing it is not allowed.
+  
+  A. GNU GENERAL PUBLIC LICENSE
+  Version 3, 29 June 2007
+
+  Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
+  Everyone is permitted to copy and distribute verbatim copies
+  of this license document, but changing it is not allowed.
 
                             Preamble
 
@@ -672,3 +677,46 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <http://www.gnu.org/philosophy/why-not-lgpl.html>.
+
+
+  B. License of WinSCP Icon Set
+  
+Note that all images distributed in or with WinSCP application are NOT
+published under the GNU General Public License. It means that it is not
+allowed to redistribute or reuse these images or parts of them or modifications
+of them without WinSCP separately or in or with another software.
+
+You agree that all ownership and copyright of the licensed stock icons remain
+the property of York Technologies Limited. WinSCP was granted a license to
+display this graphical media royalty-free in WinSCP software applications,
+web design, presentations, and multimedia projects that WinSCP creates and/or
+distributes.
+
+
+  C. WinSCP Privacy Policy
+
+Please take time to read WinSCP Privacy policy at
+http://winscp.net/eng/docs/privacy
+
+WinSCP includes functionality to collect and send non-personal WinSCP
+Usage statistics and to automatically check for application updates. The only
+potentially personal information sent to WinSCP is IP addresses. Users can
+opt-out from using this functionality in the installer or anytime later
+in WinSCP Preferences. WinSCP Usage statistics help improve future versions
+of WinSCP. Once sent, usage statistics are stored for analysis (except
+IP addresses) and made available to the core WinSCP team only.
+
+Before disabling WinSCP Usage statistics, be so kind and consider that it
+plays very important role in the WinSCP development. We work very hard
+to make WinSCP reliable and useful. We also love improving WinSCP with every
+release. And last but not least, we provide WinSCP application to you
+for free and we want this to stay so! However our resources and time are
+unfortunately very limited. We want to focus our effort on improving
+the right features for you. That is why we need to learn more about how you
+use WinSCP.
+
+If you still want to disable WinSCP Usage statistics already during
+installation, you may do so using Custom installation.
+
+Thank you!
+

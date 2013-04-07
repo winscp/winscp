@@ -1,0 +1,66 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXOLECL_RC__
+#define __AFXOLECL_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifndef _INC_DLGS
+	#include <dlgs.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Client Resources
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE strings
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_STATIC_OBJECT           "Impossible d'activer un objet ActiveX statique."
+	AFX_IDP_FAILED_TO_CONNECT       "La connexion a échoué. \nLa liaison est peut être rompue."
+	AFX_IDP_SERVER_BUSY             "Impossible d'exécuter la commande, le serveur est occupé."
+	AFX_IDP_BAD_VERB                "Erreur lors de l'exécution de l'opération par l'application serveur."
+	AFX_IDP_FAILED_TO_LAUNCH        "Erreur lors du démarrage d'une application serveur."
+	AFX_IDS_UPDATING_ITEMS          "Mise à jour des objets ActiveX"
+	AFX_IDP_FAILED_TO_CONVERT       "Echec de conversion de l'objet ActiveX."
+	AFX_IDP_ASK_TO_DISCARD          "Impossible de sauvegarder les objets ActiveX en quittant Windows !\nRejeter tous les modifications sur %1?"
+	AFX_IDP_FAILED_TO_CREATE        "Echec de création de l'objet. Vérifiez que l'application est entrée dans le registre du système."
+
+	AFX_IDS_METAFILE_FORMAT         "Image (métafichier)\na image"
+	AFX_IDS_DIB_FORMAT              "Image en mode point indépendante du périphérique\na image en mode point indépendante du périphérique"
+	AFX_IDS_BITMAP_FORMAT           "Image en mode point\na image en mode point"
+	AFX_IDS_LINKSOURCE_FORMAT       "%s\n%s"
+	AFX_IDS_EMBED_FORMAT            "%s\n%s"
+	AFX_IDS_RTF_FORMAT              "Rich Text (RTF)\ntexte avec du formatage de police et de paragraphe"
+	AFX_IDS_TEXT_FORMAT             "Texte non formaté\ntexte sans aucun formatage"
+
+	AFX_IDS_INVALID_CURRENCY        "Monnaie non valide."
+	AFX_IDS_INVALID_DATETIME        "DateTime non valide."
+	AFX_IDS_INVALID_DATETIMESPAN    "DateTimeSpan non valide."
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXOLECL_RC__

@@ -1,0 +1,66 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXOLECL_RC__
+#define __AFXOLECL_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifndef _INC_DLGS
+	#include <dlgs.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 標準 MFC ﾘｿｰｽの変更はできません! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Client Resources
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE strings
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_STATIC_OBJECT           "静的 ActiveX ｵﾌﾞｼﾞｪｸﾄをｱｸﾃｨﾌﾞにできません。"
+	AFX_IDP_FAILED_TO_CONNECT       "接続に失敗しました。\nﾘﾝｸが壊れている可能性があります。"
+	AFX_IDP_SERVER_BUSY             "ｺﾏﾝﾄﾞを実行できません。ｻｰﾊﾞｰがﾋﾞｼﾞｰ状態です。"
+	AFX_IDP_BAD_VERB                "ｻｰﾊﾞｰ処理の実行に失敗しました。"
+	AFX_IDP_FAILED_TO_LAUNCH        "ｻｰﾊﾞｰ ｱﾌﾟﾘｹｰｼｮﾝの起動に失敗しました。"
+	AFX_IDS_UPDATING_ITEMS          "ActiveX ｵﾌﾞｼﾞｪｸﾄを更新しています。"
+	AFX_IDP_FAILED_TO_CONVERT       "ActiveX ｵﾌﾞｼﾞｪｸﾄの変換に失敗しました。"
+	AFX_IDP_ASK_TO_DISCARD          "ActiveX ｵﾌﾞｼﾞｪｸﾄは Windows の終了時には保存できません。\n%1 へのすべての変更を破棄しますか?"
+	AFX_IDP_FAILED_TO_CREATE        "ｵﾌﾞｼﾞｪｸﾄの作成に失敗しました。ｼｽﾃﾑ ﾚｼﾞｽﾄﾘにｱﾌﾟﾘｹｰｼｮﾝが登録されているか確認してください。"
+
+	AFX_IDS_METAFILE_FORMAT         "ﾋﾟｸﾁｬ (ﾒﾀﾌｧｲﾙ)\nﾋﾟｸﾁｬ"
+	AFX_IDS_DIB_FORMAT              "ﾃﾞﾊﾞｲｽに依存しないﾋﾞｯﾄﾏｯﾌﾟ\nﾃﾞﾊﾞｲｽ非依存ﾋﾞｯﾄﾏｯﾌﾟ"
+	AFX_IDS_BITMAP_FORMAT           "ﾋﾞｯﾄﾏｯﾌﾟ\nﾋﾞｯﾄﾏｯﾌﾟ"
+	AFX_IDS_LINKSOURCE_FORMAT       "%s\n%s"
+	AFX_IDS_EMBED_FORMAT            "%s\n%s"
+	AFX_IDS_RTF_FORMAT              "ﾘｯﾁ ﾃｷｽﾄ (RTF)\n書式付きﾃｷｽﾄ"
+	AFX_IDS_TEXT_FORMAT             "ﾃｷｽﾄ\n書式なしﾃｷｽﾄ"
+
+	AFX_IDS_INVALID_CURRENCY        "無効な通貨型です。"
+	AFX_IDS_INVALID_DATETIME        "無効な日付と時刻です。"
+	AFX_IDS_INVALID_DATETIMESPAN    "無効な期間です。"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXOLECL_RC__

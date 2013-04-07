@@ -1,0 +1,105 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXDB_RC__
+#define __AFXDB_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 標準 MFC ﾘｿｰｽの変更はできません! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// Database Resources
+
+// Database strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_SQL_CONNECT_FAIL
+		"ﾃﾞｰﾀｿｰｽへの接続に失敗しました。"
+	AFX_IDP_SQL_RECORDSET_FORWARD_ONLY
+		"ﾚｺｰﾄﾞｾｯﾄの移動は、順方向のみｻﾎﾟｰﾄされています。"
+	AFX_IDP_SQL_EMPTY_COLUMN_LIST
+		"取得する列が指定されていないため、ﾃｰﾌﾞﾙを開けませんでした。"
+	AFX_IDP_SQL_FIELD_SCHEMA_MISMATCH
+		"ｸｴﾘｰで予期しない列のﾃﾞｰﾀ型が返されました。"
+	AFX_IDP_SQL_ILLEGAL_MODE "更新または削除に失敗しました。"
+	AFX_IDP_SQL_MULTIPLE_ROWS_AFFECTED "複数の行が更新されました。"
+	AFX_IDP_SQL_NO_CURRENT_RECORD "現在のﾚｺｰﾄﾞがないため、操作に失敗しました。"
+	AFX_IDP_SQL_NO_ROWS_AFFECTED
+		"更新または削除操作の結果、変更された行はありません。"
+	AFX_IDP_SQL_RECORDSET_READONLY "ﾚｺｰﾄﾞｾｯﾄは読み取り専用です。"
+	AFX_IDP_SQL_SQL_NO_TOTAL
+		"ODBC ﾄﾞﾗｲﾊﾞは MFC LongBinary ﾃﾞｰﾀ ﾓﾃﾞﾙをｻﾎﾟｰﾄしていません。"
+	AFX_IDP_SQL_ODBC_LOAD_FAILED
+		"ODBC32.DLL を読み込めませんでした。"
+	AFX_IDP_SQL_DYNASET_NOT_SUPPORTED
+		"ODBC ﾄﾞﾗｲﾊﾞはﾀﾞｲﾅｾｯﾄをｻﾎﾟｰﾄしていません。"
+	AFX_IDP_SQL_SNAPSHOT_NOT_SUPPORTED
+		"ｽﾅｯﾌﾟｼｮｯﾄのｻﾎﾟｰﾄには ODBC ｽﾀﾃｨｯｸ ｶｰｿﾙが必要です。"
+	AFX_IDP_SQL_API_CONFORMANCE
+		"ODBC ﾄﾞﾗｲﾊﾞは MFC ﾃﾞｰﾀﾍﾞｰｽ ｸﾗｽと互換性がありません (API_CONFORMANCE >= SQL_OAC_LEVEL1 が必要です)。"
+	AFX_IDP_SQL_SQL_CONFORMANCE
+		"ODBC ﾄﾞﾗｲﾊﾞは MFC ﾃﾞｰﾀﾍﾞｰｽ ｸﾗｽと互換性がありません (SQL_CONFORMANCE >= SQL_OSC_MINIMUM が必要です)。"
+	AFX_IDP_SQL_NO_DATA_FOUND
+		"ﾃﾞｰﾀの末尾または先頭を超えてｽｸﾛｰﾙしようとしています。"
+	AFX_IDP_SQL_ROW_UPDATE_NOT_SUPPORTED
+		"ﾀﾞｲﾅｾｯﾄは ODBC ﾄﾞﾗｲﾊﾞでｻﾎﾟｰﾄされていません。"
+	AFX_IDP_SQL_ODBC_V2_REQUIRED
+		"ODBC Level 2 に準拠したﾄﾞﾗｲﾊﾞが必要です。"
+	AFX_IDP_SQL_NO_POSITIONED_UPDATES
+		"特定の位置の更新は ODBC ﾄﾞﾗｲﾊﾞでｻﾎﾟｰﾄされていません。"
+	AFX_IDP_SQL_LOCK_MODE_NOT_SUPPORTED
+		"要求したﾛｯｸ ﾓｰﾄﾞはｻﾎﾟｰﾄされていません。"
+	AFX_IDP_SQL_DATA_TRUNCATED
+		"ﾃﾞｰﾀは切り捨てられました。"
+	AFX_IDP_SQL_ROW_FETCH
+		"ﾚｺｰﾄﾞの取得ｴﾗｰです。"
+	AFX_IDP_SQL_INCORRECT_ODBC
+		"必要な ODBC ｴﾝﾄﾘ ﾎﾟｲﾝﾄは見つかりませんでした。ODBC ﾄﾞﾗｲﾊﾞが正しくｲﾝｽﾄｰﾙされているか確認してください。"
+	AFX_IDP_SQL_UPDATE_DELETE_FAILED
+		"更新または削除に失敗しました。"
+	AFX_IDP_SQL_DYNAMIC_CURSOR_NOT_SUPPORTED
+		"ﾀﾞｲﾅﾐｯｸ ｶｰｿﾙは ODBC ﾄﾞﾗｲﾊﾞではｻﾎﾟｰﾄされていません。"
+	AFX_IDP_SQL_FIELD_NOT_FOUND
+		"無効なﾌｨｰﾙﾄﾞ名またはﾌｨｰﾙﾄﾞ ｲﾝﾃﾞｯｸｽです。"
+	AFX_IDP_SQL_BOOKMARKS_NOT_SUPPORTED
+		"ﾌﾞｯｸﾏｰｸは ODBC ﾄﾞﾗｲﾊﾞではｻﾎﾟｰﾄされていません。"
+	AFX_IDP_SQL_BOOKMARKS_NOT_ENABLED
+		"ﾌﾞｯｸﾏｰｸはﾚｺｰﾄﾞｾｯﾄ上で使用できません。"
+	AFX_IDP_DAO_ENGINE_INITIALIZATION
+		"DAO/Jet db ｴﾝｼﾞﾝを初期化できません。"
+	AFX_IDP_DAO_DFX_BIND
+		"DFX のﾊﾟﾗﾒｰﾀ値が正しくありません。"
+	AFX_IDP_DAO_OBJECT_NOT_OPEN
+		"DAO TableDef または QueryDef が開けません。"
+	AFX_IDP_DAO_ROWTOOSHORT
+		"GetRows に失敗しました。行に割り当てる十分なﾒﾓﾘがありません。"
+	AFX_IDP_DAO_BADBINDINFO
+		"GetRows ﾊﾞｲﾝﾃﾞｨﾝｸﾞ ｴﾗｰ。ﾃﾞｰﾀ型が合っていない可能性があります。"
+	AFX_IDP_DAO_COLUMNUNAVAILABLE
+		"GetRows に失敗しました。 要求された列はこのﾚｺｰﾄﾞｾｯﾄのﾒﾝﾊﾞではありません。"
+
+	AFX_IDS_DELETED "<削除済>"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXDB_RC__

@@ -1,0 +1,87 @@
+// mfcintl.rc : Defines the resources for the MFC Language Specific DLLs
+//
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#include "afxres.h"
+
+#if (LANGID == 0x409)
+ #define LOCDIR(f) <f>
+#else
+ #define LOCDIR(f) <l.##LANG##\\f>
+#endif
+
+#define _AFX_IMPL_RESOURCES
+
+// include all the standard resources
+#include LOCDIR(afxres.rc)
+#include LOCDIR(afxprint.rc)
+
+// include all the OLE resources
+#include LOCDIR(afxolecl.rc)
+#include LOCDIR(afxolesv.rc)
+
+// include all the DB resources
+#include LOCDIR(afxdb.rc)
+
+// include all the CTL resources
+#include LOCDIR(afxctl.rc)
+
+// include all the ISAPI resources
+#include LOCDIR(afxisapi.rc)
+
+// include standard status bar strings
+#include LOCDIR(indicate.rc)
+// include _all_ standard command message prompts
+#include LOCDIR(prompts.rc)
+
+/////////////////////////////////////////////////////////////////////////////
+// Version stamp for this .DLL
+
+#include "winver.h"
+#include "afxbld_.h"
+
+// Version Info for MFC42[LANG].DLL
+VS_VERSION_INFO     VERSIONINFO
+  FILEVERSION       6,0,_MFC_BUILD,_MFC_RBLD
+  PRODUCTVERSION    6,0,0,0
+  FILEFLAGSMASK     VS_FFI_FILEFLAGSMASK
+#ifndef RELEASE
+  FILEFLAGS         VS_FF_PRERELEASE
+#else
+  FILEFLAGS         0 // final version
+#endif
+  FILEOS            VOS_NT_WINDOWS32
+  FILETYPE          VFT_DLL
+  FILESUBTYPE       0   // not used
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK LANGCODE
+			// Note: Actual LANGCODE determined by MFCINTL.MAK
+		BEGIN
+			VALUE "CompanyName",     "Microsoft Corporation\0"
+			VALUE "FileDescription", "MFC Language Specific Resources\0"
+			VALUE "FileVersion",     "6.00." _MFC_USER_BUILD "." _MFC_USER_RBLD "\0"
+			VALUE "InternalName",    "MFCINTL\0"
+			VALUE "LegalCopyright",  "Copyright (C) Microsoft Corp. 1993-1998\0"
+			VALUE "LegalTrademarks", "\0"
+			VALUE "ProductName",     "Microsoft (R) Visual C++\0"
+			VALUE "ProductVersion",  "6.0.000\0"
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", LANGID, CODEPAGE
+			// Note: Actual LANGID and CODEPAGE determined by MFCINTL.MAK
+	END
+END
+
+/////////////////////////////////////////////////////////////////////////////

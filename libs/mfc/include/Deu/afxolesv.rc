@@ -1,0 +1,53 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXOLESV_RC__
+#define __AFXOLESV_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Server Resources
+
+// OLE strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_ASK_TO_UPDATE,              "%1 vor dem Fortfahren aktualisieren?"
+	AFX_IDP_FAILED_TO_UPDATE,           "Client konnte nicht aktualisiert werden."
+
+	AFX_IDP_FAILED_TO_REGISTER,         "Registrierung nicht möglich. ActiveX-Features möglicherweise defekt."
+	AFX_IDP_FAILED_TO_AUTO_REGISTER,    "Fehler bei der Aktualisierung der Systemregistrierung.\nVersuchen Sie REGEDIT zu benutzen."
+END
+
+STRINGTABLE PRELOAD
+BEGIN
+	AFX_IDS_APP_TITLE_EMBEDDING,        "%1 in %2"
+	AFX_IDS_OBJ_TITLE_INPLACE,          "%1 - %2"
+	AFX_IDS_EXIT_MENU,                  "&Beenden und zu %1 zurückkehren"
+	AFX_IDS_UPDATE_MENU,                "&Aktualisiere %1"
+	AFX_IDS_SAVEFILECOPY,               "Kopie speichern unter"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXOLESV_RC__

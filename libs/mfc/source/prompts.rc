@@ -1,0 +1,141 @@
+// prompts.rc : RC file for all standard AFX menu prompts
+//
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "afxres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#ifdef APSTUDIO_INVOKED
+// This resource will prevent the App Studio user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+/////////////////////////////////////////////////////////////////////////////
+
+// Standard Menu commands
+STRINGTABLE DISCARDABLE
+BEGIN
+	ID_FILE_NEW,            "Create a new document\nNew"
+	ID_FILE_OPEN,           "Open an existing document\nOpen"
+	ID_FILE_CLOSE,          "Close the active document\nClose"
+	ID_FILE_SAVE,           "Save the active document\nSave"
+	ID_FILE_SAVE_AS,        "Save the active document with a new name\nSave As"
+	ID_FILE_PAGE_SETUP,     "Change the printing options\nPage Setup"
+	ID_FILE_PRINT_SETUP,    "Change the printer and printing options\nPrint Setup"
+	ID_FILE_PRINT,          "Print the active document\nPrint"
+	ID_FILE_PRINT_PREVIEW,  "Display full pages\nPrint Preview"
+	ID_APP_ABOUT,           "Display program information, version number and copyright\nAbout"
+	ID_APP_EXIT,            "Quit the application; prompts to save documents\nExit"
+	ID_FILE_SEND_MAIL,      "Send the active document through electronic mail\nSend Mail"
+	ID_FILE_MRU_FILE1+0,    "Open this document"
+	ID_FILE_MRU_FILE1+1,    "Open this document"
+	ID_FILE_MRU_FILE1+2,    "Open this document"
+	ID_FILE_MRU_FILE1+3,    "Open this document"
+	ID_FILE_MRU_FILE1+4,    "Open this document"
+	ID_FILE_MRU_FILE1+5,    "Open this document"
+	ID_FILE_MRU_FILE1+6,    "Open this document"
+	ID_FILE_MRU_FILE1+7,    "Open this document"
+	ID_FILE_MRU_FILE1+8,    "Open this document"
+	ID_FILE_MRU_FILE1+9,    "Open this document"
+	ID_FILE_MRU_FILE1+10,   "Open this document"
+	ID_FILE_MRU_FILE1+11,   "Open this document"
+	ID_FILE_MRU_FILE1+12,   "Open this document"
+	ID_FILE_MRU_FILE1+13,   "Open this document"
+	ID_FILE_MRU_FILE1+14,   "Open this document"
+	ID_FILE_MRU_FILE1+15,   "Open this document"
+	ID_CONTEXT_HELP,        "Display help for clicked on buttons, menus and windows\nHelp"
+	ID_HELP,                "Display help for current task or command\nHelp"
+	ID_HELP_INDEX,          "List Help topics\nHelp Index"
+	ID_HELP_FINDER,         "List Help topics\nHelp Topics"
+	ID_HELP_USING,          "Display instructions about how to use help\nHelp"
+	ID_NEXT_PANE,           "Switch to the next window pane\nNext Pane"
+	ID_PREV_PANE,           "Switch back to the previous window pane\nPrevious Pane"
+	ID_WINDOW_NEW,          "Open another window for the active document\nNew Window"
+	ID_WINDOW_ARRANGE,      "Arrange icons at the bottom of the window\nArrange Icons"
+	ID_WINDOW_CASCADE,      "Arrange windows so they overlap\nCascade Windows"
+	ID_WINDOW_TILE_HORZ,    "Arrange windows as non-overlapping tiles\nTile Windows"
+	ID_WINDOW_TILE_VERT,    "Arrange windows as non-overlapping tiles\nTile Windows"
+	ID_WINDOW_SPLIT,        "Split the active window into panes\nSplit"
+	ID_EDIT_CLEAR,          "Erase the selection\nErase"
+	ID_EDIT_CLEAR_ALL,      "Erase everything\nErase All"
+	ID_EDIT_COPY,           "Copy the selection and put it on the Clipboard\nCopy"
+	ID_EDIT_CUT,            "Cut the selection and put it on the Clipboard\nCut"
+	ID_EDIT_FIND,           "Find the specified text\nFind"
+	ID_EDIT_PASTE,          "Insert Clipboard contents\nPaste"
+	ID_EDIT_PASTE_LINK,     "Insert Clipboard contents and a link to its source\nPaste Link"
+	ID_EDIT_PASTE_SPECIAL,  "Insert Clipboard contents with options\nPaste Special"
+	ID_EDIT_REPEAT,         "Repeat the last action\nRepeat"
+	ID_EDIT_REPLACE,        "Replace specific text with different text\nReplace"
+	ID_EDIT_SELECT_ALL,     "Select the entire document\nSelect All"
+	ID_EDIT_UNDO,           "Undo the last action\nUndo"
+	ID_EDIT_REDO,           "Redo the previously undone action\nRedo"
+	ID_VIEW_TOOLBAR,        "Show or hide the toolbar\nToggle ToolBar"
+	ID_VIEW_STATUS_BAR,     "Show or hide the status bar\nToggle StatusBar"
+	ID_FORMAT_FONT,         "Select font for current selection\nFont"
+END
+
+
+// OLE specific
+STRINGTABLE
+BEGIN
+	ID_OLE_EDIT_LINKS,      "Edit linked objects\nEdit Links"
+	ID_OLE_INSERT_NEW,      "Insert new embedded object\nNew Object"
+	ID_OLE_EDIT_CONVERT,    "Convert selected object between types\nConvert Object"
+	ID_OLE_EDIT_CHANGE_ICON,"Change icon of selected object\nChange Icon"
+	ID_OLE_VERB_FIRST+0,    "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+1,    "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+2,    "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+3,    "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+4,    "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+5,    "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+6,    "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+7,    "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+8,    "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+9,    "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+10,   "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+11,   "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+12,   "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+13,   "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+14,   "Activate embedded or linked object"
+	ID_OLE_VERB_FIRST+15,   "Activate embedded or linked object"
+END
+
+// Database specific
+STRINGTABLE
+BEGIN
+	ID_RECORD_NEXT          "Move to next record\nNext Record"
+	ID_RECORD_PREV          "Move to previous record\nPrevious Record"
+	ID_RECORD_LAST          "Move to final record\nLast Record"
+	ID_RECORD_FIRST         "Move to first record\nFirst Record"
+END
+
+// System commands
+STRINGTABLE
+BEGIN
+	AFX_IDS_SCSIZE,         "Change the window size"
+	AFX_IDS_SCMOVE,         "Change the window position"
+	AFX_IDS_SCMINIMIZE,     "Reduce the window to an icon"
+	AFX_IDS_SCMAXIMIZE,     "Enlarge the window to full size"
+	AFX_IDS_SCNEXTWINDOW,   "Switch to the next document window"
+	AFX_IDS_SCPREVWINDOW,   "Switch to the previous document window"
+	AFX_IDS_SCCLOSE,        "Close the active window and prompts to save the documents"
+	AFX_IDS_SCRESTORE,      "Restore the window to normal size"
+	AFX_IDS_SCTASKLIST,     "Activate Task List"
+	AFX_IDS_MDICHILD,       "Activate this window"
+	AFX_IDS_PREVIEW_CLOSE,  "Close print preview mode\nCancel Preview"
+	AFX_IDS_DESKACCESSORY,  "Open the selected item"
+END
+
+/////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,284 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXCTL_RC__
+#define __AFXCTL_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 표준 MFC 원본은 변경할 수 없음! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Control Resources
+
+#ifndef _AFX_NO_STOCKPPG_RESOURCES
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+AFX_IDB_TRUETYPE        BITMAP  DISCARDABLE     "RES\\TRUETYPE.BMP"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+AFX_IDD_PROPPAGE_FONT DIALOG DISCARDABLE  13, 54, 250, 110
+STYLE WS_CHILD | 0x4
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT           "특성 이름(&N)",IDC_STATIC,3,5,61,8
+	COMBOBOX        AFX_IDC_FONTPROP,65,3,100,71,CBS_DROPDOWNLIST | CBS_SORT |
+					WS_VSCROLL | WS_TABSTOP
+	LTEXT           "글꼴(&F)",IDC_STATIC,3,19,91,8
+	COMBOBOX        AFX_IDC_FONTNAMES,3,29,91,77,CBS_SIMPLE |
+					CBS_OWNERDRAWFIXED | CBS_AUTOHSCROLL | CBS_SORT |
+					CBS_HASSTRINGS | CBS_DISABLENOSCROLL | WS_VSCROLL |
+					WS_TABSTOP
+	LTEXT           "글꼴 유형(&Y):",IDC_STATIC,102,19,53,8
+	COMBOBOX        AFX_IDC_FONTSTYLES,104,29,53,53,CBS_DROPDOWNLIST |
+					CBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
+	LTEXT           "크기(&S):",IDC_STATIC,167,19,40,8
+	COMBOBOX        AFX_IDC_FONTSIZES,167,29,36,53,CBS_DROPDOWN | CBS_SORT |
+					CBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
+	GROUPBOX        "효과",IDC_STATIC,104,44,142,24,WS_GROUP
+	CONTROL         "취소선(&K)",AFX_IDC_STRIKEOUT,"Button",BS_AUTOCHECKBOX |
+					WS_TABSTOP,109,55,65,10
+	CONTROL         "밑줄(&U)",AFX_IDC_UNDERLINE,"Button",BS_AUTOCHECKBOX |
+					WS_TABSTOP,175,55,65,10
+	GROUPBOX        "보기",IDC_STATIC,104,71,142,36,WS_GROUP
+	CTEXT           "AaBbYyZz",AFX_IDC_SAMPLEBOX,110,80,130,22,SS_NOPREFIX |
+					NOT WS_VISIBLE
+END
+
+AFX_IDD_PROPPAGE_COLOR DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD | 0x4
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT           "특성 이름(&N)",IDC_STATIC,3,3,100,8
+	COMBOBOX        AFX_IDC_COLORPROP,3,13,100,54,CBS_DROPDOWNLIST |
+					CBS_SORT | WS_VSCROLL | WS_TABSTOP
+	LTEXT           "시스템 색(&C):",IDC_STATIC,3,29,100,8
+	COMBOBOX        AFX_IDC_SYSTEMCOLORS,3,39,100,54,CBS_DROPDOWNLIST |
+					CBS_SORT | WS_VSCROLL | WS_TABSTOP
+	CONTROL         "",AFX_IDC_COLOR_BLACK,"Button",BS_OWNERDRAW | WS_GROUP |
+					WS_TABSTOP,118,4,15,11
+	CONTROL         "",AFX_IDC_COLOR_BLUE,"Button",BS_OWNERDRAW,138,4,15,11
+	CONTROL         "",AFX_IDC_COLOR_CYAN,"Button",BS_OWNERDRAW,158,4,15,11
+	CONTROL         "",AFX_IDC_COLOR_DARKBLUE,"Button",BS_OWNERDRAW,178,4,15,
+					11
+	CONTROL         "",AFX_IDC_COLOR_DARKCYAN,"Button",BS_OWNERDRAW,118,18,
+					15,11
+	CONTROL         "",AFX_IDC_COLOR_DARKGREEN,"Button",BS_OWNERDRAW,138,18,
+					15,11
+	CONTROL         "",AFX_IDC_COLOR_DARKMAGENTA,"Button",BS_OWNERDRAW,158,
+					18,15,11
+	CONTROL         "",AFX_IDC_COLOR_GRAY,"Button",BS_OWNERDRAW,178,18,15,11
+	CONTROL         "",AFX_IDC_COLOR_DARKRED,"Button",BS_OWNERDRAW,118,32,15,
+					11
+	CONTROL         "",AFX_IDC_COLOR_GREEN,"Button",BS_OWNERDRAW,138,32,15,
+					11
+	CONTROL         "",AFX_IDC_COLOR_LIGHTBROWN,"Button",BS_OWNERDRAW,158,32,
+					15,11
+	CONTROL         "",AFX_IDC_COLOR_LIGHTGRAY,"Button",BS_OWNERDRAW,178,32,
+					15,11
+	CONTROL         "",AFX_IDC_COLOR_MAGENTA,"Button",BS_OWNERDRAW,118,46,15,
+					11
+	CONTROL         "",AFX_IDC_COLOR_RED,"Button",BS_OWNERDRAW,138,46,15,11
+	CONTROL         "",AFX_IDC_COLOR_WHITE,"Button",BS_OWNERDRAW,158,46,15,
+					11
+	CONTROL         "",AFX_IDC_COLOR_YELLOW,"Button",BS_OWNERDRAW,178,46,15,
+					11
+END
+
+AFX_IDD_PROPPAGE_PICTURE DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD | 0x4
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT           "특성 이름(&N)",IDC_STATIC,3,3,100,8
+	COMBOBOX        AFX_IDC_PROPNAME,3,13,100,30,CBS_DROPDOWNLIST | CBS_SORT |
+					WS_VSCROLL | WS_TABSTOP
+	PUSHBUTTON      "찾아보기(&B)...",AFX_IDC_BROWSE,3,35,54,14
+	PUSHBUTTON      "지우기(&C)",AFX_IDC_CLEAR,61,35,54,14
+	RTEXT           "미리보기:",IDC_STATIC,107,3,42,16
+	CONTROL         "",AFX_IDC_PICTURE,"Static",SS_BLACKFRAME,151,4,93,54
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+AFX_IDD_PROPPAGE_FONT DLGINIT
+BEGIN
+	1002, 0x403, 12, 0
+0x6f42, 0x646c, 0x4920, 0x6174, 0x696c, 0x0063,
+	0
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDS_PROPPAGE_UNKNOWN "(미지의)"
+	AFX_IDS_COLOR_DESKTOP   "데스크톱"
+	AFX_IDS_COLOR_APPWORKSPACE "응용프로그램 작업공간"
+	AFX_IDS_COLOR_WNDBACKGND "윈도우 배경"
+	AFX_IDS_COLOR_WNDTEXT   "윈도우 텍스트"
+	AFX_IDS_COLOR_MENUBAR   "메뉴표시줄"
+	AFX_IDS_COLOR_MENUTEXT  "메뉴 텍스트"
+	AFX_IDS_COLOR_ACTIVEBAR "활성 제목줄"
+	AFX_IDS_COLOR_INACTIVEBAR "비활성 제목줄"
+	AFX_IDS_COLOR_ACTIVETEXT "활성 제목줄 텍스트"
+	AFX_IDS_COLOR_INACTIVETEXT "비활성 제목줄 텍스트"
+	AFX_IDS_COLOR_ACTIVEBORDER "활성 경계선"
+	AFX_IDS_COLOR_INACTIVEBORDER "비활성 경계선"
+END
+#endif // !_AFX_NO_STOCKPPG_RESOURCES
+
+STRINGTABLE DISCARDABLE
+BEGIN
+#ifndef _AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_COLOR_WNDFRAME  "윈도우 프레임"
+	AFX_IDS_COLOR_SCROLLBARS "이동줄"
+	AFX_IDS_COLOR_BTNFACE   "버튼 정면"
+	AFX_IDS_COLOR_BTNSHADOW "버튼 그림자"
+	AFX_IDS_COLOR_BTNTEXT   "버튼 텍스트"
+	AFX_IDS_COLOR_BTNHIGHLIGHT "버튼 반전표시"
+	AFX_IDS_COLOR_DISABLEDTEXT "사용 불가 텍스트"
+	AFX_IDS_COLOR_HIGHLIGHT "반전표시"
+	AFX_IDS_COLOR_HIGHLIGHTTEXT "반전표시된 텍스트"
+	AFX_IDS_REGULAR         "보통"
+	AFX_IDS_BOLD            "굵게"
+	AFX_IDS_ITALIC          "기울임꼴"
+	AFX_IDS_BOLDITALIC      "굵은 기울임꼴"
+	AFX_IDS_SAMPLETEXT      "AaBbYyZz"
+#endif // !_AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_DISPLAYSTRING_FONT "(글꼴)"
+	AFX_IDS_DISPLAYSTRING_COLOR "(색)"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDS_DISPLAYSTRING_PICTURE "(그림 - %s)"
+#ifndef _AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_PICTUREFILTER   "모든 그림 종류|*.bmp;*.cur;*.dib;*.emf;*.ico;*.wmf|비트맵 (*.bmp;*.dib)|*.bmp;*.dib|아이콘/커서 (*.ico;*.cur)|*.ico;*.cur| 메타파일(*.wmf;*.emf)|*.wmf;*.emf|모든 파일 (*.*)|*.*||"
+#endif // !_AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_PICTYPE_UNKNOWN "미지의"
+	AFX_IDS_PICTYPE_NONE    "킠"
+	AFX_IDS_PICTYPE_BITMAP  "비트맵"
+	AFX_IDS_PICTYPE_METAFILE "메타파일"
+	AFX_IDS_PICTYPE_ICON    "아이콘"
+#ifndef _AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_COLOR_PPG       "색 특성 페이지"
+	AFX_IDS_COLOR_PPG_CAPTION "색"
+	AFX_IDS_FONT_PPG        "글꼴 특성 페이지"
+	AFX_IDS_FONT_PPG_CAPTION "글꼴"
+	AFX_IDS_PICTURE_PPG     "그림 특성 페이지"
+	AFX_IDS_PICTURE_PPG_CAPTION "그림"
+#endif // !_AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_BORDERSTYLE_0   "0 - 없음"
+	AFX_IDS_BORDERSTYLE_1   "1 - 고정 단일"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDS_VERB_EDIT       "편집(&E)"
+	AFX_IDS_VERB_PROPERTIES "특성(&P)..."
+END
+
+#ifndef _AFX_NO_STOCKPPG_RESOURCES
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_PICTURECANTOPEN "그림 파일 %1을(를) 열 수 없음. 이 파일이 없거나 읽을 수 없음."
+	AFX_IDP_PICTURECANTLOAD "그림 파일 %1을(를) 읽어들일 수 없음. 잘못된 포맷을 가진 파일임."
+	AFX_IDP_PICTURETOOLARGE "그림 파일 %1을(를) 읽어들일 수 없음. 파일이 너무 커서 메모리에 수용할 수 없음."
+	AFX_IDP_PICTUREREADFAILED
+							"그림 파일 %1을(를) 읽어들일 수 없음. 설명이 없는 읽기 실패."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDS_PICTUREBROWSETITLE "그림 찾아보기"
+END
+#endif // !_AFX_NO_STOCKPPG_RESOURCES
+
+#ifndef _AFX_NO_CTLERROR_RESOURCES
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_E_ILLEGALFUNCTIONCALL "잘못된 기능 호출"
+	AFX_IDP_E_OVERFLOW      "숫자가 너무큼"
+	AFX_IDP_E_OUTOFMEMORY   "메모리 부족"
+	AFX_IDP_E_DIVISIONBYZERO "0으로 나누기"
+	AFX_IDP_E_OUTOFSTRINGSPACE "문자열 공간 부족"
+	AFX_IDP_E_OUTOFSTACKSPACE "스택 공간 부족"
+	AFX_IDP_E_BADFILENAMEORNUMBER "불량 파일 이름 또는 번호"
+	AFX_IDP_E_FILENOTFOUND  "파일을 찾을 수 없음"
+	AFX_IDP_E_BADFILEMODE   "불량 파일 모드"
+	AFX_IDP_E_FILEALREADYOPEN "파일이 이미 열려 있음"
+	AFX_IDP_E_DEVICEIOERROR "입출력 장치 오류"
+	AFX_IDP_E_FILEALREADYEXISTS "파일이 이미 존재함"
+	AFX_IDP_E_BADRECORDLENGTH "불량 레코드 길이"
+	AFX_IDP_E_DISKFULL      "디스크가 꽉 참"
+	AFX_IDP_E_BADRECORDNUMBER "불량 레코드 번호"
+	AFX_IDP_E_BADFILENAME   "불량 파일 이름"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_E_TOOMANYFILES  "파일이 너무 많음"
+	AFX_IDP_E_DEVICEUNAVAILABLE "장치를 이용할 수 없음"
+	AFX_IDP_E_PERMISSIONDENIED "허가가 거부됨"
+	AFX_IDP_E_DISKNOTREADY  "디스크가 준비되지 않음"
+	AFX_IDP_E_PATHFILEACCESSERROR "경로/파일 액세스 오류"
+	AFX_IDP_E_PATHNOTFOUND  "경로를 찾을 수 없음"
+	AFX_IDP_E_INVALIDPATTERNSTRING "잘못된 무늬 문자열"
+	AFX_IDP_E_INVALIDUSEOFNULL "잘못된 널 사용"
+	AFX_IDP_E_INVALIDFILEFORMAT "잘못된 파일 포맷"
+	AFX_IDP_E_INVALIDPROPERTYVALUE "잘못된 특성 값"
+	AFX_IDP_E_INVALIDPROPERTYARRAYINDEX "잘못된 배열 색인"
+	AFX_IDP_E_SETNOTSUPPORTEDATRUNTIME "특성은 실행 시간에 설정될 수 없음"
+	AFX_IDP_E_SETNOTSUPPORTED "특성은 읽기전용임"
+	AFX_IDP_E_NEEDPROPERTYARRAYINDEX
+							"특성 배열을 사용할 때에는 배열 색인을 명시하여야 함"
+	AFX_IDP_E_SETNOTPERMITTED "이 제어기에서는 특성을 설정할 수 없음"
+	AFX_IDP_E_GETNOTSUPPORTEDATRUNTIME "실행 시간에는 특성을 읽을 수 없음"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_E_GETNOTSUPPORTED "특성은 쓰기전용임"
+	AFX_IDP_E_PROPERTYNOTFOUND "특성을 찾을 수 없음"
+	AFX_IDP_E_INVALIDCLIPBOARDFORMAT "잘못된 클립보드 포맷"
+	AFX_IDP_E_INVALIDPICTURE "잘못된 그림"
+	AFX_IDP_E_PRINTERERROR  "프린터 오류"
+	AFX_IDP_E_CANTSAVEFILETOTEMP
+							"저장을 위해 필요한 임시 파일을 작성할 수 없음"
+	AFX_IDP_E_SEARCHTEXTNOTFOUND "검색 텍스트를 찾을 수 없음"
+	AFX_IDP_E_REPLACEMENTSTOOLONG "대체 텍스트가 너무 길음"
+END
+#endif //!_AFX_NO_CTLERROR_RESOURCES
+
+#endif //!_AFXDLL
+#endif //__AFXOLECL_RC__

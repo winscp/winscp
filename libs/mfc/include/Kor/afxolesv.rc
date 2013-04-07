@@ -1,0 +1,53 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXOLESV_RC__
+#define __AFXOLESV_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 표준 MFC 원본은 변경할 수 없음! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Server Resources
+
+// OLE strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_ASK_TO_UPDATE,              "진행하기 전에 %1을(를) 새로 고칠까요?"
+	AFX_IDP_FAILED_TO_UPDATE,           "클라이언트를 새로 고칠 수 없음."
+
+	AFX_IDP_FAILED_TO_REGISTER,         "등록할 수 없습니다. ActiveX 기능이 바르게 작동하지 않는 것 같습니다."
+	AFX_IDP_FAILED_TO_AUTO_REGISTER,    "시스템 등록부 새로 고침 실패.\nREGEDIT를 사용해 보십시오."
+END
+
+STRINGTABLE PRELOAD
+BEGIN
+	AFX_IDS_APP_TITLE_EMBEDDING,        "%2 에서 %1"
+	AFX_IDS_OBJ_TITLE_INPLACE,          "%1 - %2"
+	AFX_IDS_EXIT_MENU,                  "종료 && %1로(으로) 복귀(&X)"
+	AFX_IDS_UPDATE_MENU,                "%1 새로 고침(&U)"
+	AFX_IDS_SAVEFILECOPY,               "사본 다른 이름으로 저장"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXOLESV_RC__

@@ -3,8 +3,10 @@ http://winscp.net/eng/docs/license
 
   
   A. GNU General Public License
-  B. Privacy Policy
-  C. Licenses and Distribution Terms of WinSCP Installation Package
+  B. License of WinSCP Icon Set
+  C. Privacy Policy
+  D. Licenses and Distribution Terms of WinSCP Installation Package
+
 
   A. GNU GENERAL PUBLIC LICENSE
   Version 3, 29 June 2007
@@ -264,7 +266,14 @@ You should also get your employer (if you work as a programmer) or school, if an
 The GNU General Public License does not permit incorporating your program into proprietary programs.  If your program is a subroutine library, you may consider it more useful to permit linking proprietary applications with the library.  If this is what you want to do, use the GNU Lesser General Public License instead of this License.  But first, please read <http://www.gnu.org/philosophy/why-not-lgpl.html>.
 
 
-  B. WinSCP Privacy Policy
+  B. License of WinSCP Icon Set
+  
+Note that all images distributed in or with WinSCP application are NOT published under the GNU General Public License. It means that it is not allowed to redistribute or reuse these images or parts of them or modifications of them without WinSCP separately or in or with another software.
+
+You agree that all ownership and copyright of the licensed stock icons remain the property of York Technologies Limited. WinSCP was granted a license to display this graphical media royalty-free in WinSCP software applications, web design, presentations, and multimedia projects that WinSCP creates and/or distributes.
+
+
+  C. WinSCP Privacy Policy
 
 Please take time to read WinSCP Privacy policy at http://winscp.net/eng/docs/privacy
 
@@ -277,7 +286,7 @@ If you still want to disable WinSCP Usage statistics already during installation
 Thank you!
 
 
-  C. Licenses and Distribution Terms of WinSCP Installation Package
+  D. Licenses and Distribution Terms of WinSCP Installation Package
 
 Note that GNU General Public License applies solely to WinSCP application. During WinSCP installation you might be offered to install also other application having own license agreement. While nothing will be installed without your consent be sure to read and understand the respective license conditions.
 

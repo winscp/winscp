@@ -1,0 +1,7 @@
+Debug build:
+- do CFLAG pridat 
+  -v -y
+  pro CodeGuard pridat
+  -vG 
+  a ubrat
+  -O2

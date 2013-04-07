@@ -1,0 +1,141 @@
+// prompts.rc : RC file for all standard AFX menu prompts
+//
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "afxres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#ifdef APSTUDIO_INVOKED
+// This resource will prevent the App Studio user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 표준 MFC 원본은 변경할 수 없음! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+/////////////////////////////////////////////////////////////////////////////
+
+// Standard Menu commands
+STRINGTABLE DISCARDABLE
+BEGIN
+	ID_FILE_NEW,            "새로운 문서 작성\n새로운"
+	ID_FILE_OPEN,           "기존 문서 열기\n열기n"
+	ID_FILE_CLOSE,          "실행중인 문서 닫기\n닫기"
+	ID_FILE_SAVE,           "실행중인 문서 저장\n저장"
+	ID_FILE_SAVE_AS,        "실행중인 문서 다른 이름으로 저장\n다른 이름으로 저장"
+	ID_FILE_PAGE_SETUP,     "인쇄 옵션 변경\n페이지 설정"
+	ID_FILE_PRINT_SETUP,    "프린터와 인쇄 옵션 변경\n인쇄 설정"
+	ID_FILE_PRINT,          "실행중인 문서 인쇄\n인쇄"
+	ID_FILE_PRINT_PREVIEW,  "전체 페이지 나타내기\n인쇄 미리보기"
+	ID_APP_ABOUT,           "프로그램 정보, 버전 번호 및 저작권 나타내기\n정보"
+	ID_APP_EXIT,            "응용프로그램 종료; 문서 저장을 요구하는 프롬프트\n종료"
+	ID_FILE_SEND_MAIL,      "전자 우편을 통한 활성중인 문서 송신\n우편 보내기"
+	ID_FILE_MRU_FILE1+0,    "이 문서 열기"
+	ID_FILE_MRU_FILE1+1,    "이 문서 열기"
+	ID_FILE_MRU_FILE1+2,    "이 문서 열기"
+	ID_FILE_MRU_FILE1+3,    "이 문서 열기"
+	ID_FILE_MRU_FILE1+4,    "이 문서 열기"
+	ID_FILE_MRU_FILE1+5,    "이 문서 열기"
+	ID_FILE_MRU_FILE1+6,    "이 문서 열기"
+	ID_FILE_MRU_FILE1+7,    "이 문서 열기"
+	ID_FILE_MRU_FILE1+8,    "이 문서 열기"
+	ID_FILE_MRU_FILE1+9,    "이 문서 열기"
+	ID_FILE_MRU_FILE1+10,   "이 문서 열기"
+	ID_FILE_MRU_FILE1+11,   "이 문서 열기"
+	ID_FILE_MRU_FILE1+12,   "이 문서 열기"
+	ID_FILE_MRU_FILE1+13,   "이 문서 열기"
+	ID_FILE_MRU_FILE1+14,   "이 문서 열기"
+	ID_FILE_MRU_FILE1+15,   "이 문서 열기"
+	ID_CONTEXT_HELP,        "누른 단추, 메뉴 및 창에 대한 도움말 나타내기\n도움말"
+	ID_HELP,                "현재 작업 및 명령에 대한 도움말 나타내기\n도움말"
+	ID_HELP_INDEX,          "도움말 주제 나열\n도움말 색인"
+	ID_HELP_FINDER,         "도움말 주제 나열\n도움말 주제"
+	ID_HELP_USING,          "도움말 사용 요령 나타내기\n도움말"
+	ID_NEXT_PANE,           "다음 창 유리로 전환\n다음 창 유리"
+	ID_PREV_PANE,           "이전 창 유리로 전환\n이전 창 유리"
+	ID_WINDOW_NEW,          "활성중인 문서를 위해 또 하나의 창 열기\n새 창"
+	ID_WINDOW_ARRANGE,      "창의 아랫 부분에 아이콘 정렬\n아이콘 정렬"
+	ID_WINDOW_CASCADE,      "창이 겹치도록 배열\n계단식 배열"
+	ID_WINDOW_TILE_HORZ,    "창을 겹치지 않는 타일과 같이 배열\n바둑판식 배열"
+	ID_WINDOW_TILE_VERT,    "창을 겹치지 않는 타일과 같이 배열\n바둑판식 배열"
+	ID_WINDOW_SPLIT,        "활성중인 창을 분할 구획\n분할"
+	ID_EDIT_CLEAR,          "선택 사항 지우기\n지우기"
+	ID_EDIT_CLEAR_ALL,      "모두 지우기\n모두 지우기"
+	ID_EDIT_COPY,           "선택 사항을 복사하여 클립보드에 저장하기\n복사"
+	ID_EDIT_CUT,            "선택 사항을 잘라 내어 클립보드에 저장하기\n잘라 내기"
+	ID_EDIT_FIND,           "지정 텍스트 찾기\n찾기"
+	ID_EDIT_PASTE,          "클립보드 내용 삽입\n붙여넣기"
+	ID_EDIT_PASTE_LINK,     "클립보드 내용 및 그 원본에 대한 연결 삽입\n연결하여 붙여넣기"
+	ID_EDIT_PASTE_SPECIAL,  "클립보드 내용을 옵션과 함께 삽입\n선택하여 붙여넣기"
+	ID_EDIT_REPEAT,         "마지막 조작 반복\n반복"
+	ID_EDIT_REPLACE,        "지정 텍스트를 다른 텍스트로 바꾸기\n바꾸기"
+	ID_EDIT_SELECT_ALL,     "문서 전체 선택\n전체 선택"
+	ID_EDIT_UNDO,           "마지막 조작 취소\n취소"
+	ID_EDIT_REDO,           "앞에서 실행취소한 조작 재실행\n재실행"
+	ID_VIEW_TOOLBAR,        "도구모음줄 보이기 또는 감추기\n도구모음줄 전환"
+	ID_VIEW_STATUS_BAR,     "상태표시줄 보이기 또는 감추기\n상태표시줄 전환"
+	ID_FORMAT_FONT,         "현재 선택한 부분을 위한 글꼴을 선택합니다\n글꼴 "
+END
+
+
+// OLE specific
+STRINGTABLE
+BEGIN
+	ID_OLE_EDIT_LINKS,      "연결된 개체 편집\n연결 편집"
+	ID_OLE_INSERT_NEW,      "새로운 삽입형 개체 삽입\n새 개체"
+	ID_OLE_EDIT_CONVERT,    "선택한 개체의 종류 전환\n개체 전환"
+	ID_OLE_EDIT_CHANGE_ICON,"선택한 개체의 아이콘 변경\n아이콘 변경 "
+	ID_OLE_VERB_FIRST+0,    "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+1,    "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+2,    "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+3,    "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+4,    "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+5,    "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+6,    "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+7,    "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+8,    "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+9,    "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+10,   "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+11,   "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+12,   "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+13,   "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+14,   "삽입 또는 연결 개체 활성화"
+	ID_OLE_VERB_FIRST+15,   "삽입 또는 연결 개체 활성화"
+END
+
+// Database specific
+STRINGTABLE
+BEGIN
+	ID_RECORD_NEXT          "다음 레코드로 이동\n다음 레코드"
+	ID_RECORD_PREV          "이전 레코드로 이동\n이전 레코드"
+	ID_RECORD_LAST          "마지막 레코드로 이동\n마지막 레코드"
+	ID_RECORD_FIRST         "첫째 레코드로 이동\n첫째 레코드"
+END
+
+// System commands
+STRINGTABLE
+BEGIN
+	AFX_IDS_SCSIZE,         "창 크기 변경"
+	AFX_IDS_SCMOVE,         "창 위치 변경"
+	AFX_IDS_SCMINIMIZE,     "창을 아이콘으로 축소"
+	AFX_IDS_SCMAXIMIZE,     "창을 전체 화면으로 확대"
+	AFX_IDS_SCNEXTWINDOW,   "다음 문서 창으로 전환"
+	AFX_IDS_SCPREVWINDOW,   "이전 문서 창으로 전환"
+	AFX_IDS_SCCLOSE,        "활성창을 닫고 문서를 저장하도록 프롬프트에 의해 요구"
+	AFX_IDS_SCRESTORE,      "창을 보통 크기로 복귀"
+	AFX_IDS_SCTASKLIST,     "작업 목록 활성화"
+	AFX_IDS_MDICHILD,       "이 창을 활성화"
+	AFX_IDS_PREVIEW_CLOSE,  "인쇄 미리보기 모드 닫기\n미리보기 취소"
+	AFX_IDS_DESKACCESSORY,  "선택된 사항 열기"
+END
+
+/////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,105 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXDB_RC__
+#define __AFXDB_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< No se pueden cambiar recursos MFC estándar. >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// Database Resources
+
+// Database strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_SQL_CONNECT_FAIL
+		"Imposible conectarse al origen de datos"
+	AFX_IDP_SQL_RECORDSET_FORWARD_ONLY
+		"Recordset sólo admite movimiento hacia adelante."
+	AFX_IDP_SQL_EMPTY_COLUMN_LIST
+		"Imposible abrir tabla, no hay columnas en la posición especificada."
+	AFX_IDP_SQL_FIELD_SCHEMA_MISMATCH
+		"Se obtuvieron tipos de datos inesperados de la consulta."
+	AFX_IDP_SQL_ILLEGAL_MODE "Imposible Actualizar o Eliminar."
+	AFX_IDP_SQL_MULTIPLE_ROWS_AFFECTED "Filas actualizadas."
+	AFX_IDP_SQL_NO_CURRENT_RECORD "La operación ha fallado, no hay registro actual."
+	AFX_IDP_SQL_NO_ROWS_AFFECTED
+		"La operación de actualización o de eliminación no afectó a ninguna fila."
+	AFX_IDP_SQL_RECORDSET_READONLY "Recordset es de sólo lectura"
+	AFX_IDP_SQL_SQL_NO_TOTAL
+		"El controlador ODBC no admite el modelo de datos MFC LongBinary."
+	AFX_IDP_SQL_ODBC_LOAD_FAILED
+		"Imposible cargar ODBC32.DLL."
+	AFX_IDP_SQL_DYNASET_NOT_SUPPORTED
+		"El controlador ODBC no admite dynasets."
+	AFX_IDP_SQL_SNAPSHOT_NOT_SUPPORTED
+		"Se requieren cursores estáticos ODBC para compatibilidad con snapshot."
+	AFX_IDP_SQL_API_CONFORMANCE
+		"Controlador ODBC incompatible con clases de bases de datos MFC (se requiere que API_CONFORMANCE >=SQL_OAC_LEVEL1)."
+	AFX_IDP_SQL_SQL_CONFORMANCE
+		"Controlador ODBC incompatible con clases de bases de datos MFC (se requiere que API_CONFORMANCE >=SQL_OAC_LEVEL1)."
+	AFX_IDP_SQL_NO_DATA_FOUND
+		"Se intentó desplazarse más allá del fin o antes del inicio de los datos."
+	AFX_IDP_SQL_ROW_UPDATE_NOT_SUPPORTED
+		"El controlador ODBC no admite dynasets."
+	AFX_IDP_SQL_ODBC_V2_REQUIRED
+		"Se requiere un controlador ODBC que cumpla con el Nivel 2."
+	AFX_IDP_SQL_NO_POSITIONED_UPDATES
+		"El controlador ODBC no admite actualizaciones posicionadas."
+	AFX_IDP_SQL_LOCK_MODE_NOT_SUPPORTED
+		"No se admite el modo de bloqueo solicitado."
+	AFX_IDP_SQL_DATA_TRUNCATED
+		"Datos truncados."
+	AFX_IDP_SQL_ROW_FETCH
+		"Error al recuperar registro."
+	AFX_IDP_SQL_INCORRECT_ODBC
+		"No se encontró un punto de entrada ODBC requerido. Compruebe que ODBC esté instalado correctamente."
+	AFX_IDP_SQL_UPDATE_DELETE_FAILED
+		"Falló actualización o eliminación."
+	AFX_IDP_SQL_DYNAMIC_CURSOR_NOT_SUPPORTED
+		"El controlador ODBC no admite cursores dinámicos."
+	AFX_IDP_SQL_FIELD_NOT_FOUND
+		"Nombre de campo o de índice no válido."
+	AFX_IDP_SQL_BOOKMARKS_NOT_SUPPORTED
+		"El controlador ODBC no admite marcadores."
+	AFX_IDP_SQL_BOOKMARKS_NOT_ENABLED
+		"Marcadores no habilitados en recordset."
+	AFX_IDP_DAO_ENGINE_INITIALIZATION
+		"Imposible inicializar motor de base de datos DAO/Jet."
+	AFX_IDP_DAO_DFX_BIND
+		"Parámetro de valor DFX incorrecto."
+	AFX_IDP_DAO_OBJECT_NOT_OPEN
+		"DAO TableDef o QueryDef no está abierto."
+	AFX_IDP_DAO_ROWTOOSHORT
+		"Falló GetRows. No hay suficiente memoria asignada a la fila."
+	AFX_IDP_DAO_BADBINDINFO
+		"Error de enlace de GetRows; es posible que algún tipo de datos no coincida."
+	AFX_IDP_DAO_COLUMNUNAVAILABLE
+		"Falló GetRows. La solicitud de columna no es miembro de este recordset." 
+
+	AFX_IDS_DELETED "<Eliminado>"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXDB_RC__

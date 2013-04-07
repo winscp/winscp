@@ -1,0 +1,40 @@
+//---------------------------------------------------------------------------
+#ifndef ThemePageControlH
+#define ThemePageControlH
+//---------------------------------------------------------------------------
+#include <ComCtrls.hpp>
+//---------------------------------------------------------------------------
+class TThemeTabSheet : public TTabSheet
+{
+public:
+  __fastcall TThemeTabSheet(TComponent * Owner);
+
+  __property bool Shadowed = { read = FShadowed, write = SetShadowed };
+
+private:
+  void __fastcall SetShadowed(bool Value);
+
+  bool FShadowed;
+};
+//---------------------------------------------------------------------------
+class TThemePageControl : public TPageControl
+{
+friend class TThemeTabSheet;
+public:
+  __fastcall TThemePageControl(TComponent * Owner);
+
+protected:
+  virtual void __fastcall PaintWindow(HDC DC);
+  DYNAMIC bool __fastcall CanChange();
+  DYNAMIC void __fastcall Change();
+
+private:
+  void __fastcall DrawThemesXpTabItem(HDC DC, int Item, const TRect & Rect, bool Body, int State);
+  void __fastcall DrawTabItem(HDC DC, int Item, TRect Rect, bool Selected);
+  void __fastcall DrawThemesPart(HDC DC, int PartId, int StateId, LPCWSTR PartNameID, LPRECT Rect);
+  void __fastcall InvalidateTab(int Index);
+
+  int FOldTabIndex;
+};
+//---------------------------------------------------------------------------
+#endif

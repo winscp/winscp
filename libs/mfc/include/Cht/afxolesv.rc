@@ -1,0 +1,53 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXOLESV_RC__
+#define __AFXOLESV_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 無法改變標準MFC資源! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Server Resources
+
+// OLE strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_ASK_TO_UPDATE,              "在進行前修改 %1?"
+	AFX_IDP_FAILED_TO_UPDATE,           "無法修改客戶(client)."
+
+	AFX_IDP_FAILED_TO_REGISTER,         "註冊失敗。某 ActiveX 功能可能無法正確運作。"
+	AFX_IDP_FAILED_TO_AUTO_REGISTER,    "修改系統登錄器(system registry)失敗.\n請嘗試使用REGEDIT."
+END
+
+STRINGTABLE PRELOAD
+BEGIN
+	AFX_IDS_APP_TITLE_EMBEDDING,        "%1 in %2"
+	AFX_IDS_OBJ_TITLE_INPLACE,          "%1 - %2"
+	AFX_IDS_EXIT_MENU,                  "離開(&x) && 跳回到%1"
+	AFX_IDS_UPDATE_MENU,                "修改(&U)%1"
+	AFX_IDS_SAVEFILECOPY,               "另存複製"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXOLESV_RC__

@@ -1,0 +1,141 @@
+// prompts.rc : RC file for all standard AFX menu prompts
+//
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "afxres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#ifdef APSTUDIO_INVOKED
+// This resource will prevent the App Studio user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+/////////////////////////////////////////////////////////////////////////////
+
+// Standard Menu commands
+STRINGTABLE DISCARDABLE
+BEGIN
+	ID_FILE_NEW,            "Erstellt ein neues Dokument.\nNeu"
+	ID_FILE_OPEN,           "Öffnet ein bestehendes Dokument.\nÖffnen"
+	ID_FILE_CLOSE,          "Schließt das aktive Dokument.\nSchließen"
+	ID_FILE_SAVE,           "Speichert das aktive Dokument.\nSpeichern"
+	ID_FILE_SAVE_AS,        "Speichert das aktive Dokument unter neuem Namen.\nSpeichern unter"
+	ID_FILE_PAGE_SETUP,     "Ändert die Druckoptionen.\nSeite einrichten"
+	ID_FILE_PRINT_SETUP,    "Ändert den Drucker und die Druckoptionen.\nDruckereinrichtung"
+	ID_FILE_PRINT,          "Druckt das aktive Dokument.\nDrucken"
+	ID_FILE_PRINT_PREVIEW,  "Zeigt ganze Seiten an.\nSeitenansicht"
+	ID_APP_ABOUT,           "Zeigt Programm-Informationen, Versionsnummer und Copyright an.\nInfo"
+	ID_APP_EXIT,            "Verläßt die Anwendung; fragt, ob Dokumente gespeichert werden sollen.\nBeenden"
+	ID_FILE_SEND_MAIL,      "Versendet das aktive Dokument mittels elektronischer Post.\nNachricht senden"
+	ID_FILE_MRU_FILE1+0,    "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+1,    "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+2,    "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+3,    "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+4,    "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+5,    "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+6,    "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+7,    "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+8,    "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+9,    "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+10,   "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+11,   "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+12,   "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+13,   "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+14,   "Öffnet dieses Dokument."
+	ID_FILE_MRU_FILE1+15,   "Öffnet dieses Dokument."
+	ID_CONTEXT_HELP,        "Zeigt Hilfe zu angeklickten Schaltflächen, Menüs und Fenstern.\nHilfe"
+	ID_HELP,                "Zeigt Hilfe zum aktuellen Vorgang oder Befehl an.\nHilfe"
+	ID_HELP_INDEX,          "Listet die Hilfethemen auf.\nHilfeindex"
+	ID_HELP_FINDER,         "Listet die Hilfethemen auf.\nHilfethemen"
+	ID_HELP_USING,          "Zeigt Anweisungen zum Umgang mit der Hilfe an.\nHilfe"
+	ID_NEXT_PANE,           "Wechselt zum nächsten Fensterausschnitt.\nNächster Ausschnitt"
+	ID_PREV_PANE,           "Springt zum vorherigen Fensterausschnitt zurück.\nVorheriger Ausschnitt"
+	ID_WINDOW_NEW,          "Öffnet ein weiteres Fenster für das aktive Dokument.\nNeues Fenster"
+	ID_WINDOW_ARRANGE,      "Ordnet die Symbole im unteren Bereich des Fensters an.\nSymbole anordnen"
+	ID_WINDOW_CASCADE,      "Ordnet die Fenster überlappend an.\nÜberlappende Fenster"
+	ID_WINDOW_TILE_HORZ,    "Ordnet die Fenster nebeneinander an.\nFenster nebeneinander"
+	ID_WINDOW_TILE_VERT,    "Ordnet die Fenster nebeneinander an.\nFenster nebeneinander"
+	ID_WINDOW_SPLIT,        "Teilt das aktive Fenster in Ausschnitte.\nTeilen"
+	ID_EDIT_CLEAR,          "Löscht die Markierung.\nLöschen"
+	ID_EDIT_CLEAR_ALL,      "Löscht alles.\nAlles löschen"
+	ID_EDIT_COPY,           "Kopiert die Markierung und überträgt sie in die Zwischenablage.\nKopieren"
+	ID_EDIT_CUT,            "Entfernt die Markierung und überträgt sie in die Zwischenablage.\nAusschneiden"
+	ID_EDIT_FIND,           "Sucht den angegebenen Text.\nSuchen"
+	ID_EDIT_PASTE,          "Fügt den Inhalt der Zwischenablage ein.\nEinfügen"
+	ID_EDIT_PASTE_LINK,     "Fügt den Inhalt der Zwischenablage und eine Verknüpfung zu seinem Ursprung ein.\nVerknüpfung einfügen"
+	ID_EDIT_PASTE_SPECIAL,  "Fügt den Inhalt der Zwischenablage unter Verwendung von Optionen ein.\nInhalte einfügen"
+	ID_EDIT_REPEAT,         "Wiederholt die letzte Aktion.\nWiederholen"
+	ID_EDIT_REPLACE,        "Ersetzt einen bestimmten Text durch einen anderen.\nErsetzen"
+	ID_EDIT_SELECT_ALL,     "Markiert das gesamte Dokument.\nAlles markieren"
+	ID_EDIT_UNDO,           "Macht die letzte Aktion rückgängig.\nRückgängig"
+	ID_EDIT_REDO,           "Wiederholt die vorher rückgängig gemachte Aktion.\nWiederherstellen"
+	ID_VIEW_TOOLBAR,        "Blendet die Symbolleiste ein oder aus.\nSymbolleiste ein-/ausschalten"
+	ID_VIEW_STATUS_BAR,     "Blendet die Statusleiste ein oder aus.\nStatusleiste ein-/ausschalten"
+	ID_FORMAT_FONT,         "Wählt die Schriftart für die aktuelle Markierung aus.\nSchriftart"
+END
+
+
+// OLE specific
+STRINGTABLE
+BEGIN
+	ID_OLE_EDIT_LINKS,      "Bearbeitet verknüpfte Objekte.\nVerknüpfungen bearbeiten"
+	ID_OLE_INSERT_NEW,      "Fügt ein neues eingebettetes Objekt ein.\nNeues Objekt"
+	ID_OLE_EDIT_CONVERT,    "Wandelt das markierte Objekt in einen anderen Typ um.\nObjekt konvertieren"
+	ID_OLE_EDIT_CHANGE_ICON,"Ändert das Symbol des markierten Objekts.\nSymbol ändern"
+	ID_OLE_VERB_FIRST+0,    "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+1,    "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+2,    "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+3,    "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+4,    "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+5,    "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+6,    "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+7,    "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+8,    "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+9,    "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+10,   "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+11,   "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+12,   "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+13,   "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+14,   "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+	ID_OLE_VERB_FIRST+15,   "Aktiviert ein eingebettetes oder verknüpftes Objekt."
+END
+
+// Database specific
+STRINGTABLE
+BEGIN
+	ID_RECORD_NEXT          "Geht zum nächsten Datensatz.\nNächster Datensatz"
+	ID_RECORD_PREV          "Geht zum vorherigen Datensatz.\nVorheriger Datensatz"
+	ID_RECORD_LAST          "Springt zum letzten Datensatz.\nLetzter Datensatz"
+	ID_RECORD_FIRST         "Springt zum ersten Datensatz.\nErster Datensatz"
+END
+
+// System commands
+STRINGTABLE
+BEGIN
+	AFX_IDS_SCSIZE,         "Ändert die Fenstergröße."
+	AFX_IDS_SCMOVE,         "Ändert die Fensterposition."
+	AFX_IDS_SCMINIMIZE,     "Verkleinert das Fenster zu einem Symbol."
+	AFX_IDS_SCMAXIMIZE,     "Vergrößert das Fenster zu voller Größe."
+	AFX_IDS_SCNEXTWINDOW,   "Wechselt zum nächsten Dokumentfenster."
+	AFX_IDS_SCPREVWINDOW,   "Wechselt zum vorherigen Dokumentfenster."
+	AFX_IDS_SCCLOSE,        "Schließt das aktive Fenster und fragt zum Speichern der Dokumente an."
+	AFX_IDS_SCRESTORE,      "Stellt das Fenster in seiner normalen Größe wieder her."
+	AFX_IDS_SCTASKLIST,     "Aktiviert die Task-Liste."
+	AFX_IDS_MDICHILD,       "Aktiviert dieses Fenster."
+	AFX_IDS_PREVIEW_CLOSE,  "Beendet die Seitenansicht.\nSeitenansicht beenden"
+	AFX_IDS_DESKACCESSORY,  "Öffnet das ausgewählte Objekt"
+END
+
+/////////////////////////////////////////////////////////////////////////////

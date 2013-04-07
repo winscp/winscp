@@ -1,0 +1,141 @@
+// prompts.rc : RC file for all standard AFX menu prompts
+//
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "afxres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#ifdef APSTUDIO_INVOKED
+// This resource will prevent the App Studio user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 不能更改标准 MFC 资源! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+/////////////////////////////////////////////////////////////////////////////
+
+// Standard Menu commands
+STRINGTABLE DISCARDABLE
+BEGIN
+	ID_FILE_NEW,            "建立一个新文档\n新建"
+	ID_FILE_OPEN,           "打开一个现存文档\n打开"
+	ID_FILE_CLOSE,          "关闭活动文档\n关闭"
+	ID_FILE_SAVE,           "保存活动文档\n保存"
+	ID_FILE_SAVE_AS,        "用一个新文件名保存活动文档\n另存为"
+	ID_FILE_PAGE_SETUP,     "改变打印选项\n页面设置"
+	ID_FILE_PRINT_SETUP,    "改变打印机及打印选项\n打印设置"
+	ID_FILE_PRINT,          "打印活动文档\n打印"
+	ID_FILE_PRINT_PREVIEW,  "显示整页\n打印预览"
+	ID_APP_ABOUT,           "显示程序信息，版本号和版权\n关于"
+	ID_APP_EXIT,            "退出应用程序；提示保存文档\n退出"
+	ID_FILE_SEND_MAIL,      "通过电子邮件传送活动文档\n传送邮件"
+	ID_FILE_MRU_FILE1+0,    "打开该文档"
+	ID_FILE_MRU_FILE1+1,    "打开该文档"
+	ID_FILE_MRU_FILE1+2,    "打开该文档"
+	ID_FILE_MRU_FILE1+3,    "打开该文档"
+	ID_FILE_MRU_FILE1+4,    "打开该文档"
+	ID_FILE_MRU_FILE1+5,    "打开该文档"
+	ID_FILE_MRU_FILE1+6,    "打开该文档"
+	ID_FILE_MRU_FILE1+7,    "打开该文档"
+	ID_FILE_MRU_FILE1+8,    "打开该文档"
+	ID_FILE_MRU_FILE1+9,    "打开该文档"
+	ID_FILE_MRU_FILE1+10,   "打开该文档"
+	ID_FILE_MRU_FILE1+11,   "打开该文档"
+	ID_FILE_MRU_FILE1+12,   "打开该文档"
+	ID_FILE_MRU_FILE1+13,   "打开该文档"
+	ID_FILE_MRU_FILE1+14,   "打开该文档"
+	ID_FILE_MRU_FILE1+15,   "打开该文档"
+	ID_CONTEXT_HELP,        "显示对按钮、菜单和窗口执行单击操作的帮助\n帮助"
+	ID_HELP,                "显示对当前任务或命令的帮助\n帮助"
+	ID_HELP_INDEX,          "列出帮助主题\n帮助索引"
+	ID_HELP_FINDER,         "列出帮助主题\n帮助主题"
+	ID_HELP_USING,          "显示关于如何使用帮助的指令\n帮助"
+	ID_NEXT_PANE,           "切换到下一个窗格\n下一窗格"
+	ID_PREV_PANE,           "切换回前一个窗格\n前一窗格"
+	ID_WINDOW_NEW,          "为活动文档打开另一个窗口\n新建窗口"
+	ID_WINDOW_ARRANGE,      "将图标排列在窗口底部\n排列图标"
+	ID_WINDOW_CASCADE,      "排列窗口成相互重叠\n层叠窗口"
+	ID_WINDOW_TILE_HORZ,    "排列窗口成互不重叠\n平铺窗口"
+	ID_WINDOW_TILE_VERT,    "排列窗口成互不重叠\n平铺窗口"
+	ID_WINDOW_SPLIT,        "将活动的窗口分隔成窗格\n分隔"
+	ID_EDIT_CLEAR,          "删除被选对象\n删除"
+	ID_EDIT_CLEAR_ALL,      "全部删除\n全部删除"
+	ID_EDIT_COPY,           "复制被选对象并将其置于剪贴板上\n复制"
+	ID_EDIT_CUT,            "剪切被选对象并将其置于剪贴板上\n剪切"
+	ID_EDIT_FIND,           "查找指定的文本\n查找"
+	ID_EDIT_PASTE,          "插入剪贴板内容\n粘贴"
+	ID_EDIT_PASTE_LINK,     "插入剪贴板内容和一条通向其来源的链接\n粘贴链接"
+	ID_EDIT_PASTE_SPECIAL,  "用选项插入剪贴板内容\n选择性粘贴"
+	ID_EDIT_REPEAT,         "重复上一步操作\n重复"
+	ID_EDIT_REPLACE,        "用不同的文本替换指定的文本\n替换"
+	ID_EDIT_SELECT_ALL,     "选择整个文档\n选择全部"
+	ID_EDIT_UNDO,           "撤消最后一步操作\n撤消"
+	ID_EDIT_REDO,           "重新执行先前已撤消的操作\n重新执行"
+	ID_VIEW_TOOLBAR,        "显示或隐藏工具栏\n显隐工具栏"
+	ID_VIEW_STATUS_BAR,     "显示或隐藏状态栏\n显隐状态栏"
+	ID_FORMAT_FONT,         "“为当前被选中的对象选择字体\n字体”"
+END
+
+
+// OLE specific
+STRINGTABLE
+BEGIN
+	ID_OLE_EDIT_LINKS,      "编辑链接的对象\n编辑链接"
+	ID_OLE_INSERT_NEW,      "插入新嵌入的对象\n新对象"
+	ID_OLE_EDIT_CONVERT,    "对被选对象作类型转换\n转换对象"
+	ID_OLE_EDIT_CHANGE_ICON,"改变被选对象的图标\n改变图标"
+	ID_OLE_VERB_FIRST+0,    "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+1,    "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+2,    "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+3,    "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+4,    "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+5,    "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+6,    "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+7,    "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+8,    "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+9,    "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+10,   "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+11,   "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+12,   "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+13,   "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+14,   "激活嵌入或链接的对象"
+	ID_OLE_VERB_FIRST+15,   "激活嵌入或链接的对象"
+END
+
+// Database specific
+STRINGTABLE
+BEGIN
+	ID_RECORD_NEXT          "移到下一个记录\n下一记录"
+	ID_RECORD_PREV          "移到前一个记录\n前一记录"
+	ID_RECORD_LAST          "移到最后一个记录\n最后记录"
+	ID_RECORD_FIRST         "移到第一个记录\n第一记录"
+END
+
+// System commands
+STRINGTABLE
+BEGIN
+	AFX_IDS_SCSIZE,         "改变窗口大小"
+	AFX_IDS_SCMOVE,         "改变窗口位置"
+	AFX_IDS_SCMINIMIZE,     "将窗口缩小成图标"
+	AFX_IDS_SCMAXIMIZE,     "把窗口放大到最大尺寸"
+	AFX_IDS_SCNEXTWINDOW,   "切换到下一个文档窗口"
+	AFX_IDS_SCPREVWINDOW,   "切换到先前的文档窗口"
+	AFX_IDS_SCCLOSE,        "关闭活动窗口并提示保存所有文档"
+	AFX_IDS_SCRESTORE,      "把窗口恢复到正常大小"
+	AFX_IDS_SCTASKLIST,     "激活任务表"
+	AFX_IDS_MDICHILD,       "激活该窗口"
+	AFX_IDS_PREVIEW_CLOSE,  "关闭打印预览模式\n取消预览"
+	AFX_IDS_DESKACCESSORY,  "打开被选项"
+END
+
+/////////////////////////////////////////////////////////////////////////////

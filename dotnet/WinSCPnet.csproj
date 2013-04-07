@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{DF44CF5D-6809-4557-A343-FEC46F14B3FF}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>WinSCP</RootNamespace>
+    <AssemblyName>WinSCP</AssemblyName>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <OutputPath>$(FINAL_PATH)\$(Configuration)</OutputPath>
+    <IntermediateOutputPath>$(INTERM_PATH)\$(Configuration)</IntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(INTERM_PATH)\$(Configuration)</BaseIntermediateOutputPath>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>WinSCPnet.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>WinSCPnet.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup />
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ChmodEventArgs.cs" />
+    <Compile Include="CommandExecutionResult.cs" />
+    <Compile Include="Internal\Callstack.cs" />
+    <Compile Include="Internal\CallstackAndLock.cs" />
+    <Compile Include="Internal\ConsoleCommStruct.cs" />
+    <Compile Include="Internal\ExeSessionProcess.cs" />
+    <Compile Include="Internal\Job.cs" />
+    <Compile Include="Internal\Lock.cs" />
+    <Compile Include="Internal\Logger.cs" />
+    <Compile Include="Internal\ProgressHandler.cs" />
+    <Compile Include="Internal\UnsafeNativeMethods.cs" />
+    <Compile Include="OutputDataReceivedEventArgs.cs" />
+    <Compile Include="FileTransferProgressEventArgs.cs" />
+    <Compile Include="RemoteDirectoryInfo.cs" />
+    <Compile Include="FailedEventArgs.cs" />
+    <Compile Include="FileOperationEventArgs.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="FilePermissions.cs" />
+    <Compile Include="Internal\Constants.cs" />
+    <Compile Include="Internal\ReadOnlyInteropCollectionHelper.cs" />
+    <Compile Include="InteropCollections\RemoteFileInfoCollection.cs" />
+    <Compile Include="InteropCollections\RemovalEventArgsCollection.cs" />
+    <Compile Include="InteropCollections\SessionRemoteExceptionCollection.cs" />
+    <Compile Include="InteropCollections\StringCollection.cs" />
+    <Compile Include="InteropCollections\TransferEventArgsCollection.cs" />
+    <Compile Include="RemovalEventArgs.cs" />
+    <Compile Include="RemovalOperationResult.cs" />
+    <Compile Include="SessionEvents.cs" />
+    <Compile Include="SynchronizationResult.cs" />
+    <Compile Include="TransferEventArgs.cs" />
+    <Compile Include="TransferOperationResult.cs" />
+    <Compile Include="TransferOptions.cs" />
+    <Compile Include="Internal\CustomLogReader.cs" />
+    <Compile Include="Internal\ElementLogReader.cs" />
+    <Compile Include="Internal\OperationResultGuard.cs" />
+    <Compile Include="OperationEventArgs.cs" />
+    <Compile Include="OperationResultBase.cs" />
+    <Compile Include="RemoteFileInfo.cs" />
+    <Compile Include="Session.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SessionOptions.cs" />
+    <Compile Include="SessionException.cs" />
+    <Compile Include="SessionLocalException.cs" />
+    <Compile Include="SessionRemoteException.cs" />
+    <Compile Include="Internal\SessionLogReader.cs" />
+    <Compile Include="TouchEventArgs.cs" />
+    <Compile Include="TransferResumeSupport.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

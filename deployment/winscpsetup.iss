@@ -20,10 +20,10 @@
   #define Status "unofficial"
 #endif
 #ifndef SourceDir
-  #define SourceDir ".."
+  #define SourceDir "..\source"
 #endif
 #ifndef BinariesDir
-  #define BinariesDir "..\Release"
+  #define BinariesDir SourceDir + "\Release"
 #endif
 #ifndef OutputSuffix
   #define OutputSuffix
@@ -67,6 +67,9 @@
 ; some path relative to CWD
 #define MessagesPathRel(L) TranslationDirRel + "\" + "WinSCP." + L + ".isl"
 
+#define ExplorerFile "explorer.bmp"
+#define CommanderFile "commander.bmp"
+
 #ifdef Chrome
 #define ChromeLogoFile "chromelogo.bmp"
 #define ChromeAdFile "chromead.bmp"
@@ -106,9 +109,12 @@ AppVersion={#Version}
 AppVerName=WinSCP {#Version}
 OutputBaseFilename=winscp{#Major}{#Minor}{#Rev}setup{#OutputSuffix}
 SolidCompression=yes
+WizardImageFile=compiler:WizModernImage-IS.bmp
+WizardSmallImageFile=compiler:WizModernSmallImage-IS.bmp
 ShowTasksTreeLines=yes
 PrivilegesRequired=none
 UsePreviousLanguage=yes
+MinVersion=0,5.1
 #ifdef Sign
 SignTool=sign $f "WinSCP Installer" http://winscp.net/eng/docs/installation
 #endif
@@ -210,26 +216,15 @@ Name: desktopicon\common; Description: {cm:DesktopIconCommonTask}; \
   Flags: exclusive
 ; No Quick Launch on Win7
 Name: quicklaunchicon; Description: {cm:QuickLaunchIconTask}; \
-  Flags: unchecked; OnlyBelowVersion: 0,6.1.7600
+  Flags: unchecked; OnlyBelowVersion: 6.1.7600
 Name: sendtohook; Description: {cm:SendToHookTask}
 Name: urlhandler; Description: {cm:RegisterAsUrlHandler}
 Name: searchpath; Description: {cm:AddSearchPath}; \
   Flags: unchecked; Check: IsAdminLoggedOn
 
 [Icons]
-; This is created always (unless user checks Don't create a Start menu folder,
-; Setup\AllowNoIcons=yes)
-Name: "{group}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
-  Comment: "{cm:ProgramComment}"; Check: not IsWin8
-; This is created when pageant/puttygen component is selected (unless user
-; checks Don't create a Start menu folder, Setup\AllowNoIcons=yes).
-Name: "{group}\{cm:RSAKeyTools}\PuTTYgen"; \
-  Filename: "{app}\PuTTY\puttygen.exe"; Components: puttygen; Check: not IsWin8
-Name: "{group}\{cm:RSAKeyTools}\Pageant"; \
-  Filename: "{app}\PuTTY\pageant.exe"; Components: pageant; Check: not IsWin8
-; On Windows 8, create just top-level icon
-Name: "{commonstartmenu}\Programs\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
-  Comment: "{cm:ProgramComment}"; Check: IsWin8
+Name: "{commonprograms}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
+  Comment: "{cm:ProgramComment}"
 ; This is created when desktopicon task is selected
 Name: "{userdesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
   Tasks: desktopicon\user
@@ -265,6 +260,9 @@ Type: files; Name: "{userdesktop}\WinSCP3.lnk"
 Type: files; Name: "{commondesktop}\WinSCP3.lnk"
 Type: files; Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\WinSCP3.lnk"
 Type: files; Name: "{sendto}\{cm:SendToHook}.lnk"
+; Remove 
+Type: filesandordirs; Name: "{commonprograms}\WinSCP"
+Type: filesandordirs; Name: "{userprograms}\WinSCP"
 
 [Run]
 ; This is called when urlhandler task is selected
@@ -272,6 +270,8 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/RegisterAsUrlHandler"; \
   StatusMsg: {cm:RegisteringAsUrlHandler}; Tasks: urlhandler
 Filename: "{app}\WinSCP.exe"; Parameters: "/AddSearchPath"; \
   StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
+Filename: "{app}\WinSCP.exe"; Parameters: "/ImportSitesIfAny"; \
+  StatusMsg: {cm:ImportSites}
 #ifdef Chrome
 Filename: "{tmp}\{#ChromeInstallerFile}"; \
   Parameters: "/r1:{#ChromeBrandCode1} /r2:{#ChromeBrandCode2} /b:1"; \
@@ -318,6 +318,8 @@ Source: "{#PuttySourceDir}\pageant.exe"; DestDir: "{app}\PuTTY"; \
   Components: pageant; Flags: ignoreversion
 Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
   Components: puttygen; Flags: ignoreversion
+Source: "{#ExplorerFile}"; Flags: dontcopy
+Source: "{#CommanderFile}"; Flags: dontcopy
 #ifdef Donations
 Source: "{#PayPalCardImage}"; \
   Flags: dontcopy
@@ -575,6 +577,11 @@ begin
   WizardForm.ActiveControl := TLabel(Sender).FocusControl;
 end;
 
+procedure ImageClick(Sender: TObject);
+begin
+  WizardForm.ActiveControl := TWinControl(TControl(Sender).Tag);
+end;
+
 type
   TProcessTranslationEvent = procedure(Lang: string; FileName: string);
 
@@ -772,13 +779,13 @@ var
   InterfacePage: TWizardPage;
   SetupTypePage: TWizardPage;
   Caption: TLabel;
+  Image: TBitmapImage;
   HelpButton: TButton;
 #ifdef Donations
-  PayPalCardImagePath: string;
-  PayPalCardImage: TBitmapImage;
   P: Integer;
 #endif
   S: string;
+  I: Integer;
 #ifdef OpenCandy
   OpenCandyNewPageID: Integer;
 #endif
@@ -963,7 +970,7 @@ begin
   Caption.Parent := InterfacePage.Surface;
 
   CommanderRadioButton := TRadioButton.Create(InterfacePage);
-  CommanderRadioButton.Caption := ExpandConstant('{cm:NortonCommanderInterfaceB}');
+  CommanderRadioButton.Caption := ExpandConstant('{cm:NortonCommanderInterfaceC}');
   CommanderRadioButton.Checked := (UserInterface = 0);
   CommanderRadioButton.Left := ScaleX(4);
   CommanderRadioButton.Width := InterfacePage.SurfaceWidth -
@@ -971,22 +978,31 @@ begin
   CommanderRadioButton.Top := Caption.Top + Caption.Height + ScaleY(6);
   CommanderRadioButton.Parent := InterfacePage.Surface;
 
+  Image := TBitmapImage.Create(InterfacePage);
+  Image.Top := CommanderRadioButton.Top + CommanderRadioButton.Height + ScaleY(6);
+  Image.Left := CommanderRadioButton.Left + ScaleX(45);
+  Image.Parent := InterfacePage.Surface;
+  LoadEmbededBitmap(Image, '{#CommanderFile}');
+  Image.ReplaceColor := $FF00FF;
+  Image.ReplaceWithColor := InterfacePage.Surface.Color;
+  Image.OnClick := @ImageClick;
+  Image.Tag := Integer(CommanderRadioButton);
+
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
   Caption.Caption :=
       ExpandConstant('{cm:NortonCommanderInterface1}') + NewLine +
       ExpandConstant('{cm:NortonCommanderInterface2}') + NewLine +
       ExpandConstant('{cm:NortonCommanderInterface3}');
-  Caption.Left := ScaleX(4) + ScaleX(20);
+  Caption.Left := CommanderRadioButton.Left + ScaleX(116);
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
-  Caption.Top := CommanderRadioButton.Top + CommanderRadioButton.Height +
-    ScaleY(6);
+  Caption.Top := CommanderRadioButton.Top;
   Caption.Parent := InterfacePage.Surface;
   Caption.FocusControl := CommanderRadioButton;
   Caption.OnClick := @CaptionClick;
 
   ExplorerRadioButton := TRadioButton.Create(InterfacePage);
-  ExplorerRadioButton.Caption := ExpandConstant('{cm:ExplorerInterfaceB}');
+  ExplorerRadioButton.Caption := ExpandConstant('{cm:ExplorerInterfaceC}');
   ExplorerRadioButton.Checked := (UserInterface <> 0);
   ExplorerRadioButton.Left := ScaleX(4);
   ExplorerRadioButton.Width := InterfacePage.SurfaceWidth -
@@ -994,24 +1010,39 @@ begin
   ExplorerRadioButton.Top := Caption.Top + Caption.Height + ScaleY(10);
   ExplorerRadioButton.Parent := InterfacePage.Surface;
 
+  Image := TBitmapImage.Create(InterfacePage);
+  Image.Top := ExplorerRadioButton.Top + ExplorerRadioButton.Height + ScaleY(6);
+  Image.Left := ExplorerRadioButton.Left + ScaleX(45);
+  Image.Parent := InterfacePage.Surface;
+  LoadEmbededBitmap(Image, '{#ExplorerFile}');
+  Image.ReplaceColor := $C020E0;
+  Image.ReplaceWithColor := InterfacePage.Surface.Color;
+  Image.OnClick := @ImageClick;
+  Image.Tag := Integer(ExplorerRadioButton);
+
+  I := CommanderRadioButton.Left + ScaleX(116);
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
   Caption.Caption :=
       ExpandConstant('{cm:ExplorerInterface1}') + NewLine +
       ExpandConstant('{cm:ExplorerInterface2}') + NewLine +
       ExpandConstant('{cm:ExplorerInterface3}');
-  Caption.Left := ScaleX(4) + ScaleX(20);
+  Caption.Left := I;
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
-  Caption.Top := ExplorerRadioButton.Top + ExplorerRadioButton.Height +
-    ScaleY(6);
+  Caption.Top := ExplorerRadioButton.Top;
   Caption.Parent := InterfacePage.Surface;
   Caption.FocusControl := ExplorerRadioButton;
   Caption.OnClick := @CaptionClick;
 
+  if Caption.Top + Caption.Height > Image.Top + Image.Height then
+    I := Caption.Top + Caption.Height
+  else
+    I := Image.Top + Image.Height;
+
   AdditionalOptionsCaption := TLabel.Create(InterfacePage);
   AdditionalOptionsCaption.Caption := ExpandConstant('{cm:AdditionalOptions}');
   AdditionalOptionsCaption.Width := InterfacePage.SurfaceWidth;
-  AdditionalOptionsCaption.Top := Caption.Top + Caption.Height + ScaleY(10);
+  AdditionalOptionsCaption.Top := I + ScaleY(10);
   AdditionalOptionsCaption.Parent := InterfacePage.Surface;
 
   AdvancedTabsCheckbox := TCheckbox.Create(InterfacePage);
@@ -1081,21 +1112,17 @@ begin
   Caption.OnClick := @AboutDonationsLinkClick;
   LinkLabel(Caption);
 
-  PayPalCardImagePath := ExpandConstant('{tmp}\{#PayPalCardImage}');
-  ExtractTemporaryFile(ExtractFileName(PayPalCardImagePath));
-
-  PayPalCardImage := TBitmapImage.Create(DonationPanel);
-  PayPalCardImage.AutoSize := True;
-  PayPalCardImage.Bitmap.LoadFromFile(PayPalCardImagePath);
-  PayPalCardImage.Cursor := crHand;
-  PayPalCardImage.Parent := DonationPanel;
-  PayPalCardImage.Left := ScaleX(100);
-  PayPalCardImage.Top := P + ScaleX(8);
-  PayPalCardImage.ReplaceColor := $FCFE04;
-  PayPalCardImage.ReplaceWithColor := WizardForm.FinishedPage.Color;
-  PayPalCardImage.Hint := ExpandConstant('{cm:AboutDonations}');
-  PayPalCardImage.ShowHint := True;
-  PayPalCardImage.OnClick := @AboutDonationsLinkClick;
+  Image := TBitmapImage.Create(DonationPanel);
+  LoadEmbededBitmap(Image, '{#PayPalCardImage}');
+  Image.Cursor := crHand;
+  Image.Parent := DonationPanel;
+  Image.Left := ScaleX(100);
+  Image.Top := P + ScaleX(8);
+  Image.ReplaceColor := $FCFE04;
+  Image.ReplaceWithColor := WizardForm.FinishedPage.Color;
+  Image.Hint := ExpandConstant('{cm:AboutDonations}');
+  Image.ShowHint := True;
+  Image.OnClick := @AboutDonationsLinkClick;
 
 #endif
 
@@ -1356,6 +1383,7 @@ var
 begin
   if CurStep = ssPostInstall then
   begin
+    Log('Post install');
     if Length(MissingTranslations) > 0 then
     begin
       Log('Removing obsolete translations');
@@ -1363,11 +1391,16 @@ begin
         ExpandConstant('{cm:RemovingObsoleteTranslations}');
       ProcessMissingTranslations(@DeleteTranslation);
     end;
+    InstallationDone := True;
   end
     else
   if CurStep = ssDone then
   begin
-    if (not WizardSilent) and (not WillRestart) then
+    Log('Done');
+    // bug in InnoSetup causes it using ssDone even when
+    // setup failed because machine was not restarted to complete previous
+    // installation. double check that ssPostInstall was called
+    if (not WizardSilent) and (not WillRestart) and InstallationDone then
     begin
       OpenGettingStarted :=
         OpenGettingStartedCheckbox.Enabled and
@@ -1423,12 +1456,6 @@ begin
 #ifdef OpenCandy
   OpenCandyCurStepChanged(CurStep);
 #endif
-
-  if CurStep = ssDone then
-  begin
-    Log('Installation done');
-    InstallationDone := True;
-  end;
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
@@ -1479,8 +1506,8 @@ begin
 
   S := S + ExpandConstant('{cm:UserSettingsOverview}') + NewLine;
   S := S + Space;
-  if CommanderRadioButton.Checked then S2 := ExpandConstant('{cm:NortonCommanderInterfaceB}')
-    else S2 := ExpandConstant('{cm:ExplorerInterfaceB}');
+  if CommanderRadioButton.Checked then S2 := ExpandConstant('{cm:NortonCommanderInterfaceC}')
+    else S2 := ExpandConstant('{cm:ExplorerInterfaceC}');
   StringChange(S2, '&', '');
   S := S + S2;
   S := S + NewLine;

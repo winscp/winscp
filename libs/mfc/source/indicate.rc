@@ -1,0 +1,35 @@
+// indicate.rc : RC file for all standard AFX status indicators
+//
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "afxres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#ifdef APSTUDIO_INVOKED
+// This resource will prevent the App Studio user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	ID_INDICATOR_EXT,           "EXT"
+	ID_INDICATOR_CAPS,          "CAP"           // supported
+	ID_INDICATOR_NUM,           "NUM"           // supported
+	ID_INDICATOR_SCRL,          "SCRL"          // supported
+	ID_INDICATOR_OVR,           "OVR"
+	ID_INDICATOR_REC,           "REC"
+	ID_INDICATOR_KANA,          "KANA"
+END

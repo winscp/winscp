@@ -1,0 +1,90 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXPRINT_RC__
+#define __AFXPRINT_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 표준 MFC 원본은 변경할 수 없음! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// Printing Resources
+
+AFX_IDC_MAGNIFY         CURSOR  DISCARDABLE     "res\\magnify.cur"
+
+AFX_IDD_PRINTDLG DIALOG DISCARDABLE  6, 18, 133, 95
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | 0x04
+FONT 8, "MS Shell Dlg"
+BEGIN
+	CTEXT           "인쇄",IDC_STATIC,0,9,133,8
+	CTEXT           "",AFX_IDC_PRINT_DOCNAME,0,19,133,8
+	CTEXT           "에서",IDC_STATIC,0,29,133,8
+	CTEXT           "",AFX_IDC_PRINT_PRINTERNAME,0,39,133,8
+	CTEXT           "",AFX_IDC_PRINT_PORTNAME,0,49,133,8
+	CTEXT           "",AFX_IDC_PRINT_PAGENUM,0,59,133,8
+	PUSHBUTTON      "취소",IDCANCEL,46,74,40,14
+END
+
+// Preview Toolbar Dialog
+AFX_IDD_PREVIEW_TOOLBAR DIALOG PRELOAD DISCARDABLE  0, 0, 330, 16
+STYLE WS_CHILD | 0x04
+FONT 8, "MS Shell Dlg"
+BEGIN
+	PUSHBUTTON      "인쇄(&P)...",AFX_ID_PREVIEW_PRINT,2,2,44,12
+	PUSHBUTTON      "다음 쪽(&N)",AFX_ID_PREVIEW_NEXT,48,2,44,12
+	PUSHBUTTON      "이전 쪽(&V)",AFX_ID_PREVIEW_PREV,94,2,44,12
+	PUSHBUTTON      "",AFX_ID_PREVIEW_NUMPAGE,140,2,44,12
+	PUSHBUTTON      "확대(&I)",AFX_ID_PREVIEW_ZOOMIN,186,2,44,12
+	PUSHBUTTON      "축소(&O)",AFX_ID_PREVIEW_ZOOMOUT,232,2,44,12
+	PUSHBUTTON      "닫기(&C)",AFX_ID_PREVIEW_CLOSE,278,2,44,12
+END
+
+// Printing strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	// print progress dialog strings
+	AFX_IDS_PRINTONPORT,            "%1에"         // for print output
+	AFX_IDS_ONEPAGE,                "한 쪽(&O)"     // for preview button
+	AFX_IDS_TWOPAGE,                "두 쪽(&T)"     // for preview button
+	AFX_IDS_PRINTPAGENUM,           "페이지 %u"       // for print output
+	AFX_IDS_PREVIEWPAGEDESC,        "페이지 %u\n페이지 %u-%u\n"
+
+	// print to file dialog strings
+	AFX_IDS_PRINTDEFAULTEXT,        "prn"           // default extension
+	AFX_IDS_PRINTDEFAULT,           "Output.prn"    // default file
+	AFX_IDS_PRINTFILTER,
+		"프린터 파일 (*.prn)|*.prn|모든 파일 (*.*)|*.*||"
+	AFX_IDS_PRINTCAPTION,           "파일에 인쇄" // caption for browse dlg
+	AFX_IDS_PRINTTOFILE,            "%1 로(으로)"         // to file
+END
+
+// Print Preview Accelerator Table
+AFX_IDR_PREVIEW_ACCEL ACCELERATORS LOADONCALL MOVEABLE
+BEGIN
+	VK_NEXT,    AFX_ID_PREVIEW_NEXT,    VIRTKEY, NOINVERT
+	VK_PRIOR,   AFX_ID_PREVIEW_PREV,    VIRTKEY, NOINVERT
+	VK_ESCAPE,  AFX_ID_PREVIEW_CLOSE,   VIRTKEY, NOINVERT
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXPRINT_RC__

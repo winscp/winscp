@@ -1,0 +1,45 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXISAPI_RC__
+#define __AFXISAPI_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// ISAPI HTML Text for HTTP error conditions
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDS_HTTP_TITLE          "<HEAD><TITLE>HTTP Error %d</TITLE></HEAD>"
+	AFX_IDS_HTTP_NO_TEXT        "<BODY><H1>HTTP Error %d: No message available</H1></BODY>\r\n"
+	AFX_IDS_HTTP_BAD_REQUEST    "<BODY><H1>BAD REQUEST</H1><P>Your client sent a request that this server didn't understand.<br>Request: %s\r\n"
+	AFX_IDS_HTTP_AUTH_REQUIRED "<BODY><H1>AUTH REQUIRED</H1><P>Browser not authentication-capable or authentication failed.</BODY>\r\n"
+	AFX_IDS_HTTP_FORBIDDEN  "<BODY><H1>FORBIDDEN</H1><P>Your client does not have permission to get this URL from the server.</BODY>\r\n"
+	AFX_IDS_HTTP_NOT_FOUND  "<BODY><H1>NOT FOUND</H1><P>The requested URL was not found on this server.</BODY>\r\n"
+	AFX_IDS_HTTP_SERVER_ERROR   "<BODY><H1>SERVER ERROR</H1>The server encountered an internal error or misconfiguration and was unable to complete your request.</BODY>\r\n"
+	AFX_IDS_HTTP_NOT_IMPLEMENTED "<BODY><H1>NOT IMPLEMENTED</H1>The server is unable to perform the method <b>%s</b> at this time.</BODY>\r\n"
+END
+
+
+#endif //!_AFXDLL
+#endif //!__AFXISAPI_RC__

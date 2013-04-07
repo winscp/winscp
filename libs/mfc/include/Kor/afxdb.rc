@@ -1,0 +1,105 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXDB_RC__
+#define __AFXDB_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 표준 MFC 원본은 변경할 수 없음! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// Database Resources
+
+// Database strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_SQL_CONNECT_FAIL
+		"데이터원본에 대한 연결 시도 실패"
+	AFX_IDP_SQL_RECORDSET_FORWARD_ONLY
+		"레코드세트는 앞으로 이동하기만을 지원함."
+	AFX_IDP_SQL_EMPTY_COLUMN_LIST
+		"표 열기 시도 실패 - 검색할 칼럼이 지정되지 않았음."
+	AFX_IDP_SQL_FIELD_SCHEMA_MISMATCH
+		"문의로부터 예기치 않은 칼럼 데이터 종류가 되돌려 보내졌음."
+	AFX_IDP_SQL_ILLEGAL_MODE "새로 고침 또는 삭제 시도 실패."
+	AFX_IDP_SQL_MULTIPLE_ROWS_AFFECTED "여러 줄이 새로 고쳐졌음."
+	AFX_IDP_SQL_NO_CURRENT_RECORD "작동 실패, 현재 레코드가 없음."
+	AFX_IDP_SQL_NO_ROWS_AFFECTED
+		"아무 줄도 새로 고침이나 삭제 작동의 영향을 받지 않았음."
+	AFX_IDP_SQL_RECORDSET_READONLY "레코드세트는 읽기전용임"
+	AFX_IDP_SQL_SQL_NO_TOTAL
+		"ODBC 드라이버는 MFC 긴 2진 데이터 모델을 지원하지 않음."
+	AFX_IDP_SQL_ODBC_LOAD_FAILED
+		"필수 구성 요소인 ODBC32.DLL를 읽어들이려는 시도 실패."
+	AFX_IDP_SQL_DYNASET_NOT_SUPPORTED
+		"ODBC 드라이버는 다이나세트를 지원하지 않음."
+	AFX_IDP_SQL_SNAPSHOT_NOT_SUPPORTED
+		"스냅샷 지원을 위해서는 ODBC 정적 커서 필요."
+	AFX_IDP_SQL_API_CONFORMANCE
+		"ODBC  드라이버가  MFC 데이터베이스  종류와  호환성이  없음 (API_CONFORMANCE  >= "
+	AFX_IDP_SQL_SQL_CONFORMANCE
+		"ODBC  드라이버가 MFC  데이터베이스  종류와  호환성이 없음  (SQL_CONFORMANCE  >= "
+	AFX_IDP_SQL_NO_DATA_FOUND
+		"데이터의 끝을 지나거나 맨 처음보다 앞으로 가려는 시도."
+	AFX_IDP_SQL_ROW_UPDATE_NOT_SUPPORTED
+		"다이나세트는 ODBC 드라이버에 의해 지원되지 않음."
+	AFX_IDP_SQL_ODBC_V2_REQUIRED
+		"ODBC 레벨 2 호환 드라이버 필요."
+	AFX_IDP_SQL_NO_POSITIONED_UPDATES
+		"지정 새로 고침은 ODBC 드라이버에 의해 지원되지 않음."
+	AFX_IDP_SQL_LOCK_MODE_NOT_SUPPORTED
+		"요구한 잠금 모드는 지원되지 않음."
+	AFX_IDP_SQL_DATA_TRUNCATED
+		"데이터  잘림."
+	AFX_IDP_SQL_ROW_FETCH
+		"기록 재생 오류"
+	AFX_IDP_SQL_INCORRECT_ODBC
+		"필요한 ODBC 엔트리 포인트를 찾을 수 없음. ODBC가 정확하게 설치되었는지 확인하십시오."
+	AFX_IDP_SQL_UPDATE_DELETE_FAILED
+		"새로 고침 또는 삭제 실패"
+	AFX_IDP_SQL_DYNAMIC_CURSOR_NOT_SUPPORTED
+		"동적 커서는 ODBC 드라이버에 의해 지원되지 않습니다."
+	AFX_IDP_SQL_FIELD_NOT_FOUND
+		"필드 이름 또는 필드 색인이 잘못되었습니다."
+	AFX_IDP_SQL_BOOKMARKS_NOT_SUPPORTED
+		"ODBC 드라이버에는 책갈피가 지원되지 않습니다."
+	AFX_IDP_SQL_BOOKMARKS_NOT_ENABLED
+		"레코드 집합에서는 책갈피를 사용할 수 없습니다."
+	AFX_IDP_DAO_ENGINE_INITIALIZATION
+		"DAO/Jet db 엔진 초기화 불능. "
+	AFX_IDP_DAO_DFX_BIND
+		"불량 DFX 값 파라미터."
+	AFX_IDP_DAO_OBJECT_NOT_OPEN
+		"DAO TableDef 또는 QueryDef가 열리지 않음."
+	AFX_IDP_DAO_ROWTOOSHORT
+		"GetRows 실패. 줄에 할당된 메모리 부족."
+	AFX_IDP_DAO_BADBINDINFO
+		"GetRows 바인딩 오류. 데이터 종류가 맞지 않기 때문에 발생된 것 같습니다."
+	AFX_IDP_DAO_COLUMNUNAVAILABLE
+		"GetRows 실패. 요구한 칼럼은 본 데이터 세트의 한 멤버가 아닙니다."
+
+	AFX_IDS_DELETED "<삭제됨>"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXDB_RC__

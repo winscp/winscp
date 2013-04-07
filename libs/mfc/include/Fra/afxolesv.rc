@@ -1,0 +1,53 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXOLESV_RC__
+#define __AFXOLESV_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Server Resources
+
+// OLE strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_ASK_TO_UPDATE,              "Mettre à jour %1 avant de continuer?"
+	AFX_IDP_FAILED_TO_UPDATE,           "Impossible de mettre à jour le client."
+
+	AFX_IDP_FAILED_TO_REGISTER,         "Echec de registration. Les fonctionalités ActiveX pourraient ne pas fonctionner correctement."
+	AFX_IDP_FAILED_TO_AUTO_REGISTER,    "La mise à jour du registre du système a échoué. \nEssayez d'utiliser REGEDIT."
+END
+
+STRINGTABLE PRELOAD
+BEGIN
+	AFX_IDS_APP_TITLE_EMBEDDING,        "%1 dans %2"
+	AFX_IDS_OBJ_TITLE_INPLACE,          "%1 - %2"
+	AFX_IDS_EXIT_MENU,                  "&Quitter et retourner à %1"
+	AFX_IDS_UPDATE_MENU,                "Mise à jo&ur de %1"
+	AFX_IDS_SAVEFILECOPY,               "Enregistrer la copie sous"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXOLESV_RC__

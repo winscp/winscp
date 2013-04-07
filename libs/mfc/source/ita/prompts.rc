@@ -1,0 +1,141 @@
+// prompts.rc : RC file for all standard AFX menu prompts
+//
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "afxres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#ifdef APSTUDIO_INVOKED
+// This resource will prevent the App Studio user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Impossibile modificare le risorse standard MFC >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+/////////////////////////////////////////////////////////////////////////////
+
+// Standard Menu commands
+STRINGTABLE DISCARDABLE
+BEGIN
+	ID_FILE_NEW,            "Crea un nuovo documento\nNuovo"
+	ID_FILE_OPEN,           "Apre un documento esistente\nApri"
+	ID_FILE_CLOSE,          "Chiude il documento attivo\nChiudi"
+	ID_FILE_SAVE,           "Salva il documento attivo\nSalva"
+	ID_FILE_SAVE_AS,        "Salva il documento attivo con un nuovo nome\nSalva con nome"
+	ID_FILE_PAGE_SETUP,     "Modifica le impostazioni di stampa\nImposta pagina"
+	ID_FILE_PRINT_SETUP,    "Modifica le impostazioni relative alla stampante e alla stampa\nImposta stampante"
+	ID_FILE_PRINT,          "Stampa il documento attivo\nStampa"
+	ID_FILE_PRINT_PREVIEW,  "Visualizza le pagine per intero\nAnteprima di stampa"
+	ID_APP_ABOUT,           "Visualizza le informazioni sul programma, il numero di versione e le informazioni di copyright\nInformazioni su..."
+	ID_APP_EXIT,            "Esce dall'applicazione e chiede di salvare i documenti\nEsci"
+	ID_FILE_SEND_MAIL,      "Invia il documento attivo tramite posta elettronica\nInvia"
+	ID_FILE_MRU_FILE1+0,    "Apre questo documento"
+	ID_FILE_MRU_FILE1+1,    "Apre questo documento"
+	ID_FILE_MRU_FILE1+2,    "Apre questo documento"
+	ID_FILE_MRU_FILE1+3,    "Apre questo documento"
+	ID_FILE_MRU_FILE1+4,    "Apre questo documento"
+	ID_FILE_MRU_FILE1+5,    "Apre questo documento"
+	ID_FILE_MRU_FILE1+6,    "Apre questo documento"
+	ID_FILE_MRU_FILE1+7,    "Apre questo documento"
+	ID_FILE_MRU_FILE1+8,    "Apre questo documento"
+	ID_FILE_MRU_FILE1+9,    "Apre questo documento"
+	ID_FILE_MRU_FILE1+10,   "Apre questo documento"
+	ID_FILE_MRU_FILE1+11,   "Apre questo documento"
+	ID_FILE_MRU_FILE1+12,   "Apre questo documento"
+	ID_FILE_MRU_FILE1+13,   "Apre questo documento"
+	ID_FILE_MRU_FILE1+14,   "Apre questo documento"
+	ID_FILE_MRU_FILE1+15,   "Apre questo documento"
+	ID_CONTEXT_HELP,        "Visualizza la Guida per i pulsanti selezionati, i menu e le finestre\n?"
+	ID_HELP,                "Visualizza la Guida per l'operazione o il comando corrente\n?"
+	ID_HELP_INDEX,          "Elenca gli argomenti della Guida\nIndice"
+	ID_HELP_FINDER,         "Elenca gli argomenti della Guida\nArgomenti"
+	ID_HELP_USING,          "Visualizza le istruzioni su come utilizzare la Guida\n?"
+	ID_NEXT_PANE,           "Passa al riquadro della finestra successivo\nRiquadro successivo"
+	ID_PREV_PANE,           "Ritorna al riquadro della finestra precedente\nRiquadro precedente"
+	ID_WINDOW_NEW,          "Apre un'altra finestra per il documento attivo\nNuova finestra"
+	ID_WINDOW_ARRANGE,      "Dispone le icone nella parte inferiore della finestra\nDisponi icone"
+	ID_WINDOW_CASCADE,      "Dispone le finestre sovrapponendole\nSovrapponi finestre"
+	ID_WINDOW_TILE_HORZ,    "Dispone le finestre senza sovrapporle\nAffianca finestre"
+	ID_WINDOW_TILE_VERT,    "Dispone le finestre senza sovrapporle\nAffianca finestre"
+	ID_WINDOW_SPLIT,        "Divide la finestra attiva in riquadri\nDividi"
+	ID_EDIT_CLEAR,          "Cancella la selezione\nCancella"
+	ID_EDIT_CLEAR_ALL,      "Cancella tutto\nCancella tutto"
+	ID_EDIT_COPY,           "Copia la selezione e la pone negli Appunti\nCopia"
+	ID_EDIT_CUT,            "Taglia la selezione e la pone negli Appunti\nTaglia"
+	ID_EDIT_FIND,           "Trova il testo specificato\nTrova"
+	ID_EDIT_PASTE,          "Inserisce il contenuto degli Appunti\nIncolla"
+	ID_EDIT_PASTE_LINK,     "Inserisce il contenuto degli Appunti e lo collega alla sua origine\nIncolla collegamento"
+	ID_EDIT_PASTE_SPECIAL,  "Inserisce il contenuto degli Appunti con opzioni\nIncolla speciale"
+	ID_EDIT_REPEAT,         "Ripete l'ultima azione\nRipeti"
+	ID_EDIT_REPLACE,        "Sostituisce il testo specifico con un testo differente\nSostituisci"
+	ID_EDIT_SELECT_ALL,     "Seleziona l'intero documento\nSeleziona tutto"
+	ID_EDIT_UNDO,           "Annulla l'ultima azione\nAnnulla"
+	ID_EDIT_REDO,           "Ripristina l'azione precedentemente annullata\nRipristina"
+	ID_VIEW_TOOLBAR,        "Mostra o nasconde la barra degli strumenti\nMostra/nascondi barra degli strumenti"
+	ID_VIEW_STATUS_BAR,     "Mostra o nasconde la barra di stato\nMostra/nascondi barra di stato"
+	ID_FORMAT_FONT,         "Seleziona il font per la selezione\nFont corrente"
+END
+
+
+// OLE specific
+STRINGTABLE
+BEGIN
+	ID_OLE_EDIT_LINKS,      "Modifica gli oggetti collegati\nModifica collegamenti"
+	ID_OLE_INSERT_NEW,      "Inserisce il nuovo oggetto incorporato\nNuovo oggetto"
+	ID_OLE_EDIT_CONVERT,    "Converte l'oggetto selezionato tra i tipi\nConverti oggetto"
+	ID_OLE_EDIT_CHANGE_ICON,"Cambia l'icona dell'oggetto selezionato\nCambia icona"
+	ID_OLE_VERB_FIRST+0,    "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+1,    "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+2,    "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+3,    "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+4,    "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+5,    "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+6,    "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+7,    "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+8,    "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+9,    "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+10,   "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+11,   "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+12,   "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+13,   "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+14,   "Attiva un oggetto incorporato o collegato"
+	ID_OLE_VERB_FIRST+15,   "Attiva un oggetto incorporato o collegato"
+END
+
+// Database specific
+STRINGTABLE
+BEGIN
+	ID_RECORD_NEXT          "Passa al record successivo\nRecord successivo"
+	ID_RECORD_PREV          "Passa al record precedente\nRecord precedente"
+	ID_RECORD_LAST          "Passa al record finale\nUltimo record"
+	ID_RECORD_FIRST         "Passa al primo record\nPrimo record"
+END
+
+// System commands
+STRINGTABLE
+BEGIN
+	AFX_IDS_SCSIZE,         "Modifica le dimensioni della finestra"
+	AFX_IDS_SCMOVE,         "Modifica la posizione della finestra"
+	AFX_IDS_SCMINIMIZE,     "Riduce la finestra ad icona"
+	AFX_IDS_SCMAXIMIZE,     "Allarga la finestra a tutto schermo"
+	AFX_IDS_SCNEXTWINDOW,   "Passa alla finestra successiva del documento "
+	AFX_IDS_SCPREVWINDOW,   "Passa alla precedente finestra del documento"
+	AFX_IDS_SCCLOSE,        "Chiude la finestra attiva e chiede di salvare i documenti"
+	AFX_IDS_SCRESTORE,      "Ripristina la finestra alle dimensioni normali"
+	AFX_IDS_SCTASKLIST,     "Attiva l'Elenco dei task"
+	AFX_IDS_MDICHILD,       "Attiva questa finestra"
+	AFX_IDS_PREVIEW_CLOSE,  "Chiude la modalità Anteprima di stampa\n Annulla anteprima"
+	AFX_IDS_DESKACCESSORY,  "Apre la voce selezionata"
+END
+
+/////////////////////////////////////////////////////////////////////////////

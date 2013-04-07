@@ -1,0 +1,284 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXCTL_RC__
+#define __AFXCTL_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Control Resources
+
+#ifndef _AFX_NO_STOCKPPG_RESOURCES
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+AFX_IDB_TRUETYPE        BITMAP  DISCARDABLE     "RES\\TRUETYPE.BMP"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+AFX_IDD_PROPPAGE_FONT DIALOG DISCARDABLE  13, 54, 250, 110
+STYLE WS_CHILD | 0x4
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT           "Eigenschafts&name:",IDC_STATIC,3,5,61,8
+	COMBOBOX        AFX_IDC_FONTPROP,65,3,100,71,CBS_DROPDOWNLIST | CBS_SORT |
+					WS_VSCROLL | WS_TABSTOP
+	LTEXT           "&Schriftart:",IDC_STATIC,3,19,91,8
+	COMBOBOX        AFX_IDC_FONTNAMES,3,29,91,77,CBS_SIMPLE |
+					CBS_OWNERDRAWFIXED | CBS_AUTOHSCROLL | CBS_SORT |
+					CBS_HASSTRINGS | CBS_DISABLENOSCROLL | WS_VSCROLL |
+					WS_TABSTOP
+	LTEXT           "Schriftst&il:",IDC_STATIC,102,19,53,8
+	COMBOBOX        AFX_IDC_FONTSTYLES,104,29,53,53,CBS_DROPDOWNLIST |
+					CBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
+	LTEXT           "&Größe:",IDC_STATIC,167,19,40,8
+	COMBOBOX        AFX_IDC_FONTSIZES,167,29,36,53,CBS_DROPDOWN | CBS_SORT |
+					CBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
+	GROUPBOX        "Effekte",IDC_STATIC,104,44,142,24,WS_GROUP
+	CONTROL         "&Durchgestrichen",AFX_IDC_STRIKEOUT,"Button",BS_AUTOCHECKBOX |
+					WS_TABSTOP,109,55,65,10
+	CONTROL         "&Unterstrichen",AFX_IDC_UNDERLINE,"Button",BS_AUTOCHECKBOX |
+					WS_TABSTOP,175,55,65,10
+	GROUPBOX        "Beispiel",IDC_STATIC,104,71,142,36,WS_GROUP
+	CTEXT           "AaBbYyZz",AFX_IDC_SAMPLEBOX,110,80,130,22,SS_NOPREFIX |
+					NOT WS_VISIBLE
+END
+
+AFX_IDD_PROPPAGE_COLOR DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD | 0x4
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT           "Eigenschafts&name:",IDC_STATIC,3,3,100,8
+	COMBOBOX        AFX_IDC_COLORPROP,3,13,100,54,CBS_DROPDOWNLIST |
+					CBS_SORT | WS_VSCROLL | WS_TABSTOP
+	LTEXT           "System&farbe:",IDC_STATIC,3,29,100,8
+	COMBOBOX        AFX_IDC_SYSTEMCOLORS,3,39,100,54,CBS_DROPDOWNLIST |
+					CBS_SORT | WS_VSCROLL | WS_TABSTOP
+	CONTROL         "",AFX_IDC_COLOR_BLACK,"Button",BS_OWNERDRAW | WS_GROUP |
+					WS_TABSTOP,118,4,15,11
+	CONTROL         "",AFX_IDC_COLOR_BLUE,"Button",BS_OWNERDRAW,138,4,15,11
+	CONTROL         "",AFX_IDC_COLOR_CYAN,"Button",BS_OWNERDRAW,158,4,15,11
+	CONTROL         "",AFX_IDC_COLOR_DARKBLUE,"Button",BS_OWNERDRAW,178,4,15,
+					11
+	CONTROL         "",AFX_IDC_COLOR_DARKCYAN,"Button",BS_OWNERDRAW,118,18,
+					15,11
+	CONTROL         "",AFX_IDC_COLOR_DARKGREEN,"Button",BS_OWNERDRAW,138,18,
+					15,11
+	CONTROL         "",AFX_IDC_COLOR_DARKMAGENTA,"Button",BS_OWNERDRAW,158,
+					18,15,11
+	CONTROL         "",AFX_IDC_COLOR_GRAY,"Button",BS_OWNERDRAW,178,18,15,11
+	CONTROL         "",AFX_IDC_COLOR_DARKRED,"Button",BS_OWNERDRAW,118,32,15,
+					11
+	CONTROL         "",AFX_IDC_COLOR_GREEN,"Button",BS_OWNERDRAW,138,32,15,
+					11
+	CONTROL         "",AFX_IDC_COLOR_LIGHTBROWN,"Button",BS_OWNERDRAW,158,32,
+					15,11
+	CONTROL         "",AFX_IDC_COLOR_LIGHTGRAY,"Button",BS_OWNERDRAW,178,32,
+					15,11
+	CONTROL         "",AFX_IDC_COLOR_MAGENTA,"Button",BS_OWNERDRAW,118,46,15,
+					11
+	CONTROL         "",AFX_IDC_COLOR_RED,"Button",BS_OWNERDRAW,138,46,15,11
+	CONTROL         "",AFX_IDC_COLOR_WHITE,"Button",BS_OWNERDRAW,158,46,15,
+					11
+	CONTROL         "",AFX_IDC_COLOR_YELLOW,"Button",BS_OWNERDRAW,178,46,15,
+					11
+END
+
+AFX_IDD_PROPPAGE_PICTURE DIALOG DISCARDABLE  0, 0, 250, 62
+STYLE WS_CHILD | 0x4
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT           "Eigenschafts&name:",IDC_STATIC,3,3,100,8
+	COMBOBOX        AFX_IDC_PROPNAME,3,13,100,30,CBS_DROPDOWNLIST | CBS_SORT |
+					WS_VSCROLL | WS_TABSTOP
+	PUSHBUTTON      "&Durchsuchen...",AFX_IDC_BROWSE,3,35,54,14
+	PUSHBUTTON      "&Löschen",AFX_IDC_CLEAR,61,35,54,14
+	RTEXT           "Vorschau:",IDC_STATIC,107,3,42,16
+	CONTROL         "",AFX_IDC_PICTURE,"Static",SS_BLACKFRAME,151,4,93,54
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+AFX_IDD_PROPPAGE_FONT DLGINIT
+BEGIN
+	1002, 0x403, 12, 0
+0x6f42, 0x646c, 0x4920, 0x6174, 0x696c, 0x0063,
+	0
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDS_PROPPAGE_UNKNOWN "(Unbekannt)"
+	AFX_IDS_COLOR_DESKTOP   "Desktop"
+	AFX_IDS_COLOR_APPWORKSPACE "Anwendungsarbeitsbereich"
+	AFX_IDS_COLOR_WNDBACKGND "Fensterhintergrund"
+	AFX_IDS_COLOR_WNDTEXT   "Fenstertext"
+	AFX_IDS_COLOR_MENUBAR   "Menüleiste"
+	AFX_IDS_COLOR_MENUTEXT  "Menütext"
+	AFX_IDS_COLOR_ACTIVEBAR "Aktive Titelleiste"
+	AFX_IDS_COLOR_INACTIVEBAR "Inaktive Titelleiste"
+	AFX_IDS_COLOR_ACTIVETEXT "Aktiver Titelleistentext"
+	AFX_IDS_COLOR_INACTIVETEXT "Inaktiver Titelleistentext"
+	AFX_IDS_COLOR_ACTIVEBORDER "Aktiver Rahmen"
+	AFX_IDS_COLOR_INACTIVEBORDER "Inaktiver Rahmen"
+END
+#endif // !_AFX_NO_STOCKPPG_RESOURCES
+
+STRINGTABLE DISCARDABLE
+BEGIN
+#ifndef _AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_COLOR_WNDFRAME  "Fensterrahmen"
+	AFX_IDS_COLOR_SCROLLBARS "Bildlaufleisten"
+	AFX_IDS_COLOR_BTNFACE   "Schaltfläche"
+	AFX_IDS_COLOR_BTNSHADOW "Schaltflächenschatten"
+	AFX_IDS_COLOR_BTNTEXT   "Schaltflächentext"
+	AFX_IDS_COLOR_BTNHIGHLIGHT "Schaltflächenhervorhebung"
+	AFX_IDS_COLOR_DISABLEDTEXT "Deaktivierter Text"
+	AFX_IDS_COLOR_HIGHLIGHT "Markierung"
+	AFX_IDS_COLOR_HIGHLIGHTTEXT "Markierter Text"
+	AFX_IDS_REGULAR         "Normal"
+	AFX_IDS_BOLD            "Fett"
+	AFX_IDS_ITALIC          "Kursiv"
+	AFX_IDS_BOLDITALIC      "Fett-kursiv"
+	AFX_IDS_SAMPLETEXT      "AaBbYyZz"
+#endif // !_AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_DISPLAYSTRING_FONT "(Schriftart)"
+	AFX_IDS_DISPLAYSTRING_COLOR "(Farbe)"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDS_DISPLAYSTRING_PICTURE "(Bild - %s)"
+#ifndef _AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_PICTUREFILTER   "Alle Bildtypen|*.bmp;*.cur;*.dib;*.emf;*.ico;*.wmf|Bitmaps (*.bmp;*.dib)|*.bmp;*.dib|Symbole/Zeiger (*.ico;*.cur)|*.ico;*.cur|Metadateien (*.wmf;*.emf)|*.wmf;*.emf|Alle Dateien (*.*)|*.*||"
+#endif // !_AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_PICTYPE_UNKNOWN "Unbekannt"
+	AFX_IDS_PICTYPE_NONE    "Kein"
+	AFX_IDS_PICTYPE_BITMAP  "Bitmap"
+	AFX_IDS_PICTYPE_METAFILE "Metadatei"
+	AFX_IDS_PICTYPE_ICON    "Symbol"
+#ifndef _AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_COLOR_PPG       "Farbeigenschaften"
+	AFX_IDS_COLOR_PPG_CAPTION "Farben"
+	AFX_IDS_FONT_PPG        "Schrifteigenschaften"
+	AFX_IDS_FONT_PPG_CAPTION "Schriftarten"
+	AFX_IDS_PICTURE_PPG     "Bildeigenschaften"
+	AFX_IDS_PICTURE_PPG_CAPTION "Bilder"
+#endif // !_AFX_NO_STOCKPPG_RESOURCES
+	AFX_IDS_BORDERSTYLE_0   "0 - Keiner"
+	AFX_IDS_BORDERSTYLE_1   "1 - Fester einzelner"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDS_VERB_EDIT       "&Bearbeiten"
+	AFX_IDS_VERB_PROPERTIES "&Eigenschaften..."
+END
+
+#ifndef _AFX_NO_STOCKPPG_RESOURCES
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_PICTURECANTOPEN "Bilddatei %1 konnte nicht geöffnet werden. Die Datei existiert möglicherweise nicht oder ist nicht lesbar."
+	AFX_IDP_PICTURECANTLOAD "Bilddatei %1 konnte nicht geladen werden. Die Datei hat möglicherweise ein ungültiges Format."
+	AFX_IDP_PICTURETOOLARGE "Bilddatei %1 konnte nicht geladen werden, da sie nicht in den Speicher paßt."
+	AFX_IDP_PICTUREREADFAILED
+							"Bilddatei %1 konnte nicht geladen werden, da ein unbekannter Lesefehler auftrat."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDS_PICTUREBROWSETITLE "Bilder durchsuchen"
+END
+#endif // !_AFX_NO_STOCKPPG_RESOURCES
+
+#ifndef _AFX_NO_CTLERROR_RESOURCES
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_E_ILLEGALFUNCTIONCALL "Ungültiger Funktionsaufruf"
+	AFX_IDP_E_OVERFLOW      "Überlauf"
+	AFX_IDP_E_OUTOFMEMORY   "Nicht genügend Speicher"
+	AFX_IDP_E_DIVISIONBYZERO "Division durch Null"
+	AFX_IDP_E_OUTOFSTRINGSPACE "Nicht genügend Zeichenfolgenspeicher"
+	AFX_IDP_E_OUTOFSTACKSPACE "Nicht genügend Stack-Speicher"
+	AFX_IDP_E_BADFILENAMEORNUMBER "Ungültiger Dateiname oder -nummer"
+	AFX_IDP_E_FILENOTFOUND  "Datei nicht gefunden"
+	AFX_IDP_E_BADFILEMODE   "Falscher Dateimodus"
+	AFX_IDP_E_FILEALREADYOPEN "Datei bereits geöffnet"
+	AFX_IDP_E_DEVICEIOERROR "Geräte-E/A-Fehler"
+	AFX_IDP_E_FILEALREADYEXISTS "Datei besteht bereits"
+	AFX_IDP_E_BADRECORDLENGTH "Ungültige Datensatzlänge"
+	AFX_IDP_E_DISKFULL      "Datenträger voll"
+	AFX_IDP_E_BADRECORDNUMBER "Ungültige Datensatznummer"
+	AFX_IDP_E_BADFILENAME   "Ungültiger Dateiname"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_E_TOOMANYFILES  "Zu viele Dateien"
+	AFX_IDP_E_DEVICEUNAVAILABLE "Gerät nicht verfügbar"
+	AFX_IDP_E_PERMISSIONDENIED "Zugriff verweigert"
+	AFX_IDP_E_DISKNOTREADY  "Laufwerk nicht bereit"
+	AFX_IDP_E_PATHFILEACCESSERROR "Pfad-/Dateizugriffsfehler"
+	AFX_IDP_E_PATHNOTFOUND  "Pfad nicht gefunden"
+	AFX_IDP_E_INVALIDPATTERNSTRING "Ungültige Musterzeichenfolge"
+	AFX_IDP_E_INVALIDUSEOFNULL "Ungültige Verwendung von Null"
+	AFX_IDP_E_INVALIDFILEFORMAT "Ungültiges Dateiformat"
+	AFX_IDP_E_INVALIDPROPERTYVALUE "Ungültiger Eigenschaftswert"
+	AFX_IDP_E_INVALIDPROPERTYARRAYINDEX "Ungültiger Feldindex"
+	AFX_IDP_E_SETNOTSUPPORTEDATRUNTIME "Eigenschaft kann nicht zur Laufzeit gesetzt werden"
+	AFX_IDP_E_SETNOTSUPPORTED "Eigenschaft ist schreibgeschützt"
+	AFX_IDP_E_NEEDPROPERTYARRAYINDEX
+							"Ein Feldindex muß angegeben sein, wenn ein Eigenschaftsfeld verwendet wird"
+	AFX_IDP_E_SETNOTPERMITTED "Eigenschaft kann für dieses Steuerelement nicht gesetzt werden"
+	AFX_IDP_E_GETNOTSUPPORTEDATRUNTIME "Eigenschaft kann nicht zur Laufzeit gelesen werden"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_E_GETNOTSUPPORTED "Eigenschaft ist lesegeschützt"
+	AFX_IDP_E_PROPERTYNOTFOUND "Eigenschaft nicht gefunden"
+	AFX_IDP_E_INVALIDCLIPBOARDFORMAT "Ungültiges Zwischenablageformat"
+	AFX_IDP_E_INVALIDPICTURE "Ungültiges Bild"
+	AFX_IDP_E_PRINTERERROR  "Druckerfehler"
+	AFX_IDP_E_CANTSAVEFILETOTEMP
+							"Zum Speichern notwendige temporäre Datei kann nicht erstellt werden"
+	AFX_IDP_E_SEARCHTEXTNOTFOUND "Suchtext nicht gefunden"
+	AFX_IDP_E_REPLACEMENTSTOOLONG "Ersetzungstext zu lang"
+END
+#endif //!_AFX_NO_CTLERROR_RESOURCES
+
+#endif //!_AFXDLL
+#endif //__AFXOLECL_RC__

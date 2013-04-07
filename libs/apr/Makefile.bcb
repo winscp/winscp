@@ -1,0 +1,287 @@
+# Set your compiler options
+CC=bcc32
+CFLAG=-DWIN32;WINNT;_WINDOWS -DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DAPR_DECLARE_STATIC;APR_HAS_UNICODE_FS;APR_HAS_LARGE_FILES
+LIB_CFLAG=
+
+# apr directory
+SRC_D=.
+
+# The output directory for everything intersting
+OUT_D=..\lib
+# The output directory for all the temporary muck
+TMP_D=tmp
+INCO_D=openssl
+
+CP=copy
+RM=del
+MKDIR=mkdir
+MKLIB=tlib /P64 /C
+ASM=nasm -f obj -d__omf__
+
+######################################################
+# You should not need to touch anything below this point
+######################################################
+
+# INCL_D - local library directory
+# OBJ_D  - temp object file directory
+OBJ_D=$(TMP_D)
+INCL_D=include
+INCL=include;include\arch\win32;include\arch\unix;
+
+O_APR=$(OUT_D)\apr.lib
+
+######################################################
+# Don't touch anything below this point
+######################################################
+
+INC=-I$(INCL) -I.
+LIB_CFLAGS=$(INC) $(CFLAG) $(LIB_CFLAG)
+LIBS_DEP=$(O_APR)
+
+#############################################
+HEADER=$(INCL_D)\apr.h
+
+APROBJS=\
+    $(OBJ_D)\apr_atomic.obj \
+    $(OBJ_D)\dso.obj \
+    $(OBJ_D)\buffer.obj \
+    $(OBJ_D)\copy.obj \
+    $(OBJ_D)\dir.obj \
+    $(OBJ_D)\fileacc.obj \
+    $(OBJ_D)\filedup.obj \
+    $(OBJ_D)\filepath.obj \
+    $(OBJ_D)\filepath_util.obj \
+    $(OBJ_D)\filestat.obj \
+    $(OBJ_D)\filesys.obj \
+    $(OBJ_D)\flock.obj \
+    $(OBJ_D)\fullrw.obj \
+    $(OBJ_D)\mktemp.obj \
+    $(OBJ_D)\open.obj \
+    $(OBJ_D)\pipe.obj \
+    $(OBJ_D)\readwrite.obj \
+    $(OBJ_D)\seek.obj \
+    $(OBJ_D)\tempdir.obj \
+    $(OBJ_D)\proc_mutex.obj \
+    $(OBJ_D)\thread_cond.obj \
+    $(OBJ_D)\thread_mutex.obj \
+    $(OBJ_D)\thread_rwlock.obj \
+    $(OBJ_D)\apr_pools.obj \
+    $(OBJ_D)\apr_app.obj \
+    $(OBJ_D)\charset.obj \
+    $(OBJ_D)\env.obj \
+    $(OBJ_D)\errorcodes.obj \
+    $(OBJ_D)\getopt.obj \
+    $(OBJ_D)\internal.obj \
+    $(OBJ_D)\misc.obj \
+    $(OBJ_D)\otherchild.obj \
+    $(OBJ_D)\rand.obj \
+    $(OBJ_D)\start.obj \
+    $(OBJ_D)\utf8.obj \
+    $(OBJ_D)\version.obj \
+    $(OBJ_D)\common.obj \
+    $(OBJ_D)\mmap.obj \
+    $(OBJ_D)\inet_ntop.obj \
+    $(OBJ_D)\inet_pton.obj \
+    $(OBJ_D)\multicast.obj \
+    $(OBJ_D)\sendrecv.obj \
+    $(OBJ_D)\sockaddr.obj \
+    $(OBJ_D)\sockets.obj \
+    $(OBJ_D)\socket_util.obj \
+    $(OBJ_D)\sockopt.obj \
+    $(OBJ_D)\apr_getpass.obj \
+    $(OBJ_D)\poll.obj \
+    $(OBJ_D)\pollcb.obj \
+    $(OBJ_D)\pollset.obj \
+    $(OBJ_D)\select.obj \
+    $(OBJ_D)\apr_random.obj \
+    $(OBJ_D)\sha2.obj \
+    $(OBJ_D)\sha2_glue.obj \
+    $(OBJ_D)\shm.obj \
+    $(OBJ_D)\apr_cpystrn.obj \
+    $(OBJ_D)\apr_fnmatch.obj \
+    $(OBJ_D)\apr_snprintf.obj \
+    $(OBJ_D)\apr_strings.obj \
+    $(OBJ_D)\apr_strnatcmp.obj \
+    $(OBJ_D)\apr_strtok.obj \
+    $(OBJ_D)\apr_hash.obj \
+    $(OBJ_D)\apr_tables.obj \
+    $(OBJ_D)\proc.obj \
+    $(OBJ_D)\signals.obj \
+    $(OBJ_D)\thread.obj \
+    $(OBJ_D)\threadpriv.obj \
+    $(OBJ_D)\time.obj \
+    $(OBJ_D)\timestr.obj \
+    $(OBJ_D)\groupinfo.obj \
+    $(OBJ_D)\userinfo.obj
+
+$(OBJ_D)\apr_atomic.obj: $(SRC_D)/atomic/win32/apr_atomic.c
+    $(CC) -o$(OBJ_D)\apr_atomic.obj $(LIB_CFLAGS) -c $(SRC_D)/atomic/win32/apr_atomic.c
+$(OBJ_D)\dso.obj: $(SRC_D)/dso/win32/dso.c
+    $(CC) -o$(OBJ_D)\dso.obj $(LIB_CFLAGS) -c $(SRC_D)/dso/win32/dso.c
+$(OBJ_D)\buffer.obj: $(SRC_D)/file_io/win32/buffer.c
+    $(CC) -o$(OBJ_D)\buffer.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/buffer.c
+$(OBJ_D)\copy.obj: $(SRC_D)/file_io/unix/copy.c
+    $(CC) -o$(OBJ_D)\copy.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/unix/copy.c
+$(OBJ_D)\dir.obj: $(SRC_D)/file_io/win32/dir.c
+    $(CC) -o$(OBJ_D)\dir.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/dir.c
+$(OBJ_D)\fileacc.obj: $(SRC_D)/file_io/unix/fileacc.c
+    $(CC) -o$(OBJ_D)\fileacc.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/unix/fileacc.c
+$(OBJ_D)\filedup.obj: $(SRC_D)/file_io/win32/filedup.c
+    $(CC) -o$(OBJ_D)\filedup.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/filedup.c
+$(OBJ_D)\filepath.obj: $(SRC_D)/file_io/win32/filepath.c
+    $(CC) -o$(OBJ_D)\filepath.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/filepath.c
+$(OBJ_D)\filepath_util.obj: $(SRC_D)/file_io/unix/filepath_util.c
+    $(CC) -o$(OBJ_D)\filepath_util.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/unix/filepath_util.c
+$(OBJ_D)\filestat.obj: $(SRC_D)/file_io/win32/filestat.c
+    $(CC) -o$(OBJ_D)\filestat.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/filestat.c
+$(OBJ_D)\filesys.obj: $(SRC_D)/file_io/win32/filesys.c
+    $(CC) -o$(OBJ_D)\filesys.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/filesys.c
+$(OBJ_D)\flock.obj: $(SRC_D)/file_io/win32/flock.c
+    $(CC) -o$(OBJ_D)\flock.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/flock.c
+$(OBJ_D)\fullrw.obj: $(SRC_D)/file_io/unix/fullrw.c
+    $(CC) -o$(OBJ_D)\fullrw.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/unix/fullrw.c
+$(OBJ_D)\mktemp.obj: $(SRC_D)/file_io/unix/mktemp.c
+    $(CC) -o$(OBJ_D)\mktemp.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/unix/mktemp.c
+$(OBJ_D)\open.obj: $(SRC_D)/file_io/win32/open.c
+    $(CC) -o$(OBJ_D)\open.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/open.c
+$(OBJ_D)\pipe.obj: $(SRC_D)/file_io/win32/pipe.c
+    $(CC) -o$(OBJ_D)\pipe.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/pipe.c
+$(OBJ_D)\readwrite.obj: $(SRC_D)/file_io/win32/readwrite.c
+    $(CC) -o$(OBJ_D)\readwrite.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/readwrite.c
+$(OBJ_D)\seek.obj: $(SRC_D)/file_io/win32/seek.c
+    $(CC) -o$(OBJ_D)\seek.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/win32/seek.c
+$(OBJ_D)\tempdir.obj: $(SRC_D)/file_io/unix/tempdir.c
+    $(CC) -o$(OBJ_D)\tempdir.obj $(LIB_CFLAGS) -c $(SRC_D)/file_io/unix/tempdir.c
+$(OBJ_D)\proc_mutex.obj: $(SRC_D)/locks/win32/proc_mutex.c
+    $(CC) -o$(OBJ_D)\proc_mutex.obj $(LIB_CFLAGS) -c $(SRC_D)/locks/win32/proc_mutex.c
+$(OBJ_D)\thread_cond.obj: $(SRC_D)/locks/win32/thread_cond.c
+    $(CC) -o$(OBJ_D)\thread_cond.obj $(LIB_CFLAGS) -c $(SRC_D)/locks/win32/thread_cond.c
+$(OBJ_D)\thread_mutex.obj: $(SRC_D)/locks/win32/thread_mutex.c
+    $(CC) -o$(OBJ_D)\thread_mutex.obj $(LIB_CFLAGS) -c $(SRC_D)/locks/win32/thread_mutex.c
+$(OBJ_D)\thread_rwlock.obj: $(SRC_D)/locks/win32/thread_rwlock.c
+    $(CC) -o$(OBJ_D)\thread_rwlock.obj $(LIB_CFLAGS) -c $(SRC_D)/locks/win32/thread_rwlock.c
+$(OBJ_D)\apr_pools.obj: $(SRC_D)/memory/unix/apr_pools.c
+    $(CC) -o$(OBJ_D)\apr_pools.obj $(LIB_CFLAGS) -c $(SRC_D)/memory/unix/apr_pools.c
+$(OBJ_D)\apr_app.obj: $(SRC_D)/misc/win32/apr_app.c
+    $(CC) -o$(OBJ_D)\apr_app.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/win32/apr_app.c
+$(OBJ_D)\charset.obj: $(SRC_D)/misc/win32/charset.c
+    $(CC) -o$(OBJ_D)\charset.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/win32/charset.c
+$(OBJ_D)\env.obj: $(SRC_D)/misc/win32/env.c
+    $(CC) -o$(OBJ_D)\env.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/win32/env.c
+$(OBJ_D)\errorcodes.obj: $(SRC_D)/misc/unix/errorcodes.c
+    $(CC) -o$(OBJ_D)\errorcodes.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/unix/errorcodes.c
+$(OBJ_D)\getopt.obj: $(SRC_D)/misc/unix/getopt.c
+    $(CC) -o$(OBJ_D)\getopt.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/unix/getopt.c
+$(OBJ_D)\internal.obj: $(SRC_D)/misc/win32/internal.c
+    $(CC) -o$(OBJ_D)\internal.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/win32/internal.c
+$(OBJ_D)\misc.obj: $(SRC_D)/misc/win32/misc.c
+    $(CC) -o$(OBJ_D)\misc.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/win32/misc.c
+$(OBJ_D)\otherchild.obj: $(SRC_D)/misc/unix/otherchild.c
+    $(CC) -o$(OBJ_D)\otherchild.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/unix/otherchild.c
+$(OBJ_D)\rand.obj: $(SRC_D)/misc/win32/rand.c
+    $(CC) -o$(OBJ_D)\rand.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/win32/rand.c
+$(OBJ_D)\start.obj: $(SRC_D)/misc/win32/start.c
+    $(CC) -o$(OBJ_D)\start.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/win32/start.c
+$(OBJ_D)\utf8.obj: $(SRC_D)/misc/win32/utf8.c
+    $(CC) -o$(OBJ_D)\utf8.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/win32/utf8.c
+$(OBJ_D)\version.obj: $(SRC_D)/misc/unix/version.c
+    $(CC) -o$(OBJ_D)\version.obj $(LIB_CFLAGS) -c $(SRC_D)/misc/unix/version.c
+$(OBJ_D)\common.obj: $(SRC_D)/mmap/unix/common.c
+    $(CC) -o$(OBJ_D)\common.obj $(LIB_CFLAGS) -c $(SRC_D)/mmap/unix/common.c
+$(OBJ_D)\mmap.obj: $(SRC_D)/mmap/win32/mmap.c
+    $(CC) -o$(OBJ_D)\mmap.obj $(LIB_CFLAGS) -c $(SRC_D)/mmap/win32/mmap.c
+$(OBJ_D)\inet_ntop.obj: $(SRC_D)/network_io/unix/inet_ntop.c
+    $(CC) -o$(OBJ_D)\inet_ntop.obj $(LIB_CFLAGS) -c $(SRC_D)/network_io/unix/inet_ntop.c
+$(OBJ_D)\inet_pton.obj: $(SRC_D)/network_io/unix/inet_pton.c
+    $(CC) -o$(OBJ_D)\inet_pton.obj $(LIB_CFLAGS) -c $(SRC_D)/network_io/unix/inet_pton.c
+$(OBJ_D)\multicast.obj: $(SRC_D)/network_io/unix/multicast.c
+    $(CC) -o$(OBJ_D)\multicast.obj $(LIB_CFLAGS) -c $(SRC_D)/network_io/unix/multicast.c
+$(OBJ_D)\sendrecv.obj: $(SRC_D)/network_io/win32/sendrecv.c
+    $(CC) -o$(OBJ_D)\sendrecv.obj $(LIB_CFLAGS) -c $(SRC_D)/network_io/win32/sendrecv.c
+$(OBJ_D)\sockaddr.obj: $(SRC_D)/network_io/unix/sockaddr.c
+    $(CC) -o$(OBJ_D)\sockaddr.obj $(LIB_CFLAGS) -c $(SRC_D)/network_io/unix/sockaddr.c
+$(OBJ_D)\sockets.obj: $(SRC_D)/network_io/win32/sockets.c
+    $(CC) -o$(OBJ_D)\sockets.obj $(LIB_CFLAGS) -c $(SRC_D)/network_io/win32/sockets.c
+$(OBJ_D)\socket_util.obj: $(SRC_D)/network_io/unix/socket_util.c
+    $(CC) -o$(OBJ_D)\socket_util.obj $(LIB_CFLAGS) -c $(SRC_D)/network_io/unix/socket_util.c
+$(OBJ_D)\sockopt.obj: $(SRC_D)/network_io/win32/sockopt.c
+    $(CC) -o$(OBJ_D)\sockopt.obj $(LIB_CFLAGS) -c $(SRC_D)/network_io/win32/sockopt.c
+$(OBJ_D)\apr_getpass.obj: $(SRC_D)/passwd/apr_getpass.c
+    $(CC) -o$(OBJ_D)\apr_getpass.obj $(LIB_CFLAGS) -c $(SRC_D)/passwd/apr_getpass.c
+$(OBJ_D)\poll.obj: $(SRC_D)/poll/unix/poll.c
+    $(CC) -o$(OBJ_D)\poll.obj $(LIB_CFLAGS) -c $(SRC_D)/poll/unix/poll.c
+$(OBJ_D)\pollcb.obj: $(SRC_D)/poll/unix/pollcb.c
+    $(CC) -o$(OBJ_D)\pollcb.obj $(LIB_CFLAGS) -c $(SRC_D)/poll/unix/pollcb.c
+$(OBJ_D)\pollset.obj: $(SRC_D)/poll/unix/pollset.c
+    $(CC) -o$(OBJ_D)\pollset.obj $(LIB_CFLAGS) -c $(SRC_D)/poll/unix/pollset.c
+$(OBJ_D)\select.obj: $(SRC_D)/poll/unix/select.c
+    $(CC) -o$(OBJ_D)\select.obj $(LIB_CFLAGS) -c $(SRC_D)/poll/unix/select.c
+$(OBJ_D)\apr_random.obj: $(SRC_D)/random/unix/apr_random.c
+    $(CC) -o$(OBJ_D)\apr_random.obj $(LIB_CFLAGS) -c $(SRC_D)/random/unix/apr_random.c
+$(OBJ_D)\sha2.obj: $(SRC_D)/random/unix/sha2.c
+    $(CC) -o$(OBJ_D)\sha2.obj $(LIB_CFLAGS) -c $(SRC_D)/random/unix/sha2.c
+$(OBJ_D)\sha2_glue.obj: $(SRC_D)/random/unix/sha2_glue.c
+    $(CC) -o$(OBJ_D)\sha2_glue.obj $(LIB_CFLAGS) -c $(SRC_D)/random/unix/sha2_glue.c
+$(OBJ_D)\shm.obj: $(SRC_D)/shmem/win32/shm.c
+    $(CC) -o$(OBJ_D)\shm.obj $(LIB_CFLAGS) -c $(SRC_D)/shmem/win32/shm.c
+$(OBJ_D)\apr_cpystrn.obj: $(SRC_D)/strings/apr_cpystrn.c
+    $(CC) -o$(OBJ_D)\apr_cpystrn.obj $(LIB_CFLAGS) -c $(SRC_D)/strings/apr_cpystrn.c
+$(OBJ_D)\apr_fnmatch.obj: $(SRC_D)/strings/apr_fnmatch.c
+    $(CC) -o$(OBJ_D)\apr_fnmatch.obj $(LIB_CFLAGS) -c $(SRC_D)/strings/apr_fnmatch.c
+$(OBJ_D)\apr_snprintf.obj: $(SRC_D)/strings/apr_snprintf.c
+    $(CC) -o$(OBJ_D)\apr_snprintf.obj $(LIB_CFLAGS) -c $(SRC_D)/strings/apr_snprintf.c
+$(OBJ_D)\apr_strings.obj: $(SRC_D)/strings/apr_strings.c
+    $(CC) -o$(OBJ_D)\apr_strings.obj $(LIB_CFLAGS) -c $(SRC_D)/strings/apr_strings.c
+$(OBJ_D)\apr_strnatcmp.obj: $(SRC_D)/strings/apr_strnatcmp.c
+    $(CC) -o$(OBJ_D)\apr_strnatcmp.obj $(LIB_CFLAGS) -c $(SRC_D)/strings/apr_strnatcmp.c
+$(OBJ_D)\apr_strtok.obj: $(SRC_D)/strings/apr_strtok.c
+    $(CC) -o$(OBJ_D)\apr_strtok.obj $(LIB_CFLAGS) -c $(SRC_D)/strings/apr_strtok.c
+$(OBJ_D)\apr_hash.obj: $(SRC_D)/tables/apr_hash.c
+    $(CC) -o$(OBJ_D)\apr_hash.obj $(LIB_CFLAGS) -c $(SRC_D)/tables/apr_hash.c
+$(OBJ_D)\apr_tables.obj: $(SRC_D)/tables/apr_tables.c
+    $(CC) -o$(OBJ_D)\apr_tables.obj $(LIB_CFLAGS) -c $(SRC_D)/tables/apr_tables.c
+$(OBJ_D)\proc.obj: $(SRC_D)/threadproc/win32/proc.c
+    $(CC) -o$(OBJ_D)\proc.obj $(LIB_CFLAGS) -c $(SRC_D)/threadproc/win32/proc.c
+$(OBJ_D)\signals.obj: $(SRC_D)/threadproc/win32/signals.c
+    $(CC) -o$(OBJ_D)\signals.obj $(LIB_CFLAGS) -c $(SRC_D)/threadproc/win32/signals.c
+$(OBJ_D)\thread.obj: $(SRC_D)/threadproc/win32/thread.c
+    $(CC) -o$(OBJ_D)\thread.obj $(LIB_CFLAGS) -c $(SRC_D)/threadproc/win32/thread.c
+$(OBJ_D)\threadpriv.obj: $(SRC_D)/threadproc/win32/threadpriv.c
+    $(CC) -o$(OBJ_D)\threadpriv.obj $(LIB_CFLAGS) -c $(SRC_D)/threadproc/win32/threadpriv.c
+$(OBJ_D)\time.obj: $(SRC_D)/time/win32/time.c
+    $(CC) -o$(OBJ_D)\time.obj $(LIB_CFLAGS) -c $(SRC_D)/time/win32/time.c
+$(OBJ_D)\timestr.obj: $(SRC_D)/time/win32/timestr.c
+    $(CC) -o$(OBJ_D)\timestr.obj $(LIB_CFLAGS) -c $(SRC_D)/time/win32/timestr.c
+$(OBJ_D)\groupinfo.obj: $(SRC_D)/user/win32/groupinfo.c
+    $(CC) -o$(OBJ_D)\groupinfo.obj $(LIB_CFLAGS) -c $(SRC_D)/user/win32/groupinfo.c
+$(OBJ_D)\userinfo.obj: $(SRC_D)/user/win32/userinfo.c
+    $(CC) -o$(OBJ_D)\userinfo.obj $(LIB_CFLAGS) -c $(SRC_D)/user/win32/userinfo.c
+
+$(O_APR): $(APROBJS)
+    if exist $(O_APR) $(RM) $(O_APR)
+    $(MKLIB) $(O_APR) @&&!
++$(**: = &^
++)
+!
+
+###################################################################
+all: banner clean_lib $(TMP_D) $(OUT_D) headers lib
+
+banner:
+    @echo Building apr
+    @echo $(APROBJS)
+
+clean_lib:
+    if exist $(O_APR) $(RM) $(O_APR)
+
+$(TMP_D):
+    if not exist "$(TMP_D)" ( $(MKDIR) "$(TMP_D)" )
+
+$(OUT_D):
+    if not exist "$(OUT_D)" ( $(MKDIR) "$(OUT_D)" )
+
+headers: $(HEADER)
+    @
+
+lib: $(LIBS_DEP)
+

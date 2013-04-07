@@ -1,0 +1,105 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXDB_RC__
+#define __AFXDB_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// Database Resources
+
+// Database strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_SQL_CONNECT_FAIL
+		"Der Verbindungsversuch zur Datenquelle ist gescheitert."
+	AFX_IDP_SQL_RECORDSET_FORWARD_ONLY
+		"Datensatzgruppe unterstützt nur Vorwärtsbewegung."
+	AFX_IDP_SQL_EMPTY_COLUMN_LIST
+		"Der Versuch, eine Tabelle zu öffnen, ist fehlgeschlagen, da am angegebenen Ort keine Spalten abgerufen werden konnten."
+	AFX_IDP_SQL_FIELD_SCHEMA_MISMATCH
+		"Von einer Abfrage wurden unerwartete Spaltendatentypen zurückgegeben."
+	AFX_IDP_SQL_ILLEGAL_MODE "Versuch zu aktualisieren oder zu löschen ist fehlgeschlagen."
+	AFX_IDP_SQL_MULTIPLE_ROWS_AFFECTED "Es wurden mehrere Zeilen aktualisiert."
+	AFX_IDP_SQL_NO_CURRENT_RECORD "Operation ist fehlgeschlagen; es gibt keinen aktuellen Datensatz."
+	AFX_IDP_SQL_NO_ROWS_AFFECTED
+		"Es waren keine Zeilen von der Aktualisierungs- oder Löschoperation betroffen."
+	AFX_IDP_SQL_RECORDSET_READONLY "Datensatzgruppe kann nur gelesen werden."
+	AFX_IDP_SQL_SQL_NO_TOTAL
+		"Der ODBC-Treiber unterstützt das MFC-LongBinary-Datenmodell nicht."
+	AFX_IDP_SQL_ODBC_LOAD_FAILED
+		"Der Versuch, die benötigte Komponente ODBC32.DLL zu laden, ist fehlgeschlagen."
+	AFX_IDP_SQL_DYNASET_NOT_SUPPORTED
+		"Der ODBC-Treiber unterstützt keine Dynasets."
+	AFX_IDP_SQL_SNAPSHOT_NOT_SUPPORTED
+		"Statische ODBC-Cursor werden zur Unterstützung von Snapshots benötigt."
+	AFX_IDP_SQL_API_CONFORMANCE
+		"Der ODBC-Treiber ist inkompatibel zu den MFC-Datenbankklassen (API_CONFORMANCE >= SQL_OAC_LEVEL1 wird benötigt)."
+	AFX_IDP_SQL_SQL_CONFORMANCE
+		"Der ODBC-Treiber ist inkompatibel zu den MFC-Datenbankklassen (SQL_CONFORMANCE >= SQL_OSC_MINIMUM wird benötigt)."
+	AFX_IDP_SQL_NO_DATA_FOUND
+		"Es wurde versucht, hinter das Ende oder vor den Anfang der Daten zu gelangen."
+	AFX_IDP_SQL_ROW_UPDATE_NOT_SUPPORTED
+		"Dynasets werden vom ODBC-Treiber nicht unterstützt."
+	AFX_IDP_SQL_ODBC_V2_REQUIRED
+		"Treiber gemäß ODBC Level 2 wird benötigt."
+	AFX_IDP_SQL_NO_POSITIONED_UPDATES
+		"Positionierte Aktualisierungen werden vom ODBC-Treiber nicht unterstützt."
+	AFX_IDP_SQL_LOCK_MODE_NOT_SUPPORTED
+		"Der angeforderte Sperrmodus wird nicht unterstützt."
+	AFX_IDP_SQL_DATA_TRUNCATED
+		"Daten abgeschnitten."
+	AFX_IDP_SQL_ROW_FETCH
+		"Fehler beim Abruf eines Datensatzes."
+	AFX_IDP_SQL_INCORRECT_ODBC
+		"Ein benötigter ODBC-Einsprungspunkt konnte nicht gefunden werden. Überprüfen Sie, ob OBDC korrekt installiert ist."
+	AFX_IDP_SQL_UPDATE_DELETE_FAILED
+		"Fehler bei der Aktualisierungs- oder Löschoperation."
+	AFX_IDP_SQL_DYNAMIC_CURSOR_NOT_SUPPORTED
+		"Dynamische Cursor werden vom ODBC-Treiber nicht unterstützt."
+	AFX_IDP_SQL_FIELD_NOT_FOUND
+		"Ungültiger Feldname oder Feldindex."
+	AFX_IDP_SQL_BOOKMARKS_NOT_SUPPORTED
+		"Lesezeichen werden für ODBC-Treiber nicht unterstützt."
+	AFX_IDP_SQL_BOOKMARKS_NOT_ENABLED
+		"Lesezeichen bei Satzgruppe nicht aktiviert."
+	AFX_IDP_DAO_ENGINE_INITIALIZATION
+		"Initialisierung des DAO/Jet-Datenbankmoduls nicht möglich."
+	AFX_IDP_DAO_DFX_BIND
+		"Ungültiger DFX-Werteparameter."
+	AFX_IDP_DAO_OBJECT_NOT_OPEN
+		"DAO-TableDef oder DAO-QueryDef nicht offen."
+	AFX_IDP_DAO_ROWTOOSHORT
+		"Fehler bei GetRows-Operation. Für die Zeile ist nicht genügend Speicher reserviert."
+	AFX_IDP_DAO_BADBINDINFO
+		"GetRows-Bindungsfehler. Nicht übereinstimmende Datentypen sind wahrscheinlich die Ursache."
+	AFX_IDP_DAO_COLUMNUNAVAILABLE
+		"Fehler bei GetRows-Operation. Die angeforderte Spalte ist kein Element der Datensatzgruppe."
+
+	AFX_IDS_DELETED "<Gelöscht>"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXDB_RC__

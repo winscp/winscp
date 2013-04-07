@@ -1,0 +1,105 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXDB_RC__
+#define __AFXDB_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Impossibile modificare le risorse standard MFC >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// Database Resources
+
+// Database strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_SQL_CONNECT_FAIL
+		"Tentativo di connessione alla fonte dati esterna non riuscito"
+	AFX_IDP_SQL_RECORDSET_FORWARD_ONLY
+		"Il set di record supporta solo il movimento in avanti."
+	AFX_IDP_SQL_EMPTY_COLUMN_LIST
+		"Tentativo di aprire una tabella non riuscito. Non c'erano colonne da recuperare dove specificato. "
+	AFX_IDP_SQL_FIELD_SCHEMA_MISMATCH
+		"La ricerca ha fornito tipi di dati inattesi per le colonne."
+	AFX_IDP_SQL_ILLEGAL_MODE "Tentativo di aggiornamento o di cancellazione non riuscito."
+	AFX_IDP_SQL_MULTIPLE_ROWS_AFFECTED "Sono state aggiornate righe multiple."
+	AFX_IDP_SQL_NO_CURRENT_RECORD "Operazione non riuscita, nessun record corrente."
+	AFX_IDP_SQL_NO_ROWS_AFFECTED
+		"Nessuna riga è stata influenzata dall'operazione di aggiornamento o di cancellazione."
+	AFX_IDP_SQL_RECORDSET_READONLY "Il set di record è di sola lettura"
+	AFX_IDP_SQL_SQL_NO_TOTAL
+		"Il driver ODBC non supporta il modello dati MFC LongBinary."
+	AFX_IDP_SQL_ODBC_LOAD_FAILED
+		"Tentativo di caricare la componente richiesta ODBC32.DLL non riuscito."
+	AFX_IDP_SQL_DYNASET_NOT_SUPPORTED
+		"Il driver ODBC non supporta i dynaset."
+	AFX_IDP_SQL_SNAPSHOT_NOT_SUPPORTED
+		"Puntatori statici ODBC richiesti per il supporto dell'anteprima."
+	AFX_IDP_SQL_API_CONFORMANCE
+		"Il driver ODBC è incompatibile con le classi di database MFC (utilizzare API_CONFORMANCE >= SQL_OAC_LEVEL1)"
+	AFX_IDP_SQL_SQL_CONFORMANCE
+		"Il driver ODBC è incompatibile con le classi di database MFC (utilizzare SQL_CONFORMANCE >= SQL_OSC_MINIMUM)"
+	AFX_IDP_SQL_NO_DATA_FOUND
+		"Tentativo di scorrere i dati oltre la fine o prima dell'inizio."
+	AFX_IDP_SQL_ROW_UPDATE_NOT_SUPPORTED
+		"Il driver ODBC non supporta i dynaset."
+	AFX_IDP_SQL_ODBC_V2_REQUIRED
+		"È richiesto un driver conforme al livello 2 di ODBC."
+	AFX_IDP_SQL_NO_POSITIONED_UPDATES
+		"Il driver ODBC non supporta gli aggiornamenti dipendenti dalla posizione."
+	AFX_IDP_SQL_LOCK_MODE_NOT_SUPPORTED
+		"La modalità blocco richiesta non è supportata."
+	AFX_IDP_SQL_DATA_TRUNCATED
+		"Dati troncati."
+	AFX_IDP_SQL_ROW_FETCH
+		"Errore nel recupero di record."
+	AFX_IDP_SQL_INCORRECT_ODBC
+		"Non è stato trovato un punto di ingresso ODBC richiesto. Assicurarsi che ODBC sia installato correttamente."
+	AFX_IDP_SQL_UPDATE_DELETE_FAILED
+		"Aggiornamento o cancellazione non riusciti."
+	AFX_IDP_SQL_DYNAMIC_CURSOR_NOT_SUPPORTED
+		"Cursore dinamico non supportato dal driver ODBC."
+	AFX_IDP_SQL_FIELD_NOT_FOUND
+		"Nome di campo o indice non valido."
+	AFX_IDP_SQL_BOOKMARKS_NOT_SUPPORTED
+		"Segnalibro non supportato per il driver ODBC."
+	AFX_IDP_SQL_BOOKMARKS_NOT_ENABLED
+		"Segnalibro non attivo sul recordset."
+	AFX_IDP_DAO_ENGINE_INITIALIZATION
+		"Non è possibile inizializzare il motore del db DAO/Jet."
+	AFX_IDP_DAO_DFX_BIND
+		"Il valore del parametro DFX non è valido."
+	AFX_IDP_DAO_OBJECT_NOT_OPEN
+		"Il DAO TableDef o QueryDef non sono aperti."
+	AFX_IDP_DAO_ROWTOOSHORT
+		"Errore GetRows. Memoria insufficiente per la fila." 
+	AFX_IDP_DAO_BADBINDINFO
+		"Errore GetRows di collegamento. Probabilmente causato da un tipo di dati non corrispondente."
+	AFX_IDP_DAO_COLUMNUNAVAILABLE
+		"Errore GetRows. La colonna richiesta non fa parte di questo set di record."
+
+	AFX_IDS_DELETED "<Cancellato>"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXDB_RC__

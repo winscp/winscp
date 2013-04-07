@@ -1,0 +1,202 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXRES_RC__
+#define __AFXRES_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 無法改變標準MFC資源! >\0"
+END
+#endif //APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// Default resource description for MFC applications
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+// Strings
+
+STRINGTABLE DISCARDABLE
+BEGIN
+#ifndef _AFX_NO_APPMENU_RESOURCES
+	AFX_IDS_OPENFILE,               "開啟舊檔"
+	AFX_IDS_SAVEFILE,               "另存新檔"
+	AFX_IDS_ALLFILTER,              "所有文件 (*.*)"
+	AFX_IDS_UNTITLED,               "未命名標題"
+	AFX_IDS_HIDE,                   "隱藏(&H)"
+#endif // !_AFX_NO_APPMENUSTRING_RESOURCES
+
+	AFX_IDS_MEMORY_EXCEPTION,       "記憶體不足."
+	AFX_IDS_NOT_SUPPORTED_EXCEPTION,"試圖執行未支援的作業."
+	AFX_IDS_RESOURCE_EXCEPTION,     "有一項必要的資源無法使用."
+	AFX_IDS_USER_EXCEPTION,         "產生一未知的錯誤."
+
+	// General error prompts
+#ifndef _AFX_NO_FILECMD_RESOURCES
+	AFX_IDP_INVALID_FILENAME,       "不合法之檔案名稱."
+	AFX_IDP_FAILED_TO_OPEN_DOC,     "開啟文件失敗."
+	AFX_IDP_FAILED_TO_SAVE_DOC,     "儲存文件失敗."
+	AFX_IDP_ASK_TO_SAVE,            "儲存修改到 %1?"
+	AFX_IDP_FAILED_TO_CREATE_DOC,   "產生空白文件失敗."
+	AFX_IDP_FILE_TOO_LARGE,         "檔案太大無法開啟."
+	AFX_IDP_FAILED_TO_START_PRINT,  "列印工作無法啟始."
+#endif // !_AFX_NO_FILECMD_RESOURCES
+	AFX_IDP_FAILED_TO_LAUNCH_HELP,  "說明開啟失敗."
+	AFX_IDP_INTERNAL_FAILURE,       "內部應用程式錯誤."
+	AFX_IDP_COMMAND_FAILURE,        "命令失敗."
+	AFX_IDP_FAILED_MEMORY_ALLOC     "記憶體不夠無法執行作業."
+	AFX_IDP_GET_NOT_SUPPORTED,      "無法讀取唯寫屬性."
+	AFX_IDP_SET_NOT_SUPPORTED,      "無法寫入唯讀屬性."
+	AFX_IDP_UNREG_DONE,               "已移除系統中的註冊項目，並已刪除相關的 INI 檔案。"
+	AFX_IDP_UNREG_FAILURE,            "並無移除系統中所有的註冊項目或 INI 檔案。。"
+	AFX_IDP_DLL_LOAD_FAILED,        "此程式需要使用檔案 %s，但無法找到此檔案。"
+	AFX_IDP_DLL_BAD_VERSION,        "此程式所連結的 Export: %s，在檔案 %s 中並不存在。本電腦中的 %s，可能為不相容的版本。"
+
+	// CFile/CArchive error strings for user failure
+#ifndef _AFX_NO_CFILE_RESOURCES
+	AFX_IDP_FAILED_INVALID_FORMAT   "檔案格式錯誤."
+	AFX_IDP_FAILED_INVALID_PATH     "%1\n沒有找到這個檔案.\n請確認正確的路徑和檔案名稱."
+	AFX_IDP_FAILED_DISK_FULL        "目標磁碟機空間已滿."
+	AFX_IDP_FAILED_ACCESS_READ      "無法讀取 %1, 它已經被某人開啟."
+	AFX_IDP_FAILED_ACCESS_WRITE     "無法寫入 %1, 它是唯讀檔或被某人開啟."
+	AFX_IDP_FAILED_IO_ERROR_READ    "當讀取 %1 時產生非預期錯誤."
+	AFX_IDP_FAILED_IO_ERROR_WRITE   "當寫入 %1 產生非預期錯誤."
+#endif // !_AFX_NO_CFILE_RESOURCES
+
+	// Parsing error prompts
+	AFX_IDP_PARSE_INT,              "請輸入一整數."
+	AFX_IDP_PARSE_REAL,             "請輸入一數值."
+	AFX_IDP_PARSE_INT_RANGE,        "請輸入一個在 %1 到 %2 之間的整數."
+	AFX_IDP_PARSE_REAL_RANGE,       "請輸入一個在 %1 到 %2 之間的數值."
+	AFX_IDP_PARSE_STRING_SIZE,      "請輸入少於 %1個文字."
+	AFX_IDP_PARSE_RADIO_BUTTON,     "請選擇一按鈕."
+	AFX_IDP_PARSE_BYTE,             "請輸入一個在 0 到 225 之間的整數."
+	AFX_IDP_PARSE_UINT,             "請輸入一正整數."
+	AFX_IDP_PARSE_DATETIME,         "請輸入一日期 和/或 時間."
+	AFX_IDP_PARSE_CURRENCY,         "請輸入一貨幣值."
+
+#ifndef _AFX_NO_OLE_RESOURCES
+	// OLE strings required for both servers and containers
+	AFX_IDS_PASTELINKEDTYPE         "連結 %s"
+	AFX_IDS_UNKNOWNTYPE             "未知型態"
+	AFX_IDP_FAILED_TO_NOTIFY        "%1\n無法登錄文件.\n這個文件已被開啟."
+	AFX_IDS_NOT_DOCOBJECT           "Document Object server 不支援此檔案。"
+#endif //!_AFX_NO_OLE_RESOURCES
+
+	AFX_IDP_NO_ERROR_AVAILABLE      "無可用的錯誤訊息."
+
+#ifndef _AFX_NO_CFILE_RESOURCES
+	AFX_IDP_FILE_NONE                "無錯誤產生."
+	AFX_IDP_FILE_GENERIC             "當存取 %1 時發生不可知的錯誤."
+	AFX_IDP_FILE_NOT_FOUND           "沒有找到 %1 ."
+	AFX_IDP_FILE_BAD_PATH            "%1 包含非合法路徑."
+	AFX_IDP_FILE_TOO_MANY_OPEN       "%1 無法開啟,因為已開啟太多檔案."
+	AFX_IDP_FILE_ACCESS_DENIED       "存取 %1 遭受拒絕."
+	AFX_IDP_FILE_INVALID_FILE        "一不合法檔案代碼與 %1 有關聯."
+	AFX_IDP_FILE_REMOVE_CURRENT      "%1 無法被移除因為它是使用中目錄."
+	AFX_IDP_FILE_DIR_FULL            "%1 無法產生因為目錄空間已滿."
+	AFX_IDP_FILE_BAD_SEEK            " %1 搜尋失敗"
+	AFX_IDP_FILE_HARD_IO             "當存取 %1 時產生硬體輸出入錯誤."
+	AFX_IDP_FILE_SHARING             "當存取 %1 時發生分享違反(Sharing Violation)."
+	AFX_IDP_FILE_LOCKING             "當存取 %1 時有產生鎖定違反(Locking Violation)."
+	AFX_IDP_FILE_DISKFULL            "當存取 %1 時磁碟空間已滿."
+	AFX_IDP_FILE_EOF                 "試圖存取超過 %1 之檔尾."
+	AFX_IDS_UNNAMED_FILE             "未命名檔案"
+#endif // !_AFX_NO_CFILE_RESOURCES
+
+	AFX_IDP_ARCH_NONE               "無錯誤產生."
+	AFX_IDP_ARCH_GENERIC                "當存取 %1 時發生不可知的錯誤."
+	AFX_IDP_ARCH_READONLY           "試圖寫入正在讀取中的 %1."
+	AFX_IDP_ARCH_ENDOFFILE          "試圖存取超過 %1 之檔尾."
+	AFX_IDP_ARCH_WRITEONLY          "試圖讀取正在寫入中的 %1."
+	AFX_IDP_ARCH_BADINDEX           "%1 有一壞的格式."
+	AFX_IDP_ARCH_BADCLASS           "%1 包含一非期望物件."
+	AFX_IDP_ARCH_BADSCHEMA          "%1 包含一不正確的觀點."
+
+#ifndef _AFX_NO_MAPI_RESOURCES
+	// MAPI strings / error messages
+	AFX_IDP_FAILED_MAPI_LOAD        "無法載入電子郵件支援."
+	AFX_IDP_INVALID_MAPI_DLL        "電子郵件系統之DLL是無效的."
+	AFX_IDP_FAILED_MAPI_SEND        "電子郵件傳送無法傳送訊息."
+#endif //!_AFX_NO_MAPI_RESOURCES
+
+#ifndef _AFX_NO_OCC_RESOURCES
+	AFX_IDS_OCC_SCALEUNITS_PIXELS   "像素"
+#endif //!_AFX_NO_OCC_RESOURCES
+END
+
+/////////////////////////////////////////////////////////////////////////////
+// Cursors
+
+AFX_IDC_CONTEXTHELP     CURSOR  DISCARDABLE     "res\\help.cur"
+
+#ifndef _AFX_NO_SPLITTER_RESOURCES
+AFX_IDC_SMALLARROWS     CURSOR  DISCARDABLE     "res\\sarrows.cur"
+AFX_IDC_HSPLITBAR       CURSOR  DISCARDABLE     "res\\splith.cur"
+AFX_IDC_VSPLITBAR       CURSOR  DISCARDABLE     "res\\splitv.cur"
+AFX_IDC_NODROPCRSR      CURSOR  DISCARDABLE     "res\\nodrop.cur"
+#endif //!_AFX_NO_SPLITTER_RESOURCES
+
+#ifndef _AFX_NO_TRACKER_RESOURCES
+AFX_IDC_TRACKNWSE       CURSOR  DISCARDABLE     "res\\trcknwse.cur"
+AFX_IDC_TRACKNESW       CURSOR  DISCARDABLE     "res\\trcknesw.cur"
+AFX_IDC_TRACKNS         CURSOR  DISCARDABLE     "res\\trckns.cur"
+AFX_IDC_TRACKWE         CURSOR  DISCARDABLE     "res\\trckwe.cur"
+AFX_IDC_TRACK4WAY       CURSOR  DISCARDABLE     "res\\trck4way.cur"
+AFX_IDC_MOVE4WAY        CURSOR  DISCARDABLE     "res\\move4way.cur"
+#endif //!_AFX_NO_TRACKER_RESOURCES
+
+#ifndef _AFX_NO_CTL3D_RESOURCES
+26567 BITMAP "res\\3dcheck.bmp" // Note: 26567 comes from CTL3D.H
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// Standard Dialogs
+
+#ifndef _AFX_NO_NEWTYPEDLG_RESOURCES
+AFX_IDD_NEWTYPEDLG DIALOG DISCARDABLE  9, 26, 183, 70
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU | 0x04
+CAPTION "開啟新檔"
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT           "開啟新檔(&N) ",IDC_STATIC,6,5,123,8,NOT WS_GROUP
+	LISTBOX         AFX_IDC_LISTBOX,6,15,125,49,WS_VSCROLL | WS_TABSTOP
+	DEFPUSHBUTTON   "確定",IDOK,137,6,40,14
+	PUSHBUTTON      "取消",IDCANCEL,137,23,40,14
+	PUSHBUTTON      "說明(&H)",ID_HELP,137,43,40,14
+END
+#endif // !_AFX_NO_NEWTYPEDLG_RESOURCES
+
+/////////////////////////////////////////////////////////////////////////////
+// CMiniFrameWnd Bitmap
+
+AFX_IDB_MINIFRAME_MENU      BITMAP  DISCARDABLE     "res\\minifwnd.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+// CCheckListBox Bitmaps
+
+AFX_IDB_CHECKLISTBOX_NT     BITMAP  DISCARDABLE     "res\\ntcheck.bmp"
+AFX_IDB_CHECKLISTBOX_95     BITMAP  DISCARDABLE     "res\\95check.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //!__AFXRES_RC__
+
+/////////////////////////////////////////////////////////////////////////////

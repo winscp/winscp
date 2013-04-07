@@ -1,0 +1,18 @@
+#ifndef NO_FILEZILLA
+#include "..\\resource\\TextsFileZilla.rc"
+#endif
+#include "..\\resource\\TextsCore1.rc"
+#include "..\\resource\\TextsCore2.rc"
+#include "..\\resource\\TextsWin1.rc"
+#include "..\\resource\\TextsWin2.rc"
+
+Z_ICON_LOG_SMALL ICON "..\\resource\\Log16.ico"
+Z_ICON_LOG_BIG ICON "..\\resource\\Log32.ico"
+Z_ICON_EDITOR_SMALL ICON "..\\resource\\Editor16.ico"
+Z_ICON_EDITOR_BIG ICON "..\\resource\\Editor32.ico"
+
+1 24 "WinSCP.exe.manifest"
+
+LICENSE RCDATA "License.txt"
+
+DELETE_FILE RCDATA "..\\resource\\DeleteFile.png"

@@ -1,0 +1,107 @@
+// mfcole.rc : Defines the resources for the MFC OLE DLL
+//
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1996 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+
+#include "afxres.h"
+
+// include all the standard resources
+#include "afxolecl.rc"
+#include "afxolesv.rc"
+#include "afxctl.rc"
+
+/////////////////////////////////////////////////////////////////////////////
+// Version stamp for this .DLL
+
+#include "winver.h"
+#include "afxbld_.h"
+
+#ifdef _DEBUG
+
+// Version Info for MFCO42D.DLL
+VS_VERSION_INFO     VERSIONINFO
+  FILEVERSION       6,0,_MFC_BUILD,_MFC_RBLD
+  PRODUCTVERSION    6,0,0,0
+  FILEFLAGSMASK     VS_FFI_FILEFLAGSMASK
+#ifndef RELEASE
+  FILEFLAGS         VS_FF_DEBUG|VS_FF_PRERELEASE
+#else
+  FILEFLAGS         VS_FF_DEBUG
+#endif
+  FILEOS            VOS_NT_WINDOWS32
+  FILETYPE          VFT_DLL
+  FILESUBTYPE       0   // not used
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "040904E4" // Lang=US English, CharSet=Windows Multilual
+		BEGIN
+			VALUE "CompanyName",     "Microsoft Corporation\0"
+			VALUE "FileDescription", "MFCOLE Shared Library - Debug Version\0"
+			VALUE "FileVersion",     "6.00." _MFC_USER_BUILD "." _MFC_USER_RBLD "\0"
+			VALUE "InternalName",    "MFCOLED\0"
+			VALUE "LegalCopyright",  "Copyright (C) Microsoft Corp. 1993-1998\0"
+			VALUE "LegalTrademarks", "\0"
+			VALUE "OriginalFilename","MFCO42D.DLL\0"
+			VALUE "ProductName",     "Microsoft (R) Visual C++\0"
+			VALUE "ProductVersion",  "6.0.000\0"
+			VALUE "OLESelfRegister", "\0"
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x409, 1252
+			// English language (0x409) and the Windows ANSI codepage (1252)
+	END
+END
+
+#else // RETAIL
+
+// Version Info for MFCO42.DLL
+VS_VERSION_INFO     VERSIONINFO
+  FILEVERSION       6,0,_MFC_BUILD,_MFC_RBLD
+  PRODUCTVERSION    6,0,0,0
+  FILEFLAGSMASK     VS_FFI_FILEFLAGSMASK
+#ifndef RELEASE
+  FILEFLAGS         VS_FF_PRERELEASE
+#else
+  FILEFLAGS         0 // final version
+#endif
+  FILEOS            VOS_NT_WINDOWS32
+  FILETYPE          VFT_DLL
+  FILESUBTYPE       0   // not used
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "040904E4" // Lang=US English, CharSet=Windows Multilual
+		BEGIN
+			VALUE "CompanyName",     "Microsoft Corporation\0"
+			VALUE "FileDescription", "MFCOLE Shared Library - Retail Version\0"
+			VALUE "FileVersion",     "6.00." _MFC_USER_BUILD "." _MFC_USER_RBLD "\0"
+			VALUE "InternalName",    "MFCOLE\0"
+			VALUE "LegalCopyright",  "Copyright (C) Microsoft Corp. 1993-1998\0"
+			VALUE "LegalTrademarks", "\0"
+			VALUE "OriginalFilename","MFCO42.DLL\0"
+			VALUE "ProductName",     "Microsoft (R) Visual C++\0"
+			VALUE "ProductVersion",  "6.0.000\0"
+			VALUE "OLESelfRegister", "\0"
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x409, 1252
+			// English language (0x409) and the Windows ANSI codepage (1252)
+	END
+END
+
+#endif // _DEBUG
+
+/////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,66 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXOLECL_RC__
+#define __AFXOLECL_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifndef _INC_DLGS
+	#include <dlgs.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 不能更改标准 MFC 资源! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Client Resources
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE strings
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_STATIC_OBJECT           "无法激活静止的 AciveX 对象。"
+	AFX_IDP_FAILED_TO_CONNECT       "连接失败。\n链接可能已经断了。"
+	AFX_IDP_SERVER_BUSY             "无法处理命令，服务器程序正忙。"
+	AFX_IDP_BAD_VERB                "执行服务器程序操作失败。"
+	AFX_IDP_FAILED_TO_LAUNCH        "启动服务器应用程序失败。"
+	AFX_IDS_UPDATING_ITEMS          "更新 ActiveX 对象"
+	AFX_IDP_FAILED_TO_CONVERT       "转换 ActiveX 对象失败。"
+	AFX_IDP_ASK_TO_DISCARD          "当正在退出 Windows 时，无法保存 ActiveX 对象！\n放弃对 %1 所做的所有的修改吗？"
+	AFX_IDP_FAILED_TO_CREATE        "创建对象失败。请确认应用程序已在系统注册表中注册。"
+
+	AFX_IDS_METAFILE_FORMAT         "图片(元文件)\n一幅图片"
+	AFX_IDS_DIB_FORMAT              "设备独立位图\n一幅设备独立位图"
+	AFX_IDS_BITMAP_FORMAT           "位图\n一幅位图"
+	AFX_IDS_LINKSOURCE_FORMAT       "%s\n%s"
+	AFX_IDS_EMBED_FORMAT            "%s\n%s"
+	AFX_IDS_RTF_FORMAT              "强化文本(RTF)\n字体和段落格式化的文本"
+	AFX_IDS_TEXT_FORMAT             "未格式化文本\n未经过任何格式化的文本"
+
+	AFX_IDS_INVALID_CURRENCY        "无效的货币。"
+	AFX_IDS_INVALID_DATETIME        "无效的日期时间。"
+	AFX_IDS_INVALID_DATETIMESPAN    "无效的日期时间跨度。"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXOLECL_RC__

@@ -1,0 +1,66 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXOLECL_RC__
+#define __AFXOLECL_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifndef _INC_DLGS
+	#include <dlgs.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 표준 MFC 원본은 변경할 수 없음! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Client Resources
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE strings
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_STATIC_OBJECT           "고정 ActiveX 개체를 활성화할 수 없습니다."
+	AFX_IDP_FAILED_TO_CONNECT       "접속 실패.\n 연결이 끊어졌을 수 있음."
+	AFX_IDP_SERVER_BUSY             "명령을 처리할 수 없음, 서버 사용 중."
+	AFX_IDP_BAD_VERB                "서버 작동 실행 실패."
+	AFX_IDP_FAILED_TO_LAUNCH        "서버 응용프로그램 실패."
+	AFX_IDS_UPDATING_ITEMS          "ActiveX 개체 새로 고침"
+	AFX_IDP_FAILED_TO_CONVERT       "ActiveX 개체를 변환하는 데 실패하였습니다."
+	AFX_IDP_ASK_TO_DISCARD          "현재의 Windows에서는 ActiveX 개체를 저장할 수 없습니다!\n%1에 대한 변경 사항을 무시할까요?"
+	AFX_IDP_FAILED_TO_CREATE        "개체 만들기 실패. 응용 프로그램이 시스템 등록부에 입력되었는지 확인하십시오."
+
+	AFX_IDS_METAFILE_FORMAT         "그림 (메타파일)\n 그림"
+	AFX_IDS_DIB_FORMAT              "장치 독립 비트맵\n 장치 독립 비트맵"
+	AFX_IDS_BITMAP_FORMAT           "비트맵\n 비트맵"
+	AFX_IDS_LINKSOURCE_FORMAT       "%s\n%s"
+	AFX_IDS_EMBED_FORMAT            "%s\n%s"
+	AFX_IDS_RTF_FORMAT              "Rich 텍스트 (RTF)\n글꼴 및 단락 서식이 있는 텍스트"
+	AFX_IDS_TEXT_FORMAT             "서식 비설정 텍스트\n서식이 없는 텍스트"
+
+	AFX_IDS_INVALID_CURRENCY        "잘못된 통화."
+	AFX_IDS_INVALID_DATETIME        "잘못된 일시."
+	AFX_IDS_INVALID_DATETIMESPAN    "잘못된 일시 범위."
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXOLECL_RC__

@@ -1,0 +1,105 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXDB_RC__
+#define __AFXDB_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// Database Resources
+
+// Database strings
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_SQL_CONNECT_FAIL
+		"Tentative infructueuse de connexion à la source de données"
+	AFX_IDP_SQL_RECORDSET_FORWARD_ONLY
+		"Le jeu d'enregistrements n'accepte que les déplacements vers l'avant."
+	AFX_IDP_SQL_EMPTY_COLUMN_LIST
+		"Tentative infructueuse d'ouverture de table - colonnes à extraire introuvables à l'endroit spécifié."
+	AFX_IDP_SQL_FIELD_SCHEMA_MISMATCH
+		"La requête a renvoyé des types de données de colonnes inattendus."
+	AFX_IDP_SQL_ILLEGAL_MODE "Tentative infructueuse de Mise à jour ou de Suppression."
+	AFX_IDP_SQL_MULTIPLE_ROWS_AFFECTED "Plusieurs lignes ont été mises à jour."
+	AFX_IDP_SQL_NO_CURRENT_RECORD "L'opération a échoué, pas d'enregistrement en cours"
+	AFX_IDP_SQL_NO_ROWS_AFFECTED
+		"Aucune ligne n'a été affectée par l'opération de mise à jour ou de suppression."
+	AFX_IDP_SQL_RECORDSET_READONLY "Le jeu d'enregistrements est en lecture seule"
+	AFX_IDP_SQL_SQL_NO_TOTAL
+		"Le pilote ODBC ne prend pas en charge le modèle de données LongBinary MFC."
+	AFX_IDP_SQL_ODBC_LOAD_FAILED
+		"Tentative infructueuse de chargement de l'élément ODBC32.DLL."
+	AFX_IDP_SQL_DYNASET_NOT_SUPPORTED
+		"Le gestionnaire ODBC ne prend pas en charge les feuilles de réponses dynamiques."
+	AFX_IDP_SQL_SNAPSHOT_NOT_SUPPORTED
+		"Curseurs ODBC statiques requis pour la prise en charge des instantanés."
+	AFX_IDP_SQL_API_CONFORMANCE
+		"Gestionnaire ODBC incompatible avec les classes de bases de données MFC (API_CONFORMANCE >= SQL_OAC_LEVEL1 requis)."
+	AFX_IDP_SQL_SQL_CONFORMANCE
+		"Gestionnaire ODBC incompatible avec les classes de bases de données MFC (SQL_CONFORMANCE >= SQL_OSC_MINIMUM requis)."
+	AFX_IDP_SQL_NO_DATA_FOUND
+		"Tentative de défilement après la fin ou avant le début des données."
+	AFX_IDP_SQL_ROW_UPDATE_NOT_SUPPORTED
+		"Feuilles de réponses dynamiques non prises en charge par le gestionnaire ODBC."
+	AFX_IDP_SQL_ODBC_V2_REQUIRED
+		"Gestionnaire ODBC conforme Niveau 2 (Level 2) requis."
+	AFX_IDP_SQL_NO_POSITIONED_UPDATES
+		"Les mises à jour programmées ne sont pas prises en charge par le gestionnaire ODBC."
+	AFX_IDP_SQL_LOCK_MODE_NOT_SUPPORTED
+		"Le mode de verrouillage requis n'est pas accepté."
+	AFX_IDP_SQL_DATA_TRUNCATED
+		"Données tronquées."
+	AFX_IDP_SQL_ROW_FETCH
+		"Erreur de récupération de l'enregistrement."
+	AFX_IDP_SQL_INCORRECT_ODBC
+		"Un point d'entrée ODBC requis est introuvable. Vérifiez qu'ODBC est correctement installé."
+	AFX_IDP_SQL_UPDATE_DELETE_FAILED
+		"Echec de la mise à jour ou de la suppression."
+	AFX_IDP_SQL_DYNAMIC_CURSOR_NOT_SUPPORTED
+		"Curseurs dynamiques non pris en charge par le pilote ODBC."
+	AFX_IDP_SQL_FIELD_NOT_FOUND
+		"Nom ou index de champ non valide"
+	AFX_IDP_SQL_BOOKMARKS_NOT_SUPPORTED
+		"Les onglets ne sont pas compatibles avec le pilote ODBC."
+	AFX_IDP_SQL_BOOKMARKS_NOT_ENABLED
+		"Les onglets ne sont pas activés sur le recordset."
+	AFX_IDP_DAO_ENGINE_INITIALIZATION
+		"Impossible d'initialiser le moteur de base de données DAO/Jet."
+	AFX_IDP_DAO_DFX_BIND
+		"Valeur du paramètre DFX incorrecte."
+	AFX_IDP_DAO_OBJECT_NOT_OPEN
+		"DAO TableDef ou QueryDef non ouverts."
+	AFX_IDP_DAO_ROWTOOSHORT
+		"Echec de GetRows. Mémoire allouée insuffisante pour la ligne."
+	AFX_IDP_DAO_BADBINDINFO
+		"Erreur de liens GetRows. Ceci est probablement du à une mauvaise correspondance de types de données."
+	AFX_IDP_DAO_COLUMNUNAVAILABLE
+		"Echec de GetRows. La colonne demandée n'est pas un membre de ce jeu d'enregistrements."
+
+	AFX_IDS_DELETED "<Effacé>"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXDB_RC__

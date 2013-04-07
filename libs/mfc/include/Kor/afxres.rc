@@ -1,0 +1,202 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXRES_RC__
+#define __AFXRES_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 표준 MFC 원본은 변경할 수 없음! >\0"
+END
+#endif //APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// Default resource description for MFC applications
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+// Strings
+
+STRINGTABLE DISCARDABLE
+BEGIN
+#ifndef _AFX_NO_APPMENU_RESOURCES
+	AFX_IDS_OPENFILE,               "열기"
+	AFX_IDS_SAVEFILE,               "다른 이름으로 저장"
+	AFX_IDS_ALLFILTER,              "모든 파일 (*.*)"
+	AFX_IDS_UNTITLED,               "제목없음"
+	AFX_IDS_HIDE,                   "숨김(&H)"
+#endif // !_AFX_NO_APPMENUSTRING_RESOURCES
+
+	AFX_IDS_MEMORY_EXCEPTION,       "메모리 부족."
+	AFX_IDS_NOT_SUPPORTED_EXCEPTION,"지원되지 않는 작동이 시도되었음."
+	AFX_IDS_RESOURCE_EXCEPTION,     "필요한 자원이 없음."
+	AFX_IDS_USER_EXCEPTION,         "미지의 오류가 발생하였습니다."
+
+	// General error prompts
+#ifndef _AFX_NO_FILECMD_RESOURCES
+	AFX_IDP_INVALID_FILENAME,       "잘못된 파일 이름."
+	AFX_IDP_FAILED_TO_OPEN_DOC,     "문서 열기 실패."
+	AFX_IDP_FAILED_TO_SAVE_DOC,     "문서 저장 실패."
+	AFX_IDP_ASK_TO_SAVE,            "변경 내용을 %1에 저장할까요?"
+	AFX_IDP_FAILED_TO_CREATE_DOC,   "빈 문서 작성 실패."
+	AFX_IDP_FILE_TOO_LARGE,         "파일이 너무 커서 열 수 없음."
+	AFX_IDP_FAILED_TO_START_PRINT,  "인쇄 작업을 시작할 수 없음."
+#endif // !_AFX_NO_FILECMD_RESOURCES
+	AFX_IDP_FAILED_TO_LAUNCH_HELP,  "도움말 시작 실패."
+	AFX_IDP_INTERNAL_FAILURE,       "내부 응용프로그램 오류."
+	AFX_IDP_COMMAND_FAILURE,        "명령 실패."
+	AFX_IDP_FAILED_MEMORY_ALLOC     "작동을 실행하기에 메모리가 부족함."
+	AFX_IDP_GET_NOT_SUPPORTED,      "쓰기전용 특성을 읽을 수 없음."
+	AFX_IDP_SET_NOT_SUPPORTED,      "읽기전용 특성을 쓸 수 없음."
+	AFX_IDP_UNREG_DONE,               "시스템 레지스트리 항목과 INI 파일(만약 있다면)이 삭제되었습니다."
+	AFX_IDP_UNREG_FAILURE,            "모든 시스템 레지스트리 항목(또는 INI 파일)이 삭제되지는 않았습니다."
+	AFX_IDP_DLL_LOAD_FAILED,        "이 프로그램은 %s 파일이 필요합니다. 시스템에서 이 파일을 찾을 수 없습니다."
+	AFX_IDP_DLL_BAD_VERSION,        "이 프로그램에 연결되어 있는 %s(% 파일의)을 찾을 수 없습니다. 이 시스템은 호환되지 않는 버전의 %s을(를) 포함하고 있는 것 같습니다."
+
+	// CFile/CArchive error strings for user failure
+#ifndef _AFX_NO_CFILE_RESOURCES
+	AFX_IDP_FAILED_INVALID_FORMAT   "예기치 않은 파일 포맷."
+	AFX_IDP_FAILED_INVALID_PATH     "%1\n이 파일을 찾을 수 없음.\n경로와 파일 이름이 정확한지 확인하십시오."
+	AFX_IDP_FAILED_DISK_FULL        "대상 디스크 드라이브가 꽉 찼음."
+	AFX_IDP_FAILED_ACCESS_READ      "%1로(으로)부터 읽을 수 없음. 다른 사람이 열었음."
+	AFX_IDP_FAILED_ACCESS_WRITE     "%1에 쓸 수 없음. 읽기전용이거나 다른 사람이 열었음."
+	AFX_IDP_FAILED_IO_ERROR_READ    "%1을(를) 읽는 중에 예기치 못한 오류 발생."
+	AFX_IDP_FAILED_IO_ERROR_WRITE   "%1을(를) 쓰는 중에 예기치 못한 오류 발생."
+#endif // !_AFX_NO_CFILE_RESOURCES
+
+	// Parsing error prompts
+	AFX_IDP_PARSE_INT,              "정수를 입력하십시오."
+	AFX_IDP_PARSE_REAL,             "숫자를 입력하십시오."
+	AFX_IDP_PARSE_INT_RANGE,        "%1와(과) %2 사이의 정수를 입력하십시오."
+	AFX_IDP_PARSE_REAL_RANGE,       "%1와(과) %2 사이의 숫자를 입력하십시오."
+	AFX_IDP_PARSE_STRING_SIZE,      "%1 이하의 문자를 입력하십시오."
+	AFX_IDP_PARSE_RADIO_BUTTON,     "버튼을 선택하십시오."
+	AFX_IDP_PARSE_BYTE,             "0 에서 255 사이의 정수를 입력하십시오."
+	AFX_IDP_PARSE_UINT,             "양의 정수를 입력하십시오."
+	AFX_IDP_PARSE_DATETIME,         "날짜 및/또는 시간을 입력하십시오."
+	AFX_IDP_PARSE_CURRENCY,         "통화를 입력하십시오."
+
+#ifndef _AFX_NO_OLE_RESOURCES
+	// OLE strings required for both servers and containers
+	AFX_IDS_PASTELINKEDTYPE         "연결된 %s"
+	AFX_IDS_UNKNOWNTYPE             "미지의 종류"
+	AFX_IDP_FAILED_TO_NOTIFY        "%1\n문서를 등록할 수 없음.\n문서가 이미 열려 있음."
+	AFX_IDS_NOT_DOCOBJECT           "이 파일은 Document Object 서버에서 지원하지 않습니다."
+#endif //!_AFX_NO_OLE_RESOURCES
+
+	AFX_IDP_NO_ERROR_AVAILABLE      "오류 메시지가 없음."
+
+#ifndef _AFX_NO_CFILE_RESOURCES
+	AFX_IDP_FILE_NONE                "아무 오류도 발생하지 않았음."
+	AFX_IDP_FILE_GENERIC             "%1 액세스 중에 미지의 오류 발생."
+	AFX_IDP_FILE_NOT_FOUND           "%1 을(를) 찾을 수 없음."
+	AFX_IDP_FILE_BAD_PATH            "%1 에 잘못된 경로가 있음."
+	AFX_IDP_FILE_TOO_MANY_OPEN       "열린 파일이 너무 많으므로 %1을(를) 열 수 없음."
+	AFX_IDP_FILE_ACCESS_DENIED       "%1에 대한 액세스가 거부되었음."
+	AFX_IDP_FILE_INVALID_FILE        "잘못된 파일 핸들이 %1와(과) 관련되었음."
+	AFX_IDP_FILE_REMOVE_CURRENT      "%1은(는) 현재 디렉토리이기 때문에 삭제할 수 없음."
+	AFX_IDP_FILE_DIR_FULL            "디렉토리가 꽉 찼기 때문에 %1을(를) 작성할 수 없음."
+	AFX_IDP_FILE_BAD_SEEK            "%1에서 탐색 실패"
+	AFX_IDP_FILE_HARD_IO             "%1 액세스 중에 하드웨어 입출력 오류가 보고되었음."
+	AFX_IDP_FILE_SHARING             "%1 액세스 중에 공유 위반이 발생하였음."
+	AFX_IDP_FILE_LOCKING             "%1 액세스 중에 잠금 위반이 발생하였음."
+	AFX_IDP_FILE_DISKFULL            "%1 액세스 중에 디스크가 꽉 참."
+	AFX_IDP_FILE_EOF                 "%1의 끝을 지나서 액세스하려는 시도가 있었음."
+	AFX_IDS_UNNAMED_FILE             "이름 없는 파일"
+#endif // !_AFX_NO_CFILE_RESOURCES
+
+	AFX_IDP_ARCH_NONE               "아무 오류도 발생하지 않았음."
+	AFX_IDP_ARCH_GENERIC                "%1 액세스 중에 미지의 오류 발생."
+	AFX_IDP_ARCH_READONLY           "%1 읽기에 쓰기를 하려는 시도가 있었음."
+	AFX_IDP_ARCH_ENDOFFILE          "%1의 끝을 지나서 액세스하려는 시도가 있었음."
+	AFX_IDP_ARCH_WRITEONLY          "%1 쓰기로부터 읽으려는 시도가 있었음."
+	AFX_IDP_ARCH_BADINDEX           "%1에는 불량 포맷이 있음."
+	AFX_IDP_ARCH_BADCLASS           "%1에는 예기치 못한 개체가 있음."
+	AFX_IDP_ARCH_BADSCHEMA          "%1에는 부정확한 스키마가 있음."
+
+#ifndef _AFX_NO_MAPI_RESOURCES
+	// MAPI strings / error messages
+	AFX_IDP_FAILED_MAPI_LOAD        "우편 시스템 지원을 읽어들일 수 없음."
+	AFX_IDP_INVALID_MAPI_DLL        "우편 시스템 DLL이 잘못되었음."
+	AFX_IDP_FAILED_MAPI_SEND        "우편 보내기가 메시지 송신에 실패했음."
+#endif //!_AFX_NO_MAPI_RESOURCES
+
+#ifndef _AFX_NO_OCC_RESOURCES
+	AFX_IDS_OCC_SCALEUNITS_PIXELS   "픽셀"
+#endif //!_AFX_NO_OCC_RESOURCES
+END
+
+/////////////////////////////////////////////////////////////////////////////
+// Cursors
+
+AFX_IDC_CONTEXTHELP     CURSOR  DISCARDABLE     "res\\help.cur"
+
+#ifndef _AFX_NO_SPLITTER_RESOURCES
+AFX_IDC_SMALLARROWS     CURSOR  DISCARDABLE     "res\\sarrows.cur"
+AFX_IDC_HSPLITBAR       CURSOR  DISCARDABLE     "res\\splith.cur"
+AFX_IDC_VSPLITBAR       CURSOR  DISCARDABLE     "res\\splitv.cur"
+AFX_IDC_NODROPCRSR      CURSOR  DISCARDABLE     "res\\nodrop.cur"
+#endif //!_AFX_NO_SPLITTER_RESOURCES
+
+#ifndef _AFX_NO_TRACKER_RESOURCES
+AFX_IDC_TRACKNWSE       CURSOR  DISCARDABLE     "res\\trcknwse.cur"
+AFX_IDC_TRACKNESW       CURSOR  DISCARDABLE     "res\\trcknesw.cur"
+AFX_IDC_TRACKNS         CURSOR  DISCARDABLE     "res\\trckns.cur"
+AFX_IDC_TRACKWE         CURSOR  DISCARDABLE     "res\\trckwe.cur"
+AFX_IDC_TRACK4WAY       CURSOR  DISCARDABLE     "res\\trck4way.cur"
+AFX_IDC_MOVE4WAY        CURSOR  DISCARDABLE     "res\\move4way.cur"
+#endif //!_AFX_NO_TRACKER_RESOURCES
+
+#ifndef _AFX_NO_CTL3D_RESOURCES
+26567 BITMAP "res\\3dcheck.bmp" // Note: 26567 comes from CTL3D.H
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// Standard Dialogs
+
+#ifndef _AFX_NO_NEWTYPEDLG_RESOURCES
+AFX_IDD_NEWTYPEDLG DIALOG DISCARDABLE  9, 26, 183, 70
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU | 0x04
+CAPTION "새로운"
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT           "새로운(&N)",IDC_STATIC,6,5,123,8,NOT WS_GROUP
+	LISTBOX         AFX_IDC_LISTBOX,6,15,125,49,WS_VSCROLL | WS_TABSTOP
+	DEFPUSHBUTTON   "확인",IDOK,137,6,40,14
+	PUSHBUTTON      "취소",IDCANCEL,137,23,40,14
+	PUSHBUTTON      "도움말(&H)",ID_HELP,137,43,40,14
+END
+#endif // !_AFX_NO_NEWTYPEDLG_RESOURCES
+
+/////////////////////////////////////////////////////////////////////////////
+// CMiniFrameWnd Bitmap
+
+AFX_IDB_MINIFRAME_MENU      BITMAP  DISCARDABLE     "res\\minifwnd.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+// CCheckListBox Bitmaps
+
+AFX_IDB_CHECKLISTBOX_NT     BITMAP  DISCARDABLE     "res\\ntcheck.bmp"
+AFX_IDB_CHECKLISTBOX_95     BITMAP  DISCARDABLE     "res\\95check.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //!__AFXRES_RC__
+
+/////////////////////////////////////////////////////////////////////////////

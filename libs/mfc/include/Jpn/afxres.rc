@@ -1,0 +1,202 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXRES_RC__
+#define __AFXRES_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< 標準 MFC ﾘｿｰｽの変更はできません! >\0"
+END
+#endif //APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// Default resource description for MFC applications
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+// Strings
+
+STRINGTABLE DISCARDABLE
+BEGIN
+#ifndef _AFX_NO_APPMENU_RESOURCES
+	AFX_IDS_OPENFILE,               "開く"
+	AFX_IDS_SAVEFILE,               "名前を付けて保存"
+	AFX_IDS_ALLFILTER,              "すべてのﾌｧｲﾙ (*.*)"
+	AFX_IDS_UNTITLED,               "無題"
+	AFX_IDS_HIDE,                   "非表示(&H)"
+#endif // !_AFX_NO_APPMENUSTRING_RESOURCES
+
+	AFX_IDS_MEMORY_EXCEPTION,       "ﾒﾓﾘが不足しています。"
+	AFX_IDS_NOT_SUPPORTED_EXCEPTION,"ｻﾎﾟｰﾄされていない操作を実行しました。"
+	AFX_IDS_RESOURCE_EXCEPTION,     "必要なﾘｿｰｽを利用できませんでした。"
+	AFX_IDS_USER_EXCEPTION,         "不明なｴﾗｰが発生しました。"
+
+	// General error prompts
+#ifndef _AFX_NO_FILECMD_RESOURCES
+	AFX_IDP_INVALID_FILENAME,       "無効なﾌｧｲﾙ名です。"
+	AFX_IDP_FAILED_TO_OPEN_DOC,     "ﾄﾞｷｭﾒﾝﾄを開くことに失敗しました。"
+	AFX_IDP_FAILED_TO_SAVE_DOC,     "ﾄﾞｷｭﾒﾝﾄの保存に失敗しました。"
+	AFX_IDP_ASK_TO_SAVE,            "%1 への変更を保存しますか?"
+	AFX_IDP_FAILED_TO_CREATE_DOC,   "空のﾄﾞｷｭﾒﾝﾄの作成に失敗しました。"
+	AFX_IDP_FILE_TOO_LARGE,         "ﾌｧｲﾙが大きすぎて開けません。"
+	AFX_IDP_FAILED_TO_START_PRINT,  "印刷ｼﾞｮﾌﾞを開始できませんでした。"
+#endif // !_AFX_NO_FILECMD_RESOURCES
+	AFX_IDP_FAILED_TO_LAUNCH_HELP,  "ﾍﾙﾌﾟの起動に失敗しました。"
+	AFX_IDP_INTERNAL_FAILURE,       "ｱﾌﾟﾘｹｰｼｮﾝの内部ｴﾗｰです。"
+	AFX_IDP_COMMAND_FAILURE,        "ｺﾏﾝﾄﾞの実行に失敗しました。"
+	AFX_IDP_FAILED_MEMORY_ALLOC     "ﾒﾓﾘ不足のため実行できません。"
+	AFX_IDP_GET_NOT_SUPPORTED,      "書き込み専用ﾌﾟﾛﾊﾟﾃｨからは読み取れません。"
+	AFX_IDP_SET_NOT_SUPPORTED,      "読み取り専用ﾌﾟﾛﾊﾟﾃｨには書き込めません。"
+	AFX_IDP_UNREG_DONE,               "ｼｽﾃﾑ ﾚｼﾞｽﾄﾘ ｴﾝﾄﾘは削除されています。また、INI ﾌｧｲﾙがある場合は、INI ﾌｧｲﾙも削除されました。"
+	AFX_IDP_UNREG_FAILURE,            "一部のｼｽﾃﾑ ﾚｼﾞｽﾄﾘ ｴﾝﾄﾘ (または INI ﾌｧｲﾙ) は削除されませんでした。"
+	AFX_IDP_DLL_LOAD_FAILED,        "このﾌﾟﾛｸﾞﾗﾑにはﾌｧｲﾙ %s が必要ですがこのｼｽﾃﾑ上に見つかりませんでした。"
+	AFX_IDP_DLL_BAD_VERSION,        "このﾌﾟﾛｸﾞﾗﾑは欠落ｴｸｽﾎﾟｰﾄ %s にﾌｧｲﾙ %s 内でﾘﾝｸされています。このｺﾝﾋﾟｭｰﾀは互換性のないﾊﾞｰｼﾞｮﾝの %s を含んでいる可能性があります。"
+
+	// CFile/CArchive error strings for user failure
+#ifndef _AFX_NO_CFILE_RESOURCES
+	AFX_IDP_FAILED_INVALID_FORMAT   "予期しないﾌｧｲﾙ形式です。"
+	AFX_IDP_FAILED_INVALID_PATH     "%1\nこのﾌｧｲﾙが見つかりません。\nﾊﾟｽとﾌｧｲﾙ名が正しいかどうか確認してださい。"
+	AFX_IDP_FAILED_DISK_FULL        "出力先のﾃﾞｨｽｸ ﾄﾞﾗｲﾌﾞの空き容量が不足しています。"
+	AFX_IDP_FAILED_ACCESS_READ      "%1 は使用中のため、読み取れません。"
+	AFX_IDP_FAILED_ACCESS_WRITE     "%1 は使用中または読み取り専用のため、書き込めません。"
+	AFX_IDP_FAILED_IO_ERROR_READ    "%1 の読み取り中に予期しないｴﾗｰが発生しました。"
+	AFX_IDP_FAILED_IO_ERROR_WRITE   "%1 の書き込み中に予期しないｴﾗｰが発生しました。"
+#endif // !_AFX_NO_CFILE_RESOURCES
+
+	// Parsing error prompts
+	AFX_IDP_PARSE_INT,              "整数を入力してください。"
+	AFX_IDP_PARSE_REAL,             "数字を入力してください。"
+	AFX_IDP_PARSE_INT_RANGE,        "%1 から %2 までの整数を入力してください。"
+	AFX_IDP_PARSE_REAL_RANGE,       "%1 から %2 までの数字を入力してください。"
+	AFX_IDP_PARSE_STRING_SIZE,      "%1 文字以内で入力してください。"
+	AFX_IDP_PARSE_RADIO_BUTTON,     "ﾎﾞﾀﾝを選択してください。"
+	AFX_IDP_PARSE_BYTE,             "0 から 255 までの整数を入力してください。"
+	AFX_IDP_PARSE_UINT,             "正の整数を入力してください。"
+	AFX_IDP_PARSE_DATETIME,         "日付/時刻を入力してください。"
+	AFX_IDP_PARSE_CURRENCY,         "通貨型を入力してください。"
+
+#ifndef _AFX_NO_OLE_RESOURCES
+	// OLE strings required for both servers and containers
+	AFX_IDS_PASTELINKEDTYPE         "%s をﾘﾝｸしました。"
+	AFX_IDS_UNKNOWNTYPE             "不明な型です。"
+	AFX_IDP_FAILED_TO_NOTIFY        "%1\nﾄﾞｷｭﾒﾝﾄを登録できません。\nﾄﾞｷｭﾒﾝﾄはすでに開かれている可能性があります。"
+	AFX_IDS_NOT_DOCOBJECT           "ﾄﾞｷｭﾒﾝﾄ ｵﾌﾞｼﾞｪｸﾄ ｻｰﾊﾞｰは、このﾌｧｲﾙをｻﾎﾟｰﾄしていません。"
+#endif //!_AFX_NO_OLE_RESOURCES
+
+	AFX_IDP_NO_ERROR_AVAILABLE      "ｴﾗｰ ﾒｯｾｰｼﾞはありません。"
+
+#ifndef _AFX_NO_CFILE_RESOURCES
+	AFX_IDP_FILE_NONE                "ｴﾗｰはありませんでした。"
+	AFX_IDP_FILE_GENERIC             "%1 へのｱｸｾｽ中に不明なｴﾗｰが発生しました。"
+	AFX_IDP_FILE_NOT_FOUND           "%1 が見つかりませんでした。"
+	AFX_IDP_FILE_BAD_PATH            "%1 には無効なﾊﾟｽが含まれています。"
+	AFX_IDP_FILE_TOO_MANY_OPEN       "開いているﾌｧｲﾙが多すぎるため、%1 を開けませんでした。"
+	AFX_IDP_FILE_ACCESS_DENIED       "%1 へのｱｸｾｽは拒否されました。"
+	AFX_IDP_FILE_INVALID_FILE        "%1 へ無効なﾌｧｲﾙ ﾊﾝﾄﾞﾙが関連付けられていました。"
+	AFX_IDP_FILE_REMOVE_CURRENT      "現在のﾃﾞｨﾚｸﾄﾘ %1 は削除できませんでした。"
+	AFX_IDP_FILE_DIR_FULL            "%1 を作成できませんでした。そのﾃﾞｨﾚｸﾄﾘはいっぱいです。"
+	AFX_IDP_FILE_BAD_SEEK            "%1 のｼｰｸに失敗しました。"
+	AFX_IDP_FILE_HARD_IO             "%1 へのｱｸｾｽ中にﾊｰﾄﾞｳｪｱ I/O ｴﾗｰが報告されました。"
+	AFX_IDP_FILE_SHARING             "%1 へのｱｸｾｽ中に共有違反が発生しました。"
+	AFX_IDP_FILE_LOCKING             "%1 へのｱｸｾｽ中にﾛｯｸ違反が発生しました。"
+	AFX_IDP_FILE_DISKFULL            "%1 へのｱｸｾｽ中にﾃﾞｨｽｸがいっぱいになりました。"
+	AFX_IDP_FILE_EOF                 "%1 の末尾以降にｱｸｾｽしようとしました。"
+	AFX_IDS_UNNAMED_FILE             "無題のﾌｧｲﾙ"
+#endif // !_AFX_NO_CFILE_RESOURCES
+
+	AFX_IDP_ARCH_NONE               "ｴﾗｰはありませんでした。"
+	AFX_IDP_ARCH_GENERIC                "%1 へのｱｸｾｽ中に不明なｴﾗｰが発生しました。"
+	AFX_IDP_ARCH_READONLY           "%1 の読み取り中に書き込もうとしました。"
+	AFX_IDP_ARCH_ENDOFFILE          "%1 の末尾以降にｱｸｾｽしようとしました。"
+	AFX_IDP_ARCH_WRITEONLY          "%1 へ書き込み中に読み取ろうとしました。"
+	AFX_IDP_ARCH_BADINDEX           "%1 の形式が正しくありません。"
+	AFX_IDP_ARCH_BADCLASS           "%1 は予期しないｵﾌﾞｼﾞｪｸﾄを含んでいます。"
+	AFX_IDP_ARCH_BADSCHEMA          "%1 は不正なｽｷｰﾏを含んでいます。"
+
+#ifndef _AFX_NO_MAPI_RESOURCES
+	// MAPI strings / error messages
+	AFX_IDP_FAILED_MAPI_LOAD        "ﾒｰﾙ ｼｽﾃﾑ ｻﾎﾟｰﾄを読み込めません。"
+	AFX_IDP_INVALID_MAPI_DLL        "ﾒｰﾙ ｼｽﾃﾑ DLL が無効です。"
+	AFX_IDP_FAILED_MAPI_SEND        "ﾒｰﾙの送信に失敗しました。"
+#endif //!_AFX_NO_MAPI_RESOURCES
+
+#ifndef _AFX_NO_OCC_RESOURCES
+	AFX_IDS_OCC_SCALEUNITS_PIXELS   "ﾋﾟｸｾﾙ"
+#endif //!_AFX_NO_OCC_RESOURCES
+END
+
+/////////////////////////////////////////////////////////////////////////////
+// Cursors
+
+AFX_IDC_CONTEXTHELP     CURSOR  DISCARDABLE     "res\\help.cur"
+
+#ifndef _AFX_NO_SPLITTER_RESOURCES
+AFX_IDC_SMALLARROWS     CURSOR  DISCARDABLE     "res\\sarrows.cur"
+AFX_IDC_HSPLITBAR       CURSOR  DISCARDABLE     "res\\splith.cur"
+AFX_IDC_VSPLITBAR       CURSOR  DISCARDABLE     "res\\splitv.cur"
+AFX_IDC_NODROPCRSR      CURSOR  DISCARDABLE     "res\\nodrop.cur"
+#endif //!_AFX_NO_SPLITTER_RESOURCES
+
+#ifndef _AFX_NO_TRACKER_RESOURCES
+AFX_IDC_TRACKNWSE       CURSOR  DISCARDABLE     "res\\trcknwse.cur"
+AFX_IDC_TRACKNESW       CURSOR  DISCARDABLE     "res\\trcknesw.cur"
+AFX_IDC_TRACKNS         CURSOR  DISCARDABLE     "res\\trckns.cur"
+AFX_IDC_TRACKWE         CURSOR  DISCARDABLE     "res\\trckwe.cur"
+AFX_IDC_TRACK4WAY       CURSOR  DISCARDABLE     "res\\trck4way.cur"
+AFX_IDC_MOVE4WAY        CURSOR  DISCARDABLE     "res\\move4way.cur"
+#endif //!_AFX_NO_TRACKER_RESOURCES
+
+#ifndef _AFX_NO_CTL3D_RESOURCES
+26567 BITMAP "res\\3dcheck.bmp" // Note: 26567 comes from CTL3D.H
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// Standard Dialogs
+
+#ifndef _AFX_NO_NEWTYPEDLG_RESOURCES
+AFX_IDD_NEWTYPEDLG DIALOG DISCARDABLE  9, 26, 183, 70
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU | 0x04
+CAPTION "新規"
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT           "新規(&N) ",IDC_STATIC,6,5,123,8,NOT WS_GROUP
+	LISTBOX         AFX_IDC_LISTBOX,6,15,125,49,WS_VSCROLL | WS_TABSTOP
+	DEFPUSHBUTTON   "OK",IDOK,137,6,40,14
+	PUSHBUTTON      "ｷｬﾝｾﾙ",IDCANCEL,137,23,40,14
+	PUSHBUTTON      "ﾍﾙﾌﾟ(&H)",ID_HELP,137,43,40,14
+END
+#endif // !_AFX_NO_NEWTYPEDLG_RESOURCES
+
+/////////////////////////////////////////////////////////////////////////////
+// CMiniFrameWnd Bitmap
+
+AFX_IDB_MINIFRAME_MENU      BITMAP  DISCARDABLE     "res\\minifwnd.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+// CCheckListBox Bitmaps
+
+AFX_IDB_CHECKLISTBOX_NT     BITMAP  DISCARDABLE     "res\\ntcheck.bmp"
+AFX_IDB_CHECKLISTBOX_95     BITMAP  DISCARDABLE     "res\\95check.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //!__AFXRES_RC__
+
+/////////////////////////////////////////////////////////////////////////////

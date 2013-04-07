@@ -1,0 +1,66 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) 1992-1998 Microsoft Corporation
+// All rights reserved.
+//
+// This source code is only intended as a supplement to the
+// Microsoft Foundation Classes Reference and related
+// electronic documentation provided with the library.
+// See these sources for detailed information regarding the
+// Microsoft Foundation Classes product.
+
+#ifndef __AFXOLECL_RC__
+#define __AFXOLECL_RC__
+
+#ifndef __AFXRES_H__
+	#include <afxres.h>
+#endif
+
+#ifndef _INC_DLGS
+	#include <dlgs.h>
+#endif
+
+#ifdef APSTUDIO_INVOKED
+// This will prevent the VC++ Resource Editor user from saving this file
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+"< Cannot change standard MFC resources! >\0"
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifndef _AFXDLL
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE Client Resources
+
+/////////////////////////////////////////////////////////////////////////////
+// OLE strings
+
+STRINGTABLE DISCARDABLE
+BEGIN
+	AFX_IDP_STATIC_OBJECT           "Ein statisches ActiveX-Objekt kann nicht aktiviert werden."
+	AFX_IDP_FAILED_TO_CONNECT       "Fehler beim Verbindungsversuch.\nDie Verbindung ist vielleicht unterbrochen."
+	AFX_IDP_SERVER_BUSY             "Der Befehl kann nicht verarbeitet werden, weil der Server beschäftigt ist."
+	AFX_IDP_BAD_VERB                "Fehler beim Ausführen der Server-Operation."
+	AFX_IDP_FAILED_TO_LAUNCH        "Die Server-Anwendung konnte nicht gestartet werden."
+	AFX_IDS_UPDATING_ITEMS          "ActiveX-Objekte werden aktualisiert"
+	AFX_IDP_FAILED_TO_CONVERT       "ActiveX-Objekt konnte nicht konvertiert werden."
+	AFX_IDP_ASK_TO_DISCARD          "ActiveX-Objekte können beim Beenden von Windows nicht gespeichert werden!\nAlle bei %1 vorgenommenen Änderungen ignorieren?"
+	AFX_IDP_FAILED_TO_CREATE        "Fehler beim Erzeugen des Objekts. Stellen Sie sicher, daß das Objekt in der Systemregistrierung eingetragen ist."
+
+	AFX_IDS_METAFILE_FORMAT         "Bild (Metadatei)\nein Bild"
+	AFX_IDS_DIB_FORMAT              "Geräteunabhängiges Bitmap\nein geräteunabhängiges Bitmap"
+	AFX_IDS_BITMAP_FORMAT           "Bitmap\nein Bitmap"
+	AFX_IDS_LINKSOURCE_FORMAT       "%s\n%s"
+	AFX_IDS_EMBED_FORMAT            "%s\n%s"
+	AFX_IDS_RTF_FORMAT              "Rich Text (RTF)\nText mit Schrift- und Absatzformatierung"
+	AFX_IDS_TEXT_FORMAT             "Unformatierter Text\nText ohne Formatierung"
+
+	AFX_IDS_INVALID_CURRENCY        "Ungültige Währung."
+	AFX_IDS_INVALID_DATETIME        "Ungültiges Datum oder ungültige Zeit."
+	AFX_IDS_INVALID_DATETIMESPAN    "Ungültige Datums- oder Zeitspanne."
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif //!_AFXDLL
+#endif //__AFXOLECL_RC__

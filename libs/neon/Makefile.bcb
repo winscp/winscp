@@ -1,0 +1,154 @@
+# Set your compiler options
+OPENSSL_CFLAG=-DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DRMD160_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_CMS -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_SOCK -DOPENSSL_NO_DGRAM -DOPENSSL_NO_EC -DOPENSSL_NO_ECDH -DOPENSSL_NO_ECDSA -DDOPENSSL_NO_EC_NISTP_64_GCC_128
+ZLIB_CFLAG=-DWIN32 -DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DNE_HAVE_SSL;HAVE_OPENSSL;HAVE_EXPAT;HAVE_EXPAT_H;NE_HAVE_DAV;NE_HAVE_ZLIB;USE_GETADDRINFO;NOUSER;NOGDI;COMPILED_FROM_DSP;XML_STATIC;_RTLDLL; -D__STDC__
+EXPAT_CFLAG1=-D_WINDOWS;WIN32;NDEBUG;_LIB;COMPILED_FROM_DSP;XML_STATIC;
+EXPAT_CFLAG2=-D_NO_VCL;_ASSERTE;NO_STRICT;_RTLDLL
+
+CFLAG=-DWIN32 -DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DNE_HAVE_SSL;HAVE_OPENSSL;HAVE_EXPAT;HAVE_EXPAT_H;NE_HAVE_DAV;NE_HAVE_ZLIB;USE_GETADDRINFO;NOUSER;NOGDI;COMPILED_FROM_DSP;XML_STATIC;_RTLDLL; -D__STDC__
+CFLAG = $(CFLAG) -w-8065 -w-8069
+LIB_CFLAG=$(OPENSSL_CFLAG) $(ZLIB_CFLAG) $(EXPAT_CFLAG1) $(EXPAT_CFLAG2)
+
+# neon directory
+SRC_D=.
+
+# The output directory for everything intersting
+OUT_D=..\lib
+# The output directory for all the temporary muck
+TMP_D=tmp
+
+CC=bcc32
+CP=copy
+RM=del
+MKDIR=mkdir
+MKLIB=tlib /P64 /C
+ASM=nasm -f obj -d__omf__
+
+######################################################
+# You should not need to touch anything below this point
+######################################################
+
+# INCL_D - local library directory
+# OBJ_D  - temp object file directory
+OBJ_D=$(TMP_D)
+INCL_D=src
+INCL=$(INCL_D);../openssl;../zlib/src;../expat/lib;
+
+O_NEON=$(OUT_D)\neon.lib
+
+######################################################
+# Don't touch anything below this point
+######################################################
+
+INC=-I$(INCL) -I.
+LIB_CFLAGS=$(INC) $(CFLAG) $(LIB_CFLAG)
+LIBS_DEP=$(O_NEON)
+
+#############################################
+HEADER=$(INCL_D)\ne_uri.h
+
+NEONOBJS=\
+    $(OBJ_D)\ne_alloc.obj \
+    $(OBJ_D)\ne_auth.obj \
+    $(OBJ_D)\ne_basic.obj \
+    $(OBJ_D)\ne_compress.obj \
+    $(OBJ_D)\ne_dates.obj \
+    $(OBJ_D)\ne_i18n.obj \
+    $(OBJ_D)\ne_md5.obj \
+    $(OBJ_D)\ne_pkcs11.obj \
+    $(OBJ_D)\ne_redirect.obj \
+    $(OBJ_D)\ne_request.obj \
+    $(OBJ_D)\ne_session.obj \
+    $(OBJ_D)\ne_socket.obj \
+    $(OBJ_D)\ne_socks.obj \
+    $(OBJ_D)\ne_sspi.obj \
+    $(OBJ_D)\ne_string.obj \
+    $(OBJ_D)\ne_uri.obj \
+    $(OBJ_D)\ne_utils.obj \
+    $(OBJ_D)\ne_207.obj \
+    $(OBJ_D)\ne_xml.obj \
+    $(OBJ_D)\ne_xmlreq.obj \
+    $(OBJ_D)\ne_oldacl.obj \
+    $(OBJ_D)\ne_acl3744.obj \
+    $(OBJ_D)\ne_props.obj \
+    $(OBJ_D)\ne_locks.obj \
+    $(OBJ_D)\ne_openssl.obj
+
+$(OBJ_D)\ne_alloc.obj: $(SRC_D)/src/ne_alloc.c
+    $(CC) -o$(OBJ_D)\ne_alloc.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_alloc.c
+$(OBJ_D)\ne_auth.obj: $(SRC_D)/src/ne_auth.c
+    $(CC) -o$(OBJ_D)\ne_auth.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_auth.c
+$(OBJ_D)\ne_basic.obj: $(SRC_D)/src/ne_basic.c
+    $(CC) -o$(OBJ_D)\ne_basic.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_basic.c
+$(OBJ_D)\ne_compress.obj: $(SRC_D)/src/ne_compress.c
+    $(CC) -o$(OBJ_D)\ne_compress.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_compress.c
+$(OBJ_D)\ne_dates.obj: $(SRC_D)/src/ne_dates.c
+    $(CC) -o$(OBJ_D)\ne_dates.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_dates.c
+$(OBJ_D)\ne_i18n.obj: $(SRC_D)/src/ne_i18n.c
+    $(CC) -o$(OBJ_D)\ne_i18n.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_i18n.c
+$(OBJ_D)\ne_md5.obj: $(SRC_D)/src/ne_md5.c
+    $(CC) -o$(OBJ_D)\ne_md5.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_md5.c
+$(OBJ_D)\ne_pkcs11.obj: $(SRC_D)/src/ne_pkcs11.c
+    $(CC) -o$(OBJ_D)\ne_pkcs11.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_pkcs11.c
+$(OBJ_D)\ne_redirect.obj: $(SRC_D)/src/ne_redirect.c
+    $(CC) -o$(OBJ_D)\ne_redirect.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_redirect.c
+$(OBJ_D)\ne_request.obj: $(SRC_D)/src/ne_request.c
+    $(CC) -o$(OBJ_D)\ne_request.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_request.c
+$(OBJ_D)\ne_session.obj: $(SRC_D)/src/ne_session.c
+    $(CC) -o$(OBJ_D)\ne_session.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_session.c
+$(OBJ_D)\ne_socket.obj: $(SRC_D)/src/ne_socket.c
+    $(CC) -o$(OBJ_D)\ne_socket.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_socket.c
+$(OBJ_D)\ne_socks.obj: $(SRC_D)/src/ne_socks.c
+    $(CC) -o$(OBJ_D)\ne_socks.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_socks.c
+$(OBJ_D)\ne_sspi.obj: $(SRC_D)/src/ne_sspi.c
+    $(CC) -o$(OBJ_D)\ne_sspi.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_sspi.c
+$(OBJ_D)\ne_string.obj: $(SRC_D)/src/ne_string.c
+    $(CC) -o$(OBJ_D)\ne_string.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_string.c
+$(OBJ_D)\ne_uri.obj: $(SRC_D)/src/ne_uri.c
+    $(CC) -o$(OBJ_D)\ne_uri.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_uri.c
+$(OBJ_D)\ne_utils.obj: $(SRC_D)/src/ne_utils.c
+    $(CC) -o$(OBJ_D)\ne_utils.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_utils.c
+$(OBJ_D)\ne_207.obj: $(SRC_D)/src/ne_207.c
+    $(CC) -o$(OBJ_D)\ne_207.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_207.c
+$(OBJ_D)\ne_xml.obj: $(SRC_D)/src/ne_xml.c
+    $(CC) -o$(OBJ_D)\ne_xml.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_xml.c
+$(OBJ_D)\ne_xmlreq.obj: $(SRC_D)/src/ne_xmlreq.c
+    $(CC) -o$(OBJ_D)\ne_xmlreq.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_xmlreq.c
+$(OBJ_D)\ne_oldacl.obj: $(SRC_D)/src/ne_oldacl.c
+    $(CC) -o$(OBJ_D)\ne_oldacl.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_oldacl.c
+$(OBJ_D)\ne_acl3744.obj: $(SRC_D)/src/ne_acl3744.c
+    $(CC) -o$(OBJ_D)\ne_acl3744.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_acl3744.c
+$(OBJ_D)\ne_props.obj: $(SRC_D)/src/ne_props.c
+    $(CC) -o$(OBJ_D)\ne_props.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_props.c
+$(OBJ_D)\ne_locks.obj: $(SRC_D)/src/ne_locks.c
+    $(CC) -o$(OBJ_D)\ne_locks.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_locks.c
+$(OBJ_D)\ne_openssl.obj: $(SRC_D)/src/ne_openssl.c
+    $(CC) -o$(OBJ_D)\ne_openssl.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_openssl.c
+
+$(O_NEON): $(NEONOBJS)
+    if exist $(O_NEON) $(RM) $(O_NEON)
+    $(MKLIB) $(O_NEON) @&&!
++$(**: = &^
++)
+!
+
+###################################################################
+all: banner clean_lib $(TMP_D) $(OUT_D) headers lib
+
+banner:
+    @echo Building neon
+    @echo $(NEONOBJS)
+
+clean_lib:
+    if exist $(O_NEON) $(RM) $(O_NEON)
+
+$(TMP_D):
+    if not exist "$(TMP_D)" ( $(MKDIR) "$(TMP_D)" )
+
+$(OUT_D):
+    if not exist "$(OUT_D)" ( $(MKDIR) "$(OUT_D)" )
+
+headers: $(HEADER)
+    @
+
+lib: $(LIBS_DEP)
+
