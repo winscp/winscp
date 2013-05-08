@@ -402,11 +402,10 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
         try
         {
             TNeedPassRequestData Data;
-            Data.Password = NULL;
             Data.Password = AData->Password.GetBuffer(AData->Password.GetLength());
             Result = HandleAsynchRequestNeedPass(Data, RequestResult);
             AData->Password.ReleaseBuffer(AData->Password.GetLength());
-            if (Result)
+            if (Result && (RequestResult == TFileZillaIntf::REPLY_OK))
             {
               AData->Password = Data.Password;
               free(Data.Password);

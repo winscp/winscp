@@ -1186,7 +1186,7 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 357
-          Height = 222
+          Height = 200
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Background transfers'
           TabOrder = 0
@@ -1200,7 +1200,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QueueKeepDoneItemsCheck: TLabel
             Left = 16
-            Top = 194
+            Top = 172
             Width = 198
             Height = 13
             Caption = 'Display completed transfers in queue for:'
@@ -1234,14 +1234,6 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'Transfer on &background by default'
             TabOrder = 2
           end
-          object RememberPasswordCheck: TCheckBox
-            Left = 16
-            Top = 170
-            Width = 337
-            Height = 17
-            Caption = 'Remember &password of main session for background transfers'
-            TabOrder = 6
-          end
           object QueueNoConfirmationCheck: TCheckBox
             Left = 16
             Top = 122
@@ -1268,12 +1260,12 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QueueKeepDoneItemsForCombo: TComboBox
             Left = 248
-            Top = 191
+            Top = 169
             Width = 97
             Height = 21
             Style = csDropDownList
             MaxLength = 1
-            TabOrder = 7
+            TabOrder = 6
             OnChange = ControlChange
             Items.Strings = (
               'Never'
@@ -1286,7 +1278,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object QueueViewGroup: TGroupBox
           Left = 8
-          Top = 236
+          Top = 214
           Width = 357
           Height = 99
           Anchors = [akLeft, akTop, akRight]
@@ -2161,6 +2153,23 @@ object PreferencesDialog: TPreferencesDialog
             Caption = '&Use master password'
             TabOrder = 0
             OnClick = UseMasterPasswordCheckClick
+          end
+        end
+        object PasswordGroupBox: TGroupBox
+          Left = 8
+          Top = 106
+          Width = 357
+          Height = 56
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Session password'
+          TabOrder = 1
+          object SessionRememberPasswordCheck: TCheckBox
+            Left = 17
+            Top = 24
+            Width = 333
+            Height = 17
+            Caption = 'Remember &password for duration of session'
+            TabOrder = 0
           end
         end
       end

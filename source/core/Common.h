@@ -95,6 +95,8 @@ LCID __fastcall GetDefaultLCID();
 UnicodeString __fastcall DefaultEncodingName();
 UnicodeString __fastcall WindowsProductName();
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path);
+UnicodeString __fastcall FormatNumber(__int64 Size);
+UnicodeString __fastcall FormatSize(__int64 Size);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const UnicodeString FileName, const TSearchRec Rec, void * Param);
@@ -175,9 +177,9 @@ private:
 #else
 #define CHECK(p) { bool __CHECK_RESULT__ = (p); assert(__CHECK_RESULT__); }
 #define FAIL assert(false)
-#define ALWAYS_TRUE(p) DoAlwaysTrue(p, TEXT(#p), TEXT(__FILE__), __LINE__)
-#define ALWAYS_FALSE(p) DoAlwaysFalse(p, TEXT(#p), TEXT(__FILE__), __LINE__)
-#define NOT_NULL(P) DoCheckNotNull(P, TEXT(#P), TEXT(__FILE__), __LINE__)
+#define ALWAYS_TRUE(p) p
+#define ALWAYS_FALSE(p) p
+#define NOT_NULL(P) P
 #endif
 #define USEDPARAM(p) ((&p) == (&p))
 //---------------------------------------------------------------------------

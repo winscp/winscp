@@ -315,7 +315,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     QueueCheck->Checked = GUIConfiguration->DefaultCopyParam.Queue;
     QueueIndividuallyCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueIndividually;
     QueueNoConfirmationCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueNoConfirmation;
-    RememberPasswordCheck->Checked = GUIConfiguration->QueueRememberPassword;
     if (!GUIConfiguration->QueueKeepDoneItems)
     {
       QueueKeepDoneItemsForCombo->ItemIndex = 0;
@@ -444,6 +443,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     // security
     UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
+    SessionRememberPasswordCheck->Checked = GUIConfiguration->SessionRememberPassword;
 
     // network
     RetrieveExternalIpAddressButton->Checked = Configuration->ExternalIpAddress.IsEmpty();
@@ -606,7 +606,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     CopyParam.Queue = QueueCheck->Checked;
     CopyParam.QueueIndividually = QueueIndividuallyCheck->Checked;
     CopyParam.QueueNoConfirmation = QueueNoConfirmationCheck->Checked;
-    GUIConfiguration->QueueRememberPassword = RememberPasswordCheck->Checked;
     GUIConfiguration->QueueKeepDoneItems = (QueueKeepDoneItemsForCombo->ItemIndex != 0);
     switch (QueueKeepDoneItemsForCombo->ItemIndex)
     {
@@ -743,6 +742,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->ExternalIpAddress =
       (CustomExternalIpAddressButton->Checked ? CustomExternalIpAddressEdit->Text : UnicodeString());
     Configuration->TryFtpWhenSshFails = TryFtpWhenSshFailsCheck->Checked;
+
+    // security
+    GUIConfiguration->SessionRememberPassword = SessionRememberPasswordCheck->Checked;
 
     #undef BOOLPROP
   }

@@ -643,8 +643,13 @@ var
   PLastSelectMethod: TSelectMethod;
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
-  AParent: TWinControl;
+  WParam: UINT_PTR;
+  LParam: INT_PTR;
 begin
+  // This whole is replacement for mere ItemFocused := Item
+  // because that does not reset some internal focused pointer,
+  // causing subsequent Shift-Click selects range from the first item,
+  // not from focused item.
   Item.MakeVisible(False);
   if Focused then
   begin
@@ -657,13 +662,19 @@ begin
     FDontUnSelectItem := True;
     FFocusingItem := True;
     try
-      AParent := Parent;
-      P := ClientToScreen(P);
-      while AParent.Parent <> nil do
-        AParent := AParent.Parent;
-      P := AParent.ScreenToClient(P);
-      SendMessage(AParent.Handle, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(P.X, P.Y));
-      SendMessage(AParent.Handle, WM_LBUTTONUP, MK_LBUTTON, MAKELPARAM(P.X, P.Y));
+      // HACK
+      // WM_LBUTTONDOWN enters loop, waiting for WM_LBUTTONUP,
+      // so we have to post it in advance to break the loop immediately
+
+      // Without MK_CONTROL, if there are more items selected,
+      // they won't get unselected on subsequent focus change
+      // (with explorer-style selection).
+      // And it also makes the click the least obtrusive, affecting the focused
+      // file only.
+      WParam := MK_LBUTTON or MK_CONTROL;
+      LParam := MAKELPARAM(P.X, P.Y);
+      PostMessage(Handle, WM_LBUTTONUP, WParam, LParam);
+      SendMessage(Handle, WM_LBUTTONDOWN, WParam, LParam);
     finally
       FFocusingItem := False;
       FLastSelectMethod := PLastSelectMethod;

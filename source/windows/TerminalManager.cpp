@@ -403,6 +403,8 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
     Configuration->Usage->Inc(L"OpenedSessionsAdvanced");
   }
 
+  ActiveTerminal->EnableUsage();
+
   // add only stored sessions to the jump list,
   // ad-hoc session cannot be reproduced from just a session name
   if (StoredSessions->FindSame(ActiveTerminal->SessionData) != NULL)
@@ -589,6 +591,16 @@ void __fastcall TTerminalManager::SetScpExplorer(TCustomScpExplorerForm * value)
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::SetActiveTerminal(TTerminal * value)
 {
+  DoSetActiveTerminal(value, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::SetActiveTerminalWithAutoReconnect(TTerminal * value)
+{
+  DoSetActiveTerminal(value, true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool AutoReconnect)
+{
   if (ActiveTerminal != value)
   {
     // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateTerminal)
@@ -631,16 +643,23 @@ void __fastcall TTerminalManager::SetActiveTerminal(TTerminal * value)
       {
         UnicodeString Message = FTerminationMessages->Strings[Index];
         FTerminationMessages->Strings[Index] = L"";
-        Exception * E = new ESshFatal(NULL, Message);
-        try
+        if (AutoReconnect)
         {
-          // finally show pending terminal message,
-          // this gives user also possibility to reconnect
-          ActiveTerminal->ShowExtendedException(E);
+          ReconnectActiveTerminal();
         }
-        __finally
+        else
         {
-          delete E;
+          Exception * E = new ESshFatal(NULL, Message);
+          try
+          {
+            // finally show pending terminal message,
+            // this gives user also possibility to reconnect
+            ActiveTerminal->ShowExtendedException(E);
+          }
+          __finally
+          {
+            delete E;
+          }
         }
       }
     }
@@ -947,7 +966,7 @@ void __fastcall TTerminalManager::TerminalPromptUser(
   {
     assert(Instructions.IsEmpty());
     assert(Prompts->Count == 1);
-    assert(bool(Prompts->Objects[0]));
+    assert(FLAGSET(int(Prompts->Objects[0]), pupEcho));
     UnicodeString AResult = Results->Strings[0];
 
     TInputDialogInitialize InputDialogInitialize = NULL;

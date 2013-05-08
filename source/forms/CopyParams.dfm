@@ -308,18 +308,18 @@ object CopyParamsFrame: TCopyParamsFrame
       Caption = '&New and updated files only'
       ParentShowHint = False
       ShowHint = True
-      TabOrder = 2
+      TabOrder = 3
       OnClick = ControlChange
     end
-  end
-  object IncludeFileMaskHintText: TStaticText
-    Left = 271
-    Top = 380
-    Width = 54
-    Height = 17
-    Alignment = taCenter
-    Caption = 'mask hints'
-    TabOrder = 6
-    TabStop = True
+    object IncludeFileMaskHintText: TStaticText
+      Left = 263
+      Top = 58
+      Width = 54
+      Height = 17
+      Alignment = taCenter
+      Caption = 'mask hints'
+      TabOrder = 2
+      TabStop = True
+    end
   end
 end

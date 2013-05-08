@@ -9,6 +9,7 @@
 #include <WinConfiguration.h>
 #include <CoreMain.h>
 #include <Tools.h>
+#include <BaseUtils.hpp>
 #include "FileFind.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -243,7 +244,9 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
   }
   else
   {
-    Item->SubItems->Add(FormatFloat(L"#,##0", File->Size));
+    Item->SubItems->Add(
+      FormatBytes(File->Size,
+        WinConfiguration->FormatSizeBytes, WinConfiguration->FormatSizeBytes));
   }
   Item->SubItems->Add(UserModificationStr(File->Modification, File->ModificationFmt));
 

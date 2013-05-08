@@ -760,7 +760,8 @@ char * CFtpListResult::GetLine()
 
 void CFtpListResult::AddLine(t_directory::t_direntry &direntry)
 {
-	if (m_server.nTimeZoneOffset && direntry.date.hasdate && direntry.date.hastime)
+	if (m_server.nTimeZoneOffset &&
+		direntry.date.hasdate && direntry.date.hastime && !direntry.date.utc)
 	{
 		SYSTEMTIME st = {0};
 		st.wYear = direntry.date.year;

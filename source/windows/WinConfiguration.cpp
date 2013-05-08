@@ -491,7 +491,7 @@ void __fastcall TWinConfiguration::Default()
   FEditor.FindMatchCase = false;
   FEditor.FindWholeWord = false;
   FEditor.FindDown = true;
-  FEditor.TabSize = 7;
+  FEditor.TabSize = 8;
   FEditor.MaxEditors = 500;
   FEditor.EarlyClose = 2; // seconds
   FEditor.SDIShellEditor = false;
@@ -759,14 +759,14 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
   ELEM.SubString(ELEM.LastDelimiter(L".>")+1, ELEM.Length() - ELEM.LastDelimiter(L".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
   if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
-#define KEY(TYPE, VAR) KEYEX(TYPE, VAR, VAR)
+#define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
-    KEYEX(Integer,DoubleClickAction, CopyOnDoubleClick); \
+    KEYEX(Integer,DoubleClickAction, L"CopyOnDoubleClick"); \
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
     KEY(Bool,     DDAllowMove); \
     KEY(Bool,     DDAllowMoveInit); \
-    KEYEX(Integer, DDTransferConfirmation, DDTransferConfirmation2); \
+    KEYEX(Integer, DDTransferConfirmation, L"DDTransferConfirmation2"); \
     KEY(String,   DDTemporaryDirectory); \
     KEY(Bool,     DDWarnLackOfTempSpace); \
     KEY(Float,    DDWarnLackOfTempSpaceRatio); \
@@ -885,7 +885,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,    ScpCommander.SessionsTabs); \
     KEY(Bool,    ScpCommander.StatusBar); \
     KEY(String,  ScpCommander.WindowParams); \
-    KEYEX(Integer, ScpCommander.NortonLikeMode, ExplorerStyleSelection); \
+    KEYEX(Integer, ScpCommander.NortonLikeMode, L"ExplorerStyleSelection"); \
     KEY(Bool,    ScpCommander.PreserveLocalDirectory); \
     KEY(Bool,    ScpCommander.CompareByTime); \
     KEY(Bool,    ScpCommander.CompareBySize); \
@@ -912,8 +912,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(String,  LogWindowParams); \
   ); \
   BLOCK(L"Security", CANCREATE, \
-    KEYEX(Bool,  FUseMasterPassword, UseMasterPassword); \
-    KEYEX(String,FMasterPasswordVerifier, MasterPasswordVerifier); \
+    KEYEX(Bool,  FUseMasterPassword, L"UseMasterPassword"); \
+    KEYEX(String,FMasterPasswordVerifier, L"MasterPasswordVerifier"); \
   );
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool All)
@@ -921,7 +921,7 @@ void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool
   TCustomWinConfiguration::SaveData(Storage, All);
 
   // duplicated from core\configuration.cpp
-  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(LASTELEM(UnicodeString(TEXT(#NAME))), VAR)
+  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(NAME, VAR)
   REGCONFIG(true);
   #undef KEYEX
 
@@ -1019,7 +1019,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   TCustomWinConfiguration::LoadData(Storage);
 
   // duplicated from core\configuration.cpp
-  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(LASTELEM(UnicodeString(TEXT(#NAME))), VAR)
+  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(NAME, VAR)
   #pragma warn -eas
   REGCONFIG(false);
   #pragma warn +eas

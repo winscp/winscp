@@ -46,6 +46,8 @@ struct TQueryButtonAlias
   unsigned int Button;
   UnicodeString Alias;
   TNotifyEvent OnClick;
+  int GroupWith;
+  TShiftState GrouppedShiftState;
 };
 
 typedef void __fastcall (__closure *TQueryParamsTimerEvent)(unsigned int & Result);
@@ -81,6 +83,8 @@ enum TPromptKind
   pkPassword,
   pkNewPassword
 };
+
+enum TPromptUserParam { pupEcho = 0x01, pupRemember = 0x02 };
 
 bool __fastcall IsAuthenticationPrompt(TPromptKind Kind);
 //---------------------------------------------------------------------------

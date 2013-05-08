@@ -508,6 +508,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FTunnelUI = NULL;
   FTunnelOpening = false;
   FCallbackGuard = NULL;
+  FEnableSecureShellUsage = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
@@ -731,6 +732,14 @@ void __fastcall TTerminal::Open()
                 FSecureShell = new TSecureShell(this, FSessionData, Log, Configuration);
                 try
                 {
+                  if (FEnableSecureShellUsage)
+                  {
+                    // only on the first connect,
+                    // this is not ideal as it may prevent usage from being collected,
+                    // e.g. when connection fails on the first try
+                    FSecureShell->EnableUsage();
+                    FEnableSecureShellUsage = false;
+                  }
                   // there will be only one channel in this session
                   FSecureShell->Simple = true;
                   FSecureShell->Open();
@@ -1015,7 +1024,7 @@ bool __fastcall TTerminal::PromptUser(TSessionData * Data, TPromptKind Kind,
   TStrings * Results = new TStringList;
   try
   {
-    Prompts->AddObject(Prompt, (TObject *)Echo);
+    Prompts->AddObject(Prompt, (TObject *)(FLAGMASK(Echo, pupEcho)));
     Results->AddObject(Result, (TObject *)MaxLen);
 
     AResult = PromptUser(Data, Kind, Name, Instructions, Prompts, Results);
@@ -1045,6 +1054,15 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
 {
   bool AResult = false;
 
+  bool PasswordPrompt =
+    (Prompts->Count == 1) && FLAGCLEAR(int(Prompts->Objects[0]), pupEcho) &&
+    ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkKeybInteractive) ||
+     (Kind == pkTIS) || (Kind == pkCryptoCard));
+  if (PasswordPrompt && !Configuration->RememberPassword)
+  {
+    Prompts->Objects[0] = (TObject*)(int(Prompts->Objects[0]) | pupRemember);
+  }
+
   if (OnPromptUser != NULL)
   {
     TCallbackGuard Guard(this);
@@ -1052,10 +1070,8 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
     Guard.Verify();
   }
 
-  if (AResult && (Configuration->RememberPassword) &&
-      (Prompts->Count == 1) && !bool(Prompts->Objects[0]) &&
-      ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkKeybInteractive) ||
-       (Kind == pkTIS) || (Kind == pkCryptoCard)))
+  if (AResult && PasswordPrompt &&
+      (Configuration->RememberPassword || FLAGSET(int(Prompts->Objects[0]), pupRemember)))
   {
     RawByteString EncryptedPassword = EncryptPassword(Results->Strings[0]);
     if (FTunnelOpening)
@@ -1468,6 +1484,10 @@ void __fastcall TTerminal::ClearCaches()
   if (FDirectoryChangesCache != NULL)
   {
     FDirectoryChangesCache->Clear();
+  }
+  if (FCommandSession != NULL)
+  {
+    FCommandSession->ClearCaches();
   }
 }
 //---------------------------------------------------------------------------
@@ -1932,7 +1952,7 @@ bool __fastcall TTerminal::CheckRemoteFile(
 }
 //---------------------------------------------------------------------------
 unsigned int __fastcall TTerminal::ConfirmFileOverwrite(const UnicodeString FileName,
-  const TOverwriteFileParams * FileParams, unsigned int Answers, const TQueryParams * QueryParams,
+  const TOverwriteFileParams * FileParams, unsigned int Answers, TQueryParams * QueryParams,
   TOperationSide Side, const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
   UnicodeString Message)
 {
@@ -1970,16 +1990,20 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(const UnicodeString File
   {
     if (Message.IsEmpty())
     {
-      Message = FMTLOAD((Side == osLocal ? LOCAL_FILE_OVERWRITE :
-        REMOTE_FILE_OVERWRITE), (FileName));
+      Message = FMTLOAD((Side == osLocal ? LOCAL_FILE_OVERWRITE2 :
+        REMOTE_FILE_OVERWRITE2), (FileName, FileName));
     }
     if (FileParams != NULL)
     {
       Message = FMTLOAD(FILE_OVERWRITE_DETAILS, (Message,
-        IntToStr(FileParams->SourceSize),
+        FormatSize(FileParams->SourceSize),
         UserModificationStr(FileParams->SourceTimestamp, FileParams->SourcePrecision),
-        IntToStr(FileParams->DestSize),
+        FormatSize(FileParams->DestSize),
         UserModificationStr(FileParams->DestTimestamp, FileParams->DestPrecision)));
+    }
+    if (ALWAYS_TRUE(QueryParams->HelpKeyword.IsEmpty()))
+    {
+      QueryParams->HelpKeyword = L"ui_overwrite";
     }
     Result = QueryUser(Message, NULL, Answers, QueryParams);
     switch (Result)
@@ -2378,7 +2402,7 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
   assert(FFileSystem);
   FFileSystem->ReadDirectory(FileList);
 
-  if (Configuration->ActualLogProtocol >= 1)
+  if (Log->Logging)
   {
     for (int Index = 0; Index < FileList->Count; Index++)
     {
@@ -2945,7 +2969,21 @@ void __fastcall TTerminal::DoCustomCommandOnFile(UnicodeString FileName,
       assert(FCommandSession->FSProtocol == cfsSCP);
       LogEvent(L"Executing custom command on command session.");
 
-      FCommandSession->CurrentDirectory = CurrentDirectory;
+      if (FCommandSession->CurrentDirectory != CurrentDirectory)
+      {
+        FCommandSession->CurrentDirectory = CurrentDirectory;
+        // We are likely in transaction, so ReadCurrentDirectory won't get called
+        // until transaction ends. But we need to know CurrentDirectory to
+        // expand !/ pattern.
+        // Doing this only, when current directory of the main and secondary shell differs,
+        // what would be the case before the first file in transation.
+        // Otherwise we would be reading pwd before every time as the
+        // CustomCommandOnFile on its own sets FReadCurrentDirectoryPending
+        if (FCommandSession->FReadCurrentDirectoryPending)
+        {
+          FCommandSession->ReadCurrentDirectory();
+        }
+      }
       FCommandSession->FFileSystem->CustomCommandOnFile(FileName, File, Command,
         Params, OutputEvent);
     }
@@ -4048,6 +4086,58 @@ TSynchronizeChecklist * __fastcall TTerminal::SynchronizeCollect(const UnicodeSt
   return Checklist;
 }
 //---------------------------------------------------------------------------
+static void __fastcall AddFlagName(UnicodeString & ParamsStr, int & Params, int Param, const UnicodeString & Name)
+{
+  if (FLAGSET(Params, Param))
+  {
+    AddToList(ParamsStr, Name, ", ");
+  }
+  Params &= ~Param;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminal::SynchronizeModeStr(TSynchronizeMode Mode)
+{
+  UnicodeString ModeStr;
+  switch (Mode)
+  {
+    case smRemote:
+      ModeStr = L"Remote";
+      break;
+    case smLocal:
+      ModeStr = L"Local";
+      break;
+    case smBoth:
+      ModeStr = L"Both";
+      break;
+    default:
+      ModeStr = L"Unknown";
+      break;
+  }
+  return ModeStr;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminal::SynchronizeParamsStr(int Params)
+{
+  UnicodeString ParamsStr;
+  AddFlagName(ParamsStr, Params, spDelete, L"Delete");
+  AddFlagName(ParamsStr, Params, spNoConfirmation, L"NoConfirmation");
+  AddFlagName(ParamsStr, Params, spExistingOnly, L"ExistingOnly");
+  AddFlagName(ParamsStr, Params, spNoRecurse, L"NoRecurse");
+  AddFlagName(ParamsStr, Params, spUseCache, L"UseCache");
+  AddFlagName(ParamsStr, Params, spDelayProgress, L"DelayProgress");
+  AddFlagName(ParamsStr, Params, spPreviewChanges, L"*PreviewChanges"); // GUI only
+  AddFlagName(ParamsStr, Params, spTimestamp, L"Timestamp");
+  AddFlagName(ParamsStr, Params, spNotByTime, L"NotByTime");
+  AddFlagName(ParamsStr, Params, spBySize, L"BySize");
+  AddFlagName(ParamsStr, Params, spSelectedOnly, L"*SelectedOnly"); // GUI only
+  AddFlagName(ParamsStr, Params, spMirror, L"Mirror");
+  if (Params > 0)
+  {
+    AddToList(ParamsStr, FORMAT(L"0x%x", (int(Params))), L", ");
+  }
+  return ParamsStr;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString LocalDirectory,
   const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
   const TCopyParamType * CopyParam, int Params,
@@ -4068,8 +4158,8 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
   Data.Checklist = Checklist;
 
   LogEvent(FORMAT(L"Collecting synchronization list for local directory '%s' and remote directory '%s', "
-    "mode = %d, params = %d", (LocalDirectory, RemoteDirectory,
-    int(Mode), int(Params))));
+    "mode = %s, params = 0x%x (%s)", (LocalDirectory, RemoteDirectory,
+    SynchronizeModeStr(Mode), int(Params), SynchronizeParamsStr(Params))));
 
   if (FLAGCLEAR(Params, spDelayProgress))
   {
@@ -4504,7 +4594,8 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
       UnicodeString CurrentRemoteDirectory = ChecklistItem->Remote.Directory;
 
       LogEvent(FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', "
-        "params = %d", (CurrentLocalDirectory, CurrentRemoteDirectory, int(Params))));
+        "params = 0x%x (%s)", (CurrentLocalDirectory, CurrentRemoteDirectory,
+        int(Params), SynchronizeParamsStr(Params))));
 
       int Count = 0;
 
@@ -5040,6 +5131,11 @@ void __fastcall TTerminal::ReflectSettings()
   // also FTunnelLog ?
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::EnableUsage()
+{
+  FEnableSecureShellUsage = true;
+}
+//---------------------------------------------------------------------------
 __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
   TSessionData * ASessionData, TConfiguration * Configuration, const UnicodeString & Name) :
   TTerminal(ASessionData, Configuration),
@@ -5076,7 +5172,7 @@ bool __fastcall TSecondaryTerminal::DoPromptUser(TSessionData * Data,
 {
   bool AResult = false;
 
-  if ((Prompts->Count == 1) && !bool(Prompts->Objects[0]) &&
+  if ((Prompts->Count == 1) && FLAGCLEAR(int(Prompts->Objects[0]), pupEcho) &&
       ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkKeybInteractive) ||
        (Kind == pkTIS) || (Kind == pkCryptoCard)))
   {

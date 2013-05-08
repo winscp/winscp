@@ -355,7 +355,7 @@ object LoginDialog: TLoginDialog
       object SessionListSheet: TTabSheet
         Tag = 2
         HelpType = htKeyword
-        HelpKeyword = 'ui_login_stored_sessions'
+        HelpKeyword = 'ui_login_sites'
         Caption = 'Sites'
         TabVisible = False
         DesignSize = (
@@ -1173,9 +1173,9 @@ object LoginDialog: TLoginDialog
             Caption = 'Post login &commands:'
             FocusControl = PostLoginCommandsMemo
           end
-          object Label5: TLabel
+          object FtpListAllLabel: TLabel
             Left = 12
-            Top = 102
+            Top = 126
             Width = 159
             Height = 13
             Caption = '&Support for listing of hidden files:'
@@ -1183,7 +1183,7 @@ object LoginDialog: TLoginDialog
           end
           object Label24: TLabel
             Left = 12
-            Top = 126
+            Top = 102
             Width = 188
             Height = 13
             Caption = 'Use &MLSD command for directory listing'
@@ -1208,12 +1208,13 @@ object LoginDialog: TLoginDialog
           end
           object FtpListAllCombo: TComboBox
             Left = 272
-            Top = 97
+            Top = 121
             Width = 61
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            TabOrder = 1
+            TabOrder = 2
+            OnChange = DataChange
           end
           object FtpForcePasvIpCombo: TComboBox
             Left = 272
@@ -1223,15 +1224,17 @@ object LoginDialog: TLoginDialog
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 3
+            OnChange = DataChange
           end
           object FtpUseMlsdCombo: TComboBox
             Left = 272
-            Top = 121
+            Top = 97
             Width = 61
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            TabOrder = 2
+            TabOrder = 1
+            OnChange = DataChange
           end
         end
       end

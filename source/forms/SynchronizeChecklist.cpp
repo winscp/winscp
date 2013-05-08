@@ -13,7 +13,8 @@
 
 #include <VCLCommon.h>
 #include <Tools.h>
-#include <CustomWinConfiguration.h>
+#include <BaseUtils.hpp>
+#include <WinConfiguration.h>
 //---------------------------------------------------------------------
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
@@ -242,7 +243,9 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
       }
       else
       {
-        Item->SubItems->Add(FormatFloat(L"#,##0", ChecklistItem->Local.Size));
+        Item->SubItems->Add(
+          FormatBytes(ChecklistItem->Local.Size,
+            WinConfiguration->FormatSizeBytes, WinConfiguration->FormatSizeBytes));
       }
       Item->SubItems->Add(UserModificationStr(ChecklistItem->Local.Modification,
         ChecklistItem->Local.ModificationFmt));
@@ -283,7 +286,9 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
       }
       else
       {
-        Item->SubItems->Add(FormatFloat(L"#,##0", ChecklistItem->Remote.Size));
+        Item->SubItems->Add(
+          FormatBytes(ChecklistItem->Remote.Size,
+            WinConfiguration->FormatSizeBytes, WinConfiguration->FormatSizeBytes));
       }
       Item->SubItems->Add(UserModificationStr(ChecklistItem->Remote.Modification,
         ChecklistItem->Remote.ModificationFmt));
@@ -438,8 +443,8 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
   if (Possible)
   {
     PanelText = FORMAT(LoadStrPart(SYNCHRONIZE_SELECTED_ACTIONS, 1),
-      (FormatFloat(L"#,##0", FChecked[Panel->Index]),
-       FormatFloat(L"#,##0", FTotals[Panel->Index])));
+      (FormatNumber(FChecked[Panel->Index]),
+       FormatNumber(FTotals[Panel->Index])));
   }
   else
   {

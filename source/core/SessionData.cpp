@@ -32,10 +32,12 @@ const int FtpPortNumber = 21;
 const int FtpsImplicitPortNumber = 990;
 const int HTTPPortNumber = 80;
 const int HTTPSPortNumber = 443;
+const int TelnetPortNumber = 23;
 const int DefaultSendBuf = 262144;
-const UnicodeString AnonymousUserName("anonymous");
-const UnicodeString AnonymousPassword("anonymous@example.com");
-
+const UnicodeString AnonymousUserName(L"anonymous");
+const UnicodeString AnonymousPassword(L"anonymous@example.com");
+const UnicodeString PuttySshProtocol(L"ssh");
+const UnicodeString PuttyTelnetProtocol(L"telnet");
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
@@ -86,7 +88,7 @@ void __fastcall TSessionData::Default()
     Kex[Index] = DefaultKexList[Index];
   }
   PublicKeyFile = L"";
-  FProtocol = ptSSH;
+  FPuttyProtocol = PuttySshProtocol;
   TcpNoDelay = true;
   SendBuf = DefaultSendBuf;
   SshSimple = true;
@@ -547,6 +549,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
 
   Color = Storage->ReadInteger(L"Color", Color);
 
+  PuttyProtocol = Storage->ReadString(L"Protocol", PuttyProtocol);
+
   Tunnel = Storage->ReadBool(L"Tunnel", Tunnel);
   TunnelPortNumber = Storage->ReadInteger(L"TunnelPortNumber", TunnelPortNumber);
   TunnelUserName = Storage->ReadString(L"TunnelUserName", TunnelUserName);
@@ -818,6 +822,11 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
     Storage->DeleteValue(L"BuggyMAC");
     Storage->DeleteValue(L"AliasGroupList");
 
+    if (PuttyExport)
+    {
+      WRITE_DATA_EX(String, L"Protocol", PuttyProtocol, );
+    }
+
     if (!PuttyExport)
     {
       WRITE_DATA(String, SftpServer);
@@ -897,9 +906,9 @@ int __fastcall TSessionData::ReadXmlNode(_di_IXMLNode Node, const UnicodeString 
   return Result;
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::ImportFromFilezilla(_di_IXMLNode Node)
+void __fastcall TSessionData::ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path)
 {
-  Name = ReadXmlNode(Node, L"Name", Name);
+  Name = UnixIncludeTrailingBackslash(Path) + ReadXmlNode(Node, L"Name", Name);
   HostName = ReadXmlNode(Node, L"Host", HostName);
   PortNumber = ReadXmlNode(Node, L"Port", PortNumber);
 
@@ -928,7 +937,7 @@ void __fastcall TSessionData::ImportFromFilezilla(_di_IXMLNode Node)
   }
 
   // LogonType enum
-  int LogonType = ReadXmlNode(Node, L"LogonType", 0);
+  int LogonType = ReadXmlNode(Node, L"Logontype", 0);
   if (LogonType == 0) // ANONYMOUS
   {
     UserName = AnonymousUserName;
@@ -1059,13 +1068,13 @@ UnicodeString __fastcall TSessionData::GetSource()
   switch (FSource)
   {
     case ::ssNone:
-      return L"Ad-Hoc session";
+      return L"Ad-Hoc site";
 
     case ssStored:
-      return L"Stored session";
+      return L"Site";
 
     case ssStoredModified:
-      return L"Modified stored session";
+      return L"Modified site";
 
     default:
       assert(false);
@@ -1789,11 +1798,6 @@ void __fastcall TSessionData::SetTimeout(int value)
   SET_SESSION_PROPERTY(Timeout);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSessionData::SetProtocol(TProtocol value)
-{
-  SET_SESSION_PROPERTY(Protocol);
-}
-//---------------------------------------------------------------------------
 void __fastcall TSessionData::SetFSProtocol(TFSProtocol value)
 {
   SET_SESSION_PROPERTY(FSProtocol);
@@ -1829,6 +1833,11 @@ void __fastcall TSessionData::SetDefaultShell(bool value)
 bool __fastcall TSessionData::GetDefaultShell()
 {
   return Shell.IsEmpty();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetPuttyProtocol(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(PuttyProtocol);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetPingIntervalDT(TDateTime value)
@@ -2551,6 +2560,37 @@ void __fastcall TStoredSessionList::Saved()
   }
 }
 //---------------------------------------------------------------------
+void __fastcall TStoredSessionList::ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path)
+{
+  for (int Index = 0; Index < Node->ChildNodes->Count; Index++)
+  {
+    _di_IXMLNode ChildNode = Node->ChildNodes->Get(Index);
+    if (ChildNode->NodeName == L"Server")
+    {
+      std::auto_ptr<TSessionData> SessionData(new TSessionData(L""));
+      SessionData->Assign(DefaultSettings);
+      SessionData->ImportFromFilezilla(ChildNode, Path);
+      Add(SessionData.release());
+    }
+    else if (ChildNode->NodeName == L"Folder")
+    {
+      UnicodeString Name;
+
+      for (int Index = 0; Index < ChildNode->ChildNodes->Count; Index++)
+      {
+        _di_IXMLNode PossibleTextMode = ChildNode->ChildNodes->Get(Index);
+        if (PossibleTextMode->NodeType == ntText)
+        {
+          UnicodeString NodeValue = PossibleTextMode->NodeValue;
+          AddToList(Name, NodeValue.Trim(), L" ");
+        }
+      }
+
+      ImportLevelFromFilezilla(ChildNode, UnixIncludeTrailingBackslash(Path) + Name.Trim());
+    }
+  }
+}
+//---------------------------------------------------------------------
 void __fastcall TStoredSessionList::ImportFromFilezilla(const UnicodeString FileName)
 {
   const _di_IXMLDocument Document = interface_cast<Xmlintf::IXMLDocument>(new TXMLDocument(NULL));
@@ -2561,17 +2601,7 @@ void __fastcall TStoredSessionList::ImportFromFilezilla(const UnicodeString File
     _di_IXMLNode ServersNode = FileZilla3Node->ChildNodes->FindNode(L"Servers");
     if (ServersNode != NULL)
     {
-      for (int Index = 0; Index < ServersNode->ChildNodes->Count; Index++)
-      {
-        _di_IXMLNode ChildNode = ServersNode->ChildNodes->Get(Index);
-        if (ChildNode->NodeName == L"Server")
-        {
-          std::auto_ptr<TSessionData> SessionData(new TSessionData(L""));
-          SessionData->Assign(DefaultSettings);
-          SessionData->ImportFromFilezilla(ChildNode);
-          Add(SessionData.release());
-        }
-      }
+      ImportLevelFromFilezilla(ServersNode, L"");
     }
   }
 }
@@ -2623,7 +2653,7 @@ void __fastcall TStoredSessionList::SelectSessionsToImport
   for (int Index = 0; Index < Count; Index++)
   {
     Sessions[Index]->Selected =
-      (!SSHOnly || (Sessions[Index]->Protocol == ptSSH)) &&
+      (!SSHOnly || (Sessions[Index]->PuttyProtocol == PuttySshProtocol)) &&
       !Dest->FindByName(Sessions[Index]->Name);
   }
 }

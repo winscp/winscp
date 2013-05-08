@@ -32,6 +32,7 @@ namespace WinSCP
                 _stream = null;
             }
 
+            ((IDisposable)_reader).Dispose();
             _reader = null;
         }
 

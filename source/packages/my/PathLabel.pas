@@ -29,6 +29,7 @@ type
     FIsActive: Boolean;
     FMask: string;
     FAutoSizeVertical: Boolean;
+    FAutoHotTrackColors: Boolean;
     procedure CMHintShow(var Message: TMessage); message CM_HINTSHOW;
     procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
     procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
@@ -39,6 +40,13 @@ type
     procedure SetUnixPath(AUnixPath: Boolean);
     procedure SetMask(Value: string);
     procedure SetAutoSizeVertical(Value: Boolean);
+    procedure SetFocusControl(Value: TWinControl);
+    function GetFocusControl: TWinControl;
+    function HotTrackColorsStored(Index: Integer): Boolean;
+    procedure SetAutoHotTrackColors(Value: Boolean);
+    function CalculateAutoHotTrackColor(C: TColor): TColor;
+    procedure CalculateAutoHotTrackColors;
+    function CalculateAutoHotTrackColorComponent(C: Byte; Bright: Boolean): Byte;
   protected
     procedure AdjustBounds; override;
     procedure Click; override;
@@ -47,6 +55,7 @@ type
       Operation: TOperation); override;
     procedure Paint; override;
     function IsActive: Boolean;
+    function TrackingActive: Boolean;
     function HotTrackPath(Path: string): string;
     procedure MouseMove(Shift: TShiftState; X: Integer; Y: Integer); override;
     procedure DoPathClick(Path: string); virtual;
@@ -60,7 +69,7 @@ type
     property ActiveTextColor: TColor index 3 read GetColors write SetColors
       default clCaptionText;
     property ActiveHotTrackColor: TColor index 5 read GetColors write SetColors
-      default clGradientActiveCaption;
+      stored HotTrackColorsStored;
     property UnixPath: Boolean read FUnixPath write SetUnixPath default False;
     property IndentHorizontal: Integer read FIndentHorizontal
       write SetIndentHorizontal default 5;
@@ -71,14 +80,15 @@ type
     property InactiveTextColor: TColor index 2 read GetColors write SetColors
       default clInactiveCaptionText;
     property InactiveHotTrackColor: TColor index 4 read GetColors write SetColors
-      default clGradientInactiveCaption;
+      stored HotTrackColorsStored;
     property OnGetStatus: TPathLabelGetStatusEvent read FOnGetStatus write FOnGetStatus;
     property OnPathClick: TPathLabelPathClickEvent read FOnPathClick write FOnPathClick;
     property HotTrack: Boolean read FHotTrack write FHotTrack default False;
     property Mask: string read FMask write SetMask;
     property AutoSizeVertical: Boolean read FAutoSizeVertical write SetAutoSizeVertical default False;
+    property AutoHotTrackColors: Boolean read FAutoHotTrackColors write SetAutoHotTrackColors default True;
 
-    property FocusControl;
+    property FocusControl: TWinControl read GetFocusControl write SetFocusControl;
     property Caption;
     property Hint stored False;
     property Align default alTop;
@@ -100,6 +110,7 @@ type
     property HotTrack;
     property OnGetStatus;
     property OnPathClick;
+    property AutoHotTrackColors;
 
     property Align;
     property Alignment;
@@ -155,13 +166,12 @@ begin
   FIndentVertical := 1;
   FUnixPath := False;
   FHotTrack := False;
+  FAutoHotTrackColors := True;
   FColors[0] := clInactiveCaption;
   FColors[1] := clActiveCaption;
   FColors[2] := clInactiveCaptionText;
   FColors[3] := clCaptionText;
-  FColors[4] := clGradientInactiveCaption;
-  FColors[5] := clGradientActiveCaption;
-  UpdateStatus;
+  CalculateAutoHotTrackColors;
 end;
 
 procedure TCustomPathLabel.CMHintShow(var Message: TMessage);
@@ -234,9 +244,210 @@ begin
   if FColors[Index] <> Value then
   begin
     FColors[Index] := Value;
+
+    if (Index = 4) or (Index = 5) then
+      FAutoHotTrackColors := False
+    else
+      CalculateAutoHotTrackColors;
+
     UpdateStatus;
   end;
 end; { SetColors }
+
+function TCustomPathLabel.HotTrackColorsStored(Index: Integer): Boolean;
+begin
+  Result := not AutoHotTrackColors;
+end;
+
+procedure TCustomPathLabel.SetAutoHotTrackColors(Value: Boolean);
+begin
+  if AutoHotTrackColors <> Value then
+  begin
+    FAutoHotTrackColors := Value;
+    CalculateAutoHotTrackColors;
+    UpdateStatus;
+  end;
+end;
+
+// taken from PngImageListEditor
+
+const
+  WeightR: single = 0.764706;
+  WeightG: single = 1.52941;
+  WeightB: single = 0.254902;
+
+function ColorDistance(C1, C2: Integer): Single;
+var
+  DR, DG, DB: Integer;
+begin
+  DR := (C1 and $FF) - (C2 and $FF);
+  Result := Sqr(DR * WeightR);
+  DG := (C1 shr 8 and $FF) - (C2 shr 8 and $FF);
+  Result := Result + Sqr(DG * WeightG);
+  DB := (C1 shr 16) - (C2 shr 16);
+  Result := Result + Sqr(DB * WeightB);
+  Result := Sqrt(Result);
+end;
+
+function GetAdjustedThreshold(BkgndIntensity, Threshold: Single): Single;
+begin
+  if BkgndIntensity < 220 then
+    Result := (2 - BkgndIntensity / 220) * Threshold
+  else
+    Result := Threshold;
+end;
+
+function IsContrastEnough(AColor, ABkgndColor: Integer; DoAdjustThreshold: Boolean; Threshold: Single): Boolean;
+begin
+  if DoAdjustThreshold then
+    Threshold := GetAdjustedThreshold(ColorDistance(ABkgndColor, $000000),
+      Threshold);
+  Result := ColorDistance(ABkgndColor, AColor) > Threshold;
+end;
+
+procedure AdjustContrast(var AColor: Integer; ABkgndColor: Integer; Threshold: Single);
+var
+  X, Y, Z: Single;
+  R, G, B: Single;
+  RR, GG, BB: Integer;
+  I1, I2, S, Q, W: Single;
+  DoInvert: Boolean;
+begin
+  I1 := ColorDistance(AColor, $000000);
+  I2 := ColorDistance(ABkgndColor, $000000);
+  Threshold := GetAdjustedThreshold(I2, Threshold);
+
+  if I1 > I2 then
+    DoInvert := I2 < 442 - Threshold
+  else
+    DoInvert := I2 < Threshold;
+
+  X := (ABkgndColor and $FF) * WeightR;
+  Y := (ABkgndColor shr 8 and $FF) * WeightG;
+  Z := (ABkgndColor shr 16) * WeightB;
+
+  R := (AColor and $FF) * WeightR;
+  G := (AColor shr 8 and $FF) * WeightG;
+  B := (AColor shr 16) * WeightB;
+
+  if DoInvert then begin
+    R := 195 - R;
+    G := 390 - G;
+    B := 65 - B;
+    X := 195 - X;
+    Y := 390 - Y;
+    Z := 65 - Z;
+  end;
+
+  S := Sqrt(Sqr(B) + Sqr(G) + Sqr(R));
+  if S < 0.01 then
+    S := 0.01;
+
+  Q := (R * X + G * Y + B * Z) / S;
+
+  X := Q / S * R - X;
+  Y := Q / S * G - Y;
+  Z := Q / S * B - Z;
+
+  W := Sqrt(Sqr(Threshold) - Sqr(X) - Sqr(Y) - Sqr(Z));
+
+  R := (Q - W) * R / S;
+  G := (Q - W) * G / S;
+  B := (Q - W) * B / S;
+
+  if DoInvert then begin
+    R := 195 - R;
+    G := 390 - G;
+    B := 65 - B;
+  end;
+
+  if R < 0 then
+    R := 0
+  else if R > 195 then
+    R := 195;
+  if G < 0 then
+    G := 0
+  else if G > 390 then
+    G := 390;
+  if B < 0 then
+    B := 0
+  else if B > 65 then
+    B := 65;
+
+  RR := Trunc(R * (1 / WeightR) + 0.5);
+  GG := Trunc(G * (1 / WeightG) + 0.5);
+  BB := Trunc(B * (1 / WeightB) + 0.5);
+
+  if RR > $FF then
+    RR := $FF
+  else if RR < 0 then
+    RR := 0;
+  if GG > $FF then
+    GG := $FF
+  else if GG < 0 then
+    GG := 0;
+  if BB > $FF then
+    BB := $FF
+  else if BB < 0 then
+    BB := 0;
+
+  AColor := (BB and $FF) shl 16 or (GG and $FF) shl 8 or (RR and $FF);
+end;
+
+procedure SetContrast(var Color: TColor; BkgndColor: TColor; Threshold: Integer);
+var
+  T: Single;
+begin
+  if Color < 0 then
+    Color := GetSysColor(Color and $FF);
+  if BkgndColor < 0 then
+    BkgndColor := GetSysColor(BkgndColor and $FF);
+  T := Threshold;
+  if not IsContrastEnough(Color, BkgndColor, True, T) then
+    AdjustContrast(Integer(Color), BkgndColor, T);
+end;
+
+function TCustomPathLabel.CalculateAutoHotTrackColorComponent(C: Byte; Bright: Boolean): Byte;
+var
+  Delta: Byte;
+begin
+  Delta := Max(Round(C * 0.3), 80);
+  if Bright then
+    Result := Byte(Max(Integer(C) - Delta, 0))
+  else
+    Result := Byte(Min(C + Delta, 255));
+end;
+
+function TCustomPathLabel.CalculateAutoHotTrackColor(C: TColor): TColor;
+var
+  R, G, B: Byte;
+  Bright: Boolean;
+begin
+  C := ColorToRGB(C);
+
+  R := GetRValue(C);
+  G := GetGValue(C);
+  B := GetBValue(C);
+
+  Bright := (R + G + B) > (256 / 2 * 3);
+
+  R := CalculateAutoHotTrackColorComponent(R, Bright);
+  G := CalculateAutoHotTrackColorComponent(G, Bright);
+  B := CalculateAutoHotTrackColorComponent(B, Bright);
+
+  Result := RGB(R, G, B);
+end;
+
+procedure TCustomPathLabel.CalculateAutoHotTrackColors;
+begin
+  if AutoHotTrackColors then
+  begin
+    FColors[4] := CalculateAutoHotTrackColor(FColors[2]);
+    SetContrast(FColors[4], FColors[0], 50);
+    FColors[5] := CalculateAutoHotTrackColor(FColors[3]);
+    SetContrast(FColors[5], FColors[1], 50);
+  end;
+end;
 
 procedure TCustomPathLabel.SetIndentHorizontal(AIndent: Integer);
 begin
@@ -265,6 +476,20 @@ begin
     FAutoSizeVertical := Value;
     AdjustBounds;
     Invalidate;
+  end;
+end;
+
+function TCustomPathLabel.GetFocusControl: TWinControl;
+begin
+  Result := inherited FocusControl;
+end;
+
+procedure TCustomPathLabel.SetFocusControl(Value: TWinControl);
+begin
+  if FocusControl <> Value then
+  begin
+    inherited FocusControl := Value;
+    UpdateStatus;
   end;
 end;
 
@@ -375,7 +600,8 @@ begin
     if FDisplayHotTrack <> '' then
     begin
       StandardColor := Canvas.Font.Color;
-      Canvas.Font.Color := FColors[4 + Integer(FIsActive)];
+      if TrackingActive then
+        Canvas.Font.Color := FColors[4 + Integer(FIsActive)];
       DrawText(Canvas.Handle, PChar(FDisplayHotTrack), Length(FDisplayHotTrack), Rect, Flags);
       Canvas.Font.Color := StandardColor;
       HotTrackOffset := Canvas.TextWidth(FDisplayHotTrack);
@@ -523,14 +749,22 @@ begin
   end;
 end;
 
+function TCustomPathLabel.TrackingActive: Boolean;
+begin
+  Result := Assigned(FocusControl) or Assigned(OnGetStatus);
+end;
+
 procedure TCustomPathLabel.UpdateStatus;
 begin
-  FIsActive := IsActive;
-  Color := FColors[Integer(FIsActive)];
-  // We don't want to store Font properties in DFM
-  // which would be if Font.Color is set to something else than clWindowText
-  if not (csDesigning in ComponentState) then
-    Font.Color := FColors[2 + Integer(FIsActive)];
+  if TrackingActive then
+  begin
+    FIsActive := IsActive;
+    Color := FColors[Integer(FIsActive)];
+    // We don't want to store Font properties in DFM
+    // which would be if Font.Color is set to something else than clWindowText
+    if not (csDesigning in ComponentState) then
+      Font.Color := FColors[2 + Integer(FIsActive)];
+  end;
 end; { UpdateStatus }
 
 procedure TCustomPathLabel.Notification(AComponent: TComponent;

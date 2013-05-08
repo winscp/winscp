@@ -279,7 +279,7 @@ __published:
   TMemo *PostLoginCommandsMemo;
   TLabel *BugMaxPkt2Label;
   TComboBox *BugMaxPkt2Combo;
-  TLabel *Label5;
+  TLabel *FtpListAllLabel;
   TComboBox *FtpListAllCombo;
   TComboBox *FtpForcePasvIpCombo;
   TLabel *Label22;

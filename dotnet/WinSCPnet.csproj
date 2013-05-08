@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>WinSCP</RootNamespace>
-    <AssemblyName>WinSCP</AssemblyName>
+    <AssemblyName>WinSCPnet</AssemblyName>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <OutputPath>$(FINAL_PATH)\$(Configuration)</OutputPath>

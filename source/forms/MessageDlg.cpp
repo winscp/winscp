@@ -23,25 +23,34 @@ public:
 
 protected:
   __fastcall TMessageForm(TComponent * AOwner);
+  virtual __fastcall ~TMessageForm();
 
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
+  DYNAMIC void __fastcall KeyUp(Word & Key, TShiftState Shift);
   UnicodeString __fastcall GetFormText();
   virtual void __fastcall CreateParams(TCreateParams & Params);
   DYNAMIC void __fastcall DoShow();
   virtual void __fastcall Dispatch(void * Message);
+  void __fastcall MenuItemClick(TObject * Sender);
+  void __fastcall ButtonDropDownClick(TObject * Sender);
+  void __fastcall UpdateForShiftStateTimer(TObject * Sender);
 
 private:
   TLabel * Message;
   TMemo * MessageMemo;
+  TShiftState FShiftState;
+  TTimer * FUpdateForShiftStateTimer;
 
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
+  void __fastcall UpdateForShiftState();
 };
 //---------------------------------------------------------------------------
 __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
 {
   Message = NULL;
   MessageMemo = NULL;
+  FUpdateForShiftStateTimer = NULL;
   TNonClientMetrics NonClientMetrics;
   NonClientMetrics.cbSize = sizeof(NonClientMetrics);
   if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, &NonClientMetrics, 0))
@@ -50,6 +59,11 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
   }
   Position = poOwnerFormCenter;
   UseSystemSettingsPre(this);
+}
+//---------------------------------------------------------------------------
+__fastcall TMessageForm::~TMessageForm()
+{
+  SAFE_DESTROY(FUpdateForShiftStateTimer);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
@@ -69,11 +83,90 @@ void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TMessageForm::UpdateForShiftState()
+{
+
+  TShiftState ShiftState =
+    KeyboardStateToShiftState() *
+    (TShiftState() << ssShift << ssCtrl << ssAlt);
+
+  if (FShiftState != ShiftState)
+  {
+    FShiftState = ShiftState;
+
+    for (int ComponentIndex = 0; ComponentIndex < ComponentCount - 1; ComponentIndex++)
+    {
+      TButton * Button = dynamic_cast<TButton*>(Components[ComponentIndex]);
+      if ((Button != NULL) && (Button->DropDownMenu != NULL))
+      {
+        TMenuItem * MenuItems = Button->DropDownMenu->Items;
+        for (int ItemIndex = 0; ItemIndex < MenuItems->Count; ItemIndex++)
+        {
+          TMenuItem * Item = MenuItems->Items[ItemIndex];
+          TShiftState GrouppedShiftState(Item->Tag >> 16);
+          if (Item->Enabled &&
+              ((ShiftState.Empty() && Item->Default) ||
+               (!ShiftState.Empty() && (ShiftState == GrouppedShiftState))))
+          {
+            int From = 1;
+            Button->Caption = CopyToChars(Item->Caption, From, L"\t", false);
+            Button->ModalResult = Item->Tag & 0xFFFF;
+            assert(Button->OnClick == NULL);
+            assert(Item->OnClick == MenuItemClick);
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::KeyUp(Word & Key, TShiftState Shift)
+{
+
+  UpdateForShiftState();
+
+  TForm::KeyUp(Key, Shift);
+}
+//---------------------------------------------------------------------------
 void __fastcall TMessageForm::KeyDown(Word & Key, TShiftState Shift)
 {
   if (Shift.Contains(ssCtrl) && (Key == L'C'))
   {
     CopyToClipboard(GetFormText());
+  }
+  else
+  {
+    if (!Shift.Contains(ssCtrl))
+    {
+      for (int ComponentIndex = 0; ComponentIndex < ComponentCount - 1; ComponentIndex++)
+      {
+        TButton * Button = dynamic_cast<TButton*>(Components[ComponentIndex]);
+        if ((Button != NULL) && (Button->DropDownMenu != NULL))
+        {
+          TMenuItem * MenuItems = Button->DropDownMenu->Items;
+          for (int ItemIndex = 0; ItemIndex < MenuItems->Count; ItemIndex++)
+          {
+            TMenuItem * Item = MenuItems->Items[ItemIndex];
+            if (IsAccel(Key, MenuItems->Items[ItemIndex]->Caption))
+            {
+              Item->OnClick(Item);
+              Key = 0;
+              break;
+            }
+          }
+        }
+
+        if (Key == 0)
+        {
+          break;
+        }
+      }
+    }
+
+    UpdateForShiftState();
+
+    TForm::KeyDown(Key, Shift);
   }
 }
 //---------------------------------------------------------------------------
@@ -113,7 +206,38 @@ void __fastcall TMessageForm::CMDialogKey(TWMKeyDown & Message)
   {
     OnKeyDown(this, Message.CharCode, KeyDataToShiftState(Message.KeyData));
   }
-  TForm::Dispatch(&Message);
+
+  if (Message.CharCode == VK_MENU)
+  {
+    bool AnyButtonWithGrouppedCommandsWithShiftState = false;
+    for (int ComponentIndex = 0; ComponentIndex < ComponentCount - 1; ComponentIndex++)
+    {
+      TButton * Button = dynamic_cast<TButton*>(Components[ComponentIndex]);
+      if ((Button != NULL) && (Button->DropDownMenu != NULL))
+      {
+        // we should check if there are any commands with shift state,
+        // but it's bit overkill
+        AnyButtonWithGrouppedCommandsWithShiftState = true;
+        break;
+      }
+    }
+
+    // this is to make Alt only alter button meaning (if there is any
+    // alternable button) and not popup system menu
+    if (AnyButtonWithGrouppedCommandsWithShiftState)
+    {
+      Message.Result = 1;
+      UpdateForShiftState();
+    }
+    else
+    {
+      TForm::Dispatch(&Message);
+    }
+  }
+  else
+  {
+    TForm::Dispatch(&Message);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::Dispatch(void * Message)
@@ -146,6 +270,32 @@ void __fastcall TMessageForm::DoShow()
   TForm::DoShow();
 }
 //---------------------------------------------------------------------------
+void __fastcall TMessageForm::MenuItemClick(TObject * Sender)
+{
+  TMenuItem * Item = NOT_NULL(dynamic_cast<TMenuItem *>(Sender));
+  ModalResult = (Item->Tag & 0xFFFF);
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::UpdateForShiftStateTimer(TObject * /*Sender*/)
+{
+  // this is needed to reflect shift state, even when we do not have a keyboard
+  // focus, what happens when drop down menu is popped up
+  UpdateForShiftState();
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::ButtonDropDownClick(TObject * /*Sender*/)
+{
+  // as optimization, do not waste time running timer, unless
+  // user pops up drop down menu. we do not have a way to stop timer, once
+  // it closes, but functionaly is does not matter
+  if (FUpdateForShiftStateTimer == NULL)
+  {
+    FUpdateForShiftStateTimer = new TTimer(this);
+    FUpdateForShiftStateTimer->Interval = 50;
+    FUpdateForShiftStateTimer->OnTimer = UpdateForShiftStateTimer;
+  }
+}
+//---------------------------------------------------------------------------
 const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
   &_SMsgDlgConfirm, NULL };
 const wchar_t * IconIDs[] = { IDI_EXCLAMATION, IDI_HAND, IDI_ASTERISK,
@@ -154,9 +304,13 @@ const int ButtonCount = 11;
 const UnicodeString ButtonNames[ButtonCount] = {
   L"Yes", L"No", L"OK", L"Cancel", L"Abort", L"Retry", L"Ignore", L"All", L"NoToAll",
   L"YesToAll", L"Help" };
+// Own variant to avoid accelerator conflict with "Abort" button.
+// Note that as of now, ALL_BUTTON is never actually used, because it's always aliased
+ResourceString MsgDlgAll = { NULL, ALL_BUTTON };
+ResourceString MsgDlgYesToAll = { NULL, YES_TO_ALL_BUTTON };
 const ResourceString * ButtonCaptions[ButtonCount] = {
   &_SMsgDlgYes, &_SMsgDlgNo, &_SMsgDlgOK, &_SMsgDlgCancel, &_SMsgDlgAbort,
-  &_SMsgDlgRetry, &_SMsgDlgIgnore, &_SMsgDlgAll, &_SMsgDlgNoToAll, &_SMsgDlgYesToAll,
+  &_SMsgDlgRetry, &_SMsgDlgIgnore, &MsgDlgAll, &_SMsgDlgNoToAll, &MsgDlgYesToAll,
   &_SMsgDlgHelp };
 extern const int ModalResults[ButtonCount] = {
   mrYes, mrNo, mrOk, mrCancel, mrAbort, mrRetry, mrIgnore, mrAll, mrNoToAll,
@@ -170,6 +324,22 @@ const int mcButtonHeight = 14;
 const int mcButtonSpacing = 4;
 const int mcMoreMessageWidth = 320;
 const int mcMoreMessageHeight = 80;
+//---------------------------------------------------------------------------
+static UnicodeString __fastcall GetKeyNameStr(int Key)
+{
+  wchar_t Buf[MAX_PATH];
+  LONG VirtualKey = MapVirtualKey(Key, MAPVK_VK_TO_VSC);
+  VirtualKey <<= 16;
+  if (GetKeyNameText(VirtualKey, Buf, LENOF(Buf)) > 0)
+  {
+    Buf[LENOF(Buf) - 1] = L'\0';
+  }
+  else
+  {
+    Buf[0] = L'\0';
+  }
+  return Buf;
+}
 //---------------------------------------------------------------------------
 TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
@@ -228,46 +398,44 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   int ButtonWidth = MulDiv(mcButtonWidth, DialogUnits.x, 4);
   TButton * ButtonControls[ButtonCount + 1];
   int ButtonControlsCount = 0;
+  typedef std::map<unsigned int, TButton *> TAnswerButtons;
+  TAnswerButtons AnswerButtons;
   for (unsigned int B = mbYes; B <= mbHelp; B++)
   {
     assert(B < ButtonCount);
     if (Buttons.Contains(TMsgDlgBtn(B)))
     {
       TextRect = Rect(0,0,0,0);
-      UnicodeString Caption = LoadResourceString(ButtonCaptions[B]);
-
-      // temporary fix of accelerators (&Abort vs. &All/Yes to &All)
-      // must be removed
-      if (Caption == L"&All")
-      {
-        Caption = L"A&ll";
-      }
-      else if (Caption == L"Yes to &All")
-      {
-        Caption = L"Yes to A&ll";
-      }
+      const ResourceString * CaptionResource = ButtonCaptions[B];
+      UnicodeString Caption = LoadStr(CaptionResource->Identifier);
 
       TNotifyEvent OnClick = NULL;
+      int GroupWith = -1;
+      TShiftState GrouppedShiftState;
       if (Aliases != NULL)
       {
         for (unsigned int i = 0; i < AliasesCount; i++)
         {
           if (B == Aliases[i].Button)
           {
-            Caption = Aliases[i].Alias;
+            if (!Aliases[i].Alias.IsEmpty())
+            {
+              Caption = Aliases[i].Alias;
+            }
             OnClick = Aliases[i].OnClick;
+            GroupWith = Aliases[i].GroupWith;
+            GrouppedShiftState = Aliases[i].GrouppedShiftState;
+            assert((OnClick == NULL) || (GrouppedShiftState == TShiftState()));
             break;
           }
         }
       }
 
-      TButton * Button = new TButton(Result);
-
       UnicodeString MeasureCaption = Caption;
-      if ((TimeoutButton != NULL) && (B == static_cast<unsigned int>(TimeoutResult)))
+      bool IsTimeoutButton = (TimeoutButton != NULL) && (B == static_cast<unsigned int>(TimeoutResult));
+      if (IsTimeoutButton)
       {
         MeasureCaption = FMTLOAD(TIMEOUT_BUTTON, (MeasureCaption, 99));
-        *TimeoutButton = Button;
       }
 
       DrawText(Result->Canvas->Handle,
@@ -275,35 +443,121 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         &TextRect, DT_CALCRECT | DT_LEFT | DT_SINGLELINE |
         Result->DrawTextBiDiModeFlagsReadingOnly());
       int CurButtonWidth = TextRect.Right - TextRect.Left + 8;
+
+      int ModalResult = ModalResults[B];
+
+      // we hope that all grouped-with buttons are for asnwer with greater
+      // value that the answer to be grouped with
+      if (SupportsSplitButton() &&
+          (GroupWith >= 0) && ALWAYS_TRUE(GroupWith < static_cast<int>(B)) &&
+          ALWAYS_TRUE(AnswerButtons.find(GroupWith) != AnswerButtons.end()) &&
+          ALWAYS_TRUE(B != static_cast<unsigned int>(TimeoutResult)) &&
+          ALWAYS_TRUE(B != static_cast<unsigned int>(DefaultButton)) &&
+          ALWAYS_TRUE(B != static_cast<unsigned int>(CancelButton)))
+      {
+        TButton * GroupWithButton = AnswerButtons[GroupWith];
+
+        if (GroupWithButton->DropDownMenu == NULL)
+        {
+          GroupWithButton->Style = TCustomButton::bsSplitButton;
+          GroupWithButton->DropDownMenu = new TPopupMenu(Result);
+          // cannot handle subitems with shift state,
+          // if the button has its own handler
+          // (though it may not be the case still here)
+          assert(GroupWithButton->OnClick == NULL);
+
+          TMenuItem * Item = new TMenuItem(GroupWithButton->DropDownMenu);
+          GroupWithButton->DropDownMenu->Items->Add(Item);
+          GroupWithButton->OnDropDownClick = Result->ButtonDropDownClick;
+
+          Item->Caption = GroupWithButton->Caption;
+          Item->OnClick = Result->MenuItemClick;
+          assert(GroupWithButton->ModalResult <= 0xFFFF);
+          Item->Tag = GroupWithButton->ModalResult;
+          Item->Default = true;
+        }
+
+        TMenuItem * Item = new TMenuItem(GroupWithButton->DropDownMenu);
+        GroupWithButton->DropDownMenu->Items->Add(Item);
+
+        // See ShortCutToText in Vcl.Menus.pas
+        if (GrouppedShiftState == (TShiftState() << ssAlt))
+        {
+          Caption = Caption + L"\t" + GetKeyNameStr(VK_MENU);
+        }
+        else if (GrouppedShiftState == (TShiftState() << ssCtrl))
+        {
+          Caption = Caption + L"\t" + GetKeyNameStr(VK_CONTROL);
+        }
+        else if (GrouppedShiftState == (TShiftState() << ssShift))
+        {
+          Caption = Caption + L"\t" + GetKeyNameStr(VK_SHIFT);
+        }
+        else
+        {
+          // do not support combined shift states yet
+          assert(GrouppedShiftState == TShiftState());
+        }
+
+        Item->Caption = Caption;
+        if (OnClick != NULL)
+        {
+          Item->OnClick = OnClick;
+        }
+        else
+        {
+          Item->OnClick = Result->MenuItemClick;
+          assert((ModalResult <= 0xFFFF) && (GrouppedShiftState.ToInt() <= 0xFFFF));
+          Item->Tag = ModalResult + (GrouppedShiftState.ToInt() << 16);
+        }
+
+        // Hard-coded drop down button width (do not know how to ask for system width).
+        // Also we do not update the max button width for the default groupped
+        // button caption. We just blindly hope that captions of advanced commands
+        // are always longer than the caption of simple default command
+        CurButtonWidth += 15;
+      }
+      else
+      {
+        TButton * Button = new TButton(Result);
+
+        if (IsTimeoutButton)
+        {
+          *TimeoutButton = Button;
+        }
+
+        Button->Name = ButtonNames[TMsgDlgBtn(B)];
+        Button->Parent = Result;
+        Button->Caption = Caption;
+        if (OnClick != NULL)
+        {
+          Button->OnClick = OnClick;
+        }
+        else
+        {
+          Button->ModalResult = ModalResult;
+          Button->Default = (B == static_cast<unsigned int>(DefaultButton));
+          Button->Cancel = (B == static_cast<unsigned int>(CancelButton));
+        }
+        if (MoreMessages != NULL)
+        {
+          Button->Anchors = TAnchors() << akBottom << akLeft;
+        }
+        if (B == mbHelp)
+        {
+          Button->OnClick = Result->HelpButtonClick;
+        }
+
+        ButtonControls[ButtonControlsCount] = Button;
+        ButtonControlsCount++;
+
+        AnswerButtons.insert(TAnswerButtons::value_type(B, Button));
+      }
+
       if (CurButtonWidth > ButtonWidth)
       {
         ButtonWidth = CurButtonWidth;
       }
-
-      Button->Name = ButtonNames[TMsgDlgBtn(B)];
-      Button->Parent = Result;
-      Button->Caption = Caption;
-      if (OnClick != NULL)
-      {
-        Button->OnClick = OnClick;
-      }
-      else
-      {
-        Button->ModalResult = ModalResults[B];
-        Button->Default = (B == static_cast<unsigned int>(DefaultButton));
-        Button->Cancel = (B == static_cast<unsigned int>(CancelButton));
-      }
-      if (MoreMessages != NULL)
-      {
-        Button->Anchors = TAnchors() << akBottom << akLeft;
-      }
-      if (B == mbHelp)
-      {
-        Button->OnClick = Result->HelpButtonClick;
-      }
-
-      ButtonControls[ButtonControlsCount] = Button;
-      ButtonControlsCount++;
     }
   }
 

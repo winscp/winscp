@@ -114,6 +114,7 @@ WizardSmallImageFile=compiler:WizModernSmallImage-IS.bmp
 ShowTasksTreeLines=yes
 PrivilegesRequired=none
 UsePreviousLanguage=yes
+DisableProgramGroupPage=yes
 MinVersion=0,5.1
 #ifdef Sign
 SignTool=sign $f "WinSCP Installer" http://winscp.net/eng/docs/installation
@@ -1467,10 +1468,9 @@ begin
     { Hide most pages during typical installation }
     (TypicalTypeButton.Checked and
      ((PageID = wpSelectDir) or (PageID = wpSelectComponents) or
-      (PageID = wpSelectProgramGroup) or (PageID = wpSelectTasks) or
+      (PageID = wpSelectTasks) or
       { Hide Interface page for upgrades only, show for fresh installs }
-      ((PageID = wpInterface) and Upgrade))) or
-    (IsWin8 and (PageID = wpSelectProgramGroup));
+      ((PageID = wpInterface) and Upgrade)));
 end;
 
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,

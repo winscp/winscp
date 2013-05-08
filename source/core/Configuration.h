@@ -131,6 +131,7 @@ protected:
   virtual void __fastcall Saved();
   void __fastcall CleanupRegistry(UnicodeString CleanupSubKey);
   UnicodeString __fastcall BannerHash(const UnicodeString & Banner);
+  static UnicodeString __fastcall PropertyToKey(const UnicodeString & Property);
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);

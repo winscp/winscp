@@ -51,6 +51,7 @@ namespace WinSCP
         public string DebugLogPath { get { CheckNotDisposed(); return Logger.LogPath; } set { CheckNotDisposed(); Logger.LogPath = value; } }
         public string SessionLogPath { get { return _sessionLogPath; } set { CheckNotOpened(); _sessionLogPath = value; } }
         public string XmlLogPath { get { return _xmlLogPath; } set { CheckNotOpened(); _xmlLogPath = value; } }
+        public bool GuardProcessWithJob { get { return _guardProcessWithJob; } set { CheckNotOpened(); _guardProcessWithJob = value; } }
 
         public TimeSpan Timeout { get; set; }
 
@@ -97,14 +98,7 @@ namespace WinSCP
                 _disposed = false;
                 _defaultConfiguration = true;
                 _logUnique = 0;
-            }
-        }
-
-        ~Session()
-        {
-            using (Logger.CreateCallstack())
-            {
-                DoDispose();
+                _guardProcessWithJob = true;
             }
         }
 
@@ -112,7 +106,17 @@ namespace WinSCP
         {
             using (Logger.CreateCallstackAndLock())
             {
-                DoDispose();
+                _disposed = true;
+
+                Cleanup();
+                Logger.Dispose();
+
+                if (_eventsEvent != null)
+                {
+                    _eventsEvent.Close();
+                    _eventsEvent = null;
+                }
+
                 GC.SuppressFinalize(this);
             }
         }
@@ -731,23 +735,6 @@ namespace WinSCP
                 path += '/';
             }
             return path;
-        }
-
-        private void DoDispose()
-        {
-            using (Logger.CreateCallstack())
-            {
-                _disposed = true;
-
-                Cleanup();
-                Logger.Dispose();
-
-                if (_eventsEvent != null)
-                {
-                    _eventsEvent.Close();
-                    _eventsEvent = null;
-                }
-            }
         }
 
         private void Cleanup()
@@ -1468,5 +1455,6 @@ namespace WinSCP
         private string _xmlLogPath;
         private FileTransferProgressEventHandler _fileTransferProgress;
         private int _progressHandling;
+        private bool _guardProcessWithJob;
     }
 }

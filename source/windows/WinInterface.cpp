@@ -147,10 +147,21 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
   for (int ii = 0; ii < Dialog->ControlCount; ii++)
   {
     TButton * Button = dynamic_cast<TButton *>(Dialog->Controls[ii]);
-    if ((Button != NULL) && (Button->ModalResult != mrNone) &&
-        (Button->ModalResult != mrCancel))
+    if (Button != NULL)
     {
-      Button->Enabled = !CheckBox->Checked || (Button->ModalResult == PositiveAnswer);
+      if ((Button->ModalResult != mrNone) && (Button->ModalResult != mrCancel))
+      {
+        Button->Enabled = !CheckBox->Checked || (Button->ModalResult == PositiveAnswer);
+      }
+
+      if (Button->DropDownMenu != NULL)
+      {
+        for (int iii = 0; iii < Button->DropDownMenu->Items->Count; iii++)
+        {
+          TMenuItem * Item = Button->DropDownMenu->Items->Items[iii];
+          Item->Enabled = Item->Default || !CheckBox->Checked;
+        }
+      }
     }
   }
 }
@@ -268,6 +279,12 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
         Aliases[i].Button = Button;
         Aliases[i].Alias = Params->Aliases[i].Alias;
         Aliases[i].OnClick = Params->Aliases[i].OnClick;
+        if (Params->Aliases[i].GroupWith >= 0)
+        {
+          CHECK(MapButton(Params->Aliases[i].GroupWith, Button));
+          Aliases[i].GroupWith = Button;
+        }
+        Aliases[i].GrouppedShiftState = Params->Aliases[i].GrouppedShiftState;
       }
       Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Buttons,
         Aliases, Params->AliasesCount, TimeoutResult, &TimeoutButton, ImageName);

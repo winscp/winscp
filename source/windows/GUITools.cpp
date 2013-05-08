@@ -92,15 +92,15 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
           {
             if (GUIConfiguration->TelnetForFtpInPutty)
             {
-              ExportData->Protocol = ptTelnet;
-              ExportData->PortNumber = 23;
+              ExportData->PuttyProtocol = PuttyTelnetProtocol;
+              ExportData->PortNumber = TelnetPortNumber;
               // PuTTY  does not allow -pw for telnet
               Password = L"";
             }
             else
             {
-              ExportData->Protocol = ptSSH;
-              ExportData->PortNumber = 22;
+              ExportData->PuttyProtocol = PuttySshProtocol;
+              ExportData->PortNumber = SshPortNumber;
             }
           }
 

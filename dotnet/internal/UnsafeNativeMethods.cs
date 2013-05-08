@@ -59,13 +59,39 @@ namespace WinSCP
         public UInt32 PeakJobMemoryUsed;
     }
 
+    [Flags]
+    internal enum FileMapProtection : uint
+    {
+        PageReadonly = 0x02,
+        PageReadWrite = 0x04,
+        PageWriteCopy = 0x08,
+        PageExecuteRead = 0x20,
+        PageExecuteReadWrite = 0x40,
+        SectionCommit = 0x8000000,
+        SectionImage = 0x1000000,
+        SectionNoCache = 0x10000000,
+        SectionReserve = 0x4000000,
+    }
+
+    [Flags]
+    public enum FileMapAccess : int
+    {
+        FileMapCopy = 0x0001,
+        FileMapWrite = 0x0002,
+        FileMapRead = 0x0004,
+        FileMapAllAccess = 0x001f,
+        FileMapExecute = 0x0020,
+    }
+    
     internal static class UnsafeNativeMethods
     {
+        public const int ERROR_ALREADY_EXISTS = 183;
+        
         [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern SafeFileHandle CreateFileMapping(SafeFileHandle hFile, IntPtr lpAttributes, int fProtect, int dwMaximumSizeHigh, int dwMaximumSizeLow, string lpName);
+        public static extern SafeFileHandle CreateFileMapping(SafeFileHandle hFile, IntPtr lpAttributes, FileMapProtection fProtect, int dwMaximumSizeHigh, int dwMaximumSizeLow, string lpName);
 
         [DllImport("kernel32", SetLastError = true, ExactSpelling = true)]
-        public static extern IntPtr MapViewOfFile(SafeFileHandle handle, int dwDesiredAccess, uint dwFileOffsetHigh, uint dwFileOffsetLow, UIntPtr dwNumberOfBytesToMap);
+        public static extern IntPtr MapViewOfFile(SafeFileHandle handle, FileMapAccess dwDesiredAccess, uint dwFileOffsetHigh, uint dwFileOffsetLow, UIntPtr dwNumberOfBytesToMap);
 
         [DllImport("kernel32", ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

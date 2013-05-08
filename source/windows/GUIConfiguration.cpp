@@ -554,7 +554,7 @@ void __fastcall TGUIConfiguration::Default()
   FQueueKeepDoneItems = true;
   FQueueKeepDoneItemsFor = 15;
   FQueueAutoPopup = true;
-  FQueueRememberPassword = false;
+  FSessionRememberPassword = false;
   UnicodeString ProgramsFolder;
   SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
   FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + L"PuTTY\\putty.exe";
@@ -610,16 +610,10 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
   Usage->Set(L"CopyParamsCount", (FCopyParamListDefaults ? 0 : FCopyParamList->Count));
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TGUIConfiguration::PropertyToKey(const UnicodeString Property)
-{
-  // no longer useful
-  int P = Property.LastDelimiter(L".>");
-  return Property.SubString(P + 1, Property.Length() - P);
-}
-//---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
 #define BLOCK(KEY, CANCREATE, BLOCK) \
   if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+#define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
     KEY(Bool,     ContinueOnError); \
@@ -633,7 +627,7 @@ UnicodeString __fastcall TGUIConfiguration::PropertyToKey(const UnicodeString Pr
     KEY(Integer,  QueueKeepDoneItems); \
     KEY(Integer,  QueueKeepDoneItemsFor); \
     KEY(Bool,     QueueAutoPopup); \
-    KEY(Bool,     QueueRememberPassword); \
+    KEYEX(Bool,   SessionRememberPassword, L"QueueRememberPassword"); \
     KEY(String,   PuttySession); \
     KEY(String,   PuttyPath); \
     KEY(Bool,     PuttyPassword); \
@@ -651,9 +645,9 @@ void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool
   TConfiguration::SaveData(Storage, All);
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) Storage->Write ## TYPE(PropertyToKey(TEXT(#VAR)), VAR)
+  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(NAME, VAR)
   REGCONFIG(true);
-  #undef KEY
+  #undef KEYEX
 
   if (Storage->OpenSubKey(L"Interface\\CopyParam", true, true))
   try
@@ -692,11 +686,11 @@ void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
   TConfiguration::LoadData(Storage);
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(PropertyToKey(TEXT(#VAR)), VAR)
+  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(NAME, VAR)
   #pragma warn -eas
   REGCONFIG(false);
   #pragma warn +eas
-  #undef KEY
+  #undef KEYEX
 
   if (Storage->OpenSubKey(L"Interface\\CopyParam", false, true))
   try
@@ -1048,7 +1042,7 @@ void __fastcall TGUIConfiguration::SetDefaultCopyParam(const TGUICopyParamType &
 //---------------------------------------------------------------------------
 bool __fastcall TGUIConfiguration::GetRememberPassword()
 {
-  return QueueRememberPassword || PuttyPassword;
+  return SessionRememberPassword || PuttyPassword;
 }
 //---------------------------------------------------------------------------
 const TCopyParamList * __fastcall TGUIConfiguration::GetCopyParamList()

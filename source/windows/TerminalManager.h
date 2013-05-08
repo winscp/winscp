@@ -52,6 +52,7 @@ public:
   void __fastcall FreeActiveTerminal();
   void __fastcall CycleTerminals(bool Forward);
   static void ConnectTerminal(TTerminal * Terminal, bool Reopen);
+  void __fastcall SetActiveTerminalWithAutoReconnect(TTerminal * value);
   void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
@@ -103,6 +104,7 @@ private:
   void __fastcall CreateLogMemo();
   void __fastcall FreeLogMemo();
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
+  void __fastcall DoSetActiveTerminal(TTerminal * value, bool AutoReconnect);
   void __fastcall SetActiveTerminal(TTerminal * value);
   void __fastcall SetLogMemo(TLogMemo * value);
   void __fastcall UpdateAll();

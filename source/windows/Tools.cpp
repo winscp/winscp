@@ -843,13 +843,39 @@ typedef struct {
 
 typedef BOOL (*WINHTTPGETDEFAULTPROXYCONFIGURATION)(WINHTTP_PROXY_INFO * pProxyInfo);
 typedef BOOL (*WINHTTPGETIEPROXYCONFIGFORCURRENTUSER)(
-  WINHTTP_CURRENT_USER_IE_PROXY_CONFIG * pProxyConfig);
+  IN OUT WINHTTP_CURRENT_USER_IE_PROXY_CONFIG * pProxyConfig);
+  WINHTTP_CURRENT_USER_IE_PROXY_CONFIG IEProxyInfo;
+static HMODULE WinHTTP = NULL;
+static WINHTTPGETDEFAULTPROXYCONFIGURATION WinHttpGetDefaultProxyConfiguration = NULL;
+static WINHTTPGETIEPROXYCONFIGFORCURRENTUSER WinHttpGetIEProxyConfigForCurrentUser = NULL;
+//---------------------------------------------------------------------------
+static bool __fastcall GetProxyUrlFromIE(UnicodeString & Proxy)
+{
+  bool Result = false;
+  memset(&IEProxyInfo, 0, sizeof(IEProxyInfo));
+  if ((WinHttpGetIEProxyConfigForCurrentUser != NULL) &&
+      WinHttpGetIEProxyConfigForCurrentUser(&IEProxyInfo))
+  {
+    if (IEProxyInfo.lpszProxy != NULL)
+    {
+      Proxy = IEProxyInfo.lpszProxy;
+      GlobalFree(IEProxyInfo.lpszProxy);
+      Result = true;
+    }
+    if (IEProxyInfo.lpszAutoConfigUrl != NULL)
+    {
+      GlobalFree(IEProxyInfo.lpszAutoConfigUrl);
+    }
+    if (IEProxyInfo.lpszProxyBypass != NULL)
+    {
+      GlobalFree(IEProxyInfo.lpszProxyBypass);
+    }
+  }
+  return Result;
+}
 //---------------------------------------------------------------------------
 bool __fastcall AutodetectProxyUrl(UnicodeString & Proxy)
 {
-  static HMODULE WinHTTP = NULL;
-  static WINHTTPGETDEFAULTPROXYCONFIGURATION WinHttpGetDefaultProxyConfiguration = NULL;
-  static WINHTTPGETIEPROXYCONFIGFORCURRENTUSER WinHttpGetIEProxyConfigForCurrentUser = NULL;
 
   bool Result = true;
 
@@ -921,26 +947,7 @@ bool __fastcall AutodetectProxyUrl(UnicodeString & Proxy)
        WinHttpGetProxyForUrl() */
     if (!Result)
     {
-      WINHTTP_CURRENT_USER_IE_PROXY_CONFIG IEProxyInfo;
-      memset(&IEProxyInfo, 0, sizeof(IEProxyInfo));
-      if ((WinHttpGetIEProxyConfigForCurrentUser != NULL) &&
-          WinHttpGetIEProxyConfigForCurrentUser(&IEProxyInfo))
-      {
-        if (IEProxyInfo.lpszProxy != NULL)
-        {
-          Proxy = IEProxyInfo.lpszProxy;
-          GlobalFree(IEProxyInfo.lpszProxy);
-          Result = true;
-        }
-        if (IEProxyInfo.lpszAutoConfigUrl != NULL)
-        {
-          GlobalFree(IEProxyInfo.lpszAutoConfigUrl);
-        }
-        if (IEProxyInfo.lpszProxyBypass != NULL)
-        {
-          GlobalFree(IEProxyInfo.lpszProxyBypass);
-        }
-      }
+      Result = GetProxyUrlFromIE(Proxy);
     }
 
     // We can also use WinHttpGetProxyForUrl, but it is lengthy

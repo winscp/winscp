@@ -106,6 +106,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnHistoryChange = DirViewHistoryChange
       OnDisplayProperties = RemoteDirViewDisplayProperties
       OnRead = RemoteDirViewRead
+      Items.ItemData = {}
     end
     object RemoteDriveView: TUnixDriveView
       Left = 0

@@ -2748,7 +2748,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
          (Data.SessionName, ExtractFileName(FileName)));
       if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) == qaOK)
       {
-        TTerminalManager::Instance()->ActiveTerminal = Data.Terminal;
+        TTerminalManager::Instance()->SetActiveTerminalWithAutoReconnect(Data.Terminal);
       }
       else
       {
@@ -3585,7 +3585,7 @@ void __fastcall TCustomScpExplorerForm::Idle()
     {
       if (FRefreshRemoteDirectory)
       {
-        if ((Terminal != NULL) && Terminal->Active)
+        if ((Terminal != NULL) && (Terminal->Status == ssOpened))
         {
           Terminal->RefreshDirectory();
         }
@@ -3601,7 +3601,7 @@ void __fastcall TCustomScpExplorerForm::Idle()
       {
         TManagedTerminal * ManagedTerminal =
           dynamic_cast<TManagedTerminal *>(Terminal);
-        if ((ManagedTerminal != NULL) && Terminal->Active &&
+        if ((ManagedTerminal != NULL) && (Terminal->Status == ssOpened) &&
             (Now() - ManagedTerminal->DirectoryLoaded >
                WinConfiguration->RefreshRemotePanelInterval))
         {
@@ -5491,19 +5491,28 @@ void __fastcall TCustomScpExplorerForm::ShowExtendedException(
     PopupTrayBalloon(Terminal, L"", qtError, E);
   }
 
+  // particularly prevent opening new session from jump list,
+  // while exception is shown
+  NonVisualDataModule->StartBusy();
   try
   {
     ShowExtendedExceptionEx(Terminal, E);
   }
   __finally
   {
+    NonVisualDataModule->EndBusy();
     FTrayIcon->CancelBalloon();
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalReady()
 {
-  UpdateSessionTab(SessionsPageControl->ActivePage);
+  // cannot rely on active page being page for active terminal,
+  // as it can happen that active page is the "new session" page
+  // (e.g. when reconnecting active terminal, while login dialog
+  // invoked from "new session" page is modal)
+  int ActiveTerminalIndex = TTerminalManager::Instance()->ActiveTerminalIndex;
+  UpdateSessionTab(SessionsPageControl->Pages[ActiveTerminalIndex]);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::InactiveTerminalException(
@@ -6558,8 +6567,8 @@ UnicodeString __fastcall TCustomScpExplorerForm::FileStatusBarText(
     FMTLOAD(FILE_INFO_FORMAT,
       (FormatBytes(FileInfo.SelectedSize),
        FormatBytes(FileInfo.FilesSize),
-       FormatFloat(L"#,##0", FileInfo.SelectedCount),
-       FormatFloat(L"#,##0", FileInfo.FilesCount)));
+       FormatNumber(FileInfo.SelectedCount),
+       FormatNumber(FileInfo.FilesCount)));
 
   if ((FileInfo.HiddenCount > 0) || (FileInfo.FilteredCount > 0))
   {
@@ -7739,11 +7748,15 @@ bool __fastcall TCustomScpExplorerForm::HandleMouseWheel(WPARAM WParam, LPARAM L
   {
     TPoint Point(LOWORD(LParam), HIWORD(LParam));
     TWinControl * Control = FindVCLWindow(Point);
-    TCustomForm * Form = ValidParentForm(Control);
-    Result = (Form == this);
+    Result = (Control != NULL);
     if (Result)
     {
-      SendMessage(Control->Handle, WM_MOUSEWHEEL, WParam, LParam);
+      TCustomForm * Form = ValidParentForm(Control);
+      Result = (Form == this);
+      if (Result)
+      {
+        SendMessage(Control->Handle, WM_MOUSEWHEEL, WParam, LParam);
+      }
     }
   }
   return Result;

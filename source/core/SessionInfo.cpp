@@ -994,12 +994,6 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
           Bugs += UnicodeString(BugFlags[Data->Bug[(TSshBug)Index]])+(Index<BUG_COUNT-1?L",":L"");
         }
         ADF(L"SSH Bugs: %s", (Bugs));
-        Bugs = L"";
-        for (int Index = 0; Index < SFTP_BUG_COUNT; Index++)
-        {
-          Bugs += UnicodeString(BugFlags[Data->SFTPBug[(TSftpBug)Index]])+(Index<SFTP_BUG_COUNT-1?L",":L"");
-        }
-        ADF(L"SFTP Bugs: %s", (Bugs));
         ADF(L"Return code variable: %s; Lookup user groups: %s",
           ((Data->DetectReturnVar ? UnicodeString(L"Autodetect") : Data->ReturnVar),
            BugFlags[Data->LookupUserGroups]));
@@ -1012,6 +1006,16 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
           (Data->ListingCommand,
            BooleanToEngStr(Data->IgnoreLsWarnings),
            BooleanToEngStr(Data->Scp1Compatibility)));
+      }
+      if (Data->FSProtocol == fsSFTP)
+      {
+        UnicodeString Bugs;
+        for (int Index = 0; Index < SFTP_BUG_COUNT; Index++)
+        {
+          Bugs += UnicodeString(BugFlags[Data->SFTPBug[(TSftpBug)Index]])+(Index<SFTP_BUG_COUNT-1?L",":L"");
+        }
+        ADF(L"SFTP Bugs: %s", (Bugs));
+        ADF(L"SFTP Server: %s", ((Data->SftpServer.IsEmpty()? UnicodeString(L"default") : Data->SftpServer)));
       }
       if (Data->FSProtocol == fsFTP)
       {

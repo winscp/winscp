@@ -6,7 +6,7 @@ object AuthenticateForm: TAuthenticateForm
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'AuthenticateForm'
-  ClientHeight = 316
+  ClientHeight = 359
   ClientWidth = 375
   Color = clBtnFace
   Constraints.MinHeight = 200
@@ -26,7 +26,7 @@ object AuthenticateForm: TAuthenticateForm
     Left = 0
     Top = 0
     Width = 375
-    Height = 26
+    Height = 44
     Align = alClient
     Columns = <
       item
@@ -46,9 +46,9 @@ object AuthenticateForm: TAuthenticateForm
   end
   object PasswordPanel: TPanel
     Left = 0
-    Top = 26
+    Top = 44
     Width = 375
-    Height = 208
+    Height = 233
     Align = alBottom
     AutoSize = True
     BevelOuter = bvNone
@@ -122,12 +122,12 @@ object AuthenticateForm: TAuthenticateForm
     end
     object SavePasswordPanel: TPanel
       Left = 0
-      Top = 139
+      Top = 164
       Width = 375
       Height = 25
       Align = alTop
       BevelOuter = bvNone
-      TabOrder = 1
+      TabOrder = 2
       object SavePasswordCheck: TCheckBox
         Left = 14
         Top = 6
@@ -141,12 +141,12 @@ object AuthenticateForm: TAuthenticateForm
     end
     object ButtonsPanel: TPanel
       Left = 0
-      Top = 164
+      Top = 189
       Width = 375
       Height = 44
       Align = alTop
       BevelOuter = bvNone
-      TabOrder = 2
+      TabOrder = 3
       DesignSize = (
         375
         44)
@@ -181,10 +181,29 @@ object AuthenticateForm: TAuthenticateForm
         OnClick = HelpButtonClick
       end
     end
+    object SessionRememberPasswordPanel: TPanel
+      Left = 0
+      Top = 139
+      Width = 375
+      Height = 25
+      Align = alTop
+      BevelOuter = bvNone
+      TabOrder = 1
+      object SessionRememberPasswordCheck: TCheckBox
+        Left = 14
+        Top = 6
+        Width = 275
+        Height = 17
+        Caption = '&Remember password for this session'
+        Checked = True
+        State = cbChecked
+        TabOrder = 0
+      end
+    end
   end
   object BannerPanel: TPanel
     Left = 0
-    Top = 234
+    Top = 277
     Width = 375
     Height = 82
     Align = alBottom

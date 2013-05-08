@@ -139,3 +139,7 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Scope = "member", Target = "WinSCP.Logger.#GetProcessStartTime(System.Diagnostics.Process)")]
 [assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.Logger.#GetTotalProcessorTime(System.Diagnostics.Process)")]
 [assembly: SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Scope = "member", Target = "WinSCP.Logger.#GetTotalProcessorTime(System.Diagnostics.Process)")]
+[assembly: SuppressMessage("Microsoft.Usage", "CA2217:DoNotMarkEnumsWithFlags", Scope = "type", Target = "WinSCP.FileMapAccess")]
+[assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#CreateFileMapping(Microsoft.Win32.SafeHandles.SafeFileHandle,System.IntPtr,WinSCP.FileMapProtection,System.Int32,System.Int32,System.String)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#MapViewOfFile(Microsoft.Win32.SafeHandles.SafeFileHandle,WinSCP.FileMapAccess,System.UInt32,System.UInt32,System.UIntPtr)")]
+[assembly: SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke", Scope = "member", Target = "WinSCP.ExeSessionProcess.#InitializeConsole()")]

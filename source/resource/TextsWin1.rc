@@ -119,6 +119,8 @@ BEGIN
         CLOSE_SESSIONS_WORKSPACE, "Terminate all sessions and close application without saving a workspace?\n\nPress 'No' to enable automatic saving of the workspace."
         IMPORT_SESSIONS, "You have stored sessions/sites in %s.\n\nDo you want to import them into WinSCP?\n\n(You can import them anytime later from Login dialog)|PuTTY SSH client|Filezilla FTP client|%s and %s"
         IMPORT_CONFIGURATION, "Importing configuration will overwrite all your preferences and sites.\n\nDo you want to continue?"
+        ALL_BUTTON, "A&ll"
+        YES_TO_ALL_BUTTON, "Yes to A&ll"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         APP_CAPTION, "%s - %s"

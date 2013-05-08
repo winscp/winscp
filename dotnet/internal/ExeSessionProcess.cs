@@ -6,6 +6,7 @@ using System.IO;
 using System.Threading;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices;
 
 namespace WinSCP
 {
@@ -127,7 +128,11 @@ namespace WinSCP
 
                 _logger.WriteLine("Started process {0}", _process.Id);
 
-                _job.AddProcess(_process.Handle);
+                if (_session.GuardProcessWithJob)
+                {
+                    _job = new Job();
+                    _job.AddProcess(_process.Handle);
+                }
 
                 _thread = new Thread(ProcessEvents);
                 _thread.IsBackground = true;
@@ -375,8 +380,6 @@ namespace WinSCP
                 Random random = new Random();
                 int process = Process.GetCurrentProcess().Id;
 
-                bool uniqEvent;
-
                 do
                 {
                     if (attempts > MaxAttempts)
@@ -387,20 +390,24 @@ namespace WinSCP
                     int instanceNumber = random.Next(1000);
 
                     _instanceName = string.Format(CultureInfo.InvariantCulture, "_{0}_{1}", process, instanceNumber);
-                    _requestEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ConsoleEventRequest + _instanceName, out uniqEvent);
-                    if (!uniqEvent)
+                    _logger.WriteLine("Trying event {0}", _instanceName);
+                    if (!TryCreateEvent(ConsoleEventRequest + _instanceName, out _requestEvent))
                     {
+                        _logger.WriteLine("Event {0} is not unique", _instanceName);
                         _requestEvent.Close();
                         _requestEvent = null;
                     }
                     else
                     {
+                        _logger.WriteLine("Event {0} is unique", _instanceName);
                         _responseEvent = CreateEvent(ConsoleEventResponse + _instanceName);
                         _cancelEvent = CreateEvent(ConsoleEventCancel + _instanceName);
                         string fileMappingName = ConsoleMapping + _instanceName;
-                        _fileMapping = UnsafeNativeMethods.CreateFileMapping(
-                            new SafeFileHandle(new IntPtr(-1), true), IntPtr.Zero, 0x04 /*readwrite*/, 0,
-                            ConsoleCommStruct.Size, fileMappingName);
+                        _fileMapping = CreateFileMapping(fileMappingName);
+                        if (Marshal.GetLastWin32Error() == UnsafeNativeMethods.ERROR_ALREADY_EXISTS)
+                        {
+                            throw new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "File mapping {0} already exists", fileMappingName));
+                        }
                         if (_fileMapping.IsInvalid)
                         {
                             throw new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "Cannot create file mapping {0}", fileMappingName));
@@ -408,7 +415,7 @@ namespace WinSCP
                     }
                     ++attempts;
                 }
-                while (!uniqEvent);
+                while (_requestEvent == null);
 
                 using (ConsoleCommStruct commStruct = AcquireCommStruct())
                 {
@@ -417,16 +424,30 @@ namespace WinSCP
             }
         }
 
+        private static SafeFileHandle CreateFileMapping(string fileMappingName)
+        {
+            return
+                UnsafeNativeMethods.CreateFileMapping(
+                    new SafeFileHandle(new IntPtr(-1), true), IntPtr.Zero, FileMapProtection.PageReadWrite, 0,
+                    ConsoleCommStruct.Size, fileMappingName);
+        }
+
         private ConsoleCommStruct AcquireCommStruct()
         {
             return new ConsoleCommStruct(_session, _fileMapping);
         }
 
-        private EventWaitHandle CreateEvent(string name)
+        private static bool TryCreateEvent(string name, out EventWaitHandle ev)
         {
             bool createdNew;
-            EventWaitHandle ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew);
-            if (!createdNew)
+            ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew);
+            return createdNew;
+        }
+
+        private EventWaitHandle CreateEvent(string name)
+        {
+            EventWaitHandle ev;
+            if (!TryCreateEvent(name, out ev))
             {
                 throw new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "Event {0} already exists", name));
             }
@@ -637,6 +658,6 @@ namespace WinSCP
         private string _incompleteLine;
         private readonly List<string> _input = new List<string>();
         private AutoResetEvent _inputEvent = new AutoResetEvent(false);
-        private Job _job = new Job();
+        private Job _job;
     }
 }

@@ -2136,8 +2136,8 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     {
       LanguageTag = FORMAT(L" (%s)", (LanguageTag));
     }
-    UnicodeString Error = FMTLOAD(SFTP_ERROR_FORMAT2, (MessageStr,
-      int(Code), LanguageTag, ServerMessage, int(Packet->RequestType)));
+    UnicodeString Error = FMTLOAD(SFTP_ERROR_FORMAT3, (MessageStr,
+      int(Code), LanguageTag, ServerMessage));
     FTerminal->TerminalError(NULL, Error);
     return 0;
   }
@@ -3715,13 +3715,25 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(UnicodeString & FileName,
     {
       Answers |= qaRetry;
     }
-    TQueryButtonAlias Aliases[3];
+    TQueryButtonAlias Aliases[5];
     Aliases[0].Button = qaRetry;
     Aliases[0].Alias = LoadStr(APPEND_BUTTON);
+    Aliases[0].GroupWith = qaNo;
+    Aliases[0].GrouppedShiftState = TShiftState() << ssAlt;
     Aliases[1].Button = qaAll;
     Aliases[1].Alias = LoadStr(YES_TO_NEWER_BUTTON);
+    Aliases[1].GroupWith = qaYes;
+    Aliases[1].GrouppedShiftState = TShiftState() << ssCtrl;
     Aliases[2].Button = qaIgnore;
     Aliases[2].Alias = LoadStr(RENAME_BUTTON);
+    Aliases[2].GroupWith = qaNo;
+    Aliases[2].GrouppedShiftState = TShiftState() << ssCtrl;
+    Aliases[3].Button = qaYesToAll;
+    Aliases[3].GroupWith = qaYes;
+    Aliases[3].GrouppedShiftState = TShiftState() << ssShift;
+    Aliases[4].Button = qaNoToAll;
+    Aliases[4].GroupWith = qaNo;
+    Aliases[4].GrouppedShiftState = TShiftState() << ssShift;
     TQueryParams QueryParams(qpNeverAskAgainCheck);
     QueryParams.NoBatchAnswers = qaIgnore | qaRetry | qaAll;
     QueryParams.Aliases = Aliases;
@@ -4476,6 +4488,8 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
     {
       if (!OpenParams->Confirmed && (OpenType & SSH_FXF_EXCL) && FTerminal->Active)
       {
+        FTerminal->LogEvent(FORMAT(L"Cannot create new file \"%s\", checking if it exists already", (OpenParams->RemoteFileName)));
+
         bool ThrowOriginal = false;
 
         // When exclusive opening of file fails, try to detect if file exists.

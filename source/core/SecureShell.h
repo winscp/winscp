@@ -46,6 +46,7 @@ private:
   int FWaiting;
   bool FSimple;
   bool FNoConnectionResponse;
+  bool FCollectPrivateKeyUsage;
 
   unsigned PendLen;
   unsigned PendSize;
@@ -128,6 +129,7 @@ public:
   unsigned long __fastcall MaxPacketSize();
   void __fastcall ClearStdError();
   bool __fastcall GetStoredCredentialsTried();
+  void __fastcall EnableUsage();
 
   void __fastcall RegisterReceiveHandler(TNotifyEvent Handler);
   void __fastcall UnregisterReceiveHandler(TNotifyEvent Handler);

@@ -89,7 +89,7 @@ void __fastcall FlashOnBackground()
   assert(Application);
   if (!ForcedOnForeground && !ForegroundTask())
   {
-    FlashWindow(Application->Handle, true);
+    FlashWindow(Application->MainFormHandle, true);
   }
 }
 //---------------------------------------------------------------------------

@@ -60,6 +60,7 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FSocketEvent = CreateEvent(NULL, false, false, NULL);
   FFrozen = false;
   FSimple = false;
+  FCollectPrivateKeyUsage = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
@@ -664,7 +665,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
   {
     if (FSessionData->AuthKIPassword && !FSessionData->Password.IsEmpty() &&
         !FStoredPasswordTriedForKI && (Prompts->Count == 1) &&
-        !bool(Prompts->Objects[0]))
+        FLAGCLEAR(int(Prompts->Objects[0]), pupEcho))
     {
       LogEvent(L"Using stored password.");
       FUI->Information(LoadStr(AUTH_PASSWORD), false);
@@ -1152,9 +1153,12 @@ int __fastcall TSecureShell::TranslateAuthenticationMessage(UnicodeString & Mess
 
   int Result = TranslatePuttyMessage(Translation, LENOF(Translation), Message);
 
-  if ((Result == 2) || (Result == 3) || (Result == 4))
+  if (FCollectPrivateKeyUsage &&
+      ((Result == 2) || (Result == 3) || (Result == 4)))
   {
-    Configuration->Usage->Inc(L"OpenedSessionsPrivateKey");
+    Configuration->Usage->Inc(L"OpenedSessionsPrivateKey2");
+    // once only
+    FCollectPrivateKeyUsage = false;
   }
 
   return Result;
@@ -2031,4 +2035,9 @@ bool __fastcall TSecureShell::GetStoredCredentialsTried()
 bool __fastcall TSecureShell::GetReady()
 {
   return FOpened && (FWaiting == 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::EnableUsage()
+{
+  FCollectPrivateKeyUsage = true;
 }

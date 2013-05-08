@@ -804,13 +804,25 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(UnicodeString & FileName,
     {
       Answers |= qaRetry;
     }
-    TQueryButtonAlias Aliases[3];
+    TQueryButtonAlias Aliases[5];
     Aliases[0].Button = qaRetry;
     Aliases[0].Alias = LoadStr(RESUME_BUTTON);
+    Aliases[0].GroupWith = qaNo;
+    Aliases[0].GrouppedShiftState = TShiftState() << ssAlt;
     Aliases[1].Button = qaAll;
     Aliases[1].Alias = LoadStr(YES_TO_NEWER_BUTTON);
+    Aliases[1].GroupWith = qaYes;
+    Aliases[1].GrouppedShiftState = TShiftState() << ssCtrl;
     Aliases[2].Button = qaIgnore;
     Aliases[2].Alias = LoadStr(RENAME_BUTTON);
+    Aliases[2].GroupWith = qaNo;
+    Aliases[2].GrouppedShiftState = TShiftState() << ssCtrl;
+    Aliases[3].Button = qaYesToAll;
+    Aliases[3].GroupWith = qaYes;
+    Aliases[3].GrouppedShiftState = TShiftState() << ssShift;
+    Aliases[4].Button = qaNoToAll;
+    Aliases[4].GroupWith = qaNo;
+    Aliases[4].GrouppedShiftState = TShiftState() << ssShift;
     TQueryParams QueryParams(qpNeverAskAgainCheck);
     QueryParams.Aliases = Aliases;
     QueryParams.AliasesCount = LENOF(Aliases);

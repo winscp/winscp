@@ -29,7 +29,7 @@ bool __fastcall DoImportSessionsDialog()
   SessionListsList->Add(PuttyImportSessionList.get());
   SessionListsList->Add(FilezillaImportSessionList.get());
 
-  bool ImportKeys = false;
+  bool ImportKeys = true;
   std::auto_ptr<TImportSessionsDialog> ImportSessionsDialog(
     new TImportSessionsDialog(Application, SessionListsList.get()));
 

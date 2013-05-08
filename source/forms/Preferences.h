@@ -104,7 +104,6 @@ __published:
   TCheckBox *QueueAutoPopupCheck;
   TCheckBox *QueueCheck;
   TCheckBox *DDAllowMoveInitCheck;
-  TCheckBox *RememberPasswordCheck;
   TCheckBox *ConfirmResumeCheck;
   TTabSheet *StorageSheet;
   TGroupBox *StorageGroup;
@@ -256,6 +255,8 @@ __published:
   TTabSheet *PanelLocalSheet;
   TGroupBox *LocalPanelGroup;
   TCheckBox *SystemContextMenuCheck;
+  TGroupBox *PasswordGroupBox;
+  TCheckBox *SessionRememberPasswordCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

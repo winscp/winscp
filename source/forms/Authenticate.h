@@ -33,6 +33,8 @@ __published:
   TLabel *InstructionsLabel;
   TLabel *PromptLabel2;
   TPasswordEdit *PromptEdit2;
+  TPanel *SessionRememberPasswordPanel;
+  TCheckBox *SessionRememberPasswordCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall FormResize(TObject *Sender);

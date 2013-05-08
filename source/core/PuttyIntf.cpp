@@ -128,7 +128,7 @@ int get_userpass_input(prompts_t * p, unsigned char * /*in*/, int /*inlen*/)
     for (int Index = 0; Index < int(p->n_prompts); Index++)
     {
       prompt_t * Prompt = p->prompts[Index];
-      Prompts->AddObject(Prompt->prompt, (TObject *)Prompt->echo);
+      Prompts->AddObject(Prompt->prompt, (TObject *)(FLAGMASK(Prompt->echo, pupEcho)));
       Results->AddObject(L"", (TObject *)Prompt->result_len);
     }
 

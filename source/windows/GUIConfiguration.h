@@ -160,7 +160,7 @@ private:
   int FMaxWatchDirectories;
   TDateTime FIgnoreCancelBeforeFinish;
   bool FQueueAutoPopup;
-  bool FQueueRememberPassword;
+  bool FSessionRememberPassword;
   int FQueueTransfersLimit;
   bool FQueueKeepDoneItems;
   int FQueueKeepDoneItemsFor;
@@ -196,7 +196,6 @@ protected:
   virtual bool __fastcall GetRememberPassword();
   const TCopyParamList * __fastcall GetCopyParamList();
   void __fastcall SetCopyParamList(const TCopyParamList * value);
-  static UnicodeString __fastcall PropertyToKey(const UnicodeString Property);
   virtual void __fastcall DefaultLocalized();
   int __fastcall GetCopyParamIndex();
   TGUICopyParamType __fastcall GetCurrentCopyParam();
@@ -233,7 +232,7 @@ public:
   __property bool QueueKeepDoneItems = { read = FQueueKeepDoneItems, write = SetQueueKeepDoneItems };
   __property int QueueKeepDoneItemsFor = { read = FQueueKeepDoneItemsFor, write = SetQueueKeepDoneItemsFor };
   __property bool QueueAutoPopup = { read = FQueueAutoPopup, write = FQueueAutoPopup };
-  __property bool QueueRememberPassword = { read = FQueueRememberPassword, write = FQueueRememberPassword };
+  __property bool SessionRememberPassword = { read = FSessionRememberPassword, write = FSessionRememberPassword };
   __property LCID Locale = { read = GetLocale, write = SetLocale };
   __property LCID LocaleSafe = { read = GetLocale, write = SetLocaleSafe };
   __property TStrings * Locales = { read = GetLocales };

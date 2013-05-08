@@ -95,7 +95,7 @@ namespace WinSCP
         {
             _session = session;
             _fileMapping = fileMapping;
-            _ptr = UnsafeNativeMethods.MapViewOfFile(_fileMapping, 0x1F /*FILE_MAP_ALL_ACCESS*/, 0, 0, UIntPtr.Zero);
+            _ptr = UnsafeNativeMethods.MapViewOfFile(_fileMapping, FileMapAccess.FileMapAllAccess, 0, 0, UIntPtr.Zero);
             _payloadPtr = new IntPtr(_ptr.ToInt64() + 12);
             _header = (ConsoleCommHeader)Marshal.PtrToStructure(_ptr, typeof(ConsoleCommHeader));
         }

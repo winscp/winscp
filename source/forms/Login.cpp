@@ -1063,7 +1063,7 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(IPvGroup, SshProtocol || FtpProtocol);
       EnableControl(IPAutoButton, IPvGroup->Enabled && SshProtocol);
 
-      // stored sessions sheet
+      // sites sheet
       EnableControl(SessionTree, SessionTree->Items->Count > 0);
       if (SitesIncrementalSearchLabel->Visible != !FSitesIncrementalSearch.IsEmpty())
       {
@@ -1234,7 +1234,10 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(UtfCombo, (SftpProtocol || FtpProtocol) && EnvironmentSheet->Enabled);
       EnableControl(UtfLabel, UtfCombo->Enabled);
       // should be enabled for fsSFTP (SCP fallback) too, but it would cause confusion
-      EnableControl(TimeDifferenceEdit, ((FtpProtocol || ScpProtocol) && EnvironmentSheet->Enabled));
+      EnableControl(TimeDifferenceEdit,
+        ((FtpProtocol && (ComboAutoSwitchSave(FtpUseMlsdCombo) == asOff)) ||
+         ScpProtocol) &&
+        EnvironmentSheet->Enabled);
       EnableControl(TimeDifferenceLabel, TimeDifferenceEdit->Enabled);
       EnableControl(TimeDifferenceHoursLabel, TimeDifferenceEdit->Enabled);
       EnableControl(TimeDifferenceMinutesEdit, TimeDifferenceEdit->Enabled);
@@ -1263,6 +1266,9 @@ void __fastcall TLoginDialog::UpdateControls()
 
       // environment/ftp
       FtpSheet->Enabled = Advanced && FtpProtocol;
+      EnableControl(FtpListAllCombo,
+        (ComboAutoSwitchSave(FtpUseMlsdCombo) == asOff));
+      EnableControl(FtpListAllLabel, FtpListAllCombo->Enabled);
       EnableControl(FtpForcePasvIpCombo,
         FtpPasvModeCheck->Checked &&
         (IPAutoButton->Checked || IPv4Button->Checked));

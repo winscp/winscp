@@ -398,7 +398,7 @@ void __fastcall TUnixDirView::LoadFiles()
           // this is out of date
           // (missing columns and does not update then file properties are loaded)
           Item->ImageIndex = File->IconIndex;
-          Item->SubItems->Add((!File->IsDirectory ? FormatFloat(L"#,##0", File->Size) : UnicodeString()));
+          Item->SubItems->Add(!File->IsDirectory ? FormatBytes(File->Size, FormatSizeBytes, FormatSizeBytes) : UnicodeString());
           Item->SubItems->Add(File->UserModificationStr);
           Item->SubItems->Add(File->RightsStr);
           Item->SubItems->Add(File->Owner.DisplayText);

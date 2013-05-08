@@ -1884,5 +1884,16 @@ bool __fastcall IsDirectoryWriteable(const UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall FormatNumber(__int64 Number)
+{
+  return FormatFloat(L"#,##0", Number);
+}
+//---------------------------------------------------------------------------
+// simple alternative to FormatBytes
+UnicodeString __fastcall FormatSize(__int64 Size)
+{
+  return FormatNumber(Size);
+}
+//---------------------------------------------------------------------------
 // Suppress warning about unused constants in DateUtils.hpp
 #pragma warn -8080

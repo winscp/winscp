@@ -21,6 +21,7 @@ TStoredSessionList * StoredSessions = NULL;
 TQueryButtonAlias::TQueryButtonAlias()
 {
   OnClick = NULL;
+  GroupWith = -1;
 }
 //---------------------------------------------------------------------------
 TQueryParams::TQueryParams(unsigned int AParams, UnicodeString AHelpKeyword)

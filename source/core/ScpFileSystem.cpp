@@ -1276,6 +1276,36 @@ void __fastcall TSCPFileSystem::SpaceAvailable(const UnicodeString Path,
 //---------------------------------------------------------------------------
 // transfer protocol
 //---------------------------------------------------------------------------
+unsigned int __fastcall TSCPFileSystem::ConfirmOverwrite(
+  UnicodeString & FileName, TOperationSide Side,
+  const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
+  int Params, TFileOperationProgressType * OperationProgress)
+{
+  TQueryButtonAlias Aliases[3];
+  Aliases[0].Button = qaAll;
+  Aliases[0].Alias = LoadStr(YES_TO_NEWER_BUTTON);
+  Aliases[0].GroupWith = qaYes;
+  Aliases[0].GrouppedShiftState = TShiftState() << ssCtrl;
+  Aliases[1].Button = qaYesToAll;
+  Aliases[1].GroupWith = qaYes;
+  Aliases[1].GrouppedShiftState = TShiftState() << ssShift;
+  Aliases[2].Button = qaNoToAll;
+  Aliases[2].GroupWith = qaNo;
+  Aliases[2].GrouppedShiftState = TShiftState() << ssShift;
+  TQueryParams QueryParams(qpNeverAskAgainCheck);
+  QueryParams.Aliases = Aliases;
+  QueryParams.AliasesCount = LENOF(Aliases);
+  unsigned int Answer;
+  SUSPEND_OPERATION
+  (
+    Answer = FTerminal->ConfirmFileOverwrite(
+      FileName, FileParams,
+      qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll | qaAll,
+      &QueryParams, Side, CopyParam, Params, OperationProgress);
+  );
+  return Answer;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SCPResponse(bool * GotLastLine)
 {
   // Taken from scp.c response() and modified
@@ -1434,19 +1464,8 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
             FileParams.DestSize = File->Size;
             FileParams.DestTimestamp = File->Modification;
 
-            TQueryButtonAlias Aliases[1];
-            Aliases[0].Button = qaAll;
-            Aliases[0].Alias = LoadStr(YES_TO_NEWER_BUTTON);
-            TQueryParams QueryParams(qpNeverAskAgainCheck);
-            QueryParams.Aliases = Aliases;
-            QueryParams.AliasesCount = LENOF(Aliases);
-            SUSPEND_OPERATION
-            (
-              Answer = FTerminal->ConfirmFileOverwrite(
-                FileNameOnly, &FileParams,
-                qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll | qaAll,
-                &QueryParams, osRemote, CopyParam, Params, OperationProgress);
-            );
+            Answer = ConfirmOverwrite(FileNameOnly, osRemote,
+              &FileParams, CopyParam, Params, OperationProgress);
           }
 
           switch (Answer)
@@ -2331,20 +2350,9 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                   FileParams.DestTimestamp = UnixToDateTime(MTime,
                     FTerminal->SessionData->DSTMode);
 
-                  TQueryButtonAlias Aliases[1];
-                  Aliases[0].Button = qaAll;
-                  Aliases[0].Alias = LoadStr(YES_TO_NEWER_BUTTON);
-                  TQueryParams QueryParams(qpNeverAskAgainCheck);
-                  QueryParams.Aliases = Aliases;
-                  QueryParams.AliasesCount = LENOF(Aliases);
-
-                  unsigned int Answer;
-                  SUSPEND_OPERATION (
-                    Answer = FTerminal->ConfirmFileOverwrite(
-                      OperationProgress->FileName, &FileParams,
-                      qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll | qaAll,
-                      &QueryParams, osLocal, CopyParam, Params, OperationProgress);
-                  );
+                  unsigned int Answer =
+                    ConfirmOverwrite(OperationProgress->FileName, osLocal,
+                      &FileParams, CopyParam, Params, OperationProgress);
 
                   switch (Answer)
                   {

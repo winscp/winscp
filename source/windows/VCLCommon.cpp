@@ -572,6 +572,13 @@ TAutoSwitch __fastcall CheckBoxAutoSwitchSave(TCheckBox * CheckBox)
   }
 }
 //---------------------------------------------------------------------------
+static const wchar_t PathWordDelimiters[] = L"\\/ ;,.";
+//---------------------------------------------------------------------------
+static bool IsPathWordDelimiter(wchar_t Ch)
+{
+  return (wcschr(PathWordDelimiters, Ch) != NULL);
+}
+//---------------------------------------------------------------------------
 // Windows algorithm is as follows (tested on W2k):
 // right:
 //   is_delimiter(current)
@@ -583,17 +590,22 @@ TAutoSwitch __fastcall CheckBoxAutoSwitchSave(TCheckBox * CheckBox)
 //   right(left(current) + 1)
 int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
 {
-  wchar_t Delimiters[] = L"\\/ ;,.";
   int Result;
   UnicodeString ACh(Ch, Len);
   if (Code == WB_ISDELIMITER)
   {
     // we return negacy of what WinAPI docs says
-    Result = (wcschr(Delimiters, ACh[Current + 1]) == NULL);
+    Result = !IsPathWordDelimiter(ACh[Current + 1]);
   }
   else if (Code == WB_LEFT)
   {
-    Result = ACh.SubString(1, Current - 1).LastDelimiter(Delimiters);
+    // skip consecutive delimiters
+    while ((Current > 0) &&
+           IsPathWordDelimiter(ACh[Current]))
+    {
+      Current--;
+    }
+    Result = ACh.SubString(1, Current - 1).LastDelimiter(PathWordDelimiters);
   }
   else if (Code == WB_RIGHT)
   {
@@ -604,7 +616,7 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
     }
     else
     {
-      const wchar_t * P = wcspbrk(ACh.c_str() + Current - 1, Delimiters);
+      const wchar_t * P = wcspbrk(ACh.c_str() + Current - 1, PathWordDelimiters);
       if (P == NULL)
       {
         Result = Len;
@@ -612,6 +624,12 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
       else
       {
         Result = P - ACh.c_str() + 1;
+        // skip consecutive delimiters
+        while ((Result < Len) &&
+               IsPathWordDelimiter(ACh[Result + 1]))
+        {
+          Result++;
+        }
       }
     }
   }

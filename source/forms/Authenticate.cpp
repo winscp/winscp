@@ -202,7 +202,8 @@ TList * __fastcall TAuthenticateForm::GeneratePrompt(UnicodeString Instructions,
     TLabel * Label = GenerateLabel(Current, Prompts->Strings[Index]);
     Current += Label->Height + FPromptEditGap;
 
-    TCustomEdit * Edit = GenerateEdit(Current, bool(Prompts->Objects[Index]),
+    bool Echo = FLAGSET(int(Prompts->Objects[Index]), pupEcho);
+    TCustomEdit * Edit = GenerateEdit(Current, Echo,
       int(Results->Objects[Index]));
     Result->Add(Edit);
     Label->FocusControl = Edit;
@@ -224,19 +225,32 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
 
   try
   {
+    bool ShowSessionRememberPasswordPanel = false;
     bool ShowSavePasswordPanel = false;
     TSessionData * Data = NULL;
-    if (((Kind == pkPassword) || (Kind == pkTIS) || (Kind == pkCryptoCard) ||
-         (Kind == pkKeybInteractive)) &&
-        (Prompts->Count == 1) && !bool(Prompts->Objects[0]) &&
-        StoredCredentialsTried)
+    bool PasswordPrompt =
+      ((Kind == pkPassword) || (Kind == pkTIS) || (Kind == pkCryptoCard) ||
+       (Kind == pkKeybInteractive)) &&
+      (Prompts->Count == 1) && FLAGCLEAR(int(Prompts->Objects[0]), pupEcho);
+    if (PasswordPrompt && StoredCredentialsTried)
     {
       Data = StoredSessions->FindSame(FSessionData);
       ShowSavePasswordPanel = (Data != NULL) && !Data->Password.IsEmpty();
     }
+    // do not offer to rememeber password,
+    // if we are offering to save the password to stored session
+    if (!ShowSavePasswordPanel &&
+        (Prompts->Count == 1) &&
+        FLAGSET(int(Prompts->Objects[0]), pupRemember) &&
+        ALWAYS_TRUE(PasswordPrompt))
+    {
+      ShowSessionRememberPasswordPanel = true;
+    }
 
     SavePasswordCheck->Checked = false;
     SavePasswordPanel->Visible = ShowSavePasswordPanel;
+    SessionRememberPasswordCheck->Checked = false;
+    SessionRememberPasswordPanel->Visible = ShowSessionRememberPasswordPanel;
 
     if (PasswordPanel->AutoSize)
     {
@@ -263,12 +277,17 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
       {
         TCustomEdit * Edit = reinterpret_cast<TCustomEdit *>(Edits->Items[Index]);
         Results->Strings[Index] = Edit->Text;
+
+        Prompts->Objects[Index] = (TObject *)
+          ((int(Prompts->Objects[Index]) & ~pupRemember) |
+           FLAGMASK(((Index == 0) && SessionRememberPasswordCheck->Checked), pupRemember));
       }
 
       if (SavePasswordCheck->Checked)
       {
         assert(Data != NULL);
         assert(Results->Count >= 1);
+        FSessionData->Password = Results->Strings[0];
         Data->Password = Results->Strings[0];
         // modified only, explicit
         StoredSessions->Save(false, true);

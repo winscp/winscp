@@ -126,11 +126,16 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
   }
 }
 //---------------------------------------------------------------------------
-#define LASTELEM(ELEM) \
-  ELEM.SubString(ELEM.LastDelimiter(L".>")+1, ELEM.Length() - ELEM.LastDelimiter(L".>"))
+UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Property)
+{
+  // no longer useful
+  int P = Property.LastDelimiter(L".>");
+  return Property.SubString(P + 1, Property.Length() - P);
+}
+//---------------------------------------------------------------------------
 #define BLOCK(KEY, CANCREATE, BLOCK) \
   if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
-#define KEY(TYPE, VAR) KEYEX(TYPE, VAR, VAR)
+#define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
     KEY(String,   RandomSeedFile); \
@@ -151,18 +156,18 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
     KEY(Bool,     CollectUsage); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
-    KEYEX(Bool,  PermanentLogging, Logging); \
-    KEYEX(String,PermanentLogFileName, LogFileName); \
+    KEYEX(Bool,  PermanentLogging, L"Logging"); \
+    KEYEX(String,PermanentLogFileName, L"LogFileName"); \
     KEY(Bool,    LogFileAppend); \
     KEY(Integer, LogWindowLines); \
     KEY(Integer, LogProtocol); \
-    KEYEX(Bool,  PermanentLogActions, LogActions); \
-    KEYEX(String,PermanentActionsLogFileName, ActionsLogFileName); \
+    KEYEX(Bool,  PermanentLogActions, L"LogActions"); \
+    KEYEX(String,PermanentActionsLogFileName, L"ActionsLogFileName"); \
   );
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SaveData(THierarchicalStorage * Storage, bool /*All*/)
 {
-  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(LASTELEM(UnicodeString(TEXT(#NAME))), VAR)
+  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(NAME, VAR)
   REGCONFIG(true);
   #undef KEYEX
 
@@ -272,7 +277,7 @@ void __fastcall TConfiguration::Import(const UnicodeString & FileName)
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadData(THierarchicalStorage * Storage)
 {
-  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(LASTELEM(UnicodeString(TEXT(#NAME))), VAR)
+  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(NAME, VAR)
   #pragma warn -eas
   REGCONFIG(false);
   #pragma warn +eas

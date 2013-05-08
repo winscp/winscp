@@ -15,8 +15,6 @@
 //---------------------------------------------------------------------------
 enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour };
 #define CIPHER_COUNT (cipArcfour+1)
-enum TProtocol { ptRaw, ptTelnet, ptRLogin, ptSSH };
-#define PROTOCOL_COUNT (ptSSH+1)
 // explicit values to skip obsoleted fsExternalSSH, fsExternalSFTP
 enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDAV = 6 };
 #define FSPROTOCOL_COUNT (fsWebDAV+1)
@@ -36,7 +34,6 @@ enum TSessionSource { ssNone, ssStored, ssStoredModified };
 //---------------------------------------------------------------------------
 extern const wchar_t CipherNames[CIPHER_COUNT][10];
 extern const wchar_t KexNames[KEX_COUNT][20];
-extern const wchar_t ProtocolNames[PROTOCOL_COUNT][10];
 extern const wchar_t SshProtList[][10];
 extern const wchar_t ProxyMethodList[][10];
 extern const TCipher DefaultCipherList[CIPHER_COUNT];
@@ -50,6 +47,9 @@ extern const int FtpPortNumber;
 extern const int FtpsImplicitPortNumber;
 extern const int HTTPPortNumber;
 extern const int HTTPSPortNumber;
+extern const int TelnetPortNumber;
+extern const UnicodeString PuttySshProtocol;
+extern const UnicodeString PuttyTelnetProtocol;
 //---------------------------------------------------------------------------
 class TStoredSessionList;
 //---------------------------------------------------------------------------
@@ -83,7 +83,7 @@ private:
   bool FClearAliases;
   TEOLType FEOLType;
   UnicodeString FPublicKeyFile;
-  TProtocol FProtocol;
+  UnicodeString FPuttyProtocol;
   TFSProtocol FFSProtocol;
   bool FModified;
   UnicodeString FLocalDirectory;
@@ -194,6 +194,7 @@ private:
   TKex __fastcall GetKex(int Index) const;
   void __fastcall SetPublicKeyFile(UnicodeString value);
 
+  void __fastcall SetPuttyProtocol(UnicodeString value);
   bool __fastcall GetCanLogin();
   void __fastcall SetPingIntervalDT(TDateTime value);
   TDateTime __fastcall GetPingIntervalDT();
@@ -204,7 +205,6 @@ private:
   bool __fastcall HasSessionName();
   UnicodeString __fastcall GetDefaultSessionName();
   UnicodeString __fastcall GetSessionUrl();
-  void __fastcall SetProtocol(TProtocol value);
   void __fastcall SetFSProtocol(TFSProtocol value);
   UnicodeString __fastcall GetFSProtocolStr();
   void __fastcall SetLocalDirectory(UnicodeString value);
@@ -322,7 +322,7 @@ public:
   void __fastcall Default();
   void __fastcall NonPersistant();
   void __fastcall Load(THierarchicalStorage * Storage);
-  void __fastcall ImportFromFilezilla(_di_IXMLNode Node);
+  void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
     const TSessionData * Default = NULL);
   void __fastcall SaveRecryptedPasswords(THierarchicalStorage * Storage);
@@ -367,7 +367,7 @@ public:
   __property TCipher Cipher[int Index] = { read=GetCipher, write=SetCipher };
   __property TKex Kex[int Index] = { read=GetKex, write=SetKex };
   __property UnicodeString PublicKeyFile  = { read=FPublicKeyFile, write=SetPublicKeyFile };
-  __property TProtocol Protocol  = { read=FProtocol, write=SetProtocol };
+  __property UnicodeString PuttyProtocol  = { read=FPuttyProtocol, write=SetPuttyProtocol };
   __property TFSProtocol FSProtocol  = { read=FFSProtocol, write=SetFSProtocol  };
   __property UnicodeString FSProtocolStr  = { read=GetFSProtocolStr };
   __property bool Modified  = { read=FModified, write=FModified };
@@ -525,6 +525,7 @@ private:
   bool __fastcall IsFolderOrWorkspace(const UnicodeString & Name, bool Workspace);
   TSessionData * __fastcall CheckIsInFolderOrWorkspaceAndResolve(
     TSessionData * Data, const UnicodeString & Name);
+  void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path);
 };
 //---------------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TSessionData * SessionData);

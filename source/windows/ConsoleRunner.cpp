@@ -1222,7 +1222,8 @@ void __fastcall TConsoleRunner::ScriptTerminalPromptUser(TTerminal * /*Terminal*
     Print(Prompt);
 
     UnicodeString AResult = Results->Strings[Index]; // useless
-    Result = DoInput(AResult, bool(Prompts->Objects[Index]), InputTimeout(), true);
+    bool Echo = FLAGSET(int(Prompts->Objects[Index]), pupEcho);
+    Result = DoInput(AResult, Echo, InputTimeout(), true);
     Results->Strings[Index] = AResult;
   }
 }

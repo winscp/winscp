@@ -118,6 +118,8 @@
 #define EDITOR_AUTO_CONFIG      1356
 #define IMPORT_SESSIONS         1357
 #define IMPORT_CONFIGURATION    1358
+#define ALL_BUTTON              1359
+#define YES_TO_ALL_BUTTON       1360
 
 #define WIN_INFORMATION_STRINGS 1400
 #define APP_CAPTION             1401
