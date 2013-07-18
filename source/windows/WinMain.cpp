@@ -42,6 +42,10 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
       !dynamic_cast<TSessionData *>(DataList->Items[0])->CanLogin ||
       DefaultsOnly)
   {
+    // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
+    // so we should not get here with more then one site.
+    // Though we should be good, if we ever do.
+    assert(DataList->Count <= 1);
     if (!DoLoginDialog(StoredSessions, DataList, loStartup))
     {
       DataList->Clear();
@@ -515,6 +519,8 @@ int __fastcall Execute()
         bool Url = false;
         TObjectList * DataList = new TObjectList();
         GetLoginData(AutoStartSession, Params, DataList, DownloadFile, Url);
+        // from now on, we do not support runtime locale change
+        GUIConfiguration->CanApplyLocaleImmediately = false;
         try
         {
           if (DataList->Count > 0)
@@ -560,7 +566,10 @@ int __fastcall Execute()
               }
               else
               {
+                // from now on, we do not support runtime interface change
+                CustomWinConfiguration->CanApplyInterfaceImmediately = false;
                 TCustomScpExplorerForm * ScpExplorer = CreateScpExplorer();
+                CustomWinConfiguration->AppliedInterface = CustomWinConfiguration->Interface;
                 try
                 {
                   // moved inside try .. __finally, because it can fail as well

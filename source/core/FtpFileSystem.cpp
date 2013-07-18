@@ -23,7 +23,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
-  FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION)
+  FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION, L"")
 //---------------------------------------------------------------------------
 const int DummyCodeClass = 8;
 const int DummyTimeoutCode = 801;
@@ -1813,7 +1813,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 {
-  FileList->Clear();
+  FileList->Reset();
   // FZAPI does not list parent directory, add it
   FileList->AddFile(new TRemoteParentDirectory(FTerminal));
 
@@ -1836,8 +1836,7 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 {
   // whole below "-a" logic is for LIST,
   // if we know we are going to use MLSD, skip it
-  if (FTerminal->SessionData->FtpUseMlsd &&
-      (FServerCapabilities->GetCapability(mlsd_command) == yes))
+  if (FFileZillaIntf->UsingMlsd())
   {
     DoReadDirectory(FileList);
   }
@@ -2758,7 +2757,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     else if (FLastCommand == SYST)
     {
       assert(FSystem.IsEmpty());
-      // Possitive reply to "SYST" must be 215, see RFC 959
+      // Positive reply to "SYST" must be 215, see RFC 959
       if (FLastCode == 215)
       {
         FSystem = FLastResponse->Text.TrimRight();
@@ -3446,7 +3445,7 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
              int(Entry->Dir), int(Entry->Link), Entry->Time.Year, Entry->Time.Month, Entry->Time.Day,
              Entry->Time.Hour, Entry->Time.Minute, int(Entry->Time.HasTime),
              int(Entry->Time.HasSeconds), int(Entry->Time.HasDate)));
-        throw ETerminal(&E, FMTLOAD(LIST_LINE_ERROR, (EntryData)));
+        throw ETerminal(&E, FMTLOAD(LIST_LINE_ERROR, (EntryData)), HELP_LIST_LINE_ERROR);
       }
 
       FFileList->AddFile(File);

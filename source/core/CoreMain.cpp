@@ -39,6 +39,16 @@ TQueryParams::TQueryParams(unsigned int AParams, UnicodeString AHelpKeyword)
   HelpKeyword = AHelpKeyword;
 }
 //---------------------------------------------------------------------------
+TQueryParams::TQueryParams(const TQueryParams & Source)
+{
+  Assign(Source);
+}
+//---------------------------------------------------------------------------
+void TQueryParams::Assign(const TQueryParams & Source)
+{
+  *this = Source;
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsAuthenticationPrompt(TPromptKind Kind)
 {
   return

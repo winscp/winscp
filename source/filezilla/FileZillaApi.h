@@ -350,6 +350,7 @@ public:
 #ifdef MPEXT
 	int SetCurrentPath(CServerPath path);
 	int GetCurrentPath(CServerPath & path);
+    bool __fastcall UsingMlsd();
 #endif
 
 #ifndef MPEXT_NO_CACHE

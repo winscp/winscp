@@ -193,14 +193,6 @@
 				<BuildOrder>32</BuildOrder>
 			</CppCompile>
 			<FormResources Include="forms\FullSynchronize.dfm"/>
-			<CppCompile Include="forms\GeneralSettings.cpp">
-				<BuildOrder>62</BuildOrder>
-				<Form>GeneralSettingsFrame</Form>
-				<DesignClass>TFrame</DesignClass>
-				<DependentOn>forms\GeneralSettings.h</DependentOn>
-				<BuildOrder>19</BuildOrder>
-			</CppCompile>
-			<FormResources Include="forms\GeneralSettings.dfm"/>
 			<CppCompile Include="forms\ImportSessions.cpp">
 				<BuildOrder>68</BuildOrder>
 				<Form>ImportSessionsDialog</Form>
@@ -240,14 +232,6 @@
 				<BuildOrder>1</BuildOrder>
 			</CppCompile>
 			<FormResources Include="forms\Login.dfm"/>
-			<CppCompile Include="forms\LogSettings.cpp">
-				<BuildOrder>83</BuildOrder>
-				<Form>LoggingFrame</Form>
-				<DesignClass>TFrame</DesignClass>
-				<DependentOn>forms\LogSettings.h</DependentOn>
-				<BuildOrder>0</BuildOrder>
-			</CppCompile>
-			<FormResources Include="forms\LogSettings.dfm"/>
 			<CppCompile Include="forms\MessageDlg.cpp">
 				<BuildOrder>8</BuildOrder>
 				<BuildOrder>25</BuildOrder>
@@ -310,6 +294,13 @@
 				<BuildOrder>107</BuildOrder>
 			</CppCompile>
 			<FormResources Include="forms\SelectMask.dfm"/>
+			<CppCompile Include="forms\SiteAdvanced.cpp">
+				<BuildOrder>80</BuildOrder>
+				<Form>SiteAdvancedDialog</Form>
+				<DependentOn>forms\SiteAdvanced.h</DependentOn>
+				<BuildOrder>1</BuildOrder>
+			</CppCompile>
+			<FormResources Include="forms\SiteAdvanced.dfm"/>
 			<CppCompile Include="forms\Symlink.cpp">
 				<BuildOrder>110</BuildOrder>
 				<Form>SymlinkDialog</Form>

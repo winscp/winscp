@@ -51,7 +51,10 @@ namespace WinSCP
         public string DebugLogPath { get { CheckNotDisposed(); return Logger.LogPath; } set { CheckNotDisposed(); Logger.LogPath = value; } }
         public string SessionLogPath { get { return _sessionLogPath; } set { CheckNotOpened(); _sessionLogPath = value; } }
         public string XmlLogPath { get { return _xmlLogPath; } set { CheckNotOpened(); _xmlLogPath = value; } }
+        #if DEBUG
         public bool GuardProcessWithJob { get { return _guardProcessWithJob; } set { CheckNotOpened(); _guardProcessWithJob = value; } }
+        public bool TestHandlesClosed { get { return TestHandlesClosedInternal; } set { TestHandlesClosedInternal = value; } }
+        #endif
 
         public TimeSpan Timeout { get; set; }
 
@@ -171,6 +174,11 @@ namespace WinSCP
 
                     WriteCommand("open " + SessionOptionsToOpenArguments(sessionOptions));
 
+                    string logExplanation =
+                        string.Format(CultureInfo.CurrentCulture,
+                            "(response log file {0} was not created). This could indicate lack of write permissions to the log folder or problems starting WinSCP itself.",
+                            XmlLogPath);
+
                     // Wait until the log file gets created or WinSCP terminates (in case of fatal error)
                     do
                     {
@@ -183,16 +191,16 @@ namespace WinSCP
                             _process.WriteStatus();
                             throw new SessionLocalException(this,
                                 string.Format(CultureInfo.CurrentCulture,
-                                    "WinSCP process terminated with exit code {0} and output \"{1}\", without creating a log file.",
-                                    _process.ExitCode, string.Join(Environment.NewLine, output)));
+                                    "WinSCP process terminated with exit code {0} and output \"{1}\", without responding {2}",
+                                    _process.ExitCode, string.Join(Environment.NewLine, output), logExplanation));
                         }
 
                         Thread.Sleep(50);
 
                         CheckForTimeout(
                             string.Format(CultureInfo.CurrentCulture,
-                                "Log file {0} was not created in time, please make sure WinSCP has write permissions to the folder",
-                                XmlLogPath));
+                                "WinSCP has not responded in time {0}",
+                                logExplanation));
 
                     } while (!File.Exists(XmlLogPath));
 
@@ -1433,6 +1441,8 @@ namespace WinSCP
 
         internal const string Namespace = "http://winscp.net/schema/session/1.0";
         internal Logger Logger { get; private set; }
+        internal bool GuardProcessWithJobInternal { get { return _guardProcessWithJob; } set { CheckNotOpened(); _guardProcessWithJob = value; } }
+        internal bool TestHandlesClosedInternal { get; set; }
 
         private ExeSessionProcess _process;
         private DateTime _lastOutput;

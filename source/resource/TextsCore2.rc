@@ -184,7 +184,7 @@ BEGIN
     "  Creates remote directory.\n"
     "example:\n"
     "  mkdir public_html\n"
-  SCRIPT_GET_HELP5,
+  SCRIPT_GET_HELP6,
     "get <file> [ [ <file2> ... ] <directory>\\[ <newname> ] ]\n"
     "  Downloads one or more files from remote directory to local directory.\n"
     "  If only one parameter is specified downloads the file to local working\n"
@@ -216,7 +216,7 @@ BEGIN
     "  get index.html about.html d:\\www\\\n"
     "  get public_html/index.html d:\\www\\about.*\n"
     "  get *.html *.png d:\\www\\*.bak\n"
-  SCRIPT_PUT_HELP5,
+  SCRIPT_PUT_HELP6,
     "put <file> [ [ <file2> ... ] <directory>/[ <newname> ] ]\n"
     "  Uploads one or more files from local directory to remote directory.\n"
     "  If only one parameter is specified uploads the file to remote working\n"
@@ -278,7 +278,7 @@ BEGIN
     "  option\n"
     "  option batch\n"
     "  option confirm off\n"
-  SCRIPT_SYNCHRONIZE_HELP5,
+  SCRIPT_SYNCHRONIZE_HELP6,
     "synchronize local|remote|both [ <local directory> [ <remote directory> ] ]\n"
     "  When the first parameter is 'local' synchronises local directory with\n"
     "  remote one. When the first parameter is 'remote' synchronises remote\n"
@@ -305,7 +305,7 @@ BEGIN
     "examples:\n"
     "  synchronize remote -delete\n"
     "  synchronize both d:\\www /home/martin/public_html\n"
-  SCRIPT_KEEPUPTODATE_HELP3,
+  SCRIPT_KEEPUPTODATE_HELP4,
     "keepuptodate [ <local directory> [ <remote directory> ] ]\n"
     "  Watches for changes in local directory and reflects them on remote one.\n"
     "  When directories are not specified, current working directories are\n"

@@ -51,11 +51,11 @@
 			<ProjectType>CppVCLApplication</ProjectType>
 			<UsingDelphiRTL>true</UsingDelphiRTL>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.2.1.0;InternalName=winscp;LegalCopyright=(c) 2000-2013 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.2.1.0;ReleaseType=beta;WWW=http://winscp.net/</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.2.2.0;InternalName=winscp;LegalCopyright=(c) 2000-2013 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.2.2.0;ReleaseType=beta;WWW=http://winscp.net/</VerInfo_Keys>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_MajorVer>5</VerInfo_MajorVer>
 			<VerInfo_MinorVer>2</VerInfo_MinorVer>
-			<VerInfo_Release>1</VerInfo_Release>
+			<VerInfo_Release>2</VerInfo_Release>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
@@ -82,7 +82,7 @@
 			<BCC_MonitorInlinePtrAccess>true</BCC_MonitorInlinePtrAccess>
 			<BCC_MonitorThis>true</BCC_MonitorThis>
 			<DCC_DebugDCUs>true</DCC_DebugDCUs>
-			<Debugger_DebugSourcePath>packages\my; packages\filemng;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
+			<Debugger_DebugSourcePath>packages\my; packages\filemng;..\libs\openssl\crypto\bio;..\libs\openssl\ssl;..\libs\openssl\crypto\stack;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<Defines>NDEBUG;$(Defines)</Defines>

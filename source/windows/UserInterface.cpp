@@ -406,18 +406,25 @@ void __fastcall AddMenuSeparator(TTBCustomItem * Menu)
 }
 //---------------------------------------------------------------------------
 static TComponent * LastPopupComponent = NULL;
+static TPoint LastPopupPoint(-1, -1);
 static TDateTime LastCloseUp;
 //---------------------------------------------------------------------------
 void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
   TComponent * PopupComponent)
 {
-
-  // pressing the same button within 200ms after closing its popup menu
+  // Pressing the same button within 200ms after closing its popup menu
   // does nothing.
-  // it is to immitate close-by-click behaviour. note that menu closes itself
-  // before onclick handler of button occurs
+  // It is to immitate close-by-click behaviour. Note that menu closes itself
+  // before onclick handler of button occurs.
+  // To support content menu popups, we have to check for the popup location too,
+  // to allow poping menu on different location (such as different node of TTreeView),
+  // even if there's another popup opened already (so that the time interval
+  // below does not elapse).
+  TDateTime N = Now();
+  TDateTime Diff = N - LastCloseUp;
   if ((PopupComponent == LastPopupComponent) &&
-      (Now() - LastCloseUp < TDateTime(0, 0, 0, 200)))
+      (Point == LastPopupPoint) &&
+      (Diff < TDateTime(0, 0, 0, 200)))
   {
     LastPopupComponent = NULL;
   }
@@ -438,7 +445,7 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
         // recurse not implemented yet
         assert(AItem->Count == 0);
 
-        if (!AItem->Enabled && !AItem->Visible)
+        if (!AItem->Enabled && !AItem->Visible && (AItem->Action == NULL) && (AItem->OnClick == NULL))
         {
           TTBXLabelItem * LabelItem = new TTBXLabelItem(Menu);
           // TTBXLabelItem has it's own Caption
@@ -486,6 +493,7 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
     Menu->Popup(Point.x, Point.y);
 
     LastPopupComponent = PopupComponent;
+    LastPopupPoint = Point;
     LastCloseUp = Now();
   }
 }

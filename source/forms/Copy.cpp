@@ -75,6 +75,7 @@ __fastcall TCopyDialog::TCopyDialog(
   FPresetsMenu = new TPopupMenu(this);
 
   HotTrackLabel(CopyParamLabel);
+  CopyParamListButton(TransferSettingsButton);
 
   UseSystemSettings(this);
 }

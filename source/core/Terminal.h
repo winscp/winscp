@@ -70,7 +70,7 @@ typedef void __fastcall (__closure *TInformationEvent)
 #define THROW_SKIP_FILE_NULL THROW_SKIP_FILE(NULL, L"")
 
 /* TODO : Better user interface (query to user) */
-#define FILE_OPERATION_LOOP_CUSTOM(TERMINAL, ALLOW_SKIP, MESSAGE, OPERATION) { \
+#define FILE_OPERATION_LOOP_CUSTOM(TERMINAL, ALLOW_SKIP, MESSAGE, OPERATION, HELPKEYWORD) { \
   bool DoRepeat; \
   do { \
     DoRepeat = false; \
@@ -91,7 +91,8 @@ typedef void __fastcall (__closure *TInformationEvent)
     }                                                                       \
     catch (Exception & E)                                                   \
     {                                                                       \
-      TERMINAL->FileOperationLoopQuery(E, OperationProgress, MESSAGE, ALLOW_SKIP); \
+      TERMINAL->FileOperationLoopQuery(                                     \
+        E, OperationProgress, MESSAGE, ALLOW_SKIP, L"", HELPKEYWORD);       \
       DoRepeat = true;                                                      \
     } \
   } while (DoRepeat); }
@@ -202,7 +203,8 @@ private:
   bool FEnableSecureShellUsage;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
-  unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg, unsigned int Answers);
+  unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
+    unsigned int Answers, const UnicodeString HelpKeyword = L"");
   UnicodeString __fastcall GetCurrentDirectory();
   bool __fastcall GetExceptionOnFail() const;
   const TRemoteTokenList * __fastcall GetGroups();
@@ -310,7 +312,7 @@ protected:
   TStrings * __fastcall GetFixedPaths();
   void __fastcall DoStartup();
   virtual bool __fastcall DoQueryReopen(Exception * E);
-  virtual void __fastcall FatalError(Exception * E, UnicodeString Msg);
+  virtual void __fastcall FatalError(Exception * E, UnicodeString Msg, UnicodeString HelpKeyword = L"");
   void __fastcall ResetConnection();
   virtual bool __fastcall DoPromptUser(TSessionData * Data, TPromptKind Kind,
     UnicodeString Name, UnicodeString Instructions, TStrings * Prompts,
@@ -404,7 +406,7 @@ public:
     const TRemoteProperties * Properties);
   bool __fastcall LoadFilesProperties(TStrings * FileList);
   void __fastcall TerminalError(UnicodeString Msg);
-  void __fastcall TerminalError(Exception * E, UnicodeString Msg);
+  void __fastcall TerminalError(Exception * E, UnicodeString Msg, UnicodeString HelpKeyword = L"");
   void __fastcall ReloadDirectory();
   void __fastcall RefreshDirectory();
   void __fastcall RenameFile(const UnicodeString FileName, const UnicodeString NewName);
@@ -440,7 +442,7 @@ public:
   UnicodeString __fastcall FileUrl(const UnicodeString FileName);
   bool __fastcall FileOperationLoopQuery(Exception & E,
     TFileOperationProgressType * OperationProgress, const UnicodeString Message,
-    bool AllowSkip, UnicodeString SpecialRetry = L"");
+    bool AllowSkip, UnicodeString SpecialRetry = L"", UnicodeString HelpKeyword = L"");
   TUsableCopyParamAttrs __fastcall UsableCopyParamAttrs(int Params);
   bool __fastcall QueryReopen(Exception * E, int Params,
     TFileOperationProgressType * OperationProgress);

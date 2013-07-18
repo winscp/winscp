@@ -622,22 +622,26 @@ void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
             else if ((Record.EventType == KEY_EVENT) &&
                      Record.Event.KeyEvent.bKeyDown)
             {
-              wchar_t CStr[2];
-              CStr[0] = Record.Event.KeyEvent.uChar.AsciiChar;
-              CStr[1] = L'\0';
-              CharUpperBuff(CStr, 1);
-              wchar_t C = CStr[0];
-              if (C == 27)
+              // This happens when Shift key is pressed
+              if (Record.Event.KeyEvent.uChar.AsciiChar != 0)
               {
-                Event.Result = Event.Cancel;
-              }
-              else if ((wcschr(Event.Options, C) != NULL) &&
-                       ((Record.Event.KeyEvent.dwControlKeyState &
-                         (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED |
-                         RIGHT_ALT_PRESSED)) == 0))
+                wchar_t CStr[2];
+                CStr[0] = Record.Event.KeyEvent.uChar.AsciiChar;
+                CStr[1] = L'\0';
+                CharUpperBuff(CStr, 1);
+                wchar_t C = CStr[0];
+                if (C == 27)
+                {
+                  Event.Result = Event.Cancel;
+                }
+                else if ((wcschr(Event.Options, C) != NULL) &&
+                         ((Record.Event.KeyEvent.dwControlKeyState &
+                           (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED |
+                           RIGHT_ALT_PRESSED)) == 0))
 
-              {
-                Event.Result = wcschr(Event.Options, C) - Event.Options + 1;
+                {
+                  Event.Result = wcschr(Event.Options, C) - Event.Options + 1;
+                }
               }
             }
           }

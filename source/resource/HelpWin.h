@@ -50,5 +50,6 @@
 #define HELP_EDITOR_AUTO_CONFIG      "ui_pref_editor#auto"
 #define HELP_IMPORT_SESSIONS         "ui_import"
 #define HELP_IMPORT_CONFIGURATION    "config"
+#define HELP_DELETE_FILE             "task_delete"
 
 #endif // TextsWin

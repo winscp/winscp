@@ -6,6 +6,9 @@
 #include "..\\resource\\TextsWin1.rc"
 #include "..\\resource\\TextsWin2.rc"
 
+Z_1_SITE ICON "..\\resource\\Site.ico"
+Z_2_SITE_FOLDER ICON "..\\resource\\SiteFolder.ico"
+Z_3_WORKSPACE ICON "..\\resource\\Workspace.ico"
 Z_ICON_LOG_SMALL ICON "..\\resource\\Log16.ico"
 Z_ICON_LOG_BIG ICON "..\\resource\\Log32.ico"
 Z_ICON_EDITOR_SMALL ICON "..\\resource\\Editor16.ico"

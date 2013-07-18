@@ -61,7 +61,7 @@
   }
 
 #define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
-  FILE_OPERATION_LOOP_CUSTOM(this, ALLOW_SKIP, MESSAGE, OPERATION)
+  FILE_OPERATION_LOOP_CUSTOM(this, ALLOW_SKIP, MESSAGE, OPERATION, L"")
 //---------------------------------------------------------------------------
 struct TMoveFileParams
 {
@@ -279,7 +279,7 @@ public:
     UnicodeString Name, UnicodeString Instructions, TStrings * Prompts,
     TStrings * Results);
   virtual void __fastcall DisplayBanner(const UnicodeString & Banner);
-  virtual void __fastcall FatalError(Exception * E, UnicodeString Msg);
+  virtual void __fastcall FatalError(Exception * E, UnicodeString Msg, UnicodeString HelpContext);
   virtual void __fastcall HandleExtendedException(Exception * E);
   virtual void __fastcall Closed();
 
@@ -364,9 +364,9 @@ void __fastcall TTunnelUI::DisplayBanner(const UnicodeString & Banner)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTunnelUI::FatalError(Exception * E, UnicodeString Msg)
+void __fastcall TTunnelUI::FatalError(Exception * E, UnicodeString Msg, UnicodeString HelpKeyword)
 {
-  throw ESshFatal(E, Msg);
+  throw ESshFatal(E, Msg, HelpKeyword);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTunnelUI::HandleExtendedException(Exception * E)
@@ -389,7 +389,7 @@ public:
   inline __fastcall TCallbackGuard(TTerminal * FTerminal);
   inline __fastcall ~TCallbackGuard();
 
-  void __fastcall FatalError(Exception * E, const UnicodeString & Msg);
+  void __fastcall FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword);
   inline void __fastcall Verify();
   void __fastcall Dismiss();
 
@@ -421,7 +421,7 @@ __fastcall TCallbackGuard::~TCallbackGuard()
   delete FFatalError;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCallbackGuard::FatalError(Exception * E, const UnicodeString & Msg)
+void __fastcall TCallbackGuard::FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword)
 {
   assert(FGuarding);
 
@@ -431,7 +431,7 @@ void __fastcall TCallbackGuard::FatalError(Exception * E, const UnicodeString & 
   if (dynamic_cast<ECallbackGuardAbort *>(E) == NULL)
   {
     delete FFatalError;
-    FFatalError = new ExtException(E, Msg);
+    FFatalError = new ExtException(E, Msg, HelpKeyword);
   }
 
   // silently abort what we are doing.
@@ -1107,26 +1107,39 @@ unsigned int __fastcall TTerminal::QueryUserException(const UnicodeString Query,
   TQueryType QueryType)
 {
   unsigned int Result;
-  TStrings * MoreMessages = new TStringList();
-  try
+  UnicodeString ExMessage;
+  if (ALWAYS_TRUE(ExceptionMessage(E, ExMessage) || !Query.IsEmpty()))
   {
-    if (!E->Message.IsEmpty() && !Query.IsEmpty())
+    TStrings * MoreMessages = new TStringList();
+    try
     {
-      MoreMessages->Add(E->Message);
-    }
+      if (!ExMessage.IsEmpty() && !Query.IsEmpty())
+      {
+        MoreMessages->Add(ExMessage);
+      }
 
-    ExtException * EE = dynamic_cast<ExtException*>(E);
-    if ((EE != NULL) && (EE->MoreMessages != NULL))
-    {
-      MoreMessages->AddStrings(EE->MoreMessages);
+      ExtException * EE = dynamic_cast<ExtException*>(E);
+      if ((EE != NULL) && (EE->MoreMessages != NULL))
+      {
+        MoreMessages->AddStrings(EE->MoreMessages);
+      }
+
+      TQueryParams HelpKeywordOverrideParams;
+      if (Params != NULL)
+      {
+        HelpKeywordOverrideParams.Assign(*Params);
+      }
+      HelpKeywordOverrideParams.HelpKeyword =
+        MergeHelpKeyword(HelpKeywordOverrideParams.HelpKeyword, GetExceptionHelpKeyword(E));
+
+      Result = QueryUser(!Query.IsEmpty() ? Query : ExMessage,
+        MoreMessages->Count ? MoreMessages : NULL,
+        Answers, &HelpKeywordOverrideParams, QueryType);
     }
-    Result = QueryUser(!Query.IsEmpty() ? Query : UnicodeString(E->Message),
-      MoreMessages->Count ? MoreMessages : NULL,
-      Answers, Params, QueryType);
-  }
-  __finally
-  {
-    delete MoreMessages;
+    __finally
+    {
+      delete MoreMessages;
+    }
   }
   return Result;
 }
@@ -1291,9 +1304,10 @@ void __fastcall TTerminal::TerminalError(UnicodeString Msg)
   TerminalError(NULL, Msg);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::TerminalError(Exception * E, UnicodeString Msg)
+void __fastcall TTerminal::TerminalError(
+  Exception * E, UnicodeString Msg, UnicodeString HelpKeyword)
 {
-  throw ETerminal(E, Msg);
+  throw ETerminal(E, Msg, HelpKeyword);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::DoQueryReopen(Exception * E)
@@ -1366,7 +1380,7 @@ bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
   TFileOperationProgressType * OperationProgress, const UnicodeString Message,
-  bool AllowSkip, UnicodeString SpecialRetry)
+  bool AllowSkip, UnicodeString SpecialRetry, UnicodeString HelpKeyword)
 {
   bool Result = false;
   Log->AddException(&E);
@@ -1383,6 +1397,7 @@ bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
       FLAGMASK(SkipPossible, (qaSkip | qaAll)) |
       FLAGMASK(!SpecialRetry.IsEmpty(), qaYes);
     TQueryParams Params(qpAllowContinueOnError | FLAGMASK(!AllowSkip, qpFatalAbort));
+    Params.HelpKeyword = HelpKeyword;
     TQueryButtonAlias Aliases[2];
     int AliasCount = 0;
 
@@ -1782,7 +1797,7 @@ void __fastcall TTerminal::FatalAbort()
   FatalError(NULL, "");
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::FatalError(Exception * E, UnicodeString Msg)
+void __fastcall TTerminal::FatalError(Exception * E, UnicodeString Msg, UnicodeString HelpKeyword)
 {
   bool SecureShellActive = (FSecureShell != NULL) && FSecureShell->Active;
   if (Active || SecureShellActive)
@@ -1809,11 +1824,11 @@ void __fastcall TTerminal::FatalError(Exception * E, UnicodeString Msg)
 
   if (FCallbackGuard != NULL)
   {
-    FCallbackGuard->FatalError(E, Msg);
+    FCallbackGuard->FatalError(E, Msg, HelpKeyword);
   }
   else
   {
-    throw ESshFatal(E, Msg);
+    throw ESshFatal(E, Msg, HelpKeyword);
   }
 }
 //---------------------------------------------------------------------------
@@ -1823,7 +1838,7 @@ void __fastcall TTerminal::CommandError(Exception * E, const UnicodeString Msg)
 }
 //---------------------------------------------------------------------------
 unsigned int __fastcall TTerminal::CommandError(Exception * E, const UnicodeString Msg,
-  unsigned int Answers)
+  unsigned int Answers, const UnicodeString HelpKeyword)
 {
   // may not be, particularly when TTerminal::Reopen is being called
   // from within OnShowExtendedException handler
@@ -1831,7 +1846,7 @@ unsigned int __fastcall TTerminal::CommandError(Exception * E, const UnicodeStri
   unsigned int Result = 0;
   if (E && E->InheritsFrom(__classid(EFatal)))
   {
-    FatalError(E, Msg);
+    FatalError(E, Msg, HelpKeyword);
   }
   else if (E && E->InheritsFrom(__classid(EAbort)))
   {
@@ -1840,11 +1855,11 @@ unsigned int __fastcall TTerminal::CommandError(Exception * E, const UnicodeStri
   }
   else if (ExceptionOnFail)
   {
-    throw ECommand(E, Msg);
+    throw ECommand(E, Msg, HelpKeyword);
   }
   else if (!Answers)
   {
-    ECommand * ECmd = new ECommand(E, Msg);
+    ECommand * ECmd = new ECommand(E, Msg, HelpKeyword);
     try
     {
       HandleExtendedException(ECmd);
@@ -1864,7 +1879,7 @@ unsigned int __fastcall TTerminal::CommandError(Exception * E, const UnicodeStri
     }
     else
     {
-      TQueryParams Params(qpAllowContinueOnError);
+      TQueryParams Params(qpAllowContinueOnError, HelpKeyword);
       TQueryButtonAlias Aliases[1];
       if (CanSkip)
       {
@@ -2003,7 +2018,7 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(const UnicodeString File
     }
     if (ALWAYS_TRUE(QueryParams->HelpKeyword.IsEmpty()))
     {
-      QueryParams->HelpKeyword = L"ui_overwrite";
+      QueryParams->HelpKeyword = HELP_OVERWRITE;
     }
     Result = QueryUser(Message, NULL, Answers, QueryParams);
     switch (Result)
@@ -2182,8 +2197,11 @@ void __fastcall TTerminal::ReloadDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::RefreshDirectory()
 {
-  if (SessionData->CacheDirectories &&
-      FDirectoryCache->HasNewerFileList(CurrentDirectory, FFiles->Timestamp))
+  if (!SessionData->CacheDirectories)
+  {
+    LogEvent(L"Not refreshing directory, caching is off.");
+  }
+  else if (FDirectoryCache->HasNewerFileList(CurrentDirectory, FFiles->Timestamp))
   {
     // Second parameter was added to allow (rather force) using the cache.
     // Before, the directory was reloaded always, it seems useless,
@@ -2976,7 +2994,7 @@ void __fastcall TTerminal::DoCustomCommandOnFile(UnicodeString FileName,
         // until transaction ends. But we need to know CurrentDirectory to
         // expand !/ pattern.
         // Doing this only, when current directory of the main and secondary shell differs,
-        // what would be the case before the first file in transation.
+        // what would be the case before the first file in transaction.
         // Otherwise we would be reading pwd before every time as the
         // CustomCommandOnFile on its own sets FReadCurrentDirectoryPending
         if (FCommandSession->FReadCurrentDirectoryPending)
@@ -4243,7 +4261,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
       }
 
       // can we expect that ProcessDirectory would take so little time
-      // that we can pospone showing progress window until anything actually happens?
+      // that we can postpone showing progress window until anything actually happens?
       bool Cached = FLAGSET(Params, spUseCache) && SessionData->CacheDirectories &&
         FDirectoryCache->HasFileList(RemoteDirectory);
 

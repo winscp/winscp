@@ -18,12 +18,13 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
-  FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION)
+  FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION, L"")
 //---------------------------------------------------------------------------
 #define SSH_FX_OK                                 0
 #define SSH_FX_EOF                                1
 #define SSH_FX_NO_SUCH_FILE                       2
 #define SSH_FX_PERMISSION_DENIED                  3
+#define SSH_FX_FAILURE                            4
 #define SSH_FX_OP_UNSUPPORTED                     8
 
 #define SSH_FXP_INIT               1
@@ -798,7 +799,7 @@ public:
     while (Index < Dump.Length())
     {
       char C = Dump[Index];
-      if (((C >= '0') && (C <= '9')) || ((C >= 'A') && (C <= 'Z')))
+      if (IsHex(C))
       {
         if (Byte[0] == '\0')
         {
@@ -2136,9 +2137,20 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     {
       LanguageTag = FORMAT(L" (%s)", (LanguageTag));
     }
+    UnicodeString HelpKeyword;
+    switch (Code)
+    {
+      case SSH_FX_FAILURE:
+        HelpKeyword = HELP_SFTP_STATUS_FAILURE;
+        break;
+
+      case SSH_FX_PERMISSION_DENIED:
+        HelpKeyword = HELP_SFTP_STATUS_PERMISSION_DENIED;
+        break;
+    }
     UnicodeString Error = FMTLOAD(SFTP_ERROR_FORMAT3, (MessageStr,
       int(Code), LanguageTag, ServerMessage));
-    FTerminal->TerminalError(NULL, Error);
+    FTerminal->TerminalError(NULL, Error, HelpKeyword);
     return 0;
   }
   else
@@ -2179,7 +2191,7 @@ inline int __fastcall TSFTPFileSystem::PacketLength(unsigned char * LenBuf, int 
       Message = FMTLOAD(SFTP_PACKET_TOO_BIG_INIT_EXPLAIN,
         (Message, DisplayableStr(LenString)));
     }
-    FTerminal->FatalError(NULL, Message);
+    FTerminal->FatalError(NULL, Message, HELP_SFTP_PACKET_TOO_BIG);
   }
   return Length;
 }
@@ -2437,7 +2449,7 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path,
     if (!Path.IsEmpty())
     {
       // this condition/block was outside (before) current block
-      // but it dod not work when Path was empty
+      // but it did not work when Path was empty
       if (!BaseDir.IsEmpty())
       {
         APath = UnixIncludeTrailingBackslash(BaseDir);
@@ -2984,7 +2996,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
   // moved before SSH_FXP_OPENDIR, so directory listing does not retain
   // old data (e.g. parent directory) when reading fails
-  FileList->Clear();
+  FileList->Reset();
 
   TSFTPPacket Packet(SSH_FXP_OPENDIR);
   RawByteString Handle;
@@ -3122,7 +3134,9 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
       if (Failure)
       {
-        throw Exception(FMTLOAD(EMPTY_DIRECTORY, (FileList->Directory)));
+        throw ExtException(
+          NULL, FMTLOAD(EMPTY_DIRECTORY, (FileList->Directory)),
+          HELP_EMPTY_DIRECTORY);
       }
     }
   }
@@ -3381,7 +3395,7 @@ void __fastcall TSFTPFileSystem::ChangeFileProperties(const UnicodeString FileNa
     }
 
     // SFTP can change owner and group at the same time only, not individually.
-    // Fortunatelly we know current owner/group, so if only one is present,
+    // Fortunately we know current owner/group, so if only one is present,
     // we can supplement the other.
     TRemoteProperties Properties(*AProperties);
     if (Properties.Valid.Contains(vpGroup) &&
@@ -4015,7 +4029,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
 
       TDateTime Modification = UnixToDateTime(MTime, FTerminal->SessionData->DSTMode);
 
-      // Will we use ASCII of BINARY file tranfer?
+      // Will we use ASCII of BINARY file transfer?
       TFileMasks::TParams MaskParams;
       MaskParams.Size = Size;
       MaskParams.Modification = Modification;
@@ -4283,9 +4297,11 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
 
         // originally this was before CLOSE (last __finally statement),
         // on VShell it failed
-        FILE_OPERATION_LOOP(FMTLOAD(RENAME_AFTER_RESUME_ERROR,
+        FILE_OPERATION_LOOP_CUSTOM(FTerminal, true,
+          FMTLOAD(RENAME_AFTER_RESUME_ERROR,
             (UnixExtractFileName(OpenParams.RemoteFileName), DestFileName)),
-          RenameFile(OpenParams.RemoteFileName, DestFileName);
+          RenameFile(OpenParams.RemoteFileName, DestFileName),
+          HELP_RENAME_AFTER_RESUME_ERROR
         );
       }
 
@@ -4316,7 +4332,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
             SendPacket(&PropertiesRequest);
           }
           bool Resend = false;
-          FILE_OPERATION_LOOP(FMTLOAD(PRESERVE_TIME_PERM_ERROR, (DestFileName)),
+          FILE_OPERATION_LOOP_CUSTOM(FTerminal, true, FMTLOAD(PRESERVE_TIME_PERM_ERROR2, (DestFileName)),
             try
             {
               TSFTPPacket DummyResponse;
@@ -4346,6 +4362,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
                 throw;
               }
             }
+            ,
+            HELP_PRESERVE_TIME_PERM_ERROR
           );
         }
         catch(Exception & E)
@@ -4556,7 +4574,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
       }
       else if (FTerminal->Active)
       {
-        // if file overwritting was confirmed, it means that the file already exists,
+        // if file overwriting was confirmed, it means that the file already exists,
         // if not, check now
         if (!OpenParams->Confirmed)
         {
@@ -4714,7 +4732,7 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const UnicodeString Directo
         SUSPEND_OPERATION (
           // here a message to user was displayed, which was not appropriate
           // when user refused to overwrite the file in subdirectory.
-          // hopefuly it won't be missing in other situations.
+          // hopefully it won't be missing in other situations.
           if (!FTerminal->HandleException(&E)) throw;
         );
       }
@@ -4921,7 +4939,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
     bool ResumeTransfer = false;
     __int64 ResumeOffset;
 
-    // Will we use ASCII of BINARY file tranfer?
+    // Will we use ASCII of BINARY file transfer?
     OperationProgress->SetAsciiTransfer(
       CopyParam->UseAsciiTransfer(FileName, osRemote, MaskParams));
     FTerminal->LogEvent(UnicodeString((OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary")) +
@@ -5084,7 +5102,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
 
         if (OverwriteMode == omOverwrite)
         {
-          // is NULL when overwritting read-only file
+          // is NULL when overwriting read-only file
           if (LocalHandle)
           {
             CloseHandle(LocalHandle);
@@ -5093,7 +5111,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
         }
         else
         {
-          // is NULL when overwritting read-only file, so following will
+          // is NULL when overwriting read-only file, so following will
           // probably fail anyway
           if (LocalHandle == NULL)
           {
@@ -5191,7 +5209,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
               if ((Missing == 0) && PrevIncomplete)
               {
                 // This can happen only if last request returned less bytes
-                // than expected, but exacly number of bytes missing to last
+                // than expected, but exactly number of bytes missing to last
                 // known file size, but actually EOF was not reached.
                 // Can happen only when filesize has changed since directory
                 // listing and server returns less bytes than requested and

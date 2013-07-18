@@ -42,7 +42,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   FOldChangeDirectory = NULL;
   FPrevTerminalClose = NULL;;
   FLastTerminal = NULL;
-  FAnyCommandExecuted = false;
+  FDirectoryChanged = false;
   OutputMemo->Color = clBlack;
   OutputMemo->Font->Color = (TColor)0x00BBBBBB; //clGray;
   FixComboBoxResizeBug(CommandEdit);
@@ -77,9 +77,9 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
       assert(FTerminal->OnChangeDirectory == DoChangeDirectory);
       FTerminal->OnChangeDirectory = FOldChangeDirectory;
       FOldChangeDirectory = NULL;
-      if (FAnyCommandExecuted)
+      if (FDirectoryChanged)
       {
-        FAnyCommandExecuted = false;
+        FDirectoryChanged = false;
         if (FTerminal->Active)
         {
           // directory would be read from EndTransaction anyway,
@@ -195,11 +195,11 @@ void __fastcall TConsoleDialog::DoExecuteCommand()
   CommandEdit->SelectAll();
   FTerminal->ExceptionOnFail = true;
   FClearExceptionOnFail = true;
+  UnicodeString CurrentDirectory = FTerminal->CurrentDirectory;
   try
   {
     UnicodeString Command = CommandEdit->Text;
-    OutputMemo->Lines->Add(FORMAT(L"%s$ %s", (FTerminal->CurrentDirectory, Command)));
-    FAnyCommandExecuted = true;
+    OutputMemo->Lines->Add(FORMAT(L"%s$ %s", (CurrentDirectory, Command)));
     Configuration->Usage->Inc(L"RemoteCommandExecutions");
     FTerminal->AnyCommand(Command, AddLine);
   }
@@ -216,6 +216,12 @@ void __fastcall TConsoleDialog::DoExecuteCommand()
       }
     }
   }
+
+  if (CurrentDirectory != FTerminal->CurrentDirectory)
+  {
+    FDirectoryChanged = true;
+  }
+
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::ExecuteCommand()

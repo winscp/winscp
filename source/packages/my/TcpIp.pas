@@ -892,4 +892,5 @@ begin
   RegisterComponents('Martin', [THttp]);
 end;
 
+initialization
 end.

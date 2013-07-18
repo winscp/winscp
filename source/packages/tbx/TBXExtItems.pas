@@ -1605,6 +1605,9 @@ var
   S: string;
   TextMetrics: TTextMetric;
   RotatedFont, SaveFont: HFont;
+  Margins: TTBXMargins;
+  ImgList: TCustomImageList;
+  ImgHeight: Integer;
 begin
   Canvas.Font := TTBViewAccess(View).GetFont;
   DoAdjustFont(Canvas.Font, 0);
@@ -1654,8 +1657,31 @@ begin
 
     {MP}
     with TTBXLabelItem(Item) do
+    begin
       if FFixedSize > 0 then
-        AWidth := FFixedSize
+        AWidth := FFixedSize;
+
+      if SectionHeader then
+      begin
+        // the same as regular menu item
+        CurrentTheme.GetMargins(MID_MENUITEM, Margins);
+
+        Inc(AWidth, Margins.LeftWidth + Margins.RightWidth);
+        Inc(AWidth,
+          GetPopupMargin(Self) + CurrentTheme.MenuImageTextSpace +
+          CurrentTheme.MenuLeftCaptionMargin + CurrentTheme.MenuRightCaptionMargin);
+        // + make sure it's always bit indented compared to menu items
+        Inc(AWidth, 2 * 8);
+
+        ImgHeight := 16;
+        ImgList := GetImageList;
+        if ImgList <> nil then ImgHeight := ImgList.Height;
+        if AHeight < ImgHeight then AHeight := ImgHeight;
+        Inc(AHeight, Margins.TopHeight + Margins.BottomHeight);
+
+        Inc(AWidth, AHeight); { Note: maybe this should be controlled by the theme }
+      end;
+    end;
   end;
 
   if AWidth < 6 then AWidth := 6;

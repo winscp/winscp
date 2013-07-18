@@ -48,7 +48,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     ModalResult = 2
     TabOrder = 5
   end
-  object SessionListView: TListView
+  object SessionListView2: TListView
     Left = 8
     Top = 35
     Width = 361
@@ -70,9 +70,9 @@ object ImportSessionsDialog: TImportSessionsDialog
     ShowHint = True
     TabOrder = 1
     ViewStyle = vsReport
-    OnInfoTip = SessionListViewInfoTip
-    OnKeyUp = SessionListViewKeyUp
-    OnMouseDown = SessionListViewMouseDown
+    OnInfoTip = SessionListView2InfoTip
+    OnKeyUp = SessionListView2KeyUp
+    OnMouseDown = SessionListView2MouseDown
   end
   object CheckAllButton: TButton
     Left = 8

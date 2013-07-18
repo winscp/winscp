@@ -157,6 +157,7 @@ public:
 
   bool __fastcall SetCurrentPath(const wchar_t * Path);
   bool __fastcall GetCurrentPath(wchar_t * Path, size_t MaxLen);
+  bool __fastcall UsingMlsd();
 
   bool __fastcall Cancel();
 

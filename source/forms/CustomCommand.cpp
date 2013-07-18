@@ -47,7 +47,7 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner,
   FCustomCommandList = CustomCommandList;
   FMode = Mode;
   FOnValidate = OnValidate;
-  HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT2));
+  HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT3));
 
   int CaptionRes;
   switch (FMode)

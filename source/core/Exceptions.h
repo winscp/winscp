@@ -9,7 +9,7 @@
 //---------------------------------------------------------------------------
 bool __fastcall ExceptionMessage(Exception * E, UnicodeString & Message);
 UnicodeString __fastcall LastSysErrorMessage();
-TStrings * ExceptionToMoreMessages(Exception * E);
+TStrings * __fastcall ExceptionToMoreMessages(Exception * E);
 //---------------------------------------------------------------------------
 enum TOnceDoneOperation { odoIdle, odoDisconnect, odoShutDown };
 //---------------------------------------------------------------------------
@@ -17,9 +17,9 @@ class ExtException : public Sysutils::Exception
 {
 public:
   __fastcall ExtException(Exception* E);
-  __fastcall ExtException(Exception* E, UnicodeString Msg);
+  __fastcall ExtException(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = L"");
   // "copy the exception", just append message to the end
-  __fastcall ExtException(UnicodeString Msg, Exception* E);
+  __fastcall ExtException(UnicodeString Msg, Exception* E, UnicodeString HelpKeyword = L"");
   __fastcall ExtException(UnicodeString Msg, UnicodeString MoreMessages, UnicodeString HelpKeyword = "");
   __fastcall ExtException(UnicodeString Msg, TStrings* MoreMessages, bool Own, UnicodeString HelpKeyword = "");
   __fastcall virtual ~ExtException(void);
@@ -47,7 +47,7 @@ private:
   class NAME : public BASE \
   { \
   public: \
-    inline __fastcall NAME(Exception* E, UnicodeString Msg) : BASE(E, Msg) { } \
+    inline __fastcall NAME(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = L"") : BASE(E, Msg, HelpKeyword) { } \
     inline __fastcall NAME(Exception* E, int Ident) : BASE(E, Ident) { } \
     inline __fastcall virtual ~NAME(void) { } \
     inline __fastcall NAME(const UnicodeString Msg, const TVarRec * Args, const int Args_Size) : BASE(Msg, Args, Args_Size) { } \
@@ -77,7 +77,7 @@ class EFatal : public ExtException
 {
 public:
   // fatal errors are always copied, new message is only appended
-  __fastcall EFatal(Exception* E, UnicodeString Msg);
+  __fastcall EFatal(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = "");
 
   __property bool ReopenQueried = { read = FReopenQueried, write = FReopenQueried };
 
@@ -91,7 +91,7 @@ private:
   class NAME : public BASE \
   { \
   public: \
-    inline __fastcall NAME(Exception* E, UnicodeString Msg) : BASE(E, Msg) { } \
+    inline __fastcall NAME(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = "") : BASE(E, Msg, HelpKeyword) { } \
     virtual ExtException * __fastcall Clone() { return new NAME(this, L""); } \
   };
 //---------------------------------------------------------------------------
@@ -120,5 +120,8 @@ public:
 //---------------------------------------------------------------------------
 Exception * __fastcall CloneException(Exception * Exception);
 void __fastcall RethrowException(Exception * E);
+UnicodeString __fastcall GetExceptionHelpKeyword(Exception * E);
+UnicodeString __fastcall MergeHelpKeyword(const UnicodeString & PrimaryHelpKeyword, const UnicodeString & SecondaryHelpKeyword);
+bool __fastcall IsInternalErrorHelpKeyword(const UnicodeString & HelpKeyword);
 //---------------------------------------------------------------------------
 #endif  // Exceptions

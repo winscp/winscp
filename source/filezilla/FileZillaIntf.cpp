@@ -518,3 +518,8 @@ inline bool __fastcall TFileZillaIntf::Check(int ReturnCode,
     return CheckError(ReturnCode, Context);
   }
 }
+//---------------------------------------------------------------------------
+bool __fastcall TFileZillaIntf::UsingMlsd()
+{
+  return FFileZillaApi->UsingMlsd();
+}

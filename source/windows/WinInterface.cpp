@@ -10,8 +10,10 @@
 #include <TextsCore.h>
 #include <TextsWin.h>
 #include <HelpWin.h>
+#include <HelpCore.h>
 #include <Interface.h>
 #include <VCLCommon.h>
+#include <Glyphs.h>
 
 #include "WinInterface.h"
 #include "CustomWinConfiguration.h"
@@ -78,27 +80,9 @@ inline void TMessageParams::Reset()
   ImageName = L"";
 }
 //---------------------------------------------------------------------------
-inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
+static bool __fastcall IsPositiveAnswer(unsigned int Answer)
 {
-  bool Result = true;
-  #define MAP_BUTTON(TYPE) if (Answer == qa ## TYPE) Button = mb ## TYPE; else
-  MAP_BUTTON(Yes)
-  MAP_BUTTON(No)
-  MAP_BUTTON(OK)
-  MAP_BUTTON(Cancel)
-  MAP_BUTTON(Abort)
-  MAP_BUTTON(Retry)
-  MAP_BUTTON(Ignore)
-  MAP_BUTTON(All)
-  MAP_BUTTON(NoToAll)
-  MAP_BUTTON(YesToAll)
-  MAP_BUTTON(Help)
-  #undef MAP_BUTTON
-  if (Answer == qaSkip) Button = mbIgnore;
-    else
-  Result = false;
-
-  return Result;
+  return (Answer == qaYes) || (Answer == qaOK) || (Answer == qaYesToAll);
 }
 //---------------------------------------------------------------------------
 static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender)
@@ -108,40 +92,31 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
   TForm * Dialog = dynamic_cast<TForm *>(CheckBox->Owner);
   assert(Dialog != NULL);
 
-  TModalResult PositiveAnswer = mrNone;
+  unsigned int PositiveAnswer = 0;
 
   if (CheckBox->Checked)
   {
     if (CheckBox->Tag > 0)
     {
-      PositiveAnswer = CheckBox->Tag - 1;
+      PositiveAnswer = CheckBox->Tag;
     }
     else
     {
-      TModalResult PositiveAnswers[] = { mrYes, mrOk, mrYesToAll };
-      for (size_t i = 0; i < LENOF(PositiveAnswers); i++)
+      for (int ii = 0; ii < Dialog->ControlCount; ii++)
       {
-        for (int ii = 0; ii < Dialog->ControlCount; ii++)
+        TButton * Button = dynamic_cast<TButton *>(Dialog->Controls[ii]);
+        if (Button != NULL)
         {
-          TButton * Button = dynamic_cast<TButton *>(Dialog->Controls[ii]);
-          if (Button != NULL)
+          if (IsPositiveAnswer(Button->ModalResult))
           {
-            if (Button->ModalResult == PositiveAnswers[i])
-            {
-              PositiveAnswer = PositiveAnswers[i];
-              break;
-            }
+            PositiveAnswer = Button->ModalResult;
+            break;
           }
-        }
-
-        if (PositiveAnswer != mrNone)
-        {
-          break;
         }
       }
     }
 
-    assert(PositiveAnswer != mrNone);
+    assert(PositiveAnswer != 0);
   }
 
   for (int ii = 0; ii < Dialog->ControlCount; ii++)
@@ -149,9 +124,9 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
     TButton * Button = dynamic_cast<TButton *>(Dialog->Controls[ii]);
     if (Button != NULL)
     {
-      if ((Button->ModalResult != mrNone) && (Button->ModalResult != mrCancel))
+      if ((Button->ModalResult != 0) && (Button->ModalResult != static_cast<int>(qaCancel)))
       {
-        Button->Enabled = !CheckBox->Checked || (Button->ModalResult == PositiveAnswer);
+        Button->Enabled = !CheckBox->Checked || (Button->ModalResult == static_cast<int>(PositiveAnswer));
       }
 
       if (Button->DropDownMenu != NULL)
@@ -166,53 +141,11 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
   }
 }
 //---------------------------------------------------------------------------
-unsigned int MapResult(unsigned int Result, unsigned int Answers)
-{
-  int Answer;
-
-  switch (Result)
-  {
-    #define MAP_RESULT(RESULT) case mr ## RESULT: Answer = qa ## RESULT; break;
-    MAP_RESULT(Abort);
-    MAP_RESULT(All);
-    MAP_RESULT(NoToAll);
-    MAP_RESULT(YesToAll);
-    MAP_RESULT(Yes);
-    MAP_RESULT(No);
-    MAP_RESULT(Retry);
-    #undef MAP_RESULT
-
-    case mrCancel:
-      // mrCancel is returned always when X button is pressed, despite
-      // no Cancel button was on the dialog. Find valid "cancel" answer.
-      Answer = CancelAnswer(Answers);
-      break;
-
-    case mrOk:
-      Answer = qaOK;
-      break;
-
-    case mrIgnore:
-      Answer = (Answers & qaSkip) ? qaSkip : qaIgnore;
-      break;
-
-    default:
-      assert(false);
-      Answer = CancelAnswer(Answers);
-      break;
-  }
-
-  return Answer;
-}
-//---------------------------------------------------------------------------
 TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
   TStrings * MoreMessages, TQueryType Type, unsigned int Answers, UnicodeString HelpKeyword,
   const TMessageParams * Params, TButton *& TimeoutButton)
 {
-  TMsgDlgBtn TimeoutResult = mbHelp;
-  TMsgDlgButtons Buttons;
   TMsgDlgType DlgType;
-
   switch (Type) {
     case qtConfirmation: DlgType = mtConfirmation; break;
     case qtInformation: DlgType = mtInformation; break;
@@ -221,32 +154,16 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
     default: assert(false);
   }
 
-  int AAnswers = Answers;
-  unsigned int Answer = 0x01;
-  while (AAnswers > 0)
-  {
-    if ((AAnswers & Answer) != 0)
-    {
-      TMsgDlgBtn Button;
-      if (MapButton(Answer, Button))
-      {
-        Buttons << Button;
-        if ((Params != NULL) && (Params->Timeout > 0) &&
-            (Params->TimeoutAnswer == Answer))
-        {
-          TimeoutResult = Button;
-        }
-      }
-      AAnswers &= ~Answer;
-    }
-    Answer <<= 1;
-  }
-
-  assert(!Buttons.Empty());
+  int TimeoutAnswer = (Params != NULL) ? Params->TimeoutAnswer : 0;
 
   if ((Params == NULL) || Params->AllowHelp)
   {
-    Buttons << mbHelp;
+    Answers = Answers | qaHelp;
+  }
+
+  if (HelpKeyword == HELP_INTERNAL_ERROR)
+  {
+    Answers = Answers | qaReport;
   }
 
   if ((MoreMessages != NULL) && (MoreMessages->Count == 0))
@@ -260,50 +177,14 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
     ImageName = Params->ImageName;
   }
 
-  TForm * Dialog;
+  const TQueryButtonAlias * Aliases = (Params != NULL) ? Params->Aliases : NULL;
+  unsigned int AliasesCount = (Params != NULL) ? Params->AliasesCount : 0;
 
-  if ((Params == NULL) || (Params->Aliases == NULL))
-  {
-    Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Buttons,
-      NULL, 0, TimeoutResult, &TimeoutButton, ImageName);
-  }
-  else
-  {
-    TQueryButtonAlias * Aliases = new TQueryButtonAlias[Params->AliasesCount];
-    try
-    {
-      for (unsigned int i = 0; i < Params->AliasesCount; i++)
-      {
-        TMsgDlgBtn Button;
-        CHECK(MapButton(Params->Aliases[i].Button, Button));
-        Aliases[i].Button = Button;
-        Aliases[i].Alias = Params->Aliases[i].Alias;
-        Aliases[i].OnClick = Params->Aliases[i].OnClick;
-        if (Params->Aliases[i].GroupWith >= 0)
-        {
-          CHECK(MapButton(Params->Aliases[i].GroupWith, Button));
-          Aliases[i].GroupWith = Button;
-        }
-        Aliases[i].GrouppedShiftState = Params->Aliases[i].GrouppedShiftState;
-      }
-      Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Buttons,
-        Aliases, Params->AliasesCount, TimeoutResult, &TimeoutButton, ImageName);
-    }
-    __finally
-    {
-      delete[] Aliases;
-    }
-  }
+  TForm * Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Answers,
+    Aliases, AliasesCount, TimeoutAnswer, &TimeoutButton, ImageName);
 
   try
   {
-    if (Answers & qaSkip)
-    {
-      TButton * IgnoreButton = dynamic_cast<TButton *>(Dialog->FindComponent("Ignore"));
-      assert(IgnoreButton);
-      IgnoreButton->Caption = LoadStr(SKIP_BUTTON);
-    }
-
     if ((Params != NULL) && (Params->Params & mpNeverAskAgainCheck))
     {
       static const int VertSpace = 20;
@@ -340,12 +221,7 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
       NeverAskAgainCheck->Anchors = TAnchors() << akBottom << akLeft;
       if (Params->NewerAskAgainAnswer > 0)
       {
-        TMsgDlgBtn Button;
-        if (MapButton(Params->NewerAskAgainAnswer, Button))
-        {
-          extern const int ModalResults[];
-          NeverAskAgainCheck->Tag = ModalResults[Button] + 1;
-        }
+        NeverAskAgainCheck->Tag = Params->NewerAskAgainAnswer;
       }
       TNotifyEvent OnClick;
       ((TMethod*)&OnClick)->Code = NeverAskAgainCheckClick;
@@ -353,6 +229,10 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
     }
 
     Dialog->HelpKeyword = HelpKeyword;
+    if (FLAGSET(Answers, qaHelp))
+    {
+      Dialog->BorderIcons = Dialog->BorderIcons << biHelp;
+    }
     ResetSystemSettings(Dialog);
   }
   catch(...)
@@ -366,7 +246,13 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
 unsigned int __fastcall ExecuteMessageDialog(TForm * Dialog, unsigned int Answers, const TMessageParams * Params)
 {
   FlashOnBackground();
-  unsigned int Answer = MapResult(Dialog->ShowModal(), Answers);
+  unsigned int Answer = Dialog->ShowModal();
+  // mrCancel is returned always when X button is pressed, despite
+  // no Cancel button was on the dialog. Find valid "cancel" answer.
+  if (Answer == mrCancel)
+  {
+    Answer = CancelAnswer(Answers);
+  }
 
   if ((Params != NULL) && (Params->Params & mpNeverAskAgainCheck))
   {
@@ -376,11 +262,11 @@ unsigned int __fastcall ExecuteMessageDialog(TForm * Dialog, unsigned int Answer
 
     if (NeverAskAgainCheck->Checked)
     {
-      bool PossitiveAnswer =
+      bool PositiveAnswer =
         (Params->NewerAskAgainAnswer > 0) ?
           (Answer == Params->NewerAskAgainAnswer) :
-          (Answer == qaYes || Answer == qaOK || Answer == qaYesToAll);
-      if (PossitiveAnswer)
+          IsPositiveAnswer(Answer);
+      if (PositiveAnswer)
       {
         Answer = qaNeverAskAgain;
       }
@@ -394,7 +280,6 @@ class TMessageTimer : public TTimer
 {
 public:
   TQueryParamsTimerEvent Event;
-  unsigned int Result;
   TForm * Dialog;
 
   __fastcall TMessageTimer(TComponent * AOwner);
@@ -405,7 +290,6 @@ protected:
 //---------------------------------------------------------------------------
 __fastcall TMessageTimer::TMessageTimer(TComponent * AOwner) : TTimer(AOwner)
 {
-  Result = 0;
   Event = NULL;
   OnTimer = DoTimer;
   Dialog = NULL;
@@ -415,10 +299,11 @@ void __fastcall TMessageTimer::DoTimer(TObject * /*Sender*/)
 {
   if (Event != NULL)
   {
+    unsigned int Result = 0;
     Event(Result);
     if (Result != 0)
     {
-      Dialog->ModalResult = mrCancel;
+      Dialog->ModalResult = Result;
     }
   }
 }
@@ -592,11 +477,6 @@ unsigned int __fastcall MoreMessageDialog(const UnicodeString Message, TStrings 
     }
 
     Result = ExecuteMessageDialog(Dialog, Answers, Params);
-
-    if ((Timer != NULL) && (Timer->Result != 0))
-    {
-      Result = Timer->Result;
-    }
   }
   __finally
   {
@@ -642,17 +522,14 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   if (EE != NULL)
   {
     MoreMessages = EE->MoreMessages;
-    if (!EE->HelpKeyword.IsEmpty())
-    {
-      // we have to yet decide what to do now
-      assert(HelpKeyword.IsEmpty());
-      HelpKeyword = EE->HelpKeyword;
-    }
   }
+
   UnicodeString Message;
   // this is always called from within ExceptionMessage check,
   // so it should never fail here
   CHECK(ExceptionMessage(E, Message));
+
+  HelpKeyword = MergeHelpKeyword(HelpKeyword, GetExceptionHelpKeyword(E));
 
   return MoreMessageDialog(
     FORMAT(MessageFormat.IsEmpty() ? UnicodeString(L"%s") : MessageFormat, (Message)),
@@ -735,6 +612,14 @@ bool __fastcall DoRemoteMoveDialog(UnicodeString & Target, UnicodeString & FileM
     FileMask = UnixExtractFileName(Value);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall CopyParamListButton(TButton * Button)
+{
+  if (!SupportsSplitButton())
+  {
+    MenuButton(Button);
+  }
 }
 //---------------------------------------------------------------------------
 const int cpiDefault = -1;
@@ -878,7 +763,7 @@ TWinInteractiveCustomCommand::TWinInteractiveCustomCommand(
   FCustomCommandName = StripHotkey(CustomCommandName);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinInteractiveCustomCommand::Prompt(int /*Index*/,
+void __fastcall TWinInteractiveCustomCommand::Prompt(
   const UnicodeString & Prompt, UnicodeString & Value)
 {
   UnicodeString APrompt = Prompt;
@@ -895,6 +780,117 @@ void __fastcall TWinInteractiveCustomCommand::Prompt(int /*Index*/,
   else
   {
     Abort();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinInteractiveCustomCommand::Execute(
+  const UnicodeString & Command, UnicodeString & Value)
+{
+  // inspired by
+  // http://forum.codecall.net/topic/72472-execute-a-console-program-and-capture-its-output/
+  HANDLE StdOutOutput;
+  HANDLE StdOutInput;
+  HANDLE StdInOutput;
+  HANDLE StdInInput;
+  SECURITY_ATTRIBUTES SecurityAttributes;
+  SecurityAttributes.nLength = sizeof(SecurityAttributes);
+  SecurityAttributes.lpSecurityDescriptor = NULL;
+  SecurityAttributes.bInheritHandle = TRUE;
+  try
+  {
+    if (!CreatePipe(&StdOutOutput, &StdOutInput, &SecurityAttributes, 0))
+    {
+      throw Exception(FMTLOAD(SHELL_PATTERN_ERROR, (Command, L"out")));
+    }
+    else if (!CreatePipe(&StdInOutput, &StdInInput, &SecurityAttributes, 0))
+    {
+      throw Exception(FMTLOAD(SHELL_PATTERN_ERROR, (Command, L"in")));
+    }
+    else
+    {
+      STARTUPINFO StartupInfo;
+      PROCESS_INFORMATION ProcessInformation;
+
+      FillMemory(&StartupInfo, sizeof(StartupInfo), 0);
+      StartupInfo.cb = sizeof(StartupInfo);
+      StartupInfo.wShowWindow = SW_HIDE;
+      StartupInfo.hStdInput = StdInOutput;
+      StartupInfo.hStdOutput = StdOutInput;
+      StartupInfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+
+      if (!CreateProcess(NULL, Command.c_str(), &SecurityAttributes, &SecurityAttributes,
+            TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &StartupInfo, &ProcessInformation))
+      {
+        throw Exception(FMTLOAD(SHELL_PATTERN_ERROR, (Command, L"process")));
+      }
+      else
+      {
+        try
+        {
+          // wait until the console program terminated
+          bool Running = true;
+          while (Running)
+          {
+            switch (WaitForSingleObject(ProcessInformation.hProcess, 200))
+            {
+              case WAIT_TIMEOUT:
+                Application->ProcessMessages();
+                break;
+
+              case WAIT_OBJECT_0:
+                Running = false;
+                break;
+
+              default:
+                throw Exception(FMTLOAD(SHELL_PATTERN_ERROR, (Command, L"wait")));
+            }
+          }
+
+          char Buffer[1024];
+          unsigned long Read;
+          while (PeekNamedPipe(StdOutOutput, NULL, 0, NULL, &Read, NULL) &&
+                 (Read > 0))
+
+          {
+            if (!ReadFile(StdOutOutput, &Buffer, Read, &Read, NULL))
+            {
+              throw Exception(FMTLOAD(SHELL_PATTERN_ERROR, (Command, L"read")));
+            }
+            else if (Read > 0)
+            {
+              Value += UnicodeString(AnsiString(Buffer, Read));
+            }
+          }
+
+          // trim trailing cr/lf
+          Value = TrimRight(Value);
+        }
+        __finally
+        {
+          CloseHandle(ProcessInformation.hProcess);
+          CloseHandle(ProcessInformation.hThread);
+        }
+      }
+    }
+  }
+  __finally
+  {
+    if (StdOutOutput != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle(StdOutOutput);
+    }
+    if (StdOutInput != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle(StdOutInput);
+    }
+    if (StdInOutput != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle(StdInOutput);
+    }
+    if (StdInInput != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle(StdInInput);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -956,6 +952,14 @@ void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Hand
   assert(PopupMenu != NULL);
   MenuPopup(PopupMenu, Point, Control);
   Handled = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall MenuButton(TButton * Button)
+{
+  Button->Images = GlyphsModule->ButtonImages;
+  Button->ImageIndex = 0;
+  Button->DisabledImageIndex = 1;
+  Button->ImageAlignment = iaRight;
 }
 //---------------------------------------------------------------------------
 void __fastcall SetGlobalMinimizeHandler(TCustomForm * /*Form*/, TNotifyEvent OnMinimize)
@@ -1111,6 +1115,7 @@ void __fastcall GetFormatSettingsFix()
 //---------------------------------------------------------------------------
 void __fastcall WinInitialize()
 {
+  SetErrorMode(SEM_FAILCRITICALERRORS);
   if (IsWin7())
   {
     GetFormatSettingsFix();

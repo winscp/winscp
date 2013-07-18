@@ -149,8 +149,8 @@ protected:
   virtual void __fastcall ValidatePattern(const UnicodeString & Command,
     int Index, int Len, wchar_t PatternCmd, void * Arg);
 
-  virtual int __fastcall PatternLen(int Index, wchar_t PatternCmd) = 0;
-  virtual bool __fastcall PatternReplacement(int Index, const UnicodeString & Pattern,
+  virtual int __fastcall PatternLen(const UnicodeString & Command, int Index) = 0;
+  virtual bool __fastcall PatternReplacement(const UnicodeString & Pattern,
     UnicodeString & Replacement, bool & Delimit) = 0;
   virtual void __fastcall DelimitReplacement(UnicodeString & Replacement, wchar_t Quote);
 };
@@ -161,10 +161,12 @@ public:
   TInteractiveCustomCommand(TCustomCommand * ChildCustomCommand);
 
 protected:
-  virtual void __fastcall Prompt(int Index, const UnicodeString & Prompt,
+  virtual void __fastcall Prompt(const UnicodeString & Prompt,
     UnicodeString & Value);
-  virtual int __fastcall PatternLen(int Index, wchar_t PatternCmd);
-  virtual bool __fastcall PatternReplacement(int Index, const UnicodeString & Pattern,
+  virtual void __fastcall Execute(const UnicodeString & Command,
+    UnicodeString & Value);
+  virtual int __fastcall PatternLen(const UnicodeString & Command, int Index);
+  virtual bool __fastcall PatternReplacement(const UnicodeString & Pattern,
     UnicodeString & Replacement, bool & Delimit);
 
 private:
@@ -172,14 +174,19 @@ private:
 };
 //---------------------------------------------------------------------------
 class TTerminal;
+class TSessionData;
 struct TCustomCommandData
 {
   __fastcall TCustomCommandData();
   __fastcall TCustomCommandData(TTerminal * Terminal);
+  __fastcall TCustomCommandData(TSessionData * SessionData, const UnicodeString & Password);
 
   UnicodeString HostName;
   UnicodeString UserName;
   UnicodeString Password;
+
+private:
+  void __fastcall Init(TSessionData * SessionData, const UnicodeString & Password);
 };
 //---------------------------------------------------------------------------
 class TFileCustomCommand : public TCustomCommand
@@ -196,10 +203,12 @@ public:
 
   bool __fastcall IsFileListCommand(const UnicodeString & Command);
   virtual bool __fastcall IsFileCommand(const UnicodeString & Command);
+  bool __fastcall IsSiteCommand(const UnicodeString & Command);
+  bool __fastcall IsPasswordCommand(const UnicodeString & Command);
 
 protected:
-  virtual int __fastcall PatternLen(int Index, wchar_t PatternCmd);
-  virtual bool __fastcall PatternReplacement(int Index, const UnicodeString & Pattern,
+  virtual int __fastcall PatternLen(const UnicodeString & Command, int Index);
+  virtual bool __fastcall PatternReplacement(const UnicodeString & Pattern,
     UnicodeString & Replacement, bool & Delimit);
 
 private:

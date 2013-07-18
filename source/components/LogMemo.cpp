@@ -5,6 +5,7 @@
 #include <Common.h>
 
 #include "LogMemo.h"
+#include <StrUtils.hpp>
 
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -179,8 +180,7 @@ void __fastcall TLogMemo::UpdateFromLog()
               {
                 if (SessionLog->Line[LastIndex].Pos(L"\r"))
                 {
-                  Lines->Add(StringReplace(SessionLog->Line[LastIndex], L"\r", L"",
-                    TReplaceFlags() << rfReplaceAll));
+                  Lines->Add(ReplaceStr(SessionLog->Line[LastIndex], L"\r", L""));
                 }
                 else
                 {

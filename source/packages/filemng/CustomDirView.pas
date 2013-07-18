@@ -91,7 +91,7 @@ type
 
   TDirViewExecFileEvent = procedure(Sender: TObject; Item: TListItem; var AllowExec: Boolean) of object;
   TRenameEvent = procedure(Sender: TObject; Item: TListItem; NewName: string) of object;
-  TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; var Matches: Boolean) of object;
+  TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; var Matches: Boolean; AllowImplicitMatches: Boolean) of object;
   TDirViewGetOverlayEvent = procedure(Sender: TObject; Item: TListItem; var Indexes: Word) of object;
   TDirViewUpdateStatusBarEvent = procedure(Sender: TObject; const FileInfo: TStatusFileInfo) of object;
 
@@ -328,7 +328,6 @@ type
     function ItemMatchesFilter(Item: TListItem; const Filter: TFileFilter): Boolean; virtual; abstract;
     function ItemOverlayIndexes(Item: TListItem): Word; virtual;
     procedure LimitHistorySize;
-    function MinimizePath(Path: string; Len: Integer): string; virtual; abstract;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure PathChanged; virtual;
     procedure PathChanging(Relative: Boolean);
@@ -343,7 +342,7 @@ type
     procedure UpdatePathLabel; dynamic;
     procedure UpdateStatusBar; dynamic;
     procedure WndProc(var Message: TMessage); override;
-    function FileNameMatchesMasks(FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string): Boolean;
+    function FileNameMatchesMasks(FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; AllowImplicitMatches: Boolean): Boolean;
     function EnableDragOnClick: Boolean; override;
     procedure SetMask(Value: string); virtual;
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
@@ -1111,11 +1110,12 @@ begin
 end;
 
 function TCustomDirView.FileNameMatchesMasks(FileName: string;
-  Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string): Boolean;
+  Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string;
+  AllowImplicitMatches: Boolean): Boolean;
 begin
   Result := False;
   if Assigned(OnMatchMask) then
-    OnMatchMask(Self, FileName, Directory, Size, Modification, Masks, Result)
+    OnMatchMask(Self, FileName, Directory, Size, Modification, Masks, Result, AllowImplicitMatches)
 end;
 
 procedure TCustomDirView.SetAddParentDir(Value: Boolean);
@@ -3232,7 +3232,7 @@ begin
   end;
 end;{SetMask}
 
-// WM_SETFOCUS works even when focus is mored to another window/app,
+// WM_SETFOCUS works even when focus is moved to another window/app,
 // while .Enter works only when focus is moved to order control of the same window.
 procedure TCustomDirView.WMSetFocus(var Message: TWMSetFocus);
 begin

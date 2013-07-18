@@ -12143,7 +12143,7 @@ private:
 //---------------------------------------------------------------------------
 #undef FILE_OPERATION_LOOP_EX
 #define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
-  FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION)
+  FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION, L"")
 //---------------------------------------------------------------------------
 static const UnicodeString CONST_WEBDAV_PROTOCOL_BASE_NAME = L"WebDAV";
 
@@ -12444,7 +12444,7 @@ void __fastcall TWebDAVFileSystem::CachedChangeDirectory(const UnicodeString Dir
 
 void __fastcall TWebDAVFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 {
-  FileList->Clear();
+  FileList->Reset();
   // add parent directory
   FileList->AddFile(new TRemoteParentDirectory(FTerminal));
 
@@ -13603,7 +13603,7 @@ bool __fastcall TWebDAVFileSystem::HandleListData(const wchar_t * Path,
                  Entry->Size,
                  int(Entry->Dir), int(Entry->Link), Entry->Time.Year, Entry->Time.Month, Entry->Time.Day,
                  Entry->Time.Hour, Entry->Time.Minute, int(Entry->Time.HasTime), int(Entry->Time.HasDate)));
-        throw ETerminal(&E, FMTLOAD(LIST_LINE_ERROR, (EntryData.c_str())));
+        throw ETerminal(&E, FMTLOAD(LIST_LINE_ERROR, (EntryData.c_str())), HELP_LIST_LINE_ERROR);
       }
 
       FFileList->AddFile(File);

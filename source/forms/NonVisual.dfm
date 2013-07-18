@@ -605,7 +605,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 26
       ShortCut = 24644
     end
-    object SavedSessionsAction: TAction
+    object SavedSessionsAction2: TAction
       Tag = 15
       Category = 'Session'
       Caption = 'Si&tes'
@@ -697,7 +697,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 30
       ShortCut = 32880
     end
-    object ToolBarAction: TAction
+    object ToolBar2Action: TAction
       Tag = 11
       Category = 'View'
       Caption = '&Hot Keys Toolbar'
@@ -1078,7 +1078,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Version History'
       Hint = 'Opens web browser and points it to application history page'
     end
-    object SaveCurrentSessionAction: TAction
+    object SaveCurrentSessionAction2: TAction
       Tag = 15
       Category = 'Session'
       Caption = '&Save Session as Site...'
@@ -2214,7 +2214,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = CommandLinePanelAction
     end
     object CommandsToolbar1: TTBXItem
-      Action = ToolBarAction
+      Action = ToolBar2Action
     end
     object StatusBar8: TTBXItem
       Action = StatusBarAction
@@ -2763,7 +2763,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = DuplicateSessionAction
     end
     object TBXItem125: TTBXItem
-      Action = SaveCurrentSessionAction
+      Action = SaveCurrentSessionAction2
     end
     object TBXSeparatorItem34: TTBXSeparatorItem
     end
@@ -2771,7 +2771,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = NewSessionAction
     end
     object TBXSubmenuItem23: TTBXSubmenuItem
-      Action = SavedSessionsAction
+      Action = SavedSessionsAction2
       Options = [tboDropdownArrow]
     end
     object TBXSeparatorItem52: TTBXSeparatorItem

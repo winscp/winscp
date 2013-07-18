@@ -47,6 +47,7 @@ private:
   bool FSimple;
   bool FNoConnectionResponse;
   bool FCollectPrivateKeyUsage;
+  int FWaitingForData;
 
   unsigned PendLen;
   unsigned PendSize;
@@ -96,13 +97,14 @@ protected:
 
   void __fastcall GotHostKey();
   int __fastcall TranslatePuttyMessage(const TPuttyTranslation * Translation,
-    size_t Count, UnicodeString & Message);
-  int __fastcall TranslateAuthenticationMessage(UnicodeString & Message);
-  int __fastcall TranslateErrorMessage(UnicodeString & Message);
+    size_t Count, UnicodeString & Message, UnicodeString * HelpKeyword = NULL);
+  int __fastcall TranslateAuthenticationMessage(UnicodeString & Message, UnicodeString * HelpKeyword = NULL);
+  int __fastcall TranslateErrorMessage(UnicodeString & Message, UnicodeString * HelpKeyword = NULL);
   void __fastcall AddStdError(UnicodeString Str);
   void __fastcall AddStdErrorLine(const UnicodeString & Str);
   void __fastcall inline LogEvent(const UnicodeString & Str);
-  void __fastcall FatalError(UnicodeString Error);
+  void __fastcall FatalError(UnicodeString Error, UnicodeString HelpKeyword = L"");
+  UnicodeString __fastcall FormatKeyStr(UnicodeString KeyStr);
   static void __fastcall ClearConfig(Config * cfg);
   static void __fastcall StoreToConfig(TSessionData * Data, Config * cfg, bool Simple);
 

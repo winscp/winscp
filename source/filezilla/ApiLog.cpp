@@ -94,7 +94,7 @@ void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
 		return;
-	
+
 #ifdef MPEXT
 	if (nMessageType>=FZ_LOG_DEBUG)
 		return;

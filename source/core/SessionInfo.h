@@ -63,7 +63,7 @@ public:
     UnicodeString Name, UnicodeString Instructions, TStrings * Prompts,
     TStrings * Results) = 0;
   virtual void __fastcall DisplayBanner(const UnicodeString & Banner) = 0;
-  virtual void __fastcall FatalError(Exception * E, UnicodeString Msg) = 0;
+  virtual void __fastcall FatalError(Exception * E, UnicodeString Msg, UnicodeString HelpKeyword = L"") = 0;
   virtual void __fastcall HandleExtendedException(Exception * E) = 0;
   virtual void __fastcall Closed() = 0;
 };

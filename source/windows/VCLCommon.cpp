@@ -73,17 +73,22 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
 {
   if (Control->Enabled != Enable)
   {
-    if (Control->InheritsFrom(__classid(TWinControl)) &&
-        (((TWinControl*)Control)->ControlCount > 0))
+    TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
+    if ((WinControl != NULL) &&
+        (WinControl->ControlCount > 0))
     {
-      for (Integer Index = 0; Index < ((TWinControl*)Control)->ControlCount; Index++)
-        EnableControl(((TWinControl*)Control)->Controls[Index], Enable);
+      for (int Index = 0; Index < WinControl->ControlCount; Index++)
+      {
+        EnableControl(WinControl->Controls[Index], Enable);
+      }
     }
     Control->Enabled = Enable;
   }
-  if (Control->InheritsFrom(__classid(TCustomEdit)) ||
-      Control->InheritsFrom(__classid(TCustomComboBox)) ||
-      Control->InheritsFrom(__classid(TCustomListView)))
+
+  if ((dynamic_cast<TCustomEdit *>(Control) != NULL) ||
+      (dynamic_cast<TCustomComboBox *>(Control) != NULL) ||
+      (dynamic_cast<TCustomListView *>(Control) != NULL) ||
+      (dynamic_cast<TTreeView *>(Control) != NULL))
   {
     if (Enable)
     {
@@ -98,7 +103,7 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
 //---------------------------------------------------------------------------
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
 {
-  if (Control->InheritsFrom(__classid(TCustomEdit)))
+  if (dynamic_cast<TCustomEdit *>(Control) != NULL)
   {
     ((TEdit*)Control)->ReadOnly = ReadOnly;
     if (ReadOnly)
@@ -109,6 +114,11 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
     {
       ((TEdit*)Control)->Color = clWindow;
     }
+  }
+  else if ((dynamic_cast<TCustomComboBox *>(Control) != NULL) ||
+           (dynamic_cast<TCustomTreeView *>(Control) != NULL))
+  {
+    EnableControl(Control, !ReadOnly);
   }
   else
   {

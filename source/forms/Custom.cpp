@@ -186,46 +186,57 @@ void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
 class TSaveSessionDialog : public TCustomDialog
 {
 public:
-  __fastcall TSaveSessionDialog(TSessionData * OriginalSession, bool CanSavePassword, bool NotRecommendedSavingPassword);
+  __fastcall TSaveSessionDialog(bool CanSavePassword, bool NotRecommendedSavingPassword);
 
   bool __fastcall Execute(UnicodeString & SessionName, bool & SavePassword);
 
 protected:
-  DYNAMIC void __fastcall DoShow();
   virtual void __fastcall DoValidate();
   virtual void __fastcall DoChange(bool & CanSubmit);
 
 private:
-  TSessionData * FOriginalSession;
-  TComboBox * SessionNameCombo;
+  UnicodeString FOriginalSessionName;
+  TEdit * SessionNameEdit;
+  TComboBox * FolderCombo;
   TCheckBox * SavePasswordCheck;
+  UnicodeString FRootFolder;
+
+  UnicodeString __fastcall GetSessionName();
 };
 //---------------------------------------------------------------------------
 __fastcall TSaveSessionDialog::TSaveSessionDialog(
-    TSessionData * OriginalSession, bool CanSavePassword, bool NotRecommendedSavingPassword) :
-  TCustomDialog(HELP_SESSION_SAVE),
-  FOriginalSession(OriginalSession)
+    bool CanSavePassword, bool NotRecommendedSavingPassword) :
+  TCustomDialog(HELP_SESSION_SAVE)
 {
   Caption = LoadStr(SAVE_SESSION_CAPTION);
 
-  SessionNameCombo = new TComboBox(this);
-  SessionNameCombo->AutoComplete = false;
-  AddComboBox(SessionNameCombo, CreateLabel(LoadStr(SAVE_SESSION_PROMPT)));
-  SessionNameCombo->Items->BeginUpdate();
+  SessionNameEdit = new TEdit(this);
+  AddEdit(SessionNameEdit, CreateLabel(LoadStr(SAVE_SESSION_PROMPT)));
+
+  FolderCombo = new TComboBox(this);
+  AddComboBox(FolderCombo, CreateLabel(LoadStr(SAVE_SESSION_FOLDER)));
+  FolderCombo->Items->BeginUpdate();
   try
   {
+    FRootFolder = LoadStr(SAVE_SESSION_ROOT_FOLDER);
+    FolderCombo->Items->Add(FRootFolder);
+
     for (int Index = 0; Index < StoredSessions->Count; Index++)
     {
       TSessionData * Data = StoredSessions->Sessions[Index];
-      if (!Data->Special)
+      if (!Data->Special && !Data->IsWorkspace)
       {
-        SessionNameCombo->Items->Add(Data->Name);
+        UnicodeString Folder = Data->FolderName;
+        if (!Folder.IsEmpty() && FolderCombo->Items->IndexOf(Folder) < 0)
+        {
+          FolderCombo->Items->Add(Folder);
+        }
       }
     }
   }
   __finally
   {
-    SessionNameCombo->Items->EndUpdate();
+    FolderCombo->Items->EndUpdate();
   }
 
   SavePasswordCheck = new TCheckBox(this);
@@ -239,36 +250,43 @@ __fastcall TSaveSessionDialog::TSaveSessionDialog(
 //---------------------------------------------------------------------------
 bool __fastcall TSaveSessionDialog::Execute(UnicodeString & SessionName, bool & SavePassword)
 {
-  SessionNameCombo->Text = SessionName;
+  FOriginalSessionName = SessionName;
+  SessionNameEdit->Text = TSessionData::ExtractLocalName(SessionName);
+  UnicodeString Folder = TSessionData::ExtractFolderName(SessionName);
+  if (Folder.IsEmpty())
+  {
+    FolderCombo->Text = FRootFolder;
+  }
+  else
+  {
+    FolderCombo->Text = Folder;
+  }
   SavePasswordCheck->Checked = SavePassword;
   bool Result = TCustomDialog::Execute();
   if (Result)
   {
-    SessionName = SessionNameCombo->Text;
+    SessionName = GetSessionName();
     SavePassword = SavePasswordCheck->Checked;
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSaveSessionDialog::DoShow()
+UnicodeString __fastcall TSaveSessionDialog::GetSessionName()
 {
-  InstallPathWordBreakProc(SessionNameCombo);
-
-  int P = SessionNameCombo->Text.LastDelimiter(L"/");
-  if (P > 0)
+  UnicodeString Folder;
+  if (FolderCombo->Text != FRootFolder)
   {
-    SessionNameCombo->SetFocus();
-    SessionNameCombo->SelStart = P;
-    SessionNameCombo->SelLength = SessionNameCombo->Text.Length() - P;
+    Folder = FolderCombo->Text;
   }
-  TCustomDialog::DoShow();
+  return TSessionData::ComposePath(Folder, SessionNameEdit->Text);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSaveSessionDialog::DoValidate()
 {
-  SessionNameValidate(SessionNameCombo->Text, FOriginalSession);
+  TSessionData::ValidateName(SessionNameEdit->Text);
+  SessionNameValidate(GetSessionName(), FOriginalSessionName);
 
-  UnicodeString Folder = UnixExtractFileDir(SessionNameCombo->Text);
+  UnicodeString Folder = TSessionData::ExtractFolderName(GetSessionName());
   if (!Folder.IsEmpty() && StoredSessions->IsWorkspace(Folder))
   {
     throw Exception(FMTLOAD(WORKSPACE_NOT_FOLDER, (Folder)));
@@ -285,34 +303,73 @@ void __fastcall TSaveSessionDialog::DoValidate()
 //---------------------------------------------------------------------------
 void __fastcall TSaveSessionDialog::DoChange(bool & CanSubmit)
 {
-  CanSubmit = !SessionNameCombo->Text.IsEmpty();
+  CanSubmit = !SessionNameEdit->Text.IsEmpty();
   TCustomDialog::DoChange(CanSubmit);
 }
 //---------------------------------------------------------------------------
-bool __fastcall DoSaveSessionDialog(UnicodeString & SessionName,
-  bool * SavePassword, TSessionData * OriginalSession, bool NotRecommendedSavingPassword)
+TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
+  TSessionData * OriginalSession, bool ForceDialog)
 {
+  bool SavePassword = false;
+  bool * PSavePassword;
+  bool NotRecommendedSavingPassword =
+    !CustomWinConfiguration->UseMasterPassword &&
+    !SameText(SessionData->UserName, AnonymousUserName);
+
+  if (Configuration->DisablePasswordStoring ||
+      !SessionData->HasAnyPassword())
+  {
+    PSavePassword = NULL;
+  }
+  else
+  {
+    PSavePassword = &SavePassword;
+    SavePassword =
+      ((OriginalSession != NULL) &&
+       !OriginalSession->Password.IsEmpty()) ||
+      !NotRecommendedSavingPassword;
+  }
+
+  UnicodeString SessionName = SessionData->SessionName;
+
   bool Result;
-  TSaveSessionDialog * Dialog = new TSaveSessionDialog(
-    OriginalSession, (SavePassword != NULL), NotRecommendedSavingPassword);
-  try
+  if (!ForceDialog && ((PSavePassword == NULL) || SavePassword))
   {
-    bool Dummy = false;
-    if (SavePassword == NULL)
+    Result = true;
+  }
+  else
+  {
+    TSaveSessionDialog * Dialog =
+      new TSaveSessionDialog((PSavePassword != NULL), NotRecommendedSavingPassword);
+    try
     {
-      SavePassword = &Dummy;
+      Result = Dialog->Execute(SessionName, SavePassword);
     }
-    Result = Dialog->Execute(SessionName, *SavePassword);
+    __finally
+    {
+      delete Dialog;
+    }
   }
-  __finally
+
+  TSessionData * NewSession = NULL;
+  if (Result)
   {
-    delete Dialog;
+    if ((PSavePassword != NULL) && !SavePassword)
+    {
+      SessionData->Password = L"";
+    }
+
+    NewSession =
+      StoredSessions->NewSession(SessionName, SessionData);
+    // modified only, explicit
+    StoredSessions->Save(false, true);
   }
-  return Result;
+
+  return NewSession;
 }
 //---------------------------------------------------------------------------
 void __fastcall SessionNameValidate(const UnicodeString & Text,
-  TSessionData * RenamingSession)
+  const UnicodeString & OriginalName)
 {
   TSessionData::ValidatePath(Text);
 
@@ -324,7 +381,7 @@ void __fastcall SessionNameValidate(const UnicodeString & Text,
       qtError, qaOK, HELP_NONE);
     Abort();
   }
-  else if (Data && (Data != RenamingSession) &&
+  else if ((Data != NULL) && (Text != OriginalName) &&
     MessageDialog(FMTLOAD(CONFIRM_OVERWRITE_SESSION, (Text)),
       qtConfirmation, qaYes | qaNo, HELP_SESSION_SAVE_OVERWRITE) != qaYes)
   {

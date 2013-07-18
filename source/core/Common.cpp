@@ -270,7 +270,7 @@ UnicodeString ExceptionLogString(Exception *E)
       if (MoreMessages)
       {
         Msg += L"\n" +
-          StringReplace(MoreMessages->Text, L"\r", L"", TReplaceFlags() << rfReplaceAll);
+          ReplaceStr(MoreMessages->Text, L"\r", L"");
       }
     }
     return Msg;
@@ -740,6 +740,19 @@ unsigned char __fastcall HexToByte(const UnicodeString Hex)
     static_cast<unsigned char>(((P1 <= 0) || (P2 <= 0)) ? 0 : (((P1 - 1) << 4) + (P2 - 1)));
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsDigit(wchar_t Ch)
+{
+  return (Ch >= '0') && (Ch <= '9');
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsHex(wchar_t Ch)
+{
+  return
+    IsDigit(Ch) ||
+    ((Ch >= 'A') && (Ch <= 'F')) ||
+    ((Ch >= 'a') && (Ch <= 'f'));
+}
+//---------------------------------------------------------------------------
 int __fastcall FindCheck(int Result)
 {
   if ((Result != ERROR_SUCCESS) &&
@@ -1077,7 +1090,7 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime)
 {
   S = S.Trim();
   int Index = 1;
-  while ((Index <= S.Length()) && (S[Index] >= '0') && (S[Index] <= '9'))
+  while ((Index <= S.Length()) && IsDigit(S[Index]))
   {
     Index++;
   }
@@ -1678,7 +1691,7 @@ UnicodeString __fastcall EncodeUrlString(UnicodeString S)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption)
 {
-  return StringReplace(Caption, L"&", L"&&", TReplaceFlags() << rfReplaceAll);
+  return ReplaceStr(Caption, L"&", L"&&");
 }
 //---------------------------------------------------------------------------
 // duplicated in console's Main.cpp

@@ -318,9 +318,9 @@ bool __fastcall TUnixDirView::ItemMatchesFilter(TListItem * Item,
     ((!(int)Filter.ModificationFrom) || (File->Modification >= Filter.ModificationFrom)) &&
     ((!(int)Filter.ModificationTo) || (File->Modification <= Filter.ModificationTo)) &&
     ((Filter.Masks.IsEmpty()) ||
-     FileNameMatchesMasks(File->FileName, File->IsDirectory, File->Size, File->Modification, Filter.Masks) ||
+     FileNameMatchesMasks(File->FileName, File->IsDirectory, File->Size, File->Modification, Filter.Masks, false) ||
      (File->IsDirectory && Filter.Directories &&
-      FileNameMatchesMasks(File->FileName, false, File->Size, File->Modification, Filter.Masks)));
+      FileNameMatchesMasks(File->FileName, false, File->Size, File->Modification, Filter.Masks, false)));
 #else
   USEDPARAM(Item);
   USEDPARAM(Filter);
@@ -374,8 +374,8 @@ void __fastcall TUnixDirView::LoadFiles()
         FHiddenCount++;
       }
       else if (!Mask.IsEmpty() &&
-               !File->IsDirectory &&
-               !FileNameMatchesMasks(File->FileName, false, File->Size, File->Modification, Mask))
+               !File->IsParentDirectory && !File->IsThisDirectory &&
+               !FileNameMatchesMasks(File->FileName, File->IsDirectory, File->Size, File->Modification, Mask, true))
       {
         FFilteredCount++;
       }
@@ -869,13 +869,6 @@ void __fastcall TUnixDirView::CreateDirectoryEx(UnicodeString DirName, const TRe
 #else
   USEDPARAM(Properties);
 #endif
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TUnixDirView::MinimizePath(UnicodeString Path, int Length)
-{
-  return StringReplace(MinimizeName(
-    StringReplace(Path, L'/', L'\\', TReplaceFlags() << rfReplaceAll),
-      Canvas, Length), L'\\', L'/', TReplaceFlags() << rfReplaceAll);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TUnixDirView::GetIsRoot()

@@ -1320,7 +1320,13 @@ void __fastcall TTerminalManager::OpenInPutty()
   try
   {
     assert(ActiveTerminal != NULL);
+    ScpExplorer->UpdateTerminal(ActiveTerminal);
+
     Data->Assign(ActiveTerminal->SessionData);
+
+    Data->RemoteDirectory =
+      NOT_NULL(dynamic_cast<TManagedTerminal *>(ActiveTerminal))->RemoteDirectory;
+
     // putty does not support resolving environment variables in session settings
     Data->ExpandEnvironmentVariables();
     if (ActiveTerminal->TunnelLocalPortNumber != 0)
@@ -1337,7 +1343,7 @@ void __fastcall TTerminalManager::OpenInPutty()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::NewSession(bool FromSite)
+void __fastcall TTerminalManager::NewSession(bool /*FromSite*/)
 {
   TObjectList * DataList = new TObjectList();
   try
@@ -1346,7 +1352,7 @@ void __fastcall TTerminalManager::NewSession(bool FromSite)
     Data->Assign(StoredSessions->DefaultSettings);
     DataList->Add(Data);
 
-    int Options = loAddSession | FLAGMASK(FromSite, loSiteManager);
+    int Options = loAddSession;
     if (DoLoginDialog(StoredSessions, DataList, Options))
     {
       ActiveTerminal = NewTerminals(DataList);

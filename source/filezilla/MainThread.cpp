@@ -410,6 +410,13 @@ void CMainThread::SetOption(int nOption, int nValue)
 	m_Options[nOption]=nValue;
 	LCS;
 }
+#else
+bool __fastcall CMainThread::UsingMlsd()
+{
+	if (!IsConnected())
+		return false;
+	return m_pControlSocket->UsingMlsd();
+}
 #endif
 
 BOOL CMainThread::GetWorkingDir(t_directory *pWorkingDir)

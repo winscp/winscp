@@ -341,6 +341,9 @@ public:
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   static void __fastcall ValidatePath(const UnicodeString Path);
   static void __fastcall ValidateName(const UnicodeString Name);
+  static UnicodeString __fastcall ExtractLocalName(const UnicodeString & Name);
+  static UnicodeString __fastcall ExtractFolderName(const UnicodeString & Name);
+  static UnicodeString __fastcall ComposePath(const UnicodeString & Path, const UnicodeString & Name);
 
   __property UnicodeString HostName  = { read=FHostName, write=SetHostName };
   __property UnicodeString HostNameExpanded  = { read=GetHostNameExpanded };
@@ -529,5 +532,6 @@ private:
 };
 //---------------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TSessionData * SessionData);
+bool __fastcall IsSshProtocol(TFSProtocol FSProtocol);
 //---------------------------------------------------------------------------
 #endif

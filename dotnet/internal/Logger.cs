@@ -67,6 +67,10 @@ namespace WinSCP
 
                 AddCounter(new PerformanceCounter("Memory", "Available KBytes"));
             }
+            catch (UnauthorizedAccessException)
+            {
+                WriteLine("Not authorized to get counters");
+            }
             catch (Exception e)
             {
                 WriteLine("Error getting counters: {0}", e);

@@ -27,6 +27,7 @@ type
     FEditorEnabled: Boolean;
     FValueType: TValueType;
     FArrowKeys: Boolean;
+    FButtonsVisible: Boolean;
     FOnTopClick: TNotifyEvent;
     FOnBottomClick: TNotifyEvent;
     FUpDown: TCustomUpDown;
@@ -52,6 +53,7 @@ type
     procedure ResizeButton;
     procedure SetEditRect;
     procedure SetAlignment(Value: TAlignment);
+    procedure SetButtonsVisible(Value: Boolean);
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
     procedure CMEnter(var Message: TMessage); message CM_ENTER;
     procedure CMExit(var Message: TCMExit); message CM_EXIT;
@@ -86,6 +88,7 @@ type
     property MinValue: Extended read FMinValue write FMinValue stored IsMinStored;
     property ValueType: TValueType read FValueType write SetValueType default vtInt;
     property Value: Extended read GetValue write SetValue stored IsValueStored;
+    property ButtonsVisible: Boolean read FButtonsVisible write SetButtonsVisible default True;
     property AutoSelect;
     property AutoSize;
     property BorderStyle;
@@ -231,6 +234,7 @@ begin
   FDecimal := 2;
   FEditorEnabled := True;
   FArrowKeys := True;
+  FButtonsVisible := True;
   RecreateButton;
 end;
 
@@ -279,7 +283,8 @@ end;
 
 function TUpDownEdit.GetButtonWidth: Integer;
 begin
-  Result := FUpDown.Width;
+  if FUpDown.Visible then Result := FUpDown.Width
+    else Result := 0;
 end;
 
 procedure TUpDownEdit.ResizeButton;
@@ -289,6 +294,7 @@ begin
     FUpDown.Width := DefBtnWidth;
     if (BiDiMode = bdRightToLeft) then FUpDown.Align := alLeft
       else FUpDown.Align := alRight;
+    FUpDown.Visible := ButtonsVisible;
   end
 end;
 
@@ -638,4 +644,15 @@ begin
   end;
 end;
 
+procedure TUpDownEdit.SetButtonsVisible(Value: Boolean);
+begin
+  if ButtonsVisible <> Value then
+  begin
+    FButtonsVisible := Value;
+    ResizeButton;
+    SetEditRect;
+  end;
+end;
+
+initialization
 end.

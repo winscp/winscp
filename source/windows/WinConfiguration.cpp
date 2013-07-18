@@ -15,7 +15,6 @@
 #include "TerminalManager.h"
 #include "Cryptography.h"
 #include <VCLCommon.h>
-#include <LanguagesDEPfix.hpp>
 #include <InitGUID.h>
 #include <DragExt.h>
 //---------------------------------------------------------------------------
@@ -1858,7 +1857,7 @@ LCID __fastcall TWinConfiguration::GetLocale()
       UnicodeString ResourceExt = ExtractFileExt(ResourceModule).UpperCase();
       ResourceExt.Delete(1, 1);
 
-      TLanguages * Langs = LanguagesDEPF();
+      TLanguages * Langs = Languages();
       int Index, Count;
 
       Count = Langs->Count;
@@ -1867,12 +1866,13 @@ LCID __fastcall TWinConfiguration::GetLocale()
       {
         if (Langs->Ext[Index] == ResourceExt)
         {
-          FLocale = Langs->LocaleID[Index];
+          SetInitialLocale(Langs->LocaleID[Index]);
         }
         else if (Langs->Ext[Index].SubString(1, 2) == ResourceExt)
         {
-          FLocale = MAKELANGID(PRIMARYLANGID(Langs->LocaleID[Index]),
-            SUBLANG_DEFAULT);
+          SetInitialLocale(
+            MAKELANGID(PRIMARYLANGID(Langs->LocaleID[Index]),
+              SUBLANG_DEFAULT));
         }
         Index++;
       }

@@ -357,17 +357,17 @@ void __fastcall TScript::Init()
   FCommands->Register(L"ln", SCRIPT_LN_DESC, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"symlink", 0, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"mkdir", SCRIPT_MKDIR_DESC, SCRIPT_MKDIR_HELP, &MkDirProc, 1, 1, false);
-  FCommands->Register(L"get", SCRIPT_GET_DESC, SCRIPT_GET_HELP5, &GetProc, 1, -1, true);
-  FCommands->Register(L"recv", 0, SCRIPT_GET_HELP5, &GetProc, 1, -1, false);
-  FCommands->Register(L"mget", 0, SCRIPT_GET_HELP5, &GetProc, 1, -1, false);
-  FCommands->Register(L"put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP5, &PutProc, 1, -1, true);
-  FCommands->Register(L"send", 0, SCRIPT_PUT_HELP5, &PutProc, 1, -1, false);
-  FCommands->Register(L"mput", 0, SCRIPT_PUT_HELP5, &PutProc, 1, -1, false);
+  FCommands->Register(L"get", SCRIPT_GET_DESC, SCRIPT_GET_HELP6, &GetProc, 1, -1, true);
+  FCommands->Register(L"recv", 0, SCRIPT_GET_HELP6, &GetProc, 1, -1, false);
+  FCommands->Register(L"mget", 0, SCRIPT_GET_HELP6, &GetProc, 1, -1, false);
+  FCommands->Register(L"put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP6, &PutProc, 1, -1, true);
+  FCommands->Register(L"send", 0, SCRIPT_PUT_HELP6, &PutProc, 1, -1, false);
+  FCommands->Register(L"mput", 0, SCRIPT_PUT_HELP6, &PutProc, 1, -1, false);
   FCommands->Register(L"option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP6, &OptionProc, -1, 2, false);
   FCommands->Register(L"ascii", 0, SCRIPT_OPTION_HELP6, &AsciiProc, 0, 0, false);
   FCommands->Register(L"binary", 0, SCRIPT_OPTION_HELP6, &BinaryProc, 0, 0, false);
-  FCommands->Register(L"synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP5, &SynchronizeProc, 1, 3, true);
-  FCommands->Register(L"keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP3, &KeepUpToDateProc, 0, 2, true);
+  FCommands->Register(L"synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP6, &SynchronizeProc, 1, 3, true);
+  FCommands->Register(L"keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP4, &KeepUpToDateProc, 0, 2, true);
   // the echo command does not have switches actually, but it must handle dashes in its arguments
   FCommands->Register(L"echo", SCRIPT_ECHO_DESC, SCRIPT_ECHO_HELP, &EchoProc, -1, -1, true);
   FCommands->Register(L"stat", SCRIPT_STAT_DESC, SCRIPT_STAT_HELP, &StatProc, 1, 1, false);
@@ -1783,7 +1783,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
       time_t Time = time(NULL);
 
       if ((OnProgress != NULL) && WantsProgress &&
-          (DoPrint || (FLastProgressEventTime != Time)))
+          (DoPrint || (FLastProgressEventTime != Time) || ProgressData.IsTransferDone()))
       {
         FLastProgressEventTime = Time;
 

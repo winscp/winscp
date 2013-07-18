@@ -67,6 +67,8 @@ public:
 #ifndef MPEXT
 	void SetOption(int nOption, int nValue);
 	int GetOption(int nOption);
+#else
+    bool __fastcall UsingMlsd();
 #endif
 	t_command m_LastCommand;
 #ifndef MPEXT_NO_CACHE

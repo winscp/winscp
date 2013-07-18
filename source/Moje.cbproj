@@ -112,9 +112,6 @@
 			<DelphiCompile Include="packages\my\IEListView.pas">
 				<BuildOrder>10</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="packages\my\LanguagesDEPfix.pas">
-				<BuildOrder>11</BuildOrder>
-			</DelphiCompile>
 			<DelphiCompile Include="packages\my\ListViewColProperties.pas">
 				<BuildOrder>12</BuildOrder>
 			</DelphiCompile>

@@ -140,7 +140,7 @@ __published:
   void __fastcall RemoteDriveViewEnter(TObject *Sender);
   void __fastcall DirViewMatchMask(TObject *Sender, UnicodeString FileName,
     bool Directory, __int64 Size, TDateTime Modification,
-    UnicodeString Masks, bool &Matches);
+    UnicodeString Masks, bool &Matches, bool AllowImplicitMatches);
   void __fastcall DirViewGetOverlay(TObject *Sender, TListItem *Item,
     WORD &Indexes);
   void __fastcall DirViewHistoryChange(TCustomDirView *Sender);

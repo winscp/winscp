@@ -87,12 +87,12 @@ TStoredSessionList * __fastcall TImportSessionsDialog::GetSessionList(int Index)
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::UpdateControls()
 {
-  EnableControl(OKButton, ListViewAnyChecked(SessionListView));
+  EnableControl(OKButton, ListViewAnyChecked(SessionListView2));
 
   bool AnySshChecked = false;
-  for (int Index = 0; Index < SessionListView->Items->Count; Index++)
+  for (int Index = 0; Index < SessionListView2->Items->Count; Index++)
   {
-    TListItem * Item = SessionListView->Items->Item[Index];
+    TListItem * Item = SessionListView2->Items->Item[Index];
     TSessionData * Data = (TSessionData*)Item->Data;
     if (Item->Checked && Data->UsesSsh)
     {
@@ -103,8 +103,8 @@ void __fastcall TImportSessionsDialog::UpdateControls()
 
   EnableControl(ImportKeysCheck, AnySshChecked);
 
-  EnableControl(CheckAllButton, SessionListView->Items->Count > 0);
-  AdjustListColumnsWidth(SessionListView);
+  EnableControl(CheckAllButton, SessionListView2->Items->Count > 0);
+  AdjustListColumnsWidth(SessionListView2);
 }
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::ClearSelections()
@@ -121,24 +121,24 @@ void __fastcall TImportSessionsDialog::ClearSelections()
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::SaveSelection()
 {
-  for (int Index = 0; Index < SessionListView->Items->Count; Index++)
+  for (int Index = 0; Index < SessionListView2->Items->Count; Index++)
   {
-    ((TSessionData*)SessionListView->Items->Item[Index]->Data)->Selected =
-      SessionListView->Items->Item[Index]->Checked;
+    ((TSessionData*)SessionListView2->Items->Item[Index]->Data)->Selected =
+      SessionListView2->Items->Item[Index]->Checked;
   }
 }
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::LoadSessions()
 {
-  SessionListView->Items->BeginUpdate();
+  SessionListView2->Items->BeginUpdate();
   try
   {
-    SessionListView->Items->Clear();
+    SessionListView2->Items->Clear();
     TStoredSessionList * SessionList = GetSessionList(SourceComboBox->ItemIndex);
     for (int Index = 0; Index < SessionList->Count; Index++)
     {
       TSessionData * Session = SessionList->Sessions[Index];
-      TListItem * Item = SessionListView->Items->Add();
+      TListItem * Item = SessionListView2->Items->Add();
       Item->Data = Session;
       Item->Caption = Session->Name;
       Item->Checked = Session->Selected;
@@ -146,25 +146,25 @@ void __fastcall TImportSessionsDialog::LoadSessions()
   }
   __finally
   {
-    SessionListView->Items->EndUpdate();
+    SessionListView2->Items->EndUpdate();
   }
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TImportSessionsDialog::SessionListViewInfoTip(
+void __fastcall TImportSessionsDialog::SessionListView2InfoTip(
       TObject * /*Sender*/, TListItem * Item, UnicodeString & InfoTip)
 {
   InfoTip = ((TSessionData*)Item->Data)->InfoTip;
 }
 //---------------------------------------------------------------------------
-void __fastcall TImportSessionsDialog::SessionListViewMouseDown(
+void __fastcall TImportSessionsDialog::SessionListView2MouseDown(
       TObject * /*Sender*/, TMouseButton /*Button*/, TShiftState /*Shift*/,
       int /*X*/, int /*Y*/)
 {
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TImportSessionsDialog::SessionListViewKeyUp(
+void __fastcall TImportSessionsDialog::SessionListView2KeyUp(
       TObject * /*Sender*/, WORD & /*Key*/, TShiftState /*Shift*/)
 {
   UpdateControls();
@@ -177,7 +177,7 @@ void __fastcall TImportSessionsDialog::FormShow(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::CheckAllButtonClick(TObject * /*Sender*/)
 {
-  ListViewCheckAll(SessionListView, caToggle);
+  ListViewCheckAll(SessionListView2, caToggle);
   UpdateControls();
 }
 //---------------------------------------------------------------------------

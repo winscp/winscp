@@ -72,6 +72,8 @@ UnicodeString __fastcall BytesToHex(RawByteString Str, bool UpperCase = true, wc
 UnicodeString __fastcall CharToHex(wchar_t Ch, bool UpperCase = true);
 RawByteString __fastcall HexToBytes(const UnicodeString Hex);
 unsigned char __fastcall HexToByte(const UnicodeString Hex);
+bool __fastcall IsDigit(wchar_t Ch);
+bool __fastcall IsHex(wchar_t Ch);
 UnicodeString __fastcall DecodeUrlChars(UnicodeString S);
 UnicodeString __fastcall EncodeUrlChars(UnicodeString S, UnicodeString Ignore = L"");
 UnicodeString __fastcall EncodeUrlString(UnicodeString S);

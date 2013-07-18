@@ -62,7 +62,7 @@ namespace WinSCP
         {
             if (threshold <= 0)
             {
-                throw new ArgumentOutOfRangeException("threshold", "Threshold must be possitive");
+                throw new ArgumentOutOfRangeException("threshold", "Threshold must be positive");
             }
             CheckSmart();
             _threshold = threshold;

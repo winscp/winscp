@@ -31,7 +31,7 @@ __fastcall TCustomWinConfiguration::TCustomWinConfiguration():
   FHistory = new TStringList();
   FEmptyHistory = new TStringList();
   FDefaultInterface = ifCommander;
-  FDefaultShowAdvancedLoginOptions = false;
+  FCanApplyInterfaceImmediately = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomWinConfiguration::~TCustomWinConfiguration()
@@ -59,8 +59,10 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
 {
   ClearHistory();
 
+  std::auto_ptr<THistoryStrings> Strings;
+
   // defaults for speed limits
-  THistoryStrings * Strings = new THistoryStrings();
+  Strings.reset(new THistoryStrings());
   Strings->Add(LoadStr(SPEED_UNLIMITED));
   unsigned long Speed = 8192;
   while (Speed >= 8)
@@ -68,14 +70,20 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
     Strings->Add(IntToStr(int(Speed)));
     Speed = Speed / 2;
   }
-  FHistory->AddObject(L"SpeedLimit", Strings);
+  FHistory->AddObject(L"SpeedLimit", Strings.release());
+
+  Strings.reset(new THistoryStrings());
+  Strings->Add(FormatCommand(DefaultPuttyPath, L""));
+  Strings->Add(FormatCommand(DefaultPuttyPath, L"-t -m \"%TEMP%\\putty.txt\" !`cmd.exe /c echo cd '!/' ; /bin/bash -login > \"%TEMP%\\putty.txt\"`"));
+  Strings->Add(KittyExecutable);
+  Strings->Add(FORMAT(L"%s -cmd \"cd '!/'\" !U@!@", (KittyExecutable)));
+  FHistory->AddObject(L"PuttyPath", Strings.release());
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::Default()
 {
   TGUIConfiguration::Default();
 
-  FShowAdvancedLoginOptions = FDefaultShowAdvancedLoginOptions;
   FInterface = FDefaultInterface;
   FLogView = lvNone;
   FSynchronizeChecklist.WindowParams = L"0;-1;-1;600;450;0";
@@ -83,6 +91,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FFindFile.WindowParams = L"646,481";
   FFindFile.ListParams = L"3;1|125,1;181,1;80,1;122,1|0;1;2;3";
   FConsoleWin.WindowSize = L"570,430";
+  FLoginDialog.WindowSize = L"640,430";
   FConfirmExitOnCompletion = true;
   FOperationProgressOnTop = true;
 
@@ -110,7 +119,6 @@ void __fastcall TCustomWinConfiguration::Saved()
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
     KEY(Integer,  Interface); \
-    KEY(Bool,     ShowAdvancedLoginOptions); \
     KEY(Bool,     ConfirmExitOnCompletion); \
   ) \
   BLOCK(L"Logging", CANCREATE, \
@@ -126,6 +134,9 @@ void __fastcall TCustomWinConfiguration::Saved()
   ); \
   BLOCK(L"Interface\\ConsoleWin", CANCREATE, \
     KEY(String,   ConsoleWin.WindowSize); \
+  ); \
+  BLOCK(L"Interface\\LoginDialog", CANCREATE, \
+    KEY(String,   LoginDialog.WindowSize); \
   ); \
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SaveData(
@@ -224,6 +235,8 @@ void __fastcall TCustomWinConfiguration::LoadData(
 {
   TGUIConfiguration::LoadData(Storage);
 
+  FAppliedInterface = FInterface;
+
   // duplicated from core\configuration.cpp
   #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(UnicodeString(TEXT(#VAR))), VAR)
   #pragma warn -eas
@@ -315,7 +328,6 @@ void __fastcall TCustomWinConfiguration::LoadAdmin(THierarchicalStorage * Storag
 {
   TGUIConfiguration::LoadAdmin(Storage);
   FDefaultInterface = TInterface(Storage->ReadInteger(L"DefaultInterfaceInterface", FDefaultInterface));
-  FDefaultShowAdvancedLoginOptions = Storage->ReadBool(L"DefaultInterfaceShowAdvancedLoginOptions", FDefaultShowAdvancedLoginOptions);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::RecryptPasswords()
@@ -333,11 +345,6 @@ void __fastcall TCustomWinConfiguration::RecryptPasswords()
   {
     Busy(false);
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomWinConfiguration::SetShowAdvancedLoginOptions(bool value)
-{
-  SET_CONFIG_PROPERTY(ShowAdvancedLoginOptions);
 }
 //---------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SetLogView(TLogView value)
@@ -407,6 +414,11 @@ void __fastcall TCustomWinConfiguration::SetFindFile(TFindFileConfiguration valu
 void __fastcall TCustomWinConfiguration::SetConsoleWin(TConsoleWinConfiguration value)
 {
   SET_CONFIG_PROPERTY(ConsoleWin);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomWinConfiguration::SetLoginDialog(TLoginDialogConfiguration value)
+{
+  SET_CONFIG_PROPERTY(LoginDialog);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SetConfirmExitOnCompletion(bool value)

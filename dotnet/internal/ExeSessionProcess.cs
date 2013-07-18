@@ -128,7 +128,7 @@ namespace WinSCP
 
                 _logger.WriteLine("Started process {0}", _process.Id);
 
-                if (_session.GuardProcessWithJob)
+                if (_session.GuardProcessWithJobInternal)
                 {
                     _job = new Job();
                     _job.AddProcess(_process.Handle);
@@ -337,6 +337,10 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
+                _logger.WriteLine(
+                    "File Name [{0}] - Directory [{1}] - Overall Progress [{2}] - File Progress [{3}] - CPS [{4}]",
+                    e.FileName, e.Directory, e.OverallProgress, e.FileProgress, e.CPS);
+
                 FileTransferProgressEventArgs args = new FileTransferProgressEventArgs();
 
                 switch (e.Operation)
@@ -454,6 +458,23 @@ namespace WinSCP
             return ev;
         }
 
+        private void TestEventClosed(string name)
+        {
+            if (_session.TestHandlesClosedInternal)
+            {
+                _logger.WriteLine("Testing that event {0} is closed", name);
+                EventWaitHandle ev;
+                if (TryCreateEvent(name, out ev))
+                {
+                    ev.Close();
+                }
+                else
+                {
+                    _logger.WriteLine("Exception: Event {0} was not closed yet", name);
+                }
+            }
+        }
+
         public void ExecuteCommand(string command)
         {
             using (_logger.CreateCallstack())
@@ -486,6 +507,10 @@ namespace WinSCP
             {
                 lock (_lock)
                 {
+                    if (_session.TestHandlesClosedInternal)
+                    {
+                        _logger.WriteLine("Will test that handles are closed");
+                    }
                     _abort = true;
                     if (_thread != null)
                     {
@@ -500,19 +525,36 @@ namespace WinSCP
                     if (_requestEvent != null)
                     {
                         _requestEvent.Close();
+                        TestEventClosed(ConsoleEventRequest + _instanceName);
                     }
                     if (_responseEvent != null)
                     {
                         _responseEvent.Close();
+                        TestEventClosed(ConsoleEventResponse + _instanceName);
                     }
                     if (_cancelEvent != null)
                     {
                         _cancelEvent.Close();
+                        TestEventClosed(ConsoleEventCancel + _instanceName);
                     }
                     if (_fileMapping != null)
                     {
                         _fileMapping.Dispose();
                         _fileMapping = null;
+                        if (_session.TestHandlesClosedInternal)
+                        {
+                            _logger.WriteLine("Testing that file mapping is closed");
+                            string fileMappingName = ConsoleMapping + _instanceName;
+                            SafeFileHandle fileMapping = CreateFileMapping(fileMappingName);
+                            if (Marshal.GetLastWin32Error() == UnsafeNativeMethods.ERROR_ALREADY_EXISTS)
+                            {
+                                _logger.WriteLine("Exception: File mapping {0} was not closed yet", fileMappingName);
+                            }
+                            if (!fileMapping.IsInvalid)
+                            {
+                                fileMapping.Dispose();
+                            }
+                        }
                     }
                     if (_inputEvent != null)
                     {

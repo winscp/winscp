@@ -2573,6 +2573,46 @@ void ERR_load_SSL_strings(void);
 #define SSL_R_X509_LIB					 268
 #define SSL_R_X509_VERIFICATION_SETUP_PROBLEMS		 269
 
+#if 0
+
+#define SSL_TRACE(s, str) \
+	{ \
+	void (*ssl_trace_cb)(const SSL *ssl,int type,int val)=NULL; \
+	if ((s)->info_callback != NULL) \
+		ssl_trace_cb=(s)->info_callback; \
+	else if ((s)->ctx->info_callback != NULL) \
+		ssl_trace_cb=(s)->ctx->info_callback; \
+	if (ssl_trace_cb != NULL) \
+		{ \
+		char* ssl_trace_buf = CRYPTO_malloc((strlen(__FILE__) + strlen(__FUNC__) + strlen(str) + 100), __FILE__, __LINE__); \
+		sprintf(ssl_trace_buf, "[%s:%s:%d] %s", __FILE__, __FUNC__, __LINE__, str); \
+		ssl_trace_cb((s),SSL_CB_LOOP,(int)ssl_trace_buf); \
+		} \
+	}
+
+#define SSL_TRACE_BYTES(s, data, len, prefix) \
+	{ \
+	if (((s)->info_callback != NULL) || ((s)->ctx->info_callback != NULL)) \
+		{ \
+		char* ssl_trace_bytes_buf = OPENSSL_malloc(strlen(prefix) + ((len)*3) + 100); \
+		int ssl_trace_i; \
+		strcpy(ssl_trace_bytes_buf, (prefix)); \
+		for (ssl_trace_i = 0; ssl_trace_i < (len); ssl_trace_i++) \
+			{ \
+			sprintf(ssl_trace_bytes_buf + strlen(ssl_trace_bytes_buf), "%2.2x ", (unsigned char)((data)[ssl_trace_i])); \
+			} \
+		SSL_TRACE((s),ssl_trace_bytes_buf); \
+		OPENSSL_free(ssl_trace_bytes_buf); \
+		} \
+	}
+
+#else
+
+#define SSL_TRACE(s, str)
+#define SSL_TRACE_BYTES(s, data, len, prefix)
+
+#endif
+
 #ifdef  __cplusplus
 }
 #endif

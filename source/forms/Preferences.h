@@ -3,8 +3,6 @@
 #define PreferencesH
 //----------------------------------------------------------------------------
 #include "ComboEdit.hpp"
-#include "GeneralSettings.h"
-#include "LogSettings.h"
 #include "UpDownEdit.hpp"
 #include <System.Classes.hpp>
 #include <Vcl.ComCtrls.hpp>
@@ -14,11 +12,12 @@
 #include <Vcl.Mask.hpp>
 #include <Vcl.StdCtrls.hpp>
 //----------------------------------------------------------------------------
-#include "GeneralSettings.h"
-#include "LogSettings.h"
 #include "UpDownEdit.hpp"
 #include <Dialogs.hpp>
 #include <PasTools.hpp>
+#include "HistoryComboBox.hpp"
+#include <WinInterface.h>
+#include <Vcl.Imaging.pngimage.hpp>
 //----------------------------------------------------------------------------
 class TCustomCommandList;
 class TEditorList;
@@ -38,10 +37,8 @@ __published:
   TCheckBox *DDTransferConfirmationCheck;
   TCheckBox *ContinueOnErrorCheck;
   TTabSheet *LogSheet;
-  TLoggingFrame *LoggingFrame;
   TTabSheet *GeneralSheet;
-  TLabel *Label1;
-  TGeneralSettingsFrame *GeneralSettingsFrame;
+  TLabel *InterfaceChangeLabel;
   TTabSheet *PanelsSheet;
   TGroupBox *PanelsRemoteDirectoryGroup;
   TCheckBox *ShowInaccesibleDirectoriesCheck;
@@ -162,7 +159,7 @@ __published:
   TGroupBox *ThemeGroup;
   TLabel *Label7;
   TComboBox *ThemeCombo;
-  TListView *EditorListView2;
+  TListView *EditorListView3;
   TButton *AddEditorButton;
   TButton *EditEditorButton;
   TButton *UpEditorButton;
@@ -189,12 +186,11 @@ __published:
   TCheckBox *BalloonNotificationsCheck;
   TTabSheet *IntegrationAppSheet;
   TGroupBox *ExternalAppsGroup;
-  TLabel *Label2;
-  TEdit *PuttyPathEdit;
+  TLabel *PuttyPathLabel;
+  THistoryComboBox *PuttyPathEdit;
   TCheckBox *PuttyPasswordCheck2;
   TCheckBox *AutoOpenInPuttyCheck;
   TButton *PuttyPathBrowseButton;
-  TButton *PuttyPathResetButton;
   TCheckBox *TelnetForFtpInPuttyCheck;
   TRadioButton *UpdatesDirectCheck;
   TRadioButton *UpdatesAutoCheck;
@@ -257,6 +253,39 @@ __published:
   TCheckBox *SystemContextMenuCheck;
   TGroupBox *PasswordGroupBox;
   TCheckBox *SessionRememberPasswordCheck;
+  TStaticText *PuttyPathHintText;
+  TLabel *PuttyRegistryStorageKeyLabel;
+  THistoryComboBox *PuttyRegistryStorageKeyEdit;
+  TTabSheet *LanguagesSheet;
+  TGroupBox *LanguagesGroup;
+  TListView *LanguagesView;
+  TLabel *LanguageChangeLabel;
+  TButton *LanguagesGetMoreButton;
+  TGroupBox *LoggingGroup;
+  TLabel *LogWindowLinesText;
+  TCheckBox *LogToFileCheck;
+  TFilenameEdit *LogFileNameEdit3;
+  TCheckBox *LogShowWindowCheck;
+  TRadioButton *LogWindowCompleteButton;
+  TRadioButton *LogWindowLinesButton;
+  TUpDownEdit *LogWindowLinesEdit;
+  TPanel *LogFilePanel;
+  TRadioButton *LogFileAppendButton;
+  TRadioButton *LogFileOverwriteButton;
+  TComboBox *LogProtocolCombo;
+  TStaticText *LogFileNameHintText;
+  TCheckBox *EnableLoggingCheck;
+  TGroupBox *ActionsLoggingGroup;
+  TFilenameEdit *ActionsLogFileNameEdit;
+  TStaticText *ActionsLogFileNameHintText;
+  TCheckBox *EnableActionsLoggingCheck;
+  TGroupBox *InterfaceGroup;
+  TLabel *CommanderDescriptionLabel2;
+  TLabel *ExplorerDescriptionLabel;
+  TImage *CommanderInterfacePicture;
+  TImage *ExplorerInterfacePicture;
+  TRadioButton *CommanderInterfaceButton2;
+  TRadioButton *ExplorerInterfaceButton2;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -293,17 +322,16 @@ __published:
   void __fastcall AddCopyParamButtonClick(TObject *Sender);
   void __fastcall CopyParamListViewDblClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
-  void __fastcall EditorListView2DragDrop(TObject *Sender, TObject *Source,
+  void __fastcall EditorListView3DragDrop(TObject *Sender, TObject *Source,
           int X, int Y);
   void __fastcall UpDownEditorButtonClick(TObject *Sender);
   void __fastcall RemoveEditorButtonClick(TObject *Sender);
   void __fastcall AddEditEditorButtonClick(TObject *Sender);
-  void __fastcall EditorListView2DblClick(TObject *Sender);
-  void __fastcall EditorListView2KeyDown(TObject *Sender, WORD &Key,
+  void __fastcall EditorListView3DblClick(TObject *Sender);
+  void __fastcall EditorListView3KeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
-  void __fastcall EditorListView2Data(TObject *Sender, TListItem *Item);
+  void __fastcall EditorListView3Data(TObject *Sender, TListItem *Item);
   void __fastcall PuttyPathBrowseButtonClick(TObject *Sender);
-  void __fastcall PuttyPathResetButtonClick(TObject *Sender);
   void __fastcall PathEditBeforeDialog(TObject *Sender,
           UnicodeString &Name, bool &Action);
   void __fastcall PathEditAfterDialog(TObject *Sender,
@@ -312,7 +340,7 @@ __published:
           TTreeNode *Node, bool &AllowCollapse);
   void __fastcall ListViewEndDrag(TObject *Sender,
           TObject *Target, int X, int Y);
-  void __fastcall RandomSeedFileEditCreateEditDialog(TObject *Sender,
+  void __fastcall PathEditCreateEditDialog(TObject *Sender,
           TFileDialogKind DialogKind, TOpenDialog *&Dialog);
   void __fastcall SessionReopenTimeoutEditSetValue(TObject *Sender,
           Extended Value, UnicodeString &Text, bool &Handed);
@@ -326,6 +354,11 @@ __published:
   void __fastcall CopyParamLabelClick(TObject *Sender);
   void __fastcall CopyParamListViewCustomDrawItem(TCustomListView *Sender, TListItem *Item,
           TCustomDrawState State, bool &DefaultDraw);
+  void __fastcall PuttyPathEditChange(TObject *Sender);
+  void __fastcall NavigationTreeChanging(TObject *Sender, TTreeNode *Node, bool &AllowChange);
+  void __fastcall LanguagesGetMoreButtonClick(TObject *Sender);
+  void __fastcall CommanderClick(TObject *Sender);
+  void __fastcall ExplorerClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -344,17 +377,18 @@ private:
   TListViewScrollOnDragOver * FCopyParamScrollOnDragOver;
   TListViewScrollOnDragOver * FEditorScrollOnDragOver;
   bool FNoUpdate;
-  void __fastcall SetPreferencesMode(TPreferencesMode value);
+  bool FLanguagesLoaded;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
   void __fastcall AddEditCopyParam(TCopyParamPresetMode Mode);
   const TCopyParamType * GetCopyParam(int Index);
+  void __fastcall SelectPuttyRegistryStorageKey(const UnicodeString & Key);
+  TInterface __fastcall GetInterface();
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);
-  virtual __fastcall TPreferencesDialog(TComponent* AOwner);
-  __property TPreferencesMode PreferencesMode = { read = FPreferencesMode, write = SetPreferencesMode };
+  virtual __fastcall TPreferencesDialog(TComponent* AOwner, TPreferencesMode PreferencesMode);
 protected:
   void __fastcall LoadConfiguration();
   void __fastcall SaveConfiguration();
@@ -369,6 +403,8 @@ protected:
   void __fastcall PrepareNavigationTree(TTreeView * Tree);
   virtual void __fastcall Dispatch(void * Message);
   TListViewScrollOnDragOver * __fastcall ScrollOnDragOver(TObject * ListView);
+  void __fastcall LoadLanguages();
+  TTabSheet * __fastcall FindPageForTreeNode(TTreeNode * Node);
 };
 //----------------------------------------------------------------------------
 #endif

@@ -74,6 +74,7 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner,
   FStartImmediatelly = StartImmediatelly;
 
   HotTrackLabel(CopyParamLabel);
+  CopyParamListButton(TransferSettingsButton);
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
 }

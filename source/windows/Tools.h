@@ -6,17 +6,18 @@
 #include <WinInterface.h>
 #include <HelpIntfs.hpp>
 #include <stdio.h>
+#include <SessionData.h>
 //---------------------------------------------------------------------------
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn);
 bool __fastcall ExecuteShellAndWait(const UnicodeString Path, const UnicodeString Params);
 bool __fastcall ExecuteShellAndWait(const UnicodeString Command);
 IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString &Name,
   const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
-  int SpecialFolder = -1, bool Return = false);
+  int SpecialFolder = -1, int IconIndex = 0, bool Return = false);
 IShellLink * __fastcall CreateDesktopSessionShortCut(
   const UnicodeString & SessionName, UnicodeString Name,
   const UnicodeString & AdditionalParams,
-  int SpecialFolder = -1, bool Return = false);
+  int SpecialFolder = -1, int IconIndex = SITE_ICON, bool Return = false);
 UnicodeString __fastcall GetListViewStr(TListView * ListView);
 void __fastcall LoadListViewStr(TListView * ListView, UnicodeString LayoutStr);
 void __fastcall RestoreForm(UnicodeString Data, TForm * Form);
@@ -50,6 +51,8 @@ void __fastcall CopyToClipboard(UnicodeString Text);
 void __fastcall CopyToClipboard(TStrings * Strings);
 void __fastcall ShutDownWindows();
 void __fastcall EditSelectBaseName(HWND Edit);
+void __fastcall VerifyKey(UnicodeString FileName);
+void __fastcall VerifyKeyIncludingVersion(UnicodeString FileName, TSshProt SshProt);
 TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo);
 //---------------------------------------------------------------------------
 #define IUNKNOWN \

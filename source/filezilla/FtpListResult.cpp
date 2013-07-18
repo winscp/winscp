@@ -1322,7 +1322,9 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 
 		int pos = facts.Find('=');
 		if (pos < 1 || pos > delim)
+		{
 			return FALSE;
+		}
 
 		CString factname = facts.Left(pos);
 		factname.MakeLower();
@@ -1365,13 +1367,21 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 			direntry.permissionstr = value;
 		}
 		else if (factname == _T("unix.owner") || factname == _T("unix.user"))
+		{
 			owner = value;
+		}
 		else if (factname == _T("unix.group"))
+		{
 			group = value;
+		}
 		else if (factname == _T("unix.uid"))
+		{
 			uid = value;
+		}
 		else if (factname == _T("unix.gid"))
+		{
 			gid = value;
+		}
 
 		facts = facts.Mid(delim + 1);
 	}
@@ -1424,15 +1434,24 @@ bool CFtpListResult::parseMlsdDateTime(const CString value, t_directory::t_diren
 	}
 	if (result)
 	{
-		direntry.date.year = Year;
-		direntry.date.month = Month;
-		direntry.date.day = Day;
-		direntry.date.hour = Hours;
-		direntry.date.minute = Minutes;
-		direntry.date.second = Seconds;
-		direntry.date.utc = TRUE;
-		CTime dateTime(Year, Month, Day, Hours, Minutes, Seconds);
-		direntry.EntryTime = dateTime;
+		try
+		{
+			CTime dateTime(Year, Month, Day, Hours, Minutes, Seconds);
+			direntry.date.year = Year;
+			direntry.date.month = Month;
+			direntry.date.day = Day;
+			direntry.date.hour = Hours;
+			direntry.date.minute = Minutes;
+			direntry.date.second = Seconds;
+			direntry.date.utc = TRUE;
+			direntry.EntryTime = dateTime;
+		}
+		// Does not really seem to ever throw in our version of MFC/ATL
+		catch (CException &)
+		{
+			direntry.date.hasdate = FALSE;
+			direntry.date.hastime = FALSE;
+		}
 	}
 	return result;
 }

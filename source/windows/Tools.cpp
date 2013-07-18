@@ -11,9 +11,12 @@
 
 #include <Common.h>
 #include <TextsWin.h>
+#include <TextsCore.h>
+#include <HelpWin.h>
 #include <Exceptions.h>
 #include <CoreMain.h>
 #include <RemoteFiles.h>
+#include <PuttyTools.h>
 
 #include "GUITools.h"
 #include "VCLCommon.h"
@@ -22,6 +25,7 @@
 #include <WinHelpViewer.hpp>
 #include <PasTools.hpp>
 #include <System.Win.ComObj.hpp>
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -215,7 +219,7 @@ bool __fastcall ExecuteShellAndWait(const UnicodeString Command)
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
   const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
-  int SpecialFolder, bool Return)
+  int SpecialFolder, int IconIndex, bool Return)
 {
   IShellLink* pLink = NULL;
 
@@ -237,7 +241,7 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
         pLink->SetShowCmd(SW_SHOW);
         // Explicitly setting icon file,
         // without this icons are not shown at least in Windows 7 jumplist
-        pLink->SetIconLocation(File.c_str(), 0);
+        pLink->SetIconLocation(File.c_str(), IconIndex);
 
         IPersistFile* pPersistFile;
         if (!Return &&
@@ -309,7 +313,8 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateDesktopSessionShortCut(
   const UnicodeString & SessionName, UnicodeString Name,
-  const UnicodeString & AdditionalParams, int SpecialFolder, bool Return)
+  const UnicodeString & AdditionalParams, int SpecialFolder, int IconIndex,
+  bool Return)
 {
   bool DefaultsOnly;
   UnicodeString InfoTip;
@@ -346,7 +351,7 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   return
     CreateDesktopShortCut(ValidLocalFileName(Name), Application->ExeName,
       FORMAT(L"\"%s\"%s%s", (SessionName, (AdditionalParams.IsEmpty() ? L"" : L" "), AdditionalParams)),
-      InfoTip, SpecialFolder, Return);
+      InfoTip, SpecialFolder, IconIndex, Return);
 }
 //---------------------------------------------------------------------------
 template<class TEditControl>
@@ -554,7 +559,7 @@ void __fastcall BrowseForExecutableT(T * Control, UnicodeString Title,
   {
     if (Escape)
     {
-      Program = StringReplace(Program, L"\\\\", L"\\", TReplaceFlags() << rfReplaceAll);
+      Program = ReplaceStr(Program, L"\\\\", L"\\");
     }
     UnicodeString ExpandedProgram = ExpandEnvironmentVariables(Program);
     FileDialog->FileName = ExpandedProgram;
@@ -578,7 +583,7 @@ void __fastcall BrowseForExecutableT(T * Control, UnicodeString Title,
           Program = FileDialog->FileName;
           if (Escape)
           {
-            Program = StringReplace(Program, L"\\", L"\\\\", TReplaceFlags() << rfReplaceAll);
+            Program = ReplaceStr(Program, L"\\", L"\\\\");
           }
         }
         Control->Text = FormatCommand(Program, Params);
@@ -815,6 +820,69 @@ void __fastcall EditSelectBaseName(HWND Edit)
     // initialized yet
     PostMessage(Edit, EM_SETSEL, 0, P - 1);
   }
+}
+//---------------------------------------------------------------------------
+static void __fastcall DoVerifyKey(
+  UnicodeString FileName, bool TypeOnly, TSshProt SshProt)
+{
+  if (!FileName.Trim().IsEmpty())
+  {
+    FileName = ExpandEnvironmentVariables(FileName);
+    TKeyType Type = KeyType(FileName);
+    UnicodeString Message;
+    switch (Type)
+    {
+      case ktOpenSSH:
+        Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, L"OpenSSH SSH-2"));
+        break;
+
+      case ktSSHCom:
+        Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, L"ssh.com SSH-2"));
+        break;
+
+      case ktSSH1:
+      case ktSSH2:
+        // on file select do not check for SSH version as user may
+        // intend to change it only after he/she selects key file
+        if (!TypeOnly)
+        {
+          if ((Type == ktSSH1) !=
+                ((SshProt == ssh1only) || (SshProt == ssh1)))
+          {
+            Message = FMTLOAD(KEY_TYPE_DIFFERENT_SSH,
+              (FileName, (Type == ktSSH1 ? L"SSH-1" : L"PuTTY SSH-2")));
+          }
+        }
+        break;
+
+      default:
+        assert(false);
+        // fallthru
+      case ktUnopenable:
+      case ktUnknown:
+        Message = FMTLOAD(KEY_TYPE_UNKNOWN, (FileName));
+        break;
+    }
+
+    if (!Message.IsEmpty())
+    {
+      if (MessageDialog(Message, qtWarning, qaIgnore | qaAbort,
+           HELP_LOGIN_KEY_TYPE) == qaAbort)
+      {
+        Abort();
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall VerifyKey(UnicodeString FileName)
+{
+  DoVerifyKey(FileName, true, TSshProt(0));
+}
+//---------------------------------------------------------------------------
+void __fastcall VerifyKeyIncludingVersion(UnicodeString FileName, TSshProt SshProt)
+{
+  DoVerifyKey(FileName, false, SshProt);
 }
 //---------------------------------------------------------------------------
 // Code from http://gentoo.osuosl.org/distfiles/cl331.zip/io/

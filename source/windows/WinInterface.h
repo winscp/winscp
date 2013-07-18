@@ -12,6 +12,10 @@
 #include <LocalInterface.h>
 #endif
 
+#define SITE_ICON 1
+#define SITE_FOLDER_ICON 2
+#define WORKSPACE_ICON 3
+
 class TStoredSessionList;
 class TConfiguration;
 class TTerminal;
@@ -90,10 +94,10 @@ unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Ty
   UnicodeString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
 
 // forms\Custom.cpp
-bool __fastcall DoSaveSessionDialog(UnicodeString & SessionName,
-  bool * SavePassword, TSessionData * OriginalSession, bool NotRecommendedSavingPassword);
+TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
+  TSessionData * OriginalSession, bool ForceDialog);
 void __fastcall SessionNameValidate(const UnicodeString & Text,
-  TSessionData * RenamingSession = NULL);
+  const UnicodeString & OriginalName);
 bool __fastcall DoSaveWorkspaceDialog(UnicodeString & WorkspaceName,
   bool * SavePasswords, bool NotRecommendedSavingPasswords,
   bool & CreateShortcut, bool & EnableAutoSave);
@@ -178,22 +182,18 @@ void __fastcall DoLicenseDialog(TLicense License);
 // forms\Login.cpp
 // these flags are used in navigation tree of login dialog, change with care
 const loLocalDirectory = 0x01;
-const loLanguage       = 0x02;
-const loTools          = 0x04;
-const loLogWindow      = 0x08;
-const loAbout          = 0x10;
+const loExternalTools  = 0x04;
 
-const loPreferences    = 0x20;
 const loColor          = 0x80;
 
-const loSiteManager    = 0x100;
-
 const loNone           = 0x00;
-const loAddSession     = (loLocalDirectory | loLogWindow | loColor);
-const loStartup        = (loLocalDirectory | loLanguage | loTools |
-  loLogWindow | loPreferences | loAbout | loColor);
+const loAddSession     = (loLocalDirectory | loColor);
+const loStartup        = (loLocalDirectory | loExternalTools | loColor);
 bool __fastcall DoLoginDialog(TStoredSessionList * SessionList,
   TList * DataList, int Options);
+
+  // forms\SiteAdvanced.cpp
+bool __fastcall DoSiteAdvancedDialog(TSessionData * SessionData, int Options);
 
 // forms\OpenDirectory.cpp
 enum TOpenDirectoryMode { odBrowse, odAddBookmark };
@@ -207,7 +207,7 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
   TStrings * LocalDirectories, TStrings * RemoteDirectories, TTerminal * Terminal);
 
 // forms\Preferences.cpp
-enum TPreferencesMode { pmDefault, pmLogin, pmEditor, pmCustomCommands,
+enum TPreferencesMode { pmDefault, pmEditor, pmCustomCommands,
     pmQueue, pmLogging, pmUpdates, pmPresets, pmEditors };
 class TCopyParamRuleData;
 struct TPreferencesDialogData
@@ -341,11 +341,13 @@ void __fastcall DoFileSystemInfoDialog(
   UnicodeString SpaceAvailablePath, TGetSpaceAvailable OnGetSpaceAvailable);
 
 // forms\MessageDlg.cpp
+void __fastcall AnswerNameAndCaption(
+  unsigned int Answer, UnicodeString & Name, UnicodeString & Caption);
 TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
-  TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
-  TQueryButtonAlias * Aliases = NULL, unsigned int AliasesCount = 0,
-  TMsgDlgBtn TimeoutResult = mbHelp, TButton ** TimeoutButton = NULL,
-  const UnicodeString & ImageName = "");
+  TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
+  const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
+  unsigned int TimeoutAnswer, TButton ** TimeoutButton,
+  const UnicodeString & ImageName);
 
 // windows\Console.cpp
 int __fastcall Console(bool Help);
@@ -363,6 +365,7 @@ typedef void __fastcall (__closure *TFindEvent)
 bool __fastcall DoFileFindDialog(UnicodeString Directory,
   TFindEvent OnFind, UnicodeString & Path);
 
+void __fastcall CopyParamListButton(TButton * Button);
 const int cplNone =             0x00;
 const int cplCustomize =        0x01;
 const int cplCustomizeDefault = 0x02;
@@ -377,6 +380,7 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
 void __fastcall MenuPopup(TPopupMenu * Menu, TPoint Point, TComponent * PopupComponent);
 void __fastcall MenuPopup(TPopupMenu * Menu, TButtonControl * Button);
 void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Handled);
+void __fastcall MenuButton(TButton * Button);
 
 void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
 
@@ -404,7 +408,9 @@ public:
     const UnicodeString CustomCommandName);
 
 protected:
-  virtual void __fastcall Prompt(int Index, const UnicodeString & Prompt,
+  virtual void __fastcall Prompt(const UnicodeString & Prompt,
+    UnicodeString & Value);
+  virtual void __fastcall Execute(const UnicodeString & Command,
     UnicodeString & Value);
 
 private:

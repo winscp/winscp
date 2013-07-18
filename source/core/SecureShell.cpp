@@ -23,6 +23,7 @@ struct TPuttyTranslation
 {
   const wchar_t * Original;
   int Translation;
+  UnicodeString HelpKeyword;
 };
 //---------------------------------------------------------------------------
 char * __fastcall AnsiStrNew(const wchar_t * S)
@@ -61,6 +62,7 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FFrozen = false;
   FSimple = false;
   FCollectPrivateKeyUsage = false;
+  FWaitingForData = 0;
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
@@ -1100,7 +1102,8 @@ void __fastcall TSecureShell::SendLine(UnicodeString Line)
 }
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::TranslatePuttyMessage(
-  const TPuttyTranslation * Translation, size_t Count, UnicodeString & Message)
+  const TPuttyTranslation * Translation, size_t Count, UnicodeString & Message,
+  UnicodeString * HelpKeyword)
 {
   int Result = -1;
   for (unsigned int Index = 0; Index < Count; Index++)
@@ -1132,10 +1135,17 @@ int __fastcall TSecureShell::TranslatePuttyMessage(
       }
     }
   }
+
+  if ((HelpKeyword != NULL) && (Result >= 0))
+  {
+    *HelpKeyword = Translation[Result].HelpKeyword;
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall TSecureShell::TranslateAuthenticationMessage(UnicodeString & Message)
+int __fastcall TSecureShell::TranslateAuthenticationMessage(
+  UnicodeString & Message, UnicodeString * HelpKeyword)
 {
   static const TPuttyTranslation Translation[] = {
     { L"Using username \"%\".", AUTH_TRANSL_USERNAME },
@@ -1151,7 +1161,7 @@ int __fastcall TSecureShell::TranslateAuthenticationMessage(UnicodeString & Mess
     { L"Server refused our key", AUTH_TRANSL_KEY_REFUSED }
   };
 
-  int Result = TranslatePuttyMessage(Translation, LENOF(Translation), Message);
+  int Result = TranslatePuttyMessage(Translation, LENOF(Translation), Message, HelpKeyword);
 
   if (FCollectPrivateKeyUsage &&
       ((Result == 2) || (Result == 3) || (Result == 4)))
@@ -1223,16 +1233,21 @@ void __fastcall TSecureShell::CaptureOutput(TLogLineType Type,
   FLog->Add(Type, Line);
 }
 //---------------------------------------------------------------------------
-int __fastcall TSecureShell::TranslateErrorMessage(UnicodeString & Message)
+int __fastcall TSecureShell::TranslateErrorMessage(
+  UnicodeString & Message, UnicodeString * HelpKeyword)
 {
   static const TPuttyTranslation Translation[] = {
-    { L"Server unexpectedly closed network connection", UNEXPECTED_CLOSE_ERROR },
-    { L"Network error: Connection refused", NET_TRANSL_REFUSED },
-    { L"Network error: Connection reset by peer", NET_TRANSL_RESET },
-    { L"Network error: Connection timed out", NET_TRANSL_TIMEOUT },
+    { L"Server unexpectedly closed network connection", UNEXPECTED_CLOSE_ERROR, HELP_UNEXPECTED_CLOSE_ERROR },
+    { L"Network error: Connection refused", NET_TRANSL_REFUSED, HELP_NET_TRANSL_REFUSED },
+    { L"Network error: Connection reset by peer", NET_TRANSL_RESET, HELP_NET_TRANSL_RESET },
+    { L"Network error: Connection timed out", NET_TRANSL_TIMEOUT, HELP_NET_TRANSL_TIMEOUT },
+    { L"Network error: No route to host", NET_TRANSL_NO_ROUTE, HELP_NET_TRANSL_NO_ROUTE },
+    { L"Network error: Software caused connection abort", NET_TRANSL_CONN_ABORTED, HELP_NET_TRANSL_CONN_ABORTED },
+    { L"Host does not exist", NET_TRANSL_HOST_NOT_EXIST, HELP_NET_TRANSL_HOST_NOT_EXIST },
+    { L"Incoming packet was garbled on decryption", NET_TRANSL_PACKET_GARBLED, HELP_NET_TRANSL_PACKET_GARBLED },
   };
 
-  int Index = TranslatePuttyMessage(Translation, LENOF(Translation), Message);
+  int Index = TranslatePuttyMessage(Translation, LENOF(Translation), Message, HelpKeyword);
 
   if ((Index == 0) || (Index == 1) || (Index == 2) || (Index == 3))
   {
@@ -1244,14 +1259,15 @@ int __fastcall TSecureShell::TranslateErrorMessage(UnicodeString & Message)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::PuttyFatalError(UnicodeString Error)
 {
-  TranslateErrorMessage(Error);
+  UnicodeString HelpKeyword;
+  TranslateErrorMessage(Error, &HelpKeyword);
 
-  FatalError(Error);
+  FatalError(Error, HelpKeyword);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::FatalError(UnicodeString Error)
+void __fastcall TSecureShell::FatalError(UnicodeString Error, UnicodeString HelpKeyword)
 {
-  FUI->FatalError(NULL, Error);
+  FUI->FatalError(NULL, Error, HelpKeyword);
 }
 //---------------------------------------------------------------------------
 void __fastcall inline TSecureShell::LogEvent(const UnicodeString & Str)
@@ -1406,13 +1422,25 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
 {
   if (!FActive || get_ssh_state_closed(FBackendHandle))
   {
-    UnicodeString Str = LoadStr(Message >= 0 ? Message : NOT_CONNECTED);
+    UnicodeString Str;
+    UnicodeString HelpKeyword;
+
+    if (Message >= 0)
+    {
+      Str = LoadStr(Message);
+    }
+    else
+    {
+      Str = LoadStr(NOT_CONNECTED);
+      HelpKeyword = HELP_NOT_CONNECTED;
+    }
+
     int ExitCode = get_ssh_exitcode(FBackendHandle);
     if (ExitCode >= 0)
     {
       Str += L" " + FMTLOAD(SSH_EXITCODE, (ExitCode));
     }
-    FatalError(Str);
+    FatalError(Str, HelpKeyword);
   }
 }
 //---------------------------------------------------------------------------
@@ -1488,6 +1516,9 @@ void __fastcall TSecureShell::WaitForData()
     IncomingData = EventSelectLoop(FSessionData->Timeout * MSecsPerSec, true, NULL);
     if (!IncomingData)
     {
+      assert(FWaitingForData == 0);
+      TAutoNestingCounter NestingCounter(FWaitingForData);
+
       WSANETWORKEVENTS Events;
       memset(&Events, 0, sizeof(Events));
       TPoolForDataEvent Event(this, Events);
@@ -1722,7 +1753,12 @@ void __fastcall TSecureShell::Idle(unsigned int MSec)
 
   call_ssh_timer(FBackendHandle);
 
-  EventSelectLoop(MSec, false, NULL);
+  // if we are actively waiting for data in WaitForData,
+  // do not read here, otherwise we swallow read event and never wake
+  if (FWaitingForData <= 0)
+  {
+    EventSelectLoop(MSec, false, NULL);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::KeepAlive()
@@ -1827,10 +1863,35 @@ struct TClipboardHandler
   }
 };
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TSecureShell::FormatKeyStr(UnicodeString KeyStr)
+{
+  int Index = 1;
+  int Digits = 0;
+  while (Index <= KeyStr.Length())
+  {
+    if (IsHex(KeyStr[Index]))
+    {
+      Digits++;
+      if (Digits >= 16)
+      {
+        KeyStr.Insert(L" ", Index + 1);
+        Index++;
+        Digits = 0;
+      }
+    }
+    else
+    {
+      Digits = 0;
+    }
+    Index++;
+  }
+  return KeyStr;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
   const UnicodeString KeyType, UnicodeString KeyStr, const UnicodeString Fingerprint)
 {
-  LogEvent(FORMAT(L"Verifying host key %s %s with fingerprint %s", (KeyType, KeyStr, Fingerprint)));
+  LogEvent(FORMAT(L"Verifying host key %s %s with fingerprint %s", (KeyType, FormatKeyStr(KeyStr), Fingerprint)));
 
   GotHostKey();
 
@@ -1889,7 +1950,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
         }
         else
         {
-          LogEvent(FORMAT(L"Host key does not match cached key %s", (StoredKey)));
+          LogEvent(FORMAT(L"Host key does not match cached key %s", (FormatKeyStr(StoredKey))));
         }
       }
     }

@@ -32,8 +32,11 @@ namespace WinSCP
                 _stream = null;
             }
 
-            ((IDisposable)_reader).Dispose();
-            _reader = null;
+            if (_reader != null)
+            {
+                ((IDisposable)_reader).Dispose();
+                _reader = null;
+            }
         }
 
         public override bool Read(LogReadFlags flags)

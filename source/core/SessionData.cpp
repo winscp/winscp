@@ -1661,7 +1661,7 @@ UnicodeString __fastcall TSessionData::GetSshProtStr()
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::GetUsesSsh()
 {
-  return (FSProtocol == fsSCPonly) || (FSProtocol == fsSFTP) || (FSProtocol == fsSFTPonly);
+  return IsSshProtocol(FSProtocol);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetCipher(int Index, TCipher value)
@@ -2353,21 +2353,38 @@ UnicodeString __fastcall TSessionData::GetInfoTip()
   }
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::ExtractLocalName(const UnicodeString & Name)
+{
+  UnicodeString Result = Name;
+  int P = Result.LastDelimiter(L"/");
+  if (P > 0)
+  {
+    Result.Delete(1, P);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetLocalName()
 {
   UnicodeString Result;
   if (HasSessionName())
   {
-    Result = Name;
-    int P = Result.LastDelimiter(L"/");
-    if (P > 0)
-    {
-      Result.Delete(1, P);
-    }
+    Result = ExtractLocalName(Name);
   }
   else
   {
     Result = DefaultSessionName;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::ExtractFolderName(const UnicodeString & Name)
+{
+  UnicodeString Result;
+  int P = Name.LastDelimiter(L"/");
+  if (P > 0)
+  {
+    Result = Name.SubString(1, P - 1);
   }
   return Result;
 }
@@ -2377,13 +2394,15 @@ UnicodeString __fastcall TSessionData::GetFolderName()
   UnicodeString Result;
   if (HasSessionName() || IsWorkspace)
   {
-    int P = Name.LastDelimiter(L"/");
-    if (P > 0)
-    {
-      Result = Name.SubString(1, P - 1);
-    }
+    Result = ExtractFolderName(Name);
   }
   return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::ComposePath(
+  const UnicodeString & Path, const UnicodeString & Name)
+{
+  return UnixIncludeTrailingBackslash(Path) + Name;
 }
 //=== TStoredSessionList ----------------------------------------------
 __fastcall TStoredSessionList::TStoredSessionList(bool aReadOnly):
@@ -2751,7 +2770,7 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
     {
       Workspaces = true;
     }
-    else if (Data->Name.Pos(L"/") > 0)
+    else if (!Data->FolderName.IsEmpty())
     {
       Folders = true;
     }
@@ -3009,7 +3028,7 @@ void __fastcall TStoredSessionList::NewWorkspace(
 
     TSessionData * Data2 = new TSessionData(L"");
     Data2->Assign(Data);
-    Data2->Name = Name + L"/" + Data->Name;
+    Data2->Name = TSessionData::ComposePath(Name, Data->Name);
     // make sure, that new stored session is saved to registry
     Data2->Modified = true;
     Add(Data2);
@@ -3118,5 +3137,12 @@ UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TSessionData * S
     }
   }
   return ANewFileName;
+}
+//---------------------------------------------------------------------
+bool __fastcall IsSshProtocol(TFSProtocol FSProtocol)
+{
+  return
+    (FSProtocol == fsSFTPonly) || (FSProtocol == fsSFTP) ||
+    (FSProtocol == fsSCPonly);
 }
 //---------------------------------------------------------------------

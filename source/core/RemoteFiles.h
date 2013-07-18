@@ -203,10 +203,9 @@ protected:
   TRemoteFile * __fastcall GetParentDirectory();
   UnicodeString __fastcall GetParentPath();
   __int64 __fastcall GetTotalSize();
-
-  virtual void __fastcall Clear();
 public:
   __fastcall TRemoteFileList();
+  virtual void __fastcall Reset();
   TRemoteFile * __fastcall FindFile(const UnicodeString &FileName);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
   virtual void __fastcall AddFile(TRemoteFile * File);
@@ -235,12 +234,13 @@ private:
   Boolean __fastcall GetLoaded();
   void __fastcall SetIncludeParentDirectory(Boolean value);
   void __fastcall SetIncludeThisDirectory(Boolean value);
-protected:
-  virtual void __fastcall Clear();
+  void __fastcall ReleaseRelativeDirectories();
 public:
   __fastcall TRemoteDirectory(TTerminal * aTerminal, TRemoteDirectory * Template = NULL);
+  virtual __fastcall ~TRemoteDirectory();
   virtual void __fastcall AddFile(TRemoteFile * File);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
+  virtual void __fastcall Reset();
   __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
   __property TStrings * SelectedFiles  = { read=GetSelectedFiles };
   __property Boolean IncludeParentDirectory = { read = FIncludeParentDirectory, write = SetIncludeParentDirectory };
@@ -334,7 +334,6 @@ public:
   __fastcall TRights();
   __fastcall TRights(const TRights & Source);
   __fastcall TRights(unsigned short Number);
-
   void __fastcall Assign(const TRights * Source);
   void __fastcall AddExecute();
   void __fastcall AllUndef();

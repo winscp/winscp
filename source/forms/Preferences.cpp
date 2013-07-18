@@ -21,12 +21,11 @@
 #include "WinConfiguration.h"
 #include "Setup.h"
 //---------------------------------------------------------------------
-#pragma link "GeneralSettings"
-#pragma link "LogSettings"
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
 #pragma link "ComboEdit"
 #ifndef NO_RESOURCES
+#pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
@@ -34,10 +33,10 @@ bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   TPreferencesDialogData * DialogData)
 {
   bool Result;
-  TPreferencesDialog * PreferencesDialog = new TPreferencesDialog(GetFormOwner());
+  TPreferencesDialog * PreferencesDialog =
+    new TPreferencesDialog(GetFormOwner(), APreferencesMode);
   try
   {
-    PreferencesDialog->PreferencesMode = APreferencesMode;
     Result = PreferencesDialog->Execute(DialogData);
   }
   __finally
@@ -47,13 +46,14 @@ bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   return Result;
 }
 //---------------------------------------------------------------------
-__fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
+__fastcall TPreferencesDialog::TPreferencesDialog(
+  TComponent* AOwner, TPreferencesMode PreferencesMode)
   : TForm(AOwner)
 {
   SetCorrectFormParent(this);
 
   FNoUpdate = 0;
-  FPreferencesMode = ::pmDefault;
+  FPreferencesMode = PreferencesMode;
   FEditorFont = new TFont();
   FEditorFont->Color = clWindowText;
   // color tends to reset in object inspector
@@ -69,15 +69,18 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
 
   FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
   FCopyParamScrollOnDragOver = new TListViewScrollOnDragOver(CopyParamListView, true);
-  FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView2, true);
+  FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView3, true);
 
   ComboAutoSwitchInitialize(UpdatesBetaVersionsCombo);
   EnableControl(UpdatesBetaVersionsCombo, !WinConfiguration->IsBeta);
   EnableControl(UpdatesBetaVersionsLabel, UpdatesBetaVersionsCombo->Enabled);
 
-  LoggingFrame->Init();
+  HintLabel(LogFileNameHintText, LoadStr(LOG_FILE_HINT3));
+  HintLabel(ActionsLogFileNameHintText, LoadStr(LOG_FILE_HINT3));
+
   HintLabel(ShellIconsText);
   HotTrackLabel(CopyParamLabel);
+  HintLabel(PuttyPathHintText, LoadStr(PUTTY_PATTERNS_HINT));
 
   EditorEncodingCombo->Items->Add(DefaultEncodingName());
   EditorEncodingCombo->Items->Add(LoadStr(UTF8_NAME));
@@ -85,6 +88,9 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   std::auto_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
   AutoWorkspaceCombo->Items->AddStrings(Workspaces.get());
   AutoSaveWorkspacePasswordsCheck->Caption = LoadStr(SAVE_WORKSPACE_PASSWORDS);
+
+  PuttyRegistryStorageKeyEdit->Items->Add(OriginalPuttyRegistryStorageKey);
+  PuttyRegistryStorageKeyEdit->Items->Add(KittyRegistryStorageKey);
 }
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
@@ -100,14 +106,51 @@ __fastcall TPreferencesDialog::~TPreferencesDialog()
 //---------------------------------------------------------------------
 bool __fastcall TPreferencesDialog::Execute(TPreferencesDialogData * DialogData)
 {
+  PuttyPathEdit->Items = CustomWinConfiguration->History[L"PuttyPath"];
   FDialogData = DialogData;
   LoadConfiguration();
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
     SaveConfiguration();
+    CustomWinConfiguration->History[L"PuttyPath"] = PuttyPathEdit->Items;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::LoadLanguages()
+{
+  if (!FLanguagesLoaded)
+  {
+    LanguagesView->Items->Clear();
+
+    TStrings * Locales = GUIConfiguration->Locales;
+    for (int Index = 0; Index < Locales->Count; Index++)
+    {
+      TListItem * Item = LanguagesView->Items->Add();
+      Item->Caption = Locales->Strings[Index];
+      Item->Data = Locales->Objects[Index];
+      Item->Focused =
+        (reinterpret_cast<LCID>(Locales->Objects[Index]) == GUIConfiguration->Locale);
+      Item->Selected = Item->Focused;
+    }
+
+    FLanguagesLoaded = false;
+  }
+}
+//---------------------------------------------------------------------------
+TTabSheet * __fastcall TPreferencesDialog::FindPageForTreeNode(TTreeNode * Node)
+{
+  for (int pi = 0; pi < PageControl->PageCount; pi++)
+  {
+    TTabSheet * Sheet = PageControl->Pages[pi];
+    if (Sheet->Tag == Node->SelectedIndex)
+    {
+      return Sheet;
+    }
+  }
+  FAIL;
+  return NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PrepareNavigationTree(TTreeView * Tree)
@@ -116,37 +159,27 @@ void __fastcall TPreferencesDialog::PrepareNavigationTree(TTreeView * Tree)
   int i = 0;
   while (i < Tree->Items->Count)
   {
-    if ((!WinConfiguration->ExpertMode &&
-         Tree->Items->Item[i]->SelectedIndex & 128))
+    TTreeNode * Node = Tree->Items->Item[i];
+    TTabSheet * Sheet = FindPageForTreeNode(Node);
+    if (NOT_NULL(Sheet))
     {
-      Tree->Items->Delete(Tree->Items->Item[i]);
-    }
-    else
-    {
-      for (int pi = 0; pi < PageControl->PageCount; pi++)
+      if (Sheet->Enabled)
       {
-        if (PageControl->Pages[pi]->Tag == (Tree->Items->Item[i]->SelectedIndex & 127))
+        // gets called multiple times occasionally
+        // (e.g. when called from upload dialog invoked by /upload)
+        if (!Sheet->Caption.IsEmpty())
         {
-          if (PageControl->Pages[pi]->Enabled)
-          {
-            // gets called multiple times occasionally
-            // (e.g. when called from upload dialog invoked by /upload)
-            if (!PageControl->Pages[pi]->Caption.IsEmpty())
-            {
-              Tree->Items->Item[i]->Text = PageControl->Pages[pi]->Caption;
-              PageControl->Pages[pi]->Caption = L"";
-            }
-          }
-          else
-          {
-            Tree->Items->Delete(Tree->Items->Item[i]);
-            i--;
-          }
-          break;
+          Node->Text = Sheet->Caption;
+          Sheet->Caption = L"";
         }
       }
-      i++;
+      else
+      {
+        Tree->Items->Delete(Node);
+        i--;
+      }
     }
+    i++;
   }
 }
 //---------------------------------------------------------------------------
@@ -155,11 +188,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   FNoUpdate++;
   try
   {
-    if (FPreferencesMode != pmLogin)
-    {
-      LoggingFrame->LoadConfiguration();
-      GeneralSettingsFrame->LoadConfiguration();
-    }
     #define BOOLPROP(PROP) PROP ## Check->Checked = WinConfiguration->PROP;
     BOOLPROP(DefaultDirIsHome);
     BOOLPROP(PreservePanelState);
@@ -290,10 +318,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       (Configuration->SessionReopenAutoStall / MSecsPerSec) : SecsPerMin);
     SessionReopenTimeoutEdit->Value = (Configuration->SessionReopenTimeout / MSecsPerSec);
 
-    GeneralSheet->Enabled = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
+    GeneralSheet->Enabled = WinConfiguration->ExpertMode;
     ExplorerSheet->Enabled = WinConfiguration->ExpertMode;
     CommanderSheet->Enabled = WinConfiguration->ExpertMode;
-    GeneralSheet->Enabled = (PreferencesMode != pmLogin);
     EditorSheet->Enabled = WinConfiguration->ExpertMode && !WinConfiguration->DisableOpenEdit;
 
     StorageGroup->Visible = WinConfiguration->ExpertMode;
@@ -307,6 +334,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     PuttyPasswordCheck2->Checked = GUIConfiguration->PuttyPassword;
     AutoOpenInPuttyCheck->Checked = WinConfiguration->AutoOpenInPutty;
     TelnetForFtpInPuttyCheck->Checked = WinConfiguration->TelnetForFtpInPutty;
+    SelectPuttyRegistryStorageKey(GUIConfiguration->PuttyRegistryStorageKey);
 
     // Queue
     QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
@@ -428,6 +456,21 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(CopyParamAutoSelectNotice);
 
     // interface
+    switch (CustomWinConfiguration->Interface)
+    {
+      case ifCommander:
+        CommanderInterfaceButton2->Checked = true;
+        break;
+
+      case ifExplorer:
+        ExplorerInterfaceButton2->Checked = true;
+        break;
+
+      default:
+        FAIL;
+        break;
+    }
+
     if (WinConfiguration->Theme == L"OfficeXP")
     {
       ThemeCombo->ItemIndex = 1;
@@ -451,6 +494,42 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     CustomExternalIpAddressEdit->Text = Configuration->ExternalIpAddress;
     TryFtpWhenSshFailsCheck->Checked = Configuration->TryFtpWhenSshFails;
 
+    // logging
+    EnableLoggingCheck->Checked = Configuration->Logging;
+    LogProtocolCombo->ItemIndex = Configuration->LogProtocol;
+    LogToFileCheck->Checked = Configuration->LogToFile;
+    LogFileNameEdit3->Text =
+      !Configuration->LogFileName.IsEmpty() ? Configuration->LogFileName : Configuration->DefaultLogFileName;
+    if (Configuration->LogFileAppend)
+    {
+      LogFileAppendButton->Checked = true;
+    }
+    else
+    {
+      LogFileOverwriteButton->Checked = true;
+    }
+    LogShowWindowCheck->Checked = (CustomWinConfiguration->LogView == lvWindow);
+    if (Configuration->LogWindowComplete)
+    {
+      LogWindowCompleteButton->Checked = true;
+    }
+    else
+    {
+      LogWindowLinesButton->Checked = true;
+    }
+
+    if (!Configuration->LogWindowComplete)
+    {
+      LogWindowLinesEdit->AsInteger = Configuration->LogWindowLines;
+    }
+    else
+    {
+      LogWindowLinesEdit->AsInteger = 500;
+    }
+
+    EnableActionsLoggingCheck->Checked = Configuration->LogActions;
+    ActionsLogFileNameEdit->Text = Configuration->ActionsLogFileName;
+
     #undef BOOLPROP
   }
   __finally
@@ -468,11 +547,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
   {
     TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
 
-    if (FPreferencesMode != pmLogin)
-    {
-      LoggingFrame->SaveConfiguration();
-      GeneralSettingsFrame->SaveConfiguration();
-    }
     #define BOOLPROP(PROP) WinConfiguration->PROP = PROP ## Check->Checked
     BOOLPROP(DefaultDirIsHome);
     BOOLPROP(PreservePanelState);
@@ -598,6 +672,11 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     GUIConfiguration->PuttyPassword = PuttyPasswordCheck2->Checked;
     WinConfiguration->AutoOpenInPutty = AutoOpenInPuttyCheck->Checked;
     WinConfiguration->TelnetForFtpInPutty = TelnetForFtpInPuttyCheck->Checked;
+    // do not overwrite custom keys
+    if (PuttyRegistryStorageKeyEdit->ItemIndex >= 0)
+    {
+      GUIConfiguration->PuttyRegistryStorageKey = PuttyRegistryStorageKeyEdit->Text;
+    }
 
     // Queue
     GUIConfiguration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
@@ -725,6 +804,12 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(CopyParamAutoSelectNotice);
 
     // interface
+    if (GetInterface() != CustomWinConfiguration->Interface)
+    {
+      Configuration->Usage->Inc(L"InterfaceChanges");
+    }
+    CustomWinConfiguration->Interface = GetInterface();
+
     if (ThemeCombo->ItemIndex == 1)
     {
       WinConfiguration->Theme = L"OfficeXP";
@@ -746,6 +831,28 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     // security
     GUIConfiguration->SessionRememberPassword = SessionRememberPasswordCheck->Checked;
 
+    // languages
+    if (LanguagesView->ItemFocused != NULL)
+    {
+      GUIConfiguration->Locale =
+        reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data);
+    }
+
+    // logging
+    Configuration->Logging = EnableLoggingCheck->Checked;
+    Configuration->LogProtocol = LogProtocolCombo->ItemIndex;
+    Configuration->LogFileName = LogToFileCheck->Checked ? LogFileNameEdit3->Text : UnicodeString();
+    Configuration->LogFileAppend = LogFileAppendButton->Checked;
+    CustomWinConfiguration->LogView = LogShowWindowCheck->Checked ? lvWindow : lvNone;
+    Configuration->LogWindowComplete = LogWindowCompleteButton->Checked;
+    if (!LogWindowCompleteButton->Checked)
+    {
+      Configuration->LogWindowLines = LogWindowLinesEdit->AsInteger;
+    }
+
+    Configuration->LogActions = EnableActionsLoggingCheck->Checked;
+    Configuration->ActionsLogFileName = ActionsLogFileNameEdit->Text;
+
     #undef BOOLPROP
   }
   __finally
@@ -754,15 +861,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::SetPreferencesMode(TPreferencesMode value)
+TInterface __fastcall TPreferencesDialog::GetInterface()
 {
-  if (PreferencesMode != value)
-  {
-    FPreferencesMode = value;
-
-    GeneralSheet->Enabled = (value != pmLogin);
-    LogSheet->Enabled = (value != pmLogin);
-  }
+  return CommanderInterfaceButton2->Checked ? ifCommander : ifExplorer;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
@@ -770,10 +871,12 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
   InstallPathWordBreakProc(RandomSeedFileEdit);
   InstallPathWordBreakProc(DDTemporaryDirectoryEdit);
   InstallPathWordBreakProc(PuttyPathEdit);
+  InstallPathWordBreakProc(LogFileNameEdit3);
+  InstallPathWordBreakProc(ActionsLogFileNameEdit);
 
   PrepareNavigationTree(NavigationTree);
 
-  switch (PreferencesMode) {
+  switch (FPreferencesMode) {
     case pmEditor: PageControl->ActivePage = EditorSheet; break;
     case pmCustomCommands: PageControl->ActivePage = CustomCommandsSheet; break;
     case pmQueue: PageControl->ActivePage = QueueSheet; break;
@@ -902,13 +1005,13 @@ void __fastcall TPreferencesDialog::UpdateControls()
         ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageNameForReading)));
 
     EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
-    bool EditorSelected = (EditorListView2->Selected != NULL);
+    bool EditorSelected = (EditorListView3->Selected != NULL);
     EnableControl(EditEditorButton, EditorSelected);
     EnableControl(RemoveEditorButton, EditorSelected);
     EnableControl(UpEditorButton, EditorSelected &&
-      (EditorListView2->ItemIndex > 0));
+      (EditorListView3->ItemIndex > 0));
     EnableControl(DownEditorButton, EditorSelected &&
-      (EditorListView2->ItemIndex < EditorListView2->Items->Count - 1));
+      (EditorListView3->ItemIndex < EditorListView3->Items->Count - 1));
 
     EnableControl(UsageViewButton, CollectUsageCheck->Checked);
     EnableControl(UpdatesProxyHostEdit, UpdatesProxyCheck->Checked);
@@ -916,9 +1019,26 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(UpdatesProxyPortEdit, UpdatesProxyCheck->Checked);
     EnableControl(UpdatesProxyPortLabel, UpdatesProxyPortEdit->Enabled);
 
+    bool IsSiteCommand = false;
+    try
+    {
+      TRemoteCustomCommand RemoteCustomCommand;
+      TInteractiveCustomCommand InteractiveCustomCommand(&RemoteCustomCommand);
+      UnicodeString PuttyPath = PuttyPathEdit->Text;
+      PuttyPath = InteractiveCustomCommand.Complete(PuttyPath, false);
+      IsSiteCommand = RemoteCustomCommand.IsSiteCommand(PuttyPath);
+    }
+    catch (...)
+    {
+      // noop
+    }
     EnableControl(PuttyPasswordCheck2, !PuttyPathEdit->Text.IsEmpty());
     EnableControl(AutoOpenInPuttyCheck, PuttyPasswordCheck2->Enabled);
-    EnableControl(TelnetForFtpInPuttyCheck, PuttyPasswordCheck2->Enabled);
+    EnableControl(TelnetForFtpInPuttyCheck,
+      PuttyPasswordCheck2->Enabled && !IsSiteCommand);
+    EnableControl(PuttyRegistryStorageKeyEdit,
+      PuttyPasswordCheck2->Enabled && !IsSiteCommand);
+    EnableControl(PuttyRegistryStorageKeyLabel, PuttyRegistryStorageKeyEdit->Enabled);
 
     EnableControl(SetMasterPasswordButton, WinConfiguration->UseMasterPassword);
 
@@ -934,6 +1054,34 @@ void __fastcall TPreferencesDialog::UpdateControls()
     // integration
     // There's no quick launch in Windows 7
     EnableControl(QuickLaunchIconButton, !IsWin7());
+
+    // languages
+    LanguageChangeLabel->Visible =
+      !GUIConfiguration->CanApplyLocaleImmediately &&
+      (LanguagesView->ItemFocused != NULL) &&
+      (reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data) != GUIConfiguration->AppliedLocale);
+
+    // logging
+    EnableControl(LogProtocolCombo, EnableLoggingCheck->Checked);
+    EnableControl(LogToFileCheck, LogProtocolCombo->Enabled);
+    EnableControl(LogFileNameEdit3, LogToFileCheck->Enabled && LogToFileCheck->Checked);
+    EnableControl(LogFileNameHintText, LogFileNameEdit3->Enabled);
+    EnableControl(LogFileAppendButton, LogFileNameEdit3->Enabled);
+    EnableControl(LogFileOverwriteButton, LogFileNameEdit3->Enabled);
+
+    EnableControl(LogShowWindowCheck, LogProtocolCombo->Enabled);
+    EnableControl(LogWindowCompleteButton, LogShowWindowCheck->Enabled && LogShowWindowCheck->Checked);
+    EnableControl(LogWindowLinesButton, LogWindowCompleteButton->Enabled);
+    EnableControl(LogWindowLinesEdit, LogWindowLinesButton->Enabled && LogWindowLinesButton->Checked);
+    EnableControl(LogWindowLinesText, LogWindowLinesEdit->Enabled);
+
+    EnableControl(ActionsLogFileNameEdit, EnableActionsLoggingCheck->Checked);
+    EnableControl(ActionsLogFileNameHintText, ActionsLogFileNameEdit->Enabled);
+
+    // interface
+    InterfaceChangeLabel->Visible =
+      !CustomWinConfiguration->CanApplyInterfaceImmediately &&
+      (GetInterface() != CustomWinConfiguration->AppliedInterface);
   }
 }
 //---------------------------------------------------------------------------
@@ -1161,7 +1309,7 @@ TListViewScrollOnDragOver * __fastcall TPreferencesDialog::ScrollOnDragOver(TObj
   {
     return FCustomCommandsScrollOnDragOver;
   }
-  else if (ListView == EditorListView2)
+  else if (ListView == EditorListView3)
   {
     return FEditorScrollOnDragOver;
   }
@@ -1356,18 +1504,18 @@ void __fastcall TPreferencesDialog::EditorMove(int Source, int Dest)
   {
     FEditorList->Move(Source, Dest);
     // workaround for bug in VCL
-    EditorListView2->ItemIndex = -1;
-    EditorListView2->ItemFocused = EditorListView2->Selected;
-    EditorListView2->ItemIndex = Dest;
+    EditorListView3->ItemIndex = -1;
+    EditorListView3->ItemFocused = EditorListView3->Selected;
+    EditorListView3->ItemIndex = Dest;
     UpdateEditorListView();
     UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::EditorListView2DragDrop(TObject * Sender,
+void __fastcall TPreferencesDialog::EditorListView3DragDrop(TObject * Sender,
   TObject * Source, int X, int Y)
 {
-  if (Source == EditorListView2)
+  if (Source == EditorListView3)
   {
     if (AllowListViewDrag(Sender, X, Y))
     {
@@ -1378,16 +1526,16 @@ void __fastcall TPreferencesDialog::EditorListView2DragDrop(TObject * Sender,
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpDownEditorButtonClick(TObject *Sender)
 {
-  EditorMove(EditorListView2->ItemIndex,
-    EditorListView2->ItemIndex + (Sender == UpEditorButton ? -1 : 1));
+  EditorMove(EditorListView3->ItemIndex,
+    EditorListView3->ItemIndex + (Sender == UpEditorButton ? -1 : 1));
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::RemoveEditorButtonClick(
   TObject * /*Sender*/)
 {
-  assert(EditorListView2->ItemIndex >= 0 &&
-    EditorListView2->ItemIndex < FEditorList->Count);
-  FEditorList->Delete(EditorListView2->ItemIndex);
+  assert(EditorListView3->ItemIndex >= 0 &&
+    EditorListView3->ItemIndex < FEditorList->Count);
+  FEditorList->Delete(EditorListView3->ItemIndex);
   UpdateEditorListView();
   UpdateControls();
 }
@@ -1395,7 +1543,7 @@ void __fastcall TPreferencesDialog::RemoveEditorButtonClick(
 void __fastcall TPreferencesDialog::AddEditEditorButtonClick(TObject * Sender)
 {
   TEditorPreferencesMode Mode = (Sender == EditEditorButton ? epmEdit : epmAdd);
-  int Index = EditorListView2->ItemIndex;
+  int Index = EditorListView3->ItemIndex;
   TEditorPreferences * Editor;
   if (Mode == epmEdit)
   {
@@ -1431,7 +1579,7 @@ void __fastcall TPreferencesDialog::AddEditEditorButtonClick(TObject * Sender)
       Editor = NULL;
 
       UpdateEditorListView();
-      EditorListView2->ItemIndex = Index;
+      EditorListView3->ItemIndex = Index;
       UpdateControls();
     }
   }
@@ -1441,7 +1589,7 @@ void __fastcall TPreferencesDialog::AddEditEditorButtonClick(TObject * Sender)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::EditorListView2DblClick(TObject * /*Sender*/)
+void __fastcall TPreferencesDialog::EditorListView3DblClick(TObject * /*Sender*/)
 {
   if (EditEditorButton->Enabled)
   {
@@ -1449,7 +1597,7 @@ void __fastcall TPreferencesDialog::EditorListView2DblClick(TObject * /*Sender*/
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::EditorListView2KeyDown(TObject * /*Sender*/,
+void __fastcall TPreferencesDialog::EditorListView3KeyDown(TObject * /*Sender*/,
   WORD & Key, TShiftState /*Shift*/)
 {
   if (RemoveEditorButton->Enabled && (Key == VK_DELETE))
@@ -1465,12 +1613,12 @@ void __fastcall TPreferencesDialog::EditorListView2KeyDown(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateEditorListView()
 {
-  EditorListView2->Items->Count = FEditorList->Count;
-  AdjustListColumnsWidth(EditorListView2, FEditorList->Count);
-  EditorListView2->Invalidate();
+  EditorListView3->Items->Count = FEditorList->Count;
+  AdjustListColumnsWidth(EditorListView3, FEditorList->Count);
+  EditorListView3->Invalidate();
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::EditorListView2Data(TObject * /*Sender*/,
+void __fastcall TPreferencesDialog::EditorListView3Data(TObject * /*Sender*/,
   TListItem * Item)
 {
   int Index = Item->Index;
@@ -1485,36 +1633,29 @@ void __fastcall TPreferencesDialog::EditorListView2Data(TObject * /*Sender*/,
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::NavigationTreeChange(TObject * /*Sender*/,
-      TTreeNode *Node)
+  TTreeNode * Node)
 {
-  if (Node->SelectedIndex)
+  if (ALWAYS_TRUE(Node->SelectedIndex > 0))
   {
-    for (Integer Index = 0; Index < PageControl->PageCount; Index++)
-    {
-      if (PageControl->Pages[Index]->Tag == (Node->SelectedIndex & 127))
-      {
-        PageControl->ActivePage = PageControl->Pages[Index];
-        // reshow the accelerators, etc
-        ResetSystemSettings(this);
-        // This is particularly here to enable EditCopyParamButton,
-        // as to some reason CopyParamListView->Selected is NULL until
-        // its page is shown for the first time
-        UpdateControls();
-        return;
-      }
-    }
+    PageControl->ActivePage = NOT_NULL(FindPageForTreeNode(Node));
+    // reshow the accelerators, etc
+    ResetSystemSettings(this);
+    // This is particularly here to enable EditCopyParamButton,
+    // as to some reason CopyParamListView->Selected is NULL until
+    // its page is shown for the first time
+    UpdateControls();
   }
-  assert(false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PageControlChange(TObject * /*Sender*/)
 {
+  // this is probably only ever called from FormShow (explicitly)
   bool Found = false;
-  if (PageControl->ActivePage->Tag)
+  if (ALWAYS_TRUE(PageControl->ActivePage->Tag > 0))
   {
     for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
     {
-      if ((NavigationTree->Items->Item[Index]->SelectedIndex & 127) ==
+      if (NavigationTree->Items->Item[Index]->SelectedIndex ==
             PageControl->ActivePage->Tag)
       {
         NavigationTree->Items->Item[Index]->Selected = true;
@@ -1523,8 +1664,7 @@ void __fastcall TPreferencesDialog::PageControlChange(TObject * /*Sender*/)
     }
   }
 
-  assert(Found);
-  if (Found)
+  if (ALWAYS_TRUE(Found))
   {
     UpdateControls();
   }
@@ -1658,14 +1798,9 @@ void __fastcall TPreferencesDialog::HelpButtonClick(TObject * /*Sender*/)
 void __fastcall TPreferencesDialog::PuttyPathBrowseButtonClick(
   TObject * /*Sender*/)
 {
-  BrowseForExecutable(PuttyPathEdit, LoadStr(PREFERENCES_SELECT_PUTTY),
-    LoadStr(PREFERENCES_PUTTY_FILTER), false, false);
-}
-//---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::PuttyPathResetButtonClick(
-  TObject * /*Sender*/)
-{
-  PuttyPathEdit->Text = WinConfiguration->DefaultPuttyPath;
+  UnicodeString Executables = FORMAT("%s;%s", (OriginalPuttyExecutable, KittyExecutable));
+  BrowseForExecutable(PuttyPathEdit, LoadStr(PREFERENCES_SELECT_PUTTY2),
+    FMTLOAD(PREFERENCES_PUTTY_FILTER2, (Executables)), false, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PathEditBeforeDialog(
@@ -1696,7 +1831,7 @@ void __fastcall TPreferencesDialog::ListViewEndDrag(
   ScrollOnDragOver(Sender)->EndDrag();
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::RandomSeedFileEditCreateEditDialog(
+void __fastcall TPreferencesDialog::PathEditCreateEditDialog(
   TObject * Sender, TFileDialogKind DialogKind, TOpenDialog *& Dialog)
 {
   USEDPARAM(DialogKind);
@@ -1796,5 +1931,52 @@ void __fastcall TPreferencesDialog::CopyParamListViewCustomDrawItem(
   {
     Sender->Canvas->Font->Style = Sender->Canvas->Font->Style << fsBold;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SelectPuttyRegistryStorageKey(const UnicodeString & Key)
+{
+  PuttyRegistryStorageKeyEdit->ItemIndex =
+    PuttyRegistryStorageKeyEdit->Items->IndexOf(Key);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PuttyPathEditChange(TObject * /*Sender*/)
+{
+  UnicodeString PuttyPath = PuttyPathEdit->Text;
+  if (ContainsText(PuttyPath, OriginalPuttyExecutable))
+  {
+    SelectPuttyRegistryStorageKey(OriginalPuttyRegistryStorageKey);
+  }
+  else if (ContainsText(PuttyPath, KittyExecutable))
+  {
+    SelectPuttyRegistryStorageKey(KittyRegistryStorageKey);
+  }
+
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::NavigationTreeChanging(TObject * /*Sender*/,
+  TTreeNode * Node, bool & /*AllowChange*/)
+{
+  TTabSheet * Sheet = FindPageForTreeNode(Node);
+  // delay load as this can be time consuming
+  if (Sheet == LanguagesSheet)
+  {
+    LoadLanguages();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::LanguagesGetMoreButtonClick(TObject * /*Sender*/)
+{
+  OpenBrowser(LoadStr(LOCALES_URL));
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CommanderClick(TObject * /*Sender*/)
+{
+  CommanderInterfaceButton2->SetFocus();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ExplorerClick(TObject * /*Sender*/)
+{
+  ExplorerInterfaceButton2->SetFocus();
 }
 //---------------------------------------------------------------------------

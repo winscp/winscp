@@ -176,6 +176,8 @@ private:
   int FKeepUpToDateChangeDelay;
   UnicodeString FChecksumAlg;
   int FSessionReopenAutoIdle;
+  bool FCanApplyLocaleImmediately;
+  LCID FAppliedLocale;
 
 protected:
   LCID FLocale;
@@ -208,6 +210,8 @@ protected:
   void __fastcall SetQueueTransfersLimit(int value);
   void __fastcall SetQueueKeepDoneItems(bool value);
   void __fastcall SetQueueKeepDoneItemsFor(int value);
+  void __fastcall SetLocaleInternal(LCID value, bool Safe);
+  void __fastcall SetInitialLocale(LCID value);
 
 public:
   __fastcall TGUIConfiguration();
@@ -256,6 +260,8 @@ public:
   __property int KeepUpToDateChangeDelay = { read = FKeepUpToDateChangeDelay, write = FKeepUpToDateChangeDelay };
   __property UnicodeString ChecksumAlg = { read = FChecksumAlg, write = FChecksumAlg };
   __property int SessionReopenAutoIdle = { read = FSessionReopenAutoIdle, write = FSessionReopenAutoIdle };
+  __property bool CanApplyLocaleImmediately = { read = FCanApplyLocaleImmediately, write = FCanApplyLocaleImmediately };
+  __property LCID AppliedLocale = { read = FAppliedLocale };
 };
 //---------------------------------------------------------------------------
 #define GUIConfiguration (dynamic_cast<TGUIConfiguration *>(Configuration))

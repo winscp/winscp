@@ -95,7 +95,13 @@ void __fastcall TWebHelpSystem::ShowTableOfContents()
   OpenBrowser(FMTLOAD(DOCUMENTATION_URL2, (FVersion, FLanguage)));
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebHelpSystem::ShowHelp(const UnicodeString HelpString)
+void __fastcall TWebHelpSystem::ShowHelp(const UnicodeString AHelpString)
 {
-  OpenBrowser(FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpString, FVersion, FLanguage)));
+  // see also CampaignUrl
+  UnicodeString HelpString = AHelpString;
+  const wchar_t FragmentSeparator = L'#';
+  UnicodeString HelpPath = CutToChar(HelpString, FragmentSeparator, false);
+  UnicodeString HelpUrl = FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpPath, FVersion, FLanguage));
+  AddToList(HelpUrl, HelpString, FragmentSeparator);
+  OpenBrowser(HelpUrl);
 }

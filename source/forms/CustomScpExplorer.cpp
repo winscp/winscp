@@ -1963,7 +1963,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
         TMessageParams Params(mpNeverAskAgainCheck);
         Params.ImageName = L"DELETE_FILE";
         unsigned int Answer = MessageDialog(Query, qtConfirmation,
-          qaOK | qaCancel, HELP_NONE, &Params);
+          qaOK | qaCancel, HELP_DELETE_FILE, &Params);
         if (Answer == qaNeverAskAgain)
         {
           Result = true;
@@ -4493,38 +4493,7 @@ void __fastcall TCustomScpExplorerForm::SaveCurrentSession()
 
     TSessionData * EditingSessionData = StoredSessions->FindSame(SessionData);
 
-    bool SavePassword;
-    bool * PSavePassword;
-    bool NotRecommendedSavingPassword =
-      !CustomWinConfiguration->UseMasterPassword &&
-      !SameText(SessionData->UserName, AnonymousUserName);
-
-    if (Configuration->DisablePasswordStoring ||
-        !SessionData->HasAnyPassword())
-    {
-      PSavePassword = NULL;
-    }
-    else
-    {
-      PSavePassword = &SavePassword;
-      SavePassword =
-        ((EditingSessionData != NULL) &&
-         (EditingSessionData->Password == SessionData->Password)) ||
-        !NotRecommendedSavingPassword;
-    }
-
-    UnicodeString SessionName = Terminal->SessionData->SessionName;
-    if (DoSaveSessionDialog(SessionName, PSavePassword, EditingSessionData, NotRecommendedSavingPassword))
-    {
-      if ((PSavePassword != NULL) && !*PSavePassword)
-      {
-        SessionData->Password = L"";
-      }
-
-      StoredSessions->NewSession(SessionName, SessionData);
-      // modified only, explicit
-      StoredSessions->Save(false, true);
-    }
+    DoSaveSession(SessionData, EditingSessionData, true);
   }
   __finally
   {
@@ -4638,7 +4607,7 @@ bool __fastcall TCustomScpExplorerForm::SaveWorkspace(bool EnableAutoSave)
 
     if (CreateShortcut)
     {
-      CreateDesktopSessionShortCut(Name, L"", L"");
+      CreateDesktopSessionShortCut(Name, L"", L"", -1, WORKSPACE_ICON);
     }
 
     if (EnableAutoSave)
@@ -5442,20 +5411,7 @@ unsigned int __fastcall TCustomScpExplorerForm::MoreMessageDialog(const UnicodeS
       MoreMessagesCopy->Assign(MoreMessages);
     }
     FErrorList->AddObject(Message, MoreMessagesCopy);
-    if (Answers & qaSkip) return qaSkip;
-      else
-    if (Answers & qaIgnore) return qaIgnore;
-      else
-    if (Answers & qaOK) return qaOK;
-      else
-    if (Answers & qaYes) return qaYes;
-      else
-    if (Answers & qaRetry) return qaRetry;
-      else
-    {
-      assert(false);
-      return qaYes;
-    }
+    return ContinueAnswer(Answers);
   }
   else
   {
@@ -6499,7 +6455,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DirViewMatchMask(
   TObject * /*Sender*/, UnicodeString FileName, bool Directory, __int64 Size,
-  TDateTime Modification, UnicodeString Masks, bool & Matches)
+  TDateTime Modification, UnicodeString Masks, bool & Matches, bool AllowImplicitMatches)
 {
   TFileMasks::TParams MaskParams;
   MaskParams.Size = Size;
@@ -6509,7 +6465,7 @@ void __fastcall TCustomScpExplorerForm::DirViewMatchMask(
   bool ImplicitMatch;
   Matches =
     FDirViewMatchMask.Matches(FileName, Directory, UnicodeString(L""), &MaskParams, ImplicitMatch) &&
-    !ImplicitMatch;
+    (AllowImplicitMatches || !ImplicitMatch);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DirViewGetOverlay(
@@ -7609,36 +7565,7 @@ int __fastcall TCustomScpExplorerForm::AddSessionColor(TColor Color, bool Shadow
 {
   if (Color != 0)
   {
-    if (Shadowed)
-    {
-      Color = GetShadowColor(Color);
-    }
-
-    int R, G, B;
-    GetRGB(Color, R, G, B);
-    TColor TransparentColor =
-      (TColor)
-      ((static_cast<int>(static_cast<unsigned char>(~B)) << 16) +
-       (static_cast<int>(static_cast<unsigned char>(~G)) << 8) +
-       static_cast<int>(static_cast<unsigned char>(~R)));
-
-    TBitmap * Bitmap = new TBitmap();
-    Bitmap->SetSize(FSessionColors->Width, FSessionColors->Height);
-    Bitmap->Canvas->Brush->Color = TransparentColor;
-    Bitmap->Canvas->Brush->Style = bsSolid;
-    TRect Rect(0, 0, FSessionColors->Width, FSessionColors->Height);
-    Bitmap->Canvas->FillRect(Rect);
-
-    const int Padding = 2;
-    TRect RoundRect(Padding, Padding + 1, FSessionColors->Width - Padding - 1, FSessionColors->Height - Padding);
-
-    Bitmap->Canvas->Pen->Color = Color;
-    Bitmap->Canvas->Pen->Style = psSolid;
-    Bitmap->Canvas->Brush->Color = Color;
-    Bitmap->Canvas->RoundRect(RoundRect, 4, 4);
-
-    FSessionColors->AddMasked(Bitmap, TransparentColor);
-    delete Bitmap;
+    AddSessionColorImage(FSessionColors, Color, Shadowed);
     return FSessionColors->Count - 1;
   }
   else

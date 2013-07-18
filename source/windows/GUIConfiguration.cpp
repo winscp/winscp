@@ -1,7 +1,6 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
-#include <LanguagesDEPfix.hpp>
 #include "GUIConfiguration.h"
 #include "GUITools.h"
 #include <Common.h>
@@ -517,13 +516,14 @@ bool __fastcall TCopyParamList::GetAnyRule() const
 //---------------------------------------------------------------------------
 __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
 {
-  FLocale = 0;
+  SetInitialLocale(0);
   FLocales = new TStringList();
   FLastLocalesExts = L"*";
   dynamic_cast<TStringList*>(FLocales)->Sorted = true;
   dynamic_cast<TStringList*>(FLocales)->CaseSensitive = false;
   FCopyParamList = new TCopyParamList();
   CoreSetResourceModule(GetResourceModule());
+  FCanApplyLocaleImmediately = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TGUIConfiguration::~TGUIConfiguration()
@@ -557,9 +557,9 @@ void __fastcall TGUIConfiguration::Default()
   FSessionRememberPassword = false;
   UnicodeString ProgramsFolder;
   SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
-  FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + L"PuTTY\\putty.exe";
-  FDefaultPuttyPath = FormatCommand(L"%PROGRAMFILES%\\PuTTY\\putty.exe", L"");
-  FPuttyPath = FDefaultPuttyPath;
+  FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + L"PuTTY\\" + OriginalPuttyExecutable;
+  FDefaultPuttyPath = L"%PROGRAMFILES%\\PuTTY\\" + OriginalPuttyExecutable;
+  FPuttyPath = FormatCommand(FDefaultPuttyPath, L"");
   PSftpPath = FormatCommand(L"%PROGRAMFILES%\\PuTTY\\psftp.exe", L"");
   FPuttyPassword = false;
   FTelnetForFtpInPutty = true;
@@ -835,29 +835,22 @@ LCID __fastcall TGUIConfiguration::GetLocale()
 {
   if (!FLocale)
   {
-    FLocale = InternalLocale();
+    SetInitialLocale(InternalLocale());
   }
   return FLocale;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetLocale(LCID value)
 {
-  if (Locale != value)
-  {
-    HINSTANCE Module = LoadNewResourceModule(value);
-    if (Module != NULL)
-    {
-      FLocale = value;
-      SetResourceModule(Module);
-    }
-    else
-    {
-      assert(false);
-    }
-  }
+  SetLocaleInternal(value, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetLocaleSafe(LCID value)
+{
+  SetLocaleInternal(value, true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::SetLocaleInternal(LCID value, bool Safe)
 {
   if (Locale != value)
   {
@@ -866,19 +859,37 @@ void __fastcall TGUIConfiguration::SetLocaleSafe(LCID value)
     try
     {
       Module = LoadNewResourceModule(value);
+      assert(Module != NULL);
     }
     catch(...)
     {
-      // ignore any exception while loading locale
-      Module = NULL;
+      if (Safe)
+      {
+        // ignore any exception while loading locale
+        Module = NULL;
+      }
+      else
+      {
+        throw;
+      }
     }
 
     if (Module != NULL)
     {
       FLocale = value;
-      SetResourceModule(Module);
+      if (CanApplyLocaleImmediately)
+      {
+        FAppliedLocale = value;
+        SetResourceModule(Module);
+      }
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::SetInitialLocale(LCID value)
+{
+  FLocale = value;
+  FAppliedLocale = value;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::FreeResourceModule(HANDLE Instance)
@@ -957,7 +968,7 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
       FLastLocalesExts = LocalesExts;
       FLocales->Clear();
 
-      TLanguages * Langs = LanguagesDEPF();
+      TLanguages * Langs = Languages();
       int Ext, Index, Count;
       wchar_t LocaleStr[255];
       LCID Locale;

@@ -9,6 +9,7 @@
 #include "Exceptions.h"
 #include "Interface.h"
 #include "TextsCore.h"
+#include "HelpCore.h"
 #include "SecureShell.h"
 
 #include <stdio.h>
@@ -16,7 +17,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
-  FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION)
+  FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION, L"")
 //---------------------------------------------------------------------------
 const int coRaiseExcept = 1;
 const int coExpectNoOutput = 2;
@@ -710,7 +711,7 @@ void __fastcall TSCPFileSystem::SkipStartupMessage()
   }
   catch (Exception & E)
   {
-    FTerminal->CommandError(&E, LoadStr(SKIP_STARTUP_MESSAGE_ERROR));
+    FTerminal->CommandError(&E, LoadStr(SKIP_STARTUP_MESSAGE_ERROR), 0, HELP_SKIP_STARTUP_MESSAGE_ERROR);
   }
 }
 //---------------------------------------------------------------------------
@@ -890,7 +891,7 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 {
   assert(FileList);
   // emptying file list moved before command execution
-  FileList->Clear();
+  FileList->Reset();
 
   bool Again;
 
@@ -977,7 +978,9 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
         if (Empty)
         {
-          throw Exception(FMTLOAD(EMPTY_DIRECTORY, (FileList->Directory)));
+          throw ExtException(
+            NULL, FMTLOAD(EMPTY_DIRECTORY, (FileList->Directory)),
+            HELP_EMPTY_DIRECTORY);
         }
       }
 

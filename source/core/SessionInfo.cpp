@@ -71,23 +71,6 @@ UnicodeString __fastcall XmlAttributeEscape(UnicodeString Str)
   return DoXmlEscape(Str, true);
 }
 //---------------------------------------------------------------------------
-TStrings * __fastcall ExceptionToMessages(Exception * E)
-{
-  TStrings * Result = NULL;
-  UnicodeString Message;
-  if (ExceptionMessage(E, Message))
-  {
-    Result = new TStringList();
-    Result->Add(Message);
-    ExtException * EE = dynamic_cast<ExtException *>(E);
-    if ((EE != NULL) && (EE->MoreMessages != NULL))
-    {
-      Result->AddStrings(EE->MoreMessages);
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #pragma warn -inl
 class TSessionActionRecord
@@ -221,7 +204,7 @@ public:
   void __fastcall Rollback(Exception * E)
   {
     assert(FErrorMessages == NULL);
-    FErrorMessages = ExceptionToMessages(E);
+    FErrorMessages = ExceptionToMoreMessages(E);
     Close(RolledBack);
   }
 
@@ -1039,10 +1022,15 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
             Ftps = L"None";
             break;
         }
-        ADF(L"FTP: FTPS: %s; Passive: %s [Force IP: %s]; MLSD: %s",
+        ADF(L"FTP: FTPS: %s; Passive: %s [Force IP: %s]; MLSD: %s [List all: %s]",
           (Ftps, BooleanToEngStr(Data->FtpPasvMode),
            BugFlags[Data->FtpForcePasvIp],
-           BugFlags[Data->FtpUseMlsd]));
+           BugFlags[Data->FtpUseMlsd],
+           BugFlags[Data->FtpListAll]));
+        if (Data->Ftps != ftpsNone)
+        {
+          ADF(L"Session reuse: %s", (BooleanToEngStr(Data->SslSessionReuse)));
+        }
       }
       ADF(L"Local directory: %s, Remote directory: %s, Update: %s, Cache: %s",
         ((Data->LocalDirectory.IsEmpty() ? UnicodeString(L"default") : Data->LocalDirectory),
@@ -1177,7 +1165,7 @@ void __fastcall TActionLog::AddFailure(TStrings * Messages)
 //---------------------------------------------------------------------------
 void __fastcall TActionLog::AddFailure(Exception * E)
 {
-  TStrings * Messages = ExceptionToMessages(E);
+  TStrings * Messages = ExceptionToMoreMessages(E);
   if (Messages != NULL)
   {
     try

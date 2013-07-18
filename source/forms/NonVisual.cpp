@@ -290,7 +290,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   // VIEW
   UPDCOMP(SessionsTabs)
   UPDCOMP(StatusBar)
-  UPDCOMP(ToolBar)
+  UPDCOMP(ToolBar2)
   UPDCOMP(LocalStatusBar)
   UPDCOMP(RemoteStatusBar)
   UPDCOMP(CommandLinePanel)
@@ -403,10 +403,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(SiteManagerAction, true)
   UPD(DuplicateSessionAction, true)
   UPD(CloseSessionAction, true)
-  UPD(SavedSessionsAction, true)
+  UPD(SavedSessionsAction2, true)
   UPD(WorkspacesAction, StoredSessions->HasAnyWorkspace())
   UPD(OpenedSessionsAction, true)
-  UPD(SaveCurrentSessionAction, true)
+  UPD(SaveCurrentSessionAction2, true)
   UPD(SaveWorkspaceAction, true)
 
   // COMMAND
@@ -467,8 +467,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   QUEUEACTION(HideWhenEmpty)
   QUEUEACTION(Hide)
   #undef QUEUEACTION
-  UPDACT(QueueCycleOnceEmptyAction,
-    QueueCycleOnceEmptyAction->Enabled = ScpExplorer->AllowQueueOperation(qoOnceEmpty);
+  UPDEX1(QueueCycleOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty),
     QueueCycleOnceEmptyAction->ImageIndex = CurrentQueueOnceEmptyAction()->ImageIndex;
     QueueCycleOnceEmptyAction->Checked = !QueueIdleOnceEmptyAction->Checked)
   UPD(QueueIdleOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
@@ -613,7 +612,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       // VIEW
       EXECOMP(SessionsTabs)
       EXECOMP(StatusBar)
-      EXECOMP(ToolBar)
+      EXECOMP(ToolBar2)
       EXECOMP(LocalStatusBar)
       EXECOMP(RemoteStatusBar)
       EXECOMP(ExplorerMenuBand)
@@ -720,10 +719,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       EXE(SiteManagerAction, ScpExplorer->NewSession(true))
       EXE(DuplicateSessionAction, ScpExplorer->DuplicateSession())
       EXE(CloseSessionAction, ScpExplorer->CloseSession())
-      EXE(SavedSessionsAction, CreateSessionListMenu(SavedSessionsAction))
+      EXE(SavedSessionsAction2, CreateSessionListMenu(SavedSessionsAction2))
       EXE(WorkspacesAction, CreateWorkspacesMenu(WorkspacesAction))
       EXE(OpenedSessionsAction, CreateOpenedSessionListMenu(OpenedSessionsAction))
-      EXE(SaveCurrentSessionAction, ScpExplorer->SaveCurrentSession())
+      EXE(SaveCurrentSessionAction2, ScpExplorer->SaveCurrentSession())
       EXE(SaveWorkspaceAction, ScpExplorer->SaveWorkspace(false))
 
       // COMMAND
@@ -1221,7 +1220,7 @@ void __fastcall TNonVisualDataModule::CreateSessionListMenuLevel(
           Item->Caption = Name;
           Item->Tag = ((Level + 1) << 16) | Index; // MAKELONG
           Item->Hint = FMTLOAD(SAVEDSESSIONFOLDER_HINT, (Root + Name));
-          Item->ImageIndex = SavedSessionsAction->ImageIndex;
+          Item->ImageIndex = SavedSessionsAction2->ImageIndex;
           Item->OnClick = SessionFolderItemClick;
 
           Menu->Insert(FirstSession, Item);

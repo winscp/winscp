@@ -86,7 +86,10 @@ public:
 	// Other servers return "550 No files found."
 	bool IsMisleadingListResponse();
 
-	
+#ifdef MPEXT
+	virtual bool __fastcall UsingMlsd();
+#endif
+
 	// Vom Klassen-Assistenten generierte virtuelle Funktionsüberschreibungen
 	//{{AFX_VIRTUAL(CFtpControlSocket)
 	public:

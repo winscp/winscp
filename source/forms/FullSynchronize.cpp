@@ -68,6 +68,7 @@ __fastcall TFullSynchronizeDialog::TFullSynchronizeDialog(TComponent* Owner)
   FPresetsMenu = new TPopupMenu(this);
   FSynchronizeBySizeCaption = SynchronizeBySizeCheck->Caption;
   HotTrackLabel(CopyParamLabel);
+  CopyParamListButton(TransferSettingsButton);
 }
 //---------------------------------------------------------------------------
 __fastcall TFullSynchronizeDialog::~TFullSynchronizeDialog()

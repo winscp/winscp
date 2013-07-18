@@ -7,9 +7,13 @@
 
 #include <Common.h>
 #include <VCLCommon.h>
+#include <CoreMain.h>
 #include <WinInterface.h>
+#include <Tools.h>
 #include <TextsWin.h>
+#include <TextsCore.h>
 #include <Vcl.Imaging.pngimage.hpp>
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -17,9 +21,9 @@ class TMessageForm : public TForm
 {
 public:
   static TForm * __fastcall Create(const UnicodeString & Msg, TStrings * MoreMessages,
-    TMsgDlgType DlgType, TMsgDlgButtons Buttons,
-    TQueryButtonAlias * Aliases, unsigned int AliasesCount,
-    TMsgDlgBtn TimeoutResult, TButton ** TimeoutButton, const UnicodeString & ImageName);
+    TMsgDlgType DlgType, unsigned int Answers,
+    const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
+    unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName);
 
 protected:
   __fastcall TMessageForm(TComponent * AOwner);
@@ -28,6 +32,8 @@ protected:
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
   DYNAMIC void __fastcall KeyUp(Word & Key, TShiftState Shift);
   UnicodeString __fastcall GetFormText();
+  UnicodeString __fastcall GetReportText();
+  UnicodeString __fastcall NormalizeNewLines(UnicodeString Text);
   virtual void __fastcall CreateParams(TCreateParams & Params);
   DYNAMIC void __fastcall DoShow();
   virtual void __fastcall Dispatch(void * Message);
@@ -36,14 +42,22 @@ protected:
   void __fastcall UpdateForShiftStateTimer(TObject * Sender);
 
 private:
+  typedef std::map<unsigned int, TButton *> TAnswerButtons;
+
   TLabel * Message;
   TMemo * MessageMemo;
   TShiftState FShiftState;
   TTimer * FUpdateForShiftStateTimer;
 
   void __fastcall HelpButtonClick(TObject * Sender);
+  void __fastcall ReportButtonClick(TObject * Sender);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall UpdateForShiftState();
+  TButton * __fastcall CreateButton(
+    UnicodeString Name, UnicodeString Caption, unsigned int Answer,
+    TNotifyEvent OnClick, bool IsTimeoutButton,
+    int GroupWith, TShiftState GrouppedShiftState,
+    TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidth);
 };
 //---------------------------------------------------------------------------
 __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
@@ -74,13 +88,18 @@ void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
   }
   else
   {
-    UnicodeString Text = Message->Caption;
-    if (MessageMemo != NULL)
-    {
-      Text += L"\n" + MessageMemo->Text;
-    }
-    MessageWithNoHelp(Text);
+    MessageWithNoHelp(GetReportText());
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::ReportButtonClick(TObject * /*Sender*/)
+{
+  UnicodeString Url =
+    FMTLOAD(ERROR_REPORT_URL,
+      (EncodeUrlString(GetReportText()), Configuration->ProductVersion,
+       IntToHex(__int64(GUIConfiguration->Locale), 4)));
+
+  OpenBrowser(Url);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::UpdateForShiftState()
@@ -170,6 +189,13 @@ void __fastcall TMessageForm::KeyDown(Word & Key, TShiftState Shift)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TMessageForm::NormalizeNewLines(UnicodeString Text)
+{
+  Text = ReplaceStr(Text, L"\r", L"");
+  Text = ReplaceStr(Text, L"\n", L"\r\n");
+  return Text;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TMessageForm::GetFormText()
 {
   UnicodeString DividerLine, ButtonCaptions;
@@ -183,20 +209,31 @@ UnicodeString __fastcall TMessageForm::GetFormText()
         UnicodeString::StringOfChar(L' ', 3);
     }
   }
-  ButtonCaptions = StringReplace(ButtonCaptions, L"&", L"",
-    TReplaceFlags() << rfReplaceAll);
+  ButtonCaptions = ReplaceStr(ButtonCaptions, L"&", L"");
   UnicodeString MoreMessages;
   if (MessageMemo != NULL)
   {
     MoreMessages = MessageMemo->Text + DividerLine;
   }
-  UnicodeString MessageCaption;
-  MessageCaption = StringReplace(Message->Caption, L"\r", L"", TReplaceFlags() << rfReplaceAll);
-  MessageCaption = StringReplace(MessageCaption, L"\n", L"\r\n", TReplaceFlags() << rfReplaceAll);
+  UnicodeString MessageCaption = NormalizeNewLines(Message->Caption);
   UnicodeString Result = FORMAT(L"%s%s%s%s%s%s%s%s%s%s%s", (DividerLine, Caption, sLineBreak,
     DividerLine, MessageCaption, sLineBreak, DividerLine, MoreMessages,
     ButtonCaptions, sLineBreak, DividerLine));
   return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TMessageForm::GetReportText()
+{
+  UnicodeString Text = Message->Caption;
+  if (MessageMemo != NULL)
+  {
+    Text += L"\n" + MessageMemo->Text;
+  }
+  Text = NormalizeNewLines(Text);
+  UnicodeString ReportErrorText = NormalizeNewLines(FMTLOAD(REPORT_ERROR, (L"")));
+  Text = ReplaceStr(Text, ReportErrorText, L"");
+  Text = Trim(Text);
+  return Text;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::CMDialogKey(TWMKeyDown & Message)
@@ -300,21 +337,6 @@ const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDl
   &_SMsgDlgConfirm, NULL };
 const wchar_t * IconIDs[] = { IDI_EXCLAMATION, IDI_HAND, IDI_ASTERISK,
   IDI_QUESTION, NULL };
-const int ButtonCount = 11;
-const UnicodeString ButtonNames[ButtonCount] = {
-  L"Yes", L"No", L"OK", L"Cancel", L"Abort", L"Retry", L"Ignore", L"All", L"NoToAll",
-  L"YesToAll", L"Help" };
-// Own variant to avoid accelerator conflict with "Abort" button.
-// Note that as of now, ALL_BUTTON is never actually used, because it's always aliased
-ResourceString MsgDlgAll = { NULL, ALL_BUTTON };
-ResourceString MsgDlgYesToAll = { NULL, YES_TO_ALL_BUTTON };
-const ResourceString * ButtonCaptions[ButtonCount] = {
-  &_SMsgDlgYes, &_SMsgDlgNo, &_SMsgDlgOK, &_SMsgDlgCancel, &_SMsgDlgAbort,
-  &_SMsgDlgRetry, &_SMsgDlgIgnore, &MsgDlgAll, &_SMsgDlgNoToAll, &MsgDlgYesToAll,
-  &_SMsgDlgHelp };
-extern const int ModalResults[ButtonCount] = {
-  mrYes, mrNo, mrOk, mrCancel, mrAbort, mrRetry, mrIgnore, mrAll, mrNoToAll,
-  mrYesToAll, 0 };
 const int mcHorzMargin = 8;
 const int mcVertMargin = 8;
 const int mcHorzSpacing = 10;
@@ -341,43 +363,224 @@ static UnicodeString __fastcall GetKeyNameStr(int Key)
   return Buf;
 }
 //---------------------------------------------------------------------------
-TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
-  TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
-  TQueryButtonAlias * Aliases, unsigned int AliasesCount,
-  TMsgDlgBtn TimeoutResult, TButton ** TimeoutButton, const UnicodeString & ImageName)
+TButton * __fastcall TMessageForm::CreateButton(
+  UnicodeString Name, UnicodeString Caption, unsigned int Answer,
+  TNotifyEvent OnClick, bool IsTimeoutButton,
+  int GroupWith, TShiftState GrouppedShiftState,
+  TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidth)
 {
+  UnicodeString MeasureCaption = Caption;
+  if (IsTimeoutButton)
+  {
+    MeasureCaption = FMTLOAD(TIMEOUT_BUTTON, (MeasureCaption, 99));
+  }
+
   TRect TextRect;
+  DrawText(Canvas->Handle,
+    UnicodeString(MeasureCaption).c_str(), -1,
+    &TextRect, DT_CALCRECT | DT_LEFT | DT_SINGLELINE |
+    DrawTextBiDiModeFlagsReadingOnly());
+  int CurButtonWidth = TextRect.Right - TextRect.Left + 8;
 
-  TMsgDlgBtn DefaultButton, CancelButton;
-  if (Buttons.Contains(mbOK))
+  TButton * Button = NULL;
+
+  if (SupportsSplitButton() &&
+      (GroupWith >= 0) &&
+      ALWAYS_TRUE(AnswerButtons.find(GroupWith) != AnswerButtons.end()))
   {
-    DefaultButton = mbOK;
-  }
-  else if (Buttons.Contains(mbYes))
-  {
-    DefaultButton = mbYes;
+    TButton * GroupWithButton = AnswerButtons[GroupWith];
+
+    if (GroupWithButton->DropDownMenu == NULL)
+    {
+      GroupWithButton->Style = TCustomButton::bsSplitButton;
+      GroupWithButton->DropDownMenu = new TPopupMenu(this);
+      // cannot handle subitems with shift state,
+      // if the button has its own handler
+      // (though it may not be the case still here)
+      assert(GroupWithButton->OnClick == NULL);
+
+      TMenuItem * Item = new TMenuItem(GroupWithButton->DropDownMenu);
+      GroupWithButton->DropDownMenu->Items->Add(Item);
+      GroupWithButton->OnDropDownClick = ButtonDropDownClick;
+
+      Item->Caption = GroupWithButton->Caption;
+      Item->OnClick = MenuItemClick;
+      assert(GroupWithButton->ModalResult <= 0xFFFF);
+      Item->Tag = GroupWithButton->ModalResult;
+      Item->Default = true;
+    }
+
+    TMenuItem * Item = new TMenuItem(GroupWithButton->DropDownMenu);
+    GroupWithButton->DropDownMenu->Items->Add(Item);
+
+    // See ShortCutToText in Vcl.Menus.pas
+    if (GrouppedShiftState == (TShiftState() << ssAlt))
+    {
+      Caption = Caption + L"\t" + GetKeyNameStr(VK_MENU);
+    }
+    else if (GrouppedShiftState == (TShiftState() << ssCtrl))
+    {
+      Caption = Caption + L"\t" + GetKeyNameStr(VK_CONTROL);
+    }
+    else if (GrouppedShiftState == (TShiftState() << ssShift))
+    {
+      Caption = Caption + L"\t" + GetKeyNameStr(VK_SHIFT);
+    }
+    else
+    {
+      // do not support combined shift states yet
+      assert(GrouppedShiftState == TShiftState());
+    }
+
+    Item->Caption = Caption;
+    if (OnClick != NULL)
+    {
+      Item->OnClick = OnClick;
+    }
+    else
+    {
+      Item->OnClick = MenuItemClick;
+      assert((Answer <= 0xFFFF) && (GrouppedShiftState.ToInt() <= 0xFFFF));
+      Item->Tag = Answer + (GrouppedShiftState.ToInt() << 16);
+    }
+
+    // Hard-coded drop down button width (do not know how to ask for system width).
+    // Also we do not update the max button width for the default groupped
+    // button caption. We just blindly hope that captions of advanced commands
+    // are always longer than the caption of simple default command
+    CurButtonWidth += 15;
   }
   else
   {
-    DefaultButton = mbRetry;
+    Button = new TButton(this);
+
+    Button->Name = Name;
+    Button->Parent = this;
+    Button->Caption = Caption;
+
+    if (OnClick != NULL)
+    {
+      Button->OnClick = OnClick;
+    }
+    else
+    {
+      Button->ModalResult = Answer;
+    }
+
+    if (HasMoreMessages)
+    {
+      Button->Anchors = TAnchors() << akBottom << akLeft;
+    }
   }
 
-  if (Buttons.Contains(mbCancel))
+  if (CurButtonWidth > ButtonWidth)
   {
-    CancelButton = mbCancel;
+    ButtonWidth = CurButtonWidth;
   }
-  else if (Buttons.Contains(mbNo))
+
+  return Button;
+}
+//---------------------------------------------------------------------------
+void __fastcall AnswerNameAndCaption(
+  unsigned int Answer, UnicodeString & Name, UnicodeString & Caption)
+{
+  switch (Answer)
   {
-    CancelButton = mbNo;
+    case qaYes:
+      Caption = LoadStr(_SMsgDlgYes.Identifier);
+      Name = L"Yes";
+      break;
+
+    case qaNo:
+      Caption = LoadStr(_SMsgDlgNo.Identifier);
+      Name = L"No";
+      break;
+
+    case qaOK:
+      Caption = LoadStr(_SMsgDlgOK.Identifier);
+      Name = L"OK";
+      break;
+
+    case qaCancel:
+      Caption = LoadStr(_SMsgDlgCancel.Identifier);
+      Name = L"Cancel";
+      break;
+
+    case qaAbort:
+      Caption = LoadStr(_SMsgDlgAbort.Identifier);
+      Name = L"Abort";
+      break;
+
+    case qaRetry:
+      Caption = LoadStr(_SMsgDlgRetry.Identifier);
+      Name = L"Retry";
+      break;
+
+    case qaIgnore:
+      Caption = LoadStr(_SMsgDlgIgnore.Identifier);
+      Name = L"Ignore";
+      break;
+
+    // Own variant to avoid accelerator conflict with "Abort" button.
+    // Note that as of now, ALL_BUTTON is never actually used,
+    // because qaAll is always aliased
+    case qaAll:
+      Caption = LoadStr(ALL_BUTTON);
+      Name = L"All";
+      break;
+
+    case qaNoToAll:
+      Caption = LoadStr(_SMsgDlgNoToAll.Identifier);
+      Name = L"NoToAll";
+      break;
+
+    // Own variant to avoid accelerator conflict with "Abort" button.
+    case qaYesToAll:
+      Caption = LoadStr(YES_TO_ALL_BUTTON);
+      Name = L"YesToAll";
+      break;
+
+    case qaHelp:
+      Caption = LoadStr(_SMsgDlgHelp.Identifier);
+      Name = L"Help";
+      break;
+
+    case qaSkip:
+      Caption = LoadStr(SKIP_BUTTON);
+      Name = L"Skip";
+      break;
+
+    case qaReport:
+      Caption = LoadStr(REPORT_BUTTON);
+      Name = L"Report";
+      break;
+
+    default:
+      FAIL;
+      throw Exception(L"Undefined answer");
   }
-  else if (Buttons.Contains(mbAbort))
+}
+//---------------------------------------------------------------------------
+TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
+  TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
+  const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
+  unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName)
+{
+  unsigned int DefaultAnswer;
+  if (FLAGSET(Answers, qaOK))
   {
-    CancelButton = mbAbort;
+    DefaultAnswer = qaOK;
+  }
+  else if (FLAGSET(Answers, qaYes))
+  {
+    DefaultAnswer = qaYes;
   }
   else
   {
-    CancelButton = mbOK;
+    DefaultAnswer = qaRetry;
   }
+
+  unsigned int CancelAnswer = ::CancelAnswer(Answers);
 
   if (TimeoutButton != NULL)
   {
@@ -396,18 +599,17 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   int HorzSpacing = MulDiv(mcHorzSpacing, DialogUnits.x, 4);
   int VertSpacing = MulDiv(mcVertSpacing, DialogUnits.y, 8);
   int ButtonWidth = MulDiv(mcButtonWidth, DialogUnits.x, 4);
-  TButton * ButtonControls[ButtonCount + 1];
-  int ButtonControlsCount = 0;
-  typedef std::map<unsigned int, TButton *> TAnswerButtons;
+  std::vector<TButton *> ButtonControls;
   TAnswerButtons AnswerButtons;
-  for (unsigned int B = mbYes; B <= mbHelp; B++)
+  for (unsigned int Answer = qaFirst; Answer <= qaLast; Answer = Answer << 1)
   {
-    assert(B < ButtonCount);
-    if (Buttons.Contains(TMsgDlgBtn(B)))
+    if (FLAGSET(Answers, Answer))
     {
-      TextRect = Rect(0,0,0,0);
-      const ResourceString * CaptionResource = ButtonCaptions[B];
-      UnicodeString Caption = LoadStr(CaptionResource->Identifier);
+      assert(Answer != mrCancel);
+      UnicodeString Caption;
+      UnicodeString Name;
+
+      AnswerNameAndCaption(Answer, Name, Caption);
 
       TNotifyEvent OnClick = NULL;
       int GroupWith = -1;
@@ -416,7 +618,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       {
         for (unsigned int i = 0; i < AliasesCount; i++)
         {
-          if (B == Aliases[i].Button)
+          if (Answer == Aliases[i].Button)
           {
             if (!Aliases[i].Alias.IsEmpty())
             {
@@ -431,138 +633,58 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         }
       }
 
-      UnicodeString MeasureCaption = Caption;
-      bool IsTimeoutButton = (TimeoutButton != NULL) && (B == static_cast<unsigned int>(TimeoutResult));
-      if (IsTimeoutButton)
-      {
-        MeasureCaption = FMTLOAD(TIMEOUT_BUTTON, (MeasureCaption, 99));
-      }
-
-      DrawText(Result->Canvas->Handle,
-        UnicodeString(MeasureCaption).c_str(), -1,
-        &TextRect, DT_CALCRECT | DT_LEFT | DT_SINGLELINE |
-        Result->DrawTextBiDiModeFlagsReadingOnly());
-      int CurButtonWidth = TextRect.Right - TextRect.Left + 8;
-
-      int ModalResult = ModalResults[B];
-
-      // we hope that all grouped-with buttons are for asnwer with greater
+      // we hope that all grouped-with buttons are for answer with greater
       // value that the answer to be grouped with
-      if (SupportsSplitButton() &&
-          (GroupWith >= 0) && ALWAYS_TRUE(GroupWith < static_cast<int>(B)) &&
-          ALWAYS_TRUE(AnswerButtons.find(GroupWith) != AnswerButtons.end()) &&
-          ALWAYS_TRUE(B != static_cast<unsigned int>(TimeoutResult)) &&
-          ALWAYS_TRUE(B != static_cast<unsigned int>(DefaultButton)) &&
-          ALWAYS_TRUE(B != static_cast<unsigned int>(CancelButton)))
+      if (GroupWith >= 0)
       {
-        TButton * GroupWithButton = AnswerButtons[GroupWith];
-
-        if (GroupWithButton->DropDownMenu == NULL)
+        if (ALWAYS_FALSE(GroupWith >= static_cast<int>(Answer)) ||
+            ALWAYS_FALSE(Answer == TimeoutAnswer) &&
+            ALWAYS_FALSE(Answer == DefaultAnswer) &&
+            ALWAYS_FALSE(Answer == CancelAnswer))
         {
-          GroupWithButton->Style = TCustomButton::bsSplitButton;
-          GroupWithButton->DropDownMenu = new TPopupMenu(Result);
-          // cannot handle subitems with shift state,
-          // if the button has its own handler
-          // (though it may not be the case still here)
-          assert(GroupWithButton->OnClick == NULL);
-
-          TMenuItem * Item = new TMenuItem(GroupWithButton->DropDownMenu);
-          GroupWithButton->DropDownMenu->Items->Add(Item);
-          GroupWithButton->OnDropDownClick = Result->ButtonDropDownClick;
-
-          Item->Caption = GroupWithButton->Caption;
-          Item->OnClick = Result->MenuItemClick;
-          assert(GroupWithButton->ModalResult <= 0xFFFF);
-          Item->Tag = GroupWithButton->ModalResult;
-          Item->Default = true;
+          GroupWith = -1;
         }
-
-        TMenuItem * Item = new TMenuItem(GroupWithButton->DropDownMenu);
-        GroupWithButton->DropDownMenu->Items->Add(Item);
-
-        // See ShortCutToText in Vcl.Menus.pas
-        if (GrouppedShiftState == (TShiftState() << ssAlt))
-        {
-          Caption = Caption + L"\t" + GetKeyNameStr(VK_MENU);
-        }
-        else if (GrouppedShiftState == (TShiftState() << ssCtrl))
-        {
-          Caption = Caption + L"\t" + GetKeyNameStr(VK_CONTROL);
-        }
-        else if (GrouppedShiftState == (TShiftState() << ssShift))
-        {
-          Caption = Caption + L"\t" + GetKeyNameStr(VK_SHIFT);
-        }
-        else
-        {
-          // do not support combined shift states yet
-          assert(GrouppedShiftState == TShiftState());
-        }
-
-        Item->Caption = Caption;
-        if (OnClick != NULL)
-        {
-          Item->OnClick = OnClick;
-        }
-        else
-        {
-          Item->OnClick = Result->MenuItemClick;
-          assert((ModalResult <= 0xFFFF) && (GrouppedShiftState.ToInt() <= 0xFFFF));
-          Item->Tag = ModalResult + (GrouppedShiftState.ToInt() << 16);
-        }
-
-        // Hard-coded drop down button width (do not know how to ask for system width).
-        // Also we do not update the max button width for the default groupped
-        // button caption. We just blindly hope that captions of advanced commands
-        // are always longer than the caption of simple default command
-        CurButtonWidth += 15;
       }
-      else
+
+      bool IsTimeoutButton = (TimeoutButton != NULL) && (Answer == TimeoutAnswer);
+
+      if (Answer == qaHelp)
       {
-        TButton * Button = new TButton(Result);
+        assert(OnClick == NULL);
+        OnClick = Result->HelpButtonClick;
+      }
+
+      if (Answer == qaReport)
+      {
+        assert(OnClick == NULL);
+        OnClick = Result->ReportButtonClick;
+      }
+
+      TButton * Button = Result->CreateButton(
+        Name, Caption, Answer,
+        OnClick, IsTimeoutButton, GroupWith, GrouppedShiftState,
+        AnswerButtons, (MoreMessages != NULL), ButtonWidth);
+
+      if (Button != NULL)
+      {
+        ButtonControls.push_back(Button);
+
+        Button->Default = (Answer == DefaultAnswer);
+        Button->Cancel = (Answer == CancelAnswer);
+
+        AnswerButtons.insert(TAnswerButtons::value_type(Answer, Button));
 
         if (IsTimeoutButton)
         {
           *TimeoutButton = Button;
         }
-
-        Button->Name = ButtonNames[TMsgDlgBtn(B)];
-        Button->Parent = Result;
-        Button->Caption = Caption;
-        if (OnClick != NULL)
-        {
-          Button->OnClick = OnClick;
-        }
-        else
-        {
-          Button->ModalResult = ModalResult;
-          Button->Default = (B == static_cast<unsigned int>(DefaultButton));
-          Button->Cancel = (B == static_cast<unsigned int>(CancelButton));
-        }
-        if (MoreMessages != NULL)
-        {
-          Button->Anchors = TAnchors() << akBottom << akLeft;
-        }
-        if (B == mbHelp)
-        {
-          Button->OnClick = Result->HelpButtonClick;
-        }
-
-        ButtonControls[ButtonControlsCount] = Button;
-        ButtonControlsCount++;
-
-        AnswerButtons.insert(TAnswerButtons::value_type(B, Button));
-      }
-
-      if (CurButtonWidth > ButtonWidth)
-      {
-        ButtonWidth = CurButtonWidth;
       }
     }
   }
 
   int ButtonHeight = MulDiv(mcButtonHeight, DialogUnits.y, 8);
   int ButtonSpacing = MulDiv(mcButtonSpacing, DialogUnits.x, 4);
+  TRect TextRect;
   SetRect(&TextRect, 0, 0, Screen->Width / 2, 0);
   DrawText(Result->Canvas->Handle, Msg.c_str(), Msg.Length() + 1, &TextRect,
     DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK |
@@ -600,10 +722,10 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   }
 
   int ButtonGroupWidth = 0;
-  if (ButtonControlsCount > 0)
+  if (!ButtonControls.empty())
   {
-    ButtonGroupWidth = ButtonWidth * ButtonControlsCount +
-      ButtonSpacing * (ButtonControlsCount - 1);
+    ButtonGroupWidth = ButtonWidth * ButtonControls.size() +
+      ButtonSpacing * (ButtonControls.size() - 1);
   }
 
   int MoreMessageWidth = (MoreMessages != NULL ?
@@ -677,7 +799,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   }
 
   int X = (Result->ClientWidth - ButtonGroupWidth) / 2;
-  for (int i = 0; i < ButtonControlsCount; i++)
+  for (unsigned int i = 0; i < ButtonControls.size(); i++)
   {
     ButtonControls[i]->SetBounds(X,
       ButtonTop, ButtonWidth, ButtonHeight);
@@ -688,10 +810,10 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 }
 //---------------------------------------------------------------------------
 TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
-  TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
-  TQueryButtonAlias * Aliases, unsigned int AliasesCount,
-  TMsgDlgBtn TimeoutResult, TButton ** TimeoutButton, const UnicodeString & ImageName)
+  TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
+  const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
+  unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName)
 {
-  return TMessageForm::Create(Msg, MoreMessages, DlgType, Buttons,
-    Aliases, AliasesCount, TimeoutResult, TimeoutButton, ImageName);
+  return TMessageForm::Create(Msg, MoreMessages, DlgType, Answers,
+    Aliases, AliasesCount, TimeoutAnswer, TimeoutButton, ImageName);
 }

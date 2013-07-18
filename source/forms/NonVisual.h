@@ -21,7 +21,7 @@
 #include "TBXToolPals.hpp"
 //---------------------------------------------------------------------------
 #define fcStatusBar        0x01
-#define fcToolBar          0x02
+#define fcToolBar2         0x02
 #define fcLocalStatusBar   0x12
 #define fcRemoteStatusBar  0x14
 #define fcRemotePopup      0x17
@@ -120,7 +120,7 @@ __published:    // IDE-managed Components
   TAction *NewSessionAction;
   TAction *SiteManagerAction;
   TAction *CloseSessionAction;
-  TAction *SavedSessionsAction;
+  TAction *SavedSessionsAction2;
   TAction *WorkspacesAction;
   TAction *ExplorerSessionBandAction;
   TAction *PreferencesAction;
@@ -134,7 +134,7 @@ __published:    // IDE-managed Components
   TAction *LocalRootDirAction;
   TAction *LocalHomeDirAction;
   TAction *LocalRefreshAction;
-  TAction *ToolBarAction;
+  TAction *ToolBar2Action;
   TAction *CommanderMenuBandAction;
   TAction *CommanderSessionBandAction;
   TAction *CommanderPreferencesBandAction;
@@ -168,7 +168,7 @@ __published:    // IDE-managed Components
   TAction *SortColumnDescendingAction;
   TAction *HomepageAction;
   TAction *HistoryPageAction;
-  TAction *SaveCurrentSessionAction;
+  TAction *SaveCurrentSessionAction2;
   TAction *LocalSortByExtAction;
   TAction *RemoteSortByExtAction;
   TAction *CurrentSortByExtAction;

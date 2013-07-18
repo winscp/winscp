@@ -258,4 +258,9 @@ private:
   std::set<TShortCut> FShortCuts;
 };
 //---------------------------------------------------------------------------
+extern const UnicodeString OriginalPuttyRegistryStorageKey;
+extern const UnicodeString KittyRegistryStorageKey;
+extern const UnicodeString OriginalPuttyExecutable;
+extern const UnicodeString KittyExecutable;
+//---------------------------------------------------------------------------
 #endif

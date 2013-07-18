@@ -113,6 +113,10 @@ public:
 	void ShowStatus(UINT nID, int type) const;
 	void ShowStatus(CString status,int type) const;
 
+#ifdef MPEXT
+	virtual bool __fastcall UsingMlsd() = 0;
+#endif
+
 	virtual int OnLayerCallback(std::list<t_callbackMsg>& callbacks);
 protected:
 

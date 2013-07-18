@@ -9,6 +9,7 @@
 #include "RemoteFiles.h"
 #include "PuttyTools.h"
 #include "Terminal.h"
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 extern const wchar_t IncludeExcludeFileMasksDelimiter = L'|';
 static UnicodeString FileMasksDelimiters = L";,";
@@ -791,34 +792,29 @@ void __fastcall TCustomCommand::GetToken(
   if (Ptr[0] == L'!')
   {
     PatternCmd = Ptr[1];
-    if (PatternCmd == L'!')
+    if (PatternCmd == L'\0')
+    {
+      Len = 1;
+    }
+    else if (PatternCmd == L'!')
     {
       Len = 2;
     }
     else
     {
-      Len = PatternLen(Index, PatternCmd);
+      Len = PatternLen(Command, Index);
     }
 
-    if (Len < 0)
+    if (Len <= 0)
     {
       throw Exception(FMTLOAD(CUSTOM_COMMAND_UNKNOWN, (PatternCmd, Index)));
     }
-    else if (Len > 0)
+    else
     {
       if ((Command.Length() - Index + 1) < Len)
       {
         throw Exception(FMTLOAD(CUSTOM_COMMAND_UNTERMINATED, (PatternCmd, Index)));
       }
-    }
-    else if (Len == 0)
-    {
-      const wchar_t * PatternEnd = wcschr(Ptr + 1, L'!');
-      if (PatternEnd == NULL)
-      {
-        throw Exception(FMTLOAD(CUSTOM_COMMAND_UNTERMINATED, (PatternCmd, Index)));
-      }
-      Len = PatternEnd - Ptr + 1;
     }
   }
   else
@@ -876,12 +872,11 @@ UnicodeString __fastcall TCustomCommand::Complete(const UnicodeString & Command,
       UnicodeString Pattern = Command.SubString(Index, Len);
       UnicodeString Replacement;
       bool Delimit = true;
-      if (PatternReplacement(Index, Pattern, Replacement, Delimit))
+      if (PatternReplacement(Pattern, Replacement, Delimit))
       {
         if (!LastPass)
         {
-          Replacement = StringReplace(Replacement, L"!", L"!!",
-            TReplaceFlags() << rfReplaceAll);
+          Replacement = ReplaceStr(Replacement, L"!", L"!!");
         }
         if (Delimit)
         {
@@ -962,29 +957,55 @@ TInteractiveCustomCommand::TInteractiveCustomCommand(
   FChildCustomCommand = ChildCustomCommand;
 }
 //---------------------------------------------------------------------------
-void __fastcall TInteractiveCustomCommand::Prompt(int /*Index*/,
+void __fastcall TInteractiveCustomCommand::Prompt(
   const UnicodeString & /*Prompt*/, UnicodeString & Value)
 {
   Value = L"";
 }
 //---------------------------------------------------------------------------
-int __fastcall TInteractiveCustomCommand::PatternLen(int Index, wchar_t PatternCmd)
+void __fastcall TInteractiveCustomCommand::Execute(
+  const UnicodeString & /*Command*/, UnicodeString & Value)
+{
+  Value = L"";
+}
+//---------------------------------------------------------------------------
+int __fastcall TInteractiveCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  switch (PatternCmd)
+  switch (Command[Index + 1])
   {
     case L'?':
-      Len = 0;
+      {
+        const wchar_t * Ptr = Command.c_str() + Index - 1;
+        const wchar_t * PatternEnd = wcschr(Ptr + 1, L'!');
+        if (PatternEnd == NULL)
+        {
+          throw Exception(FMTLOAD(CUSTOM_COMMAND_UNTERMINATED, (Command[Index + 1], Index)));
+        }
+        Len = PatternEnd - Ptr + 1;
+      }
+      break;
+
+    case L'`':
+      {
+        const wchar_t * Ptr = Command.c_str() + Index - 1;
+        const wchar_t * PatternEnd = wcschr(Ptr + 2, L'`');
+        if (PatternEnd == NULL)
+        {
+          throw Exception(FMTLOAD(CUSTOM_COMMAND_UNTERMINATED, (Command[Index + 1], Index)));
+        }
+        Len = PatternEnd - Ptr + 1;
+      }
       break;
 
     default:
-      Len = FChildCustomCommand->PatternLen(Index, PatternCmd);
+      Len = FChildCustomCommand->PatternLen(Command, Index);
       break;
   }
   return Len;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TInteractiveCustomCommand::PatternReplacement(int Index, const UnicodeString & Pattern,
+bool __fastcall TInteractiveCustomCommand::PatternReplacement(const UnicodeString & Pattern,
   UnicodeString & Replacement, bool & Delimit)
 {
   bool Result;
@@ -1007,8 +1028,16 @@ bool __fastcall TInteractiveCustomCommand::PatternReplacement(int Index, const U
       PromptStr = Pattern.SubString(3, Pattern.Length() - 3);
     }
 
-    Prompt(Index, PromptStr, Replacement);
+    Prompt(PromptStr, Replacement);
 
+    Result = true;
+  }
+  else if ((Pattern.Length() >= 3) && (Pattern[2] == L'`'))
+  {
+    UnicodeString Command = Pattern.SubString(3, Pattern.Length() - 3);
+    Command = FChildCustomCommand->Complete(Command, true);
+    Execute(Command, Replacement);
+    Delimit = false;
     Result = true;
   }
   else
@@ -1026,9 +1055,21 @@ __fastcall TCustomCommandData::TCustomCommandData()
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData(TTerminal * Terminal)
 {
-  HostName = Terminal->SessionData->HostNameExpanded;
-  UserName = Terminal->SessionData->UserNameExpanded;
-  Password = Terminal->Password;
+  Init(Terminal->SessionData, Terminal->Password);
+}
+//---------------------------------------------------------------------------
+__fastcall TCustomCommandData::TCustomCommandData(
+  TSessionData * SessionData, const UnicodeString & Password)
+{
+  Init(SessionData, Password);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandData::Init(
+  TSessionData * SessionData, const UnicodeString & APassword)
+{
+  HostName = SessionData->HostNameExpanded;
+  UserName = SessionData->UserNameExpanded;
+  Password = APassword;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -1054,10 +1095,10 @@ TFileCustomCommand::TFileCustomCommand(const TCustomCommandData & Data,
   FFileList = FileList;
 }
 //---------------------------------------------------------------------------
-int __fastcall TFileCustomCommand::PatternLen(int /*Index*/, wchar_t PatternCmd)
+int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  switch (toupper(PatternCmd))
+  switch (toupper(Command[Index + 1]))
   {
     case L'@':
     case L'U':
@@ -1074,7 +1115,7 @@ int __fastcall TFileCustomCommand::PatternLen(int /*Index*/, wchar_t PatternCmd)
   return Len;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileCustomCommand::PatternReplacement(int /*Index*/,
+bool __fastcall TFileCustomCommand::PatternReplacement(
   const UnicodeString & Pattern, UnicodeString & Replacement, bool & Delimit)
 {
   // keep consistent with TSessionLog::OpenLogFile
@@ -1121,7 +1162,7 @@ void __fastcall TFileCustomCommand::Validate(const UnicodeString & Command)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileCustomCommand::ValidatePattern(const UnicodeString & /*Command*/,
+void __fastcall TFileCustomCommand::ValidatePattern(const UnicodeString & Command,
   int Index, int /*Len*/, wchar_t PatternCmd, void * Arg)
 {
   int * Found = static_cast<int *>(Arg);
@@ -1132,7 +1173,7 @@ void __fastcall TFileCustomCommand::ValidatePattern(const UnicodeString & /*Comm
   {
     Found[0] = Index;
   }
-  else if ((PatternCmd != TEXT_TOKEN) && (PatternLen(Index, PatternCmd) == 1))
+  else if ((PatternCmd != TEXT_TOKEN) && (PatternLen(Command, Index) == 1))
   {
     Found[1] = Index;
   }
@@ -1146,5 +1187,15 @@ bool __fastcall TFileCustomCommand::IsFileListCommand(const UnicodeString & Comm
 bool __fastcall TFileCustomCommand::IsFileCommand(const UnicodeString & Command)
 {
   return FindPattern(Command, L'!') || FindPattern(Command, L'&');
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileCustomCommand::IsSiteCommand(const UnicodeString & Command)
+{
+  return FindPattern(Command, L'@');
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileCustomCommand::IsPasswordCommand(const UnicodeString & Command)
+{
+  return FindPattern(Command, L'p');
 }
 //---------------------------------------------------------------------------

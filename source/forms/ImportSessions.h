@@ -14,17 +14,17 @@ class TImportSessionsDialog : public TForm
 __published:
   TButton *OKButton;
   TButton *CancelButton;
-  TListView *SessionListView;
+  TListView *SessionListView2;
   TLabel *Label;
   TButton *CheckAllButton;
   TCheckBox *ImportKeysCheck;
   TButton *HelpButton;
   TComboBox *SourceComboBox;
-  void __fastcall SessionListViewInfoTip(TObject *Sender,
+  void __fastcall SessionListView2InfoTip(TObject *Sender,
     TListItem *Item, UnicodeString &InfoTip);
-  void __fastcall SessionListViewMouseDown(TObject *Sender,
+  void __fastcall SessionListView2MouseDown(TObject *Sender,
     TMouseButton Button, TShiftState Shift, int X, int Y);
-  void __fastcall SessionListViewKeyUp(TObject *Sender, WORD &Key,
+  void __fastcall SessionListView2KeyUp(TObject *Sender, WORD &Key,
     TShiftState Shift);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall CheckAllButtonClick(TObject *Sender);

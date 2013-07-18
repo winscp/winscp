@@ -68,6 +68,7 @@ BEGIN
         CONSOLE_SEND_PIPE, "External console output is redirected to a pipe. Make sure the pipe is being read from."
         WORKSPACE_NOT_FOLDER, "'%s' is workspace, not site folder."
         FOLDER_NOT_WORKSPACE, "'%s' is site folder, not workspace."
+        SHELL_PATTERN_ERROR, "Error executing command \"%s\" (%s)."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"
@@ -121,6 +122,7 @@ BEGIN
         IMPORT_CONFIGURATION, "Importing configuration will overwrite all your preferences and sites.\n\nDo you want to continue?"
         ALL_BUTTON, "A&ll"
         YES_TO_ALL_BUTTON, "Yes to A&ll"
+        REPORT_BUTTON, "Re&port"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         APP_CAPTION, "%s - %s"
@@ -168,7 +170,7 @@ BEGIN
         EXTERNAL_EDITOR_HINT, "Edit (external)|Edit selected file(s) using external editor '%s'"
         MASK_HINT2, "* matches any number of characters.\n? matches exactly one character.\n[abc] matches one character from the set.\n[a-z] matches one character from the range.\nExample: *.html; photo??.png"
         PATH_MASK_HINT2, "Mask can be extended with path mask.\nExample: */public_html/*.html"
-        CUSTOM_COMMAND_PATTERNS_HINT2, "Patterns:\n!! expands to exclamation mark\n! expands to file name\n!& expands to list of selected files (quoted, space-delimited)\n!/ expands to current remote path\n!@ expands to current session hostname\n!U expands to current session username\n!P expands to current session password\n!?prompt[\\]?default! expands to user-entered value with given prompt and default (optional \\ avoids escaping)\n \nLocal command patterns:\n!^! expands to file name from local panel\n \nExample:\ngrep \"!?Pattern:?!\" !&"
+        CUSTOM_COMMAND_PATTERNS_HINT3, "Patterns:\n!! expands to exclamation mark\n! expands to file name\n!& expands to list of selected files (quoted, space-delimited)\n!/ expands to current remote path\n!@ expands to current session hostname\n!U expands to current session username\n!P expands to current session password\n!?prompt[\\]?default! expands to user-entered value with given prompt and default (optional \\ avoids escaping)\n!`command` expands to output of local command\n \nLocal command patterns:\n!^! expands to file name from local panel\n \nExample:\ngrep \"!?Pattern:?!\" !&"
         CLOSED_ON_QUEUE_EMPTY, "All background transfers were finished. Connection was closed."
         DIRECTORY_READING_CANCELLED, "Reading of remote directory was cancelled."
         SYNC_DIR_BROWSE_TOGGLE, "Synchronized browsing was turned %s.|on|off"
@@ -339,8 +341,8 @@ BEGIN
         FSINFO_UNUSED_BYTES_AVAILABLE_TO_USER, "Free bytes for user"
         FSINFO_BYTES_PER_ALLOCATION_UNIT, "Bytes per allocation unit"
         FSINFO_BYTES_UNKNOWN, "Unknown"
-        PREFERENCES_SELECT_PUTTY, "Find PuTTY executable."
-        PREFERENCES_PUTTY_FILTER, "PuTTY executable (putty.exe)|putty.exe|Executable files (*.exe)|*.exe|All files (*.*)|*.*"
+        PREFERENCES_SELECT_PUTTY2, "Find PuTTY/Terminal client executable."
+        PREFERENCES_PUTTY_FILTER2, "PuTTY/Terminal client executable|%s|Executable files (*.exe)|*.exe|All files (*.*)|*.*"
         SYNCHRONIZE_SELECTED_ACTIONS, "%s of %s|N/A"
         SYNCHRONIZE_PROGRESS_COMPARE, "Comparing"
         SYNCHRONIZE_PROGRESS_SYNCHRONIZE, "Synchronization"
@@ -441,6 +443,13 @@ BEGIN
         PROGRESS_UPLOAD, "Uploading"
         PROGRESS_DOWNLOAD, "Downloading"
         PROGRESS_IN_QUEUE, "%d in Queue"
+        PUTTY_PATTERNS_HINT, "Patterns:\n!! expands to exclamation mark\n!/ expands to current remote path\n!@ expands to current session hostname\n!U expands to current session username\n!P expands to current session password\n!?prompt[\\]?default! expands to user-entered value with given prompt and default (optional \\ avoids escaping)\n!`command` expands to output of local command"
+        LOGIN_NEW_SITE_NODE, "New Site"
+        LOGIN_SITE_FOLDER_CAPTION, "Site Folder"
+        LOGIN_WORKSPACE_CAPTION, "Workspace"
+        LOGIN_CANCEL_EDITING, "This will cancel site editing. Do you want to continue?"
+        SAVE_SESSION_FOLDER, "&Folder:"
+        SAVE_SESSION_ROOT_FOLDER, "<root>"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2013 Martin Prikryl"
@@ -454,5 +463,6 @@ BEGIN
         DOCUMENTATION_KEYWORD_URL2, "http://winscp.net/eng/docs/%s?ver=%s&lang=%s"
         LOCALES_URL, "http://winscp.net/eng/translations.php"
         DOCUMENTATION_SEARCH_URL2, "http://winscp.net/eng/docs/search.php?q=%s&ver=%s&lang=%s"
+        ERROR_REPORT_URL, "http://winscp.net/forum/posting.php?mode=newtopic&f=2&report=%s&ver=%s&lang=%s"
 
 END

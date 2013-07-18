@@ -554,6 +554,16 @@ int CFileZillaApi::GetCurrentPath(CServerPath & path)
 		return FZ_REPLY_NOTCONNECTED;
 	return (m_pMainThread->GetCurrentPath(path) ? FZ_REPLY_OK : FZ_REPLY_NOTCONNECTED);
 }
+
+bool __fastcall CFileZillaApi::UsingMlsd()
+{
+	//Check if call allowed
+	if (!m_bInitialized)
+		return false;
+	if (IsConnected()==FZ_REPLY_NOTCONNECTED)
+		return false;
+	return m_pMainThread->UsingMlsd();
+}
 #endif
 
 int CFileZillaApi::CustomCommand(CString CustomCommand)

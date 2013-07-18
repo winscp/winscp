@@ -377,7 +377,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.CloseSessionAction
         end
         object TBXItem114: TTBXItem
-          Action = NonVisualDataModule.SaveCurrentSessionAction
+          Action = NonVisualDataModule.SaveCurrentSessionAction2
         end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
@@ -393,7 +393,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXSeparatorItem53: TTBXSeparatorItem
         end
         object TBXSubmenuItem20: TTBXSubmenuItem
-          Action = NonVisualDataModule.SavedSessionsAction
+          Action = NonVisualDataModule.SavedSessionsAction2
         end
       end
       object TBXSubmenuItem9: TTBXSubmenuItem
@@ -428,7 +428,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXSeparatorItem38: TTBXSeparatorItem
           end
           object TBXItem74: TTBXItem
-            Action = NonVisualDataModule.ToolBarAction
+            Action = NonVisualDataModule.ToolBar2Action
           end
           object TBXSeparatorItem47: TTBXSeparatorItem
           end
@@ -797,12 +797,12 @@ inherited ScpCommanderForm: TScpCommanderForm
         Action = NonVisualDataModule.CloseSessionAction
       end
       object TBXItem125: TTBXItem
-        Action = NonVisualDataModule.SaveCurrentSessionAction
+        Action = NonVisualDataModule.SaveCurrentSessionAction2
       end
       object TBXSeparatorItem34: TTBXSeparatorItem
       end
       object TBXSubmenuItem23: TTBXSubmenuItem
-        Action = NonVisualDataModule.SavedSessionsAction
+        Action = NonVisualDataModule.SavedSessionsAction2
         DisplayMode = nbdmImageAndText
         Options = [tboDropdownArrow]
       end

@@ -1507,13 +1507,21 @@ void CFtpControlSocket::FtpCommand(LPCTSTR pCommand)
 	Send(pCommand);
 }
 
+#ifdef MPEXT
+bool __fastcall CFtpControlSocket::UsingMlsd()
+{
+	return
+		// 0 = on, 1 = off, 2 = auto
+		(m_CurrentServer.iUseMlsd == 0) ||
+		((m_CurrentServer.iUseMlsd != 1) &&
+		 (m_serverCapabilities.GetCapability(mlsd_command) == yes));
+}
+#endif
+
 CString CFtpControlSocket::GetListingCmd()
 {
 	CString cmd;
-	// 0 = on, 1 = off, 2 = auto
-	if ((m_CurrentServer.iUseMlsd == 0) ||
-		((m_CurrentServer.iUseMlsd != 1) &&
-		 (m_serverCapabilities.GetCapability(mlsd_command) == yes)))
+	if (UsingMlsd())
 	{
 		cmd = _T("MLSD");
 	}
@@ -5132,7 +5140,7 @@ int CFtpControlSocket::CheckOverwriteFile()
 				if (pData->transferfile.get)
 				{
 					int pos = pData->transferfile.localfile.ReverseFind(_MPT('\\'));
-					ASSERT(pos!=-1);
+					// pos can be -1 here, e.g. in scripting, the code below still works then
 					pOverwriteData->FileName1 = pData->transferfile.localfile.Mid(pos+1);
 					pOverwriteData->FileName2 = pData->transferfile.remotefile;
 					pOverwriteData->path1 = pData->transferfile.localfile.Left(pos+1);
@@ -5143,7 +5151,7 @@ int CFtpControlSocket::CheckOverwriteFile()
 				else
 				{
 					int pos = pData->transferfile.localfile.ReverseFind(_MPT('\\'));
-					ASSERT(pos!=-1);
+					// pos can be -1 here, e.g. in scripting, the code below still works then
 					pOverwriteData->FileName1 = pData->transferfile.remotefile;
 					pOverwriteData->FileName2 = pData->transferfile.localfile.Mid(pos+1);
 					pOverwriteData->path1 = pData->transferfile.remotepath.GetPath();

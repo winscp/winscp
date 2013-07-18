@@ -254,7 +254,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.CloseSessionAction
         end
         object TBXItem114: TTBXItem
-          Action = NonVisualDataModule.SaveCurrentSessionAction
+          Action = NonVisualDataModule.SaveCurrentSessionAction2
         end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
@@ -270,7 +270,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem53: TTBXSeparatorItem
         end
         object TBXSubmenuItem20: TTBXSubmenuItem
-          Action = NonVisualDataModule.SavedSessionsAction
+          Action = NonVisualDataModule.SavedSessionsAction2
         end
       end
       object TBXSubmenuItem1: TTBXSubmenuItem
@@ -695,12 +695,12 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.CloseSessionAction
       end
       object TBXItem125: TTBXItem
-        Action = NonVisualDataModule.SaveCurrentSessionAction
+        Action = NonVisualDataModule.SaveCurrentSessionAction2
       end
       object TBXSeparatorItem34: TTBXSeparatorItem
       end
       object TBXSubmenuItem23: TTBXSubmenuItem
-        Action = NonVisualDataModule.SavedSessionsAction
+        Action = NonVisualDataModule.SavedSessionsAction2
         DisplayMode = nbdmImageAndText
         Options = [tboDropdownArrow]
       end
@@ -885,7 +885,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     object TransferToolbar: TTBXToolbar
       Left = 44
       Top = 182
-      Caption = 'Transfer settings'
+      Caption = 'Transfer Settings'
       DockPos = 44
       DockRow = 7
       Images = GlyphsModule.ExplorerImages

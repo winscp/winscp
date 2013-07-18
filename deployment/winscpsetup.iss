@@ -353,17 +353,6 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; 
 Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
   ValueName: "DefaultInterfaceInterface"; ValueData: 1; \
   Check: not UserSettings(1); Flags: noerror
-; Advanced tab on login dialog
-Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
-  ValueName: "ShowAdvancedLoginOptions"; ValueData: 0; Check: not UserSettings(2)
-Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
-  ValueName: "DefaultInterfaceShowAdvancedLoginOptions"; ValueData: 0; \
-  Check: not UserSettings(2); Flags: noerror
-Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
-  ValueName: "ShowAdvancedLoginOptions"; ValueData: 1; Check: UserSettings(2)
-Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
-  ValueName: "DefaultInterfaceShowAdvancedLoginOptions"; ValueData: 1; \
-  Check: UserSettings(2); Flags: noerror
 ; If installer enabled ddext, let it reset the settings on uninstall,
 ; so the default is used on the next run
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
@@ -444,8 +433,6 @@ var
   CustomTypeButton: TRadioButton;
   CommanderRadioButton: TRadioButton;
   ExplorerRadioButton: TRadioButton;
-  AdditionalOptionsCaption: TLabel;
-  AdvancedTabsCheckbox: TCheckbox;
   LaunchCheckbox: TCheckbox;
   OpenGettingStartedCheckbox: TCheckbox;
   AreUpdatesEnabled: Boolean;
@@ -499,7 +486,6 @@ function UserSettings(Settings: Integer): Boolean;
 begin
   case Settings of
     1: Result := CommanderRadioButton.Checked;
-    2: Result := AdvancedTabsCheckbox.Checked;
     else Result := False;
   end;
 end;
@@ -775,7 +761,6 @@ procedure InitializeWizard;
 var
   DefaultLang: Boolean;
   UserInterface: Cardinal;
-  AdvancedTabs: Cardinal;
   UpdatesPeriod: Cardinal;
   InterfacePage: TWizardPage;
   SetupTypePage: TWizardPage;
@@ -961,9 +946,6 @@ begin
   UserInterface := 0; { default is commander }
   RegQueryDWordValue(HKCU, '{#RegistryKey}\Configuration\Interface',
     'Interface', UserInterface);
-  AdvancedTabs := 0; { advanced tabs are off by default }
-  RegQueryDWordValue(HKCU, '{#RegistryKey}\Configuration\Interface',
-    'ShowAdvancedLoginOptions', AdvancedTabs);
 
   Caption := TLabel.Create(InterfacePage);
   Caption.Caption := ExpandConstant('{cm:UserInterfaceStyle}');
@@ -1039,22 +1021,6 @@ begin
     I := Caption.Top + Caption.Height
   else
     I := Image.Top + Image.Height;
-
-  AdditionalOptionsCaption := TLabel.Create(InterfacePage);
-  AdditionalOptionsCaption.Caption := ExpandConstant('{cm:AdditionalOptions}');
-  AdditionalOptionsCaption.Width := InterfacePage.SurfaceWidth;
-  AdditionalOptionsCaption.Top := I + ScaleY(10);
-  AdditionalOptionsCaption.Parent := InterfacePage.Surface;
-
-  AdvancedTabsCheckbox := TCheckbox.Create(InterfacePage);
-  AdvancedTabsCheckbox.Caption := ExpandConstant('{cm:AdvancedLoginOptions}');
-  AdvancedTabsCheckbox.Checked := (AdvancedTabs <> 0);
-  AdvancedTabsCheckbox.Left := ScaleX(4);
-  AdvancedTabsCheckbox.Width := InterfacePage.SurfaceWidth -
-    AdvancedTabsCheckbox.Left;
-  AdvancedTabsCheckbox.Top :=
-    AdditionalOptionsCaption.Top + AdditionalOptionsCaption.Height + ScaleY(6);
-  AdvancedTabsCheckbox.Parent := InterfacePage.Surface;
 
   // run checkbox
   LaunchCheckbox := TCheckbox.Create(WizardForm.FinishedPage);
@@ -1241,12 +1207,6 @@ begin
   OpenCandyCurPageChanged(CurPageID);
 #endif
 
-  if CurPageID = wpInterface then
-  begin
-    AdditionalOptionsCaption.Visible := not TypicalTypeButton.Checked;
-    AdvancedTabsCheckbox.Visible := not TypicalTypeButton.Checked;
-  end
-    else
   if CurPageID = wpFinished then
   begin
     LineHeight := (WizardForm.NoRadio.Top - WizardForm.YesRadio.Top);
@@ -1511,13 +1471,6 @@ begin
   StringChange(S2, '&', '');
   S := S + S2;
   S := S + NewLine;
-
-  if AdvancedTabsCheckbox.Checked then
-  begin
-    S2 := ExpandConstant('{cm:AdvancedLoginOptions}');
-    StringChange(S2, '&', '');
-    S := S + Space + S2 + NewLine;
-  end;
 
   Result := S;
 end;

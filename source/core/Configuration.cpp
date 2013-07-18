@@ -69,7 +69,7 @@ void __fastcall TConfiguration::Default()
   }
 
   RandomSeedFile = FDefaultRandomSeedFile;
-  PuttyRegistryStorageKey = L"Software\\SimonTatham\\PuTTY";
+  PuttyRegistryStorageKey = OriginalPuttyRegistryStorageKey;
   FConfirmOverwriting = true;
   FConfirmResume = true;
   FAutoReadDirectoryAfterOp = true;

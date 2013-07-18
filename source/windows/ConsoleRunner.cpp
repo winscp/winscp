@@ -11,6 +11,7 @@
 #include <Queue.h>
 
 #include <Consts.hpp>
+#include <StrUtils.hpp>
 
 #include "Console.h"
 #include "WinInterface.h"
@@ -1127,8 +1128,8 @@ void __fastcall TConsoleRunner::PrintLine(const UnicodeString & Str)
 void __fastcall TConsoleRunner::PrintMessage(const UnicodeString & Str)
 {
   UnicodeString Line =
-    StringReplace(StringReplace(Str.TrimRight(), L"\n\n", L"\n", TReplaceFlags() << rfReplaceAll),
-      L"\n \n", L"\n", TReplaceFlags() << rfReplaceAll);
+    ReplaceStr(ReplaceStr(Str.TrimRight(), L"\n\n", L"\n"),
+      L"\n \n", L"\n");
 
   if (FScript != NULL)
   {
@@ -1282,52 +1283,40 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     PrintMessage(MoreMessages->Text);
   }
 
-  static const int MaxButtonCount = 15;
-  unsigned int Buttons[MaxButtonCount];
-  UnicodeString Captions[MaxButtonCount];
-  TNotifyEvent OnClicks[MaxButtonCount];
-  int ButtonCount = 0;
+  std::vector<unsigned int> Buttons;
+  std::vector<UnicodeString> Captions;
+  std::vector<TNotifyEvent> OnClicks;
 
-  #define ADD_BUTTON(TYPE, CAPTION) \
-    if (FLAGSET(AAnswers, qa ## TYPE)) \
-    { \
-      assert(ButtonCount < MaxButtonCount); \
-      Captions[ButtonCount] = CAPTION; \
-      Buttons[ButtonCount] = qa ## TYPE; \
-      OnClicks[ButtonCount] = NULL; \
-      ButtonCount++; \
-      AAnswers -= qa ## TYPE; \
+  for (unsigned int Answer = qaFirst; Answer <= qaLast; Answer = Answer << 1)
+  {
+    if (FLAGSET(Answers, Answer))
+    {
+      UnicodeString Name; // unused
+      UnicodeString Caption;
+      AnswerNameAndCaption(Answer, Name, Caption);
+      Captions.push_back(Caption);
+      Buttons.push_back(Answer);
+      OnClicks.push_back(NULL);
+      AAnswers -= Answer;
     }
-  #define ADD_BUTTON_RES(TYPE) ADD_BUTTON(TYPE, LoadResourceString(&_SMsgDlg ## TYPE));
-  ADD_BUTTON_RES(Yes);
-  ADD_BUTTON_RES(No);
-  ADD_BUTTON_RES(OK);
-  ADD_BUTTON_RES(Cancel);
-  ADD_BUTTON_RES(Abort);
-  ADD_BUTTON_RES(Retry);
-  ADD_BUTTON_RES(Ignore);
-  // to keep the same order as for GUI message box
-  ADD_BUTTON(Skip, LoadStr(SKIP_BUTTON));
-  ADD_BUTTON_RES(All);
-  ADD_BUTTON_RES(NoToAll);
-  ADD_BUTTON_RES(YesToAll);
-  ADD_BUTTON_RES(Help);
-  #undef ADD_BUTTON_RES
-  #undef ADD_BUTTON
+  }
 
   USEDPARAM(AAnswers);
   assert(AAnswers == 0);
-  assert(ButtonCount > 0);
+  assert(!Buttons.empty());
 
   if ((Params != NULL) && (Params->Aliases != NULL))
   {
-    for (int bi = 0; bi < ButtonCount; bi++)
+    for (unsigned int bi = 0; bi < Buttons.size(); bi++)
     {
       for (unsigned int ai = 0; ai < Params->AliasesCount; ai++)
       {
         if (Params->Aliases[ai].Button == Buttons[bi])
         {
-          Captions[bi] = Params->Aliases[ai].Alias;
+          if (!Params->Aliases[ai].Alias.IsEmpty())
+          {
+            Captions[bi] = Params->Aliases[ai].Alias;
+          }
           OnClicks[bi] = Params->Aliases[ai].OnClick;
           break;
         }
@@ -1336,7 +1325,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   }
 
   UnicodeString Accels;
-  for (int Index = 0; Index < ButtonCount; Index++)
+  for (unsigned int Index = 0; Index < Buttons.size(); Index++)
   {
     UnicodeString & Caption = Captions[Index];
     int P = Caption.Pos(L'&');
@@ -1359,7 +1348,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     }
   }
 
-  assert(Accels.Length() == ButtonCount);
+  assert(Accels.Length() == static_cast<int>(Buttons.size()));
   int NumberAccel = 0;
   unsigned int CancelA = CancelAnswer(Answers);
   int CancelIndex;
@@ -1369,7 +1358,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   int ContinueIndex;
   int TimeoutIndex = 0;
 
-  for (int Index = 0; Index < ButtonCount; Index++)
+  for (unsigned int Index = 0; Index < Buttons.size(); Index++)
   {
     UnicodeString & Caption = Captions[Index];
 
@@ -1445,7 +1434,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       if (FirstOutput || FConsole->LiveOutput())
       {
         UnicodeString Output;
-        for (int i = 0; i < ButtonCount; i++)
+        for (unsigned int i = 0; i < Buttons.size(); i++)
         {
           if (i > 0)
           {
@@ -1454,12 +1443,13 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
 
           UnicodeString Caption = Captions[i];
           int P = Caption.Pos(L'&');
-          assert(P >= 0);
+          if (ALWAYS_TRUE(P >= 0))
+          {
+            Caption[P] = L'(';
+            Caption.Insert(L")", P + 2);
+          }
 
-          Caption[P] = L'(';
-          Caption.Insert(L")", P + 2);
-
-          if (i + 1 == TimeoutIndex)
+          if (i + 1 == static_cast<unsigned int>(TimeoutIndex))
           {
             assert(Timeouting);
             Caption = FMTLOAD(TIMEOUT_BUTTON, (Caption, int(Timeout / MSecsPerSec)));
@@ -1773,8 +1763,8 @@ UnicodeString TConsoleRunner::ExpandCommand(UnicodeString Command, TStrings * Sc
   assert(ScriptParameters != NULL);
   for (int Index = 0; Index < ScriptParameters->Count; Index++)
   {
-    Command = StringReplace(Command, FORMAT(L"%%%d%%", (Index+1)),
-      ScriptParameters->Strings[Index], TReplaceFlags() << rfReplaceAll);
+    Command = ReplaceStr(Command, FORMAT(L"%%%d%%", (Index+1)),
+      ScriptParameters->Strings[Index]);
   }
   Command = ExpandEnvironmentVariables(Command);
   return Command;
@@ -1928,11 +1918,9 @@ void __fastcall Usage(TConsole * Console)
 {
   UnicodeString Usage = LoadStr(USAGE8, 10240);
   UnicodeString ExeBaseName = ChangeFileExt(ExtractFileName(Application->ExeName), L"");
-  Usage = StringReplace(Usage, L"%APP%", ExeBaseName,
-    TReplaceFlags() << rfReplaceAll << rfIgnoreCase);
+  Usage = ReplaceText(Usage, L"%APP%", ExeBaseName);
   UnicodeString Copyright =
-    StringReplace(LoadStr(WINSCP_COPYRIGHT), "©", "(c)",
-      TReplaceFlags() << rfReplaceAll << rfIgnoreCase);
+    ReplaceText(LoadStr(WINSCP_COPYRIGHT), "©", "(c)");
   Usage = FORMAT(Usage, (Configuration->VersionStr, Copyright));
   TStrings * Lines = new TStringList();
   try

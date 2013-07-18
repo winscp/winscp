@@ -40,6 +40,7 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const UnicodeString DirName);
 UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
+void __fastcall AddSessionColorImage(TCustomImageList * ImageList, TColor Color, bool Disconnected);
 //---------------------------------------------------------------------------
 class TLocalCustomCommand : public TFileCustomCommand
 {
@@ -54,8 +55,8 @@ public:
   bool __fastcall HasLocalFileName(const UnicodeString & Command);
 
 protected:
-  virtual int __fastcall PatternLen(int Index, wchar_t PatternCmd);
-  virtual bool __fastcall PatternReplacement(int Index, const UnicodeString & Pattern,
+  virtual int __fastcall PatternLen(const UnicodeString & Command, int Index);
+  virtual bool __fastcall PatternReplacement(const UnicodeString & Pattern,
     UnicodeString & Replacement, bool & Delimit);
   virtual void __fastcall DelimitReplacement(UnicodeString & Replacement, wchar_t Quote);
 

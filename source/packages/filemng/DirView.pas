@@ -121,8 +121,6 @@ type
 
 {Additional events:}
 type
-  TDirViewAddFileEvent = procedure(Sender: TObject; var SearchRec: SysUtils.TSearchRec;
-    var AddFile : Boolean) of object;
   TDirViewFileSizeChanged = procedure(Sender: TObject; Item: TListItem) of object;
   TDirViewFileIconForName = procedure(Sender: TObject; Item: TListItem; var FileName: string) of object;
 
@@ -230,7 +228,6 @@ type
     FSubDirScanner: TList;
 
     {Additional events:}
-    FOnAddFile: TDirViewAddFileEvent;
     FOnFileSizeChanged: TDirViewFileSizeChanged;
     FOnFileIconForName: TDirViewFileIconForName;
     FOnChangeDetected: TNotifyEvent;
@@ -310,7 +307,6 @@ type
     function ItemMatchesFilter(Item: TListItem; const Filter: TFileFilter): Boolean; override;
     function ItemOverlayIndexes(Item: TListItem): Word; override;
     procedure LoadFiles; override;
-    function MinimizePath(Path: string; Len: Integer): string; override;
     procedure PerformItemDragDropOperation(Item: TListItem; Effect: Integer); override;
     procedure SortItems; override;
     {$IFNDEF NO_THREADS}
@@ -515,8 +511,6 @@ type
       read FOnChangeInvalid write FOnChangeInvalid;
 {$ENDIF}
     {Set AddFile to false, if actual file should not be added to the filelist:}
-    property OnAddFile: TDirViewAddFileEvent
-      read FOnAddFile write FOnAddFile;
     property OnFileSizeChanged: TDirViewFileSizeChanged
       read FOnFileSizeChanged write FOnFileSizeChanged;
     property OnFileIconForName: TDirViewFileIconForName
@@ -557,7 +551,7 @@ uses
   ShellAPI, ComObj,
   ActiveX, ImgList,
   ShellDialogs, IEDriveInfo,
-  FileChanges, Math, PasTools;
+  FileChanges, Math, PasTools, StrUtils;
 
 var
   DaylightHack: Boolean;
@@ -1071,7 +1065,7 @@ procedure TDirView.SetPath(Value: string);
 begin
   // do checks before passing directory to drive view, because
   // it would truncate non-existing directory to first superior existing
-  Value := StringReplace(Value, '/', '\', [rfReplaceAll]);
+  Value := ReplaceStr(Value, '/', '\');
 
   if IsUncPath(Value) then
     raise Exception.CreateFmt(SUcpPathsNotSupported, [Value]);
@@ -1363,7 +1357,7 @@ begin
              FileNameMatchesMasks(
                DisplayName, False, FSize,
                FileTimeToDateTime(SRec.FindData.ftLastWriteTime),
-               Mask)) and
+               Mask, True)) and
             (FSize >= FSelFileSizeFrom) and
             ((FSelFileSizeTo = 0) or
              (FSize <= FSelFileSizeTo)) and
@@ -1372,9 +1366,6 @@ begin
             (LongWord(SRec.Time) <= FileTimeTo);
 {$WARN SYMBOL_DEPRECATED ON}
          end;
-
-         if Assigned(FOnAddFile) then
-           FOnAddFile(Self, SRec, FileSel);
 
          if FileSel then
          begin
@@ -1494,10 +1485,10 @@ begin
     ((Filter.ModificationTo = 0) or (Modification <= Filter.ModificationTo)) and
     ((Filter.Masks = '') or
      FileNameMatchesMasks(FileRec^.FileName, FileRec^.IsDirectory,
-       FileRec^.Size, FileTimeToDateTime(FileRec^.FileTime), Filter.Masks) or
+       FileRec^.Size, FileTimeToDateTime(FileRec^.FileTime), Filter.Masks, False) or
      (FileRec^.IsDirectory and Filter.Directories and
       FileNameMatchesMasks(FileRec^.FileName, False,
-       FileRec^.Size, FileTimeToDateTime(FileRec^.FileTime), Filter.Masks)));
+       FileRec^.Size, FileTimeToDateTime(FileRec^.FileTime), Filter.Masks, False)));
 end;
 
 function TDirView.ItemOverlayIndexes(Item: TListItem): Word;
@@ -1634,7 +1625,7 @@ begin
               ((Mask = '') or
                 FileNameMatchesMasks(
                   SRec.Name, False, FSize,
-                  FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask)) and
+                  FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask, True)) and
               (FSize >= FSelFileSizeFrom) and
               ((FSelFileSizeTo = 0) or (FSize <= FSelFileSizeTo)) and
 {$WARN SYMBOL_DEPRECATED OFF}
@@ -1642,9 +1633,6 @@ begin
               (LongWord(SRec.Time) <= FileTimeTo) then
 {$WARN SYMBOL_DEPRECATED ON}
             begin
-              if Assigned(OnAddFile) then
-                FOnAddFile(Self, SRec, FileSel);
-
               if FileSel then
               begin
                 AddItem(SRec);
@@ -1689,10 +1677,12 @@ begin
               {$IFDEF USE_DRIVEVIEW}
               Inc(DirsCount);
               {$ENDIF}
-              if Assigned(OnAddFile) then
-                OnAddFile(Self, SRec, FileSel);
 
-              if FileSel then
+              if FileSel and
+                 ((Mask = '') or
+                  FileNameMatchesMasks(
+                    SRec.Name, True, 0,
+                    FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask, True)) then
               begin
                 {$IFNDEF NO_THREADS}
                 NewItem :=
@@ -1880,7 +1870,7 @@ begin
                 ((Mask = '') or
                   FileNameMatchesMasks(
                     SRec.Name, False, FSize,
-                    FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask)) and
+                    FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask, True)) and
                 (FSize >= FSelFileSizeFrom) and
                 ((FSelFileSizeTo = 0) or (FSize <= FSelFileSizeTo)) and
 {$WARN SYMBOL_DEPRECATED OFF}
@@ -1893,15 +1883,10 @@ begin
                 ItemIndex := -1;
                 if not EItems.Find(SRec.Name, ItemIndex) then
                 begin
-                  if Assigned(OnAddFile) then
-                    FOnAddFile(Self, Srec, FileSel);
-                  if FileSel then
-                  begin
-                    New(PSrec);
-                    PSRec^ := SRec;
-                    NewItems.AddObject(SRec.Name, Pointer(PSrec));
-                    FItems.Add(Srec.Name);
-                  end
+                  New(PSrec);
+                  PSRec^ := SRec;
+                  NewItems.AddObject(SRec.Name, Pointer(PSrec));
+                  FItems.Add(Srec.Name);
                 end
                   else
                 begin
@@ -1969,10 +1954,11 @@ begin
                 begin
                   if not EItems.Find(SRec.Name, ItemIndex) then
                   begin
-                    if Assigned(FOnAddFile) then
-                      FOnAddFile(Self, SRec, FileSel);
-
-                    if FileSel then
+                    if FileSel and
+                       ((Mask = '') or
+                         FileNameMatchesMasks(
+                           SRec.Name, True, 0,
+                           FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask, True)) then
                     begin
                       New(PSrec);
                       PSrec^ := SRec;
@@ -1987,7 +1973,6 @@ begin
                   end
                     else
                   begin
-                    FileSel := true;
                     FItems.Add(SRec.Name);
                   end;
                 end
@@ -4398,11 +4383,6 @@ begin
       if PFileRec(Items[Index].Data)^.Empty then
         GetDisplayData(Items[Index], False);
 end; {FetchAllDisplayData}
-
-function TDirView.MinimizePath(Path: string; Len: Integer): string;
-begin
-  Result := MinimizeName(Path, Canvas, Len);
-end; { MinimizePath }
 
 function TDirView.NewColProperties: TCustomListViewColProperties;
 begin

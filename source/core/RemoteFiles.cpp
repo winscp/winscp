@@ -2,15 +2,17 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Common.h"
 #include "RemoteFiles.h"
 
 #include <SysUtils.hpp>
+#include <StrUtils.hpp>
 
-#include "Common.h"
 #include "Exceptions.h"
 #include "Interface.h"
 #include "Terminal.h"
 #include "TextsCore.h"
+#include "HelpCore.h"
 /* TODO 1 : Path class instead of UnicodeString (handle relativity...) */
 //---------------------------------------------------------------------------
 UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString Path)
@@ -200,12 +202,12 @@ UnicodeString __fastcall AbsolutePath(const UnicodeString & Base, const UnicodeS
 //---------------------------------------------------------------------------
 UnicodeString __fastcall FromUnixPath(const UnicodeString Path)
 {
-  return StringReplace(Path, L"/", L"\\", TReplaceFlags() << rfReplaceAll);
+  return ReplaceStr(Path, L"/", L"\\");
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall ToUnixPath(const UnicodeString Path)
 {
-  return StringReplace(Path, L"\\", L"/", TReplaceFlags() << rfReplaceAll);
+  return ReplaceStr(Path, L"\\", L"/");
 }
 //---------------------------------------------------------------------------
 static void __fastcall CutFirstDirectory(UnicodeString & S, bool Unix)
@@ -1210,7 +1212,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
   }
   catch (Exception &E)
   {
-    throw ETerminal(&E, FmtLoadStr(LIST_LINE_ERROR, ARRAYOFCONST((value))));
+    throw ETerminal(&E, FmtLoadStr(LIST_LINE_ERROR, ARRAYOFCONST((value))), HELP_LIST_LINE_ERROR);
   }
 }
 //---------------------------------------------------------------------------
@@ -1371,7 +1373,7 @@ void __fastcall TRemoteFileList::AddFile(TRemoteFile * File)
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFileList::DuplicateTo(TRemoteFileList * Copy)
 {
-  Copy->Clear();
+  Copy->Reset();
   for (int Index = 0; Index < Count; Index++)
   {
     TRemoteFile * File = Files[Index];
@@ -1381,10 +1383,10 @@ void __fastcall TRemoteFileList::DuplicateTo(TRemoteFileList * Copy)
   Copy->FTimestamp = FTimestamp;
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteFileList::Clear()
+void __fastcall TRemoteFileList::Reset()
 {
   FTimestamp = Now();
-  TObjectList::Clear();
+  Clear();
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFileList::SetDirectory(UnicodeString value)
@@ -1445,26 +1447,34 @@ __fastcall TRemoteDirectory::TRemoteDirectory(TTerminal * aTerminal, TRemoteDire
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteDirectory::Clear()
+__fastcall TRemoteDirectory::~TRemoteDirectory()
 {
-  if (ThisDirectory && !IncludeThisDirectory)
+  ReleaseRelativeDirectories();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteDirectory::ReleaseRelativeDirectories()
+{
+  if ((ThisDirectory != NULL) && !IncludeThisDirectory)
   {
     delete FThisDirectory;
     FThisDirectory = NULL;
   }
-  if (ParentDirectory && !IncludeParentDirectory)
+  if ((ParentDirectory != NULL) && !IncludeParentDirectory)
   {
     delete FParentDirectory;
     FParentDirectory = NULL;
   }
-
-  TRemoteFileList::Clear();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteDirectory::Reset()
+{
+  ReleaseRelativeDirectories();
+  TRemoteFileList::Reset();
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectory::SetDirectory(UnicodeString value)
 {
   TRemoteFileList::SetDirectory(value);
-  //Load();
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectory::AddFile(TRemoteFile * File)
@@ -1682,7 +1692,7 @@ void __fastcall TRemoteDirectoryCache::DoClearFileList(UnicodeString Directory, 
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectoryCache::Delete(int Index)
 {
-  delete (TRemoteFileList *)Objects[Index];
+  delete dynamic_cast<TRemoteFileList *>(Objects[Index]);
   TStringList::Delete(Index);
 }
 //---------------------------------------------------------------------------
@@ -1893,6 +1903,7 @@ __fastcall TRights::TRights(const TRights & Source)
 {
   Assign(&Source);
 }
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 void __fastcall TRights::Assign(const TRights * Source)
 {

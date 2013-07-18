@@ -294,7 +294,8 @@ static int __fastcall AdjustLineBreaks(unsigned char * Dest, const TBytes & Sour
         *P = 0;
         P++;
         // Skip #10 if preceeded by #13
-        if ((Source[I + 2] == 10) && (Source[I + 3] == 0))
+        if ((I < (Len - 3)) &&
+            (Source[I + 2] == 10) && (Source[I + 3] == 0))
         {
           I += 2;
         }
@@ -318,12 +319,14 @@ struct TStreamLoadInfo
 };
 //---------------------------------------------------------------------------
 // Copy from Vcl.ComCtrls.pas,
-/// WORKAROUND for bug in BCB XE2 VCL
+// WORKAROUND for bug in BCB XE2 VCL
 // Fixes conversion from UTF-8, when read buffer ends in the middle of UTF-8 char
 static unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead)
 {
   TStreamLoadInfo * LoadInfo = reinterpret_cast<TStreamLoadInfo *>(Cookie);
-  return LoadInfo->RichEdit->StreamLoad(LoadInfo->StreamInfo, Buff, Read, *WasRead) ? 0 : 1;
+  unsigned long Result =
+    LoadInfo->RichEdit->StreamLoad(LoadInfo->StreamInfo, Buff, Read, *WasRead) ? 0 : 1;
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRichEdit20::EMStreamIn(TMessage & Message)
@@ -411,6 +414,7 @@ bool __stdcall TRichEdit20::StreamLoad(
 {
   WasRead = 0;
 
+  bool Result;
   try
   {
     if (StreamInfo->Converter != NULL)
@@ -476,19 +480,20 @@ bool __stdcall TRichEdit20::StreamLoad(
       }
     }
 
-    return true;
+    Result = true;
   }
   catch (EEncodingError & E)
   {
     FStreamLoadError = true;
     FStreamLoadEncodingError = true;
-    return false;
+    Result = false;
   }
   catch (Exception & E)
   {
     FStreamLoadError = true;
-    return false;
+    Result = false;
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRichEdit20::LoadFromStream(TStream * Stream, TEncoding * Encoding, bool & EncodingError)

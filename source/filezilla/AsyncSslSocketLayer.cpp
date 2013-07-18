@@ -1406,7 +1406,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 	m_sCriticalSection.Unlock();
 
 	// Called while unloading?
-	if (!pLayer->m_bUseSSL)
+	if (!pLayer->m_bUseSSL && (where != SSL_CB_LOOP))
 		return;
 
 	char * str;
@@ -1459,10 +1459,21 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 
 	if (where & SSL_CB_LOOP)
 	{
-		char *buffer = new char[4096];
+		char* debug = NULL;
+		// exact SSL_CB_LOOP is abused for debugging
+		if (where == SSL_CB_LOOP)
+		{
+			debug = reinterpret_cast<char*>(ret);
+		}
+		char *buffer = new char[4096 + ((debug != NULL) ? strlen(debug) : 0)];
 		sprintf(buffer, "%s: %s",
 				str,
 				pSSL_state_string_long(s));
+		if (debug != NULL)
+		{
+			sprintf(buffer + strlen(buffer), " [%s]", debug);
+			OPENSSL_free(debug);
+		}
 		pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERBOSE_INFO, 0, buffer);
 	}
 	else if (where & SSL_CB_ALERT)

@@ -20,6 +20,7 @@
 #include "WinInterface.h"
 #include "Tools.h"
 #include "Setup.h"
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 /* Using quotes or not should make no difference but some programs (for
    instance cygwin and msys) don't like them. */
@@ -601,8 +602,12 @@ UnicodeString __fastcall VersionStrFromCompoundVersion(int Version)
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall CampaignUrl(UnicodeString URL)
+UnicodeString __fastcall CampaignUrl(UnicodeString AURL)
 {
+  // see also TWebHelpSystem::ShowHelp
+  const wchar_t FragmentSeparator = L'#';
+  UnicodeString URL = ::CutToChar(AURL, FragmentSeparator, false);
+
   if (URL.Pos(L"?") == 0)
   {
     URL += L"?";
@@ -615,6 +620,9 @@ UnicodeString __fastcall CampaignUrl(UnicodeString URL)
   int CurrentCompoundVer = Configuration->CompoundVersion;
   AnsiString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
   URL += FORMAT(L"utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
+
+  AddToList(URL, AURL, FragmentSeparator);
+
   return URL;
 }
 //---------------------------------------------------------------------------
@@ -829,7 +837,7 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
     {
       Message = FORMAT(Message,
         (FMTLOAD(UPDATE_MESSAGE,
-          (StringReplace(Updates.Results.Message, L"|", L"\n", TReplaceFlags() << rfReplaceAll)))));
+          (ReplaceStr(Updates.Results.Message, L"|", L"\n")))));
     }
     else
     {
@@ -1013,7 +1021,8 @@ void __fastcall SetupInitialize()
 //---------------------------------------------------------------------------
 static bool __fastcall AddJumpListCategory(TStrings * Names,
   UnicodeString AdditionalParams, TStringList * Removed,
-  ICustomDestinationList * DestinationList, UnicodeString CategoryName)
+  ICustomDestinationList * DestinationList, UnicodeString CategoryName,
+  int IconIndex)
 {
   bool Result = false;
   IObjectCollection * Collection = NULL;
@@ -1027,7 +1036,7 @@ static bool __fastcall AddJumpListCategory(TStrings * Names,
       {
         IShellLink * Link =
           CreateDesktopSessionShortCut(
-            Names->Strings[Index], L"", AdditionalParams, -1, true);
+            Names->Strings[Index], L"", AdditionalParams, -1, IconIndex, true);
 
         wchar_t Desc[2048];
         if (SUCCEEDED(Link->GetDescription(Desc, sizeof(Desc) - 1)))
@@ -1082,6 +1091,8 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
   ICustomDestinationList * DestinationList = NULL;
   IObjectArray * RemovedArray = NULL;
   TStringList * Removed = NULL;
+  int OldErrMode = SetErrorMode(SEM_FAILCRITICALERRORS);
+
   try
   {
     if (SUCCEEDED(CoCreateInstance(CLSID_DestinationList, NULL,
@@ -1113,11 +1124,11 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
 
         AddJumpListCategory(
           WorkspaceNames, L"", Removed, DestinationList,
-          LoadStr(JUMPLIST_WORKSPACES));
+          LoadStr(JUMPLIST_WORKSPACES), WORKSPACE_ICON);
 
         AddJumpListCategory(
           SessionNames, L"/UploadIfAny", Removed, DestinationList,
-          LoadStr(JUMPLIST_RECENT));
+          LoadStr(JUMPLIST_RECENT), SITE_ICON);
 
         if (DestinationList != NULL)
         {
@@ -1128,6 +1139,7 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
   }
   __finally
   {
+    SetErrorMode(OldErrMode);
     if (RemovedArray != NULL)
     {
       RemovedArray->Release();

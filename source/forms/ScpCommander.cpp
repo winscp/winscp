@@ -13,6 +13,7 @@
 #include <VCLCommon.h>
 #include <GUITools.h>
 #include <DragDrop.hpp>
+#include <StrUtils.hpp>
 
 #include "Glyphs.h"
 #include "NonVisual.h"
@@ -136,8 +137,7 @@ void __fastcall TScpCommanderForm::UpdateToolbar2ItemCaption(TTBCustomItem * Ite
 {
   Item->Caption =
     ShortCutToText(Item->ShortCut) + L" " +
-    Trim(StringReplace(StripHotkey(Item->Caption),
-      L"...", L"", TReplaceFlags() << rfReplaceAll << rfIgnoreCase));
+    Trim(ReplaceStr(StripHotkey(Item->Caption), L"...", L""));
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestoreFormParams()
@@ -749,7 +749,7 @@ void __fastcall TScpCommanderForm::ChangePath(TOperationSide Side)
 TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
 {
   switch (Component) {
-    case fcToolBar: return Toolbar2Toolbar; // name changed to enforce change of default visibility
+    case fcToolBar2: return Toolbar2Toolbar; // name changed to enforce change of default visibility
     case fcStatusBar: return StatusBar;
     case fcLocalStatusBar: return LocalStatusBar;
     case fcRemoteStatusBar: return RemoteStatusBar;
@@ -1095,9 +1095,11 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
             TStrings * MoreMessages = ExceptionToMoreMessages(&E);
             try
             {
+              UnicodeString HelpKeyword =
+                MergeHelpKeyword(HELP_SYNC_DIR_BROWSE_ERROR, GetExceptionHelpKeyword(&E));
               if (MoreMessageDialog(FMTLOAD(SYNC_DIR_BROWSE_CREATE, (NewPath)),
                     MoreMessages, qtConfirmation, qaYes | qaNo,
-                    HELP_SYNC_DIR_BROWSE_ERROR) == qaYes)
+                    HelpKeyword) == qaYes)
               {
                 try
                 {

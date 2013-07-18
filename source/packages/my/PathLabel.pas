@@ -196,7 +196,7 @@ begin
       else
     begin
       // Displayed path is shortened.
-      // The below is based on knowledge in MinimizePath algorithm
+      // The below is based on knowledge in MinimizeName algorithm
       RemainingPath := Copy(FDisplayPath, Length(HotPath) + 1,
         Length(FDisplayPath) - Length(HotPath));
 

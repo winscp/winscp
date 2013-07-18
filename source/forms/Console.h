@@ -56,7 +56,7 @@ private:
   TNotifyEvent FPrevTerminalClose;
   TRect FAutoBounds;
   bool FClearExceptionOnFail;
-  bool FAnyCommandExecuted;
+  bool FDirectoryChanged;
 
   void __fastcall DoExecuteCommand();
   void __fastcall ExecuteCommand();

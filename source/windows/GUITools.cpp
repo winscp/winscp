@@ -11,6 +11,8 @@
 #include <TextsCore.h>
 #include <CoreMain.h>
 #include <SessionData.h>
+#include <WinInterface.h>
+#include <TbxUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -48,83 +50,93 @@ bool __fastcall FileExistsEx(UnicodeString Path)
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData, UnicodeString Password)
 {
-  UnicodeString Program, Params, Dir;
-  SplitCommand(PuttyPath, Program, Params, Dir);
+  UnicodeString Program, AParams, Dir;
+  SplitCommand(PuttyPath, Program, AParams, Dir);
   Program = ExpandEnvironmentVariables(Program);
   if (FindFile(Program))
   {
-    UnicodeString SessionName;
-    TRegistryStorage * Storage = NULL;
-    TSessionData * ExportData = NULL;
-    TRegistryStorage * SourceStorage = NULL;
-    try
+
+    AParams = ExpandEnvironmentVariables(AParams);
+    TCustomCommandData Data(SessionData, Password);
+    TRemoteCustomCommand RemoteCustomCommand(Data, SessionData->RemoteDirectory);
+    TWinInteractiveCustomCommand InteractiveCustomCommand(
+      &RemoteCustomCommand, L"PuTTY");
+
+    UnicodeString Params =
+      RemoteCustomCommand.Complete(InteractiveCustomCommand.Complete(AParams, false), true);
+
+    if (!RemoteCustomCommand.IsSiteCommand(AParams))
     {
-      Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
-      Storage->AccessMode = smReadWrite;
-      // make it compatible with putty
-      Storage->MungeStringValues = false;
-      Storage->ForceAnsi = true;
-      if (Storage->OpenRootKey(true))
+      UnicodeString SessionName;
+      TRegistryStorage * Storage = NULL;
+      TSessionData * ExportData = NULL;
+      TRegistryStorage * SourceStorage = NULL;
+      try
       {
-        if (Storage->KeyExists(SessionData->StorageKey))
+        Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
+        Storage->AccessMode = smReadWrite;
+        // make it compatible with putty
+        Storage->MungeStringValues = false;
+        Storage->ForceAnsi = true;
+        if (Storage->OpenRootKey(true))
         {
-          SessionName = SessionData->SessionName;
-        }
-        else
-        {
-          SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
-          SourceStorage->MungeStringValues = false;
-          SourceStorage->ForceAnsi = true;
-          if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
-              Storage->OpenSubKey(GUIConfiguration->PuttySession, true))
+          if (Storage->KeyExists(SessionData->StorageKey))
           {
-            Storage->Copy(SourceStorage);
-            Storage->CloseSubKey();
+            SessionName = SessionData->SessionName;
           }
-
-          ExportData = new TSessionData(L"");
-          ExportData->Assign(SessionData);
-          ExportData->Modified = true;
-          ExportData->Name = GUIConfiguration->PuttySession;
-          ExportData->Password = L"";
-
-          if (SessionData->FSProtocol == fsFTP)
+          else
           {
-            if (GUIConfiguration->TelnetForFtpInPutty)
+            SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
+            SourceStorage->MungeStringValues = false;
+            SourceStorage->ForceAnsi = true;
+            if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
+                Storage->OpenSubKey(GUIConfiguration->PuttySession, true))
             {
-              ExportData->PuttyProtocol = PuttyTelnetProtocol;
-              ExportData->PortNumber = TelnetPortNumber;
-              // PuTTY  does not allow -pw for telnet
-              Password = L"";
+              Storage->Copy(SourceStorage);
+              Storage->CloseSubKey();
             }
-            else
-            {
-              ExportData->PuttyProtocol = PuttySshProtocol;
-              ExportData->PortNumber = SshPortNumber;
-            }
-          }
 
-          ExportData->Save(Storage, true);
-          SessionName = GUIConfiguration->PuttySession;
+            ExportData = new TSessionData(L"");
+            ExportData->Assign(SessionData);
+            ExportData->Modified = true;
+            ExportData->Name = GUIConfiguration->PuttySession;
+            ExportData->Password = L"";
+
+            if (SessionData->FSProtocol == fsFTP)
+            {
+              if (GUIConfiguration->TelnetForFtpInPutty)
+              {
+                ExportData->PuttyProtocol = PuttyTelnetProtocol;
+                ExportData->PortNumber = TelnetPortNumber;
+                // PuTTY  does not allow -pw for telnet
+                Password = L"";
+              }
+              else
+              {
+                ExportData->PuttyProtocol = PuttySshProtocol;
+                ExportData->PortNumber = SshPortNumber;
+              }
+            }
+
+            ExportData->Save(Storage, true);
+            SessionName = GUIConfiguration->PuttySession;
+          }
         }
       }
-    }
-    __finally
-    {
-      delete Storage;
-      delete ExportData;
-      delete SourceStorage;
+      __finally
+      {
+        delete Storage;
+        delete ExportData;
+        delete SourceStorage;
+      }
+
+      AddToList(Params, FORMAT(L"-load %s", (EscapePuttyCommandParam(SessionName))), L" ");
     }
 
-    if (!Params.IsEmpty())
+    if (!Password.IsEmpty() && !RemoteCustomCommand.IsPasswordCommand(AParams))
     {
-      Params += L" ";
+      AddToList(Params, FORMAT(L"-pw %s", (EscapePuttyCommandParam(Password))), L" ");
     }
-    if (!Password.IsEmpty())
-    {
-      Params += FORMAT(L"-pw %s ", (EscapePuttyCommandParam(Password)));
-    }
-    Params += FORMAT(L"-load %s", (EscapePuttyCommandParam(SessionName)));
 
     if (!ExecuteShell(Program, Params))
     {
@@ -355,6 +367,41 @@ UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDat
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall AddSessionColorImage(
+  TCustomImageList * ImageList, TColor Color, bool Disconnected)
+{
+
+  if (Disconnected)
+  {
+    Color = GetShadowColor(Color);
+  }
+
+  int R, G, B;
+  GetRGB(Color, R, G, B);
+  TColor TransparentColor =
+    (TColor)
+    ((static_cast<int>(static_cast<unsigned char>(~B)) << 16) +
+     (static_cast<int>(static_cast<unsigned char>(~G)) << 8) +
+     static_cast<int>(static_cast<unsigned char>(~R)));
+
+  std::auto_ptr<TBitmap> Bitmap(new TBitmap());
+  Bitmap->SetSize(ImageList->Width, ImageList->Height);
+  Bitmap->Canvas->Brush->Color = TransparentColor;
+  Bitmap->Canvas->Brush->Style = bsSolid;
+  TRect Rect(0, 0, ImageList->Width, ImageList->Height);
+  Bitmap->Canvas->FillRect(Rect);
+
+  const int Padding = 2;
+  TRect RoundRect(Padding, Padding + 1, ImageList->Width - Padding - 1, ImageList->Height - Padding);
+
+  Bitmap->Canvas->Pen->Color = Color;
+  Bitmap->Canvas->Pen->Style = psSolid;
+  Bitmap->Canvas->Brush->Color = Color;
+  Bitmap->Canvas->RoundRect(RoundRect, 4, 4);
+
+  ImageList->AddMasked(Bitmap.get(), TransparentColor);
+}
+//---------------------------------------------------------------------------
 TLocalCustomCommand::TLocalCustomCommand()
 {
 }
@@ -373,21 +420,21 @@ TLocalCustomCommand::TLocalCustomCommand(const TCustomCommandData & Data,
   FLocalFileName = LocalFileName;
 }
 //---------------------------------------------------------------------------
-int __fastcall TLocalCustomCommand::PatternLen(int Index, wchar_t PatternCmd)
+int __fastcall TLocalCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  if (PatternCmd == L'^')
+  if (Command[Index + 1] == L'^')
   {
     Len = 3;
   }
   else
   {
-    Len = TFileCustomCommand::PatternLen(Index, PatternCmd);
+    Len = TFileCustomCommand::PatternLen(Command, Index);
   }
   return Len;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLocalCustomCommand::PatternReplacement(int Index,
+bool __fastcall TLocalCustomCommand::PatternReplacement(
   const UnicodeString & Pattern, UnicodeString & Replacement, bool & Delimit)
 {
   bool Result;
@@ -398,7 +445,7 @@ bool __fastcall TLocalCustomCommand::PatternReplacement(int Index,
   }
   else
   {
-    Result = TFileCustomCommand::PatternReplacement(Index, Pattern, Replacement, Delimit);
+    Result = TFileCustomCommand::PatternReplacement(Pattern, Replacement, Delimit);
   }
   return Result;
 }

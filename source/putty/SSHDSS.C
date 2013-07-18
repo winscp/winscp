@@ -43,6 +43,8 @@ static void getstring(char **data, int *datalen, char **p, int *length)
     if (*datalen < 4)
 	return;
     *length = GET_32BIT(*data);
+    if (*length < 0)
+	return;
     *datalen -= 4;
     *data += 4;
     if (*datalen < *length)
@@ -98,7 +100,7 @@ static void *dss_newkey(char *data, int len)
     }
 #endif
 
-    if (!p || memcmp(p, "ssh-dss", 7)) {
+    if (!p || slen != 7 || memcmp(p, "ssh-dss", 7)) {
 	sfree(dss);
 	return NULL;
     }

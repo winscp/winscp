@@ -6,7 +6,7 @@ object PreferencesDialog: TPreferencesDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Preferences'
-  ClientHeight = 400
+  ClientHeight = 439
   ClientWidth = 513
   Color = clBtnFace
   ParentFont = True
@@ -16,12 +16,12 @@ object PreferencesDialog: TPreferencesDialog
   OnShow = FormShow
   DesignSize = (
     513
-    400)
+    439)
   PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
     Left = 250
-    Top = 369
+    Top = 408
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -32,7 +32,7 @@ object PreferencesDialog: TPreferencesDialog
   end
   object CloseButton: TButton
     Left = 338
-    Top = 369
+    Top = 408
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -45,7 +45,7 @@ object PreferencesDialog: TPreferencesDialog
     Left = 0
     Top = 0
     Width = 513
-    Height = 363
+    Height = 402
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
@@ -54,7 +54,7 @@ object PreferencesDialog: TPreferencesDialog
       Left = 132
       Top = 0
       Width = 381
-      Height = 363
+      Height = 402
       ActivePage = PreferencesSheet
       Align = alClient
       MultiLine = True
@@ -71,7 +71,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object CommonPreferencesGroup: TGroupBox
           Left = 8
           Top = 8
@@ -245,17 +245,207 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
-        inline LoggingFrame: TLoggingFrame
-          Left = 5
-          Top = 5
-          Width = 372
-          Height = 309
+          392)
+        object LoggingGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 357
+          Height = 190
           Anchors = [akLeft, akTop, akRight]
+          Caption = 'Session log'
           TabOrder = 0
           DesignSize = (
-            372
-            309)
+            357
+            190)
+          object LogWindowLinesText: TLabel
+            Left = 256
+            Top = 163
+            Width = 21
+            Height = 13
+            Caption = 'lines'
+          end
+          object LogToFileCheck: TCheckBox
+            Left = 16
+            Top = 47
+            Width = 217
+            Height = 17
+            Caption = 'Log to &file:'
+            TabOrder = 2
+            OnClick = ControlChange
+          end
+          object LogFileNameEdit3: TFilenameEdit
+            Left = 40
+            Top = 69
+            Width = 303
+            Height = 21
+            AcceptFiles = True
+            OnBeforeDialog = PathEditBeforeDialog
+            OnAfterDialog = PathEditAfterDialog
+            DefaultExt = 'log'
+            Filter = 'Session log files (*.log)|*.log|All files (*.*)|*.*'
+            DialogOptions = [ofHideReadOnly, ofPathMustExist]
+            DialogTitle = 'Select file for session log.'
+            OnCreateEditDialog = PathEditCreateEditDialog
+            ClickKey = 16397
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 3
+            Text = 'LogFileNameEdit3'
+            OnChange = ControlChange
+          end
+          object LogShowWindowCheck: TCheckBox
+            Left = 16
+            Top = 120
+            Width = 217
+            Height = 17
+            Caption = 'Show log &window:'
+            TabOrder = 6
+            OnClick = ControlChange
+          end
+          object LogWindowCompleteButton: TRadioButton
+            Left = 40
+            Top = 140
+            Width = 233
+            Height = 17
+            Caption = 'Display &complete session'
+            TabOrder = 7
+            OnClick = ControlChange
+          end
+          object LogWindowLinesButton: TRadioButton
+            Left = 40
+            Top = 163
+            Width = 136
+            Height = 17
+            Caption = 'Display only &last '
+            TabOrder = 8
+            OnClick = ControlChange
+          end
+          object LogWindowLinesEdit: TUpDownEdit
+            Left = 176
+            Top = 159
+            Width = 73
+            Height = 21
+            Alignment = taRightJustify
+            Increment = 50.000000000000000000
+            MaxValue = 10000.000000000000000000
+            MinValue = 50.000000000000000000
+            Value = 50.000000000000000000
+            TabOrder = 9
+            OnChange = ControlChange
+          end
+          object LogFilePanel: TPanel
+            Left = 40
+            Top = 93
+            Width = 233
+            Height = 25
+            Anchors = [akLeft, akTop, akRight]
+            BevelOuter = bvNone
+            TabOrder = 5
+            object LogFileAppendButton: TRadioButton
+              Left = 0
+              Top = 4
+              Width = 97
+              Height = 17
+              Caption = 'Appe&nd'
+              TabOrder = 0
+              OnClick = ControlChange
+            end
+            object LogFileOverwriteButton: TRadioButton
+              Left = 112
+              Top = 4
+              Width = 97
+              Height = 17
+              Caption = '&Overwrite'
+              TabOrder = 1
+              OnClick = ControlChange
+            end
+          end
+          object LogProtocolCombo: TComboBox
+            Left = 224
+            Top = 21
+            Width = 119
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 1
+            OnChange = ControlChange
+            Items.Strings = (
+              'Normal'
+              'Debug 1'
+              'Debug 2')
+          end
+          object LogFileNameHintText: TStaticText
+            Left = 261
+            Top = 91
+            Width = 82
+            Height = 16
+            Alignment = taRightJustify
+            Anchors = [akTop, akRight]
+            AutoSize = False
+            Caption = '&patterns'
+            TabOrder = 4
+            TabStop = True
+          end
+          object EnableLoggingCheck: TCheckBox
+            Left = 16
+            Top = 23
+            Width = 202
+            Height = 17
+            Caption = 'Enable &session logging on level:'
+            TabOrder = 0
+            OnClick = ControlChange
+          end
+        end
+        object ActionsLoggingGroup: TGroupBox
+          Left = 8
+          Top = 203
+          Width = 357
+          Height = 86
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'XML log'
+          TabOrder = 1
+          DesignSize = (
+            357
+            86)
+          object ActionsLogFileNameEdit: TFilenameEdit
+            Left = 40
+            Top = 43
+            Width = 302
+            Height = 21
+            AcceptFiles = True
+            OnBeforeDialog = PathEditBeforeDialog
+            OnAfterDialog = PathEditAfterDialog
+            DefaultExt = 'xml'
+            Filter = 'XML log files (*.xml)|*.xml|All files (*.*)|*.*'
+            DialogOptions = [ofHideReadOnly, ofPathMustExist]
+            DialogTitle = 'Select file for XML log.'
+            OnCreateEditDialog = PathEditCreateEditDialog
+            ClickKey = 16397
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 1
+            Text = 'ActionsLogFileNameEdit'
+            OnChange = ControlChange
+          end
+          object ActionsLogFileNameHintText: TStaticText
+            Left = 261
+            Top = 65
+            Width = 82
+            Height = 16
+            Alignment = taRightJustify
+            Anchors = [akTop, akRight]
+            AutoSize = False
+            Caption = 'pa&tterns'
+            TabOrder = 2
+            TabStop = True
+          end
+          object EnableActionsLoggingCheck: TCheckBox
+            Left = 16
+            Top = 21
+            Width = 241
+            Height = 17
+            Caption = 'Enable &XML logging to file:'
+            TabOrder = 0
+            OnClick = ControlChange
+          end
         end
       end
       object GeneralSheet: TTabSheet
@@ -267,44 +457,23 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
-        object Label1: TLabel
+          392)
+        object InterfaceChangeLabel: TLabel
           Left = 8
-          Top = 218
-          Width = 361
-          Height = 33
-          AutoSize = False
-          Caption = 
-            'Note: a change to this setting will only take effect the next ti' +
-            'me you start the application.'
-          WordWrap = True
-        end
-        inline GeneralSettingsFrame: TGeneralSettingsFrame
-          Left = 8
-          Top = 8
-          Width = 357
-          Height = 202
-          Anchors = [akLeft, akTop, akRight]
-          TabOrder = 0
-          inherited InterfaceGroup: TGroupBox
-            Width = 362
-            inherited CommanderDescriptionLabel2: TLabel
-              Width = 223
-            end
-            inherited ExplorerDescriptionLabel: TLabel
-              Width = 225
-            end
-          end
+          Top = 274
+          Width = 177
+          Height = 13
+          Caption = 'Changes will apply on the next start.'
         end
         object ThemeGroup: TGroupBox
           Left = 8
-          Top = 256
-          Width = 361
+          Top = 216
+          Width = 357
           Height = 52
           Caption = 'Theme'
-          TabOrder = 1
+          TabOrder = 0
           DesignSize = (
-            361
+            357
             52)
           object Label7: TLabel
             Left = 16
@@ -317,7 +486,7 @@ object PreferencesDialog: TPreferencesDialog
           object ThemeCombo: TComboBox
             Left = 120
             Top = 18
-            Width = 113
+            Width = 109
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
@@ -326,6 +495,299 @@ object PreferencesDialog: TPreferencesDialog
               'System'
               'Office XP'
               'Office 2003')
+          end
+        end
+        object InterfaceGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 357
+          Height = 202
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Caption = 'User Interface'
+          TabOrder = 1
+          DesignSize = (
+            357
+            202)
+          object CommanderDescriptionLabel2: TLabel
+            Left = 132
+            Top = 20
+            Width = 218
+            Height = 115
+            Anchors = [akLeft, akTop, akRight]
+            AutoSize = False
+            Caption = 
+              '- two panels (left for local directory, right for remote directo' +
+              'ry)'#13#10'- keyboard shortcuts like in Norton Commander (and other si' +
+              'milar programs as Total Commander, Midnight Commander...)'#13#10'- dra' +
+              'g && drop to/from both panels'
+            WordWrap = True
+            OnClick = CommanderClick
+          end
+          object ExplorerDescriptionLabel: TLabel
+            Left = 132
+            Top = 134
+            Width = 220
+            Height = 62
+            Anchors = [akLeft, akTop, akRight]
+            AutoSize = False
+            Caption = 
+              '- only remote directory'#13#10'- keyboard shortcuts like in Windows Ex' +
+              'plorer'#13#10'- drag && drop'
+            WordWrap = True
+            OnClick = ExplorerClick
+          end
+          object CommanderInterfacePicture: TImage
+            Left = 55
+            Top = 41
+            Width = 32
+            Height = 32
+            AutoSize = True
+            Picture.Data = {
+              0954506E67496D61676589504E470D0A1A0A0000000D49484452000000200000
+              00200806000000737A7AF4000000097048597300000EC400000EC401952B0E1B
+              00000A4F6943435050686F746F73686F70204943432070726F66696C65000078
+              DA9D53675453E9163DF7DEF4424B8880944B6F5215082052428B801491262A21
+              09104A8821A1D91551C1114545041BC8A088038E8E808C15512C0C8A0AD807E4
+              21A28E83A3888ACAFBE17BA36BD6BCF7E6CDFEB5D73EE7ACF39DB3CF07C0080C
+              9648335135800CA9421E11E083C7C4C6E1E42E40810A2470001008B3642173FD
+              230100F87E3C3C2B22C007BE000178D30B0800C04D9BC0301C87FF0FEA42995C
+              01808401C07491384B08801400407A8E42A600404601809D98265300A0040060
+              CB6362E300502D0060277FE6D300809DF8997B01005B94211501A09100201365
+              884400683B00ACCF568A450058300014664BC43900D82D00304957664800B0B7
+              00C0CE100BB200080C00305188852900047B0060C8232378008499001446F257
+              3CF12BAE10E72A00007899B23CB9243945815B082D710757572E1E28CE49172B
+              14366102619A402EC27999193281340FE0F3CC0000A0911511E083F3FD78CE0E
+              AECECE368EB60E5F2DEABF06FF226262E3FEE5CFAB70400000E1747ED1FE2C2F
+              B31A803B06806DFEA225EE04685E0BA075F78B66B20F40B500A0E9DA57F370F8
+              7E3C3C45A190B9D9D9E5E4E4D84AC4425B61CA577DFE67C25FC057FD6CF97E3C
+              FCF7F5E0BEE22481325D814704F8E0C2CCF44CA51CCF92098462DCE68F47FCB7
+              0BFFFC1DD322C44962B9582A14E35112718E449A8CF332A52289429229C525D2
+              FF64E2DF2CFB033EDF3500B06A3E017B912DA85D6303F64B27105874C0E2F700
+              00F2BB6FC1D4280803806883E1CF77FFEF3FFD47A02500806649927100005E44
+              242E54CAB33FC708000044A0812AB0411BF4C1182CC0061CC105DCC10BFC6036
+              844224C4C24210420A64801C726029AC82422886CDB01D2A602FD4401D34C051
+              688693700E2EC255B80E3D700FFA61089EC128BC81090441C808136121DA8801
+              628A58238E08179985F821C14804128B2420C9881451224B91354831528A5420
+              55481DF23D720239875C46BA913BC8003282FC86BC47319481B2513DD40CB543
+              B9A8371A8446A20BD06474319A8F16A09BD072B41A3D8C36A1E7D0AB680FDA8F
+              3E43C730C0E8180733C46C302EC6C342B1382C099363CBB122AC0CABC61AB056
+              AC03BB89F563CFB17704128145C0093604774220611E4148584C584ED848A820
+              1C243411DA093709038451C2272293A84BB426BA11F9C4186232318758482C23
+              D6128F132F107B8843C437241289433227B9900249B1A454D212D246D26E5223
+              E92CA99B34481A2393C9DA646BB20739942C202BC885E49DE4C3E433E41BE421
+              F25B0A9D624071A4F853E22852CA6A4A19E510E534E5066598324155A39A52DD
+              A8A15411358F5A42ADA1B652AF5187A81334759A39CD8316494BA5ADA295D31A
+              681768F769AFE874BA11DD951E4E97D057D2CBE947E897E803F4770C0D861583
+              C7886728199B18071867197718AF984CA619D38B19C754303731EB98E7990F99
+              6F55582AB62A7C1591CA0A954A9526951B2A2F54A9AAA6AADEAA0B55F355CB54
+              8FA95E537DAE46553353E3A909D496AB55AA9D50EB531B5367A93BA887AA67A8
+              6F543FA47E59FD890659C34CC34F43A451A0B15FE3BCC6200B6319B3782C216B
+              0DAB86758135C426B1CDD97C762ABB98FD1DBB8B3DAAA9A13943334A3357B352
+              F394663F07E39871F89C744E09E728A797F37E8ADE14EF29E2291BA6344CB931
+              655C6BAA96979658AB48AB51AB47EBBD36AEEDA79DA6BD45BB59FB810E41C74A
+              275C2747678FCE059DE753D953DDA70AA7164D3D3AF5AE2EAA6BA51BA1BB4477
+              BF6EA7EE989EBE5E809E4C6FA7DE79BDE7FA1C7D2FFD54FD6DFAA7F5470C5806
+              B30C2406DB0CCE183CC535716F3C1D2FC7DBF151435DC34043A561956197E184
+              91B9D13CA3D5468D460F8C69C65CE324E36DC66DC6A326062621264B4DEA4DEE
+              9A524DB9A629A63B4C3B4CC7CDCCCDA2CDD699359B3D31D732E79BE79BD79BDF
+              B7605A785A2CB6A8B6B86549B2E45AA659EEB6BC6E855A3959A558555A5DB346
+              AD9DAD25D6BBADBBA711A7B94E934EAB9ED667C3B0F1B6C9B6A9B719B0E5D806
+              DBAEB66DB67D6167621767B7C5AEC3EE93BD937DBA7D8DFD3D070D87D90EAB1D
+              5A1D7E73B472143A563ADE9ACE9CEE3F7DC5F496E92F6758CF10CFD833E3B613
+              CB29C4699D539BD347671767B97383F3888B894B82CB2E973E2E9B1BC6DDC8BD
+              E44A74F5715DE17AD2F59D9BB39BC2EDA8DBAFEE36EE69EE87DC9FCC349F299E
+              593373D0C3C843E051E5D13F0B9F95306BDFAC7E4F434F8167B5E7232F632F91
+              57ADD7B0B7A577AAF761EF173EF63E729FE33EE33C37DE32DE595FCC37C0B7C8
+              B7CB4FC36F9E5F85DF437F23FF64FF7AFFD100A78025016703898141815B02FB
+              F87A7C21BF8E3F3ADB65F6B2D9ED418CA0B94115418F82AD82E5C1AD2168C8EC
+              90AD21F7E798CE91CE690E85507EE8D6D00761E6618BC37E0C2785878557863F
+              8E7088581AD131973577D1DC4373DF44FA449644DE9B67314F39AF2D4A352A3E
+              AA2E6A3CDA37BA34BA3FC62E6659CCD5589D58496C4B1C392E2AAE366E6CBEDF
+              FCEDF387E29DE20BE37B17982FC85D7079A1CEC2F485A716A92E122C3A96404C
+              884E3894F041102AA8168C25F21377258E0A79C21DC267222FD136D188D8435C
+              2A1E4EF2482A4D7A92EC91BC357924C533A52CE5B98427A990BC4C0D4CDD9B3A
+              9E169A76206D323D3ABD31839291907142AA214D93B667EA67E66676CBAC6585
+              B2FEC56E8BB72F1E9507C96BB390AC05592D0AB642A6E8545A28D72A07B26765
+              5766BFCD89CA3996AB9E2BCDEDCCB3CADB90379CEF9FFFED12C212E192B6A586
+              4B572D1D58E6BDAC6A39B23C7179DB0AE315052B865606AC3CB88AB62A6DD54F
+              ABED5797AE7EBD267A4D6B815EC1CA82C1B5016BEB0B550AE5857DEBDCD7ED5D
+              4F582F59DFB561FA869D1B3E15898AAE14DB1797157FD828DC78E51B876FCABF
+              99DC94B4A9ABC4B964CF66D266E9E6DE2D9E5B0E96AA97E6970E6E0DD9DAB40D
+              DF56B4EDF5F645DB2F97CD28DBBB83B643B9A3BF3CB8BC65A7C9CECD3B3F54A4
+              54F454FA5436EED2DDB561D7F86ED1EE1B7BBCF634ECD5DB5BBCF7FD3EC9BEDB
+              5501554DD566D565FB49FBB3F73FAE89AAE9F896FB6D5DAD4E6D71EDC703D203
+              FD07230EB6D7B9D4D51DD23D54528FD62BEB470EC71FBEFE9DEF772D0D360D55
+              8D9CC6E223704479E4E9F709DFF71E0D3ADA768C7BACE107D31F761D671D2F6A
+              429AF29A469B539AFB5B625BBA4FCC3ED1D6EADE7AFC47DB1F0F9C343C59794A
+              F354C969DAE982D39367F2CF8C9D959D7D7E2EF9DC60DBA2B67BE763CEDF6A0F
+              6FEFBA1074E1D245FF8BE73BBC3BCE5CF2B874F2B2DBE51357B8579AAF3A5F6D
+              EA74EA3CFE93D34FC7BB9CBB9AAEB95C6BB9EE7ABDB57B66F7E91B9E37CEDDF4
+              BD79F116FFD6D59E393DDDBDF37A6FF7C5F7F5DF16DD7E7227FDCECBBBD97727
+              EEADBC4FBC5FF440ED41D943DD87D53F5BFEDCD8EFDC7F6AC077A0F3D1DC47F7
+              068583CFFE91F58F0F43058F998FCB860D86EB9E383E3939E23F72FDE9FCA743
+              CF64CF269E17FEA2FECBAE17162F7EF8D5EBD7CED198D1A197F29793BF6D7CA5
+              FDEAC0EB19AFDBC6C2C61EBEC97833315EF456FBEDC177DC771DEFA3DF0F4FE4
+              7C207F28FF68F9B1F553D0A7FB93199393FF040398F3FC63332DDB000002AD49
+              44415478DA63FCFFFF3FC34002C65107801CC06B5E7803C856A7B3DD373F9FEC
+              D78039E07F5649235D6D9FD653CF00740023DC016A36517475C0AD23CB501DB0
+              765E03C986EC3C7A9EC1DDDA902C070427350C32077C3AD18FA28098BC513AFB
+              004377AA03590EE0B7284475C087E37D241B5236E72043578A3D590E10B02C42
+              75C07BA0033E3636405C57DF409421E540077426DB3374AEBC0AE1876B13D403
+              0B59212B3407BC3B06744013D4017510BA62EE41AC867424DBC3E53BB0380097
+              3E106887EA154677C0DBA3A44741E5BC830CED49F644A5177420628DE6803747
+              7A19BA0E427C5E668F88027C8657CF3FC4D09A68C7F0E17C17982F605846B403
+              446D8A511DF00AE8806EA8034AA10EA8015A800DB4002D85C9B76071002E7D60
+              BD0910BD62B6680E7879B897E460AC5D7088A1196A20A9401CDD012F0EF5327C
+              BC00F109BF01714159B7F0104353BC1DC3D716488871D7344065B0471CB2A8A4
+              5D09AA039E1FEA61F874A11B2CC967500AA6EB171EC66A50639C2D447ED16130
+              FB6B0BA422E3AAA907D30D8BB0EB03CB41F54AD9A339E0D9C11EBCBEC5E6A746
+              A045F550034905D2E80E787AA087A16FED35B06451B0165E8B61A069F16186BA
+              585B867EA8BE42247D84808C039A031EEFEFC130A87909F6A0AC8DB185CB83D8
+              087D9A50F123382DAE8DB101D3B28EA5A80E78B4BF9BE4606C015A540335102B
+              C0137C724E680E78B8AF9BE1EB258823B8F54A897240EBD2230CD5D1360C138E
+              42126181753D5EF5C8EE514077C083BDDD0CDF2E431CC0A50B7140DB32EC4159
+              1565039707B127421D90077540FB32DC515009D5ABE88CE680FB7BF14701B6D6
+              73C7F2A30C1591D64485163A5072294375C0DD3D5D241BD209744039290E40F2
+              83B22B9A03D292FDC9F209B960D6DC8D94B709290154699452D30157806284DB
+              53D405889ED140820177000047FBBCD0A8A483CB0000000049454E44AE426082}
+            OnClick = CommanderClick
+          end
+          object ExplorerInterfacePicture: TImage
+            Left = 55
+            Top = 155
+            Width = 32
+            Height = 32
+            AutoSize = True
+            Picture.Data = {
+              0954506E67496D61676589504E470D0A1A0A0000000D49484452000000200000
+              00200806000000737A7AF4000000097048597300000EC400000EC401952B0E1B
+              00000A4F6943435050686F746F73686F70204943432070726F66696C65000078
+              DA9D53675453E9163DF7DEF4424B8880944B6F5215082052428B801491262A21
+              09104A8821A1D91551C1114545041BC8A088038E8E808C15512C0C8A0AD807E4
+              21A28E83A3888ACAFBE17BA36BD6BCF7E6CDFEB5D73EE7ACF39DB3CF07C0080C
+              9648335135800CA9421E11E083C7C4C6E1E42E40810A2470001008B3642173FD
+              230100F87E3C3C2B22C007BE000178D30B0800C04D9BC0301C87FF0FEA42995C
+              01808401C07491384B08801400407A8E42A600404601809D98265300A0040060
+              CB6362E300502D0060277FE6D300809DF8997B01005B94211501A09100201365
+              884400683B00ACCF568A450058300014664BC43900D82D00304957664800B0B7
+              00C0CE100BB200080C00305188852900047B0060C8232378008499001446F257
+              3CF12BAE10E72A00007899B23CB9243945815B082D710757572E1E28CE49172B
+              14366102619A402EC27999193281340FE0F3CC0000A0911511E083F3FD78CE0E
+              AECECE368EB60E5F2DEABF06FF226262E3FEE5CFAB70400000E1747ED1FE2C2F
+              B31A803B06806DFEA225EE04685E0BA075F78B66B20F40B500A0E9DA57F370F8
+              7E3C3C45A190B9D9D9E5E4E4D84AC4425B61CA577DFE67C25FC057FD6CF97E3C
+              FCF7F5E0BEE22481325D814704F8E0C2CCF44CA51CCF92098462DCE68F47FCB7
+              0BFFFC1DD322C44962B9582A14E35112718E449A8CF332A52289429229C525D2
+              FF64E2DF2CFB033EDF3500B06A3E017B912DA85D6303F64B27105874C0E2F700
+              00F2BB6FC1D4280803806883E1CF77FFEF3FFD47A02500806649927100005E44
+              242E54CAB33FC708000044A0812AB0411BF4C1182CC0061CC105DCC10BFC6036
+              844224C4C24210420A64801C726029AC82422886CDB01D2A602FD4401D34C051
+              688693700E2EC255B80E3D700FFA61089EC128BC81090441C808136121DA8801
+              628A58238E08179985F821C14804128B2420C9881451224B91354831528A5420
+              55481DF23D720239875C46BA913BC8003282FC86BC47319481B2513DD40CB543
+              B9A8371A8446A20BD06474319A8F16A09BD072B41A3D8C36A1E7D0AB680FDA8F
+              3E43C730C0E8180733C46C302EC6C342B1382C099363CBB122AC0CABC61AB056
+              AC03BB89F563CFB17704128145C0093604774220611E4148584C584ED848A820
+              1C243411DA093709038451C2272293A84BB426BA11F9C4186232318758482C23
+              D6128F132F107B8843C437241289433227B9900249B1A454D212D246D26E5223
+              E92CA99B34481A2393C9DA646BB20739942C202BC885E49DE4C3E433E41BE421
+              F25B0A9D624071A4F853E22852CA6A4A19E510E534E5066598324155A39A52DD
+              A8A15411358F5A42ADA1B652AF5187A81334759A39CD8316494BA5ADA295D31A
+              681768F769AFE874BA11DD951E4E97D057D2CBE947E897E803F4770C0D861583
+              C7886728199B18071867197718AF984CA619D38B19C754303731EB98E7990F99
+              6F55582AB62A7C1591CA0A954A9526951B2A2F54A9AAA6AADEAA0B55F355CB54
+              8FA95E537DAE46553353E3A909D496AB55AA9D50EB531B5367A93BA887AA67A8
+              6F543FA47E59FD890659C34CC34F43A451A0B15FE3BCC6200B6319B3782C216B
+              0DAB86758135C426B1CDD97C762ABB98FD1DBB8B3DAAA9A13943334A3357B352
+              F394663F07E39871F89C744E09E728A797F37E8ADE14EF29E2291BA6344CB931
+              655C6BAA96979658AB48AB51AB47EBBD36AEEDA79DA6BD45BB59FB810E41C74A
+              275C2747678FCE059DE753D953DDA70AA7164D3D3AF5AE2EAA6BA51BA1BB4477
+              BF6EA7EE989EBE5E809E4C6FA7DE79BDE7FA1C7D2FFD54FD6DFAA7F5470C5806
+              B30C2406DB0CCE183CC535716F3C1D2FC7DBF151435DC34043A561956197E184
+              91B9D13CA3D5468D460F8C69C65CE324E36DC66DC6A326062621264B4DEA4DEE
+              9A524DB9A629A63B4C3B4CC7CDCCCDA2CDD699359B3D31D732E79BE79BD79BDF
+              B7605A785A2CB6A8B6B86549B2E45AA659EEB6BC6E855A3959A558555A5DB346
+              AD9DAD25D6BBADBBA711A7B94E934EAB9ED667C3B0F1B6C9B6A9B719B0E5D806
+              DBAEB66DB67D6167621767B7C5AEC3EE93BD937DBA7D8DFD3D070D87D90EAB1D
+              5A1D7E73B472143A563ADE9ACE9CEE3F7DC5F496E92F6758CF10CFD833E3B613
+              CB29C4699D539BD347671767B97383F3888B894B82CB2E973E2E9B1BC6DDC8BD
+              E44A74F5715DE17AD2F59D9BB39BC2EDA8DBAFEE36EE69EE87DC9FCC349F299E
+              593373D0C3C843E051E5D13F0B9F95306BDFAC7E4F434F8167B5E7232F632F91
+              57ADD7B0B7A577AAF761EF173EF63E729FE33EE33C37DE32DE595FCC37C0B7C8
+              B7CB4FC36F9E5F85DF437F23FF64FF7AFFD100A78025016703898141815B02FB
+              F87A7C21BF8E3F3ADB65F6B2D9ED418CA0B94115418F82AD82E5C1AD2168C8EC
+              90AD21F7E798CE91CE690E85507EE8D6D00761E6618BC37E0C2785878557863F
+              8E7088581AD131973577D1DC4373DF44FA449644DE9B67314F39AF2D4A352A3E
+              AA2E6A3CDA37BA34BA3FC62E6659CCD5589D58496C4B1C392E2AAE366E6CBEDF
+              FCEDF387E29DE20BE37B17982FC85D7079A1CEC2F485A716A92E122C3A96404C
+              884E3894F041102AA8168C25F21377258E0A79C21DC267222FD136D188D8435C
+              2A1E4EF2482A4D7A92EC91BC357924C533A52CE5B98427A990BC4C0D4CDD9B3A
+              9E169A76206D323D3ABD31839291907142AA214D93B667EA67E66676CBAC6585
+              B2FEC56E8BB72F1E9507C96BB390AC05592D0AB642A6E8545A28D72A07B26765
+              5766BFCD89CA3996AB9E2BCDEDCCB3CADB90379CEF9FFFED12C212E192B6A586
+              4B572D1D58E6BDAC6A39B23C7179DB0AE315052B865606AC3CB88AB62A6DD54F
+              ABED5797AE7EBD267A4D6B815EC1CA82C1B5016BEB0B550AE5857DEBDCD7ED5D
+              4F582F59DFB561FA869D1B3E15898AAE14DB1797157FD828DC78E51B876FCABF
+              99DC94B4A9ABC4B964CF66D266E9E6DE2D9E5B0E96AA97E6970E6E0DD9DAB40D
+              DF56B4EDF5F645DB2F97CD28DBBB83B643B9A3BF3CB8BC65A7C9CECD3B3F54A4
+              54F454FA5436EED2DDB561D7F86ED1EE1B7BBCF634ECD5DB5BBCF7FD3EC9BEDB
+              5501554DD566D565FB49FBB3F73FAE89AAE9F896FB6D5DAD4E6D71EDC703D203
+              FD07230EB6D7B9D4D51DD23D54528FD62BEB470EC71FBEFE9DEF772D0D360D55
+              8D9CC6E223704479E4E9F709DFF71E0D3ADA768C7BACE107D31F761D671D2F6A
+              429AF29A469B539AFB5B625BBA4FCC3ED1D6EADE7AFC47DB1F0F9C343C59794A
+              F354C969DAE982D39367F2CF8C9D959D7D7E2EF9DC60DBA2B67BE763CEDF6A0F
+              6FEFBA1074E1D245FF8BE73BBC3BCE5CF2B874F2B2DBE51357B8579AAF3A5F6D
+              EA74EA3CFE93D34FC7BB9CBB9AAEB95C6BB9EE7ABDB57B66F7E91B9E37CEDDF4
+              BD79F116FFD6D59E393DDDBDF37A6FF7C5F7F5DF16DD7E7227FDCECBBBD97727
+              EEADBC4FBC5FF440ED41D943DD87D53F5BFEDCD8EFDC7F6AC077A0F3D1DC47F7
+              068583CFFE91F58F0F43058F998FCB860D86EB9E383E3939E23F72FDE9FCA743
+              CF64CF269E17FEA2FECBAE17162F7EF8D5EBD7CED198D1A197F29793BF6D7CA5
+              FDEAC0EB19AFDBC6C2C61EBEC97833315EF456FBEDC177DC771DEFA3DF0F4FE4
+              7C207F28FF68F9B1F553D0A7FB93199393FF040398F3FC63332DDB0000029949
+              44415478DA63FCFFFF3FC3400246900378CC8BEE3132FC57A4B6E1FF1918EF7F
+              3DD5AF84531E6837D801BCE685FFB34A1AA9EEBB693DF50C5F4E4D6024CA016A
+              36515477C0AD23CB8877C0DA790D5477407052C31072C09BA37D547780887511
+              F10E7875B8172CF863FE34B8028EC42C140D3FAF55C1D9EC5A6D287273AE4E80
+              B353B40BC0B4986D31F10E787EA8072CF8BDBF13AE80B3B01C45C3B74BB57036
+              975E338ADCA4D3AD70769E69359896B42B21DE014F0E401DD0508D7040432B8A
+              862FE7EBE06C1EC32614B9CE4388D029B783848E8C03090E78B4AF9B81DA40CE
+              A9947807DCDF0B7140FBB22370059551360C76D1ED0C8F5FBCA3BAE340A5E497
+              937D4A7007DCD9DD8555A18A6B1903AD4AC9CF27FB19E10EB8B5AB13AB4235B7
+              72065A9592280EB8BE03E280F9073FC11525DAF331687A9433D0AA904271C095
+              6D1D6089193B9FC11565B84B31E87855D0C70197B6421C3069C32DB8A2BC0035
+              063DEF0A065A9592280E38BFB91DAB4243DF4A06582989ADB48381C9BB3EC0D9
+              B96E022872D84A57502989E280331B210E98B5E9045C719A9F0583897F2503AC
+              94C456DAC140EFC6277076B1BF0C8A1CB6D215544AA238E0D406D4B21D06CC02
+              AA1860A524B6D20E06DA57DE80B32BC335501D80A5740595927007106A92D1AA
+              94843B8091116769C9C0635680B39444090112E5149D497000AE529212002A61
+              897600AE529212002A61897600AC94645E3A132EFE373A1D451DEB5D445BE1B7
+              326A5B01BD74050150094BB40360A524D3B41EB8F8BFAC1214754C37EB1172EA
+              A895177AE90A02A012966807C04A49A6764483E45F256A83E4FF5584A58CDAF5
+              2872E8A52B08804A58A21D80AB94A404804A58A21D80AB944406A4CA814A58A2
+              1D80AB94A404804A58A21CC06D5648B38E2BBC493690000005DADFD0D42C4D64
+              0000000049454E44AE426082}
+            Transparent = True
+            OnClick = ExplorerClick
+          end
+          object CommanderInterfaceButton2: TRadioButton
+            Left = 16
+            Top = 19
+            Width = 116
+            Height = 17
+            Caption = '&Commander'
+            Checked = True
+            TabOrder = 0
+            TabStop = True
+            OnClick = ControlChange
+          end
+          object ExplorerInterfaceButton2: TRadioButton
+            Left = 16
+            Top = 133
+            Width = 111
+            Height = 17
+            Caption = '&Explorer'
+            TabOrder = 1
+            OnClick = ControlChange
           end
         end
       end
@@ -338,7 +800,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object PanelsCommonGroup: TGroupBox
           Left = 8
           Top = 8
@@ -475,7 +937,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object Label3: TLabel
           Left = 8
           Top = 8
@@ -483,7 +945,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 29
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
-          Caption = 'Preferences on this tab applies to Commander interface only.'
+          Caption = 'Preferences on this page applies to Commander interface only.'
           WordWrap = True
         end
         object PanelsGroup: TGroupBox
@@ -625,7 +1087,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object Label4: TLabel
           Left = 8
           Top = 8
@@ -633,7 +1095,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 29
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
-          Caption = 'Preferences on this tab applies to Explorer interface only.'
+          Caption = 'Preferences on this page applies to Explorer interface only.'
           WordWrap = True
         end
         object GroupBox2: TGroupBox
@@ -668,13 +1130,13 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object InternalEditorGroup: TGroupBox
           Left = 8
-          Top = 205
+          Top = 244
           Width = 357
           Height = 146
-          Anchors = [akLeft, akTop, akRight]
+          Anchors = [akLeft, akRight, akBottom]
           Caption = 'Internal editor options'
           TabOrder = 1
           DesignSize = (
@@ -714,7 +1176,6 @@ object PreferencesDialog: TPreferencesDialog
             Top = 18
             Width = 105
             Height = 25
-            Anchors = [akTop, akRight]
             Caption = '&Select font...'
             TabOrder = 3
             OnClick = EditorFontButtonClick
@@ -757,18 +1218,18 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 357
-          Height = 192
-          Anchors = [akLeft, akTop, akRight]
+          Height = 231
+          Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Editor preference'
           TabOrder = 0
           DesignSize = (
             357
-            192)
-          object EditorListView2: TListView
+            231)
+          object EditorListView3: TListView
             Left = 16
             Top = 24
             Width = 324
-            Height = 94
+            Height = 133
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -794,38 +1255,38 @@ object PreferencesDialog: TPreferencesDialog
             ParentDoubleBuffered = False
             TabOrder = 0
             ViewStyle = vsReport
-            OnData = EditorListView2Data
-            OnDblClick = EditorListView2DblClick
+            OnData = EditorListView3Data
+            OnDblClick = EditorListView3DblClick
             OnEndDrag = ListViewEndDrag
-            OnDragDrop = EditorListView2DragDrop
+            OnDragDrop = EditorListView3DragDrop
             OnDragOver = ListViewDragOver
-            OnKeyDown = EditorListView2KeyDown
+            OnKeyDown = EditorListView3KeyDown
             OnSelectItem = ListViewSelectItem
             OnStartDrag = ListViewStartDrag
           end
           object AddEditorButton: TButton
             Left = 16
-            Top = 125
+            Top = 164
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akLeft, akBottom]
             Caption = '&Add ...'
             TabOrder = 1
             OnClick = AddEditEditorButtonClick
           end
           object EditEditorButton: TButton
             Left = 112
-            Top = 125
+            Top = 164
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akLeft, akBottom]
             Caption = '&Edit ...'
             TabOrder = 2
             OnClick = AddEditEditorButtonClick
           end
           object UpEditorButton: TButton
             Left = 258
-            Top = 125
+            Top = 164
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -835,7 +1296,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownEditorButton: TButton
             Left = 258
-            Top = 156
+            Top = 195
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -845,10 +1306,10 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveEditorButton: TButton
             Left = 16
-            Top = 156
+            Top = 195
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akLeft, akBottom]
             Caption = '&Remove'
             TabOrder = 5
             OnClick = RemoveEditorButtonClick
@@ -864,7 +1325,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object ShellIconsGroup: TGroupBox
           Left = 8
           Top = 8
@@ -933,7 +1394,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Hint = 
               'To add shortcuts, which directly open site, use button '#39'Shell ic' +
-              'on'#39' on '#39'Sites'#39' tab of Login dialog.'
+              'on'#39' on '#39'Sites'#39' page of Login dialog.'
             Alignment = taRightJustify
             Anchors = [akTop, akRight]
             AutoSize = False
@@ -952,23 +1413,23 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object CustomCommandsGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
-          Height = 335
+          Height = 374
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Custom commands'
           TabOrder = 0
           DesignSize = (
             357
-            335)
+            374)
           object CustomCommandsView: TListView
             Left = 16
             Top = 24
             Width = 324
-            Height = 227
+            Height = 266
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -1010,27 +1471,27 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddCommandButton: TButton
             Left = 16
-            Top = 262
+            Top = 301
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akLeft, akBottom]
             Caption = '&Add ...'
             TabOrder = 1
             OnClick = AddEditCommandButtonClick
           end
           object RemoveCommandButton: TButton
             Left = 16
-            Top = 294
+            Top = 333
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akLeft, akBottom]
             Caption = '&Remove'
             TabOrder = 3
             OnClick = RemoveCommandButtonClick
           end
           object UpCommandButton: TButton
             Left = 258
-            Top = 262
+            Top = 301
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1040,7 +1501,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownCommandButton: TButton
             Left = 258
-            Top = 294
+            Top = 333
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1050,10 +1511,10 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditCommandButton: TButton
             Left = 112
-            Top = 262
+            Top = 301
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akLeft, akBottom]
             Caption = '&Edit ...'
             TabOrder = 2
             OnClick = AddEditCommandButtonClick
@@ -1069,7 +1530,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object DragDropDownloadsGroup: TGroupBox
           Left = 8
           Top = 8
@@ -1181,7 +1642,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object QueueGroup: TGroupBox
           Left = 8
           Top = 8
@@ -1319,7 +1780,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object StorageGroup: TGroupBox
           Left = 8
           Top = 8
@@ -1473,7 +1934,7 @@ object PreferencesDialog: TPreferencesDialog
             Filter = 'Random seed files (*.rnd)|*.rnd|All files (*.*)|*.*'
             DialogOptions = [ofHideReadOnly, ofPathMustExist]
             DialogTitle = 'Select file for random seed'
-            OnCreateEditDialog = RandomSeedFileEditCreateEditDialog
+            OnCreateEditDialog = PathEditCreateEditDialog
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 0
@@ -1491,7 +1952,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object ResumeBox: TGroupBox
           Left = 8
           Top = 8
@@ -1709,7 +2170,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object UpdatesGroup: TGroupBox
           Left = 8
           Top = 8
@@ -1879,24 +2340,24 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object CopyParamListGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
-          Height = 335
-          Anchors = [akLeft, akTop, akRight]
+          Height = 374
+          Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Transfer settings presets'
           TabOrder = 0
           DesignSize = (
             357
-            335)
+            374)
           object CopyParamLabel: TLabel
             Left = 18
-            Top = 183
+            Top = 222
             Width = 322
             Height = 53
-            Anchors = [akLeft, akTop, akRight, akBottom]
+            Anchors = [akLeft, akRight, akBottom]
             AutoSize = False
             Caption = 'CopyParamLabel'
             WordWrap = True
@@ -1906,7 +2367,7 @@ object PreferencesDialog: TPreferencesDialog
             Left = 16
             Top = 24
             Width = 324
-            Height = 153
+            Height = 192
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -1940,27 +2401,27 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddCopyParamButton: TButton
             Left = 16
-            Top = 242
+            Top = 281
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akLeft, akBottom]
             Caption = '&Add ...'
             TabOrder = 1
             OnClick = AddCopyParamButtonClick
           end
           object RemoveCopyParamButton: TButton
             Left = 16
-            Top = 274
+            Top = 313
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akLeft, akBottom]
             Caption = '&Remove'
             TabOrder = 3
             OnClick = RemoveCopyParamButtonClick
           end
           object UpCopyParamButton: TButton
             Left = 257
-            Top = 242
+            Top = 281
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1970,7 +2431,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownCopyParamButton: TButton
             Left = 257
-            Top = 274
+            Top = 313
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1980,29 +2441,30 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditCopyParamButton: TButton
             Left = 112
-            Top = 242
+            Top = 281
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akLeft, akBottom]
             Caption = '&Edit ...'
             TabOrder = 2
             OnClick = EditCopyParamButtonClick
           end
           object DuplicateCopyParamButton: TButton
             Left = 112
-            Top = 274
+            Top = 313
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akLeft, akBottom]
             Caption = 'Du&plicate ...'
             TabOrder = 4
             OnClick = DuplicateCopyParamButtonClick
           end
           object CopyParamAutoSelectNoticeCheck: TCheckBox
             Left = 18
-            Top = 305
+            Top = 344
             Width = 322
             Height = 17
+            Anchors = [akLeft, akBottom]
             Caption = '&Announce when transfer settings preset is autoselected'
             TabOrder = 7
             OnClick = ControlChange
@@ -2018,7 +2480,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object PathInCaptionGroup: TGroupBox
           Left = 8
           Top = 114
@@ -2122,7 +2584,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object MasterPasswordGroup: TGroupBox
           Left = 8
           Top = 8
@@ -2182,39 +2644,46 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object ExternalAppsGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
-          Height = 177
+          Height = 208
           Anchors = [akLeft, akTop, akRight]
           Caption = 'External applications'
           TabOrder = 0
           DesignSize = (
             357
-            177)
-          object Label2: TLabel
+            208)
+          object PuttyPathLabel: TLabel
             Left = 16
             Top = 21
-            Width = 59
+            Width = 131
             Height = 13
-            Caption = '&PuTTY path:'
+            Caption = '&PuTTY/Terminal client path:'
             FocusControl = PuttyPathEdit
           end
-          object PuttyPathEdit: TEdit
+          object PuttyRegistryStorageKeyLabel: TLabel
+            Left = 16
+            Top = 158
+            Width = 94
+            Height = 13
+            Caption = 'PuTTY registry &key:'
+            FocusControl = PuttyRegistryStorageKeyEdit
+          end
+          object PuttyPathEdit: THistoryComboBox
             Left = 16
             Top = 38
-            Width = 330
+            Width = 249
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 0
-            Text = 'PuttyPathEdit'
-            OnChange = ControlChange
+            OnChange = PuttyPathEditChange
           end
           object PuttyPasswordCheck2: TCheckBox
             Left = 24
-            Top = 97
+            Top = 83
             Width = 321
             Height = 17
             Caption = '&Remember session password and pass it to PuTTY (SSH)'
@@ -2222,15 +2691,15 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AutoOpenInPuttyCheck: TCheckBox
             Left = 24
-            Top = 147
+            Top = 133
             Width = 321
             Height = 17
             Caption = 'Automatically &open new sessions in PuTTY'
             TabOrder = 5
           end
           object PuttyPathBrowseButton: TButton
-            Left = 200
-            Top = 65
+            Left = 271
+            Top = 36
             Width = 75
             Height = 25
             Anchors = [akTop, akRight]
@@ -2238,23 +2707,35 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 1
             OnClick = PuttyPathBrowseButtonClick
           end
-          object PuttyPathResetButton: TButton
-            Left = 281
-            Top = 65
-            Width = 65
-            Height = 25
-            Anchors = [akTop, akRight]
-            Caption = 'R&eset'
-            TabOrder = 2
-            OnClick = PuttyPathResetButtonClick
-          end
           object TelnetForFtpInPuttyCheck: TCheckBox
             Left = 24
-            Top = 122
+            Top = 108
             Width = 321
             Height = 17
             Caption = 'Open &Telnet sessions in PuTTY for FTP sessions'
             TabOrder = 4
+          end
+          object PuttyPathHintText: TStaticText
+            Left = 186
+            Top = 61
+            Width = 79
+            Height = 16
+            Alignment = taRightJustify
+            Anchors = [akTop, akRight]
+            AutoSize = False
+            Caption = '&patterns'
+            TabOrder = 2
+            TabStop = True
+          end
+          object PuttyRegistryStorageKeyEdit: THistoryComboBox
+            Left = 16
+            Top = 174
+            Width = 330
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 6
+            OnChange = ControlChange
           end
         end
       end
@@ -2267,7 +2748,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object ExternalIpAddressGroupBox: TGroupBox
           Left = 8
           Top = 8
@@ -2331,7 +2812,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object PanelsRemoteDirectoryGroup: TGroupBox
           Left = 8
           Top = 8
@@ -2401,7 +2882,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           373
-          353)
+          392)
         object LocalPanelGroup: TGroupBox
           Left = 8
           Top = 8
@@ -2435,23 +2916,80 @@ object PreferencesDialog: TPreferencesDialog
           end
         end
       end
+      object LanguagesSheet: TTabSheet
+        Tag = 23
+        Caption = 'Languages'
+        ImageIndex = 21
+        TabVisible = False
+        DesignSize = (
+          373
+          392)
+        object LanguagesGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 357
+          Height = 374
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Caption = 'Languages'
+          TabOrder = 0
+          DesignSize = (
+            357
+            374)
+          object LanguageChangeLabel: TLabel
+            Left = 16
+            Top = 344
+            Width = 177
+            Height = 13
+            Caption = 'Changes will apply on the next start.'
+          end
+          object LanguagesView: TListView
+            Left = 16
+            Top = 24
+            Width = 324
+            Height = 309
+            Anchors = [akLeft, akTop, akRight, akBottom]
+            Columns = <
+              item
+                AutoSize = True
+              end>
+            DoubleBuffered = True
+            HideSelection = False
+            ReadOnly = True
+            RowSelect = True
+            ParentDoubleBuffered = False
+            ShowColumnHeaders = False
+            TabOrder = 0
+            ViewStyle = vsReport
+            OnSelectItem = ListViewSelectItem
+          end
+          object LanguagesGetMoreButton: TButton
+            Left = 265
+            Top = 339
+            Width = 75
+            Height = 25
+            Caption = 'Get &more...'
+            TabOrder = 1
+            OnClick = LanguagesGetMoreButtonClick
+          end
+        end
+      end
     end
     object LeftPanel: TPanel
       Left = 0
       Top = 0
       Width = 132
-      Height = 363
+      Height = 402
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
         132
-        363)
+        402)
       object NavigationTree: TTreeView
         Left = 8
         Top = 9
         Width = 116
-        Height = 353
+        Height = 392
         Anchors = [akLeft, akTop, akRight, akBottom]
         DoubleBuffered = True
         HideSelection = False
@@ -2463,49 +3001,51 @@ object PreferencesDialog: TPreferencesDialog
         ShowRoot = False
         TabOrder = 0
         OnChange = NavigationTreeChange
+        OnChanging = NavigationTreeChanging
         OnCollapsing = NavigationTreeCollapsing
         Items.NodeData = {
           030B000000360000000000000001000000FFFFFFFFFFFFFFFF00000000000000
-          0004000000010C45006E007600690072006F006E006D0065006E007400580032
+          0005000000010C45006E007600690072006F006E006D0065006E007400580032
           0000000000000003000000FFFFFFFFFFFFFFFF00000000000000000000000001
           0A49006E00740065007200660061006300650058002C00000000000000110000
           00FFFFFFFFFFFFFFFF0000000000000000000000000107570069006E0064006F
           0077005800320000000000000005000000FFFFFFFFFFFFFFFF00000000000000
           0000000000010A43006F006D006D0061006E0064006500720058003000000000
           00000006000000FFFFFFFFFFFFFFFF0000000000000000000000000109450078
-          0070006C006F0072006500720058002C0000000000000004000000FFFFFFFFFF
-          FFFFFF0000000000000000020000000107500061006E0065006C00730058002C
-          0000000000000015000000FFFFFFFFFFFFFFFF00000000000000000000000001
-          07520065006D006F007400650058002A0000000000000016000000FFFFFFFFFF
-          FFFFFF00000000000000000000000001064C006F00630061006C0058002C0000
-          000000000008000000FFFFFFFFFFFFFFFF000000000000000000000000010745
-          006400690074006F0072005800300000000000000010000000FFFFFFFFFFFFFF
-          FF00000000000000000300000001095400720061006E00730066006500720058
-          0030000000000000000B000000FFFFFFFFFFFFFFFF0000000000000000000000
-          0001094400720061006700440072006F007000580034000000000000000C0000
-          00FFFFFFFFFFFFFFFF000000000000000000000000010B4200610063006B0067
-          0072006F0075006E00640058002C000000000000000E000000FFFFFFFFFFFFFF
-          FF000000000000000000000000010752006500730075006D00650058002E0000
-          000000000014000000FFFFFFFFFFFFFFFF00000000000000000000000001084E
-          006500740077006F0072006B005800300000000000000013000000FFFFFFFFFF
-          FFFFFF0000000000000000000000000109530065006300750072006900740079
-          0058002E0000000000000002000000FFFFFFFFFFFFFFFF000000000000000000
-          00000001084C006F006700670069006E00670058003600000000000000090000
-          00FFFFFFFFFFFFFFFF000000000000000001000000010C49006E007400650067
-          0072006100740069006F006E005800380000000000000012000000FFFFFFFFFF
-          FFFFFF000000000000000000000000010D4100700070006C0069006300610074
-          0069006F006E007300580030000000000000000A000000FFFFFFFFFFFFFFFF00
-          0000000000000000000000010943006F006D006D0061006E006400730058002E
-          000000000000000D000000FFFFFFFFFFFFFFFF00000000000000000000000001
-          08530074006F00720061006700650058002E000000000000000F000000FFFFFF
-          FFFFFFFFFF000000000000000000000000010855007000640061007400650073
-          005800}
+          0070006C006F007200650072005800320000000000000017000000FFFFFFFFFF
+          FFFFFF000000000000000000000000010A4C0061006E00670075006100670065
+          00730058002C0000000000000004000000FFFFFFFFFFFFFFFF00000000000000
+          00020000000107500061006E0065006C00730058002C00000000000000150000
+          00FFFFFFFFFFFFFFFF0000000000000000000000000107520065006D006F0074
+          00650058002A0000000000000016000000FFFFFFFFFFFFFFFF00000000000000
+          000000000001064C006F00630061006C0058002C0000000000000008000000FF
+          FFFFFFFFFFFFFF000000000000000000000000010745006400690074006F0072
+          005800300000000000000010000000FFFFFFFFFFFFFFFF000000000000000003
+          00000001095400720061006E007300660065007200580030000000000000000B
+          000000FFFFFFFFFFFFFFFF000000000000000000000000010944007200610067
+          00440072006F007000580034000000000000000C000000FFFFFFFFFFFFFFFF00
+          0000000000000000000000010B4200610063006B00670072006F0075006E0064
+          0058002C000000000000000E000000FFFFFFFFFFFFFFFF000000000000000000
+          000000010752006500730075006D00650058002E0000000000000014000000FF
+          FFFFFFFFFFFFFF00000000000000000000000001084E006500740077006F0072
+          006B005800300000000000000013000000FFFFFFFFFFFFFFFF00000000000000
+          000000000001095300650063007500720069007400790058002E000000000000
+          0002000000FFFFFFFFFFFFFFFF00000000000000000000000001084C006F0067
+          00670069006E0067005800360000000000000009000000FFFFFFFFFFFFFFFF00
+          0000000000000001000000010C49006E0074006500670072006100740069006F
+          006E005800380000000000000012000000FFFFFFFFFFFFFFFF00000000000000
+          0000000000010D4100700070006C00690063006100740069006F006E00730058
+          0030000000000000000A000000FFFFFFFFFFFFFFFF0000000000000000000000
+          00010943006F006D006D0061006E006400730058002E000000000000000D0000
+          00FFFFFFFFFFFFFFFF0000000000000000000000000108530074006F00720061
+          006700650058002E000000000000000F000000FFFFFFFFFFFFFFFF0000000000
+          00000000000000010855007000640061007400650073005800}
       end
     end
   end
   object HelpButton: TButton
     Left = 426
-    Top = 369
+    Top = 408
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
