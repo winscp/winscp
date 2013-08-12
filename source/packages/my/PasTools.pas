@@ -11,6 +11,8 @@ function IsVista: Boolean;
 
 function IsExactly2008R2: Boolean;
 
+function IsWin7: Boolean;
+
 function CutToChar(var Str: string; Ch: Char; Trim: Boolean): string;
 
 procedure FilterToFileTypes(Filter: string; FileTypes: TFileTypeItems);
@@ -137,6 +139,11 @@ begin
       end;
     end;
   end;
+end;
+
+function IsWin7: Boolean;
+begin
+  Result := CheckWin32Version(6, 1);
 end;
 
 function CutToChar(var Str: string; Ch: Char; Trim: Boolean): string;

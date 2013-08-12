@@ -2123,8 +2123,6 @@ begin
   if Attr <> 0 then
   begin
     LowBound := Low(Attrs);
-    if Win32PlatForm <> VER_PLATFORM_WIN32_NT then
-      Inc(LowBound);
 
     for Index := LowBound to High(Attrs) do
       if (Attr and Attrs[Index] <> 0) then
@@ -3148,7 +3146,7 @@ begin
       end;
     end;
 
-    if Win32PlatForm = VER_PLATFORM_WIN32_NT then Sleep(250);
+    Sleep(250);
     ValidateSelectedFiles;
 
   finally
@@ -3168,11 +3166,11 @@ begin
     if Empty then
       GetDisplayData(ListItem, IconEmpty and
         (not FUseIconUpdateThread or
-         ((ViewStyle <> vsReport) and (Win32PlatForm = VER_PLATFORM_WIN32_NT))));
+         (ViewStyle <> vsReport)));
 
     if IconEmpty and
        (not FUseIconUpdateThread or
-        ((ViewStyle <> vsReport) and (Win32PlatForm = VER_PLATFORM_WIN32_NT))) and
+        (ViewStyle <> vsReport)) and
        ((DispInfo.Mask and LVIF_IMAGE) <> 0) then
       GetDisplayData(ListItem, True);
 
@@ -4407,13 +4405,8 @@ end;
 
 {=================================================================}
 
-var
-  IsWin7: Boolean;
 initialization
   LastClipBoardOperation := cboNone;
   LastIOResult := 0;
-  IsWin7 :=
-    (Win32MajorVersion > 6) or
-    ((Win32MajorVersion = 6) and (Win32MinorVersion >= 1));
   DaylightHack := (not IsWin7) or IsExactly2008R2;
 end.

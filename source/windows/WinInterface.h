@@ -107,7 +107,7 @@ bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();
-bool __fastcall DoChangeMasterPasswordDialog();
+bool __fastcall DoChangeMasterPasswordDialog(UnicodeString & NewPassword);
 
 // windows\WinMain.cpp
 int __fastcall Execute();

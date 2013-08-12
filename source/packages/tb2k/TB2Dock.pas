@@ -4447,9 +4447,7 @@ var
 begin
   inherited;
   { Note: TME_NONCLIENT was introduced in Windows 98 and 2000 }
-  if (Win32MajorVersion >= 5) or
-     (Win32MajorVersion = 4) and (Win32MinorVersion >= 10) then
-    CallTrackMouseEvent(Handle, TME_LEAVE or $10 {TME_NONCLIENT});
+  CallTrackMouseEvent(Handle, TME_LEAVE or $10 {TME_NONCLIENT});
   InArea := Message.HitTest = HT_TB2k_Close;
   if FCloseButtonHover <> InArea then begin
     FCloseButtonHover := InArea;

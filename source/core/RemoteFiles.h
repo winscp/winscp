@@ -449,6 +449,8 @@ TModificationFmt __fastcall LessDateTimePrecision(
   TModificationFmt Precision1, TModificationFmt Precision2);
 UnicodeString __fastcall UserModificationStr(TDateTime DateTime,
   TModificationFmt Precision);
+UnicodeString __fastcall ModificationStr(TDateTime DateTime,
+  TModificationFmt Precision);
 int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs = 0,
   UnicodeString * TypeName = NULL);
 //---------------------------------------------------------------------------

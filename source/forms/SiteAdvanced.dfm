@@ -1503,6 +1503,77 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
       end
+      object SslSheet: TTabSheet
+        Tag = 2
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_tls'
+        Caption = 'TLS/SSL'
+        ImageIndex = 13
+        TabVisible = False
+        DesignSize = (
+          353
+          382)
+        object SslGroup: TGroupBox
+          Left = 0
+          Top = 6
+          Width = 345
+          Height = 71
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'TLS/SSL options'
+          TabOrder = 0
+          DesignSize = (
+            345
+            71)
+          object Label1: TLabel
+            Left = 12
+            Top = 20
+            Width = 123
+            Height = 13
+            Caption = 'Mi&nimum TLS/SSL version:'
+            FocusControl = MinTlsVersionCombo
+          end
+          object Label2: TLabel
+            Left = 12
+            Top = 44
+            Width = 127
+            Height = 13
+            Caption = 'Ma&ximum TLS/SSL version:'
+            FocusControl = MaxTlsVersionCombo
+          end
+          object MinTlsVersionCombo: TComboBox
+            Left = 256
+            Top = 15
+            Width = 77
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 0
+            OnChange = MinTlsVersionComboChange
+            Items.Strings = (
+              'SSL 2.0'
+              'SSL 3.0'
+              'TLS 1.0'
+              'TLS 1.1'
+              'TLS 1.2')
+          end
+          object MaxTlsVersionCombo: TComboBox
+            Left = 256
+            Top = 39
+            Width = 77
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 1
+            OnChange = MaxTlsVersionComboChange
+            Items.Strings = (
+              'SSL 2.0'
+              'SSL 3.0'
+              'TLS 1.0'
+              'TLS 1.1'
+              'TLS 1.2')
+          end
+        end
+      end
       object AdvancedSheet: TTabSheet
         Tag = 1
         HelpType = htKeyword

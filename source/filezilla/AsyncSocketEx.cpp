@@ -1783,6 +1783,36 @@ void CAsyncSocketEx::SetState(int nState)
 	m_nState = nState;
 }
 
+const TCHAR * CAsyncSocketEx::GetStateDesc(int nState)
+{
+  switch (nState)
+  {
+    case notsock:
+      return _T("none");
+    case unconnected:
+      return _T("unconnected");
+    case connecting:
+      return _T("connecting");
+    case listening:
+      return _T("listening");
+    case connected:
+      return _T("connected");
+    case closed:
+      return _T("closed");
+    case aborted:
+      return _T("aborted");
+    case attached:
+      return _T("attached");
+    default:
+      return _T("unknown");
+  }
+}
+
+bool CAsyncSocketEx::LogStateChange(int nState1, int nState2)
+{
+    return (nState2 != notsock) || (nState1 != unconnected);
+}
+
 #endif //NOSOCKETSTATES
 
 int CAsyncSocketEx::GetFamily() const

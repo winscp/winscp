@@ -549,30 +549,15 @@ begin
           end;
           if FilenamesAreMapped then
           begin
-               if Win32Platform=VER_PLATFORM_WIN32_WINDOWS then
-               begin
-                    with FE do
-                    begin
-                         cfFormat:=CF_FILENAMEMAP;
-                         ptd:=nil;
-                         dwAspect:=DVASPECT_CONTENT;
-                         lindex:=-1;
-                         tymed:=TYMED_HGLOBAL;
-                    end;
-                    SetData(FE,SM,false);
-               end
-               else
-               begin
-                    with FE do
-                    begin
-                         cfFormat:=CF_FILENAMEMAPW;
-                         ptd:=nil;
-                         dwAspect:=DVASPECT_CONTENT;
-                         lindex:=-1;
-                         tymed:=TYMED_HGLOBAL;
-                    end;
-                    SetData(FE,SM,false);
-               end;
+                with FE do
+                begin
+                     cfFormat:=CF_FILENAMEMAPW;
+                     ptd:=nil;
+                     dwAspect:=DVASPECT_CONTENT;
+                     lindex:=-1;
+                     tymed:=TYMED_HGLOBAL;
+                end;
+                SetData(FE,SM,false);
           end;
      end;
 end;

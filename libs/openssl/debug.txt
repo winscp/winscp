@@ -1,3 +1,0 @@
-To build debug version of OpenSSL, modify CFLAGS in Makefile as follows:
-  Add -y -k -r- -v -vi-
-  Replace -O2 with -Od

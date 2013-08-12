@@ -493,7 +493,8 @@ protected:
   void __fastcall DirViewContextPopup(
     TOperationSide Side, Byte PopupComponent, const TPoint & MousePos);
   bool __fastcall CommandLineFromAnotherInstance(const UnicodeString & CommandLine);
-  void __fastcall SetQueueTaskbarProgress();
+  void __fastcall SetQueueProgress();
+  void __fastcall UpdateQueueLabel();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

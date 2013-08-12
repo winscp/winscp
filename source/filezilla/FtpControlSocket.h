@@ -87,7 +87,9 @@ public:
 	bool IsMisleadingListResponse();
 
 #ifdef MPEXT
-	virtual bool __fastcall UsingMlsd();
+	virtual bool UsingMlsd();
+	virtual std::string GetTlsVersionStr();
+	virtual std::string GetCipherName();
 #endif
 
 	// Vom Klassen-Assistenten generierte virtuelle Funktionsüberschreibungen

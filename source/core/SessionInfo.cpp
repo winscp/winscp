@@ -867,6 +867,25 @@ void __fastcall TSessionLog::AddStartupInfo(bool System)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TSessionLog::GetTlsVersionName(TTlsVersion TlsVersion)
+{
+  switch (TlsVersion)
+  {
+    default:
+      FAIL;
+    case ssl2:
+      return "SSLv2";
+    case ssl3:
+      return "SSLv3";
+    case tls10:
+      return "TLSv1.0";
+    case tls11:
+      return "TLSv1.1";
+    case tls12:
+      return "TLSv1.2";
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
 {
   TGuard Guard(FCriticalSection);
@@ -1006,7 +1025,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         switch (Data->Ftps)
         {
           case ftpsImplicit:
-            Ftps = L"Implicit SSL/TLS";
+            Ftps = L"Implicit TLS/SSL";
             break;
 
           case ftpsExplicitSsl:
@@ -1030,6 +1049,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         if (Data->Ftps != ftpsNone)
         {
           ADF(L"Session reuse: %s", (BooleanToEngStr(Data->SslSessionReuse)));
+          ADF(L"TLS/SSL versions: %s-%s", (GetTlsVersionName(Data->MinTlsVersion), GetTlsVersionName(Data->MaxTlsVersion)));
         }
       }
       ADF(L"Local directory: %s, Remote directory: %s, Update: %s, Cache: %s",

@@ -609,7 +609,7 @@ class TMasterPasswordDialog : public TCustomDialog
 public:
   __fastcall TMasterPasswordDialog(bool Current);
 
-  bool __fastcall Execute();
+  bool __fastcall Execute(UnicodeString & CurrentPassword, UnicodeString & NewPassword);
 
 protected:
   virtual void __fastcall DoValidate();
@@ -653,18 +653,19 @@ __fastcall TMasterPasswordDialog::TMasterPasswordDialog(bool Current) :
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TMasterPasswordDialog::Execute()
+bool __fastcall TMasterPasswordDialog::Execute(
+  UnicodeString & CurrentPassword, UnicodeString & NewPassword)
 {
   bool Result = TCustomDialog::Execute();
   if (Result)
   {
     if (CurrentEdit->Enabled)
     {
-      WinConfiguration->SetMasterPassword(CurrentEdit->Text);
+      CurrentPassword = CurrentEdit->Text;
     }
     if (NewEdit != NULL)
     {
-      WinConfiguration->SetMasterPassword(NewEdit->Text);
+      NewPassword = NewEdit->Text;
     }
   }
   return Result;
@@ -715,13 +716,23 @@ void __fastcall TMasterPasswordDialog::DoValidate()
   }
 }
 //---------------------------------------------------------------------------
-static bool __fastcall DoMasterPasswordDialog(bool Current)
+static bool __fastcall DoMasterPasswordDialog(bool Current,
+  UnicodeString & NewPassword)
 {
   bool Result;
   TMasterPasswordDialog * Dialog = new TMasterPasswordDialog(Current);
   try
   {
-    Result = Dialog->Execute();
+    UnicodeString CurrentPassword;
+    Result = Dialog->Execute(CurrentPassword, NewPassword);
+    if (Result)
+    {
+      if ((Current || WinConfiguration->UseMasterPassword) &&
+          ALWAYS_TRUE(!CurrentPassword.IsEmpty()))
+      {
+        WinConfiguration->SetMasterPassword(CurrentPassword);
+      }
+    }
   }
   __finally
   {
@@ -732,12 +743,16 @@ static bool __fastcall DoMasterPasswordDialog(bool Current)
 //---------------------------------------------------------------------------
 bool __fastcall DoMasterPasswordDialog()
 {
-  return DoMasterPasswordDialog(true);
+  UnicodeString NewPassword;
+  bool Result = DoMasterPasswordDialog(true, NewPassword);
+  assert(NewPassword.IsEmpty());
+  return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall DoChangeMasterPasswordDialog()
+bool __fastcall DoChangeMasterPasswordDialog(UnicodeString & NewPassword)
 {
-  return DoMasterPasswordDialog(false);
+  bool Result = DoMasterPasswordDialog(false, NewPassword);
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall MessageWithNoHelp(const UnicodeString & Message)

@@ -46,7 +46,7 @@
 #define HELP_MASTER_PASSWORD         "master_password"
 #define HELP_MASTER_PASSWORD_SIMPLE  HELP_MASTER_PASSWORD
 #define HELP_USAGE                   "usagestatistics"
-#define HELP_WORKSPACE_SAVE          "workspace"
+#define HELP_WORKSPACE_SAVE          "ui_save_workspace"
 #define HELP_EDITOR_AUTO_CONFIG      "ui_pref_editor#auto"
 #define HELP_IMPORT_SESSIONS         "ui_import"
 #define HELP_IMPORT_CONFIGURATION    "config"

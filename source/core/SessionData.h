@@ -30,6 +30,8 @@ enum TSftpBug { sbSymlink, sbSignedTS };
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
 enum TAddressFamily { afAuto, afIPv4, afIPv6 };
 enum TFtps { ftpsNone, ftpsImplicit, ftpsExplicitSsl, ftpsExplicitTls };
+// has to match SSL_VERSION_XXX constants in AsyncSslSocketLayer.h
+enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12 };
 enum TSessionSource { ssNone, ssStored, ssStoredModified };
 //---------------------------------------------------------------------------
 extern const wchar_t CipherNames[CIPHER_COUNT][10];
@@ -156,6 +158,8 @@ private:
   int FFtpPingInterval;
   TPingType FFtpPingType;
   TFtps FFtps;
+  TTlsVersion FMinTlsVersion;
+  TTlsVersion FMaxTlsVersion;
   TAutoSwitch FNotUtf;
   bool FIsWorkspace;
   UnicodeString FLink;
@@ -297,6 +301,8 @@ private:
   void __fastcall SetFtpPingInterval(int value);
   void __fastcall SetFtpPingType(TPingType value);
   void __fastcall SetFtps(TFtps value);
+  void __fastcall SetMinTlsVersion(TTlsVersion value);
+  void __fastcall SetMaxTlsVersion(TTlsVersion value);
   void __fastcall SetNotUtf(TAutoSwitch value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -327,6 +333,7 @@ public:
     const TSessionData * Default = NULL);
   void __fastcall SaveRecryptedPasswords(THierarchicalStorage * Storage);
   void __fastcall RecryptPasswords();
+  bool __fastcall HasPassword();
   bool __fastcall HasAnyPassword();
   void __fastcall Remove();
   virtual void __fastcall Assign(TPersistent * Source);
@@ -462,6 +469,8 @@ public:
   __property TDateTime FtpPingIntervalDT  = { read=GetFtpPingIntervalDT };
   __property TPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
   __property TFtps Ftps = { read = FFtps, write = SetFtps };
+  __property TTlsVersion MinTlsVersion = { read = FMinTlsVersion, write = SetMinTlsVersion };
+  __property TTlsVersion MaxTlsVersion = { read = FMaxTlsVersion, write = SetMaxTlsVersion };
   __property TAutoSwitch NotUtf = { read = FNotUtf, write = SetNotUtf };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
@@ -488,7 +497,7 @@ public:
   void __fastcall Save(THierarchicalStorage * Storage, bool All = false);
   void __fastcall SelectAll(bool Select);
   void __fastcall Import(TStoredSessionList * From, bool OnlySelected);
-  void __fastcall RecryptPasswords();
+  void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   TSessionData * __fastcall AtSession(int Index)
     { return (TSessionData*)AtObject(Index); }
   void __fastcall SelectSessionsToImport(TStoredSessionList * Dest, bool SSHOnly);
@@ -519,8 +528,10 @@ private:
   TSessionData * FDefaultSettings;
   bool FReadOnly;
   void __fastcall SetDefaultSettings(TSessionData * value);
-  void __fastcall DoSave(THierarchicalStorage * Storage, bool All, bool RecryptPasswordOnly);
-  void __fastcall DoSave(bool All, bool Explicit, bool RecryptPasswordOnly);
+  void __fastcall DoSave(THierarchicalStorage * Storage, bool All,
+    bool RecryptPasswordOnly, TStrings * RecryptPasswordErrors);
+  void __fastcall DoSave(bool All, bool Explicit, bool RecryptPasswordOnly,
+    TStrings * RecryptPasswordErrors);
   void __fastcall DoSave(THierarchicalStorage * Storage,
     TSessionData * Data, bool All, bool RecryptPasswordOnly,
     TSessionData * FactoryDefaults);

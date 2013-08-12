@@ -79,7 +79,7 @@ procedure Register;
 
 implementation
 
-uses Windows;
+uses Windows, SysUtils;
 
 procedure Register;
 begin
@@ -110,4 +110,5 @@ begin
   end;
 end;
 
+initialization
 end.

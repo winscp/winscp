@@ -32,6 +32,7 @@
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   TPreferencesDialogData * DialogData)
 {
+  CALLSTACK;
   bool Result;
   TPreferencesDialog * PreferencesDialog =
     new TPreferencesDialog(GetFormOwner(), APreferencesMode);
@@ -120,6 +121,7 @@ bool __fastcall TPreferencesDialog::Execute(TPreferencesDialogData * DialogData)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::LoadLanguages()
 {
+  CALLSTACK;
   if (!FLanguagesLoaded)
   {
     LanguagesView->Items->Clear();
@@ -1050,10 +1052,10 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(AutoSaveWorkspacePasswordsCheck,
       !Configuration->DisablePasswordStoring &&
       AutoWorkspaceCombo->Enabled);
-
+      
     // integration
     // There's no quick launch in Windows 7
-    EnableControl(QuickLaunchIconButton, !::IsWin7());
+    EnableControl(QuickLaunchIconButton, !IsWin7());
 
     // languages
     LanguageChangeLabel->Visible =
@@ -1222,17 +1224,20 @@ void __fastcall TPreferencesDialog::CustomCommandsViewDblClick(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
 {
+  CALLSTACK;
   bool Edit = (Sender == EditCommandButton);
   TCustomCommandType Command;
 
   if (Edit)
   {
+    TRACE("1");
     int Index = CustomCommandsView->ItemIndex;
     assert(Index >= 0 && Index <= FCustomCommandList->Count);
 
     Command = *FCustomCommandList->Commands[Index];
   }
 
+  TRACE("2");
   TShortCuts ShortCuts;
   if (WinConfiguration->SharedBookmarks != NULL)
   {
@@ -1240,32 +1245,40 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
   }
   FCustomCommandList->ShortCuts(ShortCuts);
 
+  TRACE("3");
   if (DoCustomCommandDialog(Command, FCustomCommandList,
         (Edit ? ccmEdit : ccmAdd), 0, NULL, &ShortCuts))
   {
+    TRACE("4");
     int Index = CustomCommandsView->ItemIndex;
     TCustomCommandType * ACommand = new TCustomCommandType(Command);
     if (Edit)
     {
+      TRACE("5");
       FCustomCommandList->Change(Index, ACommand);
     }
     else
     {
+      TRACE("6");
       if (Index >= 0)
       {
+        TRACE("7");
         FCustomCommandList->Insert(Index, ACommand);
       }
       else
       {
+        TRACE("8");
         FCustomCommandList->Add(ACommand);
         Index = FCustomCommandList->Count - 1;
       }
     }
 
+    TRACE("9");
     UpdateCustomCommandsView();
     CustomCommandsView->ItemIndex = Index;
     UpdateControls();
   }
+  TRACE("/");
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::RemoveCommandButtonClick(
@@ -1423,6 +1436,7 @@ void __fastcall TPreferencesDialog::RemoveCopyParamButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::AddEditCopyParam(TCopyParamPresetMode Mode)
 {
+  CALLSTACK;
   int Index = CopyParamListView->ItemIndex;
   bool Result;
   if ((Index == 0) && (Mode != cpmAdd))
@@ -1798,6 +1812,7 @@ void __fastcall TPreferencesDialog::HelpButtonClick(TObject * /*Sender*/)
 void __fastcall TPreferencesDialog::PuttyPathBrowseButtonClick(
   TObject * /*Sender*/)
 {
+  CALLSTACK;
   UnicodeString Executables = FORMAT("%s;%s", (OriginalPuttyExecutable, KittyExecutable));
   BrowseForExecutable(PuttyPathEdit, LoadStr(PREFERENCES_SELECT_PUTTY2),
     FMTLOAD(PREFERENCES_PUTTY_FILTER2, (Executables)), false, false);
@@ -1861,15 +1876,18 @@ void __fastcall TPreferencesDialog::SessionReopenTimeoutEditGetValue(
 //---------------------------------------------------------------------------
 bool __fastcall TPreferencesDialog::CanSetMasterPassword()
 {
-  bool Result;
+  CALLSTACK;
+  bool Result = false;
   bool Retry;
   do
   {
+    TRACE("1");
     Retry = false;
     Result = !AnyOtherInstanceOfSelf();
 
     if (!Result)
     {
+      TRACE("2");
       unsigned int Answer =
         MessageDialog(
           LoadStr(MASTER_PASSWORD_OTHER_INSTANCE),
@@ -1895,12 +1913,14 @@ bool __fastcall TPreferencesDialog::CanSetMasterPassword()
   }
   while (Retry && !Result);
 
+  TRACE_EXIT;
   return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::MasterPasswordChanged(
   UnicodeString Message, TStrings * RecryptPasswordErrors)
 {
+  CALLSTACK;
   Configuration->Save();
   if (RecryptPasswordErrors->Count > 0)
   {
@@ -1908,36 +1928,45 @@ void __fastcall TPreferencesDialog::MasterPasswordChanged(
   }
   MoreMessageDialog(
     Message, RecryptPasswordErrors, qtInformation, qaOK, HELP_MASTER_PASSWORD);
+  TRACE_EXIT;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::ChangeMasterPassword(UnicodeString Message)
 {
+  CALLSTACK;
   UnicodeString NewPassword;
   if (DoChangeMasterPasswordDialog(NewPassword))
   {
+    TRACE("1");
     std::auto_ptr<TStrings> RecryptPasswordErrors(new TStringList());
     WinConfiguration->ChangeMasterPassword(NewPassword, RecryptPasswordErrors.get());
     MasterPasswordChanged(Message, RecryptPasswordErrors.get());
   }
+  TRACE_EXIT;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UseMasterPasswordCheckClick(
   TObject * /*Sender*/)
 {
+  CALLSTACK;
   if (UseMasterPasswordCheck->Checked != WinConfiguration->UseMasterPassword)
   {
+    TRACE("1");
     try
     {
       if (CanSetMasterPassword())
       {
         if (UseMasterPasswordCheck->Checked)
         {
+          TRACE("2");
           ChangeMasterPassword(LoadStr(MASTER_PASSWORD_SET));
         }
         else
         {
+          TRACE("3");
           if (DoMasterPasswordDialog())
           {
+            TRACE("4");
             std::auto_ptr<TStrings> RecryptPasswordErrors(new TStringList());
             WinConfiguration->ClearMasterPassword(RecryptPasswordErrors.get());
             MasterPasswordChanged(LoadStr(MASTER_PASSWORD_CLEARED), RecryptPasswordErrors.get());
@@ -1947,19 +1976,23 @@ void __fastcall TPreferencesDialog::UseMasterPasswordCheckClick(
     }
     __finally
     {
+      TRACE("5");
       UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
       UpdateControls();
     }
   }
+  TRACE_EXIT;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::SetMasterPasswordButtonClick(
   TObject * /*Sender*/)
 {
+  CALLSTACK;
   if (CanSetMasterPassword())
   {
     ChangeMasterPassword(LoadStr(MASTER_PASSWORD_CHANGED));
   }
+  TRACE_EXIT;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UsageViewButtonClick(TObject * /*Sender*/)
@@ -1998,12 +2031,14 @@ void __fastcall TPreferencesDialog::CopyParamListViewCustomDrawItem(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::SelectPuttyRegistryStorageKey(const UnicodeString & Key)
 {
+  CALLSTACK;
   PuttyRegistryStorageKeyEdit->ItemIndex =
     PuttyRegistryStorageKeyEdit->Items->IndexOf(Key);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PuttyPathEditChange(TObject * /*Sender*/)
 {
+  CALLSTACK;
   UnicodeString PuttyPath = PuttyPathEdit->Text;
   if (ContainsText(PuttyPath, OriginalPuttyExecutable))
   {
@@ -2020,6 +2055,7 @@ void __fastcall TPreferencesDialog::PuttyPathEditChange(TObject * /*Sender*/)
 void __fastcall TPreferencesDialog::NavigationTreeChanging(TObject * /*Sender*/,
   TTreeNode * Node, bool & /*AllowChange*/)
 {
+  CALLSTACK;
   TTabSheet * Sheet = FindPageForTreeNode(Node);
   // delay load as this can be time consuming
   if (Sheet == LanguagesSheet)
@@ -2030,6 +2066,7 @@ void __fastcall TPreferencesDialog::NavigationTreeChanging(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::LanguagesGetMoreButtonClick(TObject * /*Sender*/)
 {
+  CALLSTACK;
   OpenBrowser(LoadStr(LOCALES_URL));
 }
 //---------------------------------------------------------------------------
@@ -2043,3 +2080,4 @@ void __fastcall TPreferencesDialog::ExplorerClick(TObject * /*Sender*/)
   ExplorerInterfaceButton2->SetFocus();
 }
 //---------------------------------------------------------------------------
+

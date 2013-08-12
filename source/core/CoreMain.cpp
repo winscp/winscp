@@ -96,8 +96,7 @@ void CoreFinalize()
 {
   try
   {
-    // only modified, implicit
-    Configuration->Save(false, false);
+    Configuration->Save();
   }
   catch(Exception & E)
   {

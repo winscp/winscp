@@ -397,8 +397,6 @@ type
 
     property DDLinkOnExeDrag;
 
-    property UseDragImages;
-
     property TargetPopUpMenu;
 
     property OnDDDragEnter;
@@ -2124,7 +2122,7 @@ begin
           else
         begin
           Result := False;
-          if (Win32PlatForm = VER_PLATFORM_WIN32_NT) and (not AllowUndo) then
+          if not AllowUndo then
           begin
             {WinNT4-Bug: FindFirst still returns the directories search record, even if the
              directory was deleted:}

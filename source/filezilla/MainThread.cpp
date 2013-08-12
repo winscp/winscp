@@ -411,11 +411,25 @@ void CMainThread::SetOption(int nOption, int nValue)
 	LCS;
 }
 #else
-bool __fastcall CMainThread::UsingMlsd()
+bool CMainThread::UsingMlsd()
 {
 	if (!IsConnected())
 		return false;
 	return m_pControlSocket->UsingMlsd();
+}
+
+std::string CMainThread::GetTlsVersionStr()
+{
+	if (!IsConnected())
+		return std::string();
+	return m_pControlSocket->GetTlsVersionStr();
+}
+
+std::string CMainThread::GetCipherName()
+{
+	if (!IsConnected())
+		return std::string();
+	return m_pControlSocket->GetCipherName();
 }
 #endif
 

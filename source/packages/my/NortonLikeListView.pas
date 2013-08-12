@@ -222,9 +222,7 @@ begin
   // Doing the same on WinXP makes list view down from the item flicker,
   // so we avoid this there.
   // Not sure about Vista
-  FForceUpdateOnItemUnfocus :=
-    (Win32MajorVersion > 6) or
-    ((Win32MajorVersion = 6) and (Win32MinorVersion >= 1));
+  FForceUpdateOnItemUnfocus := IsWin7;
   FNextCharToIgnore := 0;
 end;
 

@@ -961,20 +961,20 @@ namespace WinSCP
                     }
                 }
 
-                if (!string.IsNullOrEmpty(sessionOptions.SslHostCertificateFingerprint) ||
-                    sessionOptions.GiveUpSecurityAndAcceptAnySslHostCertificate)
+                if (!string.IsNullOrEmpty(sessionOptions.TlsHostCertificateFingerprint) ||
+                    sessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate)
                 {
                     if (sessionOptions.FtpSecure == FtpSecure.None)
                     {
-                        throw new ArgumentException("SessionOptions.SslHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnySslHostCertificate is set, but SessionOptions.FtpSecure is FtpSecure.None.");
+                        throw new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, but SessionOptions.FtpSecure is FtpSecure.None.");
                     }
-                    string sslHostCertificateFingerprint = sessionOptions.SslHostCertificateFingerprint;
-                    if (sessionOptions.GiveUpSecurityAndAcceptAnySslHostCertificate)
+                    string tlsHostCertificateFingerprint = sessionOptions.TlsHostCertificateFingerprint;
+                    if (sessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate)
                     {
                         Logger.WriteLine("WARNING! Giving up security and accepting any certificate as configured");
-                        sslHostCertificateFingerprint = AddStarToList(sslHostCertificateFingerprint);
+                        tlsHostCertificateFingerprint = AddStarToList(tlsHostCertificateFingerprint);
                     }
-                    switches.Add(FormatSwitch("certificate", sslHostCertificateFingerprint));
+                    switches.Add(FormatSwitch("certificate", tlsHostCertificateFingerprint));
                 }
 
                 if (sessionOptions.Protocol == Protocol.Ftp)

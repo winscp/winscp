@@ -178,6 +178,8 @@ void __fastcall TSessionData::Default()
   FtpPingInterval = 30;
   FtpPingType = ptDummyCommand;
   Ftps = ftpsNone;
+  MinTlsVersion = ssl2;
+  MaxTlsVersion = tls12;
   FtpListAll = asAuto;
   SslSessionReuse = true;
 
@@ -318,6 +320,9 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(SslSessionReuse); \
   \
   PROPERTY(FtpProxyLogonType); \
+  \
+  PROPERTY(MinTlsVersion); \
+  PROPERTY(MaxTlsVersion); \
   \
   PROPERTY(IsWorkspace); \
   PROPERTY(Link); \
@@ -585,6 +590,9 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   SslSessionReuse = Storage->ReadBool(L"SslSessionReuse", SslSessionReuse);
 
   FtpProxyLogonType = Storage->ReadInteger(L"FtpProxyLogonType", FtpProxyLogonType);
+
+  MinTlsVersion = static_cast<TTlsVersion>(Storage->ReadInteger(L"MinTlsVersion", MinTlsVersion));
+  MaxTlsVersion = static_cast<TTlsVersion>(Storage->ReadInteger(L"MaxTlsVersion", MaxTlsVersion));
 
   IsWorkspace = Storage->ReadBool(L"IsWorkspace", IsWorkspace);
   Link = Storage->ReadString(L"Link", Link);
@@ -860,6 +868,9 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
 
       WRITE_DATA(Integer, FtpProxyLogonType);
 
+      WRITE_DATA(Integer, MinTlsVersion);
+      WRITE_DATA(Integer, MaxTlsVersion);
+
       WRITE_DATA(Bool, IsWorkspace);
       WRITE_DATA(String, Link);
 
@@ -1049,9 +1060,14 @@ void __fastcall TSessionData::RecryptPasswords()
   TunnelPassword = TunnelPassword;
 }
 //---------------------------------------------------------------------
+bool __fastcall TSessionData::HasPassword()
+{
+  return !FPassword.IsEmpty();
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::HasAnyPassword()
 {
-  return !FPassword.IsEmpty() || !FProxyPassword.IsEmpty() || !FTunnelPassword.IsEmpty();
+  return HasPassword() || !FProxyPassword.IsEmpty() || !FTunnelPassword.IsEmpty();
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Modify()
@@ -1086,11 +1102,16 @@ void __fastcall TSessionData::SaveRecryptedPasswords(THierarchicalStorage * Stor
 {
   if (Storage->OpenSubKey(InternalStorageKey, true))
   {
-    RecryptPasswords();
+    try
+    {
+      RecryptPasswords();
 
-    SavePasswords(Storage, false);
-
-    Storage->CloseSubKey();
+      SavePasswords(Storage, false);
+    }
+    __finally
+    {
+      Storage->CloseSubKey();
+    }
   }
 }
 //---------------------------------------------------------------------
@@ -2306,6 +2327,16 @@ void __fastcall TSessionData::SetFtps(TFtps value)
 {
   SET_SESSION_PROPERTY(Ftps);
 }
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetMinTlsVersion(TTlsVersion value)
+{
+  SET_SESSION_PROPERTY(MinTlsVersion);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetMaxTlsVersion(TTlsVersion value)
+{
+  SET_SESSION_PROPERTY(MaxTlsVersion);
+}
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetFtpListAll(TAutoSwitch value)
 {
@@ -2517,7 +2548,7 @@ void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
 }
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
-  bool All, bool RecryptPasswordOnly)
+  bool All, bool RecryptPasswordOnly, TStrings * RecryptPasswordErrors)
 {
   TSessionData * FactoryDefaults = new TSessionData(L"");
   try
@@ -2526,7 +2557,23 @@ void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
     for (int Index = 0; Index < Count+HiddenCount; Index++)
     {
       TSessionData * SessionData = (TSessionData *)Items[Index];
-      DoSave(Storage, SessionData, All, RecryptPasswordOnly, FactoryDefaults);
+      try
+      {
+        DoSave(Storage, SessionData, All, RecryptPasswordOnly, FactoryDefaults);
+      }
+      catch (Exception & E)
+      {
+        UnicodeString Message;
+        if (RecryptPasswordOnly && ALWAYS_TRUE(RecryptPasswordErrors != NULL) &&
+            ExceptionMessage(&E, Message))
+        {
+          RecryptPasswordErrors->Add(FORMAT("%s: %s", (SessionData->SessionName, Message)));
+        }
+        else
+        {
+          throw;
+        }
+      }
     }
   }
   __finally
@@ -2537,10 +2584,11 @@ void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Save(THierarchicalStorage * Storage, bool All)
 {
-  DoSave(Storage, All, false);
+  DoSave(Storage, All, false, NULL);
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::DoSave(bool All, bool Explicit, bool RecryptPasswordOnly)
+void __fastcall TStoredSessionList::DoSave(bool All, bool Explicit,
+  bool RecryptPasswordOnly, TStrings * RecryptPasswordErrors)
 {
   THierarchicalStorage * Storage = Configuration->CreateScpStorage(true);
   try
@@ -2549,7 +2597,7 @@ void __fastcall TStoredSessionList::DoSave(bool All, bool Explicit, bool Recrypt
     Storage->Explicit = Explicit;
     if (Storage->OpenSubKey(Configuration->StoredSessionsSubKey, true))
     {
-      DoSave(Storage, All, RecryptPasswordOnly);
+      DoSave(Storage, All, RecryptPasswordOnly, RecryptPasswordErrors);
     }
   }
   __finally
@@ -2562,12 +2610,12 @@ void __fastcall TStoredSessionList::DoSave(bool All, bool Explicit, bool Recrypt
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Save(bool All, bool Explicit)
 {
-  DoSave(All, Explicit, false);
+  DoSave(All, Explicit, false, NULL);
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::RecryptPasswords()
+void __fastcall TStoredSessionList::RecryptPasswords(TStrings * RecryptPasswordErrors)
 {
-  DoSave(true, true, true);
+  DoSave(true, true, true, RecryptPasswordErrors);
 }
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Saved()
@@ -2786,8 +2834,21 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
   Configuration->Usage->Set(L"StoredSessionsCountColor", Color);
   Configuration->Usage->Set(L"StoredSessionsCountAdvanced", Advanced);
 
-  bool CustomDefaultStoredSession = !FDefaultSettings->IsSame(FactoryDefaults.get(), false);
+  // actually default might be true, see below for when the default is actually used
+  bool CustomDefaultStoredSession = false;
+  try
+  {
+    // this can throw, when the default session settings have password set
+    // (and no other basic property, like hostname/username),
+    // and master password is enabled as we are called before master password
+    // handler is set
+    CustomDefaultStoredSession = !FDefaultSettings->IsSame(FactoryDefaults.get(), false);
+  }
+  catch (...)
+  {
+  }
   Configuration->Usage->Set(L"UsingDefaultStoredSession", CustomDefaultStoredSession);
+
   Configuration->Usage->Set(L"UsingStoredSessionsFolders", Folders);
   Configuration->Usage->Set(L"UsingWorkspaces", Workspaces);
 }

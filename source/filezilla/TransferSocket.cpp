@@ -386,7 +386,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
 		{
 			LPTSTR msg = new TCHAR[BUFSIZE];
 			if (e->GetErrorMessage(msg, BUFSIZE))
-				m_pOwner->ShowStatus(msg, 1);
+				m_pOwner->ShowStatus(msg, FZ_LOG_ERROR);
 			delete [] msg;
 			Close();
 			if (!m_bSentClose)
@@ -437,14 +437,17 @@ void CTransferSocket::OnAccept(int nErrorCode)
 		if (m_pSslLayer)
 		{
 			AddLayer(m_pSslLayer);
-			int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer, COptions::GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE));
+			int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer,
+				COptions::GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
+				COptions::GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
+				COptions::GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
 #ifndef MPEXT_NO_SSLDLL
 			if (res == SSL_FAILURE_LOADDLLS)
-				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
+				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, FZ_LOG_ERROR);
 			else
 #endif
 			if (res == SSL_FAILURE_INITSSL)
-				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, 1);
+				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
 
 			if (res)
 			{
@@ -484,7 +487,7 @@ void CTransferSocket::OnConnect(int nErrorCode)
 		str.Format(IDS_ERRORMSG_CANTOPENTRANSFERCHANNEL,buffer);
 		str.Replace( _T("\n"), _T("\0") );
 		str.Replace( _T("\r"), _T("\0") );
-		m_pOwner->ShowStatus(str, 1);
+		m_pOwner->ShowStatus(str, FZ_LOG_ERROR);
 		Close();
 		if (!m_bSentClose)
 		{
@@ -520,14 +523,17 @@ void CTransferSocket::OnConnect(int nErrorCode)
 		if (m_pSslLayer)
 		{
 			AddLayer(m_pSslLayer);
-			int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer, COptions::GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE));
+			int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer,
+				COptions::GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
+				COptions::GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
+				COptions::GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
 #ifndef MPEXT_NO_SSLDLL
 			if (res == SSL_FAILURE_LOADDLLS)
-				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
+				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, FZ_LOG_ERROR);
 			else
 #endif
 			if (res == SSL_FAILURE_INITSSL)
-				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, 1);
+				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
 					
 			if (res)
 			{
@@ -584,7 +590,7 @@ int CTransferSocket::CheckForTimeout(int delay)
 	CTimeSpan span = CTime::GetCurrentTime()-m_LastActiveTime;
 	if (span.GetTotalSeconds()>=delay)
 	{
-		m_pOwner->ShowStatus(IDS_ERRORMSG_TIMEOUT, 1);
+		m_pOwner->ShowStatus(IDS_ERRORMSG_TIMEOUT, FZ_LOG_ERROR);
 		Close();
 		if (!m_bSentClose)
 		{
@@ -698,7 +704,7 @@ void CTransferSocket::OnSend(int nErrorCode)
 				res = deflate(&m_zlibStream, m_pFile ? 0 : Z_FINISH);
 				if (res != Z_OK && (!m_pFile && res != Z_STREAM_END))
 				{
-					m_pOwner->ShowStatus("ZLib error", 1);
+					m_pOwner->ShowStatus("ZLib error", FZ_LOG_ERROR);
 					Close();
 					if (!m_bSentClose)
 					{
@@ -1176,7 +1182,7 @@ BOOL CTransferSocket::Create(
 		int max=COptions::GetOptionVal(OPTION_PORTRANGEHIGH);
 		if (min>=max)
 		{
-			m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,1);
+			m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
 			return FALSE;
 		}
 		int startport=static_cast<int>(min+((double)rand()*(max-min))/(RAND_MAX+1));
@@ -1188,7 +1194,7 @@ BOOL CTransferSocket::Create(
 				port=min;
 			if (port==startport)
 			{
-				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,1);
+				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
 				return FALSE;
 			}
 		}
@@ -1210,18 +1216,23 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 	{
 		if (iter->nType == LAYERCALLBACK_STATECHANGE)
 		{
-			if (iter->pLayer == m_pProxyLayer)
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("m_pProxyLayer changed state from %d to %d"), iter->nParam2, iter->nParam1);
+		    if (CAsyncSocketEx::LogStateChange(iter->nParam1, iter->nParam2))
+		    {
+			    const TCHAR * state2Desc = CAsyncSocketEx::GetStateDesc(iter->nParam2);
+			    const TCHAR * state1Desc = CAsyncSocketEx::GetStateDesc(iter->nParam1);
+				if (iter->pLayer == m_pProxyLayer)
+					LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("Proxy layer changed state from %s to %s"), state2Desc, state1Desc);
 #ifndef MPEXT_NO_SSL
-			else if (iter->pLayer == m_pSslLayer)
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("m_pSslLayer changed state from %d to %d"), iter->nParam2, iter->nParam1);
+				else if (iter->pLayer == m_pSslLayer)
+					LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("TLS layer changed state from %s to %s"), state2Desc, state1Desc);
 #endif
 #ifndef MPEXT_NO_GSS
-			else if (iter->pLayer == m_pGssLayer)
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("m_pGssLayer changed state from %d to %d"), iter->nParam2, iter->nParam1);
+				else if (iter->pLayer == m_pGssLayer)
+					LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("GSS layer changed state from %s to %s"), state2Desc, state1Desc);
 #endif
-			else
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("Layer @ %d changed state from %d to %d"), iter->pLayer, iter->nParam2, iter->nParam1);
+				else
+					LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("Layer @ %d changed state from %s to %s"), iter->pLayer, state2Desc, state1Desc);
+			}
 		}
 		else if (iter->nType == LAYERCALLBACK_LAYERSPECIFIC)
 		{
@@ -1230,22 +1241,22 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 				switch (iter->nParam1)
 				{
 				case PROXYERROR_NOCONN:
-					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_NOCONN, 1);
+					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_NOCONN, FZ_LOG_ERROR);
 					break;
 				case PROXYERROR_REQUESTFAILED:
-					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_REQUESTFAILED, 1);
+					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_REQUESTFAILED, FZ_LOG_ERROR);
 					break;
 				case PROXYERROR_AUTHTYPEUNKNOWN:
-					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_AUTHTYPEUNKNOWN, 1);
+					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_AUTHTYPEUNKNOWN, FZ_LOG_ERROR);
 					break;
 				case PROXYERROR_AUTHFAILED:
-					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_AUTHFAILED, 1);
+					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_AUTHFAILED, FZ_LOG_ERROR);
 					break;
 				case PROXYERROR_AUTHNOLOGON:
-					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_AUTHNOLOGON, 1);
+					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_AUTHNOLOGON, FZ_LOG_ERROR);
 					break;
 				case PROXYERROR_CANTRESOLVEHOST:
-					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_CANTRESOLVEHOST, 1);
+					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_CANTRESOLVEHOST, FZ_LOG_ERROR);
 					break;
 				default:
 					LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Unknown proxy error"));
@@ -1268,7 +1279,7 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 						}
 						break;
 					case SSL_INFO_ESTABLISHED:
-						m_pOwner->ShowStatus(IDS_STATUSMSG_SSLESTABLISHEDTRANSFER, 0);
+						m_pOwner->ShowStatus(IDS_STATUSMSG_SSLESTABLISHEDTRANSFER, FZ_LOG_STATUS);
 						TriggerEvent(FD_FORCEREAD);
 						break;
 					}
@@ -1277,15 +1288,15 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 					switch (iter->nParam2)
 					{
 					case SSL_FAILURE_ESTABLISH:
-						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, 1);
+						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, FZ_LOG_ERROR);
 						break;
 #ifndef MPEXT_NO_SSLDLL
 					case SSL_FAILURE_LOADDLLS:
-						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
+						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, FZ_LOG_ERROR);
 						break;
 #endif
 					case SSL_FAILURE_INITSSL:
-						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, 1);
+						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
 						break;
 					}
 					if (!m_bSentClose)
@@ -1438,7 +1449,7 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
 	{
 		TCHAR error[BUFSIZE];
 		if (e->GetErrorMessage(error, BUFSIZE))
-			m_pOwner->ShowStatus(error, 1);
+			m_pOwner->ShowStatus(error, FZ_LOG_ERROR);
 		if (ShutDown() || GetLastError() != WSAEWOULDBLOCK)
 		{
 			Close();

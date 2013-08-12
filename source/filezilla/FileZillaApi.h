@@ -350,7 +350,9 @@ public:
 #ifdef MPEXT
 	int SetCurrentPath(CServerPath path);
 	int GetCurrentPath(CServerPath & path);
-    bool __fastcall UsingMlsd();
+	bool UsingMlsd();
+	std::string GetTlsVersionStr();
+	std::string GetCipherName();
 #endif
 
 #ifndef MPEXT_NO_CACHE

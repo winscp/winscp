@@ -137,7 +137,6 @@ type
     FFormatSizeBytes: Boolean;
     FSortByExtension: Boolean;
     FWantUseDragImages: Boolean;
-    FCanUseDragImages: Boolean;
     FDragDropFilesEx: TCustomizableDragDropFilesEx;
     FSingleClickToExec: Boolean;
     FUseSystemContextMenu: Boolean;
@@ -874,7 +873,6 @@ begin
   FShowSubDirSize := False;
   FFormatSizeBytes := False;
   FWantUseDragImages := True;
-  FCanUseDragImages := (Win32PlatForm = VER_PLATFORM_WIN32_NT) or (WinVer.dwMinorVersion > 0);
   FAddParentDir := False;
   FullDrag := True;
   FSingleClickToExec := False;
@@ -1203,7 +1201,7 @@ end;
 
 function TCustomDirView.GetUseDragImages: Boolean;
 begin
-  Result := FWantUseDragImages and FCanUseDragImages;
+  Result := FWantUseDragImages;
 end;
 
 procedure TCustomDirView.SetTargetPopupMenu(Value: Boolean);

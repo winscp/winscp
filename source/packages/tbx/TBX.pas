@@ -2214,7 +2214,7 @@ begin
   with Params do
   begin
     WindowClass.Style := WindowClass.Style and not (CS_DROPSHADOW or CS_DBLCLKS);
-    if GetShowShadow and (CurrentTheme.GetPopupShadowType = PST_WINDOWSXP) and IsWindowsXP then
+    if GetShowShadow and (CurrentTheme.GetPopupShadowType = PST_WINDOWSXP) then
     begin
       WindowClass.Style := WindowClass.Style or CS_DROPSHADOW;
       StrPCopy(WinClassName, ClassName + 'S');
@@ -2229,9 +2229,6 @@ var
   VT: Integer;
   ChevronParent: Boolean;
 begin
-  if (CurrentTheme.GetPopupShadowType = PST_WINDOWS2K) and not
-    ((Win32Platform = VER_PLATFORM_WIN32_NT) and (Win32MajorVersion >= 5)) then Exit;
-
   PR := Rect(0, 0, 0, 0);
   if CurrentTheme.GetPopupShadowType = PST_OFFICEXP then
   begin
@@ -3153,9 +3150,7 @@ var
 begin
   inherited;
   { Note: TME_NONCLIENT was introduced in Windows 98 and 2000 }
-  if (Win32MajorVersion >= 5) or
-     (Win32MajorVersion = 4) and (Win32MinorVersion >= 10) then
-    CallTrackMouseEvent (Handle, TME_LEAVE or $10 {TME_NONCLIENT});
+  CallTrackMouseEvent (Handle, TME_LEAVE or $10 {TME_NONCLIENT});
   InArea := Message.HitTest = 2001; {HT_TB2k_Close}
   if FCloseButtonHover <> InArea then
   begin
@@ -3779,16 +3774,8 @@ begin
 end;
 
 function TTBXMenuAnimation.GetAvailableModes: TAnimationModes;
-var IsWindows2K: Boolean;
 begin
-  Result := [amNone];
-  IsWindows2K := (Win32Platform = VER_PLATFORM_WIN32_NT) and
-    TBXCheckWin32Version(5); { MP }
-  if IsWindows2K or ((Win32Platform = VER_PLATFORM_WIN32_WINDOWS) and
-    TBXCheckWin32Version(4, 10){Win98}) { MP } then
-      Result := Result+ [amSysDefault, amRandom, amUnfold, amSlide];
-  if IsWindows2K then
-    Include(Result, amFade);
+  Result := [amNone, amSysDefault, amRandom, amUnfold, amSlide, amFade];
 end;
 
 function TTBXMenuAnimation.GetMenuAnimation: TMenuAnimation;
@@ -3854,8 +3841,7 @@ end;
 procedure FixPlaySoundDelay;
 var ThreadId: TThreadID;
 begin
-  if (Win32Platform = VER_PLATFORM_WIN32_NT) and CheckWin32Version(5) and
-    (FixPlaySoundThreadHandle = 0) then
+  if (FixPlaySoundThreadHandle = 0) then
       FixPlaySoundThreadHandle := CreateThread(nil, $1000,
         @FixPlaySoundThreadFunc, nil, 0, ThreadId);
 end;

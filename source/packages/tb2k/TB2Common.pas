@@ -70,7 +70,6 @@ procedure HandleWMPrint(const Wnd: HWND; var Message: TMessage;
   const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: Longint);
 procedure HandleWMPrintClient(const Control: TWinControl;
   var Message: TMessage);
-function IsWindowsXP: Boolean;
 procedure ListSortEx(const List: TList; const Compare: TListSortExCompare;
   const ExtraData: Pointer);
 procedure InitTrackMouseEvent;
@@ -510,11 +509,7 @@ const
 var
   FlatMenusEnabled: BOOL;
 begin
-  { Interestingly, on Windows 2000, SystemParametersInfo(SPI_GETFLATMENU, ...)
-    succeeds and can return True in pvParam^ if the proper bit is set in
-    UserPreferencesMask. Since flat menus are not really used on Windows
-    2000, call IsWindowsXP first to see if we're running at least XP. }
-  Result := IsWindowsXP and SystemParametersInfo(SPI_GETFLATMENU, 0,
+  Result := SystemParametersInfo(SPI_GETFLATMENU, 0,
     @FlatMenusEnabled, 0) and FlatMenusEnabled;
 end;
 
@@ -526,7 +521,7 @@ const
 var
   CuesEnabled: BOOL;
 begin
-  Result := (Win32MajorVersion < 5) or
+  Result :=
     not SystemParametersInfo(SPI_GETKEYBOARDCUES, 0, @CuesEnabled, 0) or
     CuesEnabled;
 end;
@@ -999,12 +994,6 @@ var
   DataSize: DWORD;
   ErrorCode: Longint;
 begin
-  if (Win32MajorVersion < 5) or (Win32Platform <> VER_PLATFORM_WIN32_NT) then begin
-    { No need to check pre-Windows 2000 versions since their PlaySound
-      functions don't have the delay; always return True. }
-    Result := True;
-    Exit;
-  end;
   Result := False;
   if RegOpenKeyEx(HKEY_CURRENT_USER,
      PChar('AppEvents\Schemes\Apps\.Default\' + Alias + '\.Current'),
@@ -1053,13 +1042,6 @@ begin
     end;
     Inc(P);
   end;
-end;
-
-function IsWindowsXP: Boolean;
-begin
-  Result := (Win32Platform = VER_PLATFORM_WIN32_NT) and
-    ((Win32MajorVersion > 5) or
-     ((Win32MajorVersion = 5) and (Win32MinorVersion >= 1)));
 end;
 
 function GetInputLocaleCodePage: UINT;

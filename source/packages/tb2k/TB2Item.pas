@@ -6454,9 +6454,7 @@ begin
     Style := (Style and not (WS_CHILD or WS_GROUP or WS_TABSTOP)) or WS_POPUP;
     ExStyle := ExStyle or WS_EX_TOPMOST or WS_EX_TOOLWINDOW;
     WindowClass.Style := WindowClass.Style or CS_SAVEBITS;
-    { Enable drop shadow effect on Windows XP and later }
-    if IsWindowsXP then
-      WindowClass.Style := WindowClass.Style or CS_DROPSHADOW;
+    WindowClass.Style := WindowClass.Style or CS_DROPSHADOW;
   end;
 end;
 

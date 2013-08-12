@@ -508,7 +508,7 @@ RawByteString __fastcall ScramblePassword(UnicodeString Password)
   for (int Index = 0; Index < Padding; Index++)
   {
     int P = 0;
-    while ((P <= 0) || (P > 255) || IsDigit(P >= '0'))
+    while ((P <= 0) || (P > 255) || IsDigit(static_cast<wchar_t>(P)))
     {
       P = (int)((double)rand() / ((double)RAND_MAX / 256.0));
     }

@@ -114,7 +114,9 @@ public:
 	void ShowStatus(CString status,int type) const;
 
 #ifdef MPEXT
-	virtual bool __fastcall UsingMlsd() = 0;
+	virtual bool UsingMlsd() = 0;
+	virtual std::string GetTlsVersionStr() = 0;
+	virtual std::string GetCipherName() = 0;
 #endif
 
 	virtual int OnLayerCallback(std::list<t_callbackMsg>& callbacks);

@@ -239,6 +239,12 @@ __published:
   TMenuItem *PickColorItem;
   TImageList *ColorImageList;
   TButton *ColorButton;
+  TTabSheet *SslSheet;
+  TGroupBox *SslGroup;
+  TLabel *Label1;
+  TComboBox *MinTlsVersionCombo;
+  TLabel *Label2;
+  TComboBox *MaxTlsVersionCombo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -265,6 +271,8 @@ __published:
   void __fastcall ColorButtonClick(TObject *Sender);
   void __fastcall ColorDefaultItemClick(TObject *Sender);
   void __fastcall PickColorItemClick(TObject *Sender);
+  void __fastcall MinTlsVersionComboChange(TObject *Sender);
+  void __fastcall MaxTlsVersionComboChange(TObject *Sender);
 
 public:
   virtual __fastcall TSiteAdvancedDialog(TComponent * AOwner, int Options);
@@ -301,6 +309,8 @@ private:
   void __fastcall UpdateNavigationTree();
   TSshProt __fastcall GetSshProt();
   void __fastcall SetSessionColor(TColor Color);
+  TTlsVersion __fastcall IndexToTlsVersion(int Index);
+  int __fastcall TlsVersionToIndex(TTlsVersion TlsVersion);
 };
 //----------------------------------------------------------------------------
 #endif

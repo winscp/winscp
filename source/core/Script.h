@@ -147,6 +147,12 @@ protected:
   void __fastcall TerminalCaptureLog(const UnicodeString & AddedLine, bool StdError);
   virtual UnicodeString __fastcall GetLogCmd(const UnicodeString & FullCommand,
     const UnicodeString & Command, const UnicodeString & Params);
+  void __fastcall SynchronizePreview(
+    UnicodeString LocalDirectory, UnicodeString RemoteDirectory,
+    TSynchronizeChecklist * Checklist);
+  UnicodeString __fastcall SynchronizeFileRecord(
+    const UnicodeString & RootDirectory, const TSynchronizeChecklist::TItem * Item,
+    bool Local);
 
 private:
   void __fastcall Init();

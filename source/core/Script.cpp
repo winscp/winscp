@@ -366,7 +366,7 @@ void __fastcall TScript::Init()
   FCommands->Register(L"option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP6, &OptionProc, -1, 2, false);
   FCommands->Register(L"ascii", 0, SCRIPT_OPTION_HELP6, &AsciiProc, 0, 0, false);
   FCommands->Register(L"binary", 0, SCRIPT_OPTION_HELP6, &BinaryProc, 0, 0, false);
-  FCommands->Register(L"synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP6, &SynchronizeProc, 1, 3, true);
+  FCommands->Register(L"synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP7, &SynchronizeProc, 1, 3, true);
   FCommands->Register(L"keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP4, &KeepUpToDateProc, 0, 2, true);
   // the echo command does not have switches actually, but it must handle dashes in its arguments
   FCommands->Register(L"echo", SCRIPT_ECHO_DESC, SCRIPT_ECHO_HELP, &EchoProc, -1, -1, true);
@@ -1412,6 +1412,108 @@ void __fastcall TScript::SynchronizeDirectories(TScriptProcParams * Parameters,
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TScript::SynchronizeFileRecord(
+  const UnicodeString & RootDirectory, const TSynchronizeChecklist::TItem * Item, bool Local)
+{
+  const TSynchronizeChecklist::TItem::TFileInfo & FileInfo =
+    Local ? Item->Local : Item->Remote;
+  UnicodeString Path;
+  if (Local)
+  {
+    Path = IncludeTrailingBackslash(FileInfo.Directory) + FileInfo.FileName;
+  }
+  else
+  {
+    Path = UnixIncludeTrailingBackslash(FileInfo.Directory) + FileInfo.FileName;
+  }
+
+  if (SameText(RootDirectory, Path.SubString(1, RootDirectory.Length())))
+  {
+    Path[1] = L'.';
+    Path.Delete(2, RootDirectory.Length() - 2);
+  }
+
+  UnicodeString Result;
+  if (Item->IsDirectory)
+  {
+    if (Local)
+    {
+      Result = IncludeTrailingBackslash(Path);
+    }
+    else
+    {
+      Result = UnixIncludeTrailingBackslash(Path);
+    }
+  }
+  else
+  {
+    UnicodeString SizeStr = IntToStr(FileInfo.Size);
+    UnicodeString ModificationStr =
+      ::ModificationStr(FileInfo.Modification, FileInfo.ModificationFmt);
+    Result = FORMAT("%s [%s, %s]", (Path, SizeStr, ModificationStr));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::SynchronizePreview(
+  UnicodeString LocalDirectory, UnicodeString RemoteDirectory,
+  TSynchronizeChecklist * Checklist)
+{
+
+  LocalDirectory = IncludeTrailingBackslash(LocalDirectory);
+  RemoteDirectory = UnixIncludeTrailingBackslash(RemoteDirectory);
+
+  for (int Index = 0; (Index < Checklist->Count); Index++)
+  {
+    const TSynchronizeChecklist::TItem * Item = Checklist->Item[Index];
+    if (Item->Checked)
+    {
+      UnicodeString Message;
+      UnicodeString LocalRecord = SynchronizeFileRecord(LocalDirectory, Item, true);
+      UnicodeString RemoteRecord = SynchronizeFileRecord(RemoteDirectory, Item, false);
+
+      switch (Item->Action)
+      {
+        case TSynchronizeChecklist::saUploadNew:
+          Message =
+            FMTLOAD(SCRIPT_SYNC_UPLOAD_NEW, (LocalRecord));
+          break;
+
+        case TSynchronizeChecklist::saDownloadNew:
+          Message =
+            FMTLOAD(SCRIPT_SYNC_DOWNLOAD_NEW, (RemoteRecord));
+          break;
+
+        case TSynchronizeChecklist::saUploadUpdate:
+          Message =
+            FMTLOAD(SCRIPT_SYNC_UPLOAD_UPDATE,
+              (LocalRecord, RemoteRecord));
+          break;
+
+        case TSynchronizeChecklist::saDownloadUpdate:
+          Message =
+            FMTLOAD(SCRIPT_SYNC_DOWNLOAD_UPDATE,
+              (RemoteRecord, LocalRecord));
+          break;
+
+        case TSynchronizeChecklist::saDeleteRemote:
+          Message =
+            FMTLOAD(SCRIPT_SYNC_DELETE_REMOTE, (RemoteRecord));
+          break;
+
+        case TSynchronizeChecklist::saDeleteLocal:
+          Message =
+            FMTLOAD(SCRIPT_SYNC_DELETE_LOCAL, (LocalRecord));
+          break;
+
+      default:
+        FAIL;
+      }
+      PrintLine(Message);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
 {
   CheckSession();
@@ -1477,6 +1579,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
           break;
       }
     }
+    bool Preview = Parameters->FindSwitch(L"preview");
 
     // enforce rules
     if (FSynchronizeMode  == TTerminal::smBoth)
@@ -1502,9 +1605,17 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
 
       if (AnyChecked)
       {
-        PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_SYNCHRONIZING));
-        FTerminal->SynchronizeApply(Checklist, LocalDirectory, RemoteDirectory,
-          &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory);
+        if (Preview)
+        {
+          PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_CHECKLIST));
+          SynchronizePreview(LocalDirectory, RemoteDirectory, Checklist);
+        }
+        else
+        {
+          PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_SYNCHRONIZING));
+          FTerminal->SynchronizeApply(Checklist, LocalDirectory, RemoteDirectory,
+            &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory);
+        }
       }
       else
       {
@@ -1515,7 +1626,6 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     {
       delete Checklist;
     }
-
   }
   __finally
   {

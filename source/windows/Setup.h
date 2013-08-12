@@ -16,5 +16,6 @@ void __fastcall StartUpdateThread(TThreadMethod OnUpdatesChecked);
 void __fastcall StopUpdateThread();
 UnicodeString __fastcall CampaignUrl(UnicodeString URL);
 void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceNames);
+bool __fastcall AnyOtherInstanceOfSelf();
 //---------------------------------------------------------------------------
 #endif

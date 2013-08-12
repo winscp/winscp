@@ -42,14 +42,14 @@
 			<DCC_AdditionalSwitches>-LUDesignIDE</DCC_AdditionalSwitches>
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
-			<DCC_UnitSearchPath>packages\png;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_UnitSearchPath>packages\png;packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DynamicRTL>true</DynamicRTL>
 			<ILINK_Description>Png Components</ILINK_Description>
 			<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
 			<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-			<ILINK_LibraryPath>packages\png\;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(BDS)\source\toolsapi\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<ILINK_LibraryPath>packages\png\;packages\my;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(BDS)\source\toolsapi\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<ILINK_TranslatedLibraryPath>$(BDSLIB)\$(PLATFORM)\release\$(LANGDIR);$(ILINK_TranslatedLibraryPath)</ILINK_TranslatedLibraryPath>
-			<IncludePath>packages\png\;$(IncludePath)</IncludePath>
+			<IncludePath>packages\png\;packages\my;$(IncludePath)</IncludePath>
 			<Multithreaded>true</Multithreaded>
 			<ProjectType>CppPackage</ProjectType>
 			<UsePackages>true</UsePackages>

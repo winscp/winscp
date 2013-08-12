@@ -69,6 +69,7 @@ BEGIN
         WORKSPACE_NOT_FOLDER, "'%s' is workspace, not site folder."
         FOLDER_NOT_WORKSPACE, "'%s' is site folder, not workspace."
         SHELL_PATTERN_ERROR, "Error executing command \"%s\" (%s)."
+        PATH_ENV_TOO_LONG, "Cannot add new path to %PATH%, %PATH% is already too long."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"
@@ -123,6 +124,7 @@ BEGIN
         ALL_BUTTON, "A&ll"
         YES_TO_ALL_BUTTON, "Yes to A&ll"
         REPORT_BUTTON, "Re&port"
+        MASTER_PASSWORD_OTHER_INSTANCE, "There is other instance of WinSCP running.\n\nSetting or clearing master password, while another instance of WinSCP is running, can cause loss of your stored passwords.\n\nPlease quit other instances of WinSCP before continuing."
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         APP_CAPTION, "%s - %s"
@@ -212,6 +214,7 @@ BEGIN
         COPY_PARAM_PRESET_HEADER, "Presets"
         QUEUE_DONE, "Completed"
         EDITOR_AUTO_CONFIG, "Custom text editor '%s' was detected.\n\nDo you want to use '%s' instead of default internal editor?"
+        MASTER_PASSWORD_RECRYPT_ERRORS, "%s\n\nThere were some errors when encrypting passwords using new master password or decrypting passwords."
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         LOG_NOLOG, "No session log."
@@ -359,7 +362,7 @@ BEGIN
         STATUS_SECURE, "Secure connection (%s)"
         FSINFO_PROTOCOL_ANY_COMMAND, "Protocol commands only"
         FSINFO_REMOTE_SYSTEM, "Remote system"
-        FSINFO_SESSION_PROTOCOL, "Session protocol"
+        FSINFO_CRYPTOGRAPHIC_PROTOCOL, "Cryptographic protocol"
         SPECIAL_FOLDER_MY_DOCUMENTS, "My documents"
         SPECIAL_FOLDER_DESKTOP, "Desktop"
         COMMAND_LINE_LABEL, "Command"

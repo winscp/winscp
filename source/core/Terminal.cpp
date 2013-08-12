@@ -4144,6 +4144,7 @@ UnicodeString __fastcall TTerminal::SynchronizeParamsStr(int Params)
   AddFlagName(ParamsStr, Params, spUseCache, L"UseCache");
   AddFlagName(ParamsStr, Params, spDelayProgress, L"DelayProgress");
   AddFlagName(ParamsStr, Params, spPreviewChanges, L"*PreviewChanges"); // GUI only
+  AddFlagName(ParamsStr, Params, spSubDirs, L"SubDirs");
   AddFlagName(ParamsStr, Params, spTimestamp, L"Timestamp");
   AddFlagName(ParamsStr, Params, spNotByTime, L"NotByTime");
   AddFlagName(ParamsStr, Params, spBySize, L"BySize");

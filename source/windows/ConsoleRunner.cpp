@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
 
@@ -1753,9 +1753,23 @@ bool __fastcall TConsoleRunner::DoInput(UnicodeString & Str, bool Echo,
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::MasterPasswordPrompt()
 {
-  UnicodeString Password;
-  Input(LoadStr(CONSOLE_MASTER_PASSWORD_PROMPT), Password, false, true);
-  WinConfiguration->SetMasterPassword(Password);
+  bool Retry;
+  do
+  {
+    UnicodeString Password;
+    Input(LoadStr(CONSOLE_MASTER_PASSWORD_PROMPT), Password, false, true);
+    Retry = !WinConfiguration->ValidateMasterPassword(Password);
+    if (Retry)
+    {
+      PrintLine(LoadStr(MASTER_PASSWORD_INCORRECT));
+    }
+    else
+    {
+      WinConfiguration->SetMasterPassword(Password);
+    }
+  }
+  while (Retry);
+
 }
 //---------------------------------------------------------------------------
 UnicodeString TConsoleRunner::ExpandCommand(UnicodeString Command, TStrings * ScriptParameters)
@@ -1917,10 +1931,10 @@ void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
 void __fastcall Usage(TConsole * Console)
 {
   UnicodeString Usage = LoadStr(USAGE8, 10240);
-  UnicodeString ExeBaseName = ChangeFileExt(ExtractFileName(Application->ExeName), L"");
+  UnicodeString ExeBaseName = ExtractFileBaseName(Application->ExeName);
   Usage = ReplaceText(Usage, L"%APP%", ExeBaseName);
   UnicodeString Copyright =
-    ReplaceText(LoadStr(WINSCP_COPYRIGHT), "�", "(c)");
+    ReplaceText(LoadStr(WINSCP_COPYRIGHT), L"©", L"(c)");
   Usage = FORMAT(Usage, (Configuration->VersionStr, Copyright));
   TStrings * Lines = new TStringList();
   try

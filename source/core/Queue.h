@@ -254,6 +254,7 @@ public:
   __property int DoneCount = { read = FDoneCount };
   __property int ActiveCount = { read = GetActiveCount };
   __property int DoneAndActiveCount = { read = GetDoneAndActiveCount };
+  __property int ActiveAndPendingCount = { read = GetActiveAndPendingCount };
   __property TQueueItemProxy * Items[int Index] = { read = GetItem };
 
 protected:
@@ -271,6 +272,7 @@ private:
   int __fastcall GetCount();
   int __fastcall GetActiveCount();
   int __fastcall GetDoneAndActiveCount();
+  int __fastcall GetActiveAndPendingCount();
   void __fastcall SetDoneCount(int Value);
   TQueueItemProxy * __fastcall GetItem(int Index);
 };

@@ -144,11 +144,13 @@ public:
 
 	void SetNotifyReply(int nID, int nCode, int result);
 	BOOL GetPeerCertificateData(t_SslCertData &SslCertData);
+	std::string GetTlsVersionStr();
+	std::string GetCipherName();
 
 	bool IsUsingSSL();
 	int InitSSLConnection(bool clientMode, 
 		CAsyncSslSocketLayer* main,
-		bool sessionreuse,
+		bool sessionreuse, int minTlsVersion, int maxTlsVersion,
 		void* pContext = 0);
 
 	static bool CreateSslCertificate(LPCTSTR filename, int bits, unsigned char* country, unsigned char* state,
@@ -248,6 +250,9 @@ private:
 	bool m_onCloseCalled;
 
 	char* m_pKeyPassword;
+
+	std::string m_TlsVersionStr;
+	std::string m_CipherName;
 };
 
 #define SSL_INFO 0
@@ -267,5 +272,11 @@ private:
 #define SSL_FAILURE_INITSSL 4
 #define SSL_FAILURE_VERIFYCERT 8
 #define SSL_FAILURE_CERTREJECTED 0x10
+
+#define SSL_VERSION_SSL2 2
+#define SSL_VERSION_SSL3 3
+#define SSL_VERSION_TLS10 10
+#define SSL_VERSION_TLS11 11
+#define SSL_VERSION_TLS12 12
 
 #endif // ASYNCSSLSOCKETLEAYER_INCLUDED

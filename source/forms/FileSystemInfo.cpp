@@ -92,7 +92,8 @@ UnicodeString __fastcall TFileSystemInfoDialog::SpaceStr(__int64 Bytes)
 void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
 {
   AddItem(ServerView, FSINFO_REMOTE_SYSTEM, FFileSystemInfo.RemoteSystem);
-  AddItem(ServerView, FSINFO_SESSION_PROTOCOL, FSessionInfo.ProtocolName);
+  AddItem(ServerView, FSINFO_FS_PROTOCOL, FFileSystemInfo.ProtocolName);
+  AddItem(ServerView, FSINFO_CRYPTOGRAPHIC_PROTOCOL, FSessionInfo.SecurityProtocolName);
   AddItem(ServerView, FSINFO_SSH_IMPLEMENTATION, FSessionInfo.SshImplementation);
 
   UnicodeString Str = FSessionInfo.CSCipher;
@@ -108,10 +109,6 @@ void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
     Str += FORMAT(L"/%s", (DefaultStr(FSessionInfo.SCCompression, LoadStr(NO_STR))));
   }
   AddItem(ServerView, FSINFO_COMPRESSION, Str);
-  if (FSessionInfo.ProtocolName != FFileSystemInfo.ProtocolName)
-  {
-    AddItem(ServerView, FSINFO_FS_PROTOCOL, FFileSystemInfo.ProtocolName);
-  }
 
   AddItem(HostKeyFingerprintEdit, 0, FSessionInfo.HostKeyFingerprint);
   AddItem(CertificateFingerprintEdit, 0, FSessionInfo.CertificateFingerprint);

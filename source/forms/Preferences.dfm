@@ -1387,14 +1387,14 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 5
             OnClick = AddSearchPathButtonClick
           end
-          object ShellIconsText: TStaticText
+          object ShellIconsText2: TStaticText
             Left = 11
             Top = 116
             Width = 330
             Height = 17
             Hint = 
-              'To add shortcuts, which directly open site, use button '#39'Shell ic' +
-              'on'#39' on '#39'Sites'#39' page of Login dialog.'
+              'To add shortcuts, which directly open site, use icon commands in' +
+              ' '#39'Manage'#39' menu on Login dialog.'
             Alignment = taRightJustify
             Anchors = [akTop, akRight]
             AutoSize = False

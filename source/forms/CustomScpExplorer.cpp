@@ -260,7 +260,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   AddNewSessionImage();
   SessionsPageControl->Images = FSessionColors;
   QueueLabel->FocusControl = QueueView3;
-  QueueLabel->Caption = LoadStr(QUEUE_CAPTION);
+  UpdateQueueLabel();
 
   CreateHiddenWindow();
   StartUpdates();
@@ -550,8 +550,8 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueStatus(bool QueueChanging)
     Configuration->Usage->SetMax(L"MaxQueueLength", FMaxQueueLength);
   }
 
-  SetQueueTaskbarProgress();
   FQueueController->UpdateQueueStatus(FQueueStatus);
+  SetQueueProgress();
 
   UpdateQueueView();
 
@@ -580,8 +580,8 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetQueueProgressTitle()
   UnicodeString Result;
   if (FQueueStatus != NULL)
   {
-    int ActiveCount = FQueueStatus->ActiveCount;
-    if (ActiveCount == 1)
+    int ActiveAndPendingCount = FQueueStatus->ActiveAndPendingCount;
+    if ((ActiveAndPendingCount == 1) && (FQueueStatus->ActiveCount == 1))
     {
       TFileOperationProgressType * ProgressData =
         FQueueStatus->Items[FQueueStatus->DoneCount]->ProgressData;
@@ -590,9 +590,9 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetQueueProgressTitle()
         Result = TTerminalManager::ProgressTitle(ProgressData);
       }
     }
-    else if (ActiveCount > 1)
+    else if (ActiveAndPendingCount > 1)
     {
-      Result = FMTLOAD(PROGRESS_IN_QUEUE, (ActiveCount));
+      Result = FMTLOAD(PROGRESS_IN_QUEUE, (ActiveAndPendingCount));
     }
   }
   return Result;
@@ -699,12 +699,12 @@ void __fastcall TCustomScpExplorerForm::RefreshQueueItems()
     if (Updated)
     {
       NonVisualDataModule->UpdateNonVisibleActions();
-      SetQueueTaskbarProgress();
+      SetQueueProgress();
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SetQueueTaskbarProgress()
+void __fastcall TCustomScpExplorerForm::SetQueueProgress()
 {
   TTerminalManager::Instance()->QueueStatusUpdated();
 
@@ -744,6 +744,22 @@ void __fastcall TCustomScpExplorerForm::SetQueueTaskbarProgress()
       FTaskbarList->SetProgressState(Handle, TBPF_NOPROGRESS);
     }
   }
+
+  UpdateQueueLabel();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdateQueueLabel()
+{
+  UnicodeString Caption = LoadStr(QUEUE_CAPTION);
+  if (FQueueStatus != NULL)
+  {
+    int ActiveAndPendingCount = FQueueStatus->ActiveAndPendingCount;
+    if (ActiveAndPendingCount > 0)
+    {
+      Caption = FORMAT("%s (%d)", (Caption, ActiveAndPendingCount));
+    }
+  }
+  QueueLabel->Caption = Caption;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateTransferList()
@@ -1139,7 +1155,7 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
   {
     SAFE_DESTROY(FProgressForm);
 
-    SetQueueTaskbarProgress();
+    SetQueueProgress();
 
     if ((ProgressData.Operation != foCalculateSize) &&
         (ProgressData.Cancel == csContinue) &&
@@ -7419,6 +7435,18 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlMouseDown(
     {
       SessionsPageControl->ActivePageIndex = Index;
       SessionsPageControlChange(NULL);
+
+      // copied from TControl.WMContextMenu
+      SendCancelMode(SessionsPageControl);
+
+      // explicit popup instead of using PopupMenu property
+      // to avoid menu to popup somewhere within SessionsPageControlChange above,
+      // while connecting yet not-connected session and hence
+      // allowing an access to commands over not-completelly connected session
+      TPoint Point = SessionsPageControl->ClientToScreen(TPoint(X, Y));
+      TPopupMenu * PopupMenu = NonVisualDataModule->SessionsPopup;
+      PopupMenu->PopupComponent = SessionsPageControl;
+      PopupMenu->Popup(Point.x, Point.y);
     }
     else if (Button == mbLeft)
     {

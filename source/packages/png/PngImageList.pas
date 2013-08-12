@@ -1281,8 +1281,6 @@ begin
 end;
 
 initialization
-
 finalization
   MethodPatches.Free;
-
 end.

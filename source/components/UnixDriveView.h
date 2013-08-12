@@ -110,8 +110,6 @@ __published:
   __property OnDDDragFileName;
   __property OnDDEnd;
 
-  __property UseDragImages;
-
   __property TargetPopUpMenu;
   __property UseSystemContextMenu;
 

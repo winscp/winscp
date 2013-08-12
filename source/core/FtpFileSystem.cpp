@@ -298,11 +298,13 @@ void __fastcall TFTPFileSystem::Open()
   TSessionData * Data = FTerminal->SessionData;
 
   FSessionInfo.LoginTime = Now();
-  FSessionInfo.ProtocolBaseName = L"FTP";
-  FSessionInfo.ProtocolName = FSessionInfo.ProtocolBaseName;
 
   switch (Data->Ftps)
   {
+    case ftpsNone:
+      // noop;
+      break;
+
     case ftpsImplicit:
       FSessionInfo.SecurityProtocolName = LoadStr(FTPS_IMPLICIT);
       break;
@@ -313,6 +315,10 @@ void __fastcall TFTPFileSystem::Open()
 
     case ftpsExplicitTls:
       FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT_TLS);
+      break;
+
+    default:
+      FAIL;
       break;
   }
 
@@ -484,6 +490,11 @@ void __fastcall TFTPFileSystem::Open()
     }
   }
   while (FPasswordFailed);
+
+  FSessionInfo.CSCipher = FFileZillaIntf->GetCipherName().c_str();
+  FSessionInfo.SCCipher = FSessionInfo.CSCipher;
+  UnicodeString TlsVersionStr = FFileZillaIntf->GetTlsVersionStr().c_str();
+  AddToList(FSessionInfo.SecurityProtocolName, TlsVersionStr, L", ");
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::Close()
@@ -935,8 +946,7 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
   }
 
   __int64 Diff = Bytes - OperationProgress->TransferedSize;
-  assert(Diff >= 0);
-  if (Diff >= 0)
+  if (ALWAYS_TRUE(Diff >= 0))
   {
     OperationProgress->AddTransfered(Diff);
   }
@@ -2272,6 +2282,14 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
 
     case OPTION_MPEXT_SSLSESSIONREUSE:
       Result = (Data->SslSessionReuse ? TRUE : FALSE);
+      break;
+
+    case OPTION_MPEXT_MIN_TLS_VERSION:
+      Result = Data->MinTlsVersion;
+      break;
+
+    case OPTION_MPEXT_MAX_TLS_VERSION:
+      Result = Data->MaxTlsVersion;
       break;
 
     case OPTION_MPEXT_SNDBUF:

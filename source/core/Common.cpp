@@ -1775,16 +1775,9 @@ void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, con
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall Is2000()
-{
-  return (Win32MajorVersion >= 5);
-}
-//---------------------------------------------------------------------------
 bool __fastcall IsWin7()
 {
-  return
-    (Win32MajorVersion > 6) ||
-    ((Win32MajorVersion == 6) && (Win32MinorVersion >= 1));
+  return CheckWin32Version(6, 1);
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsExactly2008R2()
@@ -1845,7 +1838,7 @@ bool __fastcall IsExactly2008R2()
 //---------------------------------------------------------------------------
 LCID __fastcall GetDefaultLCID()
 {
-  return Is2000() ? GetUserDefaultLCID() : GetThreadLocale();
+  return GetUserDefaultLCID();
 }
 //---------------------------------------------------------------------------
 static UnicodeString ADefaultEncodingName;
@@ -1906,6 +1899,11 @@ UnicodeString __fastcall FormatNumber(__int64 Number)
 UnicodeString __fastcall FormatSize(__int64 Size)
 {
   return FormatNumber(Size);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall ExtractFileBaseName(const UnicodeString & Path)
+{
+  return ChangeFileExt(ExtractFileName(Path), L"");
 }
 //---------------------------------------------------------------------------
 // Suppress warning about unused constants in DateUtils.hpp

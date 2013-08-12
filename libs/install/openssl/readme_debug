@@ -1,7 +1,6 @@
 Debug build:
 - do CFLAG pridat 
-  -v -y
+  -v -y -k -r- -vi-
   pro CodeGuard pridat
   -vG 
-  a ubrat
-  -O2
+  nahradit -O2 za -Od

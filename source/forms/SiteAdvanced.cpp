@@ -54,6 +54,7 @@ __fastcall TSiteAdvancedDialog::TSiteAdvancedDialog(
   // (so that CM_SHOWINGCHANGED handling is applied)
   UseSystemSettings(this);
   InitControls();
+  PageControl->ActivePage = EnvironmentSheet;
 }
 //---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::InitControls()
@@ -100,7 +101,7 @@ void __fastcall TSiteAdvancedDialog::InitControls()
 
   UpdateNavigationTree();
 
-  if (FLAGSET(FOptions, loLocalDirectory))
+  if (FLAGCLEAR(FOptions, loLocalDirectory))
   {
     LocalDirectoryLabel->Visible = false;
     LocalDirectoryEdit->Visible = false;
@@ -385,6 +386,10 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // hide selection, which is wrongly shown initially even when the box has not focus
     TunnelLocalPortNumberEdit->SelLength = 0;
 
+    // connection/tls/ssl page
+    MinTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MinTlsVersion);
+    MaxTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MaxTlsVersion);
+
     // color
     SetSessionColor((TColor)FSessionData->Color);
   }
@@ -613,6 +618,10 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
     FSessionData->TunnelLocalPortNumber = StrToIntDef(TunnelLocalPortNumberEdit->Text, 0);
   }
 
+  // connection/tls/ssl page
+  FSessionData->MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
+  FSessionData->MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
+
   // color
   FSessionData->Color = FColor;
 }
@@ -733,6 +742,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     bool ScpProtocol = (FSessionData->FSProtocol == fsSCPonly);
     bool FtpProtocol = (FSessionData->FSProtocol == fsFTP);
     bool WebDavProtocol = (FSessionData->FSProtocol == fsWebDAV);
+    bool Ssl = (FtpProtocol || WebDavProtocol) && (FSessionData->Ftps != ftpsNone);
 
     // connection sheet
     EnableControl(FtpPasvModeCheck, FtpProtocol);
@@ -946,6 +956,9 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(TunnelSessionGroup, TunnelCheck->Enabled && TunnelCheck->Checked);
     EnableControl(TunnelOptionsGroup, TunnelSessionGroup->Enabled);
     EnableControl(TunnelAuthenticationParamsGroup, TunnelSessionGroup->Enabled);
+
+    // connection/ssl/tls
+    SslSheet->Enabled = Ssl;
 
     UpdateNavigationTree();
 
@@ -1372,6 +1385,64 @@ void __fastcall TSiteAdvancedDialog::SetSessionColor(TColor Color)
   if (Color != 0)
   {
     AddSessionColorImage(ColorImageList, Color, false);
+  }
+}
+//---------------------------------------------------------------------------
+TTlsVersion __fastcall TSiteAdvancedDialog::IndexToTlsVersion(int Index)
+{
+  switch (Index)
+  {
+    default:
+      FAIL;
+    case 0:
+      return ssl2;
+    case 1:
+      return ssl3;
+    case 2:
+      return tls10;
+    case 3:
+      return tls11;
+    case 4:
+      return tls12;
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall TSiteAdvancedDialog::TlsVersionToIndex(TTlsVersion TlsVersion)
+{
+  switch (TlsVersion)
+  {
+    default:
+      FAIL;
+    case ssl2:
+      return 0;
+    case ssl3:
+      return 1;
+    case tls10:
+      return 2;
+    case tls11:
+      return 3;
+    case tls12:
+      return 4;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::MinTlsVersionComboChange(TObject */*Sender*/)
+{
+  TTlsVersion MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
+  TTlsVersion MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
+  if (MaxTlsVersion < MinTlsVersion)
+  {
+    MaxTlsVersionCombo->ItemIndex = MinTlsVersionCombo->ItemIndex;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::MaxTlsVersionComboChange(TObject * /*Sender*/)
+{
+  TTlsVersion MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
+  TTlsVersion MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
+  if (MinTlsVersion > MaxTlsVersion)
+  {
+    MinTlsVersionCombo->ItemIndex = MaxTlsVersionCombo->ItemIndex;
   }
 }
 //---------------------------------------------------------------------------

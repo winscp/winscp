@@ -523,3 +523,14 @@ bool __fastcall TFileZillaIntf::UsingMlsd()
 {
   return FFileZillaApi->UsingMlsd();
 }
+//---------------------------------------------------------------------------
+std::string __fastcall TFileZillaIntf::GetTlsVersionStr()
+{
+  return FFileZillaApi->GetTlsVersionStr();
+}
+//---------------------------------------------------------------------------
+std::string __fastcall TFileZillaIntf::GetCipherName()
+{
+  return FFileZillaApi->GetCipherName();
+}
+

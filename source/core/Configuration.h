@@ -132,6 +132,7 @@ protected:
   void __fastcall CleanupRegistry(UnicodeString CleanupSubKey);
   UnicodeString __fastcall BannerHash(const UnicodeString & Banner);
   static UnicodeString __fastcall PropertyToKey(const UnicodeString & Property);
+  virtual void __fastcall DoSave(bool All, bool Explicit);
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);
@@ -160,7 +161,7 @@ public:
   virtual __fastcall ~TConfiguration();
   virtual void __fastcall Default();
   virtual void __fastcall Load();
-  virtual void __fastcall Save(bool All, bool Explicit);
+  virtual void __fastcall Save();
   void __fastcall SetNulStorage();
   void __fastcall SetDefaultStorage();
   void __fastcall Export(const UnicodeString & FileName);

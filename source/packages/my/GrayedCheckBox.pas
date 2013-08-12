@@ -16,7 +16,7 @@ procedure Register;
 implementation
 
 uses
-  Classes;
+  Classes, Windows, SysUtils;
 
 procedure Register;
 begin
@@ -35,4 +35,5 @@ begin
   end;
 end;
 
+initialization
 end.

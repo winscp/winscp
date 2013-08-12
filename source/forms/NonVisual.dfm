@@ -604,6 +604,8 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Close session|Terminate current session'
       ImageIndex = 26
       ShortCut = 24644
+      SecondaryShortCuts.Strings = (
+        'Ctrl+W')
     end
     object SavedSessionsAction2: TAction
       Tag = 15

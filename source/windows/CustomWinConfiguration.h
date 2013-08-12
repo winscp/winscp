@@ -65,7 +65,7 @@ protected:
   virtual void __fastcall Saved();
   void __fastcall ClearHistory();
   virtual void __fastcall DefaultHistory();
-  void __fastcall RecryptPasswords();
+  void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   virtual bool __fastcall GetUseMasterPassword() = 0;
 
 public:
@@ -73,6 +73,7 @@ public:
   virtual __fastcall ~TCustomWinConfiguration();
   virtual void __fastcall Default();
   virtual void __fastcall AskForMasterPasswordIfNotSet() = 0;
+  void __fastcall AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(TSessionData * SessionData);
 
   __property TLogView LogView = { read = FLogView, write = SetLogView };
   __property TInterface Interface = { read = FInterface, write = SetInterface };

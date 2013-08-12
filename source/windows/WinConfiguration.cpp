@@ -383,6 +383,8 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   FEditorList = new TEditorList();
   FDefaultUpdatesPeriod = 0;
   FDontDecryptPasswords = 0;
+  FMasterPasswordSession = 0;
+  FMasterPasswordSessionAsked = false;
   Default();
 
   try
@@ -622,11 +624,8 @@ void __fastcall TWinConfiguration::DefaultLocalized()
     FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_GREP),
       FORMAT(L"grep \"!?%s?!\" !&", (LoadStr(CUSTOM_COMMAND_GREP_PATTERN))),
       ccShowResults);
-    if (Win32Platform == VER_PLATFORM_WIN32_NT)
-    {
-      FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_FC),
-        L"cmd /c fc \"!\" \"\!^!\" | more && pause", ccLocal);
-    }
+    FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_FC),
+      L"cmd /c fc \"!\" \"\!^!\" | more && pause", ccLocal);
     FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_PRINT), L"notepad.exe /p \"!\"", ccLocal);
     FCustomCommandList->Reset();
     FCustomCommandsDefaults = true;
@@ -725,14 +724,28 @@ void __fastcall TWinConfiguration::Saved()
   FEditorList->Saved();
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::RecryptPasswords()
+void __fastcall TWinConfiguration::RecryptPasswords(TStrings * RecryptPasswordErrors)
 {
-  TCustomWinConfiguration::RecryptPasswords();
-  TTerminalManager * Manager = TTerminalManager::Instance(false);
-  assert(Manager != NULL);
-  if (Manager != NULL)
+  TCustomWinConfiguration::RecryptPasswords(RecryptPasswordErrors);
+
+  try
   {
-    Manager->RecryptPasswords();
+    TTerminalManager * Manager = TTerminalManager::Instance(false);
+    assert(Manager != NULL);
+    if (Manager != NULL)
+    {
+      Manager->RecryptPasswords();
+    }
+  }
+  catch (Exception & E)
+  {
+    UnicodeString Message;
+    if (ExceptionMessage(&E, Message))
+    {
+      // we do not expect this really to happen,
+      // so we do not bother providing context
+      RecryptPasswordErrors->Add(Message);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1205,7 +1218,8 @@ RawByteString __fastcall TWinConfiguration::StronglyRecryptPassword(RawByteStrin
       TCustomWinConfiguration::DecryptPassword(Password, Key);
     if (!PasswordText.IsEmpty())
     {
-      assert(!FPlainMasterPasswordEncrypt.IsEmpty());
+      // can be not set for instance, when editing=>saving site with no prior password
+      AskForMasterPasswordIfNotSet();
       Password = ScramblePassword(PasswordText);
       AES256EncyptWithMAC(Password, FPlainMasterPasswordEncrypt, Result);
       Result = SetExternalEncryptedPassword(Result);
@@ -1222,10 +1236,12 @@ UnicodeString __fastcall TWinConfiguration::DecryptPassword(RawByteString Passwo
   {
     if (FDontDecryptPasswords == 0)
     {
+      // As opposite to AskForMasterPasswordIfNotSet, we test here
+      // for decrypt password. This is important while recrypting password,
+      // when clearing master password, when encrypt password is already empty.
       if (FPlainMasterPasswordDecrypt.IsEmpty())
       {
-        assert(FOnMasterPasswordPrompt != NULL);
-        FOnMasterPasswordPrompt();
+        AskForMasterPassword();
       }
       if (!AES256DecryptWithMAC(Buf, FPlainMasterPasswordDecrypt, Buf) ||
           !UnscramblePassword(Buf, Result))
@@ -1242,32 +1258,46 @@ UnicodeString __fastcall TWinConfiguration::DecryptPassword(RawByteString Passwo
   {
     Result = TCustomWinConfiguration::DecryptPassword(Password, Key);
   }
+
   return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetMasterPassword(UnicodeString value)
 {
-  if (FUseMasterPassword && ValidateMasterPassword(value))
+  // just stores the plain-text version of the password
+
+  // we can get here even if master password is off,
+  // when we encounter stray encrypted password (e.g. manually imported site),
+  // make sure we do not set encrypt password to avoid starting encrypting
+  // new passwords
+  // (this is bit of edge case, not really well tested)
+  if (!FUseMasterPassword)
   {
-    // just store the plain-text version of the password
+    FPlainMasterPasswordDecrypt = value;
+  }
+  else if (ALWAYS_TRUE(FUseMasterPassword) &&
+      ALWAYS_TRUE(ValidateMasterPassword(value)))
+  {
     FPlainMasterPasswordEncrypt = value;
     FPlainMasterPasswordDecrypt = value;
   }
-  else
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::ChangeMasterPassword(
+  UnicodeString value, TStrings * RecryptPasswordErrors)
+{
+  RawByteString Verifier;
+  AES256CreateVerifier(value, Verifier);
+  FMasterPasswordVerifier = BytesToHex(Verifier);
+  FPlainMasterPasswordEncrypt = value;
+  FUseMasterPassword = true;
+  try
   {
-    RawByteString Verifier;
-    AES256CreateVerifier(value, Verifier);
-    FMasterPasswordVerifier = BytesToHex(Verifier);
-    FPlainMasterPasswordEncrypt = value;
-    FUseMasterPassword = true;
-    try
-    {
-      RecryptPasswords();
-    }
-    __finally
-    {
-      FPlainMasterPasswordDecrypt = value;
-    }
+    RecryptPasswords(RecryptPasswordErrors);
+  }
+  __finally
+  {
+    FPlainMasterPasswordDecrypt = value;
   }
 }
 //---------------------------------------------------------------------------
@@ -1275,17 +1305,18 @@ bool __fastcall TWinConfiguration::ValidateMasterPassword(UnicodeString value)
 {
   assert(UseMasterPassword);
   assert(!FMasterPasswordVerifier.IsEmpty());
-  return AES256Verify(value, HexToBytes(FMasterPasswordVerifier));
+  bool Result = AES256Verify(value, HexToBytes(FMasterPasswordVerifier));
+  return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::ClearMasterPassword()
+void __fastcall TWinConfiguration::ClearMasterPassword(TStrings * RecryptPasswordErrors)
 {
   FMasterPasswordVerifier = L"";
   FUseMasterPassword = false;
   Shred(FPlainMasterPasswordEncrypt);
   try
   {
-    RecryptPasswords();
+    RecryptPasswords(RecryptPasswordErrors);
   }
   __finally
   {
@@ -1293,14 +1324,58 @@ void __fastcall TWinConfiguration::ClearMasterPassword()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::AskForMasterPassword()
+{
+  if (FMasterPasswordSession > 0)
+  {
+    if (FMasterPasswordSessionAsked)
+    {
+      Abort();
+    }
+
+    // set before call to OnMasterPasswordPrompt as it may abort
+    FMasterPasswordSessionAsked = true;
+  }
+
+  // this can happen from TStoredSessionList::UpdateStaticUsage(),
+  // when the default session settings have password set (and no other basic property,
+  // like hostname/username), and master password is enabled
+  if (FOnMasterPasswordPrompt == NULL)
+  {
+    throw Exception(L"Master password handler not set");
+  }
+  else
+  {
+    FOnMasterPasswordPrompt();
+
+    assert(!FPlainMasterPasswordDecrypt.IsEmpty());
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::AskForMasterPasswordIfNotSet()
 {
   if (FPlainMasterPasswordEncrypt.IsEmpty())
   {
-    assert(FOnMasterPasswordPrompt != NULL);
-    FOnMasterPasswordPrompt();
-    assert(!FPlainMasterPasswordDecrypt.IsEmpty());
+    AskForMasterPassword();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::BeginMasterPasswordSession()
+{
+  // We do not expect nesting
+  assert(FMasterPasswordSession == 0);
+  assert(!FMasterPasswordSessionAsked || (FMasterPasswordSession > 0));
+  // This should better be thread-specific
+  FMasterPasswordSession++;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::EndMasterPasswordSession()
+{
+  if (ALWAYS_TRUE(FMasterPasswordSession > 0))
+  {
+    FMasterPasswordSession--;
+  }
+  FMasterPasswordSessionAsked = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLogWindowOnStartup(bool value)

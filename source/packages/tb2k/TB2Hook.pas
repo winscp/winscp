@@ -179,12 +179,8 @@ begin
           This is needed for compatibility with the combination of Tnt Unicode
           Controls and Keyman. See "Widechar's and tb2k" thread on the
           newsgroup from 2003-09-23 for more information. }
-        if Win32Platform = VER_PLATFORM_WIN32_NT then
-          HookHandles[T] := SetWindowsHookExW(HookIDs[T], HookProcs[T],
-            0, GetCurrentThreadId)
-        else
-          HookHandles[T] := SetWindowsHookEx(HookIDs[T], HookProcs[T],
-            0, GetCurrentThreadId);
+        HookHandles[T] := SetWindowsHookExW(HookIDs[T], HookProcs[T],
+          0, GetCurrentThreadId)
       end;
     end;
 end;

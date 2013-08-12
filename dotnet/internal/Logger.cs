@@ -80,7 +80,7 @@ namespace WinSCP
         private void AddCounter(PerformanceCounter counter)
         {
             counter.NextValue();
-            _processorCounters.Add(counter);
+            _performanceCounters.Add(counter);
         }
 
         public void WriteLine(string message)
@@ -144,6 +144,11 @@ namespace WinSCP
                     _writter.Dispose();
                     _writter = null;
                 }
+
+                foreach (PerformanceCounter counter in _performanceCounters)
+                {
+                    counter.Dispose();
+                }
             }
         }
 
@@ -153,7 +158,7 @@ namespace WinSCP
             {
                 try
                 {
-                    foreach (PerformanceCounter counter in _processorCounters)
+                    foreach (PerformanceCounter counter in _performanceCounters)
                     {
                         WriteLine("{0}{1}{2} = [{3}]",
                             counter.CounterName,
@@ -282,6 +287,6 @@ namespace WinSCP
         private readonly Dictionary<int, int> _indents = new Dictionary<int, int>();
         private readonly object _logLock = new object();
         private readonly Lock _lock = new Lock();
-        private List<PerformanceCounter> _processorCounters = new List<PerformanceCounter>();
+        private List<PerformanceCounter> _performanceCounters = new List<PerformanceCounter>();
     }
 }

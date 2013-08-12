@@ -178,7 +178,13 @@ void __fastcall TConfiguration::SaveData(THierarchicalStorage * Storage, bool /*
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::Save(bool All, bool Explicit)
+void __fastcall TConfiguration::Save()
+{
+  // only modified, implicit
+  DoSave(false, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
 {
   if (FDontSave) return;
 
@@ -272,7 +278,7 @@ void __fastcall TConfiguration::Import(const UnicodeString & FileName)
   }
 
   // save all and explicit
-  Save(true, true);
+  DoSave(true, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadData(THierarchicalStorage * Storage)
@@ -977,7 +983,7 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
     }
 
     // save all and explicit
-    Save(true, true);
+    DoSave(true, true);
   }
 }
 //---------------------------------------------------------------------------

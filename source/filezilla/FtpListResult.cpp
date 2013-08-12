@@ -1028,6 +1028,8 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
 	std::map<CString, int>::const_iterator iter;
 	t_directory::t_direntry dir;
 	
+	dir.bUnsure = FALSE;
+	
 	const char *str = GetNextToken(line, linelen, tokenlen, pos, 0);
 	if (!str)
 		return FALSE;
@@ -1301,6 +1303,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 	CString facts(str, tokenlen);
 	if (facts.IsEmpty())
 		return FALSE;
+	direntry.bUnsure = FALSE;
 	direntry.dir = FALSE;
 	direntry.bLink = FALSE;
 	direntry.size = -1;
@@ -2556,6 +2559,8 @@ BOOL CFtpListResult::parseAsIBM(const char *line, const int linelen, t_directory
 
 	copyStr(direntry.name, 0, str, tokenlen, true);
 
+	direntry.bUnsure = FALSE;
+
 	return true;
 }
 
@@ -2660,6 +2665,9 @@ BOOL CFtpListResult::parseAsIBMMVS(const char *line, const int linelen, t_direct
 	if (!str)
 		return FALSE;
 	copyStr(direntry.name, 0, str, tokenlen, true);
+
+	direntry.bUnsure = FALSE;
+
 	return true;
 }
 
@@ -2726,6 +2734,7 @@ BOOL CFtpListResult::parseAsIBMMVSPDS(const char *line, const int linelen, t_dir
 		return FALSE;
 	
 	direntry.dir = FALSE;
+	direntry.bUnsure = FALSE;
 	
 	return true;
 }
@@ -2742,6 +2751,7 @@ BOOL CFtpListResult::parseAsIBMMVSPDS2(const char *line, const int linelen, t_di
 	int pos = 0;
 	int tokenlen = 0;
 
+	direntry.bUnsure = FALSE;
 	direntry.dir = FALSE;
 	direntry.bLink = FALSE;
 	direntry.ownergroup = _MPT("");
@@ -2969,6 +2979,7 @@ BOOL CFtpListResult::parseAsWfFtp(const char *line, const int linelen, t_directo
 	if (!parseTime(str, tokenlen, direntry.date))
 		return FALSE;
 
+	direntry.bUnsure = FALSE;
 	direntry.dir = false;
 	direntry.bLink = false;
 	direntry.permissionstr = _T("");

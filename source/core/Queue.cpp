@@ -1819,6 +1819,11 @@ int __fastcall TTerminalQueueStatus::GetDoneAndActiveCount()
   return DoneCount + ActiveCount;
 }
 //---------------------------------------------------------------------------
+int __fastcall TTerminalQueueStatus::GetActiveAndPendingCount()
+{
+  return Count - DoneCount;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalQueueStatus::Add(TQueueItemProxy * ItemProxy)
 {
   ItemProxy->FQueueStatus = this;

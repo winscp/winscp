@@ -555,7 +555,7 @@ int CFileZillaApi::GetCurrentPath(CServerPath & path)
 	return (m_pMainThread->GetCurrentPath(path) ? FZ_REPLY_OK : FZ_REPLY_NOTCONNECTED);
 }
 
-bool __fastcall CFileZillaApi::UsingMlsd()
+bool CFileZillaApi::UsingMlsd()
 {
 	//Check if call allowed
 	if (!m_bInitialized)
@@ -563,6 +563,26 @@ bool __fastcall CFileZillaApi::UsingMlsd()
 	if (IsConnected()==FZ_REPLY_NOTCONNECTED)
 		return false;
 	return m_pMainThread->UsingMlsd();
+}
+
+std::string CFileZillaApi::GetTlsVersionStr()
+{
+	//Check if call allowed
+	if (!m_bInitialized)
+		return std::string();
+	if (IsConnected()==FZ_REPLY_NOTCONNECTED)
+		return std::string();
+	return m_pMainThread->GetTlsVersionStr();
+}
+
+std::string CFileZillaApi::GetCipherName()
+{
+	//Check if call allowed
+	if (!m_bInitialized)
+		return std::string();
+	if (IsConnected()==FZ_REPLY_NOTCONNECTED)
+		return std::string();
+	return m_pMainThread->GetCipherName();
 }
 #endif
 

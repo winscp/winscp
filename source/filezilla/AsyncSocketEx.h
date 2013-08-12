@@ -296,6 +296,8 @@ protected:
 
 	int GetState() const;
 	void SetState(int nState);
+	static const TCHAR * GetStateDesc(int nState);
+	static bool LogStateChange(int nState1, int nState2);
 
 	int m_nState;
 #endif //NOSOCKETSTATES

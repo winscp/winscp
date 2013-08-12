@@ -11545,7 +11545,7 @@ neon_open(
   {
     if (ne_has_support(NE_FEATURE_SSL) == 0)
       return error_create(WEBDAV_ERR_DAV_SOCK_INIT, NULL,
-        "SSL is not supported");
+        "TLS is not supported");
   }
 
   ne_session * sess = ne_session_create(uri->scheme, uri->host, uri->port);
@@ -12195,8 +12195,6 @@ void __fastcall TWebDAVFileSystem::Open()
   TSessionData * Data = FTerminal->SessionData;
 
   FSessionInfo.LoginTime = Now();
-  FSessionInfo.ProtocolBaseName = CONST_WEBDAV_PROTOCOL_BASE_NAME;
-  FSessionInfo.ProtocolName = FSessionInfo.ProtocolBaseName;
 
   bool Ssl = (FTerminal->SessionData->Ftps != ftpsNone);
   if (Ssl)

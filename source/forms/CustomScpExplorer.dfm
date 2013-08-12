@@ -296,7 +296,6 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     Align = alTop
     DoubleBuffered = True
     ParentDoubleBuffered = False
-    PopupMenu = NonVisualDataModule.SessionsPopup
     TabOrder = 3
     TabStop = False
     OnChange = SessionsPageControlChange

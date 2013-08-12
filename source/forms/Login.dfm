@@ -241,9 +241,9 @@ object LoginDialog: TLoginDialog
           OnChange = TransferProtocolComboChange
           Items.Strings = (
             'No encryption'
-            'SSL/TLS Implicit encryptionX'
-            'SSL Explicit encryptionX'
-            'TLS Explicit encryptionX')
+            'TLS/SSL Implicit encryptionX'
+            'TLS Explicit encryptionX'
+            'SSL Explicit encryptionX')
         end
         object WebDavsCombo: TComboBox
           Left = 163
@@ -255,7 +255,7 @@ object LoginDialog: TLoginDialog
           OnChange = TransferProtocolComboChange
           Items.Strings = (
             'No encryptionX'
-            'SSL/TLS Implicit encryptionX')
+            'TLS/SSL Implicit encryptionX')
         end
         object BasicFtpPanel: TPanel
           Left = 12

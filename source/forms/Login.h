@@ -221,7 +221,6 @@ private:
   TStoredSessionList * FStoredSessions;
   int FOptions;
   bool FInitialized;
-  int FSavedSession;
   bool FLocaleChanging;
   void * FSystemSettings;
   TWndMethod FOldSessionTreeProc;
@@ -234,8 +233,10 @@ private:
   int FIncrementalSearching;
   bool FSitesIncrementalSearchHaveNext;
   int FBasicGroupBaseHeight;
+  TRect FSavedBounds;
   bool FEditing;
   bool FRenaming;
+  TSize FOriginalSize;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -248,8 +249,9 @@ private:
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   int __fastcall FSProtocolToIndex(TFSProtocol FSProtocol, bool & AllowScpFallback);
   TFSProtocol __fastcall IndexToFSProtocol(int Index, bool AllowScpFallback);
+  int __fastcall FtpsToIndex(TFtps Ftps);
   TFtps __fastcall GetFtps();
-  TFSProtocol __fastcall GetFSProtocol();
+  TFSProtocol __fastcall GetFSProtocol(bool RequireScpFallbackDistinction);
   void __fastcall UpdateFolderNode(TTreeNode * Node);
   TTreeNode * __fastcall AddSession(TSessionData * Data);
   TTreeNode * __fastcall AddSessionPath(UnicodeString Path,
@@ -299,6 +301,7 @@ private:
   void __fastcall DefaultButton(TButton * Button, bool Default);
   TSessionData * __fastcall GetEditingSessionData();
   void __fastcall SaveAsSession(bool ForceDialog);
+  void __fastcall InvalidateSessionData();
 
 protected:
   void __fastcall Default();

@@ -87,7 +87,6 @@ UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption);
 bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
   UnicodeString * RawToken = NULL);
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
-bool __fastcall Is2000();
 bool __fastcall IsWin7();
 bool __fastcall IsExactly2008R2();
 TLibModule * __fastcall FindModule(void * Instance);
@@ -99,6 +98,7 @@ UnicodeString __fastcall WindowsProductName();
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path);
 UnicodeString __fastcall FormatNumber(__int64 Size);
 UnicodeString __fastcall FormatSize(__int64 Size);
+UnicodeString __fastcall ExtractFileBaseName(const UnicodeString & Path);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const UnicodeString FileName, const TSearchRec Rec, void * Param);

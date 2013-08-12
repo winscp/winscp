@@ -171,7 +171,7 @@ __published:
   TComboBox *DoubleClickActionCombo;
   TLabel *Label8;
   TComboBox *NortonLikeModeCombo;
-  TStaticText *ShellIconsText;
+  TStaticText *ShellIconsText2;
   TCheckBox *FullRowSelectCheck;
   TGroupBox *SessionReopenGroup;
   TLabel *SessionReopenAutoLabel;
@@ -405,6 +405,10 @@ protected:
   TListViewScrollOnDragOver * __fastcall ScrollOnDragOver(TObject * ListView);
   void __fastcall LoadLanguages();
   TTabSheet * __fastcall FindPageForTreeNode(TTreeNode * Node);
+  bool __fastcall CanSetMasterPassword();
+  void __fastcall ChangeMasterPassword(UnicodeString Message);
+  void __fastcall MasterPasswordChanged(
+    UnicodeString Message, TStrings * RecryptPasswordErrors);
 };
 //----------------------------------------------------------------------------
 #endif

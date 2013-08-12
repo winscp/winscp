@@ -54,9 +54,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
         : TForm(AOwner)
 {
   FNewSiteData = new TSessionData(L"");
-  FSessionData = new TSessionData(L"");
   FInitialized = false;
-  FSavedSession = -1;
   FOptions = loStartup;
   FLocaleChanging = false;
   FHintNode = NULL;
@@ -71,6 +69,9 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
   UseSystemSettingsPre(this, &FSystemSettings);
+
+  FOriginalSize = BoundsRect.GetSize();
+  FBasicGroupBaseHeight = BasicGroup->Height - BasicSshPanel->Height - BasicFtpPanel->Height;
   InitControls();
 }
 //---------------------------------------------------------------------
@@ -81,7 +82,13 @@ __fastcall TLoginDialog::~TLoginDialog()
   DeleteSystemSettings(this, FSystemSettings);
   FSystemSettings = NULL;
   delete FNewSiteData;
+  InvalidateSessionData();
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::InvalidateSessionData()
+{
   delete FSessionData;
+  FSessionData = NULL;
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList,
@@ -104,14 +111,15 @@ void __fastcall TLoginDialog::InitControls()
     SessionTree->WindowProc = SessionTreeProc;
   }
 
-  FtpsCombo->Items->Strings[1] = LoadStr(FTPS_IMPLICIT);
-  FtpsCombo->Items->Strings[2] = LoadStr(FTPS_EXPLICIT_SSL);
-  FtpsCombo->Items->Strings[3] = LoadStr(FTPS_EXPLICIT_TLS);
-  WebDavsCombo->Items->Strings[0] = FtpsCombo->Items->Strings[0];
-  WebDavsCombo->Items->Strings[1] = FtpsCombo->Items->Strings[1];
+  int FtpsNoneIndex = FtpsToIndex(ftpsNone);
+  int FtpsImplicitIndex = FtpsToIndex(ftpsImplicit);
+  FtpsCombo->Items->Strings[FtpsImplicitIndex] = LoadStr(FTPS_IMPLICIT);
+  FtpsCombo->Items->Strings[FtpsToIndex(ftpsExplicitTls)] = LoadStr(FTPS_EXPLICIT_TLS);
+  FtpsCombo->Items->Strings[FtpsToIndex(ftpsExplicitSsl)] = LoadStr(FTPS_EXPLICIT_SSL);
+  WebDavsCombo->Items->Strings[FtpsNoneIndex] = FtpsCombo->Items->Strings[FtpsNoneIndex];
+  WebDavsCombo->Items->Strings[FtpsImplicitIndex] = FtpsCombo->Items->Strings[FtpsImplicitIndex];
 
   BasicSshPanel->Top = BasicFtpPanel->Top;
-  FBasicGroupBaseHeight = BasicGroup->Height - BasicSshPanel->Height - BasicFtpPanel->Height;
 
   SitesIncrementalSearchLabel->AutoSize = false;
   SitesIncrementalSearchLabel->Left = SessionTree->Left;
@@ -353,25 +361,53 @@ void __fastcall TLoginDialog::LoadContents()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
 {
-  UserNameEdit->Text = SessionData->UserName;
-  PortNumberEdit->AsInteger = SessionData->PortNumber;
-  HostNameEdit->Text = SessionData->HostName;
-  PasswordEdit->Text = SessionData->Password;
-  FtpsCombo->ItemIndex = SessionData->Ftps;
-  WebDavsCombo->ItemIndex = SessionData->Ftps;
-  EncryptionView->Text =
-    ALWAYS_TRUE(FtpsCombo->ItemIndex >= WebDavsCombo->ItemIndex) ? FtpsCombo->Text : WebDavsCombo->Text;
+  WinConfiguration->BeginMasterPasswordSession();
+  try
+  {
+    UserNameEdit->Text = SessionData->UserName;
+    PortNumberEdit->AsInteger = SessionData->PortNumber;
+    HostNameEdit->Text = SessionData->HostName;
 
-  bool AllowScpFallback;
-  TransferProtocolCombo->ItemIndex = FSProtocolToIndex(SessionData->FSProtocol, AllowScpFallback);
-  TransferProtocolView->Text = TransferProtocolCombo->Text;
+    bool Editable = FEditing || (SessionData == FNewSiteData);
+    if (Editable)
+    {
+      PasswordEdit->Text = SessionData->Password;
+    }
+    else
+    {
+      PasswordEdit->Text =
+        SessionData->HasPassword() ?
+          UnicodeString::StringOfChar(L'?', 16) : UnicodeString();
+    }
 
-  // just in case TransferProtocolComboChange is not triggered
-  FDefaultPort = DefaultPort();
-  FUpdatePortWithProtocol = true;
+    int FtpsIndex = FtpsToIndex(SessionData->Ftps);
+    FtpsCombo->ItemIndex = FtpsIndex;
+    WebDavsCombo->ItemIndex = FtpsIndex;
+    EncryptionView->Text =
+      ALWAYS_TRUE(FtpsCombo->ItemIndex >= WebDavsCombo->ItemIndex) ? FtpsCombo->Text : WebDavsCombo->Text;
 
-  // advanced
-  FSessionData->Assign(SessionData);
+    bool AllowScpFallback;
+    TransferProtocolCombo->ItemIndex = FSProtocolToIndex(SessionData->FSProtocol, AllowScpFallback);
+    TransferProtocolView->Text = TransferProtocolCombo->Text;
+
+    // just in case TransferProtocolComboChange is not triggered
+    FDefaultPort = DefaultPort();
+    FUpdatePortWithProtocol = true;
+
+    // advanced
+    InvalidateSessionData();
+    // close advanced settings only when really needed,
+    // see also note in SessionAdvancedActionExecute
+    if (Editable)
+    {
+      FSessionData = new TSessionData(L"");
+      FSessionData->Assign(SessionData);
+    }
+  }
+  __finally
+  {
+    WinConfiguration->EndMasterPasswordSession();
+  }
 
   UpdateControls();
 }
@@ -379,7 +415,10 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
 void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
 {
   // advanced
-  SessionData->Assign(FSessionData);
+  if (ALWAYS_TRUE(FSessionData != NULL))
+  {
+    SessionData->Assign(FSessionData);
+  }
 
   // Basic page
   SessionData->UserName = UserNameEdit->Text.Trim();
@@ -389,7 +428,9 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
   SessionData->Password = PasswordEdit->Text;
   SessionData->Ftps = GetFtps();
 
-  SessionData->FSProtocol = GetFSProtocol();
+  SessionData->FSProtocol =
+    // requiring SCP fallback distinction
+    GetFSProtocol(true);
 
   TSessionData * EditingSessionData = GetEditingSessionData();
   SessionData->Name =
@@ -398,13 +439,14 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateControls()
 {
-  if (Visible && FInitialized)
+  // without FLocaleChanging test, some button controls get lost, when changing language
+  if (Visible && FInitialized && !FLocaleChanging)
   {
     bool NewSiteSelected = IsNewSiteNode(SessionTree->Selected);
 
     bool Editable = NewSiteSelected || FEditing;
 
-    TFSProtocol FSProtocol = GetFSProtocol();
+    TFSProtocol FSProtocol = GetFSProtocol(false);
     bool SshProtocol = IsSshProtocol(FSProtocol);
     bool FtpProtocol = (FSProtocol == fsFTP);
     bool WebDavProtocol = (FSProtocol == fsWebDAV);
@@ -517,14 +559,6 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
     LoadContents();
   }
 
-  if (FLocaleChanging)
-  {
-    if (FSavedSession >= 0)
-    {
-      SessionTree->Selected = SessionTree->Items->Item[FSavedSession];
-      SessionTree->Selected->MakeVisible();
-    }
-  }
   // among other this makes the expanded nodes look like expanded,
   // because the LoadState call in Execute is too early,
   // and some stray call to collapsed event during showing process,
@@ -668,6 +702,8 @@ void __fastcall TLoginDialog::EditSessionActionExecute(TObject * /*Sender*/)
   {
     FEditing = true;
     EditSession();
+    // reload session, to make sure we load decrypted password
+    LoadContents();
     UpdateControls();
   }
 }
@@ -718,6 +754,7 @@ void __fastcall TLoginDialog::SaveAsSession(bool ForceDialog)
     // this
     // - updates TransferProtocolView and EncryptionView
     // - clears the password box, if user has not opted to save password
+    // - reloads fake password
     LoadContents();
 
     UpdateControls();
@@ -1086,6 +1123,9 @@ void __fastcall TLoginDialog::SaveState()
 
   WinConfiguration->LastStoredSession = SessionNodePath(SessionTree->Selected);
 
+  // used only when changing locale
+  FSavedBounds = BoundsRect;
+
   TLoginDialogConfiguration DialogConfiguration = CustomWinConfiguration->LoginDialog;
   DialogConfiguration.WindowSize = StoreFormSize(this);
   CustomWinConfiguration->LoginDialog = DialogConfiguration;
@@ -1168,7 +1208,14 @@ void __fastcall TLoginDialog::LoadState()
     }
   }
 
-  RestoreFormSize(CustomWinConfiguration->LoginDialog.WindowSize, this);
+  if (FLocaleChanging)
+  {
+    BoundsRect = FSavedBounds;
+  }
+  else
+  {
+    RestoreFormSize(CustomWinConfiguration->LoginDialog.WindowSize, this);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveConfiguration()
@@ -1261,8 +1308,11 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
       SaveConfiguration();
       SaveState();
       PersistNewSiteIfNeeded();
-      FSavedSession = ((SessionTree->Selected != NULL) ?
-        SessionTree->Selected->AbsoluteIndex : -1);
+
+      // restore sizes to design-time state,
+      // otherwise layout is lost while reloading the form
+      BasicGroup->Height = FBasicGroupBaseHeight + BasicSshPanel->Height + BasicFtpPanel->Height;
+      SetBounds(Left, Top, FOriginalSize.cx, FOriginalSize.cy);
 
       assert(FSystemSettings);
       RevokeSystemSettings(this, FSystemSettings);
@@ -1297,12 +1347,7 @@ void __fastcall TLoginDialog::SetDefaultSessionActionExecute(
   {
     std::auto_ptr<TSessionData> SessionData(new TSessionData(L""));
     SaveSession(SessionData.get());
-    if (!Configuration->DisablePasswordStoring &&
-        SessionData->HasAnyPassword() &&
-        CustomWinConfiguration->UseMasterPassword)
-    {
-      CustomWinConfiguration->AskForMasterPasswordIfNotSet();
-    }
+    CustomWinConfiguration->AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(SessionData.get());
     StoredSessions->DefaultSettings = SessionData.get();
 
     Default();
@@ -1632,21 +1677,66 @@ TFSProtocol __fastcall TLoginDialog::IndexToFSProtocol(int Index, bool AllowScpF
   return Result;
 }
 //---------------------------------------------------------------------------
-TFtps __fastcall TLoginDialog::GetFtps()
+int __fastcall TLoginDialog::FtpsToIndex(TFtps Ftps)
 {
-  return (TFtps)((GetFSProtocol() == fsWebDAV) ? WebDavsCombo->ItemIndex : FtpsCombo->ItemIndex);
+  switch (Ftps)
+  {
+    default:
+      FAIL;
+    case ftpsNone:
+      return 0;
+
+    case ftpsImplicit:
+      return 1;
+
+    case ftpsExplicitSsl:
+      return 3;
+
+    case ftpsExplicitTls:
+      return 2;
+  }
 }
 //---------------------------------------------------------------------------
-TFSProtocol __fastcall TLoginDialog::GetFSProtocol()
+TFtps __fastcall TLoginDialog::GetFtps()
+{
+  int Index = ((GetFSProtocol(false) == fsWebDAV) ? WebDavsCombo->ItemIndex : FtpsCombo->ItemIndex);
+  TFtps Ftps;
+  switch (Index)
+  {
+    default:
+      FAIL;
+    case 0:
+      Ftps = ftpsNone;
+      break;
+
+    case 1:
+      Ftps = ftpsImplicit;
+      break;
+
+    case 2:
+      Ftps = ftpsExplicitTls;
+      break;
+
+    case 3:
+      Ftps = ftpsExplicitSsl;
+      break;
+  }
+  return Ftps;
+}
+//---------------------------------------------------------------------------
+TFSProtocol __fastcall TLoginDialog::GetFSProtocol(bool RequireScpFallbackDistinction)
 {
   bool AllowScpFallback = false;
-  FSProtocolToIndex(FSessionData->FSProtocol, AllowScpFallback);
+  if (RequireScpFallbackDistinction && ALWAYS_TRUE(FSessionData != NULL))
+  {
+    FSProtocolToIndex(FSessionData->FSProtocol, AllowScpFallback);
+  }
   return IndexToFSProtocol(TransferProtocolCombo->ItemIndex, AllowScpFallback);
 }
 //---------------------------------------------------------------------------
 int __fastcall TLoginDialog::DefaultPort()
 {
-  TFSProtocol FSProtocol = GetFSProtocol();
+  TFSProtocol FSProtocol = GetFSProtocol(false);
   TFtps Ftps = GetFtps();
   int Result;
   switch (FSProtocol)
@@ -2130,8 +2220,9 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
         {
           TransferProtocolCombo->ItemIndex = ProtocolIndex;
 
-          FtpsCombo->ItemIndex = Ftps;
-          WebDavsCombo->ItemIndex = Ftps;
+          int FtpsIndex = FtpsToIndex(Ftps);
+          FtpsCombo->ItemIndex = FtpsIndex;
+          WebDavsCombo->ItemIndex = FtpsIndex;
         }
         __finally
         {
@@ -2358,8 +2449,17 @@ void __fastcall TLoginDialog::PersistNewSiteIfNeeded()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
 {
-  SaveSession(FSessionData);
-  DoSiteAdvancedDialog(FSessionData, FOptions);
+  // If we ever allow showing advanced settings, while read-only,
+  // we must make sure that FSessionData actually holds the advanced settings,
+  // what is currently does not, in order to avoid master password prompt,
+  // while cloning the session data in LoadSession.
+  // To implement this, we may delegate the cloning to TWinConfiguration and
+  // make use of FDontDecryptPasswords
+  if (ALWAYS_TRUE(FSessionData != NULL))
+  {
+    SaveSession(FSessionData);
+    DoSiteAdvancedDialog(FSessionData, FOptions);
+  }
 }
 //---------------------------------------------------------------------------
 TPopupMenu * __fastcall TLoginDialog::GetSelectedNodePopupMenu()
@@ -2396,7 +2496,7 @@ void __fastcall TLoginDialog::SessionTreeMouseDown(TObject * /*Sender*/,
   TMouseButton Button, TShiftState /*Shift*/, int X, int Y)
 {
   TTreeNode * Node = SessionTree->GetNodeAt(X, Y);
-  if (Button == mbRight)
+  if ((Button == mbRight) && (Node != NULL))
   {
     SessionTree->Selected = Node;
   }
@@ -2415,8 +2515,14 @@ void __fastcall TLoginDialog::SessionTreeContextPopup(TObject * /*Sender*/,
   }
   else
   {
-    SessionTree->PopupMenu = GetSelectedNodePopupMenu();
-    MenuPopup(SessionTree, MousePos, Handled);
+    if (SessionTree->Selected != NULL)
+    {
+      SessionTree->PopupMenu = GetSelectedNodePopupMenu();
+      if (NOT_NULL(SessionTree->PopupMenu))
+      {
+        MenuPopup(SessionTree, MousePos, Handled);
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------

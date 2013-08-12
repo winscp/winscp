@@ -41,16 +41,16 @@ END
 STRINGTABLE
 BEGIN
   IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE, "Could not create socket in the specified port range."
-  IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, "Can't establish SSL connection"
+  IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, "Can't establish TLS connection"
   IDS_ERRORMSG_CANTGETLIST, "Could not retrieve directory listing"
-  IDS_ERRORMSG_CANTINITSSL, "Can't initialize SSL library"
+  IDS_ERRORMSG_CANTINITSSL, "Can't initialize TLS library"
 END
 
 STRINGTABLE
 BEGIN
   IDS_STATUSMSG_CONNECTED, "Connected"
   IDS_STATUSMSG_CONNECTEDWITH, "Connected with %s. Waiting for welcome message..."
-  IDS_STATUSMSG_CONNECTEDWITHSSL, "Connected with %s, negotiating SSL connection..."
+  IDS_STATUSMSG_CONNECTEDWITHSSL, "Connected with %s, negotiating TLS connection..."
   IDS_STATUSMSG_CONNECTING, "Connecting to %s ..."
   IDS_STATUSMSG_DIRLISTSUCCESSFUL, "Directory listing successful"
   IDS_STATUSMSG_DISCONNECTED, "Disconnected from server"
@@ -62,8 +62,8 @@ END
 STRINGTABLE
 BEGIN
   IDS_STATUSMSG_RETRIEVINGDIRLIST, "Retrieving directory listing..."
-  IDS_STATUSMSG_SSLESTABLISHED, "SSL connection established. Waiting for welcome message..."
-  IDS_STATUSMSG_SSLESTABLISHEDTRANSFER, "SSL connection established"
+  IDS_STATUSMSG_SSLESTABLISHED, "TLS connection established. Waiting for welcome message..."
+  IDS_STATUSMSG_SSLESTABLISHEDTRANSFER, "TLS connection established"
   IDS_STATUSMSG_UPLOADSTART, "Starting upload of %s"
   IDS_STATUSMSG_UPLOADSUCCESSFUL, "Upload successful"
 END
@@ -78,6 +78,6 @@ END
 STRINGTABLE
 BEGIN
   IDS_ERRORMSG_SETFILEPOINTER, "Could not set file pointer"
-  IDS_ERRORMSG_UNKNOWNSSLERROR, "Unknown error in SSL layer"
-  IDS_ERRORMSG_SSLCERTIFICATEERROR, "Could not verify SSL certificate"
+  IDS_ERRORMSG_UNKNOWNSSLERROR, "Unknown error in TLS layer"
+  IDS_ERRORMSG_SSLCERTIFICATEERROR, "Could not verify TLS certificate"
 END

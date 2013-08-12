@@ -8,6 +8,7 @@
 #include <CoreMain.h>
 #include <Interface.h>
 #include "CustomWinConfiguration.h"
+#include <Exceptions.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -330,20 +331,45 @@ void __fastcall TCustomWinConfiguration::LoadAdmin(THierarchicalStorage * Storag
   FDefaultInterface = TInterface(Storage->ReadInteger(L"DefaultInterfaceInterface", FDefaultInterface));
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomWinConfiguration::RecryptPasswords()
+void __fastcall TCustomWinConfiguration::RecryptPasswords(TStrings * RecryptPasswordErrors)
 {
   Busy(true);
   try
   {
-    StoredSessions->RecryptPasswords();
+    StoredSessions->RecryptPasswords(RecryptPasswordErrors);
+
     if (OnMasterPasswordRecrypt != NULL)
     {
-      OnMasterPasswordRecrypt(NULL);
+      try
+      {
+        OnMasterPasswordRecrypt(NULL);
+      }
+      catch (Exception & E)
+      {
+        UnicodeString Message;
+        if (ExceptionMessage(&E, Message))
+        {
+          // we do not expect this really to happen,
+          // so we do not bother providing context
+          RecryptPasswordErrors->Add(Message);
+        }
+      }
     }
   }
   __finally
   {
     Busy(false);
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TCustomWinConfiguration::AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(
+  TSessionData * SessionData)
+{
+  if (!DisablePasswordStoring &&
+      SessionData->HasAnyPassword() &&
+      UseMasterPassword)
+  {
+    AskForMasterPasswordIfNotSet();
   }
 }
 //---------------------------------------------------------------------

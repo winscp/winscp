@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <shlobj.h>
+#include <tlhelp32.h>
 #include <Common.h>
 #include <CoreMain.h>
 #include <Exceptions.h>
@@ -22,27 +23,14 @@
 #include "Setup.h"
 #include <StrUtils.hpp>
 //---------------------------------------------------------------------------
-/* Using quotes or not should make no difference but some programs (for
-   instance cygwin and msys) don't like them. */
-/* #define USE_QUOTES */
-//---------------------------------------------------------------------------
-#define APP_NAME "WinSCP"
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
-#define AUTOEXEC_PATH _T("c:\\autoexec.bat")
-#define AUTOEXEC_INTRO _T("rem ***** The following line was added by " \
-                       APP_NAME " *****")
-#ifdef USE_QUOTES
-#  define AUTOEXEC_CMD _T("set PATH=%%PATH%%;\"%s\"")
-#else
-#  define AUTOEXEC_CMD _T("set PATH=%%PATH%%;%s")
-#endif
+// when the PATH registry key is over aprox 2048 characters,
+// PATH as well as WINDIR variables are actually not set, breaking the system
+#define MAX_PATH_LEN 2000
 
 /* Command line options. */
 UnicodeString LastPathError;
-//---------------------------------------------------------------------------
-#define verb_out(msg) ((void)0)
-#define verb_out_param(msg, param) ((void)0)
 //---------------------------------------------------------------------------
 // Display the error "err_msg".
 void err_out(LPCTSTR err_msg)
@@ -169,27 +157,28 @@ BOOL add_path_reg(LPCTSTR path){
     else{
         if (!find_reg_str(reg_str, path, NULL)){
             _tcscat(reg_str, _T(";"));
-#ifdef USE_QUOTES
-            _tcscat(reg_str, _T(";\""));
-#endif
             _tcscat(reg_str, path);
-#ifdef USE_QUOTES
-            _tcscat(reg_str, _T("\""));
-#endif
-            ret = RegSetValueEx(key, _T("PATH"), 0, REG_EXPAND_SZ,
-                                (LPBYTE)reg_str,
-                                (_tcslen(reg_str) + 1) * sizeof(TCHAR));
-            if (ret != ERROR_SUCCESS){
-                err_out_sys(_T("Cannot write \"PATH\" key."), ret);
-                func_ret = FALSE;
+            size_t len = _tcslen(reg_str);
+            if (len >= MAX_PATH_LEN)
+            {
+              err_out(LoadStr(PATH_ENV_TOO_LONG).c_str());
+              func_ret = FALSE;
             }
-            /* Is this needed to make the new key avaible? */
-            RegFlushKey(key);
-            SetLastError(0);
-            path_reg_propagate();
+            else
+            {
+              ret = RegSetValueEx(key, _T("PATH"), 0, REG_EXPAND_SZ,
+                                  (LPBYTE)reg_str,
+                                  (_tcslen(reg_str) + 1) * sizeof(TCHAR));
+              if (ret != ERROR_SUCCESS){
+                  err_out_sys(_T("Cannot write \"PATH\" key."), ret);
+                  func_ret = FALSE;
+              }
+              /* Is this needed to make the new key avaible? */
+              RegFlushKey(key);
+              SetLastError(0);
+              path_reg_propagate();
+            }
         }
-        else
-            verb_out(_T("Value already exists in the registry."));
     }
 
     RegCloseKey(key);
@@ -248,8 +237,6 @@ BOOL remove_path_reg(LPCTSTR path){
             SetLastError(0);
             path_reg_propagate();
         }
-        else
-            verb_out(_T("Value does not exist in the registry."));
     }
 
     RegCloseKey(key);
@@ -257,163 +244,10 @@ BOOL remove_path_reg(LPCTSTR path){
     return func_ret;
 }
 //---------------------------------------------------------------------------
-/* Can this program run under Win9x if compiled with unicode support? */
-//---------------------------------------------------------------------------
-// Add "path" to "autoexec.bat". Return "TRUE" if the path has been added or
-// was already in the file, "FALSE" otherwise.
-BOOL add_path_autoexec(LPCTSTR long_path){
-    FILE * file;
-    LPTSTR path;
-    size_t path_size;
-    LPTSTR line;
-    LPTSTR out_line;
-    size_t line_size;
-    size_t sz1, sz2;
-    LPTSTR autoexec_intro;
-    BOOL found;
-    BOOL func_ret = TRUE;
-
-    file = _wfopen(AUTOEXEC_PATH, _T("r+"));
-    if (!file){
-        err_out(_T("Cannot open \"autoexec.bat\"."));
-        return FALSE;
-    }
-
-    path_size = _tcslen(long_path) + 1;
-    path = (LPTSTR)malloc(path_size * sizeof(TCHAR));
-    if (!GetShortPathName(long_path, path, path_size))
-        _tcsncpy(path, long_path, path_size);
-    sz1 = _tcslen(path) + _tcslen(AUTOEXEC_CMD);
-    sz2 = _tcslen(AUTOEXEC_INTRO) + 2 /* '\n' and '\0'. */;
-    line_size = sz1 > sz2 ? sz1 : sz2;
-    line = (LPTSTR)malloc(line_size * sizeof(TCHAR));
-    out_line = (LPTSTR)malloc(line_size * sizeof(TCHAR));
-    _stprintf(out_line, AUTOEXEC_CMD, path);
-    _tcscat(out_line, _T("\n"));
-    autoexec_intro = (LPTSTR)malloc((_tcslen(AUTOEXEC_INTRO) + 2 /* '\0', '\n' */)
-                            * sizeof(TCHAR));
-    _tcscpy(autoexec_intro, AUTOEXEC_INTRO);
-    _tcscat(autoexec_intro, _T("\n"));
-
-    found = FALSE;
-    while (!found && _fgetts(line, line_size, file)){
-        if (_tcscmp(autoexec_intro, line) == 0){
-            _fgetts(line, line_size, file);
-            if (_tcscmp(out_line, line) == 0)
-                found = TRUE;
-        }
-    }
-
-    if (!found){
-        if (fseek(file, 0, SEEK_END) != 0 ||
-            _fputts(_T("\n"), file) == _TEOF ||
-            _fputts(autoexec_intro, file) == _TEOF ||
-            _fputts(out_line, file) == _TEOF)
-                func_ret = FALSE;
-    }
-    else
-        verb_out(_T("Value already exists in \"autoexec.bat\"."));
-
-    fclose(file);
-    free(path);
-    free(line);
-    free(out_line);
-    free(autoexec_intro);
-
-    return func_ret;
-}
-//---------------------------------------------------------------------------
-// Removes "path" from "autoexec.bat". Return "TRUE" if the path has been
-// removed or it wasn't in the file, "FALSE" otherwise.
-BOOL remove_path_autoexec(LPTSTR long_path){
-    FILE * file;
-    LPTSTR path;
-    size_t path_size;
-    LPTSTR data;
-    long file_size;
-    LPTSTR expected_text;
-    size_t expected_text_size;
-    LPTSTR buff;
-    size_t buff_size;
-    LPTSTR begin_pos;
-    LPTSTR final_part;
-    size_t fread_ret;
-    BOOL func_ret = TRUE;
-
-    file = _wfopen(AUTOEXEC_PATH, _T("rb"));
-    if (!file){
-        err_out(_T("Cannot open \"autoexec.bat\" for reading."));
-        return FALSE;
-    }
-    fseek(file, 0, SEEK_END);
-    file_size = ftell(file);
-    data = (LPTSTR)malloc(file_size + sizeof(TCHAR) /* '\0'. */);
-    data[file_size / sizeof(TCHAR)] = '\0';
-    fseek(file, 0, SEEK_SET);
-    fread_ret = fread(data, file_size, 1, file);
-    fclose(file);
-    if (fread_ret != 1){
-        err_out(_T("Cannot read \"autoexec.bat\"."));
-        return FALSE;
-    }
-
-    path_size = _tcslen(long_path) + 1;
-    path = (LPTSTR)malloc(path_size * sizeof(TCHAR));
-    if (!GetShortPathName(long_path, path, path_size))
-        _tcsncpy(path, long_path, path_size);
-    buff_size = _tcslen(AUTOEXEC_CMD) + _tcslen(path);
-    buff = (LPTSTR)malloc(buff_size * sizeof(TCHAR));
-    expected_text_size = buff_size + _tcslen(AUTOEXEC_INTRO)
-                         + 4 /* 2 * '\r\n' */;
-    expected_text = (LPTSTR)malloc(expected_text_size * sizeof(TCHAR));
-    _tcscpy(expected_text, AUTOEXEC_INTRO);
-    _tcscat(expected_text, _T("\r\n"));
-    _stprintf(buff, AUTOEXEC_CMD, path);
-    _tcscat(expected_text, buff);
-    _tcscat(expected_text, _T("\r\n"));
-
-    begin_pos = _tcsstr(data, expected_text);
-    if (begin_pos){
-        file = _wfopen(AUTOEXEC_PATH, _T("wb"));
-        if (!file){
-            err_out(_T("Cannot open \"autoexec.bat\" for writing."));
-            func_ret = FALSE;
-        }
-        else{
-            final_part = begin_pos + _tcslen(expected_text);
-            if ((fwrite(data, begin_pos - data, 1, file) != 1 &&
-                 (begin_pos - data)) || /* "fwrite"fails if the
-                                           second argument is 0 */
-                (fwrite(final_part, _tcslen(final_part), 1, file) != 1 &&
-                 _tcslen(final_part)))
-                    func_ret = FALSE;
-            fclose(file);
-        }
-    }
-    else
-        verb_out(_T("Value does not exist in \"autoexec.bat\"."));
-
-    free(data);
-    free(path);
-    free(buff);
-    free(expected_text);
-
-    return func_ret;
-}
 //---------------------------------------------------------------------------
 void __fastcall AddSearchPath(const UnicodeString Path)
 {
-  bool Result;
-  if (Win32Platform == VER_PLATFORM_WIN32_NT)
-  {
-    Result = add_path_reg(Path.c_str());
-  }
-  else
-  {
-    Result = add_path_autoexec(Path.c_str());
-  }
-
-  if (!Result)
+  if (!add_path_reg(Path.c_str()))
   {
     throw ExtException(FMTLOAD(ADD_PATH_ERROR, (Path)), LastPathError);
   }
@@ -421,17 +255,7 @@ void __fastcall AddSearchPath(const UnicodeString Path)
 //---------------------------------------------------------------------------
 void __fastcall RemoveSearchPath(const UnicodeString Path)
 {
-  bool Result;
-  if (Win32Platform == VER_PLATFORM_WIN32_NT)
-  {
-    Result = remove_path_reg(Path.c_str());
-  }
-  else
-  {
-    Result = remove_path_autoexec(Path.c_str());
-  }
-
-  if (!Result)
+  if (!remove_path_reg(Path.c_str()))
   {
     throw ExtException(FMTLOAD(REMOVE_PATH_ERROR, (Path)), LastPathError);
   }
@@ -1150,4 +974,41 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
     }
     delete Removed;
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall AnyOtherInstanceOfSelf()
+{
+
+  HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+
+  bool Result = false;
+
+  try
+  {
+    unsigned int Process = GetCurrentProcessId();
+    UnicodeString ExeBaseName = ExtractFileBaseName(Application->ExeName);
+
+    PROCESSENTRY32 ProcessEntry;
+    ProcessEntry.dwSize = sizeof(PROCESSENTRY32);
+
+    if (Process32First(Snapshot, &ProcessEntry))
+    {
+      while (!Result && Process32Next(Snapshot, &ProcessEntry))
+      {
+        // we should check if the process is running in the same session,
+        // but for that we probably need some special priviledges
+        if ((Process != ProcessEntry.th32ProcessID) &&
+            SameText(ExtractFileBaseName(ProcessEntry.szExeFile), ExeBaseName))
+        {
+          Result = true;
+        }
+      }
+    }
+  }
+  __finally
+  {
+    CloseHandle(Snapshot);
+  }
+
+  return Result;
 }

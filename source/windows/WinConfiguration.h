@@ -342,6 +342,8 @@ private:
   UnicodeString FOpenedStoredSessionFolders;
   bool FAutoImportedFromPuttyOrFilezilla;
   int FDontDecryptPasswords;
+  int FMasterPasswordSession;
+  bool FMasterPasswordSessionAsked;
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -436,7 +438,7 @@ protected:
   virtual void __fastcall CopyData(THierarchicalStorage * Source, THierarchicalStorage * Target);
   virtual UnicodeString __fastcall GetDefaultKeyFile();
   virtual void __fastcall Saved();
-  void __fastcall RecryptPasswords();
+  void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   virtual bool __fastcall GetUseMasterPassword();
   bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2);
   bool __fastcall InternalReloadComponentRes(const UnicodeString ResName,
@@ -454,6 +456,7 @@ protected:
   bool __fastcall CanWriteToStorage();
   bool __fastcall DoIsBeta(const UnicodeString & ReleaseType);
   UnicodeString __fastcall FormatDefaultWindowParams(int Width, int Height);
+  void __fastcall AskForMasterPassword();
 
 public:
   __fastcall TWinConfiguration();
@@ -470,8 +473,11 @@ public:
   virtual UnicodeString __fastcall DecryptPassword(RawByteString Password, UnicodeString Key);
   virtual RawByteString __fastcall StronglyRecryptPassword(RawByteString Password, UnicodeString Key);
   void __fastcall SetMasterPassword(UnicodeString value);
+  void __fastcall ChangeMasterPassword(UnicodeString value, TStrings * RecryptPasswordErrors);
   bool __fastcall ValidateMasterPassword(UnicodeString value);
-  void __fastcall ClearMasterPassword();
+  void __fastcall ClearMasterPassword(TStrings * RecryptPasswordErrors);
+  void __fastcall BeginMasterPasswordSession();
+  void __fastcall EndMasterPasswordSession();
   virtual void __fastcall AskForMasterPasswordIfNotSet();
   void __fastcall AddSessionToJumpList(UnicodeString SessionName);
   void __fastcall DeleteSessionFromJumpList(UnicodeString SessionName);

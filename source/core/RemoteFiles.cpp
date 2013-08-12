@@ -391,6 +391,34 @@ UnicodeString __fastcall UserModificationStr(TDateTime DateTime,
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall ModificationStr(TDateTime DateTime,
+  TModificationFmt Precision)
+{
+  Word Year, Month, Day, Hour, Min, Sec, MSec;
+  DateTime.DecodeDate(&Year, &Month, &Day);
+  DateTime.DecodeTime(&Hour, &Min, &Sec, &MSec);
+  switch (Precision)
+  {
+    case mfNone:
+      return L"";
+
+    case mfMDY:
+      return FORMAT(L"%3s %2d %2d", (EngShortMonthNames[Month-1], Day, Year));
+
+    case mfMDHM:
+      return FORMAT(L"%3s %2d %2d:%2.2d",
+        (EngShortMonthNames[Month-1], Day, Hour, Min));
+
+    default:
+      assert(false);
+      // fall thru
+
+    case mfFull:
+      return FORMAT(L"%3s %2d %2d:%2.2d:%2.2d %4d",
+        (EngShortMonthNames[Month-1], Day, Hour, Min, Sec, Year));
+  }
+}
+//---------------------------------------------------------------------------
 int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs,
   UnicodeString * TypeName)
 {
@@ -920,29 +948,7 @@ UnicodeString __fastcall TRemoteFile::GetUserModificationStr()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TRemoteFile::GetModificationStr()
 {
-  Word Year, Month, Day, Hour, Min, Sec, MSec;
-  Modification.DecodeDate(&Year, &Month, &Day);
-  Modification.DecodeTime(&Hour, &Min, &Sec, &MSec);
-  switch (FModificationFmt)
-  {
-    case mfNone:
-      return L"";
-
-    case mfMDY:
-      return FORMAT(L"%3s %2d %2d", (EngShortMonthNames[Month-1], Day, Year));
-
-    case mfMDHM:
-      return FORMAT(L"%3s %2d %2d:%2.2d",
-        (EngShortMonthNames[Month-1], Day, Hour, Min));
-
-    default:
-      assert(false);
-      // fall thru
-
-    case mfFull:
-      return FORMAT(L"%3s %2d %2d:%2.2d:%2.2d %4d",
-        (EngShortMonthNames[Month-1], Day, Hour, Min, Sec, Year));
-  }
+  return ::ModificationStr(Modification, FModificationFmt);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TRemoteFile::GetExtension()

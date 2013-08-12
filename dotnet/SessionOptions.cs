@@ -29,8 +29,8 @@ namespace WinSCP
     {
         None = 0,
         Implicit = 1,
-        ExplicitSsl = 2,
         ExplicitTls = 3,
+        ExplicitSsl = 2,
     }
 
     [Guid("2D4EF368-EE80-4C15-AE77-D12AEAF4B00A")]
@@ -59,8 +59,12 @@ namespace WinSCP
         // FTP
         public FtpMode FtpMode { get; set; }
         public FtpSecure FtpSecure { get; set; }
-        public string SslHostCertificateFingerprint { get { return _sslHostCertificateFingerprint; } set { SetHostSslCertificateFingerprint(value); } }
-        public bool GiveUpSecurityAndAcceptAnySslHostCertificate { get; set; }
+        public string TlsHostCertificateFingerprint { get { return _tlsHostCertificateFingerprint; } set { SetHostTlsCertificateFingerprint(value); } }
+        [Obsolete("Use TlsHostCertificateFingerprint")]
+        public string SslHostCertificateFingerprint { get { return TlsHostCertificateFingerprint; } set { TlsHostCertificateFingerprint = value; } }
+        public bool GiveUpSecurityAndAcceptAnyTlsHostCertificate { get; set; }
+        [Obsolete("Use GiveUpSecurityAndAcceptAnyTlsHostCertificate")]
+        public bool GiveUpSecurityAndAcceptAnySslHostCertificate { get { return GiveUpSecurityAndAcceptAnyTlsHostCertificate; } set { GiveUpSecurityAndAcceptAnyTlsHostCertificate = value; } }
 
         public void AddRawSettings(string setting, string value)
         {
@@ -85,19 +89,19 @@ namespace WinSCP
             _sshHostKeyFingerprint = s;
         }
 
-        private void SetHostSslCertificateFingerprint(string s)
+        private void SetHostTlsCertificateFingerprint(string s)
         {
             if (s != null)
             {
-                Match match = _sslCertificateRegex.Match(s);
+                Match match = _tlsCertificateRegex.Match(s);
 
                 if (!match.Success || (match.Length != s.Length))
                 {
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "SSL host certificate fingerprint \"{0}\" does not match pattern /{1}/", s, _sslCertificateRegex));
+                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "TLS host certificate fingerprint \"{0}\" does not match pattern /{1}/", s, _tlsCertificateRegex));
                 }
             }
 
-            _sslHostCertificateFingerprint = s;
+            _tlsHostCertificateFingerprint = s;
         }
 
         private void SetTimeout(TimeSpan value)
@@ -121,7 +125,7 @@ namespace WinSCP
         }
 
         private string _sshHostKeyFingerprint;
-        private string _sslHostCertificateFingerprint;
+        private string _tlsHostCertificateFingerprint;
         private TimeSpan _timeout;
         private int _portNumber;
 
@@ -129,8 +133,8 @@ namespace WinSCP
         private const string _sshHostKeyPattern = @"(ssh-rsa |ssh-dss )?\d+ ([0-9a-f]{2}:){15}[0-9a-f]{2}";
         private static readonly Regex _sshHostKeyRegex =
             new Regex(string.Format(CultureInfo.InvariantCulture, _listPattern, _sshHostKeyPattern));
-        private const string _sslCertificatePattern = @"([0-9a-f]{2}:){19}[0-9a-f]{2}";
-        private static readonly Regex _sslCertificateRegex =
-            new Regex(string.Format(CultureInfo.InvariantCulture, _listPattern, _sslCertificatePattern));
+        private const string _tlsCertificatePattern = @"([0-9a-f]{2}:){19}[0-9a-f]{2}";
+        private static readonly Regex _tlsCertificateRegex =
+            new Regex(string.Format(CultureInfo.InvariantCulture, _listPattern, _tlsCertificatePattern));
     }
 }

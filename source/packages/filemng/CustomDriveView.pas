@@ -26,7 +26,6 @@ type
   protected
     FParentForm: TCustomForm;
     FDragFileList: TStringList;
-    FUseDragImages: Boolean;
     FDragDropFilesEx: TCustomizableDragDropFilesEx;
     FDragImageList: TDragImageList;
     FDragDrive: TDrive;
@@ -204,9 +203,6 @@ type
       read FOnDDCreateDataObject write FOnDDCreateDataObject;
     property OnDDMenuPopup: TOnMenuPopup read FOnDDMenuPopup write FOnDDMenuPopup;
 
-    { Show drag images during a drag&drop operation }
-    property UseDragImages: Boolean read FUseDragImages write FUseDragImages default True;
-
     { Show popupmenu when dropping a file with the right mouse button }
     property TargetPopUpMenu: Boolean read GetTargetPopUpMenu write SetTargetPopUpMenu default True;
 
@@ -238,7 +234,6 @@ begin
 
   DragMode := dmAutomatic;
   FDragFileList := TStringList.Create;
-  FUseDragImages := (Win32PlatForm = VER_PLATFORM_WIN32_NT) or (WinVer.dwMinorVersion > 0);
   FDragDrive := #0;
   FExeDrag := False;
   FDDLinkOnExeDrag := True;
@@ -700,7 +695,7 @@ begin
     try
       {Create the dragimage:}
       GlobalDragImageList := FDragImageList;
-      if UseDragImages and (not AvoidDragImage) then
+      if not AvoidDragImage then
       begin
         {Hide the selection mark to get a proper dragimage:}
         if Selected = FDragNode then

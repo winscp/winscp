@@ -335,6 +335,7 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
   bool Result;
   if (!ForceDialog && ((PSavePassword == NULL) || SavePassword))
   {
+    CustomWinConfiguration->AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(SessionData);
     Result = true;
   }
   else

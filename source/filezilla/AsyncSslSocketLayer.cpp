@@ -1025,6 +1025,7 @@ BOOL CAsyncSslSocketLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
 
 int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 	CAsyncSslSocketLayer* main, bool sessionreuse,
+	int minTlsVersion, int maxTlsVersion,
 	void* pSslContext /*=0*/)
 {
 	if (m_bUseSSL)
@@ -1104,7 +1105,14 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 	}
 
 	long options = pSSL_ctrl(m_ssl, SSL_CTRL_OPTIONS, 0, NULL);
-	options |= SSL_OP_ALL;
+	#define MASK_TLS_VERSION(VERSION, FLAG) ((minTlsVersion > VERSION) || (maxTlsVersion < VERSION) ? FLAG : 0)
+	options |=
+		SSL_OP_ALL |
+		MASK_TLS_VERSION(SSL_VERSION_SSL2, SSL_OP_NO_SSLv2) |
+		MASK_TLS_VERSION(SSL_VERSION_SSL3, SSL_OP_NO_SSLv3) |
+		MASK_TLS_VERSION(SSL_VERSION_TLS10, SSL_OP_NO_TLSv1) |
+		MASK_TLS_VERSION(SSL_VERSION_TLS11, SSL_OP_NO_TLSv1_1) |
+		MASK_TLS_VERSION(SSL_VERSION_TLS12, SSL_OP_NO_TLSv1_2);
 	pSSL_ctrl(m_ssl, SSL_CTRL_OPTIONS, options, NULL);
 
 	//Init SSL connection
@@ -1123,11 +1131,11 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 				LogSocketMessage(FZ_LOG_INFO, _T("SSL_set_session failed"));
 				return SSL_FAILURE_INITSSL;
 			}
-			LogSocketMessage(FZ_LOG_INFO, _T("Trying reuse main SSL session ID"));
+			LogSocketMessage(FZ_LOG_INFO, _T("Trying reuse main TLS session ID"));
 		}
 		else
 		{
-			LogSocketMessage(FZ_LOG_INFO, _T("Main SSL session ID was not reused previously, not trying again"));
+			LogSocketMessage(FZ_LOG_INFO, _T("Main TLS session ID was not reused previously, not trying again"));
 			pSSL_set_session(m_ssl, NULL);
 		}
 	}
@@ -1398,7 +1406,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 	if (!cur)
 	{
 		m_sCriticalSection.Unlock();
-		MessageBox(0, _T("Can't lookup SSL session!"), _T("Critical error"), MB_ICONEXCLAMATION);
+		MessageBox(0, _T("Can't lookup TLS session!"), _T("Critical error"), MB_ICONEXCLAMATION);
 		return;
 	}
 	else
@@ -1416,7 +1424,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 
 	if (w & SSL_ST_CONNECT)
 	{
-		str = "SSL_connect";
+		str = "TLS connect";
 		if (pLayer->m_sessionreuse)
 		{
 			SSL_SESSION * sessionid = SSL_get1_session(pLayer->m_ssl);
@@ -1432,7 +1440,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 					{
 						if ((pLayer->m_Main != NULL) && (pLayer->m_Main->m_sessionid != NULL))
 						{
-							pLayer->LogSocketMessage(FZ_LOG_INFO, _T("Main SSL session ID not reused, will not try again"));
+							pLayer->LogSocketMessage(FZ_LOG_INFO, _T("Main TLS session ID not reused, will not try again"));
 							SSL_SESSION_free(pLayer->m_Main->m_sessionid);
 							pLayer->m_Main->m_sessionid = NULL;
 						}
@@ -1453,9 +1461,9 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 		}
 	}
 	else if (w & SSL_ST_ACCEPT)
-		str = "SSL_accept";
+		str = "TLS accept";
 	else
-		str = "undefined";
+		str = "Undefined";
 
 	if (where & SSL_CB_LOOP)
 	{
@@ -1919,6 +1927,16 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData)
 	return TRUE;
 }
 
+std::string CAsyncSslSocketLayer::GetTlsVersionStr()
+{
+	return m_TlsVersionStr;
+}
+
+std::string CAsyncSslSocketLayer::GetCipherName()
+{
+	return m_CipherName;
+}
+
 void CAsyncSslSocketLayer::SetNotifyReply(int nID, int nCode, int result)
 {
 	if (!m_bBlocking)
@@ -1986,12 +2004,16 @@ void CAsyncSslSocketLayer::PrintSessionInfo()
 	}
 
 	char *buffer = new char[4096];
-	sprintf(buffer, "Using %s, cipher %s: %s, %s",
-			pSSL_get_version(m_ssl),
+	m_TlsVersionStr = pSSL_get_version(m_ssl);
+	sprintf(buffer, "%s: %s, %s",
 			pSSL_CIPHER_get_version(ciph),
 			pSSL_CIPHER_get_name(ciph),
 			enc);
-	DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERBOSE_INFO, 0, buffer);
+	m_CipherName = buffer;
+	sprintf(buffer, "Using %s, cipher %s",
+			m_TlsVersionStr.c_str(),
+			m_CipherName.c_str());
+	DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERBOSE_WARNING, 0, buffer);
 }
 
 void CAsyncSslSocketLayer::OnConnect(int nErrorCode)
@@ -2030,7 +2052,7 @@ int CAsyncSslSocketLayer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 	if (!cur)
 	{
 		m_sCriticalSection.Unlock();
-		MessageBox(0, _T("Can't lookup SSL session!"), _T("Critical error"), MB_ICONEXCLAMATION);
+		MessageBox(0, _T("Can't lookup TLS session!"), _T("Critical error"), MB_ICONEXCLAMATION);
 		return 1;
 	}
 	else
@@ -2106,7 +2128,7 @@ bool CAsyncSslSocketLayer::CreateSslCertificate(LPCTSTR filename, int bits, unsi
 	CAsyncSslSocketLayer layer;
 	if (layer.InitSSL())
 	{
-		err = _T("Failed to initialize SSL library");
+		err = _T("Failed to initialize TLS library");
 		return false;
 	}
 

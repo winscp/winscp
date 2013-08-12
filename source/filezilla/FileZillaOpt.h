@@ -162,5 +162,7 @@
 #define OPTION_MPEXT_PRESERVEUPLOADFILETIME 1001
 #define OPTION_MPEXT_SSLSESSIONREUSE 1002
 #define OPTION_MPEXT_SNDBUF 1003
+#define OPTION_MPEXT_MIN_TLS_VERSION 1004
+#define OPTION_MPEXT_MAX_TLS_VERSION 1005
 //---------------------------------------------------------------------------
 #endif // FileZillaOptH

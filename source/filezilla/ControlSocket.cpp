@@ -211,14 +211,19 @@ int CControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 	{
 		if (iter->nType == LAYERCALLBACK_STATECHANGE)
 		{
-			if (iter->pLayer == m_pProxyLayer)
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("m_pProxyLayer changed state from %d to %d"), iter->nParam2, iter->nParam1);
+		    if (CAsyncSocketEx::LogStateChange(iter->nParam1, iter->nParam2))
+		    {
+			    const TCHAR * state2Desc = CAsyncSocketEx::GetStateDesc(iter->nParam2);
+			    const TCHAR * state1Desc = CAsyncSocketEx::GetStateDesc(iter->nParam1);
+				if (iter->pLayer == m_pProxyLayer)
+					LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("Proxy layer changed state from %s to %s"), state2Desc, state1Desc);
 #ifndef MPEXT_NO_GSS
-			else if (iter->pLayer == m_pGssLayer)
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("m_pGssLayer changed state from %d to %d"), iter->nParam2, iter->nParam1);
+				else if (iter->pLayer == m_pGssLayer)
+					LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("m_pGssLayer changed state from %s to %s"), state2Desc, state1Desc);
 #endif
-			else
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("Layer @ %d changed state from %d to %d"), iter->pLayer, iter->nParam2, iter->nParam1);
+				else
+					LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("Layer @ %d changed state from %s to %s"), iter->pLayer, state2Desc, state1Desc);
+			}
 		}
 		else if (iter->nType == LAYERCALLBACK_LAYERSPECIFIC)
 		{
@@ -227,24 +232,24 @@ int CControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 				switch (iter->nParam1)
 				{
 				case PROXYERROR_NOCONN:
-					ShowStatus(IDS_ERRORMSG_PROXY_NOCONN, 1);
+					ShowStatus(IDS_ERRORMSG_PROXY_NOCONN, FZ_LOG_ERROR);
 					break;
 				case PROXYERROR_REQUESTFAILED:
-					ShowStatus(IDS_ERRORMSG_PROXY_REQUESTFAILED, 1);
+					ShowStatus(IDS_ERRORMSG_PROXY_REQUESTFAILED, FZ_LOG_ERROR);
 					if (iter->str)
-						ShowStatus(A2T(iter->str), 1);
+						ShowStatus(A2T(iter->str), FZ_LOG_ERROR);
 					break;
 				case PROXYERROR_AUTHTYPEUNKNOWN:
-					ShowStatus(IDS_ERRORMSG_PROXY_AUTHTYPEUNKNOWN, 1);
+					ShowStatus(IDS_ERRORMSG_PROXY_AUTHTYPEUNKNOWN, FZ_LOG_ERROR);
 					break;
 				case PROXYERROR_AUTHFAILED:
-					ShowStatus(IDS_ERRORMSG_PROXY_AUTHFAILED, 1);
+					ShowStatus(IDS_ERRORMSG_PROXY_AUTHFAILED, FZ_LOG_ERROR);
 					break;
 				case PROXYERROR_AUTHNOLOGON:
-					ShowStatus(IDS_ERRORMSG_PROXY_AUTHNOLOGON, 1);
+					ShowStatus(IDS_ERRORMSG_PROXY_AUTHNOLOGON, FZ_LOG_ERROR);
 					break;
 				case PROXYERROR_CANTRESOLVEHOST:
-					ShowStatus(IDS_ERRORMSG_PROXY_CANTRESOLVEHOST, 1);
+					ShowStatus(IDS_ERRORMSG_PROXY_CANTRESOLVEHOST, FZ_LOG_ERROR);
 					break;
 				default:
 					LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Unknown proxy error") );
@@ -262,10 +267,10 @@ int CControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 					LogMessageRaw(FZ_LOG_APIERROR, A2CT(iter->str));
 					break;
 				case GSS_COMMAND:
-					ShowStatus(A2CT(iter->str), 2);
+					ShowStatus(A2CT(iter->str), FZ_LOG_COMMAND);
 					break;
 				case GSS_REPLY:
-					ShowStatus(A2CT(iter->str), 3);
+					ShowStatus(A2CT(iter->str), FZ_LOG_REPLY);
 					break;
 				}
 			}

@@ -691,10 +691,17 @@ void __fastcall TSCPFileSystem::DoStartup()
 {
   // SkipStartupMessage and DetectReturnVar must succeed,
   // otherwise session is to be closed.
-  FTerminal->ExceptionOnFail = true;
-  SkipStartupMessage();
-  if (FTerminal->SessionData->DetectReturnVar) DetectReturnVar();
-  FTerminal->ExceptionOnFail = false;
+  try
+  {
+    FTerminal->ExceptionOnFail = true;
+    SkipStartupMessage();
+    if (FTerminal->SessionData->DetectReturnVar) DetectReturnVar();
+    FTerminal->ExceptionOnFail = false;
+  }
+  catch (Exception & E)
+  {
+    FTerminal->FatalError(&E, L"");
+  }
 
   #define COND_OPER(OPER) if (FTerminal->SessionData->OPER) OPER()
   COND_OPER(ClearAliases);
@@ -754,7 +761,7 @@ void __fastcall TSCPFileSystem::DetectReturnVar()
         if ((Output->Count != 1) || (StrToIntDef(Output->Strings[0], 256) > 255))
         {
           FTerminal->LogEvent(L"The response is not numerical exit code");
-          Abort();
+          EXCEPTION;
         }
       }
       catch (EFatal &E)
@@ -777,7 +784,7 @@ void __fastcall TSCPFileSystem::DetectReturnVar()
 
     if (NewReturnVar.IsEmpty())
     {
-      Abort();
+      EXCEPTION;
     }
     else
     {

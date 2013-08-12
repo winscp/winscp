@@ -782,12 +782,7 @@ begin
   end;
 
   SysFlatMenus := False;
-  if (Win32Platform = VER_PLATFORM_WIN32_NT) and
-    ((Win32MajorVersion > 5) or
-     ((Win32MajorVersion = 5) and (Win32MinorVersion >= 1))) then
-  begin
-    SystemParametersInfo(SPI_GETFLATMENU, 0, @SysFlatMenus, 0);
-  end;
+  SystemParametersInfo(SPI_GETFLATMENU, 0, @SysFlatMenus, 0);
 
 
   if SysFlatMenus then // System indicates support for flat menus
@@ -852,8 +847,7 @@ end;
 procedure TTBXThemeManager.VisualStylesOpen;
 begin
   USE_THEMES := False;
-  if (Win32Platform = VER_PLATFORM_WIN32_NT) and ((Win32MajorVersion > 5) or
-     ((Win32MajorVersion = 5) and (Win32MinorVersion >= 1))) and EnableVisualStyles then
+  if EnableVisualStyles then
   begin
     InitedThemeLibrary := InitThemeLibrary;
     USE_THEMES := UseThemes;
