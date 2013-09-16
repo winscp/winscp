@@ -56,6 +56,9 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner, TFindEvent OnFin
   FSystemImageList = SharedSystemImageList(false);
   FileView->SmallImages = FSystemImageList;
 
+  UseDesktopFont(FileView);
+  UseDesktopFont(StatusBar);
+
   SetGlobalMinimizeHandler(this, GlobalMinimize);
 }
 //---------------------------------------------------------------------------
@@ -137,7 +140,7 @@ bool __fastcall TFileFindDialog::Execute(UnicodeString Directory, UnicodeString 
   MaskEdit->Items = WinConfiguration->History[L"Mask"];
   RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
 
-  bool Result = (ShowModal() != mrCancel);
+  bool Result = (ShowModal() == FocusButton->ModalResult);
   if (Result)
   {
     Path = static_cast<TRemoteFile *>(FileView->ItemFocused->Data)->FullFileName;

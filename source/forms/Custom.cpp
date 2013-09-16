@@ -11,6 +11,7 @@
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <CoreMain.h>
+#include <PasTools.hpp>
 
 #include "Custom.h"
 //---------------------------------------------------------------------
@@ -24,7 +25,7 @@ __fastcall TCustomDialog::TCustomDialog(UnicodeString AHelpKeyword)
 {
   UseSystemSettings(this);
 
-  FPos = 8;
+  FPos = ScaleByTextHeight(this, 8);
 
   HelpKeyword = AHelpKeyword;
 
@@ -47,7 +48,7 @@ __fastcall TCustomDialog::TCustomDialog(UnicodeString AHelpKeyword)
 bool __fastcall TCustomDialog::Execute()
 {
   Changed();
-  return (ShowModal() == mrOk);
+  return (ShowModal() == DefaultResult(this));
 }
 //---------------------------------------------------------------------
 void __fastcall TCustomDialog::DoChange(bool & /*CanSubmit*/)
@@ -88,7 +89,7 @@ void __fastcall TCustomDialog::DoValidate()
 //---------------------------------------------------------------------------
 bool __fastcall TCustomDialog::CloseQuery()
 {
-  if (ModalResult == mrOk)
+  if (ModalResult == DefaultResult(this))
   {
     DoValidate();
   }
@@ -112,17 +113,17 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
 {
   int PrePos = FPos;
   Label->Parent = this;
-  Label->Left = 8;
+  Label->Left = ScaleByTextHeight(this, 8);
   Label->Top = FPos;
-  FPos += 16;
+  FPos += Label->Height + ScaleByTextHeight(this, 4);
 
   Edit->Parent = this;
-  Edit->Left = 8;
+  Edit->Left = ScaleByTextHeight(this, 8);
   Edit->Top = FPos;
   Edit->Width = ClientWidth - (Edit->Left * 2);
   // this updates Height property to real value
   Edit->HandleNeeded();
-  FPos += Edit->Height + 8;
+  FPos += Edit->Height + ScaleByTextHeight(this, 8);
 
   if (Label->FocusControl == NULL)
   {
@@ -164,12 +165,14 @@ void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
 {
   int PrePos = FPos;
   Control->Parent = this;
-  Control->Left = 14;
+  Control->Left = ScaleByTextHeight(this, 14);
   Control->Top = FPos;
-  Control->Width = ClientWidth - Control->Left - 8;
+  Control->Width = ClientWidth - Control->Left - ScaleByTextHeight(this, 8);
   // this updates Height property to real value
   Control->HandleNeeded();
-  FPos += Control->Height + 8;
+  // buttons do not scale with text on their own
+  Control->Height = ScaleByTextHeight(Control, Control->Height);
+  FPos += Control->Height + ScaleByTextHeight(this, 8);
 
   ClientHeight = ClientHeight + (FPos - PrePos);
 

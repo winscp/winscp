@@ -98,7 +98,7 @@ bool __fastcall TCopyParamPresetDialog::Execute(TCopyParamList * CopyParamList,
   }
 
   CopyParamsFrame->BeforeExecute();
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
 
   if (Result)
   {
@@ -169,7 +169,7 @@ void __fastcall TCopyParamPresetDialog::FormShow(TObject * /*Sender*/)
 void __fastcall TCopyParamPresetDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     UnicodeString Description = DescriptionEdit->Text;
     TCopyParamList::ValidateName(Description);

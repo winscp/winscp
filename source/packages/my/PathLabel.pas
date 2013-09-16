@@ -50,6 +50,7 @@ type
   protected
     procedure AdjustBounds; override;
     procedure Click; override;
+    procedure DoDrawTextIntern(var Rect: TRect; Flags: Longint; S: string);
     procedure DoDrawText(var Rect: TRect; Flags: Longint); override;
     procedure Notification(AComponent: TComponent;
       Operation: TOperation); override;
@@ -493,10 +494,9 @@ begin
   end;
 end;
 
-procedure TCustomPathLabel.DoDrawText(var Rect: TRect; Flags: Longint);
+procedure TCustomPathLabel.DoDrawTextIntern(var Rect: TRect; Flags: Longint; S: string);
 var
   i: Integer;
-  StandardColor: TColor;
   Width: Integer;
   WidthMask: Integer;
   WidthPath: Integer;
@@ -505,15 +505,15 @@ var
   Separator: string;
   Str: string;
 begin
-  if (Flags and DT_CALCRECT <> 0) and ((Text = '') or ShowAccelChar and
-    (Text[1] = '&') and (Text[2] = #0)) then Text := Text + ' ';
+  if (Flags and DT_CALCRECT <> 0) and ((S = '') or ShowAccelChar and
+    (S[1] = '&') and (S[2] = #0)) then S := S + ' ';
   if not ShowAccelChar then Flags := Flags or DT_NOPREFIX;
   Flags := DrawTextBiDiModeFlags(Flags);
   Canvas.Font := Font;
 
   Width := (Rect.Right - Rect.Left);
 
-  FDisplayPath := Caption;
+  FDisplayPath := S;
   FDisplayMask := Mask;
   Separator := '';
 
@@ -577,12 +577,12 @@ begin
   end;
 
   ShowHint :=
-    (FDisplayPath <> Caption) or
+    (FDisplayPath <> S) or
     (FDisplayMask <> Mask) or
     (WidthPath + WidthMask > Width);
 
   if not ShowHint then Hint := ''
-    else Hint := Caption + Separator + Mask;
+    else Hint := S + Separator + Mask;
 
   Str := FDisplayPath + FDisplayMask;
   if not Enabled then
@@ -599,11 +599,19 @@ begin
     FDisplayHotTrack := HotTrackPath(FDisplayPath);
     if FDisplayHotTrack <> '' then
     begin
-      StandardColor := Canvas.Font.Color;
       if TrackingActive then
-        Canvas.Font.Color := FColors[4 + Integer(FIsActive)];
+      begin
+        Canvas.Font.Color := FColors[4 + Integer(FIsActive)]
+      end
+        else
+      begin
+        // We do not have a path label with hot-track and not tracking-active,
+        // so this is untested branch
+        Assert(False);
+        // As if it were active
+        Canvas.Font.Color := FColors[2 + 1];
+      end;
       DrawText(Canvas.Handle, PChar(FDisplayHotTrack), Length(FDisplayHotTrack), Rect, Flags);
-      Canvas.Font.Color := StandardColor;
       HotTrackOffset := Canvas.TextWidth(FDisplayHotTrack);
       Inc(Rect.Left, HotTrackOffset);
       Delete(Str, 1, Length(FDisplayHotTrack));
@@ -615,11 +623,20 @@ begin
       HotTrackBottom := 0;
     end;
 
+    if TrackingActive then
+      Canvas.Font.Color := FColors[2 + Integer(FIsActive)]
+    else
+      Canvas.Font.Color := clWindowText;
     DrawText(Canvas.Handle, PChar(Str), Length(Str), Rect, Flags);
 
     Dec(Rect.Left, HotTrackOffset);
     Rect.Bottom := Max(Rect.Bottom, HotTrackBottom);
   end;
+end;
+
+procedure TCustomPathLabel.DoDrawText(var Rect: TRect; Flags: Longint);
+begin
+  DoDrawTextIntern(Rect, Flags, Caption);
 end;
 
 function TCustomPathLabel.HotTrackPath(Path: string): string;
@@ -713,15 +730,17 @@ var
   AAlignment: TAlignment;
   AWidth: Integer;
   AHeight: Integer;
+  S: string;
 begin
   if not (csReading in ComponentState) and
-     (AutoSize or AutoSizeVertical) and
-     (Caption <> '') then
+     (AutoSize or AutoSizeVertical) then
   begin
     Rect := ClientRect;
     DC := GetDC(0);
     Canvas.Handle := DC;
-    DoDrawText(Rect, (DT_EXPANDTABS or DT_CALCRECT) or WordWraps[WordWrap]);
+    S := Caption;
+    if S = '' then S := 'SomeTextForSizing';
+    DoDrawTextIntern(Rect, (DT_EXPANDTABS or DT_CALCRECT) or WordWraps[WordWrap], S);
     Canvas.Handle := 0;
     ReleaseDC(0, DC);
     X := Left;
@@ -755,15 +774,24 @@ begin
 end;
 
 procedure TCustomPathLabel.UpdateStatus;
+var
+  NewIsActive: Boolean;
+  NewColor: TColor;
 begin
   if TrackingActive then
   begin
-    FIsActive := IsActive;
-    Color := FColors[Integer(FIsActive)];
-    // We don't want to store Font properties in DFM
-    // which would be if Font.Color is set to something else than clWindowText
-    if not (csDesigning in ComponentState) then
-      Font.Color := FColors[2 + Integer(FIsActive)];
+    NewIsActive := IsActive;
+    NewColor := FColors[Integer(NewIsActive)];
+    if (NewIsActive <> FIsActive) or (NewColor <> Color) then
+    begin
+      FIsActive := NewIsActive;
+      Color := NewColor;
+      Invalidate;
+    end;
+  end
+    else
+  begin
+    Color := clBtnFace;
   end;
 end; { UpdateStatus }
 

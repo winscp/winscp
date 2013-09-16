@@ -7,13 +7,9 @@ object SynchronizeDialog: TSynchronizeDialog
   BorderStyle = bsDialog
   Caption = 'Keep remote directory up to date X'
   ClientHeight = 421
-  ClientWidth = 396
+  ClientWidth = 436
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   KeyPreview = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
@@ -21,25 +17,25 @@ object SynchronizeDialog: TSynchronizeDialog
   OnKeyDown = FormKeyDown
   OnShow = FormShow
   DesignSize = (
-    396
+    436
     421)
   PixelsPerInch = 96
   TextHeight = 13
   object DirectoriesGroup: TGroupBox
     Left = 8
     Top = 6
-    Width = 381
+    Width = 421
     Height = 119
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Directories'
     TabOrder = 0
     DesignSize = (
-      381
+      421
       119)
     object LocalDirectoryLabel: TLabel
       Left = 11
       Top = 19
-      Width = 191
+      Width = 235
       Height = 13
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Watch for changes in the local directory:'
@@ -48,7 +44,7 @@ object SynchronizeDialog: TSynchronizeDialog
     object RemoteDirectoryLabel: TLabel
       Left = 11
       Top = 68
-      Width = 266
+      Width = 321
       Height = 13
       Anchors = [akLeft, akTop, akRight]
       Caption = '... &and automatically reflect them on the remote directory:'
@@ -57,7 +53,7 @@ object SynchronizeDialog: TSynchronizeDialog
     object RemoteDirectoryEdit: THistoryComboBox
       Left = 11
       Top = 84
-      Width = 359
+      Width = 399
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
@@ -69,7 +65,7 @@ object SynchronizeDialog: TSynchronizeDialog
     object LocalDirectoryEdit: THistoryComboBox
       Left = 11
       Top = 35
-      Width = 276
+      Width = 316
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
@@ -79,7 +75,7 @@ object SynchronizeDialog: TSynchronizeDialog
       OnChange = ControlChange
     end
     object LocalDirectoryBrowseButton: TButton
-      Left = 293
+      Left = 335
       Top = 33
       Width = 75
       Height = 25
@@ -90,19 +86,21 @@ object SynchronizeDialog: TSynchronizeDialog
     end
   end
   object StopButton: TButton
-    Left = 152
+    Left = 192
     Top = 288
     Width = 74
     Height = 25
+    Anchors = [akTop, akRight]
     Caption = '&Stop'
     TabOrder = 4
     OnClick = StopButtonClick
   end
   object CancelButton: TButton
-    Left = 232
+    Left = 272
     Top = 288
     Width = 74
     Height = 25
+    Anchors = [akTop, akRight]
     Cancel = True
     Caption = 'Close'
     ModalResult = 2
@@ -111,18 +109,18 @@ object SynchronizeDialog: TSynchronizeDialog
   object OptionsGroup: TGroupBox
     Left = 8
     Top = 130
-    Width = 381
+    Width = 421
     Height = 95
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Synchronize options'
     TabOrder = 1
     DesignSize = (
-      381
+      421
       95)
     object SynchronizeDeleteCheck: TCheckBox
       Left = 11
       Top = 20
-      Width = 182
+      Width = 196
       Height = 17
       Caption = '&Delete files'
       TabOrder = 0
@@ -131,16 +129,16 @@ object SynchronizeDialog: TSynchronizeDialog
     object SaveSettingsCheck: TCheckBox
       Left = 11
       Top = 68
-      Width = 182
+      Width = 196
       Height = 17
       Caption = 'Use same &options next time'
       TabOrder = 4
       OnClick = ControlChange
     end
     object SynchronizeExistingOnlyCheck: TCheckBox
-      Left = 203
+      Left = 213
       Top = 20
-      Width = 166
+      Width = 197
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Existing files only'
@@ -150,16 +148,16 @@ object SynchronizeDialog: TSynchronizeDialog
     object SynchronizeRecursiveCheck: TCheckBox
       Left = 11
       Top = 44
-      Width = 182
+      Width = 196
       Height = 17
       Caption = 'Update s&ubdirectories'
       TabOrder = 2
       OnClick = ControlChange
     end
     object SynchronizeSynchronizeCheck: TGrayedCheckBox
-      Left = 203
+      Left = 213
       Top = 68
-      Width = 166
+      Width = 197
       Height = 17
       AllowGrayed = True
       Anchors = [akLeft, akTop, akRight]
@@ -168,9 +166,9 @@ object SynchronizeDialog: TSynchronizeDialog
       OnClick = ControlChange
     end
     object SynchronizeSelectedOnlyCheck: TCheckBox
-      Left = 203
+      Left = 213
       Top = 44
-      Width = 166
+      Width = 197
       Height = 17
       Caption = 'Selected files o&nly'
       TabOrder = 3
@@ -178,7 +176,7 @@ object SynchronizeDialog: TSynchronizeDialog
     end
   end
   object StartButton: TButton
-    Left = 152
+    Left = 192
     Top = 288
     Width = 74
     Height = 25
@@ -189,7 +187,7 @@ object SynchronizeDialog: TSynchronizeDialog
     OnClick = StartButtonClick
   end
   object MinimizeButton: TButton
-    Left = 233
+    Left = 273
     Top = 288
     Width = 74
     Height = 25
@@ -201,7 +199,7 @@ object SynchronizeDialog: TSynchronizeDialog
   object TransferSettingsButton: TButton
     Left = 8
     Top = 288
-    Width = 137
+    Width = 161
     Height = 25
     Caption = 'Transfer settin&gs...'
     TabOrder = 2
@@ -211,19 +209,20 @@ object SynchronizeDialog: TSynchronizeDialog
   object CopyParamGroup: TGroupBox
     Left = 8
     Top = 230
-    Width = 381
+    Width = 421
     Height = 50
+    Anchors = [akLeft, akTop, akRight]
     Caption = 'Transfer settings'
     TabOrder = 7
     OnClick = CopyParamGroupClick
     OnContextPopup = CopyParamGroupContextPopup
     DesignSize = (
-      381
+      421
       50)
     object CopyParamLabel: TLabel
       Left = 7
       Top = 15
-      Width = 367
+      Width = 407
       Height = 26
       Anchors = [akLeft, akTop, akRight, akBottom]
       AutoSize = False
@@ -233,7 +232,7 @@ object SynchronizeDialog: TSynchronizeDialog
     end
   end
   object HelpButton: TButton
-    Left = 313
+    Left = 353
     Top = 288
     Width = 75
     Height = 25
@@ -245,18 +244,18 @@ object SynchronizeDialog: TSynchronizeDialog
   object LogPanel: TPanel
     Left = 0
     Top = 321
-    Width = 396
+    Width = 436
     Height = 100
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 9
     DesignSize = (
-      396
+      436
       100)
     object LogView: TListView
       Left = 8
       Top = 2
-      Width = 380
+      Width = 420
       Height = 90
       Anchors = [akLeft, akTop, akRight, akBottom]
       Columns = <
@@ -271,10 +270,6 @@ object SynchronizeDialog: TSynchronizeDialog
             -1)
         end>
       DoubleBuffered = True
-      Items.ItemData = {
-        03510000000100000000000000FFFFFFFFFFFFFFFF01000000FFFFFFFF000000
-        000B320030003A00330030003A0034003500200050004D000F44006500740065
-        00630074006500640020006300680061006E0067006500FFFF}
       ReadOnly = True
       RowSelect = True
       ParentDoubleBuffered = False

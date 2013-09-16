@@ -157,6 +157,8 @@ private:
   TTerminal * __fastcall DoNewTerminal(TSessionData * Data);
   static void __fastcall TerminalThreadIdle(void * Data, TObject * Sender);
   void __fastcall SetQueueConfiguration(TTerminalQueue * Queue);
+  void __fastcall ApplicationModalBegin(TObject * Sender);
+  void __fastcall ApplicationModalEnd(TObject * Sender);
 };
 //---------------------------------------------------------------------------
 #endif

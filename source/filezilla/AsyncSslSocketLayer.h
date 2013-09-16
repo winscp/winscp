@@ -143,7 +143,7 @@ public:
 	virtual ~CAsyncSslSocketLayer();
 
 	void SetNotifyReply(int nID, int nCode, int result);
-	BOOL GetPeerCertificateData(t_SslCertData &SslCertData);
+	BOOL GetPeerCertificateData(t_SslCertData &SslCertData, LPCTSTR & Error);
 	std::string GetTlsVersionStr();
 	std::string GetCipherName();
 
@@ -201,7 +201,7 @@ private:
 	static int m_nSslRefCount;
 	BOOL m_bSslInitialized;
 	int m_nShutDown;
-	BOOL m_nNetworkError;
+	int m_nNetworkError;
 	int m_nSslAsyncNotifyId;
 	BOOL m_bBlocking;
 	BOOL m_bSslEstablished;

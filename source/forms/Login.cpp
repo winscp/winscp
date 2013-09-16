@@ -100,6 +100,9 @@ void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList,
   UnicodeString Dummy;
   RunPageantAction->Visible = FindTool(PageantTool, Dummy);
   RunPuttygenAction->Visible = FindTool(PuttygenTool, Dummy);
+  AdvancedButton->Style =
+    FLAGSET(FOptions, loExternalTools) ?
+      TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
   UpdateControls();
 }
 //---------------------------------------------------------------------
@@ -394,14 +397,22 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
     FDefaultPort = DefaultPort();
     FUpdatePortWithProtocol = true;
 
-    // advanced
-    InvalidateSessionData();
-    // close advanced settings only when really needed,
-    // see also note in SessionAdvancedActionExecute
-    if (Editable)
+    if (SessionData != FSessionData)
     {
-      FSessionData = new TSessionData(L"");
-      FSessionData->Assign(SessionData);
+      // advanced
+      InvalidateSessionData();
+      // clone advanced settings only when really needed,
+      // see also note in SessionAdvancedActionExecute
+      if (Editable)
+      {
+        FSessionData = new TSessionData(L"");
+        FSessionData->Assign(SessionData);
+      }
+    }
+    else
+    {
+      // we should get here only when called from SessionAdvancedActionExecute
+      assert(Editable);
     }
   }
   __finally
@@ -595,28 +606,20 @@ TSessionData * __fastcall TLoginDialog::GetSessionData()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
 {
-  TPoint P = SessionTree->ScreenToClient(Mouse->CursorPos);
-  TTreeNode * Node = SessionTree->GetNodeAt(P.x, P.y);
-
-  if (IsSessionNode(Node))
+  if (CanLogin())
   {
-    TSessionData * Data = GetNodeSession(Node);
+    TPoint P = SessionTree->ScreenToClient(Mouse->CursorPos);
+    TTreeNode * Node = SessionTree->GetNodeAt(P.x, P.y);
+
     // this may be false, when collapsed folder was double-clicked,
     // it got expanded, view was shifted to accommodate folder contents,
     // so that cursor now points to a different node (site)
-    if (Data == SelectedSession)
+    if (Node == SessionTree->Selected)
     {
-      if (FStoredSessions->CanLogin(Data))
+      if (IsSessionNode(Node) || IsWorkspaceNode(Node))
       {
-        ModalResult = mrOk;
+        ModalResult = DefaultResult(this);
       }
-    }
-  }
-  else if (IsWorkspaceNode(Node))
-  {
-    if (HasNodeAnySession(Node, true))
-    {
-      ModalResult = mrOk;
     }
   }
 }
@@ -943,10 +946,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == LoginAction)
   {
-    TSessionData * Data = GetSessionData();
-    LoginAction->Enabled =
-      ((Data != NULL) && FStoredSessions->CanLogin(Data) && !FEditing) ||
-      (FolderOrWorkspaceSelected && HasNodeAnySession(SessionTree->Selected, true));
+    LoginAction->Enabled = CanLogin();
   }
   else if (Action == SaveSessionAction)
   {
@@ -987,6 +987,14 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   Idle();
 }
 //---------------------------------------------------------------------------
+bool __fastcall TLoginDialog::CanLogin()
+{
+  TSessionData * Data = GetSessionData();
+  return
+    ((Data != NULL) && FStoredSessions->CanLogin(Data) && !FEditing) ||
+    (IsFolderOrWorkspaceNode(SessionTree->Selected) && HasNodeAnySession(SessionTree->Selected, true));
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Idle()
 {
   if (SessionTree->IsEditing() != FRenaming)
@@ -1023,7 +1031,7 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
     Default();
   }
   LoadState();
-  bool Result = (ShowModal() == mrOk);
+  bool Result = IsDefaultResult(ShowModal());
   SaveState();
   if (Result)
   {
@@ -1471,10 +1479,16 @@ void __fastcall TLoginDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TLoginDialog::IsDefaultResult(TModalResult Result)
+{
+  // When editing, there's no default button, so make sure we do not call DefaultResult
+  return !FEditing && (Result == DefaultResult(this));
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (IsDefaultResult(ModalResult))
   {
     SaveDataList(FDataList);
   }
@@ -1552,7 +1566,7 @@ void __fastcall TLoginDialog::SessionTreeEdited(TObject * /*Sender*/,
       Session->Remove();
 
       TSessionData * NewSession = StoredSessions->NewSession(Path, Session);
-      // modified, only explicit
+      // modified only, explicit
       StoredSessions->Save(false, true);
       // the session may be the same, if only letter case has changed
       if (Session != NewSession)
@@ -1629,7 +1643,7 @@ void __fastcall TLoginDialog::SessionTreeEdited(TObject * /*Sender*/,
 
       if (AnySession)
       {
-        // modified, only explicit
+        // modified only, explicit
         StoredSessions->Save(false, true);
       }
     }
@@ -2022,7 +2036,7 @@ void __fastcall TLoginDialog::SessionTreeDragDrop(TObject * Sender,
     Session->Remove();
 
     TSessionData * NewSession = StoredSessions->NewSession(Path, Session);
-    // modified, only explicit
+    // modified only, explicit
     StoredSessions->Save(false, true);
     // this should aways be the case
     if (ALWAYS_TRUE(Session != NewSession))
@@ -2459,6 +2473,10 @@ void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
   {
     SaveSession(FSessionData);
     DoSiteAdvancedDialog(FSessionData, FOptions);
+    // not really need as advanced site dialog can only change between
+    // fsSFTP and fsSFTPonly, difference of the two not being visible on
+    // login dialog.
+    LoadSession(FSessionData);
   }
 }
 //---------------------------------------------------------------------------

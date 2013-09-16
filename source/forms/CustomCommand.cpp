@@ -182,7 +182,7 @@ bool __fastcall TCustomCommandDialog::Execute(TCustomCommandType & Command)
     SetShortCutCombo(ShortCutCombo, Command.ShortCut);
   }
 
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     GetCommand(Command);
@@ -196,7 +196,7 @@ bool __fastcall TCustomCommandDialog::Execute(TCustomCommandType & Command)
 void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     if ((FMode == ccmAdd) || (FMode == ccmEdit))
     {

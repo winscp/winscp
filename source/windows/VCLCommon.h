@@ -42,10 +42,8 @@ TAutoSwitch __fastcall ComboAutoSwitchSave(TComboBox * ComboBox);
 void __fastcall CheckBoxAutoSwitchLoad(TCheckBox * CheckBox, TAutoSwitch Value);
 TAutoSwitch __fastcall CheckBoxAutoSwitchSave(TCheckBox * CheckBox);
 void __fastcall InstallPathWordBreakProc(TWinControl * Control);
-void __fastcall RepaintStatusBar(TCustomStatusBar * StatusBar);
 void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count);
 void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count);
-TPoint __fastcall GetAveCharSize(TCanvas * Canvas);
 void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After);
 void __fastcall CutFormToDesktop(TForm * Form);
 void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position);
@@ -65,6 +63,8 @@ FormType * __fastcall SafeFormCreate(TComponent * Owner = NULL)
   return dynamic_cast<FormType *>(_SafeFormCreate(__classid(FormType), Owner));
 }
 bool __fastcall SupportsSplitButton();
+TModalResult __fastcall DefaultResult(TCustomForm * Form);
+void __fastcall UseDesktopFont(TControl * Control);
 //---------------------------------------------------------------------------
 // When exception is left to be handled by Application->OnException
 // memory error occurs when clearing the exception for unknown reason.

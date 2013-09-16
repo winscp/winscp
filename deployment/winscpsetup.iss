@@ -98,9 +98,9 @@ DefaultDirName={pf}\WinSCP
 DefaultGroupName=WinSCP
 AllowNoIcons=yes
 #ifdef Chrome
-LicenseFile=licence.setup-chrome.txt
+LicenseFile=license.setup-chrome.txt
 #else
-LicenseFile=licence.setup.txt
+LicenseFile=license.setup.txt
 #endif
 UninstallDisplayIcon={app}\WinSCP.exe
 OutputDir={#OutputDir}
@@ -239,7 +239,7 @@ Name: "{sendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
   Parameters: "/upload"; Tasks: sendtohook
 
 [InstallDelete]
-Type: files; Name: "{app}\licence"
+Type: files; Name: "{app}\license"
 Type: files; Name: "{group}\{cm:WebSite}.url"
 Type: files; Name: "{group}\{cm:SupportForum}.url"
 Type: files; Name: "{group}\{cm:DocumentationPage}.url"
@@ -301,7 +301,7 @@ Source: "{app}\WinSCP3.ini"; DestName: "WinSCP.ini"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion external skipifsourcedoesntexist onlyifdoesntexist
 Source: "{#ConsoleFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
-Source: "licence.txt"; DestDir: "{app}"; \
+Source: "license.txt"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
@@ -757,6 +757,14 @@ end;
 
 #endif
 
+// WORKAROUND
+// Checkboxes and Radio buttons created on runtime do
+// not scale their height automatically
+procedure ScaleFixedHeightControl(Control: TButtonControl);
+begin
+  Control.Height := ScaleY(Control.Height);
+end;
+
 procedure InitializeWizard;
 var
   DefaultLang: Boolean;
@@ -806,7 +814,7 @@ begin
   WizardForm.TasksList.Height := WizardForm.TasksList.Height + ScaleY(8);
 
 #ifndef Chrome
-  // allow installation without requiring user to accept licence
+  // allow installation without requiring user to accept license
   WizardForm.LicenseAcceptedRadio.Checked := True;
   WizardForm.LicenseAcceptedRadio.Visible := False;
   WizardForm.LicenseLabel1.Visible := False;
@@ -861,6 +869,7 @@ begin
   TypicalTypeButton.Left := ScaleX(4);
   TypicalTypeButton.Width := SetupTypePage.SurfaceWidth -
     TypicalTypeButton.Left;
+  ScaleFixedHeightControl(TypicalTypeButton);
   TypicalTypeButton.Parent := SetupTypePage.Surface;
 
   Caption := TLabel.Create(SetupTypePage);
@@ -909,6 +918,7 @@ begin
   CustomTypeButton.Width := SetupTypePage.SurfaceWidth -
     CustomTypeButton.Left;
   CustomTypeButton.Top := Caption.Top + Caption.Height + ScaleY(10);
+  ScaleFixedHeightControl(CustomTypeButton);
   CustomTypeButton.Parent := SetupTypePage.Surface;
 
   Caption := TLabel.Create(SetupTypePage);
@@ -959,6 +969,7 @@ begin
   CommanderRadioButton.Width := InterfacePage.SurfaceWidth -
     CommanderRadioButton.Left;
   CommanderRadioButton.Top := Caption.Top + Caption.Height + ScaleY(6);
+  ScaleFixedHeightControl(CommanderRadioButton);
   CommanderRadioButton.Parent := InterfacePage.Surface;
 
   Image := TBitmapImage.Create(InterfacePage);
@@ -991,6 +1002,7 @@ begin
   ExplorerRadioButton.Width := InterfacePage.SurfaceWidth -
     ExplorerRadioButton.Left;
   ExplorerRadioButton.Top := Caption.Top + Caption.Height + ScaleY(10);
+  ScaleFixedHeightControl(ExplorerRadioButton);
   ExplorerRadioButton.Parent := InterfacePage.Surface;
 
   Image := TBitmapImage.Create(InterfacePage);
@@ -1028,12 +1040,14 @@ begin
   LaunchCheckbox.Checked := True;
   LaunchCheckbox.Left := WizardForm.YesRadio.Left;
   LaunchCheckbox.Width := WizardForm.YesRadio.Width;
+  ScaleFixedHeightControl(LaunchCheckbox);
   LaunchCheckbox.Parent := WizardForm.FinishedPage;
   OpenGettingStartedCheckbox := TCheckbox.Create(WizardForm.FinishedPage);
   OpenGettingStartedCheckbox.Caption := ExpandConstant('{cm:OpenGettingStarted}');
   OpenGettingStartedCheckbox.Checked := True;
   OpenGettingStartedCheckbox.Left := WizardForm.YesRadio.Left;
   OpenGettingStartedCheckbox.Width := WizardForm.YesRadio.Width;
+  ScaleFixedHeightControl(OpenGettingStartedCheckbox);
   OpenGettingStartedCheckbox.Parent := WizardForm.FinishedPage;
 #ifdef Chrome
   LaunchChromeCheckbox := TCheckbox.Create(WizardForm.FinishedPage);
@@ -1041,6 +1055,7 @@ begin
   LaunchChromeCheckbox.Checked := True;
   LaunchChromeCheckbox.Left := WizardForm.YesRadio.Left;
   LaunchChromeCheckbox.Width := WizardForm.YesRadio.Width;
+  ScaleFixedHeightControl(LaunchChromeCheckbox);
   LaunchChromeCheckbox.Parent := WizardForm.FinishedPage;
   LaunchChromeCheckbox.OnClick := @UpdatePostInstallRunCheckboxes;
 #endif
@@ -1151,6 +1166,7 @@ begin
       ChromePage.SurfaceWidth - ChromeCheckbox.Left;
     ChromeCheckbox.Caption := ExpandConstant('{cm:ChromeCheck}');
     ChromeCheckbox.Checked := True;
+    ScaleFixedHeightControl(ChromeCheckbox);
     ChromeCheckbox.Parent := ChromePage.Surface;
     ChromeCheckbox.OnClick := @ChromeCheckboxClick;
 
@@ -1160,6 +1176,8 @@ begin
     ChromeDefaultCheckbox.Left := ScaleX(4);
     ChromeDefaultCheckbox.Width :=
       ChromePage.SurfaceWidth - ChromeDefaultCheckbox.Left;
+    ChromeDefaultCheckbox.Height := ScaleY(ChromeDefaultCheckbox.Height);
+    ScaleFixedHeightControl(ChromeDefaultCheckbox);
     ChromeDefaultCheckbox.Caption := ExpandConstant('{cm:ChromeDefaultCheck}');
     ChromeDefaultCheckbox.Checked := True;
     ChromeDefaultCheckbox.Parent := ChromePage.Surface;

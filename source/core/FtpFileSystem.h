@@ -180,6 +180,7 @@ protected:
   void __fastcall RemoteFileTimeToDateTimeAndPrecision(const TRemoteFileTime & Source,
     TDateTime & DateTime, TModificationFmt & ModificationFmt);
   void __fastcall SetLastCode(int Code);
+  void __fastcall StoreLastResponse(const UnicodeString & Text);
 
   static bool __fastcall Unquote(UnicodeString & Str);
   static UnicodeString __fastcall ExtractStatusMessage(UnicodeString Status);
@@ -212,6 +213,7 @@ private:
   UnicodeString FTimeoutStatus;
   UnicodeString FDisconnectStatus;
   TStrings * FLastResponse;
+  TStrings * FLastErrorResponse;
   TStrings * FLastError;
   UnicodeString FSystem;
   TStrings * FFeatures;

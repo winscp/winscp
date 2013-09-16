@@ -116,7 +116,7 @@ bool __fastcall TEditorPreferencesDialog::Execute(TEditorData * Editor, bool & R
   RememberCheck->Checked = Remember;
   UpdateControls();
 
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
 
   if (Result)
   {
@@ -200,7 +200,7 @@ void __fastcall TEditorPreferencesDialog::UpdateControls()
 void __fastcall TEditorPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     ExitActiveControl(this);
   }

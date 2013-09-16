@@ -10,6 +10,7 @@
 #include <TextsWin.h>
 #include <Terminal.h>
 #include <CoreMain.h>
+#include <PasTools.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PasswordEdit"
@@ -30,6 +31,7 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   UseSystemSettings(this);
   FShowAsModalStorage = NULL;
   FFocusControl = NULL;
+  UseDesktopFont(LogView);
 
   FPromptParent = InstructionsLabel->Parent;
   FPromptLeft = InstructionsLabel->Left;
@@ -38,7 +40,7 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   FPromptEditGap = PromptEdit1->Top - PromptLabel1->Top - PromptLabel1->Height;
   FPromptsGap = PromptLabel2->Top - PromptEdit1->Top - PromptEdit1->Height;
 
-  ClientHeight = 270;
+  ClientHeight = ScaleByTextHeight(this, 270);
 
   ClearLog();
 }
@@ -320,6 +322,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
   TWinControl * FocusControl, TButton * DefaultButton, TButton * CancelButton,
   bool FixHeight, bool Zoom, bool ForceLog)
 {
+  TModalResult DefaultButtonResult;
   TAlign Align = Panel->Align;
   try
   {
@@ -327,6 +330,8 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
     FStatus = Status;
     DefaultButton->Default = true;
     CancelButton->Cancel = true;
+
+    DefaultButtonResult = DefaultResult(this);
 
     if (Zoom)
     {
@@ -430,7 +435,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
     AdjustControls();
   }
 
-  bool Result = (ModalResult != mrCancel);
+  bool Result = (ModalResult == DefaultButtonResult);
 
   if (!Result)
   {

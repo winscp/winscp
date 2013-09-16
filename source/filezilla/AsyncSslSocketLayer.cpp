@@ -512,7 +512,9 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
 			return;
 		}
 		if (m_nNetworkError)
+		{
 			return;
+		}
 
 		char buffer[16384];
 
@@ -622,7 +624,9 @@ void CAsyncSslSocketLayer::OnSend(int nErrorCode)
 	if (m_bUseSSL)
 	{
 		if (m_nNetworkError)
+		{
 			return;
+		}
 
 		m_mayTriggerWrite = false;
 
@@ -1580,11 +1584,79 @@ void CAsyncSslSocketLayer::UnloadSSL()
 	m_sCriticalSection.Unlock();
 }
 
-BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData)
+bool AsnTimeToValidTime(ASN1_TIME * AsnTime, t_SslCertData::t_validTime & ValidTime)
+{
+	int i = AsnTime->length;
+	const char * v = (const char *)AsnTime->data;
+
+	if (i < 10)
+	{
+		return FALSE;
+	}
+
+	for (int i2 = 0; i2 < 10; i2++)
+	{
+		if ((v[i2] > '9') || (v[i2] < '0'))
+		{
+			return FALSE;
+		}
+	}
+
+	if (AsnTime->type == V_ASN1_UTCTIME)
+	{
+		ValidTime.y= (v[0]-'0')*10+(v[1]-'0');
+		if (ValidTime.y < 50) ValidTime.y+=100;
+		ValidTime.y += 1900;
+		v += 2;
+		i -= 2;
+	}
+	else if (AsnTime->type == V_ASN1_GENERALIZEDTIME)
+	{
+		if (i < 12)
+		{
+			return FALSE;
+		}
+		ValidTime.y = (v[0]-'0')*1000+(v[1]-'0')*100 + (v[2]-'0')*10+(v[3]-'0');
+		v += 4;
+		i -= 4;
+	}
+	else
+	{
+		return FALSE;
+	}
+
+	ValidTime.M = (v[0]-'0')*10+(v[1]-'0');
+	if ((ValidTime.M > 12) || (ValidTime.M < 1))
+	{
+		return FALSE;
+	}
+
+	ValidTime.d = (v[2]-'0')*10+(v[3]-'0');
+	ValidTime.h = (v[4]-'0')*10+(v[5]-'0');
+	ValidTime.m =  (v[6]-'0')*10+(v[7]-'0');
+
+	if ((i >= 10) &&
+			(v[8] >= '0') && (v[8] <= '9') &&
+			(v[9] >= '0') && (v[9] <= '9'))
+	{
+		ValidTime.s = (v[8]-'0')*10+(v[9]-'0');
+	}
+	else
+	{
+		ValidTime.s = 0;
+	}
+
+	return TRUE;
+}
+
+BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LPCTSTR & Error)
 {
 	X509 *pX509=pSSL_get_peer_certificate(m_ssl);
 	if (!pX509)
+	{
+		Error = _T("Cannot get certificate");
 		return FALSE;
+	}
 
 	//Reset the contents of SslCertData
 	memset(&SslCertData, 0, sizeof(t_SslCertData));
@@ -1809,110 +1881,37 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData)
 
 	//Set date fields
 
-	static const char *mon[12]=
-    {
-    "Jan","Feb","Mar","Apr","May","Jun",
-    "Jul","Aug","Sep","Oct","Nov","Dec"
-    };
-
 	//Valid from
-	ASN1_UTCTIME *pTime=X509_get_notBefore(pX509);
+	ASN1_TIME *pTime=X509_get_notBefore(pX509);
 	if (!pTime)
 	{
 		pX509_free(pX509);
+		Error = _T("Cannot get start time");
 		return FALSE;
 	}
 
-	char *v;
-	int gmt = 0;
-	int i;
-	int y=0, M=0, d=0, h=0, m=0, s=0;
-
-	i = pTime->length;
-	v = (char *)pTime->data;
-
-	if (i < 10)
+	if (!AsnTimeToValidTime(pTime, SslCertData.validFrom))
 	{
 		pX509_free(pX509);
+		Error = _T("Invalid start time");
 		return FALSE;
 	}
-	if (v[i-1] == 'Z') gmt=1;
-	for (i=0; i<10; i++)
-		if ((v[i] > '9') || (v[i] < '0'))
-		{
-			pX509_free(pX509);
-			return FALSE;
-		}
-	y= (v[0]-'0')*10+(v[1]-'0');
-	if (y < 50) y+=100;
-	M= (v[2]-'0')*10+(v[3]-'0');
-	if ((M > 12) || (M < 1))
-	{
-		pX509_free(pX509);
-		return FALSE;
-	}
-	d= (v[4]-'0')*10+(v[5]-'0');
-	h= (v[6]-'0')*10+(v[7]-'0');
-	m=  (v[8]-'0')*10+(v[9]-'0');
-	if (	(v[10] >= '0') && (v[10] <= '9') &&
-		(v[11] >= '0') && (v[11] <= '9'))
-		s=  (v[10]-'0')*10+(v[11]-'0');
-
-	SslCertData.validFrom.y = y+1900;
-	SslCertData.validFrom.M = M;
-	SslCertData.validFrom.d = d;
-	SslCertData.validFrom.h = h;
-	SslCertData.validFrom.m = m;
-	SslCertData.validFrom.s = s;
 
 	//Valid until
 	pTime = X509_get_notAfter(pX509);
 	if (!pTime)
 	{
 		pX509_free(pX509);
+		Error = _T("Cannot get end time");
 		return FALSE;
 	}
 
-	gmt = 0;
-	i;
-	y=0,M=0,d=0,h=0,m=0,s=0;
-
-	i=pTime->length;
-	v=(char *)pTime->data;
-
-	if (i < 10)
+	if (!AsnTimeToValidTime(pTime, SslCertData.validUntil))
 	{
 		pX509_free(pX509);
+		Error = _T("Invalid end time");
 		return FALSE;
 	}
-	if (v[i-1] == 'Z') gmt=1;
-	for (i=0; i<10; i++)
-		if ((v[i] > '9') || (v[i] < '0'))
-		{
-			pX509_free(pX509);
-			return FALSE;
-		}
-	y= (v[0]-'0')*10+(v[1]-'0');
-	if (y < 50) y+=100;
-	M= (v[2]-'0')*10+(v[3]-'0');
-	if ((M > 12) || (M < 1))
-	{
-		pX509_free(pX509);
-		return FALSE;
-	}
-	d= (v[4]-'0')*10+(v[5]-'0');
-	h= (v[6]-'0')*10+(v[7]-'0');
-	m=  (v[8]-'0')*10+(v[9]-'0');
-	if (	(v[10] >= '0') && (v[10] <= '9') &&
-		(v[11] >= '0') && (v[11] <= '9'))
-		s=  (v[10]-'0')*10+(v[11]-'0');
-
-	SslCertData.validUntil.y = y+1900;
-	SslCertData.validUntil.M = M;
-	SslCertData.validUntil.d = d;
-	SslCertData.validUntil.h = h;
-	SslCertData.validUntil.m = m;
-	SslCertData.validUntil.s = s;
 
 	unsigned int length = 20;
 	pX509_digest(pX509, pEVP_sha1(), SslCertData.hash, &length);
@@ -2385,7 +2384,9 @@ void CAsyncSslSocketLayer::TriggerEvents()
 	if (m_onCloseCalled && m_bSslEstablished)
 	{
 		if (pBIO_ctrl_pending(m_sslbio) <= 0)
+		{
 			TriggerEvent(FD_CLOSE, 0, TRUE);
+		}
 	}
 }
 

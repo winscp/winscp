@@ -3751,6 +3751,8 @@ bool __fastcall TTerminal::DoCreateLocalFile(const UnicodeString FileName,
     Done = (*AHandle != INVALID_HANDLE_VALUE);
     if (!Done)
     {
+      // save the error, otherwise it gets overwritten by call to FileExists
+      int LastError = GetLastError();
       int FileAttr;
       if (::FileExists(FileName) &&
         (((FileAttr = FileGetAttr(FileName)) & (faReadOnly | faHidden)) != 0))
@@ -3804,7 +3806,7 @@ bool __fastcall TTerminal::DoCreateLocalFile(const UnicodeString FileName,
       }
       else
       {
-        RaiseLastOSError();
+        RaiseLastOSError(LastError);
       }
     }
   }
@@ -3870,7 +3872,7 @@ void __fastcall TTerminal::OpenLocalFile(const UnicodeString FileName,
         FILETIME CTime;
         // Get last file access and modification time
         FILE_OPERATION_LOOP (FMTLOAD(CANT_GET_ATTRS, (FileName)),
-          if (!GetFileTime(Handle, &CTime, &ATime, &MTime)) RaiseLastOSError();
+          THROWOSIFFALSE(GetFileTime(Handle, &CTime, &ATime, &MTime));
         );
         if (ACTime)
         {

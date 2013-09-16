@@ -143,16 +143,7 @@ type
     procedure HandleAccSelect(const AExecute: Boolean);
   end;
 
-procedure CallNotifyWinEvent(event: DWORD; hwnd: HWND; idObject: DWORD;
-  idChild: Longint);
-function InitializeOleAcc: Boolean;
-
 var
-  LresultFromObjectFunc: function(const riid: TGUID; wParam: WPARAM;
-    pUnk: IUnknown): LRESULT; stdcall;
-  AccessibleObjectFromWindowFunc: function(hwnd: HWND; dwId: DWORD;
-    const riid: TGUID; out ppvObject: Pointer): HRESULT; stdcall;
-
   { For debugging purposes only: }
   ViewAccObjectInstances: Integer = 0;
   ItemViewerAccObjectInstances: Integer = 0;
@@ -160,7 +151,7 @@ var
 implementation
 
 uses
-  {$IFDEF JR_D6} Variants, {$ENDIF} ActiveX, Menus, TB2Common;
+  {$IFDEF JR_D6} Variants, {$ENDIF} ActiveX, Menus, TB2Common, Winapi.oleacc;
 
 const
   { Constants from OleAcc.h }
@@ -196,49 +187,11 @@ var
   LastAccObject: TTBCustomAccObject;  { last object in the linked list }
   LastAccObjectCritSect: TRTLCriticalSection;
 
-  NotifyWinEventInited: BOOL;
-  NotifyWinEventFunc: procedure(event: DWORD; hwnd: HWND; idObject: DWORD;
-    idChild: Longint); stdcall;
-
-procedure CallNotifyWinEvent(event: DWORD; hwnd: HWND; idObject: DWORD;
-  idChild: Longint);
-begin
-  if not NotifyWinEventInited then begin
-    NotifyWinEventFunc := GetProcAddress(GetModuleHandle(user32), 'NotifyWinEvent');
-    InterlockedExchange(Integer(NotifyWinEventInited), Ord(True));
-  end;
-  if Assigned(NotifyWinEventFunc) then
-    NotifyWinEventFunc(event, hwnd, idObject, idChild);
-end;
-
-var
-  OleAccInited: BOOL;
-  OleAccAvailable: BOOL;
-
-function InitializeOleAcc: Boolean;
-var
-  M: HMODULE;
-begin
-  if not OleAccInited then begin
-    M := {$IFDEF JR_D5} SafeLoadLibrary {$ELSE} LoadLibrary {$ENDIF} ('oleacc.dll');
-    if M <> 0 then begin
-      LresultFromObjectFunc := GetProcAddress(M, 'LresultFromObject');
-      AccessibleObjectFromWindowFunc := GetProcAddress(M, 'AccessibleObjectFromWindow');
-      if Assigned(LresultFromObjectFunc) and
-         Assigned(AccessibleObjectFromWindowFunc) then
-        OleAccAvailable := True;
-    end;
-    InterlockedExchange(Integer(OleAccInited), Ord(True));
-  end;
-  Result := OleAccAvailable;
-end;
-
 function AccObjectFromWindow(const Wnd: HWND; out ADisp: IDispatch): Boolean;
 var
   P: Pointer;
 begin
-  if Assigned(AccessibleObjectFromWindowFunc) and
-     (AccessibleObjectFromWindowFunc(Wnd, OBJID_WINDOW, IDispatch, P) = S_OK) then begin
+  if AccessibleObjectFromWindow(Wnd, OBJID_WINDOW, IDispatch, P) = S_OK then begin
     ADisp := IDispatch(P);
     IDispatch(P)._Release;
     Result := True;

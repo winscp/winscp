@@ -2235,8 +2235,7 @@ var
   Drive: TDrive;
 begin
   Drive := GetDriveToNode(Node);
-  Result := Assigned(DriveStatus[Drive].DiscMonitor) and
-    DriveStatus[Drive].DiscMonitor.Active;
+  Result := WatchThreadActive(Drive);
 end; {NodeWatched}
 
 procedure TDriveView.ChangeInvalid(Sender: TObject; const Directory: string;
@@ -2372,7 +2371,8 @@ function TDriveView.WatchThreadActive(Drive: TDrive): Boolean;
 begin
   Result := FWatchDirectory and
     Assigned(DriveStatus[Drive].DiscMonitor) and
-    DriveStatus[Drive].DiscMonitor.Active;
+    DriveStatus[Drive].DiscMonitor.Active and
+    DriveStatus[Drive].DiscMonitor.Enabled;
 end; {WatchThreadActive}
 
 function TDriveView.WatchThreadActive: Boolean;
@@ -2387,9 +2387,7 @@ begin
 
   Drive := GetDriveToNode(Selected);
 
-  Result := FWatchDirectory and
-    Assigned(DriveStatus[Drive].DiscMonitor) and
-    DriveStatus[Drive].DiscMonitor.Active;
+  Result := WatchThreadActive(Drive);
 end; {WatchThreadActive}
 {$ENDIF}
 

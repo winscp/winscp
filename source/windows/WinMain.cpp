@@ -272,10 +272,17 @@ void __fastcall UpdateStaticUsage()
   UnicodeString WindowsVersion = FORMAT("%d.%d.%d %s", (Win32MajorVersion, Win32MinorVersion, Win32BuildNumber, Win32CSDVersion));
   Configuration->Usage->Set(L"WindowsVersion", (WindowsVersion));
   Configuration->Usage->Set(L"WindowsProductName", (WindowsProductName()));
+  DWORD Type;
+  GetWindowsProductType(Type);
+  Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(Type)));
   Configuration->Usage->Set(L"DefaultLocale",
     IntToHex(static_cast<int>(GetDefaultLCID()), 4));
   Configuration->Usage->Set(L"Locale",
     IntToHex(static_cast<int>(WinConfiguration->Locale), 4));
+  Configuration->Usage->Set(L"PixelsPerInch", Screen->PixelsPerInch);
+  Configuration->Usage->Set(L"WorkAreaWidth", Screen->WorkAreaWidth);
+  Configuration->Usage->Set(L"WorkAreaHeight", Screen->WorkAreaHeight);
+  Configuration->Usage->Set(L"MonitorCount", Screen->MonitorCount);
 
   UnicodeString ProgramsFolder;
   ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);

@@ -65,6 +65,30 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   FOldTabIndex = -1;
 }
 //----------------------------------------------------------------------------------------------------------
+int __fastcall TThemePageControl::GetTabsHeight()
+{
+  // Calculated height includes tab/contents separator line on Windows 7/8,
+  // but not on Windows XP
+
+  TRect Rect = GetClientRect();
+  ::SendMessage(Handle, TCM_ADJUSTRECT, FALSE, (LPARAM)&Rect);
+  int Result = Rect.Top - 1;
+
+  // two different ways to calculate the same, not sure which one is more reliable,
+  // so we want to know in case they differ
+  if (ALWAYS_TRUE(PageCount >= 0))
+  {
+    TRect Rect = TabRect(0);
+    int Result2 = Rect.Bottom + 1;
+    if (ALWAYS_FALSE(Result != Result2))
+    {
+      Result = Result2;
+    }
+  }
+
+  return Result;
+}
+//----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::PaintWindow(HDC DC)
 {
   // Themes not enabled, give up
@@ -198,8 +222,9 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, boo
     {
       Left = (Rect.Right - Images->Width - Rect.Left) / 2;
     }
+    int Y = ((Rect.Top + Rect.Bottom - Images->Height) / 2) - 1 + (Selected ? 0 : -2);
     ImageList_Draw((HIMAGELIST)Images->Handle, Pages[Item]->ImageIndex, DC,
-      Left, Rect.Top - 1 + (Selected ? 0 : -2), ILD_TRANSPARENT);
+      Left, Y, ILD_TRANSPARENT);
     Rect.Left += Images->Width + 3;
   }
   else

@@ -47,7 +47,7 @@ bool __fastcall TCopyParamCustomDialog::Execute(TCopyParamType & CopyParam)
   CopyParamsFrame->Params = CopyParam;
 
   CopyParamsFrame->BeforeExecute();
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
 
   if (Result)
   {
@@ -62,7 +62,7 @@ bool __fastcall TCopyParamCustomDialog::Execute(TCopyParamType & CopyParam)
 void __fastcall TCopyParamCustomDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     ExitActiveControl(this);
   }

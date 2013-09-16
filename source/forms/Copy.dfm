@@ -9,11 +9,7 @@ object CopyDialog: TCopyDialog
   ClientHeight = 189
   ClientWidth = 511
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
@@ -160,7 +156,7 @@ object CopyDialog: TCopyDialog
   object DirectoryLabel: TLabel
     Left = 46
     Top = 8
-    Width = 187
+    Width = 195
     Height = 13
     Caption = 'Copy 2 selected files to remote directory'
   end
@@ -918,7 +914,7 @@ object CopyDialog: TCopyDialog
   object TransferSettingsButton: TButton
     Left = 8
     Top = 136
-    Width = 129
+    Width = 161
     Height = 25
     Caption = 'Transfer settin&gs...'
     TabOrder = 6

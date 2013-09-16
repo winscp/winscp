@@ -1,25 +1,43 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace WinSCP
 {
     internal class Job : IDisposable
     {
-        public Job()
+        public Job(Logger logger, string name)
         {
-            _handle = UnsafeNativeMethods.CreateJobObject(IntPtr.Zero, null);
+            _logger = logger;
+            _handle = UnsafeNativeMethods.CreateJobObject(IntPtr.Zero, name);
 
-            JobObjectBasicLimitInformation info = new JobObjectBasicLimitInformation();
-            info.LimitFlags = 0x2000;
+            if (_handle == IntPtr.Zero)
+            {
+                _logger.WriteLine("Cannot create job ({0})", Logger.LastWin32ErrorMessage());
+            }
+            else
+            {
+                _logger.WriteLine("Job created");
 
-            JobObjectExtendedLimitInformation extendedInfo = new JobObjectExtendedLimitInformation();
-            extendedInfo.BasicLimitInformation = info;
+                JobObjectBasicLimitInformation info = new JobObjectBasicLimitInformation();
+                info.LimitFlags = 0x2000; // JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
 
-            int length = Marshal.SizeOf(typeof(JobObjectExtendedLimitInformation));
-            IntPtr extendedInfoPtr = Marshal.AllocHGlobal(length);
-            Marshal.StructureToPtr(extendedInfo, extendedInfoPtr, false);
+                JobObjectExtendedLimitInformation extendedInfo = new JobObjectExtendedLimitInformation();
+                extendedInfo.BasicLimitInformation = info;
 
-            UnsafeNativeMethods.SetInformationJobObject(_handle, JobObjectInfoType.ExtendedLimitInformation, extendedInfoPtr, (uint)length);
+                int length = Marshal.SizeOf(typeof(JobObjectExtendedLimitInformation));
+                IntPtr extendedInfoPtr = Marshal.AllocHGlobal(length);
+                Marshal.StructureToPtr(extendedInfo, extendedInfoPtr, false);
+
+                if (UnsafeNativeMethods.SetInformationJobObject(_handle, JobObjectInfoType.ExtendedLimitInformation, extendedInfoPtr, (uint)length))
+                {
+                    _logger.WriteLine("Job set to kill all processes");
+                }
+                else
+                {
+                    _logger.WriteLine("Cannot set job to kill all processes ({0})", Logger.LastWin32ErrorMessage());
+                }
+            }
         }
 
         ~Job()
@@ -40,15 +58,12 @@ namespace WinSCP
 
         public void Close()
         {
+            _logger.WriteLine("Closing job");
             UnsafeNativeMethods.CloseHandle(_handle);
             _handle = IntPtr.Zero;
         }
 
-        public bool AddProcess(IntPtr handle)
-        {
-            return UnsafeNativeMethods.AssignProcessToJobObject(_handle, handle);
-        }
-
         private IntPtr _handle;
+        private Logger _logger;
     }
 }

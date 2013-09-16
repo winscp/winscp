@@ -10,11 +10,7 @@ object LogForm: TLogForm
   Color = clBtnFace
   Constraints.MinHeight = 170
   Constraints.MinWidth = 250
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   OldCreateOrder = False
   OnClose = FormClose
   PixelsPerInch = 96

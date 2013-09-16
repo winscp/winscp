@@ -61,6 +61,7 @@ private:
   TNotifyEvent FOnRegistrationLink;
   void __fastcall FirstScrollingControlEnter(TObject * Sender);
   void __fastcall LastScrollingControlEnter(TObject * Sender);
+  void __fastcall FixWrappedLabelSize(TLabel * Label);
 public:
   virtual __fastcall TAboutDialog(TComponent * AOwner,
     TConfiguration * Configuration, bool AllowLicense, TRegistration * Registration);

@@ -79,6 +79,10 @@ __fastcall TTerminalManager::TTerminalManager() :
   Application->OnShowHint = ApplicationShowHint;
   assert(Application->OnMessage == NULL);
   Application->OnMessage = ApplicationMessage;
+  assert(Application->OnModalBegin == NULL);
+  Application->OnModalBegin = ApplicationModalBegin;
+  assert(Application->OnModalEnd == NULL);
+  Application->OnModalEnd = ApplicationModalEnd;
   assert(WinConfiguration->OnMasterPasswordPrompt == NULL);
   WinConfiguration->OnMasterPasswordPrompt = MasterPasswordPrompt;
 
@@ -109,6 +113,10 @@ __fastcall TTerminalManager::~TTerminalManager()
   Application->OnShowHint = ApplicationShowHint;
   assert(Application->OnMessage == ApplicationMessage);
   Application->OnMessage = NULL;
+  assert(Application->OnModalBegin == ApplicationModalBegin);
+  Application->OnModalBegin = NULL;
+  assert(Application->OnModalEnd == ApplicationModalEnd);
+  Application->OnModalEnd = NULL;
   assert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
   WinConfiguration->OnMasterPasswordPrompt = NULL;
 
@@ -835,6 +843,16 @@ void __fastcall TTerminalManager::ApplicationMessage(TMsg & Msg, bool & Handled)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::ApplicationModalBegin(TObject * /*Sender*/)
+{
+  NonVisualDataModule->StartBusy();
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::ApplicationModalEnd(TObject * /*Sender*/)
+{
+  NonVisualDataModule->EndBusy();
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::InitTaskbarButtonCreatedMessage()
 {
 
@@ -1320,12 +1338,14 @@ void __fastcall TTerminalManager::OpenInPutty()
   try
   {
     assert(ActiveTerminal != NULL);
-    ScpExplorer->UpdateTerminal(ActiveTerminal);
-
     Data->Assign(ActiveTerminal->SessionData);
 
-    Data->RemoteDirectory =
-      NOT_NULL(dynamic_cast<TManagedTerminal *>(ActiveTerminal))->RemoteDirectory;
+    if (ScpExplorer != NULL)
+    {
+      ScpExplorer->UpdateTerminal(ActiveTerminal);
+      Data->RemoteDirectory =
+        NOT_NULL(dynamic_cast<TManagedTerminal *>(ActiveTerminal))->RemoteDirectory;
+    }
 
     // putty does not support resolving environment variables in session settings
     Data->ExpandEnvironmentVariables();

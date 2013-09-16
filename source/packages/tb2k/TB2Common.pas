@@ -72,7 +72,6 @@ procedure HandleWMPrintClient(const Control: TWinControl;
   var Message: TMessage);
 procedure ListSortEx(const List: TList; const Compare: TListSortExCompare;
   const ExtraData: Pointer);
-procedure InitTrackMouseEvent;
 function Max(A, B: Integer): Integer;
 function Min(A, B: Integer): Integer;
 function MethodsEqual(const M1, M2: TMethod): Boolean;
@@ -768,42 +767,15 @@ begin
   Result := GetRectOfPrimaryMonitor(WorkArea);
 end;
 
-var
-  TrackMouseEventInited: BOOL;
-
-procedure InitTrackMouseEvent;
-var
-  TrackMouseEventComCtlModule: THandle;
-begin
-  { First look for TrackMouseEvent which is available on Windows 98 & NT 4 only.
-    If it doesn't exist, look for _TrackMouseEvent which is available on
-    Windows 95 if IE 3.0 or later is installed. }
-  if not TrackMouseEventInited then begin
-    TrackMouseEventFunc := GetProcAddress(GetModuleHandle(user32),
-      'TrackMouseEvent');
-    if @TrackMouseEventFunc = nil then begin
-      TrackMouseEventComCtlModule :=
-        {$IFDEF JR_D5} SafeLoadLibrary {$ELSE} LoadLibrary {$ENDIF} (comctl32);
-      if TrackMouseEventComCtlModule <> 0 then
-        TrackMouseEventFunc := GetProcAddress(TrackMouseEventComCtlModule,
-          '_TrackMouseEvent');
-    end;
-    InterlockedExchange(Integer(TrackMouseEventInited), Ord(True));
-  end;
-end;
-
 function CallTrackMouseEvent(const Wnd: HWND; const Flags: DWORD): Boolean;
 var
   Track: TTrackMouseEvent;
 begin
-  Result := False;
-  if Assigned(TrackMouseEventFunc) then begin
-    Track.cbSize := SizeOf(Track);
-    Track.dwFlags := Flags;
-    Track.hwndTrack := Wnd;
-    Track.dwHoverTime := 0;
-    Result := TrackMouseEventFunc(Track);
-  end;
+  Track.cbSize := SizeOf(Track);
+  Track.dwFlags := Flags;
+  Track.hwndTrack := Wnd;
+  Track.dwHoverTime := 0;
+  Result := TrackMouseEvent(Track);
 end;
 
 {$IFNDEF JR_D5}

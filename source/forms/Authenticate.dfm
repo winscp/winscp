@@ -11,11 +11,7 @@ object AuthenticateForm: TAuthenticateForm
   Color = clBtnFace
   Constraints.MinHeight = 200
   Constraints.MinWidth = 280
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnResize = FormResize
@@ -33,10 +29,6 @@ object AuthenticateForm: TAuthenticateForm
         Width = 100
       end>
     DoubleBuffered = True
-    Items.ItemData = {
-      033C0000000100000000000000FFFFFFFFFFFFFFFF00000000FFFFFFFF000000
-      001141007500740068006E0065007400690063006100740069006E0067002E00
-      2E002E00}
     ReadOnly = True
     RowSelect = True
     ParentDoubleBuffered = False

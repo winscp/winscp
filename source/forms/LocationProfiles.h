@@ -119,6 +119,11 @@ private:
   UnicodeString FRemoteDirectory;
   TTreeViewScrollOnDragOver * FSessionScrollOnDragOver;
   TTreeViewScrollOnDragOver * FSharedScrollOnDragOver;
+  UnicodeString FSessionKey;
+  #ifdef _DEBUG
+  HWND FSessionProfilesViewHandle;
+  HWND FSharedProfilesViewHandle;
+  #endif
 
   void __fastcall SetLocalDirectory(UnicodeString value);
   UnicodeString __fastcall GetLocalDirectory();

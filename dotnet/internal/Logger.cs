@@ -5,6 +5,8 @@ using System.Threading;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace WinSCP
 {
@@ -280,6 +282,11 @@ namespace WinSCP
             WriteLine("Runtime: {0}", Environment.Version);
             WriteLine("Console encoding: Input: {0} ({1}); Output: {2} ({3})", Console.InputEncoding.EncodingName, Console.InputEncoding.CodePage, Console.OutputEncoding.EncodingName, Console.OutputEncoding.CodePage);
             WriteLine("Working directory: {0}", Environment.CurrentDirectory);
+        }
+
+        public static string LastWin32ErrorMessage()
+        {
+            return new Win32Exception(Marshal.GetLastWin32Error()).Message;
         }
 
         private StreamWriter _writter;

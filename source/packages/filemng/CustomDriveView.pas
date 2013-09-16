@@ -224,13 +224,8 @@ uses
   IEListView, BaseUtils;
 
 constructor TCustomDriveView.Create(AOwner: TComponent);
-var
-  WinVer: TOSVersionInfo;
 begin
   inherited;
-
-  WinVer.dwOSVersionInfoSize := SizeOf(WinVer);
-  GetVersionEx(WinVer);
 
   DragMode := dmAutomatic;
   FDragFileList := TStringList.Create;

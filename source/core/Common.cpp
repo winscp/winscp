@@ -1488,6 +1488,14 @@ bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycle
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall DeleteFileChecked(const UnicodeString & FileName)
+{
+  if (!DeleteFile(FileName))
+  {
+    throw EOSExtException(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)));
+  }
+}
+//---------------------------------------------------------------------------
 unsigned int __fastcall CancelAnswer(unsigned int Answers)
 {
   unsigned int Result;
@@ -1775,26 +1783,27 @@ void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, con
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsWinXPOrOlder()
+{
+  // Win XP is 5.1
+  // Vista is 6.0
+  // There also 5.2, what is Windows 2003 or Windows XP 64bit
+  // (we consider it WinXP for now)
+  return !CheckWin32Version(6, 0);
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsWin7()
 {
   return CheckWin32Version(6, 1);
 }
 //---------------------------------------------------------------------------
+// Duplicated in PasTools.pas
 bool __fastcall IsExactly2008R2()
 {
-  HINSTANCE Kernel32 = GetModuleHandle(kernel32);
-  typedef BOOL WINAPI (* TGetProductInfo)(DWORD, DWORD, DWORD, DWORD, PDWORD);
-  TGetProductInfo GetProductInfo =
-      (TGetProductInfo)GetProcAddress(Kernel32, "GetProductInfo");
-  bool Result;
-  if (GetProductInfo == NULL)
+  bool Result = (Win32MajorVersion == 6) && (Win32MinorVersion == 1);
+  DWORD Type;
+  if (Result && GetWindowsProductType(Type))
   {
-    Result = false;
-  }
-  else
-  {
-    DWORD Type;
-    GetProductInfo(Win32MajorVersion, Win32MinorVersion, 0, 0, &Type);
     switch (Type)
     {
       case 0x0008 /*PRODUCT_DATACENTER_SERVER*/:
@@ -1851,6 +1860,25 @@ UnicodeString __fastcall DefaultEncodingName()
     ADefaultEncodingName = Info.CodePageName;
   }
   return ADefaultEncodingName;
+}
+//---------------------------------------------------------------------------
+bool _fastcall GetWindowsProductType(DWORD & Type)
+{
+  bool Result;
+  HINSTANCE Kernel32 = GetModuleHandle(kernel32);
+  typedef BOOL WINAPI (* TGetProductInfo)(DWORD, DWORD, DWORD, DWORD, PDWORD);
+  TGetProductInfo GetProductInfo =
+      (TGetProductInfo)GetProcAddress(Kernel32, "GetProductInfo");
+  if (GetProductInfo == NULL)
+  {
+    Result = false;
+  }
+  else
+  {
+    GetProductInfo(Win32MajorVersion, Win32MinorVersion, 0, 0, &Type);
+    Result = true;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall WindowsProductName()

@@ -114,25 +114,13 @@ __fastcall TOwnConsole::TOwnConsole()
 
   if (WinConfiguration->MinimizeToTray)
   {
-    HINSTANCE Kernel32 = GetModuleHandle(kernel32);
-
-    typedef HWND WINAPI (* TGetConsoleWindow)();
-    TGetConsoleWindow GetConsoleWindow =
-      (TGetConsoleWindow)GetProcAddress(Kernel32, "GetConsoleWindow");
-    if (GetConsoleWindow != NULL)
+    FConsoleWindow = GetConsoleWindow();
+    if (ALWAYS_TRUE(FConsoleWindow != NULL))
     {
-      FConsoleWindow = GetConsoleWindow();
-      if (FConsoleWindow != NULL)
-      {
-        FWindowStateTimer = new TTimer(Application);
-        FWindowStateTimer->OnTimer = WindowStateTimer;
-        FWindowStateTimer->Interval = 250;
-        FWindowStateTimer->Enabled = true;
-      }
-      else
-      {
-        assert(false);
-      }
+      FWindowStateTimer = new TTimer(Application);
+      FWindowStateTimer->OnTimer = WindowStateTimer;
+      FWindowStateTimer->Interval = 250;
+      FWindowStateTimer->Enabled = true;
     }
   }
 }
@@ -560,25 +548,15 @@ __fastcall TExternalConsole::TExternalConsole(
     throw Exception(LoadStr(EXTERNAL_CONSOLE_INIT_ERROR));
   }
 
-  HINSTANCE Kernel32 = GetModuleHandle(kernel32);
-  typedef HANDLE WINAPI (* TOpenJobObject)(DWORD DesiredAccess, BOOL InheritHandles, LPCTSTR Name);
-  typedef HANDLE WINAPI (* TAssignProcessToJobObject)(HANDLE Job, HANDLE Process);
-  TOpenJobObject OpenJobObject =
-    (TOpenJobObject)GetProcAddress(Kernel32, "OpenJobObjectW");
-  TAssignProcessToJobObject AssignProcessToJobObject =
-    (TAssignProcessToJobObject)GetProcAddress(Kernel32, "AssignProcessToJobObject");
-  if ((OpenJobObject != NULL) && (AssignProcessToJobObject != NULL))
+  HANDLE Job = OpenJobObject(JOB_OBJECT_ASSIGN_PROCESS, FALSE,
+    FORMAT(L"%s%s", (CONSOLE_JOB, Instance)).c_str());
+  if (ALWAYS_TRUE(Job != NULL))
   {
-    HANDLE Job = OpenJobObject(JOB_OBJECT_ASSIGN_PROCESS, FALSE,
-      FORMAT(L"%s%s", (CONSOLE_JOB, Instance)).c_str());
-    if (Job != NULL)
-    {
-      AssignProcessToJobObject(Job, GetCurrentProcess());
-      // winscp.com keeps the only reference to the job.
-      // once it gets closed (because winscp.com if forcefully terminated),
-      // we get terminated as well
-      CloseHandle(Job);
-    }
+    AssignProcessToJobObject(Job, GetCurrentProcess());
+    // winscp.com/winscp.dll keeps the only reference to the job.
+    // once it gets closed (because winscp.com if forcefully terminated),
+    // we get terminated as well
+    CloseHandle(Job);
   }
 
   TConsoleCommStruct * CommStruct = GetCommStruct();
@@ -1274,6 +1252,8 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
 
     NoBatchA = Params->NoBatchAnswers;
   }
+
+  ApplyTabs(AQuery, L' ', NULL, NULL);
 
   unsigned int AAnswers = Answers;
 

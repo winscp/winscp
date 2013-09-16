@@ -101,7 +101,7 @@ bool __fastcall TPropertiesDialog::Execute(TRemoteProperties & Properties)
 
   UpdateControls();
 
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
 
   if (Result)
   {
@@ -531,7 +531,7 @@ void __fastcall TPropertiesDialog::UpdateControls()
 void __fastcall TPropertiesDialog::FormCloseQuery(TObject * /*Sender*/,
       bool & /*CanClose*/)
 {
-  if (ModalResult == mrOk)
+  if (ModalResult == DefaultResult(this))
   {
     ExitActiveControl(this);
   }

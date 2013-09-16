@@ -100,37 +100,21 @@ void InitializeConsole(wchar_t* InstanceName, HANDLE& RequestEvent, HANDLE& Resp
     throw runtime_error("Cannot create mapping object.");
   }
 
-  typedef HANDLE WINAPI (*TCreateJobObject)(LPSECURITY_ATTRIBUTES JobAttributes, LPCTSTR Name);
-  typedef HANDLE WINAPI (*TSetInformationJobObject)(HANDLE Job, JOBOBJECTINFOCLASS JobObjectInformationClass,
-    LPVOID JobObjectInformation, DWORD JobObjectInformationLength);
-
-  HANDLE Kernel32 = GetModuleHandle(L"kernel32");
-  TCreateJobObject CreateJobObject =
-    (TCreateJobObject)GetProcAddress(Kernel32, "CreateJobObjectW");
-  TSetInformationJobObject SetInformationJobObject =
-    (TSetInformationJobObject)GetProcAddress(Kernel32, "SetInformationJobObject");
-  if ((CreateJobObject != NULL) && (SetInformationJobObject != NULL))
+  swprintf(Name, L"%s%s", CONSOLE_JOB, InstanceName);
+  Job = CreateJobObject(NULL, Name);
+  if (Job == NULL)
   {
-    swprintf(Name, L"%s%s", CONSOLE_JOB, InstanceName);
-    Job = CreateJobObject(NULL, Name);
-    if (Job == NULL)
-    {
-      throw runtime_error("Cannot create job object.");
-    }
-
-    JOBOBJECT_EXTENDED_LIMIT_INFORMATION ExtendedLimitInformation;
-    memset(&ExtendedLimitInformation, 0, sizeof(ExtendedLimitInformation));
-    ExtendedLimitInformation.BasicLimitInformation.LimitFlags =
-      JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-    if (SetInformationJobObject(Job, JobObjectExtendedLimitInformation,
-          &ExtendedLimitInformation, sizeof(ExtendedLimitInformation)) == 0)
-    {
-      CloseHandle(Job);
-      Job = NULL;
-    }
+    throw runtime_error("Cannot create job object.");
   }
-  else
+
+  JOBOBJECT_EXTENDED_LIMIT_INFORMATION ExtendedLimitInformation;
+  memset(&ExtendedLimitInformation, 0, sizeof(ExtendedLimitInformation));
+  ExtendedLimitInformation.BasicLimitInformation.LimitFlags =
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+  if (SetInformationJobObject(Job, JobObjectExtendedLimitInformation,
+        &ExtendedLimitInformation, sizeof(ExtendedLimitInformation)) == 0)
   {
+    CloseHandle(Job);
     Job = NULL;
   }
 
@@ -376,7 +360,10 @@ void FinalizeConsole(const wchar_t* /*InstanceName*/, HANDLE RequestEvent,
   CloseHandle(ResponseEvent);
   CloseHandle(CancelEvent);
   CloseHandle(FileMapping);
-  CloseHandle(Job);
+  if (Job != NULL)
+  {
+    CloseHandle(Job);
+  }
 }
 //---------------------------------------------------------------------------
 static wchar_t LastFromBeginning[sizeof(TConsoleCommStruct::TPrintEvent)] = L""; //???
@@ -776,8 +763,8 @@ int wmain(int /*argc*/, wchar_t* /*argv*/[])
 
 
     bool SupportsUtf8ConsoleOutput =
-      (VersionInfo.dwMajorVersion == 6) &&
-      (VersionInfo.dwMinorVersion == 1);
+      ((VersionInfo.dwMajorVersion == 6) && (VersionInfo.dwMinorVersion >= 1)) ||
+      (VersionInfo.dwMajorVersion > 6);
 
     if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE) ||
         SupportsUtf8ConsoleOutput)

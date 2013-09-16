@@ -7,6 +7,7 @@
 #include <Windows.hpp>
 #include <Consts.hpp>
 #include <HistoryComboBox.hpp>
+#include <PasTools.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -43,21 +44,22 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
   const UnicodeString APrompt, UnicodeString & Value, UnicodeString HelpKeyword,
   TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize)
 {
-  TForm * Form;
-  TLabel * Prompt;
-  TEdit * Edit;
-  THistoryComboBox * HistoryCombo;
-  TPoint DialogUnits;
-  int ButtonTop, ButtonWidth, ButtonHeight;
   bool Result = False;
   TInputDialogToken Token;
-  Form = new TForm(GetFormOwner(), 0); // bypass the VCL streaming (for Salamander)
+  TForm * Form = new TForm(GetFormOwner(), 0); // bypass the VCL streaming (for Salamander)
   try
   {
     // salam needs to override this in UseSystemSettings
     Form->Position = poOwnerFormCenter;
     SetCorrectFormParent(Form);
     UseSystemSettingsPre(Form);
+
+    // this is what TCustomForm.Loaded does
+    // Note that this is not needed as due to use of an alternative constructor above
+    // we are already set to default font
+    // See TMessageForm::Create for contrary
+    Form->Font->Assign(Application->DefaultFont);
+    Form->ParentFont = true;
 
     Token.OnInitialize = OnInitialize;
     Token.PathInput = PathInput;
@@ -68,11 +70,10 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
     Form->OnShow = OnShow;
 
     Form->Canvas->Font = Form->Font;
-    DialogUnits = GetAveCharSize(Form->Canvas);
     Form->BorderStyle = bsDialog;
     Form->Caption = ACaption;
-    Form->ClientWidth = MulDiv(220, DialogUnits.x, 4);
-    Form->ClientHeight = MulDiv(63, DialogUnits.y, 8);
+    Form->ClientWidth = ScaleByTextHeightRunTime(Form, 275);
+    Form->ClientHeight = ScaleByTextHeightRunTime(Form, 102);
     if (!HelpKeyword.IsEmpty())
     {
       Form->HelpKeyword = HelpKeyword;
@@ -80,13 +81,15 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
       Form->BorderIcons = TBorderIcons(Form->BorderIcons) << biHelp;
     }
 
-    Prompt = new TLabel(Form);
+    TLabel * Prompt = new TLabel(Form);
     Prompt->Parent = Form;
     Prompt->AutoSize = True;
-    Prompt->Left = MulDiv(8, DialogUnits.x, 4);
-    Prompt->Top = MulDiv(8, DialogUnits.y, 8);
+    Prompt->Left = ScaleByTextHeightRunTime(Form, 10);
+    Prompt->Top = ScaleByTextHeightRunTime(Form, 13);
     Prompt->Caption = APrompt;
 
+    TEdit * Edit;
+    THistoryComboBox * HistoryCombo;
     if (History == NULL)
     {
       Edit = new TEdit(Form);
@@ -109,15 +112,23 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
       Token.EditControl = HistoryCombo;
     }
     Token.EditControl->Left = Prompt->Left;
-    Token.EditControl->Top = MulDiv(19, DialogUnits.y, 8);
-    Token.EditControl->Width = MulDiv(204, DialogUnits.x, 4);
+    Token.EditControl->Top = ScaleByTextHeightRunTime(Form, 30);
+    Token.EditControl->Width = ScaleByTextHeightRunTime(Form, 255);
 
     Prompt->FocusControl = Token.EditControl;
 
-    ButtonTop = MulDiv(41, DialogUnits.y, 8);
-    ButtonWidth = MulDiv(50, DialogUnits.x, 4);
-    ButtonHeight = MulDiv(14, DialogUnits.y, 8);
-    int ButtonSpace = MulDiv(5, DialogUnits.x, 4);
+    int ButtonTop = ScaleByTextHeightRunTime(Form, 66);
+    int ButtonSpace = ScaleByTextHeightRunTime(Form, 6);
+
+    TButton * Button;
+    Button = new TButton(Form);
+    Button->Parent = Form;
+    Button->Caption = Vcl_Consts_SMsgDlgOK;
+    Button->ModalResult = mrOk;
+    Button->Default = True;
+
+    int ButtonHeight = ScaleByTextHeightRunTime(Button, Button->Height);
+    int ButtonWidth = ScaleByTextHeightRunTime(Button, Button->Width);
     int ButtonsStart;
     if (HelpKeyword.IsEmpty())
     {
@@ -128,12 +139,6 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
       ButtonsStart = (Form->ClientWidth / 2) - (3 * ButtonWidth / 2) - ButtonSpace;
     }
 
-    TButton * Button;
-    Button = new TButton(Form);
-    Button->Parent = Form;
-    Button->Caption = Vcl_Consts_SMsgDlgOK;
-    Button->ModalResult = mrOk;
-    Button->Default = True;
     Button->SetBounds(ButtonsStart, ButtonTop, ButtonWidth, ButtonHeight);
 
     Button = new TButton(Form);
@@ -159,7 +164,7 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
 
     UseSystemSettingsPost(Form);
 
-    if (Form->ShowModal() == mrOk)
+    if (Form->ShowModal() == DefaultResult(Form))
     {
       if (History != NULL)
       {

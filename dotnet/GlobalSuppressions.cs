@@ -129,7 +129,6 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#CloseHandle(System.IntPtr)", Justification = "Warning is bogus.")]
 [assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#CreateJobObject(System.IntPtr,System.String)", Justification = "Warning is bogus.")]
 [assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#SetInformationJobObject(System.IntPtr,WinSCP.JobObjectInfoType,System.IntPtr,System.UInt32)", Justification = "Warning is bogus.")]
-[assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#AssignProcessToJobObject(System.IntPtr,System.IntPtr)", Justification = "Warning is bogus.")]
 [assembly: SuppressMessage("Microsoft.Interoperability", "CA1409:ComVisibleTypesShouldBeCreatable", Scope = "type", Target = "WinSCP.TransferResumeSupport")]
 [assembly: SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Scope = "member", Target = "WinSCP.Logger.#CreateCounters()")]
 [assembly: SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Scope = "member", Target = "WinSCP.Logger.#WriteCounters()")]
@@ -144,3 +143,5 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#MapViewOfFile(Microsoft.Win32.SafeHandles.SafeFileHandle,WinSCP.FileMapAccess,System.UInt32,System.UInt32,System.UIntPtr)")]
 [assembly: SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke", Scope = "member", Target = "WinSCP.ExeSessionProcess.#InitializeConsole()")]
 [assembly: SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke", Scope = "member", Target = "WinSCP.ExeSessionProcess.#Dispose()")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.Job.#.ctor(WinSCP.Logger,System.String)")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.Logger.#LastWin32ErrorMessage()")]

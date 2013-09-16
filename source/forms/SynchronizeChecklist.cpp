@@ -54,6 +54,8 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FRemoteDirectory = UnixExcludeTrailingBackslash(RemoteDirectory);
   FOnCustomCommandMenu = OnCustomCommandMenu;
   UseSystemSettings(this);
+  UseDesktopFont(ListView);
+  UseDesktopFont(StatusBar);
   FChecklist = NULL;
   FChangingItem = NULL;
   FChangingItemIgnore = false;
@@ -71,6 +73,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   ListView->HeaderImages = ArrowImages;
 
   CustomCommandsButton->Visible = (FOnCustomCommandMenu != NULL);
+  MenuButton(CustomCommandsButton);
 }
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
@@ -83,7 +86,7 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
 {
   FChecklist = Checklist;
 
-  bool Result = (ShowModal() != mrCancel);
+  bool Result = (ShowModal() == DefaultResult(this));
 
   if (Result)
   {
@@ -374,7 +377,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewWindowProc(TMessage & Messa
         // doing this from ListViewAdvancedCustomDraw corrupts list view on Windows 7
         ImageList_Draw(reinterpret_cast<HIMAGELIST>(ActionImages->Handle),
           int(ChecklistItem->Action), CustomDraw->nmcd.hdc,
-          R.Left, R.Top, ILD_TRANSPARENT);
+          R.Left, ((R.Top + R.Bottom - ActionImages->Height) / 2), ILD_TRANSPARENT);
       }
     }
   }
@@ -451,9 +454,14 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
     PanelText = LoadStrPart(SYNCHRONIZE_SELECTED_ACTIONS, 2);
   }
 
-  StatusBar->Canvas->TextRect(Rect, Rect.left + 18, Rect.top + 1, PanelText);
-  ActionImages->Draw(StatusBar->Canvas,
-    Rect.Left + 1, Rect.Top, ImageIndex, Possible);
+  int TextHeight = StatusBar->Canvas->TextHeight(PanelText);
+  int X = Rect.Left + ActionImages->Width + 4;
+  int Y = (Rect.Top + Rect.Bottom - TextHeight) / 2;
+  StatusBar->Canvas->TextRect(Rect, X, Y, PanelText);
+
+  X = Rect.Left + 1;
+  Y = ((Rect.Top + Rect.Bottom - ActionImages->Height) / 2);
+  ActionImages->Draw(StatusBar->Canvas, X, Y, ImageIndex, Possible);
 }
 //---------------------------------------------------------------------------
 int __fastcall TSynchronizeChecklistDialog::PanelAt(int X)
@@ -591,12 +599,6 @@ void __fastcall TSynchronizeChecklistDialog::ListViewSelectItem(
   // Also change of selection causes buttons to flash, as for short period of time,
   // no item is selected
   UpdateTimer->Enabled = true;
-}
-//---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::StatusBarResize(
-  TObject * Sender)
-{
-  RepaintStatusBar(dynamic_cast<TCustomStatusBar *>(Sender));
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::UpdateTimerTimer(
@@ -819,7 +821,6 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsButtonClick(
 
   assert(FOnCustomCommandMenu != NULL);
   FOnCustomCommandMenu(CustomCommandsButton,
-    CustomCommandsButton->ClientToScreen(TPoint(0, CustomCommandsButton->Height)),
-    LocalFileList, RemoteFileList);
+    CalculatePopupRect(CustomCommandsButton), LocalFileList, RemoteFileList);
 }
 //---------------------------------------------------------------------------

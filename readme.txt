@@ -2,12 +2,17 @@ This is the README file for source code package of WinSCP.
 
 To build WinSCP you need:
 - Embarcadero C++ Builder XE2 Professional.
-- Copy MFC source code from Borland C++ Builder 6 Professional and
-  build its Unicode version (see readme_mfc.txt).
+  http://www.embarcadero.com/products/cbuilder
+- Microsoft .NET Framework 3.5 (for MSBuild)
+  http://www.microsoft.com/netframework
 - nasm from http://www.nasm.us/
+- Build MFC (see readme_mfc.txt).
 - To build 64-bit version of drag&drop shell extension, you need
   Windows Platform SDK:
   http://msdn.microsoft.com/en-us/windows/bb980924
+- To build WinSCP .NET assembly, you need Microsoft Visual Studio 2012
+  http://www.microsoft.com/visualstudio
+  and Microsoft .NET Framework 4.0
 
 To build WinSCP from source by yourself, modify and use 'build.bat' in root
 folder of source code package.
@@ -32,4 +37,4 @@ Directory structure:
 
 WinSCP homepage is http://winscp.net/
 
-See the file 'licence.txt' for the licence conditions.
+See the file 'license.txt' for the license conditions.

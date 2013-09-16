@@ -453,6 +453,8 @@ BEGIN
         LOGIN_CANCEL_EDITING, "This will cancel site editing. Do you want to continue?"
         SAVE_SESSION_FOLDER, "&Folder:"
         SAVE_SESSION_ROOT_FOLDER, "<root>"
+        LOGIN_SHELL_PAGE, "Shell"
+        LOGIN_SCP_SHELL_PAGE, "SCP/Shell"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2013 Martin Prikryl"

@@ -224,6 +224,7 @@ public:
   bool __fastcall AnyPuttySessionForImport(TStoredSessionList * Sessions);
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(TStoredSessionList * Sessions);
   bool __fastcall AnyFilezillaSessionForImport(TStoredSessionList * Sessions);
+  void __fastcall DetectScalingType();
 
   __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError };
   __property bool ConfirmCommandSession = { read = FConfirmCommandSession, write = FConfirmCommandSession };

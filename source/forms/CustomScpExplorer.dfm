@@ -20,7 +20,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     Top = 289
     Width = 620
     Height = 3
-    Cursor = crVSplit
+    Cursor = crSizeNS
     Hint = 'Drag to resize queue list. Double click to hide queue list.'
     Align = alBottom
     AutoSnap = False
@@ -49,6 +49,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Left = 169
       Top = 0
       Height = 240
+      Cursor = crSizeWE
       AutoSnap = False
       Color = clBtnFace
       MinSize = 70
@@ -106,7 +107,6 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnHistoryChange = DirViewHistoryChange
       OnDisplayProperties = RemoteDirViewDisplayProperties
       OnRead = RemoteDirViewRead
-      Items.ItemData = {}
     end
     object RemoteDriveView: TUnixDriveView
       Left = 0
@@ -149,7 +149,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Left = 0
       Top = 0
       Width = 620
-      Height = 15
+      Height = 19
       IndentVertical = 3
       AutoSizeVertical = True
       AutoSize = False
@@ -157,9 +157,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     end
     object QueueView3: TListView
       Left = 0
-      Top = 41
+      Top = 45
       Width = 620
-      Height = 99
+      Height = 95
       Align = alClient
       Columns = <
         item
@@ -217,7 +217,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     object QueueDock: TTBXDock
       Tag = 1
       Left = 0
-      Top = 15
+      Top = 19
       Width = 620
       Height = 26
       AllowDrag = False

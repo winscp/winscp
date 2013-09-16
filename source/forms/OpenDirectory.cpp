@@ -8,6 +8,7 @@
 #include <VCLCommon.h>
 #include <TextsWin.h>
 #include <Common.h>
+#include <Math.hpp>
 
 #include "OpenDirectory.h"
 #include "WinConfiguration.h"
@@ -146,7 +147,7 @@ void __fastcall TOpenDirectoryDialog::UpdateBookmarkControls(
       }
     }
     BookmarksList->ScrollWidth = MaxWidth;
-    MaxWidth += 6;
+    MaxWidth += ScaleByTextHeight(this, 6);
     if (BookmarksList->Items->Count > BookmarksList->ClientHeight / BookmarksList->ItemHeight)
     {
       MaxWidth += GetSystemMetrics(SM_CXVSCROLL);
@@ -154,7 +155,7 @@ void __fastcall TOpenDirectoryDialog::UpdateBookmarkControls(
     if (MaxWidth > BookmarksList->Width)
     {
       int CWidth = ClientWidth + (MaxWidth - BookmarksList->Width);
-      ClientWidth = CWidth > 700 ? 700 : CWidth;
+      ClientWidth = Min(CWidth, ScaleByTextHeight(this, 700));
     }
   }
 }
@@ -248,7 +249,7 @@ bool __fastcall TOpenDirectoryDialog::Execute()
       AddAsBookmark(PageControl->ActivePage);
     }
   }
-  Result = (ShowModal() == mrOk);
+  Result = (ShowModal() == DefaultResult(this));
   if (Terminal)
   {
     WinConfiguration->Bookmarks[SessionKey] = FSessionBookmarkList;
@@ -492,7 +493,7 @@ void __fastcall TOpenDirectoryDialog::BookmarksListDblClick(TObject * Sender)
 {
   if (GetBookmarksList(Sender)->ItemIndex >= 0)
   {
-    ModalResult = mrOk;
+    ModalResult = DefaultResult(this);
   }
 }
 //---------------------------------------------------------------------------

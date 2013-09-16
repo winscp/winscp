@@ -35,7 +35,6 @@ type
 function CheckFileExists(FileName: string): Boolean;
 function DirExists(Dir: string): Boolean; overload;
 function DirExists(Dir: string; var Attrs: Integer): Boolean; overload;
-function DiskSize(Drive: Byte): Int64;
 function ExtractFileNameOnly(Name: string): string;
 function FileOrDirExists(FileName: string): Boolean;
 function FormatBytes(Bytes: Int64; UseOrders: Boolean = True; UseUnitsForBytes: Boolean = True): string;
@@ -62,10 +61,6 @@ implementation
 
 uses
   IEDriveInfo, DateUtils, ShellApi, SysConst;
-
-var
-  GetDiskFreeSpaceEx: function (Directory: PChar;
-    var FreeAvailable, TotalSpace: TLargeInteger; TotalFree: PLargeInteger): Bool stdcall = nil;
 
 function AnyValidPath: string;
 var
@@ -212,62 +207,6 @@ begin
   end;
 end; {FreePIDL}
 
-function InternalGetDiskSpace(Drive: Byte;
-  var TotalSpace, FreeSpaceAvailable: Int64): Bool;
-var
-  RootPath: array[0..4] of Char;
-  RootPtr: PChar;
-begin
-  RootPtr := nil;
-  if Drive > 0 then
-  begin
-    RootPath[0] := Char(Drive + $40);
-    RootPath[1] := ':';
-    RootPath[2] := '\';
-    RootPath[3] := #0;
-    RootPtr := RootPath;
-  end;
-  Result := GetDiskFreeSpaceEx(RootPtr, FreeSpaceAvailable, TotalSpace, nil);
-end;
-
-// This function is used if the OS doesn't support GetDiskFreeSpaceEx
-function BackfillGetDiskFreeSpaceEx(Directory: PChar; var FreeAvailable,
-  TotalSpace: TLargeInteger; TotalFree: PLargeInteger): Bool; stdcall;
-var
-  SectorsPerCluster, BytesPerSector, FreeClusters, TotalClusters: LongWord;
-  Temp: Int64;
-  Dir: PChar;
-begin
-  if Directory <> nil then
-    Dir := Directory
-  else
-    Dir := nil;
-  Result := GetDiskFreeSpace(Dir, SectorsPerCluster, BytesPerSector,
-    FreeClusters, TotalClusters);
-  Temp := SectorsPerCluster * BytesPerSector;
-  FreeAvailable := Temp * FreeClusters;
-  TotalSpace := Temp * TotalClusters;
-end;
-
-function DiskSize(Drive: Byte): Int64;
-var
-  FreeSpace: Int64;
-begin
-  if not InternalGetDiskSpace(Drive, Result, FreeSpace) then
-    Result := -1;
-end;
-
-procedure InitDriveSpacePtr;
-var
-  Kernel: THandle;
-begin
-  Kernel := GetModuleHandle(Windows.Kernel32);
-  if Kernel <> 0 then
-    @GetDiskFreeSpaceEx := GetProcAddress(Kernel, 'GetDiskFreeSpaceExW');
-  if not Assigned(GetDiskFreeSpaceEx) then
-    GetDiskFreeSpaceEx := @BackfillGetDiskFreeSpaceEx;
-end;
-
 // duplicated in RemoteFiles.cpp
 procedure ReduceDateTimePrecision(var DateTime: TDateTime;
   Precision: TDateTimePrecision);
@@ -343,5 +282,4 @@ begin
 end;
 
 initialization
-  InitDriveSpacePtr;
 end.

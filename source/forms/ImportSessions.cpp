@@ -190,7 +190,7 @@ bool __fastcall TImportSessionsDialog::Execute(bool & ImportKeys)
 {
   ImportKeysCheck->Checked = ImportKeys;
 
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
 
   if (Result)
   {

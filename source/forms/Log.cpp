@@ -74,6 +74,7 @@ __fastcall TLogForm::TLogForm(TComponent* Owner)
   FSessionLog = NULL;
   ShowWindow(Handle, SW_SHOWNA);
   UseSystemSettings(this);
+  UseDesktopFont(StatusBar);
   SetFormIcons(this, L"Z_ICON_LOG_BIG", L"Z_ICON_LOG_SMALL");
 }
 //---------------------------------------------------------------------------

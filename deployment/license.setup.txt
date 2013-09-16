@@ -1,11 +1,10 @@
-You can also review this licence and further details online at:
+You can also review this license and further details online at:
 http://winscp.net/eng/docs/license
 
   
   A. GNU General Public License
   B. License of WinSCP Icon Set
   C. Privacy Policy
-  D. Licenses and Distribution Terms of WinSCP Installation Package
 
 
   A. GNU GENERAL PUBLIC LICENSE
@@ -284,11 +283,4 @@ Before disabling WinSCP Usage statistics, be so kind and consider that it plays 
 If you still want to disable WinSCP Usage statistics already during installation, you may do so using Custom installation.
 
 Thank you!
-
-
-  D. Licenses and Distribution Terms of WinSCP Installation Package
-
-Note that GNU General Public License applies solely to WinSCP application. During WinSCP installation you might be offered to install also other application having own license agreement. While nothing will be installed without your consent be sure to read and understand the respective license conditions.
-
-In case you intent to distribute WinSCP Installation Package you are not allowed to bundles anything in or with the WinSCP Installation Package; and you are obliged to comply with all applicable export and re-export control laws and regulations: (a) the Export Administration Regulations maintained by the U.S. Department of Commerce; (b) trade and economic sanctions maintained by the U.S. Treasury Department's Office of Foreign Assets Control; and (c) the International Traffic in Arms Regulations maintained by the U.S. Department of State. Unless Distributor obtains prior authorisation required by applicable Export Laws, Distributor shall not export any Product to Cuba, Iran, North Korea, Sudan or Syria.
 

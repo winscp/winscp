@@ -119,7 +119,6 @@ protected:
   inline static TQueueItem * __fastcall GetItem(TList * List, int Index);
   inline TQueueItem * __fastcall GetItem(int Index);
   void __fastcall FreeItemsList(TList * List);
-  static bool __fastcall EmptyButMonitoredItems(TList * List);
   void __fastcall UpdateStatusForList(
     TTerminalQueueStatus * Status, TList * List, TTerminalQueueStatus * Current);
   bool __fastcall ItemGetData(TQueueItem * Item, TQueueItemProxy * Proxy);

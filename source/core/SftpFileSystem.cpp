@@ -3186,6 +3186,7 @@ void __fastcall TSFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
     FTerminal->FatalError(NULL, LoadStr(SFTP_NON_ONE_FXP_NAME_PACKET));
   }
   SymlinkFile->LinkTo = ReadLinkPacket.GetPathString(FUtfStrings);
+  FTerminal->LogEvent(FORMAT(L"Link resolved to \"%s\".", (SymlinkFile->LinkTo)));
 
   ReceiveResponse(&AttrsPacket, &AttrsPacket, SSH_FXP_ATTRS);
   // SymlinkFile->FileName was used instead SymlinkFile->LinkTo before, why?
@@ -4903,7 +4904,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
       );
 
       FILE_OPERATION_LOOP (FMTLOAD(CREATE_DIR_ERROR, (DestFullName)),
-        if (!ForceDirectories(DestFullName)) RaiseLastOSError();
+        THROWOSIFFALSE(ForceDirectories(DestFullName));
       );
 
       TSinkFileParams SinkFileParams;
@@ -5310,12 +5311,9 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
 
           if (FileExists(DestFullName))
           {
-            THROWOSIFFALSE(Sysutils::DeleteFile(DestFullName));
+            DeleteFileChecked(DestFullName);
           }
-          if (!Sysutils::RenameFile(DestPartialFullName, DestFullName))
-          {
-            RaiseLastOSError();
-          }
+          THROWOSIFFALSE(Sysutils::RenameFile(DestPartialFullName, DestFullName));
         );
       }
 

@@ -3,7 +3,7 @@
 #define CommonH
 //---------------------------------------------------------------------------
 #define EXCEPTION throw ExtException(NULL, L"")
-#define THROWOSIFFALSE(C) if (!(C)) RaiseLastOSError();
+#define THROWOSIFFALSE(C) { if (!(C)) RaiseLastOSError(); }
 #define SAFE_DESTROY_EX(CLASS, OBJ) { CLASS * PObj = OBJ; OBJ = NULL; delete PObj; }
 #define SAFE_DESTROY(OBJ) SAFE_DESTROY_EX(TObject, OBJ)
 #define ASCOPY(dest, source) \
@@ -78,6 +78,7 @@ UnicodeString __fastcall DecodeUrlChars(UnicodeString S);
 UnicodeString __fastcall EncodeUrlChars(UnicodeString S, UnicodeString Ignore = L"");
 UnicodeString __fastcall EncodeUrlString(UnicodeString S);
 bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin);
+void __fastcall DeleteFileChecked(const UnicodeString & FileName);
 unsigned int __fastcall CancelAnswer(unsigned int Answers);
 unsigned int __fastcall AbortAnswer(unsigned int Answers);
 unsigned int __fastcall ContinueAnswer(unsigned int Answers);
@@ -87,6 +88,7 @@ UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption);
 bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
   UnicodeString * RawToken = NULL);
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
+bool __fastcall IsWinXPOrOlder();
 bool __fastcall IsWin7();
 bool __fastcall IsExactly2008R2();
 TLibModule * __fastcall FindModule(void * Instance);
@@ -95,6 +97,7 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime);
 LCID __fastcall GetDefaultLCID();
 UnicodeString __fastcall DefaultEncodingName();
 UnicodeString __fastcall WindowsProductName();
+bool _fastcall GetWindowsProductType(DWORD & Type);
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path);
 UnicodeString __fastcall FormatNumber(__int64 Size);
 UnicodeString __fastcall FormatSize(__int64 Size);
@@ -195,6 +198,12 @@ public:
   {
   }
 
+  __fastcall TValueRestorer(T & Target) :
+    FTarget(Target),
+    FValue(Target)
+  {
+  }
+
   __fastcall ~TValueRestorer()
   {
     FTarget = FValue;
@@ -205,20 +214,11 @@ protected:
   T FValue;
 };
 //---------------------------------------------------------------------------
-class TBoolRestorer : TValueRestorer<bool>
-{
-public:
-  __fastcall TBoolRestorer(bool & Target) :
-    TValueRestorer<bool>(Target, !Target)
-  {
-  }
-};
-//---------------------------------------------------------------------------
 class TAutoNestingCounter : TValueRestorer<int>
 {
 public:
   __fastcall TAutoNestingCounter(int & Target) :
-    TValueRestorer<int>(Target, Target)
+    TValueRestorer<int>(Target)
   {
     assert(Target >= 0);
     ++Target;

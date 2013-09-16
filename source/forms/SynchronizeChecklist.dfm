@@ -55,18 +55,22 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   PixelsPerInch = 96
   TextHeight = 13
   object Panel: TPanel
-    Left = 579
+    Left = 571
     Top = 0
-    Width = 116
+    Width = 124
     Height = 402
     Align = alRight
     BevelOuter = bvNone
     TabOrder = 1
+    DesignSize = (
+      124
+      402)
     object OkButton: TButton
       Left = 8
       Top = 8
-      Width = 100
+      Width = 108
       Height = 25
+      Anchors = [akLeft, akTop, akRight]
       Caption = 'OK'
       Default = True
       ModalResult = 1
@@ -75,8 +79,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object CancelButton: TButton
       Left = 8
       Top = 40
-      Width = 100
+      Width = 108
       Height = 25
+      Anchors = [akLeft, akTop, akRight]
       Cancel = True
       Caption = 'Cancel'
       ModalResult = 2
@@ -85,8 +90,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object CheckAllButton: TButton
       Left = 8
       Top = 182
-      Width = 100
+      Width = 108
       Height = 25
+      Anchors = [akLeft, akTop, akRight]
       Caption = 'Check &all'
       TabOrder = 5
       OnClick = CheckAllButtonClick
@@ -94,8 +100,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object UncheckAllButton: TButton
       Left = 8
       Top = 214
-      Width = 100
+      Width = 108
       Height = 25
+      Anchors = [akLeft, akTop, akRight]
       Caption = 'Uncheck a&ll'
       TabOrder = 6
       OnClick = CheckAllButtonClick
@@ -104,8 +111,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Tag = 1
       Left = 8
       Top = 118
-      Width = 100
+      Width = 108
       Height = 25
+      Anchors = [akLeft, akTop, akRight]
       Caption = '&Check'
       TabOrder = 3
       OnClick = CheckButtonClick
@@ -113,8 +121,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object UncheckButton: TButton
       Left = 8
       Top = 150
-      Width = 100
+      Width = 108
       Height = 25
+      Anchors = [akLeft, akTop, akRight]
       Caption = '&Uncheck'
       TabOrder = 4
       OnClick = CheckButtonClick
@@ -122,8 +131,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object HelpButton: TButton
       Left = 8
       Top = 72
-      Width = 100
+      Width = 108
       Height = 25
+      Anchors = [akLeft, akTop, akRight]
       Caption = '&Help'
       TabOrder = 2
       OnClick = HelpButtonClick
@@ -132,8 +142,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Tag = 1
       Left = 8
       Top = 260
-      Width = 100
+      Width = 108
       Height = 25
+      Anchors = [akLeft, akTop, akRight]
       Caption = 'Custom co&mmands'
       TabOrder = 7
       OnClick = CustomCommandsButtonClick
@@ -142,7 +153,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   object ListView: TIEListView
     Left = 0
     Top = 0
-    Width = 579
+    Width = 571
     Height = 402
     Align = alClient
     Checkboxes = True
@@ -203,6 +214,11 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Width = 695
     Height = 20
     Hint = 'Click to select all actions of this type'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBtnText
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
+    Font.Style = []
     Panels = <
       item
         Style = psOwnerDraw
@@ -244,10 +260,10 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     ParentShowHint = False
     ShowHint = True
+    UseSystemFont = False
     OnMouseDown = StatusBarMouseDown
     OnMouseMove = StatusBarMouseMove
     OnDrawPanel = StatusBarDrawPanel
-    OnResize = StatusBarResize
   end
   object ActionImages: TPngImageList
     PngImages = <

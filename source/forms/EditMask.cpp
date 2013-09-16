@@ -44,7 +44,7 @@ __fastcall TEditMaskDialog::TEditMaskDialog(TComponent* Owner)
 void __fastcall TEditMaskDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     ExitActiveControl(this);
   }
@@ -53,7 +53,7 @@ void __fastcall TEditMaskDialog::FormCloseQuery(TObject * /*Sender*/,
 bool __fastcall TEditMaskDialog::Execute(TFileMasks & Mask)
 {
   LoadFileMasks(Mask);
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     SaveFileMasks(Mask);
@@ -155,7 +155,7 @@ void __fastcall TEditMaskDialog::FormKeyDown(
   }
   else if ((Key == VK_RETURN) && Shift.Contains(ssCtrl))
   {
-    ModalResult = mrOk;
+    ModalResult = DefaultResult(this);
     Key = 0;
   }
 }

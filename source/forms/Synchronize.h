@@ -95,7 +95,7 @@ protected:
   void __fastcall CopyLog();
   int __fastcall ActualCopyParamAttrs();
   void __fastcall GlobalMinimize(TObject * Sender);
-  void __fastcall CopyParamListPopup(TPoint P, int AdditionalOptions);
+  void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
 
 public:
   __fastcall TSynchronizeDialog(TComponent * Owner,

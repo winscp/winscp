@@ -218,13 +218,13 @@ void __fastcall TSynchronizeDialog::SetOptions(int value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeDialog::CopyParamListPopup(TPoint P, int AdditionalOptions)
+void __fastcall TSynchronizeDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
 {
   // We pass in FCopyParams, although it may not be the exact copy param
   // that will be used (because of PreserveTime). The reason is to
   // display checkbox next to user-selected preset
   ::CopyParamListPopup(
-    P, FPresetsMenu, FCopyParams, FPreset, CopyParamClick,
+    R, FPresetsMenu, FCopyParams, FPreset, CopyParamClick,
     cplCustomize | AdditionalOptions, ActualCopyParamAttrs());
 }
 //---------------------------------------------------------------------------
@@ -233,9 +233,7 @@ void __fastcall TSynchronizeDialog::TransferSettingsButtonClick(
 {
   if (FLAGCLEAR(FOptions, soDoNotUsePresets) && !SupportsSplitButton())
   {
-    CopyParamListPopup(
-      TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
-      0);
+    CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), 0);
   }
   else
   {
@@ -490,7 +488,7 @@ void __fastcall TSynchronizeDialog::CopyParamGroupContextPopup(
 {
   if (FLAGCLEAR(FOptions, soDoNotUsePresets))
   {
-    CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos),
+    CopyParamListPopup(CalculatePopupRect(CopyParamGroup, MousePos),
       cplCustomizeDefault);
     Handled = true;
   }
@@ -558,8 +556,6 @@ void __fastcall TSynchronizeDialog::FormKeyDown(TObject * /*Sender*/, WORD & Key
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::TransferSettingsButtonDropDownClick(TObject * /*Sender*/)
 {
-  CopyParamListPopup(
-    TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
-    cplCustomizeDefault);
+  CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), cplCustomizeDefault);
 }
 //---------------------------------------------------------------------------

@@ -28,6 +28,9 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     CoreInitialize();
     InitializeWinHelp();
     InitializeSystemSettings();
+    // now everything is setup and mainly the configured locale is already loaded,
+    // detect scaling type and possibly forbid further runtime changes to locale
+    GUIConfiguration->DetectScalingType();
 
     try
     {

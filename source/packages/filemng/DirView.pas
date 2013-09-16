@@ -3426,7 +3426,7 @@ end; {ChangeInvalid}
 function TDirView.WatchThreadActive: Boolean;
 begin
   Result := WatchForChanges and Assigned(FDiscMonitor) and
-    FDiscMonitor.Active;
+    FDiscMonitor.Active and FDiscMonitor.Enabled;
 end; {WatchThreadActive}
 
 {$ENDIF}

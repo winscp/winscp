@@ -9,11 +9,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   ClientHeight = 359
   ClientWidth = 403
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
@@ -122,7 +118,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
     object MaskLabel: TLabel
       Left = 11
       Top = 20
-      Width = 150
+      Width = 157
       Height = 13
       Caption = 'Use this editor for &following files:'
       FocusControl = MaskEdit

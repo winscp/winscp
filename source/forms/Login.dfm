@@ -126,7 +126,7 @@ object LoginDialog: TLoginDialog
           FocusControl = UserNameEdit
         end
         object Label4: TLabel
-          Left = 164
+          Left = 178
           Top = 122
           Width = 50
           Height = 13
@@ -176,7 +176,7 @@ object LoginDialog: TLoginDialog
         object HostNameEdit: TEdit
           Left = 12
           Top = 89
-          Width = 228
+          Width = 236
           Height = 21
           Anchors = [akLeft, akTop, akRight]
           MaxLength = 100
@@ -187,7 +187,7 @@ object LoginDialog: TLoginDialog
         object UserNameEdit: TEdit
           Left = 12
           Top = 139
-          Width = 137
+          Width = 159
           Height = 21
           MaxLength = 100
           TabOrder = 7
@@ -195,9 +195,9 @@ object LoginDialog: TLoginDialog
           OnChange = DataChange
         end
         object PasswordEdit: TPasswordEdit
-          Left = 163
+          Left = 177
           Top = 139
-          Width = 173
+          Width = 159
           Height = 21
           Anchors = [akLeft, akTop, akRight]
           MaxLength = 100
@@ -221,7 +221,7 @@ object LoginDialog: TLoginDialog
         object TransferProtocolCombo: TComboBox
           Left = 12
           Top = 39
-          Width = 137
+          Width = 145
           Height = 21
           Style = csDropDownList
           TabOrder = 0
@@ -285,9 +285,9 @@ object LoginDialog: TLoginDialog
           TabOrder = 10
         end
         object AdvancedButton: TButton
-          Left = 240
+          Left = 238
           Top = 193
-          Width = 96
+          Width = 98
           Height = 25
           Action = SessionAdvancedAction
           Anchors = [akRight, akBottom]
@@ -307,7 +307,7 @@ object LoginDialog: TLoginDialog
           OnDropDownClick = SaveButtonDropDownClick
         end
         object EditCancelButton: TButton
-          Left = 114
+          Left = 116
           Top = 193
           Width = 82
           Height = 25
@@ -320,7 +320,7 @@ object LoginDialog: TLoginDialog
         object EditButton: TButton
           Left = 12
           Top = 193
-          Width = 96
+          Width = 98
           Height = 25
           Action = EditSessionAction
           Anchors = [akLeft, akBottom]
@@ -438,9 +438,9 @@ object LoginDialog: TLoginDialog
       Visible = False
     end
     object ManageButton: TButton
-      Left = 162
+      Left = 160
       Top = 401
-      Width = 96
+      Width = 98
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = '&Manage'
@@ -450,7 +450,7 @@ object LoginDialog: TLoginDialog
     object ToolsMenuButton: TButton
       Left = 11
       Top = 401
-      Width = 96
+      Width = 98
       Height = 25
       Anchors = [akLeft, akBottom]
       Caption = '&Tools'

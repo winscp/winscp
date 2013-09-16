@@ -41,6 +41,10 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
 bool __fastcall DeleteDirectory(const UnicodeString DirName);
 UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
 void __fastcall AddSessionColorImage(TCustomImageList * ImageList, TColor Color, bool Disconnected);
+typedef int __fastcall (*TCalculateWidth)(UnicodeString Text, void * Arg);
+void __fastcall ApplyTabs(
+  UnicodeString & Text, wchar_t Padding,
+  TCalculateWidth CalculateWidth, void * CalculateWidthArg);
 //---------------------------------------------------------------------------
 class TLocalCustomCommand : public TFileCustomCommand
 {

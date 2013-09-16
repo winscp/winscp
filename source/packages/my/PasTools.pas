@@ -3,9 +3,11 @@ unit PasTools;
 interface
 
 uses
-  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs;
+  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs, Forms;
 
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
+
+function IsVistaHard: Boolean;
 
 function IsVista: Boolean;
 
@@ -13,9 +15,30 @@ function IsExactly2008R2: Boolean;
 
 function IsWin7: Boolean;
 
+function IsWin8: Boolean;
+
 function CutToChar(var Str: string; Ch: Char; Trim: Boolean): string;
 
 procedure FilterToFileTypes(Filter: string; FileTypes: TFileTypeItems);
+
+// Note that while we based our scaling on pixels-per-inch,
+// VCL actually scales based on font size
+function LoadDimension(Dimension: Integer; PixelsPerInch: Integer): Integer;
+function StrToDimensionDef(Str: string; PixelsPerInch: Integer; Default: Integer): Integer;
+function SaveDimension(Dimension: Integer): Integer;
+function DimensionToDefaultPixelsPerInch(Dimension: Integer): Integer;
+
+function LoadPixelsPerInch(S: string): Integer;
+function SavePixelsPerInch: string;
+function SaveDefaultPixelsPerInch: string;
+
+function ScaleByTextHeight(Control: TControl; Dimension: Integer): Integer;
+function ScaleByTextHeightRunTime(Control: TControl; Dimension: Integer): Integer;
+
+function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
+
+function IsAppIconic: Boolean;
+procedure SetAppIconic(Value: Boolean);
 
 type
   TControlScrollBeforeUpdate = procedure(ObjectToValidate: TObject) of object;
@@ -84,11 +107,17 @@ end;
 
 // detects vista, even in compatibility mode
 // (GetLocaleInfoEx is available since Vista only)
-function IsVista: Boolean;
+function IsVistaHard: Boolean;
 begin
   Result := (GetProcAddress(GetModuleHandle(Kernel32), 'GetLocaleInfoEx') <> nil);
 end;
 
+function IsVista: Boolean;
+begin
+  Result := CheckWin32Version(6, 0);
+end;
+
+// Duplicated in Common.cpp
 function IsExactly2008R2: Boolean;
 var
   GetProductInfo: function(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion: DWORD; var dwReturnedProductType: DWORD): BOOL stdcall;
@@ -146,6 +175,11 @@ begin
   Result := CheckWin32Version(6, 1);
 end;
 
+function IsWin8: Boolean;
+begin
+  Result := CheckWin32Version(6, 2);
+end;
+
 function CutToChar(var Str: string; Ch: Char; Trim: Boolean): string;
 var
   P: Integer;
@@ -175,6 +209,181 @@ begin
     Item.FileMask := CutToChar(Filter, '|', True);
   end;
 end;
+
+function LoadDimension(Dimension: Integer; PixelsPerInch: Integer): Integer;
+begin
+  Result := MulDiv(Dimension, Screen.PixelsPerInch, PixelsPerInch);
+end;
+
+function StrToDimensionDef(Str: string; PixelsPerInch: Integer; Default: Integer): Integer;
+begin
+  if TryStrToInt(Str, Result) then
+  begin
+    Result := LoadDimension(Result, PixelsPerInch);
+  end
+    else
+  begin
+    Result := Default;
+  end;
+end;
+
+function SaveDimension(Dimension: Integer): Integer;
+begin
+  // noop
+  Result := Dimension;
+end;
+
+function DimensionToDefaultPixelsPerInch(Dimension: Integer): Integer;
+begin
+  Result := MulDiv(Dimension, USER_DEFAULT_SCREEN_DPI, Screen.PixelsPerInch);
+end;
+
+function LoadPixelsPerInch(S: string): Integer;
+begin
+  // for backward compatibility with version that did not save the DPI,
+  // make reasonable assumption that the configuration was saved with
+  // the same DPI as we run now
+  Result := StrToIntDef(S, Screen.PixelsPerInch);
+end;
+
+function SavePixelsPerInch: string;
+begin
+  Result := IntToStr(Screen.PixelsPerInch);
+end;
+
+function SaveDefaultPixelsPerInch: string;
+begin
+  Result := IntToStr(USER_DEFAULT_SCREEN_DPI);
+end;
+
+// WORKAROUND
+// http://stackoverflow.com/questions/9410485/how-do-i-use-class-helpers-to-access-strict-private-members-of-a-class
+
+type
+  TFormHelper = class helper for TCustomForm
+  public
+    function RetrieveTextHeight: Integer;
+    function CalculateTextHeight: Integer;
+  end;
+
+function TFormHelper.RetrieveTextHeight: Integer;
+begin
+  Result := Self.FTextHeight;
+end;
+
+function TFormHelper.CalculateTextHeight: Integer;
+begin
+  Result := Self.GetTextHeight;
+end;
+
+function ScaleByTextHeightImpl(Control: TControl; Dimension: Integer; TextHeight: Integer): Integer;
+var
+  Form: TCustomForm;
+  NewTextHeight: Integer;
+begin
+  // RTL_COPY (TCustomForm.ReadState)
+  Form := ValidParentForm(Control);
+  NewTextHeight := Form.CalculateTextHeight;
+  if TextHeight <> NewTextHeight then
+  begin
+    Dimension := MulDiv(Dimension, NewTextHeight, TextHeight);
+  end;
+  Result := Dimension;
+end;
+
+const
+  OurDesignTimeTextHeight = 13;
+
+function ScaleByTextHeight(Control: TControl; Dimension: Integer): Integer;
+var
+  Form: TCustomForm;
+  TextHeight: Integer;
+begin
+  // RTL_COPY (TCustomForm.ReadState)
+  Form := ValidParentForm(Control);
+  TextHeight := Form.RetrieveTextHeight;
+  // that's our design text-size, we do not expect any other value
+  Assert(TextHeight = OurDesignTimeTextHeight);
+  Result := ScaleByTextHeightImpl(Control, Dimension, TextHeight);
+end;
+
+// this differs from ScaleByTextHeight only by enforcing
+// constant design-time text height
+function ScaleByTextHeightRunTime(Control: TControl; Dimension: Integer): Integer;
+begin
+  Result := ScaleByTextHeightImpl(Control, Dimension, OurDesignTimeTextHeight);
+end;
+
+type
+  TListViewHelper = class helper for TCustomListView
+  public
+    function HasMemStream: Boolean;
+  end;
+
+function TListViewHelper.HasMemStream: Boolean;
+begin
+  Result := Assigned(Self.FMemStream);
+end;
+
+type
+  TTreeViewHelper = class helper for TCustomTreeView
+  public
+    function HasMemStream: Boolean;
+  end;
+
+function TTreeViewHelper.HasMemStream: Boolean;
+begin
+  Result := Assigned(Self.FMemStream);
+end;
+
+type
+  TRichEditHelper = class helper for TCustomRichEdit
+  public
+    function HasMemStream: Boolean;
+  end;
+
+function TRichEditHelper.HasMemStream: Boolean;
+begin
+  Result := Assigned(Self.FMemStream);
+end;
+
+function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
+begin
+  // not implemented for this class as we do not use it as of now
+  Assert(not (Control is TCustomComboBoxEx));
+  Result :=
+    ((Control is TCustomListView) and (Control as TCustomListView).HasMemStream) or
+    ((Control is TCustomTreeView) and (Control as TCustomTreeView).HasMemStream) or
+    ((Control is TCustomRichEdit) and (Control as TCustomRichEdit).HasMemStream);
+end;
+
+type
+  TApplicationHelper = class helper for TApplication
+  public
+    function IsAppIconic: Boolean;
+    procedure SetAppIconic(Value: Boolean);
+  end;
+
+function TApplicationHelper.IsAppIconic: Boolean;
+begin
+  Result := Self.FAppIconic;
+end;
+
+procedure TApplicationHelper.SetAppIconic(Value: Boolean);
+begin
+  Self.FAppIconic := Value;
+end;
+
+function IsAppIconic: Boolean;
+begin
+  Result := Application.IsAppIconic;
+end;
+
+procedure SetAppIconic(Value: Boolean);
+begin
+  Application.SetAppIconic(Value);
+end;
+
 
   { TCustomControlScrollOnDragOver }
 

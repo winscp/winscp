@@ -302,6 +302,8 @@ private:
   TSessionData * __fastcall GetEditingSessionData();
   void __fastcall SaveAsSession(bool ForceDialog);
   void __fastcall InvalidateSessionData();
+  bool __fastcall CanLogin();
+  bool __fastcall IsDefaultResult(TModalResult Result);
 
 protected:
   void __fastcall Default();

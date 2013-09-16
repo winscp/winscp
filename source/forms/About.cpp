@@ -52,8 +52,8 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   ApplicationLabel->Caption = AppName;
   PuttyVersionLabel->Caption = FMTLOAD(PUTTY_BASED_ON, (LoadStr(PUTTY_VERSION)));
   PuttyCopyrightLabel->Caption = LoadStr(PUTTY_COPYRIGHT);
-  FileZillaVersionLabel->Caption = FMTLOAD(FILEZILLA_BASED_ON, (LoadStr(FILEZILLA_VERSION)));
-  FileZillaCopyrightLabel->Caption = LoadStr(FILEZILLA_COPYRIGHT);
+  FileZillaVersionLabel->Caption = LoadStr(FILEZILLA_BASED_ON2);
+  FileZillaCopyrightLabel->Caption = LoadStr(FILEZILLA_COPYRIGHT2);
   OpenSSLVersionLabel->Caption = FMTLOAD(OPENSSL_BASED_ON, (LoadStr(OPENSSL_VERSION)));
   OpenSSLCopyrightLabel->Caption = LoadStr(OPENSSL_COPYRIGHT);
   WinSCPCopyrightLabel->Caption = LoadStr(WINSCP_COPYRIGHT);
@@ -161,8 +161,19 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   #endif
   #endif
 
+  // VCL wrongly autosize these, even when AutoSize is off
+  // WORKAROUND
+  FixWrappedLabelSize(Label7);
+  FixWrappedLabelSize(RegistrationSubjectLabel);
+  FixWrappedLabelSize(OpenSSLVersionLabel);
+
   LicenseButton->Visible = AllowLicense;
   LoadData();
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::FixWrappedLabelSize(TLabel * Label)
+{
+  Label->Width = Label->Parent->ClientWidth - (2 * Label->Left);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LoadData()

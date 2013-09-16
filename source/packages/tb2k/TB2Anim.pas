@@ -82,11 +82,6 @@ type
     StepMessagePending: BOOL;
   end;
 
-var
-  UpdateLayeredWindowProc: function(Handle: THandle; hdcDest: HDC;
-    pptDst: PPoint; _psize: PSize; hdcSrc: HDC; pptSrc: PPoint;
-    crKey: COLORREF; pblend: PBLENDFUNCTION; dwFlags: DWORD): BOOL; stdcall;
-
 function AnimateThreadFunc(Parameter: Pointer): Integer;
 var
   StartTime, FrameStartTime, NextFrameStartTime: DWORD;
@@ -188,7 +183,7 @@ begin
   with PAnimateThreadFuncData(@AnimateData)^ do begin
     SequenceID := AnimationSequenceID;
     Wnd := AWnd;
-    Blending := ABlend and Assigned(UpdateLayeredWindowProc);
+    Blending := ABlend;
     Direction := ADirection;
     GetCursorPos(LastPos);
     GetClientRect(Wnd, ScreenClientRect);
@@ -214,7 +209,7 @@ begin
       Longint(Blend) := 0;
       Blend.BlendOp := AC_SRC_OVER;
       Blend.SourceConstantAlpha := CurStep;
-      UpdateLayeredWindowProc(Wnd, 0, @R.TopLeft, @Size, BmpDC, @ZeroPt, 0,
+      UpdateLayeredWindow(Wnd, 0, @R.TopLeft, @Size, BmpDC, @ZeroPt, 0,
         @Blend, ULW_ALPHA);
     end
     else begin
@@ -258,7 +253,7 @@ begin
         Longint(Blend) := 0;
         Blend.BlendOp := AC_SRC_OVER;
         Blend.SourceConstantAlpha := AnimateData.CurStep;
-        UpdateLayeredWindowProc(Wnd, 0, nil, nil, 0, nil, 0, @Blend, ULW_ALPHA);
+        UpdateLayeredWindow(Wnd, 0, nil, nil, 0, nil, 0, @Blend, ULW_ALPHA);
       end
       else begin
         if tbadDown in Direction then
@@ -286,8 +281,6 @@ begin
 end;
 
 initialization
-  UpdateLayeredWindowProc := GetProcAddress(GetModuleHandle(user32),
-    'UpdateLayeredWindow');
 finalization
   TBEndAnimation(0);
 end.

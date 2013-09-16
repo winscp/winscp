@@ -107,7 +107,7 @@ void __fastcall TSelectMaskDialog::Init(TMode Mode)
 void __fastcall TSelectMaskDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     if (MaskEdit->Focused())
     {
@@ -120,7 +120,7 @@ bool __fastcall TSelectMaskDialog::Execute()
 {
   MaskEdit->Items = WinConfiguration->History[L"Mask"];
   ActiveControl = MaskEdit;
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     MaskEdit->SaveToHistory();

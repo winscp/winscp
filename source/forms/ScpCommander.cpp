@@ -122,7 +122,12 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
     UpdateToolbar2ItemCaption(Toolbar2Toolbar->Items->Items[i]);
   }
 
-  LocalDirView->Font = Screen->IconFont;
+  UseDesktopFont(LocalDirView);
+  UseDesktopFont(LocalDriveView);
+  UseDesktopFont(LocalPathLabel);
+  UseDesktopFont(RemotePathLabel);
+  UseDesktopFont(LocalStatusBar);
+  UseDesktopFont(StatusBar);
 
   NonVisualDataModule->QueueSpeedComboBoxItem(QueueSpeedComboBoxItem);
 }
@@ -165,9 +170,9 @@ void __fastcall TScpCommanderForm::RestoreParams()
     PANEL ## StatusBar->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar; \
     PANEL ## DriveView->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.DriveView; \
     if (PANEL ## DriveView->Align == alTop) \
-      PANEL ## DriveView->Height = WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight; \
+      PANEL ## DriveView->Height = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch); \
     else \
-      PANEL ## DriveView->Width = WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth
+      PANEL ## DriveView->Width = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch)
   RESTORE_PANEL_PARAMS(Local);
   RESTORE_PANEL_PARAMS(Remote);
   #undef RESTORE_PANEL_PARAMS
@@ -201,9 +206,15 @@ void __fastcall TScpCommanderForm::StoreParams()
       WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar = PANEL ## StatusBar->Visible; \
       WinConfiguration->ScpCommander.PANEL ## Panel.DriveView = PANEL ## DriveView->Visible; \
       if (PANEL ## DriveView->Align == alTop) \
+      { \
         WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight = PANEL ## DriveView->Height; \
+        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch = Screen->PixelsPerInch; \
+      } \
       else \
-        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth = PANEL ## DriveView->Width
+      { \
+        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth = PANEL ## DriveView->Width; \
+        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch = Screen->PixelsPerInch; \
+      }
     STORE_PANEL_PARAMS(Local);
     STORE_PANEL_PARAMS(Remote);
     #undef RESTORE_PANEL_PARAMS
@@ -1065,70 +1076,31 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
   if (!FSynchronisingBrowse && NonVisualDataModule->SynchronizeBrowsingAction->Checked &&
       !PrevPath.IsEmpty() && PrevPath != ADirView->Path)
   {
-    bool PrevAllowTransferPresetAutoSelect = FAllowTransferPresetAutoSelect;
+    TValueRestorer<bool> AllowTransferPresetAutoSelectRestorer(FAllowTransferPresetAutoSelect);
     FAllowTransferPresetAutoSelect = false;
+    TValueRestorer<bool> SynchronisingBrowseRestorer(FSynchronisingBrowse);
     FSynchronisingBrowse = true;
+
     try
     {
+      UnicodeString NewPath;
+
+      bool Error = false;
+      std::auto_ptr<TStrings> ErrorMoreMessages;
+      UnicodeString ErrorHelpKeyword;
+
       try
       {
-        UnicodeString NewPath;
-        try
-        {
-          SynchronizeBrowsing(ADirView, PrevPath, NewPath, false);
-        }
-        // EAbort means that we do not know how to synchronize browsing
-        // there's no fallback scenario for that
-        catch(EAbort &)
-        {
-          throw;
-        }
-        catch(Exception & E)
-        {
-          // what does this say?
-          if (Application->Terminated)
-          {
-            throw;
-          }
-          else
-          {
-            TStrings * MoreMessages = ExceptionToMoreMessages(&E);
-            try
-            {
-              UnicodeString HelpKeyword =
-                MergeHelpKeyword(HELP_SYNC_DIR_BROWSE_ERROR, GetExceptionHelpKeyword(&E));
-              if (MoreMessageDialog(FMTLOAD(SYNC_DIR_BROWSE_CREATE, (NewPath)),
-                    MoreMessages, qtConfirmation, qaYes | qaNo,
-                    HelpKeyword) == qaYes)
-              {
-                try
-                {
-                  SynchronizeBrowsing(ADirView, PrevPath, NewPath, true);
-                }
-                catch(Exception & E)
-                {
-                  if (!Application->Terminated)
-                  {
-                    Terminal->ShowExtendedException(&E);
-                  }
-                  throw;
-                }
-              }
-              else
-              {
-                NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
-              }
-            }
-            __finally
-            {
-              delete MoreMessages;
-            }
-          }
-        }
+        SynchronizeBrowsing(ADirView, PrevPath, NewPath, false);
+      }
+      // EAbort means that we do not know how to synchronize browsing
+      // there's no fallback scenario for that
+      catch(EAbort &)
+      {
+        throw;
       }
       catch(Exception & E)
       {
-        NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
         // what does this say?
         if (Application->Terminated)
         {
@@ -1136,16 +1108,57 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
         }
         else
         {
-          MessageDialog(LoadStr(SYNC_DIR_BROWSE_ERROR), qtInformation, qaOK,
-            HELP_SYNC_DIR_BROWSE_ERROR);
+          Error = true;
+          ErrorMoreMessages.reset(ExceptionToMoreMessages(&E));
+          ErrorHelpKeyword =
+            MergeHelpKeyword(HELP_SYNC_DIR_BROWSE_ERROR, GetExceptionHelpKeyword(&E));
         }
       }
+
+      // this was moved here out of the above catch clause,
+      // to avoid deep nesting, what seems to cause some stray access violations
+      if (Error)
+      {
+        if (MoreMessageDialog(FMTLOAD(SYNC_DIR_BROWSE_CREATE, (NewPath)),
+              ErrorMoreMessages.get(), qtConfirmation, qaYes | qaNo,
+              ErrorHelpKeyword) == qaYes)
+        {
+          try
+          {
+            SynchronizeBrowsing(ADirView, PrevPath, NewPath, true);
+          }
+          catch(Exception & E)
+          {
+            if (!Application->Terminated)
+            {
+              Terminal->ShowExtendedException(&E);
+            }
+            throw;
+          }
+        }
+        else
+        {
+          NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+        }
+      }
+
     }
-    __finally
+    catch(Exception & E)
     {
-      FSynchronisingBrowse = false;
-      FAllowTransferPresetAutoSelect = PrevAllowTransferPresetAutoSelect;
+      NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+      // what does this say?
+      if (Application->Terminated)
+      {
+        throw;
+      }
+      else
+      {
+        MessageDialog(LoadStr(SYNC_DIR_BROWSE_ERROR), qtInformation, qaOK,
+          HELP_SYNC_DIR_BROWSE_ERROR);
+      }
     }
+
+    // note the value restorers at the beginning of this block
   }
 }
 //---------------------------------------------------------------------------
@@ -1208,9 +1221,9 @@ void __fastcall TScpCommanderForm::AddEditLink(TOperationSide Side, bool Add)
         FileName = FileName + L".lnk";
       }
 
-      if (Edit && !DeleteFile(FileName))
+      if (Edit)
       {
-        throw Exception(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)));
+        DeleteFileChecked(FileName);
       }
       if (!CreateFileShortCut(PointTo, FileName, L""))
       {
@@ -2015,8 +2028,8 @@ void __fastcall TScpCommanderForm::LocalDirViewContextPopup(TObject * /*Sender*/
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DisplaySystemContextMenu()
 {
+  TValueRestorer<bool> Restorer(FForceSystemContextMenu);
   FForceSystemContextMenu = true;
-  TBoolRestorer Restorer(FForceSystemContextMenu);
   if ((FLastContextPopupScreenPoint.x >= 0) && (FLastContextPopupScreenPoint.Y >= 0))
   {
     LocalDirView->DisplayContextMenu(FLastContextPopupScreenPoint);

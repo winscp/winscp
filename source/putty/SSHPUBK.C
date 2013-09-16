@@ -67,14 +67,15 @@ static int loadrsakey_main(FILE * fp, struct RSAKey *key, int pub_only,
     i += 4;
 
     /* Now the serious stuff. An ordinary SSH-1 public key. */
-    i += makekey(buf + i, len, key, NULL, 1);
-    if (i < 0)
+    j = makekey(buf + i, len, key, NULL, 1);
+    if (j < 0)
 	goto end;		       /* overran */
+    i += j;
 
     /* Next, the comment field. */
     j = GET_32BIT(buf + i);
     i += 4;
-    if (len - i < j)
+    if (j < 0 || len - i < j)
 	goto end;
     comment = snewn(j + 1, char);
     if (comment) {
@@ -108,7 +109,7 @@ static int loadrsakey_main(FILE * fp, struct RSAKey *key, int pub_only,
 	MD5Update(&md5c, (unsigned char *)passphrase, strlen(passphrase));
 	MD5Final(keybuf, &md5c);
 	des3_decrypt_pubkey(keybuf, buf + i, (len - i + 7) & ~7);
-	memset(keybuf, 0, sizeof(keybuf));	/* burn the evidence */
+	smemclr(keybuf, sizeof(keybuf));	/* burn the evidence */
     }
 
     /*
@@ -150,7 +151,7 @@ static int loadrsakey_main(FILE * fp, struct RSAKey *key, int pub_only,
 	ret = 1;
 
   end:
-    memset(buf, 0, sizeof(buf));       /* burn the evidence */
+    smemclr(buf, sizeof(buf));       /* burn the evidence */
     return ret;
 }
 
@@ -257,8 +258,8 @@ int rsakey_pubblob(const Filename *filename, void **blob, int *bloblen,
 	    *blob = rsa_public_blob(&key, bloblen);
 	    freersakey(&key);
 	    ret = 1;
-	    fp = NULL;
 	}
+	fp = NULL; /* loadrsakey_main unconditionally closes fp */
     } else {
 	error = "not an SSH-1 RSA file";
     }
@@ -358,7 +359,7 @@ int saversakey(const Filename *filename, struct RSAKey *key, char *passphrase)
 	MD5Update(&md5c, (unsigned char *)passphrase, strlen(passphrase));
 	MD5Final(keybuf, &md5c);
 	des3_encrypt_pubkey(keybuf, estart, p - estart);
-	memset(keybuf, 0, sizeof(keybuf));	/* burn the evidence */
+	smemclr(keybuf, sizeof(keybuf));	/* burn the evidence */
     }
 
     /*
@@ -647,6 +648,11 @@ struct ssh2_userkey *ssh2_load_userkey(const Filename *filename,
 	/* this is an old key file; warn and then continue */
 	old_keyfile_warning();
 	old_fmt = 1;
+    } else if (0 == strncmp(header, "PuTTY-User-Key-File-", 20)) {
+	/* this is a key file FROM THE FUTURE; refuse it, but with a
+         * more specific error message than the generic one below */
+	error = "PuTTY key format too new";
+	goto error;
     } else {
 	error = "not a PuTTY SSH-2 private key";
 	goto error;
@@ -674,7 +680,6 @@ struct ssh2_userkey *ssh2_load_userkey(const Filename *filename,
 	cipher = 0;
 	cipherblk = 1;
     } else {
-	sfree(encryption);
 	goto error;
     }
 
@@ -794,14 +799,14 @@ struct ssh2_userkey *ssh2_load_userkey(const Filename *filename,
 
 	    hmac_sha1_simple(mackey, 20, macdata, maclen, binary);
 
-	    memset(mackey, 0, sizeof(mackey));
-	    memset(&s, 0, sizeof(s));
+	    smemclr(mackey, sizeof(mackey));
+	    smemclr(&s, sizeof(s));
 	} else {
 	    SHA_Simple(macdata, maclen, binary);
 	}
 
 	if (free_macdata) {
-	    memset(macdata, 0, maclen);
+	    smemclr(macdata, maclen);
 	    sfree(macdata);
 	}
 
@@ -891,6 +896,9 @@ unsigned char *ssh2_userkey_loadpub(const Filename *filename, char **algorithm,
     if (!read_header(fp, header)
 	|| (0 != strcmp(header, "PuTTY-User-Key-File-2") &&
 	    0 != strcmp(header, "PuTTY-User-Key-File-1"))) {
+        if (0 == strncmp(header, "PuTTY-User-Key-File-", 20))
+            error = "PuTTY key format too new";
+        else
 	error = "not a PuTTY SSH-2 private key";
 	goto error;
     }
@@ -1000,9 +1008,8 @@ int ssh2_userkey_encrypted(const Filename *filename, char **commentptr)
 
     if (commentptr)
 	*commentptr = comment;
-#ifdef MPEXT
-    if (!commentptr) sfree(comment);
-#endif
+    else
+        sfree(comment);
 
     fclose(fp);
     if (!strcmp(b, "aes256-cbc"))
@@ -1119,10 +1126,10 @@ int ssh2_save_userkey(const Filename *filename, struct ssh2_userkey *key,
 	    SHA_Bytes(&s, passphrase, strlen(passphrase));
 	SHA_Final(&s, mackey);
 	hmac_sha1_simple(mackey, 20, macdata, maclen, priv_mac);
-	memset(macdata, 0, maclen);
+	smemclr(macdata, maclen);
 	sfree(macdata);
-	memset(mackey, 0, sizeof(mackey));
-	memset(&s, 0, sizeof(s));
+	smemclr(mackey, sizeof(mackey));
+	smemclr(&s, sizeof(s));
     }
 
     if (passphrase) {
@@ -1142,8 +1149,8 @@ int ssh2_save_userkey(const Filename *filename, struct ssh2_userkey *key,
 	aes256_encrypt_pubkey(key, priv_blob_encrypted,
 			      priv_encrypted_len);
 
-	memset(key, 0, sizeof(key));
-	memset(&s, 0, sizeof(s));
+	smemclr(key, sizeof(key));
+	smemclr(&s, sizeof(s));
     }
 
     fp = f_open(*filename, "w", TRUE);
@@ -1163,7 +1170,7 @@ int ssh2_save_userkey(const Filename *filename, struct ssh2_userkey *key,
     fclose(fp);
 
     sfree(pub_blob);
-    memset(priv_blob, 0, priv_blob_len);
+    smemclr(priv_blob, priv_blob_len);
     sfree(priv_blob);
     sfree(priv_blob_encrypted);
     return 1;

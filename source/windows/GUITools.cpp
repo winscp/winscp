@@ -13,6 +13,7 @@
 #include <SessionData.h>
 #include <WinInterface.h>
 #include <TbxUtils.hpp>
+#include <Math.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -400,6 +401,103 @@ void __fastcall AddSessionColorImage(
   Bitmap->Canvas->RoundRect(RoundRect, 4, 4);
 
   ImageList->AddMasked(Bitmap.get(), TransparentColor);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsEligibleForApplyingTabs(
+  UnicodeString Line, int & TabPos, UnicodeString & Start, UnicodeString & Remaining)
+{
+  bool Result = false;
+  TabPos = Line.Pos(L"\t");
+  if (TabPos > 0)
+  {
+    Remaining = Line.SubString(TabPos + 1, Line.Length() - TabPos);
+    // WORKAROUND
+    // Some translations still use obsolete hack of consecutive tabs to aling the contents.
+    // Delete these, so that the following check does not fail on this
+    while (Remaining.SubString(1, 1) == L"\t")
+    {
+      Remaining.Delete(1, 1);
+    }
+
+    // We do not have, not support, mutiple tabs on a single line
+    if (ALWAYS_TRUE(Remaining.Pos(L"\t") == 0))
+    {
+      Start = Line.SubString(1, TabPos - 1);
+      // WORAROUND
+      // Previously we padded the string before tab with spaces,
+      // to aling the contents across multiple lines
+      Start = Start.TrimRight();
+      // at least two normal spaces for separation
+      Start += L"  ";
+      Result = true;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static int __fastcall CalculateWidthByLength(UnicodeString Text, void * /*Arg*/)
+{
+  return Text.Length();
+}
+//---------------------------------------------------------------------------
+void __fastcall ApplyTabs(
+  UnicodeString & Text, wchar_t Padding,
+  TCalculateWidth CalculateWidth, void * CalculateWidthArg)
+{
+  if (CalculateWidth == NULL)
+  {
+    assert(CalculateWidthArg == NULL);
+    CalculateWidth = CalculateWidthByLength;
+  }
+
+  std::auto_ptr<TStringList> Lines(new TStringList());
+  Lines->Text = Text;
+
+  int MaxWidth = -1;
+  for (int Index = 0; Index < Lines->Count; Index++)
+  {
+    UnicodeString Line = Lines->Strings[Index];
+    int TabPos;
+    UnicodeString Start;
+    UnicodeString Remaining;
+    if (IsEligibleForApplyingTabs(Line, TabPos, Start, Remaining))
+    {
+      int Width = CalculateWidth(Start, CalculateWidthArg);
+      MaxWidth = Max(MaxWidth, Width);
+    }
+  }
+
+  // Optimization and also to prevent potential regression for texts without tabs
+  if (MaxWidth >= 0)
+  {
+    for (int Index = 0; Index < Lines->Count; Index++)
+    {
+      UnicodeString Line = Lines->Strings[Index];
+      int TabPos;
+      UnicodeString Start;
+      UnicodeString Remaining;
+      if (IsEligibleForApplyingTabs(Line, TabPos, Start, Remaining))
+      {
+        int Width;
+        while ((Width = CalculateWidth(Start, CalculateWidthArg)) < MaxWidth)
+        {
+          int Wider = CalculateWidth(Start + Padding, CalculateWidthArg);
+          // If padded string is wider than max width by more pixels
+          // than non-padded string is shorter than max width
+          if ((Wider > MaxWidth) && ((Wider - MaxWidth) > (MaxWidth - Width)))
+          {
+            break;
+          }
+          Start += Padding;
+        }
+        Lines->Strings[Index] = Start + Remaining;
+      }
+    }
+
+    Text = Lines->Text;
+    // remove trailing newline
+    Text = Text.TrimRight();
+  }
 }
 //---------------------------------------------------------------------------
 TLocalCustomCommand::TLocalCustomCommand()

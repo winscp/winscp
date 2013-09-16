@@ -1,5 +1,4 @@
 //---------------------------------------------------------------------------
-#define NO_WIN32_LEAN_AND_MEAN
 #include <vcl.h>
 #pragma hdrstop
 
@@ -26,6 +25,45 @@
 #include <PasTools.hpp>
 #include <System.Win.ComObj.hpp>
 #include <StrUtils.hpp>
+//---------------------------------------------------------------------------
+// WORAROUND
+// VCL includes wininet.h (even with NO_WIN32_LEAN_AND_MEAN)
+// and it cannot be compined with winhttp.h as of current Windows SDK.
+// This is hack to allow that.
+// http://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/8f468d9f-3f15-452c-803d-fc63ab3f684e/cannot-use-both-winineth-and-winhttph
+#undef BOOLAPI
+#undef SECURITY_FLAG_IGNORE_CERT_DATE_INVALID
+#undef SECURITY_FLAG_IGNORE_CERT_CN_INVALID
+
+#define URL_COMPONENTS URL_COMPONENTS_ANOTHER
+#define URL_COMPONENTSA URL_COMPONENTSA_ANOTHER
+#define URL_COMPONENTSW URL_COMPONENTSW_ANOTHER
+
+#define LPURL_COMPONENTS LPURL_COMPONENTS_ANOTHER
+#define LPURL_COMPONENTSA LPURL_COMPONENTS_ANOTHER
+#define LPURL_COMPONENTSW LPURL_COMPONENTS_ANOTHER
+
+#define INTERNET_SCHEME INTERNET_SCHEME_ANOTHER
+#define LPINTERNET_SCHEME LPINTERNET_SCHEME_ANOTHER
+
+#define HTTP_VERSION_INFO HTTP_VERSION_INFO_ANOTHER
+#define LPHTTP_VERSION_INFO LPHTTP_VERSION_INFO_ANOTHER
+
+#include <winhttp.h>
+
+#undef URL_COMPONENTS
+#undef URL_COMPONENTSA
+#undef URL_COMPONENTSW
+
+#undef LPURL_COMPONENTS
+#undef LPURL_COMPONENTSA
+#undef LPURL_COMPONENTSW
+
+#undef INTERNET_SCHEME
+#undef LPINTERNET_SCHEME
+
+#undef HTTP_VERSION_INFO
+#undef LPHTTP_VERSION_INFO
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -69,22 +107,30 @@ UnicodeString __fastcall GetListViewStr(TListView * ListView)
   UnicodeString Result;
   for (int Index = 0; Index < ListView->Columns->Count; Index++)
   {
-    if (!Result.IsEmpty())
-    {
-      Result += L",";
-    }
-    Result += IntToStr(ListView->Column[Index]->Width);
+    AddToList(Result, IntToStr(ListView->Column[Index]->Width), L",");
   }
+  // WORKAROUND
+  // Adding an additional comma after the list,
+  // to ensure that old versions that did not expect the pixels-per-inch part,
+  // stop at the comma, otherwise they try to parse the
+  // "last-column-width;pixels-per-inch" as integer and throw.
+  // For the other instance of this hack, see TCustomListViewColProperties.GetParamsStr
+  Result += L",;" + SavePixelsPerInch();
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadListViewStr(TListView * ListView, UnicodeString LayoutStr)
+void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
 {
+  UnicodeString LayoutStr = ::CutToChar(ALayoutStr, L';', true);
+  int PixelsPerInch = LoadPixelsPerInch(::CutToChar(ALayoutStr, L';', true));
   int Index = 0;
   while (!LayoutStr.IsEmpty() && (Index < ListView->Columns->Count))
   {
-    ListView->Column[Index]->Width = StrToIntDef(
-      ::CutToChar(LayoutStr, L',', true), ListView->Column[Index]->Width);
+    int Width;
+    if (TryStrToInt(::CutToChar(LayoutStr, L',', true), Width))
+    {
+      ListView->Column[Index]->Width = LoadDimension(Width, PixelsPerInch);
+    }
     Index++;
   }
 }
@@ -96,9 +142,16 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
   {
     Forms::TMonitor * Monitor = FormMonitor(Form);
 
+    UnicodeString LeftStr = ::CutToChar(Data, L';', true);
+    UnicodeString TopStr = ::CutToChar(Data, L';', true);
+    UnicodeString RightStr = ::CutToChar(Data, L';', true);
+    UnicodeString BottomStr = ::CutToChar(Data, L';', true);
+    TWindowState State = (TWindowState)StrToIntDef(::CutToChar(Data, L';', true), (int)wsNormal);
+    int PixelsPerInch = LoadPixelsPerInch(::CutToChar(Data, L';', true));
+
     TRect Bounds = Form->BoundsRect;
-    int Left = StrToIntDef(::CutToChar(Data, L';', true), Bounds.Left);
-    int Top = StrToIntDef(::CutToChar(Data, L';', true), Bounds.Top);
+    int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Bounds.Left);
+    int Top = StrToDimensionDef(TopStr, PixelsPerInch, Bounds.Top);
     bool DefaultPos = (Left == -1) && (Top == -1);
     if (!DefaultPos)
     {
@@ -110,9 +163,8 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
       Bounds.Left = 0;
       Bounds.Top = 0;
     }
-    Bounds.Right = StrToIntDef(::CutToChar(Data, L';', true), Bounds.Right);
-    Bounds.Bottom = StrToIntDef(::CutToChar(Data, L';', true), Bounds.Bottom);
-    TWindowState State = (TWindowState)StrToIntDef(::CutToChar(Data, L';', true), (int)wsNormal);
+    Bounds.Right = StrToDimensionDef(RightStr, PixelsPerInch, Bounds.Right);
+    Bounds.Bottom = StrToDimensionDef(BottomStr, PixelsPerInch, Bounds.Bottom);
     Form->WindowState = State;
     if (State == wsNormal)
     {
@@ -185,24 +237,29 @@ UnicodeString __fastcall StoreForm(TCustomForm * Form)
   assert(Form);
   TRect Bounds = Form->BoundsRect;
   OffsetRect(Bounds, -Form->Monitor->Left, -Form->Monitor->Top);
-  return FORMAT(L"%d;%d;%d;%d;%d", ((int)Bounds.Left, (int)Bounds.Top,
-    (int)Bounds.Right, (int)Bounds.Bottom,
+  return FORMAT(L"%d;%d;%d;%d;%d;%s", (SaveDimension(Bounds.Left), SaveDimension(Bounds.Top),
+    SaveDimension(Bounds.Right), SaveDimension(Bounds.Bottom),
     // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
     // note that WindowState is wsNormal when window in minimized for some reason.
     // actually it is wsMinimized only when minimized by MSVDM
-    (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState)));
+    (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState),
+    SavePixelsPerInch()));
 }
 //---------------------------------------------------------------------------
 void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form)
 {
-  int Width = StrToIntDef(::CutToChar(Data, L',', true), Form->Width);
-  int Height = StrToIntDef(::CutToChar(Data, L',', true), Form->Height);
+  UnicodeString WidthStr = ::CutToChar(Data, L',', true);
+  UnicodeString HeightStr = ::CutToChar(Data, L',', true);
+  int PixelsPerInch = LoadPixelsPerInch(::CutToChar(Data, L',', true));
+
+  int Width = StrToDimensionDef(WidthStr, PixelsPerInch, Form->Width);
+  int Height = StrToDimensionDef(HeightStr, PixelsPerInch, Form->Height);
   ResizeForm(Form, Width, Height);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall StoreFormSize(TForm * Form)
 {
-  return FORMAT(L"%d,%d", (Form->Width, Form->Height));
+  return FORMAT(L"%d,%d,%s", (Form->Width, Form->Height, SavePixelsPerInch()));
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShellAndWait(const UnicodeString Path, const UnicodeString Params)
@@ -759,25 +816,13 @@ bool __fastcall IsWin64()
   static int Result = -1;
   if (Result < 0)
   {
-    typedef BOOL WINAPI (*IsWow64ProcessType)(HANDLE Process, PBOOL Wow64Process);
-
     Result = 0;
-
-    HMODULE Kernel = GetModuleHandle(kernel32);
-    if (Kernel != NULL)
+    BOOL Wow64Process = FALSE;
+    if (IsWow64Process(GetCurrentProcess(), &Wow64Process))
     {
-      IsWow64ProcessType IsWow64Process =
-        (IsWow64ProcessType)GetProcAddress(Kernel, "IsWow64Process");
-      if (IsWow64Process != NULL)
+      if (Wow64Process)
       {
-        BOOL Wow64Process = FALSE;
-        if (IsWow64Process(GetCurrentProcess(), &Wow64Process))
-        {
-          if (Wow64Process)
-          {
-            Result = 1;
-          }
-        }
+        Result = 1;
       }
     }
   }
@@ -886,43 +931,16 @@ void __fastcall VerifyKeyIncludingVersion(UnicodeString FileName, TSshProt SshPr
 }
 //---------------------------------------------------------------------------
 // Code from http://gentoo.osuosl.org/distfiles/cl331.zip/io/
-
-// The autoproxy functions were only documented in WinHTTP 5.1, so we have to
-//   provide the necessary defines and structures ourselves
-#ifndef WINHTTP_ACCESS_TYPE_DEFAULT_PROXY
-
-#define HINTERNET HANDLE
-
-typedef struct
-{
-  WORD dwAccessType;
-  LPWSTR lpszProxy;
-  LPWSTR lpszProxyBypass;
-} WINHTTP_PROXY_INFO;
-
-typedef struct {
-  BOOL fAutoDetect;
-  LPWSTR lpszAutoConfigUrl;
-  LPWSTR lpszProxy;
-  LPWSTR lpszProxyBypass;
-} WINHTTP_CURRENT_USER_IE_PROXY_CONFIG;
-
-#endif /* WinHTTP 5.1 defines and structures */
-
-typedef BOOL (*WINHTTPGETDEFAULTPROXYCONFIGURATION)(WINHTTP_PROXY_INFO * pProxyInfo);
-typedef BOOL (*WINHTTPGETIEPROXYCONFIGFORCURRENTUSER)(
-  IN OUT WINHTTP_CURRENT_USER_IE_PROXY_CONFIG * pProxyConfig);
-  WINHTTP_CURRENT_USER_IE_PROXY_CONFIG IEProxyInfo;
-static HMODULE WinHTTP = NULL;
-static WINHTTPGETDEFAULTPROXYCONFIGURATION WinHttpGetDefaultProxyConfiguration = NULL;
-static WINHTTPGETIEPROXYCONFIGFORCURRENTUSER WinHttpGetIEProxyConfigForCurrentUser = NULL;
+//---------------------------------------------------------------------------
+// this was moved to global scope in past in some attempt to fix crashes,
+// not sure it really helped
+WINHTTP_CURRENT_USER_IE_PROXY_CONFIG IEProxyInfo;
 //---------------------------------------------------------------------------
 static bool __fastcall GetProxyUrlFromIE(UnicodeString & Proxy)
 {
   bool Result = false;
   memset(&IEProxyInfo, 0, sizeof(IEProxyInfo));
-  if ((WinHttpGetIEProxyConfigForCurrentUser != NULL) &&
-      WinHttpGetIEProxyConfigForCurrentUser(&IEProxyInfo))
+  if (WinHttpGetIEProxyConfigForCurrentUser(&IEProxyInfo))
   {
     if (IEProxyInfo.lpszProxy != NULL)
     {
@@ -944,83 +962,41 @@ static bool __fastcall GetProxyUrlFromIE(UnicodeString & Proxy)
 //---------------------------------------------------------------------------
 bool __fastcall AutodetectProxyUrl(UnicodeString & Proxy)
 {
+  bool Result = false;
 
-  bool Result = true;
-
-  /* Under Win2K SP3, XP and 2003 (or at least Windows versions with
-     WinHTTP 5.1 installed in some way, it officially shipped with the
-     versions mentioned earlier) we can use WinHTTP AutoProxy support,
-     which implements the Web Proxy Auto-Discovery (WPAD) protocol from
-     an internet draft that expired in May 2001.  Under older versions of
-     Windows we have to use the WinINet InternetGetProxyInfo, however this
-     consists of a ghastly set of kludges that were never meant to be
-     exposed to the outside world (they were only crowbarred out of MS
-     as part of the DoJ consent decree), and user experience with them is
-     that they don't really work except in the one special way in which
-     MS-internal code calls them.  Since we don't know what this is, we
-     use the WinHTTP functions instead */
-  if (WinHTTP == NULL)
+  /* Forst we try for proxy info direct from the registry if
+     it's available. */
+  WINHTTP_PROXY_INFO ProxyInfo;
+  memset(&ProxyInfo, 0, sizeof(ProxyInfo));
+  if (WinHttpGetDefaultProxyConfiguration(&ProxyInfo))
   {
-    if ((WinHTTP = LoadLibrary(L"WinHTTP.dll")) == NULL)
+    if (ProxyInfo.lpszProxy != NULL)
     {
-      Result = false;
+      Proxy = ProxyInfo.lpszProxy;
+      GlobalFree(ProxyInfo.lpszProxy);
+      Result = true;
     }
-    else
+    if (ProxyInfo.lpszProxyBypass != NULL)
     {
-      WinHttpGetDefaultProxyConfiguration = (WINHTTPGETDEFAULTPROXYCONFIGURATION)
-        GetProcAddress(WinHTTP, "WinHttpGetDefaultProxyConfiguration");
-      WinHttpGetIEProxyConfigForCurrentUser = (WINHTTPGETIEPROXYCONFIGFORCURRENTUSER)
-        GetProcAddress(WinHTTP, "WinHttpGetIEProxyConfigForCurrentUser");
-      if ((WinHttpGetDefaultProxyConfiguration == NULL) ||
-          (WinHttpGetIEProxyConfigForCurrentUser == NULL))
-      {
-        FreeLibrary(WinHTTP);
-        Result = false;
-      }
+      GlobalFree(ProxyInfo.lpszProxyBypass);
     }
   }
 
-  if (Result)
+  /* The next fallback is to get the proxy info from MSIE.  This is also
+     usually much quicker than WinHttpGetProxyForUrl(), although sometimes
+     it seems to fall back to that, based on the longish delay involved.
+     Another issue with this is that it won't work in a service process
+     that isn't impersonating an interactive user (since there isn't a
+     current user), but in that case we just fall back to
+     WinHttpGetProxyForUrl() */
+  if (!Result)
   {
-    Result = false;
-
-    /* Forst we try for proxy info direct from the registry if
-       it's available. */
-    if (!Result)
-    {
-      WINHTTP_PROXY_INFO ProxyInfo;
-      memset(&ProxyInfo, 0, sizeof(ProxyInfo));
-      if ((WinHttpGetDefaultProxyConfiguration != NULL) &&
-          WinHttpGetDefaultProxyConfiguration(&ProxyInfo))
-      {
-        if (ProxyInfo.lpszProxy != NULL)
-        {
-          Proxy = ProxyInfo.lpszProxy;
-          GlobalFree(ProxyInfo.lpszProxy);
-          Result = true;
-        }
-        if (ProxyInfo.lpszProxyBypass != NULL)
-        {
-          GlobalFree(ProxyInfo.lpszProxyBypass);
-        }
-      }
-    }
-
-    /* The next fallback is to get the proxy info from MSIE.  This is also
-       usually much quicker than WinHttpGetProxyForUrl(), although sometimes
-       it seems to fall back to that, based on the longish delay involved.
-       Another issue with this is that it won't work in a service process
-       that isn't impersonating an interactive user (since there isn't a
-       current user), but in that case we just fall back to
-       WinHttpGetProxyForUrl() */
-    if (!Result)
-    {
-      Result = GetProxyUrlFromIE(Proxy);
-    }
-
-    // We can also use WinHttpGetProxyForUrl, but it is lengthy
-    // See the source address of the code for example
+    Result = GetProxyUrlFromIE(Proxy);
   }
+
+  // We can also use WinHttpGetProxyForUrl, but it is lengthy
+  // See the source address of the code for example
+
   return Result;
 }
 //---------------------------------------------------------------------------

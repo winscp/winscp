@@ -339,6 +339,7 @@ protected:
   inline void __fastcall CMAppSysCommand(TMessage & Message);
   inline void __fastcall WMAppCommand(TMessage & Message);
   inline void __fastcall WMSysCommand(TMessage & Message);
+  void __fastcall WMQueryEndSession(TMessage & Message);
   virtual void __fastcall SysResizing(unsigned int Cmd);
   DYNAMIC void __fastcall DoShow();
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
@@ -432,7 +433,7 @@ protected:
   void __fastcall TransferPresetAutoSelect();
   virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
   inline bool __fastcall CustomCommandRemoteAllowed();
-  void __fastcall CustomCommandMenu(TObject * Sender, const TPoint & MousePos,
+  void __fastcall CustomCommandMenu(TObject * Sender, TRect Rect,
     TStrings * LocalFileList, TStrings * RemoteFileList);
   void __fastcall LoadToolbarsLayoutStr(UnicodeString LayoutStr);
   UnicodeString __fastcall GetToolbarsLayoutStr();
@@ -451,7 +452,7 @@ protected:
   void __fastcall AddNote(UnicodeString Note, bool UpdateNow = true);
   void __fastcall PostNote(UnicodeString Note, unsigned int Seconds,
     TNotifyEvent OnNoteClick, TObject * NoteData);
-  bool __fastcall CancelNote();
+  bool __fastcall CancelNote(bool Force);
   void __fastcall UpdatesChecked();
   void __fastcall UpdatesNoteClicked(TObject * Sender);
   void __fastcall TransferPresetNoteClicked(TObject * Sender);
@@ -461,7 +462,7 @@ protected:
   void __fastcall TrayIconClick(TObject * Sender);
   void __fastcall Notify(TTerminal * Terminal, UnicodeString Message,
     TQueryType Type, bool Important = false, TNotifyEvent OnClick = NULL,
-    Exception * E = NULL);
+    TObject * UserData = NULL, Exception * E = NULL);
   virtual void __fastcall UpdateSessionData(TSessionData * Data);
   virtual void __fastcall UpdateRemotePathComboBox(
     TTBXComboBoxItem * RemotePathComboBox, bool TextOnly);
@@ -495,6 +496,10 @@ protected:
   bool __fastcall CommandLineFromAnotherInstance(const UnicodeString & CommandLine);
   void __fastcall SetQueueProgress();
   void __fastcall UpdateQueueLabel();
+  TTerminal * __fastcall GetSessionTabTerminal(TTabSheet * TabSheet);
+  bool __fastcall SessionTabSwitched();
+  void __fastcall RestoreApp();
+  void __fastcall GoToQueue();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -569,6 +574,7 @@ public:
   void __fastcall InactiveTerminalException(TTerminal * Terminal, Exception * E);
   void __fastcall TerminalReady();
   void __fastcall QueueEvent(TTerminal * Terminal, TTerminalQueue * Queue, TQueueEvent Event);
+  void __fastcall QueueEmptyNoteClicked(TObject * Sender);
   bool __fastcall DoSynchronizeDirectories(UnicodeString & LocalDirectory,
     UnicodeString & RemoteDirectory, bool UseDefaults);
   bool __fastcall DoFullSynchronizeDirectories(UnicodeString & LocalDirectory,
@@ -591,7 +597,7 @@ public:
   void __fastcall ToggleAutoReadDirectoryAfterOp();
   void __fastcall PopupTrayBalloon(TTerminal * Terminal, const UnicodeString & Str,
     TQueryType Type, Exception * E = NULL, unsigned int Seconds = 0,
-    TNotifyEvent OnBalloonClick = NULL);
+    TNotifyEvent OnBalloonClick = NULL, TObject * UserData = NULL);
   void __fastcall RemoteFindFiles();
   virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
   void __fastcall UpdateTaskbarList(ITaskbarList3 * TaskbarList);

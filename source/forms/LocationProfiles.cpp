@@ -409,23 +409,11 @@ void __fastcall TLocationProfilesDialog::LoadBookmarks(
 bool __fastcall TLocationProfilesDialog::Execute()
 {
   bool Result;
-  UnicodeString SessionKey;
-  if (Terminal)
-  {
-    // cache session key, in case terminal is closed while the window is open
-    SessionKey = Terminal->SessionData->SessionKey;
-    LoadBookmarks(SessionProfilesView, FSessionFolders, FSessionBookmarkList, WinConfiguration->Bookmarks[SessionKey]);
-    LoadBookmarks(SharedProfilesView, FSharedFolders, FSharedBookmarkList, WinConfiguration->SharedBookmarks);
-  }
-  if (Mode == odAddBookmark)
-  {
-    AddAsBookmark(GetProfilesSheet(), true);
-  }
   PageControl->ActivePage = GetProfilesSheet();
-  Result = (ShowModal() == mrOk);
+  Result = (ShowModal() == DefaultResult(this));
   if (Terminal)
   {
-    WinConfiguration->Bookmarks[SessionKey] = FSessionBookmarkList;
+    WinConfiguration->Bookmarks[FSessionKey] = FSessionBookmarkList;
     WinConfiguration->SharedBookmarks = FSharedBookmarkList;
     WinConfiguration->UseSharedBookmarks = (PageControl->ActivePage == SharedProfilesSheet);
   }
@@ -457,6 +445,10 @@ TBookmarkList * TLocationProfilesDialog::GetBookmarkList(TObject * Sender)
 //---------------------------------------------------------------------------
 TStringList * TLocationProfilesDialog::GetFolders(TObject * Sender)
 {
+  #ifdef _DEBUG
+  assert(FSessionProfilesViewHandle == SessionProfilesView->Handle);
+  assert(FSharedProfilesViewHandle == SharedProfilesView->Handle);
+  #endif
   return GetProfilesObject(Sender, FSessionFolders, FSharedFolders);
 }
 //---------------------------------------------------------------------------
@@ -761,12 +753,32 @@ void __fastcall TLocationProfilesDialog::ProfilesViewDblClick(TObject * Sender)
   TTreeNode * Node = ProfilesView->GetNodeAt(P.x, P.y);
   if (OKBtn->Enabled && Node && Node->Data && Node->Selected)
   {
-    ModalResult = mrOk;
+    ModalResult = DefaultResult(this);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::FormShow(TObject * /*Sender*/)
 {
+  if (Terminal)
+  {
+    // cache session key, in case terminal is closed while the window is open
+    FSessionKey = Terminal->SessionData->SessionKey;
+    // WORAROUND
+    // Has to load this only now (not in Execute before ShowModal),
+    // when the trees are finally (re)created,
+    // otherwise the references in *Folders would be invalid already
+    LoadBookmarks(SessionProfilesView, FSessionFolders, FSessionBookmarkList, WinConfiguration->Bookmarks[FSessionKey]);
+    LoadBookmarks(SharedProfilesView, FSharedFolders, FSharedBookmarkList, WinConfiguration->SharedBookmarks);
+    #ifdef _DEBUG
+    FSessionProfilesViewHandle = SessionProfilesView->Handle;
+    FSharedProfilesViewHandle = SharedProfilesView->Handle;
+    #endif
+  }
+  if (Mode == odAddBookmark)
+  {
+    AddAsBookmark(GetProfilesSheet(), true);
+  }
+
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
 

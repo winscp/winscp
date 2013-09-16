@@ -65,7 +65,7 @@ public:
 
   bool __fastcall LoadFromStream(TStream * Stream, TEncoding * Encoding, bool & EncodingError);
 
-  void __fastcall SetFormat(UnicodeString FontName, int FontHeight,
+  void __fastcall SetFormat(UnicodeString FontName, int FontSize,
     TFontCharset FontCharset, TFontStyles FontStyles, unsigned int TabSize,
     bool AWordWrap);
   void __fastcall ResetFormat();
@@ -109,7 +109,7 @@ __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::SetFormat(UnicodeString FontName, int FontHeight,
+void __fastcall TRichEdit20::SetFormat(UnicodeString FontName, int FontSize,
   TFontCharset FontCharset, TFontStyles FontStyles, unsigned int TabSize,
   bool AWordWrap)
 {
@@ -130,12 +130,12 @@ void __fastcall TRichEdit20::SetFormat(UnicodeString FontName, int FontHeight,
   // do not change, so avoid that if not necessary
   if (!FInitialized ||
       (Font->Name != FontName) ||
-      (Font->Height != FontHeight) ||
+      (Font->Size != FontSize) ||
       (Font->Charset != FontCharset) ||
       (Font->Style != FontStyles))
   {
     Font->Name = FontName;
-    Font->Height = FontHeight;
+    Font->Size = FontSize;
     Font->Charset = FontCharset;
     Font->Style = FontStyles;
     DefAttributes->Assign(Font);
@@ -599,6 +599,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   InitCodePage();
 
   UseSystemSettings(this);
+  UseDesktopFont(StatusBar);
   SetFormIcons(this, L"Z_ICON_EDITOR_BIG", L"Z_ICON_EDITOR_SMALL");
 }
 //---------------------------------------------------------------------------
@@ -839,7 +840,7 @@ void __fastcall TEditorForm::ApplyConfiguration()
   bool PrevModified = EditorMemo->Modified;
   assert(Configuration);
   EditorMemo->SetFormat(WinConfiguration->Editor.FontName,
-    WinConfiguration->Editor.FontHeight, (TFontCharset)WinConfiguration->Editor.FontCharset,
+    WinConfiguration->Editor.FontSize, (TFontCharset)WinConfiguration->Editor.FontCharset,
     IntToFontStyles(WinConfiguration->Editor.FontStyle), WinConfiguration->Editor.TabSize,
     WinConfiguration->Editor.WordWrap);
   EditorMemo->Modified = PrevModified;
@@ -1231,10 +1232,10 @@ void __fastcall TEditorForm::PositionFindDialog(bool VerticalOnly)
   assert(FLastFindDialog);
   if (!VerticalOnly)
   {
-    FLastFindDialog->Left = Left + EditorMemo->Left + EditorMemo->Width / 2 - 100;
+    FLastFindDialog->Left = Left + EditorMemo->Left + EditorMemo->Width / 2 - ScaleByTextHeight(this, 100);
   }
   FLastFindDialog->Top = Top + EditorMemo->Top + (EditorMemo->Height / 4) +
-    (CursorInUpperPart() ? (EditorMemo->Height / 2) : 0) - 40;
+    (CursorInUpperPart() ? (EditorMemo->Height / 2) : 0) - ScaleByTextHeight(this, 40);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::StartFind(bool Find)

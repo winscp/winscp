@@ -14,8 +14,6 @@ Z_ICON_LOG_BIG ICON "..\\resource\\Log32.ico"
 Z_ICON_EDITOR_SMALL ICON "..\\resource\\Editor16.ico"
 Z_ICON_EDITOR_BIG ICON "..\\resource\\Editor32.ico"
 
-1 24 "WinSCP.exe.manifest"
-
 LICENSE RCDATA "License.txt"
 
 DELETE_FILE RCDATA "..\\resource\\DeleteFile.png"

@@ -37,9 +37,9 @@ struct TMessageParams
   unsigned int TimerAnswers;
   unsigned int Timeout;
   unsigned int TimeoutAnswer;
-  UnicodeString NewerAskAgainTitle;
-  unsigned int NewerAskAgainAnswer;
-  bool NewerAskAgainCheckedInitially;
+  UnicodeString NeverAskAgainTitle;
+  unsigned int NeverAskAgainAnswer;
+  bool NeverAskAgainCheckedInitially;
   bool AllowHelp;
   UnicodeString ImageName;
 
@@ -65,7 +65,7 @@ void __fastcall SearchHelp(const UnicodeString & Message);
 void __fastcall MessageWithNoHelp(const UnicodeString & Message);
 
 UnicodeString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent);
-void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, UnicodeString LayoutStr);
+void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString LayoutStr);
 
 namespace Tb2item { class TTBCustomItem; }
 void __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Menu);
@@ -313,7 +313,7 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
 // forms\SynchronizeChecklist.cpp
 class TSynchronizeChecklist;
 typedef void __fastcall (__closure *TCustomCommandMenuEvent)
-  (TObject * Sender, const TPoint & MousePos, TStrings * LocalFileList, TStrings * RemoteFileList);
+  (TObject * Sender, TRect Rect, TStrings * LocalFileList, TStrings * RemoteFileList);
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
@@ -347,7 +347,7 @@ TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
   unsigned int TimeoutAnswer, TButton ** TimeoutButton,
-  const UnicodeString & ImageName);
+  const UnicodeString & ImageName, const UnicodeString & NeverAskAgainCaption);
 
 // windows\Console.cpp
 int __fastcall Console(bool Help);
@@ -370,17 +370,19 @@ const int cplNone =             0x00;
 const int cplCustomize =        0x01;
 const int cplCustomizeDefault = 0x02;
 const int cplSaveSettings =     0x04;
-void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
+void __fastcall CopyParamListPopup(TRect R, TPopupMenu * Menu,
   const TCopyParamType & Param, UnicodeString Preset, TNotifyEvent OnClick,
   int Options, int CopyParamAttrs, bool SaveSettings = false);
 bool __fastcall CopyParamListPopupClick(TObject * Sender,
   TCopyParamType & Param, UnicodeString & Preset, int CopyParamAttrs,
   bool * SaveSettings = NULL);
 
-void __fastcall MenuPopup(TPopupMenu * Menu, TPoint Point, TComponent * PopupComponent);
-void __fastcall MenuPopup(TPopupMenu * Menu, TButtonControl * Button);
+void __fastcall MenuPopup(TPopupMenu * Menu, TRect Rect, TComponent * PopupComponent);
+void __fastcall MenuPopup(TPopupMenu * Menu, TButton * Button);
 void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Handled);
 void __fastcall MenuButton(TButton * Button);
+TRect __fastcall CalculatePopupRect(TButton * Button);
+TRect __fastcall CalculatePopupRect(TControl * Control, TPoint MousePos);
 
 void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
 
@@ -425,10 +427,9 @@ public:
   __fastcall TTrayIcon(unsigned int Id);
   __fastcall ~TTrayIcon();
 
-  static bool __fastcall SupportsBalloons();
-
   void __fastcall PopupBalloon(UnicodeString Title, const UnicodeString & Str,
-    TQueryType QueryType, unsigned int Timeout, TNotifyEvent OnBalloonClick);
+    TQueryType QueryType, unsigned int Timeout, TNotifyEvent OnBalloonClick,
+    TObject * BalloonUserData);
   void __fastcall CancelBalloon();
 
   __property bool Visible = { read = FVisible, write = SetVisible };
@@ -444,6 +445,7 @@ private:
   TNotifyIconData5 * FTrayIcon;
   TNotifyEvent FOnClick;
   TNotifyEvent FOnBalloonClick;
+  TObject * FBalloonUserData;
   UINT FTaskbarCreatedMsg;
 
   void __fastcall WndProc(TMessage & Message);

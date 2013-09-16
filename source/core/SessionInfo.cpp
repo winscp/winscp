@@ -797,7 +797,7 @@ void __fastcall TSessionLog::OpenLogFile()
     FConfiguration->LogFileName = UnicodeString();
     try
     {
-      throw ExtException(&E, LOG_GEN_ERROR);
+      throw ExtException(&E, LoadStr(LOG_GEN_ERROR));
     }
     catch (Exception & E)
     {
@@ -908,13 +908,9 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         delete Storage;
       }
 
-      typedef BOOL WINAPI (* TGetUserNameEx)(EXTENDED_NAME_FORMAT NameFormat, LPWSTR lpNameBuffer, PULONG nSize);
-      HINSTANCE Secur32 = LoadLibrary(L"secur32.dll");
-      TGetUserNameEx GetUserNameEx =
-        (Secur32 != NULL) ? (TGetUserNameEx)GetProcAddress(Secur32, "GetUserNameExW") : NULL;
       wchar_t UserName[UNLEN + 1];
       unsigned long UserNameSize = LENOF(UserName);
-      if ((GetUserNameEx == NULL) || !GetUserNameEx(NameSamCompatible, UserName, &UserNameSize))
+      if (ALWAYS_FALSE(!GetUserNameEx(NameSamCompatible, UserName, &UserNameSize)))
       {
         wcscpy(UserName, L"<Failed to retrieve username>");
       }
@@ -1161,7 +1157,7 @@ void __fastcall TActionLog::Add(const UnicodeString & Line)
       FConfiguration->LogActions = false;
       try
       {
-        throw ExtException(&E, LOG_GEN_ERROR);
+        throw ExtException(&E, LoadStr(LOG_GEN_ERROR));
       }
       catch (Exception &E)
       {

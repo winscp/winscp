@@ -214,7 +214,7 @@ begin
   // So we need to manage selection state ourselves
   // cannot use Win32MajorVersion as it is affected by compatibility mode and
   // the bug is present even in compatibility mode
-  FManageSelection := IsVista;
+  FManageSelection := IsVistaHard;
   FFocused := 0;
   FIgnoreSetFocusFrom := INVALID_HANDLE_VALUE;
   // On Windows 7 we have to force item update when it looses focus,
@@ -549,6 +549,15 @@ begin
     Message.Result := 1;
   end
     else
+  if (NortonLike <> nlOff) and (Message.CharCode = VK_SPACE) and
+     ((KeyDataToShiftState(Message.KeyData) * [ssCtrl]) <> []) then
+  begin
+    // prevent Ctrl+Space landing in else branch below,
+    // this can safely get processed by default handler as Ctrl+Space
+    // toggles only focused item, not affecting others
+    inherited;
+  end
+    else
   if (Message.CharCode in [VK_SPACE, VK_PRIOR, VK_NEXT, VK_END, VK_HOME, VK_LEFT,
     VK_UP, VK_RIGHT, VK_DOWN, VK_SELECT]) then
   begin
@@ -559,6 +568,8 @@ begin
     FDontSelectItem := FDontSelectItem or
       ((NortonLike <> nlOff) and
        ((KeyDataToShiftState(Message.KeyData) * [ssShift]) = []));
+    // Note that Space (selecting toggling) is processed by default handler for WM_CHAR,
+    // otherwise the below condition would prevent unselection
     FDontUnSelectItem :=
       FDontUnSelectItem or
       (NortonLike = nlOn) or

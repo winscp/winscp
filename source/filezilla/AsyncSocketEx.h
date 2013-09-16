@@ -317,12 +317,6 @@ protected:
 	UINT m_nSocketPort;
 	LPTSTR m_lpszSocketAddress;
 
-	// imported IPv6 functions
-	static HMODULE m_hDll;
-
-	static t_getaddrinfo p_getaddrinfo;
-	static t_freeaddrinfo p_freeaddrinfo;
-
 	friend CAsyncSocketExHelperWindow;
 
 #ifndef NOLAYERS

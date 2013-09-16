@@ -1352,7 +1352,7 @@ BOOL CFtpControlSocket::Send(CString str)
 		}
 		if (res != sendLen)
 		{
-			if (res == -2)
+			if (res < 0)
 				res = 0;
 			if (!m_sendBuffer)
 			{
@@ -1389,7 +1389,7 @@ BOOL CFtpControlSocket::Send(CString str)
 		}
 		if (res != sendLen)
 		{
-			if (res == -2)
+			if (res < 0)
 				res = 0;
 			if (!m_sendBuffer)
 			{
@@ -2306,10 +2306,10 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 						memset(&hints, 0, sizeof(addrinfo));
 						hints.ai_family = AF_INET6;
 						hints.ai_socktype = SOCK_STREAM;
-						if (!p_getaddrinfo(T2CA(host), "1024", &hints, &res))
+						if (!getaddrinfo(T2CA(host), "1024", &hints, &res))
 						{
 							host = Inet6AddrToString(((SOCKADDR_IN6 *)res->ai_addr)->sin6_addr);
-							p_freeaddrinfo(res);
+							freeaddrinfo(res);
 						}
 						else
 							host = _T("");
@@ -3967,11 +3967,14 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 						}
 					}
 					if (!nReplyError)
+					{
 						m_pTransferSocket->SetActive();
+					}
 				}
 				else if (pData->bPasv)
+				{
 					m_pTransferSocket->SetActive();
-
+				}
 			}
 			break;
 		case FILETRANSFER_WAITFINISH:
@@ -4202,10 +4205,10 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 						memset(&hints, 0, sizeof(addrinfo));
 						hints.ai_family = AF_INET6;
 						hints.ai_socktype = SOCK_STREAM;
-						if (!p_getaddrinfo(T2CA(host), "1024", &hints, &res))
+						if (!getaddrinfo(T2CA(host), "1024", &hints, &res))
 						{
 							host = Inet6AddrToString(((SOCKADDR_IN6 *)res->ai_addr)->sin6_addr);
-							p_freeaddrinfo(res);
+							freeaddrinfo(res);
 						}
 						else
 							host = _T("");
@@ -4442,10 +4445,10 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 						memset(&hints, 0, sizeof(addrinfo));
 						hints.ai_family = AF_INET6;
 						hints.ai_socktype = SOCK_STREAM;
-						if (!p_getaddrinfo(T2CA(host), "1024", &hints, &res))
+						if (!getaddrinfo(T2CA(host), "1024", &hints, &res))
 						{
 							host = Inet6AddrToString(((SOCKADDR_IN6 *)res->ai_addr)->sin6_addr);
-							p_freeaddrinfo(res);
+							freeaddrinfo(res);
 						}
 						else
 							host = _T("");
@@ -5972,7 +5975,8 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 					break;
 				case SSL_VERIFY_CERT:
 					t_SslCertData *pData = new t_SslCertData;
-					if (m_pSslLayer->GetPeerCertificateData(*pData))
+					LPTSTR CertError = NULL;
+					if (m_pSslLayer->GetPeerCertificateData(*pData, CertError))
 					{
 						CVerifyCertRequestData *pRequestData = new CVerifyCertRequestData;
 						pRequestData->nRequestID=m_pOwner->GetNextAsyncRequestID();
@@ -5996,6 +6000,9 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 					{
 						delete pData;
 						delete [] iter->str;
+						CString str;
+						str.Format(TLS_CERT_DECODE_ERROR, CertError);
+						ShowStatus(str, FZ_LOG_ERROR);
 						ResetOperation(FZ_REPLY_ERROR);
 						continue;
 					}

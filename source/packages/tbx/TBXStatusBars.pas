@@ -514,8 +514,27 @@ begin
 end;
 
 procedure TTBXCustomStatusBar.ChangeScale(M, D: Integer);
+var
+  I: Integer;
+  Panel: TTBXStatusPanel;
 begin
   if UseSystemFont then ScalingFlags := [sfTop];
+
+  { MP }
+  // For VCL status bars, this is implemented in ApplySystemSettingsOnControl
+  if sfWidth in ScalingFlags then
+  begin
+    for I := 0 to Panels.Count - 1 do
+    begin
+      Panel := Panels[I];
+      if Panel.StretchPriority = 0 then
+      begin
+        Panel.Size := MulDiv(Panel.Size, M, D);
+      end;
+      Panel.MaxSize := MulDiv(Panel.MaxSize, M, D);
+    end;
+  end;
+
   inherited;
 end;
 

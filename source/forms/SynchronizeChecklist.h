@@ -51,7 +51,6 @@ __published:
   void __fastcall CheckButtonClick(TObject *Sender);
   void __fastcall ListViewSelectItem(TObject *Sender, TListItem *Item,
           bool Selected);
-  void __fastcall StatusBarResize(TObject *Sender);
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall SelectAllItemClick(TObject *Sender);
   void __fastcall StatusBarMouseDown(TObject *Sender, TMouseButton Button,

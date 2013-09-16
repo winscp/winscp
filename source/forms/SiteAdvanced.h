@@ -245,6 +245,7 @@ __published:
   TComboBox *MinTlsVersionCombo;
   TLabel *Label2;
   TComboBox *MaxTlsVersionCombo;
+  TCheckBox *SslSessionReuseCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

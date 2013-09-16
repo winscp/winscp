@@ -184,6 +184,12 @@ void __fastcall TConfiguration::Save()
   DoSave(false, false);
 }
 //---------------------------------------------------------------------------
+void __fastcall TConfiguration::SaveExplicit()
+{
+  // only modified, explicit
+  DoSave(false, true);
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
 {
   if (FDontSave) return;
@@ -554,7 +560,7 @@ void __fastcall TConfiguration::CleanupConfiguration()
   }
   catch (Exception &E)
   {
-    throw ExtException(&E, CLEANUP_CONFIG_ERROR);
+    throw ExtException(&E, LoadStr(CLEANUP_CONFIG_ERROR));
   }
 }
 //---------------------------------------------------------------------------
@@ -579,7 +585,7 @@ void __fastcall TConfiguration::CleanupHostKeys()
   }
   catch (Exception &E)
   {
-    throw ExtException(&E, CLEANUP_HOSTKEYS_ERROR);
+    throw ExtException(&E, LoadStr(CLEANUP_HOSTKEYS_ERROR));
   }
 }
 //---------------------------------------------------------------------------
@@ -590,15 +596,12 @@ void __fastcall TConfiguration::CleanupRandomSeedFile()
     DontSaveRandomSeed();
     if (FileExists(RandomSeedFileName))
     {
-      if (!DeleteFile(RandomSeedFileName))
-      {
-        RaiseLastOSError();
-      }
+      DeleteFileChecked(RandomSeedFileName);
     }
   }
   catch (Exception &E)
   {
-    throw ExtException(&E, CLEANUP_SEEDFILE_ERROR);
+    throw ExtException(&E, LoadStr(CLEANUP_SEEDFILE_ERROR));
   }
 }
 //---------------------------------------------------------------------------
@@ -608,10 +611,7 @@ void __fastcall TConfiguration::CleanupIniFile()
   {
     if (FileExists(IniFileStorageNameForReading))
     {
-      if (!DeleteFile(IniFileStorageNameForReading))
-      {
-        RaiseLastOSError();
-      }
+      DeleteFileChecked(IniFileStorageNameForReading);
     }
     if (Storage == stIniFile)
     {
@@ -620,7 +620,7 @@ void __fastcall TConfiguration::CleanupIniFile()
   }
   catch (Exception &E)
   {
-    throw ExtException(&E, CLEANUP_INIFILE_ERROR);
+    throw ExtException(&E, LoadStr(CLEANUP_INIFILE_ERROR));
   }
 }
 //---------------------------------------------------------------------------
@@ -660,9 +660,18 @@ UnicodeString __fastcall TConfiguration::GetOSVersionStr()
   OSVersionInfo.dwOSVersionInfoSize = sizeof(OSVersionInfo);
   if (GetVersionEx(&OSVersionInfo) != 0)
   {
-    Result = FORMAT(L"%d.%d.%d %s", (int(OSVersionInfo.dwMajorVersion),
-      int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber),
-      OSVersionInfo.szCSDVersion)).Trim();
+    Result = FORMAT(L"%d.%d.%d", (int(OSVersionInfo.dwMajorVersion),
+      int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber)));
+    UnicodeString CSDVersion = OSVersionInfo.szCSDVersion;
+    if (!CSDVersion.IsEmpty())
+    {
+      Result += L" " + CSDVersion;
+    }
+    UnicodeString ProductName = WindowsProductName();
+    if (!ProductName.IsEmpty())
+    {
+      Result += L" - " + ProductName;
+    }
   }
   return Result;
 }
@@ -958,32 +967,47 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
 {
   if (FStorage != value)
   {
-    THierarchicalStorage * SourceStorage = NULL;
-    THierarchicalStorage * TargetStorage = NULL;
-
+    TStorage StorageBak = FStorage;
     try
     {
-      SourceStorage = CreateScpStorage(false);
-      SourceStorage->AccessMode = smRead;
+      THierarchicalStorage * SourceStorage = NULL;
+      THierarchicalStorage * TargetStorage = NULL;
 
-      FStorage = value;
+      try
+      {
+        SourceStorage = CreateScpStorage(false);
+        SourceStorage->AccessMode = smRead;
 
-      TargetStorage = CreateScpStorage(false);
-      TargetStorage->AccessMode = smReadWrite;
-      TargetStorage->Explicit = true;
+        FStorage = value;
 
-      // copy before save as it removes the ini file,
-      // when switching from ini to registry
-      CopyData(SourceStorage, TargetStorage);
+        TargetStorage = CreateScpStorage(false);
+        TargetStorage->AccessMode = smReadWrite;
+        TargetStorage->Explicit = true;
+
+        // copy before save as it removes the ini file,
+        // when switching from ini to registry
+        CopyData(SourceStorage, TargetStorage);
+      }
+      __finally
+      {
+        delete SourceStorage;
+        delete TargetStorage;
+      }
+
+      // save all and explicit,
+      // this also removes an INI file, when switching to registry storage
+      DoSave(true, true);
     }
-    __finally
+    catch (...)
     {
-      delete SourceStorage;
-      delete TargetStorage;
+      // If this fails, do not pretend that storage was switched.
+      // For instance:
+      // - When writting to an IFI file fails (unlikely, as we fallsback to user profile)
+      // - When removing INI file fails, when switching to registry
+      //   (possible, when the INI file is in Program files folder)
+      FStorage = StorageBak;
+      throw;
     }
-
-    // save all and explicit
-    DoSave(true, true);
   }
 }
 //---------------------------------------------------------------------------

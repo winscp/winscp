@@ -9,11 +9,7 @@ object CustomCommandDialog: TCustomCommandDialog
   ClientHeight = 282
   ClientWidth = 396
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
@@ -36,7 +32,7 @@ object CustomCommandDialog: TCustomCommandDialog
     object DescriptionLabel: TLabel
       Left = 11
       Top = 16
-      Width = 56
+      Width = 57
       Height = 13
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Description:'
@@ -45,7 +41,7 @@ object CustomCommandDialog: TCustomCommandDialog
     object Label1: TLabel
       Left = 11
       Top = 64
-      Width = 87
+      Width = 88
       Height = 13
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Custom command:'
@@ -54,7 +50,7 @@ object CustomCommandDialog: TCustomCommandDialog
     object ShortCutLabel: TLabel
       Left = 16
       Top = 205
-      Width = 89
+      Width = 93
       Height = 13
       Caption = '&Keyboard shortcut:'
       FocusControl = ShortCutCombo

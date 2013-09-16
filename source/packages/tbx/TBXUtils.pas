@@ -120,7 +120,7 @@ const
 { Support for window shadows }
 type
   TShadowEdges = set of (seTopLeft, seBottomRight);
-  TShadowStyle = (ssFlat, ssLayered, ssAlphaBlend);
+  TShadowStyle = (ssFlat, ssLayered);
 
   TShadow = class(TCustomControl)
   protected
@@ -138,7 +138,6 @@ type
     procedure CreateParams(var Params: TCreateParams); override;
     procedure FillBuffer; virtual; abstract;
     procedure WMNCHitTest(var Message: TMessage); message WM_NCHITTEST;
-    procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
   public
     constructor Create(const Bounds: TRect; Opacity: Byte; LoColor: Boolean; Edges: TShadowEdges); reintroduce;
     procedure Clear(const R: TRect);
@@ -175,33 +174,6 @@ type
   end;
 
 procedure RecreateStock;
-
-type
-  PBlendFunction = ^TBlendFunction;
-  TBlendFunction = packed record
-    BlendOp: Byte;
-    BlendFlags: Byte;
-    SourceConstantAlpha: Byte;
-    AlphaFormat: Byte;
-  end;
-
-  TUpdateLayeredWindow = function(hWnd : hWnd; hdcDst : hDC; pptDst : PPoint;
-    psize : PSize; hdcSrc : hDC; pptSrc : PPoint; crKey : TColorRef;
-    pblend : PBlendFunction; dwFlags : Integer): Integer; stdcall;
-
-  TAlphaBlend = function(hdcDest: HDC; nXOriginDest, nYOriginDest,
-    nWidthDest, nHeightDest: Integer; hdcSrc: HDC;
-    nXOriginSrc, nYOriginSrc, nWidthSrc, nHeightSrc: Integer;
-    blendFunction: TBlendFunction): BOOL; stdcall;
-
-  TGradientFill = function(Handle: HDC; pVertex: Pointer; dwNumVertex: DWORD;
-    pMesh: Pointer; dwNumMesh: DWORD; dwMode: DWORD): DWORD; stdcall;
-
-var
-  UpdateLayeredWindow: TUpdateLayeredWindow = nil;
-  AlphaBlend: TAlphaBlend = nil;
-  GradientFill: TGradientFill = nil;
-
 
 implementation
 
@@ -1473,12 +1445,7 @@ begin
   FSaveBits := False;
 
   if LoColor then FStyle := ssFlat
-  else if (@UpdateLayeredWindow <> nil) and (@AlphaBlend <> nil) then
-    FStyle := ssLayered
-  else if @AlphaBlend <> nil then
-    FStyle := ssAlphaBlend
-  else
-    FStyle := ssFlat;
+    else FStyle := ssLayered;
 end;
 
 procedure TShadow.CreateParams(var Params: TCreateParams);
@@ -1623,7 +1590,6 @@ var
   BlendFunc: TBlendFunction;
 begin
   if FStyle <> ssLayered then Exit;
-  Assert(Assigned(UpdateLayeredWindow));
 
   SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) or $00080000{WS_EX_LAYERED});
   DstDC := GetDC(0);
@@ -1669,48 +1635,6 @@ begin
   SetWindowPos(Handle, ParentHandle, 0, 0, 0, 0,
     SWP_NOACTIVATE or SWP_NOSENDCHANGING or SWP_NOMOVE or
     SWP_NOOWNERZORDER or SWP_NOSIZE or SWP_SHOWWINDOW);
-end;
-
-procedure TShadow.WMEraseBkgnd(var Message: TWMEraseBkgnd);
-var
-  SrcPos, DstPos: TPoint;
-  TheSize: TSize;
-  BlendFunc: TBlendFunction;
-begin
-  if FStyle = ssAlphaBlend then
-  begin
-    Assert(Assigned(AlphaBlend));
-
-    { Dispatch all the painting messages }
-    ProcessPaintMessages;
-
-    SrcPos := Point(0, 0);
-    with BoundsRect do
-    begin
-      DstPos := Point(Left, Top);
-      TheSize.cx := Right - Left;
-      TheSize.cy := Bottom - Top;
-    end;
-
-    FBuffer := TBitmap.Create;
-    FBuffer.PixelFormat := pf32bit;
-    FBuffer.Width := TheSize.cx;
-    FBuffer.Height := TheSize.cy;
-
-    FillBuffer;
-
-    { Blend the buffer directly into the screen }
-    BlendFunc.BlendOp := 0;
-    BlendFunc.BlendFlags := 0;
-    BlendFunc.SourceConstantAlpha := FOpacity;
-    BlendFunc.AlphaFormat := 1;
-    AlphaBlend(Message.DC, 0, 0, TheSize.cx, TheSize.cy,
-      FBuffer.Canvas.Handle, 0, 0, TheSize.cx, TheSize.cy, BlendFunc);
-    FBuffer.Free;
-
-    Message.Result := 1;
-  end
-  else inherited;
 end;
 
 procedure TShadow.WMNCHitTest(var Message: TMessage);
@@ -1794,8 +1718,7 @@ var
   R: TRect;
   R1Valid, R2Valid: Boolean;
 begin
-  if LoColor or
-    ((@UpdateLayeredWindow = nil) and (@AlphaBlend = nil)) then
+  if LoColor then
   begin
     TheSize := TheSize div 2;
   end;
@@ -1987,71 +1910,32 @@ type
 var
   V: array [0..1] of TriVertex;
   GR: GRADIENT_RECT;
-  Size, I, Start, Finish: Integer;
-  GradIndex: Integer;
-  R, CR: TRect;
-  Brush: HBRUSH;
 begin
   if not RectVisible(DC, ARect) then Exit;
 
   ClrTopLeft := ColorToRGB(ClrTopLeft);
   ClrBottomRight := ColorToRGB(ClrBottomRight);
-  if @GradientFill <> nil then
-  begin
-    { Use msimg32.dll }
-    with V[0] do
-    begin
-      X := ARect.Left;
-      Y := ARect.Top;
-      R := ClrTopLeft shl 8 and $FF00;
-      G := ClrTopLeft and $FF00;
-      B := ClrTopLeft shr 8 and $FF00;
-      A := 0;
-    end;
-    with V[1] do
-    begin
-      X := ARect.Right;
-      Y := ARect.Bottom;
-      R := ClrBottomRight shl 8 and $FF00;
-      G := ClrBottomRight and $FF00;
-      B := ClrBottomRight shr 8 and $FF00;
-      A := 0;
-    end;
-    GR.UpperLeft := 0; GR.LowerRight := 1;
-    GradientFill(DC, @V, 2, @GR, 1, GRAD_MODE[Kind]);
-  end
-  else
-  begin
-    { Have to do it manually if msimg32.dll is not available }
-    GetClipBox(DC, CR);
 
-    if Kind = gkHorz then
-    begin
-      Size := ARect.Right - ARect.Left;
-      if Size <= 0 then Exit;
-      Start := 0; Finish := Size - 1;
-      if CR.Left > ARect.Left then Inc(Start, CR.Left - ARect.Left);
-      if CR.Right < ARect.Right then Dec(Finish, ARect.Right - CR.Right);
-      R := ARect; Inc(R.Left, Start); R.Right := R.Left + 1;
-    end
-    else
-    begin
-      Size := ARect.Bottom - ARect.Top;
-      if Size <= 0 then Exit;
-      Start := 0; Finish := Size - 1;
-      if CR.Top > ARect.Top then Inc(Start, CR.Top - ARect.Top);
-      if CR.Bottom < ARect.Bottom then Dec(Finish, ARect.Bottom - CR.Bottom);
-      R := ARect; Inc(R.Top, Start); R.Bottom := R.Top + 1;
-    end;
-    GradIndex := GetGradient(Size, ClrTopLeft, ClrBottomRight);
-    for I := Start to Finish do
-    begin
-      Brush := CreateSolidBrush(GradientCache[GradIndex][I]);
-      Windows.FillRect(DC, R, Brush);
-      OffsetRect(R, Integer(Kind = gkHorz), Integer(Kind = gkVert));
-      DeleteObject(Brush);
-    end;
+  with V[0] do
+  begin
+    X := ARect.Left;
+    Y := ARect.Top;
+    R := ClrTopLeft shl 8 and $FF00;
+    G := ClrTopLeft and $FF00;
+    B := ClrTopLeft shr 8 and $FF00;
+    A := 0;
   end;
+  with V[1] do
+  begin
+    X := ARect.Right;
+    Y := ARect.Bottom;
+    R := ClrBottomRight shl 8 and $FF00;
+    G := ClrBottomRight and $FF00;
+    B := ClrBottomRight shr 8 and $FF00;
+    A := 0;
+  end;
+  GR.UpperLeft := 0; GR.LowerRight := 1;
+  GradientFill(DC, @V, 2, @GR, 1, GRAD_MODE[Kind]);
 end;
 
 { Brushed Fill } ///////////////////////////////////////////////////////////////
@@ -2295,23 +2179,11 @@ begin
   RestoreDC(DC, -1);
 end;
 
-var
-  hMSImg: HModule;
-
 initialization
-  @UpdateLayeredWindow := GetProcAddress(
-    GetModuleHandle('user32.dll'), 'UpdateLayeredWindow');
-  hMSImg := LoadLibrary('msimg32.dll');
-  if hMSImg <> 0 then
-  begin
-    @AlphaBlend   := GetProcAddress(hMSImg, 'AlphaBlend');
-    @GradientFill := GetProcAddress(hMSImg, 'GradientFill');
-  end;
   InitializeStock;
   InitializeBrushedFill;
   ResetBrushedFillCache;
 finalization
   FinalizeBrushedFill;
   FinalizeStock;
-  if hMSImg <> 0 then FreeLibrary(hMSImg);
 end.

@@ -2592,7 +2592,6 @@ begin
   if not(csDesigning in ComponentState) then
     InstallHookProc(Self, ToolbarHookProc, [hpSendActivate, hpSendActivateApp,
       hpSendWindowPosChanged, hpPreDestroy]);
-  InitTrackMouseEvent;
 end;
 
 destructor TTBCustomDockableWindow.Destroy;

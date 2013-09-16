@@ -134,6 +134,12 @@ public:
   }
 };
 //---------------------------------------------------------------------------
+class TTerminalNoteData : public TObject
+{
+public:
+  TTerminal * Terminal;
+};
+//---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FFormRestored(false),
     TForm(Owner)
@@ -242,8 +248,13 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   assert(ColorPalette != NULL);
   ColorPalette->OnChange = NonVisualDataModule->SessionColorPaletteChange;
 
-  RemoteDirView->Font = Screen->IconFont;
-  QueueView3->Font = Screen->IconFont;
+  UseDesktopFont(SessionsPageControl);
+  SessionsPageControl->Height =SessionsPageControl->GetTabsHeight();
+  UseDesktopFont(RemoteDirView);
+  UseDesktopFont(RemoteDriveView);
+  UseDesktopFont(QueueView3);
+  UseDesktopFont(QueueLabel);
+  UseDesktopFont(RemoteStatusBar);
 
   reinterpret_cast<TLabel*>(QueueSplitter)->OnDblClick = QueueSplitterDblClick;
 
@@ -942,7 +953,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
           if (WinConfiguration->DDTransferConfirmation == asAuto)
           {
             PopupTrayBalloon(NULL, LoadStr(DD_TRANSFER_CONFIRM_OFF), qtInformation,
-              NULL, 0, EnableDDTransferConfirmation);
+              NULL, 0, EnableDDTransferConfirmation, NULL);
           }
           WinConfiguration->DDTransferConfirmation = asOff;
         }
@@ -1063,7 +1074,7 @@ void __fastcall TCustomScpExplorerForm::RestoreParams()
 
   ConfigurationChanged();
 
-  QueuePanel->Height = WinConfiguration->QueueView.Height;
+  QueuePanel->Height = LoadDimension(WinConfiguration->QueueView.Height, WinConfiguration->QueueView.HeightPixelsPerInch);
   LoadListViewStr(QueueView3, WinConfiguration->QueueView.Layout);
   QueueDock->Visible = WinConfiguration->QueueView.ToolBar;
   QueueLabel->Visible = WinConfiguration->QueueView.Label;
@@ -1072,6 +1083,7 @@ void __fastcall TCustomScpExplorerForm::RestoreParams()
 void __fastcall TCustomScpExplorerForm::StoreParams()
 {
   WinConfiguration->QueueView.Height = QueuePanel->Height;
+  WinConfiguration->QueueView.HeightPixelsPerInch = Screen->PixelsPerInch;
   WinConfiguration->QueueView.Layout = GetListViewStr(QueueView3);
   WinConfiguration->QueueView.ToolBar = QueueDock->Visible;
   WinConfiguration->QueueView.Label = QueueLabel->Visible;
@@ -1721,7 +1733,7 @@ void __fastcall TCustomScpExplorerForm::BothCustomCommand(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CustomCommandMenu(
-  TObject * Sender, const TPoint & MousePos,
+  TObject * Sender, TRect Rect,
   TStrings * LocalFileList, TStrings * RemoteFileList)
 {
   FCustomCommandMenu->Items->Clear();
@@ -1734,7 +1746,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommandMenu(
 
   NonVisualDataModule->CreateCustomCommandsMenu(FCustomCommandMenu->Items, false, false, true);
 
-  MenuPopup(FCustomCommandMenu, MousePos, dynamic_cast<TComponent *>(Sender));
+  MenuPopup(FCustomCommandMenu, Rect, dynamic_cast<TComponent *>(Sender));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalCaptureLog(
@@ -3704,7 +3716,7 @@ void __fastcall TCustomScpExplorerForm::ApplicationTitleChanged()
   UpdateTrayIcon();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TrayIconClick(TObject * /*Sender*/)
+void __fastcall TCustomScpExplorerForm::RestoreApp()
 {
   // workaround
   // TApplication.WndProc sets TApplication.FAppIconic to false,
@@ -3714,14 +3726,18 @@ void __fastcall TCustomScpExplorerForm::TrayIconClick(TObject * /*Sender*/)
   // (after another application was previously active)
   if (::IsIconic(Handle))
   {
-    bool * AppIconic = reinterpret_cast<bool *>((reinterpret_cast<char *>(Application)) + 56);
-    if (!*AppIconic)
+    if (!IsAppIconic())
     {
-      *AppIconic = true;
+      SetAppIconic(true);
     }
   }
   Application->Restore();
   Application->BringToFront();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::TrayIconClick(TObject * /*Sender*/)
+{
+  RestoreApp();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::OpenInNewWindow()
@@ -4005,7 +4021,7 @@ void __fastcall TCustomScpExplorerForm::SetComponentVisible(Byte Component, Bool
         }
       }
 
-      static int Reserve = 32;
+      int Reserve = ScaleByTextHeight(this, 32);
       // queue in explorer, trees in commander
       if (Control->Height > RemainingHeight - Reserve)
       {
@@ -4717,7 +4733,7 @@ void __fastcall TCustomScpExplorerForm::ToolbarGetBaseSize(
     if (DropDownItem != NULL)
     {
       ASize.x -= DropDownItem->EditWidth;
-      ASize.x += 50 /* minimal combo width */;
+      ASize.x += ScaleByTextHeight(this, 50) /* minimal combo width */;
     }
   }
 }
@@ -4790,18 +4806,18 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
   if (Mode == odAddBookmark)
   {
     TMessageParams Params(mpNeverAskAgainCheck);
-    Params.NewerAskAgainTitle = LoadStr(ADD_BOOKMARK_SHARED);
-    Params.NewerAskAgainCheckedInitially = WinConfiguration->UseSharedBookmarks;
+    Params.NeverAskAgainTitle = LoadStr(ADD_BOOKMARK_SHARED);
+    Params.NeverAskAgainCheckedInitially = WinConfiguration->UseSharedBookmarks;
 
     unsigned int Answer =
       MessageDialog(FMTLOAD(ADD_BOOKMARK_CONFIRM, (DirView(Side)->PathName)),
-        qtConfirmation, qaYes | qaNo, HELP_ADD_BOOKMARK_CONFIRM, &Params);
+        qtConfirmation, qaOK | qaCancel, HELP_ADD_BOOKMARK_CONFIRM, &Params);
     if (Answer == qaNeverAskAgain)
     {
       Continue = true;
       WinConfiguration->UseSharedBookmarks = true;
     }
-    else if (Answer == qaYes)
+    else if (Answer == qaOK)
     {
       Continue = true;
       WinConfiguration->UseSharedBookmarks = false;
@@ -5104,7 +5120,7 @@ void __fastcall TCustomScpExplorerForm::TerminalListChanged(TObject * /*Sender*/
     while (!ListChanged && (Index < TerminalList->Count))
     {
       ListChanged =
-        (SessionsPageControl->Pages[Index]->Tag != reinterpret_cast<int>(TerminalList->Objects[Index])) ||
+        (GetSessionTabTerminal(SessionsPageControl->Pages[Index]) != TerminalList->Objects[Index]) ||
         (SessionsPageControl->Pages[Index]->Caption != TerminalList->Strings[Index]);
       Index++;
     }
@@ -5161,12 +5177,17 @@ void __fastcall TCustomScpExplorerForm::UpdateNewSessionTab()
       UnicodeString();
 }
 //---------------------------------------------------------------------------
+TTerminal * __fastcall TCustomScpExplorerForm::GetSessionTabTerminal(TTabSheet * TabSheet)
+{
+  return reinterpret_cast<TTerminal *>(TabSheet->Tag);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
 {
   if (ALWAYS_TRUE(TabSheet != NULL))
   {
     TManagedTerminal * ManagedTerminal =
-      dynamic_cast<TManagedTerminal *>(reinterpret_cast<TTerminal *>(TabSheet->Tag));
+      dynamic_cast<TManagedTerminal *>(GetSessionTabTerminal(TabSheet));
     if (ALWAYS_TRUE(ManagedTerminal != NULL))
     {
       TColor Color =
@@ -5184,11 +5205,12 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SessionsPageControlChange(TObject * /*Sender*/)
+bool __fastcall TCustomScpExplorerForm::SessionTabSwitched()
 {
   assert(SessionsPageControl->ActivePage != NULL);
-  TTerminal * Terminal = reinterpret_cast<TTerminal *>(SessionsPageControl->ActivePage->Tag);
-  if (Terminal != NULL)
+  TTerminal * Terminal = GetSessionTabTerminal(SessionsPageControl->ActivePage);
+  bool Result = (Terminal != NULL);
+  if (Result)
   {
     TTerminalManager::Instance()->ActiveTerminal = Terminal;
   }
@@ -5205,6 +5227,12 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlChange(TObject * /*Se
 
     FSessionsPageControlNewSessionTime = Now();
   }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SessionsPageControlChange(TObject * /*Sender*/)
+{
+  SessionTabSwitched();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TransferListChange(TObject * Sender)
@@ -5263,7 +5291,7 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferLabel()
         GUIConfiguration->CopyParamPreset[Name].
           GetInfoStr(L"; ",
             FLAGMASK(Terminal != NULL, Terminal->UsableCopyParamAttrs(0).General));
-      int MaxWidth = TransferList->MinWidth - (2 * TransferLabel->Margin) - 10;
+      int MaxWidth = TransferList->MinWidth - (2 * TransferLabel->Margin) - ScaleByTextHeight(this, 10);
       if (Canvas->TextExtent(InfoStr).cx > MaxWidth)
       {
         UnicodeString Ellipsis = L"...";
@@ -5352,6 +5380,27 @@ void __fastcall TCustomScpExplorerForm::WMSysCommand(TMessage & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
+{
+  // We were actually never able to make ENDSESSION_CRITICAL happen.
+  // Also there no point returning TRUE as we are not able to
+  // handle the abrupt termination caused by subsequent WM_ENDSESSION cleanly.
+  // Hence the process termination might be safer :)
+  if ((Message.LParam != ENDSESSION_CRITICAL) &&
+      (!FQueue->IsEmpty || (FProgressForm != NULL)))
+  {
+    Message.Result = FALSE;
+  }
+  else
+  {
+    Message.Result = TRUE;
+  }
+  // Do not call default handling as that triggers OnCloseQuery,
+  // where our implementation will popup configuration dialogs, what we do not want,
+  // as per Vista guidelines:
+  // msdn.microsoft.com/en-us/library/ms700677.aspx
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SysResizing(unsigned int /*Cmd*/)
 {
 }
@@ -5378,7 +5427,7 @@ void __fastcall TCustomScpExplorerForm::DoShow()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::PopupTrayBalloon(TTerminal * Terminal,
   const UnicodeString & Str, TQueryType Type, Exception * E, unsigned int Seconds,
-  TNotifyEvent OnBalloonClick)
+  TNotifyEvent OnBalloonClick, TObject * UserData)
 {
   bool Do;
   UnicodeString Message;
@@ -5407,7 +5456,7 @@ void __fastcall TCustomScpExplorerForm::PopupTrayBalloon(TTerminal * Terminal,
     {
       Seconds = WinConfiguration->NotificationsTimeout;
     }
-    FTrayIcon->PopupBalloon(Title, Message, Type, Seconds * MSecsPerSec, OnBalloonClick);
+    FTrayIcon->PopupBalloon(Title, Message, Type, Seconds * MSecsPerSec, OnBalloonClick, UserData);
   }
 }
 //---------------------------------------------------------------------------
@@ -5490,7 +5539,7 @@ void __fastcall TCustomScpExplorerForm::TerminalReady()
 void __fastcall TCustomScpExplorerForm::InactiveTerminalException(
   TTerminal * Terminal, Exception * E)
 {
-  Notify(Terminal, L"", qtError, false, NULL, E);
+  Notify(Terminal, L"", qtError, false, NULL, NULL, E);
 
   if (!Terminal->Active)
   {
@@ -5504,7 +5553,7 @@ void __fastcall TCustomScpExplorerForm::InactiveTerminalException(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::Notify(TTerminal * Terminal,
   UnicodeString Message, TQueryType Type,
-  bool Important, TNotifyEvent OnClick, Exception * E)
+  bool Important, TNotifyEvent OnClick, TObject * UserData, Exception * E)
 {
   if ((E == NULL) ||
       ExceptionMessage(E, Message))
@@ -5522,16 +5571,33 @@ void __fastcall TCustomScpExplorerForm::Notify(TTerminal * Terminal,
         (TTerminalManager::Instance()->TerminalTitle(Terminal), NoteMessage));
     }
 
-    if (WinConfiguration->BalloonNotifications &&
-        ::TTrayIcon::SupportsBalloons())
+    if (WinConfiguration->BalloonNotifications)
     {
       AddNote(NoteMessage);
-      PopupTrayBalloon(Terminal, Message, Type, NULL, Seconds);
+      PopupTrayBalloon(Terminal, Message, Type, NULL, Seconds, OnClick, UserData);
     }
     else
     {
       FlashOnBackground();
-      PostNote(NoteMessage, Seconds, OnClick, NULL);
+      PostNote(NoteMessage, Seconds, OnClick, UserData);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueEmptyNoteClicked(TObject * Sender)
+{
+  RestoreApp();
+
+  TTerminalNoteData * TerminalNoteData = dynamic_cast<TTerminalNoteData *>(Sender);
+  if (ALWAYS_TRUE(TerminalNoteData != NULL) &&
+      !NonVisualDataModule->Busy)
+  {
+    TTerminal * Terminal = TerminalNoteData->Terminal;
+    TTerminalManager::Instance()->ActiveTerminal = Terminal;
+    if (!ComponentVisible[fcQueueView])
+    {
+      ToggleQueueVisibility();
+      GoToQueue();
     }
   }
 }
@@ -5540,12 +5606,18 @@ void __fastcall TCustomScpExplorerForm::QueueEvent(TTerminal * ATerminal,
   TTerminalQueue * /*Queue*/, TQueueEvent Event)
 {
   UnicodeString Message;
+  TNotifyEvent OnClick = NULL;
+  TObject * UserData = NULL;
   switch (Event)
   {
     case qeEmpty:
       if ((ATerminal != Terminal) || !ComponentVisible[fcQueueView])
       {
         Message = LoadStr(BALLOON_QUEUE_EMPTY);
+        OnClick = QueueEmptyNoteClicked;
+        TTerminalNoteData * TerminalNoteData = new TTerminalNoteData();
+        TerminalNoteData->Terminal = ATerminal;
+        UserData = TerminalNoteData;
       }
       break;
 
@@ -5563,7 +5635,7 @@ void __fastcall TCustomScpExplorerForm::QueueEvent(TTerminal * ATerminal,
 
   if (!Message.IsEmpty())
   {
-    Notify(ATerminal, Message, qtInformation);
+    Notify(ATerminal, Message, qtInformation, false, OnClick, UserData);
   }
 }
 //---------------------------------------------------------------------------
@@ -5847,7 +5919,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
       TPoint Point = SessionsPageControl->ScreenToClient(Mouse->CursorPos);
       int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
       // do not allow dropping on the "+" tab
-      TargetTerminal = reinterpret_cast<TTerminal *>(SessionsPageControl->Pages[Index]->Tag);
+      TargetTerminal = GetSessionTabTerminal(SessionsPageControl->Pages[Index]);
       if (TargetTerminal != NULL)
       {
         if ((FLastDropEffect == DROPEFFECT_MOVE) &&
@@ -6108,13 +6180,20 @@ bool __fastcall TCustomScpExplorerForm::AllowQueueOperation(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::GoToQueue()
+{
+  if (ALWAYS_TRUE(QueueView3->Visible))
+  {
+    QueueView3->SetFocus();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecuteQueueOperation(
   TQueueOperation Operation, void * Param)
 {
   if (Operation == qoGoTo)
   {
-    assert(QueueView3->Visible);
-    QueueView3->SetFocus();
+    GoToQueue();
   }
   else if (Operation == qoPreferences)
   {
@@ -6705,7 +6784,12 @@ void __fastcall TCustomScpExplorerForm::UpdatesChecked()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdatesNoteClicked(TObject * /*Sender*/)
 {
-  CheckForUpdates(true);
+  RestoreApp();
+
+  if (!NonVisualDataModule->Busy)
+  {
+    CheckForUpdates(true);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::GetTransferPresetAutoSelectData(
@@ -6831,9 +6915,16 @@ void __fastcall TCustomScpExplorerForm::TransferPresetNoteMessage(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TransferPresetNoteClicked(TObject * /*Sender*/)
+void __fastcall TCustomScpExplorerForm::TransferPresetNoteClicked(TObject * Sender)
 {
-  TransferPresetNoteMessage(dynamic_cast<TTransferPresetNoteData *>(FNoteData), false);
+  // as of now useless, as this is used for notes only, never for balloons, ...
+  RestoreApp();
+
+  // .. and we should never be busy here
+  if (ALWAYS_TRUE(!NonVisualDataModule->Busy))
+  {
+    TransferPresetNoteMessage(NOT_NULL(dynamic_cast<TTransferPresetNoteData *>(Sender)), false);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::PreferencesDialog(
@@ -6950,6 +7041,10 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
 
     case WM_SYSCOMMAND:
       WMSysCommand(*M);
+      break;
+
+    case WM_QUERYENDSESSION:
+      WMQueryEndSession(*M);
       break;
 
     case WM_COMPONENT_HIDE:
@@ -7076,18 +7171,19 @@ void __fastcall TCustomScpExplorerForm::SessionColorPick()
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomScpExplorerForm::CancelNote()
+bool __fastcall TCustomScpExplorerForm::CancelNote(bool Force)
 {
   bool Result = FNoteTimer->Enabled;
   if (Result)
   {
     // cannot cancel note too early
-    if (Now() - FNoteShown >
-          EncodeTimeVerbose(0, 0, (unsigned short)(WinConfiguration->NotificationsStickTime), 0))
+    bool NotEarly =
+      (Now() - FNoteShown >
+          EncodeTimeVerbose(0, 0, (unsigned short)(WinConfiguration->NotificationsStickTime), 0));
+    if (Force || NotEarly)
     {
       FNoteTimer->Enabled = false;
       FNote = "";
-      // beware that OnNoteClick may being executed
       SAFE_DESTROY(FNoteData);
       FOnNoteClick = NULL;
       FNoteHints = FNotes->Text;
@@ -7101,7 +7197,7 @@ bool __fastcall TCustomScpExplorerForm::CancelNote()
 void __fastcall TCustomScpExplorerForm::NoteTimer(TObject * /*Sender*/)
 {
   assert(FNoteTimer->Enabled);
-  CancelNote();
+  CancelNote(true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AddNote(UnicodeString Note, bool UpdateNow)
@@ -7139,7 +7235,6 @@ void __fastcall TCustomScpExplorerForm::PostNote(UnicodeString Note,
   FNoteHints = FNotes->Text;
   FNoteHints.Delete(FNoteHints.Length() - 1, 2);
   FNote = Note;
-  // beware that OnNoteClick may being executed
   SAFE_DESTROY(FNoteData);
   FNoteData = NoteData;
   FOnNoteClick = OnNoteClick;
@@ -7201,7 +7296,14 @@ void __fastcall TCustomScpExplorerForm::StatusBarPanelDblClick(
   {
     if (FOnNoteClick != NULL)
     {
-      FOnNoteClick(NULL);
+      // prevent the user data from being freed by possible call
+      // to CancelNote or PostNote during call to OnNoteClick
+      std::auto_ptr<TObject> NoteData(FNoteData);
+      TNotifyEvent OnNoteClick = FOnNoteClick;
+      FNoteData = NULL;
+      // need to cancel the note as we are going to delete its user data
+      CancelNote(true);
+      OnNoteClick(NoteData.get());
     }
   }
   else
@@ -7434,19 +7536,22 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlMouseDown(
     if (Button == mbRight)
     {
       SessionsPageControl->ActivePageIndex = Index;
-      SessionsPageControlChange(NULL);
+      // do not popup menu when we click "New session" tab
+      // (it would popup only after login dialog > auth dialog, what is strange)
+      if (SessionTabSwitched())
+      {
+        // copied from TControl.WMContextMenu
+        SendCancelMode(SessionsPageControl);
 
-      // copied from TControl.WMContextMenu
-      SendCancelMode(SessionsPageControl);
-
-      // explicit popup instead of using PopupMenu property
-      // to avoid menu to popup somewhere within SessionsPageControlChange above,
-      // while connecting yet not-connected session and hence
-      // allowing an access to commands over not-completelly connected session
-      TPoint Point = SessionsPageControl->ClientToScreen(TPoint(X, Y));
-      TPopupMenu * PopupMenu = NonVisualDataModule->SessionsPopup;
-      PopupMenu->PopupComponent = SessionsPageControl;
-      PopupMenu->Popup(Point.x, Point.y);
+        // explicit popup instead of using PopupMenu property
+        // to avoid menu to popup somewhere within SessionTabSwitched above,
+        // while connecting yet not-connected session and hence
+        // allowing an access to commands over not-completelly connected session
+        TPoint Point = SessionsPageControl->ClientToScreen(TPoint(X, Y));
+        TPopupMenu * PopupMenu = NonVisualDataModule->SessionsPopup;
+        PopupMenu->PopupComponent = SessionsPageControl;
+        PopupMenu->Popup(Point.x, Point.y);
+      }
     }
     else if (Button == mbLeft)
     {
@@ -7462,7 +7567,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlMouseDown(
         // starts, prevent that
         if (MilliSecondsBetween(Now(), FSessionsPageControlNewSessionTime) > 500)
         {
-          TTerminal * Terminal = reinterpret_cast<TTerminal *>(SessionsPageControl->Pages[Index]->Tag);
+          TTerminal * Terminal = GetSessionTabTerminal(SessionsPageControl->Pages[Index]);
           if (Terminal != NULL)
           {
             SessionsPageControl->BeginDrag(false);
@@ -7478,7 +7583,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlDragDrop(
 {
   int Index = SessionsPageControl->IndexOfTabAt(X, Y);
   // do not allow dropping on the "+" tab
-  TTerminal * TargetTerminal = reinterpret_cast<TTerminal *>(SessionsPageControl->Pages[Index]->Tag);
+  TTerminal * TargetTerminal = GetSessionTabTerminal(SessionsPageControl->Pages[Index]);
   if ((TargetTerminal != NULL) &&
       (SessionsPageControl->ActivePage->PageIndex != Index))
   {
@@ -7486,7 +7591,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlDragDrop(
     // this is almost redundant as we would recreate tabs in TerminalListChanged,
     // but we want to actually prevent that to avoid flicker
     SessionsPageControl->ActivePage->PageIndex = Index;
-    TTerminal * Terminal = reinterpret_cast<TTerminal *>(SessionsPageControl->ActivePage->Tag);
+    TTerminal * Terminal = GetSessionTabTerminal(SessionsPageControl->ActivePage);
     TTerminalManager::Instance()->Move(Terminal, TargetTerminal);
   }
 }
@@ -7499,7 +7604,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlDragOver(
   if (Accept)
   {
     int Index = SessionsPageControl->IndexOfTabAt(X, Y);
-    TTerminal * Terminal = reinterpret_cast<TTerminal *>(SessionsPageControl->Pages[Index]->Tag);
+    TTerminal * Terminal = GetSessionTabTerminal(SessionsPageControl->Pages[Index]);
     // do not allow dragging to the "+" tab
     Accept = (Terminal != NULL);
   }
@@ -7515,7 +7620,7 @@ void __fastcall TCustomScpExplorerForm::SessionsDDDragOver(int /*KeyState*/,
   }
   else
   {
-    TTerminal * TargetTerminal = reinterpret_cast<TTerminal *>(SessionsPageControl->Pages[Index]->Tag);
+    TTerminal * TargetTerminal = GetSessionTabTerminal(SessionsPageControl->Pages[Index]);
     // do not allow dropping on the "+" tab
     if (TargetTerminal == NULL)
     {
@@ -7531,7 +7636,7 @@ void __fastcall TCustomScpExplorerForm::SessionsDDProcessDropped(
   {
     int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
     // do not allow dropping on the "+" tab
-    TTerminal * TargetTerminal = reinterpret_cast<TTerminal *>(SessionsPageControl->Pages[Index]->Tag);
+    TTerminal * TargetTerminal = GetSessionTabTerminal(SessionsPageControl->Pages[Index]);
     if (TargetTerminal != NULL)
     {
       assert(!IsFileControl(DropSourceControl, osRemote));

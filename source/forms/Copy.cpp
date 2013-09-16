@@ -364,7 +364,7 @@ bool __fastcall TCopyDialog::Execute()
   FPreset = GUIConfiguration->CopyParamCurrent;
   DirectoryEdit->Items = CustomWinConfiguration->History[
     FToRemote ? L"RemoteTarget" : L"LocalTarget"];
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     Configuration->BeginUpdate();
@@ -390,7 +390,7 @@ bool __fastcall TCopyDialog::Execute()
 void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
       bool &CanClose)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     if (!RemotePaths() && ((FOptions & coTemp) == 0))
     {
@@ -455,9 +455,7 @@ void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
 {
   if (FLAGCLEAR(FOptions, coDoNotUsePresets) && !SupportsSplitButton())
   {
-    CopyParamListPopup(
-      TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
-      0);
+    CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), 0);
   }
   else
   {
@@ -505,16 +503,16 @@ void __fastcall TCopyDialog::CopyParamGroupContextPopup(TObject * /*Sender*/,
 {
   if (FLAGCLEAR(FOptions, coDoNotUsePresets))
   {
-    CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), cplCustomizeDefault);
+    CopyParamListPopup(CalculatePopupRect(CopyParamGroup, MousePos), cplCustomizeDefault);
     Handled = true;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyDialog::CopyParamListPopup(TPoint P, int AdditionalOptions)
+void __fastcall TCopyDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
 {
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
 
-  ::CopyParamListPopup(P, FPresetsMenu,
+  ::CopyParamListPopup(R, FPresetsMenu,
     FCopyParams, FPreset, CopyParamClick,
     cplCustomize | AdditionalOptions |
       FLAGMASK(
@@ -526,9 +524,7 @@ void __fastcall TCopyDialog::CopyParamListPopup(TPoint P, int AdditionalOptions)
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::TransferSettingsButtonDropDownClick(TObject * /*Sender*/)
 {
-  CopyParamListPopup(
-    TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
-    cplCustomizeDefault);
+  CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), cplCustomizeDefault);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::NeverShowAgainCheckClick(TObject * /*Sender*/)

@@ -106,8 +106,8 @@ void __fastcall TSiteAdvancedDialog::InitControls()
     LocalDirectoryLabel->Visible = false;
     LocalDirectoryEdit->Visible = false;
     LocalDirectoryDescLabel->Visible = false;
-    DirectoriesGroup->Height = RemoteDirectoryEdit->Top + RemoteDirectoryEdit->Height + 12;
-    DirectoryOptionsGroup->Top = DirectoriesGroup->Top + DirectoriesGroup->Height + 8;
+    DirectoriesGroup->Height = RemoteDirectoryEdit->Top + RemoteDirectoryEdit->Height + ScaleByTextHeight(this, 12);
+    DirectoryOptionsGroup->Top = DirectoriesGroup->Top + DirectoriesGroup->Height + ScaleByTextHeight(this, 8);
   }
 
   ColorButton->Visible = (FOptions & loColor);
@@ -194,6 +194,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     }
     // hide selection, which is wrongly shown initially even when the box has not focus
     SftpServerEdit->SelLength = 0;
+    AllowScpFallbackCheck->Checked = (FSessionData->FSProtocol == fsSFTP);
 
     SFTPMaxVersionCombo->ItemIndex = FSessionData->SFTPMaxVersion;
 
@@ -389,6 +390,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // connection/tls/ssl page
     MinTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MinTlsVersion);
     MaxTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MaxTlsVersion);
+    SslSessionReuseCheck->Checked = FSessionData->SslSessionReuse;
 
     // color
     SetSessionColor((TColor)FSessionData->Color);
@@ -563,6 +565,19 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
     ((SftpServerEdit->Text == SftpServerEdit->Items->Strings[0]) ?
       UnicodeString() : SftpServerEdit->Text);
   FSessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
+  if (AllowScpFallbackCheck->Checked != (FSessionData->FSProtocol == fsSFTP))
+  {
+    if (AllowScpFallbackCheck->Checked)
+    {
+      assert(FSessionData->FSProtocol == fsSFTPonly);
+      FSessionData->FSProtocol = fsSFTP;
+    }
+    else
+    {
+      assert(FSessionData->FSProtocol == fsSFTP);
+      FSessionData->FSProtocol = fsSFTPonly;
+    }
+  }
 
   #define SAVE_SFTP_BUG_COMBO(BUG) FSessionData->SFTPBug[sb ## BUG] = ComboAutoSwitchSave(SFTPBug ## BUG ## Combo);
   SAVE_SFTP_BUG_COMBO(Symlink);
@@ -621,6 +636,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   // connection/tls/ssl page
   FSessionData->MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
   FSessionData->MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
+  FSessionData->SslSessionReuse = SslSessionReuseCheck->Checked;
 
   // color
   FSessionData->Color = FColor;
@@ -879,6 +895,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       ((FtpProxyLogonType > 0) && (FtpProxyLogonType != 3) && (FtpProxyLogonType != 5)));
     EnableControl(ProxyPasswordLabel, ProxyPasswordEdit->Enabled);
     bool ProxySettings = (ProxyMethod != ::pmNone) && SshProtocol;
+    ProxySettingsGroup->Visible = SshProtocol;
     EnableControl(ProxySettingsGroup, ProxySettings);
     EnableControl(ProxyTelnetCommandEdit,
       ProxySettings && (ProxyMethod == pmTelnet));
@@ -934,11 +951,12 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // environment/scp/shell
     ScpSheet->Enabled = SshProtocol;
-    // disable also for SFTP with SCP fallback, as if someone wants to configure
+    ScpSheet->Caption = LoadStr(ScpProtocol ? LOGIN_SCP_SHELL_PAGE : LOGIN_SHELL_PAGE);
+    // hide also for SFTP with SCP fallback, as if someone wants to configure
     // these he/she probably intends to use SCP and should explicitly select it.
     // (note that these are not used for secondary shell session)
-    EnableControl(ScpLsOptionsGroup, ScpProtocol);
-    EnableControl(OtherShellOptionsGroup, ScpProtocol);
+    ScpLsOptionsGroup->Visible = ScpProtocol;
+    OtherShellOptionsGroup->Visible = ScpProtocol;
 
     // environment/ftp
     FtpSheet->Enabled = FtpProtocol;
@@ -1005,7 +1023,7 @@ bool __fastcall TSiteAdvancedDialog::Execute(TSessionData * SessionData)
   FSessionData = SessionData;
   LoadSession();
 
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
 
   if (Result)
   {
@@ -1232,7 +1250,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyEditAfterDialog(TObject * Sender,
 void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     VerifyKeyIncludingVersion(PrivateKeyEdit->Text, GetSshProt());
     // for tunnel key do not check SSH version as it is not configurable

@@ -79,7 +79,7 @@ private:
   TCopyParamType __fastcall GetCopyParams();
   void __fastcall CopyParamClick(TObject * Sender);
   int __fastcall ActualCopyParamAttrs();
-  void __fastcall CopyParamListPopup(TPoint P, int AdditionalOptions);
+  void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
 
 public:
   __fastcall TFullSynchronizeDialog(TComponent* Owner);

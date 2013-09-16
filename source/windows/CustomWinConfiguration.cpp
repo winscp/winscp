@@ -9,6 +9,7 @@
 #include <Interface.h>
 #include "CustomWinConfiguration.h"
 #include <Exceptions.h>
+#include <PasTools.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -81,18 +82,29 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
   FHistory->AddObject(L"PuttyPath", Strings.release());
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomWinConfiguration::FormatDefaultWindowSize(int Width, int Height)
+{
+  return FORMAT(L"%d,%d,%s", (Width, Height, SaveDefaultPixelsPerInch()));
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomWinConfiguration::FormatDefaultWindowParams(int Width, int Height)
+{
+  return FORMAT(L"-1;-1;%d;%d;%d;%s", (Width, Height, int(wsNormal), SaveDefaultPixelsPerInch()));
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::Default()
 {
   TGUIConfiguration::Default();
 
   FInterface = FDefaultInterface;
   FLogView = lvNone;
-  FSynchronizeChecklist.WindowParams = L"0;-1;-1;600;450;0";
-  FSynchronizeChecklist.ListParams = L"1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1|0;1;2;3;4;5;6;7";
-  FFindFile.WindowParams = L"646,481";
-  FFindFile.ListParams = L"3;1|125,1;181,1;80,1;122,1|0;1;2;3";
-  FConsoleWin.WindowSize = L"570,430";
-  FLoginDialog.WindowSize = L"640,430";
+  // 0 means no "custom-pos"
+  FSynchronizeChecklist.WindowParams = L"0;" + FormatDefaultWindowParams(600, 450);
+  FSynchronizeChecklist.ListParams = L"1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3;4;5;6;7";
+  FFindFile.WindowParams = FormatDefaultWindowSize(646, 481);
+  FFindFile.ListParams = L"3;1|125,1;181,1;80,1;122,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3";
+  FConsoleWin.WindowSize = FormatDefaultWindowSize(570, 430);
+  FLoginDialog.WindowSize = FormatDefaultWindowSize(640, 430);
   FConfirmExitOnCompletion = true;
   FOperationProgressOnTop = true;
 
@@ -450,4 +462,34 @@ void __fastcall TCustomWinConfiguration::SetLoginDialog(TLoginDialogConfiguratio
 void __fastcall TCustomWinConfiguration::SetConfirmExitOnCompletion(bool value)
 {
   SET_CONFIG_PROPERTY(ConfirmExitOnCompletion);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomWinConfiguration::GetDefaultFixedWidthFontName()
+{
+  // These are defaults for respective version of Windows Notepad
+  UnicodeString Result;
+  if (IsWin8())
+  {
+    Result = L"Consolas";
+  }
+  else
+  {
+    Result = L"Lucida Console";
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomWinConfiguration::GetDefaultFixedWidthFontSize()
+{
+  // These are defaults for respective version of Windows Notepad
+  int Result;
+  if (IsWin8())
+  {
+    Result = 11;
+  }
+  else
+  {
+    Result = 10;
+  }
+  return Result;
 }

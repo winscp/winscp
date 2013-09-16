@@ -281,6 +281,64 @@ void __fastcall FinalizeSystemSettings()
 {
 }
 //---------------------------------------------------------------------------
+#ifdef _DEBUG
+void __fastcall VerifyControl(TControl * Control)
+{
+  // If at this time the control has allocated persistence data that are used
+  // for delayed handle recreation, we are at potential risk, as the future
+  // de-persistence may overwrite meanwhile changed data.
+  // For instance it may happen with list view that DPI scaling gets lost.
+  // This for example happens when the list view has both design time
+  // ReadOnly = true and some items set. We cannot usually explicitly
+  // check for the presence of items as while the listview does not have
+  // a handle allocated, item count querying does not work
+  // (see also a check below)
+  assert(!ControlHasRecreationPersistenceData(Control));
+
+  TCustomListView * ListView = dynamic_cast<TCustomListView *>(Control);
+  if (ListView != NULL)
+  {
+    // As of now the HandleAllocated check is pointless as
+    // ListView->Items->Count returns 0 when the handle is not allocated yet.
+    // But we want to know if the implementation ever changes to allocate the handle
+    // on the call. Because we do not want to allocate a handle here as
+    // that would change the debug mode behaviour from release behaviour,
+    // possibly hiding away some problems.
+    assert(!ListView->HandleAllocated() || (ListView->Items->Count == 0));
+  }
+}
+#endif
+//---------------------------------------------------------------------------
+void __fastcall ApplySystemSettingsOnControl(TControl * Control)
+{
+  #ifdef _DEBUG
+  VerifyControl(Control);
+  #endif
+
+  // WORKAROUND
+  // VCL does not scale status par panels (while for instance it does
+  // scale list view headers). Remove this if they ever "fix" this.
+  // For TBX status bars, this is implemented in TTBXCustomStatusBar.ChangeScale
+  TStatusBar * StatusBar = dynamic_cast<TStatusBar *>(Control);
+  if (StatusBar != NULL)
+  {
+    for (int Index = 0; Index < StatusBar->Panels->Count; Index++)
+    {
+      TStatusPanel * Panel = StatusBar->Panels->Items[Index];
+      Panel->Width = ScaleByTextHeight(StatusBar, Panel->Width);
+    }
+  }
+
+  TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
+  if (WinControl != NULL)
+  {
+    for (int Index = 0; Index < WinControl->ControlCount; Index++)
+    {
+      ApplySystemSettingsOnControl(WinControl->Controls[Index]);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 // Settings that must be set as soon as possible.
 void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings)
 {
@@ -308,14 +366,13 @@ void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings)
 
   Control->WindowProc = WindowProc;
 
-  assert(Control && Control->Font);
-  Control->Font->Name = L"MS Shell Dlg";
-
   if (Control->HelpKeyword.IsEmpty())
   {
     // temporary help keyword to enable F1 key in all forms
     Control->HelpKeyword = L"start";
   }
+
+  ApplySystemSettingsOnControl(Control);
 };
 //---------------------------------------------------------------------------
 // Settings that must be set only after whole form is constructed
@@ -694,12 +751,6 @@ static void __fastcall RemoveHiddenControlsFromOrder(TControl ** ControlsOrder, 
   Count -= Shift;
 }
 //---------------------------------------------------------------------------
-void __fastcall RepaintStatusBar(TCustomStatusBar * StatusBar)
-{
-  StatusBar->SimplePanel = !StatusBar->SimplePanel;
-  StatusBar->SimplePanel = !StatusBar->SimplePanel;
-}
-//---------------------------------------------------------------------------
 void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count)
 {
   RemoveHiddenControlsFromOrder(ControlsOrder, Count);
@@ -782,17 +833,6 @@ void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count)
       CommonParent->EnableAlign();
     }
   }
-}
-//---------------------------------------------------------------------------
-TPoint __fastcall GetAveCharSize(TCanvas* Canvas)
-{
-  Integer I;
-  wchar_t Buffer[52];
-  TSize Result;
-  for (I = 0; I <= 25; I++) Buffer[I] = (wchar_t)(L'A' + I);
-  for (I = 0; I <= 25; I++) Buffer[I+26] = (wchar_t)(L'a' + I);
-  GetTextExtentPoint32(Canvas->Handle, Buffer, 52, &Result);
-  return TPoint(Result.cx / 52, Result.cy);
 }
 //---------------------------------------------------------------------------
 void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After)
@@ -1524,6 +1564,52 @@ bool __fastcall SupportsSplitButton()
   return (Win32MajorVersion >= 6);
 }
 //---------------------------------------------------------------------------
+static TButton * __fastcall FindDefaultButton(TWinControl * Control)
+{
+  TButton * Result = NULL;
+  int Index = 0;
+  while ((Result == NULL) && (Index < Control->ControlCount))
+  {
+    TControl * ChildControl = Control->Controls[Index];
+    TButton * Button = dynamic_cast<TButton *>(ChildControl);
+    if ((Button != NULL) && Button->Default)
+    {
+      Result = Button;
+    }
+    else
+    {
+      TWinControl * WinControl = dynamic_cast<TWinControl *>(ChildControl);
+      if (WinControl != NULL)
+      {
+        Result = FindDefaultButton(WinControl);
+      }
+    }
+    Index++;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+TModalResult __fastcall DefaultResult(TCustomForm * Form)
+{
+  // The point of this is to avoid hardcoding mrOk when checking dialog results.
+  // Previously we used != mrCancel instead, as mrCancel is more reliable,
+  // being automatically used for Esc/X buttons (and hence kind of forced to be used
+  // for Cancel buttons). But that failed to be reliable in the end, for
+  // ModalResult being mrNone, when Windows session is being logged off.
+  // We interpreted mrNone as OK, causing lots of troubles.
+  TModalResult Result = mrNone;
+  TButton * Button = FindDefaultButton(Form);
+  if (ALWAYS_TRUE(Button != NULL))
+  {
+    Result = Button->ModalResult;
+  }
+  if (ALWAYS_FALSE(Result == mrNone))
+  {
+    Result = mrOk;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall SetFormIcon(TForm * Form, int Size, const UnicodeString & IconName)
 {
   HICON Icon = LoadIcon(HInstance, IconName.c_str());
@@ -1540,4 +1626,15 @@ void __fastcall SetFormIcons(TForm * Form, const UnicodeString & BigIconName,
 {
   SetFormIcon(Form, ICON_SMALL, SmallIconName);
   SetFormIcon(Form, ICON_BIG, BigIconName);
+}
+//---------------------------------------------------------------------------
+void __fastcall UseDesktopFont(TControl * Control)
+{
+  class TPublicControl : public TControl
+  {
+  public:
+    __property DesktopFont;
+  };
+
+  reinterpret_cast<TPublicControl *>(Control)->DesktopFont = true;
 }

@@ -37,13 +37,12 @@ private:
   TConfiguration * FConfiguration;
   void __fastcall InitControls();
   void __fastcall UpdateControls();
-  void __fastcall SetCleanupData(TWinSCPData Data, Boolean value);
-  Boolean __fastcall GetCleanupData(TWinSCPData Data);
+  bool __fastcall GetCleanupData(TWinSCPData Data);
 public:
   virtual __fastcall TCleanupDialog(TComponent* AOwner);
   __property TStoredSessionList *SessionList  = { read=FSessionList, write=FSessionList };
   __property TConfiguration * Configuration  = { read=FConfiguration, write=FConfiguration };
-  __property Boolean CleanupData[TWinSCPData Data]  = { read=GetCleanupData, write=SetCleanupData };
+  __property Boolean CleanupData[TWinSCPData Data]  = { read=GetCleanupData };
 };
 //----------------------------------------------------------------------------
 #endif

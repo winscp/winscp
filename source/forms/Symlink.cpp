@@ -114,7 +114,7 @@ void __fastcall TSymlinkDialog::SetAllowSymbolic(bool value)
 //---------------------------------------------------------------------------
 bool __fastcall TSymlinkDialog::Execute()
 {
-  return ShowModal() == mrOk;
+  return (ShowModal() == DefaultResult(this));
 }
 //---------------------------------------------------------------------------
 void __fastcall TSymlinkDialog::FormShow(TObject * /*Sender*/)

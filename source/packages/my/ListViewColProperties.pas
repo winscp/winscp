@@ -36,7 +36,7 @@ type
     procedure CheckBounds(Index: Integer);
     procedure SetMaxWidth(Value: Integer);
     procedure SetMinWidth(Value: Integer);
-    procedure SetWidthsStr(Value: string);
+    procedure SetWidthsStr(Value: string; PixelsPerInch: Integer);
     function GetWidthsStr: string;
     procedure SetOrderStr(Value: string);
   protected
@@ -97,9 +97,6 @@ implementation
 uses
   SysUtils, CommCtrl, Windows, PasTools, Controls;
 
-const
-  MaxOrderColumns = 30 - 1;
-
 { TODO : V ListView zamezit zmenu velikosti neviditelnych sloupecku }
 
 constructor TCustomListViewColProperty.Create(AOrder: Integer);
@@ -145,7 +142,7 @@ begin
   FProperties.Free;
 end;
 
-procedure TCustomListViewColProperties.SetWidthsStr(Value: string);
+procedure TCustomListViewColProperties.SetWidthsStr(Value: string; PixelsPerInch: Integer);
 var
   ColStr: string;
   Index: Integer;
@@ -156,8 +153,8 @@ begin
     while (Value <> '') and (Index < Count) do
     begin
       ColStr := CutToChar(Value, ';', True);
-      Widths[Index] := StrToInt(CutToChar(ColStr, ',', True));
-      Visible[Index] := Boolean(StrToInt(ColStr));
+      Widths[Index] := LoadDimension(StrToInt(CutToChar(ColStr, ',', True)), PixelsPerInch);
+      Visible[Index] := Boolean(StrToInt(CutToChar(ColStr, ',', True)));
       Inc(Index);
     end;
   finally
@@ -171,7 +168,7 @@ var
 begin
   Result := '';
   for Index := 0 to Count-1 do
-    Result := Format('%s;%d,%d', [Result, Widths[Index], Integer(Visible[Index])]);
+    Result := Format('%s;%d,%d', [Result, SaveDimension(Widths[Index]), Integer(Visible[Index])]);
   Delete(Result, 1, 1);
 end;
 
@@ -323,14 +320,20 @@ end;
 
 procedure TCustomListViewColProperties.SetParamsStr(Value: string);
 var
-  W: string;
+  S: string;
+  WidthsStr: string;
+  OrderStr: string;
+  PixelsPerInch: Integer;
 begin
-  W := CutToChar(Value, '|', True);
+  S := CutToChar(Value, '|', True);
+  WidthsStr := CutToChar(S, '@', True);
+  PixelsPerInch := LoadPixelsPerInch(S);
+  OrderStr := CutToChar(Value, '|', True);
   // set first orders, only than the widths/visibility,
   // as setting visibility can reorder hidden/visible columns
   // as needed, while setting order cannot ensure this
-  SetOrderStr(Value);
-  SetWidthsStr(W);
+  SetOrderStr(OrderStr);
+  SetWidthsStr(WidthsStr, PixelsPerInch);
 end;
 
 procedure TCustomListViewColProperties.SetVisible(Index: Integer; Value: Boolean);
@@ -467,7 +470,16 @@ end;
 
 function TCustomListViewColProperties.GetParamsStr: string;
 begin
-  Result := Format('%s|%s', [GetWidthsStr, GetOrderStr]);
+  // WORKAROUND
+  // Adding an additional semicolon after the list,
+  // to ensure that old versions that did not expect the pixels-per-inch part,
+  // stop at the semicolon, otherwise they try to parse the
+  // "last-column-width|pixels-per-inch" as integer and throw.
+  // For the other instance of this hack, see GetListViewStr.
+  // The new pixels-per-inch part is inserted after the widths part
+  // as parsing of this was always robust to stop at "count" elements,
+  // what order part was not (due to its logic of skipping hidden columns)
+  Result := Format('%s;@%s|%s', [GetWidthsStr, SavePixelsPerInch, GetOrderStr]);
 end;
 
 function TCustomListViewColProperties.GetVisible(Index: Integer): Boolean;

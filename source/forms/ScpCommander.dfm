@@ -14,6 +14,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Top = 177
     Width = 5
     Height = 298
+    Cursor = crSizeWE
     Hint = 
       '|Drag to change ratio of file panels. Double click to make width' +
       ' of file panels equal.'
@@ -996,7 +997,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 143
       Width = 429
       Height = 3
-      Cursor = crVSplit
+      Cursor = crSizeNS
       Hint = 
         'Drag to resize directory tree. Double click to make height of di' +
         'rectory trees equal.'
@@ -1205,7 +1206,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     inherited QueueView3: TListView
       Width = 829
-      Height = 75
+      Height = 71
       TabStop = False
     end
     inherited QueueDock: TTBXDock
@@ -1248,7 +1249,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 143
       Width = 395
       Height = 3
-      Cursor = crVSplit
+      Cursor = crSizeNS
       Hint = 
         'Drag to resize directory tree. Double click to make height of di' +
         'rectory trees equal.'

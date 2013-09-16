@@ -109,7 +109,7 @@ static void sha512_mpint(SHA512_State * s, Bignum b)
 	lenbuf[0] = bignum_byte(b, len);
 	SHA512_Bytes(s, lenbuf, 1);
     }
-    memset(lenbuf, 0, sizeof(lenbuf));
+    smemclr(lenbuf, sizeof(lenbuf));
 }
 
 /*
@@ -272,10 +272,19 @@ static Bignum rsa_privkey_op(Bignum input, struct RSAKey *key)
 	    bignum_cmp(random, key->modulus) >= 0) {
 	    freebn(random);
 	    continue;
-	} else {
+	}
+
+        /*
+         * Also, make sure it has an inverse mod modulus.
+         */
+        random_inverse = modinv(random, key->modulus);
+        if (!random_inverse) {
+	    freebn(random);
+	    continue;
+        }
+
 	    break;
 	}
-    }
 
     /*
      * RSA blinding relies on the fact that (xy)^d mod n is equal
@@ -293,7 +302,6 @@ static Bignum rsa_privkey_op(Bignum input, struct RSAKey *key)
      */
     random_encrypted = crt_modpow(random, key->exponent,
                                   key->modulus, key->p, key->q, key->iqmp);
-    random_inverse = modinv(random, key->modulus);
     input_blinded = modmul(input, random_encrypted, key->modulus);
     ret_blinded = crt_modpow(input_blinded, key->private_exponent,
                              key->modulus, key->p, key->q, key->iqmp);
@@ -412,16 +420,18 @@ int rsa_verify(struct RSAKey *key)
     pm1 = copybn(key->p);
     decbn(pm1);
     ed = modmul(key->exponent, key->private_exponent, pm1);
+    freebn(pm1);
     cmp = bignum_cmp(ed, One);
-    sfree(ed);
+    freebn(ed);
     if (cmp != 0)
 	return 0;
 
     qm1 = copybn(key->q);
     decbn(qm1);
     ed = modmul(key->exponent, key->private_exponent, qm1);
+    freebn(qm1);
     cmp = bignum_cmp(ed, One);
-    sfree(ed);
+    freebn(ed);
     if (cmp != 0)
 	return 0;
 
@@ -440,6 +450,8 @@ int rsa_verify(struct RSAKey *key)
 
 	freebn(key->iqmp);
 	key->iqmp = modinv(key->q, key->p);
+        if (!key->iqmp)
+            return 0;
     }
 
     /*
@@ -447,7 +459,7 @@ int rsa_verify(struct RSAKey *key)
      */
     n = modmul(key->iqmp, key->q, key->p);
     cmp = bignum_cmp(n, One);
-    sfree(n);
+    freebn(n);
     if (cmp != 0)
 	return 0;
 
@@ -548,6 +560,8 @@ static Bignum getmp(char **data, int *datalen)
     return b;
 }
 
+static void rsa2_freekey(void *key);   /* forward reference */
+
 static void *rsa2_newkey(char *data, int len)
 {
     char *p;
@@ -555,8 +569,6 @@ static void *rsa2_newkey(char *data, int len)
     struct RSAKey *rsa;
 
     rsa = snew(struct RSAKey);
-    if (!rsa)
-	return NULL;
     getstring(&data, &len, &p, &slen);
 
     if (!p || slen != 7 || memcmp(p, "ssh-rsa", 7)) {
@@ -568,6 +580,11 @@ static void *rsa2_newkey(char *data, int len)
     rsa->private_exponent = NULL;
     rsa->p = rsa->q = rsa->iqmp = NULL;
     rsa->comment = NULL;
+
+    if (!rsa->exponent || !rsa->modulus) {
+        rsa2_freekey(rsa);
+        return NULL;
+    }
 
     return rsa;
 }
@@ -691,8 +708,6 @@ static void *rsa2_openssh_createkey(unsigned char **blob, int *len)
     struct RSAKey *rsa;
 
     rsa = snew(struct RSAKey);
-    if (!rsa)
-	return NULL;
     rsa->comment = NULL;
 
     rsa->modulus = getmp(b, len);
@@ -704,13 +719,12 @@ static void *rsa2_openssh_createkey(unsigned char **blob, int *len)
 
     if (!rsa->modulus || !rsa->exponent || !rsa->private_exponent ||
 	!rsa->iqmp || !rsa->p || !rsa->q) {
-	sfree(rsa->modulus);
-	sfree(rsa->exponent);
-	sfree(rsa->private_exponent);
-	sfree(rsa->iqmp);
-	sfree(rsa->p);
-	sfree(rsa->q);
-	sfree(rsa);
+        rsa2_freekey(rsa);
+	return NULL;
+    }
+
+    if (!rsa_verify(rsa)) {
+	rsa2_freekey(rsa);
 	return NULL;
     }
 
@@ -839,6 +853,8 @@ static int rsa2_verifysig(void *key, char *sig, int siglen,
 	return 0;
     }
     in = getmp(&sig, &siglen);
+    if (!in)
+        return 0;
     out = modpow(in, rsa->exponent, rsa->modulus);
     freebn(in);
 

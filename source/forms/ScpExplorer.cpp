@@ -87,14 +87,23 @@ void __fastcall TScpExplorerForm::RestoreParams()
 
   TCustomScpExplorerForm::RestoreParams();
 
+  bool HadHandleAllocated = RemoteDirView->HandleAllocated();
   RemoteDirView->UnixColProperties->ParamsStr = WinConfiguration->ScpExplorer.DirViewParams;
   RemoteDirView->UnixColProperties->ExtVisible = false; // just to make sure
   RemoteDirView->ViewStyle = (TViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
+  if (HadHandleAllocated)
+  {
+    // This is here to make our persistence checks in VerifyControl pass,
+    // but we do not want the view linger in the middle of delayed recreation anyway
+    RemoteDirView->HandleNeeded();
+  }
+
   LoadToolbarsLayoutStr(WinConfiguration->ScpExplorer.ToolbarsLayout);
   SessionsPageControl->Visible = WinConfiguration->ScpExplorer.SessionsTabs;
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
   RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
-  RemoteDriveView->Width = WinConfiguration->ScpExplorer.DriveViewWidth;
+  RemoteDriveView->Width =
+    LoadDimension(WinConfiguration->ScpExplorer.DriveViewWidth, WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::StoreParams()
@@ -113,6 +122,7 @@ void __fastcall TScpExplorerForm::StoreParams()
     WinConfiguration->ScpExplorer.ViewStyle = RemoteDirView->ViewStyle;
     WinConfiguration->ScpExplorer.DriveView = RemoteDriveView->Visible;
     WinConfiguration->ScpExplorer.DriveViewWidth = RemoteDriveView->Width;
+    WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch = Screen->PixelsPerInch;
     TCustomScpExplorerForm::StoreParams();
   }
   __finally
@@ -235,7 +245,7 @@ void __fastcall TScpExplorerForm::RemoteDirViewUpdateStatusBar(
   TObject * /*Sender*/, const TStatusFileInfo & FileInfo)
 {
   FStatusBarFileText = FileStatusBarText(FileInfo);
-  if (!CancelNote())
+  if (!CancelNote(false))
   {
     // if there's no note to cancel, we need to update status bar explicitly
     UpdateStatusBar();

@@ -9,11 +9,7 @@ object SymlinkDialog: TSymlinkDialog
   ClientHeight = 183
   ClientWidth = 396
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnShow = FormShow
@@ -35,7 +31,7 @@ object SymlinkDialog: TSymlinkDialog
     object FileNameLabel: TLabel
       Left = 11
       Top = 16
-      Width = 82
+      Width = 83
       Height = 13
       Caption = '&Link/shortcut file:'
       FocusControl = FileNameEdit
@@ -43,7 +39,7 @@ object SymlinkDialog: TSymlinkDialog
     object Label1: TLabel
       Left = 11
       Top = 64
-      Width = 101
+      Width = 103
       Height = 13
       Caption = '&Point link/shortcut to:'
       FocusControl = PointToEdit

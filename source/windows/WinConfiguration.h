@@ -19,11 +19,12 @@ struct TScpExplorerConfiguration {
   bool ShowFullAddress;
   bool DriveView;
   int DriveViewWidth;
+  int DriveViewWidthPixelsPerInch;
   bool __fastcall operator !=(TScpExplorerConfiguration & rhc)
     { return C(WindowParams) C(DirViewParams) C(ToolbarsLayout)
         C(SessionsTabs) C(StatusBar)
         C(LastLocalTargetDirectory) C(ViewStyle) C(ShowFullAddress)
-        C(DriveView) C(DriveViewWidth) 0; };
+        C(DriveView) C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderPanelConfiguration {
@@ -31,10 +32,13 @@ struct TScpCommanderPanelConfiguration {
   bool StatusBar;
   bool DriveView;
   int DriveViewHeight;
+  int DriveViewHeightPixelsPerInch;
   int DriveViewWidth;
+  int DriveViewWidthPixelsPerInch;
   bool __fastcall operator !=(TScpCommanderPanelConfiguration & rhc)
     { return C(DirViewParams) C(StatusBar)
-        C(DriveView) C(DriveViewHeight) C(DriveViewWidth) 0; };
+        C(DriveView) C(DriveViewHeight) C(DriveViewHeightPixelsPerInch)
+        C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderConfiguration {
@@ -79,7 +83,7 @@ struct TScpCommanderConfiguration {
 //---------------------------------------------------------------------------
 struct TEditorConfiguration {
   UnicodeString FontName;
-  int FontHeight;
+  int FontSize;
   int FontCharset;
   int FontStyle;
   bool WordWrap;
@@ -96,7 +100,7 @@ struct TEditorConfiguration {
   int Encoding;
   bool WarnOnEncodingFallback;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
-    { return C(FontName) C(FontHeight)
+    { return C(FontName) C(FontSize)
       C(FontCharset) C(FontStyle) C(WordWrap) C(FindText) C(ReplaceText)
       C(FindMatchCase) C(FindWholeWord) C(FindDown) C(TabSize)
       C(MaxEditors) C(EarlyClose) C(SDIShellEditor) C(WindowParams)
@@ -106,13 +110,14 @@ struct TEditorConfiguration {
 enum TQueueViewShow { qvShow, qvHideWhenEmpty, qvHide };
 struct TQueueViewConfiguration {
   int Height;
+  int HeightPixelsPerInch;
   UnicodeString Layout;
   TQueueViewShow Show;
   TQueueViewShow LastHideShow;
   bool ToolBar;
   bool Label;
   bool __fastcall operator !=(TQueueViewConfiguration & rhc)
-    { return C(Height) C(Layout) C(Show) C(LastHideShow) C(ToolBar) C(Label) 0; };
+    { return C(Height) C(HeightPixelsPerInch) C(Layout) C(Show) C(LastHideShow) C(ToolBar) C(Label) 0; };
 };
 //---------------------------------------------------------------------------
 struct TUpdatesData
@@ -455,7 +460,6 @@ protected:
   bool __fastcall DetectRegistryStorage(HKEY RootKey);
   bool __fastcall CanWriteToStorage();
   bool __fastcall DoIsBeta(const UnicodeString & ReleaseType);
-  UnicodeString __fastcall FormatDefaultWindowParams(int Width, int Height);
   void __fastcall AskForMasterPassword();
 
 public:

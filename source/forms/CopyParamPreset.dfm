@@ -9,11 +9,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   ClientHeight = 509
   ClientWidth = 675
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
@@ -26,7 +22,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   object Label1: TLabel
     Left = 10
     Top = 13
-    Width = 87
+    Width = 90
     Height = 13
     Caption = 'Preset &description:'
     FocusControl = DescriptionEdit
@@ -100,7 +96,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
     object Label4: TLabel
       Left = 16
       Top = 116
-      Width = 111
+      Width = 114
       Height = 13
       Caption = 'Remote director&y mask:'
       FocusControl = RemoteDirectoryEdit
@@ -108,7 +104,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
     object Label5: TLabel
       Left = 16
       Top = 164
-      Width = 100
+      Width = 101
       Height = 13
       Caption = '&Local directory mask:'
       FocusControl = LocalDirectoryEdit

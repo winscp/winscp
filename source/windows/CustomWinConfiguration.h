@@ -57,6 +57,8 @@ private:
   void __fastcall SetConsoleWin(TConsoleWinConfiguration value);
   void __fastcall SetLoginDialog(TLoginDialogConfiguration value);
   void __fastcall SetConfirmExitOnCompletion(bool value);
+  UnicodeString __fastcall GetDefaultFixedWidthFontName();
+  int __fastcall GetDefaultFixedWidthFontSize();
 
 protected:
   virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
@@ -67,6 +69,8 @@ protected:
   virtual void __fastcall DefaultHistory();
   void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   virtual bool __fastcall GetUseMasterPassword() = 0;
+  UnicodeString __fastcall FormatDefaultWindowParams(int Width, int Height);
+  UnicodeString __fastcall FormatDefaultWindowSize(int Width, int Height);
 
 public:
   __fastcall TCustomWinConfiguration();
@@ -88,6 +92,8 @@ public:
   __property bool OperationProgressOnTop  = { read=FOperationProgressOnTop, write=FOperationProgressOnTop };
   __property bool UseMasterPassword = { read = GetUseMasterPassword };
   __property TNotifyEvent OnMasterPasswordRecrypt = { read = FOnMasterPasswordRecrypt, write = FOnMasterPasswordRecrypt };
+  __property UnicodeString DefaultFixedWidthFontName = { read = GetDefaultFixedWidthFontName };
+  __property int DefaultFixedWidthFontSize = { read = GetDefaultFixedWidthFontSize };
 };
 //---------------------------------------------------------------------------
 #define CustomWinConfiguration \

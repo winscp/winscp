@@ -38,6 +38,10 @@ bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   try
   {
     Result = PreferencesDialog->Execute(DialogData);
+    if (Result)
+    {
+      Configuration->SaveExplicit();
+    }
   }
   __finally
   {
@@ -109,7 +113,7 @@ bool __fastcall TPreferencesDialog::Execute(TPreferencesDialogData * DialogData)
   PuttyPathEdit->Items = CustomWinConfiguration->History[L"PuttyPath"];
   FDialogData = DialogData;
   LoadConfiguration();
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     SaveConfiguration();
@@ -296,7 +300,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       EditorEncodingCombo->ItemIndex = 0;
     }
     FEditorFont->Name = WinConfiguration->Editor.FontName;
-    FEditorFont->Height = WinConfiguration->Editor.FontHeight;
+    FEditorFont->Size = WinConfiguration->Editor.FontSize;
     FEditorFont->Charset = (TFontCharset)WinConfiguration->Editor.FontCharset;
     FEditorFont->Style = IntToFontStyles(WinConfiguration->Editor.FontStyle);
     (*FEditorList) = *WinConfiguration->EditorList;
@@ -593,8 +597,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       WinConfiguration->DDTemporaryDirectory = DDTemporaryDirectoryEdit->Text;
     }
 
-    Configuration->Storage = RegistryStorageButton->Checked ? stRegistry : stIniFile;
-
     // Commander
     TScpCommanderConfiguration ScpCommander = WinConfiguration->ScpCommander;
     if (NortonLikeModeCombo->ItemIndex == 2)
@@ -646,7 +648,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
         break;
     }
     WinConfiguration->Editor.FontName = FEditorFont->Name;
-    WinConfiguration->Editor.FontHeight = FEditorFont->Height;
+    WinConfiguration->Editor.FontSize = FEditorFont->Size;
     WinConfiguration->Editor.FontCharset = FEditorFont->Charset;
     WinConfiguration->Editor.FontStyle = FontStylesToInt(FEditorFont->Style);
     WinConfiguration->EditorList = FEditorList;
@@ -831,13 +833,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     // security
     GUIConfiguration->SessionRememberPassword = SessionRememberPasswordCheck->Checked;
 
-    // languages
-    if (LanguagesView->ItemFocused != NULL)
-    {
-      GUIConfiguration->Locale =
-        reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data);
-    }
-
     // logging
     Configuration->Logging = EnableLoggingCheck->Checked;
     Configuration->LogProtocol = LogProtocolCombo->ItemIndex;
@@ -852,6 +847,19 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     Configuration->LogActions = EnableActionsLoggingCheck->Checked;
     Configuration->ActionsLogFileName = ActionsLogFileNameEdit->Text;
+
+    // languages
+    // As this dialog does not explicitly support run-time locale changing,
+    // make this last, otherwise we lose some settings (or even worse
+    // we end-up saving default text box values=control names as our configuration)
+    if (LanguagesView->ItemFocused != NULL)
+    {
+      GUIConfiguration->Locale =
+        reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data);
+    }
+
+    // this possibly fails, make it last, so that the other settings are preserved
+    Configuration->Storage = RegistryStorageButton->Checked ? stRegistry : stIniFile;
 
     #undef BOOLPROP
   }
@@ -919,7 +927,6 @@ void __fastcall TPreferencesDialog::UpdateControls()
   {
     EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
     EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
-    EnableControl(BalloonNotificationsCheck, ::TTrayIcon::SupportsBalloons());
 
     EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
     EnableControl(ResumeThresholdUnitLabel, ResumeThresholdEdit->Enabled);
@@ -1096,7 +1103,7 @@ void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
 void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     ExitActiveControl(this);
   }
@@ -1901,7 +1908,11 @@ bool __fastcall TPreferencesDialog::CanSetMasterPassword()
 void __fastcall TPreferencesDialog::MasterPasswordChanged(
   UnicodeString Message, TStrings * RecryptPasswordErrors)
 {
-  Configuration->Save();
+  // Save master password.
+  // This is unlikely to fail, as storage is written explicitly already
+  // when writting the recrypted passwords
+  Configuration->SaveExplicit();
+
   if (RecryptPasswordErrors->Count > 0)
   {
     Message = FMTLOAD(MASTER_PASSWORD_RECRYPT_ERRORS, (Message));

@@ -31,7 +31,7 @@
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
 			<_TCHARMapping>wchar_t</_TCHARMapping>
-			<AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib</AllPackageLibs>
+			<AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib</AllPackageLibs>
 			<BCC_AllWarnings>true</BCC_AllWarnings>
 			<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
 			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
@@ -44,18 +44,18 @@
 			<ILINK_GenerateDRC>true</ILINK_GenerateDRC>
 			<ILINK_LibraryPath>windows\;forms\;packages\filemng;packages\tbx;packages\png;..\libs\lib;$(LIB_PATH);$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<IncludePath>console;windows\;forms\;core;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;$(BDS)\include\mfc;$(BDS)\include\windows;$(BDS)\include\windows\vcl;$(BDS)\include\dinkumware;$(IncludePath)</IncludePath>
-			<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib</LinkPackageStatics>
-			<Manifest_File>None</Manifest_File>
+			<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib</LinkPackageStatics>
+			<Manifest_File>windows\WinSCP.exe.manifest</Manifest_File>
 			<Multithreaded>true</Multithreaded>
 			<OutputExt>exe</OutputExt>
 			<ProjectType>CppVCLApplication</ProjectType>
 			<UsingDelphiRTL>true</UsingDelphiRTL>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.2.3.0;InternalName=winscp;LegalCopyright=(c) 2000-2013 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.2.3.0;ReleaseType=beta;WWW=http://winscp.net/</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.2.4.0;InternalName=winscp;LegalCopyright=(c) 2000-2013 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.2.4.0;ReleaseType=beta;WWW=http://winscp.net/</VerInfo_Keys>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_MajorVer>5</VerInfo_MajorVer>
 			<VerInfo_MinorVer>2</VerInfo_MinorVer>
-			<VerInfo_Release>3</VerInfo_Release>
+			<VerInfo_Release>4</VerInfo_Release>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>

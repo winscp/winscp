@@ -49,6 +49,8 @@ void bufchain_fetch(bufchain *ch, void *data, int len);
 
 struct tm ltime(void);
 
+void smemclr(void *b, size_t len);
+
 /*
  * Debugging functions.
  *

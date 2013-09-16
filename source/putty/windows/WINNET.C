@@ -1296,7 +1296,7 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only,
 
     if (p_listen(s, SOMAXCONN) == SOCKET_ERROR) {
         p_closesocket(s);
-	ret->error = winsock_error_string(err);
+	ret->error = winsock_error_string(p_WSAGetLastError());
 	return (Socket) ret;
     }
 

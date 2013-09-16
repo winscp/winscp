@@ -1,9 +1,9 @@
 The following is a copy of post at
 https://forums.embarcadero.com/message.jspa?messageID=175480#175480
 
-1) copy $(BCB6)\source\mfc to $(BDS)\source\mfc
+1) copy libs\mfc\source to $(BDS)\source\mfc
 
-2) copy $(BCB6)\include\mfc to $(BDS)\include\mfc
+2) copy libs\mfc\include to $(BDS)\include\mfc
 
 3) make following changes to files in $(BDS)\source\mfc
 

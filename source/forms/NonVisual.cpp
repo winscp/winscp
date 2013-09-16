@@ -147,8 +147,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   #define EnabledFocusedFileOperation (ScpExplorer->EnableFocusedFileOperation[osCurrent])
   #define EnabledLocalSelectedOperation (ScpExplorer->HasDirView[osLocal] && ScpExplorer->EnableSelectedOperation[osLocal])
   #define EnabledLocalFocusedOperation (ScpExplorer->HasDirView[osLocal] && ScpExplorer->EnableFocusedOperation[osLocal])
+  #define EnabledLocalSelectedFileOperation (ScpExplorer->HasDirView[osLocal] && ScpExplorer->EnableSelectedFileOperation[osLocal])
   #define EnabledRemoteSelectedOperation (ScpExplorer->EnableSelectedOperation[osRemote])
   #define EnabledRemoteFocusedOperation (ScpExplorer->EnableFocusedOperation[osRemote])
+  #define EnabledRemoteSelectedFileOperation (ScpExplorer->EnableSelectedFileOperation[osRemote])
   // focused operation
   UPD(CurrentDeleteFocusedAction, EnabledFocusedOperation)
   UPD(CurrentPropertiesFocusedAction, EnabledFocusedOperation)
@@ -191,7 +193,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   // local selected operation
   UPD(LocalCopyAction, EnabledLocalSelectedOperation)
   UPD(LocalRenameAction, EnabledLocalSelectedOperation)
-  UPD(LocalEditAction, EnabledLocalSelectedOperation && !WinConfiguration->DisableOpenEdit)
+  UPD(LocalEditAction, EnabledLocalSelectedFileOperation && !WinConfiguration->DisableOpenEdit)
   UPD(LocalMoveAction, EnabledLocalSelectedOperation)
   UPD(LocalCreateDirAction, true)
   UPD(LocalDeleteAction, EnabledLocalSelectedOperation)
@@ -204,7 +206,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteCopyAction, EnabledRemoteSelectedOperation)
   UPD(RemoteRenameAction, EnabledRemoteSelectedOperation &&
     ScpExplorer->Terminal->IsCapable[fcRename])
-  UPD(RemoteEditAction, EnabledRemoteSelectedOperation && !WinConfiguration->DisableOpenEdit)
+  UPD(RemoteEditAction, EnabledRemoteSelectedFileOperation && !WinConfiguration->DisableOpenEdit)
   UPD(RemoteMoveAction, EnabledRemoteSelectedOperation)
   UPD(RemoteCreateDirAction, true)
   UPD(RemoteDeleteAction, EnabledRemoteSelectedOperation)

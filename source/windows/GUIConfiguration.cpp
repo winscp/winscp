@@ -150,7 +150,8 @@ bool __fastcall TCopyParamRule::Match(const UnicodeString & Mask,
   }
   else
   {
-    TFileMasks M(Mask);
+    TFileMasks M(1);
+    M.Masks = Mask;
     if (Path)
     {
       Result = M.Matches(Value, Local, true);
@@ -523,6 +524,8 @@ __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
   dynamic_cast<TStringList*>(FLocales)->CaseSensitive = false;
   FCopyParamList = new TCopyParamList();
   CoreSetResourceModule(GetResourceModule());
+  // allow loading configured locale, DetectScalingType needs to get called
+  // only after that, but before user can ever try to change the locale
   FCanApplyLocaleImmediately = true;
 }
 //---------------------------------------------------------------------------
@@ -530,6 +533,12 @@ __fastcall TGUIConfiguration::~TGUIConfiguration()
 {
   delete FLocales;
   delete FCopyParamList;
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::DetectScalingType()
+{
+  // USER_DEFAULT_SCREEN_DPI (96) DPI is 100%
+  FCanApplyLocaleImmediately = (Screen->PixelsPerInch == USER_DEFAULT_SCREEN_DPI);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::Default()

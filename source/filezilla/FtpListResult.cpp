@@ -667,7 +667,7 @@ void CFtpListResult::SendToMessageLog(HWND hWnd, UINT nMsg)
 		t_ffam_statusmessage *pStatus = new t_ffam_statusmessage;
 		pStatus->post = TRUE;
 		pStatus->status = _T("<Empty directory listing>");
-		pStatus->type = 5;
+		pStatus->type = FZ_LOG_INFO;
 		PostMessage(hWnd, nMsg, FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), (LPARAM)pStatus);
 	}
 	while (line)
@@ -679,7 +679,7 @@ void CFtpListResult::SendToMessageLog(HWND hWnd, UINT nMsg)
 		t_ffam_statusmessage *pStatus = new t_ffam_statusmessage;
 		pStatus->post = TRUE;
 		pStatus->status = status;
-		pStatus->type = 5;
+		pStatus->type = FZ_LOG_INFO;
 		if (!PostMessage(hWnd, nMsg, FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), (LPARAM)pStatus))
 			delete pStatus;
 

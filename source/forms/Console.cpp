@@ -11,6 +11,7 @@
 
 #include "Console.h"
 #include <Tools.h>
+#include <PasTools.hpp>
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma link "PathLabel"
@@ -44,16 +45,11 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   FLastTerminal = NULL;
   FDirectoryChanged = false;
   OutputMemo->Color = clBlack;
-  OutputMemo->Font->Color = (TColor)0x00BBBBBB; //clGray;
+  OutputMemo->Font->Color = (TColor)0x00BBBBBB;
   FixComboBoxResizeBug(CommandEdit);
   UseSystemSettings(this);
-  try
-  {
-    OutputMemo->Font->Name = L"Courier New";
-  }
-  catch(...)
-  {
-  }
+  OutputMemo->Font->Name = CustomWinConfiguration->DefaultFixedWidthFontName;
+  OutputMemo->Font->Size = CustomWinConfiguration->DefaultFixedWidthFontSize;
 }
 //---------------------------------------------------------------------
 __fastcall TConsoleDialog::~TConsoleDialog()
@@ -293,9 +289,9 @@ void __fastcall TConsoleDialog::DoAdjustWindow()
   }
 
   // 10 is surplus to cover any borders, etc.
-  int RequiredWidth = (TM.tmAveCharWidth * Columns) + 10;
-  // thre is always one line more
-  int RequiredHeight = (TM.tmHeight + TM.tmExternalLeading) * (Rows + 1) + 10;
+  int RequiredWidth = (TM.tmAveCharWidth * Columns) + ScaleByTextHeight(this, 10);
+  // there is always one line more
+  int RequiredHeight = (TM.tmHeight + TM.tmExternalLeading) * (Rows + 1) + ScaleByTextHeight(this, 10);
 
   int CurrentWidth = (Rect.Right - Rect.Left);
   int CurrentHeight = (Rect.Bottom - Rect.Top);

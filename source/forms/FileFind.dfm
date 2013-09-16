@@ -10,11 +10,7 @@ object FileFindDialog: TFileFindDialog
   Color = clBtnFace
   Constraints.MinHeight = 240
   Constraints.MinWidth = 350
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   Icon.Data = {
     0000010001001010000001002000680400001600000028000000100000002000
     0000010020000000000040040000000000000000000000000000000000000000
@@ -105,7 +101,7 @@ object FileFindDialog: TFileFindDialog
     object MaskEdit: THistoryComboBox
       Left = 11
       Top = 36
-      Width = 361
+      Width = 353
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
@@ -116,7 +112,7 @@ object FileFindDialog: TFileFindDialog
       OnExit = MaskEditExit
     end
     object MaskHintText: TStaticText
-      Left = 275
+      Left = 267
       Top = 59
       Width = 97
       Height = 17
@@ -128,9 +124,9 @@ object FileFindDialog: TFileFindDialog
       TabStop = True
     end
     object MaskButton: TButton
-      Left = 378
+      Left = 370
       Top = 33
-      Width = 72
+      Width = 80
       Height = 25
       Anchors = [akTop, akRight]
       Caption = '&Edit...'
@@ -210,10 +206,16 @@ object FileFindDialog: TFileFindDialog
     Top = 398
     Width = 562
     Height = 19
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBtnText
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
+    Font.Style = []
     Panels = <>
     ParentShowHint = False
     ShowHint = True
     SimplePanel = True
+    UseSystemFont = False
   end
   object FocusButton: TButton
     Left = 476

@@ -14,8 +14,48 @@
 #include <TextsCore.h>
 #include <Vcl.Imaging.pngimage.hpp>
 #include <StrUtils.hpp>
+#include <PasTools.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+class TMessageButton : public TButton
+{
+public:
+  __fastcall TMessageButton(TComponent * Owner);
+protected:
+  virtual void __fastcall Dispatch(void * Message);
+private:
+  void __fastcall WMGetDlgCode(TWMGetDlgCode & Message);
+};
+//---------------------------------------------------------------------------
+__fastcall TMessageButton::TMessageButton(TComponent * Owner) :
+  TButton(Owner)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageButton::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == WM_GETDLGCODE)
+  {
+    WMGetDlgCode(*((TWMGetDlgCode *)Message));
+  }
+  else
+  {
+    TButton::Dispatch(Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageButton::WMGetDlgCode(TWMGetDlgCode & Message)
+{
+  TButton::Dispatch(&Message);
+  // WORKAROUND
+  // Windows default handler returns DLGC_WANTARROWS for split buttons,
+  // what prevent left/right keys from being used for focusing next/previous buttons/controls.
+  // Overrwide that. Though note that we need to pass the up/down keys back to button
+  // to allow drop down, see TMessageForm::CMDialogKey
+  Message.Result = Message.Result & ~DLGC_WANTARROWS;
+}
 //---------------------------------------------------------------------------
 class TMessageForm : public TForm
 {
@@ -23,7 +63,8 @@ public:
   static TForm * __fastcall Create(const UnicodeString & Msg, TStrings * MoreMessages,
     TMsgDlgType DlgType, unsigned int Answers,
     const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
-    unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName);
+    unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName,
+    const UnicodeString & NeverAskAgainCaption);
 
 protected:
   __fastcall TMessageForm(TComponent * AOwner);
@@ -48,6 +89,7 @@ private:
   TMemo * MessageMemo;
   TShiftState FShiftState;
   TTimer * FUpdateForShiftStateTimer;
+  TForm * FDummyForm;
 
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall ReportButtonClick(TObject * Sender);
@@ -65,18 +107,15 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
   Message = NULL;
   MessageMemo = NULL;
   FUpdateForShiftStateTimer = NULL;
-  TNonClientMetrics NonClientMetrics;
-  NonClientMetrics.cbSize = sizeof(NonClientMetrics);
-  if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, &NonClientMetrics, 0))
-  {
-    Font->Handle = CreateFontIndirect(&NonClientMetrics.lfMessageFont);
-  }
   Position = poOwnerFormCenter;
   UseSystemSettingsPre(this);
+  FDummyForm = new TForm(this);
+  UseSystemSettings(FDummyForm);
 }
 //---------------------------------------------------------------------------
 __fastcall TMessageForm::~TMessageForm()
 {
+  SAFE_DESTROY(FDummyForm);
   SAFE_DESTROY(FUpdateForShiftStateTimer);
 }
 //---------------------------------------------------------------------------
@@ -271,6 +310,12 @@ void __fastcall TMessageForm::CMDialogKey(TWMKeyDown & Message)
       TForm::Dispatch(&Message);
     }
   }
+  else if ((Message.CharCode == VK_UP) || (Message.CharCode == VK_DOWN))
+  {
+    // WORKAROUND
+    // noop to make up/down be passed back to button to allow drop down,
+    // see TMessageButton::WMGetDlgCode
+  }
   else
   {
     TForm::Dispatch(&Message);
@@ -337,15 +382,15 @@ const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDl
   &_SMsgDlgConfirm, NULL };
 const wchar_t * IconIDs[] = { IDI_EXCLAMATION, IDI_HAND, IDI_ASTERISK,
   IDI_QUESTION, NULL };
-const int mcHorzMargin = 8;
-const int mcVertMargin = 8;
-const int mcHorzSpacing = 10;
-const int mcVertSpacing = 10;
-const int mcButtonWidth = 50;
-const int mcButtonHeight = 14;
-const int mcButtonSpacing = 4;
-const int mcMoreMessageWidth = 320;
-const int mcMoreMessageHeight = 80;
+const int mcHorzMargin = 10;
+const int mcVertMargin = 13;
+const int mcHorzSpacing = 12;
+const int mcVertSpacing = 24;
+const int mcButtonSpacing = 5;
+const int mcMoreMessageWidth = 400;
+const int mcMoreMessageHeight = 86;
+// approximately what Windows Vista task dialogs use
+const int mcMaxDialogWidth = 390;
 //---------------------------------------------------------------------------
 static UnicodeString __fastcall GetKeyNameStr(int Key)
 {
@@ -380,7 +425,7 @@ TButton * __fastcall TMessageForm::CreateButton(
     UnicodeString(MeasureCaption).c_str(), -1,
     &TextRect, DT_CALCRECT | DT_LEFT | DT_SINGLELINE |
     DrawTextBiDiModeFlagsReadingOnly());
-  int CurButtonWidth = TextRect.Right - TextRect.Left + 8;
+  int CurButtonWidth = TextRect.Right - TextRect.Left + ScaleByTextHeightRunTime(this, 16);
 
   TButton * Button = NULL;
 
@@ -448,15 +493,20 @@ TButton * __fastcall TMessageForm::CreateButton(
     // Also we do not update the max button width for the default groupped
     // button caption. We just blindly hope that captions of advanced commands
     // are always longer than the caption of simple default command
-    CurButtonWidth += 15;
+    CurButtonWidth += ScaleByTextHeightRunTime(this, 15);
   }
   else
   {
-    Button = new TButton(this);
+    Button = new TMessageButton(this);
 
     Button->Name = Name;
     Button->Parent = this;
     Button->Caption = Caption;
+    // Scale buttons using regular font, so that they are as large as buttons
+    // on other dialogs (note that they are still higher than Windows Task dialog
+    // buttons)
+    Button->Height = ScaleByTextHeightRunTime(FDummyForm, Button->Height);
+    Button->Width = ScaleByTextHeightRunTime(FDummyForm, Button->Width);
 
     if (OnClick != NULL)
     {
@@ -470,6 +520,12 @@ TButton * __fastcall TMessageForm::CreateButton(
     if (HasMoreMessages)
     {
       Button->Anchors = TAnchors() << akBottom << akLeft;
+    }
+
+    // never shrink buttons below their default width
+    if (Button->Width > CurButtonWidth)
+    {
+      CurButtonWidth = Button->Width;
     }
   }
 
@@ -561,10 +617,17 @@ void __fastcall AnswerNameAndCaption(
   }
 }
 //---------------------------------------------------------------------------
+static int __fastcall CalculateWidthOnCanvas(UnicodeString Text, void * Arg)
+{
+  TCanvas * Canvas = static_cast<TCanvas *>(Arg);
+  return Canvas->TextWidth(Text);
+}
+//---------------------------------------------------------------------------
 TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
-  unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName)
+  unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName,
+  const UnicodeString & NeverAskAgainCaption)
 {
   unsigned int DefaultAnswer;
   if (FLAGSET(Answers, qaOK))
@@ -588,17 +651,18 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   }
 
   TMessageForm * Result = SafeFormCreate<TMessageForm>();
+  UseDesktopFont(Result);
 
   Result->BiDiMode = Application->BiDiMode;
   Result->BorderStyle = bsDialog;
   Result->Canvas->Font = Result->Font;
   Result->KeyPreview = true;
-  TPoint DialogUnits = GetAveCharSize(Result->Canvas);
-  int HorzMargin = MulDiv(mcHorzMargin, DialogUnits.x, 4);
-  int VertMargin = MulDiv(mcVertMargin, DialogUnits.y, 8);
-  int HorzSpacing = MulDiv(mcHorzSpacing, DialogUnits.x, 4);
-  int VertSpacing = MulDiv(mcVertSpacing, DialogUnits.y, 8);
-  int ButtonWidth = MulDiv(mcButtonWidth, DialogUnits.x, 4);
+  int HorzMargin = ScaleByTextHeightRunTime(Result, mcHorzMargin);
+  int VertMargin = ScaleByTextHeightRunTime(Result, mcVertMargin);
+  int HorzSpacing = ScaleByTextHeightRunTime(Result, mcHorzSpacing);
+  int VertSpacing = ScaleByTextHeightRunTime(Result, mcVertSpacing);
+  int ButtonWidth = -1;
+  int ButtonHeight = -1;
   std::vector<TButton *> ButtonControls;
   TAnswerButtons AnswerButtons;
   for (unsigned int Answer = qaFirst; Answer <= qaLast; Answer = Answer << 1)
@@ -671,6 +735,11 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
         Button->Default = (Answer == DefaultAnswer);
         Button->Cancel = (Answer == CancelAnswer);
+        if (ButtonHeight < 0)
+        {
+          ButtonHeight = Button->Height;
+        }
+        assert(ButtonHeight == Button->Height);
 
         AnswerButtons.insert(TAnswerButtons::value_type(Answer, Button));
 
@@ -682,56 +751,100 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     }
   }
 
-  int ButtonHeight = MulDiv(mcButtonHeight, DialogUnits.y, 8);
-  int ButtonSpacing = MulDiv(mcButtonSpacing, DialogUnits.x, 4);
+  int NeverAskAgainWidth = 0;
+  if (!NeverAskAgainCaption.IsEmpty())
+  {
+    NeverAskAgainWidth =
+      ScaleByTextHeightRunTime(Result, 16) + // checkbox
+      Result->Canvas->TextWidth(NeverAskAgainCaption) +
+      ScaleByTextHeightRunTime(Result, 16); // margin
+  }
+
+  int ButtonSpacing = ScaleByTextHeightRunTime(Result, mcButtonSpacing);
+  int ButtonGroupWidth = NeverAskAgainWidth;
+  if (!ButtonControls.empty())
+  {
+    ButtonGroupWidth += ButtonWidth * ButtonControls.size() +
+      ButtonSpacing * (ButtonControls.size() - 1);
+  }
+
+  UnicodeString NormalizedMsg = Msg;
+  // Windows XP (not sure about Vista) does not support Hair space.
+  // For Windows XP, we still keep the existing hack by using hard-coded spaces
+  // in resource string
+  if (CheckWin32Version(6, 1))
+  {
+    // Have to be padding with spaces (the smallest space defined, hair space = 1px),
+    // as tabs actually do not tab, just expand to 8 spaces.
+    // Otherwise we would have to do custom drawing
+    // (using GetTabbedTextExtent and TabbedTextOut)
+    const wchar_t HairSpace = L'\x200A';
+    ApplyTabs(NormalizedMsg, HairSpace, CalculateWidthOnCanvas, Result->Canvas);
+  }
+
+  int IconWidth = 0;
+  const wchar_t * IconID = IconIDs[DlgType];
+  bool HasIcon = (IconID != NULL) || !ImageName.IsEmpty();
+  if (HasIcon)
+  {
+    IconWidth = 32 + HorzSpacing;
+  }
+  assert((ButtonHeight > 0) && (ButtonWidth > 0));
+  int MaxTextWidth = ScaleByTextHeightRunTime(Result, mcMaxDialogWidth);
+  // if the dialog would be wide anyway (overwrite confirmation on Windows XP),
+  // to fit the buttons, do not restrict the text
+  if (MaxTextWidth < ButtonGroupWidth - IconWidth)
+  {
+    MaxTextWidth = ButtonGroupWidth - IconWidth;
+  }
   TRect TextRect;
-  SetRect(&TextRect, 0, 0, Screen->Width / 2, 0);
-  DrawText(Result->Canvas->Handle, Msg.c_str(), Msg.Length() + 1, &TextRect,
+  SetRect(&TextRect, 0, 0, MaxTextWidth, 0);
+  DrawText(Result->Canvas->Handle, NormalizedMsg.c_str(), NormalizedMsg.Length() + 1, &TextRect,
     DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK |
     Result->DrawTextBiDiModeFlagsReadingOnly());
-  int MaxWidth = Screen->Width - HorzMargin * 2 - 32 - HorzSpacing - 30;
+  int MaxWidth = Screen->Width - HorzMargin * 2 - IconWidth - 30;
   if (TextRect.right > MaxWidth)
   {
     // this will truncate the text, we should implement something smarter eventually
     TextRect.right = MaxWidth;
   }
-  const wchar_t * IconID = IconIDs[DlgType];
-  int IconTextWidth = TextRect.Right;
+  int IconTextWidth = TextRect.Right + IconWidth;
   int IconTextHeight = TextRect.Bottom;
-  if ((IconID != NULL) || !ImageName.IsEmpty())
+  if (HasIcon && (IconTextHeight < 32))
   {
-    IconTextWidth += 32 + HorzSpacing;
-    if (IconTextHeight < 32)
-    {
-      IconTextHeight = 32;
-    }
+    IconTextHeight = 32;
   }
+
+  int MoreMessageWidth = (MoreMessages != NULL ?
+    ScaleByTextHeightRunTime(Result, mcMoreMessageWidth) : 0);
+  int MoreMessageHeight = (MoreMessages != NULL ?
+    ScaleByTextHeightRunTime(Result, mcMoreMessageHeight) : 0);
+
+  int ButtonTop = IconTextHeight + VertMargin + VertSpacing + MoreMessageHeight;
+  TPanel * Panel = new TPanel(Result);
+  Panel->Name = L"Panel";
+  Panel->Parent = Result;
+  Panel->Color = clWindow;
+  Panel->ParentBackground = false;
+  Panel->SetBounds(0, 0, Result->ClientWidth, ButtonTop - (VertSpacing / 2));
+  Panel->Anchors = TAnchors() << akLeft << akRight << akTop;
+  Panel->BevelOuter = bvNone;
+  Panel->BevelKind = bkNone;
+  Panel->Caption = L"";
 
   if (MoreMessages != NULL)
   {
-    TMemo * MessageMemo = new TMemo(Result);
-    MessageMemo->Parent = Result;
+    TMemo * MessageMemo = new TMemo(Panel);
+    MessageMemo->Name = L"MessageMemo";
+    MessageMemo->Parent = Panel;
     MessageMemo->ReadOnly = true;
     MessageMemo->WantReturns = False;
     MessageMemo->ScrollBars = ssVertical;
-    MessageMemo->Anchors = TAnchors() << akLeft << akRight << akTop; //akBottom;
-    MessageMemo->Color = clBtnFace;
+    MessageMemo->Anchors = TAnchors() << akLeft << akRight << akTop;
     MessageMemo->Lines->Text = MoreMessages->Text;
 
     Result->MessageMemo = MessageMemo;
   }
-
-  int ButtonGroupWidth = 0;
-  if (!ButtonControls.empty())
-  {
-    ButtonGroupWidth = ButtonWidth * ButtonControls.size() +
-      ButtonSpacing * (ButtonControls.size() - 1);
-  }
-
-  int MoreMessageWidth = (MoreMessages != NULL ?
-    MulDiv(mcMoreMessageWidth, DialogUnits.x, 4) : 0);
-  int MoreMessageHeight = (MoreMessages != NULL ?
-    MulDiv(mcMoreMessageHeight, DialogUnits.y, 12) : 0);
 
   int AClientWidth =
     (IconTextWidth > ButtonGroupWidth ? IconTextWidth : ButtonGroupWidth) +
@@ -753,9 +866,9 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
   if ((IconID != NULL) || !ImageName.IsEmpty())
   {
-    TImage * Image = new TImage(Result);
+    TImage * Image = new TImage(Panel);
     Image->Name = L"Image";
-    Image->Parent = Result;
+    Image->Parent = Panel;
     if (!ImageName.IsEmpty())
     {
       std::auto_ptr<TPngImage> Png(new TPngImage());
@@ -769,12 +882,12 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     Image->SetBounds(HorzMargin, VertMargin, 32, 32);
   }
 
-  TLabel * Message = new TLabel(Result);
+  TLabel * Message = new TLabel(Panel);
   Result->Message = Message;
   Message->Name = L"Message";
-  Message->Parent = Result;
+  Message->Parent = Panel;
   Message->WordWrap = true;
-  Message->Caption = Msg;
+  Message->Caption = NormalizedMsg;
   Message->BoundsRect = TextRect;
   Message->BiDiMode = Result->BiDiMode;
   // added to show & as & for messages containing !& pattern of custom commands
@@ -782,7 +895,6 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   Message->ShowAccelChar = false;
   int ALeft = IconTextWidth - TextRect.Right + HorzMargin;
   Message->SetBounds(ALeft, VertMargin, TextRect.Right, TextRect.Bottom);
-  int ButtonTop = IconTextHeight + VertMargin + VertSpacing + MoreMessageHeight;
 
   if (Result->MessageMemo != NULL)
   {
@@ -798,12 +910,34 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     }
   }
 
-  int X = (Result->ClientWidth - ButtonGroupWidth) / 2;
+  int X = Result->ClientWidth - ButtonGroupWidth + NeverAskAgainWidth - HorzMargin;
   for (unsigned int i = 0; i < ButtonControls.size(); i++)
   {
     ButtonControls[i]->SetBounds(X,
-      ButtonTop, ButtonWidth, ButtonHeight);
+      ButtonTop, ButtonWidth, ButtonControls[i]->Height);
     X += ButtonWidth + ButtonSpacing;
+  }
+
+  if (!NeverAskAgainCaption.IsEmpty() &&
+      !ButtonControls.empty())
+  {
+    TCheckBox * NeverAskAgainCheck = new TCheckBox(Result);
+    NeverAskAgainCheck->Name = L"NeverAskAgainCheck";
+    NeverAskAgainCheck->Parent = Result;
+    NeverAskAgainCheck->Caption = NeverAskAgainCaption;
+    NeverAskAgainCheck->Anchors = TAnchors() << akBottom << akLeft;
+
+    TButton * FirstButton = ButtonControls[0];
+    int NeverAskAgainHeight = ScaleByTextHeightRunTime(Result, NeverAskAgainCheck->Height);
+    int NeverAskAgainTop = FirstButton->Top + ((FirstButton->Height - NeverAskAgainHeight) / 2);
+    int NeverAskAgainLeft = ScaleByTextHeightRunTime(Result, mcHorzMargin);
+
+    NeverAskAgainCheck->BoundsRect =
+      TRect(
+        NeverAskAgainLeft,
+        NeverAskAgainTop,
+        NeverAskAgainLeft + NeverAskAgainWidth,
+        NeverAskAgainTop + NeverAskAgainHeight);
   }
 
   return Result;
@@ -812,8 +946,10 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
-  unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName)
+  unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName,
+  const UnicodeString & NeverAskAgainCaption)
 {
   return TMessageForm::Create(Msg, MoreMessages, DlgType, Answers,
-    Aliases, AliasesCount, TimeoutAnswer, TimeoutButton, ImageName);
+    Aliases, AliasesCount, TimeoutAnswer, TimeoutButton, ImageName,
+    NeverAskAgainCaption);
 }

@@ -23,7 +23,7 @@ Boolean __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
     CleanupDialog->SessionList = SessionList;
     CleanupDialog->Configuration = Configuration;
 
-    Result = (CleanupDialog->ShowModal() == mrOk);
+    Result = (CleanupDialog->ShowModal() == DefaultResult(CleanupDialog));
     if (Result)
     {
       for (int i = wdConfiguration; i <= wdTemporaryFolders; i++)
@@ -80,34 +80,58 @@ __fastcall TCleanupDialog::TCleanupDialog(TComponent* AOwner)
 //---------------------------------------------------------------------
 void __fastcall TCleanupDialog::InitControls()
 {
-  static const int Captions[] = {
-    CLEANUP_CONFIG, CLEANUP_SESSIONS, CLEANUP_HOSTKEYS, CLEANUP_INIFILE,
-    CLEANUP_SEEDFILE, CLEANUP_TEMP_FOLDERS };
-
-  int I = 0;
-  while (I < DataListView->Items->Count)
+  for (int i = wdConfiguration; i <= wdTemporaryFolders; i++)
   {
-    TListItem *Item = DataListView->Items->Item[I];
+    UnicodeString Caption;
     UnicodeString Location;
-    Item->Caption = LoadStr(Captions[Item->ImageIndex - 1]);
-    switch (Item->ImageIndex) {
-      case wdConfiguration: Location = Configuration->ConfigurationSubKey; break;
-      case wdStoredSessions: Location = Configuration->StoredSessionsSubKey; break;
-      case wdHostKeys: Location = Configuration->SshHostKeysSubKey; break;
-      case wdConfigurationIniFile: Location = ExpandEnvironmentVariables(Configuration->IniFileStorageNameForReading); break;
-      case wdRandomSeedFile: Location = ExpandEnvironmentVariables(Configuration->RandomSeedFile); break;
-      case wdTemporaryFolders: Location = WinConfiguration->TemporaryDir(true); break;
-      default: Location = L""; break;
+
+    switch (i)
+    {
+      case wdConfiguration:
+        Caption = LoadStr(CLEANUP_CONFIG);
+        Location = Configuration->ConfigurationSubKey;
+        break;
+
+      case wdStoredSessions:
+        Caption = LoadStr(CLEANUP_SESSIONS);
+        Location = Configuration->StoredSessionsSubKey;
+        break;
+
+      case wdHostKeys:
+        Caption = LoadStr(CLEANUP_HOSTKEYS);
+        Location = Configuration->SshHostKeysSubKey;
+        break;
+
+      case wdConfigurationIniFile:
+        Caption = LoadStr(CLEANUP_INIFILE);
+        Location = ExpandEnvironmentVariables(Configuration->IniFileStorageNameForReading);
+        break;
+
+      case wdRandomSeedFile:
+        Caption = LoadStr(CLEANUP_SEEDFILE);
+        Location = ExpandEnvironmentVariables(Configuration->RandomSeedFile);
+        break;
+
+      case wdTemporaryFolders:
+        Caption = LoadStr(CLEANUP_TEMP_FOLDERS);
+        Location = WinConfiguration->TemporaryDir(true);
+        break;
+
+      default:
+        FAIL;
+        break;
     }
 
-    if (Item->ImageIndex < wdConfigurationIniFile)
+    TListItem * Item = DataListView->Items->Add();
+    Item->Caption = Caption;
+    if (i < wdConfigurationIniFile)
     {
       Location = Configuration->RootKeyStr + L'\\' +
         Configuration->RegistryStorageKey + L'\\' + Location;
     }
 
     Item->SubItems->Add(Location);
-    I++;
+    assert(Item->Index == i - 1);
   }
 }
 //---------------------------------------------------------------------
@@ -148,27 +172,9 @@ void __fastcall TCleanupDialog::DataListViewInfoTip(TObject * /*Sender*/,
     ARRAYOFCONST((Item->Caption, Item->SubItems->Strings[0])));
 }
 //---------------------------------------------------------------------------
-void __fastcall TCleanupDialog::SetCleanupData(TWinSCPData Data, Boolean value)
+bool __fastcall TCleanupDialog::GetCleanupData(TWinSCPData Data)
 {
-  for (Integer Index = 0; Index < DataListView->Items->Count; Index ++)
-  {
-    TListItem *Item = DataListView->Items->Item[Index];
-    if ((Item->ImageIndex == Data) && (Item->Checked != value))
-    {
-      Item->Checked = value;
-      UpdateControls();
-    }
-  }
-}
-//---------------------------------------------------------------------------
-Boolean __fastcall TCleanupDialog::GetCleanupData(TWinSCPData Data)
-{
-  for (Integer Index = 0; Index < DataListView->Items->Count; Index ++)
-  {
-    TListItem *Item = DataListView->Items->Item[Index];
-    if (Item->ImageIndex == Data) return Item->Checked;
-  }
-  return False;
+  return DataListView->Items->Item[Data - 1]->Checked;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCleanupDialog::HelpButtonClick(TObject * /*Sender*/)

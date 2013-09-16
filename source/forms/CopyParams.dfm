@@ -282,7 +282,7 @@ object CopyParamsFrame: TCopyParamsFrame
     object IncludeFileMaskCombo: THistoryComboBox
       Left = 15
       Top = 36
-      Width = 302
+      Width = 294
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
@@ -292,9 +292,9 @@ object CopyParamsFrame: TCopyParamsFrame
       OnExit = ValidateMaskComboExit
     end
     object IncludeFileMaskButton: TButton
-      Left = 323
+      Left = 315
       Top = 33
-      Width = 72
+      Width = 80
       Height = 25
       Caption = '&Edit...'
       TabOrder = 1
@@ -312,7 +312,7 @@ object CopyParamsFrame: TCopyParamsFrame
       OnClick = ControlChange
     end
     object IncludeFileMaskHintText: TStaticText
-      Left = 263
+      Left = 255
       Top = 58
       Width = 54
       Height = 17

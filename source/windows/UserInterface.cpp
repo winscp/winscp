@@ -284,6 +284,22 @@ void __fastcall DoProductLicense()
 {
   DoLicenseDialog(lcWinScp);
 }
+//---------------------------------------------------------------------------
+const UnicodeString PixelsPerInchKey = L"PixelsPerInch";
+//---------------------------------------------------------------------
+int __fastcall GetToolbarLayoutPixelsPerInch(TStrings * Storage)
+{
+  int Result;
+  if (Storage->IndexOfName(PixelsPerInchKey))
+  {
+    Result = LoadPixelsPerInch(Storage->Values[PixelsPerInchKey]);
+  }
+  else
+  {
+    Result = -1;
+  }
+  return Result;
+}
 //---------------------------------------------------------------------
 static inline void __fastcall GetToolbarKey(const UnicodeString & ToolbarName,
   const UnicodeString & Value, UnicodeString & ToolbarKey)
@@ -317,6 +333,28 @@ static int __fastcall ToolbarReadInt(const UnicodeString ToolbarName,
     if (Storage->IndexOfName(ToolbarKey) >= 0)
     {
       Result = StrToIntDef(Storage->Values[ToolbarKey], Default);
+      #if 0
+      // this does not work well, as it scales down the stretched
+      // toolbars (path toolbars) too much, it has to be reimplemented smarter
+      if (Value == L"DockPos")
+      {
+        int PixelsPerInch = GetToolbarLayoutPixelsPerInch(Storage);
+        // When DPI has decreased since the last time, scale down
+        // toolbar position to get rid of gaps caused by smaller labels.
+        // Do not do this when DPI has increased as it would introduce gaps,
+        // as toolbars consists mostly of icons only, that do not scale.
+        // The toolbars shift themselves anyway, when other toolbars to the left
+        // get wider. We also risk a bit that toolbar order changes,
+        // as with very small toolbars (History) we can get scaled down position
+        // of the following toolbar to the left of it.
+        // There's special handling (also for scaling-up) stretched toolbars
+        // in LoadToolbarsLayoutStr
+        if ((PixelsPerInch > 0) && (Screen->PixelsPerInch < PixelsPerInch))
+        {
+          Result = LoadDimension(Result, PixelsPerInch);
+        }
+      }
+      #endif
     }
     else
     {
@@ -375,6 +413,7 @@ UnicodeString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent)
   {
     TBCustomSavePositions(OwnerComponent, ToolbarWriteInt, ToolbarWriteString,
       Storage);
+    Storage->Values[PixelsPerInchKey] = SavePixelsPerInch();
     Result = Storage->CommaText;
   }
   __finally
@@ -384,7 +423,7 @@ UnicodeString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, UnicodeString LayoutStr)
+void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString LayoutStr)
 {
   TStrings * Storage = new TStringList();
   try
@@ -392,6 +431,42 @@ void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, Unicode
     Storage->CommaText = LayoutStr;
     TBCustomLoadPositions(OwnerComponent, ToolbarReadInt, ToolbarReadString,
       Storage);
+    int PixelsPerInch = GetToolbarLayoutPixelsPerInch(Storage);
+    // Scale toolbars stretched to the first other toolbar to the right
+    if ((PixelsPerInch > 0) && (PixelsPerInch != Screen->PixelsPerInch)) // optimization
+    {
+      for (int Index = 0; Index < OwnerComponent->ComponentCount; Index++)
+      {
+        TTBXToolbar * Toolbar =
+          dynamic_cast<TTBXToolbar *>(OwnerComponent->Components[Index]);
+        if ((Toolbar != NULL) && Toolbar->Stretch &&
+            (Toolbar->OnGetBaseSize != NULL) &&
+            // we do not support floating of stretched toolbars
+            ALWAYS_TRUE(!Toolbar->Floating))
+        {
+          TTBXToolbar * FollowingToolbar = NULL;
+          for (int Index2 = 0; Index2 < OwnerComponent->ComponentCount; Index2++)
+          {
+            TTBXToolbar * Toolbar2 =
+              dynamic_cast<TTBXToolbar *>(OwnerComponent->Components[Index2]);
+            if ((Toolbar2 != NULL) && !Toolbar2->Floating &&
+                (Toolbar2->Parent == Toolbar->Parent) &&
+                (Toolbar2->DockRow == Toolbar->DockRow) &&
+                (Toolbar2->DockPos > Toolbar->DockPos) &&
+                ((FollowingToolbar == NULL) || (FollowingToolbar->DockPos > Toolbar2->DockPos)))
+            {
+              FollowingToolbar = Toolbar2;
+            }
+          }
+
+          if (FollowingToolbar != NULL)
+          {
+            int NewWidth = LoadDimension(Toolbar->Width, PixelsPerInch);
+            FollowingToolbar->DockPos += NewWidth - Toolbar->Width;
+          }
+        }
+      }
+    }
   }
   __finally
   {
@@ -406,10 +481,10 @@ void __fastcall AddMenuSeparator(TTBCustomItem * Menu)
 }
 //---------------------------------------------------------------------------
 static TComponent * LastPopupComponent = NULL;
-static TPoint LastPopupPoint(-1, -1);
+static TRect LastPopupRect(-1, -1, -1, -1);
 static TDateTime LastCloseUp;
 //---------------------------------------------------------------------------
-void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
+void __fastcall MenuPopup(TPopupMenu * AMenu, TRect Rect,
   TComponent * PopupComponent)
 {
   // Pressing the same button within 200ms after closing its popup menu
@@ -423,7 +498,7 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
   TDateTime N = Now();
   TDateTime Diff = N - LastCloseUp;
   if ((PopupComponent == LastPopupComponent) &&
-      (Point == LastPopupPoint) &&
+      (Rect == LastPopupRect) &&
       (Diff < TDateTime(0, 0, 0, 200)))
   {
     LastPopupComponent = NULL;
@@ -490,10 +565,10 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
     }
 
     Menu->PopupComponent = PopupComponent;
-    Menu->Popup(Point.x, Point.y);
+    Menu->PopupEx(Rect);
 
     LastPopupComponent = PopupComponent;
-    LastPopupPoint = Point;
+    LastPopupRect = Rect;
     LastCloseUp = Now();
   }
 }

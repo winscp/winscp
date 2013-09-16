@@ -887,7 +887,7 @@ function ProcessDoneAction(const DoneActionData: TTBDoneActionData;
 implementation
 
 uses
-  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc;
+  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc, Winapi.oleacc;
 
 var
   LastPos: TPoint;
@@ -2085,7 +2085,7 @@ begin
         Result.Visible := True;
       end;
     end;
-    CallNotifyWinEvent(EVENT_SYSTEM_MENUPOPUPSTART, Result.View.FWindow.Handle,
+    NotifyWinEvent(EVENT_SYSTEM_MENUPOPUPSTART, Result.View.FWindow.Handle,
       OBJID_CLIENT, CHILDID_SELF);
     { Call NotifyFocusEvent now that the window is visible }
     if Assigned(Result.View.Selected) then
@@ -2697,10 +2697,6 @@ end;
 function TTBItemViewer.GetAccObject: IDispatch;
 begin
   if FAccObjectInstance = nil then begin
-    if not InitializeOleAcc then begin
-      Result := nil;
-      Exit;
-    end;
     FAccObjectInstance := TTBItemViewerAccObject.Create(Self);
   end;
   Result := FAccObjectInstance;
@@ -3547,10 +3543,6 @@ end;
 function TTBView.GetAccObject: IDispatch;
 begin
   if FAccObjectInstance = nil then begin
-    if not InitializeOleAcc then begin
-      Result := nil;
-      Exit;
-    end;
     FAccObjectInstance := TTBViewAccObject.Create(Self);
     { Strictly as an optimization, take a reference for ourself and keep it
       for the lifetime of the view. (Destroy calls _Release.) }
@@ -3561,8 +3553,8 @@ end;
 
 function TTBView.HandleWMGetObject(var Message: TMessage): Boolean;
 begin
-  if (Message.LParam = Integer(OBJID_CLIENT)) and InitializeOleAcc then begin
-    Message.Result := LresultFromObjectFunc(ITBAccessible, Message.WParam, GetAccObject);
+  if (Message.LParam = Integer(OBJID_CLIENT)) then begin
+    Message.Result := LresultFromObject(ITBAccessible, Message.WParam, GetAccObject);
     Result := True;
   end
   else
@@ -4136,7 +4128,7 @@ begin
           when a standard context menu has no selection. }
         ChildID := CHILDID_SELF;
       end;
-      CallNotifyWinEvent(EVENT_OBJECT_FOCUS, FWindow.Handle, OBJID_CLIENT, ChildID);
+      NotifyWinEvent(EVENT_OBJECT_FOCUS, FWindow.Handle, OBJID_CLIENT, ChildID);
     end;
   end;
 end;
@@ -5892,7 +5884,7 @@ begin
   end;
   SetCapture(FWnd);
   SetCursor(LoadCursor(0, IDC_ARROW));
-  CallNotifyWinEvent(EVENT_SYSTEM_MENUSTART, FWnd, OBJID_CLIENT, CHILDID_SELF);
+  NotifyWinEvent(EVENT_SYSTEM_MENUSTART, FWnd, OBJID_CLIENT, CHILDID_SELF);
   FInited := True;
 end;
 
@@ -5904,7 +5896,7 @@ begin
     if GetCapture = FWnd then
       ReleaseCapture;
     if FInited then
-      CallNotifyWinEvent(EVENT_SYSTEM_MENUEND, FWnd, OBJID_CLIENT, CHILDID_SELF);
+      NotifyWinEvent(EVENT_SYSTEM_MENUEND, FWnd, OBJID_CLIENT, CHILDID_SELF);
     if FCreatedWnd then
       {$IFDEF JR_D6}Classes.{$ENDIF} DeallocateHWnd(FWnd);
   end;
@@ -6410,7 +6402,7 @@ destructor TTBPopupWindow.Destroy;
 begin
   Destroying;
   { Ensure window handle is destroyed *before* FView is freed, since
-    DestroyWindowHandle calls CallNotifyWinEvent which may result in
+    DestroyWindowHandle calls NotifyWinEvent which may result in
     FView.HandleWMObject being called }
   if HandleAllocated then
     DestroyWindowHandle;
@@ -6487,7 +6479,7 @@ begin
   { Cleanly destroy any timers before the window handle is destroyed }
   if Assigned(FView) then
     FView.StopAllTimers;
-  CallNotifyWinEvent(EVENT_SYSTEM_MENUPOPUPEND, WindowHandle, OBJID_CLIENT,
+  NotifyWinEvent(EVENT_SYSTEM_MENUPOPUPEND, WindowHandle, OBJID_CLIENT,
     CHILDID_SELF);
   inherited;
 end;

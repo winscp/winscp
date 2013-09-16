@@ -71,7 +71,7 @@ bool __fastcall TCreateDirectoryDialog::Execute(UnicodeString & Directory,
     RightsFrame->Rights = Properties->Rights;
   }
 
-  bool Result = (ShowModal() != mrCancel);
+  bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     Directory = DirectoryEdit->Text;
@@ -112,7 +112,7 @@ void __fastcall TCreateDirectoryDialog::HelpButtonClick(TObject * /*Sender*/)
 void __fastcall TCreateDirectoryDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     ExitActiveControl(this);
   }

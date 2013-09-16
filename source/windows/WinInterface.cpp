@@ -14,6 +14,7 @@
 #include <Interface.h>
 #include <VCLCommon.h>
 #include <Glyphs.h>
+#include <PasTools.hpp>
 
 #include "WinInterface.h"
 #include "CustomWinConfiguration.h"
@@ -73,9 +74,9 @@ inline void TMessageParams::Reset()
   TimerAnswers = 0;
   Timeout = 0;
   TimeoutAnswer = 0;
-  NewerAskAgainTitle = L"";
-  NewerAskAgainAnswer = 0;
-  NewerAskAgainCheckedInitially = false;
+  NeverAskAgainTitle = L"";
+  NeverAskAgainAnswer = 0;
+  NeverAskAgainCheckedInitially = false;
   AllowHelp = true;
   ImageName = L"";
 }
@@ -141,6 +142,11 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
   }
 }
 //---------------------------------------------------------------------------
+static TCheckBox * __fastcall FindNeverAskAgainCheck(TForm * Dialog)
+{
+  return NOT_NULL(dynamic_cast<TCheckBox *>(Dialog->FindComponent(L"NeverAskAgainCheck")));
+}
+//---------------------------------------------------------------------------
 TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
   TStrings * MoreMessages, TQueryType Type, unsigned int Answers, UnicodeString HelpKeyword,
   const TMessageParams * Params, TButton *& TimeoutButton)
@@ -154,8 +160,9 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
     default: assert(false);
   }
 
-  int TimeoutAnswer = (Params != NULL) ? Params->TimeoutAnswer : 0;
+  unsigned int TimeoutAnswer = (Params != NULL) ? Params->TimeoutAnswer : 0;
 
+  unsigned int ActualAnswers = Answers;
   if ((Params == NULL) || Params->AllowHelp)
   {
     Answers = Answers | qaHelp;
@@ -180,48 +187,30 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
   const TQueryButtonAlias * Aliases = (Params != NULL) ? Params->Aliases : NULL;
   unsigned int AliasesCount = (Params != NULL) ? Params->AliasesCount : 0;
 
+  UnicodeString NeverAskAgainCaption;
+  bool HasNeverAskAgain = (Params != NULL) && FLAGSET(Params->Params, mpNeverAskAgainCheck);
+  if (HasNeverAskAgain)
+  {
+    NeverAskAgainCaption =
+      !Params->NeverAskAgainTitle.IsEmpty() ?
+        (UnicodeString)Params->NeverAskAgainTitle :
+        // qaOK | qaIgnore is used, when custom "non-answer" button is required
+        LoadStr(((ActualAnswers == qaOK) || (ActualAnswers == (qaOK | qaIgnore))) ?
+          NEVER_SHOW_AGAIN : NEVER_ASK_AGAIN);
+  }
+
   TForm * Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Answers,
-    Aliases, AliasesCount, TimeoutAnswer, &TimeoutButton, ImageName);
+    Aliases, AliasesCount, TimeoutAnswer, &TimeoutButton, ImageName, NeverAskAgainCaption);
 
   try
   {
-    if ((Params != NULL) && (Params->Params & mpNeverAskAgainCheck))
+    if (HasNeverAskAgain && ALWAYS_TRUE(Params != NULL))
     {
-      static const int VertSpace = 20;
-      Dialog->ClientHeight = Dialog->ClientHeight + VertSpace;
-
-      for (int Index = 0; Index < Dialog->ControlCount; Index++)
+      TCheckBox * NeverAskAgainCheck = FindNeverAskAgainCheck(Dialog);
+      NeverAskAgainCheck->Checked = Params->NeverAskAgainCheckedInitially;
+      if (Params->NeverAskAgainAnswer > 0)
       {
-        TControl * Control = Dialog->Controls[Index];
-        if (Control->Anchors.Contains(akBottom))
-        {
-          if (Control->Anchors.Contains(akTop))
-          {
-            Control->Height = Control->Height - VertSpace;
-          }
-          else
-          {
-            Control->Top = Control->Top - VertSpace;
-          }
-        }
-      }
-
-      TCheckBox * NeverAskAgainCheck = new TCheckBox(Dialog);
-      NeverAskAgainCheck->Name = L"NeverAskAgainCheck";
-      NeverAskAgainCheck->Parent = Dialog;
-      NeverAskAgainCheck->BoundsRect =  TRect(60, Dialog->ClientHeight - 27,
-        Dialog->ClientWidth - 10, Dialog->ClientHeight - 5);
-      NeverAskAgainCheck->Caption =
-        !Params->NewerAskAgainTitle.IsEmpty() ?
-          (UnicodeString)Params->NewerAskAgainTitle :
-          // qaOK | qaIgnore is used, when custom "non-answer" button is required
-          LoadStr(((Answers == qaOK) || (Answers == (qaOK | qaIgnore))) ?
-            NEVER_SHOW_AGAIN : NEVER_ASK_AGAIN);
-      NeverAskAgainCheck->Checked = Params->NewerAskAgainCheckedInitially;
-      NeverAskAgainCheck->Anchors = TAnchors() << akBottom << akLeft;
-      if (Params->NewerAskAgainAnswer > 0)
-      {
-        NeverAskAgainCheck->Tag = Params->NewerAskAgainAnswer;
+        NeverAskAgainCheck->Tag = Params->NeverAskAgainAnswer;
       }
       TNotifyEvent OnClick;
       ((TMethod*)&OnClick)->Code = NeverAskAgainCheckClick;
@@ -249,22 +238,21 @@ unsigned int __fastcall ExecuteMessageDialog(TForm * Dialog, unsigned int Answer
   unsigned int Answer = Dialog->ShowModal();
   // mrCancel is returned always when X button is pressed, despite
   // no Cancel button was on the dialog. Find valid "cancel" answer.
-  if (Answer == mrCancel)
+  // mrNone is retuned when Windows session is closing (log off)
+  if ((Answer == mrCancel) || (Answer == mrNone))
   {
     Answer = CancelAnswer(Answers);
   }
 
   if ((Params != NULL) && (Params->Params & mpNeverAskAgainCheck))
   {
-    TCheckBox * NeverAskAgainCheck =
-      dynamic_cast<TCheckBox *>(Dialog->FindComponent(L"NeverAskAgainCheck"));
-    assert(NeverAskAgainCheck);
+    TCheckBox * NeverAskAgainCheck = FindNeverAskAgainCheck(Dialog);
 
     if (NeverAskAgainCheck->Checked)
     {
       bool PositiveAnswer =
-        (Params->NewerAskAgainAnswer > 0) ?
-          (Answer == Params->NewerAskAgainAnswer) :
+        (Params->NeverAskAgainAnswer > 0) ?
+          (Answer == Params->NeverAskAgainAnswer) :
           IsPositiveAnswer(Answer);
       if (PositiveAnswer)
       {
@@ -627,7 +615,7 @@ const int cpiConfigure = -2;
 const int cpiCustom = -3;
 const int cpiSaveSettings = -4;
 //---------------------------------------------------------------------------
-void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
+void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
   const TCopyParamType & Param, UnicodeString Preset, TNotifyEvent OnClick,
   int Options, int CopyParamAttrs, bool SaveSettings)
 {
@@ -712,7 +700,7 @@ void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
   Item->OnClick = OnClick;
   Menu->Items->Add(Item);
 
-  MenuPopup(Menu, P, NULL);
+  MenuPopup(Menu, Rect, NULL);
 }
 //---------------------------------------------------------------------------
 bool __fastcall CopyParamListPopupClick(TObject * Sender,
@@ -894,45 +882,9 @@ void __fastcall TWinInteractiveCustomCommand::Execute(
   }
 }
 //---------------------------------------------------------------------------
-static unsigned int __fastcall ShellDllVersion()
+void __fastcall MenuPopup(TPopupMenu * Menu, TButton * Button)
 {
-  static unsigned int Result = 0;
-
-  if (Result == 0)
-  {
-    Result = 4;
-    HINSTANCE ShellDll = LoadLibrary(L"shell32.dll");
-    if (ShellDll != NULL)
-    {
-      try
-      {
-        DLLGETVERSIONPROC DllGetVersion =
-          (DLLGETVERSIONPROC)GetProcAddress(ShellDll, "DllGetVersion");
-        if(DllGetVersion != NULL)
-        {
-          DLLVERSIONINFO VersionInfo;
-          ZeroMemory(&VersionInfo, sizeof(VersionInfo));
-          VersionInfo.cbSize = sizeof(VersionInfo);
-          if (SUCCEEDED(DllGetVersion(&VersionInfo)))
-          {
-            Result = VersionInfo.dwMajorVersion;
-          }
-        }
-      }
-      __finally
-      {
-        FreeLibrary(ShellDll);
-      }
-    }
-  }
-
-  return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall MenuPopup(TPopupMenu * Menu, TButtonControl * Button)
-{
-  TPoint Point = Button->ClientToScreen(TPoint(2, Button->Height));
-  MenuPopup(Menu, Point, Button);
+  MenuPopup(Menu, CalculatePopupRect(Button), Button);
 }
 //---------------------------------------------------------------------------
 void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Handled)
@@ -950,7 +902,8 @@ void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Hand
   }
   TPopupMenu * PopupMenu = (reinterpret_cast<TPublicControl *>(Control))->PopupMenu;
   assert(PopupMenu != NULL);
-  MenuPopup(PopupMenu, Point, Control);
+  TRect Rect(Point, Point);
+  MenuPopup(PopupMenu, Rect, Control);
   Handled = true;
 }
 //---------------------------------------------------------------------------
@@ -960,6 +913,23 @@ void __fastcall MenuButton(TButton * Button)
   Button->ImageIndex = 0;
   Button->DisabledImageIndex = 1;
   Button->ImageAlignment = iaRight;
+}
+//---------------------------------------------------------------------------
+TRect __fastcall CalculatePopupRect(TButton * Button)
+{
+  TPoint UpPoint = Button->ClientToScreen(TPoint(0, 0));
+  TPoint DownPoint = Button->ClientToScreen(TPoint(Button->Width, Button->Height));
+  TRect Rect(UpPoint, DownPoint);
+  int Offset = UseThemes() ? -1 : 0;
+  Rect.Inflate(Offset, Offset);
+  return Rect;
+}
+//---------------------------------------------------------------------------
+TRect __fastcall CalculatePopupRect(TControl * Control, TPoint MousePos)
+{
+  MousePos = Control->ClientToScreen(MousePos);
+  TRect Rect(MousePos, MousePos);
+  return Rect;
 }
 //---------------------------------------------------------------------------
 void __fastcall SetGlobalMinimizeHandler(TCustomForm * /*Form*/, TNotifyEvent OnMinimize)
@@ -1116,7 +1086,8 @@ void __fastcall GetFormatSettingsFix()
 void __fastcall WinInitialize()
 {
   SetErrorMode(SEM_FAILCRITICALERRORS);
-  if (IsWin7())
+  // HACK
+  if (::IsWin7())
   {
     GetFormatSettingsFix();
   }
@@ -1146,18 +1117,16 @@ struct TNotifyIconData5
   DWORD dwInfoFlags;
 };
 //---------------------------------------------------------------------------
-#undef NOTIFYICONDATA_V1_SIZE
-#define NOTIFYICONDATA_V1_SIZE FIELD_OFFSET(TNotifyIconData5, szTip[64])
-//---------------------------------------------------------------------------
 __fastcall ::TTrayIcon::TTrayIcon(unsigned int Id)
 {
   FVisible = false;
   FOnClick = NULL;
   FOnBalloonClick = NULL;
+  FBalloonUserData = NULL;
 
   FTrayIcon = new TNotifyIconData5;
   memset(FTrayIcon, 0, sizeof(*FTrayIcon));
-  FTrayIcon->cbSize = ((ShellDllVersion() >= 5) ? sizeof(*FTrayIcon) : NOTIFYICONDATA_V1_SIZE);
+  FTrayIcon->cbSize = sizeof(*FTrayIcon);
   FTrayIcon->uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
   FTrayIcon->hIcon = Application->Icon->Handle;
   FTrayIcon->uID = Id;
@@ -1177,95 +1146,80 @@ __fastcall ::TTrayIcon::~TTrayIcon()
   delete FTrayIcon;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ::TTrayIcon::SupportsBalloons()
-{
-  return (ShellDllVersion() >= 5);
-}
-//---------------------------------------------------------------------------
 void __fastcall ::TTrayIcon::PopupBalloon(UnicodeString Title,
   const UnicodeString & Str, TQueryType QueryType, unsigned int Timeout,
-  TNotifyEvent OnBalloonClick)
+  TNotifyEvent OnBalloonClick, TObject * BalloonUserData)
 {
-  if (SupportsBalloons())
+  if (Timeout > 30000)
   {
-    if (Timeout > 30000)
-    {
-      // this is probably system limit, do not try more, especially for
-      // the timeout-driven hiding of the tray icon (for Win2k)
-      Timeout = 30000;
-    }
-    FTrayIcon->uFlags |= NIF_INFO;
-    Title = FORMAT(L"%s - %s", (Title, AppNameString()));
-    StrPLCopy(FTrayIcon->szInfoTitle, Title, LENOF(FTrayIcon->szInfoTitle) - 1);
-    StrPLCopy(FTrayIcon->szInfo, Str, LENOF(FTrayIcon->szInfo) - 1);
-    FTrayIcon->uTimeout = Timeout;
-    switch (QueryType)
-    {
-      case qtError:
-        FTrayIcon->dwInfoFlags = NIIF_ERROR;
-        break;
-
-      case qtInformation:
-      case qtConfirmation:
-        FTrayIcon->dwInfoFlags = NIIF_INFO;
-        break;
-
-      case qtWarning:
-      default:
-        FTrayIcon->dwInfoFlags = NIIF_WARNING;
-        break;
-    }
-
-    KillTimer(FTrayIcon->hWnd, 1);
-    if (Visible)
-    {
-      Update();
-    }
-    else
-    {
-      Notify(NIM_ADD);
-
-      // can be 5 only anyway, no older version supports balloons
-      if (ShellDllVersion() <= 5)
-      {
-        // version 5 does not notify us when the balloon is hidden, so we must
-        // remove the icon ourselves after own timeout
-        SetTimer(FTrayIcon->hWnd, 1, Timeout, NULL);
-      }
-    }
-
-    FOnBalloonClick = OnBalloonClick;
-
-    // Clearing the flag ensures that subsequent updates does not hide the baloon
-    // unless CancelBalloon is called explicitly
-    FTrayIcon->uFlags = FTrayIcon->uFlags & ~NIF_INFO;
+    // this is probably system limit, do not try more, especially for
+    // the timeout-driven hiding of the tray icon (for Win2k)
+    Timeout = 30000;
   }
+  FTrayIcon->uFlags |= NIF_INFO;
+  Title = FORMAT(L"%s - %s", (Title, AppNameString()));
+  StrPLCopy(FTrayIcon->szInfoTitle, Title, LENOF(FTrayIcon->szInfoTitle) - 1);
+  StrPLCopy(FTrayIcon->szInfo, Str, LENOF(FTrayIcon->szInfo) - 1);
+  FTrayIcon->uTimeout = Timeout;
+  switch (QueryType)
+  {
+    case qtError:
+      FTrayIcon->dwInfoFlags = NIIF_ERROR;
+      break;
+
+    case qtInformation:
+    case qtConfirmation:
+      FTrayIcon->dwInfoFlags = NIIF_INFO;
+      break;
+
+    case qtWarning:
+    default:
+      FTrayIcon->dwInfoFlags = NIIF_WARNING;
+      break;
+  }
+
+  KillTimer(FTrayIcon->hWnd, 1);
+  if (Visible)
+  {
+    Update();
+  }
+  else
+  {
+    Notify(NIM_ADD);
+  }
+
+  FOnBalloonClick = OnBalloonClick;
+  delete FBalloonUserData;
+  FBalloonUserData = BalloonUserData;
+
+  // Clearing the flag ensures that subsequent updates does not hide the baloon
+  // unless CancelBalloon is called explicitly
+  FTrayIcon->uFlags = FTrayIcon->uFlags & ~NIF_INFO;
 }
 //---------------------------------------------------------------------------
 void __fastcall ::TTrayIcon::BalloonCancelled()
 {
   FOnBalloonClick = NULL;
+  delete FBalloonUserData;
+  FBalloonUserData = NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall ::TTrayIcon::CancelBalloon()
 {
-  if (SupportsBalloons())
+  KillTimer(FTrayIcon->hWnd, 1);
+  if (Visible)
   {
-    KillTimer(FTrayIcon->hWnd, 1);
-    if (Visible)
-    {
-      FTrayIcon->uFlags |= NIF_INFO;
-      FTrayIcon->szInfo[0] = L'\0';
-      Update();
-      FTrayIcon->uFlags = FTrayIcon->uFlags & ~NIF_INFO;
-    }
-    else
-    {
-      Notify(NIM_DELETE);
-    }
-
-    BalloonCancelled();
+    FTrayIcon->uFlags |= NIF_INFO;
+    FTrayIcon->szInfo[0] = L'\0';
+    Update();
+    FTrayIcon->uFlags = FTrayIcon->uFlags & ~NIF_INFO;
   }
+  else
+  {
+    Notify(NIM_DELETE);
+  }
+
+  BalloonCancelled();
 }
 //---------------------------------------------------------------------------
 bool __fastcall ::TTrayIcon::Notify(unsigned int Message)
@@ -1339,7 +1293,11 @@ void __fastcall ::TTrayIcon::WndProc(TMessage & Message)
       {
         if (FOnBalloonClick != NULL)
         {
-          FOnBalloonClick(NULL);
+          // prevent the user data from being freed by possible call
+          // to CancelBalloon or PopupBalloon during call to OnBalloonClick
+          std::auto_ptr<TObject> UserData(FBalloonUserData);
+          FBalloonUserData = NULL;
+          FOnBalloonClick(UserData.get());
         }
         else if (OnClick != NULL)
         {
@@ -1397,7 +1355,7 @@ void __fastcall ::TTrayIcon::SetHint(UnicodeString value)
 {
   if (Hint != value)
   {
-    unsigned int Max = ((ShellDllVersion() >= 5) ? LENOF(FTrayIcon->szTip) : 64);
+    unsigned int Max = LENOF(FTrayIcon->szTip);
     StrPLCopy(FTrayIcon->szTip, value, Max - 1);
     Update();
   }

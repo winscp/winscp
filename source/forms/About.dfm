@@ -9,11 +9,7 @@ object AboutDialog: TAboutDialog
   ClientHeight = 484
   ClientWidth = 388
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   OldCreateOrder = True
   Position = poOwnerFormCenter
   DesignSize = (
@@ -31,28 +27,28 @@ object AboutDialog: TAboutDialog
   object VersionLabel: TLabel
     Left = 72
     Top = 28
-    Width = 126
+    Width = 127
     Height = 13
     Caption = 'Version 2.0.0 (Build 12) XX'
   end
   object WinSCPCopyrightLabel: TLabel
     Left = 72
     Top = 56
-    Width = 173
+    Width = 180
     Height = 13
     Caption = 'Copyright '#169' 2000-2003 Martin Prikryl'
   end
   object ProductSpecificMessageLabel: TLabel
     Left = 72
     Top = 100
-    Width = 269
+    Width = 277
     Height = 13
     Caption = 'To send comments and report bugs use support forum at:'
   end
   object TranslatorLabel: TLabel
     Left = 72
     Top = 144
-    Width = 73
+    Width = 74
     Height = 13
     Caption = 'TranslatorLabel'
   end
@@ -3493,7 +3489,7 @@ object AboutDialog: TAboutDialog
   object Label3: TLabel
     Left = 72
     Top = 303
-    Width = 87
+    Width = 91
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'Portions copyright:'
@@ -3501,7 +3497,7 @@ object AboutDialog: TAboutDialog
   object RegistrationLabel: TLabel
     Left = 72
     Top = 188
-    Width = 126
+    Width = 127
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'This product is licensed to:'
@@ -3509,7 +3505,7 @@ object AboutDialog: TAboutDialog
   object HomepageLabel: TStaticText
     Left = 72
     Top = 72
-    Width = 133
+    Width = 128
     Height = 17
     Caption = 'http://XXXXXXwinscp.net/'
     TabOrder = 2
@@ -3518,7 +3514,7 @@ object AboutDialog: TAboutDialog
   object ForumUrlLabel: TStaticText
     Left = 72
     Top = 116
-    Width = 150
+    Width = 148
     Height = 17
     Caption = 'http://XXXXwinscp.net/forum/'
     TabOrder = 3
@@ -3527,7 +3523,7 @@ object AboutDialog: TAboutDialog
   object TranslatorUrlLabel: TStaticText
     Left = 72
     Top = 160
-    Width = 150
+    Width = 148
     Height = 17
     Caption = 'http://XXXXwinscp.net/forum/'
     TabOrder = 4
@@ -3552,7 +3548,7 @@ object AboutDialog: TAboutDialog
     object Label7: TLabel
       Left = 8
       Top = 8
-      Width = 274
+      Width = 232
       Height = 41
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
@@ -3564,56 +3560,56 @@ object AboutDialog: TAboutDialog
     object PuttyVersionLabel: TLabel
       Left = 8
       Top = 48
-      Width = 196
+      Width = 189
       Height = 13
       Caption = 'SSH and SCP code based on PuTTY xxx'
     end
     object PuttyCopyrightLabel: TLabel
       Left = 8
       Top = 64
-      Width = 145
+      Width = 151
       Height = 13
       Caption = 'Copyright '#169' xxx Simon Tatham'
     end
     object Label8: TLabel
       Left = 8
       Top = 365
-      Width = 181
+      Width = 186
       Height = 13
       Caption = 'Filemanager Toolset library Version 2.6'
     end
     object Label10: TLabel
       Left = 8
       Top = 381
-      Width = 137
+      Width = 139
       Height = 13
       Caption = 'Copyright '#169' 1999 Ingo Eckel'
     end
     object Label1: TLabel
       Left = 8
       Top = 253
-      Width = 117
+      Width = 122
       Height = 13
       Caption = 'Toolbar2000 library 2.1.6'
     end
     object Label2: TLabel
       Left = 8
       Top = 269
-      Width = 182
+      Width = 187
       Height = 13
       Caption = 'Copyright '#169' 1998-2005 Jordan Russell'
     end
     object Label5: TLabel
       Left = 8
       Top = 309
-      Width = 69
+      Width = 70
       Height = 13
       Caption = 'TBX library 2.1'
     end
     object Label6: TLabel
       Left = 8
       Top = 325
-      Width = 188
+      Width = 194
       Height = 13
       Caption = 'Copyright '#169' 2001-2005 Alex A. Denisov'
     end
@@ -3627,7 +3623,7 @@ object AboutDialog: TAboutDialog
     object FileZillaCopyrightLabel: TLabel
       Left = 8
       Top = 144
-      Width = 126
+      Width = 131
       Height = 13
       Caption = 'Copyright '#169' xxx Tim Kosse'
     end
@@ -3645,7 +3641,7 @@ object AboutDialog: TAboutDialog
     object OpenSSLCopyrightLabel: TLabel
       Left = 8
       Top = 213
-      Width = 186
+      Width = 191
       Height = 13
       Caption = 'Copyright '#169' xxxx The OpenSSL Project'
     end
@@ -3653,7 +3649,7 @@ object AboutDialog: TAboutDialog
       Tag = 1
       Left = 8
       Top = 80
-      Width = 74
+      Width = 73
       Height = 17
       Caption = 'Display license'
       TabOrder = 0
@@ -3663,7 +3659,7 @@ object AboutDialog: TAboutDialog
     object PuttyHomepageLabel: TStaticText
       Left = 8
       Top = 96
-      Width = 281
+      Width = 286
       Height = 17
       Caption = 'http://XXXwww.chiark.greenend.org.uk/~sgtatham/putty/'
       TabOrder = 1
@@ -3672,7 +3668,7 @@ object AboutDialog: TAboutDialog
     object Toolbar2000HomepageLabel: TStaticText
       Left = 8
       Top = 285
-      Width = 180
+      Width = 189
       Height = 17
       Caption = 'http://www.jrsoftware.org/tb2kdl.php'
       TabOrder = 4
@@ -3681,7 +3677,7 @@ object AboutDialog: TAboutDialog
     object TBXHomepageLabel: TStaticText
       Left = 8
       Top = 341
-      Width = 142
+      Width = 146
       Height = 17
       Caption = 'http://indasoftware.com/tbx/'
       TabOrder = 5
@@ -3690,7 +3686,7 @@ object AboutDialog: TAboutDialog
     object FileZillaHomepageLabel: TStaticText
       Left = 8
       Top = 160
-      Width = 168
+      Width = 171
       Height = 17
       Caption = 'http://XXXfilezilla.sourceforge.net/'
       TabOrder = 2
@@ -3754,7 +3750,7 @@ object AboutDialog: TAboutDialog
     object RegistrationSubjectLabel: TLabel
       Left = 8
       Top = 8
-      Width = 285
+      Width = 277
       Height = 65
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
@@ -3764,14 +3760,14 @@ object AboutDialog: TAboutDialog
     object RegistrationLicensesLabel: TLabel
       Left = 8
       Top = 43
-      Width = 107
+      Width = 106
       Height = 13
       Caption = 'Number of Licenses: X'
     end
     object RegistrationProductIdLabel: TStaticText
       Left = 8
       Top = 65
-      Width = 132
+      Width = 148
       Height = 17
       Caption = 'Product ID: xxxx-xxxx-xxxxx'
       TabOrder = 0

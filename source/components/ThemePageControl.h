@@ -23,6 +23,8 @@ friend class TThemeTabSheet;
 public:
   __fastcall TThemePageControl(TComponent * Owner);
 
+  int __fastcall GetTabsHeight();
+
 protected:
   virtual void __fastcall PaintWindow(HDC DC);
   DYNAMIC bool __fastcall CanChange();

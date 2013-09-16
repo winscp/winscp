@@ -451,6 +451,8 @@
 #define LOGIN_CANCEL_EDITING    1908
 #define SAVE_SESSION_FOLDER     1909
 #define SAVE_SESSION_ROOT_FOLDER 1910
+#define LOGIN_SHELL_PAGE        1911
+#define LOGIN_SCP_SHELL_PAGE    1912
 
 // 2xxx is reserved for TextsFileZilla.h
 

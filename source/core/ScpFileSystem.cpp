@@ -2323,7 +2323,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
           if (!FileData.Exists)
           {
             FILE_OPERATION_LOOP (FMTLOAD(CREATE_DIR_ERROR, (DestFileName)),
-              if (!ForceDirectories(DestFileName)) RaiseLastOSError();
+              THROWOSIFFALSE(ForceDirectories(DestFileName));
             );
             /* SCP: can we set the timestamp for directories ? */
           }

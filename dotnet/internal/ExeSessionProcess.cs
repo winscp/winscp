@@ -128,12 +128,6 @@ namespace WinSCP
 
                 _logger.WriteLine("Started process {0}", _process.Id);
 
-                if (_session.GuardProcessWithJobInternal)
-                {
-                    _job = new Job();
-                    _job.AddProcess(_process.Handle);
-                }
-
                 _thread = new Thread(ProcessEvents);
                 _thread.IsBackground = true;
                 _thread.Start();
@@ -393,7 +387,7 @@ namespace WinSCP
 
                     int instanceNumber = random.Next(1000);
 
-                    _instanceName = string.Format(CultureInfo.InvariantCulture, "_{0}_{1}", process, instanceNumber);
+                    _instanceName = string.Format(CultureInfo.InvariantCulture, "_{0}_{1}_{2}", process, GetHashCode(), instanceNumber);
                     _logger.WriteLine("Trying event {0}", _instanceName);
                     if (!TryCreateEvent(ConsoleEventRequest + _instanceName, out _requestEvent))
                     {
@@ -424,6 +418,12 @@ namespace WinSCP
                 using (ConsoleCommStruct commStruct = AcquireCommStruct())
                 {
                     commStruct.InitHeader();
+                }
+
+                if (_session.GuardProcessWithJobInternal)
+                {
+                    string jobName = ConsoleJob + _instanceName;
+                    _job = new Job(_logger, jobName);
                 }
             }
         }
@@ -683,6 +683,7 @@ namespace WinSCP
         private const string ConsoleEventRequest = "WinSCPConsoleEventRequest";
         private const string ConsoleEventResponse = "WinSCPConsoleEventResponse";
         private const string ConsoleEventCancel = "WinSCPConsoleEventCancel";
+        private const string ConsoleJob = "WinSCPConsoleJob";
         private const string ExeExecutableFileName = "winscp.exe";
 
         private Process _process;

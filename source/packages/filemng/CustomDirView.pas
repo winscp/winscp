@@ -856,13 +856,8 @@ end;
   { TCustomDirView }
 
 constructor TCustomDirView.Create(AOwner: TComponent);
-var
-  WinVer: TOSVersionInfo;
 begin
   inherited;
-
-  WinVer.dwOSVersionInfoSize := SizeOf(WinVer);
-  GetVersionEx(WinVer);
 
   FWatchForChanges := False;
   FFilesSize := 0;
@@ -909,7 +904,7 @@ begin
   FDragDrive := #0;
   FExeDrag := False;
   FMask := '';
-  FDoubleBufferedScrollingWorkaround := not IsVista();
+  FDoubleBufferedScrollingWorkaround := not IsVistaHard();
 
   FOnHistoryChange := nil;
   FOnPathChange := nil;
@@ -2403,7 +2398,8 @@ function TCustomDirView.AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean
 var
   Item: TListItem;
 begin
-  if OnlyFocused or (SelCount = 0) then
+  if OnlyFocused or
+     ((SelCount = 0) and Focused and GetParentForm(Self).Active) then
   begin
     Result := Assigned(ItemFocused) and ItemIsFile(ItemFocused) and
       ((not FilesOnly) or (not ItemIsDirectory(ItemFocused)));

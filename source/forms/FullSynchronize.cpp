@@ -163,7 +163,7 @@ bool __fastcall TFullSynchronizeDialog::Execute()
   FPreset = GUIConfiguration->CopyParamCurrent;
   LocalDirectoryEdit->Items = CustomWinConfiguration->History[L"LocalDirectory"];
   RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     LocalDirectoryEdit->SaveToHistory();
@@ -306,13 +306,13 @@ void __fastcall TFullSynchronizeDialog::SetOptions(int value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::CopyParamListPopup(TPoint P, int AdditionalOptions)
+void __fastcall TFullSynchronizeDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
 {
   // We pass in FCopyParams, although it may not be the exact copy param
   // that will be used (because of Preservetime). The reason is to
   // display checkbox next to user-selected preset
   ::CopyParamListPopup(
-    P, FPresetsMenu, FCopyParams, FPreset, CopyParamClick,
+    R, FPresetsMenu, FCopyParams, FPreset, CopyParamClick,
     cplCustomize | AdditionalOptions,
     ActualCopyParamAttrs());
 }
@@ -322,9 +322,7 @@ void __fastcall TFullSynchronizeDialog::TransferSettingsButtonClick(
 {
   if (FLAGCLEAR(FOptions, fsoDoNotUsePresets) && !SupportsSplitButton())
   {
-    CopyParamListPopup(
-      TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
-      0);
+    CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), 0);
   }
   else
   {
@@ -357,7 +355,7 @@ void __fastcall TFullSynchronizeDialog::FormShow(TObject * /*Sender*/)
 void __fastcall TFullSynchronizeDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & CanClose)
 {
-  if ((ModalResult != mrCancel) &&
+  if ((ModalResult == DefaultResult(this)) &&
       SaveSettings && (FOrigMode != Mode) && !FSaveMode)
   {
     switch (MessageDialog(LoadStr(SAVE_SYNCHRONIZE_MODE),
@@ -398,7 +396,7 @@ void __fastcall TFullSynchronizeDialog::CopyParamGroupContextPopup(
 {
   if (FLAGCLEAR(FOptions, fsoDoNotUsePresets))
   {
-    CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), cplCustomizeDefault);
+    CopyParamListPopup(CalculatePopupRect(CopyParamGroup, MousePos), cplCustomizeDefault);
     Handled = true;
   }
 }
@@ -423,8 +421,6 @@ void __fastcall TFullSynchronizeDialog::HelpButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::TransferSettingsButtonDropDownClick(TObject * /*Sender*/)
 {
-  CopyParamListPopup(
-    TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
-    cplCustomizeDefault);
+  CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), cplCustomizeDefault);
 }
 //---------------------------------------------------------------------------

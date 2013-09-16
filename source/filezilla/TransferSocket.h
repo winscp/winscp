@@ -127,6 +127,10 @@ protected:
 	BOOL m_bShutDown;
 
 	void Transfered(int count, CTime time);
+	void CloseAndEnsureSendClose(int Mode);
+	void EnsureSendClose(int Mode);
+	void CloseOnShutDownOrError(int Mode);
+	void LogError(int Error);
 
 	DWORD m_Transfered[SPEED_SECONDS];
 	bool m_UsedForTransfer[SPEED_SECONDS];

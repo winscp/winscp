@@ -71,7 +71,7 @@ bool __fastcall TRemoteTransferDialog::Execute(void *& Session, UnicodeString & 
   DirectoryEdit->Text = UnixIncludeTrailingBackslash(Target) + FileMask;
   FDirectCopy = DirectCopy;
   NotDirectCopyCheck->Checked = !DirectCopy;
-  bool Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     Session = SessionCombo->Items->Objects[SessionCombo->ItemIndex];
@@ -128,7 +128,7 @@ void __fastcall TRemoteTransferDialog::SessionComboChange(TObject * /*Sender*/)
 void __fastcall TRemoteTransferDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel)
+  if (ModalResult == DefaultResult(this))
   {
     if ((SessionCombo->ItemIndex == FCurrentSession) &&
         (FAllowDirectCopy == drcConfirmCommandSession) &&

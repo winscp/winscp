@@ -18,9 +18,9 @@ namespace WinSCP
     [StructLayout(LayoutKind.Sequential)]
     internal struct SecurityAttributes
     {
-        public int nLength;
+        public UInt32 nLength;
         public IntPtr lpSecurityDescriptor;
-        public int bInheritHandle;
+        public Int32 bInheritHandle;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -28,13 +28,13 @@ namespace WinSCP
     {
         public Int64 PerProcessUserTimeLimit;
         public Int64 PerJobUserTimeLimit;
-        public Int16 LimitFlags;
-        public UInt32 MinimumWorkingSetSize;
-        public UInt32 MaximumWorkingSetSize;
-        public Int16 ActiveProcessLimit;
-        public Int64 Affinity;
-        public Int16 PriorityClass;
-        public Int16 SchedulingClass;
+        public UInt32 LimitFlags;
+        public UIntPtr MinimumWorkingSetSize;
+        public UIntPtr MaximumWorkingSetSize;
+        public UInt32 ActiveProcessLimit;
+        public UIntPtr Affinity;
+        public UInt32 PriorityClass;
+        public UInt32 SchedulingClass;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -53,10 +53,10 @@ namespace WinSCP
     {
         public JobObjectBasicLimitInformation BasicLimitInformation;
         public IOCounters IoInfo;
-        public UInt32 ProcessMemoryLimit;
-        public UInt32 JobMemoryLimit;
-        public UInt32 PeakProcessMemoryUsed;
-        public UInt32 PeakJobMemoryUsed;
+        public UIntPtr ProcessMemoryLimit;
+        public UIntPtr JobMemoryLimit;
+        public UIntPtr PeakProcessMemoryUsed;
+        public UIntPtr PeakJobMemoryUsed;
     }
 
     [Flags]
@@ -100,15 +100,11 @@ namespace WinSCP
         [DllImport("kernel32", CharSet = CharSet.Auto, SetLastError = true, ExactSpelling = true)]
         public static extern int CloseHandle(IntPtr hObject);
 
-        [DllImport("kernel32", CharSet = CharSet.Unicode)]
+        [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr CreateJobObject(IntPtr a, string lpName);
-
-        [DllImport("kernel32")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool SetInformationJobObject(IntPtr hJob, JobObjectInfoType infoType, IntPtr lpJobObjectInfo, uint cbJobObjectInfoLength);
 
         [DllImport("kernel32", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
+        public static extern bool SetInformationJobObject(IntPtr hJob, JobObjectInfoType infoType, IntPtr lpJobObjectInfo, uint cbJobObjectInfoLength);
     }
 }

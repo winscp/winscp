@@ -160,8 +160,9 @@ public:
   __fastcall TConfiguration();
   virtual __fastcall ~TConfiguration();
   virtual void __fastcall Default();
-  virtual void __fastcall Load();
-  virtual void __fastcall Save();
+  void __fastcall Load();
+  void __fastcall Save();
+  void __fastcall SaveExplicit();
   void __fastcall SetNulStorage();
   void __fastcall SetDefaultStorage();
   void __fastcall Export(const UnicodeString & FileName);
