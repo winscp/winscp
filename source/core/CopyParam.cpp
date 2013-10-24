@@ -43,6 +43,8 @@ void __fastcall TCopyParamType::Default()
   FileMask = L"*.*";
   IncludeFileMask.Masks = L"";
   ClearArchive = false;
+  RemoveCtrlZ = false;
+  RemoveBOM = false;
   CPSLimit = 0;
   NewerOnly = false;
 }
@@ -211,6 +213,27 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     }
   }
 
+  if ((TransferMode == tmAscii) || (TransferMode == tmAutomatic))
+  {
+    if (RemoveBOM != Defaults.RemoveBOM)
+    {
+      if (ALWAYS_TRUE(RemoveBOM))
+      {
+        ADD(LoadStr(COPY_INFO_REMOVE_BOM),
+          cpaIncludeMaskOnly | cpaNoRemoveBOM | cpaNoTransferMode);
+      }
+    }
+
+    if (RemoveCtrlZ != Defaults.RemoveCtrlZ)
+    {
+      if (ALWAYS_TRUE(RemoveCtrlZ))
+      {
+        ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ),
+          cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode);
+      }
+    }
+  }
+
   if (!(IncludeFileMask == Defaults.IncludeFileMask))
   {
     ADD(FORMAT(LoadStr(COPY_INFO_FILE_MASK), (IncludeFileMask.Masks)),
@@ -264,6 +287,8 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(FileMask);
   COPY(IncludeFileMask);
   COPY(ClearArchive);
+  COPY(RemoveCtrlZ);
+  COPY(RemoveBOM);
   COPY(CPSLimit);
   COPY(NewerOnly);
   #undef COPY
@@ -421,7 +446,7 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
   return FORMAT(
     L"  PrTime: %s; PrRO: %s; Rght: %s; PrR: %s (%s); FnCs: %s; RIC: %s; "
        "Resume: %s (%d); CalcS: %s; Mask: %s\n"
-     "  TM: %s; ClAr: %s; CPS: %u; NewerOnly: %s; InclM: %s\n"
+     "  TM: %s; ClAr: %s; RemEOF: %s; RemBOM: %s; CPS: %u; NewerOnly: %s; InclM: %s\n"
      "  AscM: %s\n",
     (BooleanToEngStr(PreserveTime),
      BooleanToEngStr(PreserveReadOnly),
@@ -436,6 +461,8 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
      FileMask,
      ModeC[TransferMode],
      BooleanToEngStr(ClearArchive),
+     BooleanToEngStr(RemoveCtrlZ),
+     BooleanToEngStr(RemoveBOM),
      int(CPSLimit),
      BooleanToEngStr(NewerOnly),
      IncludeFileMask.Masks,
@@ -519,6 +546,8 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
     }
   }
   ClearArchive = Storage->ReadBool(L"ClearArchive", ClearArchive);
+  RemoveCtrlZ = Storage->ReadBool(L"RemoveCtrlZ", RemoveCtrlZ);
+  RemoveBOM = Storage->ReadBool(L"RemoveBOM", RemoveBOM);
   CPSLimit = Storage->ReadInteger(L"CPSLimit", CPSLimit);
   NewerOnly = Storage->ReadBool(L"NewerOnly", NewerOnly);
 }
@@ -543,6 +572,8 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage) const
   Storage->DeleteValue(L"ExcludeFileMask"); // obsolete
   Storage->DeleteValue(L"NegativeExclude"); // obsolete
   Storage->WriteBool(L"ClearArchive", ClearArchive);
+  Storage->WriteBool(L"RemoveCtrlZ", RemoveCtrlZ);
+  Storage->WriteBool(L"RemoveBOM", RemoveBOM);
   Storage->WriteInteger(L"CPSLimit", CPSLimit);
   Storage->WriteBool(L"NewerOnly", NewerOnly);
 }
@@ -567,6 +598,8 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
     C(CalculateSize) &&
     C(IncludeFileMask) &&
     C(ClearArchive) &&
+    C(RemoveCtrlZ) &&
+    C(RemoveBOM) &&
     C(CPSLimit) &&
     C(NewerOnly) &&
     true;

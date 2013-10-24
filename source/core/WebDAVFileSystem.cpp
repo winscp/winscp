@@ -3126,7 +3126,7 @@ config_read_auth_data(
   THierarchicalStorage * Storage = NULL;
   WEBDAV_ERR(fs->CreateStorage(Storage));
   assert(Storage);
-  std::auto_ptr<THierarchicalStorage> StoragePtr;
+  std::unique_ptr<THierarchicalStorage> StoragePtr;
   StoragePtr.reset(Storage);
   Storage->AccessMode = smRead;
   if (!Storage->OpenSubKey(UnicodeString(subkey), false))
@@ -3168,7 +3168,7 @@ config_write_auth_data(
   THierarchicalStorage * Storage = NULL;
   WEBDAV_ERR(fs->CreateStorage(Storage));
   assert(Storage);
-  std::auto_ptr<THierarchicalStorage> StoragePtr;
+  std::unique_ptr<THierarchicalStorage> StoragePtr;
   StoragePtr.reset(Storage);
   Storage->AccessMode = smReadWrite;
 
@@ -5366,7 +5366,7 @@ typedef enum path_type_t
 static char
 canonicalize_to_lower(char c)
 {
-  if (c < 'A' || c > 'Z')
+  if (!IsUpperCaseLetter(c))
     return c;
   else
     return c - 'A' + 'a';
@@ -5377,7 +5377,7 @@ canonicalize_to_lower(char c)
 static char
 canonicalize_to_upper(char c)
 {
-  if (c < 'a' || c > 'z')
+  if (!IsLowerCaseLetter(c))
     return c;
   else
     return c - 'a' + 'A';
@@ -5519,8 +5519,7 @@ canonicalize(
     // On Windows the first segment can be a drive letter, which we normalize
     // to upper case.
     else if ((type == type_dirent) &&
-            ((*src >= 'a' && *src <= 'z') ||
-             (*src >= 'A' && *src <= 'Z')) &&
+            IsLetter(*src) &&
             (src[1] == ':'))
     {
       *(dst++) = canonicalize_to_upper(*(src++));
@@ -5565,7 +5564,7 @@ canonicalize(
     // windows drive letter, convert the drive letter to upper case.
     else if (url && (canon_segments == 1) && (seglen == 2) &&
             (strncmp(canon, "file:", 5) == 0) &&
-            (src[0] >= 'a') && (src[0] <= 'z') && (src[1] == ':'))
+            IsLowerCaseLetter(src[0]) && (src[1] == ':'))
     {
       *(dst++) = canonicalize_to_upper(src[0]);
       *(dst++) = ':';
@@ -5798,8 +5797,7 @@ dirent_is_root(
   // are also root directories
   if ((len == 2 || ((len == 3) && (dirent[2] == '/'))) &&
       (dirent[1] == ':') &&
-      ((dirent[0] >= 'A' && dirent[0] <= 'Z') ||
-       (dirent[0] >= 'a' && dirent[0] <= 'z')))
+      IsLetter(dirent[0]))
     return TRUE;
 
   // On Windows and Cygwin //server/share is a root directory,
@@ -5928,8 +5926,7 @@ dirent_canonicalize(
 
   // Handle a specific case on Windows where path == "X:/". Here we have to
   // append the final '/', as path_canonicalize will chop this of.
-  if (((dirent[0] >= 'A' && dirent[0] <= 'Z') ||
-      (dirent[0] >= 'a' && dirent[0] <= 'z')) &&
+  if (IsLetter(dirent[0]) &&
       (dirent[1] == ':') && (dirent[2] == '/') &&
       (dst[3] == '\0'))
   {
@@ -5963,11 +5960,11 @@ dirent_is_canonical(
       return (strcmp(dirent, dirent_canonicalize(dirent, pool)) == 0);
     }
   }
-  else if (((*ptr >= 'a' && *ptr <= 'z') || (*ptr >= 'A' && *ptr <= 'Z')) &&
+  else if (IsLetter(*ptr) &&
           (ptr[1] == ':'))
   {
     // The only canonical drive names are "A:"..."Z:", no lower case
-    if (*ptr < 'A' || *ptr > 'Z')
+    if (!IsUpperCaseLetter(*ptr))
       return FALSE;
 
     ptr += 2;
@@ -6052,8 +6049,7 @@ dirent_is_rooted(
 
   // On Windows, dirent is also absolute when it starts with 'H:' or 'H:/'
   // where 'H' is any letter.
-  if (((dirent[0] >= 'A' && dirent[0] <= 'Z') ||
-      (dirent[0] >= 'a' && dirent[0] <= 'z')) &&
+  if (IsLetter(dirent[0]) &&
       (dirent[1] == ':'))
   {
     return TRUE;
@@ -6180,7 +6176,7 @@ dirent_is_absolute(
   }
   // On Windows, dirent is also absolute when it starts with 'H:/'
   // where 'H' is any letter.
-  if (((dirent[0] >= 'A' && dirent[0] <= 'Z')) &&
+  if (IsUpperCaseLetter(dirent[0]) &&
       (dirent[1] == ':') && (dirent[2] == '/'))
   {
     return TRUE;
@@ -12249,6 +12245,10 @@ bool __fastcall TWebDAVFileSystem::GetActive()
   return FActive;
 }
 //---------------------------------------------------------------------------
+void __fastcall TWebDAVFileSystem::CollectUsage()
+{
+}
+//---------------------------------------------------------------------------
 const TSessionInfo & __fastcall TWebDAVFileSystem::GetSessionInfo()
 {
   return FSessionInfo;
@@ -12317,6 +12317,8 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcCalculatingChecksum:
     case fcSecondaryShell: // has fcShellAnyCommand
     case fcGroupOwnerChangingByID: // by name
+    case fcRemoveCtrlZUpload:
+    case fcRemoveBOMUpload:
       return false;
 
     default:
@@ -14089,7 +14091,7 @@ webdav::error_t TWebDAVFileSystem::VerifyCertificate(
   Params.Aliases = Aliases;
   Params.AliasesCount = LENOF(Aliases);
   unsigned int Answer = FTerminal->QueryUser(
-    FMTLOAD(VERIFY_CERT_PROMPT2, (UnicodeString(Prompt).c_str())),
+    FMTLOAD(VERIFY_CERT_PROMPT3, (UnicodeString(Prompt).c_str())),
     NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
   RequestResult = Answer;
   switch (RequestResult)

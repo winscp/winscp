@@ -21,6 +21,8 @@ const int cpaNoRights =        0x20;
 const int cpaNoPreserveReadOnly = 0x40;
 const int cpaNoIgnorePermErrors = 0x80;
 const int cpaNoNewerOnly        = 0x100;
+const int cpaNoRemoveCtrlZ      = 0x200;
+const int cpaNoRemoveBOM        = 0x400;
 //---------------------------------------------------------------------------
 struct TUsableCopyParamAttrs
 {
@@ -51,6 +53,8 @@ private:
   UnicodeString FFileMask;
   TFileMasks FIncludeFileMask;
   bool FClearArchive;
+  bool FRemoveCtrlZ;
+  bool FRemoveBOM;
   unsigned long FCPSLimit;
   bool FNewerOnly;
   static const wchar_t TokenPrefix = L'%';
@@ -110,6 +114,8 @@ public:
   __property UnicodeString FileMask = { read = FFileMask, write = FFileMask };
   __property TFileMasks IncludeFileMask = { read = FIncludeFileMask, write = FIncludeFileMask };
   __property bool ClearArchive = { read = FClearArchive, write = FClearArchive };
+  __property bool RemoveCtrlZ = { read = FRemoveCtrlZ, write = FRemoveCtrlZ };
+  __property bool RemoveBOM = { read = FRemoveBOM, write = FRemoveBOM };
   __property unsigned long CPSLimit = { read = FCPSLimit, write = FCPSLimit };
   __property bool NewerOnly = { read = FNewerOnly, write = FNewerOnly };
 };

@@ -28,7 +28,7 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
 bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
   TProcessMessagesEvent ProcessMessages);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
-  TSessionData * SessionData, UnicodeString Password);
+  TSessionData * SessionData, UnicodeString UserName, UnicodeString Password);
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
 UnicodeString __fastcall ItemsFormatString(const UnicodeString SingleItemFormat,
   const UnicodeString MultiItemsFormat, int Count, const UnicodeString FirstItem);
@@ -40,7 +40,7 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const UnicodeString DirName);
 UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
-void __fastcall AddSessionColorImage(TCustomImageList * ImageList, TColor Color, bool Disconnected);
+void __fastcall AddSessionColorImage(TCustomImageList * ImageList, TColor Color, int MaskIndex);
 typedef int __fastcall (*TCalculateWidth)(UnicodeString Text, void * Arg);
 void __fastcall ApplyTabs(
   UnicodeString & Text, wchar_t Padding,

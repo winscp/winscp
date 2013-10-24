@@ -26,7 +26,7 @@
 #include <System.Win.ComObj.hpp>
 #include <StrUtils.hpp>
 //---------------------------------------------------------------------------
-// WORAROUND
+// WORKAROUND
 // VCL includes wininet.h (even with NO_WIN32_LEAN_AND_MEAN)
 // and it cannot be compined with winhttp.h as of current Windows SDK.
 // This is hack to allow that.
@@ -248,6 +248,8 @@ UnicodeString __fastcall StoreForm(TCustomForm * Form)
 //---------------------------------------------------------------------------
 void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form)
 {
+  // This has to be called only after DoFormWindowProc(CM_SHOWINGCHANGED).
+  // See comment in ResizeForm.
   UnicodeString WidthStr = ::CutToChar(Data, L',', true);
   UnicodeString HeightStr = ::CutToChar(Data, L',', true);
   int PixelsPerInch = LoadPixelsPerInch(::CutToChar(Data, L',', true));

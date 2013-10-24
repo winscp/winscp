@@ -6,6 +6,7 @@
 #define THROWOSIFFALSE(C) { if (!(C)) RaiseLastOSError(); }
 #define SAFE_DESTROY_EX(CLASS, OBJ) { CLASS * PObj = OBJ; OBJ = NULL; delete PObj; }
 #define SAFE_DESTROY(OBJ) SAFE_DESTROY_EX(TObject, OBJ)
+#define NULL_TERMINATE(S) S[LENOF(S) - 1] = L'\0'
 #define ASCOPY(dest, source) \
   { \
     AnsiString CopyBuf = source; \
@@ -44,6 +45,9 @@ UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString C
 UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars);
 UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote);
 UnicodeString ExceptionLogString(Exception *E);
+UnicodeString __fastcall MainInstructions(const UnicodeString & S);
+bool ExtractMainInstructions(UnicodeString & S, UnicodeString & MainInstructions);
+UnicodeString UnformatMessage(UnicodeString S);
 bool IsNumber(const UnicodeString Str);
 UnicodeString __fastcall SystemTemporaryDirectory();
 UnicodeString __fastcall GetShellFolderPath(int CSIdl);
@@ -56,6 +60,7 @@ UnicodeString __fastcall ValidLocalFileName(
   UnicodeString FileName, wchar_t InvalidCharsReplacement,
   const UnicodeString & TokenizibleChars, const UnicodeString & LocalInvalidChars);
 UnicodeString __fastcall ExtractProgram(UnicodeString Command);
+UnicodeString __fastcall ExtractProgramName(UnicodeString Command);
 UnicodeString __fastcall FormatCommand(UnicodeString Program, UnicodeString Params);
 UnicodeString __fastcall ExpandFileNameCommand(const UnicodeString Command,
   const UnicodeString FileName);
@@ -72,6 +77,9 @@ UnicodeString __fastcall BytesToHex(RawByteString Str, bool UpperCase = true, wc
 UnicodeString __fastcall CharToHex(wchar_t Ch, bool UpperCase = true);
 RawByteString __fastcall HexToBytes(const UnicodeString Hex);
 unsigned char __fastcall HexToByte(const UnicodeString Hex);
+bool __fastcall IsLowerCaseLetter(wchar_t Ch);
+bool __fastcall IsUpperCaseLetter(wchar_t Ch);
+bool __fastcall IsLetter(wchar_t Ch);
 bool __fastcall IsDigit(wchar_t Ch);
 bool __fastcall IsHex(wchar_t Ch);
 UnicodeString __fastcall DecodeUrlChars(UnicodeString S);
@@ -90,7 +98,6 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 bool __fastcall IsWinXPOrOlder();
 bool __fastcall IsWin7();
-bool __fastcall IsExactly2008R2();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
 bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime);
@@ -121,6 +128,7 @@ enum TDSTMode
 bool __fastcall UsesDaylightHack();
 TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day);
 TDateTime __fastcall EncodeTimeVerbose(Word Hour, Word Min, Word Sec, Word MSec);
+TDateTime __fastcall SystemTimeToDateTimeVerbose(const SYSTEMTIME & SystemTime);
 TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode);
 TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime);
 TDateTime __fastcall ConvertTimestampFromUTC(TDateTime DateTime);
@@ -136,6 +144,7 @@ UnicodeString __fastcall FixedLenDateTimeFormat(const UnicodeString & Format);
 UnicodeString __fastcall StandardTimestamp(const TDateTime & DateTime);
 UnicodeString __fastcall StandardTimestamp();
 UnicodeString __fastcall GetTimeZoneLogString();
+bool __fastcall AdjustClockForDSTEnabled();
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
 int __fastcall TimeToMSec(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);

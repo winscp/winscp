@@ -42,9 +42,9 @@ static void getstring(char **data, int *datalen, char **p, int *length)
     *p = NULL;
     if (*datalen < 4)
 	return;
-    *length = GET_32BIT(*data);
+    *length = toint(GET_32BIT(*data));
     if (*length < 0)
-	return;
+        return;
     *datalen -= 4;
     *data += 4;
     if (*datalen < *length)
@@ -127,13 +127,13 @@ static void dss_freekey(void *key)
 {
     struct dss_key *dss = (struct dss_key *) key;
     if (dss->p)
-    freebn(dss->p);
+        freebn(dss->p);
     if (dss->q)
-    freebn(dss->q);
+        freebn(dss->q);
     if (dss->g)
-    freebn(dss->g);
+        freebn(dss->g);
     if (dss->y)
-    freebn(dss->y);
+        freebn(dss->y);
     if (dss->x)
         freebn(dss->x);
     sfree(dss);
@@ -470,7 +470,7 @@ static void *dss_openssh_createkey(unsigned char **blob, int *len)
         !bignum_cmp(dss->q, Zero) || !bignum_cmp(dss->p, Zero)) {
         /* Invalid key. */
         dss_freekey(dss);
-	return NULL;
+        return NULL;
     }
 
     return dss;
@@ -621,12 +621,12 @@ static unsigned char *dss_sign(void *key, char *data, int datalen, int *siglen)
 
         smemclr(&ss2, sizeof(ss2));
 
-    /*
-     * Now convert the result into a bignum, and reduce it mod q.
-     */
-    proto_k = bignum_from_bytes(digest512, 64);
-    k = bigmod(proto_k, dss->q);
-    freebn(proto_k);
+        /*
+         * Now convert the result into a bignum, and reduce it mod q.
+         */
+        proto_k = bignum_from_bytes(digest512, 64);
+        k = bigmod(proto_k, dss->q);
+        freebn(proto_k);
         kinv = modinv(k, dss->q);	       /* k^-1 mod q */
         if (!kinv) {                           /* very unlikely */
             freebn(k);

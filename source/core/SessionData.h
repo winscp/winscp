@@ -164,11 +164,13 @@ private:
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FHostKey;
+  bool FOverrideCachedHostKey;
 
   UnicodeString FOrigHostName;
   int FOrigPortNumber;
   TProxyMethod FOrigProxyMethod;
   TSessionSource FSource;
+  bool FSaveOnly;
 
   void __fastcall SetHostName(UnicodeString value);
   UnicodeString __fastcall GetHostNameExpanded();
@@ -316,6 +318,7 @@ private:
   void __fastcall DoLoad(THierarchicalStorage * Storage, bool & RewritePassword);
   UnicodeString __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
   int __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, int Default);
+  bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties);
   static RawByteString __fastcall EncryptPassword(const UnicodeString & Password, UnicodeString Key);
   static UnicodeString __fastcall DecryptPassword(const RawByteString & Password, UnicodeString Key);
   static RawByteString __fastcall StronglyRecryptPassword(const RawByteString & Password, UnicodeString Key);
@@ -336,6 +339,7 @@ public:
   bool __fastcall HasPassword();
   bool __fastcall HasAnyPassword();
   void __fastcall Remove();
+  void __fastcall CacheHostKeyIfNotCached();
   virtual void __fastcall Assign(TPersistent * Source);
   bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
     TStoredSessionList * StoredSessions, bool & DefaultsOnly,
@@ -345,6 +349,7 @@ public:
   void __fastcall RollbackTunnel();
   void __fastcall ExpandEnvironmentVariables();
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly);
+  bool __fastcall IsSameSite(const TSessionData * Default);
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   static void __fastcall ValidatePath(const UnicodeString Path);
   static void __fastcall ValidateName(const UnicodeString Name);
@@ -475,12 +480,14 @@ public:
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString HostKey = { read = FHostKey, write = SetHostKey };
+  __property bool OverrideCachedHostKey = { read = FOverrideCachedHostKey };
   __property UnicodeString StorageKey = { read = GetStorageKey };
   __property UnicodeString OrigHostName = { read = FOrigHostName };
   __property int OrigPortNumber = { read = FOrigPortNumber };
   __property UnicodeString LocalName = { read = GetLocalName };
   __property UnicodeString FolderName = { read = GetFolderName };
   __property UnicodeString Source = { read = GetSource };
+  __property bool SaveOnly = { read = FSaveOnly };
 };
 //---------------------------------------------------------------------------
 class TStoredSessionList : public TNamedObjectList

@@ -14,6 +14,7 @@
 #include <WinInterface.h>
 #include <TbxUtils.hpp>
 #include <Math.hpp>
+#include "PngImageList.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -49,7 +50,7 @@ bool __fastcall FileExistsEx(UnicodeString Path)
 }
 //---------------------------------------------------------------------------
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
-  TSessionData * SessionData, UnicodeString Password)
+  TSessionData * SessionData, UnicodeString UserName, UnicodeString Password)
 {
   UnicodeString Program, AParams, Dir;
   SplitCommand(PuttyPath, Program, AParams, Dir);
@@ -58,7 +59,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   {
 
     AParams = ExpandEnvironmentVariables(AParams);
-    TCustomCommandData Data(SessionData, Password);
+    TCustomCommandData Data(SessionData, UserName, Password);
     TRemoteCustomCommand RemoteCustomCommand(Data, SessionData->RemoteDirectory);
     TWinInteractiveCustomCommand InteractiveCustomCommand(
       &RemoteCustomCommand, L"PuTTY");
@@ -369,36 +370,53 @@ UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDat
 }
 //---------------------------------------------------------------------------
 void __fastcall AddSessionColorImage(
-  TCustomImageList * ImageList, TColor Color, bool Disconnected)
+  TCustomImageList * ImageList, TColor Color, int MaskIndex)
 {
 
-  if (Disconnected)
+  // This overly complex drawing is here to support color button on SiteAdvanced
+  // dialog. There we use plain TImageList, instead of TPngImageList,
+  // TButton does not work with transparent images
+  // (not even TBitmap with Transparent = true)
+  std::unique_ptr<TBitmap> MaskBitmap(new TBitmap());
+  ImageList->GetBitmap(MaskIndex, MaskBitmap.get());
+
+  std::unique_ptr<TPngImage> MaskImage(new TPngImage());
+  MaskImage->Assign(MaskBitmap.get());
+
+  std::unique_ptr<TPngImage> ColorImage(new TPngImage(COLOR_RGB, 16, ImageList->Width, ImageList->Height));
+
+  TColor MaskTransparentColor = MaskImage->Pixels[0][0];
+  TColor TransparentColor = MaskTransparentColor;
+  // Expecting that the color to be replaced is in the centre of the image (HACK)
+  TColor MaskColor = MaskImage->Pixels[ImageList->Width / 2][ImageList->Height / 2];
+
+  for (int Y = 0; Y < ImageList->Height; Y++)
   {
-    Color = GetShadowColor(Color);
+    for (int X = 0; X < ImageList->Width; X++)
+    {
+      TColor SourceColor = MaskImage->Pixels[X][Y];
+      TColor DestColor;
+      // this branch is pointless as long as MaskTransparentColor and
+      // TransparentColor are the same
+      if (SourceColor == MaskTransparentColor)
+      {
+        DestColor = TransparentColor;
+      }
+      else if (SourceColor == MaskColor)
+      {
+        DestColor = Color;
+      }
+      else
+      {
+        DestColor = SourceColor;
+      }
+      ColorImage->Pixels[X][Y] = DestColor;
+    }
   }
 
-  int R, G, B;
-  GetRGB(Color, R, G, B);
-  TColor TransparentColor =
-    (TColor)
-    ((static_cast<int>(static_cast<unsigned char>(~B)) << 16) +
-     (static_cast<int>(static_cast<unsigned char>(~G)) << 8) +
-     static_cast<int>(static_cast<unsigned char>(~R)));
-
-  std::auto_ptr<TBitmap> Bitmap(new TBitmap());
+  std::unique_ptr<TBitmap> Bitmap(new TBitmap());
   Bitmap->SetSize(ImageList->Width, ImageList->Height);
-  Bitmap->Canvas->Brush->Color = TransparentColor;
-  Bitmap->Canvas->Brush->Style = bsSolid;
-  TRect Rect(0, 0, ImageList->Width, ImageList->Height);
-  Bitmap->Canvas->FillRect(Rect);
-
-  const int Padding = 2;
-  TRect RoundRect(Padding, Padding + 1, ImageList->Width - Padding - 1, ImageList->Height - Padding);
-
-  Bitmap->Canvas->Pen->Color = Color;
-  Bitmap->Canvas->Pen->Style = psSolid;
-  Bitmap->Canvas->Brush->Color = Color;
-  Bitmap->Canvas->RoundRect(RoundRect, 4, 4);
+  ColorImage->AssignTo(Bitmap.get());
 
   ImageList->AddMasked(Bitmap.get(), TransparentColor);
 }
@@ -423,7 +441,7 @@ bool __fastcall IsEligibleForApplyingTabs(
     if (ALWAYS_TRUE(Remaining.Pos(L"\t") == 0))
     {
       Start = Line.SubString(1, TabPos - 1);
-      // WORAROUND
+      // WORKAROUND
       // Previously we padded the string before tab with spaces,
       // to aling the contents across multiple lines
       Start = Start.TrimRight();
@@ -450,7 +468,7 @@ void __fastcall ApplyTabs(
     CalculateWidth = CalculateWidthByLength;
   }
 
-  std::auto_ptr<TStringList> Lines(new TStringList());
+  std::unique_ptr<TStringList> Lines(new TStringList());
   Lines->Text = Text;
 
   int MaxWidth = -1;
@@ -521,7 +539,7 @@ TLocalCustomCommand::TLocalCustomCommand(const TCustomCommandData & Data,
 int __fastcall TLocalCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  if (Command[Index + 1] == L'^')
+  if ((Index < Command.Length()) && (Command[Index + 1] == L'^'))
   {
     Len = 3;
   }

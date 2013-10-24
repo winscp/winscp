@@ -127,11 +127,16 @@ __fastcall TUnixDirView::~TUnixDirView()
 void __fastcall TUnixDirView::DisplayContextMenu(const TPoint &Where)
 {
   bool Handled = false;
-  if (OnContextPopup) OnContextPopup(this, ScreenToClient(Where), Handled);
+  if (OnContextPopup)
+  {
+    OnContextPopup(this, ScreenToClient(Where), Handled);
+  }
   if (!Handled)
   {
     if (PopupMenu && !PopupMenu->AutoPopup)
+    {
       PopupMenu->Popup(Where.x, Where.y);
+    }
   }
 }
 //---------------------------------------------------------------------------

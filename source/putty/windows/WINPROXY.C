@@ -96,6 +96,13 @@ static int sk_localproxy_write_oob(Socket s, const char *data, int len)
     return sk_localproxy_write(s, data, len);
 }
 
+static void sk_localproxy_write_eof(Socket s)
+{
+    Local_Proxy_Socket ps = (Local_Proxy_Socket) s;
+
+    handle_write_eof(ps->to_cmd_h);
+}
+
 static void sk_localproxy_flush(Socket s)
 {
     /* Local_Proxy_Socket ps = (Local_Proxy_Socket) s; */
@@ -132,7 +139,7 @@ static const char *sk_localproxy_socket_error(Socket s)
 Socket platform_new_connection(SockAddr addr, char *hostname,
 			       int port, int privport,
 			       int oobinline, int nodelay, int keepalive,
-			       Plug plug, const Config *cfg)
+			       Plug plug, Conf *conf)
 {
     char *cmd;
 
@@ -141,6 +148,7 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
 	sk_localproxy_close,
 	sk_localproxy_write,
 	sk_localproxy_write_oob,
+	sk_localproxy_write_eof,
 	sk_localproxy_flush,
 	sk_localproxy_set_private_ptr,
 	sk_localproxy_get_private_ptr,
@@ -154,10 +162,10 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
 
-    if (cfg->proxy_type != PROXY_CMD)
+    if (conf_get_int(conf, CONF_proxy_type) != PROXY_CMD)
 	return NULL;
 
-    cmd = format_telnet_command(addr, port, cfg);
+    cmd = format_telnet_command(addr, port, conf);
 
     {
 	char *msg = dupprintf("Starting local proxy command: %s", cmd);
@@ -181,6 +189,7 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
     sa.bInheritHandle = TRUE;
     if (!CreatePipe(&us_from_cmd, &cmd_to_us, &sa, 0)) {
 	ret->error = dupprintf("Unable to create pipes for proxy command");
+        sfree(cmd);
 	return (Socket)ret;
     }
 
@@ -188,6 +197,7 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
 	CloseHandle(us_from_cmd);
 	CloseHandle(cmd_to_us);
 	ret->error = dupprintf("Unable to create pipes for proxy command");
+        sfree(cmd);
 	return (Socket)ret;
     }
 
@@ -207,9 +217,10 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
     CreateProcess(NULL, cmd, NULL, NULL, TRUE,
 		  CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS,
 		  NULL, NULL, &si, &pi);
-    #ifdef MPEXT
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
     sfree(cmd);
-    #endif
 
     CloseHandle(cmd_from_us);
     CloseHandle(cmd_to_us);

@@ -286,6 +286,7 @@ __published:
   TImage *ExplorerInterfacePicture;
   TRadioButton *CommanderInterfaceButton2;
   TRadioButton *ExplorerInterfaceButton2;
+  TLabel *AutoWorkspaceLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

@@ -136,7 +136,7 @@ void __fastcall TRemoteTransferDialog::FormCloseQuery(TObject * /*Sender*/,
         GUIConfiguration->ConfirmCommandSession)
     {
       TMessageParams Params(mpNeverAskAgainCheck);
-      unsigned int Answer = MessageDialog(LoadStr(REMOTE_COPY_COMMAND_SESSION),
+      unsigned int Answer = MessageDialog(LoadStr(REMOTE_COPY_COMMAND_SESSION2),
         qtConfirmation, qaOK | qaCancel, HelpKeyword, &Params);
       if (Answer == qaNeverAskAgain)
       {

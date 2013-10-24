@@ -265,11 +265,6 @@ __published:
   TTBXToolbar *CustomCommandsToolbar;
   TTBXItem *TBXItem28;
   TTBXColorItem *ColorMenuItem;
-  TTBXItem *TBXItem216;
-  TTBXSeparatorItem *TBXSeparatorItem50;
-  TTBXColorPalette *SessionColorPalette;
-  TTBXSeparatorItem *TBXSeparatorItem51;
-  TTBXItem *TBXItem217;
   TTBXSeparatorItem *TBXSeparatorItem23;
   TTBXDropDownItem *TransferDropDown;
   TTBXStringList *TransferList;
@@ -296,6 +291,8 @@ __published:
   TTBXItem *TBXItem141;
   TTBXItem *TBXItem142;
   TTBXSeparatorItem *TBXSeparatorItem27;
+  TTBXItem *TBXItem143;
+  TTBXSeparatorItem *TBXSeparatorItem35;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,

@@ -161,7 +161,7 @@ TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString 
   return Result;
 }
 //---------------------------------------------------------------------------
-TCustomEdit * __fastcall TAuthenticateForm::GenerateEdit(int Current, bool Echo, int MaxLen)
+TCustomEdit * __fastcall TAuthenticateForm::GenerateEdit(int Current, bool Echo)
 {
   TCustomEdit * Result = (Echo ? static_cast<TCustomEdit *>(new TEdit(this)) :
     static_cast<TCustomEdit *>(new TPasswordEdit(this)));
@@ -171,13 +171,12 @@ TCustomEdit * __fastcall TAuthenticateForm::GenerateEdit(int Current, bool Echo,
   Result->Top = Current;
   Result->Left = FPromptLeft;
   Result->Width = FPromptParent->ClientWidth - FPromptLeft - FPromptRight;
-  ((TEdit *)Result)->MaxLength = MaxLen;
 
   return Result;
 }
 //---------------------------------------------------------------------------
 TList * __fastcall TAuthenticateForm::GeneratePrompt(UnicodeString Instructions,
-  TStrings * Prompts, TStrings * Results)
+  TStrings * Prompts)
 {
   while (FPromptParent->ControlCount > 0)
   {
@@ -193,7 +192,6 @@ TList * __fastcall TAuthenticateForm::GeneratePrompt(UnicodeString Instructions,
     Current += Label->Height + FPromptsGap;
   }
 
-  assert(Prompts->Count == Results->Count);
   for (int Index = 0; Index < Prompts->Count; Index++)
   {
     if (Index > 0)
@@ -205,8 +203,7 @@ TList * __fastcall TAuthenticateForm::GeneratePrompt(UnicodeString Instructions,
     Current += Label->Height + FPromptEditGap;
 
     bool Echo = FLAGSET(int(Prompts->Objects[Index]), pupEcho);
-    TCustomEdit * Edit = GenerateEdit(Current, Echo,
-      int(Results->Objects[Index]));
+    TCustomEdit * Edit = GenerateEdit(Current, Echo);
     Result->Add(Edit);
     Label->FocusControl = Edit;
     Current += Edit->Height;
@@ -223,7 +220,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
 {
 
   bool Result;
-  TList * Edits = GeneratePrompt(Instructions, Prompts, Results);
+  TList * Edits = GeneratePrompt(Instructions, Prompts);
 
   try
   {

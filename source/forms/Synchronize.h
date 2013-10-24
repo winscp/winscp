@@ -12,6 +12,7 @@
 #include "GrayedCheckBox.hpp"
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
+#include <Vcl.Imaging.pngimage.hpp>
 //---------------------------------------------------------------------------
 class TSynchronizeDialog : public TForm
 {
@@ -39,6 +40,7 @@ __published:
   TCheckBox *SynchronizeSelectedOnlyCheck;
   TPanel *LogPanel;
   TListView *LogView;
+  TImage *Image;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);

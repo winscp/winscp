@@ -340,6 +340,11 @@ inherited ScpCommanderForm: TScpCommanderForm
             object TBXItem199: TTBXItem
               Action = NonVisualDataModule.QueueResumeAllAction
             end
+            object TBXSeparatorItem39: TTBXSeparatorItem
+            end
+            object TBXItem134: TTBXItem
+              Action = NonVisualDataModule.QueueDeleteAllDoneAction
+            end
           end
         end
         object TBXSeparatorItem13: TTBXSeparatorItem
@@ -556,20 +561,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         object ColorMenuItem: TTBXColorItem
           Action = NonVisualDataModule.ColorMenuAction
           Color = clNone
-          object TBXItem216: TTBXItem
-            Action = NonVisualDataModule.ColorDefaultAction
-          end
-          object TBXSeparatorItem50: TTBXSeparatorItem
-            Blank = True
-          end
-          object SessionColorPalette: TTBXColorPalette
-            PaletteOptions = [tpoCustomImages]
-          end
-          object TBXSeparatorItem51: TTBXSeparatorItem
-          end
-          object TBXItem217: TTBXItem
-            Action = NonVisualDataModule.ColorPickAction
-          end
         end
         object TBXSeparatorItem49: TTBXSeparatorItem
         end

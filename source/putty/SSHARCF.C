@@ -75,7 +75,7 @@ static void arcfour_stir(ArcfourContext *ctx)
     unsigned char *junk = snewn(1536, unsigned char);
     memset(junk, 0, 1536);
     arcfour_block(ctx, junk, 1536);
-    memset(junk, 0, 1536);
+    smemclr(junk, 1536);
     sfree(junk);
 }
 

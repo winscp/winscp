@@ -23,6 +23,12 @@ class TTerminal;
 const int mpNeverAskAgainCheck =   0x01;
 const int mpAllowContinueOnError = 0x02;
 
+#define UPLOAD_IF_ANY_SWITCH L"UploadIfAny"
+#define UPLOAD_SWITCH L"Upload"
+#define JUMPLIST_SWITCH L"JumpList"
+#define DESKTOP_SWITCH L"Desktop"
+#define SEND_TO_HOOK_SWITCH L"SendToHook"
+
 struct TMessageParams
 {
   TMessageParams(unsigned int AParams = 0);
@@ -383,6 +389,16 @@ void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Hand
 void __fastcall MenuButton(TButton * Button);
 TRect __fastcall CalculatePopupRect(TButton * Button);
 TRect __fastcall CalculatePopupRect(TControl * Control, TPoint MousePos);
+
+typedef void __fastcall (__closure *TColorChangeEvent)
+  (TColor Color);
+TPopupMenu * __fastcall CreateSessionColorPopupMenu(TColor Color,
+  TColorChangeEvent OnColorChange);
+void __fastcall CreateSessionColorMenu(TComponent * AOwner, TColor Color,
+  TColorChangeEvent OnColorChange);
+
+void __fastcall FixButtonImage(TButton * Button);
+void __fastcall CenterButtonImage(TButton * Button);
 
 void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
 

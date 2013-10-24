@@ -12,6 +12,8 @@
 #include <HelpWin.h>
 #include <CoreMain.h>
 #include <PasTools.hpp>
+#include <ProgParams.h>
+#include <Tools.h>
 
 #include "Custom.h"
 //---------------------------------------------------------------------
@@ -189,9 +191,11 @@ void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
 class TSaveSessionDialog : public TCustomDialog
 {
 public:
-  __fastcall TSaveSessionDialog(bool CanSavePassword, bool NotRecommendedSavingPassword);
+  __fastcall TSaveSessionDialog(TComponent* AOwner);
+  void __fastcall Init(bool CanSavePassword, bool NotRecommendedSavingPassword);
 
-  bool __fastcall Execute(UnicodeString & SessionName, bool & SavePassword);
+  bool __fastcall Execute(UnicodeString & SessionName, bool & SavePassword,
+    bool & CreateShortcut, const UnicodeString & OriginalSessionName);
 
 protected:
   virtual void __fastcall DoValidate();
@@ -202,14 +206,19 @@ private:
   TEdit * SessionNameEdit;
   TComboBox * FolderCombo;
   TCheckBox * SavePasswordCheck;
+  TCheckBox * CreateShortcutCheck;
   UnicodeString FRootFolder;
 
   UnicodeString __fastcall GetSessionName();
 };
 //---------------------------------------------------------------------------
-__fastcall TSaveSessionDialog::TSaveSessionDialog(
-    bool CanSavePassword, bool NotRecommendedSavingPassword) :
+// Need to have an Owner argument for SafeFormCreate
+__fastcall TSaveSessionDialog::TSaveSessionDialog(TComponent* /*AOwner*/) :
   TCustomDialog(HELP_SESSION_SAVE)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TSaveSessionDialog::Init(bool CanSavePassword, bool NotRecommendedSavingPassword)
 {
   Caption = LoadStr(SAVE_SESSION_CAPTION);
 
@@ -248,12 +257,18 @@ __fastcall TSaveSessionDialog::TSaveSessionDialog(
       (CustomWinConfiguration->UseMasterPassword ? SAVE_SESSION_PASSWORD_MASTER : SAVE_SESSION_PASSWORD_RECOMMENDED));
   AddButtonControl(SavePasswordCheck);
 
+  CreateShortcutCheck = new TCheckBox(this);
+  CreateShortcutCheck->Caption = LoadStr(SAVE_SITE_WORKSPACE_SHORTCUT);
+  AddButtonControl(CreateShortcutCheck);
+
   EnableControl(SavePasswordCheck, CanSavePassword);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSaveSessionDialog::Execute(UnicodeString & SessionName, bool & SavePassword)
+bool __fastcall TSaveSessionDialog::Execute(
+  UnicodeString & SessionName, bool & SavePassword, bool & CreateShortcut,
+  const UnicodeString & OriginalSessionName)
 {
-  FOriginalSessionName = SessionName;
+  FOriginalSessionName = OriginalSessionName;
   SessionNameEdit->Text = TSessionData::ExtractLocalName(SessionName);
   UnicodeString Folder = TSessionData::ExtractFolderName(SessionName);
   if (Folder.IsEmpty())
@@ -265,11 +280,13 @@ bool __fastcall TSaveSessionDialog::Execute(UnicodeString & SessionName, bool & 
     FolderCombo->Text = Folder;
   }
   SavePasswordCheck->Checked = SavePassword;
+  CreateShortcutCheck->Checked = CreateShortcut;
   bool Result = TCustomDialog::Execute();
   if (Result)
   {
     SessionName = GetSessionName();
     SavePassword = SavePasswordCheck->Checked;
+    CreateShortcut = CreateShortcutCheck->Checked;
   }
   return Result;
 }
@@ -336,6 +353,7 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
   UnicodeString SessionName = SessionData->SessionName;
 
   bool Result;
+  bool CreateShortcut = false;
   if (!ForceDialog && ((PSavePassword == NULL) || SavePassword))
   {
     CustomWinConfiguration->AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(SessionData);
@@ -343,11 +361,12 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
   }
   else
   {
-    TSaveSessionDialog * Dialog =
-      new TSaveSessionDialog((PSavePassword != NULL), NotRecommendedSavingPassword);
+    // This can be a standalone dialog when used with save URL (from GetLoginData)
+    TSaveSessionDialog * Dialog = SafeFormCreate<TSaveSessionDialog>();
     try
     {
-      Result = Dialog->Execute(SessionName, SavePassword);
+      Dialog->Init((PSavePassword != NULL), NotRecommendedSavingPassword);
+      Result = Dialog->Execute(SessionName, SavePassword, CreateShortcut, SessionData->Name);
     }
     __finally
     {
@@ -367,6 +386,14 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
       StoredSessions->NewSession(SessionName, SessionData);
     // modified only, explicit
     StoredSessions->Save(false, true);
+
+    if (CreateShortcut)
+    {
+      UnicodeString AdditionalParams =
+        TProgramParams::FormatSwitch(DESKTOP_SWITCH) + L" " +
+        TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH);
+      CreateDesktopSessionShortCut(SessionName, L"", AdditionalParams, -1, SITE_ICON);
+    }
   }
 
   return NewSession;
@@ -386,7 +413,7 @@ void __fastcall SessionNameValidate(const UnicodeString & Text,
     Abort();
   }
   else if ((Data != NULL) && (Text != OriginalName) &&
-    MessageDialog(FMTLOAD(CONFIRM_OVERWRITE_SESSION, (Text)),
+    MessageDialog(MainInstructions(FMTLOAD(CONFIRM_OVERWRITE_SESSION, (Text))),
       qtConfirmation, qaYes | qaNo, HELP_SESSION_SAVE_OVERWRITE) != qaYes)
   {
     Abort();
@@ -425,7 +452,7 @@ __fastcall TSaveWorkspaceDialog::TSaveWorkspaceDialog(
   WorkspaceNameCombo->AutoComplete = false;
   AddComboBox(WorkspaceNameCombo, CreateLabel(LoadStr(SAVE_WORKSPACE_PROMPT)));
 
-  std::auto_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
+  std::unique_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
   WorkspaceNameCombo->Items->AddStrings(Workspaces.get());
 
   SavePasswordsCheck = new TCheckBox(this);
@@ -438,7 +465,7 @@ __fastcall TSaveWorkspaceDialog::TSaveWorkspaceDialog(
   EnableControl(SavePasswordsCheck, CanSavePasswords);
 
   CreateShortcutCheck = new TCheckBox(this);
-  CreateShortcutCheck->Caption = LoadStr(SAVE_WORKSPACE_SHORTCUT);
+  CreateShortcutCheck->Caption = LoadStr(SAVE_SITE_WORKSPACE_SHORTCUT);
   AddButtonControl(CreateShortcutCheck);
 
   EnableAutoSaveCheck = new TCheckBox(this);
@@ -494,7 +521,7 @@ bool __fastcall DoSaveWorkspaceDialog(UnicodeString & WorkspaceName,
   bool * SavePasswords, bool NotRecommendedSavingPasswords,
   bool & CreateShortcut, bool & EnableAutoSave)
 {
-  std::auto_ptr<TSaveWorkspaceDialog> Dialog(
+  std::unique_ptr<TSaveWorkspaceDialog> Dialog(
     new TSaveWorkspaceDialog((SavePasswords != NULL), NotRecommendedSavingPasswords));
 
   bool Dummy = false;

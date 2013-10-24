@@ -441,58 +441,59 @@ void __fastcall TCustomUnixDriveView::Delete(TTreeNode * Node)
 void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
 {
   #ifndef DESIGN_ONLY
+  bool Expand = false;
   try
   {
     // During D&D Selected is set to NULL and then back to previous selection,
     // prevent actually changing directory in such case
     if (Reading || ControlState.Contains(csRecreating) ||
-        FIgnoreChange || (Node == NULL) || (Node == FPrevSelected))
+        (Node == NULL) || (Node == FPrevSelected))
     {
       TCustomDriveView::Change(Node);
     }
     else
     {
-      if (FDirView != NULL)
-      {
-        // remember current directory, so it gets selected if we move to parent
-        // directory
-        FDirView->ContinueSession(true);
-      }
-
       // if previous node is child to newly selected one, do not expand it.
       // it is either already expanded and it is even being collapsed.
-      bool Expand = (FPrevSelected == NULL) || !FPrevSelected->HasAsParent(Node);
-      FDirectoryLoaded = false;
-      try
+      Expand = (FPrevSelected == NULL) || !FPrevSelected->HasAsParent(Node);
+      if (FIgnoreChange)
       {
-        APPLICATION_EXCEPTION_HACK_BEGIN
-        {
-          Terminal->ChangeDirectory(NodePathName(Node));
-        }
-        APPLICATION_EXCEPTION_HACK_END;
         TCustomDriveView::Change(Node);
       }
-      __finally
+      else
       {
-        if (FDirectoryLoaded)
+        if (FDirView != NULL)
         {
-          FPrevSelected = Selected;
-          if (Expand)
-          {
-            Selected->Expand(false);
-          }
+          // remember current directory, so it gets selected if we move to parent
+          // directory
+          FDirView->ContinueSession(true);
         }
-        else
+
+        FDirectoryLoaded = false;
+        try
         {
-          assert(!FIgnoreChange);
-          FIgnoreChange = true;
-          try
+          APPLICATION_EXCEPTION_HACK_BEGIN
           {
-            Selected = FPrevSelected;
+            Terminal->ChangeDirectory(NodePathName(Node));
           }
-          __finally
+          APPLICATION_EXCEPTION_HACK_END;
+          TCustomDriveView::Change(Node);
+        }
+        __finally
+        {
+          if (!FDirectoryLoaded)
           {
-            FIgnoreChange = false;
+            assert(!FIgnoreChange);
+            Expand = false;
+            FIgnoreChange = true;
+            try
+            {
+              Selected = FPrevSelected;
+            }
+            __finally
+            {
+              FIgnoreChange = false;
+            }
           }
         }
       }
@@ -500,6 +501,11 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
   }
   __finally
   {
+    FPrevSelected = Selected;
+    if (Expand)
+    {
+      Selected->Expand(false);
+    }
     CheckPendingDeletes();
   }
   #else

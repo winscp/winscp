@@ -15,7 +15,7 @@
 
 #ifndef DONE_TYPEDEFS
 #define DONE_TYPEDEFS
-typedef struct config_tag Config;
+typedef struct conf_tag Conf;
 typedef struct backend_tag Backend;
 typedef struct terminal_tag Terminal;
 #endif
@@ -37,6 +37,7 @@ struct socket_function_table {
     void (*close) (Socket s);
     int (*write) (Socket s, const char *data, int len);
     int (*write_oob) (Socket s, const char *data, int len);
+    void (*write_eof) (Socket s);
     void (*flush) (Socket s);
     void (*set_private_ptr) (Socket s, void *ptr);
     void *(*get_private_ptr) (Socket s);
@@ -94,18 +95,18 @@ struct plug_function_table {
 Socket new_connection(SockAddr addr, char *hostname,
 		      int port, int privport,
 		      int oobinline, int nodelay, int keepalive,
-		      Plug plug, const Config *cfg);
+		      Plug plug, Conf *conf);
 Socket new_listener(char *srcaddr, int port, Plug plug, int local_host_only,
-		    const Config *cfg, int addressfamily);
+		    Conf *conf, int addressfamily);
 SockAddr name_lookup(char *host, int port, char **canonicalname,
-		     const Config *cfg, int addressfamily);
+		     Conf *conf, int addressfamily);
 
 /* platform-dependent callback from new_connection() */
 /* (same caveat about addr as new_connection()) */
 Socket platform_new_connection(SockAddr addr, char *hostname,
 			       int port, int privport,
 			       int oobinline, int nodelay, int keepalive,
-			       Plug plug, const Config *cfg);
+			       Plug plug, Conf *conf);
 
 /* socket functions */
 
@@ -115,8 +116,9 @@ void sk_cleanup(void);		       /* called just before program exit */
 SockAddr sk_namelookup(const char *host, char **canonicalname, int address_family);
 SockAddr sk_nonamelookup(const char *host);
 void sk_getaddr(SockAddr addr, char *buf, int buflen);
-int sk_hostname_is_local(char *name);
+int sk_hostname_is_local(const char *name);
 int sk_address_is_local(SockAddr addr);
+int sk_address_is_special_local(SockAddr addr);
 int sk_addrtype(SockAddr addr);
 void sk_addrcopy(SockAddr addr, char *buf);
 void sk_addr_free(SockAddr addr);
@@ -150,6 +152,7 @@ Socket sk_register(OSSocket sock, Plug plug);
 #define sk_close(s) (((*s)->close) (s))
 #define sk_write(s,buf,len) (((*s)->write) (s, buf, len))
 #define sk_write_oob(s,buf,len) (((*s)->write_oob) (s, buf, len))
+#define sk_write_eof(s) (((*s)->write_eof) (s))
 #define sk_flush(s) (((*s)->flush) (s))
 
 #ifdef DEFINE_PLUG_METHOD_MACROS
@@ -196,12 +199,6 @@ const char *sk_addr_error(SockAddr addr);
  *    growth.
  */
 #define sk_set_frozen(s, is_frozen) (((*s)->set_frozen) (s, is_frozen))
-
-/*
- * Call this after an operation that might have tried to send on a
- * socket, to clean up any pending network errors.
- */
-void net_pending_errors(void);
 
 /*
  * Simple wrapper on getservbyname(), needed by ssh.c. Returns the

@@ -98,9 +98,17 @@
 			<TASM_Debugging>None</TASM_Debugging>
 		</PropertyGroup>
 		<ItemGroup>
+			<CppCompile Include="putty\CALLBACK.C">
+				<BuildOrder>5</BuildOrder>
+				<BuildOrder>25</BuildOrder>
+			</CppCompile>
 			<CppCompile Include="putty\CHARSET\UTF8.C">
 				<BuildOrder>80</BuildOrder>
 				<BuildOrder>0</BuildOrder>
+			</CppCompile>
+			<CppCompile Include="putty\CONF.C">
+				<BuildOrder>5</BuildOrder>
+				<BuildOrder>25</BuildOrder>
 			</CppCompile>
 			<CppCompile Include="putty\CPROXY.C">
 				<BuildOrder>5</BuildOrder>

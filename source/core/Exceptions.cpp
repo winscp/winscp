@@ -16,7 +16,7 @@ static bool __fastcall WellKnownException(
 {
   UnicodeString Message;
   const wchar_t * CounterName;
-  std::auto_ptr<Exception> Clone;
+  std::unique_ptr<Exception> Clone;
 
   bool Result = true;
 
@@ -91,7 +91,7 @@ static bool __fastcall WellKnownException(
 }
 //---------------------------------------------------------------------------
 static bool __fastcall ExceptionMessage(Exception * E, bool Count,
-  UnicodeString & Message, bool & InternalError)
+  bool Formatted, UnicodeString & Message, bool & InternalError)
 {
   bool Result = true;
   const wchar_t * CounterName = NULL;
@@ -115,6 +115,11 @@ static bool __fastcall ExceptionMessage(Exception * E, bool Count,
     Message = E->Message;
   }
 
+  if (!Formatted)
+  {
+    Message = UnformatMessage(Message);
+  }
+
   if (InternalError)
   {
     Message = FMTLOAD(REPORT_ERROR, (Message));
@@ -131,7 +136,19 @@ static bool __fastcall ExceptionMessage(Exception * E, bool Count,
 bool __fastcall ExceptionMessage(Exception * E, UnicodeString & Message)
 {
   bool InternalError;
-  return ExceptionMessage(E, true, Message, InternalError);
+  return ExceptionMessage(E, true, false, Message, InternalError);
+}
+//---------------------------------------------------------------------------
+bool __fastcall ExceptionMessageFormatted(Exception * E, UnicodeString & Message)
+{
+  bool InternalError;
+  return ExceptionMessage(E, true, true, Message, InternalError);
+}
+//---------------------------------------------------------------------------
+bool __fastcall ShouldDisplayException(Exception * E)
+{
+  UnicodeString Message;
+  return ExceptionMessageFormatted(E, Message);
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall ExceptionToMoreMessages(Exception * E)
@@ -161,7 +178,7 @@ UnicodeString __fastcall GetExceptionHelpKeyword(Exception * E)
   {
     HelpKeyword = ExtE->HelpKeyword;
   }
-  else if ((E != NULL) && ExceptionMessage(E, false, Message, InternalError) &&
+  else if ((E != NULL) && ExceptionMessage(E, false, false, Message, InternalError) &&
            InternalError)
   {
     HelpKeyword = HELP_INTERNAL_ERROR;
@@ -275,7 +292,7 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
     }
 
     UnicodeString Msg;
-    ExceptionMessage(E, Msg);
+    ExceptionMessageFormatted(E, Msg);
 
     // new exception does not have own message, this is in fact duplication of
     // the exception data, but the exception class may being changed

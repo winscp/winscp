@@ -33,7 +33,6 @@
 #define fcSessionToolbar   0x1E
 #define fcCustomCommandsBand 0x1F
 #define fcColorMenu        0x20
-#define fcColorPalette     0x21
 #define fcTransferDropDown 0x22
 #define fcTransferList     0x23
 #define fcTransferLabel    0x24
@@ -440,6 +439,7 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem10;
   TAction *QueuePauseAllAction;
   TAction *QueueResumeAllAction;
+  TAction *QueueDeleteAllDoneAction;
   TAction *QueueEnableAction;
   TTBXSubmenuItem *TBXSubmenuItem1;
   TTBXItem *TBXItem11;
@@ -462,8 +462,6 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem15;
   TTBXItem *TBXItem16;
   TAction *CustomCommandsBandAction;
-  TAction *ColorPickAction;
-  TAction *ColorDefaultAction;
   TAction *ColorMenuAction;
   TAction *AutoReadDirectoryAfterOpAction;
   TTBXPopupMenu *RemoteAddressPopup;
@@ -510,7 +508,6 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem38;
   TShellResources *ShellResources;
   TTBXColorItem *ColorMenuItem;
-  TTBXColorPalette *SessionColorPalette;
   TAction *CurrentEditInternalAction;
   TAction *SaveWorkspaceAction;
   TAction *LocalRenameAction;
@@ -572,6 +569,8 @@ __published:    // IDE-managed Components
   TAction *LocalMoveFocusedAction;
   TTBXItem *TBXItem50;
   TAction *CurrentSystemMenuFocusedAction;
+  TTBXItem *TBXItem51;
+  TTBXSeparatorItem *TBXSeparatorItem5;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -581,7 +580,6 @@ __published:    // IDE-managed Components
   void __fastcall QueuePopupSpeedComboBoxItemItemClick(TObject *Sender);
   void __fastcall QueueSpeedComboBoxItemAcceptText(TObject *Sender,
           UnicodeString &NewText, bool &Accept);
-  void __fastcall SessionColorPaletteChange(TObject * Sender);
 private:
   TListColumn * FListColumn;
   TCustomScpExplorerForm * FScpExplorer;
@@ -598,6 +596,8 @@ protected:
   void __fastcall CreateWorkspacesMenu(TAction * Action);
   void __fastcall WorkspaceItemClick(TObject * Sender);
   void __fastcall CreateCustomCommandsMenu(TAction * Action);
+  void __fastcall CreateSessionColorMenu(TAction * Action);
+  void __fastcall SessionColorChange(TColor Color);
   void __fastcall CreateOpenedSessionListMenu(TAction * Action);
   TCustomDirView * __fastcall DirView(TOperationSide Side) { return ScpExplorer->DirView(Side); }
   void __fastcall SessionItemClick(TObject * Sender);

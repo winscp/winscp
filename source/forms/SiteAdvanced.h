@@ -234,9 +234,6 @@ __published:
   TLabel *PrivateKeyLabel;
   TFilenameEdit *PrivateKeyEdit;
   TGroupBox *TunnelAuthenticationParamsGroup;
-  TPopupMenu *ColorPopupMenu;
-  TMenuItem *ColorDefaultItem;
-  TMenuItem *PickColorItem;
   TImageList *ColorImageList;
   TButton *ColorButton;
   TTabSheet *SslSheet;
@@ -270,8 +267,6 @@ __published:
   void __fastcall NavigationTreeChange(TObject * Sender,
     TTreeNode * Node);
   void __fastcall ColorButtonClick(TObject *Sender);
-  void __fastcall ColorDefaultItemClick(TObject *Sender);
-  void __fastcall PickColorItemClick(TObject *Sender);
   void __fastcall MinTlsVersionComboChange(TObject *Sender);
   void __fastcall MaxTlsVersionComboChange(TObject *Sender);
 
@@ -295,6 +290,7 @@ private:
   TFSProtocol FFSProtocol;
   TSessionData * FSessionData;
   TColor FColor;
+  std::unique_ptr<TPopupMenu> FColorPopupMenu;
 
   void __fastcall LoadSession();
   void __fastcall UpdateControls();
@@ -310,6 +306,7 @@ private:
   void __fastcall UpdateNavigationTree();
   TSshProt __fastcall GetSshProt();
   void __fastcall SetSessionColor(TColor Color);
+  void __fastcall SessionColorChange(TColor Color);
   TTlsVersion __fastcall IndexToTlsVersion(int Index);
   int __fastcall TlsVersionToIndex(TTlsVersion TlsVersion);
 };

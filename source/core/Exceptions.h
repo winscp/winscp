@@ -7,7 +7,9 @@
 #include <SysInit.hpp>
 #include <System.hpp>
 //---------------------------------------------------------------------------
+bool __fastcall ShouldDisplayException(Exception * E);
 bool __fastcall ExceptionMessage(Exception * E, UnicodeString & Message);
+bool __fastcall ExceptionMessageFormatted(Exception * E, UnicodeString & Message);
 UnicodeString __fastcall LastSysErrorMessage();
 TStrings * __fastcall ExceptionToMoreMessages(Exception * E);
 //---------------------------------------------------------------------------
@@ -26,12 +28,30 @@ public:
   __property TStrings* MoreMessages = {read=FMoreMessages};
   __property UnicodeString HelpKeyword = {read=FHelpKeyword};
 
-  inline __fastcall ExtException(const UnicodeString Msg, const TVarRec * Args, const int Args_Size) : Sysutils::Exception(Msg, Args, Args_Size) { }
-  inline __fastcall ExtException(int Ident, const TVarRec * Args, const int Args_Size)/* overload */ : Sysutils::Exception(Ident, Args, Args_Size) { }
-  inline __fastcall ExtException(const UnicodeString Msg, int AHelpContext) : Sysutils::Exception(Msg, AHelpContext) { }
-  inline __fastcall ExtException(const UnicodeString Msg, const TVarRec * Args, const int Args_Size, int AHelpContext) : Sysutils::Exception(Msg, Args, Args_Size, AHelpContext) { }
-  inline __fastcall ExtException(int Ident, int AHelpContext)/* overload */ : Exception(Ident, AHelpContext) { }
-  inline __fastcall ExtException(PResStringRec ResStringRec, const TVarRec * Args, const int Args_Size, int AHelpContext)/* overload */ : Sysutils::Exception(ResStringRec, Args, Args_Size, AHelpContext) { }
+  inline __fastcall ExtException(const UnicodeString Msg, const TVarRec * Args, const int Args_Size) :
+    Sysutils::Exception(Msg, Args, Args_Size)
+  {
+  }
+  inline __fastcall ExtException(int Ident, const TVarRec * Args, const int Args_Size)/* overload */ :
+    Sysutils::Exception(Ident, Args, Args_Size)
+  {
+  }
+  inline __fastcall ExtException(const UnicodeString Msg, int AHelpContext) :
+    Sysutils::Exception(Msg, AHelpContext)
+  {
+  }
+  inline __fastcall ExtException(const UnicodeString Msg, const TVarRec * Args, const int Args_Size, int AHelpContext) :
+    Sysutils::Exception(Msg, Args, Args_Size, AHelpContext)
+  {
+  }
+  inline __fastcall ExtException(int Ident, int AHelpContext)/* overload */ :
+    Exception(Ident, AHelpContext)
+  {
+  }
+  inline __fastcall ExtException(PResStringRec ResStringRec, const TVarRec * Args, const int Args_Size, int AHelpContext)/* overload */ :
+    Sysutils::Exception(ResStringRec, Args, Args_Size, AHelpContext)
+  {
+  }
 
   virtual ExtException * __fastcall Clone();
 
@@ -47,16 +67,45 @@ private:
   class NAME : public BASE \
   { \
   public: \
-    inline __fastcall NAME(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = L"") : BASE(E, Msg, HelpKeyword) { } \
-    inline __fastcall NAME(Exception* E, int Ident) : BASE(E, Ident) { } \
-    inline __fastcall virtual ~NAME(void) { } \
-    inline __fastcall NAME(const UnicodeString Msg, const TVarRec * Args, const int Args_Size) : BASE(Msg, Args, Args_Size) { } \
-    inline __fastcall NAME(int Ident, const TVarRec * Args, const int Args_Size) : BASE(Ident, Args, Args_Size) { } \
-    inline __fastcall NAME(const UnicodeString Msg, int AHelpContext) : BASE(Msg, AHelpContext) { } \
-    inline __fastcall NAME(const UnicodeString Msg, const TVarRec * Args, const int Args_Size, int AHelpContext) : BASE(Msg, Args, Args_Size, AHelpContext) { } \
-    inline __fastcall NAME(int Ident, int AHelpContext) : BASE(Ident, AHelpContext) { } \
-    inline __fastcall NAME(PResStringRec ResStringRec, const TVarRec * Args, const int Args_Size, int AHelpContext) : BASE(ResStringRec, Args, Args_Size, AHelpContext) { } \
-    virtual ExtException * __fastcall Clone() { return new NAME(this, L""); } \
+    inline __fastcall NAME(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = L"") : \
+      BASE(E, Msg, HelpKeyword) \
+    { \
+    } \
+    inline __fastcall NAME(Exception* E, int Ident) : \
+      BASE(E, Ident) \
+    { \
+    } \
+    inline __fastcall virtual ~NAME(void) \
+    { \
+    } \
+    inline __fastcall NAME(const UnicodeString Msg, const TVarRec * Args, const int Args_Size) : \
+      BASE(Msg, Args, Args_Size) \
+    { \
+    } \
+    inline __fastcall NAME(int Ident, const TVarRec * Args, const int Args_Size) : \
+      BASE(Ident, Args, Args_Size) \
+    { \
+    } \
+    inline __fastcall NAME(const UnicodeString Msg, int AHelpContext) : \
+      BASE(Msg, AHelpContext) \
+    { \
+    } \
+    inline __fastcall NAME(const UnicodeString Msg, const TVarRec * Args, const int Args_Size, int AHelpContext) : \
+      BASE(Msg, Args, Args_Size, AHelpContext) \
+    { \
+    } \
+    inline __fastcall NAME(int Ident, int AHelpContext) : \
+      BASE(Ident, AHelpContext) \
+    { \
+    } \
+    inline __fastcall NAME(PResStringRec ResStringRec, const TVarRec * Args, const int Args_Size, int AHelpContext) : \
+      BASE(ResStringRec, Args, Args_Size, AHelpContext) \
+    { \
+    } \
+    virtual ExtException * __fastcall Clone() \
+    { \
+      return new NAME(this, L""); \
+    } \
   };
 //---------------------------------------------------------------------------
 DERIVE_EXT_EXCEPTION(ESsh, ExtException);
@@ -91,8 +140,14 @@ private:
   class NAME : public BASE \
   { \
   public: \
-    inline __fastcall NAME(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = "") : BASE(E, Msg, HelpKeyword) { } \
-    virtual ExtException * __fastcall Clone() { return new NAME(this, L""); } \
+    inline __fastcall NAME(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = "") : \
+      BASE(E, Msg, HelpKeyword) \
+    { \
+    } \
+    virtual ExtException * __fastcall Clone() \
+    { \
+      return new NAME(this, L""); \
+    } \
   };
 //---------------------------------------------------------------------------
 DERIVE_FATAL_EXCEPTION(ESshFatal, EFatal);
@@ -105,7 +160,8 @@ public:
   inline __fastcall ESshTerminate(Exception* E, UnicodeString Msg, TOnceDoneOperation AOperation) :
     EFatal(E, Msg),
     Operation(AOperation)
-  { }
+  {
+  }
 
   virtual ExtException * __fastcall Clone();
 

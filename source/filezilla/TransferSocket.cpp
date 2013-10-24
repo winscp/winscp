@@ -463,7 +463,19 @@ void CTransferSocket::OnConnect(int nErrorCode)
 			SetSockOpt(SO_SNDBUF, &value, sizeof(value));
 		}
 	}
-	if (m_nTransferState == STATE_STARTING)
+	if (m_nTransferState == STATE_WAITING)
+	{
+		// OnReceive (invoked by m_nNotifyWaiting including FD_READ)
+		// will call back to OnConnected (as we won't be connected yet).
+		// This is needed for file transfers only, where SetActive is
+		// called only after 1xx response to RETR (and similar) arrives.
+		// But we get FD_CONNECT earlier, hence we get to thisa branch.
+		// With directory listing, SetActive is called before Connect,
+		// so we are already STATE_STARTING on FD_CONNECT.
+		// It should probably behave the same in both scenarios.
+		m_nNotifyWaiting |= FD_READ;
+	}
+	else if (m_nTransferState == STATE_STARTING)
 	{
 		m_nTransferState = STATE_STARTED;
 		

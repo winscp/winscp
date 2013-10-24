@@ -358,7 +358,7 @@ void __fastcall TFullSynchronizeDialog::FormCloseQuery(TObject * /*Sender*/,
   if ((ModalResult == DefaultResult(this)) &&
       SaveSettings && (FOrigMode != Mode) && !FSaveMode)
   {
-    switch (MessageDialog(LoadStr(SAVE_SYNCHRONIZE_MODE),
+    switch (MessageDialog(LoadStr(SAVE_SYNCHRONIZE_MODE2),
           qtConfirmation, qaYes | qaNo | qaCancel, HELP_SYNCHRONIZE_SAVE_MODE))
     {
       case qaYes:

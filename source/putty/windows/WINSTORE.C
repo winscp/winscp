@@ -150,17 +150,29 @@ void *open_settings_r(const char *sessionname)
     return (void *) sesskey;
 }
 
-char *read_setting_s(void *handle, const char *key, char *buffer, int buflen)
+char *read_setting_s(void *handle, const char *key)
 {
     DWORD type, size;
-    size = buflen;
+    char *ret;
 
-    if (!handle ||
-	RegQueryValueEx((HKEY) handle, key, 0,
-			&type, buffer, &size) != ERROR_SUCCESS ||
-	type != REG_SZ) return NULL;
-    else
-	return buffer;
+    if (!handle)
+	return NULL;
+
+    /* Find out the type and size of the data. */
+    if (RegQueryValueEx((HKEY) handle, key, 0,
+			&type, NULL, &size) != ERROR_SUCCESS ||
+	type != REG_SZ)
+	return NULL;
+
+    ret = snewn(size+1, char);
+    if (RegQueryValueEx((HKEY) handle, key, 0,
+			&type, ret, &size) != ERROR_SUCCESS ||
+	type != REG_SZ) {
+        sfree(ret);
+        return NULL;
+    }
+
+    return ret;
 }
 
 int read_setting_i(void *handle, const char *key, int defvalue)
@@ -177,53 +189,76 @@ int read_setting_i(void *handle, const char *key, int defvalue)
 	return val;
 }
 
-int read_setting_fontspec(void *handle, const char *name, FontSpec *result)
+FontSpec *read_setting_fontspec(void *handle, const char *name)
 {
     char *settingname;
-    FontSpec ret;
+    char *fontname;
+    FontSpec *ret;
+    int isbold, height, charset;
 
-    if (!read_setting_s(handle, name, ret.name, sizeof(ret.name)))
-	return 0;
+    fontname = read_setting_s(handle, name);
+    if (!fontname)
+	return NULL;
+
     settingname = dupcat(name, "IsBold", NULL);
-    ret.isbold = read_setting_i(handle, settingname, -1);
+    isbold = read_setting_i(handle, settingname, -1);
     sfree(settingname);
-    if (ret.isbold == -1) return 0;
+    if (isbold == -1) {
+        sfree(fontname);
+        return NULL;
+    }
+
     settingname = dupcat(name, "CharSet", NULL);
-    ret.charset = read_setting_i(handle, settingname, -1);
+    charset = read_setting_i(handle, settingname, -1);
     sfree(settingname);
-    if (ret.charset == -1) return 0;
+    if (charset == -1) {
+        sfree(fontname);
+        return NULL;
+    }
+
     settingname = dupcat(name, "Height", NULL);
-    ret.height = read_setting_i(handle, settingname, INT_MIN);
+    height = read_setting_i(handle, settingname, INT_MIN);
     sfree(settingname);
-    if (ret.height == INT_MIN) return 0;
-    *result = ret;
-    return 1;
+    if (height == INT_MIN) {
+        sfree(fontname);
+        return NULL;
+    }
+
+    ret = fontspec_new(fontname, isbold, height, charset);
+    sfree(fontname);
+    return ret;
 }
 
-void write_setting_fontspec(void *handle, const char *name, FontSpec font)
+void write_setting_fontspec(void *handle, const char *name, FontSpec *font)
 {
     char *settingname;
 
-    write_setting_s(handle, name, font.name);
+    write_setting_s(handle, name, font->name);
     settingname = dupcat(name, "IsBold", NULL);
-    write_setting_i(handle, settingname, font.isbold);
+    write_setting_i(handle, settingname, font->isbold);
     sfree(settingname);
     settingname = dupcat(name, "CharSet", NULL);
-    write_setting_i(handle, settingname, font.charset);
+    write_setting_i(handle, settingname, font->charset);
     sfree(settingname);
     settingname = dupcat(name, "Height", NULL);
-    write_setting_i(handle, settingname, font.height);
+    write_setting_i(handle, settingname, font->height);
     sfree(settingname);
 }
 
-int read_setting_filename(void *handle, const char *name, Filename *result)
+Filename *read_setting_filename(void *handle, const char *name)
 {
-    return !!read_setting_s(handle, name, result->path, sizeof(result->path));
+    char *tmp = read_setting_s(handle, name);
+    if (tmp) {
+        Filename *ret = filename_from_str(tmp);
+	sfree(tmp);
+	return ret;
+    } else
+	return NULL;
 }
 
-void write_setting_filename(void *handle, const char *name, Filename result)
+void write_setting_filename(void *handle, const char *name, Filename *result)
 {
-    write_setting_s(handle, name, result.path);
+    write_setting_s(handle, name, result->path);
 }
 
 void close_settings_r(void *handle)
@@ -329,16 +364,18 @@ int verify_host_key(const char *hostname, int port,
      * Now read a saved key in from the registry and see what it
      * says.
      */
-    otherstr = snewn(len, char);
     regname = snewn(3 * (strlen(hostname) + strlen(keytype)) + 15, char);
 
     hostkey_regname(regname, hostname, port, keytype);
 
     if (RegOpenKey(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys",
-		   &rkey) != ERROR_SUCCESS)
+		   &rkey) != ERROR_SUCCESS) {
+        sfree(regname);
 	return 1;		       /* key does not exist in registry */
+    }
 
     readlen = len;
+    otherstr = snewn(len, char);
     ret = RegQueryValueEx(rkey, regname, NULL, &type, otherstr, &readlen);
 
     if (ret != ERROR_SUCCESS && ret != ERROR_MORE_DATA &&
@@ -401,6 +438,8 @@ int verify_host_key(const char *hostname, int port,
 		RegSetValueEx(rkey, regname, 0, REG_SZ, otherstr,
 			      strlen(otherstr) + 1);
 	}
+
+        sfree(oldstyle);
     }
 
     RegCloseKey(rkey);
@@ -458,7 +497,10 @@ enum { DEL, OPEN_R, OPEN_W };
 static int try_random_seed(char const *path, int action, HANDLE *ret)
 {
     if (action == DEL) {
-	remove(path);
+        if (!DeleteFile(path) && GetLastError() != ERROR_FILE_NOT_FOUND) {
+            nonfatal("Unable to delete '%s': %s", path,
+                     win_strerror(GetLastError()));
+        }
 	*ret = INVALID_HANDLE_VALUE;
 	return FALSE;		       /* so we'll do the next ones too */
     }
@@ -729,7 +771,7 @@ static int transform_jumplist_registry
     /*
      * Either return or free the result.
      */
-    if (out)
+    if (out && ret == ERROR_SUCCESS)
         *out = old_value;
     else
         sfree(old_value);
@@ -762,7 +804,7 @@ char *get_jumplist_registry_entries (void)
 {
     char *list_value;
 
-    if (transform_jumplist_registry(NULL,NULL,&list_value) != ERROR_SUCCESS) {
+    if (transform_jumplist_registry(NULL,NULL,&list_value) != JUMPLISTREG_OK) {
 	list_value = snewn(2, char);
         *list_value = '\0';
         *(list_value + 1) = '\0';

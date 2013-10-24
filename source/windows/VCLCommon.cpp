@@ -890,8 +890,8 @@ void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position)
     }
     else
     {
-      X = (Screen->Width - Bounds.Width()) / 2;
-      Y = (Screen->Height - Bounds.Height()) / 2;
+      X = (Form->Monitor->Width - Bounds.Width()) / 2;
+      Y = (Form->Monitor->Height - Bounds.Height()) / 2;
     }
 
     if (X < 0)
@@ -909,13 +909,20 @@ void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position)
 //---------------------------------------------------------------------------
 void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height)
 {
-  if (Height > Screen->WorkAreaHeight)
+  // This has to be called only after DoFormWindowProc(CM_SHOWINGCHANGED),
+  // so that a correct monitor is considered.
+  // Note that we cannot use LastMonitor(), as ResizeForm is also called from
+  // TConsoleDialog::DoAdjustWindow, where we need to use the actual monitor
+  // (in case user moves the console window to a different monitor,
+  // than where a main window is [no matter how unlikely that is])
+  TRect WorkareaRect = Form->Monitor->WorkareaRect;
+  if (Height > WorkareaRect.Height())
   {
-    Height = Screen->WorkAreaHeight;
+    Height = WorkareaRect.Height();
   }
-  if (Width > Screen->WorkAreaWidth)
+  if (Width > WorkareaRect.Width())
   {
-    Width = Screen->WorkAreaWidth;
+    Width = WorkareaRect.Width();
   }
   if (Height < Form->Constraints->MinHeight)
   {
@@ -928,13 +935,13 @@ void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height)
   TRect Bounds = Form->BoundsRect;
   int Top = Bounds.Top + ((Bounds.Height() - Height) / 2);
   int Left = Bounds.Left + ((Bounds.Width() - Width) / 2);
-  if (Top + Height > Screen->WorkAreaTop + Screen->WorkAreaHeight)
+  if (Top + Height > WorkareaRect.Bottom)
   {
-    Top = Screen->WorkAreaTop + Screen->WorkAreaHeight - Height;
+    Top = WorkareaRect.Bottom - Height;
   }
-  if (Left + Width >= Screen->WorkAreaLeft + Screen->WorkAreaWidth)
+  if (Left + Width >= WorkareaRect.Right)
   {
-    Left = Screen->WorkAreaLeft + Screen->WorkAreaWidth - Width;
+    Left = WorkareaRect.Right - Width;
   }
   if (Top < 0)
   {
@@ -1153,7 +1160,7 @@ void __fastcall ShowPersistentHint(TControl * Control, TPoint HintPos)
   THintInfo HintInfo;
   HintInfo.HintControl = Control;
   HintInfo.HintPos = HintPos;
-  HintInfo.HintMaxWidth = Screen->Width;
+  HintInfo.HintMaxWidth = GetParentForm(Control)->Monitor->Width;
   HintInfo.HintColor = Application->HintColor;
   HintInfo.HintStr = GetShortHint(Control->Hint);
   HintInfo.HintData = NULL;
@@ -1527,10 +1534,13 @@ TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
     Owner = GetFormOwner();
   }
 
-  // if there is no main form yet, make this one main.
-  // this, among other, makes other forms (dialogs invoked from this one),
+  // If there is no main form yet, make this one main.
+  // This:
+  // - Makes other forms (dialogs invoked from this one),
   // be placed on the same monitor (otherwise all new forms get placed
   // on primary monitor)
+  // - Triggers MainForm-specific code in DoFormWindowProc.
+  // - Shows button on taskbar
   if (Application->MainForm == NULL)
   {
     Application->CreateForm(FormClass, &Form);

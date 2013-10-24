@@ -329,9 +329,6 @@ __published:
   TTBXItem *TBXItem215;
   TTBXSeparatorItem *TBXSeparatorItem49;
   TTBXColorItem *ColorMenuItem;
-  TTBXSeparatorItem *TBXSeparatorItem50;
-  TTBXSeparatorItem *TBXSeparatorItem51;
-  TTBXColorPalette *SessionColorPalette;
   TTBXDropDownItem *TransferDropDown;
   TTBXStringList *TransferList;
   TTBXLabelItem *TransferLabel;
@@ -399,6 +396,8 @@ __published:
   TTBXItem *TBXItem133;
   TTBXSeparatorItem *TBXSeparatorItem38;
   TPanel *QueueSeparatorPanel;
+  TTBXSeparatorItem *TBXSeparatorItem39;
+  TTBXItem *TBXItem134;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);

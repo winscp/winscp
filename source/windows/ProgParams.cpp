@@ -7,38 +7,15 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-// auto_ptr-like class
-class TProgramParamsOwner
-{
-public:
-  TProgramParamsOwner() :
-    FProgramParams(NULL)
-  {
-  }
-
-  ~TProgramParamsOwner()
-  {
-    delete FProgramParams;
-  }
-
-  TProgramParams * Get()
-  {
-    if (FProgramParams == NULL)
-    {
-      FProgramParams = new TProgramParams();
-    }
-    return FProgramParams;
-  }
-
-private:
-  TProgramParams * FProgramParams;
-};
-//---------------------------------------------------------------------------
-TProgramParamsOwner ProgramParamsOwner;
+std::unique_ptr<TProgramParams> ProgramParamsOwner;
 //---------------------------------------------------------------------------
 TProgramParams * __fastcall TProgramParams::Instance()
 {
-  return ProgramParamsOwner.Get();
+  if (ProgramParamsOwner.get() == NULL)
+  {
+    ProgramParamsOwner.reset(new TProgramParams());
+  }
+  return ProgramParamsOwner.get();
 }
 //---------------------------------------------------------------------------
 __fastcall TProgramParams::TProgramParams()
@@ -61,4 +38,9 @@ void __fastcall TProgramParams::Init(const UnicodeString & CmdLine)
   {
     Add(Param);
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TProgramParams::FormatSwitch(const UnicodeString & Switch)
+{
+  return FORMAT(L"/%s", (Switch));
 }

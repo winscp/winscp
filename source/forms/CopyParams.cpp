@@ -85,6 +85,8 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
 
   IncludeFileMaskCombo->Text = value.IncludeFileMask.Masks;
   ClearArchiveCheck->Checked = value.ClearArchive;
+  assert(value.RemoveCtrlZ == value.RemoveBOM);
+  RemoveCtrlZAndBOMCheck->Checked = value.RemoveCtrlZ && value.RemoveBOM;
 
   SpeedCombo->Text = SetSpeedLimit(value.CPSLimit);
 
@@ -129,6 +131,8 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   Result.IncludeFileMask.Masks = IncludeFileMaskCombo->Text;
 
   Result.ClearArchive = ClearArchiveCheck->Checked;
+  Result.RemoveCtrlZ = RemoveCtrlZAndBOMCheck->Checked;
+  Result.RemoveBOM = RemoveCtrlZAndBOMCheck->Checked;
 
   Result.CPSLimit = GetSpeedLimit(SpeedCombo->Text);
 
@@ -163,6 +167,12 @@ void __fastcall TCopyParamsFrame::UpdateControls()
   EnableControl(IncludeFileMaskLabel, IncludeFileMaskCombo->Enabled);
   EnableControl(ClearArchiveCheck, FLAGCLEAR(CopyParamAttrs, cpaNoClearArchive) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
+  assert(FLAGCLEAR(CopyParamAttrs, cpaNoRemoveCtrlZ) == FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM));
+  EnableControl(RemoveCtrlZAndBOMCheck,
+    (FLAGCLEAR(CopyParamAttrs, cpaNoRemoveCtrlZ) || FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM)) &&
+    FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) &&
+    (TMTextButton->Checked || TMAutomaticButton->Checked) &&
+    Enabled);
   EnableControl(PreserveTimeCheck, FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTime) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(ChangeCaseGroup, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);

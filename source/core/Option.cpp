@@ -42,7 +42,7 @@ void __fastcall TOptions::Add(UnicodeString Value)
           break;
         }
         // this is to treat /home/martin as parameter, not as switch
-        else if ((Value[Index] != L'?') && ((UpCase(Value[Index]) < L'A') || (UpCase(Value[Index]) > L'Z')))
+        else if ((Value[Index] != L'?') && !IsLetter(Value[Index]))
         {
           Switch = false;
           break;

@@ -411,7 +411,7 @@ TRemoteToken __fastcall TPropertiesDialog::StoreRemoteToken(const TRemoteToken &
           }
           else
           {
-            throw Exception(FMTLOAD(PROPERTIES_UNKNOWN_TOKEN, (Text)));
+            throw Exception(MainInstructions(FMTLOAD(PROPERTIES_UNKNOWN_TOKEN, (Text))));
           }
         }
         else

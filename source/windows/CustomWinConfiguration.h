@@ -46,6 +46,7 @@ private:
   bool FCanApplyInterfaceImmediately;
   bool FConfirmExitOnCompletion;
   bool FOperationProgressOnTop;
+  UnicodeString FSessionColors;
   TNotifyEvent FOnMasterPasswordRecrypt;
 
   void __fastcall SetInterface(TInterface value);
@@ -90,6 +91,7 @@ public:
   __property TLoginDialogConfiguration LoginDialog = { read = FLoginDialog, write = SetLoginDialog };
   __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
   __property bool OperationProgressOnTop  = { read=FOperationProgressOnTop, write=FOperationProgressOnTop };
+  __property UnicodeString SessionColors  = { read=FSessionColors, write=FSessionColors };
   __property bool UseMasterPassword = { read = GetUseMasterPassword };
   __property TNotifyEvent OnMasterPasswordRecrypt = { read = FOnMasterPasswordRecrypt, write = FOnMasterPasswordRecrypt };
   __property UnicodeString DefaultFixedWidthFontName = { read = GetDefaultFixedWidthFontName };

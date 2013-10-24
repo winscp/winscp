@@ -99,24 +99,48 @@ prompts_t *new_prompts(void *frontend)
     p->name_reqd = p->instr_reqd = FALSE;
     return p;
 }
-void add_prompt(prompts_t *p, char *promptstr, int echo, size_t len)
+void add_prompt(prompts_t *p, char *promptstr, int echo)
 {
     prompt_t *pr = snew(prompt_t);
-    char *result = snewn(len, char);
     pr->prompt = promptstr;
     pr->echo = echo;
-    pr->result = result;
-    pr->result_len = len;
+    pr->result = NULL;
+    pr->resultsize = 0;
     p->n_prompts++;
     p->prompts = sresize(p->prompts, p->n_prompts, prompt_t *);
     p->prompts[p->n_prompts-1] = pr;
+}
+void prompt_ensure_result_size(prompt_t *pr, int newlen)
+{
+    if ((int)pr->resultsize < newlen) {
+        char *newbuf;
+        newlen = newlen * 5 / 4 + 512; /* avoid too many small allocs */
+
+        /*
+         * We don't use sresize / realloc here, because we will be
+         * storing sensitive stuff like passwords in here, and we want
+         * to make sure that the data doesn't get copied around in
+         * memory without the old copy being destroyed.
+         */
+        newbuf = snewn(newlen, char);
+        memcpy(newbuf, pr->result, pr->resultsize);
+        smemclr(pr->result, pr->resultsize);
+        sfree(pr->result);
+        pr->result = newbuf;
+        pr->resultsize = newlen;
+    }
+}
+void prompt_set_result(prompt_t *pr, const char *newstr)
+{
+    prompt_ensure_result_size(pr, strlen(newstr) + 1);
+    strcpy(pr->result, newstr);
 }
 void free_prompts(prompts_t *p)
 {
     size_t i;
     for (i=0; i < p->n_prompts; i++) {
 	prompt_t *pr = p->prompts[i];
-	memset(pr->result, 0, pr->result_len); /* burn the evidence */
+	smemclr(pr->result, pr->resultsize); /* burn the evidence */
 	sfree(pr->result);
 	sfree(pr->prompt);
 	sfree(pr);
@@ -174,6 +198,37 @@ char *dupcat(const char *s1, ...)
     va_end(ap);
 
     return p;
+}
+
+void burnstr(char *string)             /* sfree(str), only clear it first */
+{
+    if (string) {
+        smemclr(string, strlen(string));
+        sfree(string);
+    }
+}
+
+int toint(unsigned u)
+{
+    /*
+     * Convert an unsigned to an int, without running into the
+     * undefined behaviour which happens by the strict C standard if
+     * the value overflows. You'd hope that sensible compilers would
+     * do the sensible thing in response to a cast, but actually I
+     * don't trust modern compilers not to do silly things like
+     * assuming that _obviously_ you wouldn't have caused an overflow
+     * and so they can elide an 'if (i < 0)' test immediately after
+     * the cast.
+     *
+     * Sensible compilers ought of course to optimise this entire
+     * function into 'just return the input value'!
+     */
+    if (u <= (unsigned)INT_MAX)
+        return (int)u;
+    else if (u >= (unsigned)INT_MIN)   /* wrap in cast _to_ unsigned is OK */
+        return INT_MIN + (int)(u - (unsigned)INT_MIN);
+    else
+        return INT_MIN; /* fallback; should never occur on binary machines */
 }
 
 /*
@@ -335,12 +390,11 @@ void base64_encode_atom(unsigned char *data, int n, char *out)
 /* MP:
 * Default granule of 512 leads to low performance.
 */
-#define BUFFER_GRANULE  512*2*32
+#define BUFFER_MIN_GRANULE  512*2*32
 
 struct bufchain_granule {
     struct bufchain_granule *next;
-    int buflen, bufpos;
-    char buf[BUFFER_GRANULE];
+    char *bufpos, *bufend, *bufmax;
 };
 
 void bufchain_init(bufchain *ch)
@@ -374,28 +428,29 @@ void bufchain_add(bufchain *ch, const void *data, int len)
 
     ch->buffersize += len;
 
-    if (ch->tail && ch->tail->buflen < BUFFER_GRANULE) {
-	int copylen = min(len, BUFFER_GRANULE - ch->tail->buflen);
-	memcpy(ch->tail->buf + ch->tail->buflen, buf, copylen);
-	buf += copylen;
-	len -= copylen;
-	ch->tail->buflen += copylen;
-    }
     while (len > 0) {
-	int grainlen = min(len, BUFFER_GRANULE);
-	struct bufchain_granule *newbuf;
-	newbuf = snew(struct bufchain_granule);
-	newbuf->bufpos = 0;
-	newbuf->buflen = grainlen;
-	memcpy(newbuf->buf, buf, grainlen);
-	buf += grainlen;
-	len -= grainlen;
-	if (ch->tail)
-	    ch->tail->next = newbuf;
-	else
-	    ch->head = ch->tail = newbuf;
-	newbuf->next = NULL;
-	ch->tail = newbuf;
+	if (ch->tail && ch->tail->bufend < ch->tail->bufmax) {
+	    int copylen = min(len, ch->tail->bufmax - ch->tail->bufend);
+	    memcpy(ch->tail->bufend, buf, copylen);
+	    buf += copylen;
+	    len -= copylen;
+	    ch->tail->bufend += copylen;
+	}
+	if (len > 0) {
+	    int grainlen =
+		max(sizeof(struct bufchain_granule) + len, BUFFER_MIN_GRANULE);
+	    struct bufchain_granule *newbuf;
+	    newbuf = smalloc(grainlen);
+	    newbuf->bufpos = newbuf->bufend =
+		(char *)newbuf + sizeof(struct bufchain_granule);
+	    newbuf->bufmax = (char *)newbuf + grainlen;
+	    newbuf->next = NULL;
+	    if (ch->tail)
+		ch->tail->next = newbuf;
+	    else
+		ch->head = newbuf;
+	    ch->tail = newbuf;
+	}
     }
 }
 
@@ -407,13 +462,13 @@ void bufchain_consume(bufchain *ch, int len)
     while (len > 0) {
 	int remlen = len;
 	assert(ch->head != NULL);
-	if (remlen >= ch->head->buflen - ch->head->bufpos) {
-	    remlen = ch->head->buflen - ch->head->bufpos;
+	if (remlen >= ch->head->bufend - ch->head->bufpos) {
+	    remlen = ch->head->bufend - ch->head->bufpos;
 	    tmp = ch->head;
 	    ch->head = tmp->next;
-	    sfree(tmp);
 	    if (!ch->head)
 		ch->tail = NULL;
+	    sfree(tmp);
 	} else
 	    ch->head->bufpos += remlen;
 	ch->buffersize -= remlen;
@@ -423,8 +478,8 @@ void bufchain_consume(bufchain *ch, int len)
 
 void bufchain_prefix(bufchain *ch, void **data, int *len)
 {
-    *len = ch->head->buflen - ch->head->bufpos;
-    *data = ch->head->buf + ch->head->bufpos;
+    *len = ch->head->bufend - ch->head->bufpos;
+    *data = ch->head->bufpos;
 }
 
 void bufchain_fetch(bufchain *ch, void *data, int len)
@@ -439,9 +494,9 @@ void bufchain_fetch(bufchain *ch, void *data, int len)
 	int remlen = len;
 
 	assert(tmp != NULL);
-	if (remlen >= tmp->buflen - tmp->bufpos)
-	    remlen = tmp->buflen - tmp->bufpos;
-	memcpy(data_c, tmp->buf + tmp->bufpos, remlen);
+	if (remlen >= tmp->bufend - tmp->bufpos)
+	    remlen = tmp->bufend - tmp->bufpos;
+	memcpy(data_c, tmp->bufpos, remlen);
 
 	tmp = tmp->next;
 	len -= remlen;
@@ -638,23 +693,23 @@ void debug_memdump(void *buf, int len, int L)
 #endif				/* def DEBUG */
 
 /*
- * Determine whether or not a Config structure represents a session
- * which can sensibly be launched right now.
+ * Determine whether or not a Conf represents a session which can
+ * sensibly be launched right now.
  */
-int cfg_launchable(const Config *cfg)
+int conf_launchable(Conf *conf)
 {
-    if (cfg->protocol == PROT_SERIAL)
-	return cfg->serline[0] != 0;
+    if (conf_get_int(conf, CONF_protocol) == PROT_SERIAL)
+	return conf_get_str(conf, CONF_serline)[0] != 0;
     else
-	return cfg->host[0] != 0;
+	return conf_get_str(conf, CONF_host)[0] != 0;
 }
 
-char const *cfg_dest(const Config *cfg)
+char const *conf_dest(Conf *conf)
 {
-    if (cfg->protocol == PROT_SERIAL)
-	return cfg->serline;
+    if (conf_get_int(conf, CONF_protocol) == PROT_SERIAL)
+	return conf_get_str(conf, CONF_serline);
     else
-	return cfg->host;
+	return conf_get_str(conf, CONF_host);
 }
 
 #ifndef PLATFORM_HAS_SMEMCLR

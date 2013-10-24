@@ -87,13 +87,13 @@ private:
   TTimer * FWindowStateTimer;
   bool FMinimized;
   ::TTrayIcon * FTrayIcon;
-  static std::auto_ptr<TCriticalSection> FSection;
+  static std::unique_ptr<TCriticalSection> FSection;
 
   bool FPendingAbort;
 };
 //---------------------------------------------------------------------------
 TOwnConsole * TOwnConsole::FInstance = NULL;
-std::auto_ptr<TCriticalSection> TOwnConsole::FSection(new TCriticalSection());
+std::unique_ptr<TCriticalSection> TOwnConsole::FSection(new TCriticalSection());
 //---------------------------------------------------------------------------
 __fastcall TOwnConsole::TOwnConsole()
 {
@@ -839,10 +839,10 @@ void __fastcall TExternalConsole::Progress(const TScriptProgress & Progress)
     }
 
     wcsncpy(ProgressEvent.FileName, Progress.FileName.c_str(), LENOF(ProgressEvent.FileName));
-    ProgressEvent.FileName[LENOF(ProgressEvent.FileName) - 1] = L'\0';
+    NULL_TERMINATE(ProgressEvent.FileName);
 
     wcsncpy(ProgressEvent.Directory, Progress.Directory.c_str(), LENOF(ProgressEvent.Directory));
-    ProgressEvent.Directory[LENOF(ProgressEvent.Directory) - 1] = L'\0';
+    NULL_TERMINATE(ProgressEvent.Directory);
 
     ProgressEvent.OverallProgress = Progress.OverallProgress;
     ProgressEvent.FileProgress = Progress.FileProgress;
@@ -1253,6 +1253,8 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     NoBatchA = Params->NoBatchAnswers;
   }
 
+  AQuery = UnformatMessage(AQuery);
+
   ApplyTabs(AQuery, L' ', NULL, NULL);
 
   unsigned int AAnswers = Answers;
@@ -1347,7 +1349,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       for (int Index2 = 1; Index2 <= Caption.Length(); Index2++)
       {
         wchar_t C = AnsiUpperCase(Caption)[Index2];
-        if ((C >= L'A') && (C <= L'Z') && (Accels.Pos(C) == 0))
+        if (IsLetter(C) && (Accels.Pos(C) == 0))
         {
           Caption.Insert(L"&", Index2);
           Accels[Index + 1] = C;

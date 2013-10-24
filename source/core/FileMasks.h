@@ -179,14 +179,18 @@ struct TCustomCommandData
 {
   __fastcall TCustomCommandData();
   __fastcall TCustomCommandData(TTerminal * Terminal);
-  __fastcall TCustomCommandData(TSessionData * SessionData, const UnicodeString & Password);
+  __fastcall TCustomCommandData(
+    TSessionData * SessionData, const UnicodeString & AUserName,
+    const UnicodeString & Password);
 
   UnicodeString HostName;
   UnicodeString UserName;
   UnicodeString Password;
 
 private:
-  void __fastcall Init(TSessionData * SessionData, const UnicodeString & Password);
+  void __fastcall Init(
+    TSessionData * SessionData, const UnicodeString & AUserName,
+    const UnicodeString & Password);
 };
 //---------------------------------------------------------------------------
 class TFileCustomCommand : public TCustomCommand

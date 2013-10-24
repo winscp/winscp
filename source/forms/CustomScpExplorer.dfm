@@ -263,6 +263,11 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         object TBXItem207: TTBXItem
           Action = NonVisualDataModule.QueueItemDownAction
         end
+        object TBXSeparatorItem57: TTBXSeparatorItem
+        end
+        object QueueDeleteAllDoneQueueToolbarItem: TTBXItem
+          Action = NonVisualDataModule.QueueDeleteAllDoneAction
+        end
         object TBXSeparatorItem202: TTBXSeparatorItem
         end
         object TBXSubmenuItem27: TTBXSubmenuItem

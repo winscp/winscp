@@ -381,6 +381,10 @@ void __fastcall TLocationProfilesDialog::LoadBookmarks(
     }
   }
 
+  // WORKAROUND
+  // TTreeNodes::Clear is noop, when tree does not have a handle yet.
+  // (what happens here for a tree view on an inactive page)
+  ProfilesView->HandleNeeded();
   ProfilesView->Items->Clear();
 
   for (int Index = 0; Index < Folders->Count; Index++)
@@ -610,7 +614,8 @@ void __fastcall TLocationProfilesDialog::RemoveBookmark(TObject * Sender)
   }
   else
   {
-    if (MessageDialog(LoadStr(DELETE_BOOKMARK_FOLDER), qtConfirmation,
+    UnicodeString Message = MainInstructions(LoadStr(DELETE_BOOKMARK_FOLDER));
+    if (MessageDialog(Message, qtConfirmation,
           qaYes | qaNo, HELP_LOCATION_PROFILE_DELETE) == qaYes)
     {
       assert(Node->Count);
@@ -763,7 +768,7 @@ void __fastcall TLocationProfilesDialog::FormShow(TObject * /*Sender*/)
   {
     // cache session key, in case terminal is closed while the window is open
     FSessionKey = Terminal->SessionData->SessionKey;
-    // WORAROUND
+    // WORKAROUND
     // Has to load this only now (not in Execute before ShowModal),
     // when the trees are finally (re)created,
     // otherwise the references in *Folders would be invalid already

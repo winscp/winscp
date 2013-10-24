@@ -17,6 +17,7 @@
 #include "Setup.h"
 #include "WinConfiguration.h"
 #include "GUITools.h"
+#include "Tools.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -24,6 +25,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   TObjectList * DataList, UnicodeString & DownloadFile, bool & Url)
 {
   bool DefaultsOnly = false;
+  bool Close = false;
 
   if (StoredSessions->IsFolder(SessionName) ||
       StoredSessions->IsWorkspace(SessionName))
@@ -36,19 +38,39 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
       StoredSessions->ParseUrl(SessionName, Options, DefaultsOnly,
         &DownloadFile, &Url);
     DataList->Add(SessionData);
+
+    if (DataList->Count == 1)
+    {
+      TSessionData * SessionData = NOT_NULL(dynamic_cast<TSessionData *>(DataList->Items[0]));
+      if (SessionData->SaveOnly)
+      {
+        Configuration->Usage->Inc(L"CommandLineSessionSave");
+        TSessionData * SavedSession = DoSaveSession(SessionData, NULL, true);
+        Close = (SavedSession == NULL);
+        if (!Close && !SessionData->HostKey.IsEmpty())
+        {
+          WinConfiguration->LastStoredSession = SavedSession->Name;
+          SessionData->CacheHostKeyIfNotCached();
+        }
+        DataList->Clear();
+      }
+    }
   }
 
-  if ((DataList->Count == 0) ||
-      !dynamic_cast<TSessionData *>(DataList->Items[0])->CanLogin ||
-      DefaultsOnly)
+  if (!Close)
   {
-    // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
-    // so we should not get here with more then one site.
-    // Though we should be good, if we ever do.
-    assert(DataList->Count <= 1);
-    if (!DoLoginDialog(StoredSessions, DataList, loStartup))
+    if ((DataList->Count == 0) ||
+        !dynamic_cast<TSessionData *>(DataList->Items[0])->CanLogin ||
+        DefaultsOnly)
     {
-      DataList->Clear();
+      // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
+      // so we should not get here with more then one site.
+      // Though we should be good, if we ever do.
+      assert(DataList->Count <= 1);
+      if (!DoLoginDialog(StoredSessions, DataList, loStartup))
+      {
+        DataList->Clear();
+      }
     }
   }
 }
@@ -183,12 +205,12 @@ void __fastcall ImportSitesIfAny()
 
     if (AnyPuttySession || AnyFilezillaSession)
     {
-      UnicodeString PuttySource = LoadStrPart(IMPORT_SESSIONS, 2);
-      UnicodeString FilezillaSource = LoadStrPart(IMPORT_SESSIONS, 3);
+      UnicodeString PuttySource = LoadStrPart(IMPORT_SESSIONS2, 2);
+      UnicodeString FilezillaSource = LoadStrPart(IMPORT_SESSIONS2, 3);
       UnicodeString Source;
       if (AnyPuttySession && AnyFilezillaSession)
       {
-        Source = FORMAT(LoadStrPart(IMPORT_SESSIONS, 4), (PuttySource, FilezillaSource));
+        Source = FORMAT(LoadStrPart(IMPORT_SESSIONS2, 4), (PuttySource, FilezillaSource));
       }
       else if (AnyPuttySession)
       {
@@ -203,7 +225,7 @@ void __fastcall ImportSitesIfAny()
         FAIL;
       }
 
-      UnicodeString Message = FORMAT(LoadStrPart(IMPORT_SESSIONS, 1), (Source));
+      UnicodeString Message = FORMAT(LoadStrPart(IMPORT_SESSIONS2, 1), (Source));
 
       if (MessageDialog(Message, qtConfirmation,
             qaOK | qaCancel, HELP_IMPORT_SESSIONS) == qaOK)
@@ -275,6 +297,7 @@ void __fastcall UpdateStaticUsage()
   DWORD Type;
   GetWindowsProductType(Type);
   Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(Type)));
+  Configuration->Usage->Set(L"Windows64", IsWin64());
   Configuration->Usage->Set(L"DefaultLocale",
     IntToHex(static_cast<int>(GetDefaultLCID()), 4));
   Configuration->Usage->Set(L"Locale",
@@ -283,6 +306,7 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"WorkAreaWidth", Screen->WorkAreaWidth);
   Configuration->Usage->Set(L"WorkAreaHeight", Screen->WorkAreaHeight);
   Configuration->Usage->Set(L"MonitorCount", Screen->MonitorCount);
+  Configuration->Usage->Set(L"NotUseThemes", !UseThemes());
 
   UnicodeString ProgramsFolder;
   ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
@@ -403,7 +427,7 @@ int __fastcall Execute()
       // workaround is that we create mutex in uninstaller, if it runs silent, and
       // ignore the UninstallCleanup, when the mutex exists.
       if ((OpenMutex(SYNCHRONIZE, false, L"WinSCPSilentUninstall") == NULL) &&
-          (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
+          (MessageDialog(MainInstructions(LoadStr(UNINSTALL_CLEANUP)), qtConfirmation,
             qaYes | qaNo, HELP_UNINSTALL_CLEANUP) == qaYes))
       {
         DoCleanupDialog(StoredSessions, Configuration);
@@ -468,7 +492,7 @@ int __fastcall Execute()
           UseDefaults = true;
         }
 
-        if (Params->FindSwitch(L"Upload", CommandParams))
+        if (Params->FindSwitch(UPLOAD_SWITCH, CommandParams))
         {
           ParamCommand = pcUpload;
           if (CommandParams->Count == 0)
@@ -476,7 +500,7 @@ int __fastcall Execute()
             throw Exception(NO_UPLOAD_LIST_ERROR);
           }
         }
-        if (Params->FindSwitch(L"UploadIfAny", CommandParams))
+        if (Params->FindSwitch(UPLOAD_IF_ANY_SWITCH, CommandParams))
         {
           if (CommandParams->Count > 0)
           {
@@ -505,7 +529,24 @@ int __fastcall Execute()
         }
         AutoStartSession = Params->Param[1];
         Params->ParamsProcessed(1, 1);
-        Configuration->Usage->Inc(L"CommandLineSession");
+        UnicodeString CounterName;
+        if (Params->FindSwitch(JUMPLIST_SWITCH))
+        {
+          CounterName = L"CommandLineJumpList";
+        }
+        else if (Params->FindSwitch(DESKTOP_SWITCH))
+        {
+          CounterName = L"CommandLineDesktop";
+        }
+        else if (Params->FindSwitch(SEND_TO_HOOK_SWITCH))
+        {
+          CounterName = L"CommandLineSendToHook";
+        }
+        else
+        {
+          CounterName = L"CommandLineSession2";
+        }
+        Configuration->Usage->Inc(CounterName);
       }
       else if (WinConfiguration->EmbeddedSessions && StoredSessions->Count)
       {

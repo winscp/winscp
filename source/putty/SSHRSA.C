@@ -283,8 +283,8 @@ static Bignum rsa_privkey_op(Bignum input, struct RSAKey *key)
 	    continue;
         }
 
-	    break;
-	}
+        break;
+    }
 
     /*
      * RSA blinding relies on the fact that (xy)^d mod n is equal
@@ -536,9 +536,9 @@ static void getstring(char **data, int *datalen, char **p, int *length)
     *p = NULL;
     if (*datalen < 4)
 	return;
-    *length = GET_32BIT(*data);
+    *length = toint(GET_32BIT(*data));
     if (*length < 0)
-	return;
+        return;
     *datalen -= 4;
     *data += 4;
     if (*datalen < *length)

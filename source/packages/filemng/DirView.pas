@@ -581,17 +581,27 @@ var
   LocalFileTime: TFileTime;
 begin
   // duplicated in Common.cpp
-  if not DaylightHack then
+
+  // The 0xFFF... is sometime seen for invalid timestamps,
+  // it would cause failure in SystemTimeToDateTime below
+  if FileTime.dwLowDateTime = High(DWORD) then
   begin
-    FileTimeToSystemTime(FileTime, UniverzalSysTime);
-    SystemTimeToTzSpecificLocalTime(nil, UniverzalSysTime, SysTime);
+    Result := MinDateTime;
   end
     else
   begin
-    FileTimeToLocalFileTime(FileTime, LocalFileTime);
-    FileTimeToSystemTime(LocalFileTime, SysTime);
+    if not DaylightHack then
+    begin
+      FileTimeToSystemTime(FileTime, UniverzalSysTime);
+      SystemTimeToTzSpecificLocalTime(nil, UniverzalSysTime, SysTime);
+    end
+      else
+    begin
+      FileTimeToLocalFileTime(FileTime, LocalFileTime);
+      FileTimeToSystemTime(LocalFileTime, SysTime);
+    end;
+    Result := SystemTimeToDateTime(SysTime);
   end;
-  Result := SystemTimeToDateTime(SysTime);
 end;
 
 function SizeFromSRec(const SRec: SysUtils.TSearchRec): Int64;
@@ -2003,8 +2013,8 @@ begin
               with PFileRec(Items[Index].Data)^ do
               begin
                 Dec(FFilesSize, Size);
-                if Items[Index].Selected then
-                  Dec(FFilesSelSize, Size);
+                // No need to decrease FFilesSelSize here as LVIF_STATE/deselect
+                // is called for item being deleted
               end;
 
               Items[Index].Delete;
@@ -4408,5 +4418,5 @@ end;
 initialization
   LastClipBoardOperation := cboNone;
   LastIOResult := 0;
-  DaylightHack := (not IsWin7) or IsExactly2008R2;
+  DaylightHack := (not IsWin7);
 end.

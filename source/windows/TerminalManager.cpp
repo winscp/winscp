@@ -361,57 +361,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::ConnectActiveTerminal()
 {
-  switch (ActiveTerminal->SessionData->FSProtocol)
-  {
-    case fsSCPonly:
-      Configuration->Usage->Inc(L"OpenedSessionsSCP");
-      break;
-
-    case fsSFTP:
-    case fsSFTPonly:
-      Configuration->Usage->Inc(L"OpenedSessionsSFTP");
-      break;
-
-    case fsFTP:
-      if (ActiveTerminal->SessionData->Ftps == ftpsNone)
-      {
-        Configuration->Usage->Inc(L"OpenedSessionsFTP");
-      }
-      else
-      {
-        Configuration->Usage->Inc(L"OpenedSessionsFTPS");
-      }
-      break;
-
-    case fsWebDAV:
-      if (ActiveTerminal->SessionData->Ftps == ftpsNone)
-      {
-        Configuration->Usage->Inc(L"OpenedSessionsWebDAV");
-      }
-      else
-      {
-        Configuration->Usage->Inc(L"OpenedSessionsWebDAVS");
-      }
-      break;
-  }
-
-  if (Configuration->LogToFile)
-  {
-    Configuration->Usage->Inc(L"OpenedSessionsLogToFile");
-  }
-
-  if (Configuration->LogActions)
-  {
-    Configuration->Usage->Inc(L"OpenedSessionsXmlLog");
-  }
-
-  std::auto_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
-  if (!ActiveTerminal->SessionData->IsSame(FactoryDefaults.get(), true))
-  {
-    Configuration->Usage->Inc(L"OpenedSessionsAdvanced");
-  }
-
-  ActiveTerminal->EnableUsage();
+  ActiveTerminal->CollectUsage();
 
   // add only stored sessions to the jump list,
   // ad-hoc session cannot be reproduced from just a session name
@@ -846,11 +796,19 @@ void __fastcall TTerminalManager::ApplicationMessage(TMsg & Msg, bool & Handled)
 void __fastcall TTerminalManager::ApplicationModalBegin(TObject * /*Sender*/)
 {
   NonVisualDataModule->StartBusy();
+  if (ScpExplorer != NULL)
+  {
+    ScpExplorer->SuspendWindowLock();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ApplicationModalEnd(TObject * /*Sender*/)
 {
   NonVisualDataModule->EndBusy();
+  if (ScpExplorer != NULL)
+  {
+    ScpExplorer->ResumeWindowLock();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::InitTaskbarButtonCreatedMessage()
@@ -1355,6 +1313,7 @@ void __fastcall TTerminalManager::OpenInPutty()
     }
 
     OpenSessionInPutty(GUIConfiguration->PuttyPath, Data,
+      ActiveTerminal->UserName,
       GUIConfiguration->PuttyPassword ? ActiveTerminal->Password : UnicodeString());
   }
   __finally
@@ -1530,4 +1489,25 @@ void __fastcall TTerminalManager::SaveWorkspace(TList * DataList)
     Data2->Name = IntToHex(Index, 4);
     Data2->IsWorkspace = true;
   }
+}
+//---------------------------------------------------------------------------
+TTerminal * __fastcall TTerminalManager::FindActiveTerminalForSite(TSessionData * Data)
+{
+  TTerminal * Result = NULL;
+  for (int Index = 0; (Result == NULL) && (Index < Count); Index++)
+  {
+    TTerminal * Terminal = Terminals[Index];
+    if (Terminal->Active &&
+        Terminal->SessionData->IsSameSite(Data))
+    {
+      Result = Terminal;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+TTerminalQueue * __fastcall TTerminalManager::FindQueueForTerminal(TTerminal * Terminal)
+{
+  int Index = IndexOf(Terminal);
+  return reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index]);
 }

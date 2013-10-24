@@ -39,6 +39,9 @@
 			<BRCC_CodePage>65001</BRCC_CodePage>
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+			<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
+			<DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
+			<DCC_UNSUPPORTED_CONSTRUCT>false</DCC_UNSUPPORTED_CONSTRUCT>
 			<Defines>OLD_DND;STRICT;$(Defines)</Defines>
 			<Icon_MainIcon>resource\Icon256.ico</Icon_MainIcon>
 			<ILINK_GenerateDRC>true</ILINK_GenerateDRC>
@@ -51,11 +54,11 @@
 			<ProjectType>CppVCLApplication</ProjectType>
 			<UsingDelphiRTL>true</UsingDelphiRTL>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.2.4.0;InternalName=winscp;LegalCopyright=(c) 2000-2013 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.2.4.0;ReleaseType=beta;WWW=http://winscp.net/</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.2.5.0;InternalName=winscp;LegalCopyright=(c) 2000-2013 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.2.5.0;ReleaseType=beta;WWW=http://winscp.net/</VerInfo_Keys>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_MajorVer>5</VerInfo_MajorVer>
 			<VerInfo_MinorVer>2</VerInfo_MinorVer>
-			<VerInfo_Release>4</VerInfo_Release>
+			<VerInfo_Release>5</VerInfo_Release>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
@@ -82,7 +85,7 @@
 			<BCC_MonitorInlinePtrAccess>true</BCC_MonitorInlinePtrAccess>
 			<BCC_MonitorThis>true</BCC_MonitorThis>
 			<DCC_DebugDCUs>true</DCC_DebugDCUs>
-			<Debugger_DebugSourcePath>packages\my; packages\filemng;..\libs\openssl\crypto\bio;..\libs\openssl\ssl;..\libs\openssl\crypto\stack;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
+			<Debugger_DebugSourcePath>packages\my; packages\filemng;..\libs\openssl\crypto\bio;..\libs\openssl\ssl;..\libs\openssl\crypto\stack;..\libs\openssl\crypto\x509;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<Defines>NDEBUG;$(Defines)</Defines>
@@ -176,6 +179,9 @@
 				<BuildOrder>6</BuildOrder>
 				<BuildOrder>53</BuildOrder>
 			</CppCompile>
+			<DelphiCompile Include="windows\Vcl.Controls.pas">
+				<BuildOrder>35</BuildOrder>
+			</DelphiCompile>
 			<CppCompile Include="windows\WinConfiguration.cpp">
 				<BuildOrder>56</BuildOrder>
 				<BuildOrder>3</BuildOrder>

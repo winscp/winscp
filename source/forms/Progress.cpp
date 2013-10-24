@@ -56,6 +56,7 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   FDeleteToRecycleBin = false;
   FReadOnly = false;
   FShowAsModalStorage = NULL;
+  FStarted = Now();
   UseSystemSettings(this);
   ResetOnceDoneOperation();
 
@@ -232,8 +233,11 @@ void __fastcall TProgressForm::UpdateControls()
   }
 }
 //---------------------------------------------------------------------
+static TDateTime DelayStartInterval(static_cast<double>(OneSecond/5));
+//---------------------------------------------------------------------
 void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & AData)
 {
+  TDateTime N = Now();
   bool InstantUpdate = false;
 
   // workaround: to force displaing first file data immediatelly,
@@ -258,8 +262,9 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
 
   FData = AData;
   // delay showing the progress until the application is restored,
-  // otherwise the form popups up unminimized
-  if (!FDataReceived && !IsApplicationMinimized())
+  // otherwise the form popups up unminimized.
+  if (!FDataReceived && !IsApplicationMinimized() &&
+      ((N - FStarted) > DelayStartInterval))
   {
     FDataReceived = true;
     // CPS limit is set set only once from TFileOperationProgressType::Start
@@ -276,8 +281,7 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
     UpdateControls();
     Application->ProcessMessages();
   }
-  TDateTime N = Now();
-  static double UpdateInterval = static_cast<double>(OneSecond*5);  // 1/5 sec
+  static double UpdateInterval = static_cast<double>(OneSecond/5);  // 1/5 sec
   if ((FUpdateCounter % 5 == 0) ||
       (double(N) - double(FLastUpdate) > UpdateInterval))
   {
@@ -339,12 +343,12 @@ void __fastcall TProgressForm::CancelOperation()
       if (FData.TransferingFile &&
           (FData.TimeExpected() > GUIConfiguration->IgnoreCancelBeforeFinish))
       {
-        Result = MessageDialog(LoadStr(CANCEL_OPERATION_FATAL), qtWarning,
+        Result = MessageDialog(LoadStr(CANCEL_OPERATION_FATAL2), qtWarning,
           qaYes | qaNo | qaCancel, HELP_PROGRESS_CANCEL);
       }
       else
       {
-        Result = MessageDialog(LoadStr(CANCEL_OPERATION), qtConfirmation,
+        Result = MessageDialog(LoadStr(CANCEL_OPERATION2), qtConfirmation,
           qaOK | qaCancel, HELP_PROGRESS_CANCEL);
       }
       switch (Result) {

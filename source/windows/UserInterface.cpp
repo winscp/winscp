@@ -22,6 +22,7 @@
 #include "Tools.h"
 #include "Custom.h"
 #include "HelpWin.h"
+#include <Math.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -106,8 +107,7 @@ void __fastcall ShowExtendedException(Exception * E)
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   Exception * E)
 {
-  UnicodeString Message; // not used
-  bool Show = ExceptionMessage(E, Message);
+  bool Show = ShouldDisplayException(E);
 
   TTerminalManager * Manager = TTerminalManager::Instance(false);
 
@@ -145,10 +145,12 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       if (ConfirmExitOnCompletion)
       {
         TMessageParams Params(mpNeverAskAgainCheck);
-        Result = FatalExceptionMessageDialog(E, Type, 0,
-          (Manager->Count > 1) ?
+        UnicodeString MessageFormat =
+          MainInstructions((Manager->Count > 1) ?
             FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
-            LoadStr(EXIT_ON_COMPLETION),
+            LoadStr(EXIT_ON_COMPLETION));
+        Result = FatalExceptionMessageDialog(E, Type, 0,
+          MessageFormat,
           qaYes | qaNo, HELP_NONE, &Params);
 
         if (Result == qaNeverAskAgain)
@@ -573,6 +575,314 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TRect Rect,
   }
 }
 //---------------------------------------------------------------------------
+const int ColorCols = 8;
+const int StandardColorRows = 2;
+const int StandardColorCount = ColorCols * StandardColorRows;
+const int UserColorRows = 1;
+const int UserColorCount = UserColorRows * ColorCols;
+const wchar_t ColorSeparator = L',';
+//---------------------------------------------------------------------------
+static void __fastcall GetStandardSessionColorInfo(
+  int Col, int Row, TColor & Color, UnicodeString & Name)
+{
+  #define COLOR_INFO(COL, ROW, NAME, COLOR) \
+    if ((Col == COL) && (Row == ROW)) { Name = NAME; Color = TColor(COLOR); } else
+  // bottom row of default TBX color set
+  COLOR_INFO(0, 0, L"Rose",              0xCC99FF)
+  COLOR_INFO(1, 0, L"Tan",               0x99CCFF)
+  COLOR_INFO(2, 0, L"Light Yellow",      0x99FFFF)
+  COLOR_INFO(3, 0, L"Light Green",       0xCCFFCC)
+  COLOR_INFO(4, 0, L"Light Turquoise",   0xFFFFCC)
+  COLOR_INFO(5, 0, L"Pale Blue",         0xFFCC99)
+  COLOR_INFO(6, 0, L"Lavender",          0xFF99CC)
+
+  // second row of Excel 2010 palette with second color (Lighter Black) skipped
+  COLOR_INFO(7, 0, L"Light Orange",      0xB5D5FB)
+
+  COLOR_INFO(0, 1, L"Darker White",      0xD8D8D8)
+  COLOR_INFO(1, 1, L"Darker Tan",        0x97BDC4)
+  COLOR_INFO(2, 1, L"Lighter Blue",      0xE2B38D)
+  COLOR_INFO(3, 1, L"Light Blue",        0xE4CCB8)
+  COLOR_INFO(4, 1, L"Lighter Red",       0xB7B9E5)
+  COLOR_INFO(5, 1, L"Light Olive Green", 0xBCE3D7)
+  COLOR_INFO(6, 1, L"Light Purple",      0xD9C1CC)
+  COLOR_INFO(7, 1, L"Light Aqua",        0xE8DDB7)
+
+  FAIL;
+  #undef COLOR_INFO
+}
+//---------------------------------------------------------------------------
+static void __fastcall SessionColorSetGetColorInfo(
+  void * /*Data*/, TTBXCustomColorSet * /*Sender*/, int Col, int Row, TColor & Color, UnicodeString & Name)
+{
+  GetStandardSessionColorInfo(Col, Row, Color, Name);
+}
+//---------------------------------------------------------------------------
+static TColor __fastcall RestoreColor(UnicodeString CStr)
+{
+  return TColor(StrToInt(UnicodeString(L"$") + CStr));
+}
+//---------------------------------------------------------------------------
+static UnicodeString __fastcall StoreColor(TColor Color)
+{
+  return IntToHex(Color, 6);
+}
+//---------------------------------------------------------------------------
+static UnicodeString __fastcall ExtractColorStr(UnicodeString & Colors)
+{
+  return ::CutToChar(Colors, ColorSeparator, true);
+}
+//---------------------------------------------------------------------------
+static bool __fastcall IsStandardColor(TColor Color)
+{
+  for (int Row = 0; Row < StandardColorRows; Row++)
+  {
+    for (int Col = 0; Col < ColorCols; Col++)
+    {
+      TColor StandardColor;
+      UnicodeString Name; // unused
+      GetStandardSessionColorInfo(Col, Row, StandardColor, Name);
+      if (StandardColor == Color)
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+//---------------------------------------------------------------------------
+class TColorChangeData : public TComponent
+{
+public:
+  __fastcall TColorChangeData(TColorChangeEvent OnColorChange, TColor Color);
+
+  static TColorChangeData * __fastcall Retrieve(TObject * Object);
+
+  void __fastcall ColorChange(TColor Color);
+
+  __property TColor Color = { read = FColor };
+
+private:
+  TColorChangeEvent FOnColorChange;
+  TColor FColor;
+};
+//---------------------------------------------------------------------------
+__fastcall TColorChangeData::TColorChangeData(TColorChangeEvent OnColorChange, TColor Color) :
+  TComponent(NULL)
+{
+  Name = QualifiedClassName();
+  FOnColorChange = OnColorChange;
+  FColor = Color;
+}
+//---------------------------------------------------------------------------
+TColorChangeData * __fastcall TColorChangeData::Retrieve(TObject * Object)
+{
+  TComponent * Component = NOT_NULL(dynamic_cast<TComponent *>(Object));
+  TComponent * ColorChangeDataComponent = Component->FindComponent(QualifiedClassName());
+  return NOT_NULL(dynamic_cast<TColorChangeData *>(ColorChangeDataComponent));
+}
+//---------------------------------------------------------------------------
+void __fastcall TColorChangeData::ColorChange(TColor Color)
+{
+  if ((Color != TColor(0)) &&
+      !IsStandardColor(Color))
+  {
+    UnicodeString SessionColors = StoreColor(Color);
+    UnicodeString Temp = CustomWinConfiguration->SessionColors;
+    while (!Temp.IsEmpty())
+    {
+      UnicodeString CStr = ExtractColorStr(Temp);
+      if (RestoreColor(CStr) != Color)
+      {
+        SessionColors += UnicodeString(ColorSeparator) + CStr;
+      }
+    }
+    CustomWinConfiguration->SessionColors = SessionColors;
+  }
+
+  FOnColorChange(Color);
+}
+//---------------------------------------------------------------------------
+static void __fastcall ColorDefaultClick(void * /*Data*/, TObject * Sender)
+{
+  TColorChangeData::Retrieve(Sender)->ColorChange(TColor(0));
+}
+//---------------------------------------------------------------------------
+static void __fastcall ColorPaletteChange(void * /*Data*/, TObject * Sender)
+{
+  TTBXColorPalette * ColorPalette = NOT_NULL(dynamic_cast<TTBXColorPalette *>(Sender));
+  TColor Color = (ColorPalette->Color != Vcl::Graphics::clNone ? ColorPalette->Color : (TColor)0);
+  TColorChangeData::Retrieve(Sender)->ColorChange(Color);
+}
+//---------------------------------------------------------------------------
+static UnicodeString __fastcall CustomColorName(int Index)
+{
+  return UnicodeString(L"Color") + wchar_t(L'A' + Index);
+}
+//---------------------------------------------------------------------------
+static void __fastcall ColorPickClick(void * /*Data*/, TObject * Sender)
+{
+  TColorChangeData * ColorChangeData = TColorChangeData::Retrieve(Sender);
+
+  std::unique_ptr<TColorDialog> Dialog(new TColorDialog(Application));
+  Dialog->Options = Dialog->Options << cdFullOpen << cdAnyColor;
+  Dialog->Color = (ColorChangeData->Color != 0 ? ColorChangeData->Color : clSkyBlue);
+
+  UnicodeString Temp = CustomWinConfiguration->SessionColors;
+  int StandardColorIndex = 0;
+  int CustomColors = Min(MaxCustomColors, StandardColorCount);
+  for (int Index = 0; Index < CustomColors; Index++)
+  {
+    TColor CustomColor;
+    if (!Temp.IsEmpty())
+    {
+      CustomColor = RestoreColor(ExtractColorStr(Temp));
+    }
+    else
+    {
+      UnicodeString Name; // not used
+      assert(StandardColorIndex < StandardColorCount);
+      GetStandardSessionColorInfo(
+        StandardColorIndex % ColorCols, StandardColorIndex / ColorCols,
+        CustomColor, Name);
+      StandardColorIndex++;
+    }
+    Dialog->CustomColors->Values[CustomColorName(Index)] = StoreColor(CustomColor);
+  }
+
+  if (Dialog->Execute())
+  {
+    // so that we do not have to try to preserve the excess colors
+    assert(UserColorCount <= MaxCustomColors);
+    UnicodeString SessionColors;
+    for (int Index = 0; Index < MaxCustomColors; Index++)
+    {
+      UnicodeString CStr = Dialog->CustomColors->Values[CustomColorName(Index)];
+      if (!CStr.IsEmpty())
+      {
+        TColor CustomColor = RestoreColor(CStr);
+        if (!IsStandardColor(CustomColor))
+        {
+          AddToList(SessionColors, StoreColor(CustomColor), ColorSeparator);
+        }
+      }
+    }
+    CustomWinConfiguration->SessionColors = SessionColors;
+
+    // call color change only after copying custom colors back,
+    // so that it can add selected color to the user list
+    ColorChangeData->ColorChange(Dialog->Color);
+  }
+}
+//---------------------------------------------------------------------------
+TPopupMenu * __fastcall CreateSessionColorPopupMenu(TColor Color,
+  TColorChangeEvent OnColorChange)
+{
+  std::unique_ptr<TTBXPopupMenu> PopupMenu(new TTBXPopupMenu(Application));
+  CreateSessionColorMenu(PopupMenu->Items, Color, OnColorChange);
+  return PopupMenu.release();
+}
+//---------------------------------------------------------------------------
+static void __fastcall UserSessionColorSetGetColorInfo(
+  void * /*Data*/, TTBXCustomColorSet * Sender, int Col, int Row, TColor & Color, UnicodeString & /*Name*/)
+{
+  int Index = (Row * Sender->ColCount) + Col;
+  UnicodeString Temp = CustomWinConfiguration->SessionColors;
+  while ((Index > 0) && !Temp.IsEmpty())
+  {
+    ExtractColorStr(Temp);
+    Index--;
+  }
+
+  if (!Temp.IsEmpty())
+  {
+    Color = RestoreColor(ExtractColorStr(Temp));
+  }
+  else
+  {
+    // hide the trailing cells
+    Color = Vcl::Graphics::clNone;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall CreateColorPalette(TTBCustomItem * Owner, TColor Color, int Rows,
+  TCSGetColorInfo OnGetColorInfo, TColorChangeEvent OnColorChange)
+{
+  TTBXCustomColorSet * ColorSet = new TTBXCustomColorSet(Owner);
+
+  TTBXColorPalette * ColorPalette = new TTBXColorPalette(Owner);
+  ColorPalette->InsertComponent(ColorSet);
+  ColorPalette->ColorSet = ColorSet;
+
+  // has to be set only after it's assigned to color palette
+  ColorSet->ColCount = ColorCols;
+  ColorSet->RowCount = Rows;
+  ColorSet->OnGetColorInfo = OnGetColorInfo;
+
+  ColorPalette->Color = (Color != 0) ? Color : Vcl::Graphics::clNone;
+  ColorPalette->OnChange = MakeMethod<TNotifyEvent>(NULL, ColorPaletteChange);
+  ColorPalette->InsertComponent(new TColorChangeData(OnColorChange, Color));
+  Owner->Add(ColorPalette);
+
+  Owner->Add(new TTBXSeparatorItem(Owner));
+}
+//---------------------------------------------------------------------------
+void __fastcall CreateSessionColorMenu(TComponent * AOwner, TColor Color,
+  TColorChangeEvent OnColorChange)
+{
+  TTBCustomItem * Owner = dynamic_cast<TTBCustomItem *>(AOwner);
+  if (ALWAYS_TRUE(Owner != NULL))
+  {
+    Owner->Clear();
+
+    TTBCustomItem * Item;
+
+    Item = new TTBXItem(Owner);
+    Item->Caption = LoadStr(COLOR_DEFAULT_CAPTION);
+    Item->Hint = LoadStr(COLOR_DEFAULT_HINT);
+    Item->HelpKeyword = HELP_COLOR;
+    Item->OnClick = MakeMethod<TNotifyEvent>(NULL, ColorDefaultClick);
+    Item->Checked = (Color == TColor(0));
+    Item->InsertComponent(new TColorChangeData(OnColorChange, Color));
+    Owner->Add(Item);
+
+    Owner->Add(new TTBXSeparatorItem(Owner));
+
+    int SessionColorCount = 0;
+    UnicodeString Temp = CustomWinConfiguration->SessionColors;
+    while (!Temp.IsEmpty())
+    {
+      SessionColorCount++;
+      ExtractColorStr(Temp);
+    }
+
+    if (SessionColorCount > 0)
+    {
+      SessionColorCount = Min(SessionColorCount, UserColorCount);
+      int RowCount = ((SessionColorCount + ColorCols - 1) / ColorCols);
+      assert(RowCount <= UserColorRows);
+
+      CreateColorPalette(Owner, Color, RowCount,
+        MakeMethod<TCSGetColorInfo>(NULL, UserSessionColorSetGetColorInfo),
+        OnColorChange);
+    }
+
+    CreateColorPalette(Owner, Color, StandardColorRows,
+      MakeMethod<TCSGetColorInfo>(NULL, SessionColorSetGetColorInfo),
+      OnColorChange);
+
+    Owner->Add(new TTBXSeparatorItem(Owner));
+
+    Item = new TTBXItem(Owner);
+    Item->Caption = LoadStr(COLOR_PICK_CAPTION);
+    Item->Hint = LoadStr(COLOR_PICK_HINT);
+    Item->HelpKeyword = HELP_COLOR;
+    Item->OnClick = MakeMethod<TNotifyEvent>(NULL, ColorPickClick);
+    Item->InsertComponent(new TColorChangeData(OnColorChange, Color));
+    Owner->Add(Item);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall UpgradeSpeedButton(TSpeedButton * /*Button*/)
 {
   // no-op yet
@@ -780,7 +1090,7 @@ void __fastcall TMasterPasswordDialog::DoValidate()
     if (Valid <= 0)
     {
       assert(Valid == 0);
-      if (MessageDialog(LoadStr(MASTER_PASSWORD_SIMPLE), qtWarning,
+      if (MessageDialog(LoadStr(MASTER_PASSWORD_SIMPLE2), qtWarning,
             qaOK | qaCancel, HELP_MASTER_PASSWORD_SIMPLE) == qaCancel)
       {
         NewEdit->SetFocus();
@@ -834,7 +1144,7 @@ void __fastcall MessageWithNoHelp(const UnicodeString & Message)
 {
   TMessageParams Params;
   Params.AllowHelp = false; // to avoid recursion
-  if (MessageDialog(LoadStr(HELP_SEND_MESSAGE), qtConfirmation,
+  if (MessageDialog(LoadStr(HELP_SEND_MESSAGE2), qtConfirmation,
         qaOK | qaCancel, HELP_NONE, &Params) == qaOK)
   {
     SearchHelp(Message);

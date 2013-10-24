@@ -15,6 +15,19 @@
 #include "HelpCore.h"
 /* TODO 1 : Path class instead of UnicodeString (handle relativity...) */
 //---------------------------------------------------------------------------
+bool __fastcall IsUnixStyleWindowsPath(const UnicodeString & Path)
+{
+  return (Path.Length() >= 3) && IsLetter(Path[1]) && (Path[2] == L':') && (Path[3] == L'/');
+}
+//---------------------------------------------------------------------------
+bool __fastcall UnixIsAbsolutePath(const UnicodeString & Path)
+{
+  return
+    ((Path.Length() >= 1) && (Path[1] == L'/')) ||
+    // we need this for FTP only, but this is unfortunately used in a static context
+    IsUnixStyleWindowsPath(Path);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString Path)
 {
   // it used to return "/" when input path was empty
@@ -29,11 +42,24 @@ UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString Path)
 }
 //---------------------------------------------------------------------------
 // Keeps "/" for root path
-UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString Path)
+UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString Path, bool Simple)
 {
-  if ((Path.Length() > 1) && Path.IsDelimiter(L"/", Path.Length()))
-      return Path.SubString(1, Path.Length() - 1);
-    else return Path;
+  if (Path.IsEmpty() ||
+      (Path == L"/") ||
+      !Path.IsDelimiter(L"/", Path.Length()) ||
+      (!Simple && ((Path.Length() == 3) && IsUnixStyleWindowsPath(Path))))
+  {
+    return Path;
+  }
+  else
+  {
+    return Path.SubString(1, Path.Length() - 1);
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString Path)
+{
+  return UnixExcludeTrailingBackslash(Path, true);
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall UnixComparePaths(const UnicodeString Path1, const UnicodeString Path2)
@@ -171,6 +197,7 @@ bool __fastcall IsUnixHiddenFile(const UnicodeString FileName)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall AbsolutePath(const UnicodeString & Base, const UnicodeString & Path)
 {
+  // There's a duplicate implementation in TTerminal::ExpandFileName()
   UnicodeString Result;
   if (Path.IsEmpty())
   {
@@ -427,8 +454,7 @@ int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs,
   TSHFileInfoW SHFileInfo;
   // On Win2k we get icon of "ZIP drive" for ".." (parent directory)
   if ((FileName == L"..") ||
-      ((FileName.Length() == 2) && (FileName[2] == L':') &&
-       (towlower(FileName[1]) >= L'a') && (towlower(FileName[1]) <= L'z')) ||
+      ((FileName.Length() == 2) && (FileName[2] == L':') && IsLetter(FileName[1])) ||
       IsReservedName(FileName))
   {
     FileName = L"dumb";
@@ -1865,7 +1891,7 @@ bool __fastcall TRemoteDirectoryChangesCache::DirectoryChangeKey(
   bool Result = !Change.IsEmpty();
   if (Result)
   {
-    bool Absolute = TTerminal::IsAbsolutePath(Change);
+    bool Absolute = UnixIsAbsolutePath(Change);
     Result = !SourceDir.IsEmpty() || Absolute;
     if (Result)
     {

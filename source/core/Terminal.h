@@ -201,6 +201,7 @@ private:
   TCallbackGuard * FCallbackGuard;
   TFindingFileEvent FOnFindingFile;
   bool FEnableSecureShellUsage;
+  bool FCollectFileSystemUsage;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -283,8 +284,8 @@ protected:
     const TRemoteFile * File, TCalculateSizeParams * Params);
   void __fastcall CalculateLocalFileSize(const UnicodeString FileName,
     const TSearchRec Rec, /*__int64*/ void * Size);
-  void __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
-    const TCopyParamType * CopyParam = NULL);
+  bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
+    const TCopyParamType * CopyParam, bool AllowDirs);
   TBatchOverwrite __fastcall EffectiveBatchOverwrite(
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, bool Special);
@@ -419,8 +420,9 @@ public:
     /*const TMoveFileParams*/ void * Param);
   bool __fastcall CopyFiles(TStrings * FileList, const UnicodeString Target,
     const UnicodeString FileMask);
-  void __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size,
-    int Params, const TCopyParamType * CopyParam = NULL, TCalculateSizeStats * Stats = NULL);
+  bool __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size,
+    int Params, const TCopyParamType * CopyParam, bool AllowDirs,
+    TCalculateSizeStats * Stats);
   void __fastcall CalculateFilesChecksum(const UnicodeString & Alg, TStrings * FileList,
     TStrings * Checksums, TCalculatedChecksumEvent OnCalculatedChecksum);
   void __fastcall ClearCaches();
@@ -449,13 +451,12 @@ public:
   UnicodeString __fastcall PeekCurrentDirectory();
   void __fastcall FatalAbort();
   void __fastcall ReflectSettings();
-  void __fastcall EnableUsage();
+  void __fastcall CollectUsage();
 
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);
   void __fastcall inline LogEvent(const UnicodeString & Str);
 
-  static bool __fastcall IsAbsolutePath(const UnicodeString Path);
   static UnicodeString __fastcall ExpandFileName(UnicodeString Path,
     const UnicodeString BasePath);
 
@@ -568,6 +569,8 @@ struct TCalculateSizeParams
   int Params;
   const TCopyParamType * CopyParam;
   TCalculateSizeStats * Stats;
+  bool AllowDirs;
+  bool Result;
 };
 //---------------------------------------------------------------------------
 struct TOverwriteFileParams

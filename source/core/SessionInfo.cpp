@@ -893,7 +893,8 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
   BeginUpdate();
   try
   {
-    #define ADF(S, F) DoAdd(llMessage, FORMAT(S, F), DoAddToSelf);
+    #define ADSTR(S) DoAdd(llMessage, S, DoAddToSelf);
+    #define ADF(S, F) ADSTR(FORMAT(S, F));
     if (Data == NULL)
     {
       AddSeparator();
@@ -919,6 +920,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       ADF(L"Process ID: %d", (int(GetCurrentProcessId())));
       ADF(L"Command-line: %s", (CmdLine));
       ADF(L"Time zone: %s", (GetTimeZoneLogString()));
+      if (!AdjustClockForDSTEnabled())
+      {
+        ADSTR(L"Warning: System option \"Automatically adjust clock for Daylight Saving Time\" is disabled, timestamps will not be represented correctly");
+      }
       ADF(L"Login time: %s", (FormatDateTime(L"dddddd tt", Now())));
       AddSeparator();
     }
@@ -969,6 +974,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
           ADF(L"Local command: %s", (Data->ProxyLocalCommand));
         }
       }
+      ADF(L"Send buffer: %d", (Data->SendBuf));
       wchar_t const * BugFlags = L"+-A";
       if (Data->UsesSsh)
       {
@@ -992,6 +998,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
           Bugs += UnicodeString(BugFlags[Data->Bug[(TSshBug)Index]])+(Index<BUG_COUNT-1?L",":L"");
         }
         ADF(L"SSH Bugs: %s", (Bugs));
+        ADF(L"Simple channel: %s", (BooleanToEngStr(Data->SshSimple)));
         ADF(L"Return code variable: %s; Lookup user groups: %s",
           ((Data->DetectReturnVar ? UnicodeString(L"Autodetect") : Data->ReturnVar),
            BugFlags[Data->LookupUserGroups]));
@@ -1069,6 +1076,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     }
 
     #undef ADF
+    #undef ADSTR
   }
   __finally
   {

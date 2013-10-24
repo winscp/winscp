@@ -100,7 +100,7 @@ public:
   }
 
 private:
-  std::auto_ptr<Exception> FSavedException;
+  std::unique_ptr<Exception> FSavedException;
 };
 //---------------------------------------------------------------------------
 #define APPLICATION_EXCEPTION_HACK_BEGIN \

@@ -69,6 +69,7 @@ public:
 	int GetOption(int nOption);
 #else
 	bool UsingMlsd();
+	bool UsingUtf8();
 	std::string GetTlsVersionStr();
 	std::string GetCipherName();
 #endif

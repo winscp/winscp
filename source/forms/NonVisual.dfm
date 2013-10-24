@@ -330,6 +330,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 
         'Move|Move selected remote file(s) to another remote directory or' +
         ' another name'
+      ImageIndex = 100
     end
     object CurrentDeleteFocusedAction: TAction
       Tag = 12
@@ -621,6 +622,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Workspaces'
       HelpKeyword = 'workspace'
       Hint = 'Open workspace'
+      ImageIndex = 101
     end
     object PreferencesAction: TAction
       Tag = 15
@@ -1277,7 +1279,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Command'
       Caption = 'Open in &PuTTY'
-      HelpKeyword = 'integration_app#opening_current_session_in_putty'
+      HelpKeyword = 'integration_putty#open_putty'
       Hint = 
         'Open session in PuTTY|Execute PuTTY SSH terminal and opens curre' +
         'nt session with it'
@@ -1456,6 +1458,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 
         'Move|Move selected remote file(s) to another remote directory or' +
         ' another name'
+      ImageIndex = 100
     end
     object ShowHiddenFilesAction: TAction
       Tag = 15
@@ -1738,20 +1741,6 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_connections#session_color'
       Hint = 'Change color of current session'
     end
-    object ColorDefaultAction: TAction
-      Tag = 15
-      Category = 'View'
-      Caption = '&Default'
-      HelpKeyword = 'task_connections#session_color'
-      Hint = 'Reset session (panel) color to system default'
-    end
-    object ColorPickAction: TAction
-      Tag = 15
-      Category = 'View'
-      Caption = '&More Colors...'
-      HelpKeyword = 'task_connections#session_color'
-      Hint = 'Choose any session (panel) color'
-    end
     object AutoReadDirectoryAfterOpAction: TAction
       Tag = 15
       Category = 'View'
@@ -1790,6 +1779,14 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_queue#managing_the_queue'
       Hint = 'Resume all suspended queue items'
       ImageIndex = 85
+    end
+    object QueueDeleteAllDoneAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = 'Delete All &Completed'
+      HelpKeyword = 'ui_queue#managing_the_queue'
+      Hint = 'Remove all completed queue items'
+      ImageIndex = 99
     end
     object QueueEnableAction: TAction
       Tag = 15
@@ -1927,6 +1924,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Save Wor&kspace...'
       HelpKeyword = 'workspace'
       Hint = 'Save workspace|Save workspace'
+      ImageIndex = 102
     end
     object LocalRenameAction: TAction
       Tag = 12
@@ -2554,6 +2552,11 @@ object NonVisualDataModule: TNonVisualDataModule
       object TBXItem12: TTBXItem
         Action = QueueResumeAllAction
       end
+      object TBXSeparatorItem5: TTBXSeparatorItem
+      end
+      object TBXItem51: TTBXItem
+        Action = QueueDeleteAllDoneAction
+      end
     end
     object TBXSubmenuItem3: TTBXSubmenuItem
       Action = QueueCycleOnceEmptyAction
@@ -2781,21 +2784,6 @@ object NonVisualDataModule: TNonVisualDataModule
     object ColorMenuItem: TTBXColorItem
       Action = ColorMenuAction
       Color = clNone
-      object TBXItem216: TTBXItem
-        Action = ColorDefaultAction
-      end
-      object TBXSeparatorItem50: TTBXSeparatorItem
-        Blank = True
-      end
-      object SessionColorPalette: TTBXColorPalette
-        PaletteOptions = [tpoCustomImages]
-        OnChange = SessionColorPaletteChange
-      end
-      object TBXSeparatorItem51: TTBXSeparatorItem
-      end
-      object TBXItem217: TTBXItem
-        Action = ColorPickAction
-      end
     end
     object TBXSeparatorItem35: TTBXSeparatorItem
     end

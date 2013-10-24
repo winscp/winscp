@@ -1,8 +1,8 @@
 #ifndef TextsCoreH
 #define TextsCoreH
 
-#define UNKNOWN_KEY2    1
-#define DIFFERENT_KEY3  2
+#define UNKNOWN_KEY3    1
+#define DIFFERENT_KEY4  2
 #define OLD_KEY         3
 
 #define SCRIPT_HELP_HELP        4
@@ -133,7 +133,7 @@
 #define DUPLICATE_BOOKMARK      203
 #define MOVE_FILE_ERROR         204
 #define SFTP_PACKET_TOO_BIG_INIT_EXPLAIN 205
-#define PRESERVE_TIME_PERM_ERROR2 206
+#define PRESERVE_TIME_PERM_ERROR3 206
 #define ACCESS_VIOLATION_ERROR3 207
 #define SFTP_STATUS_NO_SPACE_ON_FILESYSTEM 208
 #define SFTP_STATUS_QUOTA_EXCEEDED 209
@@ -233,9 +233,9 @@
 #define CIPHER_TYPE_BOTH        307
 #define CIPHER_TYPE_CS          308
 #define CIPHER_TYPE_SC          309
-#define RESUME_TRANSFER         310
+#define RESUME_TRANSFER2        310
 #define PARTIAL_BIGGER_THAN_SOURCE 311
-#define APPEND_OR_RESUME        312
+#define APPEND_OR_RESUME2       312
 #define FILE_OVERWRITE_DETAILS  313
 #define READ_ONLY_OVERWRITE     314
 #define LOCAL_FILE_OVERWRITE2   315
@@ -263,7 +263,7 @@
 #define TUNNEL_INSTRUCTION      343
 #define RENAME_TITLE            344
 #define RENAME_PROMPT2          345
-#define VERIFY_CERT_PROMPT2     346
+#define VERIFY_CERT_PROMPT3     346
 #define VERIFY_CERT_CONTACT     347
 #define VERIFY_CERT_CONTACT_LIST 348
 #define CERT_TEXT               349
@@ -393,6 +393,8 @@
 #define SCRIPT_SYNC_DELETE_REMOTE 527
 #define SCRIPT_SYNC_DELETE_LOCAL 528
 #define SCRIPT_SYNCHRONIZE_CHECKLIST 529
+#define COPY_INFO_REMOVE_CTRLZ  530
+#define COPY_INFO_REMOVE_BOM    531
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601
@@ -407,5 +409,6 @@
 #define OPENSSL_VERSION         611
 #define OPENSSL_URL             612
 #define PUTTY_LICENSE_URL       625
+#define MAIN_MSG_TAG            631
 
 #endif // TextsCore

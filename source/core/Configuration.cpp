@@ -4,8 +4,8 @@
 
 #include <FileInfo.h>
 
-#include "Exceptions.h"
 #include "Common.h"
+#include "Exceptions.h"
 #include "Configuration.h"
 #include "PuttyIntf.h"
 #include "TextsCore.h"
@@ -956,11 +956,6 @@ UnicodeString __fastcall TConfiguration::GetConfigurationSubKey()
 UnicodeString __fastcall TConfiguration::GetRootKeyStr()
 {
   return RootKeyToStr(HKEY_CURRENT_USER);
-}
-//---------------------------------------------------------------------------
-bool __fastcall TConfiguration::GetGSSAPIInstalled()
-{
-  return HasGSSAPI();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetStorage(TStorage value)

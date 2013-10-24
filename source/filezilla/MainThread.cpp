@@ -418,6 +418,13 @@ bool CMainThread::UsingMlsd()
 	return m_pControlSocket->UsingMlsd();
 }
 
+bool CMainThread::UsingUtf8()
+{
+	if (!IsConnected())
+		return false;
+	return m_pControlSocket->UsingUtf8();
+}
+
 std::string CMainThread::GetTlsVersionStr()
 {
 	if (!IsConnected())

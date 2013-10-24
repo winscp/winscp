@@ -31,7 +31,8 @@ TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TCustomForm * Pa
   {
     Dialog->FileName = FileName;
     Dialog->ParentForm = ParentForm;
-    Dialog->Caption = Caption.IsEmpty() ? FileName : Caption;
+    UnicodeString ACaption = Caption.IsEmpty() ? FileName : Caption;
+    Dialog->Caption = ACaption + L" - " + LoadStr(EDITOR_CAPTION) + L" - " + AppName;
     Dialog->OnFileChanged = OnFileChanged;
     Dialog->OnFileReload = OnFileReload;
     // load before showing, so when loading failes,
@@ -799,7 +800,7 @@ void __fastcall TEditorForm::ChangeEncoding(TEncoding * Encoding)
   if (FEncoding != Encoding)
   {
     if (!EditorMemo->Modified ||
-        (MessageDialog(LoadStr(EDITOR_MODIFIED_ENCODING), qtConfirmation,
+        (MessageDialog(MainInstructions(LoadStr(EDITOR_MODIFIED_ENCODING)), qtConfirmation,
           qaOK | qaCancel) != qaCancel))
     {
       TEncoding * PrevEncoding = FEncoding;
@@ -825,7 +826,8 @@ void __fastcall TEditorForm::FormCloseQuery(TObject * /*Sender*/,
   if (EditorMemo->Modified)
   {
     SetFocus();
-    unsigned int Answer = MessageDialog(LoadStr(SAVE_CHANGES), qtConfirmation,
+    UnicodeString Message = MainInstructions(LoadStr(SAVE_CHANGES));
+    unsigned int Answer = MessageDialog(Message, qtConfirmation,
       qaYes | qaNo | qaCancel);
     CanClose = (Answer != qaCancel);
     if (Answer == qaYes)
@@ -1022,11 +1024,13 @@ void __fastcall TEditorForm::Find()
 
         if (Replacements == 0)
         {
-          MessageDialog(FMTLOAD(EDITOR_FIND_END, (EditorConfiguration.FindText)), qtInformation, qaOK, HELP_NONE);
+          UnicodeString Message = MainInstructions(FMTLOAD(EDITOR_FIND_END, (EditorConfiguration.FindText)));
+          MessageDialog(Message, qtInformation, qaOK, HELP_NONE);
         }
         else if (FReplaceDialog->Options.Contains(frReplaceAll))
         {
-          MessageDialog(FMTLOAD(EDITOR_REPLACE_END, (Replacements)), qtInformation, qaOK, HELP_NONE);
+          UnicodeString Message = MainInstructions(FMTLOAD(EDITOR_REPLACE_END, (Replacements)));
+          MessageDialog(Message, qtInformation, qaOK, HELP_NONE);
         }
       }
     }
@@ -1151,7 +1155,7 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
               Message = Message + L" " + FMTLOAD(EDITOR_ENCODING_REVERTED, (FEncodingName));
               TMessageParams Params(mpNeverAskAgainCheck);
               unsigned int Answer =
-                MessageDialog(Message, qtInformation, qaOK, HELP_NONE, &Params);
+                MessageDialog(MainInstructions(Message), qtInformation, qaOK, HELP_NONE, &Params);
               if (Answer == qaNeverAskAgain)
               {
                 EditorConfiguration.WarnOnEncodingFallback = false;
@@ -1175,7 +1179,7 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
       }
       else
       {
-        throw Exception(FMTLOAD(EDITOR_LOAD_ERROR, (FFileName)));
+        throw Exception(MainInstructions(FMTLOAD(EDITOR_LOAD_ERROR, (FFileName))));
       }
     }
   }
@@ -1294,7 +1298,7 @@ void __fastcall TEditorForm::GoToLine()
     int Line = StrToIntDef(Str, -1);
     if (Line <= 0 || Line > EditorMemo->Lines->Count)
     {
-      throw Exception(LoadStr(EDITOR_INVALID_LINE));
+      throw Exception(MainInstructions(LoadStr(EDITOR_INVALID_LINE)));
     }
     else
     {
@@ -1357,7 +1361,7 @@ void __fastcall TEditorForm::CreateParams(TCreateParams & Params)
 void __fastcall TEditorForm::Reload()
 {
   if (!EditorMemo->Modified ||
-      (MessageDialog(LoadStr(EDITOR_MODIFIED_RELOAD), qtConfirmation,
+      (MessageDialog(MainInstructions(LoadStr(EDITOR_MODIFIED_RELOAD)), qtConfirmation,
         qaOK | qaCancel) != qaCancel))
   {
     if (FOnFileReload)

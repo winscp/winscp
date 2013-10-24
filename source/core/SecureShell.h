@@ -9,7 +9,7 @@
 //---------------------------------------------------------------------------
 #ifndef PuttyIntfH
 struct Backend;
-struct Config;
+struct Conf;
 #endif
 //---------------------------------------------------------------------------
 struct _WSANETWORKEVENTS;
@@ -35,7 +35,6 @@ private:
   Backend * FBackend;
   void * FBackendHandle;
   const unsigned int * FMaxPacketSize;
-  Config * FConfig;
   TNotifyEvent FOnReceive;
   bool FFrozen;
   bool FDataWhileFrozen;
@@ -105,8 +104,7 @@ protected:
   void __fastcall inline LogEvent(const UnicodeString & Str);
   void __fastcall FatalError(UnicodeString Error, UnicodeString HelpKeyword = L"");
   UnicodeString __fastcall FormatKeyStr(UnicodeString KeyStr);
-  static void __fastcall ClearConfig(Config * cfg);
-  static void __fastcall StoreToConfig(TSessionData * Data, Config * cfg, bool Simple);
+  static Conf * __fastcall StoreToConfig(TSessionData * Data, bool Simple);
 
 public:
   __fastcall TSecureShell(TSessionUI * UI, TSessionData * SessionData,
@@ -131,7 +129,7 @@ public:
   unsigned long __fastcall MaxPacketSize();
   void __fastcall ClearStdError();
   bool __fastcall GetStoredCredentialsTried();
-  void __fastcall EnableUsage();
+  void __fastcall CollectUsage();
 
   void __fastcall RegisterReceiveHandler(TNotifyEvent Handler);
   void __fastcall UnregisterReceiveHandler(TNotifyEvent Handler);
@@ -148,7 +146,7 @@ public:
   void __fastcall CWrite(const char * Data, int Length);
   const UnicodeString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(UnicodeString Host, int Port,
-    const UnicodeString KeyType, UnicodeString KeyStr, const UnicodeString Fingerprint);
+    const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint);
   void __fastcall AskAlg(const UnicodeString AlgType, const UnicodeString AlgName);
   void __fastcall DisplayBanner(const UnicodeString & Banner);
   void __fastcall OldKeyfileWarning();

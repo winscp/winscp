@@ -392,7 +392,7 @@ bool __fastcall TFileMasks::MatchesMasks(const UnicodeString FileName, bool Dire
   if (!Result && Directory && !IsUnixRootPath(Path) && Recurse)
   {
     UnicodeString ParentFileName = UnixExtractFileName(Path);
-    UnicodeString ParentPath = UnixExcludeTrailingBackslash(UnixExtractFilePath(Path));
+    UnicodeString ParentPath = SimpleUnixExcludeTrailingBackslash(UnixExtractFilePath(Path));
     // Pass Params down or not?
     // Currently it includes Size/Time only, what is not used for directories.
     // So it depends of future use. Possibly we should make a copy
@@ -449,7 +449,7 @@ bool __fastcall TFileMasks::Matches(const UnicodeString FileName, bool Local,
   else
   {
     Result = Matches(UnixExtractFileName(FileName), Directory,
-      UnixExcludeTrailingBackslash(UnixExtractFilePath(FileName)), Params,
+      SimpleUnixExcludeTrailingBackslash(UnixExtractFilePath(FileName)), Params,
       ImplicitMatch);
   }
   return Result;
@@ -638,7 +638,7 @@ void __fastcall TFileMasks::CreateMask(
       {
         // make sure sole "/" (root dir) is preserved as is
         CreateMaskMask(
-          UnixExcludeTrailingBackslash(ToUnixPath(PartStr.SubString(1, D))),
+          SimpleUnixExcludeTrailingBackslash(ToUnixPath(PartStr.SubString(1, D))),
           PartStart, PartStart + D - 1, false,
           Mask.DirectoryMask);
         CreateMaskMask(
@@ -972,7 +972,8 @@ void __fastcall TInteractiveCustomCommand::Execute(
 int __fastcall TInteractiveCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  switch (Command[Index + 1])
+  wchar_t PatternCmd = (Index < Command.Length()) ? Command[Index + 1] : L'\0';
+  switch (PatternCmd)
   {
     case L'?':
       {
@@ -1055,20 +1056,20 @@ __fastcall TCustomCommandData::TCustomCommandData()
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData(TTerminal * Terminal)
 {
-  Init(Terminal->SessionData, Terminal->Password);
+  Init(Terminal->SessionData, Terminal->UserName, Terminal->Password);
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData(
-  TSessionData * SessionData, const UnicodeString & Password)
+  TSessionData * SessionData, const UnicodeString & UserName, const UnicodeString & Password)
 {
-  Init(SessionData, Password);
+  Init(SessionData, UserName, Password);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandData::Init(
-  TSessionData * SessionData, const UnicodeString & APassword)
+  TSessionData * SessionData, const UnicodeString & AUserName, const UnicodeString & APassword)
 {
   HostName = SessionData->HostNameExpanded;
-  UserName = SessionData->UserNameExpanded;
+  UserName = AUserName;
   Password = APassword;
 }
 //---------------------------------------------------------------------------
@@ -1098,7 +1099,8 @@ TFileCustomCommand::TFileCustomCommand(const TCustomCommandData & Data,
 int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  switch (toupper(Command[Index + 1]))
+  wchar_t PatternCmd = (Index < Command.Length()) ? Command[Index + 1] : L'\0';
+  switch (PatternCmd)
   {
     case L'@':
     case L'U':

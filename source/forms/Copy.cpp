@@ -398,7 +398,7 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
       UnicodeString Drive = ExtractFileDrive(Dir);
       if (!DirectoryExists(Dir))
       {
-        if (MessageDialog(FMTLOAD(CREATE_LOCAL_DIRECTORY, (Dir)),
+        if (MessageDialog(MainInstructions(FMTLOAD(CREATE_LOCAL_DIRECTORY, (Dir))),
               qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaCancel)
         {
           if (!ForceDirectories(Dir))

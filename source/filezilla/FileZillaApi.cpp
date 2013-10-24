@@ -565,6 +565,16 @@ bool CFileZillaApi::UsingMlsd()
 	return m_pMainThread->UsingMlsd();
 }
 
+bool CFileZillaApi::UsingUtf8()
+{
+	//Check if call allowed
+	if (!m_bInitialized)
+		return false;
+	if (IsConnected()==FZ_REPLY_NOTCONNECTED)
+		return false;
+	return m_pMainThread->UsingUtf8();
+}
+
 std::string CFileZillaApi::GetTlsVersionStr()
 {
 	//Check if call allowed

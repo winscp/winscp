@@ -41,8 +41,7 @@ const UnicodeString PuttyTelnetProtocol(L"telnet");
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
-  return TDateTime((unsigned short)(Sec/SecsPerHour),
-    (unsigned short)(Sec/SecsPerMin%MinsPerHour), (unsigned short)(Sec%SecsPerMin), 0);
+  return TDateTime(double(Sec) / SecsPerDay);
 }
 //--- TSessionData ----------------------------------------------------
 __fastcall TSessionData::TSessionData(UnicodeString aName):
@@ -93,6 +92,7 @@ void __fastcall TSessionData::Default()
   SendBuf = DefaultSendBuf;
   SshSimple = true;
   HostKey = L"";
+  FOverrideCachedHostKey = true;
 
   ProxyMethod = ::pmNone;
   ProxyHost = L"proxy";
@@ -194,6 +194,7 @@ void __fastcall TSessionData::Default()
   Selected = false;
   FModified = false;
   FSource = ::ssNone;
+  FSaveOnly = false;
 
   // add also to TSessionLog::AddStartupInfo()
 }
@@ -214,6 +215,8 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(Ftps); \
   PROPERTY(LocalDirectory); \
   PROPERTY(RemoteDirectory); \
+  PROPERTY(Color); \
+  PROPERTY(SynchronizeBrowsing);
 //---------------------------------------------------------------------
 #define ADVANCED_PROPERTIES \
   PROPERTY(PingInterval); \
@@ -234,7 +237,6 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(RekeyTime); \
   PROPERTY(HostKey); \
   \
-  PROPERTY(SynchronizeBrowsing); \
   PROPERTY(UpdateDirectories); \
   PROPERTY(CacheDirectories); \
   PROPERTY(CacheDirectoryChanges); \
@@ -298,8 +300,6 @@ void __fastcall TSessionData::NonPersistant()
     PROPERTY(SFTPBug[(TSftpBug)Index]); \
   } \
   \
-  PROPERTY(Color); \
-  \
   PROPERTY(Tunnel); \
   PROPERTY(TunnelHostName); \
   PROPERTY(TunnelPortNumber); \
@@ -324,23 +324,28 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(MinTlsVersion); \
   PROPERTY(MaxTlsVersion); \
   \
-  PROPERTY(IsWorkspace); \
-  PROPERTY(Link); \
-  \
   PROPERTY(CustomParam1); \
   PROPERTY(CustomParam2);
+#define META_PROPERTIES \
+  PROPERTY(IsWorkspace); \
+  PROPERTY(Link);
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Assign(TPersistent * Source)
 {
   if (Source && Source->InheritsFrom(__classid(TSessionData)))
   {
-    #define PROPERTY(P) P = ((TSessionData *)Source)->P
+    TSessionData * SourceData = (TSessionData *)Source;
+
+    #define PROPERTY(P) P = SourceData->P
     PROPERTY(Name);
     BASE_PROPERTIES;
     ADVANCED_PROPERTIES;
+    META_PROPERTIES;
     #undef PROPERTY
-    FModified = ((TSessionData *)Source)->Modified;
-    FSource = ((TSessionData *)Source)->FSource;
+    FOverrideCachedHostKey = SourceData->FOverrideCachedHostKey;
+    FModified = SourceData->Modified;
+    FSource = SourceData->FSource;
+    FSaveOnly = SourceData->FSaveOnly;
   }
   else
   {
@@ -348,16 +353,41 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
   }
 }
 //---------------------------------------------------------------------
-bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool AdvancedOnly)
+bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties)
 {
-  #define PROPERTY(P) if (P != Default->P) return false;
+  bool Result = true;
+  #define PROPERTY(P) \
+    if (P != Default->P) \
+    { \
+      if (DifferentProperties != NULL) \
+      { \
+        DifferentProperties->Add(#P); \
+      } \
+      Result = false; \
+    }
+
   if (!AdvancedOnly)
   {
     BASE_PROPERTIES;
+    META_PROPERTIES;
   }
   ADVANCED_PROPERTIES;
   #undef PROPERTY
-  return true;
+  return Result;
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool AdvancedOnly)
+{
+  return IsSame(Default, AdvancedOnly, NULL);
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::IsSameSite(const TSessionData * Other)
+{
+  return
+      (FSProtocol == Other->FSProtocol) &&
+      (HostName == Other->HostName) &&
+      (PortNumber == Other->PortNumber) &&
+      (UserName == Other->UserName);
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsInFolderOrWorkspace(UnicodeString AFolder)
@@ -367,6 +397,15 @@ bool __fastcall TSessionData::IsInFolderOrWorkspace(UnicodeString AFolder)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & RewritePassword)
 {
+  // In case we are re-loading, reset passwords, to avoid pointless
+  // re-cryption, while loading username/hostname. And moreover, when
+  // the password is wrongly encrypted (using a different master password),
+  // this breaks sites reload and consequently an overal operation,
+  // such as opening Sites menu
+  FPassword = L"";
+  FProxyPassword = L"";
+  FTunnelPassword = L"";
+
   PortNumber = Storage->ReadInteger(L"PortNumber", PortNumber);
   UserName = Storage->ReadString(L"UserName", UserName);
   // must be loaded after UserName, because HostName may be in format user@host
@@ -1132,6 +1171,26 @@ void __fastcall TSessionData::Remove()
   }
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::CacheHostKeyIfNotCached()
+{
+  UnicodeString KeyType = KeyTypeFromFingerprint(HostKey);
+
+  UnicodeString TargetKey = Configuration->RegistryStorageKey + L"\\" + Configuration->SshHostKeysSubKey;
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(TargetKey));
+  Storage->AccessMode = smReadWrite;
+  if (Storage->OpenRootKey(true))
+  {
+    UnicodeString HostKeyName = PuttyMungeStr(FORMAT(L"%s@%d:%s", (KeyType, PortNumber, HostName)));
+    if (!Storage->ValueExists(HostKeyName))
+    {
+      // we do not want to implement translating fingerprint to formatted key,
+      // so we store fingerprint and TSecureShell::VerifyHostKey was
+      // modified to accept also fingerprint
+      Storage->WriteString(HostKeyName, HostKey);
+    }
+  }
+}
+//---------------------------------------------------------------------
 inline void __fastcall MoveStr(UnicodeString & Source, UnicodeString * Dest, int Count)
 {
   if (Dest != NULL)
@@ -1312,12 +1371,39 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         Ftps = AFtps;
       }
 
+      UnicodeString UserInfoWithoutConnectionParams = CutToChar(UserInfo, L';', false);
+      UnicodeString ConnectionParams = UserInfo;
+      UserInfo = UserInfoWithoutConnectionParams;
+
+      while (!ConnectionParams.IsEmpty())
+      {
+        UnicodeString ConnectionParam = CutToChar(ConnectionParams, L';', false);
+        UnicodeString ConnectionParamName = CutToChar(ConnectionParam, L'=', false);
+        if (AnsiSameText(ConnectionParamName, L"fingerprint"))
+        {
+          HostKey = ConnectionParam;
+          FOverrideCachedHostKey = false;
+        }
+      }
+
       UnicodeString RawUserName = CutToChar(UserInfo, L':', false);
       UserName = DecodeUrlChars(RawUserName);
 
       Password = DecodeUrlChars(UserInfo);
 
-      ARemoteDirectory = Url.SubString(PSlash, Url.Length() - PSlash + 1);
+      UnicodeString RemoteDirectoryWithSessionParams = Url.SubString(PSlash, Url.Length() - PSlash + 1);
+      ARemoteDirectory = CutToChar(RemoteDirectoryWithSessionParams, L';', false);
+      UnicodeString SessionParams = RemoteDirectoryWithSessionParams;
+
+      while (!SessionParams.IsEmpty())
+      {
+        UnicodeString SessionParam = CutToChar(SessionParams, L';', false);
+        UnicodeString SessionParamName = CutToChar(SessionParam, L'=', false);
+        if (AnsiSameText(SessionParamName, L"save"))
+        {
+          FSaveOnly = (StrToIntDef(SessionParam, 1) != 0);
+        }
+      }
 
       if (MaskedUrl != NULL)
       {
@@ -1373,6 +1459,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         Options->FindSwitch(L"certificate", Value))
     {
       HostKey = Value;
+      FOverrideCachedHostKey = true;
     }
     FtpPasvMode = Options->SwitchValue(L"passive", FtpPasvMode);
     if (Options->FindSwitch(L"implicit"))
@@ -1582,11 +1669,15 @@ void __fastcall TSessionData::SetUnsetNationalVars(bool value)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetUserName(UnicodeString value)
 {
-  // UserName is key for password encryption
-  UnicodeString XPassword = Password;
-  SET_SESSION_PROPERTY(UserName);
-  Password = XPassword;
-  Shred(XPassword);
+  // Avoid password recryption (what may popup master password prompt)
+  if (FUserName != value)
+  {
+    // UserName is key for password encryption
+    UnicodeString XPassword = Password;
+    SET_SESSION_PROPERTY(UserName);
+    Password = XPassword;
+    Shred(XPassword);
+  }
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetUserNameExpanded()
@@ -2241,11 +2332,15 @@ void __fastcall TSessionData::SetTunnelPortNumber(int value)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetTunnelUserName(UnicodeString value)
 {
-  // TunnelUserName is key for password encryption
-  UnicodeString XTunnelPassword = TunnelPassword;
-  SET_SESSION_PROPERTY(TunnelUserName);
-  TunnelPassword = XTunnelPassword;
-  Shred(XTunnelPassword);
+  // Avoid password recryption (what may popup master password prompt)
+  if (FTunnelUserName != value)
+  {
+    // TunnelUserName is key for password encryption
+    UnicodeString XTunnelPassword = TunnelPassword;
+    SET_SESSION_PROPERTY(TunnelUserName);
+    TunnelPassword = XTunnelPassword;
+    Shred(XTunnelPassword);
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetTunnelPassword(UnicodeString avalue)
@@ -2634,7 +2729,7 @@ void __fastcall TStoredSessionList::ImportLevelFromFilezilla(_di_IXMLNode Node, 
     _di_IXMLNode ChildNode = Node->ChildNodes->Get(Index);
     if (ChildNode->NodeName == L"Server")
     {
-      std::auto_ptr<TSessionData> SessionData(new TSessionData(L""));
+      std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
       SessionData->Assign(DefaultSettings);
       SessionData->ImportFromFilezilla(ChildNode, Path);
       Add(SessionData.release());
@@ -2761,66 +2856,72 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
   int Color = 0;
   bool Folders = false;
   bool Workspaces = false;
-  std::auto_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
+  std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
+  std::unique_ptr<TStringList> DifferentAdvancedProperties(new TStringList(L""));
+  DifferentAdvancedProperties->Sorted = true;
+  DifferentAdvancedProperties->Duplicates = dupIgnore;
   for (int Index = 0; Index < Count; Index++)
   {
     TSessionData * Data = Sessions[Index];
-    switch (Data->FSProtocol)
-    {
-      case fsSCPonly:
-        SCP++;
-        break;
-
-      case fsSFTP:
-      case fsSFTPonly:
-        SFTP++;
-        break;
-
-      case fsFTP:
-        if (Data->Ftps == ftpsNone)
-        {
-          FTP++;
-        }
-        else
-        {
-          FTPS++;
-        }
-        break;
-
-      case fsWebDAV:
-        if (Data->Ftps == ftpsNone)
-        {
-          WebDAV++;
-        }
-        else
-        {
-          WebDAVS++;
-        }
-        break;
-    }
-
-    if (Data->HasAnyPassword())
-    {
-      Password++;
-    }
-
-    if (Data->Color != 0)
-    {
-      Color++;
-    }
-
-    if (!Data->IsSame(FactoryDefaults.get(), true))
-    {
-      Advanced++;
-    }
-
     if (Data->IsWorkspace)
     {
       Workspaces = true;
     }
-    else if (!Data->FolderName.IsEmpty())
+    else
     {
-      Folders = true;
+      switch (Data->FSProtocol)
+      {
+        case fsSCPonly:
+          SCP++;
+          break;
+
+        case fsSFTP:
+        case fsSFTPonly:
+          SFTP++;
+          break;
+
+        case fsFTP:
+          if (Data->Ftps == ftpsNone)
+          {
+            FTP++;
+          }
+          else
+          {
+            FTPS++;
+          }
+          break;
+
+        case fsWebDAV:
+          if (Data->Ftps == ftpsNone)
+          {
+            WebDAV++;
+          }
+          else
+          {
+            WebDAVS++;
+          }
+          break;
+      }
+
+      if (Data->HasAnyPassword())
+      {
+        Password++;
+      }
+
+      if (Data->Color != 0)
+      {
+        Color++;
+      }
+
+      if (!Data->IsSame(FactoryDefaults.get(), true, DifferentAdvancedProperties.get()))
+      {
+        Advanced++;
+      }
+
+      if (!Data->FolderName.IsEmpty())
+      {
+        Folders = true;
+      }
     }
   }
 
@@ -2833,6 +2934,8 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
   Configuration->Usage->Set(L"StoredSessionsCountPassword", Password);
   Configuration->Usage->Set(L"StoredSessionsCountColor", Color);
   Configuration->Usage->Set(L"StoredSessionsCountAdvanced", Advanced);
+  DifferentAdvancedProperties->Delimiter = L',';
+  Configuration->Usage->Set(L"StoredSessionsAdvancedSettings", DifferentAdvancedProperties->DelimitedText);
 
   // actually default might be true, see below for when the default is actually used
   bool CustomDefaultStoredSession = false;
@@ -3034,7 +3137,7 @@ void __fastcall TStoredSessionList::GetFolderOrWorkspace(const UnicodeString & N
 TStrings * __fastcall TStoredSessionList::GetFolderOrWorkspaceList(
   const UnicodeString & Name)
 {
-  std::auto_ptr<TStringList> Result(new TStringList());
+  std::unique_ptr<TStringList> Result(new TStringList());
 
   for (int Index = 0; (Index < Count); Index++)
   {
@@ -3052,7 +3155,7 @@ TStrings * __fastcall TStoredSessionList::GetFolderOrWorkspaceList(
 //---------------------------------------------------------------------------
 TStrings * __fastcall TStoredSessionList::GetWorkspaces()
 {
-  std::auto_ptr<TStringList> Result(new TStringList());
+  std::unique_ptr<TStringList> Result(new TStringList());
   Result->Sorted = true;
   Result->Duplicates = dupIgnore;
   Result->CaseSensitive = false;

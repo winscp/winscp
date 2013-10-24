@@ -182,7 +182,6 @@ TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
     case fcSessionToolbar: return SessionToolbar;
     case fcCustomCommandsBand: return CustomCommandsToolbar;
     case fcColorMenu: return reinterpret_cast<TControl*>(ColorMenuItem);
-    case fcColorPalette: return reinterpret_cast<TControl*>(SessionColorPalette);
     case fcTransferDropDown: return reinterpret_cast<TControl*>(TransferDropDown);
     case fcTransferList: return reinterpret_cast<TControl*>(TransferList);
     case fcTransferLabel: return reinterpret_cast<TControl*>(TransferLabel);

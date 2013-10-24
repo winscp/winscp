@@ -528,6 +528,29 @@ bool __fastcall TFTPFileSystem::GetActive()
   return FActive;
 }
 //---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::CollectUsage()
+{
+  if (FFileZillaIntf->UsingMlsd())
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPMLSD");
+  }
+  if (FFileZillaIntf->UsingUtf8())
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPUTF8");
+  }
+  if (!CurrentDirectory.IsEmpty() && (CurrentDirectory[1] != L'/'))
+  {
+    if (IsUnixStyleWindowsPath(CurrentDirectory))
+    {
+      FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPWindowsPath");
+    }
+    else
+    {
+      FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPOtherPath");
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::Idle()
 {
   if (FActive && !FWaitingForReply)
@@ -579,7 +602,7 @@ void __fastcall TFTPFileSystem::Discard()
 UnicodeString __fastcall TFTPFileSystem::AbsolutePath(UnicodeString Path, bool /*Local*/)
 {
   // TODO: improve (handle .. etc.)
-  if (TTerminal::IsAbsolutePath(Path))
+  if (UnixIsAbsolutePath(Path))
   {
     return Path;
   }
@@ -1749,6 +1772,8 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcNativeTextMode:
     case fcTimestampChanging:
     case fcIgnorePermErrors:
+    case fcRemoveCtrlZUpload:
+    case fcRemoveBOMUpload:
       return false;
 
     default:
@@ -1965,7 +1990,7 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
     // cache the file list for future
     if ((FFileListCache != NULL) &&
         UnixComparePaths(Path, FFileListCache->Directory) &&
-        (TTerminal::IsAbsolutePath(FFileListCache->Directory) ||
+        (UnixIsAbsolutePath(FFileListCache->Directory) ||
         (FFileListCachePath == CurrentDirectory)))
     {
       AFile = FFileListCache->FindFile(NameOnly);
@@ -3276,7 +3301,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
       Params.Aliases = Aliases;
       Params.AliasesCount = LENOF(Aliases);
       unsigned int Answer = FTerminal->QueryUser(
-        FMTLOAD(VERIFY_CERT_PROMPT2, (FSessionInfo.Certificate)),
+        FMTLOAD(VERIFY_CERT_PROMPT3, (FSessionInfo.Certificate)),
         NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
 
       switch (Answer)

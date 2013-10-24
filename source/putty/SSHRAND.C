@@ -33,10 +33,6 @@ void noise_get_light(void (*func) (void *, int));
 #define HASHSIZE 20		       /* 160 bits SHA output */
 #define POOLSIZE 1200		       /* size of random pool */
 
-#ifdef MPEXT
-extern CRITICAL_SECTION noise_section;
-#endif MPEXT
-
 struct RandPool {
     unsigned char pool[POOLSIZE];
     int poolpos;
@@ -53,6 +49,10 @@ static struct RandPool pool;
 int random_active = 0;
 long next_noise_collection;
 
+#ifdef RANDOM_DIAGNOSTICS
+int random_diagnostics = 0;
+#endif
+
 static void random_stir(void)
 {
     word32 block[HASHINPUT / sizeof(word32)];
@@ -68,6 +68,30 @@ static void random_stir(void)
     pool.stir_pending = TRUE;
 
     noise_get_light(random_add_noise);
+
+#ifdef RANDOM_DIAGNOSTICS
+    {
+        int p, q;
+        printf("random stir starting\npool:\n");
+        for (p = 0; p < POOLSIZE; p += HASHSIZE) {
+            printf("   ");
+            for (q = 0; q < HASHSIZE; q += 4) {
+                printf(" %08x", *(word32 *)(pool.pool + p + q));            
+            }
+            printf("\n");
+        }
+        printf("incoming:\n   ");
+        for (q = 0; q < HASHSIZE; q += 4) {
+            printf(" %08x", *(word32 *)(pool.incoming + q));
+        }
+        printf("\nincomingb:\n   ");
+        for (q = 0; q < HASHINPUT; q += 4) {
+            printf(" %08x", *(word32 *)(pool.incomingb + q));
+        }
+        printf("\n");
+        random_diagnostics++;
+    }
+#endif
 
     SHATransform((word32 *) pool.incoming, (word32 *) pool.incomingb);
     pool.incomingpos = 0;
@@ -120,6 +144,29 @@ static void random_stir(void)
 	    for (k = 0; k < sizeof(digest) / sizeof(*digest); k++)
 		((word32 *) (pool.pool + j))[k] = digest[k];
 	}
+
+#ifdef RANDOM_DIAGNOSTICS
+        if (i == 0) {
+            int p, q;
+            printf("random stir midpoint\npool:\n");
+            for (p = 0; p < POOLSIZE; p += HASHSIZE) {
+                printf("   ");
+                for (q = 0; q < HASHSIZE; q += 4) {
+                    printf(" %08x", *(word32 *)(pool.pool + p + q));            
+                }
+                printf("\n");
+            }
+            printf("incoming:\n   ");
+            for (q = 0; q < HASHSIZE; q += 4) {
+                printf(" %08x", *(word32 *)(pool.incoming + q));
+            }
+            printf("\nincomingb:\n   ");
+            for (q = 0; q < HASHINPUT; q += 4) {
+                printf(" %08x", *(word32 *)(pool.incomingb + q));
+            }
+            printf("\n");
+        }
+#endif
     }
 
     /*
@@ -132,6 +179,30 @@ static void random_stir(void)
     pool.poolpos = sizeof(pool.incoming);
 
     pool.stir_pending = FALSE;
+
+#ifdef RANDOM_DIAGNOSTICS
+    {
+        int p, q;
+        printf("random stir done\npool:\n");
+        for (p = 0; p < POOLSIZE; p += HASHSIZE) {
+            printf("   ");
+            for (q = 0; q < HASHSIZE; q += 4) {
+                printf(" %08x", *(word32 *)(pool.pool + p + q));            
+            }
+            printf("\n");
+        }
+        printf("incoming:\n   ");
+        for (q = 0; q < HASHSIZE; q += 4) {
+            printf(" %08x", *(word32 *)(pool.incoming + q));
+        }
+        printf("\nincomingb:\n   ");
+        for (q = 0; q < HASHINPUT; q += 4) {
+            printf(" %08x", *(word32 *)(pool.incomingb + q));
+        }
+        printf("\n");
+        random_diagnostics--;
+    }
+#endif
 }
 
 void random_add_noise(void *noise, int length)
@@ -206,9 +277,9 @@ static void random_add_heavynoise_bitbybit(void *noise, int length)
     pool.poolpos = i;
 }
 
-static void random_timer(void *ctx, long now)
+static void random_timer(void *ctx, unsigned long now)
 {
-    if (random_active > 0 && now - next_noise_collection >= 0) {
+    if (random_active > 0 && now == next_noise_collection) {
 	noise_regular();
 	next_noise_collection =
 	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer, &pool);
@@ -217,10 +288,8 @@ static void random_timer(void *ctx, long now)
 
 void random_ref(void)
 {
+    MPEXT_PUTTY_SECTION_ENTER;
     if (!random_active) {
-#ifdef MPEXT
-        InitializeCriticalSection(&noise_section);
-#endif
 	memset(&pool, 0, sizeof(pool));    /* just to start with */
 
 	noise_get_heavy(random_add_heavynoise_bitbybit);
@@ -229,54 +298,44 @@ void random_ref(void)
 	next_noise_collection =
 	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer, &pool);
     }
-
-#ifdef MPEXT
-    EnterCriticalSection(&noise_section);
-#endif
     random_active++;
-#ifdef MPEXT
-    LeaveCriticalSection(&noise_section);
-#endif
+    MPEXT_PUTTY_SECTION_LEAVE;
 }
 
 void random_unref(void)
 {
-#ifdef MPEXT
-    EnterCriticalSection(&noise_section);
-#endif
-    random_active--;
-    assert(random_active >= 0);
-#ifdef MPEXT
-    if (random_active)
-    {
-        LeaveCriticalSection(&noise_section);
-        return;
+    MPEXT_PUTTY_SECTION_ENTER;
+    assert(random_active > 0);
+    if (random_active == 1) {
+        #ifndef MPEXT
+        // We control this on our own in PuttyFinalize()
+        random_save_seed();
+        #endif
+        expire_timer_context(&pool);
     }
-#else
-    if (random_active) return;
-#endif
-
-    expire_timer_context(&pool);
-#ifdef MPEXT
-    LeaveCriticalSection(&noise_section);
-#endif
+    random_active--;
+    MPEXT_PUTTY_SECTION_LEAVE;
 }
 
 int random_byte(void)
 {
 #ifdef MPEXT
-    int pos = pool.poolpos;
+    int pos;
+
+    assert(random_active);
+
+    pos = pool.poolpos;
 
     if (pos < sizeof(pool.incoming) || pos >= POOLSIZE)
     {
-      EnterCriticalSection(&noise_section);
+      MPEXT_PUTTY_SECTION_ENTER;
       if (pool.poolpos >= POOLSIZE)
       {
         random_stir();
       }
       pos = pool.poolpos;
       pool.poolpos++;
-      LeaveCriticalSection(&noise_section);
+      MPEXT_PUTTY_SECTION_LEAVE;
     }
     else
     {
@@ -285,6 +344,8 @@ int random_byte(void)
 
     return pool.pool[pos];
 #else
+    assert(random_active);
+
     if (pool.poolpos >= POOLSIZE)
 	random_stir();
 
@@ -295,15 +356,11 @@ int random_byte(void)
 void random_get_savedata(void **data, int *len)
 {
     void *buf = snewn(POOLSIZE / 2, char);
-#ifdef MPEXT
-    EnterCriticalSection(&noise_section);
-#endif
+    MPEXT_PUTTY_SECTION_ENTER;
     random_stir();
     memcpy(buf, pool.pool + pool.poolpos, POOLSIZE / 2);
     *len = POOLSIZE / 2;
     *data = buf;
     random_stir();
-#ifdef MPEXT
-    LeaveCriticalSection(&noise_section);
-#endif
+    MPEXT_PUTTY_SECTION_LEAVE;
 }

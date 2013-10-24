@@ -10,6 +10,8 @@
 
 #include <WinInterface.h>
 #include <CopyParam.h>
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.Imaging.pngimage.hpp>
 //---------------------------------------------------------------------------
 class TFullSynchronizeDialog : public TForm
 {
@@ -43,6 +45,7 @@ __published:
   TRadioButton *SynchronizeFilesButton;
   TRadioButton *MirrorFilesButton;
   TRadioButton *SynchronizeTimestampsButton;
+  TImage *Image;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);

@@ -28,6 +28,7 @@ public:
   virtual void __fastcall Open();
   virtual void __fastcall Close();
   virtual bool __fastcall GetActive();
+  virtual void __fastcall CollectUsage();
   virtual void __fastcall Idle();
   virtual UnicodeString __fastcall AbsolutePath(UnicodeString Path, bool Local);
   virtual void __fastcall AnyCommand(const UnicodeString Command,
@@ -98,7 +99,6 @@ protected:
   TStrings * FExtensions;
   TSFTPSupport * FSupport;
   bool FUtfStrings;
-  bool FUtfNever;
   bool FSignedTS;
   bool FOpenSSH;
   TStrings * FFixedPaths;
@@ -112,7 +112,6 @@ protected:
   virtual UnicodeString __fastcall GetCurrentDirectory();
   UnicodeString __fastcall GetHomeDirectory();
   unsigned long __fastcall GotStatusPacket(TSFTPPacket * Packet, int AllowStatus);
-  bool __fastcall inline IsAbsolutePath(const UnicodeString Path);
   bool __fastcall RemoteFileExists(const UnicodeString FullPath, TRemoteFile ** File = NULL);
   TRemoteFile * __fastcall LoadFile(TSFTPPacket * Packet,
     TRemoteFile * ALinkedByFile, const UnicodeString FileName,

@@ -355,7 +355,8 @@ type
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
-    function AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean): Boolean;
+    function AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean;
+      FocusedFileOnlyWhenFocused: Boolean): Boolean;
     constructor Create(AOwner: TComponent); override;
     procedure CreateDirectory(DirName: string); virtual; abstract;
     destructor Destroy; override;
@@ -1649,7 +1650,9 @@ begin
     Point.Y := Message.YPos;
     Point := ScreenToClient(Point);
     if Assigned(OnMouseDown) then
+    begin
       OnMouseDown(Self, mbRight, [], Point.X, Point.Y);
+    end;
     if FUseSystemContextMenu and Assigned(ItemFocused) and
        (GetItemAt(Point.X, Point.Y) = ItemFocused) then
     begin
@@ -1659,7 +1662,9 @@ begin
     end
       else
     if Assigned(PopupMenu) and (not PopupMenu.AutoPopup) then
+    begin
       PopupMenu.Popup(Message.XPos, Message.YPos);
+    end;
   end;
   FContextMenu := False;
   //inherited;
@@ -2394,12 +2399,15 @@ begin
   end;
 end;
 
-function TCustomDirView.AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean): Boolean;
+function TCustomDirView.AnyFileSelected(
+  OnlyFocused: Boolean; FilesOnly: Boolean; FocusedFileOnlyWhenFocused: Boolean): Boolean;
 var
   Item: TListItem;
 begin
   if OnlyFocused or
-     ((SelCount = 0) and Focused and GetParentForm(Self).Active) then
+     ((SelCount = 0) and
+      ((not FocusedFileOnlyWhenFocused) or
+       (Focused and (GetParentForm(Self).Handle = GetForegroundWindow())))) then
   begin
     Result := Assigned(ItemFocused) and ItemIsFile(ItemFocused) and
       ((not FilesOnly) or (not ItemIsDirectory(ItemFocused)));

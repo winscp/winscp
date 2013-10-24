@@ -71,6 +71,7 @@ private:
   TOnceDoneOperation FOnceDoneOperation;
   TProgressBar * FOperationProgress;
   TProgressBar * FFileProgress;
+  TDateTime FStarted;
 
   void __fastcall SetOnceDoneOperation(TOnceDoneOperation value);
   void __fastcall SetAllowMinimize(bool value);

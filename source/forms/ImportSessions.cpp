@@ -20,17 +20,17 @@
 //---------------------------------------------------------------------
 bool __fastcall DoImportSessionsDialog()
 {
-  std::auto_ptr<TStoredSessionList> PuttyImportSessionList(
+  std::unique_ptr<TStoredSessionList> PuttyImportSessionList(
     GUIConfiguration->SelectPuttySessionsForImport(StoredSessions));
-  std::auto_ptr<TStoredSessionList> FilezillaImportSessionList(
+  std::unique_ptr<TStoredSessionList> FilezillaImportSessionList(
     GUIConfiguration->SelectFilezillaSessionsForImport(StoredSessions));
 
-  std::auto_ptr<TList> SessionListsList(new TList());
+  std::unique_ptr<TList> SessionListsList(new TList());
   SessionListsList->Add(PuttyImportSessionList.get());
   SessionListsList->Add(FilezillaImportSessionList.get());
 
   bool ImportKeys = true;
-  std::auto_ptr<TImportSessionsDialog> ImportSessionsDialog(
+  std::unique_ptr<TImportSessionsDialog> ImportSessionsDialog(
     new TImportSessionsDialog(Application, SessionListsList.get()));
 
   bool Result = ImportSessionsDialog->Execute(ImportKeys);

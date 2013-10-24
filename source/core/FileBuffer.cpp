@@ -124,26 +124,30 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,
 
     for (int Index = 0; Index < Size; Index++)
     {
-      // EOL already in wanted format, make sure to pass unmodified
+      // EOL already in destination format, make sure to pass it unmodified
       if ((Index < Size - 1) && (*Ptr == Dest[0]) && (*(Ptr+1) == Dest[1]))
       {
         Index++;
         Ptr++;
       }
-      // last buffer ended with the first char of wanted EOL format,
-      // which got expanded to wanted format.
+      // last buffer ended with the first char of destination 2-char EOL format,
+      // which got expanded to full destination format.
       // now we got the second char, so get rid of it.
       else if ((Index == 0) && PrevToken && (*Ptr == Dest[1]))
       {
         Delete(Index, 1);
       }
+      // we are ending with the first char of destination 2-char EOL format,
+      // append the second char and make sure we strip it from the next buffer, if any
+      else if ((*Ptr == Dest[0]) && (Index == Size - 1) && Dest[1])
+      {
+        Token = true;
+        Insert(Index+1, Dest+1, 1);
+        Index++;
+        Ptr = Data + Index;
+      }
       else if (*Ptr == Source[0])
       {
-        if ((*Ptr == Dest[0]) && (Index == Size - 1))
-        {
-          Token = true;
-        }
-
         *Ptr = Dest[0];
         if (Dest[1])
         {

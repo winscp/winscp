@@ -22,6 +22,7 @@
 #include "Tools.h"
 #include "Setup.h"
 #include <StrUtils.hpp>
+#include "ProgParams.h"
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -363,6 +364,8 @@ void __fastcall TemporaryDirectoryCleanup()
 
       if (Continue)
       {
+        Configuration->Usage->Inc(L"TemporaryDirectoryCleanupConfirmations");
+
         TQueryButtonAlias Aliases[1];
         Aliases[0].Button = qaRetry;
         Aliases[0].Alias = LoadStr(OPEN_BUTTON);
@@ -371,8 +374,8 @@ void __fastcall TemporaryDirectoryCleanup()
         Params.AliasesCount = LENOF(Aliases);
 
         unsigned int Answer = MoreMessageDialog(
-          FMTLOAD(CLEANTEMP_CONFIRM, (Folders->Count)), Folders,
-          qtWarning, qaYes | qaNo | qaRetry, HELP_CLEAN_TEMP_CONFIRM, &Params);
+          FMTLOAD(CLEANTEMP_CONFIRM2, (Folders->Count)), Folders,
+          qtConfirmation, qaYes | qaNo | qaRetry, HELP_CLEAN_TEMP_CONFIRM, &Params);
 
         if (Answer == qaNeverAskAgain)
         {
@@ -636,7 +639,7 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
     {
       if (Force)
       {
-        Message = LoadStr(UPDATE_DISABLED)+L"%s";
+        Message = LoadStr(UPDATE_DISABLED);
       }
     }
     else
@@ -649,23 +652,24 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
         {
           Version = FORMAT(L"%s %s", (Version, Updates.Results.Release));
         }
-        Message = FMTLOAD(NEW_VERSION3, (Version, L"%s"));
+        Message = FMTLOAD(NEW_VERSION4, (Version));
       }
       else
       {
-        Message = LoadStr(NO_NEW_VERSION) + L"%s";
+        Message = LoadStr(NO_NEW_VERSION);
       }
+    }
+
+    if (!Message.IsEmpty())
+    {
+      Message = MainInstructions(Message);
     }
 
     if (!Updates.Results.Message.IsEmpty())
     {
-      Message = FORMAT(Message,
-        (FMTLOAD(UPDATE_MESSAGE,
-          (ReplaceStr(Updates.Results.Message, L"|", L"\n")))));
-    }
-    else
-    {
-      Message = FORMAT(Message, (L""));
+      Message +=
+        FMTLOAD(UPDATE_MESSAGE,
+          (ReplaceStr(Updates.Results.Message, L"|", L"\n")));
     }
     Type = (Updates.Results.Critical ? qtWarning : qtInformation);
   }
@@ -673,6 +677,12 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
   {
     New = false;
   }
+}
+//---------------------------------------------------------------------------
+static void __fastcall OpenHistory(void * /*Data*/, TObject * /*Sender*/)
+{
+  Configuration->Usage->Inc(L"UpdateHistoryOpens");
+  OpenBrowser(LoadStr(HISTORY_URL));
 }
 //---------------------------------------------------------------------------
 void __fastcall CheckForUpdates(bool CachedResults)
@@ -715,16 +725,33 @@ void __fastcall CheckForUpdates(bool CachedResults)
       TQueryType Type;
       GetUpdatesMessage(Message, New, Type, true);
 
+      Configuration->Usage->Inc(L"UpdateDisplays");
+      if (New)
+      {
+        Configuration->Usage->Inc(L"UpdateDisplaysNew");
+      }
+
       if (Updates.HaveResults)
       {
-        Message += L"\n\n" +
-          FMTLOAD(UPDATE_LAST,
-            (FormatDateTime("ddddd", Updates.LastCheck)));
+        bool ShowLast = Cached;
+        bool ShowNext = (double(Updates.Period) > 0);
 
-        if (double(Updates.Period) > 0)
+        if (ShowLast || ShowNext)
         {
-          Message += L"\n" +
-            FMTLOAD(UPDATE_NEXT, (FormatDateTime("ddddd", Updates.LastCheck + Updates.Period)));
+          Message += L"\n";
+
+          if (ShowLast)
+          {
+            Message += L"\n" +
+              FMTLOAD(UPDATE_LAST,
+                (FormatDateTime("ddddd", Updates.LastCheck)));
+          }
+
+          if (ShowNext)
+          {
+            Message += L"\n" +
+              FMTLOAD(UPDATE_NEXT, (FormatDateTime("ddddd", Updates.LastCheck + Updates.Period)));
+          }
         }
       }
 
@@ -747,6 +774,7 @@ void __fastcall CheckForUpdates(bool CachedResults)
       }
       Aliases[2].Button = qaAll;
       Aliases[2].Alias = LoadStr(WHATS_NEW_BUTTON);
+      Aliases[2].OnClick = MakeMethod<TNotifyEvent>(NULL, OpenHistory);
       Aliases[3].Button = qaOK;
       Aliases[3].Alias = LoadStr(DOWNLOAD_BUTTON);
 
@@ -762,6 +790,7 @@ void __fastcall CheckForUpdates(bool CachedResults)
         case qaOK:
           if (New)
           {
+            Configuration->Usage->Inc(L"UpdateDownloadOpens");
             OpenBrowser(LoadStr(DOWNLOAD_URL));
           }
           break;
@@ -771,7 +800,7 @@ void __fastcall CheckForUpdates(bool CachedResults)
           break;
 
         case qaAll:
-          OpenBrowser(LoadStr(HISTORY_URL));
+          FAIL;
           break;
 
         case qaRetry:
@@ -855,6 +884,8 @@ static bool __fastcall AddJumpListCategory(TStrings * Names,
   {
     try
     {
+      AddToList(AdditionalParams, TProgramParams::FormatSwitch(JUMPLIST_SWITCH), L" ");
+
       int Count = 0;
       for (int Index = 0; Index < Names->Count; Index++)
       {
@@ -924,8 +955,10 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
     {
 
       unsigned int MinSlots;
-      if (SUCCEEDED(DestinationList->BeginList(&MinSlots, IID_IObjectArray, (void**)&RemovedArray)) &&
-          (RemovedArray != NULL))
+      unsigned int * PMinSlots = &MinSlots;
+      void ** PRemovedArray = (void**)&RemovedArray;
+      HRESULT Result = DestinationList->BeginList(PMinSlots, IID_IObjectArray, PRemovedArray);
+      if (SUCCEEDED(Result) && ALWAYS_TRUE(RemovedArray != NULL))
       {
         Removed = new TStringList();
 
@@ -951,7 +984,7 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
           LoadStr(JUMPLIST_WORKSPACES), WORKSPACE_ICON);
 
         AddJumpListCategory(
-          SessionNames, L"/UploadIfAny", Removed, DestinationList,
+          SessionNames, TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH), Removed, DestinationList,
           LoadStr(JUMPLIST_RECENT), SITE_ICON);
 
         if (DestinationList != NULL)

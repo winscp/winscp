@@ -141,7 +141,7 @@ bool __fastcall TCopyParamRule::operator==(const TCopyParamRule & rhp) const
 #undef C
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamRule::Match(const UnicodeString & Mask,
-  const UnicodeString & Value, bool Path, bool Local) const
+  const UnicodeString & Value, bool Path, bool Local, int ForceDirectoryMasks) const
 {
   bool Result;
   if (Mask.IsEmpty())
@@ -150,7 +150,7 @@ bool __fastcall TCopyParamRule::Match(const UnicodeString & Mask,
   }
   else
   {
-    TFileMasks M(1);
+    TFileMasks M(ForceDirectoryMasks);
     M.Masks = Mask;
     if (Path)
     {
@@ -167,10 +167,10 @@ bool __fastcall TCopyParamRule::Match(const UnicodeString & Mask,
 bool __fastcall TCopyParamRule::Matches(const TCopyParamRuleData & Value) const
 {
   return
-    Match(FData.HostName, Value.HostName, false) &&
-    Match(FData.UserName, Value.UserName, false) &&
-    Match(FData.RemoteDirectory, Value.RemoteDirectory, true, false) &&
-    Match(FData.LocalDirectory, Value.LocalDirectory, true, true);
+    Match(FData.HostName, Value.HostName, false, true, 0) &&
+    Match(FData.UserName, Value.UserName, false, true, 0) &&
+    Match(FData.RemoteDirectory, Value.RemoteDirectory, true, false, 1) &&
+    Match(FData.LocalDirectory, Value.LocalDirectory, true, true, 1);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamRule::Load(THierarchicalStorage * Storage)
@@ -617,6 +617,7 @@ void __fastcall TGUIConfiguration::DefaultLocalized()
 void __fastcall TGUIConfiguration::UpdateStaticUsage()
 {
   Usage->Set(L"CopyParamsCount", (FCopyParamListDefaults ? 0 : FCopyParamList->Count));
+  Usage->Set(L"Putty", ExtractProgramName(PuttyPath));
 }
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
@@ -1169,10 +1170,10 @@ void __fastcall TGUIConfiguration::SetQueueKeepDoneItemsFor(int value)
 TStoredSessionList * __fastcall TGUIConfiguration::SelectPuttySessionsForImport(
   TStoredSessionList * Sessions)
 {
-  std::auto_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
+  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
   ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
 
-  std::auto_ptr<TRegistryStorage> Storage(new TRegistryStorage(PuttySessionsKey));
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(PuttySessionsKey));
   Storage->ForceAnsi = true;
   if (Storage->OpenRootKey(false))
   {
@@ -1194,7 +1195,7 @@ bool __fastcall TGUIConfiguration::AnyPuttySessionForImport(TStoredSessionList *
 {
   try
   {
-    std::auto_ptr<TStoredSessionList> Sesssions(SelectPuttySessionsForImport(Sessions));
+    std::unique_ptr<TStoredSessionList> Sesssions(SelectPuttySessionsForImport(Sessions));
     return (Sesssions->Count > 0);
   }
   catch (...)
@@ -1206,7 +1207,7 @@ bool __fastcall TGUIConfiguration::AnyPuttySessionForImport(TStoredSessionList *
 TStoredSessionList * __fastcall TGUIConfiguration::SelectFilezillaSessionsForImport(
   TStoredSessionList * Sessions)
 {
-  std::auto_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
+  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
   ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
 
   UnicodeString AppDataPath = GetShellFolderPath(CSIDL_APPDATA);
@@ -1227,7 +1228,7 @@ bool __fastcall TGUIConfiguration::AnyFilezillaSessionForImport(TStoredSessionLi
 {
   try
   {
-    std::auto_ptr<TStoredSessionList> Sesssions(SelectFilezillaSessionsForImport(Sessions));
+    std::unique_ptr<TStoredSessionList> Sesssions(SelectFilezillaSessionsForImport(Sessions));
     return (Sesssions->Count > 0);
   }
   catch (...)

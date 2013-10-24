@@ -100,7 +100,6 @@ private:
   void __fastcall SetIniFileStorageName(UnicodeString value);
   UnicodeString __fastcall GetPartialExt() const;
   UnicodeString __fastcall GetFileInfoString(const UnicodeString Key);
-  bool __fastcall GetGSSAPIInstalled();
   void __fastcall SetSessionReopenAuto(int value);
   void __fastcall SetSessionReopenBackground(int value);
   void __fastcall SetSessionReopenTimeout(int value);
@@ -247,7 +246,6 @@ public:
   __property bool DisablePasswordStoring = { read = FDisablePasswordStoring };
   __property bool ForceBanners = { read = FForceBanners };
   __property bool DisableAcceptingHostKeys = { read = FDisableAcceptingHostKeys };
-  __property bool GSSAPIInstalled = { read = GetGSSAPIInstalled };
 };
 //---------------------------------------------------------------------------
 class TShortCuts

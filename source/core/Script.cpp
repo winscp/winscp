@@ -2090,7 +2090,7 @@ UnicodeString __fastcall TManagementScript::GetLogCmd(const UnicodeString & Full
   if (SameText(FCommands->ResolveCommand(Command), L"open"))
   {
     UnicodeString AParams = Params;
-    std::auto_ptr<TScriptProcParams> Parameters(new TScriptProcParams(L""));
+    std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(L""));
 
     UnicodeString MaskedParams;
     UnicodeString Param;
@@ -2111,7 +2111,7 @@ UnicodeString __fastcall TManagementScript::GetLogCmd(const UnicodeString & Full
       UnicodeString MaskedUrl;
       bool DefaultsOnly;
 
-      std::auto_ptr<TSessionData> Data(
+      std::unique_ptr<TSessionData> Data(
         FStoredSessions->ParseUrl(Session, Parameters.get(), DefaultsOnly, NULL, NULL, &MaskedUrl));
       if (Session != MaskedUrl)
       {

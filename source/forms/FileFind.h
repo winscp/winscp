@@ -13,6 +13,7 @@
 #include <ExtCtrls.hpp>
 #include "IEListView.hpp"
 #include "NortonLikeListView.hpp"
+#include <Vcl.Imaging.pngimage.hpp>
 //---------------------------------------------------------------------------
 class TFileFindDialog : public TForm
 {
@@ -31,6 +32,7 @@ __published:
   TButton *MinimizeButton;
   TStaticText *MaskHintText;
   TButton *MaskButton;
+  TImage *Image;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall StartStopButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);

@@ -20,6 +20,7 @@
 #include "WinInterface.h"
 #include "WinConfiguration.h"
 #include "Setup.h"
+#include "ProgParams.h"
 //---------------------------------------------------------------------
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
@@ -89,7 +90,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   EditorEncodingCombo->Items->Add(DefaultEncodingName());
   EditorEncodingCombo->Items->Add(LoadStr(UTF8_NAME));
 
-  std::auto_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
+  std::unique_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
   AutoWorkspaceCombo->Items->AddStrings(Workspaces.get());
   AutoSaveWorkspacePasswordsCheck->Caption = LoadStr(SAVE_WORKSPACE_PASSWORDS);
 
@@ -387,8 +388,11 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     // window
     AutoSaveWorkspaceCheck->Checked = WinConfiguration->AutoSaveWorkspace;
     AutoWorkspaceCombo->Text =
-      (WinConfiguration->AutoWorkspace.IsEmpty() ?
-        WinConfiguration->LastWorkspace : WinConfiguration->AutoWorkspace);
+      DefaultStr(WinConfiguration->AutoWorkspace,
+        // It will rarely happen that LastWorkspace is set, while AutoWorkspace not.
+        // It can happen only when user saved workspace before opening the Preferences
+        // dialog for the first time
+        DefaultStr(WinConfiguration->LastWorkspace, LoadStr(NEW_WORKSPACE)));
     AutoSaveWorkspacePasswordsCheck->Checked = WinConfiguration->AutoSaveWorkspacePasswords;
     if (WinConfiguration->PathInCaption == picFull)
     {
@@ -1054,6 +1058,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     // window
     EnableControl(AutoWorkspaceCombo, AutoSaveWorkspaceCheck->Checked);
+    EnableControl(AutoWorkspaceLabel, AutoWorkspaceCombo->Enabled);
     EnableControl(AutoSaveWorkspacePasswordsCheck,
       !Configuration->DisablePasswordStoring &&
       AutoWorkspaceCombo->Enabled);
@@ -1118,7 +1123,7 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
   {
     IconName = AppName;
     int Result =
-      MessageDialog(LoadStr(CREATE_DESKTOP_ICON), qtConfirmation,
+      MessageDialog(LoadStr(CREATE_DESKTOP_ICON2), qtConfirmation,
         qaYes | qaNo | qaCancel, HELP_CREATE_ICON);
     switch (Result)
     {
@@ -1137,14 +1142,14 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
   }
   else
   {
-    if (MessageDialog(LoadStr(CONFIRM_CREATE_ICON),
+    if (MessageDialog(MainInstructions(LoadStr(CONFIRM_CREATE_ICON)),
           qtConfirmation, qaYes | qaNo, HELP_CREATE_ICON) == qaYes)
     {
       if (Sender == SendToHookButton)
       {
         IconName = FMTLOAD(SENDTO_HOOK_NAME, (AppName));
         SpecialFolder = CSIDL_SENDTO;
-        Params = L"/upload";
+        Params = TProgramParams::FormatSwitch(UPLOAD_SWITCH);
       }
       else if (Sender == QuickLaunchIconButton)
       {
@@ -1738,7 +1743,7 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
 void __fastcall TPreferencesDialog::RegisterAsUrlHandlerButtonClick(
   TObject * /*Sender*/)
 {
-  if (MessageDialog(LoadStr(CONFIRM_REGISTER_URL),
+  if (MessageDialog(MainInstructions(LoadStr(CONFIRM_REGISTER_URL)),
         qtConfirmation, qaYes | qaNo, HELP_REGISTER_URL) == qaYes)
   {
     RegisterAsUrlHandler();
@@ -1755,7 +1760,7 @@ void __fastcall TPreferencesDialog::AddSearchPathButtonClick(
   TObject * /*Sender*/)
 {
   UnicodeString AppPath = ExtractFilePath(Application->ExeName);
-  if (MessageDialog(FMTLOAD(CONFIRM_ADD_SEARCH_PATH, (AppPath)),
+  if (MessageDialog(MainInstructions(FMTLOAD(CONFIRM_ADD_SEARCH_PATH, (AppPath))),
         qtConfirmation, qaYes | qaNo, HELP_ADD_SEARCH_PATH) == qaYes)
   {
     AddSearchPath(AppPath);
@@ -1913,12 +1918,15 @@ void __fastcall TPreferencesDialog::MasterPasswordChanged(
   // when writting the recrypted passwords
   Configuration->SaveExplicit();
 
+  TQueryType QueryType = qtInformation;
   if (RecryptPasswordErrors->Count > 0)
   {
     Message = FMTLOAD(MASTER_PASSWORD_RECRYPT_ERRORS, (Message));
+    QueryType = qtWarning;
   }
+  Message = MainInstructions(Message);
   MoreMessageDialog(
-    Message, RecryptPasswordErrors, qtInformation, qaOK, HELP_MASTER_PASSWORD);
+    Message, RecryptPasswordErrors, QueryType, qaOK, HELP_MASTER_PASSWORD);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::ChangeMasterPassword(UnicodeString Message)
@@ -1926,7 +1934,7 @@ void __fastcall TPreferencesDialog::ChangeMasterPassword(UnicodeString Message)
   UnicodeString NewPassword;
   if (DoChangeMasterPasswordDialog(NewPassword))
   {
-    std::auto_ptr<TStrings> RecryptPasswordErrors(new TStringList());
+    std::unique_ptr<TStrings> RecryptPasswordErrors(new TStringList());
     WinConfiguration->ChangeMasterPassword(NewPassword, RecryptPasswordErrors.get());
     MasterPasswordChanged(Message, RecryptPasswordErrors.get());
   }
@@ -1949,7 +1957,7 @@ void __fastcall TPreferencesDialog::UseMasterPasswordCheckClick(
         {
           if (DoMasterPasswordDialog())
           {
-            std::auto_ptr<TStrings> RecryptPasswordErrors(new TStringList());
+            std::unique_ptr<TStrings> RecryptPasswordErrors(new TStringList());
             WinConfiguration->ClearMasterPassword(RecryptPasswordErrors.get());
             MasterPasswordChanged(LoadStr(MASTER_PASSWORD_CLEARED), RecryptPasswordErrors.get());
           }
@@ -1980,7 +1988,7 @@ void __fastcall TPreferencesDialog::UsageViewButtonClick(TObject * /*Sender*/)
   {
     Data->Text = GetUsageData();
     UnicodeString Message =
-      LoadStr(Data->Text.IsEmpty() ? USAGE_DATA_NONE : USAGE_DATA);
+      Data->Text.IsEmpty() ? MainInstructions(LoadStr(USAGE_DATA_NONE)) : LoadStr(USAGE_DATA2);
     MoreMessageDialog(Message, Data, qtInformation, qaOK, HELP_USAGE);
   }
   __finally

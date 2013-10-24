@@ -10,8 +10,6 @@
 #pragma comment(lib, "uafxcwd.lib")
 #endif
 //---------------------------------------------------------------------------
-#define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
-//---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 void __fastcall TFileZillaIntf::Initialize()
@@ -78,7 +76,7 @@ void __fastcall TFileZillaIntf::Destroying()
 bool __fastcall TFileZillaIntf::SetCurrentPath(const wchar_t * APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath, FServer->nServerType);
+  CServerPath Path(APath);
   return Check(FFileZillaApi->SetCurrentPath(Path), L"setcurrentpath");
 }
 //---------------------------------------------------------------------------
@@ -173,7 +171,7 @@ bool __fastcall TFileZillaIntf::CustomCommand(const wchar_t * Command)
 bool __fastcall TFileZillaIntf::MakeDir(const wchar_t* APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath, FServer->nServerType);
+  CServerPath Path(APath);
   return Check(FFileZillaApi->MakeDir(Path), L"makedir");
 }
 //---------------------------------------------------------------------------
@@ -181,21 +179,21 @@ bool __fastcall TFileZillaIntf::Chmod(int Value, const wchar_t* FileName,
   const wchar_t* APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath, FServer->nServerType);
+  CServerPath Path(APath);
   return Check(FFileZillaApi->Chmod(Value, FileName, Path), L"chmod");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::Delete(const wchar_t* FileName, const wchar_t* APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath, FServer->nServerType);
+  CServerPath Path(APath);
   return Check(FFileZillaApi->Delete(FileName, Path), L"delete");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::RemoveDir(const wchar_t* FileName, const wchar_t* APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath, FServer->nServerType);
+  CServerPath Path(APath);
   return Check(FFileZillaApi->RemoveDir(FileName, Path), L"removedir");
 }
 //---------------------------------------------------------------------------
@@ -203,8 +201,8 @@ bool __fastcall TFileZillaIntf::Rename(const wchar_t* OldName,
   const wchar_t* NewName, const wchar_t* APath, const wchar_t* ANewPath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath, FServer->nServerType);
-  CServerPath NewPath(ANewPath, FServer->nServerType);
+  CServerPath Path(APath);
+  CServerPath NewPath(ANewPath);
   return Check(FFileZillaApi->Rename(OldName, NewName, Path, NewPath), L"rename");
 }
 //---------------------------------------------------------------------------
@@ -217,7 +215,7 @@ bool __fastcall TFileZillaIntf::List()
 bool __fastcall TFileZillaIntf::List(const wchar_t * APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath, FServer->nServerType);
+  CServerPath Path(APath);
   return Check(FFileZillaApi->List(Path), L"list");
 }
 //---------------------------------------------------------------------------
@@ -240,7 +238,7 @@ bool __fastcall TFileZillaIntf::FileTransfer(const wchar_t * LocalFile,
 
   Transfer.localfile = LocalFile;
   Transfer.remotefile = RemoteFile;
-  Transfer.remotepath = CServerPath(RemotePath, FServer->nServerType);
+  Transfer.remotepath = CServerPath(RemotePath);
   Transfer.get = Get;
   Transfer.size = Size;
   Transfer.server = *FServer;
@@ -522,6 +520,11 @@ inline bool __fastcall TFileZillaIntf::Check(int ReturnCode,
 bool __fastcall TFileZillaIntf::UsingMlsd()
 {
   return FFileZillaApi->UsingMlsd();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileZillaIntf::UsingUtf8()
+{
+  return FFileZillaApi->UsingUtf8();
 }
 //---------------------------------------------------------------------------
 std::string __fastcall TFileZillaIntf::GetTlsVersionStr()

@@ -589,9 +589,10 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
 
 		if (!m_nShutDown && pSSL_get_shutdown(m_ssl))
 		{
-			if (pBIO_ctrl_pending(m_sslbio) <= 0)
+			size_t pending = pBIO_ctrl_pending(m_sslbio);
+			if (pending <= 0)
 			{
-				if (ShutDown() || GetLastError() != WSAEWOULDBLOCK)
+				if (ShutDown() || GetLastError() == WSAEWOULDBLOCK)
 				{
 					if (ShutDownComplete())
 						TriggerEvent(FD_CLOSE, 0, TRUE);
@@ -616,7 +617,9 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
 		TriggerEvents();
 	}
 	else
+	{
 		TriggerEvent(FD_READ, nErrorCode, TRUE);
+	}
 }
 
 void CAsyncSslSocketLayer::OnSend(int nErrorCode)
@@ -660,7 +663,7 @@ void CAsyncSslSocketLayer::OnSend(int nErrorCode)
 
 		//Send the data waiting in the network bio
 		char buffer[16384];
-		int len = pBIO_ctrl_pending(m_nbio);
+		size_t len = pBIO_ctrl_pending(m_nbio);
 		int numread = pBIO_read(m_nbio, buffer, len);
 		if (numread <= 0)
 			m_mayTriggerWrite = true;
@@ -862,7 +865,8 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 		}
 		if (m_nNetworkError)
 		{
-			if (pBIO_ctrl(m_sslbio, BIO_CTRL_PENDING, 0, NULL) && !m_nShutDown)
+			size_t pending = pBIO_ctrl_pending(m_sslbio);
+			if (pending && !m_nShutDown)
 			{
 				m_mayTriggerReadUp = true;
 				TriggerEvents();
@@ -880,7 +884,8 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 		{
 			return 0;
 		}
-		if (!pBIO_ctrl(m_sslbio, BIO_CTRL_PENDING, 0, NULL))
+		size_t pending = pBIO_ctrl_pending(m_sslbio);
+		if (!pending)
 		{
 			if (GetLayerState() == closed)
 			{
@@ -1077,7 +1082,11 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 		{
 			USES_CONVERSION;
 			pSSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_PEER, verify_callback);
-			pSSL_CTX_load_verify_locations(m_ssl_ctx, T2CA(m_CertStorage), 0);
+			CFileStatus Dummy;
+			if (CFile::GetStatus((LPCTSTR)m_CertStorage, Dummy))
+			{
+				pSSL_CTX_load_verify_locations(m_ssl_ctx, T2CA(m_CertStorage), 0);
+			}
 		}
 	}
 
@@ -1118,6 +1127,9 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 		MASK_TLS_VERSION(SSL_VERSION_TLS11, SSL_OP_NO_TLSv1_1) |
 		MASK_TLS_VERSION(SSL_VERSION_TLS12, SSL_OP_NO_TLSv1_2);
 	pSSL_ctrl(m_ssl, SSL_CTRL_OPTIONS, options, NULL);
+
+	LogSocketMessage(FZ_LOG_INFO, _T("Loading system certificates"));
+	LoadSslWindowsSystemCertificateStore(m_ssl_ctx);
 
 	//Init SSL connection
 	void *ssl_sessionid = NULL;
@@ -1386,7 +1398,8 @@ BOOL CAsyncSslSocketLayer::ShutDownComplete()
 		numread = pBIO_read(m_sslbio, buffer, 1000);
 	} while (numread > 0);
 
-	if (pBIO_ctrl_pending(m_nbio))
+	size_t pending = pBIO_ctrl_pending(m_nbio);
+	if (pending)
 	{
 		return FALSE;
 	}
@@ -1398,6 +1411,7 @@ BOOL CAsyncSslSocketLayer::ShutDownComplete()
 
 void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int ret)
 {
+	USES_CONVERSION;
 	CAsyncSslSocketLayer *pLayer = 0;
 	m_sCriticalSection.Lock();
 	t_SslLayerList *cur = m_pSslLayerList;
@@ -1494,14 +1508,17 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 		const char* desc = pSSL_alert_desc_string_long(ret);
 
 		// Don't send close notify warning
-		if (desc && strcmp(desc, "close notify"))
+		if (desc)
 		{
-			char *buffer = new char[4096];
-			sprintf(buffer, "SSL3 alert %s: %s: %s",
-					str,
-					pSSL_alert_type_string_long(ret),
-					desc);
-			pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERBOSE_WARNING, 0, buffer);
+			if (strcmp(desc, "close notify"))
+			{
+				char *buffer = new char[4096];
+				sprintf(buffer, "SSL3 alert %s: %s: %s",
+						str,
+						pSSL_alert_type_string_long(ret),
+						desc);
+				pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERBOSE_WARNING, 0, buffer);
+			}
 		}
 	}
 
@@ -2095,7 +2112,8 @@ void CAsyncSslSocketLayer::OnClose(int nErrorCode)
 	m_onCloseCalled = true;
 	if (m_bUseSSL && pBIO_ctrl)
 	{
-		if (pBIO_ctrl(m_sslbio, BIO_CTRL_PENDING, 0, NULL) > 0)
+		size_t pending = pBIO_ctrl_pending(m_sslbio);
+		if (pending > 0)
 		{
 			TriggerEvents();
 		}
@@ -2347,7 +2365,8 @@ int CAsyncSslSocketLayer::SendRaw(const void* lpBuf, int nBufLen, int nFlags)
 
 void CAsyncSslSocketLayer::TriggerEvents()
 {
-	if (pBIO_ctrl_pending(m_nbio) > 0)
+	size_t pending = pBIO_ctrl_pending(m_nbio);
+	if (pending > 0)
 	{
 		if (m_mayTriggerWrite)
 		{
@@ -2374,7 +2393,8 @@ void CAsyncSslSocketLayer::TriggerEvents()
 	}
 	else
 	{
-		if (pBIO_ctrl_get_write_guarantee(m_nbio) > 0 && m_mayTriggerRead)
+		int len = pBIO_ctrl_get_write_guarantee(m_nbio);
+		if (len > 0 && m_mayTriggerRead)
 		{
 			m_mayTriggerRead = false;
 			TriggerEvent(FD_READ, 0);
@@ -2406,3 +2426,39 @@ int CAsyncSslSocketLayer::pem_passwd_cb(char *buf, int size, int rwflag, void *u
 
 	return len;
 }
+//---------------------------------------------------------------------------
+#include <wincrypt.h>
+//---------------------------------------------------------------------------
+// Taken from
+// http://openssl.6102.n7.nabble.com/Get-root-certificates-from-System-Store-of-Windows-td40959.html
+void __fastcall LoadSslWindowsSystemCertificateStore(SSL_CTX * Ctx)
+{
+  HCERTSTORE CertStore = CertStore = CertOpenSystemStore(0, L"ROOT");
+  if (CertStore != NULL)
+  {
+    PCCERT_CONTEXT CertContext = NULL;
+    while ((CertContext = CertEnumCertificatesInStore(CertStore, CertContext)) != NULL)
+    {
+      #ifdef _DEBUG
+      wchar_t Buf[1024];
+      CertNameToStr(X509_ASN_ENCODING, &CertContext->pCertInfo->Subject, CERT_X500_NAME_STR, Buf, LENOF(Buf));
+      Buf[LENOF(Buf) - 1] = L'\0';
+      CertNameToStr(X509_ASN_ENCODING, &CertContext->pCertInfo->Issuer, CERT_X500_NAME_STR, Buf, LENOF(Buf));
+      Buf[LENOF(Buf) - 1] = L'\0';
+      #endif
+      X509 * x509 = d2i_X509(NULL, const_cast<const unsigned char **>(&CertContext->pbCertEncoded), CertContext->cbCertEncoded);
+      if (x509 != NULL)
+      {
+        #ifdef _DEBUG
+        int AddCertResult =
+        #endif
+        X509_STORE_add_cert(Ctx->cert_store, x509);
+        X509_free(x509);
+      }
+    }
+
+    CertFreeCertificateContext(CertContext);
+    CertCloseStore(CertStore, 0);
+  }
+}
+

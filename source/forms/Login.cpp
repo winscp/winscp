@@ -17,6 +17,7 @@
 #include "Tools.h"
 #include "Setup.h"
 #include "WinConfiguration.h"
+#include "ProgParams.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
 #pragma link "PasswordEdit"
@@ -25,10 +26,12 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-const int OpenFolderStateIndex = 2;
-const int ClosedFolderStateIndex = 3;
-const int WorkspaceStateIndex = 4;
-const int NewSiteStateIndex = 6;
+const int SiteImageIndex = 1;
+const int OpenFolderImageIndex = 2;
+const int ClosedFolderImageIndex = 3;
+const int WorkspaceImageIndex = 4;
+const int NewSiteImageIndex = 6;
+const int SiteColorMaskImageIndex = 8;
 //---------------------------------------------------------------------------
 bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
   TList * DataList, int Options)
@@ -135,6 +138,16 @@ void __fastcall TLoginDialog::InitControls()
 
   MenuButton(ToolsMenuButton);
   MenuButton(ManageButton);
+
+  FixButtonImage(LoginButton);
+  CenterButtonImage(LoginButton);
+  // generate disabled button image
+  std::unique_ptr<TBitmap> Bitmap(new TBitmap());
+  Bitmap->SetSize(ActionImageList->Width, ActionImageList->Height);
+  ActionImageList->Draw(Bitmap->Canvas, 0, 0, LoginAction->ImageIndex, false);
+  // The Color 0 is a HACK
+  int DisabledImageIndex = ActionImageList->AddMasked(Bitmap.get(), TColor(0));
+  LoginButton->DisabledImageIndex = DisabledImageIndex;
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::Init()
@@ -206,7 +219,7 @@ TTreeNode * __fastcall TLoginDialog::AddSessionPath(UnicodeString Path,
         {
           if (IsWorkspace)
           {
-            Parent->StateIndex = WorkspaceStateIndex;
+            SetNodeImage(Parent, WorkspaceImageIndex);
           }
           else
           {
@@ -234,12 +247,12 @@ TTreeNode * __fastcall TLoginDialog::AddSessionPath(UnicodeString Path,
 //---------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsFolderNode(TTreeNode * Node)
 {
-  return (Node != NULL) && (Node->Data == NULL) && (Node->StateIndex != WorkspaceStateIndex);
+  return (Node != NULL) && (Node->Data == NULL) && (Node->ImageIndex != WorkspaceImageIndex);
 }
 //---------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsWorkspaceNode(TTreeNode * Node)
 {
-  return (Node != NULL) && (Node->Data == NULL) && (Node->StateIndex == WorkspaceStateIndex);
+  return (Node != NULL) && (Node->Data == NULL) && (Node->ImageIndex == WorkspaceImageIndex);
 }
 //---------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsFolderOrWorkspaceNode(TTreeNode * Node)
@@ -272,8 +285,30 @@ TTreeNode * __fastcall TLoginDialog::AddSession(TSessionData * Data)
   TTreeNode * Parent = AddSessionPath(UnixExtractFilePath(Data->Name), true, Data->IsWorkspace);
   TTreeNode * Node = SessionTree->Items->AddChild(Parent, UnixExtractFileName(Data->Name));
   Node->Data = Data;
+  SetNodeImage(Node, GetSessionImageIndex(Data));
 
   return Node;
+}
+//---------------------------------------------------------------------
+int __fastcall TLoginDialog::GetSessionImageIndex(TSessionData * Data)
+{
+  int Result;
+  if (Data->Color != 0)
+  {
+    AddSessionColorImage(SessionTree->Images, static_cast<TColor>(Data->Color), SiteColorMaskImageIndex);
+    Result = SessionTree->Images->Count - 1;
+  }
+  else
+  {
+    Result = SiteImageIndex;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::SetNodeImage(TTreeNode * Node, int ImageIndex)
+{
+  Node->ImageIndex = ImageIndex;
+  Node->SelectedIndex = ImageIndex;
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::DestroySession(TSessionData * Data)
@@ -290,7 +325,7 @@ void __fastcall TLoginDialog::LoadSessions()
 
     TTreeNode * Node = SessionTree->Items->AddChild(NULL, LoadStr(LOGIN_NEW_SITE_NODE));
     Node->Data = FNewSiteData;
-    Node->StateIndex = NewSiteStateIndex;
+    SetNodeImage(Node, NewSiteImageIndex);
 
     assert(StoredSessions != NULL);
     for (int Index = 0; Index < StoredSessions->Count; Index++)
@@ -310,9 +345,20 @@ void __fastcall TLoginDialog::LoadSessions()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateFolderNode(TTreeNode * Node)
 {
-  assert((Node->StateIndex == -1) ||
-    (Node->StateIndex == OpenFolderStateIndex) || (Node->StateIndex == ClosedFolderStateIndex));
-  Node->StateIndex = (Node->Expanded ? OpenFolderStateIndex : ClosedFolderStateIndex);
+  assert((Node->ImageIndex == 0) ||
+    (Node->ImageIndex == OpenFolderImageIndex) || (Node->ImageIndex == ClosedFolderImageIndex));
+  SetNodeImage(Node, (Node->Expanded ? OpenFolderImageIndex : ClosedFolderImageIndex));
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::NewSite()
+{
+  TTreeNode * NewSiteNode = SessionTree->Items->GetFirstNode();
+  if (ALWAYS_TRUE(IsNewSiteNode(NewSiteNode)))
+  {
+    SessionTree->Selected = NewSiteNode;
+  }
+
+  LoadContents();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Default()
@@ -322,13 +368,7 @@ void __fastcall TLoginDialog::Default()
     FNewSiteData->Assign(StoredSessions->DefaultSettings);
   }
 
-  TTreeNode * NewSiteNode = SessionTree->Items->GetFirstNode();
-  if (ALWAYS_TRUE(IsNewSiteNode(NewSiteNode)))
-  {
-    SessionTree->Selected = NewSiteNode;
-  }
-
-  LoadContents();
+  NewSite();
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadContents()
@@ -371,7 +411,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
     PortNumberEdit->AsInteger = SessionData->PortNumber;
     HostNameEdit->Text = SessionData->HostName;
 
-    bool Editable = FEditing || (SessionData == FNewSiteData);
+    bool Editable = IsEditable();
     if (Editable)
     {
       PasswordEdit->Text = SessionData->Password;
@@ -448,14 +488,17 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
     (EditingSessionData != NULL) ? EditingSessionData->Name : SessionData->DefaultSessionName;
 }
 //---------------------------------------------------------------------
+bool __fastcall TLoginDialog::IsEditable()
+{
+  return IsNewSiteNode(SessionTree->Selected) || FEditing;
+}
+//---------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateControls()
 {
   // without FLocaleChanging test, some button controls get lost, when changing language
   if (Visible && FInitialized && !FLocaleChanging)
   {
-    bool NewSiteSelected = IsNewSiteNode(SessionTree->Selected);
-
-    bool Editable = NewSiteSelected || FEditing;
+    bool Editable = IsEditable();
 
     TFSProtocol FSProtocol = GetFSProtocol(false);
     bool SshProtocol = IsSshProtocol(FSProtocol);
@@ -573,7 +616,9 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
   // among other this makes the expanded nodes look like expanded,
   // because the LoadState call in Execute is too early,
   // and some stray call to collapsed event during showing process,
-  // make the image be set to collapsed
+  // make the image be set to collapsed.
+  // Also LoadState calls RestoreFormSize that has to be
+  // called only after DoFormWindowProc(CM_SHOWINGCHANGED).
   LoadState();
   UpdateControls();
 }
@@ -606,15 +651,19 @@ TSessionData * __fastcall TLoginDialog::GetSessionData()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
 {
-  if (CanLogin())
-  {
-    TPoint P = SessionTree->ScreenToClient(Mouse->CursorPos);
-    TTreeNode * Node = SessionTree->GetNodeAt(P.x, P.y);
+  TPoint P = SessionTree->ScreenToClient(Mouse->CursorPos);
+  TTreeNode * Node = SessionTree->GetNodeAt(P.x, P.y);
 
-    // this may be false, when collapsed folder was double-clicked,
-    // it got expanded, view was shifted to accommodate folder contents,
-    // so that cursor now points to a different node (site)
-    if (Node == SessionTree->Selected)
+  // This may be false, when collapsed folder was double-clicked,
+  // it got expanded, view was shifted to accommodate folder contents,
+  // so that cursor now points to a different node (site).
+  // This has to be evaluated before EnsureNotEditing,
+  // as that may pop-up modal box.
+  if (Node == SessionTree->Selected)
+  {
+    // EnsureNotEditing must be before CanLogin, as CanLogin checks for FEditing
+    if (EnsureNotEditing() &&
+        CanLogin())
     {
       if (IsSessionNode(Node) || IsWorkspaceNode(Node))
       {
@@ -668,6 +717,10 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
     // filter control sequences
     if (Key >= VK_SPACE)
     {
+      if (FSitesIncrementalSearch.IsEmpty())
+      {
+        Configuration->Usage->Inc(L"SiteIncrementalSearches");
+      }
       if (!SitesIncrementalSearch(FSitesIncrementalSearch + Key, false, false))
       {
         MessageBeep(0);
@@ -731,7 +784,7 @@ TSessionData * __fastcall TLoginDialog::GetEditingSessionData()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveAsSession(bool ForceDialog)
 {
-  std::auto_ptr<TSessionData> SessionData(new TSessionData(L""));
+  std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
   SaveSession(SessionData.get());
 
   TSessionData * EditingSessionData = GetEditingSessionData();
@@ -742,13 +795,21 @@ void __fastcall TLoginDialog::SaveAsSession(bool ForceDialog)
     TTreeNode * ParentNode = AddSessionPath(UnixExtractFilePath(NewSession->SessionName), false, false);
     CheckIsSessionFolder(ParentNode);
 
-    FEditing = false;
-
     TTreeNode * Node = FindSessionNode(NewSession, false);
 
     if (Node == NULL)
     {
       Node = AddSession(NewSession);
+    }
+
+    if ((SessionTree->Selected != Node) &&
+        IsSiteNode(SessionTree->Selected))
+    {
+      CancelEditing();
+    }
+    else
+    {
+      FEditing = false;
     }
 
     SessionTree->Selected = Node;
@@ -799,7 +860,8 @@ void __fastcall TLoginDialog::DeleteSessionActionExecute(TObject * /*Sender*/)
   if (IsSiteNode(Node))
   {
     TSessionData * Session = SelectedSession;
-    if (MessageDialog(FMTLOAD(CONFIRM_DELETE_SESSION, (Session->SessionName)),
+    UnicodeString Message = MainInstructions(FMTLOAD(CONFIRM_DELETE_SESSION, (Session->SessionName)));
+    if (MessageDialog(Message,
           qtConfirmation, qaOK | qaCancel, HELP_DELETE_SESSION) == qaOK)
     {
       WinConfiguration->DeleteSessionFromJumpList(Session->SessionName);
@@ -844,7 +906,7 @@ void __fastcall TLoginDialog::DeleteSessionActionExecute(TObject * /*Sender*/)
     }
 
     if ((Sessions == 0) ||
-        (MessageDialog(FMTLOAD(Prompt, (Path, Sessions)),
+        (MessageDialog(MainInstructions(FMTLOAD(Prompt, (Path, Sessions))),
           qtConfirmation, qaOK | qaCancel, HelpKeyword) == qaOK))
     {
       if (IsWorkspaceNode(Node))
@@ -914,9 +976,10 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   TAction * Action = NOT_NULL(dynamic_cast<TAction *>(BasicAction));
   bool PrevEnabled = Action->Enabled;
 
-  if (Action == EditSessionAction)
+  if ((Action == EditSessionAction) ||
+      (CloneToNewSiteAction == EditSessionAction))
   {
-    EditSessionAction->Enabled = SiteSelected && !FEditing;
+    Action->Enabled = SiteSelected && !FEditing;
   }
   else if (Action == EditCancelAction)
   {
@@ -947,6 +1010,10 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   else if (Action == LoginAction)
   {
     LoginAction->Enabled = CanLogin();
+  }
+  else if (Action == PuttyAction)
+  {
+    Action->Enabled = (NewSiteSelected || SiteSelected) && CanLogin();
   }
   else if (Action == SaveSessionAction)
   {
@@ -1053,38 +1120,42 @@ void __fastcall TLoginDialog::SaveDataList(TList * DataList)
 
   DataList->Clear();
 
-  if (!IsNewSiteNode(SessionTree->Selected))
+  TTreeNode * Node = SessionTree->Selected;
+  if (IsFolderOrWorkspaceNode(Node))
   {
-    TTreeNode * Node = SessionTree->Selected;
-    if (IsFolderOrWorkspaceNode(Node))
-    {
-      UnicodeString Name = SessionNodePath(Node);
+    UnicodeString Name = SessionNodePath(Node);
 
-      if (IsWorkspaceNode(Node))
-      {
-        WinConfiguration->AddWorkspaceToJumpList(Name);
-      }
-
-      StoredSessions->GetFolderOrWorkspace(Name, DataList);
-    }
-    else if (ALWAYS_TRUE(IsSiteNode(Node)))
+    if (IsWorkspaceNode(Node))
     {
-      TSessionData * Data2 = new TSessionData(L"");
-      Data2->Assign(GetNodeSession(Node));
-      DataList->Add(Data2);
+      WinConfiguration->AddWorkspaceToJumpList(Name);
     }
+
+    StoredSessions->GetFolderOrWorkspace(Name, DataList);
   }
   else
   {
+    DataList->Add(CloneSelectedSession());
+  }
+}
+//---------------------------------------------------------------------------
+TSessionData * __fastcall TLoginDialog::CloneSelectedSession()
+{
+  TTreeNode * Node = SessionTree->Selected;
+  std::unique_ptr<TSessionData> Data2(new TSessionData(L""));
+  if (IsSiteNode(Node))
+  {
+    Data2->Assign(GetNodeSession(Node));
+  }
+  else if (ALWAYS_TRUE(IsNewSiteNode(Node)))
+  {
     TSessionData * Data = GetSessionData();
-    TSessionData * Data2 = new TSessionData(L"");
     Data2->Assign(Data);
     // we carry the name of the edited stored session around while on the dialog,
     // but we do not want it to leave the dialog, so that we can distinguish
     // stored and ad-hoc sessions
     Data2->Name = L"";
-    DataList->Add(Data2);
   }
+  return Data2.release();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveOpenedStoredSessionFolders(
@@ -1155,6 +1226,22 @@ void __fastcall TLoginDialog::LoadOpenedStoredSessionFolders(
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadState()
 {
+  // have to set the size before trying to make selected node visible below,
+  // as shrinking the form may move node out of view again
+  if (FLocaleChanging)
+  {
+    BoundsRect = FSavedBounds;
+  }
+  else
+  {
+    // it does not make any sense to call this before
+    // DoFormWindowProc(CM_SHOWINGCHANGED), we would end up on wrong monitor
+    if (Visible)
+    {
+      RestoreFormSize(CustomWinConfiguration->LoginDialog.WindowSize, this);
+    }
+  }
+
   TStringList * OpenedStoredSessionFolders = new TStringList();
   try
   {
@@ -1214,15 +1301,6 @@ void __fastcall TLoginDialog::LoadState()
         SessionTree->Selected->MakeVisible();
       }
     }
-  }
-
-  if (FLocaleChanging)
-  {
-    BoundsRect = FSavedBounds;
-  }
-  else
-  {
-    RestoreFormSize(CustomWinConfiguration->LoginDialog.WindowSize, this);
   }
 }
 //---------------------------------------------------------------------------
@@ -1350,10 +1428,11 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
 void __fastcall TLoginDialog::SetDefaultSessionActionExecute(
       TObject * /*Sender*/)
 {
-  if (MessageDialog(LoadStr(SET_DEFAULT_SESSION_SETTINGS), qtConfirmation,
+  UnicodeString Message = MainInstructions(LoadStr(SET_DEFAULT_SESSION_SETTINGS));
+  if (MessageDialog(Message, qtConfirmation,
         qaOK | qaCancel, HELP_SESSION_SAVE_DEFAULT) == qaOK)
   {
-    std::auto_ptr<TSessionData> SessionData(new TSessionData(L""));
+    std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
     SaveSession(SessionData.get());
     CustomWinConfiguration->AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(SessionData.get());
     StoredSessions->DefaultSettings = SessionData.get();
@@ -1373,13 +1452,13 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
 
   UnicodeString Message;
   UnicodeString Name;
-  UnicodeString AdditionalParams;
+  UnicodeString AdditionalParams = TProgramParams::FormatSwitch(DESKTOP_SWITCH);
   int IconIndex = 0;
   if (IsSiteNode(Node))
   {
     Name = GetNodeSession(Node)->Name;
     Message = FMTLOAD(CONFIRM_CREATE_SHORTCUT, (Name));
-    AdditionalParams = L"/UploadIfAny";
+    AddToList(AdditionalParams, TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH), L" ");
     IconIndex = SITE_ICON;
   }
   else if (IsFolderNode(Node))
@@ -1399,6 +1478,7 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
     FAIL;
   }
 
+  Message = MainInstructions(Message);
   if (MessageDialog(Message, qtConfirmation, qaYes | qaNo, HELP_CREATE_SHORTCUT) == qaYes)
   {
     CreateDesktopSessionShortCut(Name, L"", AdditionalParams, -1, IconIndex);
@@ -1409,12 +1489,17 @@ void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
 {
   assert(IsSiteNode(SessionTree->Selected));
   assert(SelectedSession != NULL);
-  if (MessageDialog(FMTLOAD(CONFIRM_CREATE_SENDTO, (SelectedSession->Name)),
+  UnicodeString Message = MainInstructions(FMTLOAD(CONFIRM_CREATE_SENDTO, (SelectedSession->Name)));
+  if (MessageDialog(Message,
         qtConfirmation, qaYes | qaNo, HELP_CREATE_SENDTO) == qaYes)
   {
+    UnicodeString AdditionalParams =
+      TProgramParams::FormatSwitch(SEND_TO_HOOK_SWITCH) + L" " +
+      TProgramParams::FormatSwitch(UPLOAD_SWITCH);
     CreateDesktopSessionShortCut(SelectedSession->Name,
       FMTLOAD(SESSION_SENDTO_HOOK_NAME, (SelectedSession->LocalName)),
-      L"/Upload", CSIDL_SENDTO, SITE_ICON);
+      AdditionalParams,
+      CSIDL_SENDTO, SITE_ICON);
   }
 }
 //---------------------------------------------------------------------------
@@ -1453,14 +1538,6 @@ void __fastcall TLoginDialog::SessionTreeCustomDrawItem(
       if (!HasNodeAnySession(Node))
       {
         Sender->Canvas->Font->Color = clGrayText;
-      }
-    }
-    else if (ALWAYS_TRUE(IsSessionNode(Node)))
-    {
-      TSessionData * Data = GetNodeSession(Node);
-      if (Data->Color != 0)
-      {
-        Sender->Canvas->Brush->Color = (TColor)Data->Color;
       }
     }
   }
@@ -1531,7 +1608,7 @@ void __fastcall TLoginDialog::CheckDuplicateFolder(TTreeNode * Parent,
 
   if (ANode != NULL)
   {
-    throw Exception(FMTLOAD(LOGIN_DUPLICATE_SESSION_FOLDER_WORKSPACE, (Text)));
+    throw Exception(MainInstructions(FMTLOAD(LOGIN_DUPLICATE_SESSION_FOLDER_WORKSPACE, (Text))));
   }
 }
 //---------------------------------------------------------------------------
@@ -1937,12 +2014,18 @@ void __fastcall TLoginDialog::NewSessionFolderActionExecute(
   }
 }
 //---------------------------------------------------------------------------
+TTreeNode * __fastcall TLoginDialog::NormalizeDropTarget(TTreeNode * DropTarget)
+{
+  return IsWorkspaceNode(DropTarget) ? DropTarget : SessionFolderNode(DropTarget);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::SessionAllowDrop(TTreeNode * DropTarget)
 {
+  DropTarget = NormalizeDropTarget(DropTarget);
   return
     (SessionTree->Selected != NULL) &&
     (SessionTree->Selected->Parent != DropTarget) &&
-    IsFolderNode(DropTarget) || IsSiteNode(DropTarget);
+    ((DropTarget == NULL) || IsFolderNode(DropTarget));
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SessionTreeProc(TMessage & AMessage)
@@ -1969,9 +2052,7 @@ void __fastcall TLoginDialog::SessionTreeProc(TMessage & AMessage)
       {
         TPoint P = SessionTree->ScreenToClient(Message.DragRec->Pos);
         TTreeNode * Node = SessionTree->GetNodeAt(P.x, P.y);
-        TTreeNode * DropTarget =
-          IsWorkspaceNode(Node) ? Node : SessionFolderNode(Node);
-        if (!SessionAllowDrop(DropTarget))
+        if (!SessionAllowDrop(Node))
         {
           DropTarget = NULL;
           Message.Result = 0;
@@ -1983,7 +2064,7 @@ void __fastcall TLoginDialog::SessionTreeProc(TMessage & AMessage)
 
         if (Message.DragMessage == dmDragMove)
         {
-          SessionTree->DropTarget = DropTarget;
+          SessionTree->DropTarget = NormalizeDropTarget(Node);
         }
         FScrollOnDragOver->DragOver(P);
       }
@@ -2075,7 +2156,7 @@ UnicodeString __fastcall TLoginDialog::GetFolderOrWorkspaceContents(
   UnicodeString Contents;
 
   UnicodeString Path = SessionNodePath(Node);
-  std::auto_ptr<TStrings> Names(FStoredSessions->GetFolderOrWorkspaceList(Path));
+  std::unique_ptr<TStrings> Names(FStoredSessions->GetFolderOrWorkspaceList(Path));
   for (int Index = 0; Index < Names->Count; Index++)
   {
     UnicodeString Name = Names->Strings[Index];
@@ -2269,10 +2350,10 @@ void __fastcall TLoginDialog::ExportActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
 {
-  if (MessageDialog(LoadStr(IMPORT_CONFIGURATION),
+  if (MessageDialog(MainInstructions(LoadStr(IMPORT_CONFIGURATION)),
         qtWarning, qaOK | qaCancel, HELP_IMPORT_CONFIGURATION) == qaOK)
   {
-    std::auto_ptr<TOpenDialog> OpenDialog(new TOpenDialog(Application));
+    std::unique_ptr<TOpenDialog> OpenDialog(new TOpenDialog(Application));
     OpenDialog->Title = LoadStr(IMPORT_CONF_TITLE);
     OpenDialog->Filter = LoadStr(EXPORT_CONF_FILTER);
     OpenDialog->DefaultExt = L"ini";
@@ -2435,19 +2516,33 @@ void __fastcall TLoginDialog::SessionTreeExit(TObject * /*Sender*/)
   ResetSitesIncrementalSearch();
 }
 //---------------------------------------------------------------------------
+bool __fastcall TLoginDialog::EnsureNotEditing()
+{
+  bool Result = !FEditing;
+  if (!Result)
+  {
+    UnicodeString Message = MainInstructions(LoadStr(LOGIN_CANCEL_EDITING));
+    Result = (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) == qaOK);
+    if (Result)
+    {
+      CancelEditing();
+      // Make sure OK button gets enabled
+      UpdateControls();
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SessionTreeChanging(TObject * /*Sender*/,
   TTreeNode * /*Node*/, bool & AllowChange)
 {
-  if (FEditing &&
-      (MessageDialog(LoadStr(LOGIN_CANCEL_EDITING), qtConfirmation, qaOK | qaCancel) == qaCancel))
+  if (!EnsureNotEditing())
   {
     AllowChange = false;
   }
   else
   {
     PersistNewSiteIfNeeded();
-    FEditing = false;
-    UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
@@ -2473,10 +2568,15 @@ void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
   {
     SaveSession(FSessionData);
     DoSiteAdvancedDialog(FSessionData, FOptions);
-    // not really need as advanced site dialog can only change between
+    // not really needed as advanced site dialog can only change between
     // fsSFTP and fsSFTPonly, difference of the two not being visible on
     // login dialog.
     LoadSession(FSessionData);
+    if (ALWAYS_TRUE(SessionTree->Selected != NULL) &&
+        IsSiteNode(SessionTree->Selected))
+    {
+      SetNodeImage(SessionTree->Selected, GetSessionImageIndex(FSessionData));
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2546,7 +2646,7 @@ void __fastcall TLoginDialog::SessionTreeContextPopup(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::EditCancelActionExecute(TObject * /*Sender*/)
 {
-  FEditing = false;
+  CancelEditing();
   // reset back to saved settings
   LoadContents();
   UpdateControls();
@@ -2557,5 +2657,42 @@ void __fastcall TLoginDialog::EditCancelActionExecute(TObject * /*Sender*/)
 void __fastcall TLoginDialog::AdvancedButtonDropDownClick(TObject * /*Sender*/)
 {
   MenuPopup(SessionAdvancedPopupMenu, AdvancedButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CancelEditing()
+{
+  FEditing = false;
+  // reset back the color
+  SetNodeImage(SessionTree->Selected, GetSessionImageIndex(GetNodeSession(SessionTree->Selected)));
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CloneToNewSiteActionExecute(TObject * /*Sender*/)
+{
+  FNewSiteData->Assign(SelectedSession);
+  NewSite();
+  EditSession();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::LoginActionExecute(TObject * /*Sender*/)
+{
+  // this is not needed when used from LoginButton,
+  // but is needed when used from popup menus
+  ModalResult = LoginButton->ModalResult;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::PuttyActionExecute(TObject * /*Sender*/)
+{
+  std::unique_ptr<TSessionData> Data(CloneSelectedSession());
+  // putty does not support resolving environment variables in session settings
+  Data->ExpandEnvironmentVariables();
+  OpenSessionInPutty(GUIConfiguration->PuttyPath, Data.get(),
+    Data->UserName,
+    GUIConfiguration->PuttyPassword ? Data->Password : UnicodeString());
+  ModalResult = CloseButton->ModalResult;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::LoginButtonDropDownClick(TObject * /*Sender*/)
+{
+  MenuPopup(LoginDropDownMenu, LoginButton);
 }
 //---------------------------------------------------------------------------

@@ -16,6 +16,7 @@
 #include "WinInterface.h"
 #include <Terminal.h>
 #include "PngImageList.hpp"
+#include <Vcl.Imaging.pngimage.hpp>
 //----------------------------------------------------------------------------
 class TConsoleDialog : public TForm
 {
@@ -40,6 +41,7 @@ __published:
   TEditCopy *EditCopy;
   TEditSelectAll *EditSelectAll;
   TAction *AdjustWindow;
+  TImage *Image;
   void __fastcall ExecuteButtonClick(TObject *Sender);
   void __fastcall CommandEditChange(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);

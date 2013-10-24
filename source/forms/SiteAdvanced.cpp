@@ -15,6 +15,7 @@
 #include "GUITools.h"
 #include "Tools.h"
 #include "WinConfiguration.h"
+#include "PuttyTools.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
 #pragma link "PasswordEdit"
@@ -768,7 +769,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
         !FtpPasvModeCheck->Checked)
     {
       FtpPasvModeCheck->Checked = true;
-      MessageDialog(LoadStr(FTP_PASV_MODE_REQUIRED), qtInformation, qaOK);
+      MessageDialog(MainInstructions(LoadStr(FTP_PASV_MODE_REQUIRED)), qtInformation, qaOK);
     }
     EnableControl(BufferSizeCheck, SshProtocol);
     PingGroup->Visible = !FtpProtocol;
@@ -981,18 +982,14 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     UpdateNavigationTree();
 
     // color
-    bool DefaultColor = (FColor == 0);
-    ColorDefaultItem->Checked = DefaultColor;
-    PickColorItem->Checked = !DefaultColor;
-    PickColorItem->ImageIndex = (DefaultColor ? -1 : 0);
-    if (DefaultColor)
+    if (FColor == 0)
     {
       MenuButton(ColorButton);
     }
     else
     {
       ColorButton->Images = ColorImageList;
-      ColorButton->ImageIndex = 0;
+      ColorButton->ImageIndex = 1;
       ColorButton->ImageAlignment = iaRight;
     }
   }
@@ -1217,10 +1214,10 @@ void __fastcall TSiteAdvancedDialog::AlgMove(TListBox * AlgListBox, int Source, 
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::AuthGSSAPICheck3Click(TObject * /*Sender*/)
 {
-  if (NoUpdate)
+  if (NoUpdate == 0)
   {
     UpdateControls();
-    if (AuthGSSAPICheck3->Checked && !Configuration->GSSAPIInstalled)
+    if (AuthGSSAPICheck3->Checked && !HasGSSAPI(L""))
     {
       throw Exception(LoadStr(GSSAPI_NOT_INSTALLED2));
     }
@@ -1367,31 +1364,14 @@ void __fastcall TSiteAdvancedDialog::ProxyLocalCommandBrowseButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::ColorButtonClick(TObject * /*Sender*/)
 {
-  MenuPopup(ColorPopupMenu, ColorButton);
+  // popup menu has to survive the popup as TBX calls click handler asynchronously (post)
+  FColorPopupMenu.reset(CreateSessionColorPopupMenu(FColor, SessionColorChange));
+  MenuPopup(FColorPopupMenu.get(), ColorButton);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::ColorDefaultItemClick(TObject * /*Sender*/)
+void __fastcall TSiteAdvancedDialog::SessionColorChange(TColor Color)
 {
-  SetSessionColor((TColor)0);
-  UpdateControls();
-}
-//---------------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::PickColorItemClick(TObject * /*Sender*/)
-{
-  TColorDialog * Dialog = new TColorDialog(this);
-  try
-  {
-    Dialog->Options = Dialog->Options << cdFullOpen;
-    Dialog->Color = (FColor != 0 ? FColor : clSkyBlue);
-    if (Dialog->Execute())
-    {
-      SetSessionColor(Dialog->Color);
-    }
-  }
-  __finally
-  {
-    delete Dialog;
-  }
+  SetSessionColor(Color);
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -1399,10 +1379,14 @@ void __fastcall TSiteAdvancedDialog::SetSessionColor(TColor Color)
 {
   FColor = Color;
 
-  ColorImageList->Clear();
+  while (ColorImageList->Count > 1)
+  {
+    ColorImageList->Delete(1);
+  }
+
   if (Color != 0)
   {
-    AddSessionColorImage(ColorImageList, Color, false);
+    AddSessionColorImage(ColorImageList, Color, 0);
   }
 }
 //---------------------------------------------------------------------------

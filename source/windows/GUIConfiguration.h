@@ -80,7 +80,7 @@ private:
   TCopyParamRuleData FData;
 
   inline bool __fastcall Match(const UnicodeString & Mask,
-    const UnicodeString & Value, bool Path, bool Local = true) const;
+    const UnicodeString & Value, bool Path, bool Local, int ForceDirectoryMasks) const;
   bool __fastcall GetEmpty() const;
 };
 //---------------------------------------------------------------------------

@@ -279,4 +279,6 @@ private:
 #define SSL_VERSION_TLS11 11
 #define SSL_VERSION_TLS12 12
 
+void __fastcall LoadSslWindowsSystemCertificateStore(SSL_CTX * Ctx);
+
 #endif // ASYNCSSLSOCKETLEAYER_INCLUDED

@@ -88,6 +88,7 @@ public:
 
 #ifdef MPEXT
 	virtual bool UsingMlsd();
+	virtual bool UsingUtf8();
 	virtual std::string GetTlsVersionStr();
 	virtual std::string GetCipherName();
 #endif

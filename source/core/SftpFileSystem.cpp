@@ -1372,13 +1372,15 @@ public:
 
   bool __fastcall Init(const UnicodeString AFileName,
     HANDLE AFile, TFileOperationProgressType * AOperationProgress,
-    const RawByteString AHandle, __int64 ATransfered)
+    const RawByteString AHandle, __int64 ATransfered,
+    int ConvertParams)
   {
     FFileName = AFileName;
     FStream = new TSafeHandleStream((THandle)AFile);
     OperationProgress = AOperationProgress;
     FHandle = AHandle;
     FTransfered = ATransfered;
+    FConvertParams = ConvertParams;
 
     return TSFTPAsynchronousQueue::Init();
   }
@@ -1410,7 +1412,7 @@ protected:
         {
           __int64 PrevBufSize = BlockBuf.Size;
           BlockBuf.Convert(FTerminal->Configuration->LocalEOLType,
-            FFileSystem->GetEOL(), cpRemoveCtrlZ | cpRemoveBOM, FConvertToken);
+            FFileSystem->GetEOL(), FConvertParams, FConvertToken);
           // update transfer size with difference arised from EOL conversion
           OperationProgress->ChangeTransferSize(OperationProgress->TransferSize -
             PrevBufSize + BlockBuf.Size);
@@ -1471,6 +1473,7 @@ private:
   __int64 FTransfered;
   RawByteString FHandle;
   bool FConvertToken;
+  int FConvertParams;
 };
 //---------------------------------------------------------------------------
 class TSFTPLoadFilesPropertiesQueue : public TSFTPFixedLenQueue
@@ -1693,7 +1696,6 @@ __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal,
   FBusy = 0;
   FAvoidBusy = false;
   FUtfStrings = false;
-  FUtfNever = false;
   FSignedTS = false;
   FSupport = new TSFTPSupport();
   FExtensions = new TStringList();
@@ -1713,6 +1715,7 @@ __fastcall TSFTPFileSystem::~TSFTPFileSystem()
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::Open()
 {
+  // this is used for reconnects only
   FSecureShell->Open();
 }
 //---------------------------------------------------------------------------
@@ -1724,6 +1727,35 @@ void __fastcall TSFTPFileSystem::Close()
 bool __fastcall TSFTPFileSystem::GetActive()
 {
   return FSecureShell->Active;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSFTPFileSystem::CollectUsage()
+{
+  FSecureShell->CollectUsage();
+
+  UnicodeString VersionCounter;
+  switch (FVersion)
+  {
+    case 0:
+      VersionCounter = L"OpenedSessionsSFTP0";
+      break;
+    case 1:
+      VersionCounter = L"OpenedSessionsSFTP1";
+      break;
+    case 2:
+      VersionCounter = L"OpenedSessionsSFTP2";
+      break;
+    case 3:
+      VersionCounter = L"OpenedSessionsSFTP3";
+      break;
+    case 4:
+      VersionCounter = L"OpenedSessionsSFTP4";
+      break;
+    case 5:
+      VersionCounter = L"OpenedSessionsSFTP5";
+      break;
+  }
+  FTerminal->Configuration->Usage->Inc(VersionCounter);
 }
 //---------------------------------------------------------------------------
 const TSessionInfo & __fastcall TSFTPFileSystem::GetSessionInfo()
@@ -1846,6 +1878,8 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcIgnorePermErrors:
     case fcPreservingTimestampUpload:
     case fcSecondaryShell:
+    case fcRemoveCtrlZUpload:
+    case fcRemoveBOMUpload:
       return true;
 
     case fcRename:
@@ -2103,7 +2137,7 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
       // message is in UTF only since SFTP specification 01 (specification 00
       // is also version 3)
       // (in other words, always use UTF unless server is known to be buggy)
-      ServerMessage = Packet->GetString(!FUtfNever);
+      ServerMessage = Packet->GetString(FUtfStrings);
       // SSH-2.0-Maverick_SSHD and SSH-2.0-CIGNA SFTP Server Ready! omit the language tag
       // and I believe I've seen one more server doing the same.
       if (Packet->RemainingLength > 0)
@@ -2440,7 +2474,7 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path,
 {
   UnicodeString APath;
 
-  if (TTerminal::IsAbsolutePath(Path))
+  if (UnixIsAbsolutePath(Path))
   {
     APath = Path;
   }
@@ -2464,7 +2498,7 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path,
 UnicodeString __fastcall TSFTPFileSystem::LocalCanonify(const UnicodeString & Path)
 {
   // TODO: improve (handle .. etc.)
-  if (TTerminal::IsAbsolutePath(Path) ||
+  if (UnixIsAbsolutePath(Path) ||
       (!FCurrentDirectory.IsEmpty() && UnixComparePaths(FCurrentDirectory, Path)))
   {
     return Path;
@@ -2809,25 +2843,19 @@ void __fastcall TSFTPFileSystem::DoStartup()
   }
 
   // use UTF when forced or ...
-  // when "auto" and version is at least 4 and the server is not know not to use UTF
-  FUtfNever = (GetSessionInfo().SshImplementation.Pos(L"Foxit-WAC-Server") == 1) ||
-    (FTerminal->SessionData->NotUtf == asOn);
+  // when "auto" and the server is not known not to use UTF
+  bool BuggyUtf = (GetSessionInfo().SshImplementation.Pos(L"Foxit-WAC-Server") == 1);
   FUtfStrings =
     (FTerminal->SessionData->NotUtf == asOff) ||
-    ((FTerminal->SessionData->NotUtf == asAuto) &&
-      (FVersion >= 4) && !FUtfNever);
+    ((FTerminal->SessionData->NotUtf == asAuto) && !BuggyUtf);
 
   if (FUtfStrings)
   {
     FTerminal->LogEvent(L"We will use UTF-8 strings when appropriate");
   }
-  else if (FUtfNever)
-  {
-    FTerminal->LogEvent(L"We will never use UTF-8 strings");
-  }
   else
   {
-    FTerminal->LogEvent(L"We will use UTF-8 strings for status messages only");
+    FTerminal->LogEvent(L"We will never use UTF-8 strings");
   }
 
   FOpenSSH =
@@ -2907,7 +2935,7 @@ void __fastcall TSFTPFileSystem::LookupUsersGroups()
       List.Clear();
       for (unsigned long Item = 0; Item < Count; Item++)
       {
-        TRemoteToken Token(Packet->GetString(!FUtfNever));
+        TRemoteToken Token(Packet->GetString(FUtfStrings));
         List.Add(Token);
         if (&List == &FTerminal->FGroups)
         {
@@ -3787,7 +3815,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(UnicodeString & FileName,
       TQueryParams Params(0, HELP_APPEND_OR_RESUME);
       SUSPEND_OPERATION
       (
-        Answer = FTerminal->QueryUser(FORMAT(LoadStr(APPEND_OR_RESUME), (FileName)),
+        Answer = FTerminal->QueryUser(FORMAT(LoadStr(APPEND_OR_RESUME2), (FileName)),
           NULL, qaYes | qaNo | qaNoToAll | qaCancel, &Params);
       );
 
@@ -3887,7 +3915,7 @@ bool TSFTPFileSystem::SFTPConfirmResume(const UnicodeString DestFileName,
         HELP_RESUME_TRANSFER);
       // "abort" replaced with "cancel" to unify with "append/resume" query
       Answer = FTerminal->QueryUser(
-        FMTLOAD(RESUME_TRANSFER, (DestFileName)), NULL, qaYes | qaNo | qaCancel,
+        FMTLOAD(RESUME_TRANSFER2, (DestFileName)), NULL, qaYes | qaNo | qaCancel,
         &Params);
     );
 
@@ -4220,9 +4248,13 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
         TSFTPUploadQueue Queue(this);
         try
         {
+          int ConvertParams =
+            FLAGMASK(CopyParam->RemoveCtrlZ, cpRemoveCtrlZ) |
+            FLAGMASK(CopyParam->RemoveBOM, cpRemoveBOM);
           Queue.Init(FileName, File, OperationProgress,
             OpenParams.RemoteFileHandle,
-            DestWriteOffset + OperationProgress->TransferedSize);
+            DestWriteOffset + OperationProgress->TransferedSize,
+            ConvertParams);
 
           while (Queue.Continue())
           {
@@ -4308,7 +4340,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
 
       if (SetProperties)
       {
-        std::auto_ptr<TTouchSessionAction> TouchAction;
+        std::unique_ptr<TTouchSessionAction> TouchAction;
         if (CopyParam->PreserveTime)
         {
           TDateTime MDateTime = UnixToDateTime(MTime, FTerminal->SessionData->DSTMode);
@@ -4317,7 +4349,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
           TouchAction.reset(new TTouchSessionAction(FTerminal->ActionLog, DestFullName,
             MDateTime));
         }
-        std::auto_ptr<TChmodSessionAction> ChmodAction;
+        std::unique_ptr<TChmodSessionAction> ChmodAction;
         // do record chmod only if it was explicitly requested,
         // not when it was implicitly performed to apply timestamp
         // of overwritten file to new file
@@ -4333,7 +4365,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
             SendPacket(&PropertiesRequest);
           }
           bool Resend = false;
-          FILE_OPERATION_LOOP_CUSTOM(FTerminal, true, FMTLOAD(PRESERVE_TIME_PERM_ERROR2, (DestFileName)),
+          FILE_OPERATION_LOOP_CUSTOM(FTerminal, true, FMTLOAD(PRESERVE_TIME_PERM_ERROR3, (DestFileName)),
             try
             {
               TSFTPPacket DummyResponse;

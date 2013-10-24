@@ -2989,9 +2989,28 @@ var
   Popup: TTBPopupWindow;
   DoneActionData: TTBDoneActionData;
   State: TTBViewState;
+  {MP}
+  I: Integer;
+  MinWidth: Integer;
+  Border: TPoint;
 begin
   ModalHandler := TTBModalHandler.Create(0);
   try
+    {MP BEGIN}
+    // Make sure menu is not narrower than its popup control (button)
+    if not IsRectEmpty(ControlRect) then
+    begin
+      // see TTBPopupView.AutoSize and TTBXPopupWindow.GetNCSize
+      CurrentTheme.GetViewBorder(PVT_POPUPMENU, Border);
+      MinWidth := ControlRect.Width - (2*Border.X);
+      for I := 0 to Count - 1 do
+      begin
+        if Items[I] is TTBXCustomItem then
+          if TTBXCustomItem(Items[I]).MinWidth < MinWidth then
+            TTBXCustomItem(Items[I]).MinWidth := MinWidth;
+      end
+    end;
+    {MP END}
     Popup := CreatePopupEx(SelectFirstItem, ControlRect, Alignment);
     try
       State := Popup.View.State;

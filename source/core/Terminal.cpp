@@ -508,7 +508,6 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FTunnelUI = NULL;
   FTunnelOpening = false;
   FCallbackGuard = NULL;
-  FEnableSecureShellUsage = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
@@ -604,16 +603,12 @@ void __fastcall TTerminal::RecryptPasswords()
   FTunnelPassword = EncryptPassword(DecryptPassword(FTunnelPassword));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::IsAbsolutePath(const UnicodeString Path)
-{
-  return !Path.IsEmpty() && Path[1] == L'/';
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall TTerminal::ExpandFileName(UnicodeString Path,
   const UnicodeString BasePath)
 {
+  // replace this by AbsolutePath()
   Path = UnixExcludeTrailingBackslash(Path);
-  if (!IsAbsolutePath(Path) && !BasePath.IsEmpty())
+  if (!UnixIsAbsolutePath(Path) && !BasePath.IsEmpty())
   {
     // TODO: Handle more complicated cases like "../../xxx"
     if (Path == L"..")
@@ -732,14 +727,6 @@ void __fastcall TTerminal::Open()
                 FSecureShell = new TSecureShell(this, FSessionData, Log, Configuration);
                 try
                 {
-                  if (FEnableSecureShellUsage)
-                  {
-                    // only on the first connect,
-                    // this is not ideal as it may prevent usage from being collected,
-                    // e.g. when connection fails on the first try
-                    FSecureShell->EnableUsage();
-                    FEnableSecureShellUsage = false;
-                  }
                   // there will be only one channel in this session
                   FSecureShell->Simple = true;
                   FSecureShell->Open();
@@ -810,6 +797,12 @@ void __fastcall TTerminal::Open()
         }
 
         DoStartup();
+
+        if (FCollectFileSystemUsage)
+        {
+          FFileSystem->CollectUsage();
+          FCollectFileSystemUsage = false;
+        }
 
         DoInformation(LoadStr(STATUS_READY), true);
         FStatus = ssOpened;
@@ -1115,7 +1108,7 @@ unsigned int __fastcall TTerminal::QueryUserException(const UnicodeString Query,
     {
       if (!ExMessage.IsEmpty() && !Query.IsEmpty())
       {
-        MoreMessages->Add(ExMessage);
+        MoreMessages->Add(UnformatMessage(ExMessage));
       }
 
       ExtException * EE = dynamic_cast<ExtException*>(E);
@@ -2824,10 +2817,12 @@ TUsableCopyParamAttrs __fastcall TTerminal::UsableCopyParamAttrs(int Params)
     FLAGMASK(FLAGSET(Params, cpDelete), cpaNoClearArchive) |
     FLAGMASK(!IsCapable[fcIgnorePermErrors], cpaNoIgnorePermErrors);
   Result.Download = Result.General | cpaNoClearArchive | cpaNoRights |
-    cpaNoIgnorePermErrors;
+    cpaNoIgnorePermErrors | cpaNoRemoveCtrlZ | cpaNoRemoveBOM;
   Result.Upload = Result.General | cpaNoPreserveReadOnly |
     FLAGMASK(!IsCapable[fcModeChangingUpload], cpaNoRights) |
-    FLAGMASK(!IsCapable[fcPreservingTimestampUpload], cpaNoPreserveTime);
+    FLAGMASK(!IsCapable[fcPreservingTimestampUpload], cpaNoPreserveTime) |
+    FLAGMASK(!IsCapable[fcRemoveCtrlZUpload], cpaNoRemoveCtrlZ) |
+    FLAGMASK(!IsCapable[fcRemoveBOMUpload], cpaNoRemoveBOM);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -2930,6 +2925,10 @@ bool __fastcall TTerminal::DeleteFiles(TStrings * FilesToDelete, int Params)
 void __fastcall TTerminal::DeleteLocalFile(UnicodeString FileName,
   const TRemoteFile * /*File*/, void * Params)
 {
+  if ((OperationProgress != NULL) && (OperationProgress->Operation == foDelete))
+  {
+    OperationProgress->SetFile(FileName);
+  }
   if (OnDeleteLocalFile == NULL)
   {
     if (!RecursiveDeleteFile(FileName, false))
@@ -3174,9 +3173,16 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
     {
       if (!File->IsSymLink)
       {
-        LogEvent(FORMAT(L"Getting size of directory \"%s\"", (FileName)));
-        // pass in full path so we get it back in file list for AllowTransfer() exclusion
-        DoCalculateDirectorySize(File->FullFileName, File, AParams);
+        if (!AParams->AllowDirs)
+        {
+          AParams->Result = false;
+        }
+        else
+        {
+          LogEvent(FORMAT(L"Getting size of directory \"%s\"", (FileName)));
+          // pass in full path so we get it back in file list for AllowTransfer() exclusion
+          DoCalculateDirectorySize(File->FullFileName, File, AParams);
+        }
       }
       else
       {
@@ -3231,17 +3237,20 @@ void __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString FileName
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
+bool __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
   __int64 & Size, int Params, const TCopyParamType * CopyParam,
-  TCalculateSizeStats * Stats)
+  bool AllowDirs, TCalculateSizeStats * Stats)
 {
   TCalculateSizeParams Param;
   Param.Size = 0;
   Param.Params = Params;
   Param.CopyParam = CopyParam;
   Param.Stats = Stats;
+  Param.AllowDirs = AllowDirs;
+  Param.Result = true;
   ProcessFiles(FileList, foCalculateSize, CalculateFileSize, &Param);
   Size = Param.Size;
+  return Param.Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CalculateFilesChecksum(const UnicodeString & Alg,
@@ -3282,7 +3291,8 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
         QuestionFmt = LoadStr(FILE_OVERWRITE);
       }
       TQueryParams Params(qpNeverAskAgainCheck);
-      unsigned int Result = QueryUser(FORMAT(QuestionFmt, (NewName)), NULL,
+      UnicodeString Question = MainInstructions(FORMAT(QuestionFmt, (NewName)));
+      unsigned int Result = QueryUser(Question, NULL,
         qaYes | qaNo, &Params);
       if (Result == qaNeverAskAgain)
       {
@@ -3769,7 +3779,7 @@ bool __fastcall TTerminal::DoCreateLocalFile(const UnicodeString FileName,
             SUSPEND_OPERATION
             (
               Answer = QueryUser(
-                FMTLOAD(READ_ONLY_OVERWRITE, (FileName)), NULL,
+                MainInstructions(FMTLOAD(READ_ONLY_OVERWRITE, (FileName))), NULL,
                 qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll, 0);
             );
             switch (Answer) {
@@ -4017,9 +4027,10 @@ void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
-  __int64 & Size, const TCopyParamType * CopyParam)
+bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
+  __int64 & Size, const TCopyParamType * CopyParam, bool AllowDirs)
 {
+  bool Result = true;
   TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
   TOnceDoneOperation OnceDoneOperation = odoIdle;
   OperationProgress.Start(foCalculateSize, osLocal, FileList->Count);
@@ -4032,14 +4043,21 @@ void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
 
     assert(!FOperationProgress);
     FOperationProgress = &OperationProgress;
-    TSearchRec Rec;
-    for (int Index = 0; Index < FileList->Count; Index++)
+    for (int Index = 0; Result && (Index < FileList->Count); Index++)
     {
       UnicodeString FileName = FileList->Strings[Index];
+      TSearchRec Rec;
       if (FileSearchRec(FileName, Rec))
       {
-        CalculateLocalFileSize(FileName, Rec, &Params);
-        OperationProgress.Finish(FileName, true, OnceDoneOperation);
+        if (FLAGSET(Rec.Attr, faDirectory) && !AllowDirs)
+        {
+          Result = false;
+        }
+        else
+        {
+          CalculateLocalFileSize(FileName, Rec, &Params);
+          OperationProgress.Finish(FileName, true, OnceDoneOperation);
+        }
       }
     }
 
@@ -4055,6 +4073,7 @@ void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
   {
     CloseOnCompletion(OnceDoneOperation);
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 struct TSynchronizeFileData
@@ -4968,14 +4987,13 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
 
   try
   {
-
     __int64 Size;
-    if (CopyParam->CalculateSize)
-    {
-      // dirty trick: when moving, do not pass copy param to avoid exclude mask
-      CalculateLocalFilesSize(FilesToCopy, Size,
-        (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL));
-    }
+    // dirty trick: when moving, do not pass copy param to avoid exclude mask
+    bool CalculatedSize =
+      CalculateLocalFilesSize(
+        FilesToCopy, Size,
+        (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
+        CopyParam->CalculateSize);
 
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
     OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osLocal,
@@ -4984,7 +5002,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
     FOperationProgress = &OperationProgress;
     try
     {
-      if (CopyParam->CalculateSize)
+      if (CalculatedSize)
       {
         OperationProgress.SetTotalSize(Size);
       }
@@ -5063,20 +5081,21 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
       bool TotalSizeKnown = false;
       TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
 
-      if (CopyParam->CalculateSize)
+      ExceptionOnFail = true;
+      try
       {
-        ExceptionOnFail = true;
-        try
+        // dirty trick: when moving, do not pass copy param to avoid exclude mask
+        if (CalculateFilesSize(
+             FilesToCopy, TotalSize, csIgnoreErrors,
+             (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
+             CopyParam->CalculateSize, NULL))
         {
-          // dirty trick: when moving, do not pass copy param to avoid exclude mask
-          CalculateFilesSize(FilesToCopy, TotalSize, csIgnoreErrors,
-            (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL));
           TotalSizeKnown = true;
         }
-        __finally
-        {
-          ExceptionOnFail = false;
-        }
+      }
+      __finally
+      {
+        ExceptionOnFail = false;
       }
 
       OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osRemote,
@@ -5152,9 +5171,59 @@ void __fastcall TTerminal::ReflectSettings()
   // also FTunnelLog ?
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::EnableUsage()
+void __fastcall TTerminal::CollectUsage()
 {
-  FEnableSecureShellUsage = true;
+  switch (SessionData->FSProtocol)
+  {
+    case fsSCPonly:
+      Configuration->Usage->Inc(L"OpenedSessionsSCP");
+      break;
+
+    case fsSFTP:
+    case fsSFTPonly:
+      Configuration->Usage->Inc(L"OpenedSessionsSFTP");
+      break;
+
+    case fsFTP:
+      if (SessionData->Ftps == ftpsNone)
+      {
+        Configuration->Usage->Inc(L"OpenedSessionsFTP");
+      }
+      else
+      {
+        Configuration->Usage->Inc(L"OpenedSessionsFTPS");
+      }
+      break;
+
+    case fsWebDAV:
+      if (SessionData->Ftps == ftpsNone)
+      {
+        Configuration->Usage->Inc(L"OpenedSessionsWebDAV");
+      }
+      else
+      {
+        Configuration->Usage->Inc(L"OpenedSessionsWebDAVS");
+      }
+      break;
+  }
+
+  if (Configuration->Logging && Configuration->LogToFile)
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsLogToFile2");
+  }
+
+  if (Configuration->LogActions)
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsXmlLog");
+  }
+
+  std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
+  if (!SessionData->IsSame(FactoryDefaults.get(), true))
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsAdvanced");
+  }
+
+  FCollectFileSystemUsage = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,

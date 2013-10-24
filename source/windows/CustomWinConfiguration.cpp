@@ -61,7 +61,7 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
 {
   ClearHistory();
 
-  std::auto_ptr<THistoryStrings> Strings;
+  std::unique_ptr<THistoryStrings> Strings;
 
   // defaults for speed limits
   Strings.reset(new THistoryStrings());
@@ -107,6 +107,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FLoginDialog.WindowSize = FormatDefaultWindowSize(640, 430);
   FConfirmExitOnCompletion = true;
   FOperationProgressOnTop = true;
+  FSessionColors = L"";
 
   DefaultHistory();
 }
@@ -133,6 +134,7 @@ void __fastcall TCustomWinConfiguration::Saved()
   BLOCK(L"Interface", CANCREATE, \
     KEY(Integer,  Interface); \
     KEY(Bool,     ConfirmExitOnCompletion); \
+    KEY(String,   SessionColors); \
   ) \
   BLOCK(L"Logging", CANCREATE, \
     KEY(Integer, LogView); \

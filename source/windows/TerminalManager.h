@@ -62,6 +62,8 @@ public:
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
+  TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
+  TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };

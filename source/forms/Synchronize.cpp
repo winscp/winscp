@@ -321,7 +321,7 @@ void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
   if (SynchronizeSynchronizeCheck->State == cbGrayed)
   {
     TMessageParams Params(mpNeverAskAgainCheck);
-    switch (MoreMessageDialog(LoadStr(SYNCHRONISE_BEFORE_KEEPUPTODATE),
+    switch (MoreMessageDialog(LoadStr(SYNCHRONISE_BEFORE_KEEPUPTODATE2),
         NULL, qtConfirmation, qaYes | qaNo | qaCancel, HELP_KEEPUPTODATE_SYNCHRONIZE,
         &Params))
     {

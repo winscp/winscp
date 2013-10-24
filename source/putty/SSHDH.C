@@ -89,9 +89,7 @@ static const struct ssh_kex ssh_diffiehellman_gex_sha1 = {
 };
 
 static const struct ssh_kex *const gex_list[] = {
-#ifndef MPEXT
     &ssh_diffiehellman_gex_sha256,
-#endif
     &ssh_diffiehellman_gex_sha1
 };
 

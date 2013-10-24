@@ -37,7 +37,6 @@
 #include "filezillaapi.h"
 #include "misc/utf8.h"
 #ifdef MPEXT
-#define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
 #endif
 
 #ifdef _DEBUG
@@ -300,10 +299,10 @@ bool CFtpControlSocket::InitConnect()
 		{
 			filename = filename.Left(pos + 1);
 			filename += _T("cacert.pem");
-			m_pSslLayer->SetCertStorage(filename);
 		}
 		else
 			filename = _MPT("cacert.pem");
+		m_pSslLayer->SetCertStorage(filename);
 	}
 #endif
 
@@ -1521,6 +1520,11 @@ bool CFtpControlSocket::UsingMlsd()
 		(m_CurrentServer.iUseMlsd == 0) ||
 		((m_CurrentServer.iUseMlsd != 1) &&
 		 (m_serverCapabilities.GetCapability(mlsd_command) == yes));
+}
+
+bool CFtpControlSocket::UsingUtf8()
+{
+	return m_bUTF8;
 }
 
 std::string CFtpControlSocket::GetTlsVersionStr()
@@ -6304,8 +6308,8 @@ bool CFtpControlSocket::CheckForcePasvIp(CString & host)
 		default: // auto
 			if (!GetPeerName(ahost, tmpPort))
 			{
-			    // this is not failure in "auto" mode
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Error retrieving server address, cannot test if address is routable"));
+				// this is not failure in "auto" mode
+				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("Error retrieving server address, cannot test if address is routable"));
 			}
 			else if (!IsRoutableAddress(host) && IsRoutableAddress(ahost))
 			{

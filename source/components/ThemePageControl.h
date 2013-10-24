@@ -32,7 +32,7 @@ protected:
 
 private:
   void __fastcall DrawThemesXpTabItem(HDC DC, int Item, const TRect & Rect, bool Body, int State);
-  void __fastcall DrawTabItem(HDC DC, int Item, TRect Rect, bool Selected);
+  void __fastcall DrawTabItem(HDC DC, int Item, TRect Rect, bool Selected, bool Shadowed);
   void __fastcall DrawThemesPart(HDC DC, int PartId, int StateId, LPCWSTR PartNameID, LPRECT Rect);
   void __fastcall InvalidateTab(int Index);
 

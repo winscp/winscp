@@ -159,6 +159,7 @@ public:
   bool __fastcall GetCurrentPath(wchar_t * Path, size_t MaxLen);
 
   bool __fastcall UsingMlsd();
+  bool __fastcall UsingUtf8();
   std::string __fastcall GetTlsVersionStr();
   std::string __fastcall GetCipherName();
 

@@ -115,6 +115,7 @@ public:
 
 #ifdef MPEXT
 	virtual bool UsingMlsd() = 0;
+	virtual bool UsingUtf8() = 0;
 	virtual std::string GetTlsVersionStr() = 0;
 	virtual std::string GetCipherName() = 0;
 #endif

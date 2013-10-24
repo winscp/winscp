@@ -27,6 +27,7 @@ public:
   virtual void __fastcall Open();
   virtual void __fastcall Close();
   virtual bool __fastcall GetActive();
+  virtual void __fastcall CollectUsage();
   virtual void __fastcall Idle();
   virtual UnicodeString __fastcall AbsolutePath(UnicodeString Path, bool Local);
   virtual void __fastcall AnyCommand(const UnicodeString Command,

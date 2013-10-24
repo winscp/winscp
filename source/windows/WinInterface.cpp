@@ -515,7 +515,7 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   UnicodeString Message;
   // this is always called from within ExceptionMessage check,
   // so it should never fail here
-  CHECK(ExceptionMessage(E, Message));
+  CHECK(ExceptionMessageFormatted(E, Message));
 
   HelpKeyword = MergeHelpKeyword(HelpKeyword, GetExceptionHelpKeyword(E));
 
@@ -920,6 +920,7 @@ TRect __fastcall CalculatePopupRect(TButton * Button)
   TPoint UpPoint = Button->ClientToScreen(TPoint(0, 0));
   TPoint DownPoint = Button->ClientToScreen(TPoint(Button->Width, Button->Height));
   TRect Rect(UpPoint, DownPoint);
+  // With themes enabled, button are rendered 1 pixel smaller than their actual size
   int Offset = UseThemes() ? -1 : 0;
   Rect.Inflate(Offset, Offset);
   return Rect;
@@ -930,6 +931,51 @@ TRect __fastcall CalculatePopupRect(TControl * Control, TPoint MousePos)
   MousePos = Control->ClientToScreen(MousePos);
   TRect Rect(MousePos, MousePos);
   return Rect;
+}
+//---------------------------------------------------------------------------
+void __fastcall FixButtonImage(TButton * Button)
+{
+  // this themes enabled, button image is by default drawn too high
+  if (UseThemes())
+  {
+    Button->ImageMargins->Top = 1;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall CenterButtonImage(TButton * Button)
+{
+  // with themes disabled, the text seems to be drawn over the icon,
+  // so that the padding spaces hide away most of the icon
+  if (UseThemes())
+  {
+    Button->ImageAlignment = iaCenter;
+    int ImageWidthWithPadding = Button->Images->Width;
+
+    std::unique_ptr<TControlCanvas> Canvas(new TControlCanvas());
+    Canvas->Control = Button;
+
+    UnicodeString Caption = Button->Caption;
+    Caption = TrimLeft(Caption);
+    UnicodeString Padding;
+    while (Canvas->TextWidth(Padding) < ImageWidthWithPadding)
+    {
+      Padding += L" ";
+    }
+    Caption = Padding + Caption;
+    Button->Caption = Caption;
+
+    int CaptionWidth = Canvas->TextWidth(Caption);
+    // Image is bit to the left, than what it would be,
+    // if it were to be centered together with the caption.
+    // Windows elevation buttons have it the same
+    // (althought they have smaller padding between image and the caption)
+    Button->ImageMargins->Left = -(CaptionWidth / 2) - ScaleByTextHeight(Button, 8);
+  }
+  else
+  {
+    // at least do not draw it so near to the edge
+    Button->ImageMargins->Left = 1;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall SetGlobalMinimizeHandler(TCustomForm * /*Form*/, TNotifyEvent OnMinimize)
@@ -1295,7 +1341,7 @@ void __fastcall ::TTrayIcon::WndProc(TMessage & Message)
         {
           // prevent the user data from being freed by possible call
           // to CancelBalloon or PopupBalloon during call to OnBalloonClick
-          std::auto_ptr<TObject> UserData(FBalloonUserData);
+          std::unique_ptr<TObject> UserData(FBalloonUserData);
           FBalloonUserData = NULL;
           FOnBalloonClick(UserData.get());
         }

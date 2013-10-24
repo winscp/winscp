@@ -171,6 +171,9 @@ bool __fastcall TQueueController::AllowOperation(
         return Result;
       }
 
+    case qoDeleteAllDone:
+      return (FQueueStatus->DoneCount > 0);
+
     default:
       assert(false);
       return false;
@@ -187,64 +190,92 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
     QueueItem = QueueViewItemToQueueItem(FListView->ItemFocused);
   }
 
-  if (QueueItem != NULL)
+  switch (Operation)
   {
-    switch (Operation)
-    {
-      case qoItemUserAction:
-      case qoItemQuery:
-      case qoItemError:
-      case qoItemPrompt:
+    case qoItemUserAction:
+    case qoItemQuery:
+    case qoItemError:
+    case qoItemPrompt:
+      if (QueueItem != NULL)
+      {
         QueueItem->ProcessUserAction();
-        break;
+      }
+      break;
 
-      case qoItemExecute:
+    case qoItemExecute:
+      if (QueueItem != NULL)
+      {
         QueueItem->ExecuteNow();
-        break;
+      }
+      break;
 
-      case qoItemUp:
-      case qoItemDown:
+    case qoItemUp:
+    case qoItemDown:
+      if (QueueItem != NULL)
+      {
         QueueItem->Move(Operation == qoItemUp);
-        break;
+      }
+      break;
 
-      case qoItemDelete:
+    case qoItemDelete:
+      if (QueueItem != NULL)
+      {
         QueueItem->Delete();
-        break;
+      }
+      break;
 
-      case qoItemPause:
+    case qoItemPause:
+      if (QueueItem != NULL)
+      {
         QueueItem->Pause();
-        break;
+      }
+      break;
 
-      case qoItemResume:
+    case qoItemResume:
+      if (QueueItem != NULL)
+      {
         QueueItem->Resume();
-        break;
+      }
+      break;
 
-      case qoItemSpeed:
+    case qoItemSpeed:
+      if (QueueItem != NULL)
+      {
         QueueItem->SetCPSLimit(reinterpret_cast<unsigned long>(Param));
-        break;
+      }
+      break;
 
-      case qoPauseAll:
-      case qoResumeAll:
+    case qoPauseAll:
+    case qoResumeAll:
+      {
+        for (int i = FQueueStatus->DoneCount; i < FQueueStatus->DoneAndActiveCount; i++)
         {
-          for (int i = FQueueStatus->DoneCount; i < FQueueStatus->DoneAndActiveCount; i++)
+          QueueItem = FQueueStatus->Items[i];
+          if ((Operation == qoPauseAll) && (QueueItem->Status == TQueueItem::qsProcessing))
           {
-            QueueItem = FQueueStatus->Items[i];
-            if ((Operation == qoPauseAll) && (QueueItem->Status == TQueueItem::qsProcessing))
-            {
-              QueueItem->Pause();
-            }
-            else if ((Operation == qoResumeAll) && (QueueItem->Status == TQueueItem::qsPaused))
-            {
-              QueueItem->Resume();
-            }
+            QueueItem->Pause();
+          }
+          else if ((Operation == qoResumeAll) && (QueueItem->Status == TQueueItem::qsPaused))
+          {
+            QueueItem->Resume();
           }
         }
-        break;
+      }
+      break;
 
-      default:
-        assert(false);
-        break;
-    }
+    case qoDeleteAllDone:
+      {
+        for (int i = 0; i < FQueueStatus->DoneCount; i++)
+        {
+          QueueItem = FQueueStatus->Items[i];
+          QueueItem->Delete();
+        }
+      }
+      break;
+
+    default:
+      assert(false);
+      break;
   }
 }
 //---------------------------------------------------------------------------

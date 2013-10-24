@@ -73,7 +73,7 @@ static int loadrsakey_main(FILE * fp, struct RSAKey *key, int pub_only,
     i += j;
 
     /* Next, the comment field. */
-    j = GET_32BIT(buf + i);
+    j = toint(GET_32BIT(buf + i));
     i += 4;
     if (j < 0 || len - i < j)
 	goto end;
@@ -163,7 +163,7 @@ int loadrsakey(const Filename *filename, struct RSAKey *key, char *passphrase,
     int ret = 0;
     const char *error = NULL;
 
-    fp = f_open(*filename, "rb", FALSE);
+    fp = f_open(filename, "rb", FALSE);
     if (!fp) {
 	error = "can't open file";
 	goto end;
@@ -204,7 +204,7 @@ int rsakey_encrypted(const Filename *filename, char **comment)
     FILE *fp;
     char buf[64];
 
-    fp = f_open(*filename, "rb", FALSE);
+    fp = f_open(filename, "rb", FALSE);
     if (!fp)
 	return 0;		       /* doesn't even exist */
 
@@ -242,7 +242,7 @@ int rsakey_pubblob(const Filename *filename, void **blob, int *bloblen,
     *bloblen = 0;
     ret = 0;
 
-    fp = f_open(*filename, "rb", FALSE);
+    fp = f_open(filename, "rb", FALSE);
     if (!fp) {
 	error = "can't open file";
 	goto end;
@@ -365,7 +365,7 @@ int saversakey(const Filename *filename, struct RSAKey *key, char *passphrase)
     /*
      * Done. Write the result to the file.
      */
-    fp = f_open(*filename, "wb", TRUE);
+    fp = f_open(filename, "wb", TRUE);
     if (fp) {
 	int ret = (fwrite(buf, 1, p - buf, fp) == (size_t) (p - buf));
         if (fclose(fp))
@@ -463,7 +463,7 @@ static int read_header(FILE * fp, char *header)
     int len = 39;
     int c;
 
-    while (len > 0) {
+    while (1) {
 	c = fgetc(fp);
 	if (c == '\n' || c == '\r' || c == EOF)
 	    return 0;		       /* failure */
@@ -633,7 +633,7 @@ struct ssh2_userkey *ssh2_load_userkey(const Filename *filename,
     encryption = comment = mac = NULL;
     public_blob = private_blob = NULL;
 
-    fp = f_open(*filename, "rb", FALSE);
+    fp = f_open(filename, "rb", FALSE);
     if (!fp) {
 	error = "can't open file";
 	goto error;
@@ -886,7 +886,7 @@ unsigned char *ssh2_userkey_loadpub(const Filename *filename, char **algorithm,
 
     public_blob = NULL;
 
-    fp = f_open(*filename, "rb", FALSE);
+    fp = f_open(filename, "rb", FALSE);
     if (!fp) {
 	error = "can't open file";
 	goto error;
@@ -899,7 +899,7 @@ unsigned char *ssh2_userkey_loadpub(const Filename *filename, char **algorithm,
         if (0 == strncmp(header, "PuTTY-User-Key-File-", 20))
             error = "PuTTY key format too new";
         else
-	error = "not a PuTTY SSH-2 private key";
+            error = "not a PuTTY SSH-2 private key";
 	goto error;
     }
     error = "file format error";
@@ -970,7 +970,7 @@ int ssh2_userkey_encrypted(const Filename *filename, char **commentptr)
     if (commentptr)
 	*commentptr = NULL;
 
-    fp = f_open(*filename, "rb", FALSE);
+    fp = f_open(filename, "rb", FALSE);
     if (!fp)
 	return 0;
     if (!read_header(fp, header)
@@ -1153,7 +1153,7 @@ int ssh2_save_userkey(const Filename *filename, struct ssh2_userkey *key,
 	smemclr(&s, sizeof(s));
     }
 
-    fp = f_open(*filename, "w", TRUE);
+    fp = f_open(filename, "w", TRUE);
     if (!fp)
 	return 0;
     fprintf(fp, "PuTTY-User-Key-File-2: %s\n", key->alg->name);
@@ -1189,7 +1189,7 @@ int key_type(const Filename *filename)
     const char openssh_sig[] = "-----BEGIN ";
     int i;
 
-    fp = f_open(*filename, "r", FALSE);
+    fp = f_open(filename, "r", FALSE);
     if (!fp)
 	return SSH_KEYTYPE_UNOPENABLE;
     i = fread(buf, 1, sizeof(buf), fp);

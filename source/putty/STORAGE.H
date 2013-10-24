@@ -9,9 +9,9 @@
 /* ----------------------------------------------------------------------
  * Functions to save and restore PuTTY sessions. Note that this is
  * only the low-level code to do the reading and writing. The
- * higher-level code that translates a Config structure into a set
- * of (key,value) pairs is elsewhere, since it doesn't (mostly)
- * change between platforms.
+ * higher-level code that translates an internal Conf structure into
+ * a set of (key,value) pairs in their external storage format is
+ * elsewhere, since it doesn't (mostly) change between platforms.
  */
 
 /*
@@ -31,8 +31,8 @@
 void *open_settings_w(const char *sessionname, char **errmsg);
 void write_setting_s(void *handle, const char *key, const char *value);
 void write_setting_i(void *handle, const char *key, int value);
-void write_setting_filename(void *handle, const char *key, Filename value);
-void write_setting_fontspec(void *handle, const char *key, FontSpec font);
+void write_setting_filename(void *handle, const char *key, Filename *value);
+void write_setting_fontspec(void *handle, const char *key, FontSpec *font);
 void close_settings_w(void *handle);
 
 /*
@@ -41,22 +41,21 @@ void close_settings_w(void *handle);
  * number of calls to read_setting_s() and read_setting_i(), and
  * then close it using close_settings_r().
  * 
- * read_setting_s() writes into the provided buffer and returns a
- * pointer to the same buffer.
+ * read_setting_s() returns a dynamically allocated string which the
+ * caller must free. read_setting_filename() and
+ * read_setting_fontspec() likewise return dynamically allocated
+ * structures.
  * 
  * If a particular string setting is not present in the session,
  * read_setting_s() can return NULL, in which case the caller
  * should invent a sensible default. If an integer setting is not
  * present, read_setting_i() returns its provided default.
- * 
- * read_setting_filename() and read_setting_fontspec() each read into
- * the provided buffer, and return zero if they failed to.
  */
 void *open_settings_r(const char *sessionname);
-char *read_setting_s(void *handle, const char *key, char *buffer, int buflen);
+char *read_setting_s(void *handle, const char *key);
 int read_setting_i(void *handle, const char *key, int defvalue);
-int read_setting_filename(void *handle, const char *key, Filename *value);
-int read_setting_fontspec(void *handle, const char *key, FontSpec *font);
+Filename *read_setting_filename(void *handle, const char *key);
+FontSpec *read_setting_fontspec(void *handle, const char *key);
 void close_settings_r(void *handle);
 
 /*

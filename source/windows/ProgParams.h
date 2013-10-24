@@ -12,6 +12,8 @@ public:
   __fastcall TProgramParams();
   __fastcall TProgramParams(const UnicodeString & CmdLine);
 
+  static UnicodeString __fastcall FormatSwitch(const UnicodeString & Switch);
+
 private:
   void __fastcall Init(const UnicodeString & CmdLine);
 };

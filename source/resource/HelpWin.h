@@ -51,5 +51,6 @@
 #define HELP_IMPORT_SESSIONS         "ui_import"
 #define HELP_IMPORT_CONFIGURATION    "config"
 #define HELP_DELETE_FILE             "task_delete"
+#define HELP_COLOR                   "task_connections#session_color"
 
 #endif // TextsWin

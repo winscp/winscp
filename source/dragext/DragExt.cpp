@@ -293,7 +293,7 @@ bool RegisterServer(bool AllUsers)
   DWORD Unused;
   wchar_t ClassID[CLSID_SIZE];
 
-  StringFromGUID2(CLSID_ShellExtension, ClassID, CLSID_SIZE);
+  StringFromGUID2(CLSID_ShellExtension, ClassID, LENOF(ClassID));
 
   if ((RegOpenKeyEx(RootKey, L"Software\\Classes", 0, KEY_WRITE, &HKey) ==
          ERROR_SUCCESS) &&
@@ -391,7 +391,7 @@ bool UnregisterServer(bool AllUsers)
   bool Result = false;
   wchar_t ClassID[CLSID_SIZE];
 
-  StringFromGUID2(CLSID_ShellExtension, ClassID, CLSID_SIZE);
+  StringFromGUID2(CLSID_ShellExtension, ClassID, LENOF(ClassID));
 
   HKEY RootKey = AllUsers ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
   HKEY HKey;

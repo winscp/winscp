@@ -2,7 +2,10 @@
 
 STRINGTABLE
 BEGIN
-  UNKNOWN_KEY2,
+  UNKNOWN_KEY3,
+    "**Continue connecting to an unknown server and "
+    "add its host key to a cache?**\n"
+    "\n"
     "The server's host key was not found in the cache. You have no guarantee "
     "that the server is the computer you think it is.\n"
     "\n"
@@ -11,11 +14,9 @@ BEGIN
     "\n"
     "If you trust this host, press Yes. "
     "To connect without adding host key to the cache, press No. "
-    "To abandon the connection press Cancel.\n"
-    "\n"
-    "Continue connecting and add host key to the cache?"
-  DIFFERENT_KEY3,
-    "WARNING - POTENTIAL SECURITY BREACH!\n"
+    "To abandon the connection press Cancel."
+  DIFFERENT_KEY4,
+    "**WARNING - POTENTIAL SECURITY BREACH!**\n"
     "\n"
     "The server's host key does not match the one WinSCP has "
     "in cache. This means that either the "
@@ -28,14 +29,14 @@ BEGIN
     "%s\n"
     "\n"
     "If you were expecting this change, trust the new key and "
-    "want to continue connecting, "
+    "want to continue connecting to the server, "
     "either press Update to update cache, or "
     "press Add to add the new key to the cache while keeping the old one(s). "
     "If you want to carry on connecting but without updating "
     "the cache, press Skip. "
     "If you want to abandon the connection completely, press "
     "Cancel. Pressing Cancel is the ONLY guaranteed safe "
-    "choice.\n"
+    "choice."
   OLD_KEY,
     "You are loading an SSH-2 private key which has an "
     "old version of the file format. This means your key "

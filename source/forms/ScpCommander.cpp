@@ -769,7 +769,6 @@ TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
     case fcSessionToolbar: return SessionToolbar;
     case fcCustomCommandsBand: return CustomCommandsToolbar;
     case fcColorMenu: return reinterpret_cast<TControl*>(ColorMenuItem);
-    case fcColorPalette: return reinterpret_cast<TControl*>(SessionColorPalette);
     case fcTransferDropDown: return reinterpret_cast<TControl*>(TransferDropDown);
     case fcTransferList: return reinterpret_cast<TControl*>(TransferList);
     case fcTransferLabel: return reinterpret_cast<TControl*>(TransferLabel);
@@ -1086,7 +1085,7 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
       UnicodeString NewPath;
 
       bool Error = false;
-      std::auto_ptr<TStrings> ErrorMoreMessages;
+      std::unique_ptr<TStrings> ErrorMoreMessages;
       UnicodeString ErrorHelpKeyword;
 
       try
@@ -1119,7 +1118,7 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
       // to avoid deep nesting, what seems to cause some stray access violations
       if (Error)
       {
-        if (MoreMessageDialog(FMTLOAD(SYNC_DIR_BROWSE_CREATE, (NewPath)),
+        if (MoreMessageDialog(FMTLOAD(SYNC_DIR_BROWSE_CREATE2, (NewPath)),
               ErrorMoreMessages.get(), qtConfirmation, qaYes | qaNo,
               ErrorHelpKeyword) == qaYes)
         {

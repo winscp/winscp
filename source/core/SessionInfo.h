@@ -36,7 +36,7 @@ enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcTimestampChanging, fcRemoteMove, fcLoadingAdditionalProperties,
   fcCheckingSpaceAvailable, fcIgnorePermErrors, fcCalculatingChecksum,
   fcModeChangingUpload, fcPreservingTimestampUpload, fcShellAnyCommand,
-  fcSecondaryShell, fcCount };
+  fcSecondaryShell, fcRemoveCtrlZUpload, fcRemoveBOMUpload, fcCount };
 //---------------------------------------------------------------------------
 struct TFileSystemInfo
 {

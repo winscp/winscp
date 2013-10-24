@@ -351,6 +351,7 @@ public:
 	int SetCurrentPath(CServerPath path);
 	int GetCurrentPath(CServerPath & path);
 	bool UsingMlsd();
+	bool UsingUtf8();
 	std::string GetTlsVersionStr();
 	std::string GetCipherName();
 #endif

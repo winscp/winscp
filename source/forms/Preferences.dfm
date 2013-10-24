@@ -2523,7 +2523,7 @@ object PreferencesDialog: TPreferencesDialog
           392)
         object PathInCaptionGroup: TGroupBox
           Left = 8
-          Top = 114
+          Top = 131
           Width = 389
           Height = 94
           Anchors = [akLeft, akTop, akRight]
@@ -2562,7 +2562,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object WindowMiscellaneousGroup: TGroupBox
           Left = 8
-          Top = 214
+          Top = 231
           Width = 389
           Height = 53
           Anchors = [akLeft, akTop, akRight]
@@ -2586,26 +2586,34 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 100
+          Height = 117
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Workspaces'
           TabOrder = 0
           DesignSize = (
             389
-            100)
+            117)
+          object AutoWorkspaceLabel: TLabel
+            Left = 45
+            Top = 45
+            Width = 122
+            Height = 13
+            Caption = '&Default workspace name:'
+            FocusControl = AutoWorkspaceCombo
+          end
           object AutoSaveWorkspaceCheck: TCheckBox
             Left = 16
             Top = 21
             Width = 361
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Automatically save workspace on exit:'
+            Caption = '&Automatically save workspace on exit'
             TabOrder = 0
             OnClick = ControlChange
           end
           object AutoWorkspaceCombo: TComboBox
             Left = 45
-            Top = 44
+            Top = 61
             Width = 332
             Height = 21
             Anchors = [akLeft, akTop, akRight]
@@ -2614,7 +2622,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AutoSaveWorkspacePasswordsCheck: TCheckBox
             Left = 45
-            Top = 70
+            Top = 87
             Width = 332
             Height = 17
             Anchors = [akLeft, akTop, akRight]

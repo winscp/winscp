@@ -455,8 +455,8 @@ void __fastcall TWinConfiguration::Default()
   FTheme = L"OfficeXP";
   FLastStoredSession = L"";
   // deliberatelly not being saved, so that when saving ad-hoc workspace,
-  // we do not offer to overwrite the last saved workspace, when may be undesirable
-  FLastWorkspace = LoadStr(NEW_WORKSPACE);
+  // we do not offer to overwrite the last saved workspace, what may be undesirable
+  FLastWorkspace = L"";
   FAutoSaveWorkspace = false;
   FAutoSaveWorkspacePasswords = false;
   FAutoWorkspace = L"";
@@ -1202,8 +1202,25 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
   {
     if (IsWin64())
     {
-      // temporarily consider dragext always present on 64-bit system
-      FDDExtInstalled = 1;
+      // WORKAROUND
+      // We cannot load 64-bit COM class into 32-bit process,
+      // so we fallback to querying registration keys
+      #define CLSID_SIZE 39
+      wchar_t ClassID[CLSID_SIZE];
+      StringFromGUID2(CLSID_ShellExtension, ClassID, LENOF(ClassID));
+      NULL_TERMINATE(ClassID);
+      UnicodeString SubKey = UnicodeString(L"CLSID\\") + ClassID;
+      HKEY HKey;
+      LONG Result = RegOpenKeyEx(HKEY_CLASSES_ROOT, SubKey.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &HKey);
+      if (Result == ERROR_SUCCESS)
+      {
+        RegCloseKey(HKey);
+        FDDExtInstalled = 1;
+      }
+      else
+      {
+        FDDExtInstalled = 0;
+      }
     }
     else
     {
@@ -1819,6 +1836,11 @@ void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
   {
     try
     {
+      if (ALWAYS_TRUE(F->Count > 0))
+      {
+        Usage->Inc(L"TemporaryDirectoryCleanups");
+      }
+
       for (int i = 0; i < F->Count; i++)
       {
         if (!DeleteDirectory(F->Strings[i]))
@@ -2130,7 +2152,7 @@ TStringList * __fastcall TWinConfiguration::LoadJumpList(
 {
   UnicodeString JumpList = Storage->ReadString(Name, L"");
 
-  std::auto_ptr<TStringList> List(new TStringList());
+  std::unique_ptr<TStringList> List(new TStringList());
   List->CaseSensitive = false;
   List->CommaText = JumpList;
   return List.release();
@@ -2167,8 +2189,8 @@ void __fastcall TWinConfiguration::UpdateEntryInJumpList(
 
     if (Storage->OpenSubKey(ConfigurationSubKey, true))
     {
-      std::auto_ptr<TStringList> ListSessions(LoadJumpList(Storage, L"JumpList"));
-      std::auto_ptr<TStringList> ListWorkspaces(LoadJumpList(Storage, L"JumpListWorkspaces"));
+      std::unique_ptr<TStringList> ListSessions(LoadJumpList(Storage, L"JumpList"));
+      std::unique_ptr<TStringList> ListWorkspaces(LoadJumpList(Storage, L"JumpListWorkspaces"));
 
       if (!Name.IsEmpty())
       {
@@ -2229,11 +2251,24 @@ void __fastcall TWinConfiguration::UpdateJumpList()
 void __fastcall TWinConfiguration::UpdateStaticUsage()
 {
   TCustomWinConfiguration::UpdateStaticUsage();
+  Usage->Set(L"Beta", IsBeta);
+
   Usage->Set(L"Interface", Interface);
   Usage->Set(L"CustomCommandsCount", (FCustomCommandsDefaults ? 0 : FCustomCommandList->Count));
   Usage->Set(L"UsingLocationProfiles", UseLocationProfiles);
   Usage->Set(L"UsingMasterPassword", UseMasterPassword);
   Usage->Set(L"UsingAutoSaveWorkspace", AutoSaveWorkspace);
+  Usage->Set(L"TreeVisible",
+    (Interface == ifExplorer) ?
+      ScpExplorer.DriveView :
+      (ScpCommander.LocalPanel.DriveView || ScpCommander.RemotePanel.DriveView));
+
+  Usage->Set(L"CommanderNortonLikeMode", int(ScpCommander.NortonLikeMode));
+  Usage->Set(L"CommanderExplorerKeyboardShortcuts", ScpCommander.ExplorerKeyboardShortcuts);
+
+  Usage->Set(L"ExplorerViewStyle", ScpExplorer.ViewStyle);
+
+  Usage->Set(L"LastMonitor", LastMonitor);
 
   UnicodeString ExternalEditors;
   for (int Index = 0; Index < EditorList->Count; Index++)
@@ -2243,12 +2278,7 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
     {
       UnicodeString ExternalEditor = Editor->Data->ExternalEditor;
       ReformatFileNameCommand(ExternalEditor);
-      UnicodeString Name = ExtractFileName(ExtractProgram(ExternalEditor));
-      int Dot = Name.LastDelimiter(L".");
-      if (Dot > 0)
-      {
-        Name = Name.SubString(1, Dot - 1);
-      }
+      UnicodeString Name = ExtractProgramName(ExternalEditor);
       AddToList(ExternalEditors, Name, ",");
     }
   }

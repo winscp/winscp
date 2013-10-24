@@ -4,6 +4,7 @@
 
 #include <Common.h>
 #include <vsstyle.h>
+#include <memory>
 #include "ThemePageControl.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -183,7 +184,7 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
       RectMem.Bottom--;
     }
 
-    DrawTabItem(DCMem, Item, RectMem, (State == TIS_SELECTED));
+    DrawTabItem(DCMem, Item, RectMem, (State == TIS_SELECTED), (State == TIS_DISABLED));
   }
 
   // Blit image to the screen
@@ -194,7 +195,8 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
 }
 //----------------------------------------------------------------------------------------------------------
 // draw tab item context: possible icon and text
-void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, bool Selected)
+void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect,
+  bool Selected, bool Shadowed)
 {
   if (Selected)
   {
@@ -210,7 +212,6 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, boo
 
   UnicodeString Text = Pages[Item]->Caption;
 
-  int OldMode = SetBkMode(DC, TRANSPARENT);
   if ((Images != NULL) && (Pages[Item]->ImageIndex >= 0))
   {
     int Left;
@@ -223,8 +224,11 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, boo
       Left = (Rect.Right - Images->Width - Rect.Left) / 2;
     }
     int Y = ((Rect.Top + Rect.Bottom - Images->Height) / 2) - 1 + (Selected ? 0 : -2);
-    ImageList_Draw((HIMAGELIST)Images->Handle, Pages[Item]->ImageIndex, DC,
-      Left, Y, ILD_TRANSPARENT);
+    std::unique_ptr<TCanvas> Canvas(new TCanvas());
+    Canvas->Handle = DC;
+    Images->Draw(Canvas.get(), Left, Y, Pages[Item]->ImageIndex, !Shadowed);
+    //ImageList_Draw((HIMAGELIST)Images->Handle, Pages[Item]->ImageIndex, DC,
+    //  Left, Y, ILD_TRANSPARENT, );
     Rect.Left += Images->Width + 3;
   }
   else
@@ -232,6 +236,7 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, boo
     Rect.Left -= 2;
   }
 
+  int OldMode = SetBkMode(DC, TRANSPARENT);
   if (!Text.IsEmpty())
   {
     HFONT OldFont = (HFONT)SelectObject(DC, Font->Handle);

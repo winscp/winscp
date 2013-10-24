@@ -125,7 +125,7 @@ object CopyParamsFrame: TCopyParamsFrame
     end
     object IgnorePermErrorsCheck: TCheckBox
       Left = 16
-      Top = 73
+      Top = 72
       Width = 173
       Height = 17
       Caption = 'Ign&ore permission errors'
@@ -136,11 +136,20 @@ object CopyParamsFrame: TCopyParamsFrame
     end
     object ClearArchiveCheck: TCheckBox
       Left = 16
-      Top = 100
+      Top = 98
       Width = 173
       Height = 17
       Caption = 'Clear '#39'Archi&ve'#39' attribute'
       TabOrder = 3
+    end
+    object RemoveCtrlZAndBOMCheck: TCheckBox
+      Left = 16
+      Top = 124
+      Width = 173
+      Height = 17
+      Caption = 'Remove BOM and &EOF marks'
+      TabOrder = 4
+      OnClick = ControlChange
     end
   end
   object ChangeCaseGroup: TGroupBox

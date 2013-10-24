@@ -11,6 +11,7 @@
 #include <DateUtils.hpp>
 #include <math.h>
 #include <shlobj.h>
+#include <limits>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -283,6 +284,44 @@ UnicodeString ExceptionLogString(Exception *E)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall MainInstructions(const UnicodeString & S)
+{
+  UnicodeString MainMsgTag = LoadStr(MAIN_MSG_TAG);
+  return MainMsgTag + S + MainMsgTag;
+}
+//---------------------------------------------------------------------------
+bool ExtractMainInstructions(UnicodeString & S, UnicodeString & MainInstructions)
+{
+  bool Result = false;
+  UnicodeString MainMsgTag = LoadStr(MAIN_MSG_TAG);
+  if (StartsStr(MainMsgTag, S))
+  {
+    int EndTagPos =
+      S.SubString(MainMsgTag.Length() + 1, S.Length() - MainMsgTag.Length()).Pos(MainMsgTag);
+    if (EndTagPos > 0)
+    {
+      MainInstructions = S.SubString(MainMsgTag.Length() + 1, EndTagPos - 1);
+      S.Delete(1, EndTagPos + (2 * MainMsgTag.Length()) - 1);
+      Result = true;
+    }
+  }
+
+  assert(MainInstructions.Pos(MainMsgTag) == 0);
+  assert(S.Pos(MainMsgTag) == 0);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString UnformatMessage(UnicodeString S)
+{
+  UnicodeString MainInstruction;
+  if (ExtractMainInstructions(S, MainInstruction))
+  {
+    S = MainInstruction + S;
+  }
+  return S;
+}
+//---------------------------------------------------------------------------
 bool IsNumber(const UnicodeString Str)
 {
   int Value;
@@ -458,6 +497,17 @@ UnicodeString __fastcall ExtractProgram(UnicodeString Command)
   SplitCommand(Command, Program, Params, Dir);
 
   return Program;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall ExtractProgramName(UnicodeString Command)
+{
+  UnicodeString Name = ExtractFileName(ExtractProgram(Command));
+  int Dot = Name.LastDelimiter(L".");
+  if (Dot > 0)
+  {
+    Name = Name.SubString(1, Dot - 1);
+  }
+  return Name;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall FormatCommand(UnicodeString Program, UnicodeString Params)
@@ -740,6 +790,21 @@ unsigned char __fastcall HexToByte(const UnicodeString Hex)
     static_cast<unsigned char>(((P1 <= 0) || (P2 <= 0)) ? 0 : (((P1 - 1) << 4) + (P2 - 1)));
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsLowerCaseLetter(wchar_t Ch)
+{
+  return (Ch >= 'a') && (Ch <= 'z');
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsUpperCaseLetter(wchar_t Ch)
+{
+  return (Ch >= 'A') && (Ch <= 'Z');
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsLetter(wchar_t Ch)
+{
+  return IsLowerCaseLetter(Ch) || IsUpperCaseLetter(Ch);
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsDigit(wchar_t Ch)
 {
   return (Ch >= '0') && (Ch <= '9');
@@ -846,6 +911,19 @@ TDateTime __fastcall EncodeTimeVerbose(Word Hour, Word Min, Word Sec, Word MSec)
   }
 }
 //---------------------------------------------------------------------------
+TDateTime __fastcall SystemTimeToDateTimeVerbose(const SYSTEMTIME & SystemTime)
+{
+  try
+  {
+    TDateTime DateTime = SystemTimeToDateTime(SystemTime);
+    return DateTime;
+  }
+  catch (EConvertError & E)
+  {
+    throw EConvertError(FORMAT(L"%s [%d-%2.2d-%2.2d %2.2d:%2.2d:%2.2d.%3.3d]", (E.Message, int(SystemTime.wYear), int(SystemTime.wMonth), int(SystemTime.wDay), int(SystemTime.wHour), int(SystemTime.wMinute), int(SystemTime.wSecond), int(SystemTime.wMilliseconds))));
+  }
+}
+//---------------------------------------------------------------------------
 struct TDateTimeParams
 {
   TDateTime UnixEpoch;
@@ -870,7 +948,7 @@ struct TDateTimeParams
 };
 typedef std::map<int, TDateTimeParams> TYearlyDateTimeParams;
 static TYearlyDateTimeParams YearlyDateTimeParams;
-static std::auto_ptr<TCriticalSection> DateTimeParamsSection(new TCriticalSection());
+static std::unique_ptr<TCriticalSection> DateTimeParamsSection(new TCriticalSection());
 static void __fastcall EncodeDSTMargin(const SYSTEMTIME & Date, unsigned short Year,
   TDateTime & Result);
 //---------------------------------------------------------------------------
@@ -967,7 +1045,7 @@ static const TDateTimeParams * __fastcall GetDateTimeParams(unsigned short Year)
     }
     Result->SummerDST = (Result->DaylightDate < Result->StandardDate);
 
-    Result->DaylightHack = !IsWin7() || IsExactly2008R2();
+    Result->DaylightHack = !IsWin7();
   }
 
   return Result;
@@ -1165,20 +1243,30 @@ FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
 TDateTime __fastcall FileTimeToDateTime(const FILETIME & FileTime)
 {
   // duplicated in DirView.pas
-  SYSTEMTIME SysTime;
-  if (!UsesDaylightHack())
+  TDateTime Result;
+  // The 0xFFF... is sometime seen for invalid timestamps,
+  // it would cause failure in SystemTimeToDateTime below
+  if (FileTime.dwLowDateTime == std::numeric_limits<DWORD>::max())
   {
-    SYSTEMTIME UniverzalSysTime;
-    FileTimeToSystemTime(&FileTime, &UniverzalSysTime);
-    SystemTimeToTzSpecificLocalTime(NULL, &UniverzalSysTime, &SysTime);
+    Result = MinDateTime;
   }
   else
   {
-    FILETIME LocalFileTime;
-    FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
-    FileTimeToSystemTime(&LocalFileTime, &SysTime);
+    SYSTEMTIME SysTime;
+    if (!UsesDaylightHack())
+    {
+      SYSTEMTIME UniverzalSysTime;
+      FileTimeToSystemTime(&FileTime, &UniverzalSysTime);
+      SystemTimeToTzSpecificLocalTime(NULL, &UniverzalSysTime, &SysTime);
+    }
+    else
+    {
+      FILETIME LocalFileTime;
+      FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
+      FileTimeToSystemTime(&LocalFileTime, &SysTime);
+    }
+    Result = SystemTimeToDateTimeVerbose(SysTime);
   }
-  TDateTime Result = SystemTimeToDateTime(SysTime);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1195,7 +1283,7 @@ __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
       SYSTEMTIME SystemTime;
       FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
       FileTimeToSystemTime(&LocalFileTime, &SystemTime);
-      TDateTime DateTime = SystemTimeToDateTime(SystemTime);
+      TDateTime DateTime = SystemTimeToDateTimeVerbose(SystemTime);
       const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
       Result += (IsDateInDST(DateTime) ?
         Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
@@ -1215,7 +1303,7 @@ __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
       SYSTEMTIME SystemTime;
       FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
       FileTimeToSystemTime(&LocalFileTime, &SystemTime);
-      TDateTime DateTime = SystemTimeToDateTime(SystemTime);
+      TDateTime DateTime = SystemTimeToDateTimeVerbose(SystemTime);
       const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
       Result -= (IsDateInDST(DateTime) ?
         Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
@@ -1395,13 +1483,46 @@ UnicodeString __fastcall GetTimeZoneLogString()
   const TDateTimeParams * Params = GetDateTimeParams(0);
 
   UnicodeString Result =
-    FORMAT("Current: GMT%s, Standard: GMT%s, DST: GMT%s, DST Start: %s, DST End: %s",
+    FORMAT(L"Current: GMT%s, Standard: GMT%s, DST: GMT%s, DST Start: %s, DST End: %s",
       (FormatTimeZone(Params->CurrentDifferenceSec),
        FormatTimeZone(Params->BaseDifferenceSec + Params->StandardDifferenceSec),
        FormatTimeZone(Params->BaseDifferenceSec + Params->DaylightDifferenceSec),
        Params->DaylightDate.DateString(),
        Params->StandardDate.DateString()));
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall AdjustClockForDSTEnabled()
+{
+  // Windows XP deletes the DisableAutoDaylightTimeSet value when it is off
+  // (the later versions set it to DynamicDaylightTimeDisabled to 0)
+  bool DynamicDaylightTimeDisabled = false;
+  TRegistry * Registry = new TRegistry(KEY_READ);
+  try
+  {
+    Registry->RootKey = HKEY_LOCAL_MACHINE;
+    if (Registry->OpenKey(L"SYSTEM", false) &&
+        Registry->OpenKey(L"CurrentControlSet", false) &&
+        Registry->OpenKey(L"Control", false) &&
+        Registry->OpenKey(L"TimeZoneInformation", false))
+    {
+      if (Registry->ValueExists(L"DynamicDaylightTimeDisabled"))
+      {
+        DynamicDaylightTimeDisabled = Registry->ReadBool(L"DynamicDaylightTimeDisabled");
+      }
+      // WORKAROUND
+      // Windows XP equivalent
+      else if (Registry->ValueExists(L"DisableAutoDaylightTimeSet"))
+      {
+        DynamicDaylightTimeDisabled = Registry->ReadBool(L"DisableAutoDaylightTimeSet");
+      }
+    }
+    delete Registry;
+  }
+  catch(...)
+  {
+  }
+  return !DynamicDaylightTimeDisabled;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall StandardTimestamp(const TDateTime & DateTime)
@@ -1624,13 +1745,21 @@ UnicodeString __fastcall DecodeUrlChars(UnicodeString S)
         break;
 
       case L'%':
-        if (i <= S.Length() - 2)
         {
-          unsigned char B = HexToByte(S.SubString(i + 1, 2));
-          if (B > 0)
+          UnicodeString Hex;
+          while ((i + 2 <= S.Length()) && (S[i] == L'%') &&
+                 IsHex(S[i + 1]) && IsHex(S[i + 2]))
           {
-            S[i] = (wchar_t)B;
-            S.Delete(i + 1, 2);
+            Hex += S.SubString(i + 1, 2);
+            S.Delete(i, 3);
+          }
+
+          if (!Hex.IsEmpty())
+          {
+            RawByteString Bytes = HexToBytes(Hex);
+            UTF8String UTF8(Bytes.c_str(), Bytes.Length());
+            UnicodeString Chars(UTF8);
+            S.Insert(Chars, i);
           }
         }
         break;
@@ -1677,9 +1806,8 @@ UnicodeString __fastcall NonUrlChars()
   for (unsigned int I = 0; I <= 127; I++)
   {
     wchar_t C = static_cast<wchar_t>(I);
-    if (((C >= L'a') && (C <= L'z')) ||
-        ((C >= L'A') && (C <= L'Z')) ||
-        ((C >= L'0') && (C <= L'9')) ||
+    if (IsLetter(C) ||
+        IsDigit(C) ||
         (C == L'_') || (C == L'-') || (C == L'.'))
     {
       // noop
@@ -1797,54 +1925,6 @@ bool __fastcall IsWin7()
   return CheckWin32Version(6, 1);
 }
 //---------------------------------------------------------------------------
-// Duplicated in PasTools.pas
-bool __fastcall IsExactly2008R2()
-{
-  bool Result = (Win32MajorVersion == 6) && (Win32MinorVersion == 1);
-  DWORD Type;
-  if (Result && GetWindowsProductType(Type))
-  {
-    switch (Type)
-    {
-      case 0x0008 /*PRODUCT_DATACENTER_SERVER*/:
-      case 0x000C /*PRODUCT_DATACENTER_SERVER_CORE}*/:
-      case 0x0027 /*PRODUCT_DATACENTER_SERVER_CORE_V*/:
-      case 0x0025 /*PRODUCT_DATACENTER_SERVER_V*/:
-      case 0x000A /*PRODUCT_ENTERPRISE_SERVE*/:
-      case 0x000E /*PRODUCT_ENTERPRISE_SERVER_COR*/:
-      case 0x0029 /*PRODUCT_ENTERPRISE_SERVER_CORE_*/:
-      case 0x000F /*PRODUCT_ENTERPRISE_SERVER_IA6*/:
-      case 0x0026 /*PRODUCT_ENTERPRISE_SERVER_*/:
-      case 0x002A /*PRODUCT_HYPER*/:
-      case 0x001E /*PRODUCT_MEDIUMBUSINESS_SERVER_MANAGEMEN*/:
-      case 0x0020 /*PRODUCT_MEDIUMBUSINESS_SERVER_MESSAGIN*/:
-      case 0x001F /*PRODUCT_MEDIUMBUSINESS_SERVER_SECURIT*/:
-      case 0x0018 /*PRODUCT_SERVER_FOR_SMALLBUSINES*/:
-      case 0x0023 /*PRODUCT_SERVER_FOR_SMALLBUSINESS_*/:
-      case 0x0021 /*PRODUCT_SERVER_FOUNDATIO*/:
-      case 0x0009 /*PRODUCT_SMALLBUSINESS_SERVE*/:
-      case 0x0038 /*PRODUCT_SOLUTION_EMBEDDEDSERVE*/:
-      case 0x0007 /*PRODUCT_STANDARD_SERVE*/:
-      case 0x000D /*PRODUCT_STANDARD_SERVER_COR*/:
-      case 0x0028 /*PRODUCT_STANDARD_SERVER_CORE_*/:
-      case 0x0024 /*PRODUCT_STANDARD_SERVER_*/:
-      case 0x0017 /*PRODUCT_STORAGE_ENTERPRISE_SERVE*/:
-      case 0x0014 /*PRODUCT_STORAGE_EXPRESS_SERVE*/:
-      case 0x0015 /*PRODUCT_STORAGE_STANDARD_SERVE*/:
-      case 0x0016 /*PRODUCT_STORAGE_WORKGROUP_SERVE*/:
-      case 0x0011 /*PRODUCT_WEB_SERVE*/:
-      case 0x001D /*PRODUCT_WEB_SERVER_COR*/:
-        Result = true;
-        break;
-
-      default:
-        Result = false;
-        break;
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 LCID __fastcall GetDefaultLCID()
 {
   return GetUserDefaultLCID();
@@ -1888,12 +1968,12 @@ UnicodeString __fastcall WindowsProductName()
   try
   {
     Registry->RootKey = HKEY_LOCAL_MACHINE;
-    if (Registry->OpenKey("SOFTWARE", false) &&
-        Registry->OpenKey("Microsoft", false) &&
-        Registry->OpenKey("Windows NT", false) &&
-        Registry->OpenKey("CurrentVersion", false))
+    if (Registry->OpenKey(L"SOFTWARE", false) &&
+        Registry->OpenKey(L"Microsoft", false) &&
+        Registry->OpenKey(L"Windows NT", false) &&
+        Registry->OpenKey(L"CurrentVersion", false))
     {
-      Result = Registry->ReadString("ProductName");
+      Result = Registry->ReadString(L"ProductName");
     }
     delete Registry;
   }
@@ -1907,7 +1987,7 @@ bool __fastcall IsDirectoryWriteable(const UnicodeString & Path)
 {
   UnicodeString FileName =
     IncludeTrailingPathDelimiter(Path) +
-    FORMAT("wscp_%s_%d.tmp", (FormatDateTime(L"nnzzz", Now()), int(GetCurrentProcessId())));
+    FORMAT(L"wscp_%s_%d.tmp", (FormatDateTime(L"nnzzz", Now()), int(GetCurrentProcessId())));
   HANDLE Handle = CreateFile(FileName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL,
     CREATE_NEW, FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, 0);
   bool Result = (Handle != INVALID_HANDLE_VALUE);

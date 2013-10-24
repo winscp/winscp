@@ -28,6 +28,9 @@ char *dupstr(const char *s);
 char *dupcat(const char *s1, ...);
 char *dupprintf(const char *fmt, ...);
 char *dupvprintf(const char *fmt, va_list ap);
+void burnstr(char *string);
+
+int toint(unsigned);
 
 char *fgetline(FILE *fp);
 

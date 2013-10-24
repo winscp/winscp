@@ -19,6 +19,8 @@
 #define GetOption(OPTION) GetInstanceOption(this->m_pApiLogParent, OPTION)
 #define GetOptionVal(OPTION) GetInstanceOptionVal(this->m_pApiLogParent, OPTION)
 //---------------------------------------------------------------------------
+#define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
+//---------------------------------------------------------------------------
 #include <afx.h>
 #include "wtypes.h"
 #include <afxmt.h>

@@ -425,8 +425,11 @@ public:
     const TRemoteProperties & OriginalProperties, TRemoteProperties NewProperties);
 };
 //---------------------------------------------------------------------------
+bool __fastcall IsUnixStyleWindowsPath(const UnicodeString & Path);
+bool __fastcall UnixIsAbsolutePath(const UnicodeString & Path);
 UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString Path);
-UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString Path);
+UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString Path, bool Simple = false);
+UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFileDir(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFilePath(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFileName(const UnicodeString Path);

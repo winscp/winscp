@@ -288,11 +288,13 @@ public:
 	//Processes event notifications sent by the sockets or the layers
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
+		//Verify parameters
+		ASSERT(hWnd);
+		if (!hWnd)
+			return 0;
+		CAsyncSocketExHelperWindow *pWnd=(CAsyncSocketExHelperWindow *)GetWindowLongPtr(hWnd, GWL_USERDATA);
 		if (message>=WM_SOCKETEX_NOTIFY)
 		{
-			//Verify parameters
-			ASSERT(hWnd);
-			CAsyncSocketExHelperWindow *pWnd=(CAsyncSocketExHelperWindow *)GetWindowLongPtr(hWnd, GWL_USERDATA);
 			ASSERT(pWnd);
 			
 			if (message<static_cast<UINT>(WM_SOCKETEX_NOTIFY+pWnd->m_nWindowDataSize)) //Index is within socket storage
@@ -499,10 +501,6 @@ public:
 #ifndef NOLAYERS
 		else if (message == WM_USER) //Notification event sent by a layer
 		{
-			//Verify parameters, lookup socket and notification message
-			//Verify parameters
-			ASSERT(hWnd);
-			CAsyncSocketExHelperWindow *pWnd=(CAsyncSocketExHelperWindow *)GetWindowLongPtr(hWnd, GWL_USERDATA);
 			ASSERT(pWnd);
 			
 			if (wParam >= static_cast<UINT>(pWnd->m_nWindowDataSize)) //Index is within socket storage
@@ -642,6 +640,7 @@ public:
 #endif //NOLAYERS
 		else if (message == WM_USER+1)
 		{
+			ASSERT(pWnd);
 			// WSAAsyncGetHostByName reply
 
 			// Verify parameters
@@ -686,15 +685,7 @@ public:
 		}
 		else if (message == WM_USER + 2)
 		{
-			//Verify parameters, lookup socket and notification message
-			//Verify parameters
-			if (!hWnd)
-				return 0;
-
-			CAsyncSocketExHelperWindow *pWnd=(CAsyncSocketExHelperWindow *)GetWindowLongPtr(hWnd, GWL_USERDATA);
-			if (!pWnd)
-				return 0;
-
+			ASSERT(pWnd);
 			if (wParam >= static_cast<UINT>(pWnd->m_nWindowDataSize)) //Index is within socket storage
 				return 0;
 			
@@ -709,12 +700,9 @@ public:
 		}
 		else if (message == WM_TIMER)
 		{
+			ASSERT(pWnd);
 			if (wParam != 1)
 				return 0;
-			
-			ASSERT(hWnd);
-			CAsyncSocketExHelperWindow *pWnd=(CAsyncSocketExHelperWindow *)GetWindowLongPtr(hWnd, GWL_USERDATA);
-			ASSERT(pWnd);
 
 			if (pWnd->m_pThreadData->layerCloseNotify.empty())
 			{

@@ -88,6 +88,8 @@ __published:
   TTabSheet *TabSheet1;
   TThemePageControl *SessionsPageControl;
   TPathLabel *QueueLabel;
+  TTBXSeparatorItem *TBXSeparatorItem57;
+  TTBXItem *QueueDeleteAllDoneQueueToolbarItem;
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
     const TPoint &MousePos, bool &Handled);
   void __fastcall RemoteDirViewGetSelectFilter(
@@ -221,6 +223,9 @@ private:
   int FTransferListHoverIndex;
   TColor FSessionColor;
   TPngImageList * FSessionColors;
+  int FNewSessionTabImageIndex;
+  int FSessionTabImageIndex;
+  int FSessionColorMaskImageIndex;
   ::TTrayIcon * FTrayIcon;
   TCustomCommandType FLastCustomCommand;
   TFileMasks FDirViewMatchMask;
@@ -288,6 +293,7 @@ protected:
   UnicodeString FNoteHints;
   TNotifyEvent FOnNoteClick;
   unsigned int FLockLevel;
+  unsigned int FLockSuspendLevel;
   TImageList * FSystemImageList;
   bool FAlternativeDelete;
   TDragDropFilesEx * FSessionsDragDropFilesEx;
@@ -331,10 +337,10 @@ protected:
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   void __fastcall OperationComplete(const TDateTime & StartTime);
   void __fastcall ExecutedFileChanged(const UnicodeString FileName,
-    const TEditedFileData & Data, HANDLE UploadCompleteEvent);
+    TEditedFileData * Data, HANDLE UploadCompleteEvent);
   void __fastcall ExecutedFileReload(const UnicodeString FileName,
-    const TEditedFileData & Data);
-  void __fastcall ExecutedFileEarlyClosed(const TEditedFileData & Data,
+    const TEditedFileData * Data);
+  void __fastcall ExecutedFileEarlyClosed(const TEditedFileData * Data,
     bool & KeepOpen);
   inline void __fastcall CMAppSysCommand(TMessage & Message);
   inline void __fastcall WMAppCommand(TMessage & Message);
@@ -398,9 +404,9 @@ protected:
   bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
   bool __fastcall CommandSessionFallback();
   void __fastcall FileTerminalRemoved(const UnicodeString FileName,
-    TEditedFileData & Data, TObject * Token, void * Arg);
+    TEditedFileData * Data, TObject * Token, void * Arg);
   void __fastcall FileConfigurationChanged(const UnicodeString FileName,
-    TEditedFileData & Data, TObject * Token, void * Arg);
+    TEditedFileData * Data, TObject * Token, void * Arg);
   void __fastcall CustomExecuteFile(TOperationSide Side,
     TExecuteFileBy ExecuteFileBy, UnicodeString FileName, UnicodeString OriginalFileName,
     const TEditorData * ExternalEditor, UnicodeString LocalRootDirectory,
@@ -477,14 +483,16 @@ protected:
   bool __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
   void __fastcall UpdateCopyParamCounters(const TCopyParamType & CopyParam);
-  int __fastcall AddSessionColor(TColor Color, bool Shadowed);
+  int __fastcall AddSessionColor(TColor Color);
   void __fastcall UpdateSessionTab(TTabSheet * TabSheet);
   void __fastcall UpdateNewSessionTab();
-  void __fastcall AddNewSessionImage();
+  void __fastcall AddFixedSessionImages();
+  int __fastcall AddFixedSessionImage(int GlyphsSourceIndex);
   void __fastcall ExecuteNewInstance(const UnicodeString & Param);
   TObjectList * __fastcall DoCollectWorkspace();
   void __fastcall DoSaveWorkspace(const UnicodeString & Name,
     TObjectList * DataList, bool SavePasswords);
+  UnicodeString __fastcall WorkspaceName();
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual void __fastcall QueueLabelUpdateStatus();
@@ -524,6 +532,8 @@ public:
   void __fastcall BothCustomCommand(const TCustomCommandType & Command);
   void __fastcall LockWindow();
   void __fastcall UnlockWindow();
+  void __fastcall SuspendWindowLock();
+  void __fastcall ResumeWindowLock();
 
   void __fastcall NewSession(bool FromSite);
   void __fastcall DuplicateSession();
@@ -535,6 +545,7 @@ public:
   void __fastcall Idle();
   __fastcall TCustomScpExplorerForm(TComponent* Owner);
   void __fastcall SaveCurrentSession();
+  TSessionData * __fastcall CloneCurrentSessionData();
   bool __fastcall SaveWorkspace(bool EnableAutoSave);
   virtual void __fastcall CompareDirectories();
   void __fastcall ExecuteCurrentFile();
@@ -589,7 +600,6 @@ public:
   void __fastcall WhatsThis();
   virtual void __fastcall BeforeAction();
   void __fastcall FileSystemInfo();
-  void __fastcall SessionColorPick();
   void __fastcall ReadDirectoryCancelled();
   void __fastcall SynchronizeBrowsingChanged();
   void __fastcall ToggleShowHiddenFiles();

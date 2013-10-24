@@ -65,9 +65,8 @@ protected:
   virtual void __fastcall Dispatch(void * AMessage);
   void __fastcall WMNCCreate(TWMNCCreate & Message);
   TLabel * __fastcall GenerateLabel(int Current, UnicodeString Caption);
-  TCustomEdit * __fastcall GenerateEdit(int Current, bool Echo, int MaxLen);
-  TList * __fastcall GeneratePrompt(UnicodeString Instructions, TStrings * Prompts,
-    TStrings * Results);
+  TCustomEdit * __fastcall GenerateEdit(int Current, bool Echo);
+  TList * __fastcall GeneratePrompt(UnicodeString Instructions, TStrings * Prompts);
   void __fastcall DoCancel();
   void __fastcall AdjustLogView();
 

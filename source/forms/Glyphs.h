@@ -22,5 +22,7 @@ public:
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TGlyphsModule * GlyphsModule;
+const int SiteImageIndex = 103;
+const int SiteColorMaskImageIndex = 104;
 //---------------------------------------------------------------------------
 #endif

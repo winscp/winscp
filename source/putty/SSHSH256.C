@@ -218,6 +218,116 @@ const struct ssh_hash ssh_sha256 = {
     sha256_init, sha256_bytes, sha256_final, 32, "SHA-256"
 };
 
+/* ----------------------------------------------------------------------
+ * The above is the SHA-256 algorithm itself. Now we implement the
+ * HMAC wrapper on it.
+ */
+
+static void *sha256_make_context(void)
+{
+    return snewn(3, SHA256_State);
+}
+
+static void sha256_free_context(void *handle)
+{
+    sfree(handle);
+}
+
+static void sha256_key_internal(void *handle, unsigned char *key, int len)
+{
+    SHA256_State *keys = (SHA256_State *)handle;
+    unsigned char foo[64];
+    int i;
+
+    memset(foo, 0x36, 64);
+    for (i = 0; i < len && i < 64; i++)
+	foo[i] ^= key[i];
+    SHA256_Init(&keys[0]);
+    SHA256_Bytes(&keys[0], foo, 64);
+
+    memset(foo, 0x5C, 64);
+    for (i = 0; i < len && i < 64; i++)
+	foo[i] ^= key[i];
+    SHA256_Init(&keys[1]);
+    SHA256_Bytes(&keys[1], foo, 64);
+
+    smemclr(foo, 64);		       /* burn the evidence */
+}
+
+static void sha256_key(void *handle, unsigned char *key)
+{
+    sha256_key_internal(handle, key, 32);
+}
+
+static void hmacsha256_start(void *handle)
+{
+    SHA256_State *keys = (SHA256_State *)handle;
+
+    keys[2] = keys[0];		      /* structure copy */
+}
+
+static void hmacsha256_bytes(void *handle, unsigned char const *blk, int len)
+{
+    SHA256_State *keys = (SHA256_State *)handle;
+    SHA256_Bytes(&keys[2], (void *)blk, len);
+}
+
+static void hmacsha256_genresult(void *handle, unsigned char *hmac)
+{
+    SHA256_State *keys = (SHA256_State *)handle;
+    SHA256_State s;
+    unsigned char intermediate[32];
+
+    s = keys[2];		       /* structure copy */
+    SHA256_Final(&s, intermediate);
+    s = keys[1];		       /* structure copy */
+    SHA256_Bytes(&s, intermediate, 32);
+    SHA256_Final(&s, hmac);
+}
+
+static void sha256_do_hmac(void *handle, unsigned char *blk, int len,
+			 unsigned long seq, unsigned char *hmac)
+{
+    unsigned char seqbuf[4];
+
+    PUT_32BIT_MSB_FIRST(seqbuf, seq);
+    hmacsha256_start(handle);
+    hmacsha256_bytes(handle, seqbuf, 4);
+    hmacsha256_bytes(handle, blk, len);
+    hmacsha256_genresult(handle, hmac);
+}
+
+static void sha256_generate(void *handle, unsigned char *blk, int len,
+			  unsigned long seq)
+{
+    sha256_do_hmac(handle, blk, len, seq, blk + len);
+}
+
+static int hmacsha256_verresult(void *handle, unsigned char const *hmac)
+{
+    unsigned char correct[32];
+    hmacsha256_genresult(handle, correct);
+    return !memcmp(correct, hmac, 32);
+}
+
+static int sha256_verify(void *handle, unsigned char *blk, int len,
+		       unsigned long seq)
+{
+    unsigned char correct[32];
+    sha256_do_hmac(handle, blk, len, seq, correct);
+    return !memcmp(correct, blk + len, 32);
+}
+
+const struct ssh_mac ssh_hmac_sha256 = {
+    sha256_make_context, sha256_free_context, sha256_key,
+    sha256_generate, sha256_verify,
+    hmacsha256_start, hmacsha256_bytes,
+    hmacsha256_genresult, hmacsha256_verresult,
+    "hmac-sha2-256",
+    32,
+    "HMAC-SHA-256"
+};
+
 #ifdef TEST
 
 #include <stdio.h>

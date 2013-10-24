@@ -832,6 +832,11 @@ begin
     Images.BkColor := Color;
   if Assigned(StateImages) then
     StateImages.BkColor := Color;
+  // sometimes when changing color,
+  // non-client area (border line) is not redrawn,
+  // keeping previous color. force redraw here
+  if HandleAllocated then
+    RedrawWindow(Handle, nil, 0, RDW_INVALIDATE or RDW_FRAME);
 end;
 
 procedure TCustomDriveView.WMLButtonDown(var Msg: TWMLButtonDown);

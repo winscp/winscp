@@ -9,10 +9,14 @@ class TTerminalQueue;
 //---------------------------------------------------------------------------
 struct TEditedFileData
 {
+  TEditedFileData();
+  ~TEditedFileData();
+
   UnicodeString LocalRootDirectory;
   UnicodeString RemoteDirectory;
   bool ForceText;
   TTerminal * Terminal;
+  TSessionData * SessionData;
   TTerminalQueue * Queue;
   UnicodeString SessionName;
   UnicodeString OriginalFileName;
@@ -20,14 +24,14 @@ struct TEditedFileData
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileChangedEvent)
-  (const UnicodeString FileName, const TEditedFileData & Data, HANDLE CompleteEvent);
+  (const UnicodeString FileName, TEditedFileData * Data, HANDLE CompleteEvent);
 typedef void __fastcall (__closure * TEditedFileReloadEvent)
-  (const UnicodeString FileName, const TEditedFileData & Data);
+  (const UnicodeString FileName, const TEditedFileData * Data);
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
-  (const TEditedFileData & Data, bool & KeepOpen);
+  (const TEditedFileData * Data, bool & KeepOpen);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileProcessEvent)
-  (const UnicodeString FileName, TEditedFileData & Data, TObject * Token, void * Arg);
+  (const UnicodeString FileName, TEditedFileData * Data, TObject * Token, void * Arg);
 //---------------------------------------------------------------------------
 class TEditorManager
 {
@@ -44,9 +48,9 @@ public:
   bool __fastcall CloseExternalFilesWithoutProcess();
 
   void __fastcall AddFileInternal(const UnicodeString FileName,
-    const TEditedFileData & Data, TObject * Token);
+    TEditedFileData * Data, TObject * Token);
   void __fastcall AddFileExternal(const UnicodeString FileName,
-    const TEditedFileData & Data, HANDLE Process);
+    TEditedFileData * Data, HANDLE Process);
 
   void __fastcall Check();
 
@@ -69,7 +73,7 @@ private:
     HANDLE Process;
     TObject * Token;
     TDateTime Timestamp;
-    TEditedFileData Data;
+    TEditedFileData * Data;
     bool Closed;
     HANDLE UploadCompleteEvent;
     TDateTime Opened;
@@ -85,13 +89,14 @@ private:
   TEditedFileReloadEvent FOnFileReload;
   TEditedFileEarlyClosedEvent FOnFileEarlyClosed;
 
-  void __fastcall AddFile(TFileData & FileData);
+  void __fastcall AddFile(TFileData & FileData, TEditedFileData * Data);
   void __fastcall UploadComplete(int Index);
-  void __fastcall CloseFile(int Index, bool IgnoreErrors, bool Delete);
+  bool __fastcall CloseFile(int Index, bool IgnoreErrors, bool Delete);
   void __fastcall CloseProcess(int Index);
   bool __fastcall EarlyClose(int Index);
   void __fastcall CheckFileChange(int Index, bool Force);
   int __fastcall FindFile(const TObject * Token);
+  void __fastcall ReleaseFile(int Index);
 
   enum TWaitHandle { MONITOR, PROCESS, EVENT };
   int __fastcall WaitFor(unsigned int Count, const HANDLE * Handles,

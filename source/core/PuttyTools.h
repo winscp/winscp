@@ -8,9 +8,12 @@ UnicodeString KeyTypeName(TKeyType KeyType);
 //---------------------------------------------------------------------------
 __int64 __fastcall ParseSize(UnicodeString SizeStr);
 //---------------------------------------------------------------------------
-bool __fastcall HasGSSAPI();
+bool __fastcall HasGSSAPI(UnicodeString CustomPath);
 //---------------------------------------------------------------------------
 void __fastcall AES256EncodeWithMAC(char * Data, size_t Len, const char * Password,
   size_t PasswordLen, const char * Salt);
+//---------------------------------------------------------------------------
+UnicodeString __fastcall NormalizeFingerprint(UnicodeString Fingerprint);
+UnicodeString __fastcall KeyTypeFromFingerprint(UnicodeString Fingerprint);
 //---------------------------------------------------------------------------
 #endif

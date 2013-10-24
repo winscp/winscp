@@ -344,9 +344,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     SelectiveToolbarTextAction->Checked = WinConfiguration->SelectiveToolbarText, )
   UPDCOMP(CustomCommandsBand)
   UPD(ColorMenuAction, true)
-  UPDACT(ColorDefaultAction,
-    ColorDefaultAction->Checked = (ScpExplorer->SessionColor == 0));
-  UPD(ColorPickAction, true);
 
   // SORT
   UPDSORTA(Local)
@@ -457,6 +454,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDQUEUE(ItemDown)
   UPDQUEUE(PauseAll)
   UPDQUEUE(ResumeAll)
+  UPDQUEUE(DeleteAllDone)
   #undef UPDQUEUE
   UPDEX(QueueItemSpeedAction, ScpExplorer->AllowQueueOperation(qoItemSpeed, &Param),
     QueueItemSpeedAction->Text = SetSpeedLimit(reinterpret_cast<unsigned long>(Param)),
@@ -659,9 +657,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       EXE(LockToolbarsAction, WinConfiguration->LockToolbars = !WinConfiguration->LockToolbars)
       EXE(SelectiveToolbarTextAction, WinConfiguration->SelectiveToolbarText = !WinConfiguration->SelectiveToolbarText)
       EXECOMP(CustomCommandsBand)
-      EXE(ColorMenuAction, );
-      EXE(ColorDefaultAction, ScpExplorer->SessionColor = (TColor)0);
-      EXE(ColorPickAction, ScpExplorer->SessionColorPick());
+      EXE(ColorMenuAction, CreateSessionColorMenu(ColorMenuAction));
 
       #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
       // SORT
@@ -765,6 +761,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       EXEQUEUE(ItemDown)
       EXEQUEUE(PauseAll)
       EXEQUEUE(ResumeAll)
+      EXEQUEUE(DeleteAllDone)
       #undef EXEQUEUE
       EXE(QueueToggleShowAction, ScpExplorer->ToggleQueueVisibility())
       #define QUEUEACTION(SHOW) EXE(Queue ## SHOW ## Action, \
@@ -1141,6 +1138,20 @@ void __fastcall TNonVisualDataModule::CustomCommandClick(TObject * Sender)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CreateSessionColorMenu(TAction * Action)
+{
+  if (ALWAYS_TRUE(Action->ActionComponent != NULL))
+  {
+    ::CreateSessionColorMenu(Action->ActionComponent, ScpExplorer->SessionColor,
+      SessionColorChange);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::SessionColorChange(TColor Color)
+{
+  ScpExplorer->SessionColor = Color;
+}
+//---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateSessionListMenu(TAction * Action)
 {
   StoredSessions->Load();
@@ -1281,7 +1292,7 @@ void __fastcall TNonVisualDataModule::CreateWorkspacesMenu(TAction * Action)
 
     Menu->Clear();
 
-    std::auto_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
+    std::unique_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
     for (int Index = 0; Index < Workspaces->Count; Index++)
     {
       TTBCustomItem * Item = new TTBXItem(Menu);
@@ -1296,7 +1307,7 @@ void __fastcall TNonVisualDataModule::CreateWorkspacesMenu(TAction * Action)
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::WorkspaceItemClick(TObject * Sender)
 {
-  std::auto_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
+  std::unique_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
   ScpExplorer->OpenFolderOrWorkspace(
     Workspaces->Strings[NOT_NULL(dynamic_cast<TTBCustomItem *>(Sender))->Tag]);
 }
@@ -1638,14 +1649,6 @@ TOnceDoneOperation __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyOperati
 void __fastcall TNonVisualDataModule::ResetQueueOnceEmptyOperation()
 {
   SetQueueOnceEmptyAction(QueueIdleOnceEmptyAction);
-}
-//---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::SessionColorPaletteChange(
-  TObject * Sender)
-{
-  TTBXColorPalette * ColorPalette = dynamic_cast<TTBXColorPalette *>(Sender);
-  assert(ColorPalette != NULL);
-  ScpExplorer->SessionColor = (ColorPalette->Color != Vcl::Graphics::clNone ? ColorPalette->Color : (TColor)0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::StartBusy()

@@ -5,11 +5,25 @@
 #include <Common.h>
 #include <CoreMain.h>
 #include <TextsWin.h>
+#include <SessionData.h>
 #include "WinConfiguration.h"
 #include "EditorManager.h"
 #include <algorithm>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+TEditedFileData::TEditedFileData()
+{
+  ForceText = false;
+  Terminal = NULL;
+  SessionData = NULL;
+  Queue = NULL;
+}
+//---------------------------------------------------------------------------
+TEditedFileData::~TEditedFileData()
+{
+  delete SessionData;
+}
 //---------------------------------------------------------------------------
 __fastcall TEditorManager::TEditorManager()
 {
@@ -22,14 +36,18 @@ __fastcall TEditorManager::~TEditorManager()
 {
   for (unsigned int i = FFiles.size(); i > 0; i--)
   {
-    TFileData * FileData = &FFiles[i - 1];
+    int Index = i - 1;
+    TFileData * FileData = &FFiles[Index];
 
     // pending should be only external editors and files being uploaded
     assert(FileData->Closed || FileData->External);
 
     if (!FileData->Closed)
     {
-      CloseFile(i - 1, true, true);
+      if (!CloseFile(Index, true, true))
+      {
+        ReleaseFile(Index);
+      }
     }
   }
 }
@@ -72,9 +90,9 @@ bool __fastcall TEditorManager::CanAddFile(const UnicodeString RemoteDirectory,
 
     // include even "closed" (=being uploaded) files as it is nonsense
     // to download file being uploaded
-    if ((FileData->Data.RemoteDirectory == RemoteDirectory) &&
-        (FileData->Data.OriginalFileName == OriginalFileName) &&
-        (FileData->Data.SessionName == SessionName))
+    if ((FileData->Data->RemoteDirectory == RemoteDirectory) &&
+        (FileData->Data->OriginalFileName == OriginalFileName) &&
+        (FileData->Data->SessionName == SessionName))
     {
       if (!FileData->External)
       {
@@ -97,7 +115,7 @@ bool __fastcall TEditorManager::CanAddFile(const UnicodeString RemoteDirectory,
           else
           {
             // get directory where the file already is so we download it there again
-            ExistingLocalRootDirectory = FileData->Data.LocalRootDirectory;
+            ExistingLocalRootDirectory = FileData->Data->LocalRootDirectory;
             ExistingLocalDirectory = ExtractFilePath(FileData->FileName);
             CloseFile(i, false, false); // do not delete file
             Result = true;
@@ -186,28 +204,28 @@ bool __fastcall TEditorManager::CloseExternalFilesWithoutProcess()
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::AddFileInternal(const UnicodeString FileName,
-  const TEditedFileData & Data, TObject * Token)
+  TEditedFileData * AData, TObject * Token)
 {
+  std::unique_ptr<TEditedFileData> Data(AData);
   TFileData FileData;
   FileData.FileName = FileName;
   FileData.External = false;
   FileData.Process = INVALID_HANDLE_VALUE;
   FileData.Token = Token;
-  FileData.Data = Data;
   FileData.Monitor = INVALID_HANDLE_VALUE;
 
-  AddFile(FileData);
+  AddFile(FileData, Data.release());
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::AddFileExternal(const UnicodeString FileName,
-  const TEditedFileData & Data, HANDLE Process)
+  TEditedFileData * AData, HANDLE Process)
 {
+  std::unique_ptr<TEditedFileData> Data(AData);
   TFileData FileData;
   FileData.FileName = FileName;
   FileData.External = true;
   FileData.Process = Process;
   FileData.Token = NULL;
-  FileData.Data = Data;
   FileData.Monitor = FindFirstChangeNotification(
     ExtractFilePath(FileData.FileName).c_str(), false,
     FILE_NOTIFY_CHANGE_LAST_WRITE);
@@ -221,7 +239,7 @@ void __fastcall TEditorManager::AddFileExternal(const UnicodeString FileName,
   {
     FProcesses.push_back(Process);
   }
-  AddFile(FileData);
+  AddFile(FileData, Data.release());
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::Check()
@@ -348,16 +366,21 @@ void __fastcall TEditorManager::FileClosed(TObject * Token, bool Forced)
   CloseFile(Index, false, !Forced);
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::AddFile(TFileData & FileData)
+void __fastcall TEditorManager::AddFile(TFileData & FileData, TEditedFileData * AData)
 {
+  std::unique_ptr<TEditedFileData> Data(AData);
+
   FileAge(FileData.FileName, FileData.Timestamp);
   FileData.Closed = false;
   FileData.UploadCompleteEvent = INVALID_HANDLE_VALUE;
   FileData.Opened = Now();
   FileData.Reupload = false;
   FileData.Saves = 0;
+  FileData.Data = Data.get();
 
   FFiles.push_back(FileData);
+
+  Data.release(); // ownership passed
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::UploadComplete(int Index)
@@ -391,8 +414,16 @@ void __fastcall TEditorManager::CloseProcess(int Index)
   FileData->Process = INVALID_HANDLE_VALUE;
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Delete)
+void __fastcall TEditorManager::ReleaseFile(int Index)
 {
+  TFileData * FileData = &FFiles[Index];
+  delete FileData->Data;
+  FileData->Data = NULL;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Delete)
+{
+  bool Result = false;
   TFileData * FileData = &FFiles[Index];
 
   if (FileData->Process != INVALID_HANDLE_VALUE)
@@ -414,9 +445,11 @@ void __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
   else
   {
     UnicodeString FileName = FileData->FileName;
-    UnicodeString LocalRootDirectory = FileData->Data.LocalRootDirectory;
+    UnicodeString LocalRootDirectory = FileData->Data->LocalRootDirectory;
 
+    ReleaseFile(Index);
     FFiles.erase(FFiles.begin() + Index);
+    Result = true;
 
     if (Delete)
     {
@@ -427,6 +460,7 @@ void __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
       }
     }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)

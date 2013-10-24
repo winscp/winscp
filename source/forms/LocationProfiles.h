@@ -18,6 +18,8 @@
 #include <ImgList.hpp>
 #include <PasTools.hpp>
 #include "PngImageList.hpp"
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.Imaging.pngimage.hpp>
 //----------------------------------------------------------------------------
 class TLocationProfilesDialog : public TForm
 {
@@ -50,6 +52,7 @@ __published:
   TButton *UpSharedBookmarkButton;
   TButton *DownSharedBookmarkButton;
   TButton *ShortCutSharedBookmarkButton;
+  TImage *Image;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall AddBookmarkButtonClick(TObject *Sender);
   void __fastcall RemoveBookmarkButtonClick(TObject *Sender);

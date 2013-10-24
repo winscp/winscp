@@ -7,7 +7,7 @@
 enum TQueueOperation { qoNone, qoGoTo, qoPreferences, qoItemUserAction,
   qoItemQuery, qoItemError, qoItemPrompt, qoItemDelete, qoItemExecute,
   qoItemUp, qoItemDown, qoItemPause, qoItemResume, qoItemSpeed, qoPauseAll, qoResumeAll,
-  qoOnceEmpty };
+  qoOnceEmpty, qoDeleteAllDone };
 class TQueueItemProxy;
 class TTerminalQueueStatus;
 //---------------------------------------------------------------------------

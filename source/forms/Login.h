@@ -5,6 +5,7 @@
 #include "ComboEdit.hpp"
 #include "PasswordEdit.hpp"
 #include "UpDownEdit.hpp"
+#include "PngImageList.hpp"
 #include <System.Classes.hpp>
 #include <Vcl.ActnList.hpp>
 #include <Vcl.ComCtrls.hpp>
@@ -19,8 +20,6 @@
 #include <Configuration.h>
 #include <SessionData.h>
 #include <PasTools.hpp>
-
-#include "PngImageList.hpp"
 //----------------------------------------------------------------------------
 class TLoginDialog : public TForm
 {
@@ -148,6 +147,23 @@ __published:
   TAction *PreferencesLoggingAction;
   TMenuItem *PreferencesLoggingAction1;
   TMenuItem *Session1;
+  TPngImageList *ActionImageList;
+  TAction *CloneToNewSiteAction;
+  TMenuItem *ClonetoNewSite2;
+  TAction *PuttyAction;
+  TPopupMenu *LoginDropDownMenu;
+  TMenuItem *Login1;
+  TMenuItem *OpeninPuTTY1;
+  TMenuItem *Login2;
+  TMenuItem *N8;
+  TMenuItem *Login3;
+  TMenuItem *N9;
+  TMenuItem *Login4;
+  TMenuItem *N10;
+  TMenuItem *Login5;
+  TMenuItem *N11;
+  TMenuItem *OpeninPuTTY2;
+  TMenuItem *OpeninPuTTY3;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -213,6 +229,10 @@ __published:
   void __fastcall SaveAsSessionActionExecute(TObject *Sender);
   void __fastcall AdvancedButtonDropDownClick(TObject *Sender);
   void __fastcall PreferencesLoggingActionExecute(TObject *Sender);
+  void __fastcall CloneToNewSiteActionExecute(TObject *Sender);
+  void __fastcall LoginActionExecute(TObject *Sender);
+  void __fastcall PuttyActionExecute(TObject *Sender);
+  void __fastcall LoginButtonDropDownClick(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -266,6 +286,7 @@ private:
   TTreeNode * __fastcall SessionFolderNode(TTreeNode * Node);
   TTreeNode * __fastcall CurrentSessionFolderNode();
   void __fastcall SessionTreeProc(TMessage & Message);
+  TTreeNode * __fastcall NormalizeDropTarget(TTreeNode * DropTarget);
   bool __fastcall SessionAllowDrop(TTreeNode * DropTarget);
   int __fastcall DefaultPort();
   void __fastcall MasterPasswordRecrypt(TObject * Sender);
@@ -304,9 +325,16 @@ private:
   void __fastcall InvalidateSessionData();
   bool __fastcall CanLogin();
   bool __fastcall IsDefaultResult(TModalResult Result);
+  int __fastcall GetSessionImageIndex(TSessionData * Data);
+  void __fastcall SetNodeImage(TTreeNode * Node, int ImageIndex);
+  void __fastcall CancelEditing();
+  bool __fastcall EnsureNotEditing();
+  bool __fastcall IsEditable();
+  TSessionData * __fastcall CloneSelectedSession();
 
 protected:
   void __fastcall Default();
+  void __fastcall NewSite();
   void __fastcall SaveConfiguration();
   void __fastcall LoadState();
   void __fastcall SaveState();
