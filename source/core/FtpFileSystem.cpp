@@ -534,15 +534,29 @@ void __fastcall TFTPFileSystem::CollectUsage()
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPMLSD");
   }
+  else
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPLIST");
+  }
+
   if (FFileZillaIntf->UsingUtf8())
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPUTF8");
   }
+  else
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPNonUTF8");
+  }
+
   if (!CurrentDirectory.IsEmpty() && (CurrentDirectory[1] != L'/'))
   {
     if (IsUnixStyleWindowsPath(CurrentDirectory))
     {
       FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPWindowsPath");
+    }
+    else if ((CurrentDirectory.Length() >= 3) && IsLetter(CurrentDirectory[1]) && (CurrentDirectory[2] == L':') && (CurrentDirectory[3] == L'/'))
+    {
+      FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPRealWindowsPath");
     }
     else
     {
@@ -2088,7 +2102,8 @@ void __fastcall TFTPFileSystem::CopyFile(const UnicodeString FileName,
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TFTPFileSystem::FileUrl(const UnicodeString FileName)
 {
-  return FTerminal->FileUrl(L"ftp", FileName);
+  UnicodeString Protocol = (FTerminal->SessionData->Ftps == ftpsImplicit) ? FtpsProtocol : FtpProtocol;
+  return FTerminal->FileUrl(Protocol, FileName);
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TFTPFileSystem::GetFixedPaths()
@@ -2319,6 +2334,10 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
 
     case OPTION_MPEXT_SNDBUF:
       Result = Data->SendBuf;
+      break;
+
+    case OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELLY:
+      Result = Data->FtpTransferActiveImmediatelly;
       break;
 
     default:

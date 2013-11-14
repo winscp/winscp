@@ -18,6 +18,8 @@ __published:
 
 private:
   int FPos;
+  int FIndent;
+  int FHorizontalMargin;
   short FCount;
 
   void __fastcall Change(TObject * Sender);
@@ -39,6 +41,7 @@ public:
   void __fastcall AddEdit(TCustomEdit * Edit, TLabel * Label);
   void __fastcall AddComboBox(TCustomCombo * Combo, TLabel * Label);
   void __fastcall AddButtonControl(TButtonControl * Control);
+  void __fastcall AddImage(const UnicodeString & ImageName);
 
   bool __fastcall Execute();
 };

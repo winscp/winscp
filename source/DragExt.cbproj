@@ -42,7 +42,7 @@
 			<ProjectType>CppDynamicLibrary</ProjectType>
 			<VerInfo_DLL>true</VerInfo_DLL>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Drag&amp;Drop shell extension for WinSCP (32-bit);FileVersion=1.2.1.0;InternalName=dragext32;LegalCopyright=(c) 2000-2013 Martin Prikryl;LegalTrademarks=;OriginalFilename=dragext.dll;ProductName=WinSCP;ProductVersion=5.2.5.0;ReleaseType=beta;WWW=http://winscp.net/</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Drag&amp;Drop shell extension for WinSCP (32-bit);FileVersion=1.2.1.0;InternalName=dragext32;LegalCopyright=(c) 2000-2013 Martin Prikryl;LegalTrademarks=;OriginalFilename=dragext.dll;ProductName=WinSCP;ProductVersion=5.2.6.0;ReleaseType=beta;WWW=http://winscp.net/</VerInfo_Keys>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_MinorVer>2</VerInfo_MinorVer>
 			<VerInfo_Release>1</VerInfo_Release>

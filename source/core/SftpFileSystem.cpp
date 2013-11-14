@@ -3664,7 +3664,7 @@ void __fastcall TSFTPFileSystem::AnyCommand(const UnicodeString /*Command*/,
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSFTPFileSystem::FileUrl(const UnicodeString FileName)
 {
-  return FTerminal->FileUrl(L"sftp", FileName);
+  return FTerminal->FileUrl(SftpProtocol, FileName);
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TSFTPFileSystem::GetFixedPaths()

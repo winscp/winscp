@@ -9716,7 +9716,12 @@ static void ssh2_timer(void *ctx, unsigned long now)
 	return;
 
     if (!ssh->kex_in_progress && conf_get_int(ssh->conf, CONF_ssh_rekey_time) != 0 &&
+#ifdef MPEXT
+// our call from call_ssh_timer() does not guarantee the `now` to be exactly as scheduled
+	(now >= ssh->next_rekey)) {
+#else
 	now == ssh->next_rekey) {
+#endif
 	do_ssh2_transport(ssh, "timeout", -1, NULL);
     }
 }

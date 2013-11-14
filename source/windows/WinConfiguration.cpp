@@ -1377,9 +1377,6 @@ void __fastcall TWinConfiguration::AskForMasterPassword()
     FMasterPasswordSessionAsked = true;
   }
 
-  // this can happen from TStoredSessionList::UpdateStaticUsage(),
-  // when the default session settings have password set (and no other basic property,
-  // like hostname/username), and master password is enabled
   if (FOnMasterPasswordPrompt == NULL)
   {
     throw Exception(L"Master password handler not set");
@@ -2250,6 +2247,10 @@ void __fastcall TWinConfiguration::UpdateJumpList()
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::UpdateStaticUsage()
 {
+  // This is here because of TStoredSessionList::UpdateStaticUsage() call
+  // from TConfiguration::UpdateStaticUsage()
+  TAutoNestingCounter DontDecryptPasswordsAutoCounter(FDontDecryptPasswords);
+
   TCustomWinConfiguration::UpdateStaticUsage();
   Usage->Set(L"Beta", IsBeta);
 

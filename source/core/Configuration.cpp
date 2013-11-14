@@ -110,6 +110,15 @@ __fastcall TConfiguration::~TConfiguration()
   delete FUsage;
 }
 //---------------------------------------------------------------------------
+void __fastcall TConfiguration::UpdateStaticUsage()
+{
+  Usage->Set(L"ConfigurationIniFile", (Storage == stIniFile));
+
+  // this is called from here, because we are guarded from calling into
+  // master password handler here, see TWinConfiguration::UpdateStaticUsage
+  StoredSessions->UpdateStaticUsage();
+}
+//---------------------------------------------------------------------------
 THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
 {
   if (Storage == stRegistry)
@@ -997,9 +1006,9 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
     {
       // If this fails, do not pretend that storage was switched.
       // For instance:
-      // - When writting to an IFI file fails (unlikely, as we fallsback to user profile)
+      // - When writting to an INI file fails (unlikely, as we fallback to user profile)
       // - When removing INI file fails, when switching to registry
-      //   (possible, when the INI file is in Program files folder)
+      //   (possible, when the INI file is in Program Files folder)
       FStorage = StorageBak;
       throw;
     }

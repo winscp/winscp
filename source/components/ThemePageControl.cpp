@@ -227,8 +227,6 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect,
     std::unique_ptr<TCanvas> Canvas(new TCanvas());
     Canvas->Handle = DC;
     Images->Draw(Canvas.get(), Left, Y, Pages[Item]->ImageIndex, !Shadowed);
-    //ImageList_Draw((HIMAGELIST)Images->Handle, Pages[Item]->ImageIndex, DC,
-    //  Left, Y, ILD_TRANSPARENT, );
     Rect.Left += Images->Width + 3;
   }
   else

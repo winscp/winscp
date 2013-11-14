@@ -1054,6 +1054,11 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
           ADF(L"Session reuse: %s", (BooleanToEngStr(Data->SslSessionReuse)));
           ADF(L"TLS/SSL versions: %s-%s", (GetTlsVersionName(Data->MinTlsVersion), GetTlsVersionName(Data->MaxTlsVersion)));
         }
+        // kind of hidden option, so do not reveal it unless it is set
+        if (Data->FtpTransferActiveImmediatelly)
+        {
+          ADF(L"Transfer active immediatelly: %s", (BooleanToEngStr(Data->FtpTransferActiveImmediatelly)));
+        }
       }
       ADF(L"Local directory: %s, Remote directory: %s, Update: %s, Cache: %s",
         ((Data->LocalDirectory.IsEmpty() ? UnicodeString(L"default") : Data->LocalDirectory),

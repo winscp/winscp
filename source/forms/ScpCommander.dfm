@@ -1544,6 +1544,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       object TBXItem178: TTBXItem
         Action = NonVisualDataModule.CloseApplicationAction
         DisplayMode = nbdmImageAndText
+        ImageIndex = 61
         Stretch = True
       end
     end

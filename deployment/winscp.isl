@@ -12,12 +12,12 @@ DesktopIconUserTask=For the current user only
 DesktopIconCommonTask=For all users
 QuickLaunchIconTask=Create a &Quick Launch icon
 SendToHookTask=Add &upload shortcut to Explorer's 'Send to' context menu
-RegisterAsUrlHandler=Register to handle sftp:// and scp:// &addresses
+RegisterAsUrlHandlers=Register to handle URL &addresses
 AddSearchPath=Add installation directory to &search path (%PATH%)
 EnableUpdates=Enable automatic &check for application updates (recommended)
 EnableCollectUsage=Enable collecting &anonymous usage statistics
 
-RegisteringAsUrlHandler=Registering to handle sftp:// and scp:// addresses
+RegisteringAsUrlHandlers=Registering to handle URL addresses...
 AddingSearchPath=Adding installation directory to search path (%PATH%)
 RemovingObsoleteTranslations=Removing obsolete translations
 

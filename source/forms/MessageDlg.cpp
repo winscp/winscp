@@ -980,9 +980,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     Image->Parent = Panel;
     if (!ImageName.IsEmpty())
     {
-      std::unique_ptr<TPngImage> Png(new TPngImage());
-      Png->LoadFromResourceName(0, ImageName);
-      Image->Picture->Assign(Png.get());
+      LoadResourceImage(Image, ImageName);
     }
     else
     {

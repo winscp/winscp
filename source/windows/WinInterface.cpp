@@ -579,29 +579,6 @@ void __fastcall Busy(bool Start)
   }
 }
 //---------------------------------------------------------------------------
-static void __fastcall CopyParamListBoolToggleClick(TMenuItem * Item)
-{
-  bool * BoolToggle = reinterpret_cast<bool *>(Item->Tag);
-  *BoolToggle = !*BoolToggle;
-  Item->Checked = *BoolToggle;
-}
-//---------------------------------------------------------------------------
-bool __fastcall DoRemoteMoveDialog(UnicodeString & Target, UnicodeString & FileMask)
-{
-  UnicodeString Value = UnixIncludeTrailingBackslash(Target) + FileMask;
-  TStrings * History = CustomWinConfiguration->History[L"RemoteTarget"];
-  bool Result = InputDialog(
-    LoadStr(REMOTE_MOVE_TITLE), LoadStr(REMOTE_TRANSFER_PROMPT),
-    Value, HELP_REMOTE_MOVE, History, true);
-  if (Result)
-  {
-    CustomWinConfiguration->History[L"RemoteTarget"] = History;
-    Target = UnixExtractFilePath(Value);
-    FileMask = UnixExtractFileName(Value);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void __fastcall CopyParamListButton(TButton * Button)
 {
   if (!SupportsSplitButton())

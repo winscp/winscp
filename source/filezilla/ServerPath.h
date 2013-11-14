@@ -31,13 +31,8 @@ class CServerPath
 {
 public:
 	BOOL AddSubdir(CString subdir);
-	BOOL AddSubdirs(CString subdirs);
-	CString GetSubdirsOf(const CServerPath &path) const;
 	CString GetSafePath() const;
-	BOOL SetSafePath(CString path);
 	const BOOL IsEmpty() const;
-	BOOL IsParentOf(const CServerPath &path, BOOL bCompareNoCase = FALSE) const;
-	BOOL IsSubdirOf(const CServerPath &path, BOOL bCompareNoCase = FALSE) const;
 	CServerPath GetParent() const;
 	BOOL HasParent() const;
 	CString GetLastSegment() const;
@@ -53,10 +48,7 @@ public:
 	void SetServer(const t_server &server);
 	BOOL SetPath(CString &newpath, BOOL bIsFile);
 	BOOL SetPath(CString newpath);
-	BOOL ChangePath(CString &subdir, BOOL bIsFile = FALSE);
 	const CString GetPath() const;
-
-	const bool MatchNoCase(const CServerPath &op) const;
 
 	CServerPath& operator=(const CServerPath &op);
 

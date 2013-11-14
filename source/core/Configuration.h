@@ -159,6 +159,7 @@ public:
   __fastcall TConfiguration();
   virtual __fastcall ~TConfiguration();
   virtual void __fastcall Default();
+  virtual void __fastcall UpdateStaticUsage();
   void __fastcall Load();
   void __fastcall Save();
   void __fastcall SaveExplicit();

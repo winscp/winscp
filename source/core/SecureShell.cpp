@@ -143,7 +143,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   #define CONF_DEF_STR_NONE(KEY) conf_set_str(conf, KEY, "");
   // noop, used only for these and we set the first three explicitly below and latter two are not used in our code
   #define CONF_DEF_INT_INT(KEY) assert((KEY == CONF_ssh_cipherlist) || (KEY == CONF_ssh_kexlist) || (KEY == CONF_ssh_gsslist) || (KEY == CONF_colours) || (KEY == CONF_wordness));
-  // noop, used only for these three and all thay all can handle undef value
+  // noop, used only for these three and they all can handle undef value
   #define CONF_DEF_STR_STR(KEY) assert((KEY == CONF_ttymodes) || (KEY == CONF_portfwd) || (KEY == CONF_environmt));
   // noop, not used in our code
   #define CONF_DEF_FONT_NONE(KEY) assert((KEY == CONF_font) || (KEY == CONF_boldfont) || (KEY == CONF_widefont) || (KEY == CONF_wideboldfont));
@@ -254,7 +254,15 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   if (!Data->TunnelPortFwd.IsEmpty())
   {
     assert(!Simple);
-    conf_set_str_str(conf, CONF_portfwd, 0, AnsiString(Data->TunnelPortFwd).c_str());
+    UnicodeString TunnelPortFwd = Data->TunnelPortFwd;
+    while (!TunnelPortFwd.IsEmpty())
+    {
+      UnicodeString Buf = CutToChar(TunnelPortFwd, L',', true);
+      AnsiString Key = AnsiString(CutToChar(Buf, L'\t', true));
+      AnsiString Value = AnsiString(Buf);
+      conf_set_str_str(conf, CONF_portfwd, Key.c_str(), Value.c_str());
+    }
+
     // when setting up a tunnel, do not open shell/sftp
     conf_set_int(conf, CONF_ssh_no_shell, TRUE);
   }
@@ -2142,5 +2150,14 @@ void __fastcall TSecureShell::CollectUsage()
   if (FCollectPrivateKeyUsage)
   {
     Configuration->Usage->Inc(L"OpenedSessionsPrivateKey2");
+  }
+
+  if (FSshVersion == 1)
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSH1");
+  }
+  else if (FSshVersion == 2)
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSH2");
   }
 }

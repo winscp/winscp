@@ -65,6 +65,7 @@ FormType * __fastcall SafeFormCreate(TComponent * Owner = NULL)
 bool __fastcall SupportsSplitButton();
 TModalResult __fastcall DefaultResult(TCustomForm * Form);
 void __fastcall UseDesktopFont(TControl * Control);
+void __fastcall LoadResourceImage(TImage * Image, const UnicodeString & ImageName);
 //---------------------------------------------------------------------------
 // When exception is left to be handled by Application->OnException
 // memory error occurs when clearing the exception for unknown reason.

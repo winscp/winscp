@@ -14,6 +14,7 @@
 #include <PasTools.hpp>
 #include <ProgParams.h>
 #include <Tools.h>
+#include <HistoryComboBox.hpp>
 
 #include "Custom.h"
 //---------------------------------------------------------------------
@@ -28,6 +29,8 @@ __fastcall TCustomDialog::TCustomDialog(UnicodeString AHelpKeyword)
   UseSystemSettings(this);
 
   FPos = ScaleByTextHeight(this, 8);
+  FHorizontalMargin = ScaleByTextHeight(this, 8);
+  FIndent = FHorizontalMargin;
 
   HelpKeyword = AHelpKeyword;
 
@@ -98,6 +101,16 @@ bool __fastcall TCustomDialog::CloseQuery()
   return TForm::CloseQuery();
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddImage(const UnicodeString & ImageName)
+{
+  TImage * Image = new TImage(this);
+  Image->Name = L"Image";
+  Image->Parent = this;
+  LoadResourceImage(Image, ImageName);
+  Image->SetBounds(FIndent, FPos + ScaleByTextHeight(this, 3), 32, 32);
+  FIndent += Image->Width + ScaleByTextHeight(this, 12);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddWinControl(TWinControl * Control)
 {
   Control->TabOrder = FCount;
@@ -115,14 +128,14 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
 {
   int PrePos = FPos;
   Label->Parent = this;
-  Label->Left = ScaleByTextHeight(this, 8);
+  Label->Left = FIndent;
   Label->Top = FPos;
   FPos += Label->Height + ScaleByTextHeight(this, 4);
 
   Edit->Parent = this;
-  Edit->Left = ScaleByTextHeight(this, 8);
+  Edit->Left = FIndent;
   Edit->Top = FPos;
-  Edit->Width = ClientWidth - (Edit->Left * 2);
+  Edit->Width = ClientWidth - Edit->Left - FHorizontalMargin;
   // this updates Height property to real value
   Edit->HandleNeeded();
   FPos += Edit->Height + ScaleByTextHeight(this, 8);
@@ -167,9 +180,9 @@ void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
 {
   int PrePos = FPos;
   Control->Parent = this;
-  Control->Left = ScaleByTextHeight(this, 14);
+  Control->Left = FIndent + ScaleByTextHeight(this, 6);
   Control->Top = FPos;
-  Control->Width = ClientWidth - Control->Left - ScaleByTextHeight(this, 8);
+  Control->Width = ClientWidth - Control->Left - FHorizontalMargin;
   // this updates Height property to real value
   Control->HandleNeeded();
   // buttons do not scale with text on their own
@@ -386,6 +399,10 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
       StoredSessions->NewSession(SessionName, SessionData);
     // modified only, explicit
     StoredSessions->Save(false, true);
+    if (!SessionData->HostKey.IsEmpty())
+    {
+      SessionData->CacheHostKeyIfNotCached();
+    }
 
     if (CreateShortcut)
     {
@@ -581,4 +598,58 @@ bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
     delete Dialog;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TRemoteMoveDialog : public TCustomDialog
+{
+public:
+  __fastcall TRemoteMoveDialog();
+
+  bool __fastcall Execute(UnicodeString & Target, UnicodeString & FileMask);
+
+protected:
+  DYNAMIC void __fastcall DoShow();
+
+private:
+  THistoryComboBox * Combo;
+};
+//---------------------------------------------------------------------------
+__fastcall TRemoteMoveDialog::TRemoteMoveDialog() :
+  TCustomDialog(HELP_REMOTE_MOVE)
+{
+  Caption = LoadStr(REMOTE_MOVE_TITLE);
+
+  AddImage(L"REMOTE_MOVE_FILE");
+
+  Combo = new THistoryComboBox(this);
+  Combo->AutoComplete = false;
+  AddComboBox(Combo, CreateLabel(LoadStr(REMOTE_TRANSFER_PROMPT)));
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteMoveDialog::Execute(UnicodeString & Target, UnicodeString & FileMask)
+{
+  Combo->Items = CustomWinConfiguration->History[L"RemoteTarget"];
+  Combo->Text = UnixIncludeTrailingBackslash(Target) + FileMask;
+  bool Result = TCustomDialog::Execute();
+  if (Result)
+  {
+    Target = UnixExtractFilePath(Combo->Text);
+    FileMask = UnixExtractFileName(Combo->Text);
+    Combo->SaveToHistory();
+    CustomWinConfiguration->History[L"RemoteTarget"] = Combo->Items;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteMoveDialog::DoShow()
+{
+  TCustomDialog::DoShow();
+  InstallPathWordBreakProc(Combo);
+}
+//---------------------------------------------------------------------------
+bool __fastcall DoRemoteMoveDialog(UnicodeString & Target, UnicodeString & FileMask)
+{
+  std::auto_ptr<TRemoteMoveDialog> Dialog(new TRemoteMoveDialog());
+  return Dialog->Execute(Target, FileMask);
 }

@@ -74,9 +74,14 @@ UnicodeString __fastcall AppNameString()
   return L"WinSCP";
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall GetCompanyRegistryKey()
+{
+  return L"Software\\Martin Prikryl";
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall GetRegistryKey()
 {
-  return L"Software\\Martin Prikryl\\WinSCP 2";
+  return GetCompanyRegistryKey() + L"\\WinSCP 2";
 }
 //---------------------------------------------------------------------------
 static bool ForcedOnForeground = false;
@@ -1074,7 +1079,7 @@ void __fastcall TMasterPasswordDialog::DoValidate()
   {
     CurrentEdit->SetFocus();
     CurrentEdit->SelectAll();
-    throw Exception(LoadStr(MASTER_PASSWORD_INCORRECT));
+    throw Exception(MainInstructions(LoadStr(MASTER_PASSWORD_INCORRECT)));
   }
 
   if (NewEdit != NULL)
@@ -1083,7 +1088,7 @@ void __fastcall TMasterPasswordDialog::DoValidate()
     {
       ConfirmEdit->SetFocus();
       ConfirmEdit->SelectAll();
-      throw Exception(LoadStr(MASTER_PASSWORD_DIFFERENT));
+      throw Exception(MainInstructions(LoadStr(MASTER_PASSWORD_DIFFERENT)));
     }
 
     int Valid = IsValidPassword(NewEdit->Text);

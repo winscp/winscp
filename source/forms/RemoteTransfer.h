@@ -7,6 +7,8 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include "HistoryComboBox.hpp"
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.Imaging.pngimage.hpp>
 //---------------------------------------------------------------------------
 class TRemoteTransferDialog : public TForm
 {
@@ -20,6 +22,7 @@ __published:
   TButton *CancelButton;
   TButton *HelpButton;
   TCheckBox *NotDirectCopyCheck;
+  TImage *Image;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);

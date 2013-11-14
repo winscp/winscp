@@ -616,6 +616,7 @@ void __fastcall TGUIConfiguration::DefaultLocalized()
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::UpdateStaticUsage()
 {
+  TConfiguration::UpdateStaticUsage();
   Usage->Set(L"CopyParamsCount", (FCopyParamListDefaults ? 0 : FCopyParamList->Count));
   Usage->Set(L"Putty", ExtractProgramName(PuttyPath));
 }

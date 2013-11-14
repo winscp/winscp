@@ -10,6 +10,7 @@ TConfiguration * __fastcall CreateConfiguration();
 
 void __fastcall ShowExtendedException(Exception * E);
 
+UnicodeString __fastcall GetCompanyRegistryKey();
 UnicodeString __fastcall GetRegistryKey();
 void __fastcall Busy(bool Start);
 UnicodeString __fastcall AppNameString();

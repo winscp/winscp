@@ -185,26 +185,26 @@ void __fastcall TUsage::UpdateCurrentVersion()
   Set(L"CurrentVersion", CompoundVersion);
 }
 //---------------------------------------------------------------------------
-void __fastcall TUsage::Inc(const UnicodeString & Key)
+void __fastcall TUsage::Inc(const UnicodeString & Key, int Increment)
 {
   if (Collect)
   {
     TGuard Guard(FCriticalSection);
-    Inc(Key, FPeriodCounters);
-    Inc(Key, FLifetimeCounters);
+    Inc(Key, FPeriodCounters, Increment);
+    Inc(Key, FLifetimeCounters, Increment);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TUsage::Inc(const UnicodeString & Key, TCounters & Counters)
+void __fastcall TUsage::Inc(const UnicodeString & Key, TCounters & Counters, int Increment)
 {
   TCounters::iterator i = Counters.find(Key);
   if (i != Counters.end())
   {
-    i->second++;
+    i->second += Increment;
   }
   else
   {
-    Counters.insert(std::make_pair(Key, 1));
+    Counters.insert(std::make_pair(Key, Increment));
   }
 }
 //---------------------------------------------------------------------------
@@ -276,4 +276,10 @@ void __fastcall TUsage::Serialize(UnicodeString& List,
     AddToList(List, FORMAT(L"%s%s=%d", (Name, i->first, i->second)), L"&");
     i++;
   }
+}
+//---------------------------------------------------------------------------
+int __fastcall TUsage::CalculateCounterSize(__int64 Size)
+{
+  const int SizeCounterFactor = 10240;
+  return (Size <= 0) ? 0 : (Size < SizeCounterFactor ? 1 : Size / SizeCounterFactor);
 }

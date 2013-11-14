@@ -47,10 +47,9 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
         Configuration->Usage->Inc(L"CommandLineSessionSave");
         TSessionData * SavedSession = DoSaveSession(SessionData, NULL, true);
         Close = (SavedSession == NULL);
-        if (!Close && !SessionData->HostKey.IsEmpty())
+        if (!Close)
         {
           WinConfiguration->LastStoredSession = SavedSession->Name;
-          SessionData->CacheHostKeyIfNotCached();
         }
         DataList->Clear();
       }
@@ -238,6 +237,12 @@ void __fastcall ImportSitesIfAny()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall Usage(UnicodeString Param)
+{
+  UnicodeString Key = ::CutToChar(Param, L':', true);
+  Configuration->Usage->Set(Key, Param);
+}
+//---------------------------------------------------------------------------
 void __fastcall RecordWrapperVersions(UnicodeString ConsoleVersion, UnicodeString DotNetVersion)
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -315,7 +320,6 @@ void __fastcall UpdateStaticUsage()
   bool InProgramFiles = AnsiSameText(ExeName.SubString(1, ProgramsFolder.Length()), ProgramsFolder);
   Configuration->Usage->Set(L"InProgramFiles", InProgramFiles);
 
-  StoredSessions->UpdateStaticUsage();
   WinConfiguration->UpdateStaticUsage();
 
 }
@@ -406,8 +410,6 @@ int __fastcall Execute()
 
     Application->HintHidePause = 3000;
 
-    UnicodeString Value;
-
     UnicodeString IniFileName = Params->SwitchValue(L"ini");
     if (!IniFileName.IsEmpty())
     {
@@ -420,6 +422,7 @@ int __fastcall Execute()
       }
     }
 
+    UnicodeString SwitchValue;
     if (Params->FindSwitch(L"UninstallCleanup"))
     {
       MaintenanceTask();
@@ -433,10 +436,16 @@ int __fastcall Execute()
         DoCleanupDialog(StoredSessions, Configuration);
       }
     }
-    else if (Params->FindSwitch(L"RegisterAsUrlHandler"))
+    else if (Params->FindSwitch(L"RegisterForDefaultProtocols") ||
+             Params->FindSwitch(L"RegisterAsUrlHandler")) // BACKWARD COMPATIBILITY
     {
       MaintenanceTask();
-      RegisterAsUrlHandler();
+      RegisterForDefaultProtocols();
+    }
+    else if (Params->FindSwitch(L"UnregisterForProtocols"))
+    {
+      MaintenanceTask();
+      UnregisterForProtocols();
     }
     else if (Params->FindSwitch(L"AddSearchPath"))
     {
@@ -462,6 +471,11 @@ int __fastcall Execute()
     {
       MaintenanceTask();
       ImportSitesIfAny();
+    }
+    else if (Params->FindSwitch(L"Usage", SwitchValue))
+    {
+      MaintenanceTask();
+      Usage(SwitchValue);
     }
     else if (Params->FindSwitch(L"Update"))
     {

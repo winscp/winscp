@@ -219,7 +219,7 @@ Name: desktopicon\common; Description: {cm:DesktopIconCommonTask}; \
 Name: quicklaunchicon; Description: {cm:QuickLaunchIconTask}; \
   Flags: unchecked; OnlyBelowVersion: 6.1.7600
 Name: sendtohook; Description: {cm:SendToHookTask}
-Name: urlhandler; Description: {cm:RegisterAsUrlHandler}
+Name: urlhandler; Description: {cm:RegisterAsUrlHandlers}
 Name: searchpath; Description: {cm:AddSearchPath}; \
   Flags: unchecked; Check: IsAdminLoggedOn
 
@@ -266,13 +266,16 @@ Type: filesandordirs; Name: "{commonprograms}\WinSCP"
 Type: filesandordirs; Name: "{userprograms}\WinSCP"
 
 [Run]
-; This is called when urlhandler task is selected
-Filename: "{app}\WinSCP.exe"; Parameters: "/RegisterAsUrlHandler"; \
-  StatusMsg: {cm:RegisteringAsUrlHandler}; Tasks: urlhandler
+Filename: "{app}\WinSCP.exe"; Parameters: "/RegisterForDefaultProtocols"; \
+  StatusMsg: {cm:RegisteringAsUrlHandlers}; Tasks: urlhandler
 Filename: "{app}\WinSCP.exe"; Parameters: "/AddSearchPath"; \
   StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
 Filename: "{app}\WinSCP.exe"; Parameters: "/ImportSitesIfAny"; \
   StatusMsg: {cm:ImportSites}
+Filename: "{app}\WinSCP.exe"; Parameters: "/Usage=TypicalInstallation:1"; \
+  Check: IsTypicalInstallation
+Filename: "{app}\WinSCP.exe"; Parameters: "/Usage=TypicalInstallation:0"; \
+  Check: not IsTypicalInstallation
 #ifdef Chrome
 Filename: "{tmp}\{#ChromeInstallerFile}"; \
   Parameters: "/r1:{#ChromeBrandCode1} /r2:{#ChromeBrandCode2} /b:1"; \
@@ -358,16 +361,6 @@ Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
   ValueName: "DDExtEnabled"; ValueData: 1; Components: shellext; \
   Flags: uninsdeletevalue
-; This will remove url handler on uninstall
-; (when urlhandler task was selected when installing)
-Root: HKCR; Subkey: "SFTP"; Flags: dontcreatekey uninsdeletekey; \
-  Tasks: urlhandler
-Root: HKCR; Subkey: "SCP"; Flags: dontcreatekey uninsdeletekey; \
-  Tasks: urlhandler
-Root: HKCU; Subkey: "Software\Classes\SFTP"; Flags: dontcreatekey uninsdeletekey; \
-  Tasks: urlhandler
-Root: HKCU; Subkey: "Software\Classes\SCP"; Flags: dontcreatekey uninsdeletekey; \
-  Tasks: urlhandler
 ; Updates
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface\Updates"; \
   ValueType: dword; ValueName: "Period"; ValueData: 7; \
@@ -418,6 +411,8 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/UninstallCleanup"; \
   RunOnceId: "UninstallCleanup"
 Filename: "{app}\WinSCP.exe"; Parameters: "/RemoveSearchPath"; \
   RunOnceId: "RemoveSearchPath"
+Filename: "{app}\WinSCP.exe"; Parameters: "/UnregisterForProtocols"; \
+  RunOnceId: "UnregisterForProtocols"
 
 [Code]
 const
@@ -639,6 +634,11 @@ begin
   Control.Font.Style := Control.Font.Style + [fsUnderline];
   Control.Font.Color := clBlue;
   Control.Cursor := crHand;
+end;
+
+function IsTypicalInstallation: Boolean;
+begin
+  Result := TypicalTypeButton.Checked;
 end;
 
 #ifdef Donations
@@ -1209,7 +1209,7 @@ procedure RegisterPreviousData(PreviousDataKey: Integer);
 var
   S: string;
 begin
-  if TypicalTypeButton.Checked then S := 'typical'
+  if IsTypicalInstallation then S := 'typical'
     else S := 'custom';
 
   SetPreviousData(PreviousDataKey, '{#SetupTypeData}', S);
@@ -1444,7 +1444,7 @@ begin
     OpenCandyShouldSkipPage(PageID) or
 #endif
     { Hide most pages during typical installation }
-    (TypicalTypeButton.Checked and
+    (IsTypicalInstallation and
      ((PageID = wpSelectDir) or (PageID = wpSelectComponents) or
       (PageID = wpSelectTasks) or
       { Hide Interface page for upgrades only, show for fresh installs }
@@ -1463,12 +1463,12 @@ begin
 
   if not Upgrade then
   begin
-    if TypicalTypeButton.Checked then S2 := ExpandConstant('{cm:TypicalType}')
+    if IsTypicalInstallation then S2 := ExpandConstant('{cm:TypicalType}')
       else S2 := ExpandConstant('{cm:CustomType}');
   end
     else
   begin
-    if TypicalTypeButton.Checked then S2 := ExpandConstant('{cm:TypicalUpgradeType}')
+    if IsTypicalInstallation then S2 := ExpandConstant('{cm:TypicalUpgradeType}')
       else S2 := ExpandConstant('{cm:CustomUpgradeType}');
   end;
   StringChange(S2, '&', '');

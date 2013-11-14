@@ -96,6 +96,8 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 
   PuttyRegistryStorageKeyEdit->Items->Add(OriginalPuttyRegistryStorageKey);
   PuttyRegistryStorageKeyEdit->Items->Add(KittyRegistryStorageKey);
+
+  MenuButton(RegisterAsUrlHandlersButton);
 }
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
@@ -1066,6 +1068,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     // integration
     // There's no quick launch in Windows 7
     EnableControl(QuickLaunchIconButton, !::IsWin7());
+    MakeDefaultHandlerItem->Visible = IsWinVista();
 
     // languages
     LanguageChangeLabel->Visible =
@@ -1740,14 +1743,37 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::RegisterAsUrlHandlerButtonClick(
+void __fastcall TPreferencesDialog::RegisterAsUrlHandlersButtonClick(
   TObject * /*Sender*/)
 {
-  if (MessageDialog(MainInstructions(LoadStr(CONFIRM_REGISTER_URL)),
-        qtConfirmation, qaYes | qaNo, HELP_REGISTER_URL) == qaYes)
+  MenuPopup(RegisterAsUrlHandlerMenu, RegisterAsUrlHandlersButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::RegisterAsUrlHandlerItemClick(TObject * /*Sender*/)
+{
+  unsigned int Result =
+    MessageDialog(MainInstructions(LoadStr(CONFIRM_REGISTER_URL2)),
+      qtConfirmation, qaYes | qaNo, HELP_REGISTER_URL);
+  if (Result == qaYes)
   {
-    RegisterAsUrlHandler();
+    RegisterForDefaultProtocols();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UnregisterForDefaultProtocolsItemClick(TObject * /*Sender*/)
+{
+  unsigned int Result =
+    MessageDialog(MainInstructions(LoadStr(CONFIRM_UNREGISTER_URL)),
+      qtConfirmation, qaYes | qaNo, HELP_REGISTER_URL);
+  if (Result == qaYes)
+  {
+    UnregisterForProtocols();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::MakeDefaultHandlerItemClick(TObject * /*Sender*/)
+{
+  LaunchAdvancedAssociationUI();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::DDExtLabelClick(TObject * Sender)
@@ -1924,7 +1950,6 @@ void __fastcall TPreferencesDialog::MasterPasswordChanged(
     Message = FMTLOAD(MASTER_PASSWORD_RECRYPT_ERRORS, (Message));
     QueryType = qtWarning;
   }
-  Message = MainInstructions(Message);
   MoreMessageDialog(
     Message, RecryptPasswordErrors, QueryType, qaOK, HELP_MASTER_PASSWORD);
 }
@@ -1951,7 +1976,7 @@ void __fastcall TPreferencesDialog::UseMasterPasswordCheckClick(
       {
         if (UseMasterPasswordCheck->Checked)
         {
-          ChangeMasterPassword(LoadStr(MASTER_PASSWORD_SET));
+          ChangeMasterPassword(LoadStr(MASTER_PASSWORD_SET2));
         }
         else
         {
@@ -1959,7 +1984,7 @@ void __fastcall TPreferencesDialog::UseMasterPasswordCheckClick(
           {
             std::unique_ptr<TStrings> RecryptPasswordErrors(new TStringList());
             WinConfiguration->ClearMasterPassword(RecryptPasswordErrors.get());
-            MasterPasswordChanged(LoadStr(MASTER_PASSWORD_CLEARED), RecryptPasswordErrors.get());
+            MasterPasswordChanged(LoadStr(MASTER_PASSWORD_CLEARED2), RecryptPasswordErrors.get());
           }
         }
       }
@@ -1977,7 +2002,7 @@ void __fastcall TPreferencesDialog::SetMasterPasswordButtonClick(
 {
   if (CanSetMasterPassword())
   {
-    ChangeMasterPassword(LoadStr(MASTER_PASSWORD_CHANGED));
+    ChangeMasterPassword(MainInstructions(LoadStr(MASTER_PASSWORD_CHANGED)));
   }
 }
 //---------------------------------------------------------------------------

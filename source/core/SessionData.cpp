@@ -38,6 +38,14 @@ const UnicodeString AnonymousUserName(L"anonymous");
 const UnicodeString AnonymousPassword(L"anonymous@example.com");
 const UnicodeString PuttySshProtocol(L"ssh");
 const UnicodeString PuttyTelnetProtocol(L"telnet");
+const UnicodeString SftpProtocol(L"sftp");
+const UnicodeString ScpProtocol(L"scp");
+const UnicodeString FtpProtocol(L"ftp");
+const UnicodeString FtpsProtocol(L"ftps");
+const UnicodeString WebDAVProtocol(L"http");
+const UnicodeString WebDAVSProtocol(L"https");
+const UnicodeString ProtocolSeparator(L"://");
+const UnicodeString WinSCPProtocolPrefix(L"winscp-");
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
@@ -177,6 +185,7 @@ void __fastcall TSessionData::Default()
   FtpAccount = L"";
   FtpPingInterval = 30;
   FtpPingType = ptDummyCommand;
+  FtpTransferActiveImmediatelly = false;
   Ftps = ftpsNone;
   MinTlsVersion = ssl2;
   MaxTlsVersion = tls12;
@@ -316,6 +325,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(FtpAccount); \
   PROPERTY(FtpPingInterval); \
   PROPERTY(FtpPingType); \
+  PROPERTY(FtpTransferActiveImmediatelly); \
   PROPERTY(FtpListAll); \
   PROPERTY(SslSessionReuse); \
   \
@@ -397,14 +407,8 @@ bool __fastcall TSessionData::IsInFolderOrWorkspace(UnicodeString AFolder)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & RewritePassword)
 {
-  // In case we are re-loading, reset passwords, to avoid pointless
-  // re-cryption, while loading username/hostname. And moreover, when
-  // the password is wrongly encrypted (using a different master password),
-  // this breaks sites reload and consequently an overal operation,
-  // such as opening Sites menu
-  FPassword = L"";
-  FProxyPassword = L"";
-  FTunnelPassword = L"";
+  // Make sure we only ever use methods supported by TOptionsStorage
+  // (implemented by TOptionsIniFile)
 
   PortNumber = Storage->ReadInteger(L"PortNumber", PortNumber);
   UserName = Storage->ReadString(L"UserName", UserName);
@@ -624,6 +628,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   FtpAccount = Storage->ReadString(L"FtpAccount", FtpAccount);
   FtpPingInterval = Storage->ReadInteger(L"FtpPingInterval", FtpPingInterval);
   FtpPingType = static_cast<TPingType>(Storage->ReadInteger(L"FtpPingType", FtpPingType));
+  FtpTransferActiveImmediatelly = Storage->ReadBool(L"FtpTransferActiveImmediatelly", FtpTransferActiveImmediatelly);
   Ftps = static_cast<TFtps>(Storage->ReadInteger(L"Ftps", Ftps));
   FtpListAll = TAutoSwitch(Storage->ReadInteger(L"FtpListAll", FtpListAll));
   SslSessionReuse = Storage->ReadBool(L"SslSessionReuse", SslSessionReuse);
@@ -645,6 +650,15 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
   bool RewritePassword = false;
   if (Storage->OpenSubKey(InternalStorageKey, False))
   {
+    // In case we are re-loading, reset passwords, to avoid pointless
+    // re-cryption, while loading username/hostname. And moreover, when
+    // the password is wrongly encrypted (using a different master password),
+    // this breaks sites reload and consequently an overal operation,
+    // such as opening Sites menu
+    FPassword = L"";
+    FProxyPassword = L"";
+    FTunnelPassword = L"";
+
     DoLoad(Storage, RewritePassword);
 
     Storage->CloseSubKey();
@@ -901,6 +915,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(String, FtpAccount);
       WRITE_DATA(Integer, FtpPingInterval);
       WRITE_DATA(Integer, FtpPingType);
+      WRITE_DATA(Bool, FtpTransferActiveImmediatelly);
       WRITE_DATA(Integer, Ftps);
       WRITE_DATA(Integer, FtpListAll);
       WRITE_DATA(Bool, SslSessionReuse);
@@ -1201,6 +1216,25 @@ inline void __fastcall MoveStr(UnicodeString & Source, UnicodeString * Dest, int
   Source.Delete(1, Count);
 }
 //---------------------------------------------------------------------
+bool __fastcall TSessionData::DoIsProtocolUrl(
+  const UnicodeString & Url, const UnicodeString & Protocol, int & ProtocolLen)
+{
+  bool Result = SameText(Url.SubString(1, Protocol.Length() + 1), Protocol + L":");
+  if (Result)
+  {
+    ProtocolLen = Protocol.Length() + 1;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::IsProtocolUrl(
+  const UnicodeString & Url, const UnicodeString & Protocol, int & ProtocolLen)
+{
+  return
+    DoIsProtocolUrl(Url, Protocol, ProtocolLen) ||
+    DoIsProtocolUrl(Url, WinSCPProtocolPrefix + Protocol, ProtocolLen);
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
   bool * AProtocolDefined, UnicodeString * MaskedUrl)
@@ -1210,50 +1244,51 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   TFSProtocol AFSProtocol;
   int APortNumber;
   TFtps AFtps = ftpsNone;
-  if (Url.SubString(1, 4).LowerCase() == L"scp:")
+  int ProtocolLen = 0;
+  if (IsProtocolUrl(Url, ScpProtocol, ProtocolLen))
   {
     AFSProtocol = fsSCPonly;
     APortNumber = SshPortNumber;
-    MoveStr(Url, MaskedUrl, 4);
+    MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
-  else if (Url.SubString(1, 5).LowerCase() == L"sftp:")
+  else if (IsProtocolUrl(Url, SftpProtocol, ProtocolLen))
   {
     AFSProtocol = fsSFTPonly;
     APortNumber = SshPortNumber;
-    MoveStr(Url, MaskedUrl, 5);
+    MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
-  else if (Url.SubString(1, 4).LowerCase() == L"ftp:")
+  else if (IsProtocolUrl(Url, FtpProtocol, ProtocolLen))
   {
     AFSProtocol = fsFTP;
     Ftps = ftpsNone;
     APortNumber = FtpPortNumber;
-    MoveStr(Url, MaskedUrl, 4);
+    MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
-  else if (Url.SubString(1, 5).LowerCase() == L"ftps:")
+  else if (IsProtocolUrl(Url, FtpsProtocol, ProtocolLen))
   {
     AFSProtocol = fsFTP;
     AFtps = ftpsImplicit;
     APortNumber = FtpsImplicitPortNumber;
-    MoveStr(Url, MaskedUrl, 5);
+    MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
-  else if (Url.SubString(1, 5).LowerCase() == L"http:")
+  else if (IsProtocolUrl(Url, WebDAVProtocol, ProtocolLen))
   {
     AFSProtocol = fsWebDAV;
     AFtps = ftpsNone;
     APortNumber = HTTPPortNumber;
-    MoveStr(Url, MaskedUrl, 5);
+    MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
-  else if (Url.SubString(1, 6).LowerCase() == L"https:")
+  else if (IsProtocolUrl(Url, WebDAVSProtocol, ProtocolLen))
   {
     AFSProtocol = fsWebDAV;
     AFtps = ftpsImplicit;
     APortNumber = HTTPSPortNumber;
-    MoveStr(Url, MaskedUrl, 6);
+    MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
 
@@ -2036,7 +2071,7 @@ UnicodeString __fastcall TSessionData::GetSessionUrl()
     switch (FSProtocol)
     {
       case fsSCPonly:
-        Url = L"scp://";
+        Url = ScpProtocol;
         break;
 
       default:
@@ -2044,19 +2079,32 @@ UnicodeString __fastcall TSessionData::GetSessionUrl()
         // fallback
       case fsSFTP:
       case fsSFTPonly:
-        Url = L"sftp://";
+        Url = SftpProtocol;
         break;
 
       case fsFTP:
-        Url = L"ftp://";
+        if (Ftps == ftpsImplicit)
+        {
+          Url = FtpsProtocol;
+        }
+        else
+        {
+          Url = FtpProtocol;
+        }
         break;
       case fsWebDAV:
-        if (Ftps == ftpsNone)
-          Url = L"http://";
+        if (Ftps == ftpsImplicit)
+        {
+          Url = WebDAVSProtocol;
+        }
         else
-          Url = L"https://";
+        {
+          Url = WebDAVProtocol;
+        }
         break;
     }
+
+    Url += ProtocolSeparator;
 
     if (!HostName.IsEmpty() && !UserName.IsEmpty())
     {
@@ -2416,6 +2464,11 @@ TDateTime __fastcall TSessionData::GetFtpPingIntervalDT()
 void __fastcall TSessionData::SetFtpPingType(TPingType value)
 {
   SET_SESSION_PROPERTY(FtpPingType);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetFtpTransferActiveImmediatelly(bool value)
+{
+  SET_SESSION_PROPERTY(FtpTransferActiveImmediatelly);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionData::SetFtps(TFtps value)
@@ -2913,6 +2966,8 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
         Color++;
       }
 
+      // this effectively does not take passwords (proxy + tunnel) into account,
+      // when master password is set, as master password handler in not set up yet
       if (!Data->IsSame(FactoryDefaults.get(), true, DifferentAdvancedProperties.get()))
       {
         Advanced++;

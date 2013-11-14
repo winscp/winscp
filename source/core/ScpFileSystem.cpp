@@ -1278,7 +1278,7 @@ void __fastcall TSCPFileSystem::AnyCommand(const UnicodeString Command,
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSCPFileSystem::FileUrl(const UnicodeString FileName)
 {
-  return FTerminal->FileUrl(L"scp", FileName);
+  return FTerminal->FileUrl(ScpProtocol, FileName);
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TSCPFileSystem::GetFixedPaths()

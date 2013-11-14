@@ -163,16 +163,20 @@ bool __fastcall TQueueController::AllowOperation(
         TQueueItem::TStatus Status =
           (Operation == qoPauseAll) ? TQueueItem::qsProcessing : TQueueItem::qsPaused;
         bool Result = false;
-        for (int i = FQueueStatus->DoneCount; !Result && (i < FQueueStatus->DoneAndActiveCount); i++)
+        // can be NULL when action update is triggered while disconnecting
+        if (FQueueStatus != NULL)
         {
-          QueueItem = FQueueStatus->Items[i];
-          Result = (QueueItem->Status == Status);
+          for (int i = FQueueStatus->DoneCount; !Result && (i < FQueueStatus->DoneAndActiveCount); i++)
+          {
+            QueueItem = FQueueStatus->Items[i];
+            Result = (QueueItem->Status == Status);
+          }
         }
         return Result;
       }
 
     case qoDeleteAllDone:
-      return (FQueueStatus->DoneCount > 0);
+      return (FQueueStatus != NULL) && (FQueueStatus->DoneCount > 0);
 
     default:
       assert(false);

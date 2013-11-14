@@ -133,6 +133,7 @@ protected:
   void __fastcall ChangeEncoding(TEncoding * Encoding);
   void __fastcall InitCodePage();
   UnicodeString __fastcall GetCodePageName(TEncoding * Encoding);
+  void __fastcall SaveToFile();
   void __fastcall BackupSave();
 };
 //---------------------------------------------------------------------------

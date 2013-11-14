@@ -1380,15 +1380,15 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 2
             OnClick = IconButtonClick
           end
-          object RegisterAsUrlHandlerButton: TButton
+          object RegisterAsUrlHandlersButton: TButton
             Left = 16
             Top = 135
             Width = 357
             Height = 25
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Register to &handle sftp:// and scp:// addresses'
+            Caption = 'Register to handle &URL addresses'
             TabOrder = 4
-            OnClick = RegisterAsUrlHandlerButtonClick
+            OnClick = RegisterAsUrlHandlersButtonClick
           end
           object AddSearchPathButton: TButton
             Left = 16
@@ -3127,5 +3127,21 @@ object PreferencesDialog: TPreferencesDialog
     Caption = 'Help'
     TabOrder = 3
     OnClick = HelpButtonClick
+  end
+  object RegisterAsUrlHandlerMenu: TPopupMenu
+    Left = 56
+    Top = 384
+    object RegisterAsUrlHandlerItem: TMenuItem
+      Caption = 'Register'
+      OnClick = RegisterAsUrlHandlerItemClick
+    end
+    object MakeDefaultHandlerItem: TMenuItem
+      Caption = 'Make WinSCP &default handler...'
+      OnClick = MakeDefaultHandlerItemClick
+    end
+    object UnregisterForDefaultProtocolsItem: TMenuItem
+      Caption = 'Unregister'
+      OnClick = UnregisterForDefaultProtocolsItemClick
+    end
   end
 end

@@ -59,6 +59,59 @@ void __fastcall ReconfigureEditorForm(TForm * Form)
   Editor->ApplyConfiguration();
 }
 //---------------------------------------------------------------------------
+class TPreambleFilteringFileStream : public TFileStream
+{
+public:
+  __fastcall TPreambleFilteringFileStream(const UnicodeString AFileName, System::Word Mode,
+    TEncoding * Encoding, bool AllowPreamble);
+  virtual int __fastcall Write(const void * Buffer, int Count);
+private:
+  TBytes FPreamble;
+  bool FDisallowPreamble;
+};
+//---------------------------------------------------------------------------
+__fastcall TPreambleFilteringFileStream::TPreambleFilteringFileStream(
+    const UnicodeString AFileName, System::Word Mode,
+    TEncoding * Encoding, bool AllowPreamble) :
+  TFileStream(AFileName, Mode)
+{
+  FDisallowPreamble = (Encoding != NULL) && !AllowPreamble;
+  if (FDisallowPreamble)
+  {
+    FPreamble = Encoding->GetPreamble();
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall TPreambleFilteringFileStream::Write(const void * Buffer, int Count)
+{
+  bool IsDisallowedPreamble = false;
+  if (FDisallowPreamble && (Count > 0) && (FPreamble.Length == Count))
+  {
+    int Index = 0;
+    IsDisallowedPreamble = true;
+    const unsigned char * ByteBuffer = reinterpret_cast<const unsigned char *>(Buffer);
+    while (IsDisallowedPreamble && (Index < Count))
+    {
+      IsDisallowedPreamble = (ByteBuffer[Index] == FPreamble[Index]);
+      Index++;
+    }
+  }
+
+  // only on the first write
+  FDisallowPreamble = false;
+
+  int Result;
+  if (IsDisallowedPreamble)
+  {
+    Result = Count;
+  }
+  else
+  {
+    Result = TFileStream::Write(Buffer, Count);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 class TRichEdit20 : public TRichEdit
 {
 public:
@@ -76,6 +129,7 @@ public:
 
   __property bool SupportsUpSearch = { read = FVersion20 };
   __property bool CanRedo = { read = GetCanRedo };
+  __property bool LoadedWithPreamble = { read = FLoadedWithPreamble };
 
 protected:
   friend unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead);
@@ -98,6 +152,7 @@ private:
   bool FInitialized;
   bool FStreamLoadEncodingError;
   bool FStreamLoadError;
+  bool FLoadedWithPreamble;
 };
 //---------------------------------------------------------------------------
 __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
@@ -106,7 +161,8 @@ __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
   FVersion20(false),
   FTabSize(0),
   FWordWrap(true),
-  FInitialized(false)
+  FInitialized(false),
+  FLoadedWithPreamble(false)
 {
 }
 //---------------------------------------------------------------------------
@@ -470,9 +526,14 @@ bool __stdcall TRichEdit20::StreamLoad(
             }
             // If Unicode preamble is present, set StartIndex to skip over it
             TBytes Preamble = TEncoding::Unicode->GetPreamble();
-            if ((WasRead >= 2) && (Buffer[0] == Preamble[0]) && (Buffer[1] == Preamble[1]))
+            if (ALWAYS_TRUE(Preamble.Length == 2) &&
+                (WasRead >= 2) && (Buffer[0] == Preamble[0]) && (Buffer[1] == Preamble[1]))
             {
               StartIndex = 2;
+              // beware that this is also called from CreateWnd with some
+              // dummy contents that always have BOM, so FLoadedWithPreamble
+              // is true, unless overriden by LoadFromStream
+              FLoadedWithPreamble = true;
             }
           }
         }
@@ -501,6 +562,7 @@ bool __fastcall TRichEdit20::LoadFromStream(TStream * Stream, TEncoding * Encodi
 {
   FStreamLoadEncodingError = false;
   FStreamLoadError = false;
+  FLoadedWithPreamble = false;
   Lines->LoadFromStream(Stream, Encoding);
   if (FStreamLoadError)
   {
@@ -716,6 +778,14 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TEditorForm::SaveToFile()
+{
+  std::auto_ptr<TStream> Stream(
+    new TPreambleFilteringFileStream(
+      FFileName, fmCreate, FEncoding, EditorMemo->LoadedWithPreamble));
+  EditorMemo->Lines->SaveToStream(Stream.get(), FEncoding);
+}
+//---------------------------------------------------------------------------
 void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
       bool &Handled)
 {
@@ -723,7 +793,7 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   if (Action == SaveAction)
   {
     assert(!FFileName.IsEmpty());
-    EditorMemo->Lines->SaveToFile(FFileName, FEncoding);
+    SaveToFile();
     if (FOnFileChanged)
     {
       FOnFileChanged(this);

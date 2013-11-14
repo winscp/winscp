@@ -14,6 +14,7 @@
 #include <FileCtrl.hpp>
 #include <PathLabel.hpp>
 #include <PasTools.hpp>
+#include <Vcl.Imaging.pngimage.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -1647,4 +1648,11 @@ void __fastcall UseDesktopFont(TControl * Control)
   };
 
   reinterpret_cast<TPublicControl *>(Control)->DesktopFont = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall LoadResourceImage(TImage * Image, const UnicodeString & ImageName)
+{
+  std::unique_ptr<TPngImage> Png(new TPngImage());
+  Png->LoadFromResourceName(0, ImageName);
+  Image->Picture->Assign(Png.get());
 }

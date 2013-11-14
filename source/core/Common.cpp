@@ -1911,13 +1911,13 @@ void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, con
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsWinXPOrOlder()
+bool __fastcall IsWinVista()
 {
-  // Win XP is 5.1
   // Vista is 6.0
+  // Win XP is 5.1
   // There also 5.2, what is Windows 2003 or Windows XP 64bit
   // (we consider it WinXP for now)
-  return !CheckWin32Version(6, 0);
+  return CheckWin32Version(6, 0);
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsWin7()

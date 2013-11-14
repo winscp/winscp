@@ -262,92 +262,397 @@ void __fastcall RemoveSearchPath(const UnicodeString Path)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall RegisterAsUrlHandler()
+static const UnicodeString SoftwareClassesBaseKey = L"Software\\Classes\\";
+//---------------------------------------------------------------------------
+static void __fastcall DeleteKeyIfEmpty(TRegistry * Registry, const UnicodeString & Key, bool AllowRootValues)
+{
+  if (Registry->OpenKey(Key, false))
+  {
+    std::auto_ptr<TStrings> List(new TStringList());
+
+    Registry->GetValueNames(List.get());
+    bool CanDelete = true;
+    for (int Index = 0; CanDelete && (Index < List->Count); Index++)
+    {
+      UnicodeString ValueName = List->Strings[Index];
+      if (!AllowRootValues)
+      {
+        CanDelete = false;
+      }
+      if ((ValueName != L"") &&
+          (ValueName != L"URL Protocol") &&
+          (ValueName != L"EditFlags") &&
+          (ValueName != L"BrowserFlags"))
+      {
+        CanDelete = false;
+      }
+    }
+
+    List->Clear();
+    Registry->GetKeyNames(List.get());
+
+    Registry->CloseKey();
+
+    if (CanDelete)
+    {
+      for (int Index = 0; Index < List->Count; Index++)
+      {
+        DeleteKeyIfEmpty(Registry, IncludeTrailingBackslash(Key) + List->Strings[Index], false);
+      }
+
+      // will fail, if not all subkeys got removed
+      Registry->DeleteKey(Key);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall RegisterProtocol(TRegistry * Registry,
+  const UnicodeString & Protocol, UnicodeString Description, bool Force)
+{
+
+  if (Description.IsEmpty())
+  {
+    Description = FMTLOAD(PROTOCOL_URL_DESC, (Protocol));
+  }
+
+  UnicodeString ProtocolKey = SoftwareClassesBaseKey + Protocol;
+  if (Force || !Registry->KeyExists(ProtocolKey))
+  {
+    if (Registry->OpenKey(SoftwareClassesBaseKey + Protocol, true))
+    {
+      Registry->WriteString(L"", Description);
+      Registry->WriteString(L"URL Protocol", L"");
+      Registry->WriteInteger(L"EditFlags", 0x02);
+      Registry->WriteInteger(L"BrowserFlags", 0x08);
+      if (Registry->OpenKey(L"DefaultIcon", true))
+      {
+        Registry->WriteString(L"", FORMAT(L"\"%s\",0", (Application->ExeName)));
+        Registry->CloseKey();
+      }
+      else
+      {
+        Abort();
+      }
+    }
+    else
+    {
+      Abort();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall UnregisterProtocol(TRegistry * Registry,
+  const UnicodeString & Protocol)
+{
+  DeleteKeyIfEmpty(Registry, SoftwareClassesBaseKey + Protocol, true);
+}
+//---------------------------------------------------------------------------
+static TRegistry * __fastcall CreateRegistry(HKEY RootKey)
+{
+  std::auto_ptr<TRegistry> Registry(new TRegistry());
+
+  Registry->Access = KEY_WRITE | KEY_READ;
+  Registry->RootKey = RootKey;
+
+  return Registry.release();
+}
+//---------------------------------------------------------------------------
+static void __fastcall RegisterAsUrlHandler(HKEY RootKey,
+  const UnicodeString & Protocol, UnicodeString Description = "")
+{
+  std::auto_ptr<TRegistry> Registry(CreateRegistry(RootKey));
+
+  RegisterProtocol(Registry.get(), Protocol, Description, true);
+
+  if (Registry->OpenKey(SoftwareClassesBaseKey + Protocol, false) &&
+      Registry->OpenKey(L"shell", true) &&
+      Registry->OpenKey(L"open", true) &&
+      Registry->OpenKey(L"command", true))
+  {
+    Registry->WriteString(L"", FORMAT(L"\"%s\" /unsafe \"%%1\"", (Application->ExeName)));
+    Registry->CloseKey();
+  }
+  else
+  {
+    Abort();
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall RegisterAsUrlHandler(const UnicodeString & Protocol, UnicodeString Description = L"")
+{
+
+  try
+  {
+    RegisterAsUrlHandler(HKEY_LOCAL_MACHINE, Protocol, Description);
+
+    // get rid of any HKCU registraction that would overrite the HKLM one
+    std::auto_ptr<TRegistry> Registry(CreateRegistry(HKEY_CURRENT_USER));
+    if (Registry->KeyExists(SoftwareClassesBaseKey + Protocol))
+    {
+      Registry->DeleteKey(SoftwareClassesBaseKey + Protocol);
+    }
+  }
+  catch (Exception & E)
+  {
+    try
+    {
+      RegisterAsUrlHandler(HKEY_CURRENT_USER, Protocol, Description);
+    }
+    catch(Exception & E)
+    {
+      throw ExtException(&E, LoadStr(REGISTER_URL_ERROR2));
+    }
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall UnregisterAsUrlHandler(HKEY RootKey,
+  const UnicodeString & Protocol, bool UnregisterProtocol, bool ForceHandlerUnregistration)
+{
+  std::auto_ptr<TRegistry> Registry(CreateRegistry(RootKey));
+
+  UnicodeString DefaultIconKey = SoftwareClassesBaseKey + Protocol + L"\\DefaultIcon";
+  if (Registry->OpenKey(DefaultIconKey, false))
+  {
+    UnicodeString Value = Registry->ReadString(L"");
+    UnicodeString ExeBaseName = ExtractFileBaseName(Application->ExeName);
+    if (ForceHandlerUnregistration || ContainsText(Value, ExeBaseName))
+    {
+      Registry->DeleteValue(L"");
+    }
+    Registry->CloseKey();
+
+    DeleteKeyIfEmpty(Registry.get(), DefaultIconKey, false);
+  }
+
+  UnicodeString ShellKey = SoftwareClassesBaseKey + Protocol + L"\\shell";
+  if (Registry->OpenKey(ShellKey + L"\\open\\command", false))
+  {
+    UnicodeString Value = Registry->ReadString(L"");
+    UnicodeString ExeBaseName = ExtractFileBaseName(Application->ExeName);
+    if (ForceHandlerUnregistration || ContainsText(Value, ExeBaseName))
+    {
+      Registry->DeleteValue(L"");
+    }
+
+    Registry->CloseKey();
+
+    DeleteKeyIfEmpty(Registry.get(), ShellKey, false);
+  }
+
+  if (UnregisterProtocol)
+  {
+    ::UnregisterProtocol(Registry.get(), Protocol);
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall UnregisterAsUrlHandler(const UnicodeString & Protocol, bool UnregisterProtocol)
+{
+  UnregisterAsUrlHandler(HKEY_LOCAL_MACHINE, Protocol, UnregisterProtocol, false);
+  UnregisterAsUrlHandler(HKEY_CURRENT_USER, Protocol, UnregisterProtocol, false);
+}
+//---------------------------------------------------------------------------
+static void __fastcall RegisterAsNonBrowserUrlHandler(const UnicodeString & Prefix)
+{
+  RegisterAsUrlHandler(Prefix + SftpProtocol.UpperCase());
+  RegisterAsUrlHandler(Prefix + ScpProtocol.UpperCase());
+}
+//---------------------------------------------------------------------------
+static void __fastcall UnregisterAsUrlHandlers(const UnicodeString & Prefix, bool UnregisterProtocol)
+{
+  UnregisterAsUrlHandler(Prefix + SftpProtocol, UnregisterProtocol);
+  UnregisterAsUrlHandler(Prefix + ScpProtocol, UnregisterProtocol);
+  // add WebDAV
+}
+//---------------------------------------------------------------------------
+static const UnicodeString GenericUrlHandler(L"WinSCP.Url");
+//---------------------------------------------------------------------------
+static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const UnicodeString & Protocol)
+{
+  // Register protocol, if it does not exist yet.
+  // Prior to Windows 8, we need to register ourselves as legacy handler to
+  // become the default handler. On Windows 8, it's automatic as long as no other
+  // application is registered for the protocol (i.e. RegisterProtocol would be enough)
+  RegisterAsUrlHandler(RootKey, Protocol);
+
+  // see http://msdn.microsoft.com/en-us/library/windows/desktop/cc144154.aspx#registration
+  std::auto_ptr<TRegistry> Registry(CreateRegistry(RootKey));
+
+  // create capabilities record
+
+  // this has to be a separate branch from WinSCP one, as by its presence we
+  // enforce registry storage usage, and the capabilities branch may exist
+  // even if we are using INI file
+  UnicodeString CapabilitiesKey = IncludeTrailingBackslash(GetCompanyRegistryKey()) + L"WinSCPCapabilities";
+  if (!Registry->OpenKey(CapabilitiesKey, true))
+  {
+    Abort();
+  }
+
+  UnicodeString Description = LoadStr(REGISTERED_APP_DESC);
+  Registry->WriteString(L"ApplicationDescription", Description);
+
+  if (!Registry->OpenKey(L"UrlAssociations", true))
+  {
+    Abort();
+  }
+
+  Registry->WriteString(Protocol, GenericUrlHandler);
+  Registry->CloseKey();
+
+  // register application
+
+  if (!Registry->OpenKey(L"Software\\RegisteredApplications", true))
+  {
+    Abort();
+  }
+
+  Registry->WriteString(AppNameString(), CapabilitiesKey);
+  Registry->CloseKey();
+}
+//---------------------------------------------------------------------------
+static void __fastcall UnregisterProtocolForDefaultPrograms(HKEY RootKey,
+  const UnicodeString & Protocol, bool ForceHandlerUnregistration)
+{
+  std::auto_ptr<TRegistry> Registry(CreateRegistry(RootKey));
+
+  // unregister the protocol
+  UnregisterAsUrlHandler(RootKey, Protocol, false, ForceHandlerUnregistration);
+
+  // remove capabilities record
+
+  UnicodeString CapabilitiesKey = IncludeTrailingBackslash(GetCompanyRegistryKey()) + L"WinSCPCapabilities";
+  UnicodeString UrlAssociationsKey = CapabilitiesKey + L"\\UrlAssociations";
+  if (Registry->OpenKey(UrlAssociationsKey, false))
+  {
+    Registry->DeleteValue(Protocol);
+    Registry->CloseKey();
+
+    DeleteKeyIfEmpty(Registry.get(), UrlAssociationsKey, false);
+  }
+
+  if (Registry->OpenKey(CapabilitiesKey, false))
+  {
+    if (!Registry->HasSubKeys())
+    {
+      Registry->DeleteValue(L"ApplicationDescription");
+    }
+
+    Registry->CloseKey();
+
+    DeleteKeyIfEmpty(Registry.get(), CapabilitiesKey, false);
+  }
+
+  if (!Registry->KeyExists(CapabilitiesKey))
+  {
+    // unregister application
+
+    if (Registry->OpenKey(L"Software\\RegisteredApplications", false))
+    {
+      Registry->DeleteValue(AppNameString());
+      Registry->CloseKey();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall RegisterProtocolsForDefaultPrograms(HKEY RootKey)
+{
+  // register URL handler, if it does not exist yet
+  RegisterAsUrlHandler(RootKey, GenericUrlHandler, L"WinSCP URL");
+
+  RegisterProtocolForDefaultPrograms(RootKey, FtpProtocol);
+  RegisterProtocolForDefaultPrograms(RootKey, FtpsProtocol);
+  RegisterProtocolForDefaultPrograms(RootKey, SftpProtocol);
+  RegisterProtocolForDefaultPrograms(RootKey, ScpProtocol);
+}
+//---------------------------------------------------------------------------
+static void __fastcall UnregisterProtocolsForDefaultPrograms(HKEY RootKey, bool ForceHandlerUnregistration)
+{
+  UnregisterProtocolForDefaultPrograms(RootKey, FtpProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, FtpsProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, SftpProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, ScpProtocol, ForceHandlerUnregistration);
+
+  // we should not really need the "force" flag here, but why not
+  UnregisterAsUrlHandler(RootKey, GenericUrlHandler, true, true);
+}
+//---------------------------------------------------------------------------
+static void __fastcall RegisterForDefaultPrograms()
 {
   try
   {
-    bool Success;
-    bool User = true;
-    TRegistry * Registry = new TRegistry();
+    RegisterProtocolsForDefaultPrograms(HKEY_LOCAL_MACHINE);
+    // make sure we unregister any legacy protocol handler for CU,
+    // this is needed for Windows Vista+7
+    UnregisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER, true);
+  }
+  catch (Exception & E)
+  {
     try
     {
-      do
-      {
-        Success = true;
-        User = !User;
-
-        try
-        {
-          assert(Configuration != NULL);
-          UnicodeString FileName = Application->ExeName;
-          UnicodeString BaseKey;
-
-          Registry->Access = KEY_WRITE;
-          if (User)
-          {
-            Registry->RootKey = HKEY_CURRENT_USER;
-            BaseKey = _T("Software\\Classes\\");
-          }
-          else
-          {
-            Registry->RootKey = HKEY_CLASSES_ROOT;
-            BaseKey = _T("");
-          }
-
-          UnicodeString Protocol;
-          for (int Index = 0; Index <= 1; Index++)
-          {
-            Protocol = (Index == 0) ? L"SCP" : L"SFTP";
-            if (Registry->OpenKey(BaseKey + Protocol, true))
-            {
-              Registry->WriteString(L"", FMTLOAD(PROTOCOL_URL_DESC, (Protocol)));
-              Registry->WriteString(L"URL Protocol", L"");
-              Registry->WriteInteger(L"EditFlags", 0x02);
-              Registry->WriteInteger(L"BrowserFlags", 0x08);
-              if (Registry->OpenKey(L"DefaultIcon", true))
-              {
-                Registry->WriteString(L"", FORMAT(L"\"%s\",0", (FileName)));
-                Registry->CloseKey();
-              }
-              else
-              {
-                Abort();
-              }
-            }
-            else
-            {
-              Abort();
-            }
-
-            if (Registry->OpenKey(BaseKey + Protocol, false) &&
-                Registry->OpenKey(L"shell", true) &&
-                Registry->OpenKey(L"open", true) &&
-                Registry->OpenKey(L"command", true))
-            {
-              Registry->WriteString(L"", FORMAT(L"\"%s\" /unsafe \"%%1\"", (FileName)));
-              Registry->CloseKey();
-            }
-            else
-            {
-              Abort();
-            }
-          }
-        }
-        catch(...)
-        {
-          Success = false;
-        }
-      }
-      while (!Success && !User);
+      RegisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER);
     }
-    __finally
+    catch (Exception & E)
     {
-      delete Registry;
+      throw ExtException(&E, LoadStr(REGISTER_URL_ERROR2));
     }
   }
-  catch(Exception & E)
+}
+//---------------------------------------------------------------------------
+static void __fastcall NotifyChangedAssociations()
+{
+  SHChangeNotify(SHCNE_ASSOCCHANGED, 0, 0, 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall RegisterForDefaultProtocols()
+{
+  if (IsWinVista())
   {
-    throw ExtException(&E, LoadStr(REGISTER_URL_ERROR));
+    RegisterForDefaultPrograms();
+  }
+  else
+  {
+    RegisterAsNonBrowserUrlHandler(UnicodeString());
+  }
+
+  RegisterAsNonBrowserUrlHandler(WinSCPProtocolPrefix);
+  RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase());
+  RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase());
+  // add WebDAV
+
+  NotifyChangedAssociations();
+}
+//---------------------------------------------------------------------------
+void __fastcall UnregisterForProtocols()
+{
+  UnregisterAsUrlHandlers(UnicodeString(), false);
+  UnregisterAsUrlHandlers(WinSCPProtocolPrefix, true);
+  UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase(), true);
+  UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase(), true);
+
+  UnregisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER, false);
+  UnregisterProtocolsForDefaultPrograms(HKEY_LOCAL_MACHINE, false);
+
+  NotifyChangedAssociations();
+}
+//---------------------------------------------------------------------------
+void __fastcall LaunchAdvancedAssociationUI()
+{
+  assert(IsWinVista());
+
+  RegisterForDefaultPrograms();
+  NotifyChangedAssociations();
+  // sleep recommended by http://msdn.microsoft.com/en-us/library/windows/desktop/cc144154.aspx#browser
+  Sleep(1000);
+
+  IApplicationAssociationRegistrationUI * AppAssocRegUI;
+
+  HRESULT Result =
+    CoCreateInstance(CLSID_ApplicationAssociationRegistrationUI,
+      NULL, CLSCTX_INPROC, __uuidof(IApplicationAssociationRegistrationUI), (void**)&AppAssocRegUI);
+  if (SUCCEEDED(Result))
+  {
+    AppAssocRegUI->LaunchAdvancedAssociationUI(AppNameString().c_str());
+    AppAssocRegUI->Release();
   }
 }
 //---------------------------------------------------------------------------

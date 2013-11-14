@@ -52,6 +52,14 @@ extern const int HTTPSPortNumber;
 extern const int TelnetPortNumber;
 extern const UnicodeString PuttySshProtocol;
 extern const UnicodeString PuttyTelnetProtocol;
+extern const UnicodeString SftpProtocol;
+extern const UnicodeString ScpProtocol;
+extern const UnicodeString FtpProtocol;
+extern const UnicodeString FtpsProtocol;
+extern const UnicodeString WebDAVProtocol;
+extern const UnicodeString WebDAVSProtocol;
+extern const UnicodeString ProtocolSeparator;
+extern const UnicodeString WinSCPProtocolPrefix;
 //---------------------------------------------------------------------------
 class TStoredSessionList;
 //---------------------------------------------------------------------------
@@ -157,6 +165,7 @@ private:
   UnicodeString FFtpAccount;
   int FFtpPingInterval;
   TPingType FFtpPingType;
+  bool FFtpTransferActiveImmediatelly;
   TFtps FFtps;
   TTlsVersion FMinTlsVersion;
   TTlsVersion FMaxTlsVersion;
@@ -302,6 +311,7 @@ private:
   void __fastcall SetFtpAccount(UnicodeString value);
   void __fastcall SetFtpPingInterval(int value);
   void __fastcall SetFtpPingType(TPingType value);
+  void __fastcall SetFtpTransferActiveImmediatelly(bool value);
   void __fastcall SetFtps(TFtps value);
   void __fastcall SetMinTlsVersion(TTlsVersion value);
   void __fastcall SetMaxTlsVersion(TTlsVersion value);
@@ -322,6 +332,8 @@ private:
   static RawByteString __fastcall EncryptPassword(const UnicodeString & Password, UnicodeString Key);
   static UnicodeString __fastcall DecryptPassword(const RawByteString & Password, UnicodeString Key);
   static RawByteString __fastcall StronglyRecryptPassword(const RawByteString & Password, UnicodeString Key);
+  static bool __fastcall DoIsProtocolUrl(const UnicodeString & Url, const UnicodeString & Protocol, int & ProtocolLen);
+  static bool __fastcall IsProtocolUrl(const UnicodeString & Url, const UnicodeString & Protocol, int & ProtocolLen);
 
   __property UnicodeString InternalStorageKey = { read = GetInternalStorageKey };
 
@@ -473,6 +485,7 @@ public:
   __property int FtpPingInterval  = { read=FFtpPingInterval, write=SetFtpPingInterval };
   __property TDateTime FtpPingIntervalDT  = { read=GetFtpPingIntervalDT };
   __property TPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
+  __property bool FtpTransferActiveImmediatelly = { read = FFtpTransferActiveImmediatelly, write = SetFtpTransferActiveImmediatelly };
   __property TFtps Ftps = { read = FFtps, write = SetFtps };
   __property TTlsVersion MinTlsVersion = { read = FMinTlsVersion, write = SetMinTlsVersion };
   __property TTlsVersion MaxTlsVersion = { read = FMaxTlsVersion, write = SetMaxTlsVersion };

@@ -17,3 +17,4 @@ Z_ICON_EDITOR_BIG ICON "..\\resource\\Editor32.ico"
 LICENSE RCDATA "License.txt"
 
 DELETE_FILE RCDATA "..\\resource\\DeleteFile.png"
+REMOTE_MOVE_FILE RCDATA "..\\resource\\RemoteMoveFile.png"

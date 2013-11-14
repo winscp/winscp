@@ -160,9 +160,12 @@ public:
 		wndclass.lpszClassName=_T("CAsyncSocketEx Helper Window");
 		wndclass.hIconSm=0;
 
+		#ifdef _DEBUG
+		ATOM ClassAtom =
+		#endif
 		RegisterClassEx(&wndclass);
 
-		m_hWnd=CreateWindow(_T("CAsyncSocketEx Helper Window"), _T("CAsyncSocketEx Helper Window"), 0, 0, 0, 0, 0, 0, 0, 0, GetModuleHandle(0));
+		m_hWnd=CreateWindow(_T("CAsyncSocketEx Helper Window"), _T("CAsyncSocketEx Helper Window"), 0, 0, 0, 0, 0, 0, 0, GetModuleHandle(0), 0);
 		ASSERT(m_hWnd);
 		SetWindowLongPtr(m_hWnd, GWL_USERDATA, (LONG)this);
 	};

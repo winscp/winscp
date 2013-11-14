@@ -18,6 +18,7 @@
 #include "HistoryComboBox.hpp"
 #include <WinInterface.h>
 #include <Vcl.Imaging.pngimage.hpp>
+#include <Vcl.Menus.hpp>
 //----------------------------------------------------------------------------
 class TCustomCommandList;
 class TEditorList;
@@ -79,7 +80,7 @@ __published:
   TPanel *LeftPanel;
   TTreeView *NavigationTree;
   TCheckBox *DeleteToRecycleBinCheck;
-  TButton *RegisterAsUrlHandlerButton;
+  TButton *RegisterAsUrlHandlersButton;
   TTabSheet *DragDropSheet;
   TGroupBox *DragDropDownloadsGroup;
   TLabel *DDExtEnabledLabel;
@@ -287,6 +288,10 @@ __published:
   TRadioButton *CommanderInterfaceButton2;
   TRadioButton *ExplorerInterfaceButton2;
   TLabel *AutoWorkspaceLabel;
+  TPopupMenu *RegisterAsUrlHandlerMenu;
+  TMenuItem *RegisterAsUrlHandlerItem;
+  TMenuItem *UnregisterForDefaultProtocolsItem;
+  TMenuItem *MakeDefaultHandlerItem;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -308,7 +313,7 @@ __published:
           TObject *Source, int X, int Y, TDragState State, bool &Accept);
   void __fastcall NavigationTreeChange(TObject *Sender, TTreeNode *Node);
   void __fastcall PageControlChange(TObject *Sender);
-  void __fastcall RegisterAsUrlHandlerButtonClick(TObject *Sender);
+  void __fastcall RegisterAsUrlHandlersButtonClick(TObject *Sender);
   void __fastcall DDExtLabelClick(TObject *Sender);
   void __fastcall CustomCommandsViewDblClick(TObject *Sender);
   void __fastcall AddSearchPathButtonClick(TObject *Sender);
@@ -360,6 +365,9 @@ __published:
   void __fastcall LanguagesGetMoreButtonClick(TObject *Sender);
   void __fastcall CommanderClick(TObject *Sender);
   void __fastcall ExplorerClick(TObject *Sender);
+  void __fastcall RegisterAsUrlHandlerItemClick(TObject *Sender);
+  void __fastcall UnregisterForDefaultProtocolsItemClick(TObject *Sender);
+  void __fastcall MakeDefaultHandlerItemClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;

@@ -3960,7 +3960,7 @@ UnicodeString __fastcall TTerminal::FileUrl(const UnicodeString Protocol,
   const UnicodeString FileName)
 {
   assert(FileName.Length() > 0);
-  return Protocol + L"://" + EncodeUrlChars(SessionData->SessionName) +
+  return Protocol + ProtocolSeparator + EncodeUrlChars(SessionData->SessionName) +
     (FileName[1] == L'/' ? L"" : L"/") + EncodeUrlChars(FileName, L"/");
 }
 //---------------------------------------------------------------------------
@@ -5004,6 +5004,14 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
     {
       if (CalculatedSize)
       {
+        if (Configuration->Usage->Collect)
+        {
+          int CounterSize = TUsage::CalculateCounterSize(Size);
+          Configuration->Usage->Inc(L"Uploads");
+          Configuration->Usage->Inc(L"UploadedBytes", CounterSize);
+          Configuration->Usage->SetMax(L"MaxUploadSize", CounterSize);
+        }
+
         OperationProgress.SetTotalSize(Size);
       }
 
@@ -5106,6 +5114,14 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
       {
         if (TotalSizeKnown)
         {
+          if (Configuration->Usage->Collect)
+          {
+            int CounterTotalSize = TUsage::CalculateCounterSize(TotalSize);
+            Configuration->Usage->Inc(L"Downloads");
+            Configuration->Usage->Inc(L"DownloadedBytes", CounterTotalSize);
+            Configuration->Usage->SetMax(L"MaxDownloadSize", CounterTotalSize);
+          }
+
           OperationProgress.SetTotalSize(TotalSize);
         }
 

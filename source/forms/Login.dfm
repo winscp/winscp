@@ -595,6 +595,7 @@ object LoginDialog: TLoginDialog
       Category = 'Session'
       Caption = 'Open in &PuTTY'
       ImageIndex = 1
+      ShortCut = 16464
       OnExecute = PuttyActionExecute
     end
   end

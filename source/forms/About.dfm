@@ -3611,7 +3611,7 @@ object AboutDialog: TAboutDialog
       Top = 325
       Width = 194
       Height = 13
-      Caption = 'Copyright '#169' 2001-2005 Alex A. Denisov'
+      Caption = 'Copyright '#169' 2001-2005 Alex A. Denisov and contributors'
     end
     object FileZillaVersionLabel: TLabel
       Left = 8
@@ -3679,7 +3679,7 @@ object AboutDialog: TAboutDialog
       Top = 341
       Width = 146
       Height = 17
-      Caption = 'http://indasoftware.com/tbx/'
+      Caption = 'https://github.com/plashenkov/TBX'
       TabOrder = 5
       TabStop = True
     end
