@@ -689,7 +689,7 @@ void __fastcall TTerminal::Open()
 
             DoInformation(LoadStr(USING_TUNNEL), false);
             LogEvent(FORMAT(L"Connecting via tunnel interface %s:%d.",
-              (FSessionData->HostName, FSessionData->PortNumber)));
+              (FSessionData->HostNameExpanded, FSessionData->PortNumber)));
           }
           else
           {
@@ -885,7 +885,7 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->Password = FSessionData->TunnelPassword;
     FTunnelData->PublicKeyFile = FSessionData->TunnelPublicKeyFile;
     FTunnelData->TunnelPortFwd = FORMAT(L"L%d\t%s:%d",
-      (FTunnelLocalPortNumber, FSessionData->HostName, FSessionData->PortNumber));
+      (FTunnelLocalPortNumber, FSessionData->HostNameExpanded, FSessionData->PortNumber));
     FTunnelData->HostKey = FSessionData->TunnelHostKey;
     FTunnelData->ProxyMethod = FSessionData->ProxyMethod;
     FTunnelData->ProxyHost = FSessionData->ProxyHost;
@@ -1378,16 +1378,17 @@ bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
   bool Result = false;
   Log->AddException(&E);
   unsigned int Answer;
-  bool SkipPossible = AllowSkip && (OperationProgress != NULL);
+  bool SkipToAllPossible = AllowSkip && (OperationProgress != NULL);
 
-  if (SkipPossible && OperationProgress->SkipToAll)
+  if (SkipToAllPossible && OperationProgress->SkipToAll)
   {
     Answer = qaSkip;
   }
   else
   {
     int Answers = qaRetry | qaAbort |
-      FLAGMASK(SkipPossible, (qaSkip | qaAll)) |
+      FLAGMASK(AllowSkip, qaSkip) |
+      FLAGMASK(SkipToAllPossible, qaAll) |
       FLAGMASK(!SpecialRetry.IsEmpty(), qaYes);
     TQueryParams Params(qpAllowContinueOnError | FLAGMASK(!AllowSkip, qpFatalAbort));
     Params.HelpKeyword = HelpKeyword;
@@ -2399,12 +2400,36 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::LogFile(TRemoteFile * File)
+void __fastcall TTerminal::LogRemoteFile(TRemoteFile * File)
 {
-  LogEvent(FORMAT(L"%s;%s;%d;%s;%s;%s;%s;%d",
-    (File->FileName, File->Type, File->Size, StandardTimestamp(File->Modification),
-     File->Owner.LogText, File->Group.LogText, File->Rights->Text,
-     File->Attr)));
+  // optimization
+  if (Log->Logging)
+  {
+    LogEvent(FORMAT(L"%s;%s;%d;%s;%s;%s;%s;%d",
+      (File->FileName, File->Type, File->Size, StandardTimestamp(File->Modification),
+       File->Owner.LogText, File->Group.LogText, File->Rights->Text,
+       File->Attr)));
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminal::FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size)
+{
+  UnicodeString Result;
+    // optimization
+  if (Log->Logging)
+  {
+    Result = FORMAT(L"'%s' [%s] [%s]", (FileName, (Modification != TDateTime() ? StandardTimestamp(Modification) : UnicodeString(L"n/a")), IntToStr(Size)));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size)
+{
+  // optimization
+  if (Log->Logging)
+  {
+    LogEvent(FORMAT("File: %s", (FormatFileDetailsForLog(FileName, Modification, Size))));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
@@ -2417,7 +2442,7 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
   {
     for (int Index = 0; Index < FileList->Count; Index++)
     {
-      LogFile(FileList->Files[Index]);
+      LogRemoteFile(FileList->Files[Index]);
     }
   }
 
@@ -2636,7 +2661,7 @@ void __fastcall TTerminal::ReadFile(const UnicodeString FileName,
     LogEvent(FORMAT(L"Listing file \"%s\".", (FileName)));
     FFileSystem->ReadFile(FileName, File);
     ReactOnCommand(fsListFile);
-    LogFile(File);
+    LogRemoteFile(File);
   }
   catch (Exception &E)
   {
@@ -3931,7 +3956,8 @@ bool __fastcall TTerminal::AllowLocalFileTransfer(UnicodeString FileName,
   const TCopyParamType * CopyParam)
 {
   bool Result = true;
-  if (!CopyParam->AllowAnyTransfer())
+  // optimization
+  if (Log->Logging || !CopyParam->AllowAnyTransfer())
   {
     WIN32_FIND_DATA FindData;
     HANDLE Handle;
@@ -3952,6 +3978,10 @@ bool __fastcall TTerminal::AllowLocalFileTransfer(UnicodeString FileName,
       FindData.nFileSizeLow;
     Params.Modification = FileTimeToDateTime(FindData.ftLastWriteTime);
     Result = CopyParam->AllowTransfer(FileName, osLocal, Directory, Params);
+    if (Result)
+    {
+      LogFileDetails(FileName, Params.Modification, Params.Size);
+    }
   }
   return Result;
 }
@@ -4263,13 +4293,13 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
             FileData->Modified = false;
             Data.LocalFileList->AddObject(FileName,
               reinterpret_cast<TObject*>(FileData));
-            LogEvent(FORMAT(L"Local file '%s' [%s] [%s] included to synchronization",
-              (FullLocalFileName, StandardTimestamp(Modification), IntToStr(Size))));
+            LogEvent(FORMAT(L"Local file %s included to synchronization",
+              (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
           }
           else
           {
-            LogEvent(FORMAT(L"Local file '%s' [%s] [%s] excluded from synchronization",
-              (FullLocalFileName, StandardTimestamp(Modification), IntToStr(Size))));
+            LogEvent(FORMAT(L"Local file %s excluded from synchronization",
+              (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
           }
 
           FILE_OPERATION_LOOP (FMTLOAD(LIST_DIR_ERROR, (LocalDirectory)),
@@ -4310,10 +4340,9 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
 
         if (New)
         {
-          LogEvent(FORMAT(L"Local file '%s' [%s] [%s] is new",
-            (FileData->Info.Directory + FileData->Info.FileName,
-             StandardTimestamp(FileData->Info.Modification),
-             IntToStr(FileData->Info.Size))));
+          LogEvent(FORMAT(L"Local file %s is new",
+            (FormatFileDetailsForLog(FileData->Info.Directory + FileData->Info.FileName,
+             FileData->Info.Modification, FileData->Info.Size))));
         }
 
         if (Modified || New)
@@ -4503,24 +4532,19 @@ void __fastcall TTerminal::SynchronizeCollectFile(const UnicodeString FileName,
             // we need this for custom commands over checklist only,
             // not for sync itself
             LocalData->MatchingRemoteFileFile = File->Duplicate();
-            LogEvent(FORMAT(L"Local file '%s' [%s] [%s] is modified comparing to remote file '%s' [%s] [%s]",
-              (LocalData->Info.Directory + LocalData->Info.FileName,
-               StandardTimestamp(LocalData->Info.Modification),
-               IntToStr(LocalData->Info.Size),
-               FullRemoteFileName,
-               StandardTimestamp(File->Modification),
-               IntToStr(File->Size))));
+            LogEvent(FORMAT(L"Local file %s is modified comparing to remote file %s",
+              (FormatFileDetailsForLog(LocalData->Info.Directory + LocalData->Info.FileName,
+                 LocalData->Info.Modification, LocalData->Info.Size),
+               FormatFileDetailsForLog(FullRemoteFileName,
+                 File->Modification, File->Size))));
           }
 
           if (Modified)
           {
-            LogEvent(FORMAT(L"Remote file '%s' [%s] [%s] is modified comparing to local file '%s' [%s] [%s]",
-              (FullRemoteFileName,
-               StandardTimestamp(File->Modification),
-               IntToStr(File->Size),
-               LocalData->Info.Directory + LocalData->Info.FileName,
-               StandardTimestamp(LocalData->Info.Modification),
-               IntToStr(LocalData->Info.Size))));
+            LogEvent(FORMAT(L"Remote file %s is modified comparing to local file %s",
+              (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size),
+               FormatFileDetailsForLog(LocalData->Info.Directory + LocalData->Info.FileName,
+                 LocalData->Info.Modification, LocalData->Info.Size))));
           }
         }
         else if (FLAGCLEAR(Data->Params, spNoRecurse))
@@ -4536,8 +4560,8 @@ void __fastcall TTerminal::SynchronizeCollectFile(const UnicodeString FileName,
       else
       {
         ChecklistItem->Local.Directory = Data->LocalDirectory;
-        LogEvent(FORMAT(L"Remote file '%s' [%s] [%s] is new",
-          (FullRemoteFileName, StandardTimestamp(File->Modification), IntToStr(File->Size))));
+        LogEvent(FORMAT(L"Remote file %s is new",
+          (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size))));
       }
 
       if (New || Modified)
@@ -4584,8 +4608,8 @@ void __fastcall TTerminal::SynchronizeCollectFile(const UnicodeString FileName,
   }
   else
   {
-    LogEvent(FORMAT(L"Remote file '%s' [%s] [%s] excluded from synchronization",
-      (FullRemoteFileName, StandardTimestamp(File->Modification), IntToStr(File->Size))));
+    LogEvent(FORMAT(L"Remote file %s excluded from synchronization",
+      (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size))));
   }
 }
 //---------------------------------------------------------------------------

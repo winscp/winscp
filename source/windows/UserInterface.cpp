@@ -956,7 +956,7 @@ void __fastcall InitializeShortCutCombo(TComboBox * ComboBox,
   }
 
   ComboBox->Style = csDropDownList;
-  ComboBox->DropDownCount = 16;
+  ComboBox->DropDownCount = Max(ComboBox->DropDownCount, 16);
 }
 //---------------------------------------------------------------------------
 void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value)

@@ -39,8 +39,10 @@
 #define TranslationFileMask "WinSCP.???"
 #define MainFileName "WinSCP.exe"
 #define MainFileSource BinariesDir+"\"+MainFileName
-#define ShellExtFileSource BinariesDir+"\DragExt.dll"
-#define ShellExt64FileSource BinariesDir+"\DragExt64.dll"
+#define ShellExtFileName "DragExt.dll"
+#define ShellExtFileSource BinariesDir+"\"+ShellExtFileName
+#define ShellExt64FileName "DragExt64.dll"
+#define ShellExt64FileSource BinariesDir+"\"+ShellExt64FileName
 #define ConsoleFileSource BinariesDir+"\WinSCP.com"
 #define IconFileSource SourceDir+"\resource\Icon256.ico"
 
@@ -309,11 +311,11 @@ Source: "license.txt"; DestDir: "{app}"; \
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
   Flags: regserver restartreplace uninsrestartdelete; \
-  Check: not IsWin64
+  Check: not IsWin64 and IsShellExtNewer(ExpandConstant('{app}\{#ShellExtFileName}'), '{#GetFileVersion(ShellExtFileSource)}')
 Source: "{#ShellExt64FileSource}"; DestDir: "{app}"; \
   Components: shellext; \
   Flags: regserver restartreplace uninsrestartdelete; \
-  Check: IsWin64
+  Check: IsWin64 and IsShellExtNewer(ExpandConstant('{app}\{#ShellExt64FileName}'), '{#GetFileVersion(ShellExt64FileSource)}')
 Source: "{#PuttySourceDir}\LICENCE"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
 Source: "{#PuttySourceDir}\putty.hlp"; DestDir: "{app}\PuTTY"; \
@@ -434,6 +436,8 @@ var
   Upgrade: Boolean;
   MissingTranslations: string;
   PrevVersion: string;
+  ShellExtNewerCacheFileName: string;
+  ShellExtNewerCacheResult: Boolean;
 #ifdef Donations
   DonationPanel: TPanel;
 #endif
@@ -470,6 +474,87 @@ begin
   Result :=
     (Version.Major > 6) or
     ((Version.Major = 6) and (Version.Minor >= 2));
+end;
+
+procedure CutVersionPart(var VersionString: string; var VersionPart: Word);
+var
+  P: Integer;
+begin
+  P := Pos('.', VersionString);
+  if P > 0 then
+  begin
+    VersionPart := StrToIntDef(Copy(VersionString, 1, P - 1), 0);
+    Delete(VersionString, 1, P);
+  end
+    else
+  begin
+    VersionPart := StrToIntDef(VersionString, 0);
+    VersionString := '';
+  end;
+end;
+
+function IsShellExtNewer(FileName: string; InstalledVersion: string): Boolean;
+var
+  ExistingMS, ExistingLS: Cardinal;
+  ExistingMajor, ExistingMinor, ExistingRev, ExistingBuild: Cardinal;
+  InstalledMajor, InstalledMinor, InstalledRev, InstalledBuild: Word;
+begin
+  if ShellExtNewerCacheFileName = FileName then
+  begin
+    if ShellExtNewerCacheResult then
+    begin
+      Log(Format('Allowing installation of shell extension %s as already decided', [FileName]));
+      Result := True;
+    end
+      else
+    begin
+      Log(Format('Skipping installation of shell extension %s as already decided', [FileName]));
+      Result := False;
+    end;
+  end
+    else
+  if not FileExists(FileName) then
+  begin
+    Log(Format('Shell extension %s does not exist yet, allowing installation', [FileName]));
+    Result := True;
+  end
+    else
+  if not GetVersionNumbers(FileName, ExistingMS, ExistingLS) then
+  begin
+    Log(Format('Cannot retrieve version of existing shell extension %s, allowing installation', [FileName]));
+    Result := True;
+  end
+    else
+  begin
+    ExistingMajor := ExistingMS shr 16;
+    ExistingMinor := ExistingMS and $FFFF;
+    ExistingRev := ExistingLS shr 16;
+    ExistingBuild := ExistingLS and $FFFF;
+    Log(Format('Existing shell extension %s version: %d.%d.%d[.%d]', [FileName, ExistingMajor, ExistingMinor, ExistingRev, ExistingBuild]));
+
+    Log(Format('Installed extension version string: %s', [InstalledVersion]));
+    CutVersionPart(InstalledVersion, InstalledMajor);
+    CutVersionPart(InstalledVersion, InstalledMinor);
+    CutVersionPart(InstalledVersion, InstalledRev);
+    CutVersionPart(InstalledVersion, InstalledBuild);
+    Log(Format('Installed extension version: %d.%d.%d[.%d]', [InstalledMajor, InstalledMinor, InstalledRev, InstalledBuild]));
+
+    if ((InstalledMajor > ExistingMajor)) or
+       ((InstalledMajor = ExistingMajor) and (InstalledMinor > ExistingMinor)) or
+       ((InstalledMajor = ExistingMajor) and (InstalledMinor = ExistingMinor) and (InstalledRev > ExistingRev)) then
+    begin
+      Log('Installed extension is newer than existing extension, allowing installation');
+      Result := True;
+    end
+      else
+    begin
+      Log('Installed extension is same or older than existing extension, skipping installation');
+      Result := False;
+    end;
+  end;
+
+  ShellExtNewerCacheFileName := FileName;
+  ShellExtNewerCacheResult := Result;
 end;
 
 function UpdatesEnabled: Boolean;

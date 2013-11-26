@@ -220,6 +220,7 @@ object PropertiesDialog: TPropertiesDialog
         Top = 135
         Width = 161
         Height = 21
+        DropDownCount = 16
         MaxLength = 50
         TabOrder = 1
         Text = 'GroupComboBox'
@@ -231,6 +232,7 @@ object PropertiesDialog: TPropertiesDialog
         Top = 163
         Width = 161
         Height = 21
+        DropDownCount = 16
         MaxLength = 50
         TabOrder = 2
         Text = 'OwnerComboBox'

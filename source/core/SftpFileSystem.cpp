@@ -12,6 +12,7 @@
 #include "TextsCore.h"
 #include "HelpCore.h"
 #include "SecureShell.h"
+#include <limits>
 
 #include <memory>
 //---------------------------------------------------------------------------
@@ -135,6 +136,10 @@
 #define SFTP_EXT_SPACE_AVAILABLE "space-available"
 #define SFTP_EXT_CHECK_FILE "check-file"
 #define SFTP_EXT_CHECK_FILE_NAME "check-file-name"
+#define SFTP_EXT_STATVFS "statvfs@openssh.com"
+#define SFTP_EXT_STATVFS_VALUE_V2 L"2"
+#define SFTP_EXT_STATVFS_ST_RDONLY 0x1
+#define SFTP_EXT_STATVFS_ST_NOSUID 0x2
 //---------------------------------------------------------------------------
 #define OGQ_LIST_OWNERS 0x01
 #define OGQ_LIST_GROUPS 0x02
@@ -1925,7 +1930,13 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
           (SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_OWNERGROUP)) != 0);
 
     case fcCheckingSpaceAvailable:
-      return SupportsExtension(SFTP_EXT_SPACE_AVAILABLE);
+      return
+        // extension announced in estension list of by
+        // SFTP_EXT_SUPPORTED/SFTP_EXT_SUPPORTED2 extension
+        // (SFTP version 5 and newer only)
+        SupportsExtension(SFTP_EXT_SPACE_AVAILABLE) ||
+        // extension announced by proprietary SFTP_EXT_STATVFS extension
+        FSupportsStatVfsV2;
 
     case fcCalculatingChecksum:
       return SupportsExtension(SFTP_EXT_CHECK_FILE);
@@ -2658,6 +2669,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
   FExtensions->Clear();
   FEOL = "\r\n";
   FSupport->Loaded = false;
+  FSupportsStatVfsV2 = false;
   SAFE_DESTROY(FFixedPaths);
 
   if (FVersion >= 3)
@@ -2803,6 +2815,19 @@ void __fastcall TSFTPFileSystem::DoStartup()
           // if that fails, fallback to proper decoding
           FTerminal->LogEvent(FORMAT(L"SFTP versions supported by the server: %s",
             (AnsiString(ExtensionData.c_str()))));
+        }
+      }
+      else if (ExtensionName == SFTP_EXT_STATVFS)
+      {
+        UnicodeString StatVfsVersion = AnsiString(ExtensionData.c_str());
+        if (StatVfsVersion == SFTP_EXT_STATVFS_VALUE_V2)
+        {
+          FSupportsStatVfsV2 = true;
+          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+        }
+        else
+        {
+          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, ExtensionDisplayData)));
         }
       }
       else
@@ -3675,15 +3700,79 @@ TStrings * __fastcall TSFTPFileSystem::GetFixedPaths()
 void __fastcall TSFTPFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & ASpaceAvailable)
 {
-  TSFTPPacket Packet(SSH_FXP_EXTENDED);
-  Packet.AddString(SFTP_EXT_SPACE_AVAILABLE);
-  Packet.AddPathString(LocalCanonify(Path), FUtfStrings);
-  SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_EXTENDED_REPLY);
-  ASpaceAvailable.BytesOnDevice = Packet.GetInt64();
-  ASpaceAvailable.UnusedBytesOnDevice = Packet.GetInt64();
-  ASpaceAvailable.BytesAvailableToUser = Packet.GetInt64();
-  ASpaceAvailable.UnusedBytesAvailableToUser = Packet.GetInt64();
-  ASpaceAvailable.BytesPerAllocationUnit = Packet.GetCardinal();
+  if (SupportsExtension(SFTP_EXT_SPACE_AVAILABLE))
+  {
+    TSFTPPacket Packet(SSH_FXP_EXTENDED);
+    Packet.AddString(SFTP_EXT_SPACE_AVAILABLE);
+    Packet.AddPathString(LocalCanonify(Path), FUtfStrings);
+
+    SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_EXTENDED_REPLY);
+
+    ASpaceAvailable.BytesOnDevice = Packet.GetInt64();
+    ASpaceAvailable.UnusedBytesOnDevice = Packet.GetInt64();
+    ASpaceAvailable.BytesAvailableToUser = Packet.GetInt64();
+    ASpaceAvailable.UnusedBytesAvailableToUser = Packet.GetInt64();
+    ASpaceAvailable.BytesPerAllocationUnit = Packet.GetCardinal();
+  }
+  else if (ALWAYS_TRUE(FSupportsStatVfsV2))
+  {
+    // http://www.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL?rev=HEAD;content-type=text/plain
+    TSFTPPacket Packet(SSH_FXP_EXTENDED);
+    Packet.AddString(SFTP_EXT_STATVFS);
+    Packet.AddPathString(LocalCanonify(Path), FUtfStrings);
+
+    SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_EXTENDED_REPLY);
+
+    __int64 BlockSize = Packet.GetInt64(); // file system block size
+    __int64 FundamentalBlockSize = Packet.GetInt64(); // fundamental fs block size
+    __int64 Blocks = Packet.GetInt64(); // number of blocks (unit f_frsize)
+    __int64 FreeBlocks = Packet.GetInt64(); // free blocks in file system
+    __int64 AvailableBlocks = Packet.GetInt64(); // free blocks for non-root
+    __int64 FileINodes = Packet.GetInt64(); // total file inodes
+    __int64 FreeFileINodes = Packet.GetInt64(); // free file inodes
+    __int64 AvailableFileINodes = Packet.GetInt64(); // free file inodes for to non-root
+    __int64 SID = Packet.GetInt64(); // file system id
+    __int64 Flags = Packet.GetInt64(); // bit mask of f_flag values
+    __int64 NameMax = Packet.GetInt64(); // maximum filename length
+
+    FTerminal->LogEvent(FORMAT(L"Block size: %s", (IntToStr(BlockSize))));
+    FTerminal->LogEvent(FORMAT(L"Fundamental block size: %s", (IntToStr(FundamentalBlockSize))));
+    FTerminal->LogEvent(FORMAT(L"Total blocks: %s", (IntToStr(Blocks))));
+    FTerminal->LogEvent(FORMAT(L"Free blocks: %s", (IntToStr(FreeBlocks))));
+    FTerminal->LogEvent(FORMAT(L"Free blocks for non-root: %s", (IntToStr(AvailableBlocks))));
+    FTerminal->LogEvent(FORMAT(L"Total file inodes: %s", (IntToStr(FileINodes))));
+    FTerminal->LogEvent(FORMAT(L"Free file inodes: %s", (IntToStr(FreeFileINodes))));
+    FTerminal->LogEvent(FORMAT(L"Free file inodes for non-root: %s", (IntToStr(AvailableFileINodes))));
+    FTerminal->LogEvent(FORMAT(L"File system ID: %s", (BytesToHex(reinterpret_cast<const unsigned char *>(&SID), sizeof(SID)))));
+    UnicodeString FlagStr;
+    if (FLAGSET(Flags, SFTP_EXT_STATVFS_ST_RDONLY))
+    {
+      AddToList(FlagStr, L"read-only", L",");
+      Flags -= SFTP_EXT_STATVFS_ST_RDONLY;
+    }
+    if (FLAGSET(Flags, SFTP_EXT_STATVFS_ST_NOSUID))
+    {
+      AddToList(FlagStr, L"no-setuid", L",");
+      Flags -= SFTP_EXT_STATVFS_ST_NOSUID;
+    }
+    if (Flags != 0)
+    {
+      AddToList(FlagStr, UnicodeString(L"0x") + IntToHex(Flags, 2), L",");
+    }
+    if (FlagStr.IsEmpty())
+    {
+      FlagStr = L"none";
+    }
+    FTerminal->LogEvent(FORMAT(L"Flags: %s", (FlagStr)));
+    FTerminal->LogEvent(FORMAT(L"Max name length: %s", (IntToStr(NameMax))));
+
+    ASpaceAvailable.BytesOnDevice = BlockSize * Blocks;
+    ASpaceAvailable.UnusedBytesOnDevice = BlockSize * FreeBlocks;
+    ASpaceAvailable.BytesAvailableToUser = 0;
+    ASpaceAvailable.UnusedBytesAvailableToUser = BlockSize * AvailableBlocks;
+    ASpaceAvailable.BytesPerAllocationUnit =
+      (BlockSize > std::numeric_limits<unsigned long>::max()) ? 0 : static_cast<unsigned long>(BlockSize);
+  }
 }
 //---------------------------------------------------------------------------
 // transfer protocol
@@ -3997,8 +4086,6 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
   TFileOperationProgressType * OperationProgress, unsigned int Flags,
   TUploadSessionAction & Action, bool & ChildError)
 {
-  FTerminal->LogEvent(FORMAT(L"File: \"%s\"", (FileName)));
-
   Action.FileName(ExpandUNCFileName(FileName));
 
   OperationProgress->SetFile(FileName, false);
@@ -4917,7 +5004,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
     THROW_SKIP_FILE_NULL;
   }
 
-  FTerminal->LogEvent(FORMAT(L"File: \"%s\"", (FileName)));
+  FTerminal->LogFileDetails(FileName, File->Modification, File->Size);
 
   OperationProgress->SetFile(OnlyFileName);
 

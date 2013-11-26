@@ -11,6 +11,8 @@
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn);
 bool __fastcall ExecuteShellAndWait(const UnicodeString Path, const UnicodeString Params);
 bool __fastcall ExecuteShellAndWait(const UnicodeString Command);
+bool __fastcall OpenInNewWindow();
+void __fastcall ExecuteNewInstance(const UnicodeString & Param);
 IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString &Name,
   const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
   int SpecialFolder = -1, int IconIndex = 0, bool Return = false);

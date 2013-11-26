@@ -13,6 +13,7 @@
 #include "LocationProfiles.h"
 #include "WinConfiguration.h"
 #include "Custom.h"
+#include <Math.hpp>
 //---------------------------------------------------------------------
 #pragma link "IEComboBox"
 #pragma link "PngImageList"
@@ -92,6 +93,7 @@ __fastcall TBookmarkNameDialog::TBookmarkNameDialog(TStrings * PeerBookmarks,
 
   NameCombo = new TComboBox(this);
   NameCombo->AutoComplete = false;
+  NameCombo->DropDownCount = Max(NameCombo->DropDownCount, 16);
   AddComboBox(NameCombo, CreateLabel(LoadStr(ADD_BOOKMARK_PROMPT)));
   NameCombo->Items = PeerBookmarks;
 

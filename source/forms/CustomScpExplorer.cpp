@@ -3784,25 +3784,6 @@ void __fastcall TCustomScpExplorerForm::TrayIconClick(TObject * /*Sender*/)
   RestoreApp();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomScpExplorerForm::OpenInNewWindow()
-{
-  return FLAGSET(GetAsyncKeyState(VK_SHIFT), 0x8000);
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ExecuteNewInstance(const UnicodeString & Param)
-{
-  UnicodeString Arg = Param;
-  if (!Arg.IsEmpty())
-  {
-    Arg = FORMAT(L"\"%s\"", (Arg));
-  }
-
-  if (!ExecuteShell(Application->ExeName, Arg))
-  {
-    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Application->ExeName)));
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::NewSession(bool FromSite)
 {
   if (OpenInNewWindow())
@@ -4572,7 +4553,7 @@ void __fastcall TCustomScpExplorerForm::SaveCurrentSession()
   {
     TSessionData * EditingSessionData = StoredSessions->FindSame(SessionData);
 
-    DoSaveSession(SessionData, EditingSessionData, true);
+    DoSaveSession(SessionData, EditingSessionData, true, NULL);
   }
   __finally
   {
@@ -5707,7 +5688,8 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDCreateDragFileList(
   {
     if (!WinConfiguration->DDExtInstalled)
     {
-      throw Exception(LoadStr(DRAGEXT_TARGET_NOT_INSTALLED));
+      Configuration->Usage->Inc(L"DownloadsDragDropExternalExtNotInstalled");
+      throw ExtException(NULL, LoadStr(DRAGEXT_TARGET_NOT_INSTALLED2), HELP_DRAGEXT_TARGET_NOT_INSTALLED);
     }
     DDExtInitDrag(FileList, Created);
   }
@@ -5821,7 +5803,11 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
             // so we ignore absence of response in this case
             if (DDResult != drInvalid)
             {
-              throw Exception(LoadStr(DRAGEXT_TARGET_UNKNOWN));
+              // here we know that the extension is installed,
+              // as it is checked as soon as drag&drop starts from
+              // RemoteFileControlDDCreateDragFileList
+              Configuration->Usage->Inc(L"DownloadsDragDropExternalExtTargetUnknown");
+              throw ExtException(NULL, LoadStr(DRAGEXT_TARGET_UNKNOWN2), HELP_DRAGEXT_TARGET_UNKNOWN);
             }
           }
           else

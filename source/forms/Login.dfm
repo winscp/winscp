@@ -596,6 +596,8 @@ object LoginDialog: TLoginDialog
       Caption = 'Open in &PuTTY'
       ImageIndex = 1
       ShortCut = 16464
+      SecondaryShortCuts.Strings = (
+        'Shift+Ctrl+P')
       OnExecute = PuttyActionExecute
     end
   end

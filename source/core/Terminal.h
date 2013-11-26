@@ -354,7 +354,9 @@ protected:
   TRemoteFileList * __fastcall DoReadDirectoryListing(UnicodeString Directory, bool UseCache);
   RawByteString __fastcall EncryptPassword(const UnicodeString & Password);
   UnicodeString __fastcall DecryptPassword(const RawByteString & Password);
-  void __fastcall LogFile(TRemoteFile * File);
+  void __fastcall LogRemoteFile(TRemoteFile * File);
+  UnicodeString __fastcall FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
+  void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 

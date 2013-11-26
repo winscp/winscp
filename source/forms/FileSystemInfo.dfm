@@ -171,10 +171,8 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           Color = clBtnFace
           Lines.Strings = (
             'InfoMemo')
-          ReadOnly = True
           ScrollBars = ssBoth
           TabOrder = 0
-          WantReturns = False
           WordWrap = False
         end
       end

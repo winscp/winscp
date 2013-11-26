@@ -15,6 +15,7 @@
 #include <ProgParams.h>
 #include <Tools.h>
 #include <HistoryComboBox.hpp>
+#include <Math.hpp>
 
 #include "Custom.h"
 //---------------------------------------------------------------------
@@ -205,7 +206,8 @@ class TSaveSessionDialog : public TCustomDialog
 {
 public:
   __fastcall TSaveSessionDialog(TComponent* AOwner);
-  void __fastcall Init(bool CanSavePassword, bool NotRecommendedSavingPassword);
+  void __fastcall Init(bool CanSavePassword, bool NotRecommendedSavingPassword,
+    TStrings * AdditionalFolders);
 
   bool __fastcall Execute(UnicodeString & SessionName, bool & SavePassword,
     bool & CreateShortcut, const UnicodeString & OriginalSessionName);
@@ -231,38 +233,43 @@ __fastcall TSaveSessionDialog::TSaveSessionDialog(TComponent* /*AOwner*/) :
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TSaveSessionDialog::Init(bool CanSavePassword, bool NotRecommendedSavingPassword)
+void __fastcall TSaveSessionDialog::Init(bool CanSavePassword,
+  bool NotRecommendedSavingPassword, TStrings * AdditionalFolders)
 {
   Caption = LoadStr(SAVE_SESSION_CAPTION);
 
   SessionNameEdit = new TEdit(this);
   AddEdit(SessionNameEdit, CreateLabel(LoadStr(SAVE_SESSION_PROMPT)));
 
-  FolderCombo = new TComboBox(this);
-  AddComboBox(FolderCombo, CreateLabel(LoadStr(SAVE_SESSION_FOLDER)));
-  FolderCombo->Items->BeginUpdate();
-  try
-  {
-    FRootFolder = LoadStr(SAVE_SESSION_ROOT_FOLDER);
-    FolderCombo->Items->Add(FRootFolder);
+  FRootFolder = LoadStr(SAVE_SESSION_ROOT_FOLDER);
+  std::auto_ptr<TStringList> Folders(new TStringList());
 
-    for (int Index = 0; Index < StoredSessions->Count; Index++)
+  if (AdditionalFolders != NULL)
+  {
+    Folders->AddStrings(AdditionalFolders);
+  }
+
+  for (int Index = 0; Index < StoredSessions->Count; Index++)
+  {
+    TSessionData * Data = StoredSessions->Sessions[Index];
+    if (!Data->Special && !Data->IsWorkspace)
     {
-      TSessionData * Data = StoredSessions->Sessions[Index];
-      if (!Data->Special && !Data->IsWorkspace)
+      UnicodeString Folder = Data->FolderName;
+      if (!Folder.IsEmpty() && Folders->IndexOf(Folder) < 0)
       {
-        UnicodeString Folder = Data->FolderName;
-        if (!Folder.IsEmpty() && FolderCombo->Items->IndexOf(Folder) < 0)
-        {
-          FolderCombo->Items->Add(Folder);
-        }
+        Folders->Add(Folder);
       }
     }
   }
-  __finally
-  {
-    FolderCombo->Items->EndUpdate();
-  }
+
+  assert(!Folders->CaseSensitive);
+  Folders->Sort();
+
+  FolderCombo = new TComboBox(this);
+  AddComboBox(FolderCombo, CreateLabel(LoadStr(SAVE_SESSION_FOLDER)));
+  FolderCombo->DropDownCount = Max(FolderCombo->DropDownCount, 16);
+  FolderCombo->Items->Add(FRootFolder);
+  FolderCombo->Items->AddStrings(Folders.get());
 
   SavePasswordCheck = new TCheckBox(this);
   SavePasswordCheck->Caption = LoadStr(
@@ -341,7 +348,8 @@ void __fastcall TSaveSessionDialog::DoChange(bool & CanSubmit)
 }
 //---------------------------------------------------------------------------
 TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
-  TSessionData * OriginalSession, bool ForceDialog)
+  TSessionData * OriginalSession, bool ForceDialog,
+  TStrings * AdditionalFolders)
 {
   bool SavePassword = false;
   bool * PSavePassword;
@@ -378,7 +386,7 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
     TSaveSessionDialog * Dialog = SafeFormCreate<TSaveSessionDialog>();
     try
     {
-      Dialog->Init((PSavePassword != NULL), NotRecommendedSavingPassword);
+      Dialog->Init((PSavePassword != NULL), NotRecommendedSavingPassword, AdditionalFolders);
       Result = Dialog->Execute(SessionName, SavePassword, CreateShortcut, SessionData->Name);
     }
     __finally
@@ -468,6 +476,7 @@ __fastcall TSaveWorkspaceDialog::TSaveWorkspaceDialog(
   WorkspaceNameCombo = new TComboBox(this);
   WorkspaceNameCombo->AutoComplete = false;
   AddComboBox(WorkspaceNameCombo, CreateLabel(LoadStr(SAVE_WORKSPACE_PROMPT)));
+  WorkspaceNameCombo->DropDownCount = Max(WorkspaceNameCombo->DropDownCount, 16);
 
   std::unique_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
   WorkspaceNameCombo->Items->AddStrings(Workspaces.get());

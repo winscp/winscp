@@ -667,7 +667,7 @@ void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
     {
       if (IsSessionNode(Node) || IsWorkspaceNode(Node))
       {
-        ModalResult = DefaultResult(this);
+        Login();
       }
     }
   }
@@ -789,7 +789,20 @@ void __fastcall TLoginDialog::SaveAsSession(bool ForceDialog)
 
   TSessionData * EditingSessionData = GetEditingSessionData();
 
-  TSessionData * NewSession = DoSaveSession(SessionData.get(), EditingSessionData, ForceDialog);
+  // collect list of empty folders (these are not persistent and known to login dialog only)
+  std::auto_ptr<TStrings> NewFolders(new TStringList());
+  TTreeNode * Node = SessionTree->Items->GetFirstNode();
+  while (Node != NULL)
+  {
+    if (IsFolderNode(Node) && !Node->HasChildren)
+    {
+      NewFolders->Add(SessionNodePath(Node));
+    }
+    Node = Node->GetNext();
+  }
+
+  TSessionData * NewSession =
+    DoSaveSession(SessionData.get(), EditingSessionData, ForceDialog, NewFolders.get());
   if (NewSession != NULL)
   {
     TTreeNode * ParentNode = AddSessionPath(UnixExtractFilePath(NewSession->SessionName), false, false);
@@ -2104,7 +2117,10 @@ void __fastcall TLoginDialog::SessionTreeDragDrop(TObject * Sender,
   TObject * Source, int /*X*/, int /*Y*/)
 {
   TTreeNode * DropTarget = SessionTree->DropTarget;
-  if (ALWAYS_TRUE((Sender == Source) && SessionAllowDrop(DropTarget)))
+  if (ALWAYS_TRUE((Sender == Source) && SessionAllowDrop(DropTarget)) &&
+      // calling EnsureNotEditing only on drop, not on drag start,
+      // to avoid getting popup during unintended micro-dragging
+      EnsureNotEditing())
   {
     TSessionData * Session = SelectedSession;
     UnicodeString Path =
@@ -2673,22 +2689,45 @@ void __fastcall TLoginDialog::CloneToNewSiteActionExecute(TObject * /*Sender*/)
   EditSession();
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoginDialog::Login()
+{
+  if (OpenInNewWindow() && !IsNewSiteNode(SessionTree->Selected))
+  {
+    UnicodeString Path = SessionNodePath(SessionTree->Selected);
+    ExecuteNewInstance(EncodeUrlChars(Path));
+    // prevent closing the window, see below
+    ModalResult = mrNone;
+  }
+  else
+  {
+    // this is not needed when used from LoginButton,
+    // but is needed when used from popup menus
+    ModalResult = LoginButton->ModalResult;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::LoginActionExecute(TObject * /*Sender*/)
 {
-  // this is not needed when used from LoginButton,
-  // but is needed when used from popup menus
-  ModalResult = LoginButton->ModalResult;
+  Login();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::PuttyActionExecute(TObject * /*Sender*/)
 {
+  // following may take some time, so cache the shift key state,
+  // in case user manages to release it before following finishes
+  bool Close = !OpenInNewWindow();
+
   std::unique_ptr<TSessionData> Data(CloneSelectedSession());
   // putty does not support resolving environment variables in session settings
   Data->ExpandEnvironmentVariables();
   OpenSessionInPutty(GUIConfiguration->PuttyPath, Data.get(),
-    Data->UserName,
+    Data->UserNameExpanded,
     GUIConfiguration->PuttyPassword ? Data->Password : UnicodeString());
-  ModalResult = CloseButton->ModalResult;
+
+  if (Close)
+  {
+    ModalResult = CloseButton->ModalResult;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::LoginButtonDropDownClick(TObject * /*Sender*/)

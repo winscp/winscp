@@ -203,7 +203,6 @@ object EditMaskDialog: TEditMaskDialog
         'MaskMemo')
       ScrollBars = ssVertical
       TabOrder = 0
-      WantReturns = False
     end
   end
 end

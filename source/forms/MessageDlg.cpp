@@ -654,8 +654,45 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     *TimeoutButton = NULL;
   }
 
+  TColor MainInstructionColor = Graphics::clNone;
+  HFONT MainInstructionFont = 0;
+  HFONT InstructionFont = 0;
+  HTHEME Theme = OpenThemeData(0, L"TEXTSTYLE");
+  if (Theme != NULL)
+  {
+    LOGFONT AFont;
+    COLORREF AColor;
+
+    memset(&AFont, sizeof(AFont), 0);
+    if (GetThemeFont(Theme, NULL, TEXT_MAININSTRUCTION, 0, TMT_FONT, &AFont) == S_OK)
+    {
+      MainInstructionFont = CreateFontIndirect(&AFont);
+    }
+    if (GetThemeColor(Theme, TEXT_MAININSTRUCTION, 0, TMT_TEXTCOLOR, &AColor) == S_OK)
+    {
+      MainInstructionColor = (TColor)AColor;
+    }
+
+    memset(&AFont, sizeof(AFont), 0);
+    if (GetThemeFont(Theme, NULL, TEXT_INSTRUCTION, 0, TMT_FONT, &AFont) == S_OK)
+    {
+      InstructionFont = CreateFontIndirect(&AFont);
+    }
+
+    CloseThemeData(Theme);
+  }
+
   TMessageForm * Result = SafeFormCreate<TMessageForm>();
-  UseDesktopFont(Result);
+  if (InstructionFont != 0)
+  {
+    Result->Font->Handle = InstructionFont;
+  }
+  else
+  {
+    Result->Font->Assign(Screen->MessageFont);
+  }
+
+  Configuration->Usage->Set(L"ThemeMessageFontSize", Result->Font->Size);
 
   // make sure we consider sizes of the monitor,
   // that is set in DoFormWindowProc(CM_SHOWINGCHANGED) later.
@@ -833,25 +870,6 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
   assert(MainMsg.Pos(L"\t") == 0);
 
-  TColor MainInstructionColor = Graphics::clNone;
-  HFONT MainInstructionFont = 0;
-  HTHEME Theme = OpenThemeData(0, L"TEXTSTYLE");
-  if (Theme != NULL)
-  {
-    LOGFONT AMainInstructionFont;
-    memset(&AMainInstructionFont, sizeof(AMainInstructionFont), 0);
-    if (GetThemeFont(Theme, NULL, TEXT_MAININSTRUCTION, 0, TMT_FONT, &AMainInstructionFont) == S_OK)
-    {
-      MainInstructionFont = CreateFontIndirect(&AMainInstructionFont);
-    }
-    COLORREF AMainInstructionColor;
-    if (GetThemeColor(Theme, TEXT_MAININSTRUCTION, 0, TMT_TEXTCOLOR, &AMainInstructionColor) == S_OK)
-    {
-      MainInstructionColor = (TColor)AMainInstructionColor;
-    }
-    CloseThemeData(Theme);
-  }
-
   int IconTextWidth = -1;
   int IconTextHeight = 0;
   int ALeft = IconWidth + HorzMargin;
@@ -895,6 +913,10 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       if (LabelFont != 0)
       {
         Message->Font->Handle = LabelFont;
+        if (ALWAYS_TRUE(LabelFont == MainInstructionFont))
+        {
+          Configuration->Usage->Set(L"ThemeMainInstructionFontSize", Message->Font->Size);
+        }
       }
       if (LabelColor != Graphics::clNone)
       {
@@ -904,7 +926,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       TRect TextRect;
       SetRect(&TextRect, 0, 0, MaxTextWidth, 0);
       DrawText(Message->Canvas->Handle, LabelMsg.c_str(), LabelMsg.Length() + 1, &TextRect,
-        DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK |
+        DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
         Result->DrawTextBiDiModeFlagsReadingOnly());
       int MaxWidth = Monitor->Width - HorzMargin * 2 - IconWidth - 30;
       if (TextRect.right > MaxWidth)

@@ -107,13 +107,22 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
   if (dynamic_cast<TCustomEdit *>(Control) != NULL)
   {
     ((TEdit*)Control)->ReadOnly = ReadOnly;
+    TMemo * Memo = dynamic_cast<TMemo *>(Control);
     if (ReadOnly)
     {
       SetParentColor(Control);
+      if (Memo != NULL)
+      {
+        // Is true by default and makes the control swallow not only
+        // returns but also escapes
+        Memo->WantReturns = false;
+      }
     }
     else
     {
       ((TEdit*)Control)->Color = clWindow;
+      // not supported atm, we need to persist previous value of WantReturns
+      assert(Memo == NULL);
     }
   }
   else if ((dynamic_cast<TCustomComboBox *>(Control) != NULL) ||

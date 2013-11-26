@@ -276,6 +276,25 @@ bool __fastcall ExecuteShellAndWait(const UnicodeString Command)
     &Application->ProcessMessages);
 }
 //---------------------------------------------------------------------------
+bool __fastcall OpenInNewWindow()
+{
+  return FLAGSET(GetAsyncKeyState(VK_SHIFT), 0x8000);
+}
+//---------------------------------------------------------------------------
+void __fastcall ExecuteNewInstance(const UnicodeString & Param)
+{
+  UnicodeString Arg = Param;
+  if (!Arg.IsEmpty())
+  {
+    Arg = FORMAT(L"\"%s\"", (Arg));
+  }
+
+  if (!ExecuteShell(Application->ExeName, Arg))
+  {
+    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Application->ExeName)));
+  }
+}
+//---------------------------------------------------------------------------
 IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
   const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
   int SpecialFolder, int IconIndex, bool Return)

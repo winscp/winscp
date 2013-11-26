@@ -1732,8 +1732,12 @@ end;
 
 procedure TCustomDirView.CancelEdit;
 begin
-  // if editing, it has to be focused item
-  if IsEditing and Assigned(ItemFocused) then
+  // - Do nothing when handle is not allocated (we cannot be editing anyway
+  //   without a handle), otherwise this causes handle allocation,
+  //   what is wrong particularly when we are called from ClearItems
+  //   when we are being destroyed
+  // - If editing, it has to be focused item
+  if HandleAllocated and IsEditing and Assigned(ItemFocused) then
   begin
     ItemFocused.CancelEdit;
     FLoadEnabled := True;

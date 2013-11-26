@@ -101,7 +101,8 @@ unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Ty
 
 // forms\Custom.cpp
 TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
-  TSessionData * OriginalSession, bool ForceDialog);
+  TSessionData * OriginalSession, bool ForceDialog,
+  TStrings * AdditionalFolders);
 void __fastcall SessionNameValidate(const UnicodeString & Text,
   const UnicodeString & OriginalName);
 bool __fastcall DoSaveWorkspaceDialog(UnicodeString & WorkspaceName,

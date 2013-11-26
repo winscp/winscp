@@ -47,7 +47,7 @@ BEGIN
 "B: /xmllog=      Turns on XML logging to file.\n"
 "G: /privatekey=  Private key file.\n"
 "G: /timeout=     Server response timeout.\n"
-"G: /hostkey=     Fingerprint of server hostkey.\n"
+"G: /hostkey=     Fingerprint of server host key.\n"
 "G: /passive=     Passive mode (FTP protocol only).\n"
 "G: /rawsettings= Configures any session settings using raw format\n"
 "G:               as in an INI file.\n"

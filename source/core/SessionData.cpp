@@ -3100,7 +3100,7 @@ void __fastcall TStoredSessionList::ImportHostKeys(const UnicodeString TargetKey
         Session = Sessions->Sessions[Index];
         if (!OnlySelected || Session->Selected)
         {
-          HostKeyName = PuttyMungeStr(FORMAT(L"@%d:%s", (Session->PortNumber, Session->HostName)));
+          HostKeyName = PuttyMungeStr(FORMAT(L"@%d:%s", (Session->PortNumber, Session->HostNameExpanded)));
           UnicodeString KeyName;
           for (int KeyIndex = 0; KeyIndex < KeyList->Count; KeyIndex++)
           {

@@ -45,7 +45,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
       if (SessionData->SaveOnly)
       {
         Configuration->Usage->Inc(L"CommandLineSessionSave");
-        TSessionData * SavedSession = DoSaveSession(SessionData, NULL, true);
+        TSessionData * SavedSession = DoSaveSession(SessionData, NULL, true, NULL);
         Close = (SavedSession == NULL);
         if (!Close)
         {
@@ -312,6 +312,8 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"WorkAreaHeight", Screen->WorkAreaHeight);
   Configuration->Usage->Set(L"MonitorCount", Screen->MonitorCount);
   Configuration->Usage->Set(L"NotUseThemes", !UseThemes());
+  Configuration->Usage->Set(L"ThemeDefaultFontSize", Application->DefaultFont->Size);
+  Configuration->Usage->Set(L"ThemeIconFontSize", Screen->IconFont->Size);
 
   UnicodeString ProgramsFolder;
   ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
@@ -534,7 +536,7 @@ int __fastcall Execute()
       if (Params->ParamCount > 0)
       {
         if ((ParamCommand == pcNone) &&
-            !TCustomScpExplorerForm::OpenInNewWindow() &&
+            !OpenInNewWindow() &&
             !Params->FindSwitch(L"NewInstance") &&
             SendToAnotherInstance())
         {

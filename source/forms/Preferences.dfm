@@ -2617,6 +2617,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 332
             Height = 21
             Anchors = [akLeft, akTop, akRight]
+            DropDownCount = 16
             TabOrder = 1
             OnClick = ControlChange
           end

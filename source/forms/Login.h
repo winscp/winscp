@@ -343,6 +343,7 @@ protected:
   void __fastcall Init();
   void __fastcall InitControls();
   void __fastcall EditSession();
+  void __fastcall Login();
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
 
 public:

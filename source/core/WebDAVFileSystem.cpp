@@ -12198,10 +12198,10 @@ void __fastcall TWebDAVFileSystem::Open()
     FSessionInfo.SecurityProtocolName = LoadStr(FTPS_IMPLICIT);
   }
 
-  UnicodeString HostName = Data->HostName;
+  UnicodeString HostName = Data->HostNameExpanded;
   size_t Port = Data->PortNumber;
   UnicodeString ProtocolName = !Ssl ? L"http" : L"https";
-  UnicodeString UserName = Data->UserName;
+  UnicodeString UserName = Data->UserNameExpanded;
   UnicodeString Path = Data->RemoteDirectory;
   UnicodeString Url = FORMAT(L"%s://%s:%d%s", (ProtocolName.c_str(), HostName.c_str(), Port, Path.c_str()));
 
@@ -12843,7 +12843,6 @@ void __fastcall TWebDAVFileSystem::WebDAVSource(const UnicodeString FileName,
 {
   bool CheckExistence = UnixComparePaths(TargetDir, FTerminal->GetCurrentDirectory()) &&
     (FTerminal->FFiles != NULL) && FTerminal->FFiles->Loaded;
-  FTerminal->LogEvent(FORMAT(L"File: \"%s\"", (FileName.c_str())));
   bool CanProceed = false;
   UnicodeString FileNameOnly =
     CopyParam->ChangeFileName(ExtractFileName(FileName, false), osLocal, true);
@@ -13262,7 +13261,7 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
     THROW_SKIP_FILE_NULL;
   }
 
-  FTerminal->LogEvent(FORMAT(L"File: \"%s\"", (FileName.c_str())));
+  FTerminal->LogFileDetails(FileName, TDateTime(), File->Size);
 
   OperationProgress->SetFile(FileNameOnly);
 

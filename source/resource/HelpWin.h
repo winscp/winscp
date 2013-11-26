@@ -52,5 +52,7 @@
 #define HELP_IMPORT_CONFIGURATION    "config"
 #define HELP_DELETE_FILE             "task_delete"
 #define HELP_COLOR                   "task_connections#session_color"
+#define HELP_DRAGEXT_TARGET_NOT_INSTALLED "dragext"
+#define HELP_DRAGEXT_TARGET_UNKNOWN  HELP_DRAGEXT_TARGET_NOT_INSTALLED
 
 #endif // TextsWin

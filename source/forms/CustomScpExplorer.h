@@ -488,7 +488,6 @@ protected:
   void __fastcall UpdateNewSessionTab();
   void __fastcall AddFixedSessionImages();
   int __fastcall AddFixedSessionImage(int GlyphsSourceIndex);
-  void __fastcall ExecuteNewInstance(const UnicodeString & Param);
   TObjectList * __fastcall DoCollectWorkspace();
   void __fastcall DoSaveWorkspace(const UnicodeString & Name,
     TObjectList * DataList, bool SavePasswords);
@@ -613,7 +612,6 @@ public:
   void __fastcall UpdateTaskbarList(ITaskbarList3 * TaskbarList);
   virtual void __fastcall DisplaySystemContextMenu();
   bool __fastcall HandleMouseWheel(WPARAM WParam, LPARAM LParam);
-  static bool __fastcall OpenInNewWindow();
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

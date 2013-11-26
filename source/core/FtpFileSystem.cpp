@@ -1150,7 +1150,7 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
     THROW_SKIP_FILE_NULL;
   }
 
-  FTerminal->LogEvent(FORMAT(L"File: \"%s\"", (FileName)));
+  FTerminal->LogFileDetails(FileName, File->Modification, File->Size);
 
   OperationProgress->SetFile(OnlyFileName);
 
@@ -1405,8 +1405,6 @@ void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
   TFileOperationProgressType * OperationProgress, unsigned int Flags,
   TUploadSessionAction & Action)
 {
-  FTerminal->LogEvent(FORMAT(L"File: \"%s\"", (FileName)));
-
   Action.FileName(ExpandUNCFileName(FileName));
 
   OperationProgress->SetFile(FileName, false);
@@ -1920,6 +1918,7 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
             Repeat = true;
             FListAll = asOff;
             GotNoFilesForAll = true;
+            FTerminal->LogEvent(L"LIST with -a switch returned empty directory listing, will try pure LIST");
           }
           else
           {
@@ -1939,6 +1938,7 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         // further try without "-a" only as the server may not support it
         if (FListAll == asAuto)
         {
+          FTerminal->LogEvent(L"LIST with -a failed, walling back to pure LIST");
           if (!FTerminal->Active)
           {
             FTerminal->Reopen(ropNoReadDirectory);

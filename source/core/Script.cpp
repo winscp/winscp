@@ -2281,7 +2281,7 @@ void __fastcall TManagementScript::DoChangeLocalDirectory(UnicodeString Director
 {
   if (!SetCurrentDir(Directory))
   {
-    throw Exception(FMTLOAD(CHANGE_DIR_ERROR, (Directory)));
+    throw EOSExtException(FMTLOAD(CHANGE_DIR_ERROR, (Directory)));
   }
 }
 //---------------------------------------------------------------------------

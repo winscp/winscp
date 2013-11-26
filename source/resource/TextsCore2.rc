@@ -67,7 +67,7 @@ BEGIN
     "switches:\n"
     "  -privatekey=<key>  Private key file\n"
     "  -timeout=<sec>     Server response timeout\n"
-    "  -hostkey=<fingerprint> Fingerprint of server hostkey (SFTP and SCP only).\n"
+    "  -hostkey=<fingerprint> Fingerprint of server host key (SFTP and SCP only).\n"
     "  -certificate=<fingerprint> Fingerprint of TLS/SSL certificate (FTPS only)\n"
     "  -passive=on|off    Passive mode (FTP protocol only)\n"
     "  -implicit          Implicit TLS/SSL (FTPS protocol only)\n"

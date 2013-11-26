@@ -2317,6 +2317,8 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
           SCPError(L"", false);
         }
 
+        FTerminal->LogFileDetails(FileName, SourceTimestamp, MaskParams.Size);
+
         UnicodeString DestFileName =
           IncludeTrailingBackslash(TargetDir) +
           CopyParam->ChangeFileName(OperationProgress->FileName, osRemote,

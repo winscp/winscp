@@ -10,6 +10,7 @@
 #include "TextsCore.h"
 #include "HelpCore.h"
 #include "CoreMain.h"
+#include <StrUtils.hpp>
 
 #ifndef AUTO_WINSOCK
 #include <winsock2.h>
@@ -1269,12 +1270,12 @@ int __fastcall TSecureShell::TranslateErrorMessage(
 {
   static const TPuttyTranslation Translation[] = {
     { L"Server unexpectedly closed network connection", UNEXPECTED_CLOSE_ERROR, HELP_UNEXPECTED_CLOSE_ERROR },
-    { L"Network error: Connection refused", NET_TRANSL_REFUSED, HELP_NET_TRANSL_REFUSED },
+    { L"Network error: Connection refused", NET_TRANSL_REFUSED2, HELP_NET_TRANSL_REFUSED },
     { L"Network error: Connection reset by peer", NET_TRANSL_RESET, HELP_NET_TRANSL_RESET },
-    { L"Network error: Connection timed out", NET_TRANSL_TIMEOUT, HELP_NET_TRANSL_TIMEOUT },
-    { L"Network error: No route to host", NET_TRANSL_NO_ROUTE, HELP_NET_TRANSL_NO_ROUTE },
+    { L"Network error: Connection timed out", NET_TRANSL_TIMEOUT2, HELP_NET_TRANSL_TIMEOUT },
+    { L"Network error: No route to host", NET_TRANSL_NO_ROUTE2, HELP_NET_TRANSL_NO_ROUTE },
     { L"Network error: Software caused connection abort", NET_TRANSL_CONN_ABORTED, HELP_NET_TRANSL_CONN_ABORTED },
-    { L"Host does not exist", NET_TRANSL_HOST_NOT_EXIST, HELP_NET_TRANSL_HOST_NOT_EXIST },
+    { L"Host does not exist", NET_TRANSL_HOST_NOT_EXIST2, HELP_NET_TRANSL_HOST_NOT_EXIST },
     { L"Incoming packet was garbled on decryption", NET_TRANSL_PACKET_GARBLED, HELP_NET_TRANSL_PACKET_GARBLED },
   };
 
@@ -1284,6 +1285,8 @@ int __fastcall TSecureShell::TranslateErrorMessage(
   {
     FNoConnectionResponse = true;
   }
+
+  Message = ReplaceStr(Message, L"%HOST%", FSessionData->HostNameExpanded);
 
   return Index;
 }
