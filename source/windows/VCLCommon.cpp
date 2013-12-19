@@ -18,7 +18,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount, int RightPad)
+void __fastcall AdjustListColumnsWidth(TListView * ListView)
 {
   int OriginalWidth, NewWidth, i, CWidth, LastResizible;
 
@@ -34,15 +34,10 @@ void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount, int Ri
   }
   assert(LastResizible >= 0);
 
-  // when listview is virtual, ListView->Items->Count seems to return invalid
-  // value, thus provide a method to pass actual count explicitly
-  if (RowCount < 0)
-  {
-    RowCount = ListView->Items->Count;
-  }
+  int RowCount = ListView->Items->Count;
 
   NewWidth = 0;
-  CWidth = ListView->ClientWidth - RightPad;
+  CWidth = ListView->ClientWidth;
   if ((ListView->VisibleRowCount < RowCount) &&
       (ListView->Width - ListView->ClientWidth < GetSystemMetrics(SM_CXVSCROLL)))
   {
@@ -1375,6 +1370,7 @@ static void __fastcall LinkLabelWindowProc(void * Data, TMessage & Message)
     TWMKey & Key = reinterpret_cast<TWMKey &>(Message);
     if ((GetKeyState(VK_CONTROL) < 0) && (Key.CharCode == L'C'))
     {
+      TInstantOperationVisualizer Visualizer;
       CopyToClipboard(StaticText->Caption);
       Message.Result = 1;
     }
@@ -1410,6 +1406,7 @@ static void __fastcall LinkLabelContextMenuClick(void * Data, TObject * Sender)
   }
   else
   {
+    TInstantOperationVisualizer Visualizer;
     CopyToClipboard(StaticText->Caption);
   }
 }
@@ -1650,6 +1647,13 @@ void __fastcall SetFormIcons(TForm * Form, const UnicodeString & BigIconName,
 //---------------------------------------------------------------------------
 void __fastcall UseDesktopFont(TControl * Control)
 {
+  TCustomStatusBar * StatusBar = dynamic_cast<TCustomStatusBar *>(Control);
+  if (StatusBar != NULL)
+  {
+    // otherwise setting DesktopFont below has no effect
+    StatusBar->UseSystemFont = false;
+  }
+
   class TPublicControl : public TControl
   {
   public:

@@ -646,28 +646,20 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
 void __fastcall TSCPFileSystem::ExecCommand(const UnicodeString & Cmd, int Params,
   const UnicodeString & CmdString)
 {
-  if (Params < 0) Params = ecDefault;
-  if (FTerminal->UseBusyCursor)
+  if (Params < 0)
   {
-    Busy(true);
+    Params = ecDefault;
   }
-  try
-  {
-    SendCommand(Cmd);
 
-    int COParams = coWaitForLastLine;
-    if (Params & ecRaiseExcept) COParams |= coRaiseExcept;
-    if (Params & ecIgnoreWarnings) COParams |= coIgnoreWarnings;
-    if (Params & ecReadProgress) COParams |= coReadProgress;
-    ReadCommandOutput(COParams, &CmdString);
-  }
-  __finally
-  {
-    if (FTerminal->UseBusyCursor)
-    {
-      Busy(false);
-    }
-  }
+  TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
+
+  SendCommand(Cmd);
+
+  int COParams = coWaitForLastLine;
+  if (Params & ecRaiseExcept) COParams |= coRaiseExcept;
+  if (Params & ecIgnoreWarnings) COParams |= coIgnoreWarnings;
+  if (Params & ecReadProgress) COParams |= coReadProgress;
+  ReadCommandOutput(COParams, &CmdString);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::ExecCommand(TFSCommand Cmd, const TVarRec * args,
@@ -769,7 +761,7 @@ void __fastcall TSCPFileSystem::DetectReturnVar()
         if ((Output->Count != 1) || (StrToIntDef(Output->Strings[0], 256) > 255))
         {
           FTerminal->LogEvent(L"The response is not numerical exit code");
-          EXCEPTION;
+          Abort();
         }
       }
       catch (EFatal &E)
@@ -1768,7 +1760,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
                 OperationProgress->AddTransfered(BlockSize);
                 if (OperationProgress->Cancel == csCancelTransfer)
                 {
-                  throw Exception(USER_TERMINATED);
+                  throw Exception(MainInstructions(LoadStr(USER_TERMINATED)));
                 }
               }
             }
@@ -1794,7 +1786,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
           if ((OperationProgress->Cancel == csCancelTransfer) ||
               (OperationProgress->Cancel == csCancel && !OperationProgress->TransferingFile))
           {
-            throw Exception(USER_TERMINATED);
+            throw Exception(MainInstructions(LoadStr(USER_TERMINATED)));
           }
         }
         while (!OperationProgress->IsLocallyDone() || !OperationProgress->IsTransferDone());
@@ -2304,7 +2296,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         // last possibility to cancel transfer before it starts
         if (OperationProgress->Cancel)
         {
-          THROW_SKIP_FILE(NULL, LoadStr(USER_TERMINATED));
+          THROW_SKIP_FILE(NULL, MainInstructions(LoadStr(USER_TERMINATED)));
         }
 
         bool Dir = (Ctrl == L'D');
@@ -2453,7 +2445,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
                   if (OperationProgress->Cancel == csCancelTransfer)
                   {
-                    throw Exception(USER_TERMINATED);
+                    throw Exception(MainInstructions(LoadStr(USER_TERMINATED)));
                   }
                 }
                 while (!OperationProgress->IsLocallyDone() || !

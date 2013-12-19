@@ -206,6 +206,9 @@ void __fastcall TFileSystemInfoDialog::FeedControls()
 {
   FLastFeededControl = NULL;
   Feed(ControlsAddItem);
+  AdjustListColumnsWidth(ServerView);
+  AdjustListColumnsWidth(ProtocolView);
+  AdjustListColumnsWidth(SpaceAvailableView);
 }
 //---------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::UpdateControls()
@@ -255,6 +258,8 @@ void __fastcall TFileSystemInfoDialog::ClipboardAddItem(TControl * Control,
 void __fastcall TFileSystemInfoDialog::ClipboardButtonClick(
   TObject * /*Sender*/)
 {
+  TInstantOperationVisualizer Visualizer;
+
   NeedSpaceAvailable();
   FLastFeededControl = NULL;
   FClipboard = L"";
@@ -264,6 +269,8 @@ void __fastcall TFileSystemInfoDialog::ClipboardButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::CopyClick(TObject * Sender)
 {
+  TInstantOperationVisualizer Visualizer;
+
   TComponent * Item = dynamic_cast<TComponent *>(Sender);
   assert(Item != NULL);
   TPopupMenu * PopupMenu = dynamic_cast<TPopupMenu *>(Item->Owner);

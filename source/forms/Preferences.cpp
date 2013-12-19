@@ -286,8 +286,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     ShowFullAddressCheck->Checked =
       WinConfiguration->ScpExplorer.ShowFullAddress;
 
+    // select none when stNul
     RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
-    IniFileStorageButton2->Checked = (Configuration->Storage != stRegistry);
+    IniFileStorageButton2->Checked = (Configuration->Storage == stIniFile);
 
     RandomSeedFileEdit->Text = Configuration->RandomSeedFile;
 
@@ -864,8 +865,16 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
         reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data);
     }
 
-    // this possibly fails, make it last, so that the other settings are preserved
-    Configuration->Storage = RegistryStorageButton->Checked ? stRegistry : stIniFile;
+    // This possibly fails, make it last, so that the other settings are preserved.
+    // Do nothing when no option is selected (i.e. storage is stNul).
+    if (RegistryStorageButton->Checked)
+    {
+      Configuration->Storage = stRegistry;
+    }
+    else if (IniFileStorageButton2->Checked)
+    {
+      Configuration->Storage = stIniFile;
+    }
 
     #undef BOOLPROP
   }
@@ -1013,9 +1022,13 @@ void __fastcall TPreferencesDialog::UpdateControls()
       DDAllowMoveInitCheck->Checked);
     EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
       TemporaryDirectoryCleanupCheck->Checked);
+    // allow only when some of the known storages is selected,
+    // and particularly do not allow switching storage, when we start with stNul,
+    // as that would destroy the stored configuration
+    EnableControl(StorageGroup, RegistryStorageButton->Checked || IniFileStorageButton2->Checked);
     IniFileStorageButton2->Caption =
       AnsiReplaceStr(IniFileStorageButton2->Caption, L"winscp.ini",
-        ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageNameForReading)));
+        ExpandEnvironmentVariables(Configuration->IniFileStorageName));
 
     EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
     bool EditorSelected = (EditorListView3->Selected != NULL);
@@ -1167,6 +1180,8 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
     }
   }
 
+  TInstantOperationVisualizer Visualizer;
+
   CreateDesktopShortCut(IconName,
     Application->ExeName, Params, L"", SpecialFolder);
 }
@@ -1208,7 +1223,7 @@ void __fastcall TPreferencesDialog::ListViewSelectItem(
 void __fastcall TPreferencesDialog::UpdateCustomCommandsView()
 {
   CustomCommandsView->Items->Count = FCustomCommandList->Count;
-  AdjustListColumnsWidth(CustomCommandsView, FCustomCommandList->Count);
+  AdjustListColumnsWidth(CustomCommandsView);
   CustomCommandsView->Invalidate();
 }
 //---------------------------------------------------------------------------
@@ -1629,7 +1644,7 @@ void __fastcall TPreferencesDialog::EditorListView3KeyDown(TObject * /*Sender*/,
 void __fastcall TPreferencesDialog::UpdateEditorListView()
 {
   EditorListView3->Items->Count = FEditorList->Count;
-  AdjustListColumnsWidth(EditorListView3, FEditorList->Count);
+  AdjustListColumnsWidth(EditorListView3);
   EditorListView3->Invalidate();
 }
 //---------------------------------------------------------------------------
@@ -1756,6 +1771,8 @@ void __fastcall TPreferencesDialog::RegisterAsUrlHandlerItemClick(TObject * /*Se
       qtConfirmation, qaYes | qaNo, HELP_REGISTER_URL);
   if (Result == qaYes)
   {
+    TInstantOperationVisualizer Visualizer;
+
     RegisterForDefaultProtocols();
   }
 }
@@ -1767,12 +1784,15 @@ void __fastcall TPreferencesDialog::UnregisterForDefaultProtocolsItemClick(TObje
       qtConfirmation, qaYes | qaNo, HELP_REGISTER_URL);
   if (Result == qaYes)
   {
+    TInstantOperationVisualizer Visualizer;
+
     UnregisterForProtocols();
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::MakeDefaultHandlerItemClick(TObject * /*Sender*/)
 {
+  TOperationVisualizer Visualizer;
   LaunchAdvancedAssociationUI();
 }
 //---------------------------------------------------------------------------
@@ -1789,6 +1809,8 @@ void __fastcall TPreferencesDialog::AddSearchPathButtonClick(
   if (MessageDialog(MainInstructions(FMTLOAD(CONFIRM_ADD_SEARCH_PATH, (AppPath))),
         qtConfirmation, qaYes | qaNo, HELP_ADD_SEARCH_PATH) == qaYes)
   {
+    TInstantOperationVisualizer Visualizer;
+
     AddSearchPath(AppPath);
   }
 }
@@ -1802,7 +1824,7 @@ void __fastcall TPreferencesDialog::EditorFontLabelDblClick(
 void __fastcall TPreferencesDialog::UpdateCopyParamListView()
 {
   CopyParamListView->Items->Count = 1 + FCopyParamList->Count;
-  AdjustListColumnsWidth(CopyParamListView, 1 + FCopyParamList->Count);
+  AdjustListColumnsWidth(CopyParamListView);
   CopyParamListView->Invalidate();
 }
 //---------------------------------------------------------------------------

@@ -730,7 +730,8 @@ TStorage __fastcall TWinConfiguration::GetStorage()
       }
     }
   }
-  return TCustomWinConfiguration::GetStorage();
+  TStorage Result = TCustomWinConfiguration::GetStorage();
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::Saved()
@@ -773,14 +774,16 @@ bool __fastcall TWinConfiguration::GetUseMasterPassword()
 //---------------------------------------------------------------------------
 THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
 {
+  THierarchicalStorage * Result;
   if (SessionList && !FTemporarySessionFile.IsEmpty())
   {
-    return new TIniFileStorage(FTemporarySessionFile);
+    Result = new TIniFileStorage(FTemporarySessionFile);
   }
   else
   {
-    return TCustomWinConfiguration::CreateScpStorage(SessionList);
+    Result = TCustomWinConfiguration::CreateScpStorage(SessionList);
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
@@ -2028,65 +2031,59 @@ void __fastcall TWinConfiguration::SetResourceModule(HINSTANCE Instance)
 {
   TCustomWinConfiguration::SetResourceModule(Instance);
 
-  Busy(true);
-  try
+  TOperationVisualizer Visualizer;
+
+  int Count;
+  UnicodeString OrigName;
+  int OrigLeft;
+  int OrigTop;
+
+  TForm * Form;
+  Count = Screen->FormCount;
+
+  for (int Index = 0; Index < Count; Index++)
   {
-    int Count;
-    UnicodeString OrigName;
-    int OrigLeft;
-    int OrigTop;
-
-    TForm * Form;
-    Count = Screen->FormCount;
-
-    for (int Index = 0; Index < Count; Index++)
-    {
-      Form = Screen->Forms[Index];
-      SendMessage(Form->Handle, WM_LOCALE_CHANGE, 0, 1);
-    }
-
-    ConfigureInterface();
-
-    for (int Index = 0; Index < Count; Index++)
-    {
-      Form = Screen->Forms[Index];
-      TComponent * Component;
-      for (int Index = 0; Index < Form->ComponentCount; Index++)
-      {
-        Component = Form->Components[Index];
-        if (dynamic_cast<TFrame*>(Component))
-        {
-          OrigName = Component->Name;
-          InitComponent(Component, __classid(TFrame), Component->ClassType());
-          Component->Name = OrigName;
-        }
-      }
-
-      OrigLeft = Form->Left;
-      OrigTop = Form->Top;
-      OrigName = Form->Name;
-      InitComponent(Form, __classid(TForm), Form->ClassType());
-      Form->Name = OrigName;
-
-      Form->Position = poDesigned;
-      Form->Left = OrigLeft;
-      Form->Top = OrigTop;
-      SendMessage(Form->Handle, WM_LOCALE_CHANGE, 1, 1);
-    }
-
-    TDataModule * DataModule;
-    Count = Screen->DataModuleCount;
-    for (int Index = 0; Index < Count; Index++)
-    {
-      DataModule = Screen->DataModules[Index];
-      OrigName = DataModule->Name;
-      InitComponent(DataModule, __classid(TDataModule), DataModule->ClassType());
-      DataModule->Name = OrigName;
-    }
+    Form = Screen->Forms[Index];
+    SendMessage(Form->Handle, WM_LOCALE_CHANGE, 0, 1);
   }
-  __finally
+
+  ConfigureInterface();
+
+  for (int Index = 0; Index < Count; Index++)
   {
-    Busy(false);
+    Form = Screen->Forms[Index];
+    TComponent * Component;
+    for (int Index = 0; Index < Form->ComponentCount; Index++)
+    {
+      Component = Form->Components[Index];
+      if (dynamic_cast<TFrame*>(Component))
+      {
+        OrigName = Component->Name;
+        InitComponent(Component, __classid(TFrame), Component->ClassType());
+        Component->Name = OrigName;
+      }
+    }
+
+    OrigLeft = Form->Left;
+    OrigTop = Form->Top;
+    OrigName = Form->Name;
+    InitComponent(Form, __classid(TForm), Form->ClassType());
+    Form->Name = OrigName;
+
+    Form->Position = poDesigned;
+    Form->Left = OrigLeft;
+    Form->Top = OrigTop;
+    SendMessage(Form->Handle, WM_LOCALE_CHANGE, 1, 1);
+  }
+
+  TDataModule * DataModule;
+  Count = Screen->DataModuleCount;
+  for (int Index = 0; Index < Count; Index++)
+  {
+    DataModule = Screen->DataModules[Index];
+    OrigName = DataModule->Name;
+    InitComponent(DataModule, __classid(TDataModule), DataModule->ClassType());
+    DataModule->Name = OrigName;
   }
 }
 //---------------------------------------------------------------------------

@@ -414,6 +414,7 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
 
     if (CreateShortcut)
     {
+      TOperationVisualizer Visualizer;
       UnicodeString AdditionalParams =
         TProgramParams::FormatSwitch(DESKTOP_SWITCH) + L" " +
         TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH);

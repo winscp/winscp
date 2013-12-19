@@ -202,6 +202,8 @@ private:
   TFindingFileEvent FOnFindingFile;
   bool FEnableSecureShellUsage;
   bool FCollectFileSystemUsage;
+  bool FRememberedPasswordTried;
+  bool FRememberedTunnelPasswordTried;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -357,6 +359,7 @@ protected:
   void __fastcall LogRemoteFile(TRemoteFile * File);
   UnicodeString __fastcall FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
   void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
+  virtual TTerminal * __fastcall GetPasswordSource();
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -517,12 +520,9 @@ protected:
   virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);
   virtual void __fastcall DirectoryModified(const UnicodeString Path,
     bool SubDirs);
-  virtual bool __fastcall DoPromptUser(TSessionData * Data, TPromptKind Kind,
-    UnicodeString Name, UnicodeString Instructions, TStrings * Prompts, TStrings * Results);
+  virtual TTerminal * __fastcall GetPasswordSource();
 
 private:
-  bool FMasterPasswordTried;
-  bool FMasterTunnelPasswordTried;
   TTerminal * FMainTerminal;
 };
 //---------------------------------------------------------------------------

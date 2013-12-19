@@ -1680,7 +1680,8 @@ object PreferencesDialog: TPreferencesDialog
             Top = 172
             Width = 198
             Height = 13
-            Caption = 'Display completed transfers in queue for:'
+            Caption = 'Display &completed transfers in queue for:'
+            FocusControl = QueueKeepDoneItemsForCombo
             OnClick = ControlChange
           end
           object QueueTransferLimitEdit: TUpDownEdit
@@ -2984,7 +2985,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Use system file context menu'
+            Caption = 'Use &system file context menu'
             TabOrder = 1
             OnClick = ControlChange
           end
@@ -3038,9 +3039,9 @@ object PreferencesDialog: TPreferencesDialog
             OnSelectItem = ListViewSelectItem
           end
           object LanguagesGetMoreButton: TButton
-            Left = 297
+            Left = 272
             Top = 339
-            Width = 75
+            Width = 100
             Height = 25
             Anchors = [akRight, akBottom]
             Caption = 'Get &more...'

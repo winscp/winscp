@@ -99,6 +99,7 @@ private:
   unsigned int FTaskbarButtonCreatedMessage;
   ITaskbarList3 * FTaskbarList;
   int FAuthenticating;
+  void * FBusyToken;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();

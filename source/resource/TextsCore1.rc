@@ -205,7 +205,7 @@ BEGIN
   READ_ONLY_OVERWRITE, "File '%s' is read-only. Overwrite?"
   LOCAL_FILE_OVERWRITE2, "**Overwrite local file '%s'?**\n\nDestination directory already contains file '%s'.\nChoose, if you want to overwrite the file or skip this transfer and keep existing file."
   REMOTE_FILE_OVERWRITE2, "**Overwrite remote file '%s'?**\n\nDestination directory already contains file '%s'.\nChoose, if you want to overwrite the file or skip this transfer and keep existing file."
-  TIMEOUT_STILL_WAITING3, "Host is not communicating for more than %d seconds. Still waiting...\n\nNote: If the problem repeats, try turning off 'Optimize connection buffer size'."
+  TIMEOUT_STILL_WAITING3, "Host is not communicating for more than %d seconds.\nStill waiting...\n\nNote: If the problem repeats, try turning off 'Optimize connection buffer size'."
   KEX_BELOW_TRESHOLD, "The first key-exchange algorithm supported by the server is %s, which is below the configured warning threshold.\n\nDo you want to continue with this connection?"
   RECONNECT_BUTTON, "&Reconnect"
   RENAME_BUTTON, "New na&me"

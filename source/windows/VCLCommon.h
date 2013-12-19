@@ -7,8 +7,7 @@
 #include "Exceptions.h"
 #include <ComCtrls.hpp>
 //---------------------------------------------------------------------------
-void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount = -1,
-  int RightPad = 0);
+void __fastcall AdjustListColumnsWidth(TListView * ListView);
 void __fastcall EnableControl(TControl* Control, bool Enable);
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly = true);
 void __fastcall InitializeSystemSettings();

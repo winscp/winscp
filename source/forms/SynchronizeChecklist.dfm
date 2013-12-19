@@ -214,11 +214,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Width = 695
     Height = 20
     Hint = 'Click to select all actions of this type'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clBtnText
-    Font.Height = -12
-    Font.Name = 'Segoe UI'
-    Font.Style = []
     Panels = <
       item
         Style = psOwnerDraw
@@ -260,7 +255,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     ParentShowHint = False
     ShowHint = True
-    UseSystemFont = False
     OnMouseDown = StatusBarMouseDown
     OnMouseMove = StatusBarMouseMove
     OnDrawPanel = StatusBarDrawPanel

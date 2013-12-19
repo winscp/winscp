@@ -251,16 +251,10 @@ object FileFindDialog: TFileFindDialog
     Top = 398
     Width = 562
     Height = 19
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clBtnText
-    Font.Height = -12
-    Font.Name = 'Segoe UI'
-    Font.Style = []
     Panels = <>
     ParentShowHint = False
     ShowHint = True
     SimplePanel = True
-    UseSystemFont = False
   end
   object FocusButton: TButton
     Left = 476

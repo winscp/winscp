@@ -41,6 +41,7 @@ struct TMessageParams
   TQueryParamsTimerEvent TimerEvent;
   UnicodeString TimerMessage;
   unsigned int TimerAnswers;
+  TQueryType TimerQueryType;
   unsigned int Timeout;
   unsigned int TimeoutAnswer;
   UnicodeString NeverAskAgainTitle;
@@ -400,6 +401,7 @@ void __fastcall CreateSessionColorMenu(TComponent * AOwner, TColor Color,
 
 void __fastcall FixButtonImage(TButton * Button);
 void __fastcall CenterButtonImage(TButton * Button);
+void __fastcall UncenterButtonImage(TButton * Button);
 
 void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
 

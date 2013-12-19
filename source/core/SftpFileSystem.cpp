@@ -1956,7 +1956,7 @@ inline void __fastcall TSFTPFileSystem::BusyStart()
 {
   if (FBusy == 0 && FTerminal->UseBusyCursor && !FAvoidBusy)
   {
-    Busy(true);
+    FBusyToken = ::BusyStart();
   }
   FBusy++;
   assert(FBusy < 10);
@@ -1968,7 +1968,8 @@ inline void __fastcall TSFTPFileSystem::BusyEnd()
   FBusy--;
   if (FBusy == 0 && FTerminal->UseBusyCursor && !FAvoidBusy)
   {
-    Busy(false);
+    ::BusyEnd(FBusyToken);
+    FBusyToken = NULL;
   }
 }
 //---------------------------------------------------------------------------

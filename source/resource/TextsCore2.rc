@@ -74,7 +74,7 @@ BEGIN
     "  -explicittls       Explicit TLS (FTPS protocol only)\n"
     "  -explicitssl       Explicit SSL (FTPS protocol only)\n"
     "  -rawsettings setting1=value1 setting2=value2 ...\n"
-    "                     Configures any session settings using raw format\n"
+    "                     Configures any site settings using raw format\n"
     "                     as in an INI file\n"
     "examples:\n"
     "  open\n"

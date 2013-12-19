@@ -3713,6 +3713,7 @@ object AboutDialog: TAboutDialog
     Default = True
     ModalResult = 1
     TabOrder = 0
+    OnMouseDown = OKButtonMouseDown
   end
   object LicenseButton: TButton
     Left = 72

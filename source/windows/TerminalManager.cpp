@@ -697,11 +697,6 @@ void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
     {
       Data->LocalDirectory = ManagedTerminal->LocalDirectory;
       Data->RemoteDirectory = ManagedTerminal->RemoteDirectory;
-      Changed = true;
-    }
-
-    if (Data->SynchronizeBrowsing != ManagedTerminal->SynchronizeBrowsing)
-    {
       Data->SynchronizeBrowsing = ManagedTerminal->SynchronizeBrowsing;
       Changed = true;
     }
@@ -1085,7 +1080,7 @@ void __fastcall TTerminalManager::TerminalInformation(
   {
     if (FAuthenticating == 0)
     {
-      Busy(true);
+      FBusyToken = BusyStart();
     }
     FAuthenticating++;
   }
@@ -1095,7 +1090,8 @@ void __fastcall TTerminalManager::TerminalInformation(
     FAuthenticating--;
     if (FAuthenticating == 0)
     {
-      Busy(false);
+      BusyEnd(FBusyToken);
+      FBusyToken = NULL;
     }
     SAFE_DESTROY(FAuthenticateForm);
   }

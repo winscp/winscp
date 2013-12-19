@@ -165,5 +165,6 @@
 #define OPTION_MPEXT_MIN_TLS_VERSION 1004
 #define OPTION_MPEXT_MAX_TLS_VERSION 1005
 #define OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELLY 1006
+#define OPTION_MPEXT_REMOVE_BOM 1007
 //---------------------------------------------------------------------------
 #endif // FileZillaOptH

@@ -29,7 +29,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Width = 175
       Height = 17
       Anchors = [akLeft, akTop, akRight]
-      Caption = 'Preserve timesta&mp'
+      Caption = '&Preserve timestamp'
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
@@ -139,7 +139,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 98
       Width = 173
       Height = 17
-      Caption = 'Clear '#39'Archi&ve'#39' attribute'
+      Caption = 'Clear '#39'Arc&hive'#39' attribute'
       TabOrder = 3
     end
     object RemoveCtrlZAndBOMCheck: TCheckBox
@@ -147,7 +147,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 124
       Width = 173
       Height = 17
-      Caption = 'Remove BOM and &EOF marks'
+      Caption = 'Remo&ve BOM and EOF marks'
       TabOrder = 4
       OnClick = ControlChange
     end
@@ -177,7 +177,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Width = 125
       Height = 17
       Anchors = [akLeft, akTop, akRight]
-      Caption = '&No change'
+      Caption = 'No chan&ge'
       TabOrder = 0
     end
     object CCUpperCaseButton: TRadioButton
@@ -203,7 +203,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 122
       Width = 125
       Height = 17
-      Caption = 'Replace '#39'\:*?'#39' ...'
+      Caption = 'Rep&lace '#39'\:*?'#39' ...'
       TabOrder = 4
       OnClick = ControlChange
     end
@@ -285,7 +285,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 20
       Width = 47
       Height = 13
-      Caption = 'File mas&k:'
+      Caption = 'File &mask:'
       FocusControl = IncludeFileMaskCombo
     end
     object IncludeFileMaskCombo: THistoryComboBox

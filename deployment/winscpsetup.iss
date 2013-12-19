@@ -118,6 +118,7 @@ PrivilegesRequired=none
 UsePreviousLanguage=yes
 DisableProgramGroupPage=yes
 MinVersion=0,5.1
+SetupIconFile=winscpsetup.ico
 #ifdef Sign
 SignTool=sign $f "WinSCP Installer" http://winscp.net/eng/docs/installation
 #endif

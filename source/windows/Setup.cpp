@@ -917,19 +917,19 @@ void __fastcall QueryUpdates()
     }
 
     WinConfiguration->Updates = Updates;
+
+    if (!Complete)
+    {
+      EXCEPTION;
+    }
+
+    Configuration->Usage->Reset();
+    Configuration->Usage->Inc(L"UpdateChecksSucceeded");
   }
   catch(Exception & E)
   {
-    throw ExtException(&E, LoadStr(CHECK_FOR_UPDATES_ERROR));
-  }
-
-  if (Complete)
-  {
-    Configuration->Usage->Reset();
-  }
-  else
-  {
-    throw Exception(LoadStr(CHECK_FOR_UPDATES_ERROR));
+    Configuration->Usage->Inc(L"UpdateChecksFailed");
+    throw ExtException(&E, MainInstructions(LoadStr(CHECK_FOR_UPDATES_ERROR)));
   }
 }
 //---------------------------------------------------------------------------
@@ -993,7 +993,9 @@ static void __fastcall OpenHistory(void * /*Data*/, TObject * /*Sender*/)
 void __fastcall CheckForUpdates(bool CachedResults)
 {
   TCustomForm * ActiveForm = Screen->ActiveCustomForm;
-  Busy(true);
+
+  TOperationVisualizer Visualizer;
+
   try
   {
     if (ActiveForm)
@@ -1121,7 +1123,6 @@ void __fastcall CheckForUpdates(bool CachedResults)
     {
       ActiveForm->Enabled = true;
     }
-    Busy(false);
   }
 }
 //---------------------------------------------------------------------------

@@ -187,7 +187,8 @@ void __fastcall TFileFindDialog::Start()
   {
     UpdateControls();
     Repaint();
-    Busy(true);
+
+    TOperationVisualizer Visualizer;
 
     assert(FOnFind != NULL);
     FDirectory = UnixExcludeTrailingBackslash(RemoteDirectoryEdit->Text);
@@ -195,7 +196,6 @@ void __fastcall TFileFindDialog::Start()
   }
   __finally
   {
-    Busy(false);
     FFindingInDirectory = L"";
     if (FState == ffFinding)
     {

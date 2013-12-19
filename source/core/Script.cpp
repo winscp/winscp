@@ -903,7 +903,7 @@ void __fastcall TScript::CallProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  // this is used only to log failures to open secondary shell session,
+  // this is used only to log failures to open separate shell session,
   // the actual call logging is done in TTerminal::AnyCommand
   TCallSessionAction Action(
     FTerminal->ActionLog, Parameters->ParamsStr, FTerminal->CurrentDirectory);

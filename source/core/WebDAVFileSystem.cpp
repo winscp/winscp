@@ -74,6 +74,7 @@ struct TClipboardHandler
 
   void __fastcall Copy(TObject * /*Sender*/)
   {
+    TInstantOperationVisualizer Visualizer;
     CopyToClipboard(Text);
   }
 };

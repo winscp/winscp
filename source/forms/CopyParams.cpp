@@ -167,7 +167,8 @@ void __fastcall TCopyParamsFrame::UpdateControls()
   EnableControl(IncludeFileMaskLabel, IncludeFileMaskCombo->Enabled);
   EnableControl(ClearArchiveCheck, FLAGCLEAR(CopyParamAttrs, cpaNoClearArchive) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
-  assert(FLAGCLEAR(CopyParamAttrs, cpaNoRemoveCtrlZ) == FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM));
+  // TODO: Change RemoveCtrlZAndBOMCheck caption when only cpaNoRemoveBOM is set
+  // (FTP protocol)
   EnableControl(RemoveCtrlZAndBOMCheck,
     (FLAGCLEAR(CopyParamAttrs, cpaNoRemoveCtrlZ) || FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM)) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) &&

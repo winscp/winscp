@@ -329,7 +329,6 @@ void __fastcall TProgressForm::MinimizeButtonClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::CancelOperation()
 {
-  // partially duplicated in TWinSCPFileSystem::CancelConfiguration (far\WinSCPFileSystem)
   assert(FDataReceived);
   if (!FData.Suspended)
   {

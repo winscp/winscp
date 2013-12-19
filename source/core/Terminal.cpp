@@ -63,6 +63,54 @@
 #define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
   FILE_OPERATION_LOOP_CUSTOM(this, ALLOW_SKIP, MESSAGE, OPERATION, L"")
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TLoopDetector
+{
+public:
+  __fastcall TLoopDetector();
+  void __fastcall RecordVisitedDirectory(const UnicodeString & Directory);
+  bool __fastcall IsUnvisitedDirectory(const TRemoteFile * File);
+
+private:
+  std::auto_ptr<TStringList> FVisitedDirectories;
+};
+//---------------------------------------------------------------------------
+__fastcall TLoopDetector::TLoopDetector()
+{
+  FVisitedDirectories.reset(new TStringList());
+  FVisitedDirectories->Sorted = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoopDetector::RecordVisitedDirectory(const UnicodeString & Directory)
+{
+  FVisitedDirectories->Add(ExcludeTrailingBackslash(Directory));
+}
+//---------------------------------------------------------------------------
+bool __fastcall TLoopDetector::IsUnvisitedDirectory(const TRemoteFile * File)
+{
+  assert(File->IsDirectory);
+  UnicodeString Directory = UnixExcludeTrailingBackslash(File->FullFileName);
+  bool Result = (FVisitedDirectories->IndexOf(Directory) < 0);
+  if (Result)
+  {
+    if (File->IsSymLink)
+    {
+      UnicodeString BaseDirectory = UnixExtractFileDir(Directory);
+      UnicodeString SymlinkDirectory =
+        UnixExcludeTrailingBackslash(AbsolutePath(BaseDirectory, File->LinkTo));
+      Result = (FVisitedDirectories->IndexOf(SymlinkDirectory) < 0);
+    }
+  }
+
+  if (Result)
+  {
+    RecordVisitedDirectory(Directory);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 struct TMoveFileParams
 {
   UnicodeString Target;
@@ -75,6 +123,7 @@ struct TFilesFindParams
   TFileFoundEvent OnFileFound;
   TFindingFileEvent OnFindingFile;
   bool Cancel;
+  TLoopDetector LoopDetector;
 };
 //---------------------------------------------------------------------------
 TCalculateSizeStats::TCalculateSizeStats()
@@ -644,6 +693,9 @@ void __fastcall TTerminal::ResetConnection()
   // used to be called from Reopen(), why?
   FTunnelError = L"";
 
+  FRememberedPasswordTried = false;
+  FRememberedTunnelPasswordTried = false;
+
   if (FDirectoryChangesCache != NULL)
   {
     delete FDirectoryChangesCache;
@@ -1039,7 +1091,14 @@ bool __fastcall TTerminal::PromptUser(TSessionData * Data, TPromptKind Kind,
   // If PromptUser is overridden in descendant class, the overridden version
   // is not called when accessed via TSessionIU interface.
   // So this is workaround.
+  // Actually no longer needed as we do not uverride DoPromptUser
+  // anymore in TSecondaryTerminal.
   return DoPromptUser(Data, Kind, Name, Instructions, Prompts, Results);
+}
+//---------------------------------------------------------------------------
+TTerminal * __fastcall TTerminal::GetPasswordSource()
+{
+  return this;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kind,
@@ -1047,33 +1106,65 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
 {
   bool AResult = false;
 
+
   bool PasswordPrompt =
     (Prompts->Count == 1) && FLAGCLEAR(int(Prompts->Objects[0]), pupEcho) &&
     ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkKeybInteractive) ||
      (Kind == pkTIS) || (Kind == pkCryptoCard));
-  if (PasswordPrompt && !Configuration->RememberPassword)
+  if (PasswordPrompt)
   {
-    Prompts->Objects[0] = (TObject*)(int(Prompts->Objects[0]) | pupRemember);
-  }
-
-  if (OnPromptUser != NULL)
-  {
-    TCallbackGuard Guard(this);
-    OnPromptUser(this, Kind, Name, Instructions, Prompts, Results, AResult, NULL);
-    Guard.Verify();
-  }
-
-  if (AResult && PasswordPrompt &&
-      (Configuration->RememberPassword || FLAGSET(int(Prompts->Objects[0]), pupRemember)))
-  {
-    RawByteString EncryptedPassword = EncryptPassword(Results->Strings[0]);
-    if (FTunnelOpening)
+    bool & PasswordTried =
+      FTunnelOpening ? FRememberedTunnelPasswordTried : FRememberedPasswordTried;
+    if (!PasswordTried)
     {
-      FTunnelPassword = EncryptedPassword;
+      // let's expect that the main session is already authenticated and its password
+      // is not written after, so no locking is necessary
+      // (no longer true, once the main session can be reconnected)
+      UnicodeString APassword;
+      if (FTunnelOpening)
+      {
+        APassword = GetPasswordSource()->TunnelPassword;
+      }
+      else
+      {
+        APassword = GetPasswordSource()->Password;
+      }
+      Results->Strings[0] = APassword;
+      if (!Results->Strings[0].IsEmpty())
+      {
+        LogEvent(L"Using remembered password.");
+        AResult = true;
+      }
+      PasswordTried = true;
     }
-    else
+  }
+
+  if (!AResult)
+  {
+    if (PasswordPrompt && !Configuration->RememberPassword)
     {
-      FPassword = EncryptedPassword;
+      Prompts->Objects[0] = (TObject*)(int(Prompts->Objects[0]) | pupRemember);
+    }
+
+    if (OnPromptUser != NULL)
+    {
+      TCallbackGuard Guard(this);
+      OnPromptUser(this, Kind, Name, Instructions, Prompts, Results, AResult, NULL);
+      Guard.Verify();
+    }
+
+    if (AResult && PasswordPrompt &&
+        (Configuration->RememberPassword || FLAGSET(int(Prompts->Objects[0]), pupRemember)))
+    {
+      RawByteString EncryptedPassword = EncryptPassword(Results->Strings[0]);
+      if (FTunnelOpening)
+      {
+        GetPasswordSource()->FTunnelPassword = EncryptedPassword;
+      }
+      else
+      {
+        GetPasswordSource()->FPassword = EncryptedPassword;
+      }
     }
   }
 
@@ -4887,7 +4978,14 @@ void __fastcall TTerminal::FileFind(UnicodeString FileName,
 
       if (File->IsDirectory)
       {
-        DoFilesFind(FullFileName, *AParams);
+        if (!AParams->LoopDetector.IsUnvisitedDirectory(File))
+        {
+          LogEvent(FORMAT(L"Already searched \"%s\" directory, link loop detected", (FullFileName)));
+        }
+        else
+        {
+          DoFilesFind(FullFileName, *AParams);
+        }
       }
     }
   }
@@ -4922,6 +5020,9 @@ void __fastcall TTerminal::FilesFind(UnicodeString Directory, const TFileMasks &
   Params.OnFileFound = OnFileFound;
   Params.OnFindingFile = OnFindingFile;
   Params.Cancel = false;
+
+  Params.LoopDetector.RecordVisitedDirectory(Directory);
+
   DoFilesFind(Directory, Params);
 }
 //---------------------------------------------------------------------------
@@ -5075,7 +5176,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
   }
   catch (Exception &E)
   {
-    CommandError(&E, LoadStr(TOREMOTE_COPY_ERROR));
+    CommandError(&E, MainInstructions(LoadStr(TOREMOTE_COPY_ERROR)));
     OnceDoneOperation = odoIdle;
   }
 
@@ -5166,7 +5267,7 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
         }
         catch (Exception &E)
         {
-          CommandError(&E, LoadStr(TOLOCAL_COPY_ERROR));
+          CommandError(&E, MainInstructions(LoadStr(TOLOCAL_COPY_ERROR)));
           OnceDoneOperation = odoIdle;
         }
 
@@ -5269,8 +5370,7 @@ void __fastcall TTerminal::CollectUsage()
 __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
   TSessionData * ASessionData, TConfiguration * Configuration, const UnicodeString & Name) :
   TTerminal(ASessionData, Configuration),
-  FMainTerminal(MainTerminal), FMasterPasswordTried(false),
-  FMasterTunnelPasswordTried(false)
+  FMainTerminal(MainTerminal)
 {
   Log->Parent = FMainTerminal->Log;
   Log->Name = Name;
@@ -5296,48 +5396,9 @@ void __fastcall TSecondaryTerminal::DirectoryModified(const UnicodeString Path,
   FMainTerminal->DirectoryModified(Path, SubDirs);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecondaryTerminal::DoPromptUser(TSessionData * Data,
-  TPromptKind Kind, UnicodeString Name, UnicodeString Instructions, TStrings * Prompts,
-  TStrings * Results)
+TTerminal * __fastcall TSecondaryTerminal::GetPasswordSource()
 {
-  bool AResult = false;
-
-  if ((Prompts->Count == 1) && FLAGCLEAR(int(Prompts->Objects[0]), pupEcho) &&
-      ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkKeybInteractive) ||
-       (Kind == pkTIS) || (Kind == pkCryptoCard)))
-  {
-    bool & PasswordTried =
-      FTunnelOpening ? FMasterTunnelPasswordTried : FMasterPasswordTried;
-    if (!PasswordTried)
-    {
-      // let's expect that the main session is already authenticated and its password
-      // is not written after, so no locking is necessary
-      // (no longer true, once the main session can be reconnected)
-      UnicodeString Password;
-      if (FTunnelOpening)
-      {
-        Password = FMainTerminal->TunnelPassword;
-      }
-      else
-      {
-        Password = FMainTerminal->Password;
-      }
-      Results->Strings[0] = Password;
-      if (!Results->Strings[0].IsEmpty())
-      {
-        LogEvent(L"Using remembered password of the main session.");
-        AResult = true;
-      }
-      PasswordTried = true;
-    }
-  }
-
-  if (!AResult)
-  {
-    AResult = TTerminal::DoPromptUser(Data, Kind, Name, Instructions, Prompts, Results);
-  }
-
-  return AResult;
+  return FMainTerminal;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminalList::TTerminalList(TConfiguration * AConfiguration) :

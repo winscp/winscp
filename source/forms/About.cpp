@@ -223,3 +223,12 @@ void __fastcall TAboutDialog::RegistrationProductIdLabelClick(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TAboutDialog::OKButtonMouseDown(TObject * /*Sender*/,
+  TMouseButton Button, TShiftState Shift, int /*X*/, int /*Y*/)
+{
+  if ((Button == mbRight) && Shift.Contains(ssAlt))
+  {
+    ACCESS_VIOLATION_TEST;
+  }
+}
+//---------------------------------------------------------------------------

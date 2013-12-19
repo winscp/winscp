@@ -6,7 +6,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Server and protocol information'
-  ClientHeight = 370
+  ClientHeight = 398
   ClientWidth = 371
   Color = clBtnFace
   ParentFont = True
@@ -15,12 +15,12 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   OnShow = FormShow
   DesignSize = (
     371
-    370)
+    398)
   PixelsPerInch = 96
   TextHeight = 13
   object CloseButton: TButton
     Left = 204
-    Top = 336
+    Top = 364
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -32,7 +32,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   end
   object HelpButton: TButton
     Left = 287
-    Top = 336
+    Top = 364
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -44,7 +44,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     Left = 0
     Top = 0
     Width = 371
-    Height = 324
+    Height = 352
     ActivePage = ProtocolSheet
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
@@ -54,10 +54,10 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       Caption = 'Protocol'
       DesignSize = (
         363
-        296)
+        324)
       object HostKeyGroup: TGroupBox
         Left = 6
-        Top = 174
+        Top = 202
         Width = 351
         Height = 41
         Anchors = [akLeft, akRight, akBottom]
@@ -84,7 +84,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Left = 6
         Top = 8
         Width = 351
-        Height = 159
+        Height = 187
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
@@ -108,7 +108,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       end
       object CertificateGroup: TGroupBox
         Left = 6
-        Top = 218
+        Top = 246
         Width = 351
         Height = 72
         Anchors = [akLeft, akRight, akBottom]
@@ -146,10 +146,10 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       ImageIndex = 1
       DesignSize = (
         363
-        296)
+        324)
       object InfoGroup: TGroupBox
         Left = 6
-        Top = 174
+        Top = 202
         Width = 351
         Height = 114
         Anchors = [akLeft, akRight, akBottom]
@@ -180,7 +180,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Left = 6
         Top = 8
         Width = 351
-        Height = 159
+        Height = 187
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
@@ -208,7 +208,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       ImageIndex = 2
       DesignSize = (
         363
-        296)
+        324)
       object Label1: TLabel
         Left = 13
         Top = 13
@@ -221,7 +221,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Left = 6
         Top = 40
         Width = 351
-        Height = 127
+        Height = 155
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
@@ -269,7 +269,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   end
   object ClipboardButton: TButton
     Left = 8
-    Top = 336
+    Top = 364
     Width = 121
     Height = 25
     Anchors = [akRight, akBottom]
@@ -278,8 +278,8 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     OnClick = ClipboardButtonClick
   end
   object ListViewMenu: TPopupMenu
-    Left = 144
-    Top = 328
+    Left = 151
+    Top = 354
     object Copy: TMenuItem
       Caption = '&Copy'
       OnClick = CopyClick

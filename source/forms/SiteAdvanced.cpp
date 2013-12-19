@@ -955,7 +955,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     ScpSheet->Caption = LoadStr(ScpProtocol ? LOGIN_SCP_SHELL_PAGE : LOGIN_SHELL_PAGE);
     // hide also for SFTP with SCP fallback, as if someone wants to configure
     // these he/she probably intends to use SCP and should explicitly select it.
-    // (note that these are not used for secondary shell session)
+    // (note that these are not used for separate shell session)
     ScpLsOptionsGroup->Visible = ScpProtocol;
     OtherShellOptionsGroup->Visible = ScpProtocol;
 

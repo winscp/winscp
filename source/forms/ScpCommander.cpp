@@ -1203,6 +1203,8 @@ void __fastcall TScpCommanderForm::AddEditLink(TOperationSide Side, bool Add)
 
     if (DoSymlinkDialog(FileName, PointTo, osLocal, SymbolicLink, Edit, false))
     {
+      Configuration->Usage->Inc(L"LocalShortcutsCreated");
+
       assert(SymbolicLink);
       assert(!FileName.IsEmpty());
       assert(!PointTo.IsEmpty());

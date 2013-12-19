@@ -290,6 +290,26 @@ UnicodeString __fastcall MainInstructions(const UnicodeString & S)
   return MainMsgTag + S + MainMsgTag;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall MainInstructionsFirstParagraph(const UnicodeString & S)
+{
+  // WORKAROUND, we consider it bad practice, the highlighting should better
+  // be localized (but maybe we change our mind later)
+  UnicodeString Result;
+  int Pos = S.Pos(L"\n\n");
+  // we would not be calling this on single paragraph message
+  if (ALWAYS_TRUE(Pos > 0))
+  {
+    Result =
+      MainInstructions(S.SubString(1, Pos - 1)) +
+      S.SubString(Pos, S.Length() - Pos + 1);
+  }
+  else
+  {
+    Result = MainInstructions(S);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool ExtractMainInstructions(UnicodeString & S, UnicodeString & MainInstructions)
 {
   bool Result = false;

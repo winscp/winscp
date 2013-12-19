@@ -1009,8 +1009,9 @@ unsigned int __fastcall TSecureShell::TimeoutPrompt(TQueryParamsTimerEvent PoolE
     Params.HelpKeyword = HELP_MESSAGE_HOST_IS_NOT_COMMUNICATING;
     Params.Timer = 500;
     Params.TimerEvent = PoolEvent;
-    Params.TimerMessage = FMTLOAD(TIMEOUT_STILL_WAITING3, (FSessionData->Timeout));
+    Params.TimerMessage = MainInstructionsFirstParagraph(FMTLOAD(TIMEOUT_STILL_WAITING3, (FSessionData->Timeout)));
     Params.TimerAnswers = qaAbort;
+    Params.TimerQueryType = qtInformation;
     if (FConfiguration->SessionReopenAutoStall > 0)
     {
       Params.Timeout = FConfiguration->SessionReopenAutoStall;
@@ -1087,7 +1088,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
           // fallthru
 
         case qaAbort:
-          FatalError(LoadStr(USER_TERMINATED));
+          FatalError(MainInstructions(LoadStr(USER_TERMINATED)));
           break;
       }
     }
@@ -1580,7 +1581,7 @@ void __fastcall TSecureShell::WaitForData()
           // fallthru
 
         case qaAbort:
-          FatalError(LoadStr(USER_TERMINATED));
+          FatalError(MainInstructions(LoadStr(USER_TERMINATED)));
           break;
       }
     }
@@ -1902,6 +1903,7 @@ struct TClipboardHandler
 
   void __fastcall Copy(TObject * /*Sender*/)
   {
+    TInstantOperationVisualizer Visualizer;
     CopyToClipboard(Text);
   }
 };

@@ -27,7 +27,7 @@ static bool __fastcall WellKnownException(
     {
       throw EAccessViolation(E->Message);
     }
-    Message = LoadStr(ACCESS_VIOLATION_ERROR3);
+    Message = MainInstructions(LoadStr(ACCESS_VIOLATION_ERROR3));
     CounterName = L"AccessViolations";
     Clone.reset(new EAccessViolation(E->Message));
   }
@@ -42,7 +42,7 @@ static bool __fastcall WellKnownException(
     {
       throw EIntError(E->Message);
     }
-    Message = E->Message;
+    Message = MainInstructions(E->Message);
     CounterName = L"InternalExceptions";
     Clone.reset(new EIntError(E->Message));
   }
@@ -52,7 +52,7 @@ static bool __fastcall WellKnownException(
     {
       throw EExternal(E->Message);
     }
-    Message = E->Message;
+    Message = MainInstructions(E->Message);
     CounterName = L"ExternalExceptions";
     Clone.reset(new EExternal(E->Message));
   }
@@ -62,7 +62,7 @@ static bool __fastcall WellKnownException(
     {
       throw EHeapException(E->Message);
     }
-    Message = E->Message;
+    Message = MainInstructions(E->Message);
     CounterName = L"HeapExceptions";
     Clone.reset(new EHeapException(E->Message));
   }
@@ -239,7 +239,7 @@ __fastcall ExtException::ExtException(UnicodeString Msg, Exception* E, UnicodeSt
       {
         FMoreMessages = new TStringList();
       }
-      FMoreMessages->Append(Msg);
+      FMoreMessages->Append(UnformatMessage(Msg));
     }
   }
   FHelpKeyword = MergeHelpKeyword(GetExceptionHelpKeyword(E), HelpKeyword);
@@ -302,7 +302,7 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
     }
     else if (!Msg.IsEmpty())
     {
-      FMoreMessages->Insert(0, Msg);
+      FMoreMessages->Insert(0, UnformatMessage(Msg));
     }
 
     if (FMoreMessages->Count == 0)

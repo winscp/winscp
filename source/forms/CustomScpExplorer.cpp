@@ -2425,7 +2425,7 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
   {
     CopyParam.TransferMode = tmAscii;
   }
-  // do not forget to add additional options to ExecutedFileChanged, FAR and SS
+  // do not forget to add additional options to ExecutedFileChanged and AS
   CopyParam.FileNameCase = ncNoChange;
   CopyParam.PreserveReadOnly = false;
   CopyParam.ReplaceInvalidChars = true;
@@ -2846,7 +2846,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
     {
       CopyParam.TransferMode = tmAscii;
     }
-    // do not forget to add additional options to TemporarilyDownloadFiles, FAR and SS
+    // do not forget to add additional options to TemporarilyDownloadFiles, and AS
     CopyParam.FileNameCase = ncNoChange;
     CopyParam.PreserveRights = false;
     // so i do not need to worry if masking algorithm works in all cases
@@ -4674,6 +4674,7 @@ bool __fastcall TCustomScpExplorerForm::SaveWorkspace(bool EnableAutoSave)
 
     if (CreateShortcut)
     {
+      TOperationVisualizer Visualizer;
       UnicodeString AdditionalParams = TProgramParams::FormatSwitch(DESKTOP_SWITCH);
       CreateDesktopSessionShortCut(Name, L"", AdditionalParams, -1, WORKSPACE_ICON);
     }
@@ -5779,6 +5780,10 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
         TDragResult DDResult = (Sender == RemoteDirView) ?
           RemoteDirView->LastDDResult : RemoteDriveView->LastDDResult;
 
+        // focus is moved to the target application,
+        // but as we are going to present the UI, we need to steal the focus back
+        Application->BringToFront();
+
         // note that we seem to never get drMove here, see also comment below
         if ((DDResult == drCopy) || (DDResult == drMove) || (DDResult == drInvalid))
         {
@@ -6176,6 +6181,7 @@ void __fastcall TCustomScpExplorerForm::PanelExportStore(TOperationSide /*Side*/
 {
   if (Destination == pedClipboard)
   {
+    TInstantOperationVisualizer Visualizer;
     CopyToClipboard(ExportData);
   }
   else
@@ -6834,6 +6840,7 @@ void __fastcall TCustomScpExplorerForm::UpdatesNoteClicked(TObject * /*Sender*/)
 
   if (!NonVisualDataModule->Busy)
   {
+    Configuration->Usage->Inc(L"UpdateNotificationsClicked");
     CheckForUpdates(true);
   }
 }

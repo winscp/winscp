@@ -46,6 +46,7 @@ UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars);
 UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote);
 UnicodeString ExceptionLogString(Exception *E);
 UnicodeString __fastcall MainInstructions(const UnicodeString & S);
+UnicodeString __fastcall MainInstructionsFirstParagraph(const UnicodeString & S);
 bool ExtractMainInstructions(UnicodeString & S, UnicodeString & MainInstructions);
 UnicodeString UnformatMessage(UnicodeString S);
 bool IsNumber(const UnicodeString Str);
@@ -180,6 +181,7 @@ private:
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #include <assert.h>
+#define ACCESS_VIOLATION_TEST { (*((int*)NULL)) = 0; }
 #ifndef _DEBUG
 #undef assert
 #define assert(p)   ((void)0)

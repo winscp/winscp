@@ -56,6 +56,8 @@ __published:
   void __fastcall LicenseButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall RegistrationProductIdLabelClick(TObject *Sender);
+  void __fastcall OKButtonMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift,
+          int X, int Y);
 private:
   TConfiguration * FConfiguration;
   TNotifyEvent FOnRegistrationLink;

@@ -347,32 +347,26 @@ void __fastcall TCustomWinConfiguration::LoadAdmin(THierarchicalStorage * Storag
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::RecryptPasswords(TStrings * RecryptPasswordErrors)
 {
-  Busy(true);
-  try
-  {
-    StoredSessions->RecryptPasswords(RecryptPasswordErrors);
+  TOperationVisualizer Visualizer;
 
-    if (OnMasterPasswordRecrypt != NULL)
+  StoredSessions->RecryptPasswords(RecryptPasswordErrors);
+
+  if (OnMasterPasswordRecrypt != NULL)
+  {
+    try
     {
-      try
+      OnMasterPasswordRecrypt(NULL);
+    }
+    catch (Exception & E)
+    {
+      UnicodeString Message;
+      if (ExceptionMessage(&E, Message))
       {
-        OnMasterPasswordRecrypt(NULL);
-      }
-      catch (Exception & E)
-      {
-        UnicodeString Message;
-        if (ExceptionMessage(&E, Message))
-        {
-          // we do not expect this really to happen,
-          // so we do not bother providing context
-          RecryptPasswordErrors->Add(Message);
-        }
+        // we do not expect this really to happen,
+        // so we do not bother providing context
+        RecryptPasswordErrors->Add(Message);
       }
     }
-  }
-  __finally
-  {
-    Busy(false);
   }
 }
 //---------------------------------------------------------------------

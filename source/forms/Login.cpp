@@ -1416,6 +1416,9 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
       assert(FSystemSettings);
       RevokeSystemSettings(this, FSystemSettings);
       FSystemSettings = NULL;
+      // have to undo the caption padding, otherwise the button does not
+      // get localized
+      UncenterButtonImage(LoginButton);
 
       Hide();
     }
@@ -1494,6 +1497,7 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
   Message = MainInstructions(Message);
   if (MessageDialog(Message, qtConfirmation, qaYes | qaNo, HELP_CREATE_SHORTCUT) == qaYes)
   {
+    TInstantOperationVisualizer Visualizer;
     CreateDesktopSessionShortCut(Name, L"", AdditionalParams, -1, IconIndex);
   }
 }
@@ -1506,6 +1510,7 @@ void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
   if (MessageDialog(Message,
         qtConfirmation, qaYes | qaNo, HELP_CREATE_SENDTO) == qaYes)
   {
+    TInstantOperationVisualizer Visualizer;
     UnicodeString AdditionalParams =
       TProgramParams::FormatSwitch(SEND_TO_HOOK_SWITCH) + L" " +
       TProgramParams::FormatSwitch(UPLOAD_SWITCH);

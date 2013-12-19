@@ -95,6 +95,7 @@ protected:
   char FPreviousLoggedPacket;
   int FNotLoggedPackets;
   int FBusy;
+  void * FBusyToken;
   bool FAvoidBusy;
   TStrings * FExtensions;
   TSFTPSupport * FSupport;

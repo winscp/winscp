@@ -1237,6 +1237,8 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
 
       FFileTransferCPSLimit = OperationProgress->CPSLimit;
       FFileTransferPreserveTime = CopyParam->PreserveTime;
+      // not used for downloads anyway
+      FFileTransferRemoveBOM = CopyParam->RemoveBOM;
       UserData.FileName = DestFileName;
       UserData.Params = Params;
       UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
@@ -1480,6 +1482,7 @@ void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
       FFileTransferCPSLimit = OperationProgress->CPSLimit;
       // not used for uploads anyway
       FFileTransferPreserveTime = CopyParam->PreserveTime;
+      FFileTransferRemoveBOM = CopyParam->RemoveBOM;
       // not used for uploads, but we get new name (if any) back in this field
       UserData.FileName = DestFileName;
       UserData.Params = Params;
@@ -1763,6 +1766,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcAnyCommand: // but not fcShellAnyCommand
     case fcRename:
     case fcRemoteMove:
+    case fcRemoveBOMUpload:
       return true;
 
     case fcPreservingTimestampUpload:
@@ -1785,7 +1789,6 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcTimestampChanging:
     case fcIgnorePermErrors:
     case fcRemoveCtrlZUpload:
-    case fcRemoveBOMUpload:
       return false;
 
     default:
@@ -2340,6 +2343,10 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       Result = Data->FtpTransferActiveImmediatelly;
       break;
 
+    case OPTION_MPEXT_REMOVE_BOM:
+      Result = FFileTransferRemoveBOM ? TRUE : FALSE;
+      break;
+
     default:
       assert(false);
       Result = FALSE;
@@ -2687,7 +2694,8 @@ void __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned int Flags,
       if (Error.IsEmpty() && (MoreMessages != NULL))
       {
         assert(MoreMessages->Count > 0);
-        Error = MoreMessages->Strings[0];
+        // bit too generic assigning of main instructions, let's see how it works
+        Error = MainInstructions(MoreMessages->Strings[0]);
         MoreMessages->Delete(0);
       }
 
@@ -3118,6 +3126,7 @@ struct TClipboardHandler
 
   void __fastcall Copy(TObject * /*Sender*/)
   {
+    TInstantOperationVisualizer Visualizer;
     CopyToClipboard(Text);
   }
 };

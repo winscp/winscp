@@ -1239,6 +1239,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       {
         Answers = Params->TimerAnswers;
       }
+      // not considering TimerQueryType as we do not use QueryType anyway
       if (!Params->TimerMessage.IsEmpty())
       {
         AQuery = Params->TimerMessage;

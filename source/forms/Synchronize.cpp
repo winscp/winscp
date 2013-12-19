@@ -520,6 +520,7 @@ void __fastcall TSynchronizeDialog::ClearLog()
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::CopyLog()
 {
+  TInstantOperationVisualizer Visualizer;
   UnicodeString Content;
   for (int i = 0; i < LogView->Items->Count; i++)
   {

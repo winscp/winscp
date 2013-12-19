@@ -302,6 +302,7 @@ void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
     }
     else if (Action == CopyTextAction)
     {
+      TInstantOperationVisualizer Visualizer;
       CopyToClipboard(Text);
       Changed = false;
     }
@@ -311,6 +312,7 @@ void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
       assert(!R.IsUndef);
       if (!R.IsUndef)
       {
+        TInstantOperationVisualizer Visualizer;
         CopyToClipboard(R.Octal);
       }
       Changed = false;

@@ -49,6 +49,7 @@ TMessageParams::TMessageParams(const TQueryParams * AParams)
     TimerEvent = AParams->TimerEvent;
     TimerMessage = AParams->TimerMessage;
     TimerAnswers = AParams->TimerAnswers;
+    TimerQueryType = AParams->TimerQueryType;
     Timeout = AParams->Timeout;
     TimeoutAnswer = AParams->TimeoutAnswer;
 
@@ -72,6 +73,7 @@ inline void TMessageParams::Reset()
   TimerEvent = NULL;
   TimerMessage = L"";
   TimerAnswers = 0;
+  TimerQueryType = static_cast<TQueryType>(-1);
   Timeout = 0;
   TimeoutAnswer = 0;
   NeverAskAgainTitle = L"";
@@ -440,6 +442,10 @@ unsigned int __fastcall MoreMessageDialog(const UnicodeString Message, TStrings 
       {
         Answers = Params->TimerAnswers;
       }
+      if (Params->TimerQueryType >= 0)
+      {
+        Type = Params->TimerQueryType;
+      }
       if (!Params->TimerMessage.IsEmpty())
       {
         AMessage = Params->TimerMessage;
@@ -554,29 +560,16 @@ unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Ty
   return ExceptionMessageDialog(E, Type, MessageFormat, Answers, HelpKeyword, &AParams);
 }
 //---------------------------------------------------------------------------
-void __fastcall Busy(bool Start)
+void * __fastcall BusyStart()
 {
-  static int Busy = 0;
-  static TCursor PrevCursor;
-  if (Start)
-  {
-    if (!Busy)
-    {
-      PrevCursor = Screen->Cursor;
-      Screen->Cursor = crHourGlass;
-    }
-    Busy++;
-    assert(Busy < 10);
-  }
-  else
-  {
-    assert(Busy > 0);
-    Busy--;
-    if (!Busy)
-    {
-      Screen->Cursor = PrevCursor;
-    }
-  }
+  void * Token = reinterpret_cast<void *>(Screen->Cursor);
+  Screen->Cursor = crHourGlass;
+  return Token;
+}
+//---------------------------------------------------------------------------
+void __fastcall BusyEnd(void * Token)
+{
+  Screen->Cursor = reinterpret_cast<TCursor>(Token);
 }
 //---------------------------------------------------------------------------
 void __fastcall CopyParamListButton(TButton * Button)
@@ -919,22 +912,32 @@ void __fastcall FixButtonImage(TButton * Button)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall UncenterButtonImage(TButton * Button)
+{
+  Button->ImageMargins->Left = 0;
+  if (UseThemes())
+  {
+    Button->Caption = TrimLeft(Button->Caption);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall CenterButtonImage(TButton * Button)
 {
+  UncenterButtonImage(Button);
+
   // with themes disabled, the text seems to be drawn over the icon,
   // so that the padding spaces hide away most of the icon
   if (UseThemes())
   {
     Button->ImageAlignment = iaCenter;
-    int ImageWidthWithPadding = Button->Images->Width;
+    int ImageWidth = Button->Images->Width;
 
     std::unique_ptr<TControlCanvas> Canvas(new TControlCanvas());
     Canvas->Control = Button;
 
     UnicodeString Caption = Button->Caption;
-    Caption = TrimLeft(Caption);
     UnicodeString Padding;
-    while (Canvas->TextWidth(Padding) < ImageWidthWithPadding)
+    while (Canvas->TextWidth(Padding) < ImageWidth)
     {
       Padding += L" ";
     }
@@ -942,11 +945,11 @@ void __fastcall CenterButtonImage(TButton * Button)
     Button->Caption = Caption;
 
     int CaptionWidth = Canvas->TextWidth(Caption);
-    // Image is bit to the left, than what it would be,
-    // if it were to be centered together with the caption.
-    // Windows elevation buttons have it the same
-    // (althought they have smaller padding between image and the caption)
-    Button->ImageMargins->Left = -(CaptionWidth / 2) - ScaleByTextHeight(Button, 8);
+    // The margins seem to extend the area over which the image is centered,
+    // so we have to set it to a double of desired padding.
+    // Note that (CaptionWidth / 2) - (ImageWidth / 2)
+    // is approximatelly same as half of caption width before padding.
+    Button->ImageMargins->Left = - 2 * ((CaptionWidth / 2) - (ImageWidth / 2) + ScaleByTextHeight(Button, 2));
   }
   else
   {

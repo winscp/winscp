@@ -1289,7 +1289,8 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
 		// leaving it onto the server (what Filezilla 3 seems to do too)
 		const char Bom[3] = "\xEF\xBB\xBF";
 		int read = m_pFile->Read(buffer, len);
-		if (m_transferdata.bType && (read >= sizeof(Bom)) && (memcmp(buffer, Bom, sizeof(Bom)) == 0))
+		if (COptions::GetOptionVal(OPTION_MPEXT_REMOVE_BOM) &&
+				m_transferdata.bType && (read >= sizeof(Bom)) && (memcmp(buffer, Bom, sizeof(Bom)) == 0))
 		{
 			memcpy(buffer, buffer + sizeof(Bom), read - sizeof(Bom));
 			read -= sizeof(Bom);

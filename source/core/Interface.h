@@ -12,7 +12,8 @@ void __fastcall ShowExtendedException(Exception * E);
 
 UnicodeString __fastcall GetCompanyRegistryKey();
 UnicodeString __fastcall GetRegistryKey();
-void __fastcall Busy(bool Start);
+void * __fastcall BusyStart();
+void __fastcall BusyEnd(void * Token);
 UnicodeString __fastcall AppNameString();
 UnicodeString __fastcall SshVersionString();
 void __fastcall CopyToClipboard(UnicodeString Text);
@@ -59,6 +60,7 @@ struct TQueryButtonAlias
 };
 
 typedef void __fastcall (__closure *TQueryParamsTimerEvent)(unsigned int & Result);
+enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };
 
 struct TQueryParams
 {
@@ -74,13 +76,12 @@ struct TQueryParams
   TQueryParamsTimerEvent TimerEvent;
   UnicodeString TimerMessage;
   unsigned int TimerAnswers;
+  TQueryType TimerQueryType;
   unsigned int Timeout;
   unsigned int TimeoutAnswer;
   unsigned int NoBatchAnswers;
   UnicodeString HelpKeyword;
 };
-
-enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };
 
 enum TPromptKind
 {
@@ -104,5 +105,26 @@ typedef void __fastcall (__closure *TFileFoundEvent)
    bool & Cancel);
 typedef void __fastcall (__closure *TFindingFileEvent)
   (TTerminal * Terminal, const UnicodeString Directory, bool & Cancel);
+//---------------------------------------------------------------------------
+class TOperationVisualizer
+{
+public:
+  __fastcall TOperationVisualizer(bool UseBusyCursor = true);
+  __fastcall ~TOperationVisualizer();
+
+private:
+  bool FUseBusyCursor;
+  void * FToken;
+};
+//---------------------------------------------------------------------------
+class TInstantOperationVisualizer : public TOperationVisualizer
+{
+public:
+  __fastcall TInstantOperationVisualizer();
+  __fastcall ~TInstantOperationVisualizer();
+
+private:
+  TDateTime FStart;
+};
 //---------------------------------------------------------------------------
 #endif

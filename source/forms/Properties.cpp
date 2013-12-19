@@ -642,6 +642,8 @@ void __fastcall TPropertiesDialog::ChecksumAlgEditChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::CopyClick(TObject * /*Sender*/)
 {
+  TInstantOperationVisualizer Visualizer;
+
   TListView * ListView = dynamic_cast<TListView *>(ListViewMenu->PopupComponent);
   assert(ListView != NULL);
 

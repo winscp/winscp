@@ -121,18 +121,20 @@ void __fastcall TConfiguration::UpdateStaticUsage()
 //---------------------------------------------------------------------------
 THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
 {
+  THierarchicalStorage * Result;
   if (Storage == stRegistry)
   {
-    return new TRegistryStorage(RegistryStorageKey);
+    Result = new TRegistryStorage(RegistryStorageKey);
   }
   else if (Storage == stNul)
   {
-    return new TIniFileStorage(L"nul");
+    Result = new TIniFileStorage(L"nul");
   }
   else
   {
-    return new TIniFileStorage(IniFileStorageName);
+    Result = new TIniFileStorage(IniFileStorageName);
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Property)
@@ -910,6 +912,7 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
       }
     }
 
+    // BACKWARD COMPATIBILITY with 4.x
     if (FVirtualIniFileStorageName.IsEmpty() &&
         TPath::IsDriveRooted(IniPath))
     {
