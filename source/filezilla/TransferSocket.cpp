@@ -799,7 +799,9 @@ void CTransferSocket::OnSend(int nErrorCode)
 					return;
 				}
 				else if (nError == WSAEWOULDBLOCK)
+				{
 					m_bufferpos += numread;
+				}
 #ifndef MPEXT_NO_SSL
 				else if (m_pSslLayer && nError == WSAESHUTDOWN)
 				{
@@ -831,7 +833,9 @@ void CTransferSocket::OnSend(int nErrorCode)
 					return;
 				}
 				else if (!pos)
+				{
 					m_bufferpos = 0;
+				}
 				else
 				{
 					memmove(m_pBuffer, m_pBuffer+numsent, pos);
@@ -869,7 +873,9 @@ void CTransferSocket::OnSend(int nErrorCode)
 				}
 			}
 			else 
+			{
 				numread = 0;
+			}
 
 			if (!currentBufferSize && !m_bufferpos)
 			{

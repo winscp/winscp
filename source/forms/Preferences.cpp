@@ -625,8 +625,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       (ExplorerKeyboardShortcutsCombo->ItemIndex != 0);
     BOOLPROP(UseLocationProfiles);
 
-    WinConfiguration->ScpCommander.CompareByTime = CompareByTimeCheck->Checked;
-    WinConfiguration->ScpCommander.CompareBySize = CompareBySizeCheck->Checked;
+    ScpCommander.CompareByTime = CompareByTimeCheck->Checked;
+    ScpCommander.CompareBySize = CompareBySizeCheck->Checked;
 
     // Local panel
     ScpCommander.PreserveLocalDirectory = PreserveLocalDirectoryCheck->Checked;
@@ -982,8 +982,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     bool CopyParamSelected = (CopyParamListView->Selected != NULL);
     EnableControl(EditCopyParamButton, CopyParamSelected);
-    EnableControl(DuplicateCopyParamButton,
-      CopyParamSelected && (CopyParamListView->ItemIndex >= 1));
+    EnableControl(DuplicateCopyParamButton, CopyParamSelected);
     EnableControl(RemoveCopyParamButton,
       CopyParamSelected && (CopyParamListView->ItemIndex >= 1));
     EnableControl(UpCopyParamButton,
@@ -1455,22 +1454,17 @@ void __fastcall TPreferencesDialog::AddEditCopyParam(TCopyParamPresetMode Mode)
 {
   int Index = CopyParamListView->ItemIndex;
   bool Result;
-  if ((Index == 0) && (Mode != cpmAdd))
+  if ((Index == 0) && (Mode == cpmEdit))
   {
     Result = DoCopyParamCustomDialog(FCopyParams, 0);
   }
   else
   {
-    if (Index == 0)
-    {
-      assert(Mode == cpmAdd);
-      Index = 1;
-    }
-
     TCopyParamRuleData * CopyParamRuleData =
       (FDialogData != NULL ? FDialogData->CopyParamRuleData : NULL);
+    // negative (when default is selected) means add to the end
     Index--;
-    Result = DoCopyParamPresetDialog(FCopyParamList, Index, Mode, CopyParamRuleData);
+    Result = DoCopyParamPresetDialog(FCopyParamList, Index, Mode, CopyParamRuleData, FCopyParams);
     if (Result)
     {
       UpdateCopyParamListView();
@@ -1498,10 +1492,7 @@ void __fastcall TPreferencesDialog::EditCopyParamButtonClick(TObject * /*Sender*
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::DuplicateCopyParamButtonClick(TObject * /*Sender*/)
 {
-  if (ALWAYS_TRUE(CopyParamListView->ItemIndex >= 1))
-  {
-    AddEditCopyParam(cpmDuplicate);
-  }
+  AddEditCopyParam(cpmDuplicate);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CopyParamListViewDblClick(

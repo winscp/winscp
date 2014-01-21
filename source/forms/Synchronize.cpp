@@ -432,12 +432,12 @@ void __fastcall TSynchronizeDialog::FormShow(TObject * /*Sender*/)
     UpdateControls();
     if (FStartImmediatelly)
     {
+      // if starting get cancelled (from SYNCHRONISE_BEFORE_KEEPUPTODATE2 prompt),
+      // and OnShow gets called again (FSynchronizing is false),
+      // we do not want to try to start again
+      FStartImmediatelly = false;
       StartButtonClick(NULL);
     }
-  }
-  else
-  {
-    assert(FStartImmediatelly);
   }
 }
 //---------------------------------------------------------------------------

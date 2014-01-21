@@ -228,7 +228,14 @@ void __fastcall TAboutDialog::OKButtonMouseDown(TObject * /*Sender*/,
 {
   if ((Button == mbRight) && Shift.Contains(ssAlt))
   {
-    ACCESS_VIOLATION_TEST;
+    try
+    {
+      ACCESS_VIOLATION_TEST;
+    }
+    catch (Exception & E)
+    {
+      throw ExtException(&E, MainInstructions(L"Internal error test."));
+    }
   }
 }
 //---------------------------------------------------------------------------

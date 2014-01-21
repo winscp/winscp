@@ -265,7 +265,7 @@ type
     procedure DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint; Point: TPoint; dwEffect: Longint); virtual;
     procedure DDGiveFeedback(dwEffect: Longint; var Result: HResult); virtual;
     procedure DDMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
-      AMinCustCmd:integer; grfKeyState: Longint; pt: TPoint);
+      AMinCustCmd:integer; grfKeyState: Longint; pt: TPoint); virtual;
     procedure DDMenuDone(Sender: TObject; AMenu: HMenu); virtual;
     procedure DDProcessDropped(Sender: TObject; grfKeyState: Longint;
       Point: TPoint; dwEffect: Longint);

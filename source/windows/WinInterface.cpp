@@ -304,12 +304,13 @@ public:
   __fastcall TMessageTimeout(TComponent * AOwner, unsigned int Timeout,
     TButton * Button);
 
-  void __fastcall Reset();
+  void __fastcall Suspend();
   void __fastcall Cancel();
 
 protected:
   unsigned int FOrigTimeout;
   unsigned int FTimeout;
+  unsigned int FSuspended;
   TButton * FButton;
   UnicodeString FOrigCaption;
 
@@ -324,11 +325,13 @@ __fastcall TMessageTimeout::TMessageTimeout(TComponent * AOwner,
   OnTimer = DoTimer;
   Interval = MSecsPerSec;
   FOrigCaption = FButton->Caption;
+  FSuspended = 0;
   UpdateButton();
 }
 //---------------------------------------------------------------------------
-void __fastcall TMessageTimeout::Reset()
+void __fastcall TMessageTimeout::Suspend()
 {
+  FSuspended = 30 * MSecsPerSec;
   FTimeout = FOrigTimeout;
   UpdateButton();
 }
@@ -358,7 +361,16 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
   }
   else
   {
-    FTimeout -= MSecsPerSec;
+    unsigned int & Timeout = (FSuspended > 0) ? FSuspended : FTimeout;
+
+    if (Timeout > Interval)
+    {
+      Timeout -= Interval;
+    }
+    else
+    {
+      Timeout = 0;
+    }
     UpdateButton();
   }
 }
@@ -379,7 +391,7 @@ static void __fastcall MessageDialogMouseMove(void * Data, TObject * /*Sender*/,
 {
   assert(Data != NULL);
   TMessageTimeout * Timeout = static_cast<TMessageTimeout *>(Data);
-  Timeout->Reset();
+  Timeout->Suspend();
 }
 //---------------------------------------------------------------------------
 static void __fastcall MessageDialogMouseDown(void * Data, TObject * /*Sender*/,

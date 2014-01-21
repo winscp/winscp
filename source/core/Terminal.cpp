@@ -3271,6 +3271,12 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
     FileName = File->FileName;
   }
 
+  if (OperationProgress && OperationProgress->Operation == foCalculateSize)
+  {
+    if (OperationProgress->Cancel != csContinue) Abort();
+    OperationProgress->SetFile(FileName);
+  }
+
   bool AllowTransfer = (AParams->CopyParam == NULL);
   if (!AllowTransfer)
   {
@@ -3324,12 +3330,6 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
     {
       AParams->Stats->SymLinks++;
     }
-  }
-
-  if (OperationProgress && OperationProgress->Operation == foCalculateSize)
-  {
-    if (OperationProgress->Cancel != csContinue) Abort();
-    OperationProgress->SetFile(FileName);
   }
 }
 //---------------------------------------------------------------------------

@@ -827,7 +827,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Height = 117
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Keepalives'
-          TabOrder = 4
+          TabOrder = 3
           DesignSize = (
             393
             117)
@@ -935,7 +935,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Height = 117
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Keepalives'
-          TabOrder = 3
+          TabOrder = 2
           DesignSize = (
             393
             117)
@@ -999,7 +999,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Height = 46
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Internet protocol version'
-          TabOrder = 2
+          TabOrder = 4
           object IPAutoButton: TRadioButton
             Left = 12
             Top = 19

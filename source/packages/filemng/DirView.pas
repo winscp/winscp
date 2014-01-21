@@ -268,6 +268,8 @@ type
 
     procedure DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint;
       DragStatus: TDragDetectStatus); override;
+    procedure DDMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
+      AMinCustCmd:integer; grfKeyState: Longint; pt: TPoint); override;
     procedure DDMenuDone(Sender: TObject; AMenu: HMenu); override;
     procedure DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint;
       Point: TPoint; dwEffect: Longint); override;
@@ -3886,15 +3888,44 @@ begin
 end;
 {$ENDIF}
 
+procedure TDirView.DDMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
+  AMinCustCmd: Integer; grfKeyState: Longint; pt: TPoint);
+begin
+{$IFNDEF NO_THREADS}
+  {$IFDEF USE_DRIVEVIEW}
+  if Assigned(FDriveView) then
+  begin
+    // When a change is detected while menu is popped up
+    // it loses focus (or somethins similar)
+    // preventing it from handling sussequent click.
+    // This typically happens when right-dragging from remote to local panel,
+    // what causes temp directory being created+deleted.
+    // This is HACK, we should implement some uniform watch disabling/enabling
+    TDriveView(FDriveView).SuspendChangeTimer;
+  end;
+  {$ENDIF}
+{$ENDIF}
+
+  inherited;
+end;
+
 procedure TDirView.DDMenuDone(Sender: TObject; AMenu: HMenu);
 begin
 {$IFNDEF NO_THREADS}
   if not WatchThreadActive then
-{$ENDIF}
   begin
     FChangeTimer.Interval := Min(FChangeInterval * 2, 3000);
     FChangeTimer.Enabled  := True;
   end;
+
+  {$IFDEF USE_DRIVEVIEW}
+  if Assigned(FDriveView) then
+  begin
+    TDriveView(FDriveView).ResumeChangeTimer;
+  end;
+  {$ENDIF}
+{$ENDIF}
+
   inherited;
 end;
 
@@ -3903,11 +3934,18 @@ procedure TDirView.DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint;
 begin
 {$IFNDEF NO_THREADS}
   if not WatchThreadActive then
-{$ENDIF}
   begin
     FChangeTimer.Interval := FChangeInterval;
     FChangeTimer.Enabled  := True;
   end;
+  {$IFDEF USE_DRIVEVIEW}
+  if Assigned(FDriveView) then
+  begin
+    TDriveView(FDriveView).ResumeChangeTimer;
+  end;
+  {$ENDIF}
+{$ENDIF}
+
   inherited;
 end;
 

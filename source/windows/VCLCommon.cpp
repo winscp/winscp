@@ -15,6 +15,7 @@
 #include <PathLabel.hpp>
 #include <PasTools.hpp>
 #include <Vcl.Imaging.pngimage.hpp>
+#include <Math.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -1031,11 +1032,12 @@ static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
         break;
 
       case taRightJustify:
-        R.Left = R.Right - TextSize.cx;
+        R.Left = Max(0, R.Right - TextSize.cx);
         break;
 
       case taCenter:
         {
+          FAIL; // not used branch, possibly untested
           int Diff = R.Width() - TextSize.cx;
           R.Left += Diff / 2;
           R.Right -= Diff - (Diff / 2);
@@ -1130,7 +1132,7 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
           Canvas->LineTo(R.Right + 1, R.Bottom);
           Canvas->Pen->Color = clGrayText;
         }
-        Canvas->MoveTo(R.Left + 1, R.Bottom - 1);
+        Canvas->MoveTo(R.Left, R.Bottom - 1);
         Canvas->LineTo(R.Right, R.Bottom - 1);
       }
     }
@@ -1271,6 +1273,12 @@ static void __fastcall HintLabelWindowProc(void * Data, TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall HintLabel(TStaticText * StaticText, UnicodeString Hint)
 {
+  // Currently all are right-justified, when other alignemtn is used,
+  // test respective branches in FocusableLabelCanvas.
+  assert(StaticText->Alignment == taRightJustify);
+  // With right-justify, it has to be off. We may not notice on riginal
+  // English version, results will differ with translations only
+  assert(!StaticText->AutoSize);
   StaticText->ParentFont = true;
   if (!Hint.IsEmpty())
   {

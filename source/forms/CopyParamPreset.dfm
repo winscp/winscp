@@ -6,7 +6,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CopyParamPresetDialog'
-  ClientHeight = 509
+  ClientHeight = 514
   ClientWidth = 675
   Color = clBtnFace
   ParentFont = True
@@ -16,7 +16,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   OnShow = FormShow
   DesignSize = (
     675
-    509)
+    514)
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
@@ -29,7 +29,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   end
   object OkButton: TButton
     Left = 423
-    Top = 476
+    Top = 481
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -40,7 +40,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   end
   object CancelButton: TButton
     Left = 507
-    Top = 476
+    Top = 481
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -70,13 +70,13 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
     Left = 426
     Top = 91
     Width = 240
-    Height = 379
+    Height = 384
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Autoselection rule'
     TabOrder = 3
     DesignSize = (
       240
-      379)
+      384)
     object Label2: TLabel
       Left = 16
       Top = 20
@@ -163,9 +163,9 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       OnClick = CurrentRuleButtonClick
     end
     object RuleMaskHintText: TStaticText
-      Left = 127
+      Left = 95
       Top = 207
-      Width = 97
+      Width = 129
       Height = 17
       Alignment = taRightJustify
       Anchors = [akTop, akRight]
@@ -187,7 +187,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   end
   object HelpButton: TButton
     Left = 591
-    Top = 476
+    Top = 481
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

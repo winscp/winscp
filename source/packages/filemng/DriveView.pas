@@ -151,6 +151,7 @@ type
     FInternalWindowHandle: HWND;
     FPrevSelected: TTreeNode;
     FPrevSelectedIndex: Integer;
+    FChangeTimerSuspended: Integer;
 
     FDesktop: IShellFolder;
     FWorkPlace: IShellFolder;
@@ -332,6 +333,8 @@ type
     {Watchthread handling:}
     procedure StartWatchThread; virtual;
     procedure StopWatchThread; virtual;
+    procedure SuspendChangeTimer;
+    procedure ResumeChangeTimer;
     procedure TerminateWatchThread(Drive: TDrive); virtual;
     procedure StartAllWatchThreads; virtual;
     procedure StopAllWatchThreads; virtual;
@@ -598,6 +601,7 @@ begin
   FRenameNode := nil;
   FPrevSelected := nil;
   FPrevSelectedIndex := -1;
+  FChangeTimerSuspended := 0;
 
   FConfirmOverwrite := True;
   FLastPathCut := '';
@@ -2261,12 +2265,14 @@ begin
   begin
     DirChanged := (Sender as TDiscMonitor).Directories[0];
     if Length(DirChanged) > 0 then
+    begin
       with DriveStatus[DirChanged[1]] do
       begin
         ChangeTimer.Interval := 0;
         ChangeTimer.Interval := FChangeInterval;
         ChangeTimer.Enabled  := True;
       end;
+    end;
   end;
 end; {DirWatchChangeDetected}
 
@@ -2275,7 +2281,7 @@ var
   Node: TTreeNode;
   Drive: TDrive;
 begin
-  if Sender is TTimer then
+  if (FChangeTimerSuspended = 0) and (Sender is TTimer) then
     with TTimer(Sender) do
     begin
       Drive := Chr(Tag);
@@ -2322,6 +2328,17 @@ begin
       if Assigned(DiscMonitor) then
         DiscMonitor.Enabled := False;
 end; {StopWatchThread}
+
+procedure TDriveView.SuspendChangeTimer;
+begin
+  Inc(FChangeTimerSuspended);
+end;
+
+procedure TDriveView.ResumeChangeTimer;
+begin
+  Assert(FChangeTimerSuspended > 0);
+  Dec(FChangeTimerSuspended);
+end;
 
 procedure TDriveView.TerminateWatchThread(Drive: TDrive);
 begin

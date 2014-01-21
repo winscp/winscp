@@ -40,7 +40,7 @@ object SelectMaskDialog: TSelectMaskDialog
     object ApplyToDirectoriesCheck: TCheckBox
       Left = 16
       Top = 63
-      Width = 217
+      Width = 209
       Height = 17
       Caption = 'Apply to &directories'
       TabOrder = 2
@@ -58,9 +58,9 @@ object SelectMaskDialog: TSelectMaskDialog
       OnExit = MaskEditExit
     end
     object HintText: TStaticText
-      Left = 232
+      Left = 224
       Top = 64
-      Width = 97
+      Width = 105
       Height = 17
       Alignment = taRightJustify
       Anchors = [akTop, akRight]

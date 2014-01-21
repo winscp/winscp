@@ -1780,6 +1780,7 @@ UnicodeString __fastcall DecodeUrlChars(UnicodeString S)
             UTF8String UTF8(Bytes.c_str(), Bytes.Length());
             UnicodeString Chars(UTF8);
             S.Insert(Chars, i);
+            i += Chars.Length() - 1;
           }
         }
         break;

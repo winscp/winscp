@@ -149,7 +149,7 @@ __published:
   TMenuItem *Session1;
   TPngImageList *ActionImageList;
   TAction *CloneToNewSiteAction;
-  TMenuItem *ClonetoNewSite2;
+  TMenuItem *SiteClonetoNewSiteMenuItem;
   TAction *PuttyAction;
   TPopupMenu *LoginDropDownMenu;
   TMenuItem *Login1;
@@ -158,7 +158,7 @@ __published:
   TMenuItem *N8;
   TMenuItem *Login3;
   TMenuItem *N9;
-  TMenuItem *Login4;
+  TMenuItem *SiteLoginMenuItem;
   TMenuItem *N10;
   TMenuItem *Login5;
   TMenuItem *N11;
@@ -237,6 +237,7 @@ __published:
 private:
   int NoUpdate;
   TSessionData * FNewSiteData;
+  bool FNewSiteKeepName;
   TSessionData * FSessionData;
   TStoredSessionList * FStoredSessions;
   int FOptions;
@@ -324,6 +325,7 @@ private:
   void __fastcall SaveAsSession(bool ForceDialog);
   void __fastcall InvalidateSessionData();
   bool __fastcall CanLogin();
+  bool __fastcall IsCloneToNewSiteDefault();
   bool __fastcall IsDefaultResult(TModalResult Result);
   int __fastcall GetSessionImageIndex(TSessionData * Data);
   void __fastcall SetNodeImage(TTreeNode * Node, int ImageIndex);
@@ -331,6 +333,7 @@ private:
   bool __fastcall EnsureNotEditing();
   bool __fastcall IsEditable();
   TSessionData * __fastcall CloneSelectedSession();
+  void __fastcall CloneToNewSite();
 
 protected:
   void __fastcall Default();

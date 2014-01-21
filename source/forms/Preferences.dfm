@@ -2724,7 +2724,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 21
             Width = 131
             Height = 13
-            Caption = '&PuTTY/Terminal client path:'
+            Caption = 'PuTTY/Terminal &client path:'
             FocusControl = PuttyPathEdit
           end
           object PuttyRegistryStorageKeyLabel: TLabel

@@ -492,18 +492,7 @@ void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
     {
       if ((Count > 0) && !FDestroying)
       {
-        for (int i = 0; i < Count; i++)
-        {
-          if (Terminals[i]->Status == ssOpened)
-          {
-            ActiveTerminal = Terminals[i];
-            break;
-          }
-        }
-        if (ActiveTerminal == Terminal)
-        {
-          ActiveTerminal = Terminals[Index < Count ? Index : 0];
-        }
+        ActiveTerminal = Terminals[Index < Count ? Index : Index - 1];
       }
       else
       {
@@ -665,7 +654,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     {
       NewTitle = FProgressTitle + L" - " + NewTitle;
     }
-    else if ((ScpExplorer != NULL) && (GetActiveWindow() != ScpExplorer->Handle) &&
+    else if ((ScpExplorer != NULL) && (ScpExplorer->Handle != GetAncestor(GetActiveWindow(), GA_ROOTOWNER)) &&
              !(QueueProgressTitle = ScpExplorer->GetQueueProgressTitle()).IsEmpty())
     {
       NewTitle = QueueProgressTitle + L" - " + NewTitle;

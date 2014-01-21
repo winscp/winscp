@@ -46,6 +46,7 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
 {
   FLastOperation = foNone;
   FLastTotalSizeSet = false;
+  FDataGot = false;
   FDataReceived = false;
   FAsciiTransferChanged = false;
   FResumeStatusChanged = false;
@@ -57,6 +58,9 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   FReadOnly = false;
   FShowAsModalStorage = NULL;
   FStarted = Now();
+  FModalBeginHooked = false;
+  FPrevApplicationModalBegin = NULL;
+  FModalLevel = -1;
   UseSystemSettings(this);
   ResetOnceDoneOperation();
 
@@ -84,6 +88,13 @@ __fastcall TProgressForm::~TProgressForm()
   if (IsApplicationMinimized() && FMinimizedByMe)
   {
     ShowNotification(NULL, LoadStr(BALLOON_OPERATION_COMPLETE), qtInformation);
+  }
+
+  if (FModalBeginHooked)
+  {
+    assert(Application->OnModalBegin == ApplicationModalBegin);
+    Application->OnModalBegin = FPrevApplicationModalBegin;
+    FModalBeginHooked = false;
   }
 
   ReleaseAsModal(this, FShowAsModalStorage);
@@ -234,6 +245,61 @@ void __fastcall TProgressForm::UpdateControls()
 }
 //---------------------------------------------------------------------
 static TDateTime DelayStartInterval(static_cast<double>(OneSecond/5));
+static TDateTime UpdateInterval(static_cast<double>(OneSecond));
+//---------------------------------------------------------------------
+bool __fastcall TProgressForm::ReceiveData(bool Force, int ModalLevelOffset)
+{
+  bool Result = false;
+  if (FDataGot && !FDataReceived &&
+      // Never popup over dialog that appeared later than we started
+      // (this can happen from UpdateTimerTimer when application is
+      // restored while overwrite confirmation dialog [or any other]
+      // is already shown).
+      // TODO We should probably take as-modal windows into account too
+      // (for extreme cases like restoring while reconnecting [as-modal TAuthenticateForm]).
+      ((FModalLevel < 0) || (Application->ModalLevel + ModalLevelOffset <= FModalLevel)))
+  {
+    // delay showing the progress until the application is restored,
+    // otherwise the form popups up unminimized.
+    if (!IsApplicationMinimized() &&
+        (Force || ((Now() - FStarted) > DelayStartInterval)))
+    {
+      FDataReceived = true;
+      // CPS limit is set set only once from TFileOperationProgressType::Start
+      FCPSLimit = FData.CPSLimit;
+      SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
+      ShowAsModal(this, FShowAsModalStorage);
+      // particularly needed for the case, when we are showing the form delayed
+      // because application was minimized when operation started
+      Result = true;
+    }
+    else if (!FModalBeginHooked && ALWAYS_TRUE(FModalLevel < 0))
+    {
+      // record state as of time, the window should be shown,
+      // had not we implemented delayed show
+      FPrevApplicationModalBegin = Application->OnModalBegin;
+      Application->OnModalBegin = ApplicationModalBegin;
+      FModalBeginHooked = true;
+      FModalLevel = Application->ModalLevel;
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::ApplicationModalBegin(TObject * Sender)
+{
+  // Popup before any modal dialog shows (typically overwrite confirmation,
+  // as that popups nerly instantly, i.e. less than DelayStartInterval).
+  // The Application->ModalLevel is already incremented, but we should treat is as
+  // if it were not as the dialog is not created yet (so we can popup if we are not yet).
+  ReceiveData(true, -1);
+
+  if (FPrevApplicationModalBegin != NULL)
+  {
+    FPrevApplicationModalBegin(Sender);
+  }
+}
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & AData)
 {
@@ -261,18 +327,16 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
   }
 
   FData = AData;
-  // delay showing the progress until the application is restored,
-  // otherwise the form popups up unminimized.
-  if (!FDataReceived && !IsApplicationMinimized() &&
-      ((N - FStarted) > DelayStartInterval))
+  FDataGot = true;
+  if (!UpdateTimer->Enabled)
   {
-    FDataReceived = true;
-    // CPS limit is set set only once from TFileOperationProgressType::Start
-    FCPSLimit = AData.CPSLimit;
-    SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
-    ShowAsModal(this, FShowAsModalStorage);
-    // particularly needed for the case, when we are showing the form delayed
-    // because application was minimized when operation started
+    UpdateTimer->Interval = static_cast<unsigned int>(MilliSecondsBetween(TDateTime(), DelayStartInterval));
+    UpdateTimer->Enabled = true;
+    FSinceLastUpdate = TDateTime();
+  }
+
+  if (ReceiveData(false, 0))
+  {
     InstantUpdate = true;
   }
 
@@ -296,14 +360,30 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
 {
-  if (FDataReceived) UpdateControls();
+  // popup the progress window at least here, if SetProgressData is
+  // not being called (typically this happens when using custom command
+  // that launches long-lasting external process, such as visual diff)
+  ReceiveData(false, 0);
+
+  if (FDataReceived)
+  {
+    FSinceLastUpdate = IncMilliSecond(FSinceLastUpdate, UpdateTimer->Interval);
+    if (FSinceLastUpdate >= UpdateInterval)
+    {
+      UpdateControls();
+      FSinceLastUpdate = TDateTime();
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::FormShow(TObject * /*Sender*/)
 {
-  UpdateTimer->Enabled = true;
   SpeedCombo->Items = CustomWinConfiguration->History[L"SpeedLimit"];
-  if (FDataReceived) UpdateControls();
+  ReceiveData(false, 0);
+  if (FDataReceived)
+  {
+    UpdateControls();
+  }
   FLastUpdate = 0;
 }
 //---------------------------------------------------------------------------

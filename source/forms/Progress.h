@@ -56,6 +56,7 @@ __published:
 private:
   TCancelStatus FCancel;
   TFileOperationProgressType FData;
+  bool FDataGot;
   bool FDataReceived;
   TFileOperation FLastOperation;
   bool FLastTotalSizeSet;
@@ -72,18 +73,24 @@ private:
   TProgressBar * FOperationProgress;
   TProgressBar * FFileProgress;
   TDateTime FStarted;
+  TDateTime FSinceLastUpdate;
+  bool FModalBeginHooked;
+  TNotifyEvent FPrevApplicationModalBegin;
+  int FModalLevel;
 
   void __fastcall SetOnceDoneOperation(TOnceDoneOperation value);
   void __fastcall SetAllowMinimize(bool value);
   bool __fastcall GetAllowMinimize();
   void __fastcall SetReadOnly(bool value);
   void __fastcall GlobalMinimize(TObject * Sender);
+  void __fastcall ApplicationModalBegin(TObject * Sender);
 
 protected:
   void __fastcall CancelOperation();
   void __fastcall UpdateControls();
   void __fastcall ApplyCPSLimit();
   void __fastcall ResetOnceDoneOperation();
+  bool __fastcall ReceiveData(bool Force, int ModalLevelOffset);
 
 public:
   static UnicodeString __fastcall OperationName(TFileOperation Operation, TOperationSide Side);

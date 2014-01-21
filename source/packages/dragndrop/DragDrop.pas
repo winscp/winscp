@@ -1329,26 +1329,29 @@ begin
                   BuildMenuItemInfo(MIAbortStr, false, CmdAbort, false));
                // Add custom-menuitems ...
                FOwner.DoMenuPopup(self, Menu, DataObj, MinCustCmd, KeyState, pt);
-               dwEffect:=DROPEFFECT_None;
-               Cmd:=Cardinal(TrackPopupMenuEx(Menu, TPM_LEFTALIGN or TPM_RIGHTBUTTON or TPM_RETURNCMD,
-                  pt.x, pt.y, FOwner.DragDropControl.Handle, nil));
-               case Cmd of
-                    CmdMove: dwEffect:=DROPEFFECT_Move;
-                    CmdCopy: dwEffect:=DROPEFFECT_Copy;
-                    CmdLink: dwEffect:=DROPEFFECT_Link;
-                    CmdSeparator, CmdAbort:
-                       dwEffect:=DROPEFFECT_None;
-                    else // custom-menuitem was selected ...
-                    begin
+               try
+                 dwEffect:=DROPEFFECT_None;
+                 Cmd:=Cardinal(TrackPopupMenuEx(Menu, TPM_LEFTALIGN or TPM_RIGHTBUTTON or TPM_RETURNCMD,
+                    pt.x, pt.y, FOwner.DragDropControl.Handle, nil));
+                 case Cmd of
+                      CmdMove: dwEffect:=DROPEFFECT_Move;
+                      CmdCopy: dwEffect:=DROPEFFECT_Copy;
+                      CmdLink: dwEffect:=DROPEFFECT_Link;
+                      CmdSeparator, CmdAbort:
                          dwEffect:=DROPEFFECT_None;
-                         if FOwner.DoMenuExecCmd(self, Menu, DataObj, Cmd, dwEffect) and
-                            assigned(FOwner.FOnMenuSucceeded) then
-                            FOwner.FOnMenuSucceeded(self, KeyState,
-                            FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
-                    end;
+                      else // custom-menuitem was selected ...
+                      begin
+                           dwEffect:=DROPEFFECT_None;
+                           if FOwner.DoMenuExecCmd(self, Menu, DataObj, Cmd, dwEffect) and
+                              assigned(FOwner.FOnMenuSucceeded) then
+                              FOwner.FOnMenuSucceeded(self, KeyState,
+                              FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
+                      end;
+                 end;
+               finally
+                 FOwner.DoMenuDestroy(Self, Menu);
+                 DestroyMenu(Menu);
                end;
-               FOwner.DoMenuDestroy(Self, Menu);
-               DestroyMenu(Menu);
           end;
           if assigned(FOwner.OnDrop) then
              FOwner.OnDrop(DataObj, KeyState,

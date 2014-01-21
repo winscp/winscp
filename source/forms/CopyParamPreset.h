@@ -51,7 +51,8 @@ public:
   __fastcall TCopyParamPresetDialog(TComponent * Owner,
     TCopyParamPresetMode Mode, TCopyParamRuleData * CurrentRuleData);
 
-  bool __fastcall Execute(TCopyParamList * CopyParamList, int & Index);
+  bool __fastcall Execute(TCopyParamList * CopyParamList, int & Index,
+    const TCopyParamType & DefaultCopyParams);
 };
 //---------------------------------------------------------------------------
 #endif

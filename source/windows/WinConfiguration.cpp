@@ -504,7 +504,7 @@ void __fastcall TWinConfiguration::Default()
   FQueueView.HeightPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   // with 1000 pixels wide screen, both interfaces are wide enough to fit wider queue
   FQueueView.Layout =
-    UnicodeString((WorkAreaWidthScaled > 1000) ? L"70,250,250,80,80,80,80" : L"70,160,160,80,80,80,80") +
+    UnicodeString((WorkAreaWidthScaled > 1000) ? L"70,250,250,80,80,80,100" : L"70,160,160,80,80,80,100") +
     // WORKAROUND (the comma), see GetListViewStr
     L",;" + SaveDefaultPixelsPerInch();
   FQueueView.Show = qvHideWhenEmpty;

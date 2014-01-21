@@ -465,7 +465,7 @@ BEGIN
         COLOR_PICK_HINT, "Choose any session (panel) color"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000-2013 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000-2014 Martin Prikryl"
         HOMEPAGE_URL, "http://winscp.net/"
         HISTORY_URL, "http://winscp.net/eng/docs/history"
         FORUM_URL, "http://winscp.net/forum/"

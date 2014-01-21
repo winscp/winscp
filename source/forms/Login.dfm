@@ -472,7 +472,8 @@ object LoginDialog: TLoginDialog
     end
     object SaveAsSessionAction: TAction
       Category = 'Sessions'
-      Caption = '&Save As...'
+      Caption = 'Save &As...'
+      ShortCut = 32833
       OnExecute = SaveAsSessionActionExecute
     end
     object SaveSessionAction: TAction
@@ -578,7 +579,7 @@ object LoginDialog: TLoginDialog
     end
     object SessionAdvancedAction: TAction
       Category = 'Session'
-      Caption = '&Advanced...'
+      Caption = 'A&dvanced...'
       OnExecute = SessionAdvancedActionExecute
     end
     object PreferencesLoggingAction: TAction
@@ -1031,6 +1032,7 @@ object LoginDialog: TLoginDialog
     Top = 145
     object SaveSessionMenuItem: TMenuItem
       Action = SaveSessionAction
+      Default = True
     end
     object SaveAsSessionMenuItem: TMenuItem
       Action = SaveAsSessionAction
@@ -1051,7 +1053,7 @@ object LoginDialog: TLoginDialog
       Enabled = False
       Visible = False
     end
-    object Login4: TMenuItem
+    object SiteLoginMenuItem: TMenuItem
       Action = LoginAction
       Default = True
     end
@@ -1070,7 +1072,7 @@ object LoginDialog: TLoginDialog
     object Rename1: TMenuItem
       Action = RenameSessionAction
     end
-    object ClonetoNewSite2: TMenuItem
+    object SiteClonetoNewSiteMenuItem: TMenuItem
       Action = CloneToNewSiteAction
     end
     object N5: TMenuItem

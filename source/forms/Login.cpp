@@ -68,6 +68,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FSitesIncrementalSearchHaveNext = false;
   FEditing = false;
   FRenaming = false;
+  FNewSiteKeepName = false;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -485,7 +486,8 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
 
   TSessionData * EditingSessionData = GetEditingSessionData();
   SessionData->Name =
-    (EditingSessionData != NULL) ? EditingSessionData->Name : SessionData->DefaultSessionName;
+    (EditingSessionData != NULL) ? EditingSessionData->Name :
+        (FNewSiteKeepName ? SessionData->Name : SessionData->DefaultSessionName);
 }
 //---------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsEditable()
@@ -557,25 +559,24 @@ void __fastcall TLoginDialog::UpdateControls()
     EnableControl(ToolsMenuButton, !FEditing);
     EnableControl(CloseButton, !FEditing);
 
-    DefaultButton(LoginButton, !FEditing && !FRenaming);
+    DefaultButton(LoginButton, !FEditing && !FRenaming && !IsCloneToNewSiteDefault());
     CloseButton->Cancel = !FEditing && !FRenaming;
     DefaultButton(SaveButton, FEditing);
     EditCancelButton->Cancel = FEditing;
+    SiteClonetoNewSiteMenuItem->Default = IsCloneToNewSiteDefault();
+    SiteLoginMenuItem->Default = !SiteClonetoNewSiteMenuItem->Default;
 
     UpdateButtonVisibility(SaveButton);
     UpdateButtonVisibility(EditButton);
     UpdateButtonVisibility(EditCancelButton);
 
-    bool CanSaveSssion = FEditing;
     TAction * SaveButtonAction =
-      CanSaveSssion && SupportsSplitButton() ? SaveSessionAction : SaveAsSessionAction;
+      SupportsSplitButton() ? SaveSessionAction : SaveAsSessionAction;
     if (SaveButton->Action != SaveButtonAction)
     {
       SaveButton->Action = SaveButtonAction;
     }
-    SaveSessionMenuItem->Visible = CanSaveSssion;
-    SaveSessionMenuItem->Default = CanSaveSssion;
-    SaveAsSessionMenuItem->Default = !CanSaveSssion;
+    SaveAsSessionMenuItem->Visible = FEditing;
   }
 }
 //---------------------------------------------------------------------------
@@ -607,19 +608,30 @@ void __fastcall TLoginDialog::DataChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
 {
-  if (!FInitialized || FLocaleChanging)
+  // this is called twice on startup, first with ControlState = [csRecreating]
+  // we should probably filter this out, it would avoid need for explicit
+  // LoadContents call below
+  bool NeedInitialize = !FInitialized || FLocaleChanging;
+  if (NeedInitialize)
   {
     Init();
-    LoadContents();
   }
 
   // among other this makes the expanded nodes look like expanded,
-  // because the LoadState call in Execute is too early,
+  // because the LoadState call in Execute would be too early,
   // and some stray call to collapsed event during showing process,
   // make the image be set to collapsed.
   // Also LoadState calls RestoreFormSize that has to be
   // called only after DoFormWindowProc(CM_SHOWINGCHANGED).
+  // See also comment about MakeVisible in LoadState().
   LoadState();
+  if (NeedInitialize)
+  {
+    // Need to load contents only after state (as that selects initial node).
+    // Explicit call is needed, as we get here during csRecreating phase,
+    // when SessionTreeChange is not triggered, see initial method comment
+    LoadContents();
+  }
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -662,12 +674,21 @@ void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
   if (Node == SessionTree->Selected)
   {
     // EnsureNotEditing must be before CanLogin, as CanLogin checks for FEditing
-    if (EnsureNotEditing() &&
-        CanLogin())
+    if (EnsureNotEditing())
     {
-      if (IsSessionNode(Node) || IsWorkspaceNode(Node))
+      if (IsCloneToNewSiteDefault())
       {
-        Login();
+        CloneToNewSite();
+      }
+      // this can hardle be false
+      // (after editing and clone tests above)
+      // (except for empty folders, but those do not pass a condition below)
+      else if (CanLogin())
+      {
+        if (IsSessionNode(Node) || IsWorkspaceNode(Node))
+        {
+          Login();
+        }
       }
     }
   }
@@ -840,7 +861,9 @@ void __fastcall TLoginDialog::SaveAsSession(bool ForceDialog)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
 {
-  SaveAsSession(false);
+  bool NewSiteSelected = IsNewSiteNode(SessionTree->Selected);
+  // for new site, the "save" command is actually "save as"
+  SaveAsSession(NewSiteSelected);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveAsSessionActionExecute(TObject * /*Sender*/)
@@ -990,7 +1013,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   bool PrevEnabled = Action->Enabled;
 
   if ((Action == EditSessionAction) ||
-      (CloneToNewSiteAction == EditSessionAction))
+      (Action == CloneToNewSiteAction))
   {
     Action->Enabled = SiteSelected && !FEditing;
   }
@@ -1030,7 +1053,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == SaveSessionAction)
   {
-    SaveSessionAction->Enabled = FEditing;
+    SaveSessionAction->Enabled = NewSiteSelected || FEditing;
   }
   else if (Action == SessionAdvancedAction)
   {
@@ -1038,6 +1061,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == SaveAsSessionAction)
   {
+    // Save as is needed for new site only when !SupportsSplitButton()
     SaveAsSessionAction->Enabled = NewSiteSelected || FEditing;
   }
   else if (Action == NewSessionFolderAction)
@@ -1065,6 +1089,11 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
 
   Idle();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TLoginDialog::IsCloneToNewSiteDefault()
+{
+  return IsSiteNode(SessionTree->Selected) && !FStoredSessions->CanLogin(GetSessionData());
 }
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::CanLogin()
@@ -1110,7 +1139,8 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
   {
     Default();
   }
-  LoadState();
+  // Not calling LoadState here.
+  // Its redundant and does not work anyway, see comment in the method.
   bool Result = IsDefaultResult(ShowModal());
   SaveState();
   if (Result)
@@ -1249,7 +1279,7 @@ void __fastcall TLoginDialog::LoadState()
   {
     // it does not make any sense to call this before
     // DoFormWindowProc(CM_SHOWINGCHANGED), we would end up on wrong monitor
-    if (Visible)
+    if (ALWAYS_TRUE(Visible))
     {
       RestoreFormSize(CustomWinConfiguration->LoginDialog.WindowSize, this);
     }
@@ -1268,11 +1298,13 @@ void __fastcall TLoginDialog::LoadState()
         SessionTree->Items->Item[Index], OpenedStoredSessionFolders);
     }
 
-    // tree view tried to make expanded node children all visible, what
+    // tree view tries to make expanded node children all visible, what
     // may scroll the selected node (what should be the first one here),
     // out of the view
     if (SessionTree->Selected != NULL)
     {
+      // see comment for LastStoredSession branch below
+      assert(Visible);
       SessionTree->Selected->MakeVisible();
     }
   }
@@ -1281,7 +1313,12 @@ void __fastcall TLoginDialog::LoadState()
     delete OpenedStoredSessionFolders;
   }
 
-  if (!WinConfiguration->LastStoredSession.IsEmpty())
+  // calling TTreeNode::MakeVisible() when tree view is not visible yet,
+  // sometimes scrolls view horizontally when not needed
+  // (seems like it happens for sites that are at the same level
+  // as site folders, e.g. for the very last root-level site, at long as
+  // there are any folders)
+  if (!WinConfiguration->LastStoredSession.IsEmpty() && ALWAYS_TRUE(Visible))
   {
     UnicodeString Path = WinConfiguration->LastStoredSession;
 
@@ -1362,6 +1399,7 @@ void __fastcall TLoginDialog::ResetNewSessionActionExecute(TObject * /*Sender*/)
 {
   Default();
   EditSession();
+  FNewSiteKeepName = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
@@ -2687,11 +2725,18 @@ void __fastcall TLoginDialog::CancelEditing()
   SetNodeImage(SessionTree->Selected, GetSessionImageIndex(GetNodeSession(SessionTree->Selected)));
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::CloneToNewSiteActionExecute(TObject * /*Sender*/)
+void __fastcall TLoginDialog::CloneToNewSite()
 {
   FNewSiteData->Assign(SelectedSession);
+  FNewSiteData->MakeUniqueIn(FStoredSessions);
+  FNewSiteKeepName = true;
   NewSite();
   EditSession();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CloneToNewSiteActionExecute(TObject * /*Sender*/)
+{
+  CloneToNewSite();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Login()

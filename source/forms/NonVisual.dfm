@@ -120,7 +120,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object LocalCopyFocusedAction: TAction
       Tag = 8
       Category = 'Local Focused Operation'
-      Caption = '&Upload...'
+      Caption = 'Up&load...'
       HelpKeyword = 'task_upload'
       Hint = 'Upload|Upload selected local file(s) to remote directory'
       ImageIndex = 88
@@ -128,7 +128,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteCopyFocusedAction: TAction
       Tag = 12
       Category = 'Remote Focused Operation'
-      Caption = '&Download...'
+      Caption = 'Down&load...'
       HelpKeyword = 'task_download'
       Hint = 'Download|Download selected remote file(s) to local directory'
       ImageIndex = 89
@@ -136,7 +136,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteMoveFocusedAction: TAction
       Tag = 12
       Category = 'Remote Focused Operation'
-      Caption = 'Download and D&elete...'
+      Caption = 'Download and Dele&te...'
       HelpKeyword = 'task_download'
       Hint = 
         'Download and Delete|Download selected remote file(s) to local di' +
@@ -146,7 +146,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteCopyAction: TAction
       Tag = 14
       Category = 'Remote Selected Operation'
-      Caption = '&Download...'
+      Caption = 'Down&load...'
       HelpKeyword = 'task_download'
       Hint = 'Download|Download selected remote file(s) to local directory'
       ImageIndex = 89
@@ -1650,7 +1650,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object LocalCopyAction: TAction
       Tag = 9
       Category = 'Local Selected Operation'
-      Caption = '&Upload...'
+      Caption = 'Up&load...'
       HelpKeyword = 'task_upload'
       Hint = 'Upload|Upload selected local file(s) to remote directory'
       ImageIndex = 88
@@ -1944,7 +1944,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object LocalMoveAction: TAction
       Tag = 9
       Category = 'Local Selected Operation'
-      Caption = 'Upload and D&elete...'
+      Caption = 'Upload and Dele&te...'
       HelpKeyword = 'task_upload'
       Hint = 
         'Upload and Delete|Upload selected local file(s) to remote direct' +
@@ -2004,7 +2004,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteMoveAction: TAction
       Tag = 14
       Category = 'Remote Selected Operation'
-      Caption = 'Download and D&elete...'
+      Caption = 'Download and Dele&te...'
       HelpKeyword = 'task_download'
       Hint = 
         'Download and Delete|Download selected remote file(s) to local di' +
@@ -2072,7 +2072,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object LocalMoveFocusedAction: TAction
       Tag = 8
       Category = 'Local Focused Operation'
-      Caption = 'Upload and D&elete...'
+      Caption = 'Upload and Dele&te...'
       HelpKeyword = 'task_upload'
       Hint = 
         'Upload and Delete|Upload selected local file(s) to remote direct' +

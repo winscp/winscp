@@ -322,6 +322,12 @@ void __fastcall UpdateStaticUsage()
   bool InProgramFiles = AnsiSameText(ExeName.SubString(1, ProgramsFolder.Length()), ProgramsFolder);
   Configuration->Usage->Set(L"InProgramFiles", InProgramFiles);
 
+  HMODULE NtDll = GetModuleHandle(L"ntdll.dll");
+  bool Wine =
+    ALWAYS_TRUE(NtDll != NULL) &&
+    (GetProcAddress(NtDll, "wine_get_version") != NULL);
+  Configuration->Usage->Set(L"Wine", Wine);
+
   WinConfiguration->UpdateStaticUsage();
 
 }
@@ -331,20 +337,94 @@ void __fastcall MaintenanceTask()
   CoreMaintenanceTask();
 }
 //---------------------------------------------------------------------------
+struct TFindProcessMainWindowParam
+{
+  unsigned long ProcessId;
+  HWND HiddenWindow;
+  HWND MainWindow;
+};
+//---------------------------------------------------------------------------
+BOOL __stdcall FindProcessMainWindow(HWND Handle, LPARAM AParam)
+{
+  TFindProcessMainWindowParam & Param = *reinterpret_cast<TFindProcessMainWindowParam *>(AParam);
+
+  unsigned long ProcessId;
+  if ((Handle != Param.HiddenWindow) &&
+      (Param.MainWindow == 0) && // optimization
+      (GetWindowThreadProcessId(Handle, &ProcessId) != 0) &&
+      (ProcessId == Param.ProcessId))
+  {
+    TCopyDataMessage Message;
+    Message.Version = TCopyDataMessage::Version1;
+
+    COPYDATASTRUCT CopyData;
+    CopyData.cbData = sizeof(Message);
+    CopyData.lpData = &Message;
+
+    Message.Command = TCopyDataMessage::CommandCanCommandLine;
+
+    LRESULT SendResult =
+      SendMessage(Handle, WM_COPYDATA, reinterpret_cast<WPARAM>(HInstance),
+        reinterpret_cast<LPARAM>(&CopyData));
+
+    if (SendResult > 0)
+    {
+      Param.MainWindow = Handle;
+    }
+  }
+
+  return TRUE;
+}
+//---------------------------------------------------------------------------
 bool __fastcall SendToAnotherInstance()
 {
   HWND HiddenWindow = FindWindow(HIDDEN_WINDOW_NAME, NULL);
   bool Result = (HiddenWindow != NULL);
   if (Result)
   {
-    COPYDATASTRUCT CopyData;
-    CopyData.cbData = wcslen(CmdLine) * sizeof(*CmdLine);
-    CopyData.lpData = CmdLine;
+    TCopyDataMessage Message;
+    Message.Version = TCopyDataMessage::Version1;
 
+    COPYDATASTRUCT CopyData;
+    CopyData.cbData = sizeof(Message);
+    CopyData.lpData = &Message;
+
+    // this test is actually redundant, it just a kind of optimization to avoid expensive
+    // EnumWindows, we can achieve the same by testing FindProcessMainWindowParam.MainWindow,
+    // before sending CommandCommandLine
+    Message.Command = TCopyDataMessage::CommandCanCommandLine;
     LRESULT SendResult =
       SendMessage(HiddenWindow, WM_COPYDATA, reinterpret_cast<WPARAM>(HInstance),
         reinterpret_cast<LPARAM>(&CopyData));
     Result = (SendResult > 0);
+
+    if (Result)
+    {
+      TFindProcessMainWindowParam FindProcessMainWindowParam;
+      if (GetWindowThreadProcessId(HiddenWindow, &FindProcessMainWindowParam.ProcessId) != 0)
+      {
+        FindProcessMainWindowParam.HiddenWindow = HiddenWindow;
+        FindProcessMainWindowParam.MainWindow = 0;
+        if (EnumWindows(FindProcessMainWindow, reinterpret_cast<LPARAM>(&FindProcessMainWindowParam)) &&
+            (FindProcessMainWindowParam.MainWindow != 0))
+        {
+          // Restore window, if minimized
+          ShowWindow(FindProcessMainWindowParam.MainWindow, SW_RESTORE);
+          // bring it to foreground
+          SetForegroundWindow(FindProcessMainWindowParam.MainWindow);
+        }
+      }
+
+      Message.Command = TCopyDataMessage::CommandCommandLine;
+      wcsncpy(Message.CommandLine, CmdLine, LENOF(Message.CommandLine));
+      NULL_TERMINATE(Message.CommandLine);
+
+
+      LRESULT SendResult =
+        SendMessage(HiddenWindow, WM_COPYDATA,
+          reinterpret_cast<WPARAM>(HInstance), reinterpret_cast<LPARAM>(&CopyData));
+      Result = (SendResult > 0);
+    }
   }
   return Result;
 }

@@ -71,7 +71,7 @@ __fastcall TImportSessionsDialog::TImportSessionsDialog(TComponent * AOwner,
     }
   }
 
-  // should not happen as we never get here when there are no session to import
+  // should not happen as we never get here when there are no sessions to import
   if (SourceComboBox->ItemIndex < 0)
   {
     SourceComboBox->ItemIndex = 0;

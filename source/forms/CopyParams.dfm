@@ -2,7 +2,7 @@ object CopyParamsFrame: TCopyParamsFrame
   Left = 0
   Top = 0
   Width = 420
-  Height = 426
+  Height = 431
   HelpType = htKeyword
   TabOrder = 0
   object CommonPropertiesGroup: TGroupBox
@@ -274,12 +274,12 @@ object CopyParamsFrame: TCopyParamsFrame
     Left = 8
     Top = 322
     Width = 405
-    Height = 97
+    Height = 102
     Caption = 'Other'
     TabOrder = 5
     DesignSize = (
       405
-      97)
+      102)
     object IncludeFileMaskLabel: TLabel
       Left = 16
       Top = 20
@@ -311,8 +311,8 @@ object CopyParamsFrame: TCopyParamsFrame
     end
     object NewerOnlyCheck: TCheckBox
       Left = 16
-      Top = 67
-      Width = 218
+      Top = 72
+      Width = 293
       Height = 17
       Caption = '&New and updated files only'
       ParentShowHint = False
@@ -321,11 +321,12 @@ object CopyParamsFrame: TCopyParamsFrame
       OnClick = ControlChange
     end
     object IncludeFileMaskHintText: TStaticText
-      Left = 255
+      Left = 204
       Top = 58
-      Width = 54
+      Width = 105
       Height = 17
-      Alignment = taCenter
+      Alignment = taRightJustify
+      AutoSize = False
       Caption = 'mask hints'
       TabOrder = 2
       TabStop = True

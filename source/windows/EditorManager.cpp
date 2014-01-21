@@ -226,9 +226,10 @@ void __fastcall TEditorManager::AddFileExternal(const UnicodeString FileName,
   FileData.External = true;
   FileData.Process = Process;
   FileData.Token = NULL;
-  FileData.Monitor = FindFirstChangeNotification(
-    ExtractFilePath(FileData.FileName).c_str(), false,
-    FILE_NOTIFY_CHANGE_LAST_WRITE);
+  UnicodeString FilePath = ExtractFilePath(FileData.FileName);
+  FileData.Monitor =
+    FindFirstChangeNotification(
+      FilePath.c_str(), false, FILE_NOTIFY_CHANGE_LAST_WRITE);
   if (FileData.Monitor == INVALID_HANDLE_VALUE)
   {
     throw Exception(FMTLOAD(FILE_WATCH_ERROR, (FileData.FileName)));

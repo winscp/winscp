@@ -242,7 +242,8 @@ bool __fastcall DoCustomCommandDialog(TCustomCommandType & Command,
 class TCopyParamList;
 enum TCopyParamPresetMode { cpmAdd, cpmEdit, cpmDuplicate };
 bool __fastcall DoCopyParamPresetDialog(TCopyParamList * CopyParamList,
-  int & Index, TCopyParamPresetMode Mode, TCopyParamRuleData * CurrentRuleData);
+  int & Index, TCopyParamPresetMode Mode, TCopyParamRuleData * CurrentRuleData,
+  const TCopyParamType & DefaultCopyParams);
 
 // forms\CopyParamCsutom.cpp
 bool __fastcall DoCopyParamCustomDialog(TCopyParamType & CopyParam,
@@ -420,7 +421,21 @@ void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value);
 TShortCut __fastcall GetShortCutCombo(TComboBox * ComboBox);
 bool __fastcall IsCustomShortCut(TShortCut ShortCut);
 //---------------------------------------------------------------------------
-#define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow"
+#define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow2"
+//---------------------------------------------------------------------------
+struct TCopyDataMessage
+{
+  enum { CommandCanCommandLine, CommandCommandLine };
+  static const unsigned int Version1 = 1;
+
+  unsigned int Version;
+  unsigned int Command;
+
+  union
+  {
+    wchar_t CommandLine[10240];
+  };
+};
 //---------------------------------------------------------------------------
 class TWinInteractiveCustomCommand : public TInteractiveCustomCommand
 {

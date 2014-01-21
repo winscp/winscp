@@ -497,7 +497,8 @@ TKeyType KeyType(UnicodeString FileName)
 {
   assert(ktUnopenable == SSH_KEYTYPE_UNOPENABLE);
   assert(ktSSHCom == SSH_KEYTYPE_SSHCOM);
-  Filename * KeyFile = filename_from_str(AnsiString(FileName).c_str());
+  AnsiString AnsiFileName = AnsiString(FileName);
+  Filename * KeyFile = filename_from_str(AnsiFileName.c_str());
   TKeyType Result = (TKeyType)key_type(KeyFile);
   filename_free(KeyFile);
   return Result;

@@ -138,6 +138,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     TForm(Owner)
 {
   FCurrentSide = osRemote;
+  FEverShown = false;
   FDocks = new TList();
   RestoreParams();
   ConfigurationChanged();
@@ -174,6 +175,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FPendingQueueActionItem = NULL;
   FLockLevel = 0;
   FLockSuspendLevel = 0;
+  FDisabledOnLockSuspend = false;
   FAlternativeDelete = false;
   FTrayIcon = new ::TTrayIcon(0);
   FTrayIcon->OnClick = TrayIconClick;
@@ -318,7 +320,14 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
   FDragMoveCursor = NULL;
 
   assert(!FErrorList);
-  StoreParams();
+  if (FEverShown)
+  {
+    // when window is never shown (like when running command-line operation),
+    // particularly window site is not restored correctly (BoundsRect value set
+    // in RestoreForm gets lost during handle allocation), so we do not want
+    // it to be stored
+    StoreParams();
+  }
   Terminal = NULL;
   Queue = NULL;
   assert(NonVisualDataModule && (NonVisualDataModule->ScpExplorer == this));
@@ -361,16 +370,58 @@ LRESULT WINAPI TCustomScpExplorerForm::HiddenWindowProc(
   {
     LONG_PTR Ptr = GetWindowLongPtr(HWnd, GWLP_USERDATA);
     TCustomScpExplorerForm * Form = reinterpret_cast<TCustomScpExplorerForm *>(Ptr);
-    PCOPYDATASTRUCT CopyData = reinterpret_cast<PCOPYDATASTRUCT>(LParam);
-    UnicodeString CommandLine(
-      reinterpret_cast<const wchar_t*>(CopyData->lpData), CopyData->cbData / sizeof(wchar_t));
-    Result = Form->CommandLineFromAnotherInstance(CommandLine) ? 1 : 0;
+
+    TMessage AMessage;
+    AMessage.Msg = Message;
+    AMessage.WParam = WParam;
+    AMessage.LParam = LParam;
+    AMessage.Result = 0;
+    Form->WMCopyData(AMessage);
+
+    Result = AMessage.Result;
   }
   else
   {
     Result = DefWindowProc(HWnd, Message, WParam, LParam);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::WMCopyData(TMessage & Message)
+{
+  PCOPYDATASTRUCT CopyData = reinterpret_cast<PCOPYDATASTRUCT>(Message.LParam);
+
+  size_t MessageSize = sizeof(TCopyDataMessage);
+  bool Result = ALWAYS_TRUE(CopyData->cbData == MessageSize);
+  if (Result)
+  {
+    const TCopyDataMessage & Message = *reinterpret_cast<const TCopyDataMessage *>(CopyData->lpData);
+
+    Result = (Message.Version == TCopyDataMessage::Version1);
+
+    if (Result)
+    {
+      switch (Message.Command)
+      {
+        case TCopyDataMessage::CommandCanCommandLine:
+          Result = CanCommandLineFromAnotherInstance();
+          break;
+
+        case TCopyDataMessage::CommandCommandLine:
+          {
+            UnicodeString CommandLine(Message.CommandLine);
+            Result = CommandLineFromAnotherInstance(CommandLine);
+          }
+          break;
+
+      default:
+        Result = false;
+        break;
+      }
+    }
+  }
+
+  Message.Result = Result ? 1 : 0;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CreateHiddenWindow()
@@ -393,11 +444,17 @@ void __fastcall TCustomScpExplorerForm::CreateHiddenWindow()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::CanCommandLineFromAnotherInstance()
+{
+  bool Result = !NonVisualDataModule->Busy;
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CommandLineFromAnotherInstance(
   const UnicodeString & CommandLine)
 {
   TProgramParams Params(CommandLine);
-  bool Result = !NonVisualDataModule->Busy && ALWAYS_TRUE(Params.ParamCount > 0);
+  bool Result = CanCommandLineFromAnotherInstance() && ALWAYS_TRUE(Params.ParamCount > 0);
   if (Result)
   {
     // this action is initiated from another process,
@@ -1559,7 +1616,10 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
           if (ALocalFileList == NULL)
           {
             assert(HasDirView[osLocal]);
-            assert(EnableSelectedOperation[osLocal]);
+            // Cannot have focus on both panels, so we have to call AnyFileSelected
+            // directly (instead of EnableSelectedOperation) to pass
+            // false to FocusedFileOnlyWhenFocused
+            assert(DirView(osLocal)->AnyFileSelected(false, false, false));
             LocalFileList = DirView(osLocal)->CreateFileList(false, true, NULL);
           }
           else
@@ -5780,8 +5840,10 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
         TDragResult DDResult = (Sender == RemoteDirView) ?
           RemoteDirView->LastDDResult : RemoteDriveView->LastDDResult;
 
-        // focus is moved to the target application,
-        // but as we are going to present the UI, we need to steal the focus back
+        // Focus is moved to the target application,
+        // but as we are going to present the UI, we need to steal the focus back.
+        // This most likely won't work though (windows does not allow application
+        // to steal focus most of the time)
         Application->BringToFront();
 
         // note that we seem to never get drMove here, see also comment below
@@ -7120,6 +7182,10 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       }
       break;
 
+    case WM_COPYDATA:
+      WMCopyData(*M);
+      break;
+
     default:
       TForm::Dispatch(Message);
       break;
@@ -7382,7 +7448,8 @@ void __fastcall TCustomScpExplorerForm::SuspendWindowLock()
     // for the top-level modal window
     if (ALWAYS_TRUE(FLockSuspendLevel == 0))
     {
-      assert(!Enabled);
+      // won't be disabled when conditions in LockWindow() were not satisfied
+      FDisabledOnLockSuspend = !Enabled;
       Enabled = true;
     }
     FLockSuspendLevel++;
@@ -7399,7 +7466,10 @@ void __fastcall TCustomScpExplorerForm::ResumeWindowLock()
     if (ALWAYS_TRUE(FLockSuspendLevel == 0))
     {
       assert(Enabled);
-      Enabled = false;
+      // we should possibly do the same check as in LockWindow(),
+      // if it is ever possible that the consitions change between
+      // SuspendWindowLock() and ResumeWindowLock()
+      Enabled = !FDisabledOnLockSuspend;
     }
   }
 }
@@ -7557,6 +7627,7 @@ void __fastcall TCustomScpExplorerForm::DestroyWnd()
 void __fastcall TCustomScpExplorerForm::FormShow(TObject * /*Sender*/)
 {
   SideEnter(FCurrentSide);
+  FEverShown = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoFindFiles(

@@ -276,6 +276,7 @@ private:
 
 protected:
   TOperationSide FCurrentSide;
+  bool FEverShown;
   TControl * FDDTargetControl;
   TProgressForm * FProgressForm;
   TSynchronizeProgressForm * FSynchronizeProgressForm;
@@ -294,6 +295,7 @@ protected:
   TNotifyEvent FOnNoteClick;
   unsigned int FLockLevel;
   unsigned int FLockSuspendLevel;
+  bool FDisabledOnLockSuspend;
   TImageList * FSystemImageList;
   bool FAlternativeDelete;
   TDragDropFilesEx * FSessionsDragDropFilesEx;
@@ -346,6 +348,7 @@ protected:
   inline void __fastcall WMAppCommand(TMessage & Message);
   inline void __fastcall WMSysCommand(TMessage & Message);
   void __fastcall WMQueryEndSession(TMessage & Message);
+  void __fastcall WMCopyData(TMessage & Message);
   virtual void __fastcall SysResizing(unsigned int Cmd);
   DYNAMIC void __fastcall DoShow();
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
@@ -501,6 +504,7 @@ protected:
   void __fastcall DirViewContextPopup(
     TOperationSide Side, Byte PopupComponent, const TPoint & MousePos);
   bool __fastcall CommandLineFromAnotherInstance(const UnicodeString & CommandLine);
+  bool __fastcall CanCommandLineFromAnotherInstance();
   void __fastcall SetQueueProgress();
   void __fastcall UpdateQueueLabel();
   TTerminal * __fastcall GetSessionTabTerminal(TTabSheet * TabSheet);

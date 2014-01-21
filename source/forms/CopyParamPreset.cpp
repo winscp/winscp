@@ -17,13 +17,14 @@
 #endif
 //---------------------------------------------------------------------------
 bool __fastcall DoCopyParamPresetDialog(TCopyParamList * CopyParamList,
-  int & Index, TCopyParamPresetMode Mode, TCopyParamRuleData * CurrentRuleData)
+  int & Index, TCopyParamPresetMode Mode, TCopyParamRuleData * CurrentRuleData,
+  const TCopyParamType & DefaultCopyParams)
 {
   bool Result;
   TCopyParamPresetDialog * Dialog = new TCopyParamPresetDialog(GetFormOwner() , Mode, CurrentRuleData);
   try
   {
-    Result = Dialog->Execute(CopyParamList, Index);
+    Result = Dialog->Execute(CopyParamList, Index, DefaultCopyParams);
   }
   __finally
   {
@@ -58,13 +59,22 @@ void __fastcall TCopyParamPresetDialog::ControlChange(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamPresetDialog::Execute(TCopyParamList * CopyParamList,
-  int & Index)
+  int & Index, const TCopyParamType & DefaultCopyParams)
 {
   FCopyParamList = CopyParamList;
   if ((FMode == cpmEdit) || (FMode == cpmDuplicate))
   {
-    CopyParamsFrame->Params = *CopyParamList->CopyParams[Index];
-    const TCopyParamRule * Rule = CopyParamList->Rules[Index];
+    const TCopyParamRule * Rule;
+    if (Index >= 0)
+    {
+      CopyParamsFrame->Params = *CopyParamList->CopyParams[Index];
+      Rule = CopyParamList->Rules[Index];
+    }
+    else
+    {
+      CopyParamsFrame->Params = DefaultCopyParams;
+      Rule = NULL;
+    }
 
     if (FMode == cpmEdit)
     {
