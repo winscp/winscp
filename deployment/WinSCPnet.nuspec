@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>WinSCPnet</id>
+    <version>$version$</version>
+    <title>WinSCP .NET assembly</title>
+    <authors>Martin Prikryl</authors>
+    <owners>Martin Prikryl</owners>
+    <licenseUrl>http://winscp.net/eng/docs/library#license</licenseUrl>
+    <projectUrl>http://winscp.net/eng/docs/library</projectUrl>
+    <iconUrl>http://winscp.net/pad/winscp.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>The WinSCP .NET assembly is a .NET wrapper around WinSCP’s scripting interface.</summary>
+    <description>The WinSCP .NET assembly is a .NET wrapper around WinSCP’s scripting interface that allows your code to connect to a remote machine and manipulate remote files over SFTP, SCP, and FTP sessions.
+    
+The library is primarily intended for advanced automation tasks that require conditional processing, loops or other control structures for which the basic scripting interface is too limited. The library is not a general purpose file transfer library. It particularly lacks support for interactive processing and as such it is not well suited for use in GUI applications.
+
+For documentation and examples of use, see project website.</description>
+    <copyright>Copyright © 2012-2014 Martin Prikryl</copyright>
+    <tags>winscp sftp ftp ftps scp transfer</tags>
+  </metadata>
+  <files>
+    <file src="$BuildConfigDir$\WinSCPnet.dll" target="lib"/>
+    <file src="$BuildConfigDir$\WinSCP.exe" target="content"/>
+    <file src="install.ps1" target="tools"/>
+  </files>
+</package>

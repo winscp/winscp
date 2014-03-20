@@ -949,13 +949,15 @@ void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height)
   {
     Left = WorkareaRect.Right - Width;
   }
-  if (Top < 0)
+  // WorkareaRect.Left is not 0, when secondary monitor is placed left of primary one.
+  // Similarly for WorkareaRect.Top.
+  if (Top < WorkareaRect.Top)
   {
-    Top = 0;
+    Top = WorkareaRect.Top;
   }
-  if (Left < 0)
+  if (Left < WorkareaRect.Left)
   {
-    Left = 0;
+    Left = WorkareaRect.Left;
   }
   Form->SetBounds(Left, Top, Width, Height);
   Bounds = Form->BoundsRect;

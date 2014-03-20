@@ -13,5 +13,7 @@ namespace WinSCP
         void Failed(object sender, FailedEventArgs e);
         [DispId(3)]
         void OutputDataReceived(object sender, OutputDataReceivedEventArgs e);
+        [DispId(4)]
+        void FileTransferProgress(object sender, FileTransferProgressEventArgs e);
     }
 }

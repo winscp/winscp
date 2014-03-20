@@ -557,7 +557,7 @@ var
   StdDirIcon: Integer;
   StdDirSelIcon: Integer;
   DropSourceControl: TObject;
-  UnknownFileIcon: Integer;
+  UnknownFileIcon: Integer = 0;
   HasExtendedCOMCTL32: Boolean;
   StdDirTypeName: string;
   DefaultExeIcon: Integer;
@@ -575,6 +575,33 @@ const
   ResBrokenLink = 'BROKEN%2.2d';
   ResPartial = 'PARTIAL%2.2d';
 
+var
+  WinDir: string;
+  TempDir: string;
+  GlobalsInitialized: Boolean = False;
+
+procedure InitGlobals;
+begin
+  if not GlobalsInitialized then
+  begin
+    GlobalsInitialized := True;
+
+    UnknownFileIcon := GetshFileInfo('$#)(.#$)', FILE_ATTRIBUTE_NORMAL,
+      SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES).iIcon;
+    DefaultExeIcon := GetshFileInfo('.COM',
+      FILE_ATTRIBUTE_NORMAL, SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES).iIcon;
+
+    with GetshFileInfo(WinDir, FILE_ATTRIBUTE_NORMAL or FILE_ATTRIBUTE_DIRECTORY,
+      SHGFI_TYPENAME or SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES) do
+    begin
+      StdDirTypeName := szTypeName;
+      StdDirIcon := iIcon;
+    end;
+    StdDirSelIcon := GetIconIndex(WinDir,
+      FILE_ATTRIBUTE_NORMAL or FILE_ATTRIBUTE_DIRECTORY, SHGFI_OPENICON);
+  end;
+end;
+
 type
   TDirViewState = class(TObject)
   public
@@ -589,8 +616,6 @@ type
   end;
 
 var
-  WinDir: string;
-  TempDir: string;
   COMCTL32Version: DWORD;
 
 destructor TDirViewState.Destroy;
@@ -858,6 +883,8 @@ end;
 
 constructor TCustomDirView.Create(AOwner: TComponent);
 begin
+  InitGlobals;
+
   inherited;
 
   FWatchForChanges := False;
@@ -3287,23 +3314,8 @@ initialization
 
   SpecialFolderLocation(CSIDL_PERSONAL, UserDocumentDirectory);
 
-  UnknownFileIcon := GetshFileInfo('$#)(.#$)', FILE_ATTRIBUTE_NORMAL,
-    SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES).iIcon;
-  DefaultExeIcon := GetshFileInfo('.COM',
-    FILE_ATTRIBUTE_NORMAL, SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES).iIcon;
-
-  with GetshFileInfo(WinDir, FILE_ATTRIBUTE_NORMAL or FILE_ATTRIBUTE_DIRECTORY,
-    SHGFI_TYPENAME or SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES) do
-  begin
-    StdDirTypeName := szTypeName;
-    StdDirIcon := iIcon;
-  end;
-  StdDirSelIcon := GetIconIndex(WinDir,
-    FILE_ATTRIBUTE_NORMAL or FILE_ATTRIBUTE_DIRECTORY, SHGFI_OPENICON);
-
   WinDir := IncludeTrailingPathDelimiter(WinDir);
   TempDir := IncludeTrailingPathDelimiter(TempDir);
-
 
 finalization
   SetLength(StdDirTypeName, 0);

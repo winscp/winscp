@@ -188,6 +188,7 @@ BEGIN
   NET_TRANSL_PACKET_GARBLED, "Incoming packet was garbled on decryption"
   REPORT_ERROR, "%s\n\nPlease help us improving WinSCP by reporting the error on WinSCP support forum."
   TLS_CERT_DECODE_ERROR, "Error decoding TLS/SSL certificate (%s)."
+  FIND_FILE_ERROR, "Error retrieving file list for \"%s\"."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"

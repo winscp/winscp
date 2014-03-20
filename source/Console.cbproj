@@ -41,10 +41,10 @@
 			<PackageImports>rtl.bpi;$(PackageImports)</PackageImports>
 			<ProjectType>CppConsoleApplication</ProjectType>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Console interface for WinSCP;FileVersion=4.0.2.0;InternalName=console;LegalCopyright=(c) 2000-2014 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.com;ProductName=WinSCP;ProductVersion=5.5.1.0;ReleaseType=stable;WWW=http://winscp.net/</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Console interface for WinSCP;FileVersion=4.0.3.0;InternalName=console;LegalCopyright=(c) 2000-2014 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.com;ProductName=WinSCP;ProductVersion=5.5.2.0;ReleaseType=stable;WWW=http://winscp.net/</VerInfo_Keys>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_MajorVer>4</VerInfo_MajorVer>
-			<VerInfo_Release>2</VerInfo_Release>
+			<VerInfo_Release>3</VerInfo_Release>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>

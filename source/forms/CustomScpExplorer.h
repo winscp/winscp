@@ -348,6 +348,7 @@ protected:
   inline void __fastcall WMAppCommand(TMessage & Message);
   inline void __fastcall WMSysCommand(TMessage & Message);
   void __fastcall WMQueryEndSession(TMessage & Message);
+  void __fastcall WMEndSession(TWMEndSession & Message);
   void __fastcall WMCopyData(TMessage & Message);
   virtual void __fastcall SysResizing(unsigned int Cmd);
   DYNAMIC void __fastcall DoShow();

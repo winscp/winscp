@@ -2884,15 +2884,10 @@ void __fastcall TSFTPFileSystem::DoStartup()
     FTerminal->LogEvent(L"We will never use UTF-8 strings");
   }
 
-  FOpenSSH =
-    // Sun SSH is based on OpenSSH (suffers the same bugs)
-    (GetSessionInfo().SshImplementation.Pos(L"OpenSSH") == 1) ||
-    (GetSessionInfo().SshImplementation.Pos(L"Sun_SSH") == 1);
-
   FMaxPacketSize = FTerminal->SessionData->SFTPMaxPacketSize;
   if (FMaxPacketSize == 0)
   {
-    if (FOpenSSH && (FVersion == 3) && !FSupport->Loaded)
+    if (FSecureShell->IsOpenSSH() && (FVersion == 3) && !FSupport->Loaded)
     {
       FMaxPacketSize = 4 + (256 * 1024); // len + 256kB payload
       FTerminal->LogEvent(FORMAT(L"Limiting packet size to OpenSSH sftp-server limit of %d bytes",
@@ -3404,7 +3399,7 @@ void __fastcall TSFTPFileSystem::CreateLink(const UnicodeString FileName,
   TSFTPPacket Packet(SSH_FXP_SYMLINK);
 
   bool Buggy = (FTerminal->SessionData->SFTPBug[sbSymlink] == asOn) ||
-    ((FTerminal->SessionData->SFTPBug[sbSymlink] == asAuto) && FOpenSSH);
+    ((FTerminal->SessionData->SFTPBug[sbSymlink] == asAuto) && FSecureShell->IsOpenSSH());
 
   if (!Buggy)
   {
@@ -4826,7 +4821,7 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const UnicodeString Directo
   }
 
   int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-  TSearchRec SearchRec;
+  TSearchRecChecked SearchRec;
   bool FindOK;
 
   FILE_OPERATION_LOOP (FMTLOAD(LIST_DIR_ERROR, (DirectoryName)),

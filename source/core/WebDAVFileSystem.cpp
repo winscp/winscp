@@ -13037,13 +13037,14 @@ void __fastcall TWebDAVFileSystem::WebDAVDirectorySource(const UnicodeString Dir
   bool FindOK = false;
   HANDLE findHandle = 0;
 
+  UnicodeString FindPath = DirectoryName + L"*.*";
+
   FILE_OPERATION_LOOP (FMTLOAD(LIST_DIR_ERROR, (DirectoryName.c_str())),
-    UnicodeString path = DirectoryName + L"*.*";
-    findHandle = FindFirstFile(path.c_str(), &SearchRec);
+    findHandle = FindFirstFile(FindPath.c_str(), &SearchRec);
     FindOK = (findHandle != 0);
     if (!FindOK)
     {
-      FindCheck(GetLastError());
+      FindCheck(GetLastError(), FindPath);
     }
   );
 
@@ -13085,7 +13086,7 @@ void __fastcall TWebDAVFileSystem::WebDAVDirectorySource(const UnicodeString Dir
         FindOK = (::FindNextFile(findHandle, &SearchRec) != 0);
         if (!FindOK)
         {
-          FindCheck(GetLastError());
+          FindCheck(GetLastError(), FindPath);
         }
       );
     }

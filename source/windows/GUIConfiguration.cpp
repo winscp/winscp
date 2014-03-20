@@ -948,10 +948,10 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
     Exts->CaseSensitive = false;
 
     int FindAttrs = faReadOnly | faArchive;
-    TSearchRec SearchRec;
+    TSearchRecChecked SearchRec;
     bool Found;
 
-    Found = (bool)(FindFirst(ChangeFileExt(ModuleFileName(), L".*"),
+    Found = (bool)(FindFirstUnchecked(ChangeFileExt(ModuleFileName(), L".*"),
       FindAttrs, SearchRec) == 0);
     try
     {

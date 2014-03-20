@@ -151,8 +151,7 @@ bool __fastcall TQueueController::AllowOperation(
         bool Result = (QueueItem != NULL) && (QueueItem->Status != TQueueItem::qsDone);
         if (Result && (Param != NULL))
         {
-          *Param = reinterpret_cast<void *>(QueueItem->ProgressData != NULL ?
-            QueueItem->ProgressData->CPSLimit : 0);
+          Result = QueueItem->GetCPSLimit(*reinterpret_cast<unsigned long *>(Param));
         }
         return Result;
       }

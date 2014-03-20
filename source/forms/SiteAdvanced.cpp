@@ -1249,9 +1249,9 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult == DefaultResult(this))
   {
-    VerifyKeyIncludingVersion(PrivateKeyEdit->Text, GetSshProt());
+    VerifyKeyIncludingVersion(StripPathQuotes(PrivateKeyEdit->Text), GetSshProt());
     // for tunnel key do not check SSH version as it is not configurable
-    VerifyKey(TunnelPrivateKeyEdit->Text);
+    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit->Text));
   }
 }
 //---------------------------------------------------------------------------

@@ -313,7 +313,6 @@ object LoginDialog: TLoginDialog
           Height = 25
           Action = EditCancelAction
           Anchors = [akLeft, akBottom]
-          Caption = 'Cancel'
           TabOrder = 13
           OnDropDownClick = SaveButtonDropDownClick
         end
@@ -574,7 +573,7 @@ object LoginDialog: TLoginDialog
     end
     object EditCancelAction: TAction
       Category = 'Session'
-      Caption = '&Cancel'
+      Caption = 'Cancel'
       OnExecute = EditCancelActionExecute
     end
     object SessionAdvancedAction: TAction

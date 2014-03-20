@@ -942,6 +942,7 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
   {
     if (Updates.Results.Disabled)
     {
+      New = false;
       if (Force)
       {
         Message = LoadStr(UPDATE_DISABLED);
@@ -1098,7 +1099,7 @@ void __fastcall CheckForUpdates(bool CachedResults)
           if (New)
           {
             Configuration->Usage->Inc(L"UpdateDownloadOpens");
-            OpenBrowser(LoadStr(DOWNLOAD_URL));
+            OpenBrowser(LoadStr(UPGRADE_URL));
           }
           break;
 

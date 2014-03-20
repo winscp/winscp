@@ -2737,7 +2737,8 @@ begin
   P := Pos(#9, Result);
   if P <> 0 then
     SetLength(Result, P-1);
-  if IsToolbarStyle then
+  { MP }
+  if IsToolbarStyle and not (vsMenuBar in View.Style) then
     Result := StripAccelChars(StripTrailingPunctuation(Result));
 end;
 

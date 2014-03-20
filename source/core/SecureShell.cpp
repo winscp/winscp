@@ -50,6 +50,7 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FActive = false;
   FWaiting = 0;
   FOpened = false;
+  FOpenSSH = false;
   OutPtr = NULL;
   Pending = NULL;
   FBackendHandle = NULL;
@@ -131,6 +132,11 @@ const TSessionInfo & __fastcall TSecureShell::GetSessionInfo()
     UpdateSessionInfo();
   }
   return FSessionInfo;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecureShell::IsOpenSSH()
+{
+  return FOpenSSH;
 }
 //---------------------------------------------------------------------
 Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
@@ -408,6 +414,11 @@ void __fastcall TSecureShell::Open()
 
   assert(!FSessionInfo.SshImplementation.IsEmpty());
   FOpened = true;
+
+  FOpenSSH =
+    // Sun SSH is based on OpenSSH (suffers the same bugs)
+    (GetSessionInfo().SshImplementation.Pos(L"OpenSSH") == 1) ||
+    (GetSessionInfo().SshImplementation.Pos(L"Sun_SSH") == 1);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::TryFtp()
@@ -2164,5 +2175,14 @@ void __fastcall TSecureShell::CollectUsage()
   else if (FSshVersion == 2)
   {
     Configuration->Usage->Inc(L"OpenedSessionsSSH2");
+  }
+
+  if (FOpenSSH)
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSHOpenSSH");
+  }
+  else
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSHOther");
   }
 }

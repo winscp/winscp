@@ -120,6 +120,7 @@ class EOSExtException : public ExtException
 public:
   __fastcall EOSExtException();
   __fastcall EOSExtException(UnicodeString Msg);
+  __fastcall EOSExtException(UnicodeString Msg, int LastError);
 };
 //---------------------------------------------------------------------------
 class EFatal : public ExtException

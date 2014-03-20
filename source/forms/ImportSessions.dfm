@@ -57,7 +57,6 @@ object ImportSessionsDialog: TImportSessionsDialog
     Checkboxes = True
     Columns = <
       item
-        Caption = 'Site'
         Width = 240
       end>
     ColumnClick = False

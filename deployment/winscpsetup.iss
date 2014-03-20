@@ -274,7 +274,7 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/RegisterForDefaultProtocols"; \
 Filename: "{app}\WinSCP.exe"; Parameters: "/AddSearchPath"; \
   StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
 Filename: "{app}\WinSCP.exe"; Parameters: "/ImportSitesIfAny"; \
-  StatusMsg: {cm:ImportSites}
+  StatusMsg: {cm:ImportSites}; Flags: skipifsilent
 Filename: "{app}\WinSCP.exe"; Parameters: "/Usage=TypicalInstallation:1"; \
   Check: IsTypicalInstallation
 Filename: "{app}\WinSCP.exe"; Parameters: "/Usage=TypicalInstallation:0"; \
@@ -745,14 +745,14 @@ end;
 
 #endif
 
-#ifdef Chrome
-
 procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string);
 begin
   ExtractTemporaryFile(Name);
   Image.Bitmap.LoadFromFile(ExpandConstant('{tmp}\' + Name));
   Image.AutoSize := True;
 end;
+
+#ifdef Chrome
 
 procedure ChromeCheckboxClick(Sender: TObject);
 begin
@@ -1334,14 +1334,18 @@ begin
     begin
       LaunchCheckboxTop := WizardForm.RunList.Top;
 #ifdef Donations
+#ifdef Chrome
       DonationPanel.Visible := not IsChromeSelected;
+#endif
 #endif
     end;
 
     LaunchCheckbox.Top := LaunchCheckboxTop;
     OpenGettingStartedCheckbox.Top := LaunchCheckbox.Top + LineHeight;
+#ifdef Chrome
     LaunchChromeCheckbox.Visible := IsChromeSelected;
     LaunchChromeCheckbox.Top := OpenGettingStartedCheckbox.Top + LineHeight;
+#endif    
 
     UpdatePostInstallRunCheckboxes(nil);
   end;
@@ -1444,7 +1448,9 @@ var
   Path: string;
   WebGettingStarted: string;
   OpenGettingStarted: Boolean;
+#ifdef Chrome
   LaunchChrome: Boolean;
+#endif  
 begin
   if CurStep = ssPostInstall then
   begin
@@ -1471,10 +1477,12 @@ begin
         OpenGettingStartedCheckbox.Enabled and
          OpenGettingStartedCheckbox.Checked;
 
+#ifdef Chrome
       LaunchChrome :=
         ChromeAllowed and IsChromeSelected and
          LaunchChromeCheckbox.Visible and // sanity check
          LaunchChromeCheckbox.Checked;
+#endif         
 
       if OpenGettingStarted then
       begin
@@ -1486,7 +1494,11 @@ begin
 
       if LaunchCheckbox.Checked then
       begin
-        if OpenGettingStarted or LaunchChrome then
+        if OpenGettingStarted 
+#ifdef Chrome
+           or LaunchChrome
+#endif
+           then
         begin
           Log('Will launch WinSCP minimized');
           ShowCmd := SW_SHOWMINIMIZED
@@ -1501,6 +1513,7 @@ begin
         ExecAsOriginalUser(Path, '', '', ShowCmd, ewNoWait, ErrorCode)
       end;
 
+#ifdef Chrome
       if LaunchChrome then
       begin
         Log('Launching Chrome');
@@ -1515,6 +1528,7 @@ begin
           MsgBox(ExpandConstant('{cm:ChromeInstallationFailed}'), mbError, MB_OK);
         end;
       end;
+#endif      
     end;
   end;
 

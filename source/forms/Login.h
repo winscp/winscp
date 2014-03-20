@@ -303,6 +303,8 @@ private:
   inline bool __fastcall IsSessionNode(TTreeNode * Node);
   inline bool __fastcall IsSiteNode(TTreeNode * Node);
   inline bool __fastcall IsNewSiteNode(TTreeNode * Node);
+  TTreeNode * __fastcall GetNewSiteNode();
+  void __fastcall SetNewSiteNodeLabel();
   inline TSessionData * __fastcall GetNodeSession(TTreeNode * Node);
   void __fastcall ExecuteTool(const UnicodeString & Name);
   UnicodeString __fastcall ImportExportIniFilePath();

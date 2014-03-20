@@ -223,6 +223,7 @@
 #define NET_TRANSL_PACKET_GARBLED 297
 #define REPORT_ERROR            298
 #define TLS_CERT_DECODE_ERROR   299
+#define FIND_FILE_ERROR         700
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT3 301
@@ -410,5 +411,7 @@
 #define OPENSSL_URL             612
 #define PUTTY_LICENSE_URL       625
 #define MAIN_MSG_TAG            631
+
+// 7xxx used by errors as secondary sequence
 
 #endif // TextsCore

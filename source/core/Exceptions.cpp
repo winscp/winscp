@@ -323,9 +323,8 @@ ExtException * __fastcall ExtException::Clone()
   return new ExtException(this, L"");
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall LastSysErrorMessage()
+UnicodeString __fastcall SysErrorMessageForError(int LastError)
 {
-  int LastError = GetLastError();
   UnicodeString Result;
   if (LastError != 0)
   {
@@ -334,8 +333,18 @@ UnicodeString __fastcall LastSysErrorMessage()
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall LastSysErrorMessage()
+{
+  return SysErrorMessageForError(GetLastError());
+}
+//---------------------------------------------------------------------------
 __fastcall EOSExtException::EOSExtException(UnicodeString Msg) :
   ExtException(Msg, LastSysErrorMessage())
+{
+}
+//---------------------------------------------------------------------------
+__fastcall EOSExtException::EOSExtException(UnicodeString Msg, int LastError) :
+  ExtException(Msg, SysErrorMessageForError(LastError))
 {
 }
 //---------------------------------------------------------------------------

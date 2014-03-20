@@ -1917,7 +1917,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
   try
   {
     int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-    TSearchRec SearchRec;
+    TSearchRecChecked SearchRec;
     bool FindOK;
 
     FILE_OPERATION_LOOP (FMTLOAD(LIST_DIR_ERROR, (DirectoryName)),

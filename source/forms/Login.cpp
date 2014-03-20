@@ -149,6 +149,11 @@ void __fastcall TLoginDialog::InitControls()
   // The Color 0 is a HACK
   int DisabledImageIndex = ActionImageList->AddMasked(Bitmap.get(), TColor(0));
   LoginButton->DisabledImageIndex = DisabledImageIndex;
+
+  if (SessionTree->Items->Count > 0)
+  {
+    SetNewSiteNodeLabel();
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::Init()
@@ -317,6 +322,18 @@ void __fastcall TLoginDialog::DestroySession(TSessionData * Data)
   StoredSessions->Remove(Data);
 }
 //---------------------------------------------------------------------
+TTreeNode * __fastcall TLoginDialog::GetNewSiteNode()
+{
+  TTreeNode * Result = SessionTree->Items->GetFirstNode();
+  assert(IsNewSiteNode(Result));
+  return Result;
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::SetNewSiteNodeLabel()
+{
+  GetNewSiteNode()->Text = LoadStr(LOGIN_NEW_SITE_NODE);
+}
+//---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSessions()
 {
   SessionTree->Items->BeginUpdate();
@@ -324,8 +341,9 @@ void __fastcall TLoginDialog::LoadSessions()
   {
     SessionTree->Items->Clear();
 
-    TTreeNode * Node = SessionTree->Items->AddChild(NULL, LoadStr(LOGIN_NEW_SITE_NODE));
+    TTreeNode * Node = SessionTree->Items->AddChild(NULL, L"");
     Node->Data = FNewSiteData;
+    SetNewSiteNodeLabel();
     SetNodeImage(Node, NewSiteImageIndex);
 
     assert(StoredSessions != NULL);
@@ -353,7 +371,7 @@ void __fastcall TLoginDialog::UpdateFolderNode(TTreeNode * Node)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::NewSite()
 {
-  TTreeNode * NewSiteNode = SessionTree->Items->GetFirstNode();
+  TTreeNode * NewSiteNode = GetNewSiteNode();
   if (ALWAYS_TRUE(IsNewSiteNode(NewSiteNode)))
   {
     SessionTree->Selected = NewSiteNode;
@@ -564,7 +582,7 @@ void __fastcall TLoginDialog::UpdateControls()
     DefaultButton(SaveButton, FEditing);
     EditCancelButton->Cancel = FEditing;
     SiteClonetoNewSiteMenuItem->Default = IsCloneToNewSiteDefault();
-    SiteLoginMenuItem->Default = !SiteClonetoNewSiteMenuItem->Default;
+    SiteLoginMenuItem->Default = LoginButton->Default;
 
     UpdateButtonVisibility(SaveButton);
     UpdateButtonVisibility(EditButton);
@@ -764,6 +782,11 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
         }
         Key = 0;
       }
+    }
+    else if ((Key == VK_RETURN) && IsCloneToNewSiteDefault())
+    {
+      CloneToNewSite();
+      Key = 0;
     }
   }
 }
@@ -1093,7 +1116,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsCloneToNewSiteDefault()
 {
-  return IsSiteNode(SessionTree->Selected) && !FStoredSessions->CanLogin(GetSessionData());
+  return !FEditing && !FRenaming && IsSiteNode(SessionTree->Selected) && !FStoredSessions->CanLogin(GetSessionData());
 }
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::CanLogin()

@@ -2001,6 +2001,7 @@ bool __fastcall TTerminal::HandleException(Exception * E)
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CloseOnCompletion(TOnceDoneOperation Operation, const UnicodeString Message)
 {
+  Configuration->Usage->Inc(L"ClosesOnCompletion");
   LogEvent(L"Closing session after completed operation (as requested by user)");
   Close();
   throw ESshTerminate(NULL,
@@ -2931,14 +2932,20 @@ TUsableCopyParamAttrs __fastcall TTerminal::UsableCopyParamAttrs(int Params)
     FLAGMASK(!IsCapable[fcModeChanging], cpaNoRights) |
     FLAGMASK(!IsCapable[fcModeChanging], cpaNoPreserveReadOnly) |
     FLAGMASK(FLAGSET(Params, cpDelete), cpaNoClearArchive) |
-    FLAGMASK(!IsCapable[fcIgnorePermErrors], cpaNoIgnorePermErrors);
-  Result.Download = Result.General | cpaNoClearArchive | cpaNoRights |
-    cpaNoIgnorePermErrors | cpaNoRemoveCtrlZ | cpaNoRemoveBOM;
-  Result.Upload = Result.General | cpaNoPreserveReadOnly |
+    FLAGMASK(!IsCapable[fcIgnorePermErrors], cpaNoIgnorePermErrors) |
+    // the following three are never supported for download,
+    // so when they are not suppored for upload too,
+    // set them in General flags, so that they do not get enabled on
+    // Synchronize dialog.
     FLAGMASK(!IsCapable[fcModeChangingUpload], cpaNoRights) |
-    FLAGMASK(!IsCapable[fcPreservingTimestampUpload], cpaNoPreserveTime) |
     FLAGMASK(!IsCapable[fcRemoveCtrlZUpload], cpaNoRemoveCtrlZ) |
     FLAGMASK(!IsCapable[fcRemoveBOMUpload], cpaNoRemoveBOM);
+  Result.Download = Result.General | cpaNoClearArchive |
+    cpaNoIgnorePermErrors |
+    // May be already set in General flags, but it's unconditional here
+    cpaNoRights | cpaNoRemoveCtrlZ | cpaNoRemoveBOM;
+  Result.Upload = Result.General | cpaNoPreserveReadOnly |
+    FLAGMASK(!IsCapable[fcPreservingTimestampUpload], cpaNoPreserveTime);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -4330,7 +4337,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
   try
   {
     bool Found;
-    TSearchRec SearchRec;
+    TSearchRecChecked SearchRec;
     Data.LocalFileList = new TStringList();
     Data.LocalFileList->Sorted = true;
     Data.LocalFileList->CaseSensitive = false;
@@ -5125,6 +5132,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
       FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
 
     FOperationProgress = &OperationProgress;
+    bool CollectingUsage = false;
     try
     {
       if (CalculatedSize)
@@ -5135,6 +5143,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
           Configuration->Usage->Inc(L"Uploads");
           Configuration->Usage->Inc(L"UploadedBytes", CounterSize);
           Configuration->Usage->SetMax(L"MaxUploadSize", CounterSize);
+          CollectingUsage = true;
         }
 
         OperationProgress.SetTotalSize(Size);
@@ -5170,6 +5179,12 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
     }
     __finally
     {
+      if (CollectingUsage)
+      {
+        int CounterTime = TimeToSeconds(OperationProgress.TimeElapsed());
+        Configuration->Usage->Inc(L"UploadTime", CounterTime);
+        Configuration->Usage->SetMax(L"MaxUploadTime", CounterTime);
+      }
       OperationProgress.Stop();
       FOperationProgress = NULL;
     }
@@ -5235,6 +5250,7 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
         FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
 
       FOperationProgress = &OperationProgress;
+      bool CollectingUsage = false;
       try
       {
         if (TotalSizeKnown)
@@ -5245,6 +5261,7 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
             Configuration->Usage->Inc(L"Downloads");
             Configuration->Usage->Inc(L"DownloadedBytes", CounterTotalSize);
             Configuration->Usage->SetMax(L"MaxDownloadSize", CounterTotalSize);
+            CollectingUsage = true;
           }
 
           OperationProgress.SetTotalSize(TotalSize);
@@ -5278,6 +5295,12 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
       }
       __finally
       {
+        if (CollectingUsage)
+        {
+          int CounterTime = TimeToSeconds(OperationProgress.TimeElapsed());
+          Configuration->Usage->Inc(L"DownloadTime", CounterTime);
+          Configuration->Usage->SetMax(L"MaxDownloadTime", CounterTime);
+        }
         FOperationProgress = NULL;
         OperationProgress.Stop();
       }

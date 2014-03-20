@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("WinSCPnet")]
-[assembly: AssemblyDescription("WinSCP console interface .NET wrapper")]
+[assembly: AssemblyDescription("WinSCP scripting interface .NET wrapper")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Martin Prikryl")]
 [assembly: AssemblyProduct("WinSCP")]
@@ -19,9 +19,9 @@ using System.Runtime.InteropServices;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("a0b93468-d98a-4845-a234-8076229ad93f")]
 
-[assembly: AssemblyVersion("1.1.4.0")]
-[assembly: AssemblyFileVersion("1.1.4.0")]
-[assembly: AssemblyInformationalVersionAttribute("5.5.1.0")]
+[assembly: AssemblyVersion("1.1.5.0")]
+[assembly: AssemblyFileVersion("1.1.5.0")]
+[assembly: AssemblyInformationalVersionAttribute("5.5.2.0")]
 
 [assembly: CLSCompliant(true)]
 

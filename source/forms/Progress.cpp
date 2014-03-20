@@ -250,37 +250,42 @@ static TDateTime UpdateInterval(static_cast<double>(OneSecond));
 bool __fastcall TProgressForm::ReceiveData(bool Force, int ModalLevelOffset)
 {
   bool Result = false;
-  if (FDataGot && !FDataReceived &&
-      // Never popup over dialog that appeared later than we started
-      // (this can happen from UpdateTimerTimer when application is
-      // restored while overwrite confirmation dialog [or any other]
-      // is already shown).
-      // TODO We should probably take as-modal windows into account too
-      // (for extreme cases like restoring while reconnecting [as-modal TAuthenticateForm]).
-      ((FModalLevel < 0) || (Application->ModalLevel + ModalLevelOffset <= FModalLevel)))
+  if (FDataGot && !FDataReceived)
   {
-    // delay showing the progress until the application is restored,
-    // otherwise the form popups up unminimized.
-    if (!IsApplicationMinimized() &&
-        (Force || ((Now() - FStarted) > DelayStartInterval)))
+    // CPS limit is set set only once from TFileOperationProgressType::Start.
+    // Needs to be set even when data are not accepted yet, otherwise we would
+    // write default value to FData in TProgressForm::SetProgressData
+    FCPSLimit = FData.CPSLimit;
+
+    // Never popup over dialog that appeared later than we started
+    // (this can happen from UpdateTimerTimer when application is
+    // restored while overwrite confirmation dialog [or any other]
+    // is already shown).
+    // TODO We should probably take as-modal windows into account too
+    // (for extreme cases like restoring while reconnecting [as-modal TAuthenticateForm]).
+    if ((FModalLevel < 0) || (Application->ModalLevel + ModalLevelOffset <= FModalLevel))
     {
-      FDataReceived = true;
-      // CPS limit is set set only once from TFileOperationProgressType::Start
-      FCPSLimit = FData.CPSLimit;
-      SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
-      ShowAsModal(this, FShowAsModalStorage);
-      // particularly needed for the case, when we are showing the form delayed
-      // because application was minimized when operation started
-      Result = true;
-    }
-    else if (!FModalBeginHooked && ALWAYS_TRUE(FModalLevel < 0))
-    {
-      // record state as of time, the window should be shown,
-      // had not we implemented delayed show
-      FPrevApplicationModalBegin = Application->OnModalBegin;
-      Application->OnModalBegin = ApplicationModalBegin;
-      FModalBeginHooked = true;
-      FModalLevel = Application->ModalLevel;
+      // delay showing the progress until the application is restored,
+      // otherwise the form popups up unminimized.
+      if (!IsApplicationMinimized() &&
+          (Force || ((Now() - FStarted) > DelayStartInterval)))
+      {
+        FDataReceived = true;
+        SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
+        ShowAsModal(this, FShowAsModalStorage);
+        // particularly needed for the case, when we are showing the form delayed
+        // because application was minimized when operation started
+        Result = true;
+      }
+      else if (!FModalBeginHooked && ALWAYS_TRUE(FModalLevel < 0))
+      {
+        // record state as of time, the window should be shown,
+        // had not we implemented delayed show
+        FPrevApplicationModalBegin = Application->OnModalBegin;
+        Application->OnModalBegin = ApplicationModalBegin;
+        FModalBeginHooked = true;
+        FModalLevel = Application->ModalLevel;
+      }
     }
   }
 

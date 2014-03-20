@@ -68,6 +68,8 @@ public:
     unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName,
     const UnicodeString & NeverAskAgainCaption);
 
+  virtual int __fastcall ShowModal();
+
 protected:
   __fastcall TMessageForm(TComponent * AOwner);
   virtual __fastcall ~TMessageForm();
@@ -83,6 +85,7 @@ protected:
   void __fastcall MenuItemClick(TObject * Sender);
   void __fastcall ButtonDropDownClick(TObject * Sender);
   void __fastcall UpdateForShiftStateTimer(TObject * Sender);
+  DYNAMIC void __fastcall SetZOrder(bool TopMost);
 
 private:
   typedef std::map<unsigned int, TButton *> TAnswerButtons;
@@ -92,20 +95,24 @@ private:
   TShiftState FShiftState;
   TTimer * FUpdateForShiftStateTimer;
   TForm * FDummyForm;
+  bool FShowNoActivate;
 
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall ReportButtonClick(TObject * Sender);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
+  void __fastcall CMShowingChanged(TMessage & Message);
   void __fastcall UpdateForShiftState();
   TButton * __fastcall CreateButton(
     UnicodeString Name, UnicodeString Caption, unsigned int Answer,
     TNotifyEvent OnClick, bool IsTimeoutButton,
     int GroupWith, TShiftState GrouppedShiftState,
     TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidth);
+  bool __fastcall ApplicationHook(TMessage & Message);
 };
 //---------------------------------------------------------------------------
 __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
 {
+  FShowNoActivate = false;
   MessageMemo = NULL;
   FUpdateForShiftStateTimer = NULL;
   Position = poOwnerFormCenter;
@@ -324,12 +331,124 @@ void __fastcall TMessageForm::CMDialogKey(TWMKeyDown & Message)
   }
 }
 //---------------------------------------------------------------------------
+int __fastcall TMessageForm::ShowModal()
+{
+  if (IsApplicationMinimized())
+  {
+    FShowNoActivate = true;
+  }
+
+  int Result = TForm::ShowModal();
+
+  Application->UnhookMainWindow(ApplicationHook);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::SetZOrder(bool TopMost)
+{
+  // WORKAROUND: If application is minimized,
+  // swallow call to BringToFront() from TForm::ShowModal()
+  if (FShowNoActivate && TopMost)
+  {
+    // noop
+  }
+  else
+  {
+    TForm::SetZOrder(TopMost);
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TMessageForm::ApplicationHook(TMessage & Message)
+{
+  bool Result = false;
+  // If application is restored, message box is not activated, do it manually.
+  // We cannot do this from TApplication::OnActivate because
+  // TApplication.WndProc resets focus to the last active window afterwards.
+  // So we override CM_ACTIVATE implementation here completelly.
+  if ((Message.Msg == CM_ACTIVATE) && FShowNoActivate)
+  {
+    ::SetFocus(Handle);
+    // VCLCOPY
+    if (Application->OnActivate != NULL)
+    {
+      Application->OnActivate(Application);
+    }
+    Result = true;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::CMShowingChanged(TMessage & Message)
+{
+  if (Showing && FShowNoActivate)
+  {
+    // With is same as SendToBack, except for added SWP_NOACTIVATE (VCLCOPY)
+    SetWindowPos(WindowHandle, HWND_BOTTOM, 0, 0, 0, 0,
+      SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+    // This replaces TCustomForm::CMShowingChanged()
+    // which calls ShowWindow(Handle, SW_SHOWNORMAL).
+
+    ShowWindow(Handle, SW_SHOWNOACTIVATE);
+
+    // - so we have to call DoShow explicitly.
+    DoShow();
+
+    // - also we skip applying TForm::Position (VCLCOPY)
+    if (ALWAYS_TRUE(Position == poOwnerFormCenter))
+    {
+      TCustomForm * CenterForm = Application->MainForm;
+      TCustomForm * OwnerForm = dynamic_cast<TCustomForm *>(Owner);
+      if (OwnerForm != NULL)
+      {
+        CenterForm = OwnerForm;
+      }
+      int X, Y;
+      if ((CenterForm != NULL) && (CenterForm != this))
+      {
+        TRect Bounds = CenterForm->BoundsRect;
+        X = ((Bounds.Width() - Width) / 2) + CenterForm->Left;
+        Y = ((Bounds.Height() - Height) / 2) + CenterForm->Top;
+      }
+      else
+      {
+        X = (Screen->Width - Width) / 2;
+        Y = (Screen->Height - Height) / 2;
+      }
+      if (X < Screen->DesktopLeft)
+      {
+        X = Screen->DesktopLeft;
+      }
+      if (Y < Screen->DesktopTop)
+      {
+        Y = Screen->DesktopTop;
+      }
+      SetBounds(X, Y, Width, Height);
+      // We cannot call SetWindowToMonitor().
+      // We cannot set FPosition = poDesigned, so worlarea-checking code
+      // in DoFormWindowProc is not triggered
+    }
+
+    // wait for application to be activate to activate ourself
+    Application->HookMainWindow(ApplicationHook);
+  }
+  else
+  {
+    TForm::Dispatch(&Message);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TMessageForm::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
   if (M->Msg == CM_DIALOGKEY)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
+  }
+  else if (M->Msg == CM_SHOWINGCHANGED)
+  {
+    CMShowingChanged(*M);
   }
   else
   {

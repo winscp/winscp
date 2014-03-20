@@ -2490,6 +2490,7 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
   CopyParam.PreserveReadOnly = false;
   CopyParam.ReplaceInvalidChars = true;
   CopyParam.FileMask = L"";
+  CopyParam.NewerOnly = false;
   if (AllFiles)
   {
     CopyParam.IncludeFileMask = TFileMasks();
@@ -2939,22 +2940,28 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
 void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
   const UnicodeString FileName, const TEditedFileData * Data)
 {
+  // Sanity check, we should not be busy othwerwise user would not be able to click Reload button.
+  assert(!NonVisualDataModule->Busy);
+
   if ((Data->Terminal == NULL) || !Data->Terminal->Active)
   {
     throw Exception(FMTLOAD(EDIT_SESSION_CLOSED_RELOAD,
       (ExtractFileName(FileName), Data->SessionName)));
   }
 
-  TRemoteFile * File = NULL;
-  TStrings * FileList = new TStringList();
+  TTerminal * PrevTerminal = TTerminalManager::Instance()->ActiveTerminal;
+  TTerminalManager::Instance()->ActiveTerminal = Data->Terminal;
   try
   {
+    std::unique_ptr<TRemoteFile> File;
     UnicodeString RemoteFileName =
       UnixIncludeTrailingBackslash(Data->RemoteDirectory) + Data->OriginalFileName;
     FTerminal->ExceptionOnFail = true;
     try
     {
-      FTerminal->ReadFile(RemoteFileName, File);
+      TRemoteFile * AFile = NULL;
+      FTerminal->ReadFile(RemoteFileName, AFile);
+      File.reset(AFile);
       if (!File->HaveFullFileName)
       {
         File->FullFileName = RemoteFileName;
@@ -2964,31 +2971,22 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
     {
       FTerminal->ExceptionOnFail = false;
     }
-    FileList->AddObject(RemoteFileName, File);
+    std::unique_ptr<TStrings> FileList(new TStringList());
+    FileList->AddObject(RemoteFileName, File.get());
 
     UnicodeString RootTempDir = Data->LocalRootDirectory;
     UnicodeString TempDir = ExtractFilePath(FileName);
 
-    TTerminal * PrevTerminal = TTerminalManager::Instance()->ActiveTerminal;
-    TTerminalManager::Instance()->ActiveTerminal = Data->Terminal;
-    try
-    {
-      TemporarilyDownloadFiles(FileList, Data->ForceText, RootTempDir,
-        TempDir, true, true, true);
-    }
-    __finally
-    {
-      // it actually may not exist anymore...
-      TTerminalManager::Instance()->ActiveTerminal = PrevTerminal;
-    }
+    TemporarilyDownloadFiles(FileList.get(), Data->ForceText, RootTempDir,
+      TempDir, true, true, true);
 
     // sanity check, the target file name should be still the same
     assert(ExtractFileName(FileName) == FileList->Strings[0]);
   }
   __finally
   {
-    delete File;
-    delete FileList;
+    // it actually may not exist anymore...
+    TTerminalManager::Instance()->ActiveTerminal = PrevTerminal;
   }
 }
 //---------------------------------------------------------------------------
@@ -5498,6 +5496,26 @@ void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
   // msdn.microsoft.com/en-us/library/ms700677.aspx
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::WMEndSession(TWMEndSession & Message)
+{
+  if (Message.EndSession && IsApplicationMinimized())
+  {
+    // WORKAROUND
+    // TApplication.WndProc() calls Application.Terminate() before Halt(),
+    // when it receives WM_ENDSESSION,
+    // but that sometimes (particularly when application is minimized) cause crashes.
+    // Crash popups message that blocks log off.
+    // Obviously application cannot shutdown cleanly after WM_ENDSESSION,
+    // so we call ExitProcess() immediatelly, not even trying to cleanup.
+    // It still causes beep, so there's likely some popup, but it does not block
+    // log off.
+    // Still needs testing on Windows 8 final. On Windows 8 preview it still blocks.
+    // Works on Windows XP and 7.
+    ExitProcess(0);
+  }
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SysResizing(unsigned int /*Cmd*/)
 {
 }
@@ -5540,6 +5558,8 @@ void __fastcall TCustomScpExplorerForm::PopupTrayBalloon(TTerminal * Terminal,
 
   if (Do && WinConfiguration->BalloonNotifications)
   {
+    Message = UnformatMessage(Message);
+
     const ResourceString * Captions[] = { &_SMsgDlgConfirm, &_SMsgDlgWarning,
       &_SMsgDlgError, &_SMsgDlgInformation, NULL };
     UnicodeString Title = LoadResourceString(Captions[Type]);
@@ -7162,6 +7182,10 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       WMQueryEndSession(*M);
       break;
 
+    case WM_ENDSESSION:
+      WMEndSession(*reinterpret_cast<TWMEndSession *>(M));
+      break;
+
     case WM_COMPONENT_HIDE:
       {
         Byte Component = static_cast<Byte>(M->WParam);
@@ -7450,7 +7474,13 @@ void __fastcall TCustomScpExplorerForm::SuspendWindowLock()
     {
       // won't be disabled when conditions in LockWindow() were not satisfied
       FDisabledOnLockSuspend = !Enabled;
-      Enabled = true;
+      // When minimized to tray (or actually when set to SW_HIDE),
+      // setting Enabled makes the window focusable even when there's
+      // modal window over it
+      if (!FTrayIcon->Visible)
+      {
+        Enabled = true;
+      }
     }
     FLockSuspendLevel++;
   }
@@ -7465,8 +7495,10 @@ void __fastcall TCustomScpExplorerForm::ResumeWindowLock()
     // see comment in SuspendWindowLock
     if (ALWAYS_TRUE(FLockSuspendLevel == 0))
     {
-      assert(Enabled);
-      // we should possibly do the same check as in LockWindow(),
+      // Note that window can be enabled here, when we were minized to tray when
+      // was SuspendWindowLock() called.
+
+      // We should possibly do the same check as in LockWindow(),
       // if it is ever possible that the consitions change between
       // SuspendWindowLock() and ResumeWindowLock()
       Enabled = !FDisabledOnLockSuspend;

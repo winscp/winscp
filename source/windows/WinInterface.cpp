@@ -988,6 +988,7 @@ void __fastcall ClearGlobalMinimizeHandler(TNotifyEvent OnMinimize)
 //---------------------------------------------------------------------------
 void __fastcall CallGlobalMinimizeHandler(TObject * Sender)
 {
+  Configuration->Usage->Inc(L"OperationMinimizations");
   if (ALWAYS_TRUE(GlobalOnMinimize != NULL))
   {
     GlobalOnMinimize(Sender);
@@ -1166,7 +1167,25 @@ __fastcall ::TTrayIcon::TTrayIcon(unsigned int Id)
   memset(FTrayIcon, 0, sizeof(*FTrayIcon));
   FTrayIcon->cbSize = sizeof(*FTrayIcon);
   FTrayIcon->uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
-  FTrayIcon->hIcon = Application->Icon->Handle;
+
+  // LoadIconMetric is available from Windows Vista only
+  HMODULE ComCtl32Dll = GetModuleHandle(comctl32);
+  if (ALWAYS_TRUE(ComCtl32Dll))
+  {
+    typedef HRESULT WINAPI (* TLoadIconMetric)(HINSTANCE hinst, PCWSTR pszName, int lims, __out HICON *phico);
+    TLoadIconMetric LoadIconMetric = (TLoadIconMetric)GetProcAddress(ComCtl32Dll, "LoadIconMetric");
+    if (LoadIconMetric != NULL)
+    {
+      // Prefer not to use Application->Icon->Handle as that shows 32x32 scaled down to 16x16 for some reason
+      LoadIconMetric(MainInstance, L"MAINICON", LIM_SMALL, &FTrayIcon->hIcon);
+    }
+  }
+
+  if (FTrayIcon->hIcon == 0)
+  {
+    FTrayIcon->hIcon = Application->Icon->Handle;
+  }
+
   FTrayIcon->uID = Id;
   FTrayIcon->hWnd = AllocateHWnd(WndProc);
   FTrayIcon->uCallbackMessage = WM_TRAY_ICON;

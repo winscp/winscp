@@ -613,9 +613,9 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
       UnicodeString FileName = Parameters->Param[i];
       if (FLAGSET(ListType, fltMask))
       {
-        TSearchRec SearchRec;
+        TSearchRecChecked SearchRec;
         int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-        if (FindFirst(FileName, FindAttrs, SearchRec) == 0)
+        if (FindFirstUnchecked(FileName, FindAttrs, SearchRec) == 0)
         {
           UnicodeString Directory = ExtractFilePath(FileName);
           try
@@ -2377,9 +2377,9 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
     Mask = L"*.*";
   }
 
-  TSearchRec SearchRec;
+  TSearchRecChecked SearchRec;
   int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-  if (FindFirst(IncludeTrailingBackslash(Directory) + Mask, FindAttrs, SearchRec) != 0)
+  if (FindFirstUnchecked(IncludeTrailingBackslash(Directory) + Mask, FindAttrs, SearchRec) != 0)
   {
     throw EOSExtException(FMTLOAD(LIST_DIR_ERROR, (Directory)));
   }

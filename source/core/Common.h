@@ -114,9 +114,14 @@ UnicodeString __fastcall ExtractFileBaseName(const UnicodeString & Path);
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const UnicodeString FileName, const TSearchRec Rec, void * Param);
 bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec);
-int __fastcall FindCheck(int Result);
-int __fastcall FindFirstChecked(const UnicodeString & Path, int Attr, TSearchRec & F);
-int __fastcall FindNextChecked(TSearchRec & F);
+struct TSearchRecChecked : public TSearchRec
+{
+  UnicodeString Path;
+};
+int __fastcall FindCheck(int Result, const UnicodeString & Path);
+int __fastcall FindFirstUnchecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F);
+int __fastcall FindFirstChecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F);
+int __fastcall FindNextChecked(TSearchRecChecked & F);
 void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
 //---------------------------------------------------------------------------
@@ -148,6 +153,7 @@ UnicodeString __fastcall GetTimeZoneLogString();
 bool __fastcall AdjustClockForDSTEnabled();
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
 int __fastcall TimeToMSec(TDateTime T);
+int __fastcall TimeToSeconds(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);
 //---------------------------------------------------------------------------
 template<class MethodT>

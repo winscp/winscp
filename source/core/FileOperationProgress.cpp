@@ -4,6 +4,7 @@
 
 #include "Common.h"
 #include "FileOperationProgress.h"
+#include "CoreMain.h"
 //---------------------------------------------------------------------------
 #define TRANSFER_BUF_SIZE 4096
 //---------------------------------------------------------------------------
@@ -55,6 +56,7 @@ void __fastcall TFileOperationProgressType::Clear()
   CPSLimit = 0;
   FTicks.clear();
   FTotalTransferredThen.clear();
+  FCounterSet = false;
   ClearTransfer();
 }
 //---------------------------------------------------------------------------
@@ -243,9 +245,20 @@ bool __fastcall TFileOperationProgressType::IsLocallyDone()
   return (LocallyUsed == LocalSize);
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::SetSpeedCounters()
+{
+  if ((CPSLimit > 0) && !FCounterSet)
+  {
+    FCounterSet = true;
+    Configuration->Usage->Inc(L"SpeedLimitUses");
+  }
+}
+//---------------------------------------------------------------------------
 unsigned long __fastcall TFileOperationProgressType::AdjustToCPSLimit(
   unsigned long Size)
 {
+  SetSpeedCounters();
+
   if (CPSLimit > 0)
   {
     // we must not return 0, hence, if we reach zero,

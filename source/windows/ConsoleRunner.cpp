@@ -626,24 +626,36 @@ void __fastcall TExternalConsole::SendEvent(int Timeout)
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning)
 {
-  TConsoleCommStruct * CommStruct = GetCommStruct();
-  try
+  // need to do at least one iteration, even when Str is empty (new line)
+  do
   {
-    if (Str.Length() >= static_cast<int>(LENOF(CommStruct->PrintEvent.Message)))
+    TConsoleCommStruct * CommStruct = GetCommStruct();
+    try
     {
-      throw Exception(FMTLOAD(CONSOLE_PRINT_TOO_LONG, (Str.Length())));
+      size_t MaxLen = LENOF(CommStruct->PrintEvent.Message) - 1;
+      UnicodeString Piece = Str.SubString(1, MaxLen);
+      Str.Delete(1, MaxLen);
+
+      CommStruct->Event = TConsoleCommStruct::PRINT;
+      wcscpy(CommStruct->PrintEvent.Message, Piece.c_str());
+      CommStruct->PrintEvent.FromBeginning = FromBeginning;
+
+      // In the next iteration we need to append never overwrite.
+      // Note that this won't work properly for disk/pipe outputs,
+      // when the next line is also FromBeginning,
+      // as !FromBeginning print effectively commits previous FromBeginning print.
+      // On the other hand, FromBeginning print is always initiated by us,
+      // and it's not likely we ever issue print over 10 KiB.
+      FromBeginning = false;
+    }
+    __finally
+    {
+      FreeCommStruct(CommStruct);
     }
 
-    CommStruct->Event = TConsoleCommStruct::PRINT;
-    wcscpy(CommStruct->PrintEvent.Message, Str.c_str());
-    CommStruct->PrintEvent.FromBeginning = FromBeginning;
+    SendEvent(PrintTimeout);
   }
-  __finally
-  {
-    FreeCommStruct(CommStruct);
-  }
-
-  SendEvent(PrintTimeout);
+  while (!Str.IsEmpty());
 }
 //---------------------------------------------------------------------------
 bool __fastcall TExternalConsole::Input(UnicodeString & Str, bool Echo, unsigned int Timer)
@@ -727,10 +739,8 @@ void __fastcall TExternalConsole::SetTitle(UnicodeString Title)
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
-    if (Title.Length() >= static_cast<int>(LENOF(CommStruct->TitleEvent.Title)))
-    {
-      throw Exception(FMTLOAD(CONSOLE_PRINT_TOO_LONG, (Title.Length())));
-    }
+    // Truncate to maximum allowed. Title over 10 KiB won't fir to screen anyway
+    Title = Title.SubString(1, LENOF(CommStruct->TitleEvent.Title) - 1);
 
     CommStruct->Event = TConsoleCommStruct::TITLE;
     wcscpy(CommStruct->TitleEvent.Title, Title.c_str());

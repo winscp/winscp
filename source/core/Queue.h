@@ -128,6 +128,7 @@ protected:
   bool __fastcall ItemDelete(TQueueItem * Item);
   bool __fastcall ItemPause(TQueueItem * Item, bool Pause);
   bool __fastcall ItemSetCPSLimit(TQueueItem * Item, unsigned long CPSLimit);
+  bool __fastcall ItemGetCPSLimit(TQueueItem * Item, unsigned long & CPSLimit);
 
   void __fastcall RetryItem(TQueueItem * Item);
   void __fastcall DeleteItem(TQueueItem * Item, bool CanKeep);
@@ -193,6 +194,8 @@ protected:
   void __fastcall SetProgress(TFileOperationProgressType & ProgressData);
   void __fastcall GetData(TQueueItemProxy * Proxy);
   void __fastcall SetCPSLimit(unsigned long CPSLimit);
+  unsigned long __fastcall GetCPSLimit();
+  virtual unsigned long __fastcall DefaultCPSLimit();
   virtual UnicodeString __fastcall StartupDirectory() = 0;
   void __fastcall Complete();
 };
@@ -213,6 +216,7 @@ public:
   bool __fastcall Pause();
   bool __fastcall Resume();
   bool __fastcall SetCPSLimit(unsigned long CPSLimit);
+  bool __fastcall GetCPSLimit(unsigned long & CPSLimit);
 
   __property TFileOperationProgressType * ProgressData = { read = GetProgressData };
   __property __int64 TotalTransferred = { read = GetTotalTransferred };
@@ -302,6 +306,8 @@ protected:
   UnicodeString FTargetDir;
   TCopyParamType * FCopyParam;
   int FParams;
+
+  virtual unsigned long __fastcall DefaultCPSLimit();
 };
 //---------------------------------------------------------------------------
 class TUploadQueueItem : public TTransferQueueItem

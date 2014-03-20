@@ -48,7 +48,6 @@ BEGIN
         CUSTOM_COMMAND_SELECTED_UNMATCH1, "To use selected custom command only one file must be selected in local panel."
         CUSTOM_COMMAND_PAIRS_DOWNLOAD_FAILED, "Some of the selected remote files were not downloaded. The selected custom command must be executed for pairs of file, what is thus not possible."
         EXTERNAL_CONSOLE_INIT_ERROR, "Cannot initialize external console."
-        CONSOLE_PRINT_TOO_LONG, "Message too long (%d bytes) to send to external console."
         CONSOLE_COMM_ERROR, "Cannot open mapping object to start comunication with external console."
         CONSOLE_SEND_TIMEOUT, "Timeout waiting for external console to complete the command."
         EXTERNAL_CONSOLE_INCOMPATIBLE, "Incompatible external console protocol version %d."
@@ -477,5 +476,6 @@ BEGIN
         LOCALES_URL, "http://winscp.net/eng/translations.php"
         DOCUMENTATION_SEARCH_URL2, "http://winscp.net/eng/docs/search.php?q=%s&ver=%s&lang=%s"
         ERROR_REPORT_URL, "http://winscp.net/forum/posting.php?mode=newtopic&f=2&report=%s&ver=%s&lang=%s"
+        UPGRADE_URL, "http://winscp.net/eng/upgrade.php"
 
 END

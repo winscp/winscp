@@ -33,6 +33,7 @@ private:
   bool FReset;
   unsigned int FLastSecond;
   unsigned long FRemainingCPS;
+  bool FCounterSet;
   std::vector<unsigned long> FTicks;
   std::vector<__int64> FTotalTransferredThen;
 
@@ -121,6 +122,7 @@ public:
   int __fastcall TransferProgress();
   int __fastcall OverallProgress();
   int __fastcall TotalTransferProgress();
+  void __fastcall SetSpeedCounters();
 };
 //---------------------------------------------------------------------------
 class TSuspendFileOperationProgress

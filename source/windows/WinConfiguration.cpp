@@ -1789,10 +1789,10 @@ TStrings * __fastcall TWinConfiguration::FindTemporaryFolders()
   TStrings * Result = new TStringList();
   try
   {
-    TSearchRec SRec;
+    TSearchRecChecked SRec;
     UnicodeString Mask = TemporaryDir(true);
     UnicodeString Directory = ExtractFilePath(Mask);
-    if (FindFirst(Mask, faDirectory, SRec) == 0)
+    if (FindFirstUnchecked(Mask, faDirectory, SRec) == 0)
     {
       do
       {
@@ -2260,6 +2260,7 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
     (Interface == ifExplorer) ?
       ScpExplorer.DriveView :
       (ScpCommander.LocalPanel.DriveView || ScpCommander.RemotePanel.DriveView));
+  Usage->Set(L"MinimizeToTray", MinimizeToTray);
 
   Usage->Set(L"CommanderNortonLikeMode", int(ScpCommander.NortonLikeMode));
   Usage->Set(L"CommanderExplorerKeyboardShortcuts", ScpCommander.ExplorerKeyboardShortcuts);

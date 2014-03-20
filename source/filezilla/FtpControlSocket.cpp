@@ -3976,6 +3976,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 					}
 					if (!nReplyError && !COptions::GetOptionVal(OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELLY))
 					{
+						m_pTransferSocket->SetActive();
 					}
 				}
 				else if (pData->bPasv && !COptions::GetOptionVal(OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELLY))

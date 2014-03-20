@@ -319,9 +319,9 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeS
 //---------------------------------------------------------------------------
 bool __fastcall DeleteDirectory(const UnicodeString DirName)
 {
-  TSearchRec sr;
+  TSearchRecChecked sr;
   bool retval = true;
-  if (FindFirst(DirName + L"\\*", faAnyFile, sr) == 0) // VCL Function
+  if (FindFirstUnchecked(DirName + L"\\*", faAnyFile, sr) == 0) // VCL Function
   {
     if (FLAGSET(sr.Attr, faDirectory))
     {
