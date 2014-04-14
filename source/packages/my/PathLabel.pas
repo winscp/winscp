@@ -531,6 +531,7 @@ begin
     end;
 
     FDisplayPath := FDisplayPath + Separator;
+    S := S + Separator;
 
     WidthMask := Canvas.TextWidth(FDisplayMask);
     if WidthMask > Width div 3 then
@@ -582,7 +583,7 @@ begin
     (WidthPath + WidthMask > Width);
 
   if not ShowHint then Hint := ''
-    else Hint := S + Separator + Mask;
+    else Hint := S + Mask;
 
   Str := FDisplayPath + FDisplayMask;
   if not Enabled then

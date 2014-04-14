@@ -329,6 +329,7 @@ private:
   bool __fastcall CanLogin();
   bool __fastcall IsCloneToNewSiteDefault();
   bool __fastcall IsDefaultResult(TModalResult Result);
+  void __fastcall UpdateNodeImage(TTreeNode * Node);
   int __fastcall GetSessionImageIndex(TSessionData * Data);
   void __fastcall SetNodeImage(TTreeNode * Node, int ImageIndex);
   void __fastcall CancelEditing();
@@ -336,6 +337,7 @@ private:
   bool __fastcall IsEditable();
   TSessionData * __fastcall CloneSelectedSession();
   void __fastcall CloneToNewSite();
+  void __fastcall ResetNewSiteData();
 
 protected:
   void __fastcall Default();

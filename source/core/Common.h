@@ -86,6 +86,7 @@ bool __fastcall IsHex(wchar_t Ch);
 UnicodeString __fastcall DecodeUrlChars(UnicodeString S);
 UnicodeString __fastcall EncodeUrlChars(UnicodeString S, UnicodeString Ignore = L"");
 UnicodeString __fastcall EncodeUrlString(UnicodeString S);
+UnicodeString __fastcall AppendUrlParams(UnicodeString AURL, UnicodeString Params);
 bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin);
 void __fastcall DeleteFileChecked(const UnicodeString & FileName);
 unsigned int __fastcall CancelAnswer(unsigned int Answers);
@@ -99,6 +100,7 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 bool __fastcall IsWinVista();
 bool __fastcall IsWin7();
+bool __fastcall IsWine();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
 bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime);

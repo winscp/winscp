@@ -1,4 +1,4 @@
-/*           CAsyncSslSocketLayer by Tim Kosse 
+/*           CAsyncSslSocketLayer by Tim Kosse
           mailto: tim.kosse@filezilla-project.org)
                  Version 2.0 (2005-02-27)
 -------------------------------------------------------------
@@ -123,6 +123,7 @@ static char THIS_FILE[] = __FILE__;
 	if (!p##n) \
 		bError = true;
 #endif
+#include <openssl/x509v3.h>
 
 //The following functions from the SSL libraries are used:
 def(int, SSL_state, (const SSL *s));
@@ -1558,16 +1559,8 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 	if (where & SSL_CB_HANDSHAKE_DONE)
 	{
 		int error = pSSL_get_verify_result(pLayer->m_ssl);
-		if (error)
-		{
-			pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERIFY_CERT, error);
-			pLayer->m_bBlocking = TRUE;
-			return;
-		}
-		pLayer->m_bSslEstablished = TRUE;
-		pLayer->PrintSessionInfo();
-		pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_INFO, SSL_INFO_ESTABLISHED);
-		pLayer->TriggerEvents();
+		pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERIFY_CERT, error);
+		pLayer->m_bBlocking = TRUE;
 	}
 }
 
@@ -1929,6 +1922,27 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 		Error = _T("Invalid end time");
 		return FALSE;
 	}
+
+	int subjectAltNamePos = X509_get_ext_by_NID(pX509, NID_subject_alt_name, -1);
+	if (subjectAltNamePos >= 0)
+	{
+		X509_EXTENSION * subjectAltNameExtension = X509_get_ext(pX509, subjectAltNamePos);
+		BIO * subjectAltNameBio = BIO_new(BIO_s_mem());
+
+		if (X509V3_EXT_print(subjectAltNameBio, subjectAltNameExtension, 0, 0) == 1)
+		{
+			USES_CONVERSION;
+			u_char *data;
+			int len = BIO_get_mem_data(subjectAltNameBio, &data);
+			char * buf = new char[len + 1];
+			memcpy(buf, data, len);
+			buf[len] = '\0';
+			_tcsncpy(SslCertData.subjectAltName, A2CT(buf), LENOF(SslCertData.subjectAltName));
+			SslCertData.subjectAltName[LENOF(SslCertData.subjectAltName) - 1] = '\0';
+		}
+
+		BIO_vfree(subjectAltNameBio);
+  }
 
 	unsigned int length = 20;
 	pX509_digest(pX509, pEVP_sha1(), SslCertData.hash, &length);

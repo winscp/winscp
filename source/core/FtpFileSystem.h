@@ -183,6 +183,7 @@ protected:
   void __fastcall SetLastCode(int Code);
   void __fastcall StoreLastResponse(const UnicodeString & Text);
   void __fastcall SetCPSLimit(TFileOperationProgressType * OperationProgress);
+  bool __fastcall VerifyCertificateHostName(const TFtpsCertificateData & Data);
 
   static bool __fastcall Unquote(UnicodeString & Str);
   static UnicodeString __fastcall ExtractStatusMessage(UnicodeString Status);

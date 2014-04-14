@@ -139,7 +139,7 @@ BEGIN
         BOOKMARK_INFO_TIP, "Local: %s\nRemote: %s"
         CUSTOM_COMMAND_TOUCH, "&Touch"
         CUSTOM_COMMAND_EXECUTE, "&Execute"
-        ERROR_LIST_COUNT, "%d error(s) occured during last operation. Do you want to see it/them?"
+        ERROR_LIST_COUNT, "%d error(s) occurred during last operation. Do you want to see it/them?"
         ERROR_LIST_NUMBER, "Error %d of %d:\n%s"
         NO_NEW_VERSION, "You have the latest version."
         NEW_VERSION4, "New version %s was released."

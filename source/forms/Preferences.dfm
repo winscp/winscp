@@ -2952,6 +2952,8 @@ object PreferencesDialog: TPreferencesDialog
       end
       object PanelLocalSheet: TTabSheet
         Tag = 22
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_panels_local'
         Caption = 'Local'
         ImageIndex = 20
         TabVisible = False

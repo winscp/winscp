@@ -23,6 +23,7 @@
 #include "Custom.h"
 #include "HelpWin.h"
 #include <Math.hpp>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -273,6 +274,9 @@ void __fastcall ConfigureInterface()
   {
     TBXSetTheme(WinConfiguration->Theme);
   }
+  // Has any effect on Wine only
+  // (otherwise initial UserDocumentDirectory is equivalent to GetPersonalFolder())
+  UserDocumentDirectory = GetPersonalFolder();
 }
 //---------------------------------------------------------------------------
 // dummy function to force linking of TBXOfficeXPTheme.pas

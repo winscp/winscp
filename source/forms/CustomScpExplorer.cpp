@@ -2017,7 +2017,11 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
     else if (Operation == foDelete)
     {
       assert(FileList->Count);
-      bool Alternative = bool(Param);
+      // We deliberately do not toggle alternative flag (Param), but use OR,
+      // because the Param is set only when command is invoked using Shift-Del/F8 keyboard
+      // shortcut of CurrentDeleteAlternativeAction
+      bool Alternative =
+        bool(Param) || UseAlternativeFunction();
       bool Recycle;
       if (Side == osLocal)
       {

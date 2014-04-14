@@ -1897,6 +1897,28 @@ UnicodeString __fastcall EncodeUrlString(UnicodeString S)
   return DoEncodeUrl(S, NonUrlChars());
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall AppendUrlParams(UnicodeString AURL, UnicodeString Params)
+{
+  // see also TWebHelpSystem::ShowHelp
+  const wchar_t FragmentSeparator = L'#';
+  UnicodeString URL = ::CutToChar(AURL, FragmentSeparator, false);
+
+  if (URL.Pos(L"?") == 0)
+  {
+    URL += L"?";
+  }
+  else
+  {
+    URL += L"&";
+  }
+
+  URL += Params;
+
+  AddToList(URL, AURL, FragmentSeparator);
+
+  return URL;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption)
 {
   return ReplaceStr(Caption, L"&", L"&&");
@@ -1995,6 +2017,14 @@ bool __fastcall IsWinVista()
 bool __fastcall IsWin7()
 {
   return CheckWin32Version(6, 1);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsWine()
+{
+  HMODULE NtDll = GetModuleHandle(L"ntdll.dll");
+  return
+    ALWAYS_TRUE(NtDll != NULL) &&
+    (GetProcAddress(NtDll, "wine_get_version") != NULL);
 }
 //---------------------------------------------------------------------------
 LCID __fastcall GetDefaultLCID()

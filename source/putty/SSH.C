@@ -2563,7 +2563,9 @@ static void ssh_detect_bugs(Ssh ssh, char *vstring)
     if (conf_get_int(ssh->conf, CONF_sshbug_rsapad2) == FORCE_ON ||
 	(conf_get_int(ssh->conf, CONF_sshbug_rsapad2) == AUTO &&
 	 (wc_match("OpenSSH_2.[5-9]*", imp) ||
-	  wc_match("OpenSSH_3.[0-2]*", imp)))) {
+ 	  wc_match("OpenSSH_3.[0-2]*", imp) ||
+ 	  wc_match("mod_sftp/0.[0-8]*", imp) ||
+ 	  wc_match("mod_sftp/0.9.[0-8]", imp)))) {
 	/*
 	 * These versions have the SSH-2 RSA padding bug.
 	 */

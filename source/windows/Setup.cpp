@@ -763,6 +763,37 @@ UnicodeString __fastcall GetUsageData()
   return Configuration->Usage->Serialize();
 }
 //---------------------------------------------------------------------------
+static UnicodeString __fastcall WantBetaUrl(UnicodeString URL, bool Force)
+{
+  bool Beta;
+  if (WinConfiguration->IsBeta)
+  {
+    Beta = true;
+  }
+  else
+  {
+    switch (WinConfiguration->Updates.BetaVersions)
+    {
+      case asAuto:
+        Beta = WinConfiguration->AnyBetaInVersionHistory;
+        break;
+
+      case asOn:
+        Beta = true;
+        break;
+
+      default:
+        Beta = false;
+        break;
+    }
+  }
+  if (Beta || Force)
+  {
+    URL = AppendUrlParams(URL, FORMAT(L"beta=%d", (Beta ? 1 : 0)));
+  }
+  return URL;
+}
+//---------------------------------------------------------------------------
 void __fastcall QueryUpdates()
 {
   bool Complete = false;
@@ -784,32 +815,7 @@ void __fastcall QueryUpdates()
       UnicodeString URL = LoadStr(UPDATES_URL) +
         FORMAT(L"?v=%s&lang=%s", (CurrentVersionStr,
           IntToHex(__int64(GUIConfiguration->Locale), 4)));
-      bool Beta;
-      if (WinConfiguration->IsBeta)
-      {
-        Beta = true;
-      }
-      else
-      {
-        switch (Updates.BetaVersions)
-        {
-          case asAuto:
-            Beta = WinConfiguration->AnyBetaInVersionHistory;
-            break;
-
-          case asOn:
-            Beta = true;
-            break;
-
-          default:
-            Beta = false;
-            break;
-        }
-      }
-      if (Beta)
-      {
-        URL += L"&beta=1";
-      }
+      URL = WantBetaUrl(URL, false);
       URL += L"&dotnet=" + Updates.DotNetVersion;
       URL += L"&console=" + Updates.ConsoleVersion;
       UnicodeString Proxy;
@@ -1099,7 +1105,10 @@ void __fastcall CheckForUpdates(bool CachedResults)
           if (New)
           {
             Configuration->Usage->Inc(L"UpdateDownloadOpens");
-            OpenBrowser(LoadStr(UPGRADE_URL));
+            UnicodeString UpgradeUrl = LoadStr(UPGRADE_URL);
+            UpgradeUrl = WantBetaUrl(UpgradeUrl, true);
+            UpgradeUrl = AppendUrlParams(UpgradeUrl, FORMAT(L"to=%s", (VersionStrFromCompoundVersion(Updates.Results.Version))));
+            OpenBrowser(UpgradeUrl);
           }
           break;
 

@@ -259,6 +259,39 @@ bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path)
   return false;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall GetPersonalFolder()
+{
+  UnicodeString Result;
+  SpecialFolderLocation(CSIDL_PERSONAL, Result);
+
+  if (IsWine())
+  {
+    UnicodeString WineHostHome = GetEnvironmentVariable(L"WINE_HOST_HOME");
+    if (!WineHostHome.IsEmpty())
+    {
+      UnicodeString WineHome = L"Z:" + ToUnixPath(WineHostHome);
+      if (DirectoryExists(WineHome))
+      {
+        Result = WineHome;
+      }
+    }
+    else
+    {
+      // Should we use WinAPI GetUserName() instead?
+      UnicodeString UserName = GetEnvironmentVariable(L"USERNAME");
+      if (!UserName.IsEmpty())
+      {
+        UnicodeString WineHome = L"Z:\\home\\" + UserName;
+        if (DirectoryExists(WineHome))
+        {
+          Result = WineHome;
+        }
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall ItemsFormatString(const UnicodeString SingleItemFormat,
   const UnicodeString MultiItemsFormat, int Count, const UnicodeString FirstItem)
 {
@@ -311,7 +344,7 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeS
     {
       TempDir += IncludeTrailingBackslash(FormatDateTime(L"nnzzz", Now()));
     };
-  }
+    }
   while (!Mask && DirectoryExists(TempDir));
 
   return TempDir;

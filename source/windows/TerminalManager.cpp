@@ -650,7 +650,11 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     }
 
     UnicodeString QueueProgressTitle;
-    if (!FProgressTitle.IsEmpty() && !ForegroundTask())
+    if (!FForegroundProgressTitle.IsEmpty())
+    {
+      NewTitle = FForegroundProgressTitle + L" - " + NewTitle;
+    }
+    else if (!FProgressTitle.IsEmpty() && !ForegroundTask())
     {
       NewTitle = FProgressTitle + L" - " + NewTitle;
     }
@@ -1013,9 +1017,10 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
       ScpExplorer->LockWindow();
     }
     FDirectoryReadingStart = Now();
-    if (!FProgressTitle.IsEmpty())
+    if (!FProgressTitle.IsEmpty() || !FForegroundProgressTitle.IsEmpty())
     {
       FProgressTitle = L"";
+      FForegroundProgressTitle = L"";
       UpdateAppTitle();
     }
 
@@ -1040,6 +1045,7 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
       }
 
       FProgressTitle = L"";
+      FForegroundProgressTitle = L"";
       UpdateAppTitle();
     }
   }
@@ -1055,7 +1061,7 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
 
     if ((Now() - FDirectoryReadingStart) >= DirectoryReadingProgressDelay)
     {
-      FProgressTitle = FMTLOAD(DIRECTORY_READING_PROGRESS, (Progress));
+      FForegroundProgressTitle = FMTLOAD(DIRECTORY_READING_PROGRESS, (Progress));
       UpdateAppTitle();
     }
   }

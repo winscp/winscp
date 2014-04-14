@@ -105,10 +105,13 @@ __fastcall TPreferencesDialog::~TPreferencesDialog()
   SAFE_DESTROY(FEditorScrollOnDragOver);
   SAFE_DESTROY(FCopyParamScrollOnDragOver);
   SAFE_DESTROY(FCustomCommandsScrollOnDragOver);
-  delete FEditorFont;
+  SAFE_DESTROY(FEditorFont);
   delete FCustomCommandList;
+  FCustomCommandList = NULL;
   delete FCopyParamList;
+  FCopyParamList = NULL;
   delete FEditorList;
+  FEditorList = NULL;
 }
 //---------------------------------------------------------------------
 bool __fastcall TPreferencesDialog::Execute(TPreferencesDialogData * DialogData)
@@ -1188,29 +1191,32 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
       TListItem * Item)
 {
-  assert(FCustomCommandList != NULL);
-  int Index = Item->Index;
-  assert(Index >= 0 && Index <= FCustomCommandList->Count);
-  const TCustomCommandType * Command = FCustomCommandList->Commands[Index];
-  UnicodeString Caption = StripHotkey(Command->Name);
-  if (Command->ShortCut != 0)
+  // WORKAROUND We get here on Wine after destructor is called
+  if (FCustomCommandList != NULL)
   {
-    Caption = FORMAT(L"%s (%s)", (Caption, ShortCutToText(Command->ShortCut)));
+    int Index = Item->Index;
+    assert(Index >= 0 && Index <= FCustomCommandList->Count);
+    const TCustomCommandType * Command = FCustomCommandList->Commands[Index];
+    UnicodeString Caption = StripHotkey(Command->Name);
+    if (Command->ShortCut != 0)
+    {
+      Caption = FORMAT(L"%s (%s)", (Caption, ShortCutToText(Command->ShortCut)));
+    }
+    Item->Caption = Caption;
+    assert(!Item->SubItems->Count);
+    Item->SubItems->Add(Command->Command);
+    int Params = Command->Params;
+    Item->SubItems->Add(LoadStr(
+      FLAGSET(Params, ccLocal) ? CUSTOM_COMMAND_LOCAL : CUSTOM_COMMAND_REMOTE));
+    UnicodeString ParamsStr;
+    #define ADDPARAM(PARAM, STR) \
+      if (FLAGSET(Params, PARAM)) \
+        ParamsStr += (ParamsStr.IsEmpty() ? L"" : L"/") + LoadStr(STR);
+    ADDPARAM(ccApplyToDirectories, CUSTOM_COMMAND_DIRECTORIES);
+    ADDPARAM(ccRecursive, CUSTOM_COMMAND_RECURSE);
+    #undef ADDPARAM
+    Item->SubItems->Add(ParamsStr);
   }
-  Item->Caption = Caption;
-  assert(!Item->SubItems->Count);
-  Item->SubItems->Add(Command->Command);
-  int Params = Command->Params;
-  Item->SubItems->Add(LoadStr(
-    FLAGSET(Params, ccLocal) ? CUSTOM_COMMAND_LOCAL : CUSTOM_COMMAND_REMOTE));
-  UnicodeString ParamsStr;
-  #define ADDPARAM(PARAM, STR) \
-    if (FLAGSET(Params, PARAM)) \
-      ParamsStr += (ParamsStr.IsEmpty() ? L"" : L"/") + LoadStr(STR);
-  ADDPARAM(ccApplyToDirectories, CUSTOM_COMMAND_DIRECTORIES);
-  ADDPARAM(ccRecursive, CUSTOM_COMMAND_RECURSE);
-  #undef ADDPARAM
-  Item->SubItems->Add(ParamsStr);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::ListViewSelectItem(
@@ -1642,14 +1648,18 @@ void __fastcall TPreferencesDialog::UpdateEditorListView()
 void __fastcall TPreferencesDialog::EditorListView3Data(TObject * /*Sender*/,
   TListItem * Item)
 {
-  int Index = Item->Index;
-  assert(Index >= 0 && Index <= FEditorList->Count);
-  const TEditorPreferences * Editor = FEditorList->Editors[Index];
-  Item->Caption = Editor->Name;
-  Item->SubItems->Add(Editor->Data->FileMask.Masks);
-  if (Editor->Data->Editor == edExternal)
+  // WORKAROUND We get here on Wine after destructor is called
+  if (FEditorList != NULL)
   {
-    Item->SubItems->Add(BooleanToStr(Editor->Data->ExternalEditorText));
+    int Index = Item->Index;
+    assert(Index >= 0 && Index <= FEditorList->Count);
+    const TEditorPreferences * Editor = FEditorList->Editors[Index];
+    Item->Caption = Editor->Name;
+    Item->SubItems->Add(Editor->Data->FileMask.Masks);
+    if (Editor->Data->Editor == edExternal)
+    {
+      Item->SubItems->Add(BooleanToStr(Editor->Data->ExternalEditorText));
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1822,23 +1832,27 @@ void __fastcall TPreferencesDialog::UpdateCopyParamListView()
 void __fastcall TPreferencesDialog::CopyParamListViewData(TObject * /*Sender*/,
   TListItem * Item)
 {
-  UnicodeString Name;
-  UnicodeString Rule;
-
-  int Index = Item->Index;
-  if (Index == 0)
+  // WORKAROUND We get here on Wine after destructor is called
+  if (FCopyParamList != NULL)
   {
-    Name = StripHotkey(LoadStr(COPY_PARAM_DEFAULT));
-  }
-  else
-  {
-    assert(Index >= 1 && Index <= 1 + FCopyParamList->Count);
-    Name = StripHotkey(FCopyParamList->Names[Index - 1]);
-    Rule = BooleanToStr(FCopyParamList->Rules[Index - 1] != NULL);
-  }
+    UnicodeString Name;
+    UnicodeString Rule;
 
-  Item->Caption = Name;
-  Item->SubItems->Add(Rule);
+    int Index = Item->Index;
+    if (Index == 0)
+    {
+      Name = StripHotkey(LoadStr(COPY_PARAM_DEFAULT));
+    }
+    else
+    {
+      assert(Index >= 1 && Index <= 1 + FCopyParamList->Count);
+      Name = StripHotkey(FCopyParamList->Names[Index - 1]);
+      Rule = BooleanToStr(FCopyParamList->Rules[Index - 1] != NULL);
+    }
+
+    Item->Caption = Name;
+    Item->SubItems->Add(Rule);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::HelpButtonClick(TObject * /*Sender*/)

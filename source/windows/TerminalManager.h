@@ -91,6 +91,7 @@ private:
   TList * FQueues;
   TStrings * FTerminationMessages;
   UnicodeString FProgressTitle;
+  UnicodeString FForegroundProgressTitle;
   TDateTime FDirectoryReadingStart;
   TAuthenticateForm * FAuthenticateForm;
   TCriticalSection * FQueueSection;

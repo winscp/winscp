@@ -110,7 +110,7 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
     UnicodeString LocalDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
     if (LocalDirectory.IsEmpty())
     {
-      ::SpecialFolderLocation(CSIDL_PERSONAL, LocalDirectory);
+      LocalDirectory = GetPersonalFolder();
     }
     TargetDirectory = IncludeTrailingBackslash(LocalDirectory);
 
@@ -321,12 +321,7 @@ void __fastcall UpdateStaticUsage()
   UnicodeString ExeName = ExpandFileName(Application->ExeName);
   bool InProgramFiles = AnsiSameText(ExeName.SubString(1, ProgramsFolder.Length()), ProgramsFolder);
   Configuration->Usage->Set(L"InProgramFiles", InProgramFiles);
-
-  HMODULE NtDll = GetModuleHandle(L"ntdll.dll");
-  bool Wine =
-    ALWAYS_TRUE(NtDll != NULL) &&
-    (GetProcAddress(NtDll, "wine_get_version") != NULL);
-  Configuration->Usage->Set(L"Wine", Wine);
+  Configuration->Usage->Set(L"Wine", IsWine());
 
   WinConfiguration->UpdateStaticUsage();
 

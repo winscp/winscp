@@ -291,9 +291,14 @@ TTreeNode * __fastcall TLoginDialog::AddSession(TSessionData * Data)
   TTreeNode * Parent = AddSessionPath(UnixExtractFilePath(Data->Name), true, Data->IsWorkspace);
   TTreeNode * Node = SessionTree->Items->AddChild(Parent, UnixExtractFileName(Data->Name));
   Node->Data = Data;
-  SetNodeImage(Node, GetSessionImageIndex(Data));
+  UpdateNodeImage(Node);
 
   return Node;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::UpdateNodeImage(TTreeNode * Node)
+{
+  SetNodeImage(Node, GetSessionImageIndex(GetNodeSession(Node)));
 }
 //---------------------------------------------------------------------
 int __fastcall TLoginDialog::GetSessionImageIndex(TSessionData * Data)
@@ -380,12 +385,17 @@ void __fastcall TLoginDialog::NewSite()
   LoadContents();
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::Default()
+void __fastcall TLoginDialog::ResetNewSiteData()
 {
   if (ALWAYS_TRUE(StoredSessions != NULL))
   {
     FNewSiteData->Assign(StoredSessions->DefaultSettings);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::Default()
+{
+  ResetNewSiteData();
 
   NewSite();
 }
@@ -588,12 +598,6 @@ void __fastcall TLoginDialog::UpdateControls()
     UpdateButtonVisibility(EditButton);
     UpdateButtonVisibility(EditCancelButton);
 
-    TAction * SaveButtonAction =
-      SupportsSplitButton() ? SaveSessionAction : SaveAsSessionAction;
-    if (SaveButton->Action != SaveButtonAction)
-    {
-      SaveButton->Action = SaveButtonAction;
-    }
     SaveAsSessionMenuItem->Visible = FEditing;
   }
 }
@@ -649,6 +653,19 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
     // Explicit call is needed, as we get here during csRecreating phase,
     // when SessionTreeChange is not triggered, see initial method comment
     LoadContents();
+
+    if (FLocaleChanging)
+    {
+      TTreeNode * Node = SessionTree->Items->GetFirstNode();
+      while (Node != NULL)
+      {
+        if (IsSiteNode(Node))
+        {
+          UpdateNodeImage(Node);
+        }
+        Node = Node->GetNext();
+      }
+    }
   }
   UpdateControls();
 }
@@ -879,6 +896,8 @@ void __fastcall TLoginDialog::SaveAsSession(bool ForceDialog)
     LoadContents();
 
     UpdateControls();
+
+    ResetNewSiteData();
   }
 }
 //---------------------------------------------------------------------------
@@ -2414,8 +2433,7 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TLoginDialog::ImportExportIniFilePath()
 {
-  UnicodeString PersonalDirectory;
-  ::SpecialFolderLocation(CSIDL_PERSONAL, PersonalDirectory);
+  UnicodeString PersonalDirectory = GetPersonalFolder();
   UnicodeString FileName = IncludeTrailingBackslash(PersonalDirectory) +
     ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName));
   return FileName;
@@ -2745,7 +2763,7 @@ void __fastcall TLoginDialog::CancelEditing()
 {
   FEditing = false;
   // reset back the color
-  SetNodeImage(SessionTree->Selected, GetSessionImageIndex(GetNodeSession(SessionTree->Selected)));
+  UpdateNodeImage(SessionTree->Selected);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CloneToNewSite()

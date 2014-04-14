@@ -118,53 +118,62 @@ void __fastcall TProgressForm::UpdateControls()
   if (FData.Operation != FLastOperation)
   {
     bool AVisible;
-    THandle ShellModule;
 
-    try
+    // Wine does have static text "Searching" instead of actual animations
+    if (!IsWine())
     {
-      AVisible = true;
-      switch (FData.Operation) {
-        case foCopy:
-        case foMove:
-        case foRemoteMove:
-        case foRemoteCopy:
-          if (FData.Count == 1) Animate->CommonAVI = aviCopyFile;
-            else Animate->CommonAVI = aviCopyFiles;
-          break;
+      try
+      {
+        THandle ShellModule;
+        AVisible = true;
+        switch (FData.Operation) {
+          case foCopy:
+          case foMove:
+          case foRemoteMove:
+          case foRemoteCopy:
+            if (FData.Count == 1) Animate->CommonAVI = aviCopyFile;
+              else Animate->CommonAVI = aviCopyFiles;
+            break;
 
-        case foDelete:
-          Animate->CommonAVI = (DeleteToRecycleBin ? aviRecycleFile : aviDeleteFile);
-          break;
+          case foDelete:
+            Animate->CommonAVI = (DeleteToRecycleBin ? aviRecycleFile : aviDeleteFile);
+            break;
 
-        case foSetProperties:
-        case foGetProperties:
-          ShellModule = SafeLoadLibrary(L"shell32.dll");
-          if (!ShellModule)
-          {
-            Abort();
-          }
-          // workaround, VCL is not able to set both ResId and ResHandle otherwise
-          Animate->Active = false;
-          Animate->ResHandle = 0;
-          Animate->ComponentState << csLoading;
-          Animate->ResId = 165;
-          Animate->ResHandle = ShellModule;
-          Animate->ComponentState >> csLoading;
-          Animate->Active = true;
-          break;
+          case foSetProperties:
+          case foGetProperties:
+            ShellModule = SafeLoadLibrary(L"shell32.dll");
+            if (!ShellModule)
+            {
+              Abort();
+            }
+            // workaround, VCL is not able to set both ResId and ResHandle otherwise
+            Animate->Active = false;
+            Animate->ResHandle = 0;
+            Animate->ComponentState << csLoading;
+            Animate->ResId = 165;
+            Animate->ResHandle = ShellModule;
+            Animate->ComponentState >> csLoading;
+            Animate->Active = true;
+            break;
 
-        default:
-          assert(FData.Operation == foCustomCommand ||
-            FData.Operation == foCalculateSize ||
-            FData.Operation == foCalculateChecksum);
-          Animate->CommonAVI = aviNone;
-          AVisible = false;
+          default:
+            assert(FData.Operation == foCustomCommand ||
+              FData.Operation == foCalculateSize ||
+              FData.Operation == foCalculateChecksum);
+            Animate->CommonAVI = aviNone;
+            AVisible = false;
+        }
       }
+      catch (...)
+      {
+        AVisible = false;
+      };
     }
-    catch (...)
+    else
     {
+      Animate->CommonAVI = aviNone;
       AVisible = false;
-    };
+    }
 
     int Delta = 0;
     if (AVisible && !Animate->Visible) Delta = Animate->Height;
@@ -173,7 +182,6 @@ void __fastcall TProgressForm::UpdateControls()
 
     MainPanel->Top = MainPanel->Top + Delta;
     TransferPanel->Top = TransferPanel->Top + Delta;
-    SpeedPanel->Top = SpeedPanel->Top + Delta;
     Animate->Visible = AVisible;
     Animate->Active = AVisible;
 
@@ -181,7 +189,9 @@ void __fastcall TProgressForm::UpdateControls()
       else
     if (!TransferOperation && TransferPanel->Visible) Delta += -TransferPanel->Height;
     TransferPanel->Visible = TransferOperation;
-    SpeedPanel->Visible = TransferOperation;
+    // when animation is hidden for transfers (on wine) speed panel does not fit,
+    // so we hide it (temporary solution before window redesign)
+    SpeedPanel->Visible = TransferOperation && AVisible;
 
     ClientHeight = ClientHeight + Delta;
 

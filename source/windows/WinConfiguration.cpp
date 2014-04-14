@@ -552,9 +552,7 @@ void __fastcall TWinConfiguration::Default()
     PixelsPerInchToolbarValue;
   FScpExplorer.SessionsTabs = true;
   FScpExplorer.StatusBar = true;
-  UnicodeString PersonalFolder;
-  ::SpecialFolderLocation(CSIDL_PERSONAL, PersonalFolder);
-  FScpExplorer.LastLocalTargetDirectory = PersonalFolder;
+  FScpExplorer.LastLocalTargetDirectory = GetPersonalFolder();
   FScpExplorer.ViewStyle = 0; /* vsIcon */
   FScpExplorer.ShowFullAddress = true;
   FScpExplorer.DriveView = true;

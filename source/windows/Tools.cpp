@@ -276,9 +276,14 @@ bool __fastcall ExecuteShellAndWait(const UnicodeString Command)
     &Application->ProcessMessages);
 }
 //---------------------------------------------------------------------------
-bool __fastcall OpenInNewWindow()
+bool __fastcall UseAlternativeFunction()
 {
   return FLAGSET(GetAsyncKeyState(VK_SHIFT), 0x8000);
+}
+//---------------------------------------------------------------------------
+bool __fastcall OpenInNewWindow()
+{
+  return UseAlternativeFunction();
 }
 //---------------------------------------------------------------------------
 void __fastcall ExecuteNewInstance(const UnicodeString & Param)

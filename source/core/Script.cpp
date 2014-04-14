@@ -410,7 +410,7 @@ void __fastcall TScript::LogPendingLines(TTerminal * ATerminal)
   {
     // not using Log(), as we want to log to ATerminal, not Terminal,
     // what is different here, as we are called from TManagementScript::Connect()
-    ATerminal->Log->Add(llMessage, FORMAT(ScriptLogFormat, (L"Retrospectivelly logging previous script records:")));
+    ATerminal->Log->Add(llMessage, FORMAT(ScriptLogFormat, (L"Retrospectively logging previous script records:")));
 
     for (int Index = 0; Index < FPendingLogLines->Count; Index++)
     {

@@ -1416,9 +1416,10 @@ begin
     Log('Preparing intallation report');
 
     ReportData := Format(
-      'installed=%d&silent=%d&ver=%s&lang=%s&', [
+      'installed=%d&silent=%d&ver=%s&lang=%s&prevver=%s&', [
        Integer(InstallationDone), Integer(WizardSilent),
-       ExpandConstant('{#VersionOnly}'), ActiveLanguage]);
+       ExpandConstant('{#VersionOnly}'), ActiveLanguage,
+       PrevVersion]);
 
 #ifdef Chrome
     ReportData := ReportData +

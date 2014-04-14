@@ -30,6 +30,7 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData, UnicodeString UserName, UnicodeString Password);
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
+UnicodeString __fastcall GetPersonalFolder();
 UnicodeString __fastcall ItemsFormatString(const UnicodeString SingleItemFormat,
   const UnicodeString MultiItemsFormat, int Count, const UnicodeString FirstItem);
 UnicodeString __fastcall ItemsFormatString(const UnicodeString SingleItemFormat,

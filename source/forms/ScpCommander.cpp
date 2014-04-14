@@ -1774,7 +1774,7 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
     Strings->Clear();
     FLocalPathComboBoxPaths->Clear();
     Strings->Add(LoadStr(SPECIAL_FOLDER_MY_DOCUMENTS));
-    FLocalPathComboBoxPaths->AddObject(DriveInfo->SpecialFolder[CSIDL_PERSONAL]->Location,
+    FLocalPathComboBoxPaths->AddObject(GetPersonalFolder(),
       (TObject *)DriveInfo->SpecialFolder[CSIDL_PERSONAL]->ImageIndex);
     Strings->Add(LoadStr(SPECIAL_FOLDER_DESKTOP));
     FLocalPathComboBoxPaths->AddObject(DriveInfo->SpecialFolder[CSIDL_DESKTOP]->Location,
