@@ -30,13 +30,6 @@ This class only has a couple of public functions:
   You can call this function only after receiving a layerspecific callback with the SSL_VERIFY_CERT 
   id. Set result to 1 if you trust the certificate and 0 if you don't trust it.
   nID has to be the priv_data element of the t_SslCertData structure and nCode has to be SSL_VERIFY_CERT.
-- CreateSslCertificate(LPCTSTR filename, int bits, unsigned char* country, unsigned char* state,
-			unsigned char* locality, unsigned char* organization, unsigned char* unit, unsigned char* cname,
-			unsigned char *email, CString& err);
-  Creates a new self-signed SSL certificate and stores it in the given file
-- SendRaw(const void* lpBuf, int nBufLen, int nFlags = 0)
-  Sends a raw, unencrypted message. This may be useful after successful initialization to tell the other
-  side that can use SSL.
 
 This layer sends some layerspecific notifications to your socket instance, you can handle them in
 OnLayerCallback of your socket class.
@@ -154,12 +147,6 @@ public:
 		CAsyncSslSocketLayer* main,
 		bool sessionreuse, int minTlsVersion, int maxTlsVersion,
 		void* pContext = 0);
-
-	static bool CreateSslCertificate(LPCTSTR filename, int bits, unsigned char* country, unsigned char* state,
-			unsigned char* locality, unsigned char* organization, unsigned char* unit, unsigned char* cname,
-			unsigned char *email, CString& err);
-
-	int SetCertKeyFile(const char* cert, const char* key, const char* pass, CString* error = 0);
 
 	// Send raw text, useful to send a confirmation after the ssl connection
 	// has been initialized

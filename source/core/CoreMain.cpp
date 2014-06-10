@@ -59,6 +59,14 @@ bool __fastcall IsAuthenticationPrompt(TPromptKind Kind)
     (Kind == pkPassword) || (Kind == pkNewPassword);
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsPasswordPrompt(TPromptKind Kind, TStrings * Prompts)
+{
+  return
+    (Prompts->Count == 1) && FLAGCLEAR(int(Prompts->Objects[0]), pupEcho) &&
+    ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkKeybInteractive) ||
+     (Kind == pkTIS) || (Kind == pkCryptoCard));
+}
+//---------------------------------------------------------------------------
 void CoreInitialize()
 {
   Randomize();

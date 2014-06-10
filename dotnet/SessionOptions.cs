@@ -50,6 +50,7 @@ namespace WinSCP
         public string UserName { get; set; }
         public string Password { get; set; }
         public TimeSpan Timeout { get { return _timeout; } set { SetTimeout(value); } }
+        public int TimeoutInMilliseconds { get { return GetTimeoutInMilliseconds(); } set { SetTimeoutInMilliseconds(value); } }
 
         // SSH
         public string SshHostKeyFingerprint { get { return _sshHostKeyFingerprint; } set { SetSshHostKeyFingerprint(value); } }
@@ -122,6 +123,20 @@ namespace WinSCP
             }
 
             _portNumber = value;
+        }
+
+        private int GetTimeoutInMilliseconds()
+        {
+            if ((Timeout.TotalMilliseconds > int.MaxValue) || (Timeout.TotalMilliseconds < int.MinValue))
+            {
+                throw new InvalidCastException(string.Format(CultureInfo.CurrentCulture, "Cannot convert {0} to integer", Timeout));
+            }
+            return (int)Timeout.TotalMilliseconds;
+        }
+
+        private void SetTimeoutInMilliseconds(int value)
+        {
+            Timeout = TimeSpan.FromMilliseconds(value);
         }
 
         private string _sshHostKeyFingerprint;

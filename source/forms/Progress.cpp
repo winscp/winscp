@@ -469,7 +469,7 @@ void __fastcall TProgressForm::CancelOperation()
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::GlobalMinimize(TObject * /*Sender*/)
 {
-  Application->Minimize();
+  ApplicationMinimize();
   FMinimizedByMe = true;
 }
 //---------------------------------------------------------------------------

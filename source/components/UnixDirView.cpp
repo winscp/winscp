@@ -58,6 +58,18 @@ int __stdcall CompareDirectories(TListItem *Item1, TListItem *Item2)
   return 0;
 }
 //---------------------------------------------------------------------------
+int __fastcall CompareExtThenFull(const UnicodeString & Name1, const UnicodeString & Name2)
+{
+  UnicodeString Ext1 = UnixExtractFileExt(Name1);
+  UnicodeString Ext2 = UnixExtractFileExt(Name2);
+  int Result = AnsiCompareText(Ext1, Ext2);
+  if (Result == 0)
+  {
+    Result = AnsiCompareText(Name1, Name2);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 #define DEFINE_COMPARE_FUNC_EX(PROPERTY, NAME, COMPAREFUNCFILE, COMPAREFUNCDIR, FALLBACK) \
   int __stdcall Compare ## NAME(TListItem *Item1, TListItem *Item2, TUnixDirView *DirView) \
   { \
@@ -94,7 +106,7 @@ DEFINE_COMPARE_FUNC(Owner, COMPARE_TOKEN);
 DEFINE_COMPARE_FUNC(Group, COMPARE_TOKEN);
 DEFINE_COMPARE_FUNC_EX(Extension, Extension, AnsiCompareText, COMPARE_DUMMY, AnsiCompareText);
 DEFINE_COMPARE_FUNC(LinkTo, AnsiCompareText);
-DEFINE_COMPARE_FUNC(TypeName, AnsiCompareText);
+DEFINE_COMPARE_FUNC_EX(TypeName, TypeName, AnsiCompareText, AnsiCompareText, CompareExtThenFull);
 //---------------------------------------------------------------------------
 #undef DEFINE_COMPARE_FUNC
 #undef COMPARE_NUMBER

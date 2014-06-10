@@ -342,6 +342,7 @@ type
     function WatchThreadActive(Drive: TDrive): Boolean; overload;
     function NodeWatched(Node: TTreeNode): Boolean; virtual;
 {$ENDIF}
+    procedure ValidateCurrentDirectoryIfNotMonitoring;
 
     (* Modified Events: *)
     procedure GetImageIndex(Node: TTreeNode); override;
@@ -1151,6 +1152,8 @@ begin
       if (not Assigned(FPrevSelected)) or (not FPrevSelected.HasAsParent(Node)) then
         Node.Expand(False);
       FPrevSelected := Node;
+
+      ValidateCurrentDirectoryIfNotMonitoring;
     end;
   end;
 
@@ -1899,6 +1902,15 @@ begin
     with DriveStatus[Drive] do
       if Assigned(RootNode) and DriveStatus[Drive].Scanned then
         ValidateDirectory(RootNode);
+end;
+
+procedure TDriveView.ValidateCurrentDirectoryIfNotMonitoring;
+begin
+  if Assigned(Selected) and
+     not Assigned(DriveStatus[GetDriveToNode(Selected)].DiscMonitor) then
+  begin
+    ValidateDirectory(Selected);
+  end;
 end;
 
 procedure TDriveView.ValidateDirectoryEx(Node: TTreeNode; Recurse: TRecursiveScan;

@@ -151,6 +151,7 @@ __int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
 UnicodeString __fastcall FixedLenDateTimeFormat(const UnicodeString & Format);
 UnicodeString __fastcall StandardTimestamp(const TDateTime & DateTime);
 UnicodeString __fastcall StandardTimestamp();
+UnicodeString __fastcall StandardDatestamp();
 UnicodeString __fastcall GetTimeZoneLogString();
 bool __fastcall AdjustClockForDSTEnabled();
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);

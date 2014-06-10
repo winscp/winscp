@@ -188,8 +188,6 @@ namespace WinSCP
 
         private void OpenLog()
         {
-            Session.Logger.WriteLine("Opening log");
-
             if (_closed)
             {
                 throw new InvalidOperationException("Log was closed already");
@@ -197,21 +195,23 @@ namespace WinSCP
 
             try
             {
+                Session.Logger.WriteLine("Opening log without write sharing");
                 // First try to open file without write sharing.
                 // This fails, if WinSCP is still writing to the log file.
                 // This is done only as a way to detect that log file is not complete yet.
                 _stream = File.Open(Session.XmlLogPath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 _closed = true;
-                Session.Logger.WriteLine("Log opened without write sharing");
                 LogContents();
             }
             catch (IOException)
             {
+                Session.Logger.WriteLine("Opening log with write sharing");
                 // If log file is still being written to, open it with write sharing
                 _stream = OpenLogFileWithWriteSharing();
                 _closed = false;
-                Session.Logger.WriteLine("Log opened with write sharing");
             }
+
+            Session.Logger.WriteLine("Log opened");
 
             _reader = XmlReader.Create(_stream);
 

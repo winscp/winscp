@@ -101,6 +101,7 @@ private:
   ITaskbarList3 * FTaskbarList;
   int FAuthenticating;
   void * FBusyToken;
+  bool FAuthenticationCancelled;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();

@@ -1708,7 +1708,9 @@ begin
                 else
               begin
                 if (AttrExcludeMask and Srec.Attr and SysUtils.faHidden) <> 0 then
-                  Inc(FHiddenCount);
+                  Inc(FHiddenCount)
+                else
+                  Inc(FFilteredCount);
               end;
             end;
             DosError := FindNext(SRec);
@@ -1980,7 +1982,9 @@ begin
                       else
                     begin
                       if (AttrExcludeMask and Srec.Attr and SysUtils.faHidden) <> 0 then
-                        Inc(FHiddenCount);
+                        Inc(FHiddenCount)
+                      else
+                        Inc(FFilteredCount);
                     end;
                   end
                     else
@@ -2078,6 +2082,11 @@ begin
             Screen.Cursor := SaveCursor;
           end;
         end; {Finally}
+      end;
+
+      if Assigned(FDriveView) and Assigned(TDriveView(FDriveView).Selected) then
+      begin
+        TDriveView(FDriveView).ValidateCurrentDirectoryIfNotMonitoring;
       end;
     end;
   end;

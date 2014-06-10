@@ -370,11 +370,25 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
     WinConfiguration->AddSessionToJumpList(ActiveTerminal->SessionData->SessionName);
   }
 
+  FAuthenticationCancelled = false;
   bool Result = ConnectActiveTerminalImpl(false);
 
-  if (!Result)
+  UnicodeString DateStamp = StandardDatestamp();
+  if (Result)
+  {
+    if (Configuration->Usage->Get(L"OpenedSessionsFailedLastDate") == DateStamp)
+    {
+      Configuration->Usage->Inc(L"OpenedSessionsFailedRecovered");
+    }
+  }
+  else
   {
     Configuration->Usage->Inc(L"OpenedSessionsFailed");
+    Configuration->Usage->Set(L"OpenedSessionsFailedLastDate", DateStamp);
+    if (FAuthenticationCancelled)
+    {
+      Configuration->Usage->Inc(L"OpenedSessionsFailedAfterCancel");
+    }
   }
 
   if (Result && WinConfiguration->AutoOpenInPutty && CanOpenInPutty())
@@ -903,6 +917,7 @@ void __fastcall TTerminalManager::AuthenticateFormCancel(TObject * Sender)
       TerminalThread->Cancel();
     }
   }
+  FAuthenticationCancelled = true;
 }
 //---------------------------------------------------------------------------
 TAuthenticateForm * __fastcall TTerminalManager::MakeAuthenticateForm(

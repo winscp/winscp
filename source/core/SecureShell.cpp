@@ -2090,7 +2090,9 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
 
     if (!Verified)
     {
-      Exception * E = new Exception(LoadStr(KEY_NOT_VERIFIED));
+      Configuration->Usage->Inc(L"HostNotVerified");
+
+      Exception * E = new Exception(MainInstructions(LoadStr(KEY_NOT_VERIFIED)));
       try
       {
         FUI->FatalError(E, FMTLOAD(HOSTKEY, (Fingerprint)));

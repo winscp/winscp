@@ -2564,6 +2564,21 @@ TTreeNode * __fastcall TLoginDialog::GetNextNode(TTreeNode * Node, bool Reverse)
   return Node;
 }
 //---------------------------------------------------------------------------
+static bool __fastcall ContainsTextSemiCaseSensitive(
+  const UnicodeString & Text, const UnicodeString & SubText)
+{
+  bool Result;
+  if (AnsiLowerCase(SubText) == SubText)
+  {
+    Result = ContainsText(Text, SubText);
+  }
+  else
+  {
+    Result = ContainsStr(Text, SubText);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TTreeNode * __fastcall TLoginDialog::SearchSite(const UnicodeString & Text,
   bool AllowExpanding, bool SkipCurrent, bool Reverse)
 {
@@ -2596,7 +2611,7 @@ TTreeNode * __fastcall TLoginDialog::SearchSite(const UnicodeString & Text,
           (Parent->Expanded || AllowExpanding);
         Parent = Parent->Parent;
       }
-      if (Eligible && ContainsText(Node->Text, Text))
+      if (Eligible && ContainsTextSemiCaseSensitive(Node->Text, Text))
       {
         return Node;
       }

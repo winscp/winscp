@@ -46,10 +46,10 @@ https://forums.embarcadero.com/message.jspa?messageID=175480#175480
   - replace lines 357-367 of borland.mak with:
     OLECTL=
 
-  - change line 547 of borland.mak to read:
+  - change line 516 of borland.mak to read:
     $(LIBDIR)\$(GOAL).lib: $(D)\$(OBJS)
 
-  - change line 548 of borland.mak to read:
+  - change line 517 of borland.mak to read:
     # @-if exist $@ erase $@
 
   - change line 775 of arccore.cpp to read:

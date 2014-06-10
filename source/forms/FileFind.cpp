@@ -306,7 +306,7 @@ void __fastcall TFileFindDialog::MinimizeButtonClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::GlobalMinimize(TObject * /*Sender*/)
 {
-  Application->Minimize();
+  ApplicationMinimize();
   FMinimizedByMe = true;
 }
 //---------------------------------------------------------------------------

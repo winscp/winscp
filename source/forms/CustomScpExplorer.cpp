@@ -3799,7 +3799,10 @@ void __fastcall TCustomScpExplorerForm::ApplicationMinimize(TObject * /*Sender*/
   {
     UpdateTrayIcon();
     FTrayIcon->Visible = true;
-    ShowWindow(Handle, SW_HIDE);
+    if (Visible)
+    {
+      ShowWindow(Handle, SW_HIDE);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -3808,7 +3811,10 @@ void __fastcall TCustomScpExplorerForm::ApplicationRestore(TObject * /*Sender*/)
   if (FTrayIcon->Visible)
   {
     FTrayIcon->Visible = false;
-    ShowWindow(Handle, SW_SHOW);
+    if (Visible)
+    {
+      ShowWindow(Handle, SW_SHOW);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -3837,7 +3843,7 @@ void __fastcall TCustomScpExplorerForm::RestoreApp()
       SetAppIconic(true);
     }
   }
-  Application->Restore();
+  ::ApplicationRestore();
   Application->BringToFront();
 }
 //---------------------------------------------------------------------------
@@ -6942,9 +6948,11 @@ void __fastcall TCustomScpExplorerForm::GetTransferPresetAutoSelectData(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TransferPresetAutoSelect()
 {
-  if (FAllowTransferPresetAutoSelect)
+  // Terminal can be null when we are changing local directory implicitly,
+  // because it has been deleted, while no session is connected
+  // (Login dialog is open)
+  if (FAllowTransferPresetAutoSelect && (Terminal != NULL))
   {
-    assert(Terminal != NULL);
     TCopyParamRuleData Data;
     GetTransferPresetAutoSelectData(Data);
 

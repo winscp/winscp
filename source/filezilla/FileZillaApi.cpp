@@ -86,7 +86,6 @@ int CFileZillaApi::Init(CApiLog * pParent, CFileZillaTools * pTools)
 	m_pMainThread->m_nInternalMessageID=m_nInternalMessageID;
 	m_pMainThread->m_nReplyMessageID=m_nReplyMessageID;
 	m_pMainThread->m_hOwnerWnd=m_hOwnerWnd;
-	m_pMainThread->m_hOwnerWnd=m_hOwnerWnd;
 	m_pMainThread->m_pTools=pTools;
 
 #ifndef MPEXT

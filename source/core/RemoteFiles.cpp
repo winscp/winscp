@@ -900,11 +900,12 @@ Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory() const
   {
     assert(Terminal);
     Result = !
-       (((Rights->RightUndef[TRights::rrOtherExec] != TRights::rsNo)) ||
+       (SameText(Terminal->UserName, L"root") ||
+        ((Rights->RightUndef[TRights::rrOtherExec] != TRights::rsNo)) ||
         ((Rights->Right[TRights::rrGroupExec] != TRights::rsNo) &&
          Terminal->Membership->Exists(Group.Name)) ||
         ((Rights->Right[TRights::rrUserExec] != TRights::rsNo) &&
-         (AnsiCompareText(Terminal->UserName, Owner.Name) == 0)));
+         SameText(Terminal->UserName, Owner.Name)));
   }
     else Result = False;
   return Result;

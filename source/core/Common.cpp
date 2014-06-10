@@ -1591,6 +1591,11 @@ bool __fastcall AdjustClockForDSTEnabled()
   return !DynamicDaylightTimeDisabled;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall StandardDatestamp()
+{
+  return FormatDateTime(L"yyyy'-'mm'-'dd", ConvertTimestampToUTC(Now()));
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall StandardTimestamp(const TDateTime & DateTime)
 {
   return FormatDateTime(L"yyyy'-'mm'-'dd'T'hh':'nn':'ss'.'zzz'Z'", ConvertTimestampToUTC(DateTime));
@@ -1656,7 +1661,7 @@ bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycle
   FileList[FileList.Length() - 1] = L'\0';
   FileList[FileList.Length()] = L'\0';
   Data.pFrom = FileList.c_str();
-  Data.pTo = L"";
+  Data.pTo = L"\0\0"; // this will actually give one null more than needed
   Data.fFlags = FOF_NOCONFIRMATION | FOF_RENAMEONCOLLISION | FOF_NOCONFIRMMKDIR |
     FOF_NOERRORUI | FOF_SILENT;
   if (ToRecycleBin)

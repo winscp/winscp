@@ -114,7 +114,7 @@ void __fastcall TSynchronizeProgressForm::MinimizeButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::GlobalMinimize(TObject * /*Sender*/)
 {
-  Application->Minimize();
+  ApplicationMinimize();
   FMinimizedByMe = true;
 }
 //---------------------------------------------------------------------------

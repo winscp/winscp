@@ -783,7 +783,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     LOGFONT AFont;
     COLORREF AColor;
 
-    memset(&AFont, sizeof(AFont), 0);
+    memset(&AFont, 0, sizeof(AFont));
     if (GetThemeFont(Theme, NULL, TEXT_MAININSTRUCTION, 0, TMT_FONT, &AFont) == S_OK)
     {
       MainInstructionFont = CreateFontIndirect(&AFont);
@@ -793,7 +793,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       MainInstructionColor = (TColor)AColor;
     }
 
-    memset(&AFont, sizeof(AFont), 0);
+    memset(&AFont, 0, sizeof(AFont));
     if (GetThemeFont(Theme, NULL, TEXT_INSTRUCTION, 0, TMT_FONT, &AFont) == S_OK)
     {
       InstructionFont = CreateFontIndirect(&AFont);

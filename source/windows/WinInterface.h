@@ -410,6 +410,8 @@ void __fastcall SetGlobalMinimizeHandler(TCustomForm * Form, TNotifyEvent OnMini
 void __fastcall ClearGlobalMinimizeHandler(TNotifyEvent OnMinimize);
 void __fastcall CallGlobalMinimizeHandler(TObject * Sender);
 bool __fastcall IsApplicationMinimized();
+void __fastcall ApplicationMinimize();
+void __fastcall ApplicationRestore();
 void __fastcall WinInitialize();
 
 void __fastcall ShowNotification(TTerminal * Terminal, const UnicodeString & Str,

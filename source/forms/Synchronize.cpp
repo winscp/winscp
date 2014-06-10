@@ -394,7 +394,7 @@ void __fastcall TSynchronizeDialog::Stop()
   if (IsApplicationMinimized() && FMinimizedByMe)
   {
     FMinimizedByMe = false;
-    Application->Restore();
+    ApplicationRestore();
     Application->BringToFront();
   }
 }
@@ -406,7 +406,7 @@ void __fastcall TSynchronizeDialog::MinimizeButtonClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::GlobalMinimize(TObject * /*Sender*/)
 {
-  Application->Minimize();
+  ApplicationMinimize();
   FMinimizedByMe = true;
 }
 //---------------------------------------------------------------------------

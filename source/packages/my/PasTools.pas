@@ -37,6 +37,7 @@ function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
 
 function IsAppIconic: Boolean;
 procedure SetAppIconic(Value: Boolean);
+procedure SetAppMainForm(Value: TForm);
 
 type
   TControlScrollBeforeUpdate = procedure(ObjectToValidate: TObject) of object;
@@ -307,6 +308,7 @@ type
   public
     function IsAppIconic: Boolean;
     procedure SetAppIconic(Value: Boolean);
+    procedure SetMainForm(Value: TForm);
   end;
 
 function TApplicationHelper.IsAppIconic: Boolean;
@@ -319,6 +321,11 @@ begin
   Self.FAppIconic := Value;
 end;
 
+procedure TApplicationHelper.SetMainForm(Value: TForm);
+begin
+  Self.FMainForm := Value;
+end;
+
 function IsAppIconic: Boolean;
 begin
   Result := Application.IsAppIconic;
@@ -327,6 +334,11 @@ end;
 procedure SetAppIconic(Value: Boolean);
 begin
   Application.SetAppIconic(Value);
+end;
+
+procedure SetAppMainForm(Value: TForm);
+begin
+  Application.SetMainForm(Value);
 end;
 
 

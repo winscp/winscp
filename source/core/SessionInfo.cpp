@@ -959,8 +959,11 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       }
       ADF(L"Ping type: %s, Ping interval: %d sec; Timeout: %d sec",
         (UnicodeString(PingTypes[PingType]), PingInterval, Data->Timeout));
-      ADF(L"Proxy: %s", (ProxyMethodList[Data->ProxyMethod]));
-      if (Data->ProxyMethod != ::pmNone)
+      ADF(L"Proxy: %s",
+        ((Data->FtpProxyLogonType != 0) ?
+          FORMAT(L"FTP proxy %d", (Data->FtpProxyLogonType)) :
+          UnicodeString(ProxyMethodList[Data->ProxyMethod])));
+      if ((Data->FtpProxyLogonType != 0) || (Data->ProxyMethod != ::pmNone))
       {
         ADF(L"HostName: %s (Port: %d); Username: %s; Passwd: %s",
           (Data->ProxyHost, Data->ProxyPort,
@@ -1003,7 +1006,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
           ((Data->DetectReturnVar ? UnicodeString(L"Autodetect") : Data->ReturnVar),
            BugFlags[Data->LookupUserGroups]));
         ADF(L"Shell: %s", ((Data->Shell.IsEmpty()? UnicodeString(L"default") : Data->Shell)));
-        ADF(L"EOL: %d, UTF: %d", (Data->EOLType, Data->NotUtf));
+        ADF(L"EOL: %d, UTF: %d", (Data->EOLType, Data->NotUtf)); // NotUtf duplicated in FTP branch
         ADF(L"Clear aliases: %s, Unset nat.vars: %s, Resolve symlinks: %s",
           (BooleanToEngStr(Data->ClearAliases), BooleanToEngStr(Data->UnsetNationalVars),
            BooleanToEngStr(Data->ResolveSymlinks)));
@@ -1024,6 +1027,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       }
       if (Data->FSProtocol == fsFTP)
       {
+        ADF(L"UTF: %d", (Data->NotUtf)); // duplicated in UsesSsh branch
         UnicodeString Ftps;
         switch (Data->Ftps)
         {

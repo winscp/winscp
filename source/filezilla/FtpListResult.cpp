@@ -1336,11 +1336,28 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 		{
 			if (!value.CompareNoCase(_T("dir")))
 				direntry.dir = TRUE;
+			// This is syntax used by proftpd by default
+			// http://www.proftpd.org/docs/modules/mod_facts.html
+			// They claim it's the correct one.
+			// See also
+			// http://www.rfc-editor.org/errata_search.php?rfc=3659&eid=1500
+			else if (!value.Left(15).CompareNoCase(_T("OS.unix=symlink")))
+			{
+				direntry.dir = TRUE;
+				direntry.bLink = TRUE;
+				// actually symlink target should not be included in this syntax,
+				// but just in case some servers do.
+				if ((value.GetLength() > 16) && (value[15] == ':'))
+					direntry.linkTarget = value.Mid(16);
+			}
+			// This is syntax shown in RFC 3659 section 7.7.4 "A More Complex Example"
+			// Type=OS.unix=slink:/foobar;Perm=;Unique=keVO1+4G4; foobar
+			// https://tools.ietf.org/html/rfc3659
 			else if (!value.Left(13).CompareNoCase(_T("OS.unix=slink")))
 			{
 				direntry.dir = TRUE;
 				direntry.bLink = TRUE;
-				if (value[13] == ':' && value[14] != 0)
+				if ((value.GetLength() > 14) && (value[13] == ':'))
 					direntry.linkTarget = value.Mid(14);
 			}
 			else if (!value.CompareNoCase(_T("cdir")) ||

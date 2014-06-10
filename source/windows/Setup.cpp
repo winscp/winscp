@@ -823,10 +823,15 @@ void __fastcall QueryUpdates()
       {
         case ctAuto:
           AutodetectProxyUrl(Proxy);
+          if (!Proxy.IsEmpty())
+          {
+            Configuration->Usage->Inc(L"UpdateProxyAutodetected");
+          }
           break;
 
         case ctProxy:
           Proxy = FORMAT(L"%s:%d", (Updates.ProxyHost, Updates.ProxyPort));
+          Configuration->Usage->Inc(L"UpdateProxyManual");
           break;
       }
       CheckForUpdatesHTTP->Proxy = Proxy;

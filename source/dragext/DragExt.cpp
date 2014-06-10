@@ -551,11 +551,6 @@ STDMETHODIMP CShellExtClassFactory::CreateInstance(LPUNKNOWN UnkOuter,
 
   CShellExt* ShellExt = new CShellExt();  //Create the CShellExt object
 
-  if (NULL == ShellExt)
-  {
-    return E_OUTOFMEMORY;
-  }
-
   return ShellExt->QueryInterface(Riid, PpvObj);
 }
 //---------------------------------------------------------------------------

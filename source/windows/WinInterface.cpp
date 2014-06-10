@@ -995,6 +995,52 @@ void __fastcall CallGlobalMinimizeHandler(TObject * Sender)
   }
 }
 //---------------------------------------------------------------------------
+static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
+{
+  // WORKAROUND
+  // When main window is hidden (command-line operation),
+  // we do not want it to be shown by TApplication.Restore,
+  // so we temporarily detach it from an application.
+  // Probably not really necessary for minimizing phase,
+  // but we do it for consistency anyway.
+  TForm * MainForm = Application->MainForm;
+  bool RestoreMainForm = false;
+  if (ALWAYS_TRUE(MainForm != NULL) &&
+      !MainForm->Visible)
+  {
+    SetAppMainForm(NULL);
+    RestoreMainForm = true;
+  }
+  try
+  {
+    if (Minimize)
+    {
+      Application->Minimize();
+    }
+    else
+    {
+      Application->Restore();
+    }
+  }
+  __finally
+  {
+    if (RestoreMainForm)
+    {
+      SetAppMainForm(MainForm);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ApplicationMinimize()
+{
+  DoApplicationMinimizeRestore(true);
+}
+//---------------------------------------------------------------------------
+void __fastcall ApplicationRestore()
+{
+  DoApplicationMinimizeRestore(false);
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsApplicationMinimized()
 {
   // VCL help recommends handling Application->OnMinimize/OnRestore

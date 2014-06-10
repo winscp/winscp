@@ -346,6 +346,10 @@ end;
 function TTcpIp.CreateSocket: TSocket;
 begin
   Result := Winsock.Socket(PF_INET, SOCK_STREAM, IPPROTO_IP);
+  if Result = INVALID_SOCKET then
+  begin
+    raise ESocketError.Create(WSAGetLastError);
+  end;
 end;
 
 procedure TTcpIp.BindSocket(var Socket: TSocket; OutPortMin, OutPortMax: Word);
@@ -372,6 +376,7 @@ procedure TTcpIp.ConnectSocket(var Socket: TSocket; SocketNumber: SmallInt;
   IpAddress: LongInt);
 var
   RemoteAddress: TSockAddr;
+  Error: Integer;
 begin
   with RemoteAddress do
   begin
@@ -383,7 +388,8 @@ begin
   if Winsock.Connect(Socket,RemoteAddress,
        SizeOf(RemoteAddress)) = SOCKET_ERROR then
   begin
-    if Winsock.WSAGetLastError <> WSAEWouldBlock then
+    Error := Winsock.WSAGetLastError;
+    if Error <> WSAEWouldBlock then
     begin
       CloseSocket(Socket);
       if Assigned(FTracer) then
@@ -391,6 +397,7 @@ begin
         FTracer('Failed to open output socket '+IntToStr(SocketNumber)+' to host '+
           Ip2String(IpAddress), tt_socket);
       end;
+      raise ESocketError.Create(Error);
     end
   end
     else
@@ -551,8 +558,6 @@ begin
   if IpAddress = INVALID_IP_ADDRESS then
     raise ETcpIpError.Create('Couldn''t resolve hostname ' + FHostname);
   OpenSocketOut(FSocket, FSocketNumber, IpAddress);
-  if FSocket = INVALID_SOCKET then
-    raise ESocketError.Create(WSAGetLastError);
   FEof := False;
   FLoggedIn := True;
 end;

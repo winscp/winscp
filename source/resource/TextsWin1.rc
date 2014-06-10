@@ -92,7 +92,7 @@ BEGIN
         UNINSTALL_CLEANUP, "Do you want to cleanup data stored by the application on this computer?"
         EXIT_ON_COMPLETION, "%s\n\nDo you want to close application?"
         DISCONNECT_ON_COMPLETION, "%%s\n\nDo you want to terminate %d remaining session(s) and close the application?"
-        PENDING_QUEUE_ITEMS2, "**There are still some background transfers in queue. Do you want to disconnect anyway?**\n \nWarning: Pressing 'OK' will terminate all transfers immediatelly."
+        PENDING_QUEUE_ITEMS2, "**There are still some background transfers in queue. Do you want to disconnect anyway?**\n \nWarning: Pressing 'OK' will terminate all transfers immediately."
         PERFORM_ON_COMMAND_SESSION2, "**Do you want to open separate shell session?**\n\nCurrent %s session does not support command you request. Separate shell session may be opened to process the command.\n \nNote: The server must provide Unix-like shell and the shell must use same path syntax as current %s session."
         PENDING_EDITORS, "There are some opened files. Please close them before exiting application.\n \nBeware: If you ignore this message, opened files may remain in temporary directory."
         CLEANTEMP_CONFIRM2, "**Do you want to delete past temporary folders?**\n\nWinSCP has found %d temporary folders, which it has probably created in past. These folders may contain files previously edited or downloaded.\n\nYou may also open the folders to review their content and to delete them yourself."

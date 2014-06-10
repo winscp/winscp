@@ -470,32 +470,33 @@ namespace WinSCP
                         throw new ArgumentOutOfRangeException("mode");
                 }
 
-                List<string> criteriaNames = new List<string>();
-                if ((criteria & SynchronizationCriteria.Time) == SynchronizationCriteria.Time)
+                string criteriaName;
+                switch (criteria)
                 {
-                    criteria -= SynchronizationCriteria.Time;
-                    criteriaNames.Add("time");
-                }
-
-                if ((criteria & SynchronizationCriteria.Size) == SynchronizationCriteria.Size)
-                {
-                    criteria -= SynchronizationCriteria.Size;
-                    criteriaNames.Add("size");
-                }
-
-                if (criteria != 0)
-                {
-                    throw new ArgumentOutOfRangeException("criteria");
+                    case SynchronizationCriteria.None:
+                        criteriaName = "none";
+                        break;
+                    case SynchronizationCriteria.Time:
+                        criteriaName = "time";
+                        break;
+                    case SynchronizationCriteria.Size:
+                        criteriaName = "size";
+                        break;
+                    case SynchronizationCriteria.Either:
+                        criteriaName = "either";
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException("criteria");
                 }
 
                 WriteCommand(
                     string.Format(CultureInfo.InvariantCulture,
-                        "synchronize {0} {1} {2} {3} {4} -- \"{5}\" \"{6}\"",
+                        "synchronize {0} {1} {2} {3} -criteria=\"{4}\" -- \"{5}\" \"{6}\"",
                         modeName,
                         BooleanSwitch(removeFiles, "delete"),
                         BooleanSwitch(mirror, "mirror"),
                         options.ToSwitches(),
-                        FormatSwitch("criteria", string.Join(",", criteriaNames.ToArray())),
+                        criteriaName,
                         ArgumentEscape(localPath), ArgumentEscape(remotePath)));
 
                 return ReadSynchronizeDirectories();

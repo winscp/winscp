@@ -1777,7 +1777,7 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
     FLocalPathComboBoxPaths->AddObject(GetPersonalFolder(),
       (TObject *)DriveInfo->SpecialFolder[CSIDL_PERSONAL]->ImageIndex);
     Strings->Add(LoadStr(SPECIAL_FOLDER_DESKTOP));
-    FLocalPathComboBoxPaths->AddObject(DriveInfo->SpecialFolder[CSIDL_DESKTOP]->Location,
+    FLocalPathComboBoxPaths->AddObject(GetDesktopFolder(),
       (TObject *)DriveInfo->SpecialFolder[CSIDL_DESKTOP]->ImageIndex);
 
     for (TDrive Drive = FirstDrive; Drive <= LastDrive; Drive++)

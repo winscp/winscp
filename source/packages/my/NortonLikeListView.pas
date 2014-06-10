@@ -35,6 +35,7 @@ type
     FLButtonDownShiftState: TShiftState;
     FLButtonDownPos: TPoint;
     FLastSelectMethod: TSelectMethod;
+    FPendingInternalFocus: TListItem;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
@@ -77,6 +78,7 @@ type
     function GetSelCount: Integer; override;
     procedure DDBeforeDrag;
     function CanEdit(Item: TListItem): Boolean; override;
+    procedure DoEnter; override;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -209,6 +211,7 @@ begin
   FUpdatingSelection := 0;
   FFocusingItem := False;
   FLastSelectMethod := smNoneYet;
+  FPendingInternalFocus := nil;
   // On Windows Vista, native GetNextItem for selection stops working once we
   // disallow deselecting any item (see ExCanChange).
   // So we need to manage selection state ourselves
@@ -304,6 +307,10 @@ begin
   if (FLastDeletedItem <> Item) and Item.Selected then
   begin
     ItemUnselected(Item, -1);
+  end;
+  if FPendingInternalFocus = Item then
+  begin
+    FPendingInternalFocus := nil;
   end;
   FLastDeletedItem := Item;
   inherited;
@@ -690,9 +697,28 @@ begin
       FDontSelectItem := PDontSelectItem;
       FDontUnSelectItem := PDontUnSelectItem;
     end;
+    FPendingInternalFocus := nil;
+  end
+    else
+  begin
+    FPendingInternalFocus := Item;
   end;
   if ItemFocused <> Item then
     ItemFocused := Item;
+end;
+
+procedure TCustomNortonLikeListView.DoEnter;
+begin
+  inherited;
+
+  if Assigned(FPendingInternalFocus) then
+  begin
+    if FPendingInternalFocus = ItemFocused then
+    begin
+      FocusItem(FPendingInternalFocus);
+    end;
+    FPendingInternalFocus := nil;
+  end;
 end;
 
 procedure TCustomNortonLikeListView.SelectAll(Mode: TSelectMode; Exclude: TListItem);

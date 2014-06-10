@@ -227,10 +227,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
     bool ShowSessionRememberPasswordPanel = false;
     bool ShowSavePasswordPanel = false;
     TSessionData * Data = NULL;
-    bool PasswordPrompt =
-      ((Kind == pkPassword) || (Kind == pkTIS) || (Kind == pkCryptoCard) ||
-       (Kind == pkKeybInteractive)) &&
-      (Prompts->Count == 1) && FLAGCLEAR(int(Prompts->Objects[0]), pupEcho);
+    bool PasswordPrompt = IsPasswordPrompt(Kind, Prompts);
     if (PasswordPrompt && StoredCredentialsTried)
     {
       Data = StoredSessions->FindSame(FSessionData);

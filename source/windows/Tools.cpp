@@ -901,14 +901,17 @@ static void __fastcall DoVerifyKey(
     FileName = ExpandEnvironmentVariables(FileName);
     TKeyType Type = KeyType(FileName);
     UnicodeString Message;
+    UnicodeString HelpKeyword = HELP_LOGIN_KEY_TYPE;
     switch (Type)
     {
       case ktOpenSSH:
         Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, L"OpenSSH SSH-2"));
+        HelpKeyword = HELP_KEY_TYPE_UNSUPPORTED;
         break;
 
       case ktSSHCom:
         Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, L"ssh.com SSH-2"));
+        HelpKeyword = HELP_KEY_TYPE_UNSUPPORTED;
         break;
 
       case ktSSH1:
@@ -937,8 +940,9 @@ static void __fastcall DoVerifyKey(
 
     if (!Message.IsEmpty())
     {
+      Configuration->Usage->Inc(L"PrivateKeySelectErrors");
       if (MessageDialog(Message, qtWarning, qaIgnore | qaAbort,
-           HELP_LOGIN_KEY_TYPE) == qaAbort)
+           HelpKeyword) == qaAbort)
       {
         Abort();
       }
@@ -970,7 +974,25 @@ static bool __fastcall GetProxyUrlFromIE(UnicodeString & Proxy)
   {
     if (IEProxyInfo.lpszProxy != NULL)
     {
-      Proxy = IEProxyInfo.lpszProxy;
+      UnicodeString IEProxy = IEProxyInfo.lpszProxy;
+      Proxy = L"";
+      while (Proxy.IsEmpty() && !IEProxy.IsEmpty())
+      {
+        UnicodeString Str = ::CutToChar(IEProxy, L';', true);
+        if (Str.Pos(L"=") == 0)
+        {
+          Proxy = Str;
+        }
+        else
+        {
+          UnicodeString Protocol = ::CutToChar(Str, L'=', true);
+          if (SameText(Protocol, L"http"))
+          {
+            Proxy = Str;
+          }
+        }
+      }
+
       GlobalFree(IEProxyInfo.lpszProxy);
       Result = true;
     }

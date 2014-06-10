@@ -183,8 +183,8 @@ private:
   bool FReadingCurrentDirectory;
   bool * FClosedOnCompletion;
   TSessionStatus FStatus;
-  RawByteString FPassword;
-  RawByteString FTunnelPassword;
+  RawByteString FRememberedPassword;
+  RawByteString FRememberedTunnelPassword;
   TTunnelThread * FTunnelThread;
   TSecureShell * FTunnel;
   TSessionData * FTunnelData;
@@ -225,7 +225,8 @@ private:
   bool __fastcall GetResolvingSymlinks();
   bool __fastcall GetActive();
   UnicodeString __fastcall GetPassword();
-  UnicodeString __fastcall GetTunnelPassword();
+  UnicodeString __fastcall GetRememberedPassword();
+  UnicodeString __fastcall GetRememberedTunnelPassword();
   bool __fastcall GetStoredCredentialsTried();
   inline bool __fastcall InTransaction();
   static UnicodeString __fastcall SynchronizeModeStr(TSynchronizeMode Mode);
@@ -496,7 +497,8 @@ public:
   __property TStrings * FixedPaths = { read = GetFixedPaths };
   __property bool ResolvingSymlinks = { read = GetResolvingSymlinks };
   __property UnicodeString Password = { read = GetPassword };
-  __property UnicodeString TunnelPassword = { read = GetTunnelPassword };
+  __property UnicodeString RememberedPassword = { read = GetRememberedPassword };
+  __property UnicodeString RememberedTunnelPassword = { read = GetRememberedTunnelPassword };
   __property bool StoredCredentialsTried = { read = GetStoredCredentialsTried };
   __property TQueryUserEvent OnQueryUser = { read = FOnQueryUser, write = FOnQueryUser };
   __property TPromptUserEvent OnPromptUser = { read = FOnPromptUser, write = FOnPromptUser };

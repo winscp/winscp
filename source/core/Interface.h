@@ -99,6 +99,7 @@ enum TPromptKind
 enum TPromptUserParam { pupEcho = 0x01, pupRemember = 0x02 };
 
 bool __fastcall IsAuthenticationPrompt(TPromptKind Kind);
+bool __fastcall IsPasswordPrompt(TPromptKind Kind, TStrings * Prompts);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TFileFoundEvent)
   (TTerminal * Terminal, const UnicodeString FileName, const TRemoteFile * File,

@@ -259,6 +259,33 @@ bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path)
   return false;
 }
 //---------------------------------------------------------------------------
+static UnicodeString __fastcall GetWineHomeFolder()
+{
+  UnicodeString Result;
+
+  UnicodeString WineHostHome = GetEnvironmentVariable(L"WINE_HOST_HOME");
+  if (!WineHostHome.IsEmpty())
+  {
+    Result = L"Z:" + FromUnixPath(WineHostHome);
+  }
+  else
+  {
+    // Should we use WinAPI GetUserName() instead?
+    UnicodeString UserName = GetEnvironmentVariable(L"USERNAME");
+    if (!UserName.IsEmpty())
+    {
+      Result = L"Z:\\home\\" + UserName;
+    }
+  }
+
+  if (!DirectoryExists(Result))
+  {
+    Result = L"";
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall GetPersonalFolder()
 {
   UnicodeString Result;
@@ -266,26 +293,41 @@ UnicodeString __fastcall GetPersonalFolder()
 
   if (IsWine())
   {
-    UnicodeString WineHostHome = GetEnvironmentVariable(L"WINE_HOST_HOME");
-    if (!WineHostHome.IsEmpty())
+    UnicodeString WineHome = GetWineHomeFolder();
+
+    if (!WineHome.IsEmpty())
     {
-      UnicodeString WineHome = L"Z:" + ToUnixPath(WineHostHome);
-      if (DirectoryExists(WineHome))
+      // if at least home exists, use it
+      Result = WineHome;
+
+      // but try to go deeper to "Documents"
+      UnicodeString WineDocuments =
+        IncludeTrailingBackslash(WineHome) + L"Documents";
+      if (DirectoryExists(WineDocuments))
       {
-        Result = WineHome;
+        Result = WineDocuments;
       }
     }
-    else
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetDesktopFolder()
+{
+  UnicodeString Result;
+  SpecialFolderLocation(CSIDL_DESKTOPDIRECTORY, Result);
+
+  if (IsWine())
+  {
+    UnicodeString WineHome = GetWineHomeFolder();
+
+    if (!WineHome.IsEmpty())
     {
-      // Should we use WinAPI GetUserName() instead?
-      UnicodeString UserName = GetEnvironmentVariable(L"USERNAME");
-      if (!UserName.IsEmpty())
+      UnicodeString WineDesktop =
+        IncludeTrailingBackslash(WineHome) + L"Desktop";
+      if (DirectoryExists(WineHome))
       {
-        UnicodeString WineHome = L"Z:\\home\\" + UserName;
-        if (DirectoryExists(WineHome))
-        {
-          Result = WineHome;
-        }
+        Result = WineDesktop;
       }
     }
   }

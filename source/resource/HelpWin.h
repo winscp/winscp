@@ -54,5 +54,6 @@
 #define HELP_COLOR                   "task_connections#session_color"
 #define HELP_DRAGEXT_TARGET_NOT_INSTALLED "dragext"
 #define HELP_DRAGEXT_TARGET_UNKNOWN  HELP_DRAGEXT_TARGET_NOT_INSTALLED
+#define HELP_KEY_TYPE_UNSUPPORTED    "ui_puttygen#other_formats"
 
 #endif // TextsWin
