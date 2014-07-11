@@ -21,6 +21,8 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+TWinConfiguration * WinConfiguration = NULL;
+//---------------------------------------------------------------------------
 __fastcall TEditorData::TEditorData() :
   FileMask(L"*.*"),
   Editor(edInternal),
@@ -401,7 +403,7 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::~TWinConfiguration()
 {
-  if (!FTemporarySessionFile.IsEmpty()) DeleteFile(FTemporarySessionFile);
+  if (!FTemporarySessionFile.IsEmpty()) DeleteFile(::ApiPath(FTemporarySessionFile));
   ClearTemporaryLoginData();
 
   delete FBookmarks;
@@ -430,8 +432,8 @@ void __fastcall TWinConfiguration::Default()
   FDeleteToRecycleBin = true;
   FSelectDirectories = false;
   FSelectMask = L"*.*";
-  FShowHiddenFiles = true;
-  FFormatSizeBytes = true;
+  FShowHiddenFiles = false;
+  FFormatSizeBytes = fbKilobytes;
   FShowInaccesibleDirectories = true;
   FConfirmTransferring = true;
   FConfirmDeleting = true;
@@ -454,7 +456,7 @@ void __fastcall TWinConfiguration::Default()
   FPreservePanelState = true;
   FTheme = L"OfficeXP";
   FLastStoredSession = L"";
-  // deliberatelly not being saved, so that when saving ad-hoc workspace,
+  // deliberately not being saved, so that when saving ad-hoc workspace,
   // we do not offer to overwrite the last saved workspace, what may be undesirable
   FLastWorkspace = L"";
   FAutoSaveWorkspace = false;
@@ -481,6 +483,8 @@ void __fastcall TWinConfiguration::Default()
   FMasterPasswordVerifier = L"";
   FOpenedStoredSessionFolders = L"";
   FAutoImportedFromPuttyOrFilezilla = false;
+  FGenerateUrlComponents = -1;
+  FExternalSessionInExistingInstance = true;
 
   FEditor.FontName = DefaultFixedWidthFontName;
   FEditor.FontSize = DefaultFixedWidthFontSize;
@@ -499,8 +503,9 @@ void __fastcall TWinConfiguration::Default()
   FEditor.WindowParams = L"";
   FEditor.Encoding = CP_ACP;
   FEditor.WarnOnEncodingFallback = true;
+  FEditor.WarnOrLargeFileSize = true;
 
-  FQueueView.Height = 115;
+  FQueueView.Height = 140;
   FQueueView.HeightPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   // with 1000 pixels wide screen, both interfaces are wide enough to fit wider queue
   FQueueView.Layout =
@@ -509,7 +514,7 @@ void __fastcall TWinConfiguration::Default()
     L",;" + SaveDefaultPixelsPerInch();
   FQueueView.Show = qvHideWhenEmpty;
   FQueueView.LastHideShow = qvHideWhenEmpty;
-  FQueueView.ToolBar = false;
+  FQueueView.ToolBar = true;
   FQueueView.Label = true;
 
   FEnableQueueByDefault = true;
@@ -519,18 +524,19 @@ void __fastcall TWinConfiguration::Default()
   FUpdates.HaveResults = false;
   FUpdates.ShownResults = false;
   FUpdates.BetaVersions = asAuto;
+  FUpdates.ShowOnStartup = true;
   // for backward compatibility the default is decided based on value of ProxyHost
   FUpdates.ConnectionType = (TConnectionType)-1;
   FUpdates.ProxyHost = L""; // keep empty (see above)
   FUpdates.ProxyPort = 8080;
   FUpdates.Results.Reset();
-  FUpdates.DotNetVersion = "";
-  FUpdates.ConsoleVersion = "";
+  FUpdates.DotNetVersion = L"";
+  FUpdates.ConsoleVersion = L"";
 
   FLogWindowOnStartup = true;
   FLogWindowParams = FormatDefaultWindowParams(500, 400);
 
-  int ExplorerWidth = Min(WorkAreaWidthScaled - 40, 860);
+  int ExplorerWidth = Min(WorkAreaWidthScaled - 40, 960);
   int ExplorerHeight = Min(WorkAreaHeightScaled - 30, 720);
   FScpExplorer.WindowParams = FormatDefaultWindowParams(ExplorerWidth, ExplorerHeight);
 
@@ -715,11 +721,11 @@ TStorage __fastcall TWinConfiguration::GetStorage()
     }
 
     FStorage = stIniFile;
-    if (!FileExists(IniFileStorageNameForReading))
+    if (!FileExists(::ApiPath(IniFileStorageNameForReading)))
     {
       if (DetectRegistryStorage(HKEY_CURRENT_USER) ||
           DetectRegistryStorage(HKEY_LOCAL_MACHINE) ||
-          // FStorage is now stIniFile, so this tests writting to an INI file.
+          // FStorage is now stIniFile, so this tests writing to an INI file.
           // As we fall back to user profile folder, when application folder
           // is not writtable, it is actually unlikely that the below test ever fails.
           !CanWriteToStorage())
@@ -806,7 +812,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     SelectDirectories); \
     KEY(String,   SelectMask); \
     KEY(Bool,     ShowHiddenFiles); \
-    KEY(Bool,     FormatSizeBytes); \
+    KEY(Integer,  FormatSizeBytes); \
     KEY(Bool,     ShowInaccesibleDirectories); \
     KEY(Bool,     ConfirmTransferring); \
     KEY(Bool,     ConfirmDeleting); \
@@ -847,6 +853,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     EnableQueueByDefault); \
     KEY(String,   OpenedStoredSessionFolders); \
     KEY(Bool,     AutoImportedFromPuttyOrFilezilla); \
+    KEY(Integer,  GenerateUrlComponents); \
+    KEY(Bool,     ExternalSessionInExistingInstance); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.FontName, L"FontName2"); \
@@ -866,6 +874,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(String,   Editor.WindowParams); \
     KEY(Integer,  Editor.Encoding); \
     KEY(Bool,     Editor.WarnOnEncodingFallback); \
+    KEY(Bool,     Editor.WarnOrLargeFileSize); \
   ); \
   BLOCK(L"Interface\\QueueView", CANCREATE, \
     KEY(Integer,  QueueView.Height); \
@@ -882,6 +891,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Integer,  FUpdates.HaveResults); \
     KEY(Integer,  FUpdates.ShownResults); \
     KEY(Integer,  FUpdates.BetaVersions); \
+    KEY(Bool,     FUpdates.ShowOnStartup); \
     KEY(Integer,  FUpdates.ConnectionType); \
     KEY(String,   FUpdates.ProxyHost); \
     KEY(Integer,  FUpdates.ProxyPort); \
@@ -893,6 +903,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     FUpdates.Results.Disabled); \
     KEY(String,   FUpdates.Results.Url); \
     KEY(String,   FUpdates.Results.UrlButton); \
+    KEY(String,   FUpdates.Results.NewsUrl); \
+    KEYEX(Integer,FUpdates.Results.NewsSize.Width, L"NewsWidth"); \
+    KEYEX(Integer,FUpdates.Results.NewsSize.Height, L"NewsHeight"); \
     KEY(String,   FUpdates.DotNetVersion); \
     KEY(String,   FUpdates.ConsoleVersion); \
   ); \
@@ -1076,7 +1089,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   {
     // can this (=reloading of configuration) even happen?
     // if it does, shouldn't we reset default commands?
-    assert(false);
+    FAIL;
     FCustomCommandList->Clear();
     FCustomCommandsDefaults = false;
   }
@@ -1135,8 +1148,8 @@ void __fastcall TWinConfiguration::ClearTemporaryLoginData()
 {
   if (!FTemporaryKeyFile.IsEmpty())
   {
-    DeleteFile(FTemporaryKeyFile);
-    FTemporaryKeyFile = "";
+    DeleteFile(::ApiPath(FTemporaryKeyFile));
+    FTemporaryKeyFile = L"";
   }
 }
 //---------------------------------------------------------------------------
@@ -1528,7 +1541,7 @@ void __fastcall TWinConfiguration::SetShowHiddenFiles(bool value)
   SET_CONFIG_PROPERTY(ShowHiddenFiles);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetFormatSizeBytes(bool value)
+void __fastcall TWinConfiguration::SetFormatSizeBytes(TFormatBytesStyle value)
 {
   SET_CONFIG_PROPERTY(FormatSizeBytes);
 }
@@ -1726,6 +1739,16 @@ void __fastcall TWinConfiguration::SetOpenedStoredSessionFolders(UnicodeString v
 void __fastcall TWinConfiguration::SetAutoImportedFromPuttyOrFilezilla(bool value)
 {
   SET_CONFIG_PROPERTY(AutoImportedFromPuttyOrFilezilla);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetGenerateUrlComponents(int value)
+{
+  SET_CONFIG_PROPERTY(GenerateUrlComponents);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetExternalSessionInExistingInstance(bool value)
+{
+  SET_CONFIG_PROPERTY(ExternalSessionInExistingInstance);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCustomCommandList(TCustomCommandList * value)

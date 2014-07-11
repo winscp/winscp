@@ -11,11 +11,12 @@ class TFileOperationProgressType;
 enum TFileOperation { foNone, foCopy, foMove, foDelete, foSetProperties,
   foRename, foCustomCommand, foCalculateSize, foRemoteMove, foRemoteCopy,
   foGetProperties, foCalculateChecksum };
+// csCancelTransfer and csRemoteAbort are used with SCP only
 enum TCancelStatus { csContinue = 0, csCancel, csCancelTransfer, csRemoteAbort };
 enum TResumeStatus { rsNotAvailable, rsEnabled, rsDisabled };
 enum TBatchOverwrite { boNo, boAll, boNone, boOlder, boAlternateResume, boAppend, boResume };
 typedef void __fastcall (__closure *TFileOperationProgressEvent)
-  (TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
+  (TFileOperationProgressType & ProgressData);
 typedef void __fastcall (__closure *TFileOperationFinished)
   (TFileOperation Operation, TOperationSide Side, bool Temp,
     const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
@@ -47,8 +48,10 @@ public:
   // on what side if operation being processed (local/remote), source of copy
   TOperationSide Side;
   UnicodeString FileName;
+  UnicodeString FullFileName;
   UnicodeString Directory;
   bool AsciiTransfer;
+  // Can be true with SCP protocol only
   bool TransferingFile;
   bool Temp;
 
@@ -85,6 +88,7 @@ public:
   void __fastcall AddLocallyUsed(__int64 ASize);
   void __fastcall AddTransfered(__int64 ASize, bool AddToTotals = true);
   void __fastcall AddResumed(__int64 ASize);
+  void __fastcall AddSkippedFileSize(__int64 ASize);
   void __fastcall Clear();
   unsigned int __fastcall CPS();
   void __fastcall Finish(UnicodeString FileName, bool Success,
@@ -97,6 +101,7 @@ public:
   int __fastcall OperationProgress();
   unsigned long __fastcall TransferBlockSize();
   unsigned long __fastcall AdjustToCPSLimit(unsigned long Size);
+  void __fastcall ThrottleToCPSLimit(unsigned long Size);
   static unsigned long __fastcall StaticBlockSize();
   void __fastcall Reset();
   void __fastcall Resume();

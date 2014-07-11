@@ -1,5 +1,4 @@
 //---------------------------------------------------------------------------
-#define NO_WIN32_LEAN_AND_MEAN
 #include <vcl.h>
 #pragma hdrstop
 
@@ -14,6 +13,8 @@
 #include <WinInterface.h>
 #include <TbxUtils.hpp>
 #include <Math.hpp>
+#include <WebBrowserEx.hpp>
+#include <Tools.h>
 #include "PngImageList.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -23,7 +24,7 @@ extern const UnicodeString PuttygenTool = L"puttygen.exe";
 //---------------------------------------------------------------------------
 bool __fastcall FindFile(UnicodeString & Path)
 {
-  bool Result = FileExists(Path);
+  bool Result = FileExists(ApiPath(Path));
   if (!Result)
   {
     int Len = GetEnvironmentVariable(L"PATH", NULL, 0);
@@ -50,7 +51,7 @@ bool __fastcall FileExistsEx(UnicodeString Path)
 }
 //---------------------------------------------------------------------------
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
-  TSessionData * SessionData, UnicodeString UserName, UnicodeString Password)
+  TSessionData * SessionData)
 {
   UnicodeString Program, AParams, Dir;
   SplitCommand(PuttyPath, Program, AParams, Dir);
@@ -59,7 +60,8 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   {
 
     AParams = ExpandEnvironmentVariables(AParams);
-    TCustomCommandData Data(SessionData, UserName, Password);
+    UnicodeString Password = GUIConfiguration->PuttyPassword ? SessionData->Password : UnicodeString();
+    TCustomCommandData Data(SessionData, SessionData->UserName, Password);
     TRemoteCustomCommand RemoteCustomCommand(Data, SessionData->RemoteDirectory);
     TWinInteractiveCustomCommand InteractiveCustomCommand(
       &RemoteCustomCommand, L"PuTTY");
@@ -156,10 +158,10 @@ bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path)
   UnicodeString AppPath = IncludeTrailingBackslash(ExtractFilePath(Application->ExeName));
   Path = AppPath + Name;
   bool Result = true;
-  if (!FileExists(Path))
+  if (!FileExists(ApiPath(Path)))
   {
     Path = AppPath + L"PuTTY\\" + Name;
-    if (!FileExists(Path))
+    if (!FileExists(ApiPath(Path)))
     {
       Path = Name;
       if (!FindFile(Path))
@@ -334,42 +336,6 @@ UnicodeString __fastcall GetDesktopFolder()
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall ItemsFormatString(const UnicodeString SingleItemFormat,
-  const UnicodeString MultiItemsFormat, int Count, const UnicodeString FirstItem)
-{
-  UnicodeString Result;
-  if (Count == 1)
-  {
-    Result = FORMAT(SingleItemFormat, (FirstItem));
-  }
-  else
-  {
-    Result = FORMAT(MultiItemsFormat, (Count));
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall ItemsFormatString(const UnicodeString SingleItemFormat,
-  const UnicodeString MultiItemsFormat, TStrings * Items)
-{
-  return ItemsFormatString(SingleItemFormat, MultiItemsFormat,
-    Items->Count, (Items->Count > 0 ? Items->Strings[0] : UnicodeString()));
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall FileNameFormatString(const UnicodeString SingleFileFormat,
-  const UnicodeString MultiFilesFormat, TStrings * Files, bool Remote)
-{
-  assert(Files != NULL);
-  UnicodeString Item;
-  if (Files->Count > 0)
-  {
-    Item = Remote ? UnixExtractFileName(Files->Strings[0]) :
-      ExtractFileName(Files->Strings[0]);
-  }
-  return ItemsFormatString(SingleFileFormat, MultiFilesFormat,
-    Files->Count, Item);
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeString Identity,
   bool Mask)
 {
@@ -385,9 +351,9 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeS
     else
     {
       TempDir += IncludeTrailingBackslash(FormatDateTime(L"nnzzz", Now()));
-    };
     }
-  while (!Mask && DirectoryExists(TempDir));
+  }
+  while (!Mask && DirectoryExists(ApiPath(TempDir)));
 
   return TempDir;
 }
@@ -405,7 +371,7 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
     }
     else
     {
-      retval = DeleteFile(DirName + L"\\" + sr.Name);
+      retval = DeleteFile(ApiPath(DirName + L"\\" + sr.Name));
     }
 
     if (retval)
@@ -419,7 +385,7 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
         }
         else
         {
-          retval = DeleteFile(DirName + L"\\" + sr.Name);
+          retval = DeleteFile(ApiPath(DirName + L"\\" + sr.Name));
         }
 
         if (!retval) break;
@@ -427,7 +393,7 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
     }
   }
   FindClose(sr);
-  if (retval) retval = RemoveDir(DirName); // VCL function
+  if (retval) retval = RemoveDir(ApiPath(DirName)); // VCL function
   return retval;
 }
 //---------------------------------------------------------------------------
@@ -496,6 +462,19 @@ void __fastcall AddSessionColorImage(
   ImageList->AddMasked(Bitmap.get(), TransparentColor);
 }
 //---------------------------------------------------------------------------
+void __fastcall SetSubmenu(TTBXCustomItem * Item)
+{
+  class TTBXPublicItem : public TTBXCustomItem
+  {
+  public:
+    __property ItemStyle;
+  };
+  TTBXPublicItem * PublicItem = reinterpret_cast<TTBXPublicItem *>(Item);
+  assert(PublicItem != NULL);
+  // See TTBItemViewer.IsPtInButtonPart (called from TTBItemViewer.MouseDown)
+  PublicItem->ItemStyle = PublicItem->ItemStyle << tbisSubmenu;
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsEligibleForApplyingTabs(
   UnicodeString Line, int & TabPos, UnicodeString & Start, UnicodeString & Remaining)
 {
@@ -543,8 +522,7 @@ void __fastcall ApplyTabs(
     CalculateWidth = CalculateWidthByLength;
   }
 
-  std::unique_ptr<TStringList> Lines(new TStringList());
-  Lines->Text = Text;
+  std::unique_ptr<TStringList> Lines(TextToStringList(Text));
 
   int MaxWidth = -1;
   for (int Index = 0; Index < Lines->Count; Index++)
@@ -590,6 +568,128 @@ void __fastcall ApplyTabs(
     Text = Lines->Text;
     // remove trailing newline
     Text = Text.TrimRight();
+  }
+}
+//---------------------------------------------------------------------------
+class TBrowserViewer : public TWebBrowserEx
+{
+public:
+  __fastcall virtual TBrowserViewer(TComponent* AOwner);
+
+  void __fastcall AddLinkHandler(
+    const UnicodeString & Url, TNotifyEvent Handler);
+
+  TControl * LoadingPanel;
+
+protected:
+  DYNAMIC void __fastcall DoContextPopup(const TPoint & MousePos, bool & Handled);
+  void __fastcall DocumentComplete(
+    TObject * Sender, const _di_IDispatch Disp, const OleVariant & URL);
+  void __fastcall BeforeNavigate2(
+    TObject * Sender, const _di_IDispatch Disp, const OleVariant & URL,
+    const OleVariant & Flags, const OleVariant & TargetFrameName,
+    const OleVariant & PostData, const OleVariant & Headers, WordBool & Cancel);
+
+  bool FComplete;
+  std::map<UnicodeString, TNotifyEvent> FHandlers;
+};
+//---------------------------------------------------------------------------
+__fastcall TBrowserViewer::TBrowserViewer(TComponent* AOwner) :
+  TWebBrowserEx(AOwner)
+{
+  FComplete = false;
+
+  OnDocumentComplete = DocumentComplete;
+  OnBeforeNavigate2 = BeforeNavigate2;
+  LoadingPanel = NULL;
+}
+//---------------------------------------------------------------------------
+void __fastcall TBrowserViewer::AddLinkHandler(
+  const UnicodeString & Url, TNotifyEvent Handler)
+{
+  FHandlers.insert(std::make_pair(Url, Handler));
+}
+//---------------------------------------------------------------------------
+void __fastcall TBrowserViewer::DoContextPopup(const TPoint & MousePos, bool & Handled)
+{
+  // suppress built-in context menu
+  Handled = true;
+  TWebBrowserEx::DoContextPopup(MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TBrowserViewer::DocumentComplete(
+    TObject * /*Sender*/, const _di_IDispatch /*Disp*/, const OleVariant & /*URL*/)
+{
+  SetBrowserDesignModeOff(this);
+
+  FComplete = true;
+
+  if (LoadingPanel != NULL)
+  {
+    LoadingPanel->Visible = false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TBrowserViewer::BeforeNavigate2(
+  TObject * /*Sender*/, const _di_IDispatch /*Disp*/, const OleVariant & AURL,
+  const OleVariant & /*Flags*/, const OleVariant & /*TargetFrameName*/,
+  const OleVariant & /*PostData*/, const OleVariant & /*Headers*/, WordBool & Cancel)
+{
+  // If OnDocumentComplete was not called yet, is has to be our initial message URL,
+  // opened using TWebBrowserEx::Navigate(), allow it.
+  // Otherwise it's user navigating, block that and open link
+  // in an external browser, possibly adding campaign parameters on the way.
+  if (FComplete)
+  {
+    Cancel = 1;
+
+    UnicodeString URL = AURL;
+    if (FHandlers.count(URL) > 0)
+    {
+      FHandlers[URL](this);
+    }
+    else
+    {
+      OpenBrowser(URL);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeString & LoadingLabel)
+{
+  TBrowserViewer * Result = new TBrowserViewer(Parent);
+  // TWebBrowserEx has its own unrelated Name and Parent properties
+  static_cast<TWinControl *>(Result)->Name = L"BrowserViewer";
+  static_cast<TWinControl *>(Result)->Parent = Parent;
+  Result->Align = alClient;
+  Result->ControlBorder = cbNone;
+
+  TPanel * LoadingPanel = new TPanel(Parent);
+  LoadingPanel->Parent = Parent;
+  LoadingPanel->BevelOuter = bvNone;
+  LoadingPanel->BevelInner = bvNone; // default
+  LoadingPanel->Align = alClient;
+  LoadingPanel->Caption = LoadingLabel;
+  Result->LoadingPanel = LoadingPanel;
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall SetBrowserDesignModeOff(TWebBrowserEx * WebBrowser)
+{
+  if (ALWAYS_TRUE(WebBrowser->Document2 != NULL))
+  {
+    WebBrowser->Document2->designMode = L"Off";
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
+  const UnicodeString & Url, TNotifyEvent Handler)
+{
+  TBrowserViewer * BrowserViewer = dynamic_cast<TBrowserViewer *>(WebBrowser);
+  if (ALWAYS_TRUE(BrowserViewer != NULL))
+  {
+    BrowserViewer->AddLinkHandler(Url, Handler);
   }
 }
 //---------------------------------------------------------------------------

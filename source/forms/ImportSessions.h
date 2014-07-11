@@ -39,8 +39,8 @@ private:
   TStoredSessionList * __fastcall GetSessionList(int Index);
 
 public:
-  virtual __fastcall TImportSessionsDialog(TComponent * AOwner,
-    TList * SessionListsList);
+  virtual __fastcall TImportSessionsDialog(TComponent * AOwner);
+  void __fastcall Init(TList * SessionListsList);
   bool __fastcall Execute(bool & ImportKeys);
 };
 //----------------------------------------------------------------------------

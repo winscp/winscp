@@ -249,6 +249,7 @@ void __fastcall TScpExplorerForm::RemoteDirViewUpdateStatusBar(
     // if there's no note to cancel, we need to update status bar explicitly
     UpdateStatusBar();
   }
+  UpdateFileStatusExtendedPanels(RemoteStatusBar, FileInfo);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RemotePanelSplitterDblClick(TObject * /*Sender*/)
@@ -329,7 +330,7 @@ void __fastcall TScpExplorerForm::QueueSubmenuItemPopup(
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::ChangePath(TOperationSide /*Side*/)
 {
-  assert(false);
+  FAIL;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::UpdateToolbarDisplayMode()
@@ -341,5 +342,11 @@ bool __fastcall TScpExplorerForm::UpdateToolbarDisplayMode()
     ToolBarResize(AddressToolbar);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::RemoteStatusBarPanelClick(TTBXCustomStatusBar * /*Sender*/,
+  TTBXStatusPanel *Panel)
+{
+  FileStatusBarPanelClick(Panel, osRemote);
 }
 //---------------------------------------------------------------------------

@@ -54,6 +54,7 @@ int ne_version_match(int major, int minor);
 #define NE_FEATURE_SOCKS (5) /* SOCKSv5 support */
 #define NE_FEATURE_TS_SSL (6) /* Thread-safe SSL/TLS support */
 #define NE_FEATURE_I18N (7) /* i18n error message support */
+#define NE_FEATURE_SSPI (8) /* NTLM/Negotiate authentication protocol via SSPI */
 
 /* Returns non-zero if library is built with support for the given
  * NE_FEATURE_* feature code 'code'. */
@@ -64,7 +65,11 @@ int ne_has_support(int feature);
 #ifndef NE_DEBUGGING
 #define NE_DEBUG if (0) ne_debug
 #else /* DEBUGGING */
+#ifdef WINSCP
+#define NE_DEBUG(...) ne_debug(ne_debug_context, __VA_ARGS__)
+#else
 #define NE_DEBUG ne_debug
+#endif
 #endif /* DEBUGGING */
 
 /* Debugging masks. */
@@ -77,21 +82,43 @@ int ne_has_support(int feature);
 #define NE_DBG_XMLPARSE (1<<6) /* low-level XML parser */
 #define NE_DBG_HTTPBODY (1<<7) /* HTTP response body blocks */
 #define NE_DBG_SSL (1<<8) /* SSL/TLS */
+#ifdef WINSCP
+#define NE_DBG_WINSCP_HTTP_DETAIL (1<<29)
+#endif
 #define NE_DBG_FLUSH (1<<30) /* always flush debugging */
+
+#ifdef WINSCP
+
+#define NE_DEBUG_WINSCP_CONTEXT(SESSION) void * ne_debug_context = (SESSION)
+
+extern void * ne_debug_context;
+
+void ne_debug(void * context, int ch, const char * fmt, ...);
+
+#else
+
+#define NE_DEBUG_WINSCP_CONTEXT(SESSION)
 
 /* Send debugging output to 'stream', for all of the given debug
  * channels.  To disable debugging, pass 'stream' as NULL and 'mask'
  * as 0. */
 void ne_debug_init(FILE *stream, int mask);
 
+#endif /* WINSCP */
+
 /* The current debug mask and stream set by the last call to
  * ne_debug_init. */
 extern int ne_debug_mask;
+
+#ifndef WINSCP
+
 extern FILE *ne_debug_stream;
 
 /* Produce debug output if any of channels 'ch' is enabled for
  * debugging. */
 void ne_debug(int ch, const char *, ...) ne_attribute((format(printf, 2, 3)));
+
+#endif /* WINSCP */
 
 /* Storing an HTTP status result */
 typedef struct {

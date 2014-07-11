@@ -64,12 +64,12 @@ object SymlinkDialog: TSymlinkDialog
       TabOrder = 1
       OnChange = ControlChange
     end
-    object SymbolicCheck: TCheckBox
+    object HardLinkCheck: TCheckBox
       Left = 17
       Top = 109
       Width = 238
       Height = 17
-      Caption = 'Sy&mbolic link'
+      Caption = '&Hard link'
       TabOrder = 2
       OnClick = ControlChange
     end

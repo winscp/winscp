@@ -70,7 +70,8 @@ type
 implementation
 
 uses
-  Classes, Controls, CommCtrl, TBXUtils, UxTheme, TB2Common, TB2Item, TBX, Forms;
+  Classes, Controls, CommCtrl, TBXUtils, UxTheme, TB2Common, TB2Item, TBX, Forms,
+  Types, UITypes;
 
 var
   SmCaptionFont: TFont;

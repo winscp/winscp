@@ -59,7 +59,7 @@ ne__ssl_clicert_exkey_import(const unsigned char *der,
 #include <gnutls/gnutls.h>
 
 struct ne_ssl_context_s {
-    gnutls_certificate_credentials cred;
+    gnutls_certificate_credentials_t cred;
     int verify; /* non-zero if client cert verification required */
 
     const char *hostname; /* for SNI */
@@ -67,10 +67,10 @@ struct ne_ssl_context_s {
     /* Session cache. */
     union ne_ssl_scache {
         struct {
-            gnutls_datum key, data;
+            gnutls_datum_t key, data;
         } server;
 #if defined(HAVE_GNUTLS_SESSION_GET_DATA2)
-        gnutls_datum client;
+        gnutls_datum_t client;
 #else
         struct {
             char *data;
@@ -85,7 +85,7 @@ struct ne_ssl_context_s {
 #endif
 };
 
-typedef gnutls_session ne_ssl_socket;
+typedef gnutls_session_t ne_ssl_socket;
 
 NE_PRIVATE ne_ssl_client_cert *
 ne__ssl_clicert_exkey_import(const unsigned char *der, size_t der_len);

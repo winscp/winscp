@@ -16,8 +16,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-#define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
-  FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION, L"")
+#define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
 const int coRaiseExcept = 1;
 const int coExpectNoOutput = 2;
@@ -300,10 +299,7 @@ __fastcall TSCPFileSystem::TSCPFileSystem(TTerminal * ATerminal, TSecureShell * 
   FFileSystemInfo.ProtocolBaseName = L"SCP";
   FFileSystemInfo.ProtocolName = FFileSystemInfo.ProtocolBaseName;
   // capabilities of SCP protocol are fixed
-  for (int Index = 0; Index < fcCount; Index++)
-  {
-    FFileSystemInfo.IsCapable[Index] = IsCapable((TFSCapability)Index);
-  }
+  FTerminal->SaveCapabilities(FFileSystemInfo);
 }
 //---------------------------------------------------------------------------
 __fastcall TSCPFileSystem::~TSCPFileSystem()
@@ -462,10 +458,11 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcCalculatingChecksum:
     case fcSecondaryShell: // has fcShellAnyCommand
     case fcGroupOwnerChangingByID: // by name
+    case fcMoveToQueue:
       return false;
 
     default:
-      assert(false);
+      FAIL;
       return false;
   }
 }
@@ -601,7 +598,7 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
             if (Total % 10 == 0)
             {
               bool Cancel; //dummy
-              FTerminal->DoReadDirectoryProgress(Total, Cancel);
+              FTerminal->DoReadDirectoryProgress(Total, 0, Cancel);
             }
           }
         }
@@ -1195,7 +1192,7 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const UnicodeString FileNam
 //---------------------------------------------------------------------------
 bool __fastcall TSCPFileSystem::LoadFilesProperties(TStrings * /*FileList*/ )
 {
-  assert(false);
+  FAIL;
   return false;
 }
 //---------------------------------------------------------------------------
@@ -1203,7 +1200,7 @@ void __fastcall TSCPFileSystem::CalculateFilesChecksum(const UnicodeString & /*A
   TStrings * /*FileList*/, TStrings * /*Checksums*/,
   TCalculatedChecksumEvent /*OnCalculatedChecksum*/)
 {
-  assert(false);
+  FAIL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::CustomCommandOnFile(const UnicodeString FileName,
@@ -1268,11 +1265,6 @@ void __fastcall TSCPFileSystem::AnyCommand(const UnicodeString Command,
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSCPFileSystem::FileUrl(const UnicodeString FileName)
-{
-  return FTerminal->FileUrl(ScpProtocol, FileName);
-}
-//---------------------------------------------------------------------------
 TStrings * __fastcall TSCPFileSystem::GetFixedPaths()
 {
   return NULL;
@@ -1281,16 +1273,18 @@ TStrings * __fastcall TSCPFileSystem::GetFixedPaths()
 void __fastcall TSCPFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & /*ASpaceAvailable*/)
 {
-  assert(false);
+  FAIL;
 }
 //---------------------------------------------------------------------------
 // transfer protocol
 //---------------------------------------------------------------------------
 unsigned int __fastcall TSCPFileSystem::ConfirmOverwrite(
-  UnicodeString & FileName, TOperationSide Side,
+  const UnicodeString & FileName, TOperationSide Side,
   const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
   int Params, TFileOperationProgressType * OperationProgress)
 {
+  TSuspendFileOperationProgress Suspend(OperationProgress);
+
   TQueryButtonAlias Aliases[3];
   Aliases[0].Button = qaAll;
   Aliases[0].Alias = LoadStr(YES_TO_NEWER_BUTTON);
@@ -1305,14 +1299,11 @@ unsigned int __fastcall TSCPFileSystem::ConfirmOverwrite(
   TQueryParams QueryParams(qpNeverAskAgainCheck);
   QueryParams.Aliases = Aliases;
   QueryParams.AliasesCount = LENOF(Aliases);
-  unsigned int Answer;
-  SUSPEND_OPERATION
-  (
-    Answer = FTerminal->ConfirmFileOverwrite(
+  unsigned int Answer =
+    FTerminal->ConfirmFileOverwrite(
       FileName, FileParams,
       qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll | qaAll,
       &QueryParams, Side, CopyParam, Params, OperationProgress);
-  );
   return Answer;
 }
 //---------------------------------------------------------------------------
@@ -1390,7 +1381,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
 
   Params &= ~(cpAppend | cpResume);
   UnicodeString Options = L"";
-  bool CheckExistence = UnixComparePaths(TargetDir, FTerminal->CurrentDirectory) &&
+  bool CheckExistence = UnixSamePath(TargetDir, FTerminal->CurrentDirectory) &&
     (FTerminal->FFiles != NULL) && FTerminal->FFiles->Loaded;
   bool CopyBatchStarted = false;
   bool Failed = true;
@@ -1454,13 +1445,12 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
           {
             UnicodeString Message = FMTLOAD(DIRECTORY_OVERWRITE, (FileNameOnly));
             TQueryParams QueryParams(qpNeverAskAgainCheck);
-            SUSPEND_OPERATION
-            (
-              Answer = FTerminal->ConfirmFileOverwrite(
-                FileNameOnly /*not used*/, NULL,
-                qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll,
-                &QueryParams, osRemote, CopyParam, Params, OperationProgress, Message);
-            );
+
+            TSuspendFileOperationProgress Suspend(OperationProgress);
+            Answer = FTerminal->ConfirmFileOverwrite(
+              FileNameOnly /*not used*/, NULL,
+              qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll,
+              &QueryParams, osRemote, CopyParam, Params, OperationProgress, Message);
           }
           else
           {
@@ -1474,7 +1464,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
             FileParams.DestSize = File->Size;
             FileParams.DestTimestamp = File->Modification;
 
-            Answer = ConfirmOverwrite(FileNameOnly, osRemote,
+            Answer = ConfirmOverwrite(FileName, osRemote,
               &FileParams, CopyParam, Params, OperationProgress);
           }
 
@@ -1491,7 +1481,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
               break;
 
             default:
-              assert(false);
+              FAIL;
               break;
           }
         }
@@ -1511,7 +1501,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         {
           FTerminal->DirectoryModified(TargetDir, false);
 
-          if (DirectoryExists(FileName))
+          if (DirectoryExists(ApiPath(FileName)))
           {
             FTerminal->DirectoryModified(UnixIncludeTrailingBackslash(TargetDir)+
               FileNameOnly, true);
@@ -1527,23 +1517,32 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         catch (EScpFileSkipped &E)
         {
           TQueryParams Params(qpAllowContinueOnError);
-          SUSPEND_OPERATION (
-            if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (FileName)), &E,
-              qaOK | qaAbort, &Params, qtError) == qaAbort)
-            {
-              OperationProgress->Cancel = csCancel;
-            }
-            OperationProgress->Finish(FileName, false, OnceDoneOperation);
-            if (!FTerminal->HandleException(&E)) throw;
-          );
+
+          TSuspendFileOperationProgress Suspend(OperationProgress);
+
+          if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (FileName)), &E,
+            qaOK | qaAbort, &Params, qtError) == qaAbort)
+          {
+            OperationProgress->Cancel = csCancel;
+          }
+          OperationProgress->Finish(FileName, false, OnceDoneOperation);
+          if (!FTerminal->HandleException(&E))
+          {
+            throw;
+          }
         }
         catch (EScpSkipFile &E)
         {
           OperationProgress->Finish(FileName, false, OnceDoneOperation);
-          // If ESkipFile occurs, just log it and continue with next file
-          SUSPEND_OPERATION (
-            if (!FTerminal->HandleException(&E)) throw;
-          );
+
+          {
+            TSuspendFileOperationProgress Suspend(OperationProgress);
+            // If ESkipFile occurs, just log it and continue with next file
+            if (!FTerminal->HandleException(&E))
+            {
+              throw;
+            }
+          }
         }
         catch (...)
         {
@@ -1598,9 +1597,8 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
 
   OperationProgress->SetFile(FileName, false);
 
-  if (!FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
+  if (!FTerminal->AllowLocalFileTransfer(FileName, CopyParam, OperationProgress))
   {
-    FTerminal->LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
     THROW_SKIP_FILE_NULL;
   }
 
@@ -1669,10 +1667,13 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
           TFileBuffer BlockBuf;
 
           // This is crucial, if it fails during file transfer, it's fatal error
-          FILE_OPERATION_LOOP_EX (!OperationProgress->TransferingFile,
-              FMTLOAD(READ_ERROR, (FileName)),
+          FILE_OPERATION_LOOP_BEGIN
+          {
             BlockBuf.LoadStream(Stream, OperationProgress->LocalBlockSize(), true);
-          );
+          }
+          FILE_OPERATION_LOOP_END_EX(
+            FMTLOAD(READ_ERROR, (FileName)),
+            !OperationProgress->TransferingFile);
 
           OperationProgress->AddLocallyUsed(BlockBuf.Size);
 
@@ -1869,16 +1870,20 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
   {
     if (!Dir)
     {
-      FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)),
-        THROWOSIFFALSE(Sysutils::DeleteFile(FileName));
-      )
+      FILE_OPERATION_LOOP_BEGIN
+      {
+        THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(FileName)));
+      }
+      FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)));
     }
   }
   else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
   {
-    FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (FileName)),
-      THROWOSIFFALSE(FileSetAttr(FileName, Attrs & ~faArchive) == 0);
-    )
+    FILE_OPERATION_LOOP_BEGIN
+    {
+      THROWOSIFFALSE(FileSetAttr(ApiPath(FileName), Attrs & ~faArchive) == 0);
+    }
+    FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (FileName)));
   }
 
   FTerminal->LogEvent(FORMAT(L"Copying \"%s\" to remote directory finished.", (FileName)));
@@ -1897,10 +1902,12 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
     ExtractFileName(DirectoryName), osLocal, Level == 0);
 
   // Get directory attributes
-  FILE_OPERATION_LOOP (FMTLOAD(CANT_GET_ATTRS, (DirectoryName)),
-    Attrs = FileGetAttr(DirectoryName);
-    if (Attrs == -1) RaiseLastOSError();
-  )
+  FILE_OPERATION_LOOP_BEGIN
+  {
+    Attrs = FileGetAttr(ApiPath(DirectoryName));
+    if (Attrs < 0) RaiseLastOSError();
+  }
+  FILE_OPERATION_LOOP_END(FMTLOAD(CANT_GET_ATTRS, (DirectoryName)));
 
   UnicodeString TargetDirFull = UnixIncludeTrailingBackslash(TargetDir + DestFileName);
 
@@ -1920,10 +1927,13 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
     TSearchRecChecked SearchRec;
     bool FindOK;
 
-    FILE_OPERATION_LOOP (FMTLOAD(LIST_DIR_ERROR, (DirectoryName)),
-      FindOK = (bool)(FindFirstChecked(IncludeTrailingBackslash(DirectoryName) + L"*.*",
-        FindAttrs, SearchRec) == 0);
-    );
+    FILE_OPERATION_LOOP_BEGIN
+    {
+      FindOK =
+        (FindFirstChecked(IncludeTrailingBackslash(DirectoryName) + L"*.*",
+           FindAttrs, SearchRec) == 0);
+    }
+    FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
 
     try
     {
@@ -1943,26 +1953,33 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
         catch (EScpFileSkipped &E)
         {
           TQueryParams Params(qpAllowContinueOnError);
-          SUSPEND_OPERATION (
-            if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (FileName)), &E,
-                  qaOK | qaAbort, &Params, qtError) == qaAbort)
-            {
-              OperationProgress->Cancel = csCancel;
-            }
-            if (!FTerminal->HandleException(&E)) throw;
-          );
+          TSuspendFileOperationProgress Suspend(OperationProgress);
+
+          if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (FileName)), &E,
+                qaOK | qaAbort, &Params, qtError) == qaAbort)
+          {
+            OperationProgress->Cancel = csCancel;
+          }
+          if (!FTerminal->HandleException(&E))
+          {
+            throw;
+          }
         }
         catch (EScpSkipFile &E)
         {
           // If ESkipFile occurs, just log it and continue with next file
-          SUSPEND_OPERATION (
-            if (!FTerminal->HandleException(&E)) throw;
-          );
+          TSuspendFileOperationProgress Suspend(OperationProgress);
+          if (!FTerminal->HandleException(&E))
+          {
+            throw;
+          }
         }
 
-        FILE_OPERATION_LOOP (FMTLOAD(LIST_DIR_ERROR, (DirectoryName)),
+        FILE_OPERATION_LOOP_BEGIN
+        {
           FindOK = (FindNextChecked(SearchRec) == 0);
-        );
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
       }
     }
     __finally
@@ -1976,13 +1993,15 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
     {
       if (FLAGSET(Params, cpDelete))
       {
-        RemoveDir(DirectoryName);
+        RemoveDir(ApiPath(DirectoryName));
       }
       else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
       {
-        FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (DirectoryName)),
-          THROWOSIFFALSE(FileSetAttr(DirectoryName, Attrs & ~faArchive) == 0);
-        )
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          THROWOSIFFALSE(FileSetAttr(ApiPath(DirectoryName), Attrs & ~faArchive) == 0);
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DirectoryName)));
       }
     }
   }
@@ -2050,11 +2069,13 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
             FTerminal->ExceptionOnFail = true;
             try
             {
-              FILE_OPERATION_LOOP(FMTLOAD(DELETE_FILE_ERROR, (FileName)),
+              FILE_OPERATION_LOOP_BEGIN
+              {
                 // pass full file name in FileName, in case we are not moving
                 // from current directory
-                FTerminal->DeleteFile(FileName, File)
-              );
+                FTerminal->DeleteFile(FileName, File);
+              }
+              FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_FILE_ERROR, (FileName)));
             }
             __finally
             {
@@ -2281,15 +2302,16 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
             FTerminal->LogEvent(FORMAT(L"Warning: Remote host set a compound pathname '%s'", (Line)));
           }
 
-          OperationProgress->SetFile(OnlyFileName);
           AbsoluteFileName = SourceDir + OnlyFileName;
+          OperationProgress->SetFile(AbsoluteFileName);
           OperationProgress->SetTransferSize(TSize);
         }
         catch (Exception &E)
         {
-          SUSPEND_OPERATION (
+          {
+            TSuspendFileOperationProgress Suspend(OperationProgress);
             FTerminal->Log->AddException(&E);
-          );
+          }
           SCPError(LoadStr(SCP_ILLEGAL_FILE_DESCRIPTOR), false);
         }
 
@@ -2300,13 +2322,19 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         }
 
         bool Dir = (Ctrl == L'D');
-        UnicodeString SourceFullName = SourceDir + OperationProgress->FileName;
-        if (!CopyParam->AllowTransfer(SourceFullName, osRemote, Dir, MaskParams))
+        if (!CopyParam->AllowTransfer(AbsoluteFileName, osRemote, Dir, MaskParams))
         {
           FTerminal->LogEvent(FORMAT(L"File \"%s\" excluded from transfer",
             (AbsoluteFileName)));
           SkipConfirmed = true;
           SCPError(L"", false);
+        }
+
+        if (CopyParam->SkipTransfer(AbsoluteFileName, Dir))
+        {
+          SkipConfirmed = true;
+          SCPError(L"", false);
+          OperationProgress->AddSkippedFileSize(MaskParams.Size);
         }
 
         FTerminal->LogFileDetails(FileName, SourceTimestamp, MaskParams.Size);
@@ -2316,7 +2344,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
           CopyParam->ChangeFileName(OperationProgress->FileName, osRemote,
             Level == 0);
 
-        FileData.Attrs = FileGetAttr(DestFileName);
+        FileData.Attrs = FileGetAttr(ApiPath(DestFileName));
         // If getting attrs fails, we suppose, that file/folder doesn't exists
         FileData.Exists = (FileData.Attrs != -1);
         if (Dir)
@@ -2328,9 +2356,11 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
           if (!FileData.Exists)
           {
-            FILE_OPERATION_LOOP (FMTLOAD(CREATE_DIR_ERROR, (DestFileName)),
-              THROWOSIFFALSE(ForceDirectories(DestFileName));
-            );
+            FILE_OPERATION_LOOP_BEGIN
+            {
+              THROWOSIFFALSE(ForceDirectories(ApiPath(DestFileName)));
+            }
+            FILE_OPERATION_LOOP_END(FMTLOAD(CREATE_DIR_ERROR, (DestFileName)));
             /* SCP: can we set the timestamp for directories ? */
           }
           UnicodeString FullFileName = SourceDir + OperationProgress->FileName;
@@ -2354,7 +2384,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
             {
               try
               {
-                if (FileExists(DestFileName))
+                if (FileExists(ApiPath(DestFileName)))
                 {
                   __int64 MTime;
                   TOverwriteFileParams FileParams;
@@ -2409,7 +2439,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
               // Will we use ASCII of BINARY file transfer?
               OperationProgress->SetAsciiTransfer(
-                CopyParam->UseAsciiTransfer(SourceFullName, osRemote, MaskParams));
+                CopyParam->UseAsciiTransfer(AbsoluteFileName, osRemote, MaskParams));
               FTerminal->LogEvent(UnicodeString((OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary")) +
                 L" transfer mode selected.");
 
@@ -2437,9 +2467,12 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                   }
 
                   // This is crucial, if it fails during file transfer, it's fatal error
-                  FILE_OPERATION_LOOP_EX (false, FMTLOAD(WRITE_ERROR, (DestFileName)),
+                  FILE_OPERATION_LOOP_BEGIN
+                  {
                     BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
-                  );
+                  }
+                  FILE_OPERATION_LOOP_END_EX(
+                    FMTLOAD(WRITE_ERROR, (DestFileName)), false);
 
                   OperationProgress->AddLocallyUsed(BlockBuf.Size);
 
@@ -2507,9 +2540,11 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
           int NewAttrs = CopyParam->LocalFileAttrs(FileData.RemoteRights);
           if ((NewAttrs & FileData.Attrs) != NewAttrs)
           {
-            FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (DestFileName)),
-              THROWOSIFFALSE(FileSetAttr(DestFileName, FileData.Attrs | NewAttrs) == 0);
-            );
+            FILE_OPERATION_LOOP_BEGIN
+            {
+              THROWOSIFFALSE(FileSetAttr(ApiPath(DestFileName), FileData.Attrs | NewAttrs) == 0);
+            }
+            FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFileName)));
           }
         }
       }
@@ -2518,15 +2553,14 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
     {
       if (!SkipConfirmed)
       {
-        SUSPEND_OPERATION (
-          TQueryParams Params(qpAllowContinueOnError);
-          if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (AbsoluteFileName)),
-                &E, qaOK | qaAbort, &Params, qtError) == qaAbort)
-          {
-            OperationProgress->Cancel = csCancel;
-          }
-          FTerminal->Log->AddException(&E);
-        );
+        TSuspendFileOperationProgress Suspend(OperationProgress);
+        TQueryParams Params(qpAllowContinueOnError);
+        if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (AbsoluteFileName)),
+              &E, qaOK | qaAbort, &Params, qtError) == qaAbort)
+        {
+          OperationProgress->Cancel = csCancel;
+        }
+        FTerminal->Log->AddException(&E);
       }
       // this was inside above condition, but then transfer was considered
       // successful, even when for example user refused to overwrite file

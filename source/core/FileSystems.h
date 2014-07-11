@@ -77,7 +77,6 @@ public:
     const UnicodeString NewName) = 0;
   virtual void __fastcall CopyFile(const UnicodeString FileName,
     const UnicodeString NewName) = 0;
-  virtual UnicodeString __fastcall FileUrl(const UnicodeString FileName) = 0;
   virtual TStrings * __fastcall GetFixedPaths() = 0;
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
     TSpaceAvailable & ASpaceAvailable) = 0;

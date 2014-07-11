@@ -11,6 +11,7 @@
 #include <Terminal.h>
 #include <CoreMain.h>
 #include <PasTools.hpp>
+#include <CustomWinConfiguration.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PasswordEdit"
@@ -87,6 +88,11 @@ void __fastcall TAuthenticateForm::Dispatch(void * AMessage)
     DoCancel();
     TForm::Dispatch(AMessage);
   }
+  else if (Message.Msg == WM_MANAGES_CAPTION)
+  {
+    // caption managed in TAuthenticateForm::AdjustControls()
+    Message.Result = 1;
+  }
   else
   {
     TForm::Dispatch(AMessage);
@@ -132,14 +138,16 @@ void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::AdjustControls()
 {
+  UnicodeString ACaption;
   if (FStatus.IsEmpty())
   {
-    Caption = FSessionData->SessionName;
+    ACaption = FSessionData->SessionName;
   }
   else
   {
-    Caption = FORMAT(L"%s - %s", (FStatus, FSessionData->SessionName));
+    ACaption = FORMAT(L"%s - %s", (FStatus, FSessionData->SessionName));
   }
+  Caption = FormatFormCaption(this, ACaption);
 }
 //---------------------------------------------------------------------------
 TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString Caption)
@@ -227,18 +235,17 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
     bool ShowSessionRememberPasswordPanel = false;
     bool ShowSavePasswordPanel = false;
     TSessionData * Data = NULL;
-    bool PasswordPrompt = IsPasswordPrompt(Kind, Prompts);
-    if (PasswordPrompt && StoredCredentialsTried)
+    if (IsPasswordPrompt(Kind, Prompts) && StoredCredentialsTried)
     {
       Data = StoredSessions->FindSame(FSessionData);
       ShowSavePasswordPanel = (Data != NULL) && !Data->Password.IsEmpty();
     }
-    // do not offer to rememeber password,
-    // if we are offering to save the password to stored session
+    // do not offer to remember password,
+    // if we are offering to save the password to stored site
     if (!ShowSavePasswordPanel &&
         (Prompts->Count == 1) &&
         FLAGSET(int(Prompts->Objects[0]), pupRemember) &&
-        ALWAYS_TRUE(PasswordPrompt))
+        ALWAYS_TRUE(IsPasswordOrPassphrasePrompt(Kind, Prompts)))
     {
       ShowSessionRememberPasswordPanel = true;
     }
@@ -433,6 +440,11 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
 
   if (!Result)
   {
+    // This is not nice as it may untimately route to
+    // TTerminalThread::Cancel() and throw fatal exception,
+    // what actually means that any PromptUser call during authentication never
+    // return false and their fall back/alternative code never occurs.
+    // It probably needs fixing.
     DoCancel();
   }
 

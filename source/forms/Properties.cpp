@@ -291,7 +291,7 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
   else
   {
     SizeStr = FormatBytes(FilesSize);
-    UnicodeString SizeUnorderedStr = FormatBytes(FilesSize, false);
+    UnicodeString SizeUnorderedStr = FormatBytes(FilesSize, fbNone);
     if (SizeStr != SizeUnorderedStr)
     {
       SizeStr = FORMAT(L"%s (%s)", (SizeStr, SizeUnorderedStr));
@@ -481,12 +481,16 @@ void __fastcall TPropertiesDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::UpdateControls()
 {
+  // No point enabling recursive check if there's no change allowed (supported),
+  // i.e. with WebDAV.
+  EnableControl(RecursiveCheck, ((FAllowedChanges & (cpGroup | cpOwner | cpMode)) != 0));
+
   bool Allow;
   try
   {
     Allow =
       !TRemoteProperties::ChangedProperties(FOrigProperties, GetFileProperties()).Valid.Empty() ||
-      RecursiveCheck->Checked;
+      (RecursiveCheck->Enabled && RecursiveCheck->Checked);
   }
   catch(...)
   {

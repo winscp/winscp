@@ -1,6 +1,6 @@
 /* 
    HTTP Authentication routines
-   Copyright (C) 1999-2009, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2011, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -181,6 +181,7 @@ typedef struct {
     /* This is used for SSPI (Negotiate/NTLM) auth */
     char *sspi_token;
     void *sspi_context;
+    char *sspi_host;
 #endif
 #ifdef HAVE_NTLM
      /* This is used for NTLM auth */
@@ -299,6 +300,8 @@ static void clean_session(auth_session *sess)
     sess->sspi_token = NULL;
     ne_sspi_destroy_context(sess->sspi_context);
     sess->sspi_context = NULL;
+    if (sess->sspi_host) ne_free(sess->sspi_host);
+    sess->sspi_host = NULL;
 #endif
 #ifdef HAVE_NTLM
     if (sess->ntlm_context) {
@@ -482,6 +485,7 @@ static void make_gss_error(ne_buffer *buf, int *flag,
 static int continue_negotiate(auth_session *sess, const char *token,
                               ne_buffer **errmsg)
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     unsigned int major, minor;
     gss_buffer_desc input = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc output = GSS_C_EMPTY_BUFFER;
@@ -571,6 +575,7 @@ static int negotiate_challenge(auth_session *sess, int attempt,
 static int verify_negotiate_response(struct auth_request *req, auth_session *sess,
                                      const char *hdr)
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char *duphdr = ne_strdup(hdr);
     char *sep, *ptr = strchr(duphdr, ' ');
     int ret;
@@ -621,20 +626,14 @@ static char *request_sspi(auth_session *sess, struct auth_request *request)
 
 static int continue_sspi(auth_session *sess, int ntlm, const char *hdr)
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int status;
     char *response = NULL;
     
     NE_DEBUG(NE_DBG_HTTPAUTH, "auth: SSPI challenge.\n");
     
     if (!sess->sspi_context) {
-        ne_uri uri = {0};
-
-        ne_fill_server_uri(sess->sess, &uri);
-
-        status = ne_sspi_create_context(&sess->sspi_context, uri.host, ntlm);
-
-        ne_uri_free(&uri);
-
+        status = ne_sspi_create_context(&sess->sspi_context, sess->sspi_host, ntlm);
         if (status) {
             return status;
         }
@@ -666,6 +665,7 @@ static int sspi_challenge(auth_session *sess, int attempt,
 static int verify_sspi(struct auth_request *req, auth_session *sess,
                        const char *hdr)
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int ntlm = ne_strncasecmp(hdr, "NTLM ", 5) == 0;
     char *ptr = strchr(hdr, ' ');
 
@@ -692,6 +692,7 @@ static int verify_sspi(struct auth_request *req, auth_session *sess,
  * in the session appropriately. */
 static int parse_domain(auth_session *sess, const char *domain)
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char *cp = ne_strdup(domain), *p = cp;
     ne_uri base;
     int invalid = 0;
@@ -765,6 +766,7 @@ static int ntlm_challenge(auth_session *sess, int attempt,
                           struct auth_challenge *parms,
                           ne_buffer **errmsg) 
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int status;
     
     NE_DEBUG(NE_DBG_HTTPAUTH, "auth: NTLM challenge.\n");
@@ -800,6 +802,7 @@ static int digest_challenge(auth_session *sess, int attempt,
                             struct auth_challenge *parms,
                             ne_buffer **errmsg) 
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char password[NE_ABUFSIZ];
 
     if (parms->alg == auth_alg_unknown) {
@@ -915,6 +918,7 @@ static int digest_challenge(auth_session *sess, int attempt,
  * domain defined for the session. */
 static int inside_domain(auth_session *sess, const char *req_uri)
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int inside = 0;
     size_t n;
     ne_uri uri;
@@ -943,6 +947,7 @@ static int inside_domain(auth_session *sess, const char *req_uri)
  * session. */
 static char *request_digest(auth_session *sess, struct auth_request *req) 
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     struct ne_md5_ctx *a2, *rdig;
     char a2_md5_ascii[33], rdig_md5_ascii[33];
     char nc_value[9] = {0};
@@ -1103,6 +1108,7 @@ static int tokenize(char **hdr, char **key, char **value, char *sep,
 static int verify_digest_response(struct auth_request *req, auth_session *sess,
                                   const char *value) 
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char *hdr, *pnt, *key, *val;
     auth_qop qop = auth_qop_none;
     char *nextnonce, *rspauth, *cnonce, *nc, *qop_value;
@@ -1232,7 +1238,7 @@ static const struct auth_protocol protocols[] = {
       digest_challenge, request_digest, verify_digest_response,
       0 },
 #ifdef HAVE_GSSAPI
-    { NE_AUTH_GSSAPI, 30, "Negotiate",
+    { NE_AUTH_GSSAPI_ONLY, 30, "Negotiate",
       negotiate_challenge, request_negotiate, verify_negotiate_response,
       AUTH_FLAG_OPAQUE_PARAM|AUTH_FLAG_VERIFY_NON40x|AUTH_FLAG_CONN_AUTH },
 #endif
@@ -1240,7 +1246,7 @@ static const struct auth_protocol protocols[] = {
     { NE_AUTH_NTLM, 30, "NTLM",
       sspi_challenge, request_sspi, NULL,
       AUTH_FLAG_OPAQUE_PARAM|AUTH_FLAG_VERIFY_NON40x|AUTH_FLAG_CONN_AUTH },
-    { NE_AUTH_GSSAPI, 30, "Negotiate",
+    { NE_AUTH_SSPI, 30, "Negotiate",
       sspi_challenge, request_sspi, verify_sspi,
       AUTH_FLAG_OPAQUE_PARAM|AUTH_FLAG_VERIFY_NON40x|AUTH_FLAG_CONN_AUTH },
 #endif
@@ -1306,6 +1312,7 @@ static void challenge_error(ne_buffer **errbuf, const char *fmt, ...)
 static int auth_challenge(auth_session *sess, int attempt,
                           const char *value) 
 {
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char *pnt, *key, *val, *hdr, sep;
     struct auth_challenge *chall = NULL, *challenges = NULL;
     ne_buffer *errmsg = NULL;
@@ -1435,6 +1442,7 @@ static void ah_create(ne_request *req, void *session, const char *method,
 		      const char *uri)
 {
     auth_session *sess = session;
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int is_connect = strcmp(method, "CONNECT") == 0;
 
     if (sess->context == AUTH_ANY ||
@@ -1463,6 +1471,7 @@ static void ah_create(ne_request *req, void *session, const char *method,
 static void ah_pre_send(ne_request *r, void *cookie, ne_buffer *request)
 {
     auth_session *sess = cookie;
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     struct auth_request *req = ne_get_request_private(r, sess->spec->id);
 
     if (sess->protocol && req) {
@@ -1484,6 +1493,7 @@ static void ah_pre_send(ne_request *r, void *cookie, ne_buffer *request)
 static int ah_post_send(ne_request *req, void *cookie, const ne_status *status)
 {
     auth_session *sess = cookie;
+    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     struct auth_request *areq = ne_get_request_private(req, sess->spec->id);
     const char *auth_hdr, *auth_info_hdr;
     int ret = NE_OK;
@@ -1551,8 +1561,8 @@ static int ah_post_send(ne_request *req, void *cookie, const ne_status *status)
     }
 
 #ifdef HAVE_SSPI
-    /* Clear the SSPI context after successfull authentication. */
-    if ((status->klass == 2 || status->klass == 3) && sess->sspi_context) {
+    /* Clear the SSPI context after successful authentication. */
+    if (status->code != sess->spec->status_code && sess->sspi_context) {
         ne_sspi_clear_context(sess->sspi_context);
     }
 #endif
@@ -1614,6 +1624,11 @@ static void auth_register(ne_session *sess, int isproxy, unsigned protomask,
         /* Map NEGOTIATE to NTLM | GSSAPI. */
         protomask |= NE_AUTH_GSSAPI | NE_AUTH_NTLM;
     }
+    
+    if ((protomask & NE_AUTH_GSSAPI) == NE_AUTH_GSSAPI) {
+        /* Map GSSAPI to GSSAPI_ONLY | SSPI. */
+        protomask |= NE_AUTH_GSSAPI_ONLY | NE_AUTH_SSPI;
+    }
 
     ahs = ne_get_session_private(sess, id);
     if (ahs == NULL) {
@@ -1639,7 +1654,7 @@ static void auth_register(ne_session *sess, int isproxy, unsigned protomask,
     }
 
 #ifdef HAVE_GSSAPI
-    if ((protomask & NE_AUTH_GSSAPI) && ahs->gssname == GSS_C_NO_NAME) {
+    if ((protomask & NE_AUTH_GSSAPI_ONLY) && ahs->gssname == GSS_C_NO_NAME) {
         ne_uri uri = {0};
         
         if (isproxy)
@@ -1652,6 +1667,21 @@ static void auth_register(ne_session *sess, int isproxy, unsigned protomask,
         ne_uri_free(&uri);
     }
 #endif
+#ifdef HAVE_SSPI
+    if ((protomask & (NE_AUTH_NTLM|NE_AUTH_SSPI)) && !ahs->sspi_host) {
+        ne_uri uri = {0};
+        
+        if (isproxy)
+            ne_fill_proxy_uri(sess, &uri);
+        else
+            ne_fill_server_uri(sess, &uri);
+
+        ahs->sspi_host = uri.host;
+        uri.host = NULL;
+
+        ne_uri_free(&uri);
+    }
+#endif        
 
     /* Find the end of the handler list, and add a new one. */
     hdl = &ahs->handlers;

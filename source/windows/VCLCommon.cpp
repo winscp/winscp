@@ -10,10 +10,12 @@
 #include <RemoteFiles.h>
 #include <GUITools.h>
 #include <Tools.h>
+#include <CustomWinConfiguration.h>
 
 #include <FileCtrl.hpp>
 #include <PathLabel.hpp>
 #include <PasTools.hpp>
+#include <StrUtils.hpp>
 #include <Vcl.Imaging.pngimage.hpp>
 #include <Math.hpp>
 //---------------------------------------------------------------------------
@@ -110,7 +112,8 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
       if (Memo != NULL)
       {
         // Is true by default and makes the control swallow not only
-        // returns but also escapes
+        // returns but also escapes.
+        // See also MemoKeyDown
         Memo->WantReturns = false;
       }
     }
@@ -128,8 +131,70 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
   }
   else
   {
-    assert(false);
+    FAIL;
   }
+}
+//---------------------------------------------------------------------------
+static TForm * MainLikeForm = NULL;
+//---------------------------------------------------------------------------
+TForm * __fastcall GetMainForm()
+{
+  TForm * Result;
+  if (MainLikeForm != NULL)
+  {
+    Result = MainLikeForm;
+  }
+  else
+  {
+    Result = Application->MainForm;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsMainFormHidden()
+{
+  bool Result = (GetMainForm() != NULL) && !GetMainForm()->Visible;
+  // we do not expect this to return true when MainLikeForm is set
+  assert(!Result || (MainLikeForm == NULL));
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsMainFormLike(TCustomForm * Form)
+{
+  return
+    (GetMainForm() == Form) ||
+    // this particularly happens if error occurs while main
+    // window is being shown (e.g. non existent local directory when opening
+    // explorer)
+    IsMainFormHidden();
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption)
+{
+  UnicodeString Result = Caption;
+  if (Result.IsEmpty())
+  {
+    Result = AppName;
+  }
+  else
+  {
+    UnicodeString Suffix = L" - " + AppName;
+    if (!EndsStr(Suffix, Result))
+    {
+      Result += Suffix;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall FormatFormCaption(TCustomForm * Form, const UnicodeString & Caption)
+{
+  UnicodeString Result = Caption;
+  if (IsMainFormLike(Form))
+  {
+    Result = FormatMainFormCaption(Result);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 struct TSavedSystemSettings
@@ -166,17 +231,59 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   {
     TForm * AForm = dynamic_cast<TForm *>(Form);
     assert(AForm != NULL);
+    if (IsMainFormLike(Form))
+    {
+      if (Form->Showing)
+      {
+        if (Application->MainForm != Form)
+        {
+          MainLikeForm = AForm;
+
+          // When main form is hidden, no taskbar button for it is shown and
+          // this window does not become main window, so there won't be no taskbar
+          // icon created automatically (by VCL). So we force is manually here.
+          // This particularly happen for all windows/dialogs of command-line
+          // operations (e.g. /synchronize) after CreateScpExplorer() happens.
+
+          // Also CM_SHOWINGCHANGED happens twice, and the WS_EX_APPWINDOW flag
+          // from the first call is not preserved, re-applying on the second call too.
+
+          // TODO: What about minimize to tray?
+
+          int Style = GetWindowLong(Form->Handle, GWL_EXSTYLE);
+          if (FLAGCLEAR(Style, WS_EX_APPWINDOW))
+          {
+            Style |= WS_EX_APPWINDOW;
+            SetWindowLong(Form->Handle, GWL_EXSTYLE, Style);
+          }
+        }
+
+        if (Form->Perform(WM_MANAGES_CAPTION, 0, 0) == 0)
+        {
+          Form->Caption = FormatFormCaption(Form, Form->Caption);
+        }
+        SendMessage(Form->Handle, WM_SETICON, ICON_BIG, reinterpret_cast<long>(Application->Icon->Handle));
+      }
+      else
+      {
+        if (MainLikeForm == Form)
+        {
+          // Do not bother with hiding the WS_EX_APPWINDOW flag
+          // as the window is closing anyway.
+          MainLikeForm = NULL;
+        }
+      }
+    }
+
+    // Part of following code (but actually not all, TODO), has to happen
+    // for all windows when VCL main window is hidden (psrticularly the last branch).
+    // This is different from above brach, that should happen only for top-level visible window.
     if ((Application->MainForm == Form) ||
         // this particularly happens if error occurs while main
         // window is being shown (e.g. non existent local directory when opening
         // explorer)
         ((Application->MainForm != NULL) && !Application->MainForm->Visible))
     {
-      if (Form->Showing)
-      {
-        SendMessage(Form->Handle, WM_SETICON, ICON_BIG, reinterpret_cast<long>(Application->Icon->Handle));
-      }
-
       if (!Form->Showing)
       {
         // when closing main form, remember its monitor,
@@ -204,7 +311,7 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
                  (AForm->Position != poDefaultPosOnly))
         {
           // we do not expect any other positioning
-          assert(false);
+          FAIL;
         }
       }
       else
@@ -324,6 +431,7 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
   // WORKAROUND
   // VCL does not scale status par panels (while for instance it does
   // scale list view headers). Remove this if they ever "fix" this.
+  // Check TCustomStatusBar.ChangeScale() for changes.
   // For TBX status bars, this is implemented in TTBXCustomStatusBar.ChangeScale
   TStatusBar * StatusBar = dynamic_cast<TStatusBar *>(Control);
   if (StatusBar != NULL)
@@ -522,7 +630,7 @@ bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt
   {
     UnicodeString Directory;
     UnicodeString FileName;
-    if (!PreserveFileName || DirectoryExists(Path))
+    if (!PreserveFileName || DirectoryExists(::ApiPath(Path)))
     {
       Directory = Path;
     }
@@ -708,7 +816,7 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
   }
   else
   {
-    assert(false);
+    FAIL;
     Result = 0;
   }
   return Result;
@@ -1069,7 +1177,7 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
   if (Message.Msg == WM_LBUTTONDOWN)
   {
     StaticText->SetFocus();
-    // in case the action takes long, make sure focus is shown immediatelly
+    // in case the action takes long, make sure focus is shown immediately
     UpdateWindow(StaticText->Handle);
     Clicked = true;
     Message.Result = 1;
@@ -1097,7 +1205,7 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
         IsAccel(reinterpret_cast<TCMDialogChar &>(Message).CharCode, StaticText->Caption))
     {
       StaticText->SetFocus();
-      // in case the action takes long, make sure focus is shown immediatelly
+      // in case the action takes long, make sure focus is shown immediately
       UpdateWindow(StaticText->Handle);
       Clicked = true;
       Message.Result = 1;
@@ -1427,7 +1535,7 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
   StaticText->Transparent = false;
   StaticText->ParentFont = true;
   StaticText->Font->Style = StaticText->Font->Style << fsUnderline;
-  StaticText->Font->Color = clBlue;
+  StaticText->Font->Color = LinkColor;
   StaticText->Cursor = crHandPoint;
   reinterpret_cast<TButton*>(StaticText)->OnEnter = OnEnter;
   if (!Url.IsEmpty())
@@ -1591,7 +1699,7 @@ bool __fastcall SupportsSplitButton()
   return (Win32MajorVersion >= 6);
 }
 //---------------------------------------------------------------------------
-static TButton * __fastcall FindDefaultButton(TWinControl * Control)
+TButton * __fastcall FindDefaultButton(TWinControl * Control)
 {
   TButton * Result = NULL;
   int Index = 0;
@@ -1635,6 +1743,29 @@ TModalResult __fastcall DefaultResult(TCustomForm * Form)
     Result = mrOk;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall MemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift)
+{
+  // Sender can be Form or Memo itself
+  TControl * Control = dynamic_cast<TControl *>(Sender);
+  if (ALWAYS_TRUE(Control != NULL))
+  {
+    TCustomForm * Form = GetParentForm(Control);
+    // Particularly when WantReturns is true,
+    // memo swallows also Esc, so we have to handle it ourselves.
+    // See also ReadOnlyControl.
+    if ((Key == VK_ESCAPE) && Shift.Empty())
+    {
+      Form->ModalResult = mrCancel;
+      Key = 0;
+    }
+    else if ((Key == VK_RETURN) && Shift.Contains(ssCtrl))
+    {
+      Form->ModalResult = DefaultResult(Form);
+      Key = 0;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall SetFormIcon(TForm * Form, int Size, const UnicodeString & IconName)

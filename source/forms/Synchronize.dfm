@@ -6,7 +6,7 @@ object SynchronizeDialog: TSynchronizeDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Keep remote directory up to date X'
-  ClientHeight = 421
+  ClientHeight = 445
   ClientWidth = 436
   Color = clBtnFace
   ParentFont = True
@@ -18,7 +18,7 @@ object SynchronizeDialog: TSynchronizeDialog
   OnShow = FormShow
   DesignSize = (
     436
-    421)
+    445)
   PixelsPerInch = 96
   TextHeight = 13
   object DirectoriesGroup: TGroupBox
@@ -138,7 +138,7 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object StopButton: TButton
     Left = 192
-    Top = 288
+    Top = 312
     Width = 74
     Height = 25
     Anchors = [akTop, akRight]
@@ -148,7 +148,7 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object CancelButton: TButton
     Left = 272
-    Top = 288
+    Top = 312
     Width = 74
     Height = 25
     Anchors = [akTop, akRight]
@@ -161,13 +161,13 @@ object SynchronizeDialog: TSynchronizeDialog
     Left = 8
     Top = 130
     Width = 421
-    Height = 95
+    Height = 119
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Synchronize options'
     TabOrder = 1
     DesignSize = (
       421
-      95)
+      119)
     object SynchronizeDeleteCheck: TCheckBox
       Left = 11
       Top = 20
@@ -179,11 +179,11 @@ object SynchronizeDialog: TSynchronizeDialog
     end
     object SaveSettingsCheck: TCheckBox
       Left = 11
-      Top = 68
+      Top = 92
       Width = 196
       Height = 17
       Caption = 'Use same &options next time'
-      TabOrder = 4
+      TabOrder = 6
       OnClick = ControlChange
     end
     object SynchronizeExistingOnlyCheck: TCheckBox
@@ -225,10 +225,19 @@ object SynchronizeDialog: TSynchronizeDialog
       TabOrder = 3
       OnClick = ControlChange
     end
+    object ContinueOnErrorCheck: TCheckBox
+      Left = 11
+      Top = 68
+      Width = 196
+      Height = 17
+      Caption = 'Continue on &error'
+      TabOrder = 4
+      OnClick = ControlChange
+    end
   end
   object StartButton: TButton
     Left = 192
-    Top = 288
+    Top = 312
     Width = 74
     Height = 25
     Anchors = [akTop, akRight]
@@ -239,7 +248,7 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object MinimizeButton: TButton
     Left = 273
-    Top = 288
+    Top = 312
     Width = 74
     Height = 25
     Anchors = [akTop, akRight]
@@ -249,7 +258,7 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object TransferSettingsButton: TButton
     Left = 8
-    Top = 288
+    Top = 312
     Width = 161
     Height = 25
     Caption = 'Transfer settin&gs...'
@@ -259,7 +268,7 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object CopyParamGroup: TGroupBox
     Left = 8
-    Top = 230
+    Top = 254
     Width = 421
     Height = 50
     Anchors = [akLeft, akTop, akRight]
@@ -284,7 +293,7 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object HelpButton: TButton
     Left = 353
-    Top = 288
+    Top = 312
     Width = 75
     Height = 25
     Anchors = [akTop, akRight]
@@ -294,7 +303,7 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object LogPanel: TPanel
     Left = 0
-    Top = 321
+    Top = 345
     Width = 436
     Height = 100
     Align = alBottom
@@ -327,6 +336,9 @@ object SynchronizeDialog: TSynchronizeDialog
       ShowColumnHeaders = False
       TabOrder = 0
       ViewStyle = vsReport
+      OnCustomDrawItem = LogViewCustomDrawItem
+      OnDblClick = LogViewDblClick
+      OnDeletion = LogViewDeletion
       OnKeyDown = LogViewKeyDown
     end
   end

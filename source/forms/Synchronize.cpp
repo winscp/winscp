@@ -16,6 +16,7 @@
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <CustomWinConfiguration.h>
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
@@ -29,11 +30,15 @@ const int WM_USER_STOP = WM_WINSCP_USER + 2;
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
   bool & SaveSettings, int Options, int CopyParamAttrs,
-  TGetSynchronizeOptionsEvent OnGetOptions, bool Start)
+  TGetSynchronizeOptionsEvent OnGetOptions,
+  TFeedSynchronizeError & OnFeedSynchronizeError,
+  bool Start)
 {
   bool Result;
-  TSynchronizeDialog * Dialog = new TSynchronizeDialog(Application,
-    OnStartStop, OnGetOptions, Start);
+  TSynchronizeDialog * Dialog = SafeFormCreate<TSynchronizeDialog>(Application);
+
+  Dialog->Init(OnStartStop, OnGetOptions, OnFeedSynchronizeError, Start);
+
   try
   {
     Dialog->Options = Options;
@@ -58,9 +63,16 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
 //---------------------------------------------------------------------------
 const TSynchronizeDialog::MaxLogItems = 1000;
 //---------------------------------------------------------------------------
-__fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner,
-  TSynchronizeStartStopEvent OnStartStop, TGetSynchronizeOptionsEvent OnGetOptions,
-  bool StartImmediatelly)
+struct TLogItemData
+{
+  TSynchronizeLogEntry Entry;
+  UnicodeString Message;
+  std::unique_ptr<TStrings> MoreMessages;
+  TQueryType Type;
+  UnicodeString HelpKeyword;
+};
+//---------------------------------------------------------------------------
+__fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner)
   : TForm(Owner)
 {
   UseSystemSettings(this);
@@ -68,15 +80,23 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner,
   FSynchronizing = false;
   FMinimizedByMe = false;
   FPresetsMenu = new TPopupMenu(this);
-  FOnStartStop = OnStartStop;
-  FOnGetOptions = OnGetOptions;
   FSynchronizeOptions = NULL;
-  FStartImmediatelly = StartImmediatelly;
 
   HotTrackLabel(CopyParamLabel);
   CopyParamListButton(TransferSettingsButton);
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::Init(TSynchronizeStartStopEvent OnStartStop,
+  TGetSynchronizeOptionsEvent OnGetOptions,
+  TFeedSynchronizeError & OnFeedSynchronizeError,
+  bool StartImmediately)
+{
+  FOnStartStop = OnStartStop;
+  FOnGetOptions = OnGetOptions;
+  FOnFeedSynchronizeError = &OnFeedSynchronizeError;
+  FStartImmediately = StartImmediately;
 }
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeDialog::~TSynchronizeDialog()
@@ -93,6 +113,16 @@ __fastcall TSynchronizeDialog::~TSynchronizeDialog()
 
   delete FSynchronizeOptions;
   delete FPresetsMenu;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::FeedSynchronizeError(
+  const UnicodeString & Message, TStrings * MoreMessages, TQueryType Type,
+  const UnicodeString & HelpKeyword)
+{
+  UnicodeString AMessage = Message;
+  AMessage = ReplaceStr(AMessage, L"\r", L"");
+  AMessage = ReplaceStr(AMessage, L"\n", L" ");
+  DoLogInternal(slContinuedError, AMessage, MoreMessages, Type, HelpKeyword);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::UpdateControls()
@@ -114,7 +144,7 @@ void __fastcall TSynchronizeDialog::UpdateControls()
     // some of the above steps hides accelerators when start button is pressed with mouse
     ResetSystemSettings(this);
   }
-  Caption = LoadStr(FSynchronizing ? SYNCHRONIZE_SYCHRONIZING : SYNCHRONIZE_TITLE);
+  Caption = FormatFormCaption(this, LoadStr(FSynchronizing ? SYNCHRONIZE_SYCHRONIZING : SYNCHRONIZE_TITLE));
   EnableControl(TransferSettingsButton, !FSynchronizing);
   CancelButton->Visible = !FSynchronizing || FLAGSET(FOptions, soNoMinimize);
   EnableControl(CancelButton, !FSynchronizing);
@@ -179,6 +209,7 @@ void __fastcall TSynchronizeDialog::SetParams(const TSynchronizeParamType& value
   SynchronizeSynchronizeCheck->State =
     FLAGSET(value.Options, soSynchronizeAsk) ? cbGrayed :
       (FLAGSET(value.Options, soSynchronize) ? cbChecked : cbUnchecked);
+  ContinueOnErrorCheck->Checked = FLAGSET(value.Options, soContinueOnError);
 }
 //---------------------------------------------------------------------------
 TSynchronizeParamType __fastcall TSynchronizeDialog::GetParams()
@@ -192,10 +223,11 @@ TSynchronizeParamType __fastcall TSynchronizeDialog::GetParams()
     FLAGMASK(SynchronizeExistingOnlyCheck->Checked, spExistingOnly) |
     FLAGMASK(SynchronizeSelectedOnlyCheck->Checked, spSelectedOnly);
   Result.Options =
-    (Result.Options & ~(soRecurse | soSynchronize | soSynchronizeAsk)) |
+    (Result.Options & ~(soRecurse | soSynchronize | soSynchronizeAsk | soContinueOnError)) |
     FLAGMASK(SynchronizeRecursiveCheck->Checked, soRecurse) |
     FLAGMASK(SynchronizeSynchronizeCheck->State == cbChecked, soSynchronize) |
-    FLAGMASK(SynchronizeSynchronizeCheck->State == cbGrayed, soSynchronizeAsk);
+    FLAGMASK(SynchronizeSynchronizeCheck->State == cbGrayed, soSynchronizeAsk) |
+    FLAGMASK(ContinueOnErrorCheck->Checked, soContinueOnError);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -251,19 +283,27 @@ void __fastcall TSynchronizeDialog::DoStartStop(bool Start, bool Synchronize)
       FLAGMASK(Synchronize, soSynchronize);
     if (Start)
     {
+      assert(*FOnFeedSynchronizeError == NULL);
+      *FOnFeedSynchronizeError =
+        (FLAGSET(SParams.Options, soContinueOnError) ? &FeedSynchronizeError : TFeedSynchronizeError(NULL));
       delete FSynchronizeOptions;
       FSynchronizeOptions = new TSynchronizeOptions;
       FOnGetOptions(SParams.Params, *FSynchronizeOptions);
+    }
+    else
+    {
+      *FOnFeedSynchronizeError = NULL;
     }
     FOnStartStop(this, Start, SParams, CopyParams, FSynchronizeOptions, DoAbort,
       NULL, DoLog);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeDialog::Dispatch(void * Message)
+void __fastcall TSynchronizeDialog::Dispatch(void * AMessage)
 {
-  assert(Message);
-  if ((reinterpret_cast<TMessage *>(Message)->Msg == WM_USER_STOP) && FAbort)
+  assert(AMessage != NULL);
+  TMessage & Message = *reinterpret_cast<TMessage *>(AMessage);
+  if ((Message.Msg == WM_USER_STOP) && FAbort)
   {
     if (FSynchronizing)
     {
@@ -275,9 +315,14 @@ void __fastcall TSynchronizeDialog::Dispatch(void * Message)
       ModalResult = mrCancel;
     }
   }
+  else if (Message.Msg == WM_MANAGES_CAPTION)
+  {
+    // caption managed in UpdateControls()
+    Message.Result = 1;
+  }
   else
   {
-    TForm::Dispatch(Message);
+    TForm::Dispatch(AMessage);
   }
 }
 //---------------------------------------------------------------------------
@@ -288,13 +333,27 @@ void __fastcall TSynchronizeDialog::DoAbort(TObject * /*Sender*/, bool Close)
   PostMessage(Handle, WM_USER_STOP, 0, 0);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeDialog::DoLog(TSynchronizeController * /*Controller*/,
-  TSynchronizeLogEntry Entry, const UnicodeString Message)
+void __fastcall TSynchronizeDialog::DoLogInternal(
+  TSynchronizeLogEntry Entry, const UnicodeString & Message,
+  TStrings * MoreMessages, TQueryType Type, const UnicodeString & HelpKeyword)
 {
   LogView->Items->BeginUpdate();
   try
   {
     TListItem * Item = LogView->Items->Add();
+
+    TLogItemData * LogItemData = new TLogItemData();
+    Item->Data = LogItemData;
+    LogItemData->Entry = Entry;
+    LogItemData->Message = Message;
+    if (MoreMessages != NULL)
+    {
+      LogItemData->MoreMessages.reset(new TStringList());
+      LogItemData->MoreMessages->Assign(MoreMessages);
+    }
+    LogItemData->Type = Type;
+    LogItemData->HelpKeyword = HelpKeyword;
+
     Item->Caption = Now().TimeString();
     Item->SubItems->Add(Message);
     Item->MakeVisible(false);
@@ -312,6 +371,14 @@ void __fastcall TSynchronizeDialog::DoLog(TSynchronizeController * /*Controller*
       LogView->Repaint();
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::DoLog(TSynchronizeController * /*Controller*/,
+  TSynchronizeLogEntry Entry, const UnicodeString Message)
+{
+  DoLogInternal(Entry, Message,
+    // these are unused (as Entry is not slContinuedError here)
+    NULL, qtInformation, UnicodeString());
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
@@ -430,12 +497,12 @@ void __fastcall TSynchronizeDialog::FormShow(TObject * /*Sender*/)
   {
     ClearLog();
     UpdateControls();
-    if (FStartImmediatelly)
+    if (FStartImmediately)
     {
       // if starting get cancelled (from SYNCHRONISE_BEFORE_KEEPUPTODATE2 prompt),
       // and OnShow gets called again (FSynchronizing is false),
       // we do not want to try to start again
-      FStartImmediatelly = false;
+      FStartImmediately = false;
       StartButtonClick(NULL);
     }
   }
@@ -558,5 +625,40 @@ void __fastcall TSynchronizeDialog::FormKeyDown(TObject * /*Sender*/, WORD & Key
 void __fastcall TSynchronizeDialog::TransferSettingsButtonDropDownClick(TObject * /*Sender*/)
 {
   CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), cplCustomizeDefault);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::LogViewCustomDrawItem(TCustomListView * Sender,
+  TListItem * Item, TCustomDrawState /*State*/, bool & /*DefaultDraw*/)
+{
+  TLogItemData * LogItemData = GetLogItemData(Item);
+  if (LogItemData->Entry == slContinuedError)
+  {
+    Sender->Canvas->Font->Color = clRed;
+  }
+}
+//---------------------------------------------------------------------------
+TLogItemData * __fastcall TSynchronizeDialog::GetLogItemData(TListItem * Item)
+{
+  return reinterpret_cast<TLogItemData *>(Item->Data);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::LogViewDeletion(TObject * /*Sender*/, TListItem * Item)
+{
+  delete GetLogItemData(Item);
+  Item->Data = NULL;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::LogViewDblClick(TObject * /*Sender*/)
+{
+  if (LogView->ItemFocused != NULL)
+  {
+    TLogItemData * LogItemData = GetLogItemData(LogView->ItemFocused);
+    if (LogItemData->Entry == slContinuedError)
+    {
+      MoreMessageDialog(
+        LogItemData->Message, LogItemData->MoreMessages.get(), LogItemData->Type,
+        qaOK, LogItemData->HelpKeyword);
+    }
+  }
 }
 //---------------------------------------------------------------------------

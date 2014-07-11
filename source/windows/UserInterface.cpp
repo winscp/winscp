@@ -23,6 +23,7 @@
 #include "Custom.h"
 #include "HelpWin.h"
 #include <Math.hpp>
+#include <PasTools.hpp>
 #include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -31,7 +32,9 @@ const UnicodeString AppName = L"WinSCP";
 //---------------------------------------------------------------------------
 TConfiguration * __fastcall CreateConfiguration()
 {
-  TConfiguration * Configuration = new TWinConfiguration();
+  WinConfiguration = new TWinConfiguration();
+  CustomWinConfiguration = WinConfiguration;
+  GUIConfiguration = CustomWinConfiguration;
 
   TProgramParams * Params = TProgramParams::Instance();
   UnicodeString IniFileName = Params->SwitchValue(L"ini");
@@ -39,16 +42,16 @@ TConfiguration * __fastcall CreateConfiguration()
   {
     if (AnsiSameText(IniFileName, L"nul"))
     {
-      Configuration->SetNulStorage();
+      WinConfiguration->SetNulStorage();
     }
     else
     {
       IniFileName = ExpandFileName(ExpandEnvironmentVariables(IniFileName));
-      Configuration->IniFileStorageName = IniFileName;
+      WinConfiguration->IniFileStorageName = IniFileName;
     }
   }
 
-  return Configuration;
+  return WinConfiguration;
 }
 //---------------------------------------------------------------------------
 TCustomScpExplorerForm * __fastcall CreateScpExplorer()
@@ -198,7 +201,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
           break;
 
         default:
-          assert(false);
+          FAIL;
       }
     }
     else if (Result == qaRetry)
@@ -416,7 +419,7 @@ static void __fastcall ToolbarWriteString(const UnicodeString ToolbarName,
   Storage->Values[ToolbarKey] = Data;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent)
+UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent)
 {
   UnicodeString Result;
   TStrings * Storage = new TStringList();

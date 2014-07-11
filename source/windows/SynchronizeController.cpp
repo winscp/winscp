@@ -159,7 +159,7 @@ void __fastcall TSynchronizeController::SynchronizeChange(
                 }
                 else
                 {
-                  assert(false);
+                  FAIL;
                 }
               }
             }
@@ -205,7 +205,7 @@ void __fastcall TSynchronizeController::LogOperation(TSynchronizeOperation Opera
       break;
 
     default:
-      assert(false);
+      FAIL;
       // fallthru
 
     case soUpload:

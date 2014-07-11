@@ -16,7 +16,7 @@ __fastcall TBookmarks::TBookmarks(): TObject()
   FBookmarkLists = new TStringList();
   FBookmarkLists->Sorted = true;
   FBookmarkLists->CaseSensitive = false;
-  FBookmarkLists->Duplicates = dupError;
+  FBookmarkLists->Duplicates = Types::dupError;
 }
 //---------------------------------------------------------------------------
 __fastcall TBookmarks::~TBookmarks()

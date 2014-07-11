@@ -55,6 +55,7 @@ public:
   void __fastcall Command(UnicodeString Cmd);
   void __fastcall Log(TLogLineType Type, AnsiString Str);
   void __fastcall PrintLine(const UnicodeString Str);
+  void __fastcall StartInteractive();
 
   void __fastcall Synchronize(const UnicodeString LocalDirectory,
     const UnicodeString RemoteDirectory, const TCopyParamType & CopyParam,
@@ -83,8 +84,11 @@ protected:
   TCopyParamType FCopyParam;
   bool FIncludeFileMaskOptionUsed;
   TBatchMode FBatch;
+  TBatchMode FInteractiveBatch;
   bool FConfirm;
+  bool FInteractiveConfirm;
   bool FEcho;
+  bool FFailOnNoMatch;
   int FSynchronizeParams;
   int FSynchronizeMode;
   bool FKeepingUpToDate;
@@ -94,6 +98,8 @@ protected:
   bool FGroups;
   bool FWantsProgress;
   TStrings * FPendingLogLines;
+  bool FWarnNonDefaultCopyParam;
+  bool FWarnNonDefaultSynchronizeParams;
 
   virtual void __fastcall ResetTransfer();
   virtual void __fastcall ConnectTerminal(TTerminal * ATerminal);
@@ -160,6 +166,9 @@ private:
   void __fastcall SetSynchronizeParams(int value);
   TTransferMode __fastcall ParseTransferModeName(UnicodeString Name);
   inline bool __fastcall IsTerminalLogging(TTerminal * ATerminal);
+  void __fastcall CheckDefaultCopyParam();
+  bool __fastcall HasNonDefaultCopyParams();
+  void __fastcall CheckDefaultSynchronizeParams();
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TScriptInputEvent)(TScript * Script, const UnicodeString Prompt, UnicodeString & Str);
@@ -200,8 +209,7 @@ protected:
   void __fastcall Input(const UnicodeString Prompt, UnicodeString & Str, bool AllowEmpty);
   void __fastcall TerminalInformation(TTerminal * Terminal, const UnicodeString & Str,
     bool Status, int Phase);
-  void __fastcall TerminalOperationProgress(TFileOperationProgressType & ProgressData,
-    TCancelStatus & Cancel);
+  void __fastcall TerminalOperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall TerminalOperationFinished(TFileOperation Operation, TOperationSide Side,
     bool Temp, const UnicodeString & FileName, Boolean Success,
     TOnceDoneOperation & OnceDoneOperation);

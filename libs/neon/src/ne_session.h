@@ -46,10 +46,9 @@ void ne_session_destroy(ne_session *sess);
  * session. */
 void ne_close_connection(ne_session *sess);
 
-/* Set the proxy server to be used for the session.  This function
- * will override (remove) any proxy servers previously configured, and
- * must be called before any requests are created using this
- * session. */
+/* Configure an HTTP proxy server for the session.  This function will
+ * override (remove) any proxy servers previously configured, and must
+ * be called before any requests are created using this session. */
 void ne_session_proxy(ne_session *sess,
 		      const char *hostname, unsigned int port);
 
@@ -118,6 +117,16 @@ int ne_get_session_flag(ne_session *sess, ne_session_flag flag);
  * previously configured, and must be called before any requests are
  * created using this session.  */
 void ne_set_addrlist(ne_session *sess, const ne_inet_addr **addrs, size_t n);
+
+/* Bypass the normal name resolution; force the use of specific set of
+ * addresses for this session, addrs[0]...addrs[n-1].  The 'addrs'
+ * array and pointed-to objects must remain valid until the session is
+ * destroyed.  This function will override (remove) any proxy servers
+ * previously configured, and must be called before any requests are
+ * created using this session.  Port number 'port' will be used
+ * instead of the "real" session port, to connect to the proxy. */
+void ne_set_addrlist2(ne_session *sess, unsigned int port, 
+                      const ne_inet_addr **addrs, size_t n);
 
 /* Bind connections to the specified local address.  If the address
  * determined for the remote host has a different family (type) to
@@ -284,6 +293,13 @@ typedef void (*ne_ssl_provide_fn)(void *userdata, ne_session *sess,
  * certificate. */
 void ne_ssl_provide_clicert(ne_session *sess, 
                             ne_ssl_provide_fn fn, void *userdata);
+
+#ifdef WINSCP
+const char * ne_ssl_get_version(ne_session *sess);
+char * ne_ssl_get_cipher(ne_session *sess);
+struct ssl_st;
+void ne_init_ssl_session(struct ssl_st *ssl, ne_session *sess);
+#endif                            
 
 /* Set the timeout (in seconds) used when reading from a socket.  The
  * timeout value must be greater than zero. */

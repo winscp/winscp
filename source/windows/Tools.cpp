@@ -28,7 +28,7 @@
 //---------------------------------------------------------------------------
 // WORKAROUND
 // VCL includes wininet.h (even with NO_WIN32_LEAN_AND_MEAN)
-// and it cannot be compined with winhttp.h as of current Windows SDK.
+// and it cannot be combined with winhttp.h as of current Windows SDK.
 // This is hack to allow that.
 // http://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/8f468d9f-3f15-452c-803d-fc63ab3f684e/cannot-use-both-winineth-and-winhttph
 #undef BOOLAPI
@@ -476,11 +476,9 @@ void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory)
 //---------------------------------------------------------------------------
 TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo)
 {
-  TStrings * Result = new TStringList();
   // This removes soft linebreakes when text in memo wraps
   // (Memo->Lines includes soft linebreaks, while Memo->Text does not)
-  Result->Text = Memo->Text;
-  return Result;
+  return TextToStringList(Memo->Text);
 }
 //---------------------------------------------------------------------------
 void __fastcall ExitActiveControl(TForm * Form)
@@ -544,7 +542,7 @@ void __fastcall CloseTextFromClipboard(HANDLE Handle)
   CloseClipboard();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TextFromClipboard(UnicodeString & Text)
+bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim)
 {
   const wchar_t * AText = NULL;
   HANDLE Handle = OpenTextFromClipboard(AText);
@@ -552,6 +550,10 @@ bool __fastcall TextFromClipboard(UnicodeString & Text)
   if (Result)
   {
     Text = AText;
+    if (Trim)
+    {
+      Text = Text.Trim();
+    }
     CloseTextFromClipboard(Handle);
   }
   return Result;
@@ -596,7 +598,7 @@ bool __fastcall DumpResourceToFile(const UnicodeString ResName,
 
   if (Result)
   {
-    FILE * f = _wfopen(FileName.c_str(), L"wb");
+    FILE * f = _wfopen(::ApiPath(FileName).c_str(), L"wb");
     if (!f)
     {
       throw Exception(FORMAT(L"Cannot create file %s", (FileName)));
@@ -902,15 +904,24 @@ static void __fastcall DoVerifyKey(
     TKeyType Type = KeyType(FileName);
     UnicodeString Message;
     UnicodeString HelpKeyword = HELP_LOGIN_KEY_TYPE;
+    UnicodeString PuttygenPath;
+    bool TryPuttygen = false;
     switch (Type)
     {
       case ktOpenSSH:
-        Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, L"OpenSSH SSH-2"));
-        HelpKeyword = HELP_KEY_TYPE_UNSUPPORTED;
-        break;
-
       case ktSSHCom:
-        Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, L"ssh.com SSH-2"));
+        {
+          UnicodeString TypeName = (Type == ktOpenSSH) ? L"OpenSSH SSH-2" : L"ssh.com SSH-2";
+          TryPuttygen = FindTool(PuttygenTool, PuttygenPath);
+          if (TryPuttygen)
+          {
+            Message = FMTLOAD(KEY_TYPE_CONVERT, (TypeName, FileName, TypeName));
+          }
+          else
+          {
+            Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, TypeName));
+          }
+        }
         HelpKeyword = HELP_KEY_TYPE_UNSUPPORTED;
         break;
 
@@ -930,7 +941,7 @@ static void __fastcall DoVerifyKey(
         break;
 
       default:
-        assert(false);
+        FAIL;
         // fallthru
       case ktUnopenable:
       case ktUnknown:
@@ -940,11 +951,26 @@ static void __fastcall DoVerifyKey(
 
     if (!Message.IsEmpty())
     {
-      Configuration->Usage->Inc(L"PrivateKeySelectErrors");
-      if (MessageDialog(Message, qtWarning, qaIgnore | qaAbort,
-           HelpKeyword) == qaAbort)
+      if (TryPuttygen)
       {
+        Configuration->Usage->Inc(L"PrivateKeyConvertSuggestions");
+        if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HelpKeyword) == qaOK)
+        {
+          if (!ExecuteShell(PuttygenPath, AddPathQuotes(FileName)))
+          {
+            throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (PuttygenPath)));
+          }
+        }
         Abort();
+      }
+      else
+      {
+        Configuration->Usage->Inc(L"PrivateKeySelectErrors");
+        if (MessageDialog(Message, qtWarning, qaIgnore | qaAbort,
+             HelpKeyword) == qaAbort)
+        {
+          Abort();
+        }
       }
     }
   }
@@ -1012,7 +1038,7 @@ bool __fastcall AutodetectProxyUrl(UnicodeString & Proxy)
 {
   bool Result = false;
 
-  /* Forst we try for proxy info direct from the registry if
+  /* First we try for proxy info direct from the registry if
      it's available. */
   WINHTTP_PROXY_INFO ProxyInfo;
   memset(&ProxyInfo, 0, sizeof(ProxyInfo));
@@ -1111,20 +1137,20 @@ bool __fastcall TWinHelpTester::CanShowALink(const UnicodeString ALink,
 bool __fastcall TWinHelpTester::CanShowTopic(const UnicodeString Topic,
   const UnicodeString FileName)
 {
-  assert(false);
+  FAIL;
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinHelpTester::CanShowContext(const int /*Context*/,
   const UnicodeString FileName)
 {
-  assert(false);
+  FAIL;
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinHelpTester::GetHelpStrings(const UnicodeString ALink)
 {
-  assert(false);
+  FAIL;
   TStringList * Result = new TStringList();
   Result->Add(ViewerName + L": " + ALink);
   return Result;

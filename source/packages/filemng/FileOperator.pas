@@ -185,6 +185,8 @@ resourcestring
 implementation
 {==============================================================}
 
+uses
+  PasTools;
 
 { TFileOperator }
 
@@ -311,7 +313,8 @@ Begin
   Result := '';
   For i := 0 to Pred(List.Count) Do
   Begin
-    Result := Result + List[i];
+    // SHFileOperation does not support long paths anyway
+    Result := Result + ApiPath(List[i]);
     SetLength(Result, Succ(Length(Result)));
     Result[Length(Result)] := #0;
   End;

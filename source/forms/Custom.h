@@ -37,6 +37,7 @@ public:
   __fastcall TCustomDialog(UnicodeString HelpKeyword);
 
   TLabel * __fastcall CreateLabel(UnicodeString Label);
+  TCheckBox * __fastcall CreateAndAddCheckBox(const UnicodeString & Caption);
   void __fastcall AddEditLikeControl(TWinControl * Edit, TLabel * Label);
   void __fastcall AddEdit(TCustomEdit * Edit, TLabel * Label);
   void __fastcall AddComboBox(TCustomCombo * Combo, TLabel * Label);

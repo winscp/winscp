@@ -42,7 +42,7 @@ typedef void __fastcall (__closure *TExtendedExceptionEvent)
   (TTerminal * Terminal, Exception * E, void * Arg);
 typedef void __fastcall (__closure *TReadDirectoryEvent)(System::TObject * Sender, Boolean ReloadOnly);
 typedef void __fastcall (__closure *TReadDirectoryProgressEvent)(
-  System::TObject* Sender, int Progress, bool & Cancel);
+  System::TObject* Sender, int Progress, int ResolvedLinks, bool & Cancel);
 typedef void __fastcall (__closure *TProcessFileEvent)
   (const UnicodeString FileName, const TRemoteFile * File, void * Param);
 typedef void __fastcall (__closure *TProcessFileEventEx)
@@ -59,46 +59,44 @@ typedef int __fastcall (__closure *TDirectoryModifiedEvent)
 typedef void __fastcall (__closure *TInformationEvent)
   (TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase);
 //---------------------------------------------------------------------------
-#define SUSPEND_OPERATION(Command)                            \
-  {                                                           \
-    TSuspendFileOperationProgress Suspend(OperationProgress); \
-    Command                                                   \
-  }
-
 #define THROW_SKIP_FILE(EXCEPTION, MESSAGE) \
   throw EScpSkipFile(EXCEPTION, MESSAGE)
 #define THROW_SKIP_FILE_NULL THROW_SKIP_FILE(NULL, L"")
 
 /* TODO : Better user interface (query to user) */
-#define FILE_OPERATION_LOOP_CUSTOM(TERMINAL, ALLOW_SKIP, MESSAGE, OPERATION, HELPKEYWORD) { \
-  bool DoRepeat; \
-  do { \
-    DoRepeat = false; \
-    try { \
-      OPERATION;                                                            \
-    }                                                                       \
-    catch (EAbort & E)                                                      \
-    {                                                                       \
-      throw;                                                                \
-    }                                                                       \
-    catch (EScpSkipFile & E)                                                \
-    {                                                                       \
-      throw;                                                                \
-    }                                                                       \
-    catch (EFatal & E)                                                      \
-    {                                                                       \
-      throw;                                                                \
-    }                                                                       \
-    catch (Exception & E)                                                   \
-    {                                                                       \
-      TERMINAL->FileOperationLoopQuery(                                     \
-        E, OperationProgress, MESSAGE, ALLOW_SKIP, L"", HELPKEYWORD);       \
-      DoRepeat = true;                                                      \
-    } \
-  } while (DoRepeat); }
+#define FILE_OPERATION_LOOP_BEGIN \
+  { \
+    bool DoRepeat; \
+    do { \
+      DoRepeat = false; \
+      try \
 
-#define FILE_OPERATION_LOOP(MESSAGE, OPERATION) \
-  FILE_OPERATION_LOOP_EX(True, MESSAGE, OPERATION)
+#define FILE_OPERATION_LOOP_END_CUSTOM(MESSAGE, ALLOW_SKIP, HELPKEYWORD) \
+      catch (EAbort & E) \
+      { \
+        throw; \
+      } \
+      catch (EScpSkipFile & E) \
+      { \
+        throw; \
+      } \
+      catch (EFatal & E) \
+      { \
+        throw; \
+      } \
+      catch (Exception & E) \
+      { \
+        FILE_OPERATION_LOOP_TERMINAL->FileOperationLoopQuery( \
+          E, OperationProgress, MESSAGE, ALLOW_SKIP, L"", HELPKEYWORD); \
+        DoRepeat = true; \
+      } \
+    } while (DoRepeat); \
+  }
+
+#define FILE_OPERATION_LOOP_END_EX(MESSAGE, ALLOW_SKIP) \
+  FILE_OPERATION_LOOP_END_CUSTOM(MESSAGE, ALLOW_SKIP, L"")
+#define FILE_OPERATION_LOOP_END(MESSAGE) \
+  FILE_OPERATION_LOOP_END_EX(MESSAGE, true)
 //---------------------------------------------------------------------------
 enum TCurrentFSProtocol { cfsUnknown, cfsSCP, cfsSFTP, cfsFTP, cfsWebDAV };
 //---------------------------------------------------------------------------
@@ -136,6 +134,7 @@ public:
   static const int spBySize = 0x400; // cannot be combined with smBoth, has opposite meaning for spTimestamp
   static const int spSelectedOnly = 0x800; // not used by core
   static const int spMirror = 0x1000;
+  static const int spDefault = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
 
 // for TranslateLockedPath()
 friend class TRemoteFile;
@@ -229,6 +228,7 @@ private:
   UnicodeString __fastcall GetRememberedTunnelPassword();
   bool __fastcall GetStoredCredentialsTried();
   inline bool __fastcall InTransaction();
+  void __fastcall SaveCapabilities(TFileSystemInfo & FileSystemInfo);
   static UnicodeString __fastcall SynchronizeModeStr(TSynchronizeMode Mode);
   static UnicodeString __fastcall SynchronizeParamsStr(int Params);
 
@@ -238,7 +238,7 @@ protected:
   bool FTunnelOpening;
 
   void __fastcall DoStartReadDirectory();
-  void __fastcall DoReadDirectoryProgress(int Progress, bool & Cancel);
+  void __fastcall DoReadDirectoryProgress(int Progress, int ResolvedLinks, bool & Cancel);
   void __fastcall DoReadDirectory(bool ReloadOnly);
   void __fastcall DoCreateDirectory(const UnicodeString DirName);
   void __fastcall DoDeleteFile(const UnicodeString FileName, const TRemoteFile * File,
@@ -279,7 +279,8 @@ protected:
   void __fastcall OpenLocalFile(const UnicodeString FileName, unsigned int Access,
     int * Attrs, HANDLE * Handle, __int64 * ACTime, __int64 * MTime,
     __int64 * ATime, __int64 * Size, bool TryWriteReadOnly = true);
-  bool __fastcall AllowLocalFileTransfer(UnicodeString FileName, const TCopyParamType * CopyParam);
+  bool __fastcall AllowLocalFileTransfer(UnicodeString FileName,
+    const TCopyParamType * CopyParam, TFileOperationProgressType * OperationProgress);
   bool __fastcall HandleException(Exception * E);
   void __fastcall CalculateFileSize(UnicodeString FileName,
     const TRemoteFile * File, /*TCalculateSizeParams*/ void * Size);
@@ -290,10 +291,11 @@ protected:
   bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
     const TCopyParamType * CopyParam, bool AllowDirs);
   TBatchOverwrite __fastcall EffectiveBatchOverwrite(
-    const TCopyParamType * CopyParam, int Params,
+    const UnicodeString & FileName, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, bool Special);
   bool __fastcall CheckRemoteFile(
-    const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress);
+    const UnicodeString & FileName, const TCopyParamType * CopyParam,
+    int Params, TFileOperationProgressType * OperationProgress);
   unsigned int __fastcall ConfirmFileOverwrite(const UnicodeString FileName,
     const TOverwriteFileParams * FileParams, unsigned int Answers, TQueryParams * QueryParams,
     TOperationSide Side, const TCopyParamType * CopyParam, int Params,
@@ -303,6 +305,8 @@ protected:
     const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory,
     TSynchronizeOptions * Options, int Level, TSynchronizeChecklist * Checklist);
+  void __fastcall DoSynchronizeCollectFile(const UnicodeString FileName,
+    const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   void __fastcall SynchronizeCollectFile(const UnicodeString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   void __fastcall SynchronizeRemoteTimestamp(const UnicodeString FileName,
@@ -324,7 +328,6 @@ protected:
   void __fastcall OpenTunnel();
   void __fastcall CloseTunnel();
   void __fastcall DoInformation(const UnicodeString & Str, bool Status, int Phase = -1);
-  UnicodeString __fastcall FileUrl(const UnicodeString Protocol, const UnicodeString FileName);
   bool __fastcall PromptUser(TSessionData * Data, TPromptKind Kind,
     UnicodeString Name, UnicodeString Instructions, UnicodeString Prompt, bool Echo,
     int MaxLen, UnicodeString & Result);
@@ -347,7 +350,7 @@ protected:
   virtual void __fastcall Closed();
   virtual void __fastcall HandleExtendedException(Exception * E);
   bool __fastcall IsListenerFree(unsigned int PortNumber);
-  void __fastcall DoProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
+  void __fastcall DoProgress(TFileOperationProgressType & ProgressData);
   void __fastcall DoFinished(TFileOperation Operation, TOperationSide Side, bool Temp,
     const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall RollbackAction(TSessionAction & Action,
@@ -361,6 +364,12 @@ protected:
   UnicodeString __fastcall FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
   void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
   virtual TTerminal * __fastcall GetPasswordSource();
+  void __fastcall DoEndTransaction(bool Inform);
+  bool  __fastcall VerifyCertificate(
+    const UnicodeString & CertificateStorageKey, const UnicodeString & Fingerprint,
+    const UnicodeString & CertificateSubject, int Failures);
+  void __fastcall TTerminal::CacheCertificate(const UnicodeString & CertificateStorageKey,
+    const UnicodeString & Fingerprint, int Failures);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -447,7 +456,6 @@ public:
     TRemoteFileList *& FileList, bool CanLoad);
   void __fastcall MakeLocalFileList(const UnicodeString FileName,
     const TSearchRec Rec, void * Param);
-  UnicodeString __fastcall FileUrl(const UnicodeString FileName);
   bool __fastcall FileOperationLoopQuery(Exception & E,
     TFileOperationProgressType * OperationProgress, const UnicodeString Message,
     bool AllowSkip, UnicodeString SpecialRetry = L"", UnicodeString HelpKeyword = L"");

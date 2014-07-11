@@ -241,6 +241,7 @@ struct ne_lock *ne_lockstore_findbyuri(ne_lock_store *store,
 
 void ne_lock_using_parent(ne_request *req, const char *path)
 {
+    NE_DEBUG_WINSCP_CONTEXT(ne_get_session(req));
     struct lh_req_cookie *lrc = ne_get_request_private(req, HOOK_ID);
     ne_uri u = {0};
     struct lock_list *item;
@@ -279,6 +280,7 @@ void ne_lock_using_parent(ne_request *req, const char *path)
 
 void ne_lock_using_resource(ne_request *req, const char *uri, int depth)
 {
+    NE_DEBUG_WINSCP_CONTEXT(ne_get_session(req));
     struct lh_req_cookie *lrc = ne_get_request_private(req, HOOK_ID);
     struct lock_list *item;
     int match;
@@ -567,6 +569,7 @@ static int lk_startelm(void *userdata, int parent,
 {
     struct lock_ctx *ctx = userdata;
     int id;
+    NE_DEBUG_WINSCP_CONTEXT(ne_get_session(ctx->req));
 
     id = ne_xml_mapid(element_map, NE_XML_MAPLEN(element_map), nspace, name);
 

@@ -151,7 +151,7 @@ var
 implementation
 
 uses
-  {$IFDEF JR_D6} Variants, {$ENDIF} ActiveX, Menus, TB2Common, Winapi.oleacc;
+  {$IFDEF JR_D6} Variants, {$ENDIF} ActiveX, Menus, TB2Common, Winapi.oleacc, Types;
 
 const
   { Constants from OleAcc.h }

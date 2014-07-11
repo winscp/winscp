@@ -814,13 +814,22 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 195
+          Height = 171
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             389
-            195)
+            171)
+          object Label1: TLabel
+            Left = 16
+            Top = 143
+            Width = 84
+            Height = 13
+            Caption = 'Show file si&zes in:'
+            FocusControl = FormatSizeBytesCombo
+            OnClick = ControlChange
+          end
           object ShowHiddenFilesCheck: TCheckBox
             Left = 16
             Top = 21
@@ -833,68 +842,63 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DefaultDirIsHomeCheck: TCheckBox
             Left = 16
-            Top = 69
-            Width = 357
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Default directory is &home directory'
-            TabOrder = 2
-            OnClick = ControlChange
-          end
-          object DeleteToRecycleBinCheck: TCheckBox
-            Left = 16
             Top = 45
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Delete local files to recycle bin'
+            Caption = 'Default directory is &home directory'
             TabOrder = 1
             OnClick = ControlChange
           end
           object PreservePanelStateCheck: TCheckBox
             Left = 16
-            Top = 93
+            Top = 69
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Remember panels'#39' state when switching sessions'
-            TabOrder = 3
+            TabOrder = 2
             OnClick = ControlChange
           end
           object RenameWholeNameCheck: TCheckBox
+            Left = 16
+            Top = 93
+            Width = 357
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Select &whole name when renaming file'
+            TabOrder = 3
+            OnClick = ControlChange
+          end
+          object FullRowSelectCheck: TCheckBox
             Left = 16
             Top = 117
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Select &whole name when renaming file'
+            Caption = '&Full row select'
             TabOrder = 4
             OnClick = ControlChange
           end
-          object FormatSizeBytesCheck: TCheckBox
-            Left = 16
-            Top = 141
-            Width = 357
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Show file sizes in short &format'
+          object FormatSizeBytesCombo: TComboBox
+            Left = 264
+            Top = 140
+            Width = 108
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            MaxLength = 1
             TabOrder = 5
-            OnClick = ControlChange
-          end
-          object FullRowSelectCheck: TCheckBox
-            Left = 16
-            Top = 165
-            Width = 357
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = '&Full row select'
-            TabOrder = 6
-            OnClick = ControlChange
+            OnChange = ControlChange
+            Items.Strings = (
+              'Bytes'
+              'Kilobytes'
+              'Short format')
           end
         end
         object DoubleClickGroup: TGroupBox
           Left = 8
-          Top = 208
+          Top = 184
           Width = 389
           Height = 74
           Anchors = [akLeft, akTop, akRight]
@@ -1997,12 +2001,12 @@ object PreferencesDialog: TPreferencesDialog
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Enable transfer resume/transfer to temporary filename for'
           TabOrder = 0
-          object ResumeThresholdUnitLabel: TLabel
+          object ResumeThresholdUnitLabel2: TLabel
             Left = 136
             Top = 71
-            Width = 14
+            Width = 12
             Height = 13
-            Caption = 'KiB'
+            Caption = 'KB'
             FocusControl = ResumeThresholdEdit
           end
           object ResumeOnButton: TRadioButton
@@ -2211,13 +2215,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 51
+          Height = 81
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Automatic check for application updates'
           TabOrder = 0
           DesignSize = (
             389
-            51)
+            81)
           object Label12: TLabel
             Left = 16
             Top = 23
@@ -2240,10 +2244,20 @@ object PreferencesDialog: TPreferencesDialog
               'Weekly'
               'Monthly')
           end
+          object UpdatesShowOnStartup: TCheckBox
+            Left = 16
+            Top = 49
+            Width = 262
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Display information about update on startup'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
         end
         object UpdatesProxyGroup: TGroupBox
           Left = 8
-          Top = 152
+          Top = 182
           Width = 389
           Height = 142
           Anchors = [akLeft, akTop, akRight]
@@ -2324,7 +2338,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object UpdatesOptionsGroup: TGroupBox
           Left = 8
-          Top = 65
+          Top = 95
           Width = 389
           Height = 81
           Anchors = [akLeft, akTop, akRight]
@@ -2565,13 +2579,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 231
           Width = 389
-          Height = 53
+          Height = 77
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Miscellaneous'
           TabOrder = 2
           DesignSize = (
             389
-            53)
+            77)
           object MinimizeToTrayCheck: TCheckBox
             Left = 16
             Top = 21
@@ -2580,6 +2594,16 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Minimize main window to taskbar status area (system tray)'
             TabOrder = 0
+            OnClick = ControlChange
+          end
+          object ExternalSessionInExistingInstanceCheck: TCheckBox
+            Left = 16
+            Top = 45
+            Width = 361
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Open new externally initiated sessions in &existing window'
+            TabOrder = 1
             OnClick = ControlChange
           end
         end
@@ -2964,31 +2988,41 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 75
+          Height = 99
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Local panel'
           TabOrder = 0
           DesignSize = (
             389
-            75)
+            99)
           object PreserveLocalDirectoryCheck: TCheckBox
+            Left = 16
+            Top = 45
+            Width = 357
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Do not &change state when switching sessions'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+          object SystemContextMenuCheck: TCheckBox
+            Left = 16
+            Top = 69
+            Width = 357
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Use &system file context menu'
+            TabOrder = 2
+            OnClick = ControlChange
+          end
+          object DeleteToRecycleBinCheck: TCheckBox
             Left = 16
             Top = 21
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Do not &change state when switching sessions'
+            Caption = '&Delete files to recycle bin'
             TabOrder = 0
-            OnClick = ControlChange
-          end
-          object SystemContextMenuCheck: TCheckBox
-            Left = 16
-            Top = 44
-            Width = 357
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Use &system file context menu'
-            TabOrder = 1
             OnClick = ControlChange
           end
         end

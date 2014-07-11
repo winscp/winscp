@@ -160,7 +160,9 @@ begin
   end;
 end;
 
+{$IF RTLVersion > 18.0 }
 {$POINTERMATH ON}
+{$IFEND}
 function PatchPtr(OldPtr, NewPtr: Pointer; const Name: string; Patch: TMethodPatch): Boolean;
 var
   Access: Cardinal;
@@ -180,7 +182,11 @@ begin
     Move(opCode^, Patch.OldBody[0], memSize);
     if VirtualProtect(OldPtr, 16, PAGE_EXECUTE_READWRITE, @Access) then begin
       opCode^ := $E9; // Near jump
+      {$IF RTLVersion > 18.0 }
       operand^ := PByte(NewPtr) - PByte(OldPtr) - 5;
+      {$ELSE}
+      operand^ := PChar(NewPtr) - PChar(OldPtr) - 5;
+      {$IFEND}
       VirtualProtect(OldPtr, 16, Access, @Access);
 //      {$IF not (defined(CPU386) or defined(CPUX86) or defined(CPUX64)) }
 //      FlushInstructionCache(GetCurrentProcess, OldPtr, memSize);
@@ -191,7 +197,9 @@ begin
   if not Result then
     Patch.OldPointer := nil;
 end;
+{$IF RTLVersion > 18.0 }
 {$POINTERMATH OFF}
+{$IFEND}
 
 procedure ApplyMethodPatches;
 type

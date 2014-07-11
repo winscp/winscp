@@ -82,6 +82,7 @@ object EditorForm: TEditorForm
       object Encoding: TTBXSubmenuItem
         Caption = 'Encoding'
         Hint = 'Change file encoding'
+        Options = [tboDropdownArrow]
         object DefaultEncoding: TTBXItem
           Action = DefaultEncodingAction
           RadioItem = True
@@ -90,6 +91,10 @@ object EditorForm: TEditorForm
           Action = UTF8EncodingAction
           RadioItem = True
         end
+      end
+      object ColorItem: TTBXColorItem
+        Action = ColorAction
+        Options = [tboDropdownArrow]
       end
       object TBXItem13: TTBXItem
         Action = PreferencesAction
@@ -146,9 +151,9 @@ object EditorForm: TEditorForm
       Caption = '&Save'
       Hint = 'Save|Save file'
       ImageIndex = 0
-      ShortCut = 16467
       SecondaryShortCuts.Strings = (
         'F2')
+      ShortCut = 16467
     end
     object EditCut: TEditCut
       Caption = 'Cu&t'
@@ -166,10 +171,10 @@ object EditorForm: TEditorForm
       Caption = '&Paste'
       Hint = 'Paste|Inserts Clipboard contents'
       ImageIndex = 3
-      ShortCut = 16470
       SecondaryShortCuts.Strings = (
         'Shift+Ins'
         'Ctrl+Shift+Ins')
+      ShortCut = 16470
     end
     object EditSelectAll: TEditSelectAll
       Caption = 'Select &All'
@@ -203,33 +208,33 @@ object EditorForm: TEditorForm
       Caption = '&Find...'
       Hint = 'Find|Find the specified text'
       ImageIndex = 8
-      ShortCut = 16454
       SecondaryShortCuts.Strings = (
         'F7')
+      ShortCut = 16454
     end
     object ReplaceAction: TAction
       Caption = '&Replace...'
       Hint = 'Replace|Replace the specified text with different text'
       ImageIndex = 9
-      ShortCut = 16456
       SecondaryShortCuts.Strings = (
         'Ctrl+F7')
+      ShortCut = 16456
     end
     object FindNextAction: TAction
       Caption = 'Find &Next'
       Hint = 'Find next|Find the next occurrence of the specified text'
       ImageIndex = 10
-      ShortCut = 114
       SecondaryShortCuts.Strings = (
         'Shift+F7')
+      ShortCut = 114
     end
     object GoToLineAction: TAction
       Caption = '&Go to Line Number...'
       Hint = 'Go to line|Go to specific line number'
       ImageIndex = 11
-      ShortCut = 16455
       SecondaryShortCuts.Strings = (
         'Alt+F8')
+      ShortCut = 16455
     end
     object HelpAction: TAction
       Caption = '&Help'
@@ -240,9 +245,9 @@ object EditorForm: TEditorForm
       Caption = '&Reload'
       Hint = 'Reload|Reload file'
       ImageIndex = 13
-      ShortCut = 16466
       SecondaryShortCuts.Strings = (
         'F5')
+      ShortCut = 16466
     end
     object DefaultEncodingAction: TAction
       Caption = 'AnsiX'
@@ -251,6 +256,10 @@ object EditorForm: TEditorForm
     object UTF8EncodingAction: TAction
       Caption = 'UTF-8'
       Hint = 'UTF-8|UTF-8 encoding'
+    end
+    object ColorAction: TAction
+      Caption = 'C&olor'
+      Hint = 'Change color of editor'
     end
   end
   object EditorImages: TPngImageList

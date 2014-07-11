@@ -17,7 +17,7 @@ CAsyncSslSocketLayer to your socket and call InitClientSsl after creation of the
 
 This class only has a couple of public functions:
 - int InitSSLConnection(bool clientMode);
-  This functions establishes an SSL connection. The clientMode parameter specifies wether the SSL connection 
+  This functions establishes an SSL connection. The clientMode parameter specifies whether the SSL connection 
   is in server or in client mode.
   Most likely you want to call this function right after calling Create for the socket.
   But sometimes, you'll need to call this function later. One example is for an FTP connection
@@ -45,7 +45,6 @@ Valid notification IDs are:
   - SSL_FAILURE_NONE 0 - Everything OK
   - SSL_FAILURE_UNKNOWN 1 - Details may have been sent with a SSL_VERBOSE_* notification.
   - SSL_FAILURE_ESTABLISH 2 - Problem during SSL negotiation
-  - SSL_FAILURE_LOADDLLS 4
   - SSL_FAILURE_INITSSL 8
   - SSL_FAILURE_VERIFYCERT 16 - The remote SSL certificate was invalid
   - SSL_FAILURE_CERTREJECTED 32 - The remote SSL certificate was rejected by user
@@ -91,16 +90,16 @@ Version 2.0:
 #endif
 
 #include "AsyncSocketExLayer.h"
-#ifdef MPEXT
-#define OPENSSL_NO_EC
-#define OPENSSL_NO_ECDSA
-#define OPENSSL_NO_ECDH
-#endif
 #include <openssl/ssl.h>
 
 // Details of SSL certificate, can be used by app to verify if certificate is valid
 struct t_SslCertData
 {
+	~t_SslCertData()
+	{
+		delete [] certificate;
+	}
+
 	struct t_Contact
 	{
 		TCHAR Organization[256];
@@ -122,6 +121,9 @@ struct t_SslCertData
 	TCHAR subjectAltName[10240];
 
 	unsigned char hash[20];
+
+	unsigned char * certificate;
+	size_t certificateLen;
 
 	int verificationResult;
 	int verificationDepth;
@@ -204,12 +206,6 @@ private:
 		t_SslLayerList *pNext;
 	} *m_pSslLayerList;
 
-#ifndef MPEXT_NO_SSLDLL
-	// Handles to the SLL libraries
-	static HMODULE m_hSslDll1;
-	static HMODULE m_hSslDll2;
-#endif
-
 	// SSL data
 	SSL_CTX* m_ssl_ctx;	// SSL context
 	static std::map<SSL_CTX *, int> m_contextRefCount;
@@ -255,9 +251,6 @@ private:
 
 #define SSL_FAILURE_UNKNOWN 0
 #define SSL_FAILURE_ESTABLISH 1
-#ifndef MPEXT_NO_SSLDLL
-#define SSL_FAILURE_LOADDLLS 2
-#endif
 #define SSL_FAILURE_INITSSL 4
 #define SSL_FAILURE_VERIFYCERT 8
 #define SSL_FAILURE_CERTREJECTED 0x10
@@ -267,7 +260,5 @@ private:
 #define SSL_VERSION_TLS10 10
 #define SSL_VERSION_TLS11 11
 #define SSL_VERSION_TLS12 12
-
-void __fastcall LoadSslWindowsSystemCertificateStore(SSL_CTX * Ctx);
 
 #endif // ASYNCSSLSOCKETLEAYER_INCLUDED

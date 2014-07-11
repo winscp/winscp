@@ -106,6 +106,7 @@ struct ne_decompress_s {
  */
 static int parse_header(ne_decompress *ctx)
 {
+    NE_DEBUG_WINSCP_CONTEXT(ctx->session);
     NE_DEBUG(NE_DBG_HTTP, "ID1: %d  ID2: %d, cmeth %d, flags %d\n", 
              HDR_ID1(ctx), HDR_ID2(ctx), HDR_CMETH(ctx), HDR_FLAGS(ctx));
     
@@ -140,6 +141,7 @@ static int parse_header(ne_decompress *ctx)
 static int process_footer(ne_decompress *ctx, 
 			   const unsigned char *buf, size_t len)
 {
+    NE_DEBUG_WINSCP_CONTEXT(ctx->session);
     if (len + ctx->footcount > 8) {
         ne_set_error(ctx->session, 
                      "Too many bytes (%" NE_FMT_SIZE_T ") in gzip footer",
@@ -188,6 +190,7 @@ static void set_zlib_error(ne_decompress *ctx, const char *msg, int code)
 /* Inflate response buffer 'buf' of length 'len'. */
 static int do_inflate(ne_decompress *ctx, const char *buf, size_t len)
 {
+    NE_DEBUG_WINSCP_CONTEXT(ctx->session);
     int ret;
 
     ctx->zstr.avail_in = len;
@@ -239,6 +242,7 @@ static int do_inflate(ne_decompress *ctx, const char *buf, size_t len)
 static int gz_reader(void *ud, const char *buf, size_t len)
 {
     ne_decompress *ctx = ud;
+    NE_DEBUG_WINSCP_CONTEXT(ctx->session);
     const char *zbuf;
     size_t count;
     const char *hdr;
@@ -377,6 +381,7 @@ static int gz_reader(void *ud, const char *buf, size_t len)
 static void gz_pre_send(ne_request *r, void *ud, ne_buffer *req)
 {
     ne_decompress *ctx = ud;
+    NE_DEBUG_WINSCP_CONTEXT(ctx->session);
 
     if (ctx->request == r) {
         NE_DEBUG(NE_DBG_HTTP, "compress: Initialization.\n");

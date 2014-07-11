@@ -24,6 +24,7 @@ namespace WinSCP
         public TransferMode TransferMode { get; set; }
         public string FileMask { get; set; }
         public TransferResumeSupport ResumeSupport { get; private set; }
+        public int SpeedLimit { get; set; }
 
         public TransferOptions()
         {
@@ -72,6 +73,11 @@ namespace WinSCP
             if (ResumeSupport.State != TransferResumeSupportState.Default)
             {
                 switches.Add(Session.FormatSwitch("resumesupport", ResumeSupport.ToString()));
+            }
+
+            if (SpeedLimit > 0)
+            {
+                switches.Add(Session.FormatSwitch("speed", SpeedLimit.ToString(CultureInfo.InvariantCulture)));
             }
 
             return string.Join(" ", switches.ToArray());

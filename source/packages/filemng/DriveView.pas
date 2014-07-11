@@ -50,10 +50,7 @@ uses
 {$I ResStrings.pas}
 
 const
-{$IFNDEF NO_THREADS}
   msThreadChangeDelay = 50;
-{$ENDIF}
-  CInvalidSize = $FFFFFFFF;
 
   ErrorNodeNA = '%s: Node not assigned';
 
@@ -62,9 +59,7 @@ const
   dvdsRereadAllways   = 16; {Refresh drivestatus in any case}
 
 type
-  ECreateShortCut  = class(Exception);
   EInvalidDirName  = class(Exception);
-  EInvalidPath     = class(Exception);
   ENodeNotAssigned = class(Exception);
 
   TDriveStatus = record
@@ -72,9 +67,7 @@ type
     Verified: Boolean;         {Drive completly scanned?}
     RootNode: TTreeNode;       {Rootnode to drive}
     RootNodeIndex: Integer;
-    {$IFNDEF NO_THREADS}
     DiscMonitor: TDiscMonitor; {Monitor thread}
-    {$ENDIF}
     ChangeTimer: TTimer;       {Change timer for the monitor thread}
     DefaultDir: string;        {Current directory}
   end;
@@ -87,10 +80,6 @@ type
 
   PScanDirInfo = ^TScanDirInfo;
 
-  TDriveViewScanDirEvent = procedure(Sender: TObject; Node: TTreeNode;
-    var DoScanDir: Boolean) of object;
-  TDriveViewDiskChangeEvent = procedure(Sender: TObject; Drive: TDrive) of object;
-
   TDriveView = class;
 
   TNodeData = class
@@ -100,8 +89,6 @@ type
     FAttr: Integer;
     FScanned: Boolean;
     FData: Pointer;
-    FExpanded: Boolean;
-    FDirSize: Cardinal;
     FIsRecycleBin: Boolean;
     FIconEmpty: Boolean;
 
@@ -118,8 +105,6 @@ type
     property Attr: Integer read FAttr write FAttr;
     property Scanned: Boolean read FScanned write FScanned;
     property Data: Pointer read FData write FData;
-    property Expanded: Boolean read FExpanded write FExpanded;
-    property DirSize: Cardinal read FDirSize write FDirSize;
     property IsRecycleBin: Boolean read FIsRecycleBin;
     property IconEmpty: Boolean read FIconEmpty write FIconEmpty;
   end;
@@ -137,7 +122,6 @@ type
     FWatchDirectory: Boolean;
     FDirectory: string;
     FFullDriveScan: Boolean;
-    FShowDirSize: Boolean;
     FShowVolLabel: Boolean;
     FVolDisplayStyle: TVolumeDisplayStyle;
     FShowAnimation: Boolean;
@@ -157,13 +141,6 @@ type
     FWorkPlace: IShellFolder;
 
     {Additional events:}
-    FOnStartScan: TNotifyEvent;
-    FOnEndScan: TNotifyEvent;
-    FOnScanDir: TDriveViewScanDirEvent;
-    FOnDiskChange: TDriveViewDiskChangeEvent;
-    FOnInsertedDiskChange: TDriveViewDiskChangeEvent;
-    FOnChangeDetected: TDriveViewDiskChangeEvent;
-    FOnChangeInvalid: TDriveViewDiskChangeEvent;
     FOnDisplayContextMenu: TNotifyEvent;
     FOnRefreshDrives: TNotifyEvent;
 
@@ -173,9 +150,7 @@ type
 
     FChangeInterval: Cardinal;
 
-    FNoCheckDrives: string;
     FCompressedColor: TColor;
-    FFileNameDisplay: TFileNameDisplay;
 
     {Drag&drop:}
     FLastPathCut: string;
@@ -188,11 +163,6 @@ type
 
     {Callback-functions used by iteratesubtree:}
     function CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boolean;
-    function CallBackSaveNodeState(var Node: TTreeNode; Data: Pointer): Boolean;
-    function CallBackRestoreNodeState(var Node: TTreeNode; Data: Pointer): Boolean;
-    function CallBackDisplayName(var Node: TTreeNode; Data: Pointer): Boolean;
-    function CallBackSetDirSize(var Node: TTreeNode; Data: Pointer): Boolean;
-    function CallBackExpandLevel(var Node: TTreeNode; Data: Pointer): Boolean;
 
     { Notification procedures used by component TDiscMonitor: }
     procedure ChangeDetected(Sender: TObject; const Directory: string;
@@ -206,14 +176,11 @@ type
     procedure SetSelected(Node: TTreeNode);
     procedure SetFullDriveScan(DoFullDriveScan: Boolean);
     procedure SetWatchDirectory(Value: Boolean);
-    procedure SetShowDirSize(ShowIt: Boolean);
     procedure SetShowVolLabel(ShowIt: Boolean);
     procedure SetVolDisplayStyle(DoStyle: TVolumeDisplayStyle);
     procedure SetDirView(Value: TDirView);
     procedure SetChangeInterval(Value: Cardinal);
-    procedure SetNoCheckDrives(Value: string);
     procedure SetCompressedColor(Value: TColor);
-    procedure SetFileNameDisplay(Value: TFileNameDisplay);
     procedure SetDirectory(Value: string); override;
     procedure SetDrive(Drive: TDrive);
     function  GetDrive: TDrive;
@@ -221,16 +188,13 @@ type
       Path: string; ContentMask: Boolean = True);
     function  DoScanDir(FromNode: TTreeNode): Boolean; virtual;
     function  AddChildNode(ParentNode: TTreeNode; SRec: TSearchRec): TTreeNode; virtual;
-{$IFNDEF NO_THREADS}
     procedure CreateWatchThread(Drive: TDrive); virtual;
-{$ENDIF}
     procedure InternalWndProc(var Msg: TMessage);
 
     function DirAttrMask: Integer;
 
     procedure ValidateDirectoryEx(Node: TTreeNode; Recurse: TRecursiveScan;
       NewDirs: Boolean); override;
-    procedure ValidateDirectoryEasy(Node: TTreeNode);
     procedure RebuildTree; override;
 
     procedure SetLastPathCut(Path: string);
@@ -288,48 +252,30 @@ type
     function GetDriveToNode(Node: TTreeNode): Char;
     function GetDriveText(Drive: TDrive): string;
     procedure ScanDrive(Drive: TDrive);
-    procedure RefreshRootNodes(ScanDirectory: Boolean; dsFlags: Integer);
-    function GetValidDrivesStr: string;
-    procedure RefreshDirSize(Node: TTreeNode);
-    procedure RefreshDriveDirSize(Drive: TDrive);
+    procedure RefreshRootNodes(dsFlags: Integer);
 
     {Node handling:}
     procedure SetImageIndex(Node: TTreeNode); virtual;
     function FindNodeToPath(Path: string): TTreeNode;
-    function NodeVerified(Node: TTreeNode): Boolean;
-    function NodeAttr(Node: TTreeNode): Integer;
     function RootNode(Node: TTreeNode): TTreeNode;
     function GetDirName(Node: TTreeNode): string;
-    function GetDirSize(Node: TTreeNode): Cardinal; virtual;
-    procedure SetDirSize(Node: TTreeNode); virtual;
     function GetDisplayName(Node: TTreeNode): string;
-    function NodeUpdateAble(Node: TTreeNode): Boolean; virtual;
-    procedure ExpandLevel(Node: TTreeNode; Level: Integer); virtual;
     function NodePathName(Node: TTreeNode): string; override;
 
     function GetFQPIDL(Node: TTreeNode): PItemIDList;
-
-    function GetSubTreeSize(Node: TTreeNode): Integer; dynamic;
 
     {Directory update:}
     function  CreateDirectory(ParentNode: TTreeNode; NewName: string): TTreeNode; dynamic;
     function  DeleteDirectory(Node: TTreeNode; AllowUndo: Boolean): Boolean; dynamic;
 
-    procedure DeleteSubNodes(Node: TTreeNode); dynamic;
-
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-
-    {Save and restore the subnodes expanded state:}
-    procedure SaveNodesState(Node: TTreeNode);
-    procedure RestoreNodesState(Node: TTreeNode);
 
     {Menu-handling:}
     procedure DisplayContextMenu(Node: TTreeNode; Point: TPoint); override;
 
     procedure DisplayPropertiesMenu(Node: TTreeNode); override;
 
-{$IFNDEF NO_THREADS}
     {Watchthread handling:}
     procedure StartWatchThread; virtual;
     procedure StopWatchThread; virtual;
@@ -341,7 +287,6 @@ type
     function WatchThreadActive: Boolean; overload;
     function WatchThreadActive(Drive: TDrive): Boolean; overload;
     function NodeWatched(Node: TTreeNode): Boolean; virtual;
-{$ENDIF}
     procedure ValidateCurrentDirectoryIfNotMonitoring;
 
     (* Modified Events: *)
@@ -372,28 +317,14 @@ type
     property ChangeInterval: Cardinal read FChangeInterval write SetChangeInterval default MSecsPerSec;
     {Linked component TDirView:}
     property DirView: TDirView read FDirView write SetDirView;
-    property ShowDirSize: Boolean read FShowDirSize write SetShowDirSize default False;
     {Show the volume labels of drives:}
     property ShowVolLabel: Boolean read FShowVolLabel write SetShowVolLabel default True;
     {How to display the drives volume labels:}
     property VolDisplayStyle: TVolumeDisplayStyle read FVolDisplayStyle write SetVolDisplayStyle default doPrettyName;
     {Show AVI-animation when performing a full drive scan:}
     property ShowAnimation: Boolean read FShowAnimation write FShowAnimation default False;
-    {Don't watch these drives for changes:}
-    property NoCheckDrives: string read  FNoCheckDrives write SetNoCheckDrives;
     property CompressedColor: TColor read FCompressedColor write SetCompressedColor default clBlue;
-    property FileNameDisplay: TFileNameDisplay read FFileNameDisplay write SetFileNameDisplay default fndStored;
     {Additional events:}
-    property OnStartScan: TNotifyEvent read FOnStartScan write FOnStartScan;
-    property OnEndScan: TNotifyEvent read FOnEndScan write FOnEndScan;
-    property OnScanDir: TDriveViewScanDirEvent read FOnScanDir write FOnScanDir;
-    property OnDiskChange: TDriveViewDiskChangeEvent read FOnDiskChange write FOnDiskChange;
-    property OnInsertedDiskChange: TDriveViewDiskChangeEvent read FOnInsertedDiskChange
-      write FOnInsertedDiskChange;
-    property OnChangeDetected: TDriveViewDiskChangeEvent read FOnChangeDetected
-      write FOnChangeDetected;
-    property OnChangeInvalid: TDriveViewDiskChangeEvent read FOnChangeInvalid
-      write FOnChangeInvalid;
     property OnDisplayContextMenu: TNotifyEvent read FOnDisplayContextMenu
       write FOnDisplayContextMenu;
     property OnRefreshDrives: TNotifyEvent read FOnRefreshDrives
@@ -489,7 +420,7 @@ procedure Register;
 implementation
 
 uses
-  CompThread;
+  CompThread, PasTools, UITypes, Types;
 
 resourcestring
    SErrorInvalidDirName = 'New name contains invalid characters %s';
@@ -507,11 +438,9 @@ begin
   inherited;
 
   FAttr := 0;
-  FExpanded := False;
   FScanned := False;
   FDirName := '';
   FShortName := '';
-  FDirSize := CInvalidSize;
   FIsRecycleBin := False;
   FIconEmpty := True;
   shAttr := 0;
@@ -547,7 +476,6 @@ begin
     NewData.Attr := SourceData.Attr;
     NewData.Scanned := SourceData.Scanned;
     NewData.Data := SourceData.Data;
-    NewData.Expanded := SourceData.Expanded;
     NewData.FIsRecycleBin := SourceData.FIsRecycleBin;
     NewData.IconEmpty := SourceData.IconEmpty;
     TTreeNode(Source).Data := NewData;
@@ -596,7 +524,6 @@ begin
   FConfirmDelete := True;
   FShowAnimation := False;
   FDirectory := EmptyStr;
-  FFileNameDisplay   := fndStored;
   FForceRename := False;
   FLastRenameName := '';
   FRenameNode := nil;
@@ -647,14 +574,25 @@ begin
        ((wParam = {DBT_CONFIGCHANGED} $0018) or (wParam = {DBT_DEVICEARRIVAL} $8000) or
           (wParam = {DBT_DEVICEREMOVECOMPLETE} $8004)) then
     begin
+      // Delay refresing drives for a sec.
+      // Particularly with CD/DVD drives, if we query display name
+      // immediately after receiving DBT_DEVICEARRIVAL, we do not get media label.
+      // Actually one sec does not help usually, but we do not want to wait any longer,
+      // because we want to add USB drives asap.
+      SetTimer(FInternalWindowHandle, 1, MSecsPerSec, nil);
+    end
+      else
+    if Msg = WM_TIMER then
+    begin
+      KillTimer(FInternalWindowHandle, 1);
       try
         //DriveInfo.Load;
-        RefreshRootNodes(False, dsAll);
+        RefreshRootNodes(dsAll or dvdsRereadAllways);
         if Assigned(OnRefreshDrives) then
           OnRefreshDrives(Self);
       except
         Application.HandleException(Self);
-      end
+      end;
     end;
 
     Result := DefWindowProc(FInternalWindowHandle, Msg, wParam, lParam);
@@ -731,6 +669,7 @@ begin
   Result := nil;
   if Assigned(Node) then
   begin
+    shAttr := 0;
     FDesktop.ParseDisplayName(FParentForm.Handle, nil, PChar(NodePathName(Node)), Eaten,
       Result, shAttr);
   end;
@@ -847,11 +786,9 @@ begin
       Exit;
     end;
 
-{$IFNDEF NO_THREADS}
     StopWatchThread;
     if Assigned(DirView) then
       DirView.StopWatchThread;
-{$ENDIF}
 
     with FFileOperator do
     begin
@@ -868,7 +805,7 @@ begin
       begin
         Node.Text := Item.pszText;
         TNodeData(Node.Data).DirName := Item.pszText;
-        if FindFirst(IncludeTrailingBackslash(NodePath(Node.Parent)) + Item.pszText,
+        if FindFirst(ApiPath(IncludeTrailingBackslash(NodePath(Node.Parent)) + Item.pszText),
              faAnyFile, SRec) = 0 then
         begin
           TNodeData(Node.Data).ShortName := string(SRec.FindData.cAlternateFileName);
@@ -894,15 +831,11 @@ begin
         end;
       end;
     finally
-{$IFNDEF NO_THREADS}
       StartWatchThread;
-{$ENDIF}
       if Assigned(DirView) then
       begin
         DirView.Reload2;
-{$IFNDEF NO_THREADS}
         DirView.StartWatchThread;
-{$ENDIF}
       end;
     end;
   end;
@@ -940,10 +873,8 @@ begin
         SubNode := Node.GetFirstChild;
         Node.HasChildren := Assigned(SubNode);
         Result := Node.HasChildren;
-{$IFNDEF NO_THREADS}
         if not Assigned(DriveStatus[Drive].DiscMonitor) then
           CreateWatchThread(Drive);
-{$ENDIF}
       end;
     end
       else
@@ -973,7 +904,7 @@ procedure TDriveView.Loaded;
 begin
   inherited;
   {Create the drive nodes:}
-  RefreshRootNodes(False, dsDisplayName or dvdsFloppy);
+  RefreshRootNodes(dsDisplayName or dvdsFloppy);
   {Set the initial directory:}
   if (Length(FDirectory) > 0) and DirExists(FDirectory) then
     Directory := FDirectory;
@@ -1044,7 +975,7 @@ begin
           Result := False;
         end
           else
-        if not DirectoryExists(Path) then
+        if not DirectoryExists(ApiPath(Path)) then
         begin
           MessageDlg(Format(SDirNotExists, [Path]), mtError, [mbOK], 0);
           Result := False;
@@ -1112,39 +1043,23 @@ begin
 
             if LastDrive <> Drive then
             begin
-{$IFNDEF NO_THREADS}
               if (LastDrive >= FirstDrive) and
                  (DriveInfo[LastDrive].DriveType = DRIVE_REMOVABLE) then
                     TerminateWatchThread(LastDrive);
-{$ENDIF}
 
               {Drive serial has changed or is missing: allways reread the drive:}
               if (DriveSerial <> OldSerial) or (DriveSerial = 0) then
               begin
                 if TNodeData(DriveStatus[Drive].RootNode.Data).Scanned then
                   ScanDrive(Drive);
-                if Assigned(FOnInsertedDiskChange) then
-                  FOnInsertedDiskChange(Self, Drive);
               end;
-
-              if Assigned(FOnDiskChange) then
-                FOnDiskChange(Self, Drive);
             end;
-{$IFNDEF NO_THREADS}
             StartWatchThread;
-{$ENDIF}
           end
             else  {Drive not ready:}
           begin
             DriveStatus[Drive].RootNode.DeleteChildren;
             DriveStatus[Drive].DefaultDir := EmptyStr;
-            if LastDrive <> Drive then
-            begin
-              if Assigned(FOnInsertedDiskChange) then
-                FOnInsertedDiskChange(Self, Drive);
-              if Assigned(FOnDiskChange) then
-                FOnDiskChange(Self, Drive);
-            end;
           end;
         end;
       end;
@@ -1223,40 +1138,31 @@ begin
     case FVolDisplayStyle of
       doPrettyName:     Result := DriveInfo.GetPrettyName(Drive);
       doDisplayName:    Result := DriveInfo.GetDisplayName(Drive);
-      doLongPrettyName: Result := DriveInfo.GetLongPrettyName(Drive);
     end; {Case}
   end
     else Result := Drive + ':';
 end; {GetDriveText}
-
-function TDriveView.GetValidDrivesStr: String;
-var
-  Drive: TDrive;
-begin
-  Result := '';
-  for Drive := FirstDrive to LastDrive do
-    if DriveInfo[Drive].Valid then
-      Result := Result + Drive;
-end; {GetValidDriveStr}
 
 type
   TFolderAttributesGetterThread = class(TCompThread)
   private
     FParentFolder: iShellFolder;
     FPIDL: PItemIDList;
-    FshAttr: PUINT;
+    FshAttr: UINT;
 
   protected
     procedure Execute; override;
 
   public
-    constructor Create(ParentFolder: iShellFolder; PIDL: PItemIDList; shAttr: PUINT);
+    constructor Create(ParentFolder: iShellFolder; PIDL: PItemIDList; shAttr: UINT);
 
-    class procedure GetFolderAttributes(ParentFolder: iShellFolder; PIDL: PItemIDList; shAttr: PUINT);
+    property shAttr: UINT read FshAttr;
+
+    class procedure GetFolderAttributes(ParentFolder: iShellFolder; PIDL: PItemIDList; var shAttr: UINT);
   end;
 
 class procedure TFolderAttributesGetterThread.GetFolderAttributes(
-  ParentFolder: iShellFolder; PIDL: PItemIDList; shAttr: PUINT);
+  ParentFolder: iShellFolder; PIDL: PItemIDList; var shAttr: UINT);
 var
   NotResult: Boolean;
   ErrorMode: Word;
@@ -1264,17 +1170,17 @@ begin
   ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
   try
     try
-      NotResult := not Succeeded(ParentFolder.GetAttributesOf(1, PIDL, shAttr^));
+      NotResult := not Succeeded(ParentFolder.GetAttributesOf(1, PIDL, shAttr));
     finally
       SetErrorMode(ErrorMode);
     end;
-    if NotResult then shAttr^ := 0;
+    if NotResult then shAttr := 0;
   except
-    shAttr^ := 0;
+    shAttr := 0;
   end;
 end;
 
-constructor TFolderAttributesGetterThread.Create(ParentFolder: iShellFolder; PIDL: PItemIDList; shAttr: PUINT);
+constructor TFolderAttributesGetterThread.Create(ParentFolder: iShellFolder; PIDL: PItemIDList; shAttr: UINT);
 begin
   inherited Create(True);
   FParentFolder := ParentFolder;
@@ -1312,18 +1218,21 @@ begin
     // But when running from IDE, it triggers starting/exiting the thread,
     // again taking ages. So in IDE we revert to single-thread approach
     {$IFDEF IDE}
-    TFolderAttributesGetterThread.GetFolderAttributes(ParentFolder, NodeData.PIDL, @shAttr);
+    TFolderAttributesGetterThread.GetFolderAttributes(ParentFolder, NodeData.PIDL, shAttr);
     NodeData.shAttr := shAttr;
     {$ELSE}
-    Thread := TFolderAttributesGetterThread.Create(ParentFolder, NodeData.PIDL, @shAttr);
-    Thread.FreeOnTerminate := True;
+    Thread := TFolderAttributesGetterThread.Create(ParentFolder, NodeData.PIDL, shAttr);
     Thread.Resume;
     if Thread.WaitFor(MSecsPerSec) then
     begin
-      NodeData.shAttr := shAttr;
+      NodeData.shAttr := Thread.shAttr;
+      Thread.Free;
     end
       else
     begin
+      // There's a chance for memory leak, if thread is terminated
+      // between WaitFor() and this line
+      Thread.FreeOnTerminate := True;
       NodeData.shAttr := 0;
     end;
     {$ENDIF}
@@ -1339,7 +1248,7 @@ begin
   end;
 end; {GetNodeAttr}
 
-procedure TDriveView.RefreshRootNodes(ScanDirectory: Boolean; dsFlags: Integer);
+procedure TDriveView.RefreshRootNodes(dsFlags: Integer);
 var
   Drive: Char;
   NewText: string;
@@ -1347,7 +1256,6 @@ var
   D: TDrive;
   SaveCursor: TCursor;
   WasValid: Boolean;
-  OldSerial: DWORD;
   WFirstDrive: TDrive;
   NodeData: TNodeData;
 begin
@@ -1366,7 +1274,6 @@ begin
       with DriveInfo[Drive]^ do
       begin
         WasValid  := Assigned(DriveStatus[Drive].RootNode);
-        OldSerial := DriveSerial;
       end;
       if ((dsFlags and dvdsReReadAllways) = 0) and
          (Length(DriveInfo[Drive].DisplayName) > 0) then
@@ -1427,13 +1334,6 @@ begin
             RootNode.SelectedIndex := DriveInfo[Drive].ImageIndex;
           end;
 
-          if (Drive >= FirstFixedDrive) and Scanned then
-          begin
-            if ScanDirectory and (DriveSerial <> OldSerial) then
-            begin
-              ScanDrive(Drive);
-            end;
-          end;
 
           if Assigned(RootNode) then
           begin
@@ -1505,10 +1405,7 @@ end; {GetDriveStatus}
 
 function TDriveView.DoScanDir(FromNode: TTreeNode): Boolean;
 begin
-  with TNodeData(FromNode.Data) do
-    Result := not IsRecycleBin;
-  if Assigned(FOnScanDir) then
-    FOnScanDir(Self, FromNode, Result);
+  Result := not TNodeData(FromNode.Data).IsRecycleBin;
 end; {DoScanDir}
 
 function TDriveView.DirAttrMask: Integer;
@@ -1533,7 +1430,7 @@ var
     if not DoScanDir(ParentNode) then
       Exit;
 
-    DosError := FindFirst(Path, DirAttrMask, Srec);
+    DosError := FindFirst(ApiPath(Path), DirAttrMask, Srec);
     while DosError = 0 do
     begin
       if (SRec.Name <> '.') and
@@ -1585,9 +1482,6 @@ begin {ScanDrive}
         FAnimate.Active := True;
       end;
 
-      if Assigned(FOnStartScan) then
-        FOnStartScan(Self);
-
       try
         RootNode := DriveStatus[Drive].RootNode;
         if not Assigned(RootNode) then Exit;
@@ -1609,8 +1503,6 @@ begin {ScanDrive}
       RootNode.Expand(False);
 
       Screen.Cursor := SaveCursor;
-      if Assigned(FOnEndScan) then
-      FOnEndScan(Self);
     end;
   end;
 end; {ScanDrive}
@@ -1722,7 +1614,7 @@ var
 begin
   Result := False;
 
-  DosError := FindFirst(IncludeTrailingBackslash(Path) + '*.', DirAttrMask, SRec);
+  DosError := FindFirst(ApiPath(IncludeTrailingBackslash(Path) + '*.'), DirAttrMask, SRec);
   while DosError = 0 do
   begin
     if (SRec.Name <> '.' ) and
@@ -1744,7 +1636,7 @@ var
   NewNode: TTreeNode;
 begin
   Result := False;
-  DosError := FindFirst(IncludeTrailingBackslash(NodePath(Node)) + '*.*', DirAttrMask, SRec);
+  DosError := FindFirst(ApiPath(IncludeTrailingBackslash(NodePath(Node)) + '*.*'), DirAttrMask, SRec);
   while DosError = 0 do
   begin
     if (SRec.Name <> '.' ) and
@@ -1754,9 +1646,9 @@ begin
       NewNode := AddChildNode(Node, SRec);
       if DoScanDir(NewNode) then
       begin
-        NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
+      NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
 
-        TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
+      TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
       end
         else
       begin
@@ -1821,68 +1713,68 @@ begin {CallBackValidateDir}
   begin
     if DoScanDir(Node) then
     begin
-      ParentDir := IncludeTrailingBackslash(NodePath(Node));
-      {Build list of existing subnodes:}
-      SubDirList := TStringList.Create;
-      while Assigned(WorkNode) do
+    ParentDir := IncludeTrailingBackslash(NodePath(Node));
+    {Build list of existing subnodes:}
+    SubDirList := TStringList.Create;
+    while Assigned(WorkNode) do
+    begin
+      SubDirList.Add(TNodeData(WorkNode.Data).DirName);
+      WorkNode := Node.GetNextChild(WorkNode);
+    end;
+    {Sorting not required, because the subnodes are already sorted!}
+
+    SRecList := TStringList.Create;
+    DosError := FindFirst(ApiPath(ParentDir + '*.*'), DirAttrMask, SRec);
+    while DosError = 0 do
+    begin
+      if (Srec.Name <> '.' ) and
+         (Srec.Name <> '..') and
+         (Srec.Attr and faDirectory <> 0) then
       begin
-        SubDirList.Add(TNodeData(WorkNode.Data).DirName);
+        SrecList.Add(Srec.Name);
+        if not SubDirList.Find(Srec.Name, Index) then
+        {Subnode does not exists: add it:}
+        begin
+          NewNode := AddChildNode(Node, SRec);
+          NewNode.HasChildren := CheckForSubDirs(ParentDir + Srec.Name);
+          TNodeData(NewNode.Data).Scanned := Not NewNode.HasChildren;
+          NewDirFound  := True;
+        end;
+      end;
+      DosError := FindNext(Srec);
+    end;
+    FindClose(Srec);
+    Sreclist.Sort;
+
+    {Remove not existing subnodes:}
+    WorkNode := Node.GetFirstChild;
+    while Assigned(WorkNode) do
+    begin
+      if not Assigned(WorkNode.Data) or
+         not SrecList.Find(TNodeData(WorkNode.Data).DirName, Index) then
+      begin
+        DelNode := WorkNode;
+        WorkNode := Node.GetNextChild(WorkNode);
+        DelNode.Delete;
+      end
+        else
+      begin
+        if (SrecList[Index] <> TNodeData(WorkNode.Data).DirName) then
+        begin
+          {Case of directory letters has changed:}
+          TNodeData(WorkNode.Data).DirName := SrecList[Index];
+          TNodeData(WorkNode.Data).ShortName := ExtractShortPathName(NodePathName(WorkNode));
+          WorkNode.Text := SrecList[Index];
+        end;
+        SrecList.Delete(Index);
         WorkNode := Node.GetNextChild(WorkNode);
       end;
-      {Sorting not required, because the subnodes are already sorted!}
-
-      SRecList := TStringList.Create;
-      DosError := FindFirst(ParentDir + '*.*', DirAttrMask, SRec);
-      while DosError = 0 do
-      begin
-        if (Srec.Name <> '.' ) and
-           (Srec.Name <> '..') and
-           (Srec.Attr and faDirectory <> 0) then
-        begin
-          SrecList.Add(Srec.Name);
-          if not SubDirList.Find(Srec.Name, Index) then
-          {Subnode does not exists: add it:}
-          begin
-            NewNode := AddChildNode(Node, SRec);
-            NewNode.HasChildren := CheckForSubDirs(ParentDir + Srec.Name);
-            TNodeData(NewNode.Data).Scanned := Not NewNode.HasChildren;
-            NewDirFound  := True;
-          end;
-        end;
-        DosError := FindNext(Srec);
-      end;
-      FindClose(Srec);
-      Sreclist.Sort;
-
-      {Remove not existing subnodes:}
-      WorkNode := Node.GetFirstChild;
-      while Assigned(WorkNode) do
-      begin
-        if not Assigned(WorkNode.Data) or
-           not SrecList.Find(TNodeData(WorkNode.Data).DirName, Index) then
-        begin
-          DelNode := WorkNode;
-          WorkNode := Node.GetNextChild(WorkNode);
-          DelNode.Delete;
-        end
-          else
-        begin
-          if (SrecList[Index] <> TNodeData(WorkNode.Data).DirName) then
-          begin
-            {Case of directory letters has changed:}
-            TNodeData(WorkNode.Data).DirName := SrecList[Index];
-            TNodeData(WorkNode.Data).ShortName := ExtractShortPathName(NodePathName(WorkNode));
-            WorkNode.Text := SrecList[Index];
-          end;
-          SrecList.Delete(Index);
-          WorkNode := Node.GetNextChild(WorkNode);
-        end;
-      end;
-      SrecList.Free;
-      SubDirList.Free;
-      {Sort subnodes:}
-      if NewDirFound then
-        SortChildren(Node, False);
+    end;
+    SrecList.Free;
+    SubDirList.Free;
+    {Sort subnodes:}
+    if NewDirFound then
+      SortChildren(Node, False);
     end;
   end
     else
@@ -1919,9 +1811,7 @@ var
   Info: PScanDirInfo;
   SelDir: string;
   SaveCursor: TCursor;
-{$IFNDEF NO_THREADS}
   RestartWatchThread: Boolean;
-{$ENDIF}
   SaveCanChange: Boolean;
   CurrentPath: string;
 begin
@@ -1938,14 +1828,10 @@ begin
     if Node.Level = 0 then
       DriveStatus[CurrentPath[1]].ChangeTimer.Enabled := False;
 
-    {$IFNDEF NO_THREADS}
     RestartWatchThread := WatchThreadActive;
-    {$ENDIF}
     try
-      {$IFNDEF NO_THREADS}
       if WatchThreadActive then
         StopWatchThread;
-      {$ENDIF}
 
       FValidateFlag := True;
 
@@ -1967,44 +1853,14 @@ begin
 
       Dispose(Info);
     finally
-      {$IFNDEF NO_THREADS}
       if RestartWatchThread and FWatchDirectory and not WatchThreadActive then
         StartWatchThread;
-      {$ENDIF}
 
       if Screen.Cursor <> SaveCursor then
         Screen.Cursor := SaveCursor;
     end;
   end;
 end; {ValidateDirectoryEx}
-
-procedure TDriveView.ValidateDirectoryEasy(Node: TTreeNode);
-begin
-  if Assigned(Node) then
-  begin
-    if not Assigned(Node.Data) or (not TNodeData(Node.Data).Scanned) then
-      ValidateDirectoryEx(Node, rsRecursiveExpanded, False);
-  end;
-end; {ValidateDirectoryEasy}
-
-function  TDriveView.GetSubTreeSize(Node: TTreeNode): Integer;
-var
-  PSubSize: PInt;
-  SaveCursor: TCursor;
-begin
-  Assert(Assigned(Node));
-
-  SaveCursor := Screen.Cursor;
-  Screen.Cursor := crHourGlass;
-  ValidateAllDirectories(Node);
-  RefreshDirSize(Node);
-  New(PSubSize);
-  PSubSize^ := 0;
-  IterateSubTree(Node, CallBackSetDirSize, rsRecursive, coScanStartNode, PSubSize);
-  Result := PSubSize^;
-  Dispose(PSubSize);
-  Screen.Cursor := SaveCursor;
-end; {GetSubTreeSize}
 
 function TDriveView.GetDriveTypeToNode(Node: TTreeNode): Integer;
 begin
@@ -2018,35 +1874,6 @@ begin
   Result := DriveInfo[UpCase(Drive)].DriveType;
 end; {GetDriveType}
 
-function TDriveView.NodeUpdateAble(Node: TTreeNode): Boolean;
-begin
-  Result := Assigned(Node) and Assigned(Node.Data) and (Node.Level > 0);
-end; {NodeUpdateAble}
-
-function  TDriveView.CallBackSaveNodeState(var Node: TTreeNode; Data: Pointer): Boolean;
-begin
-  Result := True;
-  TNodeData(Node.Data).Expanded := Node.Expanded;
-end; {CallBackSaveNodeState}
-
-function  TDriveView.CallBackRestoreNodeState(Var Node: TTreeNode; Data: Pointer): Boolean;
-begin
-  Result := True;
-  Node.Expanded := TNodeData(Node.Data).Expanded;
-end; {CallBackRestoreNodeState}
-
-procedure TDriveView.SaveNodesState(Node: TTreeNode);
-begin
-  IterateSubTree(Node, CallbackSaveNodeState, rsRecursive, coScanStartNode, nil);
-end; {SaveNodesState}
-
-procedure TDriveView.RestoreNodesState(Node: TTreeNode);
-begin
-  Items.BeginUpdate;
-  IterateSubTree(Node, CallbackRestoreNodeState, rsRecursive, coScanStartNode, nil);
-  Items.EndUpdate;
-end; {RestoreNodesState}
-
 function TDriveView.CreateDirectory(ParentNode: TTreeNode; NewName: string): TTreeNode;
 var
   SRec: TSearchRec;
@@ -2057,15 +1884,11 @@ begin
   if not TNodeData(ParentNode.Data).Scanned then
     ValidateDirectory(ParentNode);
 
-{$IFNDEF NO_THREADS}
   StopWatchThread;
-{$ENDIF}
 
   try
-{$IFNDEF NO_THREADS}
     if Assigned(FDirView) then
       FDirView.StopWatchThread;
-{$ENDIF}
 
     {create phyical directory:}
     LastIOResult := 0;
@@ -2074,7 +1897,7 @@ begin
     if LastIOResult = 0 then
     begin
       {Create treenode:}
-      FindFirst(NodePath(ParentNode) + '\' + NewName, faAnyFile, SRec);
+      FindFirst(ApiPath(NodePath(ParentNode) + '\' + NewName), faAnyFile, SRec);
       Result := AddChildNode(ParentNode, Srec);
       FindClose(Srec);
       TNodeData(Result.Data).Scanned := True;
@@ -2082,14 +1905,10 @@ begin
       ParentNode.Expand(False);
     end;
   finally
-{$IFNDEF NO_THREADS}
     StartWatchThread;
-{$ENDIF}
     if Assigned(FDirView) then
     begin
-{$IFNDEF NO_THREADS}
       FDirView.StartWatchThread;
-{$ENDIF}
       FDirView.Reload2;
     end;
 
@@ -2125,9 +1944,7 @@ begin
     try
       if DirExists(DelDir) then
       begin
-{$IFNDEF NO_THREADS}
         StopWatchThread;
-{$ENDIF}
         OperatorResult := FileOperator.Execute;
 
         if OperatorResult and (not FileOperator.OperationAborted) and
@@ -2154,9 +1971,7 @@ begin
         Result := True;
       end;
     finally
-{$IFNDEF NO_THREADS}
       StartWatchThread;
-{$ENDIF}
       if Assigned(DirView) and Assigned(Selected) then
         DirView.Path := NodePathName(Selected);
       FileOperator.Free;
@@ -2165,7 +1980,6 @@ begin
   end;
 end; {DeleteDirectory}
 
-{$IFNDEF NO_THREADS}
 procedure TDriveView.CreateWatchThread(Drive: TDrive);
 begin
   if csDesigning in ComponentState then
@@ -2173,8 +1987,7 @@ begin
 
   if (not Assigned(DriveStatus[Drive].DiscMonitor)) and
      FWatchDirectory and
-     (DriveInfo[Drive].DriveType <> DRIVE_REMOTE) and
-     (Pos(Drive, FNoCheckDrives) = 0) then
+     (DriveInfo[Drive].DriveType <> DRIVE_REMOTE) then
   begin
     with DriveStatus[Drive] do
     begin
@@ -2189,19 +2002,16 @@ begin
     end;
   end;
 end; {CreateWatchThread}
-{$ENDIF}
 
 procedure TDriveView.SetWatchDirectory(Value: Boolean);
 begin
   if FWatchDirectory <> Value then
   begin
     FWatchDirectory := Value;
-{$IFNDEF NO_THREADS}
     if (not (csDesigning in ComponentState)) and Value then
       StartAllWatchThreads
     else
       StopAllWatchThreads;
-{$ENDIF}
   end;
 end; {SetAutoScan}
 
@@ -2230,22 +2040,6 @@ begin
   end;
 end; {SetChangeInterval}
 
-procedure TDriveView.SetNoCheckDrives(Value: string);
-begin
-  FNoCheckDrives := UpperCase(Value);
-end; {SetNoCheckDrives}
-
-procedure TDriveView.DeleteSubNodes(Node: TTreeNode);
-begin
-  if Assigned(Node) then
-  begin
-    Node.DeleteChildren;
-    if Node.Level = 0 then
-      DriveStatus[GetDriveToNode(Node)].Scanned := False;
-    Node.HasChildren := False;
-  end;
-end; {DeleteSubNodes}
-
 function TDriveView.NodeWatched(Node: TTreeNode): Boolean;
 var
   Drive: TDrive;
@@ -2263,8 +2057,6 @@ begin
   with DriveStatus[Dir[1]] do
   begin
     DiscMonitor.Close;
-    if Assigned(FOnChangeInvalid) then
-      FOnChangeInvalid(Self, Dir[1]);
   end;
 end; {DirWatchChangeInvalid}
 
@@ -2305,13 +2097,10 @@ begin
       begin
         {Check also collapsed (invisible) subdirectories:}
         ValidateDirectory(Node);
-        if Assigned(FOnChangeDetected) then
-          FOnChangeDetected(Self, Drive);
       end;
     end;
 end; {ChangeTimerOnTimer}
 
-{$IFNDEF NO_THREADS}
 procedure TDriveView.StartWatchThread;
 var
   NewWatchedDir: string;
@@ -2418,7 +2207,6 @@ begin
 
   Result := WatchThreadActive(Drive);
 end; {WatchThreadActive}
-{$ENDIF}
 
 procedure TDriveView.SetFullDriveScan(DoFullDriveScan: Boolean);
 begin
@@ -2504,145 +2292,7 @@ begin
     Result := Result.Parent;
 end; {RootNode}
 
-{NodeAttr: Returns the directory attributes to the node:}
-function TDriveView.NodeAttr(Node: TTreeNode): Integer;
-begin
-  if not Assigned(Node) then
-    raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['NodeAttr']));
-  Result := TNodeData(Node.Data).Attr;
-end; {NodeAttr}
-
-function TDriveView.NodeVerified(Node: TTreeNode): Boolean;
-begin
-  if (not Assigned(Node)) or (not Assigned(Node.Data)) then
-    raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['NodeVerified']));
-  Result := TNodeData(Node.Data).Scanned;
-end; {NodeVerified}
-
-function  TDriveView.CallBackExpandLevel(var Node: TTreeNode; Data: Pointer): Boolean;
-begin
-  Result := True;
-  if not Assigned(Node) then
-    raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['CallBackExpandLevel']));
-  if (Node.Level <= Integer(Data)) and (not Node.Expanded) then
-    Node.Expand(False)
-  else if (Node.Level > Integer(Data)) and Node.Expanded then
-    Node.Collapse(True);
-end; {CallBackExpandLevel}
-
-procedure TDriveView.ExpandLevel(Node: TTreeNode; Level: Integer);
-{Purpose: Expands all subnodes of node up to the given level}
-begin
-  if (not Assigned(Node)) or (not Assigned(Node.Data)) then
-    raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['ExpandLevel']));
-  Items.BeginUpdate;
-  IterateSubTree(Node, CallBackExpandLevel, rsRecursive, coScanStartNode, Pointer(Level));
-  Items.EndUpdate;
-end; {ExpandLevel}
-
-function  TDriveView.CallBackDisplayName(var Node: TTreeNode; Data: Pointer): Boolean;
-begin
-  Result := True;
-  if not Assigned(Node) then
-    raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['CallBackDisplayName']));
-  Node.Text := GetDisplayName(Node);
-end; {CallBackDisplayName}
-
-function  TDriveView.CallBackSetDirSize(var Node: TTreeNode; Data: Pointer): Boolean;
-begin
-  Result := True;
-  if Assigned(Node) then
-  begin
-    SetDirSize(Node);
-    if FShowDirSize then
-      Node.Text := GetDisplayName(Node);
-    if Assigned(Data) then
-      Inc(PInt(Data)^, TNodeData(Node.Data).DirSize);
-  end;
-  Application.ProcessMessages;
-  if not FContinue then
-    Exit;
-end; {CallBackSetDirSize}
-
-procedure TDriveView.SetShowDirSize(ShowIt: Boolean);
-var
-  Drive: Char;
-  RootNode: TTreeNode;
-  SaveCursor: TCursor;
-begin
-  if ShowIt = FShowDirSize then
-    Exit;
-  FShowDirSize := ShowIt;
-  SaveCursor := Screen.Cursor;
-  Screen.Cursor := crHourGlass;
-  Items.BeginUpdate;
-  for Drive := FirstFixedDrive to LastDrive do
-  begin
-    if DriveInfo[Drive].Valid then
-    begin
-      RootNode := DriveStatus[Drive].RootNode;
-      if Assigned(RootNode) then
-        IterateSubTree(RootNode, CallBackDisplayName, rsRecursive, coScanStartNode, nil);
-    end;
-  end;
-  Items.EndUpdate;
-  Screen.Cursor := SaveCursor;
-end; {SetShowDirSize}
-
-procedure TDriveView.RefreshDirSize(Node: TTreeNode);
-begin
-  if not Assigned(Node) then
-    raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['RefreshDirSize']));
-  CallBackSetDirSize(Node, nil);
-end; {RefreshDirSize}
-
-procedure TDriveView.RefreshDriveDirSize(Drive: TDrive);
-var
-  SaveCursor: TCursor;
-begin
-  SaveCursor := Screen.Cursor;
-  Screen.Cursor := crHourGlass;
-  Items.BeginUpdate;
-  with DriveStatus[Drive] do
-  begin
-    if Assigned(RootNode) then
-      IterateSubTree(RootNode, CallBackSetDirSize, rsRecursive, coScanStartNode, nil);
-  end;
-  Items.EndUpdate;
-  Screen.Cursor := SaveCursor;
-end; {RefreshDriveDirSize}
-
-function TDriveView.GetDirSize(Node: TTreeNode): Cardinal;
-begin
-  if (not Assigned(Node)) or (not Assigned(Node.Data)) then
-    raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['GetDirSize']));
-  if TNodeData(Node.Data).DirSize = CInvalidSize then
-    SetDirSize(Node);
-  Result := TNodeData(Node.Data).DirSize;
-end; {GetDirSize}
-
-procedure TDriveView.SetDirSize(Node: TTreeNode);
-var
-  SRec: TSearchRec;
-  Size: Cardinal;
-begin
-  if (not Assigned(Node)) or (not Assigned(Node.Data)) then
-    raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['SetDirSize']));
-  Size := 0;
-  if FindFirst(IncludeTrailingBackslash(NodePath(Node)) + '*.*', faAnyFile, SRec) = 0 then
-  begin
-    repeat
-      if (SRec.Attr and faDirectory) = 0 then
-        Inc(Size, SRec.Size);
-    until FindNext(SRec) <> 0;
-  end;
-  FindClose(Srec);
-  TNodeData(Node.Data).DirSize := Size;
-end; {SetDirSize}
-
 function TDriveView.GetDisplayName(Node: TTreeNode): string;
-var
-  DirName: string;
 begin
   Result := '';
   if (not Assigned(Node)) or (not Assigned(Node.Data)) then
@@ -2651,33 +2301,17 @@ begin
   if Node.Level = 0 then Result := GetDriveText(GetDriveToNode(Node))
     else
   begin
-    DirName := GetDirName(Node);
-    case FFileNameDisplay of
-      fndCap: Result := UpperCase(DirName);
-      fndNoCap: Result := LowerCase(DirName);
-      fndNice: if Length(DirName) <= 8 then
-               begin
-                  Result := LowerCase(DirName);
-                 Result[1] := Upcase(Result[1]);
-               end
-                 else Result := DirName;
-      else
-        Result := DirName;
-    end; {Case}
+    Result := GetDirName(Node);
   end;
-
-  if FShowDirSize then
-    Result := Result + ' = ' + FormatBytes(GetDirSize(Node), True, False);
 end; {GetDisplayName}
 
 procedure TDriveView.SetShowVolLabel(ShowIt: Boolean);
 begin
-  IF ShowIt = fShowVolLabel Then
-  Exit;
-  fShowVolLabel := ShowIt;
-  RefreshRootNodes(False, dvdsFloppy);
-End; {SetShowVolLabel}
-
+  if ShowIt = FShowVolLabel then
+    Exit;
+  FShowVolLabel := ShowIt;
+  RefreshRootNodes(dvdsFloppy);
+end; {SetShowVolLabel}
 
 procedure TDriveView.SetVolDisplayStyle(DoStyle: TVolumeDisplayStyle);
 var
@@ -2704,30 +2338,12 @@ begin
   end;
 end; {SetCompressedColor}
 
-procedure TDriveView.SetFileNameDisplay(Value: TFileNameDisplay);
-var
-  Drive: TDrive;
-begin
-  if Value <> FFileNameDisplay then
-  begin
-    FFileNameDisplay := Value;
-    for Drive := FirstDrive to LastDrive do
-      with DriveStatus[Drive] do
-        if Assigned(RootNode) and DriveStatus[Drive].Scanned then
-          IterateSubTree(RootNode, CallBackDisplayName, rsRecursive, coNoScanStartNode, nil);
-  end;
-end; {SetFileNameDisplay}
-
 procedure TDriveView.DisplayContextMenu(Node: TTreeNode; Point: TPoint);
 var
   Verb: string;
   DirWatched: Boolean;
 begin
-{$IFNDEF NO_THREADS}
   DirWatched := NodeWatched(Node) and WatchThreadActive;
-{$ELSE}
-  DirWatched := False;
-{$ENDIF}
 
   Assert(Node <> nil);
 
@@ -2825,20 +2441,15 @@ begin
 end;
 
 function TDriveView.DDExecute: TDragResult;
-{$IFNDEF NO_THREADS}
 var
   WatchThreadOK: Boolean;
   DragParentPath: string;
   DragPath: string;
-{$ENDIF}
 begin
-{$IFNDEF NO_THREADS}
   WatchThreadOK := WatchThreadActive;
-{$ENDIF}
 
   Result := FDragDropFilesEx.Execute(nil);
 
-  {$IFNDEF NO_THREADS}
   if (Result = drMove) and (not WatchThreadOK) then
   begin
     DragPath := NodePathName(FDragNode);
@@ -2858,7 +2469,6 @@ begin
       end;
     end;
   end;
-{$ENDIF}
 end;
 
 procedure TDriveView.PerformDragDropFileOperation(Node: TTreeNode; Effect: Integer);
@@ -2887,7 +2497,6 @@ begin
   try
     if (Effect = DropEffect_Copy) or (Effect = DropEffect_Move) then
     begin
-{$IFNDEF NO_THREADS}
       StopAllWatchThreads;
       if Assigned(FDirView) then
         FDirView.StopWatchThread;
@@ -2898,7 +2507,6 @@ begin
       begin
         TDirView(DropSourceControl).StopWatchThread;
       end;
-{$ENDIF}
 
       FileNamesAreMapped := (TFDDListItem(FDragDropFilesEx.FileList[0]^).MappedName <> '');
 
@@ -3001,9 +2609,7 @@ begin
 
     {Update linked component TDirView:}
     if Assigned(FDirView)
-{$IFNDEF NO_THREADS}
         and not FDirView.WatchThreadActive
-{$ENDIF}
         then
     begin
       case Effect of
@@ -3028,7 +2634,6 @@ begin
   finally
     FFileOperator.OperandFrom.Clear;
     FFileOperator.OperandTo.Clear;
-{$IFNDEF NO_THREADS}
     StartAllWatchThreads;
 
     if Assigned(FDirView) and (not FDirView.WatchThreadActive) then
@@ -3036,7 +2641,6 @@ begin
     if Assigned(DropSourceControl) and (DropSourceControl is TDirView) and
        (not TDirView(DropSourceControl).WatchThreadActive) then
       TDirView(DropSourceControl).StartWatchThread;
-{$ENDIF}
     Screen.Cursor := SaveCursor;
   end;
 end; {PerformDragDropFileOperation}
@@ -3056,22 +2660,16 @@ begin
   begin
     Lasttarget := FFileOperator.LastOperandTo[0];
     LastSource := FFileOperator.LastOperandFrom[0];
-{$IFNDEF NO_THREADS}
     StopAllWatchThreads;
-{$ENDIF}
     Result := FFileOperator.UndoExecute;
 
     ValidateDirectory(FindNodeToPath(ExtractFilePath(LastTarget)));
     ValidateDirectory(FindNodeToPath(ExtractFilePath(LastSource)));
-{$IFNDEF NO_THREADS}
     StartAllWatchThreads;
-{$ENDIF}
 
     if Assigned(FDirView) then
       with FDirView do
-{$IFNDEF NO_THREADS}
         if not WatchThreadActive then
-{$ENDIF}
         begin
           if (IncludeTrailingBackslash(ExtractFilePath(LastTarget)) = IncludeTrailingBackslash(Path)) or
              (IncludeTrailingBackslash(ExtractFilePath(LastSource)) = IncludeTrailingBackslash(Path)) then
@@ -3152,8 +2750,7 @@ function TDriveView.PasteFromClipBoard(TargetPath: String = ''): Boolean;
 begin
   ClearDragFileList(FDragDropFilesEx.FileList);
   Result := False;
-  if CanPasteFromClipBoard and
-    {MP}{$IFDEF OLD_DND} FDragDropFilesEx.GetFromClipBoard {$ELSE} FDragDropFilesEx.PasteFromClipboard {$ENDIF}{/MP}
+  if CanPasteFromClipBoard and {MP}FDragDropFilesEx.GetFromClipBoard{/MP}
     then
   begin
     if TargetPath = '' then

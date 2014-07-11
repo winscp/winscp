@@ -23,7 +23,6 @@ unit DirView;
 
     V2.6:
     - Shows "shared"-symbol with directories
-    - New property ShowSubDirSize. Displays subdirectories sizes.
     - Delphi5 compatible
 
     For detailed documentation and history see TDirView.htm.
@@ -37,39 +36,30 @@ interface
 
 {$WARN UNIT_PLATFORM OFF}
 {$WARN SYMBOL_PLATFORM OFF}
-{$DEFINE USE_DRIVEVIEW}
 
 uses
   Windows, ShlObj, ComCtrls, CompThread, CustomDirView, ListExt,
   ExtCtrls, Graphics, FileOperator, DiscMon, Classes, DirViewColProperties,
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
-  FileCtrl, SysUtils, BaseUtils, Controls;
+  FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView;
 
 {$I ResStrings.pas }
 
 type
-  TVolumeDisplayStyle = (doPrettyName, doDisplayName, doLongPrettyName); {Diplaytext of drive node}
+  TVolumeDisplayStyle = (doPrettyName, doDisplayName); {Diplaytext of drive node}
 
 const
-{$IFNDEF NO_THREADS}
   msThreadChangeDelay = 10; {TDiscMonitor: change delay}
   MaxWaitTimeOut = 10; {TFileDeleteThread: wait nn seconds for deleting files or directories}
-{$ENDIF}
 {$WARN SYMBOL_DEPRECATED OFF}
   FileAttr = SysUtils.faAnyFile and (not SysUtils.faVolumeID);
 {$WARN SYMBOL_DEPRECATED ON}
   SpecialExtensions = 'EXE,LNK,ICO,ANI,CUR,PIF,JOB,CPL';
   ExeExtension = 'EXE';
-  MinDate = $21;    {01.01.1980}
-  MaxDate = $EF9F;  {31.12.2099}
-  MinTime = 0;      {00:00:00}
-  MaxTime = $C000;  {24:00:00}
 
 type
   {Exceptions:}
-{$IFNDEF NO_THREADS}
   EIUThread = class(Exception);
-{$ENDIF}
   EDragDrop = class(Exception);
   EInvalidFileName = class(Exception);
   ERenameFileFailed = class(Exception);
@@ -77,7 +67,6 @@ type
   TDriveLetter = 'A'..'Z';
 
   TClipboardOperation = (cboNone, cboCut, cboCopy);
-  TFileNameDisplay = (fndStored, fndCap, fndNoCap, fndNice);
 
   {Record for each file item:}
   PFileRec = ^TFileRec;
@@ -106,19 +95,6 @@ type
     ImageIndex: Integer;
   end;
 
-{$IFDEF VER120}
-type
-  TWMContextMenu = packed record
-    Msg: Cardinal;
-    hWnd: HWND;
-    case Integer of
-      0: (XPos: Smallint;
-          YPos: Smallint);
-      1: (Pos: TSmallPoint;
-          Result: Longint);
-  end;
-{$ENDIF}
-
 {Additional events:}
 type
   TDirViewFileSizeChanged = procedure(Sender: TObject; Item: TListItem) of object;
@@ -126,22 +102,6 @@ type
 
 type
   TDirView = class;
-
-{$IFNDEF NO_THREADS}
-  TSubDirScanner = class(TCompThread)
-  private
-    FOwner: TDirView;
-    FStartPath: string;
-    FDirName: string;
-    FTotalSize: Int64;
-
-    procedure ThreadTerminated(Sender: TObject);
-
-  protected
-    constructor Create(Owner: TDirView; Item: TListItem);
-    procedure DoUpdateItem;
-    procedure Execute; override;
-  end;
 
   {  TIconUpdateThread (Fetch shell icons via thread) }
   TIconUpdateThread = class(TCompThread)
@@ -171,7 +131,6 @@ type
   public
     procedure Terminate; override;
   end;
-{$ENDIF}
 
   { TDirView }
   TDirView = class(TCustomDirView)
@@ -180,58 +139,30 @@ type
     FConfirmOverwrite: Boolean;
     FUseIconCache: Boolean;
     FInfoCacheList: TListExt;
-    {$IFDEF USE_DRIVEVIEW}
-    FDriveView: TObject;
-    {$ENDIF}
+    FDriveView: TCustomDriveView;
     FChangeTimer: TTimer;
     FChangeInterval: Cardinal;
     FUseIconUpdateThread: Boolean;
-    {$IFNDEF NO_THREADS}
     FIUThreadFinished: Boolean;
-    {$ENDIF}
     FDriveType: Integer;
-    FAttrSpace: string;
-    FNoCheckDrives: string;
-    FSortAfterUpdate: Boolean;
     FCompressedColor: TColor;
-    FFileNameDisplay: TFileNameDisplay;
     FParentFolder: IShellFolder;
     FDesktopFolder: IShellFolder;
     FDirOK: Boolean;
     FPath: string;
-    FDrawLinkOverlay: Boolean;
     SelectNewFiles: Boolean;
-    FSelfDropDuplicates: Boolean;
     FHiddenCount: Integer;
     FFilteredCount: Integer;
-
-    {File selection properties:}
-    FSelArchive: TSelAttr;
-    FSelHidden: TSelAttr;
-    FSelSysFile: TSelAttr;
-    FSelReadOnly: TSelAttr;
-    FSelFileSizeFrom: Int64;
-    FSelFileSizeTo: Int64;
-    FSelFileDateFrom: Word;
-    FSelFileDateTo: Word;
-    FSelFileTimeFrom: Word;
-    FSelFileTimeTo: Word;
 
     {shFileOperation-shell component TFileOperator:}
     FFileOperator: TFileOperator;
     {Additional thread components:}
-    {$IFNDEF NO_THREADS}
     FIconUpdateThread: TIconUpdateThread;
-    {$ENDIF}
     FDiscMonitor: TDiscMonitor;
     FHomeDirectory: string;
-    FSubDirScanner: TList;
 
     {Additional events:}
-    FOnFileSizeChanged: TDirViewFileSizeChanged;
     FOnFileIconForName: TDirViewFileIconForName;
-    FOnChangeDetected: TNotifyEvent;
-    FOnChangeInvalid: TNotifyEvent;
 
     iRecycleFolder: iShellFolder;
     PIDLRecycle: PItemIDList;
@@ -243,9 +174,7 @@ type
     function GetHomeDirectory: string;
 
     {Drag&drop helper functions:}
-    {$IFNDEF NO_THREADS}
     procedure SignalFileDelete(Sender: TObject; Files: TStringList);
-    {$ENDIF}
     procedure PerformDragDropFileOperation(TargetPath: string; dwEffect: Integer;
       RenameOnCollision: Boolean);
     procedure SetDirColProperties(Value: TDirViewColProperties);
@@ -253,10 +182,7 @@ type
   protected
     function NewColProperties: TCustomListViewColProperties; override;
     function SortAscendingByDefault(Index: Integer): Boolean; override;
-    procedure SetShowSubDirSize(Value: Boolean); override;
-    {$IFDEF USE_DRIVEVIEW}
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
-    {$ENDIF}
 
     procedure Delete(Item: TListItem); override;
     procedure DDError(ErrorNo: TDDError);
@@ -289,32 +215,26 @@ type
     procedure ChangeInvalid(Sender: TObject; const Directory: string; const ErrorStr: string);
     procedure TimerOnTimer(Sender: TObject);
     procedure ResetItemImage(Index: Integer);
-    procedure SetAttrSpace(Value: string);
-    procedure SetNoCheckDrives(Value: string);
     procedure SetWatchForChanges(Value: Boolean); override;
     procedure AddParentDirItem;
     procedure AddToDragFileList(FileList: TFileList; Item: TListItem); override;
-    procedure SetFileNameDisplay(Value: TFileNameDisplay); virtual;
     function DragCompleteFileList: Boolean; override;
     procedure ExecuteFile(Item: TListItem); override;
     function GetIsRoot: Boolean; override;
     procedure InternalEdit(const HItem: TLVItem); override;
     function ItemColor(Item: TListItem): TColor; override;
-    function ItemDisplayName(FileName: string): string; virtual;
     function ItemFileExt(Item: TListItem): string;
     function ItemFileNameOnly(Item: TListItem): string;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; override;
     function ItemIsFile(Item: TListItem): Boolean; override;
     function ItemIsRecycleBin(Item: TListItem): Boolean; override;
     function ItemMatchesFilter(Item: TListItem; const Filter: TFileFilter): Boolean; override;
+    function FileMatches(FileName: string; const SearchRec: TSearchRec): Boolean;
     function ItemOverlayIndexes(Item: TListItem): Word; override;
     procedure LoadFiles; override;
     procedure PerformItemDragDropOperation(Item: TListItem; Effect: Integer); override;
     procedure SortItems; override;
-    {$IFNDEF NO_THREADS}
     procedure StartFileDeleteThread;
-    {$ENDIF}
-    procedure SetShowHiddenFiles(Value: Boolean); override;
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     function SecondaryColumnHeader(Index: Integer; var AliasOnly: Boolean): Integer; override;
@@ -324,10 +244,8 @@ type
   public
     {Runtime, readonly properties:}
     property DriveType: Integer read FDriveType;
-    {$IFDEF USE_DRIVEVIEW}
     {Linked component TDriveView:}
-    property DriveView: TObject read FDriveView write FDriveView;
-    {$ENDIF}
+    property DriveView: TCustomDriveView read FDriveView write FDriveView;
     { required, otherwise AV generated, when dragging columns}
     property Columns stored False;
     property ParentFolder: IShellFolder read FParentFolder;
@@ -354,17 +272,13 @@ type
     function ItemFileSize(Item: TListItem): Int64; override;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; override;
 
-    {$IFNDEF NO_THREADS}
     {Thread handling: }
     procedure StartWatchThread;
     procedure StopWatchThread;
     function WatchThreadActive: Boolean;
     procedure StartIconUpdateThread;
     procedure StopIconUpdateThread;
-    procedure StartSubDirScanner;
-    procedure StopSubDirScanner;
     procedure TerminateThreads;
-    {$ENDIF}
 
     {Other additional functions: }
     procedure ClearIconCache;
@@ -402,30 +316,6 @@ type
     procedure ExecuteDrive(Drive: TDriveLetter);
     property HomeDirectory: string read GetHomeDirectory write FHomeDirectory;
 
-    {Redefined functions: }
-    {Properties for filtering files:}
-
-    property SelArchive: TSelAttr
-      read FSelArchive write FSelArchive default selDontCare;
-    property SelHidden: TSelAttr
-      read FSelHidden write FSelHidden default selDontCare;
-    property SelSysFile: TSelAttr
-      read FSelSysFile write FSelSysFile default selDontCare;
-    property SelReadOnly: TSelAttr
-      read FSelReadOnly write FSelReadOnly default selDontCare;
-    property SelFileSizeFrom: Int64
-      read FSelFileSizeFrom write FSelFileSizeFrom;
-    property SelFileSizeTo: Int64
-      read FSelFileSizeTo write FSelFileSizeTo default 0;
-    property SelFileDateFrom: Word
-      read FSelFileDateFrom write FSelFileDateFrom default MinDate; {01.01.1980}
-    property SelFileDateTo: Word
-      read FSelFileDateTo write FSelFileDateTo default MaxDate; {31.12.2099}
-    property SelFileTimeFrom: Word
-      read FSelFileTimeFrom write FSelFileTimeFrom;
-    property SelFileTimeTo: Word
-      read FSelFileTimeTo write FSelFileTimeTo default MaxTime;
-
   published
     property DirColProperties: TDirViewColProperties read GetDirColProperties write SetDirColProperties;
     property PathLabel;
@@ -435,10 +325,7 @@ type
 
     property LoadAnimation;
     property DimmHiddenFiles;
-    property ShowDirectories;
     property ShowHiddenFiles;
-    property ShowSubDirSize;
-    property SingleClickToExec;
     property WantUseDragImages;
     property TargetPopupMenu;
     property AddParentDir;
@@ -477,8 +364,6 @@ type
     {Confirm overwriting files}
     property ConfirmOverwrite: Boolean
       read FConfirmOverwrite write fConfirmOverwrite default True;
-    property SortAfterUpdate: Boolean
-      read FSortAfterUpdate write FSortAfterUpdate default True;
     {Reload the directory after only the interval:}
     property ChangeInterval: Cardinal
       read FChangeInterval write SetChangeInterval default MSecsPerSec;
@@ -491,36 +376,14 @@ type
      icon itself:}
     property UseIconCache: Boolean
       read FUseIconCache write FUseIconCache default False;
-    property FileNameDisplay: TFileNameDisplay
-      read FFileNameDisplay write SetFileNameDisplay default fndStored;
-    {Use this string as whitespace in the attribute column:}
-    property AttrSpace: string read FAttrSpace write SetAttrSpace;
-    {Don't watch these drives for changes:}
-    property NoCheckDrives: string read FNoCheckDrives write SetNoCheckDrives;
     {Watch current directory for filename changes (create, rename, delete files)}
     property WatchForChanges;
-    property SelfDropDuplicates: Boolean
-      read FSelfDropDuplicates write FSelfDropDuplicates default False;
 
     {Additional events:}
-    {The watchthread has detected new, renamed or deleted files}
-{$IFNDEF NO_THREADS}
-    property OnChangeDetected: TNotifyEvent
-      read FOnChangeDetected write FOnChangeDetected;
-    {The watchthread can't watch the current directory. Occurs on novell
-     network drives.}
-    property OnChangeInvalid: TNotifyEvent
-      read FOnChangeInvalid write FOnChangeInvalid;
-{$ENDIF}
-    {Set AddFile to false, if actual file should not be added to the filelist:}
-    property OnFileSizeChanged: TDirViewFileSizeChanged
-      read FOnFileSizeChanged write FOnFileSizeChanged;
     property OnFileIconForName: TDirViewFileIconForName
       read FOnFileIconForName write FOnFileIconForName;
     property UseSystemContextMenu;
     property OnContextPopup;
-    property OnBeginRename;
-    property OnEndRename;
     property OnHistoryChange;
     property OnHistoryGo;
     property OnPathChange;
@@ -546,14 +409,12 @@ var
 implementation
 
 uses
-{$IFDEF USE_DRIVEVIEW}
   DriveView,
-{$ENDIF}
   PIDL, Forms, Dialogs,
   ShellAPI, ComObj,
   ActiveX, ImgList,
   ShellDialogs, IEDriveInfo,
-  FileChanges, Math, PasTools, StrUtils;
+  FileChanges, Math, PasTools, StrUtils, Types, UITypes;
 
 var
   DaylightHack: Boolean;
@@ -618,134 +479,6 @@ begin
 {$WARNINGS ON}
   end;
 end;
-
-{$IFNDEF NO_THREADS}
-
-{ TSubDirScanner }
-
-constructor TSubDirScanner.Create(Owner: TDirView; Item: TListItem);
-begin
-  inherited Create(True);
-  FOwner := Owner;
-  FTotalSize := 0;
-  FStartPath := FOwner.ItemFullFileName(Item);
-  FDirName := Item.Caption;
-  FreeOnTerminate := False;
-  OnTerminate := ThreadTerminated;
-  Priority := tpLower;
-  Resume;
-end; {Create}
-
-procedure TSubDirScanner.Execute;
-
-  function ScanSubDir(Path: string): Boolean;
-  var
-    SRec: SysUtils.TSearchRec;
-    DosError: Integer;
-    SubDirs: TStringList;
-    Index: Integer;
-    FSize: Int64;
-  begin
-    Result := True;
-    DosError := FindFirst(Path + '*.*', faAnyFile, SRec);
-    if DosError = 0 then
-    begin
-      SubDirs := TStringList.Create;
-      try
-        while DosError = 0 do
-        begin
-          if Terminated then
-            Break;
-
-          if (SRec.Name <> '.') and (SRec.name <> '..') then
-          begin
-            FSize := SizeFromSRec(SRec);
-            if FSize > 0 then
-              Inc(FTotalSize, FSize);
-
-            if SRec.Attr and faDirectory <> 0 then
-              SubDirs.Add(IncludeTrailingPathDelimiter(Path + Srec.Name));
-          end;
-          if not Terminated then DosError := FindNext(SRec)
-            else Break;
-        end; {While}
-        FindClose(SRec);
-      finally
-        try
-          for Index := 0 to SubDirs.Count - 1 do
-          begin
-            Result := ScanSubDir(SubDirs[Index]);
-            if not Result then Break;
-          end;
-        finally
-          SubDirs.Free;
-          if Result then
-            Result := (DosError = ERROR_NO_MORE_FILES);
-        end;
-      end;
-    end;
-  end; {ScanSubDir}
-
-begin {Execute}
-  if ScanSubDir(IncludeTrailingPathDelimiter(FStartPath)) and not Terminated then
-    Synchronize(DoUpdateItem);
-end; {Execute}
-
-procedure TSubDirScanner.DoUpdateItem;
-var
-  Item: TListItem;
-  StartPos: Integer;
-begin
-  if not Terminated then
-  begin
-    StartPos := 0;
-    Item := nil;
-    while StartPos < FOwner.Items.Count do
-    begin
-      Item := FOwner.FindCaption(StartPos, FDirName, False, True, False);
-      if Assigned(Item) and (FOwner.ItemFullFileName(Item) = FStartPath) then
-        Break
-        else
-      if not Assigned(Item) then Break
-        else StartPos := Item.Index + 1;
-    end;
-
-    if Assigned(Item) and not Terminated then
-    begin
-      PFileRec(Item.Data)^.Size := FTotalSize;
-      Inc(FOwner.FFilesSize, FTotalSize);
-      if Item.Selected then
-        Inc(FOwner.FFilesSelSize, FTotalSize);
-      FOwner.UpdateItems(Item.Index, Item.Index);
-      if Assigned(FOwner.OnFileSizeChanged) then
-        FOwner.OnFileSizeChanged(FOwner, Item);
-    end;
-  end;
-end; {DoUpdateItem}
-
-procedure TSubDirScanner.ThreadTerminated(Sender: TObject);
-var
-  Index: Integer;
-begin
-  Assert(Assigned(FOwner));
-  with FOwner do
-    for Index := 0 to FSubDirScanner.Count - 1 do
-      if FSubDirScanner[Index] = Self then
-      begin
-        try
-          FSubDirScanner.Delete(Index);
-          if (FSubDirScanner.Count = 0) and
-             (FOwner.SortColumn = Integer(dvSize)) and
-             not Loading then FOwner.SortItems;
-        finally
-          inherited Destroy;
-        end;
-        Exit;
-      end;
-
-  Assert(False, 'TSubDirScanner failed: ' + FStartPath);
-  inherited Destroy;
-end; {ThreadTerminated}
 
 { TIconUpdateThread }
 
@@ -836,6 +569,7 @@ begin
 
         if not Assigned(CurrentItemData.PIDL) then
         begin
+          ShAttr := 0;
           FOwner.FDesktopFolder.ParseDisplayName(FOwner.ParentForm.Handle, nil,
             PChar(CurrentFilePath), Eaten, CurrentItemData.PIDL, ShAttr);
         end;
@@ -920,8 +654,6 @@ begin
   inherited;
 end; {TIconUpdateThread.Terminate}
 
-{$ENDIF} // NO_THREADS
-
 { TDirView }
 
 constructor TDirView.Create(AOwner: TComponent);
@@ -934,16 +666,11 @@ begin
   FDriveType := DRIVE_UNKNOWN;
   FUseIconCache := False;
   FConfirmDelete := True;
-  FAttrSpace := EmptyStr;
-  FSortAfterUpdate := True;
   FCompressedColor := clBlue;
-  FFileNameDisplay := fndStored;
   FParentFolder := nil;
   FDesktopFolder := nil;
   SelectNewFiles := False;
-  FDrawLinkOverlay := False;
   DragOnDriveIsMove := True;
-  FSelfDropDuplicates := False;
   FHiddenCount := 0;
   FFilteredCount := 0;
 
@@ -954,7 +681,6 @@ begin
   FPath := '';
 
   FDiscMonitor := nil;
-  FSubDirScanner := TList.Create;
 
   {ChangeTimer: }
   if FChangeInterval = 0 then FChangeInterval := MSecsPerSec;
@@ -962,15 +688,6 @@ begin
   FChangeTimer.Interval := FChangeInterval;
   FChangeTimer.Enabled := False;
   FChangeTimer.OnTimer := TimerOnTimer;
-
-  FSelArchive := selDontCare;
-  FSelHidden := selDontCare;
-  FSelReadOnly := selDontCare;
-  FSelSysFile := selDontCare;
-  FSelFileSizeTo := 0;
-  FSelFileDateFrom := MinDate;
-  FSelFileDateTo := MaxDate;
-  FSelFileTimeTo := MaxTime;
 
   {Drag&drop:}
   FConfirmOverwrite := True;
@@ -991,8 +708,6 @@ end; {Create}
 
 destructor TDirView.Destroy;
 begin
-  FSubDirScanner.Free;
-
   if Assigned(PIDLRecycle) then FreePIDL(PIDLRecycle);
 
   FInfoCacheList.Free;
@@ -1007,26 +722,21 @@ procedure TDirView.WMDestroy(var Msg: TWMDestroy);
 begin
   Selected := nil;
   ClearItems;
-{$IFNDEF NO_THREADS}
   TerminateThreads;
-{$ENDIF}
   inherited;
 end; {WMDestroy}
 
 procedure TDirView.CMRecreateWnd(var Message: TMessage);
 begin
-  // see comment in TDirView.StopSubDirScanner
+  // see comment in TDirView.StopIconUpdateThread
   if not (csRecreating in ControlState) then
   begin
     inherited;
   end;
 end;
 
-{$IFNDEF NO_THREADS}
-
 procedure TDirView.TerminateThreads;
 begin
-  StopSubDirScanner;
   StopIconUpdateThread;
   StopWatchThread;
   if Assigned(FDiscMonitor) then
@@ -1035,8 +745,6 @@ begin
     FDiscMonitor := nil;
   end;
 end; {TerminateThreads}
-
-{$ENDIF}
 
 function TDirView.GetHomeDirectory: string;
 begin
@@ -1081,13 +789,13 @@ begin
 
   if IsUncPath(Value) then
     raise Exception.CreateFmt(SUcpPathsNotSupported, [Value]);
-  if not DirectoryExists(Value) then
+  if not DirectoryExists(ApiPath(Value)) then
     raise Exception.CreateFmt(SDirNotExists, [Value]);
 
   if Assigned(FDriveView) and
-     (TDriveView(FDriveView).Directory <> Value) then
+     (FDriveView.Directory <> Value) then
   begin
-    TDriveView(FDriveView).Directory := Value;
+    FDriveView.Directory := Value;
   end
     else
   if FPath <> Value then
@@ -1115,16 +823,6 @@ begin
   end;
 end; {SetLoadEnabled}
 
-procedure TDirView.SetShowHiddenFiles(Value: Boolean);
-begin
-  if Value <> ShowHiddenFiles then
-  begin
-    if Value then FSelHidden := selDontCare
-      else FSelHidden := selNo;
-    inherited;
-  end;
-end;
-
 procedure TDirView.SetCompressedColor(Value: TColor);
 begin
   if Value <> CompressedColor then
@@ -1145,24 +843,6 @@ begin
   if Index > Pred(Items.Count) then Result := nil
     else Result := Items[index].Data;
 end; {GetFileRec}
-
-function TDirView.ItemDisplayName(FileName: string): string;
-begin
-  case FFileNameDisplay of
-    fndCap: Result := UpperCase(FileName);
-    fndNoCap: Result := LowerCase(FileName);
-    fndNice:
-      if (Length(FileName) > 12) or (Pos(' ', FileName) <> 0) then
-          Result := FileName
-        else
-      begin
-        Result := LowerCase(FileName);
-        Result[1] := Upcase(Result[1]);
-      end;
-    else
-      Result := FileName;
-  end; {Case}
-end; {ItemDisplayName}
 
 function TDirView.SecondaryColumnHeader(Index: Integer; var AliasOnly: Boolean): Integer;
 begin
@@ -1197,7 +877,7 @@ begin
     FileName := SRec.Name;
     FileExt := UpperCase(ExtractFileExt(Srec.Name));
     FileExt := Copy(FileExt, 2, Length(FileExt) - 1);
-    DisplayName := ItemDisplayName(FileName);
+    DisplayName := FileName;
 {$WARNINGS OFF}
     Attr := SRec.FindData.dwFileAttributes;
 {$WARNINGS ON}
@@ -1239,7 +919,7 @@ begin
   FHasParentDir := True;
   Item := Items.Add;
   New(PItem);
-  if FindFirst(FPath, faAnyFile, SRec) = 0 then
+  if FindFirst(ApiPath(FPath), faAnyFile, SRec) = 0 then
     FindClose(SRec);
   with PItem^ do
   begin
@@ -1262,8 +942,7 @@ begin
     IconEmpty := False;
     PIDL := nil;
 
-    if HasExtendedCOMCTL32 then ImageIndex := StdDirIcon
-      else ImageIndex  := StdDirSelIcon;
+    ImageIndex := StdDirIcon;
 
     TypeName := SParentDir;
     Empty := False;
@@ -1283,21 +962,7 @@ var
   NewItem: TListItem;
   FileRec: PFileRec;
   FileInfo: TSHFileInfo;
-  FileSel: Boolean;
   DosError: Integer;
-  AttrIncludeMask: Integer;
-  AttrExcludeMask: Integer;
-  FileTimeFrom: LongWord;
-  FileTimeTo: LongWord;
-  FSize: Int64;
-
-  procedure AddToMasks(Attr: TSelAttr; Mask: Word);
-  begin
-    case Attr of
-      selYes: AttrIncludeMask := AttrIncludeMask or Mask;
-      selNo:  AttrExcludeMask := AttrExcludeMask or Mask;
-    end;
-  end;
 
 begin
   if not Assigned(iRecycleFolder) then
@@ -1322,16 +987,6 @@ begin
   FHiddenCount := 0;
   FFilteredCount := 0;
 
-  AttrIncludeMask := 0;
-  AttrExcludeMask := 0;
-  AddToMasks(FSelArchive, SysUtils.faArchive);
-  AddToMasks(FSelHidden, SysUtils.faHidden);
-  AddToMasks(FSelReadOnly, SysUtils.faReadOnly);
-  AddToMasks(FSelSysFile, SysUtils.faSysFile);
-
-  FileTimeFrom := LongWord(FSelFileDateFrom) shl 16 or FSelFileTimeFrom;
-  FileTimeTo   := LongWord(FSelFileDateTo)   shl 16 or FSelFileTimeTo;
-
   if SUCCEEDED(iRecycleFolder.EnumObjects(Self.Handle,
     SHCONTF_FOLDERS or SHCONTF_NONFOLDERS or SHCONTF_INCLUDEHIDDEN, EnumList)) then
   begin
@@ -1347,39 +1002,16 @@ begin
            SetLength(FullPath, StrLen(PChar(FullPath)));
 
          {Filesize, attributes and -date:}
-         DosError := FindFirst(FullPath, faAnyFile, SRec);
+         DosError := FindFirst(ApiPath(FullPath), faAnyFile, SRec);
          FindClose(Srec);
          SRec.Name := ExtractFilePath(FullPath) + SRec.Name;
 
          {Displayname:}
          GetShellDisplayName(iRecycleFolder, PCurrList, SHGDN_FORPARSING, DisplayName);
 
-         FileSel := (DosError = 0);
-         if FileSel and not (Bool(SRec.Attr and faDirectory)) then
-         begin
-           if (AttrIncludeMask <> 0) then
-             FileSel := Srec.Attr and AttrIncludeMask >= AttrIncludeMask;
-           if FileSel and (AttrExcludeMask <> 0) then
-              FileSel := AttrExcludeMask and Srec.Attr = 0;
-
-           FSize := SizeFromSRec(SRec);
-           FileSel :=
-            FileSel and
-            ((Mask = '') or
-             FileNameMatchesMasks(
-               DisplayName, False, FSize,
-               FileTimeToDateTime(SRec.FindData.ftLastWriteTime),
-               Mask, True)) and
-            (FSize >= FSelFileSizeFrom) and
-            ((FSelFileSizeTo = 0) or
-             (FSize <= FSelFileSizeTo)) and
-{$WARN SYMBOL_DEPRECATED OFF}
-            (LongWord(SRec.Time) >= FileTimeFrom) and
-            (LongWord(SRec.Time) <= FileTimeTo);
-{$WARN SYMBOL_DEPRECATED ON}
-         end;
-
-         if FileSel then
+         if (DosError = 0) and
+            (((SRec.Attr and faDirectory) <> 0) or
+             FileMatches(DisplayName, SRec)) then
          begin
            {Filetype and icon:}
            SHGetFileInfo(PChar(FQPIDL), 0, FileInfo, SizeOf(FileInfo),
@@ -1396,18 +1028,9 @@ begin
            if FileRec^.Typename = EmptyStr then
              FileRec^.TypeName := Format(STextFileExt, [FileRec.FileExt]);
            FileRec^.ImageIndex := FileInfo.iIcon;
-
-{$IFNDEF NO_THREADS}
-           if ShowSubDirSize and FileRec^.isDirectory then
-             FSubDirScanner.Add(TSubDirScanner.Create(Self, NewItem));
-{$ENDIF}
          end
            else
          begin
-           if (AttrExcludeMask and Srec.Attr and SysUtils.faHidden) <> 0 then
-             Inc(FHiddenCount)
-           else
-             Inc(FFilteredCount);
            FreePIDL(FQPIDL);
          end;
 
@@ -1435,6 +1058,7 @@ begin
 
   if Assigned(FDesktopFolder) then
   begin
+    Attr := 0;
     if Succeeded(FDesktopFolder.ParseDisplayName(
          ParentForm.Handle, nil, PChar(Dir), Eaten, NewPIDL, Attr)) then
     begin
@@ -1503,6 +1127,38 @@ begin
        FileRec^.Size, FileTimeToDateTime(FileRec^.FileTime), Filter.Masks, False)));
 end;
 
+function TDirView.FileMatches(FileName: string; const SearchRec: TSearchRec): Boolean;
+var
+  Directory: Boolean;
+  FileSize: Int64;
+begin
+  Result := (ShowHiddenFiles or ((SearchRec.Attr and SysUtils.faHidden) = 0));
+  if not Result then
+  begin
+    Inc(FHiddenCount);
+  end
+    else
+  if Mask <> '' then
+  begin
+    Directory := ((SearchRec.Attr and faDirectory) <> 0);
+    if Directory then FileSize := 0
+      else FileSize := SizeFromSRec(SearchRec);
+
+    Result :=
+      FileNameMatchesMasks(
+        FileName,
+        Directory,
+        FileSize,
+        FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime),
+        Mask, True);
+
+    if not Result then
+    begin
+      Inc(FFilteredCount);
+    end;
+  end;
+end;
+
 function TDirView.ItemOverlayIndexes(Item: TListItem): Word;
 begin
   Result := inherited ItemOverlayIndexes(Item);
@@ -1510,20 +1166,14 @@ begin
   begin
     if PFileRec(Item.Data)^.IsParentDir then
       Inc(Result, oiDirUp);
-    if FDrawLinkOverlay and
-       (UpperCase(ItemFileExt(Item)) = '.LNK') then
-        Inc(Result, oiLink);
   end;
 end;
 
 procedure TDirView.Load;
 begin
   try
-{$IFNDEF NO_THREADS}
-    StopSubDirScanner;
     StopIconUpdateThread;
     StopWatchThread;
-{$ENDIF}
 
     FChangeTimer.Enabled  := False;
     FChangeTimer.Interval := 0;
@@ -1532,11 +1182,9 @@ begin
   finally
     if DirOK and not AbortLoading then
     begin
-{$IFNDEF NO_THREADS}
       if FUseIconUpdateThread and (not IsRecycleBin) then
         StartIconUpdateThread;
       StartWatchThread;
-{$ENDIF}
     end;
   end;
 end;
@@ -1545,42 +1193,12 @@ procedure TDirView.LoadFiles;
 var
   SRec: SysUtils.TSearchRec;
   DosError: Integer;
-  FileSel: Boolean;
-  FSize: Int64;
-  {$IFNDEF NO_THREADS}
-  NewItem: TListItem;
-  {$ENDIF}
-  AttrIncludeMask: Integer;
-  AttrExcludeMask: Integer;
-  FileTimeFrom: LongWord;
-  FileTimeTo: LongWord;
-  {$IFDEF USE_DRIVEVIEW}
   DirsCount: Integer;
   SelTreeNode: TTreeNode;
   Node: TTreeNode;
-  {$ENDIF}
-
-  procedure AddToMasks(Attr: TSelAttr; Mask: Word);
-  begin
-    case Attr of
-      selYes: AttrIncludeMask := AttrIncludeMask or Mask;
-      selNo:  AttrExcludeMask := AttrExcludeMask or Mask;
-    end;
-  end;
-
 begin
   FHiddenCount := 0;
   FFilteredCount := 0;
-
-  AttrIncludeMask := 0;
-  AttrExcludeMask := 0;
-  AddToMasks(FSelArchive, SysUtils.faArchive);
-  AddToMasks(FSelHidden, SysUtils.faHidden);
-  AddToMasks(FSelReadOnly, SysUtils.faReadOnly);
-  AddToMasks(FSelSysFile, SysUtils.faSysFile);
-
-  FileTimeFrom := LongWord(fSelFileDateFrom) shl 16 or fSelFileTimeFrom;
-  FileTimeTo   := LongWord(fSelFileDateTo)   shl 16 or fSelFileTimeTo;
 
   try
     if Length(FPath) > 0 then
@@ -1595,17 +1213,13 @@ begin
 
     if DirOK then
     begin
-      {$IFDEF USE_DRIVEVIEW}
       if Assigned(FDriveView) then
         SelTreeNode := TDriveView(FDriveView).FindNodeToPath(FPath)
         else SelTreeNode := nil;
-      {$ENDIF}
 
-      {$IFDEF USE_DRIVEVIEW}
       if Assigned(FDriveView) and Assigned(SelTreeNode) then
           FIsRecycleBin := TNodeData(SelTreeNode.Data).IsRecycleBin
         else
-      {$ENDIF}
       FIsRecycleBin :=
         (Uppercase(Copy(FPath, 2, 10)) = ':\RECYCLED') or
         (Uppercase(Copy(FPath, 2, 10)) = ':\RECYCLER');
@@ -1613,49 +1227,20 @@ begin
       if not Assigned(FDesktopFolder) then
         shGetDesktopFolder(FDesktopFolder);
 
-      {$IFNDEF PHYSICALRECYCLEBIN}
       if IsRecycleBin then LoadFromRecycleBin(Path)
         else
-      {$ENDIF}
       begin
         FParentFolder := GetShellFolder(PathName);
 
-        DosError := SysUtils.FindFirst(IncludeTrailingPathDelimiter(FPath) + '*.*',
+        DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'),
           FileAttr, SRec);
         while (DosError = 0) and (not AbortLoading) do
         begin
           if (SRec.Attr and faDirectory) = 0 then
           begin
-            FileSel := True;
-            FSize := SizeFromSRec(SRec);
-            if AttrIncludeMask <> 0 then
-              FileSel := (SRec.Attr and AttrIncludeMask) >= AttrIncludeMask;
-            if FileSel and (AttrExcludeMask <> 0) then
-              FileSel := ((AttrExcludeMask and Srec.Attr) = 0);
-
-            if FileSel and
-              ((Mask = '') or
-                FileNameMatchesMasks(
-                  SRec.Name, False, FSize,
-                  FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask, True)) and
-              (FSize >= FSelFileSizeFrom) and
-              ((FSelFileSizeTo = 0) or (FSize <= FSelFileSizeTo)) and
-{$WARN SYMBOL_DEPRECATED OFF}
-              (LongWord(SRec.Time) >= FileTimeFrom) and
-              (LongWord(SRec.Time) <= FileTimeTo) then
-{$WARN SYMBOL_DEPRECATED ON}
+            if FileMatches(SRec.Name, SRec) then
             begin
-              if FileSel then
-              begin
-                AddItem(SRec);
-              end;
-            end
-              else
-            begin
-             if (AttrExcludeMask and Srec.Attr and SysUtils.faHidden) <> 0 then
-               Inc(FHiddenCount)
-             else
-               Inc(FFilteredCount);
+              AddItem(SRec);
             end;
           end;
           DosError := FindNext(SRec);
@@ -1668,73 +1253,40 @@ begin
         end;
 
         {Search for directories:}
-        {$IFDEF USE_DRIVEVIEW}
         DirsCount := 0;
-        {$ENDIF}
-        if ShowDirectories then
+        DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'),
+          DirAttrMask, SRec);
+        while (DosError = 0) and (not AbortLoading) do
         begin
-          DosError := SysUtils.FindFirst(IncludeTrailingPathDelimiter(FPath) + '*.*',
-            DirAttrMask, SRec);
-          while (DosError = 0) and (not AbortLoading) do
+          if (SRec.Name <> '.') and (SRec.Name <> '..') and
+             ((Srec.Attr and faDirectory) <> 0) then
           begin
-            FileSel := True;
-            if AttrIncludeMask <> 0 then
-              FileSel := ((SRec.Attr and AttrIncludeMask) = AttrIncludeMask);
-            if FileSel and (AttrExcludeMask <> 0) then
-              FileSel := ((AttrExcludeMask and SRec.Attr) = 0);
+            Inc(DirsCount);
 
-            if (SRec.Name <> '.') and (SRec.Name <> '..') and
-               ((Srec.Attr and faDirectory) <> 0) then
+            if FileMatches(SRec.Name, SRec) then
             begin
-              {$IFDEF USE_DRIVEVIEW}
-              Inc(DirsCount);
-              {$ENDIF}
-
-              if FileSel and
-                 ((Mask = '') or
-                  FileNameMatchesMasks(
-                    SRec.Name, True, 0,
-                    FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask, True)) then
-              begin
-                {$IFNDEF NO_THREADS}
-                NewItem :=
-                {$ENDIF}
-                AddItem(Srec);
-                {$IFNDEF NO_THREADS}
-                if ShowSubDirSize then
-                  FSubDirScanner.Add(TSubDirScanner.Create(Self, NewItem));
-                {$ENDIF}
-              end
-                else
-              begin
-                if (AttrExcludeMask and Srec.Attr and SysUtils.faHidden) <> 0 then
-                  Inc(FHiddenCount)
-                else
-                  Inc(FFilteredCount);
-              end;
+              AddItem(Srec);
             end;
-            DosError := FindNext(SRec);
           end;
-          SysUtils.FindClose(SRec);
+          DosError := FindNext(SRec);
+        end;
+        SysUtils.FindClose(SRec);
 
-          {$IFDEF USE_DRIVEVIEW}
-          {Update TDriveView's subdir indicator:}
-          if Assigned(FDriveView) and (FDriveType = DRIVE_REMOTE) then
-            with FDriveView as TDriveView do
+        {Update TDriveView's subdir indicator:}
+        if Assigned(FDriveView) and (FDriveType = DRIVE_REMOTE) then
+          with TDriveView(FDriveView) do
+          begin
+            Node := FindNodeToPath(PathName);
+            if Assigned(Node) and Assigned(Node.Data) and
+               not TNodeData(Node.Data).Scanned then
             begin
-              Node := FindNodeToPath(PathName);
-              if Assigned(Node) and Assigned(Node.Data) and
-                 not TNodeData(Node.Data).Scanned then
+              if DirsCount = 0 then
               begin
-                if DirsCount = 0 then
-                begin
-                  Node.HasChildren := False;
-                  TNodeData(Node.Data).Scanned := True;
-                end;
+                Node.HasChildren := False;
+                TNodeData(Node.Data).Scanned := True;
               end;
             end;
-          {$ENDIF}
-        end; {If FShowDirectories}
+          end;
       end; {not isRecycleBin}
     end
       else FIsRecycleBin := False;
@@ -1759,9 +1311,6 @@ var
   EItems: TStringList;
   FItems: TStringList;
   NewItems: TStringList;
-  {$IFNDEF NO_THREADS}
-  NewItem: TListItem;
-  {$ENDIF}
   Srec: SysUtils.TSearchRec;
   DosError: Integer;
   PSrec: ^SysUtils.TSearchRec;
@@ -1771,23 +1320,9 @@ var
   PUpdate: Boolean;
   PEFile: PEFileRec;
   SaveCursor: TCursor;
-  FileTimeFrom: LongWord;
-  FileTimeTo: LongWord;
-  AttrIncludeMask: Integer;
-  AttrExcludeMask: Integer;
-  FileSel: Boolean;
   FSize: Int64;
   FocusedIsVisible: Boolean;
   R: TRect;
-
-  procedure AddToMasks(Attr: TSelAttr; Mask: Word);
-  begin
-    case Attr of
-      selYes: AttrIncludeMask := AttrIncludeMask or Mask;
-      selNo:  AttrExcludeMask := AttrExcludeMask or Mask;
-    end;
-  end;
-
 begin
   if (not Loading) and LoadEnabled then
   begin
@@ -1819,7 +1354,7 @@ begin
             else // vsIcon and vsSmallIcon
               FocusedIsVisible :=
                 IntersectRect(R,
-                  Rect(ViewOrigin, Point(ViewOrigin.X + ClientWidth, ViewOrigin.Y + ClientHeight)),
+                  Classes.Rect(ViewOrigin, Point(ViewOrigin.X + ClientWidth, ViewOrigin.Y + ClientHeight)),
                   ItemFocused.DisplayRect(drBounds));
           end;
         end
@@ -1840,16 +1375,6 @@ begin
         FHiddenCount := 0;
         FFilteredCount := 0;
 
-        AttrIncludeMask := 0;
-        AttrExcludeMask := 0;
-        AddToMasks(FSelArchive, SysUtils.faArchive);
-        AddToMasks(FSelHidden, SysUtils.faHidden);
-        AddToMasks(FSelReadOnly, SysUtils.faReadOnly);
-        AddToMasks(FSelSysFile, SysUtils.faSysFile);
-
-        FileTimeFrom := LongWord(fSelFileDateFrom) shl 16 or fSelFileTimeFrom;
-        FileTimeTo   := LongWord(fSelFileDateTo)   shl 16 or fSelFileTimeTo;
-
         try
           {Store existing files and directories:}
           for Index := 0 to Items.Count - 1 do
@@ -1866,33 +1391,13 @@ begin
           end;
           EItems.Sort;
 
-          DosError := SysUtils.FindFirst(IncludeTrailingPathDelimiter(FPath) + '*.*',
+          DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'),
             FileAttr, SRec);
           while DosError = 0 do
           begin
             if (SRec.Attr and faDirectory) = 0 then
             begin
-              FileSel := True;
-              if (AttrIncludeMask <> 0) then
-                FileSel := ((SRec.Attr and AttrIncludeMask) = AttrIncludeMask);
-              if FileSel and (AttrExcludeMask <> 0) then
-                FileSel := ((AttrExcludeMask and Srec.Attr) = 0);
-
-              FSize := SizeFromSRec(SRec);
-              FileSel :=
-                FileSel and
-                ((Mask = '') or
-                  FileNameMatchesMasks(
-                    SRec.Name, False, FSize,
-                    FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask, True)) and
-                (FSize >= FSelFileSizeFrom) and
-                ((FSelFileSizeTo = 0) or (FSize <= FSelFileSizeTo)) and
-{$WARN SYMBOL_DEPRECATED OFF}
-                (LongWord(SRec.Time) >= FileTimeFrom) and
-                (LongWord(SRec.Time) <= FileTimeTo);
-{$WARN SYMBOL_DEPRECATED ON}
-
-              if FileSel then
+              if FileMatches(SRec.Name, SRec) then
               begin
                 ItemIndex := -1;
                 if not EItems.Find(SRec.Name, ItemIndex) then
@@ -1904,6 +1409,7 @@ begin
                 end
                   else
                 begin
+                  FSize := SizeFromSRec(SRec);
                   with PEFileRec(EItems.Objects[ItemIndex])^ do
 {$WARNINGS OFF}
                   if (iSize <> FSize) or (iAttr <> SRec.Attr) or
@@ -1926,8 +1432,6 @@ begin
 {$WARNINGS OFF}
                       FileTime := SRec.FindData.ftLastWriteTime;
 {$WARNINGS ON}
-                      if (iSize <> FSize) and Assigned(OnFileSizeChanged) then
-                        OnFileSizeChanged(Self, Items[iIndex]);
                     end;
                     // alternative to TListItem.Update (which causes flicker)
                     R := Items[iIndex].DisplayRect(drBounds);
@@ -1937,58 +1441,26 @@ begin
                   FItems.Add(Srec.Name);
                 end;
               end;
-
-              if not FileSel then
-              begin
-                if ((AttrExcludeMask and Srec.Attr and SysUtils.faHidden) <> 0) then
-                  Inc(FHiddenCount)
-                else
-                  Inc(FFilteredCount);
-              end;
             end;
             DosError := FindNext(Srec);
           end;
           SysUtils.FindClose(Srec);
 
           {Search new directories:}
-          if ShowDirectories then
+          DosError := SysUtils.FindFirst(ApiPath(FPath + '\*.*'), DirAttrMask, SRec);
+          while DosError = 0 do
           begin
-            DosError := SysUtils.FindFirst(FPath + '\*.*', DirAttrMask, SRec);
-            while DosError = 0 do
+            if (Srec.Attr and faDirectory) <> 0 then
             begin
-              if (Srec.Attr and faDirectory) <> 0 then
+              if (SRec.Name <> '.') and (SRec.Name <> '..') then
               begin
-                FileSel := True;
-                if AttrIncludeMask <> 0 then
-                  FileSel := ((SRec.Attr and AttrIncludeMask) = AttrIncludeMask);
-                if FileSel and (AttrExcludeMask <> 0) then
-                  FileSel := ((AttrExcludeMask and SRec.Attr) = 0);
-
-                if (SRec.Name <> '.') and (SRec.Name <> '..') then
+                if not EItems.Find(SRec.Name, ItemIndex) then
                 begin
-                  if not EItems.Find(SRec.Name, ItemIndex) then
+                  if FileMatches(SRec.Name, SRec) then
                   begin
-                    if FileSel and
-                       ((Mask = '') or
-                         FileNameMatchesMasks(
-                           SRec.Name, True, 0,
-                           FileTimeToDateTime(SRec.FindData.ftLastWriteTime), Mask, True)) then
-                    begin
-                      New(PSrec);
-                      PSrec^ := SRec;
-                      NewItems.AddObject(Srec.Name, Pointer(PSrec));
-                      FItems.Add(SRec.Name);
-                    end
-                      else
-                    begin
-                      if (AttrExcludeMask and Srec.Attr and SysUtils.faHidden) <> 0 then
-                        Inc(FHiddenCount)
-                      else
-                        Inc(FFilteredCount);
-                    end;
-                  end
-                    else
-                  begin
+                    New(PSrec);
+                    PSrec^ := SRec;
+                    NewItems.AddObject(Srec.Name, Pointer(PSrec));
                     FItems.Add(SRec.Name);
                   end;
                 end
@@ -1996,12 +1468,15 @@ begin
                 begin
                   FItems.Add(SRec.Name);
                 end;
+              end
+                else
+              begin
+                FItems.Add(SRec.Name);
               end;
-              DosError := FindNext(SRec);
             end;
-            SysUtils.FindClose(SRec);
-          end; {If FShowDirectories}
-
+            DosError := FindNext(SRec);
+          end;
+          SysUtils.FindClose(SRec);
 
           {Check wether displayed Items still exists:}
           FItems.Sort;
@@ -2042,22 +1517,14 @@ begin
               end;
               AnyUpdate := True;
               PSrec := Pointer(NewItems.Objects[Index]);
-              {$IFNDEF NO_THREADS}
-              NewItem :=
-              {$ENDIF}
               AddItem(PSrec^);
-              {$IFNDEF NO_THREADS}
-              if ShowSubDirSize and ((PSrec^.Attr and faDirectory) <> 0) then
-                FSubDirScanner.Add(TSubDirScanner.Create(Self, NewItem));
-              {$ENDIF}
               Dispose(PSrec);
             end;
             NewItems.Free;
             // if we are sorted by name and there were only updates to existing
             // items, there is no need for sorting
-            if SortAfterUpdate and
-               (PUpdate or
-                (AnyUpdate and (DirColProperties.SortDirColumn <> dvName))) then
+            if PUpdate or
+               (AnyUpdate and (DirColProperties.SortDirColumn <> dvName)) then
             begin
               SortItems;
             end;
@@ -2066,16 +1533,12 @@ begin
           finally
             FDirOK := True;
             FDirty := false;
-{$IFNDEF NO_THREADS}
             if FUseIconUpdateThread and (not FisRecycleBin) then
               StartIconUpdateThread;
             StartWatchThread;
-{$ENDIF}
             // make focused item visible, only if it was before
             if FocusedIsVisible and Assigned(ItemFocused) then
               ItemFocused.MakeVisible(False);
-            if AnyUpdate and Assigned(OnDirUpdated) then
-              OnDirUpdated(Self);
 
             UpdateStatusBar;
 
@@ -2084,7 +1547,7 @@ begin
         end; {Finally}
       end;
 
-      if Assigned(FDriveView) and Assigned(TDriveView(FDriveView).Selected) then
+      if Assigned(FDriveView) then
       begin
         TDriveView(FDriveView).ValidateCurrentDirectoryIfNotMonitoring;
       end;
@@ -2149,7 +1612,7 @@ begin
       if (Attr and Attrs[Index] <> 0) then
         Result := Result + AttrChars[Index]
       else
-        Result := Result + FAttrSpace;
+        Result := Result;
   end;
 end; {GetAttrString}
 
@@ -2192,6 +1655,7 @@ begin
         if not Assigned(PIDL) and IsSpecialExt then
         begin
           try
+            ShAttr := 0;
             FDesktopFolder.ParseDisplayName(ParentForm.Handle, nil,
               PChar(FPath + '\' + FileName), Eaten, PIDL, ShAttr);
 
@@ -2378,18 +1842,12 @@ var
   UpdateEnabled: Boolean;
   WatchDir: Boolean;
   Updating: Boolean;
-  {$IFDEF USE_DRIVEVIEW}
   DirDeleted: Boolean;
-  {$ENDIF}
 begin
   AllowUndo := AllowUndo and (not IsRecycleBin);
-  {$IFDEF USE_DRIVEVIEW}
   DirDeleted := False;
-{$IFNDEF NO_THREADS}
   if Assigned(FDriveView) then
     TDriveView(FDriveView).StopWatchThread;
-{$ENDIF}
-  {$ENDIF}
   WatchDir := WatchForChanges;
   WatchForChanges := False;
   UpdateEnabled := (SelCount < MaxSel);
@@ -2409,10 +1867,7 @@ begin
     if AllowUndo then
       FileOperator.Flags := FileOperator.Flags + [foAllowUndo];
 
-{$IFNDEF NO_THREADS}
     StopIconUpdateThread;
-    StopSubDirScanner;
-{$ENDIF}
     Result := FileOperator.Execute;
     Result := Result and (not FileOperator.OperationAborted);
     Sleep(0);
@@ -2426,9 +1881,7 @@ begin
         True:
           if not DirExists(ItemFullFileName(Item)) then
           begin
-            {$IFDEF USE_DRIVEVIEW}
             DirDeleted := True;
-            {$ENDIF}
             Item.Delete;
           end;
         False:
@@ -2451,26 +1904,17 @@ begin
     if not UpdateEnabled then
       Items.EndUpdate;
     FileOperator.Free;
-    if Assigned(OnDirUpdated) then
-      OnDirUpdated(Self);
   end;
 
-  {$IFDEF USE_DRIVEVIEW}
   if Assigned(DriveView) then
-    with TDriveView(DriveView) do
+    with DriveView do
     begin
       if DirDeleted and Assigned(Selected) then
         ValidateDirectory(Selected);
-{$IFNDEF NO_THREADS}
-      TDriveView(fDriveView).StartWatchThread;
-{$ENDIF}
+      TDriveView(FDriveView).StartWatchThread;
     end;
-  {$ENDIF}
 
-{$IFNDEF NO_THREADS}
   if UseIconUpdateThread then StartIconUpdateThread;
-  if ShowSubDirSize then StartSubDirScanner;
-{$ENDIF}
 
   WatchForChanges := WatchDir;
 
@@ -2792,15 +2236,12 @@ var
 begin
   if HandleAllocated then
   begin
-{$IFNDEF NO_THREADS}
     StopIconUpdateThread;
-{$ENDIF}
     try
       case DirColProperties.SortDirColumn of
         dvName: SortProc := @CompareFilename;
         dvSize: SortProc := @CompareFileSize;
-        dvType: if not SortByExtension then SortProc := @CompareFileType
-             else SortProc := @CompareFileExt;
+        dvType: SortProc := @CompareFileType;
         dvChanged: SortProc := @CompareFileTime;
         dvAttr: SortProc := @CompareFileAttr;
         dvExt: SortProc := @CompareFileExt;
@@ -2808,10 +2249,8 @@ begin
       end;
       CustomSortItems(Pointer(@SortProc));
     finally
-{$IFNDEF NO_THREADS}
       if (not Loading) and FUseIconUpdateThread then
         StartIconUpdateThread;
-{$ENDIF}
     end;
   end
 end;
@@ -2823,11 +2262,9 @@ begin
   if Assigned(Item) and Assigned(Item.Data) then
   begin
     Index := Item.Index;
-    if not FileExists(ItemFullFileName(Items[Index])) then
+    if not FileExists(ApiPath(ItemFullFileName(Items[Index]))) then
     begin
       Item.Delete;
-      if Assigned(OnDirUpdated) then
-        OnDirUpdated(Self);
     end;
   end;
 end; {ValidateFile}
@@ -2849,23 +2286,21 @@ var
   i: Integer;
   ToDelete: Boolean;
   Updating: Boolean;
-  Deleted: Boolean;
   Item: TListItem;
 begin
   if SelCount > 50 then Reload2
     else
   begin
     Updating := False;
-    Deleted := False;
     FileList := CustomCreateFileList(True, False, True, nil, True);
     try
       for i := 0 to FileList.Count - 1 do
       begin
         Item := TListItem(FileList.Objects[i]);
         if ItemIsDirectory(Item) then
-          ToDelete := not DirectoryExists(FileList[i])
+          ToDelete := not DirectoryExists(ApiPath(FileList[i]))
         else
-          ToDelete := not FileExists(FileList[i]);
+          ToDelete := not FileExists(ApiPath(FileList[i]));
 
         if ToDelete then
         begin
@@ -2875,15 +2310,12 @@ begin
             Updating := True;
           end;
           Item.Delete;
-          Deleted := True;
         end;
       end;
     finally
       if Updating then
         Items.EndUpdate;
       FileList.Free;
-      if Deleted and Assigned(OnDirUpdated) then
-        OnDirUpdated(Self);
     end;
   end;
 end; {ValidateSelectedFiles}
@@ -2898,17 +2330,15 @@ begin
   NewName := Path + '\' + NewName;
 
   {Ermitteln des neuen Dateinamens:}
-  if not FileExists(NewName) then
+  if not FileExists(ApiPath(NewName)) then
   begin
-{$IFNDEF NO_THREADS}
     if FWatchForChanges then
       StopWatchThread;
     StopIconUpdateThread;
-{$ENDIF}
 
     try
       {Create the desired file as empty file:}
-      AssignFile(F, NewName);
+      AssignFile(F, ApiPath(NewName));
       Rewrite(F);
       LastIOResult := IOResult;
       if LastIOResult = 0 then
@@ -2916,24 +2346,20 @@ begin
         CloseFile(F);
 
         {Anlegen der Datei als TListItem:}
-        if FindFirst(NewName, faAnyFile, SRec) = 0 then
+        if FindFirst(ApiPath(NewName), faAnyFile, SRec) = 0 then
         begin
           Result := AddItem(SRec);
           ItemFocused := FindFileItem(GetFileRec(Result.Index)^.FileName);
           if Assigned(ItemFocused) then
             ItemFocused.MakeVisible(False);
-          if Assigned(OnDirUpdated) then
-            OnDirUpdated(Self);
         end;
         FindClose(Srec);
       end;
     finally
-{$IFNDEF NO_THREADS}
       if FUseIconUpdateThread then
         StartIconUpdateThread;
       if WatchForChanges then
         StartWatchThread;
-{$ENDIF}
     end;
   end
     else LastIOResult := 183;
@@ -2948,25 +2374,21 @@ begin
   if Copy(DirName, 2, 1) <> ':' then
     DirName := Path + '\' + DirName;
 
-{$IFNDEF NO_THREADS}
   if WatchForChanges then StopWatchThread;
 
-  {$IFDEF USE_DRIVEVIEW}
   if Assigned(FDriveView) then
     TDriveView(FDriveView).StopWatchThread;
-  {$ENDIF}
 
   StopIconUpdateThread;
-{$ENDIF}
   try
     {create the phyical directory:}
-    Win32Check(Windows.CreateDirectory(PChar(DirName), nil));
+    Win32Check(Windows.CreateDirectory(PChar(ApiPath(DirName)), nil));
 
     if IncludeTrailingBackslash(ExtractFilePath(ExpandFileName(DirName))) =
          IncludeTrailingBackslash(Path) then
     begin
       {Create the TListItem:}
-      if FindFirst(DirName, faAnyFile, SRec) = 0 then
+      if FindFirst(ApiPath(DirName), faAnyFile, SRec) = 0 then
       begin
         Item := AddItem(SRec);
         ItemFocused := FindFileItem(GetFileRec(Item.Index)^.FileName);
@@ -2975,25 +2397,19 @@ begin
         begin
           ItemFocused.MakeVisible(False);
         end;
-        if Assigned(OnDirUpdated) then
-          OnDirUpdated(Self);
       end;
       FindClose(SRec);
     end;
 
   finally
-{$IFNDEF NO_THREADS}
     if FUseIconUpdateThread then
       StartIconUpdateThread;
 
     if WatchForChanges then StartWatchThread;
-{$ENDIF}
-    {$IFDEF USE_DRIVEVIEW}
     if Assigned(FDriveView) then
-      with FDriveView as TDriveView do
+      with FDriveView do
         if not WatchThreadActive and Assigned(Selected) then
           ValidateDirectory(Selected);
-    {$ENDIF}
   end;
 end; {CreateDirectory}
 
@@ -3015,9 +2431,7 @@ begin
   GetDir(0, DefDir);
   ChDir(PathName);
   Verb := EmptyStr;
-{$IFNDEF NO_THREADS}
   StopWatchThread;
-{$ENDIF}
   try
     if Assigned(OnContextPopup) then
     begin
@@ -3160,9 +2574,7 @@ begin
 
       if DiffSelectedPath then
       begin
-{$IFNDEF NO_THREADS}
         StartFileDeleteThread;
-{$ENDIF}
         Exit;
       end;
     end;
@@ -3171,9 +2583,7 @@ begin
     ValidateSelectedFiles;
 
   finally
-{$IFNDEF NO_THREADS}
     StartWatchThread;
-{$ENDIF}
   end;
 end;
 
@@ -3196,7 +2606,6 @@ begin
       GetDisplayData(ListItem, True);
 
     {Set IconUpdatethread :}
-{$IFNDEF NO_THREADS}
     if IconEmpty and Assigned(FIconUpdateThread) then
     begin
       if Assigned(TopItem) then
@@ -3209,7 +2618,6 @@ begin
       if FIconUpdateThread.Suspended and not FIsRecycleBin then
         FIconUpdateThread.Resume;
     end;
-{$ENDIF}
 
     if (DispInfo.Mask and LVIF_TEXT) <> 0 then
     begin
@@ -3219,25 +2627,14 @@ begin
       begin
         case TDirViewCol(iSubItem) of
           dvSize: {Size:     }
-            if not IsDirectory or
-               (IsDirectory and ShowSubDirSize and (Size >= 0)) then
-                 StrPLCopy(pszText, FormatBytes(Size, FormatSizeBytes, FormatSizeBytes), cchTextMax);
+            if not IsDirectory then
+                 StrPLCopy(pszText, FormatPanelBytes(Size, FormatSizeBytes), cchTextMax);
           dvType: {FileType: }
-            if SortByExtension and (not IsDirectory) then
-            begin
-              case FFileNameDisplay of
-                fndNoCap, fndNice: StrPLCopy(pszText, LowerCase(FileExt), cchTextMax);
-                else StrPLCopy(pszText, FileExt, cchTextMax);
-              end; {Case}
-            end
-              else StrPLCopy(pszText, TypeName, cchTextMax);
+            StrPLCopy(pszText, TypeName, cchTextMax);
           dvChanged: {Date}
             StrPLCopy(pszText, FormatFileTime(FileTime), cchTextMax);
           dvAttr: {Attrs:}
-            if FFileNameDisplay = fndCap then
-              StrPLCopy(pszText, UpperCase(GetAttrString(Attr)), cchTextMax)
-            else
-              StrPLCopy(pszText, GetAttrString(Attr), cchTextMax);
+            StrPLCopy(pszText, GetAttrString(Attr), cchTextMax);
           dvExt:
             StrPLCopy(pszText, FileExt, cchTextMax);
         end {Case}
@@ -3266,8 +2663,6 @@ begin
     else
   Result := clDefaultItemColor;
 end;
-
-{$IFNDEF NO_THREADS}
 
 procedure TDirView.StartFileDeleteThread;
 var
@@ -3301,40 +2696,6 @@ begin
   end;
 end; {StartIconUpdateThread}
 
-procedure TDirView.StartSubDirScanner;
-var
-  Index: Integer;
-begin
-  if not (csDesigning in ComponentState) and
-     DirOk and ShowDirectories and ShowSubDirSize then
-  for Index := 0 to Items.Count - 1 do
-    with PFileRec(Items[Index].Data)^ do
-      if IsDirectory and not isParentDir then
-        FSubDirScanner.Add(TSubDirScanner.Create(Self, Items[Index]));
-end; {StartSubDirScanner}
-
-procedure TDirView.StopSubDirScanner;
-var
-  Index: Integer;
-begin
-  for Index := 0 To FSubDirScanner.Count - 1 do
-    if Assigned(FSubDirScanner[Index]) then
-      with TSubDirScanner(FSubDirScanner[Index]) do
-      begin
-        Priority := tpHigher;
-        Resume;
-        Terminate;
-      end;
-
-  // Not really sure why this is here, but definitelly, when recreating
-  // the dir view, it may cause recursion calls back to destroyed dir view,
-  // causing AVs.
-  // May not be necessary anymore after the recursion check in
-  // TDirView.CMRecreateWnd
-  if not (csRecreating in ControlState) then
-    Application.ProcessMessages;
-end; {StopSubDirScanner}
-
 procedure TDirView.StopIconUpdateThread;
 var
   Counter: Integer;
@@ -3353,7 +2714,11 @@ begin
       while not FIUThreadFinished do
       begin
         Sleep(10);
-        // See comment in StopSubDirScanner
+        // Not really sure why this is here, but definitelly, when recreating
+        // the dir view, it may cause recursion calls back to destryed dir view,
+        // causing AVs
+        // May not be necessary anymore after the recursion check in
+        // TDirView.CMRecreateWnd
         if not (csRecreating in ControlState) then
           Application.ProcessMessages;
         Inc(Counter);
@@ -3381,8 +2746,7 @@ end; {StopWatchThread}
 
 procedure TDirView.StartWatchThread;
 begin
-  if (Length(Path) > 0) and WatchForChanges and DirOK and
-     (Pos(Path[1], NoCheckDrives) = 0) then
+  if (Length(Path) > 0) and WatchForChanges and DirOK then
   begin
     if not Assigned(FDiscMonitor) then
     begin
@@ -3406,8 +2770,6 @@ begin
   end;
 end; {StartWatchThread}
 
-{$ENDIF}
-
 procedure TDirView.TimerOnTimer(Sender: TObject);
 begin
   if not Loading then
@@ -3416,9 +2778,7 @@ begin
     FChangeTimer.Enabled := False;
     FChangeTimer.Interval := 0;
     Reload2;
-    if Assigned(FOnChangeDetected) then
-      FOnChangeDetected(Self);
-  end
+  end;
 end; {TimerOnTimer}
 
 procedure TDirView.ChangeDetected(Sender: TObject; const Directory: string;
@@ -3438,19 +2798,13 @@ procedure TDirView.ChangeInvalid(Sender: TObject; const Directory: string;
   const ErrorStr: string);
 begin
   FDiscMonitor.Close;
-  if Assigned(FOnChangeInvalid) then
-    FOnChangeInvalid(Self);
 end; {ChangeInvalid}
-
-{$IFNDEF NO_THREADS}
 
 function TDirView.WatchThreadActive: Boolean;
 begin
   Result := WatchForChanges and Assigned(FDiscMonitor) and
     FDiscMonitor.Active and FDiscMonitor.Enabled;
 end; {WatchThreadActive}
-
-{$ENDIF}
 
 procedure TDirView.SetChangeInterval(Value: Cardinal);
 begin
@@ -3460,15 +2814,6 @@ begin
     FChangeTimer.Interval := Value;
   end;
 end; {SetChangeInterval}
-
-procedure TDirView.SetFileNameDisplay(Value: TFileNameDisplay);
-begin
-  if Value <> FileNameDisplay then
-  begin
-    FFileNameDisplay := Value;
-    if DirOK then Reload(True);
-  end;
-end; {SetFileNameDisplay}
 
 procedure TDirView.SetDirColProperties(Value: TDirViewColProperties);
 begin
@@ -3481,28 +2826,6 @@ begin
   Result := TDirViewColProperties(ColProperties);
 end;
 
-procedure TDirView.SetShowSubDirSize(Value: Boolean);
-begin
-  if Value <> ShowSubDirSize then
-  begin
-    inherited;
-    if Value then
-    begin
-      {$IFNDEF NO_THREADS}
-      if ShowDirectories then
-        StartSubDirScanner;
-      {$ENDIF}
-    end
-      else
-    begin
-      {$IFNDEF NO_THREADS}
-      StopSubDirScanner;
-      {$ENDIF}
-      Invalidate;
-    end;
-  end;
-end; {SetShowSubDirSize}
-
 procedure TDirView.SetWatchForChanges(Value: Boolean);
 begin
   if WatchForChanges <> Value then
@@ -3510,10 +2833,8 @@ begin
     FWatchForChanges := Value;
     if not (csDesigning in ComponentState) then
     begin
-{$IFNDEF NO_THREADS}
       if Value then StartWatchThread
         else StopWatchThread;
-{$ENDIF}
     end;
   end;
 end; {SetWatchForChanges}
@@ -3564,9 +2885,7 @@ procedure TDirView.ExecuteFile(Item: TListItem);
 var
   DefDir: string;
   FileName: string;
-  {$IFDEF USE_DRIVEVIEW}
   Node: TTreeNode;
-  {$ENDIF}
 begin
   if (UpperCase(PFileRec(Item.Data)^.FileExt) = 'LNK') or
      PFileRec(Item.Data)^.IsDirectory then
@@ -3577,11 +2896,9 @@ begin
       if not DirExists(FileName) then
       begin
         Reload2;
-        {$IFDEF USE_DRIVEVIEW}
-        if Assigned(FDriveView) and Assigned(TDriveView(FDriveView).Selected) then
-          with FDriveView as TDriveView do
+        if Assigned(FDriveView) and Assigned(FDriveView.Selected) then
+          with FDriveView do
             ValidateDirectory(Selected);
-        {$ENDIF}
         Exit;
       end;
     end
@@ -3590,9 +2907,8 @@ begin
 
     if DirExists(FileName) then
     begin
-      {$IFDEF USE_DRIVEVIEW}
       if Assigned(FDriveView) then
-        with (FDriveView as TDriveView) do
+        with TDriveView(FDriveView) do
         begin
           Node := FindNodeToPath(FileName);
           if not Assigned(Node) then
@@ -3608,14 +2924,13 @@ begin
           Exit;
         end
       else
-      {$ENDIF}
       begin
         Path := FileName;
         Exit;
       end;
     end
       else
-    if not FileExists(FileName) then
+    if not FileExists(ApiPath(FileName)) then
     begin
       Exit;
     end;
@@ -3639,7 +2954,7 @@ begin
   if FLastPath[Drive] <> '' then
   begin
     APath := FLastPath[Drive];
-    if not DirectoryExists(APath) then
+    if not DirectoryExists(ApiPath(APath)) then
       APath := Format('%s:', [Drive]);
   end
     else
@@ -3661,13 +2976,11 @@ procedure TDirView.ExecuteParentDirectory;
 begin
   if Valid then
   begin
-    {$IFDEF USE_DRIVEVIEW}
-    if Assigned(DriveView) and Assigned(TDriveView(DriveView).Selected) then
+    if Assigned(DriveView) and Assigned(DriveView.Selected) then
     begin
-      TDriveView(DriveView).Selected := TDriveView(DriveView).Selected.Parent
+      DriveView.Selected := DriveView.Selected.Parent
     end
       else
-    {$ENDIF}
     begin
       Path := ExtractFilePath(Path);
     end;
@@ -3706,23 +3019,15 @@ var
   Item: TListItem;
   Info: string;
   NewCaption: string;
-  {$IFDEF USE_DRIVEVIEW}
   IsDirectory: Boolean;
-  {$ENDIF}
 begin
   Item := GetItemFromHItem(HItem);
-  {$IFDEF USE_DRIVEVIEW}
   IsDirectory := DirExists(ItemFullFileName(Item));
-  {$ENDIF}
   NewCaption := HItem.pszText;
 
-{$IFNDEF NO_THREADS}
   StopWatchThread;
-  {$IFDEF USE_DRIVEVIEW}
   if IsDirectory and Assigned(FDriveView) then
     TDriveView(FDriveView).StopWatchThread;
-  {$ENDIF}
-{$ENDIF}
 
   with FFileOperator do
   begin
@@ -3737,12 +3042,10 @@ begin
   try
     if FFileOperator.Execute then
     begin
-      {$IFDEF USE_DRIVEVIEW}
       if IsDirectory and Assigned(FDriveView) then
-        with (FDriveView as TDriveView) do
+        with FDriveView do
           if Assigned(Selected) then
             ValidateDirectory(Selected);
-      {$ENDIF}
 
       with GetFileRec(Item.Index)^ do
       begin
@@ -3781,14 +3084,10 @@ begin
   finally
     Sleep(0);
     LoadEnabled := True;
-{$IFNDEF NO_THREADS}
     if FWatchForChanges and (not WatchThreadActive) then
       StartWatchThread;
-    {$IFDEF USE_DRIVEVIEW}
     if Assigned(FDriveView) then
       TDriveView(FDriveView).StartWatchThread;
-    {$ENDIF}
-{$ENDIF}
   end;
 end;
 
@@ -3836,14 +3135,12 @@ begin
     else Result := -1;
 end;
 
-{$IFDEF USE_DRIVEVIEW}
 procedure TDirView.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   inherited Notification(AComponent, Operation);
   if (Operation = opRemove) and (AComponent = FDriveView) then
     FDriveView := nil;
 end; {Notification}
-{$ENDIF}
 
 procedure TDirView.ReloadDirectory;
 begin
@@ -3869,23 +3166,8 @@ begin
   end; {With}
 end; {ResetItemImage}
 
-procedure TDirView.SetAttrSpace(Value: string);
-begin
-  if Value <> FAttrSpace then
-  begin
-    FAttrSpace := Value;
-    Invalidate;
-  end;
-end; {SetAttrSpace}
-
-procedure TDirView.SetNoCheckDrives(Value: string);
-begin
-  FNoCheckDrives := UpperCase(Value);
-end; {SetNoCheckDrives}
-
 { Drag&Drop handling }
 
-{$IFNDEF NO_THREADS}
 procedure TDirView.SignalFileDelete(Sender: TObject; Files: TStringList);
 {Called by TFileDeleteThread, when a file was deleted by the Drag&Drop target window:}
 var
@@ -3895,13 +3177,10 @@ begin
     for Index := 0 to Files.Count - 1 do
       ValidateFile(Files[Index]);
 end;
-{$ENDIF}
 
 procedure TDirView.DDMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
   AMinCustCmd: Integer; grfKeyState: Longint; pt: TPoint);
 begin
-{$IFNDEF NO_THREADS}
-  {$IFDEF USE_DRIVEVIEW}
   if Assigned(FDriveView) then
   begin
     // When a change is detected while menu is popped up
@@ -3912,28 +3191,22 @@ begin
     // This is HACK, we should implement some uniform watch disabling/enabling
     TDriveView(FDriveView).SuspendChangeTimer;
   end;
-  {$ENDIF}
-{$ENDIF}
 
   inherited;
 end;
 
 procedure TDirView.DDMenuDone(Sender: TObject; AMenu: HMenu);
 begin
-{$IFNDEF NO_THREADS}
   if not WatchThreadActive then
   begin
     FChangeTimer.Interval := Min(FChangeInterval * 2, 3000);
     FChangeTimer.Enabled  := True;
   end;
 
-  {$IFDEF USE_DRIVEVIEW}
   if Assigned(FDriveView) then
   begin
     TDriveView(FDriveView).ResumeChangeTimer;
   end;
-  {$ENDIF}
-{$ENDIF}
 
   inherited;
 end;
@@ -3941,19 +3214,15 @@ end;
 procedure TDirView.DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint;
   Point: TPoint; dwEffect: Longint);
 begin
-{$IFNDEF NO_THREADS}
   if not WatchThreadActive then
   begin
     FChangeTimer.Interval := FChangeInterval;
     FChangeTimer.Enabled  := True;
   end;
-  {$IFDEF USE_DRIVEVIEW}
   if Assigned(FDriveView) then
   begin
     TDriveView(FDriveView).ResumeChangeTimer;
   end;
-  {$ENDIF}
-{$ENDIF}
 
   inherited;
 end;
@@ -3980,29 +3249,23 @@ end;
 
 procedure TDirView.DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint;
   DragStatus: TDragDetectStatus);
-{$IFNDEF NO_THREADS}
 var
   WasWatchThreadActive: Boolean;
-{$ENDIF}
 begin
   if (DragStatus = ddsDrag) and (MarkedCount > 0) then
   begin
-{$IFNDEF NO_THREADS}
     WasWatchThreadActive := WatchThreadActive;
-{$ENDIF}
     inherited;
 
-{$IFNDEF NO_THREADS}
     if (LastDDResult = drMove) and (not WasWatchThreadActive) then
       StartFileDeleteThread;
-{$ENDIF}
   end;
 end; {DDDragDetect}
 
 procedure TDirView.DDChooseEffect(grfKeyState: Integer;
   var dwEffect: Integer);
 begin
-  if (not SelfDropDuplicates) and DragDropFilesEx.OwnerIsSource and
+  if DragDropFilesEx.OwnerIsSource and
      (dwEffect = DropEffect_Copy) and (not Assigned(DropTarget)) then
         dwEffect := DropEffect_None
     else
@@ -4031,10 +3294,8 @@ var
   OldWatchForChanges: Boolean;
   DoFileOperation: Boolean;
   IsRecycleBin: Boolean;
-  {$IFDEF USE_DRIVEVIEW}
   SourceIsDirectory: Boolean;
   Node: TTreeNode;
-  {$ENDIF}
 begin
   if DragDropFilesEx.FileList.Count > 0 then
   begin
@@ -4051,9 +3312,7 @@ begin
       begin
         OldCursor := Screen.Cursor;
         OldWatchForChanges := WatchForChanges;
-        {$IFDEF USE_DRIVEVIEW}
         SourceIsDirectory := True;
-        {$ENDIF}
         SourcePath := EmptyStr;
 
         try
@@ -4062,18 +3321,14 @@ begin
 
           if (dwEffect in [DropEffect_Copy, DropEffect_Move]) then
           begin
-{$IFNDEF NO_THREADS}
             StopWatchThread;
 
-            {$IFDEF USE_DRIVEVIEW}
             if Assigned(DriveView) then
               TDriveView(DriveView).StopWatchThread;
-            {$ENDIF}
 
             if (DropSourceControl <> Self) and
                (DropSourceControl is TDirView) then
                 TDirView(DropSourceControl).StopWatchThread;
-{$ENDIF}
 
             SourcePath := '';
 
@@ -4091,16 +3346,12 @@ begin
                 if DirExists(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name) then
                 begin
                   SourcePath := TFDDListItem(DragDropFilesEx.FileList[Index]^).Name;
-                  {$IFDEF USE_DRIVEVIEW}
                   SourceIsDirectory := True;
-                  {$ENDIF}
                 end
                   else
                 begin
                   SourcePath := ExtractFilePath(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name);
-                  {$IFDEF USE_DRIVEVIEW}
                   SourceIsDirectory := False;
-                  {$ENDIF}
                 end;
               end;
             end;
@@ -4170,9 +3421,7 @@ begin
           if dwEffect = DropEffect_Link then
           (* Create Link requested: *)
           begin
-{$IFNDEF NO_THREADS}
             StopWatchThread;
-{$ENDIF}
             for Index := 0 to DragDropFilesEx.FileList.Count - 1 do
             begin
               SourceFile := TFDDListItem(DragDropFilesEx.FileList[Index]^).Name;
@@ -4198,7 +3447,6 @@ begin
              (dwEffect = DropEffect_Move) then
                 TDirView(DropSourceControl).ValidateSelectedFiles;
 
-          {$IFDEF USE_DRIVEVIEW}
           if Assigned(FDriveView) and SourceIsDirectory then
             with TDriveView(FDriveView) do
             begin
@@ -4216,22 +3464,15 @@ begin
               except
               end;
             end;
-          {$ENDIF}
         finally
           FFileOperator.OperandFrom.Clear;
           FFileOperator.OperandTo.Clear;
-          {$IFDEF USE_DRIVEVIEW}
-{$IFNDEF NO_THREADS}
           if Assigned(FDriveView) then
             TDriveView(FDriveView).StartWatchThread;
-{$ENDIF}
-          {$ENDIF}
           Sleep(0);
           WatchForChanges := OldWatchForChanges;
-{$IFNDEF NO_THREADS}
           if (DropSourceControl <> Self) and (DropSourceControl is TDirView) then
             TDirView(DropSourceControl).StartWatchThread;
-{$ENDIF}
           Screen.Cursor := OldCursor;
         end;
       end;
@@ -4261,31 +3502,21 @@ begin
   begin
     Lasttarget := FFileOperator.LastOperandTo[0];
     LastSource := FFileOperator.LastOperandFrom[0];
-{$IFNDEF NO_THREADS}
-    {$IFDEF USE_DRIVEVIEW}
     if Assigned(FDriveView) then
       TDriveView(FDriveView).StopAllWatchThreads;
-    {$ENDIF}
-{$ENDIF}
 
     Result := FFileOperator.UndoExecute;
 
-{$IFNDEF NO_THREADS}
     if not WatchthreadActive then
-{$ENDIF}
       Reload2;
 
-    {$IFDEF USE_DRIVEVIEW}
     if Assigned(FDriveView) then
       with TDriveView(FDriveView) do
       begin
         ValidateDirectory(FindNodeToPath(ExtractFilePath(LastTarget)));
         ValidateDirectory(FindNodeToPath(ExtractFilePath(LastSource)));
-{$IFNDEF NO_THREADS}
         StartAllWatchThreads;
-{$ENDIF}
       end;
-    {$ENDIF}
   end;
 end; {UndoCopyMove}
 
@@ -4307,10 +3538,8 @@ begin
       end;
     end;
     LastClipBoardOperation := cboNone;
-    {$IFDEF USE_DRIVEVIEW}
     if Assigned(FDriveView) then
       TDriveView(FDriveView).LastPathCut := '';
-    {$ENDIF}
   end;
 end; {EmptyClipBoard}
 
@@ -4368,8 +3597,7 @@ function TDirView.PasteFromClipBoard(TargetPath: string): Boolean;
 begin
   DragDropFilesEx.FileList.Clear;
   Result := False;
-  if CanPasteFromClipBoard and
-    {MP}{$IFDEF OLD_DND} DragDropFilesEx.GetFromClipBoard {$ELSE} DragDropFilesEx.PasteFromClipboard {$ENDIF}{/MP}
+  if CanPasteFromClipBoard and {MP}DragDropFilesEx.GetFromClipBoard{/MP}
     then
   begin
     if TargetPath = '' then

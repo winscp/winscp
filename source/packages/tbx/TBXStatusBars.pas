@@ -13,7 +13,7 @@ interface
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, Forms, Graphics, TBX,
-  TBXThemes, TB2ITem, ImgList;
+  TBXThemes, TB2ITem, ImgList, UITypes;
 
 type
   TTBXCustomStatusBar = class;
@@ -223,7 +223,7 @@ type
 
 implementation
 
-uses TBXUtils;
+uses TBXUtils, Types;
 
 type TFontSettingsAccess = class(TFontSettings);
 
@@ -972,8 +972,9 @@ begin
         if (Panel.MaxSize > Panel.CachedSize) and (NewSize > Panel.MaxSize) then
         begin
           NewSize := Panel.MaxSize;
-          Dec(Delta, NewSize - Panel.CachedSize);
         end;
+        // MP fix (this was inside branch above, but it has to be done always)
+        Dec(Delta, NewSize - Panel.CachedSize);
         Panel.CachedSize := NewSize;
         SortList.Count := SortList.Count - 1;
       end;

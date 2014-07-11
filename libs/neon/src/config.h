@@ -25,9 +25,9 @@
 
 #ifdef WIN32
 
-#define NEON_VERSION "0.29.6"
+#define NEON_VERSION "0.30.0"
 #define NE_VERSION_MAJOR (0)
-#define NE_VERSION_MINOR (29)
+#define NE_VERSION_MINOR (30)
 
 #define HAVE_ERRNO_H
 #define HAVE_LIMITS_H
@@ -36,16 +36,18 @@
 
 #define HAVE_MEMCPY
 #define HAVE_SETSOCKOPT
-#define HAVE_STRTOLL
 
 #define HAVE_SSPI
+
+#define NE_HAVE_TS_SSL 1
 
 /* Define to enable debugging */
 #define NE_DEBUGGING 1
 
 #define NE_FMT_SIZE_T "u"
 #define NE_FMT_SSIZE_T "d"
-#define NE_FMT_OFF_T "lld"
+#define NE_FMT_OFF_T "ld"
+#define NE_FMT_OFF64_T "I64d"
 #define NE_FMT_NE_OFF_T NE_FMT_OFF_T
 
 #ifndef NE_FMT_XML_SIZE
@@ -70,9 +72,27 @@
 #define strcasecmp			strcmpi
 #define strncasecmp			strnicmp
 #endif
+#if defined(_MSC_VER) && _MSC_VER >= 1300
+#define HAVE_STRTOLL
+#define strtoll				_strtoi64
+#endif
+#ifndef __BORLANDC__
 #define ssize_t				int
+#endif
 #define inline                          __inline
+#if defined(NE_LFS)
+#ifdef __BORLANDC__
+#define lseek64				_lseeki64
+#define fstat64				_fstati64
+#define stat64				stati64
+#else
+#define lseek64				_lseeki64
+#define fstat64				_fstat64
+#define stat64				__stat64
+#endif
+#else
 #define off_t                           _off_t
+#endif
 
 #ifndef USE_GETADDRINFO
 #define in_addr_t                       unsigned int

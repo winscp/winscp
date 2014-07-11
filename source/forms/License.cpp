@@ -15,8 +15,8 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-UnicodeString LicenseStr[4] =
-  { L"LICENSE", L"LICENSE_EXPAT", L"LICENSE_ZLIB" };
+UnicodeString LicenseStr[2] =
+  { L"LICENSE", L"LICENSE_EXPAT" };
 //---------------------------------------------------------------------------
 void __fastcall DoLicenseDialog(TLicense License)
 {

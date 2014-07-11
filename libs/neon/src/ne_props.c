@@ -387,6 +387,7 @@ static int startelm(void *userdata, int parent,
                     const char *nspace, const char *name, const char **atts)
 {
     ne_propfind_handler *hdl = userdata;
+    NE_DEBUG_WINSCP_CONTEXT(hdl->sess);
     struct propstat *pstat = ne_207_get_current_propstat(hdl->parser207);
     struct prop *prop;
     int n;

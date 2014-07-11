@@ -1,0 +1,24 @@
+STRINGTABLE
+BEGIN
+  SHORT_DESCRIPTION, "Free SFTP, FTP and SCP client for Windows"
+  LONG_DESCRIPTION, "WinSCP is an open source free SFTP client and FTP client for Windows. Its main function is secure file transfer between a local and a remote computer. Beyond this, WinSCP offers basic file manager and file synchronization functionality."
+
+  FUNCTIONS_PROTOCOLS, "Support for SFTP and SCP protocols over SSH and FTP protocol"
+  FUNCTIONS_FILE_OPERATION, "All common operations with files"
+  FUNCTIONS_INTEGRATION, "Integration with Windows (drag&drop, URL, shortcut icons)"
+  FUNCTIONS_TRANSLATIONS, "Translated into many languages"
+  FUNCTIONS_AUTOMATION, "Batch file scripting, command-line interface, .NET assembly"
+  FUNCTIONS_SYNCHRONIZATION, "Directory synchronization in several semi or fully automatic ways"
+  FUNCTIONS_EDITOR, "Integrated text editor and support for external text editors"
+  FUNCTIONS_INTERFACES, "Choice of Windows Explorer-like or Norton Commander-like interfaces"
+  FUNCTIONS_PORTABLE, "Optionally supports portable operation using a configuration file instead of registry entries, suitable for operation from removable media"
+
+  KEYWORD_SFTP_CLIENT, "sftp client"
+  KEYWORD_FTP_CLIENT, "ftp client"
+  KEYWORD_FTP, "ftp"
+  KEYWORD_SCP_CLIENT, "scp client"
+  KEYWORD_SECURE_TRANSFER, "secure file transfer"
+  KEYWORD_FREEWARE, "freeware"
+
+  LICENSE, "WinSCP is free software: you can use it, redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
+END

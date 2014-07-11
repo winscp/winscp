@@ -21,6 +21,7 @@
 #include "WinConfiguration.h"
 #include "SynchronizeController.h"
 #include "GUITools.h"
+#include "VCLCommon.h"
 enum { RESULT_SUCCESS = 0, RESULT_ANY_ERROR = 1 };
 //---------------------------------------------------------------------------
 #define WM_INTERUPT_IDLE (WM_WINSCP_USER + 3)
@@ -132,7 +133,7 @@ __fastcall TOwnConsole::~TOwnConsole()
   delete FTrayIcon;
   delete FWindowStateTimer;
 
-  // deliberatelly do not remove ConsoleCtrlHandler as it causes
+  // deliberately do not remove ConsoleCtrlHandler as it causes
   // failures while exiting
 
   FreeConsole();
@@ -173,7 +174,7 @@ void __fastcall TOwnConsole::WindowStateTimer(TObject * /*Sender*/)
   }
   else
   {
-    assert(false);
+    FAIL;
   }
 }
 //---------------------------------------------------------------------------
@@ -645,7 +646,7 @@ void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning)
       // when the next line is also FromBeginning,
       // as !FromBeginning print effectively commits previous FromBeginning print.
       // On the other hand, FromBeginning print is always initiated by us,
-      // and it's not likely we ever issue print over 10 KiB.
+      // and it's not likely we ever issue print over 10 KB.
       FromBeginning = false;
     }
     __finally
@@ -739,7 +740,7 @@ void __fastcall TExternalConsole::SetTitle(UnicodeString Title)
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
-    // Truncate to maximum allowed. Title over 10 KiB won't fir to screen anyway
+    // Truncate to maximum allowed. Title over 10 KB won't fit to screen anyway
     Title = Title.SubString(1, LENOF(CommStruct->TitleEvent.Title) - 1);
 
     CommStruct->Event = TConsoleCommStruct::TITLE;
@@ -943,19 +944,19 @@ bool __fastcall TNullConsole::LiveOutput()
 bool __fastcall TNullConsole::NoInteractiveInput()
 {
   // do not matter, even if we return false,
-  // it fails immediatelly afterwards in TNullConsole::Input
+  // it fails immediately afterwards in TNullConsole::Input
   return true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNullConsole::WaitBeforeExit()
 {
-  assert(false);
+  FAIL;
   // noop
 }
 //---------------------------------------------------------------------------
 bool __fastcall TNullConsole::CommandLineOnly()
 {
-  assert(false);
+  FAIL;
   return false;
 }
 //---------------------------------------------------------------------------
@@ -1844,8 +1845,12 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
         }
         else
         {
-          // no longer batch
-          FBatchScript = false;
+          if (FBatchScript)
+          {
+            // no longer batch
+            FBatchScript = false;
+            FScript->StartInteractive();
+          }
           Print(L"winscp> ");
           Result = DoInput(Command, true, 0, false);
         }
@@ -1899,11 +1904,11 @@ void __fastcall TConsoleRunner::UpdateTitle()
   UnicodeString NewTitle;
   if (FScript->Terminal != NULL)
   {
-    NewTitle = FMTLOAD(APP_CAPTION, (FScript->Terminal->SessionData->SessionName, AppName));
+    NewTitle = FormatMainFormCaption(FScript->Terminal->SessionData->SessionName);
   }
   else
   {
-    NewTitle = AppName;
+    NewTitle = FormatMainFormCaption(L"");
   }
   FConsole->SetTitle(NewTitle);
 }
@@ -1923,52 +1928,44 @@ void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
 //---------------------------------------------------------------------------
 void __fastcall Usage(TConsole * Console)
 {
-  UnicodeString Usage = LoadStr(USAGE8, 10240);
+  UnicodeString Usage = LoadStr(USAGE9, 10240);
   UnicodeString ExeBaseName = ExtractFileBaseName(Application->ExeName);
   Usage = ReplaceText(Usage, L"%APP%", ExeBaseName);
   UnicodeString Copyright =
     ReplaceText(LoadStr(WINSCP_COPYRIGHT), L"©", L"(c)");
   Usage = FORMAT(Usage, (Configuration->VersionStr, Copyright));
-  TStrings * Lines = new TStringList();
-  try
+  std::unique_ptr<TStrings> Lines(TextToStringList(Usage));
+  for (int Index = 0; Index < Lines->Count; Index++)
   {
-    Lines->Text = Usage;
-    for (int Index = 0; Index < Lines->Count; Index++)
+    bool Print = true;
+    UnicodeString Line = Lines->Strings[Index];
+    if ((Line.Length() >= 2) && (Line[2] == L':'))
     {
-      bool Print = true;
-      UnicodeString Line = Lines->Strings[Index];
-      if ((Line.Length() >= 2) && (Line[2] == L':'))
+      switch (Line[1])
       {
-        switch (Line[1])
-        {
-          case L'G':
-            Print = !Console->CommandLineOnly();
-            break;
+        case L'G':
+          Print = !Console->CommandLineOnly();
+          break;
 
-          case L'C':
-            Print = Console->CommandLineOnly();
-            break;
+        case L'C':
+          Print = Console->CommandLineOnly();
+          break;
 
-          case L'B':
-            Print = true;
-            break;
+        case L'B':
+          Print = true;
+          break;
 
-          default:
-            assert(false);
-            break;
-        }
-        Line.Delete(1, 2);
+        default:
+          FAIL;
+          break;
       }
-
-      if (Print)
-      {
-        Console->Print(Line + L"\n");
-      }
+      Line.Delete(1, 2);
     }
-  }
-  __finally
-  {
-    delete Lines;
+
+    if (Print)
+    {
+      Console->Print(Line + L"\n");
+    }
   }
   Console->WaitBeforeExit();
 }

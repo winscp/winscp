@@ -236,8 +236,9 @@ UnicodeString __fastcall GetLanguage(Word Language)
 // Return the value of the specified file version info string using the
 // specified translation
 UnicodeString __fastcall GetFileInfoString(void * FileInfo,
-  TTranslation Translation, UnicodeString StringName)
+  TTranslation Translation, UnicodeString StringName, bool AllowEmpty)
 {
+  UnicodeString Result;
   wchar_t * P;
   UINT Len;
 
@@ -246,10 +247,16 @@ UnicodeString __fastcall GetFileInfoString(void * FileInfo,
     IntToHex(Translation.CharSet, 4) +
     L"\\" + StringName).c_str(), (void**)&P, &Len))
   {
-    throw Exception("Specified file info string not available");
+    if (!AllowEmpty)
+    {
+      throw Exception("Specified file info string not available");
+    }
   }
-  UnicodeString Result = UnicodeString(P, Len);
-  PackStr(Result);
+  else
+  {
+    Result = UnicodeString(P, Len);
+    PackStr(Result);
+  }
   return Result;
 }
 //---------------------------------------------------------------------------

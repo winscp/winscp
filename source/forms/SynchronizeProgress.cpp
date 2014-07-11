@@ -48,7 +48,9 @@ __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()
 
   if (IsApplicationMinimized() && FMinimizedByMe)
   {
-    ShowNotification(NULL, LoadStr(BALLOON_OPERATION_COMPLETE), qtInformation);
+    ShowNotification(
+      NULL, MainInstructions(LoadStr(BALLOON_OPERATION_COMPLETE)),
+      qtInformation);
   }
 }
 //---------------------------------------------------------------------------
@@ -58,12 +60,12 @@ void __fastcall TSynchronizeProgressForm::Start()
   FStartTime = Now();
   UpdateTimer->Enabled = true;
   StartTimeLabel->Caption = FStartTime.TimeString();
-  Caption = LoadStr(FCompareOnly ? SYNCHRONIZE_PROGRESS_COMPARE : SYNCHRONIZE_PROGRESS_SYNCHRONIZE);
+  Caption = FormatFormCaption(this, LoadStr(FCompareOnly ? SYNCHRONIZE_PROGRESS_COMPARE : SYNCHRONIZE_PROGRESS_SYNCHRONIZE2));
   if (!IsApplicationMinimized())
   {
     // Do not showing the progress when the application is minimized,
     // otherwise the form popups up unminimized.
-    // Quick as dirty hack: with this form, we do not support showing it
+    // Quick and dirty hack: with this form, we do not support showing it
     // once the application restores,
     // otherwise we would have to synchronize it somehow with the TProgressForm,
     // not to show it over the TProgressForm
@@ -92,13 +94,18 @@ void __fastcall TSynchronizeProgressForm::UpdateControls()
   TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FElapsed);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeProgressForm::CancelButtonClick(TObject * /*Sender*/)
+void __fastcall TSynchronizeProgressForm::CancelOperation()
 {
   if (!FCanceled && (MessageDialog(LoadStr(CANCEL_OPERATION2), qtConfirmation,
-       qaOK | qaCancel, HELP_NONE) == qaOK))
+       qaYes | qaNo, HELP_NONE) == qaYes))
   {
     FCanceled = true;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeProgressForm::CancelButtonClick(TObject * /*Sender*/)
+{
+  CancelOperation();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
@@ -116,5 +123,18 @@ void __fastcall TSynchronizeProgressForm::GlobalMinimize(TObject * /*Sender*/)
 {
   ApplicationMinimize();
   FMinimizedByMe = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeProgressForm::Dispatch(void * AMessage)
+{
+  TMessage & Message = *reinterpret_cast<TMessage *>(AMessage);
+  if (Message.Msg == WM_CLOSE)
+  {
+    CancelOperation();
+  }
+  else
+  {
+    TForm::Dispatch(AMessage);
+  }
 }
 //---------------------------------------------------------------------------

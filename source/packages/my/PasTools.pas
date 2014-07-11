@@ -39,6 +39,16 @@ function IsAppIconic: Boolean;
 procedure SetAppIconic(Value: Boolean);
 procedure SetAppMainForm(Value: TForm);
 
+procedure ForceColorChange(Control: TWinControl);
+
+type
+  TApiPathEvent = function(Path: string): string;
+
+var
+  OnApiPath: TApiPathEvent = nil;
+
+function ApiPath(Path: string): string;
+
 type
   TControlScrollBeforeUpdate = procedure(ObjectToValidate: TObject) of object;
   TControlScrollAfterUpdate = procedure of object;
@@ -90,7 +100,7 @@ type
 implementation
 
 uses
-  SysUtils, Messages, StdCtrls;
+  SysUtils, Messages, StdCtrls, Graphics;
 
 const
   DDExpandDelay = 15000000;
@@ -341,6 +351,25 @@ begin
   Application.SetMainForm(Value);
 end;
 
+function ApiPath(Path: string): string;
+begin
+  Result := Path;
+  if Assigned(OnApiPath) then
+  begin
+    Result := OnApiPath(Result);
+  end;
+end;
+
+procedure ForceColorChange(Control: TWinControl);
+begin
+  // particularly when changing color back to default (clWindow),
+  // non-client area (border line) is not redrawn,
+  // keeping previous color. force redraw here
+  if Control.HandleAllocated then
+  begin
+    RedrawWindow(Control.Handle, nil, 0, RDW_INVALIDATE or RDW_FRAME);
+  end;
+end;
 
   { TCustomControlScrollOnDragOver }
 

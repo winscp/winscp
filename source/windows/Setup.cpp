@@ -23,6 +23,7 @@
 #include "Setup.h"
 #include <StrUtils.hpp>
 #include "ProgParams.h"
+#include <Consts.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -268,7 +269,7 @@ static void __fastcall DeleteKeyIfEmpty(TRegistry * Registry, const UnicodeStrin
 {
   if (Registry->OpenKey(Key, false))
   {
-    std::auto_ptr<TStrings> List(new TStringList());
+    std::unique_ptr<TStrings> List(new TStringList());
 
     Registry->GetValueNames(List.get());
     bool CanDelete = true;
@@ -349,7 +350,7 @@ static void __fastcall UnregisterProtocol(TRegistry * Registry,
 //---------------------------------------------------------------------------
 static TRegistry * __fastcall CreateRegistry(HKEY RootKey)
 {
-  std::auto_ptr<TRegistry> Registry(new TRegistry());
+  std::unique_ptr<TRegistry> Registry(new TRegistry());
 
   Registry->Access = KEY_WRITE | KEY_READ;
   Registry->RootKey = RootKey;
@@ -358,9 +359,9 @@ static TRegistry * __fastcall CreateRegistry(HKEY RootKey)
 }
 //---------------------------------------------------------------------------
 static void __fastcall RegisterAsUrlHandler(HKEY RootKey,
-  const UnicodeString & Protocol, UnicodeString Description = "")
+  const UnicodeString & Protocol, UnicodeString Description = L"")
 {
-  std::auto_ptr<TRegistry> Registry(CreateRegistry(RootKey));
+  std::unique_ptr<TRegistry> Registry(CreateRegistry(RootKey));
 
   RegisterProtocol(Registry.get(), Protocol, Description, true);
 
@@ -386,7 +387,7 @@ static void __fastcall RegisterAsUrlHandler(const UnicodeString & Protocol, Unic
     RegisterAsUrlHandler(HKEY_LOCAL_MACHINE, Protocol, Description);
 
     // get rid of any HKCU registraction that would overrite the HKLM one
-    std::auto_ptr<TRegistry> Registry(CreateRegistry(HKEY_CURRENT_USER));
+    std::unique_ptr<TRegistry> Registry(CreateRegistry(HKEY_CURRENT_USER));
     if (Registry->KeyExists(SoftwareClassesBaseKey + Protocol))
     {
       Registry->DeleteKey(SoftwareClassesBaseKey + Protocol);
@@ -408,7 +409,7 @@ static void __fastcall RegisterAsUrlHandler(const UnicodeString & Protocol, Unic
 static void __fastcall UnregisterAsUrlHandler(HKEY RootKey,
   const UnicodeString & Protocol, bool UnregisterProtocol, bool ForceHandlerUnregistration)
 {
-  std::auto_ptr<TRegistry> Registry(CreateRegistry(RootKey));
+  std::unique_ptr<TRegistry> Registry(CreateRegistry(RootKey));
 
   UnicodeString DefaultIconKey = SoftwareClassesBaseKey + Protocol + L"\\DefaultIcon";
   if (Registry->OpenKey(DefaultIconKey, false))
@@ -475,7 +476,7 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
   RegisterAsUrlHandler(RootKey, Protocol);
 
   // see http://msdn.microsoft.com/en-us/library/windows/desktop/cc144154.aspx#registration
-  std::auto_ptr<TRegistry> Registry(CreateRegistry(RootKey));
+  std::unique_ptr<TRegistry> Registry(CreateRegistry(RootKey));
 
   // create capabilities record
 
@@ -513,7 +514,7 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
 static void __fastcall UnregisterProtocolForDefaultPrograms(HKEY RootKey,
   const UnicodeString & Protocol, bool ForceHandlerUnregistration)
 {
-  std::auto_ptr<TRegistry> Registry(CreateRegistry(RootKey));
+  std::unique_ptr<TRegistry> Registry(CreateRegistry(RootKey));
 
   // unregister the protocol
   UnregisterAsUrlHandler(RootKey, Protocol, false, ForceHandlerUnregistration);
@@ -734,33 +735,39 @@ UnicodeString __fastcall VersionStrFromCompoundVersion(int Version)
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall CampaignUrl(UnicodeString AURL)
+UnicodeString __fastcall CampaignUrl(UnicodeString URL)
 {
-  // see also TWebHelpSystem::ShowHelp
-  const wchar_t FragmentSeparator = L'#';
-  UnicodeString URL = ::CutToChar(AURL, FragmentSeparator, false);
-
-  if (URL.Pos(L"?") == 0)
-  {
-    URL += L"?";
-  }
-  else
-  {
-    URL += L"&";
-  }
-
   int CurrentCompoundVer = Configuration->CompoundVersion;
   AnsiString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
-  URL += FORMAT(L"utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
+  UnicodeString Params = FORMAT(L"utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
 
-  AddToList(URL, AURL, FragmentSeparator);
-
-  return URL;
+  return AppendUrlParams(URL, Params);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetUsageData()
 {
   return Configuration->Usage->Serialize();
+}
+//---------------------------------------------------------------------------
+static UnicodeString ProgramUrl(UnicodeString URL)
+{
+  TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
+  UnicodeString CurrentVersionStr =
+    FORMAT(L"%d.%d.%d.%d",
+      (HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
+       HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS)));
+  UnicodeString Params =
+    FORMAT(L"v=%s&lang=%s&isinstalled=%d",
+      (CurrentVersionStr,
+      IntToHex(__int64(GUIConfiguration->Locale), 4),
+      int(IsInstalled())));
+
+  if (Configuration->IsUnofficial)
+  {
+    Params += L"&unofficial=1";
+  }
+
+  return AppendUrlParams(URL, Params);
 }
 //---------------------------------------------------------------------------
 static UnicodeString __fastcall WantBetaUrl(UnicodeString URL, bool Force)
@@ -801,20 +808,13 @@ void __fastcall QueryUpdates()
   {
     UnicodeString Response;
 
-    TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
     int CurrentCompoundVer = Configuration->CompoundVersion;
-    UnicodeString CurrentVersionStr =
-      FORMAT(L"%d.%d.%d.%d",
-        (HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
-         HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS)));
 
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
     THttp * CheckForUpdatesHTTP = new THttp(Application);
     try
     {
-      UnicodeString URL = LoadStr(UPDATES_URL) +
-        FORMAT(L"?v=%s&lang=%s", (CurrentVersionStr,
-          IntToHex(__int64(GUIConfiguration->Locale), 4)));
+      UnicodeString URL = ProgramUrl(LoadStr(UPDATES_URL));
       URL = WantBetaUrl(URL, false);
       URL += L"&dotnet=" + Updates.DotNetVersion;
       URL += L"&console=" + Updates.ConsoleVersion;
@@ -920,6 +920,19 @@ void __fastcall QueryUpdates()
         Changed |= (PrevResults.UrlButton != Line);
         Updates.Results.UrlButton = Line;
       }
+      else if (AnsiSameText(Name, L"NewsUrl"))
+      {
+        Changed |= (PrevResults.NewsUrl != Line);
+        Updates.Results.NewsUrl = Line;
+      }
+      else if (AnsiSameText(Name, L"NewsSize"))
+      {
+        TSize NewsSize;
+        NewsSize.Width = StrToIntDef(::CutToChar(Line, L',', true), 0);
+        NewsSize.Height = StrToIntDef(::CutToChar(Line, L',', true), 0);
+        Changed |= (PrevResults.NewsSize != NewsSize);
+        Updates.Results.NewsSize = NewsSize;
+      }
     }
 
     if (Changed)
@@ -1002,10 +1015,11 @@ static void __fastcall OpenHistory(void * /*Data*/, TObject * /*Sender*/)
   OpenBrowser(LoadStr(HISTORY_URL));
 }
 //---------------------------------------------------------------------------
-void __fastcall CheckForUpdates(bool CachedResults)
+bool __fastcall CheckForUpdates(bool CachedResults)
 {
   TCustomForm * ActiveForm = Screen->ActiveCustomForm;
 
+  bool Result = false;
   TOperationVisualizer Visualizer;
 
   try
@@ -1016,121 +1030,98 @@ void __fastcall CheckForUpdates(bool CachedResults)
       ActiveForm->Enabled = false;
     }
 
-    bool Again = false;
-    do
+    TUpdatesConfiguration Updates = WinConfiguration->Updates;
+    bool Cached =
+      Updates.HaveValidResultsForVersion(Configuration->CompoundVersion) &&
+      CachedResults;
+    if (!Cached)
     {
-      TUpdatesConfiguration Updates = WinConfiguration->Updates;
-      bool Cached = !Again && Updates.HaveResults &&
-        (double(Updates.Period) > 0) &&
-        (Updates.Results.ForVersion == Configuration->CompoundVersion) &&
-        CachedResults;
-      if (!Cached)
-      {
-        QueryUpdates();
-        // reread new data
-        Updates = WinConfiguration->Updates;
-      }
-      Again = false;
-
-      if (!Updates.ShownResults)
-      {
-        Updates.ShownResults = true;
-        WinConfiguration->Updates = Updates;
-      }
-      assert(Updates.HaveResults);
-
-      UnicodeString Message;
-      bool New;
-      TQueryType Type;
-      GetUpdatesMessage(Message, New, Type, true);
-
-      Configuration->Usage->Inc(L"UpdateDisplays");
-      if (New)
-      {
-        Configuration->Usage->Inc(L"UpdateDisplaysNew");
-      }
-
-      if (Updates.HaveResults)
-      {
-        bool ShowLast = Cached;
-        bool ShowNext = (double(Updates.Period) > 0);
-
-        if (ShowLast || ShowNext)
-        {
-          Message += L"\n";
-
-          if (ShowLast)
-          {
-            Message += L"\n" +
-              FMTLOAD(UPDATE_LAST,
-                (FormatDateTime("ddddd", Updates.LastCheck)));
-          }
-
-          if (ShowNext)
-          {
-            Message += L"\n" +
-              FMTLOAD(UPDATE_NEXT, (FormatDateTime("ddddd", Updates.LastCheck + Updates.Period)));
-          }
-        }
-      }
-
-      // add FLAGMASK(Cached, qaRetry) to enable "check again" button
-      // for cached results
-      int Answers = qaOK |
-        FLAGMASK(New, qaCancel | qaAll) |
-        FLAGMASK(!Updates.Results.Url.IsEmpty(), qaYes);
-      TQueryButtonAlias Aliases[4];
-      Aliases[0].Button = qaRetry;
-      Aliases[0].Alias = LoadStr(CHECK_AGAIN_BUTTON);
-      Aliases[1].Button = qaYes;
-      if (Updates.Results.UrlButton.IsEmpty())
-      {
-        Aliases[1].Alias = LoadStr(UPDATE_URL_BUTTON);
-      }
-      else
-      {
-        Aliases[1].Alias = Updates.Results.UrlButton;
-      }
-      Aliases[2].Button = qaAll;
-      Aliases[2].Alias = LoadStr(WHATS_NEW_BUTTON);
-      Aliases[2].OnClick = MakeMethod<TNotifyEvent>(NULL, OpenHistory);
-      Aliases[3].Button = qaOK;
-      Aliases[3].Alias = LoadStr(DOWNLOAD_BUTTON);
-
-      TMessageParams Params;
-      Params.Aliases = Aliases;
-      // alias "ok" button to "download" only if we have new version
-      Params.AliasesCount = (New ? 4 : 3);
-      unsigned int Answer =
-        MessageDialog(Message, Type,
-          Answers, HELP_UPDATES, &Params);
-      switch (Answer)
-      {
-        case qaOK:
-          if (New)
-          {
-            Configuration->Usage->Inc(L"UpdateDownloadOpens");
-            UnicodeString UpgradeUrl = LoadStr(UPGRADE_URL);
-            UpgradeUrl = WantBetaUrl(UpgradeUrl, true);
-            UpgradeUrl = AppendUrlParams(UpgradeUrl, FORMAT(L"to=%s", (VersionStrFromCompoundVersion(Updates.Results.Version))));
-            OpenBrowser(UpgradeUrl);
-          }
-          break;
-
-        case qaYes:
-          OpenBrowser(Updates.Results.Url);
-          break;
-
-        case qaAll:
-          FAIL;
-          break;
-
-        case qaRetry:
-          Again = true;
-          break;
-      }
+      QueryUpdates();
+      // reread new data
+      Updates = WinConfiguration->Updates;
     }
-    while (Again);
+
+    if (!Updates.ShownResults)
+    {
+      Updates.ShownResults = true;
+      WinConfiguration->Updates = Updates;
+    }
+    assert(Updates.HaveResults);
+
+    UnicodeString Message;
+    bool New;
+    TQueryType Type;
+    GetUpdatesMessage(Message, New, Type, true);
+
+    Configuration->Usage->Inc(L"UpdateDisplays");
+    if (New)
+    {
+      Configuration->Usage->Inc(L"UpdateDisplaysNew");
+    }
+
+    if (Updates.HaveResults &&
+        (double(Updates.Period) > 0) &&
+        // do not chow next check time, if we have new version info
+        !New)
+    {
+      Message += L"\n\n" +
+        FMTLOAD(UPDATE_NEXT, (FormatDateTime("ddddd", Updates.LastCheck + Updates.Period)));
+    }
+
+    int Answers = qaOK |
+      // show "what's new" button only when change list URL was not provided in results
+      FLAGMASK(New && Updates.Results.NewsUrl.IsEmpty(), qaAll) |
+      FLAGMASK(New, qaCancel) |
+      FLAGMASK(!Updates.Results.Url.IsEmpty(), qaYes);
+    TQueryButtonAlias Aliases[4];
+    Aliases[0].Button = qaYes;
+    if (Updates.Results.UrlButton.IsEmpty())
+    {
+      Aliases[0].Alias = LoadStr(UPDATE_URL_BUTTON);
+    }
+    else
+    {
+      Aliases[0].Alias = Updates.Results.UrlButton;
+    }
+    Aliases[1].Button = qaAll;
+    Aliases[1].Alias = LoadStr(WHATS_NEW_BUTTON);
+    Aliases[1].OnClick = MakeMethod<TNotifyEvent>(NULL, OpenHistory);
+    Aliases[2].Button = qaCancel;
+    Aliases[2].Alias = Vcl_Consts_SMsgDlgClose;
+    Aliases[3].Button = qaOK;
+    Aliases[3].Alias = LoadStr(UPGRADE_BUTTON);
+
+    TMessageParams Params;
+    Params.Aliases = Aliases;
+    Params.MoreMessagesUrl = Updates.Results.NewsUrl;
+    Params.MoreMessagesSize = Updates.Results.NewsSize;
+    // alias "ok" button to "download" only if we have new version
+    Params.AliasesCount = LENOF(Aliases) - (New ? 0 : 1);
+    unsigned int Answer =
+      MessageDialog(Message, Type,
+        Answers, HELP_UPDATES, &Params);
+    switch (Answer)
+    {
+      case qaOK:
+        if (New)
+        {
+          Configuration->Usage->Inc(L"UpdateDownloadOpens");
+          UnicodeString UpgradeUrl = ProgramUrl(LoadStr(UPGRADE_URL));
+          UpgradeUrl = WantBetaUrl(UpgradeUrl, true);
+          UpgradeUrl = AppendUrlParams(UpgradeUrl, FORMAT(L"to=%s", (VersionStrFromCompoundVersion(Updates.Results.Version))));
+          OpenBrowser(UpgradeUrl);
+          Result = true;
+        }
+        break;
+
+      case qaYes:
+        OpenBrowser(Updates.Results.Url);
+        break;
+
+      case qaAll:
+        FAIL;
+        break;
+    }
   }
   __finally
   {
@@ -1139,6 +1130,7 @@ void __fastcall CheckForUpdates(bool CachedResults)
       ActiveForm->Enabled = true;
     }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 class TUpdateThread : public TCompThread
@@ -1365,4 +1357,28 @@ bool __fastcall AnyOtherInstanceOfSelf()
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+static bool __fastcall DoIsInstalled(HKEY RootKey)
+{
+  std::unique_ptr<TRegistry> Registry(new TRegistry(KEY_READ));
+  Registry->RootKey = RootKey;
+  bool Result =
+    Registry->OpenKey(L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\winscp3_is1", false);
+  if (Result)
+  {
+    UnicodeString InstallPath = ExcludeTrailingBackslash(Registry->ReadString(L"Inno Setup: App Path"));
+    UnicodeString ExePath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
+    Result =
+      !InstallPath.IsEmpty() &&
+      CompareFileName(ExePath, InstallPath);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsInstalled()
+{
+  return
+    DoIsInstalled(HKEY_LOCAL_MACHINE) ||
+    DoIsInstalled(HKEY_CURRENT_USER);
 }

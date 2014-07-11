@@ -140,7 +140,7 @@ bool __fastcall TRightsFrame::GetAllowUndef()
       }
       else if (Result != Check->AllowGrayed)
       {
-        assert(false);
+        FAIL;
       }
     }
   }
@@ -320,11 +320,11 @@ void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
     else if (Action == PasteAction)
     {
       UnicodeString S;
-      if (TextFromClipboard(S))
+      if (TextFromClipboard(S, true))
       {
         Text = S;
       }
-      // trigger on change event, even if no change actually occured to
+      // trigger on change event, even if no change actually occurred to
       // allow parent form to visualize feedback of an action
       DoChange();
       Changed = false;

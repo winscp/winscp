@@ -113,7 +113,7 @@ __published:
   TLabel *BeepOnFinishAfterText;
   TTabSheet *TransferEnduranceSheet;
   TGroupBox *ResumeBox;
-  TLabel *ResumeThresholdUnitLabel;
+  TLabel *ResumeThresholdUnitLabel2;
   TRadioButton *ResumeOnButton;
   TRadioButton *ResumeSmartButton;
   TRadioButton *ResumeOffButton;
@@ -217,7 +217,6 @@ __published:
   TRadioButton *RetrieveExternalIpAddressButton;
   TRadioButton *CustomExternalIpAddressButton;
   TEdit *CustomExternalIpAddressEdit;
-  TCheckBox *FormatSizeBytesCheck;
   TCheckBox *SessionReopenAutoStallCheck;
   TLabel *SessionReopenAutoStallLabel;
   TUpDownEdit *SessionReopenAutoStallEdit;
@@ -292,6 +291,10 @@ __published:
   TMenuItem *RegisterAsUrlHandlerItem;
   TMenuItem *UnregisterForDefaultProtocolsItem;
   TMenuItem *MakeDefaultHandlerItem;
+  TLabel *Label1;
+  TComboBox *FormatSizeBytesCombo;
+  TCheckBox *UpdatesShowOnStartup;
+  TCheckBox *ExternalSessionInExistingInstanceCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

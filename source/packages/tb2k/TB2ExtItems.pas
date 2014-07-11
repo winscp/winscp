@@ -255,9 +255,9 @@ var
   I: Integer;
 begin
   if FEditCaption <> Value then begin
-    for I := 0 to FClients.Count - 1 do
-      if TBasicActionLink(FClients[I]) is TTBEditItemActionLink then
-        TTBEditItemActionLink(FClients[I]).SetEditCaption(Value);
+    for I := 0 to ClientCount - 1 do
+      if TBasicActionLink(Clients[I]) is TTBEditItemActionLink then
+        TTBEditItemActionLink(Clients[I]).SetEditCaption(Value);
     FEditCaption := Value;
     Change;
   end;
@@ -268,9 +268,9 @@ var
   I: Integer;
 begin
   if FEditOptions <> Value then begin
-    for I := 0 to FClients.Count - 1 do
-      if TBasicActionLink(FClients[I]) is TTBEditItemActionLink then
-        TTBEditItemActionLink(FClients[I]).SetEditOptions(Value);
+    for I := 0 to ClientCount - 1 do
+      if TBasicActionLink(Clients[I]) is TTBEditItemActionLink then
+        TTBEditItemActionLink(Clients[I]).SetEditOptions(Value);
     FEditOptions := Value;
     Change;
   end;
@@ -281,9 +281,9 @@ var
   I: Integer;
 begin
   if FEditWidth <> Value then begin
-    for I := 0 to FClients.Count - 1 do
-      if TBasicActionLink(FClients[I]) is TTBEditItemActionLink then
-        TTBEditItemActionLink(FClients[I]).SetEditWidth(Value);
+    for I := 0 to ClientCount - 1 do
+      if TBasicActionLink(Clients[I]) is TTBEditItemActionLink then
+        TTBEditItemActionLink(Clients[I]).SetEditWidth(Value);
     FEditWidth := Value;
     Change;
   end;
@@ -294,9 +294,9 @@ var
   I: Integer;
 begin
   if not MethodsEqual(TMethod(FOnAcceptText), TMethod(Value)) then begin
-    for I := 0 to FClients.Count - 1 do
-      if TBasicActionLink(FClients[I]) is TTBEditItemActionLink then
-        TTBEditItemActionLink(FClients[I]).SetOnAcceptText(Value);
+    for I := 0 to ClientCount - 1 do
+      if TBasicActionLink(Clients[I]) is TTBEditItemActionLink then
+        TTBEditItemActionLink(Clients[I]).SetOnAcceptText(Value);
     FOnAcceptText := Value;
     Change;
   end;
@@ -307,9 +307,9 @@ var
   I: Integer;
 begin
   if FText <> Value then begin
-    for I := 0 to FClients.Count - 1 do
-      if TBasicActionLink(FClients[I]) is TTBEditItemActionLink then
-        TTBEditItemActionLink(FClients[I]).SetText(Value);
+    for I := 0 to ClientCount - 1 do
+      if TBasicActionLink(Clients[I]) is TTBEditItemActionLink then
+        TTBEditItemActionLink(Clients[I]).SetText(Value);
     FText := Value;
     Change;
   end;

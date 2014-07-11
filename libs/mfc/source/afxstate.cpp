@@ -61,11 +61,11 @@ _AFX_THREAD_STATE::_AFX_THREAD_STATE()
 _AFX_THREAD_STATE::~_AFX_THREAD_STATE()
 {
 	// cleanup thread local tooltip window
-	if (m_pToolTip != NULL)
+	/*if (m_pToolTip != NULL)
 	{
 		m_pToolTip->DestroyWindow();
 		delete m_pToolTip;
-	}
+	}*/
 
 	// unhook windows hooks
 	if (m_hHookOldMsgFilter != NULL)
@@ -141,11 +141,11 @@ AFX_MODULE_STATE::~AFX_MODULE_STATE()
 #endif
 
 	// clean up type lib cache map, if any
-	if (m_pTypeLibCacheMap != NULL)
+	/*if (m_pTypeLibCacheMap != NULL)
 	{
 		m_pTypeLibCacheMap->RemoveAll(&m_typeLibCache);
 		delete m_pTypeLibCacheMap;
-	}
+	}*/
 }
 
 void CTypeLibCacheMap::RemoveAll(void* pExcept)
@@ -257,7 +257,7 @@ AFX_MODULE_THREAD_STATE* AFXAPI AfxGetModuleThreadState()
 // CTypeLibCache::Unlock
 // (Note: the rest of CTypeLibCache is implemented in oletyplb.cpp)
 
-void CTypeLibCache::Unlock()
+/*void CTypeLibCache::Unlock()
 {
 	ASSERT(m_cRef > 0);
 
@@ -274,4 +274,4 @@ void CTypeLibCache::Unlock()
 			m_ptlib = NULL;
 		}
 	}
-}
+}*/

@@ -44,6 +44,8 @@ public:
   __fastcall TSafeHandleStream(int AHandle);
   virtual int __fastcall Read(void * Buffer, int Count);
   virtual int __fastcall Write(const void * Buffer, int Count);
+  virtual int __fastcall Read(System::DynamicArray<System::Byte> Buffer, int Offset, int Count);
+  virtual int __fastcall Write(const System::DynamicArray<System::Byte> Buffer, int Offset, int Count);
 };
 //---------------------------------------------------------------------------
 char * __fastcall EOLToStr(TEOLType EOLType);

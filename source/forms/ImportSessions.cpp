@@ -18,7 +18,7 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
-bool __fastcall DoImportSessionsDialog()
+bool __fastcall DoImportSessionsDialog(TList * Imported)
 {
   std::unique_ptr<TStoredSessionList> PuttyImportSessionList(
     GUIConfiguration->SelectPuttySessionsForImport(StoredSessions));
@@ -30,15 +30,18 @@ bool __fastcall DoImportSessionsDialog()
   SessionListsList->Add(FilezillaImportSessionList.get());
 
   bool ImportKeys = true;
+
   std::unique_ptr<TImportSessionsDialog> ImportSessionsDialog(
-    new TImportSessionsDialog(Application, SessionListsList.get()));
+    SafeFormCreate<TImportSessionsDialog>(Application));
+
+  ImportSessionsDialog->Init(SessionListsList.get());
 
   bool Result = ImportSessionsDialog->Execute(ImportKeys);
 
   if (Result)
   {
-    StoredSessions->Import(PuttyImportSessionList.get(), true);
-    StoredSessions->Import(FilezillaImportSessionList.get(), true);
+    StoredSessions->Import(PuttyImportSessionList.get(), true, Imported);
+    StoredSessions->Import(FilezillaImportSessionList.get(), true, Imported);
 
     if (ImportKeys)
     {
@@ -54,14 +57,16 @@ bool __fastcall DoImportSessionsDialog()
   return Result;
 }
 //---------------------------------------------------------------------
-__fastcall TImportSessionsDialog::TImportSessionsDialog(TComponent * AOwner,
-  TList * SessionListsList)
-  : TForm(AOwner)
+__fastcall TImportSessionsDialog::TImportSessionsDialog(TComponent * AOwner) :
+  TForm(AOwner)
 {
   UseSystemSettings(this);
   // this is loaded from res string to force translation
   Caption = LoadStr(IMPORT_CAPTION);
-
+}
+//---------------------------------------------------------------------
+void __fastcall TImportSessionsDialog::Init(TList * SessionListsList)
+{
   for (int Index = 0; Index < SessionListsList->Count; Index++)
   {
     SourceComboBox->Items->Objects[Index] = static_cast<TObject *>(SessionListsList->Items[Index]);

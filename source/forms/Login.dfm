@@ -8,7 +8,7 @@ object LoginDialog: TLoginDialog
   ClientHeight = 432
   ClientWidth = 630
   Color = clBtnFace
-  Constraints.MinHeight = 350
+  Constraints.MinHeight = 375
   Constraints.MinWidth = 600
   ParentFont = True
   KeyPreview = True
@@ -183,6 +183,7 @@ object LoginDialog: TLoginDialog
           TabOrder = 5
           Text = 'HostNameEdit'
           OnChange = DataChange
+          OnExit = HostNameEditExit
         end
         object UserNameEdit: TEdit
           Left = 12
@@ -229,7 +230,8 @@ object LoginDialog: TLoginDialog
           Items.Strings = (
             'SFTP'
             'SCP'
-            'FTP')
+            'FTP'
+            'WebDAV')
         end
         object FtpsCombo: TComboBox
           Left = 163
@@ -325,6 +327,33 @@ object LoginDialog: TLoginDialog
           Anchors = [akLeft, akBottom]
           TabOrder = 12
           OnDropDownClick = SaveButtonDropDownClick
+        end
+      end
+      object NoteGroup: TGroupBox
+        Left = 2
+        Top = 247
+        Width = 347
+        Height = 141
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        Caption = 'Note'
+        TabOrder = 1
+        DesignSize = (
+          347
+          141)
+        object NoteMemo: TMemo
+          Left = 7
+          Top = 15
+          Width = 333
+          Height = 117
+          TabStop = False
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          BevelInner = bvNone
+          BevelOuter = bvNone
+          BorderStyle = bsNone
+          Lines.Strings = (
+            'NoteMemo')
+          ScrollBars = ssVertical
+          TabOrder = 0
         end
       end
     end
@@ -599,6 +628,22 @@ object LoginDialog: TLoginDialog
       SecondaryShortCuts.Strings = (
         'Shift+Ctrl+P')
       OnExecute = PuttyActionExecute
+    end
+    object PasteUrlAction: TAction
+      Category = 'Sessions'
+      Caption = 'Paste Session &URL'
+      ShortCut = 16470
+      OnExecute = PasteUrlActionExecute
+    end
+    object GenerateUrlAction: TAction
+      Category = 'Sessions'
+      Caption = '&Generate Session URL...'
+      OnExecute = GenerateUrlActionExecute
+    end
+    object CopyParamRuleAction: TAction
+      Category = 'Sessions'
+      Caption = 'Transfer Settings &Rule...'
+      OnExecute = CopyParamRuleActionExecute
     end
   end
   object ToolsPopupMenu: TPopupMenu
@@ -1074,6 +1119,9 @@ object LoginDialog: TLoginDialog
     object SiteClonetoNewSiteMenuItem: TMenuItem
       Action = CloneToNewSiteAction
     end
+    object GenerateSessionURL1: TMenuItem
+      Action = GenerateUrlAction
+    end
     object N5: TMenuItem
       Caption = '-'
     end
@@ -1160,6 +1208,12 @@ object LoginDialog: TLoginDialog
     object Reset1: TMenuItem
       Action = ResetNewSessionAction
     end
+    object Paste1: TMenuItem
+      Action = PasteUrlAction
+    end
+    object GenerateSessionURL2: TMenuItem
+      Action = GenerateUrlAction
+    end
     object MenuItem21: TMenuItem
       Caption = '-'
     end
@@ -1215,6 +1269,9 @@ object LoginDialog: TLoginDialog
     object MenuItem9: TMenuItem
       Action = SessionAdvancedAction
       Default = True
+    end
+    object TransferSettingsRule1: TMenuItem
+      Action = CopyParamRuleAction
     end
     object MenuItem14: TMenuItem
       Caption = 'Global Preferences'

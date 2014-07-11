@@ -34,13 +34,13 @@ static const char _szAfxDlgsInl[] = "afxdlgs.inl";
 #undef THIS_FILE
 #define THIS_FILE _szAfxDlgsInl
 #define _AFXDLGS_INLINE
-#include "afxdlgs.inl"
+//#include "afxdlgs.inl"
 
 // expand inlines
 static const char _szAfxExtInl[] = "afxext.inl";
 #undef THIS_FILE
 #define THIS_FILE _szAfxExtInl
 #define _AFXEXT_INLINE
-#include "afxext.inl"
+//#include "afxext.inl"
 
 #endif //!_AFX_ENABLE_INLINES

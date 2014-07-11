@@ -49,6 +49,8 @@ struct TMessageParams
   bool NeverAskAgainCheckedInitially;
   bool AllowHelp;
   UnicodeString ImageName;
+  UnicodeString MoreMessagesUrl;
+  TSize MoreMessagesSize;
 
 private:
   inline void Reset();
@@ -71,7 +73,7 @@ void __fastcall FormHelp(TForm * Form);
 void __fastcall SearchHelp(const UnicodeString & Message);
 void __fastcall MessageWithNoHelp(const UnicodeString & Message);
 
-UnicodeString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent);
+UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent);
 void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString LayoutStr);
 
 namespace Tb2item { class TTBCustomItem; }
@@ -181,10 +183,10 @@ bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
   TRemoteProperties * Properties, bool & SaveSettings);
 
 // forms\ImportSessions.cpp
-bool __fastcall DoImportSessionsDialog();
+bool __fastcall DoImportSessionsDialog(TList * Imported);
 
 // forms\License.cpp
-enum TLicense { lcNoLicense = -1, lcWinScp, lcExpat, lcZlib };
+enum TLicense { lcNoLicense = -1, lcWinScp, lcExpat };
 void __fastcall DoLicenseDialog(TLicense License);
 
 // forms\Login.cpp
@@ -240,7 +242,7 @@ bool __fastcall DoCustomCommandDialog(TCustomCommandType & Command,
 
 // forms\CopyParamPreset.cpp
 class TCopyParamList;
-enum TCopyParamPresetMode { cpmAdd, cpmEdit, cpmDuplicate };
+enum TCopyParamPresetMode { cpmAdd, cpmAddCurrent, cpmEdit, cpmDuplicate };
 bool __fastcall DoCopyParamPresetDialog(TCopyParamList * CopyParamList,
   int & Index, TCopyParamPresetMode Mode, TCopyParamRuleData * CurrentRuleData,
   const TCopyParamType & DefaultCopyParams);
@@ -303,10 +305,15 @@ const soNoMinimize =       0x02;
 const soAllowSelectedOnly = 0x04;
 typedef void __fastcall (__closure *TGetSynchronizeOptionsEvent)
   (int Params, TSynchronizeOptions & Options);
+typedef void __fastcall (__closure *TFeedSynchronizeError)
+  (const UnicodeString & Message, TStrings * MoreMessages, TQueryType Type,
+   const UnicodeString & HelpKeyword);
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
   bool & SaveSettings, int Options, int CopyParamAttrs,
-  TGetSynchronizeOptionsEvent OnGetOptions, bool Start);
+  TGetSynchronizeOptionsEvent OnGetOptions,
+  TFeedSynchronizeError & OnFeedSynchronizeError,
+  bool Start);
 
 // forms\FullSynchronize.cpp
 struct TUsableCopyParamAttrs;
@@ -333,8 +340,9 @@ typedef void __fastcall (__closure *TFileClosedEvent)
   (TObject * Sender, bool Forced);
 TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TCustomForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
-  const UnicodeString Caption = L"");
+  const UnicodeString Caption, bool StandaloneEditor, TColor Color);
 void __fastcall ReconfigureEditorForm(TForm * Form);
+void __fastcall EditorFormFileUploadComplete(TForm * Form);
 
 bool __fastcall DoSymlinkDialog(UnicodeString & FileName, UnicodeString & PointTo,
   TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic);
@@ -356,7 +364,8 @@ TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
   unsigned int TimeoutAnswer, TButton ** TimeoutButton,
-  const UnicodeString & ImageName, const UnicodeString & NeverAskAgainCaption);
+  const UnicodeString & ImageName, const UnicodeString & NeverAskAgainCaption,
+  const UnicodeString & MoreMessagesUrl, TSize MoreMessagesSize);
 
 // windows\Console.cpp
 int __fastcall Console(bool Help);
@@ -373,6 +382,9 @@ typedef void __fastcall (__closure *TFindEvent)
    TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
 bool __fastcall DoFileFindDialog(UnicodeString Directory,
   TFindEvent OnFind, UnicodeString & Path);
+
+// forms\GenerateUrl.cpp
+void __fastcall DoGenerateUrlDialog(TSessionData * Data, TStrings * Paths);
 
 void __fastcall CopyParamListButton(TButton * Button);
 const int cplNone =             0x00;
@@ -413,6 +425,7 @@ bool __fastcall IsApplicationMinimized();
 void __fastcall ApplicationMinimize();
 void __fastcall ApplicationRestore();
 void __fastcall WinInitialize();
+void __fastcall WinFinalize();
 
 void __fastcall ShowNotification(TTerminal * Terminal, const UnicodeString & Str,
   TQueryType Type);
@@ -455,8 +468,6 @@ private:
   UnicodeString FCustomCommandName;
 };
 //---------------------------------------------------------------------------
-struct TNotifyIconData5;
-//---------------------------------------------------------------------------
 class TTrayIcon
 {
 public:
@@ -478,7 +489,7 @@ protected:
 
 private:
   bool FVisible;
-  TNotifyIconData5 * FTrayIcon;
+  NOTIFYICONDATA * FTrayIcon;
   TNotifyEvent FOnClick;
   TNotifyEvent FOnBalloonClick;
   TObject * FBalloonUserData;

@@ -7,7 +7,7 @@ object ProgressForm: TProgressForm
   BorderStyle = bsDialog
   Caption = 'Operation'
   ClientHeight = 196
-  ClientWidth = 405
+  ClientWidth = 425
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = False
@@ -15,7 +15,7 @@ object ProgressForm: TProgressForm
   OnHide = FormHide
   OnShow = FormShow
   DesignSize = (
-    405
+    425
     196)
   PixelsPerInch = 96
   TextHeight = 13
@@ -24,6 +24,7 @@ object ProgressForm: TProgressForm
     Top = 88
     Width = 69
     Height = 13
+    Anchors = [akTop, akRight]
     Caption = 'Once &finished:'
     FocusControl = OnceDoneOperationCombo
   end
@@ -39,7 +40,7 @@ object ProgressForm: TProgressForm
   object CancelButton: TButton
     Left = 320
     Top = 8
-    Width = 80
+    Width = 100
     Height = 25
     Anchors = [akTop, akRight]
     Cancel = True
@@ -50,7 +51,7 @@ object ProgressForm: TProgressForm
   object MinimizeButton: TButton
     Left = 320
     Top = 40
-    Width = 80
+    Width = 100
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Minimize'
@@ -118,13 +119,13 @@ object ProgressForm: TProgressForm
   object TransferPanel: TPanel
     Left = 10
     Top = 133
-    Width = 301
+    Width = 321
     Height = 63
     Anchors = [akLeft, akTop, akRight]
     BevelOuter = bvNone
     TabOrder = 4
     DesignSize = (
-      301
+      321
       63)
     object StartTimeLabel: TLabel
       Left = 88
@@ -159,7 +160,7 @@ object ProgressForm: TProgressForm
       Alignment = taRightJustify
       Anchors = [akTop, akRight]
       AutoSize = False
-      Caption = '0 KiB/s'
+      Caption = '0 KB/s'
     end
     object TimeElapsedLabel: TLabel
       Left = 236
@@ -178,7 +179,7 @@ object ProgressForm: TProgressForm
       Height = 13
       Alignment = taRightJustify
       AutoSize = False
-      Caption = '0 KiB'
+      Caption = '0 KB'
     end
     object Label3: TLabel
       Left = 164
@@ -224,25 +225,29 @@ object ProgressForm: TProgressForm
   object SpeedPanel: TPanel
     Left = 314
     Top = 151
-    Width = 92
+    Width = 112
     Height = 41
     Anchors = [akTop, akRight]
     BevelOuter = bvNone
     TabOrder = 6
-    object SpeedLabel2: TLabel
+    DesignSize = (
+      112
+      41)
+    object SpeedLabel3: TLabel
       Left = 8
       Top = 0
-      Width = 68
+      Width = 66
       Height = 13
-      Caption = '&Speed (KiB/s):'
+      Caption = '&Speed (KB/s):'
       FocusControl = SpeedCombo
     end
     object SpeedCombo: THistoryComboBox
       Left = 6
       Top = 16
-      Width = 80
+      Width = 100
       Height = 21
       AutoComplete = False
+      Anchors = [akLeft, akTop, akRight]
       TabOrder = 0
       Text = 'SpeedCombo'
       OnExit = SpeedComboExit
@@ -263,10 +268,11 @@ object ProgressForm: TProgressForm
   object OnceDoneOperationCombo: TComboBox
     Left = 320
     Top = 104
-    Width = 80
+    Width = 100
     Height = 21
     AutoComplete = False
     Style = csDropDownList
+    Anchors = [akTop, akRight]
     TabOrder = 5
     OnCloseUp = OnceDoneOperationComboCloseUp
     OnSelect = OnceDoneOperationComboSelect
@@ -280,5 +286,17 @@ object ProgressForm: TProgressForm
     OnTimer = UpdateTimerTimer
     Left = 336
     Top = 168
+  end
+  object MinimizeMenu: TPopupMenu
+    Left = 384
+    Top = 48
+    object MoveToQueueMenuItem: TMenuItem
+      Caption = 'Proceed in &Background'
+      OnClick = MoveToQueueMenuItemClick
+    end
+    object MinimizeMenuItem: TMenuItem
+      Caption = '&Minimize'
+      OnClick = MinimizeMenuItemClick
+    end
   end
 end

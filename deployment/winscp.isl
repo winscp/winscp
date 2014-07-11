@@ -21,21 +21,9 @@ RegisteringAsUrlHandlers=Registering to handle URL addresses...
 AddingSearchPath=Adding installation directory to search path (%PATH%)
 RemovingObsoleteTranslations=Removing obsolete translations
 
-RSAKeyTools=Key tools
 SendToHookNew=WinSCP (for upload)
 Launch=Launch &WinSCP
 OpenGettingStarted=Open &Getting started page
-
-; used only to delete file from older version
-; (not to be translated for new languages)
-SupportForum=Support forum
-WebSite=WinSCP Web Site
-PuTTYgenManual=PuTTYgen Manual
-PageantManual=Pageant Manual
-KeysManual=Using public keys for SSH authentication
-PuttyWebSite=PuTTY Web Site
-DocumentationPage=Documentation
-SendToHook=WinSCP3 (upload using SFTP or SCP)
 
 HelpButton=&Help
 ProgramComment=SFTP, FTP and SCP client
@@ -76,3 +64,4 @@ AboutDonations=About donations
 Donate=Donate %s
 Currency=USD
 ImportSites=Looking for sites to import...
+ApplicationsFoundDragExt=The following applications have loaded WinSCP Drag & drop shell extension that needs to be updated by Setup. It is recommended that you allow Setup to automatically close these applications. After the installation has completed, Setup will attempt to restart the applications. You can restart your computer later instead, if you do not need to use the extension.

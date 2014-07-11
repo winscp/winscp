@@ -80,7 +80,7 @@ UnicodeString __fastcall TFileSystemInfoDialog::SpaceStr(__int64 Bytes)
   else
   {
     Result = FormatBytes(Bytes);
-    UnicodeString SizeUnorderedStr = FormatBytes(Bytes, false);
+    UnicodeString SizeUnorderedStr = FormatBytes(Bytes, fbNone);
     if (Result != SizeUnorderedStr)
     {
       Result = FORMAT(L"%s (%s)", (Result, SizeUnorderedStr));

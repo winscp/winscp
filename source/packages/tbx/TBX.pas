@@ -639,7 +639,7 @@ implementation
 uses
   TBXExtItems, TBXLists, TB2Common, UxTheme, MultiMon, TBXDefaultTheme,
   {ComCtrls, Menus;} {vb-}
-  ComCtrls, Menus, MMSystem; {vb+}
+  ComCtrls, Menus, MMSystem, Types, UITypes; {vb+}
 
 type
   TTBItemAccess = class(TTBCustomItem);

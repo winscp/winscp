@@ -6,6 +6,7 @@
 #include "Exceptions.h"
 #include "PuttyIntf.h"
 #include "HierarchicalStorage.h"
+#include <Interface.h>
 #include <TextsCore.h>
 #include <StrUtils.hpp>
 #include <vector>
@@ -709,8 +710,8 @@ bool __fastcall TCustomIniFileStorage::DoOpenSubKey(const UnicodeString SubKey, 
     TStringList * Sections = new TStringList();
     try
     {
-      Sections->Sorted = true;
       FIniFile->ReadSections(Sections);
+      Sections->Sorted = true; // has to set only after reading as ReadSections reset it to false
       UnicodeString NewKey = ExcludeTrailingBackslash(CurrentSubKey+SubKey);
       if (Sections->Count)
       {
@@ -971,17 +972,17 @@ void __fastcall TIniFileStorage::Flush()
       {
         int Attr;
         // preserve attributes (especially hidden)
-        bool Exists = FileExists(Storage);
+        bool Exists = FileExists(ApiPath(Storage));
         if (Exists)
         {
-          Attr = GetFileAttributes(UnicodeString(Storage).c_str());
+          Attr = GetFileAttributes(ApiPath(Storage).c_str());
         }
         else
         {
           Attr = FILE_ATTRIBUTE_NORMAL;
         }
 
-        HANDLE Handle = CreateFile(UnicodeString(Storage).c_str(), GENERIC_READ | GENERIC_WRITE,
+        HANDLE Handle = CreateFile(ApiPath(Storage).c_str(), GENERIC_READ | GENERIC_WRITE,
           0, NULL, CREATE_ALWAYS, Attr, 0);
 
         if (Handle == INVALID_HANDLE_VALUE)

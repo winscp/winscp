@@ -278,7 +278,7 @@ static void AfxGetIconInfo(LPCTSTR lpszRegInfo, LPTSTR lpszImagePath,
 	// extract the index
 	if (*pstrSource != '\0')
 	{
-		LPTSTR pstrIndex = _tcsinc(pstrSource);
+		LPCTSTR pstrIndex = _tcsinc(pstrSource);
 		nIndex = (UINT) _ttol(pstrIndex);
 	}
 	else

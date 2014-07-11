@@ -25,6 +25,8 @@ public:
   void __fastcall RefreshQueueItem(TQueueItemProxy * QueueItem);
   static bool __fastcall QueueItemNeedsFrequentRefresh(TQueueItemProxy * QueueItem);
 
+  bool __fastcall NeedRefresh();
+
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property bool Empty = { read = GetEmpty };
 
@@ -32,6 +34,7 @@ private:
   TListView * FListView;
   TTerminalQueueStatus * FQueueStatus;
   TNotifyEvent FOnChange;
+  TFormatBytesStyle FFormatSizeBytes;
 
   TQueueItemProxy * __fastcall QueueViewItemToQueueItem(
     TListItem * Item, bool * Detail = NULL);
@@ -41,6 +44,7 @@ private:
     TCustomDrawState State, bool & DefaultDraw);
   virtual void __fastcall DoChange();
   bool __fastcall GetEmpty();
+  void __fastcall RememberConfiguration();
 
   static void __fastcall FillQueueViewItem(TListItem * Item,
     TQueueItemProxy * QueueItem, bool Detail);

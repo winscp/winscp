@@ -7,6 +7,8 @@
 #include "Exceptions.h"
 #include <ComCtrls.hpp>
 //---------------------------------------------------------------------------
+const TColor LinkColor = clBlue;
+//---------------------------------------------------------------------------
 void __fastcall AdjustListColumnsWidth(TListView * ListView);
 void __fastcall EnableControl(TControl* Control, bool Enable);
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly = true);
@@ -62,55 +64,12 @@ FormType * __fastcall SafeFormCreate(TComponent * Owner = NULL)
   return dynamic_cast<FormType *>(_SafeFormCreate(__classid(FormType), Owner));
 }
 bool __fastcall SupportsSplitButton();
+TButton * __fastcall FindDefaultButton(TWinControl * Control);
 TModalResult __fastcall DefaultResult(TCustomForm * Form);
+void __fastcall MemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
 void __fastcall UseDesktopFont(TControl * Control);
 void __fastcall LoadResourceImage(TImage * Image, const UnicodeString & ImageName);
-//---------------------------------------------------------------------------
-// When exception is left to be handled by Application->OnException
-// memory error occurs when clearing the exception for unknown reason.
-// (possibly only when exception handling takes too long,
-// such as when reconnect is retried)
-// deferring call after the catch clause gets rid of the problem.
-// on the other hand, not sure if there's some code that actually
-// relies on exception leaving the method when we use APPLICATION_EXCEPTION_HACK*
-// (such as then timer is called from withing event loop run
-// by our code, which we want to break too with the exception).
-// Steps to reproduce the problem:
-// 1) Connect
-// 2) Terminate the server
-// 3) Let is try to reconnect once
-// 4) Start the server and let it reconnect
-// 5) Upon clearing the original terminattion exception from 2)
-//    the EAccessViolation is thrown
-class TApplicationExceptionHackHelper
-{
-public:
-  void __fastcall Catch(Exception & E)
-  {
-    FSavedException.reset(CloneException(&E));
-  }
-
-  void __fastcall Handle()
-  {
-    if (FSavedException.get() != NULL)
-    {
-      Application->OnException(Application, FSavedException.get());
-      Abort();
-    }
-  }
-
-private:
-  std::unique_ptr<Exception> FSavedException;
-};
-//---------------------------------------------------------------------------
-#define APPLICATION_EXCEPTION_HACK_BEGIN \
-  TApplicationExceptionHackHelper _ExceptionHackHelper; \
-  try
-#define APPLICATION_EXCEPTION_HACK_END \
-  catch (Exception & E) \
-  { \
-    _ExceptionHackHelper.Catch(E); \
-  } \
-  _ExceptionHackHelper.Handle();
+UnicodeString __fastcall FormatFormCaption(TCustomForm * Form, const UnicodeString & Caption);
+UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

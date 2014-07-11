@@ -70,7 +70,6 @@ private:
   UnicodeString __fastcall GetProductVersion();
   UnicodeString __fastcall GetProductName();
   UnicodeString __fastcall GetCompanyName();
-  UnicodeString __fastcall TrimVersion(UnicodeString Version);
   UnicodeString __fastcall GetStoredSessionsSubKey();
   UnicodeString __fastcall GetPuttySessionsKey();
   void __fastcall SetRandomSeedFile(UnicodeString value);
@@ -94,7 +93,7 @@ private:
   UnicodeString __fastcall GetTimeFormat();
   void __fastcall SetStorage(TStorage value);
   UnicodeString __fastcall GetRegistryStorageKey();
-  UnicodeString __fastcall GetIniFileStorageNameForReadingWritting();
+  UnicodeString __fastcall GetIniFileStorageNameForReadingWriting();
   UnicodeString __fastcall GetIniFileStorageNameForReading();
   UnicodeString __fastcall GetIniFileStorageName(bool ReadingOnly);
   void __fastcall SetIniFileStorageName(UnicodeString value);
@@ -114,6 +113,7 @@ private:
   void __fastcall SetTryFtpWhenSshFails(bool value);
   bool __fastcall GetCollectUsage();
   void __fastcall SetCollectUsage(bool value);
+  bool __fastcall GetIsUnofficial();
 
 protected:
   TStorage FStorage;
@@ -144,7 +144,7 @@ protected:
   virtual UnicodeString __fastcall ModuleFileName();
 
   UnicodeString __fastcall GetFileFileInfoString(const UnicodeString Key,
-    const UnicodeString FileName);
+    const UnicodeString FileName, bool AllowEmpty = false);
   void * __fastcall GetFileApplicationInfo(const UnicodeString FileName);
   UnicodeString __fastcall GetFileProductVersion(const UnicodeString FileName);
   UnicodeString __fastcall GetFileProductName(const UnicodeString FileName);
@@ -208,6 +208,7 @@ public:
   __property UnicodeString CompanyName = { read=GetCompanyName };
   __property UnicodeString FileInfoString[UnicodeString Key] = { read = GetFileInfoString };
   __property UnicodeString OSVersionStr = { read = GetOSVersionStr };
+  __property bool IsUnofficial = { read = GetIsUnofficial };
   __property bool Logging  = { read=FLogging, write=SetLogging };
   __property UnicodeString LogFileName  = { read=FLogFileName, write=SetLogFileName };
   __property bool LogToFile  = { read=GetLogToFile };
@@ -239,7 +240,7 @@ public:
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage, write=SetStorage };
   __property UnicodeString RegistryStorageKey  = { read=GetRegistryStorageKey };
-  __property UnicodeString IniFileStorageName  = { read=GetIniFileStorageNameForReadingWritting, write=SetIniFileStorageName };
+  __property UnicodeString IniFileStorageName  = { read=GetIniFileStorageNameForReadingWriting, write=SetIniFileStorageName };
   __property UnicodeString IniFileStorageNameForReading  = { read=GetIniFileStorageNameForReading };
 
   __property UnicodeString DefaultKeyFile = { read = GetDefaultKeyFile };

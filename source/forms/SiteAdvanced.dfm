@@ -349,16 +349,16 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 114
+          Height = 116
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Recycle bin'
           TabOrder = 0
           DesignSize = (
             393
-            114)
+            116)
           object RecycleBinPathLabel: TLabel
             Left = 12
-            Top = 64
+            Top = 66
             Width = 95
             Height = 13
             Caption = '&Remote recycle bin:'
@@ -386,7 +386,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object RecycleBinPathEdit: TEdit
             Left = 12
-            Top = 81
+            Top = 83
             Width = 370
             Height = 21
             Anchors = [akLeft, akTop, akRight]
@@ -1075,13 +1075,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 136
+          Height = 164
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Proxy'
           TabOrder = 0
           DesignSize = (
             393
-            136)
+            164)
           object ProxyMethodLabel: TLabel
             Left = 12
             Top = 20
@@ -1222,10 +1222,19 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'SOCKS5'
               'HTTP')
           end
+          object ProxyAutodetectButton: TButton
+            Left = 12
+            Top = 129
+            Width = 100
+            Height = 25
+            Caption = '&Autodetect'
+            TabOrder = 7
+            OnClick = ProxyAutodetectButtonClick
+          end
         end
         object ProxySettingsGroup: TGroupBox
           Left = 0
-          Top = 147
+          Top = 176
           Width = 393
           Height = 128
           Anchors = [akLeft, akTop, akRight]
@@ -1407,7 +1416,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 182
             Height = 21
             MaxLength = 50
-            TabOrder = 1
+            TabOrder = 2
             Text = 'TunnelUserNameEdit'
             OnChange = DataChange
           end
@@ -1418,7 +1427,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
-            TabOrder = 2
+            TabOrder = 3
             Text = 'TunnelPasswordEdit'
             OnChange = DataChange
           end
@@ -1432,7 +1441,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             MinValue = 1.000000000000000000
             Value = 1.000000000000000000
             Anchors = [akTop, akRight]
-            TabOrder = 3
+            TabOrder = 1
             OnChange = DataChange
           end
         end
@@ -2026,13 +2035,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 265
+          Height = 289
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Detection of known bugs in SSH servers'
           TabOrder = 0
           DesignSize = (
             393
-            265)
+            289)
           object BugIgnore1Label: TLabel
             Left = 12
             Top = 20
@@ -2059,7 +2068,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugHMAC2Label: TLabel
             Left = 12
-            Top = 116
+            Top = 140
             Width = 154
             Height = 13
             Caption = 'Miscomputes SSH-2 H&MAC keys:'
@@ -2067,7 +2076,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugDeriveKey2Label: TLabel
             Left = 12
-            Top = 140
+            Top = 164
             Width = 176
             Height = 13
             Caption = 'Miscomputes SSH-2 &encryption keys:'
@@ -2075,7 +2084,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugRSAPad2Label: TLabel
             Left = 12
-            Top = 164
+            Top = 188
             Width = 210
             Height = 13
             Caption = 'Requires &padding on SSH-2 RSA signatures:'
@@ -2083,7 +2092,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugPKSessID2Label: TLabel
             Left = 12
-            Top = 188
+            Top = 212
             Width = 195
             Height = 13
             Caption = 'Misuses the sessio&n ID in SSH-2 PK auth:'
@@ -2091,7 +2100,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugRekey2Label: TLabel
             Left = 12
-            Top = 212
+            Top = 236
             Width = 187
             Height = 13
             Caption = 'Handles SSH-2 &key re-exchange badly:'
@@ -2099,7 +2108,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugMaxPkt2Label: TLabel
             Left = 12
-            Top = 236
+            Top = 260
             Width = 176
             Height = 13
             Caption = 'Ignores SSH-2 ma&ximum packet size:'
@@ -2112,6 +2121,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Height = 13
             Caption = 'Chokes on SSH-&2 ignore messages:'
             FocusControl = BugIgnore2Combo
+          end
+          object BugWinAdjLabel: TLabel
+            Left = 12
+            Top = 116
+            Width = 212
+            Height = 13
+            Caption = 'Chokes on WinSCP'#39's SSH-2 '#39'winadj'#39' requests'
+            FocusControl = BugWinAdjCombo
           end
           object BugIgnore1Combo: TComboBox
             Left = 320
@@ -2145,16 +2162,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugHMAC2Combo: TComboBox
             Left = 320
-            Top = 111
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 4
-            OnChange = DataChange
-          end
-          object BugDeriveKey2Combo: TComboBox
-            Left = 320
             Top = 135
             Width = 61
             Height = 21
@@ -2163,7 +2170,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 5
             OnChange = DataChange
           end
-          object BugRSAPad2Combo: TComboBox
+          object BugDeriveKey2Combo: TComboBox
             Left = 320
             Top = 159
             Width = 61
@@ -2173,7 +2180,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 6
             OnChange = DataChange
           end
-          object BugPKSessID2Combo: TComboBox
+          object BugRSAPad2Combo: TComboBox
             Left = 320
             Top = 183
             Width = 61
@@ -2183,7 +2190,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 7
             OnChange = DataChange
           end
-          object BugRekey2Combo: TComboBox
+          object BugPKSessID2Combo: TComboBox
             Left = 320
             Top = 207
             Width = 61
@@ -2193,7 +2200,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 8
             OnChange = DataChange
           end
-          object BugMaxPkt2Combo: TComboBox
+          object BugRekey2Combo: TComboBox
             Left = 320
             Top = 231
             Width = 61
@@ -2201,6 +2208,16 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 9
+            OnChange = DataChange
+          end
+          object BugMaxPkt2Combo: TComboBox
+            Left = 320
+            Top = 255
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 10
             OnChange = DataChange
           end
           object BugIgnore2Combo: TComboBox
@@ -2212,6 +2229,47 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Anchors = [akTop, akRight]
             TabOrder = 3
             OnChange = DataChange
+          end
+          object BugWinAdjCombo: TComboBox
+            Left = 320
+            Top = 111
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 4
+            OnChange = DataChange
+          end
+        end
+      end
+      object NoteSheet: TTabSheet
+        Caption = 'Note'
+        ImageIndex = 14
+        TabVisible = False
+        DesignSize = (
+          401
+          382)
+        object NoteGroup: TGroupBox
+          Left = 0
+          Top = 6
+          Width = 393
+          Height = 367
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Caption = 'Note'
+          TabOrder = 0
+          DesignSize = (
+            393
+            367)
+          object NoteMemo: TMemo
+            Left = 12
+            Top = 21
+            Width = 371
+            Height = 332
+            Anchors = [akLeft, akTop, akRight, akBottom]
+            MaxLength = 1000
+            TabOrder = 0
+            OnChange = DataChange
+            OnKeyDown = NoteMemoKeyDown
           end
         end
       end
@@ -2245,7 +2303,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         OnChange = NavigationTreeChange
         OnCollapsing = NavigationTreeCollapsing
         Items.NodeData = {
-          030300000036000000000000000000000000000000FFFFFFFF00000000000000
+          030400000036000000000000000000000000000000FFFFFFFF00000000000000
           0005000000010C45006E007600690072006F006E006D0065006E007400580036
           000000000000000000000000000000FFFFFFFF00000000000000000000000001
           0C4400690072006500630074006F007200690065007300580036000000000000
@@ -2265,7 +2323,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           006300680061006E006700650058003C000000000000000000000000000000FF
           FFFFFF000000000000000000000000010F410075007400680065006E00740069
           0063006100740069006F006E00580028000000000000000000000000000000FF
-          FFFFFF000000000000000000000000010542007500670073005800}
+          FFFFFF0000000000000000000000000105420075006700730058002800000000
+          0000000000000000000000FFFFFFFF00000000000000000000000001054E006F
+          00740065005800}
       end
     end
   end

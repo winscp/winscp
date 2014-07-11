@@ -166,7 +166,6 @@ __published:
   TTBXItem *TBXItem54;
   TTBXItem *TBXItem55;
   TTBXSeparatorItem *TBXSeparatorItem14;
-  TTBXItem *TBXItem56;
   TTBXItem *TBXItem57;
   TTBXSeparatorItem *TBXSeparatorItem15;
   TTBXItem *TBXItem58;
@@ -398,6 +397,9 @@ __published:
   TPanel *QueueSeparatorPanel;
   TTBXSeparatorItem *TBXSeparatorItem39;
   TTBXItem *TBXItem134;
+  TTBXItem *TBXItem56;
+  TTBXSeparatorItem *TBXSeparatorItem50;
+  TTBXItem *TBXItem135;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -453,6 +455,8 @@ __published:
   void __fastcall DirViewHistoryGo(TCustomDirView *Sender, int Index,
           bool &Cancel);
   void __fastcall LocalDirViewContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall LocalStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
+  void __fastcall RemoteStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
 
 private:
   bool FConstructed;
@@ -499,7 +503,7 @@ protected:
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
   virtual void __fastcall UpdateControls();
   virtual void __fastcall FileOperationProgress(
-    TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
+    TFileOperationProgressType & ProgressData);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode,
     TOperationSide Side);
   bool __fastcall InternalDDDownload(UnicodeString & TargetDirectory);
@@ -510,7 +514,7 @@ protected:
   bool __fastcall ExecuteCommandLine();
   virtual void __fastcall PanelExportStore(TOperationSide Side,
     TPanelExport Export, TPanelExportDestination Destination,
-    TStringList * ExportData);
+    TStrings * ExportData);
   void __fastcall CommandLinePopulate();
   virtual int __fastcall GetStaticComponentsHeight();
   DYNAMIC void __fastcall Resize();

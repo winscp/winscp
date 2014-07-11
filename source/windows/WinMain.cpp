@@ -129,6 +129,12 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall Edit(TCustomScpExplorerForm * ScpExplorer, TStrings * FileList)
+{
+  ScpExplorer->StandaloneEdit(FileList->Strings[0]);
+  Abort();
+}
+//---------------------------------------------------------------------------
 void __fastcall SynchronizeDirectories(TTerminal * Terminal,
   TStrings * CommandParams,
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory)
@@ -229,7 +235,7 @@ void __fastcall ImportSitesIfAny()
       if (MessageDialog(Message, qtConfirmation,
             qaOK | qaCancel, HELP_IMPORT_SESSIONS) == qaOK)
       {
-        DoImportSessionsDialog();
+        DoImportSessionsDialog(NULL);
       }
 
       WinConfiguration->AutoImportedFromPuttyOrFilezilla = true;
@@ -321,6 +327,7 @@ void __fastcall UpdateStaticUsage()
   UnicodeString ExeName = ExpandFileName(Application->ExeName);
   bool InProgramFiles = AnsiSameText(ExeName.SubString(1, ProgramsFolder.Length()), ProgramsFolder);
   Configuration->Usage->Set(L"InProgramFiles", InProgramFiles);
+  Configuration->Usage->Set(L"IsInstalled", IsInstalled());
   Configuration->Usage->Set(L"Wine", IsWine());
 
   WinConfiguration->UpdateStaticUsage();
@@ -424,6 +431,28 @@ bool __fastcall SendToAnotherInstance()
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall ShowUpdatesIfAvailable()
+{
+  TUpdatesConfiguration Updates = WinConfiguration->Updates;
+  int CurrentCompoundVer = Configuration->CompoundVersion;
+  bool Result =
+    Updates.ShowOnStartup &&
+    Updates.HaveValidResultsForVersion(CurrentCompoundVer) &&
+    !Updates.Results.Disabled &&
+    ((Updates.Results.Version > CurrentCompoundVer) || !Updates.Results.Message.IsEmpty()) &&
+    !Updates.ShownResults;
+  if (Result)
+  {
+    Configuration->Usage->Inc(L"UpdateStartup");
+    Result = CheckForUpdates(true);
+    if (Result)
+    {
+      Configuration->Usage->Inc(L"UpdateDownloadOpensStartup");
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 int __fastcall Execute()
 {
   assert(StoredSessions);
@@ -491,7 +520,7 @@ int __fastcall Execute()
     if (!IniFileName.IsEmpty())
     {
       UnicodeString IniFileNameExpanded = ExpandEnvironmentVariables(IniFileName);
-      if (!FileExists(IniFileNameExpanded))
+      if (!FileExists(::ApiPath(IniFileNameExpanded)))
       {
         // this should be displayed rather at the very beginning.
         // however for simplicity (GUI-only), we do it only here.
@@ -559,9 +588,13 @@ int __fastcall Execute()
       MaintenanceTask();
       CheckForUpdates(false);
     }
+    else if (ShowUpdatesIfAvailable())
+    {
+      // noop
+    }
     else
     {
-      enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize } ParamCommand;
+      enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize, pcEdit } ParamCommand;
       ParamCommand = pcNone;
       UnicodeString AutoStartSession;
       UnicodeString DownloadFile;
@@ -606,12 +639,17 @@ int __fastcall Execute()
         {
           ParamCommand = pcSynchronize;
         }
+        else if (Params->FindSwitch(L"Edit", CommandParams, 1) &&
+                 (CommandParams->Count == 1))
+        {
+          ParamCommand = pcEdit;
+        }
       }
 
       if (Params->ParamCount > 0)
       {
         if ((ParamCommand == pcNone) &&
-            !OpenInNewWindow() &&
+            (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
             !Params->FindSwitch(L"NewInstance") &&
             SendToAnotherInstance())
         {
@@ -732,6 +770,10 @@ int __fastcall Execute()
                   {
                     Synchronize(TerminalManager->ActiveTerminal, ScpExplorer,
                       CommandParams, UseDefaults);
+                  }
+                  else if (ParamCommand == pcEdit)
+                  {
+                    Edit(ScpExplorer, CommandParams);
                   }
                   else if (!DownloadFile.IsEmpty())
                   {

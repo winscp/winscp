@@ -14,4 +14,7 @@ void CoreFinalize();
 void CoreSetResourceModule(void * ResourceHandle);
 void CoreMaintenanceTask();
 //---------------------------------------------------------------------------
+UnicodeString __fastcall NeonVersion();
+UnicodeString __fastcall ExpatVersion();
+//---------------------------------------------------------------------------
 #endif

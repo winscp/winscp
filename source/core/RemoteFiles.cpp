@@ -62,7 +62,7 @@ UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString 
   return UnixExcludeTrailingBackslash(Path, true);
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall UnixComparePaths(const UnicodeString Path1, const UnicodeString Path2)
+Boolean __fastcall UnixSamePath(const UnicodeString Path1, const UnicodeString Path2)
 {
   return (UnixIncludeTrailingBackslash(Path1) == UnixIncludeTrailingBackslash(Path2));
 }
@@ -214,9 +214,17 @@ UnicodeString __fastcall AbsolutePath(const UnicodeString & Base, const UnicodeS
     int P;
     while ((P = Result.Pos(L"/../")) > 0)
     {
-      int P2 = Result.SubString(1, P-1).LastDelimiter(L"/");
-      assert(P2 > 0);
-      Result.Delete(P2, P - P2 + 3);
+      // special case, "/../" => "/"
+      if (P == 1)
+      {
+        Result = L"/";
+      }
+      else
+      {
+        int P2 = Result.SubString(1, P-1).LastDelimiter(L"/");
+        assert(P2 > 0);
+        Result.Delete(P2, P - P2 + 3);
+      }
     }
     while ((P = Result.Pos(L"/./")) > 0)
     {
@@ -387,7 +395,7 @@ TDateTime __fastcall ReduceDateTimePrecision(TDateTime DateTime,
         break;
 
       default:
-        assert(false);
+        FAIL;
     }
 
     DateTime = EncodeDateVerbose(Y, M, D) + EncodeTimeVerbose(H, N, S, MS);
@@ -437,7 +445,7 @@ UnicodeString __fastcall ModificationStr(TDateTime DateTime,
         (EngShortMonthNames[Month-1], Day, Hour, Min));
 
     default:
-      assert(false);
+      FAIL;
       // fall thru
 
     case mfFull:
@@ -1603,7 +1611,7 @@ __fastcall TRemoteDirectoryCache::TRemoteDirectoryCache(): TStringList()
 {
   FSection = new TCriticalSection();
   Sorted = true;
-  Duplicates = dupError;
+  Duplicates = Types::dupError;
   CaseSensitive = true;
 }
 //---------------------------------------------------------------------------

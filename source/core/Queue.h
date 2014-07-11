@@ -58,7 +58,7 @@ typedef void __fastcall (__closure * TQueueListUpdate)
   (TTerminalQueue * Queue);
 typedef void __fastcall (__closure * TQueueItemUpdateEvent)
   (TTerminalQueue * Queue, TQueueItem * Item);
-enum TQueueEvent { qeEmpty, qePendingUserAction };
+enum TQueueEvent { qeEmpty, qeEmptyButMonitored, qePendingUserAction };
 typedef void __fastcall (__closure * TQueueEventEvent)
   (TTerminalQueue * Queue, TQueueEvent Event);
 //---------------------------------------------------------------------------
@@ -407,7 +407,7 @@ private:
   void __fastcall TerminalChangeDirectory(TObject * Sender);
   void __fastcall TerminalReadDirectory(TObject * Sender, Boolean ReloadOnly);
   void __fastcall TerminalStartReadDirectory(TObject * Sender);
-  void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress, bool & Cancel);
+  void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress, int ResolvedLinks, bool & Cancel);
   void __fastcall TerminalInitializeLog(TObject * Sender);
 };
 //---------------------------------------------------------------------------

@@ -133,23 +133,24 @@ void __fastcall TCopyDialog::AdjustTransferControls()
   }
 
   TImage * Image;
+  UnicodeString ACaption;
   if (!FMove)
   {
     if (!FToRemote && FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
-      Caption = LoadStr(REMOTE_COPY_TITLE);
+      ACaption = LoadStr(REMOTE_COPY_TITLE);
       Image = CopyImage;
     }
     else
     {
       if (RemotePaths())
       {
-        Caption = LoadStr(COPY_COPY_TOREMOTE_CAPTION);
+        ACaption = LoadStr(COPY_COPY_TOREMOTE_CAPTION);
         Image = CopyUploadImage;
       }
       else
       {
-        Caption = LoadStr(COPY_COPY_TOLOCAL_CAPTION);
+        ACaption = LoadStr(COPY_COPY_TOLOCAL_CAPTION);
         Image = CopyDownloadImage;
       }
     }
@@ -158,23 +159,25 @@ void __fastcall TCopyDialog::AdjustTransferControls()
   {
     if (!FToRemote && FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
-      Caption = LoadStr(COPY_MOVE_CAPTION);
+      ACaption = LoadStr(COPY_MOVE_CAPTION);
       Image = MoveImage;
     }
     else
     {
       if (RemotePaths())
       {
-        Caption = LoadStr(COPY_MOVE_TOREMOTE_CAPTION);
+        ACaption = LoadStr(COPY_MOVE_TOREMOTE_CAPTION);
         Image = MoveUploadImage;
       }
       else
       {
-        Caption = LoadStr(COPY_MOVE_TOLOCAL_CAPTION);
+        ACaption = LoadStr(COPY_MOVE_TOLOCAL_CAPTION);
         Image = MoveDownloadImage;
       }
     }
   }
+
+  Caption = FormatFormCaption(this, ACaption);
 
   CopyImage->Visible = (Image == CopyImage) || (Image == NULL);
   MoveImage->Visible = (Image == MoveImage);
@@ -396,12 +399,12 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
     {
       UnicodeString Dir = Directory;
       UnicodeString Drive = ExtractFileDrive(Dir);
-      if (!DirectoryExists(Dir))
+      if (!DirectoryExists(ApiPath(Dir)))
       {
         if (MessageDialog(MainInstructions(FMTLOAD(CREATE_LOCAL_DIRECTORY, (Dir))),
               qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaCancel)
         {
-          if (!ForceDirectories(Dir))
+          if (!ForceDirectories(ApiPath(Dir)))
           {
             SimpleErrorDialog(FMTLOAD(CREATE_LOCAL_DIR_ERROR, (Dir)));
             CanClose = false;

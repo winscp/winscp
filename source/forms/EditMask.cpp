@@ -146,18 +146,9 @@ void __fastcall TEditMaskDialog::UpdateControls()
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditMaskDialog::FormKeyDown(
-  TObject * /*Sender*/, WORD & Key, TShiftState Shift)
+  TObject * Sender, WORD & Key, TShiftState Shift)
 {
-  if ((Key == VK_ESCAPE) && Shift.Empty())
-  {
-    ModalResult = mrCancel;
-    Key = 0;
-  }
-  else if ((Key == VK_RETURN) && Shift.Contains(ssCtrl))
-  {
-    ModalResult = DefaultResult(this);
-    Key = 0;
-  }
+  MemoKeyDown(Sender, Key, Shift);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditMaskDialog::FormShow(TObject * /*Sender*/)

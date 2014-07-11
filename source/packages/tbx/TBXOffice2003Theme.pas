@@ -128,7 +128,9 @@ function GetMDIWorkspaceColor: TColor;
 
 implementation
 
-uses TBXUtils, TB2Common, TB2Item, Controls, CommCtrl, Forms, SysUtils;
+uses
+  TBXUtils, TB2Common, TB2Item, Controls, CommCtrl, Forms, SysUtils,
+  Types, UITypes;
 
 function GetOffice2003Scheme: TOffice2003Scheme;
 const

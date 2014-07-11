@@ -15,9 +15,10 @@ extern const int ccShowResults;
 extern const int ccCopyResults;
 extern const int ccSet;
 //---------------------------------------------------------------------------
-const int soRecurse =        0x01;
-const int soSynchronize =    0x02;
-const int soSynchronizeAsk = 0x04;
+const int soRecurse =         0x01;
+const int soSynchronize =     0x02;
+const int soSynchronizeAsk =  0x04;
+const int soContinueOnError = 0x08;
 //---------------------------------------------------------------------------
 class TGUICopyParamType : public TCopyParamType
 {
@@ -265,6 +266,6 @@ public:
   __property LCID AppliedLocale = { read = FAppliedLocale };
 };
 //---------------------------------------------------------------------------
-#define GUIConfiguration (dynamic_cast<TGUIConfiguration *>(Configuration))
+extern TGUIConfiguration * GUIConfiguration;
 //---------------------------------------------------------------------------
 #endif

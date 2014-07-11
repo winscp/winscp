@@ -81,7 +81,6 @@ __published:
   TTBXItem *TBXItem54;
   TTBXItem *TBXItem55;
   TTBXSeparatorItem *TBXSeparatorItem14;
-  TTBXItem *TBXItem56;
   TTBXItem *TBXItem57;
   TTBXSubmenuItem *TBXSubmenuItem19;
   TTBXItem *TBXItem113;
@@ -293,6 +292,9 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem27;
   TTBXItem *TBXItem143;
   TTBXSeparatorItem *TBXSeparatorItem35;
+  TTBXItem *TBXItem56;
+  TTBXSeparatorItem *TBXSeparatorItem37;
+  TTBXItem *TBXItem144;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
@@ -302,6 +304,8 @@ __published:
   void __fastcall RemoteDirViewPathChange(TCustomDirView *Sender);
   void __fastcall QueueSubmenuItemPopup(TTBCustomItem *Sender,
           bool FromLink);
+  void __fastcall RemoteStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
+
 private:
   UnicodeString FStatusBarFileText;
 

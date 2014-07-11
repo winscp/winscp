@@ -29,6 +29,8 @@ typedef void __fastcall (__closure * TEditedFileReloadEvent)
   (const UnicodeString FileName, const TEditedFileData * Data);
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
   (const TEditedFileData * Data, bool & KeepOpen);
+typedef void __fastcall (__closure * TEditedFileUploadComplete)
+  (TObject * Token);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileProcessEvent)
   (const UnicodeString FileName, TEditedFileData * Data, TObject * Token, void * Arg);
@@ -63,6 +65,7 @@ public:
   __property TEditedFileChangedEvent OnFileChange = { read = FOnFileChange, write = FOnFileChange };
   __property TEditedFileReloadEvent OnFileReload = { read = FOnFileReload, write = FOnFileReload };
   __property TEditedFileEarlyClosedEvent OnFileEarlyClosed = { read = FOnFileEarlyClosed, write = FOnFileEarlyClosed };
+  __property TEditedFileUploadComplete OnFileUploadComplete = { read = FOnFileUploadComplete, write = FOnFileUploadComplete };
 
 private:
   struct TFileData
@@ -88,6 +91,7 @@ private:
   TEditedFileChangedEvent FOnFileChange;
   TEditedFileReloadEvent FOnFileReload;
   TEditedFileEarlyClosedEvent FOnFileEarlyClosed;
+  TEditedFileUploadComplete FOnFileUploadComplete;
 
   void __fastcall AddFile(TFileData & FileData, TEditedFileData * Data);
   void __fastcall UploadComplete(int Index);

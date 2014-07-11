@@ -96,7 +96,9 @@ type
 
 implementation
 
-uses TBXUtils, TB2Common, TB2Item, Classes, Controls, Commctrl, Forms, SysUtils;
+uses
+  TBXUtils, TB2Common, TB2Item, Classes, Controls, Commctrl, Forms, SysUtils,
+  Types, UITypes;
 
 var
   StockImgList: TImageList;

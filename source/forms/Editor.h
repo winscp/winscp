@@ -22,6 +22,8 @@
 #include "WinConfiguration.h"
 #include "WinInterface.h"
 #include "PngImageList.hpp"
+#include <System.Actions.hpp>
+#include "TBXExtItems.hpp"
 //---------------------------------------------------------------------------
 class TRichEdit20;
 //---------------------------------------------------------------------------
@@ -70,6 +72,8 @@ __published:
   TTBXItem *UTF8Encoding;
   TAction *DefaultEncodingAction;
   TAction *UTF8EncodingAction;
+  TTBXColorItem *ColorItem;
+  TAction *ColorAction;
   void __fastcall EditorActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall EditorActionsExecute(TBasicAction *Action,
           bool &Handled);
@@ -103,21 +107,29 @@ private:
   unsigned int FInstance;
   TEncoding * FEncoding;
   UnicodeString FEncodingName;
+  bool FSaving;
+  bool FStandaloneEditor;
+  bool FClosePending;
+  TColor FBackgroundColor;
 
   static unsigned int FInstances;
   void __fastcall SetFileName(const UnicodeString value);
   void __fastcall SetParentForm(TCustomForm * value);
   void __fastcall ApplicationHint(TObject * Sender);
+  void __fastcall SetBackgroundColor(TColor Color);
 public:
   __fastcall TEditorForm(TComponent* Owner);
   virtual __fastcall ~TEditorForm();
   void __fastcall ApplyConfiguration();
+  void __fastcall FileUploadComplete();
   void __fastcall LoadFile();
   __property UnicodeString FileName = { read = FFileName, write = SetFileName };
+  __property bool StandaloneEditor = { read = FStandaloneEditor, write = FStandaloneEditor };
   __property TNotifyEvent OnFileChanged = { read = FOnFileChanged, write = FOnFileChanged };
   __property TNotifyEvent OnFileReload = { read = FOnFileReload, write = FOnFileReload };
   __property TFileClosedEvent OnWindowClose = { read = FOnWindowClose, write = FOnWindowClose };
   __property TCustomForm * ParentForm = { read = FParentForm, write = SetParentForm };
+  __property TColor BackgroundColor = { read = FBackgroundColor, write = SetBackgroundColor };
 protected:
   bool __fastcall CursorInUpperPart();
   void __fastcall Find();
@@ -135,6 +147,7 @@ protected:
   UnicodeString __fastcall GetCodePageName(TEncoding * Encoding);
   void __fastcall SaveToFile();
   void __fastcall BackupSave();
+  void __fastcall CheckFileSize();
 };
 //---------------------------------------------------------------------------
 #endif

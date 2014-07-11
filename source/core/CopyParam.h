@@ -52,6 +52,8 @@ private:
   bool FCalculateSize;
   UnicodeString FFileMask;
   TFileMasks FIncludeFileMask;
+  std::unique_ptr<TStringList> FTransferSkipList;
+  UnicodeString FTransferResumeFile;
   bool FClearArchive;
   bool FRemoveCtrlZ;
   bool FRemoveBOM;
@@ -67,6 +69,8 @@ private:
   UnicodeString __fastcall RestoreChars(UnicodeString FileName) const;
   void __fastcall DoGetInfoStr(UnicodeString Separator, int Attrs,
     UnicodeString & Result, bool & SomeAttrIncluded) const;
+  TStrings * __fastcall GetTransferSkipList() const;
+  void __fastcall SetTransferSkipList(TStrings * value);
 
 public:
   __fastcall TCopyParamType();
@@ -82,11 +86,13 @@ public:
   bool __fastcall UseAsciiTransfer(UnicodeString FileName, TOperationSide Side,
     const TFileMasks::TParams & Params) const;
   bool __fastcall AllowResume(__int64 Size) const;
+  bool __fastcall ResumeTransfer(UnicodeString FileName) const;
   UnicodeString __fastcall ValidLocalFileName(UnicodeString FileName) const;
   UnicodeString __fastcall ValidLocalPath(UnicodeString Path) const;
   bool __fastcall AllowAnyTransfer() const;
   bool __fastcall AllowTransfer(UnicodeString FileName, TOperationSide Side,
     bool Directory, const TFileMasks::TParams & Params) const;
+  bool __fastcall SkipTransfer(UnicodeString FileName, bool Directory) const;
 
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage) const;
@@ -113,6 +119,8 @@ public:
   __property bool CalculateSize = { read = FCalculateSize, write = FCalculateSize };
   __property UnicodeString FileMask = { read = FFileMask, write = FFileMask };
   __property TFileMasks IncludeFileMask = { read = FIncludeFileMask, write = FIncludeFileMask };
+  __property TStrings * TransferSkipList = { read = GetTransferSkipList, write = SetTransferSkipList };
+  __property UnicodeString TransferResumeFile = { read = FTransferResumeFile, write = FTransferResumeFile };
   __property bool ClearArchive = { read = FClearArchive, write = FClearArchive };
   __property bool RemoveCtrlZ = { read = FRemoveCtrlZ, write = FRemoveCtrlZ };
   __property bool RemoveBOM = { read = FRemoveBOM, write = FRemoveBOM };

@@ -118,6 +118,14 @@ void __fastcall TCustomDialog::AddWinControl(TWinControl * Control)
   FCount++;
 }
 //---------------------------------------------------------------------------
+TCheckBox * __fastcall TCustomDialog::CreateAndAddCheckBox(const UnicodeString & Caption)
+{
+  TCheckBox * CheckBox = new TCheckBox(this);
+  CheckBox->Caption = Caption;
+  AddButtonControl(CheckBox);
+  return CheckBox;
+}
+//---------------------------------------------------------------------------
 TLabel * __fastcall TCustomDialog::CreateLabel(UnicodeString Label)
 {
   TLabel * Result = new TLabel(this);
@@ -241,8 +249,8 @@ void __fastcall TSaveSessionDialog::Init(bool CanSavePassword,
   SessionNameEdit = new TEdit(this);
   AddEdit(SessionNameEdit, CreateLabel(LoadStr(SAVE_SESSION_PROMPT)));
 
-  FRootFolder = LoadStr(SAVE_SESSION_ROOT_FOLDER);
-  std::auto_ptr<TStringList> Folders(new TStringList());
+  FRootFolder = LoadStr(SAVE_SESSION_ROOT_FOLDER2);
+  std::unique_ptr<TStringList> Folders(new TStringList());
 
   if (AdditionalFolders != NULL)
   {
@@ -271,15 +279,11 @@ void __fastcall TSaveSessionDialog::Init(bool CanSavePassword,
   FolderCombo->Items->Add(FRootFolder);
   FolderCombo->Items->AddStrings(Folders.get());
 
-  SavePasswordCheck = new TCheckBox(this);
-  SavePasswordCheck->Caption = LoadStr(
-    NotRecommendedSavingPassword ? SAVE_SESSION_PASSWORD :
-      (CustomWinConfiguration->UseMasterPassword ? SAVE_SESSION_PASSWORD_MASTER : SAVE_SESSION_PASSWORD_RECOMMENDED));
-  AddButtonControl(SavePasswordCheck);
+  SavePasswordCheck = CreateAndAddCheckBox(
+    LoadStr(NotRecommendedSavingPassword ? SAVE_SESSION_PASSWORD :
+      (CustomWinConfiguration->UseMasterPassword ? SAVE_SESSION_PASSWORD_MASTER : SAVE_SESSION_PASSWORD_RECOMMENDED)));
 
-  CreateShortcutCheck = new TCheckBox(this);
-  CreateShortcutCheck->Caption = LoadStr(SAVE_SITE_WORKSPACE_SHORTCUT);
-  AddButtonControl(CreateShortcutCheck);
+  CreateShortcutCheck = CreateAndAddCheckBox(LoadStr(SAVE_SITE_WORKSPACE_SHORTCUT));
 
   EnableControl(SavePasswordCheck, CanSavePassword);
 }
@@ -358,7 +362,7 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
     !SameText(SessionData->UserName, AnonymousUserName);
 
   if (Configuration->DisablePasswordStoring ||
-      !SessionData->HasAnyPassword())
+      !SessionData->HasAnySessionPassword())
   {
     PSavePassword = NULL;
   }
@@ -366,8 +370,7 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
   {
     PSavePassword = &SavePassword;
     SavePassword =
-      ((OriginalSession != NULL) &&
-       !OriginalSession->Password.IsEmpty()) ||
+      ((OriginalSession != NULL) && OriginalSession->HasAnySessionPassword()) ||
       !NotRecommendedSavingPassword;
   }
 
@@ -400,7 +403,7 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
   {
     if ((PSavePassword != NULL) && !SavePassword)
     {
-      SessionData->Password = L"";
+      SessionData->ClearSessionPasswords();
     }
 
     NewSession =
@@ -482,22 +485,16 @@ __fastcall TSaveWorkspaceDialog::TSaveWorkspaceDialog(
   std::unique_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
   WorkspaceNameCombo->Items->AddStrings(Workspaces.get());
 
-  SavePasswordsCheck = new TCheckBox(this);
-  SavePasswordsCheck->Caption = LoadStr(
-    NotRecommendedSavingPasswords ? SAVE_WORKSPACE_PASSWORDS :
+  SavePasswordsCheck = CreateAndAddCheckBox(
+    LoadStr(NotRecommendedSavingPasswords ? SAVE_WORKSPACE_PASSWORDS :
       (CustomWinConfiguration->UseMasterPassword ?
-        SAVE_WORKSPACE_PASSWORDS_MASTER : SAVE_WORKSPACE_PASSWORDS_RECOMMENDED));
-  AddButtonControl(SavePasswordsCheck);
+        SAVE_WORKSPACE_PASSWORDS_MASTER : SAVE_WORKSPACE_PASSWORDS_RECOMMENDED)));
 
   EnableControl(SavePasswordsCheck, CanSavePasswords);
 
-  CreateShortcutCheck = new TCheckBox(this);
-  CreateShortcutCheck->Caption = LoadStr(SAVE_SITE_WORKSPACE_SHORTCUT);
-  AddButtonControl(CreateShortcutCheck);
+  CreateShortcutCheck = CreateAndAddCheckBox(LoadStr(SAVE_SITE_WORKSPACE_SHORTCUT));
 
-  EnableAutoSaveCheck = new TCheckBox(this);
-  EnableAutoSaveCheck->Caption = LoadStr(SAVE_WORKSPACE_AUTO);
-  AddButtonControl(EnableAutoSaveCheck);
+  EnableAutoSaveCheck = CreateAndAddCheckBox(LoadStr(SAVE_WORKSPACE_AUTO));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSaveWorkspaceDialog::Execute(
@@ -629,12 +626,14 @@ __fastcall TRemoteMoveDialog::TRemoteMoveDialog() :
   TCustomDialog(HELP_REMOTE_MOVE)
 {
   Caption = LoadStr(REMOTE_MOVE_TITLE);
+  // The same as TRemoteTransferDialog
+  ClientWidth = ScaleByTextHeight(this, 420);
 
   AddImage(L"REMOTE_MOVE_FILE");
 
   Combo = new THistoryComboBox(this);
   Combo->AutoComplete = false;
-  AddComboBox(Combo, CreateLabel(LoadStr(REMOTE_TRANSFER_PROMPT)));
+  AddComboBox(Combo, CreateLabel(LoadStr(REMOTE_TRANSFER_PROMPT2)));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteMoveDialog::Execute(UnicodeString & Target, UnicodeString & FileMask)
@@ -660,6 +659,6 @@ void __fastcall TRemoteMoveDialog::DoShow()
 //---------------------------------------------------------------------------
 bool __fastcall DoRemoteMoveDialog(UnicodeString & Target, UnicodeString & FileMask)
 {
-  std::auto_ptr<TRemoteMoveDialog> Dialog(new TRemoteMoveDialog());
+  std::unique_ptr<TRemoteMoveDialog> Dialog(new TRemoteMoveDialog());
   return Dialog->Execute(Target, FileMask);
 }

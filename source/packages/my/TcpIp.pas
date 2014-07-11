@@ -23,8 +23,8 @@ type
   ETcpIpError = class(Exception);
 
   ESocketError = class(ETcpIpError)
-    ErrorNumber: Cardinal;
-    constructor Create(Number: Cardinal);
+    ErrorNumber: Integer;
+    constructor Create(Number: Integer);
   end;
 
   EProtocolError = class(ETcpIpError)
@@ -238,7 +238,7 @@ begin
   ErrorNumber := Number;
 end;
 
-constructor ESocketError.Create(Number: Cardinal);
+constructor ESocketError.Create(Number: Integer);
 const
   UnknownSuccessError = $1BD0000;
 var

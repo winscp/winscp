@@ -18,7 +18,7 @@ namespace WinSCP
         Local = 0,
         Remote = 1,
         Both = 2,
-    };
+    }
 
     [Guid("3F770EC1-35F5-4A7B-A000-46A2F7A213D8")]
     [ComVisible(true)]
@@ -29,7 +29,7 @@ namespace WinSCP
         Time = 0x01,
         Size = 0x02,
         Either = Time | Size,
-    };
+    }
 
     public delegate void OutputDataReceivedEventHandler(object sender, OutputDataReceivedEventArgs e);
     public delegate void FileTransferredEventHandler(object sender, TransferEventArgs e);
@@ -52,7 +52,7 @@ namespace WinSCP
         public string SessionLogPath { get { return _sessionLogPath; } set { CheckNotOpened(); _sessionLogPath = value; } }
         public string XmlLogPath { get { return _xmlLogPath; } set { CheckNotOpened(); _xmlLogPath = value; } }
         #if DEBUG
-        public bool GuardProcessWithJob { get { return _guardProcessWithJob; } set { CheckNotOpened(); _guardProcessWithJob = value; } }
+        public bool GuardProcessWithJob { get { return GuardProcessWithJobInternal; } set { GuardProcessWithJobInternal = value; } }
         public bool TestHandlesClosed { get { return TestHandlesClosedInternal; } set { TestHandlesClosedInternal = value; } }
         #endif
 
@@ -189,10 +189,15 @@ namespace WinSCP
                             Logger.WriteCounters();
                             Logger.WriteProcesses();
                             _process.WriteStatus();
+                            string exitCode = string.Format(CultureInfo.CurrentCulture, "{0}", _process.ExitCode);
+                            if (_process.ExitCode < 0)
+                            {
+                                exitCode = string.Format(CultureInfo.CurrentCulture, "{0} ({1:X})", exitCode, _process.ExitCode);
+                            }
                             throw new SessionLocalException(this,
                                 string.Format(CultureInfo.CurrentCulture,
                                     "WinSCP process terminated with exit code {0} and output \"{1}\", without responding {2}",
-                                    _process.ExitCode, string.Join(Environment.NewLine, output), logExplanation));
+                                    exitCode, string.Join(Environment.NewLine, output), logExplanation));
                         }
 
                         Thread.Sleep(50);
@@ -206,8 +211,12 @@ namespace WinSCP
 
                     _logReader = new SessionLogReader(this);
 
-                    _reader = _logReader.WaitForNonEmptyElementAndCreateLogReader("session", LogReadFlags.ThrowFailures);
+                    _logReader.WaitForNonEmptyElement("session", LogReadFlags.ThrowFailures);
 
+                    // special variant of ElementLogReader that throws when closing element (</session>) is encountered
+                    _reader = new SessionElementLogReader(_logReader);
+
+                    // Skip "open" command <group>
                     using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
                     {
                         ReadElement(groupReader, LogReadFlags.ThrowFailures);
@@ -219,6 +228,16 @@ namespace WinSCP
                     Cleanup();
                     throw;
                 }
+            }
+        }
+
+        public void Close()
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                CheckOpened();
+
+                Cleanup();
             }
         }
 
@@ -830,6 +849,14 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
+                if (sessionOptions.WebdavSecure)
+                {
+                    if (sessionOptions.Protocol != Protocol.Webdav)
+                    {
+                        throw new ArgumentException("SessionOptions.WebdavSecure is set, but SessionOptions.Protocol is not Protocol.Webdav.");
+                    }
+                }
+
                 string url;
                 switch (sessionOptions.Protocol)
                 {
@@ -843,6 +870,17 @@ namespace WinSCP
 
                     case Protocol.Ftp:
                         url = "ftp://";
+                        break;
+
+                    case Protocol.Webdav:
+                        if (!sessionOptions.WebdavSecure)
+                        {
+                            url = "http://";
+                        }
+                        else
+                        {
+                            url = "https://";
+                        }
                         break;
 
                     default:
@@ -931,9 +969,18 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsSsh)
                     {
-                        throw new ArgumentException("SessionOptions.SshPrivateKey is set, but SessionOptions.Protocol is not Protocol.Sftp nor Protocol.Scp.");
+                        throw new ArgumentException("SessionOptions.SshPrivateKeyPath is set, but SessionOptions.Protocol is not Protocol.Sftp nor Protocol.Scp.");
                     }
                     switches.Add(FormatSwitch("privatekey", sessionOptions.SshPrivateKeyPath));
+                }
+
+                if (!string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPassphrase))
+                {
+                    if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath))
+                    {
+                        throw new ArgumentException("SessionOptions.SshPrivateKeyPassphrase is set, but sessionOptions.SshPrivateKeyPath is not.");
+                    }
+                    switches.Add(FormatSwitch("passphrase", sessionOptions.SshPrivateKeyPassphrase));
                 }
 
                 if (sessionOptions.FtpSecure != FtpSecure.None)
@@ -1295,7 +1342,7 @@ namespace WinSCP
             using (Logger.CreateCallstack())
             {
                 Logger.WriteLine("Name [{0}]", name);
-                FieldInfo result = typeof(Session).GetField(name, bindingAttr);
+                FieldInfo result = GetType().GetField(name, bindingAttr);
                 Logger.WriteLine("Result [{0}]", result != null ? result.Name : "null");
                 return result;
             }
@@ -1305,7 +1352,7 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                FieldInfo[] result = typeof(Session).GetFields(bindingAttr);
+                FieldInfo[] result = GetType().GetFields(bindingAttr);
                 Logger.WriteLine("Fields [{0}]", result.Length);
                 return result;
             }
@@ -1316,7 +1363,7 @@ namespace WinSCP
             using (Logger.CreateCallstack())
             {
                 Logger.WriteLine("Name [{0}]", name);
-                MemberInfo[] result = typeof(Session).GetMember(name, bindingAttr);
+                MemberInfo[] result = GetType().GetMember(name, bindingAttr);
                 Logger.WriteLine("Result [{0}]", result.Length);
                 return result;
             }
@@ -1326,7 +1373,7 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                MemberInfo[] result = typeof(Session).GetMembers(bindingAttr);
+                MemberInfo[] result = GetType().GetMembers(bindingAttr);
                 Logger.WriteLine("Result [{0}]", result.Length);
                 return result;
             }
@@ -1337,7 +1384,7 @@ namespace WinSCP
             using (Logger.CreateCallstack())
             {
                 Logger.WriteLine("Name [{0}]", name);
-                MethodInfo result = typeof(Session).GetMethod(name, bindingAttr);
+                MethodInfo result = GetType().GetMethod(name, bindingAttr);
                 Logger.WriteLine("Result [{0}]", result != null ? result.Name : "null");
                 return result;
             }
@@ -1348,7 +1395,7 @@ namespace WinSCP
             using (Logger.CreateCallstack())
             {
                 Logger.WriteLine("Name [{0}]", name);
-                MethodInfo result = typeof(Session).GetMethod(name, bindingAttr, binder, types, modifiers);
+                MethodInfo result = GetType().GetMethod(name, bindingAttr, binder, types, modifiers);
                 Logger.WriteLine("Result [{0}]", result != null ? result.Name : "null");
                 return result;
             }
@@ -1358,7 +1405,7 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                MethodInfo[] result = typeof(Session).GetMethods(bindingAttr);
+                MethodInfo[] result = GetType().GetMethods(bindingAttr);
                 Logger.WriteLine("Result [{0}]", result.Length);
                 return result;
             }
@@ -1368,7 +1415,7 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                PropertyInfo[] result = typeof(Session).GetProperties(bindingAttr);
+                PropertyInfo[] result = GetType().GetProperties(bindingAttr);
                 Logger.WriteLine("Result [{0}]", result.Length);
                 return result;
             }
@@ -1379,7 +1426,7 @@ namespace WinSCP
             using (Logger.CreateCallstack())
             {
                 Logger.WriteLine("Name [{0}]", name);
-                PropertyInfo result = typeof(Session).GetProperty(name, bindingAttr, binder, returnType, types, modifiers);
+                PropertyInfo result = GetType().GetProperty(name, bindingAttr, binder, returnType, types, modifiers);
                 Logger.WriteLine("Result [{0}]", result != null ? result.Name : "null");
                 return result;
             }
@@ -1390,7 +1437,7 @@ namespace WinSCP
             using (Logger.CreateCallstack())
             {
                 Logger.WriteLine("Name [{0}]", name);
-                PropertyInfo result = typeof(Session).GetProperty(name, bindingAttr);
+                PropertyInfo result = GetType().GetProperty(name, bindingAttr);
                 Logger.WriteLine("Result [{0}]", result != null ? result.Name : "null");
                 return result;
             }
@@ -1400,30 +1447,109 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                Logger.WriteLine("Name [{0}]", name);
                 object result;
+
                 try
                 {
-                    Logger.WriteLine("Target [{0}]", target);
-                    if (args != null)
+                    if (Logger.Logging)
                     {
-                        Logger.WriteLine("Args [{0}] [{1}]", args.Length, modifiers != null ? modifiers.Length.ToString(CultureInfo.InvariantCulture) : "null");
-                        for (int i = 0; i < args.Length; ++i)
+                        Logger.WriteLine("Name [{0}]", name);
+                        Logger.WriteLine("BindingFlags [{0}]", invokeAttr);
+                        Logger.WriteLine("Binder [{0}]", binder);
+                        Logger.WriteLine("Target [{0}]", target);
+                        if (args != null)
                         {
-                            Logger.WriteLine("Arg [{0}] [{1}] [{2}]", i, args[i], (modifiers != null ? modifiers[i].ToString() : "null"));
+                            Logger.WriteLine("Args [{0}] [{1}]", args.Length, modifiers != null ? modifiers.Length.ToString(CultureInfo.InvariantCulture) : "null");
+                            for (int i = 0; i < args.Length; ++i)
+                            {
+                                Logger.WriteLine("Arg [{0}] [{1}] [{2}]", i, args[i], (modifiers != null ? modifiers[i].ToString() : "null"));
+                            }
                         }
-                    }
-                    Logger.WriteLine("Culture [{0}]", culture);
-                    if (namedParameters != null)
-                    {
-                        foreach (string namedParameter in namedParameters)
+                        Logger.WriteLine("Culture [{0}]", culture);
+                        if (namedParameters != null)
                         {
-                            Logger.WriteLine("NamedParameter [{0}]", namedParameter);
+                            foreach (string namedParameter in namedParameters)
+                            {
+                                Logger.WriteLine("NamedParameter [{0}]", namedParameter);
+                            }
                         }
                     }
 
-                    Logger.WriteLine("Invoking");
-                    result = typeof(Session).InvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
+                    Type type = target.GetType();
+
+                    // RuntimeType.InvokeMember below calls into Binder.BindToMethod (Binder is OleAutBinder)
+                    // that fails to match method, if integer value is provided to enum argument
+                    // (SynchronizeDirectories with its SynchronizationMode and SynchronizationCriteria).
+                    // This does not happen if we do not implement IReflect, though no idea why.
+                    // So as a workaround we check, if the method has no overloads (what is always true for Session),
+                    // and call the only instance directly.
+                    // Calling MethodInfo.Invoke with int values for enum arguments works.
+                    // Only as a fallback, we call InvokeMember (what is currently actually used only when
+                    // the method with given name does not exist at all)
+
+                    MethodInfo method = null;
+
+                    // would be way too difficult to implement the below involving named arguments
+                    if (namedParameters == null)
+                    {
+                        try
+                        {
+                            method = type.GetMethod(name, invokeAttr | BindingFlags.Instance | BindingFlags.Public);
+
+                            if (method != null)
+                            {
+                                // MethodInfo.Invoke does not fill-in optional arguments (contrary to RuntimeType.InvokeMember) 
+                                ParameterInfo[] parameters = method.GetParameters();
+                                if (args.Length < parameters.Length)
+                                {
+                                    Logger.WriteLine("Provided less parameters [{0}] than defined [{1}]", args.Length, parameters.Length);
+                                    object[] args2 = new object[parameters.Length];
+
+                                    for (int i = 0; i < parameters.Length; i++)
+                                    {
+                                        if (i < args.Length)
+                                        {
+                                            args2[i] = args[i];
+                                        }
+                                        else
+                                        {
+                                            if (!parameters[i].IsOptional)
+                                            {
+                                                Logger.WriteLine("Parameter [{0}] of [{1}] is not optional", i, method);
+                                                args2 = null;
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                Logger.WriteLine("Adding default value [{0}] for optional parameter [{1}]", parameters[i].DefaultValue, i);
+                                                args2[i] = parameters[i].DefaultValue;
+                                            }
+                                        }
+                                    }
+
+                                    if (args2 != null)
+                                    {
+                                        args = args2;
+                                    }
+                                }
+                            }
+                        }
+                        catch (AmbiguousMatchException)
+                        {
+                        }
+                    }
+
+                    if (method != null)
+                    {
+                        Logger.WriteLine("Invoking unambiguous method [{0}]", method);
+                        result = method.Invoke(target, invokeAttr, binder, args, culture);
+                    }
+                    else
+                    {
+                        Logger.WriteLine("Invoking ambiguous method [{0}]", name);
+                        result = type.InvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
+                    }
+
                     Logger.WriteLine("Result [{0}]", result);
                 }
                 catch (Exception e)
@@ -1437,7 +1563,7 @@ namespace WinSCP
 
         Type IReflect.UnderlyingSystemType
         {
-            get { return typeof(Session); }
+            get { return GetType(); }
         }
 
         internal const string Namespace = "http://winscp.net/schema/session/1.0";

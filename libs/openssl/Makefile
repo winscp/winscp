@@ -11,11 +11,11 @@
 # The one monster makefile better suits building in non-unix
 # environments.
 
-# The makefile fwas further modified for WinSCP build.
+# The makefile was further modified for WinSCP build.
 
 # Set your compiler options
 CC=bcc32
-CFLAG=-DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_CMS -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_DGRAM -DOPENSSL_NO_EC -DOPENSSL_NO_ECDH -DOPENSSL_NO_ECDSA -DDOPENSSL_NO_EC_NISTP_64_GCC_128 -DOPENSSL_NO_WHIRLPOOL
+CFLAG=-DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -Od -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_CMS -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_DGRAM -DDOPENSSL_NO_EC_NISTP_64_GCC_128 -DOPENSSL_NO_WHIRLPOOL
 LIB_CFLAG=
 
 # The OpenSSL directory
@@ -38,7 +38,7 @@ INCO_D=openssl
 CP=copy
 RM=del
 MKDIR=-mkdir
-MKLIB=tlib /P64 /C
+MKLIB=tlib /P128 /C
 ASM=nasm -f obj -d__omf__
 
 ######################################################
@@ -106,7 +106,8 @@ EXHEADER=$(INCO_D)\e_os2.h \
     $(INCO_D)\ssl23.h $(INCO_D)\tls1.h $(INCO_D)\dtls1.h \
     $(INCO_D)\modes.h $(INCO_D)\ts.h \
     $(INCO_D)\kssl.h $(INCO_D)\srtp.h $(INCO_D)\cmac.h \
-    $(INCO_D)\srp.h
+    $(INCO_D)\srp.h \
+    $(INCO_D)\ec.h $(INCO_D)\ecdh.h $(INCO_D)\ecdsa.h \
 
 E_OBJ=$(OBJ_D)\verify.obj \
     $(OBJ_D)\asn1pars.obj $(OBJ_D)\req.obj $(OBJ_D)\dgst.obj \
@@ -307,7 +308,19 @@ CRYPTOOBJ=$(OBJ_D)\cryptlib.obj \
     $(OBJ_D)\ui_err.obj $(OBJ_D)\ui_lib.obj $(OBJ_D)\ui_openssl.obj \
     $(OBJ_D)\ui_util.obj $(OBJ_D)\ui_compat.obj $(OBJ_D)\krb5_asn.obj \
     $(OBJ_D)\pqueue.obj $(OBJ_D)\o_init.obj $(OBJ_D)\srp_lib.obj \
-    $(OBJ_D)\srp_vfy.obj $(OBJ_D)\txt_db.obj
+    $(OBJ_D)\srp_vfy.obj $(OBJ_D)\txt_db.obj \
+    $(OBJ_D)\ec_ameth.obj $(OBJ_D)\ec_asn1.obj $(OBJ_D)\ec_curve.obj \
+    $(OBJ_D)\ec_cvt.obj $(OBJ_D)\ec_err.obj $(OBJ_D)\ec_check.obj \
+    $(OBJ_D)\ec_key.obj $(OBJ_D)\ec_lib.obj $(OBJ_D)\ec_mult.obj \
+    $(OBJ_D)\ec_oct.obj $(OBJ_D)\ec_pmeth.obj $(OBJ_D)\ec_print.obj \
+    $(OBJ_D)\ec2_mult.obj $(OBJ_D)\ec2_oct.obj $(OBJ_D)\ec2_smpl.obj \
+    $(OBJ_D)\eck_prn.obj $(OBJ_D)\ecp_mont.obj $(OBJ_D)\ecp_nist.obj \
+    $(OBJ_D)\ecp_nistp224.obj $(OBJ_D)\ecp_nistp256.obj $(OBJ_D)\ecp_nistp521.obj \
+    $(OBJ_D)\ecp_nistputil.obj $(OBJ_D)\ecp_oct.obj $(OBJ_D)\ecp_smpl.obj \
+    $(OBJ_D)\ech_err.obj $(OBJ_D)\ech_key.obj $(OBJ_D)\ech_lib.obj \
+    $(OBJ_D)\ech_ossl.obj $(OBJ_D)\ecs_asn1.obj $(OBJ_D)\ecs_err.obj \
+    $(OBJ_D)\ecs_lib.obj $(OBJ_D)\ecs_ossl.obj $(OBJ_D)\ecs_sign.obj \
+    $(OBJ_D)\ecs_vrf.obj $(OBJ_D)\m_ecdsa.obj
 
 ###################################################################
 all: banner $(TMP_D) $(INCO_D) headers lib
@@ -628,6 +641,15 @@ $(INCO_D)\cmac.h: $(SRC_D)\crypto\cmac\cmac.h
 
 $(INCO_D)\srp.h: $(SRC_D)\crypto\srp\srp.h
     $(CP) "$(SRC_D)\crypto\srp\srp.h" "$(INCO_D)\srp.h"
+
+$(INCO_D)\ec.h: $(SRC_D)\crypto\ec\ec.h
+    $(CP) "$(SRC_D)\crypto\ec\ec.h" "$(INCO_D)\ec.h"
+
+$(INCO_D)\ecdh.h: $(SRC_D)\crypto\ecdh\ecdh.h
+    $(CP) "$(SRC_D)\crypto\ecdh\ecdh.h" "$(INCO_D)\ecdh.h"
+
+$(INCO_D)\ecdsa.h: $(SRC_D)\crypto\ecdsa\ecdsa.h
+    $(CP) "$(SRC_D)\crypto\ecdsa\ecdsa.h" "$(INCO_D)\ecdsa.h"
 
 $(OBJ_D)\s2_meth.obj: $(SRC_D)\ssl\s2_meth.c
     $(CC) -o$(OBJ_D)\s2_meth.obj  $(LIB_CFLAGS) -c $(SRC_D)\ssl\s2_meth.c
@@ -2158,6 +2180,111 @@ $(OBJ_D)\srp_vfy.obj: $(SRC_D)\crypto\srp\srp_vfy.c
 
 $(OBJ_D)\txt_db.obj: $(SRC_D)\crypto\txt_db\txt_db.c
     $(CC) -o$(OBJ_D)\txt_db.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\txt_db\txt_db.c
+
+$(OBJ_D)\ec_ameth.obj: $(SRC_D)\crypto\ec\ec_ameth.c
+    $(CC) -o$(OBJ_D)\ec_ameth.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_ameth.c
+
+$(OBJ_D)\ec_asn1.obj: $(SRC_D)\crypto\ec\ec_asn1.c
+    $(CC) -o$(OBJ_D)\ec_asn1.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_asn1.c
+
+$(OBJ_D)\ec_curve.obj: $(SRC_D)\crypto\ec\ec_curve.c
+    $(CC) -o$(OBJ_D)\ec_curve.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_curve.c
+
+$(OBJ_D)\ec_cvt.obj: $(SRC_D)\crypto\ec\ec_cvt.c
+    $(CC) -o$(OBJ_D)\ec_cvt.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_cvt.c
+
+$(OBJ_D)\ec_err.obj: $(SRC_D)\crypto\ec\ec_err.c
+    $(CC) -o$(OBJ_D)\ec_err.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_err.c
+
+$(OBJ_D)\ec_check.obj: $(SRC_D)\crypto\ec\ec_check.c
+    $(CC) -o$(OBJ_D)\ec_check.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_check.c
+
+$(OBJ_D)\ec_key.obj: $(SRC_D)\crypto\ec\ec_key.c
+    $(CC) -o$(OBJ_D)\ec_key.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_key.c
+
+$(OBJ_D)\ec_lib.obj: $(SRC_D)\crypto\ec\ec_lib.c
+    $(CC) -o$(OBJ_D)\ec_lib.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_lib.c
+
+$(OBJ_D)\ec_mult.obj: $(SRC_D)\crypto\ec\ec_mult.c
+    $(CC) -o$(OBJ_D)\ec_mult.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_mult.c
+
+$(OBJ_D)\ec_oct.obj: $(SRC_D)\crypto\ec\ec_oct.c
+    $(CC) -o$(OBJ_D)\ec_oct.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_oct.c
+
+$(OBJ_D)\ec_pmeth.obj: $(SRC_D)\crypto\ec\ec_pmeth.c
+    $(CC) -o$(OBJ_D)\ec_pmeth.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_pmeth.c
+
+$(OBJ_D)\ec_print.obj: $(SRC_D)\crypto\ec\ec_print.c
+    $(CC) -o$(OBJ_D)\ec_print.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec_print.c
+
+$(OBJ_D)\ec2_mult.obj: $(SRC_D)\crypto\ec\ec2_mult.c
+    $(CC) -o$(OBJ_D)\ec2_mult.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec2_mult.c
+
+$(OBJ_D)\ec2_oct.obj: $(SRC_D)\crypto\ec\ec2_oct.c
+    $(CC) -o$(OBJ_D)\ec2_oct.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec2_oct.c
+
+$(OBJ_D)\ec2_smpl.obj: $(SRC_D)\crypto\ec\ec2_smpl.c
+    $(CC) -o$(OBJ_D)\ec2_smpl.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ec2_smpl.c
+
+$(OBJ_D)\eck_prn.obj: $(SRC_D)\crypto\ec\eck_prn.c
+    $(CC) -o$(OBJ_D)\eck_prn.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\eck_prn.c
+
+$(OBJ_D)\ecp_mont.obj: $(SRC_D)\crypto\ec\ecp_mont.c
+    $(CC) -o$(OBJ_D)\ecp_mont.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ecp_mont.c
+
+$(OBJ_D)\ecp_nist.obj: $(SRC_D)\crypto\ec\ecp_nist.c
+    $(CC) -o$(OBJ_D)\ecp_nist.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ecp_nist.c
+
+$(OBJ_D)\ecp_nistp224.obj: $(SRC_D)\crypto\ec\ecp_nistp224.c
+    $(CC) -o$(OBJ_D)\ecp_nistp224.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ecp_nistp224.c
+
+$(OBJ_D)\ecp_nistp256.obj: $(SRC_D)\crypto\ec\ecp_nistp256.c
+    $(CC) -o$(OBJ_D)\ecp_nistp256.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ecp_nistp256.c
+
+$(OBJ_D)\ecp_nistp521.obj: $(SRC_D)\crypto\ec\ecp_nistp521.c
+    $(CC) -o$(OBJ_D)\ecp_nistp521.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ecp_nistp521.c
+
+$(OBJ_D)\ecp_nistputil.obj: $(SRC_D)\crypto\ec\ecp_nistputil.c
+    $(CC) -o$(OBJ_D)\ecp_nistputil.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ecp_nistputil.c
+
+$(OBJ_D)\ecp_oct.obj: $(SRC_D)\crypto\ec\ecp_oct.c
+    $(CC) -o$(OBJ_D)\ecp_oct.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ecp_oct.c
+
+$(OBJ_D)\ecp_smpl.obj: $(SRC_D)\crypto\ec\ecp_smpl.c
+    $(CC) -o$(OBJ_D)\ecp_smpl.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ecp_smpl.c
+
+$(OBJ_D)\ech_err.obj: $(SRC_D)\crypto\ecdh\ech_err.c
+    $(CC) -o$(OBJ_D)\ech_err.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ecdh\ech_err.c
+
+$(OBJ_D)\ech_key.obj: $(SRC_D)\crypto\ecdh\ech_key.c
+    $(CC) -o$(OBJ_D)\ech_key.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ecdh\ech_key.c
+
+$(OBJ_D)\ech_lib.obj: $(SRC_D)\crypto\ecdh\ech_lib.c
+    $(CC) -o$(OBJ_D)\ech_lib.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ecdh\ech_lib.c
+
+$(OBJ_D)\ech_ossl.obj: $(SRC_D)\crypto\ecdh\ech_ossl.c
+    $(CC) -o$(OBJ_D)\ech_ossl.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ecdh\ech_ossl.c
+
+$(OBJ_D)\ecs_asn1.obj: $(SRC_D)\crypto\ecdsa\ecs_asn1.c
+    $(CC) -o$(OBJ_D)\ecs_asn1.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ecdsa\ecs_asn1.c
+
+$(OBJ_D)\ecs_err.obj: $(SRC_D)\crypto\ecdsa\ecs_err.c
+    $(CC) -o$(OBJ_D)\ecs_err.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ecdsa\ecs_err.c
+
+$(OBJ_D)\ecs_lib.obj: $(SRC_D)\crypto\ecdsa\ecs_lib.c
+    $(CC) -o$(OBJ_D)\ecs_lib.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ecdsa\ecs_lib.c
+
+$(OBJ_D)\ecs_ossl.obj: $(SRC_D)\crypto\ecdsa\ecs_ossl.c
+    $(CC) -o$(OBJ_D)\ecs_ossl.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ecdsa\ecs_ossl.c
+
+$(OBJ_D)\ecs_sign.obj: $(SRC_D)\crypto\ecdsa\ecs_sign.c
+    $(CC) -o$(OBJ_D)\ecs_sign.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ecdsa\ecs_sign.c
+
+$(OBJ_D)\ecs_vrf.obj: $(SRC_D)\crypto\ecdsa\ecs_vrf.c
+    $(CC) -o$(OBJ_D)\ecs_vrf.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ecdsa\ecs_vrf.c
+
+$(OBJ_D)\m_ecdsa.obj: $(SRC_D)\crypto\evp\m_ecdsa.c
+    $(CC) -o$(OBJ_D)\m_ecdsa.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\evp\m_ecdsa.c
 
 $(O_SSL): $(SSLOBJ)
     -if exist $(O_SSL) $(RM) $(O_SSL)

@@ -80,7 +80,7 @@ procedure ProcessPaintMessages;
 procedure RemoveMessages(const AMin, AMax: Integer);
 procedure RemoveFromList(var List: TList; Item: Pointer);
 procedure SelectNCUpdateRgn(Wnd: HWND; DC: HDC; Rgn: HRGN);
-function StripAccelChars(const S: String): String;
+function StripAccelChars(const S: String; IncludingStandaloneKey: Boolean = False {MP}): String;
 function StripTrailingPunctuation(const S: String): String;
 function UsingMultipleMonitors: Boolean;
 
@@ -94,7 +94,7 @@ var
 implementation
 
 uses
-  TB2Version;
+  TB2Version, Types, System.Character {MP};
 
 function ApplicationIsActive: Boolean;
 { Returns True if the application is in the foreground }
@@ -308,7 +308,7 @@ begin
   Result := TextMetric.tmHeight;
 end;
 
-function StripAccelChars(const S: String): String;
+function StripAccelChars(const S: String; IncludingStandaloneKey: Boolean {MP}): String;
 var
   I: Integer;
 begin
@@ -317,7 +317,23 @@ begin
   while I <= Length(Result) do begin
     if not CharInSet(Result[I], LeadBytes) then begin
       if Result[I] = '&' then
-        System.Delete(Result, I, 1);
+      begin
+        {MP}
+        // Trim trailing artificial accelerators typical for asian translation
+        // e.g. "ローカル(&L)"
+        if IncludingStandaloneKey and
+           (I = Length(Result) - 2) and
+           (Result[I - 1] = '(') and
+           Result[I + 1].IsLetter() and
+           (Result[I + 2] = ')') then
+        begin
+          System.Delete(Result, I - 1, 4);
+        end
+          else
+        begin
+          System.Delete(Result, I, 1);
+        end;
+      end;
       Inc(I);
     end
     else

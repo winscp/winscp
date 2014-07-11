@@ -10,6 +10,7 @@
 // WM_COMPONENT_HIDE = WM_WINSCP_USER + 4 (forms/CustomScpExplorer.cpp)
 // WM_TRAY_ICON = WM_WINSCP_USER + 5 (forms/CustomScpExplorer.cpp)
 // WM_LOG_UPDATE = WM_WINSCP_USER + 6 (components/LogMemo.cpp)
+#define WM_MANAGES_CAPTION (WM_WINSCP_USER + 7)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration
@@ -98,7 +99,6 @@ public:
   __property int DefaultFixedWidthFontSize = { read = GetDefaultFixedWidthFontSize };
 };
 //---------------------------------------------------------------------------
-#define CustomWinConfiguration \
-  (dynamic_cast<TCustomWinConfiguration *>(Configuration))
+extern TCustomWinConfiguration * CustomWinConfiguration;
 //---------------------------------------------------------------------------
 #endif

@@ -23,8 +23,8 @@ enum TSshProt { ssh1only, ssh1, ssh2, ssh2only };
 enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA };
 #define KEX_COUNT (kexRSA+1)
 enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
-  sbPKSessID2, sbRekey2, sbMaxPkt2, sbIgnore2 };
-#define BUG_COUNT (sbIgnore2+1)
+  sbPKSessID2, sbRekey2, sbMaxPkt2, sbIgnore2, sbWinAdj };
+#define BUG_COUNT (sbWinAdj+1)
 enum TSftpBug { sbSymlink, sbSignedTS };
 #define SFTP_BUG_COUNT (sbSignedTS+1)
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
@@ -50,6 +50,7 @@ extern const int FtpsImplicitPortNumber;
 extern const int HTTPPortNumber;
 extern const int HTTPSPortNumber;
 extern const int TelnetPortNumber;
+extern const int ProxyPortNumber;
 extern const UnicodeString PuttySshProtocol;
 extern const UnicodeString PuttyTelnetProtocol;
 extern const UnicodeString SftpProtocol;
@@ -60,6 +61,10 @@ extern const UnicodeString WebDAVProtocol;
 extern const UnicodeString WebDAVSProtocol;
 extern const UnicodeString ProtocolSeparator;
 extern const UnicodeString WinSCPProtocolPrefix;
+extern const wchar_t UrlParamSeparator;
+extern const wchar_t UrlParamValueSeparator;
+extern const UnicodeString UrlHostKeyParamName;
+extern const UnicodeString UrlSaveParamName;
 //---------------------------------------------------------------------------
 class TStoredSessionList;
 //---------------------------------------------------------------------------
@@ -93,6 +98,7 @@ private:
   bool FClearAliases;
   TEOLType FEOLType;
   UnicodeString FPublicKeyFile;
+  UnicodeString FPassphrase;
   UnicodeString FPuttyProtocol;
   TFSProtocol FFSProtocol;
   bool FModified;
@@ -165,7 +171,7 @@ private:
   UnicodeString FFtpAccount;
   int FFtpPingInterval;
   TPingType FFtpPingType;
-  bool FFtpTransferActiveImmediatelly;
+  bool FFtpTransferActiveImmediately;
   TFtps FFtps;
   TTlsVersion FMinTlsVersion;
   TTlsVersion FMaxTlsVersion;
@@ -174,6 +180,7 @@ private:
   UnicodeString FLink;
   UnicodeString FHostKey;
   bool FOverrideCachedHostKey;
+  UnicodeString FNote;
 
   UnicodeString FOrigHostName;
   int FOrigPortNumber;
@@ -208,6 +215,8 @@ private:
   void __fastcall SetKex(int Index, TKex value);
   TKex __fastcall GetKex(int Index) const;
   void __fastcall SetPublicKeyFile(UnicodeString value);
+  UnicodeString __fastcall GetPassphrase() const;
+  void __fastcall SetPassphrase(UnicodeString value);
 
   void __fastcall SetPuttyProtocol(UnicodeString value);
   bool __fastcall GetCanLogin();
@@ -220,6 +229,7 @@ private:
   bool __fastcall HasSessionName();
   UnicodeString __fastcall GetDefaultSessionName();
   UnicodeString __fastcall GetSessionUrl();
+  UnicodeString __fastcall GetProtocolUrl();
   void __fastcall SetFSProtocol(TFSProtocol value);
   UnicodeString __fastcall GetFSProtocolStr();
   void __fastcall SetLocalDirectory(UnicodeString value);
@@ -285,6 +295,7 @@ private:
   void __fastcall SetSslSessionReuse(bool value);
   UnicodeString __fastcall GetStorageKey();
   UnicodeString __fastcall GetInternalStorageKey();
+  UnicodeString __fastcall GetSiteKey();
   void __fastcall SetDSTMode(TDSTMode value);
   void __fastcall SetDeleteToRecycleBin(bool value);
   void __fastcall SetOverwrittenToRecycleBin(bool value);
@@ -311,7 +322,7 @@ private:
   void __fastcall SetFtpAccount(UnicodeString value);
   void __fastcall SetFtpPingInterval(int value);
   void __fastcall SetFtpPingType(TPingType value);
-  void __fastcall SetFtpTransferActiveImmediatelly(bool value);
+  void __fastcall SetFtpTransferActiveImmediately(bool value);
   void __fastcall SetFtps(TFtps value);
   void __fastcall SetMinTlsVersion(TTlsVersion value);
   void __fastcall SetMaxTlsVersion(TTlsVersion value);
@@ -319,6 +330,7 @@ private:
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
   void __fastcall SetHostKey(UnicodeString value);
+  void __fastcall SetNote(UnicodeString value);
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport);
   UnicodeString __fastcall GetLocalName();
@@ -349,7 +361,9 @@ public:
   void __fastcall SaveRecryptedPasswords(THierarchicalStorage * Storage);
   void __fastcall RecryptPasswords();
   bool __fastcall HasPassword();
+  bool __fastcall HasAnySessionPassword();
   bool __fastcall HasAnyPassword();
+  void __fastcall ClearSessionPasswords();
   void __fastcall Remove();
   void __fastcall CacheHostKeyIfNotCached();
   virtual void __fastcall Assign(TPersistent * Source);
@@ -365,6 +379,7 @@ public:
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   static void __fastcall ValidatePath(const UnicodeString Path);
   static void __fastcall ValidateName(const UnicodeString Name);
+  static UnicodeString __fastcall MakeValidName(const UnicodeString & Name);
   static UnicodeString __fastcall ExtractLocalName(const UnicodeString & Name);
   static UnicodeString __fastcall ExtractFolderName(const UnicodeString & Name);
   static UnicodeString __fastcall ComposePath(const UnicodeString & Path, const UnicodeString & Name);
@@ -394,6 +409,7 @@ public:
   __property TCipher Cipher[int Index] = { read=GetCipher, write=SetCipher };
   __property TKex Kex[int Index] = { read=GetKex, write=SetKex };
   __property UnicodeString PublicKeyFile  = { read=FPublicKeyFile, write=SetPublicKeyFile };
+  __property UnicodeString Passphrase  = { read=GetPassphrase, write=SetPassphrase };
   __property UnicodeString PuttyProtocol  = { read=FPuttyProtocol, write=SetPuttyProtocol };
   __property TFSProtocol FSProtocol  = { read=FFSProtocol, write=SetFSProtocol  };
   __property UnicodeString FSProtocolStr  = { read=GetFSProtocolStr };
@@ -406,6 +422,7 @@ public:
   __property UnicodeString SessionName  = { read=GetSessionName };
   __property UnicodeString DefaultSessionName  = { read=GetDefaultSessionName };
   __property UnicodeString SessionUrl  = { read=GetSessionUrl };
+  __property UnicodeString ProtocolUrl  = { read=GetProtocolUrl };
   __property UnicodeString LocalDirectory  = { read=FLocalDirectory, write=SetLocalDirectory };
   __property UnicodeString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };
   __property bool SynchronizeBrowsing = { read=FSynchronizeBrowsing, write=SetSynchronizeBrowsing };
@@ -485,7 +502,7 @@ public:
   __property int FtpPingInterval  = { read=FFtpPingInterval, write=SetFtpPingInterval };
   __property TDateTime FtpPingIntervalDT  = { read=GetFtpPingIntervalDT };
   __property TPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
-  __property bool FtpTransferActiveImmediatelly = { read = FFtpTransferActiveImmediatelly, write = SetFtpTransferActiveImmediatelly };
+  __property bool FtpTransferActiveImmediately = { read = FFtpTransferActiveImmediately, write = SetFtpTransferActiveImmediately };
   __property TFtps Ftps = { read = FFtps, write = SetFtps };
   __property TTlsVersion MinTlsVersion = { read = FMinTlsVersion, write = SetMinTlsVersion };
   __property TTlsVersion MaxTlsVersion = { read = FMaxTlsVersion, write = SetMaxTlsVersion };
@@ -494,7 +511,9 @@ public:
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString HostKey = { read = FHostKey, write = SetHostKey };
   __property bool OverrideCachedHostKey = { read = FOverrideCachedHostKey };
+  __property UnicodeString Note = { read = FNote, write = SetNote };
   __property UnicodeString StorageKey = { read = GetStorageKey };
+  __property UnicodeString SiteKey = { read = GetSiteKey };
   __property UnicodeString OrigHostName = { read = FOrigHostName };
   __property int OrigPortNumber = { read = FOrigPortNumber };
   __property UnicodeString LocalName = { read = GetLocalName };
@@ -516,7 +535,7 @@ public:
     bool UseDefaults = false);
   void __fastcall Save(THierarchicalStorage * Storage, bool All = false);
   void __fastcall SelectAll(bool Select);
-  void __fastcall Import(TStoredSessionList * From, bool OnlySelected);
+  void __fastcall Import(TStoredSessionList * From, bool OnlySelected, TList * Imported);
   void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   TSessionData * __fastcall AtSession(int Index)
     { return (TSessionData*)AtObject(Index); }
@@ -531,6 +550,7 @@ public:
   bool __fastcall IsWorkspace(const UnicodeString & Name);
   TSessionData * __fastcall ParseUrl(UnicodeString Url, TOptions * Options, bool & DefaultsOnly,
     UnicodeString * FileName = NULL, bool * ProtocolDefined = NULL, UnicodeString * MaskedUrl = NULL);
+  bool __fastcall IsUrl(UnicodeString Url);
   bool __fastcall CanLogin(TSessionData * Data);
   void __fastcall GetFolderOrWorkspace(const UnicodeString & Name, TList * List);
   TStrings * __fastcall GetFolderOrWorkspaceList(const UnicodeString & Name);
@@ -564,5 +584,6 @@ private:
 //---------------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TSessionData * SessionData);
 bool __fastcall IsSshProtocol(TFSProtocol FSProtocol);
+int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps);
 //---------------------------------------------------------------------------
 #endif

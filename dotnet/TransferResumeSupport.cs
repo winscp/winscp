@@ -25,7 +25,7 @@ namespace WinSCP
         internal TransferResumeSupport()
         {
             State = TransferResumeSupportState.Default;
-            _threshold = 100; // (100 KiB)
+            _threshold = 100; // (100 KB)
         }
 
         public override string ToString()

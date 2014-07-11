@@ -179,7 +179,7 @@ implementation
 
 {$R-}{$Q-}
 
-uses TB2Common, Math;
+uses TB2Common, Math, Types;
 
 {$IFDEF TBX_UNICODE}
 

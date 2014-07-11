@@ -243,6 +243,12 @@ __published:
   TLabel *Label2;
   TComboBox *MaxTlsVersionCombo;
   TCheckBox *SslSessionReuseCheck;
+  TLabel *BugWinAdjLabel;
+  TComboBox *BugWinAdjCombo;
+  TButton *ProxyAutodetectButton;
+  TTabSheet *NoteSheet;
+  TGroupBox *NoteGroup;
+  TMemo *NoteMemo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -269,6 +275,9 @@ __published:
   void __fastcall ColorButtonClick(TObject *Sender);
   void __fastcall MinTlsVersionComboChange(TObject *Sender);
   void __fastcall MaxTlsVersionComboChange(TObject *Sender);
+  void __fastcall ProxyAutodetectButtonClick(TObject *Sender);
+  void __fastcall NoteMemoKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+
 
 public:
   virtual __fastcall TSiteAdvancedDialog(TComponent * AOwner, int Options);

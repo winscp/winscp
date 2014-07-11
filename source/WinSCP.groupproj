@@ -18,6 +18,9 @@
 			<Projects Include="tbxp.cbproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="Jcl.cbproj">
+				<Dependencies/>
+			</Projects>
 			<Projects Include="PngComponents.cbproj">
 				<Dependencies/>
 			</Projects>
@@ -97,6 +100,15 @@
 		</Target>
 		<Target Name="tbxp:Make">
 			<MSBuild Projects="tbxp.cbproj" Targets="Make"/>
+		</Target>
+		<Target Name="Jcl">
+			<MSBuild Projects="Jcl.cbproj"/>
+		</Target>
+		<Target Name="Jcl:Clean">
+			<MSBuild Projects="Jcl.cbproj" Targets="Clean"/>
+		</Target>
+		<Target Name="Jcl:Make">
+			<MSBuild Projects="Jcl.cbproj" Targets="Make"/>
 		</Target>
 		<Target Name="PngComponents">
 			<MSBuild Projects="PngComponents.cbproj"/>
@@ -180,13 +192,13 @@
 			<MSBuild Projects="DragExt.cbproj" Targets="Make"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="Moje;DragDropP;DriveDir;tb2k;tbxp;PngComponents;Putty;FileZilla;ScpCore;RScpComp;ScpForms;WinSCP;Console;DragExt"/>
+			<CallTarget Targets="Moje;DragDropP;DriveDir;tb2k;tbxp;Jcl;PngComponents;Putty;FileZilla;ScpCore;RScpComp;ScpForms;WinSCP;Console;DragExt"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="Moje:Clean;DragDropP:Clean;DriveDir:Clean;tb2k:Clean;tbxp:Clean;PngComponents:Clean;Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;WinSCP:Clean;Console:Clean;DragExt:Clean"/>
+			<CallTarget Targets="Moje:Clean;DragDropP:Clean;DriveDir:Clean;tb2k:Clean;tbxp:Clean;Jcl:Clean;PngComponents:Clean;Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;WinSCP:Clean;Console:Clean;DragExt:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="Moje:Make;DragDropP:Make;DriveDir:Make;tb2k:Make;tbxp:Make;PngComponents:Make;Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;WinSCP:Make;Console:Make;DragExt:Make"/>
+			<CallTarget Targets="Moje:Make;DragDropP:Make;DriveDir:Make;tb2k:Make;tbxp:Make;Jcl:Make;PngComponents:Make;Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;WinSCP:Make;Console:Make;DragExt:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>

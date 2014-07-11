@@ -15,12 +15,12 @@ object CopyParamsFrame: TCopyParamsFrame
     DesignSize = (
       201
       98)
-    object SpeedLabel2: TLabel
+    object SpeedLabel3: TLabel
       Left = 15
       Top = 71
       Width = 68
       Height = 13
-      Caption = '&Speed (KiB/s):'
+      Caption = '&Speed (KB/s):'
       FocusControl = SpeedCombo
     end
     object PreserveTimeCheck: TCheckBox
@@ -147,7 +147,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 124
       Width = 173
       Height = 17
-      Caption = 'Remo&ve BOM and EOF marks'
+      Caption = 'Remo&ve BOM and EOF marks X'
       TabOrder = 4
       OnClick = ControlChange
     end

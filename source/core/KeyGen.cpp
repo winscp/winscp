@@ -379,7 +379,7 @@ void __fastcall TKeyGenerator::SaveKey(const AnsiString FileName,
         break;
 
       default:
-        assert(false);
+        FAIL;
     }
   }
   else

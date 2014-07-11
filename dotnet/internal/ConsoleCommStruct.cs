@@ -12,7 +12,7 @@ namespace WinSCP
         public uint InputType;
         public uint OutputType;
         public bool WantsProgress;
-    };
+    }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal class ConsolePrintEventStruct
@@ -21,7 +21,7 @@ namespace WinSCP
         public string Message; // wide since version 4
         [MarshalAs(UnmanagedType.I1)]
         public bool FromBeginning;
-    };
+    }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal class ConsoleInputEventStruct
@@ -33,7 +33,7 @@ namespace WinSCP
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 10240)]
         public string Str; // wide since version 4
         public uint Timer; // since version 2
-    };
+    }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal class ConsoleChoiceEventStruct

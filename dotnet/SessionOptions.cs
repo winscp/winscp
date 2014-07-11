@@ -13,6 +13,7 @@ namespace WinSCP
         Sftp = 0,
         Scp = 1,
         Ftp = 2,
+        Webdav = 3,
     }
 
     [Guid("D924FAB9-FCE7-47B8-9F23-5717698384D3")]
@@ -56,16 +57,18 @@ namespace WinSCP
         public string SshHostKeyFingerprint { get { return _sshHostKeyFingerprint; } set { SetSshHostKeyFingerprint(value); } }
         public bool GiveUpSecurityAndAcceptAnySshHostKey { get; set; }
         public string SshPrivateKeyPath { get; set; }
+        public string SshPrivateKeyPassphrase { get; set; }
 
         // FTP
         public FtpMode FtpMode { get; set; }
         public FtpSecure FtpSecure { get; set; }
+
+        // WebDAV
+        public bool WebdavSecure { get; set; }
+
+        // TLS
         public string TlsHostCertificateFingerprint { get { return _tlsHostCertificateFingerprint; } set { SetHostTlsCertificateFingerprint(value); } }
-        [Obsolete("Use TlsHostCertificateFingerprint")]
-        public string SslHostCertificateFingerprint { get { return TlsHostCertificateFingerprint; } set { TlsHostCertificateFingerprint = value; } }
         public bool GiveUpSecurityAndAcceptAnyTlsHostCertificate { get; set; }
-        [Obsolete("Use GiveUpSecurityAndAcceptAnyTlsHostCertificate")]
-        public bool GiveUpSecurityAndAcceptAnySslHostCertificate { get { return GiveUpSecurityAndAcceptAnyTlsHostCertificate; } set { GiveUpSecurityAndAcceptAnyTlsHostCertificate = value; } }
 
         public void AddRawSettings(string setting, string value)
         {

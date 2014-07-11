@@ -329,15 +329,20 @@ __fastcall TScript::~TScript()
 //---------------------------------------------------------------------------
 void __fastcall TScript::Init()
 {
-  FBatch = BatchOff;
-  FConfirm = true;
+  FBatch = BatchAbort;
+  FInteractiveBatch = BatchOff;
+  FConfirm = false;
+  FInteractiveConfirm = true;
   FEcho = false;
+  FFailOnNoMatch = false;
   FSynchronizeParams = 0;
   FOnPrint = NULL;
   FOnTerminalSynchronizeDirectory = NULL;
   FOnSynchronizeStartStop = NULL;
   FSynchronizeMode = -1;
   FKeepingUpToDate = false;
+  FWarnNonDefaultCopyParam = false;
+  FWarnNonDefaultSynchronizeParams = false;
 
   FCommands = new TScriptCommands(this);
   FCommands->Register(L"help", SCRIPT_HELP_DESC, SCRIPT_HELP_HELP, &HelpProc, 0, -1, false);
@@ -357,15 +362,15 @@ void __fastcall TScript::Init()
   FCommands->Register(L"ln", SCRIPT_LN_DESC, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"symlink", 0, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"mkdir", SCRIPT_MKDIR_DESC, SCRIPT_MKDIR_HELP, &MkDirProc, 1, 1, false);
-  FCommands->Register(L"get", SCRIPT_GET_DESC, SCRIPT_GET_HELP6, &GetProc, 1, -1, true);
-  FCommands->Register(L"recv", 0, SCRIPT_GET_HELP6, &GetProc, 1, -1, false);
-  FCommands->Register(L"mget", 0, SCRIPT_GET_HELP6, &GetProc, 1, -1, false);
-  FCommands->Register(L"put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP6, &PutProc, 1, -1, true);
-  FCommands->Register(L"send", 0, SCRIPT_PUT_HELP6, &PutProc, 1, -1, false);
-  FCommands->Register(L"mput", 0, SCRIPT_PUT_HELP6, &PutProc, 1, -1, false);
-  FCommands->Register(L"option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP6, &OptionProc, -1, 2, false);
-  FCommands->Register(L"ascii", 0, SCRIPT_OPTION_HELP6, &AsciiProc, 0, 0, false);
-  FCommands->Register(L"binary", 0, SCRIPT_OPTION_HELP6, &BinaryProc, 0, 0, false);
+  FCommands->Register(L"get", SCRIPT_GET_DESC, SCRIPT_GET_HELP7, &GetProc, 1, -1, true);
+  FCommands->Register(L"recv", 0, SCRIPT_GET_HELP7, &GetProc, 1, -1, false);
+  FCommands->Register(L"mget", 0, SCRIPT_GET_HELP7, &GetProc, 1, -1, false);
+  FCommands->Register(L"put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP7, &PutProc, 1, -1, true);
+  FCommands->Register(L"send", 0, SCRIPT_PUT_HELP7, &PutProc, 1, -1, false);
+  FCommands->Register(L"mput", 0, SCRIPT_PUT_HELP7, &PutProc, 1, -1, false);
+  FCommands->Register(L"option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP7, &OptionProc, -1, 2, false);
+  FCommands->Register(L"ascii", 0, SCRIPT_OPTION_HELP7, &AsciiProc, 0, 0, false);
+  FCommands->Register(L"binary", 0, SCRIPT_OPTION_HELP7, &BinaryProc, 0, 0, false);
   FCommands->Register(L"synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP7, &SynchronizeProc, 1, 3, true);
   FCommands->Register(L"keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP4, &KeepUpToDateProc, 0, 2, true);
   // the echo command does not have switches actually, but it must handle dashes in its arguments
@@ -373,16 +378,49 @@ void __fastcall TScript::Init()
   FCommands->Register(L"stat", SCRIPT_STAT_DESC, SCRIPT_STAT_HELP, &StatProc, 1, 1, false);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScript::CheckDefaultCopyParam()
+{
+  if (FWarnNonDefaultCopyParam)
+  {
+    // started with non-factory settings and still have them, warn
+    if (HasNonDefaultCopyParams())
+    {
+      PrintLine(LoadStr(SCRIPT_NON_DEFAULT_COPY_PARAM));
+    }
+    FWarnNonDefaultCopyParam = false;
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TScript::HasNonDefaultCopyParams()
+{
+  return !(FCopyParam == TCopyParamType());
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::SetCopyParam(const TCopyParamType & value)
 {
   FCopyParam.Assign(&value);
+  FWarnNonDefaultCopyParam = HasNonDefaultCopyParams();
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::CheckDefaultSynchronizeParams()
+{
+  if (FWarnNonDefaultSynchronizeParams)
+  {
+    // as opposite to CheckDefaultCopyParam(), not checking
+    // current params as we cannot override any of those we accept anyway
+    PrintLine(LoadStr(SCRIPT_NON_DEFAULT_SYNC_PARAM));
+    FWarnNonDefaultSynchronizeParams = false;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::SetSynchronizeParams(int value)
 {
-  FSynchronizeParams = (value &
-    (TTerminal::spExistingOnly | TTerminal::spTimestamp |
-     TTerminal::spNotByTime | TTerminal::spBySize));
+  const int AcceptedParams =
+    TTerminal::spExistingOnly | TTerminal::spTimestamp |
+    TTerminal::spNotByTime | TTerminal::spBySize;
+  FSynchronizeParams = (value & AcceptedParams);
+  FWarnNonDefaultSynchronizeParams =
+    (FSynchronizeParams != (TTerminal::spDefault & AcceptedParams));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScript::IsTerminalLogging(TTerminal * ATerminal)
@@ -429,6 +467,12 @@ UnicodeString __fastcall TScript::GetLogCmd(const UnicodeString & FullCommand,
   return FullCommand;
 }
 //---------------------------------------------------------------------------
+void __fastcall TScript::StartInteractive()
+{
+  FBatch = FInteractiveBatch;
+  FConfirm = FInteractiveConfirm;
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::Command(UnicodeString Cmd)
 {
   try
@@ -462,7 +506,7 @@ void __fastcall TScript::Command(UnicodeString Cmd)
           }
           catch(Exception & E)
           {
-            // seemingly duplicate (to the method-level one) catch clausule,
+            // seemingly duplicate (to the method-level one) catch clause,
             // ensures the <failure/> tag is enclosed in <group/> tag
             if (!HandleExtendedException(&E))
             {
@@ -558,6 +602,11 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
                 FLAGSET(ListType, fltQueryServer) ? File->Duplicate() : NULL);
             }
           }
+
+          if ((Result->Count == 0) && FFailOnNoMatch)
+          {
+            throw Exception(FMTLOAD(SCRIPT_MATCH_NO_MATCH, (Mask.Masks)));
+          }
         }
         else
         {
@@ -610,7 +659,10 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
   {
     for (int i = Start; i <= End; i++)
     {
-      UnicodeString FileName = Parameters->Param[i];
+      // FindFirstFile called (indirectly) below fails if path ends with slash.
+      // (it actually won't make a difference functionally as we fall back to adding
+      // the path as is in "else" branch, but the comment "let it fail later" won't stand)
+      UnicodeString FileName = ExcludeTrailingBackslash(Parameters->Param[i]);
       if (FLAGSET(ListType, fltMask))
       {
         TSearchRecChecked SearchRec;
@@ -641,6 +693,11 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
             // no match, and it is not a mask, let it fail latter
             Result->Add(FileName);
           }
+        }
+
+        if ((Result->Count == 0) && FFailOnNoMatch)
+        {
+          throw Exception(FMTLOAD(SCRIPT_MATCH_NO_MATCH, (ExtractFileName(FileName))));
         }
       }
       else
@@ -832,6 +889,16 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
       CopyParam.ResumeSupport = rsSmart;
       CopyParam.ResumeThreshold = ThresholdValue * 1024;
     }
+  }
+
+  if (Parameters->FindSwitch(L"noneweronly"))
+  {
+    CopyParam.NewerOnly = false;
+  }
+
+  if (Parameters->FindSwitch(L"neweronly"))
+  {
+    CopyParam.NewerOnly = true;
   }
 }
 //---------------------------------------------------------------------------
@@ -1105,6 +1172,7 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     (TFileListType)(fltQueryServer | fltMask));
   try
   {
+    CheckDefaultCopyParam();
     TCopyParamType CopyParam = FCopyParam;
 
     UnicodeString TargetDirectory;
@@ -1146,6 +1214,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
   TStrings * FileList = CreateLocalFileList(Parameters, 1, LastFileParam, fltMask);
   try
   {
+    CheckDefaultCopyParam();
     TCopyParamType CopyParam = FCopyParam;
 
     UnicodeString TargetDirectory;
@@ -1194,9 +1263,9 @@ TTransferMode __fastcall TScript::ParseTransferModeName(UnicodeString Name)
 //---------------------------------------------------------------------------
 void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString ValueName)
 {
-  enum { Echo, Batch, Confirm, Transfer, SynchDelete, Exclude, Include, ReconnectTime };
+  enum { Echo, Batch, Confirm, Transfer, SynchDelete, Exclude, Include, ReconnectTime, FailOnNoMatch };
   static const wchar_t * Names[] = { L"echo", L"batch", L"confirm", L"transfer",
-    L"synchdelete", L"exclude", L"include", L"reconnecttime" };
+    L"synchdelete", L"exclude", L"include", L"reconnecttime", L"failonnomatch" };
 
   assert((BatchOff == 0) && (BatchOn == 1) && (BatchAbort == 2) && (BatchContinue == 3));
   static const wchar_t * BatchModeNames[] = { L"off", L"on", L"abort", L"continue" };
@@ -1218,6 +1287,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   #define OPT(OPT) ((Option < 0) || (Option == OPT))
   const wchar_t * ListFormat = L"%-15s %-10s";
   bool SetValue = !ValueName.IsEmpty();
+  bool PrintReconnectTime = false;
 
   if (OPT(Echo))
   {
@@ -1244,6 +1314,13 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
       }
       FBatch = (TBatchMode)Value;
+      FInteractiveBatch = FBatch;
+
+      if (SetValue && (FBatch != BatchOff) && (FSessionReopenTimeout == 0))
+      {
+        FSessionReopenTimeout = 2 * MSecsPerSec * SecsPerMin; // 2 mins
+        PrintReconnectTime = true;
+      }
     }
 
     PrintLine(FORMAT(ListFormat, (Names[Batch], BatchModeNames[FBatch])));
@@ -1259,6 +1336,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
       }
       FConfirm = (Value == On);
+      FInteractiveConfirm = FConfirm;
     }
 
     PrintLine(FORMAT(ListFormat, (Names[Confirm], ToggleNames[FConfirm ? On : Off])));
@@ -1325,9 +1403,9 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
     PrintLine(FORMAT(ListFormat, (Names[Include], FCopyParam.IncludeFileMask.Masks)));
   }
 
-  if (OPT(ReconnectTime))
+  if (OPT(ReconnectTime) || PrintReconnectTime)
   {
-    if (SetValue)
+    if (SetValue && !PrintReconnectTime)
     {
       int Value;
       if (AnsiSameText(ValueName, ToggleNames[Off]))
@@ -1357,6 +1435,21 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
       ValueName = IntToStr(FSessionReopenTimeout / MSecsPerSec);
     }
     PrintLine(FORMAT(ListFormat, (Names[ReconnectTime], ValueName)));
+  }
+
+  if (OPT(FailOnNoMatch))
+  {
+    if (SetValue)
+    {
+      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      if (Value < 0)
+      {
+        throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
+      }
+      FFailOnNoMatch = (Value == On);
+    }
+
+    PrintLine(FORMAT(ListFormat, (Names[FailOnNoMatch], ToggleNames[FFailOnNoMatch ? On : Off])));
   }
 
   #undef OPT
@@ -1537,9 +1630,11 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
 
     SynchronizeDirectories(Parameters, LocalDirectory, RemoteDirectory, 2);
 
+    CheckDefaultCopyParam();
     TCopyParamType CopyParam = FCopyParam;
     CopyParamParams(CopyParam, Parameters);
 
+    CheckDefaultSynchronizeParams();
     int SynchronizeParams = FSynchronizeParams | TTerminal::spNoConfirmation;
 
     UnicodeString Value;
@@ -1693,6 +1788,7 @@ void __fastcall TScript::KeepUpToDateProc(TScriptProcParams * Parameters)
 
   SynchronizeDirectories(Parameters, LocalDirectory, RemoteDirectory, 1);
 
+  CheckDefaultSynchronizeParams();
   int SynchronizeParams = FSynchronizeParams | TTerminal::spNoConfirmation |
     TTerminal::spNoRecurse | TTerminal::spUseCache | TTerminal::spDelayProgress |
     TTerminal::spSubDirs;
@@ -1702,6 +1798,7 @@ void __fastcall TScript::KeepUpToDateProc(TScriptProcParams * Parameters)
     SynchronizeParams |= TTerminal::spDelete;
   }
 
+  CheckDefaultCopyParam();
   TCopyParamType CopyParam = FCopyParam;
   CopyParamParams(CopyParam, Parameters);
 
@@ -1731,7 +1828,7 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
 
   FCommands->Register(L"exit", SCRIPT_EXIT_DESC, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
   FCommands->Register(L"bye", 0, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
-  FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP5, &OpenProc, 0, -1, true);
+  FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP6, &OpenProc, 0, -1, true);
   FCommands->Register(L"close", SCRIPT_CLOSE_DESC, SCRIPT_CLOSE_HELP, &CloseProc, 0, 1, false);
   FCommands->Register(L"session", SCRIPT_SESSION_DESC, SCRIPT_SESSION_HELP, &SessionProc, 0, 1, false);
   FCommands->Register(L"lpwd", SCRIPT_LPWD_DESC, SCRIPT_LPWD_HELP, &LPwdProc, 0, 0, false);
@@ -1863,7 +1960,7 @@ void __fastcall TManagementScript::ShowPendingProgress()
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalOperationProgress(
-  TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
+  TFileOperationProgressType & ProgressData)
 {
   if ((ProgressData.Operation == foCopy) ||
       (ProgressData.Operation == foMove))
@@ -1933,10 +2030,10 @@ void __fastcall TManagementScript::TerminalOperationProgress(
         }
         else
         {
-          TransferedSizeStr = FORMAT("%d KiB", (static_cast<int>(ProgressData.TransferedSize / 1024)));
+          TransferedSizeStr = FORMAT("%d KB", (static_cast<int>(ProgressData.TransferedSize / 1024)));
         }
 
-        UnicodeString ProgressMessage = FORMAT(L"%-*s | %14s | %6.1f KiB/s | %-6.6s | %3d%%",
+        UnicodeString ProgressMessage = FORMAT(L"%-*s | %14s | %6.1f KB/s | %-6.6s | %3d%%",
           (WidthFileName, FileName,
            TransferedSizeStr,
            static_cast<float>(ProgressData.CPS()) / 1024,
@@ -1959,7 +2056,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 
   if (QueryCancel())
   {
-    Cancel = csCancel;
+    ProgressData.Cancel = csCancel;
   }
 }
 //---------------------------------------------------------------------------
@@ -2279,7 +2376,7 @@ void __fastcall TManagementScript::DoClose(TTerminal * ATerminal)
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::DoChangeLocalDirectory(UnicodeString Directory)
 {
-  if (!SetCurrentDir(Directory))
+  if (!SetCurrentDir(ApiPath(Directory)))
   {
     throw EOSExtException(FMTLOAD(CHANGE_DIR_ERROR, (Directory)));
   }

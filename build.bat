@@ -1,7 +1,7 @@
 @echo off
 rem See 'readme' file
-if "%PROCESSOR_ARCHITECTURE%"=="x86" set BDS=%ProgramFiles%\Embarcadero\RAD Studio\9.0
-if "%PROCESSOR_ARCHITECTURE%"=="AMD64" set BDS=%ProgramFiles(x86)%\Embarcadero\RAD Studio\9.0
+if "%PROCESSOR_ARCHITECTURE%"=="x86" set BDS=%ProgramFiles%\Embarcadero\Studio\14.0
+if "%PROCESSOR_ARCHITECTURE%"=="AMD64" set BDS=%ProgramFiles(x86)%\Embarcadero\Studio\14.0
 set WITH_DRAGEXT64=0
 set WITH_DOTNET=1
 rem set DRAGEXT64CL=<path to x64 cl.exe>

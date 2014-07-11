@@ -121,7 +121,7 @@ void __fastcall TFileFindDialog::UpdateControls()
       break;
 
     default:
-      assert(false);
+      FAIL;
       break;
   }
 }
@@ -207,7 +207,9 @@ void __fastcall TFileFindDialog::Start()
     }
     if (IsApplicationMinimized() && FMinimizedByMe)
     {
-      ShowNotification(NULL, LoadStr(BALLOON_OPERATION_COMPLETE), qtInformation);
+      ShowNotification(
+        NULL, MainInstructions(LoadStr(BALLOON_OPERATION_COMPLETE)),
+        qtInformation);
       FMinimizedByMe = false;
     }
     UpdateControls();
@@ -237,7 +239,7 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
   }
   else
   {
-    assert(false);
+    FAIL;
   }
   Item->SubItems->Add(Directory);
 
@@ -248,8 +250,7 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
   else
   {
     Item->SubItems->Add(
-      FormatBytes(File->Size,
-        WinConfiguration->FormatSizeBytes, WinConfiguration->FormatSizeBytes));
+      FormatPanelBytes(File->Size, WinConfiguration->FormatSizeBytes));
   }
   Item->SubItems->Add(UserModificationStr(File->Modification, File->ModificationFmt));
 

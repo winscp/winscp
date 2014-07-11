@@ -230,7 +230,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     }
     else
     {
-      assert(false);
+      FAIL;
     }
     Item->SubItems->Add(S);
     if (ChecklistItem->Action == TSynchronizeChecklist::saDownloadNew)
@@ -247,8 +247,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
       else
       {
         Item->SubItems->Add(
-          FormatBytes(ChecklistItem->Local.Size,
-            WinConfiguration->FormatSizeBytes, WinConfiguration->FormatSizeBytes));
+          FormatPanelBytes(ChecklistItem->Local.Size, WinConfiguration->FormatSizeBytes));
       }
       Item->SubItems->Add(UserModificationStr(ChecklistItem->Local.Modification,
         ChecklistItem->Local.ModificationFmt));
@@ -273,7 +272,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     }
     else
     {
-      assert(false);
+      FAIL;
     }
     Item->SubItems->Add(S);
     if (ChecklistItem->Action == TSynchronizeChecklist::saUploadNew)
@@ -290,8 +289,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
       else
       {
         Item->SubItems->Add(
-          FormatBytes(ChecklistItem->Remote.Size,
-            WinConfiguration->FormatSizeBytes, WinConfiguration->FormatSizeBytes));
+          FormatPanelBytes(ChecklistItem->Remote.Size, WinConfiguration->FormatSizeBytes));
       }
       Item->SubItems->Add(UserModificationStr(ChecklistItem->Remote.Modification,
         ChecklistItem->Remote.ModificationFmt));
@@ -436,7 +434,7 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
       break;
 
     default:
-      assert(false);
+      FAIL;
       Possible = false;
       break;
   }

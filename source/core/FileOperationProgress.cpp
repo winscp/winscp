@@ -192,7 +192,7 @@ int __fastcall TFileOperationProgressType::OverallProgress()
 void __fastcall TFileOperationProgressType::DoProgress()
 {
   SetThreadExecutionState(ES_SYSTEM_REQUIRED);
-  FOnProgress(*this, Cancel);
+  FOnProgress(*this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Finish(UnicodeString FileName,
@@ -209,6 +209,14 @@ void __fastcall TFileOperationProgressType::Finish(UnicodeString FileName,
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::SetFile(UnicodeString AFileName, bool AFileInProgress)
 {
+  FullFileName = AFileName;
+  if (Side == osRemote)
+  {
+    // historically set were passing filename-only for remote site operations,
+    // now we need to collect a full paths, so we pass in full path,
+    // but still want to have filename-only in FileName
+    AFileName = UnixExtractFileName(AFileName);
+  }
   FileName = AFileName;
   FileInProgress = AFileInProgress;
   ClearTransfer();
@@ -251,6 +259,16 @@ void __fastcall TFileOperationProgressType::SetSpeedCounters()
   {
     FCounterSet = true;
     Configuration->Usage->Inc(L"SpeedLimitUses");
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::ThrottleToCPSLimit(
+  unsigned long Size)
+{
+  unsigned long Remaining = Size;
+  while (Remaining > 0)
+  {
+    Remaining -= AdjustToCPSLimit(Remaining);
   }
 }
 //---------------------------------------------------------------------------
@@ -356,6 +374,7 @@ void __fastcall TFileOperationProgressType::AddTransfered(__int64 ASize,
     // grows while being downloaded
     if (TotalSizeSet)
     {
+      // we should probably guard this with AddToTotals
       TotalSize += (TransferedSize - TransferSize);
     }
     TransferSize = TransferedSize;
@@ -387,6 +406,12 @@ void __fastcall TFileOperationProgressType::AddResumed(__int64 ASize)
   SkippedSize += ASize;
   AddTransfered(ASize, false);
   AddLocallyUsed(ASize);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::AddSkippedFileSize(__int64 ASize)
+{
+  TotalSkipped += ASize;
+  DoProgress();
 }
 //---------------------------------------------------------------------------
 unsigned long __fastcall TFileOperationProgressType::TransferBlockSize()

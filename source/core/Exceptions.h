@@ -12,6 +12,7 @@ bool __fastcall ExceptionMessage(Exception * E, UnicodeString & Message);
 bool __fastcall ExceptionMessageFormatted(Exception * E, UnicodeString & Message);
 UnicodeString __fastcall LastSysErrorMessage();
 TStrings * __fastcall ExceptionToMoreMessages(Exception * E);
+bool __fastcall IsInternalException(Exception * E);
 //---------------------------------------------------------------------------
 enum TOnceDoneOperation { odoIdle, odoDisconnect, odoShutDown };
 //---------------------------------------------------------------------------
@@ -22,8 +23,8 @@ public:
   __fastcall ExtException(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = L"");
   // "copy the exception", just append message to the end
   __fastcall ExtException(UnicodeString Msg, Exception* E, UnicodeString HelpKeyword = L"");
-  __fastcall ExtException(UnicodeString Msg, UnicodeString MoreMessages, UnicodeString HelpKeyword = "");
-  __fastcall ExtException(UnicodeString Msg, TStrings* MoreMessages, bool Own, UnicodeString HelpKeyword = "");
+  __fastcall ExtException(UnicodeString Msg, UnicodeString MoreMessages, UnicodeString HelpKeyword = L"");
+  __fastcall ExtException(UnicodeString Msg, TStrings* MoreMessages, bool Own, UnicodeString HelpKeyword = L"");
   __fastcall virtual ~ExtException(void);
   __property TStrings* MoreMessages = {read=FMoreMessages};
   __property UnicodeString HelpKeyword = {read=FHelpKeyword};
@@ -127,7 +128,7 @@ class EFatal : public ExtException
 {
 public:
   // fatal errors are always copied, new message is only appended
-  __fastcall EFatal(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = "");
+  __fastcall EFatal(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = L"");
 
   __property bool ReopenQueried = { read = FReopenQueried, write = FReopenQueried };
 
@@ -141,7 +142,7 @@ private:
   class NAME : public BASE \
   { \
   public: \
-    inline __fastcall NAME(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = "") : \
+    inline __fastcall NAME(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = L"") : \
       BASE(E, Msg, HelpKeyword) \
     { \
     } \

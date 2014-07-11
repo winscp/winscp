@@ -55,14 +55,10 @@ type
     DriveReady  : Boolean;     {Drive is ready}
     DriveType   : Integer;     {DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE}
     DisplayName : string;      {Windows displayname}
-    Prettyname  : string;      {Prettyfied displayname}
-    LongPrettyName : string;   {UNC-Network name on Network drives or same as PrettyName}
+    PrettyName  : string;      {Prettyfied displayname}
     DriveSerial : DWORD;       {Serial number of the drive}
     Size        : Int64;       {Drivesize}
     ImageIndex  : Integer;     {Drive imageIndex}
-    FileSystemName  : string;  {Filesystemname as returned by GetVolumeInformation}
-    MaxFileNameLength : DWORD; {Maximum length of filenames}
-    FileSystemFlags : DWORD;   {Filesystem flags as returned by GetVolumeInformation}
   end;
 
   TSpecialFolder = FirstSpecialFolder..LastSpecialFolder;
@@ -83,6 +79,8 @@ type
     FFolders: array[TSpecialFolder] of TSpecialFolderRec;
     function GetData(Drive: TDrive): PDriveInfoRec;
     function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
+    procedure ReadDriveBasicStatus(Drive: TDrive);
+    procedure ResetDrive(Drive: TDrive);
 
   public
     property Data[Drive: TDrive]: PDriveInfoRec read GetData; default;
@@ -91,7 +89,6 @@ type
     function GetImageIndex(Drive: TDrive): Integer;
     function GetDisplayName(Drive: TDrive): string;
     function GetPrettyName(Drive: TDrive): string;
-    function GetLongPrettyName(Drive: TDrive): string;
     function ReadDriveStatus(Drive: TDrive; Flags: Integer): Boolean;
     constructor Create;
     destructor Destroy; override;
@@ -113,7 +110,7 @@ resourceString
 implementation
 
 uses
-  Math;
+  Math, CompThread;
 
 constructor TDriveInfo.Create;
 begin
@@ -131,8 +128,6 @@ begin
     begin
       SetLength(DisplayName, 0);
       SetLength(PrettyName, 0);
-      SetLength(LongPrettyName, 0);
-      SetLength(FileSystemName, 0);
       // This causes access violation
       // FreePIDL(PIDL);
     end;
@@ -174,6 +169,29 @@ begin
   Result := @FFolders[Folder];
 end;
 
+procedure TDriveInfo.ReadDriveBasicStatus(Drive: TDrive);
+begin
+  with FData[Drive] do
+  begin
+    DriveType := Windows.GetDriveType(PChar(Drive + ':\'));
+    Valid := not Bool((1 shl (Ord(Drive) - 65)) and FNoDrives) and
+      (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
+  end;
+end;
+
+procedure TDriveInfo.ResetDrive(Drive: TDrive);
+begin
+  with FData[Drive] do
+  begin
+    DriveReady := False;
+    DisplayName := '';
+    PrettyName := '';
+    DriveSerial := 0;
+    Size := -1;
+    ImageIndex := 0;
+  end;
+end;
+
 procedure TDriveInfo.Load;
 var
   Drive: TDrive;
@@ -196,25 +214,15 @@ begin
   FDesktop := nil;
 
   for Drive := FirstDrive to LastDrive do
+  begin
     with FData[Drive] do
-      begin
-        PIDL := nil;
-        Init := False;
-        DriveType := Windows.GetDriveType(PChar(Drive + ':\'));
-        Valid := not Bool((1 shl (Ord(Drive) - 65)) and FNoDrives) and
-          (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
-        Init := False;
-        DriveReady := False;
-        DisplayName := '';
-        PrettyName := '';
-        LongPrettyName := '';
-        FileSystemName := '';
-        DriveSerial := 0;
-        Size := -1;
-        ImageIndex := 0;
-        FileSystemFlags := 0;
-        MaxFileNameLength := 0;
-      end;
+    begin
+      ReadDriveBasicStatus(Drive);
+      Init := False;
+      PIDL := nil;
+      ResetDrive(Drive);
+    end;
+  end;
 
   for Folder := Low(FFolders) to High(FFolders) do
     FFolders[Folder].Valid := False;
@@ -265,21 +273,6 @@ begin
   end;
 end; {TDriveInfo.GetPrettyName}
 
-function TDriveInfo.GetLongPrettyName(Drive: TDrive): String;
-begin
-  if (Drive < FirstDrive) or (Drive > LastDrive) then
-    raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
-
-  Result := Drive + ':';
-
-  if FData[Drive].Valid then
-  begin
-    if Length(FData[Drive].PrettyName) = 0 then
-      ReadDriveStatus(Drive, dsDisplayName);
-    Result := FData[Drive].LongPrettyName;
-  end;
-end; {TDriveInfo.GetLongPrettyName}
-
 function TDriveInfo.GetData(Drive: TDrive): PDriveInfoRec;
 begin
   if not CharInSet(Upcase(Drive), ['A'..'Z']) then
@@ -288,36 +281,87 @@ begin
   Result := @FData[Upcase(Drive)];
 end; {TDriveInfo.GetData}
 
+type
+  TParseDisplayNameThread = class(TCompThread)
+  private
+    FDesktop: IShellFolder;
+    FDrive: TDrive;
+    FPIDL: PItemIDList;
+
+  protected
+    procedure Execute; override;
+
+  public
+    constructor Create(Desktop: IShellFolder; Drive: TDrive);
+
+    property PIDL: PItemIDList read FPIDL;
+  end;
+
+constructor TParseDisplayNameThread.Create(Desktop: IShellFolder; Drive: TDrive);
+begin
+  inherited Create(True);
+  FDesktop := Desktop;
+  FDrive := Drive;
+end;
+
+procedure TParseDisplayNameThread.Execute;
+var
+  Eaten: ULONG;
+  ShAttr: ULONG;
+begin
+  ShAttr := 0;
+  FDesktop.ParseDisplayName(Application.Handle, nil, PChar(FDrive + ':\'), Eaten, FPIDL, ShAttr);
+end;
+
 function TDriveInfo.ReadDriveStatus(Drive: TDrive; Flags: Integer): Boolean;
 var
   ErrorMode: Word;
   FileInfo: TShFileInfo;
-  FileSystemNameBuffer: string;
   DriveID: string;
   CPos: Integer;
+  Thread: TParseDisplayNameThread;
   Eaten: ULONG;
   ShAttr: ULONG;
+  MaxFileNameLength: DWORD;
+  FileSystemFlags: DWORD;
 begin
   if not Assigned(FDesktop) then
     SHGetDesktopFolder(FDesktop);
 
   Drive := Upcase(Drive);
-  DriveID := '';
   if (Drive < FirstDrive) or (Drive > LastDrive) then
     raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
 
   with FData[Drive] do
   begin
     Init := True;
-    DriveType := Windows.GetDriveType(PChar(Drive + ':\'));
-    Valid := not Bool((1 shl (Ord(Drive) - 65)) and FNoDrives) and
-      (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
+    ReadDriveBasicStatus(Drive);
 
     if Valid then
     begin
       if (not Assigned(PIDL)) and (Drive >= FirstFixedDrive) then
       begin
-        FDesktop.ParseDisplayName(Application.Handle, nil, PChar(Drive + ':\'), Eaten, PIDL, ShAttr);
+        if DriveType = DRIVE_REMOTE then
+        begin
+          Thread := TParseDisplayNameThread.Create(FDesktop, Drive);
+          Thread.Resume;
+          if Thread.WaitFor(2 * MSecsPerSec) then
+          begin
+            PIDL := Thread.PIDL;
+            Thread.Free;
+          end
+            else
+          begin
+            // There's a chance for memory leak, if thread is terminated
+            // between WaitFor() and this line
+            Thread.FreeOnTerminate := True;
+          end;
+        end
+          else
+        begin
+          ShAttr := 0;
+          FDesktop.ParseDisplayName(Application.Handle, nil, PChar(Drive + ':\'), Eaten, PIDL, ShAttr);
+        end;
       end;
 
       {Read driveStatus:}
@@ -332,22 +376,16 @@ begin
           DriveReady := (Size >= 0);
           if DriveReady then
           begin
-            SetLength(FileSystemNameBuffer, 500) ;
-            SetLength(DriveID, 24);
             {Access the physical drive:}
-            if GetVolumeInformation(PChar(Drive + ':\'), PChar(DriveID), 24,
+            if GetVolumeInformation(PChar(Drive + ':\'), nil, 0,
                  @DriveSerial, MaxFileNameLength, FileSystemFlags,
-                 PChar(FileSystemNameBuffer), 499) then
+                 nil, 0) then
             begin
-              FileSystemName := StrPas(PChar(FileSystemNameBuffer));
-              DriveID := StrPas(PChar(DriveID));
             end
               else
             begin
               DriveSerial := 0;
-              FileSystemName := '';
             end;
-            SetLength(FileSystemNameBuffer, 0);
           end
             else
           begin
@@ -362,46 +400,28 @@ begin
       {DisplayName:}
       if (Flags and dsDisplayName <> 0) then
       begin
-        if DriveReady or (Flags and dsSize = 0) then
-        begin
-          {Fetch drives displayname:}
-          {Due to a bug in shGetFileInfo, this function returns allways the displayname of
-           the first inserted disk, even if a disk change has occured. So, better use the
-           Volume ID to build the drives displayname:}
-          if (DriveType = DRIVE_CDROM) and (Length(DriveID) > 0) then
-              DisplayName := DriveID[1] + LowerCase(Copy(DriveID, 2, 24)) + ' ('+ Drive + ':)'
-            else
-          begin
-            if Assigned(PIDL) then DisplayName := GetShellFileName(PIDL)
-              else DisplayName := GetShellFileName(Drive + ':\')
-          end;
+        {Fetch drives displayname:}
+        if Assigned(PIDL) then DisplayName := GetShellFileName(PIDL)
+          else
+        if Drive < FirstFixedDrive then DisplayName := GetShellFileName(Drive + ':\')
+          // typical reason we do not have PIDL is that it took too long to
+          // call ParseDisplayName, in what case calling SHGetFileInfo with
+          // path (instead of PIDL) will take long too, avoiding that and using
+          // fallback
+          else DisplayName := '(' + Drive + ':)';
 
+        if DriveType <> DRIVE_REMOTE then
+        begin
           PrettyName := Drive + ': ' + DisplayName;
 
-          CPos := Pos('(' + Drive, PrettyName);
+          CPos := Pos(' (' + Drive + ':)', PrettyName);
           if CPos > 0 then
-            SetLength(PrettyName, Pred(CPos));
-
-          if DriveType = DRIVE_REMOTE then
-          begin
-            DriveID := GetNetWorkName(Drive);
-            PrettyName := Drive + ': ' + ExtractFileName(DriveID);
-            LongPrettyName := Drive + ': ' + DriveID;
-          end
-            else
-          begin
-            LongPrettyName := Copy(PrettyName, 1, 3) + DisplayName;
-            CPos := Pos('(' + Drive, LongPrettyName);
-            if CPos > 0 then
-              SetLength(LongPrettyName, Pred(CPos));
-          end;
+            Delete(PrettyName, CPos, 5);
         end
           else
         begin
-          DisplayName := Drive + ':';
-          PrettyName  := DisplayName;
-          LongPrettyName := DisplayName;
-          FreePIDL(PIDL);
+          DriveID := GetNetWorkName(Drive);
+          PrettyName := Drive + ': ' + ExtractFileName(DriveID);
         end;
       end;
 
@@ -417,15 +437,9 @@ begin
     end
       else
     begin
-      Size := 0;
-      DriveReady := False;
-      DisplayName := '';
-      PrettyName := '';
-      LongPrettyName := '';
-      DriveSerial := 0;
-      ImageIndex  := 0;
       if Assigned(PIDL) then
         FreePIDL(PIDL);
+      ResetDrive(Drive);
     end;
     Result := Valid and DriveReady;
   end;

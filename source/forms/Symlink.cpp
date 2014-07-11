@@ -15,7 +15,7 @@
 #endif
 //---------------------------------------------------------------------------
 bool __fastcall DoSymlinkDialog(UnicodeString & FileName, UnicodeString & PointTo,
-  TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic)
+  TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowHardLink)
 {
   bool Result;
   TSymlinkDialog * Dialog = new TSymlinkDialog(Application);
@@ -26,7 +26,7 @@ bool __fastcall DoSymlinkDialog(UnicodeString & FileName, UnicodeString & PointT
     Dialog->Side = Side;
     Dialog->SymbolicLink = SymbolicLink;
     Dialog->Edit = Edit;
-    Dialog->AllowSymbolic = AllowSymbolic;
+    Dialog->AllowHardLink = AllowHardLink;
     Result = Dialog->Execute();
     if (Result)
     {
@@ -55,7 +55,7 @@ void __fastcall TSymlinkDialog::UpdateControls()
   FileNameEdit->Color = !Edit ? clWindow : clBtnFace;
   FileNameEdit->ReadOnly = Edit;
   FileNameEdit->TabStop = !Edit;
-  EnableControl(SymbolicCheck, Side == osRemote && !Edit && AllowSymbolic);
+  EnableControl(HardLinkCheck, (Side == osRemote) && !Edit && AllowHardLink);
   EnableControl(OkButton, !FileName.IsEmpty() && !PointTo.IsEmpty());
 }
 //---------------------------------------------------------------------------
@@ -81,12 +81,12 @@ UnicodeString __fastcall TSymlinkDialog::GetPointTo()
 //---------------------------------------------------------------------------
 void __fastcall TSymlinkDialog::SetSymbolicLink(bool value)
 {
-  SymbolicCheck->Checked = value;
+  HardLinkCheck->Checked = !value;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSymlinkDialog::GetSymbolicLink()
 {
-  return SymbolicCheck->Checked;
+  return !HardLinkCheck->Checked;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSymlinkDialog::SetSide(TOperationSide value)
@@ -106,9 +106,9 @@ void __fastcall TSymlinkDialog::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSymlinkDialog::SetAllowSymbolic(bool value)
+void __fastcall TSymlinkDialog::SetAllowHardLink(bool value)
 {
-  FAllowSymbolic = value;
+  FAllowHardLink = value;
   UpdateControls();
 }
 //---------------------------------------------------------------------------

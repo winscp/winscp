@@ -247,6 +247,8 @@ type
 
 implementation
 
+uses Types;
+
 type TTBViewAccess = class(TTBView);
 
 const

@@ -383,7 +383,7 @@ procedure Register;
 implementation
 
 uses
-  ShellAPI, Consts, ExtDlgs, Variants;
+  ShellAPI, Consts, ExtDlgs, Variants, PasTools, UITypes;
 
 procedure Register;
 begin
@@ -429,7 +429,7 @@ function DirExists(Name: string): Boolean;
 var
   Code: Integer;
 begin
-  Code := GetFileAttributes(PChar(Name));
+  Code := GetFileAttributes(PChar(ApiPath(Name)));
   Result := (Code <> -1) and (FILE_ATTRIBUTE_DIRECTORY and Code <> 0);
 end;
 
@@ -996,7 +996,7 @@ function ClipFilename(const FileName: string): string;
 var
   Params: string;
 begin
-  if FileExists(FileName) then Result := FileName
+  if FileExists(ApiPath(FileName)) then Result := FileName
   else SplitCommandLine(FileName, Result, Params);
 end;
 
@@ -1291,7 +1291,7 @@ procedure TDirectoryEdit.ReceptFileDir(const AFileName: string);
 var
   Temp: string;
 begin
-  if FileExists(AFileName) then Temp := ExtractFilePath(AFileName)
+  if FileExists(ApiPath(AFileName)) then Temp := ExtractFilePath(AFileName)
   else Temp := AFileName;
   if (Text = '') or not MultipleDirs then Text := Temp
   else Text := Text + ';' + Temp;

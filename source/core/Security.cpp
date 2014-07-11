@@ -102,3 +102,68 @@ bool GetExternalEncryptedPassword(RawByteString Encrypted, RawByteString & Passw
   return Result;
 }
 //---------------------------------------------------------------------------
+bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len)
+{
+  bool Result = false;
+
+  // Parse the certificate into a context.
+  const CERT_CONTEXT * CertContext =
+    CertCreateCertificateContext(
+      X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, Certificate, Len);
+
+  if (CertContext != NULL)
+  {
+    CERT_CHAIN_PARA ChainPara;
+    // Retrieve the certificate chain of the certificate
+    // (a certificate without a valid root does not have a chain).
+    memset(&ChainPara, 0, sizeof(ChainPara));
+    ChainPara.cbSize = sizeof(ChainPara);
+
+    CERT_CHAIN_ENGINE_CONFIG ChainConfig;
+
+    memset(&ChainConfig, 0, sizeof(ChainConfig));
+    ChainConfig.cbSize = sizeof(CERT_CHAIN_ENGINE_CONFIG);
+    ChainConfig.hRestrictedRoot = NULL;
+    ChainConfig.hRestrictedTrust = NULL;
+    ChainConfig.hRestrictedOther = NULL;
+    ChainConfig.cAdditionalStore = 0;
+    ChainConfig.rghAdditionalStore = NULL;
+    ChainConfig.dwFlags = CERT_CHAIN_CACHE_END_CERT;
+    ChainConfig.dwUrlRetrievalTimeout = 0;
+    ChainConfig.MaximumCachedCertificates =0;
+    ChainConfig.CycleDetectionModulus = 0;
+
+    HCERTCHAINENGINE ChainEngine;
+    if (CertCreateCertificateChainEngine(&ChainConfig, &ChainEngine))
+    {
+      const CERT_CHAIN_CONTEXT * ChainContext = NULL;
+      if (CertGetCertificateChain(ChainEngine, CertContext, NULL, NULL, &ChainPara,
+            CERT_CHAIN_CACHE_END_CERT |
+            CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT,
+            NULL, &ChainContext))
+      {
+        CERT_CHAIN_POLICY_PARA PolicyPara;
+
+        PolicyPara.cbSize = sizeof(PolicyPara);
+        PolicyPara.dwFlags = 0;
+        PolicyPara.pvExtraPolicyPara = NULL;
+
+        CERT_CHAIN_POLICY_STATUS PolicyStatus;
+        PolicyStatus.cbSize = sizeof(PolicyStatus);
+
+        if (CertVerifyCertificateChainPolicy(CERT_CHAIN_POLICY_SSL,
+              ChainContext, &PolicyPara, &PolicyStatus))
+        {
+          // Windows thinks the certificate is valid.
+          Result = (PolicyStatus.dwError == S_OK);
+        }
+
+        CertFreeCertificateChain(ChainContext);
+      }
+      CertFreeCertificateChainEngine(ChainEngine);
+    }
+    CertFreeCertificateContext(CertContext);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------

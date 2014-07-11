@@ -38,6 +38,9 @@ public:
 
   __property bool Started = { read = FStarted };
 
+protected:
+  virtual void __fastcall Dispatch(void * Message);
+
 private:
   TDateTime FStartTime;
   TDateTime FElapsed;
@@ -49,6 +52,7 @@ private:
 
   void __fastcall UpdateControls();
   void __fastcall GlobalMinimize(TObject * Sender);
+  void __fastcall CancelOperation();
 };
 //---------------------------------------------------------------------------
 #endif

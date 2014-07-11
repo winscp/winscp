@@ -85,8 +85,16 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
 
   IncludeFileMaskCombo->Text = value.IncludeFileMask.Masks;
   ClearArchiveCheck->Checked = value.ClearArchive;
-  assert(value.RemoveCtrlZ == value.RemoveBOM);
-  RemoveCtrlZAndBOMCheck->Checked = value.RemoveCtrlZ && value.RemoveBOM;
+  if (FLAGSET(CopyParamAttrs, cpaNoRemoveCtrlZ))
+  {
+    FRemoveCtrlZ = value.RemoveCtrlZ;
+    RemoveCtrlZAndBOMCheck->Checked = value.RemoveBOM;
+  }
+  else
+  {
+    assert(FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM));
+    RemoveCtrlZAndBOMCheck->Checked = value.RemoveCtrlZ && value.RemoveBOM;
+  }
 
   SpeedCombo->Text = SetSpeedLimit(value.CPSLimit);
 
@@ -131,7 +139,14 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   Result.IncludeFileMask.Masks = IncludeFileMaskCombo->Text;
 
   Result.ClearArchive = ClearArchiveCheck->Checked;
-  Result.RemoveCtrlZ = RemoveCtrlZAndBOMCheck->Checked;
+  if (FLAGSET(CopyParamAttrs, cpaNoRemoveCtrlZ))
+  {
+    Result.RemoveCtrlZ = FRemoveCtrlZ;
+  }
+  else
+  {
+    Result.RemoveCtrlZ = RemoveCtrlZAndBOMCheck->Checked;
+  }
   Result.RemoveBOM = RemoveCtrlZAndBOMCheck->Checked;
 
   Result.CPSLimit = GetSpeedLimit(SpeedCombo->Text);
@@ -167,8 +182,15 @@ void __fastcall TCopyParamsFrame::UpdateControls()
   EnableControl(IncludeFileMaskLabel, IncludeFileMaskCombo->Enabled);
   EnableControl(ClearArchiveCheck, FLAGCLEAR(CopyParamAttrs, cpaNoClearArchive) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
-  // TODO: Change RemoveCtrlZAndBOMCheck caption when only cpaNoRemoveBOM is set
-  // (FTP protocol)
+  // Do not mention EOF when not supported, but only when at least BOM is supported.
+  // This is not ideal as it shows both BOM and EOF for FTP downloads
+  // (when EOF is never supported for FTP).
+  // But as the option is disabled for FTP download, it's not that bad.
+  // We do not have enough information here to implement this correctly.
+  RemoveCtrlZAndBOMCheck->Caption =
+    LoadStr(
+      FLAGSET(CopyParamAttrs, cpaNoRemoveCtrlZ) && FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM) ?
+        COPY_PARAM_REMOVE_BOM : COPY_PARAM_REMOVE_BOM_EOF);
   EnableControl(RemoveCtrlZAndBOMCheck,
     (FLAGCLEAR(CopyParamAttrs, cpaNoRemoveCtrlZ) || FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM)) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) &&

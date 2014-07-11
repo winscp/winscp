@@ -41,7 +41,7 @@ UnicodeString __fastcall TProgressForm::OperationName(TFileOperation Operation, 
   return LoadStr(Id);
 }
 //---------------------------------------------------------------------
-__fastcall TProgressForm::TProgressForm(TComponent* AOwner)
+__fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQueue)
     : FData(), TForm(AOwner)
 {
   FLastOperation = foNone;
@@ -51,6 +51,7 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   FAsciiTransferChanged = false;
   FResumeStatusChanged = false;
   FCancel = csContinue;
+  FMoveToQueue = false;
   FMinimizedByMe = false;
   FUpdateCounter = 0;
   FLastUpdate = 0;
@@ -61,6 +62,7 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   FModalBeginHooked = false;
   FPrevApplicationModalBegin = NULL;
   FModalLevel = -1;
+  FAllowMoveToQueue = AllowMoveToQueue;
   UseSystemSettings(this);
   ResetOnceDoneOperation();
 
@@ -76,6 +78,10 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   }
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
+  if (FAllowMoveToQueue)
+  {
+    MenuButton(MinimizeButton);
+  }
 }
 //---------------------------------------------------------------------------
 __fastcall TProgressForm::~TProgressForm()
@@ -87,7 +93,9 @@ __fastcall TProgressForm::~TProgressForm()
 
   if (IsApplicationMinimized() && FMinimizedByMe)
   {
-    ShowNotification(NULL, LoadStr(BALLOON_OPERATION_COMPLETE), qtInformation);
+    ShowNotification(
+      NULL, MainInstructions(LoadStr(BALLOON_OPERATION_COMPLETE)),
+      qtInformation);
   }
 
   if (FModalBeginHooked)
@@ -126,6 +134,7 @@ void __fastcall TProgressForm::UpdateControls()
       {
         THandle ShellModule;
         AVisible = true;
+        TProgressBarStyle Style = pbstNormal;
         switch (FData.Operation) {
           case foCopy:
           case foMove:
@@ -156,13 +165,19 @@ void __fastcall TProgressForm::UpdateControls()
             Animate->Active = true;
             break;
 
+          case foCalculateSize:
+            Animate->CommonAVI = aviNone;
+            AVisible = false;
+            Style = pbstMarquee;
+            break;
+
           default:
             assert(FData.Operation == foCustomCommand ||
-              FData.Operation == foCalculateSize ||
               FData.Operation == foCalculateChecksum);
             Animate->CommonAVI = aviNone;
             AVisible = false;
         }
+        TopProgress->Style = Style;
       }
       catch (...)
       {
@@ -195,8 +210,6 @@ void __fastcall TProgressForm::UpdateControls()
 
     ClientHeight = ClientHeight + Delta;
 
-    Caption = OperationName(FData.Operation, FData.Side);
-
     TargetLabel->Visible = TransferOperation;
     TargetPathLabel->Visible = TransferOperation;
     TargetPathLabel->UnixPath = (FData.Side == osLocal);
@@ -227,7 +240,7 @@ void __fastcall TProgressForm::UpdateControls()
   int OverallProgress = FData.OverallProgress();
   FOperationProgress->Position = OverallProgress;
   FOperationProgress->Hint = FORMAT(L"%d%%", (OverallProgress));
-  Caption = FORMAT(L"%d%% %s", (OverallProgress, OperationName(FData.Operation, FData.Side)));
+  Caption = FormatFormCaption(this, FORMAT(L"%d%% %s", (OverallProgress, OperationName(FData.Operation, FData.Side))));
 
   if (TransferOperation)
   {
@@ -321,7 +334,7 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
   TDateTime N = Now();
   bool InstantUpdate = false;
 
-  // workaround: to force displaing first file data immediatelly,
+  // workaround: to force displaing first file data immediately,
   // otherwise form dialog uses to be blank for first second
   // (until UpdateTimerTimer)
   if (FileLabel->Caption.IsEmpty() && !AData.FileName.IsEmpty())
@@ -419,7 +432,24 @@ void __fastcall TProgressForm::CancelButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::MinimizeButtonClick(TObject * Sender)
 {
+  if (FAllowMoveToQueue)
+  {
+    MenuPopup(MinimizeMenu, MinimizeButton);
+  }
+  else
+  {
+    Minimize(Sender);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::Minimize(TObject * Sender)
+{
   CallGlobalMinimizeHandler(Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::MinimizeMenuItemClick(TObject * Sender)
+{
+  Minimize(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::CancelOperation()
@@ -433,26 +463,32 @@ void __fastcall TProgressForm::CancelOperation()
     try
     {
       TCancelStatus ACancel;
-      int Result;
       if (FData.TransferingFile &&
           (FData.TimeExpected() > GUIConfiguration->IgnoreCancelBeforeFinish))
       {
-        Result = MessageDialog(LoadStr(CANCEL_OPERATION_FATAL2), qtWarning,
+        int Result = MessageDialog(LoadStr(CANCEL_OPERATION_FATAL2), qtWarning,
           qaYes | qaNo | qaCancel, HELP_PROGRESS_CANCEL);
+        switch (Result)
+        {
+          case qaYes:
+            ACancel = csCancelTransfer; break;
+          case qaNo:
+            ACancel = csCancel; break;
+          default:
+            ACancel = csContinue; break;
+        }
       }
       else
       {
-        Result = MessageDialog(LoadStr(CANCEL_OPERATION2), qtConfirmation,
-          qaOK | qaCancel, HELP_PROGRESS_CANCEL);
-      }
-      switch (Result) {
-        case qaYes:
-          ACancel = csCancelTransfer; break;
-        case qaOK:
-        case qaNo:
-          ACancel = csCancel; break;
-        default:
-          ACancel = csContinue; break;
+        int Result = MessageDialog(LoadStr(CANCEL_OPERATION2), qtConfirmation,
+          qaYes | qaNo, HELP_PROGRESS_CANCEL);
+        switch (Result)
+        {
+          case qaYes:
+            ACancel = csCancel; break;
+          default:
+            ACancel = csContinue; break;
+        }
       }
 
       if (FCancel < ACancel)
@@ -491,7 +527,7 @@ void __fastcall TProgressForm::SetOnceDoneOperation(TOnceDoneOperation value)
       break;
 
     default:
-      assert(false);
+      FAIL;
   }
   OnceDoneOperationCombo->ItemIndex = Index;
   OnceDoneOperationComboSelect(NULL);
@@ -583,7 +619,7 @@ void __fastcall TProgressForm::OnceDoneOperationComboSelect(TObject * /*Sender*/
       break;
 
     default:
-      assert(false);
+      FAIL;
   }
 }
 //---------------------------------------------------------------------------
@@ -592,4 +628,21 @@ void __fastcall TProgressForm::OnceDoneOperationComboCloseUp(TObject * /*Sender*
   CancelButton->SetFocus();
 }
 //---------------------------------------------------------------------------
-#pragma warn -8080
+void __fastcall TProgressForm::Dispatch(void * AMessage)
+{
+  TMessage & Message = *reinterpret_cast<TMessage *>(AMessage);
+  if (Message.Msg == WM_CLOSE)
+  {
+    CancelOperation();
+  }
+  else
+  {
+    TForm::Dispatch(AMessage);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::MoveToQueueMenuItemClick(TObject * /*Sender*/)
+{
+  FMoveToQueue = true;
+}
+//---------------------------------------------------------------------------

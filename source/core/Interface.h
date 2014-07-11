@@ -9,6 +9,7 @@
 TConfiguration * __fastcall CreateConfiguration();
 
 void __fastcall ShowExtendedException(Exception * E);
+bool __fastcall AppendExceptionStackTrace(TStrings *& MoreMessages);
 
 UnicodeString __fastcall GetCompanyRegistryKey();
 UnicodeString __fastcall GetRegistryKey();
@@ -99,6 +100,7 @@ enum TPromptKind
 enum TPromptUserParam { pupEcho = 0x01, pupRemember = 0x02 };
 
 bool __fastcall IsAuthenticationPrompt(TPromptKind Kind);
+bool __fastcall IsPasswordOrPassphrasePrompt(TPromptKind Kind, TStrings * Prompts);
 bool __fastcall IsPasswordPrompt(TPromptKind Kind, TStrings * Prompts);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TFileFoundEvent)
@@ -126,6 +128,17 @@ public:
 
 private:
   TDateTime FStart;
+};
+//---------------------------------------------------------------------------
+struct TClipboardHandler
+{
+  UnicodeString Text;
+
+  void __fastcall Copy(TObject * /*Sender*/)
+  {
+    TInstantOperationVisualizer Visualizer;
+    CopyToClipboard(Text);
+  }
 };
 //---------------------------------------------------------------------------
 #endif

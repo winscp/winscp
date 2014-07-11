@@ -415,7 +415,7 @@ void __fastcall TUnixDirView::LoadFiles()
           // this is out of date
           // (missing columns and does not update then file properties are loaded)
           Item->ImageIndex = File->IconIndex;
-          Item->SubItems->Add(!File->IsDirectory ? FormatBytes(File->Size, FormatSizeBytes, FormatSizeBytes) : UnicodeString());
+          Item->SubItems->Add(!File->IsDirectory ? FormatPanelBytes(File->Size, FormatSizeBytes) : UnicodeString());
           Item->SubItems->Add(File->UserModificationStr);
           Item->SubItems->Add(File->RightsStr);
           Item->SubItems->Add(File->Owner.DisplayText);
@@ -448,7 +448,7 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
           // expanded from ?: to avoid memory leaks
           if (!File->IsDirectory)
           {
-            Value = FormatBytes(File->Size, FormatSizeBytes, FormatSizeBytes);
+            Value = FormatPanelBytes(File->Size, FormatSizeBytes);
           }
           break;
         case uvChanged: Value = File->UserModificationStr; break;
@@ -458,7 +458,7 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
         case uvExt: Value = File->Extension; break;
         case uvLinkTarget: Value = File->LinkTo; break;
         case uvType: Value = File->TypeName; break;
-        default: assert(false);
+        default: FAIL;
       }
       StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax);
     }
@@ -715,7 +715,7 @@ void __fastcall TUnixDirView::SortItems()
       case uvExt: SortProc = (PFNLVCOMPARE)CompareExtension; break;
       case uvLinkTarget: SortProc = (PFNLVCOMPARE)CompareLinkTo; break;
       case uvType: SortProc = (PFNLVCOMPARE)CompareTypeName; break;
-      default: assert(false);
+      default: FAIL;
     }
     CustomSortItems(SortProc);
   }
@@ -794,24 +794,20 @@ void __fastcall TUnixDirView::ChangeDirectory(UnicodeString Path)
   try
   {
     FDirLoadedAfterChangeDir = false;
-    APPLICATION_EXCEPTION_HACK_BEGIN
+    if (Path == HOMEDIRECTORY)
     {
-      if (Path == HOMEDIRECTORY)
-      {
-        Terminal->HomeDirectory();
-      }
-      else
-      // this works even with LockInHome
-      if (Path == ROOTDIRECTORY)
-      {
-        Terminal->CurrentDirectory = ROOTDIRECTORY;
-      }
-      else
-      {
-        Terminal->ChangeDirectory(Path);
-      }
+      Terminal->HomeDirectory();
     }
-    APPLICATION_EXCEPTION_HACK_END;
+    else
+    // this works even with LockInHome
+    if (Path == ROOTDIRECTORY)
+    {
+      Terminal->CurrentDirectory = ROOTDIRECTORY;
+    }
+    else
+    {
+      Terminal->ChangeDirectory(Path);
+    }
   }
   __finally
   {

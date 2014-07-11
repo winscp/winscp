@@ -27,7 +27,7 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   const TUsableCopyParamAttrs & CopyParamAttrs)
 {
   bool Result;
-  TFullSynchronizeDialog * Dialog = new TFullSynchronizeDialog(Application);
+  TFullSynchronizeDialog * Dialog = SafeFormCreate<TFullSynchronizeDialog>();
   try
   {
     Dialog->Mode = Mode;
@@ -139,7 +139,7 @@ int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
         break;
 
       default:
-        assert(false);
+        FAIL;
         //fallthru
       case smBoth:
         Result = CopyParamAttrs.General;
@@ -212,7 +212,7 @@ void __fastcall TFullSynchronizeDialog::SetMode(TSynchronizeMode value)
        break;
 
     default:
-      assert(false);
+      FAIL;
   }
 }
 //---------------------------------------------------------------------------

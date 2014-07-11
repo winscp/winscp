@@ -61,7 +61,6 @@ public:
     const UnicodeString NewName);
   virtual void __fastcall CopyFile(const UnicodeString FileName,
     const UnicodeString NewName);
-  virtual UnicodeString __fastcall FileUrl(const UnicodeString FileName);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
     TSpaceAvailable & ASpaceAvailable);
@@ -126,7 +125,7 @@ private:
   void __fastcall ChangeFileToken(const UnicodeString & DelimitedName,
     const TRemoteToken & Token, TFSCommand Cmd, const UnicodeString & RecursiveStr);
   unsigned int __fastcall ConfirmOverwrite(
-    UnicodeString & FileName, TOperationSide Side,
+    const UnicodeString & FileName, TOperationSide Side,
     const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress);
 

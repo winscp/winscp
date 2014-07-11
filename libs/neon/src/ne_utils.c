@@ -54,6 +54,13 @@
 #include "ne_dates.h"
 
 int ne_debug_mask = 0;
+
+#ifdef WINSCP
+
+void * ne_debug_context = NULL;
+
+#else
+
 FILE *ne_debug_stream = NULL;
 
 void ne_debug_init(FILE *stream, int mask)
@@ -78,6 +85,8 @@ void ne_debug(int ch, const char *template, ...)
     if ((ch & NE_DBG_FLUSH) == NE_DBG_FLUSH)
 	fflush(ne_debug_stream);
 }
+
+#endif /* WINSCP */
 
 #define NE_STRINGIFY(x) # x
 #define NE_EXPAT_VER(x,y,z) NE_STRINGIFY(x) "." NE_STRINGIFY(y) "." NE_STRINGIFY(z)
@@ -118,6 +127,9 @@ static const char version_string[] = "neon " NEON_VERSION ": "
 #ifdef HAVE_GNUTLS
     ", GNU TLS " LIBGNUTLS_VERSION
 #endif /* HAVE_GNUTLS */
+#ifdef HAVE_SSPI
+    ", SSPI"
+#endif /* HAVE_SSPI */
    "."
 ;
 
@@ -137,7 +149,7 @@ int ne_has_support(int feature)
     switch (feature) {
 #if defined(NE_HAVE_SSL) || defined(NE_HAVE_ZLIB) || defined(NE_HAVE_IPV6) \
     || defined(NE_HAVE_SOCKS) || defined(NE_HAVE_LFS) \
-    || defined(NE_HAVE_TS_SSL) || defined(NE_HAVE_I18N)
+    || defined(NE_HAVE_TS_SSL) || defined(NE_HAVE_I18N) || defined(HAVE_SSPI)
 #ifdef NE_HAVE_SSL
     case NE_FEATURE_SSL:
 #endif
@@ -158,6 +170,9 @@ int ne_has_support(int feature)
 #endif
 #ifdef NE_HAVE_I18N
     case NE_FEATURE_I18N:
+#endif
+#ifdef HAVE_SSPI
+    case NE_FEATURE_SSPI:
 #endif
         return 1;
 #endif /* NE_HAVE_* */

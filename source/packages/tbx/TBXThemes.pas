@@ -438,7 +438,7 @@ function GetTBXDragHandleSize(const ToolbarInfo: TTBXToolbarInfo): Integer;
 implementation
 
 uses
-  SysUtils, TBXUtils, UxTheme;
+  SysUtils, TBXUtils, UxTheme, Types;
 
 const
   SPI_GETFLATMENU = $1022;

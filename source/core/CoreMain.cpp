@@ -13,6 +13,7 @@
 #ifndef NO_FILEZILLA
 #include "FileZillaIntf.h"
 #endif
+#include "WebDAVFileSystem.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -59,7 +60,7 @@ bool __fastcall IsAuthenticationPrompt(TPromptKind Kind)
     (Kind == pkPassword) || (Kind == pkNewPassword);
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsPasswordPrompt(TPromptKind Kind, TStrings * Prompts)
+bool __fastcall IsPasswordOrPassphrasePrompt(TPromptKind Kind, TStrings * Prompts)
 {
   return
     (Prompts->Count == 1) && FLAGCLEAR(int(Prompts->Objects[0]), pupEcho) &&
@@ -67,11 +68,20 @@ bool __fastcall IsPasswordPrompt(TPromptKind Kind, TStrings * Prompts)
      (Kind == pkTIS) || (Kind == pkCryptoCard));
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsPasswordPrompt(TPromptKind Kind, TStrings * Prompts)
+{
+  return
+    IsPasswordOrPassphrasePrompt(Kind, Prompts) &&
+    (Kind != pkPassphrase);
+}
+//---------------------------------------------------------------------------
 void CoreInitialize()
 {
   Randomize();
   CryptographyInitialize();
 
+  // we do not expect configuration re-creation
+  assert(Configuration == NULL);
   // configuration needs to be created and loaded before putty is initialized,
   // so that random seed path is known
   Configuration = CreateConfiguration();
@@ -89,6 +99,7 @@ void CoreInitialize()
   #ifndef NO_FILEZILLA
   TFileZillaIntf::Initialize();
   #endif
+  NeonInitialize();
 
   StoredSessions = new TStoredSessionList();
 
@@ -113,6 +124,7 @@ void CoreFinalize()
     ShowExtendedException(&E);
   }
 
+  NeonFinalize();
   #ifndef NO_FILEZILLA
   TFileZillaIntf::Finalize();
   #endif
@@ -175,5 +187,3 @@ __fastcall TInstantOperationVisualizer::~TInstantOperationVisualizer()
   }
 }
 //---------------------------------------------------------------------------
-// WORKAROUND, suppress warning about unused constants in DateUtils.hpp
-#pragma warn -8080

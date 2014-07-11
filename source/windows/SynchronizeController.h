@@ -19,7 +19,7 @@ typedef void __fastcall (__closure * TSynchronizeAbortEvent)
   (System::TObject * Sender, bool Close);
 typedef void __fastcall (__closure * TSynchronizeThreadsEvent)
   (TObject* Sender, TThreadMethod Method);
-enum TSynchronizeLogEntry { slScan, slStart, slChange, slUpload, slDelete, slDirChange };
+enum TSynchronizeLogEntry { slScan, slStart, slChange, slUpload, slDelete, slDirChange, slContinuedError };
 typedef void __fastcall (__closure * TSynchronizeLog)
   (TSynchronizeController * Controller, TSynchronizeLogEntry Entry, const UnicodeString Message);
 typedef void __fastcall (__closure * TSynchronizeStartStopEvent)

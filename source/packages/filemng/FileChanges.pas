@@ -60,6 +60,8 @@ type
 implementation
 {==============================================================}
 
+uses
+  PasTools;
 
 
 {==============================================================}
@@ -95,7 +97,7 @@ Begin
     i := 0;
     While i <= Pred(fFiles.Count) Do
     Begin
-      DosError := SysUtils.FindFirst(fFiles[i], faAnyFile, SRec);
+      DosError := SysUtils.FindFirst(ApiPath(fFiles[i]), faAnyFile, SRec);
       IF DosError <> 0 Then
       Begin
         ChangeDetected := True;

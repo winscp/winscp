@@ -17,7 +17,7 @@ CAsyncSslSocketLayer to your socket and call InitClientSsl after creation of the
 
 This class only has a couple of public functions:
 - InitSSLConnection(bool clientMode);
-  This functions establishes an SSL connection. The clientMode parameter specifies wether the SSL connection 
+  This functions establishes an SSL connection. The clientMode parameter specifies whether the SSL connection 
   is in server or in client mode.
   Most likely you want to call this function right after calling Create for the socket.
   But sometimes, you'll need to call this function later. One example is for an FTP connection
@@ -43,7 +43,6 @@ Valid notification IDs are:
   connection failed. Valid values for param2 are:
   - SSL_FAILURE_UNKNOWN 0 - Details may have been sent with a SSL_VERBOSE_* notification.
   - SSL_FAILURE_ESTABLISH 1 - Problem during SSL negotiation
-  - SSL_FAILURE_LOADDLLS 2
   - SSL_FAILURE_INITSSL 4
   - SSL_FAILURE_VERIFYCERT 8 - The remote SSL certificate was invalid
   - SSL_FAILURE_CERTREJECTED 16 - The remote SSL certificate was rejected by user
@@ -90,145 +89,8 @@ Version 2.0:
 static char THIS_FILE[] = __FILE__;
 #endif
 
-// Simple macro to declare function type and function pointer based on the
-// three given parametrs:
-// r - return type,
-// n - function name
-// a - argument list
-//
-// Example:
-// def(int, foo, (int x)) becomes the following:
-// typedef int (*tfoo)(int x);
-// static tfoo pfoo;
-
-#define def(r, n, a) \
-	typedef r (*t##n) a; \
-	static t##n p##n;
-
-// Macro to load the given macro from a dll:
-#ifdef MPEXT_NO_SSLDLL
-#include <openssl/err.h>
-#define load(dll, n) \
-	p##n = n;
-#else
-#define load(dll, n) \
-	p##n = (t##n) GetProcAddress(dll, #n); \
-	if (!p##n) \
-		bError = true;
-#endif
 #include <openssl/x509v3.h>
-
-//The following functions from the SSL libraries are used:
-def(int, SSL_state, (const SSL *s));
-def(const char*, SSL_state_string_long, (const SSL *s));
-def(void, SSL_set_info_callback, (SSL *ssl, void (*cb)(const SSL *ssl,int type,int val)));
-def(void, SSL_set_bio, (SSL *s, BIO *rbio, BIO *wbio));
-def(void, SSL_set_connect_state, (SSL *s));
-def(int, SSL_set_session, (SSL *to, SSL_SESSION *session));
-def(BIO_METHOD*, BIO_f_ssl, (void));
-def(SSL*, SSL_new, (SSL_CTX *ctx));
-#ifdef MPEXT
-def(SSL_CTX*, SSL_CTX_new, (const SSL_METHOD *meth));
-def(const SSL_METHOD*, SSLv23_method, (void));
-#else
-def(SSL_CTX*, SSL_CTX_new, (SSL_METHOD *meth));
-def(SSL_METHOD*, SSLv23_method, (void));
-#endif
-def(void, SSL_load_error_strings, (void));
-def(int, SSL_library_init, (void));
-def(void, SSL_CTX_free, (SSL_CTX *));
-def(void, SSL_free, (SSL *ssl));
-def(int, SSL_get_error, (const SSL *s, int retcode));
-def(int, SSL_shutdown, (SSL *s));
-def(int, SSL_get_shutdown, (const SSL *ssl));
-def(const char*, SSL_alert_type_string_long, (int value));
-def(const char*, SSL_alert_desc_string_long, (int value));
-def(void, SSL_CTX_set_verify, (SSL_CTX *ctx, int mode, int (*callback)(int, X509_STORE_CTX *)));
-def(X509_STORE*, SSL_CTX_get_cert_store, (const SSL_CTX *));
-def(long, SSL_get_verify_result, (const SSL *ssl));
-def(X509*, SSL_get_peer_certificate, (const SSL *s));
-def(const char*, SSL_get_version, (const SSL *ssl));
-#ifdef MPEXT
-def(const SSL_CIPHER*, SSL_get_current_cipher, (const SSL *ssl));
-#else
-def(SSL_CIPHER*, SSL_get_current_cipher, (const SSL *ssl));
-#endif
-def(const char*, SSL_CIPHER_get_name, (const SSL_CIPHER *cipher));
-def(char*, SSL_CIPHER_get_version, (const SSL_CIPHER *cipher));
-def(int, SSL_get_ex_data_X509_STORE_CTX_idx, (void));
-def(int, SSL_CTX_load_verify_locations, (SSL_CTX *ctx, const char *CAfile, const char *CApath));
-def(long, SSL_ctrl, (SSL *ssl, int cmd, long larg, void *parg));
-def(void, SSL_set_accept_state, (SSL *ssl));
-def(int, SSL_CTX_use_PrivateKey_file, (SSL_CTX *ctx, const char *file, int type));
-def(int, SSL_CTX_use_certificate_file, (SSL_CTX *ctx, const char *file, int type));
-def(int, SSL_CTX_check_private_key, (const SSL_CTX *ctx));
-def(void, SSL_CTX_set_default_passwd_cb, (SSL_CTX *ctx, pem_password_cb *cb));
-def(void, SSL_CTX_set_default_passwd_cb_userdata, (SSL_CTX *ctx, void *u));
-def(int, SSL_CTX_use_certificate_chain_file, (SSL_CTX *ctx, const char *file));
-
-def(size_t, BIO_ctrl_pending, (BIO *b));
-def(int, BIO_read, (BIO *b, void *data, int len));
-def(long, BIO_ctrl, (BIO *bp, int cmd, long larg, void *parg));
-def(int, BIO_write, (BIO *b, const void *data, int len));
-def(size_t, BIO_ctrl_get_write_guarantee, (BIO *b));
-def(int, BIO_new_bio_pair, (BIO **bio1, size_t writebuf1, BIO **bio2, size_t writebuf2));
-def(BIO*, BIO_new, (BIO_METHOD *type));
-def(int, BIO_free, (BIO *a));
-def(int, i2t_ASN1_OBJECT, (char *buf, int buf_len, ASN1_OBJECT *a));
-def(int, OBJ_obj2nid, (const ASN1_OBJECT *o));
-def(ASN1_OBJECT*, X509_NAME_ENTRY_get_object, (X509_NAME_ENTRY *ne));
-def(X509_NAME_ENTRY*, X509_NAME_get_entry, (X509_NAME *name, int loc));
-def(int, X509_NAME_entry_count, (X509_NAME *name));
-def(X509_NAME*, X509_get_subject_name, (X509 *a));
-def(X509_NAME*, X509_get_issuer_name, (X509 *a));
-def(const char*, OBJ_nid2sn, (int n));
-def(ASN1_STRING*, X509_NAME_ENTRY_get_data, (X509_NAME_ENTRY *ne));
-def(void, X509_STORE_CTX_set_error, (X509_STORE_CTX *ctx, int s));
-def(int, X509_digest, (const X509 *data, const EVP_MD *type, unsigned char *md, unsigned int *len));
-def(const EVP_MD*, EVP_sha1, (void));
-def(X509*, X509_STORE_CTX_get_current_cert, (X509_STORE_CTX *ctx));
-def(int, X509_STORE_CTX_get_error, (X509_STORE_CTX *ctx));
-def(void, X509_free, (X509 *a));
-def(EVP_PKEY*, X509_get_pubkey, (X509 *x));
-def(int, BN_num_bits, (const BIGNUM *a));
-def(void, EVP_PKEY_free, (EVP_PKEY *pkey));
-def(void*, X509_STORE_CTX_get_ex_data, (X509_STORE_CTX *ctx, int idx));
-def(char*, X509_NAME_oneline, (X509_NAME *a, char *buf, int size));
-def(const char*, X509_verify_cert_error_string, (long n));
-def(int, X509_STORE_CTX_get_error_depth, (X509_STORE_CTX *ctx));
-def(unsigned long, ERR_get_error, (void));
-#ifdef MPEXT
-def(char*, ERR_error_string, (unsigned long e, char *buf));
-#else
-def(const char*, ERR_error_string, (unsigned long e, char *buf));
-#endif
-def(int, ASN1_STRING_to_UTF8, (unsigned char **out, ASN1_STRING *in));
-def(void, CRYPTO_free, (void *p));
-def(RSA*, RSA_generate_key, (int bits, unsigned long e, void (*callback)(int,int,void *), void *cb_arg));
-def(int, X509_set_version, (X509 *x,long version));
-def(ASN1_TIME*, X509_gmtime_adj, (ASN1_TIME *s, long adj));
-def(int, X509_set_pubkey, (X509 *x, EVP_PKEY *pkey));
-def(int, X509_NAME_add_entry_by_txt, (X509_NAME *name, const char *field, int type, const unsigned char *bytes, int len, int loc, int set));
-def(int, X509_NAME_add_entry_by_NID, (X509_NAME *name, int nid, int type, unsigned char *bytes, int len, int loc, int set));
-def(int, X509_set_issuer_name, (X509 *x, X509_NAME *name));
-def(int, X509_sign, (X509 *x, EVP_PKEY *pkey, const EVP_MD *md));
-def(EVP_PKEY*, EVP_PKEY_new, (void));
-#ifdef MPEXT
-def(int, EVP_PKEY_assign, (EVP_PKEY *pkey, int type, void *key));
-#else
-def(int, EVP_PKEY_assign, (EVP_PKEY *pkey, int type, char *key));
-#endif
-def(X509*, X509_new, (void));
-def(int, ASN1_INTEGER_set, (ASN1_INTEGER *a, long v));
-def(ASN1_INTEGER*, X509_get_serialNumber, (X509 *x));
-#ifdef MPEXT
-def(int, PEM_ASN1_write_bio, (i2d_of_void *i2d,const char *name,BIO *bp,void *x, const EVP_CIPHER *enc,unsigned char *kstr,int klen, pem_password_cb *callback, void *u));
-#else
-def(int, PEM_ASN1_write_bio, (int (*i2d)(),const char *name,BIO *bp,char *x, const EVP_CIPHER *enc,unsigned char *kstr,int klen, pem_password_cb *callback, void *u));
-#endif
-def(int, i2d_X509, (X509 *x, unsigned char **out));
-def(BIO_METHOD *, BIO_s_mem, (void));
-def(int, i2d_PrivateKey, (EVP_PKEY *a, unsigned char **pp));
+#include <openssl/err.h>
 
 // Critical section wrapper class
 #ifndef CCRITICALSECTIONWRAPPERINCLUDED
@@ -271,10 +133,6 @@ CCriticalSectionWrapper CAsyncSslSocketLayer::m_sCriticalSection;
 
 CAsyncSslSocketLayer::t_SslLayerList* CAsyncSslSocketLayer::m_pSslLayerList = 0;
 int CAsyncSslSocketLayer::m_nSslRefCount = 0;
-#ifndef MPEXT_NO_SSLDLL
-HMODULE CAsyncSslSocketLayer::m_hSslDll1 = 0;
-HMODULE CAsyncSslSocketLayer::m_hSslDll2 = 0;
-#endif
 std::map<SSL_CTX *, int> CAsyncSslSocketLayer::m_contextRefCount;
 
 CAsyncSslSocketLayer::CAsyncSslSocketLayer()
@@ -330,160 +188,9 @@ int CAsyncSslSocketLayer::InitSSL()
 
 	if (!m_nSslRefCount)
 	{
-#ifndef MPEXT_NO_SSLDLL
-		m_hSslDll2=
-			LoadLibrary(_T("libeay32.dll"));
-		if (!m_hSslDll2)
+		SSL_load_error_strings();
+		if (!SSL_library_init())
 		{
-			if (m_hSslDll1)
-				FreeLibrary(m_hSslDll1);
-			m_hSslDll1=0;
-
-			m_sCriticalSection.Unlock();
-			return SSL_FAILURE_LOADDLLS;
-		}
-
-		bool bError = false;
-#endif
-		load(m_hSslDll2, BIO_ctrl_pending);
-		load(m_hSslDll2, BIO_ctrl_pending);
-		load(m_hSslDll2, BIO_read);
-		load(m_hSslDll2, BIO_ctrl);
-		load(m_hSslDll2, BIO_write);
-		load(m_hSslDll2, BIO_ctrl_get_write_guarantee);
-		load(m_hSslDll2, BIO_new_bio_pair);
-		load(m_hSslDll2, BIO_new);
-		load(m_hSslDll2, BIO_free);
-		load(m_hSslDll2, i2t_ASN1_OBJECT);
-		load(m_hSslDll2, OBJ_obj2nid);
-		load(m_hSslDll2, X509_NAME_ENTRY_get_object);
-		load(m_hSslDll2, X509_NAME_get_entry);
-		load(m_hSslDll2, X509_NAME_entry_count);
-		load(m_hSslDll2, X509_get_subject_name);
-		load(m_hSslDll2, X509_get_issuer_name);
-		load(m_hSslDll2, OBJ_nid2sn);
-		load(m_hSslDll2, X509_NAME_ENTRY_get_data);
-		load(m_hSslDll2, X509_STORE_CTX_set_error);
-		load(m_hSslDll2, X509_digest);
-		load(m_hSslDll2, EVP_sha1);
-		load(m_hSslDll2, X509_STORE_CTX_get_current_cert);
-		load(m_hSslDll2, X509_STORE_CTX_get_error);
-		load(m_hSslDll2, X509_free);
-		load(m_hSslDll2, X509_get_pubkey);
-		load(m_hSslDll2, BN_num_bits);
-		load(m_hSslDll2, EVP_PKEY_free);
-		load(m_hSslDll2, X509_STORE_CTX_get_ex_data);
-		load(m_hSslDll2, X509_NAME_oneline);
-		load(m_hSslDll2, X509_verify_cert_error_string);
-		load(m_hSslDll2, X509_STORE_CTX_get_error_depth);
-		load(m_hSslDll2, ERR_get_error);
-		load(m_hSslDll2, ERR_error_string);
-		load(m_hSslDll2, ASN1_STRING_to_UTF8);
-		load(m_hSslDll2, CRYPTO_free);
-		load(m_hSslDll2, RSA_generate_key);
-		load(m_hSslDll2, X509_set_version);
-		load(m_hSslDll2, X509_gmtime_adj);
-		load(m_hSslDll2, X509_set_pubkey);
-		load(m_hSslDll2, X509_NAME_add_entry_by_txt);
-		load(m_hSslDll2, X509_NAME_add_entry_by_NID);
-		load(m_hSslDll2, X509_set_issuer_name);
-		load(m_hSslDll2, X509_sign);
-		load(m_hSslDll2, EVP_PKEY_new);
-		load(m_hSslDll2, EVP_PKEY_assign);
-		load(m_hSslDll2, X509_new);
-		load(m_hSslDll2, ASN1_INTEGER_set);
-		load(m_hSslDll2, X509_get_serialNumber);
-		load(m_hSslDll2, PEM_ASN1_write_bio);
-		load(m_hSslDll2, i2d_X509);
-		load(m_hSslDll2, BIO_s_mem);
-		load(m_hSslDll2, i2d_PrivateKey);
-
-#ifndef MPEXT_NO_SSLDLL
-		if (bError)
-		{
-			FreeLibrary(m_hSslDll1);
-			m_hSslDll1 = 0;
-			FreeLibrary(m_hSslDll2);
-			m_hSslDll2 = 0;
-
-			m_sCriticalSection.Unlock();
-			return SSL_FAILURE_LOADDLLS;
-		}
-
-		m_hSslDll1 = LoadLibrary(_T("ssleay32.dll"));
-		if (!m_hSslDll1)
-		{
-			if (m_hSslDll2)
-				FreeLibrary(m_hSslDll2);
-			m_hSslDll2 = NULL;
-			
-			m_sCriticalSection.Unlock();
-			return SSL_FAILURE_LOADDLLS;
-		}
-#endif    
-		load(m_hSslDll1, SSL_state_string_long);
-		load(m_hSslDll1, SSL_state);
-		load(m_hSslDll1, SSL_set_info_callback);
-		load(m_hSslDll1, SSL_set_bio);
-		load(m_hSslDll1, SSL_set_connect_state);
-		load(m_hSslDll1, SSL_set_session);
-		load(m_hSslDll1, BIO_f_ssl);
-		load(m_hSslDll1, SSL_new);
-		load(m_hSslDll1, SSL_CTX_new);
-		load(m_hSslDll1, SSLv23_method);
-		load(m_hSslDll1, SSL_load_error_strings);
-		load(m_hSslDll1, SSL_library_init);
-		load(m_hSslDll1, SSL_CTX_free);
-		load(m_hSslDll1, SSL_free);
-		load(m_hSslDll1, SSL_get_error);
-		load(m_hSslDll1, SSL_shutdown);
-		load(m_hSslDll1, SSL_get_shutdown);
-		load(m_hSslDll1, SSL_alert_type_string_long);
-		load(m_hSslDll1, SSL_alert_desc_string_long);
-		load(m_hSslDll1, SSL_CTX_set_verify);
-		load(m_hSslDll1, SSL_CTX_get_cert_store);
-		load(m_hSslDll1, SSL_get_verify_result);
-		load(m_hSslDll1, SSL_get_peer_certificate);
-		load(m_hSslDll1, SSL_get_version);
-		load(m_hSslDll1, SSL_get_current_cipher);
-		load(m_hSslDll1, SSL_CIPHER_get_name);
-		load(m_hSslDll1, SSL_CIPHER_get_version);
-		load(m_hSslDll1, SSL_get_ex_data_X509_STORE_CTX_idx);
-		load(m_hSslDll1, SSL_CTX_load_verify_locations);
-		load(m_hSslDll1, SSL_ctrl);
-		load(m_hSslDll1, SSL_set_accept_state);
-		load(m_hSslDll1, SSL_CTX_use_PrivateKey_file);
-		load(m_hSslDll1, SSL_CTX_use_certificate_file);
-		load(m_hSslDll1, SSL_CTX_check_private_key);
-		load(m_hSslDll1, SSL_CTX_set_default_passwd_cb_userdata);
-		load(m_hSslDll1, SSL_CTX_set_default_passwd_cb);
-		load(m_hSslDll1, SSL_CTX_use_certificate_chain_file);
-
-#ifndef MPEXT_NO_SSLDLL
-		if (bError)
-		{
-			FreeLibrary(m_hSslDll1);
-			m_hSslDll1=0;
-			if (m_hSslDll2)
-				FreeLibrary(m_hSslDll2);
-			m_hSslDll2=0;
-
-			m_sCriticalSection.Unlock();
-			return SSL_FAILURE_LOADDLLS;
-		}
-
-#endif
-		pSSL_load_error_strings();
-		if (!pSSL_library_init())
-		{
-#ifndef MPEXT_NO_SSLDLL
-			FreeLibrary(m_hSslDll1);
-			m_hSslDll1=0;
-			FreeLibrary(m_hSslDll2);
-			m_hSslDll2=0;
-
-			m_sCriticalSection.Unlock();
-#endif
 			return SSL_FAILURE_INITSSL;
 		}
 	}
@@ -515,7 +222,7 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
 		m_mayTriggerRead = false;
 		
 		//Get number of bytes we can receive and store in the network input bio
-		int len = pBIO_ctrl_get_write_guarantee(m_nbio);
+		int len = BIO_ctrl_get_write_guarantee(m_nbio);
 		if (len > 16384)
 			len = 16384;
 		else if (!len)
@@ -532,15 +239,15 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
 		if (numread > 0)
 		{
 			//Store it in the network input bio and process data
-			int numwritten = pBIO_write(m_nbio, buffer, numread);
-			pBIO_ctrl(m_nbio, BIO_CTRL_FLUSH, 0, NULL);
+			int numwritten = BIO_write(m_nbio, buffer, numread);
+			BIO_ctrl(m_nbio, BIO_CTRL_FLUSH, 0, NULL);
 
 			// I have no idea why this call is needed, but without it, connections
 			// will stall. Perhaps it triggers some internal processing.
 			// Also, ignore return value, don't do any error checking. This function
 			// can report errors, even though a later call can succeed.
 			char buffer;
-			pBIO_read(m_sslbio, &buffer, 0);
+			BIO_read(m_sslbio, &buffer, 0);
 		}
 		if (!numread)
 		{
@@ -560,10 +267,10 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
 
 		if (m_pRetrySendBuffer)
 		{
-			int numwrite = pBIO_write(m_sslbio, m_pRetrySendBuffer, m_nRetrySendBufferLen);
+			int numwrite = BIO_write(m_sslbio, m_pRetrySendBuffer, m_nRetrySendBufferLen);
 			if (numwrite >= 0)
 			{
-				pBIO_ctrl(m_sslbio, BIO_CTRL_FLUSH, 0, NULL);
+				BIO_ctrl(m_sslbio, BIO_CTRL_FLUSH, 0, NULL);
 				delete [] m_pRetrySendBuffer;
 				m_pRetrySendBuffer = 0;
 			}
@@ -581,9 +288,9 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
 			}
 		}
 
-		if (!m_nShutDown && pSSL_get_shutdown(m_ssl))
+		if (!m_nShutDown && SSL_get_shutdown(m_ssl))
 		{
-			size_t pending = pBIO_ctrl_pending(m_sslbio);
+			size_t pending = BIO_ctrl_pending(m_sslbio);
 			if (pending <= 0)
 			{
 				if (ShutDown() || GetLastError() == WSAEWOULDBLOCK)
@@ -647,7 +354,9 @@ void CAsyncSslSocketLayer::OnSend(int nErrorCode)
 					TriggerEvent(FD_CLOSE, nErrorCode, TRUE);
 			}
 			if (numsent == m_nNetworkSendBufferLen)
+			{
 				m_nNetworkSendBufferLen = 0;
+			}
 			else
 			{
 				memmove(m_pNetworkSendBuffer, m_pNetworkSendBuffer + numsent, m_nNetworkSendBufferLen - numsent);
@@ -657,8 +366,8 @@ void CAsyncSslSocketLayer::OnSend(int nErrorCode)
 
 		//Send the data waiting in the network bio
 		char buffer[16384];
-		size_t len = pBIO_ctrl_pending(m_nbio);
-		int numread = pBIO_read(m_nbio, buffer, len);
+		size_t len = BIO_ctrl_pending(m_nbio);
+		int numread = BIO_read(m_nbio, buffer, len);
 		if (numread <= 0)
 			m_mayTriggerWrite = true;
 		while (numread > 0)
@@ -698,24 +407,28 @@ void CAsyncSslSocketLayer::OnSend(int nErrorCode)
 				m_nNetworkSendBufferLen += numread - numsent;
 			}
 			if (!numsent)
+			{
 				break;
-			len = pBIO_ctrl_pending(m_nbio);
+			}
+			len = BIO_ctrl_pending(m_nbio);
 			if (!len)
 			{
 				m_mayTriggerWrite = true;
 				break;
 			}
-			numread = pBIO_read(m_nbio, buffer, len);
+			numread = BIO_read(m_nbio, buffer, len);
 			if (numread <= 0)
+			{
 				m_mayTriggerWrite = true;
+			}
 		}
 
 		if (m_pRetrySendBuffer)
 		{
-			int numwrite = pBIO_write(m_sslbio, m_pRetrySendBuffer, m_nRetrySendBufferLen);
+			int numwrite = BIO_write(m_sslbio, m_pRetrySendBuffer, m_nRetrySendBufferLen);
 			if (numwrite >= 0)
 			{
-				pBIO_ctrl(m_sslbio, BIO_CTRL_FLUSH, 0, NULL);
+				BIO_ctrl(m_sslbio, BIO_CTRL_FLUSH, 0, NULL);
 				delete [] m_pRetrySendBuffer;
 				m_pRetrySendBuffer = 0;
 			}
@@ -738,12 +451,15 @@ void CAsyncSslSocketLayer::OnSend(int nErrorCode)
 		if (m_nShutDown == 1 && ShutDownComplete())
 		{
 			//Send shutdown notification if all pending data has been sent
+            // FileZilla3 calls ShutDownNext() here 
 			DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_INFO, SSL_INFO_SHUTDOWNCOMPLETE);
 			m_nShutDown++;
 		}
 	}
 	else
+	{
 		TriggerEvent(FD_WRITE, nErrorCode, TRUE);
+	}
 }
 
 int CAsyncSslSocketLayer::Send(const void* lpBuf, int nBufLen, int nFlags)
@@ -787,7 +503,7 @@ int CAsyncSslSocketLayer::Send(const void* lpBuf, int nBufLen, int nFlags)
 			return 0;
 		}
 
-		int len = pBIO_ctrl_get_write_guarantee(m_sslbio);
+		int len = BIO_ctrl_get_write_guarantee(m_sslbio);
 		if (nBufLen > len)
 			nBufLen = len;
 		if (!len)
@@ -801,10 +517,10 @@ int CAsyncSslSocketLayer::Send(const void* lpBuf, int nBufLen, int nFlags)
 		m_nRetrySendBufferLen = nBufLen;
 		memcpy(m_pRetrySendBuffer, lpBuf, nBufLen);
 
-		int numwrite = pBIO_write(m_sslbio, m_pRetrySendBuffer, m_nRetrySendBufferLen);
+		int numwrite = BIO_write(m_sslbio, m_pRetrySendBuffer, m_nRetrySendBufferLen);
 		if (numwrite >= 0)
 		{
-			pBIO_ctrl(m_sslbio, BIO_CTRL_FLUSH, 0, NULL);
+			BIO_ctrl(m_sslbio, BIO_CTRL_FLUSH, 0, NULL);
 			delete [] m_pRetrySendBuffer;
 			m_pRetrySendBuffer = 0;
 		}
@@ -859,12 +575,12 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 		}
 		if (m_nNetworkError)
 		{
-			size_t pending = pBIO_ctrl_pending(m_sslbio);
+			size_t pending = BIO_ctrl_pending(m_sslbio);
 			if (pending && !m_nShutDown)
 			{
 				m_mayTriggerReadUp = true;
 				TriggerEvents();
-				return pBIO_read(m_sslbio, lpBuf,nBufLen);
+				return BIO_read(m_sslbio, lpBuf,nBufLen);
 			}
 			WSASetLastError(m_nNetworkError);
 			return SOCKET_ERROR;
@@ -878,7 +594,7 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 		{
 			return 0;
 		}
-		size_t pending = pBIO_ctrl_pending(m_sslbio);
+		size_t pending = BIO_ctrl_pending(m_sslbio);
 		if (!pending)
 		{
 			if (GetLayerState() == closed)
@@ -897,7 +613,7 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 			}
 			else
 			{
-				if (pSSL_get_shutdown(m_ssl))
+				if (SSL_get_shutdown(m_ssl))
 				{
 					if (ShutDown() || GetLastError() == WSAEWOULDBLOCK)
 					{
@@ -923,10 +639,10 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 			SetLastError(WSAEWOULDBLOCK);
 			return SOCKET_ERROR;
 		}
-		int numread = pBIO_read(m_sslbio, lpBuf, nBufLen);
+		int numread = BIO_read(m_sslbio, lpBuf, nBufLen);
 		if (!numread)
 		{
-			if (pSSL_get_shutdown(m_ssl))
+			if (SSL_get_shutdown(m_ssl))
 			{
 				if (ShutDown() || GetLastError() == WSAEWOULDBLOCK)
 				{
@@ -963,7 +679,7 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 			}
 			else
 			{
-				if (pSSL_get_shutdown(m_ssl))
+				if (SSL_get_shutdown(m_ssl))
 				{
 					if (ShutDown() || GetLastError() == WSAEWOULDBLOCK)
 					{
@@ -1012,8 +728,12 @@ BOOL CAsyncSslSocketLayer::Connect(const SOCKADDR *lpSockAddr, int nSockAddrLen)
 {
 	BOOL res = ConnectNext(lpSockAddr, nSockAddrLen);
 	if (!res)
+	{
 		if (GetLastError() != WSAEWOULDBLOCK)
+		{
 			ResetSslSession();
+		}
+	}
 	return res;
 }
 
@@ -1021,8 +741,12 @@ BOOL CAsyncSslSocketLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
 {
 	BOOL res = ConnectNext(lpszHostAddress, nHostPort);
 	if (!res)
+	{
 		if (GetLastError()!=WSAEWOULDBLOCK)
+		{
 			ResetSslSession();
+		}
+	}
 	return res;
 }
 
@@ -1064,7 +788,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 	else if (!m_ssl_ctx)
 	{
 		// Create new context if none given
-		if (!(m_ssl_ctx = pSSL_CTX_new( pSSLv23_method())))
+		if (!(m_ssl_ctx = SSL_CTX_new( SSLv23_method())))
 		{
 			m_sCriticalSection.Unlock();
 			ResetSslSession();
@@ -1075,17 +799,17 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 		if (clientMode)
 		{
 			USES_CONVERSION;
-			pSSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_PEER, verify_callback);
+			SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_PEER, verify_callback);
 			CFileStatus Dummy;
 			if (CFile::GetStatus((LPCTSTR)m_CertStorage, Dummy))
 			{
-				pSSL_CTX_load_verify_locations(m_ssl_ctx, T2CA(m_CertStorage), 0);
+				SSL_CTX_load_verify_locations(m_ssl_ctx, T2CA(m_CertStorage), 0);
 			}
 		}
 	}
 
 	//Create new SSL session
-	if (!(m_ssl = pSSL_new(m_ssl_ctx)))
+	if (!(m_ssl = SSL_new(m_ssl_ctx)))
 	{
 		m_sCriticalSection.Unlock();
 		ResetSslSession();
@@ -1099,11 +823,11 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 	m_pSslLayerList->pLayer = this;
 	m_sCriticalSection.Unlock();
 
-	pSSL_set_info_callback(m_ssl, apps_ssl_info_callback);
+	SSL_set_info_callback(m_ssl, apps_ssl_info_callback);
 
 	//Create bios
-	m_sslbio = pBIO_new(pBIO_f_ssl());
-	pBIO_new_bio_pair(&m_ibio, 4096, &m_nbio, 4096);
+	m_sslbio = BIO_new(BIO_f_ssl());
+	BIO_new_bio_pair(&m_ibio, 4096, &m_nbio, 4096);
 
 	if (!m_sslbio || !m_nbio || !m_ibio)
 	{
@@ -1111,19 +835,17 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 		return SSL_FAILURE_INITSSL;
 	}
 
-	long options = pSSL_ctrl(m_ssl, SSL_CTRL_OPTIONS, 0, NULL);
+	// See also TWebDAVFileSystem::InitSslSession
 	#define MASK_TLS_VERSION(VERSION, FLAG) ((minTlsVersion > VERSION) || (maxTlsVersion < VERSION) ? FLAG : 0)
-	options |=
+	long options =
 		SSL_OP_ALL |
 		MASK_TLS_VERSION(SSL_VERSION_SSL2, SSL_OP_NO_SSLv2) |
 		MASK_TLS_VERSION(SSL_VERSION_SSL3, SSL_OP_NO_SSLv3) |
 		MASK_TLS_VERSION(SSL_VERSION_TLS10, SSL_OP_NO_TLSv1) |
 		MASK_TLS_VERSION(SSL_VERSION_TLS11, SSL_OP_NO_TLSv1_1) |
 		MASK_TLS_VERSION(SSL_VERSION_TLS12, SSL_OP_NO_TLSv1_2);
-	pSSL_ctrl(m_ssl, SSL_CTRL_OPTIONS, options, NULL);
-
-	LogSocketMessage(FZ_LOG_INFO, _T("Loading system certificates"));
-	LoadSslWindowsSystemCertificateStore(m_ssl_ctx);
+	// SSL_ctrl() with SSL_CTRL_OPTIONS adds flags (not sets)
+	SSL_ctrl(m_ssl, SSL_CTRL_OPTIONS, options, NULL);
 
 	//Init SSL connection
 	void *ssl_sessionid = NULL;
@@ -1136,7 +858,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 	{
 		if (m_Main->m_sessionid != NULL)
 		{
-			if (!pSSL_set_session(m_ssl, m_Main->m_sessionid))
+			if (!SSL_set_session(m_ssl, m_Main->m_sessionid))
 			{
 				LogSocketMessage(FZ_LOG_INFO, _T("SSL_set_session failed"));
 				return SSL_FAILURE_INITSSL;
@@ -1146,24 +868,24 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 		else
 		{
 			LogSocketMessage(FZ_LOG_INFO, _T("Main TLS session ID was not reused previously, not trying again"));
-			pSSL_set_session(m_ssl, NULL);
+			SSL_set_session(m_ssl, NULL);
 		}
 	}
 	else
 	{
-		pSSL_set_session(m_ssl, NULL);
+		SSL_set_session(m_ssl, NULL);
 	}
 	if (clientMode)
 	{
-		pSSL_set_connect_state(m_ssl);
+		SSL_set_connect_state(m_ssl);
 	}
 	else
 	{
-		pSSL_set_accept_state(m_ssl);
+		SSL_set_accept_state(m_ssl);
 	}
-	pSSL_set_bio(m_ssl, m_ibio, m_ibio);
-	pBIO_ctrl(m_sslbio, BIO_C_SET_SSL, BIO_NOCLOSE, m_ssl);
-	pBIO_read(m_sslbio, (void *)1, 0);
+	SSL_set_bio(m_ssl, m_ibio, m_ibio);
+	BIO_ctrl(m_sslbio, BIO_C_SET_SSL, BIO_NOCLOSE, m_ssl);
+	BIO_read(m_sslbio, (void *)1, 0);
 
 	// Trigger FD_WRITE so that we can initialize SSL negotiation
 	if (GetLayerState() == connected || GetLayerState() == attached)
@@ -1198,19 +920,19 @@ void CAsyncSslSocketLayer::ResetSslSession()
 	m_bSslEstablished = FALSE;
 	if (m_sslbio)
 	{
-		pBIO_free(m_sslbio);
+		BIO_free(m_sslbio);
 	}
 	if (m_ssl)
 	{
-		pSSL_set_session(m_ssl,NULL);
+		SSL_set_session(m_ssl,NULL);
 	}
 	if (m_nbio)
 	{
-		pBIO_free(m_nbio);
+		BIO_free(m_nbio);
 	}
 	if (m_ibio)
 	{
-		pBIO_free(m_ibio);
+		BIO_free(m_ibio);
 	}
 
 	m_nNetworkSendBufferLen = 0;
@@ -1221,7 +943,7 @@ void CAsyncSslSocketLayer::ResetSslSession()
 
 	if (m_ssl)
 	{
-		pSSL_free(m_ssl);
+		SSL_free(m_ssl);
 	}
 
 	m_sCriticalSection.Lock();
@@ -1237,7 +959,7 @@ void CAsyncSslSocketLayer::ResetSslSession()
 		{
 			if (iter->second <= 1)
 			{
-				pSSL_CTX_free(m_ssl_ctx);
+				SSL_CTX_free(m_ssl_ctx);
 				m_contextRefCount.erase(iter);
 			}
 			else
@@ -1325,12 +1047,12 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
 			}
 		}
 		
-		int res = pSSL_shutdown(m_ssl);
+		int res = SSL_shutdown(m_ssl);
 		if (res != -1)
 		{
 			if (!res)
 			{
-				pSSL_shutdown(m_ssl);
+				SSL_shutdown(m_ssl);
 			}
 			if (ShutDownComplete())
 				return ShutDownNext();
@@ -1343,7 +1065,7 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
 		}
 		else
 		{
-			int error = pSSL_get_error(m_ssl, -1);
+			int error = SSL_get_error(m_ssl, -1);
 			if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
 			{
 #ifdef MPEXT
@@ -1389,10 +1111,10 @@ BOOL CAsyncSslSocketLayer::ShutDownComplete()
 	int numread;
 	do
 	{
-		numread = pBIO_read(m_sslbio, buffer, 1000);
+		numread = BIO_read(m_sslbio, buffer, 1000);
 	} while (numread > 0);
 
-	size_t pending = pBIO_ctrl_pending(m_nbio);
+	size_t pending = BIO_ctrl_pending(m_nbio);
 	if (pending)
 	{
 		return FALSE;
@@ -1488,7 +1210,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 		char *buffer = new char[4096 + ((debug != NULL) ? strlen(debug) : 0)];
 		sprintf(buffer, "%s: %s",
 				str,
-				pSSL_state_string_long(s));
+				SSL_state_string_long(s));
 		if (debug != NULL)
 		{
 			sprintf(buffer + strlen(buffer), " [%s]", debug);
@@ -1499,7 +1221,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 	else if (where & SSL_CB_ALERT)
 	{
 		str=(where & SSL_CB_READ)? "read" : "write";
-		const char* desc = pSSL_alert_desc_string_long(ret);
+		const char* desc = SSL_alert_desc_string_long(ret);
 
 		// Don't send close notify warning
 		if (desc)
@@ -1509,7 +1231,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 				char *buffer = new char[4096];
 				sprintf(buffer, "SSL3 alert %s: %s: %s",
 						str,
-						pSSL_alert_type_string_long(ret),
+						SSL_alert_type_string_long(ret),
 						desc);
 				pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERBOSE_WARNING, 0, buffer);
 			}
@@ -1523,7 +1245,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 			char *buffer = new char[4096];
 			sprintf(buffer, "%s: failed in %s",
 					str,
-					pSSL_state_string_long(s));
+					SSL_state_string_long(s));
 			pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERBOSE_WARNING, 0, buffer);
 			if (!pLayer->m_bFailureSent)
 			{
@@ -1533,13 +1255,13 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 		}
 		else if (ret < 0)
 		{
-			int error = pSSL_get_error(s,ret);
+			int error = SSL_get_error(s,ret);
 			if (error != SSL_ERROR_WANT_READ && error != SSL_ERROR_WANT_WRITE)
 			{
 				char *buffer = new char[4096];
 				sprintf(buffer, "%s: error in %s",
 						str,
-						pSSL_state_string_long(s));
+						SSL_state_string_long(s));
 				pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERBOSE_WARNING, 0, buffer);
 				if (!pLayer->m_bFailureSent)
 				{
@@ -1551,7 +1273,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 	}
 	if (where & SSL_CB_HANDSHAKE_DONE)
 	{
-		int error = pSSL_get_verify_result(pLayer->m_ssl);
+		int error = SSL_get_verify_result(pLayer->m_ssl);
 		pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERIFY_CERT, error);
 		pLayer->m_bBlocking = TRUE;
 	}
@@ -1574,16 +1296,6 @@ void CAsyncSslSocketLayer::UnloadSSL()
 		return;
 	}
 
-#ifndef MPEXT_NO_SSLDLL
-	if (m_hSslDll1)
-		FreeLibrary(m_hSslDll1);
-	if (m_hSslDll2)
-	{
-		FreeLibrary(m_hSslDll2);
-	}
-	m_hSslDll1 = NULL;
-	m_hSslDll2 = NULL;
-#endif
 	m_sCriticalSection.Unlock();
 }
 
@@ -1654,7 +1366,7 @@ bool AsnTimeToValidTime(ASN1_TIME * AsnTime, t_SslCertData::t_validTime & ValidT
 
 BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LPCTSTR & Error)
 {
-	X509 *pX509=pSSL_get_peer_certificate(m_ssl);
+	X509 *pX509=SSL_get_peer_certificate(m_ssl);
 	if (!pX509)
 	{
 		Error = _T("Cannot get certificate");
@@ -1665,22 +1377,22 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 	memset(&SslCertData, 0, sizeof(t_SslCertData));
 
 	//Set subject data fields
-	X509_NAME *pX509Name=pX509_get_subject_name(pX509);
+	X509_NAME *pX509Name=X509_get_subject_name(pX509);
 
 	if (pX509Name)
 	{
-		int count=pX509_NAME_entry_count(pX509Name);
+		int count=X509_NAME_entry_count(pX509Name);
 		for (int i=0;i<count;i++)
 		{
-			X509_NAME_ENTRY *pX509NameEntry=pX509_NAME_get_entry(pX509Name,i);
+			X509_NAME_ENTRY *pX509NameEntry=X509_NAME_get_entry(pX509Name,i);
 			if (!pX509NameEntry)
 				continue;
-			ASN1_OBJECT *pObject = pX509_NAME_ENTRY_get_object(pX509NameEntry);
-			ASN1_STRING *pString = pX509_NAME_ENTRY_get_data(pX509NameEntry);
+			ASN1_OBJECT *pObject = X509_NAME_ENTRY_get_object(pX509NameEntry);
+			ASN1_STRING *pString = X509_NAME_ENTRY_get_data(pX509NameEntry);
 			CString str;
 
 			unsigned char *out;
-			int len = pASN1_STRING_to_UTF8(&out, pString);
+			int len = ASN1_STRING_to_UTF8(&out, pString);
 			if (len > 0)
 			{
 				// Keep it huge
@@ -1702,10 +1414,10 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 #endif
 				}
 				delete [] unicode;
-				pCRYPTO_free(out);
+				CRYPTO_free(out);
 			}
 
-			switch(pOBJ_obj2nid(pObject))
+			switch(OBJ_obj2nid(pObject))
 			{
 			case NID_organizationName:
 				_tcsncpy(SslCertData.subject.Organization, str, 255);
@@ -1736,10 +1448,10 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 				SslCertData.subject.Town[255] = 0;
 				break;
 			default:
-				if ( !pOBJ_nid2sn(pOBJ_obj2nid(pObject)) )
+				if ( !OBJ_nid2sn(OBJ_obj2nid(pObject)) )
 				{
 					TCHAR tmp[20];
-					_stprintf(tmp, _T("%d"), pOBJ_obj2nid(pObject));
+					_stprintf(tmp, _T("%d"), OBJ_obj2nid(pObject));
 					int maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
 					_tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), tmp, maxlen);
 
@@ -1757,7 +1469,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 					int maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
 
 					USES_CONVERSION;
-					_tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), A2CT(pOBJ_nid2sn(pOBJ_obj2nid(pObject))), maxlen);
+					_tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), A2CT(OBJ_nid2sn(OBJ_obj2nid(pObject))), maxlen);
 
 					maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
 					_tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), _T("="), maxlen);
@@ -1774,22 +1486,22 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 	}
 
 	//Set issuer data fields
-	pX509Name=pX509_get_issuer_name(pX509);
+	pX509Name=X509_get_issuer_name(pX509);
 	if (pX509Name)
 	{
-		int count=pX509_NAME_entry_count(pX509Name);
+		int count=X509_NAME_entry_count(pX509Name);
 		for (int i=0;i<count;i++)
 		{
-			X509_NAME_ENTRY *pX509NameEntry=pX509_NAME_get_entry(pX509Name,i);
+			X509_NAME_ENTRY *pX509NameEntry=X509_NAME_get_entry(pX509Name,i);
 			if (!pX509NameEntry)
 				continue;
-			ASN1_STRING *pString=pX509_NAME_ENTRY_get_data(pX509NameEntry);
-			ASN1_OBJECT *pObject=pX509_NAME_ENTRY_get_object(pX509NameEntry);
+			ASN1_STRING *pString=X509_NAME_ENTRY_get_data(pX509NameEntry);
+			ASN1_OBJECT *pObject=X509_NAME_ENTRY_get_object(pX509NameEntry);
 
 			CString str;
 
 			unsigned char *out;
-			int len = pASN1_STRING_to_UTF8(&out, pString);
+			int len = ASN1_STRING_to_UTF8(&out, pString);
 			if (len > 0)
 			{
 				// Keep it huge
@@ -1811,10 +1523,10 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 #endif
 				}
 				delete [] unicode;
-				pCRYPTO_free(out);
+				CRYPTO_free(out);
 			}
 
-			switch(pOBJ_obj2nid(pObject))
+			switch(OBJ_obj2nid(pObject))
 			{
 			case NID_organizationName:
 				_tcsncpy(SslCertData.issuer.Organization, str, 255);
@@ -1845,10 +1557,10 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 				SslCertData.issuer.Town[255] = 0;
 				break;
 			default:
-				if ( !pOBJ_nid2sn(pOBJ_obj2nid(pObject)) )
+				if ( !OBJ_nid2sn(OBJ_obj2nid(pObject)) )
 				{
 					TCHAR tmp[20];
-					_stprintf(tmp, _T("%d"), pOBJ_obj2nid(pObject));
+					_stprintf(tmp, _T("%d"), OBJ_obj2nid(pObject));
 					int maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
 					_tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), tmp, maxlen);
 
@@ -1866,7 +1578,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 					int maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
 
 					USES_CONVERSION;
-					_tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), A2CT(pOBJ_nid2sn(pOBJ_obj2nid(pObject))), maxlen);
+					_tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), A2CT(OBJ_nid2sn(OBJ_obj2nid(pObject))), maxlen);
 
 					maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
 					_tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), _T("="), maxlen);
@@ -1888,14 +1600,14 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 	ASN1_TIME *pTime=X509_get_notBefore(pX509);
 	if (!pTime)
 	{
-		pX509_free(pX509);
+		X509_free(pX509);
 		Error = _T("Cannot get start time");
 		return FALSE;
 	}
 
 	if (!AsnTimeToValidTime(pTime, SslCertData.validFrom))
 	{
-		pX509_free(pX509);
+		X509_free(pX509);
 		Error = _T("Invalid start time");
 		return FALSE;
 	}
@@ -1904,14 +1616,14 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 	pTime = X509_get_notAfter(pX509);
 	if (!pTime)
 	{
-		pX509_free(pX509);
+		X509_free(pX509);
 		Error = _T("Cannot get end time");
 		return FALSE;
 	}
 
 	if (!AsnTimeToValidTime(pTime, SslCertData.validUntil))
 	{
-		pX509_free(pX509);
+		X509_free(pX509);
 		Error = _T("Invalid end time");
 		return FALSE;
 	}
@@ -1938,11 +1650,18 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
   }
 
 	unsigned int length = 20;
-	pX509_digest(pX509, pEVP_sha1(), SslCertData.hash, &length);
+	X509_digest(pX509, EVP_sha1(), SslCertData.hash, &length);
+
+	// Inspired by ne_ssl_cert_export()
+	// Find the length of the DER encoding.
+	SslCertData.certificateLen = i2d_X509(pX509, NULL);
+	SslCertData.certificate = new unsigned char[SslCertData.certificateLen];
+	unsigned char * p = SslCertData.certificate;
+	i2d_X509(pX509, &p);
 
 	SslCertData.priv_data = m_nSslAsyncNotifyId;
 
-	pX509_free(pX509);
+	X509_free(pX509);
 
 	SslCertData.verificationResult = m_nVerificationResult;
 	SslCertData.verificationDepth = m_nVerificationDepth;
@@ -1998,13 +1717,13 @@ void CAsyncSslSocketLayer::PrintSessionInfo()
 	SSL_CIPHER *ciph;
 	X509 *cert;
 
-	ciph = pSSL_get_current_cipher(m_ssl);
+	ciph = SSL_get_current_cipher(m_ssl);
 	char enc[4096] = {0};
-	cert=pSSL_get_peer_certificate(m_ssl);
+	cert=SSL_get_peer_certificate(m_ssl);
 
 	if (cert != NULL)
 	{
-		EVP_PKEY *pkey = pX509_get_pubkey(cert);
+		EVP_PKEY *pkey = X509_get_pubkey(cert);
 		if (pkey != NULL)
 		{
 			if (0)
@@ -2012,27 +1731,29 @@ void CAsyncSslSocketLayer::PrintSessionInfo()
 #ifndef NO_RSA
 			else if (pkey->type == EVP_PKEY_RSA && pkey->pkey.rsa != NULL
 				&& pkey->pkey.rsa->n != NULL)
-				sprintf(enc,	"%d bit RSA", pBN_num_bits(pkey->pkey.rsa->n));
+				sprintf(enc,	"%d bit RSA", BN_num_bits(pkey->pkey.rsa->n));
 #endif
 #ifndef NO_DSA
 			else if (pkey->type == EVP_PKEY_DSA && pkey->pkey.dsa != NULL
 					&& pkey->pkey.dsa->p != NULL)
-				sprintf(enc,	"%d bit DSA", pBN_num_bits(pkey->pkey.dsa->p));
+				sprintf(enc,	"%d bit DSA", BN_num_bits(pkey->pkey.dsa->p));
 #endif
-			pEVP_PKEY_free(pkey);
+			EVP_PKEY_free(pkey);
 		}
-		pX509_free(cert);
+		X509_free(cert);
 		/* The SSL API does not allow us to look at temporary RSA/DH keys,
 		 * otherwise we should print their lengths too */
 	}
 
 	char *buffer = new char[4096];
-	m_TlsVersionStr = pSSL_get_version(m_ssl);
+	// see also ne_ssl_get_version and ne_ssl_get_cipher
+	m_TlsVersionStr = SSL_get_version(m_ssl);
 	sprintf(buffer, "%s: %s, %s",
-			pSSL_CIPHER_get_version(ciph),
-			pSSL_CIPHER_get_name(ciph),
+			SSL_CIPHER_get_version(ciph),
+			SSL_CIPHER_get_name(ciph),
 			enc);
 	m_CipherName = buffer;
+	// see TWebDAVFileSystem::CollectTLSSessionInfo()
 	sprintf(buffer, "Using %s, cipher %s",
 			m_TlsVersionStr.c_str(),
 			m_CipherName.c_str());
@@ -2052,15 +1773,15 @@ int CAsyncSslSocketLayer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
     int     err, depth;
     SSL    *ssl;
 
-    err_cert = pX509_STORE_CTX_get_current_cert(ctx);
-    err = pX509_STORE_CTX_get_error(ctx);
-    depth = pX509_STORE_CTX_get_error_depth(ctx);
+    err_cert = X509_STORE_CTX_get_current_cert(ctx);
+    err = X509_STORE_CTX_get_error(ctx);
+    depth = X509_STORE_CTX_get_error_depth(ctx);
 
     /*
      * Retrieve the pointer to the SSL of the connection currently treated
      * and the application specific data stored into the SSL object.
      */
-    ssl = (SSL *)pX509_STORE_CTX_get_ex_data(ctx, pSSL_get_ex_data_X509_STORE_CTX_idx());
+    ssl = (SSL *)X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
 
 	// Lookup CAsyncSslSocketLayer instance
 	CAsyncSslSocketLayer *pLayer = 0;
@@ -2094,7 +1815,7 @@ int CAsyncSslSocketLayer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
     if (depth > 10) {//mydata->verify_depth) {
         preverify_ok = 0;
         err = X509_V_ERR_CERT_CHAIN_TOO_LONG;
-        pX509_STORE_CTX_set_error(ctx, err);
+        X509_STORE_CTX_set_error(ctx, err);
     }
 
 	if (!preverify_ok)
@@ -2117,9 +1838,9 @@ BOOL CAsyncSslSocketLayer::SetCertStorage(CString file)
 void CAsyncSslSocketLayer::OnClose(int nErrorCode)
 {
 	m_onCloseCalled = true;
-	if (m_bUseSSL && pBIO_ctrl)
+	if (m_bUseSSL && BIO_ctrl)
 	{
-		size_t pending = pBIO_ctrl_pending(m_sslbio);
+		size_t pending = BIO_ctrl_pending(m_sslbio);
 		if (pending > 0)
 		{
 			TriggerEvents();
@@ -2132,19 +1853,19 @@ void CAsyncSslSocketLayer::OnClose(int nErrorCode)
 
 void CAsyncSslSocketLayer::PrintLastErrorMsg()
 {
-	int err = pERR_get_error();
+	int err = ERR_get_error();
 	while (err)
 	{
 		char *buffer = new char[512];
-		pERR_error_string(err, buffer);
-		err = pERR_get_error();
+		ERR_error_string(err, buffer);
+		err = ERR_get_error();
 		DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERBOSE_WARNING, 0, buffer);
 	}
 }
 
 void CAsyncSslSocketLayer::TriggerEvents()
 {
-	size_t pending = pBIO_ctrl_pending(m_nbio);
+	size_t pending = BIO_ctrl_pending(m_nbio);
 	if (pending > 0)
 	{
 		if (m_mayTriggerWrite)
@@ -2155,14 +1876,14 @@ void CAsyncSslSocketLayer::TriggerEvents()
 	}
 	else if (!m_nNetworkSendBufferLen && m_bSslEstablished && !m_pRetrySendBuffer)
 	{
-		if (pBIO_ctrl_get_write_guarantee(m_sslbio) > 0 && m_mayTriggerWriteUp)
+		if (BIO_ctrl_get_write_guarantee(m_sslbio) > 0 && m_mayTriggerWriteUp)
 		{
 			m_mayTriggerWriteUp = false;
 			TriggerEvent(FD_WRITE, 0, TRUE);
 		}
 	}
 
-	if (m_bSslEstablished && pBIO_ctrl_pending(m_sslbio) > 0)
+	if (m_bSslEstablished && BIO_ctrl_pending(m_sslbio) > 0)
 	{
 		if (m_mayTriggerReadUp && !m_bBlocking)
 		{
@@ -2172,7 +1893,7 @@ void CAsyncSslSocketLayer::TriggerEvents()
 	}
 	else
 	{
-		int len = pBIO_ctrl_get_write_guarantee(m_nbio);
+		int len = BIO_ctrl_get_write_guarantee(m_nbio);
 		if (len > 0 && m_mayTriggerRead)
 		{
 			m_mayTriggerRead = false;
@@ -2182,7 +1903,7 @@ void CAsyncSslSocketLayer::TriggerEvents()
 
 	if (m_onCloseCalled && m_bSslEstablished)
 	{
-		if (pBIO_ctrl_pending(m_sslbio) <= 0)
+		if (BIO_ctrl_pending(m_sslbio) <= 0)
 		{
 			TriggerEvent(FD_CLOSE, 0, TRUE);
 		}
@@ -2206,38 +1927,4 @@ int CAsyncSslSocketLayer::pem_passwd_cb(char *buf, int size, int rwflag, void *u
 	return len;
 }
 //---------------------------------------------------------------------------
-#include <wincrypt.h>
-//---------------------------------------------------------------------------
-// Taken from
-// http://openssl.6102.n7.nabble.com/Get-root-certificates-from-System-Store-of-Windows-td40959.html
-void __fastcall LoadSslWindowsSystemCertificateStore(SSL_CTX * Ctx)
-{
-  HCERTSTORE CertStore = CertStore = CertOpenSystemStore(0, L"ROOT");
-  if (CertStore != NULL)
-  {
-    PCCERT_CONTEXT CertContext = NULL;
-    while ((CertContext = CertEnumCertificatesInStore(CertStore, CertContext)) != NULL)
-    {
-      #ifdef _DEBUG
-      wchar_t Buf[1024];
-      CertNameToStr(X509_ASN_ENCODING, &CertContext->pCertInfo->Subject, CERT_X500_NAME_STR, Buf, LENOF(Buf));
-      Buf[LENOF(Buf) - 1] = L'\0';
-      CertNameToStr(X509_ASN_ENCODING, &CertContext->pCertInfo->Issuer, CERT_X500_NAME_STR, Buf, LENOF(Buf));
-      Buf[LENOF(Buf) - 1] = L'\0';
-      #endif
-      X509 * x509 = d2i_X509(NULL, const_cast<const unsigned char **>(&CertContext->pbCertEncoded), CertContext->cbCertEncoded);
-      if (x509 != NULL)
-      {
-        #ifdef _DEBUG
-        int AddCertResult =
-        #endif
-        X509_STORE_add_cert(Ctx->cert_store, x509);
-        X509_free(x509);
-      }
-    }
-
-    CertFreeCertificateContext(CertContext);
-    CertCloseStore(CertStore, 0);
-  }
-}
 

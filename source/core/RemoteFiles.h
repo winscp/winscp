@@ -11,6 +11,7 @@ enum TModificationFmt { mfNone, mfMDHM, mfMDY, mfFull };
 #define PARENTDIRECTORY L".."
 #define THISDIRECTORY L"."
 #define ROOTDIRECTORY L"/"
+#define FILETYPE_DEFAULT L'-'
 #define FILETYPE_SYMLINK L'L'
 #define FILETYPE_DIRECTORY L'D'
 #define PARTIAL_EXT L".filepart"
@@ -434,7 +435,7 @@ UnicodeString __fastcall UnixExtractFileDir(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFilePath(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFileName(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFileExt(const UnicodeString Path);
-Boolean __fastcall UnixComparePaths(const UnicodeString Path1, const UnicodeString Path2);
+Boolean __fastcall UnixSamePath(const UnicodeString Path1, const UnicodeString Path2);
 bool __fastcall UnixIsChildPath(UnicodeString Parent, UnicodeString Child);
 bool __fastcall ExtractCommonPath(TStrings * Files, UnicodeString & Path);
 bool __fastcall UnixExtractCommonPath(TStrings * Files, UnicodeString & Path);

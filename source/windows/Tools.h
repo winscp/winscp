@@ -34,7 +34,7 @@ void __fastcall ValidateMaskEdit(TEdit * Edit);
 void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory);
 void __fastcall OpenBrowser(UnicodeString URL);
 bool __fastcall IsFormatInClipboard(unsigned int Format);
-bool __fastcall TextFromClipboard(UnicodeString & Text);
+bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim);
 HANDLE __fastcall OpenTextFromClipboard(const wchar_t *& Text);
 void __fastcall CloseTextFromClipboard(HANDLE Handle);
 void __fastcall ExitActiveControl(TForm * Form);

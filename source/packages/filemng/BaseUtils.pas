@@ -31,13 +31,17 @@ uses
 
 type
   TDateTimePrecision = (tpNone, tpDay, tpMinute, tpSecond, tpMillisecond);
+  // order choosen so that for previous bool value, false maps to fbNone,
+  // and true maps to new default fbKilobytes, although functionaly it is fbShort
+  TFormatBytesStyle = (fbNone, fbKilobytes, fbShort);
 
 function CheckFileExists(FileName: string): Boolean;
 function DirExists(Dir: string): Boolean; overload;
 function DirExists(Dir: string; var Attrs: Integer): Boolean; overload;
 function ExtractFileNameOnly(Name: string): string;
 function FileOrDirExists(FileName: string): Boolean;
-function FormatBytes(Bytes: Int64; UseOrders: Boolean = True; UseUnitsForBytes: Boolean = True): string;
+function FormatBytes(Bytes: Int64; Style: TFormatBytesStyle = fbShort; UseUnitsForBytes: Boolean = True): string;
+function FormatPanelBytes(Bytes: Int64; Style: TFormatBytesStyle): string;
 procedure FreePIDL(var PIDL: PItemIDList);
 function StrContains(Str1, Str2: string): Boolean;
 procedure StrTranslate(var Str: string; Code: string);
@@ -56,11 +60,15 @@ function FormatLastOSError(Message: string): string;
 resourcestring
   SNoValidPath = 'Can''t find any valid path.';
   SUcpPathsNotSupported = 'UNC paths are not supported.';
+  SByte = 'B';
+  SKiloByte = 'KB';
+  SMegaByte = 'MB';
+  SGigaByte = 'GB';
 
 implementation
 
 uses
-  IEDriveInfo, DateUtils, ShellApi, SysConst;
+  IEDriveInfo, DateUtils, ShellApi, SysConst, PasTools;
 
 function AnyValidPath: string;
 var
@@ -68,14 +76,14 @@ var
 begin
   for Drive := 'C' to 'Z' do
     if (DriveInfo[Drive].DriveType = DRIVE_FIXED) and
-       DirectoryExists(Drive + ':\') then
+       DirectoryExists(ApiPath(Drive + ':\')) then
     begin
       Result := Drive + ':\';
       Exit;
     end;
   for Drive := 'C' to 'Z' do
     if (DriveInfo[Drive].DriveType = DRIVE_REMOTE) and
-       DirectoryExists(Drive + ':\') then
+       DirectoryExists(ApiPath(Drive + ':\')) then
     begin
       Result := Drive + ':\';
       Exit;
@@ -118,7 +126,7 @@ begin
   if Length(FileName) = 0 then Result := False
     else
   begin
-    Result := (FindFirst(FileName, faAnyFile, SRec) = 0);
+    Result := (FindFirst(ApiPath(FileName), faAnyFile, SRec) = 0);
     SysUtils.FindCLose(SRec);
   end;
 end; {FileOrDirExists}
@@ -131,7 +139,7 @@ begin
   SaveFileMode := System.FileMode;
   System.FileMode := 0;
   try
-    AssignFile(F, FileName);
+    AssignFile(F, ApiPath(FileName));
     Reset(F, 1);
     Result := IOResult = 0;
     if Result then
@@ -149,7 +157,7 @@ begin
   if Result then Attrs := 0
     else
   begin
-    if FindFirst(Dir, faAnyFile, SRec) = 0 then
+    if FindFirst(ApiPath(Dir), faAnyFile, SRec) = 0 then
     begin
       Result := (SRec.Attr and faDirectory <> 0);
       Attrs := SRec.Attr;
@@ -175,23 +183,43 @@ begin
     Delete(Result, Length(Result)-Length(Ext)+1, Length(Ext));
 end; {ExtractFileNameOnly}
 
-function FormatBytes(Bytes: Int64; UseOrders: Boolean; UseUnitsForBytes: Boolean): string;
+function FormatBytes(Bytes: Int64; Style: TFormatBytesStyle; UseUnitsForBytes: Boolean): string;
+var
+  SizeUnit: string;
+  Value: Extended;
 begin
-  if (not UseOrders) or (Bytes < Int64(100*1024)) then
+  if (Style = fbNone) or ((Style = fbShort) and (Bytes < Int64(100*1024))) then
   begin
+    Value := Bytes;
     if UseUnitsForBytes then
-      Result := FormatFloat('#,##0 "B"', Bytes)
-    else
-      Result := FormatFloat('#,##0', Bytes)
+      SizeUnit := SByte;
   end
     else
-  if Bytes < Int64(100*1024*1024) then
-    Result := FormatFloat('#,##0 "KiB"', Bytes / 1024)
+  if (Style = fbKilobytes) or (Bytes < Int64(100*1024*1024)) then
+  begin
+    Value := Bytes / 1024;
+    SizeUnit := SKiloByte;
+  end
     else
   if Bytes < Int64(Int64(100)*1024*1024*1024) then
-    Result := FormatFloat('#,##0 "MiB"', Bytes / (1024*1024))
-  else
-    Result := FormatFloat('#,##0 "GiB"', Bytes / Int64(1024*1024*1024));
+  begin
+    Value := Bytes / (1024*1024);
+    SizeUnit := SMegaByte;
+  end
+    else
+  begin
+    Value := Bytes / Int64(1024*1024*1024);
+    SizeUnit := SGigaByte;
+  end;
+
+  Result := FormatFloat('#,##0', Value);
+  if SizeUnit <> '' then
+    Result := Result + ' ' + SizeUnit;
+end;
+
+function FormatPanelBytes(Bytes: Int64; Style: TFormatBytesStyle): string;
+begin
+  Result := FormatBytes(Bytes, Style, (Style <> fbNone));
 end;
 
 procedure FreePIDL(var PIDL: PItemIDList);

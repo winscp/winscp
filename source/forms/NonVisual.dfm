@@ -102,7 +102,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = FullFileListToClipboardAction
       end
       object CopyURLtoClipboard3: TTBXItem
-        Action = UrlToClipboardAction
+        Action = FileGenerateUrlAction
       end
     end
     object N1: TTBXSeparatorItem
@@ -585,9 +585,9 @@ object NonVisualDataModule: TNonVisualDataModule
         'New session|Opens new session (hold down Shift to open session i' +
         'n new window)'
       ImageIndex = 25
-      ShortCut = 16462
       SecondaryShortCuts.Strings = (
         'Ctrl+Shift+N')
+      ShortCut = 16462
     end
     object SiteManagerAction: TAction
       Tag = 15
@@ -604,9 +604,9 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Disconnect'
       Hint = 'Close session|Terminate current session'
       ImageIndex = 26
-      ShortCut = 24644
       SecondaryShortCuts.Strings = (
         'Ctrl+W')
+      ShortCut = 24644
     end
     object SavedSessionsAction2: TAction
       Tag = 15
@@ -1467,12 +1467,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Toggle showing hidden files in panel(s)'
       ShortCut = 49224
     end
-    object FormatSizeBytesAction: TAction
+    object FormatSizeBytesNoneAction: TAction
       Tag = 15
       Category = 'View'
-      Caption = 'Short &Files Sizes'
-      HelpKeyword = 'ui_file_panel#short_format'
-      Hint = 'Show files sizes in short format (KiB, MiB, etc)'
+      Caption = '&Bytes'
+      HelpKeyword = 'ui_file_panel#size_format'
+      Hint = 'Show files sizes in bytes'
     end
     object LocalPathToClipboardAction: TAction
       Tag = 15
@@ -1579,12 +1579,15 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Customize queue list'
       ImageIndex = 28
     end
-    object PasteAction: TAction
+    object PasteAction2: TAction
       Tag = 15
       Category = 'Command'
       Caption = '&Paste'
       HelpKeyword = 'task_upload#using_copy_amp:paste'
-      Hint = 'Paste files from clipboard to current directory in active panel'
+      Hint = 
+        'Paste files from clipboard to current directory in active panel;' +
+        ' or opens path from clipboard in active panel; or opens session ' +
+        'URL from clipboard'
       ImageIndex = 75
       ShortCut = 16470
     end
@@ -1624,12 +1627,12 @@ object NonVisualDataModule: TNonVisualDataModule
         'rectory or another name'
       ImageIndex = 78
     end
-    object UrlToClipboardAction: TAction
+    object FileGenerateUrlAction: TAction
       Tag = 15
       Category = 'Selected Operation'
-      Caption = 'Copy &URL to Clipboard'
-      HelpKeyword = 'filenames#file_url'
-      Hint = 'Copy URL'#39's of selected file(s) to clipboard'
+      Caption = 'Generate &URL...'
+      HelpKeyword = 'ui_generateurl'
+      Hint = 'Generate URL'#39's of selected file(s)'
     end
     object TableOfContentsAction: TAction
       Tag = 12
@@ -1693,16 +1696,19 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Configure automatic check for application updates'
       ImageIndex = 28
     end
-    object ShowUpdatesAction: TAction
+    object FormatSizeBytesKilobytesAction: TAction
       Tag = 15
-      Category = 'Help'
-      Caption = '&Show Updates'
-      HelpKeyword = 'updates'
-      Hint = 
-        'Shows information about application updates|Shows information ab' +
-        'out application updates (queries application homepage if the inf' +
-        'ormation is not available at the moment)'
-      ImageIndex = 81
+      Category = 'View'
+      Caption = '&Kilobytes'
+      HelpKeyword = 'ui_file_panel#size_format'
+      Hint = 'Show files sizes in kilobytes'
+    end
+    object FormatSizeBytesShortAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Short format'
+      HelpKeyword = 'ui_file_panel#size_format'
+      Hint = 'Show files sizes in short format'
     end
     object PresetsPreferencesAction: TAction
       Tag = 15
@@ -1893,6 +1899,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#filter'
       Hint = 'Filter|Filter displayed files'
       ImageIndex = 92
+      ShortCut = 49222
     end
     object RemoteFilterAction: TAction
       Tag = 14
@@ -1901,6 +1908,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#filter'
       Hint = 'Filter|Filter displayed files'
       ImageIndex = 92
+      ShortCut = 49222
     end
     object RemoteFindFilesAction: TAction
       Tag = 15
@@ -2086,6 +2094,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 
         'Display system file context menu (in Properties you can opt to d' +
         'isplay it by default instead of built-in menu)'
+    end
+    object SessionGenerateUrlAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = 'Generate &URL...'
+      HelpKeyword = 'ui_generateurl'
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu
@@ -2415,13 +2429,26 @@ object NonVisualDataModule: TNonVisualDataModule
     object LocalSortByExtColumnPopupItem: TTBXItem
       Action = LocalSortByExtAction
     end
-    object LocalFormatSizeBytesPopupItem: TTBXItem
-      Action = FormatSizeBytesAction
-    end
     object Hidecolumn1: TTBXItem
       Action = HideColumnAction
     end
     object N37: TTBXSeparatorItem
+    end
+    object LocalFormatSizeBytesPopupItem: TTBXSubmenuItem
+      Caption = 'Show File Si&zes In'
+      HelpKeyword = 'ui_file_panel#size_format'
+      Hint = 'Select files sizes display format'
+      object TBXItem64: TTBXItem
+        Action = FormatSizeBytesNoneAction
+      end
+      object TBXItem65: TTBXItem
+        Action = FormatSizeBytesKilobytesAction
+      end
+      object TBXItem66: TTBXItem
+        Action = FormatSizeBytesShortAction
+      end
+    end
+    object TBXSeparatorItem8: TTBXSeparatorItem
     end
     object Showcolumns3: TTBXSubmenuItem
       Caption = 'Show &Columns'
@@ -2459,13 +2486,26 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteSortByExtColumnPopupItem: TTBXItem
       Action = RemoteSortByExtAction
     end
-    object RemoteFormatSizeBytesPopupItem: TTBXItem
-      Action = FormatSizeBytesAction
-    end
     object Hidecolumn2: TTBXItem
       Action = HideColumnAction
     end
     object N38: TTBXSeparatorItem
+    end
+    object RemoteFormatSizeBytesPopupItem: TTBXSubmenuItem
+      Caption = 'Show File Si&zes In'
+      HelpKeyword = 'ui_file_panel#size_format'
+      Hint = 'Select files sizes display format'
+      object TBXItem67: TTBXItem
+        Action = FormatSizeBytesNoneAction
+      end
+      object TBXItem53: TTBXItem
+        Action = FormatSizeBytesKilobytesAction
+      end
+      object TBXItem55: TTBXItem
+        Action = FormatSizeBytesShortAction
+      end
+    end
+    object TBXSeparatorItem7: TTBXSeparatorItem
     end
     object Showcolumns4: TTBXSubmenuItem
       Caption = 'Show &Columns'
@@ -2769,6 +2809,14 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem125: TTBXItem
       Action = SaveCurrentSessionAction2
     end
+    object TBXSeparatorItem6: TTBXSeparatorItem
+    end
+    object TBXItem56: TTBXItem
+      Action = FileSystemInfoAction
+    end
+    object TBXItem52: TTBXItem
+      Action = SessionGenerateUrlAction
+    end
     object TBXSeparatorItem34: TTBXSeparatorItem
     end
     object TBXItem123: TTBXItem
@@ -2837,7 +2885,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = FullFileListToClipboardAction
       end
       object TBXItem62: TTBXItem
-        Action = UrlToClipboardAction
+        Action = FileGenerateUrlAction
       end
     end
     object TBXSeparatorItem4: TTBXSeparatorItem

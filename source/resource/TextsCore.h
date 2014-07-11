@@ -7,7 +7,7 @@
 
 #define SCRIPT_HELP_HELP        4
 #define SCRIPT_EXIT_HELP        5
-#define SCRIPT_OPEN_HELP5       6
+#define SCRIPT_OPEN_HELP6       6
 #define SCRIPT_CLOSE_HELP       7
 #define SCRIPT_SESSION_HELP     8
 #define SCRIPT_PWD_HELP         9
@@ -22,9 +22,9 @@
 #define SCRIPT_CHMOD_HELP       18
 #define SCRIPT_LN_HELP          19
 #define SCRIPT_MKDIR_HELP       20
-#define SCRIPT_GET_HELP6        21
-#define SCRIPT_PUT_HELP6        22
-#define SCRIPT_OPTION_HELP6     23
+#define SCRIPT_GET_HELP7        21
+#define SCRIPT_PUT_HELP7        22
+#define SCRIPT_OPTION_HELP7     23
 #define SCRIPT_SYNCHRONIZE_HELP7 24
 #define SCRIPT_KEEPUPTODATE_HELP4 25
 #define SCRIPT_CALL_HELP2       26
@@ -224,6 +224,15 @@
 #define TLS_CERT_DECODE_ERROR   299
 #define FIND_FILE_ERROR         700
 #define CERT_NAME_MISMATCH      701
+#define SCRIPT_MATCH_NO_MATCH   702
+#define CERT_ERR_BAD_CHAIN      703
+#define CERT_OK                 704
+#define REQUEST_REDIRECTED      705
+#define TOO_MANY_REDIRECTS      706
+#define REDIRECT_LOOP           707
+#define INVALID_URL             708
+#define PROXY_AUTHENTICATION_FAILED 709
+#define CONFIGURED_KEY_NOT_MATCH 710
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT3 301
@@ -276,7 +285,7 @@
 #define YES_STR                 401
 #define NO_STR                  402
 #define SESSION_INFO_TIP2       403
-#define VERSION                 404
+#define VERSION2                404
 #define CLOSED_ON_COMPLETION    405
 #define SFTP_PROTOCOL_NAME2     406
 #define FS_RENAME_NOT_SUPPORTED 407
@@ -366,7 +375,7 @@
 #define RESUME_BUTTON           499
 #define FTP_NO_FEATURE_INFO     500
 #define FTP_FEATURE_INFO        501
-#define COPY_INFO_CPS_LIMIT     502
+#define COPY_INFO_CPS_LIMIT2    502
 #define COPY_KEY_BUTTON         503
 #define UPDATE_KEY_BUTTON       504
 #define ADD_KEY_BUTTON          505
@@ -396,6 +405,14 @@
 #define SCRIPT_SYNCHRONIZE_CHECKLIST 529
 #define COPY_INFO_REMOVE_CTRLZ  530
 #define COPY_INFO_REMOVE_BOM    531
+#define SCRIPT_NON_DEFAULT_COPY_PARAM 532
+#define SCRIPT_NON_DEFAULT_SYNC_PARAM 533
+#define KEY_TYPE_CONVERT        534
+#define VERSION_BUILD           535
+#define VERSION_DEV_BUILD       536
+#define VERSION_DEBUG_BUILD     537
+#define VERSION_DONT_DISTRIBUTE 538
+#define WEBDAV_EXTENSION_INFO   539
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601
@@ -406,9 +423,14 @@
 #define FILEZILLA_COPYRIGHT2    607
 #define FILEZILLA_URL           608
 #define OPENSSL_BASED_ON        609
-#define OPENSSL_COPYRIGHT       610
-#define OPENSSL_VERSION         611
+#define OPENSSL_COPYRIGHT2      610
 #define OPENSSL_URL             612
+#define NEON_BASED_ON           613
+#define NEON_COPYRIGHT          614
+#define NEON_URL                615
+#define EXPAT_BASED_ON          616
+#define EXPAT_COPYRIGHT         617
+#define EXPAT_URL               618
 #define PUTTY_LICENSE_URL       625
 #define MAIN_MSG_TAG            631
 

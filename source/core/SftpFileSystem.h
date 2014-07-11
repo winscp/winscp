@@ -71,7 +71,6 @@ public:
     const UnicodeString NewName);
   virtual void __fastcall CopyFile(const UnicodeString FileName,
     const UnicodeString NewName);
-  virtual UnicodeString __fastcall FileUrl(const UnicodeString FileName);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
     TSpaceAvailable & ASpaceAvailable);
@@ -160,7 +159,7 @@ protected:
   void __fastcall SFTPDirectorySource(const UnicodeString DirectoryName,
     const UnicodeString TargetDir, int Attrs, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  void __fastcall SFTPConfirmOverwrite(UnicodeString & FileName,
+  void __fastcall SFTPConfirmOverwrite(const UnicodeString & FullFileName, UnicodeString & FileName,
     const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
     TSFTPOverwriteMode & Mode, const TOverwriteFileParams * FileParams);
   bool SFTPConfirmResume(const UnicodeString DestFileName, bool PartialBiggerThanSource,

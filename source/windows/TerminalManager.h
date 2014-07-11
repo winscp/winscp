@@ -30,6 +30,7 @@ public:
   TDateTime ReopenStart;
   TDateTime DirectoryLoaded;
   TTerminalThread * TerminalThread;
+  TDateTime QueueOperationStart;
 };
 //---------------------------------------------------------------------------
 class TTerminalManager : public TTerminalList
@@ -56,7 +57,7 @@ public:
   void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
-  void __fastcall NewSession(bool FromSite);
+  void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl);
   void __fastcall Idle();
   UnicodeString __fastcall TerminalTitle(TTerminal * Terminal);
   void __fastcall HandleException(Exception * E);
@@ -64,6 +65,7 @@ public:
   void __fastcall QueueStatusUpdated();
   TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
+  void __fastcall UpdateSessionCredentials(TSessionData * Data);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
@@ -95,8 +97,7 @@ private:
   TDateTime FDirectoryReadingStart;
   TAuthenticateForm * FAuthenticateForm;
   TCriticalSection * FQueueSection;
-  TTerminalQueue * FQueueWithEvent;
-  TQueueEvent FQueueEvent;
+  std::vector<std::pair<TTerminalQueue *, TQueueEvent> > FQueueEvents;
   unsigned int FTaskbarButtonCreatedMessage;
   ITaskbarList3 * FTaskbarList;
   int FAuthenticating;
@@ -131,7 +132,7 @@ private:
   void __fastcall TerminalShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress,
-    bool & Cancel);
+    int ResolvedLinks, bool & Cancel);
   void __fastcall TerminalInformation(TTerminal * Terminal, const UnicodeString & Str,
     bool Status, int Phase);
   void __fastcall FreeAll();
@@ -145,8 +146,7 @@ private:
   void __fastcall OperationFinished(::TFileOperation Operation, TOperationSide Side,
     bool Temp, const UnicodeString & FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
-  void __fastcall OperationProgress(TFileOperationProgressType & ProgressData,
-    TCancelStatus & Cancel);
+  void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall DeleteLocalFile(const UnicodeString FileName, bool Alternative);
   void __fastcall QueueEvent(TTerminalQueue * Queue, TQueueEvent Event);
   TAuthenticateForm * __fastcall MakeAuthenticateForm(TTerminal * Terminal);

@@ -1465,7 +1465,7 @@ class COleCmdUI;
 /////////////////////////////////////////////////////////////////////////////
 // OLE event sink map handling (more in AFXDISP.H)
 
-#ifndef _AFX_NO_OCC_SUPPORT
+//#ifndef _AFX_NO_OCC_SUPPORT
 
 struct AFX_EVENTSINKMAP_ENTRY;
 
@@ -1501,7 +1501,7 @@ protected: \
 
 #endif
 
-#endif //!_AFX_NO_OCC_SUPPORT
+//#endif //!_AFX_NO_OCC_SUPPORT
 
 /////////////////////////////////////////////////////////////////////////////
 // OLE connection map handling (more in AFXDISP.H)

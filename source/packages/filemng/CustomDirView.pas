@@ -90,7 +90,6 @@ type
   TDDFileOperationExecutedEvent = procedure(Sender: TObject; dwEffect: LongInt; SourcePath, TargetPath: string) of object;
 
   TDirViewExecFileEvent = procedure(Sender: TObject; Item: TListItem; var AllowExec: Boolean) of object;
-  TRenameEvent = procedure(Sender: TObject; Item: TListItem; NewName: string) of object;
   TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; var Matches: Boolean; AllowImplicitMatches: Boolean) of object;
   TDirViewGetOverlayEvent = procedure(Sender: TObject; Item: TListItem; var Indexes: Word) of object;
   TDirViewUpdateStatusBarEvent = procedure(Sender: TObject; const FileInfo: TStatusFileInfo) of object;
@@ -132,19 +131,13 @@ type
   private
     FAddParentDir: Boolean;
     FDimmHiddenFiles: Boolean;
-    FShowDirectories: Boolean;
-    FShowSubDirSize: Boolean;
-    FFormatSizeBytes: Boolean;
-    FSortByExtension: Boolean;
+    FFormatSizeBytes: TFormatBytesStyle;
     FWantUseDragImages: Boolean;
     FDragDropFilesEx: TCustomizableDragDropFilesEx;
-    FSingleClickToExec: Boolean;
     FUseSystemContextMenu: Boolean;
     FOnGetSelectFilter: TDVGetFilterEvent;
     FOnStartLoading: TNotifyEvent;
     FOnLoaded: TNotifyEvent;
-    FOnDirUpdated: TNotifyEvent;
-    FReloadTime: TSystemTime;
     FDragDrive: TDrive;
     FExeDrag: Boolean;
     FDDLinkOnExeDrag: Boolean;
@@ -189,8 +182,6 @@ type
     FMaxHistoryCount: Integer;
     FPathLabel: TCustomPathLabel;
     FOnUpdateStatusBar: TDirViewUpdateStatusBarEvent;
-    FOnBeginRename: TRenameEvent;
-    FOnEndRename: TRenameEvent;
     FOnHistoryChange: TDirViewNotifyEvent;
     FOnHistoryGo: TDVHistoryGoEvent;
     FOnPathChange: TDirViewNotifyEvent;
@@ -316,7 +307,6 @@ type
     procedure SelectFiles(Filter: TFileFilter; Select: Boolean);
     procedure SetAddParentDir(Value: Boolean); virtual;
     procedure SetDimmHiddenFiles(Value: Boolean); virtual;
-    procedure SetShowDirectories(Value: Boolean); virtual;
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); virtual; abstract;
     procedure SetLoadEnabled(Enabled : Boolean); virtual;
     procedure SetMultiSelect(Value: Boolean); override;
@@ -331,10 +321,8 @@ type
     procedure PathChanged; virtual;
     procedure PathChanging(Relative: Boolean);
     procedure SetPath(Value: string); virtual; abstract;
-    procedure SetSortByExtension(Value: Boolean);
     procedure SetShowHiddenFiles(Value: Boolean); virtual;
-    procedure SetShowSubDirSize(Value: Boolean); virtual;
-    procedure SetFormatSizeBytes(Value: Boolean);
+    procedure SetFormatSizeBytes(Value: TFormatBytesStyle);
     procedure SetViewStyle(Value: TViewStyle); override;
     procedure SetWatchForChanges(Value: Boolean); virtual;
     function TargetHasDropHandler(Item: TListItem; Effect: Integer): Boolean; virtual;
@@ -355,20 +343,20 @@ type
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
-    function AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean;
-      FocusedFileOnlyWhenFocused: Boolean): Boolean;
     constructor Create(AOwner: TComponent); override;
-    procedure CreateDirectory(DirName: string); virtual; abstract;
     destructor Destroy; override;
     procedure Load; virtual;
     procedure Reload(CacheIcons: Boolean); virtual;
     function CreateFocusedFileList(FullPath: Boolean; FileList: TStrings = nil): TStrings;
     function CreateFileList(Focused: Boolean; FullPath: Boolean; FileList: TStrings = nil): TStrings;
+    function AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean;
+      FocusedFileOnlyWhenFocused: Boolean): Boolean;
     function DoSelectByMask(Select: Boolean): Boolean; override;
     procedure ExecuteHomeDirectory; virtual; abstract;
     procedure ExecuteParentDirectory; virtual; abstract;
     procedure ExecuteRootDirectory; virtual; abstract;
     procedure ExecuteCurrentFile();
+    procedure CreateDirectory(DirName: string); virtual; abstract;
     function FindFileItem(FileName: string): TListItem;
     procedure HistoryGo(Index: Integer);
     function ItemIsDirectory(Item: TListItem): Boolean; virtual; abstract;
@@ -399,11 +387,8 @@ type
 
     property AddParentDir: Boolean read FAddParentDir write SetAddParentDir default False;
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
-    property ShowDirectories: Boolean read FShowDirectories write SetShowDirectories default True;
     property DragDropFilesEx: TCustomizableDragDropFilesEx read FDragDropFilesEx;
-    property ShowSubDirSize: Boolean read FShowSubDirSize write SetShowSubDirSize default False;
-    property FormatSizeBytes: Boolean read FFormatSizeBytes write SetFormatSizeBytes default False;
-    property SortByExtension: Boolean read FSortByExtension write SetSortByExtension default False;
+    property FormatSizeBytes: TFormatBytesStyle read FFormatSizeBytes write SetFormatSizeBytes default fbNone;
     property WantUseDragImages: Boolean read FWantUseDragImages write FWantUseDragImages default True;
     property UseDragImages: Boolean read GetUseDragImages stored False;
     property FullDrag default True;
@@ -416,8 +401,6 @@ type
     property HasParentDir: Boolean read FHasParentDir;
     property Path: string read GetPath write SetPath;
     property PathName: string read GetPathName;
-    property ReloadTime: TSystemTime read FReloadTime;
-    property SingleClickToExec: Boolean read FSingleClickToExec write FSingleClickToExec default False;
     property UseSystemContextMenu: Boolean read FUseSystemContextMenu
       write FUseSystemContextMenu default True;
     property Loading: Boolean read FLoading;
@@ -449,13 +432,9 @@ type
     property Mask: string read FMask write SetMask;
 
     property OnContextPopup;
-    property OnBeginRename: TRenameEvent read FOnBeginRename write FOnBeginRename;
-    property OnEndRename: TRenameEvent read FOnEndRename write FOnEndRename;
     property OnGetSelectFilter: TDVGetFilterEvent read FOnGetSelectFilter write FOnGetSelectFilter;
     property OnStartLoading: TNotifyEvent read FOnStartLoading write FOnStartLoading;
     property OnLoaded: TNotifyEvent read FOnLoaded write FOnLoaded;
-    {This event is fired, when any update has made to the listview}
-    property OnDirUpdated: TNotifyEvent read FOnDirUpdated write FOnDirUpdated;
     {The mouse has entered the component window as a target of a drag&drop operation:}
     property OnDDDragEnter: TDDOnDragEnter read FOnDDDragEnter write FOnDDDragEnter;
     {The mouse has leaved the component window as a target of a drag&drop operation:}
@@ -485,7 +464,7 @@ type
     {The component window is the target of a drag&drop operation:}
     property OnDDProcessDropped: TOnProcessDropped
       read FOnDDProcessDropped write FOnDDProcessDropped;
-    {An error has occured during a drag&drop operation:}
+    {An error has occurred during a drag&drop operation:}
     property OnDDError: TDDErrorEvent read FOnDDError write FOnDDError;
     {The drag&drop operation has been executed:}
     property OnDDExecuted: TDDExecutedEvent
@@ -558,7 +537,6 @@ var
   StdDirSelIcon: Integer;
   DropSourceControl: TObject;
   UnknownFileIcon: Integer = 0;
-  HasExtendedCOMCTL32: Boolean;
   StdDirTypeName: string;
   DefaultExeIcon: Integer;
   UserDocumentDirectory: string;
@@ -566,7 +544,7 @@ var
 implementation
 
 uses
-  Math, DirViewColProperties;
+  Math, DirViewColProperties, UITypes, Types;
 
 const
   Space = ' ';
@@ -586,6 +564,10 @@ begin
   begin
     GlobalsInitialized := True;
 
+    // Calling GetshFileInfo in Windows Session 0 sometime cause crash
+    // (not immediately, but very shortly afterwards [few ms]).
+    // So this code was moved from initialization section to avoid it
+    // being used for non-GUI runs.
     UnknownFileIcon := GetshFileInfo('$#)(.#$)', FILE_ATTRIBUTE_NORMAL,
       SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES).iIcon;
     DefaultExeIcon := GetshFileInfo('.COM',
@@ -614,9 +596,6 @@ type
     Mask: string;
     FocusedItem: string;
   end;
-
-var
-  COMCTL32Version: DWORD;
 
 destructor TDirViewState.Destroy;
 begin
@@ -715,7 +694,7 @@ begin
   ShellLink := IUnk as IShellLink;
   IPFile := IUnk as IPersistFile;
 
-  if FileExists(TargetFile) and UpdateIfExists then
+  if FileExists(ApiPath(TargetFile)) and UpdateIfExists then
   begin
     HRes := IPFile.Load(PChar(TargetFile), 0);
     if not Succeeded(HRes) then Exit;
@@ -777,40 +756,6 @@ begin
   end
     else Result := False;
 end; {GetShellDisplayName}
-
-function COMCTL32OK: Boolean;
-{Returs, whether COMCTL32 supports the extended display properties:
- COMCTL32.DLL version 4.70 or higher is required. Version 4.70 is
- included in Internet Explorer 4 with Active Desktop.
- Updates of COMCTL32.DLL are available at:
- http://msdn.microsoft.com/developer/downloads/files/40Comupd.htm }
-var
-  VerInfoSize: DWORD;
-  Dummy: DWORD;
-  VerInfo: Pointer;
-  FileInfo: PVSFixedFileInfo;
-  FileInfoSize: UINT;
-begin
-  Result := False;
-  VerInfoSize := GetFileVersionInfoSize('COMCTL32.DLL', Dummy);
-  if VerInfoSize > 0 then
-  begin
-    GetMem(VerInfo, VerInfoSize);
-    try
-      if GetFileVersionInfo(PChar('COMCTL32.DLL'), 0, VerInfoSize, VerInfo) then
-      begin
-        if VerQueryValue(VerInfo, '\', Pointer(FileInfo), FileInfoSize) then
-        begin
-          ComCTL32Version := FileInfo.dwFileVersionMS;
-          Result := (ComCTL32Version >= $40046); { COMCTL32 Version >= 4.70  required }
-        end
-          else ComCTL32Version := 0;
-      end;
-    finally
-      FreeMem(VerInfo, VerInfoSize);
-    end;
-  end;
-end; {COMCTL32OK}
 
 function OverlayImageList(Size: Integer): TImageList;
 
@@ -892,13 +837,10 @@ begin
   FFilesSelSize := 0;
   FDimmHiddenFiles := True;
   FShowHiddenFiles := True;
-  FShowDirectories := True;
-  FShowSubDirSize := False;
-  FFormatSizeBytes := False;
+  FFormatSizeBytes := fbNone;
   FWantUseDragImages := True;
   FAddParentDir := False;
   FullDrag := True;
-  FSingleClickToExec := False;
   FInvalidNameChars := '\/:*?"<>|';
   FHasParentDir := False;
   FDragOnDriveIsMove := False;
@@ -951,14 +893,8 @@ begin
   FDragDropFilesEx := TCustomizableDragDropFilesEx.Create(Self);
   with FDragDropFilesEx do
   begin
-    {$IFDEF OLD_DND}
     AutoDetectDnD := False;
     DragDetectDelta  := 4;
-    {$ELSE}
-    DragDetect.Automatic := False;
-    DragDetect.DeltaX := 4;
-    DragDetect.DeltaY := 4;
-    {$ENDIF}
     AcceptOwnDnD := True;
     BringToFront := True;
     CompleteFileList := True;
@@ -1103,7 +1039,7 @@ begin
       end;
 
   if (Message.NMHdr.code = NM_CUSTOMDRAW) and
-     HasExtendedCOMCTL32 and Valid and (not Loading) then
+     Valid and (not Loading) then
     with PNMLVCustomDraw(Message.NMHdr)^ do
       try
         Message.Result := Message.Result or CDRF_NOTIFYPOSTPAINT;
@@ -1174,16 +1110,6 @@ begin
   end;
 end; { SetPathLabel }
 
-procedure TCustomDirView.SetShowDirectories(Value: Boolean);
-begin
-  if Value <> FShowDirectories then
-  begin
-    FShowDirectories := Value;
-    if DirOK then Reload(True);
-    Self.Repaint;
-  end;
-end; {SetShowDirectories}
-
 procedure TCustomDirView.SetShowHiddenFiles(Value: Boolean);
 begin
   if ShowHiddenFiles <> Value then
@@ -1193,29 +1119,14 @@ begin
   end;
 end;
 
-procedure TCustomDirView.SetShowSubDirSize(Value: Boolean);
-begin
-  if Value <> FShowSubDirSize then
-    FShowSubDirSize := Value;
-end; {SetShowSubDirSize}
-
-procedure TCustomDirView.SetFormatSizeBytes(Value: Boolean);
+procedure TCustomDirView.SetFormatSizeBytes(Value: TFormatBytesStyle);
 begin
   if Value <> FFormatSizeBytes then
   begin
     FFormatSizeBytes := Value;
     Self.Repaint;
   end;
-end; {SetShowSubDirSize}
-
-procedure TCustomDirView.SetSortByExtension(Value: Boolean);
-Begin
-  if Value <> FSortByExtension then
-  begin
-    FSortByExtension := Value;
-    SortItems;
-  end;
-end; {SetSortByExtension}
+end; {SetFormatSizeBytes}
 
 function TCustomDirView.GetDragSourceEffects: TDropEffectSet;
 begin
@@ -1721,7 +1632,7 @@ end;
 procedure TCustomDirView.WMLButtonDblClk(var Message: TWMLButtonDblClk);
 begin
   inherited;
-  if (not SingleClickToExec) and Assigned(ItemFocused) and (not Loading) and
+  if Assigned(ItemFocused) and (not Loading) and
      (GetItemAt(Message.XPos, Message.YPos) = ItemFocused) then
   begin
     if GetKeyState(VK_MENU) < 0 then DisplayPropertiesMenu
@@ -1731,13 +1642,6 @@ end;
 
 procedure TCustomDirView.WMLButtonUp(var Message: TWMLButtonUp);
 begin
-  if SingleClickToExec and FDragEnabled and Assigned(ItemFocused) and (not Loading) and
-     (GetItemAt(Message.XPos, Message.YPos) = ItemFocused) and
-     (GetKeyState(VK_SHIFT) >= 0) and (GetKeyState(VK_CONTROL) >= 0) then
-  begin
-    if GetKeyState(VK_MENU) < 0 then DisplayPropertiesMenu
-      else Execute(ItemFocused);
-  end;
   FDragEnabled := False;
   inherited;
 end;
@@ -1956,8 +1860,6 @@ begin
         FNotifyEnabled := False;
         ClearItems;
 
-        GetSystemTime(FReloadTime);
-
         FFilesSize := 0;
         FFilesSelSize := 0;
         SortType := stNone;
@@ -2002,9 +1904,6 @@ begin
         // because we really want these to be executed
 
         FNotifyEnabled := True;
-
-        if DirOK and not FAbortLoading and Assigned(FOnDirUpdated) then
-          FOnDirUpdated(Self);
 
         FocusSomething;
 
@@ -2478,15 +2377,12 @@ end;
 
 procedure TCustomDirView.Edit(const HItem: TLVItem);
 var
-  Item: TListItem;
   Info: string;
   Index: Integer;
 begin
   if Length(HItem.pszText) = 0 then LoadEnabled := True
     else
   begin
-    Item := GetItemFromHItem(HItem);
-
     {Does the changed filename contains invalid characters?}
     if StrContains(FInvalidNameChars, HItem.pszText) then
     begin
@@ -2500,13 +2396,7 @@ begin
     end
       else
     begin
-      if Assigned(FOnBeginRename) then
-        FOnBeginRename(Self, Item, string(HItem.pszText));
-
       InternalEdit(HItem);
-
-      if Assigned(FOnEndRename) then
-        FOnEndRename(Self, Item, string(HItem.pszText));
     end;
   end;
 end; {Edit}
@@ -2801,11 +2691,7 @@ end;
 procedure TCustomDirView.CMColorChanged(var Message: TMessage);
 begin
   inherited;
-  // particularly when changing color back to default (clWindow),
-  // non-client area (border line) is not redrawn,
-  // keeping previous color. force redraw here
-  if HandleAllocated then
-    RedrawWindow(Handle, nil, 0, RDW_INVALIDATE or RDW_FRAME);
+  ForceColorChange(Self);
 end;
 
 procedure TCustomDirView.WndProc(var Message: TMessage);
@@ -3285,7 +3171,7 @@ begin
   // when receiving/losing focus, selection is not redrawn in report view
   // (except for focus item selection),
   // probably when double buffering is enabled (LVS_EX_DOUBLEBUFFER).
-  // But even without LVS_EX_DOUBLEBUFFER, selection behing file icon is not updated.
+  // But even without LVS_EX_DOUBLEBUFFER, selection behind file icon is not updated.
   if ViewStyle = vsReport then
   begin
     if (SelCount >= 2) or ((SelCount >= 1) and ((not Assigned(ItemFocused)) or (not ItemFocused.Selected))) then
@@ -3302,8 +3188,6 @@ begin
 end;
 
 initialization
-  HasExtendedCOMCTL32 := COMCTL32OK;
-
   DropSourceControl := nil;
 
   SetLength(WinDir, MAX_PATH);

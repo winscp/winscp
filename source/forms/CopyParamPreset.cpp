@@ -50,7 +50,10 @@ void __fastcall TCopyParamPresetDialog::UpdateControls()
 {
   EnableControl(OkButton, !DescriptionEdit->Text.IsEmpty());
   EnableControl(RuleGroup, HasRuleCheck->Checked);
-  CurrentRuleButton->Visible = (FCurrentRuleData != NULL);
+  CurrentRuleButton->Visible =
+    (FCurrentRuleData != NULL) &&
+    // current rule data are loaded implicitly
+    (FMode != cpmAddCurrent);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamPresetDialog::ControlChange(TObject * /*Sender*/)
@@ -99,7 +102,15 @@ bool __fastcall TCopyParamPresetDialog::Execute(TCopyParamList * CopyParamList,
     DescriptionEdit->Text = L"";
     TCopyParamType Default;
     CopyParamsFrame->Params = Default;
-    HasRuleCheck->Checked = false;
+    if (FMode == cpmAddCurrent)
+    {
+      SetRuleData(*FCurrentRuleData);
+      HasRuleCheck->Checked = true;
+    }
+    else
+    {
+      HasRuleCheck->Checked = false;
+    }
     FIndex = -1; // never used
     if (Index < 0)
     {
@@ -202,7 +213,7 @@ void __fastcall TCopyParamPresetDialog::FormCloseQuery(TObject * /*Sender*/,
 
     int Index = FCopyParamList->IndexOfName(Description);
     if (((FMode == cpmEdit) && (Index >= 0) && (Index != FIndex)) ||
-        (((FMode == cpmAdd) || (FMode == cpmDuplicate)) && (Index >= 0)))
+        (((FMode == cpmAdd) || (FMode == cpmAddCurrent) || (FMode == cpmDuplicate)) && (Index >= 0)))
     {
       DescriptionEdit->SetFocus();
       throw Exception(FMTLOAD(COPY_PARAM_DUPLICATE, (Description)));

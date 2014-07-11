@@ -313,7 +313,7 @@ procedure Register;
 implementation
 
 uses
-  PasTools;
+  PasTools, Types;
 
 const HDF_SORTUP = $400;
 const HDF_SORTDOWN = $200;

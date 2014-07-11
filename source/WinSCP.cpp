@@ -55,6 +55,7 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
       FinalizeSystemSettings();
       FinalizeWinHelp();
       CoreFinalize();
+      WinFinalize();
     }
   }
   catch (Exception &E)

@@ -61,7 +61,7 @@
 #
 #############################################################################
 # Define defaults if not defined
-
+UNICODE=1
 # Default to DEBUG mode
 !ifndef DEBUG
 DEBUG=0
@@ -137,7 +137,8 @@ NO_CLEAN_PCH=0
 !endif
 
 BASE=W
-MODEL=N
+MODEL=U
+TARGDEFS=/D_UNICODE /DUNICODE /D_AFX_NO_OLEDB_SUPPORT /D_AFX_NO_OCC_SUPPORT
 !if "$(MBCS)" != "0"
 TARGDEFS=$(TARGDEFS) /D_MBCS
 !endif
@@ -301,51 +302,30 @@ MISC=\
 	afxdbcs.obj afxstate.obj afxtls.obj fixalloc.obj \
         mtcore.obj mtex.obj
 
-WINDOWS=\
-	wincore.obj winfrm.obj winfrm2.obj winfrmx.obj \
-	winmdi.obj tooltip.obj winmini.obj winhand.obj \
-	winmain.obj barcore.obj bartool.obj bardlg.obj \
-	barstat.obj bardock.obj dockcont.obj dockstat.obj \
-	dcprev.obj dcmeta.obj trckrect.obj barcool.obj
+WINDOWS=winhand.obj
 
-DIALOG=\
-	winctrl1.obj winctrl2.obj winctrl3.obj winctrl4.obj \
-	winbtn.obj dlgcore.obj dlgdata.obj dlgfloat.obj \
-	dlgprop.obj dlgcomm.obj dlgfile.obj dlgprnt.obj \
-	dlgclr.obj dlgfnt.obj dlgfr.obj ccdata.obj dlgtempl.obj \
-        winctrl6.obj winctrl7.obj
+DIALOG=
 
-WINMISC=\
-	wingdi.obj wingdix.obj winstr.obj winmenu.obj \
-	auxdata.obj afxcrit.obj afxtrace.obj winutil.obj winocc.obj
+WINMISC=afxcrit.obj winstr.obj winutil.obj auxdata.obj wingdi.obj
 
-DOCVIEW=\
-	cmdtarg.obj doccore.obj doctempl.obj \
-	docsingl.obj docmulti.obj docmgr.obj \
-	viewcore.obj viewprnt.obj winsplit.obj viewscrl.obj \
-	viewform.obj viewedit.obj viewprev.obj viewcmn.obj \
-	docmapi.obj
+DOCVIEW=
 
 INTERNET=inet.obj filefind.obj
 !if "$(UNICODE)" == "1"
-INTERNET=$(INTERNET) isapimix.obj
+#INTERNET=$(INTERNET) isapimix.obj
 !endif
 
-APPLICATION=\
-	thrdcore.obj appcore.obj appinit.obj appterm.obj \
-	appui.obj appui1.obj appui2.obj appui3.obj appgray.obj \
-	appdlg.obj app3d.obj appprnt.obj apphelp.obj apphelpx.obj \
-	filelist.obj
+APPLICATION=appterm.obj appui1.obj appinit.obj apphelp.obj thrdcore.obj
 
 !if "$(DLL)" != "2"
-APPLICATION=$(APPLICATION) app3ds.obj \
-	nolib.obj appmodul.obj dllmodul.obj oleexp.obj dumpstak.obj
+#APPLICATION=$(APPLICATION) app3ds.obj \
+#	nolib.obj appmodul.obj dllmodul.obj oleexp.obj dumpstak.obj
 !endif
 
 # ODBC components:
-DB=\
-	dbcore.obj dbrfx.obj dbview.obj dbflt.obj \
-	dblong.obj dbvar.obj
+#DB=\
+#	dbcore.obj dbrfx.obj dbview.obj dbflt.obj \
+#	dblong.obj dbvar.obj
 
 #
 # DAO is not supported under Borland C++
@@ -357,34 +337,9 @@ SOCKETS=sockcore.obj
 
 OLEREQ=olelock.obj
 
-OLE=\
-	oleinit.obj olecli1.obj olecli2.obj \
-	olecli3.obj olecnvrt.obj oledobj1.obj oledobj2.obj \
-	oledisp1.obj oledisp2.obj oledlgs1.obj oledlgs2.obj \
-	oledlgs3.obj oledata.obj olevar.obj olevar1.obj \
-	oledoc1.obj oledoc2.obj oledrop1.obj oledrop2.obj \
-	olemsgf.obj oleenum.obj olefact.obj oleipfrm.obj \
-	olelink.obj olemisc.obj olestrm.obj olesvr1.obj \
-	olesvr2.obj olereg.obj oletsvr.obj oleui1.obj \
-	oleui2.obj oleunk.obj oleverb.obj olecall.obj \
-	viewrich.obj oledll.obj oletyplb.obj \
-	olemon.obj winctrl5.obj viewhtml.obj \
-	occmgr.obj occevent.obj occcont.obj occsite.obj \
-	occlock.obj occddx.obj occddxf.obj occdlg.obj \
-	oledocvw.obj oledocob.obj oledoctg.obj oledocip.obj \
-	oledoccl.obj oleasmon.obj olebar.obj
+OLE=olevar.obj oleunk.obj
 
-OLECTL=\
-	ctlcache.obj ctlcore.obj ctlconn.obj \
-	ctldata.obj ctlevent.obj ctlmodul.obj \
-	ctlframe.obj ctlfont.obj ctlinplc.obj \
-	ctllic.obj oleconn.obj ctlobj.obj ctlpict.obj \
-	ctlpropx.obj ctlppg.obj ctlprop.obj \
-	ctlpset.obj ctlpstg.obj ctlpstm.obj \
-	ctlrefl.obj ctlreg.obj ctltrack.obj \
-	ctlview.obj olepset.obj ctlpbag.obj \
-	ctlquick.obj ctlnownd.obj \
-	ppgcolor.obj ppgfont.obj ppgpict.obj ppgstock.obj
+OLECTL=
 
 !if "$(DEBUG)" == "1"
 OLECTL=$(OLECTL) ctlinl.obj
@@ -543,8 +498,8 @@ $(CPPFLAGS) -I$(BCINCL);$(MFCINCL) /c $(PCH_CPP).cpp
 
 !if "$(DLL)" != "2"
 # Build final library
-$(LIBDIR)\$(GOAL).lib: $(OBJS)
-	@-if exist $@ erase $@
+$(LIBDIR)\$(GOAL).lib: $(D)\$(OBJS)
+	# @-if exist $@ erase $@
 	@$(LIB32) $@ /P2048 @&&!
 +-$(**: = &^
 +-)

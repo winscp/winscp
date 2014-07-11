@@ -44,7 +44,7 @@ __published:
   TCheckBox *IgnorePermErrorsCheck;
   TCheckBox *ClearArchiveCheck;
   TStaticText *IncludeFileMaskHintText;
-  TLabel *SpeedLabel2;
+  TLabel *SpeedLabel3;
   THistoryComboBox *SpeedCombo;
   TButton *IncludeFileMaskButton;
   TCheckBox *NewerOnlyCheck;
@@ -62,6 +62,7 @@ private:
   TCopyParamType * FParams;
   int FCopyParamAttrs;
   TRightsExtFrame * FRightsFrame;
+  bool FRemoveCtrlZ;
   void __fastcall SetParams(TCopyParamType value);
   TCopyParamType __fastcall GetParams();
   void __fastcall SetCopyParamAttrs(int value);

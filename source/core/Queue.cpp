@@ -205,13 +205,14 @@ public:
   {
     if (OnReadDirectoryProgress != NULL)
     {
-      OnReadDirectoryProgress(Sender, Progress, Cancel);
+      OnReadDirectoryProgress(Sender, Progress, ResolvedLinks, Cancel);
     }
   }
 
   TReadDirectoryProgressEvent OnReadDirectoryProgress;
   TObject * Sender;
   int Progress;
+  int ResolvedLinks;
   bool Cancel;
 };
 //---------------------------------------------------------------------------
@@ -256,8 +257,7 @@ protected:
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
     bool Temp, const UnicodeString & FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
-  void __fastcall OperationProgress(TFileOperationProgressType & ProgressData,
-    TCancelStatus & Cancel);
+  void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
 };
 //---------------------------------------------------------------------------
 // TSignalThread
@@ -273,7 +273,7 @@ int __fastcall TSimpleThread::ThreadProc(void * Thread)
   catch(...)
   {
     // we do not expect thread to be terminated with exception
-    assert(false);
+    FAIL;
   }
   SimpleThread->FFinished = true;
   SimpleThread->Finished();
@@ -575,6 +575,7 @@ void __fastcall TTerminalQueue::DeleteItem(TQueueItem * Item, bool CanKeep)
   if (!FTerminated)
   {
     bool Empty;
+    bool EmptyButMonitored;
     bool Monitored;
     {
       TGuard Guard(FItemsSection);
@@ -599,19 +600,24 @@ void __fastcall TTerminalQueue::DeleteItem(TQueueItem * Item, bool CanKeep)
         delete Item;
       }
 
-      Empty = true;
+      EmptyButMonitored = true;
       Index = 0;
-      while (Empty && (Index < FItems->Count))
+      while (EmptyButMonitored && (Index < FItems->Count))
       {
-        Empty = (GetItem(FItems, Index)->CompleteEvent != INVALID_HANDLE_VALUE);
+        EmptyButMonitored = (GetItem(FItems, Index)->CompleteEvent != INVALID_HANDLE_VALUE);
         Index++;
       }
+      Empty = (FItems->Count == 0);
     }
 
     DoListUpdate();
-    // report empty, if queue is empty or only monitored items are pending.
+    // report empty but/except for monitored, if queue is empty or only monitored items are pending.
     // do not report if current item was the last, but was monitored.
-    if (!Monitored && Empty)
+    if (!Monitored && EmptyButMonitored)
+    {
+      DoEvent(qeEmptyButMonitored);
+    }
+    if (Empty)
     {
       DoEvent(qeEmpty);
     }
@@ -1428,7 +1434,7 @@ void __fastcall TTerminalItem::TerminalPromptUser(TTerminal * Terminal,
   if (FItem == NULL)
   {
     // sanity, should not occur
-    assert(false);
+    FAIL;
     Result = false;
   }
   else
@@ -1478,7 +1484,7 @@ void __fastcall TTerminalItem::OperationFinished(TFileOperation /*Operation*/,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalItem::OperationProgress(
-  TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
+  TFileOperationProgressType & ProgressData)
 {
   if (FPause && !FTerminated && !FCancel)
   {
@@ -1507,11 +1513,11 @@ void __fastcall TTerminalItem::OperationProgress(
   {
     if (ProgressData.TransferingFile)
     {
-      Cancel = csCancelTransfer;
+      ProgressData.Cancel = csCancelTransfer;
     }
     else
     {
-      Cancel = csCancel;
+      ProgressData.Cancel = csCancel;
     }
   }
 
@@ -1978,8 +1984,8 @@ __fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
   {
     if (FLAGSET(Params, cpTemporary))
     {
-      FInfo->Source = "";
-      FInfo->ModifiedLocal = "";
+      FInfo->Source = L"";
+      FInfo->ModifiedLocal = L"";
     }
     else
     {
@@ -2545,11 +2551,12 @@ void __fastcall TTerminalThread::TerminalStartReadDirectory(TObject * Sender)
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalReadDirectoryProgress(
-  TObject * Sender, int Progress, bool & Cancel)
+  TObject * Sender, int Progress, int ResolvedLinks, bool & Cancel)
 {
   TReadDirectoryProgressAction Action(FOnReadDirectoryProgress);
   Action.Sender = Sender;
   Action.Progress = Progress;
+  Action.ResolvedLinks = ResolvedLinks;
   Action.Cancel = Cancel;
 
   WaitForUserAction(&Action);
@@ -2557,4 +2564,3 @@ void __fastcall TTerminalThread::TerminalReadDirectoryProgress(
   Cancel = Action.Cancel;
 }
 //---------------------------------------------------------------------------
-#pragma warn -8080

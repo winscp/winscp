@@ -69,6 +69,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FEditing = false;
   FRenaming = false;
   FNewSiteKeepName = false;
+  FForceNewSite = false;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -76,6 +77,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
 
   FOriginalSize = BoundsRect.GetSize();
   FBasicGroupBaseHeight = BasicGroup->Height - BasicSshPanel->Height - BasicFtpPanel->Height;
+  FNoteGroupOffset = NoteGroup->Top - (BasicGroup->Top + BasicGroup->Height);
   InitControls();
 }
 //---------------------------------------------------------------------
@@ -136,6 +138,7 @@ void __fastcall TLoginDialog::InitControls()
 
   ReadOnlyControl(TransferProtocolView);
   ReadOnlyControl(EncryptionView);
+  ReadOnlyControl(NoteMemo);
 
   MenuButton(ToolsMenuButton);
   MenuButton(ManageButton);
@@ -168,7 +171,7 @@ void __fastcall TLoginDialog::Init()
   }
   FInitialized = true;
 
-  Caption = FORMAT(L"%s %s", (AppName, Caption));
+  Caption = FormatFormCaption(this, Caption);
 
   InitControls();
 
@@ -182,7 +185,8 @@ void __fastcall TLoginDialog::Init()
 
   if (ALWAYS_FALSE(SessionTree->Items->Count == 0) ||
       ((SessionTree->Items->Count == 1) &&
-       ALWAYS_TRUE(IsNewSiteNode(SessionTree->Items->GetFirstNode()))))
+       ALWAYS_TRUE(IsNewSiteNode(SessionTree->Items->GetFirstNode()))) ||
+      FForceNewSite)
   {
     ActiveControl = HostNameEdit;
   }
@@ -462,6 +466,9 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
     TransferProtocolCombo->ItemIndex = FSProtocolToIndex(SessionData->FSProtocol, AllowScpFallback);
     TransferProtocolView->Text = TransferProtocolCombo->Text;
 
+    NoteGroup->Visible = !Trim(SessionData->Note).IsEmpty();
+    NoteMemo->Lines->Text = SessionData->Note;
+
     // just in case TransferProtocolComboChange is not triggered
     FDefaultPort = DefaultPort();
     FUpdatePortWithProtocol = true;
@@ -550,6 +557,10 @@ void __fastcall TLoginDialog::UpdateControls()
       FBasicGroupBaseHeight +
       (BasicSshPanel->Visible ? BasicSshPanel->Height : 0) +
       (BasicFtpPanel->Visible ? BasicFtpPanel->Height : 0);
+    int NoteGroupTop = (BasicGroup->Top + BasicGroup->Height) + FNoteGroupOffset;
+    NoteGroup->SetBounds(
+      NoteGroup->Left, (BasicGroup->Top + BasicGroup->Height) + FNoteGroupOffset,
+      NoteGroup->Width, NoteGroup->Top + NoteGroup->Height - NoteGroupTop);
     AnonymousLoginCheck->Checked =
       SameText(UserNameEdit->Text, AnonymousUserName) &&
       SameText(PasswordEdit->Text, AnonymousPassword);
@@ -845,13 +856,18 @@ TSessionData * __fastcall TLoginDialog::GetEditingSessionData()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveAsSession(bool ForceDialog)
 {
+  // Parse hostname before saving
+  // (HostNameEditExit is not triggered when child dialog pops up when it is invoked by accelerator)
+  // We should better handle this automaticaly when focus is moved to another dialog.
+  ParseHostName();
+
   std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
   SaveSession(SessionData.get());
 
   TSessionData * EditingSessionData = GetEditingSessionData();
 
   // collect list of empty folders (these are not persistent and known to login dialog only)
-  std::auto_ptr<TStrings> NewFolders(new TStringList());
+  std::unique_ptr<TStrings> NewFolders(new TStringList());
   TTreeNode * Node = SessionTree->Items->GetFirstNode();
   while (Node != NULL)
   {
@@ -1010,22 +1026,34 @@ void __fastcall TLoginDialog::DeleteSessionActionExecute(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::ReloadSessions()
+void __fastcall TLoginDialog::ReloadSessions(const UnicodeString & SelectSite)
 {
   SaveState();
+  if (!SelectSite.IsEmpty())
+  {
+    WinConfiguration->LastStoredSession = SelectSite;
+  }
   LoadSessions();
   LoadState();
-  if (SessionTree->Items->Count > 0)
-  {
-    SessionTree->Items->GetFirstNode()->MakeVisible();
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ImportSessionsActionExecute(TObject * /*Sender*/)
 {
-  if (DoImportSessionsDialog())
+  std::unique_ptr<TList> Imported(new TList());
+  if (DoImportSessionsDialog(Imported.get()))
   {
-    ReloadSessions();
+    UnicodeString SelectSite;
+    if (ALWAYS_TRUE(Imported->Count > 0))
+    {
+      // Focus the first imported session.
+      // We should also consider expanding all newly created folders
+      SelectSite = static_cast<TSessionData *>(Imported->Items[0])->Name;
+    }
+
+    ReloadSessions(SelectSite);
+
+    // Focus the tree with focused imported session(s).
+    SessionTree->SetFocus();
   }
 }
 //---------------------------------------------------------------------------
@@ -1053,6 +1081,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
 
   TAction * Action = NOT_NULL(dynamic_cast<TAction *>(BasicAction));
   bool PrevEnabled = Action->Enabled;
+  bool Editable = IsEditable();
 
   if ((Action == EditSessionAction) ||
       (Action == CloneToNewSiteAction))
@@ -1095,16 +1124,16 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == SaveSessionAction)
   {
-    SaveSessionAction->Enabled = NewSiteSelected || FEditing;
+    SaveSessionAction->Enabled = Editable;
   }
   else if (Action == SessionAdvancedAction)
   {
-    SessionAdvancedAction->Enabled = NewSiteSelected || FEditing;
+    SessionAdvancedAction->Enabled = Editable;
   }
   else if (Action == SaveAsSessionAction)
   {
     // Save as is needed for new site only when !SupportsSplitButton()
-    SaveAsSessionAction->Enabled = NewSiteSelected || FEditing;
+    SaveAsSessionAction->Enabled = Editable;
   }
   else if (Action == NewSessionFolderAction)
   {
@@ -1121,6 +1150,26 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
            (Action == CheckForUpdatesAction) || (Action == PreferencesAction))
   {
     Action->Visible = FLAGSET(FOptions, loExternalTools);
+  }
+  else if (Action == PasteUrlAction)
+  {
+    UnicodeString ClipboardUrl;
+    Action->Enabled =
+      TextFromClipboard(ClipboardUrl, true) &&
+      !ClipboardUrl.IsEmpty() &&
+      StoredSessions->IsUrl(ClipboardUrl);
+  }
+  else if (Action == GenerateUrlAction)
+  {
+    TSessionData * Data = GetSessionData();
+    // URL without hostname is pointless
+    Action->Enabled = (Data != NULL) && !Data->HostName.IsEmpty() && !FEditing;
+  }
+  else if (Action == CopyParamRuleAction)
+  {
+    TSessionData * Data = GetSessionData();
+    // without hostname it's pointless
+    Action->Enabled = (Data != NULL) && !Data->HostName.IsEmpty();
   }
   Handled = true;
 
@@ -1169,11 +1218,20 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
     }
     else
     {
+      FNewSiteData->Assign(SessionData);
+      FNewSiteData->Special = false;
+
       // This is actualy bit pointless, as we focus the last selected site anyway
       // in LoadState(). As of now, we hardly get any useful data
       // in ad-hoc DataList anyway, so it is not a big deal
-      FNewSiteData->Assign(SessionData);
-      FNewSiteData->Special = false;
+      // (this was implemented for support taking session url from clipboard instead
+      // of command-line, but without autoconnect, but this functionality was cancelled)
+      if (!FNewSiteData->IsSame(StoredSessions->DefaultSettings, false))
+      {
+        // we want to start with new site page
+        FForceNewSite = true;
+      }
+
       LoadContents();
     }
   }
@@ -1360,7 +1418,8 @@ void __fastcall TLoginDialog::LoadState()
   // (seems like it happens for sites that are at the same level
   // as site folders, e.g. for the very last root-level site, at long as
   // there are any folders)
-  if (!WinConfiguration->LastStoredSession.IsEmpty() && ALWAYS_TRUE(Visible))
+  if (!FForceNewSite &&
+      !WinConfiguration->LastStoredSession.IsEmpty() && ALWAYS_TRUE(Visible))
   {
     UnicodeString Path = WinConfiguration->LastStoredSession;
 
@@ -1515,6 +1574,11 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
       }
     }
   }
+  else if (M->Msg == WM_MANAGES_CAPTION)
+  {
+    // caption managed in TLoginDialog::Init()
+    M->Result = 1;
+  }
   else
   {
     TForm::Dispatch(Message);
@@ -1656,14 +1720,19 @@ void __fastcall TLoginDialog::HelpButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsDefaultResult(TModalResult Result)
 {
-  // When editing, there's no default button, so make sure we do not call DefaultResult
-  return !FEditing && (Result == DefaultResult(this));
+  return
+    // When editing or when hostname-less site is selected,
+    // there's no default button, so make sure we do not call DefaultResult
+    (FindDefaultButton(this) != NULL) &&
+    (FindDefaultButton(this)->ModalResult != mrNone) &&
+    (Result == DefaultResult(this));
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::FormCloseQuery(TObject * /*Sender*/,
-  bool & /*CanClose*/)
+  bool & CanClose)
 {
-  if (IsDefaultResult(ModalResult))
+  CanClose = EnsureNotEditing();
+  if (CanClose && IsDefaultResult(ModalResult))
   {
     SaveDataList(FDataList);
   }
@@ -1925,46 +1994,7 @@ TFSProtocol __fastcall TLoginDialog::GetFSProtocol(bool RequireScpFallbackDistin
 //---------------------------------------------------------------------------
 int __fastcall TLoginDialog::DefaultPort()
 {
-  TFSProtocol FSProtocol = GetFSProtocol(false);
-  TFtps Ftps = GetFtps();
-  int Result;
-  switch (FSProtocol)
-  {
-    case fsFTP:
-      if (Ftps == ftpsImplicit)
-      {
-        Result = FtpsImplicitPortNumber;
-      }
-      else
-      {
-        Result = FtpPortNumber;
-      }
-      break;
-
-    case fsWebDAV:
-      if (Ftps == ftpsNone)
-      {
-        Result = HTTPPortNumber;
-      }
-      else
-      {
-        Result = HTTPSPortNumber;
-      }
-      break;
-
-    default:
-      if (IsSshProtocol(FSProtocol))
-      {
-        Result = SshPortNumber;
-      }
-      else
-      {
-        FAIL;
-        Result = -1;
-      }
-      break;
-  }
-  return Result;
+  return ::DefaultPort(GetFSProtocol(false), GetFtps());
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
@@ -2464,7 +2494,12 @@ void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
       // before the session list gets destroyed
       SessionTree->Items->Clear();
       Configuration->Import(OpenDialog->FileName);
-      ReloadSessions();
+      ReloadSessions(L"");
+
+      if (SessionTree->Items->Count > 0)
+      {
+        SessionTree->Items->GetFirstNode()->MakeVisible();
+      }
     }
   }
 }
@@ -2636,13 +2671,25 @@ bool __fastcall TLoginDialog::EnsureNotEditing()
   bool Result = !FEditing;
   if (!Result)
   {
-    UnicodeString Message = MainInstructions(LoadStr(LOGIN_CANCEL_EDITING));
-    Result = (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) == qaOK);
-    if (Result)
+    UnicodeString Message = MainInstructions(LoadStr(LOGIN_SAVE_EDITING));
+    unsigned int Answer = MessageDialog(Message, qtConfirmation, qaYes |qaNo | qaCancel);
+    switch (Answer)
     {
-      CancelEditing();
-      // Make sure OK button gets enabled
-      UpdateControls();
+      case qaYes:
+        SaveAsSession(false);
+        Result = true;
+        break;
+
+      case qaNo:
+        CancelEditing();
+        // Make sure OK button gets enabled
+        UpdateControls();
+        Result = true;
+        break;
+
+      default:
+        // noop;
+        break;
     }
   }
   return Result;
@@ -2675,17 +2722,23 @@ void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
 {
   // If we ever allow showing advanced settings, while read-only,
   // we must make sure that FSessionData actually holds the advanced settings,
-  // what is currently does not, in order to avoid master password prompt,
+  // what it currently does not, in order to avoid master password prompt,
   // while cloning the session data in LoadSession.
   // To implement this, we may delegate the cloning to TWinConfiguration and
   // make use of FDontDecryptPasswords
   if (ALWAYS_TRUE(FSessionData != NULL))
   {
+    // parse hostname (it may change protocol particularly) before opening advanced settings
+    // (HostNameEditExit is not triggered when child dialog pops up when it is invoked by accelerator)
+    // We should better handle this automaticaly when focus is moved to another dialog.
+    ParseHostName();
+
     SaveSession(FSessionData);
     DoSiteAdvancedDialog(FSessionData, FOptions);
-    // not really needed as advanced site dialog can only change between
-    // fsSFTP and fsSFTPonly, difference of the two not being visible on
-    // login dialog.
+    // Needed only for Note.
+    // The only other property visible on Login dialog that Advanced site dialog
+    // can change is protocol (between fsSFTP and fsSFTPonly),
+    // difference of the two not being visible on Login dialog anyway.
     LoadSession(FSessionData);
     if (ALWAYS_TRUE(SessionTree->Selected != NULL) &&
         IsSiteNode(SessionTree->Selected))
@@ -2738,6 +2791,7 @@ void __fastcall TLoginDialog::SessionTreeMouseDown(TObject * /*Sender*/,
 void __fastcall TLoginDialog::SessionTreeContextPopup(TObject * /*Sender*/,
   TPoint & MousePos, bool & Handled)
 {
+  ResetSitesIncrementalSearch();
   TTreeNode * Node = SessionTree->GetNodeAt(MousePos.X, MousePos.Y);
   // This is mostly to prevent context menu from poping up,
   // while there is prompt to confirm cancelling session edit,
@@ -2826,9 +2880,7 @@ void __fastcall TLoginDialog::PuttyActionExecute(TObject * /*Sender*/)
   std::unique_ptr<TSessionData> Data(CloneSelectedSession());
   // putty does not support resolving environment variables in session settings
   Data->ExpandEnvironmentVariables();
-  OpenSessionInPutty(GUIConfiguration->PuttyPath, Data.get(),
-    Data->UserNameExpanded,
-    GUIConfiguration->PuttyPassword ? Data->Password : UnicodeString());
+  OpenSessionInPutty(GUIConfiguration->PuttyPath, Data.get());
 
   if (Close)
   {
@@ -2839,5 +2891,106 @@ void __fastcall TLoginDialog::PuttyActionExecute(TObject * /*Sender*/)
 void __fastcall TLoginDialog::LoginButtonDropDownClick(TObject * /*Sender*/)
 {
   MenuPopup(LoginDropDownMenu, LoginButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ParseUrl(const UnicodeString & Url)
+{
+  std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
+
+  SaveSession(SessionData.get());
+
+  // We do not want to pass in StoredSessions as we do not want the URL be
+  // parsed as pointing to a stored site.
+  // It also prevents resetting to defaults (do we want this?)
+  bool DefaultsOnly; // unused
+  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL);
+
+  LoadSession(SessionData.get());
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::PasteUrlActionExecute(TObject * /*Sender*/)
+{
+  UnicodeString ClipboardUrl;
+  if (ALWAYS_TRUE(TextFromClipboard(ClipboardUrl, true) && !ClipboardUrl.IsEmpty()))
+  {
+    if (!IsEditable())
+    {
+      // select new site node, when other node is selected and not in editing mode
+      SessionTree->Selected = GetNewSiteNode();
+    }
+
+    // sanity check
+    if (ALWAYS_TRUE(IsEditable()))
+    {
+      ParseUrl(ClipboardUrl);
+    }
+
+    // visualize the pasting
+    HostNameEdit->SetFocus();
+    HostNameEdit->SelectAll();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ParseHostName()
+{
+  UnicodeString HostName = HostNameEdit->Text;
+  if (!HostName.IsEmpty() &&
+      (StoredSessions->IsUrl(HostName) || (HostName.Pos(L"@") > 0)))
+  {
+    ParseUrl(HostName);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::HostNameEditExit(TObject * /*Sender*/)
+{
+  ParseHostName();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::GenerateUrlActionExecute(TObject * /*Sender*/)
+{
+  if (ALWAYS_TRUE(SelectedSession != NULL))
+  {
+    PersistNewSiteIfNeeded();
+    DoGenerateUrlDialog(SelectedSession, NULL);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CopyParamRuleActionExecute(TObject * /*Sender*/)
+{
+  TSessionData * Data = GetSessionData();
+  std::unique_ptr<TCopyParamList> CopyParamList(new TCopyParamList());
+  (*CopyParamList) = *GUIConfiguration->CopyParamList;
+
+  TCopyParamRuleData RuleData;
+  RuleData.HostName = Data->HostNameExpanded;
+  RuleData.UserName = Data->UserNameExpanded;
+  int CopyParamIndex = CopyParamList->Find(RuleData);
+  if (CopyParamIndex < 0)
+  {
+    TCopyParamRuleData RuleDataHostNameOnly;
+    RuleDataHostNameOnly.HostName = Data->HostNameExpanded;
+    CopyParamIndex = CopyParamList->Find(RuleDataHostNameOnly);
+  }
+
+  TCopyParamPresetMode Mode;
+  TCopyParamRuleData * CurrentRuleData = NULL;
+
+  if (CopyParamIndex < 0)
+  {
+    Mode = cpmAddCurrent;
+    CurrentRuleData = &RuleData;
+  }
+  else
+  {
+    Mode = cpmEdit;
+  }
+
+  TCopyParamType DummyDefaultCopyParams;
+
+  if (DoCopyParamPresetDialog(
+        CopyParamList.get(), CopyParamIndex, Mode, CurrentRuleData, DummyDefaultCopyParams))
+  {
+    GUIConfiguration->CopyParamList = CopyParamList.get();
+  }
 }
 //---------------------------------------------------------------------------

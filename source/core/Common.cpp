@@ -12,6 +12,8 @@
 #include <math.h>
 #include <shlobj.h>
 #include <limits>
+#include <shlwapi.h>
+#include <CoreMain.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -53,6 +55,7 @@ const wchar_t TokenPrefix = L'%';
 const wchar_t NoReplacement = wchar_t(false);
 const wchar_t TokenReplacement = wchar_t(true);
 const UnicodeString LocalInvalidChars = L"/\\:*?\"<>|";
+const UnicodeString PasswordMask = L"***";
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
@@ -678,6 +681,267 @@ bool __fastcall IsReservedName(UnicodeString FileName)
   return false;
 }
 //---------------------------------------------------------------------------
+// ApiPath support functions
+// Inspired by
+// http://stackoverflow.com/questions/18580945/need-clarification-for-converting-paths-into-long-unicode-paths-or-the-ones-star
+// This can be reimplemented using PathCchCanonicalizeEx on Windows 8 and later
+enum PATH_PREFIX_TYPE
+{
+  PPT_UNKNOWN,
+  PPT_ABSOLUTE,           //Found absolute path that is none of the other types
+  PPT_UNC,                //Found \\server\share\ prefix
+  PPT_LONG_UNICODE,       //Found \\?\ prefix
+  PPT_LONG_UNICODE_UNC,   //Found \\?\UNC\ prefix
+};
+//---------------------------------------------------------------------------
+static int __fastcall PathRootLength(UnicodeString Path)
+{
+  // Correction for PathSkipRoot API
+
+  // Replace all /'s with \'s because PathSkipRoot can't handle /'s
+  UnicodeString Result = ReplaceChar(Path, L'/', L'\\');
+
+  // Now call the API
+  LPCTSTR Buffer = PathSkipRoot(Result.c_str());
+
+  return (Buffer != NULL) ? (Buffer - Result.c_str()) : -1;
+}
+//---------------------------------------------------------------------------
+static bool __fastcall PathIsRelative_CorrectedForMicrosoftStupidity(UnicodeString Path)
+{
+  // Correction for PathIsRelative API
+
+  // Replace all /'s with \'s because PathIsRelative can't handle /'s
+  UnicodeString Result = ReplaceChar(Path, L'/', L'\\');
+
+  //Now call the API
+  return PathIsRelative(Result.c_str());
+}
+//---------------------------------------------------------------------------
+static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYPE & PrefixType)
+{
+  // Checks if 'pPath' begins with the drive, share, prefix, etc
+  // EXAMPLES:
+  //    Path                          Return:   Points at:                 PrefixType:
+  //   Relative\Folder\File.txt        0         Relative\Folder\File.txt   PPT_UNKNOWN
+  //   \RelativeToRoot\Folder          1         RelativeToRoot\Folder      PPT_ABSOLUTE
+  //   C:\Windows\Folder               3         Windows\Folder             PPT_ABSOLUTE
+  //   \\server\share\Desktop          15        Desktop                    PPT_UNC
+  //   \\?\C:\Windows\Folder           7         Windows\Folder             PPT_LONG_UNICODE
+  //   \\?\UNC\server\share\Desktop    21        Desktop                    PPT_LONG_UNICODE_UNC
+  // RETURN:
+  //      = Index in 'pPath' after the root, or
+  //      = 0 if no root was found
+  int Result = 0;
+
+  PrefixType = PPT_UNKNOWN;
+
+  if (!Path.IsEmpty())
+  {
+    int Len = Path.Length();
+
+    bool WinXPOnly = !IsWinVista();
+
+    // The PathSkipRoot() API doesn't work correctly on Windows XP
+    if (!WinXPOnly)
+    {
+      // Works since Vista and up, but still needs correction :)
+      int RootLength = PathRootLength(Path);
+      if (RootLength >= 0)
+      {
+        Result = RootLength + 1;
+      }
+    }
+
+    // Now determine the type of prefix
+    int IndCheckUNC = -1;
+
+    if ((Len >= 8) &&
+        (Path[1] == L'\\' || Path[1] == L'/') &&
+        (Path[2] == L'\\' || Path[2] == L'/') &&
+        (Path[3] == L'?') &&
+        (Path[4] == L'\\' || Path[4] == L'/') &&
+        (Path[5] == L'U' || Path[5] == L'u') &&
+        (Path[6] == L'N' || Path[6] == L'n') &&
+        (Path[7] == L'C' || Path[7] == L'c') &&
+        (Path[8] == L'\\' || Path[8] == L'/'))
+    {
+      // Found \\?\UNC\ prefix
+      PrefixType = PPT_LONG_UNICODE_UNC;
+
+      if (WinXPOnly)
+      {
+          //For older OS
+          Result += 8;
+      }
+
+      //Check for UNC share later
+      IndCheckUNC = 8;
+    }
+    else if ((Len >= 4) &&
+        (Path[1] == L'\\' || Path[1] == L'/') &&
+        (Path[2] == L'\\' || Path[2] == L'/') &&
+        (Path[3] == L'?') &&
+        (Path[4] == L'\\' || Path[4] == L'/'))
+    {
+      // Found \\?\ prefix
+      PrefixType = PPT_LONG_UNICODE;
+
+      if (WinXPOnly)
+      {
+          //For older OS
+          Result += 4;
+      }
+    }
+    else if ((Len >= 2) &&
+        (Path[1] == L'\\' || Path[1] == L'/') &&
+        (Path[2] == L'\\' || Path[2] == L'/'))
+    {
+      // Check for UNC share later
+      IndCheckUNC = 2;
+    }
+
+    if (IndCheckUNC >= 0)
+    {
+      // Check for UNC, i.e. \\server\share\ part
+      int Index = IndCheckUNC;
+      for (int SkipSlashes = 2; SkipSlashes > 0; SkipSlashes--)
+      {
+        for(; Index <= Len; Index++)
+        {
+          TCHAR z = Path[Index];
+          if ((z == L'\\') || (z == L'/') || (Index >= Len))
+          {
+            Index++;
+            if (SkipSlashes == 1)
+            {
+              if (PrefixType == PPT_UNKNOWN)
+              {
+                PrefixType = PPT_UNC;
+              }
+
+              if (WinXPOnly)
+              {
+                  //For older OS
+                  Result = Index;
+              }
+            }
+
+            break;
+          }
+        }
+      }
+    }
+
+    if (WinXPOnly)
+    {
+      // Only if we didn't determine any other type
+      if (PrefixType == PPT_UNKNOWN)
+      {
+        if (!PathIsRelative_CorrectedForMicrosoftStupidity(Path.SubString(Result, Path.Length() - Result + 1)))
+        {
+          PrefixType = PPT_ABSOLUTE;
+        }
+      }
+
+      // For older OS only
+      int RootLength = PathRootLength(Path.SubString(Result, Path.Length() - Result + 1));
+      if (RootLength >= 0)
+      {
+        Result = RootLength + 1;
+      }
+    }
+    else
+    {
+      // Only if we didn't determine any other type
+      if (PrefixType == PPT_UNKNOWN)
+      {
+        if (!PathIsRelative_CorrectedForMicrosoftStupidity(Path))
+        {
+          PrefixType = PPT_ABSOLUTE;
+        }
+      }
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall MakeUnicodeLargePath(UnicodeString Path)
+{
+  // Convert path from 'into a larger Unicode path, that allows up to 32,767 character length
+  UnicodeString Result;
+
+  if (!Path.IsEmpty())
+  {
+      // Determine the type of the existing prefix
+      PATH_PREFIX_TYPE PrefixType;
+      GetOffsetAfterPathRoot(Path, PrefixType);
+
+      // Assume path to be without change
+      Result = Path;
+
+      switch (PrefixType)
+      {
+        case PPT_ABSOLUTE:
+          {
+            // First we need to check if its an absolute path relative to the root
+            bool AddPrefix = true;
+            if ((Path.Length() >= 1) &&
+                ((Path[1] == L'\\') || (Path[1] == L'/')))
+            {
+              AddPrefix = FALSE;
+
+              // Get current root path
+              UnicodeString CurrentDir = GetCurrentDir();
+              PATH_PREFIX_TYPE PrefixType2; // unused
+              int Following = GetOffsetAfterPathRoot(CurrentDir, PrefixType2);
+              if (Following > 0)
+              {
+                AddPrefix = true;
+                Result = CurrentDir.SubString(1, Following - 1) + Result.SubString(2, Result.Length() - 1);
+              }
+            }
+
+            if (AddPrefix)
+            {
+              // Add \\?\ prefix
+              Result = L"\\\\?\\" + Result;
+            }
+          }
+          break;
+
+      case PPT_UNC:
+        // First we need to remove the opening slashes for UNC share
+        if ((Result.Length() >= 2) &&
+            ((Result[1] == L'\\') || (Result[1] == L'/')) &&
+            ((Result[2] == L'\\') || (Result[2] == L'/')))
+        {
+          Result = Result.SubString(3, Result.Length() - 2);
+        }
+
+        // Add \\?\UNC\ prefix
+        Result = L"\\\\?\\UNC\\" + Result;
+        break;
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall ApiPath(UnicodeString Path)
+{
+  if (Path.Length() >= MAX_PATH)
+  {
+    if (Configuration != NULL)
+    {
+      Configuration->Usage->Inc(L"LongPath");
+    }
+    Path = MakeUnicodeLargePath(Path);
+  }
+  return Path;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall DisplayableStr(const RawByteString & Str)
 {
   bool Displayable = true;
@@ -854,7 +1118,7 @@ int __fastcall FindCheck(int Result, const UnicodeString & Path)
 int __fastcall FindFirstUnchecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F)
 {
   F.Path = Path;
-  return FindFirst(Path, Attr, F);
+  return FindFirst(ApiPath(Path), Attr, F);
 }
 //---------------------------------------------------------------------------
 int __fastcall FindFirstChecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F)
@@ -874,7 +1138,7 @@ int __fastcall FindNextChecked(TSearchRecChecked & F)
 bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec)
 {
   int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-  bool Result = (FindFirst(FileName, FindAttrs, Rec) == 0);
+  bool Result = (FindFirst(ApiPath(FileName), FindAttrs, Rec) == 0);
   if (Result)
   {
     FindClose(Rec);
@@ -958,7 +1222,8 @@ struct TDateTimeParams
   TDateTime UnixEpoch;
   double BaseDifference;
   long BaseDifferenceSec;
-  // All Current* are actually global, not per-year
+  // All Current* are actually global, not per-year and
+  // are valid for Year 0 (current) only
   double CurrentDaylightDifference;
   long CurrentDaylightDifferenceSec;
   double CurrentDifference;
@@ -1104,6 +1369,7 @@ static void __fastcall EncodeDSTMargin(const SYSTEMTIME & Date, unsigned short Y
     TDateTime Temp = EncodeDateVerbose(Year, Date.wMonth, 1);
     Result = Temp + ((Date.wDayOfWeek - DayOfWeek(Temp) + 8) % 7) +
       (7 * (Date.wDay - 1));
+    // Day 5 means, the last occurence of day-of-week in month
     if (Date.wDay == 5)
     {
       unsigned short Month = static_cast<unsigned short>(Date.wMonth + 1);
@@ -1656,7 +1922,8 @@ bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycle
   memset(&Data, 0, sizeof(Data));
   Data.hwnd = NULL;
   Data.wFunc = FO_DELETE;
-  UnicodeString FileList(FileName);
+  // SHFileOperation does not support long paths anyway
+  UnicodeString FileList(ApiPath(FileName));
   FileList.SetLength(FileList.Length() + 2);
   FileList[FileList.Length() - 1] = L'\0';
   FileList[FileList.Length()] = L'\0';
@@ -1687,7 +1954,7 @@ bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycle
 //---------------------------------------------------------------------------
 void __fastcall DeleteFileChecked(const UnicodeString & FileName)
 {
-  if (!DeleteFile(FileName))
+  if (!DeleteFile(ApiPath(FileName)))
   {
     throw EOSExtException(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)));
   }
@@ -1714,7 +1981,7 @@ unsigned int __fastcall CancelAnswer(unsigned int Answers)
   }
   else
   {
-    assert(false);
+    FAIL;
     Result = qaCancel;
   }
   return Result;
@@ -1863,18 +2130,10 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, UnicodeString Chars)
   return S;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall EncodeUrlChars(UnicodeString S, UnicodeString Ignore)
+// we should probably replace all uses with EncodeUrlString
+UnicodeString __fastcall EncodeUrlChars(UnicodeString S)
 {
-  UnicodeString Chars;
-  if (Ignore.Pos(L' ') == 0)
-  {
-    Chars += L' ';
-  }
-  if (Ignore.Pos(L'/') == 0)
-  {
-    Chars += L'/';
-  }
-  return DoEncodeUrl(S, Chars);
+  return DoEncodeUrl(S, L" /");
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall NonUrlChars()
@@ -1900,6 +2159,17 @@ UnicodeString __fastcall NonUrlChars()
 UnicodeString __fastcall EncodeUrlString(UnicodeString S)
 {
   return DoEncodeUrl(S, NonUrlChars());
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall EncodeUrlPath(UnicodeString S)
+{
+  UnicodeString Ignore = NonUrlChars();
+  int P = Ignore.Pos(L"/");
+  if (ALWAYS_TRUE(P > 0))
+  {
+    Ignore.Delete(P, 1);
+  }
+  return DoEncodeUrl(S, Ignore);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall AppendUrlParams(UnicodeString AURL, UnicodeString Params)
@@ -2095,7 +2365,7 @@ bool __fastcall IsDirectoryWriteable(const UnicodeString & Path)
   UnicodeString FileName =
     IncludeTrailingPathDelimiter(Path) +
     FORMAT(L"wscp_%s_%d.tmp", (FormatDateTime(L"nnzzz", Now()), int(GetCurrentProcessId())));
-  HANDLE Handle = CreateFile(FileName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL,
+  HANDLE Handle = CreateFile(ApiPath(FileName).c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL,
     CREATE_NEW, FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, 0);
   bool Result = (Handle != INVALID_HANDLE_VALUE);
   if (Result)
@@ -2121,5 +2391,38 @@ UnicodeString __fastcall ExtractFileBaseName(const UnicodeString & Path)
   return ChangeFileExt(ExtractFileName(Path), L"");
 }
 //---------------------------------------------------------------------------
-// Suppress warning about unused constants in DateUtils.hpp
-#pragma warn -8080
+TStringList * __fastcall TextToStringList(const UnicodeString & Text)
+{
+  std::unique_ptr<TStringList> List(new TStringList());
+  List->Text = Text;
+  return List.release();
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TrimVersion(UnicodeString Version)
+{
+  while ((Version.Pos(L".") != Version.LastDelimiter(L".")) &&
+    (Version.SubString(Version.Length() - 1, 2) == L".0"))
+  {
+    Version.SetLength(Version.Length() - 2);
+  }
+  return Version;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall FormatVersion(int MajovVersion, int MinorVersion, int Release)
+{
+  return
+    TrimVersion(FORMAT(L"%d.%d.%d",
+      (MajovVersion, MinorVersion, Release)));
+}
+//---------------------------------------------------------------------------
+TFormatSettings __fastcall GetEngFormatSettings()
+{
+  return TFormatSettings::Create((TLocaleID)1033);
+}
+//---------------------------------------------------------------------------
+int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr)
+{
+  TFormatSettings FormatSettings = GetEngFormatSettings();
+  return IndexStr(MonthStr, FormatSettings.ShortMonthNames, FormatSettings.ShortMonthNames.Size()) + 1;
+}
+//---------------------------------------------------------------------------

@@ -36,7 +36,8 @@ static bool __fastcall WellKnownException(
            (dynamic_cast<EStringListError*>(E) != NULL) ||
            (dynamic_cast<EIntError*>(E) != NULL) ||
            (dynamic_cast<EMathError*>(E) != NULL) ||
-           (dynamic_cast<EVariantError*>(E) != NULL))
+           (dynamic_cast<EVariantError*>(E) != NULL) ||
+           (dynamic_cast<EInvalidOperation*>(E) != NULL))
   {
     if (Rethrow)
     {
@@ -95,7 +96,7 @@ static bool __fastcall ExceptionMessage(Exception * E, bool Count,
 {
   bool Result = true;
   const wchar_t * CounterName = NULL;
-  InternalError = false;
+  InternalError = false; // see also IsInternalException
 
   // this list has to be in sync with CloneException
   if (dynamic_cast<EAbort *>(E) != NULL)
@@ -131,6 +132,12 @@ static bool __fastcall ExceptionMessage(Exception * E, bool Count,
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsInternalException(Exception * E)
+{
+  // see also InternalError in ExceptionMessage
+  return WellKnownException(E, NULL, NULL, NULL, false);
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExceptionMessage(Exception * E, UnicodeString & Message)
@@ -252,8 +259,7 @@ __fastcall ExtException::ExtException(UnicodeString Msg, UnicodeString MoreMessa
 {
   if (!MoreMessages.IsEmpty())
   {
-    FMoreMessages = new TStringList();
-    FMoreMessages->Text = MoreMessages;
+    FMoreMessages = TextToStringList(MoreMessages);
   }
 }
 //---------------------------------------------------------------------------

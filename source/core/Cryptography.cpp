@@ -571,7 +571,7 @@ bool __fastcall UnscramblePassword(RawByteString Scrambled, UnicodeString & Pass
   }
   else
   {
-    Password = "";
+    Password = L"";
   }
   return Result;
 }

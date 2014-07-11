@@ -116,10 +116,7 @@ __published:
 
   __property AddParentDir;
   __property DimmHiddenFiles;
-  __property ShowDirectories;
-  __property ShowSubDirSize;
   __property ShowHiddenFiles;
-  __property SingleClickToExec;
   __property WantUseDragImages;
   __property TargetPopupMenu;
   __property OnSelectItem;
@@ -148,8 +145,6 @@ __published:
   __property OnDDMenuPopup;
 
   __property OnContextPopup;
-  __property OnBeginRename;
-  __property OnEndRename;
   __property OnHistoryChange;
   __property OnHistoryGo;
   __property OnPathChange;

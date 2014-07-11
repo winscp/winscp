@@ -293,7 +293,7 @@ bool __fastcall TScpCommanderForm::InternalDDDownload(UnicodeString & TargetDire
   }
   else
   {
-    assert(false);
+    FAIL;
     Abort();
   }
 
@@ -881,7 +881,7 @@ void __fastcall TScpCommanderForm::LocalDirViewExecFile(TObject *Sender,
 {
   assert(Item);
   if ((UpperCase(PFileRec(Item->Data)->FileExt) == L"LNK") &&
-      DirectoryExists(ResolveFileShortCut(LocalDirView->ItemFullFileName(Item), true)))
+      DirectoryExists(::ApiPath(ResolveFileShortCut(LocalDirView->ItemFullFileName(Item), true))))
   {
     AllowExec = true;
   }
@@ -909,7 +909,7 @@ bool __fastcall TScpCommanderForm::PanelOperation(TOperationSide Side,
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::FileOperationProgress(
-  TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
+  TFileOperationProgressType & ProgressData)
 {
   // Heuristic: When operation finishes and DD targed is local dir view,
   // we suppose that drag&drop download finished, so local dir view should be
@@ -920,7 +920,7 @@ void __fastcall TScpCommanderForm::FileOperationProgress(
   {
     ReloadLocalDirectory();
   }
-  TCustomScpExplorerForm::FileOperationProgress(ProgressData, Cancel);
+  TCustomScpExplorerForm::FileOperationProgress(ProgressData);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TScpCommanderForm::ChangeFilePath(UnicodeString Path, TOperationSide Side)
@@ -1012,7 +1012,7 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsingRemote(
 
       UnicodeString NewLocalPath;
       NewPath = ExcludeTrailingBackslash(LocalDirView->Path);
-      while (!UnixComparePaths(PrevPath, CommonPath))
+      while (!UnixSamePath(PrevPath, CommonPath))
       {
         NewLocalPath = ExcludeTrailingBackslash(ExtractFileDir(NewPath));
         if (NewLocalPath == NewPath)
@@ -1549,7 +1549,7 @@ void __fastcall TScpCommanderForm::GoToTree()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::PanelExportStore(TOperationSide Side,
   TPanelExport Export, TPanelExportDestination Destination,
-  TStringList * ExportData)
+  TStrings * ExportData)
 {
   if (Destination == pedCommandLine)
   {
@@ -1673,7 +1673,7 @@ void __fastcall TScpCommanderForm::LocalPathLabelPathClick(
 void __fastcall TScpCommanderForm::RemotePathLabelPathClick(
   TCustomPathLabel * /*Sender*/, UnicodeString Path)
 {
-  if (UnixComparePaths(Path, RemoteDirView->Path))
+  if (UnixSamePath(Path, RemoteDirView->Path))
   {
     OpenDirectory(osRemote);
   }
@@ -1696,13 +1696,13 @@ void __fastcall TScpCommanderForm::LocalDirViewFileIconForName(
 void __fastcall TScpCommanderForm::LocalDirViewUpdateStatusBar(
   TObject * /*Sender*/, const TStatusFileInfo & FileInfo)
 {
-  UpdateFileStatusBar(LocalStatusBar, FileInfo, 0);
+  UpdateFileStatusBar(LocalStatusBar, FileInfo);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RemoteDirViewUpdateStatusBar(
   TObject * /*Sender*/, const TStatusFileInfo & FileInfo)
 {
-  UpdateFileStatusBar(RemoteStatusBar, FileInfo, 0);
+  UpdateFileStatusBar(RemoteStatusBar, FileInfo);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalStatusBarClick(TObject * /*Sender*/)
@@ -2039,5 +2039,17 @@ void __fastcall TScpCommanderForm::DisplaySystemContextMenu()
   {
     LocalDirView->DisplayContextMenuInSitu();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalStatusBarPanelClick(TTBXCustomStatusBar * /*Sender*/,
+  TTBXStatusPanel * Panel)
+{
+  FileStatusBarPanelClick(Panel, osLocal);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::RemoteStatusBarPanelClick(TTBXCustomStatusBar * /*Sender*/,
+  TTBXStatusPanel *Panel)
+{
+  FileStatusBarPanelClick(Panel, osRemote);
 }
 //---------------------------------------------------------------------------

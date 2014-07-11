@@ -74,22 +74,22 @@ ZLIB_CLEAN =
 !ELSE
 ZLIB_CLEAN = ZLIB_CLEAN
 !IF "$(DEBUG_BUILD)" == ""
-ZLIB_STATICLIB = $(TEMPDIR)\zlib\zlib.lib
-ZLIB_SHAREDLIB = $(TEMPDIR)\zlib\zlib1.dll
-ZLIB_IMPLIB    = $(TEMPDIR)\zlib\zdll.lib
+ZLIB_STATICLIB = zlib.lib
+ZLIB_SHAREDLIB = zlib1.dll
+ZLIB_IMPLIB    = zdll.lib
 ZLIB_LDFLAGS   = /nologo /release
 !ELSE
-ZLIB_STATICLIB = $(TEMPDIR)\zlib\zlib.lib
-ZLIB_SHAREDLIB = $(TEMPDIR)\zlib\zlib1.dll
-ZLIB_IMPLIB    = $(TEMPDIR)\zlib\zdll.lib
+ZLIB_STATICLIB = zlib_d.lib
+ZLIB_SHAREDLIB = zlib1_d.dll
+ZLIB_IMPLIB    = zdll_d.lib
 ZLIB_LDFLAGS   = /nologo /debug
 !ENDIF
 ZLIB_FLAGS = /I "$(ZLIB_SRC)" /D NE_HAVE_ZLIB
 !IF "$(ZLIB_DLL)" == ""
-ZLIB_LIBS = "$(ZLIB_STATICLIB)"
+ZLIB_LIBS = "$(ZLIB_SRC)\$(ZLIB_STATICLIB)"
 !ELSE
 ZLIB_FLAGS = $(ZLIB_FLAGS) /D ZLIB_DLL
-ZLIB_LIBS = "$(ZLIB_IMPLIB)"
+ZLIB_LIBS = "$(ZLIB_SRC)\$(ZLIB_IMPLIB)"
 !ENDIF
 !ENDIF
 
@@ -237,3 +237,23 @@ CLEAN: $(ZLIB_CLEAN)
 "$(INTDIR)\ne_xml.obj":      .\src\ne_xml.c
 "$(INTDIR)\ne_xmlreq.obj":   .\src\ne_xmlreq.c
 
+"$(ZLIB_SRC)\$(ZLIB_STATICLIB)":
+	<<tempfile.bat
+  @echo off
+  cd /d "$(ZLIB_SRC)"
+  $(MAKE) /nologo /f win32\Makefile.msc CFLAGS="/nologo $(CFLAGS)" LDFLAGS="$(ZLIB_LDFLAGS)" STATICLIB=$(ZLIB_STATICLIB) $(ZLIB_STATICLIB)
+<<
+
+"$(ZLIB_SRC)\$(ZLIB_IMPLIB)":
+	<<tempfile.bat
+  @echo off
+  cd /d "$(ZLIB_SRC)"
+  $(MAKE) /nologo /f win32\Makefile.msc CFLAGS="/nologo $(CFLAGS)" LDFLAGS="$(ZLIB_LDFLAGS)" SHAREDLIB=$(ZLIB_SHAREDLIB) IMPLIB=$(ZLIB_IMPLIB) $(ZLIB_SHAREDLIB) $(ZLIB_IMPLIB)
+<<
+
+ZLIB_CLEAN:
+	<<tempfile.bat
+  @echo off
+  cd /d "$(ZLIB_SRC)"
+  $(MAKE) /nologo /f win32\Makefile.msc STATICLIB=$(ZLIB_STATICLIB) SHAREDLIB=$(ZLIB_SHAREDLIB) IMPLIB=$(ZLIB_IMPLIB) clean
+<<

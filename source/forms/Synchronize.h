@@ -14,6 +14,8 @@
 #include <ExtCtrls.hpp>
 #include <Vcl.Imaging.pngimage.hpp>
 //---------------------------------------------------------------------------
+struct TLogItemData;
+//---------------------------------------------------------------------------
 class TSynchronizeDialog : public TForm
 {
 __published:
@@ -41,6 +43,7 @@ __published:
   TPanel *LogPanel;
   TListView *LogView;
   TImage *Image;
+  TCheckBox *ContinueOnErrorCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);
@@ -58,6 +61,10 @@ __published:
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
   void __fastcall TransferSettingsButtonDropDownClick(TObject *Sender);
+  void __fastcall LogViewCustomDrawItem(TCustomListView *Sender, TListItem *Item,
+          TCustomDrawState State, bool &DefaultDraw);
+  void __fastcall LogViewDeletion(TObject *Sender, TListItem *Item);
+  void __fastcall LogViewDblClick(TObject *Sender);
 
 private:
   TSynchronizeParamType FParams;
@@ -69,11 +76,12 @@ private:
   bool FMinimizedByMe;
   bool FAbort;
   bool FClose;
-  bool FStartImmediatelly;
+  bool FStartImmediately;
   TCopyParamType FCopyParams;
   TPopupMenu * FPresetsMenu;
   UnicodeString FPreset;
   TSynchronizeOptions * FSynchronizeOptions;
+  TFeedSynchronizeError * FOnFeedSynchronizeError;
   static const MaxLogItems;
 
   void __fastcall SetParams(const TSynchronizeParamType& value);
@@ -87,6 +95,8 @@ private:
 protected:
   void __fastcall DoStartStop(bool Start, bool Synchronize);
   void __fastcall DoAbort(TObject * Sender, bool Close);
+  void __fastcall DoLogInternal(TSynchronizeLogEntry Entry, const UnicodeString & Message,
+    TStrings * MoreMessages, TQueryType Type, const UnicodeString & HelpKeyword);
   void __fastcall DoLog(TSynchronizeController * Controller, TSynchronizeLogEntry Entry,
     const UnicodeString Message);
   void __fastcall OnlyStop();
@@ -98,11 +108,16 @@ protected:
   int __fastcall ActualCopyParamAttrs();
   void __fastcall GlobalMinimize(TObject * Sender);
   void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
+  void __fastcall FeedSynchronizeError(
+    const UnicodeString & Message, TStrings * MoreMessages, TQueryType Type,
+    const UnicodeString & HelpKeyword);
+  TLogItemData * __fastcall GetLogItemData(TListItem * Item);
 
 public:
-  __fastcall TSynchronizeDialog(TComponent * Owner,
-    TSynchronizeStartStopEvent OnStartStop, TGetSynchronizeOptionsEvent OnGetOptions,
-    bool StartImmediatelly);
+  __fastcall TSynchronizeDialog(TComponent * Owner);
+  void __fastcall Init(TSynchronizeStartStopEvent OnStartStop,
+    TGetSynchronizeOptionsEvent OnGetOptions,
+    TFeedSynchronizeError & OnFeedSynchronizeError, bool StartImmediately);
   virtual __fastcall ~TSynchronizeDialog();
 
   bool __fastcall Execute();

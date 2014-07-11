@@ -194,11 +194,11 @@ __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner)
   FSessionFolders = new TStringList;
   FSessionFolders->CaseSensitive = false;
   FSessionFolders->Sorted = true;
-  FSessionFolders->Duplicates = dupIgnore;
+  FSessionFolders->Duplicates = Types::dupIgnore;
   FSharedFolders = new TStringList;
   FSharedFolders->CaseSensitive = false;
   FSharedFolders->Sorted = true;
-  FSharedFolders->Duplicates = dupIgnore;
+  FSharedFolders->Duplicates = Types::dupIgnore;
 
   FSessionScrollOnDragOver = new TTreeViewScrollOnDragOver(SessionProfilesView, true);
   FSharedScrollOnDragOver = new TTreeViewScrollOnDragOver(SharedProfilesView, true);
@@ -440,7 +440,7 @@ typename T * GetProfilesObject(TObject * Sender, T * SessionObject, T * SharedOb
   {
     case 1: return SessionObject;
     case 2: return SharedObject;
-    default: assert(false); return NULL;
+    default: FAIL; return NULL;
   }
 }
 //---------------------------------------------------------------------------

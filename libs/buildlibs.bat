@@ -20,25 +20,6 @@ exit
 
 :SKIP_OPENSSL
 
-rem ==== zlib ====
-
-if exist lib\zlib.lib (
-echo zlib already built
-goto SKIP_ZLIB
-)
-
-echo Building zlib ...
-cd zlib
-make -f Makefile.bcb all
-cd ..
-
-if not exist lib\zlib.lib (
-echo zlib build failed
-exit
-)
-
-:SKIP_ZLIB
-
 rem ==== Expat ====
 
 if exist lib\libexpats_mtd.lib (
@@ -60,25 +41,6 @@ exit
 copy expat\bcb5\release\libexpats_mtd.lib lib
 
 :SKIP_EXPAT
-
-rem ==== APR ====
-
-if exist lib\apr.lib (
-echo APR already built
-goto SKIP_APR
-)
-
-echo Building APR ...
-cd apr
-make -f Makefile.bcb all
-cd ..
-
-if not exist lib\apr.lib (
-echo APR build failed
-exit
-)
-
-:SKIP_APR
 
 rem ==== neon ====
 

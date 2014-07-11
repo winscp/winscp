@@ -404,11 +404,6 @@ void CTransferSocket::OnAccept(int nErrorCode)
 				COptions::GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
 				COptions::GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
 				COptions::GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
-#ifndef MPEXT_NO_SSLDLL
-			if (res == SSL_FAILURE_LOADDLLS)
-				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, FZ_LOG_ERROR);
-			else
-#endif
 			if (res == SSL_FAILURE_INITSSL)
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
 
@@ -490,13 +485,10 @@ void CTransferSocket::OnConnect(int nErrorCode)
 				COptions::GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
 				COptions::GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
 				COptions::GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
-#ifndef MPEXT_NO_SSLDLL
-			if (res == SSL_FAILURE_LOADDLLS)
-				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, FZ_LOG_ERROR);
-			else
-#endif
 			if (res == SSL_FAILURE_INITSSL)
+			{
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
+			}
 					
 			if (res)
 			{
@@ -1164,11 +1156,6 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 					case SSL_FAILURE_ESTABLISH:
 						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, FZ_LOG_ERROR);
 						break;
-#ifndef MPEXT_NO_SSLDLL
-					case SSL_FAILURE_LOADDLLS:
-						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, FZ_LOG_ERROR);
-						break;
-#endif
 					case SSL_FAILURE_INITSSL:
 						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
 						break;

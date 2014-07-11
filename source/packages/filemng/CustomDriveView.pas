@@ -11,10 +11,8 @@ type
   {Types uses by the function IterateSubTree:}
   {TRecursiveScan: determines, wich nodes are scanned by the function IterateSubTree:
   rsNoRecursive:       Scan startnode only.
-  rsRecursive:         Scan all subnodes of the startnode.
-  rsRecursiveExisting: Scan all subnodes of the startnode but not new created subnodes.
-  rsRecursiveExpanded: Scan all expanded subnodes of the startnode.}
-  TRecursiveScan = (rsNoRecursive, rsRecursive, rsRecursiveExisting, rsRecursiveExpanded);
+  rsRecursiveExisting: Scan all subnodes of the startnode but not new created subnodes.}
+  TRecursiveScan = (rsNoRecursive, rsRecursiveExisting);
 
   {TScanStartnode: determines, wether the startnode should also be scanned:}
   TScanStartNode = (coNoScanStartNode, coScanStartNode);
@@ -136,8 +134,6 @@ type
 
     procedure ValidateDirectoryEx(Node: TTreeNode; Recurse: TRecursiveScan;
       NewDirs: Boolean); virtual; abstract;
-    procedure ValidateVisibleDirectories(Node: TTreeNode);
-    procedure ValidateAllDirectories(Node: TTreeNode);
     procedure RebuildTree; virtual; abstract;
 
     procedure DisplayContextMenu(Node: TTreeNode; ScreenPos: TPoint); virtual; abstract;
@@ -185,7 +181,7 @@ type
     property OnDDDragDetect: TDDOnDragDetect read FOnDDDragDetect write FOnDDDragDetect;
     {The component window is the target of a drag&drop operation:}
     property OnDDProcessDropped: TOnProcessDropped read FOnDDProcessDropped write FOnDDProcessDropped;
-    {An error has occured during a drag&drop operation:}
+    {An error has occurred during a drag&drop operation:}
     property OnDDError: TDDErrorEvent read FOnDDError write FOnDDError;
     {The drag&drop operation has been executed:}
     property OnDDExecuted: TDDExecutedEvent read FOnDDExecuted write FOnDDExecuted;
@@ -242,11 +238,7 @@ begin
   begin
     AcceptOwnDnd := True;
     {MP}
-    {$IFDEF OLD_DND}
     AutoDetectDnD := False;
-    {$ELSE}
-    DragDetect.Automatic := False;
-    {$ENDIF}
     {/MP}
     BringToFront := True;
     CompleteFileList := True;
@@ -785,7 +777,7 @@ var
 begin
   Result := inherited CustomDrawItem(Node, State, Stage, PaintImages);
 
-  if Result and (Stage = cdPostPaint) and HasExtendedCOMCTL32 then
+  if Result and (Stage = cdPostPaint) then
   begin
     Assert(Assigned(Node));
     OverlayIndexes := NodeOverlayIndexes(Node);
@@ -832,11 +824,7 @@ begin
     Images.BkColor := Color;
   if Assigned(StateImages) then
     StateImages.BkColor := Color;
-  // sometimes when changing color,
-  // non-client area (border line) is not redrawn,
-  // keeping previous color. force redraw here
-  if HandleAllocated then
-    RedrawWindow(Handle, nil, 0, RDW_INVALIDATE or RDW_FRAME);
+  ForceColorChange(Self);
 end;
 
 procedure TCustomDriveView.WMLButtonDown(var Msg: TWMLButtonDown);
@@ -983,16 +971,6 @@ begin
   ValidateDirectoryEx(Node, rsRecursiveExisting, False);
 end;  {ValidateDirectory}
 
-procedure TCustomDriveView.ValidateVisibleDirectories(Node: TTreeNode);
-begin
-  ValidateDirectoryEx(Node, rsRecursiveExpanded, False);
-end; {ValidateVisibleDirectories}
-
-procedure TCustomDriveView.ValidateAllDirectories(Node: TTreeNode);
-begin
-  ValidateDirectoryEx(Node, rsRecursive, True);
-end; {ValidateAllDirectories}
-
 procedure TCustomDriveView.CenterNode(Node: TTreeNode);
 var
   NodePos: TRect;
@@ -1092,9 +1070,8 @@ function TCustomDriveView.IterateSubTree(var StartNode : TTreeNode;
 
       if (not FContinue) or (not CallBackFunc(Node, Data)) then Exit;
 
-      if Assigned(Node) and ((Recurse = rsRecursive) or
-         ((Recurse = rsRecursiveExpanded) and Node.Expanded) or
-         ((Recurse = rsRecursiveExisting) and NodeHasChilds)) then
+      if Assigned(Node) and
+         (Recurse = rsRecursiveExisting) and NodeHasChilds then
       begin
         if (not ScanSubTree(Node)) or (not FContinue) then Exit;
       end;

@@ -13,7 +13,7 @@ char * __fastcall EOLToStr(TEOLType EOLType)
     case eolLF: return "\n";
     case eolCRLF: return "\r\n";
     case eolCR: return "\r";
-    default: assert(false); return "";
+    default: FAIL; return "";
   }
 }
 //---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ DWORD __fastcall TFileBuffer::ReadStream(TStream * Stream, const DWORD Len, bool
     {
       Size = Size - Len + Result;
     }
-    FMemory->Seek(Len, soFromCurrent);
+    FMemory->Seek(Len, soCurrent);
   }
   catch(EReadError &)
   {
@@ -224,7 +224,7 @@ void __fastcall TFileBuffer::WriteToStream(TStream * Stream, const DWORD Len)
   try
   {
     Stream->WriteBuffer(Data + Position, Len);
-    FMemory->Seek(Len, soFromCurrent);
+    FMemory->Seek(Len, soCurrent);
   }
   catch(EWriteError &)
   {
@@ -251,6 +251,28 @@ int __fastcall TSafeHandleStream::Read(void * Buffer, int Count)
 int __fastcall TSafeHandleStream::Write(const void * Buffer, int Count)
 {
   int Result = FileWrite(FHandle, Buffer, Count);
+  if (Result == -1)
+  {
+    RaiseLastOSError();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TSafeHandleStream::Read(System::DynamicArray<System::Byte> Buffer, int Offset, int Count)
+{
+  FAIL; // untested
+  int Result = FileRead(FHandle, Buffer, Offset, Count);
+  if (Result == -1)
+  {
+    RaiseLastOSError();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TSafeHandleStream::Write(const System::DynamicArray<System::Byte> Buffer, int Offset, int Count)
+{
+  FAIL; // untested
+  int Result = FileWrite(FHandle, Buffer, Offset, Count);
   if (Result == -1)
   {
     RaiseLastOSError();

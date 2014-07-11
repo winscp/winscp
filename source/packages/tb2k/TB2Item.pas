@@ -40,7 +40,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, CommCtrl, Menus, ActnList, ImgList, TB2Anim;
+  StdCtrls, CommCtrl, Menus, ActnList, ImgList, TB2Anim, UITypes;
 
 const
   WM_TB2K_POPUPSHOWING = WM_USER + 554;
@@ -887,7 +887,7 @@ function ProcessDoneAction(const DoneActionData: TTBDoneActionData;
 implementation
 
 uses
-  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc, Winapi.oleacc;
+  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc, Winapi.oleacc, Types;
 
 var
   LastPos: TPoint;
@@ -2739,7 +2739,7 @@ begin
     SetLength(Result, P-1);
   { MP }
   if IsToolbarStyle and not (vsMenuBar in View.Style) then
-    Result := StripAccelChars(StripTrailingPunctuation(Result));
+    Result := StripAccelChars(StripTrailingPunctuation(Result), True);
 end;
 
 function TTBItemViewer.GetHintText: String;
@@ -6979,7 +6979,9 @@ var
 begin
   NonClientMetrics.cbSize := SizeOf(NonClientMetrics);
   if SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, @NonClientMetrics, 0) then
+  begin
     ToolbarFont.Handle := CreateFontIndirect(NonClientMetrics.lfMenuFont);
+  end;
 end;
 
 initialization

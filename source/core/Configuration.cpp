@@ -14,6 +14,7 @@
 #include "Security.h"
 #include <shlobj.h>
 #include <System.IOUtils.hpp>
+#include <System.StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -113,6 +114,7 @@ __fastcall TConfiguration::~TConfiguration()
 void __fastcall TConfiguration::UpdateStaticUsage()
 {
   Usage->Set(L"ConfigurationIniFile", (Storage == stIniFile));
+  Usage->Set("Unofficial", IsUnofficial);
 
   // this is called from here, because we are guarded from calling into
   // master password handler here, see TWinConfiguration::UpdateStaticUsage
@@ -605,7 +607,7 @@ void __fastcall TConfiguration::CleanupRandomSeedFile()
   try
   {
     DontSaveRandomSeed();
-    if (FileExists(RandomSeedFileName))
+    if (FileExists(ApiPath(RandomSeedFileName)))
     {
       DeleteFileChecked(RandomSeedFileName);
     }
@@ -620,7 +622,7 @@ void __fastcall TConfiguration::CleanupIniFile()
 {
   try
   {
-    if (FileExists(IniFileStorageNameForReading))
+    if (FileExists(ApiPath(IniFileStorageNameForReading)))
     {
       DeleteFileChecked(IniFileStorageNameForReading);
     }
@@ -735,7 +737,8 @@ UnicodeString __fastcall TConfiguration::GetFileProductName(const UnicodeString 
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetFileCompanyName(const UnicodeString FileName)
 {
-  return GetFileFileInfoString(L"CompanyName", FileName);
+  // particularly in IDE build, company name is empty
+  return GetFileFileInfoString(L"CompanyName", FileName, true);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetProductName()
@@ -763,14 +766,13 @@ UnicodeString __fastcall TConfiguration::GetProductVersion()
   return GetFileProductVersion(L"");
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::TrimVersion(UnicodeString Version)
+bool __fastcall TConfiguration::GetIsUnofficial()
 {
-  while ((Version.Pos(L".") != Version.LastDelimiter(L".")) &&
-    (Version.SubString(Version.Length() - 1, 2) == L".0"))
-  {
-    Version.SetLength(Version.Length() - 2);
-  }
-  return Version;
+  #ifdef BUILD_OFFICIAL
+  return false;
+  #else
+  return true;
+  #endif
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetVersionStr()
@@ -778,12 +780,43 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
   TGuard Guard(FCriticalSection);
   try
   {
-    TVSFixedFileInfo * Info = FixedApplicationInfo;
-    return FMTLOAD(VERSION, (
-      HIWORD(Info->dwFileVersionMS),
-      LOWORD(Info->dwFileVersionMS),
-      HIWORD(Info->dwFileVersionLS),
-      LOWORD(Info->dwFileVersionLS)));
+    UnicodeString BuildStr;
+    if (!IsUnofficial)
+    {
+      BuildStr = LoadStr(VERSION_BUILD);
+    }
+    else
+    {
+      #ifdef _DEBUG
+      BuildStr = LoadStr(VERSION_DEBUG_BUILD);
+      #else
+      BuildStr = LoadStr(VERSION_DEV_BUILD);
+      #endif
+    }
+
+    int Build = LOWORD(FixedApplicationInfo->dwFileVersionLS);
+    if (Build > 0)
+    {
+      BuildStr += L" " + IntToStr(Build);
+    }
+
+    #ifndef BUILD_OFFICIAL
+    UnicodeString BuildDate = __DATE__;
+    UnicodeString MonthStr = CutToChar(BuildDate, L' ', true);
+    int Month = ParseShortEngMonthName(MonthStr);
+    int Day = StrToInt(CutToChar(BuildDate, L' ', true));
+    int Year = StrToInt(Trim(BuildDate));
+    UnicodeString DateStr = FORMAT(L"%d-%2.2d-%2.2d", (Year, Month, Day));
+    AddToList(BuildStr, DateStr, L" ");
+    #endif
+
+    UnicodeString Result = FMTLOAD(VERSION2, (Version, BuildStr));
+
+    #ifndef BUILD_OFFICIAL
+    Result += L" " + LoadStr(VERSION_DONT_DISTRIBUTE);
+    #endif
+
+    return Result;
   }
   catch (Exception &E)
   {
@@ -797,11 +830,11 @@ UnicodeString __fastcall TConfiguration::GetVersion()
   try
   {
     TVSFixedFileInfo * Info = FixedApplicationInfo;
-    UnicodeString Result;
-    Result = TrimVersion(FORMAT(L"%d.%d.%d", (
-      HIWORD(Info->dwFileVersionMS),
-      LOWORD(Info->dwFileVersionMS),
-      HIWORD(Info->dwFileVersionLS))));
+    UnicodeString Result =
+      FormatVersion(
+        HIWORD(Info->dwFileVersionMS),
+        LOWORD(Info->dwFileVersionMS),
+        HIWORD(Info->dwFileVersionLS));
     return Result;
   }
   catch (Exception &E)
@@ -811,7 +844,7 @@ UnicodeString __fastcall TConfiguration::GetVersion()
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetFileFileInfoString(const UnicodeString Key,
-  const UnicodeString FileName)
+  const UnicodeString FileName, bool AllowEmpty)
 {
   TGuard Guard(FCriticalSection);
 
@@ -823,7 +856,7 @@ UnicodeString __fastcall TConfiguration::GetFileFileInfoString(const UnicodeStri
     {
       TTranslation Translation;
       Translation = GetTranslation(Info, 0);
-      Result = ::GetFileInfoString(Info, Translation, Key);
+      Result = ::GetFileInfoString(Info, Translation, Key, AllowEmpty);
     }
     else
     {
@@ -871,7 +904,7 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageNameForReading()
   return GetIniFileStorageName(true);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetIniFileStorageNameForReadingWritting()
+UnicodeString __fastcall TConfiguration::GetIniFileStorageNameForReadingWriting()
 {
   return GetIniFileStorageName(false);
 }
@@ -885,7 +918,7 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
     UnicodeString ProgramIniPath = ChangeFileExt(ProgramPath, L".ini");
 
     UnicodeString IniPath;
-    if (FileExists(ProgramIniPath))
+    if (FileExists(ApiPath(ProgramIniPath)))
     {
       IniPath = ProgramIniPath;
     }
@@ -894,7 +927,7 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
       UnicodeString AppDataIniPath =
         IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) +
         ExtractFileName(ProgramIniPath);
-      if (FileExists(AppDataIniPath))
+      if (FileExists(ApiPath(AppDataIniPath)))
       {
         IniPath = AppDataIniPath;
       }
@@ -930,7 +963,7 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
     }
 
     if (!FVirtualIniFileStorageName.IsEmpty() &&
-        FileExists(FVirtualIniFileStorageName))
+        FileExists(ApiPath(FVirtualIniFileStorageName)))
     {
       return FVirtualIniFileStorageName;
     }
@@ -1009,7 +1042,7 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
     {
       // If this fails, do not pretend that storage was switched.
       // For instance:
-      // - When writting to an INI file fails (unlikely, as we fallback to user profile)
+      // - When writing to an INI file fails (unlikely, as we fallback to user profile)
       // - When removing INI file fails, when switching to registry
       //   (possible, when the INI file is in Program Files folder)
       FStorage = StorageBak;
@@ -1027,7 +1060,7 @@ TStorage __fastcall TConfiguration::GetStorage()
 {
   if (FStorage == stDetect)
   {
-    if (FileExists(IniFileStorageNameForReading))
+    if (FileExists(ApiPath(IniFileStorageNameForReading)))
     {
       FStorage = stIniFile;
     }
@@ -1055,10 +1088,10 @@ void __fastcall TConfiguration::SetRandomSeedFile(UnicodeString value)
 
     if (!PrevRandomSeedFileName.IsEmpty() &&
         (PrevRandomSeedFileName != RandomSeedFileName) &&
-        FileExists(PrevRandomSeedFileName))
+        FileExists(ApiPath(PrevRandomSeedFileName)))
     {
       // ignore any error
-      DeleteFile(PrevRandomSeedFileName);
+      DeleteFile(ApiPath(PrevRandomSeedFileName));
     }
   }
 }

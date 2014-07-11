@@ -29,7 +29,7 @@ public:
   };
 
   static bool __fastcall IsMask(const UnicodeString Mask);
-  static UnicodeString __fastcall NormalizeMask(const UnicodeString & Mask, const UnicodeString & AnyMask = "");
+  static UnicodeString __fastcall NormalizeMask(const UnicodeString & Mask, const UnicodeString & AnyMask = L"");
   static UnicodeString __fastcall ComposeMaskStr(
     TStrings * IncludeFileMasksStr, TStrings * ExcludeFileMasksStr,
     TStrings * IncludeDirectoryMasksStr, TStrings * ExcludeDirectoryMasksStr);
@@ -48,7 +48,7 @@ public:
   void __fastcall SetMask(const UnicodeString & Mask);
 
   bool __fastcall Matches(const UnicodeString FileName, bool Directory = false,
-    const UnicodeString Path = "", const TParams * Params = NULL) const;
+    const UnicodeString Path = L"", const TParams * Params = NULL) const;
   bool __fastcall Matches(const UnicodeString FileName, bool Directory,
     const UnicodeString Path, const TParams * Params,
     bool & ImplicitMatch) const;

@@ -72,6 +72,7 @@ void __fastcall TSiteAdvancedDialog::InitControls()
   ComboAutoSwitchInitialize(BugRekey2Combo);
   ComboAutoSwitchInitialize(BugMaxPkt2Combo);
   ComboAutoSwitchInitialize(BugIgnore2Combo);
+  ComboAutoSwitchInitialize(BugWinAdjCombo);
 
   ComboAutoSwitchInitialize(SFTPBugSymlinkCombo);
   ComboAutoSwitchInitialize(SFTPBugSignedTSCombo);
@@ -368,6 +369,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     LOAD_BUG_COMBO(Rekey2);
     LOAD_BUG_COMBO(MaxPkt2);
     LOAD_BUG_COMBO(Ignore2);
+    LOAD_BUG_COMBO(WinAdj);
     #undef LOAD_BUG_COMBO
 
     // Tunnel page
@@ -392,6 +394,9 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     MinTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MinTlsVersion);
     MaxTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MaxTlsVersion);
     SslSessionReuseCheck->Checked = FSessionData->SslSessionReuse;
+
+    // Note page
+    NoteMemo->Lines->Text = FSessionData->Note;
 
     // color
     SetSessionColor((TColor)FSessionData->Color);
@@ -616,6 +621,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   SAVE_BUG_COMBO(Rekey2);
   SAVE_BUG_COMBO(MaxPkt2);
   SAVE_BUG_COMBO(Ignore2);
+  SAVE_BUG_COMBO(WinAdj);
   #undef SAVE_BUG_COMBO
 
   // Tunnel page
@@ -638,6 +644,9 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
   FSessionData->MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
   FSessionData->SslSessionReuse = SslSessionReuseCheck->Checked;
+
+  // Note page
+  FSessionData->Note = NoteMemo->Lines->Text;
 
   // color
   FSessionData->Color = FColor;
@@ -834,8 +843,12 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(BugMaxPkt2Label, BugMaxPkt2Combo->Enabled);
     EnableControl(BugIgnore2Combo, !SshProt1onlyButton->Checked);
     EnableControl(BugIgnore2Label, BugIgnore2Combo->Enabled);
+    EnableControl(BugWinAdjCombo, !SshProt1onlyButton->Checked);
+    EnableControl(BugWinAdjLabel, BugWinAdjCombo->Enabled);
 
     // connection/proxy sheet
+    // this is probaqbly overkill, now we do not allow changing protocol on
+    // the same window as changing proxy
     TComboBox * ProxyMethodCombo =
       (SshProtocol ? SshProxyMethodCombo : (FtpProtocol ? FtpProxyMethodCombo : WebDavProxyMethodCombo));
     TProxyMethod ProxyMethod = GetProxyMethod();
@@ -912,6 +925,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // environment/directories sheet
     EnableControl(SynchronizeBrowsingCheck,
+      (CustomWinConfiguration->Interface == ifCommander) &&
       WinConfiguration->PreservePanelState &&
       !WinConfiguration->ScpCommander.PreserveLocalDirectory);
     EnableControl(CacheDirectoryChangesCheck,
@@ -978,6 +992,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // connection/ssl/tls
     SslSheet->Enabled = Ssl;
+    // TLS/SSL session reuse is not configurable for WebDAV yet
+    SslSessionReuseCheck->Enabled = SslSheet->Enabled && FtpProtocol;
 
     UpdateNavigationTree();
 
@@ -1364,7 +1380,7 @@ void __fastcall TSiteAdvancedDialog::ProxyLocalCommandBrowseButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::ColorButtonClick(TObject * /*Sender*/)
 {
-  // popup menu has to survive the popup as TBX calls click handler asynchronously (post)
+  // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
   FColorPopupMenu.reset(CreateSessionColorPopupMenu(FColor, SessionColorChange));
   MenuPopup(FColorPopupMenu.get(), ColorButton);
 }
@@ -1446,5 +1462,28 @@ void __fastcall TSiteAdvancedDialog::MaxTlsVersionComboChange(TObject * /*Sender
   {
     MinTlsVersionCombo->ItemIndex = MaxTlsVersionCombo->ItemIndex;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::ProxyAutodetectButtonClick(TObject * /*Sender*/)
+{
+  TInstantOperationVisualizer Visualizer;
+  UnicodeString Proxy;
+  if (AutodetectProxyUrl(Proxy) && !Proxy.IsEmpty())
+  {
+    ProxyHostEdit->Text = ::CutToChar(Proxy, L':', true);
+    ProxyPortEdit->AsInteger = StrToIntDef(Proxy, ProxyPortNumber);
+
+    SshProxyMethodCombo->ItemIndex = pmHTTP;
+    FtpProxyMethodCombo->ItemIndex = pmHTTP;
+    WebDavProxyMethodCombo->ItemIndex = pmHTTP;
+
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::NoteMemoKeyDown(
+  TObject * Sender, WORD & Key, TShiftState Shift)
+{
+  MemoKeyDown(Sender, Key, Shift);
 }
 //---------------------------------------------------------------------------

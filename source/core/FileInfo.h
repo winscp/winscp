@@ -26,7 +26,7 @@ UnicodeString __fastcall GetLanguage(Word Language);
 // Return the value of the specified file version info string using the
 // specified translation
 UnicodeString __fastcall GetFileInfoString(void * FileInfo,
-  TTranslation Translation, UnicodeString StringName);
+  TTranslation Translation, UnicodeString StringName, bool AllowEmpty = false);
 
 int __fastcall CalculateCompoundVersion(int MajorVer,
   int MinorVer, int Release, int Build);

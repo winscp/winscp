@@ -19,6 +19,9 @@
 #include "WinInterface.h"
 #include "CustomWinConfiguration.h"
 #include "GUITools.h"
+#include "JclDebug.hpp"
+#include "JclHookExcept.hpp"
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -81,6 +84,8 @@ inline void TMessageParams::Reset()
   NeverAskAgainCheckedInitially = false;
   AllowHelp = true;
   ImageName = L"";
+  MoreMessagesUrl = L"";
+  MoreMessagesSize = TSize();
 }
 //---------------------------------------------------------------------------
 static bool __fastcall IsPositiveAnswer(unsigned int Answer)
@@ -159,7 +164,7 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
     case qtInformation: DlgType = mtInformation; break;
     case qtError: DlgType = mtError; break;
     case qtWarning: DlgType = mtWarning; break;
-    default: assert(false);
+    default: FAIL;
   }
 
   unsigned int TimeoutAnswer = (Params != NULL) ? Params->TimeoutAnswer : 0;
@@ -170,7 +175,7 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
     Answers = Answers | qaHelp;
   }
 
-  if (HelpKeyword == HELP_INTERNAL_ERROR)
+  if (IsInternalErrorHelpKeyword(HelpKeyword))
   {
     Answers = Answers | qaReport;
   }
@@ -181,9 +186,13 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
   }
 
   UnicodeString ImageName;
+  UnicodeString MoreMessagesUrl;
+  TSize MoreMessagesSize;
   if (Params != NULL)
   {
     ImageName = Params->ImageName;
+    MoreMessagesUrl = Params->MoreMessagesUrl;
+    MoreMessagesSize = Params->MoreMessagesSize;
   }
 
   const TQueryButtonAlias * Aliases = (Params != NULL) ? Params->Aliases : NULL;
@@ -202,7 +211,8 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
   }
 
   TForm * Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Answers,
-    Aliases, AliasesCount, TimeoutAnswer, &TimeoutButton, ImageName, NeverAskAgainCaption);
+    Aliases, AliasesCount, TimeoutAnswer, &TimeoutButton, ImageName, NeverAskAgainCaption,
+    MoreMessagesUrl, MoreMessagesSize);
 
   try
   {
@@ -507,14 +517,53 @@ unsigned int __fastcall SimpleErrorDialog(const UnicodeString Msg, const Unicode
   {
     if (!MoreMessages.IsEmpty())
     {
-      More = new TStringList();
-      More->Text = MoreMessages;
+      More = TextToStringList(MoreMessages);
     }
     Result = MoreMessageDialog(Msg, More, qtError, qaOK, HELP_NONE);
   }
   __finally
   {
     delete More;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static TStrings * __fastcall StackInfoListToStrings(
+  TJclStackInfoList * StackInfoList)
+{
+  std::unique_ptr<TStrings> StackTrace(new TStringList());
+  StackInfoList->AddToStrings(StackTrace.get(), true, false, true, false);
+  // get rid of __fastcall declarations that are included in .map
+  StackTrace->Text = ReplaceStr(StackTrace->Text, L"__fastcall ", L"");
+  return StackTrace.release();
+}
+//---------------------------------------------------------------------------
+bool __fastcall AppendExceptionStackTrace(TStrings *& MoreMessages)
+{
+  TJclStackInfoList * StackInfoList = JclLastExceptStackList();
+  std::unique_ptr<TStrings> OwnedMoreMessages;
+  bool Result = false;
+  if (StackInfoList != NULL)
+  {
+    if (MoreMessages == NULL)
+    {
+      OwnedMoreMessages.reset(new TStringList());
+      MoreMessages = OwnedMoreMessages.get();
+      Result = true;
+    }
+    std::unique_ptr<TStrings> StackTrace(StackInfoListToStrings(StackInfoList));
+    if (!MoreMessages->Text.IsEmpty())
+    {
+      MoreMessages->Text = MoreMessages->Text + "\n";
+    }
+    MoreMessages->Text = MoreMessages->Text + LoadStr(STACK_TRACE) + "\n";
+    MoreMessages->AddStrings(StackTrace.get());
+
+    // this chains so that JclLastExceptStackList() returns NULL the next time
+    // for the current thread
+    delete StackInfoList;
+
+    OwnedMoreMessages.release();
   }
   return Result;
 }
@@ -536,6 +585,33 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   CHECK(ExceptionMessageFormatted(E, Message));
 
   HelpKeyword = MergeHelpKeyword(HelpKeyword, GetExceptionHelpKeyword(E));
+
+  std::unique_ptr<TStrings> OwnedMoreMessages;
+  if (AppendExceptionStackTrace(MoreMessages))
+  {
+    OwnedMoreMessages.reset(MoreMessages);
+  }
+
+  TJclStackInfoList * StackInfoList = JclLastExceptStackList();
+  if (StackInfoList != NULL)
+  {
+    if (MoreMessages == NULL)
+    {
+      OwnedMoreMessages.reset(new TStringList());
+      MoreMessages = OwnedMoreMessages.get();
+    }
+    std::unique_ptr<TStrings> StackTrace(StackInfoListToStrings(StackInfoList));
+    if (!MoreMessages->Text.IsEmpty())
+    {
+      MoreMessages->Text = MoreMessages->Text + "\n";
+    }
+    MoreMessages->Text = MoreMessages->Text + LoadStr(STACK_TRACE) + "\n";
+    MoreMessages->AddStrings(StackTrace.get());
+
+    // this chains so that JclLastExceptStackList() returns NULL the next time
+    // for the current thread
+    delete StackInfoList;
+  }
 
   return MoreMessageDialog(
     FORMAT(MessageFormat.IsEmpty() ? UnicodeString(L"%s") : MessageFormat, (Message)),
@@ -570,6 +646,19 @@ unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Ty
   AParams.AliasesCount = LENOF(Aliases);
 
   return ExceptionMessageDialog(E, Type, MessageFormat, Answers, HelpKeyword, &AParams);
+}
+//---------------------------------------------------------------------------
+static void __fastcall DoExceptNotify(TObject * ExceptObj, void * ExceptAddr,
+  bool OSException, void * BaseOfStack)
+{
+  if (ExceptObj != NULL)
+  {
+    Exception * E = dynamic_cast<Exception *>(ExceptObj);
+    if ((E != NULL) && IsInternalException(E)) // optimization
+    {
+      DoExceptionStackTrace(ExceptObj, ExceptAddr, OSException, BaseOfStack);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void * __fastcall BusyStart()
@@ -1051,156 +1140,26 @@ bool __fastcall IsApplicationMinimized()
   return AppMinimized || MainFormMinimized;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TranslateDateFormat(UnicodeString FormatStr)
-{
-  UnicodeString Result;
-  CALTYPE CalendarType = StrToIntDef(GetLocaleStr(GetDefaultLCID(), LOCALE_ICALENDARTYPE, L"1"), 1);
-  if ((CalendarType != CAL_JAPAN) && (CalendarType != CAL_TAIWAN) && (CalendarType != CAL_KOREA))
-  {
-    bool RemoveEra =
-      (SysLocale.PriLangID == LANG_JAPANESE) ||
-      (SysLocale.PriLangID == LANG_CHINESE) ||
-      (SysLocale.PriLangID == LANG_KOREAN);
-    if (RemoveEra)
-    {
-      int I = 1;
-      while (I <= FormatStr.Length())
-      {
-        if ((FormatStr[I] != L'g') && (FormatStr[I] != L'G'))
-        {
-          Result += FormatStr[I];
-        }
-        I++;
-      }
-    }
-    else
-    {
-      Result = FormatStr;
-    }
-  }
-  else
-  {
-    int I = 1;
-    while (I <= FormatStr.Length())
-    {
-      if (FormatStr.IsLeadSurrogate(I))
-      {
-        int L = CharLength(FormatStr, I);
-        Result += FormatStr.SubString(I, L);
-        I += L;
-      }
-      else
-      {
-        if (StrLIComp(FormatStr.c_str() + I - 1, L"gg", 2) == 0)
-        {
-          Result += L"ggg";
-          I++;
-        }
-        else if (StrLIComp(FormatStr.c_str() + I - 1, L"yyyy", 4) == 0)
-        {
-          Result += L"eeee";
-          I += 4 - 1;
-        }
-        else if (StrLIComp(FormatStr.c_str() + I - 1, L"yy", 2) == 0)
-        {
-          Result += L"ee";
-          I += 2 - 1;
-        }
-        else if ((FormatStr[I] == L'y') || (FormatStr[I] == L'Y'))
-        {
-          Result += L"e";
-        }
-        else
-        {
-          Result += FormatStr[I];
-        }
-        I++;
-      }
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall GetFormatSettingsFix()
-{
-  // todo InitSysLocale
-  // todo GetMonthDayNames
-  // todo GetEraNamesAndYearOffsets
-  LCID DefaultLCID = GetDefaultLCID();
-  FormatSettings = TFormatSettings::Create(DefaultLCID);
-#pragma warn -8111
-  CurrencyString = GetLocaleStr(DefaultLCID, LOCALE_SCURRENCY, L"");
-  CurrencyFormat = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ICURRENCY, L"0"), 0);
-  NegCurrFormat = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_INEGCURR, L"0"), 0);
-  ThousandSeparator = GetLocaleChar(DefaultLCID, LOCALE_STHOUSAND, L',');
-  DecimalSeparator = GetLocaleChar(DefaultLCID, LOCALE_SDECIMAL, L'.');
-  CurrencyDecimals = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ICURRDIGITS, L"0"), 0);
-  DateSeparator = GetLocaleChar(DefaultLCID, LOCALE_SDATE, L'/');
-  ShortDateFormat = TranslateDateFormat(GetLocaleStr(DefaultLCID, LOCALE_SSHORTDATE, L"m/d/yy"));
-  LongDateFormat = TranslateDateFormat(GetLocaleStr(DefaultLCID, LOCALE_SLONGDATE, L"mmmm d, yyyy"));
-  TimeSeparator = GetLocaleChar(DefaultLCID, LOCALE_STIME, L':');
-  TimeAMString = GetLocaleStr(DefaultLCID, LOCALE_S1159, L"am");
-  TimePMString = GetLocaleStr(DefaultLCID, LOCALE_S2359, L"pm");
-  UnicodeString HourFormat;
-  if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITLZERO, L"0"), 0) == 0)
-  {
-    HourFormat = L"h";
-  }
-  else
-  {
-    HourFormat = L"hh";
-  }
-  UnicodeString TimePrefix, TimePostfix;
-  if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITIME, L"0"), 0) == 0)
-  {
-    if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITIMEMARKPOSN, L"0"), 0) == 0)
-    {
-      TimePostfix = L" AMPM";
-    }
-    else
-    {
-      TimePrefix = L"AMPM ";
-    }
-  }
-  ShortTimeFormat = TimePrefix + HourFormat + L":mm" + TimePostfix;
-  LongTimeFormat = TimePrefix + HourFormat + L":mm:ss" + TimePostfix;
-  ListSeparator = GetLocaleChar(DefaultLCID, LOCALE_SLIST, L',');
-#pragma warn .8111
-}
-//---------------------------------------------------------------------------
 void __fastcall WinInitialize()
 {
-  SetErrorMode(SEM_FAILCRITICALERRORS);
-  // HACK
-  if (::IsWin7())
+  if (JclHookExceptions())
   {
-    GetFormatSettingsFix();
+    JclStackTrackingOptions << stAllModules;
+    JclAddExceptNotifier(DoExceptNotify, npFirstChain);
   }
+
+  SetErrorMode(SEM_FAILCRITICALERRORS);
+  OnApiPath = ::ApiPath;
 
 #pragma warn -8111
 #pragma warn .8111
 
 }
 //---------------------------------------------------------------------------
-struct TNotifyIconData5
+void __fastcall WinFinalize()
 {
-  DWORD cbSize;
-  HWND hWnd;
-  UINT uID;
-  UINT uFlags;
-  UINT uCallbackMessage;
-  HICON hIcon;
-  TCHAR szTip[128];
-  DWORD dwState;
-  DWORD dwStateMask;
-  TCHAR szInfo[256];
-  union {
-    UINT uTimeout;
-    UINT uVersion;
-  } DUMMYUNIONNAME;
-  TCHAR szInfoTitle[64];
-  DWORD dwInfoFlags;
-};
+  JclRemoveExceptNotifier(DoExceptNotify);
+}
 //---------------------------------------------------------------------------
 __fastcall ::TTrayIcon::TTrayIcon(unsigned int Id)
 {
@@ -1209,7 +1168,7 @@ __fastcall ::TTrayIcon::TTrayIcon(unsigned int Id)
   FOnBalloonClick = NULL;
   FBalloonUserData = NULL;
 
-  FTrayIcon = new TNotifyIconData5;
+  FTrayIcon = new NOTIFYICONDATA;
   memset(FTrayIcon, 0, sizeof(*FTrayIcon));
   FTrayIcon->cbSize = sizeof(*FTrayIcon);
   FTrayIcon->uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
@@ -1262,7 +1221,14 @@ void __fastcall ::TTrayIcon::PopupBalloon(UnicodeString Title,
   FTrayIcon->uFlags |= NIF_INFO;
   Title = FORMAT(L"%s - %s", (Title, AppNameString()));
   StrPLCopy(FTrayIcon->szInfoTitle, Title, LENOF(FTrayIcon->szInfoTitle) - 1);
-  StrPLCopy(FTrayIcon->szInfo, Str, LENOF(FTrayIcon->szInfo) - 1);
+  UnicodeString Info = Str;
+  // When szInfo is empty, balloon is not shown
+  // (or actually it means the balloon should be deleted, if any)
+  if (Info.IsEmpty())
+  {
+    Info = L" ";
+  }
+  StrPLCopy(FTrayIcon->szInfo, Info, LENOF(FTrayIcon->szInfo) - 1);
   FTrayIcon->uTimeout = Timeout;
   switch (QueryType)
   {

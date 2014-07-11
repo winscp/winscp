@@ -69,7 +69,6 @@ __fastcall TTerminalManager::TTerminalManager() :
   FTerminalPendingAction = tpNull;
   FDirectoryReadingStart = 0;
   FAuthenticateForm = NULL;
-  FQueueWithEvent = NULL;
   FTaskbarList = NULL;
   FAuthenticating = 0;
 
@@ -656,11 +655,11 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     UnicodeString NewTitle;
     if (ActiveTerminal)
     {
-      NewTitle = FMTLOAD(APP_CAPTION, (ActiveTerminalTitle, AppName));
+      NewTitle = FormatMainFormCaption(ActiveTerminalTitle);
     }
     else
     {
-      NewTitle = AppName;
+      NewTitle = FormatMainFormCaption(L"");
     }
 
     UnicodeString QueueProgressTitle;
@@ -815,7 +814,9 @@ void __fastcall TTerminalManager::ApplicationModalEnd(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::InitTaskbarButtonCreatedMessage()
 {
-
+  // XE6 VCL already handles TaskbarButtonCreated, but does not call ChangeWindowMessageFilterEx.
+  // So we keep our implementation.
+  // See also http://stackoverflow.com/a/14618587/850848
   FTaskbarButtonCreatedMessage = RegisterWindowMessage(L"TaskbarButtonCreated");
 
   HINSTANCE User32Library = LoadLibrary(L"user32.dll");
@@ -1023,7 +1024,7 @@ void __fastcall TTerminalManager::TerminalShowExtendedException(
 static TDateTime DirectoryReadingProgressDelay(0, 0, 1, 500);
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
-  TObject * /*Sender*/, int Progress, bool & Cancel)
+  TObject * /*Sender*/, int Progress, int ResolvedLinks, bool & Cancel)
 {
   if (Progress == 0)
   {
@@ -1076,7 +1077,10 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
 
     if ((Now() - FDirectoryReadingStart) >= DirectoryReadingProgressDelay)
     {
-      FForegroundProgressTitle = FMTLOAD(DIRECTORY_READING_PROGRESS, (Progress));
+      // 4 is arbitrary number
+      FForegroundProgressTitle =
+        FMTLOAD(ResolvedLinks >= 4 ? DIRECTORY_READING_AND_RESOLVING_PROGRESS : DIRECTORY_READING_PROGRESS,
+          (Progress));
       UpdateAppTitle();
     }
   }
@@ -1142,7 +1146,7 @@ UnicodeString __fastcall TTerminalManager::ProgressTitle(TFileOperationProgressT
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationProgress(
-  TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
+  TFileOperationProgressType & ProgressData)
 {
   if (ProgressData.InProgress)
   {
@@ -1155,14 +1159,13 @@ void __fastcall TTerminalManager::OperationProgress(
 
   UpdateAppTitle();
   assert(ScpExplorer);
-  ScpExplorer->OperationProgress(ProgressData, Cancel);
+  ScpExplorer->OperationProgress(ProgressData);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::QueueEvent(TTerminalQueue * Queue, TQueueEvent Event)
 {
   TGuard Guard(FQueueSection);
-  FQueueWithEvent = Queue;
-  FQueueEvent = Event;
+  FQueueEvents.push_back(std::make_pair(Queue, Event));
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)
@@ -1294,33 +1297,42 @@ bool __fastcall TTerminalManager::CanOpenInPutty()
   return (ActiveTerminal != NULL) && !GUIConfiguration->PuttyPath.Trim().IsEmpty();
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::UpdateSessionCredentials(TSessionData * Data)
+{
+  Data->UserName = ActiveTerminal->UserName;
+  Data->Password = ActiveTerminal->Password;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OpenInPutty()
 {
   Configuration->Usage->Inc(L"OpenInPutty");
 
-  TSessionData * Data = new TSessionData(L"");
+  TSessionData * Data = NULL;
   try
   {
-    assert(ActiveTerminal != NULL);
-    Data->Assign(ActiveTerminal->SessionData);
-
+    // Is NULL on the first session when called from ConnectActiveTerminal()
+    // due to WinConfiguration->AutoOpenInPutty
     if (ScpExplorer != NULL)
     {
-      ScpExplorer->UpdateTerminal(ActiveTerminal);
-      Data->RemoteDirectory =
-        NOT_NULL(dynamic_cast<TManagedTerminal *>(ActiveTerminal))->RemoteDirectory;
+      Data = ScpExplorer->CloneCurrentSessionData();
+    }
+    else
+    {
+      Data = new TSessionData(L"");
+      assert(ActiveTerminal != NULL);
+      Data->Assign(ActiveTerminal->SessionData);
+      UpdateSessionCredentials(Data);
     }
 
     // putty does not support resolving environment variables in session settings
     Data->ExpandEnvironmentVariables();
+
     if (ActiveTerminal->TunnelLocalPortNumber != 0)
     {
       Data->ConfigureTunnel(ActiveTerminal->TunnelLocalPortNumber);
     }
 
-    OpenSessionInPutty(GUIConfiguration->PuttyPath, Data,
-      ActiveTerminal->UserName,
-      GUIConfiguration->PuttyPassword ? ActiveTerminal->Password : UnicodeString());
+    OpenSessionInPutty(GUIConfiguration->PuttyPath, Data);
   }
   __finally
   {
@@ -1328,24 +1340,17 @@ void __fastcall TTerminalManager::OpenInPutty()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::NewSession(bool /*FromSite*/)
+void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeString & SessionUrl)
 {
-  TObjectList * DataList = new TObjectList();
-  try
-  {
-    TSessionData * Data = new TSessionData(L"");
-    Data->Assign(StoredSessions->DefaultSettings);
-    DataList->Add(Data);
+  UnicodeString DownloadFile; // unused
+  bool Url; // unused
+  std::unique_ptr<TObjectList> DataList(new TObjectList());
 
-    int Options = loAddSession;
-    if (DoLoginDialog(StoredSessions, DataList, Options))
-    {
-      ActiveTerminal = NewTerminals(DataList);
-    }
-  }
-  __finally
+  GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile, Url);
+
+  if (DataList->Count > 0)
   {
-    delete DataList;
+    ActiveTerminal = NewTerminals(DataList.get());
   }
 }
 //---------------------------------------------------------------------------
@@ -1410,29 +1415,39 @@ void __fastcall TTerminalManager::Idle()
 
   TTerminalQueue * QueueWithEvent;
   TQueueEvent QueueEvent;
-  {
-    TGuard Guard(FQueueSection);
 
-    QueueWithEvent = FQueueWithEvent;
-    FQueueWithEvent = NULL;
-    QueueEvent = FQueueEvent;
-  }
-
-  if (QueueWithEvent != NULL)
+  do
   {
-    int Index = FQueues->IndexOf(QueueWithEvent);
-    // the session may not exist anymore
-    if (Index >= 0)
+    QueueWithEvent = NULL;
+
     {
-      TTerminal * Terminal = Terminals[Index];
-      // we can hardly have a queue event without explorer
-      assert(ScpExplorer != NULL);
-      if (ScpExplorer != NULL)
+      TGuard Guard(FQueueSection);
+
+      if (!FQueueEvents.empty())
       {
-        ScpExplorer->QueueEvent(Terminal, QueueWithEvent, QueueEvent);
+        QueueWithEvent = FQueueEvents[0].first;
+        QueueEvent = FQueueEvents[0].second;
+        FQueueEvents.erase(FQueueEvents.begin());
+      }
+    }
+
+    if (QueueWithEvent != NULL)
+    {
+      int Index = FQueues->IndexOf(QueueWithEvent);
+      // the session may not exist anymore
+      if (Index >= 0)
+      {
+        TTerminal * Terminal = Terminals[Index];
+        // we can hardly have a queue event without explorer
+        assert(ScpExplorer != NULL);
+        if (ScpExplorer != NULL)
+        {
+          ScpExplorer->QueueEvent(Terminal, QueueWithEvent, QueueEvent);
+        }
       }
     }
   }
+  while (QueueWithEvent != NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::MasterPasswordPrompt()

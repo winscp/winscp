@@ -208,6 +208,7 @@ begin
      if PIDL_GetDisplayName(piParentFolder, pidl, SHGDN_FORPARSING, @szBuffer, sizeof(szBuffer))=false then
         exit;
      MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, @szBuffer, -1, @szOleChar, sizeof(szOleChar));
+     ulAttribs := 0;
      if Failed(piDesktopFolder.ParseDisplayName(0, nil, @szOleChar, ulEaten,
         Result, ulAttribs)) then Result:=nil;
      // piDesktopFolder._Release; automaticly done by D4
@@ -259,6 +260,7 @@ begin
      Result:=nil;
      if Failed(SHGetDesktopFolder(piDesktop)) then exit;
      piDesktop._AddRef;
+     ulAttribs := 0;
      if Failed(piDesktop.ParseDisplayName(0, nil, pszFile, ulEaten,
         Result, ulAttribs)) then Result:=nil;
      // piDesktop._Release; -> automaticly done by D4
@@ -298,6 +300,7 @@ var chEaten, dwAttributes: ULONG;
 begin
      ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
      try
+       dwAttributes := 0;
        NotResult := Failed(pParentFolder.ParseDisplayName(0, nil, pszFile, chEaten, Result,
           dwAttributes));
      finally

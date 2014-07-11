@@ -15,7 +15,7 @@ class TRemoteTransferDialog : public TForm
 __published:
   TGroupBox *SymlinkGroup;
   TLabel *SessionLabel;
-  TLabel *Label2;
+  TLabel *Label3;
   TComboBox *SessionCombo;
   THistoryComboBox *DirectoryEdit;
   TButton *OkButton;

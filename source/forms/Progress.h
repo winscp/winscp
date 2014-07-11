@@ -11,6 +11,7 @@
 #include <Vcl.StdCtrls.hpp>
 //----------------------------------------------------------------------------
 #include <FileOperationProgress.h>
+#include <Vcl.Menus.hpp>
 //----------------------------------------------------------------------------
 class TProgressForm : public TForm
 {
@@ -36,12 +37,15 @@ __published:
   TProgressBar *BottomProgress;
   TTimer *UpdateTimer;
   TPanel *SpeedPanel;
-  TLabel *SpeedLabel2;
+  TLabel *SpeedLabel3;
   TLabel *TimeLeftLabelLabel;
   TLabel *TimeLeftLabel;
   THistoryComboBox *SpeedCombo;
   TLabel *OnceDoneOperationLabel;
   TComboBox *OnceDoneOperationCombo;
+  TPopupMenu *MinimizeMenu;
+  TMenuItem *MoveToQueueMenuItem;
+  TMenuItem *MinimizeMenuItem;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormHide(TObject *Sender);
@@ -52,9 +56,12 @@ __published:
   void __fastcall SpeedComboKeyPress(TObject *Sender, wchar_t &Key);
   void __fastcall OnceDoneOperationComboSelect(TObject *Sender);
   void __fastcall OnceDoneOperationComboCloseUp(TObject *Sender);
+  void __fastcall MinimizeMenuItemClick(TObject *Sender);
+  void __fastcall MoveToQueueMenuItemClick(TObject *Sender);
 
 private:
   TCancelStatus FCancel;
+  bool FMoveToQueue;
   TFileOperationProgressType FData;
   bool FDataGot;
   bool FDataReceived;
@@ -77,6 +84,7 @@ private:
   bool FModalBeginHooked;
   TNotifyEvent FPrevApplicationModalBegin;
   int FModalLevel;
+  bool FAllowMoveToQueue;
 
   void __fastcall SetOnceDoneOperation(TOnceDoneOperation value);
   void __fastcall SetAllowMinimize(bool value);
@@ -91,14 +99,17 @@ protected:
   void __fastcall ApplyCPSLimit();
   void __fastcall ResetOnceDoneOperation();
   bool __fastcall ReceiveData(bool Force, int ModalLevelOffset);
+  void __fastcall Minimize(TObject * Sender);
+  virtual void __fastcall Dispatch(void * Message);
 
 public:
   static UnicodeString __fastcall OperationName(TFileOperation Operation, TOperationSide Side);
 
+  virtual __fastcall TProgressForm(TComponent * AOwner, bool AllowMoveToQueue);
   virtual __fastcall ~TProgressForm();
   void __fastcall SetProgressData(TFileOperationProgressType & AData);
-  virtual __fastcall TProgressForm(TComponent * AOwner);
   __property TCancelStatus Cancel = { read = FCancel };
+  __property bool MoveToQueue = { read = FMoveToQueue };
   __property TOnceDoneOperation OnceDoneOperation = { read=FOnceDoneOperation, write=SetOnceDoneOperation };
   __property bool AllowMinimize = { read=GetAllowMinimize, write=SetAllowMinimize };
   __property bool DeleteToRecycleBin = { read=FDeleteToRecycleBin, write=FDeleteToRecycleBin };

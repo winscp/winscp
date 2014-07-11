@@ -10,6 +10,8 @@
 #include "VCLCommon.h"
 #include "WinConfiguration.h"
 #include "HelpWin.h"
+#include <BaseUtils.hpp>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "TB2Dock"
@@ -18,13 +20,14 @@
 #pragma link "TB2Toolbar"
 #pragma link "TBXStatusBars"
 #pragma link "PngImageList"
+#pragma link "TBXExtItems"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
 TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TCustomForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
-  const UnicodeString Caption)
+  const UnicodeString Caption, bool StandaloneEditor, TColor Color)
 {
   TEditorForm * Dialog = new TEditorForm(Application);
   try
@@ -35,6 +38,8 @@ TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TCustomForm * Pa
     Dialog->Caption = ACaption + L" - " + LoadStr(EDITOR_CAPTION) + L" - " + AppName;
     Dialog->OnFileChanged = OnFileChanged;
     Dialog->OnFileReload = OnFileReload;
+    Dialog->StandaloneEditor = StandaloneEditor;
+    Dialog->BackgroundColor = Color;
     // load before showing, so when loading failes,
     // we do not show an empty editor
     Dialog->LoadFile();
@@ -59,12 +64,18 @@ void __fastcall ReconfigureEditorForm(TForm * Form)
   Editor->ApplyConfiguration();
 }
 //---------------------------------------------------------------------------
+void __fastcall EditorFormFileUploadComplete(TForm * Form)
+{
+  NOT_NULL(dynamic_cast<TEditorForm *>(Form))->FileUploadComplete();
+}
+//---------------------------------------------------------------------------
 class TPreambleFilteringFileStream : public TFileStream
 {
 public:
   __fastcall TPreambleFilteringFileStream(const UnicodeString AFileName, System::Word Mode,
     TEncoding * Encoding, bool AllowPreamble);
   virtual int __fastcall Write(const void * Buffer, int Count);
+  virtual int __fastcall Write(const System::DynamicArray<System::Byte> Buffer, int Offset, int Count);
 private:
   TBytes FPreamble;
   bool FDisallowPreamble;
@@ -110,6 +121,13 @@ int __fastcall TPreambleFilteringFileStream::Write(const void * Buffer, int Coun
     Result = TFileStream::Write(Buffer, Count);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TPreambleFilteringFileStream::Write(
+  const System::DynamicArray<System::Byte> /*Buffer*/, int /*Offset*/, int /*Count*/)
+{
+  FAIL;
+  EXCEPTION;
 }
 //---------------------------------------------------------------------------
 class TRichEdit20 : public TRichEdit
@@ -376,7 +394,7 @@ struct TStreamLoadInfo
 };
 //---------------------------------------------------------------------------
 // Copy from Vcl.ComCtrls.pas,
-// WORKAROUND for bug in BCB XE2 VCL
+// WORKAROUND for bug in BCB XE2-XE6 VCL
 // Fixes conversion from UTF-8, when read buffer ends in the middle of UTF-8 char
 static unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead)
 {
@@ -658,6 +676,10 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   FReplaceDialog->OnFind = FindDialogFind;
   FReplaceDialog->OnReplace = FindDialogFind;
   FEncoding = NULL;
+  FSaving = false;
+  FStandaloneEditor = false;
+  FClosePending = false;
+  SetSubmenu(ColorItem);
 
   InitCodePage();
 
@@ -693,6 +715,11 @@ __fastcall TEditorForm::~TEditorForm()
   if (Application->OnHint == ApplicationHint)
   {
     Application->OnHint = NULL;
+  }
+
+  if (FStandaloneEditor)
+  {
+    Application->Terminate();
   }
 }
 //---------------------------------------------------------------------------
@@ -758,7 +785,7 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   }
   else if (Action == PreferencesAction ||
     Action == FindAction || Action == ReplaceAction || Action == GoToLineAction ||
-    Action == HelpAction || Action == ReloadAction)
+    Action == HelpAction || Action == ReloadAction || Action == ColorAction)
   {
     ((TAction *)Action)->Enabled = true;
   }
@@ -780,9 +807,9 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::SaveToFile()
 {
-  std::auto_ptr<TStream> Stream(
+  std::unique_ptr<TStream> Stream(
     new TPreambleFilteringFileStream(
-      FFileName, fmCreate, FEncoding, EditorMemo->LoadedWithPreamble));
+      ::ApiPath(FFileName), fmCreate, FEncoding, EditorMemo->LoadedWithPreamble));
   EditorMemo->Lines->SaveToStream(Stream.get(), FEncoding);
 }
 //---------------------------------------------------------------------------
@@ -798,6 +825,7 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
     {
       FOnFileChanged(this);
     }
+    FSaving = true;
     EditorMemo->Modified = false;
     UpdateControls();
   }
@@ -841,6 +869,14 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   {
     ChangeEncoding(TEncoding::UTF8);
   }
+  else if (Action == ColorAction)
+  {
+    if (ALWAYS_TRUE(Action->ActionComponent != NULL))
+    {
+      ::CreateSessionColorMenu(Action->ActionComponent, BackgroundColor,
+        SetBackgroundColor);
+    }
+  }
   else
   {
     Handled = false;
@@ -855,9 +891,10 @@ void __fastcall TEditorForm::BackupSave()
     while (true)
     {
       UnicodeString FileName = FFileName + L".bak" + (Uniq == 0 ? UnicodeString() : IntToStr(Uniq));
-      if (!FileExists(FileName))
+      UnicodeString ApiFileName = ::ApiPath(FileName);
+      if (!FileExists(ApiFileName))
       {
-        EditorMemo->Lines->SaveToFile(FileName, FEncoding);
+        EditorMemo->Lines->SaveToFile(ApiFileName, FEncoding);
         break;
       }
       Uniq++;
@@ -903,6 +940,11 @@ void __fastcall TEditorForm::FormCloseQuery(TObject * /*Sender*/,
     if (Answer == qaYes)
     {
       SaveAction->Execute();
+      if (FStandaloneEditor)
+      {
+        CanClose = false;
+        FClosePending = true;
+      }
     }
   }
 }
@@ -918,6 +960,17 @@ void __fastcall TEditorForm::ApplyConfiguration()
   EditorMemo->Modified = PrevModified;
   EditorMemo->ClearUndo();
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::FileUploadComplete()
+{
+  assert(FSaving);
+  FSaving = false;
+  UpdateControls();
+  if (FClosePending && ALWAYS_TRUE(FStandaloneEditor))
+  {
+    Close();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::UpdateControls()
@@ -995,7 +1048,8 @@ void __fastcall TEditorForm::UpdateControls()
     }
     StatusBar->Panels->Items[3]->Caption = FMTLOAD(EDITOR_ENCODING_STATUS, (FEncodingName));
     StatusBar->Panels->Items[4]->Caption =
-      (EditorMemo->Modified ? LoadStr(EDITOR_MODIFIED) : UnicodeString(L""));
+      (FSaving ? LoadStr(EDITOR_SAVING) :
+        (EditorMemo->Modified ? LoadStr(EDITOR_MODIFIED) : UnicodeString(L"")));
     StatusBar->SimplePanel = false;
   }
 
@@ -1161,7 +1215,7 @@ bool __fastcall TEditorForm::ContainsPreamble(TStream * Stream, const TBytes & S
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
 {
-  TStream * Stream = new TFileStream(FFileName, fmOpenRead | fmShareDenyWrite);
+  TStream * Stream = new TFileStream(::ApiPath(FFileName), fmOpenRead | fmShareDenyWrite);
   try
   {
     bool CanTrySecondary;
@@ -1261,8 +1315,52 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
   SendMessage(EditorMemo->Handle, EM_EXLIMITTEXT, 0, 0x7FFFFFF0);
 }
 //---------------------------------------------------------------------------
+void __fastcall TEditorForm::CheckFileSize()
+{
+  TEditorConfiguration EditorConfiguration = WinConfiguration->Editor;
+
+  if (EditorConfiguration.WarnOrLargeFileSize)
+  {
+    TWin32FileAttributeData FileAttributeData;
+    if (GetFileAttributesEx(::ApiPath(FFileName).c_str(), GetFileExInfoStandard, &FileAttributeData))
+    {
+      const __int64 MaxSize = 100 * 1024 * 1024;
+      __int64 Size =
+        (static_cast<__int64>(FileAttributeData.nFileSizeHigh) << 32) +
+        FileAttributeData.nFileSizeLow;
+      if (Size > MaxSize)
+      {
+        TMessageParams Params(mpNeverAskAgainCheck);
+        unsigned int Answer =
+          MoreMessageDialog(
+            FMTLOAD(INTERNAL_EDITOR_LARGE_FILE, (FormatBytes(Size))), NULL,
+            qtConfirmation, qaOK | qaCancel, HELP_NONE, &Params);
+        switch (Answer)
+        {
+          case qaOK:
+            // noop;
+            break;
+
+          case qaCancel:
+            Abort();
+            break;
+
+          case qaNeverAskAgain:
+            EditorConfiguration.WarnOrLargeFileSize = false;
+            WinConfiguration->Editor = EditorConfiguration;
+            break;
+
+          default:
+            FAIL;
+        }
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TEditorForm::LoadFile()
 {
+  CheckFileSize();
   HandleNeeded();
   LoadFromFile(true);
   EditorMemo->ResetFormat();
@@ -1469,6 +1567,23 @@ void __fastcall TEditorForm::FormKeyDown(TObject * /*Sender*/, WORD & Key, TShif
   {
     Key = 0;
     Close();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::SetBackgroundColor(TColor Color)
+{
+  if (BackgroundColor != Color)
+  {
+    FBackgroundColor = Color;
+    TColor ItemColor = (Color != 0 ? Color : Vcl::Graphics::clNone);
+    ColorItem->Color = ItemColor;
+    TColor EditorColor = (Color != 0 ? Color : clWindow);
+    if (EditorMemo->Color != EditorColor)
+    {
+      EditorMemo->Color = EditorColor;
+      // does not seem to have any effect (nor is needed), but just in case
+      ForceColorChange(EditorMemo);
+    }
   }
 }
 //---------------------------------------------------------------------------

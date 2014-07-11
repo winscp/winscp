@@ -205,7 +205,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(DDTransferConfirmation);
     BOOLPROP(DDWarnLackOfTempSpace);
     BOOLPROP(ShowHiddenFiles);
-    BOOLPROP(FormatSizeBytes);
     BOOLPROP(RenameWholeName);
     BOOLPROP(ShowInaccesibleDirectories);
     BOOLPROP(CopyOnDoubleClickConfirmation);
@@ -413,6 +412,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       PathInCaptionNoneButton->Checked = true;
     }
     BOOLPROP(MinimizeToTray);
+    BOOLPROP(ExternalSessionInExistingInstance);
 
     // panels
     DoubleClickActionCombo->ItemIndex = WinConfiguration->DoubleClickAction;
@@ -420,6 +420,21 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(RefreshRemotePanel);
     RefreshRemotePanelIntervalEdit->Value =
       int(static_cast<double>(WinConfiguration->RefreshRemotePanelInterval) * SecsPerDay);
+
+    switch (WinConfiguration->FormatSizeBytes)
+    {
+      case fbNone:
+        FormatSizeBytesCombo->ItemIndex = 0;
+        break;
+      case fbKilobytes:
+        FormatSizeBytesCombo->ItemIndex = 1;
+        break;
+      case fbShort:
+        FormatSizeBytesCombo->ItemIndex = 2;
+        break;
+      default:
+        FAIL;
+    }
 
     // updates
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -439,6 +454,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     {
       UpdatesPeriodCombo->ItemIndex = 3;
     }
+
+    UpdatesShowOnStartup->Checked = Updates.ShowOnStartup;
 
     CollectUsageCheck->Checked = Configuration->CollectUsage;
 
@@ -567,7 +584,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(DeleteToRecycleBin);
     BOOLPROP(DDWarnLackOfTempSpace);
     BOOLPROP(ShowHiddenFiles);
-    BOOLPROP(FormatSizeBytes);
     BOOLPROP(RenameWholeName);
     BOOLPROP(ShowInaccesibleDirectories);
     BOOLPROP(CopyOnDoubleClickConfirmation);
@@ -756,6 +772,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       WinConfiguration->PathInCaption = picNone;
     }
     BOOLPROP(MinimizeToTray);
+    BOOLPROP(ExternalSessionInExistingInstance);
 
     // panels
     WinConfiguration->DoubleClickAction = (TDoubleClickAction)DoubleClickActionCombo->ItemIndex;
@@ -763,6 +780,21 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(RefreshRemotePanel);
     WinConfiguration->RefreshRemotePanelInterval =
       static_cast<double>(RefreshRemotePanelIntervalEdit->Value / SecsPerDay);
+
+    switch (FormatSizeBytesCombo->ItemIndex)
+    {
+      case 0:
+        WinConfiguration->FormatSizeBytes = fbNone;
+        break;
+      case 1:
+        WinConfiguration->FormatSizeBytes = fbKilobytes;
+        break;
+      case 2:
+        WinConfiguration->FormatSizeBytes = fbShort;
+        break;
+      default:
+        FAIL;
+    }
 
     // updates
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -782,6 +814,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     {
       Updates.Period = 30;
     }
+
+    Updates.ShowOnStartup = UpdatesShowOnStartup->Checked;
 
     Configuration->CollectUsage = CollectUsageCheck->Checked;
 
@@ -947,7 +981,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
 
     EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
-    EnableControl(ResumeThresholdUnitLabel, ResumeThresholdEdit->Enabled);
+    EnableControl(ResumeThresholdUnitLabel2, ResumeThresholdEdit->Enabled);
     EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
     EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
     EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
@@ -1029,8 +1063,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
     // as that would destroy the stored configuration
     EnableControl(StorageGroup, RegistryStorageButton->Checked || IniFileStorageButton2->Checked);
     IniFileStorageButton2->Caption =
-      AnsiReplaceStr(IniFileStorageButton2->Caption, L"winscp.ini",
-        ExpandEnvironmentVariables(Configuration->IniFileStorageName));
+      AnsiReplaceStr(IniFileStorageButton2->Caption, L"(winscp.ini)",
+        FORMAT(L"(%s)", (ExpandEnvironmentVariables(Configuration->IniFileStorageName))));
 
     EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
     bool EditorSelected = (EditorListView3->Selected != NULL);
@@ -1350,7 +1384,7 @@ TListViewScrollOnDragOver * __fastcall TPreferencesDialog::ScrollOnDragOver(TObj
   }
   else
   {
-    assert(false);
+    FAIL;
     return NULL;
   }
 }
@@ -1968,7 +2002,7 @@ void __fastcall TPreferencesDialog::MasterPasswordChanged(
 {
   // Save master password.
   // This is unlikely to fail, as storage is written explicitly already
-  // when writting the recrypted passwords
+  // when writing the recrypted passwords
   Configuration->SaveExplicit();
 
   TQueryType QueryType = qtInformation;
@@ -2035,18 +2069,10 @@ void __fastcall TPreferencesDialog::SetMasterPasswordButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UsageViewButtonClick(TObject * /*Sender*/)
 {
-  TStrings * Data = new TStringList();
-  try
-  {
-    Data->Text = GetUsageData();
-    UnicodeString Message =
-      Data->Text.IsEmpty() ? MainInstructions(LoadStr(USAGE_DATA_NONE)) : LoadStr(USAGE_DATA2);
-    MoreMessageDialog(Message, Data, qtInformation, qaOK, HELP_USAGE);
-  }
-  __finally
-  {
-    delete Data;
-  }
+  std::unique_ptr<TStrings> Data(TextToStringList(GetUsageData()));
+  UnicodeString Message =
+    Data->Text.IsEmpty() ? MainInstructions(LoadStr(USAGE_DATA_NONE)) : LoadStr(USAGE_DATA2);
+  MoreMessageDialog(Message, Data.get(), qtInformation, qaOK, HELP_USAGE);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CopyParamLabelClick(TObject * /*Sender*/)

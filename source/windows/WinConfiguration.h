@@ -99,12 +99,13 @@ struct TEditorConfiguration {
   UnicodeString WindowParams;
   int Encoding;
   bool WarnOnEncodingFallback;
+  bool WarnOrLargeFileSize;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
     { return C(FontName) C(FontSize)
       C(FontCharset) C(FontStyle) C(WordWrap) C(FindText) C(ReplaceText)
       C(FindMatchCase) C(FindWholeWord) C(FindDown) C(TabSize)
       C(MaxEditors) C(EarlyClose) C(SDIShellEditor) C(WindowParams)
-      C(Encoding) C(WarnOnEncodingFallback) 0; };
+      C(Encoding) C(WarnOnEncodingFallback) C(WarnOrLargeFileSize) 0; };
 };
 //---------------------------------------------------------------------------
 enum TQueueViewShow { qvShow, qvHideWhenEmpty, qvHide };
@@ -130,9 +131,11 @@ struct TUpdatesData
   bool Disabled;
   UnicodeString Url;
   UnicodeString UrlButton;
+  UnicodeString NewsUrl;
+  TSize NewsSize;
   bool __fastcall operator !=(TUpdatesData & rhc)
     { return C(ForVersion) C(Version) C(Message) C(Critical) C(Release)
-             C(Disabled) C(Url) C(UrlButton) 0; };
+             C(Disabled) C(Url) C(UrlButton) C(NewsUrl) C(NewsSize) 0; };
   void Reset()
   {
     ForVersion = 0;
@@ -143,6 +146,8 @@ struct TUpdatesData
     Disabled = false;
     Url = L"";
     UrlButton = L"";
+    NewsUrl = L"";
+    NewsSize = TSize();
   }
 };
 //---------------------------------------------------------------------------
@@ -156,15 +161,26 @@ struct TUpdatesConfiguration
   UnicodeString ProxyHost;
   int ProxyPort;
   TAutoSwitch BetaVersions;
+  bool ShowOnStartup;
   bool HaveResults;
   bool ShownResults;
   UnicodeString DotNetVersion;
   UnicodeString ConsoleVersion;
   TUpdatesData Results;
+
   bool __fastcall operator !=(TUpdatesConfiguration & rhc)
     { return C(Period) C(LastCheck) C(ConnectionType) C(ProxyHost) C(ProxyPort)
-        C(BetaVersions) C(HaveResults) C(ShownResults) C(DotNetVersion)
+        C(BetaVersions) C(ShowOnStartup)
+        C(HaveResults) C(ShownResults) C(DotNetVersion)
         C(ConsoleVersion) C(Results)  0; };
+
+  bool __fastcall HaveValidResultsForVersion(int CompoundVersion)
+  {
+    return
+      HaveResults &&
+      (double(Period) > 0) &&
+      (Results.ForVersion == CompoundVersion);
+  }
 };
 //---------------------------------------------------------------------------
 struct TEditorData
@@ -280,7 +296,7 @@ private:
   bool FSelectDirectories;
   UnicodeString FSelectMask;
   bool FShowHiddenFiles;
-  bool FFormatSizeBytes;
+  TFormatBytesStyle FFormatSizeBytes;
   bool FShowInaccesibleDirectories;
   bool FConfirmTransferring;
   bool FConfirmDeleting;
@@ -346,6 +362,8 @@ private:
   TMasterPasswordPromptEvent FOnMasterPasswordPrompt;
   UnicodeString FOpenedStoredSessionFolders;
   bool FAutoImportedFromPuttyOrFilezilla;
+  int FGenerateUrlComponents;
+  bool FExternalSessionInExistingInstance;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
@@ -364,7 +382,7 @@ private:
   void __fastcall SetScpExplorer(TScpExplorerConfiguration value);
   void __fastcall SetSelectDirectories(bool value);
   void __fastcall SetShowHiddenFiles(bool value);
-  void __fastcall SetFormatSizeBytes(bool value);
+  void __fastcall SetFormatSizeBytes(TFormatBytesStyle value);
   void __fastcall SetShowInaccesibleDirectories(bool value);
   void __fastcall SetConfirmTransferring(bool value);
   void __fastcall SetConfirmDeleting(bool value);
@@ -420,6 +438,8 @@ private:
   int __fastcall GetLastMonitor();
   void __fastcall SetOpenedStoredSessionFolders(UnicodeString value);
   void __fastcall SetAutoImportedFromPuttyOrFilezilla(bool value);
+  void __fastcall SetGenerateUrlComponents(int value);
+  void __fastcall SetExternalSessionInExistingInstance(bool value);
   bool __fastcall GetIsBeta();
 
   bool __fastcall GetDDExtInstalled();
@@ -495,7 +515,7 @@ public:
   __property bool SelectDirectories = { read = FSelectDirectories, write = SetSelectDirectories };
   __property UnicodeString SelectMask = { read = FSelectMask, write = FSelectMask };
   __property bool ShowHiddenFiles = { read = FShowHiddenFiles, write = SetShowHiddenFiles };
-  __property bool FormatSizeBytes = { read = FFormatSizeBytes, write = SetFormatSizeBytes };
+  __property TFormatBytesStyle FormatSizeBytes = { read = FFormatSizeBytes, write = SetFormatSizeBytes };
   __property bool ShowInaccesibleDirectories = { read = FShowInaccesibleDirectories, write = SetShowInaccesibleDirectories };
   __property TEditorConfiguration Editor = { read = FEditor, write = SetEditor };
   __property TQueueViewConfiguration QueueView = { read = FQueueView, write = SetQueueView };
@@ -565,6 +585,8 @@ public:
   __property UnicodeString DefaultKeyFile = { read = GetDefaultKeyFile, write = FDefaultKeyFile };
   __property UnicodeString OpenedStoredSessionFolders = { read = FOpenedStoredSessionFolders, write = SetOpenedStoredSessionFolders };
   __property bool AutoImportedFromPuttyOrFilezilla = { read = FAutoImportedFromPuttyOrFilezilla, write = SetAutoImportedFromPuttyOrFilezilla };
+  __property int GenerateUrlComponents = { read = FGenerateUrlComponents, write = SetGenerateUrlComponents };
+  __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
 };
 //---------------------------------------------------------------------------
@@ -628,6 +650,6 @@ private:
   TCustomCommandType * __fastcall GetCommand(int Index);
 };
 //---------------------------------------------------------------------------
-#define WinConfiguration (dynamic_cast<TWinConfiguration *>(Configuration))
+extern TWinConfiguration * WinConfiguration;
 //---------------------------------------------------------------------------
 #endif

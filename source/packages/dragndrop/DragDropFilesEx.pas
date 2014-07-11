@@ -181,6 +181,9 @@ procedure Register;
 
 implementation
 
+uses
+  Types;
+
 const
   {$EXTERNALSYM IID_IDropTarget}
   IID_IDropTarget: TGUID = (
@@ -213,7 +216,7 @@ begin
           begin
                while HDropPtr^<>#0 do
                begin
-                    s:=string(StrPas(HDropPtr));
+                    s:=string(HDropPtr);
                     inc(HDropPtr, Length(s)+1);
                     List.AddItem(nil,s);
                end;
@@ -490,7 +493,7 @@ begin
                end;
                pos:=pidlStream.Position;
                pidlStream.Write(pidlItem^,PIDL_GetSize(pidlItem));
-               pidlStream.seek(8+4*i,0);
+               pidlStream.seek(8+4*i,soBeginning);
                pidlStream.Write(pos,4);
                pidlStream.Seek(0,2);
                PIDL_Free(pidlRoot);

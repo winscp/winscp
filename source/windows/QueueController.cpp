@@ -7,6 +7,7 @@
 #include <Queue.h>
 #include <TextsWin.h>
 #include <GUITools.h>
+#include <WinConfiguration.h>
 #include "QueueController.h"
 #include <BaseUtils.hpp>
 //---------------------------------------------------------------------------
@@ -25,6 +26,8 @@ __fastcall TQueueController::TQueueController(TListView * ListView)
 
   FQueueStatus = NULL;
   FOnChange = NULL;
+
+  RememberConfiguration();
 }
 //---------------------------------------------------------------------------
 __fastcall TQueueController::~TQueueController()
@@ -178,7 +181,7 @@ bool __fastcall TQueueController::AllowOperation(
       return (FQueueStatus != NULL) && (FQueueStatus->DoneCount > 0);
 
     default:
-      assert(false);
+      FAIL;
       return false;
   }
 }
@@ -277,7 +280,7 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
       break;
 
     default:
-      assert(false);
+      FAIL;
       break;
   }
 }
@@ -357,7 +360,8 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
     __int64 TotalTransferred = QueueItem->TotalTransferred;
     if (TotalTransferred >= 0)
     {
-      Values[2] = FormatBytes(TotalTransferred);
+      Values[2] =
+        FormatPanelBytes(TotalTransferred, WinConfiguration->FormatSizeBytes);
     }
 
     if (ProgressData != NULL)
@@ -406,7 +410,8 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
 
       if (ProgressData->Operation == Info->Operation)
       {
-        Values[2] = FormatBytes(ProgressData->TransferedSize);
+        Values[2] =
+          FormatPanelBytes(ProgressData->TransferedSize, WinConfiguration->FormatSizeBytes);
         Values[5] = FORMAT(L"%d%%", (ProgressData->TransferProgress()));
       }
     }
@@ -607,4 +612,16 @@ void __fastcall TQueueController::QueueViewCustomDrawItem(TCustomListView * Send
 bool __fastcall TQueueController::GetEmpty()
 {
   return (FQueueStatus == NULL) || (FQueueStatus->Count == 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TQueueController::RememberConfiguration()
+{
+  FFormatSizeBytes = WinConfiguration->FormatSizeBytes;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TQueueController::NeedRefresh()
+{
+  bool Result = (WinConfiguration->FormatSizeBytes != FFormatSizeBytes);
+  RememberConfiguration();
+  return Result;
 }

@@ -164,6 +164,15 @@ __published:
   TMenuItem *N11;
   TMenuItem *OpeninPuTTY2;
   TMenuItem *OpeninPuTTY3;
+  TAction *PasteUrlAction;
+  TMenuItem *Paste1;
+  TAction *GenerateUrlAction;
+  TMenuItem *GenerateSessionURL1;
+  TMenuItem *GenerateSessionURL2;
+  TAction *CopyParamRuleAction;
+  TMenuItem *TransferSettingsRule1;
+  TGroupBox *NoteGroup;
+  TMemo *NoteMemo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -233,6 +242,10 @@ __published:
   void __fastcall LoginActionExecute(TObject *Sender);
   void __fastcall PuttyActionExecute(TObject *Sender);
   void __fastcall LoginButtonDropDownClick(TObject *Sender);
+  void __fastcall PasteUrlActionExecute(TObject *Sender);
+  void __fastcall HostNameEditExit(TObject *Sender);
+  void __fastcall GenerateUrlActionExecute(TObject *Sender);
+  void __fastcall CopyParamRuleActionExecute(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -254,10 +267,12 @@ private:
   int FIncrementalSearching;
   bool FSitesIncrementalSearchHaveNext;
   int FBasicGroupBaseHeight;
+  int FNoteGroupOffset;
   TRect FSavedBounds;
   bool FEditing;
   bool FRenaming;
   TSize FOriginalSize;
+  bool FForceNewSite;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -308,7 +323,7 @@ private:
   inline TSessionData * __fastcall GetNodeSession(TTreeNode * Node);
   void __fastcall ExecuteTool(const UnicodeString & Name);
   UnicodeString __fastcall ImportExportIniFilePath();
-  void __fastcall ReloadSessions();
+  void __fastcall ReloadSessions(const UnicodeString & SelectSite);
   void __fastcall ResetSitesIncrementalSearch();
   bool __fastcall SitesIncrementalSearch(const UnicodeString & Text,
     bool SkipCurrent, bool Reverse);
@@ -337,6 +352,8 @@ private:
   bool __fastcall IsEditable();
   TSessionData * __fastcall CloneSelectedSession();
   void __fastcall CloneToNewSite();
+  void __fastcall ParseUrl(const UnicodeString & Url);
+  void __fastcall ParseHostName();
   void __fastcall ResetNewSiteData();
 
 protected:

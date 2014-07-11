@@ -13,6 +13,8 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+TCustomWinConfiguration * CustomWinConfiguration = NULL;
+//---------------------------------------------------------------------------
 class THistoryStrings : public TStringList
 {
 public:

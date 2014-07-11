@@ -12,6 +12,7 @@
 #define CSIDL_PERSONAL                  0x0005        // My Documents
 //---------------------------------------------------------------------------
 #include <FileMasks.H>
+#include <Tbx.hpp>
 //---------------------------------------------------------------------------
 class TSessionData;
 //---------------------------------------------------------------------------
@@ -28,25 +29,29 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
 bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
   TProcessMessagesEvent ProcessMessages);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
-  TSessionData * SessionData, UnicodeString UserName, UnicodeString Password);
+  TSessionData * SessionData);
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
 UnicodeString __fastcall GetPersonalFolder();
 UnicodeString __fastcall GetDesktopFolder();
-UnicodeString __fastcall ItemsFormatString(const UnicodeString SingleItemFormat,
-  const UnicodeString MultiItemsFormat, int Count, const UnicodeString FirstItem);
-UnicodeString __fastcall ItemsFormatString(const UnicodeString SingleItemFormat,
-  const UnicodeString MultiItemsFormat, TStrings * Items);
-UnicodeString __fastcall FileNameFormatString(const UnicodeString SingleFileFormat,
-  const UnicodeString MultiFileFormat, TStrings * Files, bool Remote);
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const UnicodeString DirName);
 UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
 void __fastcall AddSessionColorImage(TCustomImageList * ImageList, TColor Color, int MaskIndex);
+void __fastcall SetSubmenu(TTBXCustomItem * Item);
 typedef int __fastcall (*TCalculateWidth)(UnicodeString Text, void * Arg);
 void __fastcall ApplyTabs(
   UnicodeString & Text, wchar_t Padding,
   TCalculateWidth CalculateWidth, void * CalculateWidthArg);
+namespace Webbrowserex
+{
+  class TWebBrowserEx;
+}
+using namespace Webbrowserex;
+TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeString & LoadingLabel);
+void __fastcall SetBrowserDesignModeOff(TWebBrowserEx * WebBrowser);
+void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
+  const UnicodeString & Url, TNotifyEvent Handler);
 //---------------------------------------------------------------------------
 class TLocalCustomCommand : public TFileCustomCommand
 {

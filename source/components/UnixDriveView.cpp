@@ -176,7 +176,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     TStringList * ChildrenDirs = new TStringList();
     try
     {
-      ChildrenDirs->Duplicates = dupAccept;
+      ChildrenDirs->Duplicates = Types::dupAccept;
       ChildrenDirs->CaseSensitive = true;
 
       TTreeNode * ChildNode = Node->getFirstChild();
@@ -472,11 +472,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         FDirectoryLoaded = false;
         try
         {
-          APPLICATION_EXCEPTION_HACK_BEGIN
-          {
-            Terminal->ChangeDirectory(NodePathName(Node));
-          }
-          APPLICATION_EXCEPTION_HACK_END;
+          Terminal->ChangeDirectory(NodePathName(Node));
           TCustomDriveView::Change(Node);
         }
         __finally

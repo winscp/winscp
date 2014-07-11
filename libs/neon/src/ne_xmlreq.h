@@ -24,6 +24,9 @@
 
 #include "ne_request.h"
 #include "ne_xml.h"
+#ifdef WINSCP
+#include "ne_basic.h"
+#endif
 
 NE_BEGIN_DECLS
 
@@ -45,6 +48,10 @@ int ne_xml_parse_response(ne_request *req, ne_xml_parser *parser);
  * session error string is set to the XML parser's error string, and
  * NE_ERROR is returned. */
 int ne_xml_dispatch_request(ne_request *req, ne_xml_parser *parser);
+
+#ifdef WINSCP
+int media_type_is_xml(const ne_content_type *ctype);
+#endif
 
 NE_END_DECLS
 

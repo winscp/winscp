@@ -6,15 +6,15 @@ object AboutDialog: TAboutDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'About application'
-  ClientHeight = 484
-  ClientWidth = 388
+  ClientHeight = 531
+  ClientWidth = 394
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
   Position = poOwnerFormCenter
   DesignSize = (
-    388
-    484)
+    394
+    531)
   PixelsPerInch = 96
   TextHeight = 13
   object ApplicationLabel: TLabel
@@ -3529,182 +3529,19 @@ object AboutDialog: TAboutDialog
     TabOrder = 4
     TabStop = True
   end
-  object ThirdPartyBox: TScrollBox
+  object ThirdPartyPanel: TPanel
     Left = 72
     Top = 321
-    Width = 306
-    Height = 121
-    HorzScrollBar.Range = 289
-    HorzScrollBar.Visible = False
-    VertScrollBar.Range = 410
-    VertScrollBar.Smooth = True
-    VertScrollBar.Tracking = True
+    Width = 312
+    Height = 168
     Anchors = [akLeft, akRight, akBottom]
-    AutoScroll = False
-    TabOrder = 6
-    DesignSize = (
-      285
-      117)
-    object Label7: TLabel
-      Left = 8
-      Top = 8
-      Width = 232
-      Height = 41
-      Anchors = [akLeft, akTop, akRight]
-      AutoSize = False
-      Caption = 
-        'License agreements of all following programs (libraries) are par' +
-        't of application license agreement.'
-      WordWrap = True
-    end
-    object PuttyVersionLabel: TLabel
-      Left = 8
-      Top = 48
-      Width = 189
-      Height = 13
-      Caption = 'SSH and SCP code based on PuTTY xxx'
-    end
-    object PuttyCopyrightLabel: TLabel
-      Left = 8
-      Top = 64
-      Width = 151
-      Height = 13
-      Caption = 'Copyright '#169' xxx Simon Tatham'
-    end
-    object Label8: TLabel
-      Left = 8
-      Top = 365
-      Width = 186
-      Height = 13
-      Caption = 'Filemanager Toolset library Version 2.6'
-    end
-    object Label10: TLabel
-      Left = 8
-      Top = 381
-      Width = 139
-      Height = 13
-      Caption = 'Copyright '#169' 1999 Ingo Eckel'
-    end
-    object Label1: TLabel
-      Left = 8
-      Top = 253
-      Width = 122
-      Height = 13
-      Caption = 'Toolbar2000 library 2.1.6'
-    end
-    object Label2: TLabel
-      Left = 8
-      Top = 269
-      Width = 187
-      Height = 13
-      Caption = 'Copyright '#169' 1998-2005 Jordan Russell'
-    end
-    object Label5: TLabel
-      Left = 8
-      Top = 309
-      Width = 70
-      Height = 13
-      Caption = 'TBX library 2.1'
-    end
-    object Label6: TLabel
-      Left = 8
-      Top = 325
-      Width = 194
-      Height = 13
-      Caption = 'Copyright '#169' 2001-2005 Alex A. Denisov and contributors'
-    end
-    object FileZillaVersionLabel: TLabel
-      Left = 8
-      Top = 128
-      Width = 148
-      Height = 13
-      Caption = 'FTP code based on Filezilla xxx'
-    end
-    object FileZillaCopyrightLabel: TLabel
-      Left = 8
-      Top = 144
-      Width = 131
-      Height = 13
-      Caption = 'Copyright '#169' xxx Tim Kosse'
-    end
-    object OpenSSLVersionLabel: TLabel
-      Left = 8
-      Top = 184
-      Width = 273
-      Height = 29
-      AutoSize = False
-      Caption = 
-        'This product includes software developed by the OpenSSL Project ' +
-        'for use in the OpenSSL Toolkit xxx.'
-      WordWrap = True
-    end
-    object OpenSSLCopyrightLabel: TLabel
-      Left = 8
-      Top = 213
-      Width = 191
-      Height = 13
-      Caption = 'Copyright '#169' xxxx The OpenSSL Project'
-    end
-    object PuttyLicenseLabel: TStaticText
-      Tag = 1
-      Left = 8
-      Top = 80
-      Width = 73
-      Height = 17
-      Caption = 'Display license'
-      TabOrder = 0
-      TabStop = True
-      OnClick = PuttyLicenseLabelClick
-    end
-    object PuttyHomepageLabel: TStaticText
-      Left = 8
-      Top = 96
-      Width = 286
-      Height = 17
-      Caption = 'http://XXXwww.chiark.greenend.org.uk/~sgtatham/putty/'
-      TabOrder = 1
-      TabStop = True
-    end
-    object Toolbar2000HomepageLabel: TStaticText
-      Left = 8
-      Top = 285
-      Width = 189
-      Height = 17
-      Caption = 'http://www.jrsoftware.org/tb2kdl.php'
-      TabOrder = 4
-      TabStop = True
-    end
-    object TBXHomepageLabel: TStaticText
-      Left = 8
-      Top = 341
-      Width = 146
-      Height = 17
-      Caption = 'https://github.com/plashenkov/TBX'
-      TabOrder = 5
-      TabStop = True
-    end
-    object FileZillaHomepageLabel: TStaticText
-      Left = 8
-      Top = 160
-      Width = 171
-      Height = 17
-      Caption = 'http://XXXfilezilla.sourceforge.net/'
-      TabOrder = 2
-      TabStop = True
-    end
-    object OpenSSLHomepageLabel: TStaticText
-      Left = 8
-      Top = 229
-      Width = 118
-      Height = 17
-      Caption = 'http://XXX.openssl.org/'
-      TabOrder = 3
-      TabStop = True
-    end
+    BevelKind = bkTile
+    BevelOuter = bvNone
+    TabOrder = 7
   end
   object OKButton: TButton
-    Left = 221
-    Top = 451
+    Left = 227
+    Top = 498
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -3717,17 +3554,17 @@ object AboutDialog: TAboutDialog
   end
   object LicenseButton: TButton
     Left = 72
-    Top = 451
+    Top = 498
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = '&License...'
-    TabOrder = 7
+    TabOrder = 6
     OnClick = LicenseButtonClick
   end
   object HelpButton: TButton
-    Left = 303
-    Top = 451
+    Left = 309
+    Top = 498
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -3735,23 +3572,22 @@ object AboutDialog: TAboutDialog
     TabOrder = 1
     OnClick = HelpButtonClick
   end
-  object RegistrationBox: TScrollBox
+  object RegistrationBox: TPanel
     Left = 72
     Top = 206
-    Width = 306
+    Width = 312
     Height = 89
-    HorzScrollBar.Visible = False
-    VertScrollBar.Smooth = True
-    VertScrollBar.Tracking = True
-    Anchors = [akLeft, akRight, akBottom]
+    Anchors = [akLeft, akTop, akRight]
+    BevelKind = bkTile
+    BevelOuter = bvNone
     TabOrder = 5
     DesignSize = (
-      302
+      308
       85)
     object RegistrationSubjectLabel: TLabel
       Left = 8
       Top = 8
-      Width = 277
+      Width = 239
       Height = 65
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False

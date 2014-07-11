@@ -17,6 +17,8 @@
 #include <PasTools.hpp>
 #include <Math.hpp>
 #include <vssym32.h>
+#include <WebBrowserEx.hpp>
+#include <Setup.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -66,7 +68,8 @@ public:
     TMsgDlgType DlgType, unsigned int Answers,
     const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
     unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName,
-    const UnicodeString & NeverAskAgainCaption);
+    const UnicodeString & NeverAskAgainCaption, const UnicodeString & MoreMessagesUrl,
+    TSize MoreMessagesSize);
 
   virtual int __fastcall ShowModal();
 
@@ -92,6 +95,9 @@ private:
 
   UnicodeString MessageText;
   TMemo * MessageMemo;
+  TPanel * MessageBrowserPanel;
+  TWebBrowserEx * MessageBrowser;
+  UnicodeString MessageBrowserUrl;
   TShiftState FShiftState;
   TTimer * FUpdateForShiftStateTimer;
   TForm * FDummyForm;
@@ -106,7 +112,7 @@ private:
     UnicodeString Name, UnicodeString Caption, unsigned int Answer,
     TNotifyEvent OnClick, bool IsTimeoutButton,
     int GroupWith, TShiftState GrouppedShiftState,
-    TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidth);
+    TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidths);
   bool __fastcall ApplicationHook(TMessage & Message);
 };
 //---------------------------------------------------------------------------
@@ -114,6 +120,8 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
 {
   FShowNoActivate = false;
   MessageMemo = NULL;
+  MessageBrowserPanel = NULL;
+  MessageBrowser = NULL;
   FUpdateForShiftStateTimer = NULL;
   Position = poOwnerFormCenter;
   UseSystemSettingsPre(this);
@@ -263,6 +271,21 @@ UnicodeString __fastcall TMessageForm::GetFormText()
   {
     MoreMessages = MessageMemo->Text + DividerLine;
   }
+  else if (MessageBrowser != NULL)
+  {
+    MessageBrowser->SelectAll();
+    MessageBrowser->CopyToClipBoard();
+    if (TextFromClipboard(MoreMessages, true))
+    {
+      if (!EndsStr(sLineBreak, MoreMessages))
+      {
+        MoreMessages += sLineBreak;
+      }
+      MoreMessages += DividerLine;
+    }
+    // http://www.ssicom.org/js/x277333.htm
+    MessageBrowser->DoCommand(L"UNSELECT");
+  }
   UnicodeString MessageCaption = NormalizeNewLines(MessageText);
   UnicodeString Result = FORMAT(L"%s%s%s%s%s%s%s%s%s%s%s", (DividerLine, Caption, sLineBreak,
     DividerLine, MessageCaption, sLineBreak, DividerLine, MoreMessages,
@@ -277,6 +300,9 @@ UnicodeString __fastcall TMessageForm::GetReportText()
   {
     Text += L"\n" + MessageMemo->Text;
   }
+  // Currently we use browser for updates box only and it has help context,
+  // and does not have Report button, so we cannot get here.
+  assert(MessageBrowser == NULL);
   Text = NormalizeNewLines(Text);
   UnicodeString ReportErrorText = NormalizeNewLines(FMTLOAD(REPORT_ERROR, (L"")));
   Text = ReplaceStr(Text, ReportErrorText, L"");
@@ -471,6 +497,20 @@ void __fastcall TMessageForm::DoShow()
   UseSystemSettingsPost(this);
 
   TForm::DoShow();
+
+  if (!MessageBrowserUrl.IsEmpty() &&
+      // Guard against repeated calls to DoOpen()
+      (MessageBrowser == NULL))
+  {
+    // Web Browser component does not seem to work,
+    // when created before any window is shown.
+    // I.e. when the message dialog is the first window (like when /update is used).
+    // So we have to delay its creation until at least the dialog box is shown.
+    MessageBrowser = CreateBrowserViewer(MessageBrowserPanel, LoadStr(MESSAGE_LOADING));
+    MessageBrowser->SendToBack();
+
+    MessageBrowser->Navigate(MessageBrowserUrl.c_str());
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::MenuItemClick(TObject * Sender)
@@ -536,7 +576,7 @@ TButton * __fastcall TMessageForm::CreateButton(
   UnicodeString Name, UnicodeString Caption, unsigned int Answer,
   TNotifyEvent OnClick, bool IsTimeoutButton,
   int GroupWith, TShiftState GrouppedShiftState,
-  TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidth)
+  TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidths)
 {
   UnicodeString MeasureCaption = Caption;
   if (IsTimeoutButton)
@@ -618,6 +658,13 @@ TButton * __fastcall TMessageForm::CreateButton(
     // button caption. We just blindly hope that captions of advanced commands
     // are always longer than the caption of simple default command
     CurButtonWidth += ScaleByTextHeightRunTime(this, 15);
+
+    // never shrink buttons below their default width
+    if (GroupWithButton->Width < CurButtonWidth)
+    {
+      ButtonWidths += CurButtonWidth - GroupWithButton->Width;
+      GroupWithButton->Width = CurButtonWidth;
+    }
   }
   else
   {
@@ -647,15 +694,11 @@ TButton * __fastcall TMessageForm::CreateButton(
     }
 
     // never shrink buttons below their default width
-    if (Button->Width > CurButtonWidth)
+    if (Button->Width < CurButtonWidth)
     {
-      CurButtonWidth = Button->Width;
+      Button->Width = CurButtonWidth;
     }
-  }
-
-  if (CurButtonWidth > ButtonWidth)
-  {
-    ButtonWidth = CurButtonWidth;
+    ButtonWidths += Button->Width;
   }
 
   return Button;
@@ -751,7 +794,8 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
   unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName,
-  const UnicodeString & NeverAskAgainCaption)
+  const UnicodeString & NeverAskAgainCaption, const UnicodeString & MoreMessagesUrl,
+  TSize MoreMessagesSize)
 {
   unsigned int DefaultAnswer;
   if (FLAGSET(Answers, qaOK))
@@ -818,6 +862,8 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   // that is set in DoFormWindowProc(CM_SHOWINGCHANGED) later.
   Forms::TMonitor * Monitor = FormMonitor(Result);
 
+  bool HasMoreMessages = (MoreMessages != NULL) || !MoreMessagesUrl.IsEmpty();
+
   Result->BiDiMode = Application->BiDiMode;
   Result->BorderStyle = bsDialog;
   Result->Canvas->Font = Result->Font;
@@ -826,7 +872,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   int VertMargin = ScaleByTextHeightRunTime(Result, mcVertMargin);
   int HorzSpacing = ScaleByTextHeightRunTime(Result, mcHorzSpacing);
   int ButtonVertMargin = ScaleByTextHeightRunTime(Result, mcButtonVertMargin);
-  int ButtonWidth = -1;
+  int ButtonWidths = 0;
   int ButtonHeight = -1;
   std::vector<TButton *> ButtonControls;
   TAnswerButtons AnswerButtons;
@@ -892,7 +938,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       TButton * Button = Result->CreateButton(
         Name, Caption, Answer,
         OnClick, IsTimeoutButton, GroupWith, GrouppedShiftState,
-        AnswerButtons, (MoreMessages != NULL), ButtonWidth);
+        AnswerButtons, HasMoreMessages, ButtonWidths);
 
       if (Button != NULL)
       {
@@ -929,7 +975,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   int ButtonGroupWidth = NeverAskAgainWidth;
   if (!ButtonControls.empty())
   {
-    ButtonGroupWidth += ButtonWidth * ButtonControls.size() +
+    ButtonGroupWidth += ButtonWidths +
       ButtonSpacing * (ButtonControls.size() - 1);
   }
 
@@ -941,7 +987,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     IconWidth = 32 + HorzSpacing;
   }
 
-  assert((ButtonHeight > 0) && (ButtonWidth > 0));
+  assert((ButtonHeight > 0) && (ButtonWidths > 0));
 
   int MaxTextWidth = ScaleByTextHeightRunTime(Result, mcMaxDialogWidth);
   // if the dialog would be wide anyway (overwrite confirmation on Windows XP),
@@ -1073,28 +1119,52 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     IconTextHeight = 32;
   }
 
-  int MoreMessageHeight = (MoreMessages != NULL ?
-    ScaleByTextHeightRunTime(Result, mcMoreMessageHeight) : 0);
+  int MoreMessageHeight =
+    (HasMoreMessages ?
+      ScaleByTextHeightRunTime(Result, (MoreMessagesSize.Height > 0 ?  MoreMessagesSize.Height : mcMoreMessageHeight)) : 0);
 
   Panel->SetBounds(0, 0, Result->ClientWidth, VertMargin + IconTextHeight + VertMargin + MoreMessageHeight);
 
-  if (MoreMessages != NULL)
+  TControl * MoreMessagesControl = NULL;
+  if (HasMoreMessages)
   {
-    TMemo * MessageMemo = new TMemo(Panel);
-    MessageMemo->Name = L"MessageMemo";
-    MessageMemo->Parent = Panel;
-    MessageMemo->ReadOnly = true;
-    MessageMemo->WantReturns = False;
-    MessageMemo->ScrollBars = ssVertical;
-    MessageMemo->Anchors = TAnchors() << akLeft << akRight << akTop;
-    MessageMemo->Lines->Text = MoreMessages->Text;
+    if (MoreMessages != NULL)
+    {
+      assert(MoreMessagesUrl.IsEmpty());
 
-    Result->MessageMemo = MessageMemo;
+      TMemo * MessageMemo = new TMemo(Panel);
+      MoreMessagesControl = MessageMemo;
+      MessageMemo->Name = L"MessageMemo";
+      MessageMemo->Parent = Panel;
+      MessageMemo->ReadOnly = true;
+      MessageMemo->WantReturns = False;
+      MessageMemo->ScrollBars = ssVertical;
+      MessageMemo->Anchors = TAnchors() << akLeft << akRight << akTop;
+      MessageMemo->Lines->Text = MoreMessages->Text;
+
+      Result->MessageMemo = MessageMemo;
+    }
+    else if (ALWAYS_TRUE(!MoreMessagesUrl.IsEmpty()))
+    {
+      TPanel * MessageBrowserPanel = new TPanel(Panel);
+      MessageBrowserPanel->Parent = Panel;
+      MessageBrowserPanel->Anchors = TAnchors() << akLeft << akRight << akTop;
+      MessageBrowserPanel->BevelOuter = bvNone;
+      MessageBrowserPanel->BevelInner = bvNone; // default
+      MessageBrowserPanel->BevelKind = bkTile;
+      Result->MessageBrowserPanel = MessageBrowserPanel;
+
+      MoreMessagesControl = Result->MessageBrowserPanel;
+
+      UnicodeString FontSizeParam = FORMAT(L"fontsize=%d", (Result->Font->Size));
+      UnicodeString Url = AppendUrlParams(CampaignUrl(MoreMessagesUrl), FontSizeParam);
+      Result->MessageBrowserUrl =  Url;
+    }
   }
 
   int MinClientWidth =
     ScaleByTextHeightRunTime(Result,
-      (MoreMessages != NULL) ? mcMinDialogwithMoreMessagesWidth : mcMinDialogWidth);
+      HasMoreMessages ? (MoreMessagesSize.Width > 0 ? MoreMessagesSize.Width : mcMinDialogwithMoreMessagesWidth) : mcMinDialogWidth);
   int AClientWidth =
     Max(
       (IconTextWidth > ButtonGroupWidth ? IconTextWidth : ButtonGroupWidth) +
@@ -1131,9 +1201,9 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     Image->SetBounds(HorzMargin, VertMargin, 32, 32);
   }
 
-  if (Result->MessageMemo != NULL)
+  if (MoreMessagesControl != NULL)
   {
-    Result->MessageMemo->SetBounds(
+    MoreMessagesControl->SetBounds(
       ALeft,
       Panel->Height - MoreMessageHeight,
       Result->ClientWidth - ALeft - HorzMargin,
@@ -1145,8 +1215,8 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   for (unsigned int i = 0; i < ButtonControls.size(); i++)
   {
     ButtonControls[i]->SetBounds(
-      X, ButtonTop, ButtonWidth, ButtonControls[i]->Height);
-    X += ButtonWidth + ButtonSpacing;
+      X, ButtonTop, ButtonControls[i]->Width, ButtonControls[i]->Height);
+    X += ButtonControls[i]->Width + ButtonSpacing;
   }
 
   if (!NeverAskAgainCaption.IsEmpty() &&
@@ -1174,9 +1244,10 @@ TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
   unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName,
-  const UnicodeString & NeverAskAgainCaption)
+  const UnicodeString & NeverAskAgainCaption, const UnicodeString & MoreMessagesUrl,
+  TSize MoreMessagesSize)
 {
   return TMessageForm::Create(Msg, MoreMessages, DlgType, Answers,
     Aliases, AliasesCount, TimeoutAnswer, TimeoutButton, ImageName,
-    NeverAskAgainCaption);
+    NeverAskAgainCaption, MoreMessagesUrl, MoreMessagesSize);
 }

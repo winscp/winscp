@@ -577,7 +577,7 @@ implementation
 
 uses
   Registry, IniFiles, Consts, Menus,
-  TB2Common, TB2Hook, TB2Consts;
+  TB2Common, TB2Hook, TB2Consts, Types;
 
 type
   TControlAccess = class(TControl);

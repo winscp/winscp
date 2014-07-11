@@ -75,7 +75,7 @@ procedure Register;
 implementation
 
 uses
-  ImgEdit;
+  ImgEdit, Actions, UITypes;
 
 {$IFDEF JR_D5}
 

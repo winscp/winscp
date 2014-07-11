@@ -18,13 +18,13 @@ __published:
   TEdit *FileNameEdit;
   TLabel *Label1;
   TEdit *PointToEdit;
-  TCheckBox *SymbolicCheck;
+  TCheckBox *HardLinkCheck;
   TButton *HelpButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
 private:
-  bool FAllowSymbolic;
+  bool FAllowHardLink;
   bool FEdit;
   TOperationSide FSide;
   void __fastcall SetFileName(UnicodeString value);
@@ -33,13 +33,13 @@ private:
   UnicodeString __fastcall GetPointTo();
   void __fastcall SetSymbolicLink(bool value);
   bool __fastcall GetSymbolicLink();
-  void __fastcall SetAllowSymbolic(bool value);
+  void __fastcall SetAllowHardLink(bool value);
   void __fastcall SetEdit(bool value);
   void __fastcall SetSide(TOperationSide value);
 public:
   bool __fastcall Execute();
   __fastcall TSymlinkDialog(TComponent* Owner);
-  __property bool AllowSymbolic = { read = FAllowSymbolic, write = SetAllowSymbolic };
+  __property bool AllowHardLink = { read = FAllowHardLink, write = SetAllowHardLink };
   __property bool Edit = { read = FEdit, write = SetEdit };
   __property UnicodeString FileName = { read = GetFileName, write = SetFileName };
   __property UnicodeString PointTo = { read = GetPointTo, write = SetPointTo };

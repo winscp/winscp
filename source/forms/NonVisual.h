@@ -19,6 +19,7 @@
 #include "TBXExtItems.hpp"
 #include <ShellAnimations.hpp>
 #include "TBXToolPals.hpp"
+#include <System.Actions.hpp>
 //---------------------------------------------------------------------------
 #define fcStatusBar        0x01
 #define fcToolBar2         0x02
@@ -212,7 +213,7 @@ __published:    // IDE-managed Components
   TAction *RemoteMoveToFocusedAction;
   TAction *SelectOneAction;
   TAction *ShowHiddenFilesAction;
-  TAction *FormatSizeBytesAction;
+  TAction *FormatSizeBytesNoneAction;
   TAction *CommandLinePanelAction;
   TAction *LocalPathToClipboardAction;
   TAction *RemotePathToClipboardAction;
@@ -234,14 +235,14 @@ __published:    // IDE-managed Components
   TAction *QueueHideAction;
   TAction *QueueToolbarAction;
   TAction *QueuePreferencesAction;
-  TAction *PasteAction;
+  TAction *PasteAction2;
   TAction *RemoteTreeAction;
   TAction *LocalTreeAction;
   TAction *GoToTreeAction;
   TAction *NewFileAction;
   TAction *RemoteCopyToFocusedAction;
   TAction *RemoteCopyToAction;
-  TAction *UrlToClipboardAction;
+  TAction *FileGenerateUrlAction;
   TAction *TableOfContentsAction;
   TTBXPopupMenu *CommanderBarPopup;
   TTBXItem *SessionButtons5;
@@ -407,9 +408,8 @@ __published:    // IDE-managed Components
   TTBXItem *Customize5;
   TTBXItem *Tree4;
   TTBXItem *RemoteSortByExtColumnPopupItem;
-  TTBXItem *RemoteFormatSizeBytesPopupItem;
+  TTBXItem *TBXItem67;
   TTBXItem *LocalSortByExtColumnPopupItem;
-  TTBXItem *LocalFormatSizeBytesPopupItem;
   TAction *FileListFromClipboardAction;
   TAction *ShowHideRemoteLinkTargetColumnAction;
   TTBXItem *TBXItem1;
@@ -417,7 +417,6 @@ __published:    // IDE-managed Components
   TAction *CommanderUpdatesBandAction;
   TTBXItem *TBXItem2;
   TAction *UpdatesPreferencesAction;
-  TAction *ShowUpdatesAction;
   TAction *ExplorerUpdatesBandAction;
   TTBXItem *TBXItem3;
   TAction *ExplorerTransferBandAction;
@@ -571,6 +570,21 @@ __published:    // IDE-managed Components
   TAction *CurrentSystemMenuFocusedAction;
   TTBXItem *TBXItem51;
   TTBXSeparatorItem *TBXSeparatorItem5;
+  TTBXSeparatorItem *TBXSeparatorItem6;
+  TTBXItem *TBXItem56;
+  TAction *SessionGenerateUrlAction;
+  TTBXItem *TBXItem52;
+  TAction *FormatSizeBytesKilobytesAction;
+  TAction *FormatSizeBytesShortAction;
+  TTBXSubmenuItem *RemoteFormatSizeBytesPopupItem;
+  TTBXItem *TBXItem53;
+  TTBXItem *TBXItem55;
+  TTBXSeparatorItem *TBXSeparatorItem7;
+  TTBXSeparatorItem *TBXSeparatorItem8;
+  TTBXSubmenuItem *LocalFormatSizeBytesPopupItem;
+  TTBXItem *TBXItem64;
+  TTBXItem *TBXItem65;
+  TTBXItem *TBXItem66;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);

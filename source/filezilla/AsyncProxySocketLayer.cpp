@@ -849,8 +849,10 @@ BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
 BOOL CAsyncProxySocketLayer::Connect( const SOCKADDR* lpSockAddr, int nSockAddrLen )
 {
 	if (!m_ProxyData.nProxyType)
+	{
 		//Connect normally because there is no proxy
 		return ConnectNext(lpSockAddr, nSockAddrLen );
+	}
 
 	LPSOCKADDR_IN sockAddr=(LPSOCKADDR_IN)lpSockAddr;
 

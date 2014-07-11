@@ -20,6 +20,8 @@ const int ccSet = 0x80000000;
 static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;
 static const UnicodeString AdditionaLanguagePrefix(L"XX");
 //---------------------------------------------------------------------------
+TGUIConfiguration * GUIConfiguration = NULL;
+//---------------------------------------------------------------------------
 __fastcall TGUICopyParamType::TGUICopyParamType()
   : TCopyParamType()
 {
@@ -554,7 +556,7 @@ void __fastcall TGUIConfiguration::Default()
   FIgnoreCancelBeforeFinish = TDateTime(0, 0, 3, 0);
   FContinueOnError = false;
   FConfirmCommandSession = true;
-  FSynchronizeParams = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
+  FSynchronizeParams = TTerminal::spDefault;
   FSynchronizeModeAuto = -1;
   FSynchronizeMode = TTerminal::smRemote;
   FMaxWatchDirectories = 500;
@@ -737,7 +739,7 @@ void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
   // can take care of it.
   if ((FPuttyPath.SubString(1, 1) != L"\"") &&
       (CompareFileName(ExpandEnvironmentVariables(FPuttyPath), FDefaultPuttyPathOnly) ||
-       FileExists(ExpandEnvironmentVariables(FPuttyPath))))
+       FileExists(ApiPath(ExpandEnvironmentVariables(FPuttyPath)))))
   {
     FPuttyPath = FormatCommand(FPuttyPath, L"");
   }
@@ -836,7 +838,7 @@ LCID __fastcall TGUIConfiguration::InternalLocale()
   }
   else
   {
-    assert(false);
+    FAIL;
     Result = 0;
   }
   return Result;
@@ -951,8 +953,9 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
     TSearchRecChecked SearchRec;
     bool Found;
 
-    Found = (bool)(FindFirstUnchecked(ChangeFileExt(ModuleFileName(), L".*"),
-      FindAttrs, SearchRec) == 0);
+    Found =
+      (FindFirstUnchecked(ChangeFileExt(ModuleFileName(), L".*"),
+         FindAttrs, SearchRec) == 0);
     try
     {
       UnicodeString Ext;
@@ -1215,7 +1218,7 @@ TStoredSessionList * __fastcall TGUIConfiguration::SelectFilezillaSessionsForImp
   UnicodeString FilezillaSiteManagerFile =
     IncludeTrailingBackslash(AppDataPath) + L"FileZilla\\sitemanager.xml";
 
-  if (FileExists(FilezillaSiteManagerFile))
+  if (FileExists(ApiPath(FilezillaSiteManagerFile)))
   {
     ImportSessionList->ImportFromFilezilla(FilezillaSiteManagerFile);
 

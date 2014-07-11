@@ -1,25 +1,23 @@
+//------------------------------------------------------------------------------
 #ifndef WebDavFileSystemH
 #define WebDavFileSystemH
 
-#include <apr_pools.h>
-
+//------------------------------------------------------------------------------
+#include <ne_uri.h>
+#include <ne_utils.h>
+#include <ne_string.h>
+#include <ne_request.h>
 #include <FileSystems.h>
-#include "Terminal.h"
-
 //------------------------------------------------------------------------------
-struct TListDataEntry;
-struct TFileTransferData;
-//------------------------------------------------------------------------------
-namespace webdav {
-  struct session_t;
-  typedef int error_t;
-} // namespace webdav
-//------------------------------------------------------------------------------
+struct TWebDAVCertificateData;
+struct ne_ssl_certificate_s;
+struct ne_session_s;
+struct ne_prop_result_set_s;
+struct TOverwriteFileParams;
+struct ssl_st;
 //------------------------------------------------------------------------------
 class TWebDAVFileSystem : public TCustomFileSystem
 {
-  friend class TWebDAVFileListHelper;
-
 public:
   explicit TWebDAVFileSystem(TTerminal * ATerminal);
   virtual __fastcall ~TWebDAVFileSystem();
@@ -70,7 +68,6 @@ public:
     const UnicodeString NewName);
   virtual void __fastcall CopyFile(const UnicodeString FileName,
     const UnicodeString NewName);
-  virtual UnicodeString __fastcall FileUrl(const UnicodeString FileName);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
     TSpaceAvailable & ASpaceAvailable);
@@ -80,136 +77,101 @@ public:
   virtual bool __fastcall GetStoredCredentialsTried();
   virtual UnicodeString __fastcall GetUserName();
 
-public:
-  virtual void __fastcall ReadDirectoryProgress(__int64 Bytes);
-  virtual void __fastcall FileTransferProgress(__int64 TransferSize, __int64 Bytes);
+  void __fastcall NeonDebug(const UnicodeString & Message);
+  void __fastcall InitSslSession(ssl_st * Ssl);
 
 protected:
-  enum TOverwriteMode { omOverwrite, omResume };
-
   virtual UnicodeString __fastcall GetCurrentDirectory();
-
-  bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries,
-    unsigned int Count);
-  void __fastcall EnsureLocation();
-  void __fastcall DoChangeDirectory(const UnicodeString Directory);
 
   void __fastcall Sink(const UnicodeString FileName,
     const TRemoteFile * File, const UnicodeString TargetDir,
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags,
-    TDownloadSessionAction & Action);
+    TDownloadSessionAction & Action, bool & ChildError);
   void __fastcall SinkRobust(const UnicodeString FileName,
     const TRemoteFile * File, const UnicodeString TargetDir,
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SinkFile(const UnicodeString FileName, const TRemoteFile * File, void * Param);
-  void __fastcall WebDAVSourceRobust(const UnicodeString FileName,
+  void __fastcall SourceRobust(const UnicodeString FileName,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  void __fastcall WebDAVSource(const UnicodeString FileName,
+  void __fastcall Source(const UnicodeString FileName,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags,
-    TUploadSessionAction & Action);
-  void __fastcall WebDAVDirectorySource(const UnicodeString DirectoryName,
+    TUploadSessionAction & Action, bool & ChildError);
+  void __fastcall DirectorySource(const UnicodeString DirectoryName,
     const UnicodeString TargetDir, int Attrs, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  bool __fastcall ConfirmOverwrite(UnicodeString & FileName,
-    TOverwriteMode & OverwriteMode, TFileOperationProgressType * OperationProgress,
+  void __fastcall ConfirmOverwrite(const UnicodeString & FullFileName, UnicodeString & FileName,
+    TFileOperationProgressType * OperationProgress,
     const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
-    int Params, bool AutoResume, unsigned int &Answer);
-  void __fastcall ResetFileTransfer();
-  void __fastcall DoFileTransferProgress(__int64 TransferSize, __int64 Bytes);
-  void __fastcall DoReadDirectory(TRemoteFileList * FileList);
-  void __fastcall FileTransfer(const UnicodeString FileName, const UnicodeString LocalFile,
-    const UnicodeString RemoteFile, const UnicodeString RemotePath, bool Get,
-    __int64 Size, int Type, TFileTransferData & UserData,
-    TFileOperationProgressType * OperationProgress);
+    int Params);
+  void __fastcall CheckStatus(int NeonStatus);
+  void __fastcall ClearNeonError();
+  static void NeonPropsResult(
+    void * UserData, const ne_uri * Uri, const ne_prop_result_set_s * Results);
+  void __fastcall ParsePropResultSet(TRemoteFile * File,
+    const UnicodeString & Path, const ne_prop_result_set_s * Results);
+  void __fastcall TryOpenDirectory(UnicodeString Directory);
+  static int NeonBodyReader(void * UserData, const char * Buf, size_t Len);
+  static void NeonPreSend(ne_request * Request, void * UserData, ne_buffer * Header);
+  static int NeonBodyAccepter(void * UserData, ne_request * Request, const ne_status * Status);
+  static void NeonCreateRequest(ne_request * Request, void * UserData, const char * Method, const char * Uri);
+  static int NeonRequestAuth(void * UserData, const char * Realm, int Attempt, char * UserName, char * Password);
+  void NeonOpen(UnicodeString & CorrectedUrl, const UnicodeString & Url);
+  void NeonClientOpenSessionInternal(UnicodeString & CorrectedUrl, UnicodeString Url);
+  static int NeonProxyAuth(
+    void * UserData, const char * Realm, int Attempt, char * UserName, char * Password);
+  static void NeonNotifier(void * UserData, ne_session_status Status, const ne_session_status_info * StatusInfo);
+  static ssize_t NeonUploadBodyProvider(void * UserData, char * Buffer, size_t BufLen);
+  static int NeonPostSend(ne_request * Req, void * UserData, const ne_status * Status);
+  void ExchangeCapabilities(const char * Path, UnicodeString & CorrectedUrl);
+  static int NeonServerSSLCallback(void * UserData, int Failures, const struct ne_ssl_certificate_s * Certificate);
+  void __fastcall CloseNeonSession();
+  bool __fastcall CancelTransfer();
+  UnicodeString __fastcall GetNeonError();
+  static void NeonQuotaResult(void * UserData, const ne_uri * Uri, const ne_prop_result_set_s * Results);
+  static const char * __fastcall GetProp(const ne_prop_result_set_s * Results, const char * Name);
 
 private:
   TFileSystemInfo FFileSystemInfo;
   UnicodeString FCurrentDirectory;
-  TRemoteFileList * FFileList;
   UnicodeString FCachedDirectoryChange;
-  TCaptureOutputEvent FOnCaptureOutput;
   TSessionInfo FSessionInfo;
   UnicodeString FUserName;
-  bool FPasswordFailed;
   bool FActive;
-  enum { ftaNone, ftaSkip, ftaCancel } FFileTransferAbort;
-  bool FIgnoreFileList;
-  bool FFileTransferCancelled;
-  __int64 FFileTransferResumed;
-  bool FFileTransferPreserveTime;
   bool FHasTrailingSlash;
-  size_t FFileTransferCPSLimit;
-  size_t FLastReadDirectoryProgress;
-  TFileOperationProgressType * FCurrentOperationProgress;
-  TCriticalSection * FTransferStatusCriticalSection;
+  bool FCancelled;
+  bool FStoredPasswordTried;
+  bool FUploading;
+  bool FDownloading;
+  ne_session_s * FNeonSession;
+  bool FInitialHandshake;
+  bool FAuthenticationRequested;
+  ne_provide_body FUploadBodyProvider;
+  void * FUploadBodyProviderUserData;
+  UnicodeString FResponse;
+  enum TIgnoreAuthenticationFailure { iafNo, iafWaiting, iafPasswordTried } FIgnoreAuthenticationFailure;
 
-private:
-  void __fastcall CustomReadFile(const UnicodeString FileName,
+  void __fastcall CustomReadFile(UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
-  bool SendPropFindRequest(const wchar_t * dir, int & responseCode);
-
-private:
-  bool WebDAVCheckExisting(const wchar_t * path, int & is_dir);
-  bool WebDAVMakeDirectory(const wchar_t * path);
-  bool WebDAVGetList(const UnicodeString Directory);
-  bool WebDAVGetFile(const wchar_t * remotePath, HANDLE * LocalFileHandle);
-  bool WebDAVPutFile(const wchar_t * remotePath, const wchar_t * localPath, const unsigned __int64 fileSize);
-  bool WebDAVRenameFile(const wchar_t * srcPath, const wchar_t * dstPath);
-  bool WebDAVDeleteFile(const wchar_t * path);
-
-public:
-  webdav::error_t GetServerSettings(
-    int * proxy_method,
-    const char **proxy_host,
-    unsigned int *proxy_port,
-    const char **proxy_username,
-    const char **proxy_password,
-    int *timeout_seconds,
-    int *neon_debug,
-    const char **neon_debug_file_name,
-    bool *compression,
-    const char **pk11_provider,
-    const char **ssl_authority_file,
-    apr_pool_t *pool);
-  webdav::error_t VerifyCertificate(
-    const char * Prompt, const char *fingerprint,
-    unsigned int & RequestResult);
-  webdav::error_t AskForClientCertificateFilename(
-    const char **cert_file, unsigned int & RequestResult,
-    apr_pool_t *pool);
-  webdav::error_t AskForUsername(
-    const char **user_name,
-    unsigned int & RequestResult,
-    apr_pool_t *pool);
-  webdav::error_t AskForUserPassword(
-    const char **password,
-    unsigned int & RequestResult,
-    apr_pool_t *pool);
-  webdav::error_t AskForPassphrase(
-    const char **passphrase,
-    const char *realm,
-    unsigned int & RequestResult,
-    apr_pool_t *pool);
-  webdav::error_t SimplePrompt(
-    const char *prompt_text,
-    const char *prompt_string,
-    unsigned int & RequestResult);
-  webdav::error_t CreateStorage(THierarchicalStorage *& Storage);
-  unsigned long AdjustToCPSLimit(unsigned long len);
-  bool GetIsCancelled();
-private:
-  webdav::error_t OpenURL(const UnicodeString & repos_URL,
-    apr_pool_t *pool);
-private:
-  apr_pool_t *webdav_pool;
-  webdav::session_t *FSession;
-private:
-  TWebDAVFileSystem(const TWebDAVFileSystem &);
-  TWebDAVFileSystem & operator=(const TWebDAVFileSystem &);
+  int __fastcall CustomReadFileInternal(const UnicodeString FileName,
+    TRemoteFile *& File, TRemoteFile * ALinkedByFile);
+  void __fastcall RegisterForDebug();
+  void __fastcall UnregisterFromDebug();
+  bool VerifyCertificate(
+    const TWebDAVCertificateData & Data);
+  void OpenUrl(const UnicodeString & Url);
+  void __fastcall CollectTLSSessionInfo();
+  UnicodeString __fastcall GetRedirectUrl();
+  UnicodeString __fastcall ParsePathFromUrl(const UnicodeString & Url);
+  int __fastcall ReadDirectoryInternal(const UnicodeString & Path, TRemoteFileList * FileList);
+  bool __fastcall IsValidRedirect(int NeonStatus, UnicodeString & Path);
+  UnicodeString __fastcall DirectoryPath(UnicodeString Path);
 };
-
+//------------------------------------------------------------------------------
+void __fastcall NeonInitialize();
+void __fastcall NeonFinalize();
+//------------------------------------------------------------------------------
 #endif

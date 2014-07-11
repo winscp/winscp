@@ -7,7 +7,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
   BorderStyle = bsDialog
   Caption = 'RemoteTransferDialog'
   ClientHeight = 179
-  ClientWidth = 368
+  ClientWidth = 420
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = False
@@ -15,19 +15,19 @@ object RemoteTransferDialog: TRemoteTransferDialog
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
-    368
+    420
     179)
   PixelsPerInch = 96
   TextHeight = 13
   object SymlinkGroup: TGroupBox
     Left = 8
     Top = 6
-    Width = 352
+    Width = 404
     Height = 131
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     DesignSize = (
-      352
+      404
       131)
     object SessionLabel: TLabel
       Left = 49
@@ -37,12 +37,12 @@ object RemoteTransferDialog: TRemoteTransferDialog
       Caption = 'Target &session:'
       FocusControl = SessionCombo
     end
-    object Label2: TLabel
+    object Label3: TLabel
       Left = 49
       Top = 60
-      Width = 119
+      Width = 98
       Height = 13
-      Caption = 'Target remote &directory:'
+      Caption = 'Target remote &path:'
       FocusControl = DirectoryEdit
     end
     object Image: TImage
@@ -95,7 +95,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
     object SessionCombo: TComboBox
       Left = 49
       Top = 28
-      Width = 292
+      Width = 344
       Height = 21
       Style = csDropDownList
       Anchors = [akLeft, akTop, akRight]
@@ -107,7 +107,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
     object DirectoryEdit: THistoryComboBox
       Left = 49
       Top = 76
-      Width = 292
+      Width = 344
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
@@ -118,7 +118,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
     object NotDirectCopyCheck: TCheckBox
       Left = 55
       Top = 105
-      Width = 288
+      Width = 340
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'Duplicate via local &temporary copy'
@@ -127,7 +127,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
     end
   end
   object OkButton: TButton
-    Left = 116
+    Left = 168
     Top = 146
     Width = 75
     Height = 25
@@ -138,7 +138,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
     TabOrder = 1
   end
   object CancelButton: TButton
-    Left = 200
+    Left = 252
     Top = 146
     Width = 75
     Height = 25
@@ -149,7 +149,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
     TabOrder = 2
   end
   object HelpButton: TButton
-    Left = 284
+    Left = 336
     Top = 146
     Width = 75
     Height = 25

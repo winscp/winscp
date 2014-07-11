@@ -7,11 +7,25 @@
 #include <VCLCommon.h>
 #include <Common.h>
 #include <Tools.h>
+#include <GUITools.h>
+#include <CoreMain.h>
 #include "WinInterface.h"
 #include "About.h"
 #include "TextsCore.h"
 #include "TextsWin.h"
+#ifndef NO_COMPONENTS
+// must be included before WebBrowserEx.hpp to avoid ambiguity of tagLOGFONTW
+#include <TB2Version.hpp>
+#include <TBX.hpp>
+#endif
+#include <WebBrowserEx.hpp>
+#include <JclBase.hpp>
+#include <StrUtils.hpp>
+#ifndef NO_FILEZILLA
+#include <FtpFileSystem.h>
+#endif
 //---------------------------------------------------------------------
+#pragma link "SHDocVw_OCX"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
@@ -37,25 +51,12 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   : TForm(AOwner)
 {
   FConfiguration = Configuration;
-  ThirdPartyBox->VertScrollBar->Position = 0;
   UseSystemSettings(this);
   LinkLabel(HomepageLabel, LoadStr(HOMEPAGE_URL));
   LinkLabel(ForumUrlLabel, LoadStr(FORUM_URL));
-  LinkLabel(PuttyLicenseLabel, L"", FirstScrollingControlEnter);
-  LinkLabel(PuttyHomepageLabel, LoadStr(PUTTY_URL));
-  LinkLabel(FileZillaHomepageLabel, LoadStr(FILEZILLA_URL));
-  LinkLabel(OpenSSLHomepageLabel, LoadStr(OPENSSL_URL));
-  LinkLabel(Toolbar2000HomepageLabel);
-  LinkLabel(TBXHomepageLabel, L"", LastScrollingControlEnter);
   ApplicationLabel->ParentFont = true;
   ApplicationLabel->Font->Style = ApplicationLabel->Font->Style << fsBold;
   ApplicationLabel->Caption = AppName;
-  PuttyVersionLabel->Caption = FMTLOAD(PUTTY_BASED_ON, (LoadStr(PUTTY_VERSION)));
-  PuttyCopyrightLabel->Caption = LoadStr(PUTTY_COPYRIGHT);
-  FileZillaVersionLabel->Caption = LoadStr(FILEZILLA_BASED_ON2);
-  FileZillaCopyrightLabel->Caption = LoadStr(FILEZILLA_COPYRIGHT2);
-  OpenSSLVersionLabel->Caption = FMTLOAD(OPENSSL_BASED_ON, (LoadStr(OPENSSL_VERSION)));
-  OpenSSLCopyrightLabel->Caption = LoadStr(OPENSSL_COPYRIGHT);
   WinSCPCopyrightLabel->Caption = LoadStr(WINSCP_COPYRIGHT);
   UnicodeString Translator = LoadStr(TRANSLATOR_INFO);
 
@@ -64,7 +65,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     RegistrationLabel->Visible = false;
     RegistrationBox->Visible = false;
     ClientHeight = ClientHeight -
-      (ThirdPartyBox->Top - RegistrationBox->Top);
+      (ThirdPartyPanel->Top - RegistrationBox->Top);
   }
   else
   {
@@ -120,60 +121,11 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     }
   }
 
-  #ifdef NO_FILEZILLA
-  int FileZillaHeight = Label1->Top - FileZillaVersionLabel->Top;
-  FileZillaVersionLabel->Visible = false;
-  FileZillaCopyrightLabel->Visible = false;
-  FileZillaHomepageLabel->Visible = false;
-  OpenSSLVersionLabel->Visible = false;
-  OpenSSLCopyrightLabel->Visible = false;
-  OpenSSLHomepageLabel->Visible = false;
-
-  for (int Index = 0; Index < ThirdPartyBox->ControlCount; Index++)
-  {
-    TControl * Control = ThirdPartyBox->Controls[Index];
-    if (Control->Top > FileZillaHomepageLabel->Top)
-    {
-      Control->Top = Control->Top - FileZillaHeight;
-    }
-  }
-
-  ThirdPartyBox->VertScrollBar->Range = ThirdPartyBox->VertScrollBar->Range - FileZillaHeight;
-  #endif
-
-  #ifdef NO_COMPONENTS
-  int ComponentsHeight = ThirdPartyBox->VertScrollBar->Range - Label1->Top;
-  Label1->Visible = false;
-  Label2->Visible = false;
-  Toolbar2000HomepageLabel->Visible = false;
-  Label5->Visible = false;
-  Label6->Visible = false;
-  TBXHomepageLabel->Visible = false;
-  Label8->Visible = false;
-  Label10->Visible = false;
-
-  ThirdPartyBox->VertScrollBar->Range = ThirdPartyBox->VertScrollBar->Range - ComponentsHeight;
-  #endif
-
-  #ifdef NO_FILEZILLA
-  #ifdef NO_COMPONENTS
-  ThirdPartyBox->VertScrollBar->Range = ThirdPartyBox->ClientHeight;
-  #endif
-  #endif
-
-  // VCL wrongly autosize these, even when AutoSize is off
-  // WORKAROUND
-  FixWrappedLabelSize(Label7);
-  FixWrappedLabelSize(RegistrationSubjectLabel);
-  FixWrappedLabelSize(OpenSSLVersionLabel);
-
   LicenseButton->Visible = AllowLicense;
+
+  FThirdPartyWebBrowser = CreateBrowserViewer(ThirdPartyPanel, L"");
+
   LoadData();
-}
-//---------------------------------------------------------------------------
-void __fastcall TAboutDialog::FixWrappedLabelSize(TLabel * Label)
-{
-  Label->Width = Label->Parent->ClientWidth - (2 * Label->Left);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LoadData()
@@ -186,11 +138,161 @@ void __fastcall TAboutDialog::LoadData()
       (Version, FConfiguration->ProductName, FConfiguration->ProductVersion));
   }
   VersionLabel->Caption = Version;
+
+  LoadThirdParty();
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::PuttyLicenseLabelClick(TObject * /*Sender*/)
+void __fastcall TAboutDialog::LoadThirdParty()
 {
-  OpenBrowser(LoadStr(PUTTY_LICENSE_URL));
+  reinterpret_cast<TLabel *>(FThirdPartyWebBrowser)->Color = clBtnFace;
+
+  FThirdPartyWebBrowser->Navigate(L"about:blank");
+  while (FThirdPartyWebBrowser->ReadyState < ::READYSTATE_INTERACTIVE)
+  {
+    Application->ProcessMessages();
+  }
+
+  std::unique_ptr<TFont> DefaultFont(new TFont());
+
+  UnicodeString ThirdParty;
+
+  ThirdParty +=
+    L"<!DOCTYPE html>\n"
+    L"<meta charset=\"utf-8\">\n"
+    L"<html>\n"
+    L"<head>\n"
+    L"<style>\n"
+    L"\n"
+    L"body\n"
+    L"{\n"
+    L"  font-family: '" + DefaultFont->Name + L"';\n"
+    L"  margin: 0.5em;\n"
+    L"  background-color: " + ColorToWebColorStr(Color) + L";\n"
+    L"}\n"
+    L"\n"
+    L"body\n"
+    L"{\n"
+    L"    font-size: " + IntToStr(DefaultFont->Size) + L"pt;\n"
+    L"}\n"
+    L"\n"
+    L"p\n"
+    L"{\n"
+    L"    margin-top: 0;\n"
+    L"    margin-bottom: 1em;\n"
+    L"}\n"
+    L"\n"
+    L"a, a:visited, a:hover, a:visited, a:current\n"
+    L"{\n"
+    L"    color: " + ColorToWebColorStr(LinkColor) + L";\n"
+    L"}\n"
+    L"</style>\n"
+    L"</head>\n"
+    L"<body>\n";
+
+  UnicodeString Br = "<br/>\n";
+  AddPara(ThirdParty, LoadStr(ABOUT_THIRDPARTY_HEADER));
+
+  AddPara(ThirdParty,
+    FMTLOAD(PUTTY_BASED_ON, (LoadStr(PUTTY_VERSION))) + Br +
+    LoadStr(PUTTY_COPYRIGHT) + Br +
+    CreateLink(LoadStr(PUTTY_LICENSE_URL), LoadStr(ABOUT_THIRDPARTY_LICENSE)) + Br +
+    CreateLink(LoadStr(PUTTY_URL)));
+
+#ifndef NO_FILEZILLA
+
+  UnicodeString OpenSSLVersionText = GetOpenSSLVersionText();
+  CutToChar(OpenSSLVersionText, L' ', true); // "OpenSSL"
+  UnicodeString OpenSSLVersion = CutToChar(OpenSSLVersionText, L' ', true);
+  CutToChar(OpenSSLVersionText, L' ', true); // day
+  CutToChar(OpenSSLVersionText, L' ', true); // month
+  UnicodeString OpenSSLYear = CutToChar(OpenSSLVersionText, L' ', true);
+
+  AddPara(ThirdParty,
+    FMTLOAD(OPENSSL_BASED_ON, (OpenSSLVersion)) + Br +
+    FMTLOAD(OPENSSL_COPYRIGHT2, (OpenSSLYear)) + Br +
+    CreateLink(LoadStr(OPENSSL_URL)));
+
+  AddPara(ThirdParty,
+    LoadStr(FILEZILLA_BASED_ON2) + Br +
+    LoadStr(FILEZILLA_COPYRIGHT2) + Br +
+    CreateLink(LoadStr(FILEZILLA_URL)));
+
+#endif
+
+  AddPara(ThirdParty,
+    FMTLOAD(NEON_BASED_ON, (NeonVersion())) + Br +
+    LoadStr(NEON_COPYRIGHT) + Br +
+    CreateLink(LoadStr(NEON_URL)));
+
+  #define EXPAT_LICENSE_URL L"license:expat"
+
+  AddPara(ThirdParty,
+    FMTLOAD(EXPAT_BASED_ON, (ExpatVersion())) + Br +
+    CreateLink(EXPAT_LICENSE_URL, LoadStr(ABOUT_THIRDPARTY_LICENSE)) + Br +
+    CreateLink(LoadStr(EXPAT_URL)));
+
+  AddBrowserLinkHandler(FThirdPartyWebBrowser, EXPAT_LICENSE_URL, ExpatLicenceHandler);
+
+#ifndef NO_COMPONENTS
+
+  AddPara(ThirdParty,
+    FMTLOAD(ABOUT_TOOLBAR2000, (Toolbar2000Version)) + Br +
+    LoadStr(ABOUT_TOOLBAR2000_COPYRIGHT) + Br +
+    CreateLink(LoadStr(ABOUT_TOOLBAR2000_URL)));
+
+  AddPara(ThirdParty,
+    FMTLOAD(ABOUT_TBX, (TBXVersionString)) + Br +
+    LoadStr(ABOUT_TBX_COPYRIGHT) + Br +
+    CreateLink(LoadStr(ABOUT_TBX_URL)));
+
+  AddPara(ThirdParty,
+    LoadStr(ABOUT_FILEMANAGER) + Br +
+    LoadStr(ABOUT_FILEMANAGER_COPYRIGHT));
+
+#endif
+
+  UnicodeString JclVersion =
+    FormatVersion(JclVersionMajor, JclVersionMinor, JclVersionRelease);
+  AddPara(ThirdParty,
+    FMTLOAD(ABOUT_JCL, (JclVersion)) + Br +
+    CreateLink(LoadStr(ABOUT_JCL_URL)));
+
+  AddPara(ThirdParty,
+    LoadStr(ABOUT_PNG) + Br +
+    LoadStr(ABOUT_PNG_COPYRIGHT) + Br +
+    CreateLink(LoadStr(ABOUT_PNG_URL)));
+
+  ThirdParty +=
+    L"</body>\n"
+    L"</html>\n";
+
+  std::unique_ptr<TMemoryStream> ThirdPartyStream(new TMemoryStream());
+  UTF8String ThirdPartyUTF8 = UTF8String(ThirdParty);
+  ThirdPartyStream->Write(ThirdPartyUTF8.c_str(), ThirdPartyUTF8.Length());
+  ThirdPartyStream->Seek(0, 0);
+
+  // For steam-loaded document, when set only after loading from OnDocumentComplete,
+  // browser stops working
+  SetBrowserDesignModeOff(FThirdPartyWebBrowser);
+
+  TStreamAdapter * ThirdPartyStreamAdapter = new TStreamAdapter(ThirdPartyStream.get(), soReference);
+  IPersistStreamInit * PersistStreamInit = NULL;
+  if (ALWAYS_TRUE(FThirdPartyWebBrowser->Document != NULL) &&
+      SUCCEEDED(FThirdPartyWebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
+      ALWAYS_TRUE(PersistStreamInit != NULL))
+  {
+    PersistStreamInit->Load(static_cast<_di_IStream>(*ThirdPartyStreamAdapter));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::AddPara(UnicodeString & Text, const UnicodeString & S)
+{
+  Text += L"<p>" + S + L"</p>\n";
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TAboutDialog::CreateLink(const UnicodeString & URL, const UnicodeString & Title)
+{
+  return FORMAT(L"<a href=\"%s\">%s</a>", (URL, Title.IsEmpty() ? URL : Title));
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LicenseButtonClick(TObject * /*Sender*/)
@@ -201,17 +303,6 @@ void __fastcall TAboutDialog::LicenseButtonClick(TObject * /*Sender*/)
 void __fastcall TAboutDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
-}
-//---------------------------------------------------------------------------
-void __fastcall TAboutDialog::FirstScrollingControlEnter(TObject * /*Sender*/)
-{
-  ThirdPartyBox->VertScrollBar->Position = 0;
-}
-//---------------------------------------------------------------------------
-void __fastcall TAboutDialog::LastScrollingControlEnter(TObject * /*Sender*/)
-{
-  ThirdPartyBox->VertScrollBar->Position =
-    ThirdPartyBox->VertScrollBar->Range - ThirdPartyBox->ClientHeight;
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::RegistrationProductIdLabelClick(
@@ -237,5 +328,10 @@ void __fastcall TAboutDialog::OKButtonMouseDown(TObject * /*Sender*/,
       throw ExtException(&E, MainInstructions(L"Internal error test."));
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::ExpatLicenceHandler(TObject * /*Sender*/)
+{
+  DoLicenseDialog(lcExpat);
 }
 //---------------------------------------------------------------------------

@@ -191,12 +191,16 @@ BOOL CAsyncSocketExLayer::TriggerEvent(long lEvent, int nErrorCode, BOOL bPassTh
 {
 	ASSERT(m_pOwnerSocket);
 	if (m_pOwnerSocket->m_SocketData.hSocket==INVALID_SOCKET)
+	{
 		return FALSE;
+	}
 
 	if (!bPassThrough)
 	{
 		if (m_nPendingEvents & lEvent)
+		{
 			return TRUE;
+		}
 
 		m_nPendingEvents |= lEvent;
 	}
@@ -205,7 +209,9 @@ BOOL CAsyncSocketExLayer::TriggerEvent(long lEvent, int nErrorCode, BOOL bPassTh
 	{
 		ASSERT(bPassThrough);
 		if (!nErrorCode)
+		{
 			ASSERT(bPassThrough && (GetLayerState()==connected || GetLayerState()==attached));
+		}
 		else if (nErrorCode)
 		{
 			SetLayerState(aborted);
@@ -215,7 +221,9 @@ BOOL CAsyncSocketExLayer::TriggerEvent(long lEvent, int nErrorCode, BOOL bPassTh
 	else if (lEvent & FD_CLOSE)
 	{
 		if (!nErrorCode)
+		{
 			SetLayerState(closed);
+		}
 		else
 		{
 			SetLayerState(aborted);
@@ -231,7 +239,9 @@ BOOL CAsyncSocketExLayer::TriggerEvent(long lEvent, int nErrorCode, BOOL bPassTh
 	pMsg->pLayer=bPassThrough?m_pPrevLayer:this;
 	BOOL res=PostMessage(m_pOwnerSocket->GetHelperWindowHandle(), WM_USER, (WPARAM)m_pOwnerSocket->m_SocketData.nSocketIndex, (LPARAM)pMsg);
 	if (!res)
+	{
 		delete pMsg;
+	}
 	return res;
 }
 
@@ -285,7 +295,8 @@ int CAsyncSocketExLayer::SendNext(const void *lpBuf, int nBufLen, int nFlags /*=
 	if (!m_pNextLayer)
 	{
 		ASSERT(m_pOwnerSocket);
-		return send(m_pOwnerSocket->GetSocketHandle(), (LPSTR)lpBuf, nBufLen, nFlags);
+		int sent = send(m_pOwnerSocket->GetSocketHandle(), (LPSTR)lpBuf, nBufLen, nFlags);
+		return sent;
 	}
 	else
 	{
@@ -925,7 +936,7 @@ BOOL CAsyncSocketExLayer::ShutDownNext(int nHow /*=sends*/)
 	if (!m_pNextLayer)
 	{
 		ASSERT(m_pOwnerSocket);
-		return shutdown(m_pOwnerSocket->GetSocketHandle(), nHow);
+		return (shutdown(m_pOwnerSocket->GetSocketHandle(), nHow) == 0);
 	}
 	else
 	{

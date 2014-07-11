@@ -30,6 +30,7 @@ __fastcall TEditorManager::TEditorManager()
   FOnFileChange = NULL;
   FOnFileReload = NULL;
   FOnFileEarlyClosed = NULL;
+  FOnFileUploadComplete = NULL;
 }
 //---------------------------------------------------------------------------
 __fastcall TEditorManager::~TEditorManager()
@@ -255,7 +256,7 @@ void __fastcall TEditorManager::Check()
 
       if (Index >= 0)
       {
-        // let the editor finish writting to the file
+        // let the editor finish writing to the file
         // (first to avoid uploading partially saved file, second
         // because the timestamp may change more than once during saving)
         Sleep(GUIConfiguration->KeepUpToDateChangeDelay);
@@ -399,10 +400,17 @@ void __fastcall TEditorManager::UploadComplete(int Index)
   {
     CloseFile(Index, false, true);
   }
-  else if (FileData->Reupload)
+  else
   {
-    FileData->Reupload = false;
-    CheckFileChange(Index, true);
+    if (FileData->Reupload)
+    {
+      FileData->Reupload = false;
+      CheckFileChange(Index, true);
+    }
+    else if ((FileData->Token != NULL) && (FOnFileUploadComplete != NULL))
+    {
+      FOnFileUploadComplete(FileData->Token);
+    }
   }
 }
 //---------------------------------------------------------------------------

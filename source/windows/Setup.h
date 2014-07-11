@@ -8,7 +8,7 @@ void __fastcall SetupInitialize();
 void __fastcall AddSearchPath(const UnicodeString Path);
 void __fastcall RemoveSearchPath(const UnicodeString Path);
 void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New, TQueryType & Type, bool Force);
-void __fastcall CheckForUpdates(bool CachedResults);
+bool __fastcall CheckForUpdates(bool CachedResults);
 UnicodeString __fastcall GetUsageData();
 void __fastcall RegisterForDefaultProtocols();
 void __fastcall UnregisterForProtocols();
@@ -19,5 +19,6 @@ void __fastcall StopUpdateThread();
 UnicodeString __fastcall CampaignUrl(UnicodeString URL);
 void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceNames);
 bool __fastcall AnyOtherInstanceOfSelf();
+bool __fastcall IsInstalled();
 //---------------------------------------------------------------------------
 #endif

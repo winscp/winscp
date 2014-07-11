@@ -31,12 +31,17 @@ struct TSessionInfo
 //---------------------------------------------------------------------------
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcOwnerChanging, fcGroupOwnerChangingByID, fcAnyCommand, fcHardLink,
-  fcSymbolicLink, fcResolveSymlink,
+  fcSymbolicLink,
+  // With WebDAV this is always true, to avoid double-click on
+  // file try to open the file as directory. It does no harm atm as
+  // WebDAV never produce a symlink in listing.
+  fcResolveSymlink,
   fcTextMode, fcRename, fcNativeTextMode, fcNewerOnlyUpload, fcRemoteCopy,
   fcTimestampChanging, fcRemoteMove, fcLoadingAdditionalProperties,
   fcCheckingSpaceAvailable, fcIgnorePermErrors, fcCalculatingChecksum,
   fcModeChangingUpload, fcPreservingTimestampUpload, fcShellAnyCommand,
-  fcSecondaryShell, fcRemoveCtrlZUpload, fcRemoveBOMUpload, fcCount };
+  fcSecondaryShell, fcRemoveCtrlZUpload, fcRemoveBOMUpload, fcMoveToQueue,
+  fcCount };
 //---------------------------------------------------------------------------
 struct TFileSystemInfo
 {

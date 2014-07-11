@@ -232,7 +232,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.CurrentRenameAction
         end
         object TBXItem36: TTBXItem
-          Action = NonVisualDataModule.PasteAction
+          Action = NonVisualDataModule.PasteAction2
         end
         object TBXSeparatorItem8: TTBXSeparatorItem
         end
@@ -253,7 +253,7 @@ inherited ScpCommanderForm: TScpCommanderForm
             Action = NonVisualDataModule.FullFileListToClipboardAction
           end
           object TBXItem40: TTBXItem
-            Action = NonVisualDataModule.UrlToClipboardAction
+            Action = NonVisualDataModule.FileGenerateUrlAction
           end
         end
         object TBXSeparatorItem9: TTBXSeparatorItem
@@ -357,9 +357,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXSeparatorItem14: TTBXSeparatorItem
         end
-        object TBXItem56: TTBXItem
-          Action = NonVisualDataModule.FileSystemInfoAction
-        end
         object TBXItem57: TTBXItem
           Action = NonVisualDataModule.ClearCachesAction
         end
@@ -384,6 +381,14 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
+        end
+        object TBXSeparatorItem50: TTBXSeparatorItem
+        end
+        object TBXItem56: TTBXItem
+          Action = NonVisualDataModule.FileSystemInfoAction
+        end
+        object TBXItem135: TTBXItem
+          Action = NonVisualDataModule.SessionGenerateUrlAction
         end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
@@ -884,10 +889,11 @@ inherited ScpCommanderForm: TScpCommanderForm
       ShowHint = True
       TabOrder = 5
       object TBXSubmenuItem1: TTBXSubmenuItem
-        Action = NonVisualDataModule.ShowUpdatesAction
+        Action = NonVisualDataModule.CheckForUpdatesAction
         DropdownCombo = True
         object TBXItem184: TTBXItem
           Action = NonVisualDataModule.CheckForUpdatesAction
+          Options = [tboDefault]
         end
         object TBXSeparatorItem46: TTBXSeparatorItem
         end
@@ -997,7 +1003,35 @@ inherited ScpCommanderForm: TScpCommanderForm
     inherited RemoteStatusBar: TTBXStatusBar
       Top = 279
       Width = 429
-      SimplePanel = True
+      Panels = <
+        item
+          Framed = False
+          Size = 170
+          StretchPriority = 1
+          Tag = 0
+          TextTruncation = twEndEllipsis
+        end
+        item
+          Alignment = taCenter
+          Framed = False
+          Hint = 'Click to show hidden files'
+          MaxSize = 100
+          Size = 80
+          StretchPriority = 2
+          Tag = 0
+          TextTruncation = twEndEllipsis
+        end
+        item
+          Alignment = taCenter
+          Framed = False
+          Hint = 'Click to modify or clear the filter'
+          MaxSize = 100
+          Size = 80
+          StretchPriority = 2
+          Tag = 0
+          TextTruncation = twEndEllipsis
+        end>
+      OnPanelClick = RemoteStatusBarPanelClick
     end
     inherited RemoteDirView: TUnixDirView
       Left = 0
@@ -1256,12 +1290,39 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 279
       Width = 395
       Height = 19
-      Panels = <>
+      Panels = <
+        item
+          Framed = False
+          Size = 170
+          StretchPriority = 1
+          Tag = 0
+          TextTruncation = twEndEllipsis
+        end
+        item
+          Alignment = taCenter
+          Framed = False
+          Hint = 'Click to show hidden files'
+          MaxSize = 100
+          Size = 80
+          StretchPriority = 2
+          Tag = 0
+          TextTruncation = twEndEllipsis
+        end
+        item
+          Alignment = taCenter
+          Framed = False
+          Hint = 'Click to modify or clear the filter'
+          MaxSize = 100
+          Size = 80
+          StretchPriority = 2
+          Tag = 0
+          TextTruncation = twEndEllipsis
+        end>
       ParentShowHint = False
-      SimplePanel = True
       ShowHint = True
       UseSystemFont = False
       OnClick = LocalStatusBarClick
+      OnPanelClick = LocalStatusBarPanelClick
     end
     object LocalDirView: TDirView
       Left = 0

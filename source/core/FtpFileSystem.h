@@ -72,7 +72,6 @@ public:
     const UnicodeString NewName);
   virtual void __fastcall CopyFile(const UnicodeString FileName,
     const UnicodeString NewName);
-  virtual UnicodeString __fastcall FileUrl(const UnicodeString FileName);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
     TSpaceAvailable & ASpaceAvailable);
@@ -108,7 +107,7 @@ protected:
   void __fastcall PoolForFatalNonCommandReply();
   void __fastcall GotNonCommandReply(unsigned int Reply);
   void __fastcall GotReply(unsigned int Reply, unsigned int Flags = 0,
-    UnicodeString Error = "", unsigned int * Code = NULL,
+    UnicodeString Error = L"", unsigned int * Code = NULL,
     TStrings ** Response = NULL);
   void __fastcall ResetReply();
   void __fastcall HandleReplyStatus(UnicodeString Response);
@@ -161,7 +160,7 @@ protected:
   void __fastcall DirectorySource(const UnicodeString DirectoryName,
     const UnicodeString TargetDir, int Attrs, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  bool __fastcall ConfirmOverwrite(UnicodeString & FileName,
+  bool __fastcall ConfirmOverwrite(const UnicodeString & FullFileName, UnicodeString & FileName,
     TOverwriteMode & OverwriteMode, TFileOperationProgressType * OperationProgress,
     const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
     int Params, bool AutoResume);
@@ -244,6 +243,8 @@ private:
   TDateTime FLastDataSent;
   mutable UnicodeString FOptionScratch;
 };
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetOpenSSLVersionText();
 //---------------------------------------------------------------------------
 #endif NO_FILEZILLA
 //---------------------------------------------------------------------------

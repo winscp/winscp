@@ -51,6 +51,7 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FWaiting = 0;
   FOpened = false;
   FOpenSSH = false;
+  FProFTPD = false;
   OutPtr = NULL;
   Pending = NULL;
   FBackendHandle = NULL;
@@ -87,6 +88,7 @@ void __fastcall TSecureShell::ResetConnection()
   FAuthenticated = false;
   FStoredPasswordTried = false;
   FStoredPasswordTriedForKI = false;
+  FStoredPassphraseTried = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetSessionInfo()
@@ -137,6 +139,11 @@ const TSessionInfo & __fastcall TSecureShell::GetSessionInfo()
 bool __fastcall TSecureShell::IsOpenSSH()
 {
   return FOpenSSH;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecureShell::IsProFTPD()
+{
+  return FProFTPD;
 }
 //---------------------------------------------------------------------
 Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
@@ -195,7 +202,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case cipAES: pcipher = CIPHER_AES; break;
       case cipDES: pcipher = CIPHER_DES; break;
       case cipArcfour: pcipher = CIPHER_ARCFOUR; break;
-      default: assert(false);
+      default: FAIL;
     }
     conf_set_int_int(conf, CONF_ssh_cipherlist, c, pcipher);
   }
@@ -209,7 +216,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case kexDHGroup14: pkex = KEX_DHGROUP14; break;
       case kexDHGEx: pkex = KEX_DHGEX; break;
       case kexRSA: pkex = KEX_RSA; break;
-      default: assert(false);
+      default: FAIL;
     }
     conf_set_int_int(conf, CONF_ssh_kexlist, k, pkex);
   }
@@ -256,7 +263,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_int(conf, CONF_sshbug_pksessid2, Data->Bug[sbPKSessID2]);
   conf_set_int(conf, CONF_sshbug_maxpkt2, Data->Bug[sbMaxPkt2]);
   conf_set_int(conf, CONF_sshbug_ignore2, Data->Bug[sbIgnore2]);
-  conf_set_int(conf, CONF_sshbug_winadj, FORCE_OFF);
+  conf_set_int(conf, CONF_sshbug_winadj, Data->Bug[sbWinAdj]);
 
   if (!Data->TunnelPortFwd.IsEmpty())
   {
@@ -395,7 +402,9 @@ void __fastcall TSecureShell::Open()
     if (FNoConnectionResponse && TryFtp())
     {
       Configuration->Usage->Inc(L"ProtocolSuggestions");
-      FUI->FatalError(&E, LoadStr(FTP_SUGGESTION));
+      // HELP_FTP_SUGGESTION won't be used as all errors that set
+      // FNoConnectionResponse have already their own help keyword
+      FUI->FatalError(&E, LoadStr(FTP_SUGGESTION), HELP_FTP_SUGGESTION);
     }
     else
     {
@@ -415,10 +424,13 @@ void __fastcall TSecureShell::Open()
   assert(!FSessionInfo.SshImplementation.IsEmpty());
   FOpened = true;
 
+  UnicodeString SshImplementation = GetSessionInfo().SshImplementation;
   FOpenSSH =
     // Sun SSH is based on OpenSSH (suffers the same bugs)
-    (GetSessionInfo().SshImplementation.Pos(L"OpenSSH") == 1) ||
-    (GetSessionInfo().SshImplementation.Pos(L"Sun_SSH") == 1);
+    (SshImplementation.Pos(L"OpenSSH") == 1) ||
+    (SshImplementation.Pos(L"Sun_SSH") == 1);
+  FProFTPD =
+    (SshImplementation.Pos(L"mod_sftp") == 1);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::TryFtp()
@@ -594,6 +606,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
   const TPuttyTranslation * InstructionTranslation = NULL;
   const TPuttyTranslation * PromptTranslation = NULL;
   size_t PromptTranslationCount = 1;
+  UnicodeString PromptDesc;
 
   if (Index == 0) // username
   {
@@ -603,6 +616,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
 
     PromptTranslation = UsernamePromptTranslation;
     PromptKind = pkUserName;
+    PromptDesc = L"username";
   }
   else if (Index == 1) // passphrase
   {
@@ -612,6 +626,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
 
     PromptTranslation = PassphrasePromptTranslation;
     PromptKind = pkPassphrase;
+    PromptDesc = L"passphrase";
   }
   else if (Index == 2) // TIS
   {
@@ -625,6 +640,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     InstructionTranslation = TISInstructionTranslation;
     PromptTranslation = TISPromptTranslation;
     PromptKind = pkTIS;
+    PromptDesc = L"tis";
   }
   else if (Index == 3) // CryptoCard
   {
@@ -638,21 +654,30 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     InstructionTranslation = CryptoCardInstructionTranslation;
     PromptTranslation = CryptoCardPromptTranslation;
     PromptKind = pkCryptoCard;
+    PromptDesc = L"cryptocard";
   }
   else if ((Index == 4) || (Index == 5))
   {
     static const TPuttyTranslation KeybInteractiveInstructionTranslation[] = {
       { L"Using keyboard-interactive authentication.%", KEYBINTER_INSTRUCTION },
     };
+    static const TPuttyTranslation KeybInteractivePromptTranslation[] = {
+      // as used by Linux-PAM (pam_exec/pam_exec.c, libpam/pam_get_authtok.c,
+      // pam_unix/pam_unix_auth.c, pam_userdb/pam_userdb.c)
+      { L"Password: ", PASSWORD_PROMPT },
+    };
 
     InstructionTranslation = KeybInteractiveInstructionTranslation;
+    PromptTranslation = KeybInteractivePromptTranslation;
     PromptKind = pkKeybInteractive;
+    PromptDesc = L"keyboard interactive";
   }
   else if (Index == 6)
   {
     assert(Prompts->Count == 1);
     Prompts->Strings[0] = LoadStr(PASSWORD_PROMPT);
     PromptKind = pkPassword;
+    PromptDesc = L"password";
   }
   else if (Index == 7)
   {
@@ -664,14 +689,21 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     PromptTranslation = NewPasswordPromptTranslation;
     PromptTranslationCount = LENOF(NewPasswordPromptTranslation);
     PromptKind = pkNewPassword;
+    PromptDesc = L"new password";
   }
   else
   {
     PromptKind = pkPrompt;
-    assert(false);
+    PromptDesc = L"unknown";
+    FAIL;
   }
 
-  LogEvent(FORMAT(L"Prompt (%d, %s, %s, %s)", (PromptKind, AName, Instructions, (Prompts->Count > 0 ? Prompts->Strings[0] : UnicodeString(L"<no prompt>")))));
+  UnicodeString InstructionsLog =
+    (Instructions.IsEmpty() ? UnicodeString(L"<no instructions>") : FORMAT(L"\"%s\"", (Instructions)));
+  UnicodeString PromptsLog =
+    (Prompts->Count > 0 ? FORMAT(L"\"%s\"", (Prompts->Strings[0])) : UnicodeString(L"<no prompt>")) +
+    (Prompts->Count > 1 ? FORMAT(L"%d more", (Prompts->Count - 1)) : UnicodeString());
+  LogEvent(FORMAT(L"Prompt (%s, \"%s\", %s, %s)", (PromptDesc, AName, InstructionsLog, PromptsLog)));
 
   Name = Name.Trim();
 
@@ -738,6 +770,16 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       FStoredPasswordTried = true;
     }
   }
+  else if (PromptKind == pkPassphrase)
+  {
+    if (!FSessionData->Passphrase.IsEmpty() && !FStoredPassphraseTried)
+    {
+      LogEvent(L"Using configured passphrase.");
+      Result = true;
+      Results->Strings[0] = FSessionData->Passphrase;
+      FStoredPassphraseTried = true;
+    }
+  }
 
   if (!Result)
   {
@@ -746,6 +788,11 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
 
     if (Result)
     {
+      if ((Prompts->Count >= 1) && FLAGSET(int(Prompts->Objects[0]), pupEcho))
+      {
+        LogEvent(FORMAT(L"Response: \"%s\"", (Results->Strings[0])));
+      }
+
       if ((PromptKind == pkUserName) && (Prompts->Count == 1))
       {
         FUserName = Results->Strings[0];
@@ -1095,7 +1142,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
           break;
 
         default:
-          assert(false);
+          FAIL;
           // fallthru
 
         case qaAbort:
@@ -1588,7 +1635,7 @@ void __fastcall TSecureShell::WaitForData()
           break;
 
         default:
-          assert(false);
+          FAIL;
           // fallthru
 
         case qaAbort:
@@ -1908,17 +1955,6 @@ TCipher __fastcall TSecureShell::FuncToSsh2Cipher(const void * Cipher)
   return Result;
 }
 //---------------------------------------------------------------------------
-struct TClipboardHandler
-{
-  UnicodeString Text;
-
-  void __fastcall Copy(TObject * /*Sender*/)
-  {
-    TInstantOperationVisualizer Visualizer;
-    CopyToClipboard(Text);
-  }
-};
-//---------------------------------------------------------------------------
 UnicodeString __fastcall TSecureShell::FormatKeyStr(UnicodeString KeyStr)
 {
   int Index = 1;
@@ -1997,7 +2033,10 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
     }
   }
 
-  if (!Result && (StoredKeys.IsEmpty() || FSessionData->OverrideCachedHostKey))
+  bool ConfiguredKeyNotMatch = false;
+
+  if (!Result && !FSessionData->HostKey.IsEmpty() &&
+      (StoredKeys.IsEmpty() || FSessionData->OverrideCachedHostKey))
   {
     UnicodeString Buf = FSessionData->HostKey;
     while (!Result && !Buf.IsEmpty())
@@ -2021,12 +2060,17 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
         LogEvent(FORMAT(L"Host key does not match configured key %s", (ExpectedKey)));
       }
     }
+
+    if (!Result)
+    {
+      ConfiguredKeyNotMatch = true;
+    }
   }
 
   if (!Result)
   {
     bool Verified;
-    if (Configuration->DisableAcceptingHostKeys)
+    if (ConfiguredKeyNotMatch || Configuration->DisableAcceptingHostKeys)
     {
       Verified = false;
     }
@@ -2092,7 +2136,9 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
     {
       Configuration->Usage->Inc(L"HostNotVerified");
 
-      Exception * E = new Exception(MainInstructions(LoadStr(KEY_NOT_VERIFIED)));
+      UnicodeString Message =
+        ConfiguredKeyNotMatch ? FMTLOAD(CONFIGURED_KEY_NOT_MATCH, (FSessionData->HostKey)) : LoadStr(KEY_NOT_VERIFIED);
+      Exception * E = new Exception(MainInstructions(Message));
       try
       {
         FUI->FatalError(E, FMTLOAD(HOSTKEY, (Fingerprint)));
@@ -2130,7 +2176,7 @@ void __fastcall TSecureShell::AskAlg(const UnicodeString AlgType,
     }
     else
     {
-      assert(false);
+      FAIL;
     }
 
     Msg = FMTLOAD(CIPHER_BELOW_TRESHOLD, (LoadStr(CipherType), AlgName));
@@ -2155,7 +2201,7 @@ void __fastcall TSecureShell::OldKeyfileWarning()
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::GetStoredCredentialsTried()
 {
-  return FStoredPasswordTried || FStoredPasswordTriedForKI;
+  return FStoredPasswordTried || FStoredPasswordTriedForKI || FStoredPassphraseTried;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::GetReady()
@@ -2182,6 +2228,10 @@ void __fastcall TSecureShell::CollectUsage()
   if (FOpenSSH)
   {
     Configuration->Usage->Inc(L"OpenedSessionsSSHOpenSSH");
+  }
+  else if (FProFTPD)
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSHProFTPD");
   }
   else
   {

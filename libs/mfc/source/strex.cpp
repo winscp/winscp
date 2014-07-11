@@ -428,6 +428,7 @@ int CString::Find(LPCTSTR lpszSub, int nStart) const
 #define FORCE_ANSI      0x10000
 #define FORCE_UNICODE   0x20000
 #define FORCE_INT64     0x40000
+#define _tclen(__a)         (1)
 
 void CString::FormatV(LPCTSTR lpszFormat, va_list argList)
 {

@@ -185,7 +185,7 @@ procedure Register;
 implementation
 
 uses
-  PasTools;
+  PasTools, Types;
 
 procedure Register;
 begin

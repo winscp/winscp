@@ -80,6 +80,6 @@ namespace WinSCP
         private readonly CustomLogReader _parentReader;
         private readonly string _localName;
         private readonly int _depth;
-        private bool _read;
+        protected bool _read;
     }
 }

@@ -28,6 +28,7 @@ bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
     CenterFormOn(Dialog, Parent);
     Dialog->Init(Select ? TSelectMaskDialog::smSelect : TSelectMaskDialog::smDeselect);
     DefaultFileFilter(*Filter);
+    TWinConfiguration * WinConfiguration = NOT_NULL(dynamic_cast<TWinConfiguration *>(Configuration));
     Filter->Masks = WinConfiguration->SelectMask;
     Filter->Directories = WinConfiguration->SelectDirectories;
     Dialog->FileFilter = *Filter;

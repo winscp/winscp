@@ -72,6 +72,9 @@ struct TFtpsCertificateData
   const unsigned char * Hash;
   static const size_t HashLen = 20;
 
+  const unsigned char * Certificate;
+  size_t CertificateLen;
+
   int VerificationResult;
   int VerificationDepth;
 };

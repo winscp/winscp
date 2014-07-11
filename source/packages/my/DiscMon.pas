@@ -204,6 +204,9 @@ procedure Register;
 
 implementation
 
+uses
+  PasTools;
+
 {$WARN SYMBOL_PLATFORM OFF}
 
 {$IFDEF BUGFIX}
@@ -227,7 +230,7 @@ var
 begin
   FindAttrs := faReadOnly or faHidden or faSysFile or faDirectory or faArchive;
   Directory := IncludeTrailingBackslash(Directory);
-  Found := (FindFirst(Directory + '*.*', FindAttrs, SearchRec) = 0);
+  Found := (FindFirst(ApiPath(Directory + '*.*'), FindAttrs, SearchRec) = 0);
 
   if Found then
   begin
@@ -288,8 +291,6 @@ constructor TDiscMonitorThread.Create;
 begin
   inherited Create(True);
   FDirectories := TStringList.Create;
-  (FDirectories as TStringList).CaseSensitive := False;
-  (FDirectories as TStringList).Sorted := True;
   FDestroyEvent := CreateEvent(nil, True,  False, nil);
   FChangeEvent  := CreateEvent(nil, False, False, nil);
   FOnFilter := nil;
@@ -340,7 +341,12 @@ end;
 
 procedure TDiscMonitorThread.SetDirectories(const Value: TStrings);
 begin
-  if Value <> nil then FDirectories.Assign(Value)
+  if Value <> nil then
+  begin
+    FDirectories.Assign(Value);
+    (FDirectories as TStringList).CaseSensitive := False;
+    (FDirectories as TStringList).Sorted := True;
+  end
     else FDirectories.Clear;
   Update;
 end;

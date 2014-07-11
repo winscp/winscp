@@ -44,7 +44,6 @@ type
     property MaxWidth;
     property MinWidth;
     property SortAscending;
-    property SortByExtension;
 
     property SortDirColumn: TUnixDirViewCol read GetSortDirColumn write SetSortDirColumn default uvName;
 

@@ -1,12 +1,11 @@
 # Set your compiler options
 OPENSSL_CFLAG=-DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DRMD160_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_CMS -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_SOCK -DOPENSSL_NO_DGRAM -DOPENSSL_NO_EC -DOPENSSL_NO_ECDH -DOPENSSL_NO_ECDSA -DDOPENSSL_NO_EC_NISTP_64_GCC_128
-ZLIB_CFLAG=-DWIN32 -DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DNE_HAVE_SSL;HAVE_OPENSSL;HAVE_EXPAT;HAVE_EXPAT_H;NE_HAVE_DAV;NE_HAVE_ZLIB;USE_GETADDRINFO;NOUSER;NOGDI;COMPILED_FROM_DSP;XML_STATIC;_RTLDLL; -D__STDC__
 EXPAT_CFLAG1=-D_WINDOWS;WIN32;NDEBUG;_LIB;COMPILED_FROM_DSP;XML_STATIC;
 EXPAT_CFLAG2=-D_NO_VCL;_ASSERTE;NO_STRICT;_RTLDLL
 
-CFLAG=-DWIN32 -DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DNE_HAVE_SSL;HAVE_OPENSSL;HAVE_EXPAT;HAVE_EXPAT_H;NE_HAVE_DAV;NE_HAVE_ZLIB;USE_GETADDRINFO;NOUSER;NOGDI;COMPILED_FROM_DSP;XML_STATIC;_RTLDLL; -D__STDC__
+CFLAG=-DWIN32 -DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DNE_HAVE_SSL;HAVE_OPENSSL;HAVE_EXPAT;HAVE_EXPAT_H;NE_HAVE_DAV;NE_LFS;USE_GETADDRINFO;NOUSER;NOGDI;COMPILED_FROM_DSP;XML_STATIC;_RTLDLL;HAVE_STRTOLL;WINSCP;
 CFLAG = $(CFLAG) -w-8065 -w-8069
-LIB_CFLAG=$(OPENSSL_CFLAG) $(ZLIB_CFLAG) $(EXPAT_CFLAG1) $(EXPAT_CFLAG2)
+LIB_CFLAG=$(OPENSSL_CFLAG) $(EXPAT_CFLAG1) $(EXPAT_CFLAG2)
 
 # neon directory
 SRC_D=.
@@ -31,7 +30,7 @@ ASM=nasm -f obj -d__omf__
 # OBJ_D  - temp object file directory
 OBJ_D=$(TMP_D)
 INCL_D=src
-INCL=$(INCL_D);../openssl;../zlib/src;../expat/lib;
+INCL=$(INCL_D);../openssl;../expat/lib;
 
 O_NEON=$(OUT_D)\neon.lib
 

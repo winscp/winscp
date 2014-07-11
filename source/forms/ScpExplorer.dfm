@@ -85,7 +85,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.RemoteMoveToAction
         end
         object TBXItem36: TTBXItem
-          Action = NonVisualDataModule.PasteAction
+          Action = NonVisualDataModule.PasteAction2
         end
         object TBXSeparatorItem9: TTBXSeparatorItem
         end
@@ -103,7 +103,7 @@ inherited ScpExplorerForm: TScpExplorerForm
             Action = NonVisualDataModule.FullFileListToClipboardAction
           end
           object TBXItem40: TTBXItem
-            Action = NonVisualDataModule.UrlToClipboardAction
+            Action = NonVisualDataModule.FileGenerateUrlAction
           end
         end
         object TBXSeparatorItem1: TTBXSeparatorItem
@@ -212,9 +212,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXSeparatorItem14: TTBXSeparatorItem
         end
-        object TBXItem56: TTBXItem
-          Action = NonVisualDataModule.FileSystemInfoAction
-        end
         object TBXItem57: TTBXItem
           Action = NonVisualDataModule.ClearCachesAction
         end
@@ -260,6 +257,14 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
+        end
+        object TBXSeparatorItem37: TTBXSeparatorItem
+        end
+        object TBXItem56: TTBXItem
+          Action = NonVisualDataModule.FileSystemInfoAction
+        end
+        object TBXItem144: TTBXItem
+          Action = NonVisualDataModule.SessionGenerateUrlAction
         end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
@@ -844,10 +849,11 @@ inherited ScpExplorerForm: TScpExplorerForm
       ShowHint = True
       TabOrder = 7
       object TBXSubmenuItem4: TTBXSubmenuItem
-        Action = NonVisualDataModule.ShowUpdatesAction
+        Action = NonVisualDataModule.CheckForUpdatesAction
         DropdownCombo = True
         object TBXItem184: TTBXItem
           Action = NonVisualDataModule.CheckForUpdatesAction
+          Options = [tboDefault]
         end
         object TBXSeparatorItem46: TTBXSeparatorItem
         end
@@ -940,8 +946,22 @@ inherited ScpExplorerForm: TScpExplorerForm
       Images = GlyphsModule.SessionImages
       Panels = <
         item
-          Size = 100
+          Size = 170
           StretchPriority = 1
+          Tag = 0
+          TextTruncation = twEndEllipsis
+        end
+        item
+          Alignment = taCenter
+          Hint = 'Click to show hidden files'
+          Size = 100
+          Tag = 0
+          TextTruncation = twEndEllipsis
+        end
+        item
+          Alignment = taCenter
+          Hint = 'Click to modify or clear the filter'
+          Size = 100
           Tag = 0
           TextTruncation = twEndEllipsis
         end
@@ -975,6 +995,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           Tag = 0
           TextTruncation = twEndEllipsis
         end>
+      OnPanelClick = RemoteStatusBarPanelClick
       OnPanelDblClick = StatusBarPanelDblClick
     end
     inherited RemoteDirView: TUnixDirView

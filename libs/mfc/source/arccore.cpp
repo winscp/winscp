@@ -772,13 +772,13 @@ LPTSTR CArchive::ReadString(LPTSTR lpsz, UINT nMax)
 	{
 		while (nRead < nStop)
 		{
-			*this >> ch;
+			AfxThrowArchiveException(CArchiveException::generic);
 
 			// stop and end-of-line (trailing '\n' is ignored)
 			if (ch == '\n' || ch == '\r')
 			{
 				if (ch == '\r')
-					*this >> ch;
+					AfxThrowArchiveException(CArchiveException::generic);
 				// store the newline when called with negative nMax
 				if ((int)nMax != nStop)
 					lpsz[nRead++] = ch;

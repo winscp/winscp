@@ -377,6 +377,8 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
           CopyValidityTime(Data.ValidUntil, AData->pCertData->validUntil);
           Data.SubjectAltName = AData->pCertData->subjectAltName;
           Data.Hash = AData->pCertData->hash;
+          Data.Certificate = AData->pCertData->certificate;
+          Data.CertificateLen = AData->pCertData->certificateLen;
           Data.VerificationResult = AData->pCertData->verificationResult;
           Data.VerificationDepth = AData->pCertData->verificationDepth;
 

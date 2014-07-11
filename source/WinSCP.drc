@@ -7,458 +7,744 @@
   produced executable.
 */
 
-#define Vcl_Imaging_Pnglang_EPNGCannotChangeTransparentText 65008
-#define Vcl_Imaging_Pnglang_EPNGHeaderNotPresentText 65009
-#define Vcl_Imaging_Pnglang_EInvalidNewSize 65010
-#define Vcl_Imaging_Pnglang_EInvalidSpec 65011
-#define Vcl_Imaging_Pnglang_EPNGZLIBErrorText 65024
-#define Vcl_Imaging_Pnglang_EPNGInvalidPaletteText 65025
-#define Vcl_Imaging_Pnglang_EPNGInvalidFileHeaderText 65026
-#define Vcl_Imaging_Pnglang_EPNGIHDRNotFirstText 65027
-#define Vcl_Imaging_Pnglang_EPNGSizeExceedsText 65028
-#define Vcl_Imaging_Pnglang_EPNGUnknownPalEntryText 65029
-#define Vcl_Imaging_Pnglang_EPNGUnknownCriticalChunkText 65030
-#define Vcl_Imaging_Pnglang_EPNGUnknownCompressionText 65031
-#define Vcl_Imaging_Pnglang_EPNGUnknownInterlaceText 65032
-#define Vcl_Imaging_Pnglang_EPNGCannotAssignChunkText 65033
-#define Vcl_Imaging_Pnglang_EPNGUnexpectedEndText 65034
-#define Vcl_Imaging_Pnglang_EPNGNoImageDataText 65035
-#define Vcl_Imaging_Pnglang_EPNGCannotAddChunkText 65036
-#define Vcl_Imaging_Pnglang_EPNGCannotAddInvalidImageText 65037
-#define Vcl_Imaging_Pnglang_EPNGCouldNotLoadResourceText 65038
-#define Vcl_Imaging_Pnglang_EPNGOutMemoryText 65039
-#define Xml_Xmlconst_SNotActive 65040
-#define Xml_Xmlconst_SNodeNotFound 65041
-#define Xml_Xmlconst_SMissingNode 65042
-#define Xml_Xmlconst_SNoAttributes 65043
-#define Xml_Xmlconst_SInvalidNodeType 65044
-#define Xml_Xmlconst_SMismatchedRegItems 65045
-#define Xml_Xmlconst_SNotSingleTextNode 65046
-#define Xml_Xmlconst_SNoDOMParseOptions 65047
-#define Xml_Xmlconst_SMissingItemTag 65048
-#define Xml_Xmlconst_SNodeReadOnly 65049
-#define Xml_Xmlconst_SNoRefresh 65050
-#define Xml_Xmlconst_SMissingFileName 65051
-#define Xml_Xmlconst_SLine 65052
-#define Vcl_Imaging_Pnglang_EPngInvalidCRCText 65053
-#define Vcl_Imaging_Pnglang_EPNGInvalidIHDRText 65054
-#define Vcl_Imaging_Pnglang_EPNGMissingMultipleIDATText 65055
-#define Dragdrop_MILinkStr 65056
-#define Dragdrop_MIAbortStr 65057
-#define Tb2consts_STBToolbarIndexOutOfBounds 65058
-#define Tb2consts_STBToolbarItemReinserted 65059
-#define Tb2consts_STBViewerNotFound 65060
-#define Tb2consts_STBChevronItemMoreButtonsHint 65061
-#define Tb2consts_STBDockParentNotAllowed 65062
-#define Tb2consts_STBDockCannotChangePosition 65063
-#define Tb2consts_STBToolwinNameNotSet 65064
-#define Tb2consts_STBToolwinDockedToNameNotSet 65065
-#define Xml_Xmlconst_SDuplicateRegistration 65066
-#define Xml_Xmlconst_SNoMatchingDOMVendor 65067
-#define Xml_Xmlconst_SNoDOMNodeEx 65068
-#define Xml_Xmlconst_SDOMNotSupported 65069
-#define Xml_Xmlconst_SNodeExpected 65070
-#define Xml_Xmlconst_SMSDOMNotInstalled 65071
-#define Dirviewcolproperties_SDirViewChangedCol 65072
-#define Dirviewcolproperties_SDirViewAttrCol 65073
-#define Dirviewcolproperties_SDirViewExtCol 65074
-#define Driveview_coFileOperatorTitle 65075
-#define Driveview_coInvalidDosChars 65076
-#define Driveview_Space 65077
-#define Driveview_16411 65078
-#define Fileoperator_SFileOperation 65079
-#define Iedriveinfo_ErrorInvalidDrive 65080
-#define Unixdirviewcolproperties_SUnixDirViewRightsCol 65081
-#define Unixdirviewcolproperties_SUnixDirViewOwnerCol 65082
-#define Unixdirviewcolproperties_SUnixDirViewGroupCol 65083
-#define Unixdirviewcolproperties_SUnixDirViewLinkTargetCol 65084
-#define Unixdirviewcolproperties_SUnixDirViewTypeCol 65085
-#define Dragdrop_MICopyStr 65086
-#define Dragdrop_MIMoveStr 65087
-#define Customdirview_SErrorRenameFileExists 65088
-#define Customdirview_SErrorInvalidName 65089
-#define Customdirview_STextFileExt 65090
-#define Customdirview_STextFiles 65091
-#define Customdirview_STextDirectories 65092
-#define Customdirview_SParentDir 65093
-#define Customdirview_SIconUpdateThreadTerminationError 65094
-#define Customdirview_SDragDropError 65095
-#define Customdirview_SDriveNotReady 65096
-#define Customdirview_SDirNotExists 65097
-#define Customdriveview_SDragDropError 65098
-#define Customunixdirview_SUnixDefaultRootName 65099
-#define Dirview_coFileOperatorTitle 65100
-#define Dirviewcolproperties_SDirViewNameCol 65101
-#define Dirviewcolproperties_SDirViewSizeCol 65102
-#define Dirviewcolproperties_SDirViewTypeCol 65103
-#define System_Sysconst_SByteIndexOutOfBounds 65104
-#define System_Sysconst_SInvalidCharCount 65105
-#define System_Sysconst_SInvalidDestinationIndex 65106
-#define System_Sysconst_SInvalidCodePage 65107
-#define System_Sysconst_SInvalidEncodingName 65108
-#define Comboedit_SBrowse 65109
-#define Comboedit_SDefaultFilter 65110
-#define Comboedit_SInvalidFileName 65111
-#define Tcpip_SSocketError2 65112
-#define Tcpip_STimeout 65113
-#define Tcpip_SUnknownSockError 65114
-#define Tcpip_SHttpError 65115
-#define Tcpip_SRedirectLimitError 65116
-#define Baseutils_SNoValidPath 65117
-#define Baseutils_SUcpPathsNotSupported 65118
-#define Customdirview_SErrorRenameFile 65119
-#define System_Sysconst_SShortDayNameTue 65120
-#define System_Sysconst_SShortDayNameWed 65121
-#define System_Sysconst_SShortDayNameThu 65122
-#define System_Sysconst_SShortDayNameFri 65123
-#define System_Sysconst_SShortDayNameSat 65124
-#define System_Sysconst_SLongDayNameSun 65125
-#define System_Sysconst_SLongDayNameMon 65126
-#define System_Sysconst_SLongDayNameTue 65127
-#define System_Sysconst_SLongDayNameWed 65128
-#define System_Sysconst_SLongDayNameThu 65129
-#define System_Sysconst_SLongDayNameFri 65130
-#define System_Sysconst_SLongDayNameSat 65131
-#define System_Sysconst_SCannotCreateDir 65132
-#define System_Sysconst_SInvalidSourceArray 65133
-#define System_Sysconst_SInvalidDestinationArray 65134
-#define System_Sysconst_SCharIndexOutOfBounds 65135
-#define System_Sysconst_SShortMonthNameNov 65136
-#define System_Sysconst_SShortMonthNameDec 65137
-#define System_Sysconst_SLongMonthNameJan 65138
-#define System_Sysconst_SLongMonthNameFeb 65139
-#define System_Sysconst_SLongMonthNameMar 65140
-#define System_Sysconst_SLongMonthNameApr 65141
-#define System_Sysconst_SLongMonthNameMay 65142
-#define System_Sysconst_SLongMonthNameJun 65143
-#define System_Sysconst_SLongMonthNameJul 65144
-#define System_Sysconst_SLongMonthNameAug 65145
-#define System_Sysconst_SLongMonthNameSep 65146
-#define System_Sysconst_SLongMonthNameOct 65147
-#define System_Sysconst_SLongMonthNameNov 65148
-#define System_Sysconst_SLongMonthNameDec 65149
-#define System_Sysconst_SShortDayNameSun 65150
-#define System_Sysconst_SShortDayNameMon 65151
-#define System_Sysconst_SNotImplemented 65152
-#define System_Sysconst_SAssertError 65153
-#define System_Sysconst_SAbstractError 65154
-#define System_Sysconst_SModuleAccessViolation 65155
-#define System_Sysconst_SOSError 65156
-#define System_Sysconst_SUnkOSError 65157
-#define System_Sysconst_SShortMonthNameJan 65158
-#define System_Sysconst_SShortMonthNameFeb 65159
-#define System_Sysconst_SShortMonthNameMar 65160
-#define System_Sysconst_SShortMonthNameApr 65161
-#define System_Sysconst_SShortMonthNameMay 65162
-#define System_Sysconst_SShortMonthNameJun 65163
-#define System_Sysconst_SShortMonthNameJul 65164
-#define System_Sysconst_SShortMonthNameAug 65165
-#define System_Sysconst_SShortMonthNameSep 65166
-#define System_Sysconst_SShortMonthNameOct 65167
-#define System_Sysconst_SVarTypeAlreadyUsedWithPrefix 65168
-#define System_Sysconst_SVarTypeNotUsableWithPrefix 65169
-#define System_Sysconst_SVarTypeTooManyCustom 65170
-#define System_Sysconst_SVarTypeCouldNotConvert 65171
-#define System_Sysconst_SVarTypeConvertOverflow 65172
-#define System_Sysconst_SVarOverflow 65173
-#define System_Sysconst_SVarInvalid 65174
-#define System_Sysconst_SVarBadType 65175
-#define System_Sysconst_SVarNotImplemented 65176
-#define System_Sysconst_SVarUnexpected 65177
-#define System_Sysconst_SExternalException 65178
-#define System_Sysconst_SAssertionFailed 65179
-#define System_Sysconst_SIntfCastError 65180
-#define System_Sysconst_SSafecallException 65181
-#define System_Sysconst_SMonitorLockException 65182
-#define System_Sysconst_SNoMonitorSupportException 65183
-#define System_Sysconst_SException 65184
-#define System_Sysconst_SExceptTitle 65185
-#define System_Sysconst_SInvalidFormat 65186
-#define System_Sysconst_SArgumentMissing 65187
-#define System_Sysconst_SDispatchError 65188
-#define System_Sysconst_SReadAccess 65189
-#define System_Sysconst_SWriteAccess 65190
-#define System_Sysconst_SFormatTooLong 65191
-#define System_Sysconst_SVarArrayCreate 65192
-#define System_Sysconst_SVarArrayBounds 65193
-#define System_Sysconst_SVarArrayLocked 65194
-#define System_Sysconst_SInvalidVarCast 65195
-#define System_Sysconst_SInvalidVarOp 65196
-#define System_Sysconst_SInvalidVarNullOp 65197
-#define System_Sysconst_SInvalidVarOpWithHResultWithPrefix 65198
-#define System_Sysconst_SVarTypeOutOfRangeWithPrefix 65199
-#define System_Sysconst_SInvalidInput 65200
-#define System_Sysconst_SDivByZero 65201
-#define System_Sysconst_SRangeError 65202
-#define System_Sysconst_SIntOverflow 65203
-#define System_Sysconst_SInvalidOp 65204
-#define System_Sysconst_SZeroDivide 65205
-#define System_Sysconst_SOverflow 65206
-#define System_Sysconst_SUnderflow 65207
-#define System_Sysconst_SInvalidPointer 65208
-#define System_Sysconst_SInvalidCast 65209
-#define System_Sysconst_SAccessViolationArg3 65210
-#define System_Sysconst_SAccessViolationNoArg 65211
-#define System_Sysconst_SStackOverflow 65212
-#define System_Sysconst_SControlC 65213
-#define System_Sysconst_SPrivilege 65214
-#define System_Sysconst_SOperationAborted 65215
-#define System_Rtlconsts_sObserverMultipleSingleCast 65216
-#define System_Rtlconsts_sObserverNoInterface 65217
-#define System_Rtlconsts_sObserverNoSinglecastFound 65218
-#define System_Rtlconsts_sObserverNoMulticastFound 65219
-#define System_Rtlconsts_sObserverNotAvailable 65220
-#define System_Sysconst_SUnknown 65221
-#define System_Sysconst_SInvalidFloat 65222
-#define System_Sysconst_SInvalidTimeStamp 65223
-#define System_Sysconst_SInvalidGUID 65224
-#define System_Sysconst_SDateEncodeError 65225
-#define System_Sysconst_SOutOfMemory 65226
-#define System_Sysconst_SInOutError 65227
-#define System_Sysconst_STooManyOpenFiles 65228
-#define System_Sysconst_SAccessDenied 65229
-#define System_Sysconst_SEndOfFile 65230
-#define System_Sysconst_SDiskFull 65231
-#define System_Rtlconsts_SGenericDuplicateItem 65232
-#define System_Rtlconsts_SServiceNotFound 65233
-#define System_Rtlconsts_SVersionStr 65234
-#define System_Rtlconsts_SSPVersionStr 65235
-#define System_Rtlconsts_SVersion32 65236
-#define System_Rtlconsts_SVersion64 65237
-#define System_Rtlconsts_SWindows 65238
-#define System_Rtlconsts_SWindowsVista 65239
-#define System_Rtlconsts_SWindowsServer2008 65240
-#define System_Rtlconsts_SWindows7 65241
-#define System_Rtlconsts_SWindowsServer2008R2 65242
-#define System_Rtlconsts_SWindows2000 65243
-#define System_Rtlconsts_SWindowsXP 65244
-#define System_Rtlconsts_SWindowsServer2003 65245
-#define System_Rtlconsts_SWindowsServer2003R2 65246
-#define System_Rtlconsts_sObserverUnsupported 65247
-#define System_Rtlconsts_sInvalidTimespanFormat 65248
-#define System_Rtlconsts_sTimespanElementTooLong 65249
-#define System_Rtlconsts_SInvalidDate 65250
-#define System_Rtlconsts_SInvalidDateTime 65251
-#define System_Rtlconsts_SInvalidInteger 65252
-#define System_Rtlconsts_SInvalidTime 65253
-#define System_Rtlconsts_STimeEncodeError 65254
-#define System_Rtlconsts_SNoContext 65255
-#define System_Rtlconsts_SNoContextFound 65256
-#define System_Rtlconsts_SNoIndex 65257
-#define System_Rtlconsts_SNoSearch 65258
-#define System_Rtlconsts_SNoTableOfContents 65259
-#define System_Rtlconsts_SNoTopics 65260
-#define System_Rtlconsts_SNothingFound 65261
-#define System_Rtlconsts_SArgumentOutOfRange 65262
-#define System_Rtlconsts_SGenericItemNotFound 65263
-#define System_Rtlconsts_SPathNotFound 65264
-#define System_Rtlconsts_SPathFormatNotSupported 65265
-#define System_Rtlconsts_SDriveNotFound 65266
-#define System_Rtlconsts_SFileNotFound 65267
-#define System_Rtlconsts_SLocalTimeInvalid 65268
-#define System_Rtlconsts_hNoFilterViewer 65269
-#define System_Rtlconsts_sArgumentOutOfRange_StringIndex 65270
-#define System_Rtlconsts_sArgumentOutOfRange_InvalidUTF32 65271
-#define System_Rtlconsts_sArgument_InvalidHighSurrogate 65272
-#define System_Rtlconsts_sArgument_InvalidLowSurrogate 65273
-#define System_Rtlconsts_sInvalidStringAndObjectArrays 65274
-#define System_Rtlconsts_sInvalidTimeoutValue 65275
-#define System_Rtlconsts_sTimespanTooLong 65276
-#define System_Rtlconsts_sInvalidTimespanDuration 65277
-#define System_Rtlconsts_sTimespanValueCannotBeNan 65278
-#define System_Rtlconsts_sCannotNegateTimespan 65279
-#define System_Rtlconsts_SStringExpected 65280
-#define System_Rtlconsts_SSymbolExpected 65281
-#define System_Rtlconsts_SUnknownGroup 65282
-#define System_Rtlconsts_SUnknownProperty 65283
-#define System_Rtlconsts_SWriteError 65284
-#define System_Rtlconsts_SThreadCreateError 65285
-#define System_Rtlconsts_SThreadError 65286
-#define System_Rtlconsts_SThreadExternalTerminate 65287
-#define System_Rtlconsts_SThreadExternalWait 65288
-#define System_Rtlconsts_SThreadStartError 65289
-#define System_Rtlconsts_SThreadExternalCheckTerminated 65290
-#define System_Rtlconsts_SThreadExternalSetReturnValue 65291
-#define System_Rtlconsts_SParamIsNegative 65292
-#define System_Rtlconsts_SInputBufferExceed 65293
-#define System_Rtlconsts_SInvalidCharsInPath 65294
-#define System_Rtlconsts_SPathTooLong 65295
-#define System_Rtlconsts_SListIndexError 65296
-#define System_Rtlconsts_SMemoryStreamError 65297
-#define System_Rtlconsts_SNoComSupport 65298
-#define System_Rtlconsts_SNumberExpected 65299
-#define System_Rtlconsts_SAnsiUTF8Expected 65300
-#define System_Rtlconsts_SParseError 65301
-#define System_Rtlconsts_SPropertyException 65302
-#define System_Rtlconsts_SReadError 65303
-#define System_Rtlconsts_SReadOnlyProperty 65304
-#define System_Rtlconsts_SRegCreateFailed 65305
-#define System_Rtlconsts_SRegGetDataFailed 65306
-#define System_Rtlconsts_SRegisterError 65307
-#define System_Rtlconsts_SRegSetDataFailed 65308
-#define System_Rtlconsts_SResNotFound 65309
-#define System_Rtlconsts_SSeekNotImplemented 65310
-#define System_Rtlconsts_SSortedListError 65311
-#define System_Rtlconsts_SFOpenErrorEx 65312
-#define System_Rtlconsts_SIdentifierExpected 65313
-#define System_Rtlconsts_SIniFileWriteError 65314
-#define System_Rtlconsts_SInvalidBinary 65315
-#define System_Rtlconsts_SInvalidFileName 65316
-#define System_Rtlconsts_SInvalidImage 65317
-#define System_Rtlconsts_SInvalidMask 65318
-#define System_Rtlconsts_SInvalidName 65319
-#define System_Rtlconsts_SInvalidProperty 65320
-#define System_Rtlconsts_SInvalidPropertyPath 65321
-#define System_Rtlconsts_SInvalidPropertyValue 65322
-#define System_Rtlconsts_SInvalidRegType 65323
-#define System_Rtlconsts_SInvalidString 65324
-#define System_Rtlconsts_SLineTooLong 65325
-#define System_Rtlconsts_SListCapacityError 65326
-#define System_Rtlconsts_SListCountError 65327
-#define System_Win_Comconst_SOleError 65328
-#define System_Win_Comconst_SNoMethod 65329
-#define System_Win_Comconst_SVarNotObject 65330
-#define System_Win_Comconst_STooManyParams 65331
-#define System_Rtlconsts_SAncestorNotFound 65332
-#define System_Rtlconsts_SAssignError 65333
-#define System_Rtlconsts_SBitsIndexError 65334
-#define System_Rtlconsts_SCantWriteResourceStreamError 65335
-#define System_Rtlconsts_SCharExpected 65336
-#define System_Rtlconsts_SCheckSynchronizeError 65337
-#define System_Rtlconsts_SClassNotFound 65338
-#define System_Rtlconsts_SDuplicateClass 65339
-#define System_Rtlconsts_SDuplicateItem 65340
-#define System_Rtlconsts_SDuplicateName 65341
-#define System_Rtlconsts_SDuplicateString 65342
-#define System_Rtlconsts_SFCreateErrorEx 65343
-#define Vcl_Comstrs_sInvalidIndex 65344
-#define Vcl_Comstrs_sInsertError 65345
-#define Vcl_Comstrs_sInvalidOwner 65346
-#define Vcl_Comstrs_sRichEditInsertError 65347
-#define Vcl_Comstrs_sRichEditLoadFail 65348
-#define Vcl_Comstrs_sRichEditSaveFail 65349
-#define Vcl_Comstrs_sUDAssociated 65350
-#define Vcl_Comstrs_sPageIndexError 65351
-#define Vcl_Comstrs_sInvalidComCtl32 65352
-#define Vcl_Comstrs_sDateTimeMax 65353
-#define Vcl_Comstrs_sDateTimeMin 65354
-#define Vcl_Comstrs_sNeedAllowNone 65355
-#define Vcl_Comstrs_sFailSetCalDateTime 65356
-#define Vcl_Comstrs_sFailSetCalMaxSelRange 65357
-#define Vcl_Comstrs_sFailSetCalMinMaxRange 65358
-#define Vcl_Comstrs_sFailsetCalSelRange 65359
-#define Vcl_Consts_SStyleInvalidHandle 65360
-#define Vcl_Consts_SStyleFormatError 65361
-#define Vcl_Consts_SStyleFileDescription 65362
-#define Vcl_Consts_SStyleHookClassNotRegistered 65363
-#define Vcl_Consts_SStyleInvalidParameter 65364
-#define Vcl_Consts_SStyleHookClassNotFound 65365
-#define Vcl_Consts_SStyleFeatureNotSupported 65366
-#define Vcl_Comstrs_sTabFailClear 65367
-#define Vcl_Comstrs_sTabFailDelete 65368
-#define Vcl_Comstrs_sTabFailRetrieve 65369
-#define Vcl_Comstrs_sTabFailGetObject 65370
-#define Vcl_Comstrs_sTabFailSet 65371
-#define Vcl_Comstrs_sTabFailSetObject 65372
-#define Vcl_Comstrs_sTabMustBeMultiLine 65373
-#define Vcl_Comstrs_sInvalidLevel 65374
-#define Vcl_Comstrs_sInvalidLevelEx 65375
-#define Vcl_Consts_SUTF7Encoding 65376
-#define Vcl_Consts_STrayIconRemoveError 65377
-#define Vcl_Consts_SPageControlNotSet 65378
-#define Vcl_Consts_SWindowsVistaRequired 65379
-#define Vcl_Consts_STaskDlgButtonCaption 65380
-#define Vcl_Consts_STaskDlgRadioButtonCaption 65381
-#define Vcl_Consts_SInvalidTaskDlgButtonCaption 65382
-#define Vcl_Consts_SInvalidCategoryPanelParent 65383
-#define Vcl_Consts_SInvalidCategoryPanelGroupChild 65384
-#define Vcl_Consts_SNoKeyword 65385
-#define Vcl_Consts_SStyleLoadError 65386
-#define Vcl_Consts_SStyleLoadErrors 65387
-#define Vcl_Consts_SStyleRegisterError 65388
-#define Vcl_Consts_SStyleClassRegisterError 65389
-#define Vcl_Consts_SStyleNotFound 65390
-#define Vcl_Consts_SStyleClassNotFound 65391
-#define Vcl_Consts_SPromptArrayTooShort 65392
-#define Vcl_Consts_SPromptArrayEmpty 65393
-#define Vcl_Consts_SUsername 65394
-#define Vcl_Consts_SPassword 65395
-#define Vcl_Consts_SDomain 65396
-#define Vcl_Consts_SLogin 65397
-#define Vcl_Consts_SSeparator 65398
-#define Vcl_Consts_SErrorSettingCount 65399
-#define Vcl_Consts_SListBoxMustBeVirtual 65400
-#define Vcl_Consts_SNoGetItemEventHandler 65401
-#define Vcl_Consts_SInvalidPath 65402
-#define Vcl_Consts_SANSIEncoding 65403
-#define Vcl_Consts_SASCIIEncoding 65404
-#define Vcl_Consts_SUnicodeEncoding 65405
-#define Vcl_Consts_SBigEndianEncoding 65406
-#define Vcl_Consts_SUTF8Encoding 65407
-#define Vcl_Consts_SIconToClipboard 65408
-#define Vcl_Consts_SCannotOpenClipboard 65409
-#define Vcl_Consts_SInvalidMemoSize 65410
-#define Vcl_Consts_SInvalidPrinterOp 65411
-#define Vcl_Consts_SNoDefaultPrinter 65412
-#define Vcl_Consts_SDuplicateMenus 65413
-#define Vcl_Consts_SPictureLabel 65414
-#define Vcl_Consts_SPictureDesc 65415
-#define Vcl_Consts_SPreviewLabel 65416
-#define Vcl_Consts_SCannotOpenAVI 65417
-#define Vcl_Consts_SDockedCtlNeedsName 65418
-#define Vcl_Consts_SDockTreeRemoveError 65419
-#define Vcl_Consts_SDockZoneNotFound 65420
-#define Vcl_Consts_SDockZoneHasNoCtl 65421
-#define Vcl_Consts_SDockZoneVersionConflict 65422
-#define Vcl_Consts_SMultiSelectRequired 65423
-#define Vcl_Consts_SmkcEnd 65424
-#define Vcl_Consts_SmkcHome 65425
-#define Vcl_Consts_SmkcLeft 65426
-#define Vcl_Consts_SmkcUp 65427
-#define Vcl_Consts_SmkcRight 65428
-#define Vcl_Consts_SmkcDown 65429
-#define Vcl_Consts_SmkcIns 65430
-#define Vcl_Consts_SmkcDel 65431
-#define Vcl_Consts_SmkcShift 65432
-#define Vcl_Consts_SmkcCtrl 65433
-#define Vcl_Consts_SmkcAlt 65434
-#define Vcl_Consts_srNone 65435
-#define Vcl_Consts_SOutOfRange 65436
-#define Vcl_Consts_sAllFilter 65437
-#define Vcl_Consts_SInsertLineError 65438
-#define Vcl_Consts_SInvalidClipFmt 65439
-#define Vcl_Consts_SMsgDlgCancel 65440
-#define Vcl_Consts_SMsgDlgHelp 65441
-#define Vcl_Consts_SMsgDlgAbort 65442
-#define Vcl_Consts_SMsgDlgRetry 65443
-#define Vcl_Consts_SMsgDlgIgnore 65444
-#define Vcl_Consts_SMsgDlgAll 65445
-#define Vcl_Consts_SMsgDlgNoToAll 65446
-#define Vcl_Consts_SMsgDlgYesToAll 65447
-#define Vcl_Consts_SMsgDlgClose 65448
-#define Vcl_Consts_SmkcBkSp 65449
-#define Vcl_Consts_SmkcTab 65450
-#define Vcl_Consts_SmkcEsc 65451
-#define Vcl_Consts_SmkcEnter 65452
-#define Vcl_Consts_SmkcSpace 65453
-#define Vcl_Consts_SmkcPgUp 65454
-#define Vcl_Consts_SmkcPgDn 65455
-#define Vcl_Consts_SVTIFFImages 65456
-#define Vcl_Consts_SGridTooLarge 65457
-#define Vcl_Consts_STooManyDeleted 65458
-#define Vcl_Consts_SIndexOutOfRange 65459
-#define Vcl_Consts_SFixedColTooBig 65460
-#define Vcl_Consts_SFixedRowTooBig 65461
-#define Vcl_Consts_SInvalidStringGridOp 65462
-#define Vcl_Consts_SMaskErr 65463
-#define Vcl_Consts_SMaskEditErr 65464
-#define Vcl_Consts_SMsgDlgWarning 65465
-#define Vcl_Consts_SMsgDlgError 65466
-#define Vcl_Consts_SMsgDlgInformation 65467
-#define Vcl_Consts_SMsgDlgConfirm 65468
-#define Vcl_Consts_SMsgDlgYes 65469
-#define Vcl_Consts_SMsgDlgNo 65470
-#define Vcl_Consts_SMsgDlgOK 65471
+#define Ieconst_sChildWindowsAlreadyHooked 64720
+#define Ieconst_sSaveCurrentFile 64721
+#define Jclresources_RsIntelCacheDescrE4 64736
+#define Jclresources_RsIntelCacheDescrEA 64737
+#define Jclresources_RsIntelCacheDescrEB 64738
+#define Jclresources_RsIntelCacheDescrEC 64739
+#define Jclresources_RsIntelCacheDescrF0 64740
+#define Jclresources_RsIntelCacheDescrF1 64741
+#define Jclresources_RsIntelCacheDescrFF 64742
+#define Jclresources_RsOSVersionWin81 64743
+#define Jclresources_RsOSVersionWinServer2012R2 64744
+#define Jclresources_RsWin32Error 64745
+#define Jclresources_RsELibraryNotFound 64746
+#define Jclresources_RsEFunctionNotFound 64747
+#define Ieconst_sNoPageLoaded 64748
+#define Ieconst_sNilProvider 64749
+#define Ieconst_sInvalidServiceProviderGUID 64750
+#define Ieconst_sClassSinkingError 64751
+#define Jclresources_RsIntelCacheDescrB3 64752
+#define Jclresources_RsIntelCacheDescrB4 64753
+#define Jclresources_RsIntelCacheDescrBA 64754
+#define Jclresources_RsIntelCacheDescrC0 64755
+#define Jclresources_RsIntelCacheDescrCA 64756
+#define Jclresources_RsIntelCacheDescrD0 64757
+#define Jclresources_RsIntelCacheDescrD1 64758
+#define Jclresources_RsIntelCacheDescrD2 64759
+#define Jclresources_RsIntelCacheDescrD6 64760
+#define Jclresources_RsIntelCacheDescrD7 64761
+#define Jclresources_RsIntelCacheDescrD8 64762
+#define Jclresources_RsIntelCacheDescrDC 64763
+#define Jclresources_RsIntelCacheDescrDD 64764
+#define Jclresources_RsIntelCacheDescrDE 64765
+#define Jclresources_RsIntelCacheDescrE2 64766
+#define Jclresources_RsIntelCacheDescrE3 64767
+#define Jclresources_RsIntelCacheDescr79 64768
+#define Jclresources_RsIntelCacheDescr7A 64769
+#define Jclresources_RsIntelCacheDescr7B 64770
+#define Jclresources_RsIntelCacheDescr7C 64771
+#define Jclresources_RsIntelCacheDescr7D 64772
+#define Jclresources_RsIntelCacheDescr7F 64773
+#define Jclresources_RsIntelCacheDescr80 64774
+#define Jclresources_RsIntelCacheDescr82 64775
+#define Jclresources_RsIntelCacheDescr83 64776
+#define Jclresources_RsIntelCacheDescr84 64777
+#define Jclresources_RsIntelCacheDescr85 64778
+#define Jclresources_RsIntelCacheDescr86 64779
+#define Jclresources_RsIntelCacheDescr87 64780
+#define Jclresources_RsIntelCacheDescrB0 64781
+#define Jclresources_RsIntelCacheDescrB1 64782
+#define Jclresources_RsIntelCacheDescrB2 64783
+#define Jclresources_RsIntelCacheDescr57 64784
+#define Jclresources_RsIntelCacheDescr59 64785
+#define Jclresources_RsIntelCacheDescr5A 64786
+#define Jclresources_RsIntelCacheDescr5B 64787
+#define Jclresources_RsIntelCacheDescr5C 64788
+#define Jclresources_RsIntelCacheDescr5D 64789
+#define Jclresources_RsIntelCacheDescr60 64790
+#define Jclresources_RsIntelCacheDescr66 64791
+#define Jclresources_RsIntelCacheDescr67 64792
+#define Jclresources_RsIntelCacheDescr68 64793
+#define Jclresources_RsIntelCacheDescr70 64794
+#define Jclresources_RsIntelCacheDescr71 64795
+#define Jclresources_RsIntelCacheDescr72 64796
+#define Jclresources_RsIntelCacheDescr73 64797
+#define Jclresources_RsIntelCacheDescr76 64798
+#define Jclresources_RsIntelCacheDescr78 64799
+#define Jclresources_RsIntelCacheDescr45 64800
+#define Jclresources_RsIntelCacheDescr46 64801
+#define Jclresources_RsIntelCacheDescr47 64802
+#define Jclresources_RsIntelCacheDescr48 64803
+#define Jclresources_RsIntelCacheDescr49 64804
+#define Jclresources_RsIntelCacheDescr4A 64805
+#define Jclresources_RsIntelCacheDescr4B 64806
+#define Jclresources_RsIntelCacheDescr4C 64807
+#define Jclresources_RsIntelCacheDescr4D 64808
+#define Jclresources_RsIntelCacheDescr4E 64809
+#define Jclresources_RsIntelCacheDescr4F 64810
+#define Jclresources_RsIntelCacheDescr50 64811
+#define Jclresources_RsIntelCacheDescr51 64812
+#define Jclresources_RsIntelCacheDescr52 64813
+#define Jclresources_RsIntelCacheDescr55 64814
+#define Jclresources_RsIntelCacheDescr56 64815
+#define Jclresources_RsIntelCacheDescr23 64816
+#define Jclresources_RsIntelCacheDescr25 64817
+#define Jclresources_RsIntelCacheDescr29 64818
+#define Jclresources_RsIntelCacheDescr2C 64819
+#define Jclresources_RsIntelCacheDescr30 64820
+#define Jclresources_RsIntelCacheDescr39 64821
+#define Jclresources_RsIntelCacheDescr3A 64822
+#define Jclresources_RsIntelCacheDescr3B 64823
+#define Jclresources_RsIntelCacheDescr3C 64824
+#define Jclresources_RsIntelCacheDescr3D 64825
+#define Jclresources_RsIntelCacheDescr3E 64826
+#define Jclresources_RsIntelCacheDescr40 64827
+#define Jclresources_RsIntelCacheDescr41 64828
+#define Jclresources_RsIntelCacheDescr42 64829
+#define Jclresources_RsIntelCacheDescr43 64830
+#define Jclresources_RsIntelCacheDescr44 64831
+#define Jclresources_RsIntelCacheDescr00 64832
+#define Jclresources_RsIntelCacheDescr01 64833
+#define Jclresources_RsIntelCacheDescr02 64834
+#define Jclresources_RsIntelCacheDescr03 64835
+#define Jclresources_RsIntelCacheDescr04 64836
+#define Jclresources_RsIntelCacheDescr05 64837
+#define Jclresources_RsIntelCacheDescr06 64838
+#define Jclresources_RsIntelCacheDescr08 64839
+#define Jclresources_RsIntelCacheDescr09 64840
+#define Jclresources_RsIntelCacheDescr0A 64841
+#define Jclresources_RsIntelCacheDescr0B 64842
+#define Jclresources_RsIntelCacheDescr0C 64843
+#define Jclresources_RsIntelCacheDescr0D 64844
+#define Jclresources_RsIntelCacheDescr0E 64845
+#define Jclresources_RsIntelCacheDescr21 64846
+#define Jclresources_RsIntelCacheDescr22 64847
+#define Jclresources_RsPeDEBUG_OMAP_FROM_SRC 64848
+#define Jclresources_RsPePkgExecutable 64849
+#define Jclresources_RsPePkgPackage 64850
+#define Jclresources_PsPePkgLibrary 64851
+#define Jclresources_RsPePkgNeverBuild 64852
+#define Jclresources_RsPePkgDesignOnly 64853
+#define Jclresources_RsPePkgRunOnly 64854
+#define Jclresources_RsPePkgIgnoreDupUnits 64855
+#define Jclresources_RsPePkgV3Produced 64856
+#define Jclresources_RsPePkgProducerUndefined 64857
+#define Jclresources_RsPePkgBCB4Produced 64858
+#define Jclresources_RsPePkgDelphi4Produced 64859
+#define Jclresources_RsPePkgMain 64860
+#define Jclresources_RsPePkgWeak 64861
+#define Jclresources_RsPePkgOrgWeak 64862
+#define Jclresources_RsPePkgImplicit 64863
+#define Jclresources_RsPeMACHINE_CEE 64864
+#define Jclresources_RsPeSUBSYSTEM_UNKNOWN 64865
+#define Jclresources_RsPeSUBSYSTEM_NATIVE 64866
+#define Jclresources_RsPeSUBSYSTEM_WINDOWS_GUI 64867
+#define Jclresources_RsPeSUBSYSTEM_WINDOWS_CUI 64868
+#define Jclresources_RsPeSUBSYSTEM_OS2_CUI 64869
+#define Jclresources_RsPeSUBSYSTEM_POSIX_CUI 64870
+#define Jclresources_RsPeSUBSYSTEM_RESERVED8 64871
+#define Jclresources_RsPeDEBUG_UNKNOWN 64872
+#define Jclresources_RsPeDEBUG_COFF 64873
+#define Jclresources_RsPeDEBUG_CODEVIEW 64874
+#define Jclresources_RsPeDEBUG_FPO 64875
+#define Jclresources_RsPeDEBUG_MISC 64876
+#define Jclresources_RsPeDEBUG_EXCEPTION 64877
+#define Jclresources_RsPeDEBUG_FIXUP 64878
+#define Jclresources_RsPeDEBUG_OMAP_TO_SRC 64879
+#define Jclresources_RsPeMACHINE_SH5 64880
+#define Jclresources_RsPeMACHINE_ARM 64881
+#define Jclresources_RsPeMACHINE_THUMB 64882
+#define Jclresources_RsPeMACHINE_AM33 64883
+#define Jclresources_RsPeMACHINE_POWERPC 64884
+#define Jclresources_RsPeMACHINE_POWERPCFP 64885
+#define Jclresources_RsPeMACHINE_IA64 64886
+#define Jclresources_RsPeMACHINE_MIPS16 64887
+#define Jclresources_RsPeMACHINE_AMPHA64 64888
+#define Jclresources_RsPeMACHINE_MIPSFPU 64889
+#define Jclresources_RsPeMACHINE_MIPSFPU16 64890
+#define Jclresources_RsPeMACHINE_TRICORE 64891
+#define Jclresources_RsPeMACHINE_CEF 64892
+#define Jclresources_RsPeMACHINE_EBC 64893
+#define Jclresources_RsPeMACHINE_AMD64 64894
+#define Jclresources_RsPeMACHINE_M32R 64895
+#define Jclresources_RsPeProcessHeapFlags 64896
+#define Jclresources_RsPeProcessAffinityMask 64897
+#define Jclresources_RsPeCSDVersion 64898
+#define Jclresources_RsPeReserved 64899
+#define Jclresources_RsPeEditList 64900
+#define Jclresources_RsPeMACHINE_UNKNOWN 64901
+#define Jclresources_RsPeMACHINE_I386 64902
+#define Jclresources_RsPeMACHINE_R3000 64903
+#define Jclresources_RsPeMACHINE_R4000 64904
+#define Jclresources_RsPeMACHINE_R10000 64905
+#define Jclresources_RsPeMACHINE_WCEMIPSV2 64906
+#define Jclresources_RsPeMACHINE_ALPHA 64907
+#define Jclresources_RsPeMACHINE_SH3 64908
+#define Jclresources_RsPeMACHINE_SH3DSP 64909
+#define Jclresources_RsPeMACHINE_SH3E 64910
+#define Jclresources_RsPeMACHINE_SH4 64911
+#define Jclresources_RsPeDllCharacteristics 64912
+#define Jclresources_RsPeSizeOfStackReserve 64913
+#define Jclresources_RsPeSizeOfStackCommit 64914
+#define Jclresources_RsPeSizeOfHeapReserve 64915
+#define Jclresources_RsPeSizeOfHeapCommit 64916
+#define Jclresources_RsPeLoaderFlags 64917
+#define Jclresources_RsPeNumberOfRvaAndSizes 64918
+#define Jclresources_RsPeVersion 64919
+#define Jclresources_RsPeGlobalFlagsClear 64920
+#define Jclresources_RsPeGlobalFlagsSet 64921
+#define Jclresources_RsPeCriticalSectionDefaultTimeout 64922
+#define Jclresources_RsPeDeCommitFreeBlockThreshold 64923
+#define Jclresources_RsPeDeCommitTotalFreeThreshold 64924
+#define Jclresources_RsPeLockPrefixTable 64925
+#define Jclresources_RsPeMaximumAllocationSize 64926
+#define Jclresources_RsPeVirtualMemoryThreshold 64927
+#define Jclresources_RsPeSizeOfInitializedData 64928
+#define Jclresources_RsPeSizeOfUninitializedData 64929
+#define Jclresources_RsPeAddressOfEntryPoint 64930
+#define Jclresources_RsPeBaseOfCode 64931
+#define Jclresources_RsPeBaseOfData 64932
+#define Jclresources_RsPeImageBase 64933
+#define Jclresources_RsPeSectionAlignment 64934
+#define Jclresources_RsPeFileAlignment 64935
+#define Jclresources_RsPeOperatingSystemVersion 64936
+#define Jclresources_RsPeImageVersion 64937
+#define Jclresources_RsPeSubsystemVersion 64938
+#define Jclresources_RsPeWin32VersionValue 64939
+#define Jclresources_RsPeSizeOfImage 64940
+#define Jclresources_RsPeSizeOfHeaders 64941
+#define Jclresources_RsPeCheckSum 64942
+#define Jclresources_RsPeSubsystem 64943
+#define Jclresources_RsPeImg_11 64944
+#define Jclresources_RsPeImg_12 64945
+#define Jclresources_RsPeImg_13 64946
+#define Jclresources_RsPeImg_14 64947
+#define Jclresources_RsPeImg_Reserved 64948
+#define Jclresources_RsPeSignature 64949
+#define Jclresources_RsPeMachine 64950
+#define Jclresources_RsPeNumberOfSections 64951
+#define Jclresources_RsPeTimeDateStamp 64952
+#define Jclresources_RsPePointerToSymbolTable 64953
+#define Jclresources_RsPeNumberOfSymbols 64954
+#define Jclresources_RsPeSizeOfOptionalHeader 64955
+#define Jclresources_RsPeCharacteristics 64956
+#define Jclresources_RsPeMagic 64957
+#define Jclresources_RsPeLinkerVersion 64958
+#define Jclresources_RsPeSizeOfCode 64959
+#define Jclresources_RsPeNotPE 64960
+#define Jclresources_RsPeUnknownTarget 64961
+#define Jclresources_RsPeNotResDir 64962
+#define Jclresources_RsPeNotAvailableForAttached 64963
+#define Jclresources_RsPeSectionNotFound 64964
+#define Jclresources_RsPeImg_00 64965
+#define Jclresources_RsPeImg_01 64966
+#define Jclresources_RsPeImg_02 64967
+#define Jclresources_RsPeImg_03 64968
+#define Jclresources_RsPeImg_04 64969
+#define Jclresources_RsPeImg_05 64970
+#define Jclresources_RsPeImg_06 64971
+#define Jclresources_RsPeImg_07 64972
+#define Jclresources_RsPeImg_08 64973
+#define Jclresources_RsPeImg_09 64974
+#define Jclresources_RsPeImg_10 64975
+#define Vcl_Imaging_Pnglang_EInvalidSpec 64976
+#define Jclresources_RsEReplacementChar 64977
+#define Jclresources_RsEWindowsVersionNotSupported 64978
+#define Jclresources_RsEWindowNotValid 64979
+#define Jclresources_RsEProcessNotValid 64980
+#define Jclresources_RsEModuleNotValid 64981
+#define Jclresources_RsFileUtilsNoVersionInfo 64982
+#define Jclresources_RsFileUtilsFileDoesNotExist 64983
+#define Jclresources_RsFileUtilsLanguageIndex 64984
+#define Jclresources_RsFileUtilsEmptyValue 64985
+#define Jclresources_RsFileUtilsValueNotFound 64986
+#define Jclresources_RsCreateFileMapping 64987
+#define Jclresources_RsCreateFileMappingView 64988
+#define Jclresources_RsFailedToObtainSize 64989
+#define Jclresources_RsPeReadOnlyStream 64990
+#define Jclresources_RsPeCantOpen 64991
+#define Vcl_Imaging_Pnglang_EPNGIHDRNotFirstText 64992
+#define Vcl_Imaging_Pnglang_EPNGSizeExceedsText 64993
+#define Vcl_Imaging_Pnglang_EPNGUnknownPalEntryText 64994
+#define Vcl_Imaging_Pnglang_EPNGUnknownCriticalChunkText 64995
+#define Vcl_Imaging_Pnglang_EPNGUnknownCompressionText 64996
+#define Vcl_Imaging_Pnglang_EPNGUnknownInterlaceText 64997
+#define Vcl_Imaging_Pnglang_EPNGCannotAssignChunkText 64998
+#define Vcl_Imaging_Pnglang_EPNGUnexpectedEndText 64999
+#define Vcl_Imaging_Pnglang_EPNGNoImageDataText 65000
+#define Vcl_Imaging_Pnglang_EPNGCannotAddChunkText 65001
+#define Vcl_Imaging_Pnglang_EPNGCannotAddInvalidImageText 65002
+#define Vcl_Imaging_Pnglang_EPNGCouldNotLoadResourceText 65003
+#define Vcl_Imaging_Pnglang_EPNGOutMemoryText 65004
+#define Vcl_Imaging_Pnglang_EPNGCannotChangeTransparentText 65005
+#define Vcl_Imaging_Pnglang_EPNGHeaderNotPresentText 65006
+#define Vcl_Imaging_Pnglang_EInvalidNewSize 65007
+#define Xml_Xmlconst_SNoAttributes 65008
+#define Xml_Xmlconst_SInvalidNodeType 65009
+#define Xml_Xmlconst_SMismatchedRegItems 65010
+#define Xml_Xmlconst_SNotSingleTextNode 65011
+#define Xml_Xmlconst_SNoDOMParseOptions 65012
+#define Xml_Xmlconst_SMissingItemTag 65013
+#define Xml_Xmlconst_SNodeReadOnly 65014
+#define Xml_Xmlconst_SNoRefresh 65015
+#define Xml_Xmlconst_SMissingFileName 65016
+#define Xml_Xmlconst_SLine 65017
+#define Vcl_Imaging_Pnglang_EPngInvalidCRCText 65018
+#define Vcl_Imaging_Pnglang_EPNGInvalidIHDRText 65019
+#define Vcl_Imaging_Pnglang_EPNGMissingMultipleIDATText 65020
+#define Vcl_Imaging_Pnglang_EPNGZLIBErrorText 65021
+#define Vcl_Imaging_Pnglang_EPNGInvalidPaletteText 65022
+#define Vcl_Imaging_Pnglang_EPNGInvalidFileHeaderText 65023
+#define Tb2consts_STBToolbarItemReinserted 65024
+#define Tb2consts_STBViewerNotFound 65025
+#define Tb2consts_STBChevronItemMoreButtonsHint 65026
+#define Tb2consts_STBDockParentNotAllowed 65027
+#define Tb2consts_STBDockCannotChangePosition 65028
+#define Tb2consts_STBToolwinNameNotSet 65029
+#define Tb2consts_STBToolwinDockedToNameNotSet 65030
+#define Xml_Xmlconst_SDuplicateRegistration 65031
+#define Xml_Xmlconst_SNoMatchingDOMVendor 65032
+#define Xml_Xmlconst_SNoDOMNodeEx 65033
+#define Xml_Xmlconst_SDOMNotSupported 65034
+#define Xml_Xmlconst_SNodeExpected 65035
+#define Xml_Xmlconst_SMSDOMNotInstalled 65036
+#define Xml_Xmlconst_SNotActive 65037
+#define Xml_Xmlconst_SNodeNotFound 65038
+#define Xml_Xmlconst_SMissingNode 65039
+#define Driveview_coFileOperatorTitle 65040
+#define Driveview_coInvalidDosChars 65041
+#define Driveview_Space 65042
+#define Driveview_16405 65043
+#define Fileoperator_SFileOperation 65044
+#define Iedriveinfo_ErrorInvalidDrive 65045
+#define Unixdirviewcolproperties_SUnixDirViewRightsCol 65046
+#define Unixdirviewcolproperties_SUnixDirViewOwnerCol 65047
+#define Unixdirviewcolproperties_SUnixDirViewGroupCol 65048
+#define Unixdirviewcolproperties_SUnixDirViewLinkTargetCol 65049
+#define Unixdirviewcolproperties_SUnixDirViewTypeCol 65050
+#define Dragdrop_MICopyStr 65051
+#define Dragdrop_MIMoveStr 65052
+#define Dragdrop_MILinkStr 65053
+#define Dragdrop_MIAbortStr 65054
+#define Tb2consts_STBToolbarIndexOutOfBounds 65055
+#define Customdirview_STextFileExt 65056
+#define Customdirview_STextFiles 65057
+#define Customdirview_STextDirectories 65058
+#define Customdirview_SParentDir 65059
+#define Customdirview_SIconUpdateThreadTerminationError 65060
+#define Customdirview_SDriveNotReady 65061
+#define Customdirview_SDirNotExists 65062
+#define Customdriveview_SDragDropError 65063
+#define Customunixdirview_SUnixDefaultRootName 65064
+#define Dirview_coFileOperatorTitle 65065
+#define Dirviewcolproperties_SDirViewNameCol 65066
+#define Dirviewcolproperties_SDirViewSizeCol 65067
+#define Dirviewcolproperties_SDirViewTypeCol 65068
+#define Dirviewcolproperties_SDirViewChangedCol 65069
+#define Dirviewcolproperties_SDirViewAttrCol 65070
+#define Dirviewcolproperties_SDirViewExtCol 65071
+#define Comboedit_SDefaultFilter 65072
+#define Comboedit_SInvalidFileName 65073
+#define Tcpip_SSocketError2 65074
+#define Tcpip_STimeout 65075
+#define Tcpip_SUnknownSockError 65076
+#define Tcpip_SHttpError 65077
+#define Tcpip_SRedirectLimitError 65078
+#define Baseutils_SNoValidPath 65079
+#define Baseutils_SUcpPathsNotSupported 65080
+#define Baseutils_SByte 65081
+#define Baseutils_SKiloByte 65082
+#define Baseutils_SMegaByte 65083
+#define Baseutils_SGigaByte 65084
+#define Customdirview_SErrorRenameFile 65085
+#define Customdirview_SErrorRenameFileExists 65086
+#define Customdirview_SErrorInvalidName 65087
+#define System_Sysconst_SLongDayNameTue 65088
+#define System_Sysconst_SLongDayNameWed 65089
+#define System_Sysconst_SLongDayNameThu 65090
+#define System_Sysconst_SLongDayNameFri 65091
+#define System_Sysconst_SLongDayNameSat 65092
+#define System_Sysconst_SCannotCreateDir 65093
+#define System_Sysconst_SInvalidSourceArray 65094
+#define System_Sysconst_SInvalidDestinationArray 65095
+#define System_Sysconst_SCharIndexOutOfBounds 65096
+#define System_Sysconst_SByteIndexOutOfBounds 65097
+#define System_Sysconst_SInvalidCharCount 65098
+#define System_Sysconst_SInvalidDestinationIndex 65099
+#define System_Sysconst_SInvalidCodePage 65100
+#define System_Sysconst_SInvalidEncodingName 65101
+#define System_Sysconst_SNoMappingForUnicodeCharacter 65102
+#define Comboedit_SBrowse 65103
+#define System_Sysconst_SLongMonthNameJun 65104
+#define System_Sysconst_SLongMonthNameJul 65105
+#define System_Sysconst_SLongMonthNameAug 65106
+#define System_Sysconst_SLongMonthNameSep 65107
+#define System_Sysconst_SLongMonthNameOct 65108
+#define System_Sysconst_SLongMonthNameNov 65109
+#define System_Sysconst_SLongMonthNameDec 65110
+#define System_Sysconst_SShortDayNameSun 65111
+#define System_Sysconst_SShortDayNameMon 65112
+#define System_Sysconst_SShortDayNameTue 65113
+#define System_Sysconst_SShortDayNameWed 65114
+#define System_Sysconst_SShortDayNameThu 65115
+#define System_Sysconst_SShortDayNameFri 65116
+#define System_Sysconst_SShortDayNameSat 65117
+#define System_Sysconst_SLongDayNameSun 65118
+#define System_Sysconst_SLongDayNameMon 65119
+#define System_Sysconst_SShortMonthNameFeb 65120
+#define System_Sysconst_SShortMonthNameMar 65121
+#define System_Sysconst_SShortMonthNameApr 65122
+#define System_Sysconst_SShortMonthNameMay 65123
+#define System_Sysconst_SShortMonthNameJun 65124
+#define System_Sysconst_SShortMonthNameJul 65125
+#define System_Sysconst_SShortMonthNameAug 65126
+#define System_Sysconst_SShortMonthNameSep 65127
+#define System_Sysconst_SShortMonthNameOct 65128
+#define System_Sysconst_SShortMonthNameNov 65129
+#define System_Sysconst_SShortMonthNameDec 65130
+#define System_Sysconst_SLongMonthNameJan 65131
+#define System_Sysconst_SLongMonthNameFeb 65132
+#define System_Sysconst_SLongMonthNameMar 65133
+#define System_Sysconst_SLongMonthNameApr 65134
+#define System_Sysconst_SLongMonthNameMay 65135
+#define System_Sysconst_SExternalException 65136
+#define System_Sysconst_SAssertionFailed 65137
+#define System_Sysconst_SIntfCastError 65138
+#define System_Sysconst_SSafecallException 65139
+#define System_Sysconst_SMonitorLockException 65140
+#define System_Sysconst_SNoMonitorSupportException 65141
+#define System_Sysconst_SNotImplemented 65142
+#define System_Sysconst_SObjectDisposed 65143
+#define System_Sysconst_SAssertError 65144
+#define System_Sysconst_SAbstractError 65145
+#define System_Sysconst_SModuleAccessViolation 65146
+#define System_Sysconst_SCannotReadPackageInfo 65147
+#define System_Sysconst_sErrorLoadingPackage 65148
+#define System_Sysconst_SOSError 65149
+#define System_Sysconst_SUnkOSError 65150
+#define System_Sysconst_SShortMonthNameJan 65151
+#define System_Sysconst_SVarArrayLocked 65152
+#define System_Sysconst_SInvalidVarCast 65153
+#define System_Sysconst_SInvalidVarOp 65154
+#define System_Sysconst_SInvalidVarNullOp 65155
+#define System_Sysconst_SInvalidVarOpWithHResultWithPrefix 65156
+#define System_Sysconst_SVarTypeOutOfRangeWithPrefix 65157
+#define System_Sysconst_SVarTypeAlreadyUsedWithPrefix 65158
+#define System_Sysconst_SVarTypeNotUsableWithPrefix 65159
+#define System_Sysconst_SVarTypeTooManyCustom 65160
+#define System_Sysconst_SVarTypeCouldNotConvert 65161
+#define System_Sysconst_SVarTypeConvertOverflow 65162
+#define System_Sysconst_SVarOverflow 65163
+#define System_Sysconst_SVarInvalid 65164
+#define System_Sysconst_SVarBadType 65165
+#define System_Sysconst_SVarNotImplemented 65166
+#define System_Sysconst_SVarUnexpected 65167
+#define System_Sysconst_SStackOverflow 65168
+#define System_Sysconst_SControlC 65169
+#define System_Sysconst_SPrivilege 65170
+#define System_Sysconst_SOperationAborted 65171
+#define System_Sysconst_SException 65172
+#define System_Sysconst_SExceptTitle 65173
+#define System_Sysconst_SInvalidFormat 65174
+#define System_Sysconst_SArgumentMissing 65175
+#define System_Sysconst_SDispatchError 65176
+#define System_Sysconst_SReadAccess 65177
+#define System_Sysconst_SWriteAccess 65178
+#define System_Sysconst_SExecuteAccess 65179
+#define System_Sysconst_SInvalidAccess 65180
+#define System_Sysconst_SFormatTooLong 65181
+#define System_Sysconst_SVarArrayCreate 65182
+#define System_Sysconst_SVarArrayBounds 65183
+#define System_Sysconst_STooManyOpenFiles 65184
+#define System_Sysconst_SAccessDenied 65185
+#define System_Sysconst_SEndOfFile 65186
+#define System_Sysconst_SDiskFull 65187
+#define System_Sysconst_SInvalidInput 65188
+#define System_Sysconst_SDivByZero 65189
+#define System_Sysconst_SRangeError 65190
+#define System_Sysconst_SIntOverflow 65191
+#define System_Sysconst_SInvalidOp 65192
+#define System_Sysconst_SZeroDivide 65193
+#define System_Sysconst_SOverflow 65194
+#define System_Sysconst_SUnderflow 65195
+#define System_Sysconst_SInvalidPointer 65196
+#define System_Sysconst_SInvalidCast 65197
+#define System_Sysconst_SAccessViolationArg3 65198
+#define System_Sysconst_SAccessViolationNoArg 65199
+#define System_Rtlconsts_SLocationSensorStarted 65200
+#define System_Rtlconsts_SInvalidDateString 65201
+#define System_Rtlconsts_SInvalidTimeString 65202
+#define System_Rtlconsts_SInvalidOffsetString 65203
+#define System_Sysconst_SUnknown 65204
+#define System_Sysconst_SInvalidInteger 65205
+#define System_Sysconst_SInvalidFloat 65206
+#define System_Sysconst_SInvalidDate 65207
+#define System_Sysconst_SInvalidTime 65208
+#define System_Sysconst_SInvalidDateTime 65209
+#define System_Sysconst_SInvalidTimeStamp 65210
+#define System_Sysconst_SInvalidGUID 65211
+#define System_Sysconst_STimeEncodeError 65212
+#define System_Sysconst_SDateEncodeError 65213
+#define System_Sysconst_SOutOfMemory 65214
+#define System_Sysconst_SInOutError 65215
+#define System_Rtlconsts_SWindows7 65216
+#define System_Rtlconsts_SWindowsServer2008R2 65217
+#define System_Rtlconsts_SWindows2000 65218
+#define System_Rtlconsts_SWindowsXP 65219
+#define System_Rtlconsts_SWindowsServer2003 65220
+#define System_Rtlconsts_SWindowsServer2003R2 65221
+#define System_Rtlconsts_SWindowsServer2012 65222
+#define System_Rtlconsts_SWindowsServer2012R2 65223
+#define System_Rtlconsts_SWindows8 65224
+#define System_Rtlconsts_SWindows8Point1 65225
+#define System_Rtlconsts_sObserverUnsupported 65226
+#define System_Rtlconsts_sObserverMultipleSingleCast 65227
+#define System_Rtlconsts_sObserverNoInterface 65228
+#define System_Rtlconsts_sObserverNoSinglecastFound 65229
+#define System_Rtlconsts_sObserverNoMulticastFound 65230
+#define System_Rtlconsts_sObserverNotAvailable 65231
+#define System_Rtlconsts_SNothingFound 65232
+#define System_Rtlconsts_SArgumentOutOfRange 65233
+#define System_Rtlconsts_SGenericItemNotFound 65234
+#define System_Rtlconsts_SGenericDuplicateItem 65235
+#define System_Rtlconsts_SInsufficientRtti 65236
+#define System_Rtlconsts_SParameterCountMismatch 65237
+#define System_Rtlconsts_SNonPublicType 65238
+#define System_Rtlconsts_SByRefArgMismatch 65239
+#define System_Rtlconsts_SServiceNotFound 65240
+#define System_Rtlconsts_SVersionStr 65241
+#define System_Rtlconsts_SSPVersionStr 65242
+#define System_Rtlconsts_SVersion32 65243
+#define System_Rtlconsts_SVersion64 65244
+#define System_Rtlconsts_SWindows 65245
+#define System_Rtlconsts_SWindowsVista 65246
+#define System_Rtlconsts_SWindowsServer2008 65247
+#define System_Rtlconsts_sArgument_InvalidHighSurrogate 65248
+#define System_Rtlconsts_sArgument_InvalidLowSurrogate 65249
+#define System_Rtlconsts_sInvalidStringAndObjectArrays 65250
+#define System_Rtlconsts_sInvalidTimeoutValue 65251
+#define System_Rtlconsts_sTimespanTooLong 65252
+#define System_Rtlconsts_sInvalidTimespanDuration 65253
+#define System_Rtlconsts_sTimespanValueCannotBeNan 65254
+#define System_Rtlconsts_sCannotNegateTimespan 65255
+#define System_Rtlconsts_sInvalidTimespanFormat 65256
+#define System_Rtlconsts_sTimespanElementTooLong 65257
+#define System_Rtlconsts_SNoContext 65258
+#define System_Rtlconsts_SNoContextFound 65259
+#define System_Rtlconsts_SNoIndex 65260
+#define System_Rtlconsts_SNoSearch 65261
+#define System_Rtlconsts_SNoTableOfContents 65262
+#define System_Rtlconsts_SNoTopics 65263
+#define System_Rtlconsts_SThreadStartError 65264
+#define System_Rtlconsts_SThreadExternalCheckTerminated 65265
+#define System_Rtlconsts_SThreadExternalSetReturnValue 65266
+#define System_Rtlconsts_SParamIsNil 65267
+#define System_Rtlconsts_SParamIsNegative 65268
+#define System_Rtlconsts_SInputBufferExceed 65269
+#define System_Rtlconsts_SInvalidCharsInPath 65270
+#define System_Rtlconsts_SPathTooLong 65271
+#define System_Rtlconsts_SPathNotFound 65272
+#define System_Rtlconsts_SPathFormatNotSupported 65273
+#define System_Rtlconsts_SDriveNotFound 65274
+#define System_Rtlconsts_SFileNotFound 65275
+#define System_Rtlconsts_SLocalTimeInvalid 65276
+#define System_Rtlconsts_hNoFilterViewer 65277
+#define System_Rtlconsts_sArgumentOutOfRange_StringIndex 65278
+#define System_Rtlconsts_sArgumentOutOfRange_InvalidUTF32 65279
+#define System_Rtlconsts_SRegCreateFailed 65280
+#define System_Rtlconsts_SRegGetDataFailed 65281
+#define System_Rtlconsts_SRegisterError 65282
+#define System_Rtlconsts_SRegSetDataFailed 65283
+#define System_Rtlconsts_SResNotFound 65284
+#define System_Rtlconsts_SSeekNotImplemented 65285
+#define System_Rtlconsts_SSortedListError 65286
+#define System_Rtlconsts_SStringExpected 65287
+#define System_Rtlconsts_SSymbolExpected 65288
+#define System_Rtlconsts_SUnknownGroup 65289
+#define System_Rtlconsts_SUnknownProperty 65290
+#define System_Rtlconsts_SWriteError 65291
+#define System_Rtlconsts_SThreadCreateError 65292
+#define System_Rtlconsts_SThreadError 65293
+#define System_Rtlconsts_SThreadExternalTerminate 65294
+#define System_Rtlconsts_SThreadExternalWait 65295
+#define System_Rtlconsts_SInvalidPropertyPath 65296
+#define System_Rtlconsts_SInvalidPropertyValue 65297
+#define System_Rtlconsts_SInvalidRegType 65298
+#define System_Rtlconsts_SInvalidString 65299
+#define System_Rtlconsts_SLineTooLong 65300
+#define System_Rtlconsts_SListCapacityError 65301
+#define System_Rtlconsts_SListCountError 65302
+#define System_Rtlconsts_SListIndexError 65303
+#define System_Rtlconsts_SMemoryStreamError 65304
+#define System_Rtlconsts_SNoComSupport 65305
+#define System_Rtlconsts_SNumberExpected 65306
+#define System_Rtlconsts_SAnsiUTF8Expected 65307
+#define System_Rtlconsts_SParseError 65308
+#define System_Rtlconsts_SPropertyException 65309
+#define System_Rtlconsts_SReadError 65310
+#define System_Rtlconsts_SReadOnlyProperty 65311
+#define System_Rtlconsts_SCheckSynchronizeError 65312
+#define System_Rtlconsts_SClassNotFound 65313
+#define System_Rtlconsts_SDuplicateClass 65314
+#define System_Rtlconsts_SDuplicateItem 65315
+#define System_Rtlconsts_SDuplicateName 65316
+#define System_Rtlconsts_SDuplicateString 65317
+#define System_Rtlconsts_SFCreateErrorEx 65318
+#define System_Rtlconsts_SFOpenErrorEx 65319
+#define System_Rtlconsts_SIdentifierExpected 65320
+#define System_Rtlconsts_SIniFileWriteError 65321
+#define System_Rtlconsts_SInvalidBinary 65322
+#define System_Rtlconsts_SInvalidFileName 65323
+#define System_Rtlconsts_SInvalidImage 65324
+#define System_Rtlconsts_SInvalidMask 65325
+#define System_Rtlconsts_SInvalidName 65326
+#define System_Rtlconsts_SInvalidProperty 65327
+#define Vcl_Comstrs_sDateTimeMin 65328
+#define Vcl_Comstrs_sNeedAllowNone 65329
+#define Vcl_Comstrs_sFailSetCalDateTime 65330
+#define Vcl_Comstrs_sFailSetCalMaxSelRange 65331
+#define Vcl_Comstrs_sFailSetCalMinMaxRange 65332
+#define Vcl_Comstrs_sFailsetCalSelRange 65333
+#define System_Win_Comconst_SOleError 65334
+#define System_Win_Comconst_SNoMethod 65335
+#define System_Win_Comconst_SVarNotObject 65336
+#define System_Win_Comconst_STooManyParams 65337
+#define System_Win_Comconst_SDCOMNotInstalled 65338
+#define System_Rtlconsts_SAncestorNotFound 65339
+#define System_Rtlconsts_SAssignError 65340
+#define System_Rtlconsts_SBitsIndexError 65341
+#define System_Rtlconsts_SCantWriteResourceStreamError 65342
+#define System_Rtlconsts_SCharExpected 65343
+#define Vcl_Comstrs_sTabFailGetObject 65344
+#define Vcl_Comstrs_sTabFailSet 65345
+#define Vcl_Comstrs_sTabFailSetObject 65346
+#define Vcl_Comstrs_sTabMustBeMultiLine 65347
+#define Vcl_Comstrs_sInvalidLevel 65348
+#define Vcl_Comstrs_sInvalidLevelEx 65349
+#define Vcl_Comstrs_sInvalidIndex 65350
+#define Vcl_Comstrs_sInsertError 65351
+#define Vcl_Comstrs_sInvalidOwner 65352
+#define Vcl_Comstrs_sRichEditInsertError 65353
+#define Vcl_Comstrs_sRichEditLoadFail 65354
+#define Vcl_Comstrs_sRichEditSaveFail 65355
+#define Vcl_Comstrs_sUDAssociated 65356
+#define Vcl_Comstrs_sPageIndexError 65357
+#define Vcl_Comstrs_sInvalidComCtl32 65358
+#define Vcl_Comstrs_sDateTimeMax 65359
+#define Vcl_Consts_SStyleHookClassNotRegistered 65360
+#define Vcl_Consts_SStyleInvalidParameter 65361
+#define Vcl_Consts_SStyleHookClassNotFound 65362
+#define Vcl_Consts_SStyleFeatureNotSupported 65363
+#define Vcl_Consts_SStyleNotRegistered 65364
+#define Vcl_Consts_SStyleUnregisterError 65365
+#define Vcl_Consts_SStyleNotRegisteredNoName 65366
+#define Vcl_Oleconst_SBadPropValue 65367
+#define Vcl_Oleconst_SCannotActivate 65368
+#define Vcl_Oleconst_SNoWindowHandle 65369
+#define Vcl_Oleconst_SInvalidLicense 65370
+#define Vcl_Oleconst_SNotLicensed 65371
+#define Vcl_Oleconst_sNoRunningObject 65372
+#define Vcl_Comstrs_sTabFailClear 65373
+#define Vcl_Comstrs_sTabFailDelete 65374
+#define Vcl_Comstrs_sTabFailRetrieve 65375
+#define Vcl_Consts_STaskDlgButtonCaption 65376
+#define Vcl_Consts_STaskDlgRadioButtonCaption 65377
+#define Vcl_Consts_SInvalidTaskDlgButtonCaption 65378
+#define Vcl_Consts_SInvalidCategoryPanelParent 65379
+#define Vcl_Consts_SInvalidCategoryPanelGroupChild 65380
+#define Vcl_Consts_SNoKeyword 65381
+#define Vcl_Consts_SStyleLoadError 65382
+#define Vcl_Consts_SStyleLoadErrors 65383
+#define Vcl_Consts_SStyleRegisterError 65384
+#define Vcl_Consts_SStyleClassRegisterError 65385
+#define Vcl_Consts_SStyleNotFound 65386
+#define Vcl_Consts_SStyleClassNotFound 65387
+#define Vcl_Consts_SStyleInvalidHandle 65388
+#define Vcl_Consts_SStyleFormatError 65389
+#define Vcl_Consts_SStyleFileDescription 65390
+#define Vcl_Consts_SStyleHookClassRegistered 65391
+#define Vcl_Consts_SDomain 65392
+#define Vcl_Consts_SLogin 65393
+#define Vcl_Consts_SSeparator 65394
+#define Vcl_Consts_SErrorSettingCount 65395
+#define Vcl_Consts_SListBoxMustBeVirtual 65396
+#define Vcl_Consts_SNoGetItemEventHandler 65397
+#define Vcl_Consts_SInvalidPath 65398
+#define Vcl_Consts_SANSIEncoding 65399
+#define Vcl_Consts_SASCIIEncoding 65400
+#define Vcl_Consts_SUnicodeEncoding 65401
+#define Vcl_Consts_SBigEndianEncoding 65402
+#define Vcl_Consts_SUTF8Encoding 65403
+#define Vcl_Consts_SUTF7Encoding 65404
+#define Vcl_Consts_STrayIconRemoveError 65405
+#define Vcl_Consts_SPageControlNotSet 65406
+#define Vcl_Consts_SWindowsVistaRequired 65407
+#define Vcl_Consts_SNoDefaultPrinter 65408
+#define Vcl_Consts_SDuplicateMenus 65409
+#define Vcl_Consts_SPictureLabel 65410
+#define Vcl_Consts_SPictureDesc 65411
+#define Vcl_Consts_SPreviewLabel 65412
+#define Vcl_Consts_SCannotOpenAVI 65413
+#define Vcl_Consts_SDockedCtlNeedsName 65414
+#define Vcl_Consts_SDockTreeRemoveError 65415
+#define Vcl_Consts_SDockZoneNotFound 65416
+#define Vcl_Consts_SDockZoneHasNoCtl 65417
+#define Vcl_Consts_SDockZoneVersionConflict 65418
+#define Vcl_Consts_SMultiSelectRequired 65419
+#define Vcl_Consts_SPromptArrayTooShort 65420
+#define Vcl_Consts_SPromptArrayEmpty 65421
+#define Vcl_Consts_SUsername 65422
+#define Vcl_Consts_SPassword 65423
+#define Vcl_Consts_SmkcRight 65424
+#define Vcl_Consts_SmkcDown 65425
+#define Vcl_Consts_SmkcIns 65426
+#define Vcl_Consts_SmkcDel 65427
+#define Vcl_Consts_SmkcShift 65428
+#define Vcl_Consts_SmkcCtrl 65429
+#define Vcl_Consts_SmkcAlt 65430
+#define Vcl_Consts_srNone 65431
+#define Vcl_Consts_SOutOfRange 65432
+#define Vcl_Consts_sAllFilter 65433
+#define Vcl_Consts_SInsertLineError 65434
+#define Vcl_Consts_SInvalidClipFmt 65435
+#define Vcl_Consts_SIconToClipboard 65436
+#define Vcl_Consts_SCannotOpenClipboard 65437
+#define Vcl_Consts_SInvalidMemoSize 65438
+#define Vcl_Consts_SInvalidPrinterOp 65439
+#define Vcl_Consts_SMsgDlgIgnore 65440
+#define Vcl_Consts_SMsgDlgAll 65441
+#define Vcl_Consts_SMsgDlgNoToAll 65442
+#define Vcl_Consts_SMsgDlgYesToAll 65443
+#define Vcl_Consts_SMsgDlgClose 65444
+#define Vcl_Consts_SmkcBkSp 65445
+#define Vcl_Consts_SmkcTab 65446
+#define Vcl_Consts_SmkcEsc 65447
+#define Vcl_Consts_SmkcEnter 65448
+#define Vcl_Consts_SmkcSpace 65449
+#define Vcl_Consts_SmkcPgUp 65450
+#define Vcl_Consts_SmkcPgDn 65451
+#define Vcl_Consts_SmkcEnd 65452
+#define Vcl_Consts_SmkcHome 65453
+#define Vcl_Consts_SmkcLeft 65454
+#define Vcl_Consts_SmkcUp 65455
+#define Vcl_Consts_SFixedColTooBig 65456
+#define Vcl_Consts_SFixedRowTooBig 65457
+#define Vcl_Consts_SInvalidStringGridOp 65458
+#define Vcl_Consts_SMaskErr 65459
+#define Vcl_Consts_SMaskEditErr 65460
+#define Vcl_Consts_SMsgDlgWarning 65461
+#define Vcl_Consts_SMsgDlgError 65462
+#define Vcl_Consts_SMsgDlgInformation 65463
+#define Vcl_Consts_SMsgDlgConfirm 65464
+#define Vcl_Consts_SMsgDlgYes 65465
+#define Vcl_Consts_SMsgDlgNo 65466
+#define Vcl_Consts_SMsgDlgOK 65467
+#define Vcl_Consts_SMsgDlgCancel 65468
+#define Vcl_Consts_SMsgDlgHelp 65469
+#define Vcl_Consts_SMsgDlgAbort 65470
+#define Vcl_Consts_SMsgDlgRetry 65471
 #define Vcl_Consts_SNoButton 65472
 #define Vcl_Consts_SHelpButton 65473
 #define Vcl_Consts_SCloseButton 65474
@@ -467,14 +753,14 @@
 #define Vcl_Consts_SAbortButton 65477
 #define Vcl_Consts_SAllButton 65478
 #define Vcl_Consts_SCannotDragForm 65479
-#define Vcl_Consts_SDdeErr 65480
-#define Vcl_Consts_SDdeConvErr 65481
-#define Vcl_Consts_SDdeMemErr 65482
-#define Vcl_Consts_SDdeNoConnect 65483
-#define Vcl_Consts_SVMetafiles 65484
-#define Vcl_Consts_SVEnhMetafiles 65485
-#define Vcl_Consts_SVIcons 65486
-#define Vcl_Consts_SVBitmaps 65487
+#define Vcl_Consts_SVMetafiles 65480
+#define Vcl_Consts_SVEnhMetafiles 65481
+#define Vcl_Consts_SVIcons 65482
+#define Vcl_Consts_SVBitmaps 65483
+#define Vcl_Consts_SVTIFFImages 65484
+#define Vcl_Consts_SGridTooLarge 65485
+#define Vcl_Consts_STooManyDeleted 65486
+#define Vcl_Consts_SIndexOutOfRange 65487
 #define Vcl_Consts_SMenuIndexError 65488
 #define Vcl_Consts_SMenuReinserted 65489
 #define Vcl_Consts_SMenuNotFound 65490
@@ -525,13 +811,264 @@
 #define Vcl_Consts_SInvalidTextFormatFlag 65535
 STRINGTABLE
 BEGIN
-	Vcl_Imaging_Pnglang_EPNGCannotChangeTransparentText,	"Setting bit transparency color is not allowed for png images containing alpha value for each pixel (COLOR_RGBALPHA and COLOR_GRAYSCALEALPHA)"
-	Vcl_Imaging_Pnglang_EPNGHeaderNotPresentText,	"This operation is not valid because the current image contains no valid header."
-	Vcl_Imaging_Pnglang_EInvalidNewSize,	"The new size provided for image resizing is invalid."
+	Ieconst_sChildWindowsAlreadyHooked,	"Attempting to hook child windows twice"
+	Ieconst_sSaveCurrentFile,	"Save the current file?"
+	Jclresources_RsIntelCacheDescrE4,	"3rd-level cache: 8 MByte, 16-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrEA,	"3rd-level cache: 12 MByte, 24-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrEB,	"3rd-level cache: 18 MByte, 24-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrEC,	"3rd-level cache: 24 MByte, 24-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrF0,	"64-Byte Prefetching"
+	Jclresources_RsIntelCacheDescrF1,	"128-Byte Prefetching"
+	Jclresources_RsIntelCacheDescrFF,	"CPUID leaf 2 does not report cache descriptor information, use CPUID leaf 4 to query cache parameters"
+	Jclresources_RsOSVersionWin81,	"Windows 8.1"
+	Jclresources_RsOSVersionWinServer2012R2,	"Windows Server 2012 R2"
+	Jclresources_RsWin32Error,	"Win32 error: %s (%u)%s%s"
+	Jclresources_RsELibraryNotFound,	"Library not found: %s"
+	Jclresources_RsEFunctionNotFound,	"Function not found: %s.%s"
+	Ieconst_sNoPageLoaded,	"No page loaded"
+	Ieconst_sNilProvider,	"Cannot register a nil provider"
+	Ieconst_sInvalidServiceProviderGUID,	"Invalid service provider GUID"
+	Ieconst_sClassSinkingError,	"%s only supports sinking of method calls!"
+	Jclresources_RsIntelCacheDescrB3,	"Data TLB: 4 KByte pages, 4-way set associative, 128 entries"
+	Jclresources_RsIntelCacheDescrB4,	"Data TLB1: 4 KByte pages, 4-way set associative, 256 entries"
+	Jclresources_RsIntelCacheDescrBA,	"Data TLB1: 4 KByte pages, 4-way set associative, 64 entries"
+	Jclresources_RsIntelCacheDescrC0,	"Data TLB: 4 KByte and 4 MByte pages, 4-way set associative, 8 entries"
+	Jclresources_RsIntelCacheDescrCA,	"Shared 2nd-Level TLB: 4 KByte pages, 4-way associative, 512 entries"
+	Jclresources_RsIntelCacheDescrD0,	"3rd-level cache: 512 KByte, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrD1,	"3rd-level cache: 1 MByte, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrD2,	"3rd-level cache: 2 MByte, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrD6,	"3rd-level cache: 1 MByte, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrD7,	"3rd-level cache: 2 MByte, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrD8,	"3rd-level cache: 4 MByte, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrDC,	"3rd-level cache: 1.5 MByte, 12-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrDD,	"3rd-level cache: 3 MByte, 12-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrDE,	"3rd-level cache: 6 MByte, 12-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrE2,	"3rd-level cache: 2 MByte, 16-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrE3,	"3rd-level cache: 4 MByte, 16-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr79,	"2nd-level cache: 128 KBytes, 8-way set associative, 64 bytes line size, 2 lines per sector"
+	Jclresources_RsIntelCacheDescr7A,	"2nd-level cache: 256 KBytes, 8-way set associative, 64 bytes line size, 2 lines per sector"
+	Jclresources_RsIntelCacheDescr7B,	"2nd-level cache: 512 KBytes, 8-way set associative, 64 bytes line size, 2 lines per sector"
+	Jclresources_RsIntelCacheDescr7C,	"2nd-level cache: 1 MBytes, 8-way set associative, 64 bytes line size, 2 lines per sector"
+	Jclresources_RsIntelCacheDescr7D,	"2nd-level cache: 2 MBytes, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr7F,	"2nd-level cache: 512 KBytes, 2-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr80,	"2nd-level cache: 512 KBytes, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr82,	"2nd-level cache: 256 KBytes, 8-way associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr83,	"2nd-level cache: 512 KBytes, 8-way associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr84,	"2nd-level cache: 1 MBytes, 8-way associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr85,	"2nd-level cache: 2 MBytes, 8-way associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr86,	"2nd-level cache: 512 KByte, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr87,	"2nd-level cache: 1 MByte, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescrB0,	"Instruction TLB: 4 KByte pages, 4-way set associative, 128 entries"
+	Jclresources_RsIntelCacheDescrB1,	"Instruction TLB: 2 MByte pages, 4-way, 8 entries or 4 MByte pages, 4-way, 4 entries"
+	Jclresources_RsIntelCacheDescrB2,	"Instruction TLB: 4 KByte pages, 4-way set associative, 64 entries"
+	Jclresources_RsIntelCacheDescr57,	"Data TLB0: 4 KByte pages, 4-way associative, 16 entries"
+	Jclresources_RsIntelCacheDescr59,	"Data TLB0: 4 KByte pages, fully associative, 16 entries"
+	Jclresources_RsIntelCacheDescr5A,	"Data TLB0: 2 MByte or 4 MByte pages, 4-way set associative, 32 entries"
+	Jclresources_RsIntelCacheDescr5B,	"Data TLB: 4 KByte and 4 MByte pages, 64 Entries"
+	Jclresources_RsIntelCacheDescr5C,	"Data TLB: 4 KByte and 4 MByte pages, 128 Entries"
+	Jclresources_RsIntelCacheDescr5D,	"Data TLB: 4 KByte and 4 MByte pages, 256 Entries"
+	Jclresources_RsIntelCacheDescr60,	"1st-level data cache: 16 KByte, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr66,	"1st-level data cache: 8 KBytes, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr67,	"1st-level data cache: 16 KBytes, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr68,	"1st-level data cache: 32 KBytes, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr70,	"Trace cache: 12 K-Ops, 8-way set associative"
+	Jclresources_RsIntelCacheDescr71,	"Trace cache: 16 K-Ops, 8-way set associative"
+	Jclresources_RsIntelCacheDescr72,	"Trace cache: 32 K-Ops, 8-way set associative"
+	Jclresources_RsIntelCacheDescr73,	"Trace cache: 64 K-Ops, 8-way set associative"
+	Jclresources_RsIntelCacheDescr76,	"Instruction TLB: 2M/4M pages, fully associative, 8 entries"
+	Jclresources_RsIntelCacheDescr78,	"2nd-level cache: 1 MBytes, 4-way set associative, 64 bytes line size"
+	Jclresources_RsIntelCacheDescr45,	"2nd-level cache: 2 MBytes, 4-way set associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr46,	"3rd-level cache: 4 MBytes, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr47,	"3rd-level cache: 8 MBytes, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr48,	"3rd-level cache: 8 MByte, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr49,	"2nd-level cache: 4 MBytes, 16-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr4A,	"3rd-level cache: 6MByte, 12-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr4B,	"3rd-level cache: 8MByte, 16-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr4C,	"3rd-level cache: 12MByte, 12-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr4D,	"3rd-level cache: 16MByte, 16-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr4E,	"2nd-level cache: 6MByte, 24-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr4F,	"Instruction TLB: 4 KByte pages, 32 Entries"
+	Jclresources_RsIntelCacheDescr50,	"Instruction TLB: 4 KByte and 2 MByte or 4 MByte pages, 64 Entries"
+	Jclresources_RsIntelCacheDescr51,	"Instruction TLB: 4 KByte and 2 MByte or 4 MByte pages, 128 Entries"
+	Jclresources_RsIntelCacheDescr52,	"Instruction TLB: 4 KByte and 2 MByte or 4 MByte pages, 256 Entries"
+	Jclresources_RsIntelCacheDescr55,	"Instruction TLB: 2-MByte or 4-MByte pages, fully associative, 7 entries"
+	Jclresources_RsIntelCacheDescr56,	"Data TLB0: 4 MByte pages, 4-way set associative, 16 entries"
+	Jclresources_RsIntelCacheDescr23,	"3rd level cache: 1 MBytes, 8-way set associative, 64 byte line size, 2 lines per sector"
+	Jclresources_RsIntelCacheDescr25,	"3rd level cache: 2 MBytes, 8-way set associative, 64 byte line size, 2 lines per sector"
+	Jclresources_RsIntelCacheDescr29,	"3rd level cache: 4 MBytes, 8-way set associative, 64 byte line size, 2 lines per sector"
+	Jclresources_RsIntelCacheDescr2C,	"1st level data cache: 32 KBytes, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr30,	"1st level instruction cache: 32 KBytes, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr39,	"2nd-level cache: 128 KBytes, 4-way set associative, sectored cache, 64-byte line size"
+	Jclresources_RsIntelCacheDescr3A,	"2nd-level cache: 192 KBytes, 6-way set associative, sectored cache, 64-byte line size"
+	Jclresources_RsIntelCacheDescr3B,	"2nd-level cache: 128 KBytes, 2-way set associative, sectored cache, 64-byte line size"
+	Jclresources_RsIntelCacheDescr3C,	"2nd-level cache: 256 KBytes, 4-way set associative, sectored cache, 64-byte line size"
+	Jclresources_RsIntelCacheDescr3D,	"2nd-level cache: 384 KBytes, 6-way set associative, sectored cache, 64-byte line size"
+	Jclresources_RsIntelCacheDescr3E,	"2nd-level cache: 512 KBytes, 4-way set associative, sectored cache, 64-byte line size"
+	Jclresources_RsIntelCacheDescr40,	"No 2nd-level cache or, if processor contains a valid 2nd-level cache, no 3rd-level cache"
+	Jclresources_RsIntelCacheDescr41,	"2nd-level cache: 128 KBytes, 4-way set associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr42,	"2nd-level cache: 256 KBytes, 4-way set associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr43,	"2nd-level cache: 512 KBytes, 4-way set associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr44,	"2nd-level cache: 1 MBytes, 4-way set associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr00,	"Null descriptor"
+	Jclresources_RsIntelCacheDescr01,	"Instruction TLB: 4 KByte pages, 4-way set associative, 32 entries"
+	Jclresources_RsIntelCacheDescr02,	"Instruction TLB: 4 MByte pages, 4-way set associative, 2 entries"
+	Jclresources_RsIntelCacheDescr03,	"Data TLB: 4 KByte pages, 4-way set associative, 64 entries"
+	Jclresources_RsIntelCacheDescr04,	"Data TLB: 4 MByte pages, 4-way set associative, 8 entries"
+	Jclresources_RsIntelCacheDescr05,	"Data TLB1: 4 MByte pages, 4-way set associative, 32 entries"
+	Jclresources_RsIntelCacheDescr06,	"1st level instruction cache: 8 KBytes, 4-way set associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr08,	"1st level instruction cache: 16 KBytes, 4-way set associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr09,	"1st level instruction cache: 32 KBytes, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr0A,	"1st level data cache: 8 KBytes, 2-way set associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr0B,	"Instruction TLB: 4 MByte pages, 4-way set associative, 4 entries"
+	Jclresources_RsIntelCacheDescr0C,	"1st level data cache: 16 KBytes, 4-way set associative, 32 byte line size"
+	Jclresources_RsIntelCacheDescr0D,	"1st level data cache: 16 KBytes, 4-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr0E,	"1st level data cache: 24 KBytes, 6-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr21,	"2nd level cache: 256 KBytes, 8-way set associative, 64 byte line size"
+	Jclresources_RsIntelCacheDescr22,	"3rd level cache: 512 KBytes, 4-way set associative, 64 byte line size, 2 lines per sector"
+	Jclresources_RsPeDEBUG_OMAP_FROM_SRC,	"OMAP_FROM_SRC"
+	Jclresources_RsPePkgExecutable,	"Executable"
+	Jclresources_RsPePkgPackage,	"Package"
+	Jclresources_PsPePkgLibrary,	"Library"
+	Jclresources_RsPePkgNeverBuild,	"NeverBuild"
+	Jclresources_RsPePkgDesignOnly,	"DesignOnly"
+	Jclresources_RsPePkgRunOnly,	"RunOnly"
+	Jclresources_RsPePkgIgnoreDupUnits,	"IgnoreDupUnits"
+	Jclresources_RsPePkgV3Produced,	"Delphi 3 or C++ Builder 3"
+	Jclresources_RsPePkgProducerUndefined,	"Undefined"
+	Jclresources_RsPePkgBCB4Produced,	"C++ Builder 4 or later"
+	Jclresources_RsPePkgDelphi4Produced,	"Delphi 4 or later"
+	Jclresources_RsPePkgMain,	"Main"
+	Jclresources_RsPePkgWeak,	"Weak"
+	Jclresources_RsPePkgOrgWeak,	"OrgWeak"
+	Jclresources_RsPePkgImplicit,	"Implicit"
+	Jclresources_RsPeMACHINE_CEE,	"CEE"
+	Jclresources_RsPeSUBSYSTEM_UNKNOWN,	"Unknown"
+	Jclresources_RsPeSUBSYSTEM_NATIVE,	"Native"
+	Jclresources_RsPeSUBSYSTEM_WINDOWS_GUI,	"GUI"
+	Jclresources_RsPeSUBSYSTEM_WINDOWS_CUI,	"Console"
+	Jclresources_RsPeSUBSYSTEM_OS2_CUI,	"OS/2"
+	Jclresources_RsPeSUBSYSTEM_POSIX_CUI,	"Posix"
+	Jclresources_RsPeSUBSYSTEM_RESERVED8,	"Reserved 8"
+	Jclresources_RsPeDEBUG_UNKNOWN,	"UNKNOWN"
+	Jclresources_RsPeDEBUG_COFF,	"COFF"
+	Jclresources_RsPeDEBUG_CODEVIEW,	"CODEVIEW"
+	Jclresources_RsPeDEBUG_FPO,	"FPO"
+	Jclresources_RsPeDEBUG_MISC,	"MISC"
+	Jclresources_RsPeDEBUG_EXCEPTION,	"EXCEPTION"
+	Jclresources_RsPeDEBUG_FIXUP,	"FIXUP"
+	Jclresources_RsPeDEBUG_OMAP_TO_SRC,	"OMAP_TO_SRC"
+	Jclresources_RsPeMACHINE_SH5,	"SH5"
+	Jclresources_RsPeMACHINE_ARM,	"ARM Little-Endian"
+	Jclresources_RsPeMACHINE_THUMB,	"THUMB"
+	Jclresources_RsPeMACHINE_AM33,	"AM33"
+	Jclresources_RsPeMACHINE_POWERPC,	"IBM PowerPC Little-Endian"
+	Jclresources_RsPeMACHINE_POWERPCFP,	"IBM PowerPC FP"
+	Jclresources_RsPeMACHINE_IA64,	"Intel 64"
+	Jclresources_RsPeMACHINE_MIPS16,	"MIPS16"
+	Jclresources_RsPeMACHINE_AMPHA64,	"ALPHA64"
+	Jclresources_RsPeMACHINE_MIPSFPU,	"MIPSFPU"
+	Jclresources_RsPeMACHINE_MIPSFPU16,	"MIPSFPU16"
+	Jclresources_RsPeMACHINE_TRICORE,	"Infineon"
+	Jclresources_RsPeMACHINE_CEF,	"CEF"
+	Jclresources_RsPeMACHINE_EBC,	"EFI Byte Code"
+	Jclresources_RsPeMACHINE_AMD64,	"AMD64 (K8)"
+	Jclresources_RsPeMACHINE_M32R,	"M32R little-endian"
+	Jclresources_RsPeProcessHeapFlags,	"ProcessHeapFlags"
+	Jclresources_RsPeProcessAffinityMask,	"ProcessAffinityMask"
+	Jclresources_RsPeCSDVersion,	"CSDVersion"
+	Jclresources_RsPeReserved,	"Reserved"
+	Jclresources_RsPeEditList,	"EditList"
+	Jclresources_RsPeMACHINE_UNKNOWN,	"Unknown"
+	Jclresources_RsPeMACHINE_I386,	"Intel 386"
+	Jclresources_RsPeMACHINE_R3000,	"MIPS little-endian R3000"
+	Jclresources_RsPeMACHINE_R4000,	"MIPS little-endian R4000"
+	Jclresources_RsPeMACHINE_R10000,	"MIPS little-endian R10000"
+	Jclresources_RsPeMACHINE_WCEMIPSV2,	"MIPS little-endian WCE v2"
+	Jclresources_RsPeMACHINE_ALPHA,	"Alpha_AXP"
+	Jclresources_RsPeMACHINE_SH3,	"SH3 little-endian"
+	Jclresources_RsPeMACHINE_SH3DSP,	"SH3 DSP"
+	Jclresources_RsPeMACHINE_SH3E,	"SH3E little-endian"
+	Jclresources_RsPeMACHINE_SH4,	"SH4 little-endian"
+	Jclresources_RsPeDllCharacteristics,	"Dll Characteristics"
+	Jclresources_RsPeSizeOfStackReserve,	"Size of Stack Reserve"
+	Jclresources_RsPeSizeOfStackCommit,	"Size of Stack Commit"
+	Jclresources_RsPeSizeOfHeapReserve,	"Size of Heap Reserve"
+	Jclresources_RsPeSizeOfHeapCommit,	"Size of Heap Commit"
+	Jclresources_RsPeLoaderFlags,	"Loader Flags"
+	Jclresources_RsPeNumberOfRvaAndSizes,	"Number of RVA"
+	Jclresources_RsPeVersion,	"Version"
+	Jclresources_RsPeGlobalFlagsClear,	"GlobalFlagsClear"
+	Jclresources_RsPeGlobalFlagsSet,	"GlobalFlagsSet"
+	Jclresources_RsPeCriticalSectionDefaultTimeout,	"CriticalSectionDefaultTimeout"
+	Jclresources_RsPeDeCommitFreeBlockThreshold,	"DeCommitFreeBlockThreshold"
+	Jclresources_RsPeDeCommitTotalFreeThreshold,	"DeCommitTotalFreeThreshold"
+	Jclresources_RsPeLockPrefixTable,	"LockPrefixTable"
+	Jclresources_RsPeMaximumAllocationSize,	"MaximumAllocationSize"
+	Jclresources_RsPeVirtualMemoryThreshold,	"VirtualMemoryThreshold"
+	Jclresources_RsPeSizeOfInitializedData,	"Size of Initialized Data"
+	Jclresources_RsPeSizeOfUninitializedData,	"Size of Uninitialized Data"
+	Jclresources_RsPeAddressOfEntryPoint,	"Address of Entry Point"
+	Jclresources_RsPeBaseOfCode,	"Base of Code"
+	Jclresources_RsPeBaseOfData,	"Base of Data"
+	Jclresources_RsPeImageBase,	"Image Base"
+	Jclresources_RsPeSectionAlignment,	"Section Alignment"
+	Jclresources_RsPeFileAlignment,	"File Alignment"
+	Jclresources_RsPeOperatingSystemVersion,	"Operating System Version"
+	Jclresources_RsPeImageVersion,	"Image Version"
+	Jclresources_RsPeSubsystemVersion,	"Subsystem Version"
+	Jclresources_RsPeWin32VersionValue,	"Win32 Version"
+	Jclresources_RsPeSizeOfImage,	"Size of Image"
+	Jclresources_RsPeSizeOfHeaders,	"Size of Headers"
+	Jclresources_RsPeCheckSum,	"CheckSum"
+	Jclresources_RsPeSubsystem,	"Subsystem"
+	Jclresources_RsPeImg_11,	"Bound Import"
+	Jclresources_RsPeImg_12,	"IAT"
+	Jclresources_RsPeImg_13,	"Delay load import"
+	Jclresources_RsPeImg_14,	"COM run-time"
+	Jclresources_RsPeImg_Reserved,	"reserved [%.2d]"
+	Jclresources_RsPeSignature,	"Signature"
+	Jclresources_RsPeMachine,	"Machine"
+	Jclresources_RsPeNumberOfSections,	"Number of Sections"
+	Jclresources_RsPeTimeDateStamp,	"Time Date Stamp"
+	Jclresources_RsPePointerToSymbolTable,	"Symbols Pointer"
+	Jclresources_RsPeNumberOfSymbols,	"Number of Symbols"
+	Jclresources_RsPeSizeOfOptionalHeader,	"Size of Optional Header"
+	Jclresources_RsPeCharacteristics,	"Characteristics"
+	Jclresources_RsPeMagic,	"Magic"
+	Jclresources_RsPeLinkerVersion,	"Linker Version"
+	Jclresources_RsPeSizeOfCode,	"Size of Code"
+	Jclresources_RsPeNotPE,	"This is not a PE format"
+	Jclresources_RsPeUnknownTarget,	"Unknown PE target"
+	Jclresources_RsPeNotResDir,	"Not a resource directory"
+	Jclresources_RsPeNotAvailableForAttached,	"Feature is not available for attached images"
+	Jclresources_RsPeSectionNotFound,	"Section \"%s\" not found"
+	Jclresources_RsPeImg_00,	"Exports"
+	Jclresources_RsPeImg_01,	"Imports"
+	Jclresources_RsPeImg_02,	"Resources"
+	Jclresources_RsPeImg_03,	"Exceptions"
+	Jclresources_RsPeImg_04,	"Security"
+	Jclresources_RsPeImg_05,	"Base Relocations"
+	Jclresources_RsPeImg_06,	"Debug"
+	Jclresources_RsPeImg_07,	"Description"
+	Jclresources_RsPeImg_08,	"Machine Value"
+	Jclresources_RsPeImg_09,	"TLS"
+	Jclresources_RsPeImg_10,	"Load configuration"
 	Vcl_Imaging_Pnglang_EInvalidSpec,	"The \"Portable Network Graphics\" could not be created because invalid image type parameters have being provided."
-	Vcl_Imaging_Pnglang_EPNGZLIBErrorText,	"Could not decompress the image because it contains invalid compressed data.\r\n Description: "
-	Vcl_Imaging_Pnglang_EPNGInvalidPaletteText,	"The \"Portable Network Graphics\" image contains an invalid palette."
-	Vcl_Imaging_Pnglang_EPNGInvalidFileHeaderText,	"The file being read is not a valid \"Portable Network Graphics\" image because it contains an invalid header. This file may be corrupted, try obtaining it again"
+	Jclresources_RsEReplacementChar,	"Failed to get ANSI replacement character"
+	Jclresources_RsEWindowsVersionNotSupported,	"This windows version is not supported"
+	Jclresources_RsEWindowNotValid,	"The window with handle %d is not valid"
+	Jclresources_RsEProcessNotValid,	"The process with ID %d is not valid"
+	Jclresources_RsEModuleNotValid,	"The Module with handle %d is not valid"
+	Jclresources_RsFileUtilsNoVersionInfo,	"File contains no version information"
+	Jclresources_RsFileUtilsFileDoesNotExist,	"The file %s does not exist"
+	Jclresources_RsFileUtilsLanguageIndex,	"Illegal language index"
+	Jclresources_RsFileUtilsEmptyValue,	"No value was supplied"
+	Jclresources_RsFileUtilsValueNotFound,	"The value %s was not found."
+	Jclresources_RsCreateFileMapping,	"Failed to create FileMapping"
+	Jclresources_RsCreateFileMappingView,	"Failed to create FileMappingView"
+	Jclresources_RsFailedToObtainSize,	"Failed to obtain size of file"
+	Jclresources_RsPeReadOnlyStream,	"Stream is read-only"
+	Jclresources_RsPeCantOpen,	"Cannot open file \"%s\""
 	Vcl_Imaging_Pnglang_EPNGIHDRNotFirstText,	"This \"Portable Network Graphics\" image is not supported or it might be invalid.\r\n(IHDR chunk is not the first)"
 	Vcl_Imaging_Pnglang_EPNGSizeExceedsText,	"This \"Portable Network Graphics\" image is not supported because either its width or height exceeds the maximum size of 65535 pixels."
 	Vcl_Imaging_Pnglang_EPNGUnknownPalEntryText,	"There is no such palette entry."
@@ -545,9 +1082,9 @@ BEGIN
 	Vcl_Imaging_Pnglang_EPNGCannotAddInvalidImageText,	"It's not allowed to add a new chunk because the current image is invalid."
 	Vcl_Imaging_Pnglang_EPNGCouldNotLoadResourceText,	"The png image could not be loaded from the resource ID."
 	Vcl_Imaging_Pnglang_EPNGOutMemoryText,	"Some operation could not be performed because the system is out of resources. Close some windows and try again."
-	Xml_Xmlconst_SNotActive,	"No active document"
-	Xml_Xmlconst_SNodeNotFound,	"Node \"%s\" not found"
-	Xml_Xmlconst_SMissingNode,	"IDOMNode required"
+	Vcl_Imaging_Pnglang_EPNGCannotChangeTransparentText,	"Setting bit transparency color is not allowed for png images containing alpha value for each pixel (COLOR_RGBALPHA and COLOR_GRAYSCALEALPHA)"
+	Vcl_Imaging_Pnglang_EPNGHeaderNotPresentText,	"This operation is not valid because the current image contains no valid header."
+	Vcl_Imaging_Pnglang_EInvalidNewSize,	"The new size provided for image resizing is invalid."
 	Xml_Xmlconst_SNoAttributes,	"Attributes are not supported on this node type"
 	Xml_Xmlconst_SInvalidNodeType,	"Invalid node type"
 	Xml_Xmlconst_SMismatchedRegItems,	"Mismatched paramaters to RegisterChildNodes"
@@ -561,9 +1098,9 @@ BEGIN
 	Vcl_Imaging_Pnglang_EPngInvalidCRCText,	"This \"Portable Network Graphics\" image is not valid because it contains invalid pieces of data (crc error)"
 	Vcl_Imaging_Pnglang_EPNGInvalidIHDRText,	"The \"Portable Network Graphics\" image could not be loaded because one of its main piece of data (ihdr) might be corrupted"
 	Vcl_Imaging_Pnglang_EPNGMissingMultipleIDATText,	"This \"Portable Network Graphics\" image is invalid because it has missing image parts."
-	Dragdrop_MILinkStr,	"&Shortcut(s) Create Here"
-	Dragdrop_MIAbortStr,	"&Abort"
-	Tb2consts_STBToolbarIndexOutOfBounds,	"Toolbar item index out of range"
+	Vcl_Imaging_Pnglang_EPNGZLIBErrorText,	"Could not decompress the image because it contains invalid compressed data.\r\n Description: "
+	Vcl_Imaging_Pnglang_EPNGInvalidPaletteText,	"The \"Portable Network Graphics\" image contains an invalid palette."
+	Vcl_Imaging_Pnglang_EPNGInvalidFileHeaderText,	"The file being read is not a valid \"Portable Network Graphics\" image because it contains an invalid header. This file may be corrupted, try obtaining it again"
 	Tb2consts_STBToolbarItemReinserted,	"Toolbar item already inserted"
 	Tb2consts_STBViewerNotFound,	"An item viewer associated the specified item could not be found"
 	Tb2consts_STBChevronItemMoreButtonsHint,	"More Buttons|"
@@ -577,13 +1114,13 @@ BEGIN
 	Xml_Xmlconst_SDOMNotSupported,	"Property or Method \"%s\" is not supported by DOM Vendor \"%s\""
 	Xml_Xmlconst_SNodeExpected,	"Node cannot be null"
 	Xml_Xmlconst_SMSDOMNotInstalled,	"Microsoft MSXML is not installed"
-	Dirviewcolproperties_SDirViewChangedCol,	"Changed"
-	Dirviewcolproperties_SDirViewAttrCol,	"Attr"
-	Dirviewcolproperties_SDirViewExtCol,	"Ext"
+	Xml_Xmlconst_SNotActive,	"No active document"
+	Xml_Xmlconst_SNodeNotFound,	"Node \"%s\" not found"
+	Xml_Xmlconst_SMissingNode,	"IDOMNode required"
 	Driveview_coFileOperatorTitle,	"Filesystem Operation"
 	Driveview_coInvalidDosChars,	"\\/:*?\"<>|"
 	Driveview_Space,	" "
-	Driveview_16411,	"New name contains invalid characters %s"
+	Driveview_16405,	"New name contains invalid characters %s"
 	Fileoperator_SFileOperation,	"File Operation"
 	Iedriveinfo_ErrorInvalidDrive,	"%s is a invalid drive letter."
 	Unixdirviewcolproperties_SUnixDirViewRightsCol,	"Rights"
@@ -593,14 +1130,14 @@ BEGIN
 	Unixdirviewcolproperties_SUnixDirViewTypeCol,	"Type"
 	Dragdrop_MICopyStr,	"&Copy Here"
 	Dragdrop_MIMoveStr,	"&Move Here"
-	Customdirview_SErrorRenameFileExists,	"File already exists: "
-	Customdirview_SErrorInvalidName,	"Filename contains invalid characters:"
+	Dragdrop_MILinkStr,	"&Shortcut(s) Create Here"
+	Dragdrop_MIAbortStr,	"&Abort"
+	Tb2consts_STBToolbarIndexOutOfBounds,	"Toolbar item index out of range"
 	Customdirview_STextFileExt,	"File %s"
 	Customdirview_STextFiles,	"%u Files"
 	Customdirview_STextDirectories,	"%u Directories"
 	Customdirview_SParentDir,	"Parent directory"
 	Customdirview_SIconUpdateThreadTerminationError,	"Can't terminate icon update thread."
-	Customdirview_SDragDropError,	"DragDrop Error: %d"
 	Customdirview_SDriveNotReady,	"Drive '%s:' is not ready."
 	Customdirview_SDirNotExists,	"Directory '%s' doesn't exist."
 	Customdriveview_SDragDropError,	"Drag&drop error: %d"
@@ -609,12 +1146,9 @@ BEGIN
 	Dirviewcolproperties_SDirViewNameCol,	"Name"
 	Dirviewcolproperties_SDirViewSizeCol,	"Size"
 	Dirviewcolproperties_SDirViewTypeCol,	"Type"
-	System_Sysconst_SByteIndexOutOfBounds,	"Start index out of bounds (%d)"
-	System_Sysconst_SInvalidCharCount,	"Invalid count (%d)"
-	System_Sysconst_SInvalidDestinationIndex,	"Invalid destination index (%d)"
-	System_Sysconst_SInvalidCodePage,	"Invalid code page"
-	System_Sysconst_SInvalidEncodingName,	"Invalid encoding name"
-	Comboedit_SBrowse,	"Browse"
+	Dirviewcolproperties_SDirViewChangedCol,	"Changed"
+	Dirviewcolproperties_SDirViewAttrCol,	"Attr"
+	Dirviewcolproperties_SDirViewExtCol,	"Ext"
 	Comboedit_SDefaultFilter,	"All files (*.*)|*.*"
 	Comboedit_SInvalidFileName,	"Invalid file name - %s"
 	Tcpip_SSocketError2,	"Socket error (%s)"
@@ -624,14 +1158,13 @@ BEGIN
 	Tcpip_SRedirectLimitError,	"Exceeded maximal redirect limie %d"
 	Baseutils_SNoValidPath,	"Can't find any valid path."
 	Baseutils_SUcpPathsNotSupported,	"UNC paths are not supported."
+	Baseutils_SByte,	"B"
+	Baseutils_SKiloByte,	"KB"
+	Baseutils_SMegaByte,	"MB"
+	Baseutils_SGigaByte,	"GB"
 	Customdirview_SErrorRenameFile,	"Can't rename file or directory: "
-	System_Sysconst_SShortDayNameTue,	"Tue"
-	System_Sysconst_SShortDayNameWed,	"Wed"
-	System_Sysconst_SShortDayNameThu,	"Thu"
-	System_Sysconst_SShortDayNameFri,	"Fri"
-	System_Sysconst_SShortDayNameSat,	"Sat"
-	System_Sysconst_SLongDayNameSun,	"Sunday"
-	System_Sysconst_SLongDayNameMon,	"Monday"
+	Customdirview_SErrorRenameFileExists,	"File already exists: "
+	Customdirview_SErrorInvalidName,	"Filename contains invalid characters:"
 	System_Sysconst_SLongDayNameTue,	"Tuesday"
 	System_Sysconst_SLongDayNameWed,	"Wednesday"
 	System_Sysconst_SLongDayNameThu,	"Thursday"
@@ -641,13 +1174,13 @@ BEGIN
 	System_Sysconst_SInvalidSourceArray,	"Invalid source array"
 	System_Sysconst_SInvalidDestinationArray,	"Invalid destination array"
 	System_Sysconst_SCharIndexOutOfBounds,	"Character index out of bounds (%d)"
-	System_Sysconst_SShortMonthNameNov,	"Nov"
-	System_Sysconst_SShortMonthNameDec,	"Dec"
-	System_Sysconst_SLongMonthNameJan,	"January"
-	System_Sysconst_SLongMonthNameFeb,	"February"
-	System_Sysconst_SLongMonthNameMar,	"March"
-	System_Sysconst_SLongMonthNameApr,	"April"
-	System_Sysconst_SLongMonthNameMay,	"May"
+	System_Sysconst_SByteIndexOutOfBounds,	"Start index out of bounds (%d)"
+	System_Sysconst_SInvalidCharCount,	"Invalid count (%d)"
+	System_Sysconst_SInvalidDestinationIndex,	"Invalid destination index (%d)"
+	System_Sysconst_SInvalidCodePage,	"Invalid code page"
+	System_Sysconst_SInvalidEncodingName,	"Invalid encoding name"
+	System_Sysconst_SNoMappingForUnicodeCharacter,	"No mapping for the Unicode character exists in the target multi-byte code page"
+	Comboedit_SBrowse,	"Browse"
 	System_Sysconst_SLongMonthNameJun,	"June"
 	System_Sysconst_SLongMonthNameJul,	"July"
 	System_Sysconst_SLongMonthNameAug,	"August"
@@ -657,13 +1190,13 @@ BEGIN
 	System_Sysconst_SLongMonthNameDec,	"December"
 	System_Sysconst_SShortDayNameSun,	"Sun"
 	System_Sysconst_SShortDayNameMon,	"Mon"
-	System_Sysconst_SNotImplemented,	"Feature not implemented"
-	System_Sysconst_SAssertError,	"%s (%s, line %d)"
-	System_Sysconst_SAbstractError,	"Abstract Error"
-	System_Sysconst_SModuleAccessViolation,	"Access violation at address %p in module '%s'. %s of address %p"
-	System_Sysconst_SOSError,	"System Error.  Code: %d.\r\n%s"
-	System_Sysconst_SUnkOSError,	"A call to an OS function failed"
-	System_Sysconst_SShortMonthNameJan,	"Jan"
+	System_Sysconst_SShortDayNameTue,	"Tue"
+	System_Sysconst_SShortDayNameWed,	"Wed"
+	System_Sysconst_SShortDayNameThu,	"Thu"
+	System_Sysconst_SShortDayNameFri,	"Fri"
+	System_Sysconst_SShortDayNameSat,	"Sat"
+	System_Sysconst_SLongDayNameSun,	"Sunday"
+	System_Sysconst_SLongDayNameMon,	"Monday"
 	System_Sysconst_SShortMonthNameFeb,	"Feb"
 	System_Sysconst_SShortMonthNameMar,	"Mar"
 	System_Sysconst_SShortMonthNameApr,	"Apr"
@@ -673,6 +1206,35 @@ BEGIN
 	System_Sysconst_SShortMonthNameAug,	"Aug"
 	System_Sysconst_SShortMonthNameSep,	"Sep"
 	System_Sysconst_SShortMonthNameOct,	"Oct"
+	System_Sysconst_SShortMonthNameNov,	"Nov"
+	System_Sysconst_SShortMonthNameDec,	"Dec"
+	System_Sysconst_SLongMonthNameJan,	"January"
+	System_Sysconst_SLongMonthNameFeb,	"February"
+	System_Sysconst_SLongMonthNameMar,	"March"
+	System_Sysconst_SLongMonthNameApr,	"April"
+	System_Sysconst_SLongMonthNameMay,	"May"
+	System_Sysconst_SExternalException,	"External exception %x"
+	System_Sysconst_SAssertionFailed,	"Assertion failed"
+	System_Sysconst_SIntfCastError,	"Interface not supported"
+	System_Sysconst_SSafecallException,	"Exception in safecall method"
+	System_Sysconst_SMonitorLockException,	"Object lock not owned"
+	System_Sysconst_SNoMonitorSupportException,	"Monitor support function not initialized"
+	System_Sysconst_SNotImplemented,	"Feature not implemented"
+	System_Sysconst_SObjectDisposed,	"Method called on disposed object"
+	System_Sysconst_SAssertError,	"%s (%s, line %d)"
+	System_Sysconst_SAbstractError,	"Abstract Error"
+	System_Sysconst_SModuleAccessViolation,	"Access violation at address %p in module '%s'. %s of address %p"
+	System_Sysconst_SCannotReadPackageInfo,	"Cannot access package information for package '%s'"
+	System_Sysconst_sErrorLoadingPackage,	"Can't load package %s.\r\n%s"
+	System_Sysconst_SOSError,	"System Error.  Code: %d.\r\n%s%s"
+	System_Sysconst_SUnkOSError,	"A call to an OS function failed"
+	System_Sysconst_SShortMonthNameJan,	"Jan"
+	System_Sysconst_SVarArrayLocked,	"Variant or safe array is locked"
+	System_Sysconst_SInvalidVarCast,	"Invalid variant type conversion"
+	System_Sysconst_SInvalidVarOp,	"Invalid variant operation"
+	System_Sysconst_SInvalidVarNullOp,	"Invalid NULL variant operation"
+	System_Sysconst_SInvalidVarOpWithHResultWithPrefix,	"Invalid variant operation (%s%.8x)\n%s"
+	System_Sysconst_SVarTypeOutOfRangeWithPrefix,	"Custom variant type (%s%.4x) is out of range"
 	System_Sysconst_SVarTypeAlreadyUsedWithPrefix,	"Custom variant type (%s%.4x) already used by %s"
 	System_Sysconst_SVarTypeNotUsableWithPrefix,	"Custom variant type (%s%.4x) is not usable"
 	System_Sysconst_SVarTypeTooManyCustom,	"Too many custom variant types have been registered"
@@ -683,12 +1245,10 @@ BEGIN
 	System_Sysconst_SVarBadType,	"Invalid variant type"
 	System_Sysconst_SVarNotImplemented,	"Operation not supported"
 	System_Sysconst_SVarUnexpected,	"Unexpected variant error"
-	System_Sysconst_SExternalException,	"External exception %x"
-	System_Sysconst_SAssertionFailed,	"Assertion failed"
-	System_Sysconst_SIntfCastError,	"Interface not supported"
-	System_Sysconst_SSafecallException,	"Exception in safecall method"
-	System_Sysconst_SMonitorLockException,	"Object lock not owned"
-	System_Sysconst_SNoMonitorSupportException,	"Monitor support function not initialized"
+	System_Sysconst_SStackOverflow,	"Stack overflow"
+	System_Sysconst_SControlC,	"Control-C hit"
+	System_Sysconst_SPrivilege,	"Privileged instruction"
+	System_Sysconst_SOperationAborted,	"Operation aborted"
 	System_Sysconst_SException,	"Exception %s in module %s at %p.\r\n%s%s\r\n"
 	System_Sysconst_SExceptTitle,	"Application Error"
 	System_Sysconst_SInvalidFormat,	"Format '%s' invalid or incompatible with argument"
@@ -696,15 +1256,15 @@ BEGIN
 	System_Sysconst_SDispatchError,	"Variant method calls not supported"
 	System_Sysconst_SReadAccess,	"Read"
 	System_Sysconst_SWriteAccess,	"Write"
+	System_Sysconst_SExecuteAccess,	"Execution"
+	System_Sysconst_SInvalidAccess,	"Invalid access"
 	System_Sysconst_SFormatTooLong,	"Format string too long"
 	System_Sysconst_SVarArrayCreate,	"Error creating variant or safe array"
 	System_Sysconst_SVarArrayBounds,	"Variant or safe array index out of bounds"
-	System_Sysconst_SVarArrayLocked,	"Variant or safe array is locked"
-	System_Sysconst_SInvalidVarCast,	"Invalid variant type conversion"
-	System_Sysconst_SInvalidVarOp,	"Invalid variant operation"
-	System_Sysconst_SInvalidVarNullOp,	"Invalid NULL variant operation"
-	System_Sysconst_SInvalidVarOpWithHResultWithPrefix,	"Invalid variant operation (%s%.8x)\n%s"
-	System_Sysconst_SVarTypeOutOfRangeWithPrefix,	"Custom variant type (%s%.4x) is out of range"
+	System_Sysconst_STooManyOpenFiles,	"Too many open files"
+	System_Sysconst_SAccessDenied,	"File access denied"
+	System_Sysconst_SEndOfFile,	"Read beyond end of file"
+	System_Sysconst_SDiskFull,	"Disk full"
 	System_Sysconst_SInvalidInput,	"Invalid numeric input"
 	System_Sysconst_SDivByZero,	"Division by zero"
 	System_Sysconst_SRangeError,	"Range check error"
@@ -717,27 +1277,46 @@ BEGIN
 	System_Sysconst_SInvalidCast,	"Invalid class typecast"
 	System_Sysconst_SAccessViolationArg3,	"Access violation at address %p. %s of address %p"
 	System_Sysconst_SAccessViolationNoArg,	"Access violation"
-	System_Sysconst_SStackOverflow,	"Stack overflow"
-	System_Sysconst_SControlC,	"Control-C hit"
-	System_Sysconst_SPrivilege,	"Privileged instruction"
-	System_Sysconst_SOperationAborted,	"Operation aborted"
-	System_Rtlconsts_sObserverMultipleSingleCast,	"Cannot have multiple single cast observers added to the observers collection"
-	System_Rtlconsts_sObserverNoInterface,	"The object does not implement the observer interface"
-	System_Rtlconsts_sObserverNoSinglecastFound,	"No single cast observer with ID %s was added to the observer collection"
-	System_Rtlconsts_sObserverNoMulticastFound,	"No multi cast observer with ID %s was added to the observer collection"
-	System_Rtlconsts_sObserverNotAvailable,	"Observer is not available"
+	System_Rtlconsts_SLocationSensorStarted,	"The location sensor is started"
+	System_Rtlconsts_SInvalidDateString,	"Invalid date string: %s"
+	System_Rtlconsts_SInvalidTimeString,	"Invalid time string: %s"
+	System_Rtlconsts_SInvalidOffsetString,	"Invalid time Offset string: %s"
 	System_Sysconst_SUnknown,	"<unknown>"
+	System_Sysconst_SInvalidInteger,	"'%s' is not a valid integer value"
 	System_Sysconst_SInvalidFloat,	"'%s' is not a valid floating point value"
+	System_Sysconst_SInvalidDate,	"'%s' is not a valid date"
+	System_Sysconst_SInvalidTime,	"'%s' is not a valid time"
+	System_Sysconst_SInvalidDateTime,	"'%s' is not a valid date and time"
 	System_Sysconst_SInvalidTimeStamp,	"'%d.%d' is not a valid timestamp"
 	System_Sysconst_SInvalidGUID,	"'%s' is not a valid GUID value"
+	System_Sysconst_STimeEncodeError,	"Invalid argument to time encode"
 	System_Sysconst_SDateEncodeError,	"Invalid argument to date encode"
 	System_Sysconst_SOutOfMemory,	"Out of memory"
 	System_Sysconst_SInOutError,	"I/O error %d"
-	System_Sysconst_STooManyOpenFiles,	"Too many open files"
-	System_Sysconst_SAccessDenied,	"File access denied"
-	System_Sysconst_SEndOfFile,	"Read beyond end of file"
-	System_Sysconst_SDiskFull,	"Disk full"
+	System_Rtlconsts_SWindows7,	"Windows 7"
+	System_Rtlconsts_SWindowsServer2008R2,	"Windows Server 2008 R2"
+	System_Rtlconsts_SWindows2000,	"Windows 2000"
+	System_Rtlconsts_SWindowsXP,	"Windows XP"
+	System_Rtlconsts_SWindowsServer2003,	"Windows Server 2003"
+	System_Rtlconsts_SWindowsServer2003R2,	"Windows Server 2003 R2"
+	System_Rtlconsts_SWindowsServer2012,	"Windows Server 2012"
+	System_Rtlconsts_SWindowsServer2012R2,	"Windows Server 2012 R2"
+	System_Rtlconsts_SWindows8,	"Windows 8"
+	System_Rtlconsts_SWindows8Point1,	"Windows 8.1"
+	System_Rtlconsts_sObserverUnsupported,	"Observer is not supported"
+	System_Rtlconsts_sObserverMultipleSingleCast,	"Cannot have multiple single cast observers added to the observers collection"
+	System_Rtlconsts_sObserverNoInterface,	"The object does not implement the observer interface"
+	System_Rtlconsts_sObserverNoSinglecastFound,	"No single cast observer with ID %d was added to the observer collection"
+	System_Rtlconsts_sObserverNoMulticastFound,	"No multi cast observer with ID %d was added to the observer collection"
+	System_Rtlconsts_sObserverNotAvailable,	"Observer is not available"
+	System_Rtlconsts_SNothingFound,	"No help found for %s"
+	System_Rtlconsts_SArgumentOutOfRange,	"Argument out of range"
+	System_Rtlconsts_SGenericItemNotFound,	"Item not found"
 	System_Rtlconsts_SGenericDuplicateItem,	"Duplicates not allowed"
+	System_Rtlconsts_SInsufficientRtti,	"Insufficient RTTI available to support this operation"
+	System_Rtlconsts_SParameterCountMismatch,	"Parameter count mismatch"
+	System_Rtlconsts_SNonPublicType,	"Type '%s' is not declared in the interface section of a unit"
+	System_Rtlconsts_SByRefArgMismatch,	"VAR and OUT arguments must match parameter type exactly"
 	System_Rtlconsts_SServiceNotFound,	"Specified Login Credential Service not found"
 	System_Rtlconsts_SVersionStr,	"%s (Version %d.%d, Build %d, %5:s)"
 	System_Rtlconsts_SSPVersionStr,	"%s Service Pack %4:d (Version %1:d.%2:d, Build %3:d, %5:s)"
@@ -746,37 +1325,6 @@ BEGIN
 	System_Rtlconsts_SWindows,	"Windows"
 	System_Rtlconsts_SWindowsVista,	"Windows Vista"
 	System_Rtlconsts_SWindowsServer2008,	"Windows Server 2008"
-	System_Rtlconsts_SWindows7,	"Windows 7"
-	System_Rtlconsts_SWindowsServer2008R2,	"Windows Server 2008 R2"
-	System_Rtlconsts_SWindows2000,	"Windows 2000"
-	System_Rtlconsts_SWindowsXP,	"Windows XP"
-	System_Rtlconsts_SWindowsServer2003,	"Windows Server 2003"
-	System_Rtlconsts_SWindowsServer2003R2,	"Windows Server 2003 R2"
-	System_Rtlconsts_sObserverUnsupported,	"Observer is not supported"
-	System_Rtlconsts_sInvalidTimespanFormat,	"Invalid Timespan format"
-	System_Rtlconsts_sTimespanElementTooLong,	"Timespan element too long"
-	System_Rtlconsts_SInvalidDate,	"''%s'' is not a valid date"
-	System_Rtlconsts_SInvalidDateTime,	"''%s'' is not a valid date and time"
-	System_Rtlconsts_SInvalidInteger,	"''%s'' is not a valid integer value"
-	System_Rtlconsts_SInvalidTime,	"''%s'' is not a valid time"
-	System_Rtlconsts_STimeEncodeError,	"Invalid argument to time encode"
-	System_Rtlconsts_SNoContext,	"No context-sensitive help installed"
-	System_Rtlconsts_SNoContextFound,	"No help found for context %d"
-	System_Rtlconsts_SNoIndex,	"Unable to open Index"
-	System_Rtlconsts_SNoSearch,	"Unable to open Search"
-	System_Rtlconsts_SNoTableOfContents,	"Unable to find a Table of Contents"
-	System_Rtlconsts_SNoTopics,	"No topic-based help system installed"
-	System_Rtlconsts_SNothingFound,	"No help found for %s"
-	System_Rtlconsts_SArgumentOutOfRange,	"Argument out of range"
-	System_Rtlconsts_SGenericItemNotFound,	"Item not found"
-	System_Rtlconsts_SPathNotFound,	"The specified path was not found"
-	System_Rtlconsts_SPathFormatNotSupported,	"The path format is not supported"
-	System_Rtlconsts_SDriveNotFound,	"The drive cannot be found"
-	System_Rtlconsts_SFileNotFound,	"The specified file was not found"
-	System_Rtlconsts_SLocalTimeInvalid,	"The given \"%s\" local time is invalid (situated within the missing period prior to DST)."
-	System_Rtlconsts_hNoFilterViewer,	"No help viewer that supports filters"
-	System_Rtlconsts_sArgumentOutOfRange_StringIndex,	"String index out of range (%d).  Must be >= 1 and <= %d"
-	System_Rtlconsts_sArgumentOutOfRange_InvalidUTF32,	"Invalid UTF32 character value.  Must be >= 0 and <= $10FFFF, excluding surrogate pair ranges"
 	System_Rtlconsts_sArgument_InvalidHighSurrogate,	"High surrogate char without a following low surrogate char at index: %d. Check that the string is encoded properly"
 	System_Rtlconsts_sArgument_InvalidLowSurrogate,	"Low surrogate char without a preceding high surrogate char at index: %d. Check that the string is encoded properly"
 	System_Rtlconsts_sInvalidStringAndObjectArrays,	"Length of Strings and Objects arrays must be equal"
@@ -785,6 +1333,37 @@ BEGIN
 	System_Rtlconsts_sInvalidTimespanDuration,	"The duration cannot be returned because the absolute value exceeds the value of TTimeSpan.MaxValue"
 	System_Rtlconsts_sTimespanValueCannotBeNan,	"Value cannot be NaN"
 	System_Rtlconsts_sCannotNegateTimespan,	"Negating the minimum value of a Timespan is invalid"
+	System_Rtlconsts_sInvalidTimespanFormat,	"Invalid Timespan format"
+	System_Rtlconsts_sTimespanElementTooLong,	"Timespan element too long"
+	System_Rtlconsts_SNoContext,	"No context-sensitive help installed"
+	System_Rtlconsts_SNoContextFound,	"No help found for context %d"
+	System_Rtlconsts_SNoIndex,	"Unable to open Index"
+	System_Rtlconsts_SNoSearch,	"Unable to open Search"
+	System_Rtlconsts_SNoTableOfContents,	"Unable to find a Table of Contents"
+	System_Rtlconsts_SNoTopics,	"No topic-based help system installed"
+	System_Rtlconsts_SThreadStartError,	"Cannot call Start on a running or suspended thread"
+	System_Rtlconsts_SThreadExternalCheckTerminated,	"Cannot call CheckTerminated on an externally created thread"
+	System_Rtlconsts_SThreadExternalSetReturnValue,	"Cannot call SetReturnValue on an externally create thread"
+	System_Rtlconsts_SParamIsNil,	"Parameter %s cannot be nil"
+	System_Rtlconsts_SParamIsNegative,	"Parameter %s cannot be a negative value"
+	System_Rtlconsts_SInputBufferExceed,	"Input buffer exceeded for %s = %d, %s = %d"
+	System_Rtlconsts_SInvalidCharsInPath,	"Invalid characters in path"
+	System_Rtlconsts_SPathTooLong,	"The specified path is too long"
+	System_Rtlconsts_SPathNotFound,	"The specified path was not found"
+	System_Rtlconsts_SPathFormatNotSupported,	"The path format is not supported"
+	System_Rtlconsts_SDriveNotFound,	"The drive cannot be found"
+	System_Rtlconsts_SFileNotFound,	"The specified file was not found"
+	System_Rtlconsts_SLocalTimeInvalid,	"The given \"%s\" local time is invalid (situated within the missing period prior to DST)."
+	System_Rtlconsts_hNoFilterViewer,	"No help viewer that supports filters"
+	System_Rtlconsts_sArgumentOutOfRange_StringIndex,	"String index out of range (%d).  Must be >= %d and <= %d"
+	System_Rtlconsts_sArgumentOutOfRange_InvalidUTF32,	"Invalid UTF32 character value.  Must be >= 0 and <= $10FFFF, excluding surrogate pair ranges"
+	System_Rtlconsts_SRegCreateFailed,	"Failed to create key %s"
+	System_Rtlconsts_SRegGetDataFailed,	"Failed to get data for '%s'"
+	System_Rtlconsts_SRegisterError,	"Invalid component registration"
+	System_Rtlconsts_SRegSetDataFailed,	"Failed to set data for '%s'"
+	System_Rtlconsts_SResNotFound,	"Resource %s not found"
+	System_Rtlconsts_SSeekNotImplemented,	"%s.Seek not implemented"
+	System_Rtlconsts_SSortedListError,	"Operation not allowed on sorted list"
 	System_Rtlconsts_SStringExpected,	"String expected"
 	System_Rtlconsts_SSymbolExpected,	"%s expected"
 	System_Rtlconsts_SUnknownGroup,	"%s not in a class registration group"
@@ -794,13 +1373,13 @@ BEGIN
 	System_Rtlconsts_SThreadError,	"Thread Error: %s (%d)"
 	System_Rtlconsts_SThreadExternalTerminate,	"Cannot terminate an externally created thread"
 	System_Rtlconsts_SThreadExternalWait,	"Cannot wait for an externally created thread"
-	System_Rtlconsts_SThreadStartError,	"Cannot call Start on a running or suspended thread"
-	System_Rtlconsts_SThreadExternalCheckTerminated,	"Cannot call CheckTerminated on an externally created thread"
-	System_Rtlconsts_SThreadExternalSetReturnValue,	"Cannot call SetReturnValue on an externally create thread"
-	System_Rtlconsts_SParamIsNegative,	"Parameter %s cannot be a negative value"
-	System_Rtlconsts_SInputBufferExceed,	"Input buffer exceeded for %s = %d, %s = %d"
-	System_Rtlconsts_SInvalidCharsInPath,	"Invalid characters in path"
-	System_Rtlconsts_SPathTooLong,	"The specified path is too long"
+	System_Rtlconsts_SInvalidPropertyPath,	"Invalid property path"
+	System_Rtlconsts_SInvalidPropertyValue,	"Invalid property value"
+	System_Rtlconsts_SInvalidRegType,	"Invalid data type for '%s'"
+	System_Rtlconsts_SInvalidString,	"Invalid string constant"
+	System_Rtlconsts_SLineTooLong,	"Line too long"
+	System_Rtlconsts_SListCapacityError,	"List capacity out of bounds (%d)"
+	System_Rtlconsts_SListCountError,	"List count out of bounds (%d)"
 	System_Rtlconsts_SListIndexError,	"List index out of bounds (%d)"
 	System_Rtlconsts_SMemoryStreamError,	"Out of memory while expanding memory stream"
 	System_Rtlconsts_SNoComSupport,	"%s has not been registered as a COM class"
@@ -810,13 +1389,13 @@ BEGIN
 	System_Rtlconsts_SPropertyException,	"Error reading %s%s%s: %s"
 	System_Rtlconsts_SReadError,	"Stream read error"
 	System_Rtlconsts_SReadOnlyProperty,	"Property is read-only"
-	System_Rtlconsts_SRegCreateFailed,	"Failed to create key %s"
-	System_Rtlconsts_SRegGetDataFailed,	"Failed to get data for '%s'"
-	System_Rtlconsts_SRegisterError,	"Invalid component registration"
-	System_Rtlconsts_SRegSetDataFailed,	"Failed to set data for '%s'"
-	System_Rtlconsts_SResNotFound,	"Resource %s not found"
-	System_Rtlconsts_SSeekNotImplemented,	"%s.Seek not implemented"
-	System_Rtlconsts_SSortedListError,	"Operation not allowed on sorted list"
+	System_Rtlconsts_SCheckSynchronizeError,	"CheckSynchronize called from thread $%x, which is NOT the main thread"
+	System_Rtlconsts_SClassNotFound,	"Class %s not found"
+	System_Rtlconsts_SDuplicateClass,	"A class named %s already exists"
+	System_Rtlconsts_SDuplicateItem,	"List does not allow duplicates ($0%x)"
+	System_Rtlconsts_SDuplicateName,	"A component named %s already exists"
+	System_Rtlconsts_SDuplicateString,	"String list does not allow duplicates"
+	System_Rtlconsts_SFCreateErrorEx,	"Cannot create file \"%s\". %s"
 	System_Rtlconsts_SFOpenErrorEx,	"Cannot open file \"%s\". %s"
 	System_Rtlconsts_SIdentifierExpected,	"Identifier expected"
 	System_Rtlconsts_SIniFileWriteError,	"Unable to write to %s"
@@ -826,29 +1405,28 @@ BEGIN
 	System_Rtlconsts_SInvalidMask,	"'%s' is an invalid mask at (%d)"
 	System_Rtlconsts_SInvalidName,	"''%s'' is not a valid component name"
 	System_Rtlconsts_SInvalidProperty,	"Invalid property value"
-	System_Rtlconsts_SInvalidPropertyPath,	"Invalid property path"
-	System_Rtlconsts_SInvalidPropertyValue,	"Invalid property value"
-	System_Rtlconsts_SInvalidRegType,	"Invalid data type for '%s'"
-	System_Rtlconsts_SInvalidString,	"Invalid string constant"
-	System_Rtlconsts_SLineTooLong,	"Line too long"
-	System_Rtlconsts_SListCapacityError,	"List capacity out of bounds (%d)"
-	System_Rtlconsts_SListCountError,	"List count out of bounds (%d)"
+	Vcl_Comstrs_sDateTimeMin,	"Date is less than minimum of %s"
+	Vcl_Comstrs_sNeedAllowNone,	"You must be in ShowCheckbox mode to set to this date"
+	Vcl_Comstrs_sFailSetCalDateTime,	"Failed to set calendar date or time"
+	Vcl_Comstrs_sFailSetCalMaxSelRange,	"Failed to set maximum selection range"
+	Vcl_Comstrs_sFailSetCalMinMaxRange,	"Failed to set calendar min/max range"
+	Vcl_Comstrs_sFailsetCalSelRange,	"Failed to set calendar selected range"
 	System_Win_Comconst_SOleError,	"OLE error %.8x"
 	System_Win_Comconst_SNoMethod,	"Method '%s' not supported by automation object"
 	System_Win_Comconst_SVarNotObject,	"Variant does not reference an automation object"
 	System_Win_Comconst_STooManyParams,	"Dispatch methods do not support more than 64 parameters"
+	System_Win_Comconst_SDCOMNotInstalled,	"DCOM not installed"
 	System_Rtlconsts_SAncestorNotFound,	"Ancestor for '%s' not found"
 	System_Rtlconsts_SAssignError,	"Cannot assign a %s to a %s"
 	System_Rtlconsts_SBitsIndexError,	"Bits index out of range"
 	System_Rtlconsts_SCantWriteResourceStreamError,	"Can't write to a read-only resource stream"
 	System_Rtlconsts_SCharExpected,	"''%s'' expected"
-	System_Rtlconsts_SCheckSynchronizeError,	"CheckSynchronize called from thread $%x, which is NOT the main thread"
-	System_Rtlconsts_SClassNotFound,	"Class %s not found"
-	System_Rtlconsts_SDuplicateClass,	"A class named %s already exists"
-	System_Rtlconsts_SDuplicateItem,	"List does not allow duplicates ($0%x)"
-	System_Rtlconsts_SDuplicateName,	"A component named %s already exists"
-	System_Rtlconsts_SDuplicateString,	"String list does not allow duplicates"
-	System_Rtlconsts_SFCreateErrorEx,	"Cannot create file \"%s\". %s"
+	Vcl_Comstrs_sTabFailGetObject,	"Failed to get object at index %d"
+	Vcl_Comstrs_sTabFailSet,	"Failed to set tab \"%s\" at index %d"
+	Vcl_Comstrs_sTabFailSetObject,	"Failed to set object at index %d"
+	Vcl_Comstrs_sTabMustBeMultiLine,	"MultiLine must be True when TabPosition is tpLeft or tpRight"
+	Vcl_Comstrs_sInvalidLevel,	"Invalid item level assignment"
+	Vcl_Comstrs_sInvalidLevelEx,	"Invalid level (%d) for item \"%s\""
 	Vcl_Comstrs_sInvalidIndex,	"Invalid index"
 	Vcl_Comstrs_sInsertError,	"Unable to insert an item"
 	Vcl_Comstrs_sInvalidOwner,	"Invalid owner"
@@ -859,32 +1437,22 @@ BEGIN
 	Vcl_Comstrs_sPageIndexError,	"%d is an invalid PageIndex value.  PageIndex must be between 0 and %d"
 	Vcl_Comstrs_sInvalidComCtl32,	"This control requires version 4.70 or greater of COMCTL32.DLL"
 	Vcl_Comstrs_sDateTimeMax,	"Date exceeds maximum of %s"
-	Vcl_Comstrs_sDateTimeMin,	"Date is less than minimum of %s"
-	Vcl_Comstrs_sNeedAllowNone,	"You must be in ShowCheckbox mode to set to this date"
-	Vcl_Comstrs_sFailSetCalDateTime,	"Failed to set calendar date or time"
-	Vcl_Comstrs_sFailSetCalMaxSelRange,	"Failed to set maximum selection range"
-	Vcl_Comstrs_sFailSetCalMinMaxRange,	"Failed to set calendar min/max range"
-	Vcl_Comstrs_sFailsetCalSelRange,	"Failed to set calendar selected range"
-	Vcl_Consts_SStyleInvalidHandle,	"Invalid style handle"
-	Vcl_Consts_SStyleFormatError,	"Invalid style format"
-	Vcl_Consts_SStyleFileDescription,	"VCL Style File"
 	Vcl_Consts_SStyleHookClassNotRegistered,	"Class '%s' is not registered for '%s'"
 	Vcl_Consts_SStyleInvalidParameter,	"%s parameter cannot be nil"
 	Vcl_Consts_SStyleHookClassNotFound,	"A StyleHook class has not been registered for %s"
 	Vcl_Consts_SStyleFeatureNotSupported,	"Feature not supported by this style"
+	Vcl_Consts_SStyleNotRegistered,	"Style '%s' is not registered"
+	Vcl_Consts_SStyleUnregisterError,	"Cannot unregister the system style"
+	Vcl_Consts_SStyleNotRegisteredNoName,	"Style not registered"
+	Vcl_Oleconst_SBadPropValue,	"'%s' is not a valid property value"
+	Vcl_Oleconst_SCannotActivate,	"OLE control activation failed"
+	Vcl_Oleconst_SNoWindowHandle,	"Could not obtain OLE control window handle"
+	Vcl_Oleconst_SInvalidLicense,	"License information for %s is invalid"
+	Vcl_Oleconst_SNotLicensed,	"License information for %s not found. You cannot use this control in design mode"
+	Vcl_Oleconst_sNoRunningObject,	"Unable to retrieve a pointer to a running object registered with OLE for %s/%s"
 	Vcl_Comstrs_sTabFailClear,	"Failed to clear tab control"
 	Vcl_Comstrs_sTabFailDelete,	"Failed to delete tab at index %d"
 	Vcl_Comstrs_sTabFailRetrieve,	"Failed to retrieve tab at index %d"
-	Vcl_Comstrs_sTabFailGetObject,	"Failed to get object at index %d"
-	Vcl_Comstrs_sTabFailSet,	"Failed to set tab \"%s\" at index %d"
-	Vcl_Comstrs_sTabFailSetObject,	"Failed to set object at index %d"
-	Vcl_Comstrs_sTabMustBeMultiLine,	"MultiLine must be True when TabPosition is tpLeft or tpRight"
-	Vcl_Comstrs_sInvalidLevel,	"Invalid item level assignment"
-	Vcl_Comstrs_sInvalidLevelEx,	"Invalid level (%d) for item \"%s\""
-	Vcl_Consts_SUTF7Encoding,	"UTF-7"
-	Vcl_Consts_STrayIconRemoveError,	"Cannot remove shell notification icon"
-	Vcl_Consts_SPageControlNotSet,	"PageControl must first be assigned"
-	Vcl_Consts_SWindowsVistaRequired,	"%s requires Windows Vista or later"
 	Vcl_Consts_STaskDlgButtonCaption,	"Button%d"
 	Vcl_Consts_STaskDlgRadioButtonCaption,	"RadioButton%d"
 	Vcl_Consts_SInvalidTaskDlgButtonCaption,	"Caption cannot be empty"
@@ -897,10 +1465,10 @@ BEGIN
 	Vcl_Consts_SStyleClassRegisterError,	"Style class '%s' already registered"
 	Vcl_Consts_SStyleNotFound,	"Style '%s' not found"
 	Vcl_Consts_SStyleClassNotFound,	"Style class '%s' not found"
-	Vcl_Consts_SPromptArrayTooShort,	"Length of value array must be >= length of prompt array"
-	Vcl_Consts_SPromptArrayEmpty,	"Prompt array must not be empty"
-	Vcl_Consts_SUsername,	"&Username"
-	Vcl_Consts_SPassword,	"&Password"
+	Vcl_Consts_SStyleInvalidHandle,	"Invalid style handle"
+	Vcl_Consts_SStyleFormatError,	"Invalid style format"
+	Vcl_Consts_SStyleFileDescription,	"VCL Style File"
+	Vcl_Consts_SStyleHookClassRegistered,	"Class '%s' is already registered for '%s'"
 	Vcl_Consts_SDomain,	"&Domain"
 	Vcl_Consts_SLogin,	"Login"
 	Vcl_Consts_SSeparator,	"Separator"
@@ -913,10 +1481,10 @@ BEGIN
 	Vcl_Consts_SUnicodeEncoding,	"Unicode"
 	Vcl_Consts_SBigEndianEncoding,	"Big Endian Unicode"
 	Vcl_Consts_SUTF8Encoding,	"UTF-8"
-	Vcl_Consts_SIconToClipboard,	"Clipboard does not support Icons"
-	Vcl_Consts_SCannotOpenClipboard,	"Cannot open clipboard: %s"
-	Vcl_Consts_SInvalidMemoSize,	"Text exceeds memo capacity"
-	Vcl_Consts_SInvalidPrinterOp,	"Operation not supported on selected printer"
+	Vcl_Consts_SUTF7Encoding,	"UTF-7"
+	Vcl_Consts_STrayIconRemoveError,	"Cannot remove shell notification icon"
+	Vcl_Consts_SPageControlNotSet,	"PageControl must first be assigned"
+	Vcl_Consts_SWindowsVistaRequired,	"%s requires Windows Vista or later"
 	Vcl_Consts_SNoDefaultPrinter,	"There is no default printer currently selected"
 	Vcl_Consts_SDuplicateMenus,	"Menu '%s' is already being used by another form"
 	Vcl_Consts_SPictureLabel,	"Picture:"
@@ -929,10 +1497,10 @@ BEGIN
 	Vcl_Consts_SDockZoneHasNoCtl,	" - Dock zone has no control"
 	Vcl_Consts_SDockZoneVersionConflict,	"Error loading dock zone from the stream. Expecting version %d, but found %d."
 	Vcl_Consts_SMultiSelectRequired,	"Multiselect mode must be on for this feature"
-	Vcl_Consts_SmkcEnd,	"End"
-	Vcl_Consts_SmkcHome,	"Home"
-	Vcl_Consts_SmkcLeft,	"Left"
-	Vcl_Consts_SmkcUp,	"Up"
+	Vcl_Consts_SPromptArrayTooShort,	"Length of value array must be >= length of prompt array"
+	Vcl_Consts_SPromptArrayEmpty,	"Prompt array must not be empty"
+	Vcl_Consts_SUsername,	"&Username"
+	Vcl_Consts_SPassword,	"&Password"
 	Vcl_Consts_SmkcRight,	"Right"
 	Vcl_Consts_SmkcDown,	"Down"
 	Vcl_Consts_SmkcIns,	"Ins"
@@ -945,10 +1513,10 @@ BEGIN
 	Vcl_Consts_sAllFilter,	"All"
 	Vcl_Consts_SInsertLineError,	"Unable to insert a line"
 	Vcl_Consts_SInvalidClipFmt,	"Invalid clipboard format"
-	Vcl_Consts_SMsgDlgCancel,	"Cancel"
-	Vcl_Consts_SMsgDlgHelp,	"&Help"
-	Vcl_Consts_SMsgDlgAbort,	"&Abort"
-	Vcl_Consts_SMsgDlgRetry,	"&Retry"
+	Vcl_Consts_SIconToClipboard,	"Clipboard does not support Icons"
+	Vcl_Consts_SCannotOpenClipboard,	"Cannot open clipboard: %s"
+	Vcl_Consts_SInvalidMemoSize,	"Text exceeds memo capacity"
+	Vcl_Consts_SInvalidPrinterOp,	"Operation not supported on selected printer"
 	Vcl_Consts_SMsgDlgIgnore,	"&Ignore"
 	Vcl_Consts_SMsgDlgAll,	"&All"
 	Vcl_Consts_SMsgDlgNoToAll,	"N&o to All"
@@ -961,10 +1529,10 @@ BEGIN
 	Vcl_Consts_SmkcSpace,	"Space"
 	Vcl_Consts_SmkcPgUp,	"PgUp"
 	Vcl_Consts_SmkcPgDn,	"PgDn"
-	Vcl_Consts_SVTIFFImages,	"TIFF Images"
-	Vcl_Consts_SGridTooLarge,	"Grid too large for operation"
-	Vcl_Consts_STooManyDeleted,	"Too many rows or columns deleted"
-	Vcl_Consts_SIndexOutOfRange,	"Grid index out of range"
+	Vcl_Consts_SmkcEnd,	"End"
+	Vcl_Consts_SmkcHome,	"Home"
+	Vcl_Consts_SmkcLeft,	"Left"
+	Vcl_Consts_SmkcUp,	"Up"
 	Vcl_Consts_SFixedColTooBig,	"Fixed column count must be less than column count"
 	Vcl_Consts_SFixedRowTooBig,	"Fixed row count must be less than row count"
 	Vcl_Consts_SInvalidStringGridOp,	"Cannot insert or delete rows from grid"
@@ -977,6 +1545,10 @@ BEGIN
 	Vcl_Consts_SMsgDlgYes,	"&Yes"
 	Vcl_Consts_SMsgDlgNo,	"&No"
 	Vcl_Consts_SMsgDlgOK,	"OK"
+	Vcl_Consts_SMsgDlgCancel,	"Cancel"
+	Vcl_Consts_SMsgDlgHelp,	"&Help"
+	Vcl_Consts_SMsgDlgAbort,	"&Abort"
+	Vcl_Consts_SMsgDlgRetry,	"&Retry"
 	Vcl_Consts_SNoButton,	"&No"
 	Vcl_Consts_SHelpButton,	"&Help"
 	Vcl_Consts_SCloseButton,	"&Close"
@@ -985,14 +1557,14 @@ BEGIN
 	Vcl_Consts_SAbortButton,	"Abort"
 	Vcl_Consts_SAllButton,	"&All"
 	Vcl_Consts_SCannotDragForm,	"Cannot drag a form"
-	Vcl_Consts_SDdeErr,	"An error returned from DDE  ($0%x)"
-	Vcl_Consts_SDdeConvErr,	"DDE Error - conversation not established ($0%x)"
-	Vcl_Consts_SDdeMemErr,	"Error occurred when DDE ran out of memory ($0%x)"
-	Vcl_Consts_SDdeNoConnect,	"Unable to connect DDE conversation"
 	Vcl_Consts_SVMetafiles,	"Metafiles"
 	Vcl_Consts_SVEnhMetafiles,	"Enhanced Metafiles"
 	Vcl_Consts_SVIcons,	"Icons"
 	Vcl_Consts_SVBitmaps,	"Bitmaps"
+	Vcl_Consts_SVTIFFImages,	"TIFF Images"
+	Vcl_Consts_SGridTooLarge,	"Grid too large for operation"
+	Vcl_Consts_STooManyDeleted,	"Too many rows or columns deleted"
+	Vcl_Consts_SIndexOutOfRange,	"Grid index out of range"
 	Vcl_Consts_SMenuIndexError,	"Menu index out of range"
 	Vcl_Consts_SMenuReinserted,	"Menu inserted twice"
 	Vcl_Consts_SMenuNotFound,	"Sub-menu is not in menu"

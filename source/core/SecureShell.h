@@ -40,6 +40,7 @@ private:
   bool FDataWhileFrozen;
   bool FStoredPasswordTried;
   bool FStoredPasswordTriedForKI;
+  bool FStoredPassphraseTried;
   int FSshVersion;
   bool FOpened;
   int FWaiting;
@@ -48,6 +49,7 @@ private:
   bool FCollectPrivateKeyUsage;
   int FWaitingForData;
   bool FOpenSSH;
+  bool FProFTPD;
 
   unsigned PendLen;
   unsigned PendSize;
@@ -132,6 +134,7 @@ public:
   bool __fastcall GetStoredCredentialsTried();
   void __fastcall CollectUsage();
   bool __fastcall IsOpenSSH();
+  bool __fastcall IsProFTPD();
 
   void __fastcall RegisterReceiveHandler(TNotifyEvent Handler);
   void __fastcall UnregisterReceiveHandler(TNotifyEvent Handler);

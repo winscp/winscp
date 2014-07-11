@@ -1,37 +1,65 @@
 	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-		<PropertyGroup>
-			<ProjectGuid>{0B0C5EC6-5DCB-4F16-9504-1E6D37FFBB77}</ProjectGuid>
-			<ProjectVersion>13.4</ProjectVersion>
-			<MainSource>WinSCP.cpp</MainSource>
-			<Config Condition="'$(Config)'==''">Release</Config>
-			<FrameworkType>VCL</FrameworkType>
-			<Base>True</Base>
-			<Platform Condition="'$(Platform)'==''">Win32</Platform>
-			<TargetedPlatforms>1</TargetedPlatforms>
-			<AppType>Application</AppType>
-		</PropertyGroup>
-		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-			<Base>true</Base>
-		</PropertyGroup>
-		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
-			<Cfg_1>true</Cfg_1>
-			<CfgParent>Base</CfgParent>
-			<Base>true</Base>
-		</PropertyGroup>
-		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
-			<Cfg_1_Win32>true</Cfg_1_Win32>
-			<CfgParent>Cfg_1</CfgParent>
-			<Cfg_1>true</Cfg_1>
-			<Base>true</Base>
-		</PropertyGroup>
-		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
-			<Cfg_2>true</Cfg_2>
-			<CfgParent>Base</CfgParent>
-			<Base>true</Base>
-		</PropertyGroup>
-		<PropertyGroup Condition="'$(Base)'!=''">
+	<PropertyGroup>
+		<ProjectGuid>{0B0C5EC6-5DCB-4F16-9504-1E6D37FFBB77}</ProjectGuid>
+		<ProjectVersion>15.4</ProjectVersion>
+		<MainSource>WinSCP.cpp</MainSource>
+		<Config Condition="'$(Config)'==''">Release</Config>
+		<FrameworkType>VCL</FrameworkType>
+		<Base>True</Base>
+		<Platform Condition="'$(Platform)'==''">Win32</Platform>
+		<TargetedPlatforms>1</TargetedPlatforms>
+		<AppType>Application</AppType>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+		<Base>true</Base>
+	</PropertyGroup>
+	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+		<Base_Win32>true</Base_Win32>
+		<CfgParent>Base</CfgParent>
+		<Base>true</Base>
+	</PropertyGroup>
+	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+		<Base_Win64>true</Base_Win64>
+		<CfgParent>Base</CfgParent>
+		<Base>true</Base>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+		<Cfg_1>true</Cfg_1>
+		<CfgParent>Base</CfgParent>
+		<Base>true</Base>
+	</PropertyGroup>
+	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+		<Cfg_1_Win32>true</Cfg_1_Win32>
+		<CfgParent>Cfg_1</CfgParent>
+		<Cfg_1>true</Cfg_1>
+		<Base>true</Base>
+	</PropertyGroup>
+	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
+		<Cfg_1_Win64>true</Cfg_1_Win64>
+		<CfgParent>Cfg_1</CfgParent>
+		<Cfg_1>true</Cfg_1>
+		<Base>true</Base>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+		<Cfg_2>true</Cfg_2>
+		<CfgParent>Base</CfgParent>
+		<Base>true</Base>
+	</PropertyGroup>
+	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
+		<Cfg_2_Win32>true</Cfg_2_Win32>
+		<CfgParent>Cfg_2</CfgParent>
+		<Cfg_2>true</Cfg_2>
+		<Base>true</Base>
+	</PropertyGroup>
+	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
+		<Cfg_2_Win64>true</Cfg_2_Win64>
+		<CfgParent>Cfg_2</CfgParent>
+		<Cfg_2>true</Cfg_2>
+		<Base>true</Base>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Base)'!=''">
 			<_TCHARMapping>wchar_t</_TCHARMapping>
-			<AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib</AllPackageLibs>
+			<AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib</AllPackageLibs>
 			<BCC_AllWarnings>true</BCC_AllWarnings>
 			<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
 			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
@@ -42,25 +70,31 @@
 			<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
 			<DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
 			<DCC_UNSUPPORTED_CONSTRUCT>false</DCC_UNSUPPORTED_CONSTRUCT>
-			<Defines>OLD_DND;STRICT;$(Defines)</Defines>
 			<Icon_MainIcon>resource\Icon256.ico</Icon_MainIcon>
 			<ILINK_GenerateDRC>true</ILINK_GenerateDRC>
-			<ILINK_LibraryPath>windows\;forms\;packages\filemng;packages\tbx;packages\png;..\libs\lib;$(LIB_PATH);$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IncludePath>console;windows\;forms\;core;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;$(BDS)\include\mfc;$(BDS)\include\windows;$(BDS)\include\windows\vcl;$(BDS)\include\dinkumware;$(IncludePath)</IncludePath>
-			<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib</LinkPackageStatics>
+			<ILINK_LibraryPath>windows\;forms\;packages\filemng;packages\tbx;packages\png;..\libs\lib;$(BDS)\lib\win32\release\psdk\;$(BDS)\lib\win32\release\;$(LIB_PATH);$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<ILINK_MapFileType>DetailedSegments</ILINK_MapFileType>
+			<IncludePath>console;windows\;forms\;core;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;packages\jcl;$(BDS)\include\mfc;$(BDS)\include\windows;$(BDS)\include\windows\sdk;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+			<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib</LinkPackageStatics>
 			<Manifest_File>windows\WinSCP.exe.manifest</Manifest_File>
 			<Multithreaded>true</Multithreaded>
 			<OutputExt>exe</OutputExt>
 			<ProjectType>CppVCLApplication</ProjectType>
+			<SanitizedProjectName>WinSCP</SanitizedProjectName>
 			<UsingDelphiRTL>true</UsingDelphiRTL>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.5.4.0;InternalName=winscp;LegalCopyright=(c) 2000-2014 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.5.4.0;ReleaseType=stable;WWW=http://winscp.net/</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.6.0.0;InternalName=winscp;LegalCopyright=(c) 2000-2014 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.6.0.0;ReleaseType=stable;WWW=http://winscp.net/</VerInfo_Keys>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_MajorVer>5</VerInfo_MajorVer>
-			<VerInfo_MinorVer>5</VerInfo_MinorVer>
-			<VerInfo_Release>4</VerInfo_Release>
+			<VerInfo_MinorVer>6</VerInfo_MinorVer>
 		</PropertyGroup>
-		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+	<PropertyGroup Condition="'$(Base_Win32)'!=''">
+			<Defines>IDE;STRICT;$(Defines)</Defines>
+		</PropertyGroup>
+	<PropertyGroup Condition="'$(Base_Win64)'!=''">
+			<Defines>IDE;STRICT;$(Defines)</Defines>
+		</PropertyGroup>
+	<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
 			<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
 			<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
@@ -71,218 +105,217 @@
 			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
 			<DCC_Define>DEBUG</DCC_Define>
 			<DCC_Optimize>false</DCC_Optimize>
-			<Defines>_DEBUG;$(Defines)</Defines>
 			<FinalOutputDir>$(FINAL_PATH)\Debug</FinalOutputDir>
 			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-			<ILINK_LibraryPath>$(INTERM_PATH)\Debug;$(BDS)\lib\win32\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<ILINK_LibraryPath>$(INTERM_PATH)\Debug\;$(BDS)\lib\win32\debug\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<IntermediateOutputDir>$(INTERM_PATH)\Debug</IntermediateOutputDir>
 			<TASM_Debugging>Full</TASM_Debugging>
 			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
 		</PropertyGroup>
-		<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+	<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
 			<BCC_AllCodeguardOptions>true</BCC_AllCodeguardOptions>
 			<BCC_MonitorGlobalAndStackData>true</BCC_MonitorGlobalAndStackData>
 			<BCC_MonitorInlinePtrAccess>true</BCC_MonitorInlinePtrAccess>
 			<BCC_MonitorThis>true</BCC_MonitorThis>
 			<DCC_DebugDCUs>true</DCC_DebugDCUs>
-			<Debugger_DebugSourcePath>packages\my; packages\filemng;..\libs\openssl\crypto\bio;..\libs\openssl\ssl;..\libs\openssl\crypto\stack;..\libs\openssl\crypto\x509;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
+			<Debugger_DebugSourcePath>packages\my;packages\filemng;packages\jcl;..\libs\openssl\crypto\bio;..\libs\openssl\ssl;..\libs\openssl\crypto\stack;..\libs\openssl\crypto\x509;..\libs\neon\src;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
+			<Defines>_DEBUG;$(Defines)</Defines>
 		</PropertyGroup>
-		<PropertyGroup Condition="'$(Cfg_2)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
+	<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
+			<Defines>_DEBUG;$(Defines)</Defines>
+		</PropertyGroup>
+	<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<FinalOutputDir>$(FINAL_PATH)\Release</FinalOutputDir>
 			<ILINK_LibraryPath>$(INTERM_PATH)\Release;$(BDS)\lib\win32\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<IntermediateOutputDir>$(INTERM_PATH)\Release</IntermediateOutputDir>
 			<TASM_Debugging>None</TASM_Debugging>
 		</PropertyGroup>
-		<ItemGroup>
+	<PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+			<Defines>NDEBUG;$(Defines)</Defines>
+		</PropertyGroup>
+	<PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
+			<Defines>NDEBUG;$(Defines)</Defines>
+		</PropertyGroup>
+	<ItemGroup>
 			<CppCompile Include="forms\CustomScpExplorer.cpp">
-				<BuildOrder>8</BuildOrder>
-				<Form>CustomScpExplorerForm</Form>
-				<DependentOn>forms\CustomScpExplorer.h</DependentOn>
-				<BuildOrder>21</BuildOrder>
-			</CppCompile>
+			<BuildOrder>8</BuildOrder>
+			<Form>CustomScpExplorerForm</Form>
+			<DependentOn>forms\CustomScpExplorer.h</DependentOn>
+			<BuildOrder>21</BuildOrder>
+		</CppCompile>
 			<FormResources Include="forms\CustomScpExplorer.dfm"/>
 			<CppCompile Include="forms\Glyphs.cpp">
-				<Form>GlyphsModule</Form>
-				<DesignClass>TDataModule</DesignClass>
-				<DependentOn>forms\Glyphs.h</DependentOn>
-				<BuildOrder>30</BuildOrder>
-			</CppCompile>
+			<Form>GlyphsModule</Form>
+			<DesignClass>TDataModule</DesignClass>
+			<DependentOn>forms\Glyphs.h</DependentOn>
+			<BuildOrder>30</BuildOrder>
+		</CppCompile>
 			<FormResources Include="forms\Glyphs.dfm"/>
 			<CppCompile Include="forms\NonVisual.cpp">
-				<BuildOrder>23</BuildOrder>
-				<Form>NonVisualDataModule</Form>
-				<DesignClass>TDataModule</DesignClass>
-				<DependentOn>forms\NonVisual.h</DependentOn>
-				<BuildOrder>22</BuildOrder>
-			</CppCompile>
+			<BuildOrder>23</BuildOrder>
+			<Form>NonVisualDataModule</Form>
+			<DesignClass>TDataModule</DesignClass>
+			<DependentOn>forms\NonVisual.h</DependentOn>
+			<BuildOrder>22</BuildOrder>
+		</CppCompile>
 			<FormResources Include="forms\NonVisual.dfm"/>
 			<CppCompile Include="forms\ScpCommander.cpp">
-				<BuildOrder>38</BuildOrder>
-				<Form>ScpCommanderForm</Form>
-				<DependentOn>forms\ScpCommander.h</DependentOn>
-				<BuildOrder>23</BuildOrder>
-			</CppCompile>
+			<BuildOrder>38</BuildOrder>
+			<Form>ScpCommanderForm</Form>
+			<DependentOn>forms\ScpCommander.h</DependentOn>
+			<BuildOrder>23</BuildOrder>
+		</CppCompile>
 			<FormResources Include="forms\ScpCommander.dfm"/>
 			<CppCompile Include="forms\ScpExplorer.cpp">
-				<BuildOrder>41</BuildOrder>
-				<Form>ScpExplorerForm</Form>
-				<DependentOn>forms\ScpExplorer.h</DependentOn>
-				<BuildOrder>24</BuildOrder>
-			</CppCompile>
+			<BuildOrder>41</BuildOrder>
+			<Form>ScpExplorerForm</Form>
+			<DependentOn>forms\ScpExplorer.h</DependentOn>
+			<BuildOrder>24</BuildOrder>
+		</CppCompile>
 			<FormResources Include="forms\ScpExplorer.dfm"/>
 			<CppCompile Include="windows\ConsoleRunner.cpp">
-				<BuildOrder>27</BuildOrder>
-				<BuildOrder>26</BuildOrder>
-			</CppCompile>
+			<BuildOrder>27</BuildOrder>
+			<BuildOrder>26</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\CustomWinConfiguration.cpp">
-				<BuildOrder>18</BuildOrder>
-				<BuildOrder>11</BuildOrder>
-			</CppCompile>
+			<BuildOrder>18</BuildOrder>
+			<BuildOrder>11</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\EditorManager.cpp">
-				<BuildOrder>15</BuildOrder>
-				<BuildOrder>14</BuildOrder>
-			</CppCompile>
+			<BuildOrder>15</BuildOrder>
+			<BuildOrder>14</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\GUIConfiguration.cpp">
-				<BuildOrder>17</BuildOrder>
-				<BuildOrder>16</BuildOrder>
-			</CppCompile>
+			<BuildOrder>17</BuildOrder>
+			<BuildOrder>16</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\GUITools.cpp">
-				<BuildOrder>20</BuildOrder>
-				<BuildOrder>17</BuildOrder>
-			</CppCompile>
+			<BuildOrder>20</BuildOrder>
+			<BuildOrder>17</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\ProgParams.cpp">
-				<BuildOrder>29</BuildOrder>
-				<BuildOrder>28</BuildOrder>
-			</CppCompile>
+			<BuildOrder>29</BuildOrder>
+			<BuildOrder>28</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\QueueController.cpp">
-				<BuildOrder>32</BuildOrder>
-				<BuildOrder>29</BuildOrder>
-			</CppCompile>
+			<BuildOrder>32</BuildOrder>
+			<BuildOrder>29</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\Setup.cpp">
-				<BuildOrder>35</BuildOrder>
-				<BuildOrder>26</BuildOrder>
-			</CppCompile>
+			<BuildOrder>35</BuildOrder>
+			<BuildOrder>26</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\SynchronizeController.cpp">
-				<BuildOrder>44</BuildOrder>
-				<BuildOrder>25</BuildOrder>
-			</CppCompile>
+			<BuildOrder>44</BuildOrder>
+			<BuildOrder>25</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\TerminalManager.cpp">
-				<BuildOrder>47</BuildOrder>
-				<BuildOrder>4</BuildOrder>
-			</CppCompile>
+			<BuildOrder>47</BuildOrder>
+			<BuildOrder>4</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\Tools.cpp">
-				<BuildOrder>50</BuildOrder>
-				<BuildOrder>5</BuildOrder>
-			</CppCompile>
+			<BuildOrder>50</BuildOrder>
+			<BuildOrder>5</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\UserInterface.cpp">
-				<BuildOrder>6</BuildOrder>
-				<BuildOrder>53</BuildOrder>
-			</CppCompile>
-			<DelphiCompile Include="windows\Vcl.Controls.pas">
-				<BuildOrder>35</BuildOrder>
-			</DelphiCompile>
+			<BuildOrder>6</BuildOrder>
+			<BuildOrder>53</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\WinConfiguration.cpp">
-				<BuildOrder>56</BuildOrder>
-				<BuildOrder>3</BuildOrder>
-			</CppCompile>
+			<BuildOrder>56</BuildOrder>
+			<BuildOrder>3</BuildOrder>
+		</CppCompile>
 			<ResourceCompile Include="windows\Windows.rc">
-				<BuildOrder>5</BuildOrder>
-				<BuildOrder>20</BuildOrder>
-			</ResourceCompile>
+			<BuildOrder>5</BuildOrder>
+			<BuildOrder>20</BuildOrder>
+		</ResourceCompile>
 			<CppCompile Include="windows\WinHelp.cpp">
-				<BuildOrder>59</BuildOrder>
-				<BuildOrder>0</BuildOrder>
-			</CppCompile>
+			<BuildOrder>59</BuildOrder>
+			<BuildOrder>0</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\WinInterface.cpp">
-				<BuildOrder>62</BuildOrder>
-				<BuildOrder>1</BuildOrder>
-			</CppCompile>
+			<BuildOrder>62</BuildOrder>
+			<BuildOrder>1</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="windows\WinMain.cpp">
-				<BuildOrder>65</BuildOrder>
-				<BuildOrder>2</BuildOrder>
-			</CppCompile>
+			<BuildOrder>65</BuildOrder>
+			<BuildOrder>2</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="WinSCP.cpp">
-				<BuildOrder>2</BuildOrder>
-				<BuildOrder>19</BuildOrder>
-			</CppCompile>
+			<BuildOrder>2</BuildOrder>
+			<BuildOrder>19</BuildOrder>
+		</CppCompile>
 			
-			<LibFiles Include="apr.lib">
-				<BuildOrder>32</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
 			<LibFiles Include="FileZilla.lib">
-				<BuildOrder>27</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
+			<BuildOrder>27</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
 			<LibFiles Include="libeay32.lib">
-				<BuildOrder>28</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
+			<BuildOrder>28</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
 			<LibFiles Include="libexpats_mtd.lib">
-				<BuildOrder>31</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
+			<BuildOrder>31</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
 			<LibFiles Include="neon.lib">
-				<BuildOrder>33</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
+			<BuildOrder>33</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
 			<LibFiles Include="Putty.lib">
-				<BuildOrder>23</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
+			<BuildOrder>23</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
 			<LibFiles Include="RScpComp.lib">
-				<BuildOrder>24</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
+			<BuildOrder>24</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
 			<LibFiles Include="ScpCore.lib">
-				<BuildOrder>25</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
+			<BuildOrder>25</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
 			<LibFiles Include="ScpForms.lib">
-				<BuildOrder>26</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
+			<BuildOrder>26</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
 			<LibFiles Include="ssleay32.lib">
-				<BuildOrder>29</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
-			<LibFiles Include="zlib.lib">
-				<BuildOrder>30</BuildOrder>
-				<IgnorePath>true</IgnorePath>
-			</LibFiles>
+			<BuildOrder>29</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
 			<BuildConfiguration Include="Base">
-				<Key>Base</Key>
-			</BuildConfiguration>
+			<Key>Base</Key>
+		</BuildConfiguration>
 			<BuildConfiguration Include="Debug">
-				<Key>Cfg_1</Key>
-				<CfgParent>Base</CfgParent>
-			</BuildConfiguration>
+			<Key>Cfg_1</Key>
+			<CfgParent>Base</CfgParent>
+		</BuildConfiguration>
 			<BuildConfiguration Include="Release">
-				<Key>Cfg_2</Key>
-				<CfgParent>Base</CfgParent>
-			</BuildConfiguration>
+			<Key>Cfg_2</Key>
+			<CfgParent>Base</CfgParent>
+		</BuildConfiguration>
 		</ItemGroup>
-		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
-		<ProjectExtensions>
-			<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
-			<Borland.ProjectType>CppVCLApplication</Borland.ProjectType>
-			<BorlandProject>
-				<CPlusPlusBuilder.Personality>
-					<Source>
-						<Source Name="MainSource">WinSCP.cpp</Source>
-					</Source>
-					<ProjectProperties>
-						<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
-						<ProjectProperties Name="ManagePaths">True</ProjectProperties>
-						<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
-					</ProjectProperties>
-				</CPlusPlusBuilder.Personality>
-				<Platforms>
-					<Platform value="Win32">True</Platform>
-				</Platforms>
-			</BorlandProject>
-			<ProjectFileVersion>12</ProjectFileVersion>
-		</ProjectExtensions>
-		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
-	</Project>
+	<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
+	<ProjectExtensions>
+		<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+		<Borland.ProjectType>CppVCLApplication</Borland.ProjectType>
+		<BorlandProject>
+			<CPlusPlusBuilder.Personality>
+				<Source>
+					<Source Name="MainSource">WinSCP.cpp</Source>
+				</Source>
+				<ProjectProperties>
+					<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+					<ProjectProperties Name="ManagePaths">True</ProjectProperties>
+					<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+					<ProjectProperties Name="IndexFiles">False</ProjectProperties>
+				</ProjectProperties>
+			</CPlusPlusBuilder.Personality>
+			<Platforms>
+				<Platform value="Win32">True</Platform>
+				<Platform value="Win64">False</Platform>
+			</Platforms>
+		</BorlandProject>
+		<ProjectFileVersion>12</ProjectFileVersion>
+	</ProjectExtensions>
+	<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+</Project>
