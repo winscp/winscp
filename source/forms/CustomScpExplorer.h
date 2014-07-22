@@ -263,10 +263,10 @@ private:
   void __fastcall QueueSplitterDblClick(TObject * Sender);
   void __fastcall ApplicationMinimize(TObject * Sender);
   void __fastcall ApplicationRestore(TObject * Sender);
-  void __fastcall AddQueueItem(TTransferDirection Direction,
+  void __fastcall AddQueueItem(TTerminalQueue * Queue, TTransferDirection Direction,
     TStrings * FileList, const UnicodeString TargetDirectory,
     const TCopyParamType & CopyParam, int Params);
-  void __fastcall AddQueueItem(TQueueItem * QueueItem);
+  void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem);
   void __fastcall ClearTransferSourceSelection(TTransferDirection Direction);
   void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect);
   void __fastcall SessionsDDProcessDropped(TObject * Sender, int KeyState, const TPoint & Point, int Effect);

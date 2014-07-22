@@ -1,7 +1,7 @@
 This is the README file for source code package of WinSCP.
 
 To build WinSCP you need:
-- Embarcadero C++ Builder XE2 Professional.
+- Embarcadero C++ Builder XE6 Professional.
   http://www.embarcadero.com/products/cbuilder
 - Microsoft .NET Framework 3.5 (for MSBuild)
   http://www.microsoft.com/netframework

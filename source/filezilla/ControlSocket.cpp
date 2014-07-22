@@ -521,3 +521,9 @@ void CControlSocket::LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat)
 {
 	LogMessage(nMessageType, pMsgFormat);
 }
+
+bool CControlSocket::LoggingSocketMessage(int nMessageType)
+{
+	return LoggingMessageType(nMessageType);
+}
+

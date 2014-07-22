@@ -102,7 +102,10 @@ __fastcall THierarchicalStorage::THierarchicalStorage(const UnicodeString AStora
   FKeyHistory = new TStringList();
   AccessMode = smRead;
   Explicit = false;
-  ForceAnsi = true;
+  // While this was implemented in 5.0 already, for some reason
+  // it was disabled (by mistake?). So although enabled for 5.6.1 only,
+  // data written in Unicode/UTF8 can be read by all versions back to 5.0.
+  ForceAnsi = false;
   MungeStringValues = true;
 }
 //---------------------------------------------------------------------------

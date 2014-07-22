@@ -1880,9 +1880,19 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 
           if (Unquote(Path))
           {
-            FCurrentDirectory = UnixExcludeTrailingBackslash(Path);
             Result = true;
           }
+        }
+        else
+        {
+          P = Path.Pos(L" ");
+          Path.Delete(P, Path.Length() - P + 1);
+          Result = true;
+        }
+
+        if (Result)
+        {
+          FCurrentDirectory = UnixExcludeTrailingBackslash(Path);
         }
       }
 

@@ -170,8 +170,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentEditWithAction, EnabledSelectedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
   UPD(CurrentOpenAction, EnabledFocusedOperation &&
-    !WinConfiguration->DisableOpenEdit &&
-    !DirView(osCurrent)->ItemIsDirectory(DirView(osCurrent)->ItemFocused))
+    !WinConfiguration->DisableOpenEdit)
   UPDEX1(CurrentAddEditLinkContextAction, ScpExplorer->CanAddEditLink(osCurrent),
     ((TAction *)Action)->Visible = ScpExplorer->LinkFocused())
   UPD(NewLinkAction, ScpExplorer->CanAddEditLink(osCurrent))

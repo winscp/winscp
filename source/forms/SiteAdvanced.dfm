@@ -2,7 +2,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
   Left = 351
   Top = 167
   HelpType = htKeyword
-  HelpKeyword = 'ui_site_advanced'
+  HelpKeyword = 'ui_login_advanced'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Advanced Site Settings'
@@ -421,9 +421,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object Label10: TLabel
             Left = 12
             Top = 20
-            Width = 230
+            Width = 211
             Height = 13
-            Caption = '&Reverses order of symlink command arguments:'
+            Caption = '&Reverses order of link command arguments:'
             FocusControl = SFTPBugSymlinkCombo
           end
           object Label36: TLabel
@@ -494,7 +494,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               '2'
               '3'
               '4'
-              '5')
+              '5'
+              '6')
           end
           object SftpServerEdit: TComboBox
             Left = 149
@@ -2243,6 +2244,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         end
       end
       object NoteSheet: TTabSheet
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_note'
         Caption = 'Note'
         ImageIndex = 14
         TabVisible = False

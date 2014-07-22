@@ -119,10 +119,7 @@ void __fastcall TSynchronizeDialog::FeedSynchronizeError(
   const UnicodeString & Message, TStrings * MoreMessages, TQueryType Type,
   const UnicodeString & HelpKeyword)
 {
-  UnicodeString AMessage = Message;
-  AMessage = ReplaceStr(AMessage, L"\r", L"");
-  AMessage = ReplaceStr(AMessage, L"\n", L" ");
-  DoLogInternal(slContinuedError, AMessage, MoreMessages, Type, HelpKeyword);
+  DoLogInternal(slContinuedError, Message, MoreMessages, Type, HelpKeyword);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::UpdateControls()
@@ -355,7 +352,12 @@ void __fastcall TSynchronizeDialog::DoLogInternal(
     LogItemData->HelpKeyword = HelpKeyword;
 
     Item->Caption = Now().TimeString();
-    Item->SubItems->Add(Message);
+
+    UnicodeString UnformattedMessage = UnformatMessage(Message);
+    UnformattedMessage = ReplaceStr(UnformattedMessage, L"\r", L"");
+    UnformattedMessage = ReplaceStr(UnformattedMessage, L"\n", L" ");
+
+    Item->SubItems->Add(UnformattedMessage);
     Item->MakeVisible(false);
     while (LogView->Items->Count > MaxLogItems)
     {

@@ -141,6 +141,7 @@ protected:
 	bool TryNextProtocol();
 
 	void LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat);
+	bool LoggingSocketMessage(int nMessageType);
 
 private:
 	//Layer state can't be set directly from derived classes

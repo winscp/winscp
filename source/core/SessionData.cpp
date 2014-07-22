@@ -11,6 +11,7 @@
 #include "TextsCore.h"
 #include "PuttyIntf.h"
 #include "RemoteFiles.h"
+#include "SFTPFileSystem.h"
 #include <StrUtils.hpp>
 #include <XMLDoc.hpp>
 #include <StrUtils.hpp>
@@ -168,7 +169,7 @@ void __fastcall TSessionData::Default()
   SFTPDownloadQueue = 4;
   SFTPUploadQueue = 4;
   SFTPListingQueue = 2;
-  SFTPMaxVersion = 5;
+  SFTPMaxVersion = ::SFTPMaxVersion;
   SFTPMaxPacketSize = 0;
 
   for (unsigned int Index = 0; Index < LENOF(FSFTPBugs); Index++)

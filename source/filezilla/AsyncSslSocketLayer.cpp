@@ -816,6 +816,20 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 		return SSL_FAILURE_INITSSL;
 	}
 
+#ifdef _DEBUG
+	if ((main == NULL) && LoggingSocketMessage(FZ_LOG_INFO))
+	{
+		USES_CONVERSION;
+		LogSocketMessage(FZ_LOG_INFO, _T("Supported ciphersuites:"));
+		STACK_OF(SSL_CIPHER) * ciphers = SSL_get_ciphers(m_ssl);
+		for (int i = 0; i < sk_SSL_CIPHER_num(ciphers); i++)
+		{
+			SSL_CIPHER * cipher = sk_SSL_CIPHER_value(ciphers, i);
+			LogSocketMessage(FZ_LOG_INFO, A2CT(cipher->name));
+		}
+	}
+#endif
+
 	//Add current instance to list of active instances
 	t_SslLayerList *tmp = m_pSslLayerList;
 	m_pSslLayerList = new t_SslLayerList;
@@ -849,11 +863,8 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 
 	//Init SSL connection
 	void *ssl_sessionid = NULL;
-	{
-		USES_CONVERSION;
-		m_Main = main;
-		m_sessionreuse = sessionreuse;
-	}
+	m_Main = main;
+	m_sessionreuse = sessionreuse;
 	if ((m_Main != NULL) && m_sessionreuse)
 	{
 		if (m_Main->m_sessionid != NULL)

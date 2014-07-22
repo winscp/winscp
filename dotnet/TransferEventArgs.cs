@@ -15,6 +15,7 @@ namespace WinSCP
 
         internal const string UploadTag = "upload";
         internal const string DownloadTag = "download";
+        internal const string MkDirTag = "mkdir";
 
         internal TransferEventArgs()
         {

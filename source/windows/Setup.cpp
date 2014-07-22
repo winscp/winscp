@@ -462,7 +462,6 @@ static void __fastcall UnregisterAsUrlHandlers(const UnicodeString & Prefix, boo
 {
   UnregisterAsUrlHandler(Prefix + SftpProtocol, UnregisterProtocol);
   UnregisterAsUrlHandler(Prefix + ScpProtocol, UnregisterProtocol);
-  // add WebDAV
 }
 //---------------------------------------------------------------------------
 static const UnicodeString GenericUrlHandler(L"WinSCP.Url");
@@ -564,6 +563,9 @@ static void __fastcall RegisterProtocolsForDefaultPrograms(HKEY RootKey)
   RegisterProtocolForDefaultPrograms(RootKey, FtpsProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, SftpProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, ScpProtocol);
+  // deliberately not including WebDAV/http,
+  // it's unlikely that anyone would like to change http handler
+  // to non-browser application
 }
 //---------------------------------------------------------------------------
 static void __fastcall UnregisterProtocolsForDefaultPrograms(HKEY RootKey, bool ForceHandlerUnregistration)
@@ -618,7 +620,8 @@ void __fastcall RegisterForDefaultProtocols()
   RegisterAsNonBrowserUrlHandler(WinSCPProtocolPrefix);
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase());
-  // add WebDAV
+  RegisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVProtocol.UpperCase());
+  RegisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVSProtocol.UpperCase());
 
   NotifyChangedAssociations();
 }
@@ -629,6 +632,8 @@ void __fastcall UnregisterForProtocols()
   UnregisterAsUrlHandlers(WinSCPProtocolPrefix, true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase(), true);
+  UnregisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVProtocol.UpperCase(), true);
+  UnregisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVSProtocol.UpperCase(), true);
 
   UnregisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER, false);
   UnregisterProtocolsForDefaultPrograms(HKEY_LOCAL_MACHINE, false);

@@ -1044,7 +1044,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
         try
         {
           FileList1->AddObject(FileList->Strings[Index], FileList->Objects[Index]);
-          AddQueueItem(Direction, FileList1, TargetDirectory, CopyParam, Params);
+          AddQueueItem(Queue, Direction, FileList1, TargetDirectory, CopyParam, Params);
         }
         __finally
         {
@@ -1054,7 +1054,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
     }
     else
     {
-      AddQueueItem(Direction, FileList, TargetDirectory, CopyParam, Params);
+      AddQueueItem(Queue, Direction, FileList, TargetDirectory, CopyParam, Params);
     }
     Result = false;
 
@@ -1074,7 +1074,7 @@ void __fastcall TCustomScpExplorerForm::ClearTransferSourceSelection(TTransferDi
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AddQueueItem(
-  TTransferDirection Direction, TStrings * FileList,
+  TTerminalQueue * Queue, TTransferDirection Direction, TStrings * FileList,
   const UnicodeString TargetDirectory, const TCopyParamType & CopyParam,
   int Params)
 {
@@ -1106,10 +1106,10 @@ void __fastcall TCustomScpExplorerForm::AddQueueItem(
     QueueItem = new TDownloadQueueItem(Terminal, FileList, TargetDirectory,
       &CopyParam, Params, SingleFile);
   }
-  AddQueueItem(QueueItem);
+  AddQueueItem(Queue, QueueItem);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::AddQueueItem(TQueueItem * QueueItem)
+void __fastcall TCustomScpExplorerForm::AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem)
 {
   if (Queue->IsEmpty)
   {
@@ -1876,8 +1876,8 @@ void __fastcall TCustomScpExplorerForm::DirViewContextPopupDefaultItem(
       // when resolving links is disabled, default action is to enter the directory,
       // no matter what DoubleClickAction is configured to
       ((Side != osRemote) || Terminal->ResolvingSymlinks) &&
-      // Can only Open/Edit files, but can Copy even directories
-      (((DoubleClickAction != dcaOpen) && (DoubleClickAction != dcaEdit)) ||
+      // Can only Edit files, but can Open/Copy even directories
+      ((DoubleClickAction != dcaEdit) ||
        !DView->ItemIsDirectory(DView->ItemFocused)))
   {
     Item->Options = O << tboDefault;
@@ -2065,7 +2065,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
 
               Configuration->Usage->Inc("MovesToBackground");
 
-              AddQueueItem(Direction, FileList, TargetDirectory, CopyParam, Params);
+              AddQueueItem(Queue, Direction, FileList, TargetDirectory, CopyParam, Params);
               ClearTransferSourceSelection(Direction);
             }
 
@@ -3010,13 +3010,13 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
     CopyParam.ReplaceInvalidChars = true;
     CopyParam.IncludeFileMask = TFileMasks();
 
-    assert(Queue != NULL);
+    assert(Data->Queue != NULL);
 
     int Params = cpNoConfirmation | cpTemporary;
     TQueueItem * QueueItem = new TUploadQueueItem(Data->Terminal, FileList,
       Data->RemoteDirectory, &CopyParam, Params, true);
     QueueItem->CompleteEvent = UploadCompleteEvent;
-    AddQueueItem(QueueItem);
+    AddQueueItem(Data->Queue, QueueItem);
   }
   __finally
   {

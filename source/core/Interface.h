@@ -9,7 +9,7 @@
 TConfiguration * __fastcall CreateConfiguration();
 
 void __fastcall ShowExtendedException(Exception * E);
-bool __fastcall AppendExceptionStackTrace(TStrings *& MoreMessages);
+bool __fastcall AppendExceptionStackTraceAndForget(TStrings *& MoreMessages);
 
 UnicodeString __fastcall GetCompanyRegistryKey();
 UnicodeString __fastcall GetRegistryKey();

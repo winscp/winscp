@@ -50,6 +50,7 @@ UnicodeString __fastcall MainInstructions(const UnicodeString & S);
 UnicodeString __fastcall MainInstructionsFirstParagraph(const UnicodeString & S);
 bool ExtractMainInstructions(UnicodeString & S, UnicodeString & MainInstructions);
 UnicodeString UnformatMessage(UnicodeString S);
+UnicodeString RemoveInteractiveMsgTag(UnicodeString S);
 bool IsNumber(const UnicodeString Str);
 UnicodeString __fastcall SystemTemporaryDirectory();
 UnicodeString __fastcall GetShellFolderPath(int CSIdl);

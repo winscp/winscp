@@ -106,6 +106,9 @@ SignTool=sign $f "WinSCP Installer" http://winscp.net/eng/docs/installation
 #endif
 
 [Languages]
+; English has to be first so that it is pre-selected
+; on Setup Select Language window, when no translation matching
+; Windows UI locale is available
 Name: {#DefaultLang}; MessagesFile: {#MessagesPathRel(DefaultLang)}
 
 #define FindHandle

@@ -325,6 +325,7 @@ protected:
 #endif // NOLAYERS
 
 	virtual void LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat) {};
+	virtual bool LoggingSocketMessage(int nMessageType) { return true; };
 };
 
 #ifndef NOLAYERS

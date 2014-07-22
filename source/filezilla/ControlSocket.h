@@ -165,6 +165,7 @@ protected:
 	//End Speed limit
 	
 	virtual void LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat);
+	virtual bool LoggingSocketMessage(int nMessageType);
 
 public:
 	struct t_operation

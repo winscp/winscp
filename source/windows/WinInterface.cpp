@@ -538,30 +538,35 @@ static TStrings * __fastcall StackInfoListToStrings(
   return StackTrace.release();
 }
 //---------------------------------------------------------------------------
-bool __fastcall AppendExceptionStackTrace(TStrings *& MoreMessages)
+static std::unique_ptr<TCriticalSection> StackTraceCriticalSection(new TCriticalSection());
+typedef std::map<DWORD, TStrings *> TStackTraceMap;
+static TStackTraceMap StackTraceMap;
+//---------------------------------------------------------------------------
+bool __fastcall AppendExceptionStackTraceAndForget(TStrings *& MoreMessages)
 {
-  TJclStackInfoList * StackInfoList = JclLastExceptStackList();
-  std::unique_ptr<TStrings> OwnedMoreMessages;
   bool Result = false;
-  if (StackInfoList != NULL)
+
+  TGuard Guard(StackTraceCriticalSection.get());
+
+  TStackTraceMap::iterator Iterator = StackTraceMap.find(GetCurrentThreadId());
+  if (Iterator != StackTraceMap.end())
   {
+    std::unique_ptr<TStrings> OwnedMoreMessages;
     if (MoreMessages == NULL)
     {
       OwnedMoreMessages.reset(new TStringList());
       MoreMessages = OwnedMoreMessages.get();
       Result = true;
     }
-    std::unique_ptr<TStrings> StackTrace(StackInfoListToStrings(StackInfoList));
     if (!MoreMessages->Text.IsEmpty())
     {
       MoreMessages->Text = MoreMessages->Text + "\n";
     }
     MoreMessages->Text = MoreMessages->Text + LoadStr(STACK_TRACE) + "\n";
-    MoreMessages->AddStrings(StackTrace.get());
+    MoreMessages->AddStrings(Iterator->second);
 
-    // this chains so that JclLastExceptStackList() returns NULL the next time
-    // for the current thread
-    delete StackInfoList;
+    delete Iterator->second;
+    StackTraceMap.erase(Iterator);
 
     OwnedMoreMessages.release();
   }
@@ -587,30 +592,9 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   HelpKeyword = MergeHelpKeyword(HelpKeyword, GetExceptionHelpKeyword(E));
 
   std::unique_ptr<TStrings> OwnedMoreMessages;
-  if (AppendExceptionStackTrace(MoreMessages))
+  if (AppendExceptionStackTraceAndForget(MoreMessages))
   {
     OwnedMoreMessages.reset(MoreMessages);
-  }
-
-  TJclStackInfoList * StackInfoList = JclLastExceptStackList();
-  if (StackInfoList != NULL)
-  {
-    if (MoreMessages == NULL)
-    {
-      OwnedMoreMessages.reset(new TStringList());
-      MoreMessages = OwnedMoreMessages.get();
-    }
-    std::unique_ptr<TStrings> StackTrace(StackInfoListToStrings(StackInfoList));
-    if (!MoreMessages->Text.IsEmpty())
-    {
-      MoreMessages->Text = MoreMessages->Text + "\n";
-    }
-    MoreMessages->Text = MoreMessages->Text + LoadStr(STACK_TRACE) + "\n";
-    MoreMessages->AddStrings(StackTrace.get());
-
-    // this chains so that JclLastExceptStackList() returns NULL the next time
-    // for the current thread
-    delete StackInfoList;
   }
 
   return MoreMessageDialog(
@@ -657,6 +641,32 @@ static void __fastcall DoExceptNotify(TObject * ExceptObj, void * ExceptAddr,
     if ((E != NULL) && IsInternalException(E)) // optimization
     {
       DoExceptionStackTrace(ExceptObj, ExceptAddr, OSException, BaseOfStack);
+
+      TJclStackInfoList * StackInfoList = JclLastExceptStackList();
+
+      if (ALWAYS_TRUE(StackInfoList != NULL))
+      {
+        std::unique_ptr<TStrings> StackTrace(StackInfoListToStrings(StackInfoList));
+
+        DWORD ThreadID = GetCurrentThreadId();
+
+        TGuard Guard(StackTraceCriticalSection.get());
+
+        TStackTraceMap::iterator Iterator = StackTraceMap.find(ThreadID);
+        if (Iterator != StackTraceMap.end())
+        {
+          Iterator->second->Add(L"");
+          Iterator->second->AddStrings(StackTrace.get());
+        }
+        else
+        {
+          StackTraceMap.insert(std::make_pair(ThreadID, StackTrace.release()));
+        }
+
+        // this chains so that JclLastExceptStackList() returns NULL the next time
+        // for the current thread
+        delete StackInfoList;
+      }
     }
   }
 }

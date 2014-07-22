@@ -1266,6 +1266,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   }
 
   AQuery = UnformatMessage(AQuery);
+  AQuery = RemoveInteractiveMsgTag(AQuery);
 
   ApplyTabs(AQuery, L' ', NULL, NULL);
 

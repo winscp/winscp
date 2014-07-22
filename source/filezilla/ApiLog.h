@@ -36,6 +36,8 @@ public:
 	BOOL InitLog(HWND hTargerWnd, int nLogMessage);
 	BOOL InitLog(CApiLog *pParent);
 
+	bool LoggingMessageType(int nMessageType) const;
+
 	void LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const;
 	void LogMessageRaw(int nMessageType, LPCTSTR pMsg) const;
 	void LogMessage(int nMessageType, UINT nFormatID, ...) const;

@@ -67,11 +67,18 @@ BOOL CApiLog::InitLog(HWND hTargetWnd, int nLogMessage)
 	return TRUE;
 }
 
+bool CApiLog::LoggingMessageType(int nMessageType) const
+{
+  return
+    (nMessageType < FZ_LOG_APIERROR) ||
+    ((nMessageType-FZ_LOG_APIERROR) < m_pApiLogParent->m_nDebugLevel);
+}
+
 void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
 {
 	ASSERT(nMessageType>=0 && nMessageType<=8);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
-	if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
+	if (!LoggingMessageType(nMessageType))
 		return;
 
 	va_list ap;
@@ -92,7 +99,7 @@ void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
 {
 	ASSERT(nMessageType>=0 && nMessageType<=8);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
-	if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
+	if (!LoggingMessageType(nMessageType))
 		return;
 
 #ifdef MPEXT
@@ -106,7 +113,7 @@ void CApiLog::LogMessage(int nMessageType, UINT nFormatID, ...) const
 {
 	ASSERT(nMessageType>=0 && nMessageType<=8);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
-	if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
+	if (!LoggingMessageType(nMessageType))
 		return;
 
 	CString str;
@@ -189,7 +196,7 @@ void CApiLog::SendLogMessage(int nMessageType, LPCTSTR pMsg) const
 	ASSERT(m_pApiLogParent);
 	ASSERT(m_pApiLogParent->m_hTargetWnd == 0);
 	ASSERT(m_pApiLogParent->m_nLogMessage == 0);
-	if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
+	if (!LoggingMessageType(nMessageType))
 		return;
 	//Displays a message in the message log	
 	t_ffam_statusmessage *pStatus = new t_ffam_statusmessage;
@@ -210,7 +217,7 @@ void CApiLog::SendLogMessage(int nMessageType, LPCTSTR pMsg) const
 		ASSERT(m_pApiLogParent);
 		ASSERT(m_pApiLogParent->m_hTargetWnd);
 		ASSERT(m_pApiLogParent->m_nLogMessage);
-		if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
+		if (!LoggingMessageType(nMessageType))
 			return;
 	}
 	//Displays a message in the message log	

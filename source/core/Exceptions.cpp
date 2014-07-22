@@ -8,6 +8,7 @@
 #include "HelpCore.h"
 #include "Configuration.h"
 #include "CoreMain.h"
+#include "Interface.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -311,6 +312,11 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
       FMoreMessages->Insert(0, UnformatMessage(Msg));
     }
 
+    if (IsInternalException(E))
+    {
+      AppendExceptionStackTraceAndForget(FMoreMessages);
+    }
+
     if (FMoreMessages->Count == 0)
     {
       delete FMoreMessages;
@@ -324,9 +330,14 @@ __fastcall ExtException::~ExtException()
   delete FMoreMessages;
 }
 //---------------------------------------------------------------------------
+ExtException * __fastcall ExtException::CloneFrom(Exception * E)
+{
+  return new ExtException(E, L"");
+}
+//---------------------------------------------------------------------------
 ExtException * __fastcall ExtException::Clone()
 {
-  return new ExtException(this, L"");
+  return CloneFrom(this);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall SysErrorMessageForError(int LastError)
@@ -402,7 +413,16 @@ Exception * __fastcall CloneException(Exception * E)
   }
   else
   {
-    Result = new Exception(E->Message);
+    // we do not expect this to happen
+    if (ALWAYS_FALSE(IsInternalException(E)))
+    {
+      // to save exception stack trace
+      Result = ExtException::CloneFrom(E);
+    }
+    else
+    {
+      Result = new Exception(E->Message);
+    }
   }
   return Result;
 }

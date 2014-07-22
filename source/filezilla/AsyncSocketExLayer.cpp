@@ -1041,3 +1041,12 @@ void CAsyncSocketExLayer::LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat)
 	else
 		m_pOwnerSocket->LogSocketMessage(nMessageType, pMsgFormat);
 }
+
+bool CAsyncSocketExLayer::LoggingSocketMessage(int nMessageType)
+{
+	if (m_pPrevLayer)
+		return m_pPrevLayer->LoggingSocketMessage(nMessageType);
+	else
+		return m_pOwnerSocket->LoggingSocketMessage(nMessageType);
+}
+

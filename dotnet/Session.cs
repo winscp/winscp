@@ -321,6 +321,7 @@ namespace WinSCP
                 using (CreateProgressHandler())
                 {
                     TransferEventArgs args = null;
+                    bool mkdir = false;
 
                     while (groupReader.Read(0))
                     {
@@ -332,22 +333,36 @@ namespace WinSCP
                                 RaiseFileTransferredEvent(args);
                             }
                             args = TransferEventArgs.Read(groupReader);
+                            mkdir = false;
+                        }
+                        else if (groupReader.IsNonEmptyElement(TransferEventArgs.MkDirTag))
+                        {
+                            args = null;
+                            mkdir = true;
+                            // For now, silently ignoring results (even errors)
+                            // of mkdir operation, including future chmod/touch
                         }
                         else if (groupReader.IsNonEmptyElement(ChmodEventArgs.Tag))
                         {
-                            if (args == null)
+                            if (!mkdir)
                             {
-                                throw new InvalidOperationException();
+                                if (args == null)
+                                {
+                                    throw new InvalidOperationException();
+                                }
+                                args.Chmod = ChmodEventArgs.Read(groupReader);
                             }
-                            args.Chmod = ChmodEventArgs.Read(groupReader);
                         }
                         else if (groupReader.IsNonEmptyElement(TouchEventArgs.Tag))
                         {
-                            if (args == null)
+                            if (!mkdir)
                             {
-                                throw new InvalidOperationException();
+                                if (args == null)
+                                {
+                                    throw new InvalidOperationException();
+                                }
+                                args.Touch = TouchEventArgs.Read(groupReader);
                             }
-                            args.Touch = TouchEventArgs.Read(groupReader);
                         }
                     }
 
@@ -649,7 +664,7 @@ namespace WinSCP
                 WriteCommand(string.Format(CultureInfo.InvariantCulture, "mkdir \"{0}\"", ArgumentEscape(path)));
 
                 using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
-                using (ElementLogReader mkdirReader = groupReader.WaitForNonEmptyElementAndCreateLogReader("mkdir", LogReadFlags.ThrowFailures))
+                using (ElementLogReader mkdirReader = groupReader.WaitForNonEmptyElementAndCreateLogReader(TransferEventArgs.MkDirTag, LogReadFlags.ThrowFailures))
                 {
                     ReadElement(mkdirReader, 0);
                     groupReader.ReadToEnd(LogReadFlags.ThrowFailures);

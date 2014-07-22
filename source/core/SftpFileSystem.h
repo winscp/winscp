@@ -10,6 +10,7 @@ struct TSFTPSupport;
 class TSecureShell;
 //---------------------------------------------------------------------------
 enum TSFTPOverwriteMode { omOverwrite, omAppend, omResume };
+extern const int SFTPMaxVersion;
 //---------------------------------------------------------------------------
 class TSFTPFileSystem : public TCustomFileSystem
 {
@@ -103,6 +104,7 @@ protected:
   TStrings * FFixedPaths;
   unsigned long FMaxPacketSize;
   bool FSupportsStatVfsV2;
+  bool FSupportsHardlink;
 
   void __fastcall SendCustomReadFile(TSFTPPacket * Packet, TSFTPPacket * Response,
     unsigned long Flags);

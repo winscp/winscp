@@ -298,8 +298,6 @@ __fastcall TSCPFileSystem::TSCPFileSystem(TTerminal * ATerminal, TSecureShell * 
 
   FFileSystemInfo.ProtocolBaseName = L"SCP";
   FFileSystemInfo.ProtocolName = FFileSystemInfo.ProtocolBaseName;
-  // capabilities of SCP protocol are fixed
-  FTerminal->SaveCapabilities(FFileSystemInfo);
 }
 //---------------------------------------------------------------------------
 __fastcall TSCPFileSystem::~TSCPFileSystem()
@@ -686,6 +684,9 @@ UnicodeString __fastcall TSCPFileSystem::GetCurrentDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::DoStartup()
 {
+  // Capabilities of SCP protocol are fixed
+  FTerminal->SaveCapabilities(FFileSystemInfo);
+
   // SkipStartupMessage and DetectReturnVar must succeed,
   // otherwise session is to be closed.
   try

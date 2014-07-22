@@ -21,7 +21,7 @@ BEGIN
 "G:%APP% site|workspace|folder\n"
 "G:%APP% (sftp|scp|ftp|http[s])://[user[:password]@]host[:port][/path/[file]]\n"
 "G:%APP% [mysession] /newinstance\n"
-"G:%APP% [mysession] /edit file\n"
+"G:%APP% [mysession] /edit <file>\n"
 "G:%APP% [mysession] /synchronize [local_dir] [remote_dir] [/defaults]\n"
 "G:%APP% [mysession] /keepuptodate [local_dir] [remote_dir] [/defaults]\n"
 "G:%APP% [mysession] [/privatekey=<key>] [/hostkey=<fingerprint>]\n"

@@ -54,6 +54,8 @@ public:
   {
   }
 
+  static ExtException * __fastcall CloneFrom(Exception * E);
+
   virtual ExtException * __fastcall Clone();
 
 protected:

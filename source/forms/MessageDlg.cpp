@@ -296,9 +296,10 @@ UnicodeString __fastcall TMessageForm::GetFormText()
 UnicodeString __fastcall TMessageForm::GetReportText()
 {
   UnicodeString Text = MessageText;
+  Text = Text.TrimRight();
   if (MessageMemo != NULL)
   {
-    Text += L"\n" + MessageMemo->Text;
+    Text += L"\n\n" + MessageMemo->Text;
   }
   // Currently we use browser for updates box only and it has help context,
   // and does not have Report button, so we cannot get here.
@@ -1008,6 +1009,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   Panel->Caption = L"";
 
   UnicodeString BodyMsg = Msg;
+  BodyMsg = RemoveInteractiveMsgTag(BodyMsg);
   UnicodeString MainMsg;
   if (ExtractMainInstructions(BodyMsg, MainMsg))
   {

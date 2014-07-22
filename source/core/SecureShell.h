@@ -17,6 +17,7 @@ typedef struct _WSANETWORKEVENTS WSANETWORKEVENTS;
 typedef UINT_PTR SOCKET;
 typedef std::set<SOCKET> TSockets;
 struct TPuttyTranslation;
+enum TSshImplementation { sshiUnknown, sshiOpenSSH, sshiProFTPD, sshiBitvise };
 //---------------------------------------------------------------------------
 class TSecureShell
 {
@@ -48,8 +49,7 @@ private:
   bool FNoConnectionResponse;
   bool FCollectPrivateKeyUsage;
   int FWaitingForData;
-  bool FOpenSSH;
-  bool FProFTPD;
+  TSshImplementation FSshImplementation;
 
   unsigned PendLen;
   unsigned PendSize;
@@ -133,8 +133,6 @@ public:
   void __fastcall ClearStdError();
   bool __fastcall GetStoredCredentialsTried();
   void __fastcall CollectUsage();
-  bool __fastcall IsOpenSSH();
-  bool __fastcall IsProFTPD();
 
   void __fastcall RegisterReceiveHandler(TNotifyEvent Handler);
   void __fastcall UnregisterReceiveHandler(TNotifyEvent Handler);
@@ -164,6 +162,7 @@ public:
   __property UnicodeString LastTunnelError = { read = FLastTunnelError };
   __property UnicodeString UserName = { read = FUserName };
   __property bool Simple = { read = FSimple, write = FSimple };
+  __property TSshImplementation SshImplementation = { read = FSshImplementation };
 };
 //---------------------------------------------------------------------------
 #endif

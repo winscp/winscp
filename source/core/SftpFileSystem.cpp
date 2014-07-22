@@ -47,6 +47,7 @@
 #define SSH_FXP_RENAME             18
 #define SSH_FXP_READLINK           19
 #define SSH_FXP_SYMLINK            20
+#define SSH_FXP_LINK               21
 #define SSH_FXP_STATUS             101
 #define SSH_FXP_HANDLE             102
 #define SSH_FXP_DATA               103
@@ -68,6 +69,12 @@
 #define SSH_FILEXFER_ATTR_OWNERGROUP        0x00000080
 #define SSH_FILEXFER_ATTR_SUBSECOND_TIMES   0x00000100
 #define SSH_FILEXFER_ATTR_BITS              0x00000200
+#define SSH_FILEXFER_ATTR_ALLOCATION_SIZE   0x00000400
+#define SSH_FILEXFER_ATTR_TEXT_HINT         0x00000800
+#define SSH_FILEXFER_ATTR_MIME_TYPE         0x00001000
+#define SSH_FILEXFER_ATTR_LINK_COUNT        0x00002000
+#define SSH_FILEXFER_ATTR_UNTRANSLATED_NAME 0x00004000
+#define SSH_FILEXFER_ATTR_CTIME             0x00008000
 #define SSH_FILEXFER_ATTR_EXTENDED          0x80000000
 
 #define SSH_FILEXFER_ATTR_COMMON \
@@ -98,9 +105,6 @@
 #define SSH_FXF_ACCESS_APPEND_DATA        0x00000008
 #define SSH_FXF_ACCESS_APPEND_DATA_ATOMIC 0x00000010
 #define SSH_FXF_ACCESS_TEXT_MODE          0x00000020
-#define SSH_FXF_ACCESS_READ_LOCK          0x00000040
-#define SSH_FXF_ACCESS_WRITE_LOCK         0x00000080
-#define SSH_FXF_ACCESS_DELETE_LOCK        0x00000100
 
 #define ACE4_READ_DATA         0x00000001
 #define ACE4_LIST_DIRECTORY    0x00000001
@@ -139,13 +143,15 @@
 #define SFTP_EXT_STATVFS_VALUE_V2 L"2"
 #define SFTP_EXT_STATVFS_ST_RDONLY 0x1
 #define SFTP_EXT_STATVFS_ST_NOSUID 0x2
+#define SFTP_EXT_HARDLINK "hardlink@openssh.com"
+#define SFTP_EXT_HARDLINK_VALUE_V1 L"1"
 #define SFTP_EXT_COPY_FILE "copy-file"
 //---------------------------------------------------------------------------
 #define OGQ_LIST_OWNERS 0x01
 #define OGQ_LIST_GROUPS 0x02
 //---------------------------------------------------------------------------
 const int SFTPMinVersion = 0;
-const int SFTPMaxVersion = 5;
+const int SFTPMaxVersion = 6;
 const unsigned int SFTPNoMessageNumber = static_cast<unsigned int>(-1);
 
 const int asNo =            0;
@@ -197,8 +203,8 @@ struct TSFTPSupport
     OpenFlags = 0;
     AccessMask = 0;
     MaxReadSize = 0;
-    OpenBlockMasks = 0;
-    BlockMasks = 0;
+    OpenBlockVector = 0;
+    BlockVector = 0;
     AttribExtensions->Clear();
     Extensions->Clear();
     Loaded = false;
@@ -209,8 +215,8 @@ struct TSFTPSupport
   unsigned int OpenFlags;
   unsigned int AccessMask;
   unsigned int MaxReadSize;
-  unsigned int OpenBlockMasks;
-  unsigned int BlockMasks;
+  unsigned int OpenBlockVector;
+  unsigned int BlockVector;
   TStrings * AttribExtensions;
   TStrings * Extensions;
   bool Loaded;
@@ -293,6 +299,11 @@ public:
     Add(&Value, sizeof(Value));
   }
 
+  void AddBool(bool Value)
+  {
+    AddByte(Value ? 1 : 0);
+  }
+
   void AddCardinal(unsigned long Value)
   {
     // duplicated in Reuse()
@@ -347,6 +358,11 @@ public:
     AddString(Value, Utf);
   }
 
+  unsigned int AllocationSizeAttribute(int Version)
+  {
+    return (Version >= 6) ? SSH_FILEXFER_ATTR_ALLOCATION_SIZE : SSH_FILEXFER_ATTR_SIZE;
+  }
+
   void AddProperties(unsigned short * Rights, TRemoteToken * Owner,
     TRemoteToken * Group, __int64 * MTime, __int64 * ATime,
     __int64 * Size, bool IsDirectory, int Version, bool Utf)
@@ -354,7 +370,7 @@ public:
     int Flags = 0;
     if (Size != NULL)
     {
-      Flags |= SSH_FILEXFER_ATTR_SIZE;
+      Flags |= AllocationSizeAttribute(Version);
     }
     // both or neither
     assert((Owner != NULL) == (Group != NULL));
@@ -397,6 +413,8 @@ public:
 
     if (Size != NULL)
     {
+      // this is SSH_FILEXFER_ATTR_SIZE for version <= 5, but
+      // SSH_FILEXFER_ATTR_ALLOCATION_SIZE for version >= 6
       AddInt64(*Size);
     }
 
@@ -509,17 +527,30 @@ public:
   {
     Need(sizeof(unsigned char));
     unsigned char Result = FData[FPosition];
-    FPosition++;
+    DataConsumed(sizeof(unsigned char));
     return Result;
+  }
+
+  bool GetBool()
+  {
+    return (GetByte() != 0);
+  }
+
+  bool CanGetBool()
+  {
+    return (RemainingLength >= sizeof(unsigned char));
   }
 
   unsigned long GetCardinal()
   {
-    unsigned long Result;
-    Need(sizeof(Result));
-    Result = GET_32BIT(FData + FPosition);
-    FPosition += sizeof(Result);
+    unsigned long Result = PeekCardinal();
+    DataConsumed(sizeof(Result));
     return Result;
+  }
+
+  bool CanGetCardinal()
+  {
+    return (RemainingLength >= sizeof(unsigned long));
   }
 
   unsigned long GetSmallCardinal()
@@ -527,8 +558,13 @@ public:
     unsigned long Result;
     Need(2);
     Result = (FData[FPosition] << 8) + FData[FPosition + 1];
-    FPosition += 2;
+    DataConsumed(2);
     return Result;
+  }
+
+  bool CanGetSmallCardinal()
+  {
+    return (RemainingLength >= 2);
   }
 
   __int64 GetInt64()
@@ -547,7 +583,19 @@ public:
     assert(Len < SFTP_MAX_PACKET_LEN);
     Result.SetLength(Len);
     memcpy(Result.c_str(), FData + FPosition, Len);
-    FPosition += Len;
+    DataConsumed(Len);
+    return Result;
+  }
+
+  bool CanGetString(unsigned int & Size)
+  {
+    bool Result = CanGetCardinal();
+    if (Result)
+    {
+      unsigned long Len = PeekCardinal();
+      Size = (sizeof(Len) + Len);
+      Result = (Size <= RemainingLength);
+    }
     return Result;
   }
 
@@ -623,6 +671,11 @@ public:
     {
       File->Size = GetInt64();
     }
+    // SFTP-6 only
+    if (Flags & SSH_FILEXFER_ATTR_ALLOCATION_SIZE)
+    {
+      GetInt64(); // skip
+    }
     // SSH-2.0-3.2.0 F-SECURE SSH - Process Software MultiNet
     // sets SSH_FILEXFER_ATTR_UIDGID for v4, but does not include the UID/GUID
     if ((Flags & SSH_FILEXFER_ATTR_UIDGID) && (Version < 4))
@@ -690,6 +743,15 @@ public:
       {
         File->Modification = Now();
       }
+      // SFTP-6
+      if (Flags & SSH_FILEXFER_ATTR_CTIME)
+      {
+        GetInt64(); // skip attribute modification time
+        if (Flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES)
+        {
+          GetCardinal(); // skip attribute modification time subseconds
+        }
+      }
     }
 
     if (Flags & SSH_FILEXFER_ATTR_ACL)
@@ -702,10 +764,33 @@ public:
       // while SSH_FILEXFER_ATTR_BITS is defined for SFTP5 only, vandyke 2.3.3 sets it
       // for SFTP4 as well
       unsigned long Bits = GetCardinal();
+      if (Version >= 6)
+      {
+        unsigned long BitsValid = GetCardinal();
+        Bits = Bits & BitsValid;
+      }
       if (FLAGSET(Bits, SSH_FILEXFER_ATTR_FLAGS_HIDDEN))
       {
         File->IsHidden = true;
       }
+    }
+
+    // skip some SFTP-6 only fields
+    if (Flags & SSH_FILEXFER_ATTR_TEXT_HINT)
+    {
+      GetByte();
+    }
+    if (Flags & SSH_FILEXFER_ATTR_MIME_TYPE)
+    {
+      GetAnsiString();
+    }
+    if (Flags & SSH_FILEXFER_ATTR_LINK_COUNT)
+    {
+      GetCardinal();
+    }
+    if (Flags & SSH_FILEXFER_ATTR_UNTRANSLATED_NAME)
+    {
+      GetPathString(Utf);
     }
 
     if ((Version < 4) && (Type != SSH_FXP_ATTRS))
@@ -765,6 +850,11 @@ public:
       Need(Size);
     }
     return FPosition < FLength ? FData + FPosition : NULL;
+  }
+
+  void DataConsumed(unsigned int Size)
+  {
+    FPosition += Size;
   }
 
   void DataUpdated(int ALength)
@@ -963,6 +1053,7 @@ private:
       TYPE_CASE(SSH_FXP_RENAME);
       TYPE_CASE(SSH_FXP_READLINK);
       TYPE_CASE(SSH_FXP_SYMLINK);
+      TYPE_CASE(SSH_FXP_LINK);
       TYPE_CASE(SSH_FXP_STATUS);
       TYPE_CASE(SSH_FXP_HANDLE);
       TYPE_CASE(SSH_FXP_DATA);
@@ -995,10 +1086,18 @@ private:
 
   inline void Need(unsigned int Size)
   {
-    if (FPosition + Size > FLength)
+    if (Size > RemainingLength)
     {
       throw Exception(FMTLOAD(SFTP_PACKET_ERROR, (int(FPosition), int(Size), int(FLength))));
     }
+  }
+
+  unsigned long PeekCardinal()
+  {
+    unsigned long Result;
+    Need(sizeof(Result));
+    Result = GET_32BIT(FData + FPosition);
+    return Result;
   }
 };
 //---------------------------------------------------------------------------
@@ -1762,6 +1861,11 @@ void __fastcall TSFTPFileSystem::CollectUsage()
     case 5:
       VersionCounter = L"OpenedSessionsSFTP5";
       break;
+    case 6:
+      VersionCounter = L"OpenedSessionsSFTP6";
+      break;
+    default:
+      FAIL;
   }
   FTerminal->Configuration->Usage->Inc(VersionCounter);
 }
@@ -1874,7 +1978,6 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
   switch (Capability) {
     case fcAnyCommand:
     case fcShellAnyCommand:
-    case fcHardLink:
       return false;
 
     case fcNewerOnlyUpload:
@@ -1931,18 +2034,35 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
 
     case fcCheckingSpaceAvailable:
       return
-        // extension announced in estension list of by
+        // extension announced in extension list of by
         // SFTP_EXT_SUPPORTED/SFTP_EXT_SUPPORTED2 extension
         // (SFTP version 5 and newer only)
         SupportsExtension(SFTP_EXT_SPACE_AVAILABLE) ||
         // extension announced by proprietary SFTP_EXT_STATVFS extension
-        FSupportsStatVfsV2;
+        FSupportsStatVfsV2 ||
+        // Bitwise (as of 6.07) fails to report it's supported extensions.
+        (FSecureShell->SshImplementation == sshiBitvise);
 
     case fcCalculatingChecksum:
-      return SupportsExtension(SFTP_EXT_CHECK_FILE);
+      return
+        // Specification says that "check-file" should be announced,
+        // yet Vandyke VShell (as of 4.0.3) announce "check-file-name"
+        // https://forums.vandyke.com/showthread.php?t=11597
+        SupportsExtension(SFTP_EXT_CHECK_FILE) ||
+        SupportsExtension(SFTP_EXT_CHECK_FILE_NAME) ||
+        // see above
+        (FSecureShell->SshImplementation == sshiBitvise);
 
     case fcRemoteCopy:
-      return SupportsExtension(SFTP_EXT_COPY_FILE);
+      return
+        SupportsExtension(SFTP_EXT_COPY_FILE) ||
+        // see above
+        (FSecureShell->SshImplementation == sshiBitvise);
+
+    case fcHardLink:
+      return
+        (FVersion >= 6) ||
+        FSupportsHardlink;
 
     default:
       FAIL;
@@ -2128,7 +2248,10 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     SFTP_STATUS_BYTE_RANGE_LOCK_CONFLICT,
     SFTP_STATUS_BYTE_RANGE_LOCK_REFUSED,
     SFTP_STATUS_DELETE_PENDING,
-    SFTP_STATUS_FILE_CORRUPT
+    SFTP_STATUS_FILE_CORRUPT,
+    SFTP_STATUS_OWNER_INVALID,
+    SFTP_STATUS_GROUP_INVALID,
+    SFTP_STATUS_NO_MATCHING_BYTE_RANGE_LOCK
   };
   int Message;
   if ((AllowStatus & (0x01 << Code)) == 0)
@@ -2674,6 +2797,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
   FEOL = "\r\n";
   FSupport->Loaded = false;
   FSupportsStatVfsV2 = false;
+  FSupportsHardlink = false;
   SAFE_DESTROY(FFixedPaths);
 
   if (FVersion >= 3)
@@ -2715,8 +2839,11 @@ void __fastcall TSFTPFileSystem::DoStartup()
         }
         else
         {
-          FSupport->OpenBlockMasks = SupportedStruct.GetSmallCardinal();
-          FSupport->BlockMasks = SupportedStruct.GetSmallCardinal();
+          // note that supported-open-block-vector, supported-block-vector,
+          // attrib-extension-count and attrib-extension-names fields
+          // were added only in rev 08, while "supported2" was defined in rev 07
+          FSupport->OpenBlockVector = SupportedStruct.GetSmallCardinal();
+          FSupport->BlockVector = SupportedStruct.GetSmallCardinal();
           unsigned int ExtensionCount;
           ExtensionCount = SupportedStruct.GetCardinal();
           for (unsigned int i = 0; i < ExtensionCount; i++)
@@ -2733,15 +2860,16 @@ void __fastcall TSFTPFileSystem::DoStartup()
         if (FTerminal->Log->Logging)
         {
           FTerminal->LogEvent(FORMAT(
-            L"Server support information:\n"
+            L"Server support information (%s):\n"
              "  Attribute mask: %x, Attribute bits: %x, Open flags: %x\n"
-             "  Access mask: %x, Open block masks: %x, Block masks: %x, Max read size: %d\n",
-            (int(FSupport->AttributeMask),
+             "  Access mask: %x, Open block vector: %x, Block vector: %x, Max read size: %d\n",
+            (ExtensionName,
+             int(FSupport->AttributeMask),
              int(FSupport->AttributeBits),
              int(FSupport->OpenFlags),
              int(FSupport->AccessMask),
-             int(FSupport->OpenBlockMasks),
-             int(FSupport->BlockMasks),
+             int(FSupport->OpenBlockVector),
+             int(FSupport->BlockVector),
              int(FSupport->MaxReadSize))));
           FTerminal->LogEvent(FORMAT(L"  Attribute extensions (%d)\n", (FSupport->AttribExtensions->Count)));
           for (int Index = 0; Index < FSupport->AttribExtensions->Count; Index++)
@@ -2801,32 +2929,43 @@ void __fastcall TSFTPFileSystem::DoStartup()
       }
       else if (ExtensionName == SFTP_EXT_VERSIONS)
       {
-        try
+        // first try legacy decoding according to incorrect encoding
+        // (structure-like) as of VShell (bug no longer present as of 4.0.3).
+        TSFTPPacket VersionsPacket(ExtensionData);
+        unsigned int StringSize;
+        if (VersionsPacket.CanGetString(StringSize) &&
+            (StringSize == VersionsPacket.RemainingLength))
         {
-          // first try legacy decoding according to incorrect encoding
-          // (structure-like) as of VShell.
-          TSFTPPacket VersionsPacket(ExtensionData);
           UnicodeString Versions = VersionsPacket.GetAnsiString();
-          if (VersionsPacket.GetNextData() != NULL)
-          {
-            Abort();
-          }
           FTerminal->LogEvent(FORMAT(L"SFTP versions supported by the server (VShell format): %s",
             (Versions)));
         }
-        catch(...)
+        else
         {
           // if that fails, fallback to proper decoding
           FTerminal->LogEvent(FORMAT(L"SFTP versions supported by the server: %s",
-            (AnsiString(ExtensionData.c_str()))));
+            (UnicodeString(AnsiString(ExtensionData.c_str())))));
         }
       }
       else if (ExtensionName == SFTP_EXT_STATVFS)
       {
-        UnicodeString StatVfsVersion = AnsiString(ExtensionData.c_str());
+        UnicodeString StatVfsVersion = UnicodeString(AnsiString(ExtensionData.c_str()));
         if (StatVfsVersion == SFTP_EXT_STATVFS_VALUE_V2)
         {
           FSupportsStatVfsV2 = true;
+          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+        }
+        else
+        {
+          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+        }
+      }
+      else if (ExtensionName == SFTP_EXT_HARDLINK)
+      {
+        UnicodeString HardlinkVersion = UnicodeString(AnsiString(ExtensionData.c_str()));
+        if (HardlinkVersion == SFTP_EXT_HARDLINK_VALUE_V1)
+        {
+          FSupportsHardlink = true;
           FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, ExtensionDisplayData)));
         }
         else
@@ -2852,7 +2991,8 @@ void __fastcall TSFTPFileSystem::DoStartup()
       Packet.AddInt64(LOWORD(FTerminal->Configuration->FixedApplicationInfo->dwFileVersionLS));
       SendPacket(&Packet);
       // we are not interested in the response, do not wait for it
-      ReserveResponse(&Packet, NULL);
+      ReceiveResponse(&Packet, &Packet);
+      //ReserveResponse(&Packet, NULL);
     }
   }
 
@@ -2890,7 +3030,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
   FMaxPacketSize = FTerminal->SessionData->SFTPMaxPacketSize;
   if (FMaxPacketSize == 0)
   {
-    if (FSecureShell->IsOpenSSH() && (FVersion == 3) && !FSupport->Loaded)
+    if ((FSecureShell->SshImplementation == sshiOpenSSH) && (FVersion == 3) && !FSupport->Loaded)
     {
       FMaxPacketSize = 4 + (256 * 1024); // len + 256kB payload
       FTerminal->LogEvent(FORMAT(L"Limiting packet size to OpenSSH sftp-server limit of %d bytes",
@@ -3120,6 +3260,11 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
               FTerminal->DoReadDirectoryProgress(-2, 0, isEOF);
             }
           }
+        }
+
+        if ((FVersion >= 6) && ListingPacket.CanGetBool())
+        {
+          isEOF = ListingPacket.GetBool();
         }
 
         if (Count == 0)
@@ -3386,13 +3531,13 @@ void __fastcall TSFTPFileSystem::RenameFile(const UnicodeString FileName,
 void __fastcall TSFTPFileSystem::CopyFile(const UnicodeString FileName,
   const UnicodeString NewName)
 {
-  // Implemented by ProFTPD/mod_sftp
-  assert(SupportsExtension(SFTP_EXT_COPY_FILE));
+  // Implemented by ProFTPD/mod_sftp and Bitvise WinSSHD (without announcing it)
+  assert(SupportsExtension(SFTP_EXT_COPY_FILE) || (FSecureShell->SshImplementation == sshiBitvise));
   TSFTPPacket Packet(SSH_FXP_EXTENDED);
   Packet.AddString(SFTP_EXT_COPY_FILE);
   Packet.AddPathString(Canonify(FileName), FUtfStrings);
   Packet.AddPathString(Canonify(NewName), FUtfStrings);
-  Packet.AddByte(0);
+  Packet.AddBool(false);
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
 //---------------------------------------------------------------------------
@@ -3408,26 +3553,95 @@ void __fastcall TSFTPFileSystem::CreateDirectory(const UnicodeString DirName)
 void __fastcall TSFTPFileSystem::CreateLink(const UnicodeString FileName,
   const UnicodeString PointTo, bool Symbolic)
 {
-  USEDPARAM(Symbolic);
-  assert(Symbolic); // only symlinks are supported by SFTP
-  assert(FVersion >= 3); // symlinks are supported with SFTP version 3 and later
-  TSFTPPacket Packet(SSH_FXP_SYMLINK);
-
-  bool Buggy =
-    (FTerminal->SessionData->SFTPBug[sbSymlink] == asOn) ||
-    ((FTerminal->SessionData->SFTPBug[sbSymlink] == asAuto) &&
-     (FSecureShell->IsOpenSSH() || FSecureShell->IsProFTPD()));
-
-  if (!Buggy)
+  assert(FVersion >= 3); // links are supported with SFTP version 3 and later
+  bool UseLink = (FVersion >= 6);
+  bool UseHardlink = !Symbolic && !UseLink && FSupportsHardlink;
+  TSFTPPacket Packet(UseHardlink ? SSH_FXP_EXTENDED : (UseLink ? SSH_FXP_LINK : SSH_FXP_SYMLINK));
+  if (UseHardlink)
   {
-    Packet.AddPathString(Canonify(FileName), FUtfStrings);
-    Packet.AddPathString(PointTo, FUtfStrings);
+    Packet.AddString(SFTP_EXT_HARDLINK);
+  }
+
+  bool Buggy;
+  // OpenSSH hardlink extension always uses the "wrong" order
+  // as it's defined as such to mimic OpenSSH symlink bug
+  if (UseHardlink)
+  {
+    Buggy = true; //sic
   }
   else
   {
-    FTerminal->LogEvent(L"We believe the server has SFTP symlink bug");
-    Packet.AddPathString(PointTo, FUtfStrings);
-    Packet.AddPathString(Canonify(FileName), FUtfStrings);
+    if (FTerminal->SessionData->SFTPBug[sbSymlink] == asOn)
+    {
+      Buggy = true;
+      FTerminal->LogEvent(L"Forcing workaround for SFTP link bug");
+    }
+    else if (FTerminal->SessionData->SFTPBug[sbSymlink] == asOff)
+    {
+      Buggy = false;
+    }
+    else
+    {
+      if (UseLink)
+      {
+        if (FSecureShell->SshImplementation == sshiProFTPD)
+        {
+          // ProFTPD/mod_sftp followed OpenSSH symlink bug even for link implementation.
+          // This will be fixed with the next release with
+          // SSH version string bumbed to "mod_sftp/1.0.0"
+          // http://bugs.proftpd.org/show_bug.cgi?id=4080
+          UnicodeString ProFTPDVerStr = GetSessionInfo().SshImplementation;
+          CutToChar(ProFTPDVerStr, L'/', false);
+          int ProFTPDMajorVer = StrToIntDef(CutToChar(ProFTPDVerStr, L'.', false), 0);
+          Buggy = (ProFTPDMajorVer == 0);
+          if (Buggy)
+          {
+            FTerminal->LogEvent(L"We believe the server has SFTP link bug");
+          }
+        }
+        else
+        {
+          Buggy = false;
+        }
+      }
+      else
+      {
+        // ProFTPD/mod_sftp deliberately follows OpenSSH bug.
+        // Though we should get here with ProFTPD only when user forced
+        // SFTP version < 6 or when connecting to an ancient version of ProFTPD.
+        Buggy =
+          (FSecureShell->SshImplementation == sshiOpenSSH) ||
+          (FSecureShell->SshImplementation == sshiProFTPD);
+        if (Buggy)
+        {
+          FTerminal->LogEvent(L"We believe the server has SFTP symlink bug");
+        }
+      }
+    }
+  }
+
+  UnicodeString FinalPointTo = PointTo;
+  UnicodeString FinalFileName = Canonify(FileName);
+
+  if (!Symbolic)
+  {
+    FinalPointTo = Canonify(PointTo);
+  }
+
+  if (!Buggy)
+  {
+    Packet.AddPathString(FinalFileName, FUtfStrings);
+    Packet.AddPathString(FinalPointTo, FUtfStrings);
+  }
+  else
+  {
+    Packet.AddPathString(FinalPointTo, FUtfStrings);
+    Packet.AddPathString(FinalFileName, FUtfStrings);
+  }
+
+  if (UseLink)
+  {
+    Packet.AddBool(Symbolic);
   }
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
@@ -3708,7 +3922,9 @@ TStrings * __fastcall TSFTPFileSystem::GetFixedPaths()
 void __fastcall TSFTPFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & ASpaceAvailable)
 {
-  if (SupportsExtension(SFTP_EXT_SPACE_AVAILABLE))
+  if (SupportsExtension(SFTP_EXT_SPACE_AVAILABLE) ||
+      // See comment in IsCapable
+      (FSecureShell->SshImplementation == sshiBitvise))
   {
     TSFTPPacket Packet(SSH_FXP_EXTENDED);
     Packet.AddString(SFTP_EXT_SPACE_AVAILABLE);
@@ -3720,7 +3936,14 @@ void __fastcall TSFTPFileSystem::SpaceAvailable(const UnicodeString Path,
     ASpaceAvailable.UnusedBytesOnDevice = Packet.GetInt64();
     ASpaceAvailable.BytesAvailableToUser = Packet.GetInt64();
     ASpaceAvailable.UnusedBytesAvailableToUser = Packet.GetInt64();
-    if (Packet.RemainingLength == 2)
+    // bytes-per-allocation-unit was added later to the protocol
+    // (revision 07, while the extension was defined already in rev 06),
+    // be tolerant
+    if (Packet.CanGetCardinal())
+    {
+      ASpaceAvailable.BytesPerAllocationUnit = Packet.GetCardinal();
+    }
+    else if (Packet.CanGetSmallCardinal())
     {
       // See http://bugs.proftpd.org/show_bug.cgi?id=4079
       FTerminal->LogEvent(L"Assuming ProFTPD/mod_sftp bug of 2-byte bytes-per-allocation-unit field");
@@ -3728,7 +3951,7 @@ void __fastcall TSFTPFileSystem::SpaceAvailable(const UnicodeString Path,
     }
     else
     {
-      ASpaceAvailable.BytesPerAllocationUnit = Packet.GetCardinal();
+      FTerminal->LogEvent(L"Missing bytes-per-allocation-unit field");
     }
   }
   else if (ALWAYS_TRUE(FSupportsStatVfsV2))
@@ -4603,7 +4826,13 @@ RawByteString __fastcall TSFTPFileSystem::SFTPOpenRemoteFile(
 
   bool SendSize =
     (Size >= 0) &&
-    FLAGSET(OpenType, SSH_FXF_CREAT | SSH_FXF_TRUNC);
+    FLAGSET(OpenType, SSH_FXF_CREAT | SSH_FXF_TRUNC) &&
+    // Particuarly VanDyke VShell (4.0.3) does not support SSH_FILEXFER_ATTR_ALLOCATION_SIZE
+    // (it fails open request when the attribute is included).
+    // It's SFTP-6 attribute, so support structure should be available.
+    // It's actually not with VShell. But VShell supports the SSH_FILEXFER_ATTR_ALLOCATION_SIZE.
+    // All servers should support SSH_FILEXFER_ATTR_SIZE (SFTP < 6)
+    (!FSupport->Loaded || FLAGSET(FSupport->AttributeMask, Packet.AllocationSizeAttribute(FVersion)));
   Packet.AddProperties(NULL, NULL, NULL, NULL, NULL,
     SendSize ? &Size : NULL, false, FVersion, FUtfStrings);
 
@@ -4760,7 +4989,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
         // now we know that the file exists
 
         if (FTerminal->FileOperationLoopQuery(E, OperationProgress,
-              FMTLOAD(SFTP_OVERWRITE_FILE_ERROR, (OpenParams->RemoteFileName)),
+              FMTLOAD(SFTP_OVERWRITE_FILE_ERROR2, (OpenParams->RemoteFileName)),
               true, LoadStr(SFTP_OVERWRITE_DELETE_BUTTON)))
         {
           int Params = dfNoRecursive;
@@ -5434,7 +5663,13 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
 
               assert(DataLen <= BlockSize);
               BlockBuf.Insert(0, reinterpret_cast<const char *>(DataPacket.GetNextData(DataLen)), DataLen);
+              DataPacket.DataConsumed(DataLen);
               OperationProgress->AddTransfered(DataLen);
+
+              if ((FVersion >= 6) && DataPacket.CanGetBool() && (Missing == 0))
+              {
+                Eof = DataPacket.GetBool();
+              }
 
               if (OperationProgress->AsciiTransfer)
               {

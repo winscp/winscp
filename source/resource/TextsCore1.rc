@@ -106,7 +106,7 @@ BEGIN
   SFTP_PACKET_TOO_BIG_INIT_EXPLAIN, "%s\n \nThe error is typically caused by message printed from startup script (like .profile). The message may start with %s."
   PRESERVE_TIME_PERM_ERROR3, "**Upload of file '%s' was successful, but error occurred while setting the permissions and/or timestamp.**\n\nIf the problem persists, turn off setting permissions or preserving timestamp. Alternatively you can turn on 'Ignore permission errors' option."
   ACCESS_VIOLATION_ERROR3, "Invalid access to memory."
-  SFTP_STATUS_NO_SPACE_ON_FILESYSTEM, "There is no free space on the filesystem."
+  SFTP_STATUS_NO_SPACE_ON_FILESYSTEM, "There is insufficient free space on the filesystem."
   SFTP_STATUS_QUOTA_EXCEEDED, "Operation cannot be completed because it would exceed the users storage quota."
   SFTP_STATUS_UNKNOWN_PRINCIPAL, "Principal (%s) is unknown to the server."
   COPY_FILE_ERROR, "Error copying file '%s' to '%s'."
@@ -140,7 +140,7 @@ BEGIN
   KEY_TYPE_UNKNOWN, "File '%s' does not exist or it does not contain private key in known format."
   KEY_TYPE_UNSUPPORTED, "**Private key file '%s' contains key in %s format. WinSCP supports only PuTTY format.**\n \nYou can use PuTTYgen tool to convert your private key file."
   KEY_TYPE_DIFFERENT_SSH, "Private key file '%s' contains key in %s format. It does not follow your preferred SSH protocol version."
-  SFTP_OVERWRITE_FILE_ERROR, "Cannot overwrite remote file '%s'.\n \nPress 'Delete' to delete the file and create new one instead of overwriting it."
+  SFTP_OVERWRITE_FILE_ERROR2, "Cannot overwrite remote file '%s'.$$\n \nPress 'Delete' to delete the file and create new one instead of overwriting it.$$"
   SFTP_OVERWRITE_DELETE_BUTTON, "&Delete"
   SPACE_AVAILABLE_ERROR, "Error checking space available for path '%s'."
   TUNNEL_NO_FREE_PORT, "Cannot find free local listening port number for tunnel in range %d to %d."
@@ -204,6 +204,9 @@ BEGIN
   INVALID_URL, "Invalid URL \"%s\"."
   PROXY_AUTHENTICATION_FAILED, "Proxy authentication failed."
   CONFIGURED_KEY_NOT_MATCH, "Host key does not match configured key \"%s\"!"
+  SFTP_STATUS_OWNER_INVALID, "The name specified can not be assigned as an owner of a file."
+  SFTP_STATUS_GROUP_INVALID, "The name specified can not be assigned as the primary group of a file."
+  SFTP_STATUS_NO_MATCHING_BYTE_RANGE_LOCK, "The requested operation could not be completed because the specifed byte range lock has not been granted."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -404,4 +407,5 @@ BEGIN
   EXPAT_URL, "http://www.libexpat.org/"
   PUTTY_LICENSE_URL, "http://www.chiark.greenend.org.uk/~sgtatham/putty/licence.html"
   MAIN_MSG_TAG, "**"
+  INTERACTIVE_MSG_TAG, "$$"
 END
