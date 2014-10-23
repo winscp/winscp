@@ -189,6 +189,11 @@ int __fastcall TFileOperationProgressType::OverallProgress()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::Progress()
+{
+  DoProgress();
+}
+//---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::DoProgress()
 {
   SetThreadExecutionState(ES_SYSTEM_REQUIRED);

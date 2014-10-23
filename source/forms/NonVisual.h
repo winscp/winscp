@@ -195,7 +195,7 @@ __published:    // IDE-managed Components
   TAction *ConsoleAction;
   TAction *LocalExploreDirectoryAction;
   TAction *CurrentEditAction;
-  TAction *CurrentEditAlternativeAction;
+  TAction *CurrentEditAlternative2Action;
   TAction *CurrentOpenAction;
   TAction *SynchronizeBrowsingAction;
   TAction *CurrentAddEditLinkAction;
@@ -343,7 +343,6 @@ __published:    // IDE-managed Components
   TTBXItem *AddToBookmarks5;
   TTBXItem *CopyPathtoClipboard7;
   TTBXSeparatorItem *N82;
-  TTBXItem *CreateDirectory4;
   TTBXPopupMenu *LocalDirViewColumnPopup;
   TTBXItem *SortAscending1;
   TTBXItem *SortDescending1;
@@ -585,6 +584,16 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem64;
   TTBXItem *TBXItem65;
   TTBXItem *TBXItem66;
+  TAction *QueueSuspendOnceEmptyAction;
+  TTBXItem *TBXItem68;
+  TTBXSubmenuItem *TBXItem69;
+  TAction *CurrentEditWithFocusedAction;
+  TAction *CurrentEditAlternativeFocusedAction;
+  TAction *CurrentEditInternalFocusedAction;
+  TTBXSubmenuItem *TBXSubmenuItem6;
+  TTBXSubmenuItem *TBXSubmenuItem7;
+  TTBXItem *TBXItem70;
+  TTBXItem *TBXItem71;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -619,8 +628,10 @@ protected:
   void __fastcall SessionFolderThisItemClick(TObject * Sender);
   void __fastcall OpenedSessionItemClick(TObject * Sender);
   void __fastcall CustomCommandClick(TObject * Sender);
-  void __fastcall CreateEditorListMenu(TAction * Action);
+  void __fastcall CreateEditorListMenu(TAction * Action, bool OnFocused);
   void __fastcall EditorItemClick(TObject * Sender);
+  void __fastcall EditorItemClickFocused(TObject * Sender);
+  void __fastcall DoEditorItemClick(TObject * Sender, bool OnFocused);
   void __fastcall DoIdle();
   inline void __fastcall ShowUpdatesUpdate();
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
@@ -645,6 +656,7 @@ public:
   void __fastcall QueueSpeedComboBoxItemUpdate(TTBXComboBoxItem * Item);
   void __fastcall CreateCustomCommandsMenu(TTBCustomItem * Menu, bool OnFocused,
     bool Toolbar, bool Both);
+  void __fastcall CreateCustomCommandsMenu(TAction * Action, bool OnFocused, bool Both);
   TOnceDoneOperation __fastcall CurrentQueueOnceEmptyOperation();
   void __fastcall ResetQueueOnceEmptyOperation();
   void __fastcall StartBusy();

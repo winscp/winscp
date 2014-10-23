@@ -206,7 +206,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.CurrentEditAction
         end
         object TBXSubmenuItem25: TTBXSubmenuItem
-          Action = NonVisualDataModule.CurrentEditAlternativeAction
+          Action = NonVisualDataModule.CurrentEditAlternative2Action
         end
         object TBXItem29: TTBXItem
           Action = NonVisualDataModule.CurrentAddEditLinkAction
@@ -551,6 +551,9 @@ inherited ScpCommanderForm: TScpCommanderForm
             object TBXItem223: TTBXItem
               Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
               RadioItem = True
+            end
+            object TBXItem141: TTBXItem
+              Action = NonVisualDataModule.QueueSuspendOnceEmptyAction
             end
             object TBXItem224: TTBXItem
               Action = NonVisualDataModule.QueueShutDownOnceEmptyAction
@@ -996,8 +999,8 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 3
       Cursor = crSizeNS
       Hint = 
-        'Drag to resize directory tree. Double click to make height of di' +
-        'rectory trees equal.'
+        'Drag to resize directory tree. Double click to make size of dire' +
+        'ctory trees equal.'
       Align = alTop
     end
     inherited RemoteStatusBar: TTBXStatusBar
@@ -1276,8 +1279,8 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 3
       Cursor = crSizeNS
       Hint = 
-        'Drag to resize directory tree. Double click to make height of di' +
-        'rectory trees equal.'
+        'Drag to resize directory tree. Double click to make size of dire' +
+        'ctory trees equal.'
       Align = alTop
       AutoSnap = False
       Color = clBtnFace
@@ -1345,7 +1348,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       PathLabel = LocalPathLabel
       OnUpdateStatusBar = LocalDirViewUpdateStatusBar
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
-      HeaderImages = GlyphsModule.ArrowImages
       AddParentDir = True
       OnSelectItem = DirViewSelectItem
       OnLoaded = DirViewLoaded

@@ -230,7 +230,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   SetSubmenu(NonVisualDataModule->ColorMenuItem);
 
   UseDesktopFont(SessionsPageControl);
-  SessionsPageControl->Height =SessionsPageControl->GetTabsHeight();
+  UpdateSessionsPageControlHeight();
   UseDesktopFont(RemoteDirView);
   UseDesktopFont(RemoteDriveView);
   UseDesktopFont(QueueView3);
@@ -874,6 +874,11 @@ void __fastcall TCustomScpExplorerForm::UpdateActions()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdateSessionsPageControlHeight()
+{
+  SessionsPageControl->Height = SessionsPageControl->GetTabsHeight();
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
 {
   assert(Configuration && RemoteDirView);
@@ -894,6 +899,8 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   RemoteDriveView->DimmHiddenDirs = WinConfiguration->DimmHiddenFiles;
   RemoteDriveView->ShowHiddenDirs = WinConfiguration->ShowHiddenFiles;
   RemoteDriveView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
+
+  UpdateSessionsPageControlHeight();
 
   SetDockAllowDrag(!WinConfiguration->LockToolbars);
   UpdateToolbarDisplayMode();
@@ -1137,9 +1144,6 @@ void __fastcall TCustomScpExplorerForm::RestoreParams()
 
   CollectItemsWithTextDisplayMode(this);
 
-  // IDE often looses this link
-  RemoteDirView->HeaderImages = GlyphsModule->ArrowImages;
-
   ConfigurationChanged();
 
   QueuePanel->Height = LoadDimension(WinConfiguration->QueueView.Height, WinConfiguration->QueueView.HeightPixelsPerInch);
@@ -1290,7 +1294,7 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
       if ((FTransferResumeList->Count == 0) ||
           (FTransferResumeList->Strings[FTransferResumeList->Count - 1] != ProgressData.FullFileName))
       {
-        // note that we do not recognise directories from files here
+        // note that we do not recognize directories from files here
         FTransferResumeList->Add(ProgressData.FullFileName);
       }
     }
@@ -1466,6 +1470,7 @@ TTBXPopupMenu * __fastcall TCustomScpExplorerForm::HistoryMenu(
 {
   if (FHistoryMenu[Side == osLocal][Back] == NULL)
   {
+    // workaround
     // In Pascal the size of TTBXPopupMenu is 132, in C++ 136,
     // operator new allocates memory in Pascal code, but calls inline
     // contructor in C++, leading in problems, the function does
@@ -1691,7 +1696,9 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
           RemoteFileList = new TStringList();
 
           TMakeLocalFileListParams MakeFileListParam;
+          TDateTimes RemoteFileTimes;
           MakeFileListParam.FileList = RemoteFileList;
+          MakeFileListParam.FileTimes = &RemoteFileTimes;
           MakeFileListParam.IncludeDirs = FLAGSET(ACommand.Params, ccApplyToDirectories);
           MakeFileListParam.Recursive =
             FLAGSET(ACommand.Params, ccRecursive) && !FileListCommand;
@@ -1784,10 +1791,43 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
           {
             Progress.Stop();
           }
+
+          assert(!FAutoOperation);
+          TempDir = IncludeTrailingBackslash(TempDir);
+          for (int Index = 0; Index < RemoteFileList->Count; Index++)
+          {
+            UnicodeString FileName = RemoteFileList->Strings[Index];
+            if (ALWAYS_TRUE(SameText(TempDir, FileName.SubString(1, TempDir.Length()))))
+            {
+              UnicodeString RemoteDir =
+                UnixExtractFileDir(
+                  UnixIncludeTrailingBackslash(FTerminal->CurrentDirectory) +
+                  ToUnixPath(FileName.SubString(TempDir.Length() + 1, FileName.Length() - TempDir.Length())));
+
+              TDateTime NewTime;
+              FileAge(FileName, NewTime);
+              if (NewTime != RemoteFileTimes[Index])
+              {
+                TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
+                TemporaryFileCopyParam(CopyParam);
+                CopyParam.FileMask = L"";
+
+                FAutoOperation = true;
+                std::unique_ptr<TStrings> TemporaryFilesList(new TStringList());
+                TemporaryFilesList->Add(FileName);
+
+                FTerminal->CopyToRemote(TemporaryFilesList.get(), RemoteDir, &CopyParam, cpTemporary);
+              }
+            }
+          }
         }
         __finally
         {
-          RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+          FAutoOperation = false;
+          if (!RootTempDir.IsEmpty())
+          {
+            RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+          }
         }
       }
       __finally
@@ -1835,10 +1875,8 @@ void __fastcall TCustomScpExplorerForm::BothCustomCommand(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CustomCommandMenu(
-  TObject * Sender, TRect Rect,
-  TStrings * LocalFileList, TStrings * RemoteFileList)
+  TAction * Action, TStrings * LocalFileList, TStrings * RemoteFileList)
 {
-  FCustomCommandMenu->Items->Clear();
   delete FCustomCommandLocalFileList;
   delete FCustomCommandRemoteFileList;
   // takeover ownership,
@@ -1846,16 +1884,28 @@ void __fastcall TCustomScpExplorerForm::CustomCommandMenu(
   FCustomCommandLocalFileList = LocalFileList;
   FCustomCommandRemoteFileList = RemoteFileList;
 
-  NonVisualDataModule->CreateCustomCommandsMenu(FCustomCommandMenu->Items, false, false, true);
+  TButton * Button = dynamic_cast<TButton *>(Action->ActionComponent);
+  if (Button != NULL)
+  {
+    FCustomCommandMenu->Items->Clear();
 
-  MenuPopup(FCustomCommandMenu, Rect, dynamic_cast<TComponent *>(Sender));
+    NonVisualDataModule->CreateCustomCommandsMenu(FCustomCommandMenu->Items, false, false, true);
+    MenuPopup(FCustomCommandMenu, Button);
+  }
+  else
+  {
+    NonVisualDataModule->CreateCustomCommandsMenu(Action, false, true);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalCaptureLog(
-  const UnicodeString & AddedLine, bool /*StdError*/)
+  const UnicodeString & AddedLine, TCaptureOutputType OutputType)
 {
   assert(FCapturedLog != NULL);
-  FCapturedLog->Add(AddedLine);
+  if ((OutputType == cotOutput) || (OutputType == cotError))
+  {
+    FCapturedLog->Add(AddedLine);
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::IsFileControl(TObject * Control,
@@ -2457,12 +2507,15 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       }
       catch(...)
       {
-        try
+        if (!LocalRootDirectory.IsEmpty())
         {
-          RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory), false);
-        }
-        catch(...)
-        {
+          try
+          {
+            RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory), false);
+          }
+          catch(...)
+          {
+          }
         }
         throw;
       }
@@ -2541,8 +2594,21 @@ void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
   UnicodeString RemoteDirectory, TCopyParamType CopyParam,
   UnicodeString & Result, UnicodeString & RootDirectory)
 {
-  RootDirectory = IncludeTrailingBackslash(WinConfiguration->TemporaryDir());
-  Result = RootDirectory;
+  if (!WinConfiguration->TemporaryDirectoryDeterministic)
+  {
+    RootDirectory = IncludeTrailingBackslash(WinConfiguration->TemporaryDir());
+    Result = RootDirectory;
+  }
+  else
+  {
+    RootDirectory = L"";
+    Result = WinConfiguration->ExpandedTemporaryDirectory();
+    if (Result.IsEmpty())
+    {
+      Result = SystemTemporaryDirectory();
+    }
+    Result = IncludeTrailingBackslash(Result);
+  }
 
   if (WinConfiguration->TemporaryDirectoryAppendSession)
   {
@@ -2573,18 +2639,13 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
   {
     CopyParam.TransferMode = tmAscii;
   }
-  // do not forget to add additional options to ExecutedFileChanged and AS
-  CopyParam.FileNameCase = ncNoChange;
-  CopyParam.PreserveReadOnly = false;
-  CopyParam.ReplaceInvalidChars = true;
-  CopyParam.FileMask = L"";
-  CopyParam.NewerOnly = false;
+  TemporaryFileCopyParam(CopyParam);
   if (AllFiles)
   {
     CopyParam.IncludeFileMask = TFileMasks();
   }
 
-  if (RootTempDir.IsEmpty())
+  if (TempDir.IsEmpty())
   {
     TemporaryDirectoryForRemoteFiles(FTerminal->CurrentDirectory, CopyParam, TempDir, RootTempDir);
   }
@@ -2612,12 +2673,15 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
     }
     catch(...)
     {
-      try
+      if (!RootTempDir.IsEmpty())
       {
-        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
-      }
-      catch(...)
-      {
+        try
+        {
+          RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+        }
+        catch(...)
+        {
+        }
       }
       throw;
     }
@@ -2642,91 +2706,30 @@ void __fastcall TCustomScpExplorerForm::EditorAutoConfig()
   }
   else
   {
-    UnicodeString TempName = ExcludeTrailingBackslash(WinConfiguration->TemporaryDir()) + L".txt";
-    if (FileExists(::ApiPath(TempName)))
+    UnicodeString Executable;
+    UnicodeString ExecutableDescription;
+    if (DetectSystemExternalEditor(false, Executable, ExecutableDescription, UsageState, TryNextTime))
     {
-      TryNextTime = true;
-      UsageState = "F";
-    }
-    else
-    {
-      unsigned int File = FileCreate(::ApiPath(TempName));
-      if (File == (unsigned int)INVALID_HANDLE_VALUE)
+      UnicodeString Message =
+        FMTLOAD(EDITOR_AUTO_CONFIG2, (ExecutableDescription, ExecutableDescription));
+
+      unsigned int Answer =
+        MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_EDITOR_AUTO_CONFIG);
+      if (Answer != qaOK)
       {
-        TryNextTime = true;
-        UsageState = "F";
+        UsageState = "R";
       }
       else
       {
-        FileClose(File);
+        UsageState = "A";
+        TEditorData EditorData;
+        EditorData.Editor = edExternal;
+        EditorData.ExternalEditor = FormatCommand(Executable, L"");
 
-        try
-        {
-          wchar_t ExecutableBuf[MAX_PATH];
-          if (!SUCCEEDED(FindExecutable(TempName.c_str(), NULL, ExecutableBuf)))
-          {
-            UsageState = "N";
-          }
-          else
-          {
-            UnicodeString Executable = ExecutableBuf;
-            if (Executable.IsEmpty() ||
-                !FileExists(::ApiPath(Executable)))
-            {
-              UsageState = "N";
-            }
-            else
-            {
-              UnicodeString ExecutableName = ExtractFileName(Executable);
-              if (SameText(ExecutableName, TEditorPreferences::GetDefaultExternalEditor()))
-              {
-                UsageState = "P";
-              }
-              else
-              {
-                UnicodeString ExecutableDescription;
-                try
-                {
-                  ExecutableDescription = Configuration->GetFileDescription(Executable);
-                }
-                catch(...)
-                {
-                }
-
-                if (ExecutableDescription.IsEmpty())
-                {
-                  ExecutableDescription = ExecutableName;
-                }
-
-                UnicodeString Message =
-                  FMTLOAD(EDITOR_AUTO_CONFIG2, (ExecutableDescription, ExecutableDescription));
-
-                unsigned int Answer =
-                  MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_EDITOR_AUTO_CONFIG);
-                if (Answer != qaOK)
-                {
-                  UsageState = "R";
-                }
-                else
-                {
-                  UsageState = "A";
-                  TEditorData EditorData;
-                  EditorData.Editor = edExternal;
-                  EditorData.ExternalEditor = FormatCommand(Executable, L"");
-
-                  TEditorList EditorList;
-                  EditorList = *WinConfiguration->EditorList;
-                  EditorList.Insert(0, new TEditorPreferences(EditorData));
-                  WinConfiguration->EditorList = &EditorList;
-                }
-              }
-            }
-          }
-        }
-        __finally
-        {
-          DeleteFile(::ApiPath(TempName));
-        }
+        TEditorList EditorList;
+        EditorList = *WinConfiguration->EditorList;
+        EditorList.Insert(0, new TEditorPreferences(EditorData));
+        WinConfiguration->EditorList = &EditorList;
       }
     }
   }
@@ -2921,6 +2924,18 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::TemporaryFileCopyParam(TCopyParamType & CopyParam)
+{
+  // do not forget to add additional options to TemporarilyDownloadFiles, and AS
+  CopyParam.FileNameCase = ncNoChange;
+  CopyParam.PreserveRights = false;
+  CopyParam.PreserveReadOnly = false;
+  CopyParam.ReplaceInvalidChars = true;
+  CopyParam.IncludeFileMask = TFileMasks();
+  CopyParam.NewerOnly = false;
+  CopyParam.FileMask = L"";
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString FileName,
   TEditedFileData * Data, HANDLE UploadCompleteEvent)
 {
@@ -2990,13 +3005,11 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
 
     // consider using the same settings (preset) as when the file was downloaded
     TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
+    TemporaryFileCopyParam(CopyParam);
     if (Data->ForceText)
     {
       CopyParam.TransferMode = tmAscii;
     }
-    // do not forget to add additional options to TemporarilyDownloadFiles, and AS
-    CopyParam.FileNameCase = ncNoChange;
-    CopyParam.PreserveRights = false;
     // so i do not need to worry if masking algorithm works in all cases
     // ("" means "copy file name", no masking is actually done)
     if (ExtractFileName(FileName) == Data->OriginalFileName)
@@ -3007,8 +3020,6 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
     {
       CopyParam.FileMask = DelimitFileNameMask(Data->OriginalFileName);
     }
-    CopyParam.ReplaceInvalidChars = true;
-    CopyParam.IncludeFileMask = TFileMasks();
 
     assert(Data->Queue != NULL);
 
@@ -3372,6 +3383,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
       {
         TMakeLocalFileListParams MakeFileListParam;
         MakeFileListParam.FileList = TemporaryFilesList;
+        MakeFileListParam.FileTimes = NULL;
         MakeFileListParam.IncludeDirs = true;
         MakeFileListParam.Recursive = false;
 
@@ -3390,7 +3402,10 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
       {
         delete TemporaryFilesList;
         FAutoOperation = false;
-        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+        if (!RootTempDir.IsEmpty())
+        {
+          RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+        }
       }
     }
     else
@@ -3438,9 +3453,11 @@ void __fastcall TCustomScpExplorerForm::CreateDirectory(TOperationSide Side)
   TRemoteProperties Properties = GUIConfiguration->NewDirectoryProperties;
   TRemoteProperties * AProperties = (Side == osRemote ? &Properties : NULL);
   UnicodeString Name = LoadStr(NEW_FOLDER);
+  int AllowedChanges =
+    FLAGMASK(Terminal->IsCapable[fcModeChanging], cpMode);
   bool SaveSettings = false;
 
-  if (DoCreateDirectoryDialog(Name, AProperties, SaveSettings))
+  if (DoCreateDirectoryDialog(Name, AProperties, AllowedChanges, SaveSettings))
   {
     if (Side == osRemote)
     {
@@ -3621,10 +3638,13 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
         CalculateChecksumEvent = CalculateChecksum;
       }
 
+      std::unique_ptr<TStrings> ChecksumAlgs(new TStringList());
+      Terminal->GetSupportedChecksumAlgs(ChecksumAlgs.get());
+
       TRemoteProperties NewProperties = CurrentProperties;
       Result =
         DoPropertiesDialog(FileList, RemoteDirView->PathName,
-          GroupList, UserList, &NewProperties, Flags,
+          GroupList, UserList, ChecksumAlgs.get(), &NewProperties, Flags,
           Terminal->IsCapable[fcGroupOwnerChangingByID],
           CalculateSize, CalculateChecksumEvent);
       if (Result)
@@ -4349,7 +4369,7 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
       }
     }
 
-    // if we have not done anything special, fall back to default behaviour
+    // if we have not done anything special, fall back to default behavior
     if (AllowExec)
     {
       if (Remote && !WinConfiguration->DisableOpenEdit)
@@ -4721,8 +4741,7 @@ void __fastcall TCustomScpExplorerForm::StandaloneEdit(const UnicodeString & Fil
   if (File != NULL)
   {
     std::unique_ptr<TRemoteFile> FileOwner(File);
-    TValueRestorer<bool> Restorer(FStandaloneEditing);
-    FStandaloneEditing = true;
+    TAutoFlag Flag(FStandaloneEditing);
 
     ExecuteRemoteFile(FullFileName, File, efInternalEditor);
 
@@ -5268,7 +5287,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteCurrentFile()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ExecuteCurrentFileWith()
+void __fastcall TCustomScpExplorerForm::ExecuteCurrentFileWith(bool OnFocused)
 {
   TEditorData ExternalEditor;
   ExternalEditor.Editor = edExternal;
@@ -5309,7 +5328,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteCurrentFileWith()
       }
     }
 
-    ExecuteFile(osCurrent, efExternalEditor, &ExternalEditor, true, false);
+    ExecuteFile(osCurrent, efExternalEditor, &ExternalEditor, true, OnFocused);
   }
 }
 //---------------------------------------------------------------------------

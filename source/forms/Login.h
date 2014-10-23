@@ -20,6 +20,7 @@
 #include <Configuration.h>
 #include <SessionData.h>
 #include <PasTools.hpp>
+#include <System.Actions.hpp>
 //----------------------------------------------------------------------------
 class TLoginDialog : public TForm
 {
@@ -273,6 +274,8 @@ private:
   bool FRenaming;
   TSize FOriginalSize;
   bool FForceNewSite;
+  bool FLoading;
+  bool FSortEnablePending;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();

@@ -33,6 +33,7 @@ __published:
   TStaticText *MaskHintText;
   TButton *MaskButton;
   TImage *Image;
+  TButton *CopyButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall StartStopButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);
@@ -48,6 +49,7 @@ __published:
   void __fastcall FileViewSelectItem(TObject *Sender, TListItem *Item,
           bool Selected);
   void __fastcall MaskButtonClick(TObject *Sender);
+  void __fastcall CopyButtonClick(TObject *Sender);
 
 public:
   __fastcall TFileFindDialog(TComponent * Owner, TFindEvent OnFind);
@@ -76,6 +78,7 @@ private:
     const UnicodeString FileName, const TRemoteFile * File, bool & Cancel);
   void __fastcall FindingFile(TTerminal * Terminal, const UnicodeString Directory,
     bool & Cancel);
+  void __fastcall CopyToClipboard();
 };
 //---------------------------------------------------------------------------
 #endif

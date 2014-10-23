@@ -71,11 +71,10 @@ struct ne_ssl_pkcs11_provider_s {
 
 #define PK11_RSA_ERR (RSA_F_RSA_EAY_PRIVATE_ENCRYPT)
 
-/* RSA_METHOD ->rsa_sign calback. */
-static int pk11_rsa_sign(int type,
-                         const unsigned char *m, unsigned int mlen,
-                         unsigned char *sigret, unsigned int *siglen, 
-                         const RSA *r)
+/* RSA_METHOD ->rsa_private_encrypt calback. */
+static int pk11_rsa_encrypt(int mlen, const unsigned char *m, 
+                            unsigned char *sigret,
+                            RSA *r, int padding)
 {
     ne_ssl_pkcs11_provider *prov = (ne_ssl_pkcs11_provider *)r->meth->app_data;
     ck_rv_t rv;
@@ -87,6 +86,12 @@ static int pk11_rsa_sign(int type,
         RSAerr(PK11_RSA_ERR,ERR_R_RSA_LIB);
         return 0;
     }
+
+    if (padding != RSA_PKCS1_PADDING) {
+        NE_DEBUG(NE_DBG_SSL, "pk11: Cannot sign, unknown padding mode '%d'.\n", padding);
+        RSAerr(PK11_RSA_ERR,ERR_R_RSA_LIB);
+        return 0;
+    }        
 
     mech.mechanism = CKM_RSA_PKCS;
     mech.parameter = NULL;
@@ -101,7 +106,7 @@ static int pk11_rsa_sign(int type,
         return 0;
     }
 
-    len = *siglen = RSA_size(r);
+    len = RSA_size(r);
     rv = pakchois_sign(prov->session, (unsigned char *)m, mlen, sigret, &len);
     if (rv != CKR_OK) {
         NE_DEBUG(NE_DBG_SSL, "pk11: Sign failed.\n");
@@ -110,15 +115,7 @@ static int pk11_rsa_sign(int type,
     }
 
     NE_DEBUG(NE_DBG_SSL, "pk11: Signed successfully.\n");
-    return 1;
-}
-
-/* RSA_METHOD ->rsa_init implementation; called during RSA_new(rsa). */
-static int pk11_rsa_init(RSA *rsa)
-{
-    /* Ensures that RSA_sign() uses meth->rsa_sign: */
-    rsa->flags |= RSA_FLAG_SIGN_VER;
-    return 1;
+    return len;
 }
 
 /* RSA_METHOD ->rsa_finish implementation; called during
@@ -145,9 +142,8 @@ static RSA_METHOD *pk11_rsa_method(ne_ssl_pkcs11_provider *prov)
     RSA_METHOD *m = ne_calloc(sizeof *m);
 
     m->name = "neon PKCS#11";
-    m->rsa_sign = pk11_rsa_sign;
+    m->rsa_priv_enc = pk11_rsa_encrypt;
     
-    m->init = pk11_rsa_init;
     m->finish = pk11_rsa_finish;
     
     /* This is hopefully under complete control of the RSA_METHOD,

@@ -74,7 +74,6 @@ protected:
     TDateTimePrecision & Precision);
   DYNAMIC bool __fastcall CanEdit(TListItem* Item);
   void __fastcall SetDriveView(TCustomUnixDriveView * Value);
-  virtual int __fastcall SecondaryColumnHeader(int Index, bool & AliasOnly);
   virtual int __fastcall HiddenCount();
   virtual int __fastcall FilteredCount();
 
@@ -153,7 +152,6 @@ __published:
   __property MultiSelect;
   __property TNotifyEvent OnDisplayProperties = { read = FOnDisplayProperties, write = FOnDisplayProperties };
   __property ReadOnly;
-  __property HeaderImages;
   __property TNotifyEvent OnRead = { read = FOnRead, write = FOnRead };
 
   // The only way to make Items stored automatically and survive handle recreation.

@@ -941,6 +941,49 @@ object PreferencesDialog: TPreferencesDialog
               'Edit')
           end
         end
+        object PanelFontGroup: TGroupBox
+          Left = 8
+          Top = 264
+          Width = 389
+          Height = 82
+          Anchors = [akLeft, akRight, akBottom]
+          Caption = 'Panel font'
+          TabOrder = 2
+          DesignSize = (
+            389
+            82)
+          object PanelFontLabel: TLabel
+            Left = 160
+            Top = 18
+            Width = 213
+            Height = 52
+            Anchors = [akLeft, akTop, akRight, akBottom]
+            AutoSize = False
+            Caption = 'PanelFontLabel'
+            Color = clWindow
+            ParentColor = False
+            Transparent = False
+            OnDblClick = PanelFontLabelDblClick
+          end
+          object PanelFontButton: TButton
+            Left = 16
+            Top = 44
+            Width = 129
+            Height = 25
+            Caption = 'Select fo&nt...'
+            TabOrder = 0
+            OnClick = PanelFontButtonClick
+          end
+          object PanelFontCheck: TCheckBox
+            Left = 16
+            Top = 21
+            Width = 129
+            Height = 17
+            Caption = 'Use custom &font'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+        end
       end
       object CommanderSheet: TTabSheet
         Tag = 5
@@ -1164,7 +1207,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akTop, akRight]
             AutoSize = False
             Caption = 'EditorFontLabel'
-            Color = clBtnFace
+            Color = clWhite
             ParentColor = False
             Transparent = False
             OnDblClick = EditorFontLabelDblClick
@@ -1851,13 +1894,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 88
           Width = 389
-          Height = 198
+          Height = 223
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Temporary directory'
           TabOrder = 1
           DesignSize = (
             389
-            198)
+            223)
           object Label6: TLabel
             Left = 16
             Top = 22
@@ -1904,22 +1947,22 @@ object PreferencesDialog: TPreferencesDialog
           end
           object TemporaryDirectoryCleanupCheck: TCheckBox
             Left = 16
-            Top = 144
+            Top = 169
             Width = 360
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Cleanup obsolete temporary directories on startup'
-            TabOrder = 5
+            TabOrder = 6
             OnClick = ControlChange
           end
           object ConfirmTemporaryDirectoryCleanupCheck: TCheckBox
             Left = 32
-            Top = 169
+            Top = 194
             Width = 344
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Ask before cleanup'
-            TabOrder = 6
+            TabOrder = 7
             OnClick = ControlChange
           end
           object TemporaryDirectoryAppendSessionCheck: TCheckBox
@@ -1942,10 +1985,20 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 4
             OnClick = ControlChange
           end
+          object TemporaryDirectoryDeterministicCheck: TCheckBox
+            Left = 16
+            Top = 144
+            Width = 360
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Keep temporary copies of remote files in &deterministic paths'
+            TabOrder = 5
+            OnClick = ControlChange
+          end
         end
         object OtherStorageGroup: TGroupBox
           Left = 8
-          Top = 293
+          Top = 318
           Width = 389
           Height = 53
           Anchors = [akLeft, akTop, akRight]

@@ -245,8 +245,23 @@ void __fastcall ImportSitesIfAny()
 //---------------------------------------------------------------------------
 void __fastcall Usage(UnicodeString Param)
 {
-  UnicodeString Key = ::CutToChar(Param, L':', true);
-  Configuration->Usage->Set(Key, Param);
+  while (!Param.IsEmpty())
+  {
+    UnicodeString Pair = ::CutToChar(Param, L',', true);
+    if (!Pair.IsEmpty())
+    {
+      if (Pair[Pair.Length()] == L'+')
+      {
+        UnicodeString Key = Pair.SubString(1, Pair.Length() - 1).Trim();
+        Configuration->Usage->Inc(Key);
+      }
+      else
+      {
+        UnicodeString Key = ::CutToChar(Pair, L':', true);
+        Configuration->Usage->Set(Key, Pair.Trim());
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall RecordWrapperVersions(UnicodeString ConsoleVersion, UnicodeString DotNetVersion)
@@ -267,7 +282,7 @@ void __fastcall RecordWrapperVersions(UnicodeString ConsoleVersion, UnicodeStrin
     Configuration->SetDefaultStorage();
     try
     {
-      THierarchicalStorage * Storage = Configuration->CreateScpStorage(false);
+      THierarchicalStorage * Storage = Configuration->CreateConfigStorage();
       try
       {
         Storage->AccessMode = smReadWrite;
@@ -591,6 +606,17 @@ int __fastcall Execute()
     else if (ShowUpdatesIfAvailable())
     {
       // noop
+    }
+    else if (Params->FindSwitch(L"Exit"))
+    {
+      // noop
+      MaintenanceTask();
+    }
+    else if (Params->FindSwitch(L"MaintenanceTask"))
+    {
+      // Parameter /MaintenanceTask can be added to command-line when executing maintenance tasks
+      // (e.g. from installer) just in case old version of WinSCP is called by mistake
+      MaintenanceTask();
     }
     else
     {

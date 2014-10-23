@@ -65,6 +65,7 @@
     <Compile Include="Internal\Logger.cs" />
     <Compile Include="Internal\ProgressHandler.cs" />
     <Compile Include="Internal\SessionElementLogReader.cs" />
+    <Compile Include="Internal\Tools.cs" />
     <Compile Include="Internal\UnsafeNativeMethods.cs" />
     <Compile Include="OutputDataReceivedEventArgs.cs" />
     <Compile Include="FileTransferProgressEventArgs.cs" />

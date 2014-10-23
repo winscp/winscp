@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include "putty.h"
 #include <security.h>
+#ifdef MPEXT
+#include <assert.h>
+#endif
 
 OSVERSIONINFO osVersion;
 
@@ -67,6 +70,40 @@ Filename *filename_deserialise(void *vdata, int maxsize, int *used)
     *used = end - data;
     return filename_from_str(data);
 }
+
+#ifdef MPEXT
+
+FILE * mp_wfopen(const char *filename, const char *mode)
+{
+    size_t len = strlen(filename);
+    wchar_t * wfilename = snewn(len * 10, wchar_t);
+    size_t wlen = MultiByteToWideChar(CP_UTF8, 0, filename, -1, wfilename, len * 10);
+    FILE * file;
+    if (wlen <= 0)
+    {
+        file = NULL;
+    }
+    else
+    {
+        wchar_t wmode[3];
+        memset(wmode, 0, sizeof(wmode));
+        wmode[0] = (wchar_t)mode[0];
+        if (mode[0] != '\0')
+        {
+            wmode[1] = (wchar_t)mode[1];
+            if (mode[1] != '\0')
+            {
+                assert(mode[2] == '\0');
+            }
+        }
+
+        file = _wfopen(wfilename, wmode);
+    }
+    sfree(wfilename);
+    return file;
+}
+
+#endif
 
 #ifndef NO_SECUREZEROMEMORY
 /*

@@ -90,6 +90,7 @@ __published:
   TPathLabel *QueueLabel;
   TTBXSeparatorItem *TBXSeparatorItem57;
   TTBXItem *QueueDeleteAllDoneQueueToolbarItem;
+  TTBXItem *TBXItem173;
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
     const TPoint &MousePos, bool &Handled);
   void __fastcall RemoteDirViewGetSelectFilter(
@@ -255,7 +256,7 @@ private:
   void __fastcall CloseInternalEditor(TObject * Sender);
   void __fastcall ForceCloseInternalEditor(TObject * Sender);
   void __fastcall ForceCloseLocalEditors();
-  void __fastcall TerminalCaptureLog(const UnicodeString & AddedLine, bool StdError);
+  void __fastcall TerminalCaptureLog(const UnicodeString & AddedLine, TCaptureOutputType OutputType);
   void __fastcall HistoryItemClick(System::TObject* Sender);
   void __fastcall UpdateHistoryMenu(TOperationSide Side, bool Back);
   void __fastcall AdHocCustomCommandValidate(const TCustomCommandType & Command);
@@ -280,6 +281,7 @@ private:
   void __fastcall CreateHiddenWindow();
   static LRESULT WINAPI HiddenWindowProc(HWND HWnd, UINT Message, WPARAM WParam, LPARAM LParam);
   bool __fastcall IsQueueAutoPopup();
+  void __fastcall UpdateSessionsPageControlHeight();
 
 protected:
   TOperationSide FCurrentSide;
@@ -435,6 +437,7 @@ protected:
     bool Local, const TFileMasks::TParams & MaskParams);
   void __fastcall ExecuteRemoteFile(
     const UnicodeString & FullFileName, TRemoteFile * File, TExecuteFileBy ExecuteFileBy);
+  void __fastcall TemporaryFileCopyParam(TCopyParamType & CopyParam);
   void __fastcall TemporaryDirectoryForRemoteFiles(
     UnicodeString RemoteDirectory, TCopyParamType CopyParam,
     UnicodeString & Result, UnicodeString & RootDirectory);
@@ -457,8 +460,8 @@ protected:
   void __fastcall TransferPresetAutoSelect();
   virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
   inline bool __fastcall CustomCommandRemoteAllowed();
-  void __fastcall CustomCommandMenu(TObject * Sender, TRect Rect,
-    TStrings * LocalFileList, TStrings * RemoteFileList);
+  void __fastcall CustomCommandMenu(
+    TAction * Action, TStrings * LocalFileList, TStrings * RemoteFileList);
   void __fastcall LoadToolbarsLayoutStr(UnicodeString LayoutStr);
   UnicodeString __fastcall GetToolbarsLayoutStr();
   virtual void __fastcall Dispatch(void * Message);
@@ -580,7 +583,7 @@ public:
   void __fastcall ExecuteFile(TOperationSide Side, TExecuteFileBy ExecuteFileBy,
     const TEditorData * ExternalEditor = NULL, bool AllSelected = false,
     bool OnFocused = false);
-  void __fastcall ExecuteCurrentFileWith();
+  void __fastcall ExecuteCurrentFileWith(bool OnFocused);
   void __fastcall EditNew(TOperationSide Side);
   bool __fastcall AllowQueueOperation(TQueueOperation Operation, void ** Param = NULL);
   void __fastcall ExecuteQueueOperation(TQueueOperation Operation, void * Param = NULL);

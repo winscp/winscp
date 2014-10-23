@@ -15,7 +15,7 @@
 
 # Set your compiler options
 CC=bcc32
-CFLAG=-DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -Od -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_CMS -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_DGRAM -DDOPENSSL_NO_EC_NISTP_64_GCC_128 -DOPENSSL_NO_WHIRLPOOL
+CFLAG=-DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_CMS -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_DGRAM -DDOPENSSL_NO_EC_NISTP_64_GCC_128 -DOPENSSL_NO_WHIRLPOOL
 LIB_CFLAG=
 
 # The OpenSSL directory
@@ -79,7 +79,7 @@ HEADER=$(INCL_D)\e_os.h \
     $(INCL_D)\pcy_int.h $(INCL_D)\conf_def.h $(INCL_D)\ui_locl.h \
     $(INCL_D)\ssl_locl.h $(INCL_D)\kssl_lcl.h \
     $(INCL_D)\asn1_locl.h $(INCL_D)\evp_locl.h \
-    $(INCL_D)\modes_lcl.h
+    $(INCL_D)\modes_lcl.h $(INCL_D)\constant_time_locl.h
 
 EXHEADER=$(INCO_D)\e_os2.h \
     $(INCO_D)\crypto.h $(INCO_D)\opensslv.h \
@@ -446,6 +446,9 @@ $(INCL_D)\evp_locl.h: $(SRC_D)\crypto\evp\evp_locl.h
 
 $(INCL_D)\modes_lcl.h: $(SRC_D)\crypto\modes\modes_lcl.h
     $(CP) "$(SRC_D)\crypto\modes\modes_lcl.h" "$(INCL_D)\modes_lcl.h"
+
+$(INCL_D)\constant_time_locl.h: $(SRC_D)\crypto\constant_time_locl.h
+    $(CP) "$(SRC_D)\crypto\constant_time_locl.h" "$(INCL_D)\constant_time_locl.h"
 
 $(INCO_D)\e_os2.h: $(SRC_D)\.\e_os2.h
     $(CP) "$(SRC_D)\.\e_os2.h" "$(INCO_D)\e_os2.h"

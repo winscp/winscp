@@ -30,6 +30,7 @@ __published:
   TGroupBox *MaskGroup;
   TMemo *MaskMemo;
   TStaticText *MaskHintText;
+  TCheckBox *ExcludeDirectoryAllCheck;
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall ClearButtonClick(TObject *Sender);
@@ -38,7 +39,8 @@ __published:
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
   void __fastcall FormShow(TObject *Sender);
-
+  void __fastcall ExcludeDirectoryAllCheckClick(TObject *Sender);
+  void __fastcall ExcludeDirectoryMasksMemoChange(TObject *Sender);
 
 public:
   __fastcall TEditMaskDialog(TComponent* Owner);
@@ -50,6 +52,10 @@ protected:
   void __fastcall SaveFileMasks(TFileMasks & Mask);
   void __fastcall LoadFileMasks(TMemo * Memo, TStrings * MasksStr);
   void __fastcall UpdateControls();
+
+private:
+  UnicodeString FExcludeDirectoryMasks;
+  bool FChanging;
 };
 //---------------------------------------------------------------------------
 #endif

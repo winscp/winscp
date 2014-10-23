@@ -41,6 +41,14 @@ __fastcall TEditorPreferencesDialog::TEditorPreferencesDialog(
 {
   SetCorrectFormParent(this);
   UseSystemSettings(this);
+
+  UnicodeString ExecutableDescription;
+  UnicodeString UsageState;
+  bool TryNextTime;
+  if (DetectSystemExternalEditor(true, FSystemExternalEditor, ExecutableDescription, UsageState, TryNextTime))
+  {
+    FSystemExternalEditor = FormatCommand(FSystemExternalEditor, L"");
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::Init(TEditorPreferencesMode Mode, bool MayRemote)
@@ -195,6 +203,7 @@ void __fastcall TEditorPreferencesDialog::UpdateControls()
   EnableControl(ExternalEditorEdit, EditorExternalButton->Checked);
   EnableControl(ExternalEditorBrowseButton, EditorExternalButton->Checked);
   EnableControl(ExternalEditorGroup, EditorExternalButton->Checked && FMayRemote);
+  EnableControl(DefaultButton, !FSystemExternalEditor.IsEmpty());
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
@@ -214,5 +223,12 @@ void __fastcall TEditorPreferencesDialog::MaskEditExit(TObject * /*Sender*/)
 void __fastcall TEditorPreferencesDialog::FormShow(TObject * /*Sender*/)
 {
   InstallPathWordBreakProc(ExternalEditorEdit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorPreferencesDialog::DefaultButtonClick(TObject * /*Sender*/)
+{
+  EditorExternalButton->Checked = true;
+  ExternalEditorEdit->Text = FSystemExternalEditor;
+  UpdateControls();
 }
 //---------------------------------------------------------------------------

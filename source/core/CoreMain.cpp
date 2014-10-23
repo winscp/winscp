@@ -75,6 +75,50 @@ bool __fastcall IsPasswordPrompt(TPromptKind Kind, TStrings * Prompts)
     (Kind != pkPassphrase);
 }
 //---------------------------------------------------------------------------
+void CoreLoad()
+{
+  bool SessionList = true;
+  std::unique_ptr<THierarchicalStorage> SessionsStorage(Configuration->CreateScpStorage(SessionList));
+  THierarchicalStorage * ConfigStorage;
+  std::unique_ptr<THierarchicalStorage> ConfigStorageAuto;
+  if (!SessionList)
+  {
+    // can reuse this for configuration
+    ConfigStorage = SessionsStorage.get();
+  }
+  else
+  {
+    ConfigStorageAuto.reset(Configuration->CreateConfigStorage());
+    ConfigStorage = ConfigStorageAuto.get();
+  }
+
+  try
+  {
+    Configuration->Load(ConfigStorage);
+  }
+  catch (Exception & E)
+  {
+    ShowExtendedException(&E);
+  }
+
+  // should be noop, unless exception occured above
+  ConfigStorage->CloseAll();
+
+  StoredSessions = new TStoredSessionList();
+
+  try
+  {
+    if (SessionsStorage->OpenSubKey(Configuration->StoredSessionsSubKey, false))
+    {
+      StoredSessions->Load(SessionsStorage.get());
+    }
+  }
+  catch (Exception & E)
+  {
+    ShowExtendedException(&E);
+  }
+}
+//---------------------------------------------------------------------------
 void CoreInitialize()
 {
   Randomize();
@@ -86,31 +130,13 @@ void CoreInitialize()
   // so that random seed path is known
   Configuration = CreateConfiguration();
 
-  try
-  {
-    Configuration->Load();
-  }
-  catch (Exception & E)
-  {
-    ShowExtendedException(&E);
-  }
-
   PuttyInitialize();
   #ifndef NO_FILEZILLA
   TFileZillaIntf::Initialize();
   #endif
   NeonInitialize();
 
-  StoredSessions = new TStoredSessionList();
-
-  try
-  {
-    StoredSessions->Load();
-  }
-  catch (Exception & E)
-  {
-    ShowExtendedException(&E);
-  }
+  CoreLoad();
 }
 //---------------------------------------------------------------------------
 void CoreFinalize()

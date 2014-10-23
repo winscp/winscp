@@ -138,6 +138,7 @@ private:
   UnicodeString FCustomParam2;
   bool FResolveSymlinks;
   TDateTime FTimeDifference;
+  bool FTimeDifferenceAuto;
   int FSFTPDownloadQueue;
   int FSFTPUploadQueue;
   int FSFTPListingQueue;
@@ -224,6 +225,7 @@ private:
   TDateTime __fastcall GetPingIntervalDT();
   TDateTime __fastcall GetFtpPingIntervalDT();
   void __fastcall SetTimeDifference(TDateTime value);
+  void __fastcall SetTimeDifferenceAuto(bool value);
   void __fastcall SetPingType(TPingType value);
   UnicodeString __fastcall GetSessionName();
   bool __fastcall HasSessionName();
@@ -367,6 +369,7 @@ public:
   void __fastcall Remove();
   void __fastcall CacheHostKeyIfNotCached();
   virtual void __fastcall Assign(TPersistent * Source);
+  void __fastcall CopyData(TSessionData * Source);
   bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
     TStoredSessionList * StoredSessions, bool & DefaultsOnly,
     UnicodeString * FileName, bool * AProtocolDefined, UnicodeString * MaskedUrl);
@@ -418,6 +421,7 @@ public:
   __property bool ClearAliases = { read = FClearAliases, write = SetClearAliases };
   __property TDateTime PingIntervalDT = { read = GetPingIntervalDT, write = SetPingIntervalDT };
   __property TDateTime TimeDifference = { read = FTimeDifference, write = SetTimeDifference };
+  __property bool TimeDifferenceAuto = { read = FTimeDifferenceAuto, write = SetTimeDifferenceAuto };
   __property TPingType PingType = { read = FPingType, write = SetPingType };
   __property UnicodeString SessionName  = { read=GetSessionName };
   __property UnicodeString DefaultSessionName  = { read=GetDefaultSessionName };

@@ -156,9 +156,6 @@ void __fastcall TScpCommanderForm::RestoreParams()
 {
   assert(Configuration);
 
-  // IDE often looses this link
-  LocalDirView->HeaderImages = GlyphsModule->ArrowImages;
-
   TCustomScpExplorerForm::RestoreParams();
   LeftPanelWidth = WinConfiguration->ScpCommander.LocalPanelWidth;
   LoadToolbarsLayoutStr(WinConfiguration->ScpCommander.ToolbarsLayout);
@@ -575,10 +572,15 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     }
 
     TAlign NonClientAlign = (TreeOnLeft ? alLeft : alTop);
+    // VCL adjusts cursors only between crVSplit and crHSplit,
+    // See TSplitter.RequestAlign
+    TCursor SplitterCursor = (TreeOnLeft ? crSizeWE : crSizeNS);
     LocalDriveView->Align = NonClientAlign;
     LocalPanelSplitter->Align = NonClientAlign;
+    LocalPanelSplitter->Cursor = SplitterCursor;
     RemoteDriveView->Align = NonClientAlign;
     RemotePanelSplitter->Align = NonClientAlign;
+    RemotePanelSplitter->Cursor = SplitterCursor;
     FixControlsPlacement();
 
     if (TreeOnLeft)
@@ -652,7 +654,7 @@ void __fastcall TScpCommanderForm::SplitterCanResize(TObject * /*Sender*/,
 {
   // When splitter is drag so far to right, that width contraint of remote panel would
   // be violated, it doesn't stop, but extend form width.
-  // Following prevents this behaviour.
+  // Following prevents this behavior.
   if (ClientWidth - NewSize - Splitter->Width < Panel(false)->Constraints->MinWidth)
     NewSize = (ClientWidth - Panel(false)->Constraints->MinWidth - Splitter->Width);
 }
@@ -2029,8 +2031,7 @@ void __fastcall TScpCommanderForm::LocalDirViewContextPopup(TObject * /*Sender*/
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DisplaySystemContextMenu()
 {
-  TValueRestorer<bool> Restorer(FForceSystemContextMenu);
-  FForceSystemContextMenu = true;
+  TAutoFlag Flag(FForceSystemContextMenu);
   if ((FLastContextPopupScreenPoint.x >= 0) && (FLastContextPopupScreenPoint.Y >= 0))
   {
     LocalDirView->DisplayContextMenu(FLastContextPopupScreenPoint);

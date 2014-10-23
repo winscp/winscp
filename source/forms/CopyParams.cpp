@@ -216,7 +216,7 @@ void __fastcall TCopyParamsFrame::ControlChange(TObject * /*Sender*/)
 void __fastcall TCopyParamsFrame::BeforeExecute()
 {
   // only now is IncludeFileMaskHintText->Width updated to match actual caption
-  // (localised one)
+  // (localized one)
   TPoint P(IncludeFileMaskCombo->Width, 0);
   P = IncludeFileMaskHintText->ScreenToClient(IncludeFileMaskCombo->ClientToScreen(P));
   IncludeFileMaskHintText->Left = IncludeFileMaskHintText->Left + P.x - IncludeFileMaskHintText->Width;

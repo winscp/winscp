@@ -56,6 +56,7 @@ type
     FClearingItems: Boolean;
     FUpdatingSelection: Integer;
     FNextCharToIgnore: Word;
+    FHeaderHandle: HWND;
     procedure CreateWnd; override;
     procedure DestroyWnd; override;
     procedure BeginSelectionUpdate; virtual;
@@ -413,17 +414,41 @@ begin
 end;
 
 procedure TCustomNortonLikeListView.WMNotify(var Message: TWMNotify);
+var
+  HDNotify: PHDNotify;
 begin
-  // disallow resizing of "invisible" (width=0) columns
-  with PHDNotify(Message.NMHdr)^ do
-    case Hdr.code of
+  if (FHeaderHandle <> 0) and (Message.NMHdr^.hWndFrom = FHeaderHandle) then
+  begin
+    HDNotify := PHDNotify(Message.NMHdr);
+    // Disallow resizing of "invisible" (width=0) columns.
+    // (We probably get only Unicode versions of the messages here as
+    // controls are created as Unicode by VCL)
+    case HDNotify.Hdr.code of
       HDN_BEGINTRACKA, HDN_TRACKA, HDN_BEGINTRACKW, HDN_TRACKW:
-        if not ColProperties.Visible[Item] then
+        if not ColProperties.Visible[HDNotify.Item] then
+        begin
+          Message.Result := 1;
+          Exit;
+        end;
+      // We won't get here when user tries to resize the column by mouse,
+      // as that's prevented above.
+      // But we get here when other methods are used
+      // (the only we know about atm is Ctrl-+ shortcut)
+      // We are getting this notification also when control is being setup,
+      // with mask including also other fields, not just HDI_WIDTH.
+      // While it does not seem to hurt to swallow even those messages,
+      // not sure it's good thing to do, so we swallow width-only messages only.
+      // That's why there's "= HDI_WIDTH" not "and HDI_WIDTH <> 0".
+      HDN_ITEMCHANGINGA, HDN_ITEMCHANGINGW:
+        if (HDNotify.PItem.Mask = HDI_WIDTH) and
+           (HDNotify.PItem.cxy <> 0) and
+           (not ColProperties.Visible[HDNotify.Item]) then
         begin
           Message.Result := 1;
           Exit;
         end;
     end;
+  end;
 
   inherited;
 end;
@@ -1003,6 +1028,7 @@ begin
   try
     Assert(ColProperties <> nil);
     inherited;
+    FHeaderHandle := ListView_GetHeader(Handle);
 
     ColProperties.ListViewWndCreated;
   finally

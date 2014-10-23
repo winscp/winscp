@@ -93,6 +93,7 @@ public:
   unsigned int __fastcall CPS();
   void __fastcall Finish(UnicodeString FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
+  void __fastcall Progress();
   unsigned long __fastcall LocalBlockSize();
   bool __fastcall IsLocallyDone();
   bool __fastcall IsTransferDone();

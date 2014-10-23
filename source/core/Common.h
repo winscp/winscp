@@ -72,6 +72,7 @@ UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
 bool __fastcall ComparePaths(const UnicodeString & Path1, const UnicodeString & Path2);
 bool __fastcall CompareFileName(const UnicodeString & Path1, const UnicodeString & Path2);
+int __fastcall CompareLogicalText(const UnicodeString & S1, const UnicodeString & S2);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
 UnicodeString __fastcall DisplayableStr(const RawByteString & Str);
@@ -161,6 +162,7 @@ UnicodeString __fastcall FixedLenDateTimeFormat(const UnicodeString & Format);
 UnicodeString __fastcall StandardTimestamp(const TDateTime & DateTime);
 UnicodeString __fastcall StandardTimestamp();
 UnicodeString __fastcall StandardDatestamp();
+UnicodeString __fastcall FormatTimeZone(long Sec);
 UnicodeString __fastcall GetTimeZoneLogString();
 bool __fastcall AdjustClockForDSTEnabled();
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
@@ -223,27 +225,39 @@ class TValueRestorer
 public:
   __fastcall TValueRestorer(T & Target, const T & Value) :
     FTarget(Target),
-    FValue(Value)
+    FValue(Value),
+    FArmed(true)
   {
   }
 
   __fastcall TValueRestorer(T & Target) :
     FTarget(Target),
-    FValue(Target)
+    FValue(Target),
+    FArmed(true)
   {
+  }
+
+  void Release()
+  {
+    if (FArmed)
+    {
+      FTarget = FValue;
+      FArmed = false;
+    }
   }
 
   __fastcall ~TValueRestorer()
   {
-    FTarget = FValue;
+    Release();
   }
 
 protected:
   T & FTarget;
   T FValue;
+  bool FArmed;
 };
 //---------------------------------------------------------------------------
-class TAutoNestingCounter : TValueRestorer<int>
+class TAutoNestingCounter : public TValueRestorer<int>
 {
 public:
   __fastcall TAutoNestingCounter(int & Target) :
@@ -255,7 +269,23 @@ public:
 
   __fastcall ~TAutoNestingCounter()
   {
-    assert(FTarget == (FValue + 1));
+    assert(!FArmed || (FTarget == (FValue + 1)));
+  }
+};
+//---------------------------------------------------------------------------
+class TAutoFlag : public TValueRestorer<bool>
+{
+public:
+  __fastcall TAutoFlag(bool & Target) :
+    TValueRestorer<bool>(Target)
+  {
+    assert(!Target);
+    Target = true;
+  }
+
+  __fastcall ~TAutoFlag()
+  {
+    assert(!FArmed || FTarget);
   }
 };
 //---------------------------------------------------------------------------

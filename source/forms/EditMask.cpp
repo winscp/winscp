@@ -35,6 +35,7 @@ bool __fastcall DoEditMaskDialog(TFileMasks & Mask)
 __fastcall TEditMaskDialog::TEditMaskDialog(TComponent* Owner)
         : TForm(Owner)
 {
+  FChanging = false;
   UseSystemSettings(this);
   HintLabel(MaskHintText,
     FORMAT(L"%s\n \n%s\n \n%s\n \n%s", (LoadStr(MASK_HINT2), LoadStr(FILE_MASK_EX_HINT), LoadStr(PATH_MASK_HINT2), LoadStr(MASK_HELP))));
@@ -113,6 +114,7 @@ void __fastcall TEditMaskDialog::ClearButtonClick(TObject * /*Sender*/)
   ExcludeFileMasksMemo->Clear();
   IncludeDirectoryMasksMemo->Clear();
   ExcludeDirectoryMasksMemo->Clear();
+  ExcludeDirectoryAllCheck->Checked = false;
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -157,5 +159,38 @@ void __fastcall TEditMaskDialog::FormShow(TObject * /*Sender*/)
   InstallPathWordBreakProc(ExcludeFileMasksMemo);
   InstallPathWordBreakProc(IncludeDirectoryMasksMemo);
   InstallPathWordBreakProc(ExcludeDirectoryMasksMemo);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditMaskDialog::ExcludeDirectoryAllCheckClick(TObject * /*Sender*/)
+{
+  if (!FChanging)
+  {
+    TAutoFlag Flag(FChanging);
+
+    if (ExcludeDirectoryAllCheck->Checked)
+    {
+      FExcludeDirectoryMasks = ExcludeDirectoryMasksMemo->Lines->Text;
+      ExcludeDirectoryMasksMemo->Lines->Text = L"*";
+    }
+    else
+    {
+      ExcludeDirectoryMasksMemo->Lines->Text = FExcludeDirectoryMasks;
+    }
+  }
+
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditMaskDialog::ExcludeDirectoryMasksMemoChange(TObject * /*Sender*/)
+{
+  if (!FChanging)
+  {
+    TAutoFlag Flag(FChanging);
+
+    UnicodeString Mask = ExcludeDirectoryMasksMemo->Lines->Text.Trim();
+    ExcludeDirectoryAllCheck->Checked = (Mask == L"*") || (Mask == L"*/");
+  }
+
+  UpdateControls();
 }
 //---------------------------------------------------------------------------

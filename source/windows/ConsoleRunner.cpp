@@ -535,14 +535,15 @@ private:
 __fastcall TExternalConsole::TExternalConsole(
   const UnicodeString Instance, bool NoInteractiveInput)
 {
-  FRequestEvent = OpenEvent(EVENT_ALL_ACCESS, false,
-    FORMAT(L"%s%s", (CONSOLE_EVENT_REQUEST, (Instance))).c_str());
-  FResponseEvent = OpenEvent(EVENT_ALL_ACCESS, false,
-    FORMAT(L"%s%s", (CONSOLE_EVENT_RESPONSE, (Instance))).c_str());
-  FCancelEvent = OpenEvent(EVENT_ALL_ACCESS, false,
-    FORMAT(L"%s%s", (CONSOLE_EVENT_CANCEL, (Instance))).c_str());
-  FFileMapping = OpenFileMapping(FILE_MAP_ALL_ACCESS, false,
-    FORMAT(L"%s%s", (CONSOLE_MAPPING, (Instance))).c_str());
+  UnicodeString Name;
+  Name = FORMAT(L"%s%s", (CONSOLE_EVENT_REQUEST, (Instance)));
+  FRequestEvent = OpenEvent(EVENT_ALL_ACCESS, false, Name.c_str());
+  Name = FORMAT(L"%s%s", (CONSOLE_EVENT_RESPONSE, (Instance)));
+  FResponseEvent = OpenEvent(EVENT_ALL_ACCESS, false, Name.c_str());
+  Name = FORMAT(L"%s%s", (CONSOLE_EVENT_CANCEL, (Instance)));
+  FCancelEvent = OpenEvent(EVENT_ALL_ACCESS, false, Name.c_str());
+  Name = FORMAT(L"%s%s", (CONSOLE_MAPPING, (Instance)));
+  FFileMapping = OpenFileMapping(FILE_MAP_ALL_ACCESS, false, Name.c_str());
 
   if ((FRequestEvent == NULL) || (FResponseEvent == NULL) || (FFileMapping == NULL))
   {
@@ -970,6 +971,8 @@ void __fastcall TNullConsole::Progress(const TScriptProgress & /*Progress*/)
   FAIL;
 }
 //---------------------------------------------------------------------------
+static UnicodeString TimestampVarName(L"TIMESTAMP");
+//---------------------------------------------------------------------------
 class TConsoleRunner
 {
 public:
@@ -1004,6 +1007,7 @@ private:
   bool FBatchScript;
   bool FAborted;
   TTimer * Timer;
+  bool FExternalTimestampVar;
 
   void __fastcall ScriptPrint(TScript * Script, const UnicodeString Str);
   void __fastcall ScriptPrintProgress(TScript * Script, bool First, const UnicodeString Str);
@@ -1056,6 +1060,7 @@ TConsoleRunner::TConsoleRunner(TConsole * Console) :
   assert(WinConfiguration->OnMasterPasswordPrompt == NULL);
   WinConfiguration->OnMasterPasswordPrompt = MasterPasswordPrompt;
   assert(Configuration->OnChange == NULL);
+  FExternalTimestampVar = !GetEnvironmentVariable(TimestampVarName).IsEmpty();
   Configuration->OnChange = ConfigurationChange;
 }
 //---------------------------------------------------------------------------
@@ -1775,6 +1780,40 @@ UnicodeString TConsoleRunner::ExpandCommand(UnicodeString Command, TStrings * Sc
     Command = ReplaceStr(Command, FORMAT(L"%%%d%%", (Index+1)),
       ScriptParameters->Strings[Index]);
   }
+
+  TDateTime N = Now();
+
+  if (!FExternalTimestampVar)
+  {
+    Command =
+      ReplaceStr(Command, FORMAT(L"%%%s%%", (TimestampVarName)), FormatDateTime(L"yyyymmddhhnnss", N));
+  }
+
+  int Offset = 1;
+  int P2;
+  do
+  {
+    int P = Pos(UpperCase(L"%" + TimestampVarName + L"#"), UpperCase(Command.SubString(Offset, Command.Length() - Offset + 1)));
+    if (P > 0)
+    {
+      P += Offset - 1;
+      Offset = P + 1 + TimestampVarName.Length() + 1;
+      P2 = Pos(L"%", Command.SubString(Offset, Command.Length() - Offset + 1));
+      if (P2 > 0)
+      {
+        UnicodeString TimestampFormat = Command.SubString(Offset, P2 - 1);
+        UnicodeString TimestampValue = FormatDateTime(TimestampFormat, N);
+        Command = Command.SubString(1, P - 1) + TimestampValue + Command.SubString(Offset + P2, Command.Length() - Offset - P2 + 1);
+        Offset = P + TimestampValue.Length();
+      }
+    }
+    else
+    {
+      P2 = 0;
+    }
+  }
+  while (P2 > 0);
+
   Command = ExpandEnvironmentVariables(Command);
   return Command;
 }
@@ -1822,6 +1861,7 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
       if (!Session.IsEmpty())
       {
         PrintMessage(LoadStr(SCRIPT_CMDLINE_SESSION));
+        FCommandError = false;
         FScript->Connect(Session, Options, false);
         if (FCommandError)
         {
@@ -1882,6 +1922,12 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
     {
       Failed(AnyError);
       ShowException(&E);
+    }
+
+    if (FLastProgressLen > 0)
+    {
+      FConsole->Print(L"\n");
+      FLastProgressLen = 0;
     }
 
     ExitCode = AnyError ? RESULT_ANY_ERROR : RESULT_SUCCESS;
@@ -2054,11 +2100,7 @@ int __fastcall Console(bool Help)
             Configuration->Usage->Inc(L"ScriptLog");
             Configuration->TemporaryLogging(LogFile);
           }
-          if (Params->FindSwitch(L"XmlLog", LogFile))
-          {
-            Configuration->Usage->Inc(L"ScriptXmlLog");
-            Configuration->TemporaryActionsLogging(LogFile);
-          }
+          CheckXmlLogParam(Params);
         }
 
         Result = Runner->Run(Session, Params,

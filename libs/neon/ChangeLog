@@ -1,4 +1,112 @@
 ------------------------------------------------------------------------
+r1960 | joe | 2014-09-23 14:22:17 +0100 (Tue, 23 Sep 2014) | 1 line
+
+Tag release 0.30.1.
+------------------------------------------------------------------------
+r1959 | joe | 2014-09-23 14:18:59 +0100 (Tue, 23 Sep 2014) | 2 lines
+
+* macros/neon.m4: Bump to 0.30.1.
+
+------------------------------------------------------------------------
+r1958 | joe | 2014-09-23 14:16:27 +0100 (Tue, 23 Sep 2014) | 1 line
+
+More news.
+------------------------------------------------------------------------
+r1957 | joe | 2014-09-23 14:15:51 +0100 (Tue, 23 Sep 2014) | 9 lines
+
+Merge r1956 from trunk:
+
+Fix PKCS#11 support with OpenSSL for TLS 1.2:
+
+* src/ne_pkcs11.c (pk11_rsa_encrypt, pk11_rsa_method): Reimplemented
+  pk11_rsa_sign as rsa_private_encrypt callback for RSA method.
+  (pk11_rsa_init): Removed.
+
+
+------------------------------------------------------------------------
+r1955 | joe | 2014-09-22 16:47:49 +0100 (Mon, 22 Sep 2014) | 2 lines
+
+* po/: make update-po.
+
+------------------------------------------------------------------------
+r1954 | joe | 2014-09-22 16:47:12 +0100 (Mon, 22 Sep 2014) | 9 lines
+
+Merge r1951, r1952, r1953 from trunk:
+
+* doc/ref/neon.xml: LFS doc tweak.
+
+* src/ne_gnutls.c (ne_ssl_readable_dname): Remove unused variable.
+
+* src/ne_gnutls.c (ne_ssl_clicert_import): Cast away warning.
+
+
+------------------------------------------------------------------------
+r1950 | joe | 2014-09-20 20:33:03 +0100 (Sat, 20 Sep 2014) | 2 lines
+
+News is good news.
+
+------------------------------------------------------------------------
+r1949 | joe | 2014-09-20 20:31:25 +0100 (Sat, 20 Sep 2014) | 5 lines
+
+Merge r1948 from trunk:
+
+* src/ne_gnutls.c (ne_ssl_context_destroy): Fix memory leak (Werner Baumann, Patrick Ohly).
+
+
+------------------------------------------------------------------------
+r1947 | joe | 2014-09-20 20:24:21 +0100 (Sat, 20 Sep 2014) | 2 lines
+
+* po/: make update-po.
+
+------------------------------------------------------------------------
+r1945 | joe | 2014-09-20 20:21:43 +0100 (Sat, 20 Sep 2014) | 9 lines
+
+Merge r1943, r1944 from trunk:
+
+* neon.pc.in: Reorder Libs/Libs.private to fix static linking (Alan H).
+
+* test/socket.c (addr_reverse): Succeed if returned name uses hostname as 
+  prefix, and only warn for non-empty strings which don't match.
+
+Reviewed by: joe
+
+------------------------------------------------------------------------
+r1942 | joe | 2014-09-20 20:05:23 +0100 (Sat, 20 Sep 2014) | 7 lines
+
+Merge r1941 from trunk:
+
+* src/ne_socket.c (ne_addr_destroy): Fix possible crash on Windows
+  for address lookup error cases.  (Olivier Goffart)
+
+Reviewed by: joe
+
+------------------------------------------------------------------------
+r1940 | joe | 2014-09-20 19:59:52 +0100 (Sat, 20 Sep 2014) | 8 lines
+
+Merge r1938, r1939 from trunk:
+
+* src/ne_openssl.c (ne__negotiate_ssl): Don't fail hard for SSL cert
+  change, invoke verify callback.
+
+* configure.ac: Rename from configure.in.
+
+
+------------------------------------------------------------------------
+r1936 | joe | 2013-09-30 16:45:36 +0100 (Mon, 30 Sep 2013) | 7 lines
+
+Merge 1933,1935 from trunk:
+
+* doc/ref/reqbody.xml: Doc fixes.
+
+* macros/neon-test.m4 (NEON_TEST): Check for signal.h.
+
+
+------------------------------------------------------------------------
+r1934 | joe | 2013-09-30 16:39:58 +0100 (Mon, 30 Sep 2013) | 2 lines
+
+Branch 0.30.x
+
+------------------------------------------------------------------------
 r1932 | joe | 2013-07-31 17:00:59 +0100 (Wed, 31 Jul 2013) | 2 lines
 
 Tag 0.30, third time lucky.

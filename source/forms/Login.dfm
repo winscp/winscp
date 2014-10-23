@@ -244,8 +244,7 @@ object LoginDialog: TLoginDialog
           Items.Strings = (
             'No encryption'
             'TLS/SSL Implicit encryptionX'
-            'TLS Explicit encryptionX'
-            'SSL Explicit encryptionX')
+            'TLS/SSL Explicit encryptionX')
         end
         object WebDavsCombo: TComboBox
           Left = 163
@@ -624,9 +623,9 @@ object LoginDialog: TLoginDialog
       Category = 'Session'
       Caption = 'Open in &PuTTY'
       ImageIndex = 1
-      ShortCut = 16464
       SecondaryShortCuts.Strings = (
         'Shift+Ctrl+P')
+      ShortCut = 16464
       OnExecute = PuttyActionExecute
     end
     object PasteUrlAction: TAction

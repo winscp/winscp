@@ -46,6 +46,7 @@ private:
   int FSessionReopenAutoStall;
   UnicodeString FIniFileStorageName;
   UnicodeString FVirtualIniFileStorageName;
+  std::unique_ptr<TStrings> FOptionsStorage;
   int FProgramIniPathWrittable;
   int FTunnelLocalPortNumberLow;
   int FTunnelLocalPortNumberHigh;
@@ -97,6 +98,8 @@ private:
   UnicodeString __fastcall GetIniFileStorageNameForReading();
   UnicodeString __fastcall GetIniFileStorageName(bool ReadingOnly);
   void __fastcall SetIniFileStorageName(UnicodeString value);
+  void __fastcall SetOptionsStorage(TStrings * value);
+  TStrings * __fastcall GetOptionsStorage();
   UnicodeString __fastcall GetPartialExt() const;
   UnicodeString __fastcall GetFileInfoString(const UnicodeString Key);
   void __fastcall SetSessionReopenAuto(int value);
@@ -160,7 +163,7 @@ public:
   virtual __fastcall ~TConfiguration();
   virtual void __fastcall Default();
   virtual void __fastcall UpdateStaticUsage();
-  void __fastcall Load();
+  void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save();
   void __fastcall SaveExplicit();
   void __fastcall SetNulStorage();
@@ -179,7 +182,8 @@ public:
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
   bool __fastcall ShowBanner(const UnicodeString SessionKey, const UnicodeString & Banner);
   void __fastcall NeverShowBanner(const UnicodeString SessionKey, const UnicodeString & Banner);
-  virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
+  THierarchicalStorage * CreateConfigStorage();
+  virtual THierarchicalStorage * CreateScpStorage(bool & SessionList);
   void __fastcall TemporaryLogging(const UnicodeString ALogFileName);
   void __fastcall TemporaryActionsLogging(const UnicodeString ALogFileName);
   virtual RawByteString __fastcall EncryptPassword(UnicodeString Password, UnicodeString Key);
@@ -242,6 +246,7 @@ public:
   __property UnicodeString RegistryStorageKey  = { read=GetRegistryStorageKey };
   __property UnicodeString IniFileStorageName  = { read=GetIniFileStorageNameForReadingWriting, write=SetIniFileStorageName };
   __property UnicodeString IniFileStorageNameForReading  = { read=GetIniFileStorageNameForReading };
+  __property TStrings * OptionsStorage = { read = GetOptionsStorage, write = SetOptionsStorage };
 
   __property UnicodeString DefaultKeyFile = { read = GetDefaultKeyFile };
 

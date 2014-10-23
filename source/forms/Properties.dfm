@@ -315,13 +315,7 @@ object PropertiesDialog: TPropertiesDialog
         TabOrder = 0
         OnChange = ChecksumAlgEditChange
         Items.Strings = (
-          'md5'
-          'sha1'
-          'sha224'
-          'sha256'
-          'sha384'
-          'sha512'
-          'crc32')
+          'Xmd5')
       end
       object ChecksumButton: TButton
         Left = 208

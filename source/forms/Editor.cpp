@@ -137,8 +137,7 @@ public:
 
   bool __fastcall LoadFromStream(TStream * Stream, TEncoding * Encoding, bool & EncodingError);
 
-  void __fastcall SetFormat(UnicodeString FontName, int FontSize,
-    TFontCharset FontCharset, TFontStyles FontStyles, unsigned int TabSize,
+  void __fastcall SetFormat(const TFontConfiguration & FontConfiguration, unsigned int TabSize,
     bool AWordWrap);
   void __fastcall ResetFormat();
   int __fastcall FindText(const UnicodeString SearchStr, int StartPos, int Length,
@@ -184,8 +183,7 @@ __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::SetFormat(UnicodeString FontName, int FontSize,
-  TFontCharset FontCharset, TFontStyles FontStyles, unsigned int TabSize,
+void __fastcall TRichEdit20::SetFormat(const TFontConfiguration & FontConfiguration, unsigned int TabSize,
   bool AWordWrap)
 {
 
@@ -201,18 +199,14 @@ void __fastcall TRichEdit20::SetFormat(UnicodeString FontName, int FontSize,
 
   LockWindowUpdate(Handle);
 
+  std::unique_ptr<TFont> NewFont(new TFont());
+  TWinConfiguration::RestoreFont(FontConfiguration, NewFont.get());
   // setting DefAttributes may take quite time, even if the font attributes
   // do not change, so avoid that if not necessary
   if (!FInitialized ||
-      (Font->Name != FontName) ||
-      (Font->Size != FontSize) ||
-      (Font->Charset != FontCharset) ||
-      (Font->Style != FontStyles))
+      !SameFont(Font, NewFont.get()))
   {
-    Font->Name = FontName;
-    Font->Size = FontSize;
-    Font->Charset = FontCharset;
-    Font->Style = FontStyles;
+    Font->Assign(NewFont.get());
     DefAttributes->Assign(Font);
   }
 
@@ -953,9 +947,8 @@ void __fastcall TEditorForm::ApplyConfiguration()
 {
   bool PrevModified = EditorMemo->Modified;
   assert(Configuration);
-  EditorMemo->SetFormat(WinConfiguration->Editor.FontName,
-    WinConfiguration->Editor.FontSize, (TFontCharset)WinConfiguration->Editor.FontCharset,
-    IntToFontStyles(WinConfiguration->Editor.FontStyle), WinConfiguration->Editor.TabSize,
+  EditorMemo->SetFormat(WinConfiguration->Editor.Font,
+    WinConfiguration->Editor.TabSize,
     WinConfiguration->Editor.WordWrap);
   EditorMemo->Modified = PrevModified;
   EditorMemo->ClearUndo();

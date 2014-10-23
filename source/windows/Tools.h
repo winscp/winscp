@@ -7,6 +7,7 @@
 #include <HelpIntfs.hpp>
 #include <stdio.h>
 #include <SessionData.h>
+#include <Vcl.Graphics.hpp>
 //---------------------------------------------------------------------------
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn);
 bool __fastcall ExecuteShellAndWait(const UnicodeString Path, const UnicodeString Params);
@@ -29,6 +30,7 @@ void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form);
 UnicodeString __fastcall StoreFormSize(TForm * Form);
 TFontStyles __fastcall IntToFontStyles(int value);
 int __fastcall FontStylesToInt(const TFontStyles value);
+bool __fastcall SameFont(TFont * Font1, TFont * Font2);
 void __fastcall ValidateMaskEdit(TComboBox * Edit);
 void __fastcall ValidateMaskEdit(TEdit * Edit);
 void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory);
@@ -53,10 +55,15 @@ bool __fastcall IsWin64();
 void __fastcall CopyToClipboard(UnicodeString Text);
 void __fastcall CopyToClipboard(TStrings * Strings);
 void __fastcall ShutDownWindows();
+void __fastcall SuspendWindows();
 void __fastcall EditSelectBaseName(HWND Edit);
 void __fastcall VerifyKey(UnicodeString FileName);
 void __fastcall VerifyKeyIncludingVersion(UnicodeString FileName, TSshProt SshProt);
 TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo);
+bool __fastcall DetectSystemExternalEditor(
+  bool AllowDefaultEditor,
+  UnicodeString & Executable, UnicodeString & ExecutableDescription,
+  UnicodeString & UsageState, bool & TryNextTime);
 //---------------------------------------------------------------------------
 #define IUNKNOWN \
   virtual HRESULT __stdcall QueryInterface(const GUID& IID, void **Obj) \

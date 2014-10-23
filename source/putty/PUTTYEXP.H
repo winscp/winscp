@@ -56,16 +56,6 @@ void putty_unmungestr(const char *in, char *out, int outlen);
 
 int select_result(WPARAM wParam, LPARAM lParam);
 
-// from utf8.c
-
-#include "charset/charset.h"
-
-typedef struct charset_spec charset_spec;
-void read_utf8(charset_spec const *, long int, charset_state *,
-           void (*)(void *, long int), void *);
-void write_utf8(charset_spec const *, long int,
-        charset_state *, void (*)(void *, long int), void *);
-
 // from sshzlib.c
 
 extern const struct ssh_compress ssh_zlib;

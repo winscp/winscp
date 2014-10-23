@@ -150,7 +150,7 @@ protected:
     UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory, int FirstParam);
   virtual bool __fastcall HandleExtendedException(Exception * E,
     TTerminal * Terminal = NULL);
-  void __fastcall TerminalCaptureLog(const UnicodeString & AddedLine, bool StdError);
+  void __fastcall TerminalCaptureLog(const UnicodeString & AddedLine, TCaptureOutputType OutputType);
   virtual UnicodeString __fastcall GetLogCmd(const UnicodeString & FullCommand,
     const UnicodeString & Command, const UnicodeString & Params);
   void __fastcall SynchronizePreview(
@@ -169,6 +169,8 @@ private:
   void __fastcall CheckDefaultCopyParam();
   bool __fastcall HasNonDefaultCopyParams();
   void __fastcall CheckDefaultSynchronizeParams();
+  void __fastcall NotSupported();
+  void __fastcall NoMatch(const UnicodeString & Mask, const UnicodeString & Error);
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TScriptInputEvent)(TScript * Script, const UnicodeString Prompt, UnicodeString & Str);

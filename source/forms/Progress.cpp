@@ -114,11 +114,11 @@ void __fastcall TProgressForm::UpdateControls()
     FData.Operation != foRename );
 
   CancelButton->Enabled = !FReadOnly;
-  OnceDoneOperationCombo->Enabled =
+  OnceDoneOperationCombo2->Enabled =
     !FReadOnly && (FData.Operation != foCalculateSize) &&
     (FData.Operation != foGetProperties) &&
     (FData.Operation != foCalculateChecksum);
-  OnceDoneOperationLabel->Enabled = OnceDoneOperationCombo->Enabled;
+  OnceDoneOperationLabel->Enabled = OnceDoneOperationCombo2->Enabled;
 
   bool TransferOperation =
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
@@ -522,15 +522,19 @@ void __fastcall TProgressForm::SetOnceDoneOperation(TOnceDoneOperation value)
       Index = 1;
       break;
 
-    case odoShutDown:
+    case odoSuspend:
       Index = 2;
+      break;
+
+    case odoShutDown:
+      Index = 3;
       break;
 
     default:
       FAIL;
   }
-  OnceDoneOperationCombo->ItemIndex = Index;
-  OnceDoneOperationComboSelect(NULL);
+  OnceDoneOperationCombo2->ItemIndex = Index;
+  OnceDoneOperationCombo2Select(NULL);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TProgressForm::GetAllowMinimize()
@@ -598,13 +602,13 @@ void __fastcall TProgressForm::SpeedComboKeyPress(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::ResetOnceDoneOperation()
 {
-  OnceDoneOperationCombo->ItemIndex = 0;
-  OnceDoneOperationComboSelect(NULL);
+  OnceDoneOperationCombo2->ItemIndex = 0;
+  OnceDoneOperationCombo2Select(NULL);
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::OnceDoneOperationComboSelect(TObject * /*Sender*/)
+void __fastcall TProgressForm::OnceDoneOperationCombo2Select(TObject * /*Sender*/)
 {
-  switch (OnceDoneOperationCombo->ItemIndex)
+  switch (OnceDoneOperationCombo2->ItemIndex)
   {
     case 0:
       FOnceDoneOperation = odoIdle;
@@ -615,6 +619,10 @@ void __fastcall TProgressForm::OnceDoneOperationComboSelect(TObject * /*Sender*/
       break;
 
     case 2:
+      FOnceDoneOperation = odoSuspend;
+      break;
+
+    case 3:
       FOnceDoneOperation = odoShutDown;
       break;
 
@@ -623,7 +631,7 @@ void __fastcall TProgressForm::OnceDoneOperationComboSelect(TObject * /*Sender*/
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::OnceDoneOperationComboCloseUp(TObject * /*Sender*/)
+void __fastcall TProgressForm::OnceDoneOperationCombo2CloseUp(TObject * /*Sender*/)
 {
   CancelButton->SetFocus();
 }

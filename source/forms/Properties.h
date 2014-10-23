@@ -78,6 +78,7 @@ private:
   TStrings * FFileList;
   const TRemoteTokenList * FGroupList;
   const TRemoteTokenList * FUserList;
+  TStrings * FChecksumAlgs;
   TRemoteProperties FOrigProperties;
   TImageList * FShellImageList;
   bool FMultiple;
@@ -120,6 +121,7 @@ public:
   virtual __fastcall TPropertiesDialog(TComponent * AOwner,
     TStrings * FileList, const UnicodeString Directory,
     const TRemoteTokenList * GroupList, const TRemoteTokenList * UserList,
+    TStrings * ChecksumAlgs,
     int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
 

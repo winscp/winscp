@@ -356,6 +356,6 @@ BEGIN
   SCRIPT_STAT_HELP,
     "stat <file>\n"
     "  Retrieves and lists attributes of specified remote file.\n"
-    "examples:\n"
+    "example:\n"
     "  stat index.html\n"
 END

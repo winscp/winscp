@@ -6,6 +6,7 @@
 #include <Common.h>
 #include <FileInfo.h>
 #include <TextsCore.h>
+#include <TextsWin.h>
 #include <Terminal.h>
 #include <CoreMain.h>
 #include <shlobj.h>
@@ -579,7 +580,7 @@ void __fastcall TGUIConfiguration::Default()
   FBeepOnFinishAfter = TDateTime(0, 0, 30, 0);
   FCopyParamCurrent = L"";
   FKeepUpToDateChangeDelay = 500;
-  FChecksumAlg = L"md5";
+  FChecksumAlg = L"sha1";
   FSessionReopenAutoIdle = 9000;
 
   FNewDirectoryProperties.Default();
@@ -610,6 +611,10 @@ void __fastcall TGUIConfiguration::DefaultLocalized()
       CopyParam = new TCopyParamType(FDefaultCopyParam);
       CopyParam->NewerOnly = true;
       FCopyParamList->Add(LoadStr(COPY_PARAM_NEWER_ONLY), CopyParam, NULL);
+
+      CopyParam = new TCopyParamType(FDefaultCopyParam);
+      CopyParam->IncludeFileMask = TFileMasks(FORMAT(L"%s */", (IncludeExcludeFileMasksDelimiter)));
+      FCopyParamList->Add(LoadStr(COPY_PARAM_PRESET_EXCLUDE_ALL_DIR), CopyParam, NULL);
     }
 
     FCopyParamList->Reset();
@@ -1172,7 +1177,7 @@ void __fastcall TGUIConfiguration::SetQueueKeepDoneItemsFor(int value)
 }
 //---------------------------------------------------------------------
 TStoredSessionList * __fastcall TGUIConfiguration::SelectPuttySessionsForImport(
-  TStoredSessionList * Sessions)
+  TStoredSessionList * Sessions, UnicodeString & Error)
 {
   std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
   ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
@@ -1190,7 +1195,14 @@ TStoredSessionList * __fastcall TGUIConfiguration::SelectPuttySessionsForImport(
   {
     ImportSessionList->Remove(PuttySessionData);
   }
-  ImportSessionList->SelectSessionsToImport(Sessions, true);
+  if (ImportSessionList->Count > 0)
+  {
+    ImportSessionList->SelectSessionsToImport(Sessions, true);
+  }
+  else
+  {
+    Error = FMTLOAD(PUTTY_NO_SITES, (PuttySessionsKey));
+  }
 
   return ImportSessionList.release();
 }
@@ -1199,7 +1211,8 @@ bool __fastcall TGUIConfiguration::AnyPuttySessionForImport(TStoredSessionList *
 {
   try
   {
-    std::unique_ptr<TStoredSessionList> Sesssions(SelectPuttySessionsForImport(Sessions));
+    UnicodeString Error;
+    std::unique_ptr<TStoredSessionList> Sesssions(SelectPuttySessionsForImport(Sessions, Error));
     return (Sesssions->Count > 0);
   }
   catch (...)
@@ -1209,7 +1222,7 @@ bool __fastcall TGUIConfiguration::AnyPuttySessionForImport(TStoredSessionList *
 }
 //---------------------------------------------------------------------
 TStoredSessionList * __fastcall TGUIConfiguration::SelectFilezillaSessionsForImport(
-  TStoredSessionList * Sessions)
+  TStoredSessionList * Sessions, UnicodeString & Error)
 {
   std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
   ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
@@ -1222,7 +1235,18 @@ TStoredSessionList * __fastcall TGUIConfiguration::SelectFilezillaSessionsForImp
   {
     ImportSessionList->ImportFromFilezilla(FilezillaSiteManagerFile);
 
-    ImportSessionList->SelectSessionsToImport(Sessions, true);
+    if (ImportSessionList->Count > 0)
+    {
+      ImportSessionList->SelectSessionsToImport(Sessions, true);
+    }
+    else
+    {
+      Error = FMTLOAD(FILEZILLA_NO_SITES, (FilezillaSiteManagerFile));
+    }
+  }
+  else
+  {
+    Error = FMTLOAD(FILEZILLA_SITE_MANAGER_NOT_FOUND, (FilezillaSiteManagerFile));
   }
 
   return ImportSessionList.release();
@@ -1232,7 +1256,8 @@ bool __fastcall TGUIConfiguration::AnyFilezillaSessionForImport(TStoredSessionLi
 {
   try
   {
-    std::unique_ptr<TStoredSessionList> Sesssions(SelectFilezillaSessionsForImport(Sessions));
+    UnicodeString Error;
+    std::unique_ptr<TStoredSessionList> Sesssions(SelectFilezillaSessionsForImport(Sessions, Error));
     return (Sesssions->Count > 0);
   }
   catch (...)

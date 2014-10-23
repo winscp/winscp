@@ -20,10 +20,10 @@
 #endif
 //---------------------------------------------------------------------
 bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
-  TRemoteProperties * Properties, bool & SaveSettings)
+  TRemoteProperties * Properties, int AllowedChanges, bool & SaveSettings)
 {
   bool Result;
-  TCreateDirectoryDialog * Dialog = new TCreateDirectoryDialog(Application);
+  TCreateDirectoryDialog * Dialog = new TCreateDirectoryDialog(Application, AllowedChanges);
   try
   {
     Result = Dialog->Execute(Directory, Properties, SaveSettings);
@@ -35,12 +35,13 @@ bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
   return Result;
 }
 //---------------------------------------------------------------------
-__fastcall TCreateDirectoryDialog::TCreateDirectoryDialog(TComponent * AOwner):
+__fastcall TCreateDirectoryDialog::TCreateDirectoryDialog(TComponent * AOwner, int AllowedChanges):
   TForm(AOwner)
 {
   UseSystemSettings(this);
 
   RightsFrame->AllowAddXToDirectories = false;
+  FAllowedChanges = AllowedChanges;
 }
 //---------------------------------------------------------------------
 __fastcall TCreateDirectoryDialog::~TCreateDirectoryDialog()
@@ -55,7 +56,8 @@ void __fastcall TCreateDirectoryDialog::ControlChange(TObject * /*Sender*/)
 void __fastcall TCreateDirectoryDialog::UpdateControls()
 {
   EnableControl(OKBtn, !DirectoryEdit->Text.Trim().IsEmpty());
-  EnableControl(RightsFrame, SetRightsCheck->Checked);
+  EnableControl(SetRightsCheck, FLAGSET(FAllowedChanges, cpMode));
+  EnableControl(RightsFrame, SetRightsCheck->Enabled && SetRightsCheck->Checked);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCreateDirectoryDialog::Execute(UnicodeString & Directory,
@@ -78,7 +80,7 @@ bool __fastcall TCreateDirectoryDialog::Execute(UnicodeString & Directory,
     SaveSettings = SaveSettingsCheck->Checked;
     if (Properties != NULL)
     {
-      if (SetRightsCheck->Checked)
+      if (SetRightsCheck->Enabled && SetRightsCheck->Checked)
       {
         Properties->Valid = Properties->Valid << vpRights;
         Properties->Rights = RightsFrame->Rights;

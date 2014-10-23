@@ -68,7 +68,7 @@ resourcestring
 implementation
 
 uses
-  IEDriveInfo, DateUtils, ShellApi, SysConst, PasTools;
+  IEDriveInfo, DateUtils, ShellApi, SysConst, PasTools, Math;
 
 function AnyValidPath: string;
 var
@@ -212,7 +212,7 @@ begin
     SizeUnit := SGigaByte;
   end;
 
-  Result := FormatFloat('#,##0', Value);
+  Result := FormatFloat('#,##0', Ceil(Value));
   if SizeUnit <> '' then
     Result := Result + ' ' + SizeUnit;
 end;
@@ -306,7 +306,7 @@ begin
   Result := Message;
   LastError := GetLastError;
   if LastError <> 0 then
-    Result := Result + #13#10 + #13#10 + Format(SOSError, [LastError, SysErrorMessage(LastError)]);
+    Result := Result + #13#10 + #13#10 + Format(SOSError, [LastError, SysErrorMessage(LastError), '']);
 end;
 
 initialization

@@ -56,13 +56,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 96
+          Height = 117
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Server environment'
           TabOrder = 0
           DesignSize = (
             393
-            96)
+            117)
           object EOLTypeLabel: TLabel
             Left = 12
             Top = 20
@@ -153,10 +153,19 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 3
             OnChange = DataChange
           end
+          object TimeDifferenceAutoCheck: TCheckBox
+            Left = 135
+            Top = 90
+            Width = 242
+            Height = 17
+            Caption = 'Detect &automatically'
+            TabOrder = 4
+            OnClick = DataChange
+          end
         end
         object DSTModeGroup: TGroupBox
           Left = 0
-          Top = 110
+          Top = 131
           Width = 393
           Height = 93
           Anchors = [akLeft, akTop, akRight]
@@ -1507,23 +1516,26 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 75
             Height = 13
             Caption = 'Private &key file:'
-            FocusControl = TunnelPrivateKeyEdit
+            FocusControl = TunnelPrivateKeyEdit2
           end
-          object TunnelPrivateKeyEdit: TFilenameEdit
+          object TunnelPrivateKeyEdit2: TFilenameEdit
             Left = 12
             Top = 35
             Width = 370
             Height = 21
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
-            OnAfterDialog = PrivateKeyEditAfterDialog
-            Filter = 'PuTTY Private Key Files (*.ppk)|*.ppk|All files (*.*)|*.*'
+            OnAfterDialog = PrivateKeyEdit2AfterDialog
+            Filter = 
+              'PuTTY Private Key Files (*.ppk)|*.ppk|All Private Key Files (*.p' +
+              'pk;*.pem;*.key;id_dsa;id_rsa)|*.ppk;*.pem;*.key;id_dsa;id_rsa|Al' +
+              'l Files (*.*)|*.*'
             DialogOptions = [ofReadOnly, ofPathMustExist, ofFileMustExist]
             DialogTitle = 'Select private key file'
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 0
-            Text = 'TunnelPrivateKeyEdit'
+            Text = 'TunnelPrivateKeyEdit2'
             OnChange = DataChange
           end
         end
@@ -1575,7 +1587,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 0
             OnChange = MinTlsVersionComboChange
             Items.Strings = (
-              'SSL 2.0'
               'SSL 3.0'
               'TLS 1.0'
               'TLS 1.1'
@@ -1591,7 +1602,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 1
             OnChange = MaxTlsVersionComboChange
             Items.Strings = (
-              'SSL 2.0'
               'SSL 3.0'
               'TLS 1.0'
               'TLS 1.1'
@@ -1959,7 +1969,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 75
             Height = 13
             Caption = 'Private &key file:'
-            FocusControl = PrivateKeyEdit
+            FocusControl = PrivateKeyEdit2
           end
           object AgentFwdCheck: TCheckBox
             Left = 12
@@ -1971,21 +1981,24 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 0
             OnClick = DataChange
           end
-          object PrivateKeyEdit: TFilenameEdit
+          object PrivateKeyEdit2: TFilenameEdit
             Left = 12
             Top = 59
             Width = 372
             Height = 21
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
-            OnAfterDialog = PrivateKeyEditAfterDialog
-            Filter = 'PuTTY Private Key Files (*.ppk)|*.ppk|All files (*.*)|*.*'
+            OnAfterDialog = PrivateKeyEdit2AfterDialog
+            Filter = 
+              'PuTTY Private Key Files (*.ppk)|*.ppk|All Private Key Files (*.p' +
+              'pk;*.pem;*.key;id_dsa;id_rsa)|*.ppk;*.pem;*.key;id_dsa;id_rsa|Al' +
+              'l Files (*.*)|*.*'
             DialogOptions = [ofReadOnly, ofPathMustExist, ofFileMustExist]
             DialogTitle = 'Select private key file'
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 1
-            Text = 'PrivateKeyEdit'
+            Text = 'PrivateKeyEdit2'
             OnChange = DataChange
           end
         end

@@ -422,9 +422,7 @@ void TWebDAVFileSystem::NeonOpen(UnicodeString & CorrectedUrl, const UnicodeStri
   ne_hook_pre_send(FNeonSession, NeonPreSend, this);
   ne_hook_post_send(FNeonSession, NeonPostSend, this);
 
-  TValueRestorer<bool> Restorer(FInitialHandshake);
-  FInitialHandshake = true;
-  FAuthenticationRequested = false;
+  TAutoFlag Flag(FInitialHandshake);
   ExchangeCapabilities(Path.c_str(), CorrectedUrl);
 }
 //---------------------------------------------------------------------------
@@ -513,6 +511,11 @@ bool __fastcall TWebDAVFileSystem::GetActive()
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::CollectUsage()
 {
+  UnicodeString TlsVersionStr = GetTlsVersionStr();
+  if (!TlsVersionStr.IsEmpty())
+  {
+    FTerminal->CollectTlsUsage(TlsVersionStr);
+  }
 }
 //---------------------------------------------------------------------------
 const TSessionInfo & __fastcall TWebDAVFileSystem::GetSessionInfo()
@@ -631,6 +634,7 @@ void __fastcall TWebDAVFileSystem::DoStartup()
 void __fastcall TWebDAVFileSystem::ClearNeonError()
 {
   FCancelled = false;
+  FAuthenticationRequested = false;
   ne_set_error(FNeonSession, "");
 }
 //---------------------------------------------------------------------------
@@ -887,23 +891,28 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
   const char * LastModified = GetProp(Results, PROP_LAST_MODIFIED);
   if (ALWAYS_TRUE(LastModified != NULL))
   {
-    char WeekDay[4];
-    int Year;
-    char MonthStr[4];
-    int Day;
-    int Hour;
-    int Min;
-    int Sec;
+    char WeekDay[4] = { L'\0' };
+    int Year = 0;
+    char MonthStr[4] = { L'\0' };
+    int Day = 0;
+    int Hour = 0;
+    int Min = 0;
+    int Sec = 0;
     #define RFC1123_FORMAT "%3s, %02d %3s %4d %02d:%02d:%02d GMT"
-    if (sscanf(LastModified, RFC1123_FORMAT,
-         WeekDay, &Day, MonthStr, &Year, &Hour, &Min, &Sec) > 0)
+    int Filled =
+      sscanf(LastModified, RFC1123_FORMAT, WeekDay, &Day, MonthStr, &Year, &Hour, &Min, &Sec);
+    // we need at least a complete date
+    if (Filled >= 4)
     {
       int Month = ParseShortEngMonthName(MonthStr);
-      TDateTime Modification =
-        EncodeDateVerbose((unsigned short)Year, (unsigned short)Month, (unsigned short)Day) +
-        EncodeTimeVerbose((unsigned short)Hour, (unsigned short)Min, (unsigned short)Sec, 0);
-      File->Modification = ConvertTimestampFromUTC(Modification);
-      File->ModificationFmt = mfFull;
+      if (Month >= 1)
+      {
+        TDateTime Modification =
+          EncodeDateVerbose((unsigned short)Year, (unsigned short)Month, (unsigned short)Day) +
+          EncodeTimeVerbose((unsigned short)Hour, (unsigned short)Min, (unsigned short)Sec, 0);
+        File->Modification = ConvertTimestampFromUTC(Modification);
+        File->ModificationFmt = mfFull;
+      }
     }
   }
   bool Collection = false;
@@ -977,13 +986,26 @@ void __fastcall TWebDAVFileSystem::DeleteFile(const UnicodeString FileName,
   CheckStatus(ne_delete(FNeonSession, PathToNeon(Path)));
 }
 //---------------------------------------------------------------------------
+int __fastcall TWebDAVFileSystem::RenameFileInternal(const UnicodeString & FileName,
+  const UnicodeString & NewName)
+{
+  // 0 = no overwrite
+  return ne_move(FNeonSession, 0, PathToNeon(FileName), PathToNeon(NewName));
+}
+//---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::RenameFile(const UnicodeString FileName,
   const UnicodeString NewName)
 {
   ClearNeonError();
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
-  // 0 = no overwrite
-  CheckStatus(ne_move(FNeonSession, 0, PathToNeon(FileName), PathToNeon(NewName)));
+
+  UnicodeString Path = FileName;
+  int NeonStatus = RenameFileInternal(Path, NewName);
+  if (IsValidRedirect(NeonStatus, Path))
+  {
+    NeonStatus = RenameFileInternal(Path, NewName);
+  }
+  CheckStatus(NeonStatus);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::CopyFile(const UnicodeString FileName,
@@ -1351,13 +1373,10 @@ void __fastcall TWebDAVFileSystem::Source(const UnicodeString FileName,
           THROW_SKIP_FILE_NULL;
         }
 
-        {
-          TValueRestorer<bool> TransferringRestorer(FUploading);
-          FUploading = true;
+        TAutoFlag UploadingFlag(FUploading);
 
-          ClearNeonError();
-          CheckStatus(ne_put(FNeonSession, PathToNeon(DestFullName), FD));
-        }
+        ClearNeonError();
+        CheckStatus(ne_put(FNeonSession, PathToNeon(DestFullName), FD));
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(TRANSFER_ERROR, (FileName)));
 
@@ -1709,19 +1728,19 @@ int TWebDAVFileSystem::NeonBodyAccepter(void * UserData, ne_request * Request, c
   TWebDAVFileSystem * FileSystem =
     static_cast<TWebDAVFileSystem *>(ne_get_request_private(Request, SESSION_FS_KEY));
 
+  bool AuthenticationFailed = (Status->code == 401) && FileSystem->FAuthenticationRequested;
+  bool AuthenticationNeeded = (Status->code == 401) && !FileSystem->FAuthenticationRequested;
+
   if (FileSystem->FInitialHandshake)
   {
     UnicodeString Line;
-    if (Status->code == 401)
+    if (AuthenticationNeeded)
     {
-      if (!FileSystem->FAuthenticationRequested)
-      {
-        Line = LoadStr(STATUS_AUTHENTICATE);
-      }
-      else
-      {
-        Line = LoadStr(FTP_ACCESS_DENIED);
-      }
+      Line = LoadStr(STATUS_AUTHENTICATE);
+    }
+    else if (AuthenticationFailed)
+    {
+      Line = LoadStr(FTP_ACCESS_DENIED);
     }
     else if (Status->klass == 2)
     {
@@ -1750,6 +1769,25 @@ int TWebDAVFileSystem::NeonBodyAccepter(void * UserData, ne_request * Request, c
     // Can be e.g. "PleskLin"
     AddHeaderValueToList(RemoteSystem, Request, "X-Powered-By");
     FileSystem->FFileSystemInfo.RemoteSystem = RemoteSystem;
+  }
+
+  // When we explicitly fail authentication of request
+  // with FIgnoreAuthenticationFailure flag (after it failed with password),
+  // neon resets its internal password store and tries the next request
+  // without calling our authentication hook first
+  // (note AuthenticationFailed vs. AuthenticationNeeded)
+  // what likely fails, but we do not want to reset out password
+  // (as it was not even tried yet for this request).
+  if (AuthenticationFailed)
+  {
+    if (FileSystem->FIgnoreAuthenticationFailure == iafNo)
+    {
+      FileSystem->FPassword = RawByteString();
+    }
+    else
+    {
+      FileSystem->FIgnoreAuthenticationFailure = iafPasswordFailed;
+    }
   }
 
   return ne_accept_2xx(UserData, Request, Status);
@@ -1937,8 +1975,7 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
           THROW_SKIP_FILE_NULL;
         }
 
-        TValueRestorer<bool> TransferringRestorer(FDownloading);
-        FDownloading = true;
+        TAutoFlag DownloadingFlag(FDownloading);
 
         ClearNeonError();
         CheckStatus(ne_get(FNeonSession, PathToNeon(FileName), FD));
@@ -2171,10 +2208,15 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data)
   return Result;
 }
 //------------------------------------------------------------------------------
+UnicodeString __fastcall TWebDAVFileSystem::GetTlsVersionStr()
+{
+  return StrFromNeon(ne_ssl_get_version(FNeonSession));
+}
+//------------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::CollectTLSSessionInfo()
 {
   // see also TFTPFileSystem::Open()
-  UnicodeString TlsVersionStr = StrFromNeon(ne_ssl_get_version(FNeonSession));
+  UnicodeString TlsVersionStr = GetTlsVersionStr();
   AddToList(FSessionInfo.SecurityProtocolName, TlsVersionStr, L", ");
 
   UnicodeString Cipher = StrFromNeon(ne_ssl_get_cipher(FNeonSession));
@@ -2256,51 +2298,50 @@ int TWebDAVFileSystem::NeonRequestAuth(
     // Some servers (Gallery2 on https://g2.pixi.me/w/webdav/)
     // return authentication error (401) on PROPFIND request for
     // non-existing files.
-    // When we already tried stored password before, do not try anymore.
-    // When we did not try stored password before (possible only when
+    // When we already tried password before, do not try anymore.
+    // When we did not try password before (possible only when
     // server does not require authentication for any previous request,
     // such as when read access is not authenticated), try it now,
     // but use special flag for the try, because when it fails
     // we still want to try password for future requests (such as PUT).
 
-    if (!SessionData->Password.IsEmpty() && !FileSystem->FStoredPasswordTried &&
-        (FileSystem->FIgnoreAuthenticationFailure != iafPasswordTried))
+    if (!FileSystem->FPassword.IsEmpty())
     {
-      APassword = SessionData->Password;
-      if (FileSystem->FIgnoreAuthenticationFailure == iafNo)
+      if (FileSystem->FIgnoreAuthenticationFailure == iafPasswordFailed)
       {
+        // Fail PROPFIND /nonexising request...
+        Result = false;
+      }
+      else
+      {
+        APassword = Terminal->DecryptPassword(FileSystem->FPassword);
+      }
+    }
+    else
+    {
+      if (!SessionData->Password.IsEmpty() && !FileSystem->FStoredPasswordTried)
+      {
+        APassword = SessionData->Password;
         FileSystem->FStoredPasswordTried = true;
       }
       else
       {
-        FileSystem->FIgnoreAuthenticationFailure = iafPasswordTried;
+        // Asking for password (or using configured password) the first time,
+        // and asking for password.
+        // Note that we never get false here actually
+        Result =
+          Terminal->PromptUser(
+            SessionData, pkPassword, LoadStr(PASSWORD_TITLE), L"",
+            LoadStr(PASSWORD_PROMPT), false, NE_ABUFSIZ, APassword);
       }
-    }
-    else if (((FileSystem->FIgnoreAuthenticationFailure == iafWaiting) &&
-              FileSystem->FStoredPasswordTried) ||
-             (FileSystem->FIgnoreAuthenticationFailure == iafPasswordTried))
-    {
-      // Fail PROPFIND /nonexising request...
-      Result = false;
-      // .... but that resets neon internal password store, so we need to make sure
-      // we provide the password again the next time.
-      FileSystem->FStoredPasswordTried = false;
-    }
-    else
-    {
-      // asking for password everytime
-      if (Terminal->PromptUser(SessionData, pkPassword, LoadStr(PASSWORD_TITLE), L"",
-            LoadStr(PASSWORD_PROMPT), false, NE_ABUFSIZ, APassword))
+
+      if (Result)
       {
-        if (FileSystem->FIgnoreAuthenticationFailure != iafNo)
-        {
-          FileSystem->FIgnoreAuthenticationFailure = iafPasswordTried;
-        }
-      }
-      else
-      {
-        // note that we never get here actually
-        Result = false;
+        // While neon remembers the password on its own,
+        // we need to keep a copy in case neon store gets reset by
+        // 401 response to PROPFIND /nonexisting on G2, see above.
+        // Possibly we can do this for G2 servers only.
+        FileSystem->FPassword = Terminal->EncryptPassword(APassword);
       }
     }
   }
@@ -2399,5 +2440,10 @@ void __fastcall TWebDAVFileSystem::InitSslSession(ssl_st * Ssl)
     MASK_TLS_VERSION(tls12, SSL_OP_NO_TLSv1_2);
   // SSL_ctrl() with SSL_CTRL_OPTIONS adds flags (not sets)
   SSL_ctrl(Ssl, SSL_CTRL_OPTIONS, Options, NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWebDAVFileSystem::GetSupportedChecksumAlgs(TStrings * /*Algs*/)
+{
+  // NOOP
 }
 //------------------------------------------------------------------------------

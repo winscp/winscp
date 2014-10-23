@@ -62,10 +62,10 @@ int __fastcall CompareExtThenFull(const UnicodeString & Name1, const UnicodeStri
 {
   UnicodeString Ext1 = UnixExtractFileExt(Name1);
   UnicodeString Ext2 = UnixExtractFileExt(Name2);
-  int Result = AnsiCompareText(Ext1, Ext2);
+  int Result = CompareLogicalText(Ext1, Ext2);
   if (Result == 0)
   {
-    Result = AnsiCompareText(Name1, Name2);
+    Result = CompareLogicalText(Name1, Name2);
   }
   return Result;
 }
@@ -84,29 +84,30 @@ int __fastcall CompareExtThenFull(const UnicodeString & Name1, const UnicodeStri
       { \
         Result = COMPAREFUNCFILE(RFILE(1)->PROPERTY, RFILE(2)->PROPERTY); \
       } \
+      if (!DirView->UnixColProperties->SortAscending) Result = -Result; \
       if (Result == 0) \
       { \
-        Result = FALLBACK(RFILE(1)->FileName, RFILE(2)->FileName); \
+        Result = FALLBACK(Item1, Item2, DirView); \
       } \
-      if (!DirView->UnixColProperties->SortAscending) Result = -Result; \
     } \
     return Result; \
   }
 #define DEFINE_COMPARE_FUNC(PROPERTY, COMPAREFUNC) \
-  DEFINE_COMPARE_FUNC_EX(PROPERTY, PROPERTY, COMPAREFUNC, COMPAREFUNC, AnsiCompareText)
+  DEFINE_COMPARE_FUNC_EX(PROPERTY, PROPERTY, COMPAREFUNC, COMPAREFUNC, CompareItemFileName)
 #define COMPARE_NUMBER(Num1, Num2) ( Num1 < Num2 ? -1 : ( Num1 > Num2 ? 1 : 0) )
 #define COMPARE_DUMMY(X1, X2) 0
+#define COMPARE_ITEM_DUMMY(X1, X2, DV) 0
 #define COMPARE_TOKEN(Token1, Token2) Token1.Compare(Token2)
 //---------------------------------------------------------------------------
-DEFINE_COMPARE_FUNC_EX(FileName, ItemFileName, AnsiCompareText, AnsiCompareText, COMPARE_DUMMY);
+DEFINE_COMPARE_FUNC_EX(FileName, ItemFileName, CompareLogicalText, CompareLogicalText, COMPARE_ITEM_DUMMY);
 DEFINE_COMPARE_FUNC(Size, COMPARE_NUMBER);
 DEFINE_COMPARE_FUNC(Modification, COMPARE_NUMBER);
 DEFINE_COMPARE_FUNC(RightsStr, AnsiCompareText);
 DEFINE_COMPARE_FUNC(Owner, COMPARE_TOKEN);
 DEFINE_COMPARE_FUNC(Group, COMPARE_TOKEN);
-DEFINE_COMPARE_FUNC_EX(Extension, Extension, AnsiCompareText, COMPARE_DUMMY, AnsiCompareText);
-DEFINE_COMPARE_FUNC(LinkTo, AnsiCompareText);
-DEFINE_COMPARE_FUNC_EX(TypeName, TypeName, AnsiCompareText, AnsiCompareText, CompareExtThenFull);
+DEFINE_COMPARE_FUNC_EX(Extension, Extension, CompareLogicalText, COMPARE_DUMMY, CompareItemFileName);
+DEFINE_COMPARE_FUNC(LinkTo, CompareLogicalText);
+DEFINE_COMPARE_FUNC_EX(TypeName, TypeName, CompareLogicalText, CompareLogicalText, CompareExtension);
 //---------------------------------------------------------------------------
 #undef DEFINE_COMPARE_FUNC
 #undef COMPARE_NUMBER
@@ -846,12 +847,6 @@ void __fastcall TUnixDirView::InternalEdit(const tagLVITEMW & HItem)
 #else
   USEDPARAM(HItem);
 #endif
-}
-//---------------------------------------------------------------------------
-int __fastcall TUnixDirView::SecondaryColumnHeader(int Index, bool & AliasOnly)
-{
-  AliasOnly = false;
-  return ((Index == uvName) ? uvExt : -1);
 }
 //---------------------------------------------------------------------------
 int __fastcall TUnixDirView::HiddenCount()

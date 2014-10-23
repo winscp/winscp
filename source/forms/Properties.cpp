@@ -23,13 +23,14 @@
 //---------------------------------------------------------------------
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
   const UnicodeString Directory, const TRemoteTokenList * GroupList,
-  const TRemoteTokenList * UserList, TRemoteProperties * Properties,
+  const TRemoteTokenList * UserList, TStrings * ChecksumAlgs,
+  TRemoteProperties * Properties,
   int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
   TCalculateChecksumEvent OnCalculateChecksum)
 {
   bool Result;
   TPropertiesDialog * PropertiesDialog = new TPropertiesDialog(Application,
-    FileList, Directory, GroupList, UserList, AllowedChanges, UserGroupByID,
+    FileList, Directory, GroupList, UserList, ChecksumAlgs, AllowedChanges, UserGroupByID,
     OnCalculateSize, OnCalculateChecksum);
   try
   {
@@ -45,6 +46,7 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
 __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   TStrings * FileList, const UnicodeString Directory,
   const TRemoteTokenList * GroupList, const TRemoteTokenList * UserList,
+  TStrings * ChecksumAlgs,
   int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
   TCalculateChecksumEvent OnCalculateChecksum)
   : TForm(AOwner)
@@ -70,6 +72,7 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
 
   FGroupList = GroupList;
   FUserList = UserList;
+  FChecksumAlgs = ChecksumAlgs;
 
   LoadInfo();
 
@@ -96,6 +99,8 @@ bool __fastcall TPropertiesDialog::Execute(TRemoteProperties & Properties)
   if (FAllowedChanges & cpMode) ActiveControl = RightsFrame;
     else ActiveControl = CancelButton;
 
+  assert(FChecksumAlgs != NULL);
+  ChecksumAlgEdit->Items->Assign(FChecksumAlgs);
   ChecksumAlgEdit->Text = GUIConfiguration->ChecksumAlg;
   ResetChecksum();
 

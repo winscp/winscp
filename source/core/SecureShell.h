@@ -17,7 +17,7 @@ typedef struct _WSANETWORKEVENTS WSANETWORKEVENTS;
 typedef UINT_PTR SOCKET;
 typedef std::set<SOCKET> TSockets;
 struct TPuttyTranslation;
-enum TSshImplementation { sshiUnknown, sshiOpenSSH, sshiProFTPD, sshiBitvise };
+enum TSshImplementation { sshiUnknown, sshiOpenSSH, sshiProFTPD, sshiBitvise, sshiTitan };
 //---------------------------------------------------------------------------
 class TSecureShell
 {
@@ -66,6 +66,7 @@ private:
   UnicodeString FAuthenticationLog;
   UnicodeString FLastTunnelError;
   UnicodeString FUserName;
+  bool FUtfStrings;
 
   static TCipher __fastcall FuncToSsh1Cipher(const void * Cipher);
   static TCipher __fastcall FuncToSsh2Cipher(const void * Cipher);
@@ -93,6 +94,7 @@ private:
   void __fastcall SendBuffer(unsigned int & Result);
   unsigned int __fastcall TimeoutPrompt(TQueryParamsTimerEvent PoolEvent);
   bool __fastcall TryFtp();
+  UnicodeString __fastcall ConvertInput(const RawByteString & Input);
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;
@@ -120,11 +122,10 @@ public:
   bool __fastcall Peek(unsigned char *& Buf, int Len);
   UnicodeString __fastcall ReceiveLine();
   void __fastcall Send(const unsigned char * Buf, int Len);
-  void __fastcall SendStr(UnicodeString Str);
   void __fastcall SendSpecial(int Code);
   void __fastcall Idle(unsigned int MSec = 0);
   void __fastcall SendEOF();
-  void __fastcall SendLine(UnicodeString Line);
+  void __fastcall SendLine(const UnicodeString & Line);
   void __fastcall SendNull();
 
   const TSessionInfo & __fastcall GetSessionInfo();
@@ -153,7 +154,8 @@ public:
   void __fastcall AskAlg(const UnicodeString AlgType, const UnicodeString AlgName);
   void __fastcall DisplayBanner(const UnicodeString & Banner);
   void __fastcall OldKeyfileWarning();
-  void __fastcall PuttyLogEvent(const UnicodeString & Str);
+  void __fastcall PuttyLogEvent(const char * Str);
+  UnicodeString __fastcall ConvertFromPutty(const char * Str, int Length);
 
   __property bool Active = { read = FActive, write = SetActive };
   __property bool Ready = { read = GetReady };
@@ -163,6 +165,7 @@ public:
   __property UnicodeString UserName = { read = FUserName };
   __property bool Simple = { read = FSimple, write = FSimple };
   __property TSshImplementation SshImplementation = { read = FSshImplementation };
+  __property bool UtfStrings = { read = FUtfStrings, write = FUtfStrings };
 };
 //---------------------------------------------------------------------------
 #endif

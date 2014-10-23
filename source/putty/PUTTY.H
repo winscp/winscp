@@ -1472,5 +1472,11 @@ void putty_finalize();
 #define MPEXT_PUTTY_SECTION_ENTER
 #define MPEXT_PUTTY_SECTION_LEAVE
 #endif
-    
+
+#ifdef MPEXT
+// To mark carefully selected messages from PuTTY code as UTF-8.
+// Only for messages that are certain not to ever get ansi-encoded component,
+// but known to get UTF-8 encoded component (currently private key path only)
+#define MPEXT_BOM "\xEF\xBB\xBF"
+#endif
 #endif

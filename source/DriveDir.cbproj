@@ -73,7 +73,7 @@
 			<ILINK_Description>Filemanager Toolset</ILINK_Description>
 			<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
 			<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-			<ILINK_LibraryPath>packages\filemng\;packages\my;packages\dragndrop;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<ILINK_LibraryPath>packages\filemng\;packages\my;packages\dragndrop;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\win32\release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<IncludePath>packages\filemng\;packages\my;packages\dragndrop;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 			<Multithreaded>true</Multithreaded>
 			<OutputExt>bpl</OutputExt>
@@ -206,6 +206,10 @@
 			<BuildOrder>53</BuildOrder>
 			<BuildOrder>1</BuildOrder>
 		</DelphiCompile>
+			<LibFiles Include="shlwapi.lib" Condition="'$(Platform)'=='Win32'">
+			<BuildOrder>26</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
 			<PackageImport Include="bcbie.bpi">
 			<BuildOrder>68</BuildOrder>
 			<BuildOrder>12</BuildOrder>

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #define INITGUID
 #include <propkey.h>
+#include <powrprof.h>
 
 #include <Common.h>
 #include <TextsWin.h>
@@ -25,6 +26,7 @@
 #include <PasTools.hpp>
 #include <System.Win.ComObj.hpp>
 #include <StrUtils.hpp>
+#include <WinConfiguration.h>
 //---------------------------------------------------------------------------
 // WORKAROUND
 // VCL includes wininet.h (even with NO_WIN32_LEAN_AND_MEAN)
@@ -93,6 +95,13 @@ int __fastcall FontStylesToInt(const TFontStyles value)
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall SameFont(TFont * Font1, TFont * Font2)
+{
+  // keep in sync with TFontConfiguration::operator !=
+  return SameText(Font1->Name, Font2->Name) && (Font1->Size == Font2->Size) &&
+      (Font1->Charset == Font2->Charset) && (Font1->Style == Font2->Style);
 }
 //---------------------------------------------------------------------------
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn)
@@ -419,6 +428,7 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   }
   else
   {
+    // this should not be done for workspaces and folders
     TSessionData * SessionData =
       StoredSessions->ParseUrl(SessionName, NULL, DefaultsOnly);
     InfoTip =
@@ -858,15 +868,17 @@ bool __fastcall IsWin64()
   return (Result > 0);
 }
 //---------------------------------------------------------------------------
-void __fastcall ShutDownWindows()
+static void __fastcall AcquireShutDownPrivileges()
 {
   HANDLE Token;
-  TOKEN_PRIVILEGES Priv;
-
   // Get a token for this process.
   Win32Check(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &Token));
 
+  TOKEN_PRIVILEGES Priv;
+  ZeroMemory(&Priv, sizeof(Priv));
   // Get the LUID for the shutdown privilege.
+  // For hibernate/suspend, you need the same:
+  // http://stackoverflow.com/questions/959589/is-there-any-win32-api-to-trigger-the-hibernate-or-suspend-mode-in-windows
   Win32Check(LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &Priv.Privileges[0].Luid));
 
   Priv.PrivilegeCount = 1;  // one privilege to set
@@ -874,10 +886,23 @@ void __fastcall ShutDownWindows()
 
   // Get the shutdown privilege for this process.
   Win32Check(AdjustTokenPrivileges(Token, FALSE, &Priv, 0, (PTOKEN_PRIVILEGES)NULL, 0));
+}
+//---------------------------------------------------------------------------
+void __fastcall ShutDownWindows()
+{
+  AcquireShutDownPrivileges();
 
   // Shut down the system and force all applications to close.
   Win32Check(ExitWindowsEx(EWX_SHUTDOWN | EWX_POWEROFF,
     SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER | SHTDN_REASON_FLAG_PLANNED));
+}
+//---------------------------------------------------------------------------
+void __fastcall SuspendWindows()
+{
+  AcquireShutDownPrivileges();
+
+  // http://msdn.microsoft.com/en-us/library/windows/desktop/aa373201.aspx
+  Win32Check(SetSuspendState(false, false, false));
 }
 //---------------------------------------------------------------------------
 void __fastcall EditSelectBaseName(HWND Edit)
@@ -984,6 +1009,88 @@ void __fastcall VerifyKey(UnicodeString FileName)
 void __fastcall VerifyKeyIncludingVersion(UnicodeString FileName, TSshProt SshProt)
 {
   DoVerifyKey(FileName, false, SshProt);
+}
+//---------------------------------------------------------------------------
+bool __fastcall DetectSystemExternalEditor(
+  bool AllowDefaultEditor,
+  UnicodeString & Executable, UnicodeString & ExecutableDescription,
+  UnicodeString & UsageState, bool & TryNextTime)
+{
+  bool Result = false;
+  UnicodeString TempName = ExcludeTrailingBackslash(WinConfiguration->TemporaryDir()) + L".txt";
+  if (FileExists(::ApiPath(TempName)))
+  {
+    TryNextTime = true;
+    UsageState = "F";
+  }
+  else
+  {
+    unsigned int File = FileCreate(::ApiPath(TempName));
+    if (File == (unsigned int)INVALID_HANDLE_VALUE)
+    {
+      TryNextTime = true;
+      UsageState = "F";
+    }
+    else
+    {
+      FileClose(File);
+
+      try
+      {
+        wchar_t ExecutableBuf[MAX_PATH];
+        if (!SUCCEEDED(FindExecutable(TempName.c_str(), NULL, ExecutableBuf)))
+        {
+          UsageState = "N";
+        }
+        else
+        {
+          Executable = ExecutableBuf;
+          if (Executable.IsEmpty() ||
+              !FileExists(::ApiPath(Executable)))
+          {
+            UsageState = "N";
+          }
+          else
+          {
+            UnicodeString ExecutableName = ExtractFileName(Executable);
+            if (!AllowDefaultEditor &&
+                SameText(ExecutableName, TEditorPreferences::GetDefaultExternalEditor()))
+            {
+              UsageState = "P";
+              Executable = L"";
+            }
+            else if (SameText(ExecutableName, "openwith.exe"))
+            {
+              UsageState = "W";
+              Executable = L"";
+            }
+            else
+            {
+              try
+              {
+                ExecutableDescription = Configuration->GetFileDescription(Executable);
+              }
+              catch(...)
+              {
+              }
+
+              if (ExecutableDescription.IsEmpty())
+              {
+                ExecutableDescription = ExecutableName;
+              }
+
+              Result = true;
+            }
+          }
+        }
+      }
+      __finally
+      {
+        DeleteFile(::ApiPath(TempName));
+      }
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 // Code from http://gentoo.osuosl.org/distfiles/cl331.zip/io/

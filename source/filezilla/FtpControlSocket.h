@@ -55,7 +55,7 @@ public:
 	virtual BOOL IsReady();
 	virtual void List(BOOL bFinish, int nError=0, CServerPath path=CServerPath(), CString subdir=_MPT(""), int nListMode = 0);
 #ifdef MPEXT
-	virtual void ListFile(CServerPath path=CServerPath(), CString fileName="");
+	virtual void ListFile(CString filename, const CServerPath &path);
 #endif
 	virtual void FtpCommand(LPCTSTR pCommand);
 	virtual void Disconnect();
@@ -91,6 +91,8 @@ public:
 	virtual bool UsingUtf8();
 	virtual std::string GetTlsVersionStr();
 	virtual std::string GetCipherName();
+	bool HandleSize(int code, __int64 & size);
+	bool HandleMdtm(int code, t_directory::t_direntry::t_date & date);
 #endif
 
 	// Vom Klassen-Assistenten generierte virtuelle Funktionsüberschreibungen
@@ -128,6 +130,8 @@ protected:
 	BOOL Send(CString str);
 	
 	BOOL ParsePwdReply(CString& rawpwd);
+	BOOL ParsePwdReply(CString& rawpwd, CServerPath & realPath);
+	BOOL SendAuthSsl();
 
 	void DiscardLine(CStringA line);
 	bool NeedModeCommand();
@@ -152,6 +156,7 @@ protected:
 	CTime m_LastRecvTime;
 	class CLogonData;
 	class CListData;
+	class CListFileData;
 	class CFileTransferData;
 	class CMakeDirData;
 
@@ -167,6 +172,7 @@ protected:
 #ifdef MPEXT
 	TFTPServerCapabilities m_serverCapabilities;
 	CStringA m_ListFile;
+	__int64 m_ListFileSize;
 #endif
 	bool m_isFileZilla;
 

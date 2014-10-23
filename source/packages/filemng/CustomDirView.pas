@@ -1838,6 +1838,7 @@ end;
 procedure TCustomDirView.Load;
 var
   SaveCursor: TCursor;
+  Delimiters: string;
   LastDirName: string;
 begin
   if not FLoadEnabled or Loading then
@@ -1895,8 +1896,16 @@ begin
              (Copy(LastPath, 1, Length(PathName)) = PathName) and
              (Items.Count > 0) then
           begin
-            LastDirName := Copy(LastPath, LastDelimiter('\:/', LastPath) + 1, MaxInt);
-            ItemFocused := FindFileItem(LastDirName);
+            LastDirName := Copy(LastPath, Length(PathName) + 1, MaxInt);
+            Delimiters := '\:/';
+            if IsDelimiter(Delimiters, LastDirName, 1) then
+            begin
+              LastDirName := Copy(LastDirName, 2, MaxInt);
+            end;
+            if LastDelimiter('\:/', LastDirName) = 0 then
+            begin
+              ItemFocused := FindFileItem(LastDirName);
+            end;
           end;
         end;
       finally

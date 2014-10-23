@@ -589,6 +589,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
 
           TFileMasks Mask;
           Mask.SetMask(UnixExtractFileName(FileName));
+          bool AnyFound = false;
           for (int i = 0; i < FileList->Count; i++)
           {
             TRemoteFile * File = FileList->Files[i];
@@ -600,12 +601,13 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
             {
               Result->AddObject(FileDirectory + File->FileName,
                 FLAGSET(ListType, fltQueryServer) ? File->Duplicate() : NULL);
+              AnyFound = true;
             }
           }
 
-          if ((Result->Count == 0) && FFailOnNoMatch)
+          if (!AnyFound)
           {
-            throw Exception(FMTLOAD(SCRIPT_MATCH_NO_MATCH, (Mask.Masks)));
+            NoMatch(Mask.Masks, UnicodeString());
           }
         }
         else
@@ -667,6 +669,8 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
       {
         TSearchRecChecked SearchRec;
         int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
+        UnicodeString Error;
+        bool AnyFound = false;
         if (FindFirstUnchecked(FileName, FindAttrs, SearchRec) == 0)
         {
           UnicodeString Directory = ExtractFilePath(FileName);
@@ -677,6 +681,7 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
               if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
               {
                 Result->Add(Directory + SearchRec.Name);
+                AnyFound = true;
               }
             }
             while (FindNextChecked(SearchRec) == 0);
@@ -692,12 +697,24 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
           {
             // no match, and it is not a mask, let it fail latter
             Result->Add(FileName);
+            AnyFound = true;
+          }
+          else
+          {
+            int LastError = GetLastError();
+            // System error text for ERROR_FILE_NOT_FOUND is more or less redundant to ours
+            // SCRIPT_MATCH_NO_MATCH. Also the system error does not look nice/user friendly
+            // so avoid using it for this frequent case.
+            if (LastError != ERROR_FILE_NOT_FOUND)
+            {
+              Error = SysErrorMessageForError(LastError);
+            }
           }
         }
 
-        if ((Result->Count == 0) && FFailOnNoMatch)
+        if (!AnyFound)
         {
-          throw Exception(FMTLOAD(SCRIPT_MATCH_NO_MATCH, (ExtractFileName(FileName))));
+          NoMatch(ExtractFileName(FileName), Error);
         }
       }
       else
@@ -712,6 +729,24 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
     throw;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::NoMatch(const UnicodeString & Mask, const UnicodeString & Error)
+{
+  UnicodeString Message = FMTLOAD(SCRIPT_MATCH_NO_MATCH, (Mask));
+  if (!Error.IsEmpty())
+  {
+    Message += FORMAT(L" (%s)", (Error));
+  }
+
+  if (FFailOnNoMatch)
+  {
+    throw Exception(Message);
+  }
+  else
+  {
+    PrintLine(Message);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::FreeFileList(TStrings * FileList)
@@ -769,6 +804,11 @@ void __fastcall TScript::CheckSession()
   {
     throw Exception(LoadStr(SCRIPT_NO_SESSION));
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::NotSupported()
+{
+  throw Exception(LoadStr(NOTSUPPORTED));
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::CheckParams(TScriptProcParams * Parameters)
@@ -969,6 +1009,11 @@ void __fastcall TScript::HelpProc(TScriptProcParams * Parameters)
 void __fastcall TScript::CallProc(TScriptProcParams * Parameters)
 {
   CheckSession();
+  if (!FTerminal->IsCapable[fcAnyCommand] &&
+      !FTerminal->IsCapable[fcSecondaryShell])
+  {
+    NotSupported();
+  }
 
   // this is used only to log failures to open separate shell session,
   // the actual call logging is done in TTerminal::AnyCommand
@@ -1006,9 +1051,12 @@ void __fastcall TScript::StatProc(TScriptProcParams * Parameters)
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::TerminalCaptureLog(const UnicodeString & AddedLine,
-  bool /*StdError*/)
+  TCaptureOutputType OutputType)
 {
-  PrintLine(AddedLine);
+  if ((OutputType == cotOutput) || (OutputType == cotError))
+  {
+    PrintLine(AddedLine);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::PwdProc(TScriptProcParams * /*Parameters*/)
@@ -1129,6 +1177,10 @@ void __fastcall TScript::MvProc(TScriptProcParams * Parameters)
 void __fastcall TScript::ChModProc(TScriptProcParams * Parameters)
 {
   CheckSession();
+  if (!FTerminal->IsCapable[fcModeChanging])
+  {
+    NotSupported();
+  }
 
   TStrings * FileList = CreateFileList(Parameters, 2, Parameters->ParamCount,
     fltMask);
@@ -1318,6 +1370,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
 
       if (SetValue && (FBatch != BatchOff) && (FSessionReopenTimeout == 0))
       {
+        // keep in sync with Session constructor in .NET
         FSessionReopenTimeout = 2 * MSecsPerSec * SecsPerMin; // 2 mins
         PrintReconnectTime = true;
       }

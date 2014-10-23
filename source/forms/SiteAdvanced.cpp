@@ -177,6 +177,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     int TimeDifferenceMin = TimeToMinutes(FSessionData->TimeDifference);
     TimeDifferenceEdit->AsInteger = TimeDifferenceMin / MinsPerHour;
     TimeDifferenceMinutesEdit->AsInteger = TimeDifferenceMin % MinsPerHour;
+    TimeDifferenceAutoCheck->Checked = FSessionData->TimeDifferenceAuto;
 
     // Environment/Recycle bin page
     DeleteToRecycleBinCheck->Checked = FSessionData->DeleteToRecycleBin;
@@ -222,7 +223,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     AuthGSSAPICheck3->Checked = FSessionData->AuthGSSAPI;
     GSSAPIFwdTGTCheck->Checked = FSessionData->GSSAPIFwdTGT;
     AgentFwdCheck->Checked = FSessionData->AgentFwd;
-    PrivateKeyEdit->Text = FSessionData->PublicKeyFile;
+    PrivateKeyEdit2->Text = FSessionData->PublicKeyFile;
 
     // SSH page
     Ssh2LegacyDESCheck->Checked = FSessionData->Ssh2DES;
@@ -378,7 +379,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     TunnelPortNumberEdit->AsInteger = FSessionData->TunnelPortNumber;
     TunnelHostNameEdit->Text = FSessionData->TunnelHostName;
     TunnelPasswordEdit->Text = FSessionData->TunnelPassword;
-    TunnelPrivateKeyEdit->Text = FSessionData->TunnelPublicKeyFile;
+    TunnelPrivateKeyEdit2->Text = FSessionData->TunnelPublicKeyFile;
     if (FSessionData->TunnelAutoassignLocalPortNumber)
     {
       TunnelLocalPortNumberEdit->Text = TunnelLocalPortNumberEdit->Items->Strings[0];
@@ -457,7 +458,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->AuthGSSAPI = AuthGSSAPICheck3->Checked;
   FSessionData->GSSAPIFwdTGT = GSSAPIFwdTGTCheck->Checked;
   FSessionData->AgentFwd = AgentFwdCheck->Checked;
-  FSessionData->PublicKeyFile = PrivateKeyEdit->Text;
+  FSessionData->PublicKeyFile = PrivateKeyEdit2->Text;
 
   // Connection page
   FSessionData->FtpPasvMode = FtpPasvModeCheck->Checked;
@@ -544,6 +545,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->TimeDifference =
     (double(TimeDifferenceEdit->AsInteger) / HoursPerDay) +
     (double(TimeDifferenceMinutesEdit->AsInteger) / MinsPerDay);
+  FSessionData->TimeDifferenceAuto = TimeDifferenceAutoCheck->Checked;
 
   // Environment/Recycle bin page
   FSessionData->DeleteToRecycleBin = DeleteToRecycleBinCheck->Checked;
@@ -630,7 +632,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->TunnelPortNumber = TunnelPortNumberEdit->AsInteger;
   FSessionData->TunnelHostName = TunnelHostNameEdit->Text;
   FSessionData->TunnelPassword = TunnelPasswordEdit->Text;
-  FSessionData->TunnelPublicKeyFile = TunnelPrivateKeyEdit->Text;
+  FSessionData->TunnelPublicKeyFile = TunnelPrivateKeyEdit2->Text;
   if (TunnelLocalPortNumberEdit->Text == TunnelLocalPortNumberEdit->Items->Strings[0])
   {
     FSessionData->TunnelLocalPortNumber = 0;
@@ -940,14 +942,17 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(EOLTypeLabel, EOLTypeCombo->Enabled);
     EnableControl(DSTModeGroup, (SftpProtocol || ScpProtocol) && EnvironmentSheet->Enabled);
     EnableControl(DSTModeKeepCheck, UsesDaylightHack() && DSTModeGroup->Enabled);
-    EnableControl(UtfCombo, (SftpProtocol || FtpProtocol) && EnvironmentSheet->Enabled);
+    EnableControl(UtfCombo, (SftpProtocol || FtpProtocol || ScpProtocol) && EnvironmentSheet->Enabled);
     EnableControl(UtfLabel, UtfCombo->Enabled);
     // should be enabled for fsSFTP (SCP fallback) too, but it would cause confusion
+    bool FtpProtocolWithMlsdOff = FtpProtocol && (ComboAutoSwitchSave(FtpUseMlsdCombo) == asOff);
+    EnableControl(TimeDifferenceAutoCheck, FtpProtocolWithMlsdOff);
     EnableControl(TimeDifferenceEdit,
-      ((FtpProtocol && (ComboAutoSwitchSave(FtpUseMlsdCombo) == asOff)) ||
+      ((FtpProtocolWithMlsdOff && !TimeDifferenceAutoCheck->Checked) ||
        ScpProtocol) &&
       EnvironmentSheet->Enabled);
-    EnableControl(TimeDifferenceLabel, TimeDifferenceEdit->Enabled);
+    EnableControl(TimeDifferenceLabel,
+      TimeDifferenceEdit->Enabled || TimeDifferenceAutoCheck->Enabled);
     EnableControl(TimeDifferenceHoursLabel, TimeDifferenceEdit->Enabled);
     EnableControl(TimeDifferenceMinutesEdit, TimeDifferenceEdit->Enabled);
     EnableControl(TimeDifferenceMinutesLabel, TimeDifferenceEdit->Enabled);
@@ -1021,7 +1026,8 @@ void __fastcall TSiteAdvancedDialog::DataChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::FormShow(TObject * /*Sender*/)
 {
-  InstallPathWordBreakProc(PrivateKeyEdit);
+  InstallPathWordBreakProc(PrivateKeyEdit2);
+  InstallPathWordBreakProc(TunnelPrivateKeyEdit2);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RecycleBinPathEdit);
@@ -1245,7 +1251,7 @@ void __fastcall TSiteAdvancedDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::PrivateKeyEditAfterDialog(TObject * Sender,
+void __fastcall TSiteAdvancedDialog::PrivateKeyEdit2AfterDialog(TObject * Sender,
   UnicodeString & Name, bool & /*Action*/)
 {
   if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
@@ -1265,9 +1271,9 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult == DefaultResult(this))
   {
-    VerifyKeyIncludingVersion(StripPathQuotes(PrivateKeyEdit->Text), GetSshProt());
+    VerifyKeyIncludingVersion(StripPathQuotes(PrivateKeyEdit2->Text), GetSshProt());
     // for tunnel key do not check SSH version as it is not configurable
-    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit->Text));
+    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit2->Text));
   }
 }
 //---------------------------------------------------------------------------
@@ -1413,14 +1419,12 @@ TTlsVersion __fastcall TSiteAdvancedDialog::IndexToTlsVersion(int Index)
     default:
       FAIL;
     case 0:
-      return ssl2;
-    case 1:
       return ssl3;
-    case 2:
+    case 1:
       return tls10;
-    case 3:
+    case 2:
       return tls11;
-    case 4:
+    case 3:
       return tls12;
   }
 }
@@ -1432,15 +1436,14 @@ int __fastcall TSiteAdvancedDialog::TlsVersionToIndex(TTlsVersion TlsVersion)
     default:
       FAIL;
     case ssl2:
-      return 0;
     case ssl3:
-      return 1;
+      return 0;
     case tls10:
-      return 2;
+      return 1;
     case tls11:
-      return 3;
+      return 2;
     case tls12:
-      return 4;
+      return 3;
   }
 }
 //---------------------------------------------------------------------------

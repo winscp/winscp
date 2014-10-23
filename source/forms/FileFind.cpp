@@ -95,6 +95,7 @@ void __fastcall TFileFindDialog::UpdateControls()
   EnableControl(FilterGroup, !Finding);
   MinimizeButton->Visible = Finding;
   EnableControl(FocusButton, (FileView->ItemFocused != NULL));
+  EnableControl(CopyButton, (FileView->Items->Count > 0));
   switch (FState)
   {
     case ffInit:
@@ -344,10 +345,16 @@ void __fastcall TFileFindDialog::HelpButtonClick(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FormKeyDown(TObject * /*Sender*/, WORD & Key,
-  TShiftState /*Shift*/)
+  TShiftState Shift)
 {
   if ((Key == VK_ESCAPE) && StopIfFinding())
   {
+    Key = 0;
+  }
+  if ((Key == L'C') && Shift.Contains(ssCtrl) &&
+      (dynamic_cast<TCustomCombo *>(ActiveControl) == NULL))
+  {
+    CopyToClipboard();
     Key = 0;
   }
 }
@@ -384,5 +391,23 @@ void __fastcall TFileFindDialog::MaskButtonClick(TObject * /*Sender*/)
   {
     MaskEdit->Text = Masks.Masks;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::CopyToClipboard()
+{
+  TInstantOperationVisualizer Visualizer;
+  std::unique_ptr<TStrings> Strings(new TStringList());
+  for (int Index = 0; Index < FileView->Items->Count; Index++)
+  {
+    TListItem * Item = FileView->Items->Item[Index];
+    TRemoteFile * File = static_cast<TRemoteFile *>(Item->Data);
+    Strings->Add(File->FullFileName);
+  }
+  ::CopyToClipboard(Strings.get());
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::CopyButtonClick(TObject * /*Sender*/)
+{
+  CopyToClipboard();
 }
 //---------------------------------------------------------------------------

@@ -176,7 +176,6 @@ type
     procedure EnableSysErrors;
     property MaxLength;
   public
-    constructor Create(AOwner: TComponent); override;
     property LongName: string read GetLongName;
     property ShortName: string read GetShortName;
   published
@@ -817,12 +816,6 @@ begin
 end;
 
 { TFileDirEdit }
-
-constructor TFileDirEdit.Create(AOwner: TComponent);
-begin
-  inherited Create(AOwner);
-  OEMConvert := True;
-end;
 
 procedure TFileDirEdit.DoBeforeDialog(var FileName: string;
   var Action: Boolean);

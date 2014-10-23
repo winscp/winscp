@@ -1173,7 +1173,9 @@ int ne_iaddr_reverse(const ne_inet_addr *ia, char *buf, size_t bufsiz)
 void ne_addr_destroy(ne_sock_addr *addr)
 {
 #ifdef USE_GETADDRINFO
-    if (addr->result)
+    /* Note that ->result is only valid for successful invocations of
+     * getaddrinfo. */
+    if (!addr->errnum && addr->result)
 	freeaddrinfo(addr->result);
 #else
     if (addr->addrs)

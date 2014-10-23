@@ -64,7 +64,7 @@ private:
   void __fastcall ExecuteCommand();
   void __fastcall SetTerminal(TTerminal * value);
   void __fastcall TerminalClose(TObject * Sender);
-  void __fastcall AddLine(const UnicodeString & Line, bool StdError);
+  void __fastcall AddLine(const UnicodeString & Line, TCaptureOutputType OutputType);
 
 protected:
   void __fastcall DoChangeDirectory(TObject * Sender);

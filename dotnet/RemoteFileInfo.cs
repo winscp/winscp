@@ -12,6 +12,8 @@ namespace WinSCP
         public string Name { get; internal set; }
         public char FileType { get; internal set; }
         public long Length { get; internal set; }
+        public int Length32 { get { return GetLength32(); } set { SetLength32(value); } }
+
         public DateTime LastWriteTime { get; internal set; }
         public FilePermissions FilePermissions { get; internal set; }
 
@@ -24,6 +26,21 @@ namespace WinSCP
         public override string ToString()
         {
             return Name;
+        }
+    
+        private int GetLength32()
+        {
+            if ((Length < int.MinValue) || (Length > int.MaxValue))
+            {
+                throw new OverflowException(string.Format(CultureInfo.CurrentCulture, "Size {0} cannot be represented using 32-bit value", Length));
+            }
+
+            return (int) Length;
+        }
+
+        private void SetLength32(int value)
+        {
+            Length = value;
         }
     }
 }

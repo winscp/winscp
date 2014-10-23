@@ -221,9 +221,10 @@ public:
   virtual void __fastcall UpdateStaticUsage();
 
   HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
-  TStoredSessionList * __fastcall SelectPuttySessionsForImport(TStoredSessionList * Sessions);
+  TStoredSessionList * __fastcall SelectPuttySessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
   bool __fastcall AnyPuttySessionForImport(TStoredSessionList * Sessions);
-  TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(TStoredSessionList * Sessions);
+  TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
+    TStoredSessionList * Sessions, UnicodeString & Error);
   bool __fastcall AnyFilezillaSessionForImport(TStoredSessionList * Sessions);
   void __fastcall DetectScalingType();
 

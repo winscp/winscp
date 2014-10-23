@@ -1382,6 +1382,12 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 			if (!parseMlsdDateTime(value, direntry))
 				return FALSE;
 		}
+		else if (factname == _T("perm"))
+		{
+			// there's no way we can convert Perm fact to unix-style permissions,
+			// so we at least present Perm as-is to a user
+			direntry.humanpermstr = value;
+		}
 		else if (factname == _T("unix.mode"))
 		{
 			direntry.permissionstr = value;
@@ -1882,7 +1888,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
 
 	if (!strntoi64(sday, sdaylen)) //Day field invalid
 	{ //Maybe the server is sending a directory listing with localized date format. 
-	  //Try to fix this really bad behaviour
+	  //Try to fix this really bad behavior
 		bCouldBeVShell = FALSE;
 		const char *tmp = smonth;
 		smonth = sday;

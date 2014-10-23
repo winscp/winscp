@@ -345,7 +345,7 @@ UnicodeString __fastcall SysErrorMessageForError(int LastError)
   UnicodeString Result;
   if (LastError != 0)
   {
-    Result = FORMAT(System_Sysconst_SOSError, (LastError, SysErrorMessage(LastError)));
+    Result = FORMAT(System_Sysconst_SOSError, (LastError, SysErrorMessage(LastError), UnicodeString()));
   }
   return Result;
 }
@@ -374,6 +374,11 @@ __fastcall EFatal::EFatal(Exception* E, UnicodeString Msg, UnicodeString HelpKey
   {
     FReopenQueried = F->ReopenQueried;
   }
+}
+//---------------------------------------------------------------------------
+__fastcall ECRTExtException::ECRTExtException(UnicodeString Msg) :
+  EOSExtException(Msg, errno)
+{
 }
 //---------------------------------------------------------------------------
 ExtException * __fastcall EFatal::Clone()

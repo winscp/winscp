@@ -34,7 +34,7 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
 
 public:
-  __fastcall TCreateDirectoryDialog(TComponent* AOwner);
+  __fastcall TCreateDirectoryDialog(TComponent* AOwner, int AllowedChanges);
   virtual __fastcall ~TCreateDirectoryDialog();
 
   bool __fastcall Execute(UnicodeString & Directory, TRemoteProperties * Properties,
@@ -42,6 +42,9 @@ public:
 
 protected:
   void __fastcall UpdateControls();
+
+private:
+  int FAllowedChanges;
 };
 //----------------------------------------------------------------------------
 #endif

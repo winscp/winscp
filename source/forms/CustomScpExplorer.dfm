@@ -281,6 +281,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
             Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
             RadioItem = True
           end
+          object TBXItem173: TTBXItem
+            Action = NonVisualDataModule.QueueSuspendOnceEmptyAction
+          end
           object TBXItem226: TTBXItem
             Action = NonVisualDataModule.QueueShutDownOnceEmptyAction
             RadioItem = True

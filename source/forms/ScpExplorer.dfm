@@ -54,7 +54,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.RemoteEditAction
         end
         object TBXSubmenuItem9: TTBXSubmenuItem
-          Action = NonVisualDataModule.CurrentEditAlternativeAction
+          Action = NonVisualDataModule.CurrentEditAlternative2Action
         end
         object TBXItem4: TTBXItem
           Action = NonVisualDataModule.RemoteAddEditLinkAction
@@ -369,6 +369,9 @@ inherited ScpExplorerForm: TScpExplorerForm
             object TBXItem223: TTBXItem
               Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
               RadioItem = True
+            end
+            object TBXItem148: TTBXItem
+              Action = NonVisualDataModule.QueueSuspendOnceEmptyAction
             end
             object TBXItem224: TTBXItem
               Action = NonVisualDataModule.QueueShutDownOnceEmptyAction

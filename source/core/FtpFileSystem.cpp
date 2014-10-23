@@ -16,6 +16,8 @@
 #include "TextsFileZilla.h"
 #include "HelpCore.h"
 #include "Security.h"
+#include <StrUtils.hpp>
+#include <DateUtils.hpp>
 #include <openssl/x509_vfy.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -59,6 +61,7 @@ protected:
 
   virtual void PreserveDownloadFileTime(HANDLE Handle, void * UserData);
   virtual bool GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time);
+  virtual wchar_t * LastSysErrorMessage();
 
 private:
   TFTPFileSystem * FFileSystem;
@@ -150,6 +153,11 @@ void TFileZillaImpl::PreserveDownloadFileTime(HANDLE Handle, void * UserData)
 bool TFileZillaImpl::GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time)
 {
   return FFileSystem->GetFileModificationTimeInUtc(FileName, Time);
+}
+//---------------------------------------------------------------------------
+wchar_t * TFileZillaImpl::LastSysErrorMessage()
+{
+  return _wcsdup(::LastSysErrorMessage().c_str());
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -310,11 +318,8 @@ void __fastcall TFTPFileSystem::Open()
       break;
 
     case ftpsExplicitSsl:
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT_SSL);
-      break;
-
     case ftpsExplicitTls:
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT_TLS);
+      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
       break;
 
     default:
@@ -383,8 +388,15 @@ void __fastcall TFTPFileSystem::Open()
       ServerType = TFileZillaIntf::SERVER_FTP;
       break;
   }
+
   int Pasv = (Data->FtpPasvMode ? 1 : 2);
-  int TimeZoneOffset = TimeToMinutes(Data->TimeDifference);
+
+  FDetectTimeDifference = Data->TimeDifferenceAuto;
+  FTimeDifference = 0;
+  FSupportsSiteCopy = false;
+  FSupportsSiteSymlink = false;
+  int TimeZoneOffset = Data->TimeDifferenceAuto ? 0 : TimeToMinutes(Data->TimeDifference);
+
   int UTF8 = 0;
   switch (Data->NotUtf)
   {
@@ -401,7 +413,6 @@ void __fastcall TFTPFileSystem::Open()
       break;
   }
 
-  FPasswordFailed = false;
   bool PromptedForCredentials = false;
 
   do
@@ -418,7 +429,7 @@ void __fastcall TFTPFileSystem::Open()
     {
       FTerminal->LogEvent(L"Username prompt (no username provided)");
 
-      if (!FPasswordFailed && !PromptedForCredentials)
+      if (!PromptedForCredentials)
       {
         FTerminal->Information(LoadStr(FTP_CREDENTIAL_PROMPT), false);
         PromptedForCredentials = true;
@@ -435,23 +446,8 @@ void __fastcall TFTPFileSystem::Open()
       }
     }
 
-    // on retry ask for password
-    if (FPasswordFailed)
-    {
-      FTerminal->LogEvent(L"Password prompt (last login attempt failed)");
-
-      // on retry ask for new password
-      Password = L"";
-      if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(PASSWORD_TITLE), L"",
-            LoadStr(PASSWORD_PROMPT), false, 0, Password))
-      {
-        FTerminal->FatalError(NULL, LoadStr(AUTHENTICATION_FAILED));
-      }
-    }
-
     FPasswordFailed = false;
-    TValueRestorer<bool> OpeningRestorer(FOpening);
-    FOpening = true;
+    TAutoFlag OpeningFlag(FOpening);
 
     FActive = FFileZillaIntf->Connect(
       HostName.c_str(), Data->PortNumber, UserName.c_str(),
@@ -477,9 +473,7 @@ void __fastcall TFTPFileSystem::Open()
     {
       if (FPasswordFailed)
       {
-        FTerminal->Information(
-          LoadStr(Password.IsEmpty() ? FTP_ACCESS_DENIED_EMPTY_PASSWORD : FTP_ACCESS_DENIED),
-          false);
+        FTerminal->Information(LoadStr(FTP_ACCESS_DENIED), false);
       }
       else
       {
@@ -528,6 +522,29 @@ bool __fastcall TFTPFileSystem::GetActive()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::CollectUsage()
 {
+  switch (FTerminal->SessionData->Ftps)
+  {
+    case ftpsNone:
+      // noop
+      break;
+
+    case ftpsImplicit:
+      FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPSImplicit");
+      break;
+
+    case ftpsExplicitSsl:
+      FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPSExplicitSSL");
+      break;
+
+    case ftpsExplicitTls:
+      FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPSExplicitTLS");
+      break;
+
+    default:
+      FAIL;
+      break;
+  }
+
   if (FFileZillaIntf->UsingMlsd())
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPMLSD");
@@ -560,6 +577,57 @@ void __fastcall TFTPFileSystem::CollectUsage()
     {
       FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPOtherPath");
     }
+  }
+
+  UnicodeString TlsVersionStr = FFileZillaIntf->GetTlsVersionStr().c_str();
+  if (!TlsVersionStr.IsEmpty())
+  {
+    FTerminal->CollectTlsUsage(TlsVersionStr);
+  }
+
+  // 220-FileZilla Server version 0.9.43 beta
+  // 220-written by Tim Kosse (Tim.Kosse@gmx.de)
+  // 220 Please visit http://sourceforge.net/projects/filezilla/
+  // SYST
+  // 215 UNIX emulated by FileZilla
+  // (Welcome message is configurable)
+  if (ContainsText(FSystem, "FileZilla"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPFileZilla");
+  }
+  // 220 ProFTPD 1.3.4a Server (Debian) [::ffff:192.168.179.137]
+  // SYST
+  // 215 UNIX Type: L8
+  else if (ContainsText(FWelcomeMessage, "ProFTPD"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPProFTPD");
+  }
+  // 220 Microsoft FTP Service
+  // SYST
+  // 215 Windows_NT
+  else if (ContainsText(FWelcomeMessage, "Microsoft FTP Service"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPIIS");
+  }
+  // 220 (vsFTPd 3.0.2)
+  // SYST
+  // 215 UNIX Type: L8
+  // (Welcome message is configurable)
+  else if (ContainsText(FWelcomeMessage, "vsFTPd"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPvsFTPd");
+  }
+  // 220 Welcome to Pure-FTPd.
+  // ...
+  // SYST
+  // 215 UNIX Type: L8
+  else if (ContainsText(FWelcomeMessage, "Pure-FTPd"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPPureFTPd");
+  }
+  else
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPOther");
   }
 }
 //---------------------------------------------------------------------------
@@ -1525,10 +1593,15 @@ void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
     // only now, we know the final destination
     Action.Destination(DestFullName);
 
-    // we are not able to tell if setting timestamp succeeded,
-    // so we log it always (if supported)
+    // We are not able to tell if setting timestamp succeeded,
+    // so we log it always (if supported).
+    // Support for MDTM does not necessarily mean that the server supports
+    // non-standard hack of setting timestamp using
+    // MFMT-like (two argument) call to MDTM.
+    // IIS definitelly does.
     if (FFileTransferPreserveTime &&
-        (FServerCapabilities->GetCapability(mfmt_command) == yes))
+        ((FServerCapabilities->GetCapability(mfmt_command) == yes) ||
+         ((FServerCapabilities->GetCapability(mdtm_command) == yes))))
     {
       TTouchSessionAction TouchAction(FTerminal->ActionLog, DestFullName, Modification);
     }
@@ -1693,10 +1766,18 @@ void __fastcall TFTPFileSystem::CreateDirectory(const UnicodeString ADirName)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CreateLink(const UnicodeString /*FileName*/,
-  const UnicodeString /*PointTo*/, bool /*Symbolic*/)
+void __fastcall TFTPFileSystem::CreateLink(const UnicodeString FileName,
+  const UnicodeString PointTo, bool Symbolic)
 {
-  FAIL;
+  assert(FSupportsSiteSymlink);
+  if (ALWAYS_TRUE(Symbolic))
+  {
+    EnsureLocation();
+
+    UnicodeString Command = FORMAT(L"SITE SYMLINK %s %s", (PointTo, FileName));
+    FFileZillaIntf->CustomCommand(Command.c_str());
+    GotReply(WaitForCommandReply(), REPLY_2XX_CODE);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DeleteFile(const UnicodeString AFileName,
@@ -1813,19 +1894,23 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcPreservingTimestampUpload:
       return (FServerCapabilities->GetCapability(mfmt_command) == yes);
 
+    case fcRemoteCopy:
+      return FSupportsSiteCopy;
+
+    case fcSymbolicLink:
+      return FSupportsSiteSymlink;
+
     case fcModeChangingUpload:
     case fcLoadingAdditionalProperties:
     case fcShellAnyCommand:
     case fcCalculatingChecksum:
     case fcHardLink:
-    case fcSymbolicLink:
     case fcCheckingSpaceAvailable:
     case fcUserGroupListing:
     case fcGroupChanging:
     case fcOwnerChanging:
     case fcGroupOwnerChangingByID:
     case fcSecondaryShell:
-    case fcRemoteCopy:
     case fcNativeTextMode:
     case fcTimestampChanging:
     case fcIgnorePermErrors:
@@ -1930,7 +2015,86 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 
   GotReply(WaitForCommandReply(), REPLY_2XX_CODE | REPLY_ALLOW_CANCEL);
 
+  AutoDetectTimeDifference(FileList);
+
+  if (FTimeDifference != 0) // optimization
+  {
+    for (int Index = 0; Index < FileList->Count; Index++)
+    {
+      ApplyTimeDifference(FileList->Files[Index]);
+    }
+  }
+
   FLastDataSent = Now();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFTPFileSystem::TimeZoneDifferenceApplicable(TModificationFmt ModificationFmt)
+{
+  // Full precision is available for MLST only, so we would not be here.
+  return (ModificationFmt == mfMDHM) || ALWAYS_FALSE(ModificationFmt == mfFull);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::ApplyTimeDifference(TRemoteFile * File)
+{
+  if (TimeZoneDifferenceApplicable(File->ModificationFmt))
+  {
+    assert(File->Modification == File->LastAccess);
+    File->Modification = IncSecond(File->Modification, FTimeDifference);
+    File->LastAccess = IncSecond(File->LastAccess, FTimeDifference);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileList)
+{
+  if (FDetectTimeDifference &&
+      // Does not support MLST/MLSD, but supports MDTM at least
+      !FFileZillaIntf->UsingMlsd() && SupportsReadingFile())
+  {
+    for (int Index = 0; Index < FileList->Count; Index++)
+    {
+      TRemoteFile * File = FileList->Files[Index];
+      // For directories, we do not do MDTM in ReadFile
+      // (it should not be problem to use them otherwise).
+      // We are also not interested in files with day precision only.
+      if (!File->IsDirectory && !File->IsSymLink &&
+          TimeZoneDifferenceApplicable(File->ModificationFmt))
+      {
+        FDetectTimeDifference = false;
+
+        TRemoteFile * UtcFile = NULL;
+        try
+        {
+          ReadFile(File->FullFileName, UtcFile);
+        }
+        catch (Exception & E)
+        {
+          if (!FTerminal->Active)
+          {
+            throw;
+          }
+          break;
+        }
+
+        TDateTime UtcModification = UtcFile->Modification;
+        delete UtcFile;
+
+        FTimeDifference = SecondsBetween(UtcModification, File->Modification);
+
+        UnicodeString LogMessage;
+        if (FTimeDifference == 0)
+        {
+          LogMessage = FORMAT(L"No timezone difference detected using file %s", (File->FullFileName));
+        }
+        else
+        {
+          LogMessage = FORMAT(L"Timezone difference of %s detected using file %s", (FormatTimeZone(FTimeDifference), File->FullFileName));
+        }
+        FTerminal->LogEvent(LogMessage);
+
+        break;
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
@@ -2011,25 +2175,27 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::DoReadFile(const UnicodeString & FileName,
+void __fastcall TFTPFileSystem::DoReadFile(const UnicodeString & AFileName,
   TRemoteFile *& AFile)
 {
-  // end-user has right to expect that client current directory is really
-  // current directory for the server
-  EnsureLocation();
+  UnicodeString FileName = AbsolutePath(AFileName, false);
+  UnicodeString FileNameOnly = UnixExtractFileName(FileName);
+  UnicodeString FilePath = UnixExtractFilePath(FileName);
 
   TRemoteFileList * FileList = new TRemoteFileList();
   try
   {
     TFileListHelper Helper(this, FileList, false);
-    FFileZillaIntf->ListFile(FileName.c_str());
+    FFileZillaIntf->ListFile(FileNameOnly.c_str(), FilePath.c_str());
 
     GotReply(WaitForCommandReply(), REPLY_2XX_CODE | REPLY_ALLOW_CANCEL);
-    TRemoteFile * File = FileList->FindFile(UnixExtractFileName(FileName));
+    TRemoteFile * File = FileList->FindFile(FileNameOnly);
     if (File != NULL)
     {
       AFile = File->Duplicate();
     }
+
+    ApplyTimeDifference(AFile);
 
     FLastDataSent = Now();
   }
@@ -2039,6 +2205,14 @@ void __fastcall TFTPFileSystem::DoReadFile(const UnicodeString & FileName,
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TFTPFileSystem::SupportsReadingFile()
+{
+  return
+    FFileZillaIntf->UsingMlsd() ||
+    ((FServerCapabilities->GetCapability(mdtm_command) == yes) &&
+     (FServerCapabilities->GetCapability(size_command) == yes));
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
   TRemoteFile *& File)
 {
@@ -2046,7 +2220,7 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
   UnicodeString NameOnly = UnixExtractFileName(FileName);
   TRemoteFile *AFile = NULL;
   bool Own;
-  if (FFileZillaIntf->UsingMlsd())
+  if (SupportsReadingFile())
   {
     DoReadFile(FileName, AFile);
     Own = true;
@@ -2148,7 +2322,18 @@ void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName,
 void __fastcall TFTPFileSystem::CopyFile(const UnicodeString FileName,
   const UnicodeString NewName)
 {
-  FAIL;
+  assert(FSupportsSiteCopy);
+  EnsureLocation();
+
+  UnicodeString Command;
+
+  Command = FORMAT(L"SITE CPFR %s", (FileName));
+  FFileZillaIntf->CustomCommand(Command.c_str());
+  GotReply(WaitForCommandReply(), REPLY_3XX_CODE);
+
+  Command = FORMAT(L"SITE CPTO %s", (NewName));
+  FFileZillaIntf->CustomCommand(Command.c_str());
+  GotReply(WaitForCommandReply(), REPLY_2XX_CODE);
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TFTPFileSystem::GetFixedPaths()
@@ -2685,7 +2870,7 @@ void __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned int Flags,
 
         if (FLAGSET(Reply, TFileZillaIntf::REPLY_NOTSUPPORTED))
         {
-          MoreMessages->Add(LoadStr(FZ_NOTSUPPORTED));
+          MoreMessages->Add(LoadStr(NOTSUPPORTED));
         }
 
         if (FLastCode == 530)
@@ -2799,7 +2984,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
 
   if (FOnCaptureOutput != NULL)
   {
-    FOnCaptureOutput(Response, false);
+    FOnCaptureOutput(Response, cotOutput);
   }
 
   // Two forms of multiline responses were observed
@@ -2866,9 +3051,10 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
   {
     if (FLastCode == 220)
     {
+      FWelcomeMessage = FLastResponse->Text;
       if (FTerminal->Configuration->ShowFtpWelcomeMessage)
       {
-        FTerminal->DisplayBanner(FLastResponse->Text);
+        FTerminal->DisplayBanner(FWelcomeMessage);
       }
     }
     else if (FLastCommand == PASS)
@@ -2908,6 +3094,17 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         FLastResponse->Delete(0);
         FLastResponse->Delete(FLastResponse->Count - 1);
         FFeatures->Assign(FLastResponse);
+        for (int Index = 0; Index < FFeatures->Count; Index++)
+        {
+          if (SameText(FFeatures->Strings[Index], L"SITE COPY"))
+          {
+            FSupportsSiteCopy = true;
+          }
+          else if (SameText(FFeatures->Strings[Index], L"SITE SYMLINK"))
+          {
+            FSupportsSiteSymlink = true;
+          }
+        }
       }
       else
       {
@@ -3257,13 +3454,13 @@ bool __fastcall TFTPFileSystem::VerifyCertificateHostName(const TFtpsCertificate
   bool Result = !NoMask && VerifyNameMask(HostName, CommonName);
   if (Result)
   {
-    FTerminal->LogEvent(FORMAT("Certificate common name \"%s\" matches hostname", (CommonName)));
+    FTerminal->LogEvent(FORMAT(L"Certificate common name \"%s\" matches hostname", (CommonName)));
   }
   else
   {
     if (!NoMask && (FTerminal->Configuration->ActualLogProtocol >= 1))
     {
-      FTerminal->LogEvent(FORMAT("Certificate common name \"%s\" does not match hostname", (CommonName)));
+      FTerminal->LogEvent(FORMAT(L"Certificate common name \"%s\" does not match hostname", (CommonName)));
     }
     UnicodeString SubjectAltName = Data.SubjectAltName;
     while (!Result && !SubjectAltName.IsEmpty())
@@ -3276,13 +3473,13 @@ bool __fastcall TFTPFileSystem::VerifyCertificateHostName(const TFtpsCertificate
         Result = VerifyNameMask(HostName, Entry);
         if (Result)
         {
-          FTerminal->LogEvent(FORMAT("Certificate subject alternative name \"%s\" matches hostname", (Entry)));
+          FTerminal->LogEvent(FORMAT(L"Certificate subject alternative name \"%s\" matches hostname", (Entry)));
         }
         else
         {
           if (FTerminal->Configuration->ActualLogProtocol >= 1)
           {
-            FTerminal->LogEvent(FORMAT("Certificate subject alternative name \"%s\" does not match hostname", (Entry)));
+            FTerminal->LogEvent(FORMAT(L"Certificate subject alternative name \"%s\" does not match hostname", (Entry)));
           }
         }
       }
@@ -3290,7 +3487,7 @@ bool __fastcall TFTPFileSystem::VerifyCertificateHostName(const TFtpsCertificate
   }
   if (!Result && NoMask)
   {
-    FTerminal->LogEvent("Certificate has no common name nor subject alternative name, not verifying hostname");
+    FTerminal->LogEvent(L"Certificate has no common name nor subject alternative name, not verifying hostname");
     Result = true;
   }
   return Result;
@@ -3572,9 +3769,10 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
   else
   {
     assert(FFileList != NULL);
-    // this can actually fail in real life,
-    // when connected to server with case insensitive paths
-    assert(UnixSamePath(AbsolutePath(FFileList->Directory, false), Path));
+    // This can actually fail in real life,
+    // when connected to server with case insensitive paths.
+    // Is empty when called from DoReadFile
+    assert(FFileList->Directory.IsEmpty() || UnixSamePath(AbsolutePath(FFileList->Directory, false), Path));
     USEDPARAM(Path);
 
     for (unsigned int Index = 0; Index < Count; Index++)
@@ -3602,6 +3800,8 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
         {
           // ignore permissions errors with FTP
         }
+
+        File->HumanRights = Entry->HumanPerm;
 
         const wchar_t * Space = wcschr(Entry->OwnerGroup, L' ');
         if (Space != NULL)
@@ -3644,8 +3844,8 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
       {
         delete File;
         UnicodeString EntryData =
-          FORMAT(L"%s/%s/%s/%s/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d",
-            (Entry->Name, Entry->Permissions, Entry->OwnerGroup, IntToStr(Entry->Size),
+          FORMAT(L"%s/%s/%s/%s/%s/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d",
+            (Entry->Name, Entry->Permissions, Entry->HumanPerm, Entry->OwnerGroup, IntToStr(Entry->Size),
              int(Entry->Dir), int(Entry->Link), Entry->Time.Year, Entry->Time.Month, Entry->Time.Day,
              Entry->Time.Hour, Entry->Time.Minute, int(Entry->Time.HasTime),
              int(Entry->Time.HasSeconds), int(Entry->Time.HasDate)));
@@ -3871,6 +4071,11 @@ bool __fastcall TFTPFileSystem::GetFileModificationTimeInUtc(const wchar_t * Fil
     Result = false;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::GetSupportedChecksumAlgs(TStrings * /*Algs*/)
+{
+  // NOOP
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetOpenSSLVersionText()

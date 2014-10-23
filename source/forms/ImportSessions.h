@@ -8,6 +8,7 @@
 #include <Vcl.StdCtrls.hpp>
 //---------------------------------------------------------------------
 #include <SessionData.h>
+#include <Vcl.ExtCtrls.hpp>
 //---------------------------------------------------------------------
 class TImportSessionsDialog : public TForm
 {
@@ -20,6 +21,8 @@ __published:
   TCheckBox *ImportKeysCheck;
   TButton *HelpButton;
   TComboBox *SourceComboBox;
+  TPanel *ErrorPanel;
+  TLabel *ErrorLabel;
   void __fastcall SessionListView2InfoTip(TObject *Sender,
     TListItem *Item, UnicodeString &InfoTip);
   void __fastcall SessionListView2MouseDown(TObject *Sender,
@@ -32,6 +35,7 @@ __published:
   void __fastcall SourceComboBoxSelect(TObject *Sender);
 
 private:
+  TStrings * FErrors;
   void __fastcall UpdateControls();
   void __fastcall LoadSessions();
   void __fastcall ClearSelections();
@@ -40,7 +44,7 @@ private:
 
 public:
   virtual __fastcall TImportSessionsDialog(TComponent * AOwner);
-  void __fastcall Init(TList * SessionListsList);
+  void __fastcall Init(TList * SessionListsList, TStrings * Errors);
   bool __fastcall Execute(bool & ImportKeys);
 };
 //----------------------------------------------------------------------------

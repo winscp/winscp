@@ -1,11 +1,11 @@
 STRINGTABLE
 BEGIN
-  SHORT_DESCRIPTION, "Free SFTP, FTP and SCP client for Windows"
-  LONG_DESCRIPTION, "WinSCP is an open source free SFTP client and FTP client for Windows. Its main function is secure file transfer between a local and a remote computer. Beyond this, WinSCP offers basic file manager and file synchronization functionality."
+  SHORT_DESCRIPTION, "Free SFTP, FTP, WebDAV and SCP client for Windows"
+  LONG_DESCRIPTION, "WinSCP is an open source free SFTP, FTP, WebDAV and SCP client for Windows. Its main function is secure file transfer between a local and a remote computer. Beyond this, WinSCP offers basic file manager, file synchronization functionality and scripting."
 
-  FUNCTIONS_PROTOCOLS, "Support for SFTP and SCP protocols over SSH and FTP protocol"
+  FUNCTIONS_PROTOCOLS, "Support for SFTP and SCP protocols over SSH, FTP and WebDAV protocol"
   FUNCTIONS_FILE_OPERATION, "All common operations with files"
-  FUNCTIONS_INTEGRATION, "Integration with Windows (drag&drop, URL, shortcut icons)"
+  FUNCTIONS_INTEGRATION, "Integration with Windows (drag&drop, URL, shortcut icons, jump list)"
   FUNCTIONS_TRANSLATIONS, "Translated into many languages"
   FUNCTIONS_AUTOMATION, "Batch file scripting, command-line interface, .NET assembly"
   FUNCTIONS_SYNCHRONIZATION, "Directory synchronization in several semi or fully automatic ways"
@@ -16,6 +16,7 @@ BEGIN
   KEYWORD_SFTP_CLIENT, "sftp client"
   KEYWORD_FTP_CLIENT, "ftp client"
   KEYWORD_FTP, "ftp"
+  KEYWORD_WEBDAV_CLIENT, "webdav client"
   KEYWORD_SCP_CLIENT, "scp client"
   KEYWORD_SECURE_TRANSFER, "secure file transfer"
   KEYWORD_FREEWARE, "freeware"

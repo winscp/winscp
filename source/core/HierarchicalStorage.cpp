@@ -20,7 +20,7 @@
 #define WRITE_REGISTRY(Method) \
   try { FRegistry->Method(Name, Value); } catch(...) { FFailed++; }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall MungeStr(const UnicodeString Str, bool ForceAnsi)
+UnicodeString __fastcall MungeStr(const UnicodeString & Str, bool ForceAnsi)
 {
   RawByteString Source;
   if (ForceAnsi)
@@ -43,7 +43,7 @@ UnicodeString __fastcall MungeStr(const UnicodeString Str, bool ForceAnsi)
   return UnicodeString(Dest.c_str(), Dest.Length());
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall UnMungeStr(const UnicodeString Str)
+UnicodeString __fastcall UnMungeStr(const UnicodeString & Str)
 {
   // Str should contain ASCII characters only
   RawByteString Source = AnsiString(Str);
@@ -68,7 +68,7 @@ UnicodeString __fastcall PuttyMungeStr(const UnicodeString Str)
   return MungeStr(Str, false);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall MungeIniName(const UnicodeString Str)
+UnicodeString __fastcall MungeIniName(const UnicodeString & Str)
 {
   int P = Str.Pos(L"=");
   // make this fast for now
@@ -82,7 +82,7 @@ UnicodeString __fastcall MungeIniName(const UnicodeString Str)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall UnMungeIniName(const UnicodeString Str)
+UnicodeString __fastcall UnMungeIniName(const UnicodeString & Str)
 {
   int P = Str.Pos(L"%3D");
   // make this fast for now
@@ -193,6 +193,14 @@ void __fastcall THierarchicalStorage::CloseSubKey()
 {
   if (FKeyHistory->Count == 0) throw Exception(L"");
     else FKeyHistory->Delete(FKeyHistory->Count-1);
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::CloseAll()
+{
+  while (!CurrentSubKey.IsEmpty())
+  {
+    CloseSubKey();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::ClearSubKeys()
@@ -404,6 +412,11 @@ UnicodeString __fastcall THierarchicalStorage::ExcludeTrailingBackslash(const Un
   {
     return ::ExcludeTrailingBackslash(S);
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall THierarchicalStorage::GetTemporary()
+{
+  return false;
 }
 //===========================================================================
 __fastcall TRegistryStorage::TRegistryStorage(const UnicodeString AStorage):
@@ -685,7 +698,9 @@ int __fastcall TRegistryStorage::GetFailed()
 //===========================================================================
 __fastcall TCustomIniFileStorage::TCustomIniFileStorage(const UnicodeString Storage, TCustomIniFile * IniFile) :
   THierarchicalStorage(Storage),
-  FIniFile(IniFile)
+  FIniFile(IniFile),
+  FMasterStorageOpenFailures(0),
+  FOpeningSubKey(false)
 {
 }
 //---------------------------------------------------------------------------
@@ -704,36 +719,112 @@ UnicodeString __fastcall TCustomIniFileStorage::GetCurrentSection()
   return ExcludeTrailingBackslash(GetCurrentSubKeyMunged());
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomIniFileStorage::CacheSections()
+{
+  if (FSections.get() == NULL)
+  {
+    FSections.reset(new TStringList());
+    FIniFile->ReadSections(FSections.get());
+    FSections->Sorted = true; // has to set only after reading as ReadSections reset it to false
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomIniFileStorage::ResetCache()
+{
+  FSections.reset(NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomIniFileStorage::SetAccessMode(TStorageAccessMode value)
+{
+  if (FMasterStorage.get() != NULL)
+  {
+    FMasterStorage->AccessMode = value;
+  }
+  THierarchicalStorage::SetAccessMode(value);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::DoOpenSubKey(const UnicodeString SubKey, bool CanCreate)
 {
   bool Result = CanCreate;
 
   if (!Result)
   {
-    TStringList * Sections = new TStringList();
-    try
+    CacheSections();
+    UnicodeString NewKey = ExcludeTrailingBackslash(CurrentSubKey+SubKey);
+    if (FSections->Count > 0)
     {
-      FIniFile->ReadSections(Sections);
-      Sections->Sorted = true; // has to set only after reading as ReadSections reset it to false
-      UnicodeString NewKey = ExcludeTrailingBackslash(CurrentSubKey+SubKey);
-      if (Sections->Count)
+      int Index = -1;
+      Result = FSections->Find(NewKey, Index);
+      if (!Result &&
+          (Index < FSections->Count) &&
+          (FSections->Strings[Index].SubString(1, NewKey.Length()+1) == NewKey + L"\\"))
       {
-        int Index = -1;
-        Result = Sections->Find(NewKey, Index);
-        if (!Result && Index < Sections->Count &&
-            Sections->Strings[Index].SubString(1, NewKey.Length()+1) == NewKey + L"\\")
-        {
-          Result = true;
-        }
+        Result = true;
       }
     }
-    __finally
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomIniFileStorage::OpenRootKey(bool CanCreate)
+{
+  // Not supported with master storage.
+  // Actually currently, we use OpenRootKey with TRegistryStorage only.
+  assert(FMasterStorage.get() == NULL);
+
+  return THierarchicalStorage::OpenRootKey(CanCreate);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomIniFileStorage::OpenSubKey(UnicodeString Key, bool CanCreate, bool Path)
+{
+  bool Result;
+
+  {
+    TAutoFlag Flag(FOpeningSubKey);
+    Result = THierarchicalStorage::OpenSubKey(Key, CanCreate, Path);
+  }
+
+  if (FMasterStorage.get() != NULL)
+  {
+    if (FMasterStorageOpenFailures > 0)
     {
-      delete Sections;
+      FMasterStorageOpenFailures++;
+    }
+    else
+    {
+      bool MasterResult = FMasterStorage->OpenSubKey(Key, CanCreate, Path);
+      if (!Result && MasterResult)
+      {
+        Result = THierarchicalStorage::OpenSubKey(Key, true, Path);
+        assert(Result);
+      }
+      else if (Result && !MasterResult)
+      {
+        FMasterStorageOpenFailures++;
+      }
     }
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomIniFileStorage::CloseSubKey()
+{
+  THierarchicalStorage::CloseSubKey();
+
+  // What we are called to restore previous key from OpenSubKey,
+  // when opening path component fails, the master storage was not involved yet
+  if (!FOpeningSubKey && (FMasterStorage.get() != NULL))
+  {
+    if (FMasterStorageOpenFailures > 0)
+    {
+      FMasterStorageOpenFailures--;
+    }
+    else
+    {
+      FMasterStorage->CloseSubKey();
+    }
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::DeleteSubKey(const UnicodeString SubKey)
@@ -741,6 +832,7 @@ bool __fastcall TCustomIniFileStorage::DeleteSubKey(const UnicodeString SubKey)
   bool Result;
   try
   {
+    ResetCache();
     FIniFile->EraseSection(CurrentSubKey + MungeKeyName(SubKey));
     Result = true;
   }
@@ -748,44 +840,48 @@ bool __fastcall TCustomIniFileStorage::DeleteSubKey(const UnicodeString SubKey)
   {
     Result = false;
   }
+  if (HandleByMasterStorage())
+  {
+    Result = FMasterStorage->DeleteSubKey(SubKey);
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::GetSubKeyNames(Classes::TStrings* Strings)
 {
-  TStrings * Sections = new TStringList();
-  try
+  Strings->Clear();
+  if (HandleByMasterStorage())
   {
-    Strings->Clear();
-    FIniFile->ReadSections(Sections);
-    for (int i = 0; i < Sections->Count; i++)
+    FMasterStorage->GetSubKeyNames(Strings);
+  }
+  CacheSections();
+  for (int i = 0; i < FSections->Count; i++)
+  {
+    UnicodeString Section = FSections->Strings[i];
+    if (AnsiCompareText(CurrentSubKey,
+        Section.SubString(1, CurrentSubKey.Length())) == 0)
     {
-      UnicodeString Section = Sections->Strings[i];
-      if (AnsiCompareText(CurrentSubKey,
-          Section.SubString(1, CurrentSubKey.Length())) == 0)
+      UnicodeString SubSection = Section.SubString(CurrentSubKey.Length() + 1,
+        Section.Length() - CurrentSubKey.Length());
+      int P = SubSection.Pos(L"\\");
+      if (P)
       {
-        UnicodeString SubSection = Section.SubString(CurrentSubKey.Length() + 1,
-          Section.Length() - CurrentSubKey.Length());
-        int P = SubSection.Pos(L"\\");
-        if (P)
-        {
-          SubSection.SetLength(P - 1);
-        }
-        if (Strings->IndexOf(SubSection) < 0)
-        {
-          Strings->Add(UnMungeStr(SubSection));
-        }
+        SubSection.SetLength(P - 1);
+      }
+      if (Strings->IndexOf(SubSection) < 0)
+      {
+        Strings->Add(UnMungeStr(SubSection));
       }
     }
-  }
-  __finally
-  {
-    delete Sections;
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::GetValueNames(Classes::TStrings* Strings)
 {
+  if (HandleByMasterStorage())
+  {
+    FMasterStorage->GetValueNames(Strings);
+  }
   FIniFile->ReadSection(CurrentSection, Strings);
   for (int Index = 0; Index < Strings->Count; Index++)
   {
@@ -795,44 +891,101 @@ void __fastcall TCustomIniFileStorage::GetValueNames(Classes::TStrings* Strings)
 //---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::DoKeyExists(const UnicodeString SubKey, bool AForceAnsi)
 {
-  return FIniFile->SectionExists(CurrentSubKey + MungeStr(SubKey, AForceAnsi));
+  return
+    (HandleByMasterStorage() && FMasterStorage->DoKeyExists(SubKey, AForceAnsi)) ||
+    FIniFile->SectionExists(CurrentSubKey + MungeStr(SubKey, AForceAnsi));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::ValueExists(const UnicodeString Value)
+bool __fastcall TCustomIniFileStorage::DoValueExists(const UnicodeString & Value)
 {
   return FIniFile->ValueExists(CurrentSection, MungeIniName(Value));
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomIniFileStorage::ValueExists(const UnicodeString Value)
+{
+  return
+    (HandleByMasterStorage() && FMasterStorage->ValueExists(Value)) ||
+    DoValueExists(Value);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::DeleteValue(const UnicodeString Name)
 {
+  bool Result = true;
+  if (HandleByMasterStorage())
+  {
+    Result = FMasterStorage->DeleteValue(Name);
+  }
+  ResetCache();
   FIniFile->DeleteKey(CurrentSection, MungeIniName(Name));
-  return true;
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomIniFileStorage::HandleByMasterStorage()
+{
+  return
+    (FMasterStorage.get() != NULL) &&
+    (FMasterStorageOpenFailures == 0);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomIniFileStorage::HandleReadByMasterStorage(const UnicodeString & Name)
+{
+  return HandleByMasterStorage() && !DoValueExists(Name);
 }
 //---------------------------------------------------------------------------
 size_t __fastcall TCustomIniFileStorage::BinaryDataSize(const UnicodeString Name)
 {
-  return ReadStringRaw(Name, L"").Length() / 2;
+  if (HandleReadByMasterStorage(Name))
+  {
+    return FMasterStorage->BinaryDataSize(Name);
+  }
+  else
+  {
+    return ReadStringRaw(Name, L"").Length() / 2;
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::ReadBool(const UnicodeString Name, bool Default)
 {
-  return FIniFile->ReadBool(CurrentSection, MungeIniName(Name), Default);
+  if (HandleReadByMasterStorage(Name))
+  {
+    return FMasterStorage->ReadBool(Name, Default);
+  }
+  else
+  {
+    return FIniFile->ReadBool(CurrentSection, MungeIniName(Name), Default);
+  }
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomIniFileStorage::ReadInteger(const UnicodeString Name, int Default)
 {
-  int Result = FIniFile->ReadInteger(CurrentSection, MungeIniName(Name), Default);
+  int Result;
+  if (HandleReadByMasterStorage(Name))
+  {
+    Result = FMasterStorage->ReadInteger(Name, Default);
+  }
+  else
+  {
+    Result = FIniFile->ReadInteger(CurrentSection, MungeIniName(Name), Default);
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
 __int64 __fastcall TCustomIniFileStorage::ReadInt64(const UnicodeString Name, __int64 Default)
 {
-  __int64 Result = Default;
-  UnicodeString Str;
-  Str = ReadStringRaw(Name, L"");
-  if (!Str.IsEmpty())
+  __int64 Result;
+  if (HandleReadByMasterStorage(Name))
   {
-    Result = StrToInt64Def(Str, Default);
+    Result = FMasterStorage->ReadInt64(Name, Default);
+  }
+  else
+  {
+    Result = Default;
+    UnicodeString Str;
+    Str = ReadStringRaw(Name, L"");
+    if (!Str.IsEmpty())
+    {
+      Result = StrToInt64Def(Str, Default);
+    }
   }
   return Result;
 }
@@ -840,28 +993,35 @@ __int64 __fastcall TCustomIniFileStorage::ReadInt64(const UnicodeString Name, __
 TDateTime __fastcall TCustomIniFileStorage::ReadDateTime(const UnicodeString Name, TDateTime Default)
 {
   TDateTime Result;
-  UnicodeString Value = FIniFile->ReadString(CurrentSection, MungeIniName(Name), L"");
-  if (Value.IsEmpty())
+  if (HandleReadByMasterStorage(Name))
   {
-    Result = Default;
+    Result = FMasterStorage->ReadDateTime(Name, Default);
   }
   else
   {
-    try
-    {
-      RawByteString Raw = HexToBytes(Value);
-      if (static_cast<size_t>(Raw.Length()) == sizeof(Result))
-      {
-        memcpy(&Result, Raw.c_str(), sizeof(Result));
-      }
-      else
-      {
-        Result = StrToDateTime(Value);
-      }
-    }
-    catch(...)
+    UnicodeString Value = FIniFile->ReadString(CurrentSection, MungeIniName(Name), L"");
+    if (Value.IsEmpty())
     {
       Result = Default;
+    }
+    else
+    {
+      try
+      {
+        RawByteString Raw = HexToBytes(Value);
+        if (static_cast<size_t>(Raw.Length()) == sizeof(Result))
+        {
+          memcpy(&Result, Raw.c_str(), sizeof(Result));
+        }
+        else
+        {
+          Result = StrToDateTime(Value);
+        }
+      }
+      catch(...)
+      {
+        Result = Default;
+      }
     }
   }
 
@@ -871,28 +1031,35 @@ TDateTime __fastcall TCustomIniFileStorage::ReadDateTime(const UnicodeString Nam
 double __fastcall TCustomIniFileStorage::ReadFloat(const UnicodeString Name, double Default)
 {
   double Result;
-  UnicodeString Value = FIniFile->ReadString(CurrentSection, MungeIniName(Name), L"");
-  if (Value.IsEmpty())
+  if (HandleReadByMasterStorage(Name))
   {
-    Result = Default;
+    Result = FMasterStorage->ReadFloat(Name, Default);
   }
   else
   {
-    try
-    {
-      RawByteString Raw = HexToBytes(Value);
-      if (static_cast<size_t>(Raw.Length()) == sizeof(Result))
-      {
-        memcpy(&Result, Raw.c_str(), sizeof(Result));
-      }
-      else
-      {
-        Result = static_cast<double>(StrToFloat(Value));
-      }
-    }
-    catch(...)
+    UnicodeString Value = FIniFile->ReadString(CurrentSection, MungeIniName(Name), L"");
+    if (Value.IsEmpty())
     {
       Result = Default;
+    }
+    else
+    {
+      try
+      {
+        RawByteString Raw = HexToBytes(Value);
+        if (static_cast<size_t>(Raw.Length()) == sizeof(Result))
+        {
+          memcpy(&Result, Raw.c_str(), sizeof(Result));
+        }
+        else
+        {
+          Result = static_cast<double>(StrToFloat(Value));
+        }
+      }
+      catch(...)
+      {
+        Result = Default;
+      }
     }
   }
 
@@ -901,58 +1068,116 @@ double __fastcall TCustomIniFileStorage::ReadFloat(const UnicodeString Name, dou
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomIniFileStorage::ReadStringRaw(const UnicodeString Name, UnicodeString Default)
 {
-  AnsiString Result = FIniFile->ReadString(CurrentSection, MungeIniName(Name), Default);
+  UnicodeString Result;
+  if (HandleReadByMasterStorage(Name))
+  {
+    Result = FMasterStorage->ReadStringRaw(Name, Default);
+  }
+  else
+  {
+    Result = FIniFile->ReadString(CurrentSection, MungeIniName(Name), Default);
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
 size_t __fastcall TCustomIniFileStorage::ReadBinaryData(const UnicodeString Name,
   void * Buffer, size_t Size)
 {
-  RawByteString Value = HexToBytes(ReadStringRaw(Name, L""));
-  size_t Len = Value.Length();
-  if (Size > Len)
+  size_t Len;
+  if (HandleReadByMasterStorage(Name))
   {
-    Size = Len;
+    Len = FMasterStorage->ReadBinaryData(Name, Buffer, Size);
   }
-  assert(Buffer);
-  memcpy(Buffer, Value.c_str(), Size);
+  else
+  {
+    RawByteString Value = HexToBytes(ReadStringRaw(Name, L""));
+    Len = Value.Length();
+    if (Size > Len)
+    {
+      Size = Len;
+    }
+    assert(Buffer);
+    memcpy(Buffer, Value.c_str(), Size);
+  }
   return Size;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::WriteBool(const UnicodeString Name, bool Value)
 {
+  if (HandleByMasterStorage())
+  {
+    FMasterStorage->WriteBool(Name, Value);
+  }
+  ResetCache();
   FIniFile->WriteBool(CurrentSection, MungeIniName(Name), Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::WriteInteger(const UnicodeString Name, int Value)
 {
+  if (HandleByMasterStorage())
+  {
+    FMasterStorage->WriteInteger(Name, Value);
+  }
+  ResetCache();
   FIniFile->WriteInteger(CurrentSection, MungeIniName(Name), Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::WriteInt64(const UnicodeString Name, __int64 Value)
 {
-  WriteStringRaw(Name, IntToStr(Value));
+  if (HandleByMasterStorage())
+  {
+    FMasterStorage->WriteInt64(Name, Value);
+  }
+  DoWriteStringRaw(Name, IntToStr(Value));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::WriteDateTime(const UnicodeString Name, TDateTime Value)
 {
-  WriteBinaryData(Name, &Value, sizeof(Value));
+  if (HandleByMasterStorage())
+  {
+    FMasterStorage->WriteDateTime(Name, Value);
+  }
+  DoWriteBinaryData(Name, &Value, sizeof(Value));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::WriteFloat(const UnicodeString Name, double Value)
 {
-  WriteBinaryData(Name, &Value, sizeof(Value));
+  if (HandleByMasterStorage())
+  {
+    FMasterStorage->WriteFloat(Name, Value);
+  }
+  DoWriteBinaryData(Name, &Value, sizeof(Value));
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomIniFileStorage::DoWriteStringRaw(const UnicodeString & Name, const UnicodeString & Value)
+{
+  ResetCache();
+  FIniFile->WriteString(CurrentSection, MungeIniName(Name), Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::WriteStringRaw(const UnicodeString Name, const UnicodeString Value)
 {
-  FIniFile->WriteString(CurrentSection, MungeIniName(Name), Value);
+  if (HandleByMasterStorage())
+  {
+    FMasterStorage->WriteStringRaw(Name, Value);
+  }
+  DoWriteStringRaw(Name, Value);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomIniFileStorage::DoWriteBinaryData(const UnicodeString & Name,
+  const void * Buffer, int Size)
+{
+  DoWriteStringRaw(Name, BytesToHex(RawByteString(static_cast<const char*>(Buffer), Size)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::WriteBinaryData(const UnicodeString Name,
   const void * Buffer, int Size)
 {
-  WriteStringRaw(Name, BytesToHex(RawByteString(static_cast<const char*>(Buffer), Size)));
+  if (HandleByMasterStorage())
+  {
+    FMasterStorage->WriteBinaryData(Name, Buffer, Size);
+  }
+  DoWriteBinaryData(Name, Buffer, Size);
 }
 //===========================================================================
 __fastcall TIniFileStorage::TIniFileStorage(const UnicodeString AStorage):
@@ -965,6 +1190,10 @@ __fastcall TIniFileStorage::TIniFileStorage(const UnicodeString AStorage):
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::Flush()
 {
+  if (FMasterStorage.get() != NULL)
+  {
+    FMasterStorage->Flush();
+  }
   if (FOriginal != NULL)
   {
     TStrings * Strings = new TStringList;
@@ -1029,55 +1258,45 @@ void __fastcall TIniFileStorage::ApplyOverrides()
 {
   UnicodeString OverridesKey = IncludeTrailingBackslash(L"Override");
 
-  TStrings * Sections = new TStringList();
-  try
+  CacheSections();
+  for (int i = 0; i < FSections->Count; i++)
   {
-    Sections->Clear();
-    FIniFile->ReadSections(Sections);
-    for (int i = 0; i < Sections->Count; i++)
+    UnicodeString Section = FSections->Strings[i];
+
+    if (AnsiSameText(OverridesKey,
+          Section.SubString(1, OverridesKey.Length())))
     {
-      UnicodeString Section = Sections->Strings[i];
+      UnicodeString SubKey = Section.SubString(OverridesKey.Length() + 1,
+        Section.Length() - OverridesKey.Length());
 
-      if (AnsiSameText(OverridesKey,
-            Section.SubString(1, OverridesKey.Length())))
+      // this all uses raw names (munged)
+      TStrings * Names = new TStringList;
+      try
       {
-        UnicodeString SubKey = Section.SubString(OverridesKey.Length() + 1,
-          Section.Length() - OverridesKey.Length());
+        FIniFile->ReadSection(Section, Names);
 
-        // this all uses raw names (munged)
-        TStrings * Names = new TStringList;
-        try
+        for (int ii = 0; ii < Names->Count; ii++)
         {
-          FIniFile->ReadSection(Section, Names);
-
-          for (int ii = 0; ii < Names->Count; ii++)
-          {
-            UnicodeString Name = Names->Strings[ii];
-            UnicodeString Value = FIniFile->ReadString(Section, Name, L"");
-            FIniFile->WriteString(SubKey, Name, Value);
-          }
+          UnicodeString Name = Names->Strings[ii];
+          UnicodeString Value = FIniFile->ReadString(Section, Name, L"");
+          FIniFile->WriteString(SubKey, Name, Value);
         }
-        __finally
-        {
-          delete Names;
-        }
-
-        FIniFile->EraseSection(Section);
       }
+      __finally
+      {
+        delete Names;
+      }
+
+      FIniFile->EraseSection(Section);
+      ResetCache();
     }
   }
-  __finally
-  {
-    delete Sections;
-  }
 }
-//===========================================================================
-#define NOT_IMPLEMENTED throw Exception(L"Not implemented")
 //===========================================================================
 class TOptionsIniFile : public TCustomIniFile
 {
 public:
-  __fastcall TOptionsIniFile(TStrings * Options);
+  __fastcall TOptionsIniFile(TStrings * Options, bool IgnoreWrite, const UnicodeString & RootKey);
 
   virtual UnicodeString __fastcall ReadString(const UnicodeString Section, const UnicodeString Ident, const UnicodeString Default);
   virtual void __fastcall WriteString(const UnicodeString Section, const UnicodeString Ident, const UnicodeString Value);
@@ -1089,87 +1308,177 @@ public:
   virtual void __fastcall UpdateFile();
   // Hoisted overload
   void __fastcall ReadSections(const UnicodeString Section, TStrings* Strings);
+  // Ntb, we can implement ValueExists more efficiently than the TCustomIniFile.ValueExists
 
 private:
   TStrings * FOptions;
+  bool FIgnoreWrite;
+  UnicodeString FRootKey;
+
+  void __fastcall HandleWrite();
+  void __fastcall NotImplemented();
 };
 //---------------------------------------------------------------------------
-__fastcall TOptionsIniFile::TOptionsIniFile(TStrings * Options) :
+__fastcall TOptionsIniFile::TOptionsIniFile(TStrings * Options, bool IgnoreWrite, const UnicodeString & RootKey) :
   TCustomIniFile(UnicodeString())
 {
   FOptions = Options;
+  FIgnoreWrite = IgnoreWrite;
+  FRootKey = RootKey;
+  if (!FRootKey.IsEmpty())
+  {
+    FRootKey += PathDelim;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptionsIniFile::NotImplemented()
+{
+  throw Exception(L"Not implemented");
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptionsIniFile::HandleWrite()
+{
+  if (!FIgnoreWrite)
+  {
+    NotImplemented();
+  }
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TOptionsIniFile::ReadString(const UnicodeString Section, const UnicodeString Ident, const UnicodeString Default)
 {
-  assert(Section.IsEmpty());
-  int Index = FOptions->IndexOfName(Ident);
-  UnicodeString Value;
-  if (Index >= 0)
+  UnicodeString Name = Section;
+  if (!Name.IsEmpty())
   {
-    Value = FOptions->ValueFromIndex[Index];
+    Name += PathDelim;
+  }
+  UnicodeString Value;
+  if (!SameText(Name.SubString(1, FRootKey.Length()), FRootKey))
+  {
+    Value = Default;
   }
   else
   {
-    Value = Default;
+    Name.Delete(1, FRootKey.Length());
+    Name += Ident;
+
+    int Index = FOptions->IndexOfName(Name);
+    if (Index >= 0)
+    {
+      Value = FOptions->ValueFromIndex[Index];
+    }
+    else
+    {
+      Value = Default;
+    }
   }
   return Value;
 }
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::WriteString(const UnicodeString Section, const UnicodeString Ident, const UnicodeString Value)
 {
-  NOT_IMPLEMENTED;
+  HandleWrite();
 }
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::ReadSection(const UnicodeString Section, TStrings * Strings)
 {
-  assert(Section.IsEmpty());
-  Strings->BeginUpdate();
 
-  try
+  UnicodeString SectionPrefix = Section;
+  if (!SectionPrefix.IsEmpty())
   {
-    for (int Index = 0; Index < FOptions->Count; Index++)
-    {
-      Strings->Add(FOptions->Names[Index]);
-    }
+    SectionPrefix += PathDelim;
   }
-  __finally
+
+  if (SameText(SectionPrefix.SubString(1, FRootKey.Length()), FRootKey))
   {
-    Strings->EndUpdate();
+    SectionPrefix.Delete(1, FRootKey.Length());
+
+    Strings->BeginUpdate();
+    try
+    {
+      for (int Index = 0; Index < FOptions->Count; Index++)
+      {
+        UnicodeString Name = FOptions->Names[Index];
+        if (SameText(Name.SubString(1, SectionPrefix.Length()), SectionPrefix) &&
+            (LastDelimiter(PathDelim, Name) <= SectionPrefix.Length()))
+        {
+          Strings->Add(Name.SubString(SectionPrefix.Length() + 1, Name.Length() - SectionPrefix.Length()));
+        }
+      }
+    }
+    __finally
+    {
+      Strings->EndUpdate();
+    }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TOptionsIniFile::ReadSections(TStrings * /*Strings*/)
+void __fastcall TOptionsIniFile::ReadSections(TStrings * Strings)
 {
-  NOT_IMPLEMENTED;
+  std::unique_ptr<TStringList> Sections(new TStringList());
+  Sections->CaseSensitive = false;
+  Sections->Sorted = true;
+
+  for (int Index = 0; Index < FOptions->Count; Index++)
+  {
+    UnicodeString Name = FOptions->Names[Index];
+    int P = LastDelimiter(PathDelim, Name);
+    if (P > 0)
+    {
+      UnicodeString Section = Name.SubString(1, P - 1);
+      if (Sections->IndexOf(Section) < 0)
+      {
+        Sections->Add(Section);
+      }
+    }
+  }
+
+  for (int Index = 0; Index < Sections->Count; Index++)
+  {
+    Strings->Add(FRootKey + Sections->Strings[Index]);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::ReadSectionValues(const UnicodeString Section, TStrings * /*Strings*/)
 {
-  NOT_IMPLEMENTED;
+  NotImplemented();
 }
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::EraseSection(const UnicodeString Section)
 {
-  NOT_IMPLEMENTED;
+  HandleWrite();
 }
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::DeleteKey(const UnicodeString Section, const UnicodeString Ident)
 {
-  NOT_IMPLEMENTED;
+  HandleWrite();
 }
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::UpdateFile()
 {
-  NOT_IMPLEMENTED;
+  HandleWrite();
 }
 //---------------------------------------------------------------------------
-void __fastcall TOptionsIniFile::ReadSections(const UnicodeString Section, TStrings* Strings)
+void __fastcall TOptionsIniFile::ReadSections(const UnicodeString /*Section*/, TStrings * /*Strings*/)
 {
-  TCustomIniFile::ReadSections(Section, Strings);
+  NotImplemented();
 }
 //===========================================================================
 __fastcall TOptionsStorage::TOptionsStorage(TStrings * Options):
-  TCustomIniFileStorage(UnicodeString(L"Command-line options"), new TOptionsIniFile(Options))
+  TCustomIniFileStorage(
+    UnicodeString(L"Command-line options"),
+    new TOptionsIniFile(Options, false, UnicodeString()))
 {
+}
+//---------------------------------------------------------------------------
+__fastcall TOptionsStorage::TOptionsStorage(TStrings * Options, const UnicodeString & RootKey, THierarchicalStorage * MasterStorage) :
+  TCustomIniFileStorage(
+    UnicodeString(L"Command-line options overriding " + MasterStorage->Source),
+    new TOptionsIniFile(Options, true, RootKey))
+{
+  FMasterStorage.reset(MasterStorage);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TOptionsStorage::GetTemporary()
+{
+  return true;
 }

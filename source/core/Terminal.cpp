@@ -257,6 +257,45 @@ const TSynchronizeChecklist::TItem * TSynchronizeChecklist::GetItem(int Index) c
   return static_cast<TItem *>(FList->Items[Index]);
 }
 //---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklist::Update(const TItem * Item, bool Check, TAction Action)
+{
+  // TSynchronizeChecklist owns non-const items so it can manipulate them freely,
+  // const_cast here is just an optimization
+  TItem * MutableItem = const_cast<TItem *>(Item);
+  assert(FList->IndexOf(MutableItem) >= 0);
+  MutableItem->Checked = Check;
+  MutableItem->Action = Action;
+}
+//---------------------------------------------------------------------------
+TSynchronizeChecklist::TAction __fastcall TSynchronizeChecklist::Reverse(TSynchronizeChecklist::TAction Action)
+{
+  switch (Action)
+  {
+    case saUploadNew:
+      return saDeleteLocal;
+
+    case saDownloadNew:
+      return saDeleteRemote;
+
+    case saUploadUpdate:
+      return saDownloadUpdate;
+
+    case saDownloadUpdate:
+      return saUploadUpdate;
+
+    case saDeleteRemote:
+      return saDownloadNew;
+
+    case saDeleteLocal:
+      return saUploadNew;
+
+    default:
+    case saNone:
+      FAIL;
+      return saNone;
+  }
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 class TTunnelThread : public TSimpleThread
 {
@@ -3289,6 +3328,7 @@ void __fastcall TTerminal::ChangeFilesProperties(TStrings * FileList,
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::LoadFilesProperties(TStrings * FileList)
 {
+  // see comment in TSFTPFileSystem::IsCapable
   bool Result =
     IsCapable[fcLoadingAdditionalProperties] &&
     FFileSystem->LoadFilesProperties(FileList);
@@ -3847,12 +3887,24 @@ void __fastcall TTerminal::AnyCommand(const UnicodeString Command,
     {
     }
 
-    void __fastcall Output(const UnicodeString & Str, bool StdError)
+    void __fastcall Output(const UnicodeString & Str, TCaptureOutputType OutputType)
     {
-      FAction.AddOutput(Str, StdError);
+      switch (OutputType)
+      {
+        case cotOutput:
+          FAction.AddOutput(Str, false);
+          break;
+        case cotError:
+          FAction.AddOutput(Str, true);
+          break;
+        case cotExitCode:
+          FAction.AddExitCode(StrToInt(Str));
+          break;
+      }
+
       if (FOutputEvent != NULL)
       {
-        FOutputEvent(Str, StdError);
+        FOutputEvent(Str, OutputType);
       }
     }
 
@@ -4162,6 +4214,10 @@ void __fastcall TTerminal::MakeLocalFileList(const UnicodeString FileName,
   if (!Directory || Params.IncludeDirs)
   {
     Params.FileList->Add(FileName);
+    if (Params.FileTimes != NULL)
+    {
+      Params.FileTimes->push_back(const_cast<TSearchRec &>(Rec).TimeStamp);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -5133,6 +5189,11 @@ const TFileSystemInfo & __fastcall TTerminal::GetFileSystemInfo(bool Retrieve)
   return FFileSystem->GetFileSystemInfo(Retrieve);
 }
 //---------------------------------------------------------------------
+void __fastcall TTerminal::GetSupportedChecksumAlgs(TStrings * Algs)
+{
+  FFileSystem->GetSupportedChecksumAlgs(Algs);
+}
+//---------------------------------------------------------------------
 UnicodeString __fastcall TTerminal::GetPassword()
 {
   UnicodeString Result;
@@ -5482,7 +5543,7 @@ bool  __fastcall TTerminal::VerifyCertificate(
 
   UnicodeString CertificateData = FormatCertificateData(Fingerprint, Failures);
 
-  std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateScpStorage(false));
+  std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateConfigStorage());
   Storage->AccessMode = smRead;
 
   if (Storage->OpenSubKey(CertificateStorageKey, false))
@@ -5532,12 +5593,41 @@ void __fastcall TTerminal::CacheCertificate(const UnicodeString & CertificateSto
 {
   UnicodeString CertificateData = FormatCertificateData(Fingerprint, Failures);
 
-  std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateScpStorage(false));
+  std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateConfigStorage());
   Storage->AccessMode = smReadWrite;
 
   if (Storage->OpenSubKey(CertificateStorageKey, true))
   {
     Storage->WriteString(SessionData->SiteKey, CertificateData);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::CollectTlsUsage(const UnicodeString & TlsVersionStr)
+{
+  // see SSL_get_version() in OpenSSL ssl_lib.c
+  if (TlsVersionStr == L"TLSv1.2")
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsTLS12");
+  }
+  else if (TlsVersionStr == L"TLSv1.1")
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsTLS11");
+  }
+  else if (TlsVersionStr == L"TLSv1")
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsTLS10");
+  }
+  else if (TlsVersionStr == L"SSLv3")
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSL30");
+  }
+  else if (TlsVersionStr == L"SSLv2")
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSL20");
+  }
+  else
+  {
+    FAIL;
   }
 }
 //---------------------------------------------------------------------------

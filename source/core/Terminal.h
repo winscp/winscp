@@ -368,8 +368,9 @@ protected:
   bool  __fastcall VerifyCertificate(
     const UnicodeString & CertificateStorageKey, const UnicodeString & Fingerprint,
     const UnicodeString & CertificateSubject, int Failures);
-  void __fastcall TTerminal::CacheCertificate(const UnicodeString & CertificateStorageKey,
+  void __fastcall CacheCertificate(const UnicodeString & CertificateStorageKey,
     const UnicodeString & Fingerprint, int Failures);
+  void __fastcall CollectTlsUsage(const UnicodeString & TlsVersionStr);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -470,6 +471,7 @@ public:
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);
   void __fastcall inline LogEvent(const UnicodeString & Str);
+  void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
 
   static UnicodeString __fastcall ExpandFileName(UnicodeString Path,
     const UnicodeString BasePath);
@@ -597,9 +599,12 @@ struct TOverwriteFileParams
   TModificationFmt DestPrecision;
 };
 //---------------------------------------------------------------------------
+typedef std::vector<TDateTime> TDateTimes;
+//---------------------------------------------------------------------------
 struct TMakeLocalFileListParams
 {
   TStrings * FileList;
+  TDateTimes * FileTimes;
   bool IncludeDirs;
   bool Recursive;
 };
@@ -657,6 +662,10 @@ public:
   };
 
   ~TSynchronizeChecklist();
+
+  void __fastcall Update(const TItem * Item, bool Check, TAction Action);
+
+  static TAction __fastcall Reverse(TAction Action);
 
   __property int Count = { read = GetCount };
   __property const TItem * Item[int Index] = { read = GetItem };

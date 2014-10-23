@@ -3644,7 +3644,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
     s->keyfile = conf_get_filename(ssh->conf, CONF_keyfile);
     if (!filename_is_null(s->keyfile)) {
 	int keytype;
-	logeventf(ssh, "Reading private key file \"%.150s\"",
+	logeventf(ssh, MPEXT_BOM "Reading private key file \"%.150s\"",
 		  filename_to_str(s->keyfile));
 	keytype = key_type(s->keyfile);
 	if (keytype == SSH_KEYTYPE_SSH1) {
@@ -3657,7 +3657,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
 	    } else {
 		char *msgbuf;
 		logeventf(ssh, "Unable to load private key (%s)", error);
-		msgbuf = dupprintf("Unable to load private key file "
+		msgbuf = dupprintf(MPEXT_BOM "Unable to load private key file "
 				   "\"%.150s\" (%s)\r\n",
 				   filename_to_str(s->keyfile),
 				   error);
@@ -3669,7 +3669,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
 	    char *msgbuf;
 	    logeventf(ssh, "Unable to use this key file (%s)",
 		      key_type_to_str(keytype));
-	    msgbuf = dupprintf("Unable to use key file \"%.150s\""
+	    msgbuf = dupprintf(MPEXT_BOM "Unable to use key file \"%.150s\""
 			       " (%s)\r\n",
 			       filename_to_str(s->keyfile),
 			       key_type_to_str(keytype));
@@ -3874,7 +3874,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
 	    if (flags & FLAG_VERBOSE)
 		c_write_str(ssh, "Trying public key authentication.\r\n");
 	    s->keyfile = conf_get_filename(ssh->conf, CONF_keyfile);
-	    logeventf(ssh, "Trying public key \"%s\"",
+	    logeventf(ssh, MPEXT_BOM "Trying public key \"%s\"",
 		      filename_to_str(s->keyfile));
 	    s->tried_publickey = 1;
 	    got_passphrase = FALSE;
@@ -3927,7 +3927,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
 		    /* Correct passphrase. */
 		    got_passphrase = TRUE;
 		} else if (ret == 0) {
-		    c_write_str(ssh, "Couldn't load private key from ");
+		    c_write_str(ssh, MPEXT_BOM "Couldn't load private key from ");
 		    c_write_str(ssh, filename_to_str(s->keyfile));
 		    c_write_str(ssh, " (");
 		    c_write_str(ssh, error);
@@ -7990,7 +7990,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 	s->keyfile = conf_get_filename(ssh->conf, CONF_keyfile);
 	if (!filename_is_null(s->keyfile)) {
 	    int keytype;
-	    logeventf(ssh, "Reading private key file \"%.150s\"",
+	    logeventf(ssh, MPEXT_BOM "Reading private key file \"%.150s\"",
 		      filename_to_str(s->keyfile));
 	    keytype = key_type(s->keyfile);
 	    if (keytype == SSH_KEYTYPE_SSH2) {
@@ -8007,7 +8007,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		    char *msgbuf;
 		    logeventf(ssh, "Unable to load private key (%s)", 
 			      error);
-		    msgbuf = dupprintf("Unable to load private key file "
+		    msgbuf = dupprintf(MPEXT_BOM "Unable to load private key file "
 				       "\"%.150s\" (%s)\r\n",
 				       filename_to_str(s->keyfile),
 				       error);
@@ -8018,7 +8018,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		char *msgbuf;
 		logeventf(ssh, "Unable to use this key file (%s)",
 			  key_type_to_str(keytype));
-		msgbuf = dupprintf("Unable to use key file \"%.150s\""
+		msgbuf = dupprintf(MPEXT_BOM "Unable to use key file \"%.150s\""
 				   " (%s)\r\n",
 				   filename_to_str(s->keyfile),
 				   key_type_to_str(keytype));

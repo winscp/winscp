@@ -77,8 +77,9 @@ public:
 enum TLogLineType { llOutput, llInput, llStdError, llMessage, llException };
 enum TLogAction { laUpload, laDownload, laTouch, laChmod, laMkdir, laRm, laMv, laCall, laLs, laStat };
 //---------------------------------------------------------------------------
+enum TCaptureOutputType { cotOutput, cotError, cotExitCode };
 typedef void __fastcall (__closure *TCaptureOutputEvent)(
-  const UnicodeString & Str, bool StdError);
+  const UnicodeString & Str, TCaptureOutputType OutputType);
 typedef void __fastcall (__closure *TCalculatedChecksumEvent)(
   const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Hash);
 //---------------------------------------------------------------------------
@@ -179,6 +180,7 @@ public:
     const UnicodeString & Destination);
 
   void __fastcall AddOutput(const UnicodeString & Output, bool StdError);
+  void __fastcall AddExitCode(int ExitCode);
 };
 //---------------------------------------------------------------------------
 class TLsSessionAction : public TSessionAction
@@ -273,6 +275,7 @@ friend class TSessionActionRecord;
 public:
   __fastcall TActionLog(TSessionUI* UI, TSessionData * SessionData,
     TConfiguration * Configuration);
+  __fastcall TActionLog(TConfiguration * Configuration);
   __fastcall ~TActionLog();
 
   void __fastcall ReflectSettings();
@@ -291,6 +294,8 @@ protected:
   void __fastcall Add(const UnicodeString & Line);
   void __fastcall AddIndented(const UnicodeString & Line);
   void __fastcall AddMessages(UnicodeString Indent, TStrings * Messages);
+  void __fastcall Init(TSessionUI * UI, TSessionData * SessionData,
+    TConfiguration * Configuration);
 
 private:
   TConfiguration * FConfiguration;

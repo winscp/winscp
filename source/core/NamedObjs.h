@@ -25,11 +25,12 @@ private:
 class TNamedObjectList : public TObjectList
 {
 private:
-  int FHiddenCount;
   int __fastcall GetCount();
+  int __fastcall GetCountIncludingHidden();
   virtual void __fastcall Notify(void *Ptr, TListNotification Action);
   void __fastcall SetCount(int value);
 protected:
+  int FHiddenCount;
   void __fastcall Recount();
 public:
   static const UnicodeString HiddenPrefix;
@@ -41,7 +42,7 @@ public:
   virtual TNamedObject * __fastcall AtObject(Integer Index);
   TNamedObject * __fastcall FindByName(UnicodeString Name, Boolean CaseSensitive = False);
   __property int Count = { read = GetCount, write = SetCount };
-  __property int HiddenCount = { read = FHiddenCount, write = FHiddenCount };
+  __property int CountIncludingHidden = { read = GetCountIncludingHidden };
 };
 //---------------------------------------------------------------------------
 int __fastcall NamedObjectSortProc(void * Item1, void * Item2);

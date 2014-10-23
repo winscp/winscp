@@ -114,4 +114,25 @@ object ImportSessionsDialog: TImportSessionsDialog
       'PuTTY'
       'Filezilla')
   end
+  object ErrorPanel: TPanel
+    Left = 48
+    Top = 80
+    Width = 281
+    Height = 97
+    BevelOuter = bvNone
+    Color = clWindow
+    ParentBackground = False
+    TabOrder = 7
+    object ErrorLabel: TLabel
+      Left = 0
+      Top = 0
+      Width = 281
+      Height = 97
+      Align = alClient
+      Alignment = taCenter
+      Caption = 'ErrorLabel'
+      Layout = tlCenter
+      WordWrap = True
+    end
+  end
 end

@@ -87,7 +87,7 @@
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
 			<ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IncludePath>putty\;putty\CHARSET\;putty\WINDOWS\;$(BDS)\include;$(IncludePath)</IncludePath>
+			<IncludePath>putty\;putty\WINDOWS\;$(BDS)\include;$(IncludePath)</IncludePath>
 			<Manifest_File>None</Manifest_File>
 			<Multithreaded>true</Multithreaded>
 			<OutputExt>lib</OutputExt>
@@ -144,10 +144,6 @@
 			<CppCompile Include="putty\CALLBACK.C">
 			<BuildOrder>5</BuildOrder>
 			<BuildOrder>25</BuildOrder>
-		</CppCompile>
-			<CppCompile Include="putty\CHARSET\UTF8.C">
-			<BuildOrder>80</BuildOrder>
-			<BuildOrder>0</BuildOrder>
 		</CppCompile>
 			<CppCompile Include="putty\CONF.C">
 			<BuildOrder>5</BuildOrder>

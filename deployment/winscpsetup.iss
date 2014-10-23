@@ -237,10 +237,6 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/AddSearchPath"; \
   StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
 Filename: "{app}\WinSCP.exe"; Parameters: "/ImportSitesIfAny"; \
   StatusMsg: {cm:ImportSites}; Flags: skipifsilent
-Filename: "{app}\WinSCP.exe"; Parameters: "/Usage=TypicalInstallation:1"; \
-  Check: IsTypicalInstallation
-Filename: "{app}\WinSCP.exe"; Parameters: "/Usage=TypicalInstallation:0"; \
-  Check: not IsTypicalInstallation
 
 [UninstallDelete]
 ; These additional files are created by application
@@ -376,6 +372,11 @@ var
 #endif
   InstallationDone: Boolean;
   LicenseAccepted: Boolean;
+  InitDir: string;
+  InitComponents: string;
+  InitTasks: string;
+  InitInterface: Integer;
+  Donated: Boolean;
 
 procedure ShowMessage(Text: string);
 begin
@@ -540,6 +541,7 @@ end;
 procedure AboutDonationsLinkClick(Sender: TObject);
 begin
   OpenBrowser('{#WebRoot}eng/donate.php?' + ExpandConstant('{#WebArguments}'));
+  Donated := true;
 end;
 
 procedure DonateLinkClick(Sender: TObject);
@@ -548,6 +550,7 @@ var
 begin
   Control := TControl(Sender);
   OpenBrowser('{#WebRoot}eng/donate.php?amount=' + IntToStr(Control.Tag) + '&currency=' + ExpandConstant('{cm:Currency}') + '&' + ExpandConstant('{#WebArguments}'));
+  Donated := true;
 end;
 
 #endif
@@ -690,10 +693,10 @@ var
   P: Integer;
 #endif
   S: string;
-  I: Integer;
 begin
   InstallationDone := False;
   LicenseAccepted := False;
+  InitInterface := -1;
 
   DefaultLang := (ActiveLanguage = '{#DefaultLang}');
 
@@ -713,6 +716,15 @@ begin
   WizardForm.OnKeyDown := @FormKeyDown;
   // to accomodate one more task
   WizardForm.TasksList.Height := WizardForm.TasksList.Height + ScaleY(8);
+
+  // allow installation without requiring user to accept license
+  WizardForm.LicenseAcceptedRadio.Checked := True;
+  WizardForm.LicenseAcceptedRadio.Visible := False;
+  WizardForm.LicenseNotAcceptedRadio.Visible := False;
+  WizardForm.LicenseMemo.Height :=
+    WizardForm.LicenseNotAcceptedRadio.Top +
+    WizardForm.LicenseNotAcceptedRadio.Height -
+    WizardForm.LicenseMemo.Top - 5;
 
   // hide installation types combo
   WizardForm.TypesCombo.Visible := False;
@@ -854,8 +866,7 @@ begin
   CommanderRadioButton.Caption := ExpandConstant('{cm:NortonCommanderInterfaceC}');
   CommanderRadioButton.Checked := (UserInterface = 0);
   CommanderRadioButton.Left := ScaleX(4);
-  CommanderRadioButton.Width := InterfacePage.SurfaceWidth -
-    CommanderRadioButton.Left;
+  CommanderRadioButton.Width := ScaleX(116);
   CommanderRadioButton.Top := Caption.Top + Caption.Height + ScaleY(6);
   ScaleFixedHeightControl(CommanderRadioButton);
   CommanderRadioButton.Parent := InterfacePage.Surface;
@@ -876,7 +887,7 @@ begin
       ExpandConstant('{cm:NortonCommanderInterface1}') + NewLine +
       ExpandConstant('{cm:NortonCommanderInterface2}') + NewLine +
       ExpandConstant('{cm:NortonCommanderInterface3}');
-  Caption.Left := CommanderRadioButton.Left + ScaleX(116);
+  Caption.Left := CommanderRadioButton.Left + CommanderRadioButton.Width;
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Top := CommanderRadioButton.Top;
   Caption.Parent := InterfacePage.Surface;
@@ -887,8 +898,7 @@ begin
   ExplorerRadioButton.Caption := ExpandConstant('{cm:ExplorerInterfaceC}');
   ExplorerRadioButton.Checked := (UserInterface <> 0);
   ExplorerRadioButton.Left := ScaleX(4);
-  ExplorerRadioButton.Width := InterfacePage.SurfaceWidth -
-    ExplorerRadioButton.Left;
+  ExplorerRadioButton.Width := CommanderRadioButton.Width;
   ExplorerRadioButton.Top := Caption.Top + Caption.Height + ScaleY(10);
   ScaleFixedHeightControl(ExplorerRadioButton);
   ExplorerRadioButton.Parent := InterfacePage.Surface;
@@ -903,24 +913,18 @@ begin
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(ExplorerRadioButton);
 
-  I := CommanderRadioButton.Left + ScaleX(116);
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
   Caption.Caption :=
       ExpandConstant('{cm:ExplorerInterface1}') + NewLine +
       ExpandConstant('{cm:ExplorerInterface2}') + NewLine +
       ExpandConstant('{cm:ExplorerInterface3}');
-  Caption.Left := I;
+  Caption.Left := ExplorerRadioButton.Left + ExplorerRadioButton.Width;
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Top := ExplorerRadioButton.Top;
   Caption.Parent := InterfacePage.Surface;
   Caption.FocusControl := ExplorerRadioButton;
   Caption.OnClick := @CaptionClick;
-
-  if Caption.Top + Caption.Height > Image.Top + Image.Height then
-    I := Caption.Top + Caption.Height
-  else
-    I := Image.Top + Image.Height;
 
   // run checkbox
   LaunchCheckbox := TCheckbox.Create(WizardForm.FinishedPage);
@@ -1006,12 +1010,55 @@ begin
   SetPreviousData(PreviousDataKey, '{#SetupTypeData}', S);
 end;
 
+function SaveCheckListBoxState(ListBox: TNewCheckListBox): string;
+var
+  I: Integer;
+begin
+  for I := 0 to ListBox.Items.Count - 1 do
+  begin
+    Result := Result + IntToStr(Integer(ListBox.State[I]));
+  end;
+end;
+
 procedure CurPageChanged(CurPageID: Integer);
 var
   Delta: Integer;
   LineHeight: Integer;
   LaunchCheckboxTop: Integer;
 begin
+  if CurPageID = wpLicense then
+  begin
+    WizardForm.NextButton.Caption := ExpandConstant('{cm:AcceptButton}')
+  end
+    else
+  begin
+    WizardForm.NextButton.Caption := SetupMessage(msgButtonNext);
+  end;
+
+  if CurPageID = wpSelectDir then
+  begin
+    if InitDir = '' then
+      InitDir := WizardForm.DirEdit.Text;
+  end
+    else
+  if CurPageID = wpSelectComponents then
+  begin
+    if InitComponents = '' then
+      InitComponents := SaveCheckListBoxState(WizardForm.ComponentsList);
+  end
+    else
+  if CurPageID = wpSelectTasks then
+  begin
+    if InitTasks = '' then
+      InitTasks := SaveCheckListBoxState(WizardForm.TasksList);
+  end
+    else
+  if CurPageID = wpInterface then
+  begin
+    if InitInterface < 0 then
+      InitInterface := Integer(CommanderRadioButton.Checked);
+  end
+    else
   if CurPageID = wpFinished then
   begin
     LineHeight := (WizardForm.NoRadio.Top - WizardForm.YesRadio.Top);
@@ -1040,14 +1087,14 @@ begin
     OpenGettingStartedCheckbox.Top := LaunchCheckbox.Top + LineHeight;
 
     UpdatePostInstallRunCheckboxes(nil);
-  end;
-
+  end
+    else
   if CurPageID = wpSetupType then
   begin
     Log('License accepted');
     LicenseAccepted := True;
-  end;
-
+  end
+    else
   if CurPageID = wpPreparing then
   begin
     // Are we at the "Restart applications?" screen
@@ -1059,7 +1106,6 @@ begin
         WizardForm.AdjustLabelHeight(WizardForm.PreparingLabel));
     end;
   end;
-
 end;
 
 function AskedRestart: Boolean;
@@ -1108,6 +1154,8 @@ var
   Path: string;
   WebGettingStarted: string;
   OpenGettingStarted: Boolean;
+  UsageData: string;
+  CanPostInstallRuns: Boolean;
 begin
   if CurStep = ssPostInstall then
   begin
@@ -1128,36 +1176,85 @@ begin
     // bug in InnoSetup causes it using ssDone even when
     // setup failed because machine was not restarted to complete previous
     // installation. double check that ssPostInstall was called
-    if (not WizardSilent) and (not WillRestart) and InstallationDone then
+    if InstallationDone then
     begin
-      OpenGettingStarted :=
-        OpenGettingStartedCheckbox.Enabled and
-         OpenGettingStartedCheckbox.Checked;
-
-      if OpenGettingStarted then
+      CanPostInstallRuns := (not WizardSilent) and (not WillRestart);
+      if CanPostInstallRuns then
       begin
-        WebGettingStarted :=
-          ExpandConstant('{#WebGettingStarted}') + PrevVersion;
-        Log('Opening getting started page: ' + WebGettingStarted);
-        OpenBrowser(WebGettingStarted);
-      end;
+        OpenGettingStarted :=
+          OpenGettingStartedCheckbox.Enabled and
+           OpenGettingStartedCheckbox.Checked;
 
-      if LaunchCheckbox.Checked then
-      begin
         if OpenGettingStarted then
         begin
-          Log('Will launch WinSCP minimized');
-          ShowCmd := SW_SHOWMINIMIZED
-        end
-          else
-        begin
-          ShowCmd := SW_SHOWNORMAL;
+          WebGettingStarted :=
+            ExpandConstant('{#WebGettingStarted}') + PrevVersion;
+          Log('Opening getting started page: ' + WebGettingStarted);
+          OpenBrowser(WebGettingStarted);
         end;
 
-        Log('Launching WinSCP');
-        Path := ExpandConstant('{app}\{#MainFileName}');
-        ExecAsOriginalUser(Path, '', '', ShowCmd, ewNoWait, ErrorCode)
+        if LaunchCheckbox.Checked then
+        begin
+          if OpenGettingStarted then
+          begin
+            Log('Will launch WinSCP minimized');
+            ShowCmd := SW_SHOWMINIMIZED
+          end
+            else
+          begin
+            ShowCmd := SW_SHOWNORMAL;
+          end;
+
+          Log('Launching WinSCP');
+          Path := ExpandConstant('{app}\{#MainFileName}');
+          ExecAsOriginalUser(Path, '', '', ShowCmd, ewNoWait, ErrorCode)
+        end;
       end;
+
+      UsageData := '/Usage=';
+      
+      // old style counter
+      UsageData := UsageData + Format('TypicalInstallation:%d,', [Integer(IsTypicalInstallation)]);
+      
+      // new style counters
+      if not Upgrade then
+      begin
+        if IsTypicalInstallation then
+          UsageData := UsageData + 'InstallationsFirstTypical+,'
+        else
+          UsageData := UsageData + 'InstallationsFirstCustom+,';
+      end
+        else
+      begin
+        if IsTypicalInstallation then
+          UsageData := UsageData + 'InstallationsUpgradeTypical+,'
+        else
+          UsageData := UsageData + 'InstallationsUpgradeCustom+,';
+      end;
+      
+      if (InitDir <> '') and (InitDir <> WizardForm.DirEdit.Text) then
+        UsageData := UsageData + 'InstallationsCustomDir+,';
+      if (InitComponents <> '') and (InitComponents <> SaveCheckListBoxState(WizardForm.ComponentsList)) then
+        UsageData := UsageData + 'InstallationsCustomComponents+,';
+      if (InitTasks <> '') and (InitTasks <> SaveCheckListBoxState(WizardForm.TasksList)) then
+        UsageData := UsageData + 'InstallationsCustomTasks+,';
+      if (InitInterface >= 0) and (InitInterface <> Integer(CommanderRadioButton.Checked)) then
+        UsageData := UsageData + 'InstallationsCustomInterface+,';
+      if CanPostInstallRuns and OpenGettingStarted then
+        UsageData := UsageData + 'InstallationsGettingStarted+,';
+      if CanPostInstallRuns and LaunchCheckbox.Checked then
+        UsageData := UsageData + 'InstallationsLaunch+,';
+      if WizardSilent then
+        UsageData := UsageData + 'InstallationsSilent+,';
+      if AskedRestart then
+        UsageData := UsageData + 'InstallationsNeedRestart+,';
+      if WillRestart then
+        UsageData := UsageData + 'InstallationsRestart+,';
+      if Donated then
+        UsageData := UsageData + 'InstallationsDonate+,';
+
+      Log('Recording installer usage statistics: ' + UsageData);
+      Exec(ExpandConstant('{app}\WinSCP.exe'), UsageData, '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
     end;
   end;
 end;

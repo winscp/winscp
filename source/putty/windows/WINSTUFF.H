@@ -20,7 +20,12 @@
 struct Filename {
     char *path;
 };
+#ifdef MPEXT
+FILE * mp_wfopen(const char *filename, const char *mode);
+#define f_open(filename, mode, isprivate) ( mp_wfopen((filename)->path, (mode)) )
+#else
 #define f_open(filename, mode, isprivate) ( fopen((filename)->path, (mode)) )
+#endif
 
 struct FontSpec {
     char *name;

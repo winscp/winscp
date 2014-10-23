@@ -277,4 +277,14 @@ object FileFindDialog: TFileFindDialog
     TabOrder = 3
     OnClick = MinimizeButtonClick
   end
+  object CopyButton: TButton
+    Left = 475
+    Top = 173
+    Width = 80
+    Height = 25
+    Anchors = [akTop, akRight]
+    Caption = '&Copy'
+    TabOrder = 7
+    OnClick = CopyButtonClick
+  end
 end

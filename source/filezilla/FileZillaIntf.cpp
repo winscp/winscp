@@ -220,13 +220,11 @@ bool __fastcall TFileZillaIntf::List(const wchar_t * APath)
 }
 //---------------------------------------------------------------------------
 #ifdef MPEXT
-bool __fastcall TFileZillaIntf::ListFile(const wchar_t * AFullFileName)
+bool __fastcall TFileZillaIntf::ListFile(const wchar_t * FileName, const wchar_t * APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CString FileName(AFullFileName);
-  CServerPath Path(FServer->nServerType);
-  Path.SetPath(FileName, TRUE);
-  return Check(FFileZillaApi->ListFile(Path, FileName), L"listfile");
+  CServerPath Path(APath);
+  return Check(FFileZillaApi->ListFile(FileName, Path), L"listfile");
 }
 #endif
 //---------------------------------------------------------------------------
@@ -448,6 +446,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
 
           Dest.Name = Source.name;
           Dest.Permissions = Source.permissionstr;
+          Dest.HumanPerm = Source.humanpermstr;
           Dest.OwnerGroup = Source.ownergroup;
           Dest.Size = Source.size;
           Dest.Dir = Source.dir;

@@ -76,6 +76,7 @@ public:
   virtual bool __fastcall TemporaryTransferFile(const UnicodeString & FileName);
   virtual bool __fastcall GetStoredCredentialsTried();
   virtual UnicodeString __fastcall GetUserName();
+  virtual void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
 
   void __fastcall NeonDebug(const UnicodeString & Message);
   void __fastcall InitSslSession(ssl_st * Ssl);
@@ -152,7 +153,8 @@ private:
   ne_provide_body FUploadBodyProvider;
   void * FUploadBodyProviderUserData;
   UnicodeString FResponse;
-  enum TIgnoreAuthenticationFailure { iafNo, iafWaiting, iafPasswordTried } FIgnoreAuthenticationFailure;
+  RawByteString FPassword;
+  enum TIgnoreAuthenticationFailure { iafNo, iafWaiting, iafPasswordFailed } FIgnoreAuthenticationFailure;
 
   void __fastcall CustomReadFile(UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
@@ -167,8 +169,10 @@ private:
   UnicodeString __fastcall GetRedirectUrl();
   UnicodeString __fastcall ParsePathFromUrl(const UnicodeString & Url);
   int __fastcall ReadDirectoryInternal(const UnicodeString & Path, TRemoteFileList * FileList);
+  int __fastcall RenameFileInternal(const UnicodeString & FileName, const UnicodeString & NewName);
   bool __fastcall IsValidRedirect(int NeonStatus, UnicodeString & Path);
   UnicodeString __fastcall DirectoryPath(UnicodeString Path);
+  UnicodeString __fastcall GetTlsVersionStr();
 };
 //------------------------------------------------------------------------------
 void __fastcall NeonInitialize();

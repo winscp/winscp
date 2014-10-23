@@ -157,13 +157,19 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentEditFocusedAction, EnabledFocusedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
   UPD(CurrentSystemMenuFocusedAction, EnabledFocusedOperation)
+  UPD(CurrentEditWithFocusedAction, EnabledFocusedFileOperation &&
+    !WinConfiguration->DisableOpenEdit)
+  UPD(CurrentEditAlternativeFocusedAction, EnabledFocusedFileOperation &&
+    !WinConfiguration->DisableOpenEdit)
+  UPD(CurrentEditInternalFocusedAction, EnabledFocusedFileOperation &&
+    !WinConfiguration->DisableOpenEdit)
   // file operation
   UPD(CurrentRenameAction, EnabledFocusedOperation &&
     ((ScpExplorer->HasDirView[osLocal] && DirView(osLocal) == DirView(osCurrent)) ||
       ScpExplorer->Terminal->IsCapable[fcRename]))
   UPD(CurrentEditAction, EnabledSelectedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
-  UPD(CurrentEditAlternativeAction, EnabledSelectedFileOperation &&
+  UPD(CurrentEditAlternative2Action, EnabledSelectedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
   UPD(CurrentEditInternalAction, EnabledSelectedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
@@ -414,7 +420,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CompareDirectoriesAction, true)
   UPD(SynchronizeAction, true)
   UPD(FullSynchronizeAction, true)
-  UPD(ConsoleAction, true)
+  UPD(ConsoleAction, ScpExplorer->Terminal->IsCapable[fcAnyCommand] || ScpExplorer->Terminal->IsCapable[fcSecondaryShell])
   UPD(PuttyAction, TTerminalManager::Instance()->CanOpenInPutty())
   UPD(SynchronizeBrowsingAction, true)
   UPD(CloseApplicationAction, true)
@@ -475,6 +481,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     QueueCycleOnceEmptyAction->Checked = !QueueIdleOnceEmptyAction->Checked)
   UPD(QueueIdleOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
   UPD(QueueDisconnectOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
+  UPD(QueueSuspendOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
   UPD(QueueShutDownOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
   UPDCOMP(CommanderPreferencesBand)
   UPDACT(QueueToolbarAction,
@@ -502,11 +509,14 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentPropertiesFocusedAction, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osCurrent, true))
     EXE(CurrentEditFocusedAction, ScpExplorer->ExecuteFile(osCurrent, efDefaultEditor, NULL, true, true))
     EXE(CurrentSystemMenuFocusedAction, ScpExplorer->DisplaySystemContextMenu())
+    EXE(CurrentEditWithFocusedAction, ScpExplorer->ExecuteCurrentFileWith(true))
+    EXE(CurrentEditAlternativeFocusedAction, CreateEditorListMenu(CurrentEditAlternativeFocusedAction, true))
+    EXE(CurrentEditInternalFocusedAction, ScpExplorer->ExecuteFile(osCurrent, efInternalEditor, NULL, true, true))
     // operation
     EXE(CurrentEditAction, ScpExplorer->ExecuteFile(osCurrent, efDefaultEditor, NULL, true, false))
-    EXE(CurrentEditAlternativeAction, CreateEditorListMenu(CurrentEditAlternativeAction))
+    EXE(CurrentEditAlternative2Action, CreateEditorListMenu(CurrentEditAlternative2Action, false))
     EXE(CurrentEditInternalAction, ScpExplorer->ExecuteFile(osCurrent, efInternalEditor, NULL, true, false))
-    EXE(CurrentEditWithAction, ScpExplorer->ExecuteCurrentFileWith())
+    EXE(CurrentEditWithAction, ScpExplorer->ExecuteCurrentFileWith(false))
     EXE(CurrentOpenAction, ScpExplorer->ExecuteCurrentFile())
     EXE(CurrentAddEditLinkAction, ScpExplorer->AddEditLink(osCurrent, false))
     EXE(CurrentAddEditLinkContextAction, ScpExplorer->AddEditLink(osCurrent, false))
@@ -779,6 +789,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(QueueCycleOnceEmptyAction, CycleQueueOnceEmptyAction());
     EXE(QueueIdleOnceEmptyAction, SetQueueOnceEmptyAction(QueueIdleOnceEmptyAction))
     EXE(QueueDisconnectOnceEmptyAction, SetQueueOnceEmptyAction(QueueDisconnectOnceEmptyAction))
+    EXE(QueueSuspendOnceEmptyAction, SetQueueOnceEmptyAction(QueueSuspendOnceEmptyAction))
     EXE(QueueShutDownOnceEmptyAction, SetQueueOnceEmptyAction(QueueShutDownOnceEmptyAction))
     EXECOMP(QueueToolbar);
     EXE(QueueItemSpeedAction, )
@@ -812,6 +823,7 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   CurrentEditAction->ShortCut = ShortCut(L'E', CTRL);
   CurrentAddEditLinkAction->ShortCut = ShortCut(L'L', CTRLALT);
   CurrentEditInternalAction->ShortCut = 0;
+  CurrentEditInternalFocusedAction->ShortCut = 0;
   // Focused operation
   RemoteCopyAction->ShortCut = ShortCut(L'C', CTRL);
   RemoteMoveAction->ShortCut = ShortCut(L'M', CTRL);
@@ -852,6 +864,7 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   CurrentEditAction->ShortCut = ShortCut(VK_F4, NONE);
   CurrentAddEditLinkAction->ShortCut = ShortCut(VK_F6, ALT);
   CurrentEditInternalAction->ShortCut = ShortCut(VK_F4, CTRLALT);
+  CurrentEditInternalFocusedAction->ShortCut = ShortCut(VK_F4, CTRLALT);
   // Focused operation
   RemoteCopyAction->ShortCut =
     ExplorerKeyboardShortcuts ? ShortCut(L'K', CTRL) : ShortCut(VK_F5, NONE);
@@ -1049,21 +1062,31 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   Menu->Add(Item);
 }
 //---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
+void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
+  TAction * Action, bool OnFocused, bool Both)
 {
   assert(Action);
   TTBCustomItem * Menu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
   if (Menu)
   {
     int PrevCount = Menu->Count;
-    bool OnFocused = (Menu == RemoteDirViewCustomCommandsMenu);
 
-    CreateCustomCommandsMenu(Menu, OnFocused, false, false);
+    CreateCustomCommandsMenu(Menu, OnFocused, false, Both);
 
     for (int Index = 0; Index < PrevCount; Index++)
     {
       Menu->Delete(0);
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
+{
+  TTBCustomItem * Menu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
+  if (ALWAYS_TRUE(Menu != NULL))
+  {
+    bool OnFocused = (Menu == RemoteDirViewCustomCommandsMenu);
+    CreateCustomCommandsMenu(Action, OnFocused, false);
   }
 }
 //---------------------------------------------------------------------------
@@ -1354,7 +1377,7 @@ void __fastcall TNonVisualDataModule::OpenedSessionItemClick(TObject * Sender)
   TTerminalManager::Instance()->ActiveTerminal = (TTerminal*)(((TMenuItem *)Sender)->Tag);
 }
 //---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::CreateEditorListMenu(TAction * Action)
+void __fastcall TNonVisualDataModule::CreateEditorListMenu(TAction * Action, bool OnFocused)
 {
   assert(Action != NULL);
   TTBCustomItem * Menu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
@@ -1363,7 +1386,7 @@ void __fastcall TNonVisualDataModule::CreateEditorListMenu(TAction * Action)
     int PrevCount = Menu->Count;
 
     TTBCustomItem * Item = new TTBXItem(Menu);
-    Item->Action = CurrentEditInternalAction;
+    Item->Action = OnFocused ? CurrentEditInternalFocusedAction : CurrentEditInternalAction;
     Menu->Add(Item);
 
     AddMenuSeparator(Menu);
@@ -1388,13 +1411,20 @@ void __fastcall TNonVisualDataModule::CreateEditorListMenu(TAction * Action)
           Item->Caption = Editor->Name;
           Item->Tag = Index;
           Item->Hint = FMTLOAD(EXTERNAL_EDITOR_HINT, (Editor->Name));
-          Item->OnClick = EditorItemClick;
+          if (OnFocused)
+          {
+            Item->OnClick = EditorItemClickFocused;
+          }
+          else
+          {
+            Item->OnClick = EditorItemClick;
+          }
           Menu->Add(Item);
         }
       }
 
       Item = new TTBXItem(Menu);
-      Item->Action = CurrentEditWithAction;
+      Item->Action = OnFocused ? CurrentEditWithFocusedAction : CurrentEditWithAction;
       Menu->Add(Item);
 
       AddMenuSeparator(Menu);
@@ -1415,7 +1445,7 @@ void __fastcall TNonVisualDataModule::CreateEditorListMenu(TAction * Action)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::EditorItemClick(TObject * Sender)
+void __fastcall TNonVisualDataModule::DoEditorItemClick(TObject * Sender, bool OnFocused)
 {
   int Tag = dynamic_cast<TTBXItem*>(Sender)->Tag;
   const TEditorList * EditorList = WinConfiguration->EditorList;
@@ -1423,8 +1453,18 @@ void __fastcall TNonVisualDataModule::EditorItemClick(TObject * Sender)
   if (Tag < EditorList->Count)
   {
     ScpExplorer->ExecuteFile(osCurrent, efExternalEditor, EditorList->Editors[Tag]->Data,
-      true, false);
+      true, OnFocused);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::EditorItemClick(TObject * Sender)
+{
+  DoEditorItemClick(Sender, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::EditorItemClickFocused(TObject * Sender)
+{
+  DoEditorItemClick(Sender, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::QueuePopupPopup(TObject * /*Sender*/)
@@ -1586,6 +1626,10 @@ void __fastcall TNonVisualDataModule::CycleQueueOnceEmptyAction()
   }
   else if (Current == QueueDisconnectOnceEmptyAction)
   {
+    QueueSuspendOnceEmptyAction->Checked = true;
+  }
+  else if (Current == QueueSuspendOnceEmptyAction)
+  {
     QueueShutDownOnceEmptyAction->Checked = true;
   }
   else if (Current == QueueShutDownOnceEmptyAction)
@@ -1609,6 +1653,10 @@ TAction * __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyAction()
   {
     Result = QueueDisconnectOnceEmptyAction;
   }
+  else if (QueueSuspendOnceEmptyAction->Checked)
+  {
+    Result = QueueSuspendOnceEmptyAction;
+  }
   else if (QueueShutDownOnceEmptyAction->Checked)
   {
     Result = QueueShutDownOnceEmptyAction;
@@ -1631,6 +1679,10 @@ TOnceDoneOperation __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyOperati
   else if (Current == QueueDisconnectOnceEmptyAction)
   {
     Result = odoDisconnect;
+  }
+  else if (Current == QueueSuspendOnceEmptyAction)
+  {
+    Result = odoSuspend;
   }
   else if (Current == QueueShutDownOnceEmptyAction)
   {

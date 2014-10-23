@@ -65,7 +65,7 @@
 			<ProjectType>CppConsoleApplication</ProjectType>
 			<SanitizedProjectName>Console</SanitizedProjectName>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Console interface for WinSCP;FileVersion=4.1.0.0;InternalName=console;LegalCopyright=(c) 2000-2014 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.com;ProductName=WinSCP;ProductVersion=5.6.1.0;ReleaseType=stable;WWW=http://winscp.net/</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Console interface for WinSCP;FileVersion=4.1.0.0;InternalName=console;LegalCopyright=(c) 2000-2014 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.com;ProductName=WinSCP;ProductVersion=5.6.2.0;ReleaseType=beta;WWW=http://winscp.net/</VerInfo_Keys>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_MajorVer>4</VerInfo_MajorVer>
 			<VerInfo_MinorVer>1</VerInfo_MinorVer>

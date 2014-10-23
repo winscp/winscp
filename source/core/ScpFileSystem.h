@@ -69,6 +69,7 @@ public:
   virtual bool __fastcall TemporaryTransferFile(const UnicodeString & FileName);
   virtual bool __fastcall GetStoredCredentialsTried();
   virtual UnicodeString __fastcall GetUserName();
+  virtual void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
 
 protected:
   __property TStrings * Output = { read = FOutput };
@@ -88,6 +89,7 @@ private:
   int FLsFullTime;
   TCaptureOutputEvent FOnCaptureOutput;
 
+  void __fastcall DetectUtf();
   void __fastcall ClearAliases();
   void __fastcall ClearAlias(UnicodeString Alias);
   void __fastcall CustomReadFile(const UnicodeString FileName,
@@ -121,7 +123,7 @@ private:
   void __fastcall UnsetNationalVars();
   TRemoteFile * __fastcall CreateRemoteFile(const UnicodeString & ListingStr,
     TRemoteFile * LinkedByFile = NULL);
-  void __fastcall CaptureOutput(const UnicodeString & AddedLine, bool StdError);
+  void __fastcall CaptureOutput(const UnicodeString & AddedLine, TCaptureOutputType OutputType);
   void __fastcall ChangeFileToken(const UnicodeString & DelimitedName,
     const TRemoteToken & Token, TFSCommand Cmd, const UnicodeString & RecursiveStr);
   unsigned int __fastcall ConfirmOverwrite(

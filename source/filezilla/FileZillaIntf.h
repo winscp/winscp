@@ -29,6 +29,7 @@ struct TListDataEntry
 {
   const wchar_t * Name;
   const wchar_t * Permissions;
+  const wchar_t * HumanPerm;
   const wchar_t * OwnerGroup;
   __int64 Size;
   bool Dir;
@@ -179,7 +180,7 @@ public:
   bool __fastcall List();
   bool __fastcall List(const wchar_t * Path);
 #ifdef MPEXT
-  bool __fastcall ListFile(const wchar_t * FullFileName);
+  bool __fastcall ListFile(const wchar_t * FileName, const wchar_t * APath);
 #endif
 
   bool __fastcall CustomCommand(const wchar_t * Command);

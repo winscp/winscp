@@ -257,6 +257,11 @@ public:
     }
   }
 
+  void __fastcall AddExitCode(int ExitCode)
+  {
+    Parameter(L"exitcode", IntToStr(ExitCode));
+  }
+
   void __fastcall FileList(TRemoteFileList * FileList)
   {
     if (FFileList == NULL)
@@ -521,6 +526,14 @@ void __fastcall TCallSessionAction::AddOutput(const UnicodeString & Output, bool
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCallSessionAction::AddExitCode(int ExitCode)
+{
+  if (FRecord != NULL)
+  {
+    FRecord->AddExitCode(ExitCode);
+  }
+}
+//---------------------------------------------------------------------------
 __fastcall TLsSessionAction::TLsSessionAction(TActionLog * Log,
     const UnicodeString & Destination) :
   TSessionAction(Log, laLs)
@@ -577,7 +590,7 @@ FILE * __fastcall OpenFile(UnicodeString LogFileName, TSessionData * SessionData
   }
   else
   {
-    throw Exception(FMTLOAD(LOG_OPENERROR, (ANewFileName)));
+    throw ECRTExtException(FMTLOAD(LOG_OPENERROR, (ANewFileName)));
   }
   return Result;
 }
@@ -899,7 +912,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     {
       AddSeparator();
       ADF(L"WinSCP %s (OS %s)", (FConfiguration->VersionStr, FConfiguration->OSVersionStr));
-      THierarchicalStorage * Storage = FConfiguration->CreateScpStorage(false);
+      THierarchicalStorage * Storage = FConfiguration->CreateConfigStorage();
       try
       {
         ADF(L"Configuration: %s", (Storage->Source));
@@ -1138,7 +1151,22 @@ void __fastcall TSessionLog::Clear()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TActionLog::TActionLog(TSessionUI* UI, TSessionData * SessionData,
+__fastcall TActionLog::TActionLog(TSessionUI * UI, TSessionData * SessionData,
+  TConfiguration * Configuration)
+{
+  assert(UI != NULL);
+  assert(SessionData != NULL);
+  Init(UI, SessionData, Configuration);
+}
+//---------------------------------------------------------------------------
+__fastcall TActionLog::TActionLog(TConfiguration * Configuration)
+{
+  Init(NULL, NULL, Configuration);
+  // not associated with session, so no need to waiting for anything
+  ReflectSettings();
+}
+//---------------------------------------------------------------------------
+void __fastcall TActionLog::Init(TSessionUI * UI, TSessionData * SessionData,
   TConfiguration * Configuration)
 {
   FCriticalSection = new TCriticalSection;
@@ -1196,7 +1224,10 @@ void __fastcall TActionLog::Add(const UnicodeString & Line)
       }
       catch (Exception &E)
       {
-        FUI->HandleExtendedException(&E);
+        if (FUI != NULL)
+        {
+          FUI->HandleExtendedException(&E);
+        }
       }
     }
   }
@@ -1250,8 +1281,10 @@ void __fastcall TActionLog::ReflectSettings()
   {
     FLogging = true;
     Add(L"<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    UnicodeString SessionName =
+      (FSessionData != NULL) ? XmlAttributeEscape(FSessionData->SessionName) : UnicodeString(L"nosession");
     Add(FORMAT(L"<session xmlns=\"http://winscp.net/schema/session/1.0\" name=\"%s\" start=\"%s\">",
-      (XmlAttributeEscape(FSessionData->SessionName), StandardTimestamp())));
+      (SessionName, StandardTimestamp())));
   }
   else if (!ALogging && FLogging)
   {
@@ -1302,7 +1335,10 @@ void __fastcall TActionLog::OpenLogFile()
     }
     catch (Exception & E)
     {
-      FUI->HandleExtendedException(&E);
+      if (FUI != NULL)
+      {
+        FUI->HandleExtendedException(&E);
+      }
     }
   }
 }

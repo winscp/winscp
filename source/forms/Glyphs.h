@@ -14,7 +14,6 @@ __published:
   TPngImageList *SessionImages;
   TPngImageList *QueueImages;
   TPngImageList *LogImages;
-  TImageList *ArrowImages;
   TImageList *ButtonImages;
 
 public:

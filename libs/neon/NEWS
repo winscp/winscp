@@ -1,3 +1,11 @@
+Changes in release 0.30.1:
+* Fix memory leak with GnuTLS (Werner Baumann, Patrick Ohly).
+* Fix possible crash after DNS lookup errors on Windows (Olivier Goffart).
+* Don't fail if the SSL cert changes between connections with OpenSSL,
+  behaviour now matches that with GnuTLS.
+* Fix PKCS#11 support under OpenSSL with TLS 1.2.
+* Fix static linking with pkg-config file (Alan H).
+
 Changes in release 0.30.0:
 * Interface changes:
  - none, API and ABI backwards-compatible with 0.27.x and later

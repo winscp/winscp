@@ -1347,7 +1347,7 @@ bool __fastcall AnyOtherInstanceOfSelf()
       while (!Result && Process32Next(Snapshot, &ProcessEntry))
       {
         // we should check if the process is running in the same session,
-        // but for that we probably need some special priviledges
+        // but for that we probably need some special privileges
         if ((Process != ProcessEntry.th32ProcessID) &&
             SameText(ExtractFileBaseName(ProcessEntry.szExeFile), ExeBaseName))
         {

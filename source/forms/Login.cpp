@@ -70,6 +70,8 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FRenaming = false;
   FNewSiteKeepName = false;
   FForceNewSite = false;
+  FLoading = false;
+  FSortEnablePending = false;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -123,8 +125,7 @@ void __fastcall TLoginDialog::InitControls()
   int FtpsNoneIndex = FtpsToIndex(ftpsNone);
   int FtpsImplicitIndex = FtpsToIndex(ftpsImplicit);
   FtpsCombo->Items->Strings[FtpsImplicitIndex] = LoadStr(FTPS_IMPLICIT);
-  FtpsCombo->Items->Strings[FtpsToIndex(ftpsExplicitTls)] = LoadStr(FTPS_EXPLICIT_TLS);
-  FtpsCombo->Items->Strings[FtpsToIndex(ftpsExplicitSsl)] = LoadStr(FTPS_EXPLICIT_SSL);
+  FtpsCombo->Items->Strings[FtpsToIndex(ftpsExplicitTls)] = LoadStr(FTPS_EXPLICIT);
   WebDavsCombo->Items->Strings[FtpsNoneIndex] = FtpsCombo->Items->Strings[FtpsNoneIndex];
   WebDavsCombo->Items->Strings[FtpsImplicitIndex] = FtpsCombo->Items->Strings[FtpsImplicitIndex];
 
@@ -236,14 +237,18 @@ TTreeNode * __fastcall TLoginDialog::AddSessionPath(UnicodeString Path,
             UpdateFolderNode(Parent);
           }
         }
-        // folders seem not to be sorted automatically (not having set the data property)
-        if (AParent == NULL)
+        // optimization
+        if (!FLoading)
         {
-          SessionTree->Items->AlphaSort();
-        }
-        else
-        {
-          AParent->AlphaSort();
+          // folders seem not to be sorted automatically (not having set the data property)
+          if (AParent == NULL)
+          {
+            SessionTree->Items->AlphaSort();
+          }
+          else
+          {
+            AParent->AlphaSort();
+          }
         }
       }
     }
@@ -345,9 +350,13 @@ void __fastcall TLoginDialog::SetNewSiteNodeLabel()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSessions()
 {
+  TAutoFlag LoadingFlag(FLoading);
   SessionTree->Items->BeginUpdate();
   try
   {
+    // optimization
+    SessionTree->SortType = Comctrls::stNone;
+
     SessionTree->Items->Clear();
 
     TTreeNode * Node = SessionTree->Items->AddChild(NULL, L"");
@@ -363,8 +372,10 @@ void __fastcall TLoginDialog::LoadSessions()
   }
   __finally
   {
-    // folders seem not to be sorted automatically (not having set the data property)
-    SessionTree->AlphaSort();
+    // Restore sorting. Moreover, folders would not be sorted automatically even when
+    // SortType is set (not having set the data property), so we would have to
+    // call AlphaSort here explicitly
+    SessionTree->SortType = Comctrls::stBoth;
     SessionTree->Items->EndUpdate();
   }
   SessionTree->Selected = SessionTree->Items->GetFirstNode();
@@ -393,7 +404,7 @@ void __fastcall TLoginDialog::ResetNewSiteData()
 {
   if (ALWAYS_TRUE(StoredSessions != NULL))
   {
-    FNewSiteData->Assign(StoredSessions->DefaultSettings);
+    FNewSiteData->CopyData(StoredSessions->DefaultSettings);
   }
 }
 //---------------------------------------------------------------------------
@@ -1139,12 +1150,6 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   {
     NewSessionFolderAction->Enabled = !FEditing;
   }
-  else if (Action == ImportSessionsAction)
-  {
-    ImportSessionsAction->Enabled =
-      GUIConfiguration->AnyPuttySessionForImport(StoredSessions) ||
-      GUIConfiguration->AnyFilezillaSessionForImport(StoredSessions);
-  }
   else if ((Action == ImportAction) ||
            (Action == AboutAction) || (Action == CleanUpAction) ||
            (Action == CheckForUpdatesAction) || (Action == PreferencesAction))
@@ -1218,7 +1223,7 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
     }
     else
     {
-      FNewSiteData->Assign(SessionData);
+      FNewSiteData->CopyData(SessionData);
       FNewSiteData->Special = false;
 
       // This is actualy bit pointless, as we focus the last selected site anyway
@@ -1239,8 +1244,13 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
   {
     Default();
   }
+  // Optimization. List view is recreated while showing the form,
+  // causing nodes repopulation and in a consequence a huge number of
+  // nodes comparison
+  SessionTree->SortType = Comctrls::stNone;
+  FSortEnablePending = true;
   // Not calling LoadState here.
-  // Its redundant and does not work anyway, see comment in the method.
+  // It's redundant and does not work anyway, see comment in the method.
   bool Result = IsDefaultResult(ShowModal());
   SaveState();
   if (Result)
@@ -1578,6 +1588,16 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
   {
     // caption managed in TLoginDialog::Init()
     M->Result = 1;
+  }
+  else if (M->Msg == CM_ACTIVATE)
+  {
+    // Called from TCustomForm.ShowModal
+    if (FSortEnablePending)
+    {
+      FSortEnablePending = false;
+      SessionTree->SortType = Comctrls::stBoth;
+    }
+    TForm::Dispatch(Message);
   }
   else
   {
@@ -1947,10 +1967,8 @@ int __fastcall TLoginDialog::FtpsToIndex(TFtps Ftps)
     case ftpsImplicit:
       return 1;
 
-    case ftpsExplicitSsl:
-      return 3;
-
     case ftpsExplicitTls:
+    case ftpsExplicitSsl:
       return 2;
   }
 }
@@ -1973,10 +1991,6 @@ TFtps __fastcall TLoginDialog::GetFtps()
 
     case 2:
       Ftps = ftpsExplicitTls;
-      break;
-
-    case 3:
-      Ftps = ftpsExplicitSsl;
       break;
   }
   return Ftps;
@@ -2067,7 +2081,7 @@ void __fastcall TLoginDialog::SessionTreeCompare(TObject * /*Sender*/,
   }
   else if (Node1IsWorkspace || Node1IsFolder)
   {
-    Compare = AnsiCompareText(Node1->Text, Node2->Text);
+    Compare = CompareLogicalText(Node1->Text, Node2->Text);
   }
   else
   {
@@ -2837,7 +2851,7 @@ void __fastcall TLoginDialog::CancelEditing()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CloneToNewSite()
 {
-  FNewSiteData->Assign(SelectedSession);
+  FNewSiteData->CopyData(SelectedSession);
   FNewSiteData->MakeUniqueIn(FStoredSessions);
   FNewSiteKeepName = true;
   NewSite();

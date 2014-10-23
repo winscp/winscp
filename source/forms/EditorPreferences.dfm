@@ -6,7 +6,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'EditorPreferencesDialog'
-  ClientHeight = 359
+  ClientHeight = 389
   ClientWidth = 403
   Color = clBtnFace
   ParentFont = True
@@ -16,12 +16,12 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   OnShow = FormShow
   DesignSize = (
     403
-    359)
+    389)
   PixelsPerInch = 96
   TextHeight = 13
   object ExternalEditorGroup: TGroupBox
     Left = 8
-    Top = 220
+    Top = 250
     Width = 388
     Height = 73
     Anchors = [akLeft, akTop, akRight]
@@ -48,13 +48,13 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
     Left = 8
     Top = 8
     Width = 388
-    Height = 125
+    Height = 155
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Editor'
     TabOrder = 0
     DesignSize = (
       388
-      125)
+      155)
     object EditorInternalButton: TRadioButton
       Left = 16
       Top = 21
@@ -103,10 +103,19 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       TabOrder = 4
       OnClick = ControlChange
     end
+    object DefaultButton: TButton
+      Left = 16
+      Top = 120
+      Width = 193
+      Height = 25
+      Caption = 'Use default system editor'
+      TabOrder = 5
+      OnClick = DefaultButtonClick
+    end
   end
   object MaskGroup: TGroupBox
-    Left = 7
-    Top = 140
+    Left = 8
+    Top = 170
     Width = 388
     Height = 73
     Anchors = [akLeft, akTop, akRight]
@@ -138,7 +147,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   end
   object OkButton: TButton
     Left = 151
-    Top = 326
+    Top = 356
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -149,7 +158,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   end
   object CancelButton: TButton
     Left = 235
-    Top = 326
+    Top = 356
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -160,7 +169,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   end
   object HelpButton: TButton
     Left = 319
-    Top = 326
+    Top = 356
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -170,7 +179,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   end
   object RememberCheck: TCheckBox
     Left = 24
-    Top = 302
+    Top = 332
     Width = 337
     Height = 17
     Anchors = [akLeft, akBottom]

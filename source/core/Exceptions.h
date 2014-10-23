@@ -10,11 +10,12 @@
 bool __fastcall ShouldDisplayException(Exception * E);
 bool __fastcall ExceptionMessage(Exception * E, UnicodeString & Message);
 bool __fastcall ExceptionMessageFormatted(Exception * E, UnicodeString & Message);
+UnicodeString __fastcall SysErrorMessageForError(int LastError);
 UnicodeString __fastcall LastSysErrorMessage();
 TStrings * __fastcall ExceptionToMoreMessages(Exception * E);
 bool __fastcall IsInternalException(Exception * E);
 //---------------------------------------------------------------------------
-enum TOnceDoneOperation { odoIdle, odoDisconnect, odoShutDown };
+enum TOnceDoneOperation { odoIdle, odoDisconnect, odoSuspend, odoShutDown };
 //---------------------------------------------------------------------------
 class ExtException : public Sysutils::Exception
 {
@@ -124,6 +125,13 @@ public:
   __fastcall EOSExtException();
   __fastcall EOSExtException(UnicodeString Msg);
   __fastcall EOSExtException(UnicodeString Msg, int LastError);
+};
+//---------------------------------------------------------------------------
+class ECRTExtException : public EOSExtException
+{
+public:
+  __fastcall ECRTExtException();
+  __fastcall ECRTExtException(UnicodeString Msg);
 };
 //---------------------------------------------------------------------------
 class EFatal : public ExtException

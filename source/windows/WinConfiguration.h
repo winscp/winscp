@@ -81,11 +81,28 @@ struct TScpCommanderConfiguration {
   }
 };
 //---------------------------------------------------------------------------
-struct TEditorConfiguration {
+struct TFontConfiguration
+{
   UnicodeString FontName;
   int FontSize;
   int FontCharset;
   int FontStyle;
+
+  __fastcall TFontConfiguration()
+  {
+    FontSize = 0;
+    FontCharset = DEFAULT_CHARSET;
+    FontStyle = 0;
+  }
+
+  // keep in sync with SameFont
+  bool __fastcall operator !=(const TFontConfiguration & rhc)
+    { return !SameText(FontName, rhc.FontName) || C(FontSize)
+      C(FontCharset) C(FontStyle) 0; };
+};
+//---------------------------------------------------------------------------
+struct TEditorConfiguration {
+  TFontConfiguration Font;
   bool WordWrap;
   UnicodeString FindText;
   UnicodeString ReplaceText;
@@ -101,8 +118,7 @@ struct TEditorConfiguration {
   bool WarnOnEncodingFallback;
   bool WarnOrLargeFileSize;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
-    { return C(FontName) C(FontSize)
-      C(FontCharset) C(FontStyle) C(WordWrap) C(FindText) C(ReplaceText)
+    { return C(Font) C(WordWrap) C(FindText) C(ReplaceText)
       C(FindMatchCase) C(FindWholeWord) C(FindDown) C(TabSize)
       C(MaxEditors) C(EarlyClose) C(SDIShellEditor) C(WindowParams)
       C(Encoding) C(WarnOnEncodingFallback) C(WarnOrLargeFileSize) 0; };
@@ -210,6 +226,7 @@ public:
   void __fastcall Load(THierarchicalStorage * Storage, bool Legacy);
   void __fastcall Save(THierarchicalStorage * Storage) const;
   void __fastcall LegacyDefaults();
+  UnicodeString __fastcall ExtractExternalEditorName() const;
 
   static UnicodeString __fastcall GetDefaultExternalEditor();
 
@@ -325,6 +342,7 @@ private:
   int FDDDeleteDelay;
   bool FTemporaryDirectoryAppendSession;
   bool FTemporaryDirectoryAppendPath;
+  bool FTemporaryDirectoryDeterministic;
   bool FTemporaryDirectoryCleanup;
   bool FConfirmTemporaryDirectoryCleanup;
   UnicodeString FDefaultTranslationFile;
@@ -353,6 +371,7 @@ private:
   TDateTime FDefaultUpdatesPeriod;
   bool FRefreshRemotePanel;
   TDateTime FRefreshRemotePanelInterval;
+  TFontConfiguration FPanelFont;
   bool FFullRowSelect;
   bool FOfferedEditorAutoConfig;
   bool FUseMasterPassword;
@@ -367,6 +386,7 @@ private:
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
+  std::unique_ptr<TFont> FSystemIconFont;
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -408,6 +428,7 @@ private:
   void __fastcall SetCustomCommandList(TCustomCommandList * value);
   void __fastcall SetTemporaryDirectoryAppendSession(bool value);
   void __fastcall SetTemporaryDirectoryAppendPath(bool value);
+  void __fastcall SetTemporaryDirectoryDeterministic(bool value);
   void __fastcall SetTemporaryDirectoryCleanup(bool value);
   void __fastcall SetConfirmTemporaryDirectoryCleanup(bool value);
   void __fastcall SetPreservePanelState(bool value);
@@ -432,6 +453,7 @@ private:
   void __fastcall SetAutoOpenInPutty(bool value);
   void __fastcall SetRefreshRemotePanel(bool value);
   void __fastcall SetRefreshRemotePanelInterval(TDateTime value);
+  void __fastcall SetPanelFont(const TFontConfiguration & value);
   void __fastcall SetFullRowSelect(bool value);
   void __fastcall SetOfferedEditorAutoConfig(bool value);
   void __fastcall SetLastMonitor(int value);
@@ -440,7 +462,10 @@ private:
   void __fastcall SetAutoImportedFromPuttyOrFilezilla(bool value);
   void __fastcall SetGenerateUrlComponents(int value);
   void __fastcall SetExternalSessionInExistingInstance(bool value);
+  bool __fastcall GetHonorDrivePolicy();
+  void __fastcall SetHonorDrivePolicy(bool value);
   bool __fastcall GetIsBeta();
+  TFont * __fastcall GetSystemIconFont();
 
   bool __fastcall GetDDExtInstalled();
   void __fastcall AddVersionToHistory();
@@ -453,6 +478,8 @@ private:
   void __fastcall SaveJumpList(THierarchicalStorage * Storage,
     UnicodeString Name, TStringList * List);
   void __fastcall TrimJumpList(TStringList * List);
+  void __fastcall UpdateSystemIconFont();
+  void __fastcall UpdateIconFont();
 
 protected:
   virtual TStorage __fastcall GetStorage();
@@ -487,10 +514,11 @@ public:
   virtual __fastcall ~TWinConfiguration();
   virtual void __fastcall Default();
   void __fastcall ClearTemporaryLoginData();
-  virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
+  virtual THierarchicalStorage * CreateScpStorage(bool & SessionList);
   UnicodeString __fastcall TemporaryDir(bool Mask = false);
   TStrings * __fastcall FindTemporaryFolders();
   void __fastcall CleanupTemporaryFolders(TStrings * Folders = NULL);
+  UnicodeString __fastcall ExpandedTemporaryDirectory();
   void __fastcall CheckDefaultTranslation();
   const TEditorPreferences * __fastcall DefaultEditorForFile(
     const UnicodeString FileName, bool Local, const TFileMasks::TParams & MaskParams);
@@ -509,6 +537,9 @@ public:
   void __fastcall DeleteWorkspaceFromJumpList(UnicodeString Workspace);
   void __fastcall UpdateJumpList();
   virtual void __fastcall UpdateStaticUsage();
+
+  static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
+  static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
 
   __property TScpCommanderConfiguration ScpCommander = { read = FScpCommander, write = SetScpCommander };
   __property TScpExplorerConfiguration ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
@@ -557,6 +588,7 @@ public:
   __property int DDDeleteDelay = { read = FDDDeleteDelay };
   __property bool TemporaryDirectoryAppendSession = { read = FTemporaryDirectoryAppendSession, write = SetTemporaryDirectoryAppendSession };
   __property bool TemporaryDirectoryAppendPath = { read = FTemporaryDirectoryAppendPath, write = SetTemporaryDirectoryAppendPath };
+  __property bool TemporaryDirectoryDeterministic = { read = FTemporaryDirectoryDeterministic, write = SetTemporaryDirectoryDeterministic };
   __property bool TemporaryDirectoryCleanup = { read = FTemporaryDirectoryCleanup, write = SetTemporaryDirectoryCleanup };
   __property bool ConfirmTemporaryDirectoryCleanup = { read = FConfirmTemporaryDirectoryCleanup, write = SetConfirmTemporaryDirectoryCleanup };
   __property bool PreservePanelState = { read = FPreservePanelState, write = SetPreservePanelState };
@@ -578,6 +610,7 @@ public:
   __property bool AutoOpenInPutty = { read = FAutoOpenInPutty, write = SetAutoOpenInPutty };
   __property bool RefreshRemotePanel = { read = FRefreshRemotePanel, write = SetRefreshRemotePanel };
   __property TDateTime RefreshRemotePanelInterval = { read = FRefreshRemotePanelInterval, write = SetRefreshRemotePanelInterval };
+  __property TFontConfiguration PanelFont = { read = FPanelFont, write = SetPanelFont };
   __property bool FullRowSelect = { read = FFullRowSelect, write = SetFullRowSelect };
   __property bool OfferedEditorAutoConfig = { read = FOfferedEditorAutoConfig, write = SetOfferedEditorAutoConfig };
   __property int LastMonitor = { read = GetLastMonitor, write = SetLastMonitor };
@@ -587,7 +620,9 @@ public:
   __property bool AutoImportedFromPuttyOrFilezilla = { read = FAutoImportedFromPuttyOrFilezilla, write = SetAutoImportedFromPuttyOrFilezilla };
   __property int GenerateUrlComponents = { read = FGenerateUrlComponents, write = SetGenerateUrlComponents };
   __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
+  __property bool HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
+  __property TFont * SystemIconFont = { read = GetSystemIconFont };
 };
 //---------------------------------------------------------------------------
 class TCustomCommandType

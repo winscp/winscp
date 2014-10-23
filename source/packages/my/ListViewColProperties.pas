@@ -581,7 +581,9 @@ var
   Temp: array of Integer;
 begin
   SetLength(Temp, Count);
-  // likely useless
+  // Seemingly useless,
+  // but probably only because we swallow HDN_ENDDRAG in TCustomIEListView.WMNotify,
+  // what prevents VLC from actually reordering columns collection
   ListView_GetColumnOrderArray(FListView.Handle, Count, PInteger(Temp));
   for Index := 0 to Count - 1 do
   begin

@@ -237,7 +237,6 @@ type
     procedure StartFileDeleteThread;
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
-    function SecondaryColumnHeader(Index: Integer; var AliasOnly: Boolean): Integer; override;
     function HiddenCount: Integer; override;
     function FilteredCount: Integer; override;
 
@@ -321,7 +320,6 @@ type
     property PathLabel;
     property OnUpdateStatusBar;
     property OnGetSelectFilter;
-    property HeaderImages;
 
     property LoadAnimation;
     property DimmHiddenFiles;
@@ -843,13 +841,6 @@ begin
   if Index > Pred(Items.Count) then Result := nil
     else Result := Items[index].Data;
 end; {GetFileRec}
-
-function TDirView.SecondaryColumnHeader(Index: Integer; var AliasOnly: Boolean): Integer;
-begin
-  if Index = Integer(dvName) then Result := Integer(dvExt)
-    else Result := -1;
-  AliasOnly := False;
-end;
 
 function TDirView.HiddenCount: Integer;
 begin
@@ -1922,6 +1913,13 @@ begin
     Selected := Items[Min(ItemIndex, Pred(Items.Count))];
 end; {DeleteSelectedFiles}
 
+function StrCmpLogicalW(const sz1, sz2: UnicodeString): Integer; stdcall; external 'shlwapi.dll';
+
+function CompareLogicalText(const S1, S2: string): Integer;
+begin
+  Result := StrCmpLogicalW(PChar(S1), PChar(S2));
+end;
+
 function CompareFileName(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
 var
   P1, P2: PFileRec;
@@ -1961,7 +1959,7 @@ begin
         Exit;
       end;
     end
-      else Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
+      else Result := CompareLogicalText(P1.DisplayName, P2.DisplayName);
   end;
 
   if not AOwner.SortAscending then
@@ -2012,7 +2010,7 @@ begin
         else
       if P1.Size > P2.Size then Result := fGreater
         else
-      Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
+      Result := CompareLogicalText(P1.DisplayName, P2.DisplayName);
     end;
   end;
   if not AOwner.SortAscending then
@@ -2022,6 +2020,7 @@ end; {CompareFileSize}
 function CompareFileType(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
 var
   P1, P2: PFileRec;
+  Key1, Key2: string;
 begin
   if I1 = I2 then  Result := fEqual
     else
@@ -2062,10 +2061,20 @@ begin
     begin
       if P1.Empty then TDirView(I1.ListView).GetDisplayData(I1, False);
       if P2.Empty then TDirView(I2.ListView).GetDisplayData(I2, False);
-      Result := lstrcmpi(PChar(P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName),
-                         PChar(P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName));
+      if P1.IsDirectory then
+      begin
+        Key1 := P1.TypeName + ' ' + P1.DisplayName;
+        Key2 := P2.TypeName + ' ' + P2.DisplayName;
+      end
+        else
+      begin
+        Key1 := P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName;
+        Key2 := P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName;
+      end;
+      Result := CompareLogicalText(Key1, Key2);
       if Result = 0 then
-        Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
+        // the fallback is probably pointless for directories as they have the same TypeName
+        Result := CompareLogicalText(P1.DisplayName, P2.DisplayName);
     end;
   end;
   if not AOwner.SortAscending then
@@ -2113,12 +2122,12 @@ begin
       else
     if P1.isDirectory then
     begin
-      Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
+      Result := CompareLogicalText(P1.DisplayName, P2.DisplayName);
     end
       else
     begin
-      Result := lstrcmpi(PChar(P1.FileExt + ' ' + P1.DisplayName),
-                         PChar(P2.FileExt + ' ' + P2.DisplayName));
+      Result := CompareLogicalText(
+        P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName);
     end;
   end;
   if not AOwner.SortAscending then
@@ -2169,7 +2178,7 @@ begin
         else
       if P1.Attr > P2.Attr then Result := fGreater
         else
-      Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
+      Result := CompareLogicalText(P1.DisplayName, P2.DisplayName);
     end;
   end;
   if not AOwner.SortAscending then

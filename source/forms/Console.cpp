@@ -132,7 +132,7 @@ bool __fastcall TConsoleDialog::Execute(const UnicodeString Command,
         TStrings * ALog = const_cast<TStrings *>(Log);
         for (int i = 0; i < ALog->Count; i++)
         {
-          AddLine(ALog->Strings[i], false);
+          AddLine(ALog->Strings[i], cotOutput);
         }
       }
       __finally
@@ -238,9 +238,12 @@ void __fastcall TConsoleDialog::CommandEditChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleDialog::AddLine(const UnicodeString & Line, bool /*StdError*/)
+void __fastcall TConsoleDialog::AddLine(const UnicodeString & Line, TCaptureOutputType OutputType)
 {
-  OutputMemo->Lines->Add(Line);
+  if ((OutputType == cotOutput) || (OutputType == cotError))
+  {
+    OutputMemo->Lines->Add(Line);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::CreateParams(TCreateParams & Params)

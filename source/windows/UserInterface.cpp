@@ -50,6 +50,11 @@ TConfiguration * __fastcall CreateConfiguration()
       WinConfiguration->IniFileStorageName = IniFileName;
     }
   }
+  std::unique_ptr<TStrings> RawConfig(new TStringList());
+  if (Params->FindSwitch(L"rawconfig", RawConfig.get()))
+  {
+    WinConfiguration->OptionsStorage = RawConfig.get();
+  }
 
   return WinConfiguration;
 }
@@ -117,124 +122,159 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   Exception * E)
 {
   bool Show = ShouldDisplayException(E);
+  bool DoNotDisplay = false;
 
-  TTerminalManager * Manager = TTerminalManager::Instance(false);
-
-  TQueryType Type;
-  ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
-  bool CloseOnCompletion = (Terminate != NULL);
-  Type = CloseOnCompletion ? qtInformation : qtError;
-  bool ConfirmExitOnCompletion =
-    CloseOnCompletion &&
-    (Terminate->Operation == odoDisconnect) &&
-    WinConfiguration->ConfirmExitOnCompletion;
-
-  if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
-      (Manager != NULL) && (Manager->ActiveTerminal == Terminal))
+  try
   {
-    if (CloseOnCompletion)
+    // This is special case used particularly when called from .NET assembly
+    // (which always uses /nointeractiveinput),
+    // but can be useful for other console runs too
+    TProgramParams * Params = TProgramParams::Instance();
+    if (Params->FindSwitch(L"nointeractiveinput"))
     {
-      Manager->DisconnectActiveTerminal();
-    }
-
-    int SessionReopenTimeout = 0;
-    TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-    if ((ManagedTerminal != NULL) &&
-        ((Configuration->SessionReopenTimeout == 0) ||
-         ((double)ManagedTerminal->ReopenStart == 0) ||
-         (int(double(Now() - ManagedTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
-    {
-      SessionReopenTimeout = GUIConfiguration->SessionReopenAutoIdle;
-    }
-
-    unsigned int Result;
-    if (CloseOnCompletion)
-    {
-      assert(Show);
-      if (ConfirmExitOnCompletion)
+      DoNotDisplay = true;
+      if (Show && CheckXmlLogParam(Params))
       {
-        TMessageParams Params(mpNeverAskAgainCheck);
-        UnicodeString MessageFormat =
-          MainInstructions((Manager->Count > 1) ?
-            FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
-            LoadStr(EXIT_ON_COMPLETION));
-        Result = FatalExceptionMessageDialog(E, Type, 0,
-          MessageFormat,
-          qaYes | qaNo, HELP_NONE, &Params);
-
-        if (Result == qaNeverAskAgain)
-        {
-          Result = qaYes;
-          WinConfiguration->ConfirmExitOnCompletion = false;
-        }
+        std::unique_ptr<TActionLog> ActionLog(new TActionLog(Configuration));
+        ActionLog->AddFailure(E);
+        // unnecessary explicit release
+        ActionLog.reset(NULL);
       }
-      else
-      {
-        Result = qaYes;
-      }
-    }
-    else
-    {
-      if (Show)
-      {
-        Result = FatalExceptionMessageDialog(E, Type, SessionReopenTimeout);
-      }
-      else
-      {
-        Result = qaOK;
-      }
-    }
-
-    if (Result == qaYes)
-    {
-      assert(Terminate != NULL);
-      assert(Terminate->Operation != odoIdle);
-      Application->Terminate();
-
-      switch (Terminate->Operation)
-      {
-        case odoDisconnect:
-          break;
-
-        case odoShutDown:
-          ShutDownWindows();
-          break;
-
-        default:
-          FAIL;
-      }
-    }
-    else if (Result == qaRetry)
-    {
-      Manager->ReconnectActiveTerminal();
-    }
-    else
-    {
-      Manager->FreeActiveTerminal();
     }
   }
-  else
+  catch (Exception & E)
   {
-    // this should not happen as we never use Terminal->CloseOnCompletion
-    // on inactive terminal
-    if (CloseOnCompletion)
+    // swallow
+  }
+
+  if (!DoNotDisplay)
+  {
+    TTerminalManager * Manager = TTerminalManager::Instance(false);
+
+    TQueryType Type;
+    ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
+    bool CloseOnCompletion = (Terminate != NULL);
+    Type = CloseOnCompletion ? qtInformation : qtError;
+    bool ConfirmExitOnCompletion =
+      CloseOnCompletion &&
+      ((Terminate->Operation == odoDisconnect) || (Terminate->Operation == odoSuspend)) &&
+      WinConfiguration->ConfirmExitOnCompletion;
+
+    if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
+        (Manager != NULL) && (Manager->ActiveTerminal == Terminal))
     {
-      assert(Show);
-      if (ConfirmExitOnCompletion)
+      int SessionReopenTimeout = 0;
+      TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
+      if ((ManagedTerminal != NULL) &&
+          ((Configuration->SessionReopenTimeout == 0) ||
+           ((double)ManagedTerminal->ReopenStart == 0) ||
+           (int(double(Now() - ManagedTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
       {
-        TMessageParams Params(mpNeverAskAgainCheck);
-        if (ExceptionMessageDialog(E, Type, L"", qaOK, HELP_NONE, &Params) ==
-              qaNeverAskAgain)
+        SessionReopenTimeout = GUIConfiguration->SessionReopenAutoIdle;
+      }
+
+      unsigned int Result;
+      if (CloseOnCompletion)
+      {
+        Manager->DisconnectActiveTerminal();
+
+        if (Terminate->Operation == odoSuspend)
         {
-          WinConfiguration->ConfirmExitOnCompletion = false;
+          // suspend, so that exit prompt is shown only after windows resume
+          SuspendWindows();
         }
+
+        assert(Show);
+        if (ConfirmExitOnCompletion)
+        {
+          TMessageParams Params(mpNeverAskAgainCheck);
+          UnicodeString MessageFormat =
+            MainInstructions((Manager->Count > 1) ?
+              FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
+              LoadStr(EXIT_ON_COMPLETION));
+          Result = FatalExceptionMessageDialog(E, Type, 0,
+            MessageFormat,
+            qaYes | qaNo, HELP_NONE, &Params);
+
+          if (Result == qaNeverAskAgain)
+          {
+            Result = qaYes;
+            WinConfiguration->ConfirmExitOnCompletion = false;
+          }
+        }
+        else
+        {
+          Result = qaYes;
+        }
+      }
+      else
+      {
+        if (Show)
+        {
+          Result = FatalExceptionMessageDialog(E, Type, SessionReopenTimeout);
+        }
+        else
+        {
+          Result = qaOK;
+        }
+      }
+
+      if (Result == qaYes)
+      {
+        assert(CloseOnCompletion);
+        assert(Terminate != NULL);
+        assert(Terminate->Operation != odoIdle);
+        Application->Terminate();
+
+        switch (Terminate->Operation)
+        {
+          case odoDisconnect:
+            break;
+
+          case odoSuspend:
+            // suspended before already
+            break;
+
+          case odoShutDown:
+            ShutDownWindows();
+            break;
+
+          default:
+            FAIL;
+        }
+      }
+      else if (Result == qaRetry)
+      {
+        Manager->ReconnectActiveTerminal();
+      }
+      else
+      {
+        Manager->FreeActiveTerminal();
       }
     }
     else
     {
-      if (Show)
+      // this should not happen as we never use Terminal->CloseOnCompletion
+      // on inactive terminal
+      if (CloseOnCompletion)
       {
-        ExceptionMessageDialog(E, Type);
+        assert(Show);
+        if (ConfirmExitOnCompletion)
+        {
+          TMessageParams Params(mpNeverAskAgainCheck);
+          if (ExceptionMessageDialog(E, Type, L"", qaOK, HELP_NONE, &Params) ==
+                qaNeverAskAgain)
+          {
+            WinConfiguration->ConfirmExitOnCompletion = false;
+          }
+        }
+      }
+      else
+      {
+        if (Show)
+        {
+          ExceptionMessageDialog(E, Type);
+        }
       }
     }
   }
@@ -503,7 +543,7 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TRect Rect,
 {
   // Pressing the same button within 200ms after closing its popup menu
   // does nothing.
-  // It is to immitate close-by-click behaviour. Note that menu closes itself
+  // It is to immitate close-by-click behavior. Note that menu closes itself
   // before onclick handler of button occurs.
   // To support content menu popups, we have to check for the popup location too,
   // to allow poping menu on different location (such as different node of TTreeView),
@@ -531,10 +571,8 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TRect Rect,
         TMenuItem * AItem = AMenu->Items->Items[Index];
         TTBCustomItem * Item;
 
-        // recurse not implemented yet
-        assert(AItem->Count == 0);
-
-        if (!AItem->Enabled && !AItem->Visible && (AItem->Action == NULL) && (AItem->OnClick == NULL))
+        if (!AItem->Enabled && !AItem->Visible && (AItem->Action == NULL) &&
+                 (AItem->OnClick == NULL) && ALWAYS_TRUE(AItem->Count == 0))
         {
           TTBXLabelItem * LabelItem = new TTBXLabelItem(Menu);
           // TTBXLabelItem has it's own Caption
@@ -551,7 +589,14 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TRect Rect,
           }
           else
           {
-            Item = new TTBXItem(Menu);
+            if (AItem->Count > 0)
+            {
+              Item = new TTBXSubmenuItem(Menu);
+            }
+            else
+            {
+              Item = new TTBXItem(Menu);
+            }
             Item->Action = AItem->Action;
             Item->AutoCheck = AItem->AutoCheck;
             Item->Caption = AItem->Caption;
@@ -572,6 +617,13 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TRect Rect,
           Item->Hint = AItem->Hint;
           Item->Tag = AItem->Tag;
           Item->Visible = AItem->Visible;
+
+          // recurse is supported only for empty submenus (as used for custom commands)
+          if ((AItem->Count > 0) &&
+              ALWAYS_TRUE((AItem->Count == 1) && (AItem->Items[0]->Caption == L"")))
+          {
+            Item->Add(new TTBXItem(Menu));
+          }
         }
 
         Menu->Items->Add(Item);
@@ -1161,4 +1213,16 @@ void __fastcall MessageWithNoHelp(const UnicodeString & Message)
   {
     SearchHelp(Message);
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall CheckXmlLogParam(TProgramParams * Params)
+{
+  UnicodeString LogFile;
+  bool Result = Params->FindSwitch(L"XmlLog", LogFile);
+  if (Result)
+  {
+    Configuration->Usage->Inc(L"ScriptXmlLog");
+    Configuration->TemporaryActionsLogging(LogFile);
+  }
+  return Result;
 }

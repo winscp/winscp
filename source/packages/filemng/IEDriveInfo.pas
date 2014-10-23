@@ -77,10 +77,12 @@ type
     FNoDrives: DWORD;
     FDesktop: IShellFolder;
     FFolders: array[TSpecialFolder] of TSpecialFolderRec;
+    FHonorDrivePolicy: Boolean;
     function GetData(Drive: TDrive): PDriveInfoRec;
     function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
     procedure ReadDriveBasicStatus(Drive: TDrive);
     procedure ResetDrive(Drive: TDrive);
+    procedure SetHonorDrivePolicy(Value: Boolean);
 
   public
     property Data[Drive: TDrive]: PDriveInfoRec read GetData; default;
@@ -90,6 +92,7 @@ type
     function GetDisplayName(Drive: TDrive): string;
     function GetPrettyName(Drive: TDrive): string;
     function ReadDriveStatus(Drive: TDrive; Flags: Integer): Boolean;
+    property HonorDrivePolicy: Boolean read FHonorDrivePolicy write SetHonorDrivePolicy;
     constructor Create;
     destructor Destroy; override;
     procedure Load;
@@ -116,6 +119,7 @@ constructor TDriveInfo.Create;
 begin
   inherited;
 
+  FHonorDrivePolicy := True;
   Load;
 end; {TDriveInfo.Create}
 
@@ -169,12 +173,27 @@ begin
   Result := @FFolders[Folder];
 end;
 
+procedure TDriveInfo.SetHonorDrivePolicy(Value: Boolean);
+var
+  Drive: TDrive;
+begin
+  if HonorDrivePolicy <> Value then
+  begin
+    FHonorDrivePolicy := Value;
+    for Drive := FirstDrive to LastDrive do
+    begin
+      ReadDriveBasicStatus(Drive);
+    end;
+  end;
+end;
+
 procedure TDriveInfo.ReadDriveBasicStatus(Drive: TDrive);
 begin
   with FData[Drive] do
   begin
     DriveType := Windows.GetDriveType(PChar(Drive + ':\'));
-    Valid := not Bool((1 shl (Ord(Drive) - 65)) and FNoDrives) and
+    Valid :=
+      ((not FHonorDrivePolicy) or (not Bool((1 shl (Ord(Drive) - 65)) and FNoDrives))) and
       (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
   end;
 end;

@@ -388,7 +388,7 @@ static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool Can
     // we expect this to be called only from verify_host_key() or store_host_key()
     assert(RegKey == L"SshHostKeys");
 
-    THierarchicalStorage * Storage = Configuration->CreateScpStorage(false);
+    THierarchicalStorage * Storage = Configuration->CreateConfigStorage();
     Storage->AccessMode = (CanCreate ? smReadWrite : smRead);
     if (Storage->OpenSubKey(RegKey, CanCreate))
     {
@@ -497,8 +497,8 @@ TKeyType KeyType(UnicodeString FileName)
 {
   assert(ktUnopenable == SSH_KEYTYPE_UNOPENABLE);
   assert(ktSSHCom == SSH_KEYTYPE_SSHCOM);
-  AnsiString AnsiFileName = AnsiString(FileName);
-  Filename * KeyFile = filename_from_str(AnsiFileName.c_str());
+  UTF8String UtfFileName = UTF8String(FileName);
+  Filename * KeyFile = filename_from_str(UtfFileName.c_str());
   TKeyType Result = (TKeyType)key_type(KeyFile);
   filename_free(KeyFile);
   return Result;
@@ -524,7 +524,7 @@ bool __fastcall HasGSSAPI(UnicodeString CustomPath)
     ssh_gss_liblist * List = NULL;
     try
     {
-      Filename * filename = filename_from_str(AnsiString(CustomPath).c_str());
+      Filename * filename = filename_from_str(UTF8String(CustomPath).c_str());
       conf_set_filename(conf, CONF_ssh_gss_custom, filename);
       filename_free(filename);
       List = ssh_gss_setup(conf);

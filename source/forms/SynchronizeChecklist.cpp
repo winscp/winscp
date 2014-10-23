@@ -14,6 +14,7 @@
 #include <VCLCommon.h>
 #include <Tools.h>
 #include <BaseUtils.hpp>
+#include <Math.hpp>
 #include <WinConfiguration.h>
 //---------------------------------------------------------------------
 #pragma link "IEListView"
@@ -22,6 +23,8 @@
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
+//---------------------------------------------------------------------
+const int ImageColumnIndex = 4;
 //---------------------------------------------------------------------
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params, const UnicodeString LocalDirectory,
@@ -68,12 +71,10 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FSystemImageList = SharedSystemImageList(false);
   ListView->SmallImages = FSystemImageList;
 
-  // header images mut be assigned after the small images, so it cannot
-  // be done via DFM
-  ListView->HeaderImages = ArrowImages;
-
-  CustomCommandsButton->Visible = (FOnCustomCommandMenu != NULL);
-  MenuButton(CustomCommandsButton);
+  CustomCommandsAction->Visible = (FOnCustomCommandMenu != NULL);
+  // button visibility cannot be bound to action visibility
+  CustomCommandsButton2->Visible = CustomCommandsAction->Visible;
+  MenuButton(CustomCommandsButton2);
 }
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
@@ -93,10 +94,8 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
     for (int Index = 0; Index < ListView->Items->Count; Index++)
     {
       TListItem * Item = ListView->Items->Item[Index];
-      // const violation !
-      TSynchronizeChecklist::TItem * ChecklistItem =
-        static_cast<TSynchronizeChecklist::TItem *>(Item->Data);
-      ChecklistItem->Checked = Item->Checked;
+      const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+      Checklist->Update(ChecklistItem, Item->Checked, GetChecklistItemAction(ChecklistItem));
     }
 
     TSynchronizeChecklistConfiguration FormConfiguration =
@@ -130,10 +129,9 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   TListItem * Item = ListView->Selected;
   while (Item != NULL)
   {
-    const TSynchronizeChecklist::TItem * ChecklistItem =
-      static_cast<const TSynchronizeChecklist::TItem *>(Item->Data);
-    if ((ChecklistItem->Action == TSynchronizeChecklist::saUploadUpdate) ||
-        (ChecklistItem->Action == TSynchronizeChecklist::saDownloadUpdate))
+    TSynchronizeChecklist::TAction Action = GetChecklistItemAction(GetChecklistItem(Item));
+    if ((Action == TSynchronizeChecklist::saUploadUpdate) ||
+        (Action == TSynchronizeChecklist::saDownloadUpdate))
     {
       AnyBoth = true;
     }
@@ -154,16 +152,14 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   }
 
   EnableControl(OkButton, (FChecked[0] > 0));
-  EnableControl(CheckButton, !AllChecked);
-  EnableControl(UncheckButton, !AllUnchecked);
-  EnableControl(CheckAllButton, (FChecked[0] < FTotals[0]));
-  EnableControl(UncheckAllButton, (FChecked[0] > 0));
-  EnableControl(UncheckAllButton, (FChecked[0] > 0));
-  EnableControl(CustomCommandsButton, AnyBoth && !AnyNonBoth);
+  CheckAction->Enabled = !AllChecked;
+  UncheckAction->Enabled = !AllUnchecked;
+  CheckAllAction->Enabled = (FChecked[0] < FTotals[0]);
+  UncheckAllAction->Enabled = (FChecked[0] > 0);
+  CustomCommandsAction->Enabled = AnyBoth && !AnyNonBoth;
+  ReverseAction->Enabled = (ListView->SelCount > 0);
 
-  CheckItem->Enabled = CheckButton->Enabled;
-  UncheckItem->Enabled = UncheckButton->Enabled;
-  SelectAllItem->Enabled = (ListView->SelCount < ListView->Items->Count);
+  SelectAllAction->Enabled = (ListView->SelCount < ListView->Items->Count);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::CreateParams(TCreateParams & Params)
@@ -191,12 +187,24 @@ void __fastcall TSynchronizeChecklistDialog::HelpButtonClick(TObject * /*Sender*
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::AddSubItem(TListItem * Item, int & Index, const UnicodeString & S)
+{
+  if (Index < Item->SubItems->Count)
+  {
+    Item->SubItems->Strings[Index] = S;
+  }
+  else
+  {
+    assert(Index == Item->SubItems->Count);
+    Item->SubItems->Add(S);
+  }
+  Index++;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
 {
   UnicodeString S;
-  const TSynchronizeChecklist::TItem * ChecklistItem = FChecklist->Item[Item->Index];
-  Item->Data = const_cast<TSynchronizeChecklist::TItem *>(ChecklistItem);
-  Item->Checked = ChecklistItem->Checked;
+  const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
   if (ChecklistItem->ImageIndex >= 0)
   {
     Item->ImageIndex = ChecklistItem->ImageIndex;
@@ -214,11 +222,15 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
   }
   Item->Caption = S;
 
-  if (ChecklistItem->Action == TSynchronizeChecklist::saDeleteRemote)
+  int Index = 0;
+
+  TSynchronizeChecklist::TAction Action = GetChecklistItemAction(ChecklistItem);
+
+  if (Action == TSynchronizeChecklist::saDeleteRemote)
   {
-    Item->SubItems->Add(L"");
-    Item->SubItems->Add(L"");
-    Item->SubItems->Add(L"");
+    AddSubItem(Item, Index, L"");
+    AddSubItem(Item, Index, L"");
+    AddSubItem(Item, Index, L"");
   }
   else
   {
@@ -232,35 +244,37 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     {
       FAIL;
     }
-    Item->SubItems->Add(S);
-    if (ChecklistItem->Action == TSynchronizeChecklist::saDownloadNew)
+    AddSubItem(Item, Index, S);
+    if (Action == TSynchronizeChecklist::saDownloadNew)
     {
-      Item->SubItems->Add(L"");
-      Item->SubItems->Add(L"");
+      AddSubItem(Item, Index, L"");
+      AddSubItem(Item, Index, L"");
     }
     else
     {
       if (ChecklistItem->IsDirectory)
       {
-        Item->SubItems->Add(L"");
+        AddSubItem(Item, Index, L"");
       }
       else
       {
-        Item->SubItems->Add(
+        AddSubItem(Item, Index,
           FormatPanelBytes(ChecklistItem->Local.Size, WinConfiguration->FormatSizeBytes));
       }
-      Item->SubItems->Add(UserModificationStr(ChecklistItem->Local.Modification,
-        ChecklistItem->Local.ModificationFmt));
+      AddSubItem(Item, Index,
+        UserModificationStr(ChecklistItem->Local.Modification,
+          ChecklistItem->Local.ModificationFmt));
     }
   }
 
-  Item->SubItems->Add(L"");
+  AddSubItem(Item, Index, L"");
+  assert(Index == ImageColumnIndex);
 
-  if (ChecklistItem->Action == TSynchronizeChecklist::saDeleteLocal)
+  if (Action == TSynchronizeChecklist::saDeleteLocal)
   {
-    Item->SubItems->Add(L"");
-    Item->SubItems->Add(L"");
-    Item->SubItems->Add(L"");
+    AddSubItem(Item, Index, L"");
+    AddSubItem(Item, Index, L"");
+    AddSubItem(Item, Index, L"");
   }
   else
   {
@@ -274,24 +288,24 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     {
       FAIL;
     }
-    Item->SubItems->Add(S);
-    if (ChecklistItem->Action == TSynchronizeChecklist::saUploadNew)
+    AddSubItem(Item, Index, S);
+    if (Action == TSynchronizeChecklist::saUploadNew)
     {
-      Item->SubItems->Add(L"");
-      Item->SubItems->Add(L"");
+      AddSubItem(Item, Index, L"");
+      AddSubItem(Item, Index, L"");
     }
     else
     {
       if (ChecklistItem->IsDirectory)
       {
-        Item->SubItems->Add(L"");
+        AddSubItem(Item, Index, L"");
       }
       else
       {
-        Item->SubItems->Add(
+        AddSubItem(Item, Index,
           FormatPanelBytes(ChecklistItem->Remote.Size, WinConfiguration->FormatSizeBytes));
       }
-      Item->SubItems->Add(UserModificationStr(ChecklistItem->Remote.Modification,
+      AddSubItem(Item, Index, UserModificationStr(ChecklistItem->Remote.Modification,
         ChecklistItem->Remote.ModificationFmt));
     }
   }
@@ -301,8 +315,8 @@ void __fastcall TSynchronizeChecklistDialog::LoadList()
 {
   memset(&FTotals, 0, sizeof(FTotals));
   memset(&FChecked, 0, sizeof(FChecked));
+  memset(&FCheckedSize, 0, sizeof(FCheckedSize));
   FTotals[0] = FChecklist->Count;
-  FChecked[0] = 0;
 
   ListView->Items->BeginUpdate();
   try
@@ -315,17 +329,27 @@ void __fastcall TSynchronizeChecklistDialog::LoadList()
       FChangingItemIgnore = true;
       try
       {
-        LoadItem(ListView->Items->Add());
+        TListItem * Item = ListView->Items->Add();
+        TSynchronizeChecklist::TAction Action = ChecklistItem->Action;
+        FActions.insert(std::make_pair(ChecklistItem, Action));
+        Item->Data = const_cast<TSynchronizeChecklist::TItem *>(ChecklistItem);
+        Item->Checked = ChecklistItem->Checked;
+        LoadItem(Item);
       }
       __finally
       {
         FChangingItemIgnore = false;
       }
-      FTotals[int(ChecklistItem->Action)]++;
+      int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
+      FTotals[ActionIndex]++;
       if (ChecklistItem->Checked)
       {
-        FChecked[int(ChecklistItem->Action)]++;
+        FChecked[ActionIndex]++;
         FChecked[0]++;
+
+        __int64 ItemSize = GetItemSize(ChecklistItem);
+        FCheckedSize[ActionIndex] += ItemSize;
+        FCheckedSize[0] += ItemSize;
       }
     }
   }
@@ -338,11 +362,70 @@ void __fastcall TSynchronizeChecklistDialog::LoadList()
   UpdateControls();
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSynchronizeChecklistDialog::IsItemSizeIrrelevant(TSynchronizeChecklist::TAction Action)
+{
+  switch (Action)
+  {
+    case TSynchronizeChecklist::saNone:
+    case TSynchronizeChecklist::saDeleteRemote:
+    case TSynchronizeChecklist::saDeleteLocal:
+      return true;
+
+    default:
+      return false;
+  }
+}
+//---------------------------------------------------------------------------
+__int64 __fastcall TSynchronizeChecklistDialog::GetItemSize(const TSynchronizeChecklist::TItem * Item)
+{
+  TSynchronizeChecklist::TAction Action = GetChecklistItemAction(Item);
+  if (IsItemSizeIrrelevant(Action))
+  {
+    return 0;
+  }
+  else
+  {
+    switch (Action)
+    {
+      case TSynchronizeChecklist::saUploadNew:
+      case TSynchronizeChecklist::saUploadUpdate:
+        return Item->Local.Size;
+
+      case TSynchronizeChecklist::saDownloadNew:
+      case TSynchronizeChecklist::saDownloadUpdate:
+        return Item->Remote.Size;
+
+      default:
+        FAIL;
+        return 0;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::FormShow(TObject * /*Sender*/)
 {
   ListView->ColProperties->ParamsStr = CustomWinConfiguration->SynchronizeChecklist.ListParams;
 
   LoadList();
+  UpdateStatusBarSize();
+}
+//---------------------------------------------------------------------------
+TRect __fastcall TSynchronizeChecklistDialog::GetColumnHeaderRect(int Index)
+{
+  HWND HeaderHandle = ListView_GetHeader(ListView->Handle);
+  TRect R;
+  Header_GetItemRect(HeaderHandle, Index, &R);
+
+  TScrollInfo ScrollInfo;
+  ZeroMemory(&ScrollInfo, sizeof(ScrollInfo));
+  ScrollInfo.cbSize = sizeof(ScrollInfo);
+  ScrollInfo.fMask = SIF_POS;
+  GetScrollInfo(ListView->Handle, SB_HORZ, &ScrollInfo);
+
+  R.Left -= ScrollInfo.nPos;
+  R.Right -= ScrollInfo.nPos;
+
+  return R;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::ListViewWindowProc(TMessage & Message)
@@ -352,6 +435,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewWindowProc(TMessage & Messa
     TWMNotify & NotifyMessage = reinterpret_cast<TWMNotify &>(Message);
     if (NotifyMessage.NMHdr->code == NM_CUSTOMDRAW)
     {
+      // workaround
       // Due to a bug in VCL, OnAdvancedCustomDrawSubItem is not called for any
       // other stage except for cdPrePaint. So we must call it ourselves.
       TNMLVCustomDraw * CustomDraw =
@@ -359,22 +443,21 @@ void __fastcall TSynchronizeChecklistDialog::ListViewWindowProc(TMessage & Messa
       if (FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_ITEM) &&
           FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_SUBITEM) &&
           FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_ITEMPOSTPAINT) &&
-          (CustomDraw->iSubItem == 4) &&
+          (CustomDraw->iSubItem == ImageColumnIndex) &&
           (ActionImages->Width <= ListView->Columns->Items[CustomDraw->iSubItem]->Width))
       {
         TListItem * Item = ListView->Items->Item[CustomDraw->nmcd.dwItemSpec];
-        const TSynchronizeChecklist::TItem * ChecklistItem =
-          static_cast<const TSynchronizeChecklist::TItem *>(Item->Data);
+        const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+
+        TRect HeaderR = GetColumnHeaderRect(CustomDraw->iSubItem);
         TRect R = Item->DisplayRect(drBounds);
-        for (int Index = 0; Index < CustomDraw->iSubItem; Index++)
-        {
-          R.Left += ListView->Columns->Items[Index]->Width;
-        }
-        R.Left +=
-          (ListView->Columns->Items[CustomDraw->iSubItem]->Width - ActionImages->Width) / 2;
+        R.Left = HeaderR.Left + (HeaderR.Width() - ActionImages->Width) / 2;
+        R.Right = HeaderR.Right;
+
+        // workaround
         // doing this from ListViewAdvancedCustomDraw corrupts list view on Windows 7
         ImageList_Draw(reinterpret_cast<HIMAGELIST>(ActionImages->Handle),
-          int(ChecklistItem->Action), CustomDraw->nmcd.hdc,
+          int(GetChecklistItemAction(ChecklistItem)), CustomDraw->nmcd.hdc,
           R.Left, ((R.Top + R.Bottom - ActionImages->Height) / 2), ILD_TRANSPARENT);
       }
     }
@@ -394,58 +477,73 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
   TStatusBar * StatusBar, TStatusPanel * Panel, const TRect & Rect)
 {
   bool Possible;
-  TSynchronizeChecklist::TAction Action = TSynchronizeChecklist::TAction(Panel->Index);
-  switch (Action)
+  int ActionIndex = Panel->Index;
+  TSynchronizeChecklist::TAction Action = TSynchronizeChecklist::TAction(ActionIndex);
+
+  if (FTotals[ActionIndex] > 0)
   {
-    case TSynchronizeChecklist::saNone:
-      Possible = true;
-      break;
+    // if direction is overriden to an action that is otherwise not possible
+    // in given synchronization mode, we still want to show the stats
+    Possible = true;
+  }
+  else
+  {
+    switch (Action)
+    {
+      case TSynchronizeChecklist::saNone:
+        Possible = true;
+        break;
 
-    case TSynchronizeChecklist::saUploadNew:
-      Possible = ((FMode == smRemote) || (FMode == smBoth)) &&
-        FLAGCLEAR(FParams, spTimestamp);
-      break;
+      case TSynchronizeChecklist::saUploadNew:
+        Possible = ((FMode == smRemote) || (FMode == smBoth)) &&
+          FLAGCLEAR(FParams, spTimestamp);
+        break;
 
-    case TSynchronizeChecklist::saDownloadNew:
-      Possible = ((FMode == smLocal) || (FMode == smBoth)) &&
-        FLAGCLEAR(FParams, spTimestamp);
-      break;
+      case TSynchronizeChecklist::saDownloadNew:
+        Possible = ((FMode == smLocal) || (FMode == smBoth)) &&
+          FLAGCLEAR(FParams, spTimestamp);
+        break;
 
-    case TSynchronizeChecklist::saUploadUpdate:
-      Possible =
-        ((FMode == smRemote) || (FMode == smBoth)) &&
-        (FLAGCLEAR(FParams, spNotByTime) || FLAGSET(FParams, spBySize));
-      break;
+      case TSynchronizeChecklist::saUploadUpdate:
+        Possible =
+          ((FMode == smRemote) || (FMode == smBoth)) &&
+          (FLAGCLEAR(FParams, spNotByTime) || FLAGSET(FParams, spBySize));
+        break;
 
-    case TSynchronizeChecklist::saDownloadUpdate:
-      Possible =
-        ((FMode == smLocal) || (FMode == smBoth)) &&
-        (FLAGCLEAR(FParams, spNotByTime) || FLAGSET(FParams, spBySize));
-      break;
+      case TSynchronizeChecklist::saDownloadUpdate:
+        Possible =
+          ((FMode == smLocal) || (FMode == smBoth)) &&
+          (FLAGCLEAR(FParams, spNotByTime) || FLAGSET(FParams, spBySize));
+        break;
 
-    case TSynchronizeChecklist::saDeleteRemote:
-      Possible = (FMode == smRemote) &&
-        FLAGCLEAR(FParams, spTimestamp);
-      break;
+      case TSynchronizeChecklist::saDeleteRemote:
+        Possible = (FMode == smRemote) &&
+          FLAGCLEAR(FParams, spTimestamp);
+        break;
 
-    case TSynchronizeChecklist::saDeleteLocal:
-      Possible = (FMode == smLocal) &&
-        FLAGCLEAR(FParams, spTimestamp);
-      break;
+      case TSynchronizeChecklist::saDeleteLocal:
+        Possible = (FMode == smLocal) &&
+          FLAGCLEAR(FParams, spTimestamp);
+        break;
 
-    default:
-      FAIL;
-      Possible = false;
-      break;
+      default:
+        FAIL;
+        Possible = false;
+        break;
+    }
   }
 
-  int ImageIndex = Panel->Index;
   UnicodeString PanelText;
   if (Possible)
   {
     PanelText = FORMAT(LoadStrPart(SYNCHRONIZE_SELECTED_ACTIONS, 1),
-      (FormatNumber(FChecked[Panel->Index]),
-       FormatNumber(FTotals[Panel->Index])));
+      (FormatNumber(FChecked[ActionIndex]),
+       FormatNumber(FTotals[ActionIndex])));
+    if ((FChecked[ActionIndex] > 0) &&
+        ((ActionIndex == 0) || !IsItemSizeIrrelevant(Action)))
+    {
+      PanelText += FORMAT(L" (%s)", (FormatBytes(FCheckedSize[ActionIndex])));
+    }
   }
   else
   {
@@ -459,14 +557,21 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
 
   X = Rect.Left + 1;
   Y = ((Rect.Top + Rect.Bottom - ActionImages->Height) / 2);
+  int ImageIndex = ActionIndex;
   ActionImages->Draw(StatusBar->Canvas, X, Y, ImageIndex, Possible);
+}
+//---------------------------------------------------------------------------
+int __fastcall TSynchronizeChecklistDialog::PanelCount()
+{
+  // last "panel" is technical
+  return StatusBar->Panels->Count - 1;
 }
 //---------------------------------------------------------------------------
 int __fastcall TSynchronizeChecklistDialog::PanelAt(int X)
 {
   int Result = 0;
   while ((X > StatusBar->Panels->Items[Result]->Width) &&
-    (Result < StatusBar->Panels->Count - 1))
+    (Result < PanelCount()))
   {
     X -= StatusBar->Panels->Items[Result]->Width;
     Result++;
@@ -507,18 +612,20 @@ void __fastcall TSynchronizeChecklistDialog::ListViewChange(
       assert(Item->Data != NULL);
       if ((FChangingItemChecked != Item->Checked) && (Item->Data != NULL))
       {
-        const TSynchronizeChecklist::TItem * ChecklistItem =
-          static_cast<const TSynchronizeChecklist::TItem *>(Item->Data);
-        if (Item->Checked)
+        const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+        int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
+        int Diff = Item->Checked ? 1 : -1;
+
+        FChecked[ActionIndex] += Diff;
+        FChecked[0] += Diff;
+
+        __int64 ItemSize = GetItemSize(ChecklistItem);
+        if (!Item->Checked)
         {
-          FChecked[int(ChecklistItem->Action)]++;
-          FChecked[0]++;
+          ItemSize = -ItemSize;
         }
-        else
-        {
-          FChecked[int(ChecklistItem->Action)]--;
-          FChecked[0]--;
-        }
+        FCheckedSize[ActionIndex] += ItemSize;
+        FCheckedSize[0] += ItemSize;
 
         if (!FChangingItemMass)
         {
@@ -563,13 +670,17 @@ void __fastcall TSynchronizeChecklistDialog::CheckAll(bool Check)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::CheckAllButtonClick(TObject * Sender)
+void __fastcall TSynchronizeChecklistDialog::CheckAllActionExecute(TObject * /*Sender*/)
 {
-  CheckAll(Sender == CheckAllButton);
+  CheckAll(true);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::CheckButtonClick(
-  TObject * Sender)
+void __fastcall TSynchronizeChecklistDialog::UncheckAllActionExecute(TObject * /*Sender*/)
+{
+  CheckAll(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::Check(bool Check)
 {
   FChangingItemMass = true;
   try
@@ -577,9 +688,7 @@ void __fastcall TSynchronizeChecklistDialog::CheckButtonClick(
     TListItem * Item = ListView->Selected;
     while (Item != NULL)
     {
-      TComponent * Component = dynamic_cast<TComponent *>(Sender);
-      assert(Component != NULL);
-      Item->Checked = (Component->Tag != 0);
+      Item->Checked = Check;
       Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
     }
   }
@@ -588,6 +697,16 @@ void __fastcall TSynchronizeChecklistDialog::CheckButtonClick(
     FChangingItemMass = false;
   }
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CheckActionExecute(TObject * /*Sender*/)
+{
+  Check(true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::UncheckActionExecute(TObject * /*Sender*/)
+{
+  Check(false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::ListViewSelectItem(
@@ -623,9 +742,8 @@ TListItem * __fastcall TSynchronizeChecklistDialog::SelectAll(bool Select, int A
     }
     else
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem =
-        static_cast<const TSynchronizeChecklist::TItem *>(Item->Data);
-      bool WantedAction = (int(ChecklistItem->Action) == Action);
+      const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+      bool WantedAction = (int(GetChecklistItemAction(ChecklistItem)) == Action);
       if (WantedAction || !OnlyTheAction)
       {
         Item->Selected = Select && WantedAction;
@@ -640,7 +758,7 @@ TListItem * __fastcall TSynchronizeChecklistDialog::SelectAll(bool Select, int A
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::SelectAllItemClick(
+void __fastcall TSynchronizeChecklistDialog::SelectAllActionExecute(
   TObject * /*Sender*/)
 {
   SelectAll(true);
@@ -687,10 +805,8 @@ void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
   TObject * /*Sender*/, TListItem * Item1, TListItem * Item2, int /*Data*/,
   int & Compare)
 {
-  const TSynchronizeChecklist::TItem * ChecklistItem1 =
-    static_cast<const TSynchronizeChecklist::TItem *>(Item1->Data);
-  const TSynchronizeChecklist::TItem * ChecklistItem2 =
-    static_cast<const TSynchronizeChecklist::TItem *>(Item2->Data);
+  const TSynchronizeChecklist::TItem * ChecklistItem1 = GetChecklistItem(Item1);
+  const TSynchronizeChecklist::TItem * ChecklistItem2 = GetChecklistItem(Item2);
 
   TIEListViewColProperties * ColProperties =
     dynamic_cast<TIEListViewColProperties *>(ListView->ColProperties);
@@ -716,8 +832,8 @@ void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
         ChecklistItem2->Local.Modification);
       break;
 
-    case 4: // action
-      Compare = CompareNumber(ChecklistItem1->Action, ChecklistItem2->Action);
+    case ImageColumnIndex: // action
+      Compare = CompareNumber(GetChecklistItemAction(ChecklistItem1), GetChecklistItemAction(ChecklistItem2));
       break;
 
     case 6: // remote size
@@ -776,7 +892,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewContextPopup(
   MenuPopup(Sender, MousePos, Handled);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::CustomCommandsButtonClick(
+void __fastcall TSynchronizeChecklistDialog::CustomCommandsActionExecute(
   TObject * /*Sender*/)
 {
   TStrings * LocalFileList = new TStringList();
@@ -788,11 +904,10 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsButtonClick(
 
     while (Item != NULL)
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem =
-        static_cast<const TSynchronizeChecklist::TItem *>(Item->Data);
+      const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
 
-      assert((ChecklistItem->Action == TSynchronizeChecklist::saUploadUpdate) ||
-             (ChecklistItem->Action == TSynchronizeChecklist::saDownloadUpdate));
+      assert((GetChecklistItemAction(ChecklistItem) == TSynchronizeChecklist::saUploadUpdate) ||
+             (GetChecklistItemAction(ChecklistItem) == TSynchronizeChecklist::saDownloadUpdate));
       assert(ChecklistItem->RemoteFile != NULL);
 
       UnicodeString LocalPath =
@@ -818,7 +933,107 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsButtonClick(
   }
 
   assert(FOnCustomCommandMenu != NULL);
-  FOnCustomCommandMenu(CustomCommandsButton,
-    CalculatePopupRect(CustomCommandsButton), LocalFileList, RemoteFileList);
+  FOnCustomCommandMenu(CustomCommandsAction, LocalFileList, RemoteFileList);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::UpdateStatusBarSize()
+{
+  int PanelWidth = Min(StatusBar->Width / PanelCount(), ScaleByTextHeight(this, 160));
+  for (int Index = 0; Index < PanelCount(); Index++)
+  {
+    StatusBar->Panels->Items[Index]->Width = PanelWidth;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::StatusBarResize(TObject * /*Sender*/)
+{
+  UpdateStatusBarSize();
+}
+//---------------------------------------------------------------------------
+const TSynchronizeChecklist::TItem * TSynchronizeChecklistDialog::GetChecklistItem(
+  TListItem * Item)
+{
+  return static_cast<const TSynchronizeChecklist::TItem *>(Item->Data);
+}
+//---------------------------------------------------------------------------
+TSynchronizeChecklist::TAction & TSynchronizeChecklistDialog::GetChecklistItemAction(
+  const TSynchronizeChecklist::TItem * ChecklistItem)
+{
+  TActions::iterator i = FActions.find(ChecklistItem);
+  if (i == FActions.end())
+  {
+    throw EInvalidOperation(L"");
+  }
+  return i->second;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::ReverseActionExecute(TObject * /*Sender*/)
+{
+  TAutoFlag Flag(FChangingItemMass);
+
+  TListItem * Item = ListView->Selected;
+  while (Item != NULL)
+  {
+    const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+    TSynchronizeChecklist::TAction & Action = GetChecklistItemAction(ChecklistItem);
+    TSynchronizeChecklist::TAction NewAction = TSynchronizeChecklist::Reverse(Action);
+
+    if (ALWAYS_TRUE(Action != NewAction))
+    {
+      int ActionIndex = int(Action);
+
+      FTotals[ActionIndex]--;
+      if (Item->Checked)
+      {
+        FChecked[ActionIndex]--;
+
+        __int64 ItemSize = GetItemSize(ChecklistItem);
+        FCheckedSize[ActionIndex] -= ItemSize;
+        FCheckedSize[0] -= ItemSize;
+      }
+
+      Action = NewAction;
+      ActionIndex = int(Action);
+
+      FTotals[ActionIndex]++;
+      if (Item->Checked)
+      {
+        FChecked[ActionIndex]++;
+
+        // item size may differ with action (0 for delete, but non-0 for new file transfer)
+        __int64 ItemSize = GetItemSize(ChecklistItem);
+        FCheckedSize[ActionIndex] += ItemSize;
+        FCheckedSize[0] += ItemSize;
+      }
+
+      LoadItem(Item);
+    }
+
+    Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
+  }
+
+  Flag.Release();
+
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::ListViewClick(TObject * /*Sender*/)
+{
+  TKeyboardState KeyState;
+  GetKeyboardState(KeyState);
+  TShiftState ShiftState = KeyboardStateToShiftState(KeyState);
+  // when selecting, do not reverse, even when user clicked on action column
+  if (!ShiftState.Contains(ssShift) && !ShiftState.Contains(ssCtrl))
+  {
+    TPoint P = ListView->ScreenToClient(Mouse->CursorPos);
+    TRect R = GetColumnHeaderRect(ImageColumnIndex);
+    if ((R.Left <= P.x) && (P.x <= R.Right))
+    {
+      // If no item was selected before the click, the action is not enabled yet here,
+      // and Execute would be noop, force update
+      UpdateControls();
+      ReverseAction->Execute();
+    }
+  }
 }
 //---------------------------------------------------------------------------

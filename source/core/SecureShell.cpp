@@ -213,7 +213,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   UnicodeString SPublicKeyFile = Data->PublicKeyFile;
   if (SPublicKeyFile.IsEmpty()) SPublicKeyFile = Configuration->DefaultKeyFile;
   SPublicKeyFile = StripPathQuotes(ExpandEnvironmentVariables(SPublicKeyFile));
-  Filename * KeyFileFileName = filename_from_str(AnsiString(SPublicKeyFile).c_str());
+  Filename * KeyFileFileName = filename_from_str(UTF8String(SPublicKeyFile).c_str());
   conf_set_filename(conf, CONF_keyfile, KeyFileFileName);
   filename_free(KeyFileFileName);
 
@@ -354,6 +354,9 @@ void __fastcall TSecureShell::Open()
   FAuthenticating = false;
   FAuthenticated = false;
 
+  // do not use UTF-8 until decided otherwise (see TSCPFileSystem::DetectUtf())
+  FUtfStrings = false;
+
   Active = false;
 
   FAuthenticationLog = L"";
@@ -430,6 +433,11 @@ void __fastcall TSecureShell::Open()
   else if (SshImplementation.Pos(L"FlowSsh") > 0)
   {
     FSshImplementation = sshiBitvise;
+  }
+  // e.g. "srtSSHServer_10.00"
+  else if (ContainsText(SshImplementation, L"srtSSHServer"))
+  {
+    FSshImplementation = sshiTitan;
   }
   else
   {
@@ -551,8 +559,23 @@ void __fastcall TSecureShell::Init()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::PuttyLogEvent(const UnicodeString & Str)
+UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Length)
 {
+  int BomLength = strlen(MPEXT_BOM);
+  if ((Length >= BomLength) &&
+      (strncmp(Str, MPEXT_BOM, BomLength) == 0))
+  {
+    return UnicodeString(UTF8String(Str + BomLength, Length - BomLength));
+  }
+  else
+  {
+    return UnicodeString(AnsiString(Str, Length));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
+{
+  UnicodeString Str = ConvertFromPutty(AStr, strlen(AStr));
   #define SERVER_VERSION_MSG L"Server version: "
   // Gross hack
   if (Str.Pos(SERVER_VERSION_MSG) == 1)
@@ -824,7 +847,7 @@ void __fastcall TSecureShell::CWrite(const char * Data, int Length)
   ResetSessionInfo();
 
   // We send only whole line at once, so we have to cache incoming data
-  FCWriteTemp += DeleteChar(UnicodeString(Data, Length), L'\r');
+  FCWriteTemp += DeleteChar(ConvertFromPutty(Data, Length), L'\r');
 
   UnicodeString Line;
   // Do we have at least one complete line in std error cache?
@@ -859,6 +882,8 @@ void __fastcall TSecureShell::UnregisterReceiveHandler(TNotifyEvent Handler)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::FromBackend(bool IsStdErr, const unsigned char * Data, int Length)
 {
+  // Note that we do not apply ConvertFromPutty to Data yet (as opposite to CWrite).
+  // as there's no use for this atm.
   CheckConnection();
 
   if (Configuration->ActualLogProtocol >= 1)
@@ -870,7 +895,7 @@ void __fastcall TSecureShell::FromBackend(bool IsStdErr, const unsigned char * D
 
   if (IsStdErr)
   {
-    AddStdError(UnicodeString(reinterpret_cast<const char *>(Data), Length));
+    AddStdError(ConvertInput(RawByteString(reinterpret_cast<const char *>(Data), Length)));
   }
   else
   {
@@ -1006,7 +1031,7 @@ Integer __fastcall TSecureShell::Receive(unsigned char * Buf, Integer Len)
 UnicodeString __fastcall TSecureShell::ReceiveLine()
 {
   unsigned Index;
-  AnsiString Line;
+  RawByteString Line;
   Boolean EOL = False;
 
   do
@@ -1041,9 +1066,24 @@ UnicodeString __fastcall TSecureShell::ReceiveLine()
   // We don't want end-of-line character
   Line.SetLength(Line.Length()-1);
 
-  UnicodeString UnicodeLine = Line;
-  CaptureOutput(llOutput, UnicodeLine);
-  return UnicodeLine;
+  UnicodeString Result = ConvertInput(Line);
+  CaptureOutput(llOutput, Result);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TSecureShell::ConvertInput(const RawByteString & Input)
+{
+  UnicodeString Result;
+  if (UtfStrings)
+  {
+    Result = UnicodeString(UTF8String(Input.c_str()));
+  }
+  else
+  {
+    Result = UnicodeString(AnsiString(Input.c_str()));
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::SendSpecial(int Code)
@@ -1185,18 +1225,22 @@ void __fastcall TSecureShell::SendNull()
   Send(&Null, 1);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::SendStr(UnicodeString Str)
+void __fastcall TSecureShell::SendLine(const UnicodeString & Line)
 {
   CheckConnection();
-  AnsiString AnsiStr = Str;
-  Send(reinterpret_cast<const unsigned char *>(AnsiStr.c_str()), AnsiStr.Length());
-}
-//---------------------------------------------------------------------------
-void __fastcall TSecureShell::SendLine(UnicodeString Line)
-{
-  SendStr(Line);
-  Send(reinterpret_cast<const unsigned char *>("\n"), 1);
+  RawByteString Buf;
+  if (UtfStrings)
+  {
+    Buf = RawByteString(UTF8String(Line));
+  }
+  else
+  {
+    Buf = RawByteString(AnsiString(Line));
+  }
+  Buf += "\n";
+
   FLog->Add(llInput, Line);
+  Send(reinterpret_cast<const unsigned char *>(Buf.c_str()), Buf.Length());
 }
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::TranslatePuttyMessage(
@@ -1323,7 +1367,7 @@ void __fastcall TSecureShell::CaptureOutput(TLogLineType Type,
 {
   if (FOnCaptureOutput != NULL)
   {
-    FOnCaptureOutput(Line, (Type == llStdError));
+    FOnCaptureOutput(Line, (Type == llStdError) ? cotError : cotOutput);
   }
   FLog->Add(Type, Line);
 }
@@ -2240,6 +2284,10 @@ void __fastcall TSecureShell::CollectUsage()
   else if (SshImplementation == sshiBitvise)
   {
     Configuration->Usage->Inc(L"OpenedSessionsSSHBitvise");
+  }
+  else if (SshImplementation == sshiTitan)
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSHTitan");
   }
   else
   {

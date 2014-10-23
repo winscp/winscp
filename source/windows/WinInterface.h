@@ -73,6 +73,9 @@ void __fastcall FormHelp(TForm * Form);
 void __fastcall SearchHelp(const UnicodeString & Message);
 void __fastcall MessageWithNoHelp(const UnicodeString & Message);
 
+class TProgramParams;
+bool __fastcall CheckXmlLogParam(TProgramParams * Params);
+
 UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent);
 void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString LayoutStr);
 
@@ -180,7 +183,7 @@ bool __fastcall DoCopyDialog(bool ToRemote,
 
 // forms\CreateDirectory.cpp
 bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
-  TRemoteProperties * Properties, bool & SaveSettings);
+  TRemoteProperties * Properties, int AllowedChanges, bool & SaveSettings);
 
 // forms\ImportSessions.cpp
 bool __fastcall DoImportSessionsDialog(TList * Imported);
@@ -268,7 +271,8 @@ typedef void __fastcall (__closure *TCalculateChecksumEvent)
    TCalculatedChecksumCallbackEvent OnCalculatedChecksum, bool & Close);
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
     const UnicodeString Directory, const TRemoteTokenList * GroupList,
-    const TRemoteTokenList * UserList, TRemoteProperties * Properties,
+    const TRemoteTokenList * UserList, TStrings * ChecksumAlgs,
+    TRemoteProperties * Properties,
     int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
 
@@ -329,7 +333,7 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
 // forms\SynchronizeChecklist.cpp
 class TSynchronizeChecklist;
 typedef void __fastcall (__closure *TCustomCommandMenuEvent)
-  (TObject * Sender, TRect Rect, TStrings * LocalFileList, TStrings * RemoteFileList);
+  (TAction * Action, TStrings * LocalFileList, TStrings * RemoteFileList);
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,

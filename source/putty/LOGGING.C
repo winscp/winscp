@@ -107,7 +107,7 @@ static void logfopen_callback(void *handle, int mode)
 		  " =~=~=~=~=~=~=~=~=~=~=~=\r\n", buf);
     }
 
-    event = dupprintf("%s session log (%s mode) to file: %s",
+    event = dupprintf(MPEXT_BOM "%s session log (%s mode) to file: %s",
 		      ctx->state == L_ERROR ?
 		      (mode == 0 ? "Disabled writing" : "Error writing") :
 		      (mode == 1 ? "Appending" : "Writing new"),

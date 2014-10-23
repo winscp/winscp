@@ -27,10 +27,10 @@ object CleanupDialog: TCleanupDialog
     AutoSize = False
     Caption = 
       'Following list contains all application data possibly stored on ' +
-      'this computer. Check those you want to remove.'#13#10#13#10'If another int' +
-      'ance of application is running, please close it before cleaning ' +
-      'data.'#13#10#13#10'Notice: Opening session and/or next execution of applic' +
-      'ation will recreate some of data.'
+      'this computer. Check those you want to remove.'#13#10#13#10'If another ins' +
+      'tance of application is running, please close it before cleaning' +
+      ' data.'#13#10#13#10'Notice: Opening session and/or next execution of appli' +
+      'cation will recreate some of data.'
     WordWrap = True
   end
   object OKButton: TButton

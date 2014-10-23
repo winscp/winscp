@@ -295,6 +295,11 @@ __published:
   TComboBox *FormatSizeBytesCombo;
   TCheckBox *UpdatesShowOnStartup;
   TCheckBox *ExternalSessionInExistingInstanceCheck;
+  TCheckBox *TemporaryDirectoryDeterministicCheck;
+  TGroupBox *PanelFontGroup;
+  TLabel *PanelFontLabel;
+  TButton *PanelFontButton;
+  TCheckBox *PanelFontCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -371,10 +376,13 @@ __published:
   void __fastcall RegisterAsUrlHandlerItemClick(TObject *Sender);
   void __fastcall UnregisterForDefaultProtocolsItemClick(TObject *Sender);
   void __fastcall MakeDefaultHandlerItemClick(TObject *Sender);
+  void __fastcall PanelFontLabelDblClick(TObject *Sender);
+  void __fastcall PanelFontButtonClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;
-  TFont * FEditorFont;
+  std::unique_ptr<TFont> FEditorFont;
+  std::unique_ptr<TFont> FPanelFont;
   TCustomCommandList * FCustomCommandList;
   TCopyParamList * FCopyParamList;
   TEditorList * FEditorList;

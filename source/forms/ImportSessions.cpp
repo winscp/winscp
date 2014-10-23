@@ -13,6 +13,7 @@
 #include <WinInterface.h>
 #include <TextsWin.h>
 #include <CoreMain.h>
+#include <PasTools.hpp>
 //---------------------------------------------------------------------
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
@@ -20,10 +21,14 @@
 //---------------------------------------------------------------------
 bool __fastcall DoImportSessionsDialog(TList * Imported)
 {
+  std::unique_ptr<TStrings> Errors(new TStringList());
+  UnicodeString Error;
   std::unique_ptr<TStoredSessionList> PuttyImportSessionList(
-    GUIConfiguration->SelectPuttySessionsForImport(StoredSessions));
+    GUIConfiguration->SelectPuttySessionsForImport(StoredSessions, Error));
+  Errors->Add(Error);
   std::unique_ptr<TStoredSessionList> FilezillaImportSessionList(
-    GUIConfiguration->SelectFilezillaSessionsForImport(StoredSessions));
+    GUIConfiguration->SelectFilezillaSessionsForImport(StoredSessions, Error));
+  Errors->Add(Error);
 
   std::unique_ptr<TList> SessionListsList(new TList());
   SessionListsList->Add(PuttyImportSessionList.get());
@@ -34,7 +39,7 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
   std::unique_ptr<TImportSessionsDialog> ImportSessionsDialog(
     SafeFormCreate<TImportSessionsDialog>(Application));
 
-  ImportSessionsDialog->Init(SessionListsList.get());
+  ImportSessionsDialog->Init(SessionListsList.get(), Errors.get());
 
   bool Result = ImportSessionsDialog->Execute(ImportKeys);
 
@@ -65,8 +70,10 @@ __fastcall TImportSessionsDialog::TImportSessionsDialog(TComponent * AOwner) :
   Caption = LoadStr(IMPORT_CAPTION);
 }
 //---------------------------------------------------------------------
-void __fastcall TImportSessionsDialog::Init(TList * SessionListsList)
+void __fastcall TImportSessionsDialog::Init(TList * SessionListsList, TStrings * Errors)
 {
+  FErrors = Errors;
+
   for (int Index = 0; Index < SessionListsList->Count; Index++)
   {
     SourceComboBox->Items->Objects[Index] = static_cast<TObject *>(SessionListsList->Items[Index]);
@@ -76,13 +83,19 @@ void __fastcall TImportSessionsDialog::Init(TList * SessionListsList)
     }
   }
 
-  // should not happen as we never get here when there are no sessions to import
   if (SourceComboBox->ItemIndex < 0)
   {
     SourceComboBox->ItemIndex = 0;
   }
 
   LoadSessions();
+
+  int Offset = ScaleByTextHeight(this, 8);
+  ErrorPanel->BoundsRect =
+    TRect(
+      SessionListView2->BoundsRect.Left + Offset, SessionListView2->BoundsRect.Top + Offset,
+      SessionListView2->BoundsRect.Right - Offset, SessionListView2->BoundsRect.Bottom - Offset);
+
 }
 //---------------------------------------------------------------------
 TStoredSessionList * __fastcall TImportSessionsDialog::GetSessionList(int Index)
@@ -135,11 +148,12 @@ void __fastcall TImportSessionsDialog::SaveSelection()
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::LoadSessions()
 {
+  TStoredSessionList * SessionList = GetSessionList(SourceComboBox->ItemIndex);
+
   SessionListView2->Items->BeginUpdate();
   try
   {
     SessionListView2->Items->Clear();
-    TStoredSessionList * SessionList = GetSessionList(SourceComboBox->ItemIndex);
     for (int Index = 0; Index < SessionList->Count; Index++)
     {
       TSessionData * Session = SessionList->Sessions[Index];
@@ -153,6 +167,18 @@ void __fastcall TImportSessionsDialog::LoadSessions()
   {
     SessionListView2->Items->EndUpdate();
   }
+
+  UnicodeString Error = FErrors->Strings[SourceComboBox->ItemIndex];
+  if ((SessionList->Count > 0) || Error.IsEmpty())
+  {
+    ErrorPanel->Visible = false;
+  }
+  else
+  {
+    ErrorLabel->Caption = Error;
+    ErrorPanel->Visible = true;
+  }
+
   UpdateControls();
 }
 //---------------------------------------------------------------------------

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using System.Security;
 
 namespace WinSCP
 {
@@ -49,9 +50,10 @@ namespace WinSCP
         public string HostName { get; set; }
         public int PortNumber { get { return _portNumber; } set { SetPortNumber(value); } }
         public string UserName { get; set; }
-        public string Password { get; set; }
+        public string Password { get { return GetPassword(); } set { SetPassword(value); } }
+        public SecureString SecurePassword { get; set; }
         public TimeSpan Timeout { get { return _timeout; } set { SetTimeout(value); } }
-        public int TimeoutInMilliseconds { get { return GetTimeoutInMilliseconds(); } set { SetTimeoutInMilliseconds(value); } }
+        public int TimeoutInMilliseconds { get { return Tools.TimeSpanToMilliseconds(Timeout); } set { Timeout = Tools.MillisecondsToTimeSpan(value); } }
 
         // SSH
         public string SshHostKeyFingerprint { get { return _sshHostKeyFingerprint; } set { SetSshHostKeyFingerprint(value); } }
@@ -65,6 +67,7 @@ namespace WinSCP
 
         // WebDAV
         public bool WebdavSecure { get; set; }
+        public string WebdavRoot { get { return _webdavRoot; } set { SetWebdavRoot(value); } }
 
         // TLS
         public string TlsHostCertificateFingerprint { get { return _tlsHostCertificateFingerprint; } set { SetHostTlsCertificateFingerprint(value); } }
@@ -128,24 +131,50 @@ namespace WinSCP
             _portNumber = value;
         }
 
-        private int GetTimeoutInMilliseconds()
+        private void SetWebdavRoot(string value)
         {
-            if ((Timeout.TotalMilliseconds > int.MaxValue) || (Timeout.TotalMilliseconds < int.MinValue))
+            if (!string.IsNullOrEmpty(value) && (value[0] != '/'))
             {
-                throw new InvalidCastException(string.Format(CultureInfo.CurrentCulture, "Cannot convert {0} to integer", Timeout));
+                throw new ArgumentException("WebDAV root path has to start with slash");
             }
-            return (int)Timeout.TotalMilliseconds;
+            _webdavRoot = value;
         }
 
-        private void SetTimeoutInMilliseconds(int value)
+        private void SetPassword(string value)
         {
-            Timeout = TimeSpan.FromMilliseconds(value);
+            SecurePassword = new SecureString();
+            foreach (char c in value)
+            {
+                SecurePassword.AppendChar(c);
+            }
+        }
+
+        private string GetPassword()
+        {
+            if (SecurePassword == null)
+            {
+                return null;
+            }
+            else
+            {
+                IntPtr ptr = IntPtr.Zero;
+                try
+                {
+                    ptr = Marshal.SecureStringToGlobalAllocUnicode(SecurePassword);
+                    return Marshal.PtrToStringUni(ptr);
+                }
+                finally
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(ptr);
+                }
+            }
         }
 
         private string _sshHostKeyFingerprint;
         private string _tlsHostCertificateFingerprint;
         private TimeSpan _timeout;
         private int _portNumber;
+        private string _webdavRoot;
 
         private const string _listPattern = @"{0}(;{0})*";
         private const string _sshHostKeyPattern = @"(ssh-rsa |ssh-dss )?\d+ ([0-9a-f]{2}:){15}[0-9a-f]{2}";

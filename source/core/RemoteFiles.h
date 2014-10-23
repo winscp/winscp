@@ -97,6 +97,7 @@ private:
   TRemoteFile * FLinkedByFile;
   UnicodeString FLinkTo;
   TRights *FRights;
+  UnicodeString FHumanRights;
   TTerminal *FTerminal;
   wchar_t FType;
   bool FSelected;
@@ -162,6 +163,7 @@ public:
   __property UnicodeString LinkTo = { read = FLinkTo, write = FLinkTo };
   __property UnicodeString ListingStr = { read = GetListingStr, write = SetListingStr };
   __property TRights * Rights = { read = FRights, write = SetRights };
+  __property UnicodeString HumanRights = { read = FHumanRights, write = FHumanRights };
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property wchar_t Type = { read = GetType, write = SetType };
   __property bool Selected  = { read=FSelected, write=FSelected };

@@ -42,7 +42,7 @@ __published:
   TLabel *TimeLeftLabel;
   THistoryComboBox *SpeedCombo;
   TLabel *OnceDoneOperationLabel;
-  TComboBox *OnceDoneOperationCombo;
+  TComboBox *OnceDoneOperationCombo2;
   TPopupMenu *MinimizeMenu;
   TMenuItem *MoveToQueueMenuItem;
   TMenuItem *MinimizeMenuItem;
@@ -54,8 +54,8 @@ __published:
   void __fastcall SpeedComboExit(TObject *Sender);
   void __fastcall SpeedComboSelect(TObject *Sender);
   void __fastcall SpeedComboKeyPress(TObject *Sender, wchar_t &Key);
-  void __fastcall OnceDoneOperationComboSelect(TObject *Sender);
-  void __fastcall OnceDoneOperationComboCloseUp(TObject *Sender);
+  void __fastcall OnceDoneOperationCombo2Select(TObject *Sender);
+  void __fastcall OnceDoneOperationCombo2CloseUp(TObject *Sender);
   void __fastcall MinimizeMenuItemClick(TObject *Sender);
   void __fastcall MoveToQueueMenuItemClick(TObject *Sender);
 

@@ -88,6 +88,15 @@ void __fastcall TEditorPreferences::LegacyDefaults()
   FData.ExternalEditor = GetDefaultExternalEditor();
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TEditorPreferences::ExtractExternalEditorName() const
+{
+  assert(FData.Editor == edExternal);
+  UnicodeString ExternalEditor = FData.ExternalEditor;
+  ReformatFileNameCommand(ExternalEditor);
+  // Trim is a workaround for unknown problem with "notepad  " (2 trailing spaces)
+  return ExtractProgramName(ExternalEditor).Trim();
+}
+//---------------------------------------------------------------------------
 void __fastcall TEditorPreferences::Load(THierarchicalStorage * Storage, bool Legacy)
 {
   if (!Legacy)
@@ -368,10 +377,20 @@ bool __fastcall TEditorList::IsDefaultList() const
   for (int Index = 0; Result && (Index < Count); Index++)
   {
     const TEditorPreferences * Editor = GetEditor(Index);
-    Result =
-      (Editor->Data->Editor == edInternal) ||
-      ((Editor->Data->Editor == edExternal) &&
-       (SameText(Editor->Data->ExternalEditor, TEditorPreferences::GetDefaultExternalEditor())));
+    if (Editor->Data->Editor == edInternal)
+    {
+      // noop (keeps Result true)
+    }
+    else if (Editor->Data->Editor == edExternal)
+    {
+      UnicodeString ExternalEditor = Editor->ExtractExternalEditorName();
+      UnicodeString DefaultExternalEditor = ExtractProgramName(TEditorPreferences::GetDefaultExternalEditor());
+      Result = SameText(ExternalEditor, DefaultExternalEditor);
+    }
+    else
+    {
+      Result = false;
+    }
   }
   return Result;
 }
@@ -388,6 +407,8 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   FDontDecryptPasswords = 0;
   FMasterPasswordSession = 0;
   FMasterPasswordSessionAsked = false;
+  FSystemIconFont.reset(new TFont());
+  UpdateSystemIconFont();
   Default();
 
   try
@@ -450,6 +471,7 @@ void __fastcall TWinConfiguration::Default()
   FDefaultDirIsHome = true;
   FDDDeleteDelay = 120;
   FTemporaryDirectoryAppendSession = false;
+  FTemporaryDirectoryDeterministic = false;
   FTemporaryDirectoryAppendPath = true;
   FTemporaryDirectoryCleanup = true;
   FConfirmTemporaryDirectoryCleanup = true;
@@ -473,6 +495,10 @@ void __fastcall TWinConfiguration::Default()
   FAutoOpenInPutty = false;
   FRefreshRemotePanel = false;
   FRefreshRemotePanelInterval = TDateTime(0, 1, 0, 0);
+  FPanelFont.FontName = L"";
+  FPanelFont.FontSize = 0;
+  FPanelFont.FontStyle = 0;
+  FPanelFont.FontCharset = DEFAULT_CHARSET;
   FFullRowSelect = false;
   FOfferedEditorAutoConfig = false;
   FVersionHistory = L"";
@@ -485,11 +511,12 @@ void __fastcall TWinConfiguration::Default()
   FAutoImportedFromPuttyOrFilezilla = false;
   FGenerateUrlComponents = -1;
   FExternalSessionInExistingInstance = true;
+  HonorDrivePolicy = true;
 
-  FEditor.FontName = DefaultFixedWidthFontName;
-  FEditor.FontSize = DefaultFixedWidthFontSize;
-  FEditor.FontStyle = 0;
-  FEditor.FontCharset = DEFAULT_CHARSET;
+  FEditor.Font.FontName = DefaultFixedWidthFontName;
+  FEditor.Font.FontSize = DefaultFixedWidthFontSize;
+  FEditor.Font.FontStyle = 0;
+  FEditor.Font.FontCharset = DEFAULT_CHARSET;
   FEditor.WordWrap = false;
   FEditor.FindText = L"";
   FEditor.ReplaceText = L"";
@@ -674,7 +701,7 @@ bool __fastcall TWinConfiguration::CanWriteToStorage()
   bool Result = false;
   try
   {
-    THierarchicalStorage * Storage = CreateScpStorage(false);
+    THierarchicalStorage * Storage = CreateConfigStorage();
     try
     {
       Storage->AccessMode = smReadWrite;
@@ -776,12 +803,15 @@ bool __fastcall TWinConfiguration::GetUseMasterPassword()
   return FUseMasterPassword;
 }
 //---------------------------------------------------------------------------
-THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
+THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
 {
   THierarchicalStorage * Result;
   if (SessionList && !FTemporarySessionFile.IsEmpty())
   {
     Result = new TIniFileStorage(FTemporarySessionFile);
+    // This is session-list specific store, so the only instance,
+    // we do not reset the SessionList argument
+    // (compare TConfiguration::CreateScpStorage)
   }
   else
   {
@@ -827,6 +857,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     DefaultDirIsHome); \
     KEY(Bool,     TemporaryDirectoryAppendSession); \
     KEY(Bool,     TemporaryDirectoryAppendPath); \
+    KEY(Bool,     TemporaryDirectoryDeterministic); \
     KEY(Bool,     TemporaryDirectoryCleanup); \
     KEY(Bool,     ConfirmTemporaryDirectoryCleanup); \
     KEY(Bool,     PreservePanelState); \
@@ -846,6 +877,10 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     AutoOpenInPutty); \
     KEY(Bool,     RefreshRemotePanel); \
     KEY(DateTime, RefreshRemotePanelInterval); \
+    KEYEX(String, PanelFont.FontName, L"PanelFontName"); \
+    KEYEX(Integer,PanelFont.FontSize, L"PanelFontSize"); \
+    KEYEX(Integer,PanelFont.FontStyle, L"PanelFontStyle"); \
+    KEYEX(Integer,PanelFont.FontCharset, L"PanelFontCharset"); \
     KEY(Bool,     FullRowSelect); \
     KEY(Bool,     OfferedEditorAutoConfig); \
     KEY(Integer,  LastMonitor); \
@@ -855,12 +890,13 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     AutoImportedFromPuttyOrFilezilla); \
     KEY(Integer,  GenerateUrlComponents); \
     KEY(Bool,     ExternalSessionInExistingInstance); \
+    KEY(Bool,     HonorDrivePolicy); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
-    KEYEX(String,   Editor.FontName, L"FontName2"); \
-    KEY(Integer,  Editor.FontSize); \
-    KEY(Integer,  Editor.FontStyle); \
-    KEY(Integer,  Editor.FontCharset); \
+    KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
+    KEY(Integer,  Editor.Font.FontSize); \
+    KEY(Integer,  Editor.Font.FontStyle); \
+    KEY(Integer,  Editor.Font.FontCharset); \
     KEY(Bool,     Editor.WordWrap); \
     KEY(String,   Editor.FindText); \
     KEY(String,   Editor.ReplaceText); \
@@ -1074,6 +1110,9 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   #pragma warn +eas
   #undef KEYEX
 
+  // to reflect changes to PanelFont
+  UpdateIconFont();
+
   if (Storage->OpenSubKey(L"Bookmarks", false))
   {
     FBookmarks->Load(Storage);
@@ -1190,6 +1229,12 @@ bool __fastcall TWinConfiguration::DoIsBeta(const UnicodeString & ReleaseType)
 bool __fastcall TWinConfiguration::GetIsBeta()
 {
   return DoIsBeta(FileInfoString[L"ReleaseType"]);
+}
+//---------------------------------------------------------------------------
+TFont * __fastcall TWinConfiguration::GetSystemIconFont()
+{
+  // We should do live update from Screen->IconFont when custom panel font is not set
+  return FSystemIconFont.get();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::GetAnyBetaInVersionHistory()
@@ -1626,6 +1671,11 @@ void __fastcall TWinConfiguration::SetTemporaryDirectoryAppendPath(bool value)
   SET_CONFIG_PROPERTY(TemporaryDirectoryAppendPath);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTemporaryDirectoryDeterministic(bool value)
+{
+  SET_CONFIG_PROPERTY(TemporaryDirectoryDeterministic);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetTemporaryDirectoryCleanup(bool value)
 {
   SET_CONFIG_PROPERTY(TemporaryDirectoryCleanup);
@@ -1721,6 +1771,40 @@ void __fastcall TWinConfiguration::SetRefreshRemotePanelInterval(TDateTime value
   SET_CONFIG_PROPERTY(RefreshRemotePanelInterval);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::UpdateSystemIconFont()
+{
+  FSystemIconFont->Assign(Screen->IconFont);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::UpdateIconFont()
+{
+  if (!PanelFont.FontName.IsEmpty())
+  {
+    UpdateSystemIconFont();
+    std::unique_ptr<TFont> IconFont(new TFont());
+    RestoreFont(PanelFont, IconFont.get());
+    Screen->IconFont->Assign(IconFont.get());
+    // When using non-standard icon font, prevent resetting it back
+    // to standard one on WM_WININICHANGE. Unfortunatelly this prevents
+    // updating all other fonts.
+    Application->UpdateMetricSettings = false;
+  }
+  else
+  {
+    if (ALWAYS_TRUE(FSystemIconFont.get() != NULL) &&
+        !SameFont(Screen->IconFont, FSystemIconFont.get()))
+    {
+      Screen->IconFont->Assign(FSystemIconFont.get());
+    }
+    Application->UpdateMetricSettings = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetPanelFont(const TFontConfiguration & value)
+{
+  SET_CONFIG_PROPERTY_EX(PanelFont, UpdateIconFont());
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetFullRowSelect(bool value)
 {
   SET_CONFIG_PROPERTY(FullRowSelect);
@@ -1749,6 +1833,20 @@ void __fastcall TWinConfiguration::SetGenerateUrlComponents(int value)
 void __fastcall TWinConfiguration::SetExternalSessionInExistingInstance(bool value)
 {
   SET_CONFIG_PROPERTY(ExternalSessionInExistingInstance);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetHonorDrivePolicy()
+{
+  return DriveInfo->HonorDrivePolicy;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetHonorDrivePolicy(bool value)
+{
+  if (HonorDrivePolicy != value)
+  {
+    DriveInfo->HonorDrivePolicy = value;
+    Changed();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCustomCommandList(TCustomCommandList * value)
@@ -1799,10 +1897,14 @@ int __fastcall TWinConfiguration::GetLastMonitor()
   return ::GetLastMonitor();
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TWinConfiguration::ExpandedTemporaryDirectory()
+{
+  return ExpandFileName(ExpandEnvironmentVariables(DDTemporaryDirectory));
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TWinConfiguration::TemporaryDir(bool Mask)
 {
-  return UniqTempDir(ExpandFileName(ExpandEnvironmentVariables(DDTemporaryDirectory)),
-    L"scp", Mask);
+  return UniqTempDir(ExpandedTemporaryDirectory(), L"scp", Mask);
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TWinConfiguration::FindTemporaryFolders()
@@ -2196,7 +2298,7 @@ void __fastcall TWinConfiguration::TrimJumpList(TStringList * List)
 void __fastcall TWinConfiguration::UpdateEntryInJumpList(
   bool Session, const UnicodeString & Name, bool Add)
 {
-  THierarchicalStorage * Storage = CreateScpStorage(false);
+  THierarchicalStorage * Storage = CreateConfigStorage();
   try
   {
     FDontDecryptPasswords++;
@@ -2296,13 +2398,28 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
     const TEditorPreferences * Editor = EditorList->Editors[Index];
     if (Editor->Data->Editor == edExternal)
     {
-      UnicodeString ExternalEditor = Editor->Data->ExternalEditor;
-      ReformatFileNameCommand(ExternalEditor);
-      UnicodeString Name = ExtractProgramName(ExternalEditor);
-      AddToList(ExternalEditors, Name, ",");
+      AddToList(ExternalEditors, Editor->ExtractExternalEditorName(), ",");
     }
   }
   Usage->Set(L"ExternalEditors", ExternalEditors);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::RestoreFont(
+  const TFontConfiguration & Configuration, TFont * Font)
+{
+  Font->Name = Configuration.FontName;
+  Font->Size = Configuration.FontSize;
+  Font->Charset = Configuration.FontCharset;
+  Font->Style = IntToFontStyles(Configuration.FontStyle);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::StoreFont(
+  TFont * Font, TFontConfiguration & Configuration)
+{
+  Configuration.FontName = Font->Name;
+  Configuration.FontSize = Font->Size;
+  Configuration.FontCharset = Font->Charset;
+  Configuration.FontStyle = FontStylesToInt(Font->Style);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

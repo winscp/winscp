@@ -26,6 +26,8 @@ Boolean __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
     Result = (CleanupDialog->ShowModal() == DefaultResult(CleanupDialog));
     if (Result)
     {
+      Configuration->Usage->Inc(L"Cleanups");
+
       for (int i = wdConfiguration; i <= wdTemporaryFolders; i++)
       {
         if (CleanupDialog->CleanupData[(TWinSCPData)i])

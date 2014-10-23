@@ -20,7 +20,6 @@ typedef void __fastcall (__closure* TProcessMessagesEvent)();
 //---------------------------------------------------------------------------
 bool __fastcall FindFile(UnicodeString & Path);
 bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path);
-bool __fastcall FileExistsEx(UnicodeString Path);
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params);
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle);

@@ -26,7 +26,7 @@ object ProgressForm: TProgressForm
     Height = 13
     Anchors = [akTop, akRight]
     Caption = 'Once &finished:'
-    FocusControl = OnceDoneOperationCombo
+    FocusControl = OnceDoneOperationCombo2
   end
   object Animate: TAnimate
     Left = 10
@@ -265,7 +265,7 @@ object ProgressForm: TProgressForm
         '8')
     end
   end
-  object OnceDoneOperationCombo: TComboBox
+  object OnceDoneOperationCombo2: TComboBox
     Left = 320
     Top = 104
     Width = 100
@@ -274,11 +274,12 @@ object ProgressForm: TProgressForm
     Style = csDropDownList
     Anchors = [akTop, akRight]
     TabOrder = 5
-    OnCloseUp = OnceDoneOperationComboCloseUp
-    OnSelect = OnceDoneOperationComboSelect
+    OnCloseUp = OnceDoneOperationCombo2CloseUp
+    OnSelect = OnceDoneOperationCombo2Select
     Items.Strings = (
       'Stay idle'
       'Disconnect'
+      'Suspend'
       'Shut down')
   end
   object UpdateTimer: TTimer

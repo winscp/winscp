@@ -80,6 +80,7 @@ public:
   virtual bool __fastcall TemporaryTransferFile(const UnicodeString & FileName);
   virtual bool __fastcall GetStoredCredentialsTried();
   virtual UnicodeString __fastcall GetUserName();
+  virtual void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
 
 protected:
   TSecureShell * FSecureShell;
@@ -99,7 +100,8 @@ protected:
   bool FAvoidBusy;
   TStrings * FExtensions;
   TSFTPSupport * FSupport;
-  bool FUtfStrings;
+  TAutoSwitch FUtfStrings;
+  bool FUtfDisablingAnnounced;
   bool FSignedTS;
   TStrings * FFixedPaths;
   unsigned long FMaxPacketSize;

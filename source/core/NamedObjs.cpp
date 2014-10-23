@@ -2,6 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Common.h"
 #include "NamedObjs.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -14,7 +15,7 @@ int __fastcall NamedObjectSortProc(void * Item1, void * Item2)
     else
   if (!HasPrefix1 && HasPrefix2) return 1;
     else
-  return AnsiCompareStr(((TNamedObject *)Item1)->Name, ((TNamedObject *)Item2)->Name);
+  return CompareLogicalText(((TNamedObject *)Item1)->Name, ((TNamedObject *)Item2)->Name);
 }
 //--- TNamedObject ----------------------------------------------------------
 __fastcall TNamedObject::TNamedObject(UnicodeString AName)
@@ -66,11 +67,12 @@ __fastcall TNamedObjectList::TNamedObjectList():
   TObjectList()
 {
   AutoSort = True;
+  FHiddenCount = 0;
 }
 //---------------------------------------------------------------------------
 TNamedObject * __fastcall TNamedObjectList::AtObject(Integer Index)
 {
-  return (TNamedObject *)Items[Index+HiddenCount];
+  return (TNamedObject *)Items[Index+FHiddenCount];
 }
 //---------------------------------------------------------------------------
 void __fastcall TNamedObjectList::Recount()
@@ -83,18 +85,26 @@ void __fastcall TNamedObjectList::Recount()
 void __fastcall TNamedObjectList::AlphaSort()
 {
   Sort(NamedObjectSortProc);
+  Recount();
 }
 //---------------------------------------------------------------------------
 void __fastcall TNamedObjectList::Notify(void *Ptr, TListNotification Action)
 {
   TObjectList::Notify(Ptr, Action);
-  if (AutoSort && (Action == lnAdded)) AlphaSort();
-  Recount();
+  if (Action == lnAdded)
+  {
+    FHiddenCount = -1;
+    if (AutoSort)
+    {
+      AlphaSort();
+    }
+  }
 }
 //---------------------------------------------------------------------------
 TNamedObject * __fastcall TNamedObjectList::FindByName(UnicodeString Name,
   Boolean CaseSensitive)
 {
+  // this should/can be optimized when list is sorted
   for (Integer Index = 0; Index < TObjectList::Count; Index++)
     if (!((TNamedObject *)Items[Index])->CompareName(Name, CaseSensitive))
       return (TNamedObject *)Items[Index];
@@ -108,5 +118,12 @@ void __fastcall TNamedObjectList::SetCount(int value)
 //---------------------------------------------------------------------------
 int __fastcall TNamedObjectList::GetCount()
 {
-  return TObjectList::Count - HiddenCount;
+  assert(FHiddenCount >= 0);
+  return TObjectList::Count - FHiddenCount;
+}
+//---------------------------------------------------------------------------
+int __fastcall TNamedObjectList::GetCountIncludingHidden()
+{
+  assert(FHiddenCount >= 0);
+  return TObjectList::Count;
 }

@@ -441,10 +441,12 @@ namespace WinSCP
             return new ConsoleCommStruct(_session, _fileMapping);
         }
 
-        private static bool TryCreateEvent(string name, out EventWaitHandle ev)
+        private bool TryCreateEvent(string name, out EventWaitHandle ev)
         {
             bool createdNew;
+            _logger.WriteLine("Creating event {0}", name);
             ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew);
+            _logger.WriteLine("Created event {0} with handle {1}, new {2}", name, ev.SafeWaitHandle.DangerousGetHandle(), createdNew);
             return createdNew;
         }
 

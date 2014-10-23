@@ -59,10 +59,10 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 
   FNoUpdate = 0;
   FPreferencesMode = PreferencesMode;
-  FEditorFont = new TFont();
+  FEditorFont.reset(new TFont());
   FEditorFont->Color = clWindowText;
-  // color tends to reset in object inspector
-  EditorFontLabel->Color = clWindow;
+  FPanelFont.reset(new TFont());
+  FPanelFont->Color = clWindowText;
   // currently useless
   FAfterFilenameEditDialog = false;
   FCustomCommandList = new TCustomCommandList();
@@ -105,7 +105,6 @@ __fastcall TPreferencesDialog::~TPreferencesDialog()
   SAFE_DESTROY(FEditorScrollOnDragOver);
   SAFE_DESTROY(FCopyParamScrollOnDragOver);
   SAFE_DESTROY(FCustomCommandsScrollOnDragOver);
-  SAFE_DESTROY(FEditorFont);
   delete FCustomCommandList;
   FCustomCommandList = NULL;
   delete FCopyParamList;
@@ -221,13 +220,14 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(BeepOnFinish);
     BOOLPROP(TemporaryDirectoryAppendSession);
     BOOLPROP(TemporaryDirectoryAppendPath);
+    BOOLPROP(TemporaryDirectoryDeterministic);
     BOOLPROP(TemporaryDirectoryCleanup);
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     BOOLPROP(FullRowSelect);
 
     if (WinConfiguration->DDTransferConfirmation == asAuto)
     {
-      // allow greayed state only initially,
+      // allow grayed state only initially,
       // once the off state is confirmed, never allow returning
       // to the undefined state
       DDTransferConfirmationCheck->AllowGrayed = true;
@@ -305,10 +305,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     {
       EditorEncodingCombo->ItemIndex = 0;
     }
-    FEditorFont->Name = WinConfiguration->Editor.FontName;
-    FEditorFont->Size = WinConfiguration->Editor.FontSize;
-    FEditorFont->Charset = (TFontCharset)WinConfiguration->Editor.FontCharset;
-    FEditorFont->Style = IntToFontStyles(WinConfiguration->Editor.FontStyle);
+    TWinConfiguration::RestoreFont(WinConfiguration->Editor.Font, FEditorFont.get());
     (*FEditorList) = *WinConfiguration->EditorList;
     UpdateEditorListView();
 
@@ -434,6 +431,17 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         break;
       default:
         FAIL;
+    }
+
+    bool CustomPanelFont = !WinConfiguration->PanelFont.FontName.IsEmpty();
+    PanelFontCheck->Checked = CustomPanelFont;
+    if (CustomPanelFont)
+    {
+      TWinConfiguration::RestoreFont(WinConfiguration->PanelFont, FPanelFont.get());
+    }
+    else
+    {
+      FPanelFont->Assign(WinConfiguration->SystemIconFont);
     }
 
     // updates
@@ -600,6 +608,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(BeepOnFinish);
     BOOLPROP(TemporaryDirectoryAppendSession);
     BOOLPROP(TemporaryDirectoryAppendPath);
+    BOOLPROP(TemporaryDirectoryDeterministic);
     BOOLPROP(TemporaryDirectoryCleanup);
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     BOOLPROP(FullRowSelect);
@@ -673,10 +682,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
         WinConfiguration->Editor.Encoding = CP_ACP;
         break;
     }
-    WinConfiguration->Editor.FontName = FEditorFont->Name;
-    WinConfiguration->Editor.FontSize = FEditorFont->Size;
-    WinConfiguration->Editor.FontCharset = FEditorFont->Charset;
-    WinConfiguration->Editor.FontStyle = FontStylesToInt(FEditorFont->Style);
+    TWinConfiguration::StoreFont(FEditorFont.get(), WinConfiguration->Editor.Font);
     WinConfiguration->EditorList = FEditorList;
 
     // overwrites only TCopyParamType fields
@@ -795,6 +801,13 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       default:
         FAIL;
     }
+
+    TFontConfiguration PanelFontConfiguration;
+    if (PanelFontCheck->Checked)
+    {
+      TWinConfiguration::StoreFont(FPanelFont.get(), PanelFontConfiguration);
+    }
+    WinConfiguration->PanelFont = PanelFontConfiguration;
 
     // updates
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -998,6 +1011,17 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     EnableControl(CopyOnDoubleClickConfirmationCheck,
       (DoubleClickActionCombo->ItemIndex == 1) && ConfirmTransferringCheck->Checked);
+
+    TFont * ActualPanelFont = PanelFontCheck->Checked ? FPanelFont.get() : WinConfiguration->SystemIconFont;
+    UnicodeString PanelFontLabelText;
+    PanelFontLabelText = FMTLOAD(EDITOR_FONT_FMT,
+      (ActualPanelFont->Name, ActualPanelFont->Size));
+    PanelFontLabel->Caption = PanelFontLabelText;
+    if (!SameFont(PanelFontLabel->Font, ActualPanelFont))
+    {
+      PanelFontLabel->Font = ActualPanelFont;
+    }
+
     EnableControl(RefreshRemotePanelIntervalEdit, RefreshRemotePanelCheck->Checked);
     EnableControl(RefreshRemoteDirectoryUnitLabel, RefreshRemotePanelCheck->Checked);
 
@@ -1007,7 +1031,10 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EditorFontLabelText += TabSample(L"ABCD") + L"\n";
     EditorFontLabelText += TabSample(L"1234");
     EditorFontLabel->Caption = EditorFontLabelText;
-    EditorFontLabel->Font = FEditorFont;
+    if (!SameFont(EditorFontLabel->Font, FEditorFont.get()))
+    {
+      EditorFontLabel->Font = FEditorFont.get();
+    }
 
     bool CommandSelected = (CustomCommandsView->Selected != NULL);
     EnableControl(EditCommandButton, CommandSelected);
@@ -1151,8 +1178,17 @@ void __fastcall TPreferencesDialog::UpdateControls()
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
 {
-  if (FontDialog(FEditorFont))
+  if (FontDialog(FEditorFont.get()))
   {
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PanelFontButtonClick(TObject * /*Sender*/)
+{
+  if (FontDialog(FPanelFont.get()))
+  {
+    PanelFontCheck->Checked = true;
     UpdateControls();
   }
 }
@@ -2138,5 +2174,10 @@ void __fastcall TPreferencesDialog::CommanderClick(TObject * /*Sender*/)
 void __fastcall TPreferencesDialog::ExplorerClick(TObject * /*Sender*/)
 {
   ExplorerInterfaceButton2->SetFocus();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PanelFontLabelDblClick(TObject * Sender)
+{
+  PanelFontButtonClick(Sender);
 }
 //---------------------------------------------------------------------------

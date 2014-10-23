@@ -415,7 +415,7 @@ void __fastcall VerifyControl(TControl * Control)
     // ListView->Items->Count returns 0 when the handle is not allocated yet.
     // But we want to know if the implementation ever changes to allocate the handle
     // on the call. Because we do not want to allocate a handle here as
-    // that would change the debug mode behaviour from release behaviour,
+    // that would change the debug mode behavior from release behavior,
     // possibly hiding away some problems.
     assert(!ListView->HandleAllocated() || (ListView->Items->Count == 0));
   }

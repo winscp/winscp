@@ -28,9 +28,8 @@ __fastcall TConfiguration::TConfiguration()
   FUsage = new TUsage(this);
   FDefaultCollectUsage = false;
 
-  wchar_t Buf[10];
   UnicodeString RandomSeedPath;
-  if (GetEnvironmentVariable(L"APPDATA", Buf, LENOF(Buf)) > 0)
+  if (!GetEnvironmentVariable(L"APPDATA").IsEmpty())
   {
     RandomSeedPath = L"%APPDATA%";
   }
@@ -121,7 +120,13 @@ void __fastcall TConfiguration::UpdateStaticUsage()
   StoredSessions->UpdateStaticUsage();
 }
 //---------------------------------------------------------------------------
-THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
+THierarchicalStorage * TConfiguration::CreateConfigStorage()
+{
+  bool SessionList = false;
+  return CreateScpStorage(SessionList);
+}
+//---------------------------------------------------------------------------
+THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
 {
   THierarchicalStorage * Result;
   if (Storage == stRegistry)
@@ -136,6 +141,26 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
   {
     Result = new TIniFileStorage(IniFileStorageName);
   }
+
+  if ((FOptionsStorage.get() != NULL) && (FOptionsStorage->Count > 0))
+  {
+    if (!SessionList)
+    {
+      Result = new TOptionsStorage(FOptionsStorage.get(), ConfigurationSubKey, Result);
+    }
+    else
+    {
+      // cannot reuse session list storage for configuration as for it we need
+      // the option-override storage above
+    }
+  }
+  else
+  {
+    // All the above stores can be reused for configuration,
+    // if no options-overrides are set
+    SessionList = false;
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -207,14 +232,17 @@ void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
 {
   if (FDontSave) return;
 
-  THierarchicalStorage * AStorage = CreateScpStorage(false);
+  THierarchicalStorage * AStorage = CreateConfigStorage();
   try
   {
     AStorage->AccessMode = smReadWrite;
     AStorage->Explicit = Explicit;
     if (AStorage->OpenSubKey(ConfigurationSubKey, true))
     {
-      SaveData(AStorage, All);
+      // if saving to TOptionsStorage, make sure we save everything so that
+      // all configuration is properly transferred to the master storage
+      bool ConfigAll = All || AStorage->Temporary;
+      SaveData(AStorage, ConfigAll);
     }
   }
   __finally
@@ -246,7 +274,7 @@ void __fastcall TConfiguration::Export(const UnicodeString & FileName)
     ExportStorage->AccessMode = smReadWrite;
     ExportStorage->Explicit = true;
 
-    Storage = CreateScpStorage(false);
+    Storage = CreateConfigStorage();
     Storage->AccessMode = smRead;
 
     CopyData(Storage, ExportStorage);
@@ -274,7 +302,7 @@ void __fastcall TConfiguration::Import(const UnicodeString & FileName)
     ImportStorage = new TIniFileStorage(FileName);
     ImportStorage->AccessMode = smRead;
 
-    Storage = CreateScpStorage(false);
+    Storage = CreateConfigStorage();
     Storage->AccessMode = smReadWrite;
     Storage->Explicit = true;
 
@@ -340,11 +368,10 @@ void __fastcall TConfiguration::LoadFrom(THierarchicalStorage * Storage)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::Load()
+void __fastcall TConfiguration::Load(THierarchicalStorage * Storage)
 {
   TGuard Guard(FCriticalSection);
-
-  THierarchicalStorage * Storage = CreateScpStorage(false);
+  TStorageAccessMode StorageAccessMode = Storage->AccessMode;
   try
   {
     Storage->AccessMode = smRead;
@@ -352,7 +379,7 @@ void __fastcall TConfiguration::Load()
   }
   __finally
   {
-    delete Storage;
+    Storage->AccessMode = StorageAccessMode;
   }
 }
 //---------------------------------------------------------------------------
@@ -434,7 +461,7 @@ void __fastcall TConfiguration::CopyData(THierarchicalStorage * Source,
 void __fastcall TConfiguration::LoadDirectoryChangesCache(const UnicodeString SessionKey,
   TRemoteDirectoryChangesCache * DirectoryChangesCache)
 {
-  THierarchicalStorage * Storage = CreateScpStorage(false);
+  THierarchicalStorage * Storage = CreateConfigStorage();
   try
   {
     Storage->AccessMode = smRead;
@@ -454,7 +481,7 @@ void __fastcall TConfiguration::LoadDirectoryChangesCache(const UnicodeString Se
 void __fastcall TConfiguration::SaveDirectoryChangesCache(const UnicodeString SessionKey,
   TRemoteDirectoryChangesCache * DirectoryChangesCache)
 {
-  THierarchicalStorage * Storage = CreateScpStorage(false);
+  THierarchicalStorage * Storage = CreateConfigStorage();
   try
   {
     Storage->AccessMode = smReadWrite;
@@ -486,7 +513,7 @@ bool __fastcall TConfiguration::ShowBanner(const UnicodeString SessionKey,
   const UnicodeString & Banner)
 {
   bool Result;
-  THierarchicalStorage * Storage = CreateScpStorage(false);
+  THierarchicalStorage * Storage = CreateConfigStorage();
   try
   {
     Storage->AccessMode = smRead;
@@ -507,7 +534,7 @@ bool __fastcall TConfiguration::ShowBanner(const UnicodeString SessionKey,
 void __fastcall TConfiguration::NeverShowBanner(const UnicodeString SessionKey,
   const UnicodeString & Banner)
 {
-  THierarchicalStorage * Storage = CreateScpStorage(false);
+  THierarchicalStorage * Storage = CreateConfigStorage();
   try
   {
     Storage->AccessMode = smReadWrite;
@@ -978,6 +1005,20 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetOptionsStorage(TStrings * value)
+{
+  if (FOptionsStorage.get() == NULL)
+  {
+    FOptionsStorage.reset(new TStringList());
+  }
+  FOptionsStorage->AddStrings(value);
+}
+//---------------------------------------------------------------------------
+TStrings * __fastcall TConfiguration::GetOptionsStorage()
+{
+  return FOptionsStorage.get();
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetPuttySessionsKey()
 {
   return PuttyRegistryStorageKey + L"\\Sessions";
@@ -1015,12 +1056,12 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
 
       try
       {
-        SourceStorage = CreateScpStorage(false);
+        SourceStorage = CreateConfigStorage();
         SourceStorage->AccessMode = smRead;
 
         FStorage = value;
 
-        TargetStorage = CreateScpStorage(false);
+        TargetStorage = CreateConfigStorage();
         TargetStorage->AccessMode = smReadWrite;
         TargetStorage->Explicit = true;
 

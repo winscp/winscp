@@ -161,6 +161,7 @@ void __fastcall TSessionData::Default()
   IgnoreLsWarnings = true;
   Scp1Compatibility = false;
   TimeDifference = 0;
+  TimeDifferenceAuto = true;
   SCPLsFullTime = asAuto;
   NotUtf = asAuto;
 
@@ -196,7 +197,7 @@ void __fastcall TSessionData::Default()
   FtpPingType = ptDummyCommand;
   FtpTransferActiveImmediately = false;
   Ftps = ftpsNone;
-  MinTlsVersion = ssl2;
+  MinTlsVersion = tls10;
   MaxTlsVersion = tls12;
   FtpListAll = asAuto;
   SslSessionReuse = true;
@@ -279,6 +280,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(SCPLsFullTime); \
   \
   PROPERTY(TimeDifference); \
+  PROPERTY(TimeDifferenceAuto); \
   PROPERTY(TcpNoDelay); \
   PROPERTY(SendBuf); \
   PROPERTY(SshSimple); \
@@ -356,22 +358,26 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
   if (Source && Source->InheritsFrom(__classid(TSessionData)))
   {
     TSessionData * SourceData = (TSessionData *)Source;
-
-    #define PROPERTY(P) P = SourceData->P
-    PROPERTY(Name);
-    BASE_PROPERTIES;
-    ADVANCED_PROPERTIES;
-    META_PROPERTIES;
-    #undef PROPERTY
-    FOverrideCachedHostKey = SourceData->FOverrideCachedHostKey;
-    FModified = SourceData->Modified;
+    CopyData(SourceData);
     FSource = SourceData->FSource;
-    FSaveOnly = SourceData->FSaveOnly;
   }
   else
   {
     TNamedObject::Assign(Source);
   }
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::CopyData(TSessionData * SourceData)
+{
+  #define PROPERTY(P) P = SourceData->P
+  PROPERTY(Name);
+  BASE_PROPERTIES;
+  ADVANCED_PROPERTIES;
+  META_PROPERTIES;
+  #undef PROPERTY
+  FOverrideCachedHostKey = SourceData->FOverrideCachedHostKey;
+  FModified = SourceData->Modified;
+  FSaveOnly = SourceData->FSaveOnly;
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties)
@@ -502,6 +508,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   SCPLsFullTime = TAutoSwitch(Storage->ReadInteger(L"SCPLsFullTime", SCPLsFullTime));
   Scp1Compatibility = Storage->ReadBool(L"Scp1Compatibility", Scp1Compatibility);
   TimeDifference = Storage->ReadFloat(L"TimeDifference", TimeDifference);
+  TimeDifferenceAuto = Storage->ReadBool(L"TimeDifferenceAuto", (TimeDifference == TDateTime()));
   DeleteToRecycleBin = Storage->ReadBool(L"DeleteToRecycleBin", DeleteToRecycleBin);
   OverwrittenToRecycleBin = Storage->ReadBool(L"OverwrittenToRecycleBin", OverwrittenToRecycleBin);
   RecycleBinPath = Storage->ReadString(L"RecycleBinPath", RecycleBinPath);
@@ -789,7 +796,17 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(Bool, IgnoreLsWarnings);
       WRITE_DATA(Integer, SCPLsFullTime);
       WRITE_DATA(Bool, Scp1Compatibility);
-      WRITE_DATA(Float, TimeDifference);
+      if (TimeDifferenceAuto)
+      {
+        // Have to delete it as TimeDifferenceAuto is not saved when enabled,
+        // but the default is derived from value of TimeDifference.
+        Storage->DeleteValue(L"TimeDifference");
+      }
+      else
+      {
+        WRITE_DATA(Float, TimeDifference);
+      }
+      WRITE_DATA(Bool, TimeDifferenceAuto);
       WRITE_DATA(Bool, DeleteToRecycleBin);
       WRITE_DATA(Bool, OverwrittenToRecycleBin);
       WRITE_DATA(String, RecycleBinPath);
@@ -1008,6 +1025,7 @@ void __fastcall TSessionData::ImportFromFilezilla(_di_IXMLNode Node, const Unico
   int DefaultTimeDifference = TimeToSeconds(TimeDifference);
   TimeDifference =
     (double(ReadXmlNode(Node, L"TimezoneOffset", DefaultTimeDifference) / SecsPerDay));
+  TimeDifferenceAuto = (TimeDifference == TDateTime());
 
   UnicodeString PasvMode = ReadXmlNode(Node, L"PasvMode", L"");
   if (SameText(PasvMode, L"MODE_PASSIVE"))
@@ -1175,7 +1193,8 @@ void __fastcall TSessionData::SaveRecryptedPasswords(THierarchicalStorage * Stor
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Remove()
 {
-  THierarchicalStorage * Storage = Configuration->CreateScpStorage(true);
+  bool SessionList = true;
+  THierarchicalStorage * Storage = Configuration->CreateScpStorage(SessionList);
   try
   {
     Storage->Explicit = true;
@@ -1316,15 +1335,33 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     // When using to paste URL on Login dialog, we do not want to lookup the stored sites
     if (StoredSessions != NULL)
     {
-      for (Integer Index = 0; Index < StoredSessions->Count + StoredSessions->HiddenCount; Index++)
+      // this can be optimized as the list is sorted
+      for (Integer Index = 0; Index < StoredSessions->CountIncludingHidden; Index++)
       {
         TSessionData * AData = (TSessionData *)StoredSessions->Items[Index];
-        if (!AData->IsWorkspace &&
-            (AnsiSameText(AData->Name, DecodedUrl) ||
-             AnsiSameText(AData->Name + L"/", DecodedUrl.SubString(1, AData->Name.Length() + 1))))
+        if (!AData->IsWorkspace)
         {
-          Data = AData;
-          break;
+          bool Match = false;
+          // Comparison optimizations as this is called many times
+          // e.g. when updating jumplist
+          if ((AData->Name.Length() == DecodedUrl.Length()) &&
+              SameText(AData->Name, DecodedUrl))
+          {
+            Match = true;
+          }
+          else if ((AData->Name.Length() < DecodedUrl.Length()) &&
+                   (DecodedUrl[AData->Name.Length() + 1] == L'/') &&
+                   // StrLIComp is an equivalent of SameText
+                   (StrLIComp(AData->Name.c_str(), DecodedUrl.c_str(), AData->Name.Length()) == 0))
+          {
+            Match = true;
+          }
+
+          if (Match)
+          {
+            Data = AData;
+            break;
+          }
         }
       }
     }
@@ -1360,7 +1397,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       // This happens when pasting URL on Login dialog
       if (StoredSessions != NULL)
       {
-        Assign(StoredSessions->DefaultSettings);
+        CopyData(StoredSessions->DefaultSettings);
       }
       Name = L"";
 
@@ -1485,7 +1522,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     // This happens when pasting URL on Login dialog
     if (StoredSessions != NULL)
     {
-      Assign(StoredSessions->DefaultSettings);
+      CopyData(StoredSessions->DefaultSettings);
     }
 
     DefaultsOnly = true;
@@ -2191,6 +2228,11 @@ void __fastcall TSessionData::SetTimeDifference(TDateTime value)
   SET_SESSION_PROPERTY(TimeDifference);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetTimeDifferenceAuto(bool value)
+{
+  SET_SESSION_PROPERTY(TimeDifferenceAuto);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetLocalDirectory(UnicodeString value)
 {
   SET_SESSION_PROPERTY(LocalDirectory);
@@ -2673,11 +2715,16 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
   TList * Loaded = new TList;
   try
   {
+    assert(AutoSort);
+    AutoSort = false;
+    bool WasEmpty = (Count == 0);
+
     Storage->GetSubKeyNames(SubKeys);
+
     for (int Index = 0; Index < SubKeys->Count; Index++)
     {
-      TSessionData *SessionData;
       UnicodeString SessionName = SubKeys->Strings[Index];
+
       bool ValidName = true;
       try
       {
@@ -2687,19 +2734,37 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
       {
         ValidName = false;
       }
+
       if (ValidName)
       {
-        if (SessionName == FDefaultSettings->Name) SessionData = FDefaultSettings;
-          else SessionData = (TSessionData*)FindByName(SessionName);
+        TSessionData * SessionData;
+        if (SessionName == FDefaultSettings->Name)
+        {
+          SessionData = FDefaultSettings;
+        }
+        else
+        {
+          // if the list was empty before loading, do not waste time trying to
+          // find existing sites to overwrite (we rely on underlying storage
+          // to secure uniqueness of the key names)
+          if (WasEmpty)
+          {
+            SessionData = NULL;
+          }
+          else
+          {
+            SessionData = (TSessionData*)FindByName(SessionName);
+          }
+        }
 
         if ((SessionData != FDefaultSettings) || !UseDefaults)
         {
-          if (!SessionData)
+          if (SessionData == NULL)
           {
             SessionData = new TSessionData(L"");
             if (UseDefaults)
             {
-              SessionData->Assign(DefaultSettings);
+              SessionData->CopyData(DefaultSettings);
             }
             SessionData->Name = SessionName;
             Add(SessionData);
@@ -2728,6 +2793,8 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
   }
   __finally
   {
+    AutoSort = true;
+    AlphaSort();
     delete SubKeys;
     delete Loaded;
   }
@@ -2735,7 +2802,8 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Load()
 {
-  THierarchicalStorage * Storage = Configuration->CreateScpStorage(true);
+  bool SessionList = true;
+  THierarchicalStorage * Storage = Configuration->CreateScpStorage(SessionList);
   try
   {
     if (Storage->OpenSubKey(Configuration->StoredSessionsSubKey, False))
@@ -2771,7 +2839,7 @@ void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
   try
   {
     DoSave(Storage, FDefaultSettings, All, RecryptPasswordOnly, FactoryDefaults);
-    for (int Index = 0; Index < Count+HiddenCount; Index++)
+    for (int Index = 0; Index < CountIncludingHidden; Index++)
     {
       TSessionData * SessionData = (TSessionData *)Items[Index];
       try
@@ -2807,7 +2875,8 @@ void __fastcall TStoredSessionList::Save(THierarchicalStorage * Storage, bool Al
 void __fastcall TStoredSessionList::DoSave(bool All, bool Explicit,
   bool RecryptPasswordOnly, TStrings * RecryptPasswordErrors)
 {
-  THierarchicalStorage * Storage = Configuration->CreateScpStorage(true);
+  bool SessionList = true;
+  THierarchicalStorage * Storage = Configuration->CreateScpStorage(SessionList);
   try
   {
     Storage->AccessMode = smReadWrite;
@@ -2838,7 +2907,7 @@ void __fastcall TStoredSessionList::RecryptPasswords(TStrings * RecryptPasswordE
 void __fastcall TStoredSessionList::Saved()
 {
   FDefaultSettings->Modified = false;
-  for (int Index = 0; Index < Count + HiddenCount; Index++)
+  for (int Index = 0; Index < CountIncludingHidden; Index++)
   {
     ((TSessionData *)Items[Index])->Modified = false;
   }
@@ -2852,7 +2921,7 @@ void __fastcall TStoredSessionList::ImportLevelFromFilezilla(_di_IXMLNode Node, 
     if (ChildNode->NodeName == L"Server")
     {
       std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
-      SessionData->Assign(DefaultSettings);
+      SessionData->CopyData(DefaultSettings);
       SessionData->ImportFromFilezilla(ChildNode, Path);
       Add(SessionData.release());
     }
@@ -2983,6 +3052,7 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
   int Advanced = 0;
   int Color = 0;
   int Note = 0;
+  int Tunnel = 0;
   bool Folders = false;
   bool Workspaces = false;
   std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
@@ -3054,6 +3124,11 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
         Advanced++;
       }
 
+      if (Data->Tunnel)
+      {
+        Tunnel++;
+      }
+
       if (!Data->FolderName.IsEmpty())
       {
         Folders = true;
@@ -3073,6 +3148,7 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
   Configuration->Usage->Set(L"StoredSessionsCountAdvanced", Advanced);
   DifferentAdvancedProperties->Delimiter = L',';
   Configuration->Usage->Set(L"StoredSessionsAdvancedSettings", DifferentAdvancedProperties->DelimitedText);
+  Configuration->Usage->Set(L"StoredSessionsCountTunnel", Tunnel);
 
   // actually default might be true, see below for when the default is actually used
   bool CustomDefaultStoredSession = false;
@@ -3426,11 +3502,25 @@ UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TSessionData * S
           break;
 
         case L'@':
-          Replacement = MakeValidFileName(SessionData->HostNameExpanded);
+          if (SessionData != NULL)
+          {
+            Replacement = MakeValidFileName(SessionData->HostNameExpanded);
+          }
+          else
+          {
+            Replacement = L"nohost";
+          }
           break;
 
         case L's':
-          Replacement = MakeValidFileName(SessionData->SessionName);
+          if (SessionData != NULL)
+          {
+            Replacement = MakeValidFileName(SessionData->SessionName);
+          }
+          else
+          {
+            Replacement = L"nosession";
+          }
           break;
 
         case L'!':

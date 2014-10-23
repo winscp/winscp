@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: neon 0.29.x\n"
 "Report-Msgid-Bugs-To: neon@lists.manyfish.co.uk\n"
-"POT-Creation-Date: 2013-07-31 16:46+0100\n"
+"POT-Creation-Date: 2014-09-22 16:25+0100\n"
 "PO-Revision-Date: 2008-03-03 11:20+0800\n"
 "Last-Translator: Dongsheng Song <dongsheng.song@gmail.com>\n"
 "Language-Team: neon@webdav.org\n"
@@ -178,41 +178,41 @@ msgstr "[非打印字符:#%lu]"
 msgid "[unprintable]"
 msgstr "[非打印字符]"
 
-#: src/ne_gnutls.c:845
+#: src/ne_gnutls.c:848
 msgid "signed using insecure algorithm"
 msgstr ""
 
-#: src/ne_gnutls.c:848
+#: src/ne_gnutls.c:851
 #, c-format
 msgid "unrecognized errors (%u)"
 msgstr ""
 
-#: src/ne_gnutls.c:893 src/ne_openssl.c:470
+#: src/ne_gnutls.c:896 src/ne_openssl.c:470
 #, c-format
 msgid "Server certificate was missing commonName attribute in subject name"
 msgstr "服务器证书在主题名称遗漏了属性 commonName"
 
-#: src/ne_gnutls.c:907
+#: src/ne_gnutls.c:910
 #, fuzzy, c-format
 msgid "Could not verify server certificate: %s"
 msgstr "不能写入文件：%s"
 
-#: src/ne_gnutls.c:919 src/ne_openssl.c:457
+#: src/ne_gnutls.c:922 src/ne_openssl.c:457
 #, c-format
 msgid "Certificate verification error: %s"
 msgstr "证书校验失败：%s"
 
-#: src/ne_gnutls.c:952 src/ne_openssl.c:702
+#: src/ne_gnutls.c:955 src/ne_openssl.c:702
 #, c-format
 msgid "SSL handshake failed, client certificate was requested: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:957 src/ne_openssl.c:707
+#: src/ne_gnutls.c:960 src/ne_openssl.c:707
 #, fuzzy, c-format
 msgid "SSL handshake failed: %s"
 msgstr "SSL 协商失败：%s"
 
-#: src/ne_gnutls.c:967
+#: src/ne_gnutls.c:970
 #, c-format
 msgid "Server did not send certificate chain"
 msgstr "服务器不能发送证书链"
@@ -235,11 +235,6 @@ msgstr "刷新锁定 %s 的响应没有返回主动锁"
 #, c-format
 msgid "SSL server did not present certificate"
 msgstr "SSL 服务器不能呈现证书"
-
-#: src/ne_openssl.c:736
-#, c-format
-msgid "Server certificate changed: connection intercepted?"
-msgstr "服务器证书改变：是否被拦截攻击？"
 
 #: src/ne_props.c:371 src/ne_props.c:435
 msgid "Response exceeds maximum property count"
@@ -457,27 +452,27 @@ msgstr "行太长"
 msgid "Host not found"
 msgstr "没有发现主机"
 
-#: src/ne_socket.c:1249
+#: src/ne_socket.c:1251
 msgid "Connection timed out"
 msgstr "连接超时"
 
-#: src/ne_socket.c:1442
+#: src/ne_socket.c:1444
 msgid "Socket descriptor number exceeds FD_SETSIZE"
 msgstr "套接字数量超过 FD_SETSIZE"
 
-#: src/ne_socket.c:1504
+#: src/ne_socket.c:1506
 msgid "Socket family not supported"
 msgstr ""
 
-#: src/ne_socket.c:1735
+#: src/ne_socket.c:1737
 msgid "Client certificate verification failed"
 msgstr "客户证书校验失败"
 
-#: src/ne_socket.c:1751
+#: src/ne_socket.c:1753
 msgid "SSL disabled due to lack of entropy"
 msgstr "由于缺少熵，SSL 已经禁用"
 
-#: src/ne_socket.c:1757
+#: src/ne_socket.c:1759
 msgid "Could not create SSL structure"
 msgstr "不能创建 SSL 结构"
 
@@ -634,6 +629,9 @@ msgstr "在 %d 行解析 XML 错误: %s"
 #, c-format
 msgid "Could not parse response: %s"
 msgstr "不能解析响应：%s"
+
+#~ msgid "Server certificate changed: connection intercepted?"
+#~ msgstr "服务器证书改变：是否被拦截攻击？"
 
 #~ msgid "SSL disabled due to library version mismatch"
 #~ msgstr "由于库版本不匹配，SSL 已经禁用"

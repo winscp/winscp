@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sitecopy 0.11.4\n"
 "Report-Msgid-Bugs-To: neon@lists.manyfish.co.uk\n"
-"POT-Creation-Date: 2013-07-31 16:46+0100\n"
+"POT-Creation-Date: 2014-09-22 16:25+0100\n"
 "PO-Revision-Date: 2002-11-07 18:11+0100\n"
 "Last-Translator: Karl Ove Hufthammer <karl@huftis.org>\n"
 "Language-Team: Norwegian Nynorsk <i18n-nn@lister.ping.uio.no>\n"
@@ -180,41 +180,41 @@ msgstr ""
 msgid "[unprintable]"
 msgstr ""
 
-#: src/ne_gnutls.c:845
+#: src/ne_gnutls.c:848
 msgid "signed using insecure algorithm"
 msgstr ""
 
-#: src/ne_gnutls.c:848
+#: src/ne_gnutls.c:851
 #, c-format
 msgid "unrecognized errors (%u)"
 msgstr ""
 
-#: src/ne_gnutls.c:893 src/ne_openssl.c:470
+#: src/ne_gnutls.c:896 src/ne_openssl.c:470
 #, c-format
 msgid "Server certificate was missing commonName attribute in subject name"
 msgstr ""
 
-#: src/ne_gnutls.c:907
+#: src/ne_gnutls.c:910
 #, fuzzy, c-format
 msgid "Could not verify server certificate: %s"
 msgstr "Klarte ikkje skriva til fil: %s"
 
-#: src/ne_gnutls.c:919 src/ne_openssl.c:457
+#: src/ne_gnutls.c:922 src/ne_openssl.c:457
 #, c-format
 msgid "Certificate verification error: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:952 src/ne_openssl.c:702
+#: src/ne_gnutls.c:955 src/ne_openssl.c:702
 #, c-format
 msgid "SSL handshake failed, client certificate was requested: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:957 src/ne_openssl.c:707
+#: src/ne_gnutls.c:960 src/ne_openssl.c:707
 #, fuzzy, c-format
 msgid "SSL handshake failed: %s"
 msgstr "Klarte ikkje skriva til fil: %s"
 
-#: src/ne_gnutls.c:967
+#: src/ne_gnutls.c:970
 #, c-format
 msgid "Server did not send certificate chain"
 msgstr ""
@@ -237,11 +237,6 @@ msgstr ""
 #, c-format
 msgid "SSL server did not present certificate"
 msgstr ""
-
-#: src/ne_openssl.c:736
-#, fuzzy, c-format
-msgid "Server certificate changed: connection intercepted?"
-msgstr "Tenarsertifikatet er utgått på dato."
 
 #: src/ne_props.c:371 src/ne_props.c:435
 #, fuzzy
@@ -471,30 +466,30 @@ msgstr "For lang linje"
 msgid "Host not found"
 msgstr "Fann ikkje vert"
 
-#: src/ne_socket.c:1249
+#: src/ne_socket.c:1251
 #, fuzzy
 msgid "Connection timed out"
 msgstr "%s: sambandet vart tidsavbrote."
 
-#: src/ne_socket.c:1442
+#: src/ne_socket.c:1444
 msgid "Socket descriptor number exceeds FD_SETSIZE"
 msgstr ""
 
-#: src/ne_socket.c:1504
+#: src/ne_socket.c:1506
 msgid "Socket family not supported"
 msgstr ""
 
-#: src/ne_socket.c:1735
+#: src/ne_socket.c:1737
 #, fuzzy
 msgid "Client certificate verification failed"
 msgstr "Tenarsertifikatet er utgått på dato."
 
-#: src/ne_socket.c:1751
+#: src/ne_socket.c:1753
 #, fuzzy
 msgid "SSL disabled due to lack of entropy"
 msgstr "SSL avslått grunna mangel på entropi"
 
-#: src/ne_socket.c:1757
+#: src/ne_socket.c:1759
 #, fuzzy
 msgid "Could not create SSL structure"
 msgstr "Klarte ikkje forhandla SSL-økt"
@@ -652,6 +647,10 @@ msgstr "XML-tolkingsfeil på linje %d: %s."
 #, fuzzy, c-format
 msgid "Could not parse response: %s"
 msgstr "Klarte ikkje lesa «LIST»-svar."
+
+#, fuzzy
+#~ msgid "Server certificate changed: connection intercepted?"
+#~ msgstr "Tenarsertifikatet er utgått på dato."
 
 #, fuzzy
 #~ msgid "SSL disabled due to library version mismatch"

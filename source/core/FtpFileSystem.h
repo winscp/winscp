@@ -80,6 +80,7 @@ public:
   virtual bool __fastcall TemporaryTransferFile(const UnicodeString & FileName);
   virtual bool __fastcall GetStoredCredentialsTried();
   virtual UnicodeString __fastcall GetUserName();
+  virtual void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
 
 protected:
   enum TOverwriteMode { omOverwrite, omResume, omComplete };
@@ -183,6 +184,10 @@ protected:
   void __fastcall StoreLastResponse(const UnicodeString & Text);
   void __fastcall SetCPSLimit(TFileOperationProgressType * OperationProgress);
   bool __fastcall VerifyCertificateHostName(const TFtpsCertificateData & Data);
+  bool __fastcall SupportsReadingFile();
+  void __fastcall AutoDetectTimeDifference(TRemoteFileList * FileList);
+  void __fastcall ApplyTimeDifference(TRemoteFile * File);
+  bool __fastcall TimeZoneDifferenceApplicable(TModificationFmt ModificationFmt);
 
   static bool __fastcall Unquote(UnicodeString & Str);
   static UnicodeString __fastcall ExtractStatusMessage(UnicodeString Status);
@@ -224,6 +229,7 @@ private:
   TRemoteFileList * FFileList;
   TRemoteFileList * FFileListCache;
   UnicodeString FFileListCachePath;
+  UnicodeString FWelcomeMessage;
   bool FActive;
   bool FOpening;
   bool FWaitingForReply;
@@ -241,6 +247,10 @@ private:
   bool FDoListAll;
   TFTPServerCapabilities * FServerCapabilities;
   TDateTime FLastDataSent;
+  bool FDetectTimeDifference;
+  __int64 FTimeDifference;
+  bool FSupportsSiteCopy;
+  bool FSupportsSiteSymlink;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------

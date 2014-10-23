@@ -75,11 +75,6 @@ to tim.kosse@gmx.de
 
 class CAsyncSocketExHelperWindow;
 
-extern "C" {
-	typedef int (FAR PASCAL *t_getaddrinfo)(const char* nodename, const char* servname, const struct addrinfo* hints, struct addrinfo** res);
-	typedef	void (FAR PASCAL *t_freeaddrinfo)(struct addrinfo* ai);
-}
-
 #ifndef NOLAYERS
 class CAsyncSocketExLayer;
 

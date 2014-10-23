@@ -27,6 +27,7 @@ __published:
   TButton *HelpButton;
   TCheckBox *RememberCheck;
   TRadioButton *EditorOpenButton;
+  TButton *DefaultButton;
   void __fastcall ExternalEditorEditExit(TObject *Sender);
   void __fastcall ExternalEditorBrowseButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
@@ -34,6 +35,7 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall MaskEditExit(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
+  void __fastcall DefaultButtonClick(TObject *Sender);
 
 public:
   virtual __fastcall TEditorPreferencesDialog(TComponent * Owner);
@@ -45,6 +47,7 @@ private:
   void __fastcall UpdateControls();
 
   bool FMayRemote;
+  UnicodeString FSystemExternalEditor;
 };
 //---------------------------------------------------------------------------
 #endif

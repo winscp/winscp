@@ -27,13 +27,9 @@ bool __fastcall FindFile(UnicodeString & Path)
   bool Result = FileExists(ApiPath(Path));
   if (!Result)
   {
-    int Len = GetEnvironmentVariable(L"PATH", NULL, 0);
-    if (Len > 0)
+    UnicodeString Paths = GetEnvironmentVariable(L"PATH");
+    if (!Paths.IsEmpty())
     {
-      UnicodeString Paths;
-      Paths.SetLength(Len - 1);
-      GetEnvironmentVariable(L"PATH", Paths.c_str(), Len);
-
       UnicodeString NewPath = FileSearch(ExtractFileName(Path), Paths);
       Result = !NewPath.IsEmpty();
       if (Result)
@@ -43,11 +39,6 @@ bool __fastcall FindFile(UnicodeString & Path)
     }
   }
   return Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall FileExistsEx(UnicodeString Path)
-{
-  return FindFile(Path);
 }
 //---------------------------------------------------------------------------
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,

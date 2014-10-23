@@ -63,6 +63,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteEditMenuItem: TTBXItem
       Action = CurrentEditFocusedAction
     end
+    object TBXItem69: TTBXSubmenuItem
+      Action = CurrentEditAlternativeFocusedAction
+    end
     object RemoteCopyMenuItem: TTBXItem
       Action = RemoteCopyFocusedAction
     end
@@ -1666,14 +1669,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Delete|Delete selected file(s)'
       ImageIndex = 2
     end
-    object CurrentEditAlternativeAction: TAction
+    object CurrentEditAlternative2Action: TAction
       Tag = 15
       Category = 'Selected Operation'
-      Caption = 'Ed&it (alternative)'
+      Caption = 'Ed&it With'
       HelpKeyword = 'task_edit'
-      Hint = 
-        'Edit (alternative)|Edit selected file(s) using alternative edito' +
-        'r'
+      Hint = 'Edit With|Edit selected file(s) using alternative editor'
     end
     object CurrentEditWithAction: TAction
       Tag = 15
@@ -1852,6 +1853,20 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Edit|Edit selected file(s)'
       ImageIndex = 57
     end
+    object CurrentEditWithFocusedAction: TAction
+      Tag = 15
+      Category = 'Focused Operation'
+      Caption = 'Edit &With...'
+      HelpKeyword = 'task_edit'
+      Hint = 'Edit With|Edit selected file(s) using editor of your choice'
+    end
+    object CurrentEditAlternativeFocusedAction: TAction
+      Tag = 15
+      Category = 'Focused Operation'
+      Caption = 'Ed&it With'
+      HelpKeyword = 'task_edit'
+      Hint = 'Edit With|Edit selected file(s) using alternative editor'
+    end
     object NewDirAction: TAction
       Tag = 12
       Category = 'Command'
@@ -1867,6 +1882,14 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_queue'
       Hint = 'Shut down the computer once the queue is empty'
       ImageIndex = 93
+    end
+    object QueueSuspendOnceEmptyAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = 'Sus&pend'
+      HelpKeyword = 'ui_queue'
+      Hint = 'Suspend the computer once the queue is empty'
+      ImageIndex = 105
     end
     object QueueIdleOnceEmptyAction: TAction
       Tag = 12
@@ -2086,6 +2109,13 @@ object NonVisualDataModule: TNonVisualDataModule
         'Upload and Delete|Upload selected local file(s) to remote direct' +
         'ory and delete original'
       ImageIndex = 98
+    end
+    object CurrentEditInternalFocusedAction: TAction
+      Tag = 15
+      Category = 'Focused Operation'
+      Caption = '&Internal editor'
+      HelpKeyword = 'task_edit'
+      Hint = 'Edit (internal)|Edit selected file(s) using internal editor'
     end
     object CurrentSystemMenuFocusedAction: TAction
       Tag = 12
@@ -2608,6 +2638,9 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = QueueDisconnectOnceEmptyAction
         RadioItem = True
       end
+      object TBXItem68: TTBXItem
+        Action = QueueSuspendOnceEmptyAction
+      end
       object TBXItem29: TTBXItem
         Action = QueueShutDownOnceEmptyAction
         RadioItem = True
@@ -2751,8 +2784,16 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N82: TTBXSeparatorItem
     end
-    object CreateDirectory4: TTBXItem
-      Action = CurrentCreateDirAction
+    object TBXSubmenuItem7: TTBXSubmenuItem
+      Caption = '&New'
+      HelpKeyword = 'task_index'
+      Hint = 'Create object|Create new object'
+      object TBXItem70: TTBXItem
+        Action = NewFileAction
+      end
+      object TBXItem71: TTBXItem
+        Action = NewDirAction
+      end
     end
   end
   object RemoteAddressPopup: TTBXPopupMenu
@@ -2851,6 +2892,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object LocalEditMenuItem: TTBXItem
       Action = CurrentEditFocusedAction
+    end
+    object TBXSubmenuItem6: TTBXSubmenuItem
+      Action = CurrentEditAlternativeFocusedAction
     end
     object LocalCopyMenuItem: TTBXItem
       Action = LocalCopyFocusedAction

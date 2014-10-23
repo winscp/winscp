@@ -690,6 +690,11 @@ bool __fastcall ComparePaths(const UnicodeString & Path1, const UnicodeString & 
   return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));
 }
 //---------------------------------------------------------------------------
+int __fastcall CompareLogicalText(const UnicodeString & S1, const UnicodeString & S2)
+{
+  return StrCmpLogicalW(S1.c_str(), S2.c_str());
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsReservedName(UnicodeString FileName)
 {
   int P = FileName.Pos(L".");
@@ -1812,7 +1817,7 @@ UnicodeString __fastcall FixedLenDateTimeFormat(const UnicodeString & Format)
   return Result;
 }
 //---------------------------------------------------------------------------
-static UnicodeString __fastcall FormatTimeZone(long Sec)
+UnicodeString __fastcall FormatTimeZone(long Sec)
 {
   TTimeSpan Span = TTimeSpan::FromSeconds(Sec);
   UnicodeString Str;

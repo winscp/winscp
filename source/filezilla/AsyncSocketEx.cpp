@@ -71,6 +71,8 @@ to tim.kosse@gmx.de
 #include "AsyncSocketExLayer.h"
 #endif //NOLAYERS
 
+#undef TRACE_TRANSMIT
+
 #ifdef MPEXT
 #pragma warn -inl
 #endif
@@ -1199,10 +1201,14 @@ int CAsyncSocketEx::Send(const void* lpBuf, int nBufLen, int nFlags /*=0*/)
 {
 #ifndef NOLAYERS
 	if (m_pFirstLayer)
+	{
 		return m_pFirstLayer->Send(lpBuf, nBufLen, nFlags);
+	}
 	else
 #endif //NOLAYERS
+	{
 		return send(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
+	}
 }
 
 BOOL CAsyncSocketEx::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)

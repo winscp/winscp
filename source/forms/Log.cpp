@@ -30,6 +30,7 @@ TLogForm *LogForm = NULL;
 TLogForm * __fastcall CreateLogForm(TLogMemo *ALogMemo)
 {
   assert(!LogForm);
+  Configuration->Usage->Inc(L"LogWindowDisplays");
   TLogForm * aLogForm = new TLogForm(Application);
   try
   {
