@@ -31,6 +31,7 @@ private:
   UnicodeString FPermanentLogFileName;
   int FLogWindowLines;
   bool FLogFileAppend;
+  bool FLogSensitive;
   int FLogProtocol;
   int FActualLogProtocol;
   bool FLogActions;
@@ -87,6 +88,7 @@ private:
   void __fastcall SetLogWindowComplete(bool value);
   bool __fastcall GetLogWindowComplete();
   void __fastcall SetLogFileAppend(bool value);
+  void __fastcall SetLogSensitive(bool value);
   void __fastcall SetLogProtocol(int value);
   void __fastcall SetLogActions(bool value);
   void __fastcall SetActionsLogFileName(UnicodeString value);
@@ -217,6 +219,7 @@ public:
   __property UnicodeString LogFileName  = { read=FLogFileName, write=SetLogFileName };
   __property bool LogToFile  = { read=GetLogToFile };
   __property bool LogFileAppend  = { read=FLogFileAppend, write=SetLogFileAppend };
+  __property bool LogSensitive  = { read=FLogSensitive, write=SetLogSensitive };
   __property int LogProtocol  = { read=FLogProtocol, write=SetLogProtocol };
   __property int ActualLogProtocol  = { read=FActualLogProtocol };
   __property bool LogActions  = { read=FLogActions, write=SetLogActions };

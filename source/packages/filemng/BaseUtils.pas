@@ -186,33 +186,39 @@ end; {ExtractFileNameOnly}
 function FormatBytes(Bytes: Int64; Style: TFormatBytesStyle; UseUnitsForBytes: Boolean): string;
 var
   SizeUnit: string;
-  Value: Extended;
+  Value: Int64;
+  Order: Int64;
+  EValue: Extended;
 begin
   if (Style = fbNone) or ((Style = fbShort) and (Bytes < Int64(100*1024))) then
   begin
-    Value := Bytes;
+    Order := 1;
     if UseUnitsForBytes then
       SizeUnit := SByte;
   end
     else
   if (Style = fbKilobytes) or (Bytes < Int64(100*1024*1024)) then
   begin
-    Value := Bytes / 1024;
+    Order := 1024;
     SizeUnit := SKiloByte;
   end
     else
   if Bytes < Int64(Int64(100)*1024*1024*1024) then
   begin
-    Value := Bytes / (1024*1024);
+    Order := 1024*1024;
     SizeUnit := SMegaByte;
   end
     else
   begin
-    Value := Bytes / Int64(1024*1024*1024);
+    Order := 1024*1024*1024;
     SizeUnit := SGigaByte;
   end;
+  Value := Bytes div Order;
+  if (Bytes mod Order) > 0 then
+    Inc(Value);
 
-  Result := FormatFloat('#,##0', Ceil(Value));
+  EValue := Value;
+  Result := FormatFloat('#,##0', EValue);
   if SizeUnit <> '' then
     Result := Result + ' ' + SizeUnit;
 end;

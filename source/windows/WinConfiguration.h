@@ -212,6 +212,8 @@ struct TEditorData
   bool DetectMDIExternalEditor;
 
   bool __fastcall operator ==(const TEditorData & rhd) const;
+  void __fastcall DecideExternalEditorText();
+  static bool __fastcall DecideExternalEditorText(UnicodeString ExternalEditor);
 };
 //---------------------------------------------------------------------------
 #undef C

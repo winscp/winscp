@@ -90,6 +90,8 @@ void __fastcall TEditorPreferencesDialog::Init(TEditorPreferencesMode Mode, bool
     EditorInternalButton->Visible = false;
     EditorExternalButton->Visible = false;
     EditorOpenButton->Visible = false;
+    DefaultButton->Top = DefaultButton->Top - Shift;
+    DefaultButton->Left = ExternalEditorEdit->Left;
     Shift += ExternalEditorGroup->Top - MaskGroup->Top;
     MaskGroup->Visible = false;
     ExternalEditorGroup->Top = ExternalEditorGroup->Top - Shift;
@@ -175,6 +177,17 @@ void __fastcall TEditorPreferencesDialog::ExternalEditorEditExit(
     FilenameEdit->SetFocus();
     throw;
   }
+
+  DecideExternalEditorText();
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorPreferencesDialog::DecideExternalEditorText()
+{
+  if (TEditorData::DecideExternalEditorText(ExternalEditorEdit->Text))
+  {
+    ExternalEditorTextCheck->Checked = true;
+    UpdateControls();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::ExternalEditorBrowseButtonClick(
@@ -183,6 +196,7 @@ void __fastcall TEditorPreferencesDialog::ExternalEditorBrowseButtonClick(
   BrowseForExecutable(ExternalEditorEdit,
     LoadStr(PREFERENCES_SELECT_EXTERNAL_EDITOR),
     LoadStr(EXECUTABLE_FILTER), true, false);
+  DecideExternalEditorText();
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::HelpButtonClick(TObject * /*Sender*/)
@@ -230,5 +244,6 @@ void __fastcall TEditorPreferencesDialog::DefaultButtonClick(TObject * /*Sender*
   EditorExternalButton->Checked = true;
   ExternalEditorEdit->Text = FSystemExternalEditor;
   UpdateControls();
+  DecideExternalEditorText();
 }
 //---------------------------------------------------------------------------

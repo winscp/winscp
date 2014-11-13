@@ -82,7 +82,8 @@ __fastcall TLoopDetector::TLoopDetector()
 //---------------------------------------------------------------------------
 void __fastcall TLoopDetector::RecordVisitedDirectory(const UnicodeString & Directory)
 {
-  FVisitedDirectories->Add(ExcludeTrailingBackslash(Directory));
+  UnicodeString VisitedDirectory = ExcludeTrailingBackslash(Directory);
+  FVisitedDirectories->Add(VisitedDirectory);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TLoopDetector::IsUnvisitedDirectory(const TRemoteFile * File)
@@ -2586,6 +2587,15 @@ void __fastcall TTerminal::LogFileDetails(const UnicodeString & FileName, TDateT
   if (Log->Logging)
   {
     LogEvent(FORMAT("File: %s", (FormatFileDetailsForLog(FileName, Modification, Size))));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::LogFileDone(TFileOperationProgressType * OperationProgress)
+{
+  // optimization
+  if (Log->Logging)
+  {
+    LogEvent(FORMAT("Transfer done: '%s' [%s]", (OperationProgress->FullFileName, IntToStr(OperationProgress->TransferedSize))));
   }
 }
 //---------------------------------------------------------------------------

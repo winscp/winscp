@@ -72,7 +72,6 @@ private:
   bool FAsciiTransferChanged;
   bool FResumeStatusChanged;
   void * FShowAsModalStorage;
-  TDateTime FLastUpdate;
   bool FDeleteToRecycleBin;
   bool FReadOnly;
   unsigned long FCPSLimit;

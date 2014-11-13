@@ -85,6 +85,7 @@ public:
   __fastcall TFileOperationProgressType(
     TFileOperationProgressEvent AOnProgress, TFileOperationFinished AOnFinished);
   __fastcall ~TFileOperationProgressType();
+  void __fastcall AssignButKeepSuspendState(const TFileOperationProgressType & Other);
   void __fastcall AddLocallyUsed(__int64 ASize);
   void __fastcall AddTransfered(__int64 ASize, bool AddToTotals = true);
   void __fastcall AddResumed(__int64 ASize);

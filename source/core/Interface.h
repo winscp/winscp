@@ -15,6 +15,8 @@ UnicodeString __fastcall GetCompanyRegistryKey();
 UnicodeString __fastcall GetRegistryKey();
 void * __fastcall BusyStart();
 void __fastcall BusyEnd(void * Token);
+const unsigned int GUIUpdateInterval = 200;
+bool __fastcall ProcessGUI(bool Force = false);
 UnicodeString __fastcall AppNameString();
 UnicodeString __fastcall SshVersionString();
 void __fastcall CopyToClipboard(UnicodeString Text);

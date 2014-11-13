@@ -4835,6 +4835,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
           throw;
         }
       }
+
+      FTerminal->LogFileDone(OperationProgress);
     }
   }
   __finally
@@ -5868,6 +5870,8 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
           true, true, NULL);
       }
     }
+
+    FTerminal->LogFileDone(OperationProgress);
   }
 
   if (Params & cpDelete)

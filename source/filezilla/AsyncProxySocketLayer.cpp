@@ -911,6 +911,7 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
 			return;
 		ASSERT(m_ProxyData.nProxyType!=PROXYTYPE_NOPROXY);
 		ClearBuffer();
+		DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_NOERROR, 0);
 		//Send the initial request
 		if (m_ProxyData.nProxyType==PROXYTYPE_SOCKS4 || m_ProxyData.nProxyType==PROXYTYPE_SOCKS4A)
 		{ //SOCKS4 proxy

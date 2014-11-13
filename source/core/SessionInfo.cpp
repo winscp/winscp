@@ -899,6 +899,18 @@ UnicodeString __fastcall TSessionLog::GetTlsVersionName(TTlsVersion TlsVersion)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TSessionLog::LogSensitive(const UnicodeString & Str)
+{
+  if (FConfiguration->LogSensitive && !Str.IsEmpty())
+  {
+    return Str;
+  }
+  else
+  {
+    return BooleanToEngStr(!Str.IsEmpty());
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
 {
   TGuard Guard(FCriticalSection);
@@ -945,8 +957,8 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       ADF(L"Session name: %s (%s)", (Data->SessionName, Data->Source));
       ADF(L"Host name: %s (Port: %d)", (Data->HostNameExpanded, Data->PortNumber));
       ADF(L"User name: %s (Password: %s, Key file: %s)",
-        (Data->UserNameExpanded, BooleanToEngStr(!Data->Password.IsEmpty()),
-         BooleanToEngStr(!Data->PublicKeyFile.IsEmpty())))
+        (Data->UserNameExpanded, LogSensitive(Data->Password),
+         LogSensitive(Data->PublicKeyFile)));
       if (Data->UsesSsh)
       {
         ADF(L"Tunnel: %s", (BooleanToEngStr(Data->Tunnel)));
@@ -954,8 +966,9 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         {
           ADF(L"Tunnel: Host name: %s (Port: %d)", (Data->TunnelHostName, Data->TunnelPortNumber));
           ADF(L"Tunnel: User name: %s (Password: %s, Key file: %s)",
-            (Data->TunnelUserName, BooleanToEngStr(!Data->TunnelPassword.IsEmpty()),
-             BooleanToEngStr(!Data->TunnelPublicKeyFile.IsEmpty())))
+            (Data->TunnelUserName,
+             LogSensitive(Data->TunnelPassword),
+             LogSensitive(Data->TunnelPublicKeyFile)));
           ADF(L"Tunnel: Local port number: %d", (Data->TunnelLocalPortNumber));
         }
       }
@@ -986,7 +999,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       {
         ADF(L"HostName: %s (Port: %d); Username: %s; Passwd: %s",
           (Data->ProxyHost, Data->ProxyPort,
-           Data->ProxyUsername, BooleanToEngStr(!Data->ProxyPassword.IsEmpty())));
+           Data->ProxyUsername, LogSensitive(Data->ProxyPassword)));
         if (Data->ProxyMethod == pmTelnet)
         {
           ADF(L"Telnet command: %s", (Data->ProxyTelnetCommand));

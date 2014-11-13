@@ -9,6 +9,7 @@
 #include <Terminal.h>
 #include <PuttyTools.h>
 #include <Queue.h>
+#include <HierarchicalStorage.h>
 
 #include <Consts.hpp>
 #include <StrUtils.hpp>
@@ -1973,9 +1974,14 @@ void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
   Lines->LoadFromFile(FileName);
 }
 //---------------------------------------------------------------------------
+void __fastcall ConsolePrintLine(TConsole * Console, const UnicodeString & Str)
+{
+  Console->Print(Str + L"\n");
+}
+//---------------------------------------------------------------------------
 void __fastcall Usage(TConsole * Console)
 {
-  UnicodeString Usage = LoadStr(USAGE9, 10240);
+  UnicodeString Usage = LoadStr(USAGE10, 10240);
   UnicodeString ExeBaseName = ExtractFileBaseName(Application->ExeName);
   Usage = ReplaceText(Usage, L"%APP%", ExeBaseName);
   UnicodeString Copyright =
@@ -2011,14 +2017,66 @@ void __fastcall Usage(TConsole * Console)
 
     if (Print)
     {
-      Console->Print(Line + L"\n");
+      ConsolePrintLine(Console, Line);
     }
   }
   Console->WaitBeforeExit();
 }
 //---------------------------------------------------------------------------
-int __fastcall Console(bool Help)
+void __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
 {
+  std::unique_ptr<TStrings> Arguments(new TStringList());
+  if (ALWAYS_TRUE(Params->FindSwitch(L"batchsettings", Arguments.get())))
+  {
+    if (Arguments->Count < 1)
+    {
+      ConsolePrintLine(Console, LoadStr(BATCH_SET_NO_MASK));
+    }
+    else if (Arguments->Count < 2)
+    {
+      ConsolePrintLine(Console, LoadStr(BATCH_SET_NO_SETTINGS));
+    }
+    else
+    {
+      TFileMasks Mask(Arguments->Strings[0]);
+      Arguments->Delete(0);
+
+      std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Arguments.get()));
+
+      int Matches = 0;
+      int Changes = 0;
+
+      for (int Index = 0; Index < StoredSessions->Count; Index++)
+      {
+        TSessionData * Data = StoredSessions->Sessions[Index];
+        if (!Data->IsWorkspace &&
+            Mask.Matches(Data->Name, false, false))
+        {
+          Matches++;
+          std::unique_ptr<TSessionData> OriginalData(new TSessionData(L""));
+          OriginalData->Assign(Data);
+          Data->ApplyRawSettings(OptionsStorage.get());
+          bool Changed = !OriginalData->IsSame(Data, false);
+          if (Changed)
+          {
+            Changes++;
+          }
+          UnicodeString StateStr = LoadStr(Changed ? BATCH_SET_CHANGED : BATCH_SET_NOT_CHANGED);
+          ConsolePrintLine(Console, FORMAT(L"%s - %s", (Data->Name, StateStr)));
+        }
+      }
+
+      StoredSessions->Save(false, true); // explicit
+      ConsolePrintLine(Console, FMTLOAD(BATCH_SET_SUMMARY, (Matches, Changes)));
+    }
+
+    Console->WaitBeforeExit();
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall Console(TConsoleMode Mode)
+{
+  assert(Mode != cmNone);
   TProgramParams * Params = TProgramParams::Instance();
   int Result = 0;
   TConsole * Console = NULL;
@@ -2033,7 +2091,7 @@ int __fastcall Console(bool Help)
       Configuration->Usage->Inc(L"ConsoleExternal");
       Console = new TExternalConsole(ConsoleInstance, Params->FindSwitch(L"nointeractiveinput"));
     }
-    else if (Params->FindSwitch(L"Console") || Help)
+    else if (Params->FindSwitch(L"Console") || (Mode != cmScripting))
     {
       Configuration->Usage->Inc(L"ConsoleOwn");
       Console = TOwnConsole::Instance();
@@ -2044,9 +2102,18 @@ int __fastcall Console(bool Help)
       Console = new TNullConsole();
     }
 
-    if (Help)
+    if (Mode == cmHelp)
     {
+      Configuration->Usage->Inc(L"UsageShown");
       Usage(Console);
+    }
+    else if (Mode == cmBatchSettings)
+    {
+      if (CheckSafe(Params))
+      {
+        Configuration->Usage->Inc(L"BatchSettings");
+        BatchSettings(Console, Params);
+      }
     }
     else
     {
@@ -2054,24 +2121,26 @@ int __fastcall Console(bool Help)
 
       try
       {
-        UnicodeString Value;
-        if (Params->FindSwitch(L"script", Value) && !Value.IsEmpty())
+        if (CheckSafe(Params))
         {
-          Configuration->Usage->Inc(L"ScriptFile");
-          LoadScriptFromFile(Value, ScriptCommands);
-        }
-        Params->FindSwitch(L"command", ScriptCommands);
-        if (ScriptCommands->Count > 0)
-        {
-          Configuration->Usage->Inc(L"ScriptCommands");
-        }
-        Params->FindSwitch(L"parameter", ScriptParameters);
-        if (ScriptParameters->Count > 0)
-        {
-          Configuration->Usage->Inc(L"ScriptParameters");
+          UnicodeString Value;
+          if (Params->FindSwitch(L"script", Value) && !Value.IsEmpty())
+          {
+            Configuration->Usage->Inc(L"ScriptFile");
+            LoadScriptFromFile(Value, ScriptCommands);
+          }
+          Params->FindSwitch(L"command", ScriptCommands);
+          if (ScriptCommands->Count > 0)
+          {
+            Configuration->Usage->Inc(L"ScriptCommands");
+          }
+          Params->FindSwitch(L"parameter", ScriptParameters);
+          if (ScriptParameters->Count > 0)
+          {
+            Configuration->Usage->Inc(L"ScriptParameters");
+          }
         }
 
-        bool Url = false;
         UnicodeString Session;
         if (Params->ParamCount >= 1)
         {
@@ -2079,29 +2148,15 @@ int __fastcall Console(bool Help)
         }
 
         bool DefaultsOnly;
-        delete StoredSessions->ParseUrl(Session, Params, DefaultsOnly,
-          NULL, &Url);
+        delete StoredSessions->ParseUrl(Session, Params, DefaultsOnly);
 
-        if (Url || Params->FindSwitch(L"Unsafe"))
+        UnicodeString LogFile;
+        if (Params->FindSwitch(L"Log", LogFile) && CheckSafe(Params))
         {
-          // prevent any automatic action when URL is provided on
-          // command-line (the check is duplicated in Execute())
-          if ((ScriptCommands->Count > 0) || Params->FindSwitch(L"Log") || Params->FindSwitch(L"XmlLog"))
-          {
-            Console->Print(LoadStr(UNSAFE_ACTIONS_DISABLED) + L"\n");
-          }
-          ScriptCommands->Clear();
+          Configuration->Usage->Inc(L"ScriptLog");
+          Configuration->TemporaryLogging(LogFile);
         }
-        else
-        {
-          UnicodeString LogFile;
-          if (Params->FindSwitch(L"Log", LogFile))
-          {
-            Configuration->Usage->Inc(L"ScriptLog");
-            Configuration->TemporaryLogging(LogFile);
-          }
-          CheckXmlLogParam(Params);
-        }
+        CheckXmlLogParam(Params);
 
         Result = Runner->Run(Session, Params,
           (ScriptCommands->Count > 0 ? ScriptCommands : NULL),

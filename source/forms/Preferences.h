@@ -300,6 +300,7 @@ __published:
   TLabel *PanelFontLabel;
   TButton *PanelFontButton;
   TCheckBox *PanelFontCheck;
+  TCheckBox *LogSensitiveCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

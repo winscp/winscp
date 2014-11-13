@@ -18,7 +18,6 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-enum TProxyType { pxNone, pxHTTP, pxSocks, pxTelnet }; // 0.53b and older
 const wchar_t * DefaultName = L"Default Settings";
 const wchar_t CipherNames[CIPHER_COUNT][10] = {L"WARN", L"3des", L"blowfish", L"aes", L"des", L"arcfour"};
 const wchar_t KexNames[KEX_COUNT][20] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-gex-sha1", L"rsa" };
@@ -77,7 +76,6 @@ void __fastcall TSessionData::Default()
   UserName = L"";
   Password = L"";
   PingInterval = 30;
-  // when changing default, update load/save logic
   PingType = ptOff;
   Timeout = 15;
   TryAgent = true;
@@ -459,7 +457,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   {
     PingInterval = 30;
   }
-  PingType = static_cast<TPingType>(Storage->ReadInteger(L"PingType", ptOff));
+  PingType = static_cast<TPingType>(Storage->ReadInteger(L"PingType", PingType));
   Timeout = Storage->ReadInteger(L"Timeout", Timeout);
   TryAgent = Storage->ReadBool(L"TryAgent", TryAgent);
   AgentFwd = Storage->ReadBool(L"AgentFwd", AgentFwd);
@@ -523,28 +521,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   SendBuf = Storage->ReadInteger(L"SendBuf", Storage->ReadInteger("SshSendBuf", SendBuf));
   SshSimple = Storage->ReadBool(L"SshSimple", SshSimple);
 
-  ProxyMethod = (TProxyMethod)Storage->ReadInteger(L"ProxyMethod", -1);
-  if (ProxyMethod < 0)
-  {
-    int ProxyType = Storage->ReadInteger(L"ProxyType", pxNone);
-    int ProxySOCKSVersion;
-    switch (ProxyType) {
-      case pxHTTP:
-        ProxyMethod = pmHTTP;
-        break;
-      case pxTelnet:
-        ProxyMethod = pmTelnet;
-        break;
-      case pxSocks:
-        ProxySOCKSVersion = Storage->ReadInteger(L"ProxySOCKSVersion", 5);
-        ProxyMethod = ProxySOCKSVersion == 5 ? pmSocks5 : pmSocks4;
-        break;
-      default:
-      case pxNone:
-        ProxyMethod = ::pmNone;
-        break;
-    }
-  }
+  ProxyMethod = (TProxyMethod)Storage->ReadInteger(L"ProxyMethod", ProxyMethod);
   ProxyHost = Storage->ReadString(L"ProxyHost", ProxyHost);
   ProxyPort = Storage->ReadInteger(L"ProxyPort", ProxyPort);
   ProxyUsername = Storage->ReadString(L"ProxyUsername", ProxyUsername);
@@ -822,39 +799,6 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
     }
 
     WRITE_DATA(Integer, ProxyMethod);
-    if (PuttyExport)
-    {
-      // support for Putty 0.53b and older
-      int ProxyType;
-      int ProxySOCKSVersion = 5;
-      switch (ProxyMethod) {
-        case pmHTTP:
-          ProxyType = pxHTTP;
-          break;
-        case pmTelnet:
-          ProxyType = pxTelnet;
-          break;
-        case pmSocks5:
-          ProxyType = pxSocks;
-          ProxySOCKSVersion = 5;
-          break;
-        case pmSocks4:
-          ProxyType = pxSocks;
-          ProxySOCKSVersion = 4;
-          break;
-        default:
-        case ::pmNone:
-          ProxyType = pxNone;
-          break;
-      }
-      Storage->WriteInteger(L"ProxyType", ProxyType);
-      Storage->WriteInteger(L"ProxySOCKSVersion", ProxySOCKSVersion);
-    }
-    else
-    {
-      Storage->DeleteValue(L"ProxyType");
-      Storage->DeleteValue(L"ProxySOCKSVersion");
-    }
     WRITE_DATA(String, ProxyHost);
     WRITE_DATA(Integer, ProxyPort);
     WRITE_DATA(String, ProxyUsername);
@@ -1567,6 +1511,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         PortNumber = FtpsImplicitPortNumber;
       }
     }
+    // BACKWARD COMPATIBILITY with 5.5.x
     if (Options->FindSwitch(L"explicitssl"))
     {
       bool Enabled = Options->SwitchValue(L"explicitssl", true);
@@ -1576,9 +1521,13 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         PortNumber = FtpPortNumber;
       }
     }
-    if (Options->FindSwitch(L"explicittls", Value))
+    if (Options->FindSwitch(L"explicit") ||
+        // BACKWARD COMPATIBILITY with 5.5.x
+        Options->FindSwitch(L"explicittls"))
     {
-      bool Enabled = Options->SwitchValue(L"explicittls", true);
+      UnicodeString SwitchName =
+        Options->FindSwitch(L"explicit") ? L"explicit" : L"explicittls";
+      bool Enabled = Options->SwitchValue(SwitchName, true);
       Ftps = Enabled ? ftpsExplicitTls : ftpsNone;
       if (!PortNumberDefined && Enabled)
       {
@@ -1596,9 +1545,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         if (Options->FindSwitch(L"rawsettings", RawSettings))
         {
           OptionsStorage = new TOptionsStorage(RawSettings);
-
-          bool Dummy;
-          DoLoad(OptionsStorage, Dummy);
+          ApplyRawSettings(OptionsStorage);
         }
       }
       __finally
@@ -1610,6 +1557,12 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   }
 
   return true;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::ApplyRawSettings(THierarchicalStorage * Storage)
+{
+  bool Dummy;
+  DoLoad(Storage, Dummy);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ConfigureTunnel(int APortNumber)

@@ -30,6 +30,14 @@ __fastcall TFileOperationProgressType::~TFileOperationProgressType()
   assert(!Suspended || FReset);
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::AssignButKeepSuspendState(const TFileOperationProgressType & Other)
+{
+  TValueRestorer<unsigned int> SuspendTimeRestorer(FSuspendTime);
+  TValueRestorer<bool> SuspendedRestorer(Suspended);
+
+  *this = Other;
+}
+//---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Clear()
 {
   FileName = L"";

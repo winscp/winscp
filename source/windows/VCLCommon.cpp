@@ -241,7 +241,7 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
 
           // When main form is hidden, no taskbar button for it is shown and
           // this window does not become main window, so there won't be no taskbar
-          // icon created automatically (by VCL). So we force is manually here.
+          // icon created automatically (by VCL). So we force it manually here.
           // This particularly happen for all windows/dialogs of command-line
           // operations (e.g. /synchronize) after CreateScpExplorer() happens.
 
@@ -276,7 +276,7 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
     }
 
     // Part of following code (but actually not all, TODO), has to happen
-    // for all windows when VCL main window is hidden (psrticularly the last branch).
+    // for all windows when VCL main window is hidden (particularly the last branch).
     // This is different from above brach, that should happen only for top-level visible window.
     if ((Application->MainForm == Form) ||
         // this particularly happens if error occurs while main

@@ -27,7 +27,7 @@ __fastcall TEditorData::TEditorData() :
   FileMask(L"*.*"),
   Editor(edInternal),
   ExternalEditor(L""),
-  ExternalEditorText(true),
+  ExternalEditorText(false),
   SDIExternalEditor(false),
   DetectMDIExternalEditor(false)
 {
@@ -56,6 +56,33 @@ bool __fastcall TEditorData::operator==(const TEditorData & rhd) const
     true;
 }
 #undef C
+//---------------------------------------------------------------------------
+bool __fastcall TEditorData::DecideExternalEditorText(UnicodeString ExternalEditor)
+{
+  bool Result = false;
+  // By default we use default transfer mode (binary),
+  // as all reasonable 3rd party editors suppose all EOS styles.
+  // A notable exception is Windows Notepad, so here's an exception for it.
+
+  ReformatFileNameCommand(ExternalEditor);
+  UnicodeString ProgramName = ExtractProgramName(ExternalEditor);
+  // We explicitly do not use TEditorPreferences::GetDefaultExternalEditor(),
+  // as we need to expliclty refer to Notepad, even if the default external
+  // editor ever changes
+  if (SameText(ProgramName, "notepad"))
+  {
+    Result = true;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorData::DecideExternalEditorText()
+{
+  if (DecideExternalEditorText(ExternalEditor))
+  {
+    ExternalEditorText = true;
+  }
+}
 //---------------------------------------------------------------------------
 __fastcall TEditorPreferences::TEditorPreferences()
 {
@@ -86,6 +113,7 @@ UnicodeString __fastcall TEditorPreferences::GetDefaultExternalEditor()
 void __fastcall TEditorPreferences::LegacyDefaults()
 {
   FData.ExternalEditor = GetDefaultExternalEditor();
+  FData.DecideExternalEditorText();
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TEditorPreferences::ExtractExternalEditorName() const

@@ -625,6 +625,14 @@ void __fastcall TFTPFileSystem::CollectUsage()
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPPureFTPd");
   }
+  // 220 Titan FTP Server 10.47.1892 Ready.
+  // ...
+  // SYST
+  // 215 UNIX Type: L8
+  else if (ContainsText(FWelcomeMessage, "Titan FTP Server"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPTitan");
+  }
   else
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPOther");
@@ -1362,6 +1370,8 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFullName)));
     }
+
+    FTerminal->LogFileDone(OperationProgress);
   }
 
   if (FLAGSET(Params, cpDelete))
@@ -1605,6 +1615,8 @@ void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
     {
       TTouchSessionAction TouchAction(FTerminal->ActionLog, DestFullName, Modification);
     }
+
+    FTerminal->LogFileDone(OperationProgress);
   }
 
   /* TODO : Delete also read-only files. */
@@ -2571,6 +2583,10 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       Result = FFileTransferRemoveBOM ? TRUE : FALSE;
       break;
 
+    case OPTION_MPEXT_LOG_SENSITIVE:
+      Result = FTerminal->Configuration->LogSensitive ? TRUE : FALSE;
+      break;
+
     default:
       FAIL;
       Result = FALSE;
@@ -2636,7 +2652,13 @@ void __fastcall TFTPFileSystem::DiscardMessages()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::WaitForMessages()
 {
-  unsigned int Result = WaitForSingleObject(FQueueEvent, INFINITE);
+  unsigned int Result;
+  do
+  {
+    Result = WaitForSingleObject(FQueueEvent, GUIUpdateInterval);
+    ProcessGUI();
+  } while (Result == WAIT_TIMEOUT);
+
   if (Result != WAIT_OBJECT_0)
   {
     FTerminal->FatalError(NULL, FMTLOAD(INTERNAL_ERROR, (L"ftp#1", IntToStr(int(Result)))));
@@ -3149,6 +3171,9 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
     case TFileZillaIntf::LOG_COMMAND:
       if (Status == L"SYST")
       {
+        // not to trigger the assert in HandleReplyStatus,
+        // when SYST command is used by the user
+        FSystem = "";
         FLastCommand = SYST;
       }
       else if (Status == L"FEAT")

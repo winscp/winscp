@@ -44,16 +44,20 @@ TConfiguration * __fastcall CreateConfiguration()
     {
       WinConfiguration->SetNulStorage();
     }
-    else
+    else if (CheckSafe(Params))
     {
       IniFileName = ExpandFileName(ExpandEnvironmentVariables(IniFileName));
       WinConfiguration->IniFileStorageName = IniFileName;
     }
   }
-  std::unique_ptr<TStrings> RawConfig(new TStringList());
-  if (Params->FindSwitch(L"rawconfig", RawConfig.get()))
+
+  if (CheckSafe(Params))
   {
-    WinConfiguration->OptionsStorage = RawConfig.get();
+    std::unique_ptr<TStrings> RawConfig(new TStringList());
+    if (Params->FindSwitch(L"rawconfig", RawConfig.get()))
+    {
+      WinConfiguration->OptionsStorage = RawConfig.get();
+    }
   }
 
   return WinConfiguration;
@@ -1218,11 +1222,28 @@ void __fastcall MessageWithNoHelp(const UnicodeString & Message)
 bool __fastcall CheckXmlLogParam(TProgramParams * Params)
 {
   UnicodeString LogFile;
-  bool Result = Params->FindSwitch(L"XmlLog", LogFile);
+  bool Result =
+    Params->FindSwitch(L"XmlLog", LogFile) &&
+    CheckSafe(Params);
   if (Result)
   {
     Configuration->Usage->Inc(L"ScriptXmlLog");
     Configuration->TemporaryActionsLogging(LogFile);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall CheckSafe(TProgramParams * Params)
+{
+  // Originally we warned when the test didn't pass,
+  // but it would actually be helping hackers, so let's be silent.
+
+  // Earlier we tested presence of any URL on command-line.
+  // That was added to prevent abusing URL handler in 3.8.2 (2006).
+  // Later in 4.0.4 (2007) an /Unsafe switch was added to URL handler registration.
+  // So by now, we can check for the switch only and
+  // do not limit user from combining URL with say
+  // /rawconfig
+
+  return !Params->FindSwitch(UNSAFE_SWITCH);
 }

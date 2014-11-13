@@ -252,13 +252,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 190
+          Height = 214
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Session log'
           TabOrder = 0
           DesignSize = (
             389
-            190)
+            214)
           object LogWindowLinesText: TLabel
             Left = 327
             Top = 163
@@ -401,10 +401,20 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 0
             OnClick = ControlChange
           end
+          object LogSensitiveCheck: TCheckBox
+            Left = 16
+            Top = 187
+            Width = 359
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Log passwor&ds and other sensitive information'
+            TabOrder = 10
+            OnClick = ControlChange
+          end
         end
         object ActionsLoggingGroup: TGroupBox
           Left = 8
-          Top = 203
+          Top = 227
           Width = 389
           Height = 86
           Anchors = [akLeft, akTop, akRight]
@@ -971,7 +981,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 129
             Height = 25
             Caption = 'Select fo&nt...'
-            TabOrder = 0
+            TabOrder = 1
             OnClick = PanelFontButtonClick
           end
           object PanelFontCheck: TCheckBox
@@ -980,7 +990,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 129
             Height = 17
             Caption = 'Use custom &font'
-            TabOrder = 1
+            TabOrder = 0
             OnClick = ControlChange
           end
         end

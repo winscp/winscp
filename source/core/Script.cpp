@@ -352,13 +352,13 @@ void __fastcall TScript::Init()
   FCommands->Register(L"!", 0, SCRIPT_CALL_HELP2, &CallProc, 1, -1, false);
   FCommands->Register(L"pwd", SCRIPT_PWD_DESC, SCRIPT_PWD_HELP, &PwdProc, 0, 0, false);
   FCommands->Register(L"cd", SCRIPT_CD_DESC, SCRIPT_CD_HELP, &CdProc, 0, 1, false);
-  FCommands->Register(L"ls", SCRIPT_LS_DESC, SCRIPT_LS_HELP, &LsProc, 0, 1, false);
-  FCommands->Register(L"dir", 0, SCRIPT_LS_HELP, &LsProc, 0, 1, false);
-  FCommands->Register(L"rm", SCRIPT_RM_DESC, SCRIPT_RM_HELP, &RmProc, 1, -1, false);
+  FCommands->Register(L"ls", SCRIPT_LS_DESC, SCRIPT_LS_HELP2, &LsProc, 0, 1, false);
+  FCommands->Register(L"dir", 0, SCRIPT_LS_HELP2, &LsProc, 0, 1, false);
+  FCommands->Register(L"rm", SCRIPT_RM_DESC, SCRIPT_RM_HELP2, &RmProc, 1, -1, false);
   FCommands->Register(L"rmdir", SCRIPT_RMDIR_DESC, SCRIPT_RMDIR_HELP, &RmDirProc, 1, -1, false);
-  FCommands->Register(L"mv", SCRIPT_MV_DESC, SCRIPT_MV_HELP, &MvProc, 2, -1, false);
-  FCommands->Register(L"rename", 0, SCRIPT_MV_HELP, &MvProc, 2, -1, false);
-  FCommands->Register(L"chmod", SCRIPT_CHMOD_DESC, SCRIPT_CHMOD_HELP, &ChModProc, 2, -1, false);
+  FCommands->Register(L"mv", SCRIPT_MV_DESC, SCRIPT_MV_HELP2, &MvProc, 2, -1, false);
+  FCommands->Register(L"rename", 0, SCRIPT_MV_HELP2, &MvProc, 2, -1, false);
+  FCommands->Register(L"chmod", SCRIPT_CHMOD_DESC, SCRIPT_CHMOD_HELP2, &ChModProc, 2, -1, false);
   FCommands->Register(L"ln", SCRIPT_LN_DESC, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"symlink", 0, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"mkdir", SCRIPT_MKDIR_DESC, SCRIPT_MKDIR_HELP, &MkDirProc, 1, 1, false);
@@ -701,14 +701,7 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
           }
           else
           {
-            int LastError = GetLastError();
-            // System error text for ERROR_FILE_NOT_FOUND is more or less redundant to ours
-            // SCRIPT_MATCH_NO_MATCH. Also the system error does not look nice/user friendly
-            // so avoid using it for this frequent case.
-            if (LastError != ERROR_FILE_NOT_FOUND)
-            {
-              Error = SysErrorMessageForError(LastError);
-            }
+            Error = ListingSysErrorMessage();
           }
         }
 
@@ -727,6 +720,20 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
   {
     delete Result;
     throw;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TScript::ListingSysErrorMessage()
+{
+  UnicodeString Result;
+  int LastError = GetLastError();
+  // System error text for ERROR_FILE_NOT_FOUND is more or less redundant to ours
+  // SCRIPT_MATCH_NO_MATCH. Also the system error does not look nice/user friendly
+  // so avoid using it for this frequent case.
+  if (LastError != ERROR_FILE_NOT_FOUND)
+  {
+    Result = SysErrorMessageForError(LastError);
   }
   return Result;
 }
@@ -1088,11 +1095,13 @@ void __fastcall TScript::LsProc(TScriptProcParams * Parameters)
 
   UnicodeString Directory;
   TFileMasks Mask;
+  bool HaveMask = false;
   if (Parameters->ParamCount > 0)
   {
     Directory = Parameters->Param[1];
     UnicodeString MaskStr = UnixExtractFileName(Directory);
-    if (TFileMasks::IsMask(MaskStr))
+    HaveMask = TFileMasks::IsMask(MaskStr);
+    if (HaveMask)
     {
       Mask.SetMask(MaskStr);
       Directory = UnixExtractFilePath(Directory);
@@ -1110,9 +1119,19 @@ void __fastcall TScript::LsProc(TScriptProcParams * Parameters)
   {
     try
     {
-      for (int i = 0; i < FileList->Count; i++)
+      if (FileList->Count > 0)
       {
-        PrintLine(FileList->Files[i]->ListingStr);
+        for (int i = 0; i < FileList->Count; i++)
+        {
+          PrintLine(FileList->Files[i]->ListingStr);
+        }
+      }
+      else
+      {
+        if (HaveMask)
+        {
+          NoMatch(Mask.Masks, UnicodeString());
+        }
       }
     }
     __finally
@@ -1886,7 +1905,7 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
   FCommands->Register(L"session", SCRIPT_SESSION_DESC, SCRIPT_SESSION_HELP, &SessionProc, 0, 1, false);
   FCommands->Register(L"lpwd", SCRIPT_LPWD_DESC, SCRIPT_LPWD_HELP, &LPwdProc, 0, 0, false);
   FCommands->Register(L"lcd", SCRIPT_LCD_DESC, SCRIPT_LCD_HELP, &LCdProc, 1, 1, false);
-  FCommands->Register(L"lls", SCRIPT_LLS_DESC, SCRIPT_LLS_HELP, &LLsProc, 0, 1, false);
+  FCommands->Register(L"lls", SCRIPT_LLS_DESC, SCRIPT_LLS_HELP2, &LLsProc, 0, 1, false);
 }
 //---------------------------------------------------------------------------
 __fastcall TManagementScript::~TManagementScript()
@@ -2237,7 +2256,8 @@ UnicodeString __fastcall TManagementScript::GetLogCmd(const UnicodeString & Full
   const UnicodeString & Command, const UnicodeString & Params)
 {
   UnicodeString Result = FullCommand;
-  if (SameText(FCommands->ResolveCommand(Command), L"open"))
+  if (SameText(FCommands->ResolveCommand(Command), L"open") &&
+      !Configuration->LogSensitive)
   {
     UnicodeString AParams = Params;
     std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(L""));
@@ -2531,54 +2551,56 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
   int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
   if (FindFirstUnchecked(IncludeTrailingBackslash(Directory) + Mask, FindAttrs, SearchRec) != 0)
   {
-    throw EOSExtException(FMTLOAD(LIST_DIR_ERROR, (Directory)));
+    NoMatch(Mask, ListingSysErrorMessage());
   }
-
-  try
+  else
   {
-    UnicodeString TimeFormat = FixedLenDateTimeFormat(FormatSettings.ShortTimeFormat);
-    UnicodeString DateFormat = FixedLenDateTimeFormat(FormatSettings.ShortDateFormat);
-    int DateLen = 0;
-    int TimeLen = 0;
-    bool First = true;
-
-    do
+    try
     {
-      if (SearchRec.Name != L".")
+      UnicodeString TimeFormat = FixedLenDateTimeFormat(FormatSettings.ShortTimeFormat);
+      UnicodeString DateFormat = FixedLenDateTimeFormat(FormatSettings.ShortDateFormat);
+      int DateLen = 0;
+      int TimeLen = 0;
+      bool First = true;
+
+      do
       {
-        TDateTime DateTime = SearchRec.TimeStamp;
-        UnicodeString TimeStr = FormatDateTime(TimeFormat, DateTime);
-        UnicodeString DateStr = FormatDateTime(DateFormat, DateTime);
-        if (First)
+        if (SearchRec.Name != L".")
         {
-          if (TimeLen < TimeStr.Length())
+          TDateTime DateTime = SearchRec.TimeStamp;
+          UnicodeString TimeStr = FormatDateTime(TimeFormat, DateTime);
+          UnicodeString DateStr = FormatDateTime(DateFormat, DateTime);
+          if (First)
           {
-            TimeLen = TimeStr.Length();
+            if (TimeLen < TimeStr.Length())
+            {
+              TimeLen = TimeStr.Length();
+            }
+            if (DateLen < DateStr.Length())
+            {
+              DateLen = DateStr.Length();
+            }
+            First = false;
           }
-          if (DateLen < DateStr.Length())
+          UnicodeString SizeStr;
+          if (FLAGSET(SearchRec.Attr, faDirectory))
           {
-            DateLen = DateStr.Length();
+            SizeStr = L"<DIR>";
           }
-          First = false;
+          else
+          {
+            SizeStr = FORMAT(L"%14.0n", (double(SearchRec.Size)));
+          }
+          PrintLine(FORMAT(L"%-*s  %-*s    %-14s %s", (
+            DateLen, DateStr, TimeLen, TimeStr, SizeStr, SearchRec.Name)));
         }
-        UnicodeString SizeStr;
-        if (FLAGSET(SearchRec.Attr, faDirectory))
-        {
-          SizeStr = L"<DIR>";
-        }
-        else
-        {
-          SizeStr = FORMAT(L"%14.0n", (double(SearchRec.Size)));
-        }
-        PrintLine(FORMAT(L"%-*s  %-*s    %-14s %s", (
-          DateLen, DateStr, TimeLen, TimeStr, SizeStr, SearchRec.Name)));
       }
+      while (FindNextChecked(SearchRec) == 0);
     }
-    while (FindNextChecked(SearchRec) == 0);
-  }
-  __finally
-  {
-    FindClose(SearchRec);
+    __finally
+    {
+      FindClose(SearchRec);
+    }
   }
 }
 //---------------------------------------------------------------------------

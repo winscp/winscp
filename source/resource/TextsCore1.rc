@@ -137,7 +137,7 @@ BEGIN
   SFTP_STATUS_BYTE_RANGE_LOCK_REFUSED, "Byte range lock refused."
   SFTP_STATUS_DELETE_PENDING, "An operation was attempted on a file for which a delete operation is pending."
   SFTP_STATUS_FILE_CORRUPT, "The file is corrupt; an filesystem integrity check should be run."
-  KEY_TYPE_UNKNOWN, "File '%s' does not exist or it does not contain private key in known format."
+  KEY_TYPE_UNKNOWN2, "File '%s' does not contain private key in known format."
   KEY_TYPE_UNSUPPORTED, "**Private key file '%s' contains key in %s format. WinSCP supports only PuTTY format.**\n \nYou can use PuTTYgen tool to convert your private key file."
   KEY_TYPE_DIFFERENT_SSH, "Private key file '%s' contains key in %s format. It does not follow your preferred SSH protocol version."
   SFTP_OVERWRITE_FILE_ERROR2, "Cannot overwrite remote file '%s'.$$\n \nPress 'Delete' to delete the file and create new one instead of overwriting it.$$"
@@ -206,6 +206,7 @@ BEGIN
   SFTP_STATUS_OWNER_INVALID, "The name specified can not be assigned as an owner of a file."
   SFTP_STATUS_GROUP_INVALID, "The name specified can not be assigned as the primary group of a file."
   SFTP_STATUS_NO_MATCHING_BYTE_RANGE_LOCK, "The requested operation could not be completed because the specifed byte range lock has not been granted."
+  KEY_TYPE_UNOPENABLE, "Private key file '%s' does not exist or cannot be opened."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"

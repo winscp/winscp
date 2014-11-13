@@ -230,6 +230,7 @@ void __fastcall TWebDAVFileSystem::Open()
   FCurrentDirectory = L"";
   FHasTrailingSlash = true;
   FStoredPasswordTried = false;
+  FTlsVersionStr = L"";
 
   TSessionData * Data = FTerminal->SessionData;
 
@@ -511,10 +512,9 @@ bool __fastcall TWebDAVFileSystem::GetActive()
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::CollectUsage()
 {
-  UnicodeString TlsVersionStr = GetTlsVersionStr();
-  if (!TlsVersionStr.IsEmpty())
+  if (!FTlsVersionStr.IsEmpty())
   {
-    FTerminal->CollectTlsUsage(TlsVersionStr);
+    FTerminal->CollectTlsUsage(FTlsVersionStr);
   }
 }
 //---------------------------------------------------------------------------
@@ -1426,6 +1426,8 @@ void __fastcall TWebDAVFileSystem::Source(const UnicodeString FileName,
           throw;
         }
       }
+
+      FTerminal->LogFileDone(OperationProgress);
     }
   }
   __finally
@@ -2028,6 +2030,8 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFullName)));
     }
+
+    FTerminal->LogFileDone(OperationProgress);
   }
 
   if (FLAGSET(Params, cpDelete))
@@ -2208,23 +2212,20 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data)
   return Result;
 }
 //------------------------------------------------------------------------------
-UnicodeString __fastcall TWebDAVFileSystem::GetTlsVersionStr()
-{
-  return StrFromNeon(ne_ssl_get_version(FNeonSession));
-}
-//------------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::CollectTLSSessionInfo()
 {
-  // see also TFTPFileSystem::Open()
-  UnicodeString TlsVersionStr = GetTlsVersionStr();
-  AddToList(FSessionInfo.SecurityProtocolName, TlsVersionStr, L", ");
+  // See also TFTPFileSystem::Open().
+  // Have to cache the value as the connection (the neon HTTP session, not "our" session)
+  // can be closed as the time we need it in CollectUsage().
+  FTlsVersionStr = StrFromNeon(ne_ssl_get_version(FNeonSession));
+  AddToList(FSessionInfo.SecurityProtocolName, FTlsVersionStr, L", ");
 
   UnicodeString Cipher = StrFromNeon(ne_ssl_get_cipher(FNeonSession));
   FSessionInfo.CSCipher = Cipher;
   FSessionInfo.SCCipher = Cipher;
 
   // see CAsyncSslSocketLayer::PrintSessionInfo()
-  FTerminal->LogEvent(FORMAT("Using %s, cipher %s", (TlsVersionStr, Cipher)));
+  FTerminal->LogEvent(FORMAT(L"Using %s, cipher %s", (FTlsVersionStr, Cipher)));
 }
 //------------------------------------------------------------------------------
 // A neon-session callback to validate the SSL certificate when the CA

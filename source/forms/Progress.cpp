@@ -54,7 +54,6 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
   FMoveToQueue = false;
   FMinimizedByMe = false;
   FUpdateCounter = 0;
-  FLastUpdate = 0;
   FDeleteToRecycleBin = false;
   FReadOnly = false;
   FShowAsModalStorage = NULL;
@@ -354,7 +353,7 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
     InstantUpdate = true;
   }
 
-  FData = AData;
+  FData.AssignButKeepSuspendState(AData);
   FDataGot = true;
   if (!UpdateTimer->Enabled)
   {
@@ -373,13 +372,9 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
     UpdateControls();
     Application->ProcessMessages();
   }
-  static double UpdateInterval = static_cast<double>(OneSecond/5);  // 1/5 sec
-  if ((FUpdateCounter % 5 == 0) ||
-      (double(N) - double(FLastUpdate) > UpdateInterval))
+  if (ProcessGUI(FUpdateCounter % 5 == 0))
   {
-    FLastUpdate = N;
     FUpdateCounter = 0;
-    Application->ProcessMessages();
   }
   FUpdateCounter++;
 
@@ -412,7 +407,6 @@ void __fastcall TProgressForm::FormShow(TObject * /*Sender*/)
   {
     UpdateControls();
   }
-  FLastUpdate = 0;
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::FormHide(TObject * /*Sender*/)

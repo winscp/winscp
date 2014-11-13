@@ -370,7 +370,7 @@ static void __fastcall RegisterAsUrlHandler(HKEY RootKey,
       Registry->OpenKey(L"open", true) &&
       Registry->OpenKey(L"command", true))
   {
-    Registry->WriteString(L"", FORMAT(L"\"%s\" /unsafe \"%%1\"", (Application->ExeName)));
+    Registry->WriteString(L"", FORMAT(L"\"%s\" %s \"%%1\"", (Application->ExeName, TProgramParams::FormatSwitch(UNSAFE_SWITCH))));
     Registry->CloseKey();
   }
   else

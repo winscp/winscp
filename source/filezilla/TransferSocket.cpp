@@ -1111,6 +1111,9 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 			{
 				switch (iter->nParam1)
 				{
+				case PROXYERROR_NOERROR:
+					m_pOwner->ShowStatus(IDS_PROXY_CONNECTED, FZ_LOG_STATUS);
+					break;
 				case PROXYERROR_NOCONN:
 					m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_NOCONN, FZ_LOG_ERROR);
 					break;

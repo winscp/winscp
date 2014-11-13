@@ -1934,6 +1934,8 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         TChmodSessionAction(FTerminal->ActionLog, AbsoluteFileName,
           Rights);
       }
+
+      FTerminal->LogFileDone(OperationProgress);
     }
   }
   __finally
@@ -2626,6 +2628,8 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
             }
             FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFileName)));
           }
+
+          FTerminal->LogFileDone(OperationProgress);
         }
       }
     }

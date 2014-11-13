@@ -22,7 +22,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
-  TObjectList * DataList, UnicodeString & DownloadFile, bool & Url)
+  TObjectList * DataList, UnicodeString & DownloadFile)
 {
   bool DefaultsOnly = false;
   bool Close = false;
@@ -36,7 +36,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   {
     TSessionData * SessionData =
       StoredSessions->ParseUrl(SessionName, Options, DefaultsOnly,
-        &DownloadFile, &Url);
+        &DownloadFile);
     DataList->Add(SessionData);
 
     if (DataList->Count == 1)
@@ -502,11 +502,24 @@ int __fastcall Execute()
     Configuration->Usage->Inc(L"ConsoleDotNet");
   }
 
-  bool Help = Params->FindSwitch(L"help") || Params->FindSwitch(L"h") || Params->FindSwitch(L"?");
-  if (Help || Params->FindSwitch(L"Console") || Params->FindSwitch(L"script") ||
+  TConsoleMode Mode = cmNone;
+  if (Params->FindSwitch(L"Console") || Params->FindSwitch(L"script") ||
       Params->FindSwitch(L"command"))
   {
-    return Console(Help);
+    Mode = cmScripting;
+  }
+  else if (Params->FindSwitch(L"help") || Params->FindSwitch(L"h") || Params->FindSwitch(L"?"))
+  {
+    Mode = cmHelp;
+  }
+  else if (Params->FindSwitch(L"batchsettings"))
+  {
+    Mode = cmBatchSettings;
+  }
+
+  if (Mode != cmNone)
+  {
+    return Console(Mode);
   }
 
   TTerminalManager * TerminalManager = NULL;
@@ -561,31 +574,43 @@ int __fastcall Execute()
              Params->FindSwitch(L"RegisterAsUrlHandler")) // BACKWARD COMPATIBILITY
     {
       MaintenanceTask();
-      RegisterForDefaultProtocols();
+      if (CheckSafe(Params))
+      {
+        RegisterForDefaultProtocols();
+      }
     }
     else if (Params->FindSwitch(L"UnregisterForProtocols"))
     {
       MaintenanceTask();
-      UnregisterForProtocols();
+      if (CheckSafe(Params))
+      {
+        UnregisterForProtocols();
+      }
     }
     else if (Params->FindSwitch(L"AddSearchPath"))
     {
       MaintenanceTask();
-      AddSearchPath(ExtractFilePath(Application->ExeName));
+      if (CheckSafe(Params))
+      {
+        AddSearchPath(ExtractFilePath(Application->ExeName));
+      }
     }
     else if (Params->FindSwitch(L"RemoveSearchPath"))
     {
       MaintenanceTask();
-      try
+      if (CheckSafe(Params))
       {
-        RemoveSearchPath(ExtractFilePath(Application->ExeName));
-      }
-      catch(...)
-      {
-        // ignore errors
-        // (RemoveSearchPath is called always on uninstallation,
-        // even if AddSearchPath was not used, so we would get the error
-        // always for non-priviledged user)
+        try
+        {
+          RemoveSearchPath(ExtractFilePath(Application->ExeName));
+        }
+        catch(...)
+        {
+          // ignore errors
+          // (RemoveSearchPath is called always on uninstallation,
+          // even if AddSearchPath was not used, so we would get the error
+          // always for non-priviledged user)
+        }
       }
     }
     else if (Params->FindSwitch(L"ImportSitesIfAny"))
@@ -637,7 +662,7 @@ int __fastcall Execute()
 
       if (!Params->Empty)
       {
-        if (Params->FindSwitch(L"Defaults"))
+        if (Params->FindSwitch(L"Defaults") && CheckSafe(Params))
         {
           UseDefaults = true;
         }
@@ -719,26 +744,15 @@ int __fastcall Execute()
       do
       {
         Retry = false;
-        bool Url = false;
         TObjectList * DataList = new TObjectList();
-        GetLoginData(AutoStartSession, Params, DataList, DownloadFile, Url);
+        GetLoginData(AutoStartSession, Params, DataList, DownloadFile);
         // from now on, we do not support runtime locale change
         GUIConfiguration->CanApplyLocaleImmediately = false;
         try
         {
           if (DataList->Count > 0)
           {
-            if (Url || Params->FindSwitch(L"Unsafe"))
-            {
-              // prevent any automatic action when URL is provided on
-              // command-line (the check is duplicated in Console())
-              if (UseDefaults || Params->FindSwitch(L"Log") || Params->FindSwitch(L"XmlLog"))
-              {
-                MessageDialog(LoadStr(UNSAFE_ACTIONS_DISABLED), qtWarning, qaOK);
-              }
-              UseDefaults = false;
-            }
-            else
+            if (CheckSafe(Params))
             {
               UnicodeString LogFile;
               if (Params->FindSwitch(L"Log", LogFile))

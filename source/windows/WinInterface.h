@@ -28,6 +28,7 @@ const int mpAllowContinueOnError = 0x02;
 #define JUMPLIST_SWITCH L"JumpList"
 #define DESKTOP_SWITCH L"Desktop"
 #define SEND_TO_HOOK_SWITCH L"SendToHook"
+#define UNSAFE_SWITCH L"Unsafe"
 
 struct TMessageParams
 {
@@ -74,6 +75,7 @@ void __fastcall SearchHelp(const UnicodeString & Message);
 void __fastcall MessageWithNoHelp(const UnicodeString & Message);
 
 class TProgramParams;
+bool __fastcall CheckSafe(TProgramParams * Params);
 bool __fastcall CheckXmlLogParam(TProgramParams * Params);
 
 UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent);
@@ -125,7 +127,7 @@ bool __fastcall DoChangeMasterPasswordDialog(UnicodeString & NewPassword);
 // windows\WinMain.cpp
 int __fastcall Execute();
 void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
-  TObjectList * DataList, UnicodeString & DownloadFile, bool & Url);
+  TObjectList * DataList, UnicodeString & DownloadFile);
 
 // forms\InputDlg.cpp
 struct TInputDialogData
@@ -372,7 +374,8 @@ TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   const UnicodeString & MoreMessagesUrl, TSize MoreMessagesSize);
 
 // windows\Console.cpp
-int __fastcall Console(bool Help);
+enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings };
+int __fastcall Console(TConsoleMode Mode);
 
 // forms\EditorPreferences.cpp
 enum TEditorPreferencesMode { epmAdd, epmEdit, epmAdHoc };
@@ -406,6 +409,7 @@ void __fastcall MenuPopup(TPopupMenu * Menu, TRect Rect, TComponent * PopupCompo
 void __fastcall MenuPopup(TPopupMenu * Menu, TButton * Button);
 void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Handled);
 void __fastcall MenuButton(TButton * Button);
+TComponent * __fastcall GetPopupComponent(TObject * Sender);
 TRect __fastcall CalculatePopupRect(TButton * Button);
 TRect __fastcall CalculatePopupRect(TControl * Control, TPoint MousePos);
 

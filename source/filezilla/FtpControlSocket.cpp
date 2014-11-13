@@ -2411,6 +2411,12 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 
 		if (pData->bPasv)
 		{
+			CString hostname;
+			hostname.Format(L"%s:%d", pData->host, pData->port);
+			CString str;
+			str.Format(IDS_STATUSMSG_CONNECTING, hostname);
+			ShowStatus(str, FZ_LOG_STATUS);
+
 			// if PASV create the socket & initiate outbound data channel connection
 			if (!m_pTransferSocket->Connect(pData->host,pData->port))
 			{

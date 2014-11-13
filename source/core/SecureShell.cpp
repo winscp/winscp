@@ -815,7 +815,8 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
 
     if (Result)
     {
-      if ((Prompts->Count >= 1) && FLAGSET(int(Prompts->Objects[0]), pupEcho))
+      if ((Prompts->Count >= 1) &&
+          (FLAGSET(int(Prompts->Objects[0]), pupEcho) || Configuration->LogSensitive))
       {
         LogEvent(FORMAT(L"Response: \"%s\"", (Results->Strings[0])));
       }
@@ -1812,7 +1813,16 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       {
         Timeout = 0;
       }
-      unsigned int WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, Timeout);
+
+      unsigned int WaitResult;
+      do
+      {
+        unsigned int TimeoutStep = std::min(GUIUpdateInterval, Timeout);
+        Timeout -= TimeoutStep;
+        WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, TimeoutStep);
+        ProcessGUI();
+      } while ((WaitResult == WAIT_TIMEOUT) && (Timeout > 0));
+
       if (WaitResult < WAIT_OBJECT_0 + HandleCount)
       {
         if (handle_got_event(Handles[WaitResult - WAIT_OBJECT_0]))

@@ -271,11 +271,7 @@ void __fastcall TFileSystemInfoDialog::CopyClick(TObject * Sender)
 {
   TInstantOperationVisualizer Visualizer;
 
-  TComponent * Item = dynamic_cast<TComponent *>(Sender);
-  assert(Item != NULL);
-  TPopupMenu * PopupMenu = dynamic_cast<TPopupMenu *>(Item->Owner);
-  assert(PopupMenu != NULL);
-  TListView * ListView = dynamic_cast<TListView *>(PopupMenu->PopupComponent);
+  TListView * ListView = dynamic_cast<TListView *>(GetPopupComponent(Sender));
   assert(ListView != NULL);
 
   UnicodeString Text;

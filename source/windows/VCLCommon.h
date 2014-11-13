@@ -50,6 +50,7 @@ void __fastcall CutFormToDesktop(TForm * Form);
 void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position);
 void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height);
 TComponent * __fastcall GetFormOwner();
+TForm * __fastcall GetMainForm();
 void __fastcall SetCorrectFormParent(TForm * Form);
 void __fastcall InvokeHelp(TWinControl * Control);
 void __fastcall SetFormIcons(TForm * Form, const UnicodeString & BigIconName,

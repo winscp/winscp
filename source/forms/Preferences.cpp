@@ -565,6 +565,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     {
       LogWindowLinesEdit->AsInteger = 500;
     }
+    BOOLPROP(LogSensitive);
 
     EnableActionsLoggingCheck->Checked = Configuration->LogActions;
     ActionsLogFileNameEdit->Text = Configuration->ActionsLogFileName;
@@ -901,6 +902,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     {
       Configuration->LogWindowLines = LogWindowLinesEdit->AsInteger;
     }
+    BOOLPROP(LogSensitive);
 
     Configuration->LogActions = EnableActionsLoggingCheck->Checked;
     Configuration->ActionsLogFileName = ActionsLogFileNameEdit->Text;
@@ -1165,6 +1167,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(LogWindowLinesButton, LogWindowCompleteButton->Enabled);
     EnableControl(LogWindowLinesEdit, LogWindowLinesButton->Enabled && LogWindowLinesButton->Checked);
     EnableControl(LogWindowLinesText, LogWindowLinesEdit->Enabled);
+
+    EnableControl(LogSensitiveCheck, LogProtocolCombo->Enabled);
 
     EnableControl(ActionsLogFileNameEdit, EnableActionsLoggingCheck->Checked);
     EnableControl(ActionsLogFileNameHintText, ActionsLogFileNameEdit->Enabled);

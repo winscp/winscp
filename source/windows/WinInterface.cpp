@@ -15,6 +15,7 @@
 #include <VCLCommon.h>
 #include <Glyphs.h>
 #include <PasTools.hpp>
+#include <DateUtils.hpp>
 
 #include "WinInterface.h"
 #include "CustomWinConfiguration.h"
@@ -683,6 +684,29 @@ void __fastcall BusyEnd(void * Token)
   Screen->Cursor = reinterpret_cast<TCursor>(Token);
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+static DWORD MainThread = 0;
+static TDateTime LastGUIUpdate = 0;
+static double GUIUpdateIntervalFrac = static_cast<double>(OneSecond/1000*GUIUpdateInterval);  // 1/5 sec
+//---------------------------------------------------------------------------
+bool __fastcall ProcessGUI(bool Force)
+{
+  assert(MainThread != 0);
+  bool Result = false;
+  if (MainThread == GetCurrentThreadId())
+  {
+    TDateTime N = Now();
+    if (Force ||
+        (double(N) - double(LastGUIUpdate) > GUIUpdateIntervalFrac))
+    {
+      LastGUIUpdate = N;
+      Application->ProcessMessages();
+      Result = true;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall CopyParamListButton(TButton * Button)
 {
   if (!SupportsSplitButton())
@@ -988,6 +1012,16 @@ void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Hand
   Handled = true;
 }
 //---------------------------------------------------------------------------
+TComponent * __fastcall GetPopupComponent(TObject * Sender)
+{
+  TComponent * Item = dynamic_cast<TComponent *>(Sender);
+  assert(Item != NULL);
+  TPopupMenu * PopupMenu = dynamic_cast<TPopupMenu *>(Item->Owner);
+  assert(PopupMenu != NULL);
+  assert(PopupMenu->PopupComponent != NULL);
+  return PopupMenu->PopupComponent;
+}
+//---------------------------------------------------------------------------
 void __fastcall MenuButton(TButton * Button)
 {
   Button->Images = GlyphsModule->ButtonImages;
@@ -1160,6 +1194,7 @@ void __fastcall WinInitialize()
 
   SetErrorMode(SEM_FAILCRITICALERRORS);
   OnApiPath = ::ApiPath;
+  MainThread = GetCurrentThreadId();
 
 #pragma warn -8111
 #pragma warn .8111

@@ -8,8 +8,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   ClientHeight = 521
   ClientWidth = 695
   Color = clBtnFace
-  Constraints.MinHeight = 350
-  Constraints.MinWidth = 380
   ParentFont = True
   Icon.Data = {
     0000010001001010000001002000680400001600000028000000100000002000
@@ -61,6 +59,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Height = 501
     Align = alRight
     BevelOuter = bvNone
+    Constraints.MinHeight = 350
     TabOrder = 1
     DesignSize = (
       124
@@ -160,6 +159,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Height = 501
     Align = alClient
     Checkboxes = True
+    Constraints.MinWidth = 240
     FullDrag = True
     HideSelection = False
     ReadOnly = True

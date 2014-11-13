@@ -454,8 +454,7 @@ bool __fastcall TCustomScpExplorerForm::CommandLineFromAnotherInstance(
     UnicodeString SessionName = Params.Param[1];
     std::unique_ptr<TObjectList> DataList(new TObjectList());
     UnicodeString DownloadFile; // unused
-    bool Url; // unused
-    GetLoginData(SessionName, &Params, DataList.get(), DownloadFile, Url);
+    GetLoginData(SessionName, &Params, DataList.get(), DownloadFile);
     if (DataList->Count > 0)
     {
       TTerminalManager * Manager = TTerminalManager::Instance();
@@ -763,6 +762,24 @@ void __fastcall TCustomScpExplorerForm::RefreshQueueItems()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressState(TBPFLAG Flags)
+{
+  FTaskbarList->SetProgressState(GetMainForm()->Handle, Flags);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(TFileOperationProgressType * ProgressData)
+{
+  if (ProgressData->Operation != foCalculateSize)
+  {
+    // implies TBPF_NORMAL
+    FTaskbarList->SetProgressValue(GetMainForm()->Handle, ProgressData->OverallProgress(), 100);
+  }
+  else
+  {
+    SetTaskbarListProgressState(TBPF_INDETERMINATE);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetQueueProgress()
 {
   TTerminalManager::Instance()->QueueStatusUpdated();
@@ -778,29 +795,21 @@ void __fastcall TCustomScpExplorerForm::SetQueueProgress()
             ((ProgressData = FQueueStatus->Items[FQueueStatus->DoneCount]->ProgressData) != NULL) &&
             ProgressData->InProgress)
         {
-          if (ProgressData->Operation != foCalculateSize)
-          {
-            // implies TBPF_NORMAL
-            FTaskbarList->SetProgressValue(Handle, ProgressData->OverallProgress(), 100);
-          }
-          else
-          {
-            FTaskbarList->SetProgressState(Handle, TBPF_INDETERMINATE);
-          }
+          SetTaskbarListProgressValue(ProgressData);
         }
         else
         {
-          FTaskbarList->SetProgressState(Handle, TBPF_NOPROGRESS);
+          SetTaskbarListProgressState(TBPF_NOPROGRESS);
         }
       }
       else
       {
-        FTaskbarList->SetProgressState(Handle, TBPF_INDETERMINATE);
+        SetTaskbarListProgressState(TBPF_INDETERMINATE);
       }
     }
     else
     {
-      FTaskbarList->SetProgressState(Handle, TBPF_NOPROGRESS);
+      SetTaskbarListProgressState(TBPF_NOPROGRESS);
     }
   }
 
@@ -1113,10 +1122,10 @@ void __fastcall TCustomScpExplorerForm::AddQueueItem(
     QueueItem = new TDownloadQueueItem(Terminal, FileList, TargetDirectory,
       &CopyParam, Params, SingleFile);
   }
-  AddQueueItem(Queue, QueueItem);
+  AddQueueItem(Queue, QueueItem, Terminal);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem)
+void __fastcall TCustomScpExplorerForm::AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem, TTerminal * Terminal)
 {
   if (Queue->IsEmpty)
   {
@@ -1235,7 +1244,7 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
     if (FTaskbarList != NULL)
     {
       // Actually, do not know what hides the progress once the operation finishes
-      FTaskbarList->SetProgressState(Handle, TBPF_NORMAL);
+      SetTaskbarListProgressState(TBPF_NORMAL);
     }
   }
   // operation is finished (or terminated), so we hide progress form
@@ -1261,15 +1270,7 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
     if (FTaskbarList != NULL)
     {
       assert(ProgressData.InProgress);
-      if (ProgressData.Operation != foCalculateSize)
-      {
-        // implies TBPF_NORMAL
-        FTaskbarList->SetProgressValue(Handle, ProgressData.OverallProgress(), 100);
-      }
-      else
-      {
-        FTaskbarList->SetProgressState(Handle, TBPF_INDETERMINATE);
-      }
+      SetTaskbarListProgressValue(&ProgressData);
     }
 
     if (FProgressForm->Cancel > ProgressData.Cancel)
@@ -2725,6 +2726,7 @@ void __fastcall TCustomScpExplorerForm::EditorAutoConfig()
         TEditorData EditorData;
         EditorData.Editor = edExternal;
         EditorData.ExternalEditor = FormatCommand(Executable, L"");
+        EditorData.DecideExternalEditorText();
 
         TEditorList EditorList;
         EditorList = *WinConfiguration->EditorList;
@@ -3027,7 +3029,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
     TQueueItem * QueueItem = new TUploadQueueItem(Data->Terminal, FileList,
       Data->RemoteDirectory, &CopyParam, Params, true);
     QueueItem->CompleteEvent = UploadCompleteEvent;
-    AddQueueItem(Data->Queue, QueueItem);
+    AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
   }
   __finally
   {

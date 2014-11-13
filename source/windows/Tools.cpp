@@ -927,9 +927,12 @@ static void __fastcall DoVerifyKey(
   {
     FileName = ExpandEnvironmentVariables(FileName);
     TKeyType Type = KeyType(FileName);
+    // reason _wfopen failed
+    int Error = errno;
     UnicodeString Message;
     UnicodeString HelpKeyword = HELP_LOGIN_KEY_TYPE;
     UnicodeString PuttygenPath;
+    std::unique_ptr<TStrings> MoreMessages;
     bool TryPuttygen = false;
     switch (Type)
     {
@@ -959,18 +962,27 @@ static void __fastcall DoVerifyKey(
           if ((Type == ktSSH1) !=
                 ((SshProt == ssh1only) || (SshProt == ssh1)))
           {
-            Message = FMTLOAD(KEY_TYPE_DIFFERENT_SSH,
-              (FileName, (Type == ktSSH1 ? L"SSH-1" : L"PuTTY SSH-2")));
+            Message =
+              MainInstructions(
+                FMTLOAD(KEY_TYPE_DIFFERENT_SSH,
+                  (FileName, (Type == ktSSH1 ? L"SSH-1" : L"PuTTY SSH-2"))));
           }
+        }
+        break;
+
+      case ktUnopenable:
+        Message = MainInstructions(FMTLOAD(KEY_TYPE_UNOPENABLE, (FileName)));
+        if (Error != ERROR_SUCCESS)
+        {
+          MoreMessages.reset(TextToStringList(SysErrorMessageForError(Error)));
         }
         break;
 
       default:
         FAIL;
         // fallthru
-      case ktUnopenable:
       case ktUnknown:
-        Message = FMTLOAD(KEY_TYPE_UNKNOWN, (FileName));
+        Message = MainInstructions(FMTLOAD(KEY_TYPE_UNKNOWN2, (FileName)));
         break;
     }
 
@@ -979,7 +991,7 @@ static void __fastcall DoVerifyKey(
       if (TryPuttygen)
       {
         Configuration->Usage->Inc(L"PrivateKeyConvertSuggestions");
-        if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HelpKeyword) == qaOK)
+        if (MoreMessageDialog(Message, MoreMessages.get(), qtConfirmation, qaOK | qaCancel, HelpKeyword) == qaOK)
         {
           if (!ExecuteShell(PuttygenPath, AddPathQuotes(FileName)))
           {
@@ -991,7 +1003,7 @@ static void __fastcall DoVerifyKey(
       else
       {
         Configuration->Usage->Inc(L"PrivateKeySelectErrors");
-        if (MessageDialog(Message, qtWarning, qaIgnore | qaAbort,
+        if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, qaIgnore | qaAbort,
              HelpKeyword) == qaAbort)
         {
           Abort();

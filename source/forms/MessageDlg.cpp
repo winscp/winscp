@@ -857,7 +857,11 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     Result->Font->Assign(Screen->MessageFont);
   }
 
-  Configuration->Usage->Set(L"ThemeMessageFontSize", Result->Font->Size);
+  // Can be possibly nul when error occurs before configuration is created
+  if (Configuration != NULL)
+  {
+    Configuration->Usage->Set(L"ThemeMessageFontSize", Result->Font->Size);
+  }
 
   // make sure we consider sizes of the monitor,
   // that is set in DoFormWindowProc(CM_SHOWINGCHANGED) later.

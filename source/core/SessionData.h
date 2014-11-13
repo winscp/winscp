@@ -357,6 +357,7 @@ public:
   void __fastcall Default();
   void __fastcall NonPersistant();
   void __fastcall Load(THierarchicalStorage * Storage);
+  void __fastcall ApplyRawSettings(THierarchicalStorage * Storage);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
     const TSessionData * Default = NULL);

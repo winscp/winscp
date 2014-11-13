@@ -45,6 +45,7 @@ public:
 
 private:
   void __fastcall UpdateControls();
+  void __fastcall DecideExternalEditorText();
 
   bool FMayRemote;
   UnicodeString FSystemExternalEditor;

@@ -154,6 +154,7 @@ private:
   void * FUploadBodyProviderUserData;
   UnicodeString FResponse;
   RawByteString FPassword;
+  UnicodeString FTlsVersionStr;
   enum TIgnoreAuthenticationFailure { iafNo, iafWaiting, iafPasswordFailed } FIgnoreAuthenticationFailure;
 
   void __fastcall CustomReadFile(UnicodeString FileName,
@@ -172,7 +173,6 @@ private:
   int __fastcall RenameFileInternal(const UnicodeString & FileName, const UnicodeString & NewName);
   bool __fastcall IsValidRedirect(int NeonStatus, UnicodeString & Path);
   UnicodeString __fastcall DirectoryPath(UnicodeString Path);
-  UnicodeString __fastcall GetTlsVersionStr();
 };
 //------------------------------------------------------------------------------
 void __fastcall NeonInitialize();

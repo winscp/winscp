@@ -267,7 +267,7 @@ private:
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TTransferDirection Direction,
     TStrings * FileList, const UnicodeString TargetDirectory,
     const TCopyParamType & CopyParam, int Params);
-  void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem);
+  void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem, TTerminal * Terminal);
   void __fastcall ClearTransferSourceSelection(TTransferDirection Direction);
   void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect);
   void __fastcall SessionsDDProcessDropped(TObject * Sender, int KeyState, const TPoint & Point, int Effect);
@@ -525,6 +525,8 @@ protected:
   bool __fastcall CanCommandLineFromAnotherInstance();
   void __fastcall SetQueueProgress();
   void __fastcall UpdateQueueLabel();
+  void __fastcall SetTaskbarListProgressState(TBPFLAG Flags);
+  void __fastcall SetTaskbarListProgressValue(TFileOperationProgressType * ProgressData);
   TTerminal * __fastcall GetSessionTabTerminal(TTabSheet * TabSheet);
   bool __fastcall SessionTabSwitched();
   void __fastcall RestoreApp();

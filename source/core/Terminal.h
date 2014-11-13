@@ -363,6 +363,7 @@ protected:
   void __fastcall LogRemoteFile(TRemoteFile * File);
   UnicodeString __fastcall FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
   void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
+  void __fastcall LogFileDone(TFileOperationProgressType * OperationProgress);
   virtual TTerminal * __fastcall GetPasswordSource();
   void __fastcall DoEndTransaction(bool Inform);
   bool  __fastcall VerifyCertificate(

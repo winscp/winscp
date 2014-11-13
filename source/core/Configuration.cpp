@@ -90,6 +90,7 @@ void __fastcall TConfiguration::Default()
   FLogFileName = DefaultLogFileName;
   FPermanentLogFileName = FLogFileName;
   FLogFileAppend = true;
+  FLogSensitive = false;
   FLogWindowLines = 100;
   FLogProtocol = 0;
   UpdateActualLogProtocol();
@@ -197,6 +198,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEYEX(Bool,  PermanentLogging, L"Logging"); \
     KEYEX(String,PermanentLogFileName, L"LogFileName"); \
     KEY(Bool,    LogFileAppend); \
+    KEY(Bool,    LogSensitive); \
     KEY(Integer, LogWindowLines); \
     KEY(Integer, LogProtocol); \
     KEYEX(Bool,  PermanentLogActions, L"LogActions"); \
@@ -1252,6 +1254,11 @@ void __fastcall TConfiguration::SetLogActions(bool value)
 void __fastcall TConfiguration::SetLogFileAppend(bool value)
 {
   SET_CONFIG_PROPERTY(LogFileAppend);
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::SetLogSensitive(bool value)
+{
+  SET_CONFIG_PROPERTY(LogSensitive);
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogWindowLines(int value)

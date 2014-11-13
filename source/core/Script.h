@@ -159,6 +159,8 @@ protected:
   UnicodeString __fastcall SynchronizeFileRecord(
     const UnicodeString & RootDirectory, const TSynchronizeChecklist::TItem * Item,
     bool Local);
+  UnicodeString __fastcall ListingSysErrorMessage();
+  void __fastcall NoMatch(const UnicodeString & Mask, const UnicodeString & Error);
 
 private:
   void __fastcall Init();
@@ -170,7 +172,6 @@ private:
   bool __fastcall HasNonDefaultCopyParams();
   void __fastcall CheckDefaultSynchronizeParams();
   void __fastcall NotSupported();
-  void __fastcall NoMatch(const UnicodeString & Mask, const UnicodeString & Error);
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TScriptInputEvent)(TScript * Script, const UnicodeString Prompt, UnicodeString & Str);

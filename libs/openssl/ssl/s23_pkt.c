@@ -81,7 +81,6 @@ int ssl23_write_bytes(SSL *s)
 			s->init_num=num;
 			return(i);
 			}
-			SSL_TRACE_BYTES(s, &(buf[tot]),i, "write: ");
 		s->rwstate=SSL_NOTHING;
 		if (i == num) return(tot+i);
 
@@ -108,7 +107,6 @@ int ssl23_read_bytes(SSL *s, int n)
 			if (j <= 0)
 				return(j);
 			s->rwstate=SSL_NOTHING;
-			SSL_TRACE_BYTES(s, (char *)&(p[s->packet_length]),j, "read: ");
 			s->packet_length+=j;
 			if (s->packet_length >= (unsigned int)n)
 				return(s->packet_length);

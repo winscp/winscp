@@ -103,6 +103,7 @@ namespace WinSCP
                 _defaultConfiguration = true;
                 _logUnique = 0;
                 _guardProcessWithJob = true;
+                RawConfiguration = new Dictionary<string, string>();
             }
         }
 
@@ -259,7 +260,7 @@ namespace WinSCP
             {
                 CheckOpened();
 
-                WriteCommand(string.Format(CultureInfo.InvariantCulture, "ls -- \"{0}\"", ArgumentEscape(IncludeTrailingSlash(path))));
+                WriteCommand(string.Format(CultureInfo.InvariantCulture, "ls -- \"{0}\"", Tools.ArgumentEscape(IncludeTrailingSlash(path))));
 
                 RemoteDirectoryInfo result = new RemoteDirectoryInfo();
 
@@ -324,7 +325,7 @@ namespace WinSCP
                     string.Format(CultureInfo.InvariantCulture,
                         "put {0} {1} -- \"{2}\" \"{3}\"",
                         BooleanSwitch(remove, "delete"), options.ToSwitches(),
-                        ArgumentEscape(localPath), ArgumentEscape(remotePath)));
+                        Tools.ArgumentEscape(localPath), Tools.ArgumentEscape(remotePath)));
 
                 TransferOperationResult result = new TransferOperationResult();
 
@@ -339,16 +340,13 @@ namespace WinSCP
                     {
                         if (groupReader.IsNonEmptyElement(TransferEventArgs.UploadTag))
                         {
-                            if (args != null)
-                            {
-                                result.AddTransfer(args);
-                                RaiseFileTransferredEvent(args);
-                            }
+                            AddTransfer(result, args);
                             args = TransferEventArgs.Read(groupReader);
                             mkdir = false;
                         }
                         else if (groupReader.IsNonEmptyElement(TransferEventArgs.MkDirTag))
                         {
+                            AddTransfer(result, args);
                             args = null;
                             mkdir = true;
                             // For now, silently ignoring results (even errors)
@@ -378,14 +376,19 @@ namespace WinSCP
                         }
                     }
 
-                    if (args != null)
-                    {
-                        result.AddTransfer(args);
-                        RaiseFileTransferredEvent(args);
-                    }
+                    AddTransfer(result, args);
                 }
 
                 return result;
+            }
+        }
+
+        private void AddTransfer(TransferOperationResult result, TransferEventArgs args)
+        {
+            if (args != null)
+            {
+                result.AddTransfer(args);
+                RaiseFileTransferredEvent(args);
             }
         }
 
@@ -403,7 +406,7 @@ namespace WinSCP
                 WriteCommand(
                     string.Format(CultureInfo.InvariantCulture, "get {0} {1} -- \"{2}\" \"{3}\"",
                         BooleanSwitch(remove, "delete"), options.ToSwitches(),
-                        ArgumentEscape(remotePath), ArgumentEscape(localPath)));
+                        Tools.ArgumentEscape(remotePath), Tools.ArgumentEscape(localPath)));
 
                 TransferOperationResult result = new TransferOperationResult();
 
@@ -417,11 +420,7 @@ namespace WinSCP
                     {
                         if (groupReader.IsNonEmptyElement(TransferEventArgs.DownloadTag))
                         {
-                            if (args != null)
-                            {
-                                result.AddTransfer(args);
-                                RaiseFileTransferredEvent(args);
-                            }
+                            AddTransfer(result, args);
                             args = TransferEventArgs.Read(groupReader);
                         }
                         else if (groupReader.IsNonEmptyElement(RemovalEventArgs.Tag))
@@ -434,11 +433,7 @@ namespace WinSCP
                         }
                     }
 
-                    if (args != null)
-                    {
-                        result.AddTransfer(args);
-                        RaiseFileTransferredEvent(args);
-                    }
+                    AddTransfer(result, args);
                 }
 
                 return result;
@@ -451,7 +446,7 @@ namespace WinSCP
             {
                 CheckOpened();
 
-                WriteCommand(string.Format(CultureInfo.InvariantCulture, "rm -- \"{0}\"", ArgumentEscape(path)));
+                WriteCommand(string.Format(CultureInfo.InvariantCulture, "rm -- \"{0}\"", Tools.ArgumentEscape(path)));
 
                 RemovalOperationResult result = new RemovalOperationResult();
 
@@ -543,7 +538,7 @@ namespace WinSCP
                         BooleanSwitch(mirror, "mirror"),
                         options.ToSwitches(),
                         criteriaName,
-                        ArgumentEscape(localPath), ArgumentEscape(remotePath)));
+                        Tools.ArgumentEscape(localPath), Tools.ArgumentEscape(remotePath)));
 
                 return ReadSynchronizeDirectories();
             }
@@ -568,10 +563,7 @@ namespace WinSCP
                         if ((transferWillBeUpload = groupReader.IsNonEmptyElement(TransferEventArgs.UploadTag)) ||
                             groupReader.IsNonEmptyElement(TransferEventArgs.DownloadTag))
                         {
-                            if (transfer != null)
-                            {
-                                AddSynchronizationTransfer(result, transferIsUpload, transfer);
-                            }
+                            AddSynchronizationTransfer(result, transferIsUpload, transfer);
                             transfer = TransferEventArgs.Read(groupReader);
                             transferIsUpload = transferWillBeUpload;
                         }
@@ -597,10 +589,7 @@ namespace WinSCP
                         }
                     }
 
-                    if (transfer != null)
-                    {
-                        AddSynchronizationTransfer(result, transferIsUpload, transfer);
-                    }
+                    AddSynchronizationTransfer(result, transferIsUpload, transfer);
                 }
                 return result;
             }
@@ -678,7 +667,7 @@ namespace WinSCP
             {
                 CheckOpened();
 
-                WriteCommand(string.Format(CultureInfo.InvariantCulture, "mkdir \"{0}\"", ArgumentEscape(path)));
+                WriteCommand(string.Format(CultureInfo.InvariantCulture, "mkdir \"{0}\"", Tools.ArgumentEscape(path)));
 
                 using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
                 using (ElementLogReader mkdirReader = groupReader.WaitForNonEmptyElementAndCreateLogReader(TransferEventArgs.MkDirTag, LogReadFlags.ThrowFailures))
@@ -695,7 +684,7 @@ namespace WinSCP
             {
                 CheckOpened();
 
-                WriteCommand(string.Format(CultureInfo.InvariantCulture, "mv \"{0}\" \"{1}\"", ArgumentEscape(sourcePath), ArgumentEscape(targetPath)));
+                WriteCommand(string.Format(CultureInfo.InvariantCulture, "mv \"{0}\" \"{1}\"", Tools.ArgumentEscape(sourcePath), Tools.ArgumentEscape(targetPath)));
 
                 using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
                 using (ElementLogReader mvReader = groupReader.WaitForNonEmptyElementAndCreateLogReader("mv", LogReadFlags.ThrowFailures))
@@ -718,6 +707,11 @@ namespace WinSCP
             string mask = lastSlash > 0 ? fileMask.Substring(lastSlash + 1) : fileMask;
             mask = mask.Replace("[", "[[]").Replace("*", "[*]").Replace("?", "[?]");
             return path + mask;
+        }
+
+        public void AddRawConfiguration(string setting, string value)
+        {
+            RawConfiguration.Add(setting, value);
         }
 
         [ComRegisterFunction]
@@ -777,15 +771,18 @@ namespace WinSCP
 
         private void AddSynchronizationTransfer(SynchronizationResult result, bool transferIsUpload, TransferEventArgs transfer)
         {
-            if (transferIsUpload)
+            if (transfer != null)
             {
-                result.AddUpload(transfer);
+                if (transferIsUpload)
+                {
+                    result.AddUpload(transfer);
+                }
+                else
+                {
+                    result.AddDownload(transfer);
+                }
+                RaiseFileTransferredEvent(transfer);
             }
-            else
-            {
-                result.AddDownload(transfer);
-            }
-            RaiseFileTransferredEvent(transfer);
         }
 
         private static string IncludeTrailingSlash(string path)
@@ -977,26 +974,16 @@ namespace WinSCP
 
                 string arguments = SessionOptionsToOpenSwitches(sessionOptions);
 
-                if (sessionOptions.RawSettings.Count > 0)
-                {
-                    if (!string.IsNullOrEmpty(arguments))
-                    {
-                        arguments += " ";
-                    }
-                    arguments += "-rawsettings";
-                    foreach (KeyValuePair<string, string> rawSetting in sessionOptions.RawSettings)
-                    {
-                        arguments += string.Format(CultureInfo.InvariantCulture, " {0}=\"{1}\"", rawSetting.Key, ArgumentEscape(rawSetting.Value));
-                    }
-                }
+                Tools.AddRawParameters(ref arguments, sessionOptions.RawSettings, "-rawsettings");
 
                 if (!string.IsNullOrEmpty(arguments))
                 {
-                    arguments += " ";
+                    arguments = " " + arguments;
                 }
 
-                command = "open " + arguments + "\"" + ArgumentEscape(url) + "\"";
-                log = "open " + arguments + "\"" + ArgumentEscape(logUrl) + "\"";
+                // Switches should (and particularly the -rawsettings MUST) come after the URL
+                command = "open \"" + Tools.ArgumentEscape(url) + "\"" + arguments;
+                log = "open \"" + Tools.ArgumentEscape(logUrl) + "\"" + arguments;
             }
         }
 
@@ -1109,7 +1096,7 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                WriteCommand(string.Format(CultureInfo.InvariantCulture, "stat -- \"{0}\"", ArgumentEscape(path)));
+                WriteCommand(string.Format(CultureInfo.InvariantCulture, "stat -- \"{0}\"", Tools.ArgumentEscape(path)));
 
                 RemoteFileInfo fileInfo = new RemoteFileInfo();
 
@@ -1149,7 +1136,7 @@ namespace WinSCP
 
         internal static string FormatSwitch(string key, string value)
         {
-            return string.Format(CultureInfo.InvariantCulture, "-{0}=\"{1}\"", key, ArgumentEscape(value));
+            return string.Format(CultureInfo.InvariantCulture, "-{0}=\"{1}\"", key, Tools.ArgumentEscape(value));
         }
 
         internal static string FormatSwitch(string key, int value)
@@ -1160,21 +1147,6 @@ namespace WinSCP
         internal static string FormatSwitch(string key, bool value)
         {
             return FormatSwitch(key, (value ? 1 : 0));
-        }
-
-        internal static string ArgumentEscape(string value)
-        {
-            int i = 0;
-            while (i < value.Length)
-            {
-                if (value[i] == '"')
-                {
-                    value = value.Insert(i, "\"");
-                    ++i;
-                }
-                ++i;
-            }
-            return value;
         }
 
         private static string UriEscape(string s)
@@ -1647,6 +1619,7 @@ namespace WinSCP
         internal Logger Logger { get; private set; }
         internal bool GuardProcessWithJobInternal { get { return _guardProcessWithJob; } set { CheckNotOpened(); _guardProcessWithJob = value; } }
         internal bool TestHandlesClosedInternal { get; set; }
+        internal Dictionary<string, string> RawConfiguration { get; private set; }
 
         private ExeSessionProcess _process;
         private DateTime _lastOutput;

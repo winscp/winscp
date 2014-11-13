@@ -1343,10 +1343,9 @@ void __fastcall TTerminalManager::OpenInPutty()
 void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeString & SessionUrl)
 {
   UnicodeString DownloadFile; // unused
-  bool Url; // unused
   std::unique_ptr<TObjectList> DataList(new TObjectList());
 
-  GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile, Url);
+  GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile);
 
   if (DataList->Count > 0)
   {

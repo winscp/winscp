@@ -74,6 +74,8 @@ namespace WinSCP
                     xmlLogSwitch + "/xmlgroups /nointeractiveinput " + assemblyVersionSwitch +
                     configSwitch + logSwitch + _session.AdditionalExecutableArguments;
 
+                Tools.AddRawParameters(ref arguments, _session.RawConfiguration, "/rawconfig");
+
                 _process = new Process();
                 _process.StartInfo.FileName = executablePath;
                 _process.StartInfo.WorkingDirectory = Path.GetDirectoryName(executablePath);
@@ -90,7 +92,7 @@ namespace WinSCP
 
         private static string LogPathEscape(string path)
         {
-            return Session.ArgumentEscape(path).Replace("!", "!!");
+            return Tools.ArgumentEscape(path).Replace("!", "!!");
         }
 
         public void Abort()

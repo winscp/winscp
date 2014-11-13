@@ -81,3 +81,8 @@ BEGIN
   IDS_ERRORMSG_UNKNOWNSSLERROR, "Unknown error in TLS layer"
   IDS_ERRORMSG_SSLCERTIFICATEERROR, "Could not verify TLS certificate"
 END
+
+STRINGTABLE
+BEGIN
+  IDS_PROXY_CONNECTED, "Connection with proxy established, performing handshake..."
+END
