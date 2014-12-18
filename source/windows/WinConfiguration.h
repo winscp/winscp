@@ -358,6 +358,7 @@ private:
   UnicodeString FAutoWorkspace;
   TPathInCaption FPathInCaption;
   bool FMinimizeToTray;
+  bool FMinimizeToTrayOnce;
   bool FBalloonNotifications;
   unsigned int FNotificationsTimeout;
   unsigned int FNotificationsStickTime;
@@ -441,6 +442,7 @@ private:
   void __fastcall SetAutoWorkspace(UnicodeString value);
   void __fastcall SetPathInCaption(TPathInCaption value);
   void __fastcall SetMinimizeToTray(bool value);
+  bool __fastcall GetMinimizeToTray();
   void __fastcall SetBalloonNotifications(bool value);
   void __fastcall SetNotificationsTimeout(unsigned int value);
   void __fastcall SetNotificationsStickTime(unsigned int value);
@@ -539,6 +541,7 @@ public:
   void __fastcall DeleteWorkspaceFromJumpList(UnicodeString Workspace);
   void __fastcall UpdateJumpList();
   virtual void __fastcall UpdateStaticUsage();
+  void __fastcall MinimizeToTrayOnce();
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
@@ -601,7 +604,7 @@ public:
   __property bool AutoSaveWorkspacePasswords = { read = FAutoSaveWorkspacePasswords, write = SetAutoSaveWorkspacePasswords };
   __property UnicodeString AutoWorkspace = { read = FAutoWorkspace, write = SetAutoWorkspace };
   __property TPathInCaption PathInCaption = { read = FPathInCaption, write = SetPathInCaption };
-  __property bool MinimizeToTray = { read = FMinimizeToTray, write = SetMinimizeToTray };
+  __property bool MinimizeToTray = { read = GetMinimizeToTray, write = SetMinimizeToTray };
   __property bool BalloonNotifications = { read = FBalloonNotifications, write = SetBalloonNotifications };
   __property unsigned int NotificationsTimeout = { read = FNotificationsTimeout, write = SetNotificationsTimeout };
   __property unsigned int NotificationsStickTime = { read = FNotificationsStickTime, write = SetNotificationsStickTime };

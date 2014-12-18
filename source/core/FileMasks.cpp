@@ -1056,21 +1056,37 @@ __fastcall TCustomCommandData::TCustomCommandData()
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData(TTerminal * Terminal)
 {
-  Init(Terminal->SessionData, Terminal->UserName, Terminal->Password);
+  Init(Terminal->SessionData, Terminal->UserName, Terminal->Password,
+    Terminal->GetSessionInfo().HostKeyFingerprint);
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData(
   TSessionData * SessionData, const UnicodeString & UserName, const UnicodeString & Password)
 {
-  Init(SessionData, UserName, Password);
+  Init(SessionData, UserName, Password, UnicodeString());
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandData::Init(
-  TSessionData * SessionData, const UnicodeString & AUserName, const UnicodeString & APassword)
+  TSessionData * ASessionData, const UnicodeString & AUserName,
+  const UnicodeString & APassword, const UnicodeString & AHostKey)
 {
-  HostName = SessionData->HostNameExpanded;
-  UserName = AUserName;
-  Password = APassword;
+  FSessionData.reset(new TSessionData(L""));
+  FSessionData->Assign(ASessionData);
+  FSessionData->UserName = AUserName;
+  FSessionData->Password = APassword;
+  FSessionData->HostKey = AHostKey;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandData::operator=(const TCustomCommandData & Data)
+{
+  assert(Data.SessionData != NULL);
+  FSessionData.reset(new TSessionData(L""));
+  FSessionData->Assign(Data.SessionData);
+}
+//---------------------------------------------------------------------------
+TSessionData * __fastcall TCustomCommandData::GetSesssionData() const
+{
+  return FSessionData.get();
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -1102,6 +1118,7 @@ int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int
   wchar_t PatternCmd = (Index < Command.Length()) ? Command[Index + 1] : L'\0';
   switch (PatternCmd)
   {
+    case L'S':
     case L'@':
     case L'U':
     case L'P':
@@ -1122,17 +1139,21 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
 {
   // keep consistent with TSessionLog::OpenLogFile
 
-  if (Pattern == L"!@")
+  if (AnsiSameText(Pattern, L"!s"))
   {
-    Replacement = FData.HostName;
+    Replacement = FData.SessionData->GenerateSessionUrl(sufComplete);
+  }
+  else if (Pattern == L"!@")
+  {
+    Replacement = FData.SessionData->HostNameExpanded;
   }
   else if (AnsiSameText(Pattern, L"!u"))
   {
-    Replacement = FData.UserName;
+    Replacement = FData.SessionData->UserName;
   }
   else if (AnsiSameText(Pattern, L"!p"))
   {
-    Replacement = FData.Password;
+    Replacement = FData.SessionData->Password;
   }
   else if (Pattern == L"!/")
   {

@@ -21,10 +21,7 @@ public:
   __fastcall TManagedTerminal(TSessionData * SessionData, TConfiguration * Configuration);
   virtual __fastcall ~TManagedTerminal();
 
-  TColor Color;
-  bool SynchronizeBrowsing;
-  UnicodeString LocalDirectory;
-  UnicodeString RemoteDirectory;
+  TSessionData * StateData;
   TObject * LocalExplorerState;
   TObject * RemoteExplorerState;
   TDateTime ReopenStart;
@@ -164,6 +161,7 @@ private:
   void __fastcall SetQueueConfiguration(TTerminalQueue * Queue);
   void __fastcall ApplicationModalBegin(TObject * Sender);
   void __fastcall ApplicationModalEnd(TObject * Sender);
+  bool __fastcall HandleMouseWheel(WPARAM WParam, LPARAM LParam);
 };
 //---------------------------------------------------------------------------
 #endif

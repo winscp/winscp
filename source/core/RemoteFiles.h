@@ -131,6 +131,7 @@ private:
   UnicodeString __fastcall GetExtension();
   UnicodeString __fastcall GetUserModificationStr();
   void __fastcall LoadTypeInfo();
+  __int64 __fastcall GetSize() const;
 
 protected:
   void __fastcall FindLinkedFile();
@@ -147,7 +148,7 @@ public:
   __property bool BrokenLink = { read = GetBrokenLink };
   __property TRemoteFileList * Directory = { read = FDirectory, write = FDirectory };
   __property UnicodeString RightsStr = { read = GetRightsStr };
-  __property __int64 Size = { read = FSize, write = FSize };
+  __property __int64 Size = { read = GetSize, write = FSize };
   __property TRemoteToken Owner = { read = FOwner, write = FOwner };
   __property TRemoteToken Group = { read = FGroup, write = FGroup };
   __property UnicodeString FileName = { read = FFileName, write = FFileName };

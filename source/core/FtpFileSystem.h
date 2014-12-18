@@ -95,7 +95,8 @@ protected:
     REPLY_CONNECT =      0x01,
     REPLY_2XX_CODE =     0x02,
     REPLY_ALLOW_CANCEL = 0x04,
-    REPLY_3XX_CODE =     0x08
+    REPLY_3XX_CODE =     0x08,
+    REPLY_SINGLE_LINE =  0x10
   };
 
   bool __fastcall PostMessage(unsigned int Type, WPARAM wParam, LPARAM lParam);
@@ -107,7 +108,7 @@ protected:
   void __fastcall WaitForFatalNonCommandReply();
   void __fastcall PoolForFatalNonCommandReply();
   void __fastcall GotNonCommandReply(unsigned int Reply);
-  void __fastcall GotReply(unsigned int Reply, unsigned int Flags = 0,
+  UnicodeString __fastcall GotReply(unsigned int Reply, unsigned int Flags = 0,
     UnicodeString Error = L"", unsigned int * Code = NULL,
     TStrings ** Response = NULL);
   void __fastcall ResetReply();
@@ -188,6 +189,17 @@ protected:
   void __fastcall AutoDetectTimeDifference(TRemoteFileList * FileList);
   void __fastcall ApplyTimeDifference(TRemoteFile * File);
   bool __fastcall TimeZoneDifferenceApplicable(TModificationFmt ModificationFmt);
+  UnicodeString __fastcall DoCalculateFileChecksum(bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File);
+  void __fastcall DoCalculateFilesChecksum(bool UsingHashCommand, const UnicodeString & Alg,
+    TStrings * FileList, TStrings * Checksums,
+    TCalculatedChecksumEvent OnCalculatedChecksum,
+    TFileOperationProgressType * OperationProgress, bool FirstLevel);
+  void __fastcall HandleFeatReply();
+  void __fastcall ResetFeatures();
+  bool __fastcall SupportsSiteCommand(const UnicodeString & Command) const;
+  bool __fastcall SupportsCommand(const UnicodeString & Command) const;
+  void __fastcall RegisterChecksumAlgCommand(const UnicodeString & Alg, const UnicodeString & Command);
+  void __fastcall SendCommand(const UnicodeString & Command);
 
   static bool __fastcall Unquote(UnicodeString & Str);
   static UnicodeString __fastcall ExtractStatusMessage(UnicodeString Status);
@@ -249,8 +261,13 @@ private:
   TDateTime FLastDataSent;
   bool FDetectTimeDifference;
   __int64 FTimeDifference;
-  bool FSupportsSiteCopy;
-  bool FSupportsSiteSymlink;
+  std::unique_ptr<TStrings> FChecksumAlgs;
+  std::unique_ptr<TStrings> FChecksumCommands;
+  std::unique_ptr<TStrings> FSupportedCommands;
+  std::unique_ptr<TStrings> FSupportedSiteCommands;
+  std::unique_ptr<TStrings> FHashAlgs;
+  bool FSupportsAnyChecksumFeature;
+  UnicodeString FLastCommandSent;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------

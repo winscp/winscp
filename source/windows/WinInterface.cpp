@@ -321,7 +321,6 @@ public:
 protected:
   unsigned int FOrigTimeout;
   unsigned int FTimeout;
-  unsigned int FSuspended;
   TButton * FButton;
   UnicodeString FOrigCaption;
 
@@ -336,14 +335,13 @@ __fastcall TMessageTimeout::TMessageTimeout(TComponent * AOwner,
   OnTimer = DoTimer;
   Interval = MSecsPerSec;
   FOrigCaption = FButton->Caption;
-  FSuspended = 0;
   UpdateButton();
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageTimeout::Suspend()
 {
-  FSuspended = 30 * MSecsPerSec;
-  FTimeout = FOrigTimeout;
+  const unsigned int SuspendTime = 30 * MSecsPerSec;
+  FTimeout = std::max(FOrigTimeout, SuspendTime);
   UpdateButton();
 }
 //---------------------------------------------------------------------------
@@ -362,7 +360,7 @@ void __fastcall TMessageTimeout::UpdateButton()
 //---------------------------------------------------------------------------
 void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
 {
-  if (FTimeout <= MSecsPerSec)
+  if (FTimeout <= Interval)
   {
     assert(FButton != NULL);
     TForm * Dialog = dynamic_cast<TForm *>(FButton->Parent);
@@ -372,16 +370,7 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
   }
   else
   {
-    unsigned int & Timeout = (FSuspended > 0) ? FSuspended : FTimeout;
-
-    if (Timeout > Interval)
-    {
-      Timeout -= Interval;
-    }
-    else
-    {
-      Timeout = 0;
-    }
+    FTimeout -= Interval;
     UpdateButton();
   }
 }

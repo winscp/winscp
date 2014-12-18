@@ -427,6 +427,24 @@ void CTransferSocket::OnAccept(int nErrorCode)
 	}
 }
 
+void CTransferSocket::ConfigureSocket()
+{
+	// Note that FileZilla re-enables Nagle's alg during TLS negotiation.
+
+	// Following post claims that TCP_NODELAY
+	// has to be set before connect()
+	// http://stackoverflow.com/questions/22583941/what-is-the-workaround-for-tcp-delayed-acknowledgment/25871250#25871250
+
+	int nodelay = COptions::GetOptionVal(OPTION_MPEXT_NODELAY);
+	if (nodelay != 0)
+	{
+		BOOL bvalue = TRUE;
+		SetSockOpt(TCP_NODELAY, &bvalue, sizeof(bvalue), IPPROTO_TCP);
+	}
+
+	CAsyncSocketEx::ConfigureSocket();
+}
+
 void CTransferSocket::OnConnect(int nErrorCode)
 {
 	LogMessage(__FILE__, __LINE__, this,FZ_LOG_DEBUG, _T("OnConnect(%d)"), nErrorCode);
@@ -464,7 +482,7 @@ void CTransferSocket::OnConnect(int nErrorCode)
 		// will call back to OnConnected (as we won't be connected yet).
 		// This is needed for file transfers only, where SetActive is
 		// called only after 1xx response to RETR (and similar) arrives.
-		// But we get FD_CONNECT earlier, hence we get to thisa branch.
+		// But we get FD_CONNECT earlier, hence we get to this branch.
 		// With directory listing, SetActive is called before Connect,
 		// so we are already STATE_STARTING on FD_CONNECT.
 		// It should probably behave the same in both scenarios.

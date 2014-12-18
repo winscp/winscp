@@ -376,6 +376,7 @@ void __fastcall TScript::Init()
   // the echo command does not have switches actually, but it must handle dashes in its arguments
   FCommands->Register(L"echo", SCRIPT_ECHO_DESC, SCRIPT_ECHO_HELP, &EchoProc, -1, -1, true);
   FCommands->Register(L"stat", SCRIPT_STAT_DESC, SCRIPT_STAT_HELP, &StatProc, 1, 1, false);
+  FCommands->Register(L"checksum", SCRIPT_CHECKSUM_DESC, SCRIPT_CHECKSUM_HELP, &ChecksumProc, 2, 2, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::CheckDefaultCopyParam()
@@ -1057,6 +1058,40 @@ void __fastcall TScript::StatProc(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TScript::ChecksumProc(TScriptProcParams * Parameters)
+{
+  CheckSession();
+  if (!FTerminal->IsCapable[fcCalculatingChecksum])
+  {
+    NotSupported();
+  }
+
+  UnicodeString Alg = Parameters->Param[1];
+  std::unique_ptr<TStrings> Checksums(new TStringList());
+  TStrings * FileList = CreateFileList(Parameters, 2, 2, fltQueryServer);
+  FTerminal->ExceptionOnFail = true;
+  try
+  {
+    if ((FileList->Count != 1) ||
+        NOT_NULL(dynamic_cast<TRemoteFile *>(FileList->Objects[0]))->IsDirectory)
+    {
+      throw Exception(FMTLOAD(NOT_FILE_ERROR, (FileList->Strings[0])));
+    }
+
+    FTerminal->CalculateFilesChecksum(Alg, FileList, Checksums.get(), NULL);
+
+    if (ALWAYS_TRUE(Checksums->Count == 1))
+    {
+      PrintLine(FORMAT(L"%s %s", (Checksums->Strings[0], FileList->Strings[0])));
+    }
+  }
+  __finally
+  {
+    FTerminal->ExceptionOnFail = false;
+    FreeFileList(FileList);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::TerminalCaptureLog(const UnicodeString & AddedLine,
   TCaptureOutputType OutputType)
 {
@@ -1071,6 +1106,7 @@ void __fastcall TScript::PwdProc(TScriptProcParams * /*Parameters*/)
   CheckSession();
 
   PrintLine(FTerminal->CurrentDirectory);
+  TCwdSessionAction Action(FTerminal->ActionLog, FTerminal->CurrentDirectory);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::CdProc(TScriptProcParams * Parameters)
@@ -2137,7 +2173,9 @@ void __fastcall TManagementScript::TerminalOperationFinished(
   bool /*Temp*/, const UnicodeString & FileName, Boolean Success,
   TOnceDoneOperation & /*OnceDoneOperation*/)
 {
-  if (Success && (Operation != foCalculateSize) && (Operation != foCopy) && (Operation != foMove))
+  if (Success &&
+      (Operation != foCalculateSize) && (Operation != foCalculateChecksum) &&
+      (Operation != foCopy) && (Operation != foMove))
   {
     ShowPendingProgress();
     // For FKeepingUpToDate we should send events to synchronize controller eventually.

@@ -122,6 +122,9 @@ UnicodeString __fastcall TrimVersion(UnicodeString Version);
 UnicodeString __fastcall FormatVersion(int MajovVersion, int MinorVersion, int Release);
 TFormatSettings __fastcall GetEngFormatSettings();
 int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr);
+// The defaults are equal to defaults of TStringList class (except for Sorted)
+TStringList * __fastcall CreateSortedStringList(bool CaseSensitive = false, System::Types::TDuplicates Duplicates = dupIgnore);
+UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const UnicodeString FileName, const TSearchRec Rec, void * Param);
@@ -213,8 +216,8 @@ private:
 #else
 #define CHECK(p) { bool __CHECK_RESULT__ = (p); assert(__CHECK_RESULT__); }
 #define FAIL assert(false)
-#define ALWAYS_TRUE(p) p
-#define ALWAYS_FALSE(p) p
+#define ALWAYS_TRUE(p) (p)
+#define ALWAYS_FALSE(p) (p)
 #define NOT_NULL(P) P
 #endif
 #define USEDPARAM(p) ((&p) == (&p))

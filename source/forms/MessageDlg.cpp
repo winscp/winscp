@@ -531,7 +531,7 @@ void __fastcall TMessageForm::ButtonDropDownClick(TObject * /*Sender*/)
 {
   // as optimization, do not waste time running timer, unless
   // user pops up drop down menu. we do not have a way to stop timer, once
-  // it closes, but functionaly is does not matter
+  // it closes, but functionaly it does not matter
   if (FUpdateForShiftStateTimer == NULL)
   {
     FUpdateForShiftStateTimer = new TTimer(this);

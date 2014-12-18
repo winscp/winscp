@@ -234,7 +234,6 @@
 			<BuildOrder>83</BuildOrder>
 		</CppCompile>
 			<CppCompile Include="core\Usage.cpp">
-			<DependentOn>core\Usage.h</DependentOn>
 			<BuildOrder>27</BuildOrder>
 		</CppCompile>
 			<CppCompile Include="core\WebDAVFileSystem.cpp">

@@ -28,16 +28,17 @@ TTerminalManager * TTerminalManager::FInstance = NULL;
 __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,
   TConfiguration * Configuration) :
   TTerminal(SessionData, Configuration),
-  Color((TColor)SessionData->Color), SynchronizeBrowsing(SessionData->SynchronizeBrowsing),
-  LocalDirectory(::ExpandFileName(SessionData->LocalDirectory)),
-  RemoteDirectory(SessionData->RemoteDirectory),
   LocalExplorerState(NULL), RemoteExplorerState(NULL),
   ReopenStart(0), DirectoryLoaded(Now()), TerminalThread(NULL)
 {
+  StateData = new TSessionData(L"");
+  StateData->Assign(SessionData);
+  StateData->LocalDirectory = ::ExpandFileName(StateData->LocalDirectory);
 }
 //---------------------------------------------------------------------------
 __fastcall TManagedTerminal::~TManagedTerminal()
 {
+  delete StateData;
   delete LocalExplorerState;
   delete RemoteExplorerState;
 }
@@ -237,7 +238,7 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
     {
       if (ManagedTerminal != NULL)
       {
-        Terminal->SessionData->RemoteDirectory = ManagedTerminal->RemoteDirectory;
+        Terminal->SessionData->RemoteDirectory = ManagedTerminal->StateData->RemoteDirectory;
 
         if ((double)ManagedTerminal->ReopenStart == 0)
         {
@@ -701,9 +702,7 @@ void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
     bool Changed = false;
     if (Terminal->SessionData->UpdateDirectories)
     {
-      Data->LocalDirectory = ManagedTerminal->LocalDirectory;
-      Data->RemoteDirectory = ManagedTerminal->RemoteDirectory;
-      Data->SynchronizeBrowsing = ManagedTerminal->SynchronizeBrowsing;
+      Data->CopyDirectoriesStateData(ManagedTerminal->StateData);
       Changed = true;
     }
 
@@ -782,15 +781,40 @@ void __fastcall TTerminalManager::ApplicationShowHint(UnicodeString & HintStr,
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
+{
+  bool Result = false;
+  if (Application->Active)
+  {
+    TPoint Point(LOWORD(LParam), HIWORD(LParam));
+    TWinControl * Control = FindVCLWindow(Point);
+    if (Control != NULL)
+    {
+      TCustomForm * Form = ValidParentForm(Control);
+      if (Form->Active)
+      {
+        // Send it only to windows we tested it with.
+        // Though we should sooner or later remote this test and pass it to all our windows.
+        if (Form->Perform(WM_WANTS_MOUSEWHEEL, 0, 0) == 1)
+        {
+          SendMessage(Control->Handle, WM_MOUSEWHEEL, WParam, LParam);
+          Result = true;
+        }
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ApplicationMessage(TMsg & Msg, bool & Handled)
 {
   if (Msg.message == FTaskbarButtonCreatedMessage)
   {
     CreateTaskbarList();
   }
-  if ((Msg.message == WM_MOUSEWHEEL) && (ScpExplorer != NULL))
+  if (Msg.message == WM_MOUSEWHEEL)
   {
-    Handled = ScpExplorer->HandleMouseWheel(Msg.wParam, Msg.lParam);
+    Handled = HandleMouseWheel(Msg.wParam, Msg.lParam);
   }
 }
 //---------------------------------------------------------------------------
@@ -1492,22 +1516,10 @@ void __fastcall TTerminalManager::SaveWorkspace(TList * DataList)
 {
   for (int Index = 0; Index < Count; Index++)
   {
-    TSessionData * Data = Terminals[Index]->SessionData;
-
-    TSessionData * Data2 = new TSessionData(L"");
-    DataList->Add(Data2);
-
-    if (StoredSessions->FindSame(Data))
-    {
-      Data2->Link = Data->Name;
-    }
-    else
-    {
-      Data2->Assign(Data);
-    }
-
-    Data2->Name = IntToHex(Index, 4);
-    Data2->IsWorkspace = true;
+    TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminals[Index]);
+    TSessionData * Data = StoredSessions->SaveWorkspaceData(ManagedTerminal->StateData);
+    DataList->Add(Data);
+    Data->Name = IntToHex(Index, 4);
   }
 }
 //---------------------------------------------------------------------------

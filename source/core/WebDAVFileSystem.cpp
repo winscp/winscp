@@ -297,8 +297,7 @@ void TWebDAVFileSystem::OpenUrl(const UnicodeString & Url)
 //---------------------------------------------------------------------------
 void TWebDAVFileSystem::NeonClientOpenSessionInternal(UnicodeString & CorrectedUrl, UnicodeString Url)
 {
-  std::unique_ptr<TStringList> AttemptedUrls(new TStringList());
-  AttemptedUrls->Sorted = true;
+  std::unique_ptr<TStringList> AttemptedUrls(CreateSortedStringList());
   int AttemptsLeft = MAX_REDIRECT_ATTEMPTS;
   while (true)
   {
@@ -515,6 +514,21 @@ void __fastcall TWebDAVFileSystem::CollectUsage()
   if (!FTlsVersionStr.IsEmpty())
   {
     FTerminal->CollectTlsUsage(FTlsVersionStr);
+  }
+
+  UnicodeString RemoteSystem = FFileSystemInfo.RemoteSystem;
+  if (ContainsText(RemoteSystem, L"Microsoft-IIS"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVIIS");
+  }
+  else if (ContainsText(RemoteSystem, L"IT Hit WebDAV Server"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVITHit");
+  }
+  else
+  {
+    // Web also know OpenDrive, Yandex, iFiles (iOS), Swapper (iOS), SafeSync
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVOther");
   }
 }
 //---------------------------------------------------------------------------
@@ -757,8 +771,7 @@ void __fastcall TWebDAVFileSystem::ChangeDirectory(const UnicodeString ADirector
 {
   UnicodeString Path = AbsolutePath(ADirectory, false);
 
-  // to verify existence of directory try to open it (SSH_FXP_REALPATH succeeds
-  // for invalid paths on some systems, like CygWin)
+  // to verify existence of directory try to open it
   TryOpenDirectory(Path);
 
   // if open dir did not fail, directory exists -> success.
@@ -1235,13 +1248,12 @@ void __fastcall TWebDAVFileSystem::SourceRobust(const UnicodeString FileName,
   TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   // the same in TSFTPFileSystem
-  bool Retry;
 
   TUploadSessionAction Action(FTerminal->ActionLog);
+  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress);
 
   do
   {
-    Retry = false;
     bool ChildError = false;
     try
     {
@@ -1250,9 +1262,7 @@ void __fastcall TWebDAVFileSystem::SourceRobust(const UnicodeString FileName,
     }
     catch (Exception & E)
     {
-      Retry = true;
-      if (FTerminal->Active ||
-          !FTerminal->QueryReopen(&E, ropNoReadDirectory, OperationProgress))
+      if (!RobustLoop.TryReopen(E))
       {
         if (!ChildError)
         {
@@ -1262,7 +1272,7 @@ void __fastcall TWebDAVFileSystem::SourceRobust(const UnicodeString FileName,
       }
     }
 
-    if (Retry)
+    if (RobustLoop.ShouldRetry())
     {
       OperationProgress->RollbackTransfer();
       Action.Restart();
@@ -1271,7 +1281,7 @@ void __fastcall TWebDAVFileSystem::SourceRobust(const UnicodeString FileName,
       Params |= cpNoConfirmation;
     }
   }
-  while (Retry);
+  while (RobustLoop.Retry());
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::Source(const UnicodeString FileName,
@@ -1603,13 +1613,12 @@ void __fastcall TWebDAVFileSystem::SinkRobust(const UnicodeString FileName,
   TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   // the same in TSFTPFileSystem
-  bool Retry;
 
   TDownloadSessionAction Action(FTerminal->ActionLog);
+  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress);
 
   do
   {
-    Retry = false;
     bool ChildError = false;
     try
     {
@@ -1618,9 +1627,7 @@ void __fastcall TWebDAVFileSystem::SinkRobust(const UnicodeString FileName,
     }
     catch (Exception & E)
     {
-      Retry = true;
-      if (FTerminal->GetActive() ||
-          !FTerminal->QueryReopen(&E, ropNoReadDirectory, OperationProgress))
+      if (!RobustLoop.TryReopen(E))
       {
         if (!ChildError)
         {
@@ -1630,7 +1637,7 @@ void __fastcall TWebDAVFileSystem::SinkRobust(const UnicodeString FileName,
       }
     }
 
-    if (Retry)
+    if (RobustLoop.ShouldRetry())
     {
       OperationProgress->RollbackTransfer();
       Action.Restart();
@@ -1642,7 +1649,7 @@ void __fastcall TWebDAVFileSystem::SinkRobust(const UnicodeString FileName,
       }
     }
   }
-  while (Retry);
+  while (RobustLoop.Retry());
 }
 //---------------------------------------------------------------------------
 void TWebDAVFileSystem::NeonCreateRequest(
@@ -1657,6 +1664,21 @@ void TWebDAVFileSystem::NeonPreSend(
   ne_request * Request, void * UserData, ne_buffer * Header)
 {
   TWebDAVFileSystem * FileSystem = static_cast<TWebDAVFileSystem *>(UserData);
+
+  if (FileSystem->FDownloading)
+  {
+    // Needed by IIS server to make it download source code, not code output,
+    // and mainly to even allow downloading file with unregistered extensions.
+    // Without it files like .001 return 404 (Not found) HTTP code.
+    // http://msdn.microsoft.com/en-us/library/cc250098.aspx
+    // http://msdn.microsoft.com/en-us/library/cc250216.aspx
+    // http://lists.manyfish.co.uk/pipermail/neon/2012-April/001452.html
+    // It's also supported by Oracle server:
+    // https://docs.oracle.com/cd/E19146-01/821-1828/gczya/index.html
+    // We do not know yet of ay server that fails when the header is used,
+    // so it's added unconditionally.
+    ne_buffer_zappend(Header, "Translate: f\r\n");
+  }
 
   if (FileSystem->FTerminal->Log->Logging)
   {

@@ -15,7 +15,7 @@
 #include <Configuration.h>
 #include <TextsWin.h>
 #include <HelpWin.h>
-#include <CustomWinConfiguration.h>
+#include <WinConfiguration.h>
 #include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -175,6 +175,10 @@ void __fastcall TSynchronizeDialog::UpdateControls()
       LogPanel->Visible = false;
     }
   }
+
+  // When minimizing to tray globally, no point showing special "minimize to tray" command
+  MinimizeButton->Style =
+    !WinConfiguration->MinimizeToTray ? TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::ControlChange(TObject * /*Sender*/)
@@ -468,9 +472,14 @@ void __fastcall TSynchronizeDialog::Stop()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeDialog::MinimizeButtonClick(TObject * Sender)
+void __fastcall TSynchronizeDialog::Minimize(TObject * Sender)
 {
   CallGlobalMinimizeHandler(Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::MinimizeButtonClick(TObject * Sender)
+{
+  Minimize(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::GlobalMinimize(TObject * /*Sender*/)
@@ -662,5 +671,21 @@ void __fastcall TSynchronizeDialog::LogViewDblClick(TObject * /*Sender*/)
         qaOK, LogItemData->HelpKeyword);
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::Minimize1Click(TObject * Sender)
+{
+  Minimize(Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::MinimizetoTray1Click(TObject * Sender)
+{
+  WinConfiguration->MinimizeToTrayOnce();
+  Minimize(Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::MinimizeButtonDropDownClick(TObject * /*Sender*/)
+{
+  MenuPopup(MinimizeMenu, MinimizeButton);
 }
 //---------------------------------------------------------------------------

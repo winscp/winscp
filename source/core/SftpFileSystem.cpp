@@ -1854,6 +1854,18 @@ __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal,
   FExtensions = new TStringList();
   FFixedPaths = NULL;
   FFileSystemInfoValid = false;
+
+  FChecksumAlgs.reset(new TStringList());
+  FChecksumSftpAlgs.reset(new TStringList());
+  // List as defined by draft-ietf-secsh-filexfer-extensions-00
+  // MD5 moved to the back
+  RegisterChecksumAlg(Sha1ChecksumAlg, L"sha1");
+  RegisterChecksumAlg(Sha224ChecksumAlg, L"sha224");
+  RegisterChecksumAlg(Sha256ChecksumAlg, L"sha256");
+  RegisterChecksumAlg(Sha384ChecksumAlg, L"sha384");
+  RegisterChecksumAlg(Sha512ChecksumAlg, L"sha512");
+  RegisterChecksumAlg(Md5ChecksumAlg, L"md5");
+  RegisterChecksumAlg(Crc32ChecksumAlg, L"crc32");
 }
 //---------------------------------------------------------------------------
 __fastcall TSFTPFileSystem::~TSFTPFileSystem()
@@ -3632,6 +3644,11 @@ void __fastcall TSFTPFileSystem::CreateDirectory(const UnicodeString DirName)
 void __fastcall TSFTPFileSystem::CreateLink(const UnicodeString FileName,
   const UnicodeString PointTo, bool Symbolic)
 {
+  // Cerberus server does not even response to LINK or SYMLINK,
+  // Although its log says:
+  // Unrecognized SFTP client command: (20)
+  // Unknown SFTP packet - Sending Unsupported OP response
+
   assert(FVersion >= 3); // links are supported with SFTP version 3 and later
   bool UseLink = (FVersion >= 6);
   bool UseHardlink = !Symbolic && !UseLink && FSupportsHardlink;
@@ -3836,7 +3853,8 @@ bool __fastcall TSFTPFileSystem::LoadFilesProperties(TStrings * FileList)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(const UnicodeString & Alg,
+void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(
+  const UnicodeString & Alg, const UnicodeString & SftpAlg,
   TStrings * FileList, TStrings * Checksums,
   TCalculatedChecksumEvent OnCalculatedChecksum,
   TFileOperationProgressType * OperationProgress, bool FirstLevel)
@@ -3873,7 +3891,7 @@ void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(const UnicodeString & 
 
             // do not collect checksums for files in subdirectories,
             // only send back checksums via callback
-            DoCalculateFilesChecksum(Alg, SubFileList, NULL,
+            DoCalculateFilesChecksum(Alg, SftpAlg, SubFileList, NULL,
               OnCalculatedChecksum, OperationProgress, false);
 
             Success = true;
@@ -3897,43 +3915,54 @@ void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(const UnicodeString & 
   TSFTPCalculateFilesChecksumQueue Queue(this);
   try
   {
-    if (Queue.Init(CalculateFilesChecksumQueueLen, Alg, FileList))
+    if (Queue.Init(CalculateFilesChecksumQueueLen, SftpAlg, FileList))
     {
       TSFTPPacket Packet;
       bool Next;
       do
       {
         bool Success = false;
-        UnicodeString Alg;
         UnicodeString Checksum;
         TRemoteFile * File = NULL;
 
         try
         {
+          TChecksumSessionAction Action(FTerminal->ActionLog);
           try
           {
             Next = Queue.ReceivePacket(&Packet, File);
             assert(Packet.Type == SSH_FXP_EXTENDED_REPLY);
 
             OperationProgress->SetFile(File->FileName);
+            Action.FileName(FTerminal->AbsolutePath(File->FullFileName, true));
 
-            Alg = Packet.GetAnsiString();
-            Checksum = BytesToHex(reinterpret_cast<const unsigned char*>(Packet.GetNextData(Packet.RemainingLength)), Packet.RemainingLength);
-            OnCalculatedChecksum(File->FileName, Alg, Checksum);
+            // skip alg
+            Packet.GetAnsiString();
+            Checksum = BytesToHex(reinterpret_cast<const unsigned char*>(Packet.GetNextData(Packet.RemainingLength)), Packet.RemainingLength, false);
+            if (OnCalculatedChecksum != NULL)
+            {
+              OnCalculatedChecksum(File->FileName, Alg, Checksum);
+            }
+            Action.Checksum(Alg, Checksum);
 
             Success = true;
           }
           catch (Exception & E)
           {
-            FTerminal->CommandError(&E, FMTLOAD(CHECKSUM_ERROR,
-              (File != NULL ? File->FullFileName : UnicodeString(L""))));
+            FTerminal->RollbackAction(Action, OperationProgress, &E);
+
+            // Error formatting expanded from inline to avoid strange exceptions
+            UnicodeString Error =
+              FMTLOAD(CHECKSUM_ERROR,
+                (File != NULL ? File->FullFileName : UnicodeString(L"")));
+            FTerminal->CommandError(&E, Error);
             // TODO: retries? resume?
             Next = false;
           }
 
           if (Checksums != NULL)
           {
-            Checksums->Add(L"");
+            Checksums->Add(Checksum);
           }
         }
         __finally
@@ -3966,11 +3995,24 @@ void __fastcall TSFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Al
   TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
   Progress.Start(foCalculateChecksum, osRemote, FileList->Count);
 
+  UnicodeString NormalizedAlg = FindIdent(Alg, FChecksumAlgs.get());
+  UnicodeString SftpAlg;
+  int Index = FChecksumAlgs->IndexOf(NormalizedAlg);
+  if (Index >= 0)
+  {
+    SftpAlg = FChecksumSftpAlgs->Strings[Index];
+  }
+  else
+  {
+    // try user-specified alg
+    SftpAlg = NormalizedAlg;
+  }
+
   FTerminal->FOperationProgress = &Progress;
 
   try
   {
-    DoCalculateFilesChecksum(Alg, FileList, Checksums, OnCalculatedChecksum,
+    DoCalculateFilesChecksum(NormalizedAlg, SftpAlg, FileList, Checksums, OnCalculatedChecksum,
       &Progress, true);
   }
   __finally
@@ -4361,13 +4403,12 @@ void __fastcall TSFTPFileSystem::SFTPSourceRobust(const UnicodeString FileName,
   TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   // the same in TFTPFileSystem
-  bool Retry;
 
   TUploadSessionAction Action(FTerminal->ActionLog);
+  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress);
 
   do
   {
-    Retry = false;
     bool ChildError = false;
     try
     {
@@ -4376,9 +4417,7 @@ void __fastcall TSFTPFileSystem::SFTPSourceRobust(const UnicodeString FileName,
     }
     catch(Exception & E)
     {
-      Retry = true;
-      if (FTerminal->Active ||
-          !FTerminal->QueryReopen(&E, ropNoReadDirectory, OperationProgress))
+      if (!RobustLoop.TryReopen(E))
       {
         if (!ChildError)
         {
@@ -4388,7 +4427,7 @@ void __fastcall TSFTPFileSystem::SFTPSourceRobust(const UnicodeString FileName,
       }
     }
 
-    if (Retry)
+    if (RobustLoop.ShouldRetry())
     {
       OperationProgress->RollbackTransfer();
       Action.Restart();
@@ -4399,7 +4438,7 @@ void __fastcall TSFTPFileSystem::SFTPSourceRobust(const UnicodeString FileName,
       Flags &= ~tfNewDirectory;
     }
   }
-  while (Retry);
+  while (RobustLoop.Retry());
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
@@ -5303,13 +5342,12 @@ void __fastcall TSFTPFileSystem::SFTPSinkRobust(const UnicodeString FileName,
   TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   // the same in TFTPFileSystem
-  bool Retry;
 
   TDownloadSessionAction Action(FTerminal->ActionLog);
+  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress);
 
   do
   {
-    Retry = false;
     bool ChildError = false;
     try
     {
@@ -5318,9 +5356,7 @@ void __fastcall TSFTPFileSystem::SFTPSinkRobust(const UnicodeString FileName,
     }
     catch(Exception & E)
     {
-      Retry = true;
-      if (FTerminal->Active ||
-          !FTerminal->QueryReopen(&E, ropNoReadDirectory, OperationProgress))
+      if (!RobustLoop.TryReopen(E))
       {
         if (!ChildError)
         {
@@ -5330,7 +5366,7 @@ void __fastcall TSFTPFileSystem::SFTPSinkRobust(const UnicodeString FileName,
       }
     }
 
-    if (Retry)
+    if (RobustLoop.ShouldRetry())
     {
       OperationProgress->RollbackTransfer();
       Action.Restart();
@@ -5342,7 +5378,7 @@ void __fastcall TSFTPFileSystem::SFTPSinkRobust(const UnicodeString FileName,
       }
     }
   }
-  while (Retry);
+  while (RobustLoop.Retry());
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
@@ -5419,8 +5455,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
     }
     else
     {
-      // file is symlink to directory, currently do nothing, but it should be
-      // reported to user
+      FTerminal->LogEvent(FORMAT(L"Skipping symlink to directory \"%s\".", (FileName)));
     }
   }
   else
@@ -5917,15 +5952,13 @@ void __fastcall TSFTPFileSystem::SFTPSinkFile(UnicodeString FileName,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TSFTPFileSystem::RegisterChecksumAlg(const UnicodeString & Alg, const UnicodeString & SftpAlg)
+{
+  FChecksumAlgs->Add(Alg);
+  FChecksumSftpAlgs->Add(SftpAlg);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::GetSupportedChecksumAlgs(TStrings * Algs)
 {
-  // List as defined by draft-ietf-secsh-filexfer-extensions-00
-  // MD5 moved to the back
-  Algs->Add(L"sha1");
-  Algs->Add(L"sha224");
-  Algs->Add(L"sha256");
-  Algs->Add(L"sha384");
-  Algs->Add(L"sha512");
-  Algs->Add(L"md5");
-  Algs->Add(L"crc32");
+  Algs->AddStrings(FChecksumAlgs.get());
 }

@@ -87,7 +87,7 @@ private:
   void __fastcall HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events);
   bool __fastcall ProcessNetworkEvents(SOCKET Socket);
   bool __fastcall EventSelectLoop(unsigned int MSec, bool ReadEventRequired,
-    WSANETWORKEVENTS * Events);
+    bool DoProcessGUI, WSANETWORKEVENTS * Events);
   void __fastcall UpdateSessionInfo();
   bool __fastcall GetReady();
   void __fastcall DispatchSendBuffer(int BufSize);

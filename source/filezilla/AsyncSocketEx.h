@@ -321,6 +321,7 @@ protected:
 
 	virtual void LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat) {};
 	virtual bool LoggingSocketMessage(int nMessageType) { return true; };
+	virtual void ConfigureSocket() {};
 };
 
 #ifndef NOLAYERS

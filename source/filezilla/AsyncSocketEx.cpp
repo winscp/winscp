@@ -1385,7 +1385,10 @@ BOOL CAsyncSocketEx::Connect(const SOCKADDR* lpSockAddr, int nSockAddrLen)
 		res = SOCKET_ERROR!=m_pFirstLayer->Connect(lpSockAddr, nSockAddrLen);
 	else
 #endif //NOLAYERS
+	{
+		ConfigureSocket();
 		res = SOCKET_ERROR!=connect(m_SocketData.hSocket, lpSockAddr, nSockAddrLen);
+	}
 
 #ifndef NOSOCKETSTATES
 	if (res || GetLastError()==WSAEWOULDBLOCK)

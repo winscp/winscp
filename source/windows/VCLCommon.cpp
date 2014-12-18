@@ -21,44 +21,183 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-void __fastcall AdjustListColumnsWidth(TListView * ListView)
+void __fastcall FixListColumnWidth(TListView * TListView, int Index)
 {
-  int OriginalWidth, NewWidth, i, CWidth, LastResizible;
-
-  OriginalWidth = 0;
-  LastResizible = -1;
-  for (i = 0; i < ListView->Columns->Count; i++)
+  if (Index < 0)
   {
-    OriginalWidth += ListView->Columns->Items[i]->Width;
-    if (ListView->Columns->Items[i]->Tag == 0)
-    {
-      LastResizible = i;
-    }
+    Index = TListView->Columns->Count + Index;
   }
-  assert(LastResizible >= 0);
+  TListView->Column[Index]->Tag = 1;
+}
+//---------------------------------------------------------------------------
+static int __fastcall GetColumnTextWidth(TListView * ListView, int ColumnPadding, const UnicodeString & Text)
+{
+  return
+    ColumnPadding +
+    ListView->Canvas->TextExtent(Text).Width;
+}
+//---------------------------------------------------------------------------
+void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrinkIndex)
+{
+  // preallocate handle to precreate columns, otherwise our changes may get
+  // overwritten once the handle is created
+  ListView->HandleNeeded();
 
-  int RowCount = ListView->Items->Count;
+  SendMessage(ListView->Handle, WM_SETREDRAW, false, 0);
 
-  NewWidth = 0;
-  CWidth = ListView->ClientWidth;
-  if ((ListView->VisibleRowCount < RowCount) &&
-      (ListView->Width - ListView->ClientWidth < GetSystemMetrics(SM_CXVSCROLL)))
+  try
   {
-    CWidth -= GetSystemMetrics(SM_CXVSCROLL);
-  }
-  for (i = 0; i < ListView->Columns->Count; i++)
-  {
-    if (i != LastResizible)
+    int ColumnPadding = 2 * ScaleByTextHeightRunTime(ListView, 6);
+    int ColumnShrinkMinWidth = ScaleByTextHeightRunTime(ListView, 60);
+
+    int ResizableWidth = 0;
+    int NonResizableWidth = 0;
+    int LastResizable = -1;
+    for (int Index = 0; Index < ListView->Columns->Count; Index++)
     {
-      if (ListView->Columns->Items[i]->Tag == 0)
+      TListColumn * Column = ListView->Columns->Items[Index];
+
+      int CaptionWidth = GetColumnTextWidth(ListView, ColumnPadding, Column->Caption);
+
+      int OrigWidth = -1;
+      bool NonResizable = (Column->Tag != 0);
+      if (NonResizable) // optimization
       {
-        ListView->Columns->Items[i]->Width =
-          (CWidth * ListView->Columns->Items[i]->Width) / OriginalWidth;
+        OrigWidth = ListView_GetColumnWidth(ListView->Handle, Index);
       }
-      NewWidth += ListView->Columns->Items[i]->Width;
+
+      int Width;
+      // LVSCW_AUTOSIZE does not work for OwnerData list views
+      if (!ListView->OwnerData)
+      {
+        ListView_SetColumnWidth(ListView->Handle, Index, LVSCW_AUTOSIZE);
+        Width = ListView_GetColumnWidth(ListView->Handle, Index);
+      }
+      else
+      {
+        // For the first column, we can simulate header double-click
+        if (Index == 0)
+        {
+          HWND HeaderHandle = ListView_GetHeader(ListView->Handle);
+          UINT_PTR From = GetDlgCtrlID(HeaderHandle);
+          NMHEADER NMHeader;
+          NMHeader.hdr.idFrom = From;
+          NMHeader.hdr.hwndFrom = HeaderHandle;
+          NMHeader.hdr.code = HDN_DIVIDERDBLCLICK;
+          NMHeader.iItem = Index;
+          NMHeader.iButton = 0;
+          NMHeader.pitem = NULL;
+          SendMessage(ListView->Handle, WM_NOTIFY, From, reinterpret_cast<LPARAM>(&NMHeader));
+          Width = ListView_GetColumnWidth(ListView->Handle, Index);
+        }
+        else
+        {
+          // For sub columns, header double click does not work reliably.
+          // It resizes based on the focused line only and even then not consistently.
+          Width = 0;
+          for (int ItemIndex = 0; ItemIndex < ListView->Items->Count; ItemIndex++)
+          {
+            TListItem * Item = ListView->Items->Item[ItemIndex];
+            if (Index < Item->SubItems->Count)
+            {
+              UnicodeString Text = Item->SubItems->Strings[Index - 1];
+              int TextWidth = GetColumnTextWidth(ListView, ColumnPadding, Text);
+              if (TextWidth > Width)
+              {
+                Width = TextWidth;
+              }
+            }
+          }
+        }
+      }
+      Width = Max(Width, CaptionWidth);
+      // Never shrink the non-resizable columns
+      if (NonResizable && (Width < OrigWidth))
+      {
+        Width = OrigWidth;
+      }
+      Column->Width = Width;
+
+      if (NonResizable)
+      {
+        NonResizableWidth += Width;
+      }
+      else
+      {
+        LastResizable = Index;
+        ResizableWidth += Width;
+      }
+    }
+
+    assert(LastResizable >= 0);
+
+    int ClientWidth = ListView->ClientWidth;
+    int RowCount = ListView->Items->Count;
+    if ((ListView->VisibleRowCount < RowCount) &&
+        (ListView->Width - ListView->ClientWidth < GetSystemMetrics(SM_CXVSCROLL)))
+    {
+      ClientWidth -= GetSystemMetrics(SM_CXVSCROLL);
+    }
+
+    if (ALWAYS_TRUE(NonResizableWidth < ClientWidth))
+    {
+      int Remaining = ClientWidth - NonResizableWidth;
+
+      bool ProportionalResize = true;
+
+      bool Shrinking = (Remaining < ResizableWidth);
+      // If columns are too wide to fit and we have dedicated shrink column, shrink it
+      if (Shrinking &&
+          (ColumnToShrinkIndex >= 0))
+      {
+        TListColumn * ColumnToShrink = ListView->Columns->Items[ColumnToShrinkIndex];
+        int ColumnToShrinkCaptionWidth = GetColumnTextWidth(ListView, ColumnPadding, ColumnToShrink->Caption);
+        int ColumnToShrinkMinWidth = Max(ColumnShrinkMinWidth, ColumnToShrinkCaptionWidth);
+        // This falls back to proprotionak shrinking when the shrink column would fall below min width.
+        // Question is whether we should not shrink to min width instead.
+        if ((ResizableWidth - ColumnToShrink->Width) < (Remaining - ColumnToShrinkMinWidth))
+        {
+          ListView->Columns->Items[ColumnToShrinkIndex]->Width =
+            Remaining - (ResizableWidth - ListView->Columns->Items[ColumnToShrinkIndex]->Width);
+          ProportionalResize = false;
+        }
+      }
+
+      if (ProportionalResize)
+      {
+        for (int Index = 0; Index <= LastResizable; Index++)
+        {
+          TListColumn * Column = ListView->Columns->Items[Index];
+
+          if (Column->Tag == 0)
+          {
+            int Width = ListView_GetColumnWidth(ListView->Handle, Index);
+            int AutoWidth = Width;
+            if (Index < LastResizable)
+            {
+              Width = (Remaining * Width) / ResizableWidth;
+            }
+            else
+            {
+              Width = Remaining;
+            }
+
+            int CaptionWidth = GetColumnTextWidth(ListView, ColumnPadding, Column->Caption);
+            Width = Max(Width, CaptionWidth);
+            Width = Max(Width, Min(ColumnShrinkMinWidth, AutoWidth));
+            Column->Width = Width;
+            Remaining -= Min(Width, Remaining);
+          }
+        }
+
+        assert(Remaining == 0);
+      }
     }
   }
-  ListView->Columns->Items[LastResizible]->Width = CWidth-NewWidth;
+  __finally
+  {
+    SendMessage(ListView->Handle, WM_SETREDRAW, true, 0);
+  }
 }
 //---------------------------------------------------------------------------
 static void __fastcall SetParentColor(TControl * Control)
@@ -551,6 +690,8 @@ struct TShowAsModalStorage
   void * FocusWindowList;
   HWND FocusActiveWindow;
   TFocusState FocusState;
+  TCursor SaveCursor;
+  int SaveCount;
 };
 //---------------------------------------------------------------------------
 void __fastcall ShowAsModal(TForm * Form, void *& Storage)
@@ -567,6 +708,15 @@ void __fastcall ShowAsModal(TForm * Form, void *& Storage)
   AStorage->FocusState = SaveFocusState();
   Screen->SaveFocusedList->Insert(0, Screen->FocusedForm);
   Screen->FocusedForm = Form;
+  AStorage->SaveCursor = Screen->Cursor;
+  // This is particularly used when displaing progress window
+  // while downloading via temporary folder
+  // (the mouse cursor is yet hidden at this point).
+  // While the code was added to workaround the above problem,
+  // it is taken from TCustomForm.ShowModal and
+  // should have been here ever since.
+  Screen->Cursor = crDefault;
+  AStorage->SaveCount = Screen->CursorCount;
   AStorage->FocusWindowList = DisableTaskWindows(0);
   Form->Show();
   SendMessage(Form->Handle, CM_ACTIVATE, 0, 0);
@@ -586,6 +736,15 @@ void __fastcall HideAsModal(TForm * Form, void *& Storage)
     AStorage->FocusActiveWindow = 0;
   }
   Form->Hide();
+
+  if (Screen->CursorCount == AStorage->SaveCount)
+  {
+    Screen->Cursor = AStorage->SaveCursor;
+  }
+  else
+  {
+    Screen->Cursor = crDefault;
+  }
 
   EnableTaskWindows(AStorage->FocusWindowList);
 
@@ -1699,7 +1858,7 @@ bool __fastcall SupportsSplitButton()
   return (Win32MajorVersion >= 6);
 }
 //---------------------------------------------------------------------------
-TButton * __fastcall FindDefaultButton(TWinControl * Control)
+static TButton * __fastcall FindDefaultButton(TWinControl * Control)
 {
   TButton * Result = NULL;
   int Index = 0;
@@ -1724,7 +1883,7 @@ TButton * __fastcall FindDefaultButton(TWinControl * Control)
   return Result;
 }
 //---------------------------------------------------------------------------
-TModalResult __fastcall DefaultResult(TCustomForm * Form)
+TModalResult __fastcall DefaultResult(TCustomForm * Form, TButton * DefaultButton)
 {
   // The point of this is to avoid hardcoding mrOk when checking dialog results.
   // Previously we used != mrCancel instead, as mrCancel is more reliable,
@@ -1738,11 +1897,27 @@ TModalResult __fastcall DefaultResult(TCustomForm * Form)
   {
     Result = Button->ModalResult;
   }
-  if (ALWAYS_FALSE(Result == mrNone))
+  if (Result == mrNone)
   {
-    Result = mrOk;
+    assert((DefaultButton != NULL) && (DefaultButton->ModalResult != mrNone));
+    Result = DefaultButton->ModalResult;
+  }
+  else
+  {
+    // If default button fallback was provided,
+    // make sure it is the default button be actually detected
+    assert((DefaultButton == NULL) || (Button == DefaultButton));
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall DefaultButton(TButton * Button, bool Default)
+{
+  // default property setter does not have guard for "the same value"
+  if (Button->Default != Default)
+  {
+    Button->Default = Default;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall MemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift)

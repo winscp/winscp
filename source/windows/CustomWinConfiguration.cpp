@@ -110,6 +110,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FConfirmExitOnCompletion = true;
   FOperationProgressOnTop = true;
   FSessionColors = L"";
+  FCopyShortCutHintShown = false;
 
   DefaultHistory();
 }
@@ -137,6 +138,7 @@ void __fastcall TCustomWinConfiguration::Saved()
     KEY(Integer,  Interface); \
     KEY(Bool,     ConfirmExitOnCompletion); \
     KEY(String,   SessionColors); \
+    KEY(Bool,     CopyShortCutHintShown); \
   ) \
   BLOCK(L"Logging", CANCREATE, \
     KEY(Integer, LogView); \

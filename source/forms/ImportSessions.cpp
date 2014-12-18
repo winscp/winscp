@@ -122,7 +122,7 @@ void __fastcall TImportSessionsDialog::UpdateControls()
   EnableControl(ImportKeysCheck, AnySshChecked);
 
   EnableControl(CheckAllButton, SessionListView2->Items->Count > 0);
-  AdjustListColumnsWidth(SessionListView2);
+  AutoSizeListColumnsWidth(SessionListView2);
 }
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::ClearSelections()

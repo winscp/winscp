@@ -65,7 +65,6 @@ object CleanupDialog: TCleanupDialog
     Columns = <
       item
         Caption = 'Data'
-        Tag = 1
         Width = 160
       end
       item

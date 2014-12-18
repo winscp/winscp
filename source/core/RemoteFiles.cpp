@@ -842,6 +842,11 @@ void __fastcall TRemoteFile::LoadTypeInfo()
   FIconIndex = FakeFileImageIndex(DumbFileName, Attrs, &FTypeName);
 }
 //---------------------------------------------------------------------------
+__int64 __fastcall TRemoteFile::GetSize() const
+{
+  return IsDirectory ? 0 : FSize;
+}
+//---------------------------------------------------------------------------
 Integer __fastcall TRemoteFile::GetIconIndex() const
 {
   if (FIconIndex == -1)
@@ -1340,8 +1345,9 @@ UnicodeString __fastcall TRemoteFile::GetListingStr()
     LinkPart = UnicodeString(SYMLINKSTR) + LinkTo;
   }
   return Format(L"%s%s %3s %-8s %-8s %9s %-12s %s%s", ARRAYOFCONST((
-    Type, Rights->Text, IntToStr(INodeBlocks), Owner.Name,
-    Group.Name, IntToStr(Size), ModificationStr, FileName,
+    Type, Rights->Text, IntToStr(INodeBlocks), Owner.Name, Group.Name,
+    IntToStr(FSize), // explicitly using size even for directories
+    ModificationStr, FileName,
     LinkPart)));
 }
 //---------------------------------------------------------------------------
@@ -1392,7 +1398,6 @@ __fastcall TRemoteDirectoryFile::TRemoteDirectoryFile() : TRemoteFile()
   ModificationFmt = mfNone;
   LastAccess = Modification;
   Type = L'D';
-  Size = 0;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -1462,7 +1467,7 @@ __int64 __fastcall TRemoteFileList::GetTotalSize()
 {
   __int64 Result = 0;
   for (Integer Index = 0; Index < Count; Index++)
-    if (!Files[Index]->IsDirectory) Result += Files[Index]->Size;
+    Result += Files[Index]->Size;
   return Result;
 }
 //---------------------------------------------------------------------------

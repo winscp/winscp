@@ -241,14 +241,12 @@ void __fastcall TScpCommanderForm::UpdateTerminal(TTerminal * Terminal)
   if (WinConfiguration->PreservePanelState)
   {
     ManagedTerminal->LocalExplorerState = LocalDirView->SaveState();
-    ManagedTerminal->SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
   }
-
-  ManagedTerminal->LocalDirectory = LocalDirView->PathName;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::UpdateSessionData(TSessionData * Data)
 {
+  // Keep in sync with TSessionData::CopyStateData
   TCustomScpExplorerForm::UpdateSessionData(Data);
 
   assert(LocalDirView);
@@ -299,7 +297,7 @@ bool __fastcall TScpCommanderForm::InternalDDDownload(UnicodeString & TargetDire
 //---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, bool Temp, TStrings * FileList, UnicodeString & TargetDirectory,
-  TGUICopyParamType & CopyParam, bool Confirm, bool DragDrop)
+  TGUICopyParamType & CopyParam, bool Confirm, bool DragDrop, int Options)
 {
   bool Result = false;
   // Temp means d&d here so far, may change in future!
@@ -328,7 +326,7 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
   if (!Result)
   {
     Result = TCustomScpExplorerForm::CopyParamDialog(Direction, Type, Temp,
-      FileList, TargetDirectory, CopyParam, Confirm, DragDrop);
+      FileList, TargetDirectory, CopyParam, Confirm, DragDrop, Options);
   }
   return Result;
 }
@@ -347,6 +345,7 @@ Boolean __fastcall TScpCommanderForm::AllowedAction(TAction * Action, TActionAll
 {
   #define FLAG ((TActionFlag)(Action->Tag))
   return
+    TCustomScpExplorerForm::AllowedAction(Action, Allowed) &&
     // always require Commander flag
     (FLAG & afCommander) &&
     // if action is execution or update, we don't require any other flag
@@ -432,7 +431,7 @@ void __fastcall TScpCommanderForm::TerminalChanged()
 
     if (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory)
     {
-      UnicodeString LocalDirectory = ManagedTerminal->LocalDirectory;
+      UnicodeString LocalDirectory = ManagedTerminal->StateData->LocalDirectory;
       bool DocumentsDir = LocalDirectory.IsEmpty();
 
       if (!DocumentsDir)
@@ -482,7 +481,7 @@ void __fastcall TScpCommanderForm::TerminalChanged()
         LocalDirView->ClearState();
       }
 
-      NonVisualDataModule->SynchronizeBrowsingAction->Checked = ManagedTerminal->SynchronizeBrowsing;
+      NonVisualDataModule->SynchronizeBrowsingAction->Checked = ManagedTerminal->StateData->SynchronizeBrowsing;
     }
   }
   else
@@ -1394,9 +1393,10 @@ void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
         {
           TransferType = ttMove;
         }
+        int Options = 0;
         if (CopyParamDialog(tdToLocal, TransferType,
               false, FInternalDDDownloadList, TargetDirectory, CopyParams,
-              (WinConfiguration->DDTransferConfirmation != asOff), true))
+              (WinConfiguration->DDTransferConfirmation != asOff), true, Options))
         {
           int Params =
             (TransferType == ttMove ? cpDelete : 0);

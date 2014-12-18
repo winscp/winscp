@@ -594,6 +594,8 @@ __published:    // IDE-managed Components
   TTBXSubmenuItem *TBXSubmenuItem7;
   TTBXItem *TBXItem70;
   TTBXItem *TBXItem71;
+  TAction *QueueDeleteAllAction;
+  TTBXItem *TBXItem142;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);

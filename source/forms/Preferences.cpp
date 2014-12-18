@@ -73,8 +73,12 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   UseSystemSettings(this);
 
   FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
+  FixListColumnWidth(CustomCommandsView, -2);
+  FixListColumnWidth(CustomCommandsView, -1);
   FCopyParamScrollOnDragOver = new TListViewScrollOnDragOver(CopyParamListView, true);
+  FixListColumnWidth(CopyParamListView, -1);
   FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView3, true);
+  FixListColumnWidth(EditorListView3, -1);
 
   ComboAutoSwitchInitialize(UpdatesBetaVersionsCombo);
   EnableControl(UpdatesBetaVersionsCombo, !WinConfiguration->IsBeta);
@@ -959,6 +963,7 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
     case pmUpdates: PageControl->ActivePage = UpdatesSheet; break;
     case pmPresets: PageControl->ActivePage = CopyParamListSheet; break;
     case pmEditors: PageControl->ActivePage = EditorSheet; break;
+    case pmCommander: PageControl->ActivePage = CommanderSheet; break;
     default: PageControl->ActivePage = PreferencesSheet; break;
   }
   PageControlChange(NULL);
@@ -1302,7 +1307,7 @@ void __fastcall TPreferencesDialog::ListViewSelectItem(
 void __fastcall TPreferencesDialog::UpdateCustomCommandsView()
 {
   CustomCommandsView->Items->Count = FCustomCommandList->Count;
-  AdjustListColumnsWidth(CustomCommandsView);
+  AutoSizeListColumnsWidth(CustomCommandsView);
   CustomCommandsView->Invalidate();
 }
 //---------------------------------------------------------------------------
@@ -1715,7 +1720,7 @@ void __fastcall TPreferencesDialog::EditorListView3KeyDown(TObject * /*Sender*/,
 void __fastcall TPreferencesDialog::UpdateEditorListView()
 {
   EditorListView3->Items->Count = FEditorList->Count;
-  AdjustListColumnsWidth(EditorListView3);
+  AutoSizeListColumnsWidth(EditorListView3);
   EditorListView3->Invalidate();
 }
 //---------------------------------------------------------------------------
@@ -1899,7 +1904,7 @@ void __fastcall TPreferencesDialog::EditorFontLabelDblClick(
 void __fastcall TPreferencesDialog::UpdateCopyParamListView()
 {
   CopyParamListView->Items->Count = 1 + FCopyParamList->Count;
-  AdjustListColumnsWidth(CopyParamListView);
+  AutoSizeListColumnsWidth(CopyParamListView);
   CopyParamListView->Invalidate();
 }
 //---------------------------------------------------------------------------

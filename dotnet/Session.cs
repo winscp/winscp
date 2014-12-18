@@ -56,6 +56,7 @@ namespace WinSCP
         public bool GuardProcessWithJob { get { return GuardProcessWithJobInternal; } set { GuardProcessWithJobInternal = value; } }
         public bool TestHandlesClosed { get { return TestHandlesClosedInternal; } set { TestHandlesClosedInternal = value; } }
         #endif
+        public string HomePath { get { CheckOpened(); return _homePath; } }
 
         public TimeSpan Timeout { get; set; }
 
@@ -234,6 +235,24 @@ namespace WinSCP
                     {
                         ReadElement(groupReader, LogReadFlags.ThrowFailures);
                     }
+
+                    WriteCommand("pwd");
+
+                    using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
+                    using (ElementLogReader cwdReader = groupReader.WaitForNonEmptyElementAndCreateLogReader("cwd", LogReadFlags.ThrowFailures))
+                    {
+                        while (cwdReader.Read(0))
+                        {
+                            string value;
+                            if (cwdReader.GetEmptyElementValue("cwd", out value))
+                            {
+                                _homePath = value;
+                            }
+                        }
+
+                        groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
+                    }
+
                 }
                 catch(Exception e)
                 {
@@ -661,6 +680,33 @@ namespace WinSCP
             }
         }
 
+        public string CalculateFileChecksum(string algorithm, string path)
+        {
+            using (Logger.CreateCallstack())
+            {
+                WriteCommand(string.Format(CultureInfo.InvariantCulture, "checksum -- \"{0}\" \"{1}\"", Tools.ArgumentEscape(algorithm), Tools.ArgumentEscape(path)));
+
+                string result = null;
+
+                using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
+                using (ElementLogReader checksumReader = groupReader.WaitForNonEmptyElementAndCreateLogReader("checksum", LogReadFlags.ThrowFailures))
+                {
+                    while (checksumReader.Read(0))
+                    {
+                        string value;
+                        if (checksumReader.GetEmptyElementValue("checksum", out value))
+                        {
+                            result = value;
+                        }
+                    }
+
+                    groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
+                }
+
+                return result;
+            }
+        }
+
         public void CreateDirectory(string path)
         {
             using (Logger.CreateCallstackAndLock())
@@ -755,6 +801,14 @@ namespace WinSCP
                 else if (fileReader.GetEmptyElementValue("permissions", out value))
                 {
                     fileInfo.FilePermissions = FilePermissions.CreateReadOnlyFromText(value);
+                }
+                else if (fileReader.GetEmptyElementValue("owner", out value))
+                {
+                    fileInfo.Owner = value;
+                }
+                else if (fileReader.GetEmptyElementValue("group", out value))
+                {
+                    fileInfo.Group = value;
                 }
             }
         }
@@ -952,6 +1006,8 @@ namespace WinSCP
                     throw new ArgumentException("SessionOptions.HostName is not set.");
                 }
 
+                // We should wrap IPv6 literals to square brackets, instead of URL-encoding them,
+                // but it works anyway...
                 tail += UriEscape(sessionOptions.HostName);
 
                 if (sessionOptions.PortNumber != 0)
@@ -1047,12 +1103,14 @@ namespace WinSCP
                             switches.Add(FormatSwitch("implicit"));
                             break;
 
-                        case FtpSecure.ExplicitSsl:
-                            switches.Add(FormatSwitch("explicitssl"));
+                        case FtpSecure.Explicit: // and ExplicitTls
+                            switches.Add(FormatSwitch("explicit"));
                             break;
 
-                        case FtpSecure.ExplicitTls:
-                            switches.Add(FormatSwitch("explicittls"));
+#pragma warning disable 618
+                        case FtpSecure.ExplicitSsl:
+#pragma warning restore 618
+                            switches.Add(FormatSwitch("explicitssl"));
                             break;
 
                         default:
@@ -1643,5 +1701,6 @@ namespace WinSCP
         private FileTransferProgressEventHandler _fileTransferProgress;
         private int _progressHandling;
         private bool _guardProcessWithJob;
+        private string _homePath;
     }
 }

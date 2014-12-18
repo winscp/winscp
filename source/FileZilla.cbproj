@@ -187,9 +187,6 @@
 			<DependentOn>filezilla\Options.h</DependentOn>
 			<BuildOrder>15</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="filezilla\PathFunctions.cpp">
-			<BuildOrder>16</BuildOrder>
-		</CppCompile>
 			<CppCompile Include="filezilla\ServerPath.cpp">
 			<BuildOrder>17</BuildOrder>
 		</CppCompile>

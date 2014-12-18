@@ -75,7 +75,11 @@ public:
 //---------------------------------------------------------------------------
 // Duplicated in LogMemo.h for design-time-only purposes
 enum TLogLineType { llOutput, llInput, llStdError, llMessage, llException };
-enum TLogAction { laUpload, laDownload, laTouch, laChmod, laMkdir, laRm, laMv, laCall, laLs, laStat };
+enum TLogAction
+{
+  laUpload, laDownload, laTouch, laChmod, laMkdir, laRm, laMv, laCall, laLs,
+  laStat, laChecksum, laCwd
+};
 //---------------------------------------------------------------------------
 enum TCaptureOutputType { cotOutput, cotError, cotExitCode };
 typedef void __fastcall (__closure *TCaptureOutputEvent)(
@@ -180,7 +184,7 @@ public:
     const UnicodeString & Destination);
 
   void __fastcall AddOutput(const UnicodeString & Output, bool StdError);
-  void __fastcall AddExitCode(int ExitCode);
+  void __fastcall ExitCode(int ExitCode);
 };
 //---------------------------------------------------------------------------
 class TLsSessionAction : public TSessionAction
@@ -197,6 +201,20 @@ public:
   __fastcall TStatSessionAction(TActionLog * Log, const UnicodeString & FileName);
 
   void __fastcall File(TRemoteFile * File);
+};
+//---------------------------------------------------------------------------
+class TChecksumSessionAction : public TFileSessionAction
+{
+public:
+  __fastcall TChecksumSessionAction(TActionLog * Log);
+
+  void __fastcall Checksum(const UnicodeString & Alg, const UnicodeString & Checksum);
+};
+//---------------------------------------------------------------------------
+class TCwdSessionAction : public TSessionAction
+{
+public:
+  __fastcall TCwdSessionAction(TActionLog * Log, const UnicodeString & Path);
 };
 //---------------------------------------------------------------------------
 class TSessionLog : protected TStringList

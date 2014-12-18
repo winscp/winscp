@@ -6,7 +6,7 @@ object CopyDialog: TCopyDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CopyDialog'
-  ClientHeight = 189
+  ClientHeight = 225
   ClientWidth = 511
   Color = clBtnFace
   ParentFont = True
@@ -16,7 +16,7 @@ object CopyDialog: TCopyDialog
   OnShow = FormShow
   DesignSize = (
     511
-    189)
+    225)
   PixelsPerInch = 96
   TextHeight = 13
   object MoveImage: TImage
@@ -943,6 +943,29 @@ object CopyDialog: TCopyDialog
       Caption = 'CopyParamLabel'
       WordWrap = True
       OnClick = CopyParamGroupClick
+    end
+  end
+  object ShortCutHintPanel: TPanel
+    Left = 0
+    Top = 191
+    Width = 511
+    Height = 34
+    Align = alBottom
+    BevelOuter = bvNone
+    ParentBackground = False
+    TabOrder = 11
+    object ShortCutHintLabel: TLabel
+      Left = 12
+      Top = 3
+      Width = 490
+      Height = 28
+      AutoSize = False
+      Caption = 
+        'In Commander interface a keyboard shortcut F5 is used to transfe' +
+        'r files. Should you want to use it to refresh a file panel, clic' +
+        'k here to go to preferences.'
+      WordWrap = True
+      OnClick = ShortCutHintLabelClick
     end
   end
 end

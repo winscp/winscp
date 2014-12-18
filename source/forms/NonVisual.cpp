@@ -463,6 +463,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDQUEUE(ItemDown)
   UPDQUEUE(PauseAll)
   UPDQUEUE(ResumeAll)
+  UPDQUEUE(DeleteAll)
   UPDQUEUE(DeleteAllDone)
   #undef UPDQUEUE
   UPDEX(QueueItemSpeedAction, ScpExplorer->AllowQueueOperation(qoItemSpeed, &Param),
@@ -501,6 +502,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
   }
   ScpExplorer->BeforeAction();
 
+  bool ShortCutAction = (Action->ActionComponent == NULL);
 
   {
     TAutoNestingCounter Counter(FBusy);
@@ -531,7 +533,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(FileGenerateUrlAction, ScpExplorer->FileGenerateUrl())
     EXE(FileListFromClipboardAction, ScpExplorer->FileListFromClipboard())
     // local selected operation
-    EXE(LocalCopyAction, ScpExplorer->ExecuteFileOperationCommand(foCopy, osLocal, false))
+    EXE(LocalCopyAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, false, ShortCutAction))
     EXE(LocalRenameAction, ScpExplorer->ExecuteFileOperationCommand(foRename, osLocal, false))
     EXE(LocalEditAction, ScpExplorer->ExecuteFile(osLocal, efDefaultEditor, NULL, true, false))
     EXE(LocalMoveAction, ScpExplorer->ExecuteFileOperationCommand(foMove, osLocal, false))
@@ -540,10 +542,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(LocalPropertiesAction, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osLocal, false))
     EXE(LocalAddEditLinkAction, ScpExplorer->AddEditLink(osLocal, false))
     // local focused operation
-    EXE(LocalCopyFocusedAction, ScpExplorer->ExecuteFileOperationCommand(foCopy, osLocal, true))
+    EXE(LocalCopyFocusedAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, true, ShortCutAction))
     EXE(LocalMoveFocusedAction, ScpExplorer->ExecuteFileOperationCommand(foMove, osLocal, true))
     // remote selected operation
-    EXE(RemoteCopyAction, ScpExplorer->ExecuteFileOperationCommand(foCopy, osRemote, false))
+    EXE(RemoteCopyAction, ScpExplorer->ExecuteCopyOperationCommand(osRemote, false, ShortCutAction))
     EXE(RemoteRenameAction, ScpExplorer->ExecuteFileOperationCommand(foRename, osRemote, false))
     EXE(RemoteEditAction, ScpExplorer->ExecuteFile(osRemote, efDefaultEditor, NULL, true, false))
     EXE(RemoteMoveAction, ScpExplorer->ExecuteFileOperationCommand(foMove, osRemote, false))
@@ -554,7 +556,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(RemoteCopyToAction, ScpExplorer->ExecuteFileOperationCommand(foRemoteCopy, osCurrent, false))
     EXE(RemoteAddEditLinkAction, ScpExplorer->AddEditLink(osRemote, false))
     // remote focused operation
-    EXE(RemoteCopyFocusedAction, ScpExplorer->ExecuteFileOperationCommand(foCopy, osRemote, true))
+    EXE(RemoteCopyFocusedAction, ScpExplorer->ExecuteCopyOperationCommand(osRemote, true, ShortCutAction))
     EXE(RemoteMoveFocusedAction, ScpExplorer->ExecuteFileOperationCommand(foMove, osRemote, true))
     EXE(RemoteMoveToFocusedAction, ScpExplorer->ExecuteFileOperationCommand(foRemoteMove, osCurrent, true))
     EXE(RemoteCopyToFocusedAction, ScpExplorer->ExecuteFileOperationCommand(foRemoteCopy, osCurrent, true))
@@ -774,6 +776,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXEQUEUE(ItemDown)
     EXEQUEUE(PauseAll)
     EXEQUEUE(ResumeAll)
+    EXEQUEUE(DeleteAll)
     EXEQUEUE(DeleteAllDone)
     #undef EXEQUEUE
     EXE(QueueToggleShowAction, ScpExplorer->ToggleQueueVisibility())
@@ -1391,12 +1394,9 @@ void __fastcall TNonVisualDataModule::CreateEditorListMenu(TAction * Action, boo
 
     AddMenuSeparator(Menu);
 
-    TStringList * UsedEditors = new TStringList();
+    TStringList * UsedEditors = CreateSortedStringList();
     try
     {
-      UsedEditors->CaseSensitive = false;
-      UsedEditors->Sorted = true;
-
       const TEditorList * EditorList = WinConfiguration->EditorList;
       for (int Index = 0; Index < EditorList->Count; Index++)
       {

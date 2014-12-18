@@ -401,6 +401,7 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem50;
   TTBXItem *TBXItem135;
   TTBXItem *TBXItem141;
+  TTBXItem *TBXItem142;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -493,7 +494,7 @@ protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
-    bool DragDrop);
+    bool DragDrop, int Options);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall RestoreFormParams();

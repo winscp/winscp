@@ -108,17 +108,17 @@ UnicodeString MakeValidFileName(UnicodeString FileName)
 //---------------------------------------------------------------------------
 UnicodeString RootKeyToStr(HKEY RootKey)
 {
-  if (RootKey == HKEY_USERS) return L"HKEY_USERS";
+  if (RootKey == HKEY_USERS) return L"HKU";
     else
-  if (RootKey == HKEY_LOCAL_MACHINE) return L"HKEY_LOCAL_MACHINE";
+  if (RootKey == HKEY_LOCAL_MACHINE) return L"HKLM";
     else
-  if (RootKey == HKEY_CURRENT_USER) return L"HKEY_CURRENT_USER";
+  if (RootKey == HKEY_CURRENT_USER) return L"HKCU";
     else
-  if (RootKey == HKEY_CLASSES_ROOT) return L"HKEY_CLASSES_ROOT";
+  if (RootKey == HKEY_CLASSES_ROOT) return L"HKCR";
     else
-  if (RootKey == HKEY_CURRENT_CONFIG) return L"HKEY_CURRENT_CONFIG";
+  if (RootKey == HKEY_CURRENT_CONFIG) return L"HKCC";
     else
-  if (RootKey == HKEY_DYN_DATA) return L"HKEY_DYN_DATA";
+  if (RootKey == HKEY_DYN_DATA) return L"HKDD";
     else
   {  Abort(); return L""; };
 }
@@ -2465,3 +2465,40 @@ int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr)
   return IndexStr(MonthStr, FormatSettings.ShortMonthNames, FormatSettings.ShortMonthNames.Size()) + 1;
 }
 //---------------------------------------------------------------------------
+TStringList * __fastcall CreateSortedStringList(bool CaseSensitive, System::Types::TDuplicates Duplicates)
+{
+  TStringList * Result = new TStringList();
+  Result->CaseSensitive = CaseSensitive;
+  Result->Duplicates = Duplicates;
+  return Result;
+}
+//---------------------------------------------------------------------------
+static UnicodeString __fastcall NormalizeIdent(UnicodeString Ident)
+{
+  int Index = 1;
+  while (Index <= Ident.Length())
+  {
+    if (Ident[Index] == L'-')
+    {
+      Ident.Delete(Index, 1);
+    }
+    else
+    {
+      Index++;
+    }
+  }
+  return Ident;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents)
+{
+  UnicodeString NormalizedIdent(NormalizeIdent(Ident));
+  for (int Index = 0; Index < Idents->Count; Index++)
+  {
+    if (SameText(NormalizedIdent, NormalizeIdent(Idents->Strings[Index])))
+    {
+      return Idents->Strings[Index];
+    }
+  }
+  return Ident;
+}

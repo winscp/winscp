@@ -17,6 +17,9 @@ namespace WinSCP
         public DateTime LastWriteTime { get; internal set; }
         public FilePermissions FilePermissions { get; internal set; }
 
+        public string Owner { get; internal set; }
+        public string Group { get; internal set; }
+
         public bool IsDirectory { get { return (Char.ToUpper(FileType, CultureInfo.InvariantCulture) == 'D'); } }
 
         internal RemoteFileInfo()

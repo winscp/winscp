@@ -114,12 +114,14 @@ struct TTransferOperationParam
   UnicodeString TargetDirectory;
   bool Temp;
   bool DragDrop;
+  int Options;
 };
 //---------------------------------------------------------------------------
 TTransferOperationParam::TTransferOperationParam()
 {
   Temp = false;
   DragDrop = false;
+  Options = 0;
 }
 //---------------------------------------------------------------------------
 class TTransferPresetNoteData : public TObject
@@ -534,7 +536,7 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged()
   {
     // this has to be set only after the tab is switched from TerminalListChanged,
     // otherwise we are changing color of wrong tab
-    SessionColor = ManagedTerminal->Color;
+    SessionColor = (TColor)ManagedTerminal->StateData->Color;
   }
 
   UpdateTransferList();
@@ -970,7 +972,7 @@ void __fastcall TCustomScpExplorerForm::EnableDDTransferConfirmation(TObject * /
 bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
   TTransferDirection Direction, TTransferType Type, bool Temp,
   TStrings * FileList, UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam,
-  bool Confirm, bool DragDrop)
+  bool Confirm, bool DragDrop, int Options)
 {
   bool Result = true;
   assert(Terminal && Terminal->Active);
@@ -1000,7 +1002,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
     bool DisableNewerOnly =
       (!Terminal->IsCapable[fcNewerOnlyUpload] && (Direction == tdToRemote)) ||
       ToTemp;
-    int Options =
+    Options |=
       FLAGMASK(ToTemp, coTemp) |
       coDoNotShowAgain;
     TUsableCopyParamAttrs UsableCopyParamAttrs = Terminal->UsableCopyParamAttrs(Params);
@@ -2020,6 +2022,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
       UnicodeString TargetDirectory;
       bool Temp = false;
       bool DragDrop = false;
+      int Options = 0;
       if (Param != NULL)
       {
         TTransferOperationParam& TParam =
@@ -2027,11 +2030,12 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
         TargetDirectory = TParam.TargetDirectory;
         Temp = TParam.Temp;
         DragDrop = TParam.DragDrop;
+        Options = TParam.Options;
       }
       TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
       Result =
         CopyParamDialog(Direction, Type, Temp, FileList, TargetDirectory,
-          CopyParam, !NoConfirmation, DragDrop);
+          CopyParam, !NoConfirmation, DragDrop, Options);
       if (Result)
       {
         assert(Terminal);
@@ -2289,6 +2293,20 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperationCommand(
       }
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ExecuteCopyOperationCommand(
+  TOperationSide Side, bool OnFocused, bool ShortCutHint)
+{
+  TTransferOperationParam Param;
+  if ((WinConfiguration->Interface != ifCommander) ||
+      WinConfiguration->ScpCommander.ExplorerKeyboardShortcuts)
+  {
+    ShortCutHint = false;
+  }
+  Param.Options =
+    FLAGMASK(ShortCutHint, coShortCutHint);
+  ExecuteFileOperationCommand(foCopy, Side, OnFocused, false, &Param);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList)
@@ -3319,7 +3337,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TTerminal *& Sessio
     else
     {
       assert(Terminal != NULL);
-      // update Terminal->RemoteDirectory
+      // update Terminal->StateData->RemoteDirectory
       UpdateTerminal(Terminal);
       TStrings * Sessions = TTerminalManager::Instance()->TerminalList;
       TStrings * Directories = new TStringList;
@@ -3329,7 +3347,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TTerminal *& Sessio
         {
           TManagedTerminal * Terminal =
             dynamic_cast<TManagedTerminal *>(Sessions->Objects[Index]);
-          Directories->Add(Terminal->RemoteDirectory);
+          Directories->Add(Terminal->StateData->RemoteDirectory);
         }
 
         TDirectRemoteCopy AllowDirectCopy;
@@ -3687,6 +3705,10 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
           AllowedAction(Action, aaShortCut))
       {
         Key = 0;
+        // Reset reference to previous component (when menu/toolbar was clicked).
+        // Needed to detect that action was invoked by keyboard shortcut
+        // in TNonVisualDataModule::ExplorerActionsExecute
+        Action->ActionComponent = NULL;
         Action->Execute();
         return;
       }
@@ -4788,14 +4810,12 @@ TObjectList * __fastcall TCustomScpExplorerForm::DoCollectWorkspace()
   TTerminalManager * Manager = TTerminalManager::Instance();
   std::unique_ptr<TObjectList> DataList(new TObjectList());
 
-  Manager->SaveWorkspace(DataList.get());
-
-  TSessionData * ActiveTerminalSessionData =
-    NOT_NULL(dynamic_cast<TSessionData *>(DataList->Items[Manager->ActiveTerminalIndex]));
-  if (ActiveTerminalSessionData->Link.IsEmpty())
+  if (ALWAYS_TRUE(Terminal != NULL))
   {
-    UpdateSessionData(ActiveTerminalSessionData);
+    // Update (Managed)Terminal->StateData
+    UpdateTerminal(Terminal);
   }
+  Manager->SaveWorkspace(DataList.get());
 
   return DataList.release();
 }
@@ -4917,7 +4937,7 @@ bool __fastcall TCustomScpExplorerForm::SaveWorkspace(bool EnableAutoSave)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateTerminal(TTerminal * Terminal)
 {
-  TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(FTerminal);
+  TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
   assert(ManagedTerminal != NULL);
 
   SAFE_DESTROY(ManagedTerminal->RemoteExplorerState);
@@ -4927,27 +4947,18 @@ void __fastcall TCustomScpExplorerForm::UpdateTerminal(TTerminal * Terminal)
     ManagedTerminal->RemoteExplorerState = RemoteDirView->SaveState();
   }
 
-  // cannot use RemoteDirView->Path, because it is empty if connection
-  // was already closed
-  // also only peek, we may not be connected at all atm,
-  // so make sure we do not try retrieving current directory from the server
-  // (particularly with FTP)
-  UnicodeString ACurrentDirectory = Terminal->PeekCurrentDirectory();
-  if (!ACurrentDirectory.IsEmpty())
-  {
-    ManagedTerminal->RemoteDirectory = ACurrentDirectory;
-  }
-  ManagedTerminal->Color = SessionColor;
+  UpdateSessionData(ManagedTerminal->StateData);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateSessionData(TSessionData * Data)
 {
+  // Keep in sync with TSessionData::CopyStateData
+
   assert(Data != NULL);
 
   // cannot use RemoteDirView->Path, because it is empty if connection
   // was already closed
   // also only peek, we may not be connected at all atm
-  // (well this can hardly be true here, as opposite to UpdateTerminal above),
   // so make sure we do not try retrieving current directory from the server
   // (particularly with FTP)
   UnicodeString ACurrentDirectory = Terminal->PeekCurrentDirectory();
@@ -5035,15 +5046,11 @@ void __fastcall TCustomScpExplorerForm::AddBookmark(TOperationSide Side)
 //---------------------------------------------------------------------------
 TStrings * __fastcall TCustomScpExplorerForm::CreateVisitedDirectories(TOperationSide Side)
 {
-  TStringList * VisitedDirectories = new TStringList();
+  // we should better use TCustomDirView::FCaseSensitive, but it is private
+  TStringList * VisitedDirectories = CreateSortedStringList((Side == osRemote));
   try
   {
     TCustomDirView * DView = DirView(Side);
-
-    VisitedDirectories->Duplicates = Types::dupIgnore;
-    // we should better use TCustomDirView::FCaseSensitive, but it is private
-    VisitedDirectories->CaseSensitive = (Side == osRemote);
-    VisitedDirectories->Sorted = true;
 
     for (int Index = -DView->BackCount; Index <= DView->ForwardCount; Index++)
     {
@@ -5451,7 +5458,7 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
     if (ALWAYS_TRUE(ManagedTerminal != NULL))
     {
       TColor Color =
-        (ManagedTerminal == FTerminal) ? FSessionColor : ManagedTerminal->Color;
+        (ManagedTerminal == FTerminal) ? FSessionColor : ManagedTerminal->StateData->Color;
 
       TabSheet->ImageIndex = AddSessionColor(Color);
 
@@ -6280,9 +6287,10 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
     TGUICopyParamType CopyParams = GUIConfiguration->CurrentCopyParam;
     // empty directory parameter means temp directory -> don't display it!
     UnicodeString TargetDir = L"";
+    int Options = 0;
 
     if (!CopyParamDialog(tdToLocal, Type, true, FDDFileList,
-          TargetDir, CopyParams, (WinConfiguration->DDTransferConfirmation != asOff), true))
+          TargetDir, CopyParams, (WinConfiguration->DDTransferConfirmation != asOff), true, Options))
     {
       Abort();
     }
@@ -6324,11 +6332,20 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
 void __fastcall TCustomScpExplorerForm::DDDownload(TStrings * FilesToCopy,
   const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params)
 {
-  UpdateCopyParamCounters(*CopyParam);
-  Terminal->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params);
-  if (FLAGSET(Params, cpDelete) && (DropSourceControl == RemoteDriveView))
+  void * BatchStorage;
+  BatchStart(BatchStorage);
+  try
   {
-    RemoteDriveView->UpdateDropSource();
+    UpdateCopyParamCounters(*CopyParam);
+    Terminal->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params);
+    if (FLAGSET(Params, cpDelete) && (DropSourceControl == RemoteDriveView))
+    {
+      RemoteDriveView->UpdateDropSource();
+    }
+  }
+  __finally
+  {
+    BatchEnd(BatchStorage);
   }
 }
 //---------------------------------------------------------------------------
@@ -7407,6 +7424,10 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       M->Result = 1;
       break;
 
+    case WM_WANTS_MOUSEWHEEL:
+      M->Result = 1;
+      break;
+
     default:
       TForm::Dispatch(Message);
       break;
@@ -8206,24 +8227,12 @@ void __fastcall TCustomScpExplorerForm::DisplaySystemContextMenu()
   FAIL;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomScpExplorerForm::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
+Boolean __fastcall TCustomScpExplorerForm::AllowedAction(TAction * /*Action*/, TActionAllowed Allowed)
 {
-  bool Result = Active;
-  if (Result)
-  {
-    TPoint Point(LOWORD(LParam), HIWORD(LParam));
-    TWinControl * Control = FindVCLWindow(Point);
-    Result = (Control != NULL);
-    if (Result)
-    {
-      TCustomForm * Form = ValidParentForm(Control);
-      Result = (Form == this);
-      if (Result)
-      {
-        SendMessage(Control->Handle, WM_MOUSEWHEEL, WParam, LParam);
-      }
-    }
-  }
-  return Result;
+  // While the window is disabled, we still seem to process menu shortcuts at least,
+  // so stop it at least here
+  return
+    (Allowed == aaUpdate) ||
+    (FLockLevel == 0);
 }
 //---------------------------------------------------------------------------

@@ -88,12 +88,12 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
-            AutoSize = True
             Caption = 'Item'
+            Width = 150
           end
           item
-            AutoSize = True
             Caption = 'Value'
+            Width = 150
           end>
         ColumnClick = False
         DoubleBuffered = True
@@ -184,12 +184,12 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
-            AutoSize = True
             Caption = 'Item'
+            Width = 150
           end
           item
-            AutoSize = True
             Caption = 'Value'
+            Width = 150
           end>
         ColumnClick = False
         DoubleBuffered = True
@@ -225,12 +225,12 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
-            AutoSize = True
             Caption = 'Item'
+            Width = 150
           end
           item
-            AutoSize = True
             Caption = 'Value'
+            Width = 150
           end>
         ColumnClick = False
         DoubleBuffered = True
@@ -242,6 +242,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         TabOrder = 2
         ViewStyle = vsReport
         OnContextPopup = ControlContextPopup
+        OnCustomDrawItem = SpaceAvailableViewCustomDrawItem
       end
       object SpaceAvailablePathEdit: TEdit
         Left = 56

@@ -521,10 +521,8 @@ bool __fastcall TCopyParamList::GetAnyRule() const
 __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
 {
   SetInitialLocale(0);
-  FLocales = new TStringList();
+  FLocales = CreateSortedStringList();
   FLastLocalesExts = L"*";
-  dynamic_cast<TStringList*>(FLocales)->Sorted = true;
-  dynamic_cast<TStringList*>(FLocales)->CaseSensitive = false;
   FCopyParamList = new TCopyParamList();
   CoreSetResourceModule(GetResourceModule());
   // allow loading configured locale, DetectScalingType needs to get called
@@ -948,12 +946,9 @@ void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)
 TStrings * __fastcall TGUIConfiguration::GetLocales()
 {
   UnicodeString LocalesExts;
-  TStringList * Exts = new TStringList();
+  TStringList * Exts = CreateSortedStringList();
   try
   {
-    Exts->Sorted = true;
-    Exts->CaseSensitive = false;
-
     int FindAttrs = faReadOnly | faArchive;
     TSearchRecChecked SearchRec;
     bool Found;

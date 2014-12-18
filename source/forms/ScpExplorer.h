@@ -296,6 +296,7 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem37;
   TTBXItem *TBXItem144;
   TTBXItem *TBXItem148;
+  TTBXItem *TBXItem154;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
@@ -316,7 +317,7 @@ protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
-    bool DragDrop);
+    bool DragDrop, int Options);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall ConfigurationChanged();

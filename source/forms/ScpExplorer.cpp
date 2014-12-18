@@ -134,7 +134,7 @@ void __fastcall TScpExplorerForm::StoreParams()
 bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, Boolean Temp, TStrings * FileList,
   UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
-  bool DragDrop)
+  bool DragDrop, int Options)
 {
   // Temp means d&d here so far, may change in future!
   if ((Direction == tdToLocal) && !Temp && TargetDirectory.IsEmpty())
@@ -142,7 +142,8 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
     TargetDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   }
   bool Result = TCustomScpExplorerForm::CopyParamDialog(
-    Direction, Type, Temp, FileList, TargetDirectory, CopyParam, Confirm, DragDrop);
+    Direction, Type, Temp, FileList, TargetDirectory, CopyParam, Confirm,
+    DragDrop, Options);
   if (Result && (Direction == tdToLocal) && !Temp)
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = TargetDirectory;
@@ -168,6 +169,7 @@ bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed
   }
   #define FLAG ((TActionFlag)(Action->Tag))
   return
+    TCustomScpExplorerForm::AllowedAction(Action, Allowed) &&
     // always require Explorer flag
     (FLAG & afExplorer) &&
     // if action is execution or update, we don't require any other flag

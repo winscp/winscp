@@ -76,6 +76,7 @@ __fastcall TCopyDialog::TCopyDialog(
 
   HotTrackLabel(CopyParamLabel);
   CopyParamListButton(TransferSettingsButton);
+  HotTrackLabel(ShortCutHintLabel);
 
   UseSystemSettings(this);
 }
@@ -218,7 +219,14 @@ void __fastcall TCopyDialog::AdjustControls()
   if (FLAGCLEAR(FOptions, coDoNotShowAgain))
   {
     NeverShowAgainCheck->Visible = false;
-    ClientHeight = NeverShowAgainCheck->Top;
+    ClientHeight = ClientHeight -
+      (ShortCutHintPanel->Top - NeverShowAgainCheck->Top);
+  }
+
+  if (FLAGCLEAR(FOptions, coShortCutHint) || CustomWinConfiguration->CopyShortCutHintShown)
+  {
+    ShortCutHintPanel->Visible = false;
+    ClientHeight = ClientHeight - ShortCutHintPanel->Height;
   }
 
   UpdateControls();
@@ -359,6 +367,8 @@ void __fastcall TCopyDialog::FormShow(TObject * /*Sender*/)
 
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
+  // Does not work when set from a contructor
+  ShortCutHintPanel->Color = Application->HintColor;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyDialog::Execute()
@@ -381,6 +391,11 @@ bool __fastcall TCopyDialog::Execute()
       DirectoryEdit->SaveToHistory();
       CustomWinConfiguration->History[FToRemote ?
         L"RemoteTarget" : L"LocalTarget"] = DirectoryEdit->Items;
+
+      if (FLAGSET(FOptions, coShortCutHint))
+      {
+        CustomWinConfiguration->CopyShortCutHintShown = true;
+      }
     }
     __finally
     {
@@ -534,5 +549,10 @@ void __fastcall TCopyDialog::NeverShowAgainCheckClick(TObject * /*Sender*/)
 {
   FSaveSettings = NeverShowAgainCheck->Checked;
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::ShortCutHintLabelClick(TObject * /*Sender*/)
+{
+  DoPreferencesDialog(pmCommander);
 }
 //---------------------------------------------------------------------------

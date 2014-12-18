@@ -624,15 +624,6 @@ void __fastcall TLoginDialog::UpdateControls()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::DefaultButton(TButton * Button, bool Default)
-{
-  // default property setter does not have guard for "the same value"
-  if (Button->Default != Default)
-  {
-    Button->Default = Default;
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateButtonVisibility(TButton * Button)
 {
   TAction * Action = NOT_NULL(dynamic_cast<TAction *>(Button->Action));
@@ -1251,7 +1242,7 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
   FSortEnablePending = true;
   // Not calling LoadState here.
   // It's redundant and does not work anyway, see comment in the method.
-  bool Result = IsDefaultResult(ShowModal());
+  bool Result = (ShowModal() == DefaultResult());
   SaveState();
   if (Result)
   {
@@ -1332,13 +1323,10 @@ void __fastcall TLoginDialog::SaveState()
 {
   assert(WinConfiguration != NULL);
 
-  TStringList * OpenedStoredSessionFolders = new TStringList();
+  TStringList * OpenedStoredSessionFolders = CreateSortedStringList();
   WinConfiguration->BeginUpdate();
   try
   {
-    OpenedStoredSessionFolders->CaseSensitive = false;
-    OpenedStoredSessionFolders->Sorted = true;
-
     for (int Index = 0; Index < SessionTree->Items->Count; Index++)
     {
       SaveOpenedStoredSessionFolders(
@@ -1395,11 +1383,9 @@ void __fastcall TLoginDialog::LoadState()
     }
   }
 
-  TStringList * OpenedStoredSessionFolders = new TStringList();
+  TStringList * OpenedStoredSessionFolders = CreateSortedStringList();
   try
   {
-    OpenedStoredSessionFolders->CaseSensitive = false;
-    OpenedStoredSessionFolders->Sorted = true;
     OpenedStoredSessionFolders->CommaText = WinConfiguration->OpenedStoredSessionFolders;
 
     for (int Index = 0; Index < SessionTree->Items->Count; Index++)
@@ -1589,6 +1575,10 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
     // caption managed in TLoginDialog::Init()
     M->Result = 1;
   }
+  else if (M->Msg == WM_WANTS_MOUSEWHEEL)
+  {
+    M->Result = 1;
+  }
   else if (M->Msg == CM_ACTIVATE)
   {
     // Called from TCustomForm.ShowModal
@@ -1738,21 +1728,18 @@ void __fastcall TLoginDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::IsDefaultResult(TModalResult Result)
+TModalResult __fastcall TLoginDialog::DefaultResult()
 {
-  return
-    // When editing or when hostname-less site is selected,
-    // there's no default button, so make sure we do not call DefaultResult
-    (FindDefaultButton(this) != NULL) &&
-    (FindDefaultButton(this)->ModalResult != mrNone) &&
-    (Result == DefaultResult(this));
+  return ::DefaultResult(this, LoginButton);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & CanClose)
 {
+  // CanClose test is now probably redundant,
+  // once we have a fallback to LoginButton in DefaultResult
   CanClose = EnsureNotEditing();
-  if (CanClose && IsDefaultResult(ModalResult))
+  if (CanClose && (ModalResult == DefaultResult()))
   {
     SaveDataList(FDataList);
   }

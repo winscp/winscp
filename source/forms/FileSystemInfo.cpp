@@ -206,9 +206,9 @@ void __fastcall TFileSystemInfoDialog::FeedControls()
 {
   FLastFeededControl = NULL;
   Feed(ControlsAddItem);
-  AdjustListColumnsWidth(ServerView);
-  AdjustListColumnsWidth(ProtocolView);
-  AdjustListColumnsWidth(SpaceAvailableView);
+  AutoSizeListColumnsWidth(ServerView, 1);
+  AutoSizeListColumnsWidth(ProtocolView, 1);
+  AutoSizeListColumnsWidth(SpaceAvailableView, 1);
 }
 //---------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::UpdateControls()
@@ -372,5 +372,14 @@ void __fastcall TFileSystemInfoDialog::CertificateViewButtonClick(
   TObject * /*Sender*/)
 {
   MessageDialog(FSessionInfo.Certificate, qtInformation, qaOK);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileSystemInfoDialog::SpaceAvailableViewCustomDrawItem(
+  TCustomListView * Sender, TListItem * Item, TCustomDrawState /*State*/, bool & /*DefaultDraw*/)
+{
+  if ((Item->SubItems->Count >= 1) && (Item->SubItems->Strings[0] == LoadStr(FSINFO_BYTES_UNKNOWN)))
+  {
+    Sender->Canvas->Font->Color = clGrayText;
+  }
 }
 //---------------------------------------------------------------------------

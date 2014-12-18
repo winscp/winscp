@@ -721,13 +721,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 200
+          Height = 224
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             393
-            200)
+            224)
           object Label25: TLabel
             Left = 12
             Top = 42
@@ -767,6 +767,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Height = 13
             Caption = '&Account:'
             FocusControl = FtpAccountEdit
+          end
+          object Label3: TLabel
+            Left = 12
+            Top = 196
+            Width = 232
+            Height = 13
+            Caption = 'Use &HOST command to select host on the server'
+            FocusControl = FtpHostCombo
           end
           object PostLoginCommandsMemo: TMemo
             Left = 12
@@ -816,6 +824,16 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             MaxLength = 100
             TabOrder = 0
             Text = 'FtpAccountEdit'
+            OnChange = DataChange
+          end
+          object FtpHostCombo: TComboBox
+            Left = 320
+            Top = 191
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 5
             OnChange = DataChange
           end
         end

@@ -327,6 +327,8 @@ void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
       // trigger on change event, even if no change actually occurred to
       // allow parent form to visualize feedback of an action
       DoChange();
+      // Update octal edit in RightsExt even if it has focus
+      ForceUpdate();
       Changed = false;
     }
     else

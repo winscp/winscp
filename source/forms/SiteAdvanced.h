@@ -250,6 +250,8 @@ __published:
   TGroupBox *NoteGroup;
   TMemo *NoteMemo;
   TCheckBox *TimeDifferenceAutoCheck;
+  TLabel *Label3;
+  TComboBox *FtpHostCombo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

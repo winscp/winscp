@@ -1178,38 +1178,13 @@ begin
     // installation. double check that ssPostInstall was called
     if InstallationDone then
     begin
+      Path := ExpandConstant('{app}\{#MainFileName}');
+
       CanPostInstallRuns := (not WizardSilent) and (not WillRestart);
-      if CanPostInstallRuns then
-      begin
-        OpenGettingStarted :=
-          OpenGettingStartedCheckbox.Enabled and
-           OpenGettingStartedCheckbox.Checked;
 
-        if OpenGettingStarted then
-        begin
-          WebGettingStarted :=
-            ExpandConstant('{#WebGettingStarted}') + PrevVersion;
-          Log('Opening getting started page: ' + WebGettingStarted);
-          OpenBrowser(WebGettingStarted);
-        end;
-
-        if LaunchCheckbox.Checked then
-        begin
-          if OpenGettingStarted then
-          begin
-            Log('Will launch WinSCP minimized');
-            ShowCmd := SW_SHOWMINIMIZED
-          end
-            else
-          begin
-            ShowCmd := SW_SHOWNORMAL;
-          end;
-
-          Log('Launching WinSCP');
-          Path := ExpandConstant('{app}\{#MainFileName}');
-          ExecAsOriginalUser(Path, '', '', ShowCmd, ewNoWait, ErrorCode)
-        end;
-      end;
+      OpenGettingStarted :=
+        OpenGettingStartedCheckbox.Enabled and
+         OpenGettingStartedCheckbox.Checked;
 
       UsageData := '/Usage=';
       
@@ -1253,8 +1228,40 @@ begin
       if Donated then
         UsageData := UsageData + 'InstallationsDonate+,';
 
+      // have to do this before running WinSCP GUI instance below,
+      // otherwise it loads the empty/previous counters and overwrites our changes,
+      // when it's closed
       Log('Recording installer usage statistics: ' + UsageData);
-      Exec(ExpandConstant('{app}\WinSCP.exe'), UsageData, '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
+      // make sure we write the counters using the "normal" account
+      // (the account that will be used to report the counters)
+      ExecAsOriginalUser(Path, UsageData, '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
+
+      if CanPostInstallRuns then
+      begin
+        if OpenGettingStarted then
+        begin
+          WebGettingStarted :=
+            ExpandConstant('{#WebGettingStarted}') + PrevVersion;
+          Log('Opening getting started page: ' + WebGettingStarted);
+          OpenBrowser(WebGettingStarted);
+        end;
+
+        if LaunchCheckbox.Checked then
+        begin
+          if OpenGettingStarted then
+          begin
+            Log('Will launch WinSCP minimized');
+            ShowCmd := SW_SHOWMINIMIZED
+          end
+            else
+          begin
+            ShowCmd := SW_SHOWNORMAL;
+          end;
+
+          Log('Launching WinSCP');
+          ExecAsOriginalUser(Path, '', '', ShowCmd, ewNoWait, ErrorCode)
+        end;
+      end;
     end;
   end;
 end;

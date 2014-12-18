@@ -372,7 +372,8 @@ void __fastcall TSecureShell::Open()
     try
     {
       InitError = FBackend->init(this, &FBackendHandle, conf,
-        AnsiString(FSessionData->HostNameExpanded).c_str(), FSessionData->PortNumber, &RealHost, 0,
+        AnsiString(FSessionData->HostNameExpanded).c_str(), FSessionData->PortNumber, &RealHost,
+        (FSessionData->TcpNoDelay ? 1 : 0),
         conf_get_int(conf, CONF_tcp_keepalives));
     }
     __finally
@@ -708,6 +709,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
   }
   else if (Index == 7)
   {
+    // Can be tested with WS_FTP server
     static const TPuttyTranslation NewPasswordPromptTranslation[] = {
       { L"Current password (blank for previously entered password): ", NEW_PASSWORD_CURRENT_PROMPT },
       { L"Enter new password: ", NEW_PASSWORD_NEW_PROMPT },
@@ -1165,7 +1167,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
         "need to send at least another %u bytes",
         (BufSize, BufSize - MAX_BUFSIZE)));
     }
-    EventSelectLoop(100, false, NULL);
+    EventSelectLoop(100, false, true, NULL);
     BufSize = FBackend->sendbuffer(FBackendHandle);
     if (Configuration->ActualLogProtocol >= 1)
     {
@@ -1210,7 +1212,7 @@ void __fastcall TSecureShell::Send(const unsigned char * Buf, Integer Len)
   }
   FLastDataSent = Now();
   // among other forces receive of pending data to free the servers's send buffer
-  EventSelectLoop(0, false, NULL);
+  EventSelectLoop(0, false, true, NULL);
 
   if (BufSize > MAX_BUFSIZE)
   {
@@ -1607,7 +1609,7 @@ void __fastcall TSecureShell::PoolForData(WSANETWORKEVENTS & Events, unsigned in
       // in extreme condition it may happen that send buffer is full, but there
       // will be no data coming and we may not empty the send buffer because we
       // do not process FD_WRITE until we receive any FD_READ
-      if (EventSelectLoop(0, false, &Events))
+      if (EventSelectLoop(0, false, true, &Events))
       {
         LogEvent(L"Data has arrived, closing query to user.");
         Result = qaOK;
@@ -1657,7 +1659,7 @@ void __fastcall TSecureShell::WaitForData()
       LogEvent(L"Looking for incoming data");
     }
 
-    IncomingData = EventSelectLoop(FSessionData->Timeout * MSecsPerSec, true, NULL);
+    IncomingData = EventSelectLoop(FSessionData->Timeout * MSecsPerSec, true, true, NULL);
     if (!IncomingData)
     {
       assert(FWaitingForData == 0);
@@ -1788,7 +1790,7 @@ bool __fastcall TSecureShell::ProcessNetworkEvents(SOCKET Socket)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventRequired,
-  WSANETWORKEVENTS * Events)
+  bool DoProcessGUI, WSANETWORKEVENTS * Events)
 {
   CheckConnection();
 
@@ -1820,7 +1822,10 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
         unsigned int TimeoutStep = std::min(GUIUpdateInterval, Timeout);
         Timeout -= TimeoutStep;
         WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, TimeoutStep);
-        ProcessGUI();
+        if (DoProcessGUI)
+        {
+          ProcessGUI();
+        }
       } while ((WaitResult == WAIT_TIMEOUT) && (Timeout > 0));
 
       if (WaitResult < WAIT_OBJECT_0 + HandleCount)
@@ -1917,7 +1922,9 @@ void __fastcall TSecureShell::Idle(unsigned int MSec)
   // do not read here, otherwise we swallow read event and never wake
   if (FWaitingForData <= 0)
   {
-    EventSelectLoop(MSec, false, NULL);
+    // do not process GUI here, as we are called from GUI loop and may
+    // recurse for good
+    EventSelectLoop(MSec, false, false, NULL);
   }
 }
 //---------------------------------------------------------------------------
@@ -2298,6 +2305,30 @@ void __fastcall TSecureShell::CollectUsage()
   else if (SshImplementation == sshiTitan)
   {
     Configuration->Usage->Inc(L"OpenedSessionsSSHTitan");
+  }
+  else if (ContainsText(FSessionInfo.SshImplementation, L"Serv-U"))
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSHServU");
+  }
+  else if (ContainsText(FSessionInfo.SshImplementation, L"CerberusFTPServer"))
+  {
+    // Ntb, Cerberus can also be detected using vendor-id extension
+    // Cerberus FTP Server 7.0.5.3 (70005003) by Cerberus, LLC
+    Configuration->Usage->Inc(L"OpenedSessionsSSHCerberus");
+  }
+  else if (ContainsText(FSessionInfo.SshImplementation, L"WS_FTP"))
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSHWSFTP");
+  }
+  // SSH-2.0-1.36_sshlib GlobalSCAPE
+  else if (ContainsText(FSessionInfo.SshImplementation, L"GlobalSCAPE"))
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSHGlobalScape");
+  }
+  // SSH-2.0-CompleteFTP-8.1.3
+  else if (ContainsText(FSessionInfo.SshImplementation, L"CompleteFTP"))
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSHComplete");
   }
   else
   {

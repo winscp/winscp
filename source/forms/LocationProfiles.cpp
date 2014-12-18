@@ -191,14 +191,8 @@ __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner)
   FSharedBookmarkList = new TBookmarkList();
   FChanging = false;
 
-  FSessionFolders = new TStringList;
-  FSessionFolders->CaseSensitive = false;
-  FSessionFolders->Sorted = true;
-  FSessionFolders->Duplicates = Types::dupIgnore;
-  FSharedFolders = new TStringList;
-  FSharedFolders->CaseSensitive = false;
-  FSharedFolders->Sorted = true;
-  FSharedFolders->Duplicates = Types::dupIgnore;
+  FSessionFolders = CreateSortedStringList();
+  FSharedFolders = CreateSortedStringList();
 
   FSessionScrollOnDragOver = new TTreeViewScrollOnDragOver(SessionProfilesView, true);
   FSharedScrollOnDragOver = new TTreeViewScrollOnDragOver(SharedProfilesView, true);

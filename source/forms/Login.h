@@ -340,7 +340,6 @@ private:
   TTreeNode * __fastcall FindSessionNode(TSessionData * SessionData, bool ByName);
   void __fastcall UpdateButtonVisibility(TButton * Button);
   void __fastcall Idle();
-  void __fastcall DefaultButton(TButton * Button, bool Default);
   TSessionData * __fastcall GetEditingSessionData();
   void __fastcall SaveAsSession(bool ForceDialog);
   void __fastcall InvalidateSessionData();
@@ -358,6 +357,7 @@ private:
   void __fastcall ParseUrl(const UnicodeString & Url);
   void __fastcall ParseHostName();
   void __fastcall ResetNewSiteData();
+  TModalResult __fastcall DefaultResult();
 
 protected:
   void __fastcall Default();

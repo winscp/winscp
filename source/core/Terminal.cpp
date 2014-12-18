@@ -76,8 +76,7 @@ private:
 //---------------------------------------------------------------------------
 __fastcall TLoopDetector::TLoopDetector()
 {
-  FVisitedDirectories.reset(new TStringList());
-  FVisitedDirectories->Sorted = true;
+  FVisitedDirectories.reset(CreateSortedStringList());
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoopDetector::RecordVisitedDirectory(const UnicodeString & Directory)
@@ -548,6 +547,34 @@ void __fastcall TCallbackGuard::Verify()
       throw ESshFatal(FFatalError, L"");
     }
   }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TRobustOperationLoop::TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress) :
+  FTerminal(Terminal),
+  FOperationProgress(OperationProgress),
+  FRetry(false)
+{
+}
+//---------------------------------------------------------------------------
+bool TRobustOperationLoop::TryReopen(Exception & E)
+{
+  FRetry =
+    !FTerminal->Active &&
+    FTerminal->QueryReopen(&E, ropNoReadDirectory, FOperationProgress);
+  return FRetry;
+}
+//---------------------------------------------------------------------------
+bool TRobustOperationLoop::ShouldRetry()
+{
+  return FRetry;
+}
+//---------------------------------------------------------------------------
+bool TRobustOperationLoop::Retry()
+{
+  bool Result = FRetry;
+  FRetry = false;
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -2603,7 +2630,25 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
 {
   assert(FileList);
   assert(FFileSystem);
-  FFileSystem->ReadDirectory(FileList);
+
+  TRobustOperationLoop RobustLoop(this, OperationProgress);
+
+  do
+  {
+    try
+    {
+      FFileSystem->ReadDirectory(FileList);
+    }
+    catch (Exception & E)
+    {
+      if (!RobustLoop.TryReopen(E))
+      {
+        throw;
+      }
+    }
+   }
+  while (RobustLoop.Retry());
+
 
   if (Log->Logging)
   {
@@ -3398,10 +3443,6 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
           DoCalculateDirectorySize(File->FullFileName, File, AParams);
         }
       }
-      else
-      {
-        AParams->Size += File->Size;
-      }
 
       if (AParams->Stats != NULL)
       {
@@ -3449,6 +3490,10 @@ bool __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
   __int64 & Size, int Params, const TCopyParamType * CopyParam,
   bool AllowDirs, TCalculateSizeStats * Stats)
 {
+  // With FTP protocol, we may se DSIZ command from
+  // draft-peterson-streamlined-ftp-command-extensions-10
+  // Implemented by Serv-U FTP.
+
   TCalculateSizeParams Param;
   Param.Size = 0;
   Param.Params = Params;
@@ -3908,7 +3953,7 @@ void __fastcall TTerminal::AnyCommand(const UnicodeString Command,
           FAction.AddOutput(Str, true);
           break;
         case cotExitCode:
-          FAction.AddExitCode(StrToInt(Str));
+          FAction.ExitCode(StrToInt(Str));
           break;
       }
 
@@ -4455,9 +4500,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
   {
     bool Found;
     TSearchRecChecked SearchRec;
-    Data.LocalFileList = new TStringList();
-    Data.LocalFileList->Sorted = true;
-    Data.LocalFileList->CaseSensitive = false;
+    Data.LocalFileList = CreateSortedStringList();
 
     FILE_OPERATION_LOOP_BEGIN
     {

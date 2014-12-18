@@ -514,6 +514,7 @@ void __fastcall TWinConfiguration::Default()
   FAutoWorkspace = L"";
   FPathInCaption = picShort;
   FMinimizeToTray = false;
+  FMinimizeToTrayOnce = false;
   FBalloonNotifications = true;
   FNotificationsTimeout = 10;
   FNotificationsStickTime = 2;
@@ -1752,6 +1753,18 @@ void __fastcall TWinConfiguration::SetPathInCaption(TPathInCaption value)
 void __fastcall TWinConfiguration::SetMinimizeToTray(bool value)
 {
   SET_CONFIG_PROPERTY(MinimizeToTray);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::MinimizeToTrayOnce()
+{
+  FMinimizeToTrayOnce = true;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetMinimizeToTray()
+{
+  bool Result = FMinimizeToTrayOnce || FMinimizeToTray;
+  FMinimizeToTrayOnce = false;
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetBalloonNotifications(bool value)

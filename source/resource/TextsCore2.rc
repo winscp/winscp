@@ -367,4 +367,9 @@ BEGIN
     "  Retrieves and lists attributes of specified remote file.\n"
     "example:\n"
     "  stat index.html\n"
+  SCRIPT_CHECKSUM_HELP,
+    "checksum <alg> <file>\n"
+    "  Calculates checksum of remote file.\n"
+    "example:\n"
+    "  checksum sha1 index.html\n"
 END

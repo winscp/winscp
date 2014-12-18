@@ -167,5 +167,7 @@
 #define OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELY 1006
 #define OPTION_MPEXT_REMOVE_BOM 1007
 #define OPTION_MPEXT_LOG_SENSITIVE 1008
+#define OPTION_MPEXT_HOST 1009
+#define OPTION_MPEXT_NODELAY 1010
 //---------------------------------------------------------------------------
 #endif // FileZillaOptH

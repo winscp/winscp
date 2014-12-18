@@ -11,6 +11,7 @@
 // WM_TRAY_ICON = WM_WINSCP_USER + 5 (forms/CustomScpExplorer.cpp)
 // WM_LOG_UPDATE = WM_WINSCP_USER + 6 (components/LogMemo.cpp)
 #define WM_MANAGES_CAPTION (WM_WINSCP_USER + 7)
+#define WM_WANTS_MOUSEWHEEL (WM_WINSCP_USER + 8)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration
@@ -48,6 +49,7 @@ private:
   bool FConfirmExitOnCompletion;
   bool FOperationProgressOnTop;
   UnicodeString FSessionColors;
+  bool FCopyShortCutHintShown;
   TNotifyEvent FOnMasterPasswordRecrypt;
 
   void __fastcall SetInterface(TInterface value);
@@ -93,6 +95,7 @@ public:
   __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
   __property bool OperationProgressOnTop  = { read=FOperationProgressOnTop, write=FOperationProgressOnTop };
   __property UnicodeString SessionColors  = { read=FSessionColors, write=FSessionColors };
+  __property bool CopyShortCutHintShown  = { read=FCopyShortCutHintShown, write=FCopyShortCutHintShown };
   __property bool UseMasterPassword = { read = GetUseMasterPassword };
   __property TNotifyEvent OnMasterPasswordRecrypt = { read = FOnMasterPasswordRecrypt, write = FOnMasterPasswordRecrypt };
   __property UnicodeString DefaultFixedWidthFontName = { read = GetDefaultFixedWidthFontName };

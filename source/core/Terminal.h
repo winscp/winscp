@@ -697,4 +697,18 @@ struct TSpaceAvailable
   unsigned long BytesPerAllocationUnit;
 };
 //---------------------------------------------------------------------------
+class TRobustOperationLoop
+{
+public:
+  TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress);
+  bool TryReopen(Exception & E);
+  bool ShouldRetry();
+  bool Retry();
+
+private:
+  TTerminal * FTerminal;
+  TFileOperationProgressType * FOperationProgress;
+  bool FRetry;
+};
+//---------------------------------------------------------------------------
 #endif

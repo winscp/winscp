@@ -33,6 +33,14 @@ enum TFtps { ftpsNone, ftpsImplicit, ftpsExplicitSsl, ftpsExplicitTls };
 // has to match SSL_VERSION_XXX constants in AsyncSslSocketLayer.h
 enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12 };
 enum TSessionSource { ssNone, ssStored, ssStoredModified };
+enum TSessionUrlFlags
+{
+  sufSpecific = 0x01,
+  sufUserName = 0x02,
+  sufPassword = 0x04,
+  sufHostKey = 0x08,
+  sufComplete = sufUserName | sufPassword | sufHostKey
+};
 //---------------------------------------------------------------------------
 extern const wchar_t CipherNames[CIPHER_COUNT][10];
 extern const wchar_t KexNames[KEX_COUNT][20];
@@ -152,6 +160,7 @@ private:
   UnicodeString FPostLoginCommands;
   TAutoSwitch FSCPLsFullTime;
   TAutoSwitch FFtpListAll;
+  TAutoSwitch FFtpHost;
   bool FSslSessionReuse;
   TAddressFamily FAddressFamily;
   UnicodeString FRekeyData;
@@ -230,7 +239,6 @@ private:
   UnicodeString __fastcall GetSessionName();
   bool __fastcall HasSessionName();
   UnicodeString __fastcall GetDefaultSessionName();
-  UnicodeString __fastcall GetSessionUrl();
   UnicodeString __fastcall GetProtocolUrl();
   void __fastcall SetFSProtocol(TFSProtocol value);
   UnicodeString __fastcall GetFSProtocolStr();
@@ -294,6 +302,7 @@ private:
   TAutoSwitch __fastcall GetSFTPBug(TSftpBug Bug) const;
   void __fastcall SetSCPLsFullTime(TAutoSwitch value);
   void __fastcall SetFtpListAll(TAutoSwitch value);
+  void __fastcall SetFtpHost(TAutoSwitch value);
   void __fastcall SetSslSessionReuse(bool value);
   UnicodeString __fastcall GetStorageKey();
   UnicodeString __fastcall GetInternalStorageKey();
@@ -343,6 +352,9 @@ private:
   UnicodeString __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
   int __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, int Default);
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties);
+  UnicodeString __fastcall GetNameWithoutHiddenPrefix();
+  bool __fastcall HasStateData();
+  void __fastcall CopyStateData(TSessionData * SourceData);
   static RawByteString __fastcall EncryptPassword(const UnicodeString & Password, UnicodeString Key);
   static UnicodeString __fastcall DecryptPassword(const RawByteString & Password, UnicodeString Key);
   static RawByteString __fastcall StronglyRecryptPassword(const RawByteString & Password, UnicodeString Key);
@@ -371,6 +383,7 @@ public:
   void __fastcall CacheHostKeyIfNotCached();
   virtual void __fastcall Assign(TPersistent * Source);
   void __fastcall CopyData(TSessionData * Source);
+  void __fastcall CopyDirectoriesStateData(TSessionData * SourceData);
   bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
     TStoredSessionList * StoredSessions, bool & DefaultsOnly,
     UnicodeString * FileName, bool * AProtocolDefined, UnicodeString * MaskedUrl);
@@ -381,6 +394,7 @@ public:
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly);
   bool __fastcall IsSameSite(const TSessionData * Default);
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
+  UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
   static void __fastcall ValidatePath(const UnicodeString Path);
   static void __fastcall ValidateName(const UnicodeString Name);
   static UnicodeString __fastcall MakeValidName(const UnicodeString & Name);
@@ -426,8 +440,6 @@ public:
   __property TPingType PingType = { read = FPingType, write = SetPingType };
   __property UnicodeString SessionName  = { read=GetSessionName };
   __property UnicodeString DefaultSessionName  = { read=GetDefaultSessionName };
-  __property UnicodeString SessionUrl  = { read=GetSessionUrl };
-  __property UnicodeString ProtocolUrl  = { read=GetProtocolUrl };
   __property UnicodeString LocalDirectory  = { read=FLocalDirectory, write=SetLocalDirectory };
   __property UnicodeString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };
   __property bool SynchronizeBrowsing = { read=FSynchronizeBrowsing, write=SetSynchronizeBrowsing };
@@ -480,6 +492,7 @@ public:
   __property TAutoSwitch SFTPBug[TSftpBug Bug]  = { read=GetSFTPBug, write=SetSFTPBug };
   __property TAutoSwitch SCPLsFullTime = { read = FSCPLsFullTime, write = SetSCPLsFullTime };
   __property TAutoSwitch FtpListAll = { read = FFtpListAll, write = SetFtpListAll };
+  __property TAutoSwitch FtpHost = { read = FFtpHost, write = SetFtpHost };
   __property bool SslSessionReuse = { read = FSslSessionReuse, write = SetSslSessionReuse };
   __property TDSTMode DSTMode = { read = FDSTMode, write = SetDSTMode };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
@@ -561,6 +574,7 @@ public:
   TStrings * __fastcall GetFolderOrWorkspaceList(const UnicodeString & Name);
   TStrings * __fastcall GetWorkspaces();
   bool __fastcall HasAnyWorkspace();
+  TSessionData * __fastcall SaveWorkspaceData(TSessionData * Data);
   virtual __fastcall ~TStoredSessionList();
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };
@@ -580,7 +594,7 @@ private:
   void __fastcall DoSave(THierarchicalStorage * Storage,
     TSessionData * Data, bool All, bool RecryptPasswordOnly,
     TSessionData * FactoryDefaults);
-  TSessionData * __fastcall ResolveSessionData(TSessionData * Data);
+  TSessionData * __fastcall ResolveWorkspaceData(TSessionData * Data);
   bool __fastcall IsFolderOrWorkspace(const UnicodeString & Name, bool Workspace);
   TSessionData * __fastcall CheckIsInFolderOrWorkspaceAndResolve(
     TSessionData * Data, const UnicodeString & Name);

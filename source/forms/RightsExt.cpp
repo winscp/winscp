@@ -22,7 +22,7 @@ void __fastcall TRightsExtFrame::UpdateControls()
 {
   if (!OctalEdit->Focused())
   {
-    ForceUpdate();
+    UpdateOctalEdit();
   }
   TRightsFrame::UpdateControls();
 }
@@ -39,13 +39,18 @@ void __fastcall TRightsExtFrame::UpdateByOctal()
   OctalEdit->Modified = false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsExtFrame::ForceUpdate()
+void __fastcall TRightsExtFrame::UpdateOctalEdit()
 {
-  TRightsFrame::ForceUpdate();
   TRights R = Rights;
   OctalEdit->Text = R.IsUndef ? UnicodeString() : R.Octal;
   OctalEdit->Modified = false;
   OctalEdit->SelectAll();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsExtFrame::ForceUpdate()
+{
+  TRightsFrame::ForceUpdate();
+  UpdateOctalEdit();
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsExtFrame::OctalEditChange(TObject * /*Sender*/)

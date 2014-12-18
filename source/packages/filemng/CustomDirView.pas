@@ -2629,7 +2629,14 @@ begin
         {Execute the drag&drop-Operation:}
         FLastDDResult := DragDropFilesEx.Execute(DataObject);
 
-        {the drag&drop operation is finished, so clean up the used drag image:}
+        // The drag&drop operation is finished, so clean up the used drag image.
+        // This also restores the default mouse cursor
+        // (which is set to "none" in GlobalDragImageList.BeginDrag above)
+        // But it's actually too late, we would need to do it when mouse button
+        // is realesed already. Otherwise the cursor is hidden when hovering over
+        // main window, while target application is processing dropped file
+        // (particularly when Explorer displays progress window or
+        // overwrite confirmation prompt)
         GlobalDragImageList.EndDrag;
         GlobalDragImageList.Clear;
 

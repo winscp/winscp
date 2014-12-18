@@ -152,7 +152,7 @@ BEGIN
   NOTSUPPORTED, "Operation not supported."
   FTP_ACCESS_DENIED, "Access denied."
   FTP_CREDENTIAL_PROMPT, "Prompting for credentials..."
-  FTP_PWD_RESPONSE_ERROR, "Invalid response to PWD command '%s'."
+  FTP_RESPONSE_ERROR, "Invalid response to %s command '%s'."
   FTP_UNSUPPORTED, "This version does not support FTP protocol."
   SCRIPT_UNKNOWN_SWITCH, "Unknown switch '%s'."
   TRANSFER_ERROR, "Error transferring file '%s'."
@@ -207,6 +207,7 @@ BEGIN
   SFTP_STATUS_GROUP_INVALID, "The name specified can not be assigned as the primary group of a file."
   SFTP_STATUS_NO_MATCHING_BYTE_RANGE_LOCK, "The requested operation could not be completed because the specifed byte range lock has not been granted."
   KEY_TYPE_UNOPENABLE, "Private key file '%s' does not exist or cannot be opened."
+  UNKNOWN_CHECKSUM, "Checksum algorithm '%s' is not supported."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -387,6 +388,7 @@ BEGIN
   VERSION_DONT_DISTRIBUTE, "- Do NOT distribute"
   WEBDAV_EXTENSION_INFO, "The server supports these WebDAV extensions:"
   COPY_PARAM_PRESET_EXCLUDE_ALL_DIR, "Exclude &directories" 
+  SCRIPT_CHECKSUM_DESC, "Calculates checksum of remote file"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

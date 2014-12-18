@@ -99,23 +99,34 @@ bool __fastcall TPropertiesDialog::Execute(TRemoteProperties & Properties)
   if (FAllowedChanges & cpMode) ActiveControl = RightsFrame;
     else ActiveControl = CancelButton;
 
-  assert(FChecksumAlgs != NULL);
-  ChecksumAlgEdit->Items->Assign(FChecksumAlgs);
-  ChecksumAlgEdit->Text = GUIConfiguration->ChecksumAlg;
+  if (ALWAYS_TRUE(FChecksumAlgs != NULL))
+  {
+    ChecksumAlgEdit->Items->Assign(FChecksumAlgs);
+    int ChecksumIndex = FChecksumAlgs->IndexOf(GUIConfiguration->ChecksumAlg);
+    if (ChecksumIndex < 0)
+    {
+      ChecksumIndex = 0;
+    }
+    ChecksumAlgEdit->ItemIndex = ChecksumIndex;
+  }
   ResetChecksum();
 
   UpdateControls();
 
-  bool Result = (ShowModal() == DefaultResult(this));
+  bool Result = (ShowModal() == DefaultResult());
 
   if (Result)
   {
     Properties = GetFileProperties();
   }
 
-  GUIConfiguration->ChecksumAlg = ChecksumAlgEdit->Text;
-
   return Result;
+}
+//---------------------------------------------------------------------------
+TModalResult __fastcall TPropertiesDialog::DefaultResult()
+{
+  // Fallback when ChecksumButton is default
+  return ::DefaultResult(this, OkButton);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TPropertiesDialog::LoadRemoteToken(
@@ -241,7 +252,7 @@ void __fastcall TPropertiesDialog::LoadInfo()
     assert(File && FShellImageList);
 
     // shell image list does not have fixed large icon size
-    // (it is probably 32x32 min, but can be larged, on xp it is 48x48 if
+    // (it is probably 32x32 min, but can be larger, on xp it is 48x48 if
     // large icons are enabled, on vista can be even larger).
     // so we stretch (shrink) the icon to 32x32 here to be sure.
     Graphics::TBitmap * Bitmap = new Graphics::TBitmap;
@@ -535,12 +546,15 @@ void __fastcall TPropertiesDialog::UpdateControls()
   // hide checksum edit at least if it is disabled to get rid of ugly
   // visage on XP
   ChecksumEdit->Visible = ChecksumEdit->Enabled;
+
+  DefaultButton(ChecksumButton, ChecksumAlgEdit->Focused());
+  DefaultButton(OkButton, !ChecksumAlgEdit->Focused());
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::FormCloseQuery(TObject * /*Sender*/,
       bool & /*CanClose*/)
 {
-  if (ModalResult == DefaultResult(this))
+  if (ModalResult == DefaultResult())
   {
     ExitActiveControl(this);
   }
@@ -578,6 +592,7 @@ void __fastcall TPropertiesDialog::ResetChecksum()
 {
   ChecksumView->Items->Clear();
   ChecksumEdit->Text = LoadStr(PROPERTIES_CHECKSUM_UNKNOWN);
+  AutoSizeListColumnsWidth(ChecksumView);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::CalculateChecksum()
@@ -586,6 +601,7 @@ void __fastcall TPropertiesDialog::CalculateChecksum()
 
   ResetChecksum();
   FChecksumLoaded = true;
+  FAlgUsed = UnicodeString();
 
   bool DoClose = false;
   try
@@ -599,10 +615,18 @@ void __fastcall TPropertiesDialog::CalculateChecksum()
       Close();
     }
   }
+
+  // If we successfully used the selected checksum, remember it (in normalized form)
+  if (!FAlgUsed.IsEmpty())
+  {
+    GUIConfiguration->ChecksumAlg = FAlgUsed;
+  }
+
+  AutoSizeListColumnsWidth(ChecksumView);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::CalculatedChecksum(
-  const UnicodeString & FileName, const UnicodeString & /*Alg*/,
+  const UnicodeString & FileName, const UnicodeString & Alg,
   const UnicodeString & Hash)
 {
   if (FMultipleChecksum)
@@ -610,11 +634,21 @@ void __fastcall TPropertiesDialog::CalculatedChecksum(
     TListItem * Item = ChecksumView->Items->Add();
     Item->Caption = FileName;
     Item->SubItems->Add(Hash);
+
+    // optimization
+    int TopIndex = ListView_GetTopIndex(ChecksumView->Handle);
+    int Index = Item->Index;
+    if ((TopIndex <= Index) &&
+        (Index <= TopIndex + ChecksumView->VisibleRowCount))
+    {
+      AutoSizeListColumnsWidth(ChecksumView);
+    }
   }
   else
   {
     ChecksumEdit->Text = Hash;
   }
+  FAlgUsed = Alg;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::NeedChecksum()

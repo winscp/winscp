@@ -80,6 +80,7 @@ void __fastcall TSiteAdvancedDialog::InitControls()
   ComboAutoSwitchInitialize(FtpListAllCombo);
   ComboAutoSwitchInitialize(FtpUseMlsdCombo);
   ComboAutoSwitchInitialize(FtpForcePasvIpCombo);
+  ComboAutoSwitchInitialize(FtpHostCombo);
 
   TunnelLocalPortNumberEdit->Items->BeginUpdate();
   try
@@ -213,6 +214,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     ComboAutoSwitchLoad(FtpListAllCombo, FSessionData->FtpListAll);
     ComboAutoSwitchLoad(FtpUseMlsdCombo, FSessionData->FtpUseMlsd);
     ComboAutoSwitchLoad(FtpForcePasvIpCombo, FSessionData->FtpForcePasvIp);
+    ComboAutoSwitchLoad(FtpHostCombo, FSessionData->FtpHost);
 
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
@@ -598,6 +600,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->FtpListAll = ComboAutoSwitchSave(FtpListAllCombo);
   FSessionData->FtpUseMlsd = ComboAutoSwitchSave(FtpUseMlsdCombo);
   FSessionData->FtpForcePasvIp = ComboAutoSwitchSave(FtpForcePasvIpCombo);
+  FSessionData->FtpHost = ComboAutoSwitchSave(FtpHostCombo);
 
   // Proxy page
   FSessionData->ProxyMethod = GetProxyMethod();

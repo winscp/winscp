@@ -37,6 +37,8 @@ __published:
   TImage *CopyDownloadImage;
   TImage *MoveDownloadImage;
   TImage *MoveUploadImage;
+  TPanel *ShortCutHintPanel;
+  TLabel *ShortCutHintLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
@@ -48,6 +50,7 @@ __published:
           TPoint &MousePos, bool &Handled);
   void __fastcall TransferSettingsButtonDropDownClick(TObject *Sender);
   void __fastcall NeverShowAgainCheckClick(TObject *Sender);
+  void __fastcall ShortCutHintLabelClick(TObject *Sender);
 private:
   bool FDefaultToRemote;
   bool FToRemote;

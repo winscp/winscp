@@ -313,7 +313,7 @@ protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
-    bool DragDrop);
+    bool DragDrop, int Options);
   virtual bool __fastcall RemoteTransferDialog(TTerminal *& Session,
     TStrings * FileList, UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy,
     bool NoConfirmation, bool Move);
@@ -538,11 +538,13 @@ public:
   virtual void __fastcall AddEditLink(TOperationSide Side, bool Add);
   bool __fastcall CanAddEditLink(TOperationSide Side);
   bool __fastcall LinkFocused();
-  virtual Boolean __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed) = 0;
+  virtual Boolean __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall ConfigurationChanged();
   void __fastcall CreateDirectory(TOperationSide Side);
   void __fastcall ExecuteFileOperationCommand(TFileOperation Operation, TOperationSide Side,
     bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
+  void __fastcall ExecuteCopyOperationCommand(
+    TOperationSide Side, bool OnFocused, bool ShortCutHint);
   void __fastcall AdHocCustomCommand(bool OnFocused);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   virtual void __fastcall ChangePath(TOperationSide Side) = 0;
@@ -638,7 +640,6 @@ public:
   virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
   void __fastcall UpdateTaskbarList(ITaskbarList3 * TaskbarList);
   virtual void __fastcall DisplaySystemContextMenu();
-  bool __fastcall HandleMouseWheel(WPARAM WParam, LPARAM LParam);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

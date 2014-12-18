@@ -1414,9 +1414,7 @@ void __fastcall TOptionsIniFile::ReadSection(const UnicodeString Section, TStrin
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::ReadSections(TStrings * Strings)
 {
-  std::unique_ptr<TStringList> Sections(new TStringList());
-  Sections->CaseSensitive = false;
-  Sections->Sorted = true;
+  std::unique_ptr<TStringList> Sections(CreateSortedStringList());
 
   for (int Index = 0; Index < FOptions->Count; Index++)
   {

@@ -9,7 +9,8 @@
 //---------------------------------------------------------------------------
 const TColor LinkColor = clBlue;
 //---------------------------------------------------------------------------
-void __fastcall AdjustListColumnsWidth(TListView * ListView);
+void __fastcall FixListColumnWidth(TListView * TListView, int Index);
+void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrinkIndex = -1);
 void __fastcall EnableControl(TControl* Control, bool Enable);
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly = true);
 void __fastcall InitializeSystemSettings();
@@ -65,8 +66,8 @@ FormType * __fastcall SafeFormCreate(TComponent * Owner = NULL)
   return dynamic_cast<FormType *>(_SafeFormCreate(__classid(FormType), Owner));
 }
 bool __fastcall SupportsSplitButton();
-TButton * __fastcall FindDefaultButton(TWinControl * Control);
-TModalResult __fastcall DefaultResult(TCustomForm * Form);
+TModalResult __fastcall DefaultResult(TCustomForm * Form, TButton * DefaultButton = NULL);
+void __fastcall DefaultButton(TButton * Button, bool Default);
 void __fastcall MemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
 void __fastcall UseDesktopFont(TControl * Control);
 void __fastcall LoadResourceImage(TImage * Image, const UnicodeString & ImageName);

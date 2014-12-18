@@ -340,6 +340,9 @@ inherited ScpCommanderForm: TScpCommanderForm
             object TBXItem199: TTBXItem
               Action = NonVisualDataModule.QueueResumeAllAction
             end
+            object TBXItem142: TTBXItem
+              Action = NonVisualDataModule.QueueDeleteAllAction
+            end
             object TBXSeparatorItem39: TTBXSeparatorItem
             end
             object TBXItem134: TTBXItem
@@ -945,6 +948,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           MinWidth = 350
         end
         object TransferLabel: TTBXLabelItem
+          Caption = ''
           Margin = 4
           ShowAccelChar = False
         end

@@ -233,7 +233,7 @@ void __fastcall ImportSitesIfAny()
       UnicodeString Message = FORMAT(LoadStrPart(IMPORT_SESSIONS2, 1), (Source));
 
       if (MessageDialog(Message, qtConfirmation,
-            qaOK | qaCancel, HELP_IMPORT_SESSIONS) == qaOK)
+            qaYes | qaNo, HELP_IMPORT_SESSIONS) == qaYes)
       {
         DoImportSessionsDialog(NULL);
       }
@@ -503,18 +503,21 @@ int __fastcall Execute()
   }
 
   TConsoleMode Mode = cmNone;
-  if (Params->FindSwitch(L"Console") || Params->FindSwitch(L"script") ||
-      Params->FindSwitch(L"command"))
-  {
-    Mode = cmScripting;
-  }
-  else if (Params->FindSwitch(L"help") || Params->FindSwitch(L"h") || Params->FindSwitch(L"?"))
+  if (Params->FindSwitch(L"help") || Params->FindSwitch(L"h") || Params->FindSwitch(L"?"))
   {
     Mode = cmHelp;
   }
   else if (Params->FindSwitch(L"batchsettings"))
   {
     Mode = cmBatchSettings;
+  }
+  // We have to check for /console only after the other options,
+  // as the /console is always used when we are run by winscp.com
+  // (ambiguous use to pass console version)
+  else if (Params->FindSwitch(L"Console") || Params->FindSwitch(L"script") ||
+      Params->FindSwitch(L"command"))
+  {
+    Mode = cmScripting;
   }
 
   if (Mode != cmNone)

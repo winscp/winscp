@@ -144,6 +144,7 @@ protected:
   void __fastcall KeepUpToDateProc(TScriptProcParams * Parameters);
   void __fastcall EchoProc(TScriptProcParams * Parameters);
   void __fastcall StatProc(TScriptProcParams * Parameters);
+  void __fastcall ChecksumProc(TScriptProcParams * Parameters);
 
   void __fastcall OptionImpl(UnicodeString OptionName, UnicodeString ValueName);
   void __fastcall SynchronizeDirectories(TScriptProcParams * Parameters,

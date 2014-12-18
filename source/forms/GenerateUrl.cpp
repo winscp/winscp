@@ -33,40 +33,12 @@ __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl(UnicodeString Path)
 {
-  UnicodeString Url;
-
-  if (WinSCPSpecificCheck->Checked)
-  {
-    Url += WinSCPProtocolPrefix;
-  }
-
-  Url += FData->ProtocolUrl;
-
-  if (UserNameCheck->Enabled && UserNameCheck->Checked)
-  {
-    Url += EncodeUrlString(FData->UserNameExpanded);
-
-    if (PasswordCheck->Enabled && PasswordCheck->Checked)
-    {
-      Url += L":" + EncodeUrlString(FData->Password);
-    }
-
-    if (HostKeyCheck->Enabled && HostKeyCheck->Checked)
-    {
-      Url +=
-        UnicodeString(UrlParamSeparator) + UrlHostKeyParamName +
-        UnicodeString(UrlParamValueSeparator) + NormalizeFingerprint(FData->HostKey);
-    }
-
-    Url += L"@";
-  }
-
-  Url += EncodeUrlString(FData->HostNameExpanded);
-  if (FData->PortNumber != DefaultPort(FData->FSProtocol, FData->Ftps))
-  {
-    Url += L":" + IntToStr(FData->PortNumber);
-  }
-  Url += L"/";
+  UnicodeString Url =
+    FData->GenerateSessionUrl(
+      FLAGMASK(WinSCPSpecificCheck->Checked, sufSpecific) |
+      FLAGMASK(UserNameCheck->Enabled && UserNameCheck->Checked, sufUserName) |
+      FLAGMASK(PasswordCheck->Enabled && PasswordCheck->Checked, sufPassword) |
+      FLAGMASK(HostKeyCheck->Enabled && HostKeyCheck->Checked, sufHostKey));
 
   if ((RemoteDirectoryCheck->Enabled && RemoteDirectoryCheck->Checked) ||
       (FPaths != NULL))

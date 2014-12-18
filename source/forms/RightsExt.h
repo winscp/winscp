@@ -13,6 +13,7 @@
 #include <Menus.hpp>
 #include "GrayedCheckBox.hpp"
 #include "PngImageList.hpp"
+#include <System.Actions.hpp>
 //---------------------------------------------------------------------------
 class TRightsExtFrame : public TRightsFrame
 {
@@ -37,6 +38,7 @@ protected:
 
 private:
   void __fastcall UpdateByOctal();
+  void __fastcall UpdateOctalEdit();
 };
 //---------------------------------------------------------------------------
 #endif

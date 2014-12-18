@@ -32,9 +32,6 @@ struct CFileStatus64
 	_int64 m_size;            // logical size of file in bytes
 	BYTE m_attribute;       // logical OR of CFile::Attribute enum values
 	BYTE _m_padding;        // pad the structure to a WORD
-	TCHAR m_szFullName[_MAX_PATH]; // absolute path name
 };
 
 BOOL PASCAL GetStatus64(LPCTSTR lpszFileName, CFileStatus64& rStatus);
-
-_int64 GetPosition64(CFile &file);

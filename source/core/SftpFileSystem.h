@@ -107,6 +107,8 @@ protected:
   unsigned long FMaxPacketSize;
   bool FSupportsStatVfsV2;
   bool FSupportsHardlink;
+  std::unique_ptr<TStringList> FChecksumAlgs;
+  std::unique_ptr<TStringList> FChecksumSftpAlgs;
 
   void __fastcall SendCustomReadFile(TSFTPPacket * Packet, TSFTPPacket * Response,
     unsigned long Flags);
@@ -141,10 +143,12 @@ protected:
   void __fastcall TryOpenDirectory(const UnicodeString Directory);
   bool __fastcall SupportsExtension(const UnicodeString & Extension) const;
   void __fastcall ResetConnection();
-  void __fastcall DoCalculateFilesChecksum(const UnicodeString & Alg,
+  void __fastcall DoCalculateFilesChecksum(
+    const UnicodeString & Alg, const UnicodeString & SftpAlg,
     TStrings * FileList, TStrings * Checksums,
     TCalculatedChecksumEvent OnCalculatedChecksum,
     TFileOperationProgressType * OperationProgress, bool FirstLevel);
+  void __fastcall RegisterChecksumAlg(const UnicodeString & Alg, const UnicodeString & SftpAlg);
   void __fastcall DoDeleteFile(const UnicodeString FileName, unsigned char Type);
 
   void __fastcall SFTPSourceRobust(const UnicodeString FileName,

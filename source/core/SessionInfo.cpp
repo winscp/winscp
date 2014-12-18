@@ -156,6 +156,14 @@ public:
             }
             FLog->AddIndented(FORMAT(L"      <modification value=\"%s\" />", (StandardTimestamp(File->Modification))));
             FLog->AddIndented(FORMAT(L"      <permissions value=\"%s\" />", (XmlAttributeEscape(File->Rights->Text))));
+            if (File->Owner.IsSet)
+            {
+              FLog->AddIndented(FORMAT(L"      <owner value=\"%s\" />", (XmlAttributeEscape(File->Owner.DisplayText))));
+            }
+            if (File->Group.IsSet)
+            {
+              FLog->AddIndented(FORMAT(L"      <group value=\"%s\" />", (XmlAttributeEscape(File->Group.DisplayText))));
+            }
             FLog->AddIndented(L"    </file>");
           }
           FLog->AddIndented(L"  </files>");
@@ -257,9 +265,20 @@ public:
     }
   }
 
-  void __fastcall AddExitCode(int ExitCode)
+  void __fastcall ExitCode(int ExitCode)
   {
     Parameter(L"exitcode", IntToStr(ExitCode));
+  }
+
+  void __fastcall Checksum(const UnicodeString & Alg, const UnicodeString & Checksum)
+  {
+    Parameter(L"algorithm", Alg);
+    Parameter(L"checksum", Checksum);
+  }
+
+  void __fastcall Cwd(const UnicodeString & Path)
+  {
+    Parameter(L"cwd", Path);
   }
 
   void __fastcall FileList(TRemoteFileList * FileList)
@@ -304,6 +323,8 @@ protected:
       case laCall: return L"call";
       case laLs: return L"ls";
       case laStat: return L"stat";
+      case laChecksum: return L"checksum";
+      case laCwd: return L"cwd";
       default: FAIL; return L"";
     }
   }
@@ -526,11 +547,11 @@ void __fastcall TCallSessionAction::AddOutput(const UnicodeString & Output, bool
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCallSessionAction::AddExitCode(int ExitCode)
+void __fastcall TCallSessionAction::ExitCode(int ExitCode)
 {
   if (FRecord != NULL)
   {
-    FRecord->AddExitCode(ExitCode);
+    FRecord->ExitCode(ExitCode);
   }
 }
 //---------------------------------------------------------------------------
@@ -563,6 +584,30 @@ void __fastcall TStatSessionAction::File(TRemoteFile * File)
   if (FRecord != NULL)
   {
     FRecord->File(File);
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TChecksumSessionAction::TChecksumSessionAction(TActionLog * Log) :
+  TFileSessionAction(Log, laChecksum)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TChecksumSessionAction::Checksum(const UnicodeString & Alg, const UnicodeString & Checksum)
+{
+  if (FRecord != NULL)
+  {
+    FRecord->Checksum(Alg, Checksum);
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TCwdSessionAction::TCwdSessionAction(TActionLog * Log, const UnicodeString & Path) :
+  TSessionAction(Log, laCwd)
+{
+  if (FRecord != NULL)
+  {
+    FRecord->Cwd(Path);
   }
 }
 //---------------------------------------------------------------------------

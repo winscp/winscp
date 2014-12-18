@@ -2086,6 +2086,7 @@ int __fastcall Console(TConsoleMode Mode)
   try
   {
     UnicodeString ConsoleInstance;
+    // First check for /consoleinstance as /console is always used by winscp.com
     if (Params->FindSwitch(L"consoleinstance", ConsoleInstance))
     {
       Configuration->Usage->Inc(L"ConsoleExternal");

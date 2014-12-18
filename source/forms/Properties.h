@@ -87,6 +87,7 @@ private:
   TCalculateSizeEvent FOnCalculateSize;
   TCalculateChecksumEvent FOnCalculateChecksum;
   bool FChecksumLoaded;
+  UnicodeString FAlgUsed;
   bool FMultipleChecksum;
 
   void __fastcall CalculateChecksum();
@@ -97,6 +98,7 @@ private:
     const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Hash);
   void __fastcall SetFileProperties(const TRemoteProperties & value);
   TRemoteProperties __fastcall GetFileProperties();
+  TModalResult __fastcall DefaultResult();
 
 protected:
   void __fastcall LoadInfo();

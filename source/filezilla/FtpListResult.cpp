@@ -424,7 +424,6 @@ t_directory::t_direntry *CFtpListResult::getList(int &num, CTime EntryTime)
 	#ifdef _DEBUG
 	USES_CONVERSION;
 	#endif
-	t_directory::t_direntry direntry;
 	char *line=GetLine();
 	m_curline=line;
 	while (line)
@@ -432,6 +431,7 @@ t_directory::t_direntry *CFtpListResult::getList(int &num, CTime EntryTime)
 		int tmp;
 		char *tmpline = new char[strlen(line) + 1];
 		strcpy(tmpline, line);
+		t_directory::t_direntry direntry;
 		if (parseLine(tmpline, strlen(tmpline), direntry, tmp))
 		{
 			delete [] tmpline;
@@ -1306,7 +1306,6 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 	direntry.bUnsure = FALSE;
 	direntry.dir = FALSE;
 	direntry.bLink = FALSE;
-	direntry.size = -1;
 	direntry.ownergroup = _T("");
 	direntry.permissionstr = _T("");
 
@@ -2126,7 +2125,6 @@ BOOL CFtpListResult::parseAsDos(const char *line, const int linelen, t_directory
 	if (tokenlen == 5 && !memcmp(str, "<DIR>", 5))
 	{
 		direntry.dir = TRUE;
-		direntry.size = -1;
 	}
 	else
 	{
@@ -2673,7 +2671,6 @@ BOOL CFtpListResult::parseAsIBMMVS(const char *line, const int linelen, t_direct
 	if (tokenlen == 2 && !memcmp(str, "PO", 2))
 	{
 		direntry.dir = TRUE;
-		direntry.size = -1;
 	}
 	else
 	{
@@ -2777,7 +2774,6 @@ BOOL CFtpListResult::parseAsIBMMVSPDS2(const char *line, const int linelen, t_di
 	direntry.bLink = FALSE;
 	direntry.ownergroup = _MPT("");
 	direntry.permissionstr = _MPT("");
-	direntry.size = -1;
 	direntry.date.hasdate = direntry.date.hastime = FALSE;
 
 	// pds member name

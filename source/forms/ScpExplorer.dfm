@@ -187,6 +187,9 @@ inherited ScpExplorerForm: TScpExplorerForm
             object TBXItem199: TTBXItem
               Action = NonVisualDataModule.QueueResumeAllAction
             end
+            object TBXItem154: TTBXItem
+              Action = NonVisualDataModule.QueueDeleteAllAction
+            end
             object TBXSeparatorItem35: TTBXSeparatorItem
             end
             object TBXItem143: TTBXItem
@@ -905,6 +908,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           MinWidth = 350
         end
         object TransferLabel: TTBXLabelItem
+          Caption = ''
           Margin = 4
           ShowAccelChar = False
         end

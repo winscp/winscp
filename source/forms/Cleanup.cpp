@@ -135,6 +135,8 @@ void __fastcall TCleanupDialog::InitControls()
     Item->SubItems->Add(Location);
     assert(Item->Index == i - 1);
   }
+
+  AutoSizeListColumnsWidth(DataListView);
 }
 //---------------------------------------------------------------------
 void __fastcall TCleanupDialog::UpdateControls()

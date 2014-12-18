@@ -144,6 +144,8 @@ int get_userpass_input(prompts_t * p, unsigned char * /*in*/, int /*inlen*/)
     {
       prompt_t * Prompt = p->prompts[Index];
       Prompts->AddObject(Prompt->prompt, (TObject *)(FLAGMASK(Prompt->echo, pupEcho)));
+      // this fails, when new passwords do not match on change password prompt,
+      // and putty retries the prompt
       assert(Prompt->resultsize == 0);
       Results->Add(L"");
     }

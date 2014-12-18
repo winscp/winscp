@@ -93,6 +93,7 @@ public:
 	virtual std::string GetCipherName();
 	bool HandleSize(int code, __int64 & size);
 	bool HandleMdtm(int code, t_directory::t_direntry::t_date & date);
+	void TransferHandleListError();
 #endif
 
 	// Vom Klassen-Assistenten generierte virtuelle Funktionsüberschreibungen
@@ -139,6 +140,7 @@ protected:
 	CString GetListingCmd();
 
 	bool InitConnect();
+	int InitConnectState();
 
 #ifdef MPEXT
 	bool IsRoutableAddress(const CString & host);

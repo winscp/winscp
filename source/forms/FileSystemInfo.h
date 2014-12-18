@@ -48,6 +48,8 @@ __published:
   void __fastcall ControlContextPopup(TObject *Sender, TPoint &MousePos,
           bool &Handled);
   void __fastcall CertificateViewButtonClick(TObject *Sender);
+  void __fastcall SpaceAvailableViewCustomDrawItem(TCustomListView *Sender, TListItem *Item,
+          TCustomDrawState State, bool &DefaultDraw);
 public:
   virtual __fastcall TFileSystemInfoDialog(TComponent * AOwner,
     TGetSpaceAvailable OnGetSpaceAvailable);

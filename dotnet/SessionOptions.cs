@@ -31,7 +31,10 @@ namespace WinSCP
     {
         None = 0,
         Implicit = 1,
-        ExplicitTls = 3,
+        Explicit = 3,
+        [Obsolete("Use FtpSecure.Explicit")]
+        ExplicitTls = Explicit,
+        [Obsolete("Use FtpSecure.Explicit")]
         ExplicitSsl = 2,
     }
 
@@ -76,6 +79,200 @@ namespace WinSCP
         public void AddRawSettings(string setting, string value)
         {
             RawSettings.Add(setting, value);
+        }
+
+        public void ParseUrl(string url)
+        {
+            url = url.Trim();
+            const string protocolSeparator = "://";
+            int index = url.IndexOf(protocolSeparator, StringComparison.OrdinalIgnoreCase);
+            if (index < 0)
+            {
+                throw new ArgumentException("Protocol not specified", "url");
+            }
+            string protocol = url.Substring(0, index).Trim();
+
+            FtpSecure = FtpSecure.None;
+
+            if (protocol.Equals("sftp", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Sftp;
+            }
+            else if (protocol.Equals("scp", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Scp;
+            }
+            else if (protocol.Equals("ftp", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Ftp;
+            }
+            else if (protocol.Equals("ftps", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Ftp;
+                FtpSecure = FtpSecure.Implicit;
+            }
+            else if (protocol.Equals("http", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Webdav;
+            }
+            else if (protocol.Equals("https", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Webdav;
+                WebdavSecure = true;
+            }
+            else
+            {
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unknown protocol {0}", protocol), "url");
+            }
+
+            url = url.Substring(index + protocolSeparator.Length).Trim();
+            index = url.IndexOf('/');
+            WebdavRoot = null;
+            if (index >= 0)
+            {
+                string path = url.Substring(index).Trim();
+                url = url.Substring(0, index).Trim();
+                string parameters = path;
+                path = CutToChar(ref parameters, ';');
+                if (!string.IsNullOrEmpty(path) && (path != "/"))
+                {
+                    if (Protocol != Protocol.Webdav)
+                    {
+                        throw new ArgumentException("Root folder can be specified for WebDAV protocol only", "url");
+                    }
+                    WebdavRoot = path;
+                }
+
+                // forward compatibility
+                if (!string.IsNullOrEmpty(parameters))
+                {
+                    throw new ArgumentException("No session parameters are supported", "url");
+                }
+            }
+
+            index = url.LastIndexOf('@');
+
+            string hostInfo;
+            string userInfo = null;
+            if (index >= 0)
+            {
+                userInfo = url.Substring(0, index).Trim();
+                hostInfo = url.Substring(index + 1).Trim();
+            }
+            else
+            {
+                hostInfo = url;
+            }
+
+            PortNumber = 0;
+            string portNumber = null;
+            if ((hostInfo.Length >= 2) && (hostInfo[0] == '[') && ((index = hostInfo.IndexOf(']')) > 0))
+            {
+                HostName = hostInfo.Substring(1, index - 1).Trim();
+                hostInfo = hostInfo.Substring(index + 1).Trim();
+                if (hostInfo.Length > 0)
+                {
+                    if (hostInfo[0] != ':')
+                    {
+                        throw new ArgumentException("Unexpected syntax after ]", "url");
+                    }
+                    else
+                    {
+                        portNumber = hostInfo.Substring(1);
+                    }
+                }
+            }
+            else
+            {
+                HostName = UriUnescape(CutToChar(ref hostInfo, ':'));
+                portNumber = hostInfo;
+            }
+
+            if (string.IsNullOrEmpty(HostName))
+            {
+                throw new ArgumentException("No host name", "url");
+            }
+
+            if (string.IsNullOrEmpty(portNumber))
+            {
+                PortNumber = 0;
+            }
+            else
+            {
+                portNumber = UriUnescape(portNumber);
+                int number;
+                if (!int.TryParse(portNumber, 0, CultureInfo.InvariantCulture, out number))
+                {
+                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "{0} is not a valid port number", portNumber), "url");
+                }
+                else
+                {
+                    PortNumber = number;
+                }
+            }
+
+            UserName = null;
+            Password = null;
+            SshHostKeyFingerprint = null;
+            GiveUpSecurityAndAcceptAnySshHostKey = false;
+            TlsHostCertificateFingerprint = null;
+            GiveUpSecurityAndAcceptAnyTlsHostCertificate = false;
+            if (!string.IsNullOrEmpty(userInfo))
+            {
+                string parameters = userInfo;
+                userInfo = CutToChar(ref parameters, ';');
+
+                UserName = EmptyToNull(UriUnescape(CutToChar(ref userInfo, ':')));
+                Password = EmptyToNull(UriUnescape(userInfo));
+
+                while (!string.IsNullOrEmpty(parameters))
+                {
+                    string parameter = CutToChar(ref parameters, ';');
+                    string parameterName = CutToChar(ref parameter, '=');
+                    if (parameterName.Equals("fingerprint", StringComparison.OrdinalIgnoreCase))
+                    {
+                        SshHostKeyFingerprint = parameter;
+                    }
+                    else
+                    {
+                        throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unsupported connection parameter {0}", parameterName), "url");
+                    }
+                }
+            }
+        }
+
+        private static string EmptyToNull(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+            {
+                return null;
+            }
+            else
+            {
+                return s;
+            }
+        }
+
+        private static string UriUnescape(string s)
+        {
+            return Uri.UnescapeDataString(s);
+        }
+
+        private static string CutToChar(ref string s, char c)
+        {
+            int index = s.IndexOf(c);
+            string result;
+            if (index >= 0)
+            {
+                result = s.Substring(0, index).Trim();
+                s = s.Substring(index + 1).Trim();
+            }
+            else
+            {
+                result = s;
+                s = string.Empty;
+            }
+            return result;
         }
 
         internal Dictionary<string, string> RawSettings { get; private set; }
@@ -142,10 +339,17 @@ namespace WinSCP
 
         private void SetPassword(string value)
         {
-            SecurePassword = new SecureString();
-            foreach (char c in value)
+            if (value == null)
             {
-                SecurePassword.AppendChar(c);
+                SecurePassword = null;
+            }
+            else
+            {
+                SecurePassword = new SecureString();
+                foreach (char c in value)
+                {
+                    SecurePassword.AppendChar(c);
+                }
             }
         }
 
@@ -177,7 +381,7 @@ namespace WinSCP
         private string _webdavRoot;
 
         private const string _listPattern = @"{0}(;{0})*";
-        private const string _sshHostKeyPattern = @"(ssh-rsa |ssh-dss )?\d+ ([0-9a-f]{2}:){15}[0-9a-f]{2}";
+        private const string _sshHostKeyPattern = @"((ssh-rsa|ssh-dss)( |-))?(\d+ )?([0-9a-f]{2}(:|-)){15}[0-9a-f]{2}";
         private static readonly Regex _sshHostKeyRegex =
             new Regex(string.Format(CultureInfo.InvariantCulture, _listPattern, _sshHostKeyPattern));
         private const string _tlsCertificatePattern = @"([0-9a-f]{2}:){19}[0-9a-f]{2}";

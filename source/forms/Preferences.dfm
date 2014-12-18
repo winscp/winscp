@@ -1235,7 +1235,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 95
             Width = 85
             Height = 13
-            Caption = 'Default &encoding:'
+            Caption = 'Default en&coding:'
             FocusControl = EditorEncodingCombo
           end
           object EditorFontButton: TButton
@@ -1312,7 +1312,6 @@ object PreferencesDialog: TPreferencesDialog
               end
               item
                 Caption = 'Text'
-                Tag = 1
                 Width = 45
               end>
             ColumnClick = False
@@ -1512,12 +1511,10 @@ object PreferencesDialog: TPreferencesDialog
               end
               item
                 Caption = 'L/R'
-                Tag = 1
                 Width = 35
               end
               item
                 Caption = 'D/R'
-                Tag = 1
                 Width = 40
               end>
             ColumnClick = False
@@ -2494,7 +2491,6 @@ object PreferencesDialog: TPreferencesDialog
               end
               item
                 Caption = 'Auto'
-                Tag = 1
                 Width = 40
               end>
             ColumnClick = False

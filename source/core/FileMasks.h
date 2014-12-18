@@ -183,14 +183,16 @@ struct TCustomCommandData
     TSessionData * SessionData, const UnicodeString & AUserName,
     const UnicodeString & Password);
 
-  UnicodeString HostName;
-  UnicodeString UserName;
-  UnicodeString Password;
+  __property TSessionData * SessionData = { read = GetSesssionData };
+
+  void __fastcall operator=(const TCustomCommandData & Data);
 
 private:
+  std::unique_ptr<TSessionData> FSessionData;
   void __fastcall Init(
     TSessionData * SessionData, const UnicodeString & AUserName,
-    const UnicodeString & Password);
+    const UnicodeString & Password, const UnicodeString & HostKey);
+  TSessionData * __fastcall GetSesssionData() const;
 };
 //---------------------------------------------------------------------------
 class TFileCustomCommand : public TCustomCommand

@@ -289,7 +289,7 @@ __int64 __fastcall TUnixDirView::ItemFileSize(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
-  return ITEMFILE->IsDirectory ? 0 : ITEMFILE->Size;
+  return ITEMFILE->Size;
 #else
   USEDPARAM(Item);
   return 0;
@@ -401,7 +401,7 @@ void __fastcall TUnixDirView::LoadFiles()
       {
         VisibleFiles++;
 
-        if (!File->IsDirectory) FFilesSize += File->Size;
+        FFilesSize += File->Size;
         if (File->IsParentDirectory) FHasParentDir = true;
 
         TListItem * Item = new TListItem(Items);

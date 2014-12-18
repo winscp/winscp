@@ -175,6 +175,7 @@ const coDoNotUsePresets     = 0x080;
 const coAllowRemoteTransfer = 0x100;
 const coNoQueue             = 0x200;
 const coNoQueueIndividually = 0x400;
+const coShortCutHint        = 0x800;
 const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
@@ -223,7 +224,7 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
 
 // forms\Preferences.cpp
 enum TPreferencesMode { pmDefault, pmEditor, pmCustomCommands,
-    pmQueue, pmLogging, pmUpdates, pmPresets, pmEditors };
+    pmQueue, pmLogging, pmUpdates, pmPresets, pmEditors, pmCommander };
 class TCopyParamRuleData;
 struct TPreferencesDialogData
 {

@@ -13,10 +13,7 @@
 __fastcall TBookmarks::TBookmarks(): TObject()
 {
   FSharedKey = TNamedObjectList::HiddenPrefix + L"shared";
-  FBookmarkLists = new TStringList();
-  FBookmarkLists->Sorted = true;
-  FBookmarkLists->CaseSensitive = false;
-  FBookmarkLists->Duplicates = Types::dupError;
+  FBookmarkLists = CreateSortedStringList(false, Types::dupError);
 }
 //---------------------------------------------------------------------------
 __fastcall TBookmarks::~TBookmarks()
@@ -285,9 +282,7 @@ __fastcall TBookmarkList::TBookmarkList(): TPersistent()
   FModified = false;
   FBookmarks = new TStringList();
   FBookmarks->CaseSensitive = false;
-  FOpenedNodes = new TStringList();
-  FOpenedNodes->CaseSensitive = false;
-  FOpenedNodes->Sorted = true;
+  FOpenedNodes = CreateSortedStringList();
 }
 //---------------------------------------------------------------------------
 __fastcall TBookmarkList::~TBookmarkList()

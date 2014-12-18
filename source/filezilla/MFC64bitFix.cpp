@@ -44,21 +44,14 @@ BOOL GetLength64(CString filename, _int64 &size)
 	return TRUE;	
 }
 
-BOOL AFXAPI AfxFullPath(LPTSTR lpszPathOut, LPCTSTR lpszFileIn);
-
 BOOL PASCAL GetStatus64(LPCTSTR lpszFileName, CFileStatus64& rStatus)
 {
-	// attempt to fully qualify path first
-	if (!AfxFullPath(rStatus.m_szFullName, lpszFileName))
-	{
-		rStatus.m_szFullName[0] = _MPT('\0');
-		return FALSE;
-	}
-
 	WIN32_FIND_DATA findFileData;
 	HANDLE hFind = FindFirstFile((LPTSTR)lpszFileName, &findFileData);
 	if (hFind == INVALID_HANDLE_VALUE)
+	{
 		return FALSE;
+	}
 	VERIFY(FindClose(hFind));
 
 	// strip attribute of NORMAL bit, our API doesn't have a "normal" bit.
@@ -136,14 +129,4 @@ BOOL PASCAL GetStatus64(LPCTSTR lpszFileName, CFileStatus64& rStatus)
 	}
 
 	return TRUE;
-}
-
-_int64 GetPosition64(CFile &file)
-{
-	LONG low=0;
-	LONG high=0;
-	low=SetFilePointer((HANDLE)file.m_hFile, low, &high, FILE_CURRENT);
-	if (low==0xFFFFFFFF && GetLastError!=NO_ERROR)
-		CFileException::ThrowOsError((LONG)::GetLastError());
-	return ((_int64)high<<32)+low;
 }

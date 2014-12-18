@@ -1915,6 +1915,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Change speed limit of selected queue item'
       EditCaption = '&Speed'
     end
+    object QueueDeleteAllAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&Cancel All'
+      HelpKeyword = 'ui_queue#managing_the_queue'
+      Hint = 'Remove all queue items'
+    end
     object LocalFilterAction: TAction
       Tag = 9
       Category = 'Local Directory'
@@ -2620,6 +2627,9 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object TBXItem12: TTBXItem
         Action = QueueResumeAllAction
+      end
+      object TBXItem142: TTBXItem
+        Action = QueueDeleteAllAction
       end
       object TBXSeparatorItem5: TTBXSeparatorItem
       end

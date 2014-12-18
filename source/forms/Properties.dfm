@@ -143,7 +143,7 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Links to:'
       end
       object LinksToLabel: TPathLabel
-        Left = 88
+        Left = 85
         Top = 102
         Width = 240
         Height = 13
@@ -283,15 +283,11 @@ object PropertiesDialog: TPropertiesDialog
         Columns = <
           item
             Caption = 'File'
-            Width = -2
-            WidthType = (
-              -2)
+            Width = 100
           end
           item
             Caption = 'Checksum'
-            Width = -2
-            WidthType = (
-              -2)
+            Width = 100
           end>
         ColumnClick = False
         DoubleBuffered = True
@@ -314,6 +310,8 @@ object PropertiesDialog: TPropertiesDialog
         MaxLength = 250
         TabOrder = 0
         OnChange = ChecksumAlgEditChange
+        OnEnter = ControlChange
+        OnExit = ControlChange
         Items.Strings = (
           'Xmd5')
       end

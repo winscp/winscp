@@ -13,6 +13,7 @@
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
 #include <Vcl.Imaging.pngimage.hpp>
+#include <Vcl.Menus.hpp>
 //---------------------------------------------------------------------------
 struct TLogItemData;
 //---------------------------------------------------------------------------
@@ -44,6 +45,9 @@ __published:
   TListView *LogView;
   TImage *Image;
   TCheckBox *ContinueOnErrorCheck;
+  TPopupMenu *MinimizeMenu;
+  TMenuItem *Minimize1;
+  TMenuItem *MinimizetoTray1;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);
@@ -65,6 +69,9 @@ __published:
           TCustomDrawState State, bool &DefaultDraw);
   void __fastcall LogViewDeletion(TObject *Sender, TListItem *Item);
   void __fastcall LogViewDblClick(TObject *Sender);
+  void __fastcall Minimize1Click(TObject *Sender);
+  void __fastcall MinimizetoTray1Click(TObject *Sender);
+  void __fastcall MinimizeButtonDropDownClick(TObject *Sender);
 
 private:
   TSynchronizeParamType FParams;
@@ -112,6 +119,7 @@ protected:
     const UnicodeString & Message, TStrings * MoreMessages, TQueryType Type,
     const UnicodeString & HelpKeyword);
   TLogItemData * __fastcall GetLogItemData(TListItem * Item);
+  void __fastcall Minimize(TObject * Sender);
 
 public:
   __fastcall TSynchronizeDialog(TComponent * Owner);

@@ -180,6 +180,9 @@ bool __fastcall TQueueController::AllowOperation(
     case qoDeleteAllDone:
       return (FQueueStatus != NULL) && (FQueueStatus->DoneCount > 0);
 
+    case qoDeleteAll:
+      return (FQueueStatus != NULL) && (FQueueStatus->Count > 0);
+
     default:
       FAIL;
       return false;
@@ -270,8 +273,10 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
       break;
 
     case qoDeleteAllDone:
+    case qoDeleteAll:
       {
-        for (int i = 0; i < FQueueStatus->DoneCount; i++)
+        int Count = (Operation == qoDeleteAll) ? FQueueStatus->Count : FQueueStatus->DoneCount;
+        for (int i = 0; i < Count; i++)
         {
           QueueItem = FQueueStatus->Items[i];
           QueueItem->Delete();
