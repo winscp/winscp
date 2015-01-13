@@ -16,6 +16,7 @@
 const int ccLocal = ccUser;
 const int ccShowResults = ccUser << 1;
 const int ccCopyResults = ccUser << 2;
+const int ccRemoteFiles = ccUser << 3;
 const int ccSet = 0x80000000;
 //---------------------------------------------------------------------------
 static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;

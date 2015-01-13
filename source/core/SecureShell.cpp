@@ -1167,7 +1167,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
         "need to send at least another %u bytes",
         (BufSize, BufSize - MAX_BUFSIZE)));
     }
-    EventSelectLoop(100, false, true, NULL);
+    EventSelectLoop(100, false, NULL);
     BufSize = FBackend->sendbuffer(FBackendHandle);
     if (Configuration->ActualLogProtocol >= 1)
     {
@@ -1212,7 +1212,7 @@ void __fastcall TSecureShell::Send(const unsigned char * Buf, Integer Len)
   }
   FLastDataSent = Now();
   // among other forces receive of pending data to free the servers's send buffer
-  EventSelectLoop(0, false, true, NULL);
+  EventSelectLoop(0, false, NULL);
 
   if (BufSize > MAX_BUFSIZE)
   {
@@ -1609,7 +1609,7 @@ void __fastcall TSecureShell::PoolForData(WSANETWORKEVENTS & Events, unsigned in
       // in extreme condition it may happen that send buffer is full, but there
       // will be no data coming and we may not empty the send buffer because we
       // do not process FD_WRITE until we receive any FD_READ
-      if (EventSelectLoop(0, false, true, &Events))
+      if (EventSelectLoop(0, false, &Events))
       {
         LogEvent(L"Data has arrived, closing query to user.");
         Result = qaOK;
@@ -1659,7 +1659,7 @@ void __fastcall TSecureShell::WaitForData()
       LogEvent(L"Looking for incoming data");
     }
 
-    IncomingData = EventSelectLoop(FSessionData->Timeout * MSecsPerSec, true, true, NULL);
+    IncomingData = EventSelectLoop(FSessionData->Timeout * MSecsPerSec, true, NULL);
     if (!IncomingData)
     {
       assert(FWaitingForData == 0);
@@ -1790,7 +1790,7 @@ bool __fastcall TSecureShell::ProcessNetworkEvents(SOCKET Socket)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventRequired,
-  bool DoProcessGUI, WSANETWORKEVENTS * Events)
+  WSANETWORKEVENTS * Events)
 {
   CheckConnection();
 
@@ -1822,10 +1822,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
         unsigned int TimeoutStep = std::min(GUIUpdateInterval, Timeout);
         Timeout -= TimeoutStep;
         WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, TimeoutStep);
-        if (DoProcessGUI)
-        {
-          ProcessGUI();
-        }
+        FUI->ProcessGUI();
       } while ((WaitResult == WAIT_TIMEOUT) && (Timeout > 0));
 
       if (WaitResult < WAIT_OBJECT_0 + HandleCount)
@@ -1922,9 +1919,7 @@ void __fastcall TSecureShell::Idle(unsigned int MSec)
   // do not read here, otherwise we swallow read event and never wake
   if (FWaitingForData <= 0)
   {
-    // do not process GUI here, as we are called from GUI loop and may
-    // recurse for good
-    EventSelectLoop(MSec, false, false, NULL);
+    EventSelectLoop(MSec, false, NULL);
   }
 }
 //---------------------------------------------------------------------------
@@ -2078,7 +2073,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
     {
       UnicodeString StoredKey = CutToChar(Buf, Delimiter, false);
       bool Fingerprint = (StoredKey.SubString(1, 2) != L"0x");
-      // its probably a fingerprint (stored by TSessionData::CacheHostKey)
+      // it's probably a fingerprint (stored by TSessionData::CacheHostKey)
       UnicodeString NormalizedExpectedKey;
       if (Fingerprint)
       {
@@ -2220,9 +2215,11 @@ void __fastcall TSecureShell::AskAlg(const UnicodeString AlgType,
   const UnicodeString AlgName)
 {
   UnicodeString Msg;
+  UnicodeString Error;
   if (AlgType == L"key-exchange algorithm")
   {
     Msg = FMTLOAD(KEX_BELOW_TRESHOLD, (AlgName));
+    Error = FMTLOAD(KEX_NOT_VERIFIED, (AlgName));
   }
   else
   {
@@ -2245,11 +2242,12 @@ void __fastcall TSecureShell::AskAlg(const UnicodeString AlgType,
     }
 
     Msg = FMTLOAD(CIPHER_BELOW_TRESHOLD, (LoadStr(CipherType), AlgName));
+    Error = FMTLOAD(CIPHER_NOT_VERIFIED, (AlgName));
   }
 
   if (FUI->QueryUser(Msg, NULL, qaYes | qaNo, NULL, qtWarning) == qaNo)
   {
-    Abort();
+    FUI->FatalError(NULL, Error);
   }
 }
 //---------------------------------------------------------------------------

@@ -6551,10 +6551,17 @@ bool CFtpControlSocket::CheckForcePasvIp(CString & host)
 		case 0: // on
 			if (!GetPeerName(ahost, tmpPort))
 			{
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Error retrieving server address"));
-				result = false;
+				// this should happen with proxy server only
+				int logontype = COptions::GetOptionVal(OPTION_LOGONTYPE);
+				// do not know what to do, if there's FTP proxy
+				if (!logontype)
+				{
+					// this is a host name, not an IP, but it should not be a problem
+					ahost = m_CurrentServer.host;
+				}
 			}
-			else if (ahost != host)
+			
+			if (ahost != host)
 			{
 				LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Using host address %s instead of the one suggested by the server: %s"), ahost, host);
 				host = ahost;
@@ -6568,7 +6575,6 @@ bool CFtpControlSocket::CheckForcePasvIp(CString & host)
 		default: // auto
 			if (!GetPeerName(ahost, tmpPort))
 			{
-				// this is not failure in "auto" mode
 				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("Error retrieving server address, cannot test if address is routable"));
 			}
 			else if (!IsRoutableAddress(host) && IsRoutableAddress(ahost))

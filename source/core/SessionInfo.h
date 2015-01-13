@@ -71,6 +71,7 @@ public:
   virtual void __fastcall FatalError(Exception * E, UnicodeString Msg, UnicodeString HelpKeyword = L"") = 0;
   virtual void __fastcall HandleExtendedException(Exception * E) = 0;
   virtual void __fastcall Closed() = 0;
+  virtual void __fastcall ProcessGUI() = 0;
 };
 //---------------------------------------------------------------------------
 // Duplicated in LogMemo.h for design-time-only purposes

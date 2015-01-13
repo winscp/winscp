@@ -1035,6 +1035,8 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         }
         ADF(L"Ping type: %s, Ping interval: %d sec; Timeout: %d sec",
           (UnicodeString(PingTypes[PingType]), PingInterval, Data->Timeout));
+        ADF(L"Disable Nagle: %s",
+          (BooleanToEngStr(Data->TcpNoDelay)));
       }
       ADF(L"Proxy: %s",
         ((Data->FtpProxyLogonType != 0) ?

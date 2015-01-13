@@ -460,5 +460,6 @@ UnicodeString __fastcall ModificationStr(TDateTime DateTime,
   TModificationFmt Precision);
 int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs = 0,
   UnicodeString * TypeName = NULL);
+bool __fastcall SameUserName(const UnicodeString & UserName1, const UnicodeString & UserName2);
 //---------------------------------------------------------------------------
 #endif

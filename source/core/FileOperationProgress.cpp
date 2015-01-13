@@ -42,7 +42,6 @@ void __fastcall TFileOperationProgressType::Clear()
 {
   FileName = L"";
   AsciiTransfer = false;
-  ResumeStatus = rsNotAvailable;
   Count = 0;
   FFilesFinished = 0;
   StartTime = Now();
@@ -452,12 +451,6 @@ bool __fastcall TFileOperationProgressType::IsTransferDone()
 void __fastcall TFileOperationProgressType::SetAsciiTransfer(bool AAsciiTransfer)
 {
   AsciiTransfer = AAsciiTransfer;
-  DoProgress();
-}
-//---------------------------------------------------------------------------
-void __fastcall TFileOperationProgressType::SetResumeStatus(TResumeStatus AResumeStatus)
-{
-  ResumeStatus = AResumeStatus;
   DoProgress();
 }
 //---------------------------------------------------------------------------

@@ -371,5 +371,5 @@ BEGIN
     "checksum <alg> <file>\n"
     "  Calculates checksum of remote file.\n"
     "example:\n"
-    "  checksum sha1 index.html\n"
+    "  checksum sha-1 index.html\n"
 END

@@ -14,6 +14,7 @@ extern const int ccLocal;
 extern const int ccShowResults;
 extern const int ccCopyResults;
 extern const int ccSet;
+extern const int ccRemoteFiles;
 //---------------------------------------------------------------------------
 const int soRecurse =         0x01;
 const int soSynchronize =     0x02;

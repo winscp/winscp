@@ -6,8 +6,8 @@ object CustomCommandDialog: TCustomCommandDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CustomCommandDialog'
-  ClientHeight = 282
-  ClientWidth = 396
+  ClientHeight = 309
+  ClientWidth = 416
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = False
@@ -15,20 +15,20 @@ object CustomCommandDialog: TCustomCommandDialog
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
-    396
-    282)
+    416
+    309)
   PixelsPerInch = 96
   TextHeight = 13
   object Group: TGroupBox
     Left = 8
     Top = 8
-    Width = 380
-    Height = 232
+    Width = 400
+    Height = 259
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     DesignSize = (
-      380
-      232)
+      400
+      259)
     object DescriptionLabel: TLabel
       Left = 11
       Top = 16
@@ -49,7 +49,7 @@ object CustomCommandDialog: TCustomCommandDialog
     end
     object ShortCutLabel: TLabel
       Left = 16
-      Top = 205
+      Top = 231
       Width = 93
       Height = 13
       Caption = '&Keyboard shortcut:'
@@ -58,7 +58,7 @@ object CustomCommandDialog: TCustomCommandDialog
     object DescriptionEdit: TEdit
       Left = 11
       Top = 32
-      Width = 358
+      Width = 378
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
@@ -68,7 +68,7 @@ object CustomCommandDialog: TCustomCommandDialog
     object CommandEdit: THistoryComboBox
       Left = 11
       Top = 80
-      Width = 358
+      Width = 378
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
@@ -81,14 +81,14 @@ object CustomCommandDialog: TCustomCommandDialog
     object ApplyToDirectoriesCheck: TCheckBox
       Left = 16
       Top = 149
-      Width = 161
+      Width = 181
       Height = 17
       Caption = '&Apply to directories'
       TabOrder = 5
       OnClick = ControlChange
     end
     object RecursiveCheck: TCheckBox
-      Left = 184
+      Left = 203
       Top = 149
       Width = 185
       Height = 17
@@ -97,7 +97,7 @@ object CustomCommandDialog: TCustomCommandDialog
       OnClick = ControlChange
     end
     object LocalCommandButton: TRadioButton
-      Left = 184
+      Left = 203
       Top = 122
       Width = 185
       Height = 17
@@ -108,7 +108,7 @@ object CustomCommandDialog: TCustomCommandDialog
     object RemoteCommandButton: TRadioButton
       Left = 16
       Top = 122
-      Width = 161
+      Width = 181
       Height = 17
       Caption = '&Remote command'
       TabOrder = 3
@@ -117,23 +117,23 @@ object CustomCommandDialog: TCustomCommandDialog
     object ShowResultsCheck: TCheckBox
       Left = 16
       Top = 176
-      Width = 161
+      Width = 181
       Height = 17
       Caption = '&Show results in terminal'
       TabOrder = 7
       OnClick = ControlChange
     end
     object CopyResultsCheck: TCheckBox
-      Left = 184
-      Top = 176
-      Width = 185
+      Left = 16
+      Top = 203
+      Width = 181
       Height = 17
       Caption = 'Copy results to clip&board'
-      TabOrder = 8
+      TabOrder = 9
       OnClick = ControlChange
     end
     object HintText: TStaticText
-      Left = 290
+      Left = 310
       Top = 103
       Width = 79
       Height = 16
@@ -145,16 +145,25 @@ object CustomCommandDialog: TCustomCommandDialog
       TabStop = True
     end
     object ShortCutCombo: TComboBox
-      Left = 184
-      Top = 200
+      Left = 203
+      Top = 226
       Width = 184
       Height = 21
-      TabOrder = 9
+      TabOrder = 10
+    end
+    object RemoteFilesCheck: TCheckBox
+      Left = 203
+      Top = 176
+      Width = 181
+      Height = 17
+      Caption = '&Use remote files'
+      TabOrder = 8
+      OnClick = ControlChange
     end
   end
   object OkButton: TButton
-    Left = 144
-    Top = 249
+    Left = 164
+    Top = 276
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -164,8 +173,8 @@ object CustomCommandDialog: TCustomCommandDialog
     TabOrder = 1
   end
   object CancelButton: TButton
-    Left = 228
-    Top = 249
+    Left = 248
+    Top = 276
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -175,8 +184,8 @@ object CustomCommandDialog: TCustomCommandDialog
     TabOrder = 2
   end
   object HelpButton: TButton
-    Left = 312
-    Top = 249
+    Left = 332
+    Top = 276
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

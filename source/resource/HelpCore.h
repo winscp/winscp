@@ -31,5 +31,6 @@
 #define HELP_INTERNAL_ERROR                    "internal_error"
 #define HELP_PRESERVE_TIME_PERM_ERROR          "message_preserve_time_perm"
 #define HELP_FTP_SUGGESTION                    "message_server_rejected_sftp_listens_for_ftp"
+#define HELP_STATUSMSG_DISCONNECTED            "message_disconnected"
 
 #endif // HelpCoreH

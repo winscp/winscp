@@ -203,6 +203,7 @@ private:
   bool FCollectFileSystemUsage;
   bool FRememberedPasswordTried;
   bool FRememberedTunnelPasswordTried;
+  int FIdle;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -348,6 +349,7 @@ protected:
     UnicodeString Name, UnicodeString Instructions, TStrings * Prompts, TStrings * Results);
   virtual void __fastcall DisplayBanner(const UnicodeString & Banner);
   virtual void __fastcall Closed();
+  virtual void __fastcall ProcessGUI();
   virtual void __fastcall HandleExtendedException(Exception * E);
   bool __fastcall IsListenerFree(unsigned int PortNumber);
   void __fastcall DoProgress(TFileOperationProgressType & ProgressData);

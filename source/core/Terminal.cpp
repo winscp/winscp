@@ -369,6 +369,7 @@ public:
   virtual void __fastcall FatalError(Exception * E, UnicodeString Msg, UnicodeString HelpContext);
   virtual void __fastcall HandleExtendedException(Exception * E);
   virtual void __fastcall Closed();
+  virtual void __fastcall ProcessGUI();
 
 private:
   TTerminal * FTerminal;
@@ -465,6 +466,11 @@ void __fastcall TTunnelUI::HandleExtendedException(Exception * E)
 }
 //---------------------------------------------------------------------------
 void __fastcall TTunnelUI::Closed()
+{
+  // noop
+}
+//---------------------------------------------------------------------------
+void __fastcall TTunnelUI::ProcessGUI()
 {
   // noop
 }
@@ -623,6 +629,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FTunnelUI = NULL;
   FTunnelOpening = false;
   FCallbackGuard = NULL;
+  FIdle = 0;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
@@ -663,6 +670,8 @@ void __fastcall TTerminal::Idle()
   // "receives the information"
   if (Active)
   {
+    TAutoNestingCounter IdleCounter(FIdle);
+
     if (Configuration->ActualLogProtocol >= 1)
     {
       LogEvent(L"Session upkeep");
@@ -1068,6 +1077,17 @@ void __fastcall TTerminal::Closed()
   }
 
   FStatus = ssClosed;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::ProcessGUI()
+{
+  // Do not process GUI here, as we are called directly from a GUI loop and may
+  // recurse for good.
+  // Alternatively we may check for (FOperationProgress == NULL)
+  if (FIdle == 0)
+  {
+    ::ProcessGUI();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Reopen(int Params)

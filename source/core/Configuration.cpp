@@ -676,6 +676,11 @@ void __fastcall TConfiguration::CleanupIniFile()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TConfiguration::DontSave()
+{
+  FDontSave = true;
+}
+//---------------------------------------------------------------------------
 RawByteString __fastcall TConfiguration::EncryptPassword(UnicodeString Password, UnicodeString Key)
 {
   if (Password.IsEmpty())
@@ -805,6 +810,11 @@ UnicodeString __fastcall TConfiguration::GetProductVersion()
   return GetFileProductVersion(L"");
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetReleaseType()
+{
+  return GetFileInfoString(L"ReleaseType");
+}
+//---------------------------------------------------------------------------
 bool __fastcall TConfiguration::GetIsUnofficial()
 {
   #ifdef BUILD_OFFICIAL
@@ -849,7 +859,17 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
     AddToList(BuildStr, DateStr, L" ");
     #endif
 
-    UnicodeString Result = FMTLOAD(VERSION2, (Version, BuildStr));
+    UnicodeString FullVersion = Version;
+
+    UnicodeString AReleaseType = GetReleaseType();
+    if (ALWAYS_TRUE(!AReleaseType.IsEmpty()) &&
+        !SameText(AReleaseType, L"stable") &&
+        !SameText(AReleaseType, L"development"))
+    {
+      FullVersion += L" " + AReleaseType;
+    }
+
+    UnicodeString Result = FMTLOAD(VERSION2, (FullVersion, BuildStr));
 
     #ifndef BUILD_OFFICIAL
     Result += L" " + LoadStr(VERSION_DONT_DISTRIBUTE);

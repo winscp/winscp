@@ -1886,9 +1886,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object QueueSuspendOnceEmptyAction: TAction
       Tag = 12
       Category = 'Queue'
-      Caption = 'Sus&pend'
+      Caption = 'Slee&p'
       HelpKeyword = 'ui_queue'
-      Hint = 'Suspend the computer once the queue is empty'
+      Hint = 'Put the computer into sleep mode once the queue is empty'
       ImageIndex = 105
     end
     object QueueIdleOnceEmptyAction: TAction
@@ -2137,6 +2137,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Session'
       Caption = 'Generate &URL...'
       HelpKeyword = 'ui_generateurl'
+      Hint = 'Generate URL for current session'
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu

@@ -108,6 +108,7 @@ void __fastcall TCustomCommandDialog::UpdateControls()
   bool RemoteCommand = RemoteCommandButton->Checked;
   bool AllowRecursive = true;
   bool AllowApplyToDirectories = true;
+  bool AllowRemoteFiles = false;
   try
   {
     TRemoteCustomCommand RemoteCustomCommand;
@@ -118,6 +119,7 @@ void __fastcall TCustomCommandDialog::UpdateControls()
     TInteractiveCustomCommand InteractiveCustomCommand(FileCustomCommand);
     UnicodeString Cmd = InteractiveCustomCommand.Complete(Command, false);
     bool FileCommand = FileCustomCommand->IsFileCommand(Cmd);
+    AllowRemoteFiles = !RemoteCommand && FileCustomCommand->IsRemoteFileCommand(Cmd);
     AllowRecursive = FileCommand && !FileCustomCommand->IsFileListCommand(Cmd);
     if (AllowRecursive && !RemoteCommand)
     {
@@ -129,10 +131,11 @@ void __fastcall TCustomCommandDialog::UpdateControls()
   {
   }
 
-  EnableControl(RecursiveCheck, AllowRecursive);
+  EnableControl(RecursiveCheck, AllowRecursive && (!RemoteFilesCheck->Enabled || !RemoteFilesCheck->Checked));
   EnableControl(ApplyToDirectoriesCheck, AllowApplyToDirectories);
   EnableControl(ShowResultsCheck, RemoteCommand);
   EnableControl(CopyResultsCheck, RemoteCommand);
+  EnableControl(RemoteFilesCheck, AllowRemoteFiles && (!RecursiveCheck->Enabled || !RecursiveCheck->Checked));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::SetParams(int value)
@@ -143,18 +146,20 @@ void __fastcall TCustomCommandDialog::SetParams(int value)
   (FLAGSET(value, ccLocal) ? LocalCommandButton : RemoteCommandButton)->Checked = true;
   ShowResultsCheck->Checked = FLAGSET(value, ccShowResults);
   CopyResultsCheck->Checked = FLAGSET(value, ccCopyResults);
+  RemoteFilesCheck->Checked = FLAGSET(value, ccRemoteFiles);
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomCommandDialog::GetParams()
 {
   return
     (FParams & ~(ccApplyToDirectories | ccRecursive | ccLocal |
-       ccShowResults | ccCopyResults)) |
+       ccShowResults | ccCopyResults | ccRemoteFiles)) |
     FLAGMASK(!RemoteCommandButton->Checked, ccLocal) |
     FLAGMASK(ApplyToDirectoriesCheck->Checked, ccApplyToDirectories) |
     FLAGMASK(RecursiveCheck->Checked && RecursiveCheck->Enabled, ccRecursive) |
     FLAGMASK(ShowResultsCheck->Checked && ShowResultsCheck->Enabled, ccShowResults) |
-    FLAGMASK(CopyResultsCheck->Checked && CopyResultsCheck->Enabled, ccCopyResults);
+    FLAGMASK(CopyResultsCheck->Checked && CopyResultsCheck->Enabled, ccCopyResults) |
+    FLAGMASK(RemoteFilesCheck->Checked && RemoteFilesCheck->Enabled, ccRemoteFiles);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::ControlChange(TObject * /*Sender*/)

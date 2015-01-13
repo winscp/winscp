@@ -43,12 +43,14 @@ UnicodeString DefaultStr(const UnicodeString & Str, const UnicodeString & Defaul
 UnicodeString CutToChar(UnicodeString &Str, wchar_t Ch, bool Trim);
 UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString Chs, bool Trim,
   wchar_t * Delimiter = NULL, bool DoubleDelimiterEscapes = false);
+UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim);
 UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars);
 UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote);
 UnicodeString ExceptionLogString(Exception *E);
 UnicodeString __fastcall MainInstructions(const UnicodeString & S);
 UnicodeString __fastcall MainInstructionsFirstParagraph(const UnicodeString & S);
 bool ExtractMainInstructions(UnicodeString & S, UnicodeString & MainInstructions);
+UnicodeString RemoveMainInstructionsTag(UnicodeString S);
 UnicodeString UnformatMessage(UnicodeString S);
 UnicodeString RemoveInteractiveMsgTag(UnicodeString S);
 bool IsNumber(const UnicodeString Str);

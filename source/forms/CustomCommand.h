@@ -30,6 +30,7 @@ __published:
   TStaticText *HintText;
   TLabel *ShortCutLabel;
   TComboBox *ShortCutCombo;
+  TCheckBox *RemoteFilesCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall HelpButtonClick(TObject *Sender);

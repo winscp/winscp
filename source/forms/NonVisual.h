@@ -612,7 +612,7 @@ private:
   int FBusy;
 
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
-  bool __fastcall GetBusy() { return FBusy > 0; }
+  bool __fastcall GetBusy();
 
 protected:
   void __fastcall CreateSessionListMenu(TAction * Action);

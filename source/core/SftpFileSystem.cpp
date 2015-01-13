@@ -1662,11 +1662,14 @@ protected:
       FIndex++;
 
       bool MissingRights =
-        (FLAGSET(FFileSystem->FSupport->AttributeMask, SSH_FILEXFER_ATTR_PERMISSIONS) &&
-           File->Rights->Unknown);
+        (FFileSystem->FSupport->Loaded &&
+         FLAGSET(FFileSystem->FSupport->AttributeMask, SSH_FILEXFER_ATTR_PERMISSIONS) &&
+         File->Rights->Unknown);
       bool MissingOwnerGroup =
-        (FLAGSET(FFileSystem->FSupport->AttributeMask, SSH_FILEXFER_ATTR_OWNERGROUP) &&
-           !File->Owner.IsSet || !File->Group.IsSet);
+        (FFileSystem->FSecureShell->SshImplementation == sshiBitvise) ||
+        (FFileSystem->FSupport->Loaded &&
+         FLAGSET(FFileSystem->FSupport->AttributeMask, SSH_FILEXFER_ATTR_OWNERGROUP) &&
+         !File->Owner.IsSet || !File->Group.IsSet);
 
       Result = (MissingRights || MissingOwnerGroup);
       if (Result)
@@ -2088,11 +2091,14 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
       // (no other attributes are loaded).
       // This is here only because of VShell
       // (it supports owner/group, but does not include them into response to
-      // SSH_FXP_READDIR).
-      // No other use is know.
-      return FSupport->Loaded &&
-        ((FSupport->AttributeMask &
-          (SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_OWNERGROUP)) != 0);
+      // SSH_FXP_READDIR)
+      // and Bitwise (the same as VShell, but it does not even bother to provide "supported" extension)
+      // No other use is known.
+      return
+        (FSupport->Loaded &&
+         ((FSupport->AttributeMask &
+           (SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_OWNERGROUP)) != 0)) ||
+        (FSecureShell->SshImplementation == sshiBitvise);
 
     case fcCheckingSpaceAvailable:
       return
@@ -3803,7 +3809,7 @@ bool __fastcall TSFTPFileSystem::LoadFilesProperties(TStrings * FileList)
 {
   bool Result = false;
   // without knowledge of server's capabilities, this all make no sense
-  if (FSupport->Loaded)
+  if (FSupport->Loaded || (FSecureShell->SshImplementation == sshiBitvise))
   {
     TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
     Progress.Start(foGetProperties, osRemote, FileList->Count);
@@ -4518,7 +4524,6 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
       ResumeAllowed = !OperationProgress->AsciiTransfer &&
         CopyParam->AllowResume(OperationProgress->LocalSize) &&
         IsCapable(fcRename);
-      OperationProgress->SetResumeStatus(ResumeAllowed ? rsEnabled : rsDisabled);
 
       TOverwriteFileParams FileParams;
       FileParams.SourceSize = OperationProgress->LocalSize;
@@ -4542,20 +4547,24 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
             FileParams.DestSize = OpenParams.DestFileSize;
             FileParams.DestTimestamp = File->Modification;
             DestRights = *File->Rights;
-            // if destination file is symlink, never do resumable transfer,
+            // - If destination file is symlink, never do resumable transfer,
             // as it would delete the symlink.
-            // also bit of heuristics to detect symlink on SFTP-3 and older
+            // - Also bit of heuristics to detect symlink on SFTP-3 and older
             // (which does not indicate symlink in SSH_FXP_ATTRS).
             // if file has all permissions and is small, then it is likely symlink.
             // also it is not likely that such a small file (if it is not symlink)
             // gets overwritten by large file (that would trigger resumable transfer).
+            // - Also never do resumable transfer for file owner by other user
+            // as deleting and recreating the file would change ownership.
+            // This won't for work for SFT-3 (OpenSSH) as it does not provide
+            // owner name (only UID) and we know only logged in user name (not UID)
             if (File->IsSymLink ||
                 ((FVersion < 4) &&
                  ((*File->Rights & TRights::rfAll) == TRights::rfAll) &&
-                 (File->Size < 100)))
+                 (File->Size < 100)) ||
+                (!File->Owner.Name.IsEmpty() && !SameUserName(File->Owner.Name, FTerminal->UserName)))
             {
               ResumeAllowed = false;
-              OperationProgress->SetResumeStatus(rsDisabled);
             }
 
             delete File;
@@ -5482,7 +5491,6 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
     ResumeAllowed = ((Params & cpTemporary) == 0) &&
       !OperationProgress->AsciiTransfer &&
       CopyParam->AllowResume(OperationProgress->TransferSize);
-    OperationProgress->SetResumeStatus(ResumeAllowed ? rsEnabled : rsDisabled);
 
     int Attrs;
     FILE_OPERATION_LOOP_BEGIN

@@ -1709,3 +1709,10 @@ void __fastcall TNonVisualDataModule::EndBusy()
 {
   FBusy--;
 }
+//---------------------------------------------------------------------------
+bool __fastcall TNonVisualDataModule::GetBusy()
+{
+  return
+    (FBusy > 0) ||
+    ((ScpExplorer != NULL) && ScpExplorer->IsBusy());
+}

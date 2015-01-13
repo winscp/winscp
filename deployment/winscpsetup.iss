@@ -7,7 +7,7 @@
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebReport WebRoot+"install.php"
 #define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
-#define Year 2014
+#define Year 2015
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
@@ -341,6 +341,7 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; \
 #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang
 
 [UninstallRun]
+; Make sure no later uninstall task recreate the configuration
 Filename: "{app}\WinSCP.exe"; Parameters: "/UninstallCleanup"; \
   RunOnceId: "UninstallCleanup"
 Filename: "{app}\WinSCP.exe"; Parameters: "/RemoveSearchPath"; \

@@ -48,8 +48,6 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
   FLastTotalSizeSet = false;
   FDataGot = false;
   FDataReceived = false;
-  FAsciiTransferChanged = false;
-  FResumeStatusChanged = false;
   FCancel = csContinue;
   FMoveToQueue = false;
   FMinimizedByMe = false;
@@ -338,18 +336,6 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
   // (until UpdateTimerTimer)
   if (FileLabel->Caption.IsEmpty() && !AData.FileName.IsEmpty())
   {
-    InstantUpdate = true;
-  }
-
-  if (!FAsciiTransferChanged && FData.AsciiTransfer != AData.AsciiTransfer)
-  {
-    FAsciiTransferChanged = true;
-    InstantUpdate = true;
-  }
-
-  if (!FResumeStatusChanged && FData.ResumeStatus != AData.ResumeStatus)
-  {
-    FResumeStatusChanged = true;
     InstantUpdate = true;
   }
 

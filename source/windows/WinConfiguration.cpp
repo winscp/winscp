@@ -1243,7 +1243,7 @@ void __fastcall TWinConfiguration::AddVersionToHistory()
   if (!CurrentVersionPresent)
   {
     UnicodeString CurrentVersionInfo =
-      IntToStr(CurrentVersion) + L"," + FileInfoString[L"ReleaseType"];
+      IntToStr(CurrentVersion) + L"," + GetReleaseType();
     AddToList(FVersionHistory, CurrentVersionInfo, L';');
   }
 
@@ -1252,12 +1252,13 @@ void __fastcall TWinConfiguration::AddVersionToHistory()
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::DoIsBeta(const UnicodeString & ReleaseType)
 {
+  // What about "Development" release type?
   return AnsiSameText(ReleaseType, L"beta") || AnsiSameText(ReleaseType, L"rc");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::GetIsBeta()
 {
-  return DoIsBeta(FileInfoString[L"ReleaseType"]);
+  return DoIsBeta(GetReleaseType());
 }
 //---------------------------------------------------------------------------
 TFont * __fastcall TWinConfiguration::GetSystemIconFont()

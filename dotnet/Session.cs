@@ -680,13 +680,13 @@ namespace WinSCP
             }
         }
 
-        public string CalculateFileChecksum(string algorithm, string path)
+        public byte[] CalculateFileChecksum(string algorithm, string path)
         {
             using (Logger.CreateCallstack())
             {
                 WriteCommand(string.Format(CultureInfo.InvariantCulture, "checksum -- \"{0}\" \"{1}\"", Tools.ArgumentEscape(algorithm), Tools.ArgumentEscape(path)));
 
-                string result = null;
+                string hex = null;
 
                 using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
                 using (ElementLogReader checksumReader = groupReader.WaitForNonEmptyElementAndCreateLogReader("checksum", LogReadFlags.ThrowFailures))
@@ -696,14 +696,28 @@ namespace WinSCP
                         string value;
                         if (checksumReader.GetEmptyElementValue("checksum", out value))
                         {
-                            result = value;
+                            hex = value;
                         }
                     }
 
                     groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
                 }
 
-                return result;
+                int len = hex.Length;
+
+                if ((len % 2) != 0)
+                {
+                    string error = string.Format(CultureInfo.CurrentCulture, "Invalid string representation of checksum - {0}", hex);
+                    throw new SessionLocalException(this, error);
+                }
+
+                int count = len / 2;
+                byte[] bytes = new byte[count];
+                for (int i = 0; i < count; i++)
+                {
+                    bytes[i] = Convert.ToByte(hex.Substring(i * 2, 2), 16);
+                }
+                return bytes;
             }
         }
 

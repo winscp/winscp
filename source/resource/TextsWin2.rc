@@ -31,7 +31,7 @@ BEGIN
 "G:%APP% [/console] [/script=file] [/command command1...] [/parameter param1...]\n"
 "C:%APP% [/script=file] [/command command1...] [/parameter param1...]\n"
 "B:%APP% [/ini=<inifile>] [/log=<logfile>] [/xmllog=<logfile> [/xmlgroups]]\n"
-"B:%APP% [/rawconfig config1=value1 config1=value2 ...]\n"
+"B:%APP% [/rawconfig config1=value1 config2=value2 ...]\n"
 "B:%APP% [/batchsettings <site_mask> setting1=value1 setting2=value2 ...]\n"
 "G:%APP% /update\n"
 "B:%APP% /help\n"

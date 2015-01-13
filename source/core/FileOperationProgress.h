@@ -13,7 +13,6 @@ enum TFileOperation { foNone, foCopy, foMove, foDelete, foSetProperties,
   foGetProperties, foCalculateChecksum };
 // csCancelTransfer and csRemoteAbort are used with SCP only
 enum TCancelStatus { csContinue = 0, csCancel, csCancelTransfer, csRemoteAbort };
-enum TResumeStatus { rsNotAvailable, rsEnabled, rsDisabled };
 enum TBatchOverwrite { boNo, boAll, boNone, boOlder, boAlternateResume, boAppend, boResume };
 typedef void __fastcall (__closure *TFileOperationProgressEvent)
   (TFileOperationProgressType & ProgressData);
@@ -61,7 +60,6 @@ public:
   __int64 TransferSize;
   __int64 TransferedSize;
   __int64 SkippedSize;
-  TResumeStatus ResumeStatus;
   bool InProgress;
   bool FileInProgress;
   TCancelStatus Cancel;
@@ -109,7 +107,6 @@ public:
   void __fastcall Resume();
   void __fastcall SetLocalSize(__int64 ASize);
   void __fastcall SetAsciiTransfer(bool AAsciiTransfer);
-  void __fastcall SetResumeStatus(TResumeStatus AResumeStatus);
   void __fastcall SetTransferSize(__int64 ASize);
   void __fastcall ChangeTransferSize(__int64 ASize);
   void __fastcall RollbackTransfer();

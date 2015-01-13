@@ -506,7 +506,9 @@ BOOL CAsyncSocketExLayer::GetPeerName( CString& rPeerAddress, UINT& rPeerPort )
 BOOL CAsyncSocketExLayer::GetPeerNameNext( CString& rPeerAddress, UINT& rPeerPort )
 {
 	if (m_pNextLayer)
+	{
 		return m_pNextLayer->GetPeerName(rPeerAddress, rPeerPort);
+	}
 	else
 	{
 		SOCKADDR* sockAddr;
@@ -563,14 +565,20 @@ BOOL CAsyncSocketExLayer::GetPeerName( SOCKADDR* lpSockAddr, int* lpSockAddrLen 
 BOOL CAsyncSocketExLayer::GetPeerNameNext( SOCKADDR* lpSockAddr, int* lpSockAddrLen )
 {
 	if (m_pNextLayer)
+	{
 		return m_pNextLayer->GetPeerName(lpSockAddr, lpSockAddrLen);
+	}
 	else
 	{
 		ASSERT(m_pOwnerSocket);
 		if ( !getpeername(m_pOwnerSocket->GetSocketHandle(), lpSockAddr, lpSockAddrLen) )
+		{
 			return TRUE;
+		}
 		else
+		{
 			return FALSE;
+		}
 	}
 }
 

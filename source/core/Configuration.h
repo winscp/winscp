@@ -145,6 +145,7 @@ protected:
   bool __fastcall GetAutoReadDirectoryAfterOp();
   void __fastcall SetAutoReadDirectoryAfterOp(bool value);
   virtual bool __fastcall GetRememberPassword();
+  UnicodeString __fastcall GetReleaseType();
 
   virtual UnicodeString __fastcall ModuleFileName();
 
@@ -178,6 +179,7 @@ public:
   void __fastcall CleanupRandomSeedFile();
   void __fastcall BeginUpdate();
   void __fastcall EndUpdate();
+  void __fastcall DontSave();
   void __fastcall LoadDirectoryChangesCache(const UnicodeString SessionKey,
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
   void __fastcall SaveDirectoryChangesCache(const UnicodeString SessionKey,
@@ -212,7 +214,6 @@ public:
   __property UnicodeString ProductVersion = { read=GetProductVersion };
   __property UnicodeString ProductName = { read=GetProductName };
   __property UnicodeString CompanyName = { read=GetCompanyName };
-  __property UnicodeString FileInfoString[UnicodeString Key] = { read = GetFileInfoString };
   __property UnicodeString OSVersionStr = { read = GetOSVersionStr };
   __property bool IsUnofficial = { read = GetIsUnofficial };
   __property bool Logging  = { read=FLogging, write=SetLogging };

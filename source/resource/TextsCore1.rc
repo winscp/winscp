@@ -208,6 +208,8 @@ BEGIN
   SFTP_STATUS_NO_MATCHING_BYTE_RANGE_LOCK, "The requested operation could not be completed because the specifed byte range lock has not been granted."
   KEY_TYPE_UNOPENABLE, "Private key file '%s' does not exist or cannot be opened."
   UNKNOWN_CHECKSUM, "Checksum algorithm '%s' is not supported."
+  CIPHER_NOT_VERIFIED, "Cipher %s was not verified!"
+  KEX_NOT_VERIFIED, "Key-exchange algorithm %s was not verified!"
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -251,8 +253,8 @@ BEGIN
   VERIFY_CERT_PROMPT3, "**The server's certificate is not known. You have no guarantee that the server is the computer you think it is.**\n\nServer's certificate details follow:\n\n%s\n\nIf you trust this certificate, press Yes. To connect without storing certificate, press No. To abandon the connection press Cancel.\n\nContinue connecting and store the certificate?"
   VERIFY_CERT_CONTACT, "- Organization: %s\n|- Location: %s\n|- Other: %s\n"
   VERIFY_CERT_CONTACT_LIST, "%s, %s"
-  CERT_TEXT, "Issuer:\n%s\nSubject:\n%s\nValid: %s - %s\n\nFingerprint (SHA1): %s\n\nSummary: %s"
-  KEY_TYPE_CONVERT, "**Do you want to load this %s private key to PuTTYgen to convert it to PuTTY format?**\n\nPrivate key file '%s' contains key in %s format. WinSCP supports only PuTTY format.\n \nYou can use PuTTYgen tool to convert your private key file."
+  CERT_TEXT, "Issuer:\n%s\nSubject:\n%s\nValid: %s - %s\n\nFingerprint (SHA-1): %s\n\nSummary: %s"
+  KEY_TYPE_CONVERT2, "**Do you want to load this %s private key to PuTTYgen to convert it to PuTTY format?**\n\n%s"
 
   CERT_FILENAME_PROMPT_TITLE, "Certificate file name"
   CERT_FILENAME_PROMPT, "Enter certificate file name:"

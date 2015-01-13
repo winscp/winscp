@@ -498,6 +498,15 @@ int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs,
   return Icon;
 }
 //---------------------------------------------------------------------------
+bool __fastcall SameUserName(const UnicodeString & UserName1, const UnicodeString & UserName2)
+{
+  // Bitvise reports file owner as "user@host", but we login with "user" only.
+  UnicodeString AUserName1 = CopyToChar(UserName1, L'@', true);
+  UnicodeString AUserName2 = CopyToChar(UserName2, L'@', true);
+  return SameText(AUserName1, AUserName2);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 __fastcall TRemoteToken::TRemoteToken() :
   FID(0),
   FIDValid(false)
@@ -706,6 +715,7 @@ void __fastcall TRemoteTokenList::AddUnique(const TRemoteToken & Token)
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteTokenList::Exists(const UnicodeString & Name) const
 {
+  // We should make use of SameUserName
   return (FNameMap.find(Name) != FNameMap.end());
 }
 //---------------------------------------------------------------------------
@@ -914,12 +924,12 @@ Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory() const
   {
     assert(Terminal);
     Result = !
-       (SameText(Terminal->UserName, L"root") ||
+       (SameUserName(Terminal->UserName, L"root") ||
         ((Rights->RightUndef[TRights::rrOtherExec] != TRights::rsNo)) ||
         ((Rights->Right[TRights::rrGroupExec] != TRights::rsNo) &&
          Terminal->Membership->Exists(Group.Name)) ||
         ((Rights->Right[TRights::rrUserExec] != TRights::rsNo) &&
-         SameText(Terminal->UserName, Owner.Name)));
+         SameUserName(Terminal->UserName, Owner.Name)));
   }
     else Result = False;
   return Result;

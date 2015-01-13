@@ -1555,7 +1555,8 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   }
   while (Answer == 0);
 
-  if ((Answer == AbortA) && FLAGCLEAR(Params->Params, qpIgnoreAbort))
+  if ((Answer == AbortA) &&
+      ((Params == NULL) || FLAGCLEAR(Params->Params, qpIgnoreAbort)))
   {
     if (FScript->Terminal != NULL)
     {

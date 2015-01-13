@@ -580,6 +580,7 @@ int __fastcall Execute()
       if (CheckSafe(Params))
       {
         RegisterForDefaultProtocols();
+        Configuration->DontSave();
       }
     }
     else if (Params->FindSwitch(L"UnregisterForProtocols"))
@@ -588,6 +589,7 @@ int __fastcall Execute()
       if (CheckSafe(Params))
       {
         UnregisterForProtocols();
+        Configuration->DontSave();
       }
     }
     else if (Params->FindSwitch(L"AddSearchPath"))
@@ -596,6 +598,7 @@ int __fastcall Execute()
       if (CheckSafe(Params))
       {
         AddSearchPath(ExtractFilePath(Application->ExeName));
+        Configuration->DontSave();
       }
     }
     else if (Params->FindSwitch(L"RemoveSearchPath"))
@@ -614,6 +617,7 @@ int __fastcall Execute()
           // even if AddSearchPath was not used, so we would get the error
           // always for non-priviledged user)
         }
+        Configuration->DontSave();
       }
     }
     else if (Params->FindSwitch(L"ImportSitesIfAny"))
@@ -639,12 +643,14 @@ int __fastcall Execute()
     {
       // noop
       MaintenanceTask();
+      Configuration->DontSave();
     }
     else if (Params->FindSwitch(L"MaintenanceTask"))
     {
       // Parameter /MaintenanceTask can be added to command-line when executing maintenance tasks
       // (e.g. from installer) just in case old version of WinSCP is called by mistake
       MaintenanceTask();
+      Configuration->DontSave();
     }
     else
     {

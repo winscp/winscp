@@ -83,11 +83,11 @@
 			<SanitizedProjectName>WinSCP</SanitizedProjectName>
 			<UsingDelphiRTL>true</UsingDelphiRTL>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.6.4.0;InternalName=winscp;LegalCopyright=(c) 2000-2014 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.6.4.0;ReleaseType=RC;WWW=http://winscp.net/</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.6.5.0;InternalName=winscp;LegalCopyright=(c) 2000-2015 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.6.5.0;ReleaseType=RC;WWW=http://winscp.net/</VerInfo_Keys>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<VerInfo_MajorVer>5</VerInfo_MajorVer>
 			<VerInfo_MinorVer>6</VerInfo_MinorVer>
-			<VerInfo_Release>4</VerInfo_Release>
+			<VerInfo_Release>5</VerInfo_Release>
 		</PropertyGroup>
 	<PropertyGroup Condition="'$(Base_Win32)'!=''">
 			<Defines>IDE;STRICT;$(Defines)</Defines>

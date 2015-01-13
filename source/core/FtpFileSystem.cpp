@@ -3011,7 +3011,7 @@ void __fastcall TFTPFileSystem::WaitForMessages()
   do
   {
     Result = WaitForSingleObject(FQueueEvent, GUIUpdateInterval);
-    ProcessGUI();
+    FTerminal->ProcessGUI();
   } while (Result == WAIT_TIMEOUT);
 
   if (Result != WAIT_OBJECT_0)
@@ -3271,6 +3271,11 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
           HelpKeyword = HELP_ERRORMSG_TIMEOUT;
         }
 
+        if (FLastCode == DummyDisconnectCode)
+        {
+          HelpKeyword = HELP_STATUSMSG_DISCONNECTED;
+        }
+
         MoreMessages->AddStrings(FLastError);
         // already cleared from WaitForReply, but GotReply can be also called
         // from Closed. then make sure that error from previous command not
@@ -3355,8 +3360,7 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
 void __fastcall TFTPFileSystem::SendCommand(const UnicodeString & Command)
 {
   FFileZillaIntf->CustomCommand(Command.c_str());
-  int From = 1;
-  FLastCommandSent = CopyToChars(Command, From, L" ", false);
+  FLastCommandSent = CopyToChar(Command, L' ', false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::SetLastCode(int Code)

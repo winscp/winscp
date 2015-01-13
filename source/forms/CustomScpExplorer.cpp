@@ -1692,21 +1692,33 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
         UnicodeString RootTempDir;
         UnicodeString TempDir;
 
-        TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, false, true);
+        bool RemoteFiles = FLAGSET(ACommand.Params, ccRemoteFiles);
+        if (!RemoteFiles)
+        {
+          TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, false, true);
+        }
 
         try
         {
-          RemoteFileList = new TStringList();
-
-          TMakeLocalFileListParams MakeFileListParam;
           TDateTimes RemoteFileTimes;
-          MakeFileListParam.FileList = RemoteFileList;
-          MakeFileListParam.FileTimes = &RemoteFileTimes;
-          MakeFileListParam.IncludeDirs = FLAGSET(ACommand.Params, ccApplyToDirectories);
-          MakeFileListParam.Recursive =
-            FLAGSET(ACommand.Params, ccRecursive) && !FileListCommand;
 
-          ProcessLocalDirectory(TempDir, Terminal->MakeLocalFileList, &MakeFileListParam);
+          if (RemoteFiles)
+          {
+            RemoteFileList = FileList;
+          }
+          else
+          {
+            RemoteFileList = new TStringList();
+
+            TMakeLocalFileListParams MakeFileListParam;
+            MakeFileListParam.FileList = RemoteFileList;
+            MakeFileListParam.FileTimes = &RemoteFileTimes;
+            MakeFileListParam.IncludeDirs = FLAGSET(ACommand.Params, ccApplyToDirectories);
+            MakeFileListParam.Recursive =
+              FLAGSET(ACommand.Params, ccRecursive) && !FileListCommand;
+
+            ProcessLocalDirectory(TempDir, Terminal->MakeLocalFileList, &MakeFileListParam);
+          }
 
           TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
 
@@ -1796,30 +1808,34 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
           }
 
           assert(!FAutoOperation);
-          TempDir = IncludeTrailingBackslash(TempDir);
-          for (int Index = 0; Index < RemoteFileList->Count; Index++)
+
+          if (!RemoteFiles)
           {
-            UnicodeString FileName = RemoteFileList->Strings[Index];
-            if (ALWAYS_TRUE(SameText(TempDir, FileName.SubString(1, TempDir.Length()))))
+            TempDir = IncludeTrailingBackslash(TempDir);
+            for (int Index = 0; Index < RemoteFileList->Count; Index++)
             {
-              UnicodeString RemoteDir =
-                UnixExtractFileDir(
-                  UnixIncludeTrailingBackslash(FTerminal->CurrentDirectory) +
-                  ToUnixPath(FileName.SubString(TempDir.Length() + 1, FileName.Length() - TempDir.Length())));
-
-              TDateTime NewTime;
-              FileAge(FileName, NewTime);
-              if (NewTime != RemoteFileTimes[Index])
+              UnicodeString FileName = RemoteFileList->Strings[Index];
+              if (ALWAYS_TRUE(SameText(TempDir, FileName.SubString(1, TempDir.Length()))))
               {
-                TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-                TemporaryFileCopyParam(CopyParam);
-                CopyParam.FileMask = L"";
+                UnicodeString RemoteDir =
+                  UnixExtractFileDir(
+                    UnixIncludeTrailingBackslash(FTerminal->CurrentDirectory) +
+                    ToUnixPath(FileName.SubString(TempDir.Length() + 1, FileName.Length() - TempDir.Length())));
 
-                FAutoOperation = true;
-                std::unique_ptr<TStrings> TemporaryFilesList(new TStringList());
-                TemporaryFilesList->Add(FileName);
+                TDateTime NewTime;
+                FileAge(FileName, NewTime);
+                if (NewTime != RemoteFileTimes[Index])
+                {
+                  TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
+                  TemporaryFileCopyParam(CopyParam);
+                  CopyParam.FileMask = L"";
 
-                FTerminal->CopyToRemote(TemporaryFilesList.get(), RemoteDir, &CopyParam, cpTemporary);
+                  FAutoOperation = true;
+                  std::unique_ptr<TStrings> TemporaryFilesList(new TStringList());
+                  TemporaryFilesList->Add(FileName);
+
+                  FTerminal->CopyToRemote(TemporaryFilesList.get(), RemoteDir, &CopyParam, cpTemporary);
+                }
               }
             }
           }
@@ -1827,7 +1843,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
         __finally
         {
           FAutoOperation = false;
-          if (!RootTempDir.IsEmpty())
+          if (!RootTempDir.IsEmpty() && ALWAYS_TRUE(!RemoteFiles))
           {
             RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
           }
@@ -1835,7 +1851,10 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
       }
       __finally
       {
-        delete RemoteFileList;
+        if (RemoteFileList != FileList)
+        {
+          delete RemoteFileList;
+        }
         if (LocalFileList != ALocalFileList)
         {
           delete LocalFileList;
@@ -3058,7 +3077,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
 void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
   const UnicodeString FileName, const TEditedFileData * Data)
 {
-  // Sanity check, we should not be busy othwerwise user would not be able to click Reload button.
+  // Sanity check, we should not be busy otherwise user would not be able to click Reload button.
   assert(!NonVisualDataModule->Busy);
 
   if ((Data->Terminal == NULL) || !Data->Terminal->Active)
@@ -3865,7 +3884,9 @@ void __fastcall TCustomScpExplorerForm::Idle()
 
   if (FShowing)
   {
-    if (!NonVisualDataModule->Busy)
+    if (!NonVisualDataModule->Busy &&
+        // Menu is opened or drag&drop is going on
+        (Mouse->Capture == NULL))
     {
       if (FRefreshRemoteDirectory)
       {
@@ -8227,12 +8248,23 @@ void __fastcall TCustomScpExplorerForm::DisplaySystemContextMenu()
   FAIL;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::IsBusy()
+{
+  // Among other, a lock level is non zero, while directory is being loaded,
+  // even when it happens as a result of dirview navigation,
+  // i.e. when TNonVisualDataModule is NOT FBusy.
+  // That's why the TNonVisualDataModule::GetBusy calls this method.
+  // Among other this prevents a panel auto update to occur while
+  // directory is changing.
+  return (FLockLevel > 0);
+}
+//---------------------------------------------------------------------------
 Boolean __fastcall TCustomScpExplorerForm::AllowedAction(TAction * /*Action*/, TActionAllowed Allowed)
 {
   // While the window is disabled, we still seem to process menu shortcuts at least,
   // so stop it at least here
   return
     (Allowed == aaUpdate) ||
-    (FLockLevel == 0);
+    !IsBusy();
 }
 //---------------------------------------------------------------------------

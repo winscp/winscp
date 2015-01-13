@@ -182,8 +182,7 @@ void __fastcall TMessageForm::UpdateForShiftState()
               ((ShiftState.Empty() && Item->Default) ||
                (!ShiftState.Empty() && (ShiftState == GrouppedShiftState))))
           {
-            int From = 1;
-            Button->Caption = CopyToChars(Item->Caption, From, L"\t", false);
+            Button->Caption = CopyToChar(Item->Caption, L'\t', false);
             Button->ModalResult = Item->Tag & 0xFFFF;
             assert(Button->OnClick == NULL);
             assert(Item->OnClick == MenuItemClick);

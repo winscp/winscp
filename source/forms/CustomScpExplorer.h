@@ -539,6 +539,7 @@ public:
   bool __fastcall CanAddEditLink(TOperationSide Side);
   bool __fastcall LinkFocused();
   virtual Boolean __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
+  bool __fastcall IsBusy();
   virtual void __fastcall ConfigurationChanged();
   void __fastcall CreateDirectory(TOperationSide Side);
   void __fastcall ExecuteFileOperationCommand(TFileOperation Operation, TOperationSide Side,

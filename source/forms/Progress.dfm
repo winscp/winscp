@@ -279,7 +279,7 @@ object ProgressForm: TProgressForm
     Items.Strings = (
       'Stay idle'
       'Disconnect'
-      'Suspend'
+      'Sleep'
       'Shut down')
   end
   object UpdateTimer: TTimer

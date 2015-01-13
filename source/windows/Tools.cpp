@@ -941,13 +941,10 @@ static void __fastcall DoVerifyKey(
         {
           UnicodeString TypeName = (Type == ktOpenSSH) ? L"OpenSSH SSH-2" : L"ssh.com SSH-2";
           TryPuttygen = FindTool(PuttygenTool, PuttygenPath);
+          Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, TypeName));
           if (TryPuttygen)
           {
-            Message = FMTLOAD(KEY_TYPE_CONVERT, (TypeName, FileName, TypeName));
-          }
-          else
-          {
-            Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, TypeName));
+            Message = FMTLOAD(KEY_TYPE_CONVERT2, (TypeName, RemoveMainInstructionsTag(Message)));
           }
         }
         HelpKeyword = HELP_KEY_TYPE_UNSUPPORTED;

@@ -238,6 +238,12 @@ UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString C
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim)
+{
+  int From = 1;
+  return CopyToChars(Str, From, UnicodeString(Ch), Trim);
+}
+//---------------------------------------------------------------------------
 UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars)
 {
   for (int i = 1; i <= Str.Length(); i++)
@@ -351,13 +357,19 @@ static int FindInteractiveMsgStart(const UnicodeString & S)
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString UnformatMessage(UnicodeString S)
+UnicodeString RemoveMainInstructionsTag(UnicodeString S)
 {
   UnicodeString MainInstruction;
   if (ExtractMainInstructions(S, MainInstruction))
   {
     S = MainInstruction + S;
   }
+  return S;
+}
+//---------------------------------------------------------------------------
+UnicodeString UnformatMessage(UnicodeString S)
+{
+  S = RemoveMainInstructionsTag(S);
 
   int InteractiveMsgStart = FindInteractiveMsgStart(S);
   if (InteractiveMsgStart > 0)
@@ -2469,6 +2481,7 @@ TStringList * __fastcall CreateSortedStringList(bool CaseSensitive, System::Type
 {
   TStringList * Result = new TStringList();
   Result->CaseSensitive = CaseSensitive;
+  Result->Sorted = true;
   Result->Duplicates = Duplicates;
   return Result;
 }
