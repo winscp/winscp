@@ -226,6 +226,7 @@ BEGIN
         MESSAGE_LOADING, "Loading..."
         NEW_VERSION_CLICK, "%s\n\nClick here, to see what is new."
         DIRECTORY_READING_AND_RESOLVING_PROGRESS, "%d Resolving links and Reading directory"
+        MESSAGE_DISPLAY_ERROR, "Cannot display"
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         LOG_NOLOG, "No session log."

@@ -1030,10 +1030,6 @@ begin
   if CurPageID = wpLicense then
   begin
     WizardForm.NextButton.Caption := ExpandConstant('{cm:AcceptButton}')
-  end
-    else
-  begin
-    WizardForm.NextButton.Caption := SetupMessage(msgButtonNext);
   end;
 
   if CurPageID = wpSelectDir then

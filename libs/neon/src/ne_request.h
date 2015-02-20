@@ -85,9 +85,8 @@ void ne_set_request_body_provider(ne_request *req, ne_off_t length,
                                   ne_provide_body provider, void *userdata);
 
 #ifdef WINSCP
-void ne_set_request_body_provider_proxy(ne_request *req,
-  ne_provide_body provider, void * ud,
-  ne_provide_body * prev_provider, void ** prev_ud);
+void ne_set_request_body_provider_pre(ne_request *req,
+  ne_provide_body provider, void * ud);
 
 int ne_get_request_body_buffer(ne_request *req, const char **buffer,
 			       size_t * size);

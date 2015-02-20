@@ -285,11 +285,12 @@ public:
 #define FZ_LOG_COMMAND 2
 #define FZ_LOG_REPLY 3
 #define FZ_LOG_LIST 4
-//By calling CFileZillaApi::SetDebugLevel, the aplication can enable loggint of the following messages:
+//By calling CFileZillaApi::SetDebugLevel, the aplication can enable logging of the following messages:
 #define FZ_LOG_APIERROR 5
 #define FZ_LOG_WARNING 6
-#define FZ_LOG_INFO 7
-#define FZ_LOG_DEBUG 8
+#define FZ_LOG_PROGRESS 7
+#define FZ_LOG_INFO 8
+#define FZ_LOG_DEBUG 9
 
 class CMainThread;
 class CFileZillaTools;

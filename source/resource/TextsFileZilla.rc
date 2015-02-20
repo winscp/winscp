@@ -85,4 +85,6 @@ END
 STRINGTABLE
 BEGIN
   IDS_PROXY_CONNECTED, "Connection with proxy established, performing handshake..."
+  IDS_CONTROL_CONNECTION, "control connection"
+  IDS_DATA_CONNECTION, "data connection"
 END

@@ -173,6 +173,7 @@ private:
   bool __fastcall HasNonDefaultCopyParams();
   void __fastcall CheckDefaultSynchronizeParams();
   void __fastcall NotSupported();
+  void __fastcall LogOption(const UnicodeString & LogStr);
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TScriptInputEvent)(TScript * Script, const UnicodeString Prompt, UnicodeString & Str);

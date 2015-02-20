@@ -157,19 +157,19 @@ object EditorForm: TEditorForm
     end
     object EditCut: TEditCut
       Caption = 'Cu&t'
-      Hint = 'Cut|Cuts the selection and puts it on the Clipboard'
+      Hint = 'Cut|Cut the selection and put it on the Clipboard'
       ImageIndex = 1
       ShortCut = 16472
     end
     object EditCopy: TEditCopy
       Caption = '&Copy'
-      Hint = 'Copy|Copies the selection and puts it on the Clipboard'
+      Hint = 'Copy|Copy the selection and put it on the Clipboard'
       ImageIndex = 2
       ShortCut = 16451
     end
     object EditPaste: TEditPaste
       Caption = '&Paste'
-      Hint = 'Paste|Inserts Clipboard contents'
+      Hint = 'Paste|Insert Clipboard contents'
       ImageIndex = 3
       SecondaryShortCuts.Strings = (
         'Shift+Ins'
@@ -178,25 +178,25 @@ object EditorForm: TEditorForm
     end
     object EditSelectAll: TEditSelectAll
       Caption = 'Select &All'
-      Hint = 'Select All|Selects the entire document'
+      Hint = 'Select All|Select the entire document'
       ImageIndex = 6
       ShortCut = 16449
     end
     object EditUndo: TEditUndo
       Caption = '&Undo'
-      Hint = 'Undo|Reverts the last action'
+      Hint = 'Undo|Revert the last action'
       ImageIndex = 4
       ShortCut = 16474
     end
     object EditRedo: TAction
       Caption = 'Re&do'
-      Hint = 'Redo|Reverts the effects of most recent Undo'
+      Hint = 'Redo|Revert the effects of most recent Undo'
       ImageIndex = 14
       ShortCut = 16473
     end
     object EditDelete: TEditDelete
       Caption = '&Delete'
-      Hint = 'Delete|Erases the selection'
+      Hint = 'Delete|Erase the selection'
       ImageIndex = 5
     end
     object PreferencesAction: TAction

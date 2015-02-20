@@ -520,6 +520,7 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     LocalDirView->Invalidate();
   }
 
+  // See also LocalDirViewDDTargetHasDropHandler
   LocalDirView->DragDropFilesEx->ShellExtensions->DropHandler =
     !WinConfiguration->DDExtEnabled;
   LocalDriveView->DragDropFilesEx->ShellExtensions->DropHandler =
@@ -1321,11 +1322,12 @@ bool __fastcall TScpCommanderForm::OpenBookmark(UnicodeString Local, UnicodeStri
 void __fastcall TScpCommanderForm::LocalDirViewDDTargetHasDropHandler(
   TObject * /*Sender*/, TListItem * Item, int & /*Effect*/, bool & DropHandler)
 {
-  // when drop target is not directory, it is probably file type, which have
-  // associated drop handler (such as ZIP file in WinXP). in this case we
-  // cannot allow downloading when using shellex.
-  // ! this check is duplicated in InternalDDDownload() for non-shellex downloads
-  if ((FDDExtMapFile != NULL) &&
+  // When drop target is not directory, it is probably file type, which have
+  // associated drop handler (such as EXE file). In this case we
+  // cannot allow drop when when using shellex,
+  // as drop handlers are disabled, so drop would error
+  // (see TShellExtension.DropHandler assignment in ConfigurationChanged),
+  if (WinConfiguration->DDExtEnabled &&
       !LocalDirView->ItemIsDirectory(Item))
   {
     DropHandler = false;

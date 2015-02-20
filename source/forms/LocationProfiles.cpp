@@ -410,12 +410,24 @@ bool __fastcall TLocationProfilesDialog::Execute()
 {
   bool Result;
   PageControl->ActivePage = GetProfilesSheet();
+  FBookmarkSelected = false;
   Result = (ShowModal() == DefaultResult(this));
   if (Terminal)
   {
     WinConfiguration->Bookmarks[FSessionKey] = FSessionBookmarkList;
     WinConfiguration->SharedBookmarks = FSharedBookmarkList;
     WinConfiguration->UseSharedBookmarks = (PageControl->ActivePage == SharedProfilesSheet);
+  }
+  if (Result)
+  {
+    if (FBookmarkSelected)
+    {
+      Configuration->Usage->Inc(L"OpenedBookmark");
+    }
+    else
+    {
+      Configuration->Usage->Inc(L"OpenedPath");
+    }
   }
   return Result;
 }
@@ -821,6 +833,7 @@ void __fastcall TLocationProfilesDialog::DirectoryEditChange(TObject * /*Sender*
   {
     FindProfile();
     UpdateControls();
+    FBookmarkSelected = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -842,6 +855,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewChange(
     }
     // try to locate the same profile in the other set
     FindProfile();
+    FBookmarkSelected = true;
   }
   UpdateControls();
 }

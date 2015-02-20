@@ -249,12 +249,24 @@ bool __fastcall TOpenDirectoryDialog::Execute()
       AddAsBookmark(PageControl->ActivePage);
     }
   }
+  FBookmarkSelected = false;
   Result = (ShowModal() == DefaultResult(this));
   if (Terminal)
   {
     WinConfiguration->Bookmarks[SessionKey] = FSessionBookmarkList;
     WinConfiguration->SharedBookmarks = FSharedBookmarkList;
     WinConfiguration->UseSharedBookmarks = (PageControl->ActivePage == SharedBookmarksSheet);
+  }
+  if (Result)
+  {
+    if (FBookmarkSelected)
+    {
+      Configuration->Usage->Inc(L"OpenedBookmark");
+    }
+    else
+    {
+      Configuration->Usage->Inc(L"OpenedPath");
+    }
   }
   return Result;
 }
@@ -400,6 +412,7 @@ void __fastcall TOpenDirectoryDialog::BookmarkSelected(TObject * Sender)
     Directory = BookmarkDirectory(GetBookmark(BookmarksList, BookmarksList->ItemIndex));
   }
   UpdateControls();
+  FBookmarkSelected = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::BookmarksListClick(TObject * Sender)
@@ -487,6 +500,7 @@ void __fastcall TOpenDirectoryDialog::DirectoryEditChange(TObject * /*Sender*/)
   SelectBookmark(SessionBookmarksList);
   SelectBookmark(SharedBookmarksList);
   UpdateControls();
+  FBookmarkSelected = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::BookmarksListDblClick(TObject * Sender)

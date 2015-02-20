@@ -443,6 +443,11 @@ void __fastcall TScript::Log(TLogLineType Type, AnsiString Str)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TScript::LogOption(const UnicodeString & LogStr)
+{
+  Log(llInput, LogStr);
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::LogPendingLines(TTerminal * ATerminal)
 {
   if (IsTerminalLogging(ATerminal) && (FPendingLogLines->Count > 0))
@@ -486,6 +491,16 @@ void __fastcall TScript::Command(UnicodeString Cmd)
       {
         UnicodeString LogCmd = GetLogCmd(FullCmd, Command, Cmd);
         Log(llInput, LogCmd);
+
+        if (Configuration->LogProtocol >= 1)
+        {
+          UnicodeString DummyLogCmd;
+          if (ALWAYS_TRUE(CutToken(LogCmd, DummyLogCmd)))
+          {
+            std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(LogCmd));
+            Parameters->LogOptions(LogOption);
+          }
+        }
 
         if (FEcho)
         {
@@ -2300,33 +2315,55 @@ UnicodeString __fastcall TManagementScript::GetLogCmd(const UnicodeString & Full
     UnicodeString AParams = Params;
     std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(L""));
 
-    UnicodeString MaskedParams;
+    UnicodeString Url;
+    UnicodeString MaskedParamsPre;
+    UnicodeString MaskedParamsPost;
+
     UnicodeString Param;
     UnicodeString RawParam;
-    while ((Parameters->ParamCount == 0) && CutToken(AParams, Param, &RawParam))
+    bool AnySensitiveOption = false;
+
+    while (CutToken(AParams, Param, &RawParam))
     {
       Parameters->Add(Param);
-      if (Parameters->ParamCount == 0)
+      if ((Parameters->ParamCount == 1) && Url.IsEmpty())
       {
+        Url = Param;
+      }
+      else
+      {
+        UnicodeString & MaskedParams = Url.IsEmpty() ? MaskedParamsPre : MaskedParamsPost;
+
+        UnicodeString Switch;
+        if (Parameters->WasSwitchAdded(Switch) &&
+            TSessionData::IsSensitiveOption(Switch))
+        {
+          // We should use something like TProgramParams::FormatSwitch here
+          RawParam = FORMAT(L"-%s=***", (Switch));
+          AnySensitiveOption = true;
+        }
         AddToList(MaskedParams, RawParam, L" ");
       }
     }
 
-    if (Parameters->ParamCount > 0)
+    if (!Url.IsEmpty() || AnySensitiveOption)
     {
-      UnicodeString Session = Parameters->Param[1];
-
       UnicodeString MaskedUrl;
       bool DefaultsOnly;
 
-      std::unique_ptr<TSessionData> Data(
-        FStoredSessions->ParseUrl(Session, Parameters.get(), DefaultsOnly, NULL, NULL, &MaskedUrl));
-      if (Session != MaskedUrl)
+      if (!Url.IsEmpty())
       {
-        // todo: quote, if necessary
-        AddToList(MaskedParams, MaskedUrl, L" ");
-        AddToList(MaskedParams, AParams, L" ");
-        Result = Command + L" " + MaskedParams;
+        std::unique_ptr<TSessionData> Data(
+          FStoredSessions->ParseUrl(Url, Parameters.get(), DefaultsOnly, NULL, NULL, &MaskedUrl));
+      }
+
+      if ((Url != MaskedUrl) || AnySensitiveOption)
+      {
+        Result = Command;
+        // AddToList is noop, when respective component is empty
+        AddToList(Result, MaskedParamsPre, L" ");
+        AddToList(Result, MaskedUrl, L" ");
+        AddToList(Result, MaskedParamsPost, L" ");
       }
     }
   }

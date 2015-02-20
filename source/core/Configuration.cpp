@@ -101,8 +101,10 @@ void __fastcall TConfiguration::Default()
   FPermanentLogFileName = FLogFileName;
   FLogFileAppend = true;
   FLogSensitive = false;
+  FPermanentLogSensitive = FLogSensitive;
   FLogWindowLines = 100;
   FLogProtocol = 0;
+  FPermanentLogProtocol = FLogProtocol;
   UpdateActualLogProtocol();
   FLogActions = false;
   FPermanentLogActions = false;
@@ -208,9 +210,9 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEYEX(Bool,  PermanentLogging, L"Logging"); \
     KEYEX(String,PermanentLogFileName, L"LogFileName"); \
     KEY(Bool,    LogFileAppend); \
-    KEY(Bool,    LogSensitive); \
+    KEYEX(Bool,  PermanentLogSensitive, L"LogSensitive"); \
     KEY(Integer, LogWindowLines); \
-    KEY(Integer, LogProtocol); \
+    KEYEX(Integer,PermanentLogProtocol, L"LogProtocol"); \
     KEYEX(Bool,  PermanentLogActions, L"LogActions"); \
     KEYEX(String,PermanentActionsLogFileName, L"ActionsLogFileName"); \
   );
@@ -1224,6 +1226,16 @@ void __fastcall TConfiguration::TemporaryActionsLogging(const UnicodeString ALog
   FActionsLogFileName = ALogFileName;
 }
 //---------------------------------------------------------------------
+void __fastcall TConfiguration::TemporaryLogProtocol(int ALogProtocol)
+{
+  FLogProtocol = ALogProtocol;
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::TemporaryLogSensitive(bool ALogSensitive)
+{
+  FLogSensitive = ALogSensitive;
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogging(bool value)
 {
   if (Logging != value)
@@ -1267,8 +1279,13 @@ void __fastcall TConfiguration::UpdateActualLogProtocol()
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogProtocol(int value)
 {
-  SET_CONFIG_PROPERTY(LogProtocol);
-  UpdateActualLogProtocol();
+  if (LogProtocol != value)
+  {
+    FPermanentLogProtocol = value;
+    FLogProtocol = value;
+    Changed();
+    UpdateActualLogProtocol();
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogActions(bool value)
@@ -1288,7 +1305,12 @@ void __fastcall TConfiguration::SetLogFileAppend(bool value)
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogSensitive(bool value)
 {
-  SET_CONFIG_PROPERTY(LogSensitive);
+  if (LogSensitive != value)
+  {
+    FPermanentLogSensitive = value;
+    FLogSensitive = value;
+    Changed();
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogWindowLines(int value)

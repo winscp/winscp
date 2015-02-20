@@ -29,7 +29,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
       Tag = 1
       Left = 11
       Top = 20
-      Width = 97
+      Width = 216
       Height = 17
       Caption = '&User name'
       TabOrder = 0
@@ -39,7 +39,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
       Tag = 2
       Left = 235
       Top = 20
-      Width = 97
+      Width = 216
       Height = 17
       HelpType = htKeyword
       HelpKeyword = 'ui_generate_url'
@@ -51,7 +51,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
       Tag = 4
       Left = 11
       Top = 43
-      Width = 97
+      Width = 216
       Height = 17
       Caption = 'SSH &host Key'
       TabOrder = 2
@@ -61,7 +61,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
       Tag = 8
       Left = 235
       Top = 43
-      Width = 97
+      Width = 216
       Height = 17
       Caption = 'Initial &directory'
       TabOrder = 3
@@ -71,7 +71,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
       Tag = 16
       Left = 11
       Top = 66
-      Width = 97
+      Width = 216
       Height = 17
       Caption = '&WinSCP-specific'
       TabOrder = 4
@@ -81,7 +81,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
       Tag = 32
       Left = 235
       Top = 66
-      Width = 97
+      Width = 216
       Height = 17
       Caption = '&Save extension'
       TabOrder = 5

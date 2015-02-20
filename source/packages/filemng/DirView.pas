@@ -1920,276 +1920,43 @@ begin
   Result := StrCmpLogicalW(PChar(S1), PChar(S2));
 end;
 
-function CompareFileName(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
+function CompareFileType(I1, I2: TListItem; P1, P2: PFileRec): Integer;
 var
-  P1, P2: PFileRec;
-begin
-  if I1 = I2 then  Result := fEqual
-    else
-  if I1 = nil then Result := fLess
-    else
-  if I2 = nil then Result := fGreater
-    else
-  begin
-    P1 := PFileRec(I1.Data);
-    P2 := PFileRec(I2.Data);
-    if P1.isParentDir then
-    begin
-      Result := fLess;
-      Exit;
-    end
-      else
-    if P2.isParentDir then
-    begin
-      Result := fGreater;
-      Exit;
-    end;
-
-    {Directories allways should appear "grouped":}
-    if P1.isDirectory <> P2.isDirectory then
-    begin
-      if P1.isDirectory then
-      begin
-        Result := fLess;
-        Exit;
-      end
-        else
-      begin
-        Result := fGreater;
-        Exit;
-      end;
-    end
-      else Result := CompareLogicalText(P1.DisplayName, P2.DisplayName);
-  end;
-
-  if not AOwner.SortAscending then
-    Result := -Result;
-end; {CompareFileName}
-
-function CompareFileSize(I1, I2: TListItem; AOwner : TDirView): Integer; stdcall;
-var
-  P1, P2: PFileRec;
-begin
-  if I1 = I2 then Result := fEqual
-    else
-  if I1 = nil then Result := fLess
-    else
-  if I2 = nil then Result := fGreater
-    else
-  begin
-    P1 := PFileRec(I1.Data);
-    P2 := PFileRec(I2.Data);
-    if P1.isParentDir then
-    begin
-      Result := fLess;
-      Exit;
-    end
-      else
-    if P2.isParentDir then
-    begin
-      Result := fGreater;
-      Exit;
-    end;
-    {Directories always should appear "grouped":}
-    if P1.isDirectory <> P2.isDirectory then
-    begin
-      if P1.isDirectory then
-      begin
-        Result := fLess;
-        Exit;
-      end
-        else
-      begin
-        Result := fGreater;
-        Exit;
-      end;
-    end
-      else
-    begin
-      if P1.Size < P2.Size then Result := fLess
-        else
-      if P1.Size > P2.Size then Result := fGreater
-        else
-      Result := CompareLogicalText(P1.DisplayName, P2.DisplayName);
-    end;
-  end;
-  if not AOwner.SortAscending then
-    Result := -Result;
-end; {CompareFileSize}
-
-function CompareFileType(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
-var
-  P1, P2: PFileRec;
   Key1, Key2: string;
 begin
-  if I1 = I2 then  Result := fEqual
-    else
-  if I1 = nil then Result := fLess
-    else
-  if I2 = nil then Result := fGreater
+  if P1.Empty then TDirView(I1.ListView).GetDisplayData(I1, False);
+  if P2.Empty then TDirView(I2.ListView).GetDisplayData(I2, False);
+  if P1.IsDirectory then
+  begin
+    Key1 := P1.TypeName + ' ' + P1.DisplayName;
+    Key2 := P2.TypeName + ' ' + P2.DisplayName;
+  end
     else
   begin
-    P1 := PFileRec(I1.Data);
-    P2 := PFileRec(I2.Data);
-    if P1.isParentDir then
-    begin
-      Result := fLess;
-      Exit;
-    end
-      else
-    if P2.isParentDir then
-    begin
-      Result := fGreater;
-      Exit;
-    end;
-
-    {Directories allways should appear "grouped":}
-    if P1.isDirectory <> P2.isDirectory then
-    begin
-      if P1.isDirectory then
-      begin
-        Result := fLess;
-        Exit;
-      end
-        else
-      begin
-        Result := fGreater;
-        Exit;
-      end;
-    end
-      else
-    begin
-      if P1.Empty then TDirView(I1.ListView).GetDisplayData(I1, False);
-      if P2.Empty then TDirView(I2.ListView).GetDisplayData(I2, False);
-      if P1.IsDirectory then
-      begin
-        Key1 := P1.TypeName + ' ' + P1.DisplayName;
-        Key2 := P2.TypeName + ' ' + P2.DisplayName;
-      end
-        else
-      begin
-        Key1 := P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName;
-        Key2 := P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName;
-      end;
-      Result := CompareLogicalText(Key1, Key2);
-      if Result = 0 then
-        // the fallback is probably pointless for directories as they have the same TypeName
-        Result := CompareLogicalText(P1.DisplayName, P2.DisplayName);
-    end;
+    Key1 := P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName;
+    Key2 := P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName;
   end;
-  if not AOwner.SortAscending then
-    Result := -Result;
-end; {CompareFileType}
+  Result := CompareLogicalText(Key1, Key2);
+end;
 
-function CompareFileExt(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
-var
-  P1, P2: PFileRec;
-begin
-  if I1 = I2 then Result := fEqual
-    else
-  if I1 = nil then Result := fLess
-    else
-  if I2 = nil then Result := fGreater
-    else
-  begin
-    P1 := PFileRec(I1.Data);
-    P2 := PFileRec(I2.Data);
-    if P1.isParentDir then
-    begin
-      Result := fLess;
-      Exit;
-    end
-      else
-    if P2.isParentDir then
-    begin
-      Result := fGreater;
-      Exit;
-    end;
-    {Directories allways should appear "grouped":}
-    if P1.isDirectory <> P2.isDirectory then
-    begin
-      if P1.isDirectory then
-      begin
-        Result := fLess;
-        Exit;
-      end
-        else
-      begin
-        Result := fGreater;
-        Exit;
-      end;
-    end
-      else
-    if P1.isDirectory then
-    begin
-      Result := CompareLogicalText(P1.DisplayName, P2.DisplayName);
-    end
-      else
-    begin
-      Result := CompareLogicalText(
-        P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName);
-    end;
-  end;
-  if not AOwner.SortAscending then
-    Result := -Result;
-end; {CompareFileExt}
-
-function CompareFileAttr(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
-var
-  P1, P2: PFileRec;
-begin
-  if I1 = I2 then Result := 0
-    else
-  if I1 = nil then Result := -1
-    else
-  if I2 = nil then Result := 1
-    else
-  begin
-    P1 := PFileRec(I1.Data);
-    P2 := PFileRec(I2.Data);
-    if P1.isParentDir then
-    begin
-      Result := fLess;
-      Exit;
-    end
-      else
-    if P2.isParentDir then
-    begin
-      Result := fGreater;
-      Exit;
-    end;
-    {Directories allways should appear "grouped":}
-    if P1.isDirectory <> P2.isDirectory then
-    begin
-      if P1.isDirectory then
-      begin
-        Result := fLess;
-        Exit;
-      end
-        else
-      begin
-        Result := fGreater;
-        Exit;
-      end;
-    end
-      else
-    begin
-      if P1.Attr < P2.Attr then Result := fLess
-        else
-      if P1.Attr > P2.Attr then Result := fGreater
-        else
-      Result := CompareLogicalText(P1.DisplayName, P2.DisplayName);
-    end;
-  end;
-  if not AOwner.SortAscending then
-    Result := -Result;
-end; {CompareFileAttr}
-
-function CompareFileTime(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
+function CompareFileTime(P1, P2: PFileRec): Integer;
 var
   Time1, Time2: Int64;
+begin
+  Time1 := Int64(P1.FileTime.dwHighDateTime) shl 32 + P1.FileTime.dwLowDateTime;
+  Time2 := Int64(P2.FileTime.dwHighDateTime) shl 32 + P2.FileTime.dwLowDateTime;
+  if Time1 < Time2 then Result := fLess
+    else
+  if Time1 > Time2 then Result := fGreater
+    else Result := fEqual; // fallback
+end;
+
+function CompareFile(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
+var
+  ConsiderDirection: Boolean;
   P1, P2: PFileRec;
 begin
+  ConsiderDirection := True;
   if I1 = I2 then Result := fEqual
     else
   if I1 = nil then Result := fLess
@@ -2202,61 +1969,87 @@ begin
     if P1.isParentDir then
     begin
       Result := fLess;
-      Exit;
+      ConsiderDirection := False;
     end
       else
     if P2.isParentDir then
     begin
       Result := fGreater;
-      Exit;
-    end;
-    {Directories allways should appear "grouped":}
+      ConsiderDirection := False;
+    end
+      else
+    {Directories should always appear "grouped":}
     if P1.isDirectory <> P2.isDirectory then
     begin
       if P1.isDirectory then
       begin
         Result := fLess;
-        Exit;
+        ConsiderDirection := False;
       end
         else
       begin
         Result := fGreater;
-        Exit;
+        ConsiderDirection := False;
       end;
     end
       else
     begin
-      Time1 := Int64(P1.FileTime.dwHighDateTime) shl 32 + P1.FileTime.dwLowDateTime;
-      Time2 := Int64(P2.FileTime.dwHighDateTime) shl 32 + P2.FileTime.dwLowDateTime;
-      if Time1 < Time2 then Result := fLess
+      Result := fEqual;
+
+      case AOwner.DirColProperties.SortDirColumn of
+        dvName:
+          ; // fallback
+
+        dvSize:
+          if P1.Size < P2.Size then Result := fLess
+            else
+          if P1.Size > P2.Size then Result := fGreater
+            else ; // fallback
+
+        dvType:
+          Result := CompareFileType(I1, I2, P1, P2);
+
+        dvChanged:
+          Result := CompareFileTime(P1, P2);
+
+        dvAttr:
+          if P1.Attr < P2.Attr then Result := fLess
+            else
+          if P1.Attr > P2.Attr then Result := fGreater
+            else ; // fallback
+
+        dvExt:
+          if not P1.isDirectory then
+          begin
+            Result := CompareLogicalText(
+              P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName);
+          end
+            else ; //fallback
+
         else
-      if Time1 > Time2 then Result := fGreater
-        else
-      Result := CompareFileName(I1, I2, AOwner);
+          ; // fallback
+      end;
+
+      if Result = fEqual then
+      begin
+        Result := CompareLogicalText(P1.DisplayName, P2.DisplayName)
+      end;
     end;
   end;
-  if not AOwner.SortAscending then
+
+  if ConsiderDirection and (not AOwner.SortAscending) then
+  begin
     Result := -Result;
-end; {CompareFileTime}
+  end;
+end;
 
 procedure TDirView.SortItems;
-var
-  SortProc: TLVCompare;
 begin
   if HandleAllocated then
   begin
     StopIconUpdateThread;
     try
-      case DirColProperties.SortDirColumn of
-        dvName: SortProc := @CompareFilename;
-        dvSize: SortProc := @CompareFileSize;
-        dvType: SortProc := @CompareFileType;
-        dvChanged: SortProc := @CompareFileTime;
-        dvAttr: SortProc := @CompareFileAttr;
-        dvExt: SortProc := @CompareFileExt;
-        else SortProc := @CompareFilename;
-      end;
-      CustomSortItems(Pointer(@SortProc));
+      CustomSortItems(@CompareFile);
     finally
       if (not Loading) and FUseIconUpdateThread then
         StartIconUpdateThread;
@@ -3193,8 +2986,8 @@ begin
   if Assigned(FDriveView) then
   begin
     // When a change is detected while menu is popped up
-    // it loses focus (or somethins similar)
-    // preventing it from handling sussequent click.
+    // it loses focus (or something similar)
+    // preventing it from handling subsequent click.
     // This typically happens when right-dragging from remote to local panel,
     // what causes temp directory being created+deleted.
     // This is HACK, we should implement some uniform watch disabling/enabling
@@ -3223,14 +3016,11 @@ end;
 procedure TDirView.DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint;
   Point: TPoint; dwEffect: Longint);
 begin
+  // Not sure why is this here. There's no "disable" counterparty.
   if not WatchThreadActive then
   begin
     FChangeTimer.Interval := FChangeInterval;
     FChangeTimer.Enabled  := True;
-  end;
-  if Assigned(FDriveView) then
-  begin
-    TDriveView(FDriveView).ResumeChangeTimer;
   end;
 
   inherited;

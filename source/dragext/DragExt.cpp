@@ -823,7 +823,20 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
   }
   else
   {
-    DEBUG(L"CShellExt::CopyCallback NOT copy nor move");
+    if (!GEnabled)
+    {
+      DEBUG(L"CShellExt::CopyCallback Disabled");
+    }
+    else
+    {
+      wchar_t Buf[1024];
+      wcscpy(Buf, L"CShellExt::CopyCallback NOT copy nor move - X");
+      // This is to avoid using swprintf, what's in a lib,
+      // we do not link yet, in 64-bit build (maybe this changes, once
+      // we switch to BCB build)
+      Buf[wcslen(Buf) - 1] = L'0' + Func;
+      DEBUG(Buf);
+    }
   }
 
   DEBUG(L"CShellExt::CopyCallback leave");

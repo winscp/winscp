@@ -42,7 +42,6 @@ __published:
 private:
   TConfiguration * FConfiguration;
   TNotifyEvent FOnRegistrationLink;
-  TWebBrowserEx * FThirdPartyWebBrowser;
 
   void __fastcall LoadData();
   void __fastcall LoadThirdParty();
@@ -52,7 +51,8 @@ private:
 
 public:
   virtual __fastcall TAboutDialog(TComponent * AOwner,
-    TConfiguration * Configuration, bool AllowLicense, TRegistration * Registration);
+    TConfiguration * Configuration, bool AllowLicense, TRegistration * Registration,
+    bool ALoadThirdParty);
 };
 //----------------------------------------------------------------------------
 #endif

@@ -441,7 +441,7 @@ void __fastcall SessionNameValidate(const UnicodeString & Text,
       qtError, qaOK, HELP_NONE);
     Abort();
   }
-  else if ((Data != NULL) && (Data->CompareName(OriginalName) != 0) &&
+  else if ((Data != NULL) && !Data->IsSameName(OriginalName) &&
     MessageDialog(MainInstructions(FMTLOAD(CONFIRM_OVERWRITE_SESSION, (Text))),
       qtConfirmation, qaYes | qaNo, HELP_SESSION_SAVE_OVERWRITE) != qaYes)
   {

@@ -677,12 +677,20 @@ void __fastcall BusyEnd(void * Token)
 static DWORD MainThread = 0;
 static TDateTime LastGUIUpdate = 0;
 static double GUIUpdateIntervalFrac = static_cast<double>(OneSecond/1000*GUIUpdateInterval);  // 1/5 sec
+static bool NoGUI = false;
+//---------------------------------------------------------------------------
+void __fastcall SetNoGUI()
+{
+  NoGUI = true;
+}
 //---------------------------------------------------------------------------
 bool __fastcall ProcessGUI(bool Force)
 {
   assert(MainThread != 0);
   bool Result = false;
-  if (MainThread == GetCurrentThreadId())
+  // Calling ProcessMessages in Azure WebJob causes access violation in VCL.
+  // As we do not really need to call it in scripting/.NET, just skip it.
+  if ((MainThread == GetCurrentThreadId()) && !NoGUI)
   {
     TDateTime N = Now();
     if (Force ||

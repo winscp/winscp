@@ -39,81 +39,6 @@ namespace Unixdirview
   }
 }
 //---------------------------------------------------------------------------
-#ifndef DESIGN_ONLY
-#define RFILE(N) ((TRemoteFile *)(Item ## N->Data))
-int __stdcall CompareDirectories(TListItem *Item1, TListItem *Item2)
-{
-  // Because CompareDirectories is called from each other compare functions
-  // it's sufficient to check pointers only here (see below)
-  assert(Item1 && RFILE(1) && Item2 && RFILE(2));
-
-  if (RFILE(1)->IsParentDirectory && !RFILE(2)->IsParentDirectory) return -1;
-    else
-  if (!RFILE(1)->IsParentDirectory && RFILE(2)->IsParentDirectory) return 1;
-    else
-  if (RFILE(1)->IsDirectory && !RFILE(2)->IsDirectory) return -1;
-    else
-  if (!RFILE(1)->IsDirectory && RFILE(2)->IsDirectory) return 1;
-    else
-  return 0;
-}
-//---------------------------------------------------------------------------
-int __fastcall CompareExtThenFull(const UnicodeString & Name1, const UnicodeString & Name2)
-{
-  UnicodeString Ext1 = UnixExtractFileExt(Name1);
-  UnicodeString Ext2 = UnixExtractFileExt(Name2);
-  int Result = CompareLogicalText(Ext1, Ext2);
-  if (Result == 0)
-  {
-    Result = CompareLogicalText(Name1, Name2);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-#define DEFINE_COMPARE_FUNC_EX(PROPERTY, NAME, COMPAREFUNCFILE, COMPAREFUNCDIR, FALLBACK) \
-  int __stdcall Compare ## NAME(TListItem *Item1, TListItem *Item2, TUnixDirView *DirView) \
-  { \
-    int Result = CompareDirectories(Item1, Item2); \
-    if (!Result) \
-    { \
-      if (RFILE(1)->IsDirectory) \
-      {  \
-        Result = COMPAREFUNCDIR(RFILE(1)->PROPERTY, RFILE(2)->PROPERTY); \
-      } \
-      else \
-      { \
-        Result = COMPAREFUNCFILE(RFILE(1)->PROPERTY, RFILE(2)->PROPERTY); \
-      } \
-      if (!DirView->UnixColProperties->SortAscending) Result = -Result; \
-      if (Result == 0) \
-      { \
-        Result = FALLBACK(Item1, Item2, DirView); \
-      } \
-    } \
-    return Result; \
-  }
-#define DEFINE_COMPARE_FUNC(PROPERTY, COMPAREFUNC) \
-  DEFINE_COMPARE_FUNC_EX(PROPERTY, PROPERTY, COMPAREFUNC, COMPAREFUNC, CompareItemFileName)
-#define COMPARE_NUMBER(Num1, Num2) ( Num1 < Num2 ? -1 : ( Num1 > Num2 ? 1 : 0) )
-#define COMPARE_DUMMY(X1, X2) 0
-#define COMPARE_ITEM_DUMMY(X1, X2, DV) 0
-#define COMPARE_TOKEN(Token1, Token2) Token1.Compare(Token2)
-//---------------------------------------------------------------------------
-DEFINE_COMPARE_FUNC_EX(FileName, ItemFileName, CompareLogicalText, CompareLogicalText, COMPARE_ITEM_DUMMY);
-DEFINE_COMPARE_FUNC(Size, COMPARE_NUMBER);
-DEFINE_COMPARE_FUNC(Modification, COMPARE_NUMBER);
-DEFINE_COMPARE_FUNC(RightsStr, AnsiCompareText);
-DEFINE_COMPARE_FUNC(Owner, COMPARE_TOKEN);
-DEFINE_COMPARE_FUNC(Group, COMPARE_TOKEN);
-DEFINE_COMPARE_FUNC_EX(Extension, Extension, CompareLogicalText, COMPARE_DUMMY, CompareItemFileName);
-DEFINE_COMPARE_FUNC(LinkTo, CompareLogicalText);
-DEFINE_COMPARE_FUNC_EX(TypeName, TypeName, CompareLogicalText, CompareLogicalText, CompareExtension);
-//---------------------------------------------------------------------------
-#undef DEFINE_COMPARE_FUNC
-#undef COMPARE_NUMBER
-#undef RFILE
-#endif
-//---------------------------------------------------------------------------
 #define HOMEDIRECTORY L""
 //---------------------------------------------------------------------------
 __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
@@ -699,26 +624,115 @@ void __fastcall TUnixDirView::SetPath(UnicodeString Value)
 #endif
 }
 //---------------------------------------------------------------------------
+#ifndef DESIGN_ONLY
+#define COMPARE_NUMBER(Num1, Num2) ( Num1 < Num2 ? -1 : ( Num1 > Num2 ? 1 : 0) )
+//---------------------------------------------------------------------------
+int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * DirView)
+{
+  assert((Item1 != NULL) && (Item2 != NULL));
+  TRemoteFile * File1 = NOT_NULL((TRemoteFile *)(Item1->Data));
+  TRemoteFile * File2 = NOT_NULL((TRemoteFile *)(Item2->Data));
+
+  int Result;
+  if (File1->IsParentDirectory && !File2->IsParentDirectory)
+  {
+    Result = -1;
+  }
+  else if (!File1->IsParentDirectory && File2->IsParentDirectory)
+  {
+    Result = 1;
+  }
+  else if (File1->IsDirectory && !File2->IsDirectory)
+  {
+    Result = -1;
+  }
+  else if (!File1->IsDirectory && File2->IsDirectory)
+  {
+    Result = 1;
+  }
+  else
+  {
+    Result = 0;
+
+    switch (DirView->SortColumn)
+    {
+      case uvName:
+        // fallback
+        break;
+
+      case uvSize:
+        Result = COMPARE_NUMBER(File1->Size, File2->Size);
+        break;
+
+      case uvChanged:
+        Result = COMPARE_NUMBER(File1->Modification, File2->Modification);
+        break;
+
+      case uvRights:
+        Result = AnsiCompareText(File1->RightsStr, File2->RightsStr);
+        break;
+
+      case uvOwner:
+        Result = File1->Owner.Compare(File2->Owner);
+        break;
+
+      case uvGroup:
+        Result = File1->Group.Compare(File2->Group);
+        break;
+
+      case uvExt:
+        // Duplicated in uvType branch
+        if (!File1->IsDirectory)
+        {
+          Result = CompareLogicalText(File1->Extension, File2->Extension);
+        }
+        else
+        {
+          // fallback
+        }
+        break;
+
+      case uvLinkTarget:
+        Result = CompareLogicalText(File1->LinkTo, File2->LinkTo);
+        break;
+
+      case uvType:
+        Result = CompareLogicalText(File1->TypeName, File2->TypeName);
+        // fallback to uvExt
+        if ((Result == 0) && !File1->IsDirectory)
+        {
+          Result = CompareLogicalText(File1->Extension, File2->Extension);
+        }
+        break;
+
+      default:
+        FAIL;
+    }
+
+    if (Result == 0)
+    {
+      Result = CompareLogicalText(File1->FileName, File2->FileName);
+    }
+
+    if (!DirView->UnixColProperties->SortAscending)
+    {
+      Result = -Result;
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+#undef COMPARE_NUMBER
+#endif
+//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::SortItems()
 {
 #ifndef DESIGN_ONLY
   assert(Terminal);
   if (HandleAllocated())
   {
-    PFNLVCOMPARE SortProc;
-    switch (SortColumn) {
-      case uvName: SortProc = (PFNLVCOMPARE)CompareItemFileName; break;
-      case uvSize: SortProc = (PFNLVCOMPARE)CompareSize; break;
-      case uvChanged: SortProc = (PFNLVCOMPARE)CompareModification; break;
-      case uvRights: SortProc = (PFNLVCOMPARE)CompareRightsStr; break;
-      case uvOwner: SortProc = (PFNLVCOMPARE)CompareOwner; break;
-      case uvGroup: SortProc = (PFNLVCOMPARE)CompareGroup; break;
-      case uvExt: SortProc = (PFNLVCOMPARE)CompareExtension; break;
-      case uvLinkTarget: SortProc = (PFNLVCOMPARE)CompareLinkTo; break;
-      case uvType: SortProc = (PFNLVCOMPARE)CompareTypeName; break;
-      default: FAIL;
-    }
-    CustomSortItems(SortProc);
+    CustomSortItems(CompareFile);
   }
 #endif
 }

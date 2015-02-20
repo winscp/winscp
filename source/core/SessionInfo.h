@@ -286,6 +286,8 @@ private:
   void __fastcall DoAddStartupInfo(TSessionData * Data);
   UnicodeString __fastcall GetTlsVersionName(TTlsVersion TlsVersion);
   UnicodeString __fastcall LogSensitive(const UnicodeString & Str);
+  void __fastcall AddOption(const UnicodeString & LogStr);
+  void __fastcall AddOptions(TOptions * Options);
 };
 //---------------------------------------------------------------------------
 class TActionLog

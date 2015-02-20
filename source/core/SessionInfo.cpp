@@ -956,6 +956,9 @@ UnicodeString __fastcall TSessionLog::LogSensitive(const UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
+#define ADSTR(S) DoAdd(llMessage, S, DoAddToSelf);
+#define ADF(S, F) ADSTR(FORMAT(S, F));
+//---------------------------------------------------------------------------
 void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
 {
   TGuard Guard(FCriticalSection);
@@ -963,8 +966,6 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
   BeginUpdate();
   try
   {
-    #define ADSTR(S) DoAdd(llMessage, S, DoAddToSelf);
-    #define ADF(S, F) ADSTR(FORMAT(S, F));
     if (Data == NULL)
     {
       AddSeparator();
@@ -985,10 +986,32 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       {
         wcscpy(UserName, L"<Failed to retrieve username>");
       }
+      UnicodeString LogStr;
+      if (FConfiguration->LogProtocol <= 0)
+      {
+        LogStr = L"Normal";
+      }
+      else if (FConfiguration->LogProtocol == 1)
+      {
+        LogStr = L"Debug 1";
+      }
+      else if (FConfiguration->LogProtocol >= 2)
+      {
+        LogStr = L"Debug 2";
+      }
+      if (FConfiguration->LogSensitive)
+      {
+        LogStr += L", Logging passwords";
+      }
+      ADF(L"Log level: %s", (LogStr));
       ADF(L"Local account: %s", (UserName));
       ADF(L"Working directory: %s", (GetCurrentDir()));
       ADF(L"Process ID: %d", (int(GetCurrentProcessId())));
       ADF(L"Command-line: %s", (CmdLine));
+      if (FConfiguration->LogProtocol >= 1)
+      {
+        AddOptions(GetGlobalOptions());
+      }
       ADF(L"Time zone: %s", (GetTimeZoneLogString()));
       if (!AdjustClockForDSTEnabled())
       {
@@ -1077,6 +1100,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         }
         ADF(L"Ciphers: %s; Ssh2DES: %s",
           (Data->CipherList, BooleanToEngStr(Data->Ssh2DES)));
+        ADF(L"KEX: %s", (Data->KexList));
         UnicodeString Bugs;
         for (int Index = 0; Index < BUG_COUNT; Index++)
         {
@@ -1157,12 +1181,12 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       UnicodeString TimeInfo;
       if ((Data->FSProtocol == fsSFTP) || (Data->FSProtocol == fsSFTPonly) || (Data->FSProtocol == fsSCPonly) || (Data->FSProtocol == fsWebDAV))
       {
-        AddToList(TimeInfo, FORMAT("DST mode: %d", (int(Data->DSTMode))), L";");
+        AddToList(TimeInfo, FORMAT(L"DST mode: %d", (int(Data->DSTMode))), L";");
       }
       if ((Data->FSProtocol == fsSCPonly) || (Data->FSProtocol == fsFTP))
       {
         int TimeDifferenceMin = TimeToMinutes(Data->TimeDifference);
-        AddToList(TimeInfo, FORMAT("Timezone offset: %dh %dm", ((TimeDifferenceMin / MinsPerHour), (TimeDifferenceMin % MinsPerHour))), L";");
+        AddToList(TimeInfo, FORMAT(L"Timezone offset: %dh %dm", ((TimeDifferenceMin / MinsPerHour), (TimeDifferenceMin % MinsPerHour))), L";");
       }
       ADSTR(TimeInfo);
 
@@ -1174,9 +1198,6 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
 
       AddSeparator();
     }
-
-    #undef ADF
-    #undef ADSTR
   }
   __finally
   {
@@ -1185,6 +1206,19 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     EndUpdate();
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TSessionLog::AddOption(const UnicodeString & LogStr)
+{
+  ADSTR(LogStr);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionLog::AddOptions(TOptions * Options)
+{
+  Options->LogOptions(AddOption);
+}
+//---------------------------------------------------------------------------
+#undef ADF
+#undef ADSTR
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::AddSeparator()
 {
@@ -1422,7 +1456,7 @@ void __fastcall TActionLog::BeginGroup(UnicodeString Name)
   assert(!FInGroup);
   FInGroup = true;
   assert(FIndent == L"  ");
-  AddIndented(FORMAT("<group name=\"%s\" start=\"%s\">",
+  AddIndented(FORMAT(L"<group name=\"%s\" start=\"%s\">",
     (XmlAttributeEscape(Name), StandardTimestamp())));
   FIndent = L"    ";
 }
@@ -1437,7 +1471,7 @@ void __fastcall TActionLog::EndGroup()
   // so do not try to close the group, if it has not been opened, to avoid recursion
   if (FFile != NULL)
   {
-    AddIndented("</group>");
+    AddIndented(L"</group>");
   }
 }
 //---------------------------------------------------------------------------

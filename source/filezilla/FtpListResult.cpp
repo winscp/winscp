@@ -661,6 +661,9 @@ void CFtpListResult::SendToMessageLog(HWND hWnd, UINT nMsg)
 	curpos = listhead;
 	pos=0;
 	char *line = GetLine();
+	// Note that FZ_LOG_INFO here is not checked against debug level, as the direct
+	// call to PostMessage bypasses check in LogMessage.
+	// So we get the listing on any logging level, what is actually what we want
 	if (!line)
 	{
 		//Displays a message in the message log
@@ -1331,6 +1334,8 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 		CString factname = facts.Left(pos);
 		factname.MakeLower();
 		CString value = facts.Mid(pos + 1, delim - pos - 1);
+		// When adding new facts, update filter in CFtpControlSocket::LogOnToServer
+		// (CONNECT_FEAT state)
 		if (factname == _T("type"))
 		{
 			if (!value.CompareNoCase(_T("dir")))
@@ -1378,7 +1383,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 		else if (factname == _T("modify") ||
 			(!direntry.date.hasdate && factname == _T("create")))
 		{
-			if (!parseMlsdDateTime(value, direntry))
+			if (!parseMlsdDateTime(value, direntry.date))
 				return FALSE;
 		}
 		else if (factname == _T("perm"))
@@ -1436,7 +1441,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 	return TRUE;
 }
 
-bool CFtpListResult::parseMlsdDateTime(const CString value, t_directory::t_direntry &direntry) const
+bool CFtpListResult::parseMlsdDateTime(const CString value, t_directory::t_direntry::t_date &date) const
 {
 	if (value.IsEmpty())
 		return FALSE;
@@ -1446,35 +1451,26 @@ bool CFtpListResult::parseMlsdDateTime(const CString value, t_directory::t_diren
 	Year=Month=Day=Hours=Minutes=Seconds=0;
 	if (swscanf((LPCWSTR)value, L"%4d%2d%2d%2d%2d%2d", &Year, &Month, &Day, &Hours, &Minutes, &Seconds) == 6)
 	{
-		direntry.date.hasdate = TRUE;
-		direntry.date.hastime = TRUE;
-		direntry.date.hasseconds = TRUE;
+		date.hasdate = TRUE;
+		date.hastime = TRUE;
+		date.hasseconds = TRUE;
 		result = TRUE;
 	}
 	else if (swscanf((LPCWSTR)value, L"%4d%2d%2d", &Year, &Month, &Day) == 3)
 	{
-		direntry.date.hasdate = TRUE;
-		direntry.date.hastime = FALSE;
+		date.hasdate = TRUE;
+		date.hastime = FALSE;
 		result = TRUE;
 	}
 	if (result)
 	{
-		try
-		{
-			direntry.date.year = Year;
-			direntry.date.month = Month;
-			direntry.date.day = Day;
-			direntry.date.hour = Hours;
-			direntry.date.minute = Minutes;
-			direntry.date.second = Seconds;
-			direntry.date.utc = TRUE;
-		}
-		// Does not really seem to ever throw in our version of MFC/ATL
-		catch (CException &)
-		{
-			direntry.date.hasdate = FALSE;
-			direntry.date.hastime = FALSE;
-		}
+		date.year = Year;
+		date.month = Month;
+		date.day = Day;
+		date.hour = Hours;
+		date.minute = Minutes;
+		date.second = Seconds;
+		date.utc = TRUE;
 	}
 	return result;
 }

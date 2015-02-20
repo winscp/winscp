@@ -190,7 +190,7 @@ const wchar_t CertificateStorageKey[] = L"FtpsCertificates";
 const UnicodeString SiteCommand(L"SITE");
 const UnicodeString SymlinkSiteCommand(L"SYMLINK");
 const UnicodeString CopySiteCommand(L"COPY");
-const UnicodeString HashCommand(L"HASH");
+const UnicodeString HashCommand(L"HASH"); // Cerberos + FileZilla servers
 const UnicodeString AvblCommand(L"AVBL");
 const UnicodeString XQuotaCommand(L"XQUOTA");
 //---------------------------------------------------------------------------
@@ -252,7 +252,8 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FOnCaptureOutput(NULL),
   FFileSystemInfoValid(false),
   FDoListAll(false),
-  FServerCapabilities(NULL)
+  FServerCapabilities(NULL),
+  FReadCurrentDirectory(false)
 {
   ResetReply();
 
@@ -268,11 +269,12 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
 
   FChecksumAlgs.reset(new TStringList());
   FChecksumCommands.reset(new TStringList());
-  RegisterChecksumAlgCommand(Sha1ChecksumAlg, L"XSHA1");
-  RegisterChecksumAlgCommand(Sha256ChecksumAlg, L"XSHA256");
-  RegisterChecksumAlgCommand(Sha512ChecksumAlg, L"XSHA512");
-  RegisterChecksumAlgCommand(Md5ChecksumAlg, L"XMD5");
-  RegisterChecksumAlgCommand(Crc32ChecksumAlg, L"XCRC");
+  RegisterChecksumAlgCommand(Sha1ChecksumAlg, L"XSHA1"); // e.g. Cerberos FTP
+  RegisterChecksumAlgCommand(Sha256ChecksumAlg, L"XSHA256"); // e.g. Cerberos FTP
+  RegisterChecksumAlgCommand(Sha512ChecksumAlg, L"XSHA512"); // e.g. Cerberos FTP
+  RegisterChecksumAlgCommand(Md5ChecksumAlg, L"XMD5"); // e.g. Cerberos FTP
+  RegisterChecksumAlgCommand(Md5ChecksumAlg, L"MD5"); // e.g. Apache FTP
+  RegisterChecksumAlgCommand(Crc32ChecksumAlg, L"XCRC"); // e.g. Cerberos FTP
 }
 //---------------------------------------------------------------------------
 __fastcall TFTPFileSystem::~TFTPFileSystem()
@@ -317,7 +319,7 @@ void __fastcall TFTPFileSystem::Open()
   DiscardMessages();
 
   ResetCaches();
-  FCurrentDirectory = L"";
+  FReadCurrentDirectory = true;
   FHomeDirectory = L"";
 
   TSessionData * Data = FTerminal->SessionData;
@@ -361,7 +363,7 @@ void __fastcall TFTPFileSystem::Open()
         default:
         case 0:
         case 1:
-          LogLevel = TFileZillaIntf::LOG_WARNING;
+          LogLevel = TFileZillaIntf::LOG_PROGRESS;
           break;
 
         case 2:
@@ -707,6 +709,23 @@ void __fastcall TFTPFileSystem::CollectUsage()
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPComplete");
   }
+  // 220 Core FTP Server Version 1.2, build 567, 64-bit, installed 8 days ago Unregistered
+  // ...
+  // SYST
+  // 215 UNIX Type: L8
+  else if (ContainsText(FWelcomeMessage, L"Core FTP Server"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPCore");
+  }
+  // 220 Service ready for new user.
+  // ..
+  // SYST
+  // 215 UNIX Type: Apache FtpServer
+  // (e.g. brickftp.com)
+  else if (ContainsText(FSystem, L"Apache FtpServer"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPApache");
+  }
   else
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPOther");
@@ -723,6 +742,7 @@ void __fastcall TFTPFileSystem::Idle()
     if ((FTerminal->SessionData->FtpPingType != ptOff) &&
         (double(Now() - FLastDataSent) > double(FTerminal->SessionData->FtpPingIntervalDT) * 4))
     {
+      FTerminal->LogEvent(L"Dummy directory read to keep session alive.");
       FLastDataSent = Now();
 
       TRemoteDirectory * Files = new TRemoteDirectory(FTerminal);
@@ -872,12 +892,13 @@ void __fastcall TFTPFileSystem::ChangeDirectory(const UnicodeString ADirectory)
   DoChangeDirectory(Directory);
 
   // make next ReadCurrentDirectory retrieve actual server-side current directory
-  FCurrentDirectory = L"";
+  FReadCurrentDirectory = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::CachedChangeDirectory(const UnicodeString Directory)
 {
   FCurrentDirectory = UnixExcludeTrailingBackslash(Directory);
+  FReadCurrentDirectory = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ChangeFileProperties(const UnicodeString AFileName,
@@ -959,6 +980,9 @@ bool __fastcall TFTPFileSystem::LoadFilesProperties(TStrings * /*FileList*/)
 UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(
   bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File)
 {
+  // Overview of server supporting various hash commands is at:
+  // https://tools.ietf.org/html/draft-ietf-ftpext2-hash-03#appendix-B
+
   UnicodeString CommandName;
 
   if (UsingHashCommand)
@@ -1034,10 +1058,21 @@ UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(
       Hash = Range;
     }
   }
-  else // All X<hash> commands
+  else // All hash-specific commands
   {
     // Accepting any 2xx response. Most servers use 213,
     // but for example WS_FTP uses non-sense code 220 (Service ready for new user)
+
+    // MD5 response according to a draft-twine-ftpmd5-00 includes a file name
+    // (implemented by Apache FtpServer).
+    // Other commands (X<hash>) return the hash only.
+    ResponseText = ResponseText.Trim();
+    int P = ResponseText.LastDelimiter(L" ");
+    if (P > 0)
+    {
+      ResponseText.Delete(1, P);
+    }
+
     Hash = ResponseText;
   }
 
@@ -2172,6 +2207,7 @@ void __fastcall TFTPFileSystem::HomeDirectory()
   // of ChangeDirectory, such as EnsureLocation
   DoChangeDirectory(FHomeDirectory);
   FCurrentDirectory = FHomeDirectory;
+  FReadCurrentDirectory = false;
   // make sure FZAPI is aware that we changed current working directory
   FFileZillaIntf->SetCurrentPath(FCurrentDirectory.c_str());
 }
@@ -2239,7 +2275,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
   // and immediately after call to CWD,
   // later our current directory may be not synchronized with FZAPI current
   // directory anyway, see comments in EnsureLocation
-  if (FCurrentDirectory.IsEmpty())
+  if (FReadCurrentDirectory || ALWAYS_FALSE(FCurrentDirectory.IsEmpty()))
   {
     UnicodeString Command = L"PWD";
     SendCommand(Command);
@@ -2284,6 +2320,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
         if (Result)
         {
           FCurrentDirectory = UnixExcludeTrailingBackslash(Path);
+          FReadCurrentDirectory = false;
         }
       }
 
@@ -3643,7 +3680,7 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
       // by setting dummy one
       if (Type == TFileZillaIntf::LOG_ERROR)
       {
-        if (Status == FTimeoutStatus)
+        if (StartsStr(FTimeoutStatus, Status))
         {
           if (NoFinalLastCode())
           {
@@ -3662,6 +3699,10 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
       // (such as "cannot open local file..." followed by "download failed")
       Status = ExtractStatusMessage(Status);
       FLastError->Add(Status);
+      LogType = llMessage;
+      break;
+
+    case TFileZillaIntf::LOG_PROGRESS:
       LogType = llMessage;
       break;
 

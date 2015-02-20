@@ -983,23 +983,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       ButtonSpacing * (ButtonControls.size() - 1);
   }
 
-  int IconWidth = 0;
-  const wchar_t * IconID = IconIDs[DlgType];
-  bool HasIcon = (IconID != NULL) || !ImageName.IsEmpty();
-  if (HasIcon)
-  {
-    IconWidth = 32 + HorzSpacing;
-  }
-
   assert((ButtonHeight > 0) && (ButtonWidths > 0));
-
-  int MaxTextWidth = ScaleByTextHeightRunTime(Result, mcMaxDialogWidth);
-  // if the dialog would be wide anyway (overwrite confirmation on Windows XP),
-  // to fit the buttons, do not restrict the text
-  if (MaxTextWidth < ButtonGroupWidth - IconWidth)
-  {
-    MaxTextWidth = ButtonGroupWidth - IconWidth;
-  }
 
   TPanel * Panel = new TPanel(Result);
   Panel->Name = L"Panel";
@@ -1010,6 +994,39 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   Panel->BevelOuter = bvNone;
   Panel->BevelKind = bkNone;
   Panel->Caption = L"";
+
+  int IconWidth = 0;
+  int IconHeight = 0;
+  const wchar_t * IconID = IconIDs[DlgType];
+
+  if ((IconID != NULL) || !ImageName.IsEmpty())
+  {
+    TImage * Image = new TImage(Panel);
+    Image->Name = L"Image";
+    Image->Parent = Panel;
+    if (!ImageName.IsEmpty())
+    {
+      LoadResourceImage(Image, ImageName);
+    }
+    else
+    {
+      // Until Windows 8, LoadIcon for IDI_XXX always returns 32x32 image.
+      // Since Windows 8.1, it returns image adjusted for DPI.
+      // For 125%, it's scaled version. For 150%, there's native larger version.
+      Image->Picture->Icon->Handle = LoadIcon(0, IconID);
+    }
+    Image->SetBounds(HorzMargin, VertMargin, Image->Picture->Width, Image->Picture->Height);
+    IconWidth = Image->Width + HorzSpacing;
+    IconHeight = Image->Height;
+  }
+
+  int MaxTextWidth = ScaleByTextHeightRunTime(Result, mcMaxDialogWidth);
+  // if the dialog would be wide anyway (overwrite confirmation on Windows XP),
+  // to fit the buttons, do not restrict the text
+  if (MaxTextWidth < ButtonGroupWidth - IconWidth)
+  {
+    MaxTextWidth = ButtonGroupWidth - IconWidth;
+  }
 
   UnicodeString BodyMsg = Msg;
   BodyMsg = RemoveInteractiveMsgTag(BodyMsg);
@@ -1119,10 +1136,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
   assert((IconTextWidth > 0) && (IconTextHeight > 0));
 
-  if (HasIcon && (IconTextHeight < 32))
-  {
-    IconTextHeight = 32;
-  }
+  IconTextHeight = Max(IconTextHeight, IconHeight);
 
   int MoreMessageHeight =
     (HasMoreMessages ?
@@ -1188,22 +1202,6 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   else
   {
     Result->Caption = Application->Title;
-  }
-
-  if ((IconID != NULL) || !ImageName.IsEmpty())
-  {
-    TImage * Image = new TImage(Panel);
-    Image->Name = L"Image";
-    Image->Parent = Panel;
-    if (!ImageName.IsEmpty())
-    {
-      LoadResourceImage(Image, ImageName);
-    }
-    else
-    {
-      Image->Picture->Icon->Handle = LoadIcon(0, IconID);
-    }
-    Image->SetBounds(HorzMargin, VertMargin, 32, 32);
   }
 
   if (MoreMessagesControl != NULL)

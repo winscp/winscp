@@ -6,6 +6,8 @@
 //---------------------------------------------------------------------------
 enum TOptionType { otParam, otSwitch };
 //---------------------------------------------------------------------------
+typedef void __fastcall (__closure *TLogOptionEvent)(const UnicodeString & LogStr);
+//---------------------------------------------------------------------------
 class TOptions
 {
 public:
@@ -22,6 +24,9 @@ public:
   bool __fastcall SwitchValue(const UnicodeString Switch, bool Default);
   bool __fastcall SwitchValue(const UnicodeString Switch, bool Default, bool DefaultOnNonExistence);
   bool __fastcall UnusedSwitch(UnicodeString & Switch);
+  bool __fastcall WasSwitchAdded(UnicodeString & Switch);
+
+  void __fastcall LogOptions(TLogOptionEvent OnEnumOption);
 
   __property int ParamCount = { read = FParamCount };
   __property UnicodeString Param[int Index] = { read = GetParam };
@@ -45,7 +50,9 @@ private:
     bool Used;
   };
 
-  std::vector<TOption> FOptions;
+  typedef std::vector<TOption> TOptionsVector;
+  TOptionsVector FOptions;
+  TOptionsVector FOriginalOptions;
   bool FNoMoreSwitches;
   int FParamCount;
 

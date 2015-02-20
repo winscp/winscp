@@ -50,6 +50,7 @@ namespace WinSCP
         public TimeSpan ReconnectTime { get { return _reconnectTime; } set { CheckNotOpened(); _reconnectTime = value; } }
         public int ReconnectTimeInMilliseconds { get { return Tools.TimeSpanToMilliseconds(ReconnectTime); } set { ReconnectTime = Tools.MillisecondsToTimeSpan(value); } }
         public string DebugLogPath { get { CheckNotDisposed(); return Logger.LogPath; } set { CheckNotDisposed(); Logger.LogPath = value; } }
+        public int DebugLogLevel { get { CheckNotDisposed(); return Logger.LogLevel; } set { CheckNotDisposed(); Logger.LogLevel = value; } }
         public string SessionLogPath { get { return _sessionLogPath; } set { CheckNotOpened(); _sessionLogPath = value; } }
         public string XmlLogPath { get { return _xmlLogPath; } set { CheckNotOpened(); _xmlLogPath = value; } }
         #if DEBUG
@@ -998,7 +999,7 @@ namespace WinSCP
                 string url = head;
                 string logUrl = head;
 
-                if ((sessionOptions.SecurePassword) != null && (sessionOptions.SecurePassword.Length > 0))
+                if (sessionOptions.SecurePassword != null)
                 {
                     if (!hasUsername)
                     {

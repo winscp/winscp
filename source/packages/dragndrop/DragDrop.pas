@@ -902,8 +902,11 @@ begin
           else if dwEffect and DROPEFFECT_Move<>0 then HC:=FOwner.FCHMove
                else if dwEffect and DROPEFFECT_COPY<>0 then HC:=FOwner.FCHCopy
                          else HC:=DefaultCursor;
-     if HC=DefaultCursor then Result:=DRAGDROP_S_USEDEFAULTCURSORS
-     else
+     if HC=DefaultCursor then
+     begin
+          Result:=DRAGDROP_S_USEDEFAULTCURSORS
+     end
+         else
      begin
           Result:=S_Ok;
           Windows.SetCursor(HC);

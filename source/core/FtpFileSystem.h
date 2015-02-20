@@ -237,6 +237,7 @@ private:
   UnicodeString FSystem;
   TStrings * FFeatures;
   UnicodeString FCurrentDirectory;
+  bool FReadCurrentDirectory;
   UnicodeString FHomeDirectory;
   TRemoteFileList * FFileList;
   TRemoteFileList * FFileListCache;

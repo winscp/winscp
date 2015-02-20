@@ -87,7 +87,7 @@ private:
 	bool parseTime(const char *str, int len, t_directory::t_direntry::t_date &date) const;
 	bool ParseSize(const char* str, int len, __int64 &size) const;
 
-	bool parseMlsdDateTime(const CString value, t_directory::t_direntry &direntry) const;
+	bool parseMlsdDateTime(const CString value, t_directory::t_direntry::t_date &date) const;
 
 	int pos;
 	struct t_list

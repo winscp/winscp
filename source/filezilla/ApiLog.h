@@ -45,7 +45,6 @@ public:
 	void LogMessageRaw(CString SourceFile, int nSourceLine, void *pInstance, int nMessageType, LPCTSTR pMsg) const;
 
 	BOOL SetDebugLevel(int nLogLevel);
-	int GetDebugLevel();
 protected:
 #ifdef MPEXT
 	virtual BOOL PostMessage(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) const;

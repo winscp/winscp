@@ -63,6 +63,11 @@ TConfiguration * __fastcall CreateConfiguration()
   return WinConfiguration;
 }
 //---------------------------------------------------------------------------
+TOptions * __fastcall GetGlobalOptions()
+{
+  return TProgramParams::Instance();
+}
+//---------------------------------------------------------------------------
 TCustomScpExplorerForm * __fastcall CreateScpExplorer()
 {
   TCustomScpExplorerForm * ScpExplorer;

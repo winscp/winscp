@@ -133,6 +133,17 @@ void CControlSocket::ShowStatus(CString status, int type) const
 }
 
 
+void CControlSocket::ShowTimeoutError(UINT nID) const
+{
+	CString str1;
+	str1.LoadString(IDS_ERRORMSG_TIMEOUT);
+	CString str2;
+	str2.LoadString(nID);
+	CString message;
+	message.Format(L"%s (%s)", str1, str2);
+	ShowStatus(message, FZ_LOG_ERROR);
+}
+
 t_server CControlSocket::GetCurrentServer()
 {
 	return m_CurrentServer;

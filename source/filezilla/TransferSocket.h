@@ -132,6 +132,7 @@ protected:
 	void EnsureSendClose(int Mode);
 	void CloseOnShutDownOrError(int Mode);
 	void LogError(int Error);
+	void SetBuffers();
 
 	DWORD m_Transfered[SPEED_SECONDS];
 	bool m_UsedForTransfer[SPEED_SECONDS];

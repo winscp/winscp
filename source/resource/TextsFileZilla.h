@@ -658,6 +658,8 @@
 #define IDS_OPTIONSCAPTION_FONTNAME     3104
 #endif
 #define IDS_PROXY_CONNECTED             3201
+#define IDS_CONTROL_CONNECTION          3202
+#define IDS_DATA_CONNECTION             3203
 #if 0
 #define ID_CANCELBUTTON                 32768
 #define ID_COPYTOSITEMANAGER            32769

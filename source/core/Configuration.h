@@ -32,7 +32,9 @@ private:
   int FLogWindowLines;
   bool FLogFileAppend;
   bool FLogSensitive;
+  bool FPermanentLogSensitive;
   int FLogProtocol;
+  int FPermanentLogProtocol;
   int FActualLogProtocol;
   bool FLogActions;
   bool FPermanentLogActions;
@@ -160,6 +162,8 @@ protected:
   __property UnicodeString PermanentLogFileName  = { read=FPermanentLogFileName, write=SetLogFileName };
   __property bool PermanentLogActions  = { read=FPermanentLogActions, write=SetLogActions };
   __property UnicodeString PermanentActionsLogFileName  = { read=FPermanentActionsLogFileName, write=SetActionsLogFileName };
+  __property int PermanentLogProtocol  = { read=FPermanentLogProtocol, write=SetLogProtocol };
+  __property bool PermanentLogSensitive  = { read=FPermanentLogSensitive, write=SetLogSensitive };
 
 public:
   __fastcall TConfiguration();
@@ -190,6 +194,8 @@ public:
   virtual THierarchicalStorage * CreateScpStorage(bool & SessionList);
   void __fastcall TemporaryLogging(const UnicodeString ALogFileName);
   void __fastcall TemporaryActionsLogging(const UnicodeString ALogFileName);
+  void __fastcall TemporaryLogProtocol(int ALogProtocol);
+  void __fastcall TemporaryLogSensitive(bool ALogSensitive);
   virtual RawByteString __fastcall EncryptPassword(UnicodeString Password, UnicodeString Key);
   virtual UnicodeString __fastcall DecryptPassword(RawByteString Password, UnicodeString Key);
   virtual RawByteString __fastcall StronglyRecryptPassword(RawByteString Password, UnicodeString Key);

@@ -52,6 +52,7 @@ const wchar_t UrlParamSeparator = L';';
 const wchar_t UrlParamValueSeparator = L'=';
 const UnicodeString UrlHostKeyParamName(L"fingerprint");
 const UnicodeString UrlSaveParamName(L"save");
+const UnicodeString PassphraseOption(L"passphrase");
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
@@ -67,6 +68,22 @@ __fastcall TSessionData::TSessionData(UnicodeString aName):
 //---------------------------------------------------------------------
 _fastcall TSessionData::~TSessionData()
 {
+}
+//---------------------------------------------------------------------
+int __fastcall TSessionData::Compare(TNamedObject * Other)
+{
+  int Result;
+  // To avoid using CompareLogicalText on hex names of sessions in workspace.
+  // The session 000A would be sorted before 0001.
+  if (IsWorkspace && NOT_NULL(dynamic_cast<TSessionData *>(Other))->IsWorkspace)
+  {
+    Result = CompareText(Name, Other->Name);
+  }
+  else
+  {
+    Result = TNamedObject::Compare(Other);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Default()
@@ -1228,6 +1245,11 @@ bool __fastcall TSessionData::IsProtocolUrl(
     DoIsProtocolUrl(Url, WinSCPProtocolPrefix + Protocol, ProtocolLen);
 }
 //---------------------------------------------------------------------
+bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option)
+{
+  return AnsiSameText(Option, PassphraseOption);
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
   bool * AProtocolDefined, UnicodeString * MaskedUrl)
@@ -1513,7 +1535,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     {
       PublicKeyFile = Value;
     }
-    if (Options->FindSwitch(L"passphrase", Value))
+    if (Options->FindSwitch(PassphraseOption, Value))
     {
       Passphrase = Value;
     }

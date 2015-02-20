@@ -112,6 +112,7 @@ public:
 	t_server GetCurrentServer();
 	void ShowStatus(UINT nID, int type) const;
 	void ShowStatus(CString status,int type) const;
+	void ShowTimeoutError(UINT nID) const;
 
 #ifdef MPEXT
 	virtual bool UsingMlsd() = 0;

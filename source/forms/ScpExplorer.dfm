@@ -953,7 +953,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       Images = GlyphsModule.SessionImages
       Panels = <
         item
-          Size = 170
+          Size = 130
           StretchPriority = 1
           Tag = 0
           TextTruncation = twEndEllipsis
@@ -961,14 +961,14 @@ inherited ScpExplorerForm: TScpExplorerForm
         item
           Alignment = taCenter
           Hint = 'Click to show hidden files'
-          Size = 100
+          Size = 120
           Tag = 0
           TextTruncation = twEndEllipsis
         end
         item
           Alignment = taCenter
           Hint = 'Click to modify or clear the filter'
-          Size = 100
+          Size = 120
           Tag = 0
           TextTruncation = twEndEllipsis
         end

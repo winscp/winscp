@@ -150,8 +150,6 @@ private:
   ne_session_s * FNeonSession;
   bool FInitialHandshake;
   bool FAuthenticationRequested;
-  ne_provide_body FUploadBodyProvider;
-  void * FUploadBodyProviderUserData;
   UnicodeString FResponse;
   RawByteString FPassword;
   UnicodeString FTlsVersionStr;

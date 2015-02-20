@@ -367,6 +367,38 @@ void CTransferSocket::OnReceive(int nErrorCode)
 	}
 }
 
+void CTransferSocket::SetBuffers()
+{
+	/* Set internal socket send buffer
+	 * this should fix the speed problems some users have reported
+	 */
+	DWORD value = 0;
+	int len = sizeof(value);
+	GetSockOpt(SO_SNDBUF, &value, &len);
+	// MPEXT
+	int sndbuf = COptions::GetOptionVal(OPTION_MPEXT_SNDBUF);
+	if (value < sndbuf)
+	{
+		value = sndbuf;
+		SetSockOpt(SO_SNDBUF, &value, sizeof(value));
+	}
+
+	// For now we increase receive buffer, whenever send buffer is set.
+	// The size is not configurable. The constant taken from FZ.
+	if (sndbuf > 0)
+	{
+		value = 0;
+		len = sizeof(value);
+		GetSockOpt(SO_RCVBUF, &value, &len);
+		int rcvbuf = 4 * 1024 * 1024;
+		if (value < rcvbuf)
+		{
+			value = rcvbuf;
+			SetSockOpt(SO_RCVBUF, &value, sizeof(value));
+		}
+	}
+}
+
 void CTransferSocket::OnAccept(int nErrorCode)
 {
 	LogMessage(__FILE__, __LINE__, this,FZ_LOG_DEBUG, _T("OnAccept(%d)"), nErrorCode);
@@ -378,19 +410,7 @@ void CTransferSocket::OnAccept(int nErrorCode)
 	
 	Attach(socket);
 
-	/* Set internal socket send buffer
-	 * this should fix the speed problems some users have reported
-	 */
-	DWORD value;
-	int len = sizeof(value);
-	GetSockOpt(SO_SNDBUF, &value, &len);
-	// MPEXT
-	int sndbuf = COptions::GetOptionVal(OPTION_MPEXT_SNDBUF);
-	if (value < sndbuf)
-	{
-		value = sndbuf;
-		SetSockOpt(SO_SNDBUF, &value, sizeof(value));
-	}
+	SetBuffers();
 
 	if (m_nTransferState == STATE_STARTING)
 	{
@@ -462,19 +482,8 @@ void CTransferSocket::OnConnect(int nErrorCode)
 	}
 	else
 	{
-		/* Set internal socket send buffer
-		 * this should fix the speed problems some users have reported
-		 */
-		DWORD value;
-		int len = sizeof(value);
-		GetSockOpt(SO_SNDBUF, &value, &len);
-		// MPEXT
-		int sndbuf = COptions::GetOptionVal(OPTION_MPEXT_SNDBUF);
-		if (value < sndbuf)
-		{
-			value = sndbuf;
-			SetSockOpt(SO_SNDBUF, &value, sizeof(value));
-		}
+		SetBuffers();
+		m_pOwner->ShowStatus(L"Data connection opened", FZ_LOG_INFO);
 	}
 	if (m_nTransferState == STATE_WAITING)
 	{
@@ -535,6 +544,8 @@ void CTransferSocket::OnClose(int nErrorCode)
 		m_nNotifyWaiting |= FD_CLOSE;
 		return;
 	}
+	
+	m_pOwner->ShowStatus(L"Data connection closed", FZ_LOG_INFO);
 
 	OnReceive(0);
 	CloseAndEnsureSendClose(0);
@@ -552,7 +563,7 @@ int CTransferSocket::CheckForTimeout(int delay)
 	CTimeSpan span = CTime::GetCurrentTime()-m_LastActiveTime;
 	if (span.GetTotalSeconds()>=delay)
 	{
-		m_pOwner->ShowStatus(IDS_ERRORMSG_TIMEOUT, FZ_LOG_ERROR);
+		m_pOwner->ShowTimeoutError(IDS_DATA_CONNECTION);
 		CloseAndEnsureSendClose(CSMODE_TRANSFERTIMEOUT);
 		return 2;
 	}

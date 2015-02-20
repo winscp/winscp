@@ -12,7 +12,8 @@ public:
   __property UnicodeString Name = { read = FName, write = SetName };
   __property bool Hidden = { read = FHidden };
   __fastcall TNamedObject() {};
-  Integer __fastcall CompareName(UnicodeString aName, Boolean CaseSensitive = False);
+  bool __fastcall IsSameName(const UnicodeString & Name);
+  virtual int __fastcall Compare(TNamedObject * Other);
   __fastcall TNamedObject(UnicodeString aName);
   void __fastcall MakeUniqueIn(TNamedObjectList * List);
 private:
@@ -40,7 +41,7 @@ public:
   __fastcall TNamedObjectList();
   void __fastcall AlphaSort();
   virtual TNamedObject * __fastcall AtObject(Integer Index);
-  TNamedObject * __fastcall FindByName(UnicodeString Name, Boolean CaseSensitive = False);
+  TNamedObject * __fastcall FindByName(const UnicodeString & Name);
   __property int Count = { read = GetCount, write = SetCount };
   __property int CountIncludingHidden = { read = GetCountIncludingHidden };
 };

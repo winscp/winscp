@@ -100,6 +100,7 @@ private:
   bool FAllowSwitch;
   TListBoxScrollOnDragOver * FSessionScrollOnDragOver;
   TListBoxScrollOnDragOver * FSharedScrollOnDragOver;
+  bool FBookmarkSelected;
 
   void __fastcall SetDirectory(UnicodeString value);
   UnicodeString __fastcall GetDirectory();

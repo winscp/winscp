@@ -94,6 +94,10 @@ struct ne_request_s {
     /* Request body. */
     ne_provide_body body_cb;
     void *body_ud;
+    #ifdef WINSCP
+    ne_provide_body body_cb_pre;
+    void *body_ud_pre;
+    #endif
 
     /* Request body source: file or buffer (if not callback). */
     union {
@@ -404,7 +408,11 @@ static int send_request_body(ne_request *req, int retry)
         return NE_ERROR;
     }
     
-    while ((bytes = req->body_cb(req->body_ud, start, buflen)) > 0) {
+    while (
+        #ifdef WINSCP
+        ((req->body_cb_pre == NULL) || ((bytes = req->body_cb_pre(req->body_ud_pre, start, buflen)) > 0)) &&
+        #endif
+        (bytes = req->body_cb(req->body_ud, start, buflen)) > 0) {
         req->session->status.sr.progress += bytes;
         if (chunked) {
             /* Overwrite the buffer prefix with the appropriate chunk
@@ -590,20 +598,12 @@ void ne_set_request_body_fd(ne_request *req, int fd,
 
 #include <assert.h>
 
-void ne_set_request_body_provider_proxy(ne_request *req,
-    ne_provide_body provider, void * ud,
-    ne_provide_body * prev_provider, void ** prev_ud)
+void ne_set_request_body_provider_pre(ne_request *req,
+    ne_provide_body provider, void *ud)
 {
-    if ((req->body_cb != provider) ||
-        (req->body_ud != ud))
-    {
-        assert(*prev_provider == NULL);
-        assert(*prev_ud == NULL);
-        *prev_provider = req->body_cb;
-        *prev_ud = req->body_ud;
-        req->body_cb = provider;
-        req->body_ud = ud;
-    }
+    assert((req->body_cb_pre == NULL) || (req->body_cb_pre == provider));
+    req->body_cb_pre = provider;
+    req->body_ud_pre = ud;
 }
 
 int ne_get_request_body_buffer(ne_request *req, const char **buffer,

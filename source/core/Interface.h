@@ -7,6 +7,8 @@
 #define HELP_NONE ""
 //---------------------------------------------------------------------------
 TConfiguration * __fastcall CreateConfiguration();
+class TOptions;
+TOptions * __fastcall GetGlobalOptions();
 
 void __fastcall ShowExtendedException(Exception * E);
 bool __fastcall AppendExceptionStackTraceAndForget(TStrings *& MoreMessages);
@@ -16,6 +18,7 @@ UnicodeString __fastcall GetRegistryKey();
 void * __fastcall BusyStart();
 void __fastcall BusyEnd(void * Token);
 const unsigned int GUIUpdateInterval = 200;
+void __fastcall SetNoGUI();
 bool __fastcall ProcessGUI(bool Force = false);
 UnicodeString __fastcall AppNameString();
 UnicodeString __fastcall SshVersionString();

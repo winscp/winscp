@@ -61,7 +61,7 @@ bool __fastcall TEditorData::DecideExternalEditorText(UnicodeString ExternalEdit
 {
   bool Result = false;
   // By default we use default transfer mode (binary),
-  // as all reasonable 3rd party editors suppose all EOS styles.
+  // as all reasonable 3rd party editors support all EOL styles.
   // A notable exception is Windows Notepad, so here's an exception for it.
 
   ReformatFileNameCommand(ExternalEditor);

@@ -123,6 +123,7 @@ private:
   TTreeViewScrollOnDragOver * FSessionScrollOnDragOver;
   TTreeViewScrollOnDragOver * FSharedScrollOnDragOver;
   UnicodeString FSessionKey;
+  bool FBookmarkSelected;
   #ifdef _DEBUG
   HWND FSessionProfilesViewHandle;
   HWND FSharedProfilesViewHandle;

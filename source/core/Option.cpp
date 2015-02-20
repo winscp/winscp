@@ -10,8 +10,8 @@
 //---------------------------------------------------------------------------
 __fastcall TOptions::TOptions()
 {
-  FSwitchMarks = L"-/";
-  FSwitchValueDelimiters = L":=";
+  FSwitchMarks = L"/-";
+  FSwitchValueDelimiters = L"=:";
   FNoMoreSwitches = false;
   FParamCount = 0;
 }
@@ -70,6 +70,8 @@ void __fastcall TOptions::Add(UnicodeString Value)
       ++FParamCount;
     }
   }
+
+  FOriginalOptions = FOptions;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TOptions::GetParam(int Index)
@@ -249,6 +251,18 @@ bool __fastcall TOptions::UnusedSwitch(UnicodeString & Switch)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TOptions::WasSwitchAdded(UnicodeString & Switch)
+{
+  bool Result =
+    ALWAYS_TRUE(FOptions.size() > 0) &&
+    (FOptions.back().Type == otSwitch);
+  if (Result)
+  {
+    Switch = FOptions.back().Name;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TOptions::ParamsProcessed(int ParamsStart, int ParamsCount)
 {
   if (ParamsCount > 0)
@@ -276,5 +290,32 @@ void __fastcall TOptions::ParamsProcessed(int ParamsStart, int ParamsCount)
       }
       Index++;
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptions::LogOptions(TLogOptionEvent OnLogOption)
+{
+  for (size_t Index = 0; Index < FOriginalOptions.size(); Index++)
+  {
+    const TOption & Option = FOriginalOptions[Index];
+    UnicodeString LogStr;
+    switch (Option.Type)
+    {
+      case otParam:
+        LogStr = FORMAT(L"Parameter: %s", (Option.Value));
+        assert(Option.Name.IsEmpty());
+        break;
+
+      case otSwitch:
+        LogStr =
+          FORMAT(L"Switch:    %s%s%s%s",
+            (FSwitchMarks[1], Option.Name, (Option.Value.IsEmpty() ? UnicodeString() : FSwitchValueDelimiters.SubString(1, 1)), Option.Value));
+        break;
+
+      default:
+        FAIL;
+        break;
+    }
+    OnLogOption(LogStr);
   }
 }

@@ -181,6 +181,10 @@ void __fastcall NeonInitialize()
   // Even if this fails, we do not want to interrupt WinSCP starting for that.
   // We may possibly remember that and fail opening session later.
   // Anyway, it can hardly fail.
+  // Though it fails on Wine on Debian VM.
+  // Probably because of ne_sspi_init() as we get this message on stderr:
+  // p11-kit: couldn't load module: /usr/lib/i386-linux-gnu/pkcs11/gnome-keyring-pkcs11.so: /usr/lib/i386-linux-gnu/pkcs11/gnome-keyring-pkcs11.so: cannot open shared object file: No such file or directory
+  // err:winediag:SECUR32_initNTLMSP ntlm_auth was not found or is outdated. Make sure that ntlm_auth >= 3.0.25 is in your path. Usually, you can find it in the winbind package of your distribution.
   ALWAYS_TRUE(ne_sock_init() == 0);
 }
 //---------------------------------------------------------------------------
@@ -210,7 +214,6 @@ TWebDAVFileSystem::TWebDAVFileSystem(TTerminal * ATerminal) :
   FNeonSession(NULL),
   FUploading(false),
   FDownloading(false),
-  FUploadBodyProvider(NULL),
   FInitialHandshake(false),
   FIgnoreAuthenticationFailure(iafNo)
 {
@@ -525,9 +528,14 @@ void __fastcall TWebDAVFileSystem::CollectUsage()
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVITHit");
   }
+  // e.g. brickftp.com
+  else if (ContainsText(RemoteSystem, L"nginx"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVNginx");
+  }
   else
   {
-    // Web also know OpenDrive, Yandex, iFiles (iOS), Swapper (iOS), SafeSync
+    // We also know OpenDrive, Yandex, iFiles (iOS), Swapper (iOS), SafeSync
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVOther");
   }
 }
@@ -1442,8 +1450,6 @@ void __fastcall TWebDAVFileSystem::Source(const UnicodeString FileName,
   }
   __finally
   {
-    FUploadBodyProvider = NULL;
-
     if (FD >= 0)
     {
       // _close calls CloseHandle internally (even doc states, we should not call CloseHandle),
@@ -1675,7 +1681,7 @@ void TWebDAVFileSystem::NeonPreSend(
     // http://lists.manyfish.co.uk/pipermail/neon/2012-April/001452.html
     // It's also supported by Oracle server:
     // https://docs.oracle.com/cd/E19146-01/821-1828/gczya/index.html
-    // We do not know yet of ay server that fails when the header is used,
+    // We do not know yet of any server that fails when the header is used,
     // so it's added unconditionally.
     ne_buffer_zappend(Header, "Translate: f\r\n");
   }
@@ -1688,7 +1694,6 @@ void TWebDAVFileSystem::NeonPreSend(
     {
       // all neon request types that use ne_add_request_header
       // use XML content-type, so it's text-based
-      USEDPARAM(Header);
       assert(ContainsStr(AnsiString(Header->data, Header->used), "Content-Type: " NE_XML_MEDIA_TYPE));
       FileSystem->FTerminal->Log->Add(llInput, UnicodeString(UTF8String(Buffer, Size)));
     }
@@ -1696,14 +1701,8 @@ void TWebDAVFileSystem::NeonPreSend(
 
   if (FileSystem->FUploading)
   {
-    // this may get called multiple times per request,
-    // for example when authentication fails
-    ne_set_request_body_provider_proxy(Request,
-      FileSystem->NeonUploadBodyProvider, FileSystem,
-      &FileSystem->FUploadBodyProvider,
-      &FileSystem->FUploadBodyProviderUserData);
-
-    assert(FileSystem->FUploadBodyProvider != NULL);
+    ne_set_request_body_provider_pre(Request,
+      FileSystem->NeonUploadBodyProvider, FileSystem);
   }
 
   FileSystem->FResponse = L"";
@@ -1720,10 +1719,9 @@ int TWebDAVFileSystem::NeonPostSend(ne_request * /*Req*/, void * UserData,
   return NE_OK;
 }
 //---------------------------------------------------------------------------
-ssize_t TWebDAVFileSystem::NeonUploadBodyProvider(void * UserData, char * Buffer, size_t BufLen)
+ssize_t TWebDAVFileSystem::NeonUploadBodyProvider(void * UserData, char * /*Buffer*/, size_t /*BufLen*/)
 {
   TWebDAVFileSystem * FileSystem = static_cast<TWebDAVFileSystem *>(UserData);
-  assert(FileSystem->FUploadBodyProvider != NULL);
   ssize_t Result;
   if (FileSystem->CancelTransfer())
   {
@@ -1731,7 +1729,7 @@ ssize_t TWebDAVFileSystem::NeonUploadBodyProvider(void * UserData, char * Buffer
   }
   else
   {
-    Result = FileSystem->FUploadBodyProvider(FileSystem->FUploadBodyProviderUserData, Buffer, BufLen);
+    Result = 1;
   }
   return Result;
 }

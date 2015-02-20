@@ -9,13 +9,7 @@
 //---------------------------------------------------------------------------
 int __fastcall NamedObjectSortProc(void * Item1, void * Item2)
 {
-  bool HasPrefix1 = ((TNamedObject *)Item1)->Hidden;
-  bool HasPrefix2 = ((TNamedObject *)Item2)->Hidden;
-  if (HasPrefix1 && !HasPrefix2) return -1;
-    else
-  if (!HasPrefix1 && HasPrefix2) return 1;
-    else
-  return CompareLogicalText(((TNamedObject *)Item1)->Name, ((TNamedObject *)Item2)->Name);
+  return static_cast<TNamedObject *>(Item1)->Compare(static_cast<TNamedObject *>(Item2));
 }
 //--- TNamedObject ----------------------------------------------------------
 __fastcall TNamedObject::TNamedObject(UnicodeString AName)
@@ -29,13 +23,27 @@ void __fastcall TNamedObject::SetName(UnicodeString value)
   FName = value;
 }
 //---------------------------------------------------------------------------
-Integer __fastcall TNamedObject::CompareName(UnicodeString aName,
-  Boolean CaseSensitive)
+int __fastcall TNamedObject::Compare(TNamedObject * Other)
 {
-  if (CaseSensitive)
-    return Name.Compare(aName);
+  int Result;
+  if (Hidden && !Other->Hidden)
+  {
+    Result = -1;
+  }
+  else if (!Hidden && Other->Hidden)
+  {
+    Result = 1;
+  }
   else
-    return Name.CompareIC(aName);
+  {
+    Result = CompareLogicalText(Name, Other->Name);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TNamedObject::IsSameName(const UnicodeString & AName)
+{
+  return (Name.CompareIC(AName) == 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNamedObject::MakeUniqueIn(TNamedObjectList * List)
@@ -101,13 +109,17 @@ void __fastcall TNamedObjectList::Notify(void *Ptr, TListNotification Action)
   }
 }
 //---------------------------------------------------------------------------
-TNamedObject * __fastcall TNamedObjectList::FindByName(UnicodeString Name,
-  Boolean CaseSensitive)
+TNamedObject * __fastcall TNamedObjectList::FindByName(const UnicodeString & Name)
 {
   // this should/can be optimized when list is sorted
   for (Integer Index = 0; Index < TObjectList::Count; Index++)
-    if (!((TNamedObject *)Items[Index])->CompareName(Name, CaseSensitive))
-      return (TNamedObject *)Items[Index];
+  {
+    TNamedObject * NamedObject = AtObject(Index);
+    if (NamedObject->IsSameName(Name))
+    {
+      return NamedObject;
+    }
+  }
   return NULL;
 }
 //---------------------------------------------------------------------------

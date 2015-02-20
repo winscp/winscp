@@ -205,7 +205,6 @@ private:
   UnicodeString __fastcall GetUserNameExpanded();
   void __fastcall SetPassword(UnicodeString value);
   UnicodeString __fastcall GetPassword() const;
-  void __fastcall SetPasswordless(bool value);
   void __fastcall SetPingInterval(int value);
   void __fastcall SetTryAgent(bool value);
   void __fastcall SetAgentFwd(bool value);
@@ -382,6 +381,7 @@ public:
   void __fastcall Remove();
   void __fastcall CacheHostKeyIfNotCached();
   virtual void __fastcall Assign(TPersistent * Source);
+  virtual int __fastcall Compare(TNamedObject * Other);
   void __fastcall CopyData(TSessionData * Source);
   void __fastcall CopyDirectoriesStateData(TSessionData * SourceData);
   bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
@@ -401,6 +401,7 @@ public:
   static UnicodeString __fastcall ExtractLocalName(const UnicodeString & Name);
   static UnicodeString __fastcall ExtractFolderName(const UnicodeString & Name);
   static UnicodeString __fastcall ComposePath(const UnicodeString & Path, const UnicodeString & Name);
+  static bool __fastcall IsSensitiveOption(const UnicodeString & Option);
 
   __property UnicodeString HostName  = { read=FHostName, write=SetHostName };
   __property UnicodeString HostNameExpanded  = { read=GetHostNameExpanded };

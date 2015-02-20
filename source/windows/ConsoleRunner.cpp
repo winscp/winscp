@@ -2104,6 +2104,8 @@ int __fastcall Console(TConsoleMode Mode)
       Console = new TNullConsole();
     }
 
+    SetNoGUI();
+
     if (Mode == cmHelp)
     {
       Configuration->Usage->Inc(L"UsageShown");

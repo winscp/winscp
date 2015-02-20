@@ -646,6 +646,17 @@ void __fastcall TBrowserViewer::BeforeNavigate2(
   }
 }
 //---------------------------------------------------------------------------
+TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Label)
+{
+  TPanel * Result = new TPanel(Parent);
+  Result->Parent = Parent;
+  Result->BevelOuter = bvNone;
+  Result->BevelInner = bvNone; // default
+  Result->Align = alClient;
+  Result->Caption = Label;
+  return Result;
+}
+//---------------------------------------------------------------------------
 TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeString & LoadingLabel)
 {
   TBrowserViewer * Result = new TBrowserViewer(Parent);
@@ -655,13 +666,7 @@ TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeStr
   Result->Align = alClient;
   Result->ControlBorder = cbNone;
 
-  TPanel * LoadingPanel = new TPanel(Parent);
-  LoadingPanel->Parent = Parent;
-  LoadingPanel->BevelOuter = bvNone;
-  LoadingPanel->BevelInner = bvNone; // default
-  LoadingPanel->Align = alClient;
-  LoadingPanel->Caption = LoadingLabel;
-  Result->LoadingPanel = LoadingPanel;
+  Result->LoadingPanel = CreateLabelPanel(Parent, LoadingLabel);
 
   return Result;
 }

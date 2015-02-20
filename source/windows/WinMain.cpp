@@ -502,6 +502,33 @@ int __fastcall Execute()
     Configuration->Usage->Inc(L"ConsoleDotNet");
   }
 
+  UnicodeString SwitchValue;
+  if (Params->FindSwitch(L"loglevel", SwitchValue))
+  {
+    int StarPos = SwitchValue.Pos(L"*");
+    if (StarPos > 0)
+    {
+      bool LogSensitive = true;
+      SwitchValue.Delete(StarPos, 1);
+
+      if ((StarPos <= SwitchValue.Length()) &&
+          (SwitchValue[StarPos] == L'-'))
+      {
+        LogSensitive = false;
+        SwitchValue.Delete(StarPos, 1);
+      }
+
+      SwitchValue = SwitchValue.Trim();
+
+      Configuration->TemporaryLogSensitive(LogSensitive);
+    }
+    int LogProtocol;
+    if (!SwitchValue.IsEmpty() && TryStrToInt(SwitchValue, LogProtocol) && (LogProtocol >= 0))
+    {
+      Configuration->TemporaryLogProtocol(LogProtocol);
+    }
+  }
+
   TConsoleMode Mode = cmNone;
   if (Params->FindSwitch(L"help") || Params->FindSwitch(L"h") || Params->FindSwitch(L"?"))
   {
@@ -559,7 +586,6 @@ int __fastcall Execute()
       }
     }
 
-    UnicodeString SwitchValue;
     if (Params->FindSwitch(L"UninstallCleanup"))
     {
       MaintenanceTask();

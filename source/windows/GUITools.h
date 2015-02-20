@@ -42,6 +42,7 @@ typedef int __fastcall (*TCalculateWidth)(UnicodeString Text, void * Arg);
 void __fastcall ApplyTabs(
   UnicodeString & Text, wchar_t Padding,
   TCalculateWidth CalculateWidth, void * CalculateWidthArg);
+TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Label);
 namespace Webbrowserex
 {
   class TWebBrowserEx;

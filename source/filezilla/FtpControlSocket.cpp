@@ -675,7 +675,6 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 	{
 		#ifdef MPEXT
 		std::string facts;
-		// this is never true, see comment is DiscardLine
 		if (m_serverCapabilities.GetCapabilityString(mlsd_command, &facts) == yes)
 		{
 			ftp_capabilities_t cap = m_serverCapabilities.GetCapabilityString(opts_mlst_command);
@@ -722,14 +721,14 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 					if (!strcmp(fact.c_str(), "type") ||
 						!strcmp(fact.c_str(), "size") ||
 						!strcmp(fact.c_str(), "modify") ||
+						!strcmp(fact.c_str(), "create") ||
 						!strcmp(fact.c_str(), "perm") ||
 						!strcmp(fact.c_str(), "unix.mode") ||
 						!strcmp(fact.c_str(), "unix.owner") ||
 						!strcmp(fact.c_str(), "unix.user") ||
 						!strcmp(fact.c_str(), "unix.group") ||
 						!strcmp(fact.c_str(), "unix.uid") ||
-						!strcmp(fact.c_str(), "unix.gid") ||
-						!strcmp(fact.c_str(), "x.hidden"))
+						!strcmp(fact.c_str(), "unix.gid"))
 					{
 						had_unset |= !enabled;
 						opts_facts += fact.c_str();
@@ -1164,7 +1163,7 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
 		m_MultiLine = "";
 		CString str;
 		str.Format(IDS_STATUSMSG_CONNECTEDWITH, m_ServerName);
-		ShowStatus(str, FZ_LOG_STATUS);
+		ShowStatus(str, FZ_LOG_PROGRESS);
 		m_pOwner->SetConnected(TRUE);
 	}
 	char *buffer = new char[BUFFERSIZE];
@@ -1357,7 +1356,7 @@ void CFtpControlSocket::OnConnect(int nErrorCode)
 				m_pSslLayer ? IDS_STATUSMSG_CONNECTEDWITHSSL :
 #endif
 				IDS_STATUSMSG_CONNECTEDWITH, m_ServerName);
-			ShowStatus(str,FZ_LOG_STATUS);
+			ShowStatus(str,FZ_LOG_PROGRESS);
 		}
 	}
 	else
@@ -1569,7 +1568,7 @@ void CFtpControlSocket::CheckForTimeout()
 	CTimeSpan span=CTime::GetCurrentTime()-m_LastRecvTime;
 	if (span.GetTotalSeconds()>=delay)
 	{
-		ShowStatus(IDS_ERRORMSG_TIMEOUT, FZ_LOG_ERROR);
+		ShowTimeoutError(IDS_CONTROL_CONNECTION);
 		DoClose();
 	}
 }
@@ -1762,7 +1761,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 		}
 		else if (pData->pDirectoryListing && pData->nFinish==1)
 		{
-			ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL,FZ_LOG_STATUS);
+			ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL,FZ_LOG_PROGRESS);
 #ifndef MPEXT_NO_CACHE
 			CDirectoryCache cache;
 			cache.Lock();
@@ -1837,7 +1836,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 								}
 						if (bExact)
 						{
-							ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL, FZ_LOG_STATUS);
+							ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL, FZ_LOG_PROGRESS);
 							SetDirectoryListing(&dir);
 							ResetOperation(FZ_REPLY_OK);
 							return;
@@ -1893,7 +1892,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 								}
 						if (bExact)
 						{
-							ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL, FZ_LOG_STATUS);
+							ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL, FZ_LOG_PROGRESS);
 							SetDirectoryListing(&dir);
 							ResetOperation(FZ_REPLY_OK);
 							return;
@@ -1943,7 +1942,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 								}
 						if (bExact)
 						{
-							ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL, FZ_LOG_STATUS);
+							ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL, FZ_LOG_PROGRESS);
 							SetDirectoryListing(&dir);
 							ResetOperation(FZ_REPLY_OK);
 							return;
@@ -2064,7 +2063,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 		case LIST_LIST:
 			if (IsMisleadingListResponse())
 			{
-				ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL, FZ_LOG_STATUS);
+				ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL, FZ_LOG_PROGRESS);
 
 				t_directory listing;
 				listing.server = m_CurrentServer;
@@ -2114,7 +2113,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 		pData->path=path;
 		pData->subdir=subdir;
 		m_Operation.pData=pData;
-		ShowStatus(IDS_STATUSMSG_RETRIEVINGDIRLIST, FZ_LOG_STATUS);
+		ShowStatus(IDS_STATUSMSG_RETRIEVINGDIRLIST, FZ_LOG_PROGRESS);
 		pData->nFinish=-1;
 		if (m_pDirectoryListing)
 		{
@@ -2168,7 +2167,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 									}
 							if (bExact)
 							{
-								ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL,FZ_LOG_STATUS);
+								ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL,FZ_LOG_PROGRESS);
 								SetDirectoryListing(&dir);
 								ResetOperation(FZ_REPLY_OK);
 								return;
@@ -2440,7 +2439,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 			hostname.Format(L"%s:%d", pData->host, pData->port);
 			CString str;
 			str.Format(IDS_STATUSMSG_CONNECTING, hostname);
-			ShowStatus(str, FZ_LOG_STATUS);
+			ShowStatus(str, FZ_LOG_PROGRESS);
 
 			// if PASV create the socket & initiate outbound data channel connection
 			if (!m_pTransferSocket->Connect(pData->host,pData->port))
@@ -3582,7 +3581,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 		case FILETRANSFER_LIST_LIST:
 			if (IsMisleadingListResponse())
 			{
-				ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL, FZ_LOG_STATUS);
+				ShowStatus(IDS_STATUSMSG_DIRLISTSUCCESSFUL, FZ_LOG_PROGRESS);
 
 				t_directory listing;
 				listing.server = m_CurrentServer;
@@ -5554,6 +5553,7 @@ void CFtpControlSocket::SetFileExistsAction(int nAction, COverwriteRequestData *
 
 void CFtpControlSocket::SendKeepAliveCommand()
 {
+	ShowStatus(L"Sending dummy command to keep session alive.", FZ_LOG_PROGRESS);
 	m_bKeepAliveActive=TRUE;
 	//Choose a random command from the list
 	TCHAR commands[4][7]={_MPT("PWD"),_MPT("REST 0"),_MPT("TYPE A"),_MPT("TYPE I")};
@@ -6354,14 +6354,12 @@ void CFtpControlSocket::DiscardLine(CStringA line)
 		else if (line.Left(4) == _MPAT("MLST"))
 		{
 			USES_CONVERSION;
-			// This is wrong, the -1 for length does not work with
-			// Mid(), so result is always an empty string.
-			// Consequently CONNECT_FEAT state code in
-			// LogOnToServer() is never triggered
-			// and OPTS MLST command is never sent.
-			// Also using 6 index when there are no facts after
-			// MLST (ftp.drivehq.com) triggers an assertion.
-			m_serverCapabilities.SetCapability(mlsd_command, yes, (LPCSTR)line.Mid(5, -1));
+			std::string facts;
+			if (line.GetLength() > 5)
+			{
+				facts = (LPCSTR)line.Mid(5, line.GetLength() - 5);
+			}
+			m_serverCapabilities.SetCapability(mlsd_command, yes, facts);
 		}
 		else if (line == _MPAT("MFMT"))
 		{
@@ -6575,7 +6573,7 @@ bool CFtpControlSocket::CheckForcePasvIp(CString & host)
 		default: // auto
 			if (!GetPeerName(ahost, tmpPort))
 			{
-				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("Error retrieving server address, cannot test if address is routable"));
+				LogMessage(__FILE__, __LINE__, this, FZ_LOG_PROGRESS, _T("Error retrieving server address, cannot test if address is routable"));
 			}
 			else if (!IsRoutableAddress(host) && IsRoutableAddress(ahost))
 			{

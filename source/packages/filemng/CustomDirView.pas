@@ -389,7 +389,7 @@ type
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
     property DragDropFilesEx: TCustomizableDragDropFilesEx read FDragDropFilesEx;
     property FormatSizeBytes: TFormatBytesStyle read FFormatSizeBytes write SetFormatSizeBytes default fbNone;
-    property WantUseDragImages: Boolean read FWantUseDragImages write FWantUseDragImages default True;
+    property WantUseDragImages: Boolean read FWantUseDragImages write FWantUseDragImages default False;
     property UseDragImages: Boolean read GetUseDragImages stored False;
     property FullDrag default True;
     property TargetPopupMenu: Boolean read GetTargetPopupMenu write SetTargetPopupMenu default True;
@@ -838,7 +838,7 @@ begin
   FDimmHiddenFiles := True;
   FShowHiddenFiles := True;
   FFormatSizeBytes := fbNone;
-  FWantUseDragImages := True;
+  FWantUseDragImages := False;
   FAddParentDir := False;
   FullDrag := True;
   FInvalidNameChars := '\/:*?"<>|';
@@ -2222,7 +2222,9 @@ begin
   end;
 
   if Assigned(OnDDQueryContinueDrag) then
+  begin
     OnDDQueryContinueDrag(Self, FEscapePressed, grfKeyState, Result);
+  end;
 
   try
     if FEscapePressed then
@@ -2549,6 +2551,7 @@ begin
       FDragEnabled := False;
       {Create the dragimage:}
       GlobalDragImageList := DragImageList;
+      // This code is not used anymore
       if UseDragImages and (not AvoidDragImage) then
       begin
         ImageListHandle := ListView_CreateDragImage(Handle, FirstItem.Index, Spot);

@@ -495,9 +495,18 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
-                _logger.WriteLine("Waiting for process to exit");
+                int timeout;
 
-                if (!_process.WaitForExit(1000))
+                #if DEBUG
+                // in debug build, we expect the winscp.exe to run in tracing mode, being very slow
+                timeout = 10000;
+                #else
+                timeout = 2000;
+                #endif
+
+                _logger.WriteLine("Waiting for process to exit ({0} ms)", timeout);
+
+                if (!_process.WaitForExit(timeout))
                 {
                     _logger.WriteLine("Killing process");
                     _process.Kill();

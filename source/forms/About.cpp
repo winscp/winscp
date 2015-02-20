@@ -30,14 +30,14 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-void __fastcall DoAboutDialog(TConfiguration * Configuration,
-  bool AllowLicense, TRegistration * Registration)
+static void __fastcall DoAboutDialog(TConfiguration * Configuration,
+  bool AllowLicense, TRegistration * Registration, bool LoadThirdParty)
 {
   TAboutDialog * AboutDialog = NULL;
   try
   {
     AboutDialog = new TAboutDialog(Application, Configuration, AllowLicense,
-      Registration);
+      Registration, LoadThirdParty);
     AboutDialog->ShowModal();
   }
   __finally
@@ -46,8 +46,24 @@ void __fastcall DoAboutDialog(TConfiguration * Configuration,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall DoAboutDialog(TConfiguration * Configuration,
+  bool AllowLicense, TRegistration * Registration)
+{
+  try
+  {
+    DoAboutDialog(Configuration, AllowLicense, Registration, true);
+  }
+  catch (EOleException & E)
+  {
+    // This happens particularly on Wine that's does not support some
+    // functionality of embedded IE we need.
+    DoAboutDialog(Configuration, AllowLicense, Registration, false);
+  }
+}
+//---------------------------------------------------------------------------
 __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
-  TConfiguration * Configuration, bool AllowLicense, TRegistration * Registration)
+  TConfiguration * Configuration, bool AllowLicense, TRegistration * Registration,
+  bool ALoadThirdParty)
   : TForm(AOwner)
 {
   FConfiguration = Configuration;
@@ -123,9 +139,15 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
 
   LicenseButton->Visible = AllowLicense;
 
-  FThirdPartyWebBrowser = CreateBrowserViewer(ThirdPartyPanel, L"");
-
   LoadData();
+  if (ALoadThirdParty)
+  {
+    LoadThirdParty();
+  }
+  else
+  {
+    CreateLabelPanel(ThirdPartyPanel, LoadStr(MESSAGE_DISPLAY_ERROR));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LoadData()
@@ -138,16 +160,17 @@ void __fastcall TAboutDialog::LoadData()
       (Version, FConfiguration->ProductName, FConfiguration->ProductVersion));
   }
   VersionLabel->Caption = Version;
-
-  LoadThirdParty();
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LoadThirdParty()
 {
-  reinterpret_cast<TLabel *>(FThirdPartyWebBrowser)->Color = clBtnFace;
+  TWebBrowserEx * ThirdPartyWebBrowser =
+    CreateBrowserViewer(ThirdPartyPanel, L"");
 
-  FThirdPartyWebBrowser->Navigate(L"about:blank");
-  while (FThirdPartyWebBrowser->ReadyState < ::READYSTATE_INTERACTIVE)
+  reinterpret_cast<TLabel *>(ThirdPartyWebBrowser)->Color = clBtnFace;
+
+  ThirdPartyWebBrowser->Navigate(L"about:blank");
+  while (ThirdPartyWebBrowser->ReadyState < ::READYSTATE_INTERACTIVE)
   {
     Application->ProcessMessages();
   }
@@ -231,7 +254,7 @@ void __fastcall TAboutDialog::LoadThirdParty()
     CreateLink(EXPAT_LICENSE_URL, LoadStr(ABOUT_THIRDPARTY_LICENSE)) + Br +
     CreateLink(LoadStr(EXPAT_URL)));
 
-  AddBrowserLinkHandler(FThirdPartyWebBrowser, EXPAT_LICENSE_URL, ExpatLicenceHandler);
+  AddBrowserLinkHandler(ThirdPartyWebBrowser, EXPAT_LICENSE_URL, ExpatLicenceHandler);
 
 #ifndef NO_COMPONENTS
 
@@ -271,14 +294,14 @@ void __fastcall TAboutDialog::LoadThirdParty()
   ThirdPartyStream->Write(ThirdPartyUTF8.c_str(), ThirdPartyUTF8.Length());
   ThirdPartyStream->Seek(0, 0);
 
-  // For steam-loaded document, when set only after loading from OnDocumentComplete,
+  // For stream-loaded document, when set only after loading from OnDocumentComplete,
   // browser stops working
-  SetBrowserDesignModeOff(FThirdPartyWebBrowser);
+  SetBrowserDesignModeOff(ThirdPartyWebBrowser);
 
   TStreamAdapter * ThirdPartyStreamAdapter = new TStreamAdapter(ThirdPartyStream.get(), soReference);
   IPersistStreamInit * PersistStreamInit = NULL;
-  if (ALWAYS_TRUE(FThirdPartyWebBrowser->Document != NULL) &&
-      SUCCEEDED(FThirdPartyWebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
+  if (ALWAYS_TRUE(ThirdPartyWebBrowser->Document != NULL) &&
+      SUCCEEDED(ThirdPartyWebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
       ALWAYS_TRUE(PersistStreamInit != NULL))
   {
     PersistStreamInit->Load(static_cast<_di_IStream>(*ThirdPartyStreamAdapter));

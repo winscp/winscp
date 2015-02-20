@@ -107,6 +107,24 @@ private:
   HANDLE FMutex;
 };
 //---------------------------------------------------------------------------
+class TWindowLock
+{
+public:
+  TWindowLock(TCustomScpExplorerForm * Form) :
+    FForm(Form)
+  {
+    FForm->LockWindow();
+  }
+
+  ~TWindowLock()
+  {
+    FForm->UnlockWindow();
+  }
+
+private:
+  TCustomScpExplorerForm * FForm;
+};
+//---------------------------------------------------------------------------
 struct TTransferOperationParam
 {
   TTransferOperationParam();
@@ -3498,6 +3516,7 @@ void __fastcall TCustomScpExplorerForm::CreateDirectory(TOperationSide Side)
 
   if (DoCreateDirectoryDialog(Name, AProperties, AllowedChanges, SaveSettings))
   {
+    TWindowLock Lock(this);
     if (Side == osRemote)
     {
       if (SaveSettings)
@@ -3515,6 +3534,7 @@ void __fastcall TCustomScpExplorerForm::CreateDirectory(TOperationSide Side)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::HomeDirectory(TOperationSide Side)
 {
+  TWindowLock Lock(this);
   DirView(Side)->ExecuteHomeDirectory();
 }
 //---------------------------------------------------------------------------
@@ -5125,6 +5145,7 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
       if (::DoOpenDirectoryDialog(Mode, Side, Name, VisitedDirectories, Terminal,
             HasDirView[osLocal]))
       {
+        TWindowLock Lock(this);
         DirView(Side)->Path = Name;
       }
     }
@@ -6156,7 +6177,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDGiveFeedback(
   DragDropFiles(Sender)->CHCopy = SlippedCopyCursor;
   DragDropFiles(Sender)->CHScrollCopy = SlippedCopyCursor;
 
-  // Remember drop effect so we know (when user dropes files), if we copy or move
+  // Remember drop effect so we know (when user drops files), if we copy or move
   FLastDropEffect = dwEffect;
 }
 //---------------------------------------------------------------------------
@@ -6764,7 +6785,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
       {
         bool MoveCapable = FTerminal->IsCapable[fcRemoteMove];
         // currently we support copying always (at least via temporary directory);
-        // remove associated checks once this all proves stable andworking
+        // remove associated checks once this all proves stable and working
         bool CopyCapable = true;
         // if we do not support neither of operations, there's no discussion
         if (!MoveCapable && !CopyCapable)
@@ -8265,6 +8286,6 @@ Boolean __fastcall TCustomScpExplorerForm::AllowedAction(TAction * /*Action*/, T
   // so stop it at least here
   return
     (Allowed == aaUpdate) ||
-    !IsBusy();
+    !NonVisualDataModule->Busy;
 }
 //---------------------------------------------------------------------------

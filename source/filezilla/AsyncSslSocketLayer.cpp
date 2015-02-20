@@ -1179,7 +1179,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 				{
 					if (SSL_session_reused(pLayer->m_ssl))
 					{
-						pLayer->LogSocketMessage(FZ_LOG_INFO, _T("Session ID reused"));
+						pLayer->LogSocketMessage(FZ_LOG_PROGRESS, _T("Session ID reused"));
 					}
 					else
 					{

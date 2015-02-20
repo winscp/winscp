@@ -1022,7 +1022,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Alignment = taCenter
           Framed = False
           Hint = 'Click to show hidden files'
-          MaxSize = 100
+          MaxSize = 120
           Size = 80
           StretchPriority = 2
           Tag = 0
@@ -1032,7 +1032,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Alignment = taCenter
           Framed = False
           Hint = 'Click to modify or clear the filter'
-          MaxSize = 100
+          MaxSize = 120
           Size = 80
           StretchPriority = 2
           Tag = 0
@@ -1309,7 +1309,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Alignment = taCenter
           Framed = False
           Hint = 'Click to show hidden files'
-          MaxSize = 100
+          MaxSize = 120
           Size = 80
           StretchPriority = 2
           Tag = 0
@@ -1319,7 +1319,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Alignment = taCenter
           Framed = False
           Hint = 'Click to modify or clear the filter'
-          MaxSize = 100
+          MaxSize = 120
           Size = 80
           StretchPriority = 2
           Tag = 0

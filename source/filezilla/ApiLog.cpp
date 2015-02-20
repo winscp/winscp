@@ -76,7 +76,7 @@ bool CApiLog::LoggingMessageType(int nMessageType) const
 
 void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
 {
-	ASSERT(nMessageType>=0 && nMessageType<=8);
+	ASSERT(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	if (!LoggingMessageType(nMessageType))
 		return;
@@ -97,7 +97,7 @@ void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
 
 void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
 {
-	ASSERT(nMessageType>=0 && nMessageType<=8);
+	ASSERT(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	if (!LoggingMessageType(nMessageType))
 		return;
@@ -111,7 +111,7 @@ void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
 
 void CApiLog::LogMessage(int nMessageType, UINT nFormatID, ...) const
 {
-	ASSERT(nMessageType>=0 && nMessageType<=8);
+	ASSERT(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	if (!LoggingMessageType(nMessageType))
 		return;
@@ -135,7 +135,7 @@ void CApiLog::LogMessage(int nMessageType, UINT nFormatID, ...) const
 
 void CApiLog::LogMessage(CString SourceFile, int nSourceLine, void *pInstance, int nMessageType, LPCTSTR pMsgFormat, ...) const
 {
-	ASSERT(nMessageType>=4 && nMessageType<=8);
+	ASSERT(nMessageType>=FZ_LOG_LIST && nMessageType<=FZ_LOG_DEBUG);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	ASSERT(nSourceLine>0);
 
@@ -171,7 +171,7 @@ BOOL CApiLog::PostMessage(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) con
 
 void CApiLog::LogMessageRaw(CString SourceFile, int nSourceLine, void *pInstance, int nMessageType, LPCTSTR pMsg) const
 {
-	ASSERT(nMessageType>=4 && nMessageType<=8);
+	ASSERT(nMessageType>=FZ_LOG_LIST && FZ_LOG_DEBUG<=FZ_LOG_DEBUG);
 	ASSERT(m_hTargetWnd || m_pApiLogParent);
 	ASSERT(nSourceLine>0);
 
@@ -240,15 +240,8 @@ BOOL CApiLog::SetDebugLevel(int nDebugLevel)
 {
 	if (m_pApiLogParent)
 		return FALSE;
-	if (nDebugLevel<0 || nDebugLevel>4)
+	if (nDebugLevel<0 || nDebugLevel>5)
 		return FALSE;
 	m_nDebugLevel=nDebugLevel;
 	return TRUE;
-}
-
-int CApiLog::GetDebugLevel()
-{
-	if (m_pApiLogParent)
-		return m_pApiLogParent->m_nDebugLevel;
-	return m_nDebugLevel;
 }

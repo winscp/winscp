@@ -13,6 +13,7 @@ namespace WinSCP
     internal class Logger : IDisposable
     {
         public string LogPath { get { return _logPath; } set { SetLogPath(value); } }
+        public int LogLevel { get { return _logLevel; } set { SetLogLevel(value); } }
         public bool Logging { get { return (_writter != null) && _writter.BaseStream.CanWrite; } }
 
         public string GetAssemblyFilePath()
@@ -156,7 +157,7 @@ namespace WinSCP
 
         public void WriteCounters()
         {
-            if (Logging)
+            if (Logging && (_logLevel >= 1))
             {
                 try
                 {
@@ -178,7 +179,7 @@ namespace WinSCP
 
         public void WriteProcesses()
         {
-            if (Logging)
+            if (Logging && (_logLevel >= 1))
             {
                 try
                 {
@@ -264,7 +265,10 @@ namespace WinSCP
                         _writter = File.CreateText(_logPath);
                         _writter.AutoFlush = true;
                         WriteEnvironmentInfo();
-                        CreateCounters();
+                        if (_logLevel >= 1)
+                        {
+                            CreateCounters();
+                        }
                     }
                 }
             }
@@ -289,11 +293,21 @@ namespace WinSCP
             return new Win32Exception(Marshal.GetLastWin32Error()).Message;
         }
 
+        private void SetLogLevel(int value)
+        {
+            if ((value < 0) || (value > 1))
+            {
+                throw new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range 0-1"));
+            }
+            _logLevel = value;
+        }
+
         private StreamWriter _writter;
         private string _logPath;
         private readonly Dictionary<int, int> _indents = new Dictionary<int, int>();
         private readonly object _logLock = new object();
         private readonly Lock _lock = new Lock();
         private List<PerformanceCounter> _performanceCounters = new List<PerformanceCounter>();
+        private int _logLevel;
     }
 }
