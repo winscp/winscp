@@ -158,7 +158,7 @@ namespace WinSCP
 
             if (e != Event)
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("Payload type does not match with event");
             }
 
             if (_payload == null)
@@ -173,7 +173,7 @@ namespace WinSCP
         {
             if (_ptr == IntPtr.Zero)
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("Object is disposed");
             }
         }
 

@@ -219,6 +219,29 @@ Bignum dh_create_e(void *handle, int nbits)
 }
 
 /*
+ * DH stage 2-epsilon: given a number f, validate it to ensure it's in
+ * range. (RFC 4253 section 8: "Values of 'e' or 'f' that are not in
+ * the range [1, p-1] MUST NOT be sent or accepted by either side."
+ * Also, we rule out 1 and p-1 too, since that's easy to do and since
+ * they lead to obviously weak keys that even a passive eavesdropper
+ * can figure out.)
+ */
+const char *dh_validate_f(void *handle, Bignum f)
+{
+    struct dh_ctx *ctx = (struct dh_ctx *)handle;
+    if (bignum_cmp(f, One) <= 0) {
+        return "f value received is too small";
+    } else {
+        Bignum pm1 = bigsub(ctx->p, One);
+        int cmp = bignum_cmp(f, pm1);
+        freebn(pm1);
+        if (cmp >= 0)
+            return "f value received is too large";
+    }
+    return NULL;
+}
+
+/*
  * DH stage 2: given a number f, compute K = f^x mod p.
  */
 Bignum dh_find_K(void *handle, Bignum f)

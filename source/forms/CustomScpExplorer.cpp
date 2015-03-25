@@ -467,18 +467,26 @@ bool __fastcall TCustomScpExplorerForm::CommandLineFromAnotherInstance(
   bool Result = CanCommandLineFromAnotherInstance() && ALWAYS_TRUE(Params.ParamCount > 0);
   if (Result)
   {
-    // this action is initiated from another process,
-    // so it's likely that our window is not visible,
-    // and user won't see what is going on
-    Application->BringToFront();
-    UnicodeString SessionName = Params.Param[1];
-    std::unique_ptr<TObjectList> DataList(new TObjectList());
-    UnicodeString DownloadFile; // unused
-    GetLoginData(SessionName, &Params, DataList.get(), DownloadFile);
-    if (DataList->Count > 0)
+    NonVisualDataModule->StartBusy();
+    try
     {
-      TTerminalManager * Manager = TTerminalManager::Instance();
-      Manager->ActiveTerminal = Manager->NewTerminals(DataList.get());
+      // this action is initiated from another process,
+      // so it's likely that our window is not visible,
+      // and user won't see what is going on
+      Application->BringToFront();
+      UnicodeString SessionName = Params.Param[1];
+      std::unique_ptr<TObjectList> DataList(new TObjectList());
+      UnicodeString DownloadFile; // unused
+      GetLoginData(SessionName, &Params, DataList.get(), DownloadFile);
+      if (DataList->Count > 0)
+      {
+        TTerminalManager * Manager = TTerminalManager::Instance();
+        Manager->ActiveTerminal = Manager->NewTerminals(DataList.get());
+      }
+    }
+    __finally
+    {
+      NonVisualDataModule->EndBusy();
     }
   }
   return Result;
@@ -1275,11 +1283,25 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
 
     SetQueueProgress();
 
-    if ((ProgressData.Operation != foCalculateSize) &&
-        (ProgressData.Cancel == csContinue) &&
-        !FAutoOperation)
+    if (ProgressData.Operation == foCalculateSize)
     {
-      OperationComplete(ProgressData.StartTime);
+      // When calculating size before transfer, the abort caused by
+      // cancel flag set due to "MoveToQueue" below,
+      // is not propagated back to us in ExecuteFileOperation,
+      // as it is silently swallowed.
+      // So we explicitly (re)throw it here.
+      if (FMoveToQueue)
+      {
+        Abort();
+      }
+    }
+    else
+    {
+      if ((ProgressData.Cancel == csContinue) &&
+          !FAutoOperation)
+      {
+        OperationComplete(ProgressData.StartTime);
+      }
     }
   }
 
@@ -1833,7 +1855,11 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
             for (int Index = 0; Index < RemoteFileList->Count; Index++)
             {
               UnicodeString FileName = RemoteFileList->Strings[Index];
-              if (ALWAYS_TRUE(SameText(TempDir, FileName.SubString(1, TempDir.Length()))))
+              if (ALWAYS_TRUE(SameText(TempDir, FileName.SubString(1, TempDir.Length()))) &&
+                  // Skip directories for now, they require recursion,
+                  // and we do not have original nested files times available here yet.
+                  // The check is redundant as FileAge fails for directories anyway.
+                  !DirectoryExists(FileName))
               {
                 UnicodeString RemoteDir =
                   UnixExtractFileDir(
@@ -1841,8 +1867,8 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                     ToUnixPath(FileName.SubString(TempDir.Length() + 1, FileName.Length() - TempDir.Length())));
 
                 TDateTime NewTime;
-                FileAge(FileName, NewTime);
-                if (NewTime != RemoteFileTimes[Index])
+                if (FileAge(FileName, NewTime) &&
+                    (NewTime != RemoteFileTimes[Index]))
                 {
                   TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
                   TemporaryFileCopyParam(CopyParam);
@@ -3579,7 +3605,7 @@ void __fastcall TCustomScpExplorerForm::CalculateSize(
   {
     try
     {
-      CHECK(Terminal->CalculateFilesSize(FileList, Size, 0, NULL, true, &Stats));
+      Terminal->CalculateFilesSize(FileList, Size, 0, NULL, true, &Stats);
     }
     catch(...)
     {

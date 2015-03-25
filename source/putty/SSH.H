@@ -481,6 +481,7 @@ void *dh_setup_group(const struct ssh_kex *kex);
 void *dh_setup_gex(Bignum pval, Bignum gval);
 void dh_cleanup(void *);
 Bignum dh_create_e(void *, int nbits);
+const char *dh_validate_f(void *handle, Bignum f);
 Bignum dh_find_K(void *, Bignum f);
 
 int loadrsakey(const Filename *filename, struct RSAKey *key,

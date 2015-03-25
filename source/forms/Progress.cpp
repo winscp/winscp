@@ -12,6 +12,7 @@
 #include <GUITools.h>
 #include <BaseUtils.hpp>
 #include <DateUtils.hpp>
+#include <Consts.hpp>
 
 #include "Progress.h"
 //---------------------------------------------------------------------
@@ -110,7 +111,7 @@ void __fastcall TProgressForm::UpdateControls()
   assert((FData.Operation >= foCopy) && (FData.Operation <= foCalculateChecksum) &&
     FData.Operation != foRename );
 
-  CancelButton->Enabled = !FReadOnly;
+  CancelButton->Enabled = !FReadOnly && (FCancel == csContinue);
   OnceDoneOperationCombo2->Enabled =
     !FReadOnly && (FData.Operation != foCalculateSize) &&
     (FData.Operation != foGetProperties) &&
@@ -132,6 +133,7 @@ void __fastcall TProgressForm::UpdateControls()
         THandle ShellModule;
         AVisible = true;
         TProgressBarStyle Style = pbstNormal;
+        UnicodeString CancelCaption = Vcl_Consts_SMsgDlgCancel;
         switch (FData.Operation) {
           case foCopy:
           case foMove:
@@ -166,6 +168,7 @@ void __fastcall TProgressForm::UpdateControls()
             Animate->CommonAVI = aviNone;
             AVisible = false;
             Style = pbstMarquee;
+            CancelCaption = LoadStr(SKIP_BUTTON);
             break;
 
           default:
@@ -175,6 +178,7 @@ void __fastcall TProgressForm::UpdateControls()
             AVisible = false;
         }
         TopProgress->Style = Style;
+        CancelButton->Caption = CancelCaption;
       }
       catch (...)
       {
@@ -460,20 +464,13 @@ void __fastcall TProgressForm::CancelOperation()
       }
       else
       {
-        int Result = MessageDialog(LoadStr(CANCEL_OPERATION2), qtConfirmation,
-          qaYes | qaNo, HELP_PROGRESS_CANCEL);
-        switch (Result)
-        {
-          case qaYes:
-            ACancel = csCancel; break;
-          default:
-            ACancel = csContinue; break;
-        }
+        ACancel = csCancel;
       }
 
       if (FCancel < ACancel)
       {
         FCancel = ACancel;
+        UpdateControls();
       }
     }
     __finally

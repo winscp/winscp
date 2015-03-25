@@ -31,6 +31,7 @@ __published:
 private:
   TSessionData * FData;
   TStrings * FPaths;
+  bool FChanging;
 
 protected:
   void __fastcall UpdateControls();

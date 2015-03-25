@@ -17,7 +17,7 @@
 #define HELP_NET_TRANSL_NO_ROUTE               "message_no_route_to_host"
 #define HELP_NET_TRANSL_CONN_ABORTED           "message_software_caused_connection_abort"
 #define HELP_NET_TRANSL_HOST_NOT_EXIST         "message_host_does_not_exist"
-#define HELP_SFTP_STATUS_FAILURE               "message_error_code_4"
+#define HELP_SFTP_STATUS_FAILURE               "sftp_codes#code_4"
 #define HELP_UNEXPECTED_CLOSE_ERROR            "message_unexpected_close"
 #define HELP_NET_TRANSL_PACKET_GARBLED         "message_incoming_packet_was_garbled_on_decryption"
 #define HELP_NOT_CONNECTED                     "message_exit_status_1"
@@ -32,5 +32,6 @@
 #define HELP_PRESERVE_TIME_PERM_ERROR          "message_preserve_time_perm"
 #define HELP_FTP_SUGGESTION                    "message_server_rejected_sftp_listens_for_ftp"
 #define HELP_STATUSMSG_DISCONNECTED            "message_disconnected"
+#define HELP_SFTP_INITIALIZE_ERROR             "message_cannot_initialize_sftp_protocol"
 
 #endif // HelpCoreH

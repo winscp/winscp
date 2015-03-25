@@ -6120,6 +6120,13 @@ static void do_ssh2_transport(Ssh ssh, void *vin, int inlen,
         }
         ssh_pkt_getstring(pktin, &s->sigdata, &s->siglen);
 
+        {
+            const char *err = dh_validate_f(ssh->kex_ctx, s->f);
+            if (err) {
+                bombout(("key exchange reply failed validation: %s", err));
+                crStopV;
+            }
+        }
         s->K = dh_find_K(ssh->kex_ctx, s->f);
 
         /* We assume everything from now on will be quick, and it might

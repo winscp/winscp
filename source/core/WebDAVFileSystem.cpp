@@ -1069,7 +1069,7 @@ void __fastcall TWebDAVFileSystem::CalculateFilesChecksum(const UnicodeString & 
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
-  const UnicodeString & FullFileName, UnicodeString & /*FileName*/,
+  const UnicodeString & SourceFullFileName, UnicodeString & TargetFileName,
   TFileOperationProgressType * OperationProgress,
   const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
   int Params)
@@ -1097,7 +1097,7 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
     TSuspendFileOperationProgress Suspend(OperationProgress);
     Answer =
       FTerminal->ConfirmFileOverwrite(
-        FullFileName, FileParams, Answers, &QueryParams,
+        SourceFullFileName, TargetFileName, FileParams, Answers, &QueryParams,
         (OperationProgress->Side == osLocal) ? osRemote : osLocal,
         CopyParam, Params, OperationProgress);
   }
@@ -1372,7 +1372,7 @@ void __fastcall TWebDAVFileSystem::Source(const UnicodeString FileName,
         FileParams.DestTimestamp = RemoteFile->Modification;
         delete RemoteFile;
 
-        ConfirmOverwrite(FileName, DestFullName, OperationProgress,
+        ConfirmOverwrite(FileName, DestFileName, OperationProgress,
           &FileParams, CopyParam, Params);
       }
 

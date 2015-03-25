@@ -448,9 +448,13 @@ begin
       if ((Flags and dsImageIndex) <> 0) and (ImageIndex < 5) then
       begin
         if Assigned(PIDL) then
+        begin
           SHGetFileInfo(PChar(PIDL), 0, FileInfo, SizeOf(FileInfo), SHGFI_SYSICONINDEX or SHGFI_SMALLICON or SHGFI_PIDL)
-        else
+        end
+          else
+        begin
           SHGetFileInfo(PChar(Drive + ':\'), 0, FileInfo, SizeOf(FileInfo), SHGFI_SYSICONINDEX or SHGFI_SMALLICON);
+        end;
         ImageIndex := FileInfo.iIcon;
       end;
     end

@@ -292,12 +292,13 @@ protected:
   bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
     const TCopyParamType * CopyParam, bool AllowDirs);
   TBatchOverwrite __fastcall EffectiveBatchOverwrite(
-    const UnicodeString & FileName, const TCopyParamType * CopyParam, int Params,
+    const UnicodeString & SourceFullFileName, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, bool Special);
   bool __fastcall CheckRemoteFile(
     const UnicodeString & FileName, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress);
-  unsigned int __fastcall ConfirmFileOverwrite(const UnicodeString FileName,
+  unsigned int __fastcall ConfirmFileOverwrite(
+    const UnicodeString & SourceFullFileName, const UnicodeString & TargetFileName,
     const TOverwriteFileParams * FileParams, unsigned int Answers, TQueryParams * QueryParams,
     TOperationSide Side, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, UnicodeString Message = L"");

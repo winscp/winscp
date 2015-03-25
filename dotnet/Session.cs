@@ -378,7 +378,7 @@ namespace WinSCP
                             {
                                 if (args == null)
                                 {
-                                    throw new InvalidOperationException();
+                                    throw new InvalidOperationException("Tag chmod before tag upload");
                                 }
                                 args.Chmod = ChmodEventArgs.Read(groupReader);
                             }
@@ -389,7 +389,7 @@ namespace WinSCP
                             {
                                 if (args == null)
                                 {
-                                    throw new InvalidOperationException();
+                                    throw new InvalidOperationException("Tag touch before tag upload");
                                 }
                                 args.Touch = TouchEventArgs.Read(groupReader);
                             }
@@ -447,7 +447,7 @@ namespace WinSCP
                         {
                             if (args == null)
                             {
-                                throw new InvalidOperationException();
+                                throw new InvalidOperationException("Tag removal before tag download");
                             }
                             args.Removal = RemovalEventArgs.Read(groupReader);
                         }
@@ -595,7 +595,7 @@ namespace WinSCP
                         {
                             if (transfer == null)
                             {
-                                throw new InvalidOperationException();
+                                throw new InvalidOperationException("Tag chmod before tag download");
                             }
                             transfer.Chmod = ChmodEventArgs.Read(groupReader);
                         }
@@ -603,7 +603,7 @@ namespace WinSCP
                         {
                             if (transfer == null)
                             {
-                                throw new InvalidOperationException();
+                                throw new InvalidOperationException("Tag touch before tag download");
                             }
                             transfer.Touch = TouchEventArgs.Read(groupReader);
                         }
@@ -1136,9 +1136,9 @@ namespace WinSCP
                 if (!string.IsNullOrEmpty(sessionOptions.TlsHostCertificateFingerprint) ||
                     sessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate)
                 {
-                    if (sessionOptions.FtpSecure == FtpSecure.None)
+                    if ((sessionOptions.FtpSecure == FtpSecure.None) && !sessionOptions.WebdavSecure)
                     {
-                        throw new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, but SessionOptions.FtpSecure is FtpSecure.None.");
+                        throw new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled.");
                     }
                     string tlsHostCertificateFingerprint = sessionOptions.TlsHostCertificateFingerprint;
                     if (sessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate)
@@ -1375,21 +1375,27 @@ namespace WinSCP
 
         private IDisposable CreateProgressHandler()
         {
-            _progressHandling++;
-            return new ProgressHandler(this);
+            using (Logger.CreateCallstack())
+            {
+                _progressHandling++;
+                return new ProgressHandler(this);
+            }
         }
 
         internal void DisableProgressHandling()
         {
-            if (_progressHandling <= 0)
+            using (Logger.CreateCallstack())
             {
-                throw new InvalidOperationException();
+                if (_progressHandling <= 0)
+                {
+                    throw new InvalidOperationException("Progress handling not enabled");
+                }
+
+                // make sure we process all pending progress events
+                DispatchEvents(0);
+
+                _progressHandling--;
             }
-
-            // make sure we process all pending progress events
-            DispatchEvents(0);
-
-            _progressHandling--;
         }
 
         internal void ProcessProgress(FileTransferProgressEventArgs args)

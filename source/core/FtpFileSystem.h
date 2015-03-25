@@ -162,7 +162,7 @@ protected:
   void __fastcall DirectorySource(const UnicodeString DirectoryName,
     const UnicodeString TargetDir, int Attrs, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  bool __fastcall ConfirmOverwrite(const UnicodeString & FullFileName, UnicodeString & FileName,
+  bool __fastcall ConfirmOverwrite(const UnicodeString & SourceFullFileName, UnicodeString & TargetFileName,
     TOverwriteMode & OverwriteMode, TFileOperationProgressType * OperationProgress,
     const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
     int Params, bool AutoResume);

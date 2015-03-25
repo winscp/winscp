@@ -28,6 +28,7 @@ __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
   UseSystemSettings(this);
   FData = Data;
   FPaths = Paths;
+  FChanging = false;
   ReadOnlyControl(UrlMemo);
 }
 //---------------------------------------------------------------------------
@@ -61,33 +62,36 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl(UnicodeString Path)
 //---------------------------------------------------------------------------
 void __fastcall TGenerateUrlDialog::UpdateControls()
 {
-  EnableControl(UserNameCheck, !FData->UserNameExpanded.IsEmpty());
-  bool UserNameIncluded = UserNameCheck->Enabled && UserNameCheck->Checked;
-  EnableControl(PasswordCheck, UserNameIncluded && !FData->Password.IsEmpty());
-  EnableControl(HostKeyCheck, UserNameIncluded && !FData->HostKey.IsEmpty());
-  EnableControl(RemoteDirectoryCheck, !FData->RemoteDirectory.IsEmpty() && (FPaths == NULL));
-  EnableControl(SaveExtensionCheck, (FPaths == NULL));
-
-  UnicodeString Urls;
-
-  if (FPaths == NULL)
+  if (!FChanging)
   {
-    UnicodeString Path = FData->RemoteDirectory;
-    if (!Path.IsEmpty() && !EndsStr(L"/", Path))
-    {
-      Path += L"/";
-    }
-    Urls = GenerateUrl(Path);
-  }
-  else
-  {
-    for (int Index = 0; Index < FPaths->Count; Index++)
-    {
-      Urls += GenerateUrl(FPaths->Strings[Index]) + L"\n";
-    }
-  }
+    EnableControl(UserNameCheck, !FData->UserNameExpanded.IsEmpty());
+    bool UserNameIncluded = UserNameCheck->Enabled && UserNameCheck->Checked;
+    EnableControl(PasswordCheck, UserNameIncluded && FData->HasPassword());
+    EnableControl(HostKeyCheck, UserNameIncluded && !FData->HostKey.IsEmpty());
+    EnableControl(RemoteDirectoryCheck, !FData->RemoteDirectory.IsEmpty() && (FPaths == NULL));
+    EnableControl(SaveExtensionCheck, (FPaths == NULL));
 
-  UrlMemo->Lines->Text = Urls;
+    UnicodeString Urls;
+
+    if (FPaths == NULL)
+    {
+      UnicodeString Path = FData->RemoteDirectory;
+      if (!Path.IsEmpty() && !EndsStr(L"/", Path))
+      {
+        Path += L"/";
+      }
+      Urls = GenerateUrl(Path);
+    }
+    else
+    {
+      for (int Index = 0; Index < FPaths->Count; Index++)
+      {
+        Urls += GenerateUrl(FPaths->Strings[Index]) + L"\n";
+      }
+    }
+
+    UrlMemo->Lines->Text = Urls;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TGenerateUrlDialog::Execute()
@@ -98,13 +102,17 @@ void __fastcall TGenerateUrlDialog::Execute()
     Components = UserNameCheck->Tag | RemoteDirectoryCheck->Tag;
   }
 
-  for (int Index = 0; Index < OptionsGroup->ControlCount; Index++)
   {
-    TCheckBox * CheckBox = dynamic_cast<TCheckBox *>(OptionsGroup->Controls[Index]);
+    TAutoFlag ChangingFlag(FChanging);
 
-    if (ALWAYS_TRUE((CheckBox != NULL) && (CheckBox->Tag != 0)))
+    for (int Index = 0; Index < OptionsGroup->ControlCount; Index++)
     {
-      CheckBox->Checked = FLAGSET(Components, CheckBox->Tag);
+      TCheckBox * CheckBox = dynamic_cast<TCheckBox *>(OptionsGroup->Controls[Index]);
+
+      if (ALWAYS_TRUE((CheckBox != NULL) && (CheckBox->Tag != 0)))
+      {
+        CheckBox->Checked = FLAGSET(Components, CheckBox->Tag);
+      }
     }
   }
 

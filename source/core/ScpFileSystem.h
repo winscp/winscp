@@ -127,7 +127,8 @@ private:
   void __fastcall ChangeFileToken(const UnicodeString & DelimitedName,
     const TRemoteToken & Token, TFSCommand Cmd, const UnicodeString & RecursiveStr);
   unsigned int __fastcall ConfirmOverwrite(
-    const UnicodeString & FileName, TOperationSide Side,
+    const UnicodeString & SourceFullFileName, const UnicodeString & TargetFileName,
+    TOperationSide Side,
     const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress);
 

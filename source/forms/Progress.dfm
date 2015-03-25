@@ -44,7 +44,7 @@ object ProgressForm: TProgressForm
     Height = 25
     Anchors = [akTop, akRight]
     Cancel = True
-    Caption = 'Cancel'
+    Caption = 'CancelX'
     TabOrder = 0
     OnClick = CancelButtonClick
   end

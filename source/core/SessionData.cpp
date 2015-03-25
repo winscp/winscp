@@ -12,6 +12,7 @@
 #include "PuttyIntf.h"
 #include "RemoteFiles.h"
 #include "SFTPFileSystem.h"
+#include <Soap.EncdDecd.hpp>
 #include <StrUtils.hpp>
 #include <XMLDoc.hpp>
 #include <StrUtils.hpp>
@@ -618,6 +619,9 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
 
   SFTPMaxVersion = Storage->ReadInteger(L"SFTPMaxVersion", SFTPMaxVersion);
   SFTPMaxPacketSize = Storage->ReadInteger(L"SFTPMaxPacketSize", SFTPMaxPacketSize);
+  SFTPDownloadQueue = Storage->ReadInteger(L"SFTPDownloadQueue", SFTPDownloadQueue);
+  SFTPUploadQueue = Storage->ReadInteger(L"SFTPUploadQueue", SFTPUploadQueue);
+  SFTPListingQueue = Storage->ReadInteger(L"SFTPListingQueue", SFTPListingQueue);
 
   Color = Storage->ReadInteger(L"Color", Color);
 
@@ -892,6 +896,9 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
 
       WRITE_DATA(Integer, SFTPMaxVersion);
       WRITE_DATA(Integer, SFTPMaxPacketSize);
+      WRITE_DATA(Integer, SFTPDownloadQueue);
+      WRITE_DATA(Integer, SFTPUploadQueue);
+      WRITE_DATA(Integer, SFTPListingQueue);
 
       WRITE_DATA(Integer, Color);
 
@@ -1005,8 +1012,24 @@ void __fastcall TSessionData::ImportFromFilezilla(_di_IXMLNode Node, const Unico
   else
   {
     UserName = ReadXmlNode(Node, L"User", UserName);
-    Password = ReadXmlNode(Node, L"Pass", Password);
     FtpAccount = ReadXmlNode(Node, L"Account", FtpAccount);
+
+    _di_IXMLNode PassNode = Node->ChildNodes->FindNode(L"Pass");
+    if (PassNode != NULL)
+    {
+      UnicodeString APassword = PassNode->Text.Trim();
+      OleVariant EncodingValue = PassNode->GetAttribute(L"encoding");
+      if (!EncodingValue.IsNull())
+      {
+        UnicodeString EncodingValueStr = EncodingValue;
+        if (SameText(EncodingValueStr, L"base64"))
+        {
+          TBytes Bytes = DecodeBase64(APassword);
+          APassword = TEncoding::UTF8->GetString(Bytes);
+        }
+      }
+      Password = APassword;
+    }
   }
 
   int DefaultTimeDifference = TimeToSeconds(TimeDifference);

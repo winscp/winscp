@@ -81,7 +81,6 @@ BEGIN
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"
         CREATE_LOCAL_DIRECTORY, "Directory '%s' doesn't exist. Create?"
-        CANCEL_OPERATION2, "**Cancel current operation?**"
         CANCEL_OPERATION_FATAL2, "**Cancel file transfer?**\n \nOperation can't be canceled in the middle of file transfer.\nPress 'Yes' to cancel file transfer and to close connection.\nPress 'No' to finish current file transfer.\nPress 'Cancel' to continue operation."
         CONFIRM_DELETE_FILE, "Are you sure you want to delete file '%s'?"
         CONFIRM_DELETE_FILES, "Are you sure you want to delete %d selected files?"

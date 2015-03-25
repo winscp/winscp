@@ -134,6 +134,12 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     else
     {
       TranslatorUrlLabel->Visible = false;
+
+      // allow two lines of text, if there's no URL
+      TranslatorLabel->AutoSize = false;
+      TranslatorLabel->Width = ThirdPartyPanel->Width;
+      TranslatorLabel->Height = TranslatorLabel->Height * 2;
+      TranslatorLabel->WordWrap = true;
     }
   }
 

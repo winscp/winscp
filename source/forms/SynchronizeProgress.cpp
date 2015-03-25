@@ -92,15 +92,13 @@ void __fastcall TSynchronizeProgressForm::UpdateControls()
     FElapsed = Now() - FStartTime;
   }
   TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FElapsed);
+  CancelButton->Enabled = !FCanceled;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::CancelOperation()
 {
-  if (!FCanceled && (MessageDialog(LoadStr(CANCEL_OPERATION2), qtConfirmation,
-       qaYes | qaNo, HELP_NONE) == qaYes))
-  {
-    FCanceled = true;
-  }
+  FCanceled = true;
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::CancelButtonClick(TObject * /*Sender*/)

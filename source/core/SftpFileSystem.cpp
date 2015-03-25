@@ -645,7 +645,7 @@ public:
       File->FileName = GetPathString(Utf);
       if (Version < 4)
       {
-        ListingStr = GetAnsiString();
+        ListingStr = GetString(Utf);
       }
     }
     Flags = GetCardinal();
@@ -2398,6 +2398,10 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     }
     UnicodeString Error = FMTLOAD(SFTP_ERROR_FORMAT3, (MessageStr,
       int(Code), LanguageTag, ServerMessage));
+    if (Code == SSH_FX_FAILURE)
+    {
+      FTerminal->Configuration->Usage->Inc(L"SftpFailureErrors");
+    }
     FTerminal->TerminalError(NULL, Error, HelpKeyword);
     return 0;
   }
@@ -2657,6 +2661,28 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
 
     TSFTPPacket Packet(SSH_FXP_REALPATH);
     Packet.AddPathString(Path, FUtfStrings);
+
+    // In SFTP-6 new optional field control-byte is added that defaults to
+    // SSH_FXP_REALPATH_NO_CHECK=0x01, meaning it won't fail, if the path does not exist.
+    // That differs from SFTP-5 recommendation that
+    // "The server SHOULD fail the request if the path is not present on the server."
+    // Earlier versions had no recommendation, though canonical SFTP-3 implementation
+    // in OpenSSH fails.
+
+    // While we really do not care much, we anyway set the flag to 0 to make the request fail.
+    // First for consistency.
+    // Second to workaround a bug in ProFTPD/mod_sftp version 1.3.5rc1 through 1.3.5-stable
+    // that sends a completelly malformed response for non-existing paths,
+    // when SSH_FXP_REALPATH_NO_CHECK (even implicitly) is used.
+    // See http://bugs.proftpd.org/show_bug.cgi?id=4160
+
+    // Note that earlier drafts of SFTP-6 (filexfer-07 and -08) had optional compose-path field
+    // before control-byte field. If we ever use this against a server conforming to those drafts,
+    // if may cause trouble.
+    if (FVersion >= 6)
+    {
+      Packet.AddByte(0);
+    }
     SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_NAME);
     if (Packet.GetCardinal() != 1)
     {
@@ -2858,7 +2884,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
   }
   catch(Exception &E)
   {
-    FTerminal->FatalError(&E, LoadStr(SFTP_INITIALIZE_ERROR));
+    FTerminal->FatalError(&E, LoadStr(SFTP_INITIALIZE_ERROR), HELP_SFTP_INITIALIZE_ERROR);
   }
 
   FVersion = Packet.GetCardinal();
@@ -4199,7 +4225,8 @@ void __fastcall TSFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(const UnicodeString & FullFileName, UnicodeString & FileName,
+void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
+  const UnicodeString & SourceFullFileName, UnicodeString & TargetFileName,
   const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
   TSFTPOverwriteMode & OverwriteMode, const TOverwriteFileParams * FileParams)
 {
@@ -4238,7 +4265,8 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(const UnicodeString & Full
     QueryParams.NoBatchAnswers = qaIgnore | qaRetry | qaAll;
     QueryParams.Aliases = Aliases;
     QueryParams.AliasesCount = LENOF(Aliases);
-    Answer = FTerminal->ConfirmFileOverwrite(FullFileName, FileParams,
+    Answer = FTerminal->ConfirmFileOverwrite(
+      SourceFullFileName, TargetFileName, FileParams,
       Answers, &QueryParams,
       OperationProgress->Side == osLocal ? osRemote : osLocal,
       CopyParam, Params, OperationProgress);
@@ -4251,7 +4279,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(const UnicodeString & Full
     bool CanAlternateResume =
       (FileParams->DestSize < FileParams->SourceSize) && !OperationProgress->AsciiTransfer;
     TBatchOverwrite BatchOverwrite =
-      FTerminal->EffectiveBatchOverwrite(FileName, CopyParam, Params, OperationProgress, true);
+      FTerminal->EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, true);
     // when mode is forced by batch, never query user
     if (BatchOverwrite == boAppend)
     {
@@ -4273,7 +4301,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(const UnicodeString & Full
 
       {
         TSuspendFileOperationProgress Suspend(OperationProgress);
-        Answer = FTerminal->QueryUser(FORMAT(LoadStr(APPEND_OR_RESUME2), (FileName)),
+        Answer = FTerminal->QueryUser(FORMAT(LoadStr(APPEND_OR_RESUME2), (SourceFullFileName)),
           NULL, qaYes | qaNo | qaNoToAll | qaCancel, &Params);
       }
 
@@ -4306,7 +4334,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(const UnicodeString & Full
   else if (Answer == qaIgnore)
   {
     if (FTerminal->PromptUser(FTerminal->SessionData, pkFileName, LoadStr(RENAME_TITLE), L"",
-          LoadStr(RENAME_PROMPT2), true, 0, FileName))
+          LoadStr(RENAME_PROMPT2), true, 0, TargetFileName))
     {
       OverwriteMode = omOverwrite;
     }

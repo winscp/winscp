@@ -2122,11 +2122,11 @@ void __fastcall TTerminal::CloseOnCompletion(TOnceDoneOperation Operation, const
 }
 //---------------------------------------------------------------------------
 TBatchOverwrite __fastcall TTerminal::EffectiveBatchOverwrite(
-  const UnicodeString & FileName, const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress, bool Special)
+  const UnicodeString & SourceFullFileName, const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress, bool Special)
 {
   TBatchOverwrite Result;
   if (Special &&
-      (FLAGSET(Params, cpResume) || CopyParam->ResumeTransfer(FileName)))
+      (FLAGSET(Params, cpResume) || CopyParam->ResumeTransfer(SourceFullFileName)))
   {
     Result = boResume;
   }
@@ -2165,7 +2165,8 @@ bool __fastcall TTerminal::CheckRemoteFile(
   return (EffectiveBatchOverwrite(FileName, CopyParam, Params, OperationProgress, true) != boAll);
 }
 //---------------------------------------------------------------------------
-unsigned int __fastcall TTerminal::ConfirmFileOverwrite(const UnicodeString FileName,
+unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
+  const UnicodeString & SourceFullFileName, const UnicodeString & TargetFileName,
   const TOverwriteFileParams * FileParams, unsigned int Answers, TQueryParams * QueryParams,
   TOperationSide Side, const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
   UnicodeString Message)
@@ -2176,7 +2177,7 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(const UnicodeString File
     (FileParams != NULL) &&
     (FileParams->DestSize < FileParams->SourceSize) &&
     !OperationProgress->AsciiTransfer;
-  TBatchOverwrite BatchOverwrite = EffectiveBatchOverwrite(FileName, CopyParam, Params, OperationProgress, true);
+  TBatchOverwrite BatchOverwrite = EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, true);
   bool Applicable = true;
   switch (BatchOverwrite)
   {
@@ -2195,7 +2196,7 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(const UnicodeString File
 
   if (!Applicable)
   {
-    TBatchOverwrite ABatchOverwrite = EffectiveBatchOverwrite(FileName, CopyParam, Params, OperationProgress, false);
+    TBatchOverwrite ABatchOverwrite = EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, false);
     assert(BatchOverwrite != ABatchOverwrite);
     BatchOverwrite = ABatchOverwrite;
   }
@@ -2205,9 +2206,8 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(const UnicodeString File
     if (Message.IsEmpty())
     {
       // Side refers to destination side here
-      UnicodeString FileNameOnly = (Side == osRemote) ? ExtractFileName(FileName) : UnixExtractFileName(FileName);
       Message = FMTLOAD((Side == osLocal ? LOCAL_FILE_OVERWRITE2 :
-        REMOTE_FILE_OVERWRITE2), (FileNameOnly, FileNameOnly));
+        REMOTE_FILE_OVERWRITE2), (TargetFileName, TargetFileName));
     }
     if (FileParams != NULL)
     {
@@ -3430,7 +3430,11 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
 
   if (OperationProgress && OperationProgress->Operation == foCalculateSize)
   {
-    if (OperationProgress->Cancel != csContinue) Abort();
+    if (OperationProgress->Cancel != csContinue)
+    {
+      AParams->Result = false;
+      Abort();
+    }
     OperationProgress->SetFile(FileName);
   }
 
@@ -5475,6 +5479,13 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
         {
           try
           {
+            if (Log->Logging)
+            {
+              LogEvent(FORMAT(L"Copying %d files/directories to local directory "
+                "\"%s\"", (FilesToCopy->Count, TargetDir)));
+              LogEvent(CopyParam->LogStr);
+            }
+
             FFileSystem->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params,
               &OperationProgress, OnceDoneOperation);
           }
