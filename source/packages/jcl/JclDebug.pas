@@ -4363,6 +4363,8 @@ begin
       begin
         ModuleName := ExtractFileName(GetModulePath(Module));
         ModulePosition := 12 {$IFDEF CPU64}+8{$ENDIF};
+        if IncludeVAddress then
+          ModulePosition := 2 * (ModulePosition - 1) + 1;
         if ModulePosition < Length(Result) then
           ModuleName := ModuleName + '.';
         Insert(ModuleName, Result, ModulePosition);

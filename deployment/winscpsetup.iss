@@ -1324,3 +1324,5 @@ begin
     CreateMutex('WinSCPSilentUninstall');
   Result := True;
 end;
+
+#expr SaveToFile(AddBackslash(SourcePath) + "Preprocessed.iss")

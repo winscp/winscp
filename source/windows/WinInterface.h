@@ -70,7 +70,7 @@ void __fastcall SetOnForeground(bool OnForeground);
 void __fastcall FlashOnBackground();
 
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal, Exception * E);
-void __fastcall FormHelp(TForm * Form);
+void __fastcall FormHelp(TCustomForm * Form);
 void __fastcall SearchHelp(const UnicodeString & Message);
 void __fastcall MessageWithNoHelp(const UnicodeString & Message);
 

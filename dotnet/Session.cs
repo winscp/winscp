@@ -445,11 +445,14 @@ namespace WinSCP
                         }
                         else if (groupReader.IsNonEmptyElement(RemovalEventArgs.Tag))
                         {
-                            if (args == null)
+                            // When "downloading and deleting" a folder,
+                            // we get "rm" tag without preceeding "download" tag.
+                            // So we use only the first "rm" tag after preceeding "download" tag,
+                            // silently ignoring the others
+                            if ((args != null) && (args.Removal == null))
                             {
-                                throw new InvalidOperationException("Tag removal before tag download");
+                                args.Removal = RemovalEventArgs.Read(groupReader);
                             }
-                            args.Removal = RemovalEventArgs.Read(groupReader);
                         }
                     }
 

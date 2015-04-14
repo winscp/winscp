@@ -203,7 +203,7 @@ private:
   bool FCollectFileSystemUsage;
   bool FRememberedPasswordTried;
   bool FRememberedTunnelPasswordTried;
-  int FIdle;
+  int FNesting;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,

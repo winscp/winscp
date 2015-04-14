@@ -130,6 +130,7 @@ void __fastcall TLogMemo::UpdateFromLog()
   {
     assert(FIndexes->Count == Lines->Count);
     FUpdating = true;
+    bool Updated = false;
     SessionLog->Lock();
     try
     {
@@ -143,7 +144,11 @@ void __fastcall TLogMemo::UpdateFromLog()
           while (Lines->Count && (Indexes[0] < SessionLog->TopIndex))
           {
             FIndexes->Delete(0);
-            if (Parent) Lines->Delete(0);
+            if (Parent)
+            {
+              Lines->Delete(0);
+              Updated = true;
+            }
           }
         }
         __finally
@@ -186,6 +191,7 @@ void __fastcall TLogMemo::UpdateFromLog()
                 {
                   Lines->Add(SessionLog->Line[LastIndex]);
                 }
+                Updated = true;
               }
             }
             catch(...)
@@ -221,6 +227,11 @@ void __fastcall TLogMemo::UpdateFromLog()
     {
       SessionLog->Unlock();
       FUpdating = false;
+    }
+
+    if (Updated)
+    {
+      Change();
     }
   }
 #endif
@@ -396,7 +407,7 @@ void __fastcall TLogMemo::SetParent(TWinControl * AParent)
 //---------------------------------------------------------------------------
 void __fastcall TLogMemo::Change()
 {
-  if (Parent && Visible && !Application->Terminated)
+  if (Parent && Visible && !Application->Terminated && !FUpdating)
   {
     TCustomRichEdit::Change();
   }

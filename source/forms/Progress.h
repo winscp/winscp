@@ -91,6 +91,7 @@ private:
   void __fastcall SetReadOnly(bool value);
   void __fastcall GlobalMinimize(TObject * Sender);
   void __fastcall ApplicationModalBegin(TObject * Sender);
+  void __fastcall ResetFocus();
 
 protected:
   void __fastcall CancelOperation();

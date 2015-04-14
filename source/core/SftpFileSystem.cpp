@@ -127,6 +127,10 @@
 
 #define SSH_FILEXFER_ATTR_FLAGS_HIDDEN           0x00000004
 
+#define SSH_FXP_REALPATH_NO_CHECK    0x00000001
+#define SSH_FXP_REALPATH_STAT_IF     0x00000002
+#define SSH_FXP_REALPATH_STAT_ALWAYS 0x00000003
+
 #define SFTP_MAX_PACKET_LEN   1024000
 //---------------------------------------------------------------------------
 #define SFTP_EXT_OWNER_GROUP "owner-group-query@generic-extensions"
@@ -2669,7 +2673,7 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
     // Earlier versions had no recommendation, though canonical SFTP-3 implementation
     // in OpenSSH fails.
 
-    // While we really do not care much, we anyway set the flag to 0 to make the request fail.
+    // While we really do not care much, we anyway set the flag to ~ & 0x01 to make the request fail.
     // First for consistency.
     // Second to workaround a bug in ProFTPD/mod_sftp version 1.3.5rc1 through 1.3.5-stable
     // that sends a completelly malformed response for non-existing paths,
@@ -2681,7 +2685,18 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
     // if may cause trouble.
     if (FVersion >= 6)
     {
-      Packet.AddByte(0);
+      if (FSecureShell->SshImplementation != sshiProFTPD)
+      {
+        Packet.AddByte(SSH_FXP_REALPATH_STAT_ALWAYS);
+      }
+      else
+      {
+        // Cannot use SSH_FXP_REALPATH_STAT_ALWAYS as ProFTPD does wrong bitwise test
+        // so it incorrectly evaluates SSH_FXP_REALPATH_STAT_ALWAYS (0x03) as
+        // SSH_FXP_REALPATH_NO_CHECK (0x01). The only value conforming to the
+        // specification, yet working with ProFTPD is SSH_FXP_REALPATH_STAT_IF (0x02).
+        Packet.AddByte(SSH_FXP_REALPATH_STAT_IF);
+      }
     }
     SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_NAME);
     if (Packet.GetCardinal() != 1)

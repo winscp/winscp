@@ -280,6 +280,12 @@ void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Export(const UnicodeString & FileName)
 {
+  // not to "append" the export to an existing file
+  if (FileExists(FileName))
+  {
+    DeleteFileChecked(FileName);
+  }
+
   THierarchicalStorage * Storage = NULL;
   THierarchicalStorage * ExportStorage = NULL;
   try

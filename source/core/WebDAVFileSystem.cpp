@@ -173,7 +173,8 @@ static UTF8String PathUnescape(const char * Path)
 #define StrToNeon(S) UTF8String(S).c_str()
 #define StrFromNeon(S) UnicodeString(UTF8String(S))
 #define AbsolutePathToNeon(P) PathEscape(StrToNeon(P)).c_str()
-#define PathToNeon(P) AbsolutePathToNeon(AbsolutePath(P, false))
+#define PathToNeonStatic(THIS, P) AbsolutePathToNeon((THIS)->AbsolutePath(P, false))
+#define PathToNeon(P) PathToNeonStatic(this, P)
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 void __fastcall NeonInitialize()
@@ -875,7 +876,8 @@ void TWebDAVFileSystem::NeonPropsResult(
   TReadFileData & Data = *static_cast<TReadFileData *>(UserData);
   if (Data.FileList != NULL)
   {
-    if (UnixSamePath(Path, Data.FileList->Directory))
+    UnicodeString FileListPath = PathToNeonStatic(Data.FileSystem, Data.FileList->Directory);
+    if (UnixSamePath(Path, FileListPath))
     {
       Path = UnixIncludeTrailingBackslash(Path) + L"..";
     }

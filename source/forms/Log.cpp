@@ -143,7 +143,7 @@ void __fastcall TLogForm::FormClose(TObject * /*Sender*/, TCloseAction & Action)
   else
   {
     WinConfiguration->LogView = lvNone;
-    Action = caFree;
+    Action = caNone;
   }
   WinConfiguration->LogWindowParams = StoreForm(this);
 }

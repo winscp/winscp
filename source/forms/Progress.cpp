@@ -552,7 +552,15 @@ void __fastcall TProgressForm::ApplyCPSLimit()
   SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
   // visualize application
   SpeedCombo->SelectAll();
-  CancelButton->SetFocus();
+  ResetFocus();
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::ResetFocus()
+{
+  if (CancelButton->Enabled)
+  {
+    CancelButton->SetFocus();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::SpeedComboExit(TObject * /*Sender*/)
@@ -610,7 +618,7 @@ void __fastcall TProgressForm::OnceDoneOperationCombo2Select(TObject * /*Sender*
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::OnceDoneOperationCombo2CloseUp(TObject * /*Sender*/)
 {
-  CancelButton->SetFocus();
+  ResetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::Dispatch(void * AMessage)

@@ -363,7 +363,7 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   if ((Message.Msg == WM_SYSCOMMAND) &&
       (Message.WParam == SC_CONTEXTHELP))
   {
-    InvokeHelp(Form->ActiveControl);
+    FormHelp(Form);
     Message.Result = 1;
   }
   else if (Message.Msg == CM_SHOWINGCHANGED)

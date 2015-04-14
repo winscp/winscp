@@ -30,7 +30,7 @@
 //---------------------------------------------------------------------
 TNotifyEvent GlobalOnMinimize = NULL;
 //---------------------------------------------------------------------
-void __fastcall FormHelp(TForm * Form)
+void __fastcall FormHelp(TCustomForm * Form)
 {
   InvokeHelp(Form->ActiveControl != NULL ? Form->ActiveControl : Form);
 }
@@ -522,9 +522,25 @@ static TStrings * __fastcall StackInfoListToStrings(
   TJclStackInfoList * StackInfoList)
 {
   std::unique_ptr<TStrings> StackTrace(new TStringList());
-  StackInfoList->AddToStrings(StackTrace.get(), true, false, true, false);
-  // get rid of __fastcall declarations that are included in .map
-  StackTrace->Text = ReplaceStr(StackTrace->Text, L"__fastcall ", L"");
+  StackInfoList->AddToStrings(StackTrace.get(), true, false, true, true);
+  for (int Index = 0; Index < StackTrace->Count; Index++)
+  {
+    UnicodeString Frame = StackTrace->Strings[Index];
+    // get rid of declarations "flags" that are included in .map
+    Frame = ReplaceStr(Frame, L"__fastcall ", L"");
+    Frame = ReplaceStr(Frame, L"__linkproc__ ", L"");
+    if (ALWAYS_TRUE(!Frame.IsEmpty() && (Frame[1] == L'(')))
+    {
+      int Start = Frame.Pos(L"[");
+      int End = Frame.Pos(L"]");
+      if (ALWAYS_TRUE((Start > 1) && (End > Start) && (Frame[Start - 1] == L' ')))
+      {
+        // remove absolute address
+        Frame.Delete(Start - 1, End - Start + 2);
+      }
+    }
+    StackTrace->Strings[Index] = Frame;
+  }
   return StackTrace.release();
 }
 //---------------------------------------------------------------------------

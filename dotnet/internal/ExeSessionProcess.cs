@@ -7,6 +7,7 @@ using System.Threading;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace WinSCP
 {
@@ -479,15 +480,36 @@ namespace WinSCP
             }
         }
 
+        private void AddInput(string str)
+        {
+            Type structType = typeof(ConsoleInputEventStruct);
+            FieldInfo strField = structType.GetField("Str");
+            object[] attributes = strField.GetCustomAttributes(typeof(MarshalAsAttribute), false);
+            if (attributes.Length != 1)
+            {
+                throw new InvalidOperationException("MarshalAs attribute not found for ConsoleInputEventStruct.Str");
+            }
+            MarshalAsAttribute marshalAsAttribute = (MarshalAsAttribute)attributes[0];
+
+            if (marshalAsAttribute.SizeConst <= str.Length)
+            {
+                throw new SessionLocalException(
+                    _session,
+                    string.Format(CultureInfo.CurrentCulture, "Input [{0}] is too long ({1} limit)", str, marshalAsAttribute.SizeConst));
+            }
+
+            lock (_input)
+            {
+                _input.Add(str);
+                _inputEvent.Set();
+            }
+        }
+
         public void ExecuteCommand(string command)
         {
             using (_logger.CreateCallstack())
             {
-                lock (_input)
-                {
-                    _input.Add(command);
-                    _inputEvent.Set();
-                }
+                AddInput(command);
             }
         }
 
