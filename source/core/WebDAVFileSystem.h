@@ -154,6 +154,8 @@ private:
   UnicodeString FResponse;
   RawByteString FPassword;
   UnicodeString FTlsVersionStr;
+  UnicodeString FHostName;
+  int FPortNumber;
   enum TIgnoreAuthenticationFailure { iafNo, iafWaiting, iafPasswordFailed } FIgnoreAuthenticationFailure;
 
   void __fastcall CustomReadFile(UnicodeString FileName,

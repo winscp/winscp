@@ -402,6 +402,7 @@ public:
   static UnicodeString __fastcall ExtractFolderName(const UnicodeString & Name);
   static UnicodeString __fastcall ComposePath(const UnicodeString & Path, const UnicodeString & Name);
   static bool __fastcall IsSensitiveOption(const UnicodeString & Option);
+  static UnicodeString __fastcall FormatSiteKey(const UnicodeString & HostName, int PortNumber);
 
   __property UnicodeString HostName  = { read=FHostName, write=SetHostName };
   __property UnicodeString HostNameExpanded  = { read=GetHostNameExpanded };

@@ -658,6 +658,18 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   EditorMemo->OnKeyUp = EditorMemoKeyUp;
   EditorMemo->OnMouseUp = EditorMemoMouseUp;
 
+  // By default the TEditAction's reflect state of the currently focused edit.
+  // Even if the edit is on a different window.
+  // This way we explicitly bind them to our editor.
+  for (int Index = 0; Index < EditorActions->ActionCount; Index++)
+  {
+    TEditAction * EditAction = dynamic_cast<TEditAction* >(EditorActions->Actions[Index]);
+    if (EditAction != NULL)
+    {
+      EditAction->Control = EditorMemo;
+    }
+  }
+
   FParentForm = NULL;
   FCaretPos = TPoint(-1, -1);
   FLastFindDialog = NULL;

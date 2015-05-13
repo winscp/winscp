@@ -2070,7 +2070,7 @@ void __fastcall TFTPFileSystem::DirectorySource(const UnicodeString DirectoryNam
       // ignore non-fatal error when the directory already exists
       bool Rethrow =
         !FTerminal->Active ||
-        !FTerminal->FileExists(UnixExcludeTrailingBackslash(DestFullName), &File) ||
+        !FTerminal->FileExists(DestFullName, &File) ||
         !File->IsDirectory;
       delete File;
       if (Rethrow)
@@ -2407,6 +2407,8 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
       // Does not support MLST/MLSD, but supports MDTM at least
       !FFileZillaIntf->UsingMlsd() && SupportsReadingFile())
   {
+    FTerminal->LogEvent(L"Detecting timezone difference...");
+
     for (int Index = 0; Index < FileList->Count; Index++)
     {
       TRemoteFile * File = FileList->Files[Index];
@@ -2429,6 +2431,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           {
             throw;
           }
+          FTerminal->LogEvent(FORMAT(L"Failed to retrieve file %s attributes to detect timezone difference", (File->FullFileName)));
           break;
         }
 
@@ -2450,6 +2453,11 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
 
         break;
       }
+    }
+
+    if (FDetectTimeDifference)
+    {
+      FTerminal->LogEvent(L"Found no file to use for detecting timezone difference");
     }
   }
 }
@@ -2536,8 +2544,18 @@ void __fastcall TFTPFileSystem::DoReadFile(const UnicodeString & AFileName,
   TRemoteFile *& AFile)
 {
   UnicodeString FileName = AbsolutePath(AFileName, false);
-  UnicodeString FileNameOnly = UnixExtractFileName(FileName);
-  UnicodeString FilePath = UnixExtractFilePath(FileName);
+  UnicodeString FileNameOnly;
+  UnicodeString FilePath;
+  if (IsUnixRootPath(FileName))
+  {
+    FileNameOnly = FileName;
+    FilePath = FileName;
+  }
+  else
+  {
+    FileNameOnly = UnixExtractFileName(FileName);
+    FilePath = UnixExtractFilePath(FileName);
+  }
 
   TRemoteFileList * FileList = new TRemoteFileList();
   try
@@ -4152,9 +4170,10 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
       RequestResult = 1;
     }
 
+    UnicodeString SiteKey = FTerminal->SessionData->SiteKey;
     if (RequestResult == 0)
     {
-      if (FTerminal->VerifyCertificate(CertificateStorageKey,
+      if (FTerminal->VerifyCertificate(CertificateStorageKey, SiteKey,
             FSessionInfo.CertificateFingerprint, CertificateSubject, Data.VerificationResult))
       {
         RequestResult = 1;
@@ -4206,7 +4225,8 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
       if (RequestResult == 2)
       {
         FTerminal->CacheCertificate(
-          CertificateStorageKey, FSessionInfo.CertificateFingerprint, Data.VerificationResult);
+          CertificateStorageKey, SiteKey,
+          FSessionInfo.CertificateFingerprint, Data.VerificationResult);
       }
     }
 

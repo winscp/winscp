@@ -27,6 +27,7 @@
 #include <System.Win.ComObj.hpp>
 #include <StrUtils.hpp>
 #include <WinConfiguration.h>
+#include <ProgParams.h>
 //---------------------------------------------------------------------------
 // WORKAROUND
 // VCL includes wininet.h (even with NO_WIN32_LEAN_AND_MEAN)
@@ -300,7 +301,7 @@ void __fastcall ExecuteNewInstance(const UnicodeString & Param)
   UnicodeString Arg = Param;
   if (!Arg.IsEmpty())
   {
-    Arg = FORMAT(L"\"%s\"", (Arg));
+    Arg = FORMAT(L"\"%s\" %s", (Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH)));
   }
 
   if (!ExecuteShell(Application->ExeName, Arg))

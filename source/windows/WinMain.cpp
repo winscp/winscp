@@ -736,7 +736,7 @@ int __fastcall Execute()
       {
         if ((ParamCommand == pcNone) &&
             (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
-            !Params->FindSwitch(L"NewInstance") &&
+            !Params->FindSwitch(NEWINSTANCE_SWICH) &&
             SendToAnotherInstance())
         {
           Configuration->Usage->Inc(L"SendToAnotherInstance");

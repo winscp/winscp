@@ -64,6 +64,7 @@ public:
 	bool GetWorkingDirPath(CServerPath &path);
 	void SetWorkingDir(t_directory *pWorkingDir);
 	BOOL GetWorkingDir(t_directory* pWorkingDir);
+  void SendDirectoryListing(t_directory * pDirectoryToSend);
 #ifndef MPEXT
 	void SetOption(int nOption, int nValue);
 	int GetOption(int nOption);

@@ -344,15 +344,26 @@ struct TSavedSystemSettings
   TWndMethod OldWndProc;
 };
 //---------------------------------------------------------------------------
-class TPublicControl : public TWinControl
+class TPublicWinControl : public TWinControl
 {
 friend TWndMethod __fastcall ControlWndProc(TWinControl * Control);
 };
 //---------------------------------------------------------------------------
 TWndMethod __fastcall ControlWndProc(TWinControl * Control)
 {
+  TPublicWinControl * PublicWinControl = static_cast<TPublicWinControl *>(Control);
+  return &PublicWinControl->WndProc;
+}
+//---------------------------------------------------------------------
+class TPublicControl : public TControl
+{
+friend void __fastcall RealignControl(TControl * Control);
+};
+//---------------------------------------------------------------------------
+void __fastcall RealignControl(TControl * Control)
+{
   TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
-  return &PublicControl->WndProc;
+  PublicControl->RequestAlign();
 }
 //---------------------------------------------------------------------------
 static Forms::TMonitor * LastMonitor = NULL;

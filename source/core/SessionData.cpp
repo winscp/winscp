@@ -1733,9 +1733,14 @@ UnicodeString __fastcall TSessionData::GetStorageKey()
   return SessionName;
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::FormatSiteKey(const UnicodeString & HostName, int PortNumber)
+{
+  return FORMAT(L"%s:%d", (HostName, PortNumber));
+}
+//---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetSiteKey()
 {
-  return FORMAT(L"%s:%d", (HostNameExpanded, PortNumber));
+  return FormatSiteKey(HostNameExpanded, PortNumber);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetHostName(UnicodeString value)

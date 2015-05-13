@@ -96,6 +96,16 @@ void __fastcall Shred(UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString AnsiToString(const RawByteString & S)
+{
+  return UnicodeString(AnsiString(S));
+}
+//---------------------------------------------------------------------------
+UnicodeString AnsiToString(const char * S, size_t Len)
+{
+  return UnicodeString(AnsiString(S, Len));
+}
+//---------------------------------------------------------------------------
 UnicodeString MakeValidFileName(UnicodeString FileName)
 {
   UnicodeString IllegalChars = L":;,=+<>|\"[] \\/?*";

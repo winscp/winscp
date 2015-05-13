@@ -55,6 +55,7 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner, TFindEvent OnFin
 
   FSystemImageList = SharedSystemImageList(false);
   FileView->SmallImages = FSystemImageList;
+  FileView->ShowColumnIcon = false;
 
   UseDesktopFont(FileView);
   UseDesktopFont(StatusBar);

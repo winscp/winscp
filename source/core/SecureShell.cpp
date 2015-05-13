@@ -1080,11 +1080,11 @@ UnicodeString __fastcall TSecureShell::ConvertInput(const RawByteString & Input)
   UnicodeString Result;
   if (UtfStrings)
   {
-    Result = UnicodeString(UTF8String(Input.c_str()));
+    Result = UTF8ToString(Input);
   }
   else
   {
-    Result = UnicodeString(AnsiString(Input.c_str()));
+    Result = AnsiToString(Input);
   }
   return Result;
 }

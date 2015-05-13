@@ -2088,12 +2088,14 @@ var
   i: Integer;
   ToDelete: Boolean;
   Updating: Boolean;
+  Updated: Boolean;
   Item: TListItem;
 begin
   if SelCount > 50 then Reload2
     else
   begin
     Updating := False;
+    Updated := False;
     FileList := CustomCreateFileList(True, False, True, nil, True);
     try
       for i := 0 to FileList.Count - 1 do
@@ -2111,12 +2113,21 @@ begin
             Items.BeginUpdate;
             Updating := True;
           end;
+          with PFileRec(Item.Data)^ do
+          begin
+            Dec(FFilesSize, Size);
+            // No need to decrease FFilesSelSize here as LVIF_STATE/deselect
+            // is called for item being deleted
+          end;
           Item.Delete;
+          Updated := True;
         end;
       end;
     finally
       if Updating then
         Items.EndUpdate;
+      if Updated then
+        UpdateStatusBar;
       FileList.Free;
     end;
   end;
@@ -2208,10 +2219,14 @@ begin
       StartIconUpdateThread;
 
     if WatchForChanges then StartWatchThread;
-    if Assigned(FDriveView) then
-      with FDriveView do
-        if not WatchThreadActive and Assigned(Selected) then
+    if Assigned(DriveView) then
+      with DriveView do
+      begin
+        if Assigned(Selected) then
           ValidateDirectory(Selected);
+        TDriveView(FDriveView).StartWatchThread;
+      end;
+
   end;
 end; {CreateDirectory}
 

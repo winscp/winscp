@@ -73,5 +73,6 @@ void __fastcall UseDesktopFont(TControl * Control);
 void __fastcall LoadResourceImage(TImage * Image, const UnicodeString & ImageName);
 UnicodeString __fastcall FormatFormCaption(TCustomForm * Form, const UnicodeString & Caption);
 UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption);
+void __fastcall RealignControl(TControl * Control);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

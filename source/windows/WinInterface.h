@@ -29,6 +29,7 @@ const int mpAllowContinueOnError = 0x02;
 #define DESKTOP_SWITCH L"Desktop"
 #define SEND_TO_HOOK_SWITCH L"SendToHook"
 #define UNSAFE_SWITCH L"Unsafe"
+#define NEWINSTANCE_SWICH L"NewInstance"
 
 struct TMessageParams
 {

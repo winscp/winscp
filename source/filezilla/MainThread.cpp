@@ -474,11 +474,18 @@ void CMainThread::SetWorkingDir(t_directory *pWorkingDir)
 	{
 		t_directory *pDirectoryToSend=new t_directory;
 		*pDirectoryToSend=*pWorkingDir;
-		if (!PostMessage(m_hOwnerWnd, m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_LISTDATA, 0), (LPARAM)pDirectoryToSend))
-			delete pDirectoryToSend;
+    SendDirectoryListing(pDirectoryToSend);
 	}
 
 	return;
+}
+
+void CMainThread::SendDirectoryListing(t_directory * pDirectoryToSend)
+{
+  if (!PostMessage(NULL, 0, FZ_MSG_MAKEMSG(FZ_MSG_LISTDATA, 0), (LPARAM)pDirectoryToSend))
+  {
+    delete pDirectoryToSend;
+  }
 }
 
 bool CMainThread::GetWorkingDirPath(CServerPath &path)

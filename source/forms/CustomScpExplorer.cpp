@@ -4031,6 +4031,20 @@ void __fastcall TCustomScpExplorerForm::ApplicationMinimize(TObject * /*Sender*/
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ApplicationRestore(TObject * /*Sender*/)
 {
+  // WORKAROUND
+  // When restoring maximized window from minimization,
+  // rarely some controls do not align properly.
+  // Two instances seen (both for Commander):
+  // - When restoring, window is temporarily narrower (not maximizer),
+  //   causing toolbars on TopDock to wrap and dock to expand horizontally.
+  //   Once maximized already, top dock shinks back, but the session PageControl,
+  //   do not align up, leaving space between TopDock and PageControl.
+  // - Similar issue seem with LocalDirView not aligning down to status bar.
+  for (int Index = 0; Index < ControlCount; Index++)
+  {
+    RealignControl(Controls[Index]);
+  }
+
   if (FTrayIcon->Visible)
   {
     FTrayIcon->Visible = false;

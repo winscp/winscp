@@ -21,6 +21,9 @@
 typedef struct Filename Filename;
 typedef struct FontSpec FontSpec;
 
+#ifdef MPEXT
+__int64 parse_blocksize64(const char *bs);
+#endif
 unsigned long parse_blocksize(const char *bs);
 char ctrlparse(char *s, char **next);
 

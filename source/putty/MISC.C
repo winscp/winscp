@@ -19,10 +19,10 @@
  * All numbers are decimal, and suffixes refer to powers of two.
  * Case-insensitive.
  */
-unsigned long parse_blocksize(const char *bs)
+__int64 parse_blocksize64(const char *bs)
 {
     char *suf;
-    unsigned long r = strtoul(bs, &suf, 10);
+    __int64 r = strtoul(bs, &suf, 10);
     if (*suf != '\0') {
 	while (*suf && isspace((unsigned char)*suf)) suf++;
 	switch (*suf) {
@@ -41,6 +41,11 @@ unsigned long parse_blocksize(const char *bs)
 	}
     }
     return r;
+}
+
+unsigned long parse_blocksize(const char *bs)
+{
+  return (unsigned long)parse_blocksize64(bs);
 }
 
 /*

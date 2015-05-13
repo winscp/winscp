@@ -514,7 +514,7 @@ UnicodeString KeyTypeName(TKeyType KeyType)
 __int64 __fastcall ParseSize(UnicodeString SizeStr)
 {
   AnsiString AnsiSizeStr = SizeStr;
-  return parse_blocksize(AnsiSizeStr.c_str());
+  return parse_blocksize64(AnsiSizeStr.c_str());
 }
 //---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI(UnicodeString CustomPath)

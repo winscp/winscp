@@ -1695,6 +1695,10 @@ void __fastcall TScpCommanderForm::LocalDirViewFileIconForName(
   {
     FileName.SetLength(FileName.Length() - PartialExt.Length());
   }
+  if (WinConfiguration->LocalIconsByExt)
+  {
+    FileName = ExtractFileName(FileName);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDirViewUpdateStatusBar(

@@ -1093,6 +1093,15 @@ void __fastcall TTerminal::ProcessGUI()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::Progress(TFileOperationProgressType * OperationProgress)
+{
+  if (FNesting == 0)
+  {
+    TAutoNestingCounter NestingCounter(FNesting);
+    OperationProgress->Progress();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::Reopen(int Params)
 {
   TFSProtocol OrigFSProtocol = SessionData->FSProtocol;
@@ -2922,7 +2931,7 @@ bool __fastcall TTerminal::FileExists(const UnicodeString FileName, TRemoteFile 
     ExceptionOnFail = true;
     try
     {
-      ReadFile(FileName, File);
+      ReadFile(UnixExcludeTrailingBackslash(FileName), File);
     }
     __finally
     {
@@ -5623,7 +5632,8 @@ static UnicodeString __fastcall FormatCertificateData(const UnicodeString & Fing
 }
 //---------------------------------------------------------------------------
 bool  __fastcall TTerminal::VerifyCertificate(
-  const UnicodeString & CertificateStorageKey, const UnicodeString & Fingerprint,
+  const UnicodeString & CertificateStorageKey, const UnicodeString & SiteKey,
+  const UnicodeString & Fingerprint,
   const UnicodeString & CertificateSubject, int Failures)
 {
   bool Result = false;
@@ -5635,9 +5645,9 @@ bool  __fastcall TTerminal::VerifyCertificate(
 
   if (Storage->OpenSubKey(CertificateStorageKey, false))
   {
-    if (Storage->ValueExists(SessionData->SiteKey))
+    if (Storage->ValueExists(SiteKey))
     {
-      UnicodeString CachedCertificateData = Storage->ReadString(SessionData->SiteKey, L"");
+      UnicodeString CachedCertificateData = Storage->ReadString(SiteKey, L"");
       if (CertificateData == CachedCertificateData)
       {
         LogEvent(FORMAT(L"Certificate for \"%s\" matches cached fingerprint and failures", (CertificateSubject)));
@@ -5676,7 +5686,7 @@ bool  __fastcall TTerminal::VerifyCertificate(
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CacheCertificate(const UnicodeString & CertificateStorageKey,
-  const UnicodeString & Fingerprint, int Failures)
+  const UnicodeString & SiteKey, const UnicodeString & Fingerprint, int Failures)
 {
   UnicodeString CertificateData = FormatCertificateData(Fingerprint, Failures);
 
@@ -5685,7 +5695,7 @@ void __fastcall TTerminal::CacheCertificate(const UnicodeString & CertificateSto
 
   if (Storage->OpenSubKey(CertificateStorageKey, true))
   {
-    Storage->WriteString(SessionData->SiteKey, CertificateData);
+    Storage->WriteString(SiteKey, CertificateData);
   }
 }
 //---------------------------------------------------------------------------

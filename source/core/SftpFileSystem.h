@@ -193,6 +193,7 @@ protected:
   inline unsigned long __fastcall DownloadBlockSize(
     TFileOperationProgressType * OperationProgress);
   inline int __fastcall PacketLength(unsigned char * LenBuf, int ExpectedType);
+  void __fastcall Progress(TFileOperationProgressType * OperationProgress);
 };
 //---------------------------------------------------------------------------
 #endif // SftpFileSystemH

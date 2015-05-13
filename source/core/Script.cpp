@@ -634,7 +634,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
             FTerminal->ExceptionOnFail = true;
             try
             {
-              FTerminal->ReadFile(FileName, File);
+              FTerminal->ReadFile(UnixExcludeTrailingBackslash(FileName), File);
               if (!File->HaveFullFileName)
               {
                 File->FullFileName = FileName;
@@ -1058,7 +1058,7 @@ void __fastcall TScript::StatProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  UnicodeString Path = Parameters->Param[1];
+  UnicodeString Path = UnixExcludeTrailingBackslash(Parameters->Param[1]);
   FTerminal->ExceptionOnFail = true;
   TRemoteFile * File = NULL;
   try

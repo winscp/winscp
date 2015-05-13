@@ -35,6 +35,8 @@ UnicodeString DeleteChar(UnicodeString Str, wchar_t C);
 void PackStr(UnicodeString &Str);
 void PackStr(RawByteString &Str);
 void __fastcall Shred(UnicodeString & Str);
+UnicodeString AnsiToString(const RawByteString & S);
+UnicodeString AnsiToString(const char * S, size_t Len);
 UnicodeString MakeValidFileName(UnicodeString FileName);
 UnicodeString RootKeyToStr(HKEY RootKey);
 UnicodeString BooleanToStr(bool B);

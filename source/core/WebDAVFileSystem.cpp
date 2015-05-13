@@ -64,7 +64,7 @@ struct TWebDAVCertificateData
 };
 //---------------------------------------------------------------------------
 #define SESSION_FS_KEY "filesystem"
-#define MAX_REDIRECT_ATTEMPTS 3
+#define MAX_REDIRECT_ATTEMPTS 5
 static const char CertificateStorageKey[] = "HttpsCertificates";
 static const UnicodeString CONST_WEBDAV_PROTOCOL_BASE_NAME = L"WebDAV";
 //---------------------------------------------------------------------------
@@ -240,15 +240,9 @@ void __fastcall TWebDAVFileSystem::Open()
 
   FSessionInfo.LoginTime = Now();
 
-  bool Ssl = (FTerminal->SessionData->Ftps != ftpsNone);
-  if (Ssl)
-  {
-    FSessionInfo.SecurityProtocolName = LoadStr(FTPS_IMPLICIT);
-  }
-
   UnicodeString HostName = Data->HostNameExpanded;
   size_t Port = Data->PortNumber;
-  UnicodeString ProtocolName = !Ssl ? WebDAVProtocol : WebDAVSProtocol;
+  UnicodeString ProtocolName = (FTerminal->SessionData->Ftps == ftpsNone) ? WebDAVProtocol : WebDAVSProtocol;
   UnicodeString Path = Data->RemoteDirectory;
   // PathToNeon is not used as we cannot call AbsolutePath here
   UnicodeString EscapedPath = UnicodeString(UTF8String(PathEscape(StrToNeon(Path)).c_str()));
@@ -349,6 +343,19 @@ void TWebDAVFileSystem::NeonOpen(UnicodeString & CorrectedUrl, const UnicodeStri
     uri.port = ne_uri_defaultport(uri.scheme);
   }
 
+  FHostName = StrFromNeon(uri.host);
+  FPortNumber = uri.port;
+
+  FSessionInfo.CSCipher = UnicodeString();
+  FSessionInfo.SCCipher = UnicodeString();
+  bool Ssl = SameText(StrFromNeon(uri.scheme), WebDAVSProtocol);
+  FSessionInfo.SecurityProtocolName = Ssl ? LoadStr(FTPS_IMPLICIT) : UnicodeString();
+
+  if (Ssl != (FTerminal->SessionData->Ftps != ftpsNone))
+  {
+    FTerminal->LogEvent(L"Warning: Redirected to an unencrypted URL.");
+  }
+
   TSessionData * Data = FTerminal->SessionData;
 
   assert(FNeonSession == NULL);
@@ -405,13 +412,13 @@ void TWebDAVFileSystem::NeonOpen(UnicodeString & CorrectedUrl, const UnicodeStri
   ne_set_useragent(FNeonSession, StrToNeon(FORMAT(L"%s/%s", (AppNameString(), Configuration->Version))));
 
   unsigned int NeonAuthTypes = NE_AUTH_BASIC | NE_AUTH_DIGEST;
-  if (Data->Ftps != ftpsNone)
+  if (Ssl)
   {
     NeonAuthTypes |= NE_AUTH_NEGOTIATE;
   }
   ne_add_server_auth(FNeonSession, NeonAuthTypes, NeonRequestAuth, this);
 
-  if (Data->Ftps != ftpsNone)
+  if (Ssl)
   {
     // When the CA certificate or server certificate has
     // verification problems, neon will call our verify function before
@@ -691,7 +698,7 @@ void __fastcall TWebDAVFileSystem::CheckStatus(int NeonStatus)
         break;
 
       case NE_LOOKUP:
-        Error = ReplaceStr(LoadStr(NET_TRANSL_HOST_NOT_EXIST2), L"%HOST%", FTerminal->SessionData->HostNameExpanded);
+        Error = ReplaceStr(LoadStr(NET_TRANSL_HOST_NOT_EXIST2), L"%HOST%", FHostName);
         break;
 
       case NE_AUTH:
@@ -707,7 +714,7 @@ void __fastcall TWebDAVFileSystem::CheckStatus(int NeonStatus)
         break;
 
       case NE_TIMEOUT:
-        Error = ReplaceStr(LoadStr(NET_TRANSL_TIMEOUT2), L"%HOST%", FTerminal->SessionData->HostNameExpanded);
+        Error = ReplaceStr(LoadStr(NET_TRANSL_TIMEOUT2), L"%HOST%", FHostName);
         break;
 
       case NE_REDIRECT:
@@ -2146,7 +2153,7 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data)
     // NEON checks certificate host name on its own
     if (FLAGSET(FailuresToList, NE_SSL_IDMISMATCH))
     {
-      AddToList(Summary, FMTLOAD(CERT_NAME_MISMATCH, (FTerminal->SessionData->HostNameExpanded)), L" ");
+      AddToList(Summary, FMTLOAD(CERT_NAME_MISMATCH, (FHostName)), L" ");
       FailuresToList &= ~NE_SSL_IDMISMATCH;
     }
     if (FLAGSET(FailuresToList, NE_SSL_UNTRUSTED))
@@ -2181,10 +2188,11 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data)
 
   if (!Result)
   {
+    UnicodeString SiteKey = TSessionData::FormatSiteKey(FHostName, FPortNumber);
     if (!Result)
     {
       Result = FTerminal->VerifyCertificate(
-        CertificateStorageKey, Data.Fingerprint, Data.Subject, Failures);
+        CertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Failures);
     }
 
     if (!Result)
@@ -2208,7 +2216,7 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data)
       switch (Answer)
       {
         case qaYes:
-          FTerminal->CacheCertificate(CertificateStorageKey, Data.Fingerprint, Failures);
+          FTerminal->CacheCertificate(CertificateStorageKey, SiteKey, Data.Fingerprint, Failures);
           Result = true;
           break;
 

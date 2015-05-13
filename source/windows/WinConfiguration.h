@@ -386,6 +386,7 @@ private:
   bool FAutoImportedFromPuttyOrFilezilla;
   int FGenerateUrlComponents;
   bool FExternalSessionInExistingInstance;
+  bool FLocalIconsByExt;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
@@ -466,6 +467,7 @@ private:
   void __fastcall SetAutoImportedFromPuttyOrFilezilla(bool value);
   void __fastcall SetGenerateUrlComponents(int value);
   void __fastcall SetExternalSessionInExistingInstance(bool value);
+  void __fastcall SetLocalIconsByExt(bool value);
   bool __fastcall GetHonorDrivePolicy();
   void __fastcall SetHonorDrivePolicy(bool value);
   bool __fastcall GetIsBeta();
@@ -625,6 +627,7 @@ public:
   __property bool AutoImportedFromPuttyOrFilezilla = { read = FAutoImportedFromPuttyOrFilezilla, write = SetAutoImportedFromPuttyOrFilezilla };
   __property int GenerateUrlComponents = { read = FGenerateUrlComponents, write = SetGenerateUrlComponents };
   __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
+  __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
   __property bool HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
   __property TFont * SystemIconFont = { read = GetSystemIconFont };

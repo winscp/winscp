@@ -531,6 +531,7 @@ private:
   inline void __fastcall FreeCommStruct(TConsoleCommStruct * CommStruct);
   inline void __fastcall SendEvent(int Timeout);
   void __fastcall Init();
+  void __fastcall CheckHandle(HANDLE Handle, const UnicodeString & Desc);
 };
 //---------------------------------------------------------------------------
 __fastcall TExternalConsole::TExternalConsole(
@@ -538,13 +539,13 @@ __fastcall TExternalConsole::TExternalConsole(
 {
   UnicodeString Name;
   Name = FORMAT(L"%s%s", (CONSOLE_EVENT_REQUEST, (Instance)));
-  FRequestEvent = OpenEvent(EVENT_ALL_ACCESS, false, Name.c_str());
+  CheckHandle(FRequestEvent = OpenEvent(EVENT_ALL_ACCESS, false, Name.c_str()), L"Request event");
   Name = FORMAT(L"%s%s", (CONSOLE_EVENT_RESPONSE, (Instance)));
-  FResponseEvent = OpenEvent(EVENT_ALL_ACCESS, false, Name.c_str());
+  CheckHandle(FResponseEvent = OpenEvent(EVENT_ALL_ACCESS, false, Name.c_str()), L"Response event");
   Name = FORMAT(L"%s%s", (CONSOLE_EVENT_CANCEL, (Instance)));
-  FCancelEvent = OpenEvent(EVENT_ALL_ACCESS, false, Name.c_str());
+  CheckHandle(FCancelEvent = OpenEvent(EVENT_ALL_ACCESS, false, Name.c_str()), L"Cancel event");
   Name = FORMAT(L"%s%s", (CONSOLE_MAPPING, (Instance)));
-  FFileMapping = OpenFileMapping(FILE_MAP_ALL_ACCESS, false, Name.c_str());
+  CheckHandle(FFileMapping = OpenFileMapping(FILE_MAP_ALL_ACCESS, false, Name.c_str()), L"File mapping");
 
   if ((FRequestEvent == NULL) || (FResponseEvent == NULL) || (FFileMapping == NULL))
   {
@@ -593,6 +594,14 @@ __fastcall TExternalConsole::~TExternalConsole()
   CloseHandle(FCancelEvent);
   CloseHandle(FFileMapping);
   KillTimer(Application->Handle, 1);
+}
+//---------------------------------------------------------------------------
+void __fastcall TExternalConsole::CheckHandle(HANDLE Handle, const UnicodeString & Desc)
+{
+  if (Handle == NULL)
+  {
+    throw ExtException(LoadStr(EXTERNAL_CONSOLE_INIT_ERROR), FORMAT(L"%s\n%s", (Desc, LastSysErrorMessage())));
+  }
 }
 //---------------------------------------------------------------------------
 TConsoleCommStruct * __fastcall TExternalConsole::GetCommStruct()

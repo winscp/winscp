@@ -540,6 +540,7 @@ void __fastcall TWinConfiguration::Default()
   FAutoImportedFromPuttyOrFilezilla = false;
   FGenerateUrlComponents = -1;
   FExternalSessionInExistingInstance = true;
+  FLocalIconsByExt = false;
   HonorDrivePolicy = true;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
@@ -834,6 +835,9 @@ bool __fastcall TWinConfiguration::GetUseMasterPassword()
 //---------------------------------------------------------------------------
 THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
 {
+  // Detect embedded session, if not checked yet
+  GetStorage();
+
   THierarchicalStorage * Result;
   if (SessionList && !FTemporarySessionFile.IsEmpty())
   {
@@ -919,6 +923,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     AutoImportedFromPuttyOrFilezilla); \
     KEY(Integer,  GenerateUrlComponents); \
     KEY(Bool,     ExternalSessionInExistingInstance); \
+    KEY(Bool,     LocalIconsByExt); \
     KEY(Bool,     HonorDrivePolicy); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
@@ -1875,6 +1880,11 @@ void __fastcall TWinConfiguration::SetGenerateUrlComponents(int value)
 void __fastcall TWinConfiguration::SetExternalSessionInExistingInstance(bool value)
 {
   SET_CONFIG_PROPERTY(ExternalSessionInExistingInstance);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetLocalIconsByExt(bool value)
+{
+  SET_CONFIG_PROPERTY(LocalIconsByExt);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::GetHonorDrivePolicy()
