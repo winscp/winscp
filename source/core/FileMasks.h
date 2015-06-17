@@ -51,11 +51,11 @@ public:
     const UnicodeString Path = L"", const TParams * Params = NULL) const;
   bool __fastcall Matches(const UnicodeString FileName, bool Directory,
     const UnicodeString Path, const TParams * Params,
-    bool & ImplicitMatch) const;
+    bool RecurseInclude, bool & ImplicitMatch) const;
   bool __fastcall Matches(const UnicodeString FileName, bool Local, bool Directory,
     const TParams * Params = NULL) const;
   bool __fastcall Matches(const UnicodeString FileName, bool Local, bool Directory,
-    const TParams * Params, bool & ImplicitMatch) const;
+    const TParams * Params, bool RecurseInclude, bool & ImplicitMatch) const;
 
   __property UnicodeString Masks = { read = FStr, write = SetMasks };
 

@@ -46,12 +46,13 @@ public:
   __fastcall TLogForm(TComponent* Owner);
   __property TLogMemo * LogMemo = { read = FLogMemo, write = SetLogMemo };
   __property TSessionLog * SessionLog = { read = FSessionLog, write = SetSessionLog };
+  void __fastcall SwitchSessionLog();
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TLogForm *LogForm;
 //---------------------------------------------------------------------------
-TLogForm * __fastcall CreateLogForm(TLogMemo *ALogMemo);
 TLogForm * __fastcall RequireLogForm(TLogMemo *ALogMemo);
 void __fastcall FreeLogForm();
+void __fastcall SwitchLogFormSessionLog();
 //---------------------------------------------------------------------------
 #endif

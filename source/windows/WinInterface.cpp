@@ -877,11 +877,11 @@ void __fastcall TWinInteractiveCustomCommand::Prompt(
   {
     APrompt = FMTLOAD(CUSTOM_COMMANDS_PARAM_PROMPT, (FCustomCommandName));
   }
-  TStrings * History = CustomWinConfiguration->History[L"CustomCommandParam"];
+  std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[L"CustomCommandParam"]));
   if (InputDialog(FMTLOAD(CUSTOM_COMMANDS_PARAM_TITLE, (FCustomCommandName)),
-        APrompt, Value, HELP_CUSTOM_COMMAND_PARAM, History))
+        APrompt, Value, HELP_CUSTOM_COMMAND_PARAM, History.get()))
   {
-    CustomWinConfiguration->History[L"CustomCommandParam"] = History;
+    CustomWinConfiguration->History[L"CustomCommandParam"] = History.get();
   }
   else
   {

@@ -1072,7 +1072,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsSsh)
                     {
-                        throw new ArgumentException("SessionOptions.SshHostKey or SessionOptions.GiveUpSecurityAndAcceptAnySshHostKey is set, but SessionOptions.Protocol is not Protocol.Sftp nor Protocol.Scp.");
+                        throw new ArgumentException("SessionOptions.SshHostKeyFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnySshHostKey is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp.");
                     }
                     string sshHostKeyFingerprint = sessionOptions.SshHostKeyFingerprint;
                     if (sessionOptions.GiveUpSecurityAndAcceptAnySshHostKey)
@@ -1086,7 +1086,7 @@ namespace WinSCP
                 {
                     if (sessionOptions.IsSsh && DefaultConfiguration)
                     {
-                        throw new ArgumentException("SessionOptions.Protocol is Protocol.Sftp or Protocol.Scp, but SessionOptions.HostKey is not set.");
+                        throw new ArgumentException("SessionOptions.Protocol is Protocol.Sftp or Protocol.Scp, but SessionOptions.SshHostKeyFingerprint is not set.");
                     }
                 }
 
@@ -1094,7 +1094,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsSsh)
                     {
-                        throw new ArgumentException("SessionOptions.SshPrivateKeyPath is set, but SessionOptions.Protocol is not Protocol.Sftp nor Protocol.Scp.");
+                        throw new ArgumentException("SessionOptions.SshPrivateKeyPath is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp.");
                     }
                     switches.Add(FormatSwitch("privatekey", sessionOptions.SshPrivateKeyPath));
                 }

@@ -193,8 +193,15 @@ void __fastcall TFileFindDialog::Start()
     TOperationVisualizer Visualizer;
 
     assert(FOnFind != NULL);
-    FDirectory = UnixExcludeTrailingBackslash(RemoteDirectoryEdit->Text);
-    FOnFind(FDirectory, MaskEdit->Text, FileFound, FindingFile);
+    UnicodeString Directory = UnixExcludeTrailingBackslash(RemoteDirectoryEdit->Text);
+
+    FDirectory = Directory;
+    if (FDirectory == ROOTDIRECTORY)
+    {
+      FDirectory = UnicodeString();
+    }
+
+    FOnFind(Directory, MaskEdit->Text, FileFound, FindingFile);
   }
   __finally
   {
@@ -236,8 +243,7 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
   UnicodeString Directory = UnixExtractFilePath(File->FullFileName);
   if (AnsiSameText(FDirectory, Directory.SubString(1, FDirectory.Length())))
   {
-    Directory[1] = L'.';
-    Directory.Delete(2, FDirectory.Length() - 1);
+    Directory = L"." + Directory.SubString(FDirectory.Length() + 1, Directory.Length() - FDirectory.Length());
   }
   else
   {

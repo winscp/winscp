@@ -504,7 +504,7 @@ void __fastcall TWinConfiguration::Default()
   FTemporaryDirectoryCleanup = true;
   FConfirmTemporaryDirectoryCleanup = true;
   FPreservePanelState = true;
-  FTheme = L"OfficeXP";
+  FTheme = THEME_OFFICEXP;
   FLastStoredSession = L"";
   // deliberately not being saved, so that when saving ad-hoc workspace,
   // we do not offer to overwrite the last saved workspace, what may be undesirable
@@ -2454,6 +2454,8 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
     }
   }
   Usage->Set(L"ExternalEditors", ExternalEditors);
+
+  Usage->Set(L"ThemeNotOfficeXP", (Theme != THEME_OFFICEXP));
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::RestoreFont(

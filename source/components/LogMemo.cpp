@@ -36,6 +36,7 @@ __fastcall TLogMemo::TLogMemo(TComponent* Owner)
   FIndexes = new TList();
   FWantScrollToEnd = false;
   FUpdating = false;
+  FReloading = false;
   FNeedsRepaint = false;
   FLastUpdate = 0;
 
@@ -113,7 +114,10 @@ void __fastcall TLogMemo::SessionLogChange(TObject * Sender)
         (FThread == GetCurrentThreadId()))
     {
       // forced update
-      UpdateFromLog();
+      if (!FReloading)
+      {
+        UpdateFromLog();
+      }
     }
     else
     {
@@ -239,8 +243,10 @@ void __fastcall TLogMemo::UpdateFromLog()
 //---------------------------------------------------------------------------
 void __fastcall TLogMemo::ReloadFromLog()
 {
-  if (Parent)
+  if (Parent && !FReloading)
   {
+    TAutoFlag ReloadingFlag(FReloading);
+
     Lines->BeginUpdate();
     try
     {
@@ -286,7 +292,10 @@ void __fastcall TLogMemo::ScrollToEnd()
 //---------------------------------------------------------------------------
 void TLogMemo::WMLogUpdate(TMessage & /*Message*/)
 {
-  UpdateFromLog();
+  if (!FReloading)
+  {
+    UpdateFromLog();
+  }
 }
 //---------------------------------------------------------------------------
 void TLogMemo::CMVisibleChanged(TMessage & Message)

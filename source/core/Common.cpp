@@ -2459,6 +2459,13 @@ TStringList * __fastcall TextToStringList(const UnicodeString & Text)
   return List.release();
 }
 //---------------------------------------------------------------------------
+TStrings * __fastcall CloneStrings(TStrings * Strings)
+{
+  std::unique_ptr<TStringList> List(new TStringList());
+  List->AddStrings(Strings);
+  return List.release();
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TrimVersion(UnicodeString Version)
 {
   while ((Version.Pos(L".") != Version.LastDelimiter(L".")) &&

@@ -31,6 +31,10 @@ const int mpAllowContinueOnError = 0x02;
 #define UNSAFE_SWITCH L"Unsafe"
 #define NEWINSTANCE_SWICH L"NewInstance"
 
+#define THEME_OFFICEXP L"OfficeXP"
+#define THEME_OFFICE2003 L"Office2003"
+#define THEME_DEFAULT L"Default"
+
 struct TMessageParams
 {
   TMessageParams(unsigned int AParams = 0);

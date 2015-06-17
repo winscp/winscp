@@ -805,10 +805,11 @@ void __fastcall TSessionLog::ReflectSettings()
     !FClosed &&
     ((FParent != NULL) || FConfiguration->Logging);
 
+  bool Changed = false;
   if (FLogging != ALogging)
   {
     FLogging = ALogging;
-    StateChange();
+    Changed = true;
   }
 
   // if logging to file was turned off or log file was changed -> close current log file
@@ -819,6 +820,13 @@ void __fastcall TSessionLog::ReflectSettings()
   }
 
   DeleteUnnecessary();
+
+  // trigger event only once we are in a consistent state
+  if (Changed)
+  {
+    StateChange();
+  }
+
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSessionLog::LogToFile()

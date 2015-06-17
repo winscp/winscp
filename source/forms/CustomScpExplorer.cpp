@@ -2458,11 +2458,11 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
   {
     Name = LoadStr(NEW_FILE);
   }
-  TStrings * History = CustomWinConfiguration->History[L"EditFile"];
+  std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[L"EditFile"]));
   if (InputDialog(LoadStr(EDIT_FILE_CAPTION), LoadStr(EDIT_FILE_PROMPT), Name,
-        HELP_EDIT_NEW, History, true))
+        HELP_EDIT_NEW, History.get(), true))
   {
-    CustomWinConfiguration->History[L"EditFile"] = History;
+    CustomWinConfiguration->History[L"EditFile"] = History.get();
     UnicodeString TargetFileName;
     UnicodeString LocalFileName;
     UnicodeString RootTempDir;
@@ -6946,7 +6946,8 @@ void __fastcall TCustomScpExplorerForm::DirViewMatchMask(
   FDirViewMatchMask = Masks;
   bool ImplicitMatch;
   Matches =
-    FDirViewMatchMask.Matches(FileName, Directory, UnicodeString(L""), &MaskParams, ImplicitMatch) &&
+    // RecurseInclude parameter has no effect as the Path is empty
+    FDirViewMatchMask.Matches(FileName, Directory, UnicodeString(L""), &MaskParams, true, ImplicitMatch) &&
     (AllowImplicitMatches || !ImplicitMatch);
 }
 //---------------------------------------------------------------------------
@@ -7920,16 +7921,15 @@ void __fastcall TCustomScpExplorerForm::ClickToolbarItem(TTBCustomItem * Item,
   TTBItemViewer * Viewer = Toolbar->View->Find(Item);
   assert(Viewer != NULL);
 
-  POINT P = Point(Viewer->BoundsRect.Left + (Viewer->BoundsRect.Width() / 2),
-    Viewer->BoundsRect.Top + (Viewer->BoundsRect.Height() / 2));
+  int X = Viewer->BoundsRect.Left + (Viewer->BoundsRect.Width() / 2);
+  int Y = Viewer->BoundsRect.Top + (Viewer->BoundsRect.Height() / 2);
 
   if (PositionCursor)
   {
-    Mouse->CursorPos = Toolbar->ClientToScreen(TPoint(P.x, P.y));
+    Mouse->CursorPos = Toolbar->ClientToScreen(TPoint(X, Y));
   }
 
-  PostMessage(Toolbar->Handle, WM_LBUTTONDOWN, MK_LBUTTON,
-    *reinterpret_cast<LPARAM*>(&P));
+  PostMessage(Toolbar->Handle, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(X, Y));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DirViewEditing(

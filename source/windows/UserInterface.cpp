@@ -334,8 +334,8 @@ void __fastcall ConfigureInterface()
 // dummy function to force linking of TBXOfficeXPTheme.pas
 void __fastcall CreateThemes()
 {
-  new TTBXOfficeXPTheme(L"OfficeXP");
-  new TTBXOffice2003Theme(L"Office2003");
+  new TTBXOfficeXPTheme(THEME_OFFICEXP);
+  new TTBXOffice2003Theme(THEME_OFFICE2003);
 }
 //---------------------------------------------------------------------------
 void __fastcall DoAboutDialog(TConfiguration *Configuration)

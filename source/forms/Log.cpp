@@ -55,6 +55,14 @@ TLogForm * __fastcall RequireLogForm(TLogMemo *ALogMemo)
   return LogForm;
 }
 //---------------------------------------------------------------------------
+void __fastcall SwitchLogFormSessionLog()
+{
+  if (LogForm != NULL)
+  {
+    LogForm->SwitchSessionLog();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall FreeLogForm()
 {
   if (LogForm)
@@ -106,7 +114,7 @@ void __fastcall TLogForm::SetLogMemo(TLogMemo * value)
     if (LogMemo)
     {
       LogMemo->Align = alClient;
-      if (!SessionLog) SessionLog = LogMemo->SessionLog;
+      SwitchSessionLog();
       LogMemo->Parent = this;
       // setting Parent usually calls OnChange many times (pending changes are
       // inserted to TLogMemo), so we set OnChange handler after Parent.
@@ -207,4 +215,9 @@ void __fastcall TLogForm::CreateParams(TCreateParams & Params)
   }
   TForm::CreateParams(Params);
   Params.WndParent = GetDesktopWindow();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLogForm::SwitchSessionLog()
+{
+  SessionLog = LogMemo->SessionLog;
 }

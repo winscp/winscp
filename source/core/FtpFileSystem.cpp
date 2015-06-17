@@ -737,6 +737,12 @@ void __fastcall TFTPFileSystem::CollectUsage()
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPInetutils");
   }
+  // 220 Syncplify.me Server! FTP(S) Service Ready
+  // Message is configurable
+  else if (ContainsText(FWelcomeMessage, L"Syncplify"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPSyncplify");
+  }
   else
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPOther");

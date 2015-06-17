@@ -122,6 +122,7 @@ UnicodeString __fastcall FormatNumber(__int64 Size);
 UnicodeString __fastcall FormatSize(__int64 Size);
 UnicodeString __fastcall ExtractFileBaseName(const UnicodeString & Path);
 TStringList * __fastcall TextToStringList(const UnicodeString & Text);
+TStrings * __fastcall CloneStrings(TStrings * Strings);
 UnicodeString __fastcall TrimVersion(UnicodeString Version);
 UnicodeString __fastcall FormatVersion(int MajovVersion, int MinorVersion, int Release);
 TFormatSettings __fastcall GetEngFormatSettings();

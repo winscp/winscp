@@ -883,7 +883,7 @@ void TWebDAVFileSystem::NeonPropsResult(
   TReadFileData & Data = *static_cast<TReadFileData *>(UserData);
   if (Data.FileList != NULL)
   {
-    UnicodeString FileListPath = PathToNeonStatic(Data.FileSystem, Data.FileList->Directory);
+    UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
     if (UnixSamePath(Path, FileListPath))
     {
       Path = UnixIncludeTrailingBackslash(Path) + L"..";

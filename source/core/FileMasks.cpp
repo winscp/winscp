@@ -407,15 +407,15 @@ bool __fastcall TFileMasks::Matches(const UnicodeString FileName, bool Directory
   const UnicodeString Path, const TParams * Params) const
 {
   bool ImplicitMatch;
-  return Matches(FileName, Directory, Path, Params, ImplicitMatch);
+  return Matches(FileName, Directory, Path, Params, true, ImplicitMatch);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::Matches(const UnicodeString FileName, bool Directory,
   const UnicodeString Path, const TParams * Params,
-  bool & ImplicitMatch) const
+  bool RecurseInclude, bool & ImplicitMatch) const
 {
   bool ImplicitIncludeMatch = FMasks[MASK_INDEX(Directory, true)].empty();
-  bool ExplicitIncludeMatch = MatchesMasks(FileName, Directory, Path, Params, FMasks[MASK_INDEX(Directory, true)], true);
+  bool ExplicitIncludeMatch = MatchesMasks(FileName, Directory, Path, Params, FMasks[MASK_INDEX(Directory, true)], RecurseInclude);
   bool Result =
     (ImplicitIncludeMatch || ExplicitIncludeMatch) &&
     !MatchesMasks(FileName, Directory, Path, Params, FMasks[MASK_INDEX(Directory, false)], false);
@@ -429,11 +429,11 @@ bool __fastcall TFileMasks::Matches(const UnicodeString FileName, bool Local,
   bool Directory, const TParams * Params) const
 {
   bool ImplicitMatch;
-  return Matches(FileName, Local, Directory, Params, ImplicitMatch);
+  return Matches(FileName, Local, Directory, Params, true, ImplicitMatch);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::Matches(const UnicodeString FileName, bool Local,
-  bool Directory, const TParams * Params, bool & ImplicitMatch) const
+  bool Directory, const TParams * Params, bool RecurseInclude, bool & ImplicitMatch) const
 {
   bool Result;
   if (Local)
@@ -444,13 +444,13 @@ bool __fastcall TFileMasks::Matches(const UnicodeString FileName, bool Local,
       Path = ToUnixPath(ExcludeTrailingBackslash(Path));
     }
     Result = Matches(ExtractFileName(FileName), Directory, Path, Params,
-      ImplicitMatch);
+      RecurseInclude, ImplicitMatch);
   }
   else
   {
     Result = Matches(UnixExtractFileName(FileName), Directory,
       SimpleUnixExcludeTrailingBackslash(UnixExtractFilePath(FileName)), Params,
-      ImplicitMatch);
+      RecurseInclude, ImplicitMatch);
   }
   return Result;
 }

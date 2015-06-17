@@ -514,11 +514,11 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         break;
     }
 
-    if (WinConfiguration->Theme == L"OfficeXP")
+    if (WinConfiguration->Theme == THEME_OFFICEXP)
     {
       ThemeCombo->ItemIndex = 1;
     }
-    else if (WinConfiguration->Theme == L"Office2003")
+    else if (WinConfiguration->Theme == THEME_OFFICE2003)
     {
       ThemeCombo->ItemIndex = 2;
     }
@@ -876,15 +876,15 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     if (ThemeCombo->ItemIndex == 1)
     {
-      WinConfiguration->Theme = L"OfficeXP";
+      WinConfiguration->Theme = THEME_OFFICEXP;
     }
     else if (ThemeCombo->ItemIndex == 2)
     {
-      WinConfiguration->Theme = L"Office2003";
+      WinConfiguration->Theme = THEME_OFFICE2003;
     }
     else
     {
-      WinConfiguration->Theme = L"Default";
+      WinConfiguration->Theme = THEME_DEFAULT;
     }
 
     // network

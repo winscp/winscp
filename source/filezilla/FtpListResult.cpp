@@ -224,6 +224,8 @@ CFtpListResult::CFtpListResult(t_server server, bool *bUTF8)
 	m_MonthNamesMap[_T("mrz")] = 3;
 	m_MonthNamesMap[_T("m\xE4r")] = 3;
 	m_MonthNamesMap[_T("m\xE4rz")] = 3;
+	m_MonthNamesMap[L"m\xC3\xA4r"] = 3; // UTF-8
+	m_MonthNamesMap[L"m\xC3\xA4rz"] = 3; // UTF-8
 	m_MonthNamesMap[_T("mai")] = 5;
 	m_MonthNamesMap[_T("juni")] = 6;
 	m_MonthNamesMap[_T("juli")] = 7;
@@ -232,6 +234,7 @@ CFtpListResult::CFtpListResult(t_server server, bool *bUTF8)
 
 	//Austrian month names
 	m_MonthNamesMap[_T("j\xE4n")] = 1;
+	m_MonthNamesMap[L"j\xC3\xA4n"] = 1; // UTF-8
 	
 	//French month names
 	m_MonthNamesMap[_T("janv")] = 1;

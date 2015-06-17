@@ -598,6 +598,7 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
       }
       assert(LogMemo);
       LogMemo->SessionLog = ActiveTerminal->Log;
+      SwitchLogFormSessionLog();
 
       int Index = ActiveTerminalIndex;
       if (!ActiveTerminal->Active && !FTerminationMessages->Strings[Index].IsEmpty())

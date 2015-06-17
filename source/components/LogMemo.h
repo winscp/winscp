@@ -35,6 +35,7 @@ private:
   bool FNeedsRepaint;
   unsigned int FLastUpdate;
   DWORD FThread;
+  bool FReloading;
 
   void __fastcall CMShowingChanged(TMessage & Message);
   void CMVisibleChanged(TMessage & Message);
