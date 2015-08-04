@@ -50,6 +50,7 @@ __published:
   void __fastcall FormShow(TObject *Sender);
   void __fastcall OutputMemoContextPopup(TObject *Sender, TPoint &MousePos,
           bool &Handled);
+  void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
 
 private:
   TTerminal * FTerminal;
@@ -59,6 +60,7 @@ private:
   TRect FAutoBounds;
   bool FClearExceptionOnFail;
   bool FDirectoryChanged;
+  bool FExecuting;
 
   void __fastcall DoExecuteCommand();
   void __fastcall ExecuteCommand();

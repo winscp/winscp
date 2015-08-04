@@ -188,7 +188,6 @@ protected:
   bool __fastcall SupportsReadingFile();
   void __fastcall AutoDetectTimeDifference(TRemoteFileList * FileList);
   void __fastcall ApplyTimeDifference(TRemoteFile * File);
-  bool __fastcall TimeZoneDifferenceApplicable(TModificationFmt ModificationFmt);
   UnicodeString __fastcall DoCalculateFileChecksum(bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File);
   void __fastcall DoCalculateFilesChecksum(bool UsingHashCommand, const UnicodeString & Alg,
     TStrings * FileList, TStrings * Checksums,

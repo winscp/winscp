@@ -754,7 +754,7 @@ UnicodeString __fastcall GetUsageData()
   return Configuration->Usage->Serialize();
 }
 //---------------------------------------------------------------------------
-static UnicodeString ProgramUrl(UnicodeString URL)
+UnicodeString __fastcall ProgramUrl(UnicodeString URL)
 {
   TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
   UnicodeString CurrentVersionStr =

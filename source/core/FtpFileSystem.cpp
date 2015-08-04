@@ -2388,23 +2388,10 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
   FLastDataSent = Now();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFTPFileSystem::TimeZoneDifferenceApplicable(TModificationFmt ModificationFmt)
-{
-  // Full precision is available for MLST only, so we would not be here.
-  return (ModificationFmt == mfMDHM) || ALWAYS_FALSE(ModificationFmt == mfFull);
-}
-//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ApplyTimeDifference(TRemoteFile * File)
 {
-  // FTimeDifference is not only optimization, but also prevents assertion failing
-  // in TimeZoneDifferenceApplicable when the file has full precision
-  if ((FTimeDifference != 0) &&
-      TimeZoneDifferenceApplicable(File->ModificationFmt))
-  {
-    assert(File->Modification == File->LastAccess);
-    File->Modification = IncSecond(File->Modification, FTimeDifference);
-    File->LastAccess = IncSecond(File->LastAccess, FTimeDifference);
-  }
+  assert(File->Modification == File->LastAccess);
+  File->ShiftTimeInSeconds(FTimeDifference);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileList)
@@ -2422,7 +2409,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
       // (it should not be problem to use them otherwise).
       // We are also not interested in files with day precision only.
       if (!File->IsDirectory && !File->IsSymLink &&
-          TimeZoneDifferenceApplicable(File->ModificationFmt))
+          File->IsTimeShiftingApplicable())
       {
         FDetectTimeDifference = false;
 

@@ -349,7 +349,7 @@ void __fastcall TScript::Init()
   FCommands->Register(L"man", 0, SCRIPT_HELP_HELP, &HelpProc, 0, -1, false);
   // the call command does not have switches itself, but the commands may have
   FCommands->Register(L"call", SCRIPT_CALL_DESC2, SCRIPT_CALL_HELP2, &CallProc, 1, -1, true);
-  FCommands->Register(L"!", 0, SCRIPT_CALL_HELP2, &CallProc, 1, -1, false);
+  FCommands->Register(L"!", 0, SCRIPT_CALL_HELP2, &CallProc, 1, -1, true);
   FCommands->Register(L"pwd", SCRIPT_PWD_DESC, SCRIPT_PWD_HELP, &PwdProc, 0, 0, false);
   FCommands->Register(L"cd", SCRIPT_CD_DESC, SCRIPT_CD_HELP, &CdProc, 0, 1, false);
   FCommands->Register(L"ls", SCRIPT_LS_DESC, SCRIPT_LS_HELP2, &LsProc, 0, 1, false);
@@ -363,11 +363,11 @@ void __fastcall TScript::Init()
   FCommands->Register(L"symlink", 0, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"mkdir", SCRIPT_MKDIR_DESC, SCRIPT_MKDIR_HELP, &MkDirProc, 1, 1, false);
   FCommands->Register(L"get", SCRIPT_GET_DESC, SCRIPT_GET_HELP7, &GetProc, 1, -1, true);
-  FCommands->Register(L"recv", 0, SCRIPT_GET_HELP7, &GetProc, 1, -1, false);
-  FCommands->Register(L"mget", 0, SCRIPT_GET_HELP7, &GetProc, 1, -1, false);
+  FCommands->Register(L"recv", 0, SCRIPT_GET_HELP7, &GetProc, 1, -1, true);
+  FCommands->Register(L"mget", 0, SCRIPT_GET_HELP7, &GetProc, 1, -1, true);
   FCommands->Register(L"put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP7, &PutProc, 1, -1, true);
-  FCommands->Register(L"send", 0, SCRIPT_PUT_HELP7, &PutProc, 1, -1, false);
-  FCommands->Register(L"mput", 0, SCRIPT_PUT_HELP7, &PutProc, 1, -1, false);
+  FCommands->Register(L"send", 0, SCRIPT_PUT_HELP7, &PutProc, 1, -1, true);
+  FCommands->Register(L"mput", 0, SCRIPT_PUT_HELP7, &PutProc, 1, -1, true);
   FCommands->Register(L"option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP7, &OptionProc, -1, 2, false);
   FCommands->Register(L"ascii", 0, SCRIPT_OPTION_HELP7, &AsciiProc, 0, 0, false);
   FCommands->Register(L"binary", 0, SCRIPT_OPTION_HELP7, &BinaryProc, 0, 0, false);
@@ -606,18 +606,23 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
           TFileMasks Mask;
           Mask.SetMask(UnixExtractFileName(FileName));
           bool AnyFound = false;
-          for (int i = 0; i < FileList->Count; i++)
+
+          // Can happen in "batch continue" mode
+          if (FileList != NULL)
           {
-            TRemoteFile * File = FileList->Files[i];
-            TFileMasks::TParams Params;
-            Params.Size = File->Size;
-            Params.Modification = File->Modification;
-            if (!File->IsThisDirectory && !File->IsParentDirectory &&
-                Mask.Matches(File->FileName, false, UnicodeString(), &Params))
+            for (int i = 0; i < FileList->Count; i++)
             {
-              Result->AddObject(FileDirectory + File->FileName,
-                FLAGSET(ListType, fltQueryServer) ? File->Duplicate() : NULL);
-              AnyFound = true;
+              TRemoteFile * File = FileList->Files[i];
+              TFileMasks::TParams Params;
+              Params.Size = File->Size;
+              Params.Modification = File->Modification;
+              if (!File->IsThisDirectory && !File->IsParentDirectory &&
+                  Mask.Matches(File->FileName, false, UnicodeString(), &Params))
+              {
+                Result->AddObject(FileDirectory + File->FileName,
+                  FLAGSET(ListType, fltQueryServer) ? File->Duplicate() : NULL);
+                AnyFound = true;
+              }
             }
           }
 

@@ -44,6 +44,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   FPrevTerminalClose = NULL;;
   FLastTerminal = NULL;
   FDirectoryChanged = false;
+  FExecuting = false;
   OutputMemo->Color = clBlack;
   OutputMemo->Font->Color = (TColor)0x00BBBBBB;
   FixComboBoxResizeBug(CommandEdit);
@@ -113,8 +114,12 @@ void __fastcall TConsoleDialog::DoChangeDirectory(TObject * Sender)
 void __fastcall TConsoleDialog::UpdateControls()
 {
   DirectoryLabel->Caption = (FTerminal ? FTerminal->CurrentDirectory : UnicodeString());
+  // Disabling buttons while executing to prevent recursive execution,
+  // now that message queue is processed while command is executing.
   EnableControl(ExecuteButton,
-    (FTerminal != NULL) ? FTerminal->AllowedAnyCommand(CommandEdit->Text) : false);
+    ((FTerminal != NULL) ? FTerminal->AllowedAnyCommand(CommandEdit->Text) : false) &&
+    !FExecuting);
+  EnableControl(CancelBtn, !FExecuting);
 }
 //---------------------------------------------------------------------
 bool __fastcall TConsoleDialog::Execute(const UnicodeString Command,
@@ -197,6 +202,10 @@ void __fastcall TConsoleDialog::DoExecuteCommand()
     UnicodeString Command = CommandEdit->Text;
     OutputMemo->Lines->Add(FORMAT(L"%s$ %s", (CurrentDirectory, Command)));
     Configuration->Usage->Inc(L"RemoteCommandExecutions");
+    TAutoFlag ExecutingFlag(FExecuting);
+    UpdateControls();
+    // give a chance for disabled buttons to redraw
+    Application->ProcessMessages();
     FTerminal->AnyCommand(Command, AddLine);
   }
   __finally
@@ -211,6 +220,7 @@ void __fastcall TConsoleDialog::DoExecuteCommand()
         FTerminal->ReadCurrentDirectory();
       }
     }
+    UpdateControls();
   }
 
   if (CurrentDirectory != FTerminal->CurrentDirectory)
@@ -335,5 +345,12 @@ void __fastcall TConsoleDialog::OutputMemoContextPopup(TObject * Sender,
   TPoint & MousePos, bool & Handled)
 {
   MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::FormCloseQuery(TObject * /*Sender*/, bool & CanClose)
+{
+  // Probably not necessary as this is called from top-level dialog loop,
+  // where we do not get until ExecuteButtonClick exists.
+  CanClose = !FExecuting;
 }
 //---------------------------------------------------------------------------

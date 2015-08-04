@@ -837,6 +837,7 @@ void cleanup_exit(int);
     X(INT, NONE, sshbug_rekey2) \
     X(INT, NONE, sshbug_maxpkt2) \
     X(INT, NONE, sshbug_ignore2) \
+    X(INT, NONE, sshbug_oldgex2) \
     X(INT, NONE, sshbug_winadj) \
     /*                                                                \
      * ssh_simple means that we promise never to open any channel     \

@@ -141,7 +141,8 @@ public:
   virtual __fastcall ~TRemoteFile();
   TRemoteFile * __fastcall Duplicate(bool Standalone = true) const;
 
-  void __fastcall ShiftTime(const TDateTime & Difference);
+  void __fastcall ShiftTimeInSeconds(__int64 Seconds);
+  bool __fastcall IsTimeShiftingApplicable();
   void __fastcall Complete();
 
   __property int Attr = { read = GetAttr };

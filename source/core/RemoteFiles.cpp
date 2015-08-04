@@ -7,6 +7,7 @@
 
 #include <SysUtils.hpp>
 #include <StrUtils.hpp>
+#include <DateUtils.hpp>
 
 #include "Exceptions.h"
 #include "Interface.h"
@@ -971,15 +972,19 @@ bool __fastcall TRemoteFile::GetBrokenLink()
   // "!FLinkTo.IsEmpty()" removed because it does not work with SFTP
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteFile::ShiftTime(const TDateTime & Difference)
+bool __fastcall TRemoteFile::IsTimeShiftingApplicable()
 {
-  double D = double(Difference);
-  if ((D != 0) && (FModificationFmt != mfMDY))
+  return (ModificationFmt == mfMDHM) || (ModificationFmt == mfFull);
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteFile::ShiftTimeInSeconds(__int64 Seconds)
+{
+  if ((Seconds != 0) && IsTimeShiftingApplicable())
   {
     assert(int(FModification) != 0);
-    FModification = double(FModification) + D;
+    FModification = IncSecond(FModification, Seconds);
     assert(int(FLastAccess) != 0);
-    FLastAccess = double(FLastAccess) + D;
+    FLastAccess = IncSecond(FLastAccess, Seconds);
   }
 }
 //---------------------------------------------------------------------------

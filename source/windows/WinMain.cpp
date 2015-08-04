@@ -18,6 +18,7 @@
 #include "WinConfiguration.h"
 #include "GUITools.h"
 #include "Tools.h"
+#include "WinApi.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -329,8 +330,69 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"Locale",
     IntToHex(static_cast<int>(WinConfiguration->Locale), 4));
   Configuration->Usage->Set(L"PixelsPerInch", Screen->PixelsPerInch);
+
+  bool PixelsPerInchSystemDiffers = false;
+  bool PixelsPerInchMonitorsDiffer = false;
+  bool PixelsPerInchAxesDiffer = false;
+
+  HINSTANCE ShCoreLibrary = LoadLibrary(L"shcore.dll");
+  if (ShCoreLibrary != NULL)
+  {
+    GetDpiForMonitorProc GetDpiForMonitor =
+      (GetDpiForMonitorProc)GetProcAddress(ShCoreLibrary, "GetDpiForMonitor");
+
+    if (GetDpiForMonitor != NULL)
+    {
+      unsigned int PrimaryDpiX;
+      unsigned int PrimaryDpiY;
+
+      for (int Index = 0; Index < Screen->MonitorCount; Index++)
+      {
+        unsigned int DpiX;
+        unsigned int DpiY;
+        GetDpiForMonitor(Screen->Monitors[0]->Handle, MDT_Default, &DpiX, &DpiY);
+
+        if (DpiX != DpiY)
+        {
+          PixelsPerInchAxesDiffer = true;
+        }
+
+        if (Index == 0)
+        {
+          PrimaryDpiX = DpiX;
+          PrimaryDpiY = DpiY;
+
+          // PixelsPerInch is GetDeviceCaps(DC, LOGPIXELSY)
+          if (DpiY != (unsigned int)Screen->PixelsPerInch)
+          {
+            PixelsPerInchSystemDiffers = true;
+          }
+        }
+        else
+        {
+          if ((DpiX != PrimaryDpiX) ||
+              (DpiY != PrimaryDpiY))
+          {
+            PixelsPerInchMonitorsDiffer = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (PixelsPerInchSystemDiffers)
+  {
+    Configuration->Usage->Inc(L"PixelsPerInchSystemDiffered");
+  }
+  Configuration->Usage->Set(L"PixelsPerInchMonitorsDiffer", PixelsPerInchMonitorsDiffer);
+  Configuration->Usage->Set(L"PixelsPerInchAxesDiffer", PixelsPerInchAxesDiffer);
+
   Configuration->Usage->Set(L"WorkAreaWidth", Screen->WorkAreaWidth);
   Configuration->Usage->Set(L"WorkAreaHeight", Screen->WorkAreaHeight);
+  HDC DC = GetDC(NULL);
+  int Planes = GetDeviceCaps(DC, PLANES);
+  int BitsPixel = GetDeviceCaps(DC, BITSPIXEL);
+  Configuration->Usage->Set(L"ColorDepth", Planes * BitsPixel);
   Configuration->Usage->Set(L"MonitorCount", Screen->MonitorCount);
   Configuration->Usage->Set(L"NotUseThemes", !UseThemes());
   Configuration->Usage->Set(L"ThemeDefaultFontSize", Application->DefaultFont->Size);

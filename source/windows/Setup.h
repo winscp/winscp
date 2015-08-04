@@ -20,5 +20,6 @@ UnicodeString __fastcall CampaignUrl(UnicodeString URL);
 void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceNames);
 bool __fastcall AnyOtherInstanceOfSelf();
 bool __fastcall IsInstalled();
+UnicodeString __fastcall ProgramUrl(UnicodeString URL);
 //---------------------------------------------------------------------------
 #endif

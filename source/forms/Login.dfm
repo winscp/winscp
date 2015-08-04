@@ -299,7 +299,7 @@ object LoginDialog: TLoginDialog
         object SaveButton: TButton
           Left = 12
           Top = 193
-          Width = 96
+          Width = 98
           Height = 25
           Action = SaveSessionAction
           Anchors = [akLeft, akBottom]

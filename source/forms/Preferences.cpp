@@ -2172,7 +2172,7 @@ void __fastcall TPreferencesDialog::NavigationTreeChanging(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::LanguagesGetMoreButtonClick(TObject * /*Sender*/)
 {
-  OpenBrowser(LoadStr(LOCALES_URL));
+  OpenBrowser(ProgramUrl(LoadStr(LOCALES_URL)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CommanderClick(TObject * /*Sender*/)

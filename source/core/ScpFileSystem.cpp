@@ -1102,7 +1102,7 @@ TRemoteFile * __fastcall TSCPFileSystem::CreateRemoteFile(
   {
     File->Terminal = FTerminal;
     File->ListingStr = ListingStr;
-    File->ShiftTime(FTerminal->SessionData->TimeDifference);
+    File->ShiftTimeInSeconds(TimeToSeconds(FTerminal->SessionData->TimeDifference));
     File->Complete();
   }
   catch(...)
