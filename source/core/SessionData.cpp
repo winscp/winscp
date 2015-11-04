@@ -211,7 +211,7 @@ void __fastcall TSessionData::Default()
   FtpAccount = L"";
   FtpPingInterval = 30;
   FtpPingType = ptDummyCommand;
-  FtpTransferActiveImmediately = false;
+  FtpTransferActiveImmediately = asAuto;
   Ftps = ftpsNone;
   MinTlsVersion = tls10;
   MaxTlsVersion = tls12;
@@ -657,7 +657,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   FtpAccount = Storage->ReadString(L"FtpAccount", FtpAccount);
   FtpPingInterval = Storage->ReadInteger(L"FtpPingInterval", FtpPingInterval);
   FtpPingType = static_cast<TPingType>(Storage->ReadInteger(L"FtpPingType", FtpPingType));
-  FtpTransferActiveImmediately = Storage->ReadBool(L"FtpTransferActiveImmediately", FtpTransferActiveImmediately);
+  FtpTransferActiveImmediately = static_cast<TAutoSwitch>(Storage->ReadInteger(L"FtpTransferActiveImmediately2", FtpTransferActiveImmediately));
   Ftps = static_cast<TFtps>(Storage->ReadInteger(L"Ftps", Ftps));
   FtpListAll = TAutoSwitch(Storage->ReadInteger(L"FtpListAll", FtpListAll));
   FtpHost = TAutoSwitch(Storage->ReadInteger(L"FtpHost", FtpHost));
@@ -920,7 +920,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(String, FtpAccount);
       WRITE_DATA(Integer, FtpPingInterval);
       WRITE_DATA(Integer, FtpPingType);
-      WRITE_DATA(Bool, FtpTransferActiveImmediately);
+      WRITE_DATA_EX(Integer, L"FtpTransferActiveImmediately2", FtpTransferActiveImmediately, );
       WRITE_DATA(Integer, Ftps);
       WRITE_DATA(Integer, FtpListAll);
       WRITE_DATA(Integer, FtpHost);
@@ -2650,7 +2650,7 @@ void __fastcall TSessionData::SetFtpPingType(TPingType value)
   SET_SESSION_PROPERTY(FtpPingType);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSessionData::SetFtpTransferActiveImmediately(bool value)
+void __fastcall TSessionData::SetFtpTransferActiveImmediately(TAutoSwitch value)
 {
   SET_SESSION_PROPERTY(FtpTransferActiveImmediately);
 }

@@ -83,6 +83,11 @@ namespace WinSCP
             _helper.InternalAdd(item);
         }
 
+        internal void InternalRemoveFirst()
+        {
+            _helper.InternalRemoveFirst();
+        }
+
         private readonly ReadOnlyInteropCollectionHelper<string> _helper = new ReadOnlyInteropCollectionHelper<string>();
     }
 }

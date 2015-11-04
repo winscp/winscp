@@ -791,8 +791,11 @@ bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
     TWinControl * Control = FindVCLWindow(Point);
     if (Control != NULL)
     {
-      TCustomForm * Form = ValidParentForm(Control);
-      if (Form->Active)
+      TCustomForm * Form = GetParentForm(Control);
+      // Only case we expect the parent form to be NULL is on the Find/Replace dialog,
+      // which is owned by VCL's internal TRedirectorWindow.
+      assert((Form != NULL) || (Control->ClassName() == L"TRedirectorWindow"));
+      if ((Form != NULL) && Form->Active)
       {
         // Send it only to windows we tested it with.
         // Though we should sooner or later remote this test and pass it to all our windows.

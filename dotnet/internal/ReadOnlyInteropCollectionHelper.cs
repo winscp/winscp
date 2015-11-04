@@ -11,6 +11,11 @@ namespace WinSCP
             _list.Add(item);
         }
 
+        public void InternalRemoveFirst()
+        {
+            _list.RemoveAt(0);
+        }
+
         public T this[int index]
         {
             get

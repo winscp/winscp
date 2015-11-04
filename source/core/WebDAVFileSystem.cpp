@@ -878,15 +878,13 @@ void TWebDAVFileSystem::NeonPropsResult(
   UTF8String UnescapedUri = PathUnescape(Uri->path).c_str();
   UnicodeString Path = StrFromNeon(UnescapedUri);
 
-  Path = UnixExcludeTrailingBackslash(Path);
-
   TReadFileData & Data = *static_cast<TReadFileData *>(UserData);
   if (Data.FileList != NULL)
   {
     UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
     if (UnixSamePath(Path, FileListPath))
     {
-      Path = UnixIncludeTrailingBackslash(Path) + L"..";
+      Path = UnixIncludeTrailingBackslash(UnixIncludeTrailingBackslash(Path) + L"..");
     }
     std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
     File->Terminal = Data.FileSystem->FTerminal;
@@ -910,7 +908,10 @@ const char * __fastcall TWebDAVFileSystem::GetProp(const ne_prop_result_set * Re
 void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
   const UnicodeString & Path, const ne_prop_result_set * Results)
 {
-  File->FullFileName = Path;
+  File->FullFileName = UnixExcludeTrailingBackslash(Path);
+  // Some servers do not use DAV:collection tag, but indicate the folder by trailing slash only.
+  // It seems that all servers actually use the trailing slash, including IIS, mod_Dav, IT Hit, OpenDrive, etc.
+  bool Collection = (File->FullFileName != Path);
   File->FileName = UnixExtractFileName(File->FullFileName);
   const char * ContentLength = GetProp(Results, PROP_CONTENT_LENGTH);
   // some servers, for example iFiles, do not provide "getcontentlength" for folders
@@ -945,18 +946,25 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
       }
     }
   }
-  bool Collection = false;
-  const char * ResourceType = GetProp(Results, PROP_RESOURCE_TYPE);
-  if (ResourceType != NULL)
+
+  // optimization
+  if (!Collection)
   {
-    // property has XML value
-    UnicodeString AResourceType = ResourceType;
-    // this is very poor parsing
-    if (ContainsText(ResourceType, L"<DAV:collection"))
+    // This is possibly redundant code as all servers we know (see a comment above)
+    // indicate the folder by trailing slash too
+    const char * ResourceType = GetProp(Results, PROP_RESOURCE_TYPE);
+    if (ResourceType != NULL)
     {
-      Collection = true;
+      // property has XML value
+      UnicodeString AResourceType = ResourceType;
+      // this is very poor parsing
+      if (ContainsText(ResourceType, L"<DAV:collection"))
+      {
+        Collection = true;
+      }
     }
   }
+
   File->Type = Collection ? FILETYPE_DIRECTORY : FILETYPE_DEFAULT;
   // this is MS extension (draft-hopmann-collection-props-00)
   const char * IsHidden = GetProp(Results, PROP_HIDDEN);

@@ -2353,6 +2353,10 @@ void __fastcall TSecureShell::CollectUsage()
   {
     Configuration->Usage->Inc(L"OpenedSessionsSSHSyncplify");
   }
+  else if (ContainsText(FSessionInfo.SshImplementation, L"zFTPServer"))
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsSSHzFTP");
+  }
   else
   {
     Configuration->Usage->Inc(L"OpenedSessionsSSHOther");

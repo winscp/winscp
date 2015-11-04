@@ -528,18 +528,21 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
 {
   if (OnDDFileOperation)
   {
-    assert(DragDropFilesEx->FileList->Count > 0);
-    assert(Node != NULL);
+    // see a comment in TUnixDirView::PerformItemDragDropOperation
+    if (DragDropFilesEx->FileList->Count > 0)
+    {
+      assert(Node != NULL);
 
-    UnicodeString SourceDirectory;
-    UnicodeString TargetDirectory;
+      UnicodeString SourceDirectory;
+      UnicodeString TargetDirectory;
 
-    SourceDirectory = ExtractFilePath(DragDropFilesEx->FileList->Items[0]->Name);
-    TargetDirectory = NodeData(Node)->Directory;
+      SourceDirectory = ExtractFilePath(DragDropFilesEx->FileList->Items[0]->Name);
+      TargetDirectory = NodeData(Node)->Directory;
 
-    bool DoFileOperation = true;
-    OnDDFileOperation(this, Effect, SourceDirectory, TargetDirectory,
-      DoFileOperation);
+      bool DoFileOperation = true;
+      OnDDFileOperation(this, Effect, SourceDirectory, TargetDirectory,
+        DoFileOperation);
+    }
   }
 }
 //---------------------------------------------------------------------------

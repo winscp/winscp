@@ -1239,6 +1239,10 @@ namespace WinSCP
         {
             Logger.WriteLine("Scheduling output: [{0}]", e.Data);
             Output.InternalAdd(e.Data);
+            if (Output.Count > 1000)
+            {
+                Output.InternalRemoveFirst();
+            }
             GotOutput();
             ScheduleEvent(() => RaiseOutputDataReceived(e.Data));
         }

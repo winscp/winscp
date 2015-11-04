@@ -382,6 +382,8 @@ void __fastcall TFTPFileSystem::Open()
     }
   }
 
+  FTransferActiveImmediately = (Data->FtpTransferActiveImmediately == asOn);
+
   UnicodeString HostName = Data->HostNameExpanded;
   UnicodeString UserName = Data->UserNameExpanded;
   UnicodeString Password = Data->Password;
@@ -742,6 +744,15 @@ void __fastcall TFTPFileSystem::CollectUsage()
   else if (ContainsText(FWelcomeMessage, L"Syncplify"))
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPSyncplify");
+  }
+  // 220-Idea FTP Server v0.80 (xxx.home.pl) [xxx.xxx.xxx.xxx]
+  // 220 Ready
+  // ...
+  // SYST
+  // UNIX Type: L8
+  else if (ContainsText(FWelcomeMessage, L"Idea FTP Server"))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPIdea");
   }
   else
   {
@@ -2431,7 +2442,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
         TDateTime UtcModification = UtcFile->Modification;
         delete UtcFile;
 
-        FTimeDifference = SecondsBetween(UtcModification, File->Modification);
+        FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
 
         UnicodeString LogMessage;
         if (FTimeDifference == 0)
@@ -2563,9 +2574,8 @@ void __fastcall TFTPFileSystem::DoReadFile(const UnicodeString & AFileName,
     if (File != NULL)
     {
       AFile = File->Duplicate();
+      ApplyTimeDifference(AFile);
     }
-
-    ApplyTimeDifference(AFile);
 
     FLastDataSent = Now();
   }
@@ -2597,41 +2607,50 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
   }
   else
   {
-    // FZAPI does not have efficient way to read properties of one file.
-    // In case we need properties of set of files from the same directory,
-    // cache the file list for future
-    if ((FFileListCache != NULL) &&
-        UnixSamePath(Path, FFileListCache->Directory) &&
-        (UnixIsAbsolutePath(FFileListCache->Directory) ||
-        (FFileListCachePath == CurrentDirectory)))
+    if (IsUnixRootPath(FileName))
     {
-      AFile = FFileListCache->FindFile(NameOnly);
+      AFile = new TRemoteDirectoryFile();
+      AFile->FullFileName = FileName;
+      AFile->FileName = L"";
     }
-    // if cache is invalid or file is not in cache, (re)read the directory
-    if (AFile == NULL)
+    else
     {
-      TRemoteFileList * FileListCache = new TRemoteFileList();
-      FileListCache->Directory = Path;
-      try
+      // FZAPI does not have efficient way to read properties of one file.
+      // In case we need properties of set of files from the same directory,
+      // cache the file list for future
+      if ((FFileListCache != NULL) &&
+          UnixSamePath(Path, FFileListCache->Directory) &&
+          (UnixIsAbsolutePath(FFileListCache->Directory) ||
+          (FFileListCachePath == CurrentDirectory)))
       {
-        ReadDirectory(FileListCache);
+        AFile = FFileListCache->FindFile(NameOnly);
       }
-      catch(...)
+      // if cache is invalid or file is not in cache, (re)read the directory
+      if (AFile == NULL)
       {
-        delete FileListCache;
-        throw;
-      }
-      // set only after we successfully read the directory,
-      // otherwise, when we reconnect from ReadDirectory,
-      // the FFileListCache is reset from ResetCache.
-      delete FFileListCache;
-      FFileListCache = FileListCache;
-      FFileListCachePath = GetCurrentDirectory();
+        TRemoteFileList * FileListCache = new TRemoteFileList();
+        FileListCache->Directory = Path;
+        try
+        {
+          ReadDirectory(FileListCache);
+        }
+        catch(...)
+        {
+          delete FileListCache;
+          throw;
+        }
+        // set only after we successfully read the directory,
+        // otherwise, when we reconnect from ReadDirectory,
+        // the FFileListCache is reset from ResetCache.
+        delete FFileListCache;
+        FFileListCache = FileListCache;
+        FFileListCachePath = GetCurrentDirectory();
 
-      AFile = FFileListCache->FindFile(NameOnly);
+        AFile = FFileListCache->FindFile(NameOnly);
+      }
+
+      Own = false;
     }
-
-    Own = false;
   }
 
   if (AFile == NULL)
@@ -2982,7 +3001,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELY:
-      Result = Data->FtpTransferActiveImmediately;
+      Result = FTransferActiveImmediately;
       break;
 
     case OPTION_MPEXT_REMOVE_BOM:
@@ -3455,6 +3474,10 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
   //  SIZE
   // 211 End
 
+  // This format is according to RFC 2228.
+  // Is used by ProFTPD when  MultilineRFC2228 is enabled
+  // http://www.proftpd.org/docs/directives/linked/config_ref_MultilineRFC2228.html
+
   // 211-Features:
   // 211-MDTM
   // 211-REST STREAM
@@ -3470,6 +3493,8 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
   //     SIZE
   //     MDTM
   // 211 END
+
+  // Partially duplicated in CFtpControlSocket::OnReceive
 
   bool HasCodePrefix =
     (Response.Length() >= 3) &&
@@ -3530,6 +3555,13 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         if (FTerminal->Configuration->ShowFtpWelcomeMessage)
         {
           FTerminal->DisplayBanner(FWelcomeMessage);
+        }
+        // Idea FTP Server v0.80
+        if ((FTerminal->SessionData->FtpTransferActiveImmediately == asAuto) &&
+            FWelcomeMessage.Pos(L"Idea FTP Server") > 0)
+        {
+          FTerminal->LogEvent(L"The server requires TLS/SSL handshake on transfer connection before responding 1yz to STOR/APPE");
+          FTransferActiveImmediately = true;
         }
       }
     }

@@ -181,7 +181,7 @@ private:
   UnicodeString FFtpAccount;
   int FFtpPingInterval;
   TPingType FFtpPingType;
-  bool FFtpTransferActiveImmediately;
+  TAutoSwitch FFtpTransferActiveImmediately;
   TFtps FFtps;
   TTlsVersion FMinTlsVersion;
   TTlsVersion FMaxTlsVersion;
@@ -332,7 +332,7 @@ private:
   void __fastcall SetFtpAccount(UnicodeString value);
   void __fastcall SetFtpPingInterval(int value);
   void __fastcall SetFtpPingType(TPingType value);
-  void __fastcall SetFtpTransferActiveImmediately(bool value);
+  void __fastcall SetFtpTransferActiveImmediately(TAutoSwitch value);
   void __fastcall SetFtps(TFtps value);
   void __fastcall SetMinTlsVersion(TTlsVersion value);
   void __fastcall SetMaxTlsVersion(TTlsVersion value);
@@ -522,7 +522,7 @@ public:
   __property int FtpPingInterval  = { read=FFtpPingInterval, write=SetFtpPingInterval };
   __property TDateTime FtpPingIntervalDT  = { read=GetFtpPingIntervalDT };
   __property TPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
-  __property bool FtpTransferActiveImmediately = { read = FFtpTransferActiveImmediately, write = SetFtpTransferActiveImmediately };
+  __property TAutoSwitch FtpTransferActiveImmediately = { read = FFtpTransferActiveImmediately, write = SetFtpTransferActiveImmediately };
   __property TFtps Ftps = { read = FFtps, write = SetFtps };
   __property TTlsVersion MinTlsVersion = { read = FMinTlsVersion, write = SetMinTlsVersion };
   __property TTlsVersion MaxTlsVersion = { read = FMaxTlsVersion, write = SetMaxTlsVersion };

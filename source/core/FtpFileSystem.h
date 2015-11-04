@@ -268,6 +268,7 @@ private:
   std::unique_ptr<TStrings> FHashAlgs;
   bool FSupportsAnyChecksumFeature;
   UnicodeString FLastCommandSent;
+  bool FTransferActiveImmediately;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------

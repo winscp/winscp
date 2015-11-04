@@ -1226,14 +1226,20 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
 				{
 					ShowStatus(A2CT(m_RecvBuffer.back()), FZ_LOG_REPLY);
 				}
-				//Check for multi-line responses
+				// Check for multi-line responses
+				// Partially duplicated in TFTPFileSystem::HandleReplyStatus
 				if (m_RecvBuffer.back().GetLength() > 3)
 				{
 					if (m_MultiLine != "")
 					{
 						if (m_RecvBuffer.back().Left(4) != m_MultiLine)
 						{
-							DiscardLine(m_RecvBuffer.back());
+							CStringA line = m_RecvBuffer.back();
+							if (line.Left(4) == m_MultiLine.Left(3) + '-')
+							{
+								line = line.Mid(4, line.GetLength() - 4);
+							}
+							DiscardLine(line);
  							m_RecvBuffer.pop_back();
 						}
 						else // end of multi-line found
@@ -1699,7 +1705,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 		pData->pDirectoryListing = new t_directory;
 		if (COptions::GetOptionVal(OPTION_DEBUGSHOWLISTING))
 			m_pTransferSocket->m_pListResult->SendToMessageLog(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID);
-		pData->pDirectoryListing->direntry = m_pTransferSocket->m_pListResult->getList(num, pData->ListStartTime);
+		pData->pDirectoryListing->direntry = m_pTransferSocket->m_pListResult->getList(num, pData->ListStartTime, false);
 		pData->pDirectoryListing->num = num;
 		if (m_pTransferSocket->m_pListResult->m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType & FZ_SERVERTYPE_FTP)
 			m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
@@ -2541,7 +2547,7 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
 			pListResult->AddData(buffer, size);
 			if (COptions::GetOptionVal(OPTION_DEBUGSHOWLISTING))
 				pListResult->SendToMessageLog(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID);
-			pData->direntry = pListResult->getList(num, CTime::GetCurrentTime());
+			pData->direntry = pListResult->getList(num, CTime::GetCurrentTime(), true);
 			if (pListResult->m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType & FZ_SERVERTYPE_FTP)
 				m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
 			delete pListResult;
@@ -2893,7 +2899,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 			pData->pDirectoryListing=new t_directory;
 			if (COptions::GetOptionVal(OPTION_DEBUGSHOWLISTING))
 				m_pTransferSocket->m_pListResult->SendToMessageLog(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID);
-			pData->pDirectoryListing->direntry=m_pTransferSocket->m_pListResult->getList(num, pData->ListStartTime);
+			pData->pDirectoryListing->direntry=m_pTransferSocket->m_pListResult->getList(num, pData->ListStartTime, false);
 			pData->pDirectoryListing->num=num;
 			if (m_pTransferSocket->m_pListResult->m_server.nServerType&FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType&FZ_SERVERTYPE_FTP)
 				m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;

@@ -429,25 +429,29 @@ void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item,
 #ifndef DESIGN_ONLY
   if (OnDDFileOperation)
   {
-    assert(DragDropFilesEx->FileList->Count > 0);
-
-    UnicodeString SourceDirectory;
-    UnicodeString TargetDirectory;
-
-    SourceDirectory = ExtractFilePath(DragDropFilesEx->FileList->Items[0]->Name);
-    if (Item)
+    // Could be empty if the source application does not provide any files;
+    // or if the IDataObject fails GetData, like Visual Studio Code 0.8.0:
+    // https://code.visualstudio.com/issues/detail/19410
+    if (DragDropFilesEx->FileList->Count > 0)
     {
-      assert(ITEMFILE->IsDirectory && (Terminal->Files->IndexOf(ITEMFILE) >= 0));
-      TargetDirectory = ITEMFILE->FullFileName;
-    }
-    else
-    {
-      TargetDirectory = Path;
-    }
+      UnicodeString SourceDirectory;
+      UnicodeString TargetDirectory;
 
-    bool DoFileOperation = true;
-    OnDDFileOperation(this, Effect, SourceDirectory, TargetDirectory,
-      DoFileOperation);
+      SourceDirectory = ExtractFilePath(DragDropFilesEx->FileList->Items[0]->Name);
+      if (Item)
+      {
+        assert(ITEMFILE->IsDirectory && (Terminal->Files->IndexOf(ITEMFILE) >= 0));
+        TargetDirectory = ITEMFILE->FullFileName;
+      }
+      else
+      {
+        TargetDirectory = Path;
+      }
+
+      bool DoFileOperation = true;
+      OnDDFileOperation(this, Effect, SourceDirectory, TargetDirectory,
+        DoFileOperation);
+    }
   }
 #else
   USEDPARAM(Item);

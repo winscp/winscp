@@ -61,17 +61,17 @@ public:
 	void AddData(char *data,int size);
 	CFtpListResult(t_server server, bool *bUTF8 = 0);
 	virtual ~CFtpListResult();
-	t_directory::t_direntry *getList(int &num, CTime EntryTime);
+	t_directory::t_direntry *getList(int &num, CTime EntryTime, bool mlst);
 
 private:
 	typedef std::list<t_directory::t_direntry> tEntryList;
 	tEntryList m_EntryList;
 	
-	BOOL parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType);
+	BOOL parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType, bool mlst);
 
 	BOOL parseAsVMS(const char *line, const int linelen, t_directory::t_direntry &direntry);
 	BOOL parseAsEPLF(const char *line, const int linelen, t_directory::t_direntry &direntry);
-	BOOL parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry);
+	BOOL parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry, bool mlst);
 	BOOL parseAsUnix(const char *line, const int linelen, t_directory::t_direntry &direntry);
 	BOOL parseAsDos(const char *line, const int linelen, t_directory::t_direntry &direntry);
 	BOOL parseAsOther(const char *line, const int linelen, t_directory::t_direntry &direntry);

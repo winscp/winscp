@@ -422,7 +422,7 @@ CFtpListResult::~CFtpListResult()
 		delete [] m_curline;
 }
 
-t_directory::t_direntry *CFtpListResult::getList(int &num, CTime EntryTime)
+t_directory::t_direntry *CFtpListResult::getList(int &num, CTime EntryTime, bool mlst)
 {
 	#ifdef _DEBUG
 	USES_CONVERSION;
@@ -435,7 +435,7 @@ t_directory::t_direntry *CFtpListResult::getList(int &num, CTime EntryTime)
 		char *tmpline = new char[strlen(line) + 1];
 		strcpy(tmpline, line);
 		t_directory::t_direntry direntry;
-		if (parseLine(tmpline, strlen(tmpline), direntry, tmp))
+		if (parseLine(tmpline, strlen(tmpline), direntry, tmp, mlst))
 		{
 			delete [] tmpline;
 			if (tmp)
@@ -507,14 +507,14 @@ t_directory::t_direntry *CFtpListResult::getList(int &num, CTime EntryTime)
 	return res;
 }
 
-BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType)
+BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType, bool mlst)
 {
 	USES_CONVERSION;
 
 	nFTPServerType = 0;
 	direntry.ownergroup = _T("");
 
-	if (parseAsMlsd(lineToParse, linelen, direntry))
+	if (parseAsMlsd(lineToParse, linelen, direntry, mlst))
 		return TRUE;
 
 	if (parseAsUnix(lineToParse, linelen, direntry))
@@ -556,6 +556,7 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
 	return FALSE;
 }
 
+// Used only with LISTDEBUG
 void CFtpListResult::AddData(char *data, int size)
 {
 	#ifdef _DEBUG
@@ -605,7 +606,7 @@ void CFtpListResult::AddData(char *data, int size)
 		int tmp;
 		char *tmpline = new char[strlen(line) + 1];
 		strcpy(tmpline, line);
-		if (parseLine(tmpline, strlen(tmpline), direntry, tmp))
+		if (parseLine(tmpline, strlen(tmpline), direntry, tmp, false))
 		{
 			delete [] tmpline;
 			if (tmp)
@@ -1288,7 +1289,7 @@ BOOL CFtpListResult::parseAsEPLF(const char *line, const int linelen, t_director
 	return FALSE;
 }
 
-BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry, bool mlst)
 {
 	#ifdef _DEBUG
 	USES_CONVERSION;
@@ -1342,7 +1343,9 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 		if (factname == _T("type"))
 		{
 			if (!value.CompareNoCase(_T("dir")))
+			{
 				direntry.dir = TRUE;
+			}
 			// This is syntax used by proftpd by default
 			// http://www.proftpd.org/docs/modules/mod_facts.html
 			// They claim it's the correct one.
@@ -1367,9 +1370,23 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
 				if ((value.GetLength() > 14) && (value[13] == ':'))
 					direntry.linkTarget = value.Mid(14);
 			}
-			else if (!value.CompareNoCase(_T("cdir")) ||
-					 !value.CompareNoCase(_T("pdir")))
+			else if (!value.CompareNoCase(L"cdir"))
+			{
+				// ProFTPD up to 1.3.6rc1 and 1.3.5a incorrectly uses "cdir" for the current working directory.
+				// So at least in MLST, where this would be the only entry, we treat it like "dir".
+				if (mlst)
+				{
+					direntry.dir = TRUE;
+				}
+				else
+				{
+					return FALSE;
+				}
+			}
+			else if (!value.CompareNoCase(L"pdir"))
+			{
 				return FALSE;
+			}
 		}
 		else if (factname == _T("size"))
 		{

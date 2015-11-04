@@ -569,6 +569,12 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
       for (int i = Start; i <= End; i++)
       {
         UnicodeString FileName = Parameters->Param[i];
+
+        if (SimpleUnixExcludeTrailingBackslash(FileName) != FileName)
+        {
+          PrintLine(LoadStr(SCRIPT_AMBIGUOUS_SLASH_IN_PATH));
+        }
+
         if (FLAGSET(ListType, fltDirectories))
         {
           TRemoteFile * File = new TRemoteFile();
@@ -686,6 +692,12 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
       // (it actually won't make a difference functionally as we fall back to adding
       // the path as is in "else" branch, but the comment "let it fail later" won't stand)
       UnicodeString FileName = ExcludeTrailingBackslash(Parameters->Param[i]);
+
+      if (FileName != Parameters->Param[i])
+      {
+        PrintLine(LoadStr(SCRIPT_AMBIGUOUS_SLASH_IN_PATH));
+      }
+
       if (FLAGSET(ListType, fltMask))
       {
         TSearchRecChecked SearchRec;

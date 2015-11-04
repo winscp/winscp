@@ -210,6 +210,7 @@ BEGIN
   UNKNOWN_CHECKSUM, "Checksum algorithm '%s' is not supported."
   CIPHER_NOT_VERIFIED, "Cipher %s was not verified!"
   KEX_NOT_VERIFIED, "Key-exchange algorithm %s was not verified!"
+  SCRIPT_AMBIGUOUS_SLASH_IN_PATH, "Selecting files using a path ending with slash is ambiguous. Remove the slash to select the folder. Append * mask to select all files in the folder."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"

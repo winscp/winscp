@@ -474,6 +474,9 @@ bool __fastcall TCustomScpExplorerForm::CommandLineFromAnotherInstance(
       // so it's likely that our window is not visible,
       // and user won't see what is going on
       Application->BringToFront();
+      // reload sessions as we may be asked to open a session
+      // just stored by another instance
+      StoredSessions->Load();
       UnicodeString SessionName = Params.Param[1];
       std::unique_ptr<TObjectList> DataList(new TObjectList());
       UnicodeString DownloadFile; // unused
@@ -5735,7 +5738,7 @@ void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
   // handle the abrupt termination caused by subsequent WM_ENDSESSION cleanly.
   // Hence the process termination might be safer :)
   if ((Message.LParam != ENDSESSION_CRITICAL) &&
-      (!FQueue->IsEmpty || (FProgressForm != NULL)))
+      (((FQueue != NULL) && !FQueue->IsEmpty) || (FProgressForm != NULL)))
   {
     Message.Result = FALSE;
   }
@@ -6763,39 +6766,42 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDragDropFileOperation(
       break;
   };
 
-  TStrings * FileList = new TStringList();
-  try
+  TDragDropFilesEx * DragDropFilesEx = DragDropFiles(Sender);
+  // see a comment in TUnixDirView::PerformItemDragDropOperation
+  if (DragDropFilesEx->FileList->Count > 0)
   {
-    TDragDropFilesEx * DragDropFilesEx = DragDropFiles(Sender);
-
-    for (int Index = 0; Index < DragDropFilesEx->FileList->Count; Index++)
+    TStrings * FileList = new TStringList();
+    try
     {
-      FileList->Add(DragDropFilesEx->FileList->Items[Index]->Name);
-    }
+      for (int Index = 0; Index < DragDropFilesEx->FileList->Count; Index++)
+      {
+        FileList->Add(DragDropFilesEx->FileList->Items[Index]->Name);
+      }
 
-    FDragDropOperation = true;
-    TTransferOperationParam Param;
-    Param.TargetDirectory = TargetPath;
-    // upload, no temp dirs
-    Param.Temp = false;
-    Param.DragDrop = true;
-    if (ExecuteFileOperation(Operation, osLocal, FileList,
-          (WinConfiguration->DDTransferConfirmation == asOff), &Param))
-    {
-      if (IsFileControl(DropSourceControl, osLocal))
+      FDragDropOperation = true;
+      TTransferOperationParam Param;
+      Param.TargetDirectory = TargetPath;
+      // upload, no temp dirs
+      Param.Temp = false;
+      Param.DragDrop = true;
+      if (ExecuteFileOperation(Operation, osLocal, FileList,
+            (WinConfiguration->DDTransferConfirmation == asOff), &Param))
       {
-        Configuration->Usage->Inc(L"UploadsDragDropInternal");
-      }
-      else
-      {
-        Configuration->Usage->Inc(L"UploadsDragDropExternal");
+        if (IsFileControl(DropSourceControl, osLocal))
+        {
+          Configuration->Usage->Inc(L"UploadsDragDropInternal");
+        }
+        else
+        {
+          Configuration->Usage->Inc(L"UploadsDragDropExternal");
+        }
       }
     }
-  }
-  __finally
-  {
-    FDragDropOperation = false;
-    delete FileList;
+    __finally
+    {
+      FDragDropOperation = false;
+      delete FileList;
+    }
   }
 }
 //---------------------------------------------------------------------------
