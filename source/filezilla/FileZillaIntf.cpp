@@ -100,9 +100,10 @@ bool __fastcall TFileZillaIntf::Cancel()
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::Connect(const wchar_t * Host, int Port, const wchar_t * User,
-  const wchar_t * Pass, const wchar_t * Account, bool FwByPass,
+  const wchar_t * Pass, const wchar_t * Account,
   const wchar_t * Path, int ServerType, int Pasv, int TimeZoneOffset, int UTF8,
-  int iForcePasvIp, int iUseMlsd)
+  int iForcePasvIp, int iUseMlsd,
+  X509 * Certificate, EVP_PKEY * PrivateKey)
 {
   ASSERT(FFileZillaApi != NULL);
   ASSERT((ServerType & FZ_SERVERTYPE_HIGHMASK) == FZ_SERVERTYPE_FTP);
@@ -114,7 +115,6 @@ bool __fastcall TFileZillaIntf::Connect(const wchar_t * Host, int Port, const wc
   Server.user = User;
   Server.pass = Pass;
   Server.account = Account;
-  Server.fwbypass = FwByPass;
   Server.path = Path;
   Server.nServerType = ServerType;
   Server.nPasv = Pasv;
@@ -122,6 +122,8 @@ bool __fastcall TFileZillaIntf::Connect(const wchar_t * Host, int Port, const wc
   Server.nUTF8 = UTF8;
   Server.iForcePasvIp = iForcePasvIp;
   Server.iUseMlsd = iUseMlsd;
+  Server.Certificate = Certificate;
+  Server.PrivateKey = PrivateKey;
 
   *FServer = Server;
 
@@ -222,14 +224,12 @@ bool __fastcall TFileZillaIntf::List(const wchar_t * APath)
   return Check(FFileZillaApi->List(Path), L"list");
 }
 //---------------------------------------------------------------------------
-#ifdef MPEXT
 bool __fastcall TFileZillaIntf::ListFile(const wchar_t * FileName, const wchar_t * APath)
 {
   ASSERT(FFileZillaApi != NULL);
   CServerPath Path(APath);
   return Check(FFileZillaApi->ListFile(FileName, Path), L"listfile");
 }
-#endif
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::FileTransfer(const wchar_t * LocalFile,
   const wchar_t * RemoteFile, const wchar_t * RemotePath, bool Get, __int64 Size,
@@ -472,14 +472,13 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
         t_ffam_transferstatus * Status = (t_ffam_transferstatus *)lParam;
         if (Status != NULL)
         {
-          Result = HandleTransferStatus(true, Status->transfersize, Status->bytes,
-            Status->percent, Status->timeelapsed, Status->timeleft,
-            Status->transferrate, Status->bFileTransfer);
+          Result = HandleTransferStatus(
+            true, Status->transfersize, Status->bytes, Status->bFileTransfer);
           delete Status;
         }
         else
         {
-          Result = HandleTransferStatus(false, -1, -1, -1, -1, -1, -1, false);
+          Result = HandleTransferStatus(false, -1, -1, false);
         }
       }
       break;
@@ -492,9 +491,6 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       Result = HandleCapabilities((TFTPServerCapabilities *)lParam);
       break;
 
-    case FZ_MSG_SOCKETSTATUS:
-    case FZ_MSG_SECURESERVER:
-    case FZ_MSG_QUITCOMPLETE:
     default:
       ASSERT(false);
       Result = false;
@@ -541,4 +537,3 @@ std::string __fastcall TFileZillaIntf::GetCipherName()
 {
   return FFileZillaApi->GetCipherName();
 }
-

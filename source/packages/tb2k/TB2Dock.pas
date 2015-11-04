@@ -585,15 +585,17 @@ type
 const
   DockedBorderSize = 2;
   DockedBorderSize2 = DockedBorderSize*2;
+
+var
   DragHandleSizes: array[Boolean, TTBDragHandleStyle] of Integer =
     ((9, 0, 6), (14, 14, 14));
   DragHandleXOffsets: array[Boolean, TTBDragHandleStyle] of Integer =
     ((2, 0, 1), (3, 0, 5));
+
+const
   HT_TB2k_Border = 2000;
   HT_TB2k_Close = 2001;
   HT_TB2k_Caption = 2002;
-
-  DefaultBarWidthHeight = 8;
 
   ForceDockAtTopRow = 0;
   ForceDockAtLeftPos = -8;
@@ -1023,7 +1025,9 @@ begin
       else
         J := FDockRow;
       if J > Result then
+      begin
         Result := J;
+      end;
     end;
 end;
 
@@ -5590,4 +5594,17 @@ begin
   end;
 end;
 
+var
+  B: Boolean;
+  Style: TTBDragHandleStyle;
+initialization
+  for B := False to True do
+  begin
+    for Style := Low(TTBDragHandleStyle) to High(TTBDragHandleStyle) do
+    begin
+      // DPI-scaling for a lack of better choice here
+      DragHandleSizes[B][Style] := MulDiv(DragHandleSizes[B][Style], Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+      DragHandleXOffsets[B][Style] := MulDiv(DragHandleXOffsets[B][Style], Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+    end;
+  end;
 end.

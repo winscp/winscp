@@ -56,13 +56,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 117
+          Height = 140
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Server environment'
           TabOrder = 0
           DesignSize = (
             393
-            117)
+            140)
           object EOLTypeLabel: TLabel
             Left = 12
             Top = 20
@@ -162,10 +162,19 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 4
             OnClick = DataChange
           end
+          object TrimVMSVersionsCheck: TCheckBox
+            Left = 12
+            Top = 113
+            Width = 369
+            Height = 17
+            Caption = '&Trim VMS version numbers'
+            TabOrder = 5
+            OnClick = DataChange
+          end
         end
         object DSTModeGroup: TGroupBox
           Left = 0
-          Top = 131
+          Top = 153
           Width = 393
           Height = 93
           Anchors = [akLeft, akTop, akRight]
@@ -1634,6 +1643,45 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Caption = '&Reuse TLS/SSL session ID for data connections'
             TabOrder = 2
             OnClick = DataChange
+          end
+        end
+        object TlsAuthenticationGroup: TGroupBox
+          Left = 0
+          Top = 113
+          Width = 393
+          Height = 72
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Authentication parameters'
+          TabOrder = 1
+          DesignSize = (
+            393
+            72)
+          object Label4: TLabel
+            Left = 12
+            Top = 20
+            Width = 99
+            Height = 13
+            Caption = '&Client certificate file:'
+            FocusControl = TlsCertificateFileEdit
+          end
+          object TlsCertificateFileEdit: TFilenameEdit
+            Left = 12
+            Top = 37
+            Width = 372
+            Height = 21
+            AcceptFiles = True
+            OnBeforeDialog = PathEditBeforeDialog
+            OnAfterDialog = TlsCertificateFileEditAfterDialog
+            Filter = 
+              'Certificates and private key files (*.pfx;*.p12;*.key;*.pem)|*.p' +
+              'fx;*.p12;*.key;*.pem|All Files (*.*)|*.*'
+            DialogOptions = [ofReadOnly, ofPathMustExist, ofFileMustExist]
+            DialogTitle = 'Select client certificate file'
+            ClickKey = 16397
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 0
+            Text = 'TlsCertificateFileEdit'
+            OnChange = DataChange
           end
         end
       end

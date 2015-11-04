@@ -9,6 +9,7 @@
 #include <TextsWin.h>
 #include <Common.h>
 #include <Math.hpp>
+#include <GUITools.h>
 
 #include "OpenDirectory.h"
 #include "WinConfiguration.h"
@@ -61,6 +62,7 @@ __fastcall TOpenDirectoryDialog::TOpenDirectoryDialog(TComponent * AOwner):
 
   FixComboBoxResizeBug(LocalDirectoryEdit);
   FixComboBoxResizeBug(RemoteDirectoryEdit);
+  LoadDialogImage(Image, L"Open folder");
 }
 //---------------------------------------------------------------------
 __fastcall TOpenDirectoryDialog::~TOpenDirectoryDialog()
@@ -165,6 +167,7 @@ void __fastcall TOpenDirectoryDialog::UpdateControls(bool ListBoxUpdate)
   EnableControl(OKBtn, !Directory.IsEmpty());
   LocalDirectoryBrowseButton->Visible = (OperationSide == osLocal);
   SwitchButton->Visible = AllowSwitch;
+  SessionBookmarksSheet->TabVisible = (Terminal != NULL);
 
   UpdateBookmarkControls(AddSessionBookmarkButton, RemoveSessionBookmarkButton,
     NULL, UpSessionBookmarkButton, DownSessionBookmarkButton,
@@ -240,22 +243,29 @@ bool __fastcall TOpenDirectoryDialog::Execute()
     // cache session key, in case terminal is closed while the window is open
     SessionKey = Terminal->SessionData->SessionKey;
     LoadBookmarks(SessionBookmarksList, FSessionBookmarkList, WinConfiguration->Bookmarks[SessionKey]);
-    LoadBookmarks(SharedBookmarksList, FSharedBookmarkList, WinConfiguration->SharedBookmarks);
-    PageControl->ActivePage =
-      WinConfiguration->UseSharedBookmarks ? SharedBookmarksSheet : SessionBookmarksSheet;
-    DirectoryEditChange(NULL);
-    if (Mode == odAddBookmark)
-    {
-      AddAsBookmark(PageControl->ActivePage);
-    }
   }
+
+  LoadBookmarks(SharedBookmarksList, FSharedBookmarkList, WinConfiguration->SharedBookmarks);
+  PageControl->ActivePage =
+    (Terminal == NULL) || WinConfiguration->UseSharedBookmarks ? SharedBookmarksSheet : SessionBookmarksSheet;
+  DirectoryEditChange(NULL);
+  if (Mode == odAddBookmark)
+  {
+    AddAsBookmark(PageControl->ActivePage);
+  }
+
   FBookmarkSelected = false;
   Result = (ShowModal() == DefaultResult(this));
   if (Terminal)
   {
-    WinConfiguration->Bookmarks[SessionKey] = FSessionBookmarkList;
     WinConfiguration->SharedBookmarks = FSharedBookmarkList;
-    WinConfiguration->UseSharedBookmarks = (PageControl->ActivePage == SharedBookmarksSheet);
+    if (Terminal != NULL)
+    {
+      WinConfiguration->Bookmarks[SessionKey] = FSessionBookmarkList;
+      // Do not remember that shared page was selected,
+      // if it was selected implicitly because there's no site page.
+      WinConfiguration->UseSharedBookmarks = (PageControl->ActivePage == SharedBookmarksSheet);
+    }
   }
   if (Result)
   {
@@ -275,7 +285,7 @@ template<class T>
 typename T * GetBookmarkObject(TObject * Sender, T * SessionObject, T * SharedObject)
 {
   TControl * Control = dynamic_cast<TControl *>(Sender);
-  assert(Control != NULL);
+  DebugAssert(Control != NULL);
   switch (abs(Control->Tag))
   {
     case 1: return SessionObject;
@@ -357,7 +367,7 @@ void __fastcall TOpenDirectoryDialog::RemoveBookmark(TObject * Sender)
 
   int PrevItemIndex = BookmarksList->ItemIndex;
   TBookmark * Bookmark = GetBookmark(BookmarksList, PrevItemIndex);
-  assert(Bookmark != NULL);
+  DebugAssert(Bookmark != NULL);
   BookmarkList->Delete(Bookmark);
   BookmarksList->Items->Delete(PrevItemIndex);
   if (PrevItemIndex < BookmarksList->Items->Count)
@@ -578,7 +588,7 @@ void __fastcall TOpenDirectoryDialog::ShortCutBookmarkButtonClick(
 
   int Index = BookmarksList->ItemIndex;
   TBookmark * Bookmark = GetBookmark(BookmarksList, Index);
-  assert(Bookmark != NULL);
+  DebugAssert(Bookmark != NULL);
 
   TShortCuts ShortCuts;
   WinConfiguration->CustomCommandList->ShortCuts(ShortCuts);

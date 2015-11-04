@@ -97,11 +97,19 @@ void __fastcall TWebHelpSystem::ShowTableOfContents()
 //---------------------------------------------------------------------------
 void __fastcall TWebHelpSystem::ShowHelp(const UnicodeString AHelpString)
 {
-  // see also CampaignUrl
-  UnicodeString HelpString = AHelpString;
-  const wchar_t FragmentSeparator = L'#';
-  UnicodeString HelpPath = CutToChar(HelpString, FragmentSeparator, false);
-  UnicodeString HelpUrl = FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpPath, FVersion, FLanguage));
-  AddToList(HelpUrl, HelpString, FragmentSeparator);
+  UnicodeString HelpUrl;
+  if (IsHttpUrl(AHelpString))
+  {
+    HelpUrl = AHelpString;
+  }
+  else
+  {
+    // see also AppendUrlParams
+    UnicodeString HelpString = AHelpString;
+    const wchar_t FragmentSeparator = L'#';
+    UnicodeString HelpPath = CutToChar(HelpString, FragmentSeparator, false);
+    HelpUrl = FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpPath, FVersion, FLanguage));
+    AddToList(HelpUrl, HelpString, FragmentSeparator);
+  }
   OpenBrowser(HelpUrl);
 }

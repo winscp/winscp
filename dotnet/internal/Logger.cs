@@ -86,13 +86,13 @@ namespace WinSCP
             _performanceCounters.Add(counter);
         }
 
-        public void WriteLine(string message)
+        public void WriteLine(string line)
         {
             lock (_logLock)
             {
                 if (Logging)
                 {
-                    DoWriteLine(message);
+                    DoWriteLine(line);
                 }
             }
         }
@@ -105,6 +105,14 @@ namespace WinSCP
                 {
                     DoWriteLine(string.Format(CultureInfo.CurrentCulture, format, args));
                 }
+            }
+        }
+
+        public void WriteLineLevel(int level, string line)
+        {
+            if (LogLevel >= level)
+            {
+                WriteLine(line);
             }
         }
 
@@ -157,7 +165,7 @@ namespace WinSCP
 
         public void WriteCounters()
         {
-            if (Logging && (_logLevel >= 1))
+            if (Logging && (LogLevel >= 1))
             {
                 try
                 {
@@ -179,7 +187,7 @@ namespace WinSCP
 
         public void WriteProcesses()
         {
-            if (Logging && (_logLevel >= 1))
+            if (Logging && (LogLevel >= 1))
             {
                 try
                 {

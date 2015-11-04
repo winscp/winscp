@@ -18,4 +18,9 @@ rem ==== neon ====
 echo Cleaning up neon ...
 rmdir /s /q neon\tmp
 
+rem ==== PuTTYVS ====
+
+echo Cleaning up PuTTYVS ...
+rmdir /s /q puttyvs\Release
+
 echo All done

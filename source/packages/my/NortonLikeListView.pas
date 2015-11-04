@@ -40,6 +40,7 @@ type
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
+    procedure WMSysCommand(var Message: TWMSysCommand); message WM_SYSCOMMAND;
     procedure WMChar(var Message: TWMChar); message WM_CHAR;
     procedure WMNotify(var Message: TWMNotify); message WM_NOTIFY;
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
@@ -70,7 +71,7 @@ type
     function ExCanChange(Item: TListItem; Change: Integer;
       NewState, OldState: Word): Boolean; dynamic;
     procedure InsertItem(Item: TListItem); override;
-    function NewColProperties: TCustomListViewColProperties; virtual;
+    function NewColProperties: TCustomListViewColProperties; virtual; abstract;
     procedure FocusSomething; virtual;
     function EnableDragOnClick: Boolean; virtual;
     procedure FocusItem(Item: TListItem);
@@ -101,97 +102,10 @@ type
     property LastSelectMethod: TSelectMethod read FLastSelectMethod;
   end;
 
-type
-  TNortonLikeListView = class(TCustomNortonLikeListView)
-  published
-    { Published declarations }
-    property Align;
-    property AllocBy;
-    property Anchors;
-    property BiDiMode;
-    property BorderStyle;
-    property BorderWidth;
-    property Checkboxes;
-    property Color;
-    property ColumnClick;
-    property Constraints;
-    property Ctl3D;
-    property Enabled;
-    property Font;
-    property FlatScrollBars;
-    property FullDrag;
-    property GridLines;
-    property HideSelection;
-    property HotTrack;
-    property HotTrackStyles;
-    property IconOptions;
-    property Items;
-    property LargeImages;
-    property ReadOnly;
-    property RowSelect;
-    property ParentBiDiMode;
-    property ParentColor;
-    property ParentFont;
-    property ParentShowHint;
-    property PopupMenu;
-    property ShowColumnHeaders;
-    property ShowHint;
-    property SmallImages;
-    property StateImages;
-    property TabOrder;
-    property TabStop;
-    property ViewStyle;
-    property Visible;
-    property OnChange;
-    property OnChanging;
-    property OnClick;
-    property OnColumnClick;
-    property OnCustomDraw;
-    property OwnerDraw;
-    property OnCustomDrawItem;
-    property OnCustomDrawSubItem;
-    property OwnerData;
-    property OnGetImageIndex;
-    property OnCompare;
-    property OnData;
-    property OnDataFind;
-    property OnDataHint;
-    property OnDataStateChange;
-    property OnDblClick;
-    property OnDeletion;
-    property OnDrawItem;
-    property OnEdited;
-    property OnEditing;
-    property OnEndDock;
-    property OnEnter;
-    property OnExit;
-    property OnInsert;
-    property OnKeyDown;
-    property OnKeyPress;
-    property OnKeyUp;
-    property OnMouseDown;
-    property OnMouseMove;
-    property OnMouseUp;
-    property OnResize;
-    property OnStartDock;
-    property OnSelectItem;
-
-    property NortonLike;
-    property OnSelectByMask;
-    property ColProperties;
-  end;
-
-procedure Register;
-
 implementation
 
 uses
   PasTools, Types;
-
-procedure Register;
-begin
-  RegisterComponents('Martin', [TNortonLikeListView]);
-end;
 
   { TCustomNortonLikeListView }
 
@@ -617,6 +531,18 @@ begin
     else inherited;
 end;
 
+procedure TCustomNortonLikeListView.WMSysCommand(var Message: TWMSysCommand);
+begin
+  // Ugly workaround to avoid Windows beeping when Alt+Grey +/- are pressed
+  // (for (Us)Select File with Same Ext commands)
+  if (Message.CmdType = SC_KEYMENU) and
+     ((Message.Key = Word('+')) or (Message.Key = Word('-'))) then
+  begin
+    Message.Result := 1;
+  end
+    else inherited;
+end;
+
 procedure TCustomNortonLikeListView.WMChar(var Message: TWMChar);
 var
   PLastSelectMethod: TSelectMethod;
@@ -981,11 +907,6 @@ begin
   inherited;
   if Item.Selected then
     ItemSelected(Item, -1);
-end;
-
-function TCustomNortonLikeListView.NewColProperties: TCustomListViewColProperties;
-begin
-  Result := TListViewColProperties.Create(Self, 5);
 end;
 
 function TCustomNortonLikeListView.GetItemFromHItem(const Item: TLVItem): TListItem;

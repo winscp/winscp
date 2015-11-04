@@ -178,11 +178,11 @@ private:
   int FKeepUpToDateChangeDelay;
   UnicodeString FChecksumAlg;
   int FSessionReopenAutoIdle;
-  bool FCanApplyLocaleImmediately;
   LCID FAppliedLocale;
 
 protected:
   LCID FLocale;
+  UnicodeString FLocaleModuleName;
 
   virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
   virtual void __fastcall LoadData(THierarchicalStorage * Storage);
@@ -190,11 +190,10 @@ protected:
   void __fastcall SetLocale(LCID value);
   void __fastcall SetLocaleSafe(LCID value);
   virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
-    UnicodeString * FileName = NULL);
+    UnicodeString & FileName);
   HANDLE __fastcall GetResourceModule();
-  virtual void __fastcall SetResourceModule(HINSTANCE Instance);
+  void __fastcall SetResourceModule(HINSTANCE Instance);
   TStrings * __fastcall GetLocales();
-  LCID __fastcall InternalLocale();
   void __fastcall FreeResourceModule(HANDLE Instance);
   void __fastcall SetDefaultCopyParam(const TGUICopyParamType & value);
   virtual bool __fastcall GetRememberPassword();
@@ -214,6 +213,7 @@ protected:
   void __fastcall SetQueueKeepDoneItemsFor(int value);
   void __fastcall SetLocaleInternal(LCID value, bool Safe);
   void __fastcall SetInitialLocale(LCID value);
+  bool __fastcall GetCanApplyLocaleImmediately();
 
 public:
   __fastcall TGUIConfiguration();
@@ -222,12 +222,11 @@ public:
   virtual void __fastcall UpdateStaticUsage();
 
   HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
+  LCID __fastcall InternalLocale();
+  UnicodeString __fastcall LocaleCopyright();
+  UnicodeString __fastcall LocaleVersion();
   TStoredSessionList * __fastcall SelectPuttySessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
   bool __fastcall AnyPuttySessionForImport(TStoredSessionList * Sessions);
-  TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
-    TStoredSessionList * Sessions, UnicodeString & Error);
-  bool __fastcall AnyFilezillaSessionForImport(TStoredSessionList * Sessions);
-  void __fastcall DetectScalingType();
 
   __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError };
   __property bool ConfirmCommandSession = { read = FConfirmCommandSession, write = FConfirmCommandSession };
@@ -264,7 +263,7 @@ public:
   __property int KeepUpToDateChangeDelay = { read = FKeepUpToDateChangeDelay, write = FKeepUpToDateChangeDelay };
   __property UnicodeString ChecksumAlg = { read = FChecksumAlg, write = FChecksumAlg };
   __property int SessionReopenAutoIdle = { read = FSessionReopenAutoIdle, write = FSessionReopenAutoIdle };
-  __property bool CanApplyLocaleImmediately = { read = FCanApplyLocaleImmediately, write = FCanApplyLocaleImmediately };
+  __property bool CanApplyLocaleImmediately = { read = GetCanApplyLocaleImmediately };
   __property LCID AppliedLocale = { read = FAppliedLocale };
 };
 //---------------------------------------------------------------------------

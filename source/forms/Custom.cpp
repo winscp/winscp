@@ -14,6 +14,7 @@
 #include <PasTools.hpp>
 #include <ProgParams.h>
 #include <Tools.h>
+#include <GUITools.h>
 #include <HistoryComboBox.hpp>
 #include <Math.hpp>
 
@@ -107,8 +108,8 @@ void __fastcall TCustomDialog::AddImage(const UnicodeString & ImageName)
   TImage * Image = new TImage(this);
   Image->Name = L"Image";
   Image->Parent = this;
-  LoadResourceImage(Image, ImageName);
-  Image->SetBounds(FIndent, FPos + ScaleByTextHeight(this, 3), 32, 32);
+  LoadDialogImage(Image, ImageName);
+  Image->SetBounds(FIndent, FPos + ScaleByTextHeight(this, 3), Image->Picture->Width, Image->Picture->Height);
   FIndent += Image->Width + ScaleByTextHeight(this, 12);
 }
 //---------------------------------------------------------------------------
@@ -155,7 +156,7 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
   }
   else
   {
-    assert(Label->FocusControl == Edit);
+    DebugAssert(Label->FocusControl == Edit);
   }
 
   ClientHeight = ClientHeight + (FPos - PrePos);
@@ -270,7 +271,7 @@ void __fastcall TSaveSessionDialog::Init(bool CanSavePassword,
     }
   }
 
-  assert(!Folders->CaseSensitive);
+  DebugAssert(!Folders->CaseSensitive);
   Folders->Sort();
 
   FolderCombo = new TComboBox(this);
@@ -433,7 +434,7 @@ void __fastcall SessionNameValidate(const UnicodeString & Text,
 {
   TSessionData::ValidatePath(Text);
 
-  assert(StoredSessions);
+  DebugAssert(StoredSessions);
   TSessionData * Data = (TSessionData *)StoredSessions->FindByName(Text);
   if (Data && Data->Special)
   {
@@ -611,25 +612,30 @@ bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
 class TRemoteMoveDialog : public TCustomDialog
 {
 public:
-  __fastcall TRemoteMoveDialog();
+  __fastcall TRemoteMoveDialog(bool Multi);
 
   bool __fastcall Execute(UnicodeString & Target, UnicodeString & FileMask);
 
 protected:
   DYNAMIC void __fastcall DoShow();
+  virtual void __fastcall DoValidate();
+  UnicodeString __fastcall GetFileMask();
 
 private:
   THistoryComboBox * Combo;
+  bool FMulti;
 };
 //---------------------------------------------------------------------------
-__fastcall TRemoteMoveDialog::TRemoteMoveDialog() :
+__fastcall TRemoteMoveDialog::TRemoteMoveDialog(bool Multi) :
   TCustomDialog(HELP_REMOTE_MOVE)
 {
   Caption = LoadStr(REMOTE_MOVE_TITLE);
   // The same as TRemoteTransferDialog
   ClientWidth = ScaleByTextHeight(this, 420);
 
-  AddImage(L"REMOTE_MOVE_FILE");
+  FMulti = Multi;
+
+  AddImage(L"Move To");
 
   Combo = new THistoryComboBox(this);
   Combo->AutoComplete = false;
@@ -644,11 +650,16 @@ bool __fastcall TRemoteMoveDialog::Execute(UnicodeString & Target, UnicodeString
   if (Result)
   {
     Target = UnixExtractFilePath(Combo->Text);
-    FileMask = UnixExtractFileName(Combo->Text);
+    FileMask = GetFileMask();
     Combo->SaveToHistory();
     CustomWinConfiguration->History[L"RemoteTarget"] = Combo->Items;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TRemoteMoveDialog::GetFileMask()
+{
+  return UnixExtractFileName(Combo->Text);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteMoveDialog::DoShow()
@@ -657,8 +668,23 @@ void __fastcall TRemoteMoveDialog::DoShow()
   InstallPathWordBreakProc(Combo);
 }
 //---------------------------------------------------------------------------
-bool __fastcall DoRemoteMoveDialog(UnicodeString & Target, UnicodeString & FileMask)
+void __fastcall TRemoteMoveDialog::DoValidate()
 {
-  std::unique_ptr<TRemoteMoveDialog> Dialog(new TRemoteMoveDialog());
+  if (!IsFileNameMask(GetFileMask()) && FMulti)
+  {
+    UnicodeString Message =
+      FormatMultiFilesToOneConfirmation(Combo->Text, true);
+    if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_NONE) == qaCancel)
+    {
+      Abort();
+    }
+  }
+
+  TCustomDialog::DoValidate();
+}
+//---------------------------------------------------------------------------
+bool __fastcall DoRemoteMoveDialog(bool Multi, UnicodeString & Target, UnicodeString & FileMask)
+{
+  std::unique_ptr<TRemoteMoveDialog> Dialog(new TRemoteMoveDialog(Multi));
   return Dialog->Execute(Target, FileMask);
 }

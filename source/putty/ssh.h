@@ -1,3 +1,4 @@
+#ifndef WINSCP_VS
 #include <stdio.h>
 #include <string.h>
 
@@ -8,11 +9,54 @@
 #include "misc.h"
 
 struct ssh_channel;
+typedef struct ssh_tag *Ssh;
 
 extern int sshfwd_write(struct ssh_channel *c, char *, int);
 extern void sshfwd_write_eof(struct ssh_channel *c);
 extern void sshfwd_unclean_close(struct ssh_channel *c, const char *err);
 extern void sshfwd_unthrottle(struct ssh_channel *c, int bufsize);
+Conf *sshfwd_get_conf(struct ssh_channel *c);
+void sshfwd_x11_sharing_handover(struct ssh_channel *c,
+                                 void *share_cs, void *share_chan,
+                                 const char *peer_addr, int peer_port,
+                                 int endian, int protomajor, int protominor,
+                                 const void *initial_data, int initial_len);
+void sshfwd_x11_is_local(struct ssh_channel *c);
+
+extern Socket ssh_connection_sharing_init(const char *host, int port,
+                                          Conf *conf, Ssh ssh, void **state);
+void share_got_pkt_from_server(void *ctx, int type,
+                               unsigned char *pkt, int pktlen);
+void share_activate(void *state, const char *server_verstring);
+void sharestate_free(void *state);
+int share_ndownstreams(void *state);
+
+void ssh_connshare_log(Ssh ssh, int event, const char *logtext,
+                       const char *ds_err, const char *us_err);
+unsigned ssh_alloc_sharing_channel(Ssh ssh, void *sharing_ctx);
+void ssh_delete_sharing_channel(Ssh ssh, unsigned localid);
+int ssh_alloc_sharing_rportfwd(Ssh ssh, const char *shost, int sport,
+                               void *share_ctx);
+void ssh_sharing_queue_global_request(Ssh ssh, void *share_ctx);
+struct X11FakeAuth *ssh_sharing_add_x11_display(Ssh ssh, int authtype,
+                                                void *share_cs,
+                                                void *share_chan);
+void ssh_sharing_remove_x11_display(Ssh ssh, struct X11FakeAuth *auth);
+void ssh_send_packet_from_downstream(Ssh ssh, unsigned id, int type,
+                                     const void *pkt, int pktlen,
+                                     const char *additional_log_text);
+void ssh_sharing_downstream_connected(Ssh ssh, unsigned id,
+                                      const char *peerinfo);
+void ssh_sharing_downstream_disconnected(Ssh ssh, unsigned id);
+void ssh_sharing_logf(Ssh ssh, unsigned id, const char *logfmt, ...);
+int ssh_agent_forwarding_permitted(Ssh ssh);
+void share_setup_x11_channel(void *csv, void *chanv,
+                             unsigned upstream_id, unsigned server_id,
+                             unsigned server_currwin, unsigned server_maxpkt,
+                             unsigned client_adjusted_window,
+                             const char *peer_addr, int peer_port, int endian,
+                             int protomajor, int protominor,
+                             const void *initial_data, int initial_len);
 
 /*
  * Useful thing.
@@ -71,6 +115,7 @@ int rsa_verify(struct RSAKey *key);
 unsigned char *rsa_public_blob(struct RSAKey *key, int *len);
 int rsa_public_blob_len(void *data, int maxlen);
 void freersakey(struct RSAKey *key);
+#endif // WINSCP_VS
 
 #ifndef PUTTY_UINT32_DEFINED
 /* This makes assumptions about the int type. */
@@ -79,6 +124,7 @@ typedef unsigned int uint32;
 #endif
 typedef uint32 word32;
 
+#ifndef WINSCP_VS
 unsigned long crc32_compute(const void *s, size_t len);
 unsigned long crc32_update(unsigned long crc_input, const void *s, size_t len);
 
@@ -149,12 +195,14 @@ void SHA_Simple(const void *p, int len, unsigned char *output);
 
 void hmac_sha1_simple(void *key, int keylen, void *data, int datalen,
 		      unsigned char *output);
+#endif // WINSCP_VS
 typedef struct {
     uint32 h[8];
     unsigned char block[64];
     int blkused;
     uint32 lenhi, lenlo;
 } SHA256_State;
+#ifndef WINSCP_VS
 void SHA256_Init(SHA256_State * s);
 void SHA256_Bytes(SHA256_State * s, const void *p, int len);
 void SHA256_Final(SHA256_State * s, unsigned char *output);
@@ -340,24 +388,27 @@ void random_add_heavynoise(void *noise, int length);
 
 void logevent(void *, const char *);
 
+struct PortForwarding;
+
 /* Allocate and register a new channel for port forwarding */
-void *new_sock_channel(void *handle, Socket s);
+void *new_sock_channel(void *handle, struct PortForwarding *pf);
 void ssh_send_port_open(void *channel, char *hostname, int port, char *org);
 
 /* Exports from portfwd.c */
-extern const char *pfd_newconnect(Socket * s, char *hostname, int port,
-				  void *c, Conf *conf, int addressfamily);
+extern char *pfd_connect(struct PortForwarding **pf, char *hostname, int port,
+                         void *c, Conf *conf, int addressfamily);
+extern void pfd_close(struct PortForwarding *);
+extern int pfd_send(struct PortForwarding *, char *data, int len);
+extern void pfd_send_eof(struct PortForwarding *);
+extern void pfd_confirm(struct PortForwarding *);
+extern void pfd_unthrottle(struct PortForwarding *);
+extern void pfd_override_throttle(struct PortForwarding *, int enable);
+struct PortListener;
 /* desthost == NULL indicates dynamic (SOCKS) port forwarding */
-extern const char *pfd_addforward(char *desthost, int destport, char *srcaddr,
-				  int port, void *backhandle, Conf *conf,
-				  void **sockdata, int address_family);
-extern void pfd_close(Socket s);
-extern void pfd_terminate(void *sockdata);
-extern int pfd_send(Socket s, char *data, int len);
-extern void pfd_send_eof(Socket s);
-extern void pfd_confirm(Socket s);
-extern void pfd_unthrottle(Socket s);
-extern void pfd_override_throttle(Socket s, int enable);
+extern char *pfl_listen(char *desthost, int destport, char *srcaddr,
+                        int port, void *backhandle, Conf *conf,
+                        struct PortListener **pl, int address_family);
+extern void pfl_terminate(struct PortListener *);
 
 /* Exports from x11fwd.c */
 enum {
@@ -378,24 +429,41 @@ struct X11Display {
     int port;
     char *realhost;
 
-    /* Auth details we invented for the virtual display on the SSH server. */
-    int remoteauthproto;
-    unsigned char *remoteauthdata;
-    int remoteauthdatalen;
-    char *remoteauthprotoname;
-    char *remoteauthdatastring;
-
     /* Our local auth details for talking to the real X display. */
     int localauthproto;
     unsigned char *localauthdata;
     int localauthdatalen;
+};
+struct X11FakeAuth {
+    /* Auth details we invented for a virtual display on the SSH server. */
+    int proto;
+    unsigned char *data;
+    int datalen;
+    char *protoname;
+    char *datastring;
+
+    /* The encrypted form of the first block, in XDM-AUTHORIZATION-1.
+     * Used as part of the key when these structures are organised
+     * into a tree. See x11_invent_fake_auth for explanation. */
+    unsigned char *xa1_firstblock;
 
     /*
      * Used inside x11fwd.c to remember recently seen
      * XDM-AUTHORIZATION-1 strings, to avoid replay attacks.
      */
     tree234 *xdmseen;
+
+    /*
+     * What to do with an X connection matching this auth data.
+     */
+    struct X11Display *disp;
+    void *share_cs, *share_chan;
 };
+void *x11_make_greeting(int endian, int protomajor, int protominor,
+                        int auth_proto, const void *auth_data, int auth_len,
+                        const char *peer_ip, int peer_port,
+                        int *outlen);
+int x11_authcmp(void *av, void *bv); /* for putting X11FakeAuth in a tree234 */
 /*
  * x11_setup_display() parses the display variable and fills in an
  * X11Display structure. Some remote auth details are invented;
@@ -403,16 +471,17 @@ struct X11Display {
  * authorisation protocol to use at the remote end. The local auth
  * details are looked up by calling platform_get_x11_auth.
  */
-extern struct X11Display *x11_setup_display(char *display, int authtype,
-					    Conf *);
+extern struct X11Display *x11_setup_display(char *display, Conf *);
 void x11_free_display(struct X11Display *disp);
-extern const char *x11_init(Socket *, struct X11Display *, void *,
-			    const char *, int, Conf *);
-extern void x11_close(Socket);
-extern int x11_send(Socket, char *, int);
-extern void x11_send_eof(Socket s);
-extern void x11_unthrottle(Socket s);
-extern void x11_override_throttle(Socket s, int enable);
+struct X11FakeAuth *x11_invent_fake_auth(tree234 *t, int authtype);
+void x11_free_fake_auth(struct X11FakeAuth *auth);
+struct X11Connection;                  /* opaque outside x11fwd.c */
+struct X11Connection *x11_init(tree234 *authtree, void *, const char *, int);
+extern void x11_close(struct X11Connection *);
+extern int x11_send(struct X11Connection *, char *, int);
+extern void x11_send_eof(struct X11Connection *s);
+extern void x11_unthrottle(struct X11Connection *s);
+extern void x11_override_throttle(struct X11Connection *s, int enable);
 char *x11_display(const char *display);
 /* Platform-dependent X11 functions */
 extern void platform_get_x11_auth(struct X11Display *display, Conf *);
@@ -439,6 +508,8 @@ char *platform_get_x_display(void);
  */
 void x11_get_auth_from_authfile(struct X11Display *display,
 				const char *authfilename);
+int x11_identify_auth_proto(const char *proto);
+void *x11_dehexify(const char *hex, int *outlen);
 
 Bignum copybn(Bignum b);
 Bignum bn_power_2(int n);
@@ -543,8 +614,10 @@ void aes256_encrypt_pubkey(unsigned char *key, unsigned char *blk,
 void aes256_decrypt_pubkey(unsigned char *key, unsigned char *blk,
 			   int len);
 
-void des_encrypt_xdmauth(unsigned char *key, unsigned char *blk, int len);
-void des_decrypt_xdmauth(unsigned char *key, unsigned char *blk, int len);
+void des_encrypt_xdmauth(const unsigned char *key,
+                         unsigned char *blk, int len);
+void des_decrypt_xdmauth(const unsigned char *key,
+                         unsigned char *blk, int len);
 
 /*
  * For progress updates in the key generation utility.
@@ -579,6 +652,128 @@ int zlib_decompress_block(void *, unsigned char *block, int len,
 			  unsigned char **outblock, int *outlen);
 
 /*
+ * Connection-sharing API provided by platforms. This function must
+ * either:
+ *  - return SHARE_NONE and do nothing
+ *  - return SHARE_DOWNSTREAM and set *sock to a Socket connected to
+ *    downplug
+ *  - return SHARE_UPSTREAM and set *sock to a Socket connected to
+ *    upplug.
+ */
+enum { SHARE_NONE, SHARE_DOWNSTREAM, SHARE_UPSTREAM };
+int platform_ssh_share(const char *name, Conf *conf,
+                       Plug downplug, Plug upplug, Socket *sock,
+                       char **logtext, char **ds_err, char **us_err,
+                       int can_upstream, int can_downstream);
+void platform_ssh_share_cleanup(const char *name);
+
+/*
+ * SSH-1 message type codes.
+ */
+#define SSH1_MSG_DISCONNECT                       1	/* 0x1 */
+#define SSH1_SMSG_PUBLIC_KEY                      2	/* 0x2 */
+#define SSH1_CMSG_SESSION_KEY                     3	/* 0x3 */
+#define SSH1_CMSG_USER                            4	/* 0x4 */
+#define SSH1_CMSG_AUTH_RSA                        6	/* 0x6 */
+#define SSH1_SMSG_AUTH_RSA_CHALLENGE              7	/* 0x7 */
+#define SSH1_CMSG_AUTH_RSA_RESPONSE               8	/* 0x8 */
+#define SSH1_CMSG_AUTH_PASSWORD                   9	/* 0x9 */
+#define SSH1_CMSG_REQUEST_PTY                     10	/* 0xa */
+#define SSH1_CMSG_WINDOW_SIZE                     11	/* 0xb */
+#define SSH1_CMSG_EXEC_SHELL                      12	/* 0xc */
+#define SSH1_CMSG_EXEC_CMD                        13	/* 0xd */
+#define SSH1_SMSG_SUCCESS                         14	/* 0xe */
+#define SSH1_SMSG_FAILURE                         15	/* 0xf */
+#define SSH1_CMSG_STDIN_DATA                      16	/* 0x10 */
+#define SSH1_SMSG_STDOUT_DATA                     17	/* 0x11 */
+#define SSH1_SMSG_STDERR_DATA                     18	/* 0x12 */
+#define SSH1_CMSG_EOF                             19	/* 0x13 */
+#define SSH1_SMSG_EXIT_STATUS                     20	/* 0x14 */
+#define SSH1_MSG_CHANNEL_OPEN_CONFIRMATION        21	/* 0x15 */
+#define SSH1_MSG_CHANNEL_OPEN_FAILURE             22	/* 0x16 */
+#define SSH1_MSG_CHANNEL_DATA                     23	/* 0x17 */
+#define SSH1_MSG_CHANNEL_CLOSE                    24	/* 0x18 */
+#define SSH1_MSG_CHANNEL_CLOSE_CONFIRMATION       25	/* 0x19 */
+#define SSH1_SMSG_X11_OPEN                        27	/* 0x1b */
+#define SSH1_CMSG_PORT_FORWARD_REQUEST            28	/* 0x1c */
+#define SSH1_MSG_PORT_OPEN                        29	/* 0x1d */
+#define SSH1_CMSG_AGENT_REQUEST_FORWARDING        30	/* 0x1e */
+#define SSH1_SMSG_AGENT_OPEN                      31	/* 0x1f */
+#define SSH1_MSG_IGNORE                           32	/* 0x20 */
+#define SSH1_CMSG_EXIT_CONFIRMATION               33	/* 0x21 */
+#define SSH1_CMSG_X11_REQUEST_FORWARDING          34	/* 0x22 */
+#define SSH1_CMSG_AUTH_RHOSTS_RSA                 35	/* 0x23 */
+#define SSH1_MSG_DEBUG                            36	/* 0x24 */
+#define SSH1_CMSG_REQUEST_COMPRESSION             37	/* 0x25 */
+#define SSH1_CMSG_AUTH_TIS                        39	/* 0x27 */
+#define SSH1_SMSG_AUTH_TIS_CHALLENGE              40	/* 0x28 */
+#define SSH1_CMSG_AUTH_TIS_RESPONSE               41	/* 0x29 */
+#define SSH1_CMSG_AUTH_CCARD                      70	/* 0x46 */
+#define SSH1_SMSG_AUTH_CCARD_CHALLENGE            71	/* 0x47 */
+#define SSH1_CMSG_AUTH_CCARD_RESPONSE             72	/* 0x48 */
+
+#define SSH1_AUTH_RHOSTS                          1	/* 0x1 */
+#define SSH1_AUTH_RSA                             2	/* 0x2 */
+#define SSH1_AUTH_PASSWORD                        3	/* 0x3 */
+#define SSH1_AUTH_RHOSTS_RSA                      4	/* 0x4 */
+#define SSH1_AUTH_TIS                             5	/* 0x5 */
+#define SSH1_AUTH_CCARD                           16	/* 0x10 */
+
+#define SSH1_PROTOFLAG_SCREEN_NUMBER              1	/* 0x1 */
+/* Mask for protoflags we will echo back to server if seen */
+#define SSH1_PROTOFLAGS_SUPPORTED                 0	/* 0x1 */
+
+/*
+ * SSH-2 message type codes.
+ */
+#define SSH2_MSG_DISCONNECT                       1	/* 0x1 */
+#define SSH2_MSG_IGNORE                           2	/* 0x2 */
+#define SSH2_MSG_UNIMPLEMENTED                    3	/* 0x3 */
+#define SSH2_MSG_DEBUG                            4	/* 0x4 */
+#define SSH2_MSG_SERVICE_REQUEST                  5	/* 0x5 */
+#define SSH2_MSG_SERVICE_ACCEPT                   6	/* 0x6 */
+#define SSH2_MSG_KEXINIT                          20	/* 0x14 */
+#define SSH2_MSG_NEWKEYS                          21	/* 0x15 */
+#define SSH2_MSG_KEXDH_INIT                       30	/* 0x1e */
+#define SSH2_MSG_KEXDH_REPLY                      31	/* 0x1f */
+#define SSH2_MSG_KEX_DH_GEX_REQUEST_OLD           30	/* 0x1e */
+#define SSH2_MSG_KEX_DH_GEX_REQUEST               34	/* 0x22 */
+#define SSH2_MSG_KEX_DH_GEX_GROUP                 31	/* 0x1f */
+#define SSH2_MSG_KEX_DH_GEX_INIT                  32	/* 0x20 */
+#define SSH2_MSG_KEX_DH_GEX_REPLY                 33	/* 0x21 */
+#define SSH2_MSG_KEXRSA_PUBKEY                    30    /* 0x1e */
+#define SSH2_MSG_KEXRSA_SECRET                    31    /* 0x1f */
+#define SSH2_MSG_KEXRSA_DONE                      32    /* 0x20 */
+#define SSH2_MSG_USERAUTH_REQUEST                 50	/* 0x32 */
+#define SSH2_MSG_USERAUTH_FAILURE                 51	/* 0x33 */
+#define SSH2_MSG_USERAUTH_SUCCESS                 52	/* 0x34 */
+#define SSH2_MSG_USERAUTH_BANNER                  53	/* 0x35 */
+#define SSH2_MSG_USERAUTH_PK_OK                   60	/* 0x3c */
+#define SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ        60	/* 0x3c */
+#define SSH2_MSG_USERAUTH_INFO_REQUEST            60	/* 0x3c */
+#define SSH2_MSG_USERAUTH_INFO_RESPONSE           61	/* 0x3d */
+#define SSH2_MSG_GLOBAL_REQUEST                   80	/* 0x50 */
+#define SSH2_MSG_REQUEST_SUCCESS                  81	/* 0x51 */
+#define SSH2_MSG_REQUEST_FAILURE                  82	/* 0x52 */
+#define SSH2_MSG_CHANNEL_OPEN                     90	/* 0x5a */
+#define SSH2_MSG_CHANNEL_OPEN_CONFIRMATION        91	/* 0x5b */
+#define SSH2_MSG_CHANNEL_OPEN_FAILURE             92	/* 0x5c */
+#define SSH2_MSG_CHANNEL_WINDOW_ADJUST            93	/* 0x5d */
+#define SSH2_MSG_CHANNEL_DATA                     94	/* 0x5e */
+#define SSH2_MSG_CHANNEL_EXTENDED_DATA            95	/* 0x5f */
+#define SSH2_MSG_CHANNEL_EOF                      96	/* 0x60 */
+#define SSH2_MSG_CHANNEL_CLOSE                    97	/* 0x61 */
+#define SSH2_MSG_CHANNEL_REQUEST                  98	/* 0x62 */
+#define SSH2_MSG_CHANNEL_SUCCESS                  99	/* 0x63 */
+#define SSH2_MSG_CHANNEL_FAILURE                  100	/* 0x64 */
+#define SSH2_MSG_USERAUTH_GSSAPI_RESPONSE               60
+#define SSH2_MSG_USERAUTH_GSSAPI_TOKEN                  61
+#define SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE      63
+#define SSH2_MSG_USERAUTH_GSSAPI_ERROR                  64
+#define SSH2_MSG_USERAUTH_GSSAPI_ERRTOK                 65
+#define SSH2_MSG_USERAUTH_GSSAPI_MIC                    66
+
+/*
  * SSH-1 agent messages.
  */
 #define SSH1_AGENTC_REQUEST_RSA_IDENTITIES    1
@@ -607,7 +802,34 @@ int zlib_decompress_block(void *, unsigned char *block, int len,
 #define SSH2_AGENTC_REMOVE_ALL_IDENTITIES       19
 
 /*
+ * Assorted other SSH-related enumerations.
+ */
+#define SSH2_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT 1	/* 0x1 */
+#define SSH2_DISCONNECT_PROTOCOL_ERROR            2	/* 0x2 */
+#define SSH2_DISCONNECT_KEY_EXCHANGE_FAILED       3	/* 0x3 */
+#define SSH2_DISCONNECT_HOST_AUTHENTICATION_FAILED 4	/* 0x4 */
+#define SSH2_DISCONNECT_MAC_ERROR                 5	/* 0x5 */
+#define SSH2_DISCONNECT_COMPRESSION_ERROR         6	/* 0x6 */
+#define SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE     7	/* 0x7 */
+#define SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED 8	/* 0x8 */
+#define SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE   9	/* 0x9 */
+#define SSH2_DISCONNECT_CONNECTION_LOST           10	/* 0xa */
+#define SSH2_DISCONNECT_BY_APPLICATION            11	/* 0xb */
+#define SSH2_DISCONNECT_TOO_MANY_CONNECTIONS      12	/* 0xc */
+#define SSH2_DISCONNECT_AUTH_CANCELLED_BY_USER    13	/* 0xd */
+#define SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE 14	/* 0xe */
+#define SSH2_DISCONNECT_ILLEGAL_USER_NAME         15	/* 0xf */
+
+#define SSH2_OPEN_ADMINISTRATIVELY_PROHIBITED     1	/* 0x1 */
+#define SSH2_OPEN_CONNECT_FAILED                  2	/* 0x2 */
+#define SSH2_OPEN_UNKNOWN_CHANNEL_TYPE            3	/* 0x3 */
+#define SSH2_OPEN_RESOURCE_SHORTAGE               4	/* 0x4 */
+
+#define SSH2_EXTENDED_DATA_STDERR                 1	/* 0x1 */
+
+/*
  * Need this to warn about support for the original SSH-2 keyfile
  * format.
  */
 void old_keyfile_warning(void);
+#endif // WINSCP_VS

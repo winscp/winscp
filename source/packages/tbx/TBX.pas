@@ -1301,6 +1301,7 @@ var
   TextMetric: TTextMetric;
   TextSize: TSize;
   Margins: TTBXMargins;
+  Two: Integer;
 begin
   Item := TTBCustomItem(Self.Item);
   ToolbarStyle := IsToolbarStyle;
@@ -1346,8 +1347,16 @@ begin
   { Measure size }
   if ToolbarStyle then
   begin
-    AWidth := 6;
-    AHeight := 6;
+    if not IsTextRotated then
+    begin
+      AWidth := 3;
+      AHeight := 6;
+    end
+      else
+    begin
+      AWidth := 6;
+      AHeight := 3;
+    end;
 
     if CaptionShown then
     begin
@@ -1361,13 +1370,13 @@ begin
     begin
       if ItemLayout = tbxlGlyphLeft then
       begin
-        Inc(AWidth, ImgSize.CX);
+        Inc(AWidth, ImgSize.CX + 3);
         if Wide then Inc(AWidth);
         if AHeight < ImgSize.CY + 6 then AHeight := ImgSize.CY + 6;
       end
       else
       begin
-        Inc(AHeight, ImgSize.CY);
+        Inc(AHeight, ImgSize.CY + 3);
         if AWidth < ImgSize.CX + 7 then AWidth := ImgSize.CX + 7;
       end;
     end;
@@ -1379,8 +1388,9 @@ begin
       begin
         if (ItemLayout <> tbxlGlyphTop) or (ImgSize.CX = 0) or IsTextRotated then
         begin
-          if View.Orientation <> tbvoVertical then Inc(AWidth, DropdownArrowWidth)
-          else Inc(AHeight, DropdownArrowWidth);
+          Two := ScaleByTextHeightRunTime(Canvas, 2);
+          if View.Orientation <> tbvoVertical then Inc(AWidth, Two + DropdownArrowWidth)
+          else Inc(AHeight, DropdownArrowWidth + Two + DropdownArrowMargin);
         end
         else
         begin

@@ -30,6 +30,15 @@ enum { RESULT_SUCCESS = 0, RESULT_ANY_ERROR = 1 };
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+void TrimNewLine(UnicodeString & Str)
+{
+  while (!Str.IsEmpty() &&
+    ((Str[Str.Length()] == L'\n') || (Str[Str.Length()] == L'\r')))
+  {
+    Str.SetLength(Str.Length() - 1);
+  }
+}
+//---------------------------------------------------------------------------
 class TConsole
 {
 public:
@@ -99,7 +108,7 @@ std::unique_ptr<TCriticalSection> TOwnConsole::FSection(new TCriticalSection());
 //---------------------------------------------------------------------------
 __fastcall TOwnConsole::TOwnConsole()
 {
-  assert(FInstance == NULL);
+  DebugAssert(FInstance == NULL);
   FInstance = this;
 
   AllocConsole();
@@ -139,7 +148,7 @@ __fastcall TOwnConsole::~TOwnConsole()
 
   FreeConsole();
 
-  assert(FInstance == this);
+  DebugAssert(FInstance == this);
   FInstance = NULL;
 }
 //---------------------------------------------------------------------------
@@ -150,7 +159,7 @@ TOwnConsole * __fastcall TOwnConsole::Instance()
 //---------------------------------------------------------------------------
 void __fastcall TOwnConsole::WindowStateTimer(TObject * /*Sender*/)
 {
-  assert(FConsoleWindow != NULL);
+  DebugAssert(FConsoleWindow != NULL);
   WINDOWPLACEMENT Placement;
   memset(&Placement, 0, sizeof(Placement));
   Placement.length = sizeof(Placement);
@@ -185,7 +194,7 @@ void __fastcall TOwnConsole::ProcessMessages()
   // (i.e. we need to monitor window state and eventually process tray icon messages)
   if (FWindowStateTimer != NULL)
   {
-    assert(WinConfiguration->MinimizeToTray);
+    DebugAssert(WinConfiguration->MinimizeToTray);
 
     Application->ProcessMessages();
   }
@@ -193,7 +202,7 @@ void __fastcall TOwnConsole::ProcessMessages()
 //---------------------------------------------------------------------------
 void __fastcall TOwnConsole::TrayIconClick(TObject * /*Sender*/)
 {
-  assert(FConsoleWindow != NULL);
+  DebugAssert(FConsoleWindow != NULL);
   SetForegroundWindow(FConsoleWindow);
   ShowWindow(FConsoleWindow, SW_RESTORE);
 }
@@ -211,7 +220,7 @@ void __fastcall TOwnConsole::BreakInput()
   unsigned long Written;
   // this assertion occasionally fails (when console is being exited)
   CHECK(WriteConsoleInput(FInput, &InputRecord, 1, &Written));
-  assert(Written == 1);
+  DebugAssert(Written == 1);
 
   CancelInput();
 }
@@ -269,9 +278,9 @@ void __fastcall TOwnConsole::Print(UnicodeString Str, bool FromBeginning)
   }
   unsigned long Written;
   bool Result = WriteConsole(FOutput, Str.c_str(), Str.Length(), &Written, NULL);
-  assert(Result);
+  DebugAssert(Result);
   USEDPARAM(Result);
-  assert(Str.Length() == static_cast<long>(Written));
+  DebugAssert(Str.Length() == static_cast<long>(Written));
   ProcessMessages();
 }
 //---------------------------------------------------------------------------
@@ -296,8 +305,9 @@ protected:
     unsigned long Read;
     FStr.SetLength(10240);
     FResult = ReadConsole(FInput, FStr.c_str(), FStr.Length(), &Read, NULL);
-    assert(FResult);
+    DebugAssert(FResult);
     FStr.SetLength(Read);
+    TrimNewLine(FStr);
   }
 
   virtual void __fastcall Terminate()
@@ -331,17 +341,35 @@ bool __fastcall TOwnConsole::Input(UnicodeString & Str, bool Echo, unsigned int 
   try
   {
     {
+      const int FirstKey = VK_LBUTTON; // 0x01
+      const int LastKey = VK_OEM_CLEAR; // 0xFE
+
+      // reset key state
+      for (int Key = FirstKey; Key <= LastKey; Key++)
+      {
+        GetAsyncKeyState(Key);
+      }
+
       TConsoleInputThread InputThread(FInput, Str, Result);
 
       InputThread.Start();
 
-      double Start = Now();
-      double End = Start + double(Timer)/MSecsPerDay;
+      double TimerD = double(Timer)/MSecsPerDay;
+      double End = Now() + TimerD;
       while (!InputThread.IsFinished() &&
              ((Timer == 0) || (double(Now()) < End)))
       {
         ProcessMessages();
         InputThread.WaitFor(50);
+
+        for (int Key = FirstKey; Key <= LastKey; Key++)
+        {
+          if ((GetAsyncKeyState(Key) & 0x01) != 0)
+          {
+            End = Now() + TimerD;
+            // Finishing the loop nevertheless to reset state of all keys
+          }
+        }
       }
     }
 
@@ -547,11 +575,6 @@ __fastcall TExternalConsole::TExternalConsole(
   Name = FORMAT(L"%s%s", (CONSOLE_MAPPING, (Instance)));
   CheckHandle(FFileMapping = OpenFileMapping(FILE_MAP_ALL_ACCESS, false, Name.c_str()), L"File mapping");
 
-  if ((FRequestEvent == NULL) || (FResponseEvent == NULL) || (FFileMapping == NULL))
-  {
-    throw Exception(LoadStr(EXTERNAL_CONSOLE_INIT_ERROR));
-  }
-
   HANDLE Job = OpenJobObject(JOB_OBJECT_ASSIGN_PROCESS, FALSE,
     FORMAT(L"%s%s", (CONSOLE_JOB, Instance)).c_str());
   if (ALWAYS_TRUE(Job != NULL))
@@ -694,6 +717,7 @@ bool __fastcall TExternalConsole::Input(UnicodeString & Str, bool Echo, unsigned
   {
     Result = CommStruct->InputEvent.Result;
     Str = CommStruct->InputEvent.Str;
+    TrimNewLine(Str);
   }
   __finally
   {
@@ -711,7 +735,7 @@ int __fastcall TExternalConsole::Choice(UnicodeString Options, int Cancel, int B
   {
     CommStruct->Event = TConsoleCommStruct::CHOICE;
 
-    assert(Options.Length() < static_cast<int>(LENOF(CommStruct->ChoiceEvent.Options)));
+    DebugAssert(Options.Length() < static_cast<int>(LENOF(CommStruct->ChoiceEvent.Options)));
     wcscpy(CommStruct->ChoiceEvent.Options, Options.c_str());
     CommStruct->ChoiceEvent.Cancel = Cancel;
     CommStruct->ChoiceEvent.Break = Break;
@@ -992,6 +1016,7 @@ public:
   int __fastcall Run(const UnicodeString Session, TOptions * Options,
     TStrings * ScriptCommands, TStrings * ScriptParameters);
   void __fastcall ShowException(Exception * E);
+  inline void __fastcall PrintMessage(const UnicodeString & Str);
 
 protected:
   bool __fastcall DoInput(UnicodeString & Str, bool Echo, unsigned int Timer,
@@ -1000,7 +1025,6 @@ protected:
     bool Echo, bool Interactive);
   inline void __fastcall Print(const UnicodeString & Str, bool FromBeginning = false);
   inline void __fastcall PrintLine(const UnicodeString & Str);
-  inline void __fastcall PrintMessage(const UnicodeString & Str);
   void __fastcall UpdateTitle();
   inline void __fastcall NotifyAbort();
   inline bool __fastcall Aborted(bool AllowCompleteAbort = true);
@@ -1067,18 +1091,19 @@ TConsoleRunner::TConsoleRunner(TConsole * Console) :
   Timer->OnTimer = TimerTimer;
   Timer->Interval = MSecsPerSec;
   Timer->Enabled = true;
-  assert(WinConfiguration->OnMasterPasswordPrompt == NULL);
+  DebugAssert(WinConfiguration->OnMasterPasswordPrompt == NULL);
   WinConfiguration->OnMasterPasswordPrompt = MasterPasswordPrompt;
-  assert(Configuration->OnChange == NULL);
+  DebugAssert(Configuration->OnChange == NULL);
   FExternalTimestampVar = !GetEnvironmentVariable(TimestampVarName).IsEmpty();
   Configuration->OnChange = ConfigurationChange;
+  Configuration->Scripting = true;
 }
 //---------------------------------------------------------------------------
 TConsoleRunner::~TConsoleRunner()
 {
-  assert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
+  DebugAssert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
   WinConfiguration->OnMasterPasswordPrompt = NULL;
-  assert(Configuration->OnChange == ConfigurationChange);
+  DebugAssert(Configuration->OnChange == ConfigurationChange);
   Configuration->OnChange = NULL;
   delete Timer;
 }
@@ -1131,9 +1156,7 @@ void __fastcall TConsoleRunner::PrintLine(const UnicodeString & Str)
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::PrintMessage(const UnicodeString & Str)
 {
-  UnicodeString Line =
-    ReplaceStr(ReplaceStr(Str.TrimRight(), L"\n\n", L"\n"),
-      L"\n \n", L"\n");
+  UnicodeString Line = RemoveEmptyLines(Str);
 
   if (FScript != NULL)
   {
@@ -1278,6 +1301,14 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     }
 
     NoBatchA = Params->NoBatchAnswers;
+
+    if (FLAGSET(Params->Params, qpWaitInBatch))
+    {
+      DebugAssert(Timeout == 0);
+      Timeout = InputTimeout();
+      // See a duplicate AbortAnswer call below
+      TimeoutA = AbortAnswer(Answers & ~NoBatchA);
+    }
   }
 
   AQuery = UnformatMessage(AQuery);
@@ -1312,8 +1343,8 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   }
 
   USEDPARAM(AAnswers);
-  assert(AAnswers == 0);
-  assert(!Buttons.empty());
+  DebugAssert(AAnswers == 0);
+  DebugAssert(!Buttons.empty());
 
   if ((Params != NULL) && (Params->Aliases != NULL))
   {
@@ -1358,10 +1389,11 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     }
   }
 
-  assert(Accels.Length() == static_cast<int>(Buttons.size()));
+  DebugAssert(Accels.Length() == static_cast<int>(Buttons.size()));
   int NumberAccel = 0;
   unsigned int CancelA = CancelAnswer(Answers);
   int CancelIndex;
+  // AbortAnswer call duplicated in qpWaitInBatch branch above
   unsigned int AbortA = AbortAnswer(Answers & ~NoBatchA);
   int AbortIndex;
   unsigned int ContinueA = ContinueAnswer(Answers & ~NoBatchA);
@@ -1403,7 +1435,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     if (Accels[Index + 1] == L' ')
     {
       NumberAccel++;
-      assert(NumberAccel <= 9);
+      DebugAssert(NumberAccel <= 9);
       Caption = FORMAT(L"&%d%s", (NumberAccel, Caption));
       Accels[Index + 1] = Caption[2];
     }
@@ -1426,7 +1458,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     }
   }
 
-  assert(Accels.Pos(L' ') == 0);
+  DebugAssert(Accels.Pos(L' ') == 0);
 
   bool Timeouting = (Timeout > 0);
   bool FirstOutput = true;
@@ -1461,7 +1493,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
 
           if (i + 1 == static_cast<unsigned int>(TimeoutIndex))
           {
-            assert(Timeouting);
+            DebugAssert(Timeouting);
             Caption = FMTLOAD(TIMEOUT_BUTTON, (Caption, int(Timeout / MSecsPerSec)));
           }
 
@@ -1507,7 +1539,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
         {
           if (Timeouting)
           {
-            assert(Timeout >= MSecsPerSec);
+            DebugAssert(Timeout >= MSecsPerSec);
             Timeout -= ActualTimer;
             Retry = true;
           }
@@ -1517,7 +1549,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
           // where Timer is less than MSecsPerSec
           if (Timer > 0)
           {
-            assert((Params != NULL) && (Params->TimerEvent != NULL));
+            DebugAssert((Params != NULL) && (Params->TimerEvent != NULL));
             if ((Params != NULL) && (Params->TimerEvent != NULL))
             {
               unsigned int AAnswer = 0;
@@ -1540,10 +1572,10 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
 
     if (Answer == 0)
     {
-      assert((AnswerIndex >= 1) && (AnswerIndex <= Accels.Length()));
+      DebugAssert((AnswerIndex >= 1) && (AnswerIndex <= Accels.Length()));
       UnicodeString AnswerCaption = Captions[AnswerIndex - 1];
       int P = AnswerCaption.Pos(L"&");
-      assert(P >= 0);
+      DebugAssert(P >= 0);
       AnswerCaption.Delete(P, 1);
       PrintLine(AnswerCaption);
       FirstOutput = true;
@@ -1746,15 +1778,7 @@ bool __fastcall TConsoleRunner::DoInput(UnicodeString & Str, bool Echo,
     Result = FConsole->Input(Str, Echo, Timeout);
   }
 
-  if (Result)
-  {
-    while (!Str.IsEmpty() &&
-      ((Str[Str.Length()] == L'\n') || (Str[Str.Length()] == L'\r')))
-    {
-      Str.SetLength(Str.Length() - 1);
-    }
-  }
-  else
+  if (!Result)
   {
     NotifyAbort();
   }
@@ -1785,7 +1809,7 @@ void __fastcall TConsoleRunner::MasterPasswordPrompt()
 //---------------------------------------------------------------------------
 UnicodeString TConsoleRunner::ExpandCommand(UnicodeString Command, TStrings * ScriptParameters)
 {
-  assert(ScriptParameters != NULL);
+  DebugAssert(ScriptParameters != NULL);
   for (int Index = 0; Index < ScriptParameters->Count; Index++)
   {
     Command = ReplaceStr(Command, FORMAT(L"%%%d%%", (Index+1)),
@@ -1981,7 +2005,7 @@ void __fastcall TConsoleRunner::ConfigurationChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
 {
-  Lines->LoadFromFile(FileName);
+  Lines->LoadFromFile(FileName, TEncoding::UTF8);
 }
 //---------------------------------------------------------------------------
 void __fastcall ConsolePrintLine(TConsole * Console, const UnicodeString & Str)
@@ -1989,47 +2013,158 @@ void __fastcall ConsolePrintLine(TConsole * Console, const UnicodeString & Str)
   Console->Print(Str + L"\n");
 }
 //---------------------------------------------------------------------------
+static UnicodeString __fastcall GetExeBaseName()
+{
+  return ExtractFileBaseName(Application->ExeName);
+}
+//---------------------------------------------------------------------------
+static void __fastcall PrintUsageSyntax(TConsole * Console, const UnicodeString & Str)
+{
+  ConsolePrintLine(Console, GetExeBaseName() + L" " + Str);
+}
+//---------------------------------------------------------------------------
+typedef std::vector<std::pair<UnicodeString, UnicodeString> > TSwitchesUsage;
+//---------------------------------------------------------------------------
+static void __fastcall RegisterSwitch(
+  TSwitchesUsage & SwitchesUsage, const UnicodeString & Name, const UnicodeString & Desc)
+{
+  SwitchesUsage.push_back(std::make_pair(LowerCase(Name), Desc));
+}
+//---------------------------------------------------------------------------
+static void __fastcall RegisterSwitch(
+  TSwitchesUsage & SwitchesUsage, const UnicodeString & Name, int DescID)
+{
+  UnicodeString Desc = LoadStr(DescID);
+  Desc = ReplaceText(Desc, L"%APP%", GetExeBaseName());
+  RegisterSwitch(SwitchesUsage, Name, Desc);
+}
+//---------------------------------------------------------------------------
 void __fastcall Usage(TConsole * Console)
 {
-  UnicodeString Usage = LoadStr(USAGE10, 10240);
-  UnicodeString ExeBaseName = ExtractFileBaseName(Application->ExeName);
-  Usage = ReplaceText(Usage, L"%APP%", ExeBaseName);
+
+  ConsolePrintLine(Console, FORMAT(L"WinSCP, %s", (Configuration->VersionStr)));
   UnicodeString Copyright =
     ReplaceText(LoadStr(WINSCP_COPYRIGHT), L"©", L"(c)");
-  Usage = FORMAT(Usage, (Configuration->VersionStr, Copyright));
-  std::unique_ptr<TStrings> Lines(TextToStringList(Usage));
-  for (int Index = 0; Index < Lines->Count; Index++)
+  ConsolePrintLine(Console, Copyright);
+  ConsolePrintLine(Console, L"");
+  ConsolePrintLine(Console, LoadStr(USAGE_SYNTAX_LABEL));
+
+  if (!Console->CommandLineOnly())
   {
-    bool Print = true;
-    UnicodeString Line = Lines->Strings[Index];
-    if ((Line.Length() >= 2) && (Line[2] == L':'))
-    {
-      switch (Line[1])
-      {
-        case L'G':
-          Print = !Console->CommandLineOnly();
-          break;
-
-        case L'C':
-          Print = Console->CommandLineOnly();
-          break;
-
-        case L'B':
-          Print = true;
-          break;
-
-        default:
-          FAIL;
-          break;
-      }
-      Line.Delete(1, 2);
-    }
-
-    if (Print)
-    {
-      ConsolePrintLine(Console, Line);
-    }
+    PrintUsageSyntax(Console, L"site|workspace|folder");
+    PrintUsageSyntax(Console, L"(sftp|scp|ftp|http[s])://[user[:password]@]host[:port][/path/[file]]");
+    PrintUsageSyntax(Console, L"[mysession] /newinstance");
+    PrintUsageSyntax(Console, L"[mysession] /edit <path>");
+    PrintUsageSyntax(Console, L"[mysession] /synchronize [local_dir] [remote_dir] [/defaults]");
+    PrintUsageSyntax(Console, L"[mysession] /keepuptodate [local_dir] [remote_dir] [/defaults]");
+    PrintUsageSyntax(Console, L"[mysession] [/privatekey=<file>] [/hostkey=<fingerprint>]");
+    PrintUsageSyntax(Console, L"[mysession] [/clientcert=<file>] [/certificate=<fingerprint>]");
+    PrintUsageSyntax(Console, L"[mysession] [/passive[=on|off]] [/implicit|explicit]");
+    PrintUsageSyntax(Console, L"[mysession] [/timeout=<sec>]");
+    PrintUsageSyntax(Console, L"[mysession] [/rawsettings setting1=value1 setting2=value2 ...]");
   }
+  PrintUsageSyntax(Console,
+    UnicodeString(!Console->CommandLineOnly() ? L"[/console] " : L"") +
+    FORMAT(L"[/script=file] [/%s cmd1...] [/parameter // param1...]", (LowerCase(COMMAND_SWITCH))));
+  PrintUsageSyntax(Console, L"[/log=<logfile> [/loglevel=<level>]] [/xmllog=<logfile> [/xmlgroups]]");
+  PrintUsageSyntax(Console, L"[/ini=<inifile>]");
+  PrintUsageSyntax(Console, L"[/rawconfig config1=value1 config2=value2 ...]");
+  PrintUsageSyntax(Console, L"/batchsettings <site_mask> setting1=value1 setting2=value2 ...");
+  PrintUsageSyntax(Console, FORMAT(L"/%s keyfile /%s=output [/%s] [/%s=comment]",
+    (LowerCase(KEYGEN_SWITCH), LowerCase(KEYGEN_OUTPUT_SWITCH), LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH), LowerCase(KEYGEN_COMMENT_SWITCH))));
+  if (!Console->CommandLineOnly())
+  {
+    PrintUsageSyntax(Console, L"/update");
+  }
+  PrintUsageSyntax(Console, L"/help");
+
+  ConsolePrintLine(Console, L"");
+
+  TSwitchesUsage SwitchesUsage;
+  if (!Console->CommandLineOnly())
+  {
+    RegisterSwitch(SwitchesUsage, L"session", USAGE_SESSION);
+    RegisterSwitch(SwitchesUsage, L"/newinstance", USAGE_NEWINSTANCE);
+    RegisterSwitch(SwitchesUsage, L"/edit", USAGE_EDIT);
+    RegisterSwitch(SwitchesUsage, L"/synchronize", USAGE_SYNCHRONIZE);
+    RegisterSwitch(SwitchesUsage, L"/keepuptodate", USAGE_KEEPUPTODATE);
+    RegisterSwitch(SwitchesUsage, L"/defaults", USAGE_DEFAULTS);
+    RegisterSwitch(SwitchesUsage, L"/privatekey=", USAGE_PRIVATEKEY);
+    RegisterSwitch(SwitchesUsage, L"/hostkey=", USAGE_HOSTKEY);
+    RegisterSwitch(SwitchesUsage, L"/clientcert=", USAGE_CLIENTCERT);
+    RegisterSwitch(SwitchesUsage, L"/certificate=", USAGE_CERTIFICATE);
+    RegisterSwitch(SwitchesUsage, L"/passive=", USAGE_PASSIVE);
+    RegisterSwitch(SwitchesUsage, L"/implicit", USAGE_IMPLICIT);
+    RegisterSwitch(SwitchesUsage, L"/explicit", USAGE_EXPLICIT);
+    RegisterSwitch(SwitchesUsage, L"/timeout=", USAGE_TIMEOUT);
+    RegisterSwitch(SwitchesUsage, L"/rawsettings", USAGE_RAWSETTINGS);
+    RegisterSwitch(SwitchesUsage, L"/console", USAGE_CONSOLE);
+  }
+  RegisterSwitch(SwitchesUsage, L"/script=", USAGE_SCRIPT);
+  RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(COMMAND_SWITCH), USAGE_COMMAND);
+  RegisterSwitch(SwitchesUsage, L"/parameter", USAGE_PARAMETER);
+  RegisterSwitch(SwitchesUsage, L"/log=", USAGE_LOG);
+  RegisterSwitch(SwitchesUsage, L"/loglevel=", USAGE_LOGLEVEL);
+  RegisterSwitch(SwitchesUsage, L"/xmllog=", USAGE_XMLLOG);
+  RegisterSwitch(SwitchesUsage, L"/xmlgroups", USAGE_XMLGROUPS);
+  RegisterSwitch(SwitchesUsage, L"/ini=", USAGE_INI);
+  RegisterSwitch(SwitchesUsage, L"/rawconfig", USAGE_RAWCONFIG);
+  RegisterSwitch(SwitchesUsage, L"/batchsettings", USAGE_BATCHSETTINGS);
+  UnicodeString KeyGenDesc =
+    FMTLOAD(USAGE_KEYGEN, (
+      TProgramParams::FormatSwitch(LowerCase(KEYGEN_OUTPUT_SWITCH)) + L"=",
+      TProgramParams::FormatSwitch(LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH)),
+      TProgramParams::FormatSwitch(LowerCase(KEYGEN_COMMENT_SWITCH)) + L"="));
+  RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(KEYGEN_SWITCH), KeyGenDesc);
+  if (!Console->CommandLineOnly())
+  {
+    RegisterSwitch(SwitchesUsage, L"/update", USAGE_UPDATE);
+  }
+  RegisterSwitch(SwitchesUsage, L"/help", USAGE_HELP);
+
+  int MaxSwitchLen = 0;
+  TSwitchesUsage::const_iterator Index = SwitchesUsage.begin();
+  while (Index != SwitchesUsage.end())
+  {
+    MaxSwitchLen = std::max(Index->first.Length(), MaxSwitchLen);
+    ++Index;
+  }
+
+  Index = SwitchesUsage.begin();
+  while (Index != SwitchesUsage.end())
+  {
+    UnicodeString Label =
+      UnicodeString(L" ") +
+      Index->first +
+      UnicodeString::StringOfChar(L' ', MaxSwitchLen - Index->first.Length()) +
+      L" ";
+    Console->Print(Label);
+
+    const int ConsoleWidth = 80;
+    int DescWidth = ConsoleWidth - Label.Length() - 1;
+
+    bool FirstLine = true;
+    UnicodeString Desc = Index->second;
+    while (!Desc.IsEmpty())
+    {
+      UnicodeString DescLine = CutToChar(Desc, L'\n', true);
+      DescLine = WrapText(DescLine, L"\n", TSysCharSet() << L' ', DescWidth);
+      while (!DescLine.IsEmpty())
+      {
+        UnicodeString DescLineLine = CutToChar(DescLine, L'\n', true);
+        if (!FirstLine)
+        {
+          DescLineLine =
+            UnicodeString::StringOfChar(L' ', Label.Length()) +
+            DescLineLine;
+        }
+        FirstLine = false;
+        ConsolePrintLine(Console, DescLineLine);
+      }
+    }
+    ++Index;
+  }
+
   Console->WaitBeforeExit();
 }
 //---------------------------------------------------------------------------
@@ -2051,7 +2186,7 @@ void __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
       TFileMasks Mask(Arguments->Strings[0]);
       Arguments->Delete(0);
 
-      std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Arguments.get()));
+      std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Arguments.get(), false));
 
       int Matches = 0;
       int Changes = 0;
@@ -2084,11 +2219,177 @@ void __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall FindPuttygenCompatibleSwitch(
+  TProgramParams * Params, const UnicodeString & Name, const UnicodeString & PuttygenName, UnicodeString & Value, bool & Set)
+{
+  bool Result = Params->FindSwitch(Name, Value, Set);
+  if (!Result)
+  {
+    std::unique_ptr<TStrings> Args(new TStringList());
+    Result = Params->FindSwitchCaseSensitive(PuttygenName, Args.get(), 1);
+    if (Result && (Args->Count >= 1))
+    {
+      Value = Args->Strings[0];
+      Set = true;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
+{
+  int Result = RESULT_SUCCESS;
+  UnicodeString Passphrase;
+  UnicodeString NewPassphrase;
+  try
+  {
+    UnicodeString InputFileName;
+    std::unique_ptr<TStrings> Args(new TStringList());
+    if (!Params->FindSwitch(KEYGEN_SWITCH, Args.get(), 1) ||
+        (Args->Count < 1) ||
+        Args->Strings[0].IsEmpty())
+    {
+      throw Exception(LoadStr(KEYGEN_NO_INPUT));
+    }
+    InputFileName = Args->Strings[0];
+
+    bool ValueSet;
+    UnicodeString OutputFileName;
+    FindPuttygenCompatibleSwitch(Params, KEYGEN_OUTPUT_SWITCH, L"o", OutputFileName, ValueSet);
+
+    UnicodeString NewComment;
+    FindPuttygenCompatibleSwitch(Params, KEYGEN_COMMENT_SWITCH, L"C", NewComment, ValueSet);
+
+    bool NewPassphraseSet;
+    bool ChangePassphrase =
+      FindPuttygenCompatibleSwitch(Params, KEYGEN_CHANGE_PASSPHRASE_SWITCH, L"P", NewPassphrase, NewPassphraseSet);
+
+    TKeyType Type = KeyType(InputFileName);
+    int Error = errno;
+    switch (Type)
+    {
+      case ktSSH1:
+        throw Exception(LoadStr(KEYGEN_SSH1));
+
+      case ktSSH2:
+        if (NewComment.IsEmpty() && !ChangePassphrase)
+        {
+          throw Exception(LoadStr(KEYGEN_NO_ACTION));
+        }
+        break;
+
+      case ktOpenSSH:
+      case ktSSHCom:
+        if (OutputFileName.IsEmpty())
+        {
+          throw Exception(LoadStr(KEYGEN_NO_OUTPUT));
+        }
+        break;
+
+      case ktUnopenable:
+        throw EOSExtException(FMTLOAD(KEY_TYPE_UNOPENABLE, (InputFileName)), Error);
+
+      default:
+        FAIL;
+        // fallthru
+      case ktUnknown:
+        throw Exception(FMTLOAD(KEY_TYPE_UNKNOWN2, (InputFileName)));
+    }
+
+    UnicodeString Comment;
+    if (IsKeyEncrypted(Type, InputFileName, Comment))
+    {
+      Passphrase = Params->SwitchValue(PassphraseOption);
+      if (Passphrase.IsEmpty())
+      {
+        Console->Print(StripHotkey(FMTLOAD(PROMPT_KEY_PASSPHRASE, (Comment))) + L" ");
+        if (!Console->Input(Passphrase, false, 0) ||
+            Passphrase.IsEmpty())
+        {
+          Abort();
+        }
+      }
+    }
+
+    TPrivateKey * PrivateKey = LoadKey(Type, InputFileName, Passphrase);
+
+    try
+    {
+      if (!NewComment.IsEmpty())
+      {
+        ChangeKeyComment(PrivateKey, NewComment);
+      }
+
+      if (ChangePassphrase)
+      {
+        if (!NewPassphraseSet)
+        {
+          Console->Print(LoadStr(KEYGEN_PASSPHRASE) + L" ");
+          if (!Console->Input(NewPassphrase, false, 0))
+          {
+            Abort();
+          }
+
+          Console->Print(LoadStr(KEYGEN_PASSPHRASE2) + L" ");
+          UnicodeString NewPassphrase2;
+          if (!Console->Input(NewPassphrase2, false, 0))
+          {
+            Abort();
+          }
+
+          if (NewPassphrase != NewPassphrase2)
+          {
+            Shred(NewPassphrase2);
+            throw Exception(LoadStr(KEYGEN_PASSPHRASES_MISMATCH));
+          }
+        }
+      }
+      else
+      {
+        NewPassphrase = Passphrase;
+      }
+
+      if (OutputFileName.IsEmpty())
+      {
+        OutputFileName = InputFileName;
+      }
+
+      SaveKey(ktSSH2, OutputFileName, NewPassphrase, PrivateKey);
+
+      ConsolePrintLine(Console, FMTLOAD(KEYGEN_SAVED, (OutputFileName)));
+    }
+    __finally
+    {
+      FreeKey(PrivateKey);
+    }
+  }
+  catch (Exception & E)
+  {
+    UnicodeString Message;
+    if (ExceptionMessage(&E, Message))
+    {
+      ConsolePrintLine(Console, Message);
+      ExtException * EE = dynamic_cast<ExtException *>(&E);
+      if ((EE != NULL) && (EE->MoreMessages != NULL))
+      {
+        ConsolePrintLine(Console, EE->MoreMessages->Text);
+      }
+    }
+    Result = RESULT_ANY_ERROR;
+  }
+
+  Shred(Passphrase);
+  Shred(NewPassphrase);
+
+  Console->WaitBeforeExit();
+  return Result;
+}
+//---------------------------------------------------------------------------
 int __fastcall Console(TConsoleMode Mode)
 {
-  assert(Mode != cmNone);
+  DebugAssert(Mode != cmNone);
   TProgramParams * Params = TProgramParams::Instance();
-  int Result = 0;
+  int Result = RESULT_SUCCESS;
   TConsole * Console = NULL;
   TConsoleRunner * Runner = NULL;
   TStrings * ScriptCommands = new TStringList();
@@ -2128,6 +2429,14 @@ int __fastcall Console(TConsoleMode Mode)
         BatchSettings(Console, Params);
       }
     }
+    else if (Mode == cmKeyGen)
+    {
+      if (CheckSafe(Params))
+      {
+        Configuration->Usage->Inc(L"KeyGen");
+        Result = KeyGen(Console, Params);
+      }
+    }
     else
     {
       Runner = new TConsoleRunner(Console);
@@ -2142,7 +2451,7 @@ int __fastcall Console(TConsoleMode Mode)
             Configuration->Usage->Inc(L"ScriptFile");
             LoadScriptFromFile(Value, ScriptCommands);
           }
-          Params->FindSwitch(L"command", ScriptCommands);
+          Params->FindSwitch(COMMAND_SWITCH, ScriptCommands);
           if (ScriptCommands->Count > 0)
           {
             Configuration->Usage->Inc(L"ScriptCommands");
@@ -2158,6 +2467,10 @@ int __fastcall Console(TConsoleMode Mode)
         if (Params->ParamCount >= 1)
         {
           Session = Params->Param[1];
+          if (Params->ParamCount > 1)
+          {
+            Runner->PrintMessage(LoadStr(SCRIPT_CMDLINE_PARAMETERS));
+          }
         }
 
         bool DefaultsOnly;

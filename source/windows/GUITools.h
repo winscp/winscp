@@ -43,6 +43,10 @@ void __fastcall ApplyTabs(
   UnicodeString & Text, wchar_t Padding,
   TCalculateWidth CalculateWidth, void * CalculateWidthArg);
 TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Label);
+void __fastcall SelectScaledImageList(TImageList * ImageList);
+void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName);
+int __fastcall DialogImageSize();
+void __fastcall HideComponentsPanel(TForm * Form);
 namespace Webbrowserex
 {
   class TWebBrowserEx;
@@ -52,6 +56,7 @@ TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeStr
 void __fastcall SetBrowserDesignModeOff(TWebBrowserEx * WebBrowser);
 void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
   const UnicodeString & Url, TNotifyEvent Handler);
+void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeString & Url);
 //---------------------------------------------------------------------------
 class TLocalCustomCommand : public TFileCustomCommand
 {
@@ -73,6 +78,43 @@ protected:
 
 private:
   UnicodeString FLocalFileName;
+};
+//---------------------------------------------------------------------------
+namespace Pngimagelist
+{
+  class TPngImageList;
+  class TPngImageCollectionItem;
+}
+using namespace Pngimagelist;
+//---------------------------------------------------------------------------
+class TFrameAnimation
+{
+public:
+  __fastcall TFrameAnimation();
+  void __fastcall Init(TPaintBox * PaintBox, TPngImageList * ImageList);
+  void __fastcall Init(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name);
+  void __fastcall Start();
+  void __fastcall Stop();
+
+private:
+  TPaintBox * FPaintBox;
+  TPngImageList * FImageList;
+  bool FNamed;
+  int FFirstFrame;
+  int FFirstLoopFrame;
+  int FLastFrame;
+  int FCurrentFrame;
+  DWORD FNextFrameTick;
+  TTimer * FTimer;
+  bool FPainted;
+
+  void __fastcall DoInit(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name, bool Null);
+  void __fastcall PaintBoxPaint(TObject * Sender);
+  void __fastcall CalculateNextFrameTick();
+  TPngImageCollectionItem * __fastcall GetCurrentImage();
+  void __fastcall Animate();
+  void __fastcall Timer(TObject * Sender);
+  void __fastcall Repaint();
 };
 //---------------------------------------------------------------------------
 extern const UnicodeString PageantTool;

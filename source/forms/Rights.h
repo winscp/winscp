@@ -53,6 +53,9 @@ __published:
   TMenuItem *CopyAsText1;
   TMenuItem *CopyAsOctal1;
   TMenuItem *Paste1;
+  TPngImageList *RightsImages120;
+  TPngImageList *RightsImages144;
+  TPngImageList *RightsImages192;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall RightsButtonsClick(TObject *Sender);
   void __fastcall RightsActionsExecute(TBasicAction *Action,

@@ -10,6 +10,7 @@
 #include <ExtCtrls.hpp>
 #include "PasswordEdit.hpp"
 #include "WinInterface.h"
+#include "GUITools.h"
 //---------------------------------------------------------------------------
 class TAuthenticateForm : public TForm
 {
@@ -35,6 +36,9 @@ __published:
   TPasswordEdit *PromptEdit2;
   TPanel *SessionRememberPasswordPanel;
   TCheckBox *SessionRememberPasswordCheck;
+  TPanel *TopPanel;
+  TPanel *LeftPanel;
+  TPaintBox *AnimationPaintBox;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall FormResize(TObject *Sender);
@@ -83,6 +87,8 @@ private:
   int FPromptEditGap;
   int FPromptsGap;
   TNotifyEvent FOnCancel;
+  TFrameAnimation FFrameAnimation;
+  bool FAnimationPainted;
 };
 //---------------------------------------------------------------------------
 #endif

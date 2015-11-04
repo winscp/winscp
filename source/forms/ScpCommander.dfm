@@ -169,6 +169,8 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem110: TTBXItem
           Action = NonVisualDataModule.SelectAllAction
         end
+        object TBXSeparatorItem60: TTBXSeparatorItem
+        end
         object TBXItem111: TTBXItem
           Action = NonVisualDataModule.InvertSelectionAction
         end
@@ -177,6 +179,14 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXItem27: TTBXItem
           Action = NonVisualDataModule.RestoreSelectionAction
+        end
+        object TBXSeparatorItem61: TTBXSeparatorItem
+        end
+        object TBXItem212: TTBXItem
+          Action = NonVisualDataModule.SelectSameExtAction
+        end
+        object TBXItem213: TTBXItem
+          Action = NonVisualDataModule.UnselectSameExtAction
         end
       end
       object TBXSubmenuItem5: TTBXSubmenuItem
@@ -202,22 +212,30 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem25: TTBXItem
           Action = NonVisualDataModule.CurrentOpenAction
         end
-        object TBXItem26: TTBXItem
+        object TBXItem26: TTBXSubmenuItem
           Action = NonVisualDataModule.CurrentEditAction
-        end
-        object TBXSubmenuItem25: TTBXSubmenuItem
-          Action = NonVisualDataModule.CurrentEditAlternative2Action
+          DropdownCombo = True
+          OnPopup = EditMenuItemPopup
         end
         object TBXItem29: TTBXItem
           Action = NonVisualDataModule.CurrentAddEditLinkAction
         end
         object TBXSeparatorItem7: TTBXSeparatorItem
         end
-        object CurrentCopyItem: TTBXItem
+        object CurrentCopyItem: TTBXSubmenuItem
           Action = NonVisualDataModule.RemoteCopyAction
-        end
-        object CurrentMoveItem: TTBXItem
-          Action = NonVisualDataModule.RemoteMoveAction
+          DropdownCombo = True
+          object CurrentCopyNonQueueItem: TTBXItem
+            Action = NonVisualDataModule.RemoteCopyNonQueueAction
+          end
+          object CurrentCopyQueueItem: TTBXItem
+            Action = NonVisualDataModule.RemoteCopyQueueAction
+          end
+          object TBXSeparatorItem51: TTBXSeparatorItem
+          end
+          object CurrentMoveItem: TTBXItem
+            Action = NonVisualDataModule.RemoteMoveAction
+          end
         end
         object TBXItem31: TTBXItem
           Action = NonVisualDataModule.RemoteCopyToAction
@@ -253,7 +271,17 @@ inherited ScpCommanderForm: TScpCommanderForm
             Action = NonVisualDataModule.FullFileListToClipboardAction
           end
           object TBXItem40: TTBXItem
-            Action = NonVisualDataModule.FileGenerateUrlAction
+            Action = NonVisualDataModule.FileGenerateUrlAction2
+          end
+        end
+        object TBXSubmenuItem25: TTBXSubmenuItem
+          Caption = '&Locking'
+          Hint = 'Manage file locks'
+          object TBXItem214: TTBXItem
+            Action = NonVisualDataModule.LockAction
+          end
+          object TBXItem216: TTBXItem
+            Action = NonVisualDataModule.UnlockAction
           end
         end
         object TBXSeparatorItem9: TTBXSeparatorItem
@@ -391,7 +419,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.FileSystemInfoAction
         end
         object TBXItem135: TTBXItem
-          Action = NonVisualDataModule.SessionGenerateUrlAction
+          Action = NonVisualDataModule.SessionGenerateUrlAction2
         end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
@@ -714,6 +742,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         Hint = 'Help'
         object TBXItem116: TTBXItem
           Action = NonVisualDataModule.TableOfContentsAction
+        end
+        object TBXItem217: TTBXItem
+          Action = NonVisualDataModule.TipsAction
         end
         object TBXSeparatorItem30: TTBXSeparatorItem
         end
@@ -1165,18 +1196,29 @@ inherited ScpCommanderForm: TScpCommanderForm
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
-        object TBXItem238: TTBXItem
+        object TBXItem238: TTBXSubmenuItem
           Action = NonVisualDataModule.RemoteCopyAction
           DisplayMode = nbdmImageAndText
-        end
-        object TBXItem239: TTBXItem
-          Action = NonVisualDataModule.RemoteMoveAction
+          DropdownCombo = True
+          object TBXItem143: TTBXItem
+            Action = NonVisualDataModule.RemoteCopyNonQueueAction
+          end
+          object TBXItem200: TTBXItem
+            Action = NonVisualDataModule.RemoteCopyQueueAction
+          end
+          object TBXSeparatorItem59: TTBXSeparatorItem
+          end
+          object TBXItem239: TTBXItem
+            Action = NonVisualDataModule.RemoteMoveAction
+          end
         end
         object TBXSeparatorItem55: TTBXSeparatorItem
         end
-        object TBXItem242: TTBXItem
+        object TBXItem242: TTBXSubmenuItem
           Action = NonVisualDataModule.RemoteEditAction
           DisplayMode = nbdmImageAndText
+          DropdownCombo = True
+          OnPopup = EditMenuItemPopup
         end
         object TBXItem241: TTBXItem
           Action = NonVisualDataModule.RemoteDeleteAction
@@ -1467,18 +1509,29 @@ inherited ScpCommanderForm: TScpCommanderForm
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
-        object TBXItem231: TTBXItem
+        object TBXItem231: TTBXSubmenuItem
           Action = NonVisualDataModule.LocalCopyAction
           DisplayMode = nbdmImageAndText
-        end
-        object TBXItem232: TTBXItem
-          Action = NonVisualDataModule.LocalMoveAction
+          DropdownCombo = True
+          object TBXItem144: TTBXItem
+            Action = NonVisualDataModule.LocalCopyNonQueueAction
+          end
+          object TBXItem174: TTBXItem
+            Action = NonVisualDataModule.LocalCopyQueueAction
+          end
+          object TBXSeparatorItem58: TTBXSeparatorItem
+          end
+          object TBXItem232: TTBXItem
+            Action = NonVisualDataModule.LocalMoveAction
+          end
         end
         object TBXSeparatorItem54: TTBXSeparatorItem
         end
-        object TBXItem235: TTBXItem
+        object TBXItem235: TTBXSubmenuItem
           Action = NonVisualDataModule.LocalEditAction
           DisplayMode = nbdmImageAndText
+          DropdownCombo = True
+          OnPopup = EditMenuItemPopup
         end
         object TBXItem234: TTBXItem
           Action = NonVisualDataModule.LocalDeleteAction
@@ -1500,7 +1553,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object LocalSelectionToolbar: TTBXToolbar
-        Left = 329
+        Left = 320
         Top = 53
         Caption = 'Local Selection'
         DockPos = 329

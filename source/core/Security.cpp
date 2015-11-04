@@ -97,7 +97,7 @@ bool GetExternalEncryptedPassword(RawByteString Encrypted, RawByteString & Passw
     (SimpleDecryptNextChar(Encrypted) == PWALG_SIMPLE_EXTERNAL);
   if (Result)
   {
-    Password = HexToBytes(UnicodeString(UTF8String(Encrypted.c_str(), Encrypted.Length())));
+    Password = HexToBytes(UTF8ToString(Encrypted));
   }
   return Result;
 }

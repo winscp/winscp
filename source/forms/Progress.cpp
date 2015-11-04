@@ -13,33 +13,50 @@
 #include <BaseUtils.hpp>
 #include <DateUtils.hpp>
 #include <Consts.hpp>
+#include <HistoryComboBox.hpp>
 
 #include "Progress.h"
 //---------------------------------------------------------------------
-#pragma link "HistoryComboBox"
 #pragma link "PathLabel"
+#pragma link "PngImageList"
+#pragma link "TB2Dock"
+#pragma link "TB2Item"
+#pragma link "TB2Toolbar"
+#pragma link "TBX"
+#pragma link "TB2ExtItems"
+#pragma link "TBXExtItems"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
-UnicodeString __fastcall TProgressForm::OperationName(TFileOperation Operation, TOperationSide Side)
+bool __fastcall TProgressForm::IsIndetermiateOperation(TFileOperation Operation)
+{
+  return (Operation == foCalculateSize);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TProgressForm::ProgressStr(TFileOperationProgressType * ProgressData)
 {
   static const int Captions[] = { 0, 0, PROGRESS_DELETE,
     PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE,
     PROGRESS_REMOTE_MOVE, PROGRESS_REMOTE_COPY, PROGRESS_GETPROPERTIES,
-    PROGRESS_CALCULATE_CHECKSUM };
-  assert((unsigned int)Operation >= 1 && ((unsigned int)Operation - 1) < LENOF(Captions));
+    PROGRESS_CALCULATE_CHECKSUM, PROGRESS_LOCK, PROGRESS_UNLOCK };
+  DebugAssert((unsigned int)ProgressData->Operation >= 1 && ((unsigned int)ProgressData->Operation - 1) < LENOF(Captions));
   int Id;
-  if ((Operation == foCopy) || (Operation == foMove))
+  if ((ProgressData->Operation == foCopy) || (ProgressData->Operation == foMove))
   {
-    Id = (Side == osLocal) ? PROGRESS_UPLOAD : PROGRESS_DOWNLOAD;
+    Id = (ProgressData->Side == osLocal) ? PROGRESS_UPLOAD : PROGRESS_DOWNLOAD;
   }
   else
   {
-    Id = Captions[(int)Operation - 1];
-    assert(Id != 0);
+    Id = Captions[(int)ProgressData->Operation - 1];
+    DebugAssert(Id != 0);
   }
-  return LoadStr(Id);
+  UnicodeString Result = LoadStr(Id);
+  if (!IsIndetermiateOperation(ProgressData->Operation))
+  {
+    Result = FORMAT(L"%d%% %s", (ProgressData->OverallProgress(), Result));
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQueue)
@@ -60,9 +77,7 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
   FModalBeginHooked = false;
   FPrevApplicationModalBegin = NULL;
   FModalLevel = -1;
-  FAllowMoveToQueue = AllowMoveToQueue;
   UseSystemSettings(this);
-  ResetOnceDoneOperation();
 
   if (CustomWinConfiguration->OperationProgressOnTop)
   {
@@ -75,11 +90,16 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
     FFileProgress = TopProgress;
   }
 
+  FOnceDoneItems.Add(odoIdle, IdleOnceDoneItem);
+  FOnceDoneItems.Add(odoDisconnect, DisconnectOnceDoneItem);
+  FOnceDoneItems.Add(odoSuspend, SuspendOnceDoneItem);
+  FOnceDoneItems.Add(odoShutDown, ShutDownOnceDoneItem);
+  ResetOnceDoneOperation();
+  HideComponentsPanel(this);
+  SelectScaledImageList(ImageList);
+
   SetGlobalMinimizeHandler(this, GlobalMinimize);
-  if (FAllowMoveToQueue)
-  {
-    MenuButton(MinimizeButton);
-  }
+  MoveToQueueItem->Visible = AllowMoveToQueue;
 }
 //---------------------------------------------------------------------------
 __fastcall TProgressForm::~TProgressForm()
@@ -98,7 +118,7 @@ __fastcall TProgressForm::~TProgressForm()
 
   if (FModalBeginHooked)
   {
-    assert(Application->OnModalBegin == ApplicationModalBegin);
+    DebugAssert(Application->OnModalBegin == ApplicationModalBegin);
     Application->OnModalBegin = FPrevApplicationModalBegin;
     FModalBeginHooked = false;
   }
@@ -108,106 +128,102 @@ __fastcall TProgressForm::~TProgressForm()
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateControls()
 {
-  assert((FData.Operation >= foCopy) && (FData.Operation <= foCalculateChecksum) &&
-    FData.Operation != foRename );
-
-  CancelButton->Enabled = !FReadOnly && (FCancel == csContinue);
-  OnceDoneOperationCombo2->Enabled =
-    !FReadOnly && (FData.Operation != foCalculateSize) &&
-    (FData.Operation != foGetProperties) &&
-    (FData.Operation != foCalculateChecksum);
-  OnceDoneOperationLabel->Enabled = OnceDoneOperationCombo2->Enabled;
+  DebugAssert((FData.Operation >= foCopy) && (FData.Operation <= foUnlock) &&
+    (FData.Operation != foRename));
 
   bool TransferOperation =
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
 
+  CancelItem->Enabled = !FReadOnly && (FCancel == csContinue);
+  MoveToQueueItem->Enabled = !FMoveToQueue && (FCancel == csContinue);
+  CycleOnceDoneItem->Visible =
+    !FReadOnly &&
+    (FData.Operation != foCalculateSize) &&
+    (FData.Operation != foGetProperties) &&
+    (FData.Operation != foCalculateChecksum);
+  CycleOnceDoneItem->ImageIndex = CurrentOnceDoneItem()->ImageIndex;
+  SpeedComboBoxItem->Visible = TransferOperation;
+
   if (FData.Operation != FLastOperation)
   {
-    bool AVisible;
+    UnicodeString Animation;
+    UnicodeString CancelCaption = Vcl_Consts_SMsgDlgCancel;
+    int MoveToQueueImageIndex = -1;
 
-    // Wine does have static text "Searching" instead of actual animations
-    if (!IsWine())
+    int MoveTransferToQueueImageIndex;
+    if (FData.Side == osRemote)
     {
-      try
-      {
-        THandle ShellModule;
-        AVisible = true;
-        TProgressBarStyle Style = pbstNormal;
-        UnicodeString CancelCaption = Vcl_Consts_SMsgDlgCancel;
-        switch (FData.Operation) {
-          case foCopy:
-          case foMove:
-          case foRemoteMove:
-          case foRemoteCopy:
-            if (FData.Count == 1) Animate->CommonAVI = aviCopyFile;
-              else Animate->CommonAVI = aviCopyFiles;
-            break;
-
-          case foDelete:
-            Animate->CommonAVI = (DeleteToRecycleBin ? aviRecycleFile : aviDeleteFile);
-            break;
-
-          case foSetProperties:
-          case foGetProperties:
-            ShellModule = SafeLoadLibrary(L"shell32.dll");
-            if (!ShellModule)
-            {
-              Abort();
-            }
-            // workaround, VCL is not able to set both ResId and ResHandle otherwise
-            Animate->Active = false;
-            Animate->ResHandle = 0;
-            Animate->ComponentState << csLoading;
-            Animate->ResId = 165;
-            Animate->ResHandle = ShellModule;
-            Animate->ComponentState >> csLoading;
-            Animate->Active = true;
-            break;
-
-          case foCalculateSize:
-            Animate->CommonAVI = aviNone;
-            AVisible = false;
-            Style = pbstMarquee;
-            CancelCaption = LoadStr(SKIP_BUTTON);
-            break;
-
-          default:
-            assert(FData.Operation == foCustomCommand ||
-              FData.Operation == foCalculateChecksum);
-            Animate->CommonAVI = aviNone;
-            AVisible = false;
-        }
-        TopProgress->Style = Style;
-        CancelButton->Caption = CancelCaption;
-      }
-      catch (...)
-      {
-        AVisible = false;
-      };
+      MoveTransferToQueueImageIndex = 7;
     }
     else
     {
-      Animate->CommonAVI = aviNone;
-      AVisible = false;
+      MoveTransferToQueueImageIndex = 8;
     }
 
+    switch (FData.Operation)
+    {
+      case foCopy:
+        if (FData.Side == osRemote)
+        {
+          Animation = L"CopyRemote";
+        }
+        else
+        {
+          Animation = L"CopyLocal";
+        }
+        MoveToQueueImageIndex = MoveTransferToQueueImageIndex;
+        break;
+
+      case foMove:
+        if (FData.Side == osRemote)
+        {
+          Animation = L"MoveRemote";
+        }
+        else
+        {
+          Animation = L"MoveLocal";
+        }
+        MoveToQueueImageIndex = MoveTransferToQueueImageIndex;
+        break;
+
+      case foDelete:
+        Animation = DeleteToRecycleBin ? L"Recycle" : L"Delete";
+        break;
+
+      case foCalculateSize:
+        Animation = L"CalculateSize";
+        CancelCaption = LoadStr(SKIP_BUTTON);
+        MoveToQueueImageIndex = MoveTransferToQueueImageIndex;
+        break;
+
+      case foSetProperties:
+        Animation = "SetProperties";
+        break;
+
+      default:
+        DebugAssert(
+          (FData.Operation == foCustomCommand) ||
+          (FData.Operation == foGetProperties) ||
+          (FData.Operation == foCalculateChecksum) ||
+          (FData.Operation == foLock) ||
+          (FData.Operation == foUnlock) ||
+          (FData.Operation == foRemoteCopy) ||
+          (FData.Operation == foRemoteMove));
+        break;
+    }
+
+    CancelItem->Caption = CancelCaption;
+
+    TopProgress->Style = IsIndetermiateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
+
+    FFrameAnimation.Init(AnimationPaintBox, AnimationImageList, Animation);
+    FFrameAnimation.Start();
+
     int Delta = 0;
-    if (AVisible && !Animate->Visible) Delta = Animate->Height;
-      else
-    if (!AVisible && Animate->Visible) Delta = -Animate->Height;
-
-    MainPanel->Top = MainPanel->Top + Delta;
-    TransferPanel->Top = TransferPanel->Top + Delta;
-    Animate->Visible = AVisible;
-    Animate->Active = AVisible;
-
     if (TransferOperation && !TransferPanel->Visible) Delta += TransferPanel->Height;
       else
     if (!TransferOperation && TransferPanel->Visible) Delta += -TransferPanel->Height;
     TransferPanel->Visible = TransferOperation;
-    // when animation is hidden for transfers (on wine) speed panel does not fit,
-    // so we hide it (temporary solution before window redesign)
-    SpeedPanel->Visible = TransferOperation && AVisible;
 
     ClientHeight = ClientHeight + Delta;
 
@@ -216,10 +232,14 @@ void __fastcall TProgressForm::UpdateControls()
     TargetPathLabel->UnixPath = (FData.Side == osLocal);
 
     FileLabel->UnixPath = (FData.Side == osRemote);
+    PathLabel->Caption =
+      LoadStr((FData.Operation == foCalculateSize) ? PROGRESS_PATH_LABEL : PROGRESS_FILE_LABEL);
+
+    MoveToQueueItem->ImageIndex = MoveToQueueImageIndex;
 
     FLastOperation = FData.Operation;
     FLastTotalSizeSet = !FData.TotalSizeSet;
-  };
+  }
 
   if (FLastTotalSizeSet != FData.TotalSizeSet)
   {
@@ -230,7 +250,18 @@ void __fastcall TProgressForm::UpdateControls()
     FLastTotalSizeSet = FData.TotalSizeSet;
   }
 
-  if ((FData.Side == osRemote) || !FData.Temp)
+  if ((FData.Operation == foCalculateSize) && ALWAYS_TRUE(!FData.Temp))
+  {
+    if (FData.Side == osRemote)
+    {
+      FileLabel->Caption = UnixExtractFileDir(FData.FullFileName);
+    }
+    else
+    {
+      FileLabel->Caption = ExtractFileDir(FData.FullFileName);
+    }
+  }
+  else if ((FData.Side == osRemote) || !FData.Temp)
   {
     FileLabel->Caption = FData.FileName;
   }
@@ -241,7 +272,7 @@ void __fastcall TProgressForm::UpdateControls()
   int OverallProgress = FData.OverallProgress();
   FOperationProgress->Position = OverallProgress;
   FOperationProgress->Hint = FORMAT(L"%d%%", (OverallProgress));
-  Caption = FormatFormCaption(this, FORMAT(L"%d%% %s", (OverallProgress, OperationName(FData.Operation, FData.Side))));
+  Caption = FormatFormCaption(this, ProgressStr(&FData));
 
   if (TransferOperation)
   {
@@ -268,8 +299,8 @@ void __fastcall TProgressForm::UpdateControls()
   }
 }
 //---------------------------------------------------------------------
-static TDateTime DelayStartInterval(static_cast<double>(OneSecond/5));
-static TDateTime UpdateInterval(static_cast<double>(OneSecond));
+static __int64 DelayStartInterval = MSecsPerSec / 2;
+static __int64 UpdateInterval = 1 * MSecsPerSec;
 //---------------------------------------------------------------------
 bool __fastcall TProgressForm::ReceiveData(bool Force, int ModalLevelOffset)
 {
@@ -289,13 +320,14 @@ bool __fastcall TProgressForm::ReceiveData(bool Force, int ModalLevelOffset)
     // (for extreme cases like restoring while reconnecting [as-modal TAuthenticateForm]).
     if ((FModalLevel < 0) || (Application->ModalLevel + ModalLevelOffset <= FModalLevel))
     {
-      // delay showing the progress until the application is restored,
+      // Delay showing the progress until the application is restored,
       // otherwise the form popups up unminimized.
+      // See solution in TMessageForm::CMShowingChanged.
       if (!IsApplicationMinimized() &&
-          (Force || ((Now() - FStarted) > DelayStartInterval)))
+          (Force || (MilliSecondsBetween(Now(), FStarted) > DelayStartInterval)))
       {
         FDataReceived = true;
-        SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
+        SpeedComboBoxItem->Text = SetSpeedLimit(FCPSLimit);
         ShowAsModal(this, FShowAsModalStorage);
         // particularly needed for the case, when we are showing the form delayed
         // because application was minimized when operation started
@@ -319,8 +351,8 @@ bool __fastcall TProgressForm::ReceiveData(bool Force, int ModalLevelOffset)
 void __fastcall TProgressForm::ApplicationModalBegin(TObject * Sender)
 {
   // Popup before any modal dialog shows (typically overwrite confirmation,
-  // as that popups nerly instantly, i.e. less than DelayStartInterval).
-  // The Application->ModalLevel is already incremented, but we should treat is as
+  // as that popups nearly instantly, i.e. less than DelayStartInterval).
+  // The Application->ModalLevel is already incremented, but we should treat it as
   // if it were not as the dialog is not created yet (so we can popup if we are not yet).
   ReceiveData(true, -1);
 
@@ -347,9 +379,9 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
   FDataGot = true;
   if (!UpdateTimer->Enabled)
   {
-    UpdateTimer->Interval = static_cast<unsigned int>(MilliSecondsBetween(TDateTime(), DelayStartInterval));
+    UpdateTimer->Interval = static_cast<int>(DelayStartInterval);
     UpdateTimer->Enabled = true;
-    FSinceLastUpdate = TDateTime();
+    FSinceLastUpdate = 0;
   }
 
   if (ReceiveData(false, 0))
@@ -378,52 +410,47 @@ void __fastcall TProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
   // that launches long-lasting external process, such as visual diff)
   ReceiveData(false, 0);
 
+  if (UpdateTimer->Interval == DelayStartInterval)
+  {
+    UpdateTimer->Interval = static_cast<int>(GUIUpdateInterval);
+  }
+
   if (FDataReceived)
   {
-    FSinceLastUpdate = IncMilliSecond(FSinceLastUpdate, UpdateTimer->Interval);
+    FSinceLastUpdate += UpdateTimer->Interval;
     if (FSinceLastUpdate >= UpdateInterval)
     {
       UpdateControls();
-      FSinceLastUpdate = TDateTime();
+      FSinceLastUpdate = 0;
     }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::FormShow(TObject * /*Sender*/)
 {
-  SpeedCombo->Items = CustomWinConfiguration->History[L"SpeedLimit"];
+  CopySpeedLimits(CustomWinConfiguration->History[L"SpeedLimit"], SpeedComboBoxItem->Strings);
   ReceiveData(false, 0);
   if (FDataReceived)
   {
     UpdateControls();
   }
+  HookFormActivation(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::FormHide(TObject * /*Sender*/)
 {
+  UnhookFormActivation(this);
   // This is to counter the "infinite" timestamp in
   // TTerminalManager::ApplicationShowHint.
   // Because if form disappears on its own, hint is not hidden.
   Application->CancelHint();
-  CustomWinConfiguration->History[L"SpeedLimit"] = SpeedCombo->Items;
+  CustomWinConfiguration->History[L"SpeedLimit"] = SpeedComboBoxItem->Strings;
   UpdateTimer->Enabled = false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::CancelButtonClick(TObject * /*Sender*/)
+void __fastcall TProgressForm::CancelItemClick(TObject * /*Sender*/)
 {
   CancelOperation();
-}
-//---------------------------------------------------------------------------
-void __fastcall TProgressForm::MinimizeButtonClick(TObject * Sender)
-{
-  if (FAllowMoveToQueue)
-  {
-    MenuPopup(MinimizeMenu, MinimizeButton);
-  }
-  else
-  {
-    Minimize(Sender);
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::Minimize(TObject * Sender)
@@ -431,14 +458,14 @@ void __fastcall TProgressForm::Minimize(TObject * Sender)
   CallGlobalMinimizeHandler(Sender);
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::MinimizeMenuItemClick(TObject * Sender)
+void __fastcall TProgressForm::MinimizeItemClick(TObject * Sender)
 {
   Minimize(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::CancelOperation()
 {
-  assert(FDataReceived);
+  DebugAssert(FDataReceived);
   if (!FData.Suspended)
   {
     // mostly useless, as suspend is called over copy of actual progress data
@@ -486,42 +513,51 @@ void __fastcall TProgressForm::GlobalMinimize(TObject * /*Sender*/)
   FMinimizedByMe = true;
 }
 //---------------------------------------------------------------------------
+TTBCustomItem * __fastcall TProgressForm::CurrentOnceDoneItem()
+{
+  TOnceDoneItems::const_iterator Iterator = FOnceDoneItems.begin();
+  while (Iterator != FOnceDoneItems.end())
+  {
+    if (Iterator->second->Checked)
+    {
+      return Iterator->second;
+    }
+    Iterator++;
+  }
+
+  FAIL;
+  return NULL;
+}
+//---------------------------------------------------------------------------
+TOnceDoneOperation __fastcall TProgressForm::GetOnceDoneOperation()
+{
+  return FOnceDoneItems.LookupFirst(CurrentOnceDoneItem());
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::SetOnceDoneItem(TTBCustomItem * Item)
+{
+  TTBCustomItem * Current = CurrentOnceDoneItem();
+  if (Current != Item)
+  {
+    Current->Checked = false;
+    Item->Checked = true;
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TProgressForm::SetOnceDoneOperation(TOnceDoneOperation value)
 {
-  int Index = 0;
-  switch (value)
-  {
-    case odoIdle:
-      Index = 0;
-      break;
-
-    case odoDisconnect:
-      Index = 1;
-      break;
-
-    case odoSuspend:
-      Index = 2;
-      break;
-
-    case odoShutDown:
-      Index = 3;
-      break;
-
-    default:
-      FAIL;
-  }
-  OnceDoneOperationCombo2->ItemIndex = Index;
-  OnceDoneOperationCombo2Select(NULL);
+  SetOnceDoneItem(FOnceDoneItems.LookupSecond(value));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TProgressForm::GetAllowMinimize()
 {
-  return MinimizeButton->Visible;
+  return MinimizeItem->Visible;
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::SetAllowMinimize(bool value)
 {
-  MinimizeButton->Visible = value;
+  MinimizeItem->Visible = value;
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::SetReadOnly(bool value)
@@ -537,88 +573,9 @@ void __fastcall TProgressForm::SetReadOnly(bool value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::ApplyCPSLimit()
-{
-  try
-  {
-    FCPSLimit = GetSpeedLimit(SpeedCombo->Text);
-  }
-  catch(...)
-  {
-    SpeedCombo->SetFocus();
-    throw;
-  }
-
-  SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
-  // visualize application
-  SpeedCombo->SelectAll();
-  ResetFocus();
-}
-//---------------------------------------------------------------------------
-void __fastcall TProgressForm::ResetFocus()
-{
-  if (CancelButton->Enabled)
-  {
-    CancelButton->SetFocus();
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TProgressForm::SpeedComboExit(TObject * /*Sender*/)
-{
-  SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
-}
-//---------------------------------------------------------------------------
-void __fastcall TProgressForm::SpeedComboSelect(TObject * /*Sender*/)
-{
-  ApplyCPSLimit();
-}
-//---------------------------------------------------------------------------
-void __fastcall TProgressForm::SpeedComboKeyPress(TObject * /*Sender*/,
-  wchar_t & Key)
-{
-  // using OnKeyPress instead of OnKeyDown to catch "enter" prevents
-  // system beep for unhandled key
-  if (Key == L'\r')
-  {
-    Key = L'\0';
-    ApplyCPSLimit();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TProgressForm::ResetOnceDoneOperation()
 {
-  OnceDoneOperationCombo2->ItemIndex = 0;
-  OnceDoneOperationCombo2Select(NULL);
-}
-//---------------------------------------------------------------------------
-void __fastcall TProgressForm::OnceDoneOperationCombo2Select(TObject * /*Sender*/)
-{
-  switch (OnceDoneOperationCombo2->ItemIndex)
-  {
-    case 0:
-      FOnceDoneOperation = odoIdle;
-      break;
-
-    case 1:
-      FOnceDoneOperation = odoDisconnect;
-      break;
-
-    case 2:
-      FOnceDoneOperation = odoSuspend;
-      break;
-
-    case 3:
-      FOnceDoneOperation = odoShutDown;
-      break;
-
-    default:
-      FAIL;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TProgressForm::OnceDoneOperationCombo2CloseUp(TObject * /*Sender*/)
-{
-  ResetFocus();
+  SetOnceDoneOperation(odoIdle);
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::Dispatch(void * AMessage)
@@ -634,8 +591,74 @@ void __fastcall TProgressForm::Dispatch(void * AMessage)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::MoveToQueueMenuItemClick(TObject * /*Sender*/)
+void __fastcall TProgressForm::MoveToQueueItemClick(TObject * /*Sender*/)
 {
   FMoveToQueue = true;
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::OnceDoneItemClick(TObject * Sender)
+{
+  SetOnceDoneItem(dynamic_cast<TTBCustomItem *>(Sender));
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::CycleOnceDoneItemClick(TObject * /*Sender*/)
+{
+  TTBCustomItem * Item = CurrentOnceDoneItem();
+  int Index = Item->Parent->IndexOf(Item);
+  DebugAssert(Index >= 0);
+  if (Index < Item->Parent->Count - 1)
+  {
+    Index++;
+  }
+  else
+  {
+    Index = 0;
+  }
+  SetOnceDoneItem(Item->Parent->Items[Index]);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TProgressForm::ItemSpeed(const UnicodeString & Text,
+  TTBXComboBoxItem * Item)
+{
+  // Keep in sync with TNonVisualDataModule::QueueItemSpeed
+  FCPSLimit = GetSpeedLimit(Text);
+
+  UnicodeString Result = SetSpeedLimit(FCPSLimit);
+  SaveToHistory(Item->Strings, Result);
+  CustomWinConfiguration->History[L"SpeedLimit"] = Item->Strings;
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::SpeedComboBoxItemAcceptText(TObject * Sender,
+  UnicodeString & NewText, bool & /*Accept*/)
+{
+  TTBXComboBoxItem * Item = dynamic_cast<TTBXComboBoxItem *>(Sender);
+  NewText = ItemSpeed(NewText, Item);
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::SpeedComboBoxItemItemClick(TObject * Sender)
+{
+  TTBXComboBoxItem * Item = dynamic_cast<TTBXComboBoxItem *>(Sender);
+  Item->Text = ItemSpeed(Item->Text, Item);
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::SpeedComboBoxItemAdjustImageIndex(
+  TTBXComboBoxItem * Sender, const UnicodeString /*AText*/, int /*AIndex*/, int & ImageIndex)
+{
+  // Use fixed image (do not change image by item index)
+  ImageIndex = Sender->ImageIndex;
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::FormKeyDown(
+  TObject * /*Sender*/, WORD & Key, TShiftState /*Shift*/)
+{
+  // We do not have Cancel button, so we have to handle Esc key explicitly
+  if (Key == VK_ESCAPE)
+  {
+    CancelOperation();
+    Key = 0;
+  }
 }
 //---------------------------------------------------------------------------

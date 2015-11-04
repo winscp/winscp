@@ -16,6 +16,27 @@ typedef struct {
 /*
  * The Blowfish init data: hex digits of the fractional part of pi.
  * (ie pi as a hex fraction is 3.243F6A8885A308D3...)
+ *
+ * If you have Simon Tatham's 'spigot' exact real calculator
+ * available, or any other method of generating 8336 fractional hex
+ * digits of pi on standard output, you can regenerate these tables
+ * exactly as below using the following Perl script (adjusting the
+ * first line or two if your pi-generator is not spigot).
+
+open my $spig, "spigot -n -B16 -d8336 pi |";
+read $spig, $ignore, 2; # throw away the leading "3."
+for my $name ("parray", "sbox0".."sbox3") {
+    print "static const word32 ${name}[] = {\n";
+    my $len = $name eq "parray" ? 18 : 256;
+    for my $i (1..$len) {
+        read $spig, $word, 8;
+        printf "%s0x%s,", ($i%6==1 ? "    " : " "), uc $word;
+        print "\n" if ($i == $len || $i%6 == 0);
+    }
+    print "};\n\n";
+}
+close $spig;
+
  */
 static const word32 parray[] = {
     0x243F6A88, 0x85A308D3, 0x13198A2E, 0x03707344, 0xA4093822, 0x299F31D0,

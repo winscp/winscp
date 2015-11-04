@@ -166,6 +166,7 @@ type
   private
     FColor: TColor;
     FColorSet: TTBXCustomColorSet;
+    FImageSize: Integer;
     procedure SetColorSet(Value: TTBXCustomColorSet);
     procedure SetColor(Value: TColor);
   protected
@@ -198,7 +199,7 @@ type
 
 implementation
 
-uses ImgList, UxTheme, Types;
+uses ImgList, UxTheme, Types, TBXUtils;
 
 var
   DefaultColorSet: TTBXCustomColorSet;
@@ -778,12 +779,18 @@ begin
   Options := Options + [tboShowHint];
   FColor := clNone;
   PaletteOptions := PaletteOptions + [tpoCustomImages];
+  FImageSize := -1;
 end;
 
 procedure TTBXColorPalette.DoCalcImageSize(Canvas: TCanvas; var AWidth, AHeight: Integer);
 begin
-  AWidth := 12;
-  AHeight := 12;
+  if FImageSize < 0 then
+  begin
+    FImageSize := ScaleByTextHeightRunTime(Canvas, 12);
+  end;
+
+  AWidth := FImageSize;
+  AHeight := FImageSize;
 end;
 
 procedure TTBXColorPalette.DoChange;

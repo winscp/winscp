@@ -69,7 +69,7 @@ __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RestoreFormParams()
 {
-  assert(Configuration);
+  DebugAssert(Configuration);
 
   TCustomScpExplorerForm::RestoreFormParams();
   RestoreForm(WinConfiguration->ScpExplorer.WindowParams, this);
@@ -78,12 +78,12 @@ void __fastcall TScpExplorerForm::RestoreFormParams()
 void __fastcall TScpExplorerForm::ConfigurationChanged()
 {
   TCustomScpExplorerForm::ConfigurationChanged();
-  UpdateRemotePathComboBox(UnixPathComboBox, true);
+  UpdateRemotePathComboBox(true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RestoreParams()
 {
-  assert(Configuration);
+  DebugAssert(Configuration);
 
   TCustomScpExplorerForm::RestoreParams();
 
@@ -108,7 +108,7 @@ void __fastcall TScpExplorerForm::RestoreParams()
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::StoreParams()
 {
-  assert(Configuration);
+  DebugAssert(Configuration);
 
   Configuration->BeginUpdate();
   try
@@ -131,6 +131,11 @@ void __fastcall TScpExplorerForm::StoreParams()
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TScpExplorerForm::DefaultDownloadTargetDirectory()
+{
+  return WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, Boolean Temp, TStrings * FileList,
   UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
@@ -139,7 +144,7 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
   // Temp means d&d here so far, may change in future!
   if ((Direction == tdToLocal) && !Temp && TargetDirectory.IsEmpty())
   {
-    TargetDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+    TargetDirectory = DefaultDownloadTargetDirectory();
   }
   bool Result = TCustomScpExplorerForm::CopyParamDialog(
     Direction, Type, Temp, FileList, TargetDirectory, CopyParam, Confirm,
@@ -153,9 +158,14 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::DoShow()
 {
-  TCustomScpExplorerForm::DoShow();
+  if (RemoteDirView->Enabled)
+  {
+    RemoteDirView->SetFocus();
+  }
+  assert(FRemoteDirViewWasFocused);
+  FRemoteDirViewWasFocused = true;
 
-  ActiveControl = RemoteDirView;
+  TCustomScpExplorerForm::DoShow();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
@@ -187,6 +197,7 @@ TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
     case fcTransferDropDown: return reinterpret_cast<TControl*>(TransferDropDown);
     case fcTransferList: return reinterpret_cast<TControl*>(TransferList);
     case fcTransferLabel: return reinterpret_cast<TControl*>(TransferLabel);
+    case fcRemotePathComboBox: return reinterpret_cast<TControl*>(UnixPathComboBox);
 
     case fcExplorerMenuBand: return MenuToolbar;
     case fcExplorerAddressBand: return AddressToolbar;
@@ -245,7 +256,7 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
 void __fastcall TScpExplorerForm::RemoteDirViewUpdateStatusBar(
   TObject * /*Sender*/, const TStatusFileInfo & FileInfo)
 {
-  FStatusBarFileText = FileStatusBarText(FileInfo);
+  FStatusBarFileText = FileStatusBarText(FileInfo, osRemote);
   if (!CancelNote(false))
   {
     // if there's no note to cancel, we need to update status bar explicitly
@@ -275,16 +286,19 @@ UnicodeString __fastcall TScpExplorerForm::RemotePathComboBoxText()
 {
   UnicodeString Result;
 
-  if (WinConfiguration->ScpExplorer.ShowFullAddress)
+  if (Terminal != NULL)
   {
-    Result = UnixExcludeTrailingBackslash(RemoteDirView->Path);
-  }
-  else
-  {
-    // this is called couple of times before the combo box is populated
-    if (UnixPathComboBox->Strings->Count > 0)
+    if (WinConfiguration->ScpExplorer.ShowFullAddress)
     {
-      Result = UnixPathComboBox->Strings->Strings[UnixPathComboBox->Strings->Count - 1];
+      Result = UnixExcludeTrailingBackslash(RemoteDirView->Path);
+    }
+    else
+    {
+      // this is called couple of times before the combo box is populated
+      if (UnixPathComboBox->Strings->Count > 0)
+      {
+        Result = UnixPathComboBox->Strings->Strings[UnixPathComboBox->Strings->Count - 1];
+      }
     }
   }
 
@@ -301,10 +315,9 @@ void __fastcall TScpExplorerForm::UnixPathComboBoxAcceptText(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpExplorerForm::UpdateRemotePathComboBox(
-  TTBXComboBoxItem * RemotePathComboBox, bool TextOnly)
+void __fastcall TScpExplorerForm::UpdateRemotePathComboBox(bool TextOnly)
 {
-  TCustomScpExplorerForm::UpdateRemotePathComboBox(RemotePathComboBox, TextOnly);
+  TCustomScpExplorerForm::UpdateRemotePathComboBox(TextOnly);
 
   UnixPathComboBox->Text = RemotePathComboBoxText();
 }
@@ -312,7 +325,7 @@ void __fastcall TScpExplorerForm::UpdateRemotePathComboBox(
 void __fastcall TScpExplorerForm::RemoteDirViewPathChange(
   TCustomDirView * /*Sender*/)
 {
-  UpdateRemotePathComboBox(UnixPathComboBox, false);
+  UpdateRemotePathComboBox(false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width)
@@ -350,5 +363,11 @@ void __fastcall TScpExplorerForm::RemoteStatusBarPanelClick(TTBXCustomStatusBar 
   TTBXStatusPanel *Panel)
 {
   FileStatusBarPanelClick(Panel, osRemote);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::GoToAddress()
+{
+  AddressToolbar->View->Selected = AddressToolbar->View->Find(UnixPathComboBox);
+  AddressToolbar->View->EnterToolbarLoop(TTBEnterToolbarLoopOptions() << tbetExecuteSelected);
 }
 //---------------------------------------------------------------------------

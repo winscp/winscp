@@ -180,6 +180,8 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     TimeDifferenceMinutesEdit->AsInteger = TimeDifferenceMin % MinsPerHour;
     TimeDifferenceAutoCheck->Checked = FSessionData->TimeDifferenceAuto;
 
+    TrimVMSVersionsCheck->Checked = FSessionData->TrimVMSVersions;
+
     // Environment/Recycle bin page
     DeleteToRecycleBinCheck->Checked = FSessionData->DeleteToRecycleBin;
     OverwrittenToRecycleBinCheck->Checked = FSessionData->OverwrittenToRecycleBin;
@@ -240,7 +242,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     }
 
     CipherListBox->Items->Clear();
-    assert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_ARCFOUR);
+    DebugAssert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_ARCFOUR);
     for (int Index = 0; Index < CIPHER_COUNT; Index++)
     {
       CipherListBox->Items->AddObject(
@@ -251,7 +253,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // KEX page
 
     KexListBox->Items->Clear();
-    assert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_RSA);
+    DebugAssert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_RSA);
     for (int Index = 0; Index < KEX_COUNT; Index++)
     {
       KexListBox->Items->AddObject(
@@ -397,6 +399,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     MinTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MinTlsVersion);
     MaxTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MaxTlsVersion);
     SslSessionReuseCheck->Checked = FSessionData->SslSessionReuse;
+    TlsCertificateFileEdit->Text = FSessionData->TlsCertificateFile;
 
     // Note page
     NoteMemo->Lines->Text = FSessionData->Note;
@@ -549,6 +552,8 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
     (double(TimeDifferenceMinutesEdit->AsInteger) / MinsPerDay);
   FSessionData->TimeDifferenceAuto = TimeDifferenceAutoCheck->Checked;
 
+  FSessionData->TrimVMSVersions = TrimVMSVersionsCheck->Checked;
+
   // Environment/Recycle bin page
   FSessionData->DeleteToRecycleBin = DeleteToRecycleBinCheck->Checked;
   FSessionData->OverwrittenToRecycleBin = OverwrittenToRecycleBinCheck->Checked;
@@ -579,12 +584,12 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   {
     if (AllowScpFallbackCheck->Checked)
     {
-      assert(FSessionData->FSProtocol == fsSFTPonly);
+      DebugAssert(FSessionData->FSProtocol == fsSFTPonly);
       FSessionData->FSProtocol = fsSFTP;
     }
     else
     {
-      assert(FSessionData->FSProtocol == fsSFTP);
+      DebugAssert(FSessionData->FSProtocol == fsSFTP);
       FSessionData->FSProtocol = fsSFTPonly;
     }
   }
@@ -649,6 +654,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
   FSessionData->MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
   FSessionData->SslSessionReuse = SslSessionReuseCheck->Checked;
+  FSessionData->TlsCertificateFile = TlsCertificateFileEdit->Text;
 
   // Note page
   FSessionData->Note = NoteMemo->Lines->Text;
@@ -676,7 +682,7 @@ void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
         TTreeNode * Node;
         if (PrevNode == NULL)
         {
-          assert(!Indented);
+          DebugAssert(!Indented);
           Node = NavigationTree->Items->GetFirstNode();
         }
         else
@@ -1034,6 +1040,7 @@ void __fastcall TSiteAdvancedDialog::FormShow(TObject * /*Sender*/)
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RecycleBinPathEdit);
+  InstallPathWordBreakProc(TlsCertificateFileEdit);
 
   ChangePage(EnvironmentSheet);
 
@@ -1145,7 +1152,7 @@ void __fastcall TSiteAdvancedDialog::CMDialogKey(TWMKeyDown & Message)
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::WMHelp(TWMHelp & Message)
 {
-  assert(Message.HelpInfo != NULL);
+  DebugAssert(Message.HelpInfo != NULL);
 
   if (Message.HelpInfo->iContextType == HELPINFO_WINDOW)
   {
@@ -1159,7 +1166,7 @@ void __fastcall TSiteAdvancedDialog::WMHelp(TWMHelp & Message)
 void __fastcall TSiteAdvancedDialog::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
-  assert(M);
+  DebugAssert(M);
   if (M->Msg == CM_DIALOGKEY)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
@@ -1255,17 +1262,14 @@ void __fastcall TSiteAdvancedDialog::HelpButtonClick(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::PrivateKeyEdit2AfterDialog(TObject * Sender,
-  UnicodeString & Name, bool & /*Action*/)
+  UnicodeString & Name, bool & Action)
 {
-  if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
-  {
-    Name = FBeforeDialogPath;
-  }
+  PathEditAfterDialog(Sender, Name, Action);
 
   TFilenameEdit * Edit = dynamic_cast<TFilenameEdit *>(Sender);
   if (Name != Edit->Text)
   {
-    VerifyKey(Name);
+    VerifyAndConvertKey(Name);
   }
 }
 //---------------------------------------------------------------------------
@@ -1277,6 +1281,7 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
     VerifyKeyIncludingVersion(StripPathQuotes(PrivateKeyEdit2->Text), GetSshProt());
     // for tunnel key do not check SSH version as it is not configurable
     VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit2->Text));
+    VerifyCertificate(StripPathQuotes(TlsCertificateFileEdit->Text));
   }
 }
 //---------------------------------------------------------------------------
@@ -1285,6 +1290,15 @@ void __fastcall TSiteAdvancedDialog::PathEditBeforeDialog(TObject * /*Sender*/,
 {
   FBeforeDialogPath = Name;
   Name = ExpandEnvironmentVariables(Name);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PathEditAfterDialog(TObject * /*Sender*/,
+  UnicodeString & Name, bool & /*Action*/)
+{
+  if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
+  {
+    Name = FBeforeDialogPath;
+  }
 }
 //---------------------------------------------------------------------------
 int __fastcall TSiteAdvancedDialog::LastSupportedFtpProxyMethod()
@@ -1389,9 +1403,14 @@ void __fastcall TSiteAdvancedDialog::ProxyLocalCommandBrowseButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::ColorButtonClick(TObject * /*Sender*/)
 {
+  // WORKAROUND: Compiler keeps crashing randomly (but frequently) with
+  // "internal error" when passing menu directly to unique_ptr.
+  // Splitting it to two statements seems to help.
+  // The same hack exists in TPreferencesDialog::EditorFontColorButtonClick
+  TPopupMenu * Menu = CreateSessionColorPopupMenu(FColor, SessionColorChange);
   // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
-  FColorPopupMenu.reset(CreateSessionColorPopupMenu(FColor, SessionColorChange));
-  MenuPopup(FColorPopupMenu.get(), ColorButton);
+  FColorPopupMenu.reset(Menu);
+  MenuPopup(Menu, ColorButton);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::SessionColorChange(TColor Color)
@@ -1473,11 +1492,12 @@ void __fastcall TSiteAdvancedDialog::MaxTlsVersionComboChange(TObject * /*Sender
 void __fastcall TSiteAdvancedDialog::ProxyAutodetectButtonClick(TObject * /*Sender*/)
 {
   TInstantOperationVisualizer Visualizer;
-  UnicodeString Proxy;
-  if (AutodetectProxyUrl(Proxy) && !Proxy.IsEmpty())
+  UnicodeString ProxyHost;
+  int ProxyPort;
+  if (AutodetectProxy(ProxyHost, ProxyPort))
   {
-    ProxyHostEdit->Text = ::CutToChar(Proxy, L':', true);
-    ProxyPortEdit->AsInteger = StrToIntDef(Proxy, ProxyPortNumber);
+    ProxyHostEdit->Text = ProxyHost;
+    ProxyPortEdit->AsInteger = ProxyPort;
 
     SshProxyMethodCombo->ItemIndex = pmHTTP;
     FtpProxyMethodCombo->ItemIndex = pmHTTP;
@@ -1491,5 +1511,17 @@ void __fastcall TSiteAdvancedDialog::NoteMemoKeyDown(
   TObject * Sender, WORD & Key, TShiftState Shift)
 {
   MemoKeyDown(Sender, Key, Shift);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::TlsCertificateFileEditAfterDialog(TObject *Sender,
+  UnicodeString &Name, bool &Action)
+{
+  PathEditAfterDialog(Sender, Name, Action);
+
+  TFilenameEdit * Edit = dynamic_cast<TFilenameEdit *>(Sender);
+  if (Name != Edit->Text)
+  {
+    VerifyCertificate(Name);
+  }
 }
 //---------------------------------------------------------------------------

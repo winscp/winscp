@@ -38,6 +38,8 @@ procedure RGBtoHSL(RGB: TColor; out H, S, L : Single);
 function  HSLtoRGB(H, S, L: Single): TColor;
 function  GetBGR(C: TColorRef): Cardinal;
 
+function ScaleByTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
+
 { A few drawing functions }
 { these functions recognize clNone value of TColor }
 
@@ -52,6 +54,7 @@ function  PolyLineEx(DC: HDC; const Points: array of TPoint; Color: TColor): Boo
 procedure PolygonEx(DC: HDC; const Points: array of TPoint; OutlineColor, FillColor: TColor);
 procedure RoundRectEx(DC: HDC; Left, Top, Right, Bottom: Integer; EllipseWidth, EllipseHeight, OutlineColor, FillColor: TColor); overload; {vb+}
 procedure RoundRectEx(DC: HDC; const R: TRect; EllipseWidth, EllipseHeight, OutlineColor, FillColor: TColor); overload; {vb+}
+procedure EllipseEx(DC: HDC; Left, Top, Right, Bottom: Integer; OutlineColor, FillColor: TColor);
 procedure DitherRect(DC: HDC; const R: TRect; C1, C2: TColor); {$IFDEF COMPATIBLE_GFX}overload;{$ENDIF}
 procedure Frame3D(DC: HDC; var Rect: TRect; TopColor, BottomColor: TColor; Adjust: Boolean); {$IFDEF COMPATIBLE_GFX}overload;{$ENDIF}
 procedure DrawDraggingOutline(DC: HDC; const NewRect, OldRect: TRect);
@@ -652,6 +655,36 @@ begin
   Result := RGB(R, G, B);
 end;
 
+const
+  // This differs from PasTools as we use larger menu fonts
+  OurDesignTimeTextHeight = 15;
+
+var
+  LastFontName: string = '';
+  LastFontHeight: Integer = -1;
+  LastTextHeight: Integer = -1;
+
+function ScaleByTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
+begin
+  // This should be called from the GUI thread only.
+  // See ScaleByTextHeightRunTime in PasTools.
+  if (LastTextHeight < 0) or
+     (LastFontName <> Canvas.Font.Name) or
+     (LastFontHeight <> Canvas.Font.Height) then
+  begin
+    LastTextHeight := Canvas.TextHeight('0');
+    LastFontName := Canvas.Font.Name;
+    LastFontHeight := Canvas.Font.Height;
+  end;
+
+  if LastTextHeight <> OurDesignTimeTextHeight then
+  begin
+    Dimension := MulDiv(Dimension, LastTextHeight, OurDesignTimeTextHeight);
+  end;
+
+  Result := Dimension;
+end;
+
 { Drawing routines }
 
 function GetBGR(C: TColorRef): Cardinal;
@@ -813,6 +846,22 @@ begin
   with R do
     RoundRectEx(DC, Left, Top, Right, Bottom, EllipseWidth,
       EllipseHeight, OutlineColor, FillColor);
+end;
+
+procedure EllipseEx(DC: HDC; Left, Top, Right, Bottom: Integer; OutlineColor, FillColor: TColor);
+var
+  OldBrush, Brush: HBrush;
+  OldPen, Pen: HPen;
+begin
+  Pen := CreatePenEx(OutlineColor);
+  Brush := CreateBrushEx(FillColor);
+  OldPen := SelectObject(DC, Pen);
+  OldBrush := SelectObject(DC, Brush);
+  Windows.Ellipse(DC, Left, Top, Right, Bottom);
+  SelectObject(DC, OldBrush);
+  SelectObject(DC, OldPen);
+  DeleteObject(Brush);
+  DeleteObject(Pen);
 end;
 
 function CreateDitheredBrush(C1, C2: TColor): HBrush;

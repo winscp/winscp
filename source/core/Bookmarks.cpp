@@ -103,7 +103,7 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Unic
       TBookmark * Bookmark;
       if (IsNumber(Name))
       {
-        assert(IsDirectory); // unless malformed
+        DebugAssert(IsDirectory); // unless malformed
         Name = Directory;
       }
       if (!Name.IsEmpty())
@@ -194,7 +194,7 @@ void __fastcall TBookmarks::Save(THierarchicalStorage * Storage, bool All)
                         break;
 
                       case 2:
-                        assert(Bookmark->ShortCut != 0);
+                        DebugAssert(Bookmark->ShortCut != 0);
                         Storage->WriteInteger(Bookmark->Name, Bookmark->ShortCut);
                         break;
                     }
@@ -231,7 +231,7 @@ void __fastcall TBookmarks::ModifyAll(bool Modify)
   for (int i = 0; i < FBookmarkLists->Count; i++)
   {
     BookmarkList = dynamic_cast<TBookmarkList *>(FBookmarkLists->Objects[i]);
-    assert(BookmarkList);
+    DebugAssert(BookmarkList);
     BookmarkList->Modified = Modify;
   }
 }
@@ -341,18 +341,18 @@ void __fastcall TBookmarkList::Add(TBookmark * Bookmark)
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::InsertBefore(TBookmark * BeforeBookmark, TBookmark * Bookmark)
 {
-  assert(BeforeBookmark);
+  DebugAssert(BeforeBookmark);
   int I = FBookmarks->IndexOf(BeforeBookmark->Key);
-  assert(I >= 0);
+  DebugAssert(I >= 0);
   Insert(I, Bookmark);
 }
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::MoveTo(TBookmark * ToBookmark,
   TBookmark * Bookmark, bool Before)
 {
-  assert(ToBookmark != NULL);
+  DebugAssert(ToBookmark != NULL);
   int NewIndex = FBookmarks->IndexOf(ToBookmark->Key);
-  assert(Bookmark != NULL);
+  DebugAssert(Bookmark != NULL);
   int OldIndex = FBookmarks->IndexOf(Bookmark->Key);
   if (Before && (NewIndex > OldIndex))
   {
@@ -369,9 +369,9 @@ void __fastcall TBookmarkList::MoveTo(TBookmark * ToBookmark,
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::Insert(int Index, TBookmark * Bookmark)
 {
-  assert(Bookmark);
-  assert(!Bookmark->FOwner);
-  assert(!Bookmark->Name.IsEmpty());
+  DebugAssert(Bookmark);
+  DebugAssert(!Bookmark->FOwner);
+  DebugAssert(!Bookmark->Name.IsEmpty());
 
   FModified = true;
   Bookmark->FOwner = this;
@@ -384,10 +384,10 @@ void __fastcall TBookmarkList::Insert(int Index, TBookmark * Bookmark)
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::Delete(TBookmark * Bookmark)
 {
-  assert(Bookmark);
-  assert(Bookmark->FOwner == this);
+  DebugAssert(Bookmark);
+  DebugAssert(Bookmark->FOwner == this);
   int I = IndexOf(Bookmark);
-  assert(I >= 0);
+  DebugAssert(I >= 0);
   FModified = true;
   Bookmark->FOwner = NULL;
   FBookmarks->Delete(I);
@@ -401,9 +401,9 @@ int __fastcall TBookmarkList::IndexOf(TBookmark * Bookmark)
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::KeyChanged(int Index)
 {
-  assert(Index < Count);
+  DebugAssert(Index < Count);
   TBookmark * Bookmark = dynamic_cast<TBookmark *>(FBookmarks->Objects[Index]);
-  assert(FBookmarks->Strings[Index] != Bookmark->Key);
+  DebugAssert(FBookmarks->Strings[Index] != Bookmark->Key);
   if (FBookmarks->IndexOf(Bookmark->Key) >= 0)
   {
     throw Exception(FMTLOAD(DUPLICATE_BOOKMARK, (Bookmark->Name)));
@@ -415,7 +415,7 @@ TBookmark * __fastcall TBookmarkList::FindByName(const UnicodeString Node, const
 {
   int I = FBookmarks->IndexOf(TBookmark::BookmarkKey(Node, Name));
   TBookmark * Bookmark = I >= 0 ? dynamic_cast<TBookmark *>(FBookmarks->Objects[I]) : NULL;
-  assert(!Bookmark || (Bookmark->Node == Node && Bookmark->Name == Name));
+  DebugAssert(!Bookmark || (Bookmark->Node == Node && Bookmark->Name == Name));
   return Bookmark;
 }
 //---------------------------------------------------------------------------
@@ -439,7 +439,7 @@ int __fastcall TBookmarkList::GetCount()
 TBookmark * __fastcall TBookmarkList::GetBookmarks(int Index)
 {
   TBookmark * Bookmark = dynamic_cast<TBookmark *>(FBookmarks->Objects[Index]);
-  assert(Bookmark);
+  DebugAssert(Bookmark);
   return Bookmark;
 }
 //---------------------------------------------------------------------------

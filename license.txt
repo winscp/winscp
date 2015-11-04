@@ -2,7 +2,7 @@
   B. License of WinSCP Icon Set
   C. Privacy Policy
 
-  
+
   A. GNU GENERAL PUBLIC LICENSE
   Version 3, 29 June 2007
 
@@ -680,7 +680,7 @@ Public License instead of this License.  But first, please read
 
 
   B. License of WinSCP Icon Set
-  
+
 Note that all images distributed in or with WinSCP application are NOT
 published under the GNU General Public License. It means that it is not
 allowed to redistribute or reuse these images or parts of them or modifications
@@ -719,4 +719,3 @@ If you still want to disable WinSCP Usage statistics already during
 installation, you may do so using Custom installation.
 
 Thank you!
-

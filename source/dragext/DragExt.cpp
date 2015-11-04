@@ -57,6 +57,11 @@ protected:
   unsigned long FReferenceCounter;
 };
 //---------------------------------------------------------------------------
+#ifdef _WIN64
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpadded"
+#endif
+//---------------------------------------------------------------------------
 class CShellExt : public IShellExtInit, ICopyHook
 {
 public:
@@ -82,6 +87,10 @@ protected:
   unsigned long FLastTicks;
 };
 //---------------------------------------------------------------------------
+#ifdef WIN64
+#pragma clang diagnostic pop
+#endif
+//---------------------------------------------------------------------------
 unsigned int GRefThisDll = 0;
 bool GEnabled = false;
 wchar_t GLogFile[MAX_PATH] = L"";
@@ -90,7 +99,7 @@ FILE* GLogHandle = NULL;
 HANDLE GLogMutex;
 HINSTANCE GInstance;
 //---------------------------------------------------------------------------
-void Debug(const wchar_t* Message)
+static void Debug(const wchar_t* Message)
 {
   if (GLogOn)
   {
@@ -138,7 +147,7 @@ void Debug(const wchar_t* Message)
   }
 }
 //---------------------------------------------------------------------------
-void LogVersion(HINSTANCE HInstance)
+static void LogVersion(HINSTANCE HInstance)
 {
   if (GLogOn)
   {
@@ -231,14 +240,32 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
           RegCloseKey(Key);
         }
       }
-      DEBUG(L"DllMain loaded settings");
-      DEBUG(GEnabled ? L"DllMain enabled" : L"DllMain disabled");
-      #ifdef UNICODE
-      DEBUG(L"Unicode");
-      #else
-      DEBUG(L"Ansi");
-      #endif
-      LogVersion(HInstance);
+
+      if (GLogOn)
+      {
+        DEBUG(L"DllMain loaded settings");
+        DEBUG(GEnabled ? L"DllMain enabled" : L"DllMain disabled");
+        #ifdef UNICODE
+        DEBUG(L"DllMain Unicode");
+        #else
+        DEBUG(L"DllMain Ansi");
+        #endif
+        #ifdef _WIN64
+        DEBUG(L"DllMain Win64");
+        #else
+        DEBUG(L"DllMain Win32");
+        #endif
+        LogVersion(HInstance);
+
+        TDragExtCommStruct CommStruct;
+        const char * CommStructPtr = reinterpret_cast<const char *>(&CommStruct);
+        wchar_t Buf[1024];
+        swprintf(Buf, L"DllMain - Comm struct layout - Size %d - Version @%d + %d - Dragging @%d + %d - DropDest @%d + %d",
+          sizeof(CommStruct), reinterpret_cast<const char *>(&CommStruct.Version) - CommStructPtr, sizeof(CommStruct.Version),
+          reinterpret_cast<const char *>(&CommStruct.Dragging) - CommStructPtr, sizeof(CommStruct.Dragging),
+          reinterpret_cast<const char *>(&CommStruct.DropDest) - CommStructPtr, sizeof(CommStruct.DropDest));
+        DEBUG(Buf);
+      }
     }
     else
     {
@@ -281,7 +308,7 @@ STDAPI DllGetClassObject(REFCLSID Rclsid, REFIID Riid, LPVOID* PpvOut)
   return CLASS_E_CLASSNOTAVAILABLE;
 }
 //---------------------------------------------------------------------------
-bool RegisterServer(bool AllUsers)
+static bool RegisterServer(bool AllUsers)
 {
   DEBUG(L"RegisterServer enter");
 
@@ -382,7 +409,7 @@ STDAPI DllRegisterServer()
   return Result;
 }
 //---------------------------------------------------------------------------
-bool UnregisterServer(bool AllUsers)
+static bool UnregisterServer(bool AllUsers)
 {
   DEBUG(L"UnregisterServer enter");
 
@@ -823,19 +850,18 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
   }
   else
   {
-    if (!GEnabled)
+    if (GLogOn)
     {
-      DEBUG(L"CShellExt::CopyCallback Disabled");
-    }
-    else
-    {
-      wchar_t Buf[1024];
-      wcscpy(Buf, L"CShellExt::CopyCallback NOT copy nor move - X");
-      // This is to avoid using swprintf, what's in a lib,
-      // we do not link yet, in 64-bit build (maybe this changes, once
-      // we switch to BCB build)
-      Buf[wcslen(Buf) - 1] = L'0' + Func;
-      DEBUG(Buf);
+      if (!GEnabled)
+      {
+        DEBUG(L"CShellExt::CopyCallback Disabled");
+      }
+      else
+      {
+        wchar_t Buf[1024];
+        swprintf(Buf, L"CShellExt::CopyCallback NOT copy nor move - %d", Func);
+        DEBUG(Buf);
+      }
     }
   }
 

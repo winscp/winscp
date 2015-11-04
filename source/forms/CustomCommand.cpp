@@ -47,7 +47,7 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner,
   FCustomCommandList = CustomCommandList;
   FMode = Mode;
   FOnValidate = OnValidate;
-  HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT4));
+  HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT5));
 
   int CaptionRes;
   switch (FMode)
@@ -91,7 +91,7 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner,
   }
   else
   {
-    assert(ShortCuts != NULL);
+    DebugAssert(ShortCuts != NULL);
     InitializeShortCutCombo(ShortCutCombo, *ShortCuts);
   }
 

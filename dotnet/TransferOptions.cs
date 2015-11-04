@@ -14,6 +14,15 @@ namespace WinSCP
         Automatic = 2,
     }
 
+    [Guid("E0F3C3C2-C812-48F1-A711-E0BD0F703976")]
+    [ComVisible(true)]
+    public enum OverwriteMode
+    {
+        Overwrite = 0,
+        Resume = 1,
+        Append = 2,
+    }
+
     [Guid("155B841F-39D4-40C8-BA87-C79675E14CE3")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
@@ -25,12 +34,14 @@ namespace WinSCP
         public string FileMask { get; set; }
         public TransferResumeSupport ResumeSupport { get; private set; }
         public int SpeedLimit { get; set; }
+        public OverwriteMode OverwriteMode { get; set; }
 
         public TransferOptions()
         {
             PreserveTimestamp = true;
             TransferMode = TransferMode.Binary;
             ResumeSupport = new TransferResumeSupport();
+            OverwriteMode = OverwriteMode.Overwrite;
         }
 
         internal string ToSwitches()
@@ -78,6 +89,21 @@ namespace WinSCP
             if (SpeedLimit > 0)
             {
                 switches.Add(Session.FormatSwitch("speed", SpeedLimit.ToString(CultureInfo.InvariantCulture)));
+            }
+
+            switch (OverwriteMode)
+            {
+                case OverwriteMode.Overwrite:
+                    // noop
+                    break;
+                case OverwriteMode.Resume:
+                    switches.Add(Session.FormatSwitch("resume"));
+                    break;
+                case OverwriteMode.Append:
+                    switches.Add(Session.FormatSwitch("append"));
+                    break;
+                default:
+                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", TransferMode));
             }
 
             return string.Join(" ", switches.ToArray());

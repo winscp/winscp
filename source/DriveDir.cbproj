@@ -28,39 +28,16 @@
 		<CfgParent>Base</CfgParent>
 		<Base>true</Base>
 	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
-		<Cfg_1_Win32>true</Cfg_1_Win32>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
-		<Cfg_1_Win64>true</Cfg_1_Win64>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
 	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
 		<Cfg_2>true</Cfg_2>
 		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
-		<Cfg_2_Win32>true</Cfg_2_Win32>
-		<CfgParent>Cfg_2</CfgParent>
-		<Cfg_2>true</Cfg_2>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
-		<Cfg_2_Win64>true</Cfg_2_Win64>
-		<CfgParent>Cfg_2</CfgParent>
-		<Cfg_2>true</Cfg_2>
 		<Base>true</Base>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base)'!=''">
 			<_TCHARMapping>wchar_t</_TCHARMapping>
 			<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
 			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+			<BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<DCC_CVT_ACHAR_TO_WCHAR>true</DCC_CVT_ACHAR_TO_WCHAR>
 			<DCC_CVT_WIDENING_STRING_LOST>true</DCC_CVT_WIDENING_STRING_LOST>
@@ -70,11 +47,13 @@
 			<DCC_TYPEINFO_IMPLICITLY_ADDED>false</DCC_TYPEINFO_IMPLICITLY_ADDED>
 			<DCC_UnitSearchPath>packages\my;packages\dragndrop;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_UNSAFE_TYPE>true</DCC_UNSAFE_TYPE>
+			<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 			<ILINK_Description>Filemanager Toolset</ILINK_Description>
 			<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
 			<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-			<ILINK_LibraryPath>packages\filemng\;packages\my;packages\dragndrop;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\win32\release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<ILINK_LibraryPath>packages\filemng\;packages\my;packages\dragndrop;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<IncludePath>packages\filemng\;packages\my;packages\dragndrop;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+			<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 			<Multithreaded>true</Multithreaded>
 			<OutputExt>bpl</OutputExt>
 			<ProjectType>CppPackage</ProjectType>
@@ -97,37 +76,17 @@
 			<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
 			<BCC_StackFrames>true</BCC_StackFrames>
 			<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
-			<BPILibOutputDir>$(INTERM_PATH)\Debug</BPILibOutputDir>
 			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
 			<DCC_Define>DEBUG</DCC_Define>
 			<DCC_Optimize>false</DCC_Optimize>
-			<FinalOutputDir>$(INTERM_PATH)\Debug</FinalOutputDir>
+			<Defines>_DEBUG;$(Defines)</Defines>
 			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-			<ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IntermediateOutputDir>$(INTERM_PATH)\Debug</IntermediateOutputDir>
 			<TASM_Debugging>Full</TASM_Debugging>
 			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
 		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-			<Defines>_DEBUG;$(Defines)</Defines>
-			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-			<Defines>_DEBUG;$(Defines)</Defines>
-		</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-			<BPILibOutputDir>$(INTERM_PATH)\Release</BPILibOutputDir>
-			<FinalOutputDir>$(INTERM_PATH)\Release</FinalOutputDir>
-			<ILINK_LibraryPath>$(BDS)\lib\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IntermediateOutputDir>$(INTERM_PATH)\Release</IntermediateOutputDir>
+			<Defines>NDEBUG;$(Defines)</Defines>
 			<TASM_Debugging>None</TASM_Debugging>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
-			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
 		</PropertyGroup>
 	<ItemGroup>
 			<CppCompile Include="DriveDir.cpp">

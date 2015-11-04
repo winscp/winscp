@@ -23,12 +23,15 @@
 #include "JclDebug.hpp"
 #include "JclHookExcept.hpp"
 #include <StrUtils.hpp>
+#include <WinApi.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 #define WM_TRAY_ICON (WM_WINSCP_USER + 5)
 //---------------------------------------------------------------------
 TNotifyEvent GlobalOnMinimize = NULL;
+//---------------------------------------------------------------------
+const IID IID_IListView_Win7 = {0xE5B16AF2, 0x3990, 0x4681, {0xA6, 0x09, 0x1F, 0x06, 0x0C, 0xD1, 0x42, 0x69}};
 //---------------------------------------------------------------------
 void __fastcall FormHelp(TCustomForm * Form)
 {
@@ -87,6 +90,7 @@ inline void TMessageParams::Reset()
   ImageName = L"";
   MoreMessagesUrl = L"";
   MoreMessagesSize = TSize();
+  CustomCaption = L"";
 }
 //---------------------------------------------------------------------------
 static bool __fastcall IsPositiveAnswer(unsigned int Answer)
@@ -97,9 +101,9 @@ static bool __fastcall IsPositiveAnswer(unsigned int Answer)
 static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender)
 {
   TCheckBox * CheckBox = dynamic_cast<TCheckBox *>(Sender);
-  assert(CheckBox != NULL);
+  DebugAssert(CheckBox != NULL);
   TForm * Dialog = dynamic_cast<TForm *>(CheckBox->Owner);
-  assert(Dialog != NULL);
+  DebugAssert(Dialog != NULL);
 
   unsigned int PositiveAnswer = 0;
 
@@ -125,7 +129,7 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
       }
     }
 
-    assert(PositiveAnswer != 0);
+    DebugAssert(PositiveAnswer != 0);
   }
 
   for (int ii = 0; ii < Dialog->ControlCount; ii++)
@@ -189,11 +193,13 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
   UnicodeString ImageName;
   UnicodeString MoreMessagesUrl;
   TSize MoreMessagesSize;
+  UnicodeString CustomCaption;
   if (Params != NULL)
   {
     ImageName = Params->ImageName;
     MoreMessagesUrl = Params->MoreMessagesUrl;
     MoreMessagesSize = Params->MoreMessagesSize;
+    CustomCaption = Params->CustomCaption;
   }
 
   const TQueryButtonAlias * Aliases = (Params != NULL) ? Params->Aliases : NULL;
@@ -213,7 +219,7 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
 
   TForm * Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Answers,
     Aliases, AliasesCount, TimeoutAnswer, &TimeoutButton, ImageName, NeverAskAgainCaption,
-    MoreMessagesUrl, MoreMessagesSize);
+    MoreMessagesUrl, MoreMessagesSize, CustomCaption);
 
   try
   {
@@ -353,7 +359,7 @@ void __fastcall TMessageTimeout::Cancel()
 //---------------------------------------------------------------------------
 void __fastcall TMessageTimeout::UpdateButton()
 {
-  assert(FButton != NULL);
+  DebugAssert(FButton != NULL);
   FButton->Caption =
     !Enabled ? FOrigCaption : FMTLOAD(TIMEOUT_BUTTON, (FOrigCaption, int(FTimeout / MSecsPerSec)));
 }
@@ -362,9 +368,9 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
 {
   if (FTimeout <= Interval)
   {
-    assert(FButton != NULL);
+    DebugAssert(FButton != NULL);
     TForm * Dialog = dynamic_cast<TForm *>(FButton->Parent);
-    assert(Dialog != NULL);
+    DebugAssert(Dialog != NULL);
 
     Dialog->ModalResult = FButton->ModalResult;
   }
@@ -389,7 +395,7 @@ friend void __fastcall SetTimeoutEvents(TControl * Control, TMessageTimeout * Ti
 static void __fastcall MessageDialogMouseMove(void * Data, TObject * /*Sender*/,
   TShiftState /*Shift*/, int /*X*/, int /*Y*/)
 {
-  assert(Data != NULL);
+  DebugAssert(Data != NULL);
   TMessageTimeout * Timeout = static_cast<TMessageTimeout *>(Data);
   Timeout->Suspend();
 }
@@ -397,7 +403,7 @@ static void __fastcall MessageDialogMouseMove(void * Data, TObject * /*Sender*/,
 static void __fastcall MessageDialogMouseDown(void * Data, TObject * /*Sender*/,
   TMouseButton /*Button*/, TShiftState /*Shift*/, int /*X*/, int /*Y*/)
 {
-  assert(Data != NULL);
+  DebugAssert(Data != NULL);
   TMessageTimeout * Timeout = static_cast<TMessageTimeout *>(Data);
   Timeout->Cancel();
 }
@@ -405,7 +411,7 @@ static void __fastcall MessageDialogMouseDown(void * Data, TObject * /*Sender*/,
 static void __fastcall MessageDialogKeyDownUp(void * Data, TObject * /*Sender*/,
   Word & /*Key*/, TShiftState /*Shift*/)
 {
-  assert(Data != NULL);
+  DebugAssert(Data != NULL);
   TMessageTimeout * Timeout = static_cast<TMessageTimeout *>(Data);
   Timeout->Cancel();
 }
@@ -413,18 +419,18 @@ static void __fastcall MessageDialogKeyDownUp(void * Data, TObject * /*Sender*/,
 void __fastcall SetTimeoutEvents(TControl * Control, TMessageTimeout * Timeout)
 {
   TPublicControl * PublicControl = reinterpret_cast<TPublicControl *>(Control);
-  assert(PublicControl->OnMouseMove == NULL);
+  DebugAssert(PublicControl->OnMouseMove == NULL);
   PublicControl->OnMouseMove = MakeMethod<TMouseMoveEvent>(Timeout, MessageDialogMouseMove);
-  assert(PublicControl->OnMouseDown == NULL);
+  DebugAssert(PublicControl->OnMouseDown == NULL);
   PublicControl->OnMouseDown = MakeMethod<TMouseEvent>(Timeout, MessageDialogMouseDown);
 
   TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
   if (WinControl != NULL)
   {
     TPublicWinControl * PublicWinControl = reinterpret_cast<TPublicWinControl *>(Control);
-    assert(PublicWinControl->OnKeyDown == NULL);
+    DebugAssert(PublicWinControl->OnKeyDown == NULL);
     PublicWinControl->OnKeyDown = MakeMethod<TKeyEvent>(Timeout, MessageDialogKeyDownUp);
-    assert(PublicWinControl->OnKeyUp == NULL);
+    DebugAssert(PublicWinControl->OnKeyUp == NULL);
     PublicWinControl->OnKeyUp = MakeMethod<TKeyEvent>(Timeout, MessageDialogKeyDownUp);
 
     for (int Index = 0; Index < WinControl->ControlCount; Index++)
@@ -434,62 +440,64 @@ void __fastcall SetTimeoutEvents(TControl * Control, TMessageTimeout * Timeout)
   }
 }
 //---------------------------------------------------------------------------
+// Merge with CreateMessageDialogEx
+TForm * __fastcall CreateMoreMessageDialogEx(const UnicodeString Message, TStrings * MoreMessages,
+  TQueryType Type, unsigned int Answers, UnicodeString HelpKeyword, const TMessageParams * Params)
+{
+  std::unique_ptr<TForm> Dialog;
+  UnicodeString AMessage = Message;
+  TMessageTimer * Timer = NULL;
+
+  if ((Params != NULL) && (Params->Timer > 0))
+  {
+    Timer = new TMessageTimer(Application);
+    Timer->Interval = Params->Timer;
+    Timer->Event = Params->TimerEvent;
+    if (Params->TimerAnswers > 0)
+    {
+      Answers = Params->TimerAnswers;
+    }
+    if (Params->TimerQueryType >= 0)
+    {
+      Type = Params->TimerQueryType;
+    }
+    if (!Params->TimerMessage.IsEmpty())
+    {
+      AMessage = Params->TimerMessage;
+    }
+    Timer->Name = L"MessageTimer";
+  }
+
+  TButton * TimeoutButton = NULL;
+  Dialog.reset(
+    CreateMessageDialogEx(
+      AMessage, MoreMessages, Type, Answers, HelpKeyword, Params, TimeoutButton));
+
+  if (Timer != NULL)
+  {
+    Timer->Dialog = Dialog.get();
+    Dialog->InsertComponent(Timer);
+  }
+
+  if (Params != NULL)
+  {
+    if (Params->Timeout > 0)
+    {
+      TMessageTimeout * Timeout = new TMessageTimeout(Application, Params->Timeout, TimeoutButton);
+      SetTimeoutEvents(Dialog.get(), Timeout);
+      Timeout->Name = L"MessageTimeout";
+      Dialog->InsertComponent(Timeout);
+    }
+  }
+
+  return Dialog.release();
+}
+//---------------------------------------------------------------------------
 unsigned int __fastcall MoreMessageDialog(const UnicodeString Message, TStrings * MoreMessages,
   TQueryType Type, unsigned int Answers, UnicodeString HelpKeyword, const TMessageParams * Params)
 {
-  unsigned int Result;
-  TForm * Dialog = NULL;
-  TMessageTimer * Timer = NULL;
-  TMessageTimeout * Timeout = NULL;
-  try
-  {
-    UnicodeString AMessage = Message;
-
-    if ((Params != NULL) && (Params->Timer > 0))
-    {
-      Timer = new TMessageTimer(Application);
-      Timer->Interval = Params->Timer;
-      Timer->Event = Params->TimerEvent;
-      if (Params->TimerAnswers > 0)
-      {
-        Answers = Params->TimerAnswers;
-      }
-      if (Params->TimerQueryType >= 0)
-      {
-        Type = Params->TimerQueryType;
-      }
-      if (!Params->TimerMessage.IsEmpty())
-      {
-        AMessage = Params->TimerMessage;
-      }
-    }
-
-    TButton * TimeoutButton = NULL;
-    Dialog = CreateMessageDialogEx(AMessage, MoreMessages, Type, Answers,
-      HelpKeyword, Params, TimeoutButton);
-
-    if (Timer != NULL)
-    {
-      Timer->Dialog = Dialog;
-    }
-
-    if (Params != NULL)
-    {
-      if (Params->Timeout > 0)
-      {
-        Timeout = new TMessageTimeout(Application, Params->Timeout, TimeoutButton);
-        SetTimeoutEvents(Dialog, Timeout);
-      }
-    }
-
-    Result = ExecuteMessageDialog(Dialog, Answers, Params);
-  }
-  __finally
-  {
-    delete Dialog;
-    delete Timer;
-    delete Timeout;
-  }
+  std::unique_ptr<TForm> Dialog(CreateMoreMessageDialogEx(Message, MoreMessages, Type, Answers, HelpKeyword, Params));
+  unsigned int Result = ExecuteMessageDialog(Dialog.get(), Answers, Params);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -612,7 +620,7 @@ unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Ty
   int SessionReopenTimeout, const UnicodeString MessageFormat, unsigned int Answers,
   UnicodeString HelpKeyword, const TMessageParams * Params)
 {
-  assert(FLAGCLEAR(Answers, qaRetry));
+  DebugAssert(FLAGCLEAR(Answers, qaRetry));
   Answers |= qaRetry;
 
   TQueryButtonAlias Aliases[1];
@@ -624,14 +632,14 @@ unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Ty
   {
     AParams = *Params;
   }
-  assert(AParams.Timeout == 0);
+  DebugAssert(AParams.Timeout == 0);
   // the condition is de facto excess
   if (SessionReopenTimeout > 0)
   {
     AParams.Timeout = SessionReopenTimeout;
     AParams.TimeoutAnswer = qaRetry;
   }
-  assert(AParams.Aliases == NULL);
+  DebugAssert(AParams.Aliases == NULL);
   AParams.Aliases = Aliases;
   AParams.AliasesCount = LENOF(Aliases);
 
@@ -702,7 +710,7 @@ void __fastcall SetNoGUI()
 //---------------------------------------------------------------------------
 bool __fastcall ProcessGUI(bool Force)
 {
-  assert(MainThread != 0);
+  DebugAssert(MainThread != 0);
   bool Result = false;
   // Calling ProcessMessages in Azure WebJob causes access violation in VCL.
   // As we do not really need to call it in scripting/.NET, just skip it.
@@ -826,8 +834,8 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
   bool * SaveSettings)
 {
   TComponent * Item = dynamic_cast<TComponent *>(Sender);
-  assert(Item != NULL);
-  assert((Item->Tag >= cpiSaveSettings) && (Item->Tag < GUIConfiguration->CopyParamList->Count));
+  DebugAssert(Item != NULL);
+  DebugAssert((Item->Tag >= cpiSaveSettings) && (Item->Tag < GUIConfiguration->CopyParamList->Count));
 
   bool Result;
   if (Item->Tag == cpiConfigure)
@@ -837,7 +845,8 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
     Result = (MatchedPreset && GUIConfiguration->HasCopyParamPreset[Preset]);
     if (Result)
     {
-      Param = GUIConfiguration->CopyParamPreset[Preset];
+      // For cast, see a comment below
+      Param = TCopyParamType(GUIConfiguration->CopyParamPreset[Preset]);
     }
   }
   else if (Item->Tag == cpiCustom)
@@ -856,7 +865,9 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
   {
     Preset = (Item->Tag >= 0) ?
       GUIConfiguration->CopyParamList->Names[Item->Tag] : UnicodeString();
-    Param = GUIConfiguration->CopyParamPreset[Preset];
+    // The cast strips away the "queue" properties of the TGUICopyParamType
+    // that are not configurable in presets
+    Param = TCopyParamType(GUIConfiguration->CopyParamPreset[Preset]);
     Result = true;
   }
   return Result;
@@ -964,7 +975,7 @@ void __fastcall TWinInteractiveCustomCommand::Execute(
             }
             else if (Read > 0)
             {
-              Value += UnicodeString(AnsiString(Buffer, Read));
+              Value += AnsiToString(Buffer, Read);
             }
           }
 
@@ -1008,7 +1019,7 @@ void __fastcall MenuPopup(TPopupMenu * Menu, TButton * Button)
 void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Handled)
 {
   TControl * Control = dynamic_cast<TControl *>(Sender);
-  assert(Control != NULL);
+  DebugAssert(Control != NULL);
   TPoint Point;
   if ((MousePos.x == -1) && (MousePos.y == -1))
   {
@@ -1019,7 +1030,7 @@ void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Hand
     Point = Control->ClientToScreen(MousePos);
   }
   TPopupMenu * PopupMenu = (reinterpret_cast<TPublicControl *>(Control))->PopupMenu;
-  assert(PopupMenu != NULL);
+  DebugAssert(PopupMenu != NULL);
   TRect Rect(Point, Point);
   MenuPopup(PopupMenu, Rect, Control);
   Handled = true;
@@ -1028,10 +1039,10 @@ void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Hand
 TComponent * __fastcall GetPopupComponent(TObject * Sender)
 {
   TComponent * Item = dynamic_cast<TComponent *>(Sender);
-  assert(Item != NULL);
+  DebugAssert(Item != NULL);
   TPopupMenu * PopupMenu = dynamic_cast<TPopupMenu *>(Item->Owner);
-  assert(PopupMenu != NULL);
-  assert(PopupMenu->PopupComponent != NULL);
+  DebugAssert(PopupMenu != NULL);
+  DebugAssert(PopupMenu->PopupComponent != NULL);
   return PopupMenu->PopupComponent;
 }
 //---------------------------------------------------------------------------
@@ -1063,26 +1074,15 @@ TRect __fastcall CalculatePopupRect(TControl * Control, TPoint MousePos)
 //---------------------------------------------------------------------------
 void __fastcall FixButtonImage(TButton * Button)
 {
-  // this themes enabled, button image is by default drawn too high
+  // with themes enabled, button image is by default drawn too high
   if (UseThemes())
   {
     Button->ImageMargins->Top = 1;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall UncenterButtonImage(TButton * Button)
-{
-  Button->ImageMargins->Left = 0;
-  if (UseThemes())
-  {
-    Button->Caption = TrimLeft(Button->Caption);
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall CenterButtonImage(TButton * Button)
 {
-  UncenterButtonImage(Button);
-
   // with themes disabled, the text seems to be drawn over the icon,
   // so that the padding spaces hide away most of the icon
   if (UseThemes())
@@ -1105,9 +1105,13 @@ void __fastcall CenterButtonImage(TButton * Button)
     int CaptionWidth = Canvas->TextWidth(Caption);
     // The margins seem to extend the area over which the image is centered,
     // so we have to set it to a double of desired padding.
+    // The original formula is - 2 * ((CaptionWidth / 2) - (ImageWidth / 2) + ScaleByTextHeight(Button, 2))
+    // the one below is equivalent, but with reduced rouding.
+    // Without the change, the rouding caused the space between icon and caption too
+    // small on 200% zoom.
     // Note that (CaptionWidth / 2) - (ImageWidth / 2)
     // is approximatelly same as half of caption width before padding.
-    Button->ImageMargins->Left = - 2 * ((CaptionWidth / 2) - (ImageWidth / 2) + ScaleByTextHeight(Button, 2));
+    Button->ImageMargins->Left = -(CaptionWidth - ImageWidth + ScaleByTextHeight(Button, 4));
   }
   else
   {
@@ -1206,7 +1210,7 @@ void __fastcall WinInitialize()
   }
 
   SetErrorMode(SEM_FAILCRITICALERRORS);
-  OnApiPath = ::ApiPath;
+  OnApiPath = ApiPath;
   MainThread = GetCurrentThreadId();
 
 #pragma warn -8111
@@ -1400,7 +1404,7 @@ void __fastcall ::TTrayIcon::WndProc(TMessage & Message)
   {
     if (Message.Msg == WM_TRAY_ICON)
     {
-      assert(Message.WParam == 0);
+      DebugAssert(Message.WParam == 0);
       switch (Message.LParam)
       {
         // old shell32

@@ -142,18 +142,6 @@ static void sk_proxy_flush (Socket s)
     sk_flush(ps->sub_socket);
 }
 
-static void sk_proxy_set_private_ptr (Socket s, void *ptr)
-{
-    Proxy_Socket ps = (Proxy_Socket) s;
-    sk_set_private_ptr(ps->sub_socket, ptr);
-}
-
-static void * sk_proxy_get_private_ptr (Socket s)
-{
-    Proxy_Socket ps = (Proxy_Socket) s;
-    return sk_get_private_ptr(ps->sub_socket);
-}
-
 static void sk_proxy_set_frozen (Socket s, int is_frozen)
 {
     Proxy_Socket ps = (Proxy_Socket) s;
@@ -261,24 +249,26 @@ static void plug_proxy_sent (Plug p, int bufsize)
     plug_sent(ps->plug, bufsize);
 }
 
-static int plug_proxy_accepting (Plug p, OSSocket sock)
+static int plug_proxy_accepting(Plug p,
+                                accept_fn_t constructor, accept_ctx_t ctx)
 {
     Proxy_Plug pp = (Proxy_Plug) p;
     Proxy_Socket ps = pp->proxy_socket;
 
     if (ps->state != PROXY_STATE_ACTIVE) {
-	ps->accepting_sock = sock;
+	ps->accepting_constructor = constructor;
+	ps->accepting_ctx = ctx;
 	return ps->negotiate(ps, PROXY_CHANGE_ACCEPTING);
     }
-    return plug_accepting(ps->plug, sock);
+    return plug_accepting(ps->plug, constructor, ctx);
 }
 
 /*
  * This function can accept a NULL pointer as `addr', in which case
  * it will only check the host name.
  */
-static int proxy_for_destination (SockAddr addr, const char *hostname,
-                                  int port, Conf *conf)
+int proxy_for_destination (SockAddr addr, const char *hostname,
+                           int port, Conf *conf)
 {
     int s = 0, e = 0;
     char hostip[64];
@@ -397,10 +387,9 @@ Socket new_connection(SockAddr addr, char *hostname,
 	sk_proxy_write_oob,
 	sk_proxy_write_eof,
 	sk_proxy_flush,
-	sk_proxy_set_private_ptr,
-	sk_proxy_get_private_ptr,
 	sk_proxy_set_frozen,
-	sk_proxy_socket_error
+	sk_proxy_socket_error,
+        NULL, /* peer_info */
     };
 
     static const struct plug_function_table plug_fn_table = {
@@ -625,7 +614,8 @@ int proxy_http_negotiate (Proxy_Socket p, int change)
 	 * what should we do? close the socket with an appropriate
 	 * error message?
 	 */
-	return plug_accepting(p->plug, p->accepting_sock);
+	return plug_accepting(p->plug,
+                              p->accepting_constructor, p->accepting_ctx);
     }
 
     if (change == PROXY_CHANGE_RECEIVE) {
@@ -827,7 +817,8 @@ int proxy_socks4_negotiate (Proxy_Socket p, int change)
 	 * what should we do? close the socket with an appropriate
 	 * error message?
 	 */
-	return plug_accepting(p->plug, p->accepting_sock);
+	return plug_accepting(p->plug,
+                              p->accepting_constructor, p->accepting_ctx);
     }
 
     if (change == PROXY_CHANGE_RECEIVE) {
@@ -966,7 +957,8 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
 	 * what should we do? close the socket with an appropriate
 	 * error message?
 	 */
-	return plug_accepting(p->plug, p->accepting_sock);
+	return plug_accepting(p->plug,
+                              p->accepting_constructor, p->accepting_ctx);
     }
 
     if (change == PROXY_CHANGE_RECEIVE) {
@@ -1504,7 +1496,8 @@ int proxy_telnet_negotiate (Proxy_Socket p, int change)
 	 * what should we do? close the socket with an appropriate
 	 * error message?
 	 */
-	return plug_accepting(p->plug, p->accepting_sock);
+	return plug_accepting(p->plug,
+                              p->accepting_constructor, p->accepting_ctx);
     }
 
     if (change == PROXY_CHANGE_RECEIVE) {

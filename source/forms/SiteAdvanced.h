@@ -252,6 +252,10 @@ __published:
   TCheckBox *TimeDifferenceAutoCheck;
   TLabel *Label3;
   TComboBox *FtpHostCombo;
+  TGroupBox *TlsAuthenticationGroup;
+  TLabel *Label4;
+  TFilenameEdit *TlsCertificateFileEdit;
+  TCheckBox *TrimVMSVersionsCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -270,6 +274,8 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall PathEditBeforeDialog(TObject *Sender, UnicodeString &Name,
     bool &Action);
+  void __fastcall PathEditAfterDialog(TObject * Sender,
+    UnicodeString & Name, bool & Action);
   void __fastcall NavigationTreeCollapsing(TObject *Sender,
     TTreeNode *Node, bool &AllowCollapse);
   void __fastcall ProxyLocalCommandBrowseButtonClick(TObject *Sender);
@@ -280,6 +286,8 @@ __published:
   void __fastcall MaxTlsVersionComboChange(TObject *Sender);
   void __fastcall ProxyAutodetectButtonClick(TObject *Sender);
   void __fastcall NoteMemoKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall TlsCertificateFileEditAfterDialog(TObject *Sender, UnicodeString &Name,
+          bool &Action);
 
 
 public:

@@ -174,7 +174,7 @@ void __fastcall TFileSystemInfoDialog::ControlsAddItem(TControl * Control,
   else
   {
     TListView * ListView = dynamic_cast<TListView *>(Control);
-    assert(ListView != NULL);
+    DebugAssert(ListView != NULL);
 
     if (!Value.IsEmpty())
     {
@@ -240,7 +240,7 @@ void __fastcall TFileSystemInfoDialog::ClipboardAddItem(TControl * Control,
     if (dynamic_cast<TListView *>(Control) == NULL)
     {
       TGroupBox * Group = dynamic_cast<TGroupBox *>(Control->Parent);
-      assert(Group != NULL);
+      DebugAssert(Group != NULL);
       if ((Value.Length() >= 2) && (Value.SubString(Value.Length() - 1, 2) == L"\r\n"))
       {
         Value.SetLength(Value.Length() - 2);
@@ -249,7 +249,7 @@ void __fastcall TFileSystemInfoDialog::ClipboardAddItem(TControl * Control,
     }
     else
     {
-      assert(dynamic_cast<TListView *>(Control) != NULL);
+      DebugAssert(dynamic_cast<TListView *>(Control) != NULL);
       FClipboard += FORMAT(L"%s = %s\r\n", (LoadStr(Label), Value));
     }
   }
@@ -272,7 +272,7 @@ void __fastcall TFileSystemInfoDialog::CopyClick(TObject * Sender)
   TInstantOperationVisualizer Visualizer;
 
   TListView * ListView = dynamic_cast<TListView *>(GetPopupComponent(Sender));
-  assert(ListView != NULL);
+  DebugAssert(ListView != NULL);
 
   UnicodeString Text;
   for (int Index = 0; Index < ListView->Items->Count; Index++)
@@ -302,8 +302,8 @@ void __fastcall TFileSystemInfoDialog::SpaceAvailableButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::CheckSpaceAvailable()
 {
-  assert(FOnGetSpaceAvailable != NULL);
-  assert(!SpaceAvailablePathEdit->Text.IsEmpty());
+  DebugAssert(FOnGetSpaceAvailable != NULL);
+  DebugAssert(!SpaceAvailablePathEdit->Text.IsEmpty());
 
   FSpaceAvailableLoaded = true;
 

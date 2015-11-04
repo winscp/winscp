@@ -17,43 +17,14 @@
 		<CfgParent>Base</CfgParent>
 		<Base>true</Base>
 	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
-		<Base_Win64>true</Base_Win64>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
 	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
 		<Cfg_1>true</Cfg_1>
 		<CfgParent>Base</CfgParent>
 		<Base>true</Base>
 	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
-		<Cfg_1_Win32>true</Cfg_1_Win32>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
-		<Cfg_1_Win64>true</Cfg_1_Win64>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
 	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
 		<Cfg_2>true</Cfg_2>
 		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
-		<Cfg_2_Win32>true</Cfg_2_Win32>
-		<CfgParent>Cfg_2</CfgParent>
-		<Cfg_2>true</Cfg_2>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
-		<Cfg_2_Win64>true</Cfg_2_Win64>
-		<CfgParent>Cfg_2</CfgParent>
-		<Cfg_2>true</Cfg_2>
 		<Base>true</Base>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base)'!=''">
@@ -86,8 +57,10 @@
 			<BCC_wsus>false</BCC_wsus>
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-			<ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IncludePath>putty\;putty\WINDOWS\;$(BDS)\include;$(IncludePath)</IncludePath>
+			<Defines>SECURITY_WIN32;MPEXT;_WINDOWS;$(Defines)</Defines>
+			<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+			<IncludePath>putty\;putty\windows\;$(BDS)\include;$(IncludePath)</IncludePath>
+			<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 			<Manifest_File>None</Manifest_File>
 			<Multithreaded>true</Multithreaded>
 			<OutputExt>lib</OutputExt>
@@ -99,10 +72,6 @@
 		</PropertyGroup>
 	<PropertyGroup Condition="'$(Base_Win32)'!=''">
 			<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-			<Defines>SECURITY_WIN32;MPEXT;_WINDOWS;$(Defines)</Defines>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win64)'!=''">
-			<Defines>SECURITY_WIN32;MPEXT;_WINDOWS;$(Defines)</Defines>
 		</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
@@ -115,189 +84,190 @@
 			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
 			<DCC_Define>DEBUG</DCC_Define>
 			<DCC_Optimize>false</DCC_Optimize>
-			<FinalOutputDir>$(INTERM_PATH)\Debug</FinalOutputDir>
+			<Defines>_DEBUG;$(Defines)</Defines>
 			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-			<ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IntermediateOutputDir>$(INTERM_PATH)\Debug</IntermediateOutputDir>
 			<TASM_Debugging>Full</TASM_Debugging>
 			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
 		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-			<Defines>_DEBUG;$(Defines)</Defines>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-			<Defines>_DEBUG;$(Defines)</Defines>
-		</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-			<FinalOutputDir>$(INTERM_PATH)\Release</FinalOutputDir>
-			<ILINK_LibraryPath>$(BDS)\lib\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IntermediateOutputDir>$(INTERM_PATH)\Release</IntermediateOutputDir>
+			<Defines>NDEBUG;$(Defines)</Defines>
 			<TASM_Debugging>None</TASM_Debugging>
 		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
-		</PropertyGroup>
 	<ItemGroup>
-			<CppCompile Include="putty\CALLBACK.C">
+			<CppCompile Include="putty\callback.c">
 			<BuildOrder>5</BuildOrder>
 			<BuildOrder>25</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\CONF.C">
+			<CppCompile Include="putty\conf.c">
 			<BuildOrder>5</BuildOrder>
 			<BuildOrder>25</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\CPROXY.C">
+			<CppCompile Include="putty\cproxy.c">
 			<BuildOrder>5</BuildOrder>
 			<BuildOrder>25</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\INT64.C">
+			<CppCompile Include="putty\errsock.c">
+			<BuildOrder>44</BuildOrder>
+		</CppCompile>
+			<CppCompile Include="putty\import.c">
+			<BuildOrder>46</BuildOrder>
+		</CppCompile>
+			<CppCompile Include="putty\int64.c">
 			<BuildOrder>8</BuildOrder>
 			<BuildOrder>24</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\LOGGING.C">
+			<CppCompile Include="putty\logging.c">
 			<BuildOrder>27</BuildOrder>
 			<BuildOrder>11</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\MISC.C">
+			<CppCompile Include="putty\misc.c">
 			<BuildOrder>26</BuildOrder>
 			<BuildOrder>14</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\PGSSAPI.C">
+			<CppCompile Include="putty\noshare.c">
+			<BuildOrder>41</BuildOrder>
+		</CppCompile>
+			<CppCompile Include="putty\pgssapi.c">
 			<BuildOrder>37</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\PORTFWD_.C">
+			<CppCompile Include="putty\portfwd.c">
 			<BuildOrder>23</BuildOrder>
 			<BuildOrder>17</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\PROXY.C">
+			<CppCompile Include="putty\proxy.c">
 			<BuildOrder>20</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSH_.C">
+			<CppCompile Include="putty\ssh.c">
 			<BuildOrder>23</BuildOrder>
 			<BuildOrder>19</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHAES_.C">
+			<CppCompile Include="putty\sshaes.c">
 			<BuildOrder>26</BuildOrder>
 			<BuildOrder>22</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHARCF.C">
+			<CppCompile Include="putty\ssharcf.c">
 			<BuildOrder>29</BuildOrder>
 			<BuildOrder>21</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHBLOWF.C">
+			<CppCompile Include="putty\sshblowf.c">
 			<BuildOrder>34</BuildOrder>
 			<BuildOrder>32</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHBN.C">
+			<CppCompile Include="putty\sshbn.c">
 			<BuildOrder>35</BuildOrder>
 			<BuildOrder>33</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHCRC.C">
+			<CppCompile Include="putty\sshcrc.c">
 			<BuildOrder>38</BuildOrder>
 			<BuildOrder>36</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHCRCDA.C">
+			<CppCompile Include="putty\sshcrcda.c">
 			<BuildOrder>41</BuildOrder>
 			<BuildOrder>35</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHDES.C">
+			<CppCompile Include="putty\sshdes.c">
 			<BuildOrder>44</BuildOrder>
 			<BuildOrder>32</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHDH.C">
+			<CppCompile Include="putty\sshdh.c">
 			<BuildOrder>47</BuildOrder>
 			<BuildOrder>29</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHDSS.C">
+			<CppCompile Include="putty\sshdss.c">
 			<BuildOrder>50</BuildOrder>
 			<BuildOrder>28</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHGSSC.C">
+			<CppCompile Include="putty\sshgssc.c">
 			<BuildOrder>38</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHMD5.C">
+			<CppCompile Include="putty\sshmd5.c">
 			<BuildOrder>53</BuildOrder>
 			<BuildOrder>31</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHPUBK.C">
+			<CppCompile Include="putty\sshpubk.c">
 			<BuildOrder>56</BuildOrder>
 			<BuildOrder>30</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHRAND.C">
+			<CppCompile Include="putty\sshrand.c">
 			<BuildOrder>59</BuildOrder>
 			<BuildOrder>18</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHRSA.C">
+			<CppCompile Include="putty\sshrsa.c">
 			<BuildOrder>62</BuildOrder>
 			<BuildOrder>6</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHSH256.C">
+			<CppCompile Include="putty\sshsh256.c">
 			<BuildOrder>65</BuildOrder>
 			<BuildOrder>5</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHSH512.C">
+			<CppCompile Include="putty\sshsh512.c">
 			<BuildOrder>8</BuildOrder>
 			<BuildOrder>68</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHSHA_.C">
+			<CppCompile Include="putty\sshsha.c">
 			<BuildOrder>71</BuildOrder>
 			<BuildOrder>7</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\SSHZLIB.C">
+			<CppCompile Include="putty\sshshare.c">
+			<BuildOrder>42</BuildOrder>
+		</CppCompile>
+			<CppCompile Include="putty\sshzlib.c">
 			<BuildOrder>74</BuildOrder>
 			<BuildOrder>4</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\TREE234.C">
+			<CppCompile Include="putty\tree234.c">
 			<BuildOrder>77</BuildOrder>
 			<BuildOrder>1</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WILDCARD.C">
+			<CppCompile Include="putty\wildcard.c">
 			<BuildOrder>83</BuildOrder>
 			<BuildOrder>3</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WINDOWS\WINGSS.C">
+			<CppCompile Include="putty\windows\wingss.c">
 			<BuildOrder>86</BuildOrder>
 			<BuildOrder>2</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WINDOWS\WINHANDL.C">
-			<BuildOrder>89</BuildOrder>
-			<BuildOrder>15</BuildOrder>
+			<CppCompile Include="putty\windows\winhandl.c">
+			<BuildOrder>43</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WINDOWS\WINMISC.C">
+			<CppCompile Include="putty\windows\winhsock.c">
+			<BuildOrder>45</BuildOrder>
+		</CppCompile>
+			<CppCompile Include="putty\windows\winmisc.c">
 			<BuildOrder>92</BuildOrder>
 			<BuildOrder>14</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WINDOWS\WINNET.C">
+			<CppCompile Include="putty\windows\winnet.c">
 			<BuildOrder>95</BuildOrder>
 			<BuildOrder>17</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WINDOWS\WINNOISE.C">
+			<CppCompile Include="putty\windows\winnoise.c">
 			<BuildOrder>98</BuildOrder>
 			<BuildOrder>16</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WINDOWS\WINNOJMP.C">
+			<CppCompile Include="putty\windows\winnojmp.c">
 			<BuildOrder>39</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WINDOWS\WINPGNTC.C">
+			<CppCompile Include="putty\windows\winpgntc.c">
 			<BuildOrder>13</BuildOrder>
 			<BuildOrder>101</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WINDOWS\WINPROXY.C">
+			<CppCompile Include="putty\windows\winproxy.c">
 			<BuildOrder>104</BuildOrder>
 			<BuildOrder>10</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WINDOWS\WINSTORE_.C">
+			<CppCompile Include="putty\windows\winsecur.c">
+			<BuildOrder>43</BuildOrder>
+		</CppCompile>
+			<CppCompile Include="putty\windows\winstore.c">
 			<BuildOrder>9</BuildOrder>
 			<BuildOrder>107</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\WINDOWS\WINTIME.C">
+			<CppCompile Include="putty\windows\wintime.c">
 			<BuildOrder>12</BuildOrder>
 			<BuildOrder>110</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="putty\X11FWD.C">
+			<CppCompile Include="putty\x11fwd.c">
 			<BuildOrder>113</BuildOrder>
 			<BuildOrder>11</BuildOrder>
 		</CppCompile>

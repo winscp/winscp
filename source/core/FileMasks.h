@@ -121,6 +121,7 @@ private:
 };
 //---------------------------------------------------------------------------
 UnicodeString __fastcall MaskFileName(UnicodeString FileName, const UnicodeString Mask);
+bool __fastcall IsFileNameMask(const UnicodeString & Mask);
 bool __fastcall IsEffectiveFileNameMask(const UnicodeString & Mask);
 UnicodeString __fastcall DelimitFileNameMask(UnicodeString Mask);
 //---------------------------------------------------------------------------

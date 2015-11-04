@@ -33,5 +33,6 @@
 #define HELP_FTP_SUGGESTION                    "message_server_rejected_sftp_listens_for_ftp"
 #define HELP_STATUSMSG_DISCONNECTED            "message_disconnected"
 #define HELP_SFTP_INITIALIZE_ERROR             "message_cannot_initialize_sftp_protocol"
+#define HELP_AUTH_TRANSL_KEY_REFUSED           "message_key_refused"
 
 #endif // HelpCoreH

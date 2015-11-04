@@ -17,6 +17,7 @@
 #include <Terminal.h>
 #include "PngImageList.hpp"
 #include <Vcl.Imaging.pngimage.hpp>
+#include <System.Actions.hpp>
 //----------------------------------------------------------------------------
 class TConsoleDialog : public TForm
 {
@@ -42,6 +43,9 @@ __published:
   TEditSelectAll *EditSelectAll;
   TAction *AdjustWindow;
   TImage *Image;
+  TPngImageList *Images120;
+  TPngImageList *Images144;
+  TPngImageList *Images192;
   void __fastcall ExecuteButtonClick(TObject *Sender);
   void __fastcall CommandEditChange(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);

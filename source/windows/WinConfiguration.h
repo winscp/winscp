@@ -6,6 +6,8 @@
 #include "CustomDirView.hpp"
 //---------------------------------------------------------------------------
 enum TEditor { edInternal, edExternal, edOpen };
+enum TGenerateUrlCodeTarget { guctUrl, guctScript, guctAssembly };
+enum TScriptFormat { sfScriptFile, sfBatchFile, sfCommandLine };
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TScpExplorerConfiguration {
@@ -103,6 +105,8 @@ struct TFontConfiguration
 //---------------------------------------------------------------------------
 struct TEditorConfiguration {
   TFontConfiguration Font;
+  TColor FontColor;
+  TColor BackgroundColor;
   bool WordWrap;
   UnicodeString FindText;
   UnicodeString ReplaceText;
@@ -118,7 +122,7 @@ struct TEditorConfiguration {
   bool WarnOnEncodingFallback;
   bool WarnOrLargeFileSize;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
-    { return C(Font) C(WordWrap) C(FindText) C(ReplaceText)
+    { return C(Font) C(FontColor) C(BackgroundColor) C(WordWrap) C(FindText) C(ReplaceText)
       C(FindMatchCase) C(FindWholeWord) C(FindDown) C(TabSize)
       C(MaxEditors) C(EarlyClose) C(SDIShellEditor) C(WindowParams)
       C(Encoding) C(WarnOnEncodingFallback) C(WarnOrLargeFileSize) 0; };
@@ -149,9 +153,23 @@ struct TUpdatesData
   UnicodeString UrlButton;
   UnicodeString NewsUrl;
   TSize NewsSize;
+  UnicodeString DownloadUrl;
+  __int64 DownloadSize;
+  UnicodeString DownloadSha256;
+  UnicodeString AuthenticationError;
+  bool OpenGettingStarted;
+  UnicodeString DownloadingUrl;
+  TSize TipsSize;
+  UnicodeString TipsUrl;
+  UnicodeString Tips;
+  int TipsIntervalDays;
+  int TipsIntervalRuns;
   bool __fastcall operator !=(TUpdatesData & rhc)
     { return C(ForVersion) C(Version) C(Message) C(Critical) C(Release)
-             C(Disabled) C(Url) C(UrlButton) C(NewsUrl) C(NewsSize) 0; };
+             C(Disabled) C(Url) C(UrlButton) C(NewsUrl) C(NewsSize)
+             C(DownloadUrl) C(DownloadSize) C(DownloadSha256) C(AuthenticationError)
+             C(OpenGettingStarted) C(DownloadingUrl)
+             C(TipsSize) C(TipsUrl) C(Tips) C(TipsIntervalDays) C(TipsIntervalRuns) 0; };
   void Reset()
   {
     ForVersion = 0;
@@ -164,6 +182,17 @@ struct TUpdatesData
     UrlButton = L"";
     NewsUrl = L"";
     NewsSize = TSize();
+    DownloadUrl = L"";
+    DownloadSize = 0;
+    DownloadSha256 = L"";
+    AuthenticationError = L"";
+    OpenGettingStarted = false;
+    DownloadingUrl = L"";
+    TipsSize = TSize();
+    TipsUrl = L"";
+    Tips = L"";
+    TipsIntervalDays = 7;
+    TipsIntervalRuns = 5;
   }
 };
 //---------------------------------------------------------------------------
@@ -178,6 +207,7 @@ struct TUpdatesConfiguration
   int ProxyPort;
   TAutoSwitch BetaVersions;
   bool ShowOnStartup;
+  UnicodeString AuthenticationEmail;
   bool HaveResults;
   bool ShownResults;
   UnicodeString DotNetVersion;
@@ -186,7 +216,7 @@ struct TUpdatesConfiguration
 
   bool __fastcall operator !=(TUpdatesConfiguration & rhc)
     { return C(Period) C(LastCheck) C(ConnectionType) C(ProxyHost) C(ProxyPort)
-        C(BetaVersions) C(ShowOnStartup)
+        C(BetaVersions) C(ShowOnStartup) C(AuthenticationEmail)
         C(HaveResults) C(ShownResults) C(DotNetVersion)
         C(ConsoleVersion) C(Results)  0; };
 
@@ -385,8 +415,16 @@ private:
   UnicodeString FOpenedStoredSessionFolders;
   bool FAutoImportedFromPuttyOrFilezilla;
   int FGenerateUrlComponents;
+  TGenerateUrlCodeTarget FGenerateUrlCodeTarget;
+  TScriptFormat FGenerateUrlScriptFormat;
+  TAssemblyLanguage FGenerateUrlAssemblyLanguage;
   bool FExternalSessionInExistingInstance;
+  bool FKeepOpenWhenNoSession;
   bool FLocalIconsByExt;
+  bool FShowTips;
+  UnicodeString FTipsSeen;
+  TDateTime FTipsShown;
+  int FRunsSinceLastTip;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
@@ -466,8 +504,16 @@ private:
   void __fastcall SetOpenedStoredSessionFolders(UnicodeString value);
   void __fastcall SetAutoImportedFromPuttyOrFilezilla(bool value);
   void __fastcall SetGenerateUrlComponents(int value);
+  void __fastcall SetGenerateUrlCodeTarget(TGenerateUrlCodeTarget value);
+  void __fastcall SetGenerateUrlScriptFormat(TScriptFormat value);
+  void __fastcall SetGenerateUrlAssemblyLanguage(TAssemblyLanguage value);
   void __fastcall SetExternalSessionInExistingInstance(bool value);
+  void __fastcall SetKeepOpenWhenNoSession(bool value);
   void __fastcall SetLocalIconsByExt(bool value);
+  void __fastcall SetShowTips(bool value);
+  void __fastcall SetTipsSeen(UnicodeString value);
+  void __fastcall SetTipsShown(TDateTime value);
+  void __fastcall SetRunsSinceLastTip(int value);
   bool __fastcall GetHonorDrivePolicy();
   void __fastcall SetHonorDrivePolicy(bool value);
   bool __fastcall GetIsBeta();
@@ -499,13 +545,8 @@ protected:
   void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   virtual bool __fastcall GetUseMasterPassword();
   bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2);
-  bool __fastcall InternalReloadComponentRes(const UnicodeString ResName,
-    HINSTANCE HInst, TComponent * Instance);
-  bool __fastcall InitComponent(TComponent * Instance,
-    TClass RootAncestor, TClass ClassType);
   virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
-    UnicodeString * FileName = NULL);
-  virtual void __fastcall SetResourceModule(HINSTANCE Instance);
+    UnicodeString & FileName);
   virtual LCID __fastcall GetLocale();
   void __fastcall CheckTranslationVersion(const UnicodeString FileName,
     bool InternalLocaleOnError);
@@ -626,8 +667,16 @@ public:
   __property UnicodeString OpenedStoredSessionFolders = { read = FOpenedStoredSessionFolders, write = SetOpenedStoredSessionFolders };
   __property bool AutoImportedFromPuttyOrFilezilla = { read = FAutoImportedFromPuttyOrFilezilla, write = SetAutoImportedFromPuttyOrFilezilla };
   __property int GenerateUrlComponents = { read = FGenerateUrlComponents, write = SetGenerateUrlComponents };
+  __property TGenerateUrlCodeTarget GenerateUrlCodeTarget = { read = FGenerateUrlCodeTarget, write = SetGenerateUrlCodeTarget };
+  __property TScriptFormat GenerateUrlScriptFormat = { read = FGenerateUrlScriptFormat, write = SetGenerateUrlScriptFormat };
+  __property TAssemblyLanguage GenerateUrlAssemblyLanguage = { read = FGenerateUrlAssemblyLanguage, write = SetGenerateUrlAssemblyLanguage };
   __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
+  __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
+  __property bool ShowTips = { read = FShowTips, write = SetShowTips };
+  __property UnicodeString TipsSeen = { read = FTipsSeen, write = SetTipsSeen };
+  __property TDateTime TipsShown = { read = FTipsShown, write = SetTipsShown };
+  __property int RunsSinceLastTip = { read = FRunsSinceLastTip, write = SetRunsSinceLastTip };
   __property bool HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
   __property TFont * SystemIconFont = { read = GetSystemIconFont };

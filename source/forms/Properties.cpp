@@ -198,7 +198,7 @@ void __fastcall TPropertiesDialog::LoadRemoteTokens(TComboBox * ComboBox,
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::LoadInfo()
 {
-  assert(FFileList->Count > 0);
+  DebugAssert(FFileList->Count > 0);
   FMultiple = FFileList->Count > 1;
   FMultipleChecksum = FMultiple;
 
@@ -242,14 +242,14 @@ void __fastcall TPropertiesDialog::LoadInfo()
 
   LoadStats(FilesSize, Stats);
 
-  FileIconImage->Picture->Bitmap = NULL;
-
   RightsFrame->AllowUndef = FMultiple;
 
   if (!FMultiple)
   {
     TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
-    assert(File && FShellImageList);
+    DebugAssert(File && FShellImageList);
+
+    FileIconImage->Picture->Bitmap = NULL;
 
     // shell image list does not have fixed large icon size
     // (it is probably 32x32 min, but can be larger, on xp it is 48x48 if
@@ -259,10 +259,16 @@ void __fastcall TPropertiesDialog::LoadInfo()
     try
     {
       FShellImageList->GetBitmap(File->IconIndex, Bitmap);
-      FileIconImage->Picture->Bitmap->Width = FileIconImage->Width;
-      FileIconImage->Picture->Bitmap->Height = FileIconImage->Height;
+      int Size = DialogImageSize();
+      // Use exact DPI-scaled size, not approximate scaling by font size.
+      // Otherwise we stretch icons unnecessarily because the canvas
+      // is one or two pixels off the icon size
+      FileIconImage->Width = Size;
+      FileIconImage->Height = Size;
+      FileIconImage->Picture->Bitmap->Width = Size;
+      FileIconImage->Picture->Bitmap->Height = Size;
       FileIconImage->Picture->Bitmap->Canvas->StretchDraw(
-        TRect(0, 0, FileIconImage->Width, FileIconImage->Height),
+        TRect(0, 0, Size, Size),
         Bitmap);
     }
     __finally
@@ -287,10 +293,9 @@ void __fastcall TPropertiesDialog::LoadInfo()
     Caption = FMTLOAD(PROPERTIES_FILES_CAPTION, (FFileList->Strings[0]));
     LinksToLabelLabel->Hide();
     LinksToLabel->Hide();
+    LoadDialogImage(FileIconImage, L"Multiple Files");
   }
 
-  FilesIconImage->Visible = FMultiple;
-  FileIconImage->Visible = !FMultiple;
   ChecksumGroup->Visible = !FMultipleChecksum;
   ChecksumView->Visible = FMultipleChecksum;
 }
@@ -317,7 +322,7 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
   if (((Stats.Files + Stats.Directories) == 0) && !FMultiple)
   {
     TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
-    assert(File != NULL);
+    DebugAssert(File != NULL);
     FilesStr = File->FileName;
   }
   else
@@ -378,7 +383,7 @@ void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & v
 void __fastcall TPropertiesDialog::StoreRemoteToken(unsigned int ID,
   const UnicodeString & Text, const TRemoteTokenList * List, TRemoteToken & Result)
 {
-  assert(List != NULL);
+  DebugAssert(List != NULL);
   const TRemoteToken * Token = List->Find(ID);
   if (Token == NULL)
   {
@@ -400,7 +405,7 @@ TRemoteToken __fastcall TPropertiesDialog::StoreRemoteToken(const TRemoteToken &
   {
     if (FUserGroupByID)
     {
-      assert(List != NULL);
+      DebugAssert(List != NULL);
       int IDStart = Text.LastDelimiter(L"[");
       if (!Text.IsEmpty() && (IDStart >= 0) && (Text[Text.Length()] == L']'))
       {
@@ -563,7 +568,7 @@ void __fastcall TPropertiesDialog::FormCloseQuery(TObject * /*Sender*/,
 void __fastcall TPropertiesDialog::CalculateSizeButtonClick(
       TObject * /*Sender*/)
 {
-  assert(FOnCalculateSize != NULL);
+  DebugAssert(FOnCalculateSize != NULL);
 
   bool DoClose = false;
   try
@@ -597,7 +602,7 @@ void __fastcall TPropertiesDialog::ResetChecksum()
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::CalculateChecksum()
 {
-  assert(FOnCalculateChecksum != NULL);
+  DebugAssert(FOnCalculateChecksum != NULL);
 
   ResetChecksum();
   FChecksumLoaded = true;
@@ -688,7 +693,7 @@ void __fastcall TPropertiesDialog::CopyClick(TObject * Sender)
   TInstantOperationVisualizer Visualizer;
 
   TListView * ListView = dynamic_cast<TListView *>(GetPopupComponent(Sender));
-  assert(ListView != NULL);
+  DebugAssert(ListView != NULL);
 
   int Count = 0;
   UnicodeString SingleText;
@@ -696,7 +701,7 @@ void __fastcall TPropertiesDialog::CopyClick(TObject * Sender)
   TListItem * Item = ListView->GetNextItem(NULL, sdAll, TItemStates() << isSelected);
   while (Item != NULL)
   {
-    assert(Item->Selected);
+    DebugAssert(Item->Selected);
 
     SingleText = Item->SubItems->Strings[0];
     Text += FORMAT(L"%s = %s\r\n", (Item->Caption, Item->SubItems->Strings[0]));

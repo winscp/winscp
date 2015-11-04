@@ -8,6 +8,8 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Security.Principal;
+using System.Security.AccessControl;
 
 namespace WinSCP
 {
@@ -40,7 +42,7 @@ namespace WinSCP
                 CheckVersion(executablePath, assemblyVersion);
 
                 string configSwitch;
-                if (_session.DefaultConfiguration)
+                if (_session.DefaultConfigurationInternal)
                 {
                     configSwitch = "/ini=nul ";
                 }
@@ -83,11 +85,6 @@ namespace WinSCP
                 _process.StartInfo.Arguments = arguments;
                 _process.StartInfo.UseShellExecute = false;
                 _process.Exited += ProcessExited;
-                if (_logger.Logging)
-                {
-                    _process.OutputDataReceived += ProcessOutputDataReceived;
-                    _process.ErrorDataReceived += ProcessErrorDataReceived;
-                }
             }
         }
 
@@ -125,6 +122,47 @@ namespace WinSCP
             {
                 _process.StartInfo.Arguments += string.Format(CultureInfo.InvariantCulture, " /console /consoleinstance={0}", _instanceName);
 
+                // When running under IIS in "impersonated" mode, the process starts, but does not do anything.
+                // Supposedly it "displayes" some invisible error message when starting and hangs.
+                // Running it "as the user" helps, eventhough it already runs as the user.
+                // These's probably some difference between "run as" and impersonations
+                if (!string.IsNullOrEmpty(_session.ExecutableProcessUserName))
+                {
+                    _logger.WriteLine("Will run process as {0}", _session.ExecutableProcessUserName);
+
+                    _process.StartInfo.UserName = _session.ExecutableProcessUserName;
+                    _process.StartInfo.Password = _session.ExecutableProcessPassword;
+                    // One of the hints for resolving C0000142 error (see below)
+                    // was setting this property, so that an environment is correctly loaded,
+                    // so DLLs can be found and loaded.
+                    _process.StartInfo.LoadUserProfile = true;
+
+                    // Without granting both window station and desktop access permissions,
+                    // WinSCP process aborts with C0000142 (DLL Initialization Failed) error,
+                    // when "running as user"
+                    _logger.WriteLine("Granting access to window station");
+                    try
+                    {
+                        IntPtr windowStation = UnsafeNativeMethods.GetProcessWindowStation();
+                        GrantAccess(windowStation, (int)WindowStationRights.AllAccess);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new SessionLocalException(_session, "Error granting access to window station", e);
+                    }
+
+                    _logger.WriteLine("Granting access to desktop");
+                    try
+                    {
+                        IntPtr desktop = UnsafeNativeMethods.GetThreadDesktop(UnsafeNativeMethods.GetCurrentThreadId());
+                        GrantAccess(desktop, (int)DesktopRights.AllAccess);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new SessionLocalException(_session, "Error granting access to desktop", e);
+                    }
+                }
+
                 _logger.WriteLine("Starting \"{0}\" {1}", _process.StartInfo.FileName, _process.StartInfo.Arguments);
 
                 _process.Start();
@@ -137,19 +175,41 @@ namespace WinSCP
             }
         }
 
+        // Handles returned by GetProcessWindowStation and GetThreadDesktop should not be closed
+        internal class NoopSafeHandle : SafeHandle
+        {
+            public NoopSafeHandle(IntPtr handle) :
+                base(handle, false)
+            {
+            }
+
+            public override bool IsInvalid
+            {
+                get { return false; }
+            }
+
+            protected override bool ReleaseHandle()
+            {
+                return true;
+            }
+        }
+
+        private void GrantAccess(IntPtr handle, int accessMask)
+        {
+            using (SafeHandle safeHandle = new NoopSafeHandle(handle))
+            {
+                GenericSecurity security =
+                    new GenericSecurity(false, ResourceType.WindowObject, safeHandle, AccessControlSections.Access);
+
+                security.AddAccessRule(
+                    new GenericAccessRule(new NTAccount(_session.ExecutableProcessUserName), accessMask, AccessControlType.Allow));
+                security.Persist(safeHandle, AccessControlSections.Access);
+            }
+        }
+
         private void ProcessExited(object sender, EventArgs e)
         {
             _logger.WriteLine("Process {0} exited with exit code {1}", _process.Id, _process.ExitCode);
-        }
-
-        private void ProcessOutputDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            _logger.WriteLine("Process output: {0}", e.Data);
-        }
-
-        private void ProcessErrorDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            _logger.WriteLine("Process error output: {0}", e.Data);
         }
 
         private bool AbortedOrExited()
@@ -176,8 +236,10 @@ namespace WinSCP
             {
                 while (!AbortedOrExited())
                 {
+                    _logger.WriteLineLevel(1, "Waiting for request event");
                     if (_requestEvent.WaitOne(100, false))
                     {
+                        _logger.WriteLineLevel(1, "Got request event");
                         ProcessEvent();
                     }
                 }
@@ -431,12 +493,43 @@ namespace WinSCP
             }
         }
 
-        private static SafeFileHandle CreateFileMapping(string fileMappingName)
+        private SafeFileHandle CreateFileMapping(string fileMappingName)
         {
-            return
-                UnsafeNativeMethods.CreateFileMapping(
-                    new SafeFileHandle(new IntPtr(-1), true), IntPtr.Zero, FileMapProtection.PageReadWrite, 0,
-                    ConsoleCommStruct.Size, fileMappingName);
+            unsafe
+            {
+                IntPtr securityAttributesPtr = IntPtr.Zero;
+
+                // We use the EventWaitHandleSecurity only to generate the descriptor binary form
+                // that does not differ for object types, so we abuse the existing "event handle" implementation,
+                // not to have to create the file mapping SecurityAttributes via P/Invoke.
+
+                // .NET 4 supports MemoryMappedFile and MemoryMappedFileSecurity natively already
+
+                EventWaitHandleSecurity security = CreateSecurity((EventWaitHandleRights)FileMappingRights.AllAccess);
+
+                if (security != null)
+                {
+                    SecurityAttributes securityAttributes = new SecurityAttributes();
+                    securityAttributes.nLength = (uint)Marshal.SizeOf(securityAttributes);
+
+                    byte[] descriptorBinaryForm = security.GetSecurityDescriptorBinaryForm();
+                    byte * buffer = stackalloc byte[descriptorBinaryForm.Length];
+                    for (int i = 0; i < descriptorBinaryForm.Length; i++)
+                    {
+                        buffer[i] = descriptorBinaryForm[i];
+                    }
+                    securityAttributes.lpSecurityDescriptor = (IntPtr)buffer;
+
+                    int length = Marshal.SizeOf(typeof(SecurityAttributes));
+                    securityAttributesPtr = Marshal.AllocHGlobal(length);
+                    Marshal.StructureToPtr(securityAttributes, securityAttributesPtr, false);
+                }
+
+                return
+                    UnsafeNativeMethods.CreateFileMapping(
+                        new SafeFileHandle(new IntPtr(-1), true), securityAttributesPtr, FileMapProtection.PageReadWrite, 0,
+                        ConsoleCommStruct.Size, fileMappingName);
+            }
         }
 
         private ConsoleCommStruct AcquireCommStruct()
@@ -448,9 +541,42 @@ namespace WinSCP
         {
             bool createdNew;
             _logger.WriteLine("Creating event {0}", name);
-            ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew);
-            _logger.WriteLine("Created event {0} with handle {1}, new {2}", name, ev.SafeWaitHandle.DangerousGetHandle(), createdNew);
+
+            EventWaitHandleSecurity security = CreateSecurity(EventWaitHandleRights.FullControl);
+
+            ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew, security);
+            _logger.WriteLine(
+                "Created event {0} with handle {1} with security {2}, new {3}",
+                name, ev.SafeWaitHandle.DangerousGetHandle(),
+                (security != null ? security.GetSecurityDescriptorSddlForm(AccessControlSections.All) : "none"), createdNew);
             return createdNew;
+        }
+
+        private EventWaitHandleSecurity CreateSecurity(EventWaitHandleRights eventRights)
+        {
+            EventWaitHandleSecurity security = null;
+
+            // When "running as user", we have to grant the target user permissions to the objects (events and file mapping) explicitly
+            if (!string.IsNullOrEmpty(_session.ExecutableProcessUserName))
+            {
+                security = new EventWaitHandleSecurity();
+                IdentityReference si;
+                try
+                {
+                    si = new NTAccount(_session.ExecutableProcessUserName);
+                }
+                catch (Exception e)
+                {
+                    throw new SessionLocalException(_session, string.Format(CultureInfo.CurrentCulture, "Error resolving account {0}", _session.ExecutableProcessUserName), e);
+                }
+
+                EventWaitHandleAccessRule rule =
+                    new EventWaitHandleAccessRule(
+                        si, eventRights, AccessControlType.Allow);
+                security.AddAccessRule(rule);
+            }
+
+            return security;
         }
 
         private EventWaitHandle CreateEvent(string name)
@@ -701,7 +827,7 @@ namespace WinSCP
                 {
                     throw new SessionLocalException(
                         _session, string.Format(CultureInfo.CurrentCulture,
-                            "The version of {0} ({1}) does not match version of this assembly {2} ({3}). You can disable this check using Session.DisableVersionCheck (not recommended).",
+                            "The version of {0} ({1}) does not match version of this assembly {2} ({3}).",
                             exePath, version.ProductVersion, _logger.GetAssemblyFilePath(), assemblyVersion.ProductVersion));
                 }
             }

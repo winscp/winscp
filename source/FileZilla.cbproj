@@ -17,43 +17,14 @@
 		<CfgParent>Base</CfgParent>
 		<Base>true</Base>
 	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
-		<Base_Win64>true</Base_Win64>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
 	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
 		<Cfg_1>true</Cfg_1>
 		<CfgParent>Base</CfgParent>
 		<Base>true</Base>
 	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
-		<Cfg_1_Win32>true</Cfg_1_Win32>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
-		<Cfg_1_Win64>true</Cfg_1_Win64>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
 	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
 		<Cfg_2>true</Cfg_2>
 		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
-		<Cfg_2_Win32>true</Cfg_2_Win32>
-		<CfgParent>Cfg_2</CfgParent>
-		<Cfg_2>true</Cfg_2>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
-		<Cfg_2_Win64>true</Cfg_2_Win64>
-		<CfgParent>Cfg_2</CfgParent>
-		<Cfg_2>true</Cfg_2>
 		<Base>true</Base>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base)'!=''">
@@ -72,8 +43,11 @@
 			<BCC_wrch>false</BCC_wrch>
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+			<Defines>_WIN32;$(Defines)</Defines>
+			<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 			<ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IncludePath>filezilla\misc\;filezilla\;resource;..\libs\openssl;$(BDS)\include;$(BDS)\include\windows\vcl;$(BDS)\include\mfc;$(IncludePath)</IncludePath>
+			<IncludePath>filezilla\misc\;filezilla\;resource;core;..\libs\openssl;$(BDS)\include;$(BDS)\include\windows\vcl;$(BDS)\include\mfc;$(IncludePath)</IncludePath>
+			<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 			<Manifest_File>None</Manifest_File>
 			<Multithreaded>true</Multithreaded>
 			<OutputExt>lib</OutputExt>
@@ -85,10 +59,6 @@
 		</PropertyGroup>
 	<PropertyGroup Condition="'$(Base_Win32)'!=''">
 			<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-			<Defines>_WIN32;$(Defines)</Defines>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win64)'!=''">
-			<Defines>_WIN32;$(Defines)</Defines>
 		</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
@@ -104,30 +74,14 @@
 			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
 			<DCC_Define>DEBUG</DCC_Define>
 			<DCC_Optimize>false</DCC_Optimize>
-			<FinalOutputDir>$(INTERM_PATH)\Debug</FinalOutputDir>
+			<Defines>_DEBUG;$(Defines)</Defines>
 			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-			<ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IntermediateOutputDir>$(INTERM_PATH)\Debug</IntermediateOutputDir>
 			<TASM_Debugging>Full</TASM_Debugging>
 			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
 		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-			<Defines>_DEBUG;$(Defines)</Defines>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-			<Defines>_DEBUG;$(Defines)</Defines>
-		</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-			<FinalOutputDir>$(INTERM_PATH)\Release</FinalOutputDir>
-			<ILINK_LibraryPath>$(BDS)\lib\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IntermediateOutputDir>$(INTERM_PATH)\Release</IntermediateOutputDir>
+			<Defines>NDEBUG;$(Defines)</Defines>
 			<TASM_Debugging>None</TASM_Debugging>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
 		</PropertyGroup>
 	<ItemGroup>
 			<CppCompile Include="filezilla\ApiLog.cpp">
@@ -144,12 +98,6 @@
 		</CppCompile>
 			<CppCompile Include="filezilla\AsyncSslSocketLayer.cpp">
 			<BuildOrder>4</BuildOrder>
-		</CppCompile>
-			<CppCompile Include="filezilla\ControlSocket.cpp">
-			<BuildOrder>5</BuildOrder>
-		</CppCompile>
-			<CppCompile Include="filezilla\Crypt.cpp">
-			<BuildOrder>6</BuildOrder>
 		</CppCompile>
 			<CppCompile Include="filezilla\FileZillaApi.cpp">
 			<BuildOrder>7</BuildOrder>
@@ -176,16 +124,6 @@
 		</CppCompile>
 			<CppCompile Include="filezilla\MFC64bitFix.cpp">
 			<BuildOrder>14</BuildOrder>
-		</CppCompile>
-			<CppCompile Include="filezilla\misc\CBase64Coding.cpp">
-			<BuildOrder>20</BuildOrder>
-		</CppCompile>
-			<CppCompile Include="filezilla\misc\Fzutf8.cpp">
-			<BuildOrder>21</BuildOrder>
-		</CppCompile>
-			<CppCompile Include="filezilla\Options.cpp">
-			<DependentOn>filezilla\Options.h</DependentOn>
-			<BuildOrder>15</BuildOrder>
 		</CppCompile>
 			<CppCompile Include="filezilla\ServerPath.cpp">
 			<BuildOrder>17</BuildOrder>

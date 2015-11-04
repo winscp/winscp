@@ -505,7 +505,7 @@ type
 
 implementation
 
-uses TB2Common, TB2Consts, TypInfo, Math, ImgList, {MP}Menus {$IFNDEF JR_D5}, DsgnIntf{$ENDIF};
+uses TB2Common, TB2Consts, TypInfo, Math, ImgList, {MP}Menus, Forms {$IFNDEF JR_D5}, DsgnIntf{$ENDIF};
 
 const
   { Repeat intervals for spin edit items }
@@ -997,6 +997,8 @@ begin
     SetBkMode(DC, TRANSPARENT);
     SetBkColor(DC, GetSysColor(FillColors[Item.Enabled]));
     SetTextColor(DC, GetSysColor(TextColors[Item.Enabled]));
+    // WinSCP: Align edit text with toolbar labels
+    InflateRect(R, 0, -1);
     DrawText(DC, PChar(S), Length(S), R, DT_SINGLELINE or DT_NOPREFIX or Alignments[Item.Alignment]);
     SelectObject(DC, OldFnt);
     DeleteObject(Fnt);
@@ -1815,23 +1817,27 @@ end;
 
 procedure TTBXColorItemViewer.DrawItemImage(Canvas: TCanvas; ARect: TRect; ItemInfo: TTBXItemInfo);
 begin
-  with ItemInfo, Canvas do if Enabled then
+  with ItemInfo, Canvas do
   begin
-    if ((ItemOptions and IO_TOOLBARSTYLE) = 0) then InflateRect(ARect, -2, -2);
     if TTBXColorItem(Item).Color <> clNone then
     begin
-      Brush.Color := clBtnShadow;
-      FrameRect(ARect);
-      InflateRect(ARect, -1, -1);
-      Brush.Color := TTBXColorItem(Item).Color;
-      FillRect(ARect);
+      if ((ItemOptions and IO_TOOLBARSTYLE) = 0) then InflateRect(ARect, -2, -2);
+
+      if Enabled then
+      begin
+        Brush.Color := clBtnShadow;
+        FrameRect(ARect);
+        InflateRect(ARect, -1, -1);
+        Brush.Color := TTBXColorItem(Item).Color;
+        FillRect(ARect);
+      end
+        else
+      begin
+        Inc(ARect.Right);
+        Inc(ARect.Bottom);
+        DrawEdge(Handle, ARect, BDR_SUNKENOUTER or BDR_RAISEDINNER, BF_RECT);
+      end;
     end;
-  end
-  else
-  begin
-    Inc(ARect.Right);
-    Inc(ARect.Bottom);
-    DrawEdge(Handle, ARect, BDR_SUNKENOUTER or BDR_RAISEDINNER, BF_RECT);
   end;
 end;
 
@@ -1848,16 +1854,39 @@ begin
 end;
 
 function TTBXColorItemViewer.GetImageSize: TSize;
+var
+  ImgList: TCustomImageList;
+  Size: Integer;
 begin
-  if IsToolbarStyle then
+  ImgList := GetImageList;
+  if ImgList <> nil then
   begin
-    Result.CX := 12;
-    Result.CY := 12;
+    Result.CX := ImgList.Width;
+    Result.CY := ImgList.Height;
+    if IsToolbarStyle then
+    begin
+      // we want to get 12x12 with 16x16 images,
+      // to match the imagelist-less branch below
+      Result.CX := MulDiv(Result.CX, 12, 16);
+      Result.CY := MulDiv(Result.CY, 12, 16);
+    end;
   end
-  else
+    else
   begin
-    Result.CX := 16;
-    Result.CY := 16;
+    // we do not want to get here
+    Assert(False);
+    if IsToolbarStyle then
+    begin
+      Size := 12;
+    end
+    else
+    begin
+      Size := 16;
+    end;
+    // do not have a canvas here to scale by text height
+    Size := MulDiv(Size, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+    Result.CX := Size;
+    Result.CY := Size;
   end;
 end;
 

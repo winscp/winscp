@@ -906,7 +906,7 @@ void des3_encrypt_pubkey_ossh(unsigned char *key, unsigned char *iv,
     smemclr(ourkeys, sizeof(ourkeys));
 }
 
-static void des_keysetup_xdmauth(unsigned char *keydata, DESContext *dc)
+static void des_keysetup_xdmauth(const unsigned char *keydata, DESContext *dc)
 {
     unsigned char key[8];
     int i, nbits, j;
@@ -929,18 +929,20 @@ static void des_keysetup_xdmauth(unsigned char *keydata, DESContext *dc)
     des_key_setup(GET_32BIT_MSB_FIRST(key), GET_32BIT_MSB_FIRST(key + 4), dc);
 }
 
-void des_encrypt_xdmauth(unsigned char *keydata, unsigned char *blk, int len)
+void des_encrypt_xdmauth(const unsigned char *keydata,
+                         unsigned char *blk, int len)
 {
     DESContext dc;
     des_keysetup_xdmauth(keydata, &dc);
-    des_cbc_encrypt(blk, 24, &dc);
+    des_cbc_encrypt(blk, len, &dc);
 }
 
-void des_decrypt_xdmauth(unsigned char *keydata, unsigned char *blk, int len)
+void des_decrypt_xdmauth(const unsigned char *keydata,
+                         unsigned char *blk, int len)
 {
     DESContext dc;
     des_keysetup_xdmauth(keydata, &dc);
-    des_cbc_decrypt(blk, 24, &dc);
+    des_cbc_decrypt(blk, len, &dc);
 }
 
 static const struct ssh2_cipher ssh_3des_ssh2 = {
@@ -1029,3 +1031,58 @@ const struct ssh_cipher ssh_des = {
     des_encrypt_blk, des_decrypt_blk,
     8, "single-DES CBC"
 };
+
+#ifdef TEST_XDM_AUTH
+
+/*
+ * Small standalone utility which allows encryption and decryption of
+ * single cipher blocks in the XDM-AUTHORIZATION-1 style. Written
+ * during the rework of X authorisation for connection sharing, to
+ * check the corner case when xa1_firstblock matches but the rest of
+ * the authorisation is bogus.
+ *
+ * Just compile this file on its own with the above ifdef symbol
+ * predefined:
+
+gcc -DTEST_XDM_AUTH -o sshdes sshdes.c
+
+ */
+
+#include <stdlib.h>
+void *safemalloc(size_t n, size_t size) { return calloc(n, size); }
+void safefree(void *p) { return free(p); }
+void smemclr(void *p, size_t size) { memset(p, 0, size); }
+int main(int argc, char **argv)
+{
+    unsigned char words[2][8];
+    unsigned char out[8];
+    int i, j;
+
+    memset(words, 0, sizeof(words));
+
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < 8 && argv[i+1][2*j]; j++) {
+            char x[3];
+            unsigned u;
+            x[0] = argv[i+1][2*j];
+            x[1] = argv[i+1][2*j+1];
+            x[2] = 0;
+            sscanf(x, "%02x", &u);
+            words[i][j] = u;
+        }
+    }
+
+    memcpy(out, words[0], 8);
+    des_decrypt_xdmauth(words[1], out, 8);
+    printf("decrypt(%s,%s) = ", argv[1], argv[2]);
+    for (i = 0; i < 8; i++) printf("%02x", out[i]);
+    printf("\n");
+
+    memcpy(out, words[0], 8);
+    des_encrypt_xdmauth(words[1], out, 8);
+    printf("encrypt(%s,%s) = ", argv[1], argv[2]);
+    for (i = 0; i < 8; i++) printf("%02x", out[i]);
+    printf("\n");
+}
+
+#endif

@@ -19,6 +19,7 @@
 #define smallsigma0(x) ( ror((x),7) ^ ror((x),18) ^ shr((x),3) )
 #define smallsigma1(x) ( ror((x),17) ^ ror((x),19) ^ shr((x),10) )
 
+#ifndef WINSCP_VS
 void SHA256_Core_Init(SHA256_State *s) {
     s->h[0] = 0x6a09e667;
     s->h[1] = 0xbb67ae85;
@@ -29,7 +30,11 @@ void SHA256_Core_Init(SHA256_State *s) {
     s->h[6] = 0x1f83d9ab;
     s->h[7] = 0x5be0cd19;
 }
+#endif // !WINSCP_VS
 
+#ifndef WINSCP_VS
+void SHA256_Block(SHA256_State *s, uint32 *block);
+#else
 void SHA256_Block(SHA256_State *s, uint32 *block) {
     uint32 w[80];
     uint32 a,b,c,d,e,f,g,h;
@@ -84,7 +89,9 @@ void SHA256_Block(SHA256_State *s, uint32 *block) {
     s->h[0] += a; s->h[1] += b; s->h[2] += c; s->h[3] += d;
     s->h[4] += e; s->h[5] += f; s->h[6] += g; s->h[7] += h;
 }
+#endif // !WINSCP_VS
 
+#ifndef WINSCP_VS
 /* ----------------------------------------------------------------------
  * Outer SHA256 algorithm: take an arbitrary length byte string,
  * convert it into 16-word blocks with the prescribed padding at
@@ -184,6 +191,7 @@ void SHA256_Simple(const void *p, int len, unsigned char *output) {
     SHA256_Init(&s);
     SHA256_Bytes(&s, p, len);
     SHA256_Final(&s, output);
+    smemclr(&s, sizeof(s));
 }
 
 /*
@@ -211,6 +219,7 @@ static void sha256_final(void *handle, unsigned char *output)
     SHA256_State *s = handle;
 
     SHA256_Final(s, output);
+    smemclr(s, sizeof(*s));
     sfree(s);
 }
 
@@ -230,6 +239,7 @@ static void *sha256_make_context(void)
 
 static void sha256_free_context(void *handle)
 {
+    smemclr(handle, 3 * sizeof(SHA256_State));
     sfree(handle);
 }
 
@@ -307,7 +317,7 @@ static int hmacsha256_verresult(void *handle, unsigned char const *hmac)
 {
     unsigned char correct[32];
     hmacsha256_genresult(handle, correct);
-    return !memcmp(correct, hmac, 32);
+    return smemeq(correct, hmac, 32);
 }
 
 static int sha256_verify(void *handle, unsigned char *blk, int len,
@@ -315,7 +325,7 @@ static int sha256_verify(void *handle, unsigned char *blk, int len,
 {
     unsigned char correct[32];
     sha256_do_hmac(handle, blk, len, seq, correct);
-    return !memcmp(correct, blk + len, 32);
+    return smemeq(correct, blk + len, 32);
 }
 
 const struct ssh_mac ssh_hmac_sha256 = {
@@ -327,6 +337,7 @@ const struct ssh_mac ssh_hmac_sha256 = {
     32,
     "HMAC-SHA-256"
 };
+#endif // !WINSCP_VS
 
 #ifdef TEST
 

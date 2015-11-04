@@ -23,6 +23,8 @@
 //---------------------------------------------------------------------------
 TWinConfiguration * WinConfiguration = NULL;
 //---------------------------------------------------------------------------
+static UnicodeString NotepadName(L"notepad.exe");
+//---------------------------------------------------------------------------
 __fastcall TEditorData::TEditorData() :
   FileMask(L"*.*"),
   Editor(edInternal),
@@ -67,9 +69,10 @@ bool __fastcall TEditorData::DecideExternalEditorText(UnicodeString ExternalEdit
   ReformatFileNameCommand(ExternalEditor);
   UnicodeString ProgramName = ExtractProgramName(ExternalEditor);
   // We explicitly do not use TEditorPreferences::GetDefaultExternalEditor(),
-  // as we need to expliclty refer to Notepad, even if the default external
+  // as we need to explicitly refer to the Notepad, even if the default external
   // editor ever changes
-  if (SameText(ProgramName, "notepad"))
+  UnicodeString NotepadProgramName = ExtractProgramName(NotepadName);
+  if (SameText(ProgramName, NotepadProgramName))
   {
     Result = true;
   }
@@ -107,7 +110,7 @@ bool __fastcall TEditorPreferences::Matches(const UnicodeString FileName,
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TEditorPreferences::GetDefaultExternalEditor()
 {
-  return L"notepad.exe";
+  return NotepadName;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferences::LegacyDefaults()
@@ -118,7 +121,7 @@ void __fastcall TEditorPreferences::LegacyDefaults()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TEditorPreferences::ExtractExternalEditorName() const
 {
-  assert(FData.Editor == edExternal);
+  DebugAssert(FData.Editor == edExternal);
   UnicodeString ExternalEditor = FData.ExternalEditor;
   ReformatFileNameCommand(ExternalEditor);
   // Trim is a workaround for unknown problem with "notepad  " (2 trailing spaces)
@@ -303,7 +306,7 @@ void __fastcall TEditorList::Move(int CurIndex, int NewIndex)
 //---------------------------------------------------------------------------
 void __fastcall TEditorList::Delete(int Index)
 {
-  assert((Index >= 0) && (Index < Count));
+  DebugAssert((Index >= 0) && (Index < Count));
   delete Editors[Index];
   FEditors->Delete(Index);
   Modify();
@@ -452,7 +455,7 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::~TWinConfiguration()
 {
-  if (!FTemporarySessionFile.IsEmpty()) DeleteFile(::ApiPath(FTemporarySessionFile));
+  if (!FTemporarySessionFile.IsEmpty()) DeleteFile(ApiPath(FTemporarySessionFile));
   ClearTemporaryLoginData();
 
   delete FBookmarks;
@@ -539,14 +542,25 @@ void __fastcall TWinConfiguration::Default()
   FOpenedStoredSessionFolders = L"";
   FAutoImportedFromPuttyOrFilezilla = false;
   FGenerateUrlComponents = -1;
+  FGenerateUrlCodeTarget = guctUrl;
+  FGenerateUrlScriptFormat = sfScriptFile;
+  FGenerateUrlAssemblyLanguage = alCSharp;
   FExternalSessionInExistingInstance = true;
+  FKeepOpenWhenNoSession = false;
   FLocalIconsByExt = false;
+  FShowTips = true;
+  FTipsSeen = L"";
+  FTipsShown = Now();
+  FRunsSinceLastTip = 0;
+
   HonorDrivePolicy = true;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
   FEditor.Font.FontSize = DefaultFixedWidthFontSize;
   FEditor.Font.FontStyle = 0;
   FEditor.Font.FontCharset = DEFAULT_CHARSET;
+  FEditor.FontColor = TColor(0);
+  FEditor.BackgroundColor = TColor(0);
   FEditor.WordWrap = false;
   FEditor.FindText = L"";
   FEditor.ReplaceText = L"";
@@ -582,6 +596,7 @@ void __fastcall TWinConfiguration::Default()
   FUpdates.ShownResults = false;
   FUpdates.BetaVersions = asAuto;
   FUpdates.ShowOnStartup = true;
+  FUpdates.AuthenticationEmail = L"";
   // for backward compatibility the default is decided based on value of ProxyHost
   FUpdates.ConnectionType = (TConnectionType)-1;
   FUpdates.ProxyHost = L""; // keep empty (see above)
@@ -778,7 +793,7 @@ TStorage __fastcall TWinConfiguration::GetStorage()
     }
 
     FStorage = stIniFile;
-    if (!FileExists(::ApiPath(IniFileStorageNameForReading)))
+    if (!FileExists(ApiPath(IniFileStorageNameForReading)))
     {
       if (DetectRegistryStorage(HKEY_CURRENT_USER) ||
           DetectRegistryStorage(HKEY_LOCAL_MACHINE) ||
@@ -810,7 +825,7 @@ void __fastcall TWinConfiguration::RecryptPasswords(TStrings * RecryptPasswordEr
   try
   {
     TTerminalManager * Manager = TTerminalManager::Instance(false);
-    assert(Manager != NULL);
+    DebugAssert(Manager != NULL);
     if (Manager != NULL)
     {
       Manager->RecryptPasswords();
@@ -922,8 +937,16 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   OpenedStoredSessionFolders); \
     KEY(Bool,     AutoImportedFromPuttyOrFilezilla); \
     KEY(Integer,  GenerateUrlComponents); \
+    KEY(Integer,  GenerateUrlCodeTarget); \
+    KEY(Integer,  GenerateUrlScriptFormat); \
+    KEY(Integer,  GenerateUrlAssemblyLanguage); \
     KEY(Bool,     ExternalSessionInExistingInstance); \
+    KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     LocalIconsByExt); \
+    KEY(Bool,     ShowTips); \
+    KEY(String,   TipsSeen); \
+    KEY(DateTime, TipsShown); \
+    KEY(Integer,  RunsSinceLastTip); \
     KEY(Bool,     HonorDrivePolicy); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
@@ -931,6 +954,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  Editor.Font.FontSize); \
     KEY(Integer,  Editor.Font.FontStyle); \
     KEY(Integer,  Editor.Font.FontCharset); \
+    KEY(Integer,  Editor.FontColor); \
+    KEY(Integer,  Editor.BackgroundColor); \
     KEY(Bool,     Editor.WordWrap); \
     KEY(String,   Editor.FindText); \
     KEY(String,   Editor.ReplaceText); \
@@ -962,6 +987,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  FUpdates.ShownResults); \
     KEY(Integer,  FUpdates.BetaVersions); \
     KEY(Bool,     FUpdates.ShowOnStartup); \
+    KEY(String,   FUpdates.AuthenticationEmail); \
     KEY(Integer,  FUpdates.ConnectionType); \
     KEY(String,   FUpdates.ProxyHost); \
     KEY(Integer,  FUpdates.ProxyPort); \
@@ -976,6 +1002,18 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   FUpdates.Results.NewsUrl); \
     KEYEX(Integer,FUpdates.Results.NewsSize.Width, L"NewsWidth"); \
     KEYEX(Integer,FUpdates.Results.NewsSize.Height, L"NewsHeight"); \
+    KEY(String,   FUpdates.Results.DownloadUrl); \
+    KEY(Int64,    FUpdates.Results.DownloadSize); \
+    KEY(String,   FUpdates.Results.DownloadSha256); \
+    KEY(String,   FUpdates.Results.AuthenticationError); \
+    KEY(Bool,     FUpdates.Results.OpenGettingStarted); \
+    KEY(String,   FUpdates.Results.DownloadingUrl); \
+    KEYEX(Integer,FUpdates.Results.TipsSize.Width, L"TipsWidth"); \
+    KEYEX(Integer,FUpdates.Results.TipsSize.Height, L"TipsHeight"); \
+    KEY(String,   FUpdates.Results.TipsUrl); \
+    KEY(String,   FUpdates.Results.Tips); \
+    KEY(Integer,  FUpdates.Results.TipsIntervalDays); \
+    KEY(Integer,  FUpdates.Results.TipsIntervalRuns); \
     KEY(String,   FUpdates.DotNetVersion); \
     KEY(String,   FUpdates.ConsoleVersion); \
   ); \
@@ -1180,7 +1218,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   }
 
   // load legacy editor configuration
-  assert(FLegacyEditor != NULL);
+  DebugAssert(FLegacyEditor != NULL);
   if (Storage->OpenSubKey(L"Interface\\Editor", false, true))
   {
     try
@@ -1221,7 +1259,7 @@ void __fastcall TWinConfiguration::ClearTemporaryLoginData()
 {
   if (!FTemporaryKeyFile.IsEmpty())
   {
-    DeleteFile(::ApiPath(FTemporaryKeyFile));
+    DeleteFile(ApiPath(FTemporaryKeyFile));
     FTemporaryKeyFile = L"";
   }
 }
@@ -1235,7 +1273,7 @@ void __fastcall TWinConfiguration::AddVersionToHistory()
   while (!CurrentVersionPresent && (From < FVersionHistory.Length()))
   {
     UnicodeString VersionInfo = CopyToChars(FVersionHistory, From, L";", true);
-    UnicodeString VersionStr = ::CutToChar(VersionInfo, L',', true);
+    UnicodeString VersionStr = CutToChar(VersionInfo, L',', true);
     int Version;
 
     if (TryStrToInt(VersionStr, Version) &&
@@ -1279,8 +1317,8 @@ bool __fastcall TWinConfiguration::GetAnyBetaInVersionHistory()
   while (!AnyBeta && (From < VersionHistory.Length()))
   {
     UnicodeString VersionInfo = CopyToChars(VersionHistory, From, L";", true);
-    ::CutToChar(VersionInfo, L',', true);
-    UnicodeString ReleaseType = ::CutToChar(VersionInfo, ',', true);
+    CutToChar(VersionInfo, L',', true);
+    UnicodeString ReleaseType = CutToChar(VersionInfo, ',', true);
 
     if (DoIsBeta(ReleaseType))
     {
@@ -1437,8 +1475,8 @@ void __fastcall TWinConfiguration::ChangeMasterPassword(
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::ValidateMasterPassword(UnicodeString value)
 {
-  assert(UseMasterPassword);
-  assert(!FMasterPasswordVerifier.IsEmpty());
+  DebugAssert(UseMasterPassword);
+  DebugAssert(!FMasterPasswordVerifier.IsEmpty());
   bool Result = AES256Verify(value, HexToBytes(FMasterPasswordVerifier));
   return Result;
 }
@@ -1479,7 +1517,7 @@ void __fastcall TWinConfiguration::AskForMasterPassword()
   {
     FOnMasterPasswordPrompt();
 
-    assert(!FPlainMasterPasswordDecrypt.IsEmpty());
+    DebugAssert(!FPlainMasterPasswordDecrypt.IsEmpty());
   }
 }
 //---------------------------------------------------------------------------
@@ -1494,8 +1532,8 @@ void __fastcall TWinConfiguration::AskForMasterPasswordIfNotSet()
 void __fastcall TWinConfiguration::BeginMasterPasswordSession()
 {
   // We do not expect nesting
-  assert(FMasterPasswordSession == 0);
-  assert(!FMasterPasswordSessionAsked || (FMasterPasswordSession > 0));
+  DebugAssert(FMasterPasswordSession == 0);
+  DebugAssert(!FMasterPasswordSessionAsked || (FMasterPasswordSession > 0));
   // This should better be thread-specific
   FMasterPasswordSession++;
 }
@@ -1877,14 +1915,54 @@ void __fastcall TWinConfiguration::SetGenerateUrlComponents(int value)
   SET_CONFIG_PROPERTY(GenerateUrlComponents);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetGenerateUrlCodeTarget(TGenerateUrlCodeTarget value)
+{
+  SET_CONFIG_PROPERTY(GenerateUrlCodeTarget);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetGenerateUrlScriptFormat(TScriptFormat value)
+{
+  SET_CONFIG_PROPERTY(GenerateUrlScriptFormat);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetGenerateUrlAssemblyLanguage(TAssemblyLanguage value)
+{
+  SET_CONFIG_PROPERTY(GenerateUrlAssemblyLanguage);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetExternalSessionInExistingInstance(bool value)
 {
   SET_CONFIG_PROPERTY(ExternalSessionInExistingInstance);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetKeepOpenWhenNoSession(bool value)
+{
+  SET_CONFIG_PROPERTY(KeepOpenWhenNoSession);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLocalIconsByExt(bool value)
 {
   SET_CONFIG_PROPERTY(LocalIconsByExt);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetShowTips(bool value)
+{
+  SET_CONFIG_PROPERTY(ShowTips);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTipsSeen(UnicodeString value)
+{
+  SET_CONFIG_PROPERTY(TipsSeen);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTipsShown(TDateTime value)
+{
+  SET_CONFIG_PROPERTY(TipsShown);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetRunsSinceLastTip(int value)
+{
+  SET_CONFIG_PROPERTY(RunsSinceLastTip);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::GetHonorDrivePolicy()
@@ -1903,7 +1981,7 @@ void __fastcall TWinConfiguration::SetHonorDrivePolicy(bool value)
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCustomCommandList(TCustomCommandList * value)
 {
-  assert(FCustomCommandList);
+  DebugAssert(FCustomCommandList);
   if (!FCustomCommandList->Equals(value))
   {
     FCustomCommandList->Assign(value);
@@ -1951,7 +2029,13 @@ int __fastcall TWinConfiguration::GetLastMonitor()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TWinConfiguration::ExpandedTemporaryDirectory()
 {
-  return ExpandFileName(ExpandEnvironmentVariables(DDTemporaryDirectory));
+  UnicodeString Result =
+    ExpandFileName(ExpandEnvironmentVariables(DDTemporaryDirectory));
+  if (Result.IsEmpty())
+  {
+    Result = SystemTemporaryDirectory();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TWinConfiguration::TemporaryDir(bool Mask)
@@ -2043,104 +2127,6 @@ void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
   }
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-#pragma warn -inl
-//---------------------------------------------------------------------------
-class TAsInheritedReader : public TReader
-{
-public:
-  __fastcall TAsInheritedReader(TStream * Stream, int BufSize) :
-    TReader(Stream, BufSize)
-  {
-    OnAncestorNotFound = AncestorNotFound;
-  }
-
-  virtual void __fastcall ReadPrefix(TFilerFlags & Flags, int & AChildPos)
-  {
-    TReader::ReadPrefix(Flags, AChildPos);
-    Flags << ffInherited;
-  }
-
-  void __fastcall AncestorNotFound(TReader * Reader,
-    const UnicodeString ComponentName, TMetaClass * ComponentClass,
-    TComponent *& Component)
-  {
-    assert(!Component);
-    if (ComponentName.IsEmpty())
-    {
-      for (int Index = 0; Index < LookupRoot->ComponentCount; Index++)
-      {
-        Component = LookupRoot->Components[Index];
-        if (Component->Name.IsEmpty())
-        {
-          return;
-        }
-      }
-      Component = NULL;
-    }
-  }
-};
-//---------------------------------------------------------------------------
-#pragma warn .inl
-//---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::InternalReloadComponentRes(const UnicodeString ResName,
-  HINSTANCE HInst, TComponent * Instance)
-{
-  HANDLE HRsrc;
-  bool Result;
-
-  if (!HInst)
-  {
-    HInst = HInstance;
-  }
-  HRsrc = FindResource(HInst, ResName.c_str(), RT_RCDATA);
-  Result = (HRsrc != 0);
-  if (Result)
-  {
-    TResourceStream * ResStream = new TResourceStream(
-      reinterpret_cast<int>(HInst), ResName, RT_RCDATA);
-    try
-    {
-      TReader * Reader;
-      Reader = new TAsInheritedReader(ResStream, 4096);
-
-      try
-      {
-        /*Instance =*/ Reader->ReadRootComponent(Instance);
-      }
-      __finally
-      {
-        delete Reader;
-      }
-    }
-    __finally
-    {
-      delete ResStream;
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::InitComponent(TComponent * Instance,
-  TClass RootAncestor, TClass ClassType)
-{
-  bool Result = false;
-  if ((ClassType != __classid(TComponent)) && (ClassType != RootAncestor))
-  {
-    if (InitComponent(Instance, RootAncestor, ClassType->ClassParent()))
-    {
-      Result = true;
-    }
-    if (InternalReloadComponentRes(ClassType->ClassName(),
-          reinterpret_cast<HINSTANCE>(FindResourceHInstance(FindClassHInstance(ClassType))),
-          Instance))
-    {
-      Result = true;
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 LCID __fastcall TWinConfiguration::GetLocale()
 {
   if (!FLocale)
@@ -2157,7 +2143,7 @@ LCID __fastcall TWinConfiguration::GetLocale()
 
       Count = Langs->Count;
       Index = 0;
-      while ((Index < Count) && !FLocale)
+      while ((Index < Count) && (FLocale == 0))
       {
         if (Langs->Ext[Index] == ResourceExt)
         {
@@ -2169,6 +2155,10 @@ LCID __fastcall TWinConfiguration::GetLocale()
             MAKELANGID(PRIMARYLANGID(Langs->LocaleID[Index]),
               SUBLANG_DEFAULT));
         }
+        if (FLocale != 0)
+        {
+          FLocaleModuleName = ResourceModule;
+        }
         Index++;
       }
     }
@@ -2178,20 +2168,14 @@ LCID __fastcall TWinConfiguration::GetLocale()
 }
 //---------------------------------------------------------------------------
 HINSTANCE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
-  UnicodeString * FileName)
+  UnicodeString & FileName)
 {
-  UnicodeString FileNameStorage;
-  if (FileName == NULL)
-  {
-    FileName = &FileNameStorage;
-  }
-
   HINSTANCE Instance = TCustomWinConfiguration::LoadNewResourceModule(ALocale, FileName);
   if (Instance != NULL)
   {
     try
     {
-      CheckTranslationVersion(*FileName, false);
+      CheckTranslationVersion(FileName, false);
     }
     catch(...)
     {
@@ -2200,66 +2184,6 @@ HINSTANCE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
     }
   }
   return Instance;
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetResourceModule(HINSTANCE Instance)
-{
-  TCustomWinConfiguration::SetResourceModule(Instance);
-
-  TOperationVisualizer Visualizer;
-
-  int Count;
-  UnicodeString OrigName;
-  int OrigLeft;
-  int OrigTop;
-
-  TForm * Form;
-  Count = Screen->FormCount;
-
-  for (int Index = 0; Index < Count; Index++)
-  {
-    Form = Screen->Forms[Index];
-    SendMessage(Form->Handle, WM_LOCALE_CHANGE, 0, 1);
-  }
-
-  ConfigureInterface();
-
-  for (int Index = 0; Index < Count; Index++)
-  {
-    Form = Screen->Forms[Index];
-    TComponent * Component;
-    for (int Index = 0; Index < Form->ComponentCount; Index++)
-    {
-      Component = Form->Components[Index];
-      if (dynamic_cast<TFrame*>(Component))
-      {
-        OrigName = Component->Name;
-        InitComponent(Component, __classid(TFrame), Component->ClassType());
-        Component->Name = OrigName;
-      }
-    }
-
-    OrigLeft = Form->Left;
-    OrigTop = Form->Top;
-    OrigName = Form->Name;
-    InitComponent(Form, __classid(TForm), Form->ClassType());
-    Form->Name = OrigName;
-
-    Form->Position = poDesigned;
-    Form->Left = OrigLeft;
-    Form->Top = OrigTop;
-    SendMessage(Form->Handle, WM_LOCALE_CHANGE, 1, 1);
-  }
-
-  TDataModule * DataModule;
-  Count = Screen->DataModuleCount;
-  for (int Index = 0; Index < Count; Index++)
-  {
-    DataModule = Screen->DataModules[Index];
-    OrigName = DataModule->Name;
-    InitComponent(DataModule, __classid(TDataModule), DataModule->ClassType());
-    DataModule->Name = OrigName;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::CheckTranslationVersion(const UnicodeString FileName,
@@ -2436,6 +2360,8 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
       ScpExplorer.DriveView :
       (ScpCommander.LocalPanel.DriveView || ScpCommander.RemotePanel.DriveView));
   Usage->Set(L"MinimizeToTray", MinimizeToTray);
+  Usage->Set(L"ShowingTips", ShowTips);
+  TipsUpdateStaticUsage();
 
   Usage->Set(L"CommanderNortonLikeMode", int(ScpCommander.NortonLikeMode));
   Usage->Set(L"CommanderExplorerKeyboardShortcuts", ScpCommander.ExplorerKeyboardShortcuts);
@@ -2671,7 +2597,7 @@ void __fastcall TCustomCommandList::Move(int CurIndex, int NewIndex)
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandList::Delete(int Index)
 {
-  assert((Index >= 0) && (Index < Count));
+  DebugAssert((Index >= 0) && (Index < Count));
   delete GetCommand(Index);
   FCommands->Delete(Index);
   Modify();

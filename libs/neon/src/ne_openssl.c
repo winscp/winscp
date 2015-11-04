@@ -891,6 +891,29 @@ static ne_ssl_client_cert *parse_client_cert(PKCS12 *p12)
     }
 }
 
+#ifdef WINSCP
+ne_ssl_client_cert * ne_ssl_clicert_create(X509 * cert, EVP_PKEY * pkey)
+{
+    /* Copy from parse_client_cert */
+    
+    /* Success - no password needed for decryption. */
+    int len = 0;
+    unsigned char *name;
+    ne_ssl_client_cert *cc;
+
+    name = X509_alias_get0(cert, &len);
+    
+    cc = ne_calloc(sizeof *cc);
+    cc->pkey = pkey;
+    cc->decrypted = 1;
+    if (name && len > 0)
+        cc->friendly_name = ne_strndup((char *)name, len);
+    populate_cert(&cc->cert, cert);
+
+    return cc;
+}
+#endif
+
 ne_ssl_client_cert *ne_ssl_clicert_import(const unsigned char *buffer, 
                                           size_t buflen)
 {

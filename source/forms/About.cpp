@@ -9,6 +9,7 @@
 #include <Tools.h>
 #include <GUITools.h>
 #include <CoreMain.h>
+#include <PuttyTools.h>
 #include "WinInterface.h"
 #include "About.h"
 #include "TextsCore.h"
@@ -18,9 +19,11 @@
 #include <TB2Version.hpp>
 #include <TBX.hpp>
 #endif
-#include <WebBrowserEx.hpp>
 #include <JclBase.hpp>
+#include <JclDebug.hpp>
+#include <WebBrowserEx.hpp>
 #include <StrUtils.hpp>
+#include <Dialogs.hpp>
 #ifndef NO_FILEZILLA
 #include <FtpFileSystem.h>
 #endif
@@ -55,7 +58,7 @@ void __fastcall DoAboutDialog(TConfiguration * Configuration,
   }
   catch (EOleException & E)
   {
-    // This happens particularly on Wine that's does not support some
+    // This happens particularly on Wine that does not support some
     // functionality of embedded IE we need.
     DoAboutDialog(Configuration, AllowLicense, Registration, false);
   }
@@ -74,7 +77,6 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   ApplicationLabel->Font->Style = ApplicationLabel->Font->Style << fsBold;
   ApplicationLabel->Caption = AppName;
   WinSCPCopyrightLabel->Caption = LoadStr(WINSCP_COPYRIGHT);
-  UnicodeString Translator = LoadStr(TRANSLATOR_INFO);
 
   if (Registration == NULL)
   {
@@ -116,33 +118,6 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     }
   }
 
-  if (Translator.IsEmpty())
-  {
-    TranslatorLabel->Visible = false;
-    TranslatorUrlLabel->Visible = false;
-    ClientHeight = ClientHeight -
-      (TranslatorLabel->Top - ProductSpecificMessageLabel->Top);
-  }
-  else
-  {
-    TranslatorLabel->Caption = LoadStr(TRANSLATOR_INFO);
-    UnicodeString TranslatorUrl = LoadStr(TRANSLATOR_URL);
-    if (!TranslatorUrl.IsEmpty())
-    {
-      LinkLabel(TranslatorUrlLabel, TranslatorUrl);
-    }
-    else
-    {
-      TranslatorUrlLabel->Visible = false;
-
-      // allow two lines of text, if there's no URL
-      TranslatorLabel->AutoSize = false;
-      TranslatorLabel->Width = ThirdPartyPanel->Width;
-      TranslatorLabel->Height = TranslatorLabel->Height * 2;
-      TranslatorLabel->WordWrap = true;
-    }
-  }
-
   LicenseButton->Visible = AllowLicense;
 
   LoadData();
@@ -154,6 +129,16 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   {
     CreateLabelPanel(ThirdPartyPanel, LoadStr(MESSAGE_DISPLAY_ERROR));
   }
+
+  int IconSize = DialogImageSize();
+  FIconHandle = (HICON)LoadImage(MainInstance, L"MAINICON", IMAGE_ICON, IconSize, IconSize, 0);
+  IconPaintBox->Width = IconSize;
+  IconPaintBox->Height = IconSize;
+}
+//---------------------------------------------------------------------------
+__fastcall TAboutDialog::~TAboutDialog()
+{
+  DestroyIcon(FIconHandle);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LoadData()
@@ -219,10 +204,22 @@ void __fastcall TAboutDialog::LoadThirdParty()
     L"<body>\n";
 
   UnicodeString Br = "<br/>\n";
+
+  if (GUIConfiguration->AppliedLocale != GUIConfiguration->InternalLocale())
+  {
+    UnicodeString TranslatorUrl = LoadStr(TRANSLATOR_URL);
+    UnicodeString TranslatorInfo = LoadStr(TRANSLATOR_INFO2);
+    AddPara(ThirdParty,
+      LoadStr(ABOUT_TRANSLATIONS_HEADER) + Br +
+      FMTLOAD(ABOUT_TRANSLATIONS_COPYRIGHT, (GUIConfiguration->LocaleCopyright())) + Br +
+      (!TranslatorInfo.IsEmpty() ? TranslatorInfo + Br : UnicodeString()) +
+      (!TranslatorUrl.IsEmpty() ? CreateLink(TranslatorUrl) : UnicodeString()));
+  }
+
   AddPara(ThirdParty, LoadStr(ABOUT_THIRDPARTY_HEADER));
 
   AddPara(ThirdParty,
-    FMTLOAD(PUTTY_BASED_ON, (LoadStr(PUTTY_VERSION))) + Br +
+    FMTLOAD(PUTTY_BASED_ON, (GetPuTTYVersion())) + Br +
     LoadStr(PUTTY_COPYRIGHT) + Br +
     CreateLink(LoadStr(PUTTY_LICENSE_URL), LoadStr(ABOUT_THIRDPARTY_LICENSE)) + Br +
     CreateLink(LoadStr(PUTTY_URL)));
@@ -346,21 +343,49 @@ void __fastcall TAboutDialog::RegistrationProductIdLabelClick(
 void __fastcall TAboutDialog::OKButtonMouseDown(TObject * /*Sender*/,
   TMouseButton Button, TShiftState Shift, int /*X*/, int /*Y*/)
 {
-  if ((Button == mbRight) && Shift.Contains(ssAlt))
+  if (Button == mbRight)
   {
-    try
+    if (Shift.Contains(ssAlt))
     {
-      ACCESS_VIOLATION_TEST;
+      AccessViolationTest();
     }
-    catch (Exception & E)
+    else if (Shift.Contains(ssCtrl))
     {
-      throw ExtException(&E, MainInstructions(L"Internal error test."));
+      LookupAddress();
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::LookupAddress()
+{
+  UnicodeString S;
+  if (InputQuery(L"Address lookup", L"&Address:", S))
+  {
+    void * Address = reinterpret_cast<void *>(StrToInt(L"$" + S));
+    ShowMessage(GetLocationInfoStr(Address, true, true, true, true));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::AccessViolationTest()
+{
+  try
+  {
+    ACCESS_VIOLATION_TEST;
+  }
+  catch (Exception & E)
+  {
+    throw ExtException(&E, MainInstructions(L"Internal error test."));
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::ExpatLicenceHandler(TObject * /*Sender*/)
 {
   DoLicenseDialog(lcExpat);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::IconPaintBoxPaint(TObject * /*Sender*/)
+{
+  DrawIconEx(IconPaintBox->Canvas->Handle,
+    0, 0, FIconHandle, IconPaintBox->Width, IconPaintBox->Height, 0, NULL, DI_NORMAL);
 }
 //---------------------------------------------------------------------------

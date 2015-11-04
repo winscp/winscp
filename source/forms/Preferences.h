@@ -19,6 +19,7 @@
 #include <WinInterface.h>
 #include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
+#include <WinConfiguration.h>
 //----------------------------------------------------------------------------
 class TCustomCommandList;
 class TEditorList;
@@ -34,7 +35,7 @@ __published:
   TGroupBox *CommonPreferencesGroup;
   TCheckBox *ConfirmOverwritingCheck;
   TCheckBox *ConfirmDeletingCheck;
-  TCheckBox *ConfirmClosingSessionCheck;
+  TCheckBox *ConfirmClosingSessionCheck2;
   TCheckBox *DDTransferConfirmationCheck;
   TCheckBox *ContinueOnErrorCheck;
   TTabSheet *LogSheet;
@@ -61,9 +62,6 @@ __published:
   TCheckBox *ShowFullAddressCheck;
   TTabSheet *EditorSheet;
   TGroupBox *EditorPreferenceGroup;
-  TGroupBox *InternalEditorGroup;
-  TLabel *EditorFontLabel;
-  TButton *EditorFontButton;
   TTabSheet *IntegrationSheet;
   TGroupBox *ShellIconsGroup;
   TButton *DesktopIconButton;
@@ -133,7 +131,6 @@ __published:
   TCheckBox *PreservePanelStateCheck;
   TButton *AddSearchPathButton;
   TCheckBox *QueueNoConfirmationCheck;
-  TCheckBox *EditorWordWrapCheck;
   TGroupBox *PathInCaptionGroup;
   TRadioButton *PathInCaptionFullButton;
   TRadioButton *PathInCaptionShortButton;
@@ -195,8 +192,6 @@ __published:
   TCheckBox *TelnetForFtpInPuttyCheck;
   TRadioButton *UpdatesDirectCheck;
   TRadioButton *UpdatesAutoCheck;
-  TLabel *Label9;
-  TUpDownEdit *EditorTabSizeEdit;
   TCheckBox *ConfirmTransferringCheck;
   TGroupBox *UpdatesOptionsGroup;
   TCheckBox *QueueIndividuallyCheck;
@@ -222,8 +217,6 @@ __published:
   TUpDownEdit *SessionReopenAutoStallEdit;
   TLabel *SessionReopenAutoStallSecLabel;
   TCheckBox *EnableQueueByDefaultCheck;
-  TLabel *Label11;
-  TComboBox *EditorEncodingCombo;
   TCheckBox *RefreshRemotePanelCheck;
   TUpDownEdit *RefreshRemotePanelIntervalEdit;
   TLabel *RefreshRemoteDirectoryUnitLabel;
@@ -301,6 +294,23 @@ __published:
   TButton *PanelFontButton;
   TCheckBox *PanelFontCheck;
   TCheckBox *LogSensitiveCheck;
+  TTabSheet *EditorInternalSheet;
+  TGroupBox *InternalEditorGroup;
+  TLabel *Label9;
+  TLabel *Label11;
+  TCheckBox *EditorWordWrapCheck;
+  TUpDownEdit *EditorTabSizeEdit;
+  TComboBox *EditorEncodingCombo;
+  TGroupBox *FontGroup;
+  TLabel *EditorFontLabel;
+  TButton *EditorFontButton;
+  TButton *EditorFontColorButton;
+  TButton *EditorBackgroundColorButton;
+  TCheckBox *KeepOpenWhenNoSessionCheck;
+  TLabel *UpdatesAuthenticationEmailLabel;
+  TEdit *UpdatesAuthenticationEmailEdit;
+  TStaticText *UpdatesLink;
+  TCheckBox *ShowTipsCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -379,10 +389,15 @@ __published:
   void __fastcall MakeDefaultHandlerItemClick(TObject *Sender);
   void __fastcall PanelFontLabelDblClick(TObject *Sender);
   void __fastcall PanelFontButtonClick(TObject *Sender);
+  void __fastcall EditorFontColorButtonClick(TObject *Sender);
+  void __fastcall EditorBackgroundColorButtonClick(TObject *Sender);
+  void __fastcall UpdatesAuthenticationEmailEditExit(TObject *Sender);
+  void __fastcall UpdatesLinkClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;
   std::unique_ptr<TFont> FEditorFont;
+  TColor FEditorBackgroundColor;
   std::unique_ptr<TFont> FPanelFont;
   TCustomCommandList * FCustomCommandList;
   TCopyParamList * FCopyParamList;
@@ -399,6 +414,9 @@ private:
   TListViewScrollOnDragOver * FEditorScrollOnDragOver;
   bool FNoUpdate;
   bool FLanguagesLoaded;
+  std::unique_ptr<TPopupMenu> FColorPopupMenu;
+  UnicodeString FVerifiedUpdatesAuthenticationEmail;
+  bool FAutomaticUpdatesPossible;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
@@ -406,6 +424,7 @@ private:
   const TCopyParamType * GetCopyParam(int Index);
   void __fastcall SelectPuttyRegistryStorageKey(const UnicodeString & Key);
   TInterface __fastcall GetInterface();
+  TUpdatesConfiguration __fastcall SaveUpdates();
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);
@@ -430,6 +449,8 @@ protected:
   void __fastcall ChangeMasterPassword(UnicodeString Message);
   void __fastcall MasterPasswordChanged(
     UnicodeString Message, TStrings * RecryptPasswordErrors);
+  void __fastcall EditorFontColorChange(TColor Color);
+  void __fastcall EditorBackgroundColorChange(TColor Color);
 };
 //----------------------------------------------------------------------------
 #endif

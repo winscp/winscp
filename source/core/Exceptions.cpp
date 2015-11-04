@@ -434,8 +434,8 @@ Exception * __fastcall CloneException(Exception * E)
 //---------------------------------------------------------------------------
 void __fastcall RethrowException(Exception * E)
 {
-   // this list has to be in sync with ExceptionMessage
- if (dynamic_cast<EFatal *>(E) != NULL)
+  // this list has to be in sync with ExceptionMessage
+  if (dynamic_cast<EFatal *>(E) != NULL)
   {
     throw EFatal(E, L"");
   }

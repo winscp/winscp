@@ -31,12 +31,7 @@ __published:
   TButton *TransferSettingsButton;
   TGroupBox *CopyParamGroup;
   TLabel *CopyParamLabel;
-  TImage *CopyImage;
-  TImage *MoveImage;
-  TImage *CopyUploadImage;
-  TImage *CopyDownloadImage;
-  TImage *MoveDownloadImage;
-  TImage *MoveUploadImage;
+  TImage *Image;
   TPanel *ShortCutHintPanel;
   TLabel *ShortCutHintLabel;
   void __fastcall FormShow(TObject *Sender);

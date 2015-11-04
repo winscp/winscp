@@ -31,12 +31,16 @@ UnicodeString __fastcall StoreFormSize(TForm * Form);
 TFontStyles __fastcall IntToFontStyles(int value);
 int __fastcall FontStylesToInt(const TFontStyles value);
 bool __fastcall SameFont(TFont * Font1, TFont * Font2);
+TColor __fastcall GetWindowTextColor(TColor Color);
+TColor __fastcall GetWindowColor(TColor Color);
+TColor __fastcall GetNonZeroColor(TColor Color);
 void __fastcall ValidateMaskEdit(TComboBox * Edit);
 void __fastcall ValidateMaskEdit(TEdit * Edit);
 void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory);
 void __fastcall OpenBrowser(UnicodeString URL);
 bool __fastcall IsFormatInClipboard(unsigned int Format);
 bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim);
+bool __fastcall NonEmptyTextFromClipboard(UnicodeString & Text);
 HANDLE __fastcall OpenTextFromClipboard(const wchar_t *& Text);
 void __fastcall CloseTextFromClipboard(HANDLE Handle);
 void __fastcall ExitActiveControl(TForm * Form);
@@ -50,15 +54,17 @@ void __fastcall BrowseForExecutable(TComboBox * Control, UnicodeString Title,
 bool __fastcall FontDialog(TFont * Font);
 bool __fastcall SaveDialog(UnicodeString Title, UnicodeString Filter,
   UnicodeString DefaultExt, UnicodeString & FileName);
-bool __fastcall AutodetectProxyUrl(UnicodeString & Proxy);
+bool __fastcall AutodetectProxy(UnicodeString & HostName, int & PortNumber);
 bool __fastcall IsWin64();
 void __fastcall CopyToClipboard(UnicodeString Text);
 void __fastcall CopyToClipboard(TStrings * Strings);
 void __fastcall ShutDownWindows();
 void __fastcall SuspendWindows();
 void __fastcall EditSelectBaseName(HWND Edit);
+void __fastcall VerifyAndConvertKey(UnicodeString & FileName);
 void __fastcall VerifyKey(UnicodeString FileName);
 void __fastcall VerifyKeyIncludingVersion(UnicodeString FileName, TSshProt SshProt);
+void __fastcall VerifyCertificate(const UnicodeString & FileName);
 TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo);
 bool __fastcall DetectSystemExternalEditor(
   bool AllowDefaultEditor,

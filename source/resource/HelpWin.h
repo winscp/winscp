@@ -4,7 +4,7 @@
 #define HELP_ERROR                   "messages"
 #define HELP_SESSION_SAVE            "ui_login_save"
 #define HELP_SESSION_SAVE_OVERWRITE  HELP_SESSION_SAVE
-#define HELP_SESSION_SAVE_DEFAULT    "ui_login_stored_sessions#session_management"
+#define HELP_SESSION_SAVE_DEFAULT    "ui_login#management"
 #define HELP_CREATE_SHORTCUT         "integration"
 #define HELP_CREATE_SENDTO           HELP_CREATE_SHORTCUT
 #define HELP_CREATE_ICON             HELP_CREATE_SHORTCUT
@@ -34,7 +34,7 @@
 #define HELP_UNINSTALL_CLEANUP       "ui_cleanup"
 #define HELP_EDITOR_FIND             "ui_editor_find"
 #define HELP_EDITOR_REPLACE          "ui_editor_replace"
-#define HELP_DELETE_SESSION          "ui_login_stored_sessions#session_management"
+#define HELP_DELETE_SESSION          "ui_login#management"
 #define HELP_DELETE_SESSION_FOLDER   HELP_DELETE_SESSION
 #define HELP_DELETE_WORKSPACE        HELP_DELETE_SESSION
 #define HELP_NEW_SESSION_FOLDER      HELP_DELETE_SESSION
@@ -55,5 +55,6 @@
 #define HELP_DRAGEXT_TARGET_NOT_INSTALLED "dragext"
 #define HELP_DRAGEXT_TARGET_UNKNOWN  HELP_DRAGEXT_TARGET_NOT_INSTALLED
 #define HELP_KEY_TYPE_UNSUPPORTED    "ui_puttygen#other_formats"
+#define HELP_TIPS                    "ui_tips"
 
 #endif // TextsWin

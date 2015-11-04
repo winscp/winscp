@@ -70,6 +70,9 @@ public:
   virtual bool __fastcall GetStoredCredentialsTried();
   virtual UnicodeString __fastcall GetUserName();
   virtual void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
+  virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File);
+  virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
+  virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem);
 
 protected:
   __property TStrings * Output = { read = FOutput };

@@ -125,10 +125,10 @@ __published:
   TTBXSubmenuItem *TBXSubmenuItem5;
   TTBXSeparatorItem *TBXSeparatorItem6;
   TTBXItem *TBXItem25;
-  TTBXItem *TBXItem26;
+  TTBXSubmenuItem *TBXItem26;
   TTBXItem *TBXItem29;
   TTBXSeparatorItem *TBXSeparatorItem7;
-  TTBXItem *CurrentCopyItem;
+  TTBXSubmenuItem *CurrentCopyItem;
   TTBXItem *TBXItem31;
   TTBXItem *CurrentMoveItem;
   TTBXItem *TBXItem33;
@@ -318,7 +318,6 @@ __published:
   TTBXSubmenuItem *TBXSubmenuItem13;
   TTBXItem *TBXItem198;
   TTBXItem *TBXItem199;
-  TTBXSubmenuItem *TBXSubmenuItem25;
   TTBXItem *TBXItem27;
   TTBXSubmenuItem *TBXSubmenuItem26;
   TTBXItem *TBXItem24;
@@ -356,22 +355,22 @@ __published:
   TTBXItem *TBXItem230;
   TTBXSubmenuItem *TBXSubmenuItem231;
   TTBXToolbar *LocalFileToolbar;
-  TTBXItem *TBXItem231;
+  TTBXSubmenuItem *TBXItem231;
   TTBXItem *TBXItem232;
   TTBXItem *TBXItem233;
   TTBXItem *TBXItem234;
-  TTBXItem *TBXItem235;
+  TTBXSubmenuItem *TBXItem235;
   TTBXSeparatorItem *TBXSeparatorItem35;
   TTBXItem *TBXItem236;
   TTBXSeparatorItem *TBXSeparatorItem54;
   TTBXItem *TBXItem237;
   TTBXToolbar *RemoteFileToolbar;
-  TTBXItem *TBXItem238;
+  TTBXSubmenuItem *TBXItem238;
   TTBXItem *TBXItem239;
   TTBXSeparatorItem *TBXSeparatorItem55;
   TTBXItem *TBXItem240;
   TTBXItem *TBXItem241;
-  TTBXItem *TBXItem242;
+  TTBXSubmenuItem *TBXItem242;
   TTBXItem *TBXItem243;
   TTBXSeparatorItem *TBXSeparatorItem56;
   TTBXItem *TBXItem244;
@@ -402,6 +401,23 @@ __published:
   TTBXItem *TBXItem135;
   TTBXItem *TBXItem141;
   TTBXItem *TBXItem142;
+  TTBXItem *TBXItem143;
+  TTBXItem *TBXItem144;
+  TTBXItem *CurrentCopyNonQueueItem;
+  TTBXItem *CurrentCopyQueueItem;
+  TTBXSeparatorItem *TBXSeparatorItem51;
+  TTBXItem *TBXItem174;
+  TTBXSeparatorItem *TBXSeparatorItem58;
+  TTBXItem *TBXItem200;
+  TTBXSeparatorItem *TBXSeparatorItem59;
+  TTBXSeparatorItem *TBXSeparatorItem60;
+  TTBXSeparatorItem *TBXSeparatorItem61;
+  TTBXItem *TBXItem212;
+  TTBXItem *TBXItem213;
+  TTBXSubmenuItem *TBXSubmenuItem25;
+  TTBXItem *TBXItem214;
+  TTBXItem *TBXItem216;
+  TTBXItem *TBXItem217;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -489,6 +505,7 @@ private:
   void __fastcall UpdateToolbar2ItemCaption(TTBCustomItem * Item);
   void __fastcall SetShortcuts();
   void __fastcall UpdatePanelsPathLabelsStatus();
+  void __fastcall LocalDefaultDirectory();
 
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
@@ -496,6 +513,7 @@ protected:
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop, int Options);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
+  virtual bool __fastcall DirViewEnabled(TOperationSide Side);
   TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
@@ -509,7 +527,8 @@ protected:
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode,
     TOperationSide Side);
   bool __fastcall InternalDDDownload(UnicodeString & TargetDirectory);
-  virtual bool __fastcall DDGetTarget(UnicodeString & Directory, bool & Internal);
+  virtual bool __fastcall DDGetTarget(
+    UnicodeString & Directory, bool & ForceQueue, bool & Internal);
   virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
   virtual void __fastcall SideEnter(TOperationSide Side);
   void __fastcall SaveCommandLine();
@@ -545,6 +564,8 @@ protected:
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual void __fastcall QueueLabelUpdateStatus();
+  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
+  virtual void __fastcall StartingDisconnected();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
@@ -567,6 +588,7 @@ public:
   virtual void __fastcall HomeDirectory(TOperationSide Side);
   virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
   virtual void __fastcall DisplaySystemContextMenu();
+  virtual void __fastcall GoToAddress();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

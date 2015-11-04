@@ -11,18 +11,18 @@
     <iconUrl>http://winscp.net/pad/winscp.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>The WinSCP .NET assembly is a .NET wrapper around WinSCP’s scripting interface.</summary>
-    <description>The WinSCP .NET assembly is a .NET wrapper around WinSCP’s scripting interface that allows your code to connect to a remote machine and manipulate remote files over SFTP, SCP, and FTP sessions.
-    
+    <description>The WinSCP .NET assembly is a .NET wrapper around WinSCP’s scripting interface that allows your code to connect to a remote machine and manipulate remote files over SFTP, SCP, WebDAV and FTP sessions.
+
 The library is primarily intended for advanced automation tasks that require conditional processing, loops or other control structures for which the basic scripting interface is too limited. The library is not a general purpose file transfer library. It particularly lacks support for interactive processing and as such it is not well suited for use in GUI applications.
 
 For documentation and examples of use, see project website.
 
 The NuGet package includes the assembly itself and a required WinSCP executable. When installed, it adds the assembly as reference to your project and sets up WinSCP executable to be copied to project output directory, so that it can be found on run-time.</description>
     <copyright>Copyright © 2012-2015 Martin Prikryl</copyright>
-    <tags>winscp sftp ftp ftps scp transfer</tags>
+    <tags>winscp sftp ftp ftps webdav scp transfer</tags>
   </metadata>
   <files>
-    <file src="$BuildConfigDir$\WinSCPnet.dll" target="lib"/>
+    <file src="$DotNetBuildConfigDir$\WinSCPnet.dll" target="lib"/>
     <file src="$BuildConfigDir$\WinSCP.exe" target="content"/>
     <file src="install.ps1" target="tools"/>
   </files>

@@ -82,11 +82,74 @@ namespace WinSCP
         FileMapAllAccess = 0x001f,
         FileMapExecute = 0x0020,
     }
-    
+
+    [Flags]
+    internal enum StandardRights
+    {
+        Delete = 0x00010000,
+        ReadPermissions = 0x00020000,
+        WritePermissions = 0x00040000,
+        TakeOwnership = 0x00080000,
+        Synchronize = 0x00100000,
+
+        Required = Delete | ReadPermissions | WritePermissions | TakeOwnership,
+    }
+
+    // Isn't this the same as FileMapAccess?
+    [Flags]
+    internal enum FileMappingRights
+    {
+        FileMapCopy = 1,
+        FileMapWrite = 2,
+        FileMapRead = 4,
+        SectionMapExecute = 8,
+        SectionExtendSize = 16,
+        FileMapExecute = 32,
+
+        AllAccess = FileMapCopy | FileMapWrite | FileMapRead | SectionMapExecute | SectionExtendSize |
+            StandardRights.Required
+    }
+
+    [Flags]
+    internal enum DesktopRights
+    {
+        ReadObjects       = 1,
+        CreateWindow      = 2,
+        CreateMenu        = 4,
+        HookControl       = 8,
+        JournalRecord     = 16,
+        JournalPlayback   = 32,
+        Enumerate         = 64,
+        WriteObjects      = 128,
+        SwitchDesktop     = 256,
+
+        AllAccess = ReadObjects | CreateWindow | CreateMenu | HookControl |
+            JournalRecord | JournalPlayback | Enumerate | WriteObjects | SwitchDesktop |
+            StandardRights.Required
+    }
+
+    [Flags]
+    internal enum WindowStationRights
+    {
+        EnumDesktops = 1,
+        ReadAttributes = 2,
+        AccessClipboard = 4,
+        CreateDesktop = 8,
+        WriteAttributes = 16,
+        AccessGlobalAtoms = 32,
+        ExitWindows = 64,
+        Enumerate = 256,
+        ReadScreen = 512,
+
+        AllAccess = EnumDesktops  | ReadAttributes  | AccessClipboard | CreateDesktop |
+            WriteAttributes | AccessGlobalAtoms | ExitWindows | Enumerate | ReadScreen |
+            StandardRights.Required
+    }
+
     internal static class UnsafeNativeMethods
     {
         public const int ERROR_ALREADY_EXISTS = 183;
-        
+
         [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern SafeFileHandle CreateFileMapping(SafeFileHandle hFile, IntPtr lpAttributes, FileMapProtection fProtect, int dwMaximumSizeHigh, int dwMaximumSizeLow, string lpName);
 
@@ -106,5 +169,14 @@ namespace WinSCP
         [DllImport("kernel32", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool SetInformationJobObject(IntPtr hJob, JobObjectInfoType infoType, IntPtr lpJobObjectInfo, uint cbJobObjectInfoLength);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern IntPtr GetProcessWindowStation();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern IntPtr GetThreadDesktop(int dwThreadId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern int GetCurrentThreadId();
     }
 }

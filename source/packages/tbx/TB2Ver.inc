@@ -14,7 +14,7 @@
       {$IFNDEF VER110}  { and it's not C++Builder 3.0 }
         {$DEFINE JR_D4}  { then it must be at least Delphi 4 or C++Builder 4 }
         {$IFNDEF VER120} {$IFNDEF VER125}  { if it's not Delphi 4 or C++Builder 4 }
-          {$DEFINE JR_D5}  { then it must be at least Delphi 5 or C++Builder 5 } 
+          {$DEFINE JR_D5}  { then it must be at least Delphi 5 or C++Builder 5 }
           {$IFNDEF VER130}  { if it's not Delphi 5 or C++Builder 5 }
             {$DEFINE JR_D6}  { then it must be at least Delphi 6 or C++Builder 6 }
             {$IFNDEF VER140}  { if it's not Delphi 6 or C++Builder 6 }

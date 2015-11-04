@@ -38,9 +38,9 @@ PROXYERROR_CANTRESOLVEHOST 7
 
 //Status messages
 PROXYSTATUS_LISTENSOCKETCREATED 8 //Called when a listen socket was created successfully. Unlike the normal listen function,
-								//a socksified socket has to connect to the proxy to negotiate the details with the server
-								//on which the listen socket will be created
-								//The two parameters will contain the ip and port of the listen socket on the server.
+                //a socksified socket has to connect to the proxy to negotiate the details with the server
+                //on which the listen socket will be created
+                //The two parameters will contain the ip and port of the listen socket on the server.
 
 If you want to use CAsyncProxySocketLayer to create a listen socket, you
 have to use this overloaded function:
@@ -81,7 +81,7 @@ There are also some other functions:
 
 GetProxyPeerName
 Like GetPeerName of CAsyncSocket, but returns the address of the
-server connected through the proxy.	If using proxies, GetPeerName
+server connected through the proxy.  If using proxies, GetPeerName
 only returns the address of the proxy.
 
 int GetProxyType();
@@ -97,110 +97,81 @@ Feel free to use this class, as long as you don't claim that you wrote it
 and this copyright notice stays intact in the source files.
 If you use this class in commercial applications, please send a short message
 to tim.kosse@gmx.de
-
-
-Version history
----------------
-
-- 1.6 got rid of MFC
-- 1.5 released CAsyncSocketExLayer version
-- 1.4 added UNICODE support
-- 1.3 added basic HTTP1.1 authentication
-      fixed memory leak in SOCKS5 code
-	  OnSocksOperationFailed will be called after Socket has been closed
-      fixed some minor bugs
-- 1.2 renamed into CAsyncProxySocketLayer
-      added HTTP1.1 proxy support
-- 1.1 fixes all known bugs, mostly with SOCKS5 authentication
-- 1.0 initial release
 */
-
-#if !defined(AFX_ASYNCPROXYSOCKETLAYER_H__6B19D281_F1D0_4EF2_984A_31639A038AE5__INCLUDED_)
-#define AFX_ASYNCPROXYSOCKETLAYER_H__6B19D281_F1D0_4EF2_984A_31639A038AE5__INCLUDED_
-
-#if _MSC_VER > 1000
-#pragma once
-#endif // _MSC_VER > 1000
-
+//---------------------------------------------------------------------------
+#ifndef AsyncProxySocketLayerH
+#define AsyncProxySocketLayerH
+//---------------------------------------------------------------------------
 #include "AsyncSocketExLayer.h"
-
+//---------------------------------------------------------------------------
 class CAsyncProxySocketLayer : public CAsyncSocketExLayer
 {
-// Attribute
 public:
 
-// Operationen
 public:
-	CAsyncProxySocketLayer();
-	virtual ~CAsyncProxySocketLayer();
+  CAsyncProxySocketLayer();
+  virtual ~CAsyncProxySocketLayer();
 
-
-// Überschreibungen
 public:
-	virtual void Close();
-	virtual BOOL Connect( LPCTSTR lpHostAddress, UINT nHostPort );
-	virtual BOOL Connect( const SOCKADDR* lpSockAddr, int nSockAddrLen );
-	virtual BOOL Listen( int nConnectionBacklog);
+  virtual void Close();
+  virtual BOOL Connect(LPCTSTR lpHostAddress, UINT nHostPort);
+  virtual BOOL Connect(const SOCKADDR * lpSockAddr, int nSockAddrLen);
+  virtual BOOL Listen(int nConnectionBacklog);
 
-	void SetProxy(int nProxyType); //Only PROXYTYPE_NOPROXY
-	void SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort); //May not be PROXYTYPE_NOPROXY
-	void SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort, const char * pProxyUser, const char * pProxyPass); //Only SOCKS5 and HTTP1.1 proxies
-	//Sets the proxy details.
-	//nProxyType - Type of the proxy. May be PROXYTYPE_NONE, PROXYTYPE_SOCKS4, PROXYTYPE_SOCKS5 or PROXYTYPE_HTTP11
-	//ProxyHost - The address of the proxy. Can be either IP or URL
-	//ProxyPort - The port of the proxy
-	//ProxyUser - the username for SOCKS5 proxies
-	//ProxyPass - the password for SOCKS5 proxies
+  void SetProxy(int nProxyType); // Only PROXYTYPE_NOPROXY
+  void SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort); // May not be PROXYTYPE_NOPROXY
 
-	//Prepare listen
-	BOOL PrepareListen(unsigned long ip);
+  // Sets the proxy details.
+  // nProxyType - Type of the proxy. May be PROXYTYPE_NONE, PROXYTYPE_SOCKS4, PROXYTYPE_SOCKS5 or PROXYTYPE_HTTP11
+  // ProxyHost - The address of the proxy. Can be either IP or URL
+  // ProxyPort - The port of the proxy
+  // ProxyUser - the username for SOCKS5 proxies
+  // ProxyPass - the password for SOCKS5 proxies
+  void SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort, const char * pProxyUser, const char * pProxyPass); // Only SOCKS5 and HTTP1.1 proxies
 
-	int GetProxyType() const;
-	//Returns the type of the proxy
+  // Prepare listen
+  BOOL PrepareListen(unsigned long ip);
 
-#ifdef _AFX
-	virtual BOOL GetPeerName( CString& rPeerAddress, UINT& rPeerPort );
-#endif
-	virtual BOOL GetPeerName( SOCKADDR* lpSockAddr, int* lpSockAddrLen );
+  int GetProxyType() const;
+  // Returns the type of the proxy
 
+  // Returns the address of the server behind the SOCKS proxy you are connected to
+  virtual BOOL GetPeerName(CString & rPeerAddress, UINT & rPeerPort);
+  virtual BOOL GetPeerName(SOCKADDR * lpSockAddr, int * lpSockAddrLen);
 
-	//Returns the address of the server behind the SOCKS proxy you are connected to
-
-
-// Implementierung
 protected:
-	virtual BOOL Accept( CAsyncSocketEx& rConnectedSocket, SOCKADDR* lpSockAddr = NULL, int* lpSockAddrLen = NULL );
-	virtual void OnReceive(int nErrorCode);
-	virtual void OnConnect(int nErrorCode);
-	virtual int Send(const void* lpBuf, int nBufLen, int nFlags = 0);
-	virtual int Receive(void* lpBuf, int nBufLen, int nFlags = 0);
+  virtual BOOL Accept(CAsyncSocketEx & rConnectedSocket, SOCKADDR * lpSockAddr = NULL, int * lpSockAddrLen = NULL);
+  virtual void OnReceive(int nErrorCode);
+  virtual void OnConnect(int nErrorCode);
+  virtual int Send(const void * lpBuf, int nBufLen, int nFlags = 0);
+  virtual int Receive(void * lpBuf, int nBufLen, int nFlags = 0);
 
 private:
-	void Reset();
-	void ClearBuffer();		//Clears the receive buffer
-	char *m_pRecvBuffer;	//The receive buffer
-	int m_nRecvBufferLen;	//Length of the RecvBuffer
-	int m_nRecvBufferPos;	//Position within the receive buffer
-	char *m_pStrBuffer;		//Recvbuffer needed by HTTP1.1 proxy
-	int m_nProxyOpState;	//State of an operation
-	int m_nProxyOpID;		//Currently active operation (0 if none)
-	int m_nProxyPeerPort;	//Port of the server you are connected to, retrieve via GetPeerName
-	ULONG m_nProxyPeerIp;	//IP of the server you are connected to, retrieve via GetPeerName
-	typedef struct
-	{
-		int nProxyType;
-		char * pProxyHost;
-		int nProxyPort;
-		char * pProxyUser;
-		char * pProxyPass;
-		BOOL bUseLogon;
-	} t_proxydata; //This structure will be used to hold the proxy details
+  void Reset();
+  void ClearBuffer();    // Clears the receive buffer
+  char *m_pRecvBuffer;  // The receive buffer
+  int m_nRecvBufferLen;  // Length of the RecvBuffer
+  int m_nRecvBufferPos;  // Position within the receive buffer
+  char *m_pStrBuffer;    // Recvbuffer needed by HTTP1.1 proxy
+  int m_nProxyOpState;  // State of an operation
+  int m_nProxyOpID;    // Currently active operation (0 if none)
+  int m_nProxyPeerPort;  // Port of the server you are connected to, retrieve via GetPeerName
+  ULONG m_nProxyPeerIp;  // IP of the server you are connected to, retrieve via GetPeerName
+  typedef struct
+  {
+    int nProxyType;
+    char * pProxyHost;
+    int nProxyPort;
+    char * pProxyUser;
+    char * pProxyPass;
+    BOOL bUseLogon;
+  } t_proxydata; // This structure will be used to hold the proxy details
 
-	t_proxydata m_ProxyData; //Structure to hold the data set by SetProxy
-	char * m_pProxyPeerHost; //The host connected to
+  t_proxydata m_ProxyData; // Structure to hold the data set by SetProxy
+  char * m_pProxyPeerHost; // The host connected to
 };
-
-//Errorcodes
+//---------------------------------------------------------------------------
+// Errorcodes
 #define PROXYERROR_NOERROR 0
 #define PROXYERROR_NOCONN 1 //Can't connect to proxy server, use GetLastError for more information
 #define PROXYERROR_REQUESTFAILED 2 //Request failed, can't send data
@@ -209,27 +180,27 @@ private:
 #define PROXYERROR_AUTHFAILED 5  //Authentication failed
 #define PROXYERROR_AUTHNOLOGON 6
 #define PROXYERROR_CANTRESOLVEHOST 7
-
-//Status messages
-#define PROXYSTATUS_LISTENSOCKETCREATED 8 //Called when a listen socket was created successfully. Unlike the normal listen function,
-										//a socksified socket has to connect to the proxy to negotiate the details with the server
-										//on which the listen socket will be created
-										//The two parameters will contain the ip and port of the listen socket on the server.
+//---------------------------------------------------------------------------
+// Status messages
+// Called when a listen socket was created successfully. Unlike the normal listen function,
+// a socksified socket has to connect to the proxy to negotiate the details with the server
+// on which the listen socket will be created
+// The two parameters will contain the ip and port of the listen socket on the server.
+#define PROXYSTATUS_LISTENSOCKETCREATED 8
 struct t_ListenSocketCreatedStruct
 {
-	unsigned long ip;
-	UINT nPort;
+  unsigned long ip;
+  UINT nPort;
 };
-
-//Proxytypes
+//---------------------------------------------------------------------------
+// Proxytypes
 #define PROXYTYPE_NOPROXY 0
 #define PROXYTYPE_SOCKS4 1
 #define PROXYTYPE_SOCKS4A 2
 #define PROXYTYPE_SOCKS5 3
 #define PROXYTYPE_HTTP11 4
-
+//---------------------------------------------------------------------------
 #define PROXYOP_CONNECT 1
 #define PROXYOP_LISTEN 2
-
-
-#endif // !defined(AFX_ASYNCPROXYSOCKETLAYER_H__6B19D281_F1D0_4EF2_984A_31639A038AE5__INCLUDED_)
+//---------------------------------------------------------------------------
+#endif // AsyncProxySocketLayerH

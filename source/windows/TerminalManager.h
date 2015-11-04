@@ -36,8 +36,6 @@ public:
   static TTerminalManager * __fastcall Instance(bool ForceCreation = true);
   static void __fastcall DestroyInstance();
 
-  static UnicodeString __fastcall ProgressTitle(TFileOperationProgressType * ProgressData);
-
   __fastcall TTerminalManager();
   __fastcall ~TTerminalManager();
 
@@ -54,7 +52,7 @@ public:
   void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
-  void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl);
+  void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl, bool ReloadSessions = true);
   void __fastcall Idle();
   UnicodeString __fastcall TerminalTitle(TTerminal * Terminal);
   void __fastcall HandleException(Exception * E);

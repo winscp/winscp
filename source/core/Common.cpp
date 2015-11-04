@@ -14,37 +14,13 @@
 #include <limits>
 #include <shlwapi.h>
 #include <CoreMain.h>
+#include <openssl/pkcs12.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-// TGuard
-//---------------------------------------------------------------------------
-__fastcall TGuard::TGuard(TCriticalSection * ACriticalSection) :
-  FCriticalSection(ACriticalSection)
-{
-  assert(ACriticalSection != NULL);
-  FCriticalSection->Enter();
-}
-//---------------------------------------------------------------------------
-__fastcall TGuard::~TGuard()
-{
-  FCriticalSection->Leave();
-}
-//---------------------------------------------------------------------------
-// TUnguard
-//---------------------------------------------------------------------------
-__fastcall TUnguard::TUnguard(TCriticalSection * ACriticalSection) :
-  FCriticalSection(ACriticalSection)
-{
-  assert(ACriticalSection != NULL);
-  FCriticalSection->Leave();
-}
-//---------------------------------------------------------------------------
-__fastcall TUnguard::~TUnguard()
-{
-  FCriticalSection->Enter();
-}
+const wchar_t * DSTModeNames = L"Win;Unix;Keep";
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 const wchar_t EngShortMonthNames[12][4] =
@@ -74,19 +50,30 @@ UnicodeString DeleteChar(UnicodeString Str, wchar_t C)
   return Str;
 }
 //---------------------------------------------------------------------------
-void PackStr(UnicodeString &Str)
+template<typename T>
+void DoPackStr(T & Str)
 {
   // Following will free unnecessary bytes
   Str = Str.c_str();
 }
 //---------------------------------------------------------------------------
-void PackStr(RawByteString &Str)
+void PackStr(UnicodeString & Str)
 {
-  // Following will free unnecessary bytes
-  Str = Str.c_str();
+  DoPackStr(Str);
 }
 //---------------------------------------------------------------------------
-void __fastcall Shred(UnicodeString & Str)
+void PackStr(RawByteString & Str)
+{
+  DoPackStr(Str);
+}
+//---------------------------------------------------------------------------
+void PackStr(AnsiString & Str)
+{
+  DoPackStr(Str);
+}
+//---------------------------------------------------------------------------
+template<typename T>
+void __fastcall DoShred(T & Str)
 {
   if (!Str.IsEmpty())
   {
@@ -94,6 +81,21 @@ void __fastcall Shred(UnicodeString & Str)
     memset(Str.c_str(), 0, Str.Length() * sizeof(*Str.c_str()));
     Str = L"";
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall Shred(UnicodeString & Str)
+{
+  DoShred(Str);
+}
+//---------------------------------------------------------------------------
+void __fastcall Shred(UTF8String & Str)
+{
+  DoShred(Str);
+}
+//---------------------------------------------------------------------------
+void __fastcall Shred(AnsiString & Str)
+{
+  DoShred(Str);
 }
 //---------------------------------------------------------------------------
 UnicodeString AnsiToString(const RawByteString & S)
@@ -279,7 +281,7 @@ UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote)
 //---------------------------------------------------------------------------
 UnicodeString ExceptionLogString(Exception *E)
 {
-  assert(E);
+  DebugAssert(E);
   if (E->InheritsFrom(__classid(Exception)))
   {
     UnicodeString Msg;
@@ -307,6 +309,11 @@ UnicodeString __fastcall MainInstructions(const UnicodeString & S)
 {
   UnicodeString MainMsgTag = LoadStr(MAIN_MSG_TAG);
   return MainMsgTag + S + MainMsgTag;
+}
+//---------------------------------------------------------------------------
+bool __fastcall HasParagraphs(const UnicodeString & S)
+{
+  return (S.Pos(L"\n\n") > 0);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall MainInstructionsFirstParagraph(const UnicodeString & S)
@@ -345,8 +352,8 @@ bool ExtractMainInstructions(UnicodeString & S, UnicodeString & MainInstructions
     }
   }
 
-  assert(MainInstructions.Pos(MainMsgTag) == 0);
-  assert(S.Pos(MainMsgTag) == 0);
+  DebugAssert(MainInstructions.Pos(MainMsgTag) == 0);
+  DebugAssert(S.Pos(MainMsgTag) == 0);
 
   return Result;
 }
@@ -401,6 +408,14 @@ UnicodeString RemoveInteractiveMsgTag(UnicodeString S)
   return S;
 }
 //---------------------------------------------------------------------------
+UnicodeString RemoveEmptyLines(const UnicodeString & S)
+{
+  return
+    ReplaceStr(
+      ReplaceStr(S.TrimRight(), L"\n\n", L"\n"),
+      L"\n \n", L"\n");
+}
+//---------------------------------------------------------------------------
 bool IsNumber(const UnicodeString Str)
 {
   int Value;
@@ -441,14 +456,19 @@ UnicodeString __fastcall StripPathQuotes(const UnicodeString Path)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall AddQuotes(UnicodeString Str)
+{
+  if (Str.Pos(L" ") > 0)
+  {
+    Str = L"\"" + Str + L"\"";
+  }
+  return Str;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall AddPathQuotes(UnicodeString Path)
 {
   Path = StripPathQuotes(Path);
-  if (Path.Pos(L" "))
-  {
-    Path = L"\"" + Path + L"\"";
-  }
-  return Path;
+  return AddQuotes(Path);
 }
 //---------------------------------------------------------------------------
 static wchar_t * __fastcall ReplaceChar(
@@ -596,7 +616,7 @@ UnicodeString __fastcall FormatCommand(UnicodeString Program, UnicodeString Para
   Program = Program.Trim();
   Params = Params.Trim();
   if (!Params.IsEmpty()) Params = L" " + Params;
-  if (Program.Pos(L" ")) Program = L"\"" + Program + L"\"";
+  Program = AddQuotes(Program);
   return Program + Params;
 }
 //---------------------------------------------------------------------------
@@ -621,6 +641,11 @@ UnicodeString __fastcall ExpandFileNameCommand(const UnicodeString Command,
 {
   return AnsiReplaceStr(Command, ShellCommandFileNamePattern,
     AddPathQuotes(FileName));
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall EscapeParam(const UnicodeString & Param)
+{
+  return ReplaceStr(Param, L"\"", L"\"\"");
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param)
@@ -984,6 +1009,11 @@ UnicodeString __fastcall MakeUnicodeLargePath(UnicodeString Path)
         // Add \\?\UNC\ prefix
         Result = L"\\\\?\\UNC\\" + Result;
         break;
+
+      case PPT_LONG_UNICODE:
+      case PPT_LONG_UNICODE_UNC:
+        // nothing to do
+        break;
     }
   }
 
@@ -1129,7 +1159,7 @@ RawByteString __fastcall HexToBytes(const UnicodeString Hex)
 unsigned char __fastcall HexToByte(const UnicodeString Hex)
 {
   static UnicodeString Digits = L"0123456789ABCDEF";
-  assert(Hex.Length() == 2);
+  DebugAssert(Hex.Length() == 2);
   int P1 = Digits.Pos((wchar_t)toupper(Hex[1]));
   int P2 = Digits.Pos((wchar_t)toupper(Hex[2]));
 
@@ -1188,12 +1218,18 @@ int __fastcall FindFirstChecked(const UnicodeString & Path, int Attr, TSearchRec
   return FindCheck(Result, F.Path);
 }
 //---------------------------------------------------------------------------
+// Equivalent to FindNext, just to complement to FindFirstUnchecked
+int __fastcall FindNextUnchecked(TSearchRecChecked & F)
+{
+  return FindNext(F);
+}
+//---------------------------------------------------------------------------
 // It can make sense to use FindNextChecked, even if unchecked FindFirst is used.
 // I.e. even if we do not care that FindFirst failed, if FindNext
-// failes after successfull FindFirst, it mean some terrible problem
+// fails after successful FindFirst, it means some terrible problem
 int __fastcall FindNextChecked(TSearchRecChecked & F)
 {
-  return FindCheck(FindNext(F), F.Path);
+  return FindCheck(FindNextUnchecked(F), F.Path);
 }
 //---------------------------------------------------------------------------
 bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec)
@@ -1211,7 +1247,7 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param,
   int FindAttrs)
 {
-  assert(CallBackFunc);
+  DebugAssert(CallBackFunc);
   if (FindAttrs < 0)
   {
     FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
@@ -1496,7 +1532,7 @@ bool __fastcall UsesDaylightHack()
 //---------------------------------------------------------------------------
 TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode)
 {
-  assert(int(EncodeDateVerbose(1970, 1, 1)) == UnixDateDelta);
+  DebugAssert(int(EncodeDateVerbose(1970, 1, 1)) == UnixDateDelta);
 
   TDateTime Result = UnixDateDelta + (double(TimeStamp) / SecsPerDay);
 
@@ -1584,7 +1620,7 @@ static __int64 __fastcall DateTimeToUnix(const TDateTime DateTime)
 {
   const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
 
-  assert(int(EncodeDateVerbose(1970, 1, 1)) == UnixDateDelta);
+  DebugAssert(int(EncodeDateVerbose(1970, 1, 1)) == UnixDateDelta);
 
   return Round(double(DateTime - UnixDateDelta) * SecsPerDay) +
     CurrentParams->CurrentDifferenceSec;
@@ -1976,41 +2012,121 @@ int __fastcall TimeToMinutes(TDateTime T)
   return TimeToSeconds(T) / SecsPerMin;
 }
 //---------------------------------------------------------------------------
-bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin)
+static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin, UnicodeString & ErrorPath)
 {
-  SHFILEOPSTRUCT Data;
+  bool Result;
 
-  memset(&Data, 0, sizeof(Data));
-  Data.hwnd = NULL;
-  Data.wFunc = FO_DELETE;
-  // SHFileOperation does not support long paths anyway
-  UnicodeString FileList(ApiPath(FileName));
-  FileList.SetLength(FileList.Length() + 2);
-  FileList[FileList.Length() - 1] = L'\0';
-  FileList[FileList.Length()] = L'\0';
-  Data.pFrom = FileList.c_str();
-  Data.pTo = L"\0\0"; // this will actually give one null more than needed
-  Data.fFlags = FOF_NOCONFIRMATION | FOF_RENAMEONCOLLISION | FOF_NOCONFIRMMKDIR |
-    FOF_NOERRORUI | FOF_SILENT;
-  if (ToRecycleBin)
+  UnicodeString AErrorPath = FileName;
+
+  if (!ToRecycleBin)
   {
-    Data.fFlags |= FOF_ALLOWUNDO;
+    TSearchRecChecked SearchRec;
+    Result = FileSearchRec(FileName, SearchRec);
+    if (Result)
+    {
+      if (FLAGCLEAR(SearchRec.Attr, faDirectory))
+      {
+        Result = DeleteFile(ApiPath(FileName));
+      }
+      else
+      {
+        Result = (FindFirstUnchecked(FileName + L"\\*", faAnyFile, SearchRec) == 0);
+
+        if (Result)
+        {
+          try
+          {
+            do
+            {
+              UnicodeString FileName2 = FileName + L"\\" + SearchRec.Name;
+              if (FLAGSET(SearchRec.Attr, faDirectory))
+              {
+                if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+                {
+                  Result = DoRecursiveDeleteFile(FileName2, ALWAYS_FALSE(ToRecycleBin), AErrorPath);
+                }
+              }
+              else
+              {
+                Result = DeleteFile(ApiPath(FileName2));
+                if (!Result)
+                {
+                  AErrorPath = FileName2;
+                }
+              }
+            }
+            while (Result && (FindNextUnchecked(SearchRec) == 0));
+          }
+          __finally
+          {
+            FindClose(SearchRec);
+          }
+
+          if (Result)
+          {
+            Result = RemoveDir(ApiPath(FileName));
+          }
+        }
+      }
+    }
   }
-  int ErrorCode = SHFileOperation(&Data);
-  bool Result = (ErrorCode == 0);
+  else
+  {
+    SHFILEOPSTRUCT Data;
+
+    memset(&Data, 0, sizeof(Data));
+    Data.hwnd = NULL;
+    Data.wFunc = FO_DELETE;
+    // SHFileOperation does not support long paths anyway
+    UnicodeString FileList(ApiPath(FileName));
+    FileList.SetLength(FileList.Length() + 2);
+    FileList[FileList.Length() - 1] = L'\0';
+    FileList[FileList.Length()] = L'\0';
+    Data.pFrom = FileList.c_str();
+    Data.pTo = L"\0\0"; // this will actually give one null more than needed
+    Data.fFlags = FOF_NOCONFIRMATION | FOF_RENAMEONCOLLISION | FOF_NOCONFIRMMKDIR |
+      FOF_NOERRORUI | FOF_SILENT;
+    if (ALWAYS_TRUE(ToRecycleBin))
+    {
+      Data.fFlags |= FOF_ALLOWUNDO;
+    }
+    int ErrorCode = SHFileOperation(&Data);
+    Result = (ErrorCode == 0);
+    if (!Result)
+    {
+      // according to MSDN, SHFileOperation may return following non-Win32
+      // error codes
+      if (((ErrorCode >= 0x71) && (ErrorCode <= 0x88)) ||
+          (ErrorCode == 0xB7) || (ErrorCode == 0x402) || (ErrorCode == 0x10000) ||
+          (ErrorCode == 0x10074))
+      {
+        ErrorCode = 0;
+      }
+      SetLastError(ErrorCode);
+    }
+  }
+
   if (!Result)
   {
-    // according to MSDN, SHFileOperation may return following non-Win32
-    // error codes
-    if (((ErrorCode >= 0x71) && (ErrorCode <= 0x88)) ||
-        (ErrorCode == 0xB7) || (ErrorCode == 0x402) || (ErrorCode == 0x10000) ||
-        (ErrorCode == 0x10074))
-    {
-      ErrorCode = 0;
-    }
-    SetLastError(ErrorCode);
+    ErrorPath = AErrorPath;
   }
+
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin)
+{
+  UnicodeString ErrorPath; // unused
+  return DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath);
+}
+//---------------------------------------------------------------------------
+void __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin)
+{
+  UnicodeString ErrorPath;
+  if (!DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath))
+  {
+    throw EOSExtException(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (ErrorPath)));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall DeleteFileChecked(const UnicodeString & FileName)
@@ -2114,7 +2230,7 @@ TLibModule * __fastcall FindModule(void * Instance)
 UnicodeString __fastcall LoadStr(int Ident, unsigned int MaxLength)
 {
   TLibModule * MainModule = FindModule(HInstance);
-  assert(MainModule != NULL);
+  DebugAssert(MainModule != NULL);
 
   UnicodeString Result;
   Result.SetLength(MaxLength);
@@ -2161,8 +2277,7 @@ UnicodeString __fastcall DecodeUrlChars(UnicodeString S)
           if (!Hex.IsEmpty())
           {
             RawByteString Bytes = HexToBytes(Hex);
-            UTF8String UTF8(Bytes.c_str(), Bytes.Length());
-            UnicodeString Chars(UTF8);
+            UnicodeString Chars(UTF8ToString(Bytes));
             S.Insert(Chars, i);
             i += Chars.Length() - 1;
           }
@@ -2181,6 +2296,7 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, UnicodeString Chars)
   {
     if (Chars.Pos(S[i]) > 0)
     {
+      // We decode as UTF-8 so we should encode as UTF-8 too
       UnicodeString H = ByteToHex(AnsiString(UnicodeString(S[i]))[1]);
       S.Insert(H, i + 1);
       S[i] = '%';
@@ -2237,7 +2353,7 @@ UnicodeString __fastcall AppendUrlParams(UnicodeString AURL, UnicodeString Param
 {
   // see also TWebHelpSystem::ShowHelp
   const wchar_t FragmentSeparator = L'#';
-  UnicodeString URL = ::CutToChar(AURL, FragmentSeparator, false);
+  UnicodeString URL = CutToChar(AURL, FragmentSeparator, false);
 
   if (URL.Pos(L"?") == 0)
   {
@@ -2262,7 +2378,7 @@ UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption)
 //---------------------------------------------------------------------------
 // duplicated in console's Main.cpp
 bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
-  UnicodeString * RawToken)
+  UnicodeString * RawToken, UnicodeString * Separator)
 {
   bool Result;
 
@@ -2286,6 +2402,9 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
       {
         break;
       }
+      // We should escape quotes only within quotes
+      // otherwise the "" means " (quote), but it should mean empty string.
+      // Or have a special case for bare "".
       else if ((Str[Index] == L'"') && (Index + 1 <= Str.Length()) &&
         (Str[Index + 1] == L'"'))
       {
@@ -2311,7 +2430,18 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
 
     if (Index <= Str.Length())
     {
+      if (Separator != NULL)
+      {
+        *Separator = Str.SubString(Index, 1);
+      }
       Index++;
+    }
+    else
+    {
+      if (Separator != NULL)
+      {
+        *Separator = UnicodeString();
+      }
     }
 
     Str = Str.SubString(Index, Str.Length());
@@ -2353,6 +2483,16 @@ bool __fastcall IsWinVista()
 bool __fastcall IsWin7()
 {
   return CheckWin32Version(6, 1);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsWin8()
+{
+  return CheckWin32Version(6, 2);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsWin10()
+{
+  return CheckWin32Version(10, 0);
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsWine()
@@ -2531,4 +2671,184 @@ UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Ident
     }
   }
   return Ident;
+}
+//---------------------------------------------------------------------------
+static UnicodeString __fastcall GetTlsErrorStr(int Err)
+{
+  char * Buffer = new char[512];
+  ERR_error_string(Err, Buffer);
+  // not sure about the UTF8
+  return UnicodeString(UTF8String(Buffer));
+}
+//---------------------------------------------------------------------------
+static FILE * __fastcall OpenCertificate(const UnicodeString & Path)
+{
+  FILE * Result = _wfopen(ApiPath(Path).c_str(), L"rb");
+  if (Result == NULL)
+  {
+    int Error = errno;
+    throw EOSExtException(MainInstructions(FMTLOAD(CERTIFICATE_OPEN_ERROR, (Path))), Error);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+struct TPemPasswordCallbackData
+{
+  UnicodeString * Passphrase;
+};
+//---------------------------------------------------------------------------
+static int PemPasswordCallback(char * Buf, int Size, int /*RWFlag*/, void * UserData)
+{
+  TPemPasswordCallbackData & Data = *reinterpret_cast<TPemPasswordCallbackData *>(UserData);
+  UTF8String UtfPassphrase = UTF8String(*Data.Passphrase);
+  strncpy(Buf, UtfPassphrase.c_str(), Size);
+  Shred(UtfPassphrase);
+  Buf[Size - 1] = '\0';
+  return strlen(Buf);
+}
+//---------------------------------------------------------------------------
+static bool __fastcall IsTlsPassphraseError(int Error)
+{
+  bool Result =
+    ((ERR_GET_LIB(Error) == ERR_LIB_PKCS12) &&
+     (ERR_GET_REASON(Error) == PKCS12_R_MAC_VERIFY_FAILURE)) ||
+    ((ERR_GET_LIB(Error) == ERR_LIB_PEM) &&
+     (ERR_GET_REASON(Error) == PEM_R_BAD_PASSWORD_READ));
+  return Result;
+}
+//---------------------------------------------------------------------------
+static void __fastcall ThrowTlsCertificateErrorIgnorePassphraseErrors(const UnicodeString & Path)
+{
+  int Error = ERR_get_error();
+  if (!IsTlsPassphraseError(Error))
+  {
+    throw ExtException(MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (Path))), GetTlsErrorStr(Error));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ParseCertificate(const UnicodeString & Path,
+  const UnicodeString & Passphrase, X509 *& Certificate, EVP_PKEY *& PrivateKey,
+  bool & WrongPassphrase)
+{
+  FILE * File;
+
+  // Inspired by neon's ne_ssl_clicert_read
+  File = OpenCertificate(Path);
+  PKCS12 * Pkcs12 = d2i_PKCS12_fp(File, NULL);
+  fclose(File);
+
+  if (Pkcs12 != NULL)
+  {
+    // Not sure about the UTF-8 encoding, but there's no wchar_t API
+    bool Result =
+      (PKCS12_parse(Pkcs12, UTF8String(Passphrase).c_str(), &PrivateKey, &Certificate, NULL) == 1);
+    PKCS12_free(Pkcs12);
+
+    if (!Result)
+    {
+      ThrowTlsCertificateErrorIgnorePassphraseErrors(Path);
+      WrongPassphrase = true;
+    }
+  }
+  else
+  {
+    ERR_clear_error();
+
+    TPemPasswordCallbackData CallbackUserData;
+    // PemPasswordCallback never writes to the .Passphrase
+    CallbackUserData.Passphrase = const_cast<UnicodeString *>(&Passphrase);
+
+    File = OpenCertificate(Path);
+    PrivateKey = PEM_read_PrivateKey(File, NULL, PemPasswordCallback, &CallbackUserData);
+    fclose(File);
+
+    try
+    {
+      if (PrivateKey == NULL)
+      {
+        ThrowTlsCertificateErrorIgnorePassphraseErrors(Path);
+        WrongPassphrase = true;
+      }
+
+      File = OpenCertificate(Path);
+      Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
+      fclose(File);
+
+      if (Certificate == NULL)
+      {
+        int Error = ERR_get_error();
+        // unlikely
+        if (IsTlsPassphraseError(Error))
+        {
+          WrongPassphrase = true;
+        }
+        else
+        {
+          UnicodeString CertificatePath = ChangeFileExt(Path, L".cer");
+          if (!FileExists(CertificatePath))
+          {
+            CertificatePath = ChangeFileExt(Path, L".crt");
+          }
+
+          if (!FileExists(CertificatePath))
+          {
+            throw Exception(MainInstructions(FMTLOAD(CERTIFICATE_PUBLIC_KEY_NOT_FOUND, (Path))));
+          }
+          else
+          {
+            File = OpenCertificate(CertificatePath);
+            Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
+            fclose(File);
+
+            if (Certificate == NULL)
+            {
+              ThrowTlsCertificateErrorIgnorePassphraseErrors(CertificatePath);
+              WrongPassphrase = true;
+            }
+          }
+        }
+      }
+    }
+    __finally
+    {
+      // We loaded private key, but failed to load certificate, discard the certificate
+      // (either exception was thrown or WrongPassphrase)
+      if ((PrivateKey != NULL) && (Certificate == NULL))
+      {
+        EVP_PKEY_free(PrivateKey);
+        PrivateKey = NULL;
+      }
+      // Certificate was verified, but passphrase was wrong when loading private key,
+      // so discard the certificate
+      else if ((Certificate != NULL) && (PrivateKey == NULL))
+      {
+        X509_free(Certificate);
+        Certificate = NULL;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall CheckCertificate(const UnicodeString & Path)
+{
+  X509 * Certificate;
+  EVP_PKEY * PrivateKey;
+  bool WrongPassphrase;
+
+  ParseCertificate(Path, L"", Certificate, PrivateKey, WrongPassphrase);
+
+  if (PrivateKey != NULL)
+  {
+    EVP_PKEY_free(PrivateKey);
+  }
+  if (Certificate != NULL)
+  {
+    X509_free(Certificate);
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsHttpUrl(const UnicodeString & S)
+{
+  return SameText(S.SubString(1, 4), L"http");
 }

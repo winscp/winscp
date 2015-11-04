@@ -52,7 +52,7 @@ __fastcall TCopyParamsFrame::~TCopyParamsFrame()
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
 {
-  assert((value.TransferMode == tmAscii) ||
+  DebugAssert((value.TransferMode == tmAscii) ||
     (value.TransferMode == tmBinary) || (value.TransferMode == tmAutomatic));
   switch (value.TransferMode) {
     case tmAscii: TMTextButton->Checked = True; break;
@@ -92,7 +92,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   }
   else
   {
-    assert(FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM));
+    DebugAssert(FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM));
     RemoveCtrlZAndBOMCheck->Checked = value.RemoveCtrlZ && value.RemoveBOM;
   }
 
@@ -109,7 +109,7 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
 {
   TCopyParamType Result = *FParams;
 
-  assert(TMTextButton->Checked || TMBinaryButton->Checked || TMAutomaticButton->Checked);
+  DebugAssert(TMTextButton->Checked || TMBinaryButton->Checked || TMAutomaticButton->Checked);
   if (TMTextButton->Checked) Result.TransferMode = tmAscii;
     else
   if (TMBinaryButton->Checked) Result.TransferMode = tmBinary;
@@ -223,15 +223,15 @@ void __fastcall TCopyParamsFrame::BeforeExecute()
 
   // adding TRightsFrame on run-time corrupts the tab order, fix it
   TransferModeGroup->TabOrder = 0;
-  assert(CustomWinConfiguration);
+  DebugAssert(CustomWinConfiguration);
   AsciiFileMaskCombo->Items = CustomWinConfiguration->History[L"Mask"];
   IncludeFileMaskCombo->Items = CustomWinConfiguration->History[L"IncludeMask"];
-  SpeedCombo->Items = CustomWinConfiguration->History[L"SpeedLimit"];
+  CopySpeedLimits(CustomWinConfiguration->History[L"SpeedLimit"], SpeedCombo->Items);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::AfterExecute()
 {
-  assert(CustomWinConfiguration);
+  DebugAssert(CustomWinConfiguration);
   AsciiFileMaskCombo->SaveToHistory();
   CustomWinConfiguration->History[L"Mask"] = AsciiFileMaskCombo->Items;
   IncludeFileMaskCombo->SaveToHistory();

@@ -74,6 +74,11 @@ __published:
   TAction *UTF8EncodingAction;
   TTBXColorItem *ColorItem;
   TAction *ColorAction;
+  TAction *SaveAllAction;
+  TTBXItem *TBXItem1;
+  TPngImageList *EditorImages120;
+  TPngImageList *EditorImages144;
+  TPngImageList *EditorImages192;
   void __fastcall EditorActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall EditorActionsExecute(TBasicAction *Action,
           bool &Handled);
@@ -93,6 +98,8 @@ private:
   TNotifyEvent FOnFileChanged;
   TNotifyEvent FOnFileReload;
   TFileClosedEvent FOnWindowClose;
+  TNotifyEvent FOnSaveAll;
+  TAnyModifiedEvent FOnAnyModified;
   TCustomForm * FParentForm;
   TFindDialog * FLastFindDialog;
   TPoint FCaretPos;
@@ -123,11 +130,15 @@ public:
   void __fastcall ApplyConfiguration();
   void __fastcall FileUploadComplete();
   void __fastcall LoadFile();
+  void __fastcall SaveFile();
+  bool __fastcall IsFileModified();
   __property UnicodeString FileName = { read = FFileName, write = SetFileName };
   __property bool StandaloneEditor = { read = FStandaloneEditor, write = FStandaloneEditor };
   __property TNotifyEvent OnFileChanged = { read = FOnFileChanged, write = FOnFileChanged };
   __property TNotifyEvent OnFileReload = { read = FOnFileReload, write = FOnFileReload };
   __property TFileClosedEvent OnWindowClose = { read = FOnWindowClose, write = FOnWindowClose };
+  __property TNotifyEvent OnSaveAll = { read = FOnSaveAll, write = FOnSaveAll };
+  __property TAnyModifiedEvent OnAnyModified = { read = FOnAnyModified, write = FOnAnyModified };
   __property TCustomForm * ParentForm = { read = FParentForm, write = SetParentForm };
   __property TColor BackgroundColor = { read = FBackgroundColor, write = SetBackgroundColor };
 protected:
@@ -148,6 +159,7 @@ protected:
   void __fastcall SaveToFile();
   void __fastcall BackupSave();
   void __fastcall CheckFileSize();
+  void __fastcall UpdateBackgroundColor();
 };
 //---------------------------------------------------------------------------
 #endif

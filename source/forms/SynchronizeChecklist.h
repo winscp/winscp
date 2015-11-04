@@ -49,6 +49,9 @@ __published:
   TButton *ReverseButton;
   TAction *ReverseAction;
   TMenuItem *ReverseItem;
+  TPngImageList *ActionImages120;
+  TPngImageList *ActionImages144;
+  TPngImageList *ActionImages192;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,

@@ -304,7 +304,6 @@ type
       Criterias: TCompareCriterias);
     procedure ReloadForce(CacheIcons : Boolean);
     procedure RetryRename(NewName: string);
-    procedure SelectFiles(Filter: TFileFilter; Select: Boolean);
     procedure SetAddParentDir(Value: Boolean); virtual;
     procedure SetDimmHiddenFiles(Value: Boolean); virtual;
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); virtual; abstract;
@@ -327,6 +326,7 @@ type
     procedure SetWatchForChanges(Value: Boolean); virtual;
     function TargetHasDropHandler(Item: TListItem; Effect: Integer): Boolean; virtual;
     procedure UpdatePathLabel; dynamic;
+    procedure UpdatePathLabelCaption; dynamic;
     procedure UpdateStatusBar; dynamic;
     procedure WndProc(var Message: TMessage); override;
     function FileNameMatchesMasks(FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; AllowImplicitMatches: Boolean): Boolean;
@@ -352,6 +352,7 @@ type
     function AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean;
       FocusedFileOnlyWhenFocused: Boolean): Boolean;
     function DoSelectByMask(Select: Boolean): Boolean; override;
+    procedure SelectFiles(Filter: TFileFilter; Select: Boolean);
     procedure ExecuteHomeDirectory; virtual; abstract;
     procedure ExecuteParentDirectory; virtual; abstract;
     procedure ExecuteRootDirectory; virtual; abstract;
@@ -772,7 +773,20 @@ function OverlayImageList(Size: Integer): TImageList;
     end;
   end; {GetOverlayBitmap}
 
+var
+  PixelsPerInch: Integer;
+  Factor: Integer;
 begin
+  // Hardcoded according to sizes of overlays we have in resources
+  PixelsPerInch := Screen.PixelsPerInch;
+  if PixelsPerInch >= 192 then Factor := 200
+    else
+  if PixelsPerInch >= 144 then Factor := 150
+    else
+  if PixelsPerInch >= 120 then Factor := 124
+    else Factor := 100;
+
+  Size := MulDiv(Size, Factor, 100);
   Result := TImageList.CreateSize(Size, Size);
   Result.DrawingStyle := dsTransparent;
   Result.BkColor := clNone;
@@ -1535,15 +1549,25 @@ begin
   end;
 end;
 
+procedure TCustomDirView.UpdatePathLabelCaption;
+begin
+  PathLabel.Caption := PathName;
+  PathLabel.Mask := Mask;
+end;
+
 procedure TCustomDirView.UpdatePathLabel;
 begin
   if Assigned(PathLabel) then
   begin
     if csDesigning in ComponentState then
-      PathLabel.Caption := PathLabel.Name
-    else
-      PathLabel.Caption := PathName;
-    PathLabel.Mask := Mask;
+    begin
+      PathLabel.Caption := PathLabel.Name;
+      PathLabel.Mask := '';
+    end
+      else
+    begin
+      UpdatePathLabelCaption;
+    end;
     PathLabel.UpdateStatus;
   end;
 end; { UpdatePathLabel }

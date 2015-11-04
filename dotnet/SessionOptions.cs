@@ -32,10 +32,6 @@ namespace WinSCP
         None = 0,
         Implicit = 1,
         Explicit = 3,
-        [Obsolete("Use FtpSecure.Explicit")]
-        ExplicitTls = Explicit,
-        [Obsolete("Use FtpSecure.Explicit")]
-        ExplicitSsl = 2,
     }
 
     [Guid("2D4EF368-EE80-4C15-AE77-D12AEAF4B00A")]
@@ -57,12 +53,14 @@ namespace WinSCP
         public SecureString SecurePassword { get; set; }
         public TimeSpan Timeout { get { return _timeout; } set { SetTimeout(value); } }
         public int TimeoutInMilliseconds { get { return Tools.TimeSpanToMilliseconds(Timeout); } set { Timeout = Tools.MillisecondsToTimeSpan(value); } }
+        public string PrivateKeyPassphrase { get; set; }
 
         // SSH
         public string SshHostKeyFingerprint { get { return _sshHostKeyFingerprint; } set { SetSshHostKeyFingerprint(value); } }
         public bool GiveUpSecurityAndAcceptAnySshHostKey { get; set; }
         public string SshPrivateKeyPath { get; set; }
-        public string SshPrivateKeyPassphrase { get; set; }
+        [Obsolete("Use PrivateKeyPassphrase")]
+        public string SshPrivateKeyPassphrase { get { return PrivateKeyPassphrase; } set { PrivateKeyPassphrase = value; } }
 
         // FTP
         public FtpMode FtpMode { get; set; }
@@ -75,6 +73,7 @@ namespace WinSCP
         // TLS
         public string TlsHostCertificateFingerprint { get { return _tlsHostCertificateFingerprint; } set { SetHostTlsCertificateFingerprint(value); } }
         public bool GiveUpSecurityAndAcceptAnyTlsHostCertificate { get; set; }
+        public string TlsClientCertificatePath { get; set; }
 
         public void AddRawSettings(string setting, string value)
         {
@@ -83,6 +82,11 @@ namespace WinSCP
 
         public void ParseUrl(string url)
         {
+            if (url == null)
+            {
+                throw new ArgumentNullException("url");
+            }
+
             url = url.Trim();
             const string protocolSeparator = "://";
             int index = url.IndexOf(protocolSeparator, StringComparison.OrdinalIgnoreCase);
@@ -90,37 +94,9 @@ namespace WinSCP
             {
                 throw new ArgumentException("Protocol not specified", "url");
             }
+
             string protocol = url.Substring(0, index).Trim();
-
-            FtpSecure = FtpSecure.None;
-
-            if (protocol.Equals("sftp", StringComparison.OrdinalIgnoreCase))
-            {
-                Protocol = Protocol.Sftp;
-            }
-            else if (protocol.Equals("scp", StringComparison.OrdinalIgnoreCase))
-            {
-                Protocol = Protocol.Scp;
-            }
-            else if (protocol.Equals("ftp", StringComparison.OrdinalIgnoreCase))
-            {
-                Protocol = Protocol.Ftp;
-            }
-            else if (protocol.Equals("ftps", StringComparison.OrdinalIgnoreCase))
-            {
-                Protocol = Protocol.Ftp;
-                FtpSecure = FtpSecure.Implicit;
-            }
-            else if (protocol.Equals("http", StringComparison.OrdinalIgnoreCase))
-            {
-                Protocol = Protocol.Webdav;
-            }
-            else if (protocol.Equals("https", StringComparison.OrdinalIgnoreCase))
-            {
-                Protocol = Protocol.Webdav;
-                WebdavSecure = true;
-            }
-            else
+            if (!ParseProtocol(protocol))
             {
                 throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unknown protocol {0}", protocol), "url");
             }
@@ -241,6 +217,44 @@ namespace WinSCP
             }
         }
 
+        private bool ParseProtocol(string protocol)
+        {
+            bool result = true;
+            FtpSecure = FtpSecure.None;
+
+            if (protocol.Equals("sftp", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Sftp;
+            }
+            else if (protocol.Equals("scp", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Scp;
+            }
+            else if (protocol.Equals("ftp", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Ftp;
+            }
+            else if (protocol.Equals("ftps", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Ftp;
+                FtpSecure = FtpSecure.Implicit;
+            }
+            else if (protocol.Equals("http", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Webdav;
+            }
+            else if (protocol.Equals("https", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Webdav;
+                WebdavSecure = true;
+            }
+            else
+            {
+                result = false;
+            }
+            return result;
+        }
+
         private static string EmptyToNull(string s)
         {
             if (string.IsNullOrEmpty(s))
@@ -277,6 +291,14 @@ namespace WinSCP
 
         internal Dictionary<string, string> RawSettings { get; private set; }
         internal bool IsSsh { get { return (Protocol == Protocol.Sftp) || (Protocol == Protocol.Scp); } }
+        internal bool IsTls { get { return GetIsTls(); } }
+
+        private bool GetIsTls()
+        {
+            return
+                ((Protocol == Protocol.Ftp) && (FtpSecure != FtpSecure.None)) ||
+                ((Protocol == Protocol.Webdav) && WebdavSecure);
+        }
 
         private void SetSshHostKeyFingerprint(string s)
         {

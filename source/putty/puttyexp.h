@@ -31,7 +31,6 @@ void md5checksum(const char * buffer, int len, unsigned char output[16]);
 // from portfwd.c
 
 int is_pfwd(void * handle);
-int is_pfwd_listener(void * handle);
 void * get_pfwd_backend(void * handle);
 
 // for winstore.c
@@ -75,5 +74,9 @@ void call_sha1_key_internal(void * handle, unsigned char * key, int len);
 // from winmisc.c
 
 void win_misc_cleanup();
+
+// from misc.c
+
+const char * get_putty_version();
 
 #endif

@@ -60,17 +60,25 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteOpenMenuItem: TTBXItem
       Action = CurrentOpenAction
     end
-    object RemoteEditMenuItem: TTBXItem
+    object RemoteEditMenuItem: TTBXSubmenuItem
       Action = CurrentEditFocusedAction
+      DropdownCombo = True
+      OnPopup = FocusedEditMenuItemPopup
     end
-    object TBXItem69: TTBXSubmenuItem
-      Action = CurrentEditAlternativeFocusedAction
-    end
-    object RemoteCopyMenuItem: TTBXItem
+    object RemoteCopyMenuItem: TTBXSubmenuItem
       Action = RemoteCopyFocusedAction
-    end
-    object Moveto1: TTBXItem
-      Action = RemoteMoveFocusedAction
+      DropdownCombo = True
+      object TBXItem72: TTBXItem
+        Action = RemoteCopyFocusedNonQueueAction
+      end
+      object TBXItem69: TTBXItem
+        Action = RemoteCopyFocusedQueueAction
+      end
+      object TBXSeparatorItem9: TTBXSeparatorItem
+      end
+      object Moveto1: TTBXItem
+        Action = RemoteMoveFocusedAction
+      end
     end
     object Duplicate3: TTBXItem
       Action = RemoteCopyToAction
@@ -105,7 +113,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = FullFileListToClipboardAction
       end
       object CopyURLtoClipboard3: TTBXItem
-        Action = FileGenerateUrlAction
+        Action = FileGenerateUrlAction2
       end
     end
     object N1: TTBXSeparatorItem
@@ -120,6 +128,78 @@ object NonVisualDataModule: TNonVisualDataModule
     OnUpdate = ExplorerActionsUpdate
     Left = 440
     Top = 24
+    object RemoteCopyQueueAction: TAction
+      Tag = 14
+      Category = 'Remote Selected Operation'
+      Caption = 'Download in &Background...'
+      HelpKeyword = 'task_download'
+      Hint = 
+        'Download|Download selected remote file(s) to local directory in ' +
+        'background'
+      ImageIndex = 107
+    end
+    object RemoteCopyFocusedQueueAction: TAction
+      Tag = 12
+      Category = 'Remote Focused Operation'
+      Caption = 'Download in &Background...'
+      HelpKeyword = 'task_download'
+      Hint = 
+        'Download|Download selected remote file(s) to local directory in ' +
+        'background'
+      ImageIndex = 107
+    end
+    object LocalCopyQueueAction: TAction
+      Tag = 9
+      Category = 'Local Selected Operation'
+      Caption = 'Upload in &Background...'
+      HelpKeyword = 'task_upload'
+      Hint = 
+        'Upload|Upload selected local file(s) to remote directory in back' +
+        'ground'
+      ImageIndex = 108
+    end
+    object LocalCopyFocusedQueueAction: TAction
+      Tag = 8
+      Category = 'Local Focused Operation'
+      Caption = 'Upload in &Background...'
+      HelpKeyword = 'task_upload'
+      Hint = 
+        'Upload|Upload selected local file(s) to remote directory in back' +
+        'ground'
+      ImageIndex = 108
+    end
+    object RemoteCopyNonQueueAction: TAction
+      Tag = 14
+      Category = 'Remote Selected Operation'
+      Caption = 'Down&load...'
+      HelpKeyword = 'task_download'
+      Hint = 'Download|Download selected remote file(s) to local directory'
+      ImageIndex = 89
+    end
+    object RemoteCopyFocusedNonQueueAction: TAction
+      Tag = 12
+      Category = 'Remote Focused Operation'
+      Caption = 'Down&load...'
+      HelpKeyword = 'task_download'
+      Hint = 'Download|Download selected remote file(s) to local directory'
+      ImageIndex = 89
+    end
+    object LocalCopyNonQueueAction: TAction
+      Tag = 9
+      Category = 'Local Selected Operation'
+      Caption = 'Up&load...'
+      HelpKeyword = 'task_upload'
+      Hint = 'Upload|Upload selected local file(s) to remote directory'
+      ImageIndex = 88
+    end
+    object LocalCopyFocusedNonQueueAction: TAction
+      Tag = 8
+      Category = 'Local Focused Operation'
+      Caption = 'Up&load...'
+      HelpKeyword = 'task_upload'
+      Hint = 'Upload|Upload selected local file(s) to remote directory'
+      ImageIndex = 88
+    end
     object LocalCopyFocusedAction: TAction
       Tag = 8
       Category = 'Local Focused Operation'
@@ -596,7 +676,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = 'Site &Manager...'
-      HelpKeyword = 'ui_login_stored_sessions'
+      HelpKeyword = 'ui_login'
       Hint = 
         'Site Manager|Opens site manager (hold down Shift to open site ma' +
         'nager in new window)'
@@ -1630,10 +1710,10 @@ object NonVisualDataModule: TNonVisualDataModule
         'rectory or another name'
       ImageIndex = 78
     end
-    object FileGenerateUrlAction: TAction
+    object FileGenerateUrlAction2: TAction
       Tag = 15
       Category = 'Selected Operation'
-      Caption = 'Generate &URL...'
+      Caption = 'Generate File &URL...'
       HelpKeyword = 'ui_generateurl'
       Hint = 'Generate URL'#39's of selected file(s)'
     end
@@ -1668,13 +1748,6 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_delete'
       Hint = 'Delete|Delete selected file(s)'
       ImageIndex = 2
-    end
-    object CurrentEditAlternative2Action: TAction
-      Tag = 15
-      Category = 'Selected Operation'
-      Caption = 'Ed&it With'
-      HelpKeyword = 'task_edit'
-      Hint = 'Edit With|Edit selected file(s) using alternative editor'
     end
     object CurrentEditWithAction: TAction
       Tag = 15
@@ -1860,13 +1933,6 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_edit'
       Hint = 'Edit With|Edit selected file(s) using editor of your choice'
     end
-    object CurrentEditAlternativeFocusedAction: TAction
-      Tag = 15
-      Category = 'Focused Operation'
-      Caption = 'Ed&it With'
-      HelpKeyword = 'task_edit'
-      Hint = 'Edit With|Edit selected file(s) using alternative editor'
-    end
     object NewDirAction: TAction
       Tag = 12
       Category = 'Command'
@@ -1913,6 +1979,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Queue'
       HelpKeyword = 'ui_queue#managing_the_queue'
       Hint = 'Change speed limit of selected queue item'
+      ImageIndex = 109
       EditCaption = '&Speed'
     end
     object QueueDeleteAllAction: TAction
@@ -1921,6 +1988,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Cancel All'
       HelpKeyword = 'ui_queue#managing_the_queue'
       Hint = 'Remove all queue items'
+      ImageIndex = 106
     end
     object LocalFilterAction: TAction
       Tag = 9
@@ -2132,12 +2200,58 @@ object NonVisualDataModule: TNonVisualDataModule
         'Display system file context menu (in Properties you can opt to d' +
         'isplay it by default instead of built-in menu)'
     end
-    object SessionGenerateUrlAction: TAction
+    object SessionGenerateUrlAction2: TAction
       Tag = 15
       Category = 'Session'
-      Caption = 'Generate &URL...'
+      Caption = 'Generate Session &URL/Code...'
       HelpKeyword = 'ui_generateurl'
-      Hint = 'Generate URL for current session'
+      Hint = 'Generate URL or code for current session'
+    end
+    object SelectSameExtAction: TAction
+      Tag = 15
+      Category = 'Selection'
+      Caption = 'Select Files with Same &Extension'
+      Hint = 
+        'Select all files with the same extension as currently focused fi' +
+        'le'
+      ShortCut = 32875
+    end
+    object UnselectSameExtAction: TAction
+      Tag = 15
+      Category = 'Selection'
+      Caption = 'Unselect Files with Same E&xtension'
+      Hint = 
+        'Unselect all files with the same extension as currently focused ' +
+        'file'
+      ShortCut = 32877
+    end
+    object GoToAddressAction: TAction
+      Tag = 15
+      Category = 'Command'
+      Caption = 'GoToAddressAction'
+      SecondaryShortCuts.Strings = (
+        'Alt+D')
+      ShortCut = 16460
+    end
+    object LockAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Lock'
+      Hint = 'Lock|Lock selected file(s)'
+    end
+    object UnlockAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Unlock'
+      Hint = 'Unlock|Unlock selected file(s)'
+    end
+    object TipsAction: TAction
+      Tag = 15
+      Category = 'Help'
+      Caption = 'Show &Tips'
+      HelpKeyword = 'ui_tips'
+      Hint = 'Displays tips on using WinSCP'
+      ImageIndex = 110
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu
@@ -2605,6 +2719,8 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object QueuePopupSpeedComboBoxItem: TTBXComboBoxItem
       Action = QueueItemSpeedAction
+      ShowImage = True
+      OnAdjustImageIndex = QueuePopupSpeedComboBoxItemAdjustImageIndex
     end
     object N54: TTBXSeparatorItem
     end
@@ -2651,6 +2767,7 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object TBXItem68: TTBXItem
         Action = QueueSuspendOnceEmptyAction
+        RadioItem = True
       end
       object TBXItem29: TTBXItem
         Action = QueueShutDownOnceEmptyAction
@@ -2867,7 +2984,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = FileSystemInfoAction
     end
     object TBXItem52: TTBXItem
-      Action = SessionGenerateUrlAction
+      Action = SessionGenerateUrlAction2
     end
     object TBXSeparatorItem34: TTBXSeparatorItem
     end
@@ -2901,17 +3018,25 @@ object NonVisualDataModule: TNonVisualDataModule
     object LocalOpenMenuItem: TTBXItem
       Action = CurrentOpenAction
     end
-    object LocalEditMenuItem: TTBXItem
+    object LocalEditMenuItem: TTBXSubmenuItem
       Action = CurrentEditFocusedAction
+      DropdownCombo = True
+      OnPopup = FocusedEditMenuItemPopup
     end
-    object TBXSubmenuItem6: TTBXSubmenuItem
-      Action = CurrentEditAlternativeFocusedAction
-    end
-    object LocalCopyMenuItem: TTBXItem
+    object LocalCopyMenuItem: TTBXSubmenuItem
       Action = LocalCopyFocusedAction
-    end
-    object TBXItem54: TTBXItem
-      Action = LocalMoveFocusedAction
+      DropdownCombo = True
+      object TBXItem73: TTBXItem
+        Action = LocalCopyFocusedNonQueueAction
+      end
+      object TBXItem74: TTBXItem
+        Action = LocalCopyFocusedQueueAction
+      end
+      object TBXSeparatorItem10: TTBXSeparatorItem
+      end
+      object TBXItem54: TTBXItem
+        Action = LocalMoveFocusedAction
+      end
     end
     object TBXItem57: TTBXItem
       Action = CurrentDeleteFocusedAction
@@ -2940,7 +3065,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = FullFileListToClipboardAction
       end
       object TBXItem62: TTBXItem
-        Action = FileGenerateUrlAction
+        Action = FileGenerateUrlAction2
       end
     end
     object TBXSeparatorItem4: TTBXSeparatorItem

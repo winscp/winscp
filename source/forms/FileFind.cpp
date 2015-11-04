@@ -16,6 +16,7 @@
 #pragma link "HistoryComboBox"
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
+#pragma link "PngImageList"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
@@ -61,6 +62,8 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner, TFindEvent OnFin
   UseDesktopFont(StatusBar);
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
+  FFrameAnimation.Init(AnimationPaintBox, AnimationImageList);
+  FixFormIcons(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TFileFindDialog::~TFileFindDialog()
@@ -182,17 +185,18 @@ void __fastcall TFileFindDialog::Start()
   WinConfiguration->History[L"Mask"] = MaskEdit->Items;
   WinConfiguration->SelectMask = MaskEdit->Text;
 
-  assert(FState != ffFinding);
+  DebugAssert(FState != ffFinding);
 
   FState = ffFinding;
   try
   {
+    FFrameAnimation.Start();
     UpdateControls();
     Repaint();
 
     TOperationVisualizer Visualizer;
 
-    assert(FOnFind != NULL);
+    DebugAssert(FOnFind != NULL);
     UnicodeString Directory = UnixExcludeTrailingBackslash(RemoteDirectoryEdit->Text);
 
     FDirectory = Directory;
@@ -214,6 +218,7 @@ void __fastcall TFileFindDialog::Start()
     {
       FState = ffAborted;
     }
+    FFrameAnimation.Stop();
     if (IsApplicationMinimized() && FMinimizedByMe)
     {
       ShowNotification(

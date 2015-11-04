@@ -91,7 +91,6 @@ type
     procedure CreateWnd; override;
     procedure ColClick(Column: TListColumn); override;
     procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
-
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;

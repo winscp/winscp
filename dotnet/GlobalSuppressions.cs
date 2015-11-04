@@ -1,10 +1,10 @@
-﻿// This file is used by Code Analysis to maintain SuppressMessage 
+﻿// This file is used by Code Analysis to maintain SuppressMessage
 // attributes that are applied to this project.
-// Project-level suppressions either have no target or are given 
+// Project-level suppressions either have no target or are given
 // a specific target and scoped to a namespace, type, member, etc.
 //
-// To add a suppression to this file, right-click the message in the 
-// Error List, point to "Suppress Message(s)", and click 
+// To add a suppression to this file, right-click the message in the
+// Error List, point to "Suppress Message(s)", and click
 // "In Project Suppression File".
 // You do not need to add suppressions to this file manually.
 
@@ -143,11 +143,19 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#MapViewOfFile(Microsoft.Win32.SafeHandles.SafeFileHandle,WinSCP.FileMapAccess,System.UInt32,System.UInt32,System.UIntPtr)")]
 [assembly: SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke", Scope = "member", Target = "WinSCP.ExeSessionProcess.#InitializeConsole()")]
 [assembly: SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke", Scope = "member", Target = "WinSCP.ExeSessionProcess.#Dispose()")]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.Job.#.ctor(WinSCP.Logger,System.String)")]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.Logger.#LastWin32ErrorMessage()")]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "WinSCP.Session.#GuardProcessWithJobInternal")]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "WinSCP.Session.#TestHandlesClosedInternal")]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.ExeSessionProcess.#TryCreateEvent(System.String,System.Threading.EventWaitHandle&)")]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Runtime.InteropServices.SafeHandle.DangerousGetHandle", Scope = "member", Target = "WinSCP.ExeSessionProcess.#TryCreateEvent(System.String,System.Threading.EventWaitHandle&)")]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.SessionOptions.#GetPassword()")]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", MessageId = "0#", Scope = "member", Target = "WinSCP.SessionOptions.#ParseUrl(System.String)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.Job.#.ctor(WinSCP.Logger,System.String)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.Logger.#LastWin32ErrorMessage()")]
+[assembly: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "WinSCP.Session.#GuardProcessWithJobInternal")]
+[assembly: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "WinSCP.Session.#TestHandlesClosedInternal")]
+[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.ExeSessionProcess.#TryCreateEvent(System.String,System.Threading.EventWaitHandle&)")]
+[assembly: SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Runtime.InteropServices.SafeHandle.DangerousGetHandle", Scope = "member", Target = "WinSCP.ExeSessionProcess.#TryCreateEvent(System.String,System.Threading.EventWaitHandle&)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.SessionOptions.#GetPassword()")]
+[assembly: SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", MessageId = "0#", Scope = "member", Target = "WinSCP.SessionOptions.#ParseUrl(System.String)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.ExeSessionProcess+NoopSafeHandle.#.ctor(System.IntPtr)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.ExeSessionProcess.#CreateFileMapping(System.String)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#GetProcessWindowStation()")]
+[assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#GetThreadDesktop(System.Int32)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#GetCurrentThreadId()")]
+[assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.ExeSessionProcess.#CreateFileMapping(System.String)")]
+[assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.Logger.#CreateCounters()")]
+[assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.SessionLogReader.#LogContents()")]

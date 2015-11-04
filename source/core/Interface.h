@@ -5,6 +5,7 @@
 #include "Configuration.h"
 #include "SessionData.h"
 #define HELP_NONE ""
+#define COMMAND_SWITCH L"Command"
 //---------------------------------------------------------------------------
 TConfiguration * __fastcall CreateConfiguration();
 class TOptions;
@@ -17,7 +18,7 @@ UnicodeString __fastcall GetCompanyRegistryKey();
 UnicodeString __fastcall GetRegistryKey();
 void * __fastcall BusyStart();
 void __fastcall BusyEnd(void * Token);
-const unsigned int GUIUpdateInterval = 200;
+const unsigned int GUIUpdateInterval = 100;
 void __fastcall SetNoGUI();
 bool __fastcall ProcessGUI(bool Force = false);
 UnicodeString __fastcall AppNameString();
@@ -53,6 +54,7 @@ const int qpFatalAbort =           0x01;
 const int qpNeverAskAgainCheck =   0x02;
 const int qpAllowContinueOnError = 0x04;
 const int qpIgnoreAbort =          0x08;
+const int qpWaitInBatch =          0x10;
 
 struct TQueryButtonAlias
 {
@@ -63,6 +65,7 @@ struct TQueryButtonAlias
   TNotifyEvent OnClick;
   int GroupWith;
   TShiftState GrouppedShiftState;
+  bool ElevationRequired;
 };
 
 typedef void __fastcall (__closure *TQueryParamsTimerEvent)(unsigned int & Result);

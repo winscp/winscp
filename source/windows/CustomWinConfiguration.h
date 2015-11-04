@@ -4,7 +4,6 @@
 //---------------------------------------------------------------------------
 #include "GUIConfiguration.h"
 #define WM_WINSCP_USER   (WM_USER + 0x2000)
-#define WM_LOCALE_CHANGE (WM_WINSCP_USER + 1)
 // WM_USER_STOP = WM_WINSCP_USER + 2 (in forms/Synchronize.cpp)
 // WM_INTERUPT_IDLE = WM_WINSCP_USER + 3 (in windows/ConsoleRunner.cpp)
 // WM_COMPONENT_HIDE = WM_WINSCP_USER + 4 (forms/CustomScpExplorer.cpp)
@@ -29,7 +28,15 @@ struct TConsoleWinConfiguration
   bool __fastcall operator !=(TConsoleWinConfiguration & rhc)
     { return C(WindowSize) 0; };
 };
-typedef TConsoleWinConfiguration TLoginDialogConfiguration;
+//---------------------------------------------------------------------------
+enum TSiteSearch { ssSiteNameStartOnly, ssSiteName, ssSite };
+//---------------------------------------------------------------------------
+struct TLoginDialogConfiguration : public TConsoleWinConfiguration
+{
+  TSiteSearch SiteSearch;
+  bool __fastcall operator !=(TLoginDialogConfiguration & rhc)
+    { return (TConsoleWinConfiguration::operator !=(rhc)) || C(SiteSearch) 0; };
+};
 //---------------------------------------------------------------------------
 class TCustomWinConfiguration : public TGUIConfiguration
 {

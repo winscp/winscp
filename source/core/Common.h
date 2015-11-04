@@ -13,12 +13,6 @@
     strncpy(dest, CopyBuf.c_str(), LENOF(dest)); \
     dest[LENOF(dest)-1] = '\0'; \
   }
-#define FORMAT(S, F) Format(S, ARRAYOFCONST(F))
-#define FMTLOAD(I, F) FmtLoadStr(I, ARRAYOFCONST(F))
-#define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
-#define FLAGSET(SET, FLAG) (((SET) & (FLAG)) == (FLAG))
-#define FLAGCLEAR(SET, FLAG) (((SET) & (FLAG)) == 0)
-#define FLAGMASK(ENABLE, FLAG) ((ENABLE) ? (FLAG) : 0)
 #define SWAP(TYPE, FIRST, SECOND) \
   { TYPE __Backup = FIRST; FIRST = SECOND; SECOND = __Backup; }
 //---------------------------------------------------------------------------
@@ -32,9 +26,12 @@ extern const UnicodeString PasswordMask;
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B);
 UnicodeString DeleteChar(UnicodeString Str, wchar_t C);
-void PackStr(UnicodeString &Str);
-void PackStr(RawByteString &Str);
+void PackStr(UnicodeString & Str);
+void PackStr(RawByteString & Str);
+void PackStr(AnsiString & Str);
 void __fastcall Shred(UnicodeString & Str);
+void __fastcall Shred(UTF8String & Str);
+void __fastcall Shred(AnsiString & Str);
 UnicodeString AnsiToString(const RawByteString & S);
 UnicodeString AnsiToString(const char * S, size_t Len);
 UnicodeString MakeValidFileName(UnicodeString FileName);
@@ -50,15 +47,18 @@ UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars);
 UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote);
 UnicodeString ExceptionLogString(Exception *E);
 UnicodeString __fastcall MainInstructions(const UnicodeString & S);
+bool __fastcall HasParagraphs(const UnicodeString & S);
 UnicodeString __fastcall MainInstructionsFirstParagraph(const UnicodeString & S);
 bool ExtractMainInstructions(UnicodeString & S, UnicodeString & MainInstructions);
 UnicodeString RemoveMainInstructionsTag(UnicodeString S);
 UnicodeString UnformatMessage(UnicodeString S);
 UnicodeString RemoveInteractiveMsgTag(UnicodeString S);
+UnicodeString RemoveEmptyLines(const UnicodeString & S);
 bool IsNumber(const UnicodeString Str);
 UnicodeString __fastcall SystemTemporaryDirectory();
 UnicodeString __fastcall GetShellFolderPath(int CSIdl);
 UnicodeString __fastcall StripPathQuotes(const UnicodeString Path);
+UnicodeString __fastcall AddQuotes(UnicodeString Str);
 UnicodeString __fastcall AddPathQuotes(UnicodeString Path);
 void __fastcall SplitCommand(UnicodeString Command, UnicodeString &Program,
   UnicodeString & Params, UnicodeString & Dir);
@@ -72,6 +72,7 @@ UnicodeString __fastcall FormatCommand(UnicodeString Program, UnicodeString Para
 UnicodeString __fastcall ExpandFileNameCommand(const UnicodeString Command,
   const UnicodeString FileName);
 void __fastcall ReformatFileNameCommand(UnicodeString & Command);
+UnicodeString __fastcall EscapeParam(const UnicodeString & Param);
 UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
 bool __fastcall ComparePaths(const UnicodeString & Path1, const UnicodeString & Path2);
@@ -96,7 +97,8 @@ UnicodeString __fastcall EncodeUrlChars(UnicodeString S);
 UnicodeString __fastcall EncodeUrlString(UnicodeString S);
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S);
 UnicodeString __fastcall AppendUrlParams(UnicodeString URL, UnicodeString Params);
-bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin);
+bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin);
+void __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin);
 void __fastcall DeleteFileChecked(const UnicodeString & FileName);
 unsigned int __fastcall CancelAnswer(unsigned int Answers);
 unsigned int __fastcall AbortAnswer(unsigned int Answers);
@@ -105,10 +107,12 @@ UnicodeString __fastcall LoadStr(int Ident, unsigned int MaxLength);
 UnicodeString __fastcall LoadStrPart(int Ident, int Part);
 UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption);
 bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
-  UnicodeString * RawToken = NULL);
+  UnicodeString * RawToken = NULL, UnicodeString * Separator = NULL);
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 bool __fastcall IsWinVista();
 bool __fastcall IsWin7();
+bool __fastcall IsWin8();
+bool __fastcall IsWin10();
 bool __fastcall IsWine();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
@@ -130,6 +134,13 @@ int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr);
 // The defaults are equal to defaults of TStringList class (except for Sorted)
 TStringList * __fastcall CreateSortedStringList(bool CaseSensitive = false, System::Types::TDuplicates Duplicates = dupIgnore);
 UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents);
+void __fastcall CheckCertificate(const UnicodeString & Path);
+typedef struct x509_st X509;
+typedef struct evp_pkey_st EVP_PKEY;
+void __fastcall ParseCertificate(const UnicodeString & Path,
+  const UnicodeString & Passphrase, X509 *& Certificate, EVP_PKEY *& PrivateKey,
+  bool & WrongPassphrase);
+bool __fastcall IsHttpUrl(const UnicodeString & S);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const UnicodeString FileName, const TSearchRec Rec, void * Param);
@@ -145,6 +156,7 @@ int __fastcall FindNextChecked(TSearchRecChecked & F);
 void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
 //---------------------------------------------------------------------------
+extern const wchar_t * DSTModeNames;
 enum TDSTMode
 {
   dstmWin =  0, //
@@ -187,45 +199,7 @@ MethodT __fastcall MakeMethod(void * Data, void * Code)
   return Method;
 }
 //---------------------------------------------------------------------------
-class TGuard
-{
-public:
-  __fastcall TGuard(TCriticalSection * ACriticalSection);
-  __fastcall ~TGuard();
-
-private:
-  TCriticalSection * FCriticalSection;
-};
-//---------------------------------------------------------------------------
-class TUnguard
-{
-public:
-  __fastcall TUnguard(TCriticalSection * ACriticalSection);
-  __fastcall ~TUnguard();
-
-private:
-  TCriticalSection * FCriticalSection;
-};
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-#include <assert.h>
-#define ACCESS_VIOLATION_TEST { (*((int*)NULL)) = 0; }
-#ifndef _DEBUG
-#undef assert
-#define assert(p)   ((void)0)
-#define CHECK(p) p
-#define FAIL
-#define ALWAYS_TRUE(p) p
-#define ALWAYS_FALSE(p) p
-#define NOT_NULL(P) P
-#else
-#define CHECK(p) { bool __CHECK_RESULT__ = (p); assert(__CHECK_RESULT__); }
-#define FAIL assert(false)
-#define ALWAYS_TRUE(p) (p)
-#define ALWAYS_FALSE(p) (p)
-#define NOT_NULL(P) P
-#endif
-#define USEDPARAM(p) ((&p) == (&p))
+#include "Global.h"
 //---------------------------------------------------------------------------
 template<class T>
 class TValueRestorer
@@ -271,13 +245,13 @@ public:
   __fastcall TAutoNestingCounter(int & Target) :
     TValueRestorer<int>(Target)
   {
-    assert(Target >= 0);
+    DebugAssert(Target >= 0);
     ++Target;
   }
 
   __fastcall ~TAutoNestingCounter()
   {
-    assert(!FArmed || (FTarget == (FValue + 1)));
+    DebugAssert(!FArmed || (FTarget == (FValue + 1)));
   }
 };
 //---------------------------------------------------------------------------
@@ -287,14 +261,59 @@ public:
   __fastcall TAutoFlag(bool & Target) :
     TValueRestorer<bool>(Target)
   {
-    assert(!Target);
+    DebugAssert(!Target);
     Target = true;
   }
 
   __fastcall ~TAutoFlag()
   {
-    assert(!FArmed || FTarget);
+    DebugAssert(!FArmed || FTarget);
   }
+};
+//---------------------------------------------------------------------------
+#include <map>
+//---------------------------------------------------------------------------
+template<class T1, class T2>
+class BiDiMap
+{
+public:
+  typedef std::map<T1, T2> TFirstToSecond;
+  typedef TFirstToSecond::const_iterator const_iterator;
+
+  void Add(const T1 & Value1, const T2 & Value2)
+  {
+    FFirstToSecond.insert(std::make_pair(Value1, Value2));
+    FSecondToFirst.insert(std::make_pair(Value2, Value1));
+  }
+
+  T1 LookupFirst(const T2 & Value2) const
+  {
+    TSecondToFirst::const_iterator Iterator = FSecondToFirst.find(Value2);
+    assert(Iterator != FSecondToFirst.end());
+    return Iterator->second;
+  }
+
+  T2 LookupSecond(const T1 & Value1) const
+  {
+    const_iterator Iterator = FFirstToSecond.find(Value1);
+    assert(Iterator != FFirstToSecond.end());
+    return Iterator->second;
+  }
+
+  const_iterator begin()
+  {
+    return FFirstToSecond.begin();
+  }
+
+  const_iterator end()
+  {
+    return FFirstToSecond.end();
+  }
+
+private:
+  TFirstToSecond FFirstToSecond;
+  typedef std::map<T2, T1> TSecondToFirst;
+  TSecondToFirst FSecondToFirst;
 };
 //---------------------------------------------------------------------------
 #endif

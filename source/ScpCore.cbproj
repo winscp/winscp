@@ -17,43 +17,14 @@
 		<CfgParent>Base</CfgParent>
 		<Base>true</Base>
 	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
-		<Base_Win64>true</Base_Win64>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
 	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
 		<Cfg_1>true</Cfg_1>
 		<CfgParent>Base</CfgParent>
 		<Base>true</Base>
 	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
-		<Cfg_1_Win32>true</Cfg_1_Win32>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
-		<Cfg_1_Win64>true</Cfg_1_Win64>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
 	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
 		<Cfg_2>true</Cfg_2>
 		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
-		<Cfg_2_Win32>true</Cfg_2_Win32>
-		<CfgParent>Cfg_2</CfgParent>
-		<Cfg_2>true</Cfg_2>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
-		<Cfg_2_Win64>true</Cfg_2_Win64>
-		<CfgParent>Cfg_2</CfgParent>
-		<Cfg_2>true</Cfg_2>
 		<Base>true</Base>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base)'!=''">
@@ -65,8 +36,11 @@
 			<BCC_wdiu>false</BCC_wdiu>
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-			<ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<Defines>USE_COMPATIBLE_THREAD;_WINDOWS;WIN32;WINNT;_CRTIMP=;_LIB;$(BUILD_TYPE);$(Defines)</Defines>
+			<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+			<ILINK_LibraryPath>$(BDS)\lib;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<IncludePath>core\;putty;putty\windows;filezilla;resource;..\libs\openssl;..\libs\expat\lib;..\libs\neon\src;$(BDS)\include;$(BDS)\include\windows\vcl;$(BDS)\include\Mfc;$(IncludePath)</IncludePath>
+			<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 			<Manifest_File>None</Manifest_File>
 			<Multithreaded>true</Multithreaded>
 			<OutputExt>lib</OutputExt>
@@ -79,12 +53,6 @@
 		</PropertyGroup>
 	<PropertyGroup Condition="'$(Base_Win32)'!=''">
 			<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-			<Debugger_HostApplication>C:\Misto\bin\final\Debug\WinSCP.exe</Debugger_HostApplication>
-			<Debugger_RunParams>/console</Debugger_RunParams>
-			<Defines>USE_COMPATIBLE_THREAD;_WINDOWS;WIN32;WINNT;_CRTIMP=;_LIB;$(BUILD_TYPE);$(Defines)</Defines>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win64)'!=''">
-			<Defines>USE_COMPATIBLE_THREAD;_WINDOWS;WIN32;WINNT;_CRTIMP=;_LIB;$(BUILD_TYPE);$(Defines)</Defines>
 		</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
@@ -100,30 +68,14 @@
 			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
 			<DCC_Define>DEBUG</DCC_Define>
 			<DCC_Optimize>false</DCC_Optimize>
-			<FinalOutputDir>$(INTERM_PATH)\Debug</FinalOutputDir>
+			<Defines>_DEBUG;$(Defines)</Defines>
 			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-			<ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IntermediateOutputDir>$(INTERM_PATH)\Debug</IntermediateOutputDir>
 			<TASM_Debugging>Full</TASM_Debugging>
 			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
 		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-			<Defines>_DEBUG;$(Defines)</Defines>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-			<Defines>_DEBUG;$(Defines)</Defines>
-		</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-			<FinalOutputDir>$(INTERM_PATH)\Release</FinalOutputDir>
-			<ILINK_LibraryPath>$(BDS)\lib\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IntermediateOutputDir>$(INTERM_PATH)\Release</IntermediateOutputDir>
+			<Defines>NDEBUG;$(Defines)</Defines>
 			<TASM_Debugging>None</TASM_Debugging>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
 		</PropertyGroup>
 	<ItemGroup>
 			<CppCompile Include="core\Bookmarks.cpp">
@@ -177,11 +129,21 @@
 			<BuildOrder>41</BuildOrder>
 			<BuildOrder>23</BuildOrder>
 		</CppCompile>
+			<CppCompile Include="core\Global.cpp">
+			<BuildOrder>29</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="core\HierarchicalStorage.cpp">
 			<BuildOrder>44</BuildOrder>
 			<BuildOrder>13</BuildOrder>
 		</CppCompile>
+			<CppCompile Include="core\Http.cpp">
+			<BuildOrder>4</BuildOrder>
+		</CppCompile>
 			<CppCompile Include="core\NamedObjs.cpp">
+			<BuildOrder>47</BuildOrder>
+			<BuildOrder>3</BuildOrder>
+		</CppCompile>
+			<CppCompile Include="core\NeonIntf.cpp">
 			<BuildOrder>47</BuildOrder>
 			<BuildOrder>3</BuildOrder>
 		</CppCompile>

@@ -51,4 +51,3 @@ ALERT_jedi_inc_missing
 {$ENDIF ~MSWINDOWS}
 
 {$ENDIF ~WINDOWSONLY_INC}
-

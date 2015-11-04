@@ -7,6 +7,8 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+const wchar_t * EOLTypeNames = L"LF;CRLF;CR";
+//---------------------------------------------------------------------------
 char * __fastcall EOLToStr(TEOLType EOLType)
 {
   switch (EOLType) {
@@ -95,8 +97,8 @@ DWORD __fastcall TFileBuffer::LoadStream(TStream * Stream, const DWORD Len, bool
 void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,
   bool & Token)
 {
-  assert(strlen(Source) <= 2);
-  assert(strlen(Dest) <= 2);
+  DebugAssert(strlen(Source) <= 2);
+  DebugAssert(strlen(Dest) <= 2);
 
   if (FLAGSET(Params, cpRemoveBOM) && (Size >= 3) &&
       (memcmp(Data, Bom, sizeof(Bom)) == 0))

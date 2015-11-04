@@ -81,6 +81,9 @@ public:
   virtual bool __fastcall GetStoredCredentialsTried();
   virtual UnicodeString __fastcall GetUserName();
   virtual void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
+  virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File);
+  virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
+  virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem);
 
 protected:
   enum TOverwriteMode { omOverwrite, omResume, omComplete };
@@ -130,8 +133,7 @@ protected:
   bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries,
     unsigned int Count);
   bool __fastcall HandleTransferStatus(bool Valid, __int64 TransferSize,
-    __int64 Bytes, int Percent, int TimeElapsed, int TimeLeft, int TransferRate,
-    bool FileTransfer);
+    __int64 Bytes, bool FileTransfer);
   bool __fastcall HandleReply(int Command, unsigned int Reply);
   bool __fastcall HandleCapabilities(TFTPServerCapabilities * ServerCapabilities);
   bool __fastcall CheckError(int ReturnCode, const wchar_t * Context);
@@ -201,7 +203,6 @@ protected:
   void __fastcall SendCommand(const UnicodeString & Command);
 
   static bool __fastcall Unquote(UnicodeString & Str);
-  static UnicodeString __fastcall ExtractStatusMessage(UnicodeString Status);
 
 private:
   enum TCommand
@@ -268,6 +269,8 @@ private:
   std::unique_ptr<TStrings> FHashAlgs;
   bool FSupportsAnyChecksumFeature;
   UnicodeString FLastCommandSent;
+  X509 * FCertificate;
+  EVP_PKEY * FPrivateKey;
   bool FTransferActiveImmediately;
   mutable UnicodeString FOptionScratch;
 };

@@ -1,201 +1,238 @@
-// FileZilla - a Windows ftp client
-
-// Copyright (C) 2002-2004 - Tim Kosse <tim.kosse@gmx.de>
-
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
-
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-#if !defined(AFX_FTPCONTROLSOCKET_H__AE6AA44E_B09D_487A_8EF2_A23697434945__INCLUDED_)
-#define AFX_FTPCONTROLSOCKET_H__AE6AA44E_B09D_487A_8EF2_A23697434945__INCLUDED_
-
-#include "structures.h"	// Hinzugefügt von der Klassenansicht
-#include "StdAfx.h"	// Hinzugefügt von der Klassenansicht
+//---------------------------------------------------------------------------
+#ifndef FtpControlSocketH
+#define FtpControlSocketH
+//---------------------------------------------------------------------------
+#include "structures.h"
+#include "stdafx.h"
 #include "FileZillaApi.h"
 #include "FileZillaIntf.h"
-#include "ControlSocket.h"
-#if _MSC_VER > 1000
-#pragma once
-#endif // _MSC_VER > 1000
-// FtpControlSocket.h : Header-Datei
-//
-
+//---------------------------------------------------------------------------
 class CTransferSocket;
 class CMainThread;
-/////////////////////////////////////////////////////////////////////////////
-// Befehlsziel CFtpControlSocket 
-
+//---------------------------------------------------------------------------
 class CAsyncProxySocketLayer;
 class CMainThread;
-class CFtpControlSocket : public CControlSocket
+//---------------------------------------------------------------------------
+#define CSMODE_NONE             0x0000
+#define CSMODE_CONNECT          0x0001
+#define CSMODE_COMMAND          0x0002
+#define CSMODE_LIST             0x0004
+#define CSMODE_TRANSFER         0x0008
+#define CSMODE_DOWNLOAD         0x0010
+#define CSMODE_UPLOAD           0x0020
+#define CSMODE_TRANSFERERROR    0x0040
+#define CSMODE_TRANSFERTIMEOUT  0x0080
+#define CSMODE_DELETE           0x0100
+#define CSMODE_RMDIR            0x0200
+#define CSMODE_DISCONNECT       0x0400
+#define CSMODE_MKDIR            0x0800
+#define CSMODE_RENAME           0x1000
+#define CSMODE_CHMOD            0x2000
+#define CSMODE_LISTFILE         0x4000
+//---------------------------------------------------------------------------
+typedef struct
 {
-	friend CTransferSocket;
-// Attribute
+  BOOL bResume,bResumeAppend,bType;
+  __int64 transfersize,transferleft;
+} t_transferdata;
+//---------------------------------------------------------------------------
+class CFtpControlSocket : public CAsyncSocketEx, public CApiLog
+{
+  friend CTransferSocket;
+
 public:
+  CFtpControlSocket(CMainThread * pMainThread, CFileZillaTools * pTools);
+  virtual ~CFtpControlSocket();
 
-// Operationen
 public:
-	CFtpControlSocket(CMainThread *pMainThread, CFileZillaTools * pTools);
-	virtual ~CFtpControlSocket();
+  void Connect(t_server & server);
+  virtual void OnTimer();
+  BOOL IsReady();
+  void List(BOOL bFinish, int nError = 0, CServerPath path = CServerPath(), CString subdir = L"");
+  void ListFile(CString filename, const CServerPath & path);
+  void FtpCommand(LPCTSTR pCommand);
+  void Disconnect();
+  void FileTransfer(t_transferfile * transferfile = 0, BOOL bFinish = FALSE, int nError = 0);
+  void Delete(CString filename, const CServerPath & path);
+  void Rename(CString oldName, CString newName, const CServerPath & path, const CServerPath & newPath);
+  void MakeDir(const CServerPath & path);
+  void RemoveDir(CString dirname, const CServerPath & path);
+  void Chmod(CString filename, const CServerPath & path, int nValue);
 
-// Überschreibungen
+  void ProcessReply();
+  void TransferEnd(int nMode);
+  void Cancel(BOOL bQuit = FALSE);
+
+  void SetAsyncRequestResult(int nAction, CAsyncRequestData * pData);
+
+  int CheckOverwriteFile();
+  BOOL Create();
+  void TransfersocketListenFinished(unsigned int ip, unsigned short port);
+
+  BOOL m_bKeepAliveActive;
+  BOOL m_bDidRejectCertificate;
+
+  // Some servers are broken. Instead of an empty listing, some MVS servers
+  // for example they return something "550 no members found"
+  // Other servers return "550 No files found."
+  bool IsMisleadingListResponse();
+
+  bool UsingMlsd();
+  bool UsingUtf8();
+  std::string GetTlsVersionStr();
+  std::string GetCipherName();
+  bool HandleSize(int code, __int64 & size);
+  bool HandleMdtm(int code, t_directory::t_direntry::t_date & date);
+  void TransferHandleListError();
+
+  enum transferDirection
+  {
+    download = 0,
+    upload = 1
+  };
+
+  BOOL RemoveActiveTransfer();
+  BOOL SpeedLimitAddTransferredBytes(enum transferDirection direction, _int64 nBytesTransferred);
+
+  _int64 GetSpeedLimit(enum transferDirection direction, CTime & time);
+
+  _int64 GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting, int nBufSize = 0);
+
+  t_server GetCurrentServer();
+
 public:
-	virtual void Connect(t_server &server);
-	virtual void OnTimer();
-	virtual BOOL IsReady();
-	virtual void List(BOOL bFinish, int nError=0, CServerPath path=CServerPath(), CString subdir=_MPT(""), int nListMode = 0);
-#ifdef MPEXT
-	virtual void ListFile(CString filename, const CServerPath &path);
-#endif
-	virtual void FtpCommand(LPCTSTR pCommand);
-	virtual void Disconnect();
-	virtual void FileTransfer(t_transferfile *transferfile = 0, BOOL bFinish = FALSE, int nError = 0);
-	virtual void Delete(CString filename, const CServerPath &path);
-	virtual void Rename(CString oldName, CString newName, const CServerPath &path, const CServerPath &newPath);
-	virtual void MakeDir(const CServerPath &path);
-	virtual void RemoveDir(CString dirname, const CServerPath &path);
-	virtual void Chmod(CString filename, const CServerPath &path, int nValue);
-		
-	virtual void ProcessReply();
-	virtual void TransferEnd(int nMode);
-	virtual void Cancel(BOOL bQuit=FALSE);
+  virtual void OnReceive(int nErrorCode);
+  virtual void OnConnect(int nErrorCode);
+  virtual void OnClose(int nErrorCode);
+  virtual void OnSend(int nErrorCode);
 
-	virtual void SetAsyncRequestResult(int nAction, CAsyncRequestData *pData);
-	
-	
-	int CheckOverwriteFile();
-	virtual BOOL Create();
-	void TransfersocketListenFinished(unsigned int ip,unsigned short port);
-	
-	BOOL m_bKeepAliveActive;
-#ifndef MPEXT_NO_SSL
-	BOOL m_bDidRejectCertificate;
-#endif
-	// Some servers are broken. Instead of an empty listing, some MVS servers
-	// for example they return something "550 no members found"
-	// Other servers return "550 No files found."
-	bool IsMisleadingListResponse();
-
-#ifdef MPEXT
-	virtual bool UsingMlsd();
-	virtual bool UsingUtf8();
-	virtual std::string GetTlsVersionStr();
-	virtual std::string GetCipherName();
-	bool HandleSize(int code, __int64 & size);
-	bool HandleMdtm(int code, t_directory::t_direntry::t_date & date);
-	void TransferHandleListError();
-#endif
-
-	// Vom Klassen-Assistenten generierte virtuelle Funktionsüberschreibungen
-	//{{AFX_VIRTUAL(CFtpControlSocket)
-	public:
-	virtual void OnReceive(int nErrorCode);
-	virtual void OnConnect(int nErrorCode);
-	virtual void OnClose(int nErrorCode);
-	virtual void OnSend(int nErrorCode);
-	//}}AFX_VIRTUAL
-
-	// Generierte Nachrichtenzuordnungsfunktionen
-	//{{AFX_MSG(CFtpControlSocket)
-		// HINWEIS - Der Klassen-Assistent fügt hier Member-Funktionen ein und entfernt diese.
-	//}}AFX_MSG
-
-// Implementierung
 protected:
-	//Called by OnTimer()
-	void ResumeTransfer();
-	void CheckForTimeout();
-	void SendKeepAliveCommand();
+  // Called by OnTimer()
+  void ResumeTransfer();
+  void CheckForTimeout();
+  void SendKeepAliveCommand();
 
-	virtual int OnLayerCallback(std::list<t_callbackMsg>& callbacks);
-	void SetFileExistsAction(int nAction, COverwriteRequestData *pData);
-#ifndef MPEXT_NO_SSL
-	void SetVerifyCertResult( int nResult, t_SslCertData *pData );
-#endif
-	void ResetOperation(int nSuccessful = -1);
+  virtual int OnLayerCallback(std::list<t_callbackMsg> & callbacks);
+  void SetFileExistsAction(int nAction, COverwriteRequestData * pData);
+  void SetVerifyCertResult(int nResult, t_SslCertData * pData);
+  void ResetOperation(int nSuccessful = -1);
 
-	virtual void DoClose(int nError = 0);
-	int GetReplyCode();
-	CString GetReply();
-	void LogOnToServer(BOOL bSkipReply = FALSE);
-	BOOL Send(CString str);
-	
-	BOOL ParsePwdReply(CString& rawpwd);
-	BOOL ParsePwdReply(CString& rawpwd, CServerPath & realPath);
-	BOOL SendAuthSsl();
+  void DoClose(int nError = 0);
+  int GetReplyCode();
+  CString GetReply();
+  void LogOnToServer(BOOL bSkipReply = FALSE);
+  BOOL Send(CString str);
 
-	void DiscardLine(CStringA line);
-	bool NeedModeCommand();
-	bool NeedOptsCommand();
-	CString GetListingCmd();
+  BOOL ParsePwdReply(CString & rawpwd);
+  BOOL ParsePwdReply(CString & rawpwd, CServerPath & realPath);
+  BOOL SendAuthSsl();
 
-	bool InitConnect();
-	int InitConnectState();
+  void DiscardLine(CStringA line);
+  bool NeedModeCommand();
+  bool NeedOptsCommand();
+  CString GetListingCmd();
 
-#ifdef MPEXT
-	bool IsRoutableAddress(const CString & host);
-	bool CheckForcePasvIp(CString & host);
-	void TransferFinished(bool preserveFileTimeForUploads);
-#endif
+  bool InitConnect();
+  int InitConnectState();
 
-	CFile *m_pDataFile;
-	CTransferSocket *m_pTransferSocket;
-	CStringA m_MultiLine;
-	CTime m_LastSendTime;
-	
-	CString m_ServerName;
-	std::list<CStringA> m_RecvBuffer;
-	CTime m_LastRecvTime;
-	class CLogonData;
-	class CListData;
-	class CListFileData;
-	class CFileTransferData;
-	class CMakeDirData;
+  bool IsRoutableAddress(const CString & host);
+  bool CheckForcePasvIp(CString & host);
+  void TransferFinished(bool preserveFileTimeForUploads);
+
+  virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
+  virtual bool LoggingSocketMessage(int nMessageType);
+
+  void ShowStatus(UINT nID, int type) const;
+  void ShowStatus(CString status,int type) const;
+  void ShowTimeoutError(UINT nID) const;
+
+  void Close();
+  BOOL Connect(CString hostAddress, UINT nHostPort);
+  CString ConvertDomainName(CString domain);
+
+  struct t_ActiveList
+  {
+    CFtpControlSocket * pOwner;
+    __int64 nBytesAvailable;
+    __int64 nBytesTransferred;
+  };
+  static std::list<t_ActiveList> m_InstanceList[2];
+  static CTime m_CurrentTransferTime[2];
+  static _int64 m_CurrentTransferLimit[2];
+  static CCriticalSection m_SpeedLimitSync;
+  _int64 GetAbleToUDSize(bool & beenWaiting, CTime & curTime, _int64 & curLimit, std::list<t_ActiveList>::iterator & iter, enum transferDirection direction, int nBufSize);
+  _int64 GetSpeedLimit(CTime & time, int valType, int valValue);
+
+  void SetDirectoryListing(t_directory * pDirectory, bool bSetWorkingDir = true);
+  t_directory * m_pDirectoryListing;
+
+  CMainThread * m_pOwner;
+  CFileZillaTools * m_pTools;
+
+  CFile * m_pDataFile;
+  CTransferSocket * m_pTransferSocket;
+  CStringA m_MultiLine;
+  CTime m_LastSendTime;
+
+  CString m_ServerName;
+  std::list<CStringA> m_RecvBuffer;
+  CTime m_LastRecvTime;
+  class CLogonData;
+  class CListData;
+  class CListFileData;
+  class CFileTransferData;
+  class CMakeDirData;
 
 #ifndef MPEXT_NO_ZLIB
-	bool m_useZlib;
-	bool m_zlibSupported;
-	int m_zlibLevel;
+  bool m_useZlib;
+  bool m_zlibSupported;
+  int m_zlibLevel;
 #endif
 
-	bool m_bUTF8;
-	bool m_bAnnouncesUTF8;
-	bool m_hasClntCmd;
-#ifdef MPEXT
-	TFTPServerCapabilities m_serverCapabilities;
-	CStringA m_ListFile;
-	__int64 m_ListFileSize;
+  bool m_bUTF8;
+  bool m_bAnnouncesUTF8;
+  bool m_hasClntCmd;
+  TFTPServerCapabilities m_serverCapabilities;
+  CStringA m_ListFile;
+  __int64 m_ListFileSize;
+  bool m_isFileZilla;
+
+  bool m_awaitsReply;
+  bool m_skipReply;
+
+  char * m_sendBuffer;
+  int m_sendBufferLen;
+
+  bool m_bProtP;
+
+  bool m_mayBeMvsFilesystem;
+  bool m_mayBeBS2000Filesystem;
+
+  struct t_operation
+  {
+    int nOpMode;
+    int nOpState;
+    class COpData //Base class which will store operation specific parameters.
+    {
+    public:
+      COpData() {};
+      virtual ~COpData() {};
+    };
+    COpData * pData;
+  public:
+  };
+
+  t_operation m_Operation;
+
+  CAsyncProxySocketLayer * m_pProxyLayer;
+  CAsyncSslSocketLayer * m_pSslLayer;
+#ifndef MPEXT_NO_GSS
+  CAsyncGssSocketLayer * m_pGssLayer;
 #endif
-	bool m_isFileZilla;
-
-	bool m_awaitsReply;
-	bool m_skipReply;
-
-	char* m_sendBuffer;
-	int m_sendBufferLen;
-
-	bool m_bProtP;
-
-	bool m_mayBeMvsFilesystem;
-	bool m_mayBeBS2000Filesystem;
+  t_server m_CurrentServer;
 
 private:
-	BOOL m_bCheckForTimeout;
+  BOOL m_bCheckForTimeout;
 };
-
-/////////////////////////////////////////////////////////////////////////////
-
-//{{AFX_INSERT_LOCATION}}
-// Microsoft Visual C++ fügt unmittelbar vor der vorhergehenden Zeile zusätzliche Deklarationen ein.
-
-#endif // AFX_FTPCONTROLSOCKET_H__AE6AA44E_B09D_487A_8EF2_A23697434945__INCLUDED_
+//---------------------------------------------------------------------------
+#endif // FtpControlSocketH

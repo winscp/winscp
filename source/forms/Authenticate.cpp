@@ -33,6 +33,7 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   FShowAsModalStorage = NULL;
   FFocusControl = NULL;
   UseDesktopFont(LogView);
+  FAnimationPainted = false;
 
   FPromptParent = InstructionsLabel->Parent;
   FPromptLeft = InstructionsLabel->Left;
@@ -118,6 +119,10 @@ void __fastcall TAuthenticateForm::FormShow(TObject * /*Sender*/)
   {
     ActiveControl = FFocusControl;
   }
+
+  UnicodeString AnimationName = FSessionData->IsSecure() ? L"ConnectingSecure" : L"ConnectingInsecure";
+  FFrameAnimation.Init(AnimationPaintBox, NULL, AnimationName);
+  FFrameAnimation.Start();
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::ClearLog()
@@ -129,6 +134,15 @@ void __fastcall TAuthenticateForm::ClearLog()
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
 {
+  // HACK
+  // The first call to Repaint from TFrameAnimation happens
+  // even before the form is showing. After it is shown it takes sometime too long
+  // before the animation is panted, so that the form is closed before the first frame even appers
+  if (!FAnimationPainted && Showing)
+  {
+    AnimationPaintBox->Repaint();
+    FAnimationPainted = true;
+  }
   TListItem * Item = LogView->Items->Add();
   Item->Caption = Message;
   Item->MakeVisible(false);
@@ -262,7 +276,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
     }
     PasswordPanel->Realign();
 
-    assert(Results->Count == Edits->Count);
+    DebugAssert(Results->Count == Edits->Count);
     for (int Index = 0; Index < Edits->Count; Index++)
     {
       TCustomEdit * Edit = reinterpret_cast<TCustomEdit *>(Edits->Items[Index]);
@@ -288,8 +302,8 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
 
       if (SavePasswordCheck->Checked)
       {
-        assert(Data != NULL);
-        assert(Results->Count >= 1);
+        DebugAssert(Data != NULL);
+        DebugAssert(Results->Count >= 1);
         FSessionData->Password = Results->Strings[0];
         Data->Password = Results->Strings[0];
         // modified only, explicit
@@ -327,7 +341,12 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
   TAlign Align = Panel->Align;
   try
   {
-    assert(FStatus.IsEmpty());
+    // If not visible yet, the animation was not even initialized yet
+    if (Visible)
+    {
+      FFrameAnimation.Stop();
+    }
+    DebugAssert(FStatus.IsEmpty());
     FStatus = Status;
     DefaultButton->Default = true;
     CancelButton->Cancel = true;
@@ -354,7 +373,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
       {
         if (Zoom)
         {
-          LogView->Hide();
+          TopPanel->Hide();
         }
         else
         {
@@ -372,7 +391,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
 
         if (!Visible)
         {
-          assert(ForceLog);
+          DebugAssert(ForceLog);
           ShowAsModal();
         }
 
@@ -391,7 +410,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
         Screen->Cursor = PrevCursor;
         if (Zoom)
         {
-          LogView->Show();
+          TopPanel->Show();
         }
         Repaint();
       }
@@ -410,7 +429,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
           Constraints->MinHeight = Height;
           Constraints->MaxHeight = Height;
         }
-        LogView->Hide();
+        TopPanel->Hide();
         Panel->Show();
         FFocusControl = FocusControl;
 
@@ -423,7 +442,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
         Constraints->MinHeight = PrevMinHeight;
         Constraints->MaxHeight = PrevMaxHeight;
         Panel->Hide();
-        LogView->Show();
+        TopPanel->Show();
       }
     }
   }
@@ -434,13 +453,14 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
     CancelButton->Cancel = false;
     FStatus = L"";
     AdjustControls();
+    FFrameAnimation.Start();
   }
 
   bool Result = (ModalResult == DefaultButtonResult);
 
   if (!Result)
   {
-    // This is not nice as it may untimately route to
+    // This is not nice as it may ultimately route to
     // TTerminalThread::Cancel() and throw fatal exception,
     // what actually means that any PromptUser call during authentication never
     // return false and their fall back/alternative code never occurs.

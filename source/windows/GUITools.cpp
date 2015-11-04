@@ -16,6 +16,11 @@
 #include <WebBrowserEx.hpp>
 #include <Tools.h>
 #include "PngImageList.hpp"
+#include <StrUtils.hpp>
+#include <limits>
+#include <Glyphs.h>
+#include <PasTools.hpp>
+#include <VCLCommon.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -59,6 +64,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     UnicodeString Params =
       RemoteCustomCommand.Complete(InteractiveCustomCommand.Complete(AParams, false), true);
+    UnicodeString PuttyParams;
 
     if (!RemoteCustomCommand.IsSiteCommand(AParams))
     {
@@ -125,15 +131,17 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
         delete SourceStorage;
       }
 
-      AddToList(Params, FORMAT(L"-load %s", (EscapePuttyCommandParam(SessionName))), L" ");
+      AddToList(PuttyParams, FORMAT(L"-load %s", (EscapePuttyCommandParam(SessionName))), L" ");
     }
 
     if (!Password.IsEmpty() && !RemoteCustomCommand.IsPasswordCommand(AParams))
     {
-      AddToList(Params, FORMAT(L"-pw %s", (EscapePuttyCommandParam(Password))), L" ");
+      AddToList(PuttyParams, FORMAT(L"-pw %s", (EscapePuttyCommandParam(Password))), L" ");
     }
 
-    if (!ExecuteShell(Program, Params))
+    AddToList(PuttyParams, Params, L" ");
+
+    if (!ExecuteShell(Program, PuttyParams))
     {
       throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
     }
@@ -330,11 +338,11 @@ UnicodeString __fastcall GetDesktopFolder()
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeString Identity,
   bool Mask)
 {
+  assert(!BaseDir.IsEmpty());
   UnicodeString TempDir;
   do
   {
-    TempDir = BaseDir.IsEmpty() ? SystemTemporaryDirectory() : BaseDir;
-    TempDir = IncludeTrailingBackslash(TempDir) + Identity;
+    TempDir = IncludeTrailingBackslash(BaseDir) + Identity;
     if (Mask)
     {
       TempDir += L"?????";
@@ -461,7 +469,7 @@ void __fastcall SetSubmenu(TTBXCustomItem * Item)
     __property ItemStyle;
   };
   TTBXPublicItem * PublicItem = reinterpret_cast<TTBXPublicItem *>(Item);
-  assert(PublicItem != NULL);
+  DebugAssert(PublicItem != NULL);
   // See TTBItemViewer.IsPtInButtonPart (called from TTBItemViewer.MouseDown)
   PublicItem->ItemStyle = PublicItem->ItemStyle << tbisSubmenu;
 }
@@ -509,7 +517,7 @@ void __fastcall ApplyTabs(
 {
   if (CalculateWidth == NULL)
   {
-    assert(CalculateWidthArg == NULL);
+    DebugAssert(CalculateWidthArg == NULL);
     CalculateWidth = CalculateWidthByLength;
   }
 
@@ -562,6 +570,111 @@ void __fastcall ApplyTabs(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall SelectScaledImageList(TImageList * ImageList)
+{
+  TImageList * MatchingList = NULL;
+  int MachingPixelsPerInch = 0;
+  int PixelsPerInch = Screen->PixelsPerInch;
+
+  for (int Index = 0; Index < ImageList->Owner->ComponentCount; Index++)
+  {
+    TImageList * OtherList = dynamic_cast<TImageList *>(ImageList->Owner->Components[Index]);
+
+    if ((OtherList != NULL) &&
+        (OtherList != ImageList) &&
+        StartsStr(ImageList->Name, OtherList->Name))
+    {
+      UnicodeString OtherListPixelsPerInchStr =
+        OtherList->Name.SubString(
+          ImageList->Name.Length() + 1, OtherList->Name.Length() - ImageList->Name.Length());
+      int OtherListPixelsPerInch = StrToInt(OtherListPixelsPerInchStr);
+      if ((OtherListPixelsPerInch <= PixelsPerInch) &&
+          ((MatchingList == NULL) ||
+           (MachingPixelsPerInch < OtherListPixelsPerInch)))
+      {
+        MatchingList = OtherList;
+        MachingPixelsPerInch = OtherListPixelsPerInch;
+      }
+    }
+  }
+
+  if (MatchingList != NULL)
+  {
+    TPngImageList * PngImageList = dynamic_cast<TPngImageList *>(ImageList);
+    TPngImageList * PngMatchingList = dynamic_cast<TPngImageList *>(MatchingList);
+
+    ImageList->Clear();
+    ImageList->Height = MatchingList->Height;
+    ImageList->Width = MatchingList->Width;
+
+    if ((PngImageList != NULL) && (PngMatchingList != NULL))
+    {
+      // AddImages won't copy the names and we need them for LoadDialogImage
+      PngImageList->PngImages->Assign(PngMatchingList->PngImages);
+    }
+    else
+    {
+      ImageList->AddImages(MatchingList);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
+{
+  if (GlyphsModule != NULL)
+  {
+    TPngImageList * DialogImages = GlyphsModule->DialogImages;
+
+    int Index;
+    for (Index = 0; Index < DialogImages->PngImages->Count; Index++)
+    {
+      TPngImageCollectionItem * PngItem = DialogImages->PngImages->Items[Index];
+      if (SameText(PngItem->Name, ImageName))
+      {
+        Image->Picture->Assign(PngItem->PngImage);
+        break;
+      }
+    }
+
+    DebugAssert(Index < DialogImages->PngImages->Count);
+  }
+  // When showing an exception from wWinMain, the glyphs module does not exist anymore.
+  // We expect errors only.
+  else if (ALWAYS_TRUE(ImageName == L"Error"))
+  {
+    Image->Picture->Icon->Handle = LoadIcon(0, IDI_HAND);
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall DialogImageSize()
+{
+  return ScaleByPixelsPerInch(32);
+}
+//---------------------------------------------------------------------------
+void __fastcall HideComponentsPanel(TForm * Form)
+{
+  TComponent * Component = NOT_NULL(Form->FindComponent(L"ComponentsPanel"));
+  TPanel * Panel = NOT_NULL(dynamic_cast<TPanel *>(Component));
+  DebugAssert(Panel->Align == alBottom);
+  int Offset = Panel->Height;
+  Panel->Visible = false;
+  Form->Height -= Offset;
+
+  // Shift back bottom-anchored controls
+  // (needed for toolbar panel on Progress window)
+  for (int Index = 0; Index < Form->ControlCount; Index++)
+  {
+    TControl * Control = Form->Controls[Index];
+
+    if ((Control->Align == alNone) &&
+        Control->Anchors.Contains(akBottom) &&
+        !Control->Anchors.Contains(akTop))
+    {
+      Control->Top += Offset;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 class TBrowserViewer : public TWebBrowserEx
 {
 public:
@@ -569,6 +682,7 @@ public:
 
   void __fastcall AddLinkHandler(
     const UnicodeString & Url, TNotifyEvent Handler);
+  void __fastcall NavigateToUrl(const UnicodeString & Url);
 
   TControl * LoadingPanel;
 
@@ -646,12 +760,16 @@ void __fastcall TBrowserViewer::BeforeNavigate2(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TBrowserViewer::NavigateToUrl(const UnicodeString & Url)
+{
+  FComplete = false;
+  Navigate(Url.c_str());
+}
+//---------------------------------------------------------------------------
 TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Label)
 {
-  TPanel * Result = new TPanel(Parent);
+  TPanel * Result = CreateBlankPanel(Parent);
   Result->Parent = Parent;
-  Result->BevelOuter = bvNone;
-  Result->BevelInner = bvNone; // default
   Result->Align = alClient;
   Result->Caption = Label;
   return Result;
@@ -660,7 +778,8 @@ TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Labe
 TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeString & LoadingLabel)
 {
   TBrowserViewer * Result = new TBrowserViewer(Parent);
-  // TWebBrowserEx has its own unrelated Name and Parent properties
+  // TWebBrowserEx has its own unrelated Name and Parent properties.
+  // The name is used in DownloadUpdate().
   static_cast<TWinControl *>(Result)->Name = L"BrowserViewer";
   static_cast<TWinControl *>(Result)->Parent = Parent;
   Result->Align = alClient;
@@ -686,6 +805,15 @@ void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
   if (ALWAYS_TRUE(BrowserViewer != NULL))
   {
     BrowserViewer->AddLinkHandler(Url, Handler);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeString & Url)
+{
+  TBrowserViewer * BrowserViewer = dynamic_cast<TBrowserViewer *>(WebBrowser);
+  if (ALWAYS_TRUE(BrowserViewer != NULL))
+  {
+    BrowserViewer->NavigateToUrl(Url);
   }
 }
 //---------------------------------------------------------------------------
@@ -752,3 +880,196 @@ bool __fastcall TLocalCustomCommand::IsFileCommand(const UnicodeString & Command
 {
   return TFileCustomCommand::IsFileCommand(Command) || HasLocalFileName(Command);
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TFrameAnimation::TFrameAnimation()
+{
+  FFirstFrame = -1;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::Init(TPaintBox * PaintBox, TPngImageList * ImageList)
+{
+  DoInit(PaintBox, ImageList, UnicodeString(), false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::Init(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name)
+{
+  DoInit(PaintBox, ImageList, Name, Name.IsEmpty());
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name, bool Null)
+{
+  FImageList = (ImageList != NULL) ? ImageList : GlyphsModule->AnimationImages;
+  FFirstFrame = -1;
+  FFirstLoopFrame = -1;
+  DebugAssert((PaintBox->OnPaint == NULL) || (PaintBox->OnPaint == PaintBoxPaint));
+  PaintBox->ControlStyle = PaintBox->ControlStyle << csOpaque;
+  PaintBox->OnPaint = PaintBoxPaint;
+  FPaintBox = PaintBox;
+
+  FNamed = !Name.IsEmpty();
+  if (!Null)
+  {
+    int Frame = 0;
+    while (Frame < FImageList->PngImages->Count)
+    {
+      UnicodeString FrameData = FImageList->PngImages->Items[Frame]->Name;
+      UnicodeString FrameName;
+      if (FNamed)
+      {
+        FrameName = CutToChar(FrameData, L'_', false);
+      }
+
+      if (SameText(Name, FrameName))
+      {
+        int FrameIndex = StrToInt(CutToChar(FrameData, L'_', false));
+        if (FFirstFrame < 0)
+        {
+          FFirstFrame = Frame;
+        }
+        if ((FFirstLoopFrame < 0) && (FrameIndex > 0))
+        {
+          FFirstLoopFrame = Frame;
+        }
+        FLastFrame = Frame;
+      }
+      else
+      {
+        if (FFirstFrame >= 0)
+        {
+          // optimization
+          break;
+        }
+      }
+      Frame++;
+    }
+
+    DebugAssert(FFirstFrame >= 0);
+    DebugAssert(FFirstLoopFrame >= 0);
+  }
+
+  Stop();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::Start()
+{
+  if (FFirstFrame >= 0)
+  {
+    FNextFrameTick = GetTickCount();
+    CalculateNextFrameTick();
+
+    if (FTimer == NULL)
+    {
+      FTimer = new TTimer(GetParentForm(FPaintBox));
+      FTimer->Interval = static_cast<int>(GUIUpdateInterval);
+      FTimer->OnTimer = Timer;
+    }
+    else
+    {
+      // reset timer
+      FTimer->Enabled = false;
+      FTimer->Enabled = true;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::Timer(TObject * /*Sender*/)
+{
+  Animate();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::PaintBoxPaint(TObject * Sender)
+{
+  if (FFirstFrame >= 0)
+  {
+    // Double-buffered drawing to prevent flicker (as the images are transparent)
+    USEDPARAM(Sender);
+    DebugAssert(FPaintBox == Sender);
+    DebugAssert(FPaintBox->ControlStyle.Contains(csOpaque));
+    std::unique_ptr<TBitmap> Bitmap(new TBitmap());
+    Bitmap->SetSize(FPaintBox->Width, FPaintBox->Height);
+    Bitmap->Canvas->Brush->Color = FPaintBox->Color;
+    TRect Rect(0, 0, Bitmap->Width, Bitmap->Height);
+    Bitmap->Canvas->FillRect(Rect);
+    TGraphic * Graphic = GetCurrentImage()->PngImage;
+    // Do not trigger assertion when animation size does not match scaled
+    // paint box as we do not have scaled animations available yet
+    DebugAssert((Graphic->Width == FPaintBox->Width) || (Screen->PixelsPerInch != USER_DEFAULT_SCREEN_DPI));
+    DebugAssert((Graphic->Height == FPaintBox->Height) || (Screen->PixelsPerInch != USER_DEFAULT_SCREEN_DPI));
+    Bitmap->Canvas->Draw(0, 0, Graphic);
+    FPaintBox->Canvas->Draw(0, 0, Bitmap.get());
+  }
+  FPainted = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::Repaint()
+{
+  FPainted = false;
+  // Ff the form is not showing yet, the Paint() is not even called
+  FPaintBox->Repaint();
+  if (!FPainted)
+  {
+    // Paint later, alternativelly we may keep trying Repaint() in Animate().
+    // See also a hack in TAuthenticateForm::Log.
+    FPaintBox->Invalidate();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::Stop()
+{
+  FNextFrameTick = std::numeric_limits<DWORD>::max();
+  FCurrentFrame = FFirstFrame;
+  Repaint();
+
+  if (FTimer != NULL)
+  {
+    FTimer->Enabled = false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::Animate()
+{
+  if (FFirstFrame >= 0)
+  {
+    // UPGRADE: Use GetTickCount64() when we stop supporting Windows XP.
+    DWORD TickCount = GetTickCount();
+
+    // Keep in sync with an opposite condition at the end of the loop.
+    // We may skip some frames if we got stalled for a while
+    while (TickCount >= FNextFrameTick)
+    {
+      if (FCurrentFrame >= FLastFrame)
+      {
+        FCurrentFrame = FFirstLoopFrame;
+      }
+      else
+      {
+        FCurrentFrame++;
+      }
+
+      CalculateNextFrameTick();
+
+      Repaint();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TPngImageCollectionItem * __fastcall TFrameAnimation::GetCurrentImage()
+{
+  return FImageList->PngImages->Items[FCurrentFrame];
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::CalculateNextFrameTick()
+{
+  TPngImageCollectionItem * ImageItem = GetCurrentImage();
+  UnicodeString Duration = ImageItem->Name;
+  if (FNamed)
+  {
+    CutToChar(Duration, L'_', false);
+  }
+  // skip index (is not really used)
+  CutToChar(Duration, L'_', false);
+  // This should overflow, when tick count wraps.
+  FNextFrameTick += StrToInt(Duration) * 10;
+}
+//---------------------------------------------------------------------------

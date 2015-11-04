@@ -15,6 +15,26 @@ __published:
   TPngImageList *QueueImages;
   TPngImageList *LogImages;
   TImageList *ButtonImages;
+  TPngImageList *ExplorerImages120;
+  TPngImageList *SessionImages120;
+  TPngImageList *QueueImages120;
+  TImageList *ButtonImages120;
+  TPngImageList *LogImages120;
+  TPngImageList *DialogImages;
+  TPngImageList *DialogImages120;
+  TPngImageList *ExplorerImages144;
+  TPngImageList *ExplorerImages192;
+  TPngImageList *SessionImages144;
+  TPngImageList *SessionImages192;
+  TPngImageList *QueueImages144;
+  TPngImageList *QueueImages192;
+  TImageList *ButtonImages144;
+  TImageList *ButtonImages192;
+  TPngImageList *LogImages144;
+  TPngImageList *LogImages192;
+  TPngImageList *DialogImages144;
+  TPngImageList *DialogImages192;
+  TPngImageList *AnimationImages;
 
 public:
   __fastcall TGlyphsModule(TComponent * Owner);

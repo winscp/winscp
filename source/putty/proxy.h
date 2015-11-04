@@ -78,7 +78,8 @@ struct Socket_proxy_tag {
     int sent_bufsize;
 
     /* accepting */
-    OSSocket accepting_sock;
+    accept_fn_t accepting_constructor;
+    accept_ctx_t accepting_ctx;
 
     /* configuration, used to look up proxy settings */
     Conf *conf;

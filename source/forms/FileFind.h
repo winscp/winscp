@@ -9,11 +9,14 @@
 #include <HistoryComboBox.hpp>
 
 #include <WinInterface.h>
+#include <GUITools.h>
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
 #include "IEListView.hpp"
 #include "NortonLikeListView.hpp"
 #include <Vcl.Imaging.pngimage.hpp>
+#include <Vcl.ImgList.hpp>
+#include "PngImageList.hpp"
 //---------------------------------------------------------------------------
 class TFileFindDialog : public TForm
 {
@@ -32,8 +35,9 @@ __published:
   TButton *MinimizeButton;
   TStaticText *MaskHintText;
   TButton *MaskButton;
-  TImage *Image;
+  TPaintBox *AnimationPaintBox;
   TButton *CopyButton;
+  TPngImageList *AnimationImageList;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall StartStopButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);
@@ -73,6 +77,7 @@ private:
   UnicodeString FDirectory;
   TFindEvent FOnFind;
   TImageList * FSystemImageList;
+  TFrameAnimation FFrameAnimation;
 
   void __fastcall FileFound(TTerminal * Terminal,
     const UnicodeString FileName, const TRemoteFile * File, bool & Cancel);

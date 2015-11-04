@@ -94,7 +94,14 @@ UnicodeString __fastcall UnixExtractFilePath(const UnicodeString Path)
 {
   int Pos = Path.LastDelimiter(L'/');
   // it used to return Path when no slash was found
-  return (Pos > 0) ? Path.SubString(1, Pos) : UnicodeString();
+  if (Pos > 0)
+  {
+    return Path.SubString(1, Pos);
+  }
+  else
+  {
+    return UnicodeString();
+  }
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall UnixExtractFileName(const UnicodeString Path)
@@ -133,7 +140,7 @@ UnicodeString __fastcall ExtractFileName(const UnicodeString & Path, bool Unix)
 //---------------------------------------------------------------------------
 bool __fastcall ExtractCommonPath(TStrings * Files, UnicodeString & Path)
 {
-  assert(Files->Count > 0);
+  DebugAssert(Files->Count > 0);
 
   Path = ExtractFilePath(Files->Strings[0]);
   bool Result = !Path.IsEmpty();
@@ -160,7 +167,7 @@ bool __fastcall ExtractCommonPath(TStrings * Files, UnicodeString & Path)
 //---------------------------------------------------------------------------
 bool __fastcall UnixExtractCommonPath(TStrings * Files, UnicodeString & Path)
 {
-  assert(Files->Count > 0);
+  DebugAssert(Files->Count > 0);
 
   Path = UnixExtractFilePath(Files->Strings[0]);
   bool Result = !Path.IsEmpty();
@@ -192,7 +199,7 @@ bool __fastcall IsUnixRootPath(const UnicodeString Path)
 //---------------------------------------------------------------------------
 bool __fastcall IsUnixHiddenFile(const UnicodeString FileName)
 {
-  return (FileName != ROOTDIRECTORY) && (FileName != PARENTDIRECTORY) &&
+  return (FileName != THISDIRECTORY) && (FileName != PARENTDIRECTORY) &&
     !FileName.IsEmpty() && (FileName[1] == L'.');
 }
 //---------------------------------------------------------------------------
@@ -223,7 +230,7 @@ UnicodeString __fastcall AbsolutePath(const UnicodeString & Base, const UnicodeS
       else
       {
         int P2 = Result.SubString(1, P-1).LastDelimiter(L"/");
-        assert(P2 > 0);
+        DebugAssert(P2 > 0);
         Result.Delete(P2, P - P2 + 3);
       }
     }
@@ -348,21 +355,9 @@ UnicodeString __fastcall MakeFileList(TStrings * FileList)
   UnicodeString Result;
   for (int Index = 0; Index < FileList->Count; Index++)
   {
-    if (!Result.IsEmpty())
-    {
-      Result += L" ";
-    }
-
     UnicodeString FileName = FileList->Strings[Index];
     // currently this is used for local file only, so no delimiting is done
-    if (FileName.Pos(L" ") > 0)
-    {
-      Result += L"\"" + FileName + L"\"";
-    }
-    else
-    {
-      Result += FileName;
-    }
+    AddToList(Result, AddQuotes(FileName), L" ");
   }
   return Result;
 }
@@ -477,7 +472,7 @@ int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs,
   }
 
   int Icon;
-  if (SHGetFileInfo(UnicodeString(FileName).c_str(),
+  if (SHGetFileInfo(FileName.c_str(),
         Attrs, &SHFileInfo, sizeof(SHFileInfo),
         SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES | SHGFI_TYPENAME) != 0)
   {
@@ -505,6 +500,26 @@ bool __fastcall SameUserName(const UnicodeString & UserName1, const UnicodeStrin
   UnicodeString AUserName1 = CopyToChar(UserName1, L'@', true);
   UnicodeString AUserName2 = CopyToChar(UserName2, L'@', true);
   return SameText(AUserName1, AUserName2);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall FormatMultiFilesToOneConfirmation(const UnicodeString & Target, bool Unix)
+{
+  UnicodeString Dir;
+  UnicodeString Name;
+  UnicodeString Path;
+  if (Unix)
+  {
+    Dir = UnixExtractFileDir(Target);
+    Name = UnixExtractFileName(Target);
+    Path = UnixIncludeTrailingBackslash(Target);
+  }
+  else
+  {
+    Dir = ExtractFilePath(Target);
+    Name = ExtractFileName(Target);
+    Path = IncludeTrailingBackslash(Target);
+  }
+  return FMTLOAD(MULTI_FILES_TO_ONE, (Name, Dir, Path));
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -923,7 +938,7 @@ Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory() const
   Boolean Result;
   if (IsDirectory)
   {
-    assert(Terminal);
+    DebugAssert(Terminal);
     Result = !
        (SameUserName(Terminal->UserName, L"root") ||
         ((Rights->RightUndef[TRights::rrOtherExec] != TRights::rsNo)) ||
@@ -965,7 +980,7 @@ void __fastcall TRemoteFile::SetLinkedFile(TRemoteFile * value)
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteFile::GetBrokenLink()
 {
-  assert(Terminal);
+  DebugAssert(Terminal);
   // If file is symlink but we couldn't find linked file we assume broken link
   return (IsSymLink && (FCyclicLink || !FLinkedFile) &&
     Terminal->ResolvingSymlinks);
@@ -981,9 +996,9 @@ void __fastcall TRemoteFile::ShiftTimeInSeconds(__int64 Seconds)
 {
   if ((Seconds != 0) && IsTimeShiftingApplicable())
   {
-    assert(int(FModification) != 0);
+    DebugAssert(int(FModification) != 0);
     FModification = IncSecond(FModification, Seconds);
-    assert(int(FLastAccess) != 0);
+    DebugAssert(int(FLastAccess) != 0);
     FLastAccess = IncSecond(FLastAccess, Seconds);
   }
 }
@@ -1089,7 +1104,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
     {
       FGroup.Name = FGroup.Name + Col;
       GETCOL;
-      assert(!Col.IsEmpty());
+      DebugAssert(!Col.IsEmpty());
       // for devices etc.. there is additional column ending by comma, we ignore it
       if (Col[Col.Length()] == L',') GETCOL;
       ASize = StrToInt64Def(Col, -1);
@@ -1237,7 +1252,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
       // adjusting default "midnight" time makes no sense
       if ((FModificationFmt == mfMDHM) || (FModificationFmt == mfFull))
       {
-        assert(Terminal != NULL);
+        DebugAssert(Terminal != NULL);
         FModification = AdjustDateTimeFromUnix(FModification,
           Terminal->SessionData->DSTMode);
       }
@@ -1282,7 +1297,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::Complete()
 {
-  assert(Terminal != NULL);
+  DebugAssert(Terminal != NULL);
   if (IsSymLink && Terminal->ResolvingSymlinks)
   {
     FindLinkedFile();
@@ -1291,7 +1306,7 @@ void __fastcall TRemoteFile::Complete()
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::FindLinkedFile()
 {
-  assert(Terminal && IsSymLink);
+  DebugAssert(Terminal && IsSymLink);
 
   if (FLinkedFile) delete FLinkedFile;
   FLinkedFile = NULL;
@@ -1326,7 +1341,7 @@ void __fastcall TRemoteFile::FindLinkedFile()
   }
   else
   {
-    assert(Terminal->ResolvingSymlinks);
+    DebugAssert(Terminal->ResolvingSymlinks);
     Terminal->ExceptionOnFail = true;
     try
     {
@@ -1370,8 +1385,8 @@ UnicodeString __fastcall TRemoteFile::GetFullFileName() const
 {
   if (FFullFileName.IsEmpty())
   {
-    assert(Terminal);
-    assert(Directory != NULL);
+    DebugAssert(Terminal);
+    DebugAssert(Directory != NULL);
     UnicodeString Path;
     if (IsParentDirectory) Path = Directory->ParentPath;
     else if (IsDirectory) Path = UnixIncludeTrailingBackslash(Directory->FullDirectory + FileName);
@@ -1601,12 +1616,12 @@ void __fastcall TRemoteDirectory::SetIncludeParentDirectory(Boolean value)
     FIncludeParentDirectory = value;
     if (value && ParentDirectory)
     {
-      assert(IndexOf(ParentDirectory) < 0);
+      DebugAssert(IndexOf(ParentDirectory) < 0);
       Add(ParentDirectory);
     }
     else if (!value && ParentDirectory)
     {
-      assert(IndexOf(ParentDirectory) >= 0);
+      DebugAssert(IndexOf(ParentDirectory) >= 0);
       Extract(ParentDirectory);
     }
   }
@@ -1619,12 +1634,12 @@ void __fastcall TRemoteDirectory::SetIncludeThisDirectory(Boolean value)
     FIncludeThisDirectory = value;
     if (value && ThisDirectory)
     {
-      assert(IndexOf(ThisDirectory) < 0);
+      DebugAssert(IndexOf(ThisDirectory) < 0);
       Add(ThisDirectory);
     }
     else if (!value && ThisDirectory)
     {
-      assert(IndexOf(ThisDirectory) >= 0);
+      DebugAssert(IndexOf(ThisDirectory) >= 0);
       Extract(ThisDirectory);
     }
   }
@@ -1703,7 +1718,7 @@ bool __fastcall TRemoteDirectoryCache::GetFileList(const UnicodeString Directory
   bool Result = (Index >= 0);
   if (Result)
   {
-    assert(Objects[Index] != NULL);
+    DebugAssert(Objects[Index] != NULL);
     dynamic_cast<TRemoteFileList *>(Objects[Index])->DuplicateTo(FileList);
   }
   return Result;
@@ -1711,7 +1726,7 @@ bool __fastcall TRemoteDirectoryCache::GetFileList(const UnicodeString Directory
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectoryCache::AddFileList(TRemoteFileList * FileList)
 {
-  assert(FileList);
+  DebugAssert(FileList);
   TRemoteFileList * Copy = new TRemoteFileList();
   FileList->DuplicateTo(Copy);
 
@@ -1799,7 +1814,7 @@ void __fastcall TRemoteDirectoryChangesCache::AddDirectoryChange(
   const UnicodeString SourceDir, const UnicodeString Change,
   const UnicodeString TargetDir)
 {
-  assert(!TargetDir.IsEmpty());
+  DebugAssert(!TargetDir.IsEmpty());
   SetValue(TargetDir, L"//");
   if (TTerminal::ExpandFileName(Change, SourceDir) != TargetDir)
   {
@@ -2101,7 +2116,7 @@ void __fastcall TRights::SetAllowUndef(bool value)
 {
   if (FAllowUndef != value)
   {
-    assert(!value || ((FSet | FUnset) == rfAllSpecials));
+    DebugAssert(!value || ((FSet | FUnset) == rfAllSpecials));
     FAllowUndef = value;
   }
 }
@@ -2292,7 +2307,7 @@ void __fastcall TRights::SetNumber(unsigned short value)
 //---------------------------------------------------------------------------
 unsigned short __fastcall TRights::GetNumber() const
 {
-  assert(!IsUndef);
+  DebugAssert(!IsUndef);
   return FSet;
 }
 //---------------------------------------------------------------------------
@@ -2304,7 +2319,7 @@ void __fastcall TRights::SetRight(TRight Right, bool value)
 bool __fastcall TRights::GetRight(TRight Right) const
 {
   TState State = RightUndef[Right];
-  assert(State != rsUndef);
+  DebugAssert(State != rsUndef);
   return (State == rsYes);
 }
 //---------------------------------------------------------------------------
@@ -2312,7 +2327,7 @@ void __fastcall TRights::SetRightUndef(TRight Right, TState value)
 {
   if (value != RightUndef[Right])
   {
-    assert((value != rsUndef) || AllowUndef);
+    DebugAssert((value != rsUndef) || AllowUndef);
 
     TFlag Flag = RightToFlag(Right);
 
@@ -2542,7 +2557,7 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
   for (int Index = 0; Index < FileList->Count; Index++)
   {
     TRemoteFile * File = (TRemoteFile *)(FileList->Objects[Index]);
-    assert(File);
+    DebugAssert(File);
     if (!Index)
     {
       CommonProperties.Rights = *(File->Rights);

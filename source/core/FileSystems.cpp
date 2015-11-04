@@ -11,7 +11,7 @@
 __fastcall TCustomFileSystem::TCustomFileSystem(TTerminal * ATerminal):
   FTerminal(ATerminal)
 {
-  assert(FTerminal);
+  DebugAssert(FTerminal);
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomFileSystem::~TCustomFileSystem()

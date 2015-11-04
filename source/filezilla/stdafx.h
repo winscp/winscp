@@ -4,20 +4,10 @@
 //---------------------------------------------------------------------------
 #define _int64 __int64
 //---------------------------------------------------------------------------
-#define MPEXT
 #define MPEXT_NO_ZLIB
 #define MPEXT_NO_GSS
-#define MPEXT_NO_SFTP
-#define MPEXT_NO_IDENT
-#define MPEXT_NO_CACHE
-#define MPEXT_NO_SPEED_LIM_RULES
 #define _AFX_ENABLE_INLINES
 #define _AFX_NOFORCE_LIBS
-#define _MPT(T) _T(T)
-#define _MPAT(T) T
-//---------------------------------------------------------------------------
-#define GetOption(OPTION) GetInstanceOption(this->m_pApiLogParent, OPTION)
-#define GetOptionVal(OPTION) GetInstanceOptionVal(this->m_pApiLogParent, OPTION)
 //---------------------------------------------------------------------------
 #define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
 //---------------------------------------------------------------------------
@@ -25,7 +15,7 @@
 #include "wtypes.h"
 #include <afxmt.h>
 
-//STL includes
+// STL includes
 #include <list>
 #include <map>
 #include <vector>
@@ -36,12 +26,17 @@
 class CFileFix;
 #define CFile CFileFix
 //---------------------------------------------------------------------------
+#pragma hdrstop
+//---------------------------------------------------------------------------
+#include <Global.h>
+// these create conflict with afxwin.h
+#undef BEGIN_MESSAGE_MAP
+#undef END_MESSAGE_MAP
+//---------------------------------------------------------------------------
 #include "MFC64bitFix.h"
 #include <ApiLog.h>
 #include <FileZillaApi.h>
 #include <FileZillaOpt.h>
-#include <Options.h>
-#include <Crypt.h>
 #include <TextsFileZilla.h>
 #include <structures.h>
 //---------------------------------------------------------------------------
@@ -50,7 +45,6 @@ class CFileFix;
 #include <afxconv.h>
 //---------------------------------------------------------------------------
 #define _strlwr strlwr
-#define USEDPARAM(p) ((p) == (p))
 //---------------------------------------------------------------------------
 #ifdef _DEBUG
 #ifndef ASSERT
@@ -60,26 +54,23 @@ class CFileFix;
 // Copy of afx.h ASSERT with TRACE added.
 // Better would be to hook afxAssertFailedLine
 #define ASSERT(f) \
-	do \
-	{ \
-		if (!(f)) \
-		{ \
-			if (AfxAssertFailedLine(THIS_FILE, __LINE__)) \
-			{ \
-				AfxDebugBreak(); \
-			} \
-		} \
-	} while (0) 
+  do \
+  { \
+    if (!(f)) \
+    { \
+      if (AfxAssertFailedLine(__FILE__, __LINE__)) \
+      { \
+        AfxDebugBreak(); \
+      } \
+    } \
+  } while (0)
 #endif
 //---------------------------------------------------------------------------
-const int FILEEXISTS_ASK = -1;
 const int FILEEXISTS_OVERWRITE = 0;
-const int FILEEXISTS_OVERWRITEIFNEWER = 1;
-const int FILEEXISTS_RESUME = 2;
-const int FILEEXISTS_RENAME = 3;
-const int FILEEXISTS_SKIP = 4;
-const int FILEEXISTS_RESUME_ASKONFAIL = 5; // Used by queue for automatic resuming. If APPE failes, ask what to do instead.
-const int FILEEXISTS_COMPLETE = 6;
+const int FILEEXISTS_RESUME = 1;
+const int FILEEXISTS_RENAME = 2;
+const int FILEEXISTS_SKIP = 3;
+const int FILEEXISTS_COMPLETE = 4;
 //---------------------------------------------------------------------------
 class t_ffam_statusmessage
 {
@@ -92,13 +83,7 @@ public:
 typedef struct
 {
   __int64 bytes;
-#ifdef MPEXT
   __int64 transfersize;
-#endif
-  int percent;
-  int timeelapsed;
-  int timeleft;
-  int transferrate;
   BOOL bFileTransfer;
 } t_ffam_transferstatus;
 //---------------------------------------------------------------------------
@@ -134,7 +119,7 @@ public:
   // MFC allocates CObject (ancestor of CFile) with new, but deallocates with free,
   // what codeguard dislikes, this is fix, not sure if it is necessary for
   // release version, but probably causes no harm
-  void PASCAL operator delete(void* p)
+  void PASCAL operator delete(void * p)
   {
     delete p;
   }
@@ -147,11 +132,11 @@ struct CStringDataA
   long nRefs;             // reference count
   int nDataLength;        // length of data (including terminator)
   int nAllocLength;       // length of allocation
-  //char data[nAllocLength];
+  // char data[nAllocLength];
 
-  CHAR* data()           // CHAR* to managed data
+  CHAR * data()           // CHAR* to managed data
   {
-    return (CHAR*)(this+1);
+    return (CHAR *)(this+1);
   }
 };
 //---------------------------------------------------------------------------
@@ -248,20 +233,20 @@ public:
     return *this;
   }
 
-  const CStringA& operator=(LPCSTR lpsz)
+  const CStringA & operator=(LPCSTR lpsz)
   {
     ASSERT(lpsz == NULL || AfxIsValidString(lpsz));
     AssignCopy(SafeStrlen(lpsz), lpsz);
     return *this;
   }
 
-  const CStringA& operator+=(char ch)
+  const CStringA & operator+=(char ch)
   {
     ConcatInPlace(1, &ch);
     return *this;
   }
 
-  friend CStringA AFXAPI operator+(const CStringA& string, char ch);
+  friend CStringA AFXAPI operator+(const CStringA & string, char ch);
 
   operator LPCSTR() const
   {
@@ -377,7 +362,7 @@ public:
 protected:
   LPSTR m_pchData;   // pointer to ref counted string data
 
-  CStringDataA* GetData() const
+  CStringDataA * GetData() const
   {
     ASSERT(m_pchData != NULL); return ((CStringDataA*)m_pchData)-1;
   }
@@ -387,7 +372,7 @@ protected:
     m_pchData = afxEmptyStringA.m_pchData;
   }
 
-  void AllocCopy(CStringA& dest, int nCopyLen, int nCopyIndex, int nExtraLen) const
+  void AllocCopy(CStringA & dest, int nCopyLen, int nCopyIndex, int nExtraLen) const
   {
     // will clone the data attached to this string
     // allocating 'nExtraLen' characters
@@ -440,12 +425,12 @@ protected:
     m_pchData[nSrcLen] = '\0';
   }
 
-  void FASTCALL FreeData(CStringDataA* pData)
+  void FASTCALL FreeData(CStringDataA * pData)
   {
     delete[] (BYTE*)pData;
   }
 
-  void PASCAL Release(CStringDataA* pData)
+  void PASCAL Release(CStringDataA * pData)
   {
     if (pData != _afxDataNilA)
     {
@@ -543,17 +528,17 @@ protected:
   }
 };
 //---------------------------------------------------------------------------
-inline bool AFXAPI operator==(const CStringA& s1, LPCSTR s2)
+inline bool AFXAPI operator==(const CStringA & s1, LPCSTR s2)
 {
   return s1.Compare(s2) == 0;
 }
 //---------------------------------------------------------------------------
-inline bool AFXAPI operator!=(const CStringA& s1, LPCSTR s2)
+inline bool AFXAPI operator!=(const CStringA & s1, LPCSTR s2)
 {
   return s1.Compare(s2) != 0;
 }
 //---------------------------------------------------------------------------
-inline CStringA AFXAPI operator+(const CStringA& string1, char ch)
+inline CStringA AFXAPI operator+(const CStringA & string1, char ch)
 {
   CStringA s;
   s.ConcatCopy(string1.GetData()->nDataLength, string1.m_pchData, 1, &ch);

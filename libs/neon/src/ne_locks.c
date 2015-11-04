@@ -676,6 +676,36 @@ int ne_lock_discover(ne_session *sess, const char *uri,
     return ret;
 }
 
+#ifdef WINSCP
+
+void * ne_lock_register_discovery(ne_propfind_handler * handler)
+{
+    struct discover_ctx * ctx = ne_calloc(sizeof *ctx);
+    
+    ctx->results = NULL;
+    ctx->userdata = NULL;
+    ctx->cdata = ne_buffer_create();
+    ctx->phandler = handler;
+ 
+    ne_propfind_set_private(handler, ld_create, ld_destroy, ctx);
+    
+    ne_xml_push_handler(ne_propfind_get_parser(handler), 
+                        ld_startelm, ld_cdata, end_element_ldisc, ctx);
+
+    return ctx;
+}
+
+void ne_lock_discovery_free(void * actx)
+{
+    struct discover_ctx * ctx = actx;
+    
+    ne_buffer_destroy(ctx->cdata);
+
+    ne_free(ctx);
+}
+
+#endif
+
 static void add_timeout_header(ne_request *req, long timeout)
 {
     if (timeout == NE_TIMEOUT_INFINITE) {

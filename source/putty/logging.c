@@ -235,7 +235,8 @@ void log_eventlog(void *handle, const char *event)
 void log_packet(void *handle, int direction, int type,
 		char *texttype, const void *data, int len,
 		int n_blanks, const struct logblank_t *blanks,
-		const unsigned long *seq)
+		const unsigned long *seq,
+                unsigned downstream_id, const char *additional_log_text)
 {
     struct LogContext *ctx = (struct LogContext *)handle;
     char dumpdata[80], smalldata[5];
@@ -248,15 +249,21 @@ void log_packet(void *handle, int direction, int type,
 
     /* Packet header. */
     if (texttype) {
-	if (seq) {
-	    logprintf(ctx, "%s packet #0x%lx, type %d / 0x%02x (%s)\r\n",
-		      direction == PKT_INCOMING ? "Incoming" : "Outgoing",
-		      *seq, type, type, texttype);
-	} else {
-	    logprintf(ctx, "%s packet type %d / 0x%02x (%s)\r\n",
-		      direction == PKT_INCOMING ? "Incoming" : "Outgoing",
-		      type, type, texttype);
-	}
+        logprintf(ctx, "%s packet ",
+                  direction == PKT_INCOMING ? "Incoming" : "Outgoing");
+
+	if (seq)
+	    logprintf(ctx, "#0x%lx, ", *seq);
+
+        logprintf(ctx, "type %d / 0x%02x (%s)", type, type, texttype);
+
+        if (downstream_id) {
+	    logprintf(ctx, " on behalf of downstream #%u", downstream_id);
+            if (additional_log_text)
+                logprintf(ctx, " (%s)", additional_log_text);
+        }
+
+        logprintf(ctx, "\r\n");
     } else {
         /*
          * Raw data is logged with a timestamp, so that it's possible
@@ -366,6 +373,7 @@ void log_free(void *handle)
     bufchain_clear(&ctx->queue);
     if (ctx->currlogfilename)
         filename_free(ctx->currlogfilename);
+    conf_free(ctx->conf);
     sfree(ctx);
 }
 

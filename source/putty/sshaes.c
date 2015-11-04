@@ -27,8 +27,10 @@
  * same answers at the same speed.
  */
 
+#ifndef WINSCP_VS
 #include <assert.h>
 #include <stdlib.h>
+#endif // !WINSCP_VS
 
 #include "ssh.h"
 
@@ -679,7 +681,10 @@ static const word32 D3[256] = {
  * Core encrypt routines, expecting word32 inputs read big-endian
  * from the byte-oriented input stream.
  */
-static void aes_encrypt_nb_4(AESContext * ctx, word32 * block)
+void aes_encrypt_nb_4(AESContext * ctx, word32 * block)
+#ifndef WINSCP_VS
+;
+#else
 {
     int i;
     static const int C1 = 1, C2 = 2, C3 = 3, Nb = 4;
@@ -707,7 +712,11 @@ static void aes_encrypt_nb_4(AESContext * ctx, word32 * block)
     MOVEWORD(3);
     ADD_ROUND_KEY_4;
 }
-static void aes_encrypt_nb_6(AESContext * ctx, word32 * block)
+#endif // WINSCP_VS
+void aes_encrypt_nb_6(AESContext * ctx, word32 * block)
+#ifndef WINSCP_VS
+;
+#else
 {
     int i;
     static const int C1 = 1, C2 = 2, C3 = 3, Nb = 6;
@@ -743,7 +752,11 @@ static void aes_encrypt_nb_6(AESContext * ctx, word32 * block)
     MOVEWORD(5);
     ADD_ROUND_KEY_6;
 }
-static void aes_encrypt_nb_8(AESContext * ctx, word32 * block)
+#endif // WINSCP_VS
+void aes_encrypt_nb_8(AESContext * ctx, word32 * block)
+#ifndef WINSCP_VS
+;
+#else
 {
     int i;
     static const int C1 = 1, C2 = 3, C3 = 4, Nb = 8;
@@ -788,6 +801,7 @@ static void aes_encrypt_nb_8(AESContext * ctx, word32 * block)
     ADD_ROUND_KEY_8;
 }
 
+#endif // WINSCP_VS
 #undef MAKEWORD
 #undef LASTWORD
 
@@ -808,7 +822,10 @@ static void aes_encrypt_nb_8(AESContext * ctx, word32 * block)
  * Core decrypt routines, expecting word32 inputs read big-endian
  * from the byte-oriented input stream.
  */
-static void aes_decrypt_nb_4(AESContext * ctx, word32 * block)
+void aes_decrypt_nb_4(AESContext * ctx, word32 * block)
+#ifndef WINSCP_VS
+;
+#else
 {
     int i;
     static const int C1 = 4 - 1, C2 = 4 - 2, C3 = 4 - 3, Nb = 4;
@@ -836,7 +853,11 @@ static void aes_decrypt_nb_4(AESContext * ctx, word32 * block)
     MOVEWORD(3);
     ADD_ROUND_KEY_4;
 }
-static void aes_decrypt_nb_6(AESContext * ctx, word32 * block)
+#endif // WINSCP_VS
+void aes_decrypt_nb_6(AESContext * ctx, word32 * block)
+#ifndef WINSCP_VS
+;
+#else
 {
     int i;
     static const int C1 = 6 - 1, C2 = 6 - 2, C3 = 6 - 3, Nb = 6;
@@ -872,7 +893,11 @@ static void aes_decrypt_nb_6(AESContext * ctx, word32 * block)
     MOVEWORD(5);
     ADD_ROUND_KEY_6;
 }
-static void aes_decrypt_nb_8(AESContext * ctx, word32 * block)
+#endif // WINSCP_VS
+void aes_decrypt_nb_8(AESContext * ctx, word32 * block)
+#ifndef WINSCP_VS
+;
+#else
 {
     int i;
     static const int C1 = 8 - 1, C2 = 8 - 3, C3 = 8 - 4, Nb = 8;
@@ -917,10 +942,12 @@ static void aes_decrypt_nb_8(AESContext * ctx, word32 * block)
     ADD_ROUND_KEY_8;
 }
 
+#endif // WINSCP_VS
 #undef MAKEWORD
 #undef LASTWORD
 
 
+#ifndef WINSCP_VS
 /*
  * Set up an AESContext. `keylen' and `blocklen' are measured in
  * bytes; each can be either 16 (128-bit), 24 (192-bit), or 32
@@ -1232,3 +1259,35 @@ const struct ssh2_ciphers ssh2_aes = {
     sizeof(aes_list) / sizeof(*aes_list),
     aes_list
 };
+
+#ifdef MPEXT
+
+#include "puttyexp.h"
+
+void * call_aes_make_context()
+{
+  return aes_make_context();
+}
+
+void call_aes_free_context(void * handle)
+{
+  aes_free_context(handle);
+}
+
+void call_aes_setup(void * ctx, int blocklen, unsigned char * key, int keylen)
+{
+  aes_setup((AESContext *)ctx, blocklen, key, keylen);
+}
+
+void call_aes_encrypt(void * ctx, unsigned int * block)
+{
+  aes_encrypt((AESContext *)ctx, block);
+}
+
+void call_aes_decrypt(void * ctx, unsigned int * block)
+{
+  aes_decrypt((AESContext *)ctx, block);
+}
+
+#endif
+#endif // WINSCP_VS

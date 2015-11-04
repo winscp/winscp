@@ -13,6 +13,7 @@
 #include <Configuration.h>
 #include <TextsWin.h>
 #include <HelpWin.h>
+#include <GUITools.h>
 #include <CustomWinConfiguration.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -69,6 +70,7 @@ __fastcall TFullSynchronizeDialog::TFullSynchronizeDialog(TComponent* Owner)
   FSynchronizeBySizeCaption = SynchronizeBySizeCheck->Caption;
   HotTrackLabel(CopyParamLabel);
   CopyParamListButton(TransferSettingsButton);
+  LoadDialogImage(Image, L"Synchronize directories");
 }
 //---------------------------------------------------------------------------
 __fastcall TFullSynchronizeDialog::~TFullSynchronizeDialog()
@@ -228,7 +230,7 @@ TSynchronizeMode __fastcall TFullSynchronizeDialog::GetMode()
   }
   else
   {
-    assert(SynchronizeBothButton->Checked);
+    DebugAssert(SynchronizeBothButton->Checked);
     return smBoth;
   }
 }
@@ -332,7 +334,7 @@ void __fastcall TFullSynchronizeDialog::TransferSettingsButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::CopyParamClick(TObject * Sender)
 {
-  assert(FLAGCLEAR(FOptions, fsoDoNotUsePresets));
+  DebugAssert(FLAGCLEAR(FOptions, fsoDoNotUsePresets));
   // PreserveTime is forced for some settings, but avoid hard-setting it until
   // user really confirms it on custom dialog
   TCopyParamType ACopyParams = CopyParams;

@@ -13,18 +13,24 @@ class TOptions
 public:
   __fastcall TOptions();
 
+  void __fastcall Add(UnicodeString Option);
+
   bool __fastcall FindSwitch(const UnicodeString Switch);
   bool __fastcall FindSwitch(const UnicodeString Switch, UnicodeString & Value);
+  bool __fastcall FindSwitch(const UnicodeString Switch, UnicodeString & Value, bool & ValueSet);
   bool __fastcall FindSwitch(const UnicodeString Switch, int & ParamsStart,
     int & ParamsCount);
   bool __fastcall FindSwitch(const UnicodeString Switch, TStrings * Params,
+    int ParamsMax = -1);
+  bool __fastcall FindSwitchCaseSensitive(const UnicodeString Switch);
+  bool __fastcall FindSwitchCaseSensitive(const UnicodeString Switch, TStrings * Params,
     int ParamsMax = -1);
   void __fastcall ParamsProcessed(int Position, int Count);
   UnicodeString __fastcall SwitchValue(const UnicodeString Switch, const UnicodeString Default = L"");
   bool __fastcall SwitchValue(const UnicodeString Switch, bool Default);
   bool __fastcall SwitchValue(const UnicodeString Switch, bool Default, bool DefaultOnNonExistence);
   bool __fastcall UnusedSwitch(UnicodeString & Switch);
-  bool __fastcall WasSwitchAdded(UnicodeString & Switch);
+  bool __fastcall WasSwitchAdded(UnicodeString & Switch, wchar_t & SwitchMark);
 
   void __fastcall LogOptions(TLogOptionEvent OnEnumOption);
 
@@ -36,10 +42,10 @@ protected:
   UnicodeString FSwitchMarks;
   UnicodeString FSwitchValueDelimiters;
 
-  void __fastcall Add(UnicodeString Option);
-
   bool __fastcall FindSwitch(const UnicodeString Switch,
-    UnicodeString & Value, int & ParamsStart, int & ParamsCount);
+    UnicodeString & Value, int & ParamsStart, int & ParamsCount, bool CaseSensitive, bool & ValueSet);
+  bool __fastcall DoFindSwitch(const UnicodeString Switch, TStrings * Params,
+    int ParamsMax, bool CaseInsensitive);
 
 private:
   struct TOption
@@ -47,7 +53,9 @@ private:
     TOptionType Type;
     UnicodeString Name;
     UnicodeString Value;
+    bool ValueSet;
     bool Used;
+    wchar_t SwitchMark;
   };
 
   typedef std::vector<TOption> TOptionsVector;

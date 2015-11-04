@@ -143,7 +143,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   if ((InvalidCharsReplacement == NoReplacement) !=
         (Defaults.InvalidCharsReplacement == NoReplacement))
   {
-    assert(InvalidCharsReplacement == NoReplacement);
+    DebugAssert(InvalidCharsReplacement == NoReplacement);
     if (InvalidCharsReplacement == NoReplacement)
     {
       ADD(LoadStr(COPY_INFO_DONT_REPLACE_INV_CHARS), cpaIncludeMaskOnly);
@@ -154,7 +154,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       (PreserveRights &&
        ((Rights != Defaults.Rights) || (AddXToDirectories != Defaults.AddXToDirectories))))
   {
-    assert(PreserveRights);
+    DebugAssert(PreserveRights);
 
     if (PreserveRights)
     {
@@ -177,7 +177,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   if ((PreserveRights || PreserveTime) &&
       (IgnorePermErrors != Defaults.IgnorePermErrors))
   {
-    assert(IgnorePermErrors);
+    DebugAssert(IgnorePermErrors);
 
     if (IgnorePermErrors)
     {
@@ -188,7 +188,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
   if (PreserveReadOnly != Defaults.PreserveReadOnly)
   {
-    assert(PreserveReadOnly);
+    DebugAssert(PreserveReadOnly);
     if (PreserveReadOnly)
     {
       ADD(LoadStr(COPY_INFO_PRESERVE_READONLY),
@@ -198,7 +198,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
   if (CalculateSize != Defaults.CalculateSize)
   {
-    assert(!CalculateSize);
+    DebugAssert(!CalculateSize);
     if (!CalculateSize)
     {
       ADD(LoadStr(COPY_INFO_DONT_CALCULATE_SIZE), cpaIncludeMaskOnly);
@@ -207,7 +207,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
   if (ClearArchive != Defaults.ClearArchive)
   {
-    assert(ClearArchive);
+    DebugAssert(ClearArchive);
     if (ClearArchive)
     {
       ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE),
@@ -242,8 +242,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       cpaNoIncludeMask);
   }
 
-  assert(FTransferSkipList.get() == NULL);
-  assert(FTransferResumeFile.IsEmpty());
+  DebugAssert(FTransferSkipList.get() == NULL);
+  DebugAssert(FTransferResumeFile.IsEmpty());
 
   if (CPSLimit > 0)
   {
@@ -273,7 +273,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
 {
-  assert(Source != NULL);
+  DebugAssert(Source != NULL);
   #define COPY(Prop) Prop = Source->Prop
   COPY(FileNameCase);
   COPY(PreserveReadOnly);
@@ -628,8 +628,8 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage) const
   Storage->WriteString(L"IncludeFileMask", IncludeFileMask.Masks);
   Storage->DeleteValue(L"ExcludeFileMask"); // obsolete
   Storage->DeleteValue(L"NegativeExclude"); // obsolete
-  assert(FTransferSkipList.get() == NULL);
-  assert(FTransferResumeFile.IsEmpty());
+  DebugAssert(FTransferSkipList.get() == NULL);
+  DebugAssert(FTransferResumeFile.IsEmpty());
   Storage->WriteBool(L"ClearArchive", ClearArchive);
   Storage->WriteBool(L"RemoveCtrlZ", RemoveCtrlZ);
   Storage->WriteBool(L"RemoveBOM", RemoveBOM);
@@ -640,10 +640,10 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage) const
 #define C(Property) (Property == rhp.Property)
 bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
 {
-  assert(FTransferSkipList.get() == NULL);
-  assert(FTransferResumeFile.IsEmpty());
-  assert(rhp.FTransferSkipList.get() == NULL);
-  assert(rhp.FTransferResumeFile.IsEmpty());
+  DebugAssert(FTransferSkipList.get() == NULL);
+  DebugAssert(FTransferResumeFile.IsEmpty());
+  DebugAssert(rhp.FTransferSkipList.get() == NULL);
+  DebugAssert(rhp.FTransferResumeFile.IsEmpty());
   return
     C(AddXToDirectories) &&
     C(AsciiFileMask) &&
@@ -669,24 +669,34 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
 }
 #undef C
 //---------------------------------------------------------------------------
-unsigned long __fastcall GetSpeedLimit(const UnicodeString & Text)
+static bool __fastcall TryGetSpeedLimit(const UnicodeString & Text, unsigned long & Speed)
 {
-  unsigned long Speed;
+  bool Result;
   if (AnsiSameText(Text, LoadStr(SPEED_UNLIMITED)))
   {
     Speed = 0;
+    Result = true;
   }
   else
   {
     int SSpeed;
-    if (!TryStrToInt(Text, SSpeed) ||
-        (SSpeed < 0))
+    Result = TryStrToInt(Text, SSpeed) && (SSpeed >= 0);
+    if (Result)
     {
-      throw Exception(FMTLOAD(SPEED_INVALID, (Text)));
+      Speed = SSpeed * 1024;
     }
-    Speed = SSpeed;
   }
-  return Speed * 1024;
+  return Result;
+}
+//---------------------------------------------------------------------------
+unsigned long __fastcall GetSpeedLimit(const UnicodeString & Text)
+{
+  unsigned long Speed;
+  if (!TryGetSpeedLimit(Text, Speed))
+  {
+    throw Exception(FMTLOAD(SPEED_INVALID, (Text)));
+  }
+  return Speed;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall SetSpeedLimit(unsigned long Limit)
@@ -701,4 +711,33 @@ UnicodeString __fastcall SetSpeedLimit(unsigned long Limit)
     Text = IntToStr(int(Limit / 1024));
   }
   return Text;
+}
+//---------------------------------------------------------------------------
+void __fastcall CopySpeedLimits(TStrings * Source, TStrings * Dest)
+{
+  std::unique_ptr<TStringList> Temp(new TStringList());
+
+  bool Unlimited = false;
+  for (int Index = 0; Index < Source->Count; Index++)
+  {
+    UnicodeString Text = Source->Strings[Index];
+    unsigned long Speed;
+    bool Valid = TryGetSpeedLimit(Text, Speed);
+    if ((!Valid || (Speed == 0)) && !Unlimited)
+    {
+      Temp->Add(LoadStr(SPEED_UNLIMITED));
+      Unlimited = true;
+    }
+    else if (Valid && (Speed > 0))
+    {
+      Temp->Add(Text);
+    }
+  }
+
+  if (!Unlimited)
+  {
+    Temp->Insert(0, LoadStr(SPEED_UNLIMITED));
+  }
+
+  Dest->Assign(Temp.get());
 }

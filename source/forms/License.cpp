@@ -41,7 +41,7 @@ __fastcall TLicenseDialog::TLicenseDialog(TComponent * Owner, TLicense License)
   try
   {
     LicenseList->Text = ReadResource(LicenseStr[License]);
-    assert(LicenseList->Count > 0);
+    DebugAssert(LicenseList->Count > 0);
     Caption = FMTLOAD(LICENSE_CAPTION, (LicenseList->Strings[0]));
     LicenseList->Delete(0);
     LicenseMemo->Lines->Text = LicenseList->Text;

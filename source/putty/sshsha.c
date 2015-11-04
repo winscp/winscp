@@ -217,6 +217,7 @@ void SHA_Simple(const void *p, int len, unsigned char *output)
     SHA_Init(&s);
     SHA_Bytes(&s, p, len);
     SHA_Final(&s, output);
+    smemclr(&s, sizeof(s));
 }
 
 /*
@@ -244,6 +245,7 @@ static void sha1_final(void *handle, unsigned char *output)
     SHA_State *s = handle;
 
     SHA_Final(s, output);
+    smemclr(s, sizeof(*s));
     sfree(s);
 }
 
@@ -263,6 +265,7 @@ static void *sha1_make_context(void)
 
 static void sha1_free_context(void *handle)
 {
+    smemclr(handle, 3 * sizeof(SHA_State));
     sfree(handle);
 }
 
@@ -345,7 +348,7 @@ static int hmacsha1_verresult(void *handle, unsigned char const *hmac)
 {
     unsigned char correct[20];
     hmacsha1_genresult(handle, correct);
-    return !memcmp(correct, hmac, 20);
+    return smemeq(correct, hmac, 20);
 }
 
 static int sha1_verify(void *handle, unsigned char *blk, int len,
@@ -353,7 +356,7 @@ static int sha1_verify(void *handle, unsigned char *blk, int len,
 {
     unsigned char correct[20];
     sha1_do_hmac(handle, blk, len, seq, correct);
-    return !memcmp(correct, blk + len, 20);
+    return smemeq(correct, blk + len, 20);
 }
 
 static void hmacsha1_96_genresult(void *handle, unsigned char *hmac)
@@ -375,7 +378,7 @@ static int hmacsha1_96_verresult(void *handle, unsigned char const *hmac)
 {
     unsigned char correct[20];
     hmacsha1_genresult(handle, correct);
-    return !memcmp(correct, hmac, 12);
+    return smemeq(correct, hmac, 12);
 }
 
 static int sha1_96_verify(void *handle, unsigned char *blk, int len,
@@ -383,7 +386,7 @@ static int sha1_96_verify(void *handle, unsigned char *blk, int len,
 {
     unsigned char correct[20];
     sha1_do_hmac(handle, blk, len, seq, correct);
-    return !memcmp(correct, blk + len, 12);
+    return smemeq(correct, blk + len, 12);
 }
 
 void hmac_sha1_simple(void *key, int keylen, void *data, int datalen,
@@ -436,3 +439,14 @@ const struct ssh_mac ssh_hmac_sha1_96_buggy = {
     12,
     "bug-compatible HMAC-SHA1-96"
 };
+
+#ifdef MPEXT
+
+#include "puttyexp.h"
+
+void call_sha1_key_internal(void * handle, unsigned char * key, int len)
+{
+  sha1_key_internal(handle, key, len);
+}
+
+#endif

@@ -76,6 +76,7 @@ protected:
   void __fastcall SetDriveView(TCustomUnixDriveView * Value);
   virtual int __fastcall HiddenCount();
   virtual int __fastcall FilteredCount();
+  DYNAMIC void __fastcall UpdatePathLabelCaption();
 
   __property TCustomUnixDriveView * DriveView = { read = FDriveView, write = SetDriveView };
 

@@ -248,6 +248,11 @@ GLOBAL void *logctx;
 				 "All Files (*.*)\0*\0\0\0")
 
 /*
+ * Exports from winnet.c.
+ */
+extern int select_result(WPARAM, LPARAM);
+
+/*
  * winnet.c dynamically loads WinSock 2 or WinSock 1 depending on
  * what it can get, which means any WinSock routines used outside
  * that module must be exported from it as function pointers. So
@@ -507,6 +512,8 @@ void handle_got_event(HANDLE event);
 void handle_unthrottle(struct handle *h, int backlog);
 int handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);
+struct handle *handle_add_foreign_event(HANDLE event,
+                                        void (*callback)(void *), void *ctx);
 
 /*
  * winpgntc.c needs to schedule callbacks for asynchronous agent
@@ -519,14 +526,6 @@ void *handle_get_privdata(struct handle *h);
 void agent_schedule_callback(void (*callback)(void *, void *, int),
 			     void *callback_ctx, void *data, int len);
 #define FLAG_SYNCAGENT 0x1000
-
-/*
- * winpgntc.c also exports these two functions which are used by the
- * server side of Pageant as well, to get the user SID for comparing
- * with clients'.
- */
-int init_advapi(void);  /* initialises everything needed by get_user_sid */
-PSID get_user_sid(void);
 
 /*
  * Exports from winser.c.

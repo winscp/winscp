@@ -105,6 +105,16 @@ UnicodeString __fastcall MaskFileName(UnicodeString FileName, const UnicodeStrin
   return FileName;
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsFileNameMask(const UnicodeString & Mask)
+{
+  bool Result = Mask.IsEmpty(); // empty mask is the same as *
+  if (!Result)
+  {
+    MaskFilePart(UnicodeString(), Mask, Result);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsEffectiveFileNameMask(const UnicodeString & Mask)
 {
   return !Mask.IsEmpty() && (Mask != L"*") && (Mask != L"*.*");
@@ -395,7 +405,7 @@ bool __fastcall TFileMasks::MatchesMasks(const UnicodeString FileName, bool Dire
     UnicodeString ParentPath = SimpleUnixExcludeTrailingBackslash(UnixExtractFilePath(Path));
     // Pass Params down or not?
     // Currently it includes Size/Time only, what is not used for directories.
-    // So it depends of future use. Possibly we should make a copy
+    // So it depends on future use. Possibly we should make a copy
     // and pass on only relevant fields.
     Result = MatchesMasks(ParentFileName, true, ParentPath, Params, Masks, Recurse);
   }
@@ -490,7 +500,7 @@ void __fastcall TFileMasks::CreateMaskMask(const UnicodeString & Mask, int Start
 {
   try
   {
-    assert(MaskMask.Mask == NULL);
+    DebugAssert(MaskMask.Mask == NULL);
     if (Ex && IsAnyMask(Mask))
     {
       MaskMask.Kind = TMaskMask::Any;
@@ -510,7 +520,7 @@ void __fastcall TFileMasks::CreateMaskMask(const UnicodeString & Mask, int Start
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TFileMasks::MakeDirectoryMask(UnicodeString Str)
 {
-  assert(!Str.IsEmpty());
+  DebugAssert(!Str.IsEmpty());
   if (Str.IsEmpty() || !Str.IsDelimiter(DirectoryMaskDelimiters, Str.Length()))
   {
     int D = Str.LastDelimiter(DirectoryMaskDelimiters);
@@ -786,7 +796,7 @@ TCustomCommand::TCustomCommand()
 void __fastcall TCustomCommand::GetToken(
   const UnicodeString & Command, int Index, int & Len, wchar_t & PatternCmd)
 {
-  assert(Index <= Command.Length());
+  DebugAssert(Index <= Command.Length());
   const wchar_t * Ptr = Command.c_str() + Index - 1;
 
   if (Ptr[0] == L'!')
@@ -1079,7 +1089,7 @@ void __fastcall TCustomCommandData::Init(
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandData::operator=(const TCustomCommandData & Data)
 {
-  assert(Data.SessionData != NULL);
+  DebugAssert(Data.SessionData != NULL);
   FSessionData.reset(new TSessionData(L""));
   FSessionData->Assign(Data.SessionData);
 }
@@ -1122,8 +1132,10 @@ int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int
     case L'@':
     case L'U':
     case L'P':
+    case L'#':
     case L'/':
     case L'&':
+    case L'N':
       Len = 2;
       break;
 
@@ -1155,6 +1167,10 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
   {
     Replacement = FData.SessionData->Password;
   }
+  else if (AnsiSameText(Pattern, L"!#"))
+  {
+    Replacement = IntToStr(FData.SessionData->PortNumber);
+  }
   else if (Pattern == L"!/")
   {
     Replacement = UnixIncludeTrailingBackslash(FPath);
@@ -1165,9 +1181,13 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
     // already delimited
     Delimit = false;
   }
+  else if (AnsiSameText(Pattern, L"!n"))
+  {
+    Replacement = FData.SessionData->SessionName;
+  }
   else
   {
-    assert(Pattern.Length() == 1);
+    DebugAssert(Pattern.Length() == 1);
     Replacement = FFileName;
   }
 
@@ -1190,7 +1210,7 @@ void __fastcall TFileCustomCommand::ValidatePattern(const UnicodeString & Comman
 {
   int * Found = static_cast<int *>(Arg);
 
-  assert(Index > 0);
+  DebugAssert(Index > 0);
 
   if (PatternCmd == L'&')
   {

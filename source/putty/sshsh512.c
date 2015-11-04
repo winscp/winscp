@@ -274,6 +274,7 @@ void SHA512_Simple(const void *p, int len, unsigned char *output) {
     SHA512_Init(&s);
     SHA512_Bytes(&s, p, len);
     SHA512_Final(&s, output);
+    smemclr(&s, sizeof(s));
 }
 
 #ifdef TEST
