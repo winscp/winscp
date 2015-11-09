@@ -1,0 +1,361 @@
+<html>
+<head>
+   <title>Toolbar2000 Revision History</title>
+</head>
+<body text="#000000" bgcolor="#ffffff" link="#264b99" vlink="#5e85d7" alink="#7799dd">
+
+<!-- $jrsoftware: tb2k/whatsnew.htm,v 1.43 2005/07/30 18:34:13 jr Exp $ -->
+
+<font face="verdana,arial" size=2>
+
+<table width="100%" border="0" cellpadding="5" cellspacing="0">
+   <tr>
+   <td align=center bgcolor="#264b99"><font face="verdana,arial" size=6 color="#FFFFFF"><b>Toolbar2000</b></font><br>
+<font face="verdana,arial" size=4 color="#FFFFFF"><b>Revision History</b><br>
+</font></td>
+   </tr>
+</table>
+
+<p>Copyright &copy; 1998-2005 <a href="http://www.jrsoftware.org/">Jordan Russell</a>. All rights reserved.<br>
+For conditions of distribution and use, see <a href="LICENSE.txt">LICENSE.txt</a>.
+
+<h3>2.1.6 <font size=1>(2005-07-30)</font></h3>
+<ul>
+<li>The captions of floating toolbars are now grayed when their parent forms are inactive (e.g., when a modal dialog is up).
+<li>Replaced various global "var"s with "threadvar"s to improve thread safety when Toolbar2000 is used in a browser-embedded ActiveForm. (Note that this can never be 100% safe because the VCL itself has some thread safety issues.)
+<li><i>Fix:</i> When running on an Athlon 64 CPU with the Cool'n'Quiet feature enabled, menus animated at approximately half the expected speed when the CPU utilization was low. (Previously, it used QueryPerformanceCounter to time the animation, but with Cool'n'Quiet enabled, the rate at which the performance counter increments actually varies depending on the current CPU clock frequency. Now it uses GetTickCount instead.)
+<li><i>Fix:</i> In the Delphi 2005 IDE, toolbar editor forms could fall behind the IDE's main form.
+<li><i>Fix:</i> When an EXE contained a Toolbar2000 menu bar, and a modal Delphi form hosted in a DLL was currently active, pressing Alt would open the menu bar in the EXE even though the form containing the menu bar was disabled/inactive.
+<li><i>Fix:</i> Fixed MSAA bug reported in "Accessibility issue with Window-Eyes" thread on newsgroup 2005-06-21.
+<li>Internal tweaks and trivial fixes.
+</ul>
+
+<h3>2.1.5 <font size=1>(2004-12-13)</font></h3>
+<ul>
+<li>Packages for Delphi 2005 are now included.
+<li>Added new <i>RadioItem</i> property to TTBCustomItem and descendants. Like the property of the same name on TMenuItem, it causes the item to display a circle instead of a check mark when the item is checked and no other image has been specified.
+<li>Like standard menus, it now prevents other applications from stealing the focus while a menu is open. This should make it fully compatible with Tweak UI's X-Mouse option.
+<li>If the application displays a modal dialog of its own while a menu is open, the menu will now be hidden.
+<li>TTBCustomDockableWindow and descendants: Made <i>Canvas</i> a public property.
+<li>Fix "ImageIndex on toolbutton incorrectly overriden by action's imageindex" issue reported on newsgroup 2004-09-02 by Anthony Egerton.<br>
+(Note: The problem described in the thread isn't Toolbar2000 specific. Standard menus and controls will continue to exhibit the same problem.)
+<li>TMainMenu/TPopupMenu converter: Now additionally transfers the AutoCheck, GroupIndex, and RadioItem properties.
+<li>Internal tweaks.
+</ul>
+
+<h3>2.1.4 <font size=1>(2004-02-28)</font></h3>
+<ul>
+<li>Toolbar2000 may now alternatively, at your option, be used and/or distributed under the terms of the <a href="GPL-LICENSE.txt">GNU General Public License</a>. Please see the updated <a href="LICENSE.txt">LICENSE.txt</a> file for more information on the two licensing options.<br>
+Note that if you choose the GPL license option, your application as a whole must also be licensed under the GPL. Therefore, you cannot choose the GPL license option if your application is proprietary/closed-source.
+<li>Reworded point 5 of the <a href="TB2k-LICENSE.txt">Toolbar2000 License</a> for clarity.
+<li>Added new <i>ChevronPriorityForNewItems</i> property to TTBToolbar.
+</ul>
+
+<h3>2.1.3 <font size=1>(2003-11-23)</font></h3>
+<ul>
+<li>Added new <i>tboNoAutoHint</i> value to the Options property. When set, the automatic hint generation feature (introduced in 2.1.1) will be disabled.
+<li>On Windows NT/2000/XP, use SetWindowsHookExW instead of SetWindowsHookEx to work around apparent OS bug reported on the newsgroup by George Kyrou 2003-09-23.
+<li>Tweak to HookProc in TB2Toolbar.pas to avoid ANSI/Unicode character set issue with hooks on Windows NT/2000/XP.
+<li><i>Fix:</i> When a TTBEditItem was focused, it didn't inherit the font settings from the parent toolbar.
+</ul>
+
+<h3>2.1.2 <font size=1>(2003-08-10)</font></h3>
+<ul>
+<li>It's now possible to nest "group" items such as TTBGroupItem. Previously, placing one group item inside another did not work.
+<li>Tweaked the automatic hint generation introduced in the last version: It now will not generate hints for submenu items unless the submenu item has the <i>DropdownCombo</i> property set to <i>True</i> or the submenu item has no visible caption.
+<li>TTBControlItem is no longer explicitly registered. There is a slim chance that this change may affect you if your application initially used one of the very early Toolbar2000 betas. In those early betas, Toolbar2000 did not assign to the <i>Name</i> property of TTBControlItem components it created. If you have unnamed TTBControlItem components on your forms, you must now assign them names, otherwise you might receive a "class not found" error message when running your application.
+<li><i>Fix:</i> TTBEditItem would lose the focus when Alt+[keypad digit] was pressed.
+<li>Internal tweaks.
+</ul>
+
+<h3>2.1.1-beta <font size=1>(2003-07-13)</font></h3>
+<ul>
+<li>Now	automatically supplies short hints for items with no short hint	assigned to the <i>Hint</i> property. The hint is derived from the item's caption, with accelerator keys and any trailing colon or ellipsis stripped.
+<li>Shortcut text is now displayed in the hints of items that don't have associated Actions.
+<li><i>Fix:</i> In TTBMRUList, "&" characters in filenames weren't escaped when assigning item captions.
+<li>MSAA-related tweaks:
+  <ul>
+  <li>Escape any "&" characters when assigning text to chevron item's <i>Caption</i> property.
+  <li>Work around bug in Delphi/C++Builder 4's <i>ShortCutToText</i> function.
+  </ul>
+<li>Internal tweaks.
+</ul>
+
+<h3>2.1.0-beta <font size=1>(2003-07-05)</font></h3>
+<ul>
+<li><b>Microsoft Active Accessibility support</b> for Toolbar2000's menus and toolbars. This exclusive feature will make your application's user interface more accessible to users who rely on screen readers. For more details, see the <i>MSAA Support</i> topic in the help file.
+<li>When new items are inserted	programmatically at run-time, they are now placed at the top of the "priority list" instead of at the bottom. This means that new items will now be the <i>last</i> to move onto the chevron menu when all items can't fit on the toolbar.
+<li>On popup menus, accelerator keys are now properly hidden if the last input came from the mouse.
+<li>On TTBMDIButtonsItem, the <i>biMinimize</i> setting of <i>BorderIcons</i> on MDI child forms is now respected.
+<li>As a performance optimization, the default image base of the Delphi design and run-time packages have been changed from $400000 to $3F800000 and $3FC00000 respectively.<br>
+(The C++Builder packages remain at $400000 due to a design flaw in the C++Builder linker: it strips the image's relocation table whenever the base address is changed from $400000. DLLs must have relocation tables in order to load properly in all cases.)
+<li><i>Fix:</i> When a top-level <i>DropdownCombo=True</i> submenu item is selected using Alt+[accelerator key] the item is now clicked instead of opened.
+<li><i>Fix:</i> When F1 was pressed on a menu item and Toolbar2000 handled it, a WM_HELP message would still reach the parent form.
+<li><i>Fix:</i> A focused TTBEditItem would lose the focus when Alt+Shift was pressed.
+<li>Many internal changes, most of them necessary for supporting MSAA as cleanly as possible.
+</ul>
+
+<hr>
+
+<h3>2.0.16 <font size=1>(2003-03-28)</font></h3>
+<ul>
+<li>Added new <i>tboSameWidth</i> value to the Options property. When set along with <i>tboImageAboveCaption</i> on two or more items on the same view, the items will be stretched as necessary so that they all have the width in pixels.
+<li>Added ChevronMoveItems property to TTBToolbar. Normally, when an item on a toolbar's chevron popup menu is clicked, the clicked item will move into the visible area of the toolbar in place of the least recently clicked item. Setting this property to False will disable that behavior.
+<li>TTBCustomItem.Click now checks the <i>Enabled</i> property before calling any event handlers, like TMenuItem.Click does.
+<li>TTBPopupMenu.Popup now sets the <i>PopupPoint</i> property.
+<li>Published <i>OnContextPopup</i> event properties on TTBDock, TTBToolbar, and TTBToolWindow.
+<li>Fixed issues with Russian characters as accelerator keys on Windows NT/2000/XP.
+<li>Internal tweaks and trivial fixes.
+</ul>
+
+<h3>2.0.15 <font size=1>(2002-09-29)</font></h3>
+<ul>
+<li>Packages for Delphi 7 are now included.
+<li>Revised the Toolbar2000 License Agreement.
+<li>TTBMRUList: Added new Remove method.<br>
+TTBMRUListStrings: IndexOf method now uses AnsiCompareFileName instead of AnsiCompareText.
+<li><i>Fix:</i> The issue reported in the "Problem with tb2k in Com Server/ActiveX" thread on the newsgroup has been fixed.
+<li>Internal tweaks and trivial fixes.
+</ul>
+
+<h3>2.0.14 <font size=1>(2002-05-10)</font></h3>
+<ul>
+<li>Added new <i>tboNoRotation</i> value to Options property. When set, the item and its caption will not be rotated 270 degrees when docked vertically.
+<li>Added <i>Move Up</i> and <i>Move Down</i> commands to the design-time editor to make it easier to move items.
+<li>Chevron popup windows now wrap if they are too wide to fit on the screen.
+<li>A toolbar's <i>LastDock</i> property is no longer updated when the toolbar is dragged over but not dropped on a dock.
+<li>When arranging toolbars on a dock, row numbers that contain only invisible or undocked toolbars are no longer removed. This way, when the toolbars are shown/docked again, they stay on their row. This was how Toolbar97 worked.
+<li>A toolbar's <i>DockRow</i> and <i>DockPos</i> properties got updated if you dragged the toolbar over a dock but didn't drop it on the dock. Now it restores the original <i>DockRow</i> and <i>DockPos</i> settings when a toolbar is not dropped on a dock.
+<li><i>Fix:</i> When arranging toolbars on a dock, there was a case where <i>LimitToOneRow</i> wasn't being checked.
+<li>Internal tweaks.
+</ul>
+
+<h3>2.0.13 <font size=1>(2002-04-06)</font></h3>
+<ul>
+<li>New item class: TTBVisibilityToggleItem. This item class controls the <i>Visible</i> property of a control, such as a TTBToolbar.
+<li>On menus, it now uses <i>clGrayText</i> to draw disabled text when the menu background color doesn't equal <i>clBtnFace</i>. (That is how standard menus work.)
+<li>On vertically docked toolbars, it now uses a vertical font if one is available so that Asian characters aren't drawn sideways.
+<li>Now, if at design time you double click a TTBToolbar or TTBPopupMenu that has its <i>LinkSubitems</i> property assigned, it asks if you want to edit the item specified by <i>LinkSubitems</i> instead.
+<li>TTBEditItem: The outermost border is now transparent when the item is not selected.
+<li>In the functions that load toolbar positions, it now compares the dock names with case insensitivity.
+<li>Added new demo project file for C++Builder 6 - DemoBCB6 - because DemoBCB doesn't seem to compile under C++Builder 6.
+<li>Internal tweaks.
+</ul>
+
+<h3>2.0.12 <font size=1>(2002-03-06)</font></h3>
+<ul>
+<li>Menus now display scroll arrows when they are too tall to fit on the screen.
+<li>Packages for C++Builder 6 are now included.
+<li>Minor tweaks and documentation updates.
+</ul>
+
+<h3>2.0.11 <font size=1>(2002-02-23)</font></h3>
+<ul>
+<li><i>Fix:</i> The new <i>Stretch</i> property introduced in 2.0.10 had some bugs.
+</ul>
+
+<h3>2.0.10 <font size=1>(2002-02-13)</font></h3>
+<ul>
+<li>Added new <i>Stretch</i> property to TTBToolWindow and TTBToolbar. When True, the toolbar, when docked, will stretch to fill any unused space on the row.
+<li>On TTBToolbar, chevrons now display a "More Buttons" hint, like Office 2000. The hint text can be customized by changing the new <i>ChevronHint</i> property, or globally by changing <i>STBChevronItemMoreButtonsHint</i> in TB2Consts.pas.
+<li>The OnMove event of TTBToolbar/TTBToolWindow now gets fired when the bar is floating also.
+<li><i>Fix:</i> TTBPopupMenu.OnPopup was being	called twice when the popup was displayed - once with the TTBPopupMenu as the Sender, and once with the internal TTBRootItem as the Sender. Now, it's called only once with the TTBPopupMenu as the Sender.
+<li><i>Fix:</i> TTBEditItem: Fixed double-click issue ("TB2k Strange Behaviour").
+<li>Internal tweaks.
+</ul>
+
+<h3>2.0.9 <font size=1>(2002-01-11)</font></h3>
+<ul>
+<li>Added new TTBImageList component. It is an enhanced version of the standard TImageList component, designed for use with the Toolbar2000 components. It adds the ability to use special images for different item states (hot, disabled, checked). It also adds the ability to load the images from a bitmap instead of using TImageList's normal streaming mechanism, which has problems with older COMCTL32.DLL versions.
+<li>Added new <i>OnSelect</i> property to TTBCustomItem and descendants. This event lets you trap when the mouse enters or leaves an item.
+<li>Added new <i>CharCase</i> and <i>OnBeginEdit</i> properties to TTBEditItem.
+<li>Added C++Builder version of the Demo project - DemoBCB.
+<li>Minor tweaks and fixes.
+</ul>
+
+<h3>2.0.8 <font size=1>(2001-12-27)</font></h3>
+<ul>
+<li>Now supports "flat" menu borders on Windows XP.
+<li>The background of a selected menu item's image is now filled with clBtnFace. This seems to look better with Windows XP's white menus.
+<li>Made chevron popups colored clBtnFace instead of clMenu. This seems to look better on Windows XP with themes enabled.
+<li><i>Fix:</i> Fixed "stack overflow" problem that may have occurred if you had a floating TTBToolWindow and pressed Alt on the keyboard.
+<li><i>Fix:</i> On Delphi 6 the ActionComponent property of an action now gets set properly when the action is fired from a TB2k item.
+<li>Removed some Windows NT 3.51 support code since NT 3.51 is now officially unsupported.
+</ul>
+
+<h3>2.0.7 <font size=1>(2001-12-19)</font></h3>
+<ul>
+<li>Menus now display drop-shadows on Windows XP if they are enabled in the Display Properties.
+<li>When a menu is up, keystrokes will no longer get processed by an IME if one was active.<br>
+<i>Note:</i> The ImmGetVirtualKey function is used, which is not available on Windows NT 3.51. Therefore, NT 3.51 is now officially unsupported. (It never was officially supported anyway.)
+<li>TTBToolbar: Added new published FloatingWidth property.
+<li><i>Fix:</i> Accessing menu bars on non-main forms with the keyboard should now work.
+<li>Minor fixes.
+</ul>
+
+<h3>2.0.6 <font size=1>(2001-11-14)</font></h3>
+<ul>
+<li>When a shortcut key is pressed, it now sends OnPopup/OnClick events to the selected item's parents so that they can update the Enabled state of the item if needed.
+<li>The OnPopup event of TTBPopupMenu is now fired when one of its items' shortcut keys is pressed.
+<li>TTBPopupMenu now processes shortcuts.
+<li>Added OnUpdate event to TTBMDIWindowItem.
+<li>Minor fixes.
+</ul>
+
+<h3>2.0.5 <font size=1>(2001-10-09)</font></h3>
+<ul>
+<li>Toolbars that are neither docked nor floating can now wrap or display a chevron (ShrinkMode is no longer ignored). For it to work, you must do at least one of the following: set AutoResize to False, set Align to one of [alTop, alBottom, alClient], or add [akLeft, akRight] to Anchors (which is now a published property).
+<li>TTBToolWindow: Published the Align and Anchors properties.
+<li>Now allows F1 to be handled while the mouse button is down (an odd quirk of standard menus).
+<li>Now always streams out the Width & Height properties of a toolbar that is neither docked nor floating. Needed to properly support anchored toolbars.
+<li><i>Fix:</i> Fixed a GDI resource leak in TB2Item that occurred on Windows 9x/Me due to an undocumented difference/bug in the way SaveDC works.
+<li><i>Fix:</i> Fixed resource leak with TTBMDIHandler: it was trying to free an icon handle with DeleteObject instead of DestroyIcon.
+<li><i>Fix:</i> Made TTBPopupWindow a TCustomControl descendant instead of a TForm descendant. This resolves the issue with the Application window's taskbar button reappearing after the program initially hid it.
+<li><i>Fix:</i> When destroying a toolbar on a dock that had another toolbar on the same dock linked to one of the destroying toolbar's subitems, an AV may have occurred.
+<li><i>Fix:</i> Fixed problem in TTBView.GivePriority.
+</ul>
+
+<h3>2.0.4 <font size=1>(2001-09-30)</font></h3>
+<ul>
+<li>Added new <i>tboImageAboveCaption</i> value to Options property. When set, the item's caption will be displayed underneath its image, making for an Internet Explorer-like appearance.
+<li>Added Options property to TTBPopupMenu.
+<li><i>Fix:</i> It was possible to "click" disabled top-level items by pressing Alt+[accelchar].
+<li><i>Fix:</i> Shortcut keys now work on toolbars that are on frames.
+<li>Fixed issue with TActiveForms: OnClick events were always executed in the context of the first thread.
+<li>Minor tweaks.
+</ul>
+
+<h3>2.0.3 <font size=1>(2001-09-13)</font></h3>
+<ul>
+<li>Added AutoCheck property to TTBCustomItem and descendants.
+<li>Added Prefix property to TTBMRUList.
+<li>Added Enabled property to TTBMDIWindowItem.
+<li>Published GroupIndex property on TTBSubmenuItem and TTBEditItem.
+<li>TTBView's Selected property is now writable.
+<li><i>Fix:</i> Sealed minor memory leak that occurred when when a TTBMDIHandler component was created, or when the LinkSubItems property of a toolbar was changed.
+<li><i>Fix:</i> Modifying a TTBBackground's bitmap after a dock that used the background was destroyed may have caused an AV.
+<li><i>Fix:</i> Alt+- didn't work unless the two keys were pressed simultaneously.
+<li><i>Fix:</i> Shortcuts didn't work if TTBToolbar.LinkSubitems was set.
+<li><i>Fix:</i> MDI buttons didn't show when <i>FullSize=False</i> and <i>ShrinkMode=tbsmWrap</i>.
+<li><i>Fix:</i> Unwrapped floating toolbars were a pixel too high.
+<li><i>Fix:</i> Hopefully fixed Delphi 6 AV with design-time editor again.
+</ul>
+
+<h3>2.0.2 <font size=1>(2001-08-19)</font></h3>
+<ul>
+<li>Added new component: TTBMDIHandler, which adds the MDI system menu and minimize/restore/close buttons to a menu bar. See the documentation for details.
+<li>Added new item type: TTBMDIWindowItem, which expands to a list of available MDI child windows at run-time. This is intended to be placed at the end of an MDI application's Window menu, following a separator.
+<li>The design-time menu converter can now convert TPopupMenu's too.
+<li>The <i>Alignment</i> property of TTBPopupMenu is now respected. Also added optional <i>Alignment</i> parameter to the TTBCustomItem.Popup method.
+<li>Added TTBCustomItem.Clear method.
+<li>Now respects the system's "menu drop alignment" setting when dropping down menus.
+<li>Pressing Home or End on a toolbar or menu now moves the selection to the first or last item.
+<li><i>Fix:</i> TTBToolWindow's that had their <i>FullSize</i> properties set to True weren't the correct size when undocked.
+<li><i>Fix:</i> Now doesn't attempt to draw or invalidate TTBControlItem's. Fixes issue with <i>Transparent=True</i> TLabel's.
+<li><i>Fix:</i> Now doesn't display the size-all cursor on <i>DragHandle=dhNone</i> toolbars.
+<li><i>Fix:</i> The keyboard shortcuts for Cut/Copy/Paste in the design-time editor now work again.
+<li>Some minor internal tweaks.
+</ul>
+
+<h3>2.0.1 <font size=1>(2001-08-04)</font></h3>
+<ul>
+<li>Added slide/fade animation support. It is enabled automatically if the user has menu animation enabled in Windows.
+<li>On vertical toolbars, the <i>tboDropdownArrow</i> arrows are now drawn rotated and below the text.
+<li><i>Fix:</i> When you have <i>ProcessShortCuts=True</i> toolbars on multiple forms, it now first looks for shortcuts on the active form's toolbars, and then the main form's toolbars. Previously, it looked on all forms' toolbars.
+<li><i>Fix:</i> It wasn't loading item icons correctly after design-time code was moved to the <i>tb2kdsgn</i> package.
+<li><i>Fix:</i> Setting EditOptions on TTBEditAction had no effect.
+<li>Some minor internal tweaks.
+</ul>
+
+<h3>2.0.0 <font size=1>(2001-07-21)</font></h3>
+<ul>
+<li>Revised the Toolbar2000 License Agreement.
+<li>Moved design-time units to separate tb2kdsgn_* packages so that tb2k_* may now be used as run-time packages.
+<li>Tweaked the component icons.
+</ul>
+
+<hr>
+
+<h3>Beta Releases</h3>
+
+<h3>2.0-BETA6 <font size=1>(2001-07-18)</font></h3>
+<ul>
+<li>TTBMRUList: Added AddFullPath and HidePathExtension properties. Both are True by default. See documentation for details.
+<li>TTBMRUList: Added OnChange event.
+<li>Typing or pressing Enter on	the design-time editor's tree view now activates the Object Inspector.
+<li><i>Fix:</i> On Delphi 6, the ShortCut property of TTBCustomItem was showing up like an Integer property in Object Inspector, thanks to some change Borland made. Workaround added.
+<li><i>Fix:</i> Removed call in design-time editor that appeared to cause AV's in certain cases.
+</ul>
+
+<h3>2.0-BETA5 <font size=1>(2001-07-09)</font></h3>
+<ul>
+<li>Now works around the Windows 2000 problem of delaying on the first PlaySound call by not calling PlaySound at all if there is no sound associated with the event.
+<li>Added LoadFromIni, LoadFromRegIni, SaveToIni, SaveToRegIni methods to TTBMRUList.
+<li>Updated documentation; added an index.
+<li>Updated demo project.
+<li><i>Fix:</i> The change to the Click handling in 2.0-BETA4 broke exception handling.
+<li><i>Fix:</i> The OnResize event was never fired.
+<li>A few very minor fixes and tweaks.
+</ul>
+
+<h3>2.0-BETA4 <font size=1>(2001-07-01)</font></h3>
+<ul>
+<li>Added UpdateActions property to TTBToolbar. Setting it to False can decrease CPU utilization. See the documentation for details.
+<li>Now, as with standard menus, when an item is clicked it posts a message to the queue so that the Click handler gets called when control returns to the message loop. This fixes the problem with modal forms not correctly getting the focus when an item is selected from a menu with the keyboard.
+<li>Fixed potential AV problem when Escape was pressed.
+<li>Improvements to design-time editor:
+<ul>
+<li>There's now an empty item at the end of the item list, similar to Delphi's menu editor. You can't (currently) type on this item item, but you can select it and press Insert to add a new item to the end.
+<li>You can now hold down Shift while pressing Insert or clicking one of the New buttons to add an item to the end instead of inserting it before the currently selected item.
+<li>Added keyboard shortcuts for New Subitem and New Separator.
+<li>Now selects root item when list view is focused and no item is selected.
+<li>After deleting the items, it now selects the item with the focus.
+</ul>
+</ul>
+
+<h3>2.0-BETA3 <font size=1>(2001-06-25)</font></h3>
+<ul>
+<li>Context help (F1) is now supported on menu items.
+<li>Added a GroupIndex property to TTBCustomItem due to popular demand. See documentation for details on how it works.
+<li>Added a new ImageIndex property editor which is fully compatible with Delphi 6.
+<li>It now substitutes Arial for MS Sans Serif & Microsoft Sans Serif when drawing vertical text, instead of letting Windows pick a font.
+<li>Remarked out code in TTBDock.ArrangeToolbars that was there to work around a VCL alignment bug*, because it had some undesirable side effects. Now, if you want to avoid the bug, you need to right-click your alClient-aligned controls in the form designer and select "Send to Back."
+<br>* The VCL alignment bug: if a control is taller or wider than the client height or width of its parent, alClient-aligned controls may appear on top of the control, instead of being hidden from view.
+<li><i>Fix:</i> When toolbars are dragged across a dock that has a background bitmap, they should no longer flicker.
+<li><i>Fix:</i> The menu converter now transfers the Tag property.
+<li><i>Fix:</i> The toolbar-dragging changes in 2.0-BETA2 broke the splitter.
+<li><i>Fix:</i> Work around an annoying Windows or VCL bug. (If you close all MDI child windows, the MDI client window gets the focus, and when it has the focus, pressing Alt+[char] doesn't send a WM_SYSCOMMAND message to the form for some reason.)
+<li><i>Fix:</i> In the design-time item editor, when a new item is created while the tree view has the focus, it now sets the focus to the list view so that the item becomes selected in Object Inspector.
+<li><i>Fix:</i> On TTBDock, LimitToOneRow=True didn't actually limit to one row while dragging.
+<li>Various other minor tweaks and fixes.
+</ul>
+
+<h3>2.0-BETA2 <font size=1>(2001-06-18)</font></h3>
+<ul>
+<li>Delphi 6 is now supported. There is one limitation however: the ImageIndex property editor used by TTBCustomItem descendants had to be disabled because TComponentImageIndexPropertyEditor is gone in Delphi 6! Therefore, on Delphi 6, the dropdown lists of ImageIndex properties may not work correctly, at least for now.
+<li>Text on vertical toolbars is now drawn vertically!
+<li>Vastly improved the code that handles toolbar dragging. Previously, when you dragged a SmoothDrag=True docked toolbar over other docked toolbars, the toolbar may not have ended up on the row you were expecting. This was because the old code - ported from Toolbar97 - was not designed with smooth dragging in mind. Now it should function almost exactly like Office 2000.
+<li>TTBEditItem (and friends): Removed DisplayAsButton property; replaced with EditOptions property. Now, by default, edits on toolbars will automatically change into buttons when the toolbar is docked vertically. Add tboUseEditWhenVertical to EditOptions to disable this.
+<li>On wrapped toolbars, menus now pop out to the side which obscures the least amount of items, like Office 2000.
+<li>Up/Down/Left/Right arrow keys on vertical toolbars now work like Office 2000.
+<li><i>Fix:</i> Hints on chevron popup's items didn't include shortcuts.
+<li><i>Fix:</i> Deleting an item from a TTBMRUList via Items.Delete() did not refresh the keyboard shortcuts.
+<li><i>Fix:</i> Fixed "Run-time creation of items and chevron" problem reported by Francois Rivierre.
+<li>Some very minor tweaks.
+</ul>
+
+<h3>2.0-BETA1 <font size=1>(2001-06-12)</font></h3>
+<ul>
+<li>Updated the Toolbar2000 License Agreement.
+<li>You can now display the version of Toolbar2000 by right-clicking a toolbar and selecting "Version".
+<li>Added an improved Demo project.
+<li>Made the margins of menu items a bit more like Office and standard menus.
+<li>Now includes size of a font's external leading when calculating an menu item's height.
+<li>Added workaround an apparent NT 4.0 & 2000 bug that was causing the right side of floating toolbars' non-client area to be painted incorrectly if the toolbar's width was greater than the screen width.
+<li>Various tweaks to the display of disabled toolbar & menu items.
+</ul>
+
+</font>
+
+</body>
+</html>

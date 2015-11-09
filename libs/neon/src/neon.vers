@@ -1,0 +1,22 @@
+# GNU linker version script for neon.
+# All symbols in <= 0.28.x use default unversioned.
+
+NEON_0_29 {
+    ne_iaddr_raw;
+    ne_sock_writev;
+    ne_sock_fullwritev;
+    ne_sock_set_error;
+    ne_sock_proxy;
+    ne_session_system_proxy;
+    ne_session_socks_proxy;
+    ne_acl3744_set;
+    ne_buffer_qappend;
+    ne_strnqdup;
+};
+
+NEON_0_30 {
+    ne_ssl_clicert_import;
+    ne_addr_canonical;
+    ne_ssl_context_get_flag;
+    ne_set_addrlist2;
+};
