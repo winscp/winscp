@@ -360,6 +360,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 			     struct Packet *pktin);
 static void ssh2_channel_check_close(struct ssh_channel *c);
 static void ssh_channel_destroy(struct ssh_channel *c);
+static void ssh2_msg_something_unimplemented(Ssh ssh, struct Packet *pktin);
 
 /*
  * Buffer management constants. There are several of these for
@@ -1746,6 +1747,15 @@ static struct Packet *ssh2_rdpkt(Ssh ssh, unsigned char **data, int *datalen)
 	}
     }
 
+    /*
+     * RFC 4253 doesn't explicitly say that completely empty packets
+     * with no type byte are forbidden, so treat them as deserving
+     * an SSH_MSG_UNIMPLEMENTED.
+     */
+    if (st->pktin->length <= 5) { /* == 5 we hope, but robustness */
+        ssh2_msg_something_unimplemented(ssh, st->pktin);
+        crStop(NULL);
+    }
     /*
      * pktin->body and pktin->length should identify the semantic
      * content of the packet, excluding the initial type byte.
@@ -9184,11 +9194,20 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		s->can_keyb_inter = conf_get_int(ssh->conf, CONF_try_ki_auth) &&
 		    in_commasep_string("keyboard-interactive", methods, methlen);
 #ifndef NO_GSSAPI
-		if (!ssh->gsslibs)
-		    ssh->gsslibs = ssh_gss_setup(ssh->conf);
-		s->can_gssapi = conf_get_int(ssh->conf, CONF_try_gssapi_auth) &&
-		    in_commasep_string("gssapi-with-mic", methods, methlen) &&
-		    ssh->gsslibs->nlibraries > 0;
+                if (conf_get_int(ssh->conf, CONF_try_gssapi_auth) &&
+		    in_commasep_string("gssapi-with-mic", methods, methlen)) {
+                    /* Try loading the GSS libraries and see if we
+                     * have any. */
+                    if (!ssh->gsslibs)
+                        ssh->gsslibs = ssh_gss_setup(ssh->conf);
+                    s->can_gssapi = (ssh->gsslibs->nlibraries > 0);
+                } else {
+                    /* No point in even bothering to try to load the
+                     * GSS libraries, if the user configuration and
+                     * server aren't both prepared to attempt GSSAPI
+                     * auth in the first place. */
+                    s->can_gssapi = FALSE;
+                }
 #endif
 	    }
 

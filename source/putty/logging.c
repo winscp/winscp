@@ -22,7 +22,8 @@ struct LogContext {
     int logtype;		       /* cached out of conf */
 };
 
-static Filename *xlatlognam(Filename *s, char *hostname, struct tm *tm);
+static Filename *xlatlognam(Filename *s, char *hostname, int port,
+                            struct tm *tm);
 
 /*
  * Internal wrapper function which must be called for _all_ output
@@ -87,16 +88,19 @@ static void logfopen_callback(void *handle, int mode)
     char buf[256], *event;
     struct tm tm;
     const char *fmode;
+    int shout = FALSE;
 
     if (mode == 0) {
 	ctx->state = L_ERROR;	       /* disable logging */
     } else {
 	fmode = (mode == 1 ? "ab" : "wb");
 	ctx->lgfp = f_open(ctx->currlogfilename, fmode, FALSE);
-	if (ctx->lgfp)
+	if (ctx->lgfp) {
 	    ctx->state = L_OPEN;
-	else
+        } else {
 	    ctx->state = L_ERROR;
+            shout = TRUE;
+        }
     }
 
     if (ctx->state == L_OPEN) {
@@ -118,6 +122,23 @@ static void logfopen_callback(void *handle, int mode)
 		       "unknown"),
 		      filename_to_str(ctx->currlogfilename));
     logevent(ctx->frontend, event);
+    if (shout) {
+        /*
+         * If we failed to open the log file due to filesystem error
+         * (as opposed to user action such as clicking Cancel in the
+         * askappend box), we should log it more prominently. We do
+         * this by sending it to the same place that stderr output
+         * from the main session goes (so, either a console tool's
+         * actual stderr, or a terminal window).
+         *
+         * Of course this is one case in which that policy won't cause
+         * it to turn up embarrassingly in a log file of real server
+         * output, because the whole point is that we haven't managed
+         * to open any such log file :-)
+         */
+        from_backend(ctx->frontend, 1, event, strlen(event));
+        from_backend(ctx->frontend, 1, "\r\n", 2);
+    }
     sfree(event);
 
     /*
@@ -143,6 +164,7 @@ void logfopen(void *handle)
 {
     struct LogContext *ctx = (struct LogContext *)handle;
     struct tm tm;
+    FILE *fp;
     int mode;
 
     /* Prevent repeat calls */
@@ -159,12 +181,13 @@ void logfopen(void *handle)
         filename_free(ctx->currlogfilename);
     ctx->currlogfilename = 
         xlatlognam(conf_get_filename(ctx->conf, CONF_logfilename),
-                   conf_get_str(ctx->conf, CONF_host), &tm);
+                   conf_get_str(ctx->conf, CONF_host),
+                   conf_get_int(ctx->conf, CONF_port), &tm);
 
-    ctx->lgfp = f_open(ctx->currlogfilename, "r", FALSE);  /* file already present? */
-    if (ctx->lgfp) {
+    fp = f_open(ctx->currlogfilename, "r", FALSE);  /* file already present? */
+    if (fp) {
 	int logxfovr = conf_get_int(ctx->conf, CONF_logxfovr);
-	fclose(ctx->lgfp);
+	fclose(fp);
 	if (logxfovr != LGXF_ASK) {
 	    mode = ((logxfovr == LGXF_OVR) ? 2 : 1);
 	} else
@@ -408,9 +431,10 @@ void log_reconfig(void *handle, Conf *conf)
  *
  * "&Y":YYYY   "&m":MM   "&d":DD   "&T":hhmmss   "&h":<hostname>   "&&":&
  */
-static Filename *xlatlognam(Filename *src, char *hostname, struct tm *tm)
+static Filename *xlatlognam(Filename *src, char *hostname, int port,
+                            struct tm *tm)
 {
-    char buf[10], *bufp;
+    char buf[32], *bufp;
     int size;
     char *buffer;
     int buflen, bufsize;
@@ -423,6 +447,7 @@ static Filename *xlatlognam(Filename *src, char *hostname, struct tm *tm)
     s = filename_to_str(src);
 
     while (*s) {
+        int sanitise = FALSE;
 	/* Let (bufp, len) be the string to append. */
 	bufp = buf;		       /* don't usually override this */
 	if (*s == '&') {
@@ -446,12 +471,21 @@ static Filename *xlatlognam(Filename *src, char *hostname, struct tm *tm)
 		bufp = hostname;
 		size = strlen(bufp);
 		break;
+	      case 'p':
+                size = sprintf(buf, "%d", port);
+		break;
 	      default:
 		buf[0] = '&';
 		size = 1;
 		if (c != '&')
 		    buf[size++] = c;
 	    }
+            /* Never allow path separators - or any other illegal
+             * filename character - to come out of any of these
+             * auto-format directives. E.g. 'hostname' can contain
+             * colons, if it's an IPv6 address, and colons aren't
+             * legal in filenames on Windows. */
+            sanitise = TRUE;
 	} else {
 	    buf[0] = *s++;
 	    size = 1;
@@ -460,8 +494,12 @@ static Filename *xlatlognam(Filename *src, char *hostname, struct tm *tm)
             bufsize = (buflen + size) * 5 / 4 + 512;
             buffer = sresize(buffer, bufsize, char);
         }
-	memcpy(buffer + buflen, bufp, size);
-	buflen += size;
+        while (size-- > 0) {
+            char c = *bufp++;
+            if (sanitise)
+                c = filename_char_sanitise(c);
+            buffer[buflen++] = c;
+        }
     }
     buffer[buflen] = '\0';
 

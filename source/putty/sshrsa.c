@@ -767,6 +767,8 @@ static int rsa2_pubkey_bits(void *blob, int len)
     int ret;
 
     rsa = rsa2_newkey((char *) blob, len);
+    if (!rsa)
+	return -1;
     ret = bignum_bitcount(rsa->modulus);
     rsa2_freekey(rsa);
 

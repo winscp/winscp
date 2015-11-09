@@ -579,17 +579,18 @@ static void handle_destroy(struct handle *h)
 
 void handle_free(struct handle *h)
 {
-    /*
-     * If the handle is currently busy, we cannot immediately free
-     * it. Instead we must wait until it's finished its current
-     * operation, because otherwise the subthread will write to
-     * invalid memory after we free its context from under it.
-     */
     assert(h && !h->u.g.moribund);
-    if (h->u.g.busy) {
-	/*
-	 * Just set the moribund flag, which will be noticed next
-	 * time an operation completes.
+    if (h->u.g.busy && h->type != HT_FOREIGN) {
+        /*
+         * If the handle is currently busy, we cannot immediately free
+         * it, because its subthread is in the middle of something.
+         * (Exception: foreign handles don't have a subthread.)
+         *
+         * Instead we must wait until it's finished its current
+         * operation, because otherwise the subthread will write to
+         * invalid memory after we free its context from under it. So
+         * we set the moribund flag, which will be noticed next time
+         * an operation completes.
 	 */
 	h->u.g.moribund = TRUE;
     } else if (h->u.g.defunct) {

@@ -42,6 +42,15 @@ char *dupprintf(const char *fmt, ...)
 char *dupvprintf(const char *fmt, va_list ap);
 void burnstr(char *string);
 
+/* String-to-Unicode converters that auto-allocate the destination and
+ * work around the rather deficient interface of mb_to_wc.
+ *
+ * These actually live in miscucs.c, not misc.c (the distinction being
+ * that the former is only linked into tools that also have the main
+ * Unicode support). */
+wchar_t *dup_mb_to_wc_c(int codepage, int flags, const char *string, int len);
+wchar_t *dup_mb_to_wc(int codepage, int flags, const char *string);
+
 int toint(unsigned);
 
 char *fgetline(FILE *fp);
