@@ -13,8 +13,8 @@ public:
   CString GetLastSegment() const;
   CServerPath();
   CServerPath(int nServerType);
-  CServerPath(CString path);
-  CServerPath(CString path, int nServerType);
+  CServerPath(CString path, bool trim = true);
+  CServerPath(CString path, int nServerType, bool trim = true);
   CServerPath(CString subdir, const CServerPath & parent); // If subdir is absolute, parent is ignored
   CServerPath(const CServerPath & path);
 

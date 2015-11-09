@@ -1426,14 +1426,14 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   else if (!gid.IsEmpty())
     direntry.ownergroup += L" " + gid;
 
-  if (!(str = GetNextToken(line, linelen, tokenlen, pos, 1)))
+  if (line[pos] != L' ')
   {
     return FALSE;
   }
-
+  pos++;
   CString fileName;
-  copyStr(fileName, 0, str, tokenlen, true);
-  CServerPath path(fileName);
+  copyStr(fileName, 0, line + pos, linelen - pos, true);
+  CServerPath path(fileName, false); // do not trim
   direntry.name = path.GetLastSegment();
   if (direntry.name.IsEmpty())
   {

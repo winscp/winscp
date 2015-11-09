@@ -21,11 +21,14 @@ CServerPath::CServerPath(int nServerType)
   m_bEmpty = TRUE;
 }
 
-CServerPath::CServerPath(CString path)
+CServerPath::CServerPath(CString path, bool trim)
 {
   m_nServerType = FZ_SERVERTYPE_FTP;
-  path.TrimLeft( L" " );
-  path.TrimRight( L" " );
+  if (trim)
+  {
+    path.TrimLeft( L" " );
+    path.TrimRight( L" " );
+  }
   if (path == L"")
   {
     m_bEmpty = TRUE;
@@ -44,14 +47,17 @@ CServerPath::CServerPath(CString path)
   else if (path.GetLength() > 2 && path[0] == L'\'' && path.Right(1) == L"'" && path.Find(L'/') == -1 && path.Find(L'\\') == -1)
     m_nServerType |= FZ_SERVERTYPE_SUB_FTP_MVS;
 
-  *this = CServerPath(path, m_nServerType);
+  *this = CServerPath(path, m_nServerType, trim);
 }
 
-CServerPath::CServerPath(CString path, int nServerType)
+CServerPath::CServerPath(CString path, int nServerType, bool trim)
 {
   m_nServerType = nServerType;
-  path.TrimLeft( L" " );
-  path.TrimRight( L" " );
+  if (trim)
+  {
+    path.TrimLeft( L" " );
+    path.TrimRight( L" " );
+  }
   if (path == L"")
   {
     m_bEmpty = TRUE;
