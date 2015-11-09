@@ -157,7 +157,6 @@ public:
     TSearchTypes Options, bool Down);
   void __fastcall Redo();
 
-  __property bool SupportsUpSearch = { read = FVersion20 };
   __property bool CanRedo = { read = GetCanRedo };
   __property bool LoadedWithPreamble = { read = FLoadedWithPreamble };
 
@@ -176,7 +175,6 @@ protected:
 
 private:
   HINSTANCE FLibrary;
-  bool FVersion20;
   bool FWordWrap;
   unsigned int FTabSize;
   bool FInitialized;
@@ -188,7 +186,6 @@ private:
 __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
   TRichEdit(AOwner),
   FLibrary(0),
-  FVersion20(false),
   FTabSize(0),
   FWordWrap(true),
   FInitialized(false),
@@ -259,67 +256,54 @@ void __fastcall TRichEdit20::ResetFormat()
 int __fastcall TRichEdit20::FindText(const UnicodeString SearchStr, int StartPos,
   int /*Length*/, TSearchTypes Options, bool Down)
 {
-  int Result;
-  if (FVersion20)
-  {
-    ::FINDTEXTEX Find;
-    memset(&Find, 0, sizeof(Find));
-    Find.chrg.cpMin = StartPos;
-    Find.chrg.cpMax = -1;
-    Find.lpstrText = UnicodeString(SearchStr).c_str();
+  ::FINDTEXTEX Find;
+  memset(&Find, 0, sizeof(Find));
+  Find.chrg.cpMin = StartPos;
+  Find.chrg.cpMax = -1;
+  Find.lpstrText = UnicodeString(SearchStr).c_str();
 
-    unsigned int Flags =
-      FLAGMASK(Options.Contains(stWholeWord), FR_WHOLEWORD) |
-      FLAGMASK(Options.Contains(stMatchCase), FR_MATCHCASE) |
-      FLAGMASK(Down, FR_DOWN);
-    Result = SendMessage(Handle, EM_FINDTEXTEX, Flags, (LPARAM)&Find);
-  }
-  else
-  {
-    DebugAssert(Down);
-    Result = TRichEdit::FindText(SearchStr, StartPos, Text.Length(), Options);
-  }
+  unsigned int Flags =
+    FLAGMASK(Options.Contains(stWholeWord), FR_WHOLEWORD) |
+    FLAGMASK(Options.Contains(stMatchCase), FR_MATCHCASE) |
+    FLAGMASK(Down, FR_DOWN);
+  int Result = SendMessage(Handle, EM_FINDTEXTEX, Flags, (LPARAM)&Find);
   return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRichEdit20::Redo()
 {
-  DebugAssert(FVersion20);
   SendMessage(Handle, EM_REDO, 0, 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRichEdit20::CreateParams(TCreateParams & Params)
 {
-  const wchar_t RichEditModuleName[] = L"RICHED20.DLL";
+  UnicodeString RichEditModuleName(L"RICHED20.DLL");
   long int OldError;
 
   OldError = SetErrorMode(SEM_NOOPENFILEERRORBOX);
-  FLibrary = LoadLibrary(RichEditModuleName);
+  FLibrary = LoadLibrary(RichEditModuleName.c_str());
   SetErrorMode(OldError);
 
-  FVersion20 = (FLibrary != 0);
-  if (!FVersion20)
+  // No fallback, RichEdit 2.0 is available since Windows NT/98
+  if (FLibrary == 0)
   {
-    // fallback to richedit 1.0
-    TRichEdit::CreateParams(Params);
+    throw Exception(FORMAT(L"Cannot load %s", (RichEditModuleName)));
   }
-  else
-  {
-    TCustomMemo::CreateParams(Params);
-    CreateSubClass(Params, RICHEDIT_CLASS);
-    Params.Style = Params.Style |
-      (HideScrollBars ? 0 : ES_DISABLENOSCROLL) |
-      (HideSelection ? 0 : ES_NOHIDESEL);
-    Params.WindowClass.style = Params.WindowClass.style &
-      ~(CS_HREDRAW | CS_VREDRAW);
-  }
+
+  TCustomMemo::CreateParams(Params);
+  CreateSubClass(Params, RICHEDIT_CLASS);
+  Params.Style = Params.Style |
+    (HideScrollBars ? 0 : ES_DISABLENOSCROLL) |
+    (HideSelection ? 0 : ES_NOHIDESEL);
+  Params.WindowClass.style = Params.WindowClass.style &
+    ~(CS_HREDRAW | CS_VREDRAW);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRichEdit20::DestroyWnd()
 {
   TRichEdit::DestroyWnd();
 
-  if (FLibrary != 0)
+  if (ALWAYS_TRUE(FLibrary != 0))
   {
     FreeLibrary(FLibrary);
   }
@@ -446,7 +430,7 @@ void __fastcall TRichEdit20::Dispatch(void * Message)
 //---------------------------------------------------------------------------
 bool __fastcall TRichEdit20::GetCanRedo()
 {
-  return FVersion20 && (SendMessage(Handle, EM_CANREDO, 0, 0) != 0);
+  return (SendMessage(Handle, EM_CANREDO, 0, 0) != 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRichEdit20::SetTabSize(unsigned int TabSize)
@@ -1494,16 +1478,8 @@ void __fastcall TEditorForm::StartFind(bool Find)
   {
     Options << frWholeWord;
   }
-  if (EditorMemo->SupportsUpSearch)
+  if (WinConfiguration->Editor.FindDown)
   {
-    if (WinConfiguration->Editor.FindDown)
-    {
-      Options << frDown;
-    }
-  }
-  else
-  {
-    Options << frHideUpDown; // not implemented
     Options << frDown;
   }
   FLastFindDialog->Options = Options;
