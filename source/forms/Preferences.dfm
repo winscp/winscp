@@ -285,6 +285,7 @@ object PreferencesDialog: TPreferencesDialog
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
             OnAfterDialog = PathEditAfterDialog
+            DialogKind = dkSave
             DefaultExt = 'log'
             Filter = 'Session log files (*.log)|*.log|All files (*.*)|*.*'
             DialogOptions = [ofHideReadOnly, ofPathMustExist]
@@ -430,6 +431,7 @@ object PreferencesDialog: TPreferencesDialog
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
             OnAfterDialog = PathEditAfterDialog
+            DialogKind = dkSave
             DefaultExt = 'xml'
             Filter = 'XML log files (*.xml)|*.xml|All files (*.*)|*.*'
             DialogOptions = [ofHideReadOnly, ofPathMustExist]
@@ -1725,6 +1727,7 @@ object PreferencesDialog: TPreferencesDialog
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
             OnAfterDialog = PathEditAfterDialog
+            DialogKind = dkSave
             DefaultExt = 'log'
             Filter = 'Random seed files (*.rnd)|*.rnd|All files (*.*)|*.*'
             DialogOptions = [ofHideReadOnly, ofPathMustExist]
