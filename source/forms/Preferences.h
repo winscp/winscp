@@ -365,8 +365,6 @@ __published:
           TTreeNode *Node, bool &AllowCollapse);
   void __fastcall ListViewEndDrag(TObject *Sender,
           TObject *Target, int X, int Y);
-  void __fastcall PathEditCreateEditDialog(TObject *Sender,
-          TFileDialogKind DialogKind, TOpenDialog *&Dialog);
   void __fastcall SessionReopenTimeoutEditSetValue(TObject *Sender,
           Extended Value, UnicodeString &Text, bool &Handed);
   void __fastcall SessionReopenTimeoutEditGetValue(TObject *Sender,

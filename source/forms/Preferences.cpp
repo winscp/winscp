@@ -2051,14 +2051,6 @@ void __fastcall TPreferencesDialog::ListViewEndDrag(
   ScrollOnDragOver(Sender)->EndDrag();
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::PathEditCreateEditDialog(
-  TObject * Sender, TFileDialogKind DialogKind, TOpenDialog *& Dialog)
-{
-  USEDPARAM(DialogKind);
-  DebugAssert(DialogKind == dkOpen);
-  Dialog = new TOpenDialog(dynamic_cast<TComponent *>(Sender));
-}
-//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::SessionReopenTimeoutEditSetValue(
   TObject * /*Sender*/, Extended Value, UnicodeString & Text, bool & Handled)
 {

@@ -289,7 +289,6 @@ object PreferencesDialog: TPreferencesDialog
             Filter = 'Session log files (*.log)|*.log|All files (*.*)|*.*'
             DialogOptions = [ofHideReadOnly, ofPathMustExist]
             DialogTitle = 'Select file for session log.'
-            OnCreateEditDialog = PathEditCreateEditDialog
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 3
@@ -435,7 +434,6 @@ object PreferencesDialog: TPreferencesDialog
             Filter = 'XML log files (*.xml)|*.xml|All files (*.*)|*.*'
             DialogOptions = [ofHideReadOnly, ofPathMustExist]
             DialogTitle = 'Select file for XML log.'
-            OnCreateEditDialog = PathEditCreateEditDialog
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 1
@@ -1731,7 +1729,6 @@ object PreferencesDialog: TPreferencesDialog
             Filter = 'Random seed files (*.rnd)|*.rnd|All files (*.*)|*.*'
             DialogOptions = [ofHideReadOnly, ofPathMustExist]
             DialogTitle = 'Select file for random seed'
-            OnCreateEditDialog = PathEditCreateEditDialog
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 0
