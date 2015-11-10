@@ -1055,6 +1055,7 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
   {
     if (ScpExplorer != NULL)
     {
+      // See also TCustomScpExplorerForm::RemoteDirViewBusy
       ScpExplorer->LockWindow();
     }
     FDirectoryReadingStart = Now();

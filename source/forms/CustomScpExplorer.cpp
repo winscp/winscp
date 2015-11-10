@@ -8706,7 +8706,8 @@ bool __fastcall TCustomScpExplorerForm::IsBusy()
 Boolean __fastcall TCustomScpExplorerForm::AllowedAction(TAction * /*Action*/, TActionAllowed Allowed)
 {
   // While the window is disabled, we still seem to process menu shortcuts at least,
-  // so stop it at least here
+  // so stop it at least here.
+  // See also TCustomScpExplorerForm::RemoteDirViewBusy
   return
     (Allowed == aaUpdate) ||
     !NonVisualDataModule->Busy;
@@ -8715,5 +8716,30 @@ Boolean __fastcall TCustomScpExplorerForm::AllowedAction(TAction * /*Action*/, T
 void __fastcall TCustomScpExplorerForm::EditMenuItemPopup(TTBCustomItem * Sender, bool FromLink)
 {
   NonVisualDataModule->EditMenuItemPopup(Sender, FromLink);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteDirViewBusy(TObject * /*Sender*/, bool Busy, bool & Allow)
+{
+  // This is somewhat redundant to LockWindow() call from
+  // TTerminalManager::TerminalReadDirectoryProgress.
+  // But disabling window is known not to block keyboard shorcuts
+  // (see TCustomScpExplorerForm::AllowedAction), this hopefully works.
+  if (Busy)
+  {
+    if (NonVisualDataModule->Busy)
+    {
+      Allow = false;
+    }
+    else
+    {
+      NonVisualDataModule->StartBusy();
+      LockWindow();
+    }
+  }
+  else
+  {
+    UnlockWindow();
+    NonVisualDataModule->EndBusy();
+  }
 }
 //---------------------------------------------------------------------------

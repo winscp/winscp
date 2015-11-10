@@ -18,6 +18,8 @@ enum TTransferDirection { tdToRemote, tdToLocal };
 enum TTransferType { ttCopy, ttMove };
 typedef void __fastcall (__closure *TDDDragFileName)
   (TObject * Sender, TRemoteFile * File, UnicodeString & FileName);
+typedef void __fastcall (__closure *TDirViewBusy)
+  (TObject * Sender, bool Busy, bool & Allow);
 //---------------------------------------------------------------------------
 class PACKAGE TUnixDirView : public TCustomUnixDirView
 {
@@ -32,6 +34,7 @@ private:
   TTerminal *FTerminal;
   bool FShowInaccesibleDirectories;
   TDDDragFileName FOnDDDragFileName;
+  TDirViewBusy FOnBusy;
   bool __fastcall GetActive();
   TCustomUnixDriveView * FDriveView;
   TNotifyEvent FOnRead;
@@ -77,6 +80,9 @@ protected:
   virtual int __fastcall HiddenCount();
   virtual int __fastcall FilteredCount();
   DYNAMIC void __fastcall UpdatePathLabelCaption();
+  bool __fastcall DoBusy(bool Busy);
+  bool __fastcall StartBusy();
+  void __fastcall EndBusy();
 
   __property TCustomUnixDriveView * DriveView = { read = FDriveView, write = SetDriveView };
 
@@ -105,6 +111,7 @@ __published:
     write = SetDDAllowMove, default = False };
   __property TDDDragFileName OnDDDragFileName = { read = FOnDDDragFileName,
     write = FOnDDDragFileName};
+  __property TDirViewBusy OnBusy = { read = FOnBusy, write = FOnBusy };
   __property bool ShowInaccesibleDirectories  =
     { read=FShowInaccesibleDirectories, write=SetShowInaccesibleDirectories,
       default=true  };

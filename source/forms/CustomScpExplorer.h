@@ -183,6 +183,7 @@ __published:
     int Y, TDragState State, bool &Accept);
   void __fastcall QueueView3Exit(TObject *Sender);
   void __fastcall EditMenuItemPopup(TTBCustomItem *Sender, bool FromLink);
+  void __fastcall RemoteDirViewBusy(TObject *Sender, bool Busy, bool & Allow);
 
 private:
   TTerminal * FTerminal;
