@@ -4138,7 +4138,8 @@ void __fastcall TCustomScpExplorerForm::UserActionTimer(TObject * /*Sender*/)
 void __fastcall TCustomScpExplorerForm::ApplicationHint(TObject * /*Sender*/)
 {
   DebugAssert(Application);
-  UnicodeString AHint = GetLongHint(Application->Hint);
+  // Application->Hint contains long hint only
+  UnicodeString AHint = Application->Hint;
   FShowStatusBarHint = Active && !AHint.IsEmpty();
   if (FShowStatusBarHint)
   {

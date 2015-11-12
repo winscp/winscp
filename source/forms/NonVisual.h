@@ -626,6 +626,8 @@ __published:    // IDE-managed Components
   void __fastcall EditMenuItemPopup(TTBCustomItem *Sender, bool FromLink);
   void __fastcall QueuePopupSpeedComboBoxItemAdjustImageIndex(TTBXComboBoxItem *Sender,
           const UnicodeString AText, int AIndex, int &ImageIndex);
+  UnicodeString __fastcall CustomCommandCaption(const TCustomCommandType * Command, bool Toolbar);
+  UnicodeString __fastcall CustomCommandHint(const TCustomCommandType * Command);
 
 private:
   TListColumn * FListColumn;

@@ -555,6 +555,7 @@ BEGIN
         GENERATE_URL_COMMAND, "Your command %d"
         TIPS_MESSAGE, "Tip %d of %d"
         TIPS_TITLE, "Tips"
+        CUSTOM_COMMAND_HINT_LONG, "Execute custom command '%s' as '%s'"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2015 Martin Prikryl"

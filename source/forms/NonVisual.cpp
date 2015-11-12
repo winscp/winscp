@@ -1015,6 +1015,25 @@ void __fastcall TNonVisualDataModule::DoIdle()
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TNonVisualDataModule::CustomCommandCaption(const TCustomCommandType * Command, bool Toolbar)
+{
+  UnicodeString Result = Command->Name;
+  if (Toolbar)
+  {
+    Result = EscapeHotkey(StripHotkey(Result));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TNonVisualDataModule::CustomCommandHint(const TCustomCommandType * Command)
+{
+  UnicodeString Name = StripHotkey(Command->Name);
+  UnicodeString ShortHint = FMTLOAD(CUSTOM_COMMAND_HINT, (Name));
+  UnicodeString LongHint = FMTLOAD(CUSTOM_COMMAND_HINT_LONG, (Name, Command->Command));
+  UnicodeString Result = FORMAT(L"%s|%s", (ShortHint, LongHint));
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   TTBCustomItem * Menu, bool OnFocused, bool Toolbar, bool Both)
 {
@@ -1035,11 +1054,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     if (State >= 0)
     {
       TTBCustomItem * Item = new TTBXItem(Owner);
-      Item->Caption = Command->Name;
-      if (Toolbar)
-      {
-        Item->Caption = EscapeHotkey(StripHotkey(Item->Caption));
-      }
+      Item->Caption = CustomCommandCaption(Command, Toolbar);
       Item->Tag = Index;
       Item->Enabled = (State > 0);
       if (OnFocused)
@@ -1050,7 +1065,10 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
       {
         Item->Tag = Item->Tag | 0x0200;
       }
-      Item->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (StripHotkey(Command->Name)));
+      UnicodeString Name = StripHotkey(Command->Name);
+      UnicodeString ShortHint = FMTLOAD(CUSTOM_COMMAND_HINT, (Name));
+      UnicodeString LongHint = FMTLOAD(CUSTOM_COMMAND_HINT_LONG, (Name, Command->Command));
+      Item->Hint = FORMAT(L"%s|%s", (ShortHint, LongHint));
       if (!Both)
       {
         Item->ShortCut = Command->ShortCut;
@@ -1136,9 +1154,13 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
     int Index = 0;
     while (!Changed && (Index < CustomCommandList->Count))
     {
+      TTBCustomItem * Item = Toolbar->Items->Items[Index];
+      const TCustomCommandType * Command = CustomCommandList->Commands[Index];
+
       Changed =
-        (Toolbar->Items->Items[Index]->Caption !=
-          EscapeHotkey(StripHotkey(CustomCommandList->Commands[Index]->Name)));
+        (Item->Caption != CustomCommandCaption(Command, true)) ||
+        (Item->Hint != CustomCommandHint(Command));
+
       Index++;
     }
   }

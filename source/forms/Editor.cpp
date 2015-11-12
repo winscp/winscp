@@ -1575,7 +1575,8 @@ void __fastcall TEditorForm::Reload()
 void __fastcall TEditorForm::ApplicationHint(TObject * /*Sender*/)
 {
   DebugAssert(Application);
-  UnicodeString AHint = GetLongHint(Application->Hint);
+  // Application->Hint contains long hint only
+  UnicodeString AHint = Application->Hint;
   FShowStatusBarHint = Active && !AHint.IsEmpty();
   if (FShowStatusBarHint)
   {

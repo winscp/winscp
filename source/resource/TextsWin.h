@@ -551,6 +551,7 @@
 #define GENERATE_URL_COMMAND    1954
 #define TIPS_MESSAGE            1955
 #define TIPS_TITLE              1956
+#define CUSTOM_COMMAND_HINT_LONG 1957
 
 // 2xxx is reserved for TextsFileZilla.h
 
