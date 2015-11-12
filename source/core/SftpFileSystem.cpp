@@ -3198,7 +3198,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
         }
         else
         {
-          FTerminal->LogEvent(L"We will use UTF-8 strings until server sends an invalid UTF-8 string as with SFTP version 3 and older UTF-8 string are not mandatory");
+          FTerminal->LogEvent(L"We will use UTF-8 strings until server sends an invalid UTF-8 string as with SFTP version 3 and older UTF-8 strings are not mandatory");
           FUtfStrings = asAuto;
           FUtfDisablingAnnounced = false;
         }
