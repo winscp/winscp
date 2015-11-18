@@ -1413,6 +1413,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnHistoryChange = DirViewHistoryChange
       OnHistoryGo = DirViewHistoryGo
       OnPathChange = LocalDirViewPathChange
+      OnBusy = DirViewBusy
     end
     object LocalTopDock: TTBXDock
       Left = 0

@@ -385,6 +385,7 @@ type
     property OnHistoryChange;
     property OnHistoryGo;
     property OnPathChange;
+    property OnBusy;
 
     property ColumnClick;
     property MultiSelect;

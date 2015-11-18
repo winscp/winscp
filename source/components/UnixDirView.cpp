@@ -804,71 +804,41 @@ TDropEffectSet __fastcall TUnixDirView::GetDragSourceEffects()
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TUnixDirView::DoBusy(bool Busy)
-{
-  bool Result = true;
-  if (OnBusy != NULL)
-  {
-    OnBusy(this, Busy, Result);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TUnixDirView::StartBusy()
-{
-  return DoBusy(true);
-}
-//---------------------------------------------------------------------------
-void __fastcall TUnixDirView::EndBusy()
-{
-  ALWAYS_TRUE(DoBusy(false));
-}
-//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::ChangeDirectory(UnicodeString Path)
 {
-  if (StartBusy())
+  UnicodeString LastFile = L"";
+  if (ItemFocused) LastFile = ItemFileName(ItemFocused);
+  ClearItems();
+  DoAnimation(true);
+#ifndef DESIGN_ONLY
+  try
   {
-    try
+    FDirLoadedAfterChangeDir = false;
+    if (Path == HOMEDIRECTORY)
     {
-      UnicodeString LastFile = L"";
-      if (ItemFocused) LastFile = ItemFileName(ItemFocused);
-      ClearItems();
-      DoAnimation(true);
-    #ifndef DESIGN_ONLY
-      try
-      {
-        FDirLoadedAfterChangeDir = false;
-        if (Path == HOMEDIRECTORY)
-        {
-          Terminal->HomeDirectory();
-        }
-        else
-        // this works even with LockInHome
-        if (Path == ROOTDIRECTORY)
-        {
-          Terminal->CurrentDirectory = ROOTDIRECTORY;
-        }
-        else
-        {
-          Terminal->ChangeDirectory(Path);
-        }
-      }
-      __finally
-      {
-        // changing directory failed, so we load again old directory
-        if (!FDirLoadedAfterChangeDir)
-        {
-          FSelectFile = LastFile;
-          Reload(false);
-        };
-      }
-    #endif
+      Terminal->HomeDirectory();
     }
-    __finally
+    else
+    // this works even with LockInHome
+    if (Path == ROOTDIRECTORY)
     {
-      EndBusy();
+      Terminal->CurrentDirectory = ROOTDIRECTORY;
+    }
+    else
+    {
+      Terminal->ChangeDirectory(Path);
     }
   }
+  __finally
+  {
+    // changing directory failed, so we load again old directory
+    if (!FDirLoadedAfterChangeDir)
+    {
+      FSelectFile = LastFile;
+      Reload(false);
+    };
+  }
+#endif
 }
 //---------------------------------------------------------------------------
 bool __fastcall TUnixDirView::CanEdit(TListItem* Item)

@@ -8719,17 +8719,17 @@ void __fastcall TCustomScpExplorerForm::EditMenuItemPopup(TTBCustomItem * Sender
   NonVisualDataModule->EditMenuItemPopup(Sender, FromLink);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemoteDirViewBusy(TObject * /*Sender*/, bool Busy, bool & Allow)
+void __fastcall TCustomScpExplorerForm::DirViewBusy(TObject * /*Sender*/, int Busy, bool & State)
 {
   // This is somewhat redundant to LockWindow() call from
   // TTerminalManager::TerminalReadDirectoryProgress.
   // But disabling window is known not to block keyboard shorcuts
   // (see TCustomScpExplorerForm::AllowedAction), this hopefully works.
-  if (Busy)
+  if (Busy > 0)
   {
     if (NonVisualDataModule->Busy)
     {
-      Allow = false;
+      State = false;
     }
     else
     {
@@ -8737,10 +8737,14 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewBusy(TObject * /*Sender*/, 
       LockWindow();
     }
   }
-  else
+  else if (Busy < 0)
   {
     UnlockWindow();
     NonVisualDataModule->EndBusy();
+  }
+  else
+  {
+    State = NonVisualDataModule->Busy;
   }
 }
 //---------------------------------------------------------------------------

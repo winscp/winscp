@@ -93,6 +93,8 @@ type
   TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; var Matches: Boolean; AllowImplicitMatches: Boolean) of object;
   TDirViewGetOverlayEvent = procedure(Sender: TObject; Item: TListItem; var Indexes: Word) of object;
   TDirViewUpdateStatusBarEvent = procedure(Sender: TObject; const FileInfo: TStatusFileInfo) of object;
+  TDirViewBusy = procedure(Sender: TObject; Busy: Integer; var State: Boolean) of object;
+  TBusyOperation = reference to procedure;
 
 type
   TCustomDirView = class;
@@ -197,6 +199,7 @@ type
     FScrollOnDragOver: TListViewScrollOnDragOver;
     FStatusFileInfo: TStatusFileInfo;
     FDoubleBufferedScrollingWorkaround: Boolean;
+    FOnBusy: TDirViewBusy;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
@@ -340,6 +343,14 @@ type
     procedure EnsureSelectionRedrawn;
     function HiddenCount: Integer; virtual; abstract;
     function FilteredCount: Integer; virtual; abstract;
+    function DoBusy(Busy: Integer): Boolean;
+    function StartBusy: Boolean;
+    procedure EndBusy;
+    function IsBusy: Boolean;
+    procedure BusyOperation(Operation: TBusyOperation);
+    procedure DoDisplayPropertiesMenu;
+    procedure DoExecute(Item: TListItem);
+    procedure DoExecuteParentDirectory;
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -490,6 +501,7 @@ type
     property PathLabel: TCustomPathLabel read FPathLabel write SetPathLabel;
     property ShowHiddenFiles: Boolean read FShowHiddenFiles write SetShowHiddenFiles default True;
     property OnUpdateStatusBar: TDirViewUpdateStatusBarEvent read FOnUpdateStatusBar write FOnUpdateStatusBar;
+    property OnBusy: TDirViewBusy read FOnBusy write FOnBusy;
     {Watch current directory for filename changes (create, rename, delete files)}
     property WatchForChanges: Boolean read FWatchForChanges write SetWatchForChanges default False;
   end;
@@ -1414,6 +1426,22 @@ begin
   end;
 end;
 
+procedure TCustomDirView.DoDisplayPropertiesMenu;
+begin
+  if not IsBusy then
+    DisplayPropertiesMenu;
+end;
+
+procedure TCustomDirView.DoExecute(Item: TListItem);
+begin
+  BusyOperation(procedure begin Execute(Item); end);
+end;
+
+procedure TCustomDirView.DoExecuteParentDirectory;
+begin
+  BusyOperation(ExecuteParentDirectory);
+end;
+
 procedure TCustomDirView.KeyDown(var Key: Word; Shift: TShiftState);
 begin
   if Valid and (not IsEditing) and (not Loading) then
@@ -1424,9 +1452,9 @@ begin
       if Assigned(ItemFocused) then
       begin
          Key := 0;
-         if (Key = VK_RETURN) and (Shift = [ssAlt]) then DisplayPropertiesMenu
+         if (Key = VK_RETURN) and (Shift = [ssAlt]) then DoDisplayPropertiesMenu
            else
-         if (Key <> VK_RETURN) or (Shift = []) then Execute(ItemFocused);
+         if (Key <> VK_RETURN) or (Shift = []) then DoExecute(ItemFocused);
       end;
     end
       else
@@ -1434,7 +1462,7 @@ begin
        (not IsRoot) then
     begin
       Key := 0;
-      ExecuteParentDirectory;
+      DoExecuteParentDirectory;
     end
       else
     if ((Key = VK_UP) and (ssAlt in Shift)) and
@@ -1446,13 +1474,13 @@ begin
       // We could obtain the value programatically using
       // MultiByteToWideChar(CP_OEMCP, MB_USEGLYPHCHARS, "\x8", 1, ...)
       FNextCharToIgnore := $25D8;
-      ExecuteParentDirectory;
+      DoExecuteParentDirectory;
     end
       else
     if (Key = 220 { backslash }) and (ssCtrl in Shift) and (not IsRoot) then
     begin
       Key := 0;
-      ExecuteRootDirectory;
+      BusyOperation(ExecuteRootDirectory);
     end
       else
     if (Key = VK_LEFT) and (ssAlt in Shift) then
@@ -1511,7 +1539,7 @@ var
 begin
   if Key = VK_APPS then
   begin
-    if not Loading then
+    if (not Loading) and (not IsBusy) then
     begin
       if MarkedCount > 0 then
       begin
@@ -1659,8 +1687,8 @@ begin
   if Assigned(ItemFocused) and (not Loading) and
      (GetItemAt(Message.XPos, Message.YPos) = ItemFocused) then
   begin
-    if GetKeyState(VK_MENU) < 0 then DisplayPropertiesMenu
-      else Execute(ItemFocused);
+    if GetKeyState(VK_MENU) < 0 then DoDisplayPropertiesMenu
+      else DoExecute(ItemFocused);
   end;
 end;
 
@@ -2718,13 +2746,13 @@ begin
     if Command = _APPCOMMAND_BROWSER_REFRESH then
     begin
       Message.Result := 1;
-      ReloadDirectory;
+      BusyOperation(ReloadDirectory);
     end
       else
     if Command = _APPCOMMAND_BROWSER_HOME then
     begin
       Message.Result := 1;
-      ExecuteHomeDirectory;
+      BusyOperation(ExecuteHomeDirectory);
     end
       else inherited;
   end
@@ -2842,11 +2870,16 @@ procedure TCustomDirView.DoHistoryGo(Index: Integer);
 var
   Cancel: Boolean;
 begin
-  Cancel := False;
-  if Assigned(OnHistoryGo) then
-    OnHistoryGo(Self, Index, Cancel);
+  if StartBusy then
+    try
+      Cancel := False;
+      if Assigned(OnHistoryGo) then
+        OnHistoryGo(Self, Index, Cancel);
 
-  if not Cancel then HistoryGo(Index);
+      if not Cancel then HistoryGo(Index);
+    finally
+      EndBusy;
+    end;
 end;
 
 procedure TCustomDirView.HistoryGo(Index: Integer);
@@ -3228,6 +3261,40 @@ begin
       ItemFocused.Update;
     end;
   end;
+end;
+
+function TCustomDirView.DoBusy(Busy: Integer): Boolean;
+begin
+  Result := True;
+  if Assigned(OnBusy) then
+  begin
+    OnBusy(Self, Busy, Result);
+  end;
+end;
+
+function TCustomDirView.StartBusy: Boolean;
+begin
+  Result := DoBusy(1);
+end;
+
+function TCustomDirView.IsBusy: Boolean;
+begin
+  Result := DoBusy(0);
+end;
+
+procedure TCustomDirView.EndBusy;
+begin
+  DoBusy(-1);
+end;
+
+procedure TCustomDirView.BusyOperation(Operation: TBusyOperation);
+begin
+  if StartBusy then
+    try
+      Operation;
+    finally
+      EndBusy;
+    end;
 end;
 
 initialization
