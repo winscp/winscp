@@ -1550,6 +1550,12 @@ bool __fastcall CheckForUpdates(bool CachedResults)
     Params.MoreMessagesSize = Updates.Results.NewsSize;
     // alias "ok" button to "upgrade" only if we have new version
     Params.AliasesCount = LENOF(Aliases) - (New ? 0 : 1);
+
+    if (New)
+    {
+      Params.ImageName = L"Installer";
+    }
+
     std::unique_ptr<TForm> Dialog(
       CreateMoreMessageDialogEx(Message, NULL, Type, Answers, HELP_UPDATES, &Params));
 
