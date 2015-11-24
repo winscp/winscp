@@ -2299,6 +2299,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcIgnorePermErrors:
     case fcRemoveCtrlZUpload:
     case fcLocking:
+    case fcPreservingTimestampDirs:
       return false;
 
     default:

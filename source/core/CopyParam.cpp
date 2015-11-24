@@ -28,6 +28,7 @@ void __fastcall TCopyParamType::Default()
   FileNameCase = ncNoChange;
   PreserveReadOnly = false;
   PreserveTime = true;
+  PreserveTimeDirs = false;
   Rights.Number = TRights::rfDefault;
   PreserveRights = false; // Was True until #106
   IgnorePermErrors = false;
@@ -168,10 +169,29 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     }
   }
 
-  if (PreserveTime != Defaults.PreserveTime)
+  bool AddPreserveTime = (PreserveTime != Defaults.PreserveTime);
+  bool APreserveTimeDirs = PreserveTime && PreserveTimeDirs;
+  if (AddPreserveTime || (APreserveTimeDirs != Defaults.PreserveTimeDirs))
   {
-    ADD(LoadStr(PreserveTime ? COPY_INFO_TIMESTAMP : COPY_INFO_DONT_PRESERVE_TIME),
-      cpaIncludeMaskOnly | cpaNoPreserveTime);
+    UnicodeString Str = LoadStr(PreserveTime ? COPY_INFO_TIMESTAMP : COPY_INFO_DONT_PRESERVE_TIME);
+
+    if (APreserveTimeDirs != Defaults.PreserveTimeDirs)
+    {
+      if (ALWAYS_TRUE(PreserveTimeDirs))
+      {
+        if (FLAGCLEAR(Options, cpaNoPreserveTimeDirs))
+        {
+          Str = FMTLOAD(COPY_INFO_PRESERVE_TIME_DIRS, (Str));
+          AddPreserveTime = true;
+        }
+      }
+      ADD("", cpaIncludeMaskOnly | cpaNoPreserveTime | cpaNoPreserveTimeDirs);
+    }
+
+    if (AddPreserveTime)
+    {
+      ADD(Str, cpaIncludeMaskOnly | cpaNoPreserveTime);
+    }
   }
 
   if ((PreserveRights || PreserveTime) &&
@@ -278,6 +298,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(FileNameCase);
   COPY(PreserveReadOnly);
   COPY(PreserveTime);
+  COPY(PreserveTimeDirs);
   COPY(Rights);
   COPY(AsciiFileMask);
   COPY(TransferMode);
@@ -453,9 +474,10 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
   // OpenArray (ARRAYOFCONST) supports only up to 19 arguments, so we had to split it
   return
     FORMAT(
-      L"  PrTime: %s; PrRO: %s; Rght: %s; PrR: %s (%s); FnCs: %s; RIC: %s; "
+      L"  PrTime: %s%s; PrRO: %s; Rght: %s; PrR: %s (%s); FnCs: %s; RIC: %s; "
          "Resume: %s (%d); CalcS: %s; Mask: %s\n",
       (BooleanToEngStr(PreserveTime),
+       UnicodeString(PreserveTime && PreserveTimeDirs ? L"+Dirs" : L""),
        BooleanToEngStr(PreserveReadOnly),
        Rights.Text,
        BooleanToEngStr(PreserveRights),
@@ -569,6 +591,7 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   FileNameCase = (TFileNameCase)Storage->ReadInteger(L"FileNameCase", FileNameCase);
   PreserveReadOnly = Storage->ReadBool(L"PreserveReadOnly", PreserveReadOnly);
   PreserveTime = Storage->ReadBool(L"PreserveTime", PreserveTime);
+  PreserveTimeDirs = Storage->ReadBool(L"PreserveTimeDirs", PreserveTimeDirs);
   PreserveRights = Storage->ReadBool(L"PreserveRights", PreserveRights);
   IgnorePermErrors = Storage->ReadBool(L"IgnorePermErrors", IgnorePermErrors);
   Rights.Text = Storage->ReadString(L"Text", Rights.Text);
@@ -616,6 +639,7 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage) const
   Storage->WriteInteger(L"FileNameCase", FileNameCase);
   Storage->WriteBool(L"PreserveReadOnly", PreserveReadOnly);
   Storage->WriteBool(L"PreserveTime", PreserveTime);
+  Storage->WriteBool(L"PreserveTimeDirs", PreserveTimeDirs);
   Storage->WriteBool(L"PreserveRights", PreserveRights);
   Storage->WriteBool(L"IgnorePermErrors", IgnorePermErrors);
   Storage->WriteString(L"Text", Rights.Text);
@@ -650,6 +674,7 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
     C(FileNameCase) &&
     C(PreserveReadOnly) &&
     C(PreserveTime) &&
+    C(PreserveTimeDirs) &&
     C(PreserveRights) &&
     C(IgnorePermErrors) &&
     C(Rights) &&

@@ -460,6 +460,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcGroupOwnerChangingByID: // by name
     case fcMoveToQueue:
     case fcLocking:
+    case fcPreservingTimestampDirs:
       return false;
 
     default:

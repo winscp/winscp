@@ -3193,7 +3193,8 @@ TUsableCopyParamAttrs __fastcall TTerminal::UsableCopyParamAttrs(int Params)
     // Synchronize dialog.
     FLAGMASK(!IsCapable[fcModeChangingUpload], cpaNoRights) |
     FLAGMASK(!IsCapable[fcRemoveCtrlZUpload], cpaNoRemoveCtrlZ) |
-    FLAGMASK(!IsCapable[fcRemoveBOMUpload], cpaNoRemoveBOM);
+    FLAGMASK(!IsCapable[fcRemoveBOMUpload], cpaNoRemoveBOM) |
+    FLAGMASK(!IsCapable[fcPreservingTimestampDirs], cpaNoPreserveTimeDirs);
   Result.Download = Result.General | cpaNoClearArchive |
     cpaNoIgnorePermErrors |
     // May be already set in General flags, but it's unconditional here
@@ -4271,7 +4272,7 @@ void __fastcall TTerminal::OpenLocalFile(const UnicodeString FileName,
   }
   FILE_OPERATION_LOOP_END(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
 
-  if ((Attrs & faDirectory) == 0)
+  if (FLAGCLEAR(Attrs, faDirectory) || (AHandle == NULL))
   {
     bool NoHandle = false;
     if (!TryWriteReadOnly && (Access == GENERIC_WRITE) &&
@@ -4283,9 +4284,10 @@ void __fastcall TTerminal::OpenLocalFile(const UnicodeString FileName,
 
     FILE_OPERATION_LOOP_BEGIN
     {
+      DWORD Flags = FLAGMASK(FLAGSET(Attrs, faDirectory), FILE_FLAG_BACKUP_SEMANTICS);
       Handle = CreateFile(ApiPath(FileName).c_str(), Access,
         Access == GENERIC_READ ? FILE_SHARE_READ | FILE_SHARE_WRITE : FILE_SHARE_READ,
-        NULL, OPEN_EXISTING, 0, 0);
+        NULL, OPEN_EXISTING, Flags, 0);
       if (Handle == INVALID_HANDLE_VALUE)
       {
         Handle = 0;

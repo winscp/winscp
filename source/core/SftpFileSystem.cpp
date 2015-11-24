@@ -2073,6 +2073,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcRemoveCtrlZUpload:
     case fcRemoveBOMUpload:
     case fcMoveToQueue:
+    case fcPreservingTimestampDirs:
       return true;
 
     case fcRename:
@@ -5386,6 +5387,18 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const UnicodeString Directo
   /* TODO : Show error message on failure. */
   if (!OperationProgress->Cancel)
   {
+    if (CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
+    {
+      TRemoteProperties Properties;
+      Properties.Valid << vpModification;
+
+      FTerminal->OpenLocalFile(
+        ExcludeTrailingBackslash(DirectoryName), GENERIC_READ, NULL, NULL, NULL,
+        &Properties.Modification, &Properties.LastAccess, NULL);
+
+      FTerminal->ChangeFileProperties(DestFullName, NULL, &Properties);
+    }
+
     if (FLAGSET(Params, cpDelete))
     {
       RemoveDir(ApiPath(DirectoryName));
@@ -5563,6 +5576,36 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
       SinkFileParams.Flags = Flags & ~tfFirstLevel;
 
       FTerminal->ProcessDirectory(FileName, SFTPSinkFile, &SinkFileParams);
+
+      if (CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
+      {
+        FTerminal->LogEvent(FORMAT(L"Preserving directory timestamp [%s]",
+          (StandardTimestamp(File->Modification))));
+        int SetFileTimeError = ERROR_SUCCESS;
+        // FILE_FLAG_BACKUP_SEMANTICS is needed to "open" directory
+        HANDLE LocalHandle = CreateFile(ApiPath(DestFullName).c_str(), GENERIC_WRITE,
+          FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+        if (LocalHandle == INVALID_HANDLE_VALUE)
+        {
+          SetFileTimeError = GetLastError();
+        }
+        else
+        {
+          FILETIME AcTime = DateTimeToFileTime(File->LastAccess, FTerminal->SessionData->DSTMode);
+          FILETIME WrTime = DateTimeToFileTime(File->Modification, FTerminal->SessionData->DSTMode);
+          if (!SetFileTime(LocalHandle, NULL, &AcTime, &WrTime))
+          {
+            SetFileTimeError = GetLastError();
+          }
+          CloseHandle(LocalHandle);
+        }
+
+        if (SetFileTimeError != ERROR_SUCCESS)
+        {
+          FTerminal->LogEvent(FORMAT(L"Preserving timestamp failed, ignoring: %s",
+            (SysErrorMessageForError(SetFileTimeError))));
+        }
+      }
 
       // Do not delete directory if some of its files were skip.
       // Throw "skip file" for the directory to avoid attempt to deletion

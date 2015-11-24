@@ -2,23 +2,23 @@ object CopyParamsFrame: TCopyParamsFrame
   Left = 0
   Top = 0
   Width = 420
-  Height = 431
+  Height = 456
   HelpType = htKeyword
   TabOrder = 0
   object CommonPropertiesGroup: TGroupBox
     Left = 212
     Top = 165
     Width = 201
-    Height = 98
+    Height = 123
     Caption = 'Common options'
     TabOrder = 3
     DesignSize = (
       201
-      98)
+      123)
     object SpeedLabel3: TLabel
       Left = 15
-      Top = 71
-      Width = 68
+      Top = 96
+      Width = 66
       Height = 13
       Caption = '&Speed (KB/s):'
       FocusControl = SpeedCombo
@@ -37,23 +37,23 @@ object CopyParamsFrame: TCopyParamsFrame
     end
     object CommonCalculateSizeCheck: TCheckBox
       Left = 16
-      Top = 46
+      Top = 71
       Width = 175
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Calculate total size'
       ParentShowHint = False
       ShowHint = True
-      TabOrder = 1
+      TabOrder = 2
       OnClick = ControlChange
     end
     object SpeedCombo: THistoryComboBox
       Left = 106
-      Top = 67
+      Top = 92
       Width = 85
       Height = 21
       AutoComplete = False
-      TabOrder = 2
+      TabOrder = 3
       Text = 'SpeedCombo'
       OnExit = SpeedComboExit
       Items.Strings = (
@@ -67,10 +67,22 @@ object CopyParamsFrame: TCopyParamsFrame
         '16'
         '8')
     end
+    object PreserveTimeDirsCheck: TCheckBox
+      Left = 32
+      Top = 45
+      Width = 159
+      Height = 17
+      Anchors = [akLeft, akTop, akRight]
+      Caption = 'Including directories'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 1
+      OnClick = ControlChange
+    end
   end
   object LocalPropertiesGroup: TGroupBox
     Left = 212
-    Top = 268
+    Top = 293
     Width = 201
     Height = 50
     Caption = 'Download options'
@@ -94,7 +106,7 @@ object CopyParamsFrame: TCopyParamsFrame
     Left = 8
     Top = 165
     Width = 194
-    Height = 153
+    Height = 178
     Caption = 'Upload options'
     TabOrder = 2
     object PreserveRightsCheck: TCheckBox
@@ -272,7 +284,7 @@ object CopyParamsFrame: TCopyParamsFrame
   end
   object OtherGroup: TGroupBox
     Left = 8
-    Top = 322
+    Top = 347
     Width = 405
     Height = 102
     Caption = 'Other'

@@ -964,11 +964,17 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
   if (Parameters->FindSwitch(L"nopreservetime"))
   {
     CopyParam.PreserveTime = false;
+    CopyParam.PreserveTimeDirs = false;
   }
 
-  if (Parameters->FindSwitch(L"preservetime"))
+  if (Parameters->FindSwitch(L"preservetime", Value))
   {
     CopyParam.PreserveTime = true;
+
+    if (SameText(Value, L"all"))
+    {
+      CopyParam.PreserveTimeDirs = true;
+    }
   }
 
   if (Parameters->FindSwitch(L"nopermissions"))

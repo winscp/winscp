@@ -421,6 +421,7 @@ BEGIN
   CODE_CONNECT, "Connect"
   CODE_YOUR_CODE, "Your code"
   CODE_PS_ADD_TYPE, "Load WinSCP .NET assembly"
+  COPY_INFO_PRESERVE_TIME_DIRS, "%s (including directories)"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

@@ -23,6 +23,7 @@ const int cpaNoIgnorePermErrors = 0x80;
 const int cpaNoNewerOnly        = 0x100;
 const int cpaNoRemoveCtrlZ      = 0x200;
 const int cpaNoRemoveBOM        = 0x400;
+const int cpaNoPreserveTimeDirs = 0x800;
 //---------------------------------------------------------------------------
 struct TUsableCopyParamAttrs
 {
@@ -38,6 +39,7 @@ private:
   TFileNameCase FFileNameCase;
   bool FPreserveReadOnly;
   bool FPreserveTime;
+  bool FPreserveTimeDirs;
   TRights FRights;
   TTransferMode FTransferMode;
   bool FAddXToDirectories;
@@ -105,6 +107,7 @@ public:
   __property TFileNameCase FileNameCase = { read = FFileNameCase, write = FFileNameCase };
   __property bool PreserveReadOnly = { read = FPreserveReadOnly, write = FPreserveReadOnly };
   __property bool PreserveTime = { read = FPreserveTime, write = FPreserveTime };
+  __property bool PreserveTimeDirs = { read = FPreserveTimeDirs, write = FPreserveTimeDirs };
   __property TRights Rights = { read = FRights, write = FRights };
   __property TTransferMode TransferMode = { read = FTransferMode, write = FTransferMode };
   __property UnicodeString LogStr  = { read=GetLogStr };

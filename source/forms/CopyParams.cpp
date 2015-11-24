@@ -80,6 +80,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   PreserveReadOnlyCheck->Checked = value.PreserveReadOnly;
 
   PreserveTimeCheck->Checked = value.PreserveTime;
+  PreserveTimeDirsCheck->Checked = value.PreserveTimeDirs;
 
   CommonCalculateSizeCheck->Checked = value.CalculateSize;
 
@@ -133,6 +134,7 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   Result.PreserveReadOnly = PreserveReadOnlyCheck->Checked;
 
   Result.PreserveTime = PreserveTimeCheck->Checked;
+  Result.PreserveTimeDirs = PreserveTimeDirsCheck->Checked;
 
   Result.CalculateSize = CommonCalculateSizeCheck->Checked;
 
@@ -198,6 +200,9 @@ void __fastcall TCopyParamsFrame::UpdateControls()
     Enabled);
   EnableControl(PreserveTimeCheck, FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTime) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
+  EnableControl(PreserveTimeDirsCheck,
+    PreserveTimeCheck->Enabled && FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTimeDirs) &&
+    PreserveTimeCheck->Checked);
   EnableControl(ChangeCaseGroup, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(IgnorePermErrorsCheck,
     ((PreserveRightsCheck->Enabled && PreserveRightsCheck->Checked) ||
