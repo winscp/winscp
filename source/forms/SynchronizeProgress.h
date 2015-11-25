@@ -40,6 +40,7 @@ __published:
   TPngImageList *ImageList120;
   TPngImageList *ImageList144;
   TPngImageList *ImageList192;
+  TPngImageList *AnimationImageList120;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall MinimizeItemClick(TObject *Sender);
   void __fastcall CancelItemClick(TObject *Sender);

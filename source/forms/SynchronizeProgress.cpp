@@ -35,6 +35,7 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner
   UseSystemSettings(this);
   HideComponentsPanel(this);
   SelectScaledImageList(ImageList);
+  SelectScaledImageList(AnimationImageList);
   if (!AllowMinimize)
   {
     MinimizeItem->Visible = false;
