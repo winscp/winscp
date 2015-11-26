@@ -312,6 +312,16 @@ void __fastcall RecordWrapperVersions(UnicodeString ConsoleVersion, UnicodeStrin
   }
 }
 //---------------------------------------------------------------------------
+static UnicodeString ColorToRGBStr(TColor Color)
+{
+  int RGB = ColorToRGB(Color);
+  int R = GetRValue(RGB);
+  int G = GetGValue(RGB);
+  int B = GetBValue(RGB);
+  UnicodeString Result = FORMAT(L"%.2x%.2x%.2x", (R, G, B));
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall UpdateStaticUsage()
 {
   Configuration->Usage->Inc(L"Runs");
@@ -397,6 +407,10 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"NotUseThemes", !UseThemes());
   Configuration->Usage->Set(L"ThemeDefaultFontSize", Application->DefaultFont->Size);
   Configuration->Usage->Set(L"ThemeIconFontSize", Screen->IconFont->Size);
+
+  Configuration->Usage->Set(L"SysColorWindow", ColorToRGBStr(clWindow));
+  Configuration->Usage->Set(L"SysColorBtnFace", ColorToRGBStr(clBtnFace));
+  Configuration->Usage->Set(L"SysColorWindowText", ColorToRGBStr(clWindowText));
 
   UnicodeString ProgramsFolder;
   ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
