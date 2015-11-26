@@ -313,7 +313,7 @@ void __fastcall ConfigureInterface()
   S = LoadStr(BIDI_MODE);
   if (!S.IsEmpty())
   {
-    Application->BiDiMode = static_cast<TBiDiMode>(StrToInt(bdRightToLeft));
+    Application->BiDiMode = static_cast<TBiDiMode>(StrToInt(S));
   }
   else
   {
