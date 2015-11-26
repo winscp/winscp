@@ -905,6 +905,8 @@ void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * Im
   DebugAssert((PaintBox->OnPaint == NULL) || (PaintBox->OnPaint == PaintBoxPaint));
   PaintBox->ControlStyle = PaintBox->ControlStyle << csOpaque;
   PaintBox->OnPaint = PaintBoxPaint;
+  PaintBox->Width = FImageList->Width;
+  PaintBox->Height = FImageList->Height;
   FPaintBox = PaintBox;
 
   FNamed = !Name.IsEmpty();
