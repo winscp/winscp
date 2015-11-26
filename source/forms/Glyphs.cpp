@@ -22,5 +22,6 @@ __fastcall TGlyphsModule::TGlyphsModule(TComponent* Owner)
   SelectScaledImageList(ButtonImages);
   SelectScaledImageList(LogImages);
   SelectScaledImageList(DialogImages);
+  SelectScaledImageList(AnimationImages);
 }
 //---------------------------------------------------------------------------
