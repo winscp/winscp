@@ -3,7 +3,6 @@
 STRINGTABLE
 BEGIN
         TRANSLATOR_INFO2, ""
-        MIDDLE_EAST, ""
         BIDI_MODE, ""
         FLIP_CHILDREN, ""
         TRANSLATOR_URL, ""

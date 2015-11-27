@@ -556,7 +556,6 @@
 // 2xxx is reserved for TextsFileZilla.h
 
 #define TRANSLATOR_INFO2        3001
-#define MIDDLE_EAST             3002
 #define BIDI_MODE               3003
 #define FLIP_CHILDREN           3004
 #define TRANSLATOR_URL          3006

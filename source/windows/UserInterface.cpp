@@ -301,15 +301,6 @@ void __fastcall ShowNotification(TTerminal * Terminal, const UnicodeString & Str
 void __fastcall ConfigureInterface()
 {
   UnicodeString S;
-  S = LoadStr(MIDDLE_EAST);
-  if (!S.IsEmpty())
-  {
-    SysLocale.MiddleEast = static_cast<bool>(StrToInt(S));
-  }
-  else
-  {
-    SysLocale.MiddleEast = false;
-  }
   S = LoadStr(BIDI_MODE);
   if (!S.IsEmpty())
   {
