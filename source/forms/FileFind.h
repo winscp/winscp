@@ -37,7 +37,6 @@ __published:
   TButton *MaskButton;
   TPaintBox *AnimationPaintBox;
   TButton *CopyButton;
-  TPngImageList *AnimationImageList;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall StartStopButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);
