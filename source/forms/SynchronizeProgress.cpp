@@ -43,7 +43,7 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner
   {
     SetGlobalMinimizeHandler(this, GlobalMinimize);
   }
-  FFrameAnimation.Init(AnimationPaintBox, NULL, L"SynchronizeDirectories");
+  FFrameAnimation.Init(AnimationPaintBox, L"SynchronizeDirectories");
 }
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()

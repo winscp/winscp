@@ -216,7 +216,7 @@ void __fastcall TProgressForm::UpdateControls()
 
     TopProgress->Style = IsIndetermiateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
 
-    FFrameAnimation.Init(AnimationPaintBox, NULL, Animation);
+    FFrameAnimation.Init(AnimationPaintBox, Animation);
     FFrameAnimation.Start();
 
     int Delta = 0;

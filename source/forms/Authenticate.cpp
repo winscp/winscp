@@ -121,7 +121,7 @@ void __fastcall TAuthenticateForm::FormShow(TObject * /*Sender*/)
   }
 
   UnicodeString AnimationName = FSessionData->IsSecure() ? L"ConnectingSecure" : L"ConnectingInsecure";
-  FFrameAnimation.Init(AnimationPaintBox, NULL, AnimationName);
+  FFrameAnimation.Init(AnimationPaintBox, AnimationName);
   FFrameAnimation.Start();
 }
 //---------------------------------------------------------------------------

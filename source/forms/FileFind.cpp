@@ -62,7 +62,7 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner, TFindEvent OnFin
   UseDesktopFont(StatusBar);
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
-  FFrameAnimation.Init(AnimationPaintBox, NULL, L"Find");
+  FFrameAnimation.Init(AnimationPaintBox, L"Find");
   FixFormIcons(this);
 }
 //---------------------------------------------------------------------------

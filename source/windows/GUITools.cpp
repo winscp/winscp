@@ -887,14 +887,9 @@ __fastcall TFrameAnimation::TFrameAnimation()
   FFirstFrame = -1;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFrameAnimation::Init(TPaintBox * PaintBox, TPngImageList * ImageList)
+void __fastcall TFrameAnimation::Init(TPaintBox * PaintBox, const UnicodeString & Name)
 {
-  DoInit(PaintBox, ImageList, UnicodeString(), false);
-}
-//---------------------------------------------------------------------------
-void __fastcall TFrameAnimation::Init(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name)
-{
-  DoInit(PaintBox, ImageList, Name, Name.IsEmpty());
+  DoInit(PaintBox, NULL, Name, Name.IsEmpty());
 }
 //---------------------------------------------------------------------------
 void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name, bool Null)
@@ -909,7 +904,6 @@ void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * Im
   PaintBox->Height = FImageList->Height;
   FPaintBox = PaintBox;
 
-  FNamed = !Name.IsEmpty();
   if (!Null)
   {
     int Frame = 0;
@@ -917,10 +911,7 @@ void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * Im
     {
       UnicodeString FrameData = FImageList->PngImages->Items[Frame]->Name;
       UnicodeString FrameName;
-      if (FNamed)
-      {
-        FrameName = CutToChar(FrameData, L'_', false);
-      }
+      FrameName = CutToChar(FrameData, L'_', false);
 
       if (SameText(Name, FrameName))
       {
@@ -1065,10 +1056,7 @@ void __fastcall TFrameAnimation::CalculateNextFrameTick()
 {
   TPngImageCollectionItem * ImageItem = GetCurrentImage();
   UnicodeString Duration = ImageItem->Name;
-  if (FNamed)
-  {
-    CutToChar(Duration, L'_', false);
-  }
+  CutToChar(Duration, L'_', false);
   // skip index (is not really used)
   CutToChar(Duration, L'_', false);
   // This should overflow, when tick count wraps.

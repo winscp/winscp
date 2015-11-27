@@ -91,15 +91,13 @@ class TFrameAnimation
 {
 public:
   __fastcall TFrameAnimation();
-  void __fastcall Init(TPaintBox * PaintBox, TPngImageList * ImageList);
-  void __fastcall Init(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name);
+  void __fastcall Init(TPaintBox * PaintBox, const UnicodeString & Name);
   void __fastcall Start();
   void __fastcall Stop();
 
 private:
   TPaintBox * FPaintBox;
   TPngImageList * FImageList;
-  bool FNamed;
   int FFirstFrame;
   int FFirstLoopFrame;
   int FLastFrame;
