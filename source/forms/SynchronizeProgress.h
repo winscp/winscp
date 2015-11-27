@@ -34,13 +34,11 @@ __published:
   TTBXToolbar *Toolbar;
   TTBXItem *CancelItem;
   TTBXItem *MinimizeItem;
-  TPngImageList *AnimationImageList;
   TPaintBox *AnimationPaintBox;
   TPanel *ComponentsPanel;
   TPngImageList *ImageList120;
   TPngImageList *ImageList144;
   TPngImageList *ImageList192;
-  TPngImageList *AnimationImageList120;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall MinimizeItemClick(TObject *Sender);
   void __fastcall CancelItemClick(TObject *Sender);
