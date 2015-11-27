@@ -570,16 +570,24 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
 
   if ((LocalPanel->Left > RemotePanel->Left) != WinConfiguration->ScpCommander.SwappedPanels)
   {
-    int AWidth = ClientWidth;
-    Panel(false)->Align = alClient;
-    Panel(true)->Align = alLeft;
-    TControl * ControlsOrder[] =
-      { Panel(true), Splitter, Panel(false) };
-    SetHorizontalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
-    Panel(true)->TabOrder = 0;
-    Panel(false)->TabOrder = 1;
-    ClientWidth = AWidth;
-    LeftPanelWidth = FLastLeftPanelWidth;
+    DisableAlign();
+    try
+    {
+      int AWidth = ClientWidth;
+      Panel(false)->Align = alClient;
+      Panel(true)->Align = alLeft;
+      TControl * ControlsOrder[] =
+        { Panel(true), Splitter, Panel(false) };
+      SetHorizontalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
+      Panel(true)->TabOrder = 0;
+      Panel(false)->TabOrder = 1;
+      ClientWidth = AWidth;
+      LeftPanelWidth = FLastLeftPanelWidth;
+    }
+    __finally
+    {
+      EnableAlign();
+    }
 
     int LocalIndex = MenuToolbar->Items->IndexOf(LocalMenuButton);
     int RemoteIndex = MenuToolbar->Items->IndexOf(RemoteMenuButton);
