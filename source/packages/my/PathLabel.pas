@@ -65,6 +65,7 @@ type
   public
     constructor Create(AnOwner: TComponent); override;
     procedure UpdateStatus;
+    function UseRightToLeftAlignment: Boolean; override;
 
     property ActiveColor: TColor index 1 read GetColors write SetColors
       default clActiveCaption;
@@ -484,7 +485,7 @@ begin
   if (Flags and DT_CALCRECT <> 0) and ((S = '') or ShowAccelChar and
     (S[1] = '&') and (S[2] = #0)) then S := S + ' ';
   if not ShowAccelChar then Flags := Flags or DT_NOPREFIX;
-  Flags := DrawTextBiDiModeFlags(Flags);
+  // have to apply DrawTextBiDiModeFlags if we ever deal with dibi
   Canvas.Font := Font;
 
   Width := (Rect.Right - Rect.Left);
@@ -655,6 +656,13 @@ begin
   Assert(Index in [0..5]);
   Result := FColors[Index];
 end; { GetColors }
+
+function TCustomPathLabel.UseRightToLeftAlignment: Boolean;
+begin
+  // Not sure how to properly deal with RTL atm.
+  // See also a comment on DrawTextBiDiModeFlags in DoDrawTextIntern
+  Result := False;
+end;
 
 procedure TCustomPathLabel.Paint;
 const

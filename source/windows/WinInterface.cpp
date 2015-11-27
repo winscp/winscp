@@ -1099,7 +1099,14 @@ void __fastcall CenterButtonImage(TButton * Button)
     {
       Padding += L" ";
     }
-    Caption = Padding + Caption;
+    if (Button->IsRightToLeft())
+    {
+      Caption = Caption + Padding;
+    }
+    else
+    {
+      Caption = Padding + Caption;
+    }
     Button->Caption = Caption;
 
     int CaptionWidth = Canvas->TextWidth(Caption);

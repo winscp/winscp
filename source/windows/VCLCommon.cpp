@@ -565,7 +565,18 @@ void __fastcall VerifyControl(TControl * Control)
   // check for the presence of items as while the listview does not have
   // a handle allocated, item count querying does not work
   // (see also a check below)
-  DebugAssert(!ControlHasRecreationPersistenceData(Control));
+  if (ControlHasRecreationPersistenceData(Control))
+  {
+    // Though is RTL bidi mode is set, the controls are recreated always,
+    // as we cannot really prevent it. So we force creation here.
+    DebugAssert(Application->BiDiMode != bdLeftToRight);
+    TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
+    // It must be TWinControl if ControlHasRecreationPersistenceData returned true
+    if (ALWAYS_TRUE(WinControl != NULL))
+    {
+      WinControl->HandleNeeded();
+    }
+  }
 
   TCustomListView * ListView = dynamic_cast<TCustomListView *>(Control);
   if (ListView != NULL)
@@ -699,6 +710,35 @@ void __fastcall UseSystemSettingsPre(TCustomForm * Control)
   ApplySystemSettingsOnControl(Control);
 };
 //---------------------------------------------------------------------------
+static void FlipAnchors(TControl * Control)
+{
+  // WORKAROUND VCL flips the Align, but not the Anchors
+  TAnchors Anchors = Control->Anchors;
+  if (Anchors.Contains(akLeft) != Anchors.Contains(akRight))
+  {
+    if (Anchors.Contains(akLeft))
+    {
+      Anchors << akRight;
+      Anchors >> akLeft;
+    }
+    else
+    {
+      Anchors << akLeft;
+      Anchors >> akRight;
+    }
+  }
+  Control->Anchors = Anchors;
+
+  TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
+  if (WinControl != NULL)
+  {
+    for (int Index = 0; Index < WinControl->ControlCount; Index++)
+    {
+      FlipAnchors(WinControl->Controls[Index]);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 // Settings that must be set only after whole form is constructed
 void __fastcall UseSystemSettingsPost(TCustomForm * Control)
 {
@@ -707,6 +747,8 @@ void __fastcall UseSystemSettingsPost(TCustomForm * Control)
   if (Flip)
   {
     Control->FlipChildren(true);
+
+    FlipAnchors(Control);
   }
 
   ResetSystemSettings(Control);
@@ -1353,6 +1395,9 @@ static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
     }
 
     R.Bottom = R.Top + TextSize.cy;
+    // Should call ChangeBiDiModeAlignment when UseRightToLeftAlignment(),
+    // but the label seems to draw the text wrongly aligned, even though
+    // the alignment is correctly flipped in TCustomStaticText.CreateParams
     switch (StaticText->Alignment)
     {
       case taLeftJustify:

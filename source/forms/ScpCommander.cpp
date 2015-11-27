@@ -130,6 +130,8 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   UseDesktopFont(StatusBar);
 
   NonVisualDataModule->QueueSpeedComboBoxItem(QueueSpeedComboBoxItem);
+  // particularly to reorder panels on right-to-left bidi mode
+  ConfigurationChanged();
 }
 //---------------------------------------------------------------------------
 __fastcall TScpCommanderForm::~TScpCommanderForm()
@@ -568,13 +570,15 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   LocalDriveView->DragDropFilesEx->ShellExtensions->DropHandler =
     !WinConfiguration->DDExtEnabled;
 
-  if ((LocalPanel->Left > RemotePanel->Left) != WinConfiguration->ScpCommander.SwappedPanels)
+  if (Panel(true)->Left > Panel(false)->Left)
   {
     DisableAlign();
     try
     {
       int AWidth = ClientWidth;
       Panel(false)->Align = alClient;
+      // In bidi mode it gets swapped to alRight, what does not work with the rest of this logic
+      Splitter->Align = alLeft;
       Panel(true)->Align = alLeft;
       TControl * ControlsOrder[] =
         { Panel(true), Splitter, Panel(false) };
@@ -665,8 +669,12 @@ void __fastcall TScpCommanderForm::SetShortcuts()
 //---------------------------------------------------------------------------
 TPanel * __fastcall TScpCommanderForm::Panel(bool Left)
 {
-  return (WinConfiguration->ScpCommander.SwappedPanels == Left ?
-    RemotePanel : LocalPanel);
+  bool SwappedPanels = WinConfiguration->ScpCommander.SwappedPanels;
+  if (IsRightToLeft())
+  {
+    SwappedPanels = !SwappedPanels;
+  }
+  return (SwappedPanels == Left ? RemotePanel : LocalPanel);
 }
 //---------------------------------------------------------------------------
 TPanel * __fastcall TScpCommanderForm::CurrentPanel()

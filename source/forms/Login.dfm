@@ -23,7 +23,7 @@ object LoginDialog: TLoginDialog
     Top = 0
     Width = 361
     Height = 368
-    Align = alClient
+    Align = alRight
     BevelOuter = bvNone
     TabOrder = 0
     object ContentsPanel: TPanel
@@ -409,8 +409,7 @@ object LoginDialog: TLoginDialog
     Top = 0
     Width = 269
     Height = 368
-    Align = alLeft
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
     DesignSize = (
