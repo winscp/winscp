@@ -97,7 +97,6 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
   ResetOnceDoneOperation();
   HideComponentsPanel(this);
   SelectScaledImageList(ImageList);
-  SelectScaledImageList(AnimationImages);
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
   MoveToQueueItem->Visible = AllowMoveToQueue;
@@ -217,7 +216,7 @@ void __fastcall TProgressForm::UpdateControls()
 
     TopProgress->Style = IsIndetermiateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
 
-    FFrameAnimation.Init(AnimationPaintBox, AnimationImages, Animation);
+    FFrameAnimation.Init(AnimationPaintBox, NULL, Animation);
     FFrameAnimation.Start();
 
     int Delta = 0;

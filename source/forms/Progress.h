@@ -47,7 +47,6 @@ __published:
   TLabel *TimeLeftLabelLabel;
   TLabel *TimeLeftLabel;
   TPaintBox *AnimationPaintBox;
-  TPngImageList *AnimationImages;
   TPngImageList *ImageList;
   TPanel *ToolbarPanel;
   TTBXDock *Dock;
@@ -65,7 +64,6 @@ __published:
   TPngImageList *ImageList120;
   TPngImageList *ImageList144;
   TPngImageList *ImageList192;
-  TPngImageList *AnimationImages120;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormHide(TObject *Sender);
