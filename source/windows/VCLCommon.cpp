@@ -743,8 +743,9 @@ static void FlipAnchors(TControl * Control)
 void __fastcall UseSystemSettingsPost(TCustomForm * Control)
 {
   UnicodeString FlipStr = LoadStr(FLIP_CHILDREN);
-  bool Flip = !FlipStr.IsEmpty() && static_cast<bool>(StrToInt(FlipStr));
-  if (Flip)
+  int FlipChildrenFlag =
+    AdjustLocaleFlag(FlipStr, WinConfiguration->FlipChildrenOverride, false, true, false);
+  if (static_cast<bool>(FlipChildrenFlag))
   {
     Control->FlipChildren(true);
 

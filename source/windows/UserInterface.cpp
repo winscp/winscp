@@ -14,6 +14,7 @@
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
 #include "TextsWin.h"
+#include "WinInterface.h"
 #include "TBXThemes.hpp"
 #include "TBXOfficeXPTheme.hpp"
 #include "TBXOffice2003Theme.hpp"
@@ -300,16 +301,9 @@ void __fastcall ShowNotification(TTerminal * Terminal, const UnicodeString & Str
 //---------------------------------------------------------------------------
 void __fastcall ConfigureInterface()
 {
-  UnicodeString S;
-  S = LoadStr(BIDI_MODE);
-  if (!S.IsEmpty())
-  {
-    Application->BiDiMode = static_cast<TBiDiMode>(StrToInt(S));
-  }
-  else
-  {
-    Application->BiDiMode = bdLeftToRight;
-  }
+  int BidiModeFlag =
+    AdjustLocaleFlag(LoadStr(BIDI_MODE), WinConfiguration->BidiModeOverride, false, bdRightToLeft, bdLeftToRight);
+  Application->BiDiMode = static_cast<TBiDiMode>(BidiModeFlag);
   SetTBXSysParam(TSP_XPVISUALSTYLE, XPVS_AUTOMATIC);
   // Can be called during configuration creation.
   // Skip now, will be called again later.

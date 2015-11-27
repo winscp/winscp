@@ -548,6 +548,8 @@ void __fastcall TWinConfiguration::Default()
   FExternalSessionInExistingInstance = true;
   FKeepOpenWhenNoSession = false;
   FLocalIconsByExt = false;
+  FBidiModeOverride = lfoLanguageIfRecommended;
+  FFlipChildrenOverride = lfoLanguageIfRecommended;
   FShowTips = true;
   FTipsSeen = L"";
   FTipsShown = Now();
@@ -943,6 +945,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     ExternalSessionInExistingInstance); \
     KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     LocalIconsByExt); \
+    KEY(Integer,  BidiModeOverride); \
+    KEY(Integer,  FlipChildrenOverride); \
     KEY(Bool,     ShowTips); \
     KEY(String,   TipsSeen); \
     KEY(DateTime, TipsShown); \
@@ -1943,6 +1947,16 @@ void __fastcall TWinConfiguration::SetKeepOpenWhenNoSession(bool value)
 void __fastcall TWinConfiguration::SetLocalIconsByExt(bool value)
 {
   SET_CONFIG_PROPERTY(LocalIconsByExt);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetBidiModeOverride(TLocaleFlagOverride value)
+{
+  SET_CONFIG_PROPERTY(BidiModeOverride);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetFlipChildrenOverride(TLocaleFlagOverride value)
+{
+  SET_CONFIG_PROPERTY(FlipChildrenOverride);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetShowTips(bool value)

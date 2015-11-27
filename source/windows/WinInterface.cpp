@@ -18,7 +18,6 @@
 #include <DateUtils.hpp>
 
 #include "WinInterface.h"
-#include "CustomWinConfiguration.h"
 #include "GUITools.h"
 #include "JclDebug.hpp"
 #include "JclHookExcept.hpp"
@@ -1125,6 +1124,34 @@ void __fastcall CenterButtonImage(TButton * Button)
     // at least do not draw it so near to the edge
     Button->ImageMargins->Left = 1;
   }
+}
+//---------------------------------------------------------------------------
+int __fastcall AdjustLocaleFlag(const UnicodeString & S, TLocaleFlagOverride LocaleFlagOverride, bool Recommended, int On, int Off)
+{
+  int Result = !S.IsEmpty() && StrToInt(S);
+  switch (LocaleFlagOverride)
+  {
+    default:
+    case lfoLanguageIfRecommended:
+      if (!Recommended)
+      {
+        Result = Off;
+      }
+      break;
+
+    case lfoLanguage:
+      // noop = as configured in locale
+      break;
+
+    case lfoAlways:
+      Result = On;
+      break;
+
+    case lfoNever:
+      Result = Off;
+      break;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall SetGlobalMinimizeHandler(TCustomForm * /*Form*/, TNotifyEvent OnMinimize)

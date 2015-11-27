@@ -290,7 +290,7 @@ static UnicodeString __fastcall GetWineHomeFolder()
 UnicodeString __fastcall GetPersonalFolder()
 {
   UnicodeString Result;
-  SpecialFolderLocation(CSIDL_PERSONAL, Result);
+  ::SpecialFolderLocation(CSIDL_PERSONAL, Result);
 
   if (IsWine())
   {
@@ -316,7 +316,7 @@ UnicodeString __fastcall GetPersonalFolder()
 UnicodeString __fastcall GetDesktopFolder()
 {
   UnicodeString Result;
-  SpecialFolderLocation(CSIDL_DESKTOPDIRECTORY, Result);
+  ::SpecialFolderLocation(CSIDL_DESKTOPDIRECTORY, Result);
 
   if (IsWine())
   {

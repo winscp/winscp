@@ -8,6 +8,7 @@
 enum TEditor { edInternal, edExternal, edOpen };
 enum TGenerateUrlCodeTarget { guctUrl, guctScript, guctAssembly };
 enum TScriptFormat { sfScriptFile, sfBatchFile, sfCommandLine };
+enum TLocaleFlagOverride { lfoLanguageIfRecommended, lfoLanguage, lfoAlways, lfoNever };
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TScpExplorerConfiguration {
@@ -421,6 +422,8 @@ private:
   bool FExternalSessionInExistingInstance;
   bool FKeepOpenWhenNoSession;
   bool FLocalIconsByExt;
+  TLocaleFlagOverride FBidiModeOverride;
+  TLocaleFlagOverride FFlipChildrenOverride;
   bool FShowTips;
   UnicodeString FTipsSeen;
   TDateTime FTipsShown;
@@ -510,6 +513,8 @@ private:
   void __fastcall SetExternalSessionInExistingInstance(bool value);
   void __fastcall SetKeepOpenWhenNoSession(bool value);
   void __fastcall SetLocalIconsByExt(bool value);
+  void __fastcall SetBidiModeOverride(TLocaleFlagOverride value);
+  void __fastcall SetFlipChildrenOverride(TLocaleFlagOverride value);
   void __fastcall SetShowTips(bool value);
   void __fastcall SetTipsSeen(UnicodeString value);
   void __fastcall SetTipsShown(TDateTime value);
@@ -673,6 +678,8 @@ public:
   __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
   __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
+  __property TLocaleFlagOverride BidiModeOverride = { read = FBidiModeOverride, write = SetBidiModeOverride };
+  __property TLocaleFlagOverride FlipChildrenOverride = { read = FFlipChildrenOverride, write = SetFlipChildrenOverride };
   __property bool ShowTips = { read = FShowTips, write = SetShowTips };
   __property UnicodeString TipsSeen = { read = FTipsSeen, write = SetTipsSeen };
   __property TDateTime TipsShown = { read = FTipsShown, write = SetTipsShown };

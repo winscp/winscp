@@ -5,7 +5,7 @@
 #include <Classes.hpp>
 #include <Buttons.hpp>
 #include <Interface.h>
-#include <GUIConfiguration.h>
+#include <WinConfiguration.h>
 #include <SynchronizeController.h>
 
 #ifdef LOCALINTERFACE
@@ -451,6 +451,8 @@ void __fastcall FixButtonImage(TButton * Button);
 void __fastcall CenterButtonImage(TButton * Button);
 
 void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
+
+int __fastcall AdjustLocaleFlag(const UnicodeString & S, TLocaleFlagOverride LocaleFlagOverride, bool Recommended, int On, int Off);
 
 void __fastcall SetGlobalMinimizeHandler(TCustomForm * Form, TNotifyEvent OnMinimize);
 void __fastcall ClearGlobalMinimizeHandler(TNotifyEvent OnMinimize);
