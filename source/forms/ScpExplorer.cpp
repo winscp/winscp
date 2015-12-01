@@ -158,11 +158,13 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::DoShow()
 {
+  // See comment in TScpCommanderForm::DoShow()
+  UpdateControls();
+
   if (RemoteDirView->Enabled)
   {
     RemoteDirView->SetFocus();
   }
-  assert(FRemoteDirViewWasFocused);
   FRemoteDirViewWasFocused = true;
 
   TCustomScpExplorerForm::DoShow();

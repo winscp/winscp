@@ -7437,7 +7437,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
         RemoteDirView->Enabled = true;
         if (FRemoteDirViewWasFocused)
         {
-          RemoteDirView->SetFocus();
+          ActiveControl = RemoteDirView;
         }
       }
       RemoteDriveView->Enabled = true;
@@ -7452,7 +7452,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
         // (not anymore due to Showing test above)
         // but the false is overriden in the constructor later.
         // An even later in TScpCommanderForm::DoShow()
-        FRemoteDirViewWasFocused = RemoteDirView->Focused();
+        FRemoteDirViewWasFocused = (ActiveControl == RemoteDirView);
         EnableControl(RemoteDirView, false);
       }
       EnableControl(RemoteDriveView, false);
@@ -7850,6 +7850,11 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
     // This happens before application ever goes idle, so the toolbars would
     // stay enabled (initial state) until the Login dialog is dismissed.
     UpdateActions();
+    // Need to process WM_ACTIVATEAPP before showing the Login dialog,
+    // otherwise the dialog does not receive focus.
+    // With Commander interface the ProcessMessages is called already
+    // by TDriveView, but with Explorer interface, we need to call it explicily
+    Application->ProcessMessages();
     // do not reload sessions, they have been loaded just now (optimization)
     NeedSession(false);
   }

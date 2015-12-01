@@ -340,6 +340,18 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DoShow()
 {
+  // Make sure the RemoteDirView is disabled (if not connected yet)
+  // before the focusing below,
+  // otherwise we disable the view while setting it focused
+  // (UpdateControls gets calling within the SetFocus),
+  // leading to VCL focus inconsistency wih Windows,
+  // and the view [anothing actually] not getting focused after the session
+  // is finally connected
+  UpdateControls();
+
+  // If we do not call SetFocus on any control before DoShow,
+  // no control will get focused on Login dialog
+  // (HACK seems like a bug in VCL)
   if (WinConfiguration->ScpCommander.CurrentPanel == osLocal)
   {
     LocalDirView->SetFocus();
@@ -355,13 +367,10 @@ void __fastcall TScpCommanderForm::DoShow()
     {
       LocalDirView->SetFocus();
     }
-    assert(FRemoteDirViewWasFocused);
     FRemoteDirViewWasFocused = true;
   }
 
   TCustomScpExplorerForm::DoShow();
-
-  UpdateControls();
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TScpCommanderForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
