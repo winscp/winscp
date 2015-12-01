@@ -3560,7 +3560,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     if (FLastCode == 220)
     {
       // HOST command also uses 220 response.
-      // Neither our use of welcome messagfe is prepared for changing it
+      // Neither our use of welcome message is prepared for changing it
       // during the session, so we keep the initial message only.
       // Theoretically the welcome message can be host-specific,
       // but IIS uses "220 Host accepted", and we are not interested in that anyway.
