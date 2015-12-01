@@ -460,6 +460,8 @@ void __fastcall CallGlobalMinimizeHandler(TObject * Sender);
 bool __fastcall IsApplicationMinimized();
 void __fastcall ApplicationMinimize();
 void __fastcall ApplicationRestore();
+bool __fastcall HandleMinimizeSysCommand(TMessage & Message);
+
 void __fastcall WinInitialize();
 void __fastcall WinFinalize();
 

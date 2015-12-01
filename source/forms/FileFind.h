@@ -69,6 +69,8 @@ protected:
   void __fastcall UpdateControls();
   bool __fastcall IsFinding();
 
+  virtual void __fastcall Dispatch(void * Message);
+
 private:
   enum { ffInit, ffFinding, ffAborting, ffAborted, ffDone } FState;
   bool FMinimizedByMe;

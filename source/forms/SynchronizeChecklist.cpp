@@ -1040,3 +1040,19 @@ void __fastcall TSynchronizeChecklistDialog::ListViewClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == WM_SYSCOMMAND)
+  {
+    if (!HandleMinimizeSysCommand(*M))
+    {
+      TForm::Dispatch(Message);
+    }
+  }
+  else
+  {
+    TForm::Dispatch(Message);
+  }
+}
+//---------------------------------------------------------------------------

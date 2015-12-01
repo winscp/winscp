@@ -134,6 +134,7 @@ protected:
     const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall AddSubItem(TListItem * Item, int & Index, const UnicodeString & S);
   TRect __fastcall GetColumnHeaderRect(int Index);
+  virtual void __fastcall Dispatch(void * Message);
   static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 };
 //----------------------------------------------------------------------------

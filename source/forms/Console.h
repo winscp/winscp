@@ -76,6 +76,7 @@ protected:
   void __fastcall DoChangeDirectory(TObject * Sender);
   void __fastcall UpdateControls();
   virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall Dispatch(void * Message);
   void __fastcall DoAdjustWindow();
 
 public:

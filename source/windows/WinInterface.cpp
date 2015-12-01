@@ -1235,6 +1235,19 @@ bool __fastcall IsApplicationMinimized()
   return AppMinimized || MainFormMinimized;
 }
 //---------------------------------------------------------------------------
+bool __fastcall HandleMinimizeSysCommand(TMessage & Message)
+{
+  TWMSysCommand & SysCommand = reinterpret_cast<TWMSysCommand &>(Message);
+  unsigned int Cmd = (SysCommand.CmdType & 0xFFF0);
+  bool Result = (Cmd == SC_MINIMIZE);
+  if (Result)
+  {
+    ApplicationMinimize();
+    SysCommand.Result = 1;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall WinInitialize()
 {
   if (JclHookExceptions())

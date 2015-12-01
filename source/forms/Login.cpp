@@ -1553,6 +1553,13 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
     }
     TForm::Dispatch(Message);
   }
+  else if (M->Msg == WM_SYSCOMMAND)
+  {
+    if (!HandleMinimizeSysCommand(*M))
+    {
+      TForm::Dispatch(Message);
+    }
+  }
   else
   {
     TForm::Dispatch(Message);

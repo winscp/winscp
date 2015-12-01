@@ -3,7 +3,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   Top = 169
   HelpType = htKeyword
   HelpKeyword = 'ui_synchronize_checklist'
-  BorderIcons = [biSystemMenu, biMaximize, biHelp]
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   Caption = 'Synchronization checklist'
   ClientHeight = 521
   ClientWidth = 695

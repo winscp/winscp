@@ -423,3 +423,19 @@ void __fastcall TFileFindDialog::CopyButtonClick(TObject * /*Sender*/)
   CopyToClipboard();
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == WM_SYSCOMMAND)
+  {
+    if (!HandleMinimizeSysCommand(*M))
+    {
+      TForm::Dispatch(Message);
+    }
+  }
+  else
+  {
+    TForm::Dispatch(Message);
+  }
+}
+//---------------------------------------------------------------------------

@@ -357,3 +357,19 @@ void __fastcall TConsoleDialog::FormCloseQuery(TObject * /*Sender*/, bool & CanC
   CanClose = !FExecuting;
 }
 //---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == WM_SYSCOMMAND)
+  {
+    if (!HandleMinimizeSysCommand(*M))
+    {
+      TForm::Dispatch(Message);
+    }
+  }
+  else
+  {
+    TForm::Dispatch(Message);
+  }
+}
+//---------------------------------------------------------------------------

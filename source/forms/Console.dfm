@@ -3,7 +3,7 @@ object ConsoleDialog: TConsoleDialog
   Top = 169
   HelpType = htKeyword
   HelpKeyword = 'ui_console'
-  BorderIcons = [biSystemMenu, biMaximize, biHelp]
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   Caption = 'Console'
   ClientHeight = 393
   ClientWidth = 551
