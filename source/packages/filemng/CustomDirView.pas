@@ -331,7 +331,6 @@ type
     procedure UpdatePathLabel; dynamic;
     procedure UpdatePathLabelCaption; dynamic;
     procedure UpdateStatusBar; dynamic;
-    procedure WndProc(var Message: TMessage); override;
     function FileNameMatchesMasks(FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; AllowImplicitMatches: Boolean): Boolean;
     function EnableDragOnClick: Boolean; override;
     procedure SetMask(Value: string); virtual;
@@ -2765,17 +2764,6 @@ begin
   ForceColorChange(Self);
 end;
 
-procedure TCustomDirView.WndProc(var Message: TMessage);
-begin
-  case Message.Msg of
-    WM_SETFOCUS, WM_KILLFOCUS:
-      begin
-        UpdatePathLabel;
-      end;
-  end;
-  inherited;
-end; { WndProc }
-
 function TCustomDirView.FindFileItem(FileName: string): TListItem;
 type
   TFileNameCompare = function(const S1, S2: string): Integer;
@@ -3233,12 +3221,14 @@ procedure TCustomDirView.WMSetFocus(var Message: TWMSetFocus);
 begin
   inherited;
   EnsureSelectionRedrawn;
+  UpdatePathLabel;
 end;
 
 procedure TCustomDirView.WMKillFocus(var Message: TWMKillFocus);
 begin
   inherited;
   EnsureSelectionRedrawn;
+  UpdatePathLabel;
 end;
 
 procedure TCustomDirView.EnsureSelectionRedrawn;
