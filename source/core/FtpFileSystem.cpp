@@ -3482,6 +3482,11 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     FOnCaptureOutput(Response, cotOutput);
   }
 
+  if (FWelcomeMessage.IsEmpty() && StartsStr(L"SSH", Response))
+  {
+    FLastErrorResponse->Add(LoadStr(SFTP_AS_FTP_ERROR));
+  }
+
   // Two forms of multiline responses were observed
   // (the first is according to the RFC 959):
 

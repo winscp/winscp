@@ -229,6 +229,7 @@ BEGIN
   FILEZILLA_SITE_MANAGER_NOT_FOUND, "FileZilla site manager file not found (%s)."
   FILEZILLA_NO_SITES, "No sites found in FileZilla site manager file (%s)."
   FILEZILLA_SITE_NOT_EXIST, "FileZilla site \"%s\" was not found."
+  SFTP_AS_FTP_ERROR, "You cannot connect to an SFTP server using an FTP protocol. Please selec the correct protocol."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
