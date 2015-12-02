@@ -7,7 +7,7 @@
 
 #define SCRIPT_HELP_HELP        4
 #define SCRIPT_EXIT_HELP        5
-#define SCRIPT_OPEN_HELP7       6
+#define SCRIPT_OPEN_HELP8       6
 #define SCRIPT_CLOSE_HELP       7
 #define SCRIPT_SESSION_HELP     8
 #define SCRIPT_PWD_HELP         9

@@ -2041,7 +2041,6 @@ static void __fastcall RegisterSwitch(
 //---------------------------------------------------------------------------
 void __fastcall Usage(TConsole * Console)
 {
-
   ConsolePrintLine(Console, FORMAT(L"WinSCP, %s", (Configuration->VersionStr)));
   UnicodeString Copyright =
     ReplaceText(LoadStr(WINSCP_COPYRIGHT), L"©", L"(c)");
@@ -2052,7 +2051,7 @@ void __fastcall Usage(TConsole * Console)
   if (!Console->CommandLineOnly())
   {
     PrintUsageSyntax(Console, L"site|workspace|folder");
-    PrintUsageSyntax(Console, L"(sftp|scp|ftp|http[s])://[user[:password]@]host[:port][/path/[file]]");
+    PrintUsageSyntax(Console, L"(sftp|scp|ftp[es]|http[s])://[user[:password]@]host[:port][/path/[file]]");
     PrintUsageSyntax(Console, L"[mysession] /newinstance");
     PrintUsageSyntax(Console, L"[mysession] /edit <path>");
     PrintUsageSyntax(Console, L"[mysession] /synchronize [local_dir] [remote_dir] [/defaults]");

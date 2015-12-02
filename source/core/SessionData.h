@@ -67,6 +67,7 @@ extern const UnicodeString SftpProtocol;
 extern const UnicodeString ScpProtocol;
 extern const UnicodeString FtpProtocol;
 extern const UnicodeString FtpsProtocol;
+extern const UnicodeString FtpesProtocol;
 extern const UnicodeString WebDAVProtocol;
 extern const UnicodeString WebDAVSProtocol;
 extern const UnicodeString SshProtocol;

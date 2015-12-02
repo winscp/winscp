@@ -59,9 +59,9 @@ BEGIN
     "  Closes all sessions and terminates the program.\n"
     "alias:\n"
     "  bye\n"
-  SCRIPT_OPEN_HELP7,
+  SCRIPT_OPEN_HELP8,
     "open <site>\n"
-    "open sftp|scp|ftp|http[s] :// [ <user> [ :password ] @ ] <host> [ :<port> ]\n"
+    "open sftp|scp|ftp[es]|http[s] :// [ <user> [ :password ] @ ] <host> [ :<port> ]\n"
     "  Establishes connection to given host. Use either name of the site or\n"
     "  specify host, username, port and protocol directly.\n"
     "switches:\n"
@@ -72,8 +72,8 @@ BEGIN
     "                     (FTPS and WebDAVS only)\n"
     "  -passphrase=<phr>  Private key passphrase\n"
     "  -passive=on|off    Passive mode (FTP protocol only)\n"
-    "  -implicit          Implicit TLS/SSL (FTPS protocol only)\n"
-    "  -explicit          Explicit TLS/SSL (FTPS protocol only)\n"
+    "  -implicit          Implicit TLS/SSL (FTP protocol only)\n"
+    "  -explicit          Explicit TLS/SSL (FTP protocol only)\n"
     "  -timeout=<sec>     Server response timeout\n"
     "  -rawsettings setting1=value1 setting2=value2 ...\n"
     "                     Configures any site settings using raw format\n"

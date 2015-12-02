@@ -239,6 +239,11 @@ namespace WinSCP
                 Protocol = Protocol.Ftp;
                 FtpSecure = FtpSecure.Implicit;
             }
+            else if (protocol.Equals("ftpes", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.Ftp;
+                FtpSecure = FtpSecure.Explicit;
+            }
             else if (protocol.Equals("http", StringComparison.OrdinalIgnoreCase))
             {
                 Protocol = Protocol.Webdav;

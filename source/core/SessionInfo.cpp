@@ -1184,12 +1184,12 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
             break;
 
           case ftpsExplicitSsl:
-            Ftps = L"Explicit SSL";
+            Ftps = L"Explicit SSL/TLS";
             FtpsOn = true;
             break;
 
           case ftpsExplicitTls:
-            Ftps = L"Explicit TLS";
+            Ftps = L"Explicit TLS/SSL";
             FtpsOn = true;
             break;
 

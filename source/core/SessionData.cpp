@@ -46,6 +46,7 @@ const UnicodeString SftpProtocol(L"sftp");
 const UnicodeString ScpProtocol(L"scp");
 const UnicodeString FtpProtocol(L"ftp");
 const UnicodeString FtpsProtocol(L"ftps");
+const UnicodeString FtpesProtocol(L"ftpes");
 const UnicodeString WebDAVProtocol(L"http");
 const UnicodeString WebDAVSProtocol(L"https");
 const UnicodeString SshProtocol(L"ssh");
@@ -1041,7 +1042,7 @@ void __fastcall TSessionData::ImportFromFilezilla(_di_IXMLNode Node, const Unico
 
     case 4: // FTPES
       FSProtocol = fsFTP;
-      Ftps = ftpsExplicitSsl;
+      Ftps = ftpsExplicitTls;
       break;
   }
 
@@ -1386,6 +1387,14 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     AFSProtocol = fsFTP;
     AFtps = ftpsImplicit;
     APortNumber = FtpsImplicitPortNumber;
+    MoveStr(Url, MaskedUrl, ProtocolLen);
+    ProtocolDefined = true;
+  }
+  else if (IsProtocolUrl(Url, FtpesProtocol, ProtocolLen))
+  {
+    AFSProtocol = fsFTP;
+    AFtps = ftpsExplicitTls;
+    APortNumber = FtpPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
@@ -2333,6 +2342,10 @@ UnicodeString __fastcall TSessionData::GetProtocolUrl()
       {
         Url = FtpsProtocol;
       }
+      else if ((Ftps == ftpsExplicitTls) || (Ftps == ftpsExplicitSsl))
+      {
+        Url = FtpesProtocol;
+      }
       else
       {
         Url = FtpProtocol;
@@ -2478,22 +2491,8 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs()
   SessionData->UserName = FactoryDefaults->UserName;
   SessionData->Password = FactoryDefaults->Password;
   SessionData->CopyNonCoreData(FactoryDefaults.get());
+  SessionData->Ftps = FactoryDefaults->Ftps;
 
-  if (SessionData->Ftps != FactoryDefaults->Ftps)
-  {
-    switch (SessionData->Ftps)
-    {
-      case ftpsImplicit:
-        // noop, implicit encryption is reflects in protocol prefix
-        break;
-
-      case ftpsExplicitTls:
-      case ftpsExplicitSsl:
-        AddSwitch(Result, L"explicit");
-        break;
-    }
-    SessionData->Ftps = FactoryDefaults->Ftps;
-  }
   if (SessionData->HostKey != FactoryDefaults->HostKey)
   {
     UnicodeString SwitchName = AUsesSsh ? L"hostkey" : L"certificate";

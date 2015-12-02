@@ -566,6 +566,7 @@ static void __fastcall RegisterProtocolsForDefaultPrograms(HKEY RootKey)
 
   RegisterProtocolForDefaultPrograms(RootKey, FtpProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, FtpsProtocol);
+  RegisterProtocolForDefaultPrograms(RootKey, FtpesProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, SftpProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, ScpProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, SshProtocol);
@@ -578,6 +579,7 @@ static void __fastcall UnregisterProtocolsForDefaultPrograms(HKEY RootKey, bool 
 {
   UnregisterProtocolForDefaultPrograms(RootKey, FtpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, FtpsProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, FtpesProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, SftpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, ScpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, SshProtocol, ForceHandlerUnregistration);
@@ -627,6 +629,7 @@ void __fastcall RegisterForDefaultProtocols()
   RegisterAsNonBrowserUrlHandler(WinSCPProtocolPrefix);
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase());
+  RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpesProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVSProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + SshProtocol.UpperCase());
@@ -640,6 +643,7 @@ void __fastcall UnregisterForProtocols()
   UnregisterAsUrlHandlers(WinSCPProtocolPrefix, true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase(), true);
+  UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpesProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVSProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + SshProtocol.UpperCase(), true);
