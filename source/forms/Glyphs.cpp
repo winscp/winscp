@@ -2,6 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Global.h"
 #include "Glyphs.h"
 #include "GUITools.h"
 //---------------------------------------------------------------------------
