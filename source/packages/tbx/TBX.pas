@@ -637,7 +637,7 @@ implementation
 {$R tbx_glyphs.res}
 
 uses
-  TBXExtItems, TBXLists, TB2Common, UxTheme, MultiMon, TBXDefaultTheme,
+  TBXExtItems, TBXLists, TB2Common, UxTheme, MultiMon, TBXOfficeXPTheme,
   {ComCtrls, Menus;} {vb-}
   ComCtrls, Menus, MMSystem, Types, UITypes; {vb+}
 
@@ -3883,8 +3883,8 @@ end;
 initialization
   FixPlaySoundDelay; {vb+}
   {CurrentTheme := nil;} {vb-}
-  RegisterTBXTheme('Default', TTBXDefaultTheme);
-  TBXNexus := TTBXNexus.Create('Default');
+  RegisterTBXTheme('OfficeXP', TTBXOfficeXPTheme);
+  TBXNexus := TTBXNexus.Create('OfficeXP');
   TBXMenuAnimation := TTBXMenuAnimation.Create; {vb+}
   {$IFNDEF JR_D7} {vb+}
   InitAdditionalSysColors;

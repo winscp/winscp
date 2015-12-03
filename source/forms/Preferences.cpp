@@ -528,19 +528,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         break;
     }
 
-    if (WinConfiguration->Theme == THEME_OFFICEXP)
-    {
-      ThemeCombo->ItemIndex = 1;
-    }
-    else if (WinConfiguration->Theme == THEME_OFFICE2003)
-    {
-      ThemeCombo->ItemIndex = 2;
-    }
-    else
-    {
-      ThemeCombo->ItemIndex = 0;
-    }
-
     // security
     UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
     SessionRememberPasswordCheck->Checked = GUIConfiguration->SessionRememberPassword;
@@ -848,19 +835,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       Configuration->Usage->Inc(L"InterfaceChanges");
     }
     CustomWinConfiguration->Interface = GetInterface();
-
-    if (ThemeCombo->ItemIndex == 1)
-    {
-      WinConfiguration->Theme = THEME_OFFICEXP;
-    }
-    else if (ThemeCombo->ItemIndex == 2)
-    {
-      WinConfiguration->Theme = THEME_OFFICE2003;
-    }
-    else
-    {
-      WinConfiguration->Theme = THEME_DEFAULT;
-    }
 
     // network
     Configuration->ExternalIpAddress =

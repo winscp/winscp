@@ -35,10 +35,6 @@ const int mpAllowContinueOnError = 0x02;
 #define KEYGEN_COMMENT_SWITCH L"Comment"
 #define KEYGEN_CHANGE_PASSPHRASE_SWITCH L"ChangePassphrase"
 
-#define THEME_OFFICEXP L"OfficeXP"
-#define THEME_OFFICE2003 L"Office2003"
-#define THEME_DEFAULT L"Default"
-
 struct TMessageParams
 {
   TMessageParams(unsigned int AParams = 0);

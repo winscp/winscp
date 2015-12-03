@@ -12,7 +12,7 @@ interface
 {$I TBX.inc}
 
 uses
-  Windows, Messages, Graphics, TBXThemes, TBXDefaultTheme, ImgList;
+  Windows, Messages, Graphics, TBXThemes, ImgList;
 
 {$DEFINE ALTERNATIVE_DISABLED_STYLE} // remove the asterisk to change appearance of disabled images
 {$DEFINE NO_IMAGE_DIMMING}
@@ -1712,8 +1712,5 @@ procedure TTBXOfficeXPTheme.TBXSysCommand(var Message: TMessage);
 begin
   if Message.WParam = TSC_VIEWCHANGE then SetupColorCache;
 end;
-
-initialization
-  RegisterTBXTheme('OfficeXP', TTBXOfficeXPTheme);
 
 end.

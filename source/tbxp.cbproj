@@ -23,12 +23,6 @@
 		<CfgParent>Base</CfgParent>
 		<Base>true</Base>
 	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
-		<Cfg_1_Win32>true</Cfg_1_Win32>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
 	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
 		<Cfg_2>true</Cfg_2>
 		<CfgParent>Base</CfgParent>
@@ -90,10 +84,6 @@
 			<DelphiCompile Include="packages\tbx\TBX.pas">
 			<BuildOrder>11</BuildOrder>
 		</DelphiCompile>
-			<DelphiCompile Include="packages\tbx\TBXDefaultTheme.pas">
-			<BuildOrder>9</BuildOrder>
-			<BuildOrder>5</BuildOrder>
-		</DelphiCompile>
 			<DelphiCompile Include="packages\tbx\TBXExtItems.pas">
 			<BuildOrder>17</BuildOrder>
 			<BuildOrder>13</BuildOrder>
@@ -101,10 +91,6 @@
 			<DelphiCompile Include="packages\tbx\TBXLists.pas">
 			<BuildOrder>6</BuildOrder>
 			<BuildOrder>38</BuildOrder>
-		</DelphiCompile>
-			<DelphiCompile Include="packages\tbx\TBXOffice2003Theme.pas">
-			<BuildOrder>5</BuildOrder>
-			<BuildOrder>41</BuildOrder>
 		</DelphiCompile>
 			<DelphiCompile Include="packages\tbx\TBXOfficeXPTheme.pas">
 			<BuildOrder>8</BuildOrder>

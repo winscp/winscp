@@ -154,9 +154,6 @@ __published:
   TButton *DuplicateCopyParamButton;
   TCheckBox *CopyParamAutoSelectNoticeCheck;
   TButton *HelpButton;
-  TGroupBox *ThemeGroup;
-  TLabel *Label7;
-  TComboBox *ThemeCombo;
   TListView *EditorListView3;
   TButton *AddEditorButton;
   TButton *EditEditorButton;

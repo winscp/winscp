@@ -381,7 +381,6 @@ private:
   UnicodeString FDefaultTranslationFile;
   UnicodeString FInvalidDefaultTranslationMessage;
   bool FPreservePanelState;
-  UnicodeString FTheme;
   UnicodeString FLastStoredSession;
   UnicodeString FLastWorkspace;
   bool FAutoSaveWorkspace;
@@ -477,7 +476,6 @@ private:
   void __fastcall SetTemporaryDirectoryCleanup(bool value);
   void __fastcall SetConfirmTemporaryDirectoryCleanup(bool value);
   void __fastcall SetPreservePanelState(bool value);
-  void __fastcall SetTheme(UnicodeString value);
   void __fastcall SetLastStoredSession(UnicodeString value);
   void __fastcall SetAutoSaveWorkspace(bool value);
   void __fastcall SetAutoSaveWorkspacePasswords(bool value);
@@ -645,7 +643,6 @@ public:
   __property bool TemporaryDirectoryCleanup = { read = FTemporaryDirectoryCleanup, write = SetTemporaryDirectoryCleanup };
   __property bool ConfirmTemporaryDirectoryCleanup = { read = FConfirmTemporaryDirectoryCleanup, write = SetConfirmTemporaryDirectoryCleanup };
   __property bool PreservePanelState = { read = FPreservePanelState, write = SetPreservePanelState };
-  __property UnicodeString Theme = { read = FTheme, write = SetTheme };
   __property UnicodeString LastStoredSession = { read = FLastStoredSession, write = SetLastStoredSession };
   __property UnicodeString LastWorkspace = { read = FLastWorkspace, write = FLastWorkspace };
   __property bool AutoSaveWorkspace = { read = FAutoSaveWorkspace, write = SetAutoSaveWorkspace };

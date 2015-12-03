@@ -15,9 +15,6 @@
 #include "TerminalManager.h"
 #include "TextsWin.h"
 #include "WinInterface.h"
-#include "TBXThemes.hpp"
-#include "TBXOfficeXPTheme.hpp"
-#include "TBXOffice2003Theme.hpp"
 #include "PasswordEdit.hpp"
 #include "ProgParams.h"
 #include "Tools.h"
@@ -305,22 +302,9 @@ void __fastcall ConfigureInterface()
     AdjustLocaleFlag(LoadStr(BIDI_MODE), WinConfiguration->BidiModeOverride, false, bdRightToLeft, bdLeftToRight);
   Application->BiDiMode = static_cast<TBiDiMode>(BidiModeFlag);
   SetTBXSysParam(TSP_XPVISUALSTYLE, XPVS_AUTOMATIC);
-  // Can be called during configuration creation.
-  // Skip now, will be called again later.
-  if (Configuration != NULL)
-  {
-    TBXSetTheme(WinConfiguration->Theme);
-  }
   // Has any effect on Wine only
   // (otherwise initial UserDocumentDirectory is equivalent to GetPersonalFolder())
   UserDocumentDirectory = GetPersonalFolder();
-}
-//---------------------------------------------------------------------------
-// dummy function to force linking of TBXOfficeXPTheme.pas
-void __fastcall CreateThemes()
-{
-  new TTBXOfficeXPTheme(THEME_OFFICEXP);
-  new TTBXOffice2003Theme(THEME_OFFICE2003);
 }
 //---------------------------------------------------------------------------
 #ifdef _DEBUG

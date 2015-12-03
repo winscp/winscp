@@ -478,43 +478,10 @@ object PreferencesDialog: TPreferencesDialog
           392)
         object InterfaceChangeLabel: TLabel
           Left = 8
-          Top = 274
+          Top = 216
           Width = 177
           Height = 13
           Caption = 'Changes will apply on the next start.'
-        end
-        object ThemeGroup: TGroupBox
-          Left = 8
-          Top = 216
-          Width = 389
-          Height = 52
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'Theme'
-          TabOrder = 0
-          DesignSize = (
-            389
-            52)
-          object Label7: TLabel
-            Left = 16
-            Top = 23
-            Width = 82
-            Height = 13
-            Caption = 'Interface &theme:'
-            FocusControl = ThemeCombo
-          end
-          object ThemeCombo: TComboBox
-            Left = 132
-            Top = 18
-            Width = 141
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akLeft, akTop, akRight]
-            TabOrder = 0
-            Items.Strings = (
-              'System'
-              'Office XP'
-              'Office 2003')
-          end
         end
         object InterfaceGroup: TGroupBox
           Left = 8
@@ -523,7 +490,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 202
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'User Interface'
-          TabOrder = 1
+          TabOrder = 0
           DesignSize = (
             389
             202)
