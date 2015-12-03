@@ -928,7 +928,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
     end
     object TransferToolbar: TTBXToolbar
-      Left = 44
+      Left = 45
       Top = 182
       Caption = 'Transfer Settings'
       DockPos = 44
@@ -963,7 +963,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 299
+      Left = 300
       Top = 182
       Caption = 'Custom Commands'
       DockPos = 193

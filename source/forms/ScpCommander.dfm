@@ -957,7 +957,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     object TransferToolbar: TTBXToolbar
-      Left = 44
+      Left = 45
       Top = 129
       Caption = 'Transfer Settings'
       DockPos = 44
@@ -992,7 +992,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 299
+      Left = 300
       Top = 129
       Caption = 'Custom Commands'
       DockPos = 168
@@ -1120,10 +1120,10 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object RemoteNavigationToolbar: TTBXToolbar
-        Left = 70
+        Left = 80
         Top = 27
         Caption = 'Remote Navigation'
-        DockPos = 68
+        DockPos = 72
         DockRow = 1
         Images = GlyphsModule.ExplorerImages
         ParentShowHint = False
@@ -1442,7 +1442,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object LocalNavigationToolbar: TTBXToolbar
-        Left = 70
+        Left = 80
         Top = 27
         Caption = 'Local Navigation'
         DockPos = 68
@@ -1554,7 +1554,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object LocalSelectionToolbar: TTBXToolbar
-        Left = 320
+        Left = 329
         Top = 53
         Caption = 'Local Selection'
         DockPos = 329
