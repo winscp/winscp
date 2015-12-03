@@ -7835,9 +7835,30 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       CMShowingChanged(*M);
       break;
 
+    case WM_CLOSE:
+      WMClose(*M);
+      break;
+
     default:
       TForm::Dispatch(Message);
       break;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::WMClose(TMessage & Message)
+{
+  // Cannot close window while we are busy.
+  // We cannot test this in FormCloseQuery as that is called also from
+  // Close(), which is called by CloseApplicationAction. So we can be busy
+  // there already even, when it is legitimate to close the application.
+  // Possibly a better place to handle this would be WMSysCommand.
+  if (NonVisualDataModule->Busy)
+  {
+    Message.Result = 1;
+  }
+  else
+  {
+    TForm::Dispatch(&Message);
   }
 }
 //---------------------------------------------------------------------------
@@ -7850,13 +7871,21 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
     // This happens before application ever goes idle, so the toolbars would
     // stay enabled (initial state) until the Login dialog is dismissed.
     UpdateActions();
-    // Need to process WM_ACTIVATEAPP before showing the Login dialog,
-    // otherwise the dialog does not receive focus.
-    // With Commander interface the ProcessMessages is called already
-    // by TDriveView, but with Explorer interface, we need to call it explicily
-    Application->ProcessMessages();
-    // do not reload sessions, they have been loaded just now (optimization)
-    NeedSession(false);
+    NonVisualDataModule->StartBusy();
+    try
+    {
+      // Need to process WM_ACTIVATEAPP before showing the Login dialog,
+      // otherwise the dialog does not receive focus.
+      // With Commander interface the ProcessMessages is called already
+      // by TDriveView, but with Explorer interface, we need to call it explicily
+      Application->ProcessMessages();
+      // do not reload sessions, they have been loaded just now (optimization)
+      NeedSession(false);
+    }
+    __finally
+    {
+      NonVisualDataModule->EndBusy();
+    }
   }
 }
 //---------------------------------------------------------------------------

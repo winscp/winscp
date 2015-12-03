@@ -295,6 +295,7 @@ private:
   void __fastcall KeyProcessed(Word & Key, TShiftState Shift);
   bool __fastcall CanPasteToDirViewFromClipBoard();
   void __fastcall CMShowingChanged(TMessage & Message);
+  void __fastcall WMClose(TMessage & Message);
 
 protected:
   TOperationSide FCurrentSide;
