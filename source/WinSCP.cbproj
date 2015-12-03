@@ -106,6 +106,7 @@
 	<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
 			<ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
 			<ILINK_LibraryPath>$(INTERM_PATH)\Win32\Debug\;$(BDS)\lib\Win32\Debug\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib</LinkPackageStatics>
 		</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
 			<ILINK_LibraryPath>$(INTERM_PATH)\Win64\Debug\;$(BDS)\lib\Win64\Debug\;$(BDS)\lib\Win64\Release\;$(BDS)\lib\Win64\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
@@ -128,13 +129,6 @@
 			<BuildOrder>21</BuildOrder>
 		</CppCompile>
 			<FormResources Include="forms\CustomScpExplorer.dfm"/>
-			<CppCompile Include="forms\Glyphs.cpp">
-			<Form>GlyphsModule</Form>
-			<DesignClass>TDataModule</DesignClass>
-			<DependentOn>forms\Glyphs.h</DependentOn>
-			<BuildOrder>30</BuildOrder>
-		</CppCompile>
-			<FormResources Include="forms\Glyphs.dfm"/>
 			<CppCompile Include="forms\NonVisual.cpp">
 			<BuildOrder>23</BuildOrder>
 			<Form>NonVisualDataModule</Form>
@@ -263,6 +257,10 @@
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>
 			<LibFiles Include="ScpForms.lib">
+			<BuildOrder>26</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
+			<LibFiles Include="ScpResources.lib">
 			<BuildOrder>26</BuildOrder>
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>

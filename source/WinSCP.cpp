@@ -6,7 +6,6 @@ USEFORM("forms\CustomScpExplorer.cpp", CustomScpExplorerForm);
 USEFORM("forms\NonVisual.cpp", NonVisualDataModule); /* TDataModule: File Type */
 USEFORM("forms\ScpCommander.cpp", ScpCommanderForm);
 USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
-USEFORM("forms\Glyphs.cpp", GlyphsModule); /* TDataModule: File Type */
 //---------------------------------------------------------------------------
 #include <CoreMain.h>
 #include <WinInterface.h>
