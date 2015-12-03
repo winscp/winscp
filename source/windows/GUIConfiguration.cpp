@@ -945,6 +945,11 @@ void __fastcall TGUIConfiguration::FreeResourceModule(HANDLE Instance)
   }
 }
 //---------------------------------------------------------------------------
+HANDLE __fastcall TGUIConfiguration::ChangeToDefaultResourceModule()
+{
+  return ChangeResourceModule(NULL);
+}
+//---------------------------------------------------------------------------
 HANDLE __fastcall TGUIConfiguration::ChangeResourceModule(HANDLE Instance)
 {
   if (Instance == NULL)

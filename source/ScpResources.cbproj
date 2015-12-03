@@ -60,6 +60,14 @@
 			<TASM_Debugging>None</TASM_Debugging>
 		</PropertyGroup>
 	<ItemGroup>
+			<CppCompile Include="forms\Animations.cpp">
+			<Form>AnimationsModule</Form>
+			<FormType>dfm</FormType>
+			<DesignClass>TDataModule</DesignClass>
+			<DependentOn>forms\Animations.h</DependentOn>
+			<BuildOrder>1</BuildOrder>
+		</CppCompile>
+			<FormResources Include="forms\Animations.dfm"/>
 			<CppCompile Include="forms\Glyphs.cpp">
 			<Form>GlyphsModule</Form>
 			<FormType>dfm</FormType>

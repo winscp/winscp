@@ -19,6 +19,7 @@
 #include <StrUtils.hpp>
 #include <limits>
 #include <Glyphs.h>
+#include <Animations.h>
 #include <PasTools.hpp>
 #include <VCLCommon.h>
 //---------------------------------------------------------------------------
@@ -894,7 +895,7 @@ void __fastcall TFrameAnimation::Init(TPaintBox * PaintBox, const UnicodeString 
 //---------------------------------------------------------------------------
 void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name, bool Null)
 {
-  FImageList = (ImageList != NULL) ? ImageList : GlyphsModule->AnimationImages;
+  FImageList = (ImageList != NULL) ? ImageList : GetAnimationsModule()->AnimationImages;
   FFirstFrame = -1;
   FFirstLoopFrame = -1;
   DebugAssert((PaintBox->OnPaint == NULL) || (PaintBox->OnPaint == PaintBoxPaint));

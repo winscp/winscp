@@ -221,6 +221,7 @@ public:
   virtual void __fastcall Default();
   virtual void __fastcall UpdateStaticUsage();
 
+  HANDLE __fastcall ChangeToDefaultResourceModule();
   HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
   LCID __fastcall InternalLocale();
   UnicodeString __fastcall LocaleCopyright();

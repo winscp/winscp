@@ -34,10 +34,6 @@ __published:
   TPngImageList *LogImages192;
   TPngImageList *DialogImages144;
   TPngImageList *DialogImages192;
-  TPngImageList *AnimationImages;
-  TPngImageList *AnimationImages120;
-  TPngImageList *AnimationImages144;
-  TPngImageList *AnimationImages192;
 
 public:
   __fastcall TGlyphsModule(TComponent * Owner);

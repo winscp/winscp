@@ -680,7 +680,7 @@ int __fastcall Execute()
   try
   {
     TerminalManager = TTerminalManager::Instance();
-    HANDLE ResourceModule = GUIConfiguration->ChangeResourceModule(NULL);
+    HANDLE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
     try
     {
       GlyphsModule = new TGlyphsModule(Application);
