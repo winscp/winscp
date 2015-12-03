@@ -190,7 +190,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(FileListToClipboardAction, EnabledSelectedOperation)
   UPD(FullFileListToClipboardAction, EnabledSelectedOperation)
   UPD(FileGenerateUrlAction2, EnabledSelectedOperation && (DirView(osRemote) == DirView(osCurrent)))
-  UPD(FileListFromClipboardAction, IsFormatInClipboard(CF_TEXT));
+  UPD(FileListFromClipboardAction, IsFormatInClipboard(CF_TEXT))
   UPD(CurrentAddEditLinkAction, ScpExplorer->CanAddEditLink(osCurrent))
   UPD(LockAction,
     EnabledSelectedOperation && (DirView(osRemote) == DirView(osCurrent)) &&
@@ -545,8 +545,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))
     EXE(FileGenerateUrlAction2, ScpExplorer->FileGenerateUrl())
     EXE(FileListFromClipboardAction, ScpExplorer->FileListFromClipboard())
-    EXE(LockAction, ScpExplorer->ExecuteFileOperationCommand(foLock, osCurrent, false));
-    EXE(UnlockAction, ScpExplorer->ExecuteFileOperationCommand(foUnlock, osCurrent, false));
+    EXE(LockAction, ScpExplorer->ExecuteFileOperationCommand(foLock, osCurrent, false))
+    EXE(UnlockAction, ScpExplorer->ExecuteFileOperationCommand(foUnlock, osCurrent, false))
     // local selected operation
     EXE(LocalCopyAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, false, ShortCutFlag))
     EXE(LocalCopyQueueAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, false, cocQueue))
@@ -697,7 +697,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(LockToolbarsAction, WinConfiguration->LockToolbars = !WinConfiguration->LockToolbars)
     EXE(SelectiveToolbarTextAction, WinConfiguration->SelectiveToolbarText = !WinConfiguration->SelectiveToolbarText)
     EXECOMP(CustomCommandsBand)
-    EXE(ColorMenuAction, CreateSessionColorMenu(ColorMenuAction));
+    EXE(ColorMenuAction, CreateSessionColorMenu(ColorMenuAction))
     EXE(GoToAddressAction, ScpExplorer->GoToAddress())
 
     #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
@@ -816,12 +816,12 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     QUEUEACTION(HideWhenEmpty)
     QUEUEACTION(Hide)
     #undef QUEUEACTION
-    EXE(QueueCycleOnceEmptyAction, CycleQueueOnceEmptyAction());
+    EXE(QueueCycleOnceEmptyAction, CycleQueueOnceEmptyAction())
     EXE(QueueIdleOnceEmptyAction, SetQueueOnceEmptyAction(QueueIdleOnceEmptyAction))
     EXE(QueueDisconnectOnceEmptyAction, SetQueueOnceEmptyAction(QueueDisconnectOnceEmptyAction))
     EXE(QueueSuspendOnceEmptyAction, SetQueueOnceEmptyAction(QueueSuspendOnceEmptyAction))
     EXE(QueueShutDownOnceEmptyAction, SetQueueOnceEmptyAction(QueueShutDownOnceEmptyAction))
-    EXECOMP(QueueToolbar);
+    EXECOMP(QueueToolbar)
     EXE(QueueItemSpeedAction, )
     ;
   }
