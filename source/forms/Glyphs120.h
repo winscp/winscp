@@ -1,28 +1,24 @@
 //---------------------------------------------------------------------------
-#ifndef GlyphsH
-#define GlyphsH
+#ifndef Glyphs120H
+#define Glyphs120H
 //---------------------------------------------------------------------------
-#include <Classes.hpp>
-#include <Controls.hpp>
-#include <ImgList.hpp>
+#include <System.Classes.hpp>
 #include "PngImageList.hpp"
+#include <Vcl.Controls.hpp>
+#include <Vcl.ImgList.hpp>
 //---------------------------------------------------------------------------
-class TGlyphsModule : public TDataModule
+class TGlyphs120Module : public TDataModule
 {
 __published:
   TPngImageList *ExplorerImages;
   TPngImageList *SessionImages;
   TPngImageList *QueueImages;
-  TPngImageList *LogImages;
   TImageList *ButtonImages;
+  TPngImageList *LogImages;
   TPngImageList *DialogImages;
 
 public:
-  __fastcall TGlyphsModule(TComponent * Owner);
+  __fastcall TGlyphs120Module(TComponent * Owner);
 };
-//---------------------------------------------------------------------------
-extern PACKAGE TGlyphsModule * GlyphsModule;
-const int SiteImageIndex = 103;
-const int SiteColorMaskImageIndex = 104;
 //---------------------------------------------------------------------------
 #endif

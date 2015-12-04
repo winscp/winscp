@@ -36,7 +36,7 @@
 			<Multithreaded>true</Multithreaded>
 			<ProjectType>CppStaticLibrary</ProjectType>
 			<SanitizedProjectName>ScpResources</SanitizedProjectName>
-			<TLIB_PageSize>32</TLIB_PageSize>
+			<TLIB_PageSize>64</TLIB_PageSize>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 		</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -111,6 +111,30 @@
 			<BuildOrder>0</BuildOrder>
 		</CppCompile>
 			<FormResources Include="forms\Glyphs.dfm"/>
+			<CppCompile Include="forms\Glyphs120.cpp">
+			<Form>Glyphs120Module</Form>
+			<FormType>dfm</FormType>
+			<DesignClass>TDataModule</DesignClass>
+			<DependentOn>forms\Glyphs120.h</DependentOn>
+			<BuildOrder>7</BuildOrder>
+		</CppCompile>
+			<FormResources Include="forms\Glyphs120.dfm"/>
+			<CppCompile Include="forms\Glyphs144.cpp">
+			<Form>Glyphs144Module</Form>
+			<FormType>dfm</FormType>
+			<DesignClass>TDataModule</DesignClass>
+			<DependentOn>forms\Glyphs144.h</DependentOn>
+			<BuildOrder>8</BuildOrder>
+		</CppCompile>
+			<FormResources Include="forms\Glyphs144.dfm"/>
+			<CppCompile Include="forms\Glyphs192.cpp">
+			<Form>Glyphs192Module</Form>
+			<FormType>dfm</FormType>
+			<DesignClass>TDataModule</DesignClass>
+			<DependentOn>forms\Glyphs192.h</DependentOn>
+			<BuildOrder>9</BuildOrder>
+		</CppCompile>
+			<FormResources Include="forms\Glyphs192.dfm"/>
 			<BuildConfiguration Include="Base">
 			<Key>Base</Key>
 		</BuildConfiguration>
