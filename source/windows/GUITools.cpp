@@ -628,6 +628,8 @@ void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList)
 //---------------------------------------------------------------------------
 void __fastcall CopyDataModule(TDataModule * TargetModule, TDataModule * SourceModule)
 {
+  DebugAssert(TargetModule->ComponentCount == SourceModule->ComponentCount);
+
   for (int Index = 0; Index < TargetModule->ComponentCount; Index++)
   {
     TComponent * TargetComponent = TargetModule->Components[Index];
