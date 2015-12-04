@@ -32,9 +32,12 @@
 			<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 			<IncludePath>core\;forms\;windows\;packages\png;packages\tb2k;packages\tbx;$(BDS)\include\windows;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 			<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
+			<Manifest_File>None</Manifest_File>
 			<Multithreaded>true</Multithreaded>
 			<ProjectType>CppStaticLibrary</ProjectType>
 			<SanitizedProjectName>ScpResources</SanitizedProjectName>
+			<TLIB_PageSize>32</TLIB_PageSize>
+			<VerInfo_Locale>1033</VerInfo_Locale>
 		</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
@@ -68,6 +71,38 @@
 			<BuildOrder>1</BuildOrder>
 		</CppCompile>
 			<FormResources Include="forms\Animations.dfm"/>
+			<CppCompile Include="forms\Animations120.cpp">
+			<Form>Animations120Module</Form>
+			<FormType>dfm</FormType>
+			<DesignClass>TDataModule</DesignClass>
+			<DependentOn>forms\Animations120.h</DependentOn>
+			<BuildOrder>3</BuildOrder>
+		</CppCompile>
+			<FormResources Include="forms\Animations120.dfm"/>
+			<CppCompile Include="forms\Animations144.cpp">
+			<Form>Animations144Module</Form>
+			<FormType>dfm</FormType>
+			<DesignClass>TDataModule</DesignClass>
+			<DependentOn>forms\Animations144.h</DependentOn>
+			<BuildOrder>2</BuildOrder>
+		</CppCompile>
+			<FormResources Include="forms\Animations144.dfm"/>
+			<CppCompile Include="forms\Animations192.cpp">
+			<Form>Animations192Module</Form>
+			<FormType>dfm</FormType>
+			<DesignClass>TDataModule</DesignClass>
+			<DependentOn>forms\Animations192.h</DependentOn>
+			<BuildOrder>4</BuildOrder>
+		</CppCompile>
+			<FormResources Include="forms\Animations192.dfm"/>
+			<CppCompile Include="forms\Animations96.cpp">
+			<Form>Animations96Module</Form>
+			<FormType>dfm</FormType>
+			<DesignClass>TDataModule</DesignClass>
+			<DependentOn>forms\Animations96.h</DependentOn>
+			<BuildOrder>5</BuildOrder>
+		</CppCompile>
+			<FormResources Include="forms\Animations96.dfm"/>
 			<CppCompile Include="forms\Glyphs.cpp">
 			<Form>GlyphsModule</Form>
 			<FormType>dfm</FormType>

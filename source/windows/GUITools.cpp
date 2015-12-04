@@ -601,21 +601,44 @@ void __fastcall SelectScaledImageList(TImageList * ImageList)
 
   if (MatchingList != NULL)
   {
-    TPngImageList * PngImageList = dynamic_cast<TPngImageList *>(ImageList);
-    TPngImageList * PngMatchingList = dynamic_cast<TPngImageList *>(MatchingList);
+    CopyImageList(ImageList, MatchingList);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList)
+{
+  TPngImageList * PngTargetList = dynamic_cast<TPngImageList *>(TargetList);
+  TPngImageList * PngSourceList = dynamic_cast<TPngImageList *>(SourceList);
 
-    ImageList->Clear();
-    ImageList->Height = MatchingList->Height;
-    ImageList->Width = MatchingList->Width;
+  TargetList->Clear();
+  TargetList->Height = SourceList->Height;
+  TargetList->Width = SourceList->Width;
 
-    if ((PngImageList != NULL) && (PngMatchingList != NULL))
+  if ((PngTargetList != NULL) && (PngSourceList != NULL))
+  {
+    // AddImages won't copy the names and we need them for
+    // LoadDialogImage and TFrameAnimation
+    PngTargetList->PngImages->Assign(PngSourceList->PngImages);
+  }
+  else
+  {
+    TargetList->AddImages(SourceList);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall CopyDataModule(TDataModule * TargetModule, TDataModule * SourceModule)
+{
+  for (int Index = 0; Index < TargetModule->ComponentCount; Index++)
+  {
+    TComponent * TargetComponent = TargetModule->Components[Index];
+    TImageList * TargetList = dynamic_cast<TImageList *>(TargetComponent);
+    if (ALWAYS_TRUE(TargetList != NULL))
     {
-      // AddImages won't copy the names and we need them for LoadDialogImage
-      PngImageList->PngImages->Assign(PngMatchingList->PngImages);
-    }
-    else
-    {
-      ImageList->AddImages(MatchingList);
+      TImageList * SourceList = dynamic_cast<TImageList *>(SourceModule->FindComponent(TargetList->Name));
+      if (ALWAYS_TRUE(SourceList != NULL))
+      {
+        CopyImageList(TargetList, SourceList);
+      }
     }
   }
 }

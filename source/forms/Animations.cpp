@@ -4,6 +4,10 @@
 
 #include "Global.h"
 #include "Animations.h"
+#include "Animations96.h"
+#include "Animations120.h"
+#include "Animations144.h"
+#include "Animations192.h"
 #include "GUITools.h"
 #include "GUIConfiguration.h"
 //---------------------------------------------------------------------------
@@ -35,6 +39,25 @@ TAnimationsModule * __fastcall GetAnimationsModule()
 __fastcall TAnimationsModule::TAnimationsModule(TComponent * Owner)
   : TDataModule(Owner)
 {
-  SelectScaledImageList(AnimationImages);
+  int PixelsPerInch = Screen->PixelsPerInch;
+  TDataModule * ScaledModule;
+  if (PixelsPerInch >= 192)
+  {
+    ScaledModule = new TAnimations192Module(Application);
+  }
+  else if (PixelsPerInch >= 144)
+  {
+    ScaledModule = new TAnimations144Module(Application);
+  }
+  else if (PixelsPerInch >= 120)
+  {
+    ScaledModule = new TAnimations120Module(Application);
+  }
+  else
+  {
+    ScaledModule = new TAnimations96Module(Application);
+  }
+
+  CopyDataModule(this, ScaledModule);
 }
 //---------------------------------------------------------------------------

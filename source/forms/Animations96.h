@@ -1,19 +1,19 @@
 //---------------------------------------------------------------------------
-#ifndef AnimationsH
-#define AnimationsH
+#ifndef Animations96H
+#define Animations96H
 //---------------------------------------------------------------------------
 #include <System.Classes.hpp>
 #include "PngImageList.hpp"
 #include <Vcl.Controls.hpp>
 #include <Vcl.ImgList.hpp>
 //---------------------------------------------------------------------------
-class TAnimationsModule : public TDataModule
+class TAnimations96Module : public TDataModule
 {
 __published:
   TPngImageList *AnimationImages;
 
 public:
-  __fastcall TAnimationsModule(TComponent * Owner);
+  __fastcall TAnimations96Module(TComponent * Owner);
 };
 //---------------------------------------------------------------------------
 #endif

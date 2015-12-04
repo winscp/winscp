@@ -44,6 +44,8 @@ void __fastcall ApplyTabs(
   TCalculateWidth CalculateWidth, void * CalculateWidthArg);
 TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Label);
 void __fastcall SelectScaledImageList(TImageList * ImageList);
+void __fastcall CopyDataModule(TDataModule * TargetModule, TDataModule * SourceModule);
+void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList);
 void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName);
 int __fastcall DialogImageSize();
 void __fastcall HideComponentsPanel(TForm * Form);
