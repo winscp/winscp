@@ -92,7 +92,7 @@
 			<FormType>dfm</FormType>
 			<DesignClass>TDataModule</DesignClass>
 			<DependentOn>forms\Animations192.h</DependentOn>
-			<BuildOrder>4</BuildOrder>
+			<BuildOrder>8</BuildOrder>
 		</CppCompile>
 			<FormResources Include="forms\Animations192.dfm"/>
 			<CppCompile Include="forms\Animations96.cpp">
