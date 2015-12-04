@@ -58,6 +58,9 @@ __fastcall TAnimationsModule::TAnimationsModule(TComponent * Owner)
     ScaledModule = new TAnimations96Module(Application);
   }
 
+  // Not really necessary as we never acccess AnimationImages by name
   CopyDataModule(this, ScaledModule);
+
+  AnimationImages = NOT_NULL(dynamic_cast<TPngImageList *>(FindComponent(AnimationImages->Name)));
 }
 //---------------------------------------------------------------------------

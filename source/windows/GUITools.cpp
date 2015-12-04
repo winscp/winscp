@@ -630,18 +630,32 @@ void __fastcall CopyDataModule(TDataModule * TargetModule, TDataModule * SourceM
 {
   DebugAssert(TargetModule->ComponentCount == SourceModule->ComponentCount);
 
+  typedef std::vector<std::pair<TComponent *, TComponent *> > TComponentPairs;
+  TComponentPairs ComponentPairs;
+
   for (int Index = 0; Index < TargetModule->ComponentCount; Index++)
   {
     TComponent * TargetComponent = TargetModule->Components[Index];
-    TImageList * TargetList = dynamic_cast<TImageList *>(TargetComponent);
-    if (ALWAYS_TRUE(TargetList != NULL))
+    TComponent * SourceComponent = SourceModule->FindComponent(TargetComponent->Name);
+    if (ALWAYS_TRUE(SourceComponent != NULL))
     {
-      TImageList * SourceList = dynamic_cast<TImageList *>(SourceModule->FindComponent(TargetList->Name));
-      if (ALWAYS_TRUE(SourceList != NULL))
-      {
-        CopyImageList(TargetList, SourceList);
-      }
+      ComponentPairs.push_back(std::make_pair(TargetComponent, SourceComponent));
     }
+  }
+
+  TComponentPairs::const_iterator Iterator = ComponentPairs.begin();
+  while (Iterator != ComponentPairs.end())
+  {
+    TComponent * TargetComponent = Iterator->first;
+    TComponent * SourceComponent = Iterator->second;
+
+    TargetModule->RemoveComponent(TargetComponent);
+    SourceModule->RemoveComponent(SourceComponent);
+
+    TargetModule->InsertComponent(SourceComponent);
+    SourceModule->InsertComponent(TargetComponent);
+
+    Iterator++;
   }
 }
 //---------------------------------------------------------------------------
