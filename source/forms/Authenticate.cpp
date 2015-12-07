@@ -137,7 +137,7 @@ void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
   // HACK
   // The first call to Repaint from TFrameAnimation happens
   // even before the form is showing. After it is shown it takes sometime too long
-  // before the animation is panted, so that the form is closed before the first frame even appers
+  // before the animation is painted, so that the form is closed before the first frame even appers
   if (!FAnimationPainted && Showing)
   {
     AnimationPaintBox->Repaint();
