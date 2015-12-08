@@ -6705,7 +6705,6 @@ TStrings * __fastcall TCustomScpExplorerForm::PanelExport(TOperationSide Side,
       {
         bool FullPath = (Export == peFullFileList);
         DirView->CreateFileList(false, FullPath, ExportData.get());
-        UnicodeString FileName;
         for (int Index = 0; Index < ExportData->Count; Index++)
         {
           if (ExportData->Strings[Index].Pos(L" ") > 0)
