@@ -43,6 +43,9 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   FPromptsGap = PromptLabel2->Top - PromptEdit1->Top - PromptEdit1->Height;
 
   ClientHeight = ScaleByTextHeight(this, 270);
+  FHorizontalLogPadding = ScaleByTextHeight(this, 4);
+  FVerticalLogPadding = ScaleByTextHeight(this, 3);
+  FLogTextFormat << tfNoPrefix << tfWordBreak << tfVerticalCenter;
 
   ClearLog();
 }
@@ -143,11 +146,36 @@ void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
     AnimationPaintBox->Repaint();
     FAnimationPainted = true;
   }
-  TListItem * Item = LogView->Items->Add();
-  Item->Caption = Message;
-  Item->MakeVisible(false);
-  AdjustLogView();
+
+  int Index = LogView->Items->Add(Message);
+  MakeLogItemVisible(Index);
   LogView->Repaint();
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::MakeLogItemVisible(int Index)
+{
+  int CountVisible = LogView->Height / LogView->ItemHeight;
+  if (Index < LogView->TopIndex)
+  {
+    LogView->TopIndex = Index;
+  }
+  else
+  {
+    int TotalHeight = 0;
+    int Index2 = Index;
+    while ((Index2 >= 0) && TotalHeight < LogView->ClientHeight)
+    {
+      TotalHeight += LogItemHeight(Index2);
+      Index2--;
+    }
+
+    // Index2 is the last item above the first fully visible,
+    // were the Index on the very bottom.
+    if (LogView->TopIndex <= Index2 + 1)
+    {
+      LogView->TopIndex = Index2 + 2;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::AdjustControls()
@@ -378,12 +406,17 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
         {
           if (LogView->Items->Count > 0)
           {
-            TListItem * Item = LogView->ItemFocused;
-            if (Item == NULL)
+            // To avoid the scrolling effect when setting TopIndex
+            LogView->Items->BeginUpdate();
+            try
             {
-              Item = LogView->Items->Item[LogView->Items->Count - 1];
+              MakeLogItemVisible(LogView->Items->Count - 1);
             }
-            Item->MakeVisible(false);
+            __finally
+            {
+              LogView->Items->EndUpdate();
+              RedrawLog();
+            }
           }
         }
         Screen->Cursor = crDefault;
@@ -475,13 +508,68 @@ void __fastcall TAuthenticateForm::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::AdjustLogView()
+int __fastcall TAuthenticateForm::LogItemHeight(int Index)
 {
-  ListView_SetColumnWidth(LogView->Handle, 0, LVSCW_AUTOSIZE);
+  UnicodeString S = LogView->Items->Strings[Index];
+  TRect TextRect(0, 0, LogView->ClientWidth - (2 * FHorizontalLogPadding), 0);
+  LogView->Canvas->Font = LogView->Font;
+  LogView->Canvas->TextRect(TextRect, S, FLogTextFormat + (TTextFormat() << tfCalcRect));
+  int Result = TextRect.Height() + (2 * FVerticalLogPadding);
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::LogViewMeasureItem(TWinControl * /*Control*/, int Index,
+  int & Height)
+{
+  Height = LogItemHeight(Index);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::LogViewDrawItem(TWinControl * /*Control*/, int Index,
+  TRect & Rect, TOwnerDrawState /*State*/)
+{
+  // Reset back to base colors. We do not want to render selection.
+  // + At initial phases the canvas font will not yet reflect he desktop font.
+  LogView->Canvas->Font = LogView->Font;
+  LogView->Canvas->Brush->Color = LogView->Color;
+
+  LogView->Canvas->FillRect(Rect);
+
+  int Height = LogItemHeight(Index);
+  // tfVerticalCenter does not seem to center the text,
+  // so we need to deflate the vertical size too
+  Rect.Inflate(-FHorizontalLogPadding,  -FVerticalLogPadding);
+  UnicodeString S = LogView->Items->Strings[Index];
+  LogView->Canvas->TextRect(Rect, S, FLogTextFormat);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::RedrawLog()
+{
+  // Redraw including the scrollbar (RDW_FRAME)
+  RedrawWindow(LogView->Handle, NULL, NULL, RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::FormResize(TObject * /*Sender*/)
 {
-  AdjustLogView();
+  if (LogView->Showing)
+  {
+    // Mainly to avoid the scrolling effect when setting TopIndex
+    LogView->Items->BeginUpdate();
+    try
+    {
+      // Rebuild the list view to force Windows to resend WM_MEASUREITEM
+      int ItemIndex = LogView->ItemIndex;
+      int TopIndex = LogView->TopIndex;
+      std::unique_ptr<TStringList> Items(new TStringList);
+      Items->Assign(LogView->Items);
+      LogView->Items->Assign(Items.get());
+      LogView->ItemIndex = ItemIndex;
+      LogView->TopIndex = TopIndex;
+    }
+    __finally
+    {
+      LogView->Items->EndUpdate();
+      RedrawLog();
+    }
+  }
 }
 //---------------------------------------------------------------------------

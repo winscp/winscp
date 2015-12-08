@@ -26,26 +26,21 @@ object AuthenticateForm: TAuthenticateForm
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
-    object LogView: TListView
+    object LogView: TListBox
       Left = 48
       Top = 0
       Width = 327
       Height = 65
+      Style = lbOwnerDrawVariable
       Align = alClient
       BevelInner = bvNone
       BevelOuter = bvNone
       BorderStyle = bsNone
-      Columns = <
-        item
-          Width = 100
-        end>
       DoubleBuffered = True
-      ReadOnly = True
-      RowSelect = True
       ParentDoubleBuffered = False
-      ShowColumnHeaders = False
       TabOrder = 0
-      ViewStyle = vsReport
+      OnDrawItem = LogViewDrawItem
+      OnMeasureItem = LogViewMeasureItem
     end
     object LeftPanel: TPanel
       Left = 0
