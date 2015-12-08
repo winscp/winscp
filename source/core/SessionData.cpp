@@ -1649,6 +1649,10 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     // as the option should not make session "connectable"
 
     UnicodeString Value;
+    if (Options->FindSwitch(SESSIONNAME_SWICH, Value))
+    {
+      Name = Value;
+    }
     if (Options->FindSwitch(L"privatekey", Value))
     {
       PublicKeyFile = Value;

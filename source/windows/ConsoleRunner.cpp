@@ -2052,6 +2052,7 @@ void __fastcall Usage(TConsole * Console)
   {
     PrintUsageSyntax(Console, L"site|workspace|folder");
     PrintUsageSyntax(Console, L"(sftp|scp|ftp[es]|http[s])://[user[:password]@]host[:port][/path/[file]]");
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s=<name>", (LowerCase(SESSIONNAME_SWICH))));
     PrintUsageSyntax(Console, L"[mysession] /newinstance");
     PrintUsageSyntax(Console, L"[mysession] /edit <path>");
     PrintUsageSyntax(Console, L"[mysession] /synchronize [local_dir] [remote_dir] [/defaults]");
@@ -2083,6 +2084,7 @@ void __fastcall Usage(TConsole * Console)
   if (!Console->CommandLineOnly())
   {
     RegisterSwitch(SwitchesUsage, L"session", USAGE_SESSION);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(SESSIONNAME_SWICH) + L"=", USAGE_SESSIONNAME);
     RegisterSwitch(SwitchesUsage, L"/newinstance", USAGE_NEWINSTANCE);
     RegisterSwitch(SwitchesUsage, L"/edit", USAGE_EDIT);
     RegisterSwitch(SwitchesUsage, L"/synchronize", USAGE_SYNCHRONIZE);

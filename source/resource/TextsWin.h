@@ -268,6 +268,7 @@
 #define KEYGEN_PASSPHRASE2      1570
 #define KEYGEN_SAVED            1571
 #define USAGE_CERTIFICATE       1572
+#define USAGE_SESSIONNAME       1573
 
 #define WIN_FORMS_STRINGS       1600
 #define LOG_NOLOG               1601

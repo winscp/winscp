@@ -271,6 +271,7 @@ BEGIN
         KEYGEN_PASSPHRASE2, "Re-enter passphrase to verify:"
         KEYGEN_SAVED, "Key saved to \"%s\"."
         USAGE_CERTIFICATE, "Fingerprint of server TLS/SSL certificate (FTPS protocol only)."
+        USAGE_SESSIONNAME, "Gives a name to the session"
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         LOG_NOLOG, "No session log."
