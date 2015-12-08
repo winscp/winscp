@@ -178,7 +178,6 @@ TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString 
   Result->Caption = Caption;
   int Width = FPromptParent->ClientWidth - FPromptLeft - FPromptRight;
   Result->Width = Width;
-  Result->AutoSize = true;
 
   return Result;
 }
