@@ -7957,7 +7957,8 @@ void __fastcall TCustomScpExplorerForm::SessionGenerateUrl()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FileGenerateUrl()
 {
-  std::unique_ptr<TStrings> Paths(PanelExport(osCurrent, peFullFileList));
+  std::unique_ptr<TStrings> Paths(new TStringList());
+  DirView(osCurrent)->CreateFileList(false, true, Paths.get());
   GenerateUrl(Paths.get());
 }
 //---------------------------------------------------------------------------
