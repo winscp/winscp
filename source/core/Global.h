@@ -36,7 +36,7 @@ private:
 #define ACCESS_VIOLATION_TEST { (*((int*)NULL)) = 0; }
 #if !defined(_DEBUG) || defined(DESIGN_ONLY)
 #define DebugAssert(p)   ((void)0)
-#define DebugCheck(p) p
+#define DebugCheck(p) (p)
 #define DebugFail
 #else // if !defined(_DEBUG) || defined(DESIGN_ONLY)
 void __fastcall DoAssert(wchar_t * Message, wchar_t * Filename, int LineNumber);
@@ -47,7 +47,7 @@ void __fastcall DoAssert(wchar_t * Message, wchar_t * Filename, int LineNumber);
 //---------------------------------------------------------------------------
 #define DebugAlwaysTrue(p) (p)
 #define DebugAlwaysFalse(p) (p)
-#define DebugNotNull(P) P
+#define DebugNotNull(p) (p)
 #define DebugUsedParam(p) ((&p) == (&p))
 //---------------------------------------------------------------------------
 #endif
