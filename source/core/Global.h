@@ -39,16 +39,14 @@ private:
 #define DebugAssert(p)   ((void)0)
 #define DebugCheck(p) p
 #define DebugFail
-#define DebugAlwaysTrue(p) p
-#define DebugAlwaysFalse(p) p
-#define DebugNotNull(P) P
 #else // ifndef _DEBUG
 #define DebugCheck(p) { bool __CHECK_RESULT__ = (p); DebugAssert(__CHECK_RESULT__); }
 #define DebugFail DebugAssert(false)
+#endif // ifndef _DEBUG
+//---------------------------------------------------------------------------
 #define DebugAlwaysTrue(p) (p)
 #define DebugAlwaysFalse(p) (p)
 #define DebugNotNull(P) P
-#endif // ifndef _DEBUG
 #define DebugUsedParam(p) ((&p) == (&p))
 //---------------------------------------------------------------------------
 #endif
