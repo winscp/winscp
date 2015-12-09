@@ -664,10 +664,7 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
           m_Segments.clear();
           subdir=subdir.Mid(pos1+1);
 
-          pos1=subdir.Find( L"[" );
-          int pos2=subdir.Find( L"]" );
-          if (pos1!=-1 || pos2!=-1)
-            DebugFail();
+          DebugAssert(subdir.Find( L"[" )==-1 && subdir.Find( L"]" )==-1);
         }
         int pos=subdir.Find( L"." );
         while(pos!=-1)
