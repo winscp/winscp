@@ -339,7 +339,7 @@ UnicodeString __fastcall GetDesktopFolder()
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeString Identity,
   bool Mask)
 {
-  assert(!BaseDir.IsEmpty());
+  DebugAssert(!BaseDir.IsEmpty());
   UnicodeString TempDir;
   do
   {
@@ -492,7 +492,7 @@ bool __fastcall IsEligibleForApplyingTabs(
     }
 
     // We do not have, not support, mutiple tabs on a single line
-    if (ALWAYS_TRUE(Remaining.Pos(L"\t") == 0))
+    if (DebugAlwaysTrue(Remaining.Pos(L"\t") == 0))
     {
       Start = Line.SubString(1, TabPos - 1);
       // WORKAROUND
@@ -637,7 +637,7 @@ void __fastcall CopyDataModule(TDataModule * TargetModule, TDataModule * SourceM
   {
     TComponent * TargetComponent = TargetModule->Components[Index];
     TComponent * SourceComponent = SourceModule->FindComponent(TargetComponent->Name);
-    if (ALWAYS_TRUE(SourceComponent != NULL))
+    if (DebugAlwaysTrue(SourceComponent != NULL))
     {
       ComponentPairs.push_back(std::make_pair(TargetComponent, SourceComponent));
     }
@@ -680,7 +680,7 @@ void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
   }
   // When showing an exception from wWinMain, the glyphs module does not exist anymore.
   // We expect errors only.
-  else if (ALWAYS_TRUE(ImageName == L"Error"))
+  else if (DebugAlwaysTrue(ImageName == L"Error"))
   {
     Image->Picture->Icon->Handle = LoadIcon(0, IDI_HAND);
   }
@@ -693,8 +693,8 @@ int __fastcall DialogImageSize()
 //---------------------------------------------------------------------------
 void __fastcall HideComponentsPanel(TForm * Form)
 {
-  TComponent * Component = NOT_NULL(Form->FindComponent(L"ComponentsPanel"));
-  TPanel * Panel = NOT_NULL(dynamic_cast<TPanel *>(Component));
+  TComponent * Component = DebugNotNull(Form->FindComponent(L"ComponentsPanel"));
+  TPanel * Panel = DebugNotNull(dynamic_cast<TPanel *>(Component));
   DebugAssert(Panel->Align == alBottom);
   int Offset = Panel->Height;
   Panel->Visible = false;
@@ -832,7 +832,7 @@ TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeStr
 //---------------------------------------------------------------------------
 void __fastcall SetBrowserDesignModeOff(TWebBrowserEx * WebBrowser)
 {
-  if (ALWAYS_TRUE(WebBrowser->Document2 != NULL))
+  if (DebugAlwaysTrue(WebBrowser->Document2 != NULL))
   {
     WebBrowser->Document2->designMode = L"Off";
   }
@@ -842,7 +842,7 @@ void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
   const UnicodeString & Url, TNotifyEvent Handler)
 {
   TBrowserViewer * BrowserViewer = dynamic_cast<TBrowserViewer *>(WebBrowser);
-  if (ALWAYS_TRUE(BrowserViewer != NULL))
+  if (DebugAlwaysTrue(BrowserViewer != NULL))
   {
     BrowserViewer->AddLinkHandler(Url, Handler);
   }
@@ -851,7 +851,7 @@ void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
 void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeString & Url)
 {
   TBrowserViewer * BrowserViewer = dynamic_cast<TBrowserViewer *>(WebBrowser);
-  if (ALWAYS_TRUE(BrowserViewer != NULL))
+  if (DebugAlwaysTrue(BrowserViewer != NULL))
   {
     BrowserViewer->NavigateToUrl(Url);
   }
@@ -1016,7 +1016,7 @@ void __fastcall TFrameAnimation::PaintBoxPaint(TObject * Sender)
   if (FFirstFrame >= 0)
   {
     // Double-buffered drawing to prevent flicker (as the images are transparent)
-    USEDPARAM(Sender);
+    DebugUsedParam(Sender);
     DebugAssert(FPaintBox == Sender);
     DebugAssert(FPaintBox->ControlStyle.Contains(csOpaque));
     std::unique_ptr<TBitmap> Bitmap(new TBitmap());

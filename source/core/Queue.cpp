@@ -273,7 +273,7 @@ int __fastcall TSimpleThread::ThreadProc(void * Thread)
   catch(...)
   {
     // we do not expect thread to be terminated with exception
-    FAIL;
+    DebugFail;
   }
   SimpleThread->FFinished = true;
   SimpleThread->Finished();
@@ -559,7 +559,7 @@ void __fastcall TTerminalQueue::RetryItem(TQueueItem * Item)
 
       int Index = FItems->Remove(Item);
       DebugAssert(Index < FItemsInProcess);
-      USEDPARAM(Index);
+      DebugUsedParam(Index);
       FItemsInProcess--;
       FItems->Add(Item);
     }
@@ -584,7 +584,7 @@ void __fastcall TTerminalQueue::DeleteItem(TQueueItem * Item, bool CanKeep)
       Monitored = (Item->CompleteEvent != INVALID_HANDLE_VALUE);
       int Index = FItems->Remove(Item);
       DebugAssert(Index < FItemsInProcess);
-      USEDPARAM(Index);
+      DebugUsedParam(Index);
       FItemsInProcess--;
       FForcedItems->Remove(Item);
       // =0  do not keep
@@ -1404,7 +1404,7 @@ void __fastcall TTerminalItem::TerminalQueryUser(TObject * Sender,
   // on re-key with non-cached host key. make it fail.
   if (FItem != NULL)
   {
-    USEDPARAM(Arg);
+    DebugUsedParam(Arg);
     DebugAssert(Arg == NULL);
 
     TQueryUserAction Action(FQueue->OnQueryUser);
@@ -1436,12 +1436,12 @@ void __fastcall TTerminalItem::TerminalPromptUser(TTerminal * Terminal,
   if (FItem == NULL)
   {
     // sanity, should not occur
-    FAIL;
+    DebugFail;
     Result = false;
   }
   else
   {
-    USEDPARAM(Arg);
+    DebugUsedParam(Arg);
     DebugAssert(Arg == NULL);
 
     TPromptUserAction Action(FQueue->OnPromptUser);
@@ -1464,7 +1464,7 @@ void __fastcall TTerminalItem::TerminalPromptUser(TTerminal * Terminal,
 void __fastcall TTerminalItem::TerminalShowExtendedException(
   TTerminal * Terminal, Exception * E, void * Arg)
 {
-  USEDPARAM(Arg);
+  DebugUsedParam(Arg);
   DebugAssert(Arg == NULL);
 
   if ((FItem != NULL) &&
@@ -2344,7 +2344,7 @@ void __fastcall TTerminalThread::WaitForUserAction(TUserAction * UserAction)
     DebugAssert(Thread == FThreadId);
 
     bool DoCheckCancel =
-      ALWAYS_FALSE(UserAction == NULL) || !UserAction->Force();
+      DebugAlwaysFalse(UserAction == NULL) || !UserAction->Force();
     if (DoCheckCancel)
     {
       CheckCancel();
@@ -2437,7 +2437,7 @@ void __fastcall TTerminalThread::TerminalQueryUser(TObject * Sender,
   const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
   const TQueryParams * Params, unsigned int & Answer, TQueryType Type, void * Arg)
 {
-  USEDPARAM(Arg);
+  DebugUsedParam(Arg);
   DebugAssert(Arg == NULL);
 
   // note about TQueryParams::TimerEvent
@@ -2468,7 +2468,7 @@ void __fastcall TTerminalThread::TerminalInitializeLog(TObject * Sender)
   if (FOnInitializeLog != NULL)
   {
     // never used, so not tested either
-    FAIL;
+    DebugFail;
     TNotifyAction Action(FOnInitializeLog);
     Action.Sender = Sender;
 
@@ -2480,7 +2480,7 @@ void __fastcall TTerminalThread::TerminalPromptUser(TTerminal * Terminal,
   TPromptKind Kind, UnicodeString Name, UnicodeString Instructions, TStrings * Prompts,
   TStrings * Results, bool & Result, void * Arg)
 {
-  USEDPARAM(Arg);
+  DebugUsedParam(Arg);
   DebugAssert(Arg == NULL);
 
   TPromptUserAction Action(FOnPromptUser);
@@ -2501,7 +2501,7 @@ void __fastcall TTerminalThread::TerminalPromptUser(TTerminal * Terminal,
 void __fastcall TTerminalThread::TerminalShowExtendedException(
   TTerminal * Terminal, Exception * E, void * Arg)
 {
-  USEDPARAM(Arg);
+  DebugUsedParam(Arg);
   DebugAssert(Arg == NULL);
 
   TShowExtendedExceptionAction Action(FOnShowExtendedException);

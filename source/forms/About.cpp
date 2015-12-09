@@ -303,9 +303,9 @@ void __fastcall TAboutDialog::LoadThirdParty()
 
   TStreamAdapter * ThirdPartyStreamAdapter = new TStreamAdapter(ThirdPartyStream.get(), soReference);
   IPersistStreamInit * PersistStreamInit = NULL;
-  if (ALWAYS_TRUE(ThirdPartyWebBrowser->Document != NULL) &&
+  if (DebugAlwaysTrue(ThirdPartyWebBrowser->Document != NULL) &&
       SUCCEEDED(ThirdPartyWebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
-      ALWAYS_TRUE(PersistStreamInit != NULL))
+      DebugAlwaysTrue(PersistStreamInit != NULL))
   {
     PersistStreamInit->Load(static_cast<_di_IStream>(*ThirdPartyStreamAdapter));
   }

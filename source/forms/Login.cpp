@@ -203,9 +203,9 @@ void __fastcall TLoginDialog::Init()
   ReadOnlyControl(ContentsNameEdit);
   ReadOnlyControl(ContentsMemo);
 
-  if (ALWAYS_FALSE(SessionTree->Items->Count == 0) ||
+  if (DebugAlwaysFalse(SessionTree->Items->Count == 0) ||
       ((SessionTree->Items->Count == 1) &&
-       ALWAYS_TRUE(IsNewSiteNode(SessionTree->Items->GetFirstNode()))) ||
+       DebugAlwaysTrue(IsNewSiteNode(SessionTree->Items->GetFirstNode()))) ||
       FForceNewSite)
   {
     ActiveControl = HostNameEdit;
@@ -311,7 +311,7 @@ bool __fastcall TLoginDialog::IsSessionNode(TTreeNode * Node)
 //---------------------------------------------------------------------
 TSessionData * __fastcall TLoginDialog::GetNodeSession(TTreeNode * Node)
 {
-  return NOT_NULL(static_cast<TSessionData *>(Node->Data));
+  return DebugNotNull(static_cast<TSessionData *>(Node->Data));
 }
 //---------------------------------------------------------------------
 TTreeNode * __fastcall TLoginDialog::AddSession(TSessionData * Data)
@@ -411,7 +411,7 @@ void __fastcall TLoginDialog::UpdateFolderNode(TTreeNode * Node)
 void __fastcall TLoginDialog::NewSite()
 {
   TTreeNode * NewSiteNode = GetNewSiteNode();
-  if (ALWAYS_TRUE(IsNewSiteNode(NewSiteNode)))
+  if (DebugAlwaysTrue(IsNewSiteNode(NewSiteNode)))
   {
     SessionTree->Selected = NewSiteNode;
   }
@@ -421,7 +421,7 @@ void __fastcall TLoginDialog::NewSite()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ResetNewSiteData()
 {
-  if (ALWAYS_TRUE(StoredSessions != NULL))
+  if (DebugAlwaysTrue(StoredSessions != NULL))
   {
     FNewSiteData->CopyData(StoredSessions->DefaultSettings);
   }
@@ -443,7 +443,7 @@ void __fastcall TLoginDialog::LoadContents()
     LoadSession(SelectedSession);
     UseContentsPanel = false;
   }
-  else if (ALWAYS_TRUE(IsFolderOrWorkspaceNode(Node)))
+  else if (DebugAlwaysTrue(IsFolderOrWorkspaceNode(Node)))
   {
     UnicodeString NodePath = SessionNodePath(Node);
     ContentsNameEdit->Text = NodePath;
@@ -455,7 +455,7 @@ void __fastcall TLoginDialog::LoadContents()
     {
       ContentsGroupBox->Caption = LoadStr(LOGIN_SITE_FOLDER_CAPTION);
     }
-    else if (ALWAYS_TRUE(IsWorkspaceNode(Node)))
+    else if (DebugAlwaysTrue(IsWorkspaceNode(Node)))
     {
       ContentsGroupBox->Caption = LoadStr(LOGIN_WORKSPACE_CAPTION);
     }
@@ -490,7 +490,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
     FtpsCombo->ItemIndex = FtpsIndex;
     WebDavsCombo->ItemIndex = FtpsIndex;
     EncryptionView->Text =
-      ALWAYS_TRUE(FtpsCombo->ItemIndex >= WebDavsCombo->ItemIndex) ? FtpsCombo->Text : WebDavsCombo->Text;
+      DebugAlwaysTrue(FtpsCombo->ItemIndex >= WebDavsCombo->ItemIndex) ? FtpsCombo->Text : WebDavsCombo->Text;
 
     bool AllowScpFallback;
     TransferProtocolCombo->ItemIndex = FSProtocolToIndex(SessionData->FSProtocol, AllowScpFallback);
@@ -532,7 +532,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
 void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
 {
   // advanced
-  if (ALWAYS_TRUE(FSessionData != NULL))
+  if (DebugAlwaysTrue(FSessionData != NULL))
   {
     SessionData->Assign(FSessionData);
   }
@@ -644,7 +644,7 @@ void __fastcall TLoginDialog::UpdateControls()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateButtonVisibility(TButton * Button)
 {
-  TAction * Action = NOT_NULL(dynamic_cast<TAction *>(Button->Action));
+  TAction * Action = DebugNotNull(dynamic_cast<TAction *>(Button->Action));
   // when all action targets are hidden, action does not get updated,
   // so we need to do it manually
   Action->Update();
@@ -833,7 +833,7 @@ void __fastcall TLoginDialog::EditSession()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::EditSessionActionExecute(TObject * /*Sender*/)
 {
-  if (ALWAYS_TRUE(SelectedSession != NULL))
+  if (DebugAlwaysTrue(SelectedSession != NULL))
   {
     FEditing = true;
     EditSession();
@@ -858,7 +858,7 @@ TTreeNode * __fastcall TLoginDialog::FindSessionNode(TSessionData * SessionData,
 //---------------------------------------------------------------------------
 TSessionData * __fastcall TLoginDialog::GetEditingSessionData()
 {
-  return FEditing ? NOT_NULL(SelectedSession) : NULL;
+  return FEditing ? DebugNotNull(SelectedSession) : NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveAsSession(bool ForceDialog)
@@ -1052,7 +1052,7 @@ void __fastcall TLoginDialog::ImportSessionsActionExecute(TObject * /*Sender*/)
   if (DoImportSessionsDialog(Imported.get()))
   {
     UnicodeString SelectSite;
-    if (ALWAYS_TRUE(Imported->Count > 0))
+    if (DebugAlwaysTrue(Imported->Count > 0))
     {
       // Focus the first imported session.
       // We should also consider expanding all newly created folders
@@ -1088,7 +1088,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   bool SiteSelected = IsSiteNode(SessionTree->Selected);
   bool FolderOrWorkspaceSelected = IsFolderOrWorkspaceNode(SessionTree->Selected);
 
-  TAction * Action = NOT_NULL(dynamic_cast<TAction *>(BasicAction));
+  TAction * Action = DebugNotNull(dynamic_cast<TAction *>(BasicAction));
   bool PrevEnabled = Action->Enabled;
   bool Editable = IsEditable();
 
@@ -1310,7 +1310,7 @@ TSessionData * __fastcall TLoginDialog::CloneSelectedSession()
   {
     Data2->Assign(GetNodeSession(Node));
   }
-  else if (ALWAYS_TRUE(IsNewSiteNode(Node)))
+  else if (DebugAlwaysTrue(IsNewSiteNode(Node)))
   {
     TSessionData * Data = GetSessionData();
     Data2->Assign(Data);
@@ -1375,7 +1375,7 @@ void __fastcall TLoginDialog::LoadState()
 {
   // it does not make any sense to call this before
   // DoFormWindowProc(CM_SHOWINGCHANGED), we would end up on wrong monitor
-  if (ALWAYS_TRUE(Visible))
+  if (DebugAlwaysTrue(Visible))
   {
     RestoreFormSize(CustomWinConfiguration->LoginDialog.WindowSize, this);
   }
@@ -1414,7 +1414,7 @@ void __fastcall TLoginDialog::LoadState()
   // as site folders, e.g. for the very last root-level site, at long as
   // there are any folders)
   if (!FForceNewSite &&
-      !WinConfiguration->LastStoredSession.IsEmpty() && ALWAYS_TRUE(Visible))
+      !WinConfiguration->LastStoredSession.IsEmpty() && DebugAlwaysTrue(Visible))
   {
     UnicodeString Path = WinConfiguration->LastStoredSession;
 
@@ -1616,7 +1616,7 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
   }
   else
   {
-    FAIL;
+    DebugFail;
   }
 
   Message = MainInstructions(Message);
@@ -1723,7 +1723,7 @@ void __fastcall TLoginDialog::SessionTreeEditing(TObject * /*Sender*/,
   DebugAssert(!FRenaming);
   AllowEdit =
     IsFolderOrWorkspaceNode(Node) ||
-    (ALWAYS_TRUE(IsSiteNode(Node)) && !GetNodeSession(Node)->Special);
+    (DebugAlwaysTrue(IsSiteNode(Node)) && !GetNodeSession(Node)->Special);
   FRenaming = AllowEdit;
   UpdateControls();
 }
@@ -1919,7 +1919,7 @@ int __fastcall TLoginDialog::FtpsToIndex(TFtps Ftps)
   switch (Ftps)
   {
     default:
-      FAIL;
+      DebugFail;
     case ftpsNone:
       return 0;
 
@@ -1939,7 +1939,7 @@ TFtps __fastcall TLoginDialog::GetFtps()
   switch (Index)
   {
     default:
-      FAIL;
+      DebugFail;
     case 0:
       Ftps = ftpsNone;
       break;
@@ -1958,7 +1958,7 @@ TFtps __fastcall TLoginDialog::GetFtps()
 TFSProtocol __fastcall TLoginDialog::GetFSProtocol(bool RequireScpFallbackDistinction)
 {
   bool AllowScpFallback = false;
-  if (RequireScpFallbackDistinction && ALWAYS_TRUE(FSessionData != NULL))
+  if (RequireScpFallbackDistinction && DebugAlwaysTrue(FSessionData != NULL))
   {
     FSProtocolToIndex(FSessionData->FSProtocol, AllowScpFallback);
   }
@@ -2205,7 +2205,7 @@ void __fastcall TLoginDialog::SessionTreeDragDrop(TObject * Sender,
   TObject * Source, int /*X*/, int /*Y*/)
 {
   TTreeNode * DropTarget = SessionTree->DropTarget;
-  if (ALWAYS_TRUE((Sender == Source) && SessionAllowDrop(DropTarget)) &&
+  if (DebugAlwaysTrue((Sender == Source) && SessionAllowDrop(DropTarget)) &&
       // calling EnsureNotEditing only on drop, not on drag start,
       // to avoid getting popup during unintended micro-dragging
       EnsureNotEditing())
@@ -2224,7 +2224,7 @@ void __fastcall TLoginDialog::SessionTreeDragDrop(TObject * Sender,
     // modified only, explicit
     StoredSessions->Save(false, true);
     // this should aways be the case
-    if (ALWAYS_TRUE(Session != NewSession))
+    if (DebugAlwaysTrue(Session != NewSession))
     {
       TTreeNode * Node = SessionTree->Selected;
 
@@ -2725,7 +2725,7 @@ void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
   // while cloning the session data in LoadSession.
   // To implement this, we may delegate the cloning to TWinConfiguration and
   // make use of FDontDecryptPasswords
-  if (ALWAYS_TRUE(FSessionData != NULL))
+  if (DebugAlwaysTrue(FSessionData != NULL))
   {
     // parse hostname (it may change protocol particularly) before opening advanced settings
     // (HostNameEditExit is not triggered when child dialog pops up when it is invoked by accelerator)
@@ -2739,7 +2739,7 @@ void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
     // can change is protocol (between fsSFTP and fsSFTPonly),
     // difference of the two not being visible on Login dialog anyway.
     LoadSession(FSessionData);
-    if (ALWAYS_TRUE(SessionTree->Selected != NULL) &&
+    if (DebugAlwaysTrue(SessionTree->Selected != NULL) &&
         IsSiteNode(SessionTree->Selected))
     {
       SetNodeImage(SessionTree->Selected, GetSessionImageIndex(FSessionData));
@@ -2769,7 +2769,7 @@ TPopupMenu * __fastcall TLoginDialog::GetSelectedNodePopupMenu()
     PopupMenu = ManageWorkspacePopupMenu;
   }
 
-  return NOT_NULL(PopupMenu);
+  return DebugNotNull(PopupMenu);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ManageButtonClick(TObject * /*Sender*/)
@@ -2804,7 +2804,7 @@ void __fastcall TLoginDialog::SessionTreeContextPopup(TObject * /*Sender*/,
     if (SessionTree->Selected != NULL)
     {
       SessionTree->PopupMenu = GetSelectedNodePopupMenu();
-      if (NOT_NULL(SessionTree->PopupMenu))
+      if (DebugNotNull(SessionTree->PopupMenu))
       {
         MenuPopup(SessionTree, MousePos, Handled);
       }
@@ -2919,7 +2919,7 @@ void __fastcall TLoginDialog::PasteUrlActionExecute(TObject * /*Sender*/)
     }
 
     // sanity check
-    if (ALWAYS_TRUE(IsEditable()))
+    if (DebugAlwaysTrue(IsEditable()))
     {
       ParseUrl(ClipboardUrl);
     }
@@ -2947,7 +2947,7 @@ void __fastcall TLoginDialog::HostNameEditExit(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::GenerateUrlAction2Execute(TObject * /*Sender*/)
 {
-  if (ALWAYS_TRUE(SelectedSession != NULL))
+  if (DebugAlwaysTrue(SelectedSession != NULL))
   {
     PersistNewSiteIfNeeded();
 

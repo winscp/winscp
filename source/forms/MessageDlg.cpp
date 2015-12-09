@@ -403,7 +403,7 @@ void __fastcall TMessageForm::CMShowingChanged(TMessage & Message)
     DoShow();
 
     // - also we skip applying TForm::Position (VCLCOPY)
-    if (ALWAYS_TRUE(Position == poOwnerFormCenter))
+    if (DebugAlwaysTrue(Position == poOwnerFormCenter))
     {
       TCustomForm * CenterForm = Application->MainForm;
       TCustomForm * OwnerForm = dynamic_cast<TCustomForm *>(Owner);
@@ -500,7 +500,7 @@ void __fastcall TMessageForm::DoShow()
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::MenuItemClick(TObject * Sender)
 {
-  TMenuItem * Item = NOT_NULL(dynamic_cast<TMenuItem *>(Sender));
+  TMenuItem * Item = DebugNotNull(dynamic_cast<TMenuItem *>(Sender));
   ModalResult = (Item->Tag & 0xFFFF);
 }
 //---------------------------------------------------------------------------
@@ -585,7 +585,7 @@ TButton * __fastcall TMessageForm::CreateButton(
 
   if (SupportsSplitButton() &&
       (GroupWith >= 0) &&
-      ALWAYS_TRUE(AnswerButtons.find(GroupWith) != AnswerButtons.end()))
+      DebugAlwaysTrue(AnswerButtons.find(GroupWith) != AnswerButtons.end()))
   {
     TButton * GroupWithButton = AnswerButtons[GroupWith];
 
@@ -700,10 +700,10 @@ TButton * __fastcall TMessageForm::CreateButton(
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::InsertPanel(TPanel * Panel)
 {
-  if (ALWAYS_TRUE(MessageBrowser != NULL))
+  if (DebugAlwaysTrue(MessageBrowser != NULL))
   {
     // we currently use this for updates message box only
-    TControl * ContentsControl = static_cast<TControl *>(NOT_NULL(MessageBrowser))->Parent;
+    TControl * ContentsControl = static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
 
     Panel->Width = ContentsControl->Width;
     Panel->Left = ContentsControl->Left;
@@ -721,7 +721,7 @@ void __fastcall TMessageForm::InsertPanel(TPanel * Panel)
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::NavigateToUrl(const UnicodeString & Url)
 {
-  if (ALWAYS_TRUE(MessageBrowser != NULL))
+  if (DebugAlwaysTrue(MessageBrowser != NULL))
   {
     NavigateBrowserToUrl(MessageBrowser, Url);
   }
@@ -802,7 +802,7 @@ void __fastcall AnswerNameAndCaption(
       break;
 
     default:
-      FAIL;
+      DebugFail;
       throw Exception(L"Undefined answer");
   }
 }
@@ -941,10 +941,10 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       // value that the answer to be grouped with
       if (GroupWith >= 0)
       {
-        if (ALWAYS_FALSE(GroupWith >= static_cast<int>(Answer)) ||
-            ALWAYS_FALSE(Answer == TimeoutAnswer) &&
-            ALWAYS_FALSE(Answer == DefaultAnswer) &&
-            ALWAYS_FALSE(Answer == CancelAnswer))
+        if (DebugAlwaysFalse(GroupWith >= static_cast<int>(Answer)) ||
+            DebugAlwaysFalse(Answer == TimeoutAnswer) &&
+            DebugAlwaysFalse(Answer == DefaultAnswer) &&
+            DebugAlwaysFalse(Answer == CancelAnswer))
         {
           GroupWith = -1;
         }
@@ -1024,12 +1024,12 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
   UnicodeString ImageName = AImageName;
   if (ImageName.IsEmpty() &&
-      ALWAYS_TRUE(ImageNames[DlgType] != NULL))
+      DebugAlwaysTrue(ImageNames[DlgType] != NULL))
   {
     ImageName = ImageNames[DlgType];
   }
 
-  if (ALWAYS_TRUE(!ImageName.IsEmpty()))
+  if (DebugAlwaysTrue(!ImageName.IsEmpty()))
   {
     TImage * Image = new TImage(Panel);
     Image->Name = L"Image";
@@ -1103,7 +1103,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         break;
 
       default:
-        FAIL;
+        DebugFail;
         break;
     }
 
@@ -1121,7 +1121,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       if (LabelFont != 0)
       {
         Message->Font->Handle = LabelFont;
-        if (ALWAYS_TRUE(LabelFont == MainInstructionFont))
+        if (DebugAlwaysTrue(LabelFont == MainInstructionFont))
         {
           Configuration->Usage->Set(L"ThemeMainInstructionFontSize", Message->Font->Size);
         }
@@ -1183,7 +1183,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
       Result->MessageMemo = MessageMemo;
     }
-    else if (ALWAYS_TRUE(!MoreMessagesUrl.IsEmpty()))
+    else if (DebugAlwaysTrue(!MoreMessagesUrl.IsEmpty()))
     {
       TPanel * MessageBrowserPanel = CreateBlankPanel(Panel);
       MessageBrowserPanel->Parent = Panel;
@@ -1217,7 +1217,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   {
     Result->Caption = CustomCaption;
   }
-  else if (ALWAYS_TRUE(DlgType != mtCustom))
+  else if (DebugAlwaysTrue(DlgType != mtCustom))
   {
     Result->Caption = LoadResourceString(Captions[DlgType]);
   }
@@ -1279,12 +1279,12 @@ TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
 //---------------------------------------------------------------------------
 void __fastcall InsertPanelToMessageDialog(TCustomForm * Form, TPanel * Panel)
 {
-  TMessageForm * MessageForm = NOT_NULL(dynamic_cast<TMessageForm *>(Form));
+  TMessageForm * MessageForm = DebugNotNull(dynamic_cast<TMessageForm *>(Form));
   MessageForm->InsertPanel(Panel);
 }
 //---------------------------------------------------------------------------
 void __fastcall NavigateMessageDialogToUrl(TCustomForm * Form, const UnicodeString & Url)
 {
-  TMessageForm * MessageForm = NOT_NULL(dynamic_cast<TMessageForm *>(Form));
+  TMessageForm * MessageForm = DebugNotNull(dynamic_cast<TMessageForm *>(Form));
   MessageForm->NavigateToUrl(Url);
 }

@@ -323,7 +323,7 @@ UnicodeString __fastcall MainInstructionsFirstParagraph(const UnicodeString & S)
   UnicodeString Result;
   int Pos = S.Pos(L"\n\n");
   // we would not be calling this on single paragraph message
-  if (ALWAYS_TRUE(Pos > 0))
+  if (DebugAlwaysTrue(Pos > 0))
   {
     Result =
       MainInstructions(S.SubString(1, Pos - 1)) +
@@ -2043,7 +2043,7 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
               {
                 if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
                 {
-                  Result = DoRecursiveDeleteFile(FileName2, ALWAYS_FALSE(ToRecycleBin), AErrorPath);
+                  Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath);
                 }
               }
               else
@@ -2086,7 +2086,7 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
     Data.pTo = L"\0\0"; // this will actually give one null more than needed
     Data.fFlags = FOF_NOCONFIRMATION | FOF_RENAMEONCOLLISION | FOF_NOCONFIRMMKDIR |
       FOF_NOERRORUI | FOF_SILENT;
-    if (ALWAYS_TRUE(ToRecycleBin))
+    if (DebugAlwaysTrue(ToRecycleBin))
     {
       Data.fFlags |= FOF_ALLOWUNDO;
     }
@@ -2158,7 +2158,7 @@ unsigned int __fastcall CancelAnswer(unsigned int Answers)
   }
   else
   {
-    FAIL;
+    DebugFail;
     Result = qaCancel;
   }
   return Result;
@@ -2342,7 +2342,7 @@ UnicodeString __fastcall EncodeUrlPath(UnicodeString S)
 {
   UnicodeString Ignore = NonUrlChars();
   int P = Ignore.Pos(L"/");
-  if (ALWAYS_TRUE(P > 0))
+  if (DebugAlwaysTrue(P > 0))
   {
     Ignore.Delete(P, 1);
   }
@@ -2499,7 +2499,7 @@ bool __fastcall IsWine()
 {
   HMODULE NtDll = GetModuleHandle(L"ntdll.dll");
   return
-    ALWAYS_TRUE(NtDll != NULL) &&
+    DebugAlwaysTrue(NtDll != NULL) &&
     (GetProcAddress(NtDll, "wine_get_version") != NULL);
 }
 //---------------------------------------------------------------------------

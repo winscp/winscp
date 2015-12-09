@@ -146,7 +146,7 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
       ClientWidth -= GetSystemMetrics(SM_CXVSCROLL);
     }
 
-    if (ALWAYS_TRUE(NonResizableWidth < ClientWidth))
+    if (DebugAlwaysTrue(NonResizableWidth < ClientWidth))
     {
       int Remaining = ClientWidth - NonResizableWidth;
 
@@ -282,7 +282,7 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
   }
   else
   {
-    FAIL;
+    DebugFail;
   }
 }
 //---------------------------------------------------------------------------
@@ -465,7 +465,7 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
                  (AForm->Position != poDefaultPosOnly))
         {
           // we do not expect any other positioning
-          FAIL;
+          DebugFail;
         }
       }
       else
@@ -572,7 +572,7 @@ void __fastcall VerifyControl(TControl * Control)
     DebugAssert(Application->BiDiMode != bdLeftToRight);
     TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
     // It must be TWinControl if ControlHasRecreationPersistenceData returned true
-    if (ALWAYS_TRUE(WinControl != NULL))
+    if (DebugAlwaysTrue(WinControl != NULL))
     {
       WinControl->HandleNeeded();
     }
@@ -611,8 +611,8 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
   if (StatusBar != NULL)
   {
     // We should have UseSystemFont and bottom alignment set for all status bars.
-    if (ALWAYS_TRUE(StatusBar->UseSystemFont) &&
-        ALWAYS_TRUE(StatusBar->Align == alBottom))
+    if (DebugAlwaysTrue(StatusBar->UseSystemFont) &&
+        DebugAlwaysTrue(StatusBar->Align == alBottom))
     {
       StatusBar->Height = ScaleByTextHeight(StatusBar, StatusBar->Height);
     }
@@ -673,7 +673,7 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
     {
       IListView_Win7 * ListViewIntf = NULL;
       SendMessage(IEListView->Handle, LVM_QUERYINTERFACE, reinterpret_cast<WPARAM>(&IID_IListView_Win7), reinterpret_cast<LPARAM>(&ListViewIntf));
-      if (ALWAYS_TRUE(ListViewIntf != NULL))
+      if (DebugAlwaysTrue(ListViewIntf != NULL))
       {
         ListViewIntf->SetSelectionFlags(1, 1);
         ListViewIntf->Release();
@@ -1062,7 +1062,7 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
   }
   else
   {
-    FAIL;
+    DebugFail;
     Result = 0;
   }
   return Result;
@@ -1411,7 +1411,7 @@ static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
 
       case taCenter:
         {
-          FAIL; // not used branch, possibly untested
+          DebugFail; // not used branch, possibly untested
           int Diff = R.Width() - TextSize.cx;
           R.Left += Diff / 2;
           R.Right -= Diff - (Diff / 2);
@@ -1994,7 +1994,7 @@ TModalResult __fastcall DefaultResult(TCustomForm * Form, TButton * DefaultButto
   // We interpreted mrNone as OK, causing lots of troubles.
   TModalResult Result = mrNone;
   TButton * Button = FindDefaultButton(Form);
-  if (ALWAYS_TRUE(Button != NULL))
+  if (DebugAlwaysTrue(Button != NULL))
   {
     Result = Button->ModalResult;
   }
@@ -2025,7 +2025,7 @@ void __fastcall MemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift)
 {
   // Sender can be Form or Memo itself
   TControl * Control = dynamic_cast<TControl *>(Sender);
-  if (ALWAYS_TRUE(Control != NULL))
+  if (DebugAlwaysTrue(Control != NULL))
   {
     TCustomForm * Form = GetParentForm(Control);
     // Particularly when WantReturns is true,

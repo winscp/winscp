@@ -126,7 +126,7 @@ __fastcall TOwnConsole::TOwnConsole()
   if (WinConfiguration->MinimizeToTray)
   {
     FConsoleWindow = GetConsoleWindow();
-    if (ALWAYS_TRUE(FConsoleWindow != NULL))
+    if (DebugAlwaysTrue(FConsoleWindow != NULL))
     {
       FWindowStateTimer = new TTimer(Application);
       FWindowStateTimer->OnTimer = WindowStateTimer;
@@ -184,7 +184,7 @@ void __fastcall TOwnConsole::WindowStateTimer(TObject * /*Sender*/)
   }
   else
   {
-    FAIL;
+    DebugFail;
   }
 }
 //---------------------------------------------------------------------------
@@ -219,7 +219,7 @@ void __fastcall TOwnConsole::BreakInput()
 
   unsigned long Written;
   // this assertion occasionally fails (when console is being exited)
-  CHECK(WriteConsoleInput(FInput, &InputRecord, 1, &Written));
+  DebugCheck(WriteConsoleInput(FInput, &InputRecord, 1, &Written));
   DebugAssert(Written == 1);
 
   CancelInput();
@@ -279,7 +279,7 @@ void __fastcall TOwnConsole::Print(UnicodeString Str, bool FromBeginning)
   unsigned long Written;
   bool Result = WriteConsole(FOutput, Str.c_str(), Str.Length(), &Written, NULL);
   DebugAssert(Result);
-  USEDPARAM(Result);
+  DebugUsedParam(Result);
   DebugAssert(Str.Length() == static_cast<long>(Written));
   ProcessMessages();
 }
@@ -519,7 +519,7 @@ bool __fastcall TOwnConsole::WantsProgress()
 //---------------------------------------------------------------------------
 void __fastcall TOwnConsole::Progress(const TScriptProgress & /*Progress*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 class TExternalConsole : public TConsole
@@ -577,7 +577,7 @@ __fastcall TExternalConsole::TExternalConsole(
 
   HANDLE Job = OpenJobObject(JOB_OBJECT_ASSIGN_PROCESS, FALSE,
     FORMAT(L"%s%s", (CONSOLE_JOB, Instance)).c_str());
-  if (ALWAYS_TRUE(Job != NULL))
+  if (DebugAlwaysTrue(Job != NULL))
   {
     AssignProcessToJobObject(Job, GetCurrentProcess());
     // winscp.com/winscp.dll keeps the only reference to the job.
@@ -867,7 +867,7 @@ void __fastcall TExternalConsole::Progress(const TScriptProgress & Progress)
         break;
 
       default:
-        FAIL;
+        DebugFail;
     }
 
     switch (Progress.Side)
@@ -881,7 +881,7 @@ void __fastcall TExternalConsole::Progress(const TScriptProgress & Progress)
         break;
 
       default:
-        FAIL;
+        DebugFail;
     }
 
     wcsncpy(ProgressEvent.FileName, Progress.FileName.c_str(), LENOF(ProgressEvent.FileName));
@@ -985,13 +985,13 @@ bool __fastcall TNullConsole::NoInteractiveInput()
 //---------------------------------------------------------------------------
 void __fastcall TNullConsole::WaitBeforeExit()
 {
-  FAIL;
+  DebugFail;
   // noop
 }
 //---------------------------------------------------------------------------
 bool __fastcall TNullConsole::CommandLineOnly()
 {
-  FAIL;
+  DebugFail;
   return false;
 }
 //---------------------------------------------------------------------------
@@ -1002,7 +1002,7 @@ bool __fastcall TNullConsole::WantsProgress()
 //---------------------------------------------------------------------------
 void __fastcall TNullConsole::Progress(const TScriptProgress & /*Progress*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 static UnicodeString TimestampVarName(L"TIMESTAMP");
@@ -1342,7 +1342,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     }
   }
 
-  USEDPARAM(AAnswers);
+  DebugUsedParam(AAnswers);
   DebugAssert(AAnswers == 0);
   DebugAssert(!Buttons.empty());
 
@@ -1485,7 +1485,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
 
           UnicodeString Caption = Captions[i];
           int P = Caption.Pos(L'&');
-          if (ALWAYS_TRUE(P >= 0))
+          if (DebugAlwaysTrue(P >= 0))
           {
             Caption[P] = L'(';
             Caption.Insert(L")", P + 2);
@@ -2172,7 +2172,7 @@ void __fastcall Usage(TConsole * Console)
 void __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
 {
   std::unique_ptr<TStrings> Arguments(new TStringList());
-  if (ALWAYS_TRUE(Params->FindSwitch(L"batchsettings", Arguments.get())))
+  if (DebugAlwaysTrue(Params->FindSwitch(L"batchsettings", Arguments.get())))
   {
     if (Arguments->Count < 1)
     {
@@ -2291,7 +2291,7 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
         throw EOSExtException(FMTLOAD(KEY_TYPE_UNOPENABLE, (InputFileName)), Error);
 
       default:
-        FAIL;
+        DebugFail;
         // fallthru
       case ktUnknown:
         throw Exception(FMTLOAD(KEY_TYPE_UNKNOWN2, (InputFileName)));

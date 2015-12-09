@@ -391,7 +391,7 @@ void __fastcall TFTPFileSystem::Open()
       break;
 
     default:
-      FAIL;
+      DebugFail;
       break;
   }
 
@@ -524,7 +524,7 @@ void __fastcall TFTPFileSystem::Close()
   bool Result;
   if (FFileZillaIntf->Close(FOpening))
   {
-    CHECK(FLAGSET(WaitForCommandReply(false), TFileZillaIntf::REPLY_DISCONNECTED));
+    DebugCheck(FLAGSET(WaitForCommandReply(false), TFileZillaIntf::REPLY_DISCONNECTED));
     Result = true;
   }
   else
@@ -533,7 +533,7 @@ void __fastcall TFTPFileSystem::Close()
     Result = FOpening;
   }
 
-  if (ALWAYS_TRUE(Result))
+  if (DebugAlwaysTrue(Result))
   {
     DebugAssert(FActive);
     Discard();
@@ -567,7 +567,7 @@ void __fastcall TFTPFileSystem::CollectUsage()
       break;
 
     default:
-      FAIL;
+      DebugFail;
       break;
   }
 
@@ -1008,7 +1008,7 @@ void __fastcall TFTPFileSystem::ChangeFileProperties(const UnicodeString AFileNa
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::LoadFilesProperties(TStrings * /*FileList*/)
 {
-  FAIL;
+  DebugFail;
   return false;
 }
 //---------------------------------------------------------------------------
@@ -1029,7 +1029,7 @@ UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(
     int Index = FChecksumAlgs->IndexOf(Alg);
     if (Index < 0)
     {
-      FAIL;
+      DebugFail;
       EXCEPTION;
     }
     else
@@ -1381,7 +1381,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
       break;
 
     default:
-      FAIL;
+      DebugFail;
       Result = false;
       break;
   }
@@ -1428,7 +1428,7 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
   }
 
   __int64 Diff = Bytes - OperationProgress->TransferedSize;
-  if (ALWAYS_TRUE(Diff >= 0))
+  if (DebugAlwaysTrue(Diff >= 0))
   {
     OperationProgress->AddTransfered(Diff);
   }
@@ -2148,7 +2148,7 @@ void __fastcall TFTPFileSystem::CreateLink(const UnicodeString FileName,
   const UnicodeString PointTo, bool Symbolic)
 {
   DebugAssert(SupportsSiteCommand(SymlinkSiteCommand));
-  if (ALWAYS_TRUE(Symbolic))
+  if (DebugAlwaysTrue(Symbolic))
   {
     EnsureLocation();
 
@@ -2213,7 +2213,7 @@ void __fastcall TFTPFileSystem::CustomCommandOnFile(const UnicodeString /*FileNa
 {
   // if ever implemented, do not forget to add EnsureLocation,
   // see AnyCommand for a reason why
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoStartup()
@@ -2303,14 +2303,14 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
       return false;
 
     default:
-      FAIL;
+      DebugFail;
       return false;
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::LookupUsersGroups()
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadCurrentDirectory()
@@ -2319,7 +2319,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
   // and immediately after call to CWD,
   // later our current directory may be not synchronized with FZAPI current
   // directory anyway, see comments in EnsureLocation
-  if (FReadCurrentDirectory || ALWAYS_FALSE(FCurrentDirectory.IsEmpty()))
+  if (FReadCurrentDirectory || DebugAlwaysFalse(FCurrentDirectory.IsEmpty()))
   {
     UnicodeString Command = L"PWD";
     SendCommand(Command);
@@ -2885,7 +2885,7 @@ const wchar_t * __fastcall TFTPFileSystem::GetOption(int OptionID) const
       break;
 
     default:
-      FAIL;
+      DebugFail;
       FOptionScratch = L"";
   }
 
@@ -2921,7 +2921,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
         case pmTelnet:
         case pmCmd:
         default:
-          FAIL;
+          DebugFail;
           Result = 0; // PROXYTYPE_NOPROXY;
           break;
       }
@@ -2950,7 +2950,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
 
     case OPTION_PASV:
       // should never get here t_server.nPasv being nonzero
-      FAIL;
+      DebugFail;
       Result = FALSE;
       break;
 
@@ -2966,7 +2966,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
     case OPTION_PORTRANGELOW:
     case OPTION_PORTRANGEHIGH:
       // should never get here OPTION_LIMITPORTRANGE being zero
-      FAIL;
+      DebugFail;
       Result = 0;
       break;
 
@@ -3038,7 +3038,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     default:
-      FAIL;
+      DebugFail;
       Result = FALSE;
       break;
   }
@@ -3237,7 +3237,7 @@ unsigned int __fastcall TFTPFileSystem::WaitForCommandReply(bool WantLastCode)
 void __fastcall TFTPFileSystem::WaitForFatalNonCommandReply()
 {
   WaitForReply(false, false);
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ResetReply()
@@ -3257,7 +3257,7 @@ void __fastcall TFTPFileSystem::GotNonCommandReply(unsigned int Reply)
   DebugAssert(FLAGSET(Reply, TFileZillaIntf::REPLY_DISCONNECTED));
   GotReply(Reply);
   // should never get here as GotReply should raise fatal exception
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned int Flags,
@@ -3776,7 +3776,7 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
       break;
 
     default:
-      FAIL;
+      DebugFail;
       break;
   }
 
@@ -3907,7 +3907,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
             break;
 
           default:
-            FAIL;
+            DebugFail;
             RequestResult = TFileZillaIntf::FILEEXISTS_OVERWRITE;
             break;
         }
@@ -4273,7 +4273,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
           break;
 
         default:
-          FAIL;
+          DebugFail;
           RequestResult = 0;
           break;
       }
@@ -4392,7 +4392,7 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
     // when connected to server with case insensitive paths.
     // Is empty when called from DoReadFile
     DebugAssert(FFileList->Directory.IsEmpty() || UnixSamePath(AbsolutePath(FFileList->Directory, false), Path));
-    USEDPARAM(Path);
+    DebugUsedParam(Path);
 
     for (unsigned int Index = 0; Index < Count; Index++)
     {
@@ -4561,7 +4561,7 @@ bool __fastcall TFTPFileSystem::CheckError(int ReturnCode, const wchar_t * Conte
   {
     FTerminal->FatalError(NULL,
       FMTLOAD(INTERNAL_ERROR, (FORMAT(L"fz#%s", (Context)), IntToHex(ReturnCode, 4))));
-    FAIL;
+    DebugFail;
   }
 
   return false;
@@ -4595,7 +4595,7 @@ bool __fastcall TFTPFileSystem::Unquote(UnicodeString & Str)
         }
         else
         {
-          FAIL;
+          DebugFail;
           // no quoted string
           Str.SetLength(0);
         }
@@ -4728,12 +4728,12 @@ bool __fastcall TFTPFileSystem::SupportsCommand(const UnicodeString & Command) c
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::LockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::UnlockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::UpdateFromMain(TCustomFileSystem * /*MainFileSystem*/)

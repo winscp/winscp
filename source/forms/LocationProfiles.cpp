@@ -449,7 +449,7 @@ typename T * GetProfilesObject(TObject * Sender, T * SessionObject, T * SharedOb
   {
     case 1: return SessionObject;
     case 2: return SharedObject;
-    default: FAIL; return NULL;
+    default: DebugFail; return NULL;
   }
 }
 //---------------------------------------------------------------------------
@@ -775,7 +775,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewDblClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::FormShow(TObject * /*Sender*/)
 {
-  if (ALWAYS_TRUE(Terminal != NULL))
+  if (DebugAlwaysTrue(Terminal != NULL))
   {
     // cache session key, in case terminal is closed while the window is open
     FSessionKey = Terminal->SessionData->SessionKey;

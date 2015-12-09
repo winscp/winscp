@@ -291,7 +291,7 @@ bool __fastcall TOptions::UnusedSwitch(UnicodeString & Switch)
 bool __fastcall TOptions::WasSwitchAdded(UnicodeString & Switch, wchar_t & SwitchMark)
 {
   bool Result =
-    ALWAYS_TRUE(FOptions.size() > 0) &&
+    DebugAlwaysTrue(FOptions.size() > 0) &&
     (FOptions.back().Type == otSwitch);
   if (Result)
   {
@@ -352,7 +352,7 @@ void __fastcall TOptions::LogOptions(TLogOptionEvent OnLogOption)
         break;
 
       default:
-        FAIL;
+        DebugFail;
         break;
     }
     OnLogOption(LogStr);

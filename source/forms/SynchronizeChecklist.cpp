@@ -245,7 +245,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     }
     else
     {
-      FAIL;
+      DebugFail;
     }
     AddSubItem(Item, Index, S);
     if (Action == TSynchronizeChecklist::saDownloadNew)
@@ -289,7 +289,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     }
     else
     {
-      FAIL;
+      DebugFail;
     }
     AddSubItem(Item, Index, S);
     if (Action == TSynchronizeChecklist::saUploadNew)
@@ -399,7 +399,7 @@ __int64 __fastcall TSynchronizeChecklistDialog::GetItemSize(const TSynchronizeCh
         return Item->Remote.Size;
 
       default:
-        FAIL;
+        DebugFail;
         return 0;
     }
   }
@@ -530,7 +530,7 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
         break;
 
       default:
-        FAIL;
+        DebugFail;
         Possible = false;
         break;
     }
@@ -981,7 +981,7 @@ void __fastcall TSynchronizeChecklistDialog::ReverseActionExecute(TObject * /*Se
     TSynchronizeChecklist::TAction & Action = GetChecklistItemAction(ChecklistItem);
     TSynchronizeChecklist::TAction NewAction = TSynchronizeChecklist::Reverse(Action);
 
-    if (ALWAYS_TRUE(Action != NewAction))
+    if (DebugAlwaysTrue(Action != NewAction))
     {
       int ActionIndex = int(Action);
 

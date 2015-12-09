@@ -289,14 +289,14 @@ public:
   T1 LookupFirst(const T2 & Value2) const
   {
     TSecondToFirst::const_iterator Iterator = FSecondToFirst.find(Value2);
-    assert(Iterator != FSecondToFirst.end());
+    DebugAssert(Iterator != FSecondToFirst.end());
     return Iterator->second;
   }
 
   T2 LookupSecond(const T1 & Value1) const
   {
     const_iterator Iterator = FFirstToSecond.find(Value1);
-    assert(Iterator != FFirstToSecond.end());
+    DebugAssert(Iterator != FFirstToSecond.end());
     return Iterator->second;
   }
 

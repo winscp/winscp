@@ -178,7 +178,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case cipAES: pcipher = CIPHER_AES; break;
       case cipDES: pcipher = CIPHER_DES; break;
       case cipArcfour: pcipher = CIPHER_ARCFOUR; break;
-      default: FAIL;
+      default: DebugFail;
     }
     conf_set_int_int(conf, CONF_ssh_cipherlist, c, pcipher);
   }
@@ -192,7 +192,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case kexDHGroup14: pkex = KEX_DHGROUP14; break;
       case kexDHGEx: pkex = KEX_DHGEX; break;
       case kexRSA: pkex = KEX_RSA; break;
-      default: FAIL;
+      default: DebugFail;
     }
     conf_set_int_int(conf, CONF_ssh_kexlist, k, pkex);
   }
@@ -650,7 +650,7 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
   else
   {
     PromptKind = pkPrompt;
-    FAIL;
+    DebugFail;
   }
 
   return PromptKind;
@@ -754,7 +754,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
   else
   {
     PromptDesc = L"unknown";
-    FAIL;
+    DebugFail;
   }
 
   UnicodeString InstructionsLog =
@@ -898,7 +898,7 @@ void __fastcall TSecureShell::RegisterReceiveHandler(TNotifyEvent Handler)
 void __fastcall TSecureShell::UnregisterReceiveHandler(TNotifyEvent Handler)
 {
   DebugAssert(FOnReceive == Handler);
-  USEDPARAM(Handler);
+  DebugUsedParam(Handler);
   FOnReceive = NULL;
 }
 //---------------------------------------------------------------------------
@@ -1208,7 +1208,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
           break;
 
         default:
-          FAIL;
+          DebugFail;
           // fallthru
 
         case qaAbort:
@@ -1705,7 +1705,7 @@ void __fastcall TSecureShell::WaitForData()
           break;
 
         default:
-          FAIL;
+          DebugFail;
           // fallthru
 
         case qaAbort:
@@ -2286,7 +2286,7 @@ void __fastcall TSecureShell::AskAlg(const UnicodeString AlgType,
     }
     else
     {
-      FAIL;
+      DebugFail;
     }
 
     Msg = FMTLOAD(CIPHER_BELOW_TRESHOLD, (LoadStr(CipherType), AlgName));

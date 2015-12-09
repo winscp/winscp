@@ -177,7 +177,7 @@ void CheckNeonStatus(ne_session * Session, int NeonStatus,
         case NE_FAILED: // never used by neon as of 0.30.0
         case NE_RETRY: // not sure if this is a public API
         default:
-          FAIL;
+          DebugFail;
           Error = FORMAT(L"Unexpected neon error %d", (NeonStatus));
           break;
       }
@@ -222,7 +222,7 @@ void ne_init_ssl_session(struct ssl_st * Ssl, ne_session * Session)
 {
   TNeonTlsInit OnNeonTlsInit =
     reinterpret_cast<TNeonTlsInit>(ne_get_session_private(Session, SESSION_TLS_INIT_KEY));
-  if (ALWAYS_TRUE(OnNeonTlsInit != NULL))
+  if (DebugAlwaysTrue(OnNeonTlsInit != NULL))
   {
     OnNeonTlsInit(Ssl, Session);
   }

@@ -290,7 +290,7 @@ bool __fastcall TScpCommanderForm::InternalDDDownload(UnicodeString & TargetDire
   }
   else
   {
-    FAIL;
+    DebugFail;
     Abort();
   }
 

@@ -1269,7 +1269,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
     FileName.SetLength(P - 1);
   }
   P = FileName.LastDelimiter("/");
-  if (ALWAYS_TRUE(P > 0))
+  if (DebugAlwaysTrue(P > 0))
   {
     FileName.Delete(1, P);
   }
@@ -1333,7 +1333,7 @@ void __fastcall TUpdateDownloadThread::UpdateProgress()
 //---------------------------------------------------------------------------
 void __fastcall TUpdateDownloadThread::ShowException()
 {
-  assert(FException.get() != NULL);
+  DebugAssert(FException.get() != NULL);
   ShowExtendedException(FException.get());
 }
 //---------------------------------------------------------------------------
@@ -1376,9 +1376,9 @@ public:
 
   static TUpdateDownloadData * __fastcall Retrieve(TObject * Object)
   {
-    TComponent * Component = NOT_NULL(dynamic_cast<TComponent *>(Object));
+    TComponent * Component = DebugNotNull(dynamic_cast<TComponent *>(Object));
     TComponent * UpdateDownloadDataComponent = Component->FindComponent(QualifiedClassName());
-    return NOT_NULL(dynamic_cast<TUpdateDownloadData *>(UpdateDownloadDataComponent));
+    return DebugNotNull(dynamic_cast<TUpdateDownloadData *>(UpdateDownloadDataComponent));
   }
 };
 //---------------------------------------------------------------------------
@@ -1394,8 +1394,8 @@ static void __fastcall DownloadClose(void * /*Data*/, TObject * Sender, TCloseAc
 static void __fastcall DownloadUpdate(void * /*Data*/, TObject * Sender)
 {
   Configuration->Usage->Inc(L"UpdateDownloadStarts");
-  TButton * Button = NOT_NULL(dynamic_cast<TButton *>(Sender));
-  TForm * Form = NOT_NULL(dynamic_cast<TForm *>(GetParentForm(Button)));
+  TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
+  TForm * Form = DebugNotNull(dynamic_cast<TForm *>(GetParentForm(Button)));
   TPanel * Panel = CreateBlankPanel(Form);
 
   TProgressBar * ProgressBar = new TProgressBar(Panel);
@@ -1445,7 +1445,7 @@ static void __fastcall UpdatesDonateClick(void * /*Data*/, TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
 {
-  TForm * Dialog = NOT_NULL(dynamic_cast<TForm *>(Sender));
+  TForm * Dialog = DebugNotNull(dynamic_cast<TForm *>(Sender));
   TPanel * Panel = CreateBlankPanel(Dialog);
 
   TStaticText * StaticText = new TStaticText(Panel);
@@ -1593,7 +1593,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
         break;
 
       case qaAll:
-        FAIL;
+        DebugFail;
         break;
     }
   }
@@ -1687,7 +1687,7 @@ static bool __fastcall AddJumpListCategory(TStrings * Names,
           {
             try
             {
-              CHECK(SUCCEEDED(Collection->AddObject(Link)));
+              DebugCheck(SUCCEEDED(Collection->AddObject(Link)));
               Count++;
             }
             __finally
@@ -1745,7 +1745,7 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
       unsigned int * PMinSlots = &MinSlots;
       void ** PRemovedArray = (void**)&RemovedArray;
       HRESULT Result = DestinationList->BeginList(PMinSlots, IID_IObjectArray, PRemovedArray);
-      if (SUCCEEDED(Result) && ALWAYS_TRUE(RemovedArray != NULL))
+      if (SUCCEEDED(Result) && DebugAlwaysTrue(RemovedArray != NULL))
       {
         Removed = new TStringList();
 
@@ -1903,9 +1903,9 @@ public:
 
   static TTipsData * __fastcall Retrieve(TObject * Object)
   {
-    TComponent * Component = NOT_NULL(dynamic_cast<TComponent *>(Object));
+    TComponent * Component = DebugNotNull(dynamic_cast<TComponent *>(Object));
     TComponent * TipsDataComponent = Component->FindComponent(QualifiedClassName());
-    return NOT_NULL(dynamic_cast<TTipsData *>(TipsDataComponent));
+    return DebugNotNull(dynamic_cast<TTipsData *>(TipsDataComponent));
   }
 };
 //---------------------------------------------------------------------------
@@ -1918,13 +1918,13 @@ static void __fastcall UpdateTipsForm(TCustomForm * Form)
 {
   TTipsData * TipsData = TTipsData::Retrieve(Form);
 
-  TButton * PrevButton = NOT_NULL(dynamic_cast<TButton *>(Form->FindComponent(L"Yes")));
+  TButton * PrevButton = DebugNotNull(dynamic_cast<TButton *>(Form->FindComponent(L"Yes")));
   PrevButton->Enabled = (TipsData->Index > 0);
-  TButton * NextButton = NOT_NULL(dynamic_cast<TButton *>(Form->FindComponent(L"No")));
+  TButton * NextButton = DebugNotNull(dynamic_cast<TButton *>(Form->FindComponent(L"No")));
   NextButton->Enabled = (TipsData->Index < TipsData->Tips->Count - 1);
 
-  TPanel * Panel = NOT_NULL(dynamic_cast<TPanel *>(Form->FindComponent(L"Panel")));
-  TLabel * MessageLabel = NOT_NULL(dynamic_cast<TLabel *>(Panel->FindComponent(L"MainMessage")));
+  TPanel * Panel = DebugNotNull(dynamic_cast<TPanel *>(Form->FindComponent(L"Panel")));
+  TLabel * MessageLabel = DebugNotNull(dynamic_cast<TLabel *>(Panel->FindComponent(L"MainMessage")));
   MessageLabel->Caption = TipsMessage(TipsData);
 }
 //---------------------------------------------------------------------------
@@ -2014,7 +2014,7 @@ static void __fastcall ShowTip(bool AutoShow)
   TipSeen(Tip);
   unsigned int Result = ExecuteMessageDialog(Dialog.get(), Answers, &Params);
 
-  if ((Result == qaNeverAskAgain) && ALWAYS_TRUE(AutoShow))
+  if ((Result == qaNeverAskAgain) && DebugAlwaysTrue(AutoShow))
   {
     WinConfiguration->ShowTips = false;
   }

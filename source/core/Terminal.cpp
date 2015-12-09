@@ -263,7 +263,7 @@ TSynchronizeChecklist::TAction __fastcall TSynchronizeChecklist::Reverse(TSynchr
 
     default:
     case saNone:
-      FAIL;
+      DebugFail;
       return saNone;
   }
 }
@@ -622,7 +622,7 @@ void TRetryOperationLoop::DoError(Exception & E, TSessionAction * Action, const 
       break;
 
     default:
-      FAIL;
+      DebugFail;
       break;
   }
 }
@@ -1224,7 +1224,7 @@ void __fastcall TTerminal::Reopen(int Params)
     // Could be active before, if fatal error occured in the secondary terminal.
     // But now, since we handle the secondary terminal's OnClose,
     // by closing outselves, it should not happen anymore.
-    if (ALWAYS_FALSE(Active))
+    if (DebugAlwaysFalse(Active))
     {
       Close();
     }
@@ -1371,7 +1371,7 @@ unsigned int __fastcall TTerminal::QueryUserException(const UnicodeString Query,
 {
   unsigned int Result;
   UnicodeString ExMessage;
-  if (ALWAYS_TRUE(ExceptionMessage(E, ExMessage) || !Query.IsEmpty()))
+  if (DebugAlwaysTrue(ExceptionMessage(E, ExMessage) || !Query.IsEmpty()))
   {
     TStrings * MoreMessages = new TStringList();
     try
@@ -1390,7 +1390,7 @@ unsigned int __fastcall TTerminal::QueryUserException(const UnicodeString Query,
       // We know MoreMessages not to be NULL here,
       // AppendExceptionStackTraceAndForget should never return true
       // (indicating it had to create the string list)
-      ALWAYS_FALSE(AppendExceptionStackTraceAndForget(MoreMessages));
+      DebugAlwaysFalse(AppendExceptionStackTraceAndForget(MoreMessages));
 
       TQueryParams HelpKeywordOverrideParams;
       if (Params != NULL)
@@ -2314,7 +2314,7 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
         FormatSize(FileParams->DestSize),
         UserModificationStr(FileParams->DestTimestamp, FileParams->DestPrecision)));
     }
-    if (ALWAYS_TRUE(QueryParams->HelpKeyword.IsEmpty()))
+    if (DebugAlwaysTrue(QueryParams->HelpKeyword.IsEmpty()))
     {
       QueryParams->HelpKeyword = HELP_OVERWRITE;
     }
@@ -5128,7 +5128,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
                 break;
 
               default:
-                FAIL;
+                DebugFail;
                 break;
             }
           }
@@ -5165,7 +5165,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
                 break;
 
               default:
-                FAIL;
+                DebugFail;
                 break;
             }
           }
@@ -5931,7 +5931,7 @@ void __fastcall TTerminal::CollectTlsUsage(const UnicodeString & TlsVersionStr)
   }
   else
   {
-    FAIL;
+    DebugFail;
   }
 }
 //---------------------------------------------------------------------------

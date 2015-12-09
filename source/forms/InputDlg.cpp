@@ -110,7 +110,7 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
     }
     else
     {
-      assert(Echo);
+      DebugAssert(Echo);
       HistoryCombo = new THistoryComboBox(Form);
       HistoryCombo->Parent = Form;
       HistoryCombo->Text = Value;

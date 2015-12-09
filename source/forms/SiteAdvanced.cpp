@@ -1105,7 +1105,7 @@ void __fastcall TSiteAdvancedDialog::PageControlChange(TObject *Sender)
     }
   }
 
-  if (ALWAYS_TRUE(Found))
+  if (DebugAlwaysTrue(Found))
   {
     DataChange(Sender);
   }
@@ -1360,7 +1360,7 @@ TProxyMethod __fastcall TSiteAdvancedDialog::GetProxyMethod()
   }
   else
   {
-    FAIL;
+    DebugFail;
     Result = ::pmNone;
   }
   return Result;
@@ -1439,7 +1439,7 @@ TTlsVersion __fastcall TSiteAdvancedDialog::IndexToTlsVersion(int Index)
   switch (Index)
   {
     default:
-      FAIL;
+      DebugFail;
     case 0:
       return ssl3;
     case 1:
@@ -1456,7 +1456,7 @@ int __fastcall TSiteAdvancedDialog::TlsVersionToIndex(TTlsVersion TlsVersion)
   switch (TlsVersion)
   {
     default:
-      FAIL;
+      DebugFail;
     case ssl2:
     case ssl3:
       return 0;

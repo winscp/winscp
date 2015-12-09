@@ -419,7 +419,7 @@ void __fastcall TEditorManager::CloseProcess(int Index)
   TFileData * FileData = &FFiles[Index];
 
   FProcesses.erase(std::find(FProcesses.begin(), FProcesses.end(), FileData->Process));
-  CHECK(CloseHandle(FileData->Process));
+  DebugCheck(CloseHandle(FileData->Process));
   FileData->Process = INVALID_HANDLE_VALUE;
 }
 //---------------------------------------------------------------------------
@@ -442,7 +442,7 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
 
   if (FileData->Monitor != INVALID_HANDLE_VALUE)
   {
-    CHECK(FindCloseChangeNotification(FileData->Monitor));
+    DebugCheck(FindCloseChangeNotification(FileData->Monitor));
     FMonitors.erase(std::find(FMonitors.begin(), FMonitors.end(), FileData->Monitor));
     FileData->Monitor = INVALID_HANDLE_VALUE;
   }

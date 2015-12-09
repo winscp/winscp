@@ -1354,7 +1354,7 @@ bool __fastcall TOptionsIniFile::AllowWrite()
       return false;
 
     default:
-      FAIL;
+      DebugFail;
       return false;
   }
 }
@@ -1393,7 +1393,7 @@ void __fastcall TOptionsIniFile::WriteString(const UnicodeString Section, const 
 {
   if (AllowWrite() &&
       // Implemented for TSessionData.DoSave only
-      ALWAYS_TRUE(Section.IsEmpty() && FRootKey.IsEmpty()))
+      DebugAlwaysTrue(Section.IsEmpty() && FRootKey.IsEmpty()))
   {
     FOptions->Values[Ident] = Value;
   }
@@ -1473,7 +1473,7 @@ void __fastcall TOptionsIniFile::DeleteKey(const UnicodeString Section, const Un
 {
   if (AllowWrite() &&
       // Implemented for TSessionData.DoSave only
-      ALWAYS_TRUE(Section.IsEmpty() && FRootKey.IsEmpty()))
+      DebugAlwaysTrue(Section.IsEmpty() && FRootKey.IsEmpty()))
   {
     int Index = FOptions->IndexOfName(Ident);
     if (Index >= 0)

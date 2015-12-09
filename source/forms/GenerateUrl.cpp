@@ -100,7 +100,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       ResultGroupBelow = ScriptOptionsGroup;
       ResultGroupCaption = ScriptFormatCombo->Items->Strings[ScriptFormatCombo->ItemIndex];
     }
-    else if (ALWAYS_TRUE(AssemblyButton->Checked))
+    else if (DebugAlwaysTrue(AssemblyButton->Checked))
     {
       ResultGroupBelow = AssemblyOptionsGroup;
       ResultGroupCaption = LoadStr(GENERATE_URL_CODE);
@@ -199,7 +199,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         FixedWidth = false;
       }
     }
-    else if (ALWAYS_TRUE(AssemblyButton->Checked))
+    else if (DebugAlwaysTrue(AssemblyButton->Checked))
     {
       Result = FData->GenerateAssemblyCode(static_cast<TAssemblyLanguage>(AssemblyLanguageCombo->ItemIndex));
       WordWrap = false;
@@ -254,7 +254,7 @@ void __fastcall TGenerateUrlDialog::Execute()
           break;
 
         default:
-          FAIL;
+          DebugFail;
       }
     }
 
@@ -262,7 +262,7 @@ void __fastcall TGenerateUrlDialog::Execute()
     {
       TCheckBox * CheckBox = dynamic_cast<TCheckBox *>(OptionsGroup->Controls[Index]);
 
-      if (ALWAYS_TRUE((CheckBox != NULL) && (CheckBox->Tag != 0)))
+      if (DebugAlwaysTrue((CheckBox != NULL) && (CheckBox->Tag != 0)))
       {
         CheckBox->Checked = FLAGSET(Components, CheckBox->Tag);
       }
@@ -294,7 +294,7 @@ void __fastcall TGenerateUrlDialog::Execute()
     }
     else
     {
-      FAIL;
+      DebugFail;
     }
     WinConfiguration->GenerateUrlCodeTarget = Target;
   }
@@ -306,7 +306,7 @@ void __fastcall TGenerateUrlDialog::Execute()
     {
       TCheckBox * CheckBox = dynamic_cast<TCheckBox *>(OptionsGroup->Controls[Index]);
 
-      if (ALWAYS_TRUE((CheckBox != NULL) && (CheckBox->Tag != 0)) &&
+      if (DebugAlwaysTrue((CheckBox != NULL) && (CheckBox->Tag != 0)) &&
           CheckBox->Checked)
       {
         Components |= CheckBox->Tag;

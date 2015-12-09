@@ -47,12 +47,12 @@ __fastcall TGlyphsModule::TGlyphsModule(TComponent* Owner)
     CopyDataModule(this, ScaledModule);
 
     // Not all these are accessed by field name, but we copy all for consistency
-    ExplorerImages = NOT_NULL(dynamic_cast<TPngImageList *>(FindComponent(ExplorerImages->Name)));
-    SessionImages = NOT_NULL(dynamic_cast<TPngImageList *>(FindComponent(SessionImages->Name)));
-    QueueImages = NOT_NULL(dynamic_cast<TPngImageList *>(FindComponent(QueueImages->Name)));
-    LogImages = NOT_NULL(dynamic_cast<TPngImageList *>(FindComponent(LogImages->Name)));
-    ButtonImages = NOT_NULL(dynamic_cast<TImageList *>(FindComponent(ButtonImages->Name)));
-    DialogImages = NOT_NULL(dynamic_cast<TPngImageList *>(FindComponent(DialogImages->Name)));
+    ExplorerImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(ExplorerImages->Name)));
+    SessionImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(SessionImages->Name)));
+    QueueImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(QueueImages->Name)));
+    LogImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(LogImages->Name)));
+    ButtonImages = DebugNotNull(dynamic_cast<TImageList *>(FindComponent(ButtonImages->Name)));
+    DialogImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(DialogImages->Name)));
   }
 }
 //---------------------------------------------------------------------------

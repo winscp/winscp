@@ -79,7 +79,7 @@ int __fastcall TSessionData::Compare(TNamedObject * Other)
   int Result;
   // To avoid using CompareLogicalText on hex names of sessions in workspace.
   // The session 000A would be sorted before 0001.
-  if (IsWorkspace && NOT_NULL(dynamic_cast<TSessionData *>(Other))->IsWorkspace)
+  if (IsWorkspace && DebugNotNull(dynamic_cast<TSessionData *>(Other))->IsWorkspace)
   {
     Result = CompareText(Name, Other->Name);
   }
@@ -1256,7 +1256,7 @@ UnicodeString __fastcall TSessionData::GetSource()
       return L"Modified site";
 
     default:
-      FAIL;
+      DebugFail;
       return L"";
   }
 }
@@ -2318,7 +2318,7 @@ bool __fastcall TSessionData::IsSecure()
       break;
 
     default:
-      FAIL;
+      DebugFail;
       break;
   }
   return Result;
@@ -2334,7 +2334,7 @@ UnicodeString __fastcall TSessionData::GetProtocolUrl()
       break;
 
     default:
-      FAIL;
+      DebugFail;
       // fallback
     case fsSFTP:
     case fsSFTPonly:
@@ -2600,7 +2600,7 @@ UnicodeString __fastcall TSessionData::AssemblyString(TAssemblyLanguage Language
       break;
 
     default:
-      FAIL;
+      DebugFail;
       break;
   }
 
@@ -2704,7 +2704,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
       break;
 
     default:
-      FAIL;
+      DebugFail;
       break;
   }
 
@@ -2718,7 +2718,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
       break;
 
     default:
-      FAIL;
+      DebugFail;
       // fallback
     case fsSFTP:
     case fsSFTPonly:
@@ -2791,7 +2791,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
               break;
 
             default:
-              FAIL;
+              DebugFail;
               break;
           }
           AddAssemblyProperty(Result, Language, L"FtpSecure", L"FtpSecure", FtpSecureMember);
@@ -2803,7 +2803,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
         break;
 
       default:
-        FAIL;
+        DebugFail;
         break;
     }
     SessionData->Ftps = FactoryDefaults->Ftps;
@@ -3570,7 +3570,7 @@ void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
       catch (Exception & E)
       {
         UnicodeString Message;
-        if (RecryptPasswordOnly && ALWAYS_TRUE(RecryptPasswordErrors != NULL) &&
+        if (RecryptPasswordOnly && DebugAlwaysTrue(RecryptPasswordErrors != NULL) &&
             ExceptionMessage(&E, Message))
         {
           RecryptPasswordErrors->Add(FORMAT("%s: %s", (SessionData->SessionName, Message)));
@@ -4020,7 +4020,7 @@ bool __fastcall TStoredSessionList::IsFolderOrWorkspace(
 
   return
     Result &&
-    ALWAYS_TRUE(FirstData != NULL) &&
+    DebugAlwaysTrue(FirstData != NULL) &&
     (FirstData->IsWorkspace == Workspace);
 }
 //---------------------------------------------------------------------------
@@ -4042,7 +4042,7 @@ TSessionData * __fastcall TStoredSessionList::CheckIsInFolderOrWorkspaceAndResol
     Data = ResolveWorkspaceData(Data);
 
     if ((Data != NULL) && Data->CanLogin &&
-        ALWAYS_TRUE(Data->Link.IsEmpty()))
+        DebugAlwaysTrue(Data->Link.IsEmpty()))
     {
       return Data;
     }
@@ -4063,7 +4063,7 @@ void __fastcall TStoredSessionList::GetFolderOrWorkspace(const UnicodeString & N
       TSessionData * Data2 = new TSessionData(L"");
       Data2->Assign(Data);
 
-      if (!RawData->Link.IsEmpty() && (ALWAYS_TRUE(Data != RawData)) &&
+      if (!RawData->Link.IsEmpty() && (DebugAlwaysTrue(Data != RawData)) &&
           // BACKWARD COMPATIBILITY
           // When loading pre-5.6.4 workspace, that does not have state saved,
           // do not overwrite the site "state" defaults
@@ -4328,7 +4328,7 @@ int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps)
       }
       else
       {
-        FAIL;
+        DebugFail;
         Result = -1;
       }
       break;

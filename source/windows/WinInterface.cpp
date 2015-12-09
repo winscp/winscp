@@ -155,7 +155,7 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
 //---------------------------------------------------------------------------
 static TCheckBox * __fastcall FindNeverAskAgainCheck(TForm * Dialog)
 {
-  return NOT_NULL(dynamic_cast<TCheckBox *>(Dialog->FindComponent(L"NeverAskAgainCheck")));
+  return DebugNotNull(dynamic_cast<TCheckBox *>(Dialog->FindComponent(L"NeverAskAgainCheck")));
 }
 //---------------------------------------------------------------------------
 TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
@@ -168,7 +168,7 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
     case qtInformation: DlgType = mtInformation; break;
     case qtError: DlgType = mtError; break;
     case qtWarning: DlgType = mtWarning; break;
-    default: FAIL;
+    default: DebugFail;
   }
 
   unsigned int TimeoutAnswer = (Params != NULL) ? Params->TimeoutAnswer : 0;
@@ -222,7 +222,7 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
 
   try
   {
-    if (HasNeverAskAgain && ALWAYS_TRUE(Params != NULL))
+    if (HasNeverAskAgain && DebugAlwaysTrue(Params != NULL))
     {
       TCheckBox * NeverAskAgainCheck = FindNeverAskAgainCheck(Dialog);
       NeverAskAgainCheck->Checked = Params->NeverAskAgainCheckedInitially;
@@ -536,11 +536,11 @@ static TStrings * __fastcall StackInfoListToStrings(
     // get rid of declarations "flags" that are included in .map
     Frame = ReplaceStr(Frame, L"__fastcall ", L"");
     Frame = ReplaceStr(Frame, L"__linkproc__ ", L"");
-    if (ALWAYS_TRUE(!Frame.IsEmpty() && (Frame[1] == L'(')))
+    if (DebugAlwaysTrue(!Frame.IsEmpty() && (Frame[1] == L'(')))
     {
       int Start = Frame.Pos(L"[");
       int End = Frame.Pos(L"]");
-      if (ALWAYS_TRUE((Start > 1) && (End > Start) && (Frame[Start - 1] == L' ')))
+      if (DebugAlwaysTrue((Start > 1) && (End > Start) && (Frame[Start - 1] == L' ')))
       {
         // remove absolute address
         Frame.Delete(Start - 1, End - Start + 2);
@@ -600,7 +600,7 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   UnicodeString Message;
   // this is always called from within ExceptionMessage check,
   // so it should never fail here
-  CHECK(ExceptionMessageFormatted(E, Message));
+  DebugCheck(ExceptionMessageFormatted(E, Message));
 
   HelpKeyword = MergeHelpKeyword(HelpKeyword, GetExceptionHelpKeyword(E));
 
@@ -657,7 +657,7 @@ static void __fastcall DoExceptNotify(TObject * ExceptObj, void * ExceptAddr,
 
       TJclStackInfoList * StackInfoList = JclLastExceptStackList();
 
-      if (ALWAYS_TRUE(StackInfoList != NULL))
+      if (DebugAlwaysTrue(StackInfoList != NULL))
       {
         std::unique_ptr<TStrings> StackTrace(StackInfoListToStrings(StackInfoList));
 
@@ -854,7 +854,7 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
   }
   else if (Item->Tag == cpiSaveSettings)
   {
-    if (ALWAYS_TRUE(SaveSettings != NULL))
+    if (DebugAlwaysTrue(SaveSettings != NULL))
     {
       *SaveSettings = !*SaveSettings;
     }
@@ -1173,7 +1173,7 @@ void __fastcall ClearGlobalMinimizeHandler(TNotifyEvent OnMinimize)
 void __fastcall CallGlobalMinimizeHandler(TObject * Sender)
 {
   Configuration->Usage->Inc(L"OperationMinimizations");
-  if (ALWAYS_TRUE(GlobalOnMinimize != NULL))
+  if (DebugAlwaysTrue(GlobalOnMinimize != NULL))
   {
     GlobalOnMinimize(Sender);
   }
@@ -1189,7 +1189,7 @@ static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
   // but we do it for consistency anyway.
   TForm * MainForm = Application->MainForm;
   bool RestoreMainForm = false;
-  if (ALWAYS_TRUE(MainForm != NULL) &&
+  if (DebugAlwaysTrue(MainForm != NULL) &&
       !MainForm->Visible)
   {
     SetAppMainForm(NULL);
@@ -1284,7 +1284,7 @@ __fastcall ::TTrayIcon::TTrayIcon(unsigned int Id)
 
   // LoadIconMetric is available from Windows Vista only
   HMODULE ComCtl32Dll = GetModuleHandle(comctl32);
-  if (ALWAYS_TRUE(ComCtl32Dll))
+  if (DebugAlwaysTrue(ComCtl32Dll))
   {
     typedef HRESULT WINAPI (* TLoadIconMetric)(HINSTANCE hinst, PCWSTR pszName, int lims, __out HICON *phico);
     TLoadIconMetric LoadIconMetric = (TLoadIconMetric)GetProcAddress(ComCtl32Dll, "LoadIconMetric");

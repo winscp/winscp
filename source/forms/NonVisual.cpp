@@ -1131,7 +1131,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
 {
   TTBCustomItem * Menu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
-  if (ALWAYS_TRUE(Menu != NULL))
+  if (DebugAlwaysTrue(Menu != NULL))
   {
     bool OnFocused = (Menu == RemoteDirViewCustomCommandsMenu);
     CreateCustomCommandsMenu(Action, OnFocused, false);
@@ -1212,7 +1212,7 @@ void __fastcall TNonVisualDataModule::CustomCommandClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateSessionColorMenu(TAction * Action)
 {
-  if (ALWAYS_TRUE(Action->ActionComponent != NULL))
+  if (DebugAlwaysTrue(Action->ActionComponent != NULL))
   {
     ::CreateSessionColorMenu(Action->ActionComponent, ScpExplorer->SessionColor,
       SessionColorChange);
@@ -1266,7 +1266,7 @@ void __fastcall TNonVisualDataModule::CreateSessionListMenuLevel(
     Item->Caption = LoadStr(SAVEDSESSIONFOLDER_THIS_OPEN);
     Item->Tag = MAKELONG(Index, Level);
     UnicodeString FolderName = Root;
-    if (ALWAYS_TRUE(!FolderName.IsEmpty() && FolderName[FolderName.Length()] == L'/'))
+    if (DebugAlwaysTrue(!FolderName.IsEmpty() && FolderName[FolderName.Length()] == L'/'))
     {
       FolderName.Delete(FolderName.Length(), 1);
     }
@@ -1337,7 +1337,7 @@ void __fastcall TNonVisualDataModule::SessionFolderItemClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::SessionFolderThisItemClick(TObject * Sender)
 {
-  TTBCustomItem * Item = NOT_NULL(dynamic_cast<TTBCustomItem *>(Sender));
+  TTBCustomItem * Item = DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender));
   int Index = LOWORD(Item->Tag);
   int Level = HIWORD(Item->Tag);
   UnicodeString Folder = GetSessionFolderRoot(StoredSessions->Sessions[Index], Level);
@@ -1360,7 +1360,7 @@ void __fastcall TNonVisualDataModule::CreateWorkspacesMenu(TAction * Action)
   else
   {
     TTBCustomItem * Menu =
-      NOT_NULL(dynamic_cast<TTBCustomItem *>(Action->ActionComponent));
+      DebugNotNull(dynamic_cast<TTBCustomItem *>(Action->ActionComponent));
 
     Menu->Clear();
 
@@ -1381,7 +1381,7 @@ void __fastcall TNonVisualDataModule::WorkspaceItemClick(TObject * Sender)
 {
   std::unique_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
   ScpExplorer->OpenFolderOrWorkspace(
-    Workspaces->Strings[NOT_NULL(dynamic_cast<TTBCustomItem *>(Sender))->Tag]);
+    Workspaces->Strings[DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender))->Tag]);
 }
 //---------------------------------------------------------------------------
 TShortCut __fastcall TNonVisualDataModule::OpenSessionShortCut(int Index)
@@ -1692,7 +1692,7 @@ void __fastcall TNonVisualDataModule::CycleQueueOnceEmptyAction()
   }
   else
   {
-    FAIL;
+    DebugFail;
   }
 }
 //---------------------------------------------------------------------------
@@ -1717,7 +1717,7 @@ TAction * __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyAction()
   }
   else
   {
-    FAIL;
+    DebugFail;
   }
   return Result;
 }
@@ -1744,7 +1744,7 @@ TOnceDoneOperation __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyOperati
   }
   else
   {
-    FAIL;
+    DebugFail;
   }
   return Result;
 }

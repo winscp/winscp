@@ -327,7 +327,7 @@ protected:
       case laStat: return L"stat";
       case laChecksum: return L"checksum";
       case laCwd: return L"cwd";
-      default: FAIL; return L"";
+      default: DebugFail; return L"";
     }
   }
 
@@ -940,7 +940,7 @@ UnicodeString __fastcall TSessionLog::GetTlsVersionName(TTlsVersion TlsVersion)
   switch (TlsVersion)
   {
     default:
-      FAIL;
+      DebugFail;
     case ssl2:
       return "SSLv2";
     case ssl3:
@@ -1024,7 +1024,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
 
       wchar_t UserName[UNLEN + 1];
       unsigned long UserNameSize = LENOF(UserName);
-      if (ALWAYS_FALSE(!GetUserNameEx(NameSamCompatible, UserName, &UserNameSize)))
+      if (DebugAlwaysFalse(!GetUserNameEx(NameSamCompatible, UserName, &UserNameSize)))
       {
         wcscpy(UserName, L"<Failed to retrieve username>");
       }

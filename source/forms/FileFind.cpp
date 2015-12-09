@@ -126,7 +126,7 @@ void __fastcall TFileFindDialog::UpdateControls()
       break;
 
     default:
-      FAIL;
+      DebugFail;
       break;
   }
 }
@@ -252,7 +252,7 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
   }
   else
   {
-    FAIL;
+    DebugFail;
   }
   Item->SubItems->Add(Directory);
 

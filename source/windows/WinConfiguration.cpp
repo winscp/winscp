@@ -1202,7 +1202,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   {
     // can this (=reloading of configuration) even happen?
     // if it does, shouldn't we reset default commands?
-    FAIL;
+    DebugFail;
     FCustomCommandList->Clear();
     FCustomCommandsDefaults = false;
   }
@@ -1449,8 +1449,8 @@ void __fastcall TWinConfiguration::SetMasterPassword(UnicodeString value)
   {
     FPlainMasterPasswordDecrypt = value;
   }
-  else if (ALWAYS_TRUE(FUseMasterPassword) &&
-      ALWAYS_TRUE(ValidateMasterPassword(value)))
+  else if (DebugAlwaysTrue(FUseMasterPassword) &&
+      DebugAlwaysTrue(ValidateMasterPassword(value)))
   {
     FPlainMasterPasswordEncrypt = value;
     FPlainMasterPasswordDecrypt = value;
@@ -1542,7 +1542,7 @@ void __fastcall TWinConfiguration::BeginMasterPasswordSession()
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::EndMasterPasswordSession()
 {
-  if (ALWAYS_TRUE(FMasterPasswordSession > 0))
+  if (DebugAlwaysTrue(FMasterPasswordSession > 0))
   {
     FMasterPasswordSession--;
   }
@@ -1873,7 +1873,7 @@ void __fastcall TWinConfiguration::UpdateIconFont()
   }
   else
   {
-    if (ALWAYS_TRUE(FSystemIconFont.get() != NULL) &&
+    if (DebugAlwaysTrue(FSystemIconFont.get() != NULL) &&
         !SameFont(Screen->IconFont, FSystemIconFont.get()))
     {
       Screen->IconFont->Assign(FSystemIconFont.get());
@@ -2102,7 +2102,7 @@ void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
   {
     try
     {
-      if (ALWAYS_TRUE(F->Count > 0))
+      if (DebugAlwaysTrue(F->Count > 0))
       {
         Usage->Inc(L"TemporaryDirectoryCleanups");
       }

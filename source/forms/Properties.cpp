@@ -99,7 +99,7 @@ bool __fastcall TPropertiesDialog::Execute(TRemoteProperties & Properties)
   if (FAllowedChanges & cpMode) ActiveControl = RightsFrame;
     else ActiveControl = CancelButton;
 
-  if (ALWAYS_TRUE(FChecksumAlgs != NULL))
+  if (DebugAlwaysTrue(FChecksumAlgs != NULL))
   {
     ChecksumAlgEdit->Items->Assign(FChecksumAlgs);
     int ChecksumIndex = FChecksumAlgs->IndexOf(GUIConfiguration->ChecksumAlg);

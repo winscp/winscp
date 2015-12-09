@@ -290,7 +290,7 @@ typename T * GetBookmarkObject(TObject * Sender, T * SessionObject, T * SharedOb
   {
     case 1: return SessionObject;
     case 2: return SharedObject;
-    default: FAIL; return NULL;
+    default: DebugFail; return NULL;
   }
 }
 //---------------------------------------------------------------------------

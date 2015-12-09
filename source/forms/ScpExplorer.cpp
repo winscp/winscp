@@ -347,7 +347,7 @@ void __fastcall TScpExplorerForm::QueueSubmenuItemPopup(
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::ChangePath(TOperationSide /*Side*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::UpdateToolbarDisplayMode()

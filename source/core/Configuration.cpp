@@ -911,7 +911,7 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
     UnicodeString FullVersion = Version;
 
     UnicodeString AReleaseType = GetReleaseType();
-    if (ALWAYS_TRUE(!AReleaseType.IsEmpty()) &&
+    if (DebugAlwaysTrue(!AReleaseType.IsEmpty()) &&
         !SameText(AReleaseType, L"stable") &&
         !SameText(AReleaseType, L"development"))
     {

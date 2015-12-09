@@ -169,7 +169,7 @@ TTabSheet * __fastcall TPreferencesDialog::FindPageForTreeNode(TTreeNode * Node)
       return Sheet;
     }
   }
-  FAIL;
+  DebugFail;
   return NULL;
 }
 //---------------------------------------------------------------------------
@@ -181,7 +181,7 @@ void __fastcall TPreferencesDialog::PrepareNavigationTree(TTreeView * Tree)
   {
     TTreeNode * Node = Tree->Items->Item[i];
     TTabSheet * Sheet = FindPageForTreeNode(Node);
-    if (NOT_NULL(Sheet))
+    if (DebugNotNull(Sheet))
     {
       if (Sheet->Enabled)
       {
@@ -446,7 +446,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         FormatSizeBytesCombo->ItemIndex = 2;
         break;
       default:
-        FAIL;
+        DebugFail;
     }
 
     bool CustomPanelFont = !WinConfiguration->PanelFont.FontName.IsEmpty();
@@ -524,7 +524,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         break;
 
       default:
-        FAIL;
+        DebugFail;
         break;
     }
 
@@ -810,7 +810,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
         WinConfiguration->FormatSizeBytes = fbShort;
         break;
       default:
-        FAIL;
+        DebugFail;
     }
 
     TFontConfiguration PanelFontConfiguration;
@@ -1170,7 +1170,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     // languages
     LanguageChangeLabel->Visible =
-      ALWAYS_TRUE(!GUIConfiguration->CanApplyLocaleImmediately) &&
+      DebugAlwaysTrue(!GUIConfiguration->CanApplyLocaleImmediately) &&
       (LanguagesView->ItemFocused != NULL) &&
       (reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data) != GUIConfiguration->AppliedLocale);
 
@@ -1479,7 +1479,7 @@ TListViewScrollOnDragOver * __fastcall TPreferencesDialog::ScrollOnDragOver(TObj
   }
   else
   {
-    FAIL;
+    DebugFail;
     return NULL;
   }
 }
@@ -1795,9 +1795,9 @@ void __fastcall TPreferencesDialog::EditorListView3Data(TObject * /*Sender*/,
 void __fastcall TPreferencesDialog::NavigationTreeChange(TObject * /*Sender*/,
   TTreeNode * Node)
 {
-  if (ALWAYS_TRUE(Node->SelectedIndex > 0))
+  if (DebugAlwaysTrue(Node->SelectedIndex > 0))
   {
-    PageControl->ActivePage = NOT_NULL(FindPageForTreeNode(Node));
+    PageControl->ActivePage = DebugNotNull(FindPageForTreeNode(Node));
     // reshow the accelerators, etc
     ResetSystemSettings(this);
     // This is particularly here to enable EditCopyParamButton,
@@ -1811,7 +1811,7 @@ void __fastcall TPreferencesDialog::PageControlChange(TObject * /*Sender*/)
 {
   // this is probably only ever called from FormShow (explicitly)
   bool Found = false;
-  if (ALWAYS_TRUE(PageControl->ActivePage->Tag > 0))
+  if (DebugAlwaysTrue(PageControl->ActivePage->Tag > 0))
   {
     for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
     {
@@ -1824,7 +1824,7 @@ void __fastcall TPreferencesDialog::PageControlChange(TObject * /*Sender*/)
     }
   }
 
-  if (ALWAYS_TRUE(Found))
+  if (DebugAlwaysTrue(Found))
   {
     UpdateControls();
   }

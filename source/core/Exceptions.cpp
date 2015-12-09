@@ -85,7 +85,7 @@ static bool __fastcall WellKnownException(
     }
     if (AClone != NULL)
     {
-      (*AClone) = NOT_NULL(Clone.release());
+      (*AClone) = DebugNotNull(Clone.release());
     }
   }
 
@@ -419,7 +419,7 @@ Exception * __fastcall CloneException(Exception * E)
   else
   {
     // we do not expect this to happen
-    if (ALWAYS_FALSE(IsInternalException(E)))
+    if (DebugAlwaysFalse(IsInternalException(E)))
     {
       // to save exception stack trace
       Result = ExtException::CloneFrom(E);

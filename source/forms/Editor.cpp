@@ -69,17 +69,17 @@ void __fastcall ReconfigureEditorForm(TForm * Form)
 //---------------------------------------------------------------------------
 void __fastcall EditorFormFileUploadComplete(TForm * Form)
 {
-  NOT_NULL(dynamic_cast<TEditorForm *>(Form))->FileUploadComplete();
+  DebugNotNull(dynamic_cast<TEditorForm *>(Form))->FileUploadComplete();
 }
 //---------------------------------------------------------------------------
 void __fastcall EditorFormFileSave(TForm * Form)
 {
-  NOT_NULL(dynamic_cast<TEditorForm *>(Form))->SaveFile();
+  DebugNotNull(dynamic_cast<TEditorForm *>(Form))->SaveFile();
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsEditorFormModified(TForm * Form)
 {
-  return NOT_NULL(dynamic_cast<TEditorForm *>(Form))->IsFileModified();
+  return DebugNotNull(dynamic_cast<TEditorForm *>(Form))->IsFileModified();
 }
 //---------------------------------------------------------------------------
 class TPreambleFilteringFileStream : public TFileStream
@@ -139,7 +139,7 @@ int __fastcall TPreambleFilteringFileStream::Write(const void * Buffer, int Coun
 int __fastcall TPreambleFilteringFileStream::Write(
   const System::DynamicArray<System::Byte> /*Buffer*/, int /*Offset*/, int /*Count*/)
 {
-  FAIL;
+  DebugFail;
   EXCEPTION;
 }
 //---------------------------------------------------------------------------
@@ -303,7 +303,7 @@ void __fastcall TRichEdit20::DestroyWnd()
 {
   TRichEdit::DestroyWnd();
 
-  if (ALWAYS_TRUE(FLibrary != 0))
+  if (DebugAlwaysTrue(FLibrary != 0))
   {
     FreeLibrary(FLibrary);
   }
@@ -538,7 +538,7 @@ bool __stdcall TRichEdit20::StreamLoad(
             }
             // If Unicode preamble is present, set StartIndex to skip over it
             TBytes Preamble = TEncoding::Unicode->GetPreamble();
-            if (ALWAYS_TRUE(Preamble.Length == 2) &&
+            if (DebugAlwaysTrue(Preamble.Length == 2) &&
                 (WasRead >= 2) && (Buffer[0] == Preamble[0]) && (Buffer[1] == Preamble[1]))
             {
               StartIndex = 2;
@@ -910,7 +910,7 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   }
   else if (Action == ColorAction)
   {
-    if (ALWAYS_TRUE(Action->ActionComponent != NULL))
+    if (DebugAlwaysTrue(Action->ActionComponent != NULL))
     {
       CreateEditorBackgroundColorMenu(Action->ActionComponent, BackgroundColor,
         SetBackgroundColor);
@@ -1007,7 +1007,7 @@ void __fastcall TEditorForm::FileUploadComplete()
   DebugAssert(FSaving);
   FSaving = false;
   UpdateControls();
-  if (FClosePending && ALWAYS_TRUE(FStandaloneEditor))
+  if (FClosePending && DebugAlwaysTrue(FStandaloneEditor))
   {
     Close();
   }
@@ -1281,7 +1281,7 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
 
         default:
           CanTrySecondary = false;
-          FAIL;
+          DebugFail;
           // fallthru
 
         case CP_ACP:
@@ -1391,7 +1391,7 @@ void __fastcall TEditorForm::CheckFileSize()
             break;
 
           default:
-            FAIL;
+            DebugFail;
         }
       }
     }

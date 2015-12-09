@@ -203,7 +203,7 @@ int get_userpass_input(prompts_t * p, unsigned char * /*in*/, int /*inlen*/)
 char * get_ttymode(void * /*frontend*/, const char * /*mode*/)
 {
   // should never happen when Config.nopty == TRUE
-  FAIL;
+  DebugFail;
   return NULL;
 }
 //---------------------------------------------------------------------------
@@ -307,7 +307,7 @@ int askappend(void * /*frontend*/, Filename * /*filename*/,
   void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
 {
   // this is called from logging.c of putty, which is never used with WinSCP
-  FAIL;
+  DebugFail;
   return 0;
 }
 //---------------------------------------------------------------------------
@@ -318,13 +318,13 @@ void ldisc_send(void * /*handle*/, char * /*buf*/, int len, int /*interactive*/)
   // as an ldisc. So if we get called with any real data, I want
   // to know about it.
   DebugAssert(len == 0);
-  USEDPARAM(len);
+  DebugUsedParam(len);
 }
 //---------------------------------------------------------------------------
 void agent_schedule_callback(void (* /*callback*/)(void *, void *, int),
   void * /*callback_ctx*/, void * /*data*/, int /*len*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void notify_remote_exit(void * /*frontend*/)
@@ -394,7 +394,7 @@ static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool Can
   DebugAssert(Configuration != NULL);
 
   DebugAssert(Key == HKEY_CURRENT_USER);
-  USEDPARAM(Key);
+  DebugUsedParam(Key);
 
   UnicodeString RegKey = SubKey;
   int PuttyKeyLen = OriginalPuttyRegistryStorageKey.Length();
@@ -460,7 +460,7 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
     }
     else
     {
-      FAIL;
+      DebugFail;
       R = ERROR_READ_FAULT;
     }
   }
@@ -496,7 +496,7 @@ long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long /*R
   DebugAssert(Configuration != NULL);
 
   DebugAssert(Type == REG_SZ);
-  USEDPARAM(Type);
+  DebugUsedParam(Type);
   THierarchicalStorage * Storage = reinterpret_cast<THierarchicalStorage *>(Key);
   DebugAssert(Storage != NULL);
   if (Storage != NULL)
@@ -550,7 +550,7 @@ bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeStr
       break;
 
     default:
-      FAIL;
+      DebugFail;
       Result = false;
       break;
   }
@@ -589,7 +589,7 @@ TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const Un
       break;
 
     default:
-      FAIL;
+      DebugFail;
       break;
   }
 
@@ -639,7 +639,7 @@ void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
       break;
 
     default:
-      FAIL;
+      DebugFail;
       break;
   }
 }

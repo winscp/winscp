@@ -464,7 +464,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
       return false;
 
     default:
-      FAIL;
+      DebugFail;
       return false;
   }
 }
@@ -732,7 +732,7 @@ void __fastcall TSCPFileSystem::DetectUtf()
       break;
 
     default:
-      FAIL;
+      DebugFail;
     case asAuto:
       FSecureShell->UtfStrings = false; // noop
       try
@@ -1143,8 +1143,8 @@ void __fastcall TSCPFileSystem::CustomReadFile(const UnicodeString FileName,
 void __fastcall TSCPFileSystem::DeleteFile(const UnicodeString FileName,
   const TRemoteFile * File, int Params, TRmSessionAction & Action)
 {
-  USEDPARAM(File);
-  USEDPARAM(Params);
+  DebugUsedParam(File);
+  DebugUsedParam(Params);
   Action.Recursive();
   DebugAssert(FLAGCLEAR(Params, dfNoRecursive) || (File && File->IsSymLink));
   ExecCommand(fsDeleteFile, ARRAYOFCONST((DelimitStr(FileName))));
@@ -1272,7 +1272,7 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const UnicodeString FileNam
 //---------------------------------------------------------------------------
 bool __fastcall TSCPFileSystem::LoadFilesProperties(TStrings * /*FileList*/ )
 {
-  FAIL;
+  DebugFail;
   return false;
 }
 //---------------------------------------------------------------------------
@@ -1280,7 +1280,7 @@ void __fastcall TSCPFileSystem::CalculateFilesChecksum(const UnicodeString & /*A
   TStrings * /*FileList*/, TStrings * /*Checksums*/,
   TCalculatedChecksumEvent /*OnCalculatedChecksum*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::CustomCommandOnFile(const UnicodeString FileName,
@@ -1316,7 +1316,7 @@ void __fastcall TSCPFileSystem::CaptureOutput(const UnicodeString & AddedLine, T
   UnicodeString Line = AddedLine;
   // TSecureShell never uses cotExitCode
   DebugAssert((OutputType == cotOutput) || (OutputType == cotError));
-  if ((OutputType == cotError) || ALWAYS_FALSE(OutputType == cotExitCode) ||
+  if ((OutputType == cotError) || DebugAlwaysFalse(OutputType == cotExitCode) ||
       !RemoveLastLine(Line, ReturnCode) ||
       !Line.IsEmpty())
   {
@@ -1355,7 +1355,7 @@ TStrings * __fastcall TSCPFileSystem::GetFixedPaths()
 void __fastcall TSCPFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & /*ASpaceAvailable*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 // transfer protocol
@@ -1564,7 +1564,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
               break;
 
             default:
-              FAIL;
+              DebugFail;
               break;
           }
         }
@@ -2675,12 +2675,12 @@ void __fastcall TSCPFileSystem::GetSupportedChecksumAlgs(TStrings * /*Algs*/)
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::LockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::UnlockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::UpdateFromMain(TCustomFileSystem * /*MainFileSystem*/)

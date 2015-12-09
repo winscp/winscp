@@ -1237,7 +1237,7 @@ public:
 
       ReceiveResponse(Request, Response, ExpectedType, AllowStatus, TryOnly);
 
-      if ((Response->Capacity == 0) && ALWAYS_TRUE(TryOnly))
+      if ((Response->Capacity == 0) && DebugAlwaysTrue(TryOnly))
       {
         FRequests->Insert(0, Request);
         Request = NULL;
@@ -1949,7 +1949,7 @@ void __fastcall TSFTPFileSystem::CollectUsage()
       VersionCounter = L"OpenedSessionsSFTP6";
       break;
     default:
-      FAIL;
+      DebugFail;
   }
   FTerminal->Configuration->Usage->Inc(VersionCounter);
 }
@@ -2161,7 +2161,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
       return false;
 
     default:
-      FAIL;
+      DebugFail;
       return false;
   }
 }
@@ -2588,7 +2588,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
     while (IsReserved);
   }
 
-  if ((Packet->Capacity == 0) && ALWAYS_TRUE(TryOnly))
+  if ((Packet->Capacity == 0) && DebugAlwaysTrue(TryOnly))
   {
     // noop
   }
@@ -3182,7 +3182,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
       break;
 
     default:
-      FAIL;
+      DebugFail;
     case asAuto:
       // Nb, Foxit server does not exist anymore
       if (GetSessionInfo().SshImplementation.Pos(L"Foxit-WAC-Server") == 1)
@@ -4135,13 +4135,13 @@ void __fastcall TSFTPFileSystem::CustomCommandOnFile(const UnicodeString /*FileN
     const TRemoteFile * /*File*/, UnicodeString /*Command*/, int /*Params*/,
     TCaptureOutputEvent /*OutputEvent*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::AnyCommand(const UnicodeString /*Command*/,
   TCaptureOutputEvent /*OutputEvent*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TSFTPFileSystem::GetFixedPaths()
@@ -4184,7 +4184,7 @@ void __fastcall TSFTPFileSystem::SpaceAvailable(const UnicodeString Path,
       FTerminal->LogEvent(L"Missing bytes-per-allocation-unit field");
     }
   }
-  else if (ALWAYS_TRUE(FSupportsStatVfsV2))
+  else if (DebugAlwaysTrue(FSupportsStatVfsV2))
   {
     // http://www.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL?rev=HEAD;content-type=text/plain
     TSFTPPacket Packet(SSH_FXP_EXTENDED);
@@ -4396,7 +4396,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
           OperationProgress->BatchOverwrite = boAlternateResume;
           break;
 
-        default: FAIL; //fallthru
+        default: DebugFail; //fallthru
         case qaCancel:
           if (!OperationProgress->Cancel)
           {
@@ -6126,12 +6126,12 @@ void __fastcall TSFTPFileSystem::GetSupportedChecksumAlgs(TStrings * Algs)
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::LockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::UnlockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)
 {
-  FAIL;
+  DebugFail;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::UpdateFromMain(TCustomFileSystem * /*MainFileSystem*/)

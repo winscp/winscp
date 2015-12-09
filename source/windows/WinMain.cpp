@@ -43,7 +43,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
 
     if (DataList->Count == 1)
     {
-      TSessionData * SessionData = NOT_NULL(dynamic_cast<TSessionData *>(DataList->Items[0]));
+      TSessionData * SessionData = DebugNotNull(dynamic_cast<TSessionData *>(DataList->Items[0]));
       if (SessionData->SaveOnly)
       {
         Configuration->Usage->Inc(L"CommandLineSessionSave");
@@ -244,7 +244,7 @@ void __fastcall ImportSitesIfAny()
       }
       else
       {
-        FAIL;
+        DebugFail;
       }
 
       UnicodeString Message = FORMAT(LoadStrPart(IMPORT_SESSIONS2, 1), (Source));

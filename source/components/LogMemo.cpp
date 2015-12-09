@@ -103,7 +103,7 @@ void __fastcall TLogMemo::SetSessionLog(TSessionLog * value)
 //---------------------------------------------------------------------------
 void __fastcall TLogMemo::SessionLogChange(TObject * Sender)
 {
-  USEDPARAM(Sender);
+  DebugUsedParam(Sender);
 #ifndef DESIGN_ONLY
   DebugAssert(Sender && (Sender == (TObject*)SessionLog));
 #endif

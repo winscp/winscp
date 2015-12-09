@@ -495,7 +495,7 @@ void __fastcall TScript::Command(UnicodeString Cmd)
         if (Configuration->LogProtocol >= 1)
         {
           UnicodeString DummyLogCmd;
-          if (ALWAYS_TRUE(CutToken(LogCmd, DummyLogCmd)))
+          if (DebugAlwaysTrue(CutToken(LogCmd, DummyLogCmd)))
           {
             std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(LogCmd));
             Parameters->LogOptions(LogOption);
@@ -681,7 +681,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
   if (FLAGSET(ListType, fltLatest) && (Result->Count > 1))
   {
     // otherwise we do not have TRemoteFile's
-    assert(FLAGSET(ListType, fltQueryServer));
+    DebugAssert(FLAGSET(ListType, fltQueryServer));
     int LatestIndex = 0;
 
     for (int Index = 1; Index < Result->Count; Index++)
@@ -785,7 +785,7 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
       }
       else
       {
-        assert(FLAGCLEAR(ListType, fltLatest));
+        DebugAssert(FLAGCLEAR(ListType, fltLatest));
         // this branch is currently never used
         Result->Add(FileName);
       }
@@ -1037,7 +1037,7 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
           break;
 
         default:
-          FAIL;
+          DebugFail;
           break;
       }
     }
@@ -1187,14 +1187,14 @@ void __fastcall TScript::ChecksumProc(TScriptProcParams * Parameters)
   try
   {
     if ((FileList->Count != 1) ||
-        NOT_NULL(dynamic_cast<TRemoteFile *>(FileList->Objects[0]))->IsDirectory)
+        DebugNotNull(dynamic_cast<TRemoteFile *>(FileList->Objects[0]))->IsDirectory)
     {
       throw Exception(FMTLOAD(NOT_FILE_ERROR, (FileList->Strings[0])));
     }
 
     FTerminal->CalculateFilesChecksum(Alg, FileList, Checksums.get(), NULL);
 
-    if (ALWAYS_TRUE(Checksums->Count == 1))
+    if (DebugAlwaysTrue(Checksums->Count == 1))
     {
       PrintLine(FORMAT(L"%s %s", (Checksums->Strings[0], FileList->Strings[0])));
     }
@@ -1833,7 +1833,7 @@ void __fastcall TScript::SynchronizePreview(
           break;
 
       default:
-        FAIL;
+        DebugFail;
       }
       PrintLine(Message);
     }
@@ -2363,7 +2363,7 @@ void __fastcall TManagementScript::TerminalSynchronizeDirectory(
 void __fastcall TManagementScript::TerminalInitializeLog(TObject * Sender)
 {
   TTerminal * ATerminal = dynamic_cast<TTerminal *>(Sender);
-  if (ALWAYS_TRUE(ATerminal != NULL))
+  if (DebugAlwaysTrue(ATerminal != NULL))
   {
     LogPendingLines(ATerminal);
   }

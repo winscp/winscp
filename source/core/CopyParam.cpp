@@ -177,7 +177,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
     if (APreserveTimeDirs != Defaults.PreserveTimeDirs)
     {
-      if (ALWAYS_TRUE(PreserveTimeDirs))
+      if (DebugAlwaysTrue(PreserveTimeDirs))
       {
         if (FLAGCLEAR(Options, cpaNoPreserveTimeDirs))
         {
@@ -239,7 +239,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (RemoveBOM != Defaults.RemoveBOM)
     {
-      if (ALWAYS_TRUE(RemoveBOM))
+      if (DebugAlwaysTrue(RemoveBOM))
       {
         ADD(LoadStr(COPY_INFO_REMOVE_BOM),
           cpaIncludeMaskOnly | cpaNoRemoveBOM | cpaNoTransferMode);
@@ -248,7 +248,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
     if (RemoveCtrlZ != Defaults.RemoveCtrlZ)
     {
-      if (ALWAYS_TRUE(RemoveCtrlZ))
+      if (DebugAlwaysTrue(RemoveCtrlZ))
       {
         ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ),
           cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode);
@@ -272,7 +272,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
   if (NewerOnly != Defaults.NewerOnly)
   {
-    if (ALWAYS_TRUE(NewerOnly))
+    if (DebugAlwaysTrue(NewerOnly))
     {
       ADD(StripHotkey(LoadStr(COPY_PARAM_NEWER_ONLY)), cpaIncludeMaskOnly | cpaNoNewerOnly);
     }
@@ -454,7 +454,7 @@ bool __fastcall TCopyParamType::UseAsciiTransfer(UnicodeString FileName,
     case tmAscii: return true;
     case tmAutomatic: return AsciiFileMask.Matches(FileName, (Side == osLocal),
       false, &Params);
-    default: FAIL; return false;
+    default: DebugFail; return false;
   }
 }
 //---------------------------------------------------------------------------
@@ -519,7 +519,7 @@ bool __fastcall TCopyParamType::AllowResume(__int64 Size) const
     case rsOn: return true;
     case rsOff: return false;
     case rsSmart: return (Size >= ResumeThreshold);
-    default: FAIL; return false;
+    default: DebugFail; return false;
   }
 }
 //---------------------------------------------------------------------------
@@ -562,7 +562,7 @@ bool __fastcall TCopyParamType::ResumeTransfer(UnicodeString FileName) const
   // Returning true has the same effect as cpResume
   return
     (FileName == FTransferResumeFile) &&
-    ALWAYS_TRUE(!FTransferResumeFile.IsEmpty());
+    DebugAlwaysTrue(!FTransferResumeFile.IsEmpty());
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TCopyParamType::GetTransferSkipList() const

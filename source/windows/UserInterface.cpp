@@ -247,7 +247,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
             break;
 
           default:
-            FAIL;
+            DebugFail;
         }
       }
       else if (Result == qaRetry)
@@ -482,7 +482,7 @@ void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString
         if ((Toolbar != NULL) && Toolbar->Stretch &&
             (Toolbar->OnGetBaseSize != NULL) &&
             // we do not support floating of stretched toolbars
-            ALWAYS_TRUE(!Toolbar->Floating))
+            DebugAlwaysTrue(!Toolbar->Floating))
         {
           TTBXToolbar * FollowingToolbar = NULL;
           for (int Index2 = 0; Index2 < OwnerComponent->ComponentCount; Index2++)
@@ -532,7 +532,7 @@ static void __fastcall ConvertMenu(TMenuItem * AItems, TTBCustomItem * Items)
     TTBCustomItem * Item;
 
     if (!AItem->Enabled && !AItem->Visible && (AItem->Action == NULL) &&
-        (AItem->OnClick == NULL) && ALWAYS_TRUE(AItem->Count == 0))
+        (AItem->OnClick == NULL) && DebugAlwaysTrue(AItem->Count == 0))
     {
       TTBXLabelItem * LabelItem = new TTBXLabelItem(Items->Owner);
       // TTBXLabelItem has it's own Caption
@@ -662,7 +662,7 @@ static void __fastcall GetStandardSessionColorInfo(
   COLOR_INFO(6, 1, L"Light Purple",      0xD9C1CC)
   COLOR_INFO(7, 1, L"Light Aqua",        0xE8DDB7)
 
-  FAIL;
+  DebugFail;
   #undef COLOR_INFO
 }
 //---------------------------------------------------------------------------
@@ -736,9 +736,9 @@ __fastcall TColorChangeData::TColorChangeData(
 //---------------------------------------------------------------------------
 TColorChangeData * __fastcall TColorChangeData::Retrieve(TObject * Object)
 {
-  TComponent * Component = NOT_NULL(dynamic_cast<TComponent *>(Object));
+  TComponent * Component = DebugNotNull(dynamic_cast<TComponent *>(Object));
   TComponent * ColorChangeDataComponent = Component->FindComponent(QualifiedClassName());
-  return NOT_NULL(dynamic_cast<TColorChangeData *>(ColorChangeDataComponent));
+  return DebugNotNull(dynamic_cast<TColorChangeData *>(ColorChangeDataComponent));
 }
 //---------------------------------------------------------------------------
 void __fastcall TColorChangeData::ColorChange(TColor Color)
@@ -778,7 +778,7 @@ static void __fastcall ColorDefaultClick(void * /*Data*/, TObject * Sender)
 //---------------------------------------------------------------------------
 static void __fastcall ColorPaletteChange(void * /*Data*/, TObject * Sender)
 {
-  TTBXColorPalette * ColorPalette = NOT_NULL(dynamic_cast<TTBXColorPalette *>(Sender));
+  TTBXColorPalette * ColorPalette = DebugNotNull(dynamic_cast<TTBXColorPalette *>(Sender));
   TColorChangeData::Retrieve(Sender)->ColorChange(GetNonZeroColor(ColorPalette->Color));
 }
 //---------------------------------------------------------------------------
@@ -911,7 +911,7 @@ static void __fastcall CreateColorMenu(TComponent * AOwner, TColor Color,
   const UnicodeString & ColorPickHint)
 {
   TTBCustomItem * Owner = dynamic_cast<TTBCustomItem *>(AOwner);
-  if (ALWAYS_TRUE(Owner != NULL))
+  if (DebugAlwaysTrue(Owner != NULL))
   {
     Owner->Clear();
 
@@ -1229,7 +1229,7 @@ static bool __fastcall DoMasterPasswordDialog(bool Current,
     if (Result)
     {
       if ((Current || WinConfiguration->UseMasterPassword) &&
-          ALWAYS_TRUE(!CurrentPassword.IsEmpty()))
+          DebugAlwaysTrue(!CurrentPassword.IsEmpty()))
       {
         WinConfiguration->SetMasterPassword(CurrentPassword);
       }

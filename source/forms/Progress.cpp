@@ -250,7 +250,7 @@ void __fastcall TProgressForm::UpdateControls()
     FLastTotalSizeSet = FData.TotalSizeSet;
   }
 
-  if ((FData.Operation == foCalculateSize) && ALWAYS_TRUE(!FData.Temp))
+  if ((FData.Operation == foCalculateSize) && DebugAlwaysTrue(!FData.Temp))
   {
     if (FData.Side == osRemote)
     {
@@ -333,7 +333,7 @@ bool __fastcall TProgressForm::ReceiveData(bool Force, int ModalLevelOffset)
         // because application was minimized when operation started
         Result = true;
       }
-      else if (!FModalBeginHooked && ALWAYS_TRUE(FModalLevel < 0))
+      else if (!FModalBeginHooked && DebugAlwaysTrue(FModalLevel < 0))
       {
         // record state as of time, the window should be shown,
         // had not we implemented delayed show
@@ -525,7 +525,7 @@ TTBCustomItem * __fastcall TProgressForm::CurrentOnceDoneItem()
     Iterator++;
   }
 
-  FAIL;
+  DebugFail;
   return NULL;
 }
 //---------------------------------------------------------------------------

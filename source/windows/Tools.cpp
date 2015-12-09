@@ -531,7 +531,7 @@ void __fastcall OpenBrowser(UnicodeString URL)
   UnicodeString HttpHomePageUrl = ReplaceStr(L"http://", L"https://", HomePageUrl);
   DebugAssert(HomePageUrl != HttpHomePageUrl);
   if (SameText(URL.SubString(1, HomePageUrl.Length()), HomePageUrl) ||
-      ALWAYS_FALSE(SameText(URL.SubString(1, HttpHomePageUrl.Length()), HttpHomePageUrl)))
+      DebugAlwaysFalse(SameText(URL.SubString(1, HttpHomePageUrl.Length()), HttpHomePageUrl)))
   {
     URL = CampaignUrl(URL);
   }
@@ -1058,7 +1058,7 @@ static void __fastcall DoVerifyKey(
         break;
 
       default:
-        FAIL;
+        DebugFail;
         // fallthru
       case ktUnknown:
         Message = MainInstructions(FMTLOAD(KEY_TYPE_UNKNOWN2, (FileName)));
@@ -1357,20 +1357,20 @@ bool __fastcall TWinHelpTester::CanShowALink(const UnicodeString ALink,
 bool __fastcall TWinHelpTester::CanShowTopic(const UnicodeString Topic,
   const UnicodeString FileName)
 {
-  FAIL;
+  DebugFail;
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinHelpTester::CanShowContext(const int /*Context*/,
   const UnicodeString FileName)
 {
-  FAIL;
+  DebugFail;
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinHelpTester::GetHelpStrings(const UnicodeString ALink)
 {
-  FAIL;
+  DebugFail;
   TStringList * Result = new TStringList();
   Result->Add(ViewerName + L": " + ALink);
   return Result;
@@ -1395,7 +1395,7 @@ __fastcall TCustomHelpSelector::TCustomHelpSelector(const UnicodeString & Name) 
 //---------------------------------------------------------------------------
 int __fastcall TCustomHelpSelector::SelectKeyword(TStrings * /*Keywords*/)
 {
-  FAIL;
+  DebugFail;
   return 0;
 }
 //---------------------------------------------------------------------------

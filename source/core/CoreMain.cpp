@@ -170,7 +170,7 @@ void CoreSetResourceModule(void * ResourceHandle)
   #ifndef NO_FILEZILLA
   TFileZillaIntf::SetResourceModule(ResourceHandle);
   #else
-  USEDPARAM(ResourceHandle);
+  DebugUsedParam(ResourceHandle);
   #endif
 }
 //---------------------------------------------------------------------------

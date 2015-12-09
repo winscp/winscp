@@ -253,9 +253,9 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     }
   }
   #else
-  USEDPARAM(Node);
-  USEDPARAM(Force);
-  USEDPARAM(CanLoad);
+  DebugUsedParam(Node);
+  DebugUsedParam(Force);
+  DebugUsedParam(CanLoad);
   #endif
 }
 //---------------------------------------------------------------------------
@@ -286,8 +286,8 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPathEasy(TTreeNode * Parent,
 
   return Node;
   #else
-  USEDPARAM(Parent);
-  USEDPARAM(File);
+  DebugUsedParam(Parent);
+  DebugUsedParam(File);
   return NULL;
   #endif
 }
@@ -680,7 +680,7 @@ TColor __fastcall TCustomUnixDriveView::NodeColor(TTreeNode * Node)
     }
   }
   #else
-  USEDPARAM(Node);
+  DebugUsedParam(Node);
   #endif
   return Result;
 }
@@ -702,7 +702,7 @@ Word __fastcall TCustomUnixDriveView::NodeOverlayIndexes(TTreeNode * Node)
   }
   return Result;
 #else
-  USEDPARAM(Node);
+  DebugUsedParam(Node);
   return 0;
 #endif
 }

@@ -286,7 +286,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
     if (!ShowSavePasswordPanel &&
         (Prompts->Count == 1) &&
         FLAGSET(int(Prompts->Objects[0]), pupRemember) &&
-        ALWAYS_TRUE(IsPasswordOrPassphrasePrompt(Kind, Prompts)))
+        DebugAlwaysTrue(IsPasswordOrPassphrasePrompt(Kind, Prompts)))
     {
       ShowSessionRememberPasswordPanel = true;
     }
