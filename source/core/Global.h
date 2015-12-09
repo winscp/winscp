@@ -42,13 +42,13 @@ private:
 #define DebugAlwaysTrue(p) p
 #define DebugAlwaysFalse(p) p
 #define DebugNotNull(P) P
-#else
+#else // ifndef _DEBUG
 #define DebugCheck(p) { bool __CHECK_RESULT__ = (p); DebugAssert(__CHECK_RESULT__); }
 #define DebugFail DebugAssert(false)
 #define DebugAlwaysTrue(p) (p)
 #define DebugAlwaysFalse(p) (p)
 #define DebugNotNull(P) P
-#endif
+#endif // ifndef _DEBUG
 #define DebugUsedParam(p) ((&p) == (&p))
 //---------------------------------------------------------------------------
 #endif
