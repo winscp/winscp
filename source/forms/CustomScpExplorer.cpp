@@ -2348,7 +2348,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
     }
     else
     {
-      DebugFail;
+      DebugFail();
     }
   }
   __finally
@@ -3017,7 +3017,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
         break;
 
       default:
-        DebugFail;
+        DebugFail();
     }
   }
   else
@@ -3040,7 +3040,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
         break;
 
       default:
-        DebugFail;
+        DebugFail();
     }
   }
 
@@ -4609,7 +4609,7 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
       }
       else
       {
-        DebugFail;
+        DebugFail();
       }
     }
 
@@ -4632,12 +4632,12 @@ bool __fastcall TCustomScpExplorerForm::GetHasDirView(TOperationSide Side)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CompareDirectories()
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SynchronizeDirectories()
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
@@ -4997,7 +4997,7 @@ void __fastcall TCustomScpExplorerForm::StandaloneEdit(const UnicodeString & Fil
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExploreLocalDirectory()
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 TSessionData * __fastcall TCustomScpExplorerForm::CloneCurrentSessionData()
@@ -6207,7 +6207,7 @@ void __fastcall TCustomScpExplorerForm::QueueEvent(TTerminal * ATerminal,
       break;
 
     default:
-      DebugFail;
+      DebugFail();
   }
 
   if (!Message.IsEmpty())
@@ -6679,7 +6679,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDCreateDataObject(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::GoToCommandLine()
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::GoToTree()
@@ -6716,7 +6716,7 @@ TStrings * __fastcall TCustomScpExplorerForm::PanelExport(TOperationSide Side,
       break;
 
     default:
-      DebugFail;
+      DebugFail();
   }
   return ExportData.release();
 }
@@ -6739,7 +6739,7 @@ void __fastcall TCustomScpExplorerForm::PanelExportStore(TOperationSide /*Side*/
   }
   else
   {
-    DebugFail;
+    DebugFail();
   }
 }
 //---------------------------------------------------------------------------
@@ -8724,7 +8724,7 @@ bool __fastcall TCustomScpExplorerForm::UpdateToolbarDisplayMode()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DisplaySystemContextMenu()
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::IsBusy()

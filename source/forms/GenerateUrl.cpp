@@ -254,7 +254,7 @@ void __fastcall TGenerateUrlDialog::Execute()
           break;
 
         default:
-          DebugFail;
+          DebugFail();
       }
     }
 
@@ -294,7 +294,7 @@ void __fastcall TGenerateUrlDialog::Execute()
     }
     else
     {
-      DebugFail;
+      DebugFail();
     }
     WinConfiguration->GenerateUrlCodeTarget = Target;
   }

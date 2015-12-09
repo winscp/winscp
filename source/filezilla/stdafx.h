@@ -153,7 +153,7 @@ public:
     Init();
     if (lpsz != NULL && HIWORD(lpsz) == NULL)
     {
-      DebugAssert(false);
+      DebugFail();
     }
     else
     {

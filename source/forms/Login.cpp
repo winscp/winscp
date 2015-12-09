@@ -1616,7 +1616,7 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
   }
   else
   {
-    DebugFail;
+    DebugFail();
   }
 
   Message = MainInstructions(Message);
@@ -1919,7 +1919,7 @@ int __fastcall TLoginDialog::FtpsToIndex(TFtps Ftps)
   switch (Ftps)
   {
     default:
-      DebugFail;
+      DebugFail();
     case ftpsNone:
       return 0;
 
@@ -1939,7 +1939,7 @@ TFtps __fastcall TLoginDialog::GetFtps()
   switch (Index)
   {
     default:
-      DebugFail;
+      DebugFail();
     case 0:
       Ftps = ftpsNone;
       break;

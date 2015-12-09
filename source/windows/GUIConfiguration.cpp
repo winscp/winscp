@@ -830,7 +830,7 @@ LCID __fastcall TGUIConfiguration::InternalLocale()
   }
   else
   {
-    DebugFail;
+    DebugFail();
     Result = 0;
   }
   return Result;
@@ -905,7 +905,7 @@ UnicodeString __fastcall TGUIConfiguration::LocaleCopyright()
   UnicodeString Result;
   if ((FAppliedLocale == 0) || (FAppliedLocale == InternalLocale()))
   {
-    DebugFail; // we do not expect to get called with internal locale
+    DebugFail(); // we do not expect to get called with internal locale
     Result = UnicodeString();
   }
   else

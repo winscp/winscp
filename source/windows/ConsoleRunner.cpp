@@ -184,7 +184,7 @@ void __fastcall TOwnConsole::WindowStateTimer(TObject * /*Sender*/)
   }
   else
   {
-    DebugFail;
+    DebugFail();
   }
 }
 //---------------------------------------------------------------------------
@@ -519,7 +519,7 @@ bool __fastcall TOwnConsole::WantsProgress()
 //---------------------------------------------------------------------------
 void __fastcall TOwnConsole::Progress(const TScriptProgress & /*Progress*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 class TExternalConsole : public TConsole
@@ -867,7 +867,7 @@ void __fastcall TExternalConsole::Progress(const TScriptProgress & Progress)
         break;
 
       default:
-        DebugFail;
+        DebugFail();
     }
 
     switch (Progress.Side)
@@ -881,7 +881,7 @@ void __fastcall TExternalConsole::Progress(const TScriptProgress & Progress)
         break;
 
       default:
-        DebugFail;
+        DebugFail();
     }
 
     wcsncpy(ProgressEvent.FileName, Progress.FileName.c_str(), LENOF(ProgressEvent.FileName));
@@ -985,13 +985,13 @@ bool __fastcall TNullConsole::NoInteractiveInput()
 //---------------------------------------------------------------------------
 void __fastcall TNullConsole::WaitBeforeExit()
 {
-  DebugFail;
+  DebugFail();
   // noop
 }
 //---------------------------------------------------------------------------
 bool __fastcall TNullConsole::CommandLineOnly()
 {
-  DebugFail;
+  DebugFail();
   return false;
 }
 //---------------------------------------------------------------------------
@@ -1002,7 +1002,7 @@ bool __fastcall TNullConsole::WantsProgress()
 //---------------------------------------------------------------------------
 void __fastcall TNullConsole::Progress(const TScriptProgress & /*Progress*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 static UnicodeString TimestampVarName(L"TIMESTAMP");
@@ -2291,7 +2291,7 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
         throw EOSExtException(FMTLOAD(KEY_TYPE_UNOPENABLE, (InputFileName)), Error);
 
       default:
-        DebugFail;
+        DebugFail();
         // fallthru
       case ktUnknown:
         throw Exception(FMTLOAD(KEY_TYPE_UNKNOWN2, (InputFileName)));

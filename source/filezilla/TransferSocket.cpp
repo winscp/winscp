@@ -886,7 +886,7 @@ BOOL CTransferSocket::Create(BOOL bUseSsl)
       else
         m_pProxyLayer->SetProxy(PROXYTYPE_HTTP11, T2CA(GetOption(OPTION_PROXYHOST)), GetOptionVal(OPTION_PROXYPORT));
     else
-      DebugAssert(FALSE);
+      DebugFail();
     AddLayer(m_pProxyLayer);
   }
 

@@ -1202,7 +1202,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   {
     // can this (=reloading of configuration) even happen?
     // if it does, shouldn't we reset default commands?
-    DebugFail;
+    DebugFail();
     FCustomCommandList->Clear();
     FCustomCommandsDefaults = false;
   }

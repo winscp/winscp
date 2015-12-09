@@ -37,12 +37,12 @@ private:
 #if !defined(_DEBUG) || defined(DESIGN_ONLY)
 #define DebugAssert(p)   ((void)0)
 #define DebugCheck(p) (p)
-#define DebugFail
+#define DebugFail()
 #else // if !defined(_DEBUG) || defined(DESIGN_ONLY)
 void __fastcall DoAssert(wchar_t * Message, wchar_t * Filename, int LineNumber);
 #define DebugAssert(p) ((p) ? (void)0 : DoAssert(TEXT(#p), TEXT(__FILE__), __LINE__))
 #define DebugCheck(p) { bool __CHECK_RESULT__ = (p); DebugAssert(__CHECK_RESULT__); }
-#define DebugFail DebugAssert(false)
+#define DebugFail() DebugAssert(false)
 #endif // if !defined(_DEBUG) || defined(DESIGN_ONLY)
 //---------------------------------------------------------------------------
 #define DebugAlwaysTrue(p) (p)

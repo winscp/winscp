@@ -111,7 +111,7 @@ void ne_debug(void * Context, int Channel, const char * Format, ...)
   else
   {
     DoLog = false;
-    DebugFail;
+    DebugFail();
   }
 
   #ifndef _DEBUG
@@ -656,7 +656,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
       return FLAGSET(FCapabilities, NE_CAP_DAV_CLASS2);
 
     default:
-      DebugFail;
+      DebugFail();
       return false;
   }
 }
@@ -701,7 +701,7 @@ void __fastcall TWebDAVFileSystem::CheckStatus(int NeonStatus)
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::LookupUsersGroups()
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::ReadCurrentDirectory()
@@ -845,7 +845,7 @@ void __fastcall TWebDAVFileSystem::ReadSymlink(TRemoteFile * /*SymlinkFile*/,
   TRemoteFile *& /*File*/)
 {
   // we never set SymLink flag, so we should never get here
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::ReadFile(const UnicodeString FileName,
@@ -1091,7 +1091,7 @@ void __fastcall TWebDAVFileSystem::RenameFile(const UnicodeString FileName,
 void __fastcall TWebDAVFileSystem::CopyFile(const UnicodeString FileName,
     const UnicodeString NewName)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::CreateDirectory(const UnicodeString DirName)
@@ -1104,19 +1104,19 @@ void __fastcall TWebDAVFileSystem::CreateDirectory(const UnicodeString DirName)
 void __fastcall TWebDAVFileSystem::CreateLink(const UnicodeString FileName,
   const UnicodeString PointTo, bool /*Symbolic*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::ChangeFileProperties(const UnicodeString FileName,
   const TRemoteFile * /*File*/, const TRemoteProperties * /*Properties*/,
   TChmodSessionAction & /*Action*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWebDAVFileSystem::LoadFilesProperties(TStrings * /*FileList*/)
 {
-  DebugFail;
+  DebugFail();
   return false;
 }
 //---------------------------------------------------------------------------
@@ -1124,7 +1124,7 @@ void __fastcall TWebDAVFileSystem::CalculateFilesChecksum(const UnicodeString & 
     TStrings * /*FileList*/, TStrings * /*Checksums*/,
     TCalculatedChecksumEvent /*OnCalculatedChecksum*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
@@ -1171,7 +1171,7 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
       THROW_SKIP_FILE_NULL;
 
     default:
-      DebugFail;
+      DebugFail();
     case qaCancel:
       if (!OperationProgress->Cancel)
       {
@@ -1185,13 +1185,13 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
 void __fastcall TWebDAVFileSystem::CustomCommandOnFile(const UnicodeString FileName,
   const TRemoteFile * /*File*/, UnicodeString Command, int /*Params*/, TCaptureOutputEvent /*OutputEvent*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::AnyCommand(const UnicodeString Command,
   TCaptureOutputEvent /*OutputEvent*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TWebDAVFileSystem::GetFixedPaths()
@@ -2235,7 +2235,7 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data)
           break;
 
         default:
-          DebugFail;
+          DebugFail();
         case qaCancel:
           FTerminal->Configuration->Usage->Inc(L"HostNotVerified");
           Result = false;

@@ -15,7 +15,7 @@ char * __fastcall EOLToStr(TEOLType EOLType)
     case eolLF: return "\n";
     case eolCRLF: return "\r\n";
     case eolCR: return "\r";
-    default: DebugFail; return "";
+    default: DebugFail(); return "";
   }
 }
 //---------------------------------------------------------------------------
@@ -262,7 +262,7 @@ int __fastcall TSafeHandleStream::Write(const void * Buffer, int Count)
 //---------------------------------------------------------------------------
 int __fastcall TSafeHandleStream::Read(System::DynamicArray<System::Byte> Buffer, int Offset, int Count)
 {
-  DebugFail; // untested
+  DebugFail(); // untested
   int Result = FileRead(FHandle, Buffer, Offset, Count);
   if (Result == -1)
   {
@@ -273,7 +273,7 @@ int __fastcall TSafeHandleStream::Read(System::DynamicArray<System::Byte> Buffer
 //---------------------------------------------------------------------------
 int __fastcall TSafeHandleStream::Write(const System::DynamicArray<System::Byte> Buffer, int Offset, int Count)
 {
-  DebugFail; // untested
+  DebugFail(); // untested
   int Result = FileWrite(FHandle, Buffer, Offset, Count);
   if (Result == -1)
   {

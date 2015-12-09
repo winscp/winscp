@@ -464,7 +464,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
       return false;
 
     default:
-      DebugFail;
+      DebugFail();
       return false;
   }
 }
@@ -732,7 +732,7 @@ void __fastcall TSCPFileSystem::DetectUtf()
       break;
 
     default:
-      DebugFail;
+      DebugFail();
     case asAuto:
       FSecureShell->UtfStrings = false; // noop
       try
@@ -1272,7 +1272,7 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const UnicodeString FileNam
 //---------------------------------------------------------------------------
 bool __fastcall TSCPFileSystem::LoadFilesProperties(TStrings * /*FileList*/ )
 {
-  DebugFail;
+  DebugFail();
   return false;
 }
 //---------------------------------------------------------------------------
@@ -1280,7 +1280,7 @@ void __fastcall TSCPFileSystem::CalculateFilesChecksum(const UnicodeString & /*A
   TStrings * /*FileList*/, TStrings * /*Checksums*/,
   TCalculatedChecksumEvent /*OnCalculatedChecksum*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::CustomCommandOnFile(const UnicodeString FileName,
@@ -1355,7 +1355,7 @@ TStrings * __fastcall TSCPFileSystem::GetFixedPaths()
 void __fastcall TSCPFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & /*ASpaceAvailable*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 // transfer protocol
@@ -1564,7 +1564,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
               break;
 
             default:
-              DebugFail;
+              DebugFail();
               break;
           }
         }
@@ -2675,12 +2675,12 @@ void __fastcall TSCPFileSystem::GetSupportedChecksumAlgs(TStrings * /*Algs*/)
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::LockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::UnlockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::UpdateFromMain(TCustomFileSystem * /*MainFileSystem*/)

@@ -168,7 +168,7 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
     case qtInformation: DlgType = mtInformation; break;
     case qtError: DlgType = mtError; break;
     case qtWarning: DlgType = mtWarning; break;
-    default: DebugFail;
+    default: DebugFail();
   }
 
   unsigned int TimeoutAnswer = (Params != NULL) ? Params->TimeoutAnswer : 0;

@@ -184,7 +184,7 @@ bool __fastcall TQueueController::AllowOperation(
       return (FQueueStatus != NULL) && (FQueueStatus->Count > 0);
 
     default:
-      DebugFail;
+      DebugFail();
       return false;
   }
 }
@@ -285,7 +285,7 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       break;
   }
 }

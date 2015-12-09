@@ -430,7 +430,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
         // FZ_ASYNCREQUEST_GSS_AUTHFAILED
         // FZ_ASYNCREQUEST_GSS_NEEDUSER
         // FZ_ASYNCREQUEST_GSS_NEEDPASS
-        DebugAssert(FALSE);
+        DebugFail();
         Result = false;
       }
       break;
@@ -492,7 +492,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       break;
 
     default:
-      DebugAssert(false);
+      DebugFail();
       Result = false;
       break;
   }

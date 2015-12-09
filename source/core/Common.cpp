@@ -2158,7 +2158,7 @@ unsigned int __fastcall CancelAnswer(unsigned int Answers)
   }
   else
   {
-    DebugFail;
+    DebugFail();
     Result = qaCancel;
   }
   return Result;

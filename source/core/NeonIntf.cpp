@@ -177,7 +177,7 @@ void CheckNeonStatus(ne_session * Session, int NeonStatus,
         case NE_FAILED: // never used by neon as of 0.30.0
         case NE_RETRY: // not sure if this is a public API
         default:
-          DebugFail;
+          DebugFail();
           Error = FORMAT(L"Unexpected neon error %d", (NeonStatus));
           break;
       }

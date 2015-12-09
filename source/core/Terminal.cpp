@@ -263,7 +263,7 @@ TSynchronizeChecklist::TAction __fastcall TSynchronizeChecklist::Reverse(TSynchr
 
     default:
     case saNone:
-      DebugFail;
+      DebugFail();
       return saNone;
   }
 }
@@ -622,7 +622,7 @@ void TRetryOperationLoop::DoError(Exception & E, TSessionAction * Action, const 
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       break;
   }
 }
@@ -5128,7 +5128,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
                 break;
 
               default:
-                DebugFail;
+                DebugFail();
                 break;
             }
           }
@@ -5165,7 +5165,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
                 break;
 
               default:
-                DebugFail;
+                DebugFail();
                 break;
             }
           }
@@ -5931,7 +5931,7 @@ void __fastcall TTerminal::CollectTlsUsage(const UnicodeString & TlsVersionStr)
   }
   else
   {
-    DebugFail;
+    DebugFail();
   }
 }
 //---------------------------------------------------------------------------

@@ -1354,7 +1354,7 @@ bool __fastcall TOptionsIniFile::AllowWrite()
       return false;
 
     default:
-      DebugFail;
+      DebugFail();
       return false;
   }
 }

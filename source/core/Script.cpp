@@ -1037,7 +1037,7 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
           break;
 
         default:
-          DebugFail;
+          DebugFail();
           break;
       }
     }
@@ -1833,7 +1833,7 @@ void __fastcall TScript::SynchronizePreview(
           break;
 
       default:
-        DebugFail;
+        DebugFail();
       }
       PrintLine(Message);
     }

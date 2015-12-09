@@ -945,7 +945,7 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
       return;
     }
     else
-      DebugAssert(FALSE);
+      DebugFail();
     //Now we'll wait for the response, handled in OnReceive
     m_nProxyOpState++;
   }

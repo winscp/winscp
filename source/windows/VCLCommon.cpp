@@ -282,7 +282,7 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
   }
   else
   {
-    DebugFail;
+    DebugFail();
   }
 }
 //---------------------------------------------------------------------------
@@ -465,7 +465,7 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
                  (AForm->Position != poDefaultPosOnly))
         {
           // we do not expect any other positioning
-          DebugFail;
+          DebugFail();
         }
       }
       else
@@ -1062,7 +1062,7 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
   }
   else
   {
-    DebugFail;
+    DebugFail();
     Result = 0;
   }
   return Result;
@@ -1411,7 +1411,7 @@ static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
 
       case taCenter:
         {
-          DebugFail; // not used branch, possibly untested
+          DebugFail(); // not used branch, possibly untested
           int Diff = R.Width() - TextSize.cx;
           R.Left += Diff / 2;
           R.Right -= Diff - (Diff / 2);

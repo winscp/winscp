@@ -1256,7 +1256,7 @@ UnicodeString __fastcall TSessionData::GetSource()
       return L"Modified site";
 
     default:
-      DebugFail;
+      DebugFail();
       return L"";
   }
 }
@@ -2318,7 +2318,7 @@ bool __fastcall TSessionData::IsSecure()
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       break;
   }
   return Result;
@@ -2334,7 +2334,7 @@ UnicodeString __fastcall TSessionData::GetProtocolUrl()
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       // fallback
     case fsSFTP:
     case fsSFTPonly:
@@ -2600,7 +2600,7 @@ UnicodeString __fastcall TSessionData::AssemblyString(TAssemblyLanguage Language
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       break;
   }
 
@@ -2704,7 +2704,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       break;
   }
 
@@ -2718,7 +2718,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       // fallback
     case fsSFTP:
     case fsSFTPonly:
@@ -2791,7 +2791,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
               break;
 
             default:
-              DebugFail;
+              DebugFail();
               break;
           }
           AddAssemblyProperty(Result, Language, L"FtpSecure", L"FtpSecure", FtpSecureMember);
@@ -2803,7 +2803,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
         break;
 
       default:
-        DebugFail;
+        DebugFail();
         break;
     }
     SessionData->Ftps = FactoryDefaults->Ftps;
@@ -4328,7 +4328,7 @@ int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps)
       }
       else
       {
-        DebugFail;
+        DebugFail();
         Result = -1;
       }
       break;

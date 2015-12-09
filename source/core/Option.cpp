@@ -352,7 +352,7 @@ void __fastcall TOptions::LogOptions(TLogOptionEvent OnLogOption)
         break;
 
       default:
-        DebugFail;
+        DebugFail();
         break;
     }
     OnLogOption(LogStr);

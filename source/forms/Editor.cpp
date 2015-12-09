@@ -139,7 +139,7 @@ int __fastcall TPreambleFilteringFileStream::Write(const void * Buffer, int Coun
 int __fastcall TPreambleFilteringFileStream::Write(
   const System::DynamicArray<System::Byte> /*Buffer*/, int /*Offset*/, int /*Count*/)
 {
-  DebugFail;
+  DebugFail();
   EXCEPTION;
 }
 //---------------------------------------------------------------------------
@@ -1281,7 +1281,7 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
 
         default:
           CanTrySecondary = false;
-          DebugFail;
+          DebugFail();
           // fallthru
 
         case CP_ACP:
@@ -1391,7 +1391,7 @@ void __fastcall TEditorForm::CheckFileSize()
             break;
 
           default:
-            DebugFail;
+            DebugFail();
         }
       }
     }

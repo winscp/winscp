@@ -802,7 +802,7 @@ void __fastcall AnswerNameAndCaption(
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       throw Exception(L"Undefined answer");
   }
 }
@@ -1103,7 +1103,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         break;
 
       default:
-        DebugFail;
+        DebugFail();
         break;
     }
 

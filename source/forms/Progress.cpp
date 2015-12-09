@@ -525,7 +525,7 @@ TTBCustomItem * __fastcall TProgressForm::CurrentOnceDoneItem()
     Iterator++;
   }
 
-  DebugFail;
+  DebugFail();
   return NULL;
 }
 //---------------------------------------------------------------------------

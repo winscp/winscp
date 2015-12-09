@@ -1058,7 +1058,7 @@ static void __fastcall DoVerifyKey(
         break;
 
       default:
-        DebugFail;
+        DebugFail();
         // fallthru
       case ktUnknown:
         Message = MainInstructions(FMTLOAD(KEY_TYPE_UNKNOWN2, (FileName)));
@@ -1357,20 +1357,20 @@ bool __fastcall TWinHelpTester::CanShowALink(const UnicodeString ALink,
 bool __fastcall TWinHelpTester::CanShowTopic(const UnicodeString Topic,
   const UnicodeString FileName)
 {
-  DebugFail;
+  DebugFail();
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinHelpTester::CanShowContext(const int /*Context*/,
   const UnicodeString FileName)
 {
-  DebugFail;
+  DebugFail();
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinHelpTester::GetHelpStrings(const UnicodeString ALink)
 {
-  DebugFail;
+  DebugFail();
   TStringList * Result = new TStringList();
   Result->Add(ViewerName + L": " + ALink);
   return Result;
@@ -1395,7 +1395,7 @@ __fastcall TCustomHelpSelector::TCustomHelpSelector(const UnicodeString & Name) 
 //---------------------------------------------------------------------------
 int __fastcall TCustomHelpSelector::SelectKeyword(TStrings * /*Keywords*/)
 {
-  DebugFail;
+  DebugFail();
   return 0;
 }
 //---------------------------------------------------------------------------

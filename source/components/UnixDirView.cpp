@@ -384,7 +384,7 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
         case uvExt: Value = File->Extension; break;
         case uvLinkTarget: Value = File->LinkTo; break;
         case uvType: Value = File->TypeName; break;
-        default: DebugFail;
+        default: DebugFail();
       }
       StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax);
     }
@@ -711,7 +711,7 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
         break;
 
       default:
-        DebugFail;
+        DebugFail();
     }
 
     if (Result == 0)

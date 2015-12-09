@@ -424,7 +424,7 @@ bool CFtpControlSocket::InitConnect()
       else
         m_pProxyLayer->SetProxy(PROXYTYPE_HTTP11, T2CA(GetOption(OPTION_PROXYHOST)) ,GetOptionVal(OPTION_PROXYPORT));
     else
-      DebugAssert(FALSE);
+      DebugFail();
     AddLayer(m_pProxyLayer);
   }
 
@@ -2089,7 +2089,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
   else if (m_Operation.nOpState == LIST_MODE)
   {
 #ifdef MPEXT_NO_ZLIB
-    DebugAssert(false);
+    DebugFail();
 #else
     if (m_useZlib)
 #endif
@@ -2102,7 +2102,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
   else if (m_Operation.nOpState == LIST_OPTS)
   {
 #ifdef MPEXT_NO_ZLIB
-    DebugAssert(false);
+    DebugFail();
 #else
     pData->newZlibLevel = GetOptionVal(OPTION_MODEZ_LEVEL);
     cmd.Format(L"OPTS MODE Z LEVEL %d", pData->newZlibLevel);
@@ -3064,7 +3064,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
         break;
       default:
-        DebugAssert(FALSE);
+        DebugFail();
       }
 
       break;
@@ -3107,7 +3107,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       break;
     case FILETRANSFER_LIST_MODE:
 #ifdef MPEXT_NO_ZLIB
-      DebugAssert(false);
+      DebugFail();
       m_Operation.nOpState = FILETRANSFER_LIST_TYPE;
 #else
       if (code == 2 || code == 3)
@@ -3117,7 +3117,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       break;
     case FILETRANSFER_LIST_OPTS:
 #ifdef MPEXT_NO_ZLIB
-      DebugAssert(false);
+      DebugFail();
 #else
       if (code == 2 || code == 3)
         m_zlibLevel = pData->newZlibLevel;
@@ -3399,7 +3399,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       break;
     case FILETRANSFER_MODE:
 #ifdef MPEXT_NO_ZLIB
-      DebugAssert(false);
+      DebugFail();
       m_Operation.nOpState = FILETRANSFER_PORTPASV;
 #else
       if (code == 2 || code == 3)
@@ -3409,7 +3409,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       break;
     case FILETRANSFER_OPTS:
 #ifdef MPEXT_NO_ZLIB
-      DebugAssert(false);
+      DebugFail();
 #else
       if (code == 2 || code == 3)
         m_zlibLevel = pData->newZlibLevel;
@@ -3857,7 +3857,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     break;
   case FILETRANSFER_LIST_MODE:
 #ifdef MPEXT_NO_ZLIB
-    DebugAssert(false);
+    DebugFail();
 #else
     if (m_useZlib)
     {
@@ -3871,7 +3871,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     break;
   case FILETRANSFER_LIST_OPTS:
 #ifdef MPEXT_NO_ZLIB
-    DebugAssert(false);
+    DebugFail();
 #else
     {
       pData->newZlibLevel = GetOptionVal(OPTION_MODEZ_LEVEL);
@@ -4095,7 +4095,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     break;
   case FILETRANSFER_MODE:
 #ifdef MPEXT_NO_ZLIB
-    DebugAssert(false);
+    DebugFail();
 #else
     if (m_useZlib)
     {
@@ -4109,7 +4109,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     break;
   case FILETRANSFER_OPTS:
 #ifdef MPEXT_NO_ZLIB
-    DebugAssert(false);
+    DebugFail();
 #else
     {
       pData->newZlibLevel = GetOptionVal(OPTION_MODEZ_LEVEL);
@@ -4669,7 +4669,7 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
     //No operation in progress
     nSuccessful&=FZ_REPLY_DISCONNECTED|FZ_REPLY_CANCEL;
     if (!nSuccessful)
-      DebugAssert(FALSE);
+      DebugFail();
   }
 
   if (nSuccessful&FZ_REPLY_DISCONNECTED)
@@ -5290,7 +5290,7 @@ void CFtpControlSocket::MakeDir(const CServerPath &path)
     }
   }
   else
-    DebugAssert(FALSE);
+    DebugFail();
 }
 
 void CFtpControlSocket::Rename(CString oldName, CString newName, const CServerPath &path, const CServerPath &newPath)

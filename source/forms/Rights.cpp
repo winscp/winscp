@@ -142,7 +142,7 @@ bool __fastcall TRightsFrame::GetAllowUndef()
       }
       else if (Result != Check->AllowGrayed)
       {
-        DebugFail;
+        DebugFail();
       }
     }
   }

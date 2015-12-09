@@ -247,7 +247,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
             break;
 
           default:
-            DebugFail;
+            DebugFail();
         }
       }
       else if (Result == qaRetry)
@@ -662,7 +662,7 @@ static void __fastcall GetStandardSessionColorInfo(
   COLOR_INFO(6, 1, L"Light Purple",      0xD9C1CC)
   COLOR_INFO(7, 1, L"Light Aqua",        0xE8DDB7)
 
-  DebugFail;
+  DebugFail();
   #undef COLOR_INFO
 }
 //---------------------------------------------------------------------------

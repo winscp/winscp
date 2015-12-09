@@ -169,7 +169,7 @@ TTabSheet * __fastcall TPreferencesDialog::FindPageForTreeNode(TTreeNode * Node)
       return Sheet;
     }
   }
-  DebugFail;
+  DebugFail();
   return NULL;
 }
 //---------------------------------------------------------------------------
@@ -446,7 +446,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         FormatSizeBytesCombo->ItemIndex = 2;
         break;
       default:
-        DebugFail;
+        DebugFail();
     }
 
     bool CustomPanelFont = !WinConfiguration->PanelFont.FontName.IsEmpty();
@@ -524,7 +524,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         break;
 
       default:
-        DebugFail;
+        DebugFail();
         break;
     }
 
@@ -810,7 +810,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
         WinConfiguration->FormatSizeBytes = fbShort;
         break;
       default:
-        DebugFail;
+        DebugFail();
     }
 
     TFontConfiguration PanelFontConfiguration;
@@ -1479,7 +1479,7 @@ TListViewScrollOnDragOver * __fastcall TPreferencesDialog::ScrollOnDragOver(TObj
   }
   else
   {
-    DebugFail;
+    DebugFail();
     return NULL;
   }
 }

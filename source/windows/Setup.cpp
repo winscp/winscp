@@ -1593,7 +1593,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
         break;
 
       case qaAll:
-        DebugFail;
+        DebugFail();
         break;
     }
   }

@@ -120,7 +120,7 @@ void __fastcall TCleanupDialog::InitControls()
         break;
 
       default:
-        DebugFail;
+        DebugFail();
         break;
     }
 

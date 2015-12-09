@@ -203,7 +203,7 @@ int get_userpass_input(prompts_t * p, unsigned char * /*in*/, int /*inlen*/)
 char * get_ttymode(void * /*frontend*/, const char * /*mode*/)
 {
   // should never happen when Config.nopty == TRUE
-  DebugFail;
+  DebugFail();
   return NULL;
 }
 //---------------------------------------------------------------------------
@@ -307,7 +307,7 @@ int askappend(void * /*frontend*/, Filename * /*filename*/,
   void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
 {
   // this is called from logging.c of putty, which is never used with WinSCP
-  DebugFail;
+  DebugFail();
   return 0;
 }
 //---------------------------------------------------------------------------
@@ -324,7 +324,7 @@ void ldisc_send(void * /*handle*/, char * /*buf*/, int len, int /*interactive*/)
 void agent_schedule_callback(void (* /*callback*/)(void *, void *, int),
   void * /*callback_ctx*/, void * /*data*/, int /*len*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void notify_remote_exit(void * /*frontend*/)
@@ -460,7 +460,7 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
     }
     else
     {
-      DebugFail;
+      DebugFail();
       R = ERROR_READ_FAULT;
     }
   }
@@ -550,7 +550,7 @@ bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeStr
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       Result = false;
       break;
   }
@@ -589,7 +589,7 @@ TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const Un
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       break;
   }
 
@@ -639,7 +639,7 @@ void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
       break;
 
     default:
-      DebugFail;
+      DebugFail();
       break;
   }
 }

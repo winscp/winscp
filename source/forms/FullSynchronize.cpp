@@ -141,7 +141,7 @@ int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
         break;
 
       default:
-        DebugFail;
+        DebugFail();
         //fallthru
       case smBoth:
         Result = CopyParamAttrs.General;
@@ -214,7 +214,7 @@ void __fastcall TFullSynchronizeDialog::SetMode(TSynchronizeMode value)
        break;
 
     default:
-      DebugFail;
+      DebugFail();
   }
 }
 //---------------------------------------------------------------------------

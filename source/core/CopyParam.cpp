@@ -454,7 +454,7 @@ bool __fastcall TCopyParamType::UseAsciiTransfer(UnicodeString FileName,
     case tmAscii: return true;
     case tmAutomatic: return AsciiFileMask.Matches(FileName, (Side == osLocal),
       false, &Params);
-    default: DebugFail; return false;
+    default: DebugFail(); return false;
   }
 }
 //---------------------------------------------------------------------------
@@ -519,7 +519,7 @@ bool __fastcall TCopyParamType::AllowResume(__int64 Size) const
     case rsOn: return true;
     case rsOff: return false;
     case rsSmart: return (Size >= ResumeThreshold);
-    default: DebugFail; return false;
+    default: DebugFail(); return false;
   }
 }
 //---------------------------------------------------------------------------

@@ -396,9 +396,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDSORTC(dv, Name, uv, Group)
   #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
   UPDEX(SortColumnAscendingAction, (ListColumn != NULL), SortColumnAscendingAction->Checked =
-    (COLVIEWPROPS->SortColumn == ListColumn->Index) && COLVIEWPROPS->SortAscending, /*DebugAssert(false)*/  )
+    (COLVIEWPROPS->SortColumn == ListColumn->Index) && COLVIEWPROPS->SortAscending, /*DebugFail()*/  )
   UPDEX(SortColumnDescendingAction, (ListColumn != NULL), SortColumnDescendingAction->Checked =
-    (COLVIEWPROPS->SortColumn == ListColumn->Index) && !COLVIEWPROPS->SortAscending, /*DebugAssert(false)*/ )
+    (COLVIEWPROPS->SortColumn == ListColumn->Index) && !COLVIEWPROPS->SortAscending, /*DebugFail()*/ )
   #undef COLVIEWPROPS
 
   // SHOW/HIDE COLUMN
@@ -1692,7 +1692,7 @@ void __fastcall TNonVisualDataModule::CycleQueueOnceEmptyAction()
   }
   else
   {
-    DebugFail;
+    DebugFail();
   }
 }
 //---------------------------------------------------------------------------
@@ -1717,7 +1717,7 @@ TAction * __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyAction()
   }
   else
   {
-    DebugFail;
+    DebugFail();
   }
   return Result;
 }
@@ -1744,7 +1744,7 @@ TOnceDoneOperation __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyOperati
   }
   else
   {
-    DebugFail;
+    DebugFail();
   }
   return Result;
 }

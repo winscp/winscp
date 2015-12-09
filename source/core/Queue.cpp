@@ -273,7 +273,7 @@ int __fastcall TSimpleThread::ThreadProc(void * Thread)
   catch(...)
   {
     // we do not expect thread to be terminated with exception
-    DebugFail;
+    DebugFail();
   }
   SimpleThread->FFinished = true;
   SimpleThread->Finished();
@@ -1436,7 +1436,7 @@ void __fastcall TTerminalItem::TerminalPromptUser(TTerminal * Terminal,
   if (FItem == NULL)
   {
     // sanity, should not occur
-    DebugFail;
+    DebugFail();
     Result = false;
   }
   else
@@ -2468,7 +2468,7 @@ void __fastcall TTerminalThread::TerminalInitializeLog(TObject * Sender)
   if (FOnInitializeLog != NULL)
   {
     // never used, so not tested either
-    DebugFail;
+    DebugFail();
     TNotifyAction Action(FOnInitializeLog);
     Action.Sender = Sender;
 

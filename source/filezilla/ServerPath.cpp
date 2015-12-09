@@ -99,7 +99,7 @@ CServerPath::CServerPath(CString path, int nServerType, bool trim)
         int pos1 = path.Find( L"[" );
         if (pos1 == -1 || path.Right(1) != L"]")
         {
-          DebugAssert(FALSE);
+          DebugFail();
           m_bEmpty = TRUE;
           return;
         }
@@ -160,7 +160,7 @@ CServerPath::CServerPath(CString path, int nServerType, bool trim)
     }
     break;
   default:
-    DebugAssert(FALSE);
+    DebugFail();
   }
 }
 
@@ -422,7 +422,7 @@ const CString CServerPath::GetPath() const
 
     break;
   default:
-    DebugAssert(FALSE);
+    DebugFail();
   }
   return path;
 }
@@ -584,7 +584,7 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
   if ( subdir==L"" )
   {
     if (IsEmpty())
-      DebugAssert(FALSE);
+      DebugFail();
     else
       return;
   }
@@ -655,7 +655,7 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
         else
         {
           if (subdir.Right(1)!=L"]")
-            DebugAssert(FALSE);
+            DebugFail();
           subdir=subdir.Left(subdir.GetLength()-1);
           if (pos1)
             m_Prefix=subdir.Left(pos1);
@@ -667,7 +667,7 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
           pos1=subdir.Find( L"[" );
           int pos2=subdir.Find( L"]" );
           if (pos1!=-1 || pos2!=-1)
-            DebugAssert(FALSE);
+            DebugFail();
         }
         int pos=subdir.Find( L"." );
         while(pos!=-1)
@@ -744,7 +744,7 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
         subdir=subdir.Mid(pos+1);
         subdir.TrimLeft( L"\\" );
         if (subdir.Find( L":" )!=-1)
-          DebugAssert(FALSE);
+          DebugFail();
       }
       if (pos==-1 || pos==1)
       {
@@ -759,11 +759,11 @@ CServerPath::CServerPath(CString subdir, const CServerPath &parent)
           m_Segments.push_back(subdir);
       }
       else
-        DebugAssert(FALSE);
+        DebugFail();
     }
     break;
   default:
-    DebugAssert(FALSE);
+    DebugFail();
   }
 }
 
@@ -837,7 +837,7 @@ CString CServerPath::FormatFilename(CString fn, bool omitPath /*=false*/) const
     path += fn;
     break;
   default:
-    DebugAssert(FALSE);
+    DebugFail();
   }
   return path;
 }

@@ -391,7 +391,7 @@ TDateTime __fastcall ReduceDateTimePrecision(TDateTime DateTime,
         break;
 
       default:
-        DebugFail;
+        DebugFail();
     }
 
     DateTime = EncodeDateVerbose(Y, M, D) + EncodeTimeVerbose(H, N, S, MS);
@@ -441,7 +441,7 @@ UnicodeString __fastcall ModificationStr(TDateTime DateTime,
         (EngShortMonthNames[Month-1], Day, Hour, Min));
 
     default:
-      DebugFail;
+      DebugFail();
       // fall thru
 
     case mfFull:

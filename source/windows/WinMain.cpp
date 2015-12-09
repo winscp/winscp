@@ -244,7 +244,7 @@ void __fastcall ImportSitesIfAny()
       }
       else
       {
-        DebugFail;
+        DebugFail();
       }
 
       UnicodeString Message = FORMAT(LoadStrPart(IMPORT_SESSIONS2, 1), (Source));

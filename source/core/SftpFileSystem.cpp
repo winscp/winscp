@@ -1949,7 +1949,7 @@ void __fastcall TSFTPFileSystem::CollectUsage()
       VersionCounter = L"OpenedSessionsSFTP6";
       break;
     default:
-      DebugFail;
+      DebugFail();
   }
   FTerminal->Configuration->Usage->Inc(VersionCounter);
 }
@@ -2161,7 +2161,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
       return false;
 
     default:
-      DebugFail;
+      DebugFail();
       return false;
   }
 }
@@ -3182,7 +3182,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
       break;
 
     default:
-      DebugFail;
+      DebugFail();
     case asAuto:
       // Nb, Foxit server does not exist anymore
       if (GetSessionInfo().SshImplementation.Pos(L"Foxit-WAC-Server") == 1)
@@ -4135,13 +4135,13 @@ void __fastcall TSFTPFileSystem::CustomCommandOnFile(const UnicodeString /*FileN
     const TRemoteFile * /*File*/, UnicodeString /*Command*/, int /*Params*/,
     TCaptureOutputEvent /*OutputEvent*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::AnyCommand(const UnicodeString /*Command*/,
   TCaptureOutputEvent /*OutputEvent*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TSFTPFileSystem::GetFixedPaths()
@@ -4396,7 +4396,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
           OperationProgress->BatchOverwrite = boAlternateResume;
           break;
 
-        default: DebugFail; //fallthru
+        default: DebugFail(); //fallthru
         case qaCancel:
           if (!OperationProgress->Cancel)
           {
@@ -6126,12 +6126,12 @@ void __fastcall TSFTPFileSystem::GetSupportedChecksumAlgs(TStrings * Algs)
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::LockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::UnlockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)
 {
-  DebugFail;
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::UpdateFromMain(TCustomFileSystem * /*MainFileSystem*/)

@@ -327,7 +327,7 @@ protected:
       case laStat: return L"stat";
       case laChecksum: return L"checksum";
       case laCwd: return L"cwd";
-      default: DebugFail; return L"";
+      default: DebugFail(); return L"";
     }
   }
 
@@ -940,7 +940,7 @@ UnicodeString __fastcall TSessionLog::GetTlsVersionName(TTlsVersion TlsVersion)
   switch (TlsVersion)
   {
     default:
-      DebugFail;
+      DebugFail();
     case ssl2:
       return "SSLv2";
     case ssl3:
