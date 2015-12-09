@@ -46,26 +46,6 @@ class CFileFix;
 //---------------------------------------------------------------------------
 #define _strlwr strlwr
 //---------------------------------------------------------------------------
-#ifdef _DEBUG
-#ifndef ASSERT
-#error ASSERT should be defined here by afx.h
-#endif
-#undef ASSERT
-// Copy of afx.h ASSERT with TRACE added.
-// Better would be to hook afxAssertFailedLine
-#define ASSERT(f) \
-  do \
-  { \
-    if (!(f)) \
-    { \
-      if (AfxAssertFailedLine(__FILE__, __LINE__)) \
-      { \
-        AfxDebugBreak(); \
-      } \
-    } \
-  } while (0)
-#endif
-//---------------------------------------------------------------------------
 const int FILEEXISTS_OVERWRITE = 0;
 const int FILEEXISTS_RESUME = 1;
 const int FILEEXISTS_RENAME = 2;
@@ -96,15 +76,15 @@ public:
   UINT Read(void * lpBuf, UINT nCount)
   {
     ASSERT_VALID(this);
-    ASSERT(m_hFile != (UINT)hFileNull);
+    DebugAssert(m_hFile != (UINT)hFileNull);
 
     if (nCount == 0)
     {
       return 0;   // avoid Win32 "null-read"
     }
 
-    ASSERT(lpBuf != NULL);
-    ASSERT(AfxIsValidAddress(lpBuf, nCount));
+    DebugAssert(lpBuf != NULL);
+    DebugAssert(AfxIsValidAddress(lpBuf, nCount));
 
     DWORD dwRead;
     if (!::ReadFile((HANDLE)m_hFile, lpBuf, nCount, &dwRead, NULL))
@@ -154,10 +134,10 @@ public:
 
   CStringA(const CStringA& stringSrc)
   {
-    ASSERT(stringSrc.GetData()->nRefs != 0);
+    DebugAssert(stringSrc.GetData()->nRefs != 0);
     if (stringSrc.GetData()->nRefs >= 0)
     {
-      ASSERT(stringSrc.GetData() != _afxDataNilA);
+      DebugAssert(stringSrc.GetData() != _afxDataNilA);
       m_pchData = stringSrc.m_pchData;
       InterlockedIncrement(&GetData()->nRefs);
     }
@@ -173,7 +153,7 @@ public:
     Init();
     if (lpsz != NULL && HIWORD(lpsz) == NULL)
     {
-      ASSERT(false);
+      DebugAssert(false);
     }
     else
     {
@@ -205,8 +185,8 @@ public:
   char operator[](int nIndex) const
   {
     // same as GetAt
-    ASSERT(nIndex >= 0);
-    ASSERT(nIndex < GetData()->nDataLength);
+    DebugAssert(nIndex >= 0);
+    DebugAssert(nIndex < GetData()->nDataLength);
     return m_pchData[nIndex];
   }
 
@@ -225,7 +205,7 @@ public:
       {
         // can just copy references around
         Release();
-        ASSERT(stringSrc.GetData() != _afxDataNilA);
+        DebugAssert(stringSrc.GetData() != _afxDataNilA);
         m_pchData = stringSrc.m_pchData;
         InterlockedIncrement(&GetData()->nRefs);
       }
@@ -235,7 +215,7 @@ public:
 
   const CStringA & operator=(LPCSTR lpsz)
   {
-    ASSERT(lpsz == NULL || AfxIsValidString(lpsz));
+    DebugAssert(lpsz == NULL || AfxIsValidString(lpsz));
     AssignCopy(SafeStrlen(lpsz), lpsz);
     return *this;
   }
@@ -255,7 +235,7 @@ public:
 
   int Compare(LPCSTR lpsz) const
   {
-    ASSERT(AfxIsValidString(lpsz));
+    DebugAssert(AfxIsValidString(lpsz));
     return strcmp(m_pchData, lpsz);
   }
 
@@ -280,8 +260,8 @@ public:
       nCount = 0;
     }
 
-    ASSERT(nFirst >= 0);
-    ASSERT(nFirst + nCount <= GetData()->nDataLength);
+    DebugAssert(nFirst >= 0);
+    DebugAssert(nFirst + nCount <= GetData()->nDataLength);
 
     // optimize case of returning entire string
     if (nFirst == 0 && nFirst + nCount == GetData()->nDataLength)
@@ -338,7 +318,7 @@ public:
 
   int Find(LPCSTR lpszSub, int nStart) const
   {
-    ASSERT(AfxIsValidString(lpszSub));
+    DebugAssert(AfxIsValidString(lpszSub));
 
     int nLength = GetData()->nDataLength;
     if (nStart > nLength)
@@ -364,7 +344,7 @@ protected:
 
   CStringDataA * GetData() const
   {
-    ASSERT(m_pchData != NULL); return ((CStringDataA*)m_pchData)-1;
+    DebugAssert(m_pchData != NULL); return ((CStringDataA*)m_pchData)-1;
   }
 
   void Init()
@@ -395,8 +375,8 @@ protected:
   // always allocate one extra character for '\0' termination
   // assumes [optimistically] that data length will equal allocation length
   {
-    ASSERT(nLen >= 0);
-    ASSERT(nLen <= INT_MAX-1);    // max size (enough room for 1 extra)
+    DebugAssert(nLen >= 0);
+    DebugAssert(nLen <= INT_MAX-1);    // max size (enough room for 1 extra)
 
     if (nLen == 0)
     {
@@ -434,7 +414,7 @@ protected:
   {
     if (pData != _afxDataNilA)
     {
-      ASSERT(pData->nRefs != 0);
+      DebugAssert(pData->nRefs != 0);
       if (InterlockedDecrement(&pData->nRefs) <= 0)
       {
         FreeData(pData);
@@ -446,7 +426,7 @@ protected:
   {
     if (GetData() != _afxDataNilA)
     {
-      ASSERT(GetData()->nRefs != 0);
+      DebugAssert(GetData()->nRefs != 0);
       if (InterlockedDecrement(&GetData()->nRefs) <= 0)
       {
         FreeData(GetData());
@@ -487,7 +467,7 @@ protected:
       // we have to grow the buffer, use the ConcatCopy routine
       CStringDataA* pOldData = GetData();
       ConcatCopy(GetData()->nDataLength, m_pchData, nSrcLen, lpszSrcData);
-      ASSERT(pOldData != NULL);
+      DebugAssert(pOldData != NULL);
       CStringA::Release(pOldData);
     }
     else
@@ -495,7 +475,7 @@ protected:
       // fast concatenation when buffer big enough
       memcpy(m_pchData+GetData()->nDataLength, lpszSrcData, nSrcLen*sizeof(char));
       GetData()->nDataLength += nSrcLen;
-      ASSERT(GetData()->nDataLength <= GetData()->nAllocLength);
+      DebugAssert(GetData()->nDataLength <= GetData()->nAllocLength);
       m_pchData[GetData()->nDataLength] = '\0';
     }
   }
@@ -509,7 +489,7 @@ protected:
       AllocBuffer(pData->nDataLength);
       memcpy(m_pchData, pData->data(), (pData->nDataLength+1)*sizeof(char));
     }
-    ASSERT(GetData()->nRefs <= 1);
+    DebugAssert(GetData()->nRefs <= 1);
   }
 
   void AllocBeforeWrite(int nLen)
@@ -519,7 +499,7 @@ protected:
       Release();
       AllocBuffer(nLen);
     }
-    ASSERT(GetData()->nRefs <= 1);
+    DebugAssert(GetData()->nRefs <= 1);
   }
 
   static int PASCAL SafeStrlen(LPCSTR lpsz)

@@ -29,7 +29,7 @@ bool TFileZillaIntern::PostMessage(WPARAM wParam, LPARAM lParam) const
       break;
 
     default:
-      ASSERT(FALSE);
+      DebugAssert(FALSE);
       Result = false;
       break;
   }

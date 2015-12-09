@@ -779,7 +779,7 @@ void CFtpListResult::AddLine(t_directory::t_direntry &direntry)
     BOOL bContinue=FALSE;
     while (entryiter!=m_EntryList.end())
     {
-      ASSERT(dataiter!=m_TempData.end());
+      DebugAssert(dataiter!=m_TempData.end());
       t_directory::t_direntry dir=*entryiter;
       int oldversion=*dataiter;
       if (direntry.name==dir.name)

@@ -149,7 +149,7 @@ void CFileZillaApi::Destroy()
 {
   if (!m_bInitialized)
     return;
-  ASSERT(m_pMainThread);
+  DebugAssert(m_pMainThread);
   HANDLE tmp=m_pMainThread->m_hThread;
   m_pMainThread->Quit();
   //Wait for the main thread to quit

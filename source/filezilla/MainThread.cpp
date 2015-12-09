@@ -128,44 +128,44 @@ BOOL CMainThread::OnThreadMessage(UINT Msg, WPARAM wParam, LPARAM lParam)
         switch(pCommand->id)
         {
         case FZ_COMMAND_CONNECT:
-          ASSERT(!IsConnected());
+          DebugAssert(!IsConnected());
           SetCurrentPath(CServerPath());
           m_pControlSocket->Connect(pCommand->server);
           break;
         case FZ_COMMAND_LIST:
-          ASSERT(m_pControlSocket);
+          DebugAssert(m_pControlSocket);
           m_pControlSocket->List(FALSE, 0, pCommand->path, pCommand->param1);
           break;
         case FZ_COMMAND_LISTFILE:
-          ASSERT(m_pControlSocket);
+          DebugAssert(m_pControlSocket);
           m_pControlSocket->ListFile(pCommand->param1, pCommand->path);
           break;
         case FZ_COMMAND_FILETRANSFER:
-          ASSERT(m_pControlSocket);
+          DebugAssert(m_pControlSocket);
           m_pControlSocket->FileTransfer(&pCommand->transferfile);
           break;
         case FZ_COMMAND_CUSTOMCOMMAND:
-          ASSERT(m_pControlSocket);
+          DebugAssert(m_pControlSocket);
           m_pControlSocket->FtpCommand(pCommand->param1);
           break;
         case FZ_COMMAND_DELETE:
-          ASSERT(m_pControlSocket);
+          DebugAssert(m_pControlSocket);
           m_pControlSocket->Delete(pCommand->param1, pCommand->path);
           break;
         case FZ_COMMAND_REMOVEDIR:
-          ASSERT(m_pControlSocket);
+          DebugAssert(m_pControlSocket);
           m_pControlSocket->RemoveDir(pCommand->param1, pCommand->path);
           break;
         case FZ_COMMAND_MAKEDIR:
-          ASSERT(m_pControlSocket);
+          DebugAssert(m_pControlSocket);
           m_pControlSocket->MakeDir(pCommand->path);
           break;
         case FZ_COMMAND_RENAME:
-          ASSERT(m_pControlSocket);
+          DebugAssert(m_pControlSocket);
           m_pControlSocket->Rename(pCommand->param1, pCommand->param2, pCommand->path, pCommand->newPath);
           break;
         case FZ_COMMAND_CHMOD:
-          ASSERT(m_pControlSocket);
+          DebugAssert(m_pControlSocket);
           m_pControlSocket->Chmod(pCommand->param1, pCommand->path, pCommand->param4);
           break;
         }
@@ -223,7 +223,7 @@ BOOL CMainThread::IsBusy()
 
 void CMainThread::Command(const t_command &command)
 {
-  ASSERT(!IsBusy());
+  DebugAssert(!IsBusy());
   ECS;
   if (m_bQuit)
   {

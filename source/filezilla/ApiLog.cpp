@@ -34,7 +34,7 @@ bool CApiLog::LoggingMessageType(int nMessageType) const
 
 void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
 {
-  ASSERT(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
+  DebugAssert(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
   if (!LoggingMessageType(nMessageType))
     return;
 
@@ -52,7 +52,7 @@ void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
 
 void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
 {
-  ASSERT(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
+  DebugAssert(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
   if (!LoggingMessageType(nMessageType))
     return;
 
@@ -63,7 +63,7 @@ void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
 
 void CApiLog::LogMessage(int nMessageType, UINT nFormatID, ...) const
 {
-  ASSERT(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
+  DebugAssert(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
   if (!LoggingMessageType(nMessageType))
     return;
 
@@ -97,12 +97,12 @@ void CApiLog::SendLogMessage(int nMessageType, LPCTSTR pMsg) const
 
 CString CApiLog::GetOption(int OptionID) const
 {
-  assert(FIntern != NULL);
+  DebugAssert(FIntern != NULL);
   return FIntern->GetOption(OptionID);
 }
 
 int CApiLog::GetOptionVal(int OptionID) const
 {
-  assert(FIntern != NULL);
+  DebugAssert(FIntern != NULL);
   return FIntern->GetOptionVal(OptionID);
 }

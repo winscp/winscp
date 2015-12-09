@@ -149,7 +149,7 @@ CCriticalSection CFtpControlSocket::m_SpeedLimitSync;
 
 CFtpControlSocket::CFtpControlSocket(CMainThread *pMainThread, CFileZillaTools * pTools)
 {
-  ASSERT(pMainThread);
+  DebugAssert(pMainThread);
   m_pOwner=pMainThread;
   m_pTools=pTools;
 
@@ -424,7 +424,7 @@ bool CFtpControlSocket::InitConnect()
       else
         m_pProxyLayer->SetProxy(PROXYTYPE_HTTP11, T2CA(GetOption(OPTION_PROXYHOST)) ,GetOptionVal(OPTION_PROXYPORT));
     else
-      ASSERT(FALSE);
+      DebugAssert(FALSE);
     AddLayer(m_pProxyLayer);
   }
 
@@ -1573,7 +1573,7 @@ void CFtpControlSocket::DoClose(int nError /*=0*/)
 
 void CFtpControlSocket::Disconnect()
 {
-  ASSERT(!m_Operation.nOpMode);
+  DebugAssert(!m_Operation.nOpMode);
   m_Operation.nOpMode=CSMODE_DISCONNECT;
   DoClose();
   ShowStatus(IDS_STATUSMSG_DISCONNECTED,FZ_LOG_STATUS); //Send the disconnected message to the message log
@@ -1677,7 +1677,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
   #define LIST_LIST  9
   #define LIST_WAITFINISH  10
 
-  ASSERT(!m_Operation.nOpMode || m_Operation.nOpMode&CSMODE_LIST);
+  DebugAssert(!m_Operation.nOpMode || m_Operation.nOpMode&CSMODE_LIST);
 
   m_Operation.nOpMode|=CSMODE_LIST;
 
@@ -2089,7 +2089,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
   else if (m_Operation.nOpState == LIST_MODE)
   {
 #ifdef MPEXT_NO_ZLIB
-    ASSERT(false);
+    DebugAssert(false);
 #else
     if (m_useZlib)
 #endif
@@ -2102,7 +2102,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
   else if (m_Operation.nOpState == LIST_OPTS)
   {
 #ifdef MPEXT_NO_ZLIB
-    ASSERT(false);
+    DebugAssert(false);
 #else
     pData->newZlibLevel = GetOptionVal(OPTION_MODEZ_LEVEL);
     cmd.Format(L"OPTS MODE Z LEVEL %d", pData->newZlibLevel);
@@ -2328,7 +2328,7 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
   #define LISTFILE_CWD   6
   #define LISTFILE_CWD2  7
 
-  ASSERT(!m_Operation.nOpMode || m_Operation.nOpMode&CSMODE_LISTFILE);
+  DebugAssert(!m_Operation.nOpMode || m_Operation.nOpMode&CSMODE_LISTFILE);
 
   m_Operation.nOpMode|=CSMODE_LISTFILE;
 
@@ -2677,7 +2677,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
   //         |WAITFINISH|
   //         +----------+
 
-  ASSERT(!m_Operation.nOpMode || m_Operation.nOpMode&CSMODE_TRANSFER);
+  DebugAssert(!m_Operation.nOpMode || m_Operation.nOpMode&CSMODE_TRANSFER);
   if (!m_pOwner->IsConnected())
   {
     m_Operation.nOpMode=CSMODE_TRANSFER|(transferfile->get?CSMODE_DOWNLOAD:CSMODE_UPLOAD);
@@ -2690,7 +2690,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
   //Process finish and error messages
   if (bFinish || nError)
   {
-    ASSERT(m_Operation.nOpMode&CSMODE_TRANSFER);
+    DebugAssert(m_Operation.nOpMode&CSMODE_TRANSFER);
 
     // APPE failed, ignore this reply
     if (m_Operation.nOpMode == FILETRANSFER_WAIT && bFinish)
@@ -2791,9 +2791,9 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
   int nReplyError = 0;
   if (m_Operation.nOpState == FILETRANSFER_INIT)
   {
-    ASSERT(transferfile);
-    ASSERT(!m_Operation.nOpMode);
-    ASSERT(!m_Operation.pData);
+    DebugAssert(transferfile);
+    DebugAssert(!m_Operation.nOpMode);
+    DebugAssert(!m_Operation.pData);
 
     CString str;
     str.Format(transferfile->get?IDS_STATUSMSG_DOWNLOADSTART:IDS_STATUSMSG_UPLOADSTART,
@@ -2968,7 +2968,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         {
           if (code == 2 || code == 3)
           { //Create dir entry in parent dir
-            ASSERT(!pData->MKDSegments.empty());
+            DebugAssert(!pData->MKDSegments.empty());
             pData->MKDCurrent.AddSubdir(pData->MKDSegments.front());
             CString Segment=pData->MKDSegments.front();
             pData->MKDSegments.pop_front();
@@ -3064,7 +3064,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
         break;
       default:
-        ASSERT(FALSE);
+        DebugAssert(FALSE);
       }
 
       break;
@@ -3107,7 +3107,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       break;
     case FILETRANSFER_LIST_MODE:
 #ifdef MPEXT_NO_ZLIB
-      ASSERT(false);
+      DebugAssert(false);
       m_Operation.nOpState = FILETRANSFER_LIST_TYPE;
 #else
       if (code == 2 || code == 3)
@@ -3117,7 +3117,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       break;
     case FILETRANSFER_LIST_OPTS:
 #ifdef MPEXT_NO_ZLIB
-      ASSERT(false);
+      DebugAssert(false);
 #else
       if (code == 2 || code == 3)
         m_zlibLevel = pData->newZlibLevel;
@@ -3371,7 +3371,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         __int64 size;
         if (HandleSize(code, size))
         {
-          ASSERT(!pData->pFileSize);
+          DebugAssert(!pData->pFileSize);
           pData->pFileSize=new _int64;
           *pData->pFileSize=size;
         }
@@ -3399,7 +3399,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       break;
     case FILETRANSFER_MODE:
 #ifdef MPEXT_NO_ZLIB
-      ASSERT(false);
+      DebugAssert(false);
       m_Operation.nOpState = FILETRANSFER_PORTPASV;
 #else
       if (code == 2 || code == 3)
@@ -3409,7 +3409,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       break;
     case FILETRANSFER_OPTS:
 #ifdef MPEXT_NO_ZLIB
-      ASSERT(false);
+      DebugAssert(false);
 #else
       if (code == 2 || code == 3)
         m_zlibLevel = pData->newZlibLevel;
@@ -3666,7 +3666,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
             {
               if (pData->transferdata.transfersize!=-1)
               {
-                ASSERT(m_pDataFile);
+                DebugAssert(m_pDataFile);
                 if (GetLength64(*m_pDataFile) == pData->transferdata.transfersize)
                 {
                   ShowStatus(IDS_ERRORMSG_CANTRESUME_FINISH, FZ_LOG_STATUS);
@@ -3857,7 +3857,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     break;
   case FILETRANSFER_LIST_MODE:
 #ifdef MPEXT_NO_ZLIB
-    ASSERT(false);
+    DebugAssert(false);
 #else
     if (m_useZlib)
     {
@@ -3871,7 +3871,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     break;
   case FILETRANSFER_LIST_OPTS:
 #ifdef MPEXT_NO_ZLIB
-    ASSERT(false);
+    DebugAssert(false);
 #else
     {
       pData->newZlibLevel = GetOptionVal(OPTION_MODEZ_LEVEL);
@@ -4095,7 +4095,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     break;
   case FILETRANSFER_MODE:
 #ifdef MPEXT_NO_ZLIB
-    ASSERT(false);
+    DebugAssert(false);
 #else
     if (m_useZlib)
     {
@@ -4109,7 +4109,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     break;
   case FILETRANSFER_OPTS:
 #ifdef MPEXT_NO_ZLIB
-    ASSERT(false);
+    DebugAssert(false);
 #else
     {
       pData->newZlibLevel = GetOptionVal(OPTION_MODEZ_LEVEL);
@@ -4275,7 +4275,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     }
     break;
   case FILETRANSFER_REST:
-    ASSERT(m_pDataFile);
+    DebugAssert(m_pDataFile);
     {
       CString command;
       __int64 transferoffset =
@@ -4669,7 +4669,7 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
     //No operation in progress
     nSuccessful&=FZ_REPLY_DISCONNECTED|FZ_REPLY_CANCEL;
     if (!nSuccessful)
-      ASSERT(FALSE);
+      DebugAssert(FALSE);
   }
 
   if (nSuccessful&FZ_REPLY_DISCONNECTED)
@@ -4700,10 +4700,10 @@ public:
   };
   if (filename!=L"")
   {
-    ASSERT(!path.IsEmpty());
-    ASSERT(m_Operation.nOpMode==CSMODE_NONE);
-    ASSERT(m_Operation.nOpState==-1);
-    ASSERT(!m_Operation.pData);
+    DebugAssert(!path.IsEmpty());
+    DebugAssert(m_Operation.nOpMode==CSMODE_NONE);
+    DebugAssert(m_Operation.nOpState==-1);
+    DebugAssert(!m_Operation.pData);
     m_Operation.nOpMode=CSMODE_DELETE;
     if (!Send(L"DELE " + path.FormatFilename(filename)))
       return;
@@ -4714,10 +4714,10 @@ public:
   }
   else
   {
-    ASSERT(path.IsEmpty());
-    ASSERT(m_Operation.nOpMode==CSMODE_DELETE);
-    ASSERT(m_Operation.nOpState==-1);
-    ASSERT(m_Operation.pData);
+    DebugAssert(path.IsEmpty());
+    DebugAssert(m_Operation.nOpMode==CSMODE_DELETE);
+    DebugAssert(m_Operation.nOpState==-1);
+    DebugAssert(m_Operation.pData);
     int res=GetReplyCode();
     if (res==2 || res==3)
     { //Remove file from cached dirs
@@ -4747,7 +4747,7 @@ public:
         {
           if (dir.direntry[i].name==pData->m_FileName)
           {
-            ASSERT(!dir.direntry[i].dir || dir.direntry[i].bLink);
+            DebugAssert(!dir.direntry[i].dir || dir.direntry[i].bLink);
             found=TRUE;
             break;
           }
@@ -4800,10 +4800,10 @@ public:
   };
   if (dirname != L"")
   {
-    ASSERT(!path.IsEmpty());
-    ASSERT(m_Operation.nOpMode == CSMODE_NONE);
-    ASSERT(m_Operation.nOpState == -1);
-    ASSERT(!m_Operation.pData);
+    DebugAssert(!path.IsEmpty());
+    DebugAssert(m_Operation.nOpMode == CSMODE_NONE);
+    DebugAssert(m_Operation.nOpState == -1);
+    DebugAssert(!m_Operation.pData);
     m_Operation.nOpMode = CSMODE_RMDIR;
     CServerPath newPath = path;
     if (!newPath.AddSubdir(dirname))
@@ -4820,10 +4820,10 @@ public:
   }
   else
   {
-    ASSERT(path.IsEmpty());
-    ASSERT(m_Operation.nOpMode == CSMODE_RMDIR);
-    ASSERT(m_Operation.nOpState == -1);
-    ASSERT(m_Operation.pData);
+    DebugAssert(path.IsEmpty());
+    DebugAssert(m_Operation.nOpMode == CSMODE_RMDIR);
+    DebugAssert(m_Operation.nOpState == -1);
+    DebugAssert(m_Operation.pData);
     int res = GetReplyCode();
     if (res == 2 || res == 3)
     { //Remove dir from cached dirs
@@ -4853,7 +4853,7 @@ public:
         {
           if (dir.direntry[i].name == pData->m_DirName)
           {
-            ASSERT(dir.direntry[i].dir);
+            DebugAssert(dir.direntry[i].dir);
             found = TRUE;
             break;
           }
@@ -5081,7 +5081,7 @@ void CFtpControlSocket::SetFileExistsAction(int nAction, COverwriteRequestData *
     }
     else
     {
-      ASSERT(m_pDirectoryListing);
+      DebugAssert(m_pDirectoryListing);
       int i;
       for (i = 0; i < m_pDirectoryListing->num; i++)
       {
@@ -5136,9 +5136,9 @@ void CFtpControlSocket::MakeDir(const CServerPath &path)
   //Find existing parent and create subdirs one by one
   if (m_Operation.nOpState == MKD_INIT)
   {
-    ASSERT(!path.IsEmpty());
-    ASSERT(m_Operation.nOpMode==CSMODE_NONE);
-    ASSERT(!m_Operation.pData);
+    DebugAssert(!path.IsEmpty());
+    DebugAssert(m_Operation.nOpMode==CSMODE_NONE);
+    DebugAssert(!m_Operation.pData);
     m_Operation.nOpMode = CSMODE_MKDIR;
     if (!Send(L"CWD "+path.GetParent().GetPath()))
       return;
@@ -5151,9 +5151,9 @@ void CFtpControlSocket::MakeDir(const CServerPath &path)
   }
   else if (m_Operation.nOpState==MKD_FINDPARENT)
   {
-    ASSERT(m_Operation.nOpMode==CSMODE_MKDIR);
-    ASSERT(path.IsEmpty());
-    ASSERT(m_Operation.pData);
+    DebugAssert(m_Operation.nOpMode==CSMODE_MKDIR);
+    DebugAssert(path.IsEmpty());
+    DebugAssert(m_Operation.pData);
     CMakeDirData *pData=(CMakeDirData *)m_Operation.pData;
     int res=GetReplyCode();
     if (res==2 || res==3)
@@ -5189,7 +5189,7 @@ void CFtpControlSocket::MakeDir(const CServerPath &path)
     { //Create dir entry in parent dir
       CMakeDirData *pData=(CMakeDirData *)m_Operation.pData;
 
-      ASSERT(!pData->Segments.empty());
+      DebugAssert(!pData->Segments.empty());
 
       m_pOwner->SetCurrentPath(pData->Current);
 
@@ -5290,7 +5290,7 @@ void CFtpControlSocket::MakeDir(const CServerPath &path)
     }
   }
   else
-    ASSERT(FALSE);
+    DebugAssert(FALSE);
 }
 
 void CFtpControlSocket::Rename(CString oldName, CString newName, const CServerPath &path, const CServerPath &newPath)
@@ -5306,11 +5306,11 @@ void CFtpControlSocket::Rename(CString oldName, CString newName, const CServerPa
   };
   if (oldName != L"")
   {
-    ASSERT(newName != L"");
-    ASSERT(!path.IsEmpty());
-    ASSERT(m_Operation.nOpMode == CSMODE_NONE);
-    ASSERT(m_Operation.nOpState == -1);
-    ASSERT(!m_Operation.pData);
+    DebugAssert(newName != L"");
+    DebugAssert(!path.IsEmpty());
+    DebugAssert(m_Operation.nOpMode == CSMODE_NONE);
+    DebugAssert(m_Operation.nOpState == -1);
+    DebugAssert(!m_Operation.pData);
     m_Operation.nOpMode = CSMODE_RENAME;
     if (!Send(L"RNFR " + path.FormatFilename(oldName)))
       return;
@@ -5323,10 +5323,10 @@ void CFtpControlSocket::Rename(CString oldName, CString newName, const CServerPa
   }
   else
   {
-    ASSERT(oldName == L"");
-    ASSERT(path.IsEmpty());
-    ASSERT(m_Operation.nOpMode == CSMODE_RENAME);
-    ASSERT(m_Operation.pData);
+    DebugAssert(oldName == L"");
+    DebugAssert(path.IsEmpty());
+    DebugAssert(m_Operation.nOpMode == CSMODE_RENAME);
+    DebugAssert(m_Operation.pData);
     CRenameData *pData = reinterpret_cast<CRenameData *>(m_Operation.pData);
 
     if (m_Operation.nOpState == -1)
@@ -5472,7 +5472,7 @@ void CFtpControlSocket::Rename(CString oldName, CString newName, const CServerPa
 
 void CFtpControlSocket::SetVerifyCertResult(int nResult, t_SslCertData *pData)
 {
-  ASSERT(pData);
+  DebugAssert(pData);
   if (!m_pSslLayer)
     return;
   if (!m_Operation.nOpMode == CSMODE_CONNECT)
@@ -6021,7 +6021,7 @@ BOOL CFtpControlSocket::ParsePwdReply(CString& rawpwd)
 BOOL CFtpControlSocket::ParsePwdReply(CString& rawpwd, CServerPath & realPath)
 {
   CListData *pData = static_cast<CListData *>(m_Operation.pData);
-  ASSERT(pData);
+  DebugAssert(pData);
 
   int pos1 = rawpwd.Find(L'"');
   int pos2 = rawpwd.ReverseFind(L'"');
