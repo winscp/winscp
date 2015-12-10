@@ -70,8 +70,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
     case ncLowerCaseShort: CCLowerCaseShortButton->Checked = True; break;
   }
 
-  ReplaceInvalidCharsCheck->Checked =
-    (value.InvalidCharsReplacement != TCopyParamType::NoReplacement);
+  ReplaceInvalidCharsCheck->Checked = value.ReplaceInvalidChars;
 
   FRightsFrame->AddXToDirectories = value.AddXToDirectories;
   FRightsFrame->Rights = value.Rights;
