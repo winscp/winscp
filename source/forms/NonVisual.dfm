@@ -1878,10 +1878,10 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 96
       ShortCut = 24657
     end
-    object QueueDisconnectOnceEmptyAction: TAction
+    object QueueDisconnectOnceEmptyAction2: TAction
       Tag = 12
       Category = 'Queue'
-      Caption = '&Disconnect'
+      Caption = '&Disconnect Session'
       HelpKeyword = 'ui_queue'
       Hint = 'Disconnect the session once the queue is empty'
       ImageIndex = 87
@@ -1941,18 +1941,18 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Create directory|Create new directory'
       ImageIndex = 5
     end
-    object QueueShutDownOnceEmptyAction: TAction
+    object QueueShutDownOnceEmptyAction2: TAction
       Tag = 12
       Category = 'Queue'
-      Caption = '&Shut Down'
+      Caption = '&Shut Down Computer'
       HelpKeyword = 'ui_queue'
       Hint = 'Shut down the computer once the queue is empty'
       ImageIndex = 93
     end
-    object QueueSuspendOnceEmptyAction: TAction
+    object QueueSuspendOnceEmptyAction2: TAction
       Tag = 12
       Category = 'Queue'
-      Caption = 'Slee&p'
+      Caption = 'Slee&p Computer'
       HelpKeyword = 'ui_queue'
       Hint = 'Put the computer into sleep mode once the queue is empty'
       ImageIndex = 105
@@ -2762,15 +2762,15 @@ object NonVisualDataModule: TNonVisualDataModule
         RadioItem = True
       end
       object TBXItem13: TTBXItem
-        Action = QueueDisconnectOnceEmptyAction
+        Action = QueueDisconnectOnceEmptyAction2
         RadioItem = True
       end
       object TBXItem68: TTBXItem
-        Action = QueueSuspendOnceEmptyAction
+        Action = QueueSuspendOnceEmptyAction2
         RadioItem = True
       end
       object TBXItem29: TTBXItem
-        Action = QueueShutDownOnceEmptyAction
+        Action = QueueShutDownOnceEmptyAction2
         RadioItem = True
       end
     end

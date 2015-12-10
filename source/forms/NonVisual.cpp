@@ -496,9 +496,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     QueueCycleOnceEmptyAction->ImageIndex = CurrentQueueOnceEmptyAction()->ImageIndex;
     QueueCycleOnceEmptyAction->Checked = !QueueIdleOnceEmptyAction->Checked)
   UPD(QueueIdleOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
-  UPD(QueueDisconnectOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
-  UPD(QueueSuspendOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
-  UPD(QueueShutDownOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
+  UPD(QueueDisconnectOnceEmptyAction2, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
+  UPD(QueueSuspendOnceEmptyAction2, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
+  UPD(QueueShutDownOnceEmptyAction2, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
   UPDCOMP(CommanderPreferencesBand)
   UPDACT(QueueToolbarAction,
     ((TAction *)Action)->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
@@ -818,9 +818,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     #undef QUEUEACTION
     EXE(QueueCycleOnceEmptyAction, CycleQueueOnceEmptyAction())
     EXE(QueueIdleOnceEmptyAction, SetQueueOnceEmptyAction(QueueIdleOnceEmptyAction))
-    EXE(QueueDisconnectOnceEmptyAction, SetQueueOnceEmptyAction(QueueDisconnectOnceEmptyAction))
-    EXE(QueueSuspendOnceEmptyAction, SetQueueOnceEmptyAction(QueueSuspendOnceEmptyAction))
-    EXE(QueueShutDownOnceEmptyAction, SetQueueOnceEmptyAction(QueueShutDownOnceEmptyAction))
+    EXE(QueueDisconnectOnceEmptyAction2, SetQueueOnceEmptyAction(QueueDisconnectOnceEmptyAction2))
+    EXE(QueueSuspendOnceEmptyAction2, SetQueueOnceEmptyAction(QueueSuspendOnceEmptyAction2))
+    EXE(QueueShutDownOnceEmptyAction2, SetQueueOnceEmptyAction(QueueShutDownOnceEmptyAction2))
     EXECOMP(QueueToolbar)
     EXE(QueueItemSpeedAction, )
     ;
@@ -1676,17 +1676,17 @@ void __fastcall TNonVisualDataModule::CycleQueueOnceEmptyAction()
   Current->Checked = false;
   if (Current == QueueIdleOnceEmptyAction)
   {
-    QueueDisconnectOnceEmptyAction->Checked = true;
+    QueueDisconnectOnceEmptyAction2->Checked = true;
   }
-  else if (Current == QueueDisconnectOnceEmptyAction)
+  else if (Current == QueueDisconnectOnceEmptyAction2)
   {
-    QueueSuspendOnceEmptyAction->Checked = true;
+    QueueSuspendOnceEmptyAction2->Checked = true;
   }
-  else if (Current == QueueSuspendOnceEmptyAction)
+  else if (Current == QueueSuspendOnceEmptyAction2)
   {
-    QueueShutDownOnceEmptyAction->Checked = true;
+    QueueShutDownOnceEmptyAction2->Checked = true;
   }
-  else if (Current == QueueShutDownOnceEmptyAction)
+  else if (Current == QueueShutDownOnceEmptyAction2)
   {
     QueueIdleOnceEmptyAction->Checked = true;
   }
@@ -1703,17 +1703,17 @@ TAction * __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyAction()
   {
     Result = QueueIdleOnceEmptyAction;
   }
-  else if (QueueDisconnectOnceEmptyAction->Checked)
+  else if (QueueDisconnectOnceEmptyAction2->Checked)
   {
-    Result = QueueDisconnectOnceEmptyAction;
+    Result = QueueDisconnectOnceEmptyAction2;
   }
-  else if (QueueSuspendOnceEmptyAction->Checked)
+  else if (QueueSuspendOnceEmptyAction2->Checked)
   {
-    Result = QueueSuspendOnceEmptyAction;
+    Result = QueueSuspendOnceEmptyAction2;
   }
-  else if (QueueShutDownOnceEmptyAction->Checked)
+  else if (QueueShutDownOnceEmptyAction2->Checked)
   {
-    Result = QueueShutDownOnceEmptyAction;
+    Result = QueueShutDownOnceEmptyAction2;
   }
   else
   {
@@ -1730,15 +1730,15 @@ TOnceDoneOperation __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyOperati
   {
     Result = odoIdle;
   }
-  else if (Current == QueueDisconnectOnceEmptyAction)
+  else if (Current == QueueDisconnectOnceEmptyAction2)
   {
     Result = odoDisconnect;
   }
-  else if (Current == QueueSuspendOnceEmptyAction)
+  else if (Current == QueueSuspendOnceEmptyAction2)
   {
     Result = odoSuspend;
   }
-  else if (Current == QueueShutDownOnceEmptyAction)
+  else if (Current == QueueShutDownOnceEmptyAction2)
   {
     Result = odoShutDown;
   }

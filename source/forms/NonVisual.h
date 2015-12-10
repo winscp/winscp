@@ -451,7 +451,7 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem135;
   TTBXItem *TBXItem136;
   TTBXItem *TBXItem209;
-  TAction *QueueDisconnectOnceEmptyAction;
+  TAction *QueueDisconnectOnceEmptyAction2;
   TTBXItem *TBXItem13;
   TAction *LocalCopyAction;
   TAction *RemoteCopyAction;
@@ -488,7 +488,7 @@ __published:    // IDE-managed Components
   TAction *RemoteFilterAction;
   TTBXItem *TBXItem26;
   TTBXItem *TBXItem27;
-  TAction *QueueShutDownOnceEmptyAction;
+  TAction *QueueShutDownOnceEmptyAction2;
   TAction *QueueIdleOnceEmptyAction;
   TTBXSubmenuItem *TBXSubmenuItem3;
   TTBXItem *TBXItem28;
@@ -584,7 +584,7 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem64;
   TTBXItem *TBXItem65;
   TTBXItem *TBXItem66;
-  TAction *QueueSuspendOnceEmptyAction;
+  TAction *QueueSuspendOnceEmptyAction2;
   TTBXItem *TBXItem68;
   TAction *CurrentEditWithFocusedAction;
   TAction *CurrentEditInternalFocusedAction;

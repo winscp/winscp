@@ -580,14 +580,14 @@ inherited ScpCommanderForm: TScpCommanderForm
               RadioItem = True
             end
             object TBXItem223: TTBXItem
-              Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
+              Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction2
               RadioItem = True
             end
             object TBXItem141: TTBXItem
-              Action = NonVisualDataModule.QueueSuspendOnceEmptyAction
+              Action = NonVisualDataModule.QueueSuspendOnceEmptyAction2
             end
             object TBXItem224: TTBXItem
-              Action = NonVisualDataModule.QueueShutDownOnceEmptyAction
+              Action = NonVisualDataModule.QueueShutDownOnceEmptyAction2
               RadioItem = True
             end
           end

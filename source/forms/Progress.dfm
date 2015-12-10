@@ -243,19 +243,19 @@ object ProgressForm: TProgressForm
             OnClick = OnceDoneItemClick
           end
           object DisconnectOnceDoneItem: TTBXItem
-            Caption = '&Disconnect'
+            Caption = '&Disconnect Session'
             ImageIndex = 3
             RadioItem = True
             OnClick = OnceDoneItemClick
           end
           object SuspendOnceDoneItem: TTBXItem
-            Caption = 'Slee&p'
+            Caption = 'Slee&p Computer'
             ImageIndex = 5
             RadioItem = True
             OnClick = OnceDoneItemClick
           end
           object ShutDownOnceDoneItem: TTBXItem
-            Caption = '&Shut Down'
+            Caption = '&Shut Down Computer'
             ImageIndex = 4
             RadioItem = True
             OnClick = OnceDoneItemClick
