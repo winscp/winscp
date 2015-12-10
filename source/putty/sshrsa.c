@@ -9,6 +9,7 @@
 
 #include "ssh.h"
 #include "misc.h"
+
 int makekey(unsigned char *data, int len, struct RSAKey *result,
 	    unsigned char **keystr, int order)
 {

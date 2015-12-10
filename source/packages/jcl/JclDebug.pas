@@ -77,7 +77,9 @@ procedure AssertKindOf(const ClassType: TClass; const Obj: TObject); overload;
 // use TraceMsg
 // procedure Trace(const Msg: string);
 procedure TraceMsg(const Msg: string);
+{$IFNDEF WINSCP}
 procedure TraceFmt(const Fmt: string; const Args: array of const);
+{$ENDIF}
 procedure TraceLoc(const Msg: string);
 procedure TraceLocFmt(const Fmt: string; const Args: array of const);
 

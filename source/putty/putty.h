@@ -1496,4 +1496,5 @@ void putty_finalize();
 // but known to get UTF-8 encoded component (currently private key path only)
 #define MPEXT_BOM "\xEF\xBB\xBF"
 #endif
+
 #endif
