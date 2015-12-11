@@ -4269,8 +4269,13 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
 bool __fastcall TCustomScpExplorerForm::CanCloseQueue()
 {
   DebugAssert(FQueue != NULL);
-  return (FQueue->IsEmpty ||
-    (MessageDialog(LoadStr(PENDING_QUEUE_ITEMS2), qtWarning, qaOK | qaCancel, HELP_NONE) == qaOK));
+  bool Result = FQueue->IsEmpty;
+  if (!Result)
+  {
+    SetFocus();
+    Result = (MessageDialog(LoadStr(PENDING_QUEUE_ITEMS2), qtWarning, qaOK | qaCancel, HELP_NONE) == qaOK);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CloseSession()
@@ -4346,6 +4351,7 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
             FMTLOAD(AUTO_WORKSPACE, (WorkspaceName()))));
       }
 
+      SetFocus();
       Result = MessageDialog(Message, qtConfirmation,
         Answers, HELP_NONE, &Params);
 
@@ -4391,10 +4397,14 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
 
       if (CanClose)
       {
-        CanClose =
-          FEditorManager->Empty(true) ||
-          (MessageDialog(LoadStr(PENDING_EDITORS), qtWarning, qaIgnore | qaCancel,
-            HELP_NONE) == qaIgnore);
+        CanClose = FEditorManager->Empty(true);
+        if (!CanClose)
+        {
+          SetFocus();
+          CanClose =
+            (MessageDialog(
+              LoadStr(PENDING_EDITORS), qtWarning, qaIgnore | qaCancel, HELP_NONE) == qaIgnore);
+        }
       }
     }
   }
