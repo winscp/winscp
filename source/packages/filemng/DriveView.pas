@@ -1346,7 +1346,7 @@ begin
         if WasValid then
         {Drive has been removed => delete rootnode:}
         begin
-          if Directory[1] = Drive then
+          if (Directory <> '') and (Directory[1] = Drive) then
           begin
             Directory := NodePathName(DriveStatus[Drive].RootNode.GetPrevSibling);
             if not Assigned(Selected) then
