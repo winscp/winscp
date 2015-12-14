@@ -452,7 +452,7 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   {
     // this should not be done for workspaces and folders
     TSessionData * SessionData =
-      StoredSessions->ParseUrl(SessionName, NULL, DefaultsOnly);
+      StoredSessions->ParseUrl(EncodeUrlString(SessionName), NULL, DefaultsOnly);
     InfoTip =
       FMTLOAD(SHORTCUT_INFO_TIP, (SessionName, SessionData->InfoTip));
     if (Name.IsEmpty())
@@ -465,7 +465,7 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
 
   return
     CreateDesktopShortCut(ValidLocalFileName(Name), Application->ExeName,
-      FORMAT(L"\"%s\"%s%s", (SessionName, (AdditionalParams.IsEmpty() ? L"" : L" "), AdditionalParams)),
+      FORMAT(L"\"%s\"%s%s", (EncodeUrlString(SessionName), (AdditionalParams.IsEmpty() ? L"" : L" "), AdditionalParams)),
       InfoTip, SpecialFolder, IconIndex, Return);
 }
 //---------------------------------------------------------------------------

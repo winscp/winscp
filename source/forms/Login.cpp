@@ -2853,7 +2853,7 @@ void __fastcall TLoginDialog::Login()
   if (OpenInNewWindow() && !IsNewSiteNode(SessionTree->Selected))
   {
     UnicodeString Path = SessionNodePath(SessionTree->Selected);
-    ExecuteNewInstance(EncodeUrlChars(Path));
+    ExecuteNewInstance(EncodeUrlString(Path));
     // prevent closing the window, see below
     ModalResult = mrNone;
   }

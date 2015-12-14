@@ -4251,7 +4251,7 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
       // modified only, explicit
       StoredSessions->Save(false, true);
       // encode session name because of slashes in hierarchical sessions
-      ExecuteNewInstance(EncodeUrlChars(SessionName));
+      ExecuteNewInstance(EncodeUrlString(SessionName));
     }
     else
     {
@@ -4291,7 +4291,7 @@ void __fastcall TCustomScpExplorerForm::OpenStoredSession(TSessionData * Data)
   if (OpenInNewWindow())
   {
     // encode session name because of slashes in hierarchical sessions
-    ExecuteNewInstance(EncodeUrlChars(Data->Name));
+    ExecuteNewInstance(EncodeUrlString(Data->Name));
   }
   else
   {

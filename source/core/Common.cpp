@@ -2307,12 +2307,6 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, UnicodeString Chars)
   return S;
 }
 //---------------------------------------------------------------------------
-// we should probably replace all uses with EncodeUrlString
-UnicodeString __fastcall EncodeUrlChars(UnicodeString S)
-{
-  return DoEncodeUrl(S, L" /");
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall NonUrlChars()
 {
   UnicodeString S;

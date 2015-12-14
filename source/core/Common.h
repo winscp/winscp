@@ -93,7 +93,6 @@ bool __fastcall IsLetter(wchar_t Ch);
 bool __fastcall IsDigit(wchar_t Ch);
 bool __fastcall IsHex(wchar_t Ch);
 UnicodeString __fastcall DecodeUrlChars(UnicodeString S);
-UnicodeString __fastcall EncodeUrlChars(UnicodeString S);
 UnicodeString __fastcall EncodeUrlString(UnicodeString S);
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S);
 UnicodeString __fastcall AppendUrlParams(UnicodeString URL, UnicodeString Params);
