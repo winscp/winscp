@@ -2289,39 +2289,30 @@ UnicodeString __fastcall DecodeUrlChars(UnicodeString S)
   return S;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall DoEncodeUrl(UnicodeString S, UnicodeString Chars)
+UnicodeString __fastcall DoEncodeUrl(UnicodeString S, bool EncodeSlash)
 {
-  int i = 1;
-  while (i <= S.Length())
+  int Index = 1;
+  while (Index <= S.Length())
   {
-    if (Chars.Pos(S[i]) > 0)
-    {
-      // We decode as UTF-8 so we should encode as UTF-8 too
-      UnicodeString H = ByteToHex(AnsiString(UnicodeString(S[i]))[1]);
-      S.Insert(H, i + 1);
-      S[i] = '%';
-      i += H.Length();
-    }
-    i++;
-  }
-  return S;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall NonUrlChars()
-{
-  UnicodeString S;
-  for (unsigned int I = 0; I <= 127; I++)
-  {
-    wchar_t C = static_cast<wchar_t>(I);
+    wchar_t C = S[Index];
     if (IsLetter(C) ||
         IsDigit(C) ||
-        (C == L'_') || (C == L'-') || (C == L'.'))
+        (C == L'_') || (C == L'-') || (C == L'.') ||
+        ((C == L'/') && !EncodeSlash))
     {
-      // noop
+      Index++;
     }
     else
     {
-      S += C;
+      UTF8String UtfS(S.SubString(Index, 1));
+      UnicodeString H;
+      for (int Index2 = 1; Index2 <= UtfS.Length(); Index2++)
+      {
+        H += L"%" + ByteToHex(static_cast<unsigned char>(UtfS[Index2]));
+      }
+      S.Delete(Index, 1);
+      S.Insert(H, Index);
+      Index += H.Length();
     }
   }
   return S;
@@ -2329,18 +2320,12 @@ UnicodeString __fastcall NonUrlChars()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EncodeUrlString(UnicodeString S)
 {
-  return DoEncodeUrl(S, NonUrlChars());
+  return DoEncodeUrl(S, true);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S)
 {
-  UnicodeString Ignore = NonUrlChars();
-  int P = Ignore.Pos(L"/");
-  if (DebugAlwaysTrue(P > 0))
-  {
-    Ignore.Delete(P, 1);
-  }
-  return DoEncodeUrl(S, Ignore);
+  return DoEncodeUrl(S, false);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall AppendUrlParams(UnicodeString AURL, UnicodeString Params)
