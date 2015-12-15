@@ -166,8 +166,6 @@ type
     FMultipleDirs: Boolean;
     procedure CreateHandle; override;
     procedure DestroyWindowHandle; override;
-    function GetLongName: string; virtual; abstract;
-    function GetShortName: string; virtual; abstract;
     procedure DoAfterDialog(var FileName: string; var Action: Boolean); dynamic;
     procedure DoBeforeDialog(var FileName: string; var Action: Boolean); dynamic;
     procedure ReceptFileDir(const AFileName: string); virtual; abstract;
@@ -175,9 +173,6 @@ type
     procedure DisableSysErrors;
     procedure EnableSysErrors;
     property MaxLength;
-  public
-    property LongName: string read GetLongName;
-    property ShortName: string read GetShortName;
   published
     property AcceptFiles: Boolean read FAcceptFiles write SetAcceptFiles default False;
     property OnBeforeDialog: TExecOpenDialogEvent read FOnBeforeDialog
@@ -224,8 +219,6 @@ type
     procedure ButtonClick; override;
     procedure ReceptFileDir(const AFileName: string); override;
     procedure ClearFileList; override;
-    function GetLongName: string; override;
-    function GetShortName: string; override;
   public
     constructor Create(AOwner: TComponent); override;
     property Dialog: TOpenDialog read FDialog;
@@ -307,8 +300,6 @@ type
   protected
     procedure ButtonClick; override;
     procedure ReceptFileDir(const AFileName: string); override;
-    function GetLongName: string; override;
-    function GetShortName: string; override;
   public
     constructor Create(AOwner: TComponent); override;
   published
@@ -423,70 +414,6 @@ var
 begin
   Code := GetFileAttributes(PChar(ApiPath(Name)));
   Result := (Code <> -1) and (FILE_ATTRIBUTE_DIRECTORY and Code <> 0);
-end;
-
-function ShortToLongFileName(const ShortName: string): string;
-var
-  Temp: TWin32FindData;
-  SearchHandle: THandle;
-begin
-  SearchHandle := FindFirstFile(PChar(ShortName), Temp);
-  if SearchHandle <> INVALID_HANDLE_VALUE then begin
-    Result := string(Temp.cFileName);
-    if Result = '' then Result := string(Temp.cAlternateFileName);
-  end
-  else Result := '';
-  Windows.FindClose(SearchHandle);
-end;
-
-function LongToShortFileName(const LongName: string): string;
-var
-  Temp: TWin32FindData;
-  SearchHandle: THandle;
-begin
-  SearchHandle := FindFirstFile(PChar(LongName), Temp);
-  if SearchHandle <> INVALID_HANDLE_VALUE then begin
-    Result := string(Temp.cAlternateFileName);
-    if Result = '' then Result := string(Temp.cFileName);
-  end
-  else Result := '';
-  Windows.FindClose(SearchHandle);
-end;
-
-function ShortToLongPath(const ShortName: string): string;
-var
-  LastSlash: PChar;
-  TempPathPtr: PChar;
-begin
-  Result := '';
-  TempPathPtr := PChar(ShortName);
-  LastSlash := StrRScan(TempPathPtr, '\');
-  while LastSlash <> nil do begin
-    Result := '\' + ShortToLongFileName(TempPathPtr) + Result;
-    if LastSlash <> nil then begin
-      LastSlash^ := char(0);
-      LastSlash := StrRScan(TempPathPtr, '\');
-    end;
-  end;
-  Result := TempPathPtr + Result;
-end;
-
-function LongToShortPath(const LongName: string): string;
-var
-  LastSlash: PChar;
-  TempPathPtr: PChar;
-begin
-  Result := '';
-  TempPathPtr := PChar(LongName);
-  LastSlash := StrRScan(TempPathPtr, '\');
-  while LastSlash <> nil do begin
-    Result := '\' + LongToShortFileName(TempPathPtr) + Result;
-    if LastSlash <> nil then begin
-      LastSlash^ := char(0);
-      LastSlash := StrRScan(TempPathPtr, '\');
-    end;
-  end;
-  Result := TempPathPtr + Result;
 end;
 
 { TCustomComboEdit }
@@ -1081,17 +1008,6 @@ begin
   else raise EComboEditError.CreateFmt(SInvalidFilename, [Value]);
 end;
 
-function TFilenameEdit.GetLongName: string;
-begin
-  Result := ShortToLongFileName(FileName);
-end;
-
-function TFilenameEdit.GetShortName: string;
-begin
-  Result := LongToShortFileName(FileName);
-end;
-
-
 procedure TFilenameEdit.ClearFileList;
 begin
   FDialog.Files.Clear;
@@ -1249,40 +1165,6 @@ begin
   else Temp := AFileName;
   if (Text = '') or not MultipleDirs then Text := Temp
   else Text := Text + ';' + Temp;
-end;
-
-function TDirectoryEdit.GetLongName: string;
-var
-  Temp: string;
-  Pos: Integer;
-begin
-  if not MultipleDirs then Result := ShortToLongPath(Text)
-  else begin
-    Result := '';
-    Pos := 1;
-    while Pos <= Length(Text) do begin
-      Temp := ShortToLongPath(ExtractSubstr(Text, Pos, [';']));
-      if (Result <> '') and (Temp <> '') then Result := Result + ';';
-      Result := Result + Temp;
-    end;
-  end;
-end;
-
-function TDirectoryEdit.GetShortName: string;
-var
-  Temp: string;
-  Pos: Integer;
-begin
-  if not MultipleDirs then Result := LongToShortPath(Text)
-  else begin
-    Result := '';
-    Pos := 1;
-    while Pos <= Length(Text) do begin
-      Temp := LongToShortPath(ExtractSubstr(Text, Pos, [';']));
-      if (Result <> '') and (Temp <> '') then Result := Result + ';';
-      Result := Result + Temp;
-    end;
-  end;
 end;
 
 initialization
