@@ -592,6 +592,36 @@ void __fastcall VerifyControl(TControl * Control)
 }
 #endif
 //---------------------------------------------------------------------------
+static void __fastcall ApplySystemSettingsOnTBItem(TTBCustomToolbar * Toolbar, TTBCustomItem * Item)
+{
+  TTBEditItem * EditItem = dynamic_cast<TTBEditItem *>(Item);
+  if (EditItem != NULL)
+  {
+    EditItem->EditWidth = ScaleByTextHeight(Toolbar, EditItem->EditWidth);
+
+    TTBXComboBoxItem * ComboBoxItem = dynamic_cast<TTBXComboBoxItem *>(EditItem);
+    if (ComboBoxItem != NULL)
+    {
+      ComboBoxItem->MinListWidth =
+        ScaleByTextHeight(Toolbar, ComboBoxItem->MinListWidth);
+      ComboBoxItem->MaxListWidth =
+        ScaleByTextHeight(Toolbar, ComboBoxItem->MaxListWidth);
+    }
+  }
+
+  TTBXCustomList * CustomList = dynamic_cast<TTBXCustomList *>(Item);
+  if (CustomList != NULL)
+  {
+    CustomList->MaxWidth = ScaleByTextHeight(Toolbar, CustomList->MaxWidth);
+    CustomList->MinWidth = ScaleByTextHeight(Toolbar, CustomList->MinWidth);
+  }
+
+  for (int ItemIndex = 0; ItemIndex < Item->Count; ItemIndex++)
+  {
+    ApplySystemSettingsOnTBItem(Toolbar, Item->Items[ItemIndex]);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall ApplySystemSettingsOnControl(TControl * Control)
 {
   #ifdef _DEBUG
@@ -627,26 +657,7 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
   TTBCustomToolbar * Toolbar = dynamic_cast<TTBCustomToolbar *>(Control);
   if (Toolbar != NULL)
   {
-    TTBCustomItem * Items = Toolbar->Items;
-    for (int ItemIndex = 0; ItemIndex < Items->Count; ItemIndex++)
-    {
-      // We should recurse
-      TTBCustomItem * Item = Items->Items[ItemIndex];
-      TTBEditItem * EditItem = dynamic_cast<TTBEditItem *>(Item);
-      if (EditItem != NULL)
-      {
-        EditItem->EditWidth = ScaleByTextHeight(Toolbar, EditItem->EditWidth);
-
-        TTBXComboBoxItem * ComboBoxItem = dynamic_cast<TTBXComboBoxItem *>(EditItem);
-        if (ComboBoxItem != NULL)
-        {
-          ComboBoxItem->MinListWidth =
-            ScaleByTextHeight(Toolbar, ComboBoxItem->MinListWidth);
-          ComboBoxItem->MaxListWidth =
-            ScaleByTextHeight(Toolbar, ComboBoxItem->MaxListWidth);
-        }
-      }
-    }
+    ApplySystemSettingsOnTBItem(Toolbar, Toolbar->Items);
   }
 
   TCustomListView * ListView = dynamic_cast<TCustomListView *>(Control);
