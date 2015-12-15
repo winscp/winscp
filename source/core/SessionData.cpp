@@ -2125,6 +2125,7 @@ void __fastcall TSessionData::SetPublicKeyFile(UnicodeString value)
     // PublicKeyFile is key for Passphrase encryption
     UnicodeString XPassphrase = Passphrase;
 
+    // StripPathQuotes should not be needed as we do not feed quotes anymore
     FPublicKeyFile = StripPathQuotes(value);
     Modify();
 
@@ -3223,6 +3224,7 @@ void __fastcall TSessionData::SetTunnelPublicKeyFile(UnicodeString value)
 {
   if (FTunnelPublicKeyFile != value)
   {
+    // StripPathQuotes should not be needed as we do not feed quotes anymore
     FTunnelPublicKeyFile = StripPathQuotes(value);
     Modify();
   }
@@ -4219,6 +4221,7 @@ bool __fastcall TStoredSessionList::CanLogin(TSessionData * Data)
 //---------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TSessionData * SessionData)
 {
+  // StripPathQuotes should not be needed as we do not feed quotes anymore
   UnicodeString ANewFileName = StripPathQuotes(ExpandEnvironmentVariables(LogFileName));
   TDateTime N = Now();
   for (int Index = 1; Index < ANewFileName.Length(); Index++)

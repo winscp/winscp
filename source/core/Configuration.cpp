@@ -1284,6 +1284,7 @@ void __fastcall TConfiguration::SetRandomSeedFile(UnicodeString value)
 //---------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetRandomSeedFileName()
 {
+  // StripPathQuotes should not be needed as we do not feed quotes anymore
   return StripPathQuotes(ExpandEnvironmentVariables(FRandomSeedFile)).Trim();
 }
 //---------------------------------------------------------------------

@@ -1278,6 +1278,7 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult == DefaultResult(this))
   {
+    // StripPathQuotes should not be needed as we do not feed quotes anymore
     VerifyKeyIncludingVersion(StripPathQuotes(PrivateKeyEdit2->Text), GetSshProt());
     // for tunnel key do not check SSH version as it is not configurable
     VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit2->Text));

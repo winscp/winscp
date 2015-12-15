@@ -978,21 +978,6 @@ begin
   end;
 end;
 
-function ClipFilename(const FileName: string): string;
-var
-  Params: string;
-begin
-  if FileExists(ApiPath(FileName)) then Result := FileName
-  else SplitCommandLine(FileName, Result, Params);
-end;
-
-function ExtFilename(const FileName: string): string;
-begin
-  if (Pos(' ', FileName) > 0) and (FileName[1] <> '"') then
-    Result := Format('"%s"', [FileName])
-  else Result := FileName;
-end;
-
 constructor TFilenameEdit.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
@@ -1054,7 +1039,6 @@ begin
   inherited ButtonClick;
   Temp := inherited Text;
   Action := True;
-  Temp := ClipFilename(Temp);
   DoBeforeDialog(Temp, Action);
   if not Action then Exit;
   if ValidFileName(Temp) then
@@ -1078,20 +1062,20 @@ begin
   if CanFocus then SetFocus;
   DoAfterDialog(Temp, Action);
   if Action then begin
-    inherited Text := ExtFilename(Temp);
+    inherited Text := Temp;
     SetInitialDir(ExtractFilePath(FDialog.FileName));
   end;
 end;
 
 function TFilenameEdit.GetFileName: string;
 begin
-  Result := ClipFilename(inherited Text);
+  Result := inherited Text;
 end;
 
 procedure TFilenameEdit.SetFileName(const Value: string);
 begin
-  if (Value = '') or ValidFileName(ClipFilename(Value)) then begin
-    inherited Text := ExtFilename(Value);
+  if (Value = '') or ValidFileName(Value) then begin
+    inherited Text := Value;
     ClearFileList;
   end
   else raise EComboEditError.CreateFmt(SInvalidFilename, [Value]);
