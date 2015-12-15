@@ -778,7 +778,14 @@ void __fastcall TTerminalManager::ApplicationShowHint(UnicodeString & HintStr,
   }
   else
   {
-    HintInfo.HintMaxWidth = 300;
+    int HintMaxWidth = 300;
+
+    if (DebugAlwaysTrue(HintInfo.HintControl != NULL))
+    {
+      HintMaxWidth = ScaleByTextHeight(HintInfo.HintControl, HintMaxWidth);
+    }
+
+    HintInfo.HintMaxWidth = HintMaxWidth;
   }
 }
 //---------------------------------------------------------------------------
