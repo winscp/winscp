@@ -1301,7 +1301,7 @@ var
   TextMetric: TTextMetric;
   TextSize: TSize;
   Margins: TTBXMargins;
-  Two: Integer;
+  Two, Three: Integer;
 begin
   Item := TTBCustomItem(Self.Item);
   ToolbarStyle := IsToolbarStyle;
@@ -1358,13 +1358,13 @@ begin
       AHeight := 3;
     end;
 
-    Two := ScaleByTextHeightRunTime(Canvas, 2);
     if CaptionShown then
     begin
+      Three := ScaleByTextHeightRunTime(Canvas, 3);
       Inc(AWidth, TextSize.CX);
       Inc(AHeight, TextSize.CY);
-      if not IsTextRotated then Inc(AWidth, 2 * Two)
-      else Inc(AHeight, 2 * Two);
+      if not IsTextRotated then Inc(AWidth, 2 * Three)
+      else Inc(AHeight, 2 * Three);
     end;
 
     if GetImageShown and (ImgSize.CX > 0) and (ImgSize.CY > 0) then
@@ -1389,6 +1389,7 @@ begin
       begin
         if (ItemLayout <> tbxlGlyphTop) or (ImgSize.CX = 0) or IsTextRotated then
         begin
+          Two := ScaleByTextHeightRunTime(Canvas, 2);
           if View.Orientation <> tbvoVertical then Inc(AWidth, Two + DropdownArrowWidth)
           else Inc(AHeight, DropdownArrowWidth + Two + DropdownArrowMargin);
         end
@@ -1654,7 +1655,7 @@ var
   TextMetrics: TTextMetric;
   TextSize: TSize;
   Margins: TTBXMargins;
-  Two: Integer;
+  Three: Integer;
 begin
   Item := TTBXCustomItem(Self.Item);
   View := TTBViewAccess(Self.View);
@@ -1846,12 +1847,12 @@ begin
     begin
       CaptionRect := R;
       TextFlags := TextFlags or DT_CENTER or DT_VCENTER;
-      Two := ScaleByTextHeightRunTime(Canvas, 2);
+      Three := ScaleByTextHeightRunTime(Canvas, 3);
       if ImageIsShown then with CaptionRect do
         case ItemLayout of
         tbxlGlyphLeft:
           begin
-            Inc(Left, ImgSize.CX + Two + 1);
+            Inc(Left, ImgSize.CX + Three + 1);
             Top := (Top + Bottom  - TextSize.CY) div 2;
             Bottom := Top + TextSize.CY;
             Left := (Left + Right - TextSize.CX) div 2;
