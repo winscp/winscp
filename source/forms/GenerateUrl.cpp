@@ -31,14 +31,6 @@ __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
   FPaths = Paths;
   FChanging = false;
   ReadOnlyControl(ResultMemo);
-  FGroupBoxPadding = ResultGroup->Top - (AssemblyOptionsGroup->Top + AssemblyOptionsGroup->Height);
-  ScriptOptionsGroup->Top = OptionsGroup->Top;
-  AssemblyOptionsGroup->Top = OptionsGroup->Top;
-  int DesiredHeight = ScaleByTextHeight(this, 360);
-  int HeightChange = Height - DesiredHeight;
-  // Need to enlarge the results box before it would get out of form
-  ResultGroup->SetBounds(ResultGroup->Left, ResultGroup->Top - HeightChange, ResultGroup->Width, ResultGroup->Height + HeightChange);
-  Height = Height - HeightChange;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TGenerateUrlDialog::IsFileUrl()
@@ -80,35 +72,23 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
   {
     Caption = LoadStr(IsFileUrl() ? GENERATE_URL_FILE_TITLE : GENERATE_URL_SESSION_TITLE);
 
-    EnableControl(ScriptButton, !IsFileUrl());
-    EnableControl(AssemblyButton, !IsFileUrl());
+    EnableControl(ScriptSheet, !IsFileUrl());
+    EnableControl(AssemblySheet, !IsFileUrl());
 
-    OptionsGroup->Visible = UrlButton->Checked;
-    ScriptOptionsGroup->Visible = ScriptButton->Checked;
-    AssemblyOptionsGroup->Visible = AssemblyButton->Checked;
-
-    TControl * ResultGroupBelow = NULL;
     UnicodeString ResultGroupCaption;
-
-    if (UrlButton->Checked)
+    if (OptionsPageControl->ActivePage == UrlSheet)
     {
-      ResultGroupBelow = OptionsGroup;
       ResultGroupCaption = LoadStr(GENERATE_URL_URL);
     }
-    else if (ScriptButton->Checked)
+    else if (OptionsPageControl->ActivePage == ScriptSheet)
     {
-      ResultGroupBelow = ScriptOptionsGroup;
       ResultGroupCaption = ScriptFormatCombo->Items->Strings[ScriptFormatCombo->ItemIndex];
     }
-    else if (DebugAlwaysTrue(AssemblyButton->Checked))
+    else if (DebugAlwaysTrue(OptionsPageControl->ActivePage == AssemblySheet))
     {
-      ResultGroupBelow = AssemblyOptionsGroup;
       ResultGroupCaption = LoadStr(GENERATE_URL_CODE);
     }
     ResultGroup->Caption = ResultGroupCaption;
-
-    int ResultGroupTop = ResultGroupBelow->Top + ResultGroupBelow->Height + FGroupBoxPadding;
-    ResultGroup->SetBounds(ResultGroup->Left, ResultGroupTop, ResultGroup->Width, (ResultGroup->Top + ResultGroup->Height) - ResultGroupTop);
 
     EnableControl(UserNameCheck, !FData->UserNameExpanded.IsEmpty());
     bool UserNameIncluded = UserNameCheck->Enabled && UserNameCheck->Checked;
@@ -121,7 +101,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
 
     bool WordWrap = false;
     bool FixedWidth = false;
-    if (UrlButton->Checked)
+    if (OptionsPageControl->ActivePage == UrlSheet)
     {
       if (!IsFileUrl())
       {
@@ -141,7 +121,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       }
       WordWrap = true;
     }
-    else if (ScriptButton->Checked)
+    else if (OptionsPageControl->ActivePage == ScriptSheet)
     {
       UnicodeString ExeName = Application->ExeName;
       UnicodeString BaseExeName = ExtractFileBaseName(ExeName);
@@ -199,7 +179,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         FixedWidth = false;
       }
     }
-    else if (DebugAlwaysTrue(AssemblyButton->Checked))
+    else if (DebugAlwaysTrue(OptionsPageControl->ActivePage == AssemblySheet))
     {
       Result = FData->GenerateAssemblyCode(static_cast<TAssemblyLanguage>(AssemblyLanguageCombo->ItemIndex));
       WordWrap = false;
@@ -235,22 +215,22 @@ void __fastcall TGenerateUrlDialog::Execute()
 
     if (IsFileUrl())
     {
-      UrlButton->Checked = true;
+      OptionsPageControl->ActivePage = UrlSheet;
     }
     else
     {
       switch (Target)
       {
         case guctUrl:
-          UrlButton->Checked = true;
+          OptionsPageControl->ActivePage = UrlSheet;
           break;
 
         case guctScript:
-          ScriptButton->Checked = true;
+          OptionsPageControl->ActivePage = ScriptSheet;
           break;
 
         case guctAssembly:
-          AssemblyButton->Checked = true;
+          OptionsPageControl->ActivePage = AssemblySheet;
           break;
 
         default:
@@ -258,9 +238,9 @@ void __fastcall TGenerateUrlDialog::Execute()
       }
     }
 
-    for (int Index = 0; Index < OptionsGroup->ControlCount; Index++)
+    for (int Index = 0; Index < UrlSheet->ControlCount; Index++)
     {
-      TCheckBox * CheckBox = dynamic_cast<TCheckBox *>(OptionsGroup->Controls[Index]);
+      TCheckBox * CheckBox = dynamic_cast<TCheckBox *>(UrlSheet->Controls[Index]);
 
       if (DebugAlwaysTrue((CheckBox != NULL) && (CheckBox->Tag != 0)))
       {
@@ -280,15 +260,15 @@ void __fastcall TGenerateUrlDialog::Execute()
   // Do not save the selection for files as the "URL" was selected implicitly
   if (!IsFileUrl())
   {
-    if (UrlButton->Checked)
+    if (OptionsPageControl->ActivePage == UrlSheet)
     {
       Target = guctUrl;
     }
-    else if (ScriptButton->Checked)
+    else if (OptionsPageControl->ActivePage == ScriptSheet)
     {
       Target = guctScript;
     }
-    else if (AssemblyButton->Checked)
+    else if (OptionsPageControl->ActivePage == AssemblySheet)
     {
       Target = guctAssembly;
     }
@@ -302,9 +282,9 @@ void __fastcall TGenerateUrlDialog::Execute()
   if (Target == guctUrl)
   {
     Components = 0;
-    for (int Index = 0; Index < OptionsGroup->ControlCount; Index++)
+    for (int Index = 0; Index < UrlSheet->ControlCount; Index++)
     {
-      TCheckBox * CheckBox = dynamic_cast<TCheckBox *>(OptionsGroup->Controls[Index]);
+      TCheckBox * CheckBox = dynamic_cast<TCheckBox *>(UrlSheet->Controls[Index]);
 
       if (DebugAlwaysTrue((CheckBox != NULL) && (CheckBox->Tag != 0)) &&
           CheckBox->Checked)
