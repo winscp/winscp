@@ -250,6 +250,7 @@ private:
   bool FMoveToQueue;
   bool FStandaloneEditing;
   TFeedSynchronizeError FOnFeedSynchronizeError;
+  bool FNeedSession;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);

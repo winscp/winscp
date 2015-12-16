@@ -208,6 +208,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FMoveToQueue = false;
   FStandaloneEditing = false;
   FOnFeedSynchronizeError = NULL;
+  FNeedSession = false;
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -4189,6 +4190,20 @@ void __fastcall TCustomScpExplorerForm::ApplicationRestore(TObject * /*Sender*/)
       ShowWindow(Handle, SW_SHOW);
     }
   }
+
+  if (FNeedSession && DebugAlwaysTrue(Terminal == NULL))
+  {
+    FNeedSession = false;
+    NonVisualDataModule->StartBusy();
+    try
+    {
+      NeedSession(false);
+    }
+    __finally
+    {
+      NonVisualDataModule->EndBusy();
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateTrayIcon()
@@ -7877,23 +7892,34 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
 
   if (Showing && (Terminal == NULL))
   {
-    // This happens before application ever goes idle, so the toolbars would
-    // stay enabled (initial state) until the Login dialog is dismissed.
-    UpdateActions();
-    NonVisualDataModule->StartBusy();
-    try
+    // When we are starting minimized (i.e. from an installer),
+    // postpone showing Login dialog until we get restored.
+    // Otherwise the Login dialog (and Authentication window) show restored
+    // over invidible (minimized) main window.
+    if (WindowState == wsMinimized)
     {
-      // Need to process WM_ACTIVATEAPP before showing the Login dialog,
-      // otherwise the dialog does not receive focus.
-      // With Commander interface the ProcessMessages is called already
-      // by TDriveView, but with Explorer interface, we need to call it explicily
-      Application->ProcessMessages();
-      // do not reload sessions, they have been loaded just now (optimization)
-      NeedSession(false);
+      FNeedSession = true;
     }
-    __finally
+    else
     {
-      NonVisualDataModule->EndBusy();
+      // This happens before application ever goes idle, so the toolbars would
+      // stay enabled (initial state) until the Login dialog is dismissed.
+      UpdateActions();
+      NonVisualDataModule->StartBusy();
+      try
+      {
+        // Need to process WM_ACTIVATEAPP before showing the Login dialog,
+        // otherwise the dialog does not receive focus.
+        // With Commander interface the ProcessMessages is called already
+        // by TDriveView, but with Explorer interface, we need to call it explicily
+        Application->ProcessMessages();
+        // do not reload sessions, they have been loaded just now (optimization)
+        NeedSession(false);
+      }
+      __finally
+      {
+        NonVisualDataModule->EndBusy();
+      }
     }
   }
 }
