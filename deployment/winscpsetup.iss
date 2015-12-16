@@ -13,7 +13,12 @@
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
 #define InnoSetupAppPathReg "Inno Setup: App Path"
-#define CompletenessThreshold 80
+
+#ifndef CompletenessThreshold
+  #define CompletenessThreshold 100
+#else
+  #define CompletenessThreshold Int(CompletenessThreshold)
+#endif
 
 #ifndef PuttySourceDir
   #define PuttySourceDir "c:\Program Files\PuTTY"
