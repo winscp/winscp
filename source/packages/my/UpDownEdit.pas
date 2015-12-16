@@ -147,7 +147,7 @@ procedure Register;
 implementation
 
 uses
-  CommCtrl;
+  CommCtrl, PasTools, Math;
 
 procedure Register;
 begin
@@ -156,8 +156,7 @@ end;
 
 function DefBtnWidth: Integer;
 begin
-  Result := GetSystemMetrics(SM_CXVSCROLL);
-  if Result > 15 then Result := 15;
+  Result := Min(GetSystemMetrics(SM_CXVSCROLL), ScaleByPixelsPerInch(15));
 end;
 
 type
