@@ -35,6 +35,7 @@ __published:
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ClipboardButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall WMNCCreate(TWMNCCreate & Message);
 
 private:
   TSessionData * FData;
@@ -45,6 +46,8 @@ protected:
   void __fastcall UpdateControls();
   UnicodeString __fastcall GenerateUrl(UnicodeString Path);
   bool __fastcall IsFileUrl();
+  virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall Dispatch(void * AMessage);
 
 public:
   __fastcall TGenerateUrlDialog(TComponent * Owner, TSessionData * Data, TStrings * Paths);

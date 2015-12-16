@@ -320,3 +320,34 @@ void __fastcall TGenerateUrlDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
+void __fastcall TGenerateUrlDialog::WMNCCreate(TWMNCCreate & Message)
+{
+  // bypass TForm::WMNCCreate to prevent disabling "resize"
+  // (which is done for bsDialog, see comments in CreateParams)
+  DefaultHandler(&Message);
+}
+//---------------------------------------------------------------------------
+void __fastcall TGenerateUrlDialog::Dispatch(void * AMessage)
+{
+  TMessage & Message = *reinterpret_cast<TMessage *>(AMessage);
+  if (Message.Msg == WM_NCCREATE)
+  {
+    WMNCCreate(*reinterpret_cast<TWMNCCreate *>(AMessage));
+  }
+  else
+  {
+    TForm::Dispatch(AMessage);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TGenerateUrlDialog::CreateParams(TCreateParams & Params)
+{
+  TForm::CreateParams(Params);
+
+  // Allow resizing of the window, even if this is bsDialog.
+  // This makes it more close to bsSizeable, but bsSizeable cannot for some
+  // reason receive focus, if window is shown atop non-main window
+  // (like editor)
+  Params.Style = Params.Style | WS_THICKFRAME;
+}
+//---------------------------------------------------------------------------
