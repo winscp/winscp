@@ -209,8 +209,19 @@ void __fastcall TAboutDialog::LoadThirdParty()
   {
     UnicodeString TranslatorUrl = LoadStr(TRANSLATOR_URL);
     UnicodeString TranslatorInfo = LoadStr(TRANSLATOR_INFO2);
+
+    wchar_t LocaleNameStr[255];
+    GetLocaleInfo(
+      GUIConfiguration->AppliedLocale, LOCALE_SLOCALIZEDLANGUAGENAME,
+      LocaleNameStr, LENOF(LocaleNameStr));
+    UnicodeString LocaleName(LocaleNameStr);
+
+    // The {language} should be present only if we are using an untranslated
+    // (=english) string
+    UnicodeString TranslationHeader = ReplaceStr(LoadStr(ABOUT_TRANSLATIONS_HEADER), L"{language}", LocaleName);
+
     AddPara(ThirdParty,
-      LoadStr(ABOUT_TRANSLATIONS_HEADER) + Br +
+      TranslationHeader + Br +
       FMTLOAD(ABOUT_TRANSLATIONS_COPYRIGHT, (GUIConfiguration->LocaleCopyright())) + Br +
       (!TranslatorInfo.IsEmpty() ? TranslatorInfo + Br : UnicodeString()) +
       (!TranslatorUrl.IsEmpty() ? CreateLink(TranslatorUrl) : UnicodeString()));
