@@ -618,7 +618,11 @@ void __fastcall TProgressForm::OnceDoneOperationCombo2Select(TObject * /*Sender*
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::OnceDoneOperationCombo2CloseUp(TObject * /*Sender*/)
 {
-  ResetFocus();
+  // Do not try to focus anything, if we are closing because the window itself is closing
+  if (Showing)
+  {
+    ResetFocus();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::Dispatch(void * AMessage)
