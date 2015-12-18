@@ -1279,7 +1279,11 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
             else // end of multi-line found
             {
               m_MultiLine = "";
-              m_pOwner->PostThreadMessage(m_pOwner->m_nInternalMessageID, FZAPI_THREADMSG_PROCESSREPLY, 0);
+              LPARAM lParam = 0;
+              #ifdef _DEBUG
+              lParam = GetTickCount();
+              #endif
+              m_pOwner->PostThreadMessage(m_pOwner->m_nInternalMessageID, FZAPI_THREADMSG_PROCESSREPLY, lParam);
             }
           }
           // start of new multi-line
@@ -1291,7 +1295,11 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
           }
           else
           {
-            m_pOwner->PostThreadMessage(m_pOwner->m_nInternalMessageID, FZAPI_THREADMSG_PROCESSREPLY, 0);
+            LPARAM lParam = 0;
+            #ifdef _DEBUG
+            lParam = GetTickCount();
+            #endif
+            m_pOwner->PostThreadMessage(m_pOwner->m_nInternalMessageID, FZAPI_THREADMSG_PROCESSREPLY, lParam);
           }
         }
         else
