@@ -586,7 +586,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
   }
   if (m_ProxyData.nProxyType==PROXYTYPE_HTTP11)
   {
-    DebugAssert (m_nProxyOpID==PROXYOP_CONNECT);
+    DebugAssert(m_nProxyOpID==PROXYOP_CONNECT);
     char buffer[9]={0};
     for(;;)
     {
