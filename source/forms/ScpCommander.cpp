@@ -2140,6 +2140,6 @@ void __fastcall TScpCommanderForm::RemoteStatusBarPanelClick(TTBXCustomStatusBar
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::GoToAddress()
 {
-  OpenDirectory(osCurrent);
+  OpenDirectory(GetSide(osCurrent));
 }
 //---------------------------------------------------------------------------
