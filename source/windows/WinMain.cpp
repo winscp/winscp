@@ -68,7 +68,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   if (DefaultsOnly && !NeedSession)
   {
     // No URL specified on command-line and no explicit command-line parameter
-    // that results session was specified => noop
+    // that requires session was specified => noop
     DataList->Clear();
   }
   else if ((DataList->Count == 0) ||
