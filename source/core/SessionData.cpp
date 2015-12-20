@@ -1589,6 +1589,9 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       ARemoteDirectory = CutToChar(RemoteDirectoryWithSessionParams, UrlParamSeparator, false);
       UnicodeString SessionParams = RemoteDirectoryWithSessionParams;
 
+      // We should handle session params in "stored session" branch too.
+      // And particularly if there's a "save" param, we should actually not try to match the
+      // URL against site names
       while (!SessionParams.IsEmpty())
       {
         UnicodeString SessionParam = CutToChar(SessionParams, UrlParamSeparator, false);
