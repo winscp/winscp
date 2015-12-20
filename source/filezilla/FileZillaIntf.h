@@ -179,7 +179,6 @@ public:
     X509 * Certificate, EVP_PKEY * PrivateKey);
   bool __fastcall Close(bool AllowBusy);
 
-  bool __fastcall List();
   bool __fastcall List(const wchar_t * Path);
   bool __fastcall ListFile(const wchar_t * FileName, const wchar_t * APath);
 

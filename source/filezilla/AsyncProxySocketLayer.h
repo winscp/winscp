@@ -42,25 +42,9 @@ PROXYSTATUS_LISTENSOCKETCREATED 8 //Called when a listen socket was created succ
                 //on which the listen socket will be created
                 //The two parameters will contain the ip and port of the listen socket on the server.
 
-If you want to use CAsyncProxySocketLayer to create a listen socket, you
-have to use this overloaded function:
-BOOL PrepareListen(unsigned long serverIp);
-serverIP is the IP of the server you are already connected
-through the SOCKS proxy. You can't use listen sockets over a
-SOCKS proxy without a primary connection. Listen sockets are only
-supported by SOCKS proxies, this won't work with HTTP proxies.
-When the listen socket is created successfully, the PROXYSTATUS_LISTENSOCKETCREATED
-notification is sent. The parameters  will tell you the ip and the port of the listen socket.
-After it you have to handle the OnAccept message and accept the
-connection.
-Be carful when calling Accept: rConnected socket will NOT be filled! Instead use the instance which created the
-listen socket, it will handle the data connection.
-If you want to accept more than one connection, you have to create a listing socket for each of them!
-
 Description of important functions and their parameters:
 --------------------------------------------------------
 
-void SetProxy(int nProxyType);
 void SetProxy(int nProxyType, const char * ProxyHost, int nProxyPort);
 void SetProxy(int nProxyType, const char *, int nProxyPort, const char * ProxyUser, const char * ProxyPass);
 
@@ -118,7 +102,6 @@ public:
   virtual BOOL Connect(const SOCKADDR * lpSockAddr, int nSockAddrLen);
   virtual BOOL Listen(int nConnectionBacklog);
 
-  void SetProxy(int nProxyType); // Only PROXYTYPE_NOPROXY
   void SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort); // May not be PROXYTYPE_NOPROXY
 
   // Sets the proxy details.
@@ -128,12 +111,6 @@ public:
   // ProxyUser - the username for SOCKS5 proxies
   // ProxyPass - the password for SOCKS5 proxies
   void SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort, const char * pProxyUser, const char * pProxyPass); // Only SOCKS5 and HTTP1.1 proxies
-
-  // Prepare listen
-  BOOL PrepareListen(unsigned long ip);
-
-  int GetProxyType() const;
-  // Returns the type of the proxy
 
   // Returns the address of the server behind the SOCKS proxy you are connected to
   virtual BOOL GetPeerName(CString & rPeerAddress, UINT & rPeerPort);

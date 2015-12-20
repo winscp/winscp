@@ -45,13 +45,6 @@ CAsyncProxySocketLayer::~CAsyncProxySocketLayer()
 /////////////////////////////////////////////////////////////////////////////
 // Member-Funktion CAsyncProxySocketLayer
 
-void CAsyncProxySocketLayer::SetProxy(int nProxyType)
-{
-  //Validate the parameters
-  DebugAssert(nProxyType==PROXYTYPE_NOPROXY);
-  m_ProxyData.nProxyType=nProxyType;
-}
-
 void CAsyncProxySocketLayer::SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort)
 {
   USES_CONVERSION;
@@ -966,7 +959,7 @@ void CAsyncProxySocketLayer::ClearBuffer()
 
 BOOL CAsyncProxySocketLayer::Listen( int nConnectionBacklog)
 {
-  if (GetProxyType()==PROXYTYPE_NOPROXY)
+  if (m_ProxyData.nProxyType==PROXYTYPE_NOPROXY)
     return ListenNext(nConnectionBacklog);
 
   USES_CONVERSION;
@@ -1055,11 +1048,6 @@ BOOL CAsyncProxySocketLayer::GetPeerName( SOCKADDR* lpSockAddr, int* lpSockAddrL
   return res;
 }
 
-int CAsyncProxySocketLayer::GetProxyType() const
-{
-  return m_ProxyData.nProxyType;
-}
-
 void CAsyncProxySocketLayer::Close()
 {
   delete [] m_ProxyData.pProxyHost;
@@ -1101,14 +1089,6 @@ int CAsyncProxySocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
   }
 
   return ReceiveNext(lpBuf, nBufLen, nFlags);
-}
-
-BOOL CAsyncProxySocketLayer::PrepareListen(unsigned long ip)
-{
-  if (GetLayerState()!=notsock && GetLayerState()!=unconnected)
-    return FALSE;
-  m_nProxyPeerIp=ip;
-  return TRUE;
 }
 
 BOOL CAsyncProxySocketLayer::Accept( CAsyncSocketEx& rConnectedSocket, SOCKADDR* lpSockAddr /*=NULL*/, int* lpSockAddrLen /*=NULL*/ )

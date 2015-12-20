@@ -211,12 +211,6 @@ bool __fastcall TFileZillaIntf::Rename(const wchar_t* OldName,
   return Check(FFileZillaApi->Rename(OldName, NewName, Path, NewPath), L"rename");
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileZillaIntf::List()
-{
-  DebugAssert(FFileZillaApi != NULL);
-  return Check(FFileZillaApi->List(), L"list");
-}
-//---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::List(const wchar_t * APath)
 {
   DebugAssert(FFileZillaApi != NULL);

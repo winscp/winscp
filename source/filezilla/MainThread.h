@@ -25,7 +25,6 @@ public:
   DWORD m_dwThreadId;
   HANDLE m_hThread;
   static CMainThread * Create(int nPriority = THREAD_PRIORITY_NORMAL, DWORD dwCreateFlags = 0);
-  bool GetWorkingDirPath(CServerPath & path);
   void SetWorkingDir(t_directory * pWorkingDir);
   BOOL GetWorkingDir(t_directory * pWorkingDir);
   void SendDirectoryListing(t_directory * pDirectoryToSend);
@@ -56,8 +55,6 @@ public:
   DWORD ResumeThread();
   BOOL PostThreadMessage( UINT message , WPARAM wParam, LPARAM lParam);
 
-  BOOL IsValid() const;
-
 protected:
   BOOL InitInstance();
   DWORD ExitInstance();
@@ -65,8 +62,6 @@ protected:
   static DWORD WINAPI ThreadProc(LPVOID lpParameter);
 
   CCriticalSection m_CriticalSection;
-  void ShowStatus(CString status,int type);
-  void ShowStatus(UINT nID, int type);
 
   CFtpControlSocket * m_pControlSocket;
   __int64 m_nAsyncRequestID;

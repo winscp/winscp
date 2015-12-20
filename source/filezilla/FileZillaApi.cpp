@@ -112,28 +112,6 @@ int CFileZillaApi::Connect(const t_server &server)
   return m_pMainThread->LastOperationSuccessful()?FZ_REPLY_OK:FZ_REPLY_ERROR;
 }
 
-int CFileZillaApi::List()
-{
-  //Check if call allowed
-  if (!m_bInitialized)
-    return FZ_REPLY_NOTINITIALIZED;
-  if (IsConnected()==FZ_REPLY_NOTCONNECTED)
-    return FZ_REPLY_NOTCONNECTED;
-  CServerPath path;
-// seems to be incorrectly skipped when cache is not required
-  if (!m_pMainThread->GetWorkingDirPath(path) || path.IsEmpty())
-    m_pMainThread->GetCurrentPath(path);
-
-  if (m_pMainThread->IsBusy())
-    return FZ_REPLY_BUSY;
-
-  t_command command;
-  command.id=FZ_COMMAND_LIST;
-  command.path = path;
-  m_pMainThread->Command(command);
-  return m_pMainThread->LastOperationSuccessful()?FZ_REPLY_OK:FZ_REPLY_ERROR;
-}
-
 int CFileZillaApi::Cancel()
 {
   //Check if call allowed

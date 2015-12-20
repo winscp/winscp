@@ -61,27 +61,6 @@ void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
   SendLogMessage(nMessageType, pMsg);
 }
 
-void CApiLog::LogMessage(int nMessageType, UINT nFormatID, ...) const
-{
-  DebugAssert(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
-  if (!LoggingMessageType(nMessageType))
-    return;
-
-  CString str;
-  str.LoadString(nFormatID);
-
-  va_list ap;
-
-  va_start(ap, nFormatID);
-  CString text;
-  text.FormatV(str, ap);
-  va_end(ap);
-
-  if (nMessageType>=FZ_LOG_DEBUG)
-    return;
-  SendLogMessage(nMessageType, text);
-}
-
 void CApiLog::SendLogMessage(int nMessageType, LPCTSTR pMsg) const
 {
   if (!LoggingMessageType(nMessageType))

@@ -17,7 +17,6 @@ public:
 
   void LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const;
   void LogMessageRaw(int nMessageType, LPCTSTR pMsg) const;
-  void LogMessage(int nMessageType, UINT nFormatID, ...) const;
 
   CString GetOption(int OptionID) const;
   int GetOptionVal(int OptionID) const;

@@ -240,7 +240,6 @@ public:
   // Operations
   int Connect(const t_server & server);
 
-  int List();
   int List(const CServerPath & path);
 
   int ListFile(CString FileName, const CServerPath & path); //Get info about specified file
