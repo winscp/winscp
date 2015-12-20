@@ -2859,6 +2859,8 @@ object PreferencesDialog: TPreferencesDialog
       end
       object EditorInternalSheet: TTabSheet
         Tag = 24
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_editor_internal'
         Caption = 'Internal editor'
         TabVisible = False
         DesignSize = (
