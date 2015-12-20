@@ -45,37 +45,10 @@ CAsyncProxySocketLayer::~CAsyncProxySocketLayer()
 /////////////////////////////////////////////////////////////////////////////
 // Member-Funktion CAsyncProxySocketLayer
 
-void CAsyncProxySocketLayer::SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort)
+void CAsyncProxySocketLayer::SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort, bool bUseLogon, const char * pProxyUser, const char * pProxyPass)
 {
   USES_CONVERSION;
   //Validate the parameters
-  DebugAssert(nProxyType==PROXYTYPE_SOCKS4  ||
-       nProxyType==PROXYTYPE_SOCKS4A ||
-       nProxyType==PROXYTYPE_SOCKS5  ||
-       nProxyType==PROXYTYPE_HTTP11);
-  DebugAssert(!m_nProxyOpID);
-  DebugAssert(pProxyHost && *pProxyHost);
-  DebugAssert(ProxyPort>0);
-  DebugAssert(ProxyPort<=65535);
-
-  delete m_ProxyData.pProxyHost;
-  delete m_ProxyData.pProxyUser;
-  delete m_ProxyData.pProxyPass;
-  m_ProxyData.pProxyUser = NULL;
-  m_ProxyData.pProxyPass = NULL;
-
-  m_ProxyData.nProxyType = nProxyType;
-  m_ProxyData.pProxyHost = new char[strlen(pProxyHost)+1];
-  strcpy(m_ProxyData.pProxyHost, pProxyHost);
-  m_ProxyData.nProxyPort = ProxyPort;
-  m_ProxyData.bUseLogon = FALSE;
-}
-
-void CAsyncProxySocketLayer::SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort, const char * pProxyUser, const char * pProxyPass)
-{
-  USES_CONVERSION;
-  //Validate the parameters
-  DebugAssert(nProxyType==PROXYTYPE_SOCKS5 || nProxyType==PROXYTYPE_HTTP11);
   DebugAssert(!m_nProxyOpID);
   DebugAssert(pProxyHost && *pProxyHost);
   DebugAssert(ProxyPort>0);
@@ -101,7 +74,7 @@ void CAsyncProxySocketLayer::SetProxy(int nProxyType, const char * pProxyHost, i
     m_ProxyData.pProxyPass = new char[strlen(pProxyPass)+1];
     strcpy(m_ProxyData.pProxyPass, pProxyPass);
   }
-  m_ProxyData.bUseLogon = TRUE;
+  m_ProxyData.bUseLogon = bUseLogon;
 }
 
 void CAsyncProxySocketLayer::OnReceive(int nErrorCode)

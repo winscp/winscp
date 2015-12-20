@@ -863,30 +863,10 @@ BOOL CTransferSocket::Create(BOOL bUseSsl)
   if (nProxyType != PROXYTYPE_NOPROXY)
   {
     USES_CONVERSION;
-
     m_pProxyLayer = new CAsyncProxySocketLayer;
-    if (nProxyType == PROXYTYPE_SOCKS4)
-      m_pProxyLayer->SetProxy(PROXYTYPE_SOCKS4, T2CA(GetOption(OPTION_PROXYHOST)), GetOptionVal(OPTION_PROXYPORT));
-    else if (nProxyType == PROXYTYPE_SOCKS4A)
-      m_pProxyLayer->SetProxy(PROXYTYPE_SOCKS4A, T2CA(GetOption(OPTION_PROXYHOST)), GetOptionVal(OPTION_PROXYPORT));
-    else if (nProxyType == PROXYTYPE_SOCKS5)
-      if (GetOptionVal(OPTION_PROXYUSELOGON))
-        m_pProxyLayer->SetProxy(PROXYTYPE_SOCKS5, T2CA(GetOption(OPTION_PROXYHOST)),
-                    GetOptionVal(OPTION_PROXYPORT),
-                    T2CA(GetOption(OPTION_PROXYUSER)),
-                    T2CA(GetOption(OPTION_PROXYPASS)));
-      else
-        m_pProxyLayer->SetProxy(PROXYTYPE_SOCKS5, T2CA(GetOption(OPTION_PROXYHOST)),
-                    GetOptionVal(OPTION_PROXYPORT));
-    else if (nProxyType == PROXYTYPE_HTTP11)
-      if (GetOptionVal(OPTION_PROXYUSELOGON))
-        m_pProxyLayer->SetProxy(PROXYTYPE_HTTP11, T2CA(GetOption(OPTION_PROXYHOST)), GetOptionVal(OPTION_PROXYPORT),
-                    T2CA(GetOption(OPTION_PROXYUSER)),
-                    T2CA(GetOption(OPTION_PROXYPASS)));
-      else
-        m_pProxyLayer->SetProxy(PROXYTYPE_HTTP11, T2CA(GetOption(OPTION_PROXYHOST)), GetOptionVal(OPTION_PROXYPORT));
-    else
-      DebugFail();
+    m_pProxyLayer->SetProxy(
+      nProxyType, T2CA(GetOption(OPTION_PROXYHOST)), GetOptionVal(OPTION_PROXYPORT),
+      GetOptionVal(OPTION_PROXYUSELOGON), T2CA(GetOption(OPTION_PROXYUSER)), T2CA(GetOption(OPTION_PROXYPASS)));
     AddLayer(m_pProxyLayer);
   }
 

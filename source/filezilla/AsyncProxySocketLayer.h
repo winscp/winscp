@@ -102,15 +102,13 @@ public:
   virtual BOOL Connect(const SOCKADDR * lpSockAddr, int nSockAddrLen);
   virtual BOOL Listen(int nConnectionBacklog);
 
-  void SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort); // May not be PROXYTYPE_NOPROXY
-
   // Sets the proxy details.
   // nProxyType - Type of the proxy. May be PROXYTYPE_NONE, PROXYTYPE_SOCKS4, PROXYTYPE_SOCKS5 or PROXYTYPE_HTTP11
   // ProxyHost - The address of the proxy. Can be either IP or URL
   // ProxyPort - The port of the proxy
   // ProxyUser - the username for SOCKS5 proxies
   // ProxyPass - the password for SOCKS5 proxies
-  void SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort, const char * pProxyUser, const char * pProxyPass); // Only SOCKS5 and HTTP1.1 proxies
+  void SetProxy(int nProxyType, const char * pProxyHost, int ProxyPort, bool bUseLogon, const char * pProxyUser, const char * pProxyPass);
 
   // Returns the address of the server behind the SOCKS proxy you are connected to
   virtual BOOL GetPeerName(CString & rPeerAddress, UINT & rPeerPort);
