@@ -78,10 +78,16 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
     // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
     // so we should not get here with more then one site.
     // Though we should be good, if we ever do.
+
+    // We get here when:
+    // - we need session for explicit command-line operation
+    // - after we handle "save" URL.
+    // - the specified session does not contain enough information to login [= not even hostname]
+
     DebugAssert(DataList->Count <= 1);
     if (!DoLoginDialog(StoredSessions, DataList, loStartup))
     {
-      DataList->Clear();
+      Abort();
     }
   }
 }
@@ -902,7 +908,8 @@ int __fastcall Execute()
         GetLoginData(AutoStartSession, Params, DataList, DownloadFile, NeedSession);
         try
         {
-          if (!NeedSession || (DataList->Count > 0))
+          // GetLoginData now Aborts when session is needed and none is selected
+          if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
           {
             if (CheckSafe(Params))
             {
