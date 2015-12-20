@@ -2836,7 +2836,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     pData->transferdata.bType = (pData->transferfile.nType == 1) ? TRUE : FALSE;
 
     CServerPath path;
-    VERIFY(m_pOwner->GetCurrentPath(path));
+    DebugCheck(m_pOwner->GetCurrentPath(path));
     if (path == pData->transferfile.remotepath)
     {
       if (m_pDirectoryListing)
@@ -3267,7 +3267,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           break;
         }
 
-        VERIFY(m_pTransferSocket->AsyncSelect());
+        DebugCheck(m_pTransferSocket->AsyncSelect());
       }
       m_Operation.nOpState=FILETRANSFER_LIST_LIST;
       break;
@@ -3547,7 +3547,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
             break;
           }
 
-          VERIFY(m_pTransferSocket->AsyncSelect());
+          DebugCheck(m_pTransferSocket->AsyncSelect());
         }
 
         if (pData->transferdata.bResume)

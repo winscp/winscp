@@ -845,7 +845,7 @@ BOOL CAsyncSocketEx::Bind(const SOCKADDR* lpSockAddr, int nSockAddrLen)
 void CAsyncSocketEx::AttachHandle(SOCKET hSocket)
 {
   DebugAssert(m_pLocalAsyncSocketExThreadData);
-  VERIFY(m_pLocalAsyncSocketExThreadData->m_pHelperWindow->AddSocket(this, m_SocketData.nSocketIndex));
+  DebugCheck(m_pLocalAsyncSocketExThreadData->m_pHelperWindow->AddSocket(this, m_SocketData.nSocketIndex));
   SetState(attached);
 }
 
@@ -857,7 +857,7 @@ void CAsyncSocketEx::DetachHandle(SOCKET hSocket)
   DebugAssert(m_pLocalAsyncSocketExThreadData->m_pHelperWindow);
   if (!m_pLocalAsyncSocketExThreadData->m_pHelperWindow)
     return;
-  VERIFY(m_pLocalAsyncSocketExThreadData->m_pHelperWindow->RemoveSocket(this, m_SocketData.nSocketIndex));
+  DebugCheck(m_pLocalAsyncSocketExThreadData->m_pHelperWindow->RemoveSocket(this, m_SocketData.nSocketIndex));
   SetState(notsock);
 }
 
@@ -868,7 +868,7 @@ void CAsyncSocketEx::Close()
     m_pFirstLayer->Close();
   if (m_SocketData.hSocket != INVALID_SOCKET)
   {
-    VERIFY((closesocket(m_SocketData.hSocket) != SOCKET_ERROR));
+    DebugCheck((closesocket(m_SocketData.hSocket) != SOCKET_ERROR));
     DetachHandle(m_SocketData.hSocket);
     m_SocketData.hSocket = INVALID_SOCKET;
   }
@@ -1347,7 +1347,7 @@ BOOL CAsyncSocketEx::Attach(SOCKET hSocket, long lEvent /*= FD_READ | FD_WRITE |
   if (hSocket==INVALID_SOCKET || !hSocket)
     return FALSE;
 
-  VERIFY(InitAsyncSocketExInstance());
+  DebugCheck(InitAsyncSocketExInstance());
   m_SocketData.hSocket=hSocket;
   AttachHandle(hSocket);
 
@@ -1408,7 +1408,7 @@ BOOL CAsyncSocketEx::Accept( CAsyncSocketEx& rConnectedSocket, SOCKADDR* lpSockA
 
     if (hTemp == INVALID_SOCKET)
       return FALSE;
-    VERIFY(rConnectedSocket.InitAsyncSocketExInstance());
+    DebugCheck(rConnectedSocket.InitAsyncSocketExInstance());
     rConnectedSocket.m_SocketData.hSocket=hTemp;
     rConnectedSocket.AttachHandle(hTemp);
     rConnectedSocket.SetFamily(GetFamily());

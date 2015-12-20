@@ -233,7 +233,7 @@ void CMainThread::Command(const t_command &command)
   m_bBusy=TRUE;
   t_command *pCommand=new t_command;
   *pCommand=command;
-  VERIFY(PostThreadMessage(m_nInternalMessageID,FZAPI_THREADMSG_COMMAND,(LPARAM)pCommand));
+  DebugCheck(PostThreadMessage(m_nInternalMessageID,FZAPI_THREADMSG_COMMAND,(LPARAM)pCommand));
   m_LastCommand=command;
   LCS;
 }

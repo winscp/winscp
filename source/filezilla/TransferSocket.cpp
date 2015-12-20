@@ -1120,7 +1120,7 @@ void CTransferSocket::EnsureSendClose(int Mode)
       m_nMode |= Mode;
     }
     m_bSentClose = TRUE;
-    VERIFY(m_pOwner->m_pOwner->PostThreadMessage(m_nInternalMessageID, FZAPI_THREADMSG_TRANSFEREND, m_nMode));
+    DebugCheck(m_pOwner->m_pOwner->PostThreadMessage(m_nInternalMessageID, FZAPI_THREADMSG_TRANSFEREND, m_nMode));
   }
 }
 

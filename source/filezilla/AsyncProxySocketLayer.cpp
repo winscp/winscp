@@ -568,7 +568,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
             TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
           else
           {
-            VERIFY(m_nProxyOpID==PROXYOP_LISTEN);
+            DebugCheck(m_nProxyOpID == PROXYOP_LISTEN);
             TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
           }
           Reset();
