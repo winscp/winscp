@@ -27,7 +27,6 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession)
 {
   bool DefaultsOnly = false;
-  bool Close = false;
 
   if (StoredSessions->IsFolder(SessionName) ||
       StoredSessions->IsWorkspace(SessionName))
@@ -48,11 +47,11 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
       {
         Configuration->Usage->Inc(L"CommandLineSessionSave");
         TSessionData * SavedSession = DoSaveSession(SessionData, NULL, true, NULL);
-        Close = (SavedSession == NULL);
-        if (!Close)
+        if (SavedSession == NULL)
         {
-          WinConfiguration->LastStoredSession = SavedSession->Name;
+          Abort();
         }
+        WinConfiguration->LastStoredSession = SavedSession->Name;
         DataList->Clear();
       }
       else if (!SessionData->PuttyProtocol.IsEmpty())
@@ -61,32 +60,28 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
         // though it's hardly of any use here.
         SessionData->ExpandEnvironmentVariables();
         OpenSessionInPutty(GUIConfiguration->PuttyPath, SessionData);
-        DataList->Clear();
-        Close = true;
+        Abort();
       }
     }
   }
 
-  if (!Close)
+  if (DefaultsOnly && !NeedSession)
   {
-    if (DefaultsOnly && !NeedSession)
+    // No URL specified on command-line and no explicit command-line parameter
+    // that results session was specified => noop
+    DataList->Clear();
+  }
+  else if ((DataList->Count == 0) ||
+      !dynamic_cast<TSessionData *>(DataList->Items[0])->CanLogin ||
+      DefaultsOnly)
+  {
+    // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
+    // so we should not get here with more then one site.
+    // Though we should be good, if we ever do.
+    DebugAssert(DataList->Count <= 1);
+    if (!DoLoginDialog(StoredSessions, DataList, loStartup))
     {
-      // No URL specified on command-line and no explicit command-line parameter
-      // that results session was specified => noop
       DataList->Clear();
-    }
-    else if ((DataList->Count == 0) ||
-        !dynamic_cast<TSessionData *>(DataList->Items[0])->CanLogin ||
-        DefaultsOnly)
-    {
-      // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
-      // so we should not get here with more then one site.
-      // Though we should be good, if we ever do.
-      DebugAssert(DataList->Count <= 1);
-      if (!DoLoginDialog(StoredSessions, DataList, loStartup))
-      {
-        DataList->Clear();
-      }
     }
   }
 }
