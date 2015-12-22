@@ -1557,8 +1557,7 @@ TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode)
 
   if ((DSTMode == dstmUnix) || (DSTMode == dstmKeep))
   {
-    Result -= (IsDateInDST(Result) ?
-      Params->DaylightDifference : Params->StandardDifference);
+    Result -= DSTDifferenceForTime(Result);
   }
 
   return Result;
@@ -1734,9 +1733,7 @@ TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
 {
 
   const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
-  DateTime +=
-    (IsDateInDST(DateTime) ?
-      Params->DaylightDifference : Params->StandardDifference);
+  DateTime += DSTDifferenceForTime(DateTime);
   DateTime += Params->BaseDifference;
 
   if (Params->DaylightHack)
@@ -1752,9 +1749,7 @@ TDateTime __fastcall ConvertTimestampFromUTC(TDateTime DateTime)
 {
 
   const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
-  DateTime -=
-    (IsDateInDST(DateTime) ?
-      Params->DaylightDifference : Params->StandardDifference);
+  DateTime -= DSTDifferenceForTime(DateTime);
   DateTime -= Params->BaseDifference;
 
   if (Params->DaylightHack)
@@ -1778,6 +1773,21 @@ __int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
   else
   {
     Result = ConvertTimestampToUnix(FileTime, DSTMode);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+double __fastcall DSTDifferenceForTime(TDateTime DateTime)
+{
+  double Result;
+  const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
+  if (IsDateInDST(DateTime))
+  {
+    Result = Params->DaylightDifference;
+  }
+  else
+  {
+    Result = Params->StandardDifference;
   }
   return Result;
 }
@@ -1810,14 +1820,7 @@ TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, TDSTMode DSTMode
   {
     if (DSTMode == dstmWin)
     {
-      if (IsDateInDST(DateTime))
-      {
-        DateTime = DateTime + Params->DaylightDifference;
-      }
-      else
-      {
-        DateTime = DateTime + Params->StandardDifference;
-      }
+      DateTime = DateTime + DSTDifferenceForTime(DateTime);
     }
   }
 

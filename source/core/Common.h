@@ -165,6 +165,7 @@ enum TDSTMode
 bool __fastcall UsesDaylightHack();
 TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day);
 TDateTime __fastcall EncodeTimeVerbose(Word Hour, Word Min, Word Sec, Word MSec);
+double __fastcall DSTDifferenceForTime(TDateTime DateTime);
 TDateTime __fastcall SystemTimeToDateTimeVerbose(const SYSTEMTIME & SystemTime);
 TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode);
 TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime);
