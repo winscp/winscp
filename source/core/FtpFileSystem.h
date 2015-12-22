@@ -272,6 +272,7 @@ private:
   X509 * FCertificate;
   EVP_PKEY * FPrivateKey;
   bool FTransferActiveImmediately;
+  bool FWindowsServer;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------

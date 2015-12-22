@@ -359,6 +359,7 @@ void __fastcall TFTPFileSystem::Open()
 
   TSessionData * Data = FTerminal->SessionData;
 
+  FWindowsServer = false;
   FTransferActiveImmediately = (Data->FtpTransferActiveImmediately == asOn);
 
   FSessionInfo.LoginTime = Now();
@@ -3588,6 +3589,11 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
           FTerminal->LogEvent(L"The server requires TLS/SSL handshake on transfer connection before responding 1yz to STOR/APPE");
           FTransferActiveImmediately = true;
         }
+        if (ContainsText(FWelcomeMessage, L"Microsoft FTP Service"))
+        {
+          FTerminal->LogEvent(L"The server is probably running Windows, assuming that directory listing timestamps are affected by DST.");
+          FWindowsServer = true;
+        }
       }
     }
     else if (FLastCommand == PASS)
@@ -4354,6 +4360,12 @@ void __fastcall TFTPFileSystem::RemoteFileTimeToDateTimeAndPrecision(const TRemo
       // not exact as we got year as well, but it is most probably
       // guessed by FZAPI anyway
       ModificationFmt = Source.HasSeconds ? mfFull : mfMDHM;
+
+      // With IIS, the Utc should be false only for MDTM
+      if (FWindowsServer && !Source.Utc)
+      {
+        DateTime -= DSTDifferenceForTime(DateTime);
+      }
     }
     else
     {
