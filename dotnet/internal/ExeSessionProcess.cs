@@ -48,9 +48,9 @@ namespace WinSCP
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(_session.IniFilePath))
+                    if (!string.IsNullOrEmpty(_session.IniFilePathInternal))
                     {
-                        configSwitch = string.Format(CultureInfo.InvariantCulture, "/ini=\"{0}\" ", _session.IniFilePath);
+                        configSwitch = string.Format(CultureInfo.InvariantCulture, "/ini=\"{0}\" ", _session.IniFilePathInternal);
                     }
                     else
                     {

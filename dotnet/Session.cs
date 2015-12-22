@@ -1936,6 +1936,7 @@ namespace WinSCP
         internal bool TestHandlesClosedInternal { get; set; }
         internal Dictionary<string, string> RawConfiguration { get; private set; }
         internal bool DefaultConfigurationInternal { get { return _defaultConfiguration; } }
+        internal string IniFilePathInternal { get { return _iniFilePath; } }
 
         private ExeSessionProcess _process;
         private DateTime _lastOutput;
