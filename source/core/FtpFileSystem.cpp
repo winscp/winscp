@@ -2458,6 +2458,9 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
         TDateTime UtcModification = UtcFile->Modification;
         delete UtcFile;
 
+        // Time difference between timestamp retrieved using MDTM (UTC converted to local timezone)
+        // and using LIST (no conversion, expecting the server uses the same timezone as the client).
+        // Note that FormatTimeZone reverses the value.
         FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
 
         UnicodeString LogMessage;
