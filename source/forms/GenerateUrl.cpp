@@ -72,8 +72,8 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
   {
     Caption = LoadStr(IsFileUrl() ? GENERATE_URL_FILE_TITLE : GENERATE_URL_SESSION_TITLE);
 
-    EnableControl(ScriptSheet, !IsFileUrl());
-    EnableControl(AssemblySheet, !IsFileUrl());
+    ScriptSheet->TabVisible = !IsFileUrl();
+    AssemblySheet->TabVisible = !IsFileUrl();
 
     UnicodeString ResultGroupCaption;
     if (OptionsPageControl->ActivePage == UrlSheet)
