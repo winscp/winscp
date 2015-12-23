@@ -29,7 +29,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
     BevelOuter = bvNone
     TabOrder = 0
     object PageControl: TPageControl
-      Tag = 1
       Left = 152
       Top = 0
       Width = 409
