@@ -27,9 +27,9 @@
 // Sheet tag:
 // 01 top, 02 indented
 //---------------------------------------------------------------------------
-bool __fastcall DoSiteAdvancedDialog(TSessionData * SessionData, int Options)
+bool __fastcall DoSiteAdvancedDialog(TSessionData * SessionData)
 {
-  TSiteAdvancedDialog * SiteAdvancedDialog = new TSiteAdvancedDialog(Application, Options);
+  TSiteAdvancedDialog * SiteAdvancedDialog = new TSiteAdvancedDialog(Application);
   bool Result;
   try
   {
@@ -44,12 +44,10 @@ bool __fastcall DoSiteAdvancedDialog(TSessionData * SessionData, int Options)
 //---------------------------------------------------------------------
 static const UnicodeString DefaultRecycleBinPath = L"/tmp";
 //---------------------------------------------------------------------
-__fastcall TSiteAdvancedDialog::TSiteAdvancedDialog(
-    TComponent * AOwner, int Options) :
+__fastcall TSiteAdvancedDialog::TSiteAdvancedDialog(TComponent * AOwner) :
   TForm(AOwner)
 {
   NoUpdate = 0;
-  FOptions = Options;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -103,17 +101,6 @@ void __fastcall TSiteAdvancedDialog::InitControls()
   HintLabel(ProxyLocalCommandHintText, LoadStr(LOGIN_PROXY_COMMAND_PATTERNS_HINT));
 
   UpdateNavigationTree();
-
-  if (FLAGCLEAR(FOptions, loLocalDirectory))
-  {
-    LocalDirectoryLabel->Visible = false;
-    LocalDirectoryEdit->Visible = false;
-    LocalDirectoryDescLabel->Visible = false;
-    DirectoriesGroup->Height = RemoteDirectoryEdit->Top + RemoteDirectoryEdit->Height + ScaleByTextHeight(this, 12);
-    DirectoryOptionsGroup->Top = DirectoriesGroup->Top + DirectoriesGroup->Height + ScaleByTextHeight(this, 8);
-  }
-
-  ColorButton->Visible = (FOptions & loColor);
 
   SetSessionColor((TColor)0);
 }

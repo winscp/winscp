@@ -288,7 +288,6 @@ private:
   bool FNewSiteKeepName;
   TSessionData * FSessionData;
   TStoredSessionList * FStoredSessions;
-  int FOptions;
   bool FInitialized;
   TWndMethod FOldSessionTreeProc;
   TTreeNode * FHintNode;
@@ -407,7 +406,7 @@ protected:
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);
   __fastcall ~TLoginDialog();
-  void __fastcall Init(TStoredSessionList *SessionList, int Options);
+  void __fastcall Init(TStoredSessionList *SessionList);
   bool __fastcall Execute(TList * DataList);
 };
 //----------------------------------------------------------------------------

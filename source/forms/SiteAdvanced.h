@@ -291,7 +291,7 @@ __published:
 
 
 public:
-  virtual __fastcall TSiteAdvancedDialog(TComponent * AOwner, int Options);
+  virtual __fastcall TSiteAdvancedDialog(TComponent * AOwner);
   bool __fastcall Execute(TSessionData * SessionData);
 
 protected:

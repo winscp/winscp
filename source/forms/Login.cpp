@@ -34,15 +34,14 @@ const int WorkspaceImageIndex = 4;
 const int NewSiteImageIndex = 6;
 const int SiteColorMaskImageIndex = 8;
 //---------------------------------------------------------------------------
-bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
-  TList * DataList, int Options)
+bool __fastcall DoLoginDialog(TStoredSessionList *SessionList, TList * DataList)
 {
   DebugAssert(DataList != NULL);
   TLoginDialog * LoginDialog = SafeFormCreate<TLoginDialog>();
   bool Result;
   try
   {
-    LoginDialog->Init(SessionList, Options);
+    LoginDialog->Init(SessionList);
     Result = LoginDialog->Execute(DataList);
   }
   __finally
@@ -59,7 +58,6 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
 {
   FNewSiteData = new TSessionData(L"");
   FInitialized = false;
-  FOptions = loStartup;
   FHintNode = NULL;
   FScrollOnDragOver = new TTreeViewScrollOnDragOver(SessionTree, true);
   FDataList = NULL;
@@ -96,18 +94,13 @@ void __fastcall TLoginDialog::InvalidateSessionData()
   FSessionData = NULL;
 }
 //---------------------------------------------------------------------
-void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList,
-  int Options)
+void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList)
 {
   FStoredSessions = SessionList;
   LoadSessions();
-  FOptions = Options;
   UnicodeString Dummy;
   RunPageantAction->Visible = FindTool(PageantTool, Dummy);
   RunPuttygenAction->Visible = FindTool(PuttygenTool, Dummy);
-  AdvancedButton->Style =
-    FLAGSET(FOptions, loExternalTools) ?
-      TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
   UpdateControls();
 }
 //---------------------------------------------------------------------
@@ -1147,12 +1140,6 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   else if (Action == NewSessionFolderAction)
   {
     NewSessionFolderAction->Enabled = !FEditing;
-  }
-  else if ((Action == ImportAction) ||
-           (Action == AboutAction) || (Action == CleanUpAction) ||
-           (Action == CheckForUpdatesAction) || (Action == PreferencesAction))
-  {
-    Action->Visible = FLAGSET(FOptions, loExternalTools);
   }
   else if (Action == PasteUrlAction)
   {
@@ -2733,7 +2720,7 @@ void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
     ParseHostName();
 
     SaveSession(FSessionData);
-    DoSiteAdvancedDialog(FSessionData, FOptions);
+    DoSiteAdvancedDialog(FSessionData);
     // Needed only for Note.
     // The only other property visible on Login dialog that Advanced site dialog
     // can change is protocol (between fsSFTP and fsSFTPonly),
