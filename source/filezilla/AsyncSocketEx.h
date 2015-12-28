@@ -257,7 +257,7 @@ protected:
   int m_nPendingEvents;
 
   int GetState() const;
-  void SetState(int nState);
+  virtual void SetState(int nState);
   static const TCHAR * GetStateDesc(int nState);
   static bool LogStateChange(int nState1, int nState2);
 

@@ -49,12 +49,14 @@ public:
   virtual void OnConnect(int nErrorCode);
   virtual void OnClose(int nErrorCode);
   virtual void OnSend(int nErrorCode);
+  virtual void SetState(int nState);
 
 protected:
   virtual int OnLayerCallback(std::list<t_callbackMsg> & callbacks);
   int ReadDataFromFile(char * buffer, int len);
   virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
   virtual void ConfigureSocket();
+  bool Activate();
 
   CFtpControlSocket * m_pOwner;
   CAsyncProxySocketLayer * m_pProxyLayer;
@@ -75,6 +77,7 @@ protected:
   int m_nMode;
   int m_nNotifyWaiting;
   BOOL m_bShutDown;
+  bool m_bActivationPending;
 
   void CloseAndEnsureSendClose(int Mode);
   void EnsureSendClose(int Mode);

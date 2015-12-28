@@ -37,6 +37,7 @@ CTransferSocket::CTransferSocket(CFtpControlSocket *pOwner, int nMode)
   m_transferdata.transferleft = 0;
   m_nNotifyWaiting = 0;
   m_bShutDown = FALSE;
+  m_bActivationPending = false;
 
   UpdateStatusBar(true);
 
@@ -491,19 +492,47 @@ int CTransferSocket::CheckForTimeout(int delay)
   return 1;
 }
 
+void CTransferSocket::SetState(int nState)
+{
+  CAsyncSocketEx::SetState(nState);
+  if (m_bActivationPending && Activate())
+  {
+    m_bActivationPending = false;
+  }
+}
+
+bool CTransferSocket::Activate()
+{
+  // Activation (OnSend => OnConnect) indirectly causes adding
+  // of TLS layer, which needs connected underlying layers.
+  // The code should be generic, but we particularly need it for this (TLS over proxy)
+  // scenario only. So for a safety, we use it for the scenario only.
+  bool Result =
+    (GetState() == connected) || (GetState() == attached) ||
+    (m_pSslLayer == NULL) || (m_pProxyLayer == NULL);
+  if (Result)
+  {
+    if (m_nTransferState == STATE_WAITING)
+      m_nTransferState = STATE_STARTING;
+    m_bCheckTimeout = TRUE;
+    m_LastActiveTime = CTime::GetCurrentTime();
+
+    if (m_nNotifyWaiting & FD_READ)
+      OnReceive(0);
+    if (m_nNotifyWaiting & FD_WRITE)
+      OnSend(0);
+    if (m_nNotifyWaiting & FD_CLOSE)
+      OnClose(0);
+  }
+  return Result;
+}
+
 void CTransferSocket::SetActive()
 {
-  if (m_nTransferState == STATE_WAITING)
-    m_nTransferState = STATE_STARTING;
-  m_bCheckTimeout = TRUE;
-  m_LastActiveTime = CTime::GetCurrentTime();
-
-  if (m_nNotifyWaiting & FD_READ)
-    OnReceive(0);
-  if (m_nNotifyWaiting & FD_WRITE)
-    OnSend(0);
-  if (m_nNotifyWaiting & FD_CLOSE)
-    OnClose(0);
+  if (!Activate())
+  {
+    m_bActivationPending = true;
+  }
 }
 
 void CTransferSocket::OnSend(int nErrorCode)
