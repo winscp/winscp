@@ -36,7 +36,6 @@ CTransferSocket::CTransferSocket(CFtpControlSocket *pOwner, int nMode)
   m_transferdata.transfersize = 0;
   m_transferdata.transferleft = 0;
   m_nNotifyWaiting = 0;
-  m_bShutDown = FALSE;
   m_bActivationPending = false;
 
   UpdateStatusBar(true);

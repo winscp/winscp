@@ -76,7 +76,6 @@ protected:
   int m_nTransferState;
   int m_nMode;
   int m_nNotifyWaiting;
-  BOOL m_bShutDown;
   bool m_bActivationPending;
 
   void CloseAndEnsureSendClose(int Mode);
