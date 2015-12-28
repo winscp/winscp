@@ -2001,7 +2001,7 @@ static void __fastcall ShowTip(bool AutoShow)
 
   if (AutoShow)
   {
-    // Won't be used automatically as we have more than "OK button
+    // Won't be used automatically as we have more than the "OK" button
     Params.NeverAskAgainTitle = LoadStr(NEVER_SHOW_AGAIN);
     Params.NeverAskAgainAnswer = qaCancel;
     Params.Params |= mpNeverAskAgainCheck;
