@@ -780,10 +780,13 @@ void __fastcall TTerminalManager::ApplicationShowHint(UnicodeString & HintStr,
   {
     int HintMaxWidth = 300;
 
-    if (DebugAlwaysTrue(HintInfo.HintControl != NULL))
+    TControl * ScaleControl = HintInfo.HintControl;
+    if (DebugAlwaysFalse(HintInfo.HintControl == NULL) ||
+        (GetParentForm(HintInfo.HintControl) == NULL))
     {
-      HintMaxWidth = ScaleByTextHeight(HintInfo.HintControl, HintMaxWidth);
+      ScaleControl = ScpExplorer;
     }
+    HintMaxWidth = ScaleByTextHeight(ScaleControl, HintMaxWidth);
 
     HintInfo.HintMaxWidth = HintMaxWidth;
   }
