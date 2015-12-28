@@ -344,33 +344,7 @@ void CTransferSocket::OnAccept(int nErrorCode)
 
   if (m_nTransferState == STATE_STARTING)
   {
-    m_nTransferState = STATE_STARTED;
-
-    if (m_pSslLayer)
-    {
-      AddLayer(m_pSslLayer);
-      int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer,
-        GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
-        GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
-        GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
-      if (res == SSL_FAILURE_INITSSL)
-        m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
-
-      if (res)
-      {
-        CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
-        return;
-      }
-    }
-
-#ifndef MPEXT_NO_GSS
-    if (m_pGssLayer)
-    {
-      AddLayer(m_pGssLayer);
-    }
-#endif
-
-    m_LastActiveTime = CTime::GetCurrentTime();
+    Start();
   }
 }
 
@@ -425,38 +399,42 @@ void CTransferSocket::OnConnect(int nErrorCode)
   }
   else if (m_nTransferState == STATE_STARTING)
   {
-    m_nTransferState = STATE_STARTED;
-
-    m_LastActiveTime=CTime::GetCurrentTime();
-
-    if (m_pSslLayer)
-    {
-      AddLayer(m_pSslLayer);
-      int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer,
-        GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
-        GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
-        GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
-      if (res == SSL_FAILURE_INITSSL)
-      {
-        m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
-      }
-
-      if (res)
-      {
-        CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
-        return;
-      }
-    }
-
-#ifndef MPEXT_NO_GSS
-    if (m_pGssLayer)
-    {
-      AddLayer(m_pGssLayer);
-    }
-#endif
+    Start();
   }
 }
 
+void CTransferSocket::Start()
+{
+  m_nTransferState = STATE_STARTED;
+
+  m_LastActiveTime=CTime::GetCurrentTime();
+
+  if (m_pSslLayer)
+  {
+    AddLayer(m_pSslLayer);
+    int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer,
+      GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
+      GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
+      GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
+    if (res == SSL_FAILURE_INITSSL)
+    {
+      m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
+    }
+
+    if (res)
+    {
+      CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
+      return;
+    }
+  }
+
+#ifndef MPEXT_NO_GSS
+  if (m_pGssLayer)
+  {
+    AddLayer(m_pGssLayer);
+  }
+#endif
+}
 
 void CTransferSocket::OnClose(int nErrorCode)
 {

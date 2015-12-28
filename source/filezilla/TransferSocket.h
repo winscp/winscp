@@ -57,6 +57,7 @@ protected:
   virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
   virtual void ConfigureSocket();
   bool Activate();
+  void Start();
 
   CFtpControlSocket * m_pOwner;
   CAsyncProxySocketLayer * m_pProxyLayer;
