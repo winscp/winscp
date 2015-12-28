@@ -105,13 +105,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if (WSAGetLastError()!=WSAEWOULDBLOCK)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAGetLastError(), TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAGetLastError(), TRUE);
-          Reset();
-          ClearBuffer();
+          ConnectionFailed(WSAGetLastError());
         }
         return;
       }
@@ -120,13 +114,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if (m_pRecvBuffer[1]!=90 || m_pRecvBuffer[0]!=0)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-            if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
-          Reset();
-          ClearBuffer();
+          ConnectionFailed(WSAECONNABORTED);
           return;
         }
         if (m_nProxyOpID==PROXYOP_CONNECT)
@@ -154,13 +142,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
             }
             else
             {
-              DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-              if (m_nProxyOpID==PROXYOP_CONNECT)
-                TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-              else
-                TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
-              Reset();
-              ClearBuffer();
+              ConnectionFailed(WSAECONNABORTED);
               return;
             }
           }
@@ -182,13 +164,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if (WSAGetLastError()!=WSAEWOULDBLOCK)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAGetLastError(), TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAGetLastError(), TRUE);
-          Reset();
-          ClearBuffer();
+          ConnectionFailed(WSAGetLastError());
         }
         return;
       }
@@ -197,13 +173,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if (m_pRecvBuffer[1]!=90 || m_pRecvBuffer[0]!=0)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
-          Reset();
-          ClearBuffer();
+          ConnectionFailed(WSAECONNABORTED);
           return;
         }
         //Connection to remote server established
@@ -222,12 +192,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if (WSAGetLastError()!=WSAEWOULDBLOCK)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAGetLastError(), TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAGetLastError(), TRUE);
-          Reset();
+          ConnectionFailed(WSAGetLastError());
         }
         return;
       }
@@ -236,13 +201,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if (m_pRecvBuffer[0]!=5)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
-          Reset();
-          ClearBuffer();
+          ConnectionFailed(WSAECONNABORTED);
           return;
         }
         if (m_pRecvBuffer[1])
@@ -289,12 +248,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           {
             if ((WSAGetLastError()!=WSAEWOULDBLOCK) || res<len)
             {
-              DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-              if (m_nProxyOpID==PROXYOP_CONNECT)
-                TriggerEvent(FD_CONNECT, WSAGetLastError(), TRUE);
-              else
-                TriggerEvent(FD_ACCEPT, WSAGetLastError(), TRUE);
-              Reset();
+              ConnectionFailed(WSAGetLastError());
               return;
             }
           }
@@ -332,12 +286,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if ( ( WSAGetLastError()!=WSAEWOULDBLOCK) || res<len)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAGetLastError(), TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAGetLastError(), TRUE);
-          Reset();
+          ConnectionFailed(WSAGetLastError());
           return;
         }
       }
@@ -355,12 +304,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if (WSAGetLastError()!=WSAEWOULDBLOCK)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAGetLastError(), TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAGetLastError(), TRUE);
-          Reset();
+          ConnectionFailed(WSAGetLastError());
         }
         return;
       }
@@ -405,12 +349,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
         {
           if ((WSAGetLastError()!=WSAEWOULDBLOCK) || res<len)
           {
-            DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-            if (m_nProxyOpID==PROXYOP_CONNECT)
-              TriggerEvent(FD_CONNECT, WSAGetLastError(), TRUE);
-            else
-              TriggerEvent(FD_ACCEPT, WSAGetLastError(), TRUE);
-            Reset();
+            ConnectionFailed(WSAGetLastError());
             return;
           }
         }
@@ -432,12 +371,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if (WSAGetLastError()!=WSAEWOULDBLOCK)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAGetLastError(), TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAGetLastError(), TRUE);
-          Reset();
+          ConnectionFailed(WSAGetLastError());
         }
         return;
       }
@@ -447,13 +381,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
         //Check for errors
         if (m_pRecvBuffer[1]!=0 || m_pRecvBuffer[0]!=5)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
-          Reset();
-          ClearBuffer();
+          ConnectionFailed(WSAECONNABORTED);
           return;
         }
         if (m_nRecvBufferLen==5)
@@ -504,12 +432,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if (WSAGetLastError()!=WSAEWOULDBLOCK)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAGetLastError(), TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAGetLastError(), TRUE);
-          Reset();
+          ConnectionFailed(WSAGetLastError());
         }
         return;
       }
@@ -518,16 +441,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         if (m_pRecvBuffer[1]!=0)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-          else
-          {
-            DebugCheck(m_nProxyOpID == PROXYOP_LISTEN);
-            TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
-          }
-          Reset();
-          ClearBuffer();
+          ConnectionFailed(WSAECONNABORTED);
           return;
         }
         //Connection to remote server established
@@ -547,10 +461,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
         int nError=WSAGetLastError();
         if (nError!=WSAEWOULDBLOCK)
         {
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-          Reset();
-          ClearBuffer();
-          TriggerEvent(FD_CONNECT, nError, TRUE );
+          ConnectionFailed(nError);
         }
         return;
       }
@@ -574,10 +485,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       {
         char* str = new char[strlen("No valid HTTP response") + 1];
         strcpy(str, "No valid HTTP response");
-        DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0, str);
-        Reset();
-        ClearBuffer();
-        TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE );
+        ConnectionFailed(WSAECONNABORTED, str);
         return;
       }
       char *pos = strstr(m_pStrBuffer, "\r\n");
@@ -589,10 +497,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           char *tmp = new char[pos-m_pStrBuffer + 1];
           tmp[pos-m_pStrBuffer] = 0;
           strncpy(tmp, m_pStrBuffer, pos-m_pStrBuffer);
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0, tmp);
-          Reset();
-          ClearBuffer();
-          TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE );
+          ConnectionFailed(WSAECONNABORTED, tmp);
           return;
         }
       }
@@ -603,6 +508,21 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       }
     }
   }
+}
+
+void CAsyncProxySocketLayer::ConnectionFailed(int nErrorCode, char * Str)
+{
+  DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0, Str);
+  if (m_nProxyOpID == PROXYOP_CONNECT)
+  {
+    TriggerEvent(FD_CONNECT, nErrorCode, TRUE);
+  }
+  else
+  {
+    TriggerEvent(FD_ACCEPT, nErrorCode, TRUE);
+  }
+  Reset();
+  ClearBuffer();
 }
 
 void CAsyncProxySocketLayer::ConnectionEstablished()
@@ -781,24 +701,12 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
       int nErrorCode=WSAGetLastError();
       if (res==SOCKET_ERROR)//nErrorCode!=WSAEWOULDBLOCK)
       {
-        DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-        if (m_nProxyOpID==PROXYOP_CONNECT)
-          TriggerEvent(FD_CONNECT, (nErrorCode==WSAEWOULDBLOCK)?WSAECONNABORTED:nErrorCode, TRUE);
-        else
-          TriggerEvent(FD_ACCEPT, nErrorCode, TRUE);
-        Reset();
-        ClearBuffer();
+        ConnectionFailed((m_nProxyOpID == PROXYOP_CONNECT) && (nErrorCode == WSAEWOULDBLOCK) ? WSAECONNABORTED : nErrorCode);
         return;
       }
       else if (res<len)
       {
-        DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-        if (m_nProxyOpID==PROXYOP_CONNECT)
-          TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-        else
-          TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
-        Reset();
-        ClearBuffer();
+        ConnectionFailed(WSAECONNABORTED);
         return;
       }
     }
@@ -818,24 +726,12 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
       int nErrorCode=WSAGetLastError();
       if (res==SOCKET_ERROR)//nErrorCode!=WSAEWOULDBLOCK)
       {
-        DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-        if (m_nProxyOpID==PROXYOP_CONNECT)
-          TriggerEvent(FD_CONNECT, (nErrorCode==WSAEWOULDBLOCK)?WSAECONNABORTED:nErrorCode, TRUE);
-        else
-          TriggerEvent(FD_ACCEPT, nErrorCode, TRUE);
-        Reset();
-        ClearBuffer();
+        ConnectionFailed((m_nProxyOpID == PROXYOP_CONNECT) && (nErrorCode == WSAEWOULDBLOCK) ? WSAECONNABORTED : nErrorCode);
         return;
       }
       else if (res<len)
       {
-        DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-        if (m_nProxyOpID==PROXYOP_CONNECT)
-          TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-        else
-          TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
-        Reset();
-        ClearBuffer();
+        ConnectionFailed(WSAECONNABORTED);
         return;
       }
     }
@@ -879,24 +775,12 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
       int nErrorCode=WSAGetLastError();
       if (numsent==SOCKET_ERROR)//nErrorCode!=WSAEWOULDBLOCK)
       {
-        DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-        if (m_nProxyOpID==PROXYOP_CONNECT)
-          TriggerEvent(FD_CONNECT, (nErrorCode==WSAEWOULDBLOCK)?WSAECONNABORTED:nErrorCode, TRUE);
-        else
-          TriggerEvent(FD_ACCEPT, nErrorCode, TRUE);
-        Reset();
-        ClearBuffer();
+        ConnectionFailed((m_nProxyOpID == PROXYOP_CONNECT) && (nErrorCode == WSAEWOULDBLOCK) ? WSAECONNABORTED : nErrorCode);
         return;
       }
       else if (  numsent < static_cast<int>( strlen(str) )  )
       {
-        DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0);
-        if (m_nProxyOpID==PROXYOP_CONNECT)
-          TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-        else
-          TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
-        Reset();
-        ClearBuffer();
+        ConnectionFailed(WSAECONNABORTED);
         return;
       }
       m_nProxyOpState++;

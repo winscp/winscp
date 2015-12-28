@@ -125,6 +125,7 @@ private:
   void Reset();
   void ClearBuffer();    // Clears the receive buffer
   void ConnectionEstablished();
+  void ConnectionFailed(int nErrorCode, char * Str = NULL);
   char *m_pRecvBuffer;  // The receive buffer
   int m_nRecvBufferLen;  // Length of the RecvBuffer
   int m_nRecvBufferPos;  // Position within the receive buffer
