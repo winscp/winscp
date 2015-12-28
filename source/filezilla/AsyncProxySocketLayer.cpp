@@ -173,7 +173,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
         ClearBuffer();
       }
     }
-    else if (m_nProxyOpID==2)
+    else if (m_nProxyOpID==PROXYOP_LISTEN)
     {
       if (!m_pRecvBuffer)
         m_pRecvBuffer=new char[8];
