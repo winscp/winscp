@@ -132,11 +132,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
         if (m_nProxyOpID==PROXYOP_CONNECT)
         {
           //OK, we are connected with the remote server
-          ClearBuffer();
-          Reset();
-          TriggerEvent(FD_CONNECT, 0, TRUE);
-          TriggerEvent(FD_READ, 0, TRUE);
-          TriggerEvent(FD_WRITE, 0, TRUE);
+          ConnectionEstablished();
           return;
         }
         else
@@ -211,11 +207,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           return;
         }
         //Connection to remote server established
-        ClearBuffer();
-        Reset();
-        TriggerEvent(FD_ACCEPT, 0, TRUE);
-        TriggerEvent(FD_READ, 0, TRUE);
-        TriggerEvent(FD_WRITE, 0, TRUE);
+        ConnectionEstablished();
       }
     }
   }
@@ -483,11 +475,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
         if (m_nProxyOpID==PROXYOP_CONNECT)
         {
           //OK, we are connected with the remote server
-          Reset();
-          ClearBuffer();
-          TriggerEvent(FD_CONNECT, 0, TRUE);
-          TriggerEvent(FD_READ, 0, TRUE);
-          TriggerEvent(FD_WRITE, 0, TRUE);
+          ConnectionEstablished();
         }
         else
         {
@@ -508,6 +496,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
     }
     else if (m_nProxyOpState==4)
     {
+      DebugAssert(m_nProxyOpID == PROXYOP_LISTEN);
       if (!m_pRecvBuffer)
         m_pRecvBuffer=new char[10];
       int numread=ReceiveNext(m_pRecvBuffer+m_nRecvBufferPos,10-m_nRecvBufferPos);
@@ -542,11 +531,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           return;
         }
         //Connection to remote server established
-        ClearBuffer();
-        Reset();
-        TriggerEvent(FD_ACCEPT, 0, TRUE);
-        TriggerEvent(FD_READ, 0, TRUE);
-        TriggerEvent(FD_WRITE, 0, TRUE);
+        ConnectionEstablished();
       }
     }
   }
@@ -613,15 +598,22 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       }
       if (strlen(m_pStrBuffer)>3 && !memcmp(m_pStrBuffer+strlen(m_pStrBuffer)-4, "\r\n\r\n", 4)) //End of the HTTP header
       {
-        Reset();
-        ClearBuffer();
-        TriggerEvent(FD_CONNECT, 0, TRUE);
-        TriggerEvent(FD_READ, 0, TRUE);
-        TriggerEvent(FD_WRITE, 0, TRUE);
+        ConnectionEstablished();
         return;
       }
     }
   }
+}
+
+void CAsyncProxySocketLayer::ConnectionEstablished()
+{
+  int Event = (m_nProxyOpID == PROXYOP_CONNECT) ? FD_CONNECT : FD_ACCEPT;
+  ClearBuffer();
+  Reset();
+
+  TriggerEvent(Event, 0, TRUE);
+  TriggerEvent(FD_READ, 0, TRUE);
+  TriggerEvent(FD_WRITE, 0, TRUE);
 }
 
 BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
