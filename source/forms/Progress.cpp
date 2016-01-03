@@ -541,7 +541,13 @@ void __fastcall TProgressForm::SetOnceDoneItem(TTBCustomItem * Item)
   {
     Current->Checked = false;
     Item->Checked = true;
-    UpdateControls();
+    // Not until we have any data to update.
+    // Happens when set to odoDisconnect in command-line upload/download
+    // mode from TCustomScpExplorerForm::FileOperationProgress.
+    if (FDataGot)
+    {
+      UpdateControls();
+    }
   }
 }
 //---------------------------------------------------------------------------
