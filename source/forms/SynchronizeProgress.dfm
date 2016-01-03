@@ -96,6 +96,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Height = 28
     Anchors = [akLeft, akBottom]
     BevelOuter = bvNone
+    ParentColor = True
     TabOrder = 0
     object Dock: TTBXDock
       Left = 0

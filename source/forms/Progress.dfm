@@ -33,6 +33,7 @@ object ProgressForm: TProgressForm
     Height = 68
     Anchors = [akLeft, akTop, akRight]
     BevelOuter = bvNone
+    ParentColor = True
     TabOrder = 0
     DesignSize = (
       302
@@ -91,6 +92,7 @@ object ProgressForm: TProgressForm
     Height = 63
     Anchors = [akLeft, akTop, akRight]
     BevelOuter = bvNone
+    ParentColor = True
     TabOrder = 1
     DesignSize = (
       322
@@ -197,6 +199,7 @@ object ProgressForm: TProgressForm
     Height = 28
     Anchors = [akLeft, akBottom]
     BevelOuter = bvNone
+    ParentColor = True
     TabOrder = 2
     object Dock: TTBXDock
       Left = 0
