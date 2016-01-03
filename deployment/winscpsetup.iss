@@ -8,7 +8,7 @@
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebReport WebRoot+"install.php"
 #define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
-#define Year 2015
+#define Year 2016
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"

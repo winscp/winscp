@@ -558,7 +558,7 @@ BEGIN
         CUSTOM_COMMAND_HINT_LONG, "Execute custom command '%s' as '%s'"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000-2015 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"
         HOMEPAGE_URL, "https://winscp.net/"
         HISTORY_URL, "https://winscp.net/eng/docs/history"
         FORUM_URL, "https://winscp.net/forum/"
