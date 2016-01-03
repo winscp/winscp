@@ -905,9 +905,9 @@ int __fastcall Execute()
       {
         Retry = false;
         TObjectList * DataList = new TObjectList();
-        GetLoginData(AutoStartSession, Params, DataList, DownloadFile, NeedSession);
         try
         {
+          GetLoginData(AutoStartSession, Params, DataList, DownloadFile, NeedSession);
           // GetLoginData now Aborts when session is needed and none is selected
           if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
           {
