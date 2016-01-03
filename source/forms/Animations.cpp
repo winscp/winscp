@@ -64,3 +64,7 @@ __fastcall TAnimationsModule::TAnimationsModule(TComponent * Owner)
   AnimationImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(AnimationImages->Name)));
 }
 //---------------------------------------------------------------------------
+__fastcall TAnimationsModule::~TAnimationsModule()
+{
+}
+//---------------------------------------------------------------------------

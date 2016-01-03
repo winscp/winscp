@@ -15,3 +15,7 @@ __fastcall TAnimations96Module::TAnimations96Module(TComponent * Owner)
 {
 }
 //---------------------------------------------------------------------------
+__fastcall TAnimations96Module::~TAnimations96Module()
+{
+}
+//---------------------------------------------------------------------------

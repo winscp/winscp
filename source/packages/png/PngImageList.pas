@@ -245,9 +245,13 @@ begin
       if Pointers[I].OldPtr <> nil then begin
         Patch := TMethodPatch.Create;
         if PatchPtr(Pointers[I].OldPtr, Pointers[I].NewPtr, Pointers[I].Name, Patch) then
+        begin
           MethodPatches.Add(Patch)
-        else
+        end
+          else
+        begin
           Patch.Free;
+        end;
       end;
     end;
   end;
@@ -256,7 +260,9 @@ end;
 procedure RevertPatchedMethods;
 begin
   if ImageListCount = 0 then
+  begin
     FreeAndNil(MethodPatches);
+  end;
 end;
 
 { TMethodPatch }
@@ -270,7 +276,9 @@ end;
 destructor TMethodPatch.Destroy;
 begin
   if OldPointer <> nil then
+  begin
     PatchBack;
+  end;
   inherited Destroy;
 end;
 

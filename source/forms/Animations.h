@@ -14,6 +14,7 @@ __published:
 
 public:
   __fastcall TAnimationsModule(TComponent * Owner);
+  virtual __fastcall ~TAnimationsModule();
 };
 //---------------------------------------------------------------------------
 #endif
