@@ -637,7 +637,8 @@ void __fastcall TFTPFileSystem::CollectUsage()
   // 220 Microsoft FTP Service
   // SYST
   // 215 Windows_NT
-  else if (ContainsText(FWelcomeMessage, L"Microsoft FTP Service"))
+  else if (ContainsText(FWelcomeMessage, L"Microsoft FTP Service") ||
+           ContainsText(FSystem, L"Windows_NT"))
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPIIS");
   }
@@ -3589,7 +3590,8 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
           FTerminal->LogEvent(L"The server requires TLS/SSL handshake on transfer connection before responding 1yz to STOR/APPE");
           FTransferActiveImmediately = true;
         }
-        if (ContainsText(FWelcomeMessage, L"Microsoft FTP Service"))
+        // The FWelcomeMessage usually contains "Microsoft FTP Service" but can be empty
+        if (ContainsText(FSystem, L"Windows_NT"))
         {
           FTerminal->LogEvent(L"The server is probably running Windows, assuming that directory listing timestamps are affected by DST.");
           FWindowsServer = true;
