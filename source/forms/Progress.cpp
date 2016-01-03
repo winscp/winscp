@@ -434,6 +434,10 @@ void __fastcall TProgressForm::FormShow(TObject * /*Sender*/)
   {
     UpdateControls();
   }
+  // HACK: In command-line run (/upload), FormShow gets called twice,
+  // leading to duplicate hook and memory leak. Make sure we unhook, just in case.
+  // Calling unhook without hooking first is noop.
+  UnhookFormActivation(this);
   HookFormActivation(this);
 }
 //---------------------------------------------------------------------------
