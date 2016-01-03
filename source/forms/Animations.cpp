@@ -2,7 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include "Global.h"
+#include "Common.h"
 #include "Animations.h"
 #include "Animations96.h"
 #include "Animations120.h"
@@ -36,6 +36,14 @@ TAnimationsModule * __fastcall GetAnimationsModule()
   return AnimationsModule;
 }
 //---------------------------------------------------------------------------
+void __fastcall ReleaseAnimationsModule()
+{
+  if (AnimationsModule != NULL)
+  {
+    SAFE_DESTROY(AnimationsModule);
+  }
+}
+//---------------------------------------------------------------------------
 __fastcall TAnimationsModule::TAnimationsModule(TComponent * Owner)
   : TDataModule(Owner)
 {
@@ -58,8 +66,15 @@ __fastcall TAnimationsModule::TAnimationsModule(TComponent * Owner)
     ScaledModule = new TAnimations96Module(Application);
   }
 
-  // Not really necessary as we never acccess AnimationImages by name
-  CopyDataModule(this, ScaledModule);
+  try
+  {
+    // Not really necessary as we never acccess AnimationImages by name
+    CopyDataModule(this, ScaledModule);
+  }
+  __finally
+  {
+    delete ScaledModule;
+  }
 
   AnimationImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(AnimationImages->Name)));
 }

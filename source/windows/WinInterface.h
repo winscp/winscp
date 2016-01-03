@@ -461,6 +461,7 @@ bool __fastcall IsCustomShortCut(TShortCut ShortCut);
 
 class TAnimationsModule;
 TAnimationsModule * __fastcall GetAnimationsModule();
+void __fastcall ReleaseAnimationsModule();
 
 #ifdef _DEBUG
 void __fastcall ForceTracing();

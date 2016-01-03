@@ -1017,6 +1017,7 @@ int __fastcall Execute()
   {
     delete NonVisualDataModule;
     NonVisualDataModule = NULL;
+    ReleaseAnimationsModule();
     delete GlyphsModule;
     GlyphsModule = NULL;
     TTerminalManager::DestroyInstance();
