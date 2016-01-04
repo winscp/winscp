@@ -1935,13 +1935,13 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           405
           392)
-        object UpdatesGroup: TGroupBox
+        object UpdatesGroup2: TGroupBox
           Left = 8
           Top = 8
           Width = 389
           Height = 125
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Automatic check for application updates'
+          Caption = 'Automatic updates'
           TabOrder = 0
           DesignSize = (
             389

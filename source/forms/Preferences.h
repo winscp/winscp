@@ -136,7 +136,7 @@ __published:
   TRadioButton *PathInCaptionShortButton;
   TRadioButton *PathInCaptionNoneButton;
   TTabSheet *UpdatesSheet;
-  TGroupBox *UpdatesGroup;
+  TGroupBox *UpdatesGroup2;
   TGroupBox *UpdatesProxyGroup;
   TLabel *UpdatesProxyHostLabel;
   TLabel *UpdatesProxyPortLabel;
