@@ -277,9 +277,17 @@ begin
   // RTL_COPY (TCustomForm.ReadState)
   Form := ValidParentForm(Control);
   TextHeight := Form.RetrieveTextHeight;
-  // that's our design text-size, we do not expect any other value
-  Assert(TextHeight = OurDesignTimeTextHeight);
-  Result := ScaleByTextHeightImpl(Control, Dimension, TextHeight);
+  // runtime form (such as TTBFloatingWindowParent)
+  if TextHeight = 0 then
+  begin
+    Result := ScaleByTextHeightRunTime(Control, Dimension);
+  end
+    else
+  begin
+    // that's our design text-size, we do not expect any other value
+    Assert(TextHeight = OurDesignTimeTextHeight);
+    Result := ScaleByTextHeightImpl(Control, Dimension, TextHeight);
+  end;
 end;
 
 // this differs from ScaleByTextHeight only by enforcing
