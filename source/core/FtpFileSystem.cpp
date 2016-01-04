@@ -4337,7 +4337,9 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestNeedPass(
       }
     }
 
-    if (!Password.IsEmpty())
+    // When returning REPLY_OK, we need to return an allocated password,
+    // even if we were returning and empty string we got on input.
+    if (RequestResult == TFileZillaIntf::REPLY_OK)
     {
       Data.Password = _wcsdup(Password.c_str());
     }
