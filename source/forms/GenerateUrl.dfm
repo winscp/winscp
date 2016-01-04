@@ -103,6 +103,15 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Caption = '&Format:'
         FocusControl = ScriptFormatCombo
       end
+      object ScriptDescriptionLabel: TLabel
+        Left = 11
+        Top = 32
+        Width = 446
+        Height = 42
+        AutoSize = False
+        Caption = 'ScriptDescriptionLabel'
+        WordWrap = True
+      end
       object ScriptFormatCombo: TComboBox
         Left = 112
         Top = 5
@@ -127,6 +136,15 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Height = 13
         Caption = '&Language:'
         FocusControl = AssemblyLanguageCombo
+      end
+      object AssemblyDescriptionLabel: TLabel
+        Left = 11
+        Top = 32
+        Width = 446
+        Height = 42
+        AutoSize = False
+        Caption = 'AssemblyDescriptionLabel'
+        WordWrap = True
       end
       object AssemblyLanguageCombo: TComboBox
         Left = 112

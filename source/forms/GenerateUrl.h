@@ -32,6 +32,8 @@ __published:
   TComboBox *ScriptFormatCombo;
   TLabel *Label1;
   TComboBox *AssemblyLanguageCombo;
+  TLabel *ScriptDescriptionLabel;
+  TLabel *AssemblyDescriptionLabel;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ClipboardButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);

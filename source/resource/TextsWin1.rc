@@ -556,6 +556,9 @@ BEGIN
         TIPS_MESSAGE, "Tip %d of %d"
         TIPS_TITLE, "Tips"
         CUSTOM_COMMAND_HINT_LONG, "Execute custom command '%s' as '%s'"
+        GENERATE_URL_COMMANDLINE_LABEL, "Command-line arguments"
+        GENERATE_URL_COMMANDLINE_DESC, "Command-line arguments for %s"
+        GENERATE_URL_HOSTKEY_UNKNOWN, "A server host key is not known. Please connect at least once, before generating the code."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"

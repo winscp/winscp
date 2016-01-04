@@ -70,10 +70,13 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
 {
   if (!FChanging)
   {
+    UnicodeString ExeName = Application->ExeName;
     Caption = LoadStr(IsFileUrl() ? GENERATE_URL_FILE_TITLE : GENERATE_URL_SESSION_TITLE);
 
     ScriptSheet->TabVisible = !IsFileUrl();
     AssemblySheet->TabVisible = !IsFileUrl();
+
+    bool HostKeyUnknown = FData->UsesSsh && FData->HostKey.IsEmpty();
 
     UnicodeString ResultGroupCaption;
     if (OptionsPageControl->ActivePage == UrlSheet)
@@ -82,11 +85,31 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     }
     else if (OptionsPageControl->ActivePage == ScriptSheet)
     {
-      ResultGroupCaption = ScriptFormatCombo->Items->Strings[ScriptFormatCombo->ItemIndex];
+      UnicodeString ScriptDescription;
+      if (ScriptFormatCombo->ItemIndex == sfCommandLine)
+      {
+        ResultGroupCaption = LoadStr(GENERATE_URL_COMMANDLINE_LABEL);
+        ScriptDescription = FMTLOAD(GENERATE_URL_COMMANDLINE_DESC, (FORMAT("\"%s\"", (ExeName)))) + L"\n";
+      }
+      else
+      {
+        ResultGroupCaption = ScriptFormatCombo->Items->Strings[ScriptFormatCombo->ItemIndex];
+      }
+      if (HostKeyUnknown)
+      {
+        ScriptDescription += LoadStr(GENERATE_URL_HOSTKEY_UNKNOWN) + L"\n";
+      }
+      ScriptDescriptionLabel->Caption = ScriptDescription;
     }
     else if (DebugAlwaysTrue(OptionsPageControl->ActivePage == AssemblySheet))
     {
       ResultGroupCaption = LoadStr(GENERATE_URL_CODE);
+      UnicodeString AssemblyDescription;
+      if (HostKeyUnknown)
+      {
+        AssemblyDescription += LoadStr(GENERATE_URL_HOSTKEY_UNKNOWN) + L"\n";
+      }
+      AssemblyDescriptionLabel->Caption = AssemblyDescription;
     }
     ResultGroup->Caption = ResultGroupCaption;
 
@@ -123,7 +146,6 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     }
     else if (OptionsPageControl->ActivePage == ScriptSheet)
     {
-      UnicodeString ExeName = Application->ExeName;
       UnicodeString BaseExeName = ExtractFileBaseName(ExeName);
       UnicodeString OpenCommand = FData->GenerateOpenCommandArgs();
       UnicodeString CommandPlaceholder1 = FMTLOAD(GENERATE_URL_COMMAND, (1));
@@ -173,8 +195,8 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       {
         Result =
           FORMAT(
-            L"\"%s\" /console /log=%s.log /ini=nul /command \"open %s\" \"%s\" \"%s\" \"exit\"",
-            (ExeName, BaseExeName, EscapeParam(OpenCommand), CommandPlaceholder1, CommandPlaceholder2));
+            L"/log=%s.log /ini=nul /command \"open %s\" \"%s\" \"%s\" \"exit\"",
+            (BaseExeName, EscapeParam(OpenCommand), CommandPlaceholder1, CommandPlaceholder2));
         WordWrap = true;
         FixedWidth = false;
       }
