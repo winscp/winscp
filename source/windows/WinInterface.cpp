@@ -320,7 +320,7 @@ public:
   __fastcall TMessageTimeout(TComponent * AOwner, unsigned int Timeout,
     TButton * Button);
 
-  void __fastcall Suspend();
+  void __fastcall MouseMove();
   void __fastcall Cancel();
 
 protected:
@@ -328,6 +328,7 @@ protected:
   unsigned int FTimeout;
   TButton * FButton;
   UnicodeString FOrigCaption;
+  TPoint FOrigCursorPos;
 
   void __fastcall DoTimer(TObject * Sender);
   void __fastcall UpdateButton();
@@ -340,14 +341,28 @@ __fastcall TMessageTimeout::TMessageTimeout(TComponent * AOwner,
   OnTimer = DoTimer;
   Interval = MSecsPerSec;
   FOrigCaption = FButton->Caption;
+  FOrigCursorPos = Mouse->CursorPos;
   UpdateButton();
 }
 //---------------------------------------------------------------------------
-void __fastcall TMessageTimeout::Suspend()
+void __fastcall TMessageTimeout::MouseMove()
 {
-  const unsigned int SuspendTime = 30 * MSecsPerSec;
-  FTimeout = std::max(FOrigTimeout, SuspendTime);
-  UpdateButton();
+  TPoint CursorPos = Mouse->CursorPos;
+  int Delta = std::max(std::abs(FOrigCursorPos.X - CursorPos.X), std::abs(FOrigCursorPos.Y - CursorPos.Y));
+
+  int Threshold = 8;
+  if (DebugAlwaysTrue(FButton != NULL))
+  {
+    Threshold = ScaleByTextHeight(FButton, Threshold);
+  }
+
+  if (Delta > Threshold)
+  {
+    FOrigCursorPos = CursorPos;
+    const unsigned int SuspendTime = 30 * MSecsPerSec;
+    FTimeout = std::max(FOrigTimeout, SuspendTime);
+    UpdateButton();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageTimeout::Cancel()
@@ -396,7 +411,7 @@ static void __fastcall MessageDialogMouseMove(void * Data, TObject * /*Sender*/,
 {
   DebugAssert(Data != NULL);
   TMessageTimeout * Timeout = static_cast<TMessageTimeout *>(Data);
-  Timeout->Suspend();
+  Timeout->MouseMove();
 }
 //---------------------------------------------------------------------------
 static void __fastcall MessageDialogMouseDown(void * Data, TObject * /*Sender*/,
