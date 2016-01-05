@@ -3782,7 +3782,6 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
       break;
 
     case TFileZillaIntf::LOG_DEBUG:
-      // used for directory listing only
       LogType = llMessage;
       break;
 
