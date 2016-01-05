@@ -101,7 +101,6 @@ public:
     LOG_ERROR = 1,
     LOG_COMMAND = 2,
     LOG_REPLY = 3,
-    LOG_LIST = 4,
     LOG_APIERROR = 5,
     LOG_WARNING = 6,
     LOG_PROGRESS = 7,
