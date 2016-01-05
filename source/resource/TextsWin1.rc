@@ -500,8 +500,8 @@ BEGIN
         DOCUMENTATION_URL2, "http://winscp.net/eng/docs/?ver=%s&lang=%s"
         DOCUMENTATION_KEYWORD_URL2, "http://winscp.net/eng/docs/%s?ver=%s&lang=%s"
         LOCALES_URL, "http://winscp.net/eng/translations.php"
-        DOCUMENTATION_SEARCH_URL2, "http://winscp.net/eng/docs/search.php?q=%s&ver=%s&lang=%s"
-        ERROR_REPORT_URL, "http://winscp.net/forum/posting.php?mode=newtopic&f=2&report=%s&ver=%s&lang=%s"
+        DOCUMENTATION_SEARCH_URL3, "http://winscp.net/eng/docs/search.php?ver=%s&lang=%s&q=%s"
+        ERROR_REPORT_URL2, "http://winscp.net/forum/posting.php?mode=newtopic&ver=%s&lang=%s&report=%s"
         UPGRADE_URL, "http://winscp.net/eng/upgrade.php"
 
 END

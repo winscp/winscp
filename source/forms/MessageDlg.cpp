@@ -149,10 +149,12 @@ void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::ReportButtonClick(TObject * /*Sender*/)
 {
+  // Report text goes last, as it may exceed URL parameters limit (2048) and get truncated.
+  // And we need to preserve the other parameters.
   UnicodeString Url =
-    FMTLOAD(ERROR_REPORT_URL,
-      (EncodeUrlString(GetReportText()), Configuration->ProductVersion,
-       IntToHex(__int64(GUIConfiguration->Locale), 4)));
+    FMTLOAD(ERROR_REPORT_URL2,
+      (Configuration->ProductVersion, IntToHex(__int64(GUIConfiguration->Locale), 4),
+       EncodeUrlString(GetReportText())));
 
   OpenBrowser(Url);
 }
