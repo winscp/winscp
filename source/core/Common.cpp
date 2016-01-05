@@ -2815,8 +2815,24 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 
             if (Certificate == NULL)
             {
-              ThrowTlsCertificateErrorIgnorePassphraseErrors(CertificatePath);
-              WrongPassphrase = true;
+              int Base64Error = ERR_get_error();
+
+              File = OpenCertificate(CertificatePath);
+              // Binary DER-encoded certificate
+              // (as above, with BEGIN/END removed, and decoded from Base64 to binary)
+              // openssl x509 -in cert.crt -out client.der.crt -outform DER
+              Certificate = d2i_X509_fp(File, NULL);
+              fclose(File);
+
+              if (Certificate == NULL)
+              {
+                int DERError = ERR_get_error();
+
+                UnicodeString Message = MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (CertificatePath)));
+                UnicodeString MoreMessages =
+                  FORMAT(L"Base64: %s\nDER: %s", (GetTlsErrorStr(Base64Error), GetTlsErrorStr(DERError)));
+                throw ExtException(Message, MoreMessages);
+              }
             }
           }
         }
