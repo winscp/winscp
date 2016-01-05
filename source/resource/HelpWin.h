@@ -17,7 +17,7 @@
 #define HELP_REMOTE_MOVE             "task_move_duplicate"
 #define HELP_CUSTOM_COMMAND_PARAM    "remote_command#custom_commands"
 #define HELP_SYNCHRONIZE_SAVE_MODE   "ui_synchronize"
-#define HELP_PROGRESS_CANCEL         "ui_progress#controlling_the_operation"
+#define HELP_PROGRESS_CANCEL         "ui_progress#controlling"
 #define HELP_KEEPUPTODATE_SYNCHRONIZE "task_keep_up_to_date"
 #define HELP_DND_DOWNLOAD_MOVE_WARNING "ui_pref_dragdrop#temporary_folder_mode"
 #define HELP_DD_WARN_LACK_OF_TEMP_SPACE HELP_DND_DOWNLOAD_MOVE_WARNING
