@@ -2720,6 +2720,8 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 
   // Inspired by neon's ne_ssl_clicert_read
   File = OpenCertificate(Path);
+  // openssl pkcs12 -inkey cert.pem -in cert.crt -export -out cert.pfx
+  // Binary file
   PKCS12 * Pkcs12 = d2i_PKCS12_fp(File, NULL);
   fclose(File);
 
@@ -2745,6 +2747,20 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
     CallbackUserData.Passphrase = const_cast<UnicodeString *>(&Passphrase);
 
     File = OpenCertificate(Path);
+    // Encrypted:
+    // openssl req -x509 -newkey rsa:2048 -keyout cert.pem -out cert.crt
+    // -----BEGIN ENCRYPTED PRIVATE KEY-----
+    // ...
+    // -----END ENCRYPTED PRIVATE KEY-----
+
+    // Not encrypted (add -nodes):
+    // -----BEGIN PRIVATE KEY-----
+    // ...
+    // -----END PRIVATE KEY-----
+    // Or (openssl genrsa -out client.key 1024   # used for certificate signing request)
+    // -----BEGIN RSA PRIVATE KEY-----
+    // ...
+    // -----END RSA PRIVATE KEY-----
     PrivateKey = PEM_read_PrivateKey(File, NULL, PemPasswordCallback, &CallbackUserData);
     fclose(File);
 
@@ -2757,6 +2773,14 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
       }
 
       File = OpenCertificate(Path);
+      // The file can contain both private and public key
+      // (basically cert.pem and cert.crt appended one to each other)
+      // -----BEGIN ENCRYPTED PRIVATE KEY-----
+      // ...
+      // -----END ENCRYPTED PRIVATE KEY-----
+      // -----BEGIN CERTIFICATE-----
+      // ...
+      // -----END CERTIFICATE-----
       Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
       fclose(File);
 
@@ -2783,6 +2807,9 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
           else
           {
             File = OpenCertificate(CertificatePath);
+            // -----BEGIN CERTIFICATE-----
+            // ...
+            // -----END CERTIFICATE-----
             Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
             fclose(File);
 
