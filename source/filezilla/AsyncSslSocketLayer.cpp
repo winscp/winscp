@@ -1753,7 +1753,7 @@ int CAsyncSslSocketLayer::ProvideClientCert(
   }
   else
   {
-    Level = FZ_LOG_INFO;
+    Level = FZ_LOG_PROGRESS;
     *Certificate = X509_dup(Layer->FCertificate);
     CRYPTO_add(&Layer->FPrivateKey->references, 1, CRYPTO_LOCK_EVP_PKEY);
     *PrivateKey = Layer->FPrivateKey;
