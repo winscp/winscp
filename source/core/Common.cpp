@@ -2713,6 +2713,9 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
   const UnicodeString & Passphrase, X509 *& Certificate, EVP_PKEY *& PrivateKey,
   bool & WrongPassphrase)
 {
+  Certificate = NULL;
+  PrivateKey = NULL;
+
   FILE * File;
 
   // Inspired by neon's ne_ssl_clicert_read
