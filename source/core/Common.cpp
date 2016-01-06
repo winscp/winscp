@@ -2690,20 +2690,26 @@ static int PemPasswordCallback(char * Buf, int Size, int /*RWFlag*/, void * User
   return strlen(Buf);
 }
 //---------------------------------------------------------------------------
-static bool __fastcall IsTlsPassphraseError(int Error)
+static bool __fastcall IsTlsPassphraseError(int Error, bool HasPassphrase)
 {
+  int ErrorLib = ERR_GET_LIB(Error);
+  int ErrorReason = ERR_GET_REASON(Error);
+
   bool Result =
-    ((ERR_GET_LIB(Error) == ERR_LIB_PKCS12) &&
-     (ERR_GET_REASON(Error) == PKCS12_R_MAC_VERIFY_FAILURE)) ||
-    ((ERR_GET_LIB(Error) == ERR_LIB_PEM) &&
-     (ERR_GET_REASON(Error) == PEM_R_BAD_PASSWORD_READ));
+    ((ErrorLib == ERR_LIB_PKCS12) &&
+     (ErrorReason == PKCS12_R_MAC_VERIFY_FAILURE)) ||
+    ((ErrorLib == ERR_LIB_PEM) &&
+     (ErrorReason == PEM_R_BAD_PASSWORD_READ)) ||
+    (HasPassphrase && (ERR_LIB_EVP == ERR_LIB_EVP) &&
+     ((ErrorReason == PEM_R_BAD_DECRYPT) || (ErrorReason == PEM_R_BAD_BASE64_DECODE)));
+
   return Result;
 }
 //---------------------------------------------------------------------------
-static void __fastcall ThrowTlsCertificateErrorIgnorePassphraseErrors(const UnicodeString & Path)
+static void __fastcall ThrowTlsCertificateErrorIgnorePassphraseErrors(const UnicodeString & Path, bool HasPassphrase)
 {
   int Error = ERR_get_error();
-  if (!IsTlsPassphraseError(Error))
+  if (!IsTlsPassphraseError(Error, HasPassphrase))
   {
     throw ExtException(MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (Path))), GetTlsErrorStr(Error));
   }
@@ -2715,6 +2721,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 {
   Certificate = NULL;
   PrivateKey = NULL;
+  bool HasPassphrase = !Passphrase.IsEmpty();
 
   FILE * File;
 
@@ -2734,7 +2741,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 
     if (!Result)
     {
-      ThrowTlsCertificateErrorIgnorePassphraseErrors(Path);
+      ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
       WrongPassphrase = true;
     }
   }
@@ -2768,7 +2775,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
     {
       if (PrivateKey == NULL)
       {
-        ThrowTlsCertificateErrorIgnorePassphraseErrors(Path);
+        ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
         WrongPassphrase = true;
       }
 
@@ -2788,7 +2795,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
       {
         int Error = ERR_get_error();
         // unlikely
-        if (IsTlsPassphraseError(Error))
+        if (IsTlsPassphraseError(Error, HasPassphrase))
         {
           WrongPassphrase = true;
         }
