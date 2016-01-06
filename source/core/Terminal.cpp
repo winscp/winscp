@@ -5973,7 +5973,7 @@ bool __fastcall TTerminal::LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& P
         }
         else
         {
-          Abort();
+          Result = false;
         }
       }
     }
