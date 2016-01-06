@@ -417,6 +417,7 @@ void __fastcall TFTPFileSystem::Open()
   }
 
   FPasswordFailed = false;
+  FStoredPasswordTried = false;
   bool PromptedForCredentials = false;
 
   do
@@ -2846,7 +2847,7 @@ bool __fastcall TFTPFileSystem::TemporaryTransferFile(const UnicodeString & /*Fi
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::GetStoredCredentialsTried()
 {
-  return !FTerminal->SessionData->Password.IsEmpty();
+  return FStoredPasswordTried;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TFTPFileSystem::GetUserName()
@@ -3600,6 +3601,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     }
     else if (FLastCommand == PASS)
     {
+      FStoredPasswordTried = true;
       // 530 = "Not logged in."
       if (FLastCode == 530)
       {
