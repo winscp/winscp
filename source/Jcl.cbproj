@@ -89,6 +89,7 @@
 		<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2)'!=''">
+		<DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
 		<Defines>NDEBUG;$(Defines)</Defines>
 		<TASM_Debugging>None</TASM_Debugging>
 	</PropertyGroup>
