@@ -2070,7 +2070,7 @@ void __fastcall Usage(TConsole * Console)
   PrintUsageSyntax(Console, L"[/ini=<inifile>]");
   PrintUsageSyntax(Console, L"[/rawconfig config1=value1 config2=value2 ...]");
   PrintUsageSyntax(Console, L"/batchsettings <site_mask> setting1=value1 setting2=value2 ...");
-  PrintUsageSyntax(Console, FORMAT(L"/%s keyfile /%s=output [/%s] [/%s=comment]",
+  PrintUsageSyntax(Console, FORMAT(L"/%s keyfile [/%s=output] [/%s] [/%s=comment]",
     (LowerCase(KEYGEN_SWITCH), LowerCase(KEYGEN_OUTPUT_SWITCH), LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH), LowerCase(KEYGEN_COMMENT_SWITCH))));
   if (!Console->CommandLineOnly())
   {
