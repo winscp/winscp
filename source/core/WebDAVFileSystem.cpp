@@ -1932,6 +1932,7 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
   DebugAssert(File);
   TFileMasks::TParams MaskParams;
   MaskParams.Size = File->Size;
+  MaskParams.Modification = File->Modification;
 
   UnicodeString BaseFileName = FTerminal->GetBaseFileName(FileName);
   if (!CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams))
