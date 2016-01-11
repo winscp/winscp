@@ -44,15 +44,22 @@ __fastcall TGlyphsModule::TGlyphsModule(TComponent* Owner)
 
   if (ScaledModule != NULL)
   {
-    CopyDataModule(this, ScaledModule);
+    try
+    {
+      CopyDataModule(this, ScaledModule);
 
-    // Not all these are accessed by field name, but we copy all for consistency
-    ExplorerImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(ExplorerImages->Name)));
-    SessionImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(SessionImages->Name)));
-    QueueImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(QueueImages->Name)));
-    LogImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(LogImages->Name)));
-    ButtonImages = DebugNotNull(dynamic_cast<TImageList *>(FindComponent(ButtonImages->Name)));
-    DialogImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(DialogImages->Name)));
+      // Not all these are accessed by field name, but we copy all for consistency
+      ExplorerImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(ExplorerImages->Name)));
+      SessionImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(SessionImages->Name)));
+      QueueImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(QueueImages->Name)));
+      LogImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(LogImages->Name)));
+      ButtonImages = DebugNotNull(dynamic_cast<TImageList *>(FindComponent(ButtonImages->Name)));
+      DialogImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(DialogImages->Name)));
+    }
+    __finally
+    {
+      delete ScaledModule;
+    }
   }
 }
 //---------------------------------------------------------------------------
