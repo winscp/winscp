@@ -795,9 +795,7 @@ var
   Caption: TLabel;
   Image: TBitmapImage;
   HelpButton: TButton;
-#ifdef Donations
   P: Integer;
-#endif
   S: string;
   Completeness: Integer;
 begin
@@ -1115,7 +1113,16 @@ begin
     LoadEmbededScaledBitmap(WizardForm.WizardSmallBitmapImage, '{#WizardSmallImageFileBase}', 100, 0);
   end;
 
+  // Text does not scale as quick as with DPI,
+  // so the icon may overlap the labels. Shift them.
+  P := WizardForm.SelectDirBitmapImage.Width;
   LoadEmbededScaledIcon(WizardForm.SelectDirBitmapImage, '{#SelectDirFileBase}', 32, WizardForm.SelectDirPage.Color);
+  P := (WizardForm.SelectDirBitmapImage.Width - P);
+  // Vertical change should be the same as horizontal
+  WizardForm.SelectDirLabel.Left := WizardForm.SelectDirLabel.Left + P;
+  WizardForm.SelectDirBrowseLabel.Top := WizardForm.SelectDirBrowseLabel.Top + P;
+  WizardForm.DirEdit.Top := WizardForm.DirEdit.Top + P;
+  WizardForm.DirBrowseButton.Top := WizardForm.DirBrowseButton.Top + P;
 end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);
