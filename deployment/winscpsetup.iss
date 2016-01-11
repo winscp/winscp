@@ -692,7 +692,6 @@ begin
 
   Image.Bitmap := Bitmap;
   Bitmap.Free;
-  Image.AutoSize := True;
   Image.BackColor := BackgroundColor;
 end;
 
@@ -712,6 +711,12 @@ var
 begin
   Name := Format('%s %d.bmp', [NameBase, SizeBase * GetScalingFactor div 100]);
   LoadEmbededBitmap(Image, Name, BackgroundColor);
+end;
+
+procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
+begin
+  LoadEmbededScaledBitmap(Image, NameBase, SizeBase, BackgroundColor);
+  Image.AutoSize := True;
 end;
 
 // WORKAROUND
@@ -981,7 +986,7 @@ begin
   Image.Top := GetBottom(CommanderRadioButton) + ScaleY(6);
   Image.Left := CommanderRadioButton.Left + ScaleX(45);
   Image.Parent := InterfacePage.Surface;
-  LoadEmbededScaledBitmap(Image, '{#CommanderFileBase}', 32, InterfacePage.Surface.Color);
+  LoadEmbededScaledIcon(Image, '{#CommanderFileBase}', 32, InterfacePage.Surface.Color);
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(CommanderRadioButton);
 
@@ -1011,7 +1016,7 @@ begin
   Image.Top := GetBottom(ExplorerRadioButton) + ScaleY(6);
   Image.Left := ExplorerRadioButton.Left + ScaleX(45);
   Image.Parent := InterfacePage.Surface;
-  LoadEmbededScaledBitmap(Image, '{#ExplorerFileBase}', 32, InterfacePage.Surface.Color);
+  LoadEmbededScaledIcon(Image, '{#ExplorerFileBase}', 32, InterfacePage.Surface.Color);
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(ExplorerRadioButton);
 
@@ -1079,6 +1084,7 @@ begin
 
   Image := TBitmapImage.Create(DonationPanel);
   LoadEmbededBitmap(Image, '{#PayPalCardImage}', DonationPanel.Color);
+  Image.AutoSize := True;
   Image.Cursor := crHand;
   Image.Parent := DonationPanel;
   Image.Left := ScaleX(100);
@@ -1109,7 +1115,7 @@ begin
     LoadEmbededScaledBitmap(WizardForm.WizardSmallBitmapImage, '{#WizardSmallImageFileBase}', 100, 0);
   end;
 
-  LoadEmbededScaledBitmap(WizardForm.SelectDirBitmapImage, '{#SelectDirFileBase}', 32, WizardForm.SelectDirPage.Color);
+  LoadEmbededScaledIcon(WizardForm.SelectDirBitmapImage, '{#SelectDirFileBase}', 32, WizardForm.SelectDirPage.Color);
 end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);
