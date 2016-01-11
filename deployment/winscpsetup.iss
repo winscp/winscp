@@ -684,26 +684,16 @@ var
 begin
   ExtractTemporaryFile(Name);
   Bitmap := TAlphaBitmap.Create();
+  Bitmap.AlphaFormat := afDefined;
   FileName := ExpandConstant('{tmp}\' + Name);
   Bitmap.LoadFromFile(FileName);
   // we won't need this anymore
   DeleteFile(FileName);
 
-  if BackgroundColor <> 0 then
-  begin
-    // Solving transparency on run-time to avoid having to
-    // change the background color in the image file,
-    // so they can stay identical to the original
-    // (except for conversion from png to bmp)
-    Image.ReplaceColor := clFuchsia;
-    Bitmap.Canvas.Brush.Color := Image.ReplaceColor;
-    Bitmap.Canvas.FloodFill(0, 0, Bitmap.Canvas.Pixels[0, 0], fsSurface);
-    Image.ReplaceWithColor := BackgroundColor;
-  end;
-
   Image.Bitmap := Bitmap;
   Bitmap.Free;
   Image.AutoSize := True;
+  Image.BackColor := BackgroundColor;
 end;
 
 function GetScalingFactor: Integer;
