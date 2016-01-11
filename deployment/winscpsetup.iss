@@ -108,6 +108,7 @@ UsePreviousLanguage=yes
 DisableProgramGroupPage=yes
 MinVersion=0,5.1
 SetupIconFile=winscpsetup.ico
+DisableDirPage=no
 #ifdef Sign
 SignTool=sign $f "WinSCP Installer" http://winscp.net/eng/docs/installation
 #endif
@@ -681,10 +682,10 @@ const
 procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string; BackgroundColor: TColor);
 var
   FileName: string;
-  Bitmap: TBitmap;
+  Bitmap: TAlphaBitmap;
 begin
   ExtractTemporaryFile(Name);
-  Bitmap := TBitmap.Create();
+  Bitmap := TAlphaBitmap.Create();
   FileName := ExpandConstant('{tmp}\' + Name);
   Bitmap.LoadFromFile(FileName);
   // we won't need this anymore
