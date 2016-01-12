@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include "putty.h"
+#include "misc.h"
 
 /*
  * Parse a string block size specification. This is approximately a
@@ -179,7 +180,7 @@ int main(void)
     return fails != 0 ? 1 : 0;
 }
 /* Stubs to stop the rest of this module causing compile failures. */
-void modalfatalbox(char *fmt, ...) {}
+void modalfatalbox(const char *fmt, ...) {}
 int conf_get_int(Conf *conf, int primary) { return 0; }
 char *conf_get_str(Conf *conf, int primary) { return NULL; }
 #endif /* TEST_HOST_STRFOO */
@@ -416,7 +417,7 @@ char *dupvprintf(const char *fmt, va_list ap)
     size = 512;
 
     while (1) {
-#ifdef _WINDOWS
+#if defined _WINDOWS && _MSC_VER < 1900 /* 1900 == VS2015 has real snprintf */
 #define vsnprintf _vsnprintf
 #endif
 #ifdef va_copy
@@ -464,7 +465,7 @@ char *fgetline(FILE *fp)
     int size = 512, len = 0;
     while (fgets(ret + len, size - len, fp)) {
 	len += strlen(ret + len);
-	if (ret[len-1] == '\n')
+	if (len > 0 && ret[len-1] == '\n')
 	    break;		       /* got a newline, we're done */
 	size = len + 512;
 	ret = sresize(ret, size, char);
@@ -477,11 +478,29 @@ char *fgetline(FILE *fp)
     return ret;
 }
 
+/*
+ * Perl-style 'chomp', for a line we just read with fgetline. Unlike
+ * Perl chomp, however, we're deliberately forgiving of strange
+ * line-ending conventions. Also we forgive NULL on input, so you can
+ * just write 'line = chomp(fgetline(fp));' and not bother checking
+ * for NULL until afterwards.
+ */
+char *chomp(char *str)
+{
+    if (str) {
+        int len = strlen(str);
+        while (len > 0 && (str[len-1] == '\r' || str[len-1] == '\n'))
+            len--;
+        str[len] = '\0';
+    }
+    return str;
+}
+
 /* ----------------------------------------------------------------------
  * Core base64 encoding and decoding routines.
  */
 
-void base64_encode_atom(unsigned char *data, int n, char *out)
+void base64_encode_atom(const unsigned char *data, int n, char *out)
 {
     static const char base64_chars[] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -505,7 +524,7 @@ void base64_encode_atom(unsigned char *data, int n, char *out)
 	out[3] = '=';
 }
 
-int base64_decode_atom(char *atom, unsigned char *out)
+int base64_decode_atom(const char *atom, unsigned char *out)
 {
     int vals[4];
     int i, v, len;
@@ -819,9 +838,9 @@ void safefree(void *ptr)
  */
 
 #ifdef DEBUG
-extern void dputs(char *);             /* defined in per-platform *misc.c */
+extern void dputs(const char *); /* defined in per-platform *misc.c */
 
-void debug_printf(char *fmt, ...)
+void debug_printf(const char *fmt, ...)
 {
     char *buf;
     va_list ap;
@@ -834,15 +853,15 @@ void debug_printf(char *fmt, ...)
 }
 
 
-void debug_memdump(void *buf, int len, int L)
+void debug_memdump(const void *buf, int len, int L)
 {
     int i;
-    unsigned char *p = buf;
+    const unsigned char *p = buf;
     char foo[17];
     if (L) {
 	int delta;
 	debug_printf("\t%d (0x%x) bytes:\n", len, len);
-	delta = 15 & (unsigned long int) p;
+	delta = 15 & (uintptr_t)p;
 	p -= delta;
 	len += delta;
     }
@@ -1042,6 +1061,50 @@ int smemeq(const void *av, const void *bv, size_t len)
      * will clear bit 8 iff we want to return 0, and leave it set iff
      * we want to return 1, so then we can just shift down. */
     return (0x100 - val) >> 8;
+}
+
+int match_ssh_id(int stringlen, const void *string, const char *id)
+{
+    int idlen = strlen(id);
+    return (idlen == stringlen && !memcmp(string, id, idlen));
+}
+
+void *get_ssh_string(int *datalen, const void **data, int *stringlen)
+{
+    void *ret;
+    unsigned int len;
+
+    if (*datalen < 4)
+        return NULL;
+    len = GET_32BIT_MSB_FIRST((const unsigned char *)*data);
+    if (*datalen < len+4)
+        return NULL;
+    ret = (void *)((const char *)*data + 4);
+    *datalen -= len + 4;
+    *data = (const char *)*data + len + 4;
+    *stringlen = len;
+    return ret;
+}
+
+int get_ssh_uint32(int *datalen, const void **data, unsigned *ret)
+{
+    if (*datalen < 4)
+        return FALSE;
+    *ret = GET_32BIT_MSB_FIRST((const unsigned char *)*data);
+    *datalen -= 4;
+    *data = (const char *)*data + 4;
+    return TRUE;
+}
+
+int strstartswith(const char *s, const char *t)
+{
+    return !memcmp(s, t, strlen(t));
+}
+
+int strendswith(const char *s, const char *t)
+{
+    size_t slen = strlen(s), tlen = strlen(t);
+    return slen >= tlen && !strcmp(s + (slen - tlen), t);
 }
 
 #ifdef MPEXT

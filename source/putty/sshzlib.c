@@ -1366,6 +1366,7 @@ int main(int argc, char **argv)
             sfree(outbuf);
         } else {
             fprintf(stderr, "decoding error\n");
+            fclose(fp);
             return 1;
         }
     }

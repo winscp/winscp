@@ -54,7 +54,7 @@ struct SockAddrStep_tag {
 struct Socket_tag {
     const struct socket_function_table *fn;
     /* the above variable absolutely *must* be the first in this structure */
-    char *error;
+    const char *error;
     SOCKET s;
     Plug plug;
     bufchain output_data;
@@ -142,7 +142,7 @@ static int cmpfortree(void *av, void *bv)
 static int cmpforsearch(void *av, void *bv)
 {
     Actual_Socket b = (Actual_Socket) bv;
-    unsigned long as = (unsigned long) av, bs = (unsigned long) b->s;
+    uintptr_t as = (uintptr_t) av, bs = (uintptr_t) b->s;
     if (as < bs)
 	return -1;
     if (as > bs)
@@ -375,7 +375,7 @@ static int errstring_compare(void *av, void *bv)
 
 static tree234 *errstrings = NULL;
 
-char *winsock_error_string(int error)
+const char *winsock_error_string(int error)
 {
     const char prefix[] = "Network error: ";
     struct errstring *es;
@@ -491,8 +491,8 @@ char *winsock_error_string(int error)
                            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                            es->text + bufused, bufsize - bufused, NULL)) {
             sprintf(es->text + bufused,
-                    "Windows error code %d (and FormatMessage returned %d)", 
-                    error, GetLastError());
+                    "Windows error code %d (and FormatMessage returned %u)",
+                    error, (unsigned int)GetLastError());
         } else {
             int len = strlen(es->text);
             if (len > 0 && es->text[len-1] == '\n')
@@ -1272,8 +1272,8 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
     return (Socket) ret;
 }
 
-Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only,
-		      int orig_address_family)
+Socket sk_newlistener(const char *srcaddr, int port, Plug plug,
+                      int local_host_only, int orig_address_family)
 {
     static const struct socket_function_table fn_table = {
 	sk_tcp_plug,
@@ -1775,7 +1775,7 @@ int select_result(WPARAM wParam, LPARAM lParam)
 	ret = p_recv(s->s, buf, sizeof(buf), MSG_OOB);
 	noise_ultralight(ret);
 	if (ret <= 0) {
-	    char *str = (ret == 0 ? "Internal networking trouble" :
+	    const char *str = (ret == 0 ? "Internal networking trouble" :
 			 winsock_error_string(p_WSAGetLastError()));
 	    /* We're inside the Windows frontend here, so we know
 	     * that the frontend handle is unnecessary. */

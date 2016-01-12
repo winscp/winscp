@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "putty.h"
+#ifndef SECURITY_WIN32
 #define SECURITY_WIN32
+#endif
 #include <security.h>
 #ifdef MPEXT
 #include <assert.h>
@@ -275,8 +277,8 @@ const char *win_strerror(int error)
                            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                            msgtext, lenof(msgtext)-1, NULL)) {
             sprintf(msgtext,
-                    "(unable to format: FormatMessage returned %d)",
-                    GetLastError());
+                    "(unable to format: FormatMessage returned %u)",
+                    (unsigned int)GetLastError());
         } else {
             int len = strlen(msgtext);
             if (len > 0 && msgtext[len-1] == '\n')
@@ -294,7 +296,7 @@ static FILE *debug_fp = NULL;
 static HANDLE debug_hdl = INVALID_HANDLE_VALUE;
 static int debug_got_console = 0;
 
-void dputs(char *buf)
+void dputs(const char *buf)
 {
     DWORD dw;
 

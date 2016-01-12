@@ -133,6 +133,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
+#include <errno.h>
 
 #include "putty.h"
 #include "tree234.h"
@@ -914,8 +915,25 @@ static int share_closing(Plug plug, const char *error_msg, int error_code,
                          int calling_back)
 {
     struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)plug;
-    if (error_msg)
-        ssh_sharing_logf(cs->parent->ssh, cs->id, "%s", error_msg);
+
+    if (error_msg) {
+#ifdef BROKEN_PIPE_ERROR_CODE
+        /*
+         * Most of the time, we log what went wrong when a downstream
+         * disappears with a socket error. One exception, though, is
+         * receiving EPIPE when we haven't received a protocol version
+         * string from the downstream, because that can happen as a result
+         * of plink -shareexists (opening the connection and instantly
+         * closing it again without bothering to read our version string).
+         * So that one case is not treated as a log-worthy error.
+         */
+        if (error_code == BROKEN_PIPE_ERROR_CODE && !cs->got_verstring)
+            /* do nothing */;
+        else
+#endif
+            ssh_sharing_logf(cs->parent->ssh, cs->id,
+                             "Socket error: %s", error_msg);
+    }
     share_begin_cleanup(cs);
     return 1;
 }
@@ -1810,6 +1828,7 @@ static int share_receive(Plug plug, int urgent, char *data, int len)
     ssh_sharing_logf(cs->parent->ssh, cs->id,
                      "Downstream version string: %.*s",
                      cs->recvlen, cs->recvbuf);
+    cs->got_verstring = TRUE;
 
     /*
      * Loop round reading packets.
@@ -1983,6 +2002,99 @@ extern const int share_can_be_downstream;
 extern const int share_can_be_upstream;
 
 /*
+ * Decide on the string used to identify the connection point between
+ * upstream and downstream (be it a Windows named pipe or a
+ * Unix-domain socket or whatever else).
+ *
+ * I wondered about making this a SHA hash of all sorts of pieces of
+ * the PuTTY configuration - essentially everything PuTTY uses to know
+ * where and how to make a connection, including all the proxy details
+ * (or rather, all the _relevant_ ones - only including settings that
+ * other settings didn't prevent from having any effect), plus the
+ * username. However, I think it's better to keep it really simple:
+ * the connection point identifier is derived from the hostname and
+ * port used to index the host-key cache (not necessarily where we
+ * _physically_ connected to, in cases involving proxies or
+ * CONF_loghost), plus the username if one is specified.
+ *
+ * The per-platform code will quite likely hash or obfuscate this name
+ * in turn, for privacy from other users; failing that, it might
+ * transform it to avoid dangerous filename characters and so on. But
+ * that doesn't matter to us: for us, the point is that two session
+ * configurations which return the same string from this function will
+ * be treated as potentially shareable with each other.
+ */
+char *ssh_share_sockname(const char *host, int port, Conf *conf)
+{
+    char *username = get_remote_username(conf);
+    char *sockname;
+
+    if (port == 22) {
+        if (username)
+            sockname = dupprintf("%s@%s", username, host);
+        else
+            sockname = dupprintf("%s", host);
+    } else {
+        if (username)
+            sockname = dupprintf("%s@%s:%d", username, host, port);
+        else
+            sockname = dupprintf("%s:%d", host, port);
+    }
+
+    sfree(username);
+    return sockname;
+}
+
+static void nullplug_socket_log(Plug plug, int type, SockAddr addr, int port,
+                                const char *error_msg, int error_code) {}
+static int nullplug_closing(Plug plug, const char *error_msg, int error_code,
+                            int calling_back) { return 0; }
+static int nullplug_receive(Plug plug, int urgent, char *data,
+                            int len) { return 0; }
+static void nullplug_sent(Plug plug, int bufsize) {}
+
+int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
+{
+    static const struct plug_function_table fn_table = {
+	nullplug_socket_log,
+	nullplug_closing,
+	nullplug_receive,
+	nullplug_sent,
+	NULL
+    };
+    struct nullplug {
+        const struct plug_function_table *fn;
+    } np;
+
+    char *sockname, *logtext, *ds_err, *us_err;
+    int result;
+    Socket sock;
+
+    np.fn = &fn_table;
+
+    sockname = ssh_share_sockname(host, port, conf);
+
+    sock = NULL;
+    logtext = ds_err = us_err = NULL;
+    result = platform_ssh_share(sockname, conf, (Plug)&np, (Plug)NULL, &sock,
+                                &logtext, &ds_err, &us_err, FALSE, TRUE);
+
+    sfree(logtext);
+    sfree(ds_err);
+    sfree(us_err);
+    sfree(sockname);
+
+    if (result == SHARE_NONE) {
+        assert(sock == NULL);
+        return FALSE;
+    } else {
+        assert(result == SHARE_DOWNSTREAM);
+        sk_close(sock);
+        return TRUE;
+    }
+}
+
+/*
  * Init function for connection sharing. We either open a listening
  * socket and become an upstream, or connect to an existing one and
  * become a downstream, or do neither. We are responsible for deciding
@@ -2018,47 +2130,7 @@ Socket ssh_connection_sharing_init(const char *host, int port,
     if (!can_upstream && !can_downstream)
         return NULL;
 
-    /*
-     * Decide on the string used to identify the connection point
-     * between upstream and downstream (be it a Windows named pipe or
-     * a Unix-domain socket or whatever else).
-     *
-     * I wondered about making this a SHA hash of all sorts of pieces
-     * of the PuTTY configuration - essentially everything PuTTY uses
-     * to know where and how to make a connection, including all the
-     * proxy details (or rather, all the _relevant_ ones - only
-     * including settings that other settings didn't prevent from
-     * having any effect), plus the username. However, I think it's
-     * better to keep it really simple: the connection point
-     * identifier is derived from the hostname and port used to index
-     * the host-key cache (not necessarily where we _physically_
-     * connected to, in cases involving proxies or CONF_loghost), plus
-     * the username if one is specified.
-     */
-    {
-        char *username = get_remote_username(conf);
-
-        if (port == 22) {
-            if (username)
-                sockname = dupprintf("%s@%s", username, host);
-            else
-                sockname = dupprintf("%s", host);
-        } else {
-            if (username)
-                sockname = dupprintf("%s@%s:%d", username, host, port);
-            else
-                sockname = dupprintf("%s:%d", host, port);
-        }
-
-        sfree(username);
-
-        /*
-         * The platform-specific code may transform this further in
-         * order to conform to local namespace conventions (e.g. not
-         * using slashes in filenames), but that's its job and not
-         * ours.
-         */
-    }
+    sockname = ssh_share_sockname(host, port, conf);
 
     /*
      * Create a data structure for the listening plug if we turn out
