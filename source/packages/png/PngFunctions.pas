@@ -24,16 +24,16 @@ type
 procedure MakeImageBlended(Image: TPngImage; Amount: Byte = 127);
 procedure MakeImageGrayscale(Image: TPngImage; Amount: Byte = 255);
 procedure DrawPNG(Png: TPngImage; Canvas: TCanvas; const ARect: TRect; const Options: TPngOptions);
-procedure ConvertToPNG(Source: TGraphic; out Dest: TPngImage);
-procedure CreatePNG(Color, Mask: TBitmap; out Dest: TPngImage; InverseMask: Boolean = False);
-procedure CreatePNGMasked(Bitmap: TBitmap; Mask: TColor; out Dest: TPngImage);
+procedure ConvertToPNG(Source: TGraphic; Dest: TPngImage);
+procedure CreatePNG(Color, Mask: TBitmap; Dest: TPngImage; InverseMask: Boolean = False);
+procedure CreatePNGMasked(Bitmap: TBitmap; Mask: TColor; Dest: TPngImage);
 procedure CopyImageFromImageList(Dest: TPngImage; ImageList: TCustomImageList; Index: Integer);
 procedure SlicePNG(JoinedPNG: TPngImage; Columns, Rows: Integer; out SlicedPNGs: TObjectList);
 
 implementation
 
 uses
-  SysUtils, PngImageList, classes;
+  SysUtils, PngImageList;
 
 function ColorToTriple(Color: TColor): TRGBTriple;
 var
@@ -122,13 +122,20 @@ end;
 procedure MakeImageGrayscale(Image: TPngImage; Amount: Byte = 255);
 
   procedure GrayscaleRGB(var R, G, B: Byte);
+  { Performance optimized version without floating point operations by Christian Budde }
   var
     X: Byte;
   begin
+    X := (R * 77 + G * 150 + B * 29) shr 8;
+    R := ((R * (255 - Amount)) + (X * Amount) + 128) shr 8;
+    G := ((G * (255 - Amount)) + (X * Amount) + 128) shr 8;
+    B := ((B * (255 - Amount)) + (X * Amount) + 128) shr 8;
+    (* original code
     X := Round(R * 0.30 + G * 0.59 + B * 0.11);
     R := Round(R / 256 * (256 - Amount - 1)) + Round(X / 256 * (Amount + 1));
     G := Round(G / 256 * (256 - Amount - 1)) + Round(X / 256 * (Amount + 1));
     B := Round(B / 256 * (256 - Amount - 1)) + Round(X / 256 * (Amount + 1));
+    *)
   end;
 
 var
@@ -181,16 +188,9 @@ begin
   end;
 end;
 
-procedure ConvertToPNG(Source: TGraphic; out Dest: TPngImage);
+procedure ConvertToPNG(Source: TGraphic; Dest: TPngImage);
 var
   MaskLines: array of pngimage.PByteArray;
-
-  function CompareColors(const Color1: TRGBTriple; const Color2: TColor): Boolean;
-  begin
-    Result := (Color1.rgbtBlue = Color2 shr 16 and $FF) and
-      (Color1.rgbtGreen = Color2 shr 8 and $FF) and
-      (Color1.rgbtRed = Color2 and $FF);
-  end;
 
   function ColorToTriple(const Color: TColor): TRGBTriple;
   begin
@@ -201,35 +201,44 @@ var
 
   procedure GetAlphaMask(SourceColor: TBitmap);
   type
-    TBitmapInfo = packed record
-      bmiHeader: TBitmapV4Header;
-      //Otherwise I may not get per-pixel alpha values.
-      bmiColors: array[0..0] of TRGBQuad;
+    TBitmapInfoV4 = packed record
+      bmiHeader: TBitmapV4Header; //Otherwise I may not get per-pixel alpha values.
+      bmiColors: array[0..2] of TRGBQuad; // reserve space for color lookup table
     end;
   var
     Bits: PRGBALine;
-    BitmapInfo: TBitmapInfo;
+    { The BitmapInfo parameter to GetDIBits is delared as var parameter. So instead of casting around, we simply use
+      the absolute directive to refer to the same memory area. }
+    BitmapInfo: TBitmapInfoV4;
+    BitmapInfoFake: TBitmapInfo absolute BitmapInfo;
     I, X, Y: Integer;
     HasAlpha: Boolean;
     BitsSize: Integer;
+    bmpDC: HDC;
+    bmpHandle: HBITMAP;
+    scanlineLength: Integer;
   begin
     BitsSize := 4 * SourceColor.Width * SourceColor.Height;
     Bits := AllocMem(BitsSize);
     try
-      ZeroMemory(Bits, BitsSize);
-      ZeroMemory(@BitmapInfo, SizeOf(BitmapInfo));
+      FillChar(BitmapInfo, SizeOf(BitmapInfo), 0);
       BitmapInfo.bmiHeader.bV4Size := SizeOf(BitmapInfo.bmiHeader);
       BitmapInfo.bmiHeader.bV4Width := SourceColor.Width;
-      BitmapInfo.bmiHeader.bV4Height := -SourceColor.Height;
-      //Otherwise the image is upside down.
+      BitmapInfo.bmiHeader.bV4Height := -SourceColor.Height; //Otherwise the image is upside down.
       BitmapInfo.bmiHeader.bV4Planes := 1;
       BitmapInfo.bmiHeader.bV4BitCount := 32;
       BitmapInfo.bmiHeader.bV4V4Compression := BI_BITFIELDS;
       BitmapInfo.bmiHeader.bV4SizeImage := BitsSize;
+      BitmapInfo.bmiColors[0].rgbRed := 255;
+      BitmapInfo.bmiColors[1].rgbGreen := 255;
+      BitmapInfo.bmiColors[2].rgbBlue := 255;
 
-      if GetDIBits(SourceColor.Canvas.Handle, SourceColor.Handle, 0,
-        SourceColor.Height, Bits, Windows.PBitmapInfo(@BitmapInfo)^,
-        DIB_RGB_COLORS) > 0 then begin
+      { Getting the bitmap Handle will invalidate the Canvas.Handle, so it is important to retrieve them in the correct
+        order. As parameter evaluation order is undefined and differs between Win32 and Win64, we get invalid values
+        for Canvas.Handle when we use those properties directly in the call to GetDIBits. }
+      bmpHandle := SourceColor.Handle;
+      bmpDC := SourceColor.Canvas.Handle;
+      if GetDIBits(bmpDC, bmpHandle, 0, SourceColor.Height, Bits, BitmapInfoFake, DIB_RGB_COLORS) > 0 then begin
         //Because Win32 API is a piece of crap when it comes to icons, I have to check
         //whether an has an alpha-channel the hard way.
         HasAlpha := False;
@@ -275,9 +284,9 @@ var
   IconInfo: TIconInfo;
   AlphaNeeded: Boolean;
 begin
+  Assert(Dest <> nil, 'Dest is nil!');
   //A PNG does not have to be converted
   if Source is TPngImage then begin
-    Dest := TPngImage.Create;
     Dest.Assign(Source);
     Exit;
   end;
@@ -354,8 +363,7 @@ begin
       end;
     end;
 
-    //And finally, create the destination PNG image
-    Dest := TPngImage.Create;
+    //And finally, assign the destination PNG image
     Dest.Assign(Temp);
     if AlphaNeeded then begin
       Dest.CreateAlpha;
@@ -372,15 +380,15 @@ begin
   end;
 end;
 
-procedure CreatePNG(Color, Mask: TBitmap; out Dest: TPngImage; InverseMask: Boolean = False);
+procedure CreatePNG(Color, Mask: TBitmap; Dest: TPngImage; InverseMask: Boolean = False);
 var
   Temp: TBitmap;
   Line: pngimage.PByteArray;
   X, Y: Integer;
 begin
+  Assert(Dest <> nil, 'Dest is nil!');
   //Create a PNG from two separate color and mask bitmaps. InverseMask should be
   //True if white means transparent, and black means opaque.
-  Dest := TPngImage.Create;
   if not (Color.PixelFormat in [pf24bit, pf32bit]) then begin
     Temp := TBitmap.Create;
     try
@@ -408,15 +416,15 @@ begin
   end;
 end;
 
-procedure CreatePNGMasked(Bitmap: TBitmap; Mask: TColor; out Dest: TPngImage);
+procedure CreatePNGMasked(Bitmap: TBitmap; Mask: TColor; Dest: TPngImage);
 var
   Temp: TBitmap;
   Line: pngimage.PByteArray;
   X, Y: Integer;
 begin
+  Assert(Dest <> nil, 'Dest is nil!');
   //Create a PNG from two separate color and mask bitmaps. InverseMask should be
   //True if white means transparent, and black means opaque.
-  Dest := TPngImage.Create;
   if not (Bitmap.PixelFormat in [pf24bit, pf32bit]) then begin
     Temp := TBitmap.Create;
     try
@@ -551,4 +559,3 @@ finalization
   TPicture.UnregisterGraphicClass(TPNGObject);
 {$IFEND}
 end.
-
