@@ -166,8 +166,7 @@ void __fastcall TBookmarks::Save(THierarchicalStorage * Storage, bool All)
         TBookmarkList * BookmarkList = dynamic_cast<TBookmarkList *>(FBookmarkLists->Objects[Index]);
         if (All || BookmarkList->Modified)
         {
-          UnicodeString Key;
-          Key = FBookmarkLists->Strings[Index];
+          UnicodeString Key = FBookmarkLists->Strings[Index];
           Storage->RecursiveDeleteSubKey(Key);
           if (Storage->OpenSubKey(Key, true))
           {
