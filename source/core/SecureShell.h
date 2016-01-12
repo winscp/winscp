@@ -95,6 +95,8 @@ private:
   unsigned int __fastcall TimeoutPrompt(TQueryParamsTimerEvent PoolEvent);
   bool __fastcall TryFtp();
   UnicodeString __fastcall ConvertInput(const RawByteString & Input);
+  void __fastcall GetRealHost(UnicodeString & Host, int & Port);
+  UnicodeString __fastcall RetrieveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;

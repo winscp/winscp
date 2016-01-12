@@ -2064,6 +2064,29 @@ UnicodeString __fastcall TSecureShell::FormatKeyStr(UnicodeString KeyStr)
   return KeyStr;
 }
 //---------------------------------------------------------------------------
+void __fastcall TSecureShell::GetRealHost(UnicodeString & Host, int & Port)
+{
+  if (FSessionData->Tunnel)
+  {
+    Host = FSessionData->OrigHostName;
+    Port = FSessionData->OrigPortNumber;
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TSecureShell::RetrieveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType)
+{
+  AnsiString AnsiStoredKeys;
+  AnsiStoredKeys.SetLength(10240);
+  UnicodeString Result;
+  if (retrieve_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(),
+        AnsiStoredKeys.c_str(), AnsiStoredKeys.Length()) == 0)
+  {
+    PackStr(AnsiStoredKeys);
+    Result = UnicodeString(AnsiStoredKeys);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
   const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint)
 {
@@ -2074,47 +2097,35 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
   wchar_t Delimiter = L';';
   DebugAssert(KeyStr.Pos(Delimiter) == 0);
 
-  if (FSessionData->Tunnel)
-  {
-    Host = FSessionData->OrigHostName;
-    Port = FSessionData->OrigPortNumber;
-  }
+  GetRealHost(Host, Port);
 
   FSessionInfo.HostKeyFingerprint = Fingerprint;
   UnicodeString NormalizedFingerprint = NormalizeFingerprint(Fingerprint);
 
   bool Result = false;
 
-  UnicodeString StoredKeys;
-  AnsiString AnsiStoredKeys;
-  AnsiStoredKeys.SetLength(10240);
-  if (retrieve_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(),
-        AnsiStoredKeys.c_str(), AnsiStoredKeys.Length()) == 0)
+  UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
+  UnicodeString Buf = StoredKeys;
+  while (!Result && !Buf.IsEmpty())
   {
-    PackStr(AnsiStoredKeys);
-    StoredKeys = UnicodeString(AnsiStoredKeys);
-    UnicodeString Buf = StoredKeys;
-    while (!Result && !Buf.IsEmpty())
+    UnicodeString StoredKey = CutToChar(Buf, Delimiter, false);
+    bool Fingerprint = (StoredKey.SubString(1, 2) != L"0x");
+    // it's probably a fingerprint (stored by TSessionData::CacheHostKey)
+    UnicodeString NormalizedExpectedKey;
+    if (Fingerprint)
     {
-      UnicodeString StoredKey = CutToChar(Buf, Delimiter, false);
-      bool Fingerprint = (StoredKey.SubString(1, 2) != L"0x");
-      // it's probably a fingerprint (stored by TSessionData::CacheHostKey)
-      UnicodeString NormalizedExpectedKey;
-      if (Fingerprint)
-      {
-        NormalizedExpectedKey = NormalizeFingerprint(StoredKey);
-      }
-      if ((!Fingerprint && (StoredKey == KeyStr)) ||
-          (Fingerprint && (NormalizedExpectedKey == NormalizedFingerprint)))
-      {
-        LogEvent(L"Host key matches cached key");
-        Result = true;
-      }
-      else
-      {
-        UnicodeString FormattedKey = Fingerprint ? StoredKey : FormatKeyStr(StoredKey);
-        LogEvent(FORMAT(L"Host key does not match cached key %s", (FormattedKey)));
-      }
+      NormalizedExpectedKey = NormalizeFingerprint(StoredKey);
+    }
+    if ((!Fingerprint && (StoredKey == KeyStr)) ||
+        (Fingerprint && (NormalizedExpectedKey == NormalizedFingerprint)))
+    {
+      LogEvent(L"Host key matches cached key");
+      Result = true;
+    }
+    else
+    {
+      UnicodeString FormattedKey = Fingerprint ? StoredKey : FormatKeyStr(StoredKey);
+      LogEvent(FORMAT(L"Host key does not match cached key %s", (FormattedKey)));
     }
   }
 
