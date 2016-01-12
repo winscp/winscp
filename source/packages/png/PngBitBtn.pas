@@ -8,9 +8,11 @@ uses
 type
   TPngBitBtn = class(TBitBtn)
 {$IF RTLVersion >= 24.0 }
+{$IFNDEF BCB}
   strict private
     class constructor Create;
     class destructor Destroy;
+{$IFEND}
 {$IFEND}
   private
     FPngImage: TPngImage;
@@ -83,6 +85,7 @@ end;
 { TPngBitBtn }
 
 {$IF RTLVersion >= 24.0 }
+{$IFNDEF BCB}
 class constructor TPngBitBtn.Create;
 begin
   TCustomStyleEngine.RegisterStyleHook(TPngBitBtn, TPngBitBtnStyleHook);
@@ -92,6 +95,7 @@ class destructor TPngBitBtn.Destroy;
 begin
   TCustomStyleEngine.UnRegisterStyleHook(TPngBitBtn, TPngBitBtnStyleHook);
 end;
+{$IFEND}
 {$IFEND}
 
 constructor TPngBitBtn.Create(AOwner: TComponent);

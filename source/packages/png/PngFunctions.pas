@@ -216,7 +216,6 @@ var
     BitsSize: Integer;
     bmpDC: HDC;
     bmpHandle: HBITMAP;
-    scanlineLength: Integer;
   begin
     BitsSize := 4 * SourceColor.Width * SourceColor.Height;
     Bits := AllocMem(BitsSize);
