@@ -1012,8 +1012,7 @@ begin
       BeginUpdate;
       try
         Item := FPngImages[Index];
-        Item.FPngImage.Free;
-        CreatePNG(Image, Mask, Item.FPngImage);
+        CreatePNG(Image, Mask, Item.PngImage);
         Icon := PngToIcon(Item.PngImage, Item.Background);
         ImageList_ReplaceIcon(Handle, Index, Icon);
         DestroyIcon(Icon);
@@ -1048,8 +1047,7 @@ begin
       BeginUpdate;
       try
         Item := FPngImages[Index];
-        Item.FPngImage.Free;
-        ConvertToPNG(Image, Item.FPngImage);
+        ConvertToPNG(Image, Item.PngImage);
         Icon := PngToIcon(Item.PngImage, Item.Background);
         ImageList_ReplaceIcon(Handle, Index, Icon);
         DestroyIcon(Icon);
@@ -1084,8 +1082,7 @@ begin
       BeginUpdate;
       try
         Item := FPngImages[Index];
-        Item.FPngImage.Free;
-        CreatePNGMasked(NewImage, MaskColor, Item.FPngImage);
+        CreatePNGMasked(NewImage, MaskColor, Item.PngImage);
         Icon := PngToIcon(Item.PngImage, Item.Background);
         ImageList_ReplaceIcon(Handle, Index, Icon);
         DestroyIcon(Icon);
