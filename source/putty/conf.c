@@ -39,6 +39,16 @@ struct key {
     } secondary;
 };
 
+/* Variant form of struct key which doesn't contain dynamic data, used
+ * for lookups. */
+struct constkey {
+    int primary;
+    union {
+	int i;
+	const char *s;
+    } secondary;
+};
+
 struct value {
     union {
 	int intval;
@@ -69,6 +79,29 @@ static int conf_cmp(void *av, void *bv)
 {
     struct key *a = (struct key *)av;
     struct key *b = (struct key *)bv;
+
+    if (a->primary < b->primary)
+	return -1;
+    else if (a->primary > b->primary)
+	return +1;
+    switch (subkeytypes[a->primary]) {
+      case TYPE_INT:
+	if (a->secondary.i < b->secondary.i)
+	    return -1;
+	else if (a->secondary.i > b->secondary.i)
+	    return +1;
+	return 0;
+      case TYPE_STR:
+	return strcmp(a->secondary.s, b->secondary.s);
+      default:
+	return 0;
+    }
+}
+
+static int conf_cmp_constkey(void *av, void *bv)
+{
+    struct key *a = (struct key *)av;
+    struct constkey *b = (struct constkey *)bv;
 
     if (a->primary < b->primary)
 	return -1;
@@ -286,7 +319,7 @@ char *conf_get_str_str(Conf *conf, int primary, const char *secondary)
 char *conf_get_str_strs(Conf *conf, int primary,
 		       char *subkeyin, char **subkeyout)
 {
-    struct key key;
+    struct constkey key;
     struct conf_entry *entry;
 
     assert(subkeytypes[primary] == TYPE_STR);
@@ -297,7 +330,7 @@ char *conf_get_str_strs(Conf *conf, int primary,
 	entry = findrel234(conf->tree, &key, NULL, REL234_GT);
     } else {
 	key.secondary.s = "";
-	entry = findrel234(conf->tree, &key, NULL, REL234_GE);
+	entry = findrel234(conf->tree, &key, conf_cmp_constkey, REL234_GE);
     }
     if (!entry || entry->key.primary != primary)
 	return NULL;
@@ -307,7 +340,7 @@ char *conf_get_str_strs(Conf *conf, int primary,
 
 char *conf_get_str_nthstrkey(Conf *conf, int primary, int n)
 {
-    struct key key;
+    struct constkey key;
     struct conf_entry *entry;
     int index;
 
@@ -315,7 +348,8 @@ char *conf_get_str_nthstrkey(Conf *conf, int primary, int n)
     assert(valuetypes[primary] == TYPE_STR);
     key.primary = primary;
     key.secondary.s = "";
-    entry = findrelpos234(conf->tree, &key, NULL, REL234_GE, &index);
+    entry = findrelpos234(conf->tree, &key, conf_cmp_constkey,
+                          REL234_GE, &index);
     if (!entry || entry->key.primary != primary)
 	return NULL;
     entry = index234(conf->tree, index + n);

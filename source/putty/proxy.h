@@ -19,7 +19,7 @@ struct Socket_proxy_tag {
     const struct socket_function_table *fn;
     /* the above variable absolutely *must* be the first in this structure */
 
-    char * error;
+    const char *error;
 
     Socket sub_socket;
     Plug plug;

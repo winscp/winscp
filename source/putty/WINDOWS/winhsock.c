@@ -18,8 +18,8 @@ struct Socket_handle_tag {
     const struct socket_function_table *fn;
     /* the above variable absolutely *must* be the first in this structure */
 
-    HANDLE send_H, recv_H;
-    struct handle *send_h, *recv_h;
+    HANDLE send_H, recv_H, stderr_H;
+    struct handle *send_h, *recv_h, *stderr_h;
 
     /*
      * Freezing one of these sockets is a slightly fiddly business,
@@ -38,6 +38,9 @@ struct Socket_handle_tag {
     } frozen;
     /* We buffer data here if we receive it from winhandl while frozen. */
     bufchain inputdata;
+
+    /* Data received from stderr_H, if we have one. */
+    bufchain stderrdata;
 
     char *error;
 
@@ -75,6 +78,16 @@ static int handle_gotdata(struct handle *h, void *data, int len)
     }
 }
 
+static int handle_stderr(struct handle *h, void *data, int len)
+{
+    Handle_Socket ps = (Handle_Socket) handle_get_privdata(h);
+
+    if (len > 0)
+        log_proxy_stderr(ps->plug, &ps->stderrdata, data, len);
+
+    return 0;
+}
+
 static void handle_sentdata(struct handle *h, int new_backlog)
 {
     Handle_Socket ps = (Handle_Socket) handle_get_privdata(h);
@@ -101,6 +114,7 @@ static void sk_handle_close(Socket s)
     if (ps->recv_H != ps->send_H)
         CloseHandle(ps->recv_H);
     bufchain_clear(&ps->inputdata);
+    bufchain_clear(&ps->stderrdata);
 
     sfree(ps);
 }
@@ -259,8 +273,8 @@ static char *sk_handle_peer_info(Socket s)
     return NULL;
 }
 
-Socket make_handle_socket(HANDLE send_H, HANDLE recv_H, Plug plug,
-                          int overlapped)
+Socket make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
+                          Plug plug, int overlapped)
 {
     static const struct socket_function_table socket_fn_table = {
 	sk_handle_plug,
@@ -283,11 +297,16 @@ Socket make_handle_socket(HANDLE send_H, HANDLE recv_H, Plug plug,
     ret->error = NULL;
     ret->frozen = UNFROZEN;
     bufchain_init(&ret->inputdata);
+    bufchain_init(&ret->stderrdata);
 
     ret->recv_H = recv_H;
     ret->recv_h = handle_input_new(ret->recv_H, handle_gotdata, ret, flags);
     ret->send_H = send_H;
     ret->send_h = handle_output_new(ret->send_H, handle_sentdata, ret, flags);
+    ret->stderr_H = stderr_H;
+    if (ret->stderr_H)
+        ret->stderr_h = handle_input_new(ret->stderr_H, handle_stderr,
+                                         ret, flags);
 
     return (Socket) ret;
 }

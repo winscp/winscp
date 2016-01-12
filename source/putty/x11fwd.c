@@ -190,7 +190,7 @@ int x11_authcmp(void *av, void *bv)
     }
 }
 
-struct X11Display *x11_setup_display(char *display, Conf *conf)
+struct X11Display *x11_setup_display(const char *display, Conf *conf)
 {
     struct X11Display *disp = snew(struct X11Display);
     char *localcopy;
@@ -286,7 +286,8 @@ struct X11Display *x11_setup_display(char *display, Conf *conf)
 
 	disp->port = 6000 + disp->displaynum;
 	disp->addr = name_lookup(disp->hostname, disp->port,
-				 &disp->realhost, conf, ADDRTYPE_UNSPEC);
+				 &disp->realhost, conf, ADDRTYPE_UNSPEC,
+                                 NULL, NULL);
     
 	if ((err = sk_addr_error(disp->addr)) != NULL) {
 	    sk_addr_free(disp->addr);
@@ -357,10 +358,10 @@ void x11_free_display(struct X11Display *disp)
 
 #define XDM_MAXSKEW 20*60      /* 20 minute clock skew should be OK */
 
-static char *x11_verify(unsigned long peer_ip, int peer_port,
-			tree234 *authtree, char *proto,
-			unsigned char *data, int dlen,
-                        struct X11FakeAuth **auth_ret)
+static const char *x11_verify(unsigned long peer_ip, int peer_port,
+                              tree234 *authtree, char *proto,
+                              unsigned char *data, int dlen,
+                              struct X11FakeAuth **auth_ret)
 {
     struct X11FakeAuth match_dummy;    /* for passing to find234 */
     struct X11FakeAuth *auth;
@@ -420,7 +421,8 @@ static char *x11_verify(unsigned long peer_ip, int peer_port,
 	    if (data[i] != 0)	       /* zero padding wrong */
 		return "XDM-AUTHORIZATION-1 data failed check";
 	tim = time(NULL);
-	if (abs(t - tim) > XDM_MAXSKEW)
+	if (((unsigned long)t - (unsigned long)tim
+             + XDM_MAXSKEW) > 2*XDM_MAXSKEW)
 	    return "XDM-AUTHORIZATION-1 time stamp was too far out";
 	seen = snew(struct XDMSeen);
 	seen->time = t;

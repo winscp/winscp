@@ -28,16 +28,12 @@ DECL_WINDOWS_FUNCTION(WINSECUR_GLOBAL, DWORD, GetSecurityInfo,
 		      (HANDLE, SE_OBJECT_TYPE, SECURITY_INFORMATION,
 		       PSID *, PSID *, PACL *, PACL *,
 		       PSECURITY_DESCRIPTOR *));
+DECL_WINDOWS_FUNCTION(WINSECUR_GLOBAL, DWORD, SetSecurityInfo,
+		      (HANDLE, SE_OBJECT_TYPE, SECURITY_INFORMATION,
+		       PSID, PSID, PACL, PACL));
 DECL_WINDOWS_FUNCTION(WINSECUR_GLOBAL, DWORD, SetEntriesInAclA,
 		      (ULONG, PEXPLICIT_ACCESS, PACL, PACL *));
 int got_advapi(void);
-
-/*
- * Functions loaded from crypt32.dll.
- */
-DECL_WINDOWS_FUNCTION(WINSECUR_GLOBAL, BOOL, CryptProtectMemory,
-		      (LPVOID, DWORD, DWORD));
-int got_crypt(void);
 
 /*
  * Find the SID describing the current user. The return value (if not
@@ -59,5 +55,7 @@ int make_private_security_descriptor(DWORD permissions,
                                      PSECURITY_DESCRIPTOR *psd,
                                      PACL *acl,
                                      char **error);
+
+int setprocessacl(char *error);
 
 #endif

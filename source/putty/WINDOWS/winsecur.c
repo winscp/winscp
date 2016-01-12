@@ -12,6 +12,10 @@
 #define WINSECUR_GLOBAL
 #include "winsecur.h"
 
+/* Initialised once, then kept around to reuse forever */
+static PSID worldsid, networksid, usersid;
+
+
 int got_advapi(void)
 {
     static int attempted = FALSE;
@@ -23,26 +27,12 @@ int got_advapi(void)
         advapi = load_system32_dll("advapi32.dll");
         successful = advapi &&
             GET_WINDOWS_FUNCTION(advapi, GetSecurityInfo) &&
+            GET_WINDOWS_FUNCTION(advapi, SetSecurityInfo) &&
             GET_WINDOWS_FUNCTION(advapi, OpenProcessToken) &&
             GET_WINDOWS_FUNCTION(advapi, GetTokenInformation) &&
             GET_WINDOWS_FUNCTION(advapi, InitializeSecurityDescriptor) &&
             GET_WINDOWS_FUNCTION(advapi, SetSecurityDescriptorOwner) &&
             GET_WINDOWS_FUNCTION(advapi, SetEntriesInAclA);
-    }
-    return successful;
-}
-
-int got_crypt(void)
-{
-    static int attempted = FALSE;
-    static int successful;
-    static HMODULE crypt;
-
-    if (!attempted) {
-        attempted = TRUE;
-        crypt = load_system32_dll("crypt32.dll");
-        successful = crypt &&
-            GET_WINDOWS_FUNCTION(crypt, CryptProtectMemory);
     }
     return successful;
 }
@@ -99,6 +89,52 @@ PSID get_user_sid(void)
     return ret;
 }
 
+int getsids(char *error)
+{
+    SID_IDENTIFIER_AUTHORITY world_auth = SECURITY_WORLD_SID_AUTHORITY;
+    SID_IDENTIFIER_AUTHORITY nt_auth = SECURITY_NT_AUTHORITY;
+    int ret;
+
+    error=NULL;
+
+    if (!usersid) {
+        if ((usersid = get_user_sid()) == NULL) {
+            error = dupprintf("unable to construct SID for current user: %s",
+                               win_strerror(GetLastError()));
+            goto cleanup;
+        }
+    }
+
+    if (!worldsid) {
+        if (!AllocateAndInitializeSid(&world_auth, 1, SECURITY_WORLD_RID,
+                                      0, 0, 0, 0, 0, 0, 0, &worldsid)) {
+            error = dupprintf("unable to construct SID for world: %s",
+                               win_strerror(GetLastError()));
+            goto cleanup;
+        }
+    }
+
+    if (!networksid) {
+        if (!AllocateAndInitializeSid(&nt_auth, 1, SECURITY_NETWORK_RID,
+                                      0, 0, 0, 0, 0, 0, 0, &networksid)) {
+            error = dupprintf("unable to construct SID for "
+                               "local same-user access only: %s",
+                               win_strerror(GetLastError()));
+            goto cleanup;
+        }
+    }
+
+    ret=TRUE;
+
+ cleanup:
+    if (ret) {
+      sfree(error);
+      error = NULL;
+    }
+    return ret;
+}
+  
+
 int make_private_security_descriptor(DWORD permissions,
                                      PSECURITY_DESCRIPTOR *psd,
                                      PACL *acl,
@@ -110,44 +146,13 @@ int make_private_security_descriptor(DWORD permissions,
     int acl_err;
     int ret = FALSE;
 
-    /* Initialised once, then kept around to reuse forever */
-    static PSID worldsid, networksid, usersid;
 
     *psd = NULL;
     *acl = NULL;
     *error = NULL;
 
-    if (!got_advapi()) {
-        *error = dupprintf("unable to load advapi32.dll");
-        goto cleanup;
-    }
-
-    if (!usersid) {
-        if ((usersid = get_user_sid()) == NULL) {
-            *error = dupprintf("unable to construct SID for current user: %s",
-                               win_strerror(GetLastError()));
-            goto cleanup;
-        }
-    }
-
-    if (!worldsid) {
-        if (!AllocateAndInitializeSid(&world_auth, 1, SECURITY_WORLD_RID,
-                                      0, 0, 0, 0, 0, 0, 0, &worldsid)) {
-            *error = dupprintf("unable to construct SID for world: %s",
-                               win_strerror(GetLastError()));
-            goto cleanup;
-        }
-    }
-
-    if (!networksid) {
-        if (!AllocateAndInitializeSid(&nt_auth, 1, SECURITY_NETWORK_RID,
-                                      0, 0, 0, 0, 0, 0, 0, &networksid)) {
-            *error = dupprintf("unable to construct SID for "
-                               "local same-user access only: %s",
-                               win_strerror(GetLastError()));
-            goto cleanup;
-        }
-    }
+    if (!getsids(*error))
+      goto cleanup;
 
     memset(ea, 0, sizeof(ea));
     ea[0].grfAccessPermissions = permissions;
@@ -218,4 +223,68 @@ int make_private_security_descriptor(DWORD permissions,
     return ret;
 }
 
+int setprocessacl(char *error)
+{
+    SID_IDENTIFIER_AUTHORITY world_auth = SECURITY_WORLD_SID_AUTHORITY;
+    SID_IDENTIFIER_AUTHORITY nt_auth = SECURITY_NT_AUTHORITY;
+    EXPLICIT_ACCESS ea[2];
+    int acl_err;
+    int ret=FALSE;
+    PACL acl = NULL;
+
+    static const nastyace=WRITE_DAC | WRITE_OWNER |
+	PROCESS_CREATE_PROCESS | PROCESS_CREATE_THREAD |
+	PROCESS_DUP_HANDLE | PROCESS_QUERY_INFORMATION |
+	PROCESS_SET_QUOTA | PROCESS_SET_INFORMATION |
+	PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE |
+	PROCESS_SUSPEND_RESUME;
+
+    if (!getsids(error))
+	goto cleanup;
+
+    memset(ea, 0, sizeof(ea));
+
+    /* Everyone: deny */
+    ea[0].grfAccessPermissions = nastyace;
+    ea[0].grfAccessMode = DENY_ACCESS;
+    ea[0].grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+    ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+    ea[0].Trustee.ptstrName = (LPTSTR)worldsid;
+
+    /* User: user ace */
+    ea[1].grfAccessPermissions = ~nastyace & 0x1fff;
+    ea[1].grfAccessMode = GRANT_ACCESS;
+    ea[1].grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+    ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+    ea[1].Trustee.ptstrName = (LPTSTR)usersid;
+
+    acl_err = p_SetEntriesInAclA(2, ea, NULL, &acl);
+
+    if (acl_err != ERROR_SUCCESS || acl == NULL) {
+	error = dupprintf("unable to construct ACL: %s",
+			  win_strerror(acl_err));
+        goto cleanup;
+    }
+
+    if (ERROR_SUCCESS != p_SetSecurityInfo
+        (GetCurrentProcess(), SE_KERNEL_OBJECT,
+         OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
+         usersid, NULL, acl, NULL)) {
+	error=dupprintf("Unable to set process ACL: %s",
+			win_strerror(GetLastError()));
+	goto cleanup;
+    }
+		      
+
+    ret=TRUE;
+    
+  cleanup:
+    if (!ret) {
+        if (acl) {
+            LocalFree(acl);
+            acl = NULL;
+        }
+    }
+    return ret;
+}  
 #endif /* !defined NO_SECURITY */

@@ -157,7 +157,7 @@ static int pfl_closing(Plug plug, const char *error_msg, int error_code,
     return 1;
 }
 
-static void wrap_send_port_open(void *channel, char *hostname, int port,
+static void wrap_send_port_open(void *channel, const char *hostname, int port,
                                 Socket s)
 {
     char *peerinfo, *description;
@@ -443,7 +443,8 @@ char *pfd_connect(struct PortForwarding **pf_ret, char *hostname,int port,
     /*
      * Try to find host.
      */
-    addr = name_lookup(hostname, port, &dummy_realhost, conf, addressfamily);
+    addr = name_lookup(hostname, port, &dummy_realhost, conf, addressfamily,
+                       NULL, NULL);
     if ((err = sk_addr_error(addr)) != NULL) {
         char *err_ret = dupstr(err);
 	sk_addr_free(addr);

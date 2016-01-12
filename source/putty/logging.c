@@ -256,7 +256,7 @@ void log_eventlog(void *handle, const char *event)
  * Set of blanking areas must be in increasing order.
  */
 void log_packet(void *handle, int direction, int type,
-		char *texttype, const void *data, int len,
+		const char *texttype, const void *data, int len,
 		int n_blanks, const struct logblank_t *blanks,
 		const unsigned long *seq,
                 unsigned downstream_id, const char *additional_log_text)

@@ -7,11 +7,12 @@
 #include <assert.h>
 #include <stdio.h>
 #include "ssh.h"
+#include "sshblowf.h"
 
-typedef struct {
+struct BlowfishContext {
     word32 S0[256], S1[256], S2[256], S3[256], P[18];
     word32 iv0, iv1;		       /* for CBC mode */
-} BlowfishContext;
+};
 
 /*
  * The Blowfish init data: hex digits of the fractional part of pi.
@@ -326,6 +327,24 @@ static void blowfish_lsb_encrypt_cbc(unsigned char *blk, int len,
     ctx->iv1 = iv1;
 }
 
+void blowfish_lsb_encrypt_ecb(unsigned char *blk, int len,
+                              BlowfishContext * ctx)
+{
+    word32 xL, xR, out[2];
+
+    assert((len & 7) == 0);
+
+    while (len > 0) {
+	xL = GET_32BIT_LSB_FIRST(blk);
+	xR = GET_32BIT_LSB_FIRST(blk + 4);
+	blowfish_encrypt(xL, xR, out, ctx);
+	PUT_32BIT_LSB_FIRST(blk, out[0]);
+	PUT_32BIT_LSB_FIRST(blk + 4, out[1]);
+	blk += 8;
+	len -= 8;
+    }
+}
+
 static void blowfish_lsb_decrypt_cbc(unsigned char *blk, int len,
 				     BlowfishContext * ctx)
 {
@@ -436,8 +455,25 @@ static void blowfish_msb_sdctr(unsigned char *blk, int len,
     ctx->iv1 = iv1;
 }
 
-static void blowfish_setkey(BlowfishContext * ctx,
-			    const unsigned char *key, short keybytes)
+void blowfish_initkey(BlowfishContext *ctx)
+{
+    int i;
+
+    for (i = 0; i < 18; i++) {
+	ctx->P[i] = parray[i];
+    }
+
+    for (i = 0; i < 256; i++) {
+	ctx->S0[i] = sbox0[i];
+	ctx->S1[i] = sbox1[i];
+	ctx->S2[i] = sbox2[i];
+	ctx->S3[i] = sbox3[i];
+    }
+}
+
+void blowfish_expandkey(BlowfishContext * ctx,
+                        const unsigned char *key, short keybytes,
+                        const unsigned char *salt, short saltbytes)
 {
     word32 *S0 = ctx->S0;
     word32 *S1 = ctx->S1;
@@ -445,10 +481,18 @@ static void blowfish_setkey(BlowfishContext * ctx,
     word32 *S3 = ctx->S3;
     word32 *P = ctx->P;
     word32 str[2];
-    int i;
+    int i, j;
+    int saltpos;
+    unsigned char dummysalt[1];
+
+    saltpos = 0;
+    if (!salt) {
+        saltbytes = 1;
+        salt = dummysalt;
+        dummysalt[0] = 0;
+    }
 
     for (i = 0; i < 18; i++) {
-	P[i] = parray[i];
 	P[i] ^=
 	    ((word32) (unsigned char) (key[(i * 4 + 0) % keybytes])) << 24;
 	P[i] ^=
@@ -458,48 +502,59 @@ static void blowfish_setkey(BlowfishContext * ctx,
 	P[i] ^= ((word32) (unsigned char) (key[(i * 4 + 3) % keybytes]));
     }
 
-    for (i = 0; i < 256; i++) {
-	S0[i] = sbox0[i];
-	S1[i] = sbox1[i];
-	S2[i] = sbox2[i];
-	S3[i] = sbox3[i];
-    }
-
     str[0] = str[1] = 0;
 
     for (i = 0; i < 18; i += 2) {
+        for (j = 0; j < 8; j++)
+            str[j/4] ^= ((word32)salt[saltpos++ % saltbytes]) << (24-8*(j%4));
+
 	blowfish_encrypt(str[0], str[1], str, ctx);
 	P[i] = str[0];
 	P[i + 1] = str[1];
     }
 
     for (i = 0; i < 256; i += 2) {
+        for (j = 0; j < 8; j++)
+            str[j/4] ^= ((word32)salt[saltpos++ % saltbytes]) << (24-8*(j%4));
 	blowfish_encrypt(str[0], str[1], str, ctx);
 	S0[i] = str[0];
 	S0[i + 1] = str[1];
     }
     for (i = 0; i < 256; i += 2) {
+        for (j = 0; j < 8; j++)
+            str[j/4] ^= ((word32)salt[saltpos++ % saltbytes]) << (24-8*(j%4));
 	blowfish_encrypt(str[0], str[1], str, ctx);
 	S1[i] = str[0];
 	S1[i + 1] = str[1];
     }
     for (i = 0; i < 256; i += 2) {
+        for (j = 0; j < 8; j++)
+            str[j/4] ^= ((word32)salt[saltpos++ % saltbytes]) << (24-8*(j%4));
 	blowfish_encrypt(str[0], str[1], str, ctx);
 	S2[i] = str[0];
 	S2[i + 1] = str[1];
     }
     for (i = 0; i < 256; i += 2) {
+        for (j = 0; j < 8; j++)
+            str[j/4] ^= ((word32)salt[saltpos++ % saltbytes]) << (24-8*(j%4));
 	blowfish_encrypt(str[0], str[1], str, ctx);
 	S3[i] = str[0];
 	S3[i + 1] = str[1];
     }
 }
 
+static void blowfish_setkey(BlowfishContext *ctx,
+                            const unsigned char *key, short keybytes)
+{
+    blowfish_initkey(ctx);
+    blowfish_expandkey(ctx, key, keybytes, NULL, 0);
+}
+
 /* -- Interface with PuTTY -- */
 
 #define SSH_SESSION_KEY_LENGTH	32
 
-static void *blowfish_make_context(void)
+void *blowfish_make_context(void)
 {
     return snew(BlowfishContext);
 }
@@ -510,7 +565,7 @@ static void *blowfish_ssh1_make_context(void)
     return snewn(2, BlowfishContext);
 }
 
-static void blowfish_free_context(void *handle)
+void blowfish_free_context(void *handle)
 {
     sfree(handle);
 }
@@ -586,16 +641,18 @@ const struct ssh_cipher ssh_blowfish_ssh1 = {
 
 static const struct ssh2_cipher ssh_blowfish_ssh2 = {
     blowfish_make_context, blowfish_free_context, blowfish_iv, blowfish_key,
-    blowfish_ssh2_encrypt_blk, blowfish_ssh2_decrypt_blk,
+    blowfish_ssh2_encrypt_blk, blowfish_ssh2_decrypt_blk, NULL, NULL,
     "blowfish-cbc",
-    8, 128, SSH_CIPHER_IS_CBC, "Blowfish-128 CBC"
+    8, 128, 16, SSH_CIPHER_IS_CBC, "Blowfish-128 CBC",
+    NULL
 };
 
 static const struct ssh2_cipher ssh_blowfish_ssh2_ctr = {
     blowfish_make_context, blowfish_free_context, blowfish_iv, blowfish256_key,
-    blowfish_ssh2_sdctr, blowfish_ssh2_sdctr,
+    blowfish_ssh2_sdctr, blowfish_ssh2_sdctr, NULL, NULL,
     "blowfish-ctr",
-    8, 256, 0, "Blowfish-256 SDCTR"
+    8, 256, 32, 0, "Blowfish-256 SDCTR",
+    NULL
 };
 
 static const struct ssh2_cipher *const blowfish_list[] = {

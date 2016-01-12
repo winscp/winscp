@@ -221,7 +221,7 @@ void MD5Simple(void const *p, unsigned len, unsigned char output[16])
  * useful elsewhere (SOCKS5 CHAP authentication uses HMAC-MD5).
  */
 
-void *hmacmd5_make_context(void)
+void *hmacmd5_make_context(void *cipher_ctx)
 {
     return snewn(3, struct MD5Context);
 }
@@ -336,7 +336,7 @@ const struct ssh_mac ssh_hmac_md5 = {
     hmacmd5_make_context, hmacmd5_free_context, hmacmd5_key_16,
     hmacmd5_generate, hmacmd5_verify,
     hmacmd5_start, hmacmd5_bytes, hmacmd5_genresult, hmacmd5_verresult,
-    "hmac-md5",
-    16,
+    "hmac-md5", "hmac-md5-etm@openssh.com",
+    16, 16,
     "HMAC-MD5"
 };
