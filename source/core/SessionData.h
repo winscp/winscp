@@ -13,16 +13,16 @@
 #define SET_SESSION_PROPERTY(Property) \
   if (F##Property != value) { F##Property = value; Modify(); }
 //---------------------------------------------------------------------------
-enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour };
-#define CIPHER_COUNT (cipArcfour+1)
+enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour, cipChaCha20 };
+#define CIPHER_COUNT (cipChaCha20+1)
 // explicit values to skip obsoleted fsExternalSSH, fsExternalSFTP
 enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDAV = 6 };
 #define FSPROTOCOL_COUNT (fsWebDAV+1)
 extern const wchar_t * ProxyMethodNames;
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
 enum TSshProt { ssh1only, ssh1, ssh2, ssh2only };
-enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA };
-#define KEX_COUNT (kexRSA+1)
+enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA, kexECDH };
+#define KEX_COUNT (kexECDH+1)
 enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
   sbPKSessID2, sbRekey2, sbMaxPkt2, sbIgnore2, sbOldGex2, sbWinAdj };
 #define BUG_COUNT (sbWinAdj+1)

@@ -94,6 +94,9 @@
 		<TASM_Debugging>None</TASM_Debugging>
 	</PropertyGroup>
 	<ItemGroup>
+		<CppCompile Include="putty\be_misc.c">
+			<BuildOrder>47</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\callback.c">
 			<BuildOrder>5</BuildOrder>
 			<BuildOrder>25</BuildOrder>
@@ -149,6 +152,9 @@
 			<BuildOrder>29</BuildOrder>
 			<BuildOrder>21</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshbcrypt.c">
+			<BuildOrder>50</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\sshblowf.c">
 			<BuildOrder>34</BuildOrder>
 			<BuildOrder>32</BuildOrder>
@@ -156,6 +162,9 @@
 		<CppCompile Include="putty\sshbn.c">
 			<BuildOrder>35</BuildOrder>
 			<BuildOrder>33</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\sshccp.c">
+			<BuildOrder>49</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshcrc.c">
 			<BuildOrder>38</BuildOrder>
@@ -176,6 +185,9 @@
 		<CppCompile Include="putty\sshdss.c">
 			<BuildOrder>50</BuildOrder>
 			<BuildOrder>28</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\sshecc.c">
+			<BuildOrder>48</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshgssc.c">
 			<BuildOrder>38</BuildOrder>

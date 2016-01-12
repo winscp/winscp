@@ -229,7 +229,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     }
 
     CipherListBox->Items->Clear();
-    DebugAssert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_ARCFOUR);
+    DebugAssert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_CHACHA20);
     for (int Index = 0; Index < CIPHER_COUNT; Index++)
     {
       CipherListBox->Items->AddObject(
@@ -240,7 +240,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // KEX page
 
     KexListBox->Items->Clear();
-    DebugAssert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_RSA);
+    DebugAssert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_ECDH);
     for (int Index = 0; Index < KEX_COUNT; Index++)
     {
       KexListBox->Items->AddObject(

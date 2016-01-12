@@ -131,7 +131,7 @@ int from_backend_eof(void * /*frontend*/)
   return FALSE;
 }
 //---------------------------------------------------------------------------
-int get_userpass_input(prompts_t * p, unsigned char * /*in*/, int /*inlen*/)
+int get_userpass_input(prompts_t * p, const unsigned char * /*in*/, int /*inlen*/)
 {
   DebugAssert(p != NULL);
   TSecureShell * SecureShell = reinterpret_cast<TSecureShell *>(p->frontend);
@@ -216,7 +216,7 @@ void logevent(void * frontend, const char * string)
   }
 }
 //---------------------------------------------------------------------------
-void connection_fatal(void * frontend, char * fmt, ...)
+void connection_fatal(void * frontend, const char * fmt, ...)
 {
   va_list Param;
   char Buf[200];
@@ -229,7 +229,7 @@ void connection_fatal(void * frontend, char * fmt, ...)
   ((TSecureShell *)frontend)->PuttyFatalError(Buf);
 }
 //---------------------------------------------------------------------------
-int verify_ssh_host_key(void * frontend, char * host, int port, char * keytype,
+int verify_ssh_host_key(void * frontend, char * host, int port, const char * keytype,
   char * keystr, char * fingerprint, void (*/*callback*/)(void * ctx, int result),
   void * /*ctx*/)
 {
@@ -274,7 +274,7 @@ static void SSHFatalError(const char * Format, va_list Param)
   throw ESshFatal(NULL, Buf);
 }
 //---------------------------------------------------------------------------
-void fatalbox(char * fmt, ...)
+void fatalbox(const char * fmt, ...)
 {
   va_list Param;
   va_start(Param, fmt);
@@ -282,7 +282,7 @@ void fatalbox(char * fmt, ...)
   va_end(Param);
 }
 //---------------------------------------------------------------------------
-void modalfatalbox(char * fmt, ...)
+void modalfatalbox(const char * fmt, ...)
 {
   va_list Param;
   va_start(Param, fmt);
@@ -290,7 +290,7 @@ void modalfatalbox(char * fmt, ...)
   va_end(Param);
 }
 //---------------------------------------------------------------------------
-void nonfatal(char * fmt, ...)
+void nonfatal(const char * fmt, ...)
 {
   va_list Param;
   va_start(Param, fmt);
@@ -311,14 +311,9 @@ int askappend(void * /*frontend*/, Filename * /*filename*/,
   return 0;
 }
 //---------------------------------------------------------------------------
-void ldisc_send(void * /*handle*/, char * /*buf*/, int len, int /*interactive*/)
+void ldisc_echoedit_update(void * /*handle*/)
 {
-  // This is only here because of the calls to ldisc_send(NULL,
-  // 0) in ssh.c. Nothing in PSCP actually needs to use the ldisc
-  // as an ldisc. So if we get called with any real data, I want
-  // to know about it.
-  DebugAssert(len == 0);
-  DebugUsedParam(len);
+  DebugFail();
 }
 //---------------------------------------------------------------------------
 void agent_schedule_callback(void (* /*callback*/)(void *, void *, int),

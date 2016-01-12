@@ -168,6 +168,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_str(conf, CONF_ssh_rekey_data, AnsiString(Data->RekeyData).c_str());
   conf_set_int(conf, CONF_ssh_rekey_time, Data->RekeyTime);
 
+  DebugAssert(CIPHER_MAX == CIPHER_COUNT);
   for (int c = 0; c < CIPHER_COUNT; c++)
   {
     int pcipher;
@@ -178,11 +179,13 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case cipAES: pcipher = CIPHER_AES; break;
       case cipDES: pcipher = CIPHER_DES; break;
       case cipArcfour: pcipher = CIPHER_ARCFOUR; break;
+      case cipChaCha20: pcipher = CIPHER_CHACHA20; break;
       default: DebugFail();
     }
     conf_set_int_int(conf, CONF_ssh_cipherlist, c, pcipher);
   }
 
+  DebugAssert(KEX_MAX == KEX_COUNT);
   for (int k = 0; k < KEX_COUNT; k++)
   {
     int pkex;
@@ -192,6 +195,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case kexDHGroup14: pkex = KEX_DHGROUP14; break;
       case kexDHGEx: pkex = KEX_DHGEX; break;
       case kexRSA: pkex = KEX_RSA; break;
+      case kexECDH: pkex = KEX_ECDH; break;
       default: DebugFail();
     }
     conf_set_int_int(conf, CONF_ssh_kexlist, k, pkex);
