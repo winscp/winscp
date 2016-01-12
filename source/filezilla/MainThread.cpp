@@ -365,7 +365,7 @@ __int64 CMainThread::GetNextAsyncRequestID()
   return ++m_nAsyncRequestID;
 }
 
-CMainThread* CMainThread::Create(int nPriority /*=THREAD_PRIORITY_NORMAL*/, DWORD dwCreateFlags /*=0*/)
+CMainThread* CMainThread::Create(int nPriority, DWORD dwCreateFlags)
 {
   CMainThread *pMainThread=new CMainThread();
   pMainThread->m_hThread=CreateThread(0, 0, ThreadProc, pMainThread, dwCreateFlags, &pMainThread->m_dwThreadId);

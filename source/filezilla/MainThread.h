@@ -24,7 +24,7 @@ public:
   // Operationen
   DWORD m_dwThreadId;
   HANDLE m_hThread;
-  static CMainThread * Create(int nPriority = THREAD_PRIORITY_NORMAL, DWORD dwCreateFlags = 0);
+  static CMainThread * Create(int nPriority, DWORD dwCreateFlags);
   void SetWorkingDir(t_directory * pWorkingDir);
   BOOL GetWorkingDir(t_directory * pWorkingDir);
   void SendDirectoryListing(t_directory * pDirectoryToSend);
