@@ -38,7 +38,7 @@ typedef struct terminal_tag Terminal;
 #define PGP_DSA_MASTER_KEY_FP \
     "313C 3E76 4B74 C2C5 F2AE  83A8 4F5E 6DF5 6A93 B34E"
 
-/* Three attribute types: 
+/* Three attribute types:
  * The ATTRs (normal attributes) are stored with the characters in
  * the main display arrays
  *
@@ -47,7 +47,7 @@ typedef struct terminal_tag Terminal;
  *
  * The LATTRs (line attributes) are an entirely disjoint space of
  * flags.
- * 
+ *
  * The DATTRs (display attributes) are internal to terminal.c (but
  * defined here because their values have to match the others
  * here); they reuse the TATTR_* space but are always masked off
@@ -119,7 +119,7 @@ typedef struct terminal_tag Terminal;
 /*
  * The definitive list of colour numbers stored in terminal
  * attribute words is kept here. It is:
- * 
+ *
  *  - 0-7 are ANSI colours (KRGYBMCW).
  *  - 8-15 are the bold versions of those colours.
  *  - 16-255 are the remains of the xterm 256-colour mode (a
@@ -469,22 +469,22 @@ extern const char *const appname;
 
 /*
  * Some global flags denoting the type of application.
- * 
+ *
  * FLAG_VERBOSE is set when the user requests verbose details.
- * 
+ *
  * FLAG_STDERR is set in command-line applications (which have a
  * functioning stderr that it makes sense to write to) and not in
  * GUI applications (which don't).
- * 
+ *
  * FLAG_INTERACTIVE is set when a full interactive shell session is
  * being run, _either_ because no remote command has been provided
  * _or_ because the application is GUI and can't run non-
  * interactively.
- * 
+ *
  * These flags describe the type of _application_ - they wouldn't
  * vary between individual sessions - and so it's OK to have this
  * variable be GLOBAL.
- * 
+ *
  * Note that additional flags may be defined in platform-specific
  * headers. It's probably best if those ones start from 0x1000, to
  * avoid collision.
@@ -965,7 +965,7 @@ void registry_cleanup(void);
 /*
  * Functions used by settings.c to provide platform-specific
  * default settings.
- * 
+ *
  * (The integer one is expected to return `def' if it has no clear
  * opinion of its own. This is because there's no integer value
  * which I can reliably set aside to indicate `nil'. The string
@@ -1007,7 +1007,7 @@ void term_nopaste(Terminal *);
 int term_ldisc(Terminal *, int option);
 void term_copyall(Terminal *);
 void term_reconfig(Terminal *, Conf *);
-void term_seen_key_event(Terminal *); 
+void term_seen_key_event(Terminal *);
 int term_data(Terminal *, int is_stderr, const char *data, int len);
 int term_data_untrusted(Terminal *, const char *data, int len);
 void term_provide_resize_fn(Terminal *term,
@@ -1170,12 +1170,12 @@ void crypto_wrapup();
 
 /*
  * Exports from pageantc.c.
- * 
+ *
  * agent_query returns 1 for here's-a-response, and 0 for query-in-
  * progress. In the latter case there will be a call to `callback'
  * at some future point, passing callback_ctx as the first
  * parameter and the actual reply data as the second and third.
- * 
+ *
  * The response may be a NULL pointer (in either of the synchronous
  * or asynchronous cases), which indicates failure to receive a
  * response.
@@ -1198,12 +1198,12 @@ void logevent(void *frontend, const char *);
 void pgp_fingerprints(void);
 /*
  * verify_ssh_host_key() can return one of three values:
- * 
+ *
  *  - +1 means `key was OK' (either already known or the user just
  *    approved it) `so continue with the connection'
- * 
+ *
  *  - 0 means `key was not OK, abandon the connection'
- * 
+ *
  *  - -1 means `I've initiated enquiries, please wait to be called
  *    back via the provided function with a result that's either 0
  *    or +1'.
@@ -1223,7 +1223,7 @@ int askalg(void *frontend, const char *algtype, const char *algname,
 	   void (*callback)(void *ctx, int result), void *ctx);
 /*
  * askappend can return four values:
- * 
+ *
  *  - 2 means overwrite the log file
  *  - 1 means append to the log file
  *  - 0 means cancel logging for this session
@@ -1349,24 +1349,24 @@ char filename_char_sanitise(char c);   /* rewrite special pathname chars */
  * structure as the time when that event is due. The first time a
  * callback function gives you that value or more as `now', you do
  * the thing.
- * 
+ *
  * expire_timer_context() drops all current timers associated with
  * a given value of ctx (for when you're about to free ctx).
- * 
+ *
  * run_timers() is called from the front end when it has reason to
  * think some timers have reached their moment, or when it simply
  * needs to know how long to wait next. We pass it the time we
  * think it is. It returns TRUE and places the time when the next
  * timer needs to go off in `next', or alternatively it returns
  * FALSE if there are no timers at all pending.
- * 
+ *
  * timer_change_notify() must be supplied by the front end; it
  * notifies the front end that a new timer has been added to the
  * list which is sooner than any existing ones. It provides the
  * time when that timer needs to go off.
- * 
+ *
  * *** FRONT END IMPLEMENTORS NOTE:
- * 
+ *
  * There's an important subtlety in the front-end implementation of
  * the timer interface. When a front end is given a `next' value,
  * either returned from run_timers() or via timer_change_notify(),
@@ -1374,7 +1374,7 @@ char filename_char_sanitise(char c);   /* rewrite special pathname chars */
  * parameter to its next run_timers call. It should _not_ simply
  * call GETTICKCOUNT() to get the `now' parameter when invoking
  * run_timers().
- * 
+ *
  * The reason for this is that an OS's system clock might not agree
  * exactly with the timing mechanisms it supplies to wait for a
  * given interval. I'll illustrate this by the simple example of
@@ -1383,7 +1383,7 @@ char filename_char_sanitise(char c);   /* rewrite special pathname chars */
  * Suppose, for the sake of argument, that this wait() function
  * tends to return early by 1%. Then a possible sequence of actions
  * is:
- * 
+ *
  *  - run_timers() tells the front end that the next timer firing
  *    is 10000ms from now.
  *  - Front end calls wait(10000ms), but according to
@@ -1396,29 +1396,29 @@ char filename_char_sanitise(char c);   /* rewrite special pathname chars */
  *  - Front end calls run_timers() yet again, passing time T-1ms.
  *  - run_timers() says there's still 1ms to wait.
  *  - Front end calls wait(1ms).
- * 
+ *
  * If you're _lucky_ at this point, wait(1ms) will actually wait
  * for 1ms and you'll only have woken the program up three times.
  * If you're unlucky, wait(1ms) might do nothing at all due to
  * being below some minimum threshold, and you might find your
  * program spends the whole of the last millisecond tight-looping
  * between wait() and run_timers().
- * 
+ *
  * Instead, what you should do is to _save_ the precise `next'
  * value provided by run_timers() or via timer_change_notify(), and
  * use that precise value as the input to the next run_timers()
  * call. So:
- * 
+ *
  *  - run_timers() tells the front end that the next timer firing
  *    is at time T, 10000ms from now.
  *  - Front end calls wait(10000ms).
  *  - Front end then immediately calls run_timers() and passes it
  *    time T, without stopping to check GETTICKCOUNT() at all.
- * 
+ *
  * This guarantees that the program wakes up only as many times as
  * there are actual timer actions to be taken, and that the timing
  * mechanism will never send it into a tight loop.
- * 
+ *
  * (It does also mean that the timer action in the above example
  * will occur 100ms early, but this is not generally critical. And
  * the hypothetical 1% error in wait() will be partially corrected

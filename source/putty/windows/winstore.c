@@ -41,7 +41,7 @@ static const char hex[16] = "0123456789ABCDEF";
 
 static int tried_shgetfolderpath = FALSE;
 static HMODULE shell32_module = NULL;
-DECL_WINDOWS_FUNCTION(static, HRESULT, SHGetFolderPathA, 
+DECL_WINDOWS_FUNCTION(static, HRESULT, SHGetFolderPathA,
 		      (HWND, int, HANDLE, DWORD, LPSTR));
 
 static void mungestr(const char *in, char *out)
@@ -557,7 +557,7 @@ static HANDLE access_random_seed(int action)
     /*
      * Iterate over a selection of possible random seed paths until
      * we find one that works.
-     * 
+     *
      * We do this iteration separately for reading and writing,
      * meaning that we will automatically migrate random seed files
      * if a better location becomes available (by reading from the
