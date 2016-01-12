@@ -61,6 +61,7 @@ protected:
   virtual void PreserveDownloadFileTime(HANDLE Handle, void * UserData);
   virtual bool GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time);
   virtual wchar_t * LastSysErrorMessage();
+  virtual std::wstring GetClientString();
 
 private:
   TFTPFileSystem * FFileSystem;
@@ -155,6 +156,11 @@ bool TFileZillaImpl::GetFileModificationTimeInUtc(const wchar_t * FileName, stru
 wchar_t * TFileZillaImpl::LastSysErrorMessage()
 {
   return _wcsdup(::LastSysErrorMessage().c_str());
+}
+//---------------------------------------------------------------------------
+std::wstring TFileZillaImpl::GetClientString()
+{
+  return std::wstring(SshVersionString().c_str());
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

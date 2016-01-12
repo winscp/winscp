@@ -774,14 +774,14 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
     GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_CAPABILITIES, 0), (LPARAM)&m_serverCapabilities);
     if (!m_bAnnouncesUTF8 && !m_CurrentServer.nUTF8)
       m_bUTF8 = false;
-    if (m_bUTF8 && m_hasClntCmd && !m_isFileZilla)
+    if (m_hasClntCmd)
     {
       // Some servers refuse to enable UTF8 if client does not send CLNT command
       // to fix compatibility with Internet Explorer, but in the process breaking
       // compatibility with other clients.
       // Rather than forcing MS to fix Internet Explorer, letting other clients
       // suffer is a questionable decision in my opinion.
-      if (Send(L"CLNT FileZilla"))
+      if (Send(CString(L"CLNT ") + m_pTools->GetClientString().c_str()))
         m_Operation.nOpState = CONNECT_CLNT;
       return;
     }
