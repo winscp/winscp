@@ -88,6 +88,7 @@ BEGIN
         UPDATE_MISSING_ADDRESS, "To enable automatic updates, please provide us your postal address using a link from your donation receipt."
         UPDATE_TOO_LOW, "Your donation is below the limit required to enable automatic updates."
         TIPS_NONE, "No tips."
+        KEYGEN_PUBLIC, "Converting public keys is not supported."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"

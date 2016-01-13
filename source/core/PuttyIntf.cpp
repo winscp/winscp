@@ -527,6 +527,7 @@ TKeyType KeyType(UnicodeString FileName)
 {
   DebugAssert(ktUnopenable == SSH_KEYTYPE_UNOPENABLE);
   DebugAssert(ktSSHCom == SSH_KEYTYPE_SSHCOM);
+  DebugAssert(ktSSH2PublicOpenSSH == SSH_KEYTYPE_SSH2_PUBLIC_OPENSSH);
   UTF8String UtfFileName = UTF8String(FileName);
   Filename * KeyFile = filename_from_str(UtfFileName.c_str());
   TKeyType Result = (TKeyType)key_type(KeyFile);
@@ -546,7 +547,8 @@ bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeStr
       Result = (ssh2_userkey_encrypted(KeyFile, &CommentStr) != 0);
       break;
 
-    case ktOpenSSH:
+    case ktOpenSSHPEM:
+    case ktOpenSSHNew:
     case ktSSHCom:
       Result = (import_encrypted(KeyFile, KeyType, &CommentStr) != NULL);
       break;
@@ -585,7 +587,8 @@ TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const Un
       Ssh2Key = ssh2_load_userkey(KeyFile, AnsiPassphrase.c_str(), &ErrorStr);
       break;
 
-    case ktOpenSSH:
+    case ktOpenSSHPEM:
+    case ktOpenSSHNew:
     case ktSSHCom:
       Ssh2Key = import_ssh2(KeyFile, KeyType, AnsiPassphrase.c_str(), &ErrorStr);
       break;

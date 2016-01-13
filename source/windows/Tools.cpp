@@ -1004,10 +1004,11 @@ static void __fastcall DoVerifyKey(
     std::unique_ptr<TStrings> MoreMessages;
     switch (Type)
     {
-      case ktOpenSSH:
+      case ktOpenSSHPEM:
+      case ktOpenSSHNew:
       case ktSSHCom:
         {
-          UnicodeString TypeName = (Type == ktOpenSSH) ? L"OpenSSH SSH-2" : L"ssh.com SSH-2";
+          UnicodeString TypeName = ((Type == ktOpenSSHPEM) || (Type == ktOpenSSHNew)) ? L"OpenSSH SSH-2" : L"ssh.com SSH-2";
           Message = FMTLOAD(KEY_TYPE_UNSUPPORTED2, (FileName, TypeName));
 
           if (Convert)
@@ -1047,6 +1048,13 @@ static void __fastcall DoVerifyKey(
                   (FileName, (Type == ktSSH1 ? L"SSH-1" : L"PuTTY SSH-2"))));
           }
         }
+        break;
+
+      case ktSSH1Public:
+      case ktSSH2PublicRFC4716:
+      case ktSSH2PublicOpenSSH:
+        // noop
+        // Do not even bother checking SSH protocol version
         break;
 
       case ktUnopenable:

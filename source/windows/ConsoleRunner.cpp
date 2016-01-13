@@ -2279,7 +2279,8 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
         }
         break;
 
-      case ktOpenSSH:
+      case ktOpenSSHPEM:
+      case ktOpenSSHNew:
       case ktSSHCom:
         if (OutputFileName.IsEmpty())
         {
@@ -2287,9 +2288,15 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
         }
         break;
 
+      case ktSSH1Public:
+      case ktSSH2PublicRFC4716:
+      case ktSSH2PublicOpenSSH:
+        throw Exception(LoadStr(KEYGEN_PUBLIC));
+
       case ktUnopenable:
         throw EOSExtException(FMTLOAD(KEY_TYPE_UNOPENABLE, (InputFileName)), Error);
 
+      case ktOpenSSHAuto:
       default:
         DebugFail();
         // fallthru
