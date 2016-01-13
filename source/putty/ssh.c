@@ -11858,4 +11858,10 @@ void md5checksum(const char * buffer, int len, unsigned char output[16])
   MD5Final(output, &md5c);
 }
 
+const struct ssh_signkey ** get_hostkey_algs(int * count)
+{
+  *count = lenof(hostkey_algs);
+  return hostkey_algs;
+}
+
 #endif

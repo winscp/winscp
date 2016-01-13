@@ -696,48 +696,47 @@ bool __fastcall HasGSSAPI(UnicodeString CustomPath)
   return (has > 0);
 }
 //---------------------------------------------------------------------------
+static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, UnicodeString & KeyType)
+{
+  int Count = 0;
+  const wchar_t NormalizedSeparator = L'-';
+  const ssh_signkey ** SignKeys = get_hostkey_algs(&Count);
+
+  for (int Index = 0; Index < Count; Index++)
+  {
+    const ssh_signkey * SignKey = SignKeys[Index];
+    UnicodeString Name = UnicodeString(SignKey->name);
+    if (StartsStr(Name + L" ", Fingerprint))
+    {
+      int LenStart = Name.Length() + 1;
+      Fingerprint[LenStart] = NormalizedSeparator;
+      int Space = Fingerprint.Pos(L" ");
+      DebugAssert(IsNumber(Fingerprint.SubString(LenStart + 1, Space - LenStart - 1)));
+      Fingerprint.Delete(LenStart + 1, Space - LenStart);
+      Fingerprint = ReplaceChar(Fingerprint, L':', NormalizedSeparator);
+      KeyType = UnicodeString(SignKey->keytype);
+      return;
+    }
+    else if (StartsStr(Name + NormalizedSeparator, Fingerprint))
+    {
+      KeyType = UnicodeString(SignKey->keytype);
+      return;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall NormalizeFingerprint(UnicodeString Fingerprint)
 {
-  UnicodeString DssName = UnicodeString(ssh_dss.name) + L" ";
-  UnicodeString RsaName = UnicodeString(ssh_rsa.name) + L" ";
-
-  bool IsFingerprint = false;
-  int LenStart;
-  if (StartsStr(DssName, Fingerprint))
-  {
-    LenStart = DssName.Length() + 1;
-    IsFingerprint = true;
-  }
-  else if (StartsStr(RsaName, Fingerprint))
-  {
-    LenStart = RsaName.Length() + 1;
-    IsFingerprint = true;
-  }
-
-  if (IsFingerprint)
-  {
-    Fingerprint[LenStart - 1] = L'-';
-    int Space = Fingerprint.Pos(L" ");
-    DebugAssert(IsNumber(Fingerprint.SubString(LenStart, Space - LenStart)));
-    Fingerprint.Delete(LenStart, Space - LenStart + 1);
-    Fingerprint = ReplaceChar(Fingerprint, L':', L'-');
-  }
+  UnicodeString KeyType; // unused
+  DoNormalizeFingerprint(Fingerprint, KeyType);
   return Fingerprint;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall KeyTypeFromFingerprint(UnicodeString Fingerprint)
 {
-  Fingerprint = NormalizeFingerprint(Fingerprint);
-  UnicodeString Type;
-  if (StartsStr(UnicodeString(ssh_dss.name) + L"-", Fingerprint))
-  {
-    Type = ssh_dss.keytype;
-  }
-  else if (StartsStr(UnicodeString(ssh_rsa.name) + L"-", Fingerprint))
-  {
-    Type = ssh_rsa.keytype;
-  }
-  return Type;
+  UnicodeString KeyType;
+  DoNormalizeFingerprint(Fingerprint, KeyType);
+  return KeyType;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetPuTTYVersion()
