@@ -4,7 +4,6 @@
 //---------------------------------------------------------------------------
 enum TKeyType { ktUnopenable, ktUnknown, ktSSH1, ktSSH2, ktOpenSSH, ktSSHCom };
 TKeyType KeyType(UnicodeString FileName);
-UnicodeString KeyTypeName(TKeyType KeyType);
 bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeString & Comment);
 struct TPrivateKey;
 TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase);

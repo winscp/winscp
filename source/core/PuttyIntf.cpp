@@ -646,11 +646,6 @@ void FreeKey(TPrivateKey * PrivateKey)
   sfree(Ssh2Key);
 }
 //---------------------------------------------------------------------------
-UnicodeString KeyTypeName(TKeyType KeyType)
-{
-  return key_type_to_str(KeyType);
-}
-//---------------------------------------------------------------------------
 __int64 __fastcall ParseSize(UnicodeString SizeStr)
 {
   AnsiString AnsiSizeStr = AnsiString(SizeStr);
