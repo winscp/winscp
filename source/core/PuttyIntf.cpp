@@ -747,8 +747,9 @@ UnicodeString __fastcall GetPuTTYVersion()
   // "Release 0.64"
   // "Pre-release 0.65:2015-07-20.95501a1"
   UnicodeString Result = get_putty_version();
-  // Skip "Release" (or "Pre-release")
-  CutToChar(Result, L' ', true);
+  // Skip "Release", "Pre-release", "Development snapshot"
+  int P = Result.LastDelimiter(L" ");
+  Result.Delete(1, P);
   return Result;
 }
 //---------------------------------------------------------------------------
