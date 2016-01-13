@@ -395,7 +395,8 @@ private:
     const UnicodeString & Name, bool Value);
   TStrings * __fastcall SaveToOptions(const TSessionData * Default);
   template<class AlgoT>
-  void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names, int Count, UnicodeString value);
+  void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
+    int Count, AlgoT WarnAlgo, UnicodeString value);
 
   __property UnicodeString InternalStorageKey = { read = GetInternalStorageKey };
 

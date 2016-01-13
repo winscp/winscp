@@ -697,6 +697,46 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
 
   CustomParam1 = Storage->ReadString(L"CustomParam1", CustomParam1);
   CustomParam2 = Storage->ReadString(L"CustomParam2", CustomParam2);
+
+#ifdef TEST
+  #define KEX_TEST(VALUE, EXPECTED) KexList = VALUE; DebugAssert(KexList == EXPECTED);
+  #define KEX_DEFAULT L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN"
+  // Empty source should result in default list
+  KEX_TEST(L"", KEX_DEFAULT);
+  // Default of pre 5.8.1 should result in new default
+  KEX_TEST(L"dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN", KEX_DEFAULT);
+  // Missing first two priority algos, and last non-priority algo => default
+  KEX_TEST(L"dh-group14-sha1,dh-group1-sha1,WARN", L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN");
+  // Missing first two priority algos, last non-priority algo and WARN => default
+  KEX_TEST(L"dh-group14-sha1,dh-group1-sha1", L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN");
+  // Old algos, with all but the first below WARN
+  KEX_TEST(L"dh-gex-sha1,WARN,dh-group14-sha1,dh-group1-sha1,rsa", L"ecdh,dh-gex-sha1,WARN,dh-group14-sha1,dh-group1-sha1,rsa");
+  // Unknown algo at front
+  KEX_TEST(L"unknown,ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN", KEX_DEFAULT);
+  // Unknown algo at back
+  KEX_TEST(L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN,unknown", KEX_DEFAULT);
+  // Unknown algo in the middle
+  KEX_TEST(L"ecdh,dh-gex-sha1,dh-group14-sha1,unknown,dh-group1-sha1,rsa,WARN", KEX_DEFAULT);
+  #undef KEX_DEFAULT
+  #undef KEX_TEST
+
+  #define CIPHER_TEST(VALUE, EXPECTED) CipherList = VALUE; DebugAssert(CipherList == EXPECTED);
+  #define CIPHER_DEFAULT L"aes,blowfish,chacha20,3des,WARN,arcfour,des"
+  // Empty source should result in default list
+  CIPHER_TEST(L"", CIPHER_DEFAULT);
+  // Default of pre 5.8.1
+  CIPHER_TEST(L"aes,blowfish,3des,WARN,arcfour,des", L"aes,blowfish,3des,chacha20,WARN,arcfour,des");
+  // Missing priority algo
+  CIPHER_TEST(L"blowfish,chacha20,3des,WARN,arcfour,des", CIPHER_DEFAULT);
+  // Missing non-priority algo
+  CIPHER_TEST(L"aes,chacha20,3des,WARN,arcfour,des", L"aes,chacha20,3des,blowfish,WARN,arcfour,des");
+  // Missing last warn algo
+  CIPHER_TEST(L"aes,blowfish,chacha20,3des,WARN,arcfour", L"aes,blowfish,chacha20,3des,WARN,arcfour,des");
+  // Missing first warn algo
+  CIPHER_TEST(L"aes,blowfish,chacha20,3des,WARN,des", L"aes,blowfish,chacha20,3des,WARN,des,arcfour");
+  #undef CIPHER_DEFAULT
+  #undef CIPHER_TEST
+#endif
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
@@ -2035,18 +2075,24 @@ TCipher __fastcall TSessionData::GetCipher(int Index) const
 }
 //---------------------------------------------------------------------
 template<class AlgoT>
-void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names, int Count, UnicodeString value)
+void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
+  int Count, AlgoT WarnAlgo, UnicodeString value)
 {
   std::vector<bool> Used(Count); // initialized to false
   std::vector<AlgoT> NewList(Count);
 
+  const AlgoT * WarnPtr = std::find(DefaultList, DefaultList + Count, WarnAlgo);
+  DebugAssert(WarnPtr != NULL);
+  int WarnDefaultIndex = (WarnPtr - DefaultList);
+
   int Index = 0;
-  while (!value.IsEmpty() && (Index < Count))
+  while (!value.IsEmpty())
   {
     UnicodeString AlgoStr = CutToChar(value, L',', true);
     for (int Algo = 0; Algo < Count; Algo++)
     {
-      if (!AlgoStr.CompareIC(Names[Algo]))
+      if (!AlgoStr.CompareIC(Names[Algo]) &&
+          !Used[Algo] && DebugAlwaysTrue(Index < Count))
       {
         NewList[Index] = (AlgoT)Algo;
         Used[Algo] = true;
@@ -2056,11 +2102,54 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
     }
   }
 
-  for (int Algo = 0; (Algo < Count) && (Index < Count); Algo++)
+  if (!Used[WarnAlgo] && DebugAlwaysTrue(Index < Count))
   {
-    if (!Used[DefaultList[Algo]])
+    NewList[Index] = WarnAlgo;
+    Used[WarnAlgo] = true;
+    Index++;
+  }
+
+  int WarnIndex = std::find(NewList.begin(), NewList.end(), WarnAlgo) - NewList.begin();
+
+  bool Priority = true;
+  for (int DefaultIndex = 0; (DefaultIndex < Count); DefaultIndex++)
+  {
+    AlgoT DefaultAlgo = DefaultList[DefaultIndex];
+    if (!Used[DefaultAlgo] && DebugAlwaysTrue(Index < Count))
     {
-      NewList[Index++] = DefaultList[Algo];
+      int TargetIndex;
+      // Unused algs that are prioritized in the default list,
+      // should be merged before the existing custom list
+      if (Priority)
+      {
+        TargetIndex = DefaultIndex;
+      }
+      else
+      {
+        if (DefaultIndex < WarnDefaultIndex)
+        {
+          TargetIndex = WarnIndex;
+        }
+        else
+        {
+          TargetIndex = Index;
+        }
+      }
+
+      NewList.insert(NewList.begin() + TargetIndex, DefaultAlgo);
+      DebugAssert(NewList.back() == AlgoT());
+      NewList.pop_back();
+
+      if (TargetIndex <= WarnIndex)
+      {
+        WarnIndex++;
+      }
+
+      Index++;
+    }
+    else
+    {
+      Priority = false;
     }
   }
 
@@ -2073,7 +2162,7 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetCipherList(UnicodeString value)
 {
-  SetAlgoList(FCiphers, DefaultCipherList, CipherNames, CIPHER_COUNT, value);
+  SetAlgoList(FCiphers, DefaultCipherList, CipherNames, CIPHER_COUNT, cipWarn, value);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetCipherList() const
@@ -2100,7 +2189,7 @@ TKex __fastcall TSessionData::GetKex(int Index) const
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetKexList(UnicodeString value)
 {
-  SetAlgoList(FKex, DefaultKexList, KexNames, KEX_COUNT, value);
+  SetAlgoList(FKex, DefaultKexList, KexNames, KEX_COUNT, kexWarn, value);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetKexList() const
