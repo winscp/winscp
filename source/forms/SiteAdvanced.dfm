@@ -1961,7 +1961,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Width = 382
           Height = 17
           Anchors = [akLeft, akTop, akRight]
-          Caption = '&Bypass authentication entirely (SSH-2)'
+          Caption = '&Bypass authentication entirely'
           TabOrder = 0
           OnClick = DataChange
         end
@@ -1988,32 +1988,32 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object AuthTISCheck: TCheckBox
             Left = 12
-            Top = 42
+            Top = 88
             Width = 373
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Atte&mpt TIS or CryptoCard authentication (SSH-1)'
-            TabOrder = 1
+            TabOrder = 3
             OnClick = DataChange
           end
           object AuthKICheck: TCheckBox
             Left = 12
-            Top = 65
+            Top = 42
             Width = 373
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Attempt '#39'keyboard-&interactive'#39' authentication (SSH-2)'
-            TabOrder = 2
+            Caption = 'Attempt '#39'keyboard-&interactive'#39' authentication'
+            TabOrder = 1
             OnClick = DataChange
           end
           object AuthKIPasswordCheck: TCheckBox
             Left = 32
-            Top = 88
+            Top = 65
             Width = 353
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Respond with pass&word to the first prompt'
-            TabOrder = 3
+            TabOrder = 2
             OnClick = DataChange
           end
         end
@@ -2084,7 +2084,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 373
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Attempt &GSSAPI authentication (SSH-2)'
+            Caption = 'Attempt &GSSAPI authentication'
             TabOrder = 0
             OnClick = AuthGSSAPICheck3Click
           end
@@ -2123,7 +2123,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             289)
           object BugIgnore1Label: TLabel
             Left = 12
-            Top = 20
+            Top = 212
             Width = 169
             Height = 13
             Caption = 'Chokes on SSH-1 &ignore messages:'
@@ -2131,7 +2131,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugPlainPW1Label: TLabel
             Left = 12
-            Top = 44
+            Top = 236
             Width = 195
             Height = 13
             Caption = 'Refuses all SSH-1 pass&word camouflage:'
@@ -2139,7 +2139,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugRSA1Label: TLabel
             Left = 12
-            Top = 68
+            Top = 260
             Width = 181
             Height = 13
             Caption = 'Chokes on SSH-1 &RSA authentication:'
@@ -2147,7 +2147,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugHMAC2Label: TLabel
             Left = 12
-            Top = 140
+            Top = 68
             Width = 154
             Height = 13
             Caption = 'Miscomputes SSH-2 H&MAC keys:'
@@ -2155,7 +2155,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugDeriveKey2Label: TLabel
             Left = 12
-            Top = 164
+            Top = 92
             Width = 176
             Height = 13
             Caption = 'Miscomputes SSH-2 &encryption keys:'
@@ -2163,7 +2163,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugRSAPad2Label: TLabel
             Left = 12
-            Top = 188
+            Top = 116
             Width = 210
             Height = 13
             Caption = 'Requires &padding on SSH-2 RSA signatures:'
@@ -2171,7 +2171,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugPKSessID2Label: TLabel
             Left = 12
-            Top = 212
+            Top = 140
             Width = 195
             Height = 13
             Caption = 'Misuses the sessio&n ID in SSH-2 PK auth:'
@@ -2179,7 +2179,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugRekey2Label: TLabel
             Left = 12
-            Top = 236
+            Top = 164
             Width = 187
             Height = 13
             Caption = 'Handles SSH-2 &key re-exchange badly:'
@@ -2187,7 +2187,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugMaxPkt2Label: TLabel
             Left = 12
-            Top = 260
+            Top = 188
             Width = 176
             Height = 13
             Caption = 'Ignores SSH-2 ma&ximum packet size:'
@@ -2195,7 +2195,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugIgnore2Label: TLabel
             Left = 12
-            Top = 92
+            Top = 20
             Width = 169
             Height = 13
             Caption = 'Chokes on SSH-&2 ignore messages:'
@@ -2203,73 +2203,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object BugWinAdjLabel: TLabel
             Left = 12
-            Top = 116
+            Top = 44
             Width = 212
             Height = 13
             Caption = 'Chokes on WinSCP'#39's SSH-2 '#39'winadj'#39' requests'
             FocusControl = BugWinAdjCombo
           end
           object BugIgnore1Combo: TComboBox
-            Left = 320
-            Top = 15
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 0
-            OnChange = DataChange
-          end
-          object BugPlainPW1Combo: TComboBox
-            Left = 320
-            Top = 39
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 1
-            OnChange = DataChange
-          end
-          object BugRSA1Combo: TComboBox
-            Left = 320
-            Top = 63
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 2
-            OnChange = DataChange
-          end
-          object BugHMAC2Combo: TComboBox
-            Left = 320
-            Top = 135
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 5
-            OnChange = DataChange
-          end
-          object BugDeriveKey2Combo: TComboBox
-            Left = 320
-            Top = 159
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 6
-            OnChange = DataChange
-          end
-          object BugRSAPad2Combo: TComboBox
-            Left = 320
-            Top = 183
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 7
-            OnChange = DataChange
-          end
-          object BugPKSessID2Combo: TComboBox
             Left = 320
             Top = 207
             Width = 61
@@ -2279,7 +2219,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 8
             OnChange = DataChange
           end
-          object BugRekey2Combo: TComboBox
+          object BugPlainPW1Combo: TComboBox
             Left = 320
             Top = 231
             Width = 61
@@ -2289,7 +2229,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 9
             OnChange = DataChange
           end
-          object BugMaxPkt2Combo: TComboBox
+          object BugRSA1Combo: TComboBox
             Left = 320
             Top = 255
             Width = 61
@@ -2299,7 +2239,17 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 10
             OnChange = DataChange
           end
-          object BugIgnore2Combo: TComboBox
+          object BugHMAC2Combo: TComboBox
+            Left = 320
+            Top = 63
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 2
+            OnChange = DataChange
+          end
+          object BugDeriveKey2Combo: TComboBox
             Left = 320
             Top = 87
             Width = 61
@@ -2309,7 +2259,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 3
             OnChange = DataChange
           end
-          object BugWinAdjCombo: TComboBox
+          object BugRSAPad2Combo: TComboBox
             Left = 320
             Top = 111
             Width = 61
@@ -2317,6 +2267,56 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 4
+            OnChange = DataChange
+          end
+          object BugPKSessID2Combo: TComboBox
+            Left = 320
+            Top = 135
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 5
+            OnChange = DataChange
+          end
+          object BugRekey2Combo: TComboBox
+            Left = 320
+            Top = 159
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 6
+            OnChange = DataChange
+          end
+          object BugMaxPkt2Combo: TComboBox
+            Left = 320
+            Top = 183
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 7
+            OnChange = DataChange
+          end
+          object BugIgnore2Combo: TComboBox
+            Left = 320
+            Top = 15
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 0
+            OnChange = DataChange
+          end
+          object BugWinAdjCombo: TComboBox
+            Left = 320
+            Top = 39
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 1
             OnChange = DataChange
           end
         end
