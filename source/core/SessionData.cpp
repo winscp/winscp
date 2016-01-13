@@ -118,7 +118,7 @@ void __fastcall TSessionData::Default()
   GSSAPIServerRealm = L"";
   ChangeUsername = false;
   Compression = false;
-  SshProt = ssh2;
+  SshProt = ssh2only;
   Ssh2DES = false;
   SshNoUserAuth = false;
   for (int Index = 0; Index < CIPHER_COUNT; Index++)
