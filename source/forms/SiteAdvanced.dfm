@@ -1698,38 +1698,19 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 87
+          Height = 71
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             393
-            87)
+            71)
           object Label7: TLabel
             Left = 12
             Top = 42
             Width = 152
             Height = 13
             Caption = 'Preferred SSH protocol version:'
-            FocusControl = SshProt1onlyButton
-          end
-          object SshProt1Button: TRadioButton
-            Left = 96
-            Top = 59
-            Width = 74
-            Height = 17
-            Caption = '&1'
-            TabOrder = 2
-            OnClick = DataChange
-          end
-          object SshProt2Button: TRadioButton
-            Left = 176
-            Top = 59
-            Width = 74
-            Height = 17
-            Caption = '&2'
-            TabOrder = 3
-            OnClick = DataChange
           end
           object CompressionCheck: TCheckBox
             Left = 16
@@ -1741,30 +1722,25 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 0
             OnClick = DataChange
           end
-          object SshProt1onlyButton: TRadioButton
-            Left = 16
-            Top = 59
-            Width = 74
-            Height = 17
-            Caption = '1 on&ly'
-            Checked = True
+          object SshProtCombo: TComboBox
+            Left = 303
+            Top = 37
+            Width = 80
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
             TabOrder = 1
-            TabStop = True
-            OnClick = DataChange
-          end
-          object SshProt2onlyButton: TRadioButton
-            Left = 256
-            Top = 59
-            Width = 74
-            Height = 17
-            Caption = '2 o&nly'
-            TabOrder = 4
-            OnClick = DataChange
+            OnChange = DataChange
+            Items.Strings = (
+              '1 only'
+              '1 preferred'
+              '2 preferred'
+              '2 only')
           end
         end
         object EncryptionGroup: TGroupBox
           Left = 0
-          Top = 100
+          Top = 83
           Width = 393
           Height = 171
           Anchors = [akLeft, akTop, akRight]

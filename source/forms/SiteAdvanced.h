@@ -30,8 +30,6 @@ __published:
   TTabSheet *AdvancedSheet;
   TGroupBox *ProtocolGroup;
   TLabel *Label7;
-  TRadioButton *SshProt1Button;
-  TRadioButton *SshProt2Button;
   TCheckBox *CompressionCheck;
   TTabSheet *EnvironmentSheet;
   TTabSheet *ScpSheet;
@@ -76,8 +74,6 @@ __published:
   TComboBox *BugDeriveKey2Combo;
   TLabel *BugRSAPad2Label;
   TComboBox *BugRSAPad2Combo;
-  TRadioButton *SshProt1onlyButton;
-  TRadioButton *SshProt2onlyButton;
   TTabSheet *AuthSheet;
   TGroupBox *AuthenticationGroup;
   TCheckBox *AuthTISCheck;
@@ -256,6 +252,7 @@ __published:
   TLabel *Label4;
   TFilenameEdit *TlsCertificateFileEdit;
   TCheckBox *TrimVMSVersionsCheck;
+  TComboBox *SshProtCombo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

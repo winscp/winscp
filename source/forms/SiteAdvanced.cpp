@@ -219,14 +219,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // SSH page
     Ssh2LegacyDESCheck->Checked = FSessionData->Ssh2DES;
     CompressionCheck->Checked = FSessionData->Compression;
-
-    switch (FSessionData->SshProt)
-    {
-      case ssh1only:  SshProt1onlyButton->Checked = true; break;
-      case ssh1:      SshProt1Button->Checked = true; break;
-      case ssh2:      SshProt2Button->Checked = true; break;
-      case ssh2only:  SshProt2onlyButton->Checked = true; break;
-    }
+    SshProtCombo->ItemIndex = FSessionData->SshProt;
 
     CipherListBox->Items->Clear();
     DebugAssert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_CHACHA20);
@@ -400,22 +393,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 //---------------------------------------------------------------------
 TSshProt __fastcall TSiteAdvancedDialog::GetSshProt()
 {
-  if (SshProt1onlyButton->Checked)
-  {
-    return ssh1only;
-  }
-  else if (SshProt1Button->Checked)
-  {
-    return ssh1;
-  }
-  else if (SshProt2Button->Checked)
-  {
-    return ssh2;
-  }
-  else
-  {
-    return ssh2only;
-  }
+  return (TSshProt)SshProtCombo->ItemIndex;
 }
 //---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::SaveSession()
@@ -791,17 +769,17 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // ssh/authentication sheet
     AuthSheet->Enabled = SshProtocol;
-    EnableControl(SshNoUserAuthCheck, !SshProt1onlyButton->Checked);
+    EnableControl(SshNoUserAuthCheck, (GetSshProt() != ssh1only));
     EnableControl(AuthenticationGroup,
       !SshNoUserAuthCheck->Enabled || !SshNoUserAuthCheck->Checked);
-    EnableControl(AuthTISCheck, AuthenticationGroup->Enabled && !SshProt2onlyButton->Checked);
-    EnableControl(AuthKICheck, AuthenticationGroup->Enabled && !SshProt1onlyButton->Checked);
+    EnableControl(AuthTISCheck, AuthenticationGroup->Enabled && (GetSshProt() != ssh2only));
+    EnableControl(AuthKICheck, AuthenticationGroup->Enabled && (GetSshProt() != ssh1only));
     EnableControl(AuthKIPasswordCheck,
       AuthenticationGroup->Enabled &&
       ((AuthTISCheck->Enabled && AuthTISCheck->Checked) ||
        (AuthKICheck->Enabled && AuthKICheck->Checked)));
     EnableControl(AuthGSSAPICheck3,
-      AuthenticationGroup->Enabled && !SshProt1onlyButton->Checked);
+      AuthenticationGroup->Enabled && (GetSshProt() != ssh1only));
     EnableControl(GSSAPIFwdTGTCheck,
       AuthGSSAPICheck3->Enabled && AuthGSSAPICheck3->Checked);
 
@@ -810,10 +788,10 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(CipherUpButton, CipherListBox->ItemIndex > 0);
     EnableControl(CipherDownButton, CipherListBox->ItemIndex >= 0 &&
       CipherListBox->ItemIndex < CipherListBox->Items->Count-1);
-    EnableControl(Ssh2LegacyDESCheck, !SshProt1onlyButton->Checked);
+    EnableControl(Ssh2LegacyDESCheck, (GetSshProt() != ssh1only));
 
     // ssh/kex sheet
-    KexSheet->Enabled = SshProtocol && !SshProt1onlyButton->Checked &&
+    KexSheet->Enabled = SshProtocol && (GetSshProt() != ssh1only) &&
       (BugRekey2Combo->ItemIndex != 2);
     EnableControl(KexUpButton, KexListBox->ItemIndex > 0);
     EnableControl(KexDownButton, KexListBox->ItemIndex >= 0 &&
@@ -821,27 +799,27 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // ssh/bugs sheet
     BugsSheet->Enabled = SshProtocol;
-    EnableControl(BugIgnore1Combo, !SshProt2onlyButton->Checked);
+    EnableControl(BugIgnore1Combo, (GetSshProt() != ssh2only));
     EnableControl(BugIgnore1Label, BugIgnore1Combo->Enabled);
-    EnableControl(BugPlainPW1Combo, !SshProt2onlyButton->Checked);
+    EnableControl(BugPlainPW1Combo, (GetSshProt() != ssh2only));
     EnableControl(BugPlainPW1Label, BugPlainPW1Combo->Enabled);
-    EnableControl(BugRSA1Combo, !SshProt2onlyButton->Checked);
+    EnableControl(BugRSA1Combo, (GetSshProt() != ssh2only));
     EnableControl(BugRSA1Label, BugRSA1Combo->Enabled);
-    EnableControl(BugHMAC2Combo, !SshProt1onlyButton->Checked);
+    EnableControl(BugHMAC2Combo, (GetSshProt() != ssh1only));
     EnableControl(BugHMAC2Label, BugHMAC2Combo->Enabled);
-    EnableControl(BugDeriveKey2Combo, !SshProt1onlyButton->Checked);
+    EnableControl(BugDeriveKey2Combo, (GetSshProt() != ssh1only));
     EnableControl(BugDeriveKey2Label, BugDeriveKey2Combo->Enabled);
-    EnableControl(BugRSAPad2Combo, !SshProt1onlyButton->Checked);
+    EnableControl(BugRSAPad2Combo, (GetSshProt() != ssh1only));
     EnableControl(BugRSAPad2Label, BugRSAPad2Combo->Enabled);
-    EnableControl(BugPKSessID2Combo, !SshProt1onlyButton->Checked);
+    EnableControl(BugPKSessID2Combo, (GetSshProt() != ssh1only));
     EnableControl(BugPKSessID2Label, BugPKSessID2Combo->Enabled);
-    EnableControl(BugRekey2Combo, !SshProt1onlyButton->Checked);
+    EnableControl(BugRekey2Combo, (GetSshProt() != ssh1only));
     EnableControl(BugRekey2Label, BugRekey2Combo->Enabled);
-    EnableControl(BugMaxPkt2Combo, !SshProt1onlyButton->Checked);
+    EnableControl(BugMaxPkt2Combo, (GetSshProt() != ssh1only));
     EnableControl(BugMaxPkt2Label, BugMaxPkt2Combo->Enabled);
-    EnableControl(BugIgnore2Combo, !SshProt1onlyButton->Checked);
+    EnableControl(BugIgnore2Combo, (GetSshProt() != ssh1only));
     EnableControl(BugIgnore2Label, BugIgnore2Combo->Enabled);
-    EnableControl(BugWinAdjCombo, !SshProt1onlyButton->Checked);
+    EnableControl(BugWinAdjCombo, (GetSshProt() != ssh1only));
     EnableControl(BugWinAdjLabel, BugWinAdjCombo->Enabled);
 
     // connection/proxy sheet
