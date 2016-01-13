@@ -1766,13 +1766,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 100
           Width = 393
-          Height = 163
+          Height = 171
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Encryption options'
           TabOrder = 1
           DesignSize = (
             393
-            163)
+            171)
           object Label8: TLabel
             Left = 12
             Top = 19
@@ -1785,7 +1785,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Left = 12
             Top = 36
             Width = 285
-            Height = 91
+            Height = 99
             Anchors = [akLeft, akTop, akRight]
             DragMode = dmAutomatic
             ItemHeight = 13
@@ -1797,7 +1797,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object Ssh2LegacyDESCheck: TCheckBox
             Left = 16
-            Top = 134
+            Top = 142
             Width = 367
             Height = 17
             Anchors = [akLeft, akTop, akRight]
