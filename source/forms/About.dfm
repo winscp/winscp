@@ -144,7 +144,7 @@ object AboutDialog: TAboutDialog
     object RegistrationSubjectLabel: TLabel
       Left = 8
       Top = 8
-      Width = 249
+      Width = 245
       Height = 65
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
