@@ -16,14 +16,15 @@
 #include <StrUtils.hpp>
 #include <XMLDoc.hpp>
 #include <StrUtils.hpp>
+#include <algorithm>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const wchar_t * PingTypeNames = L"Off;Null;Dummy";
 const wchar_t * ProxyMethodNames = L"None;SOCKS4;SOCKS5;HTTP;Telnet;Cmd";
 const wchar_t * DefaultName = L"Default Settings";
-const wchar_t CipherNames[CIPHER_COUNT][10] = {L"WARN", L"3des", L"blowfish", L"aes", L"des", L"arcfour", L"chacha20"};
-const wchar_t KexNames[KEX_COUNT][20] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-gex-sha1", L"rsa", L"ecdh"};
+const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", L"aes", L"des", L"arcfour", L"chacha20"};
+const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-gex-sha1", L"rsa", L"ecdh"};
 const wchar_t SshProtList[][10] = {L"1 only", L"1", L"2", L"2 only"};
 const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipChaCha20, cipAES, cipBlowfish, cip3DES, cipWarn, cipArcfour, cipDES };
@@ -2033,32 +2034,46 @@ TCipher __fastcall TSessionData::GetCipher(int Index) const
   return FCiphers[Index];
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SetCipherList(UnicodeString value)
+template<class AlgoT>
+void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names, int Count, UnicodeString value)
 {
-  bool Used[CIPHER_COUNT];
-  for (int C = 0; C < CIPHER_COUNT; C++) Used[C] = false;
+  std::vector<bool> Used(Count); // initialized to false
+  std::vector<AlgoT> NewList(Count);
 
-  UnicodeString CipherStr;
   int Index = 0;
-  while (!value.IsEmpty() && (Index < CIPHER_COUNT))
+  while (!value.IsEmpty() && (Index < Count))
   {
-    CipherStr = CutToChar(value, L',', true);
-    for (int C = 0; C < CIPHER_COUNT; C++)
+    UnicodeString AlgoStr = CutToChar(value, L',', true);
+    for (int Algo = 0; Algo < Count; Algo++)
     {
-      if (!CipherStr.CompareIC(CipherNames[C]))
+      if (!AlgoStr.CompareIC(Names[Algo]))
       {
-        Cipher[Index] = (TCipher)C;
-        Used[C] = true;
+        NewList[Index] = (AlgoT)Algo;
+        Used[Algo] = true;
         Index++;
         break;
       }
     }
   }
 
-  for (int C = 0; C < CIPHER_COUNT && Index < CIPHER_COUNT; C++)
+  for (int Algo = 0; (Algo < Count) && (Index < Count); Algo++)
   {
-    if (!Used[DefaultCipherList[C]]) Cipher[Index++] = DefaultCipherList[C];
+    if (!Used[DefaultList[Algo]])
+    {
+      NewList[Index++] = DefaultList[Algo];
+    }
   }
+
+  if (!std::equal(NewList.begin(), NewList.end(), List))
+  {
+    std::copy(NewList.begin(), NewList.end(), List);
+    Modify();
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetCipherList(UnicodeString value)
+{
+  SetAlgoList(FCiphers, DefaultCipherList, CipherNames, CIPHER_COUNT, value);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetCipherList() const
@@ -2085,30 +2100,7 @@ TKex __fastcall TSessionData::GetKex(int Index) const
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetKexList(UnicodeString value)
 {
-  bool Used[KEX_COUNT];
-  for (int K = 0; K < KEX_COUNT; K++) Used[K] = false;
-
-  UnicodeString KexStr;
-  int Index = 0;
-  while (!value.IsEmpty() && (Index < KEX_COUNT))
-  {
-    KexStr = CutToChar(value, L',', true);
-    for (int K = 0; K < KEX_COUNT; K++)
-    {
-      if (!KexStr.CompareIC(KexNames[K]))
-      {
-        Kex[Index] = (TKex)K;
-        Used[K] = true;
-        Index++;
-        break;
-      }
-    }
-  }
-
-  for (int K = 0; K < KEX_COUNT && Index < KEX_COUNT; K++)
-  {
-    if (!Used[DefaultKexList[K]]) Kex[Index++] = DefaultKexList[K];
-  }
+  SetAlgoList(FKex, DefaultKexList, KexNames, KEX_COUNT, value);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetKexList() const

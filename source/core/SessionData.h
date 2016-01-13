@@ -45,8 +45,8 @@ enum TSessionUrlFlags
   sufOpen = sufUserName | sufPassword
 };
 //---------------------------------------------------------------------------
-extern const wchar_t CipherNames[CIPHER_COUNT][10];
-extern const wchar_t KexNames[KEX_COUNT][20];
+extern const UnicodeString CipherNames[CIPHER_COUNT];
+extern const UnicodeString KexNames[KEX_COUNT];
 extern const wchar_t SshProtList[][10];
 extern const TCipher DefaultCipherList[CIPHER_COUNT];
 extern const TKex DefaultKexList[KEX_COUNT];
@@ -394,6 +394,8 @@ private:
     UnicodeString & Result, TAssemblyLanguage Language,
     const UnicodeString & Name, bool Value);
   TStrings * __fastcall SaveToOptions(const TSessionData * Default);
+  template<class AlgoT>
+  void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names, int Count, UnicodeString value);
 
   __property UnicodeString InternalStorageKey = { read = GetInternalStorageKey };
 
