@@ -6470,7 +6470,11 @@ static void do_ssh2_transport(Ssh ssh, const void *vin, int inlen,
 	     * for which we have a host key for this host.
              */
             for (i = 0; i < lenof(hostkey_algs); i++) {
-		if (have_ssh_host_key(ssh->savedhost, ssh->savedport,
+		if (have_ssh_host_key(
+#ifdef MPEXT
+				      ssh->frontend,
+#endif
+				      ssh->savedhost, ssh->savedport,
 				      hostkey_algs[i]->keytype)) {
 		    alg = ssh2_kexinit_addalg(s->kexlists[KEXLIST_HOSTKEY],
 					      hostkey_algs[i]->name);

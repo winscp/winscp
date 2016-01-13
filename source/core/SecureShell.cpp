@@ -20,6 +20,8 @@
 //---------------------------------------------------------------------------
 #define MAX_BUFSIZE 32768
 //---------------------------------------------------------------------------
+const wchar_t HostKeyDelimiter = L';';
+//---------------------------------------------------------------------------
 struct TPuttyTranslation
 {
   const wchar_t * Original;
@@ -2094,8 +2096,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
 
   GotHostKey();
 
-  wchar_t Delimiter = L';';
-  DebugAssert(KeyStr.Pos(Delimiter) == 0);
+  DebugAssert(KeyStr.Pos(HostKeyDelimiter) == 0);
 
   GetRealHost(Host, Port);
 
@@ -2108,7 +2109,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
   UnicodeString Buf = StoredKeys;
   while (!Result && !Buf.IsEmpty())
   {
-    UnicodeString StoredKey = CutToChar(Buf, Delimiter, false);
+    UnicodeString StoredKey = CutToChar(Buf, HostKeyDelimiter, false);
     bool Fingerprint = (StoredKey.SubString(1, 2) != L"0x");
     // it's probably a fingerprint (stored by TSessionData::CacheHostKey)
     UnicodeString NormalizedExpectedKey;
@@ -2137,7 +2138,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
     UnicodeString Buf = FSessionData->HostKey;
     while (!Result && !Buf.IsEmpty())
     {
-      UnicodeString ExpectedKey = CutToChar(Buf, Delimiter, false);
+      UnicodeString ExpectedKey = CutToChar(Buf, HostKeyDelimiter, false);
       UnicodeString NormalizedExpectedKey = NormalizeFingerprint(ExpectedKey);
       if (ExpectedKey == L"*")
       {
@@ -2225,7 +2226,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
       switch (R) {
         case qaOK:
           DebugAssert(!Unknown);
-          KeyStr = (StoredKeys + Delimiter + KeyStr);
+          KeyStr = (StoredKeys + HostKeyDelimiter + KeyStr);
           // fall thru
         case qaYes:
           store_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(KeyStr).c_str());
@@ -2273,6 +2274,34 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
   }
 
   Configuration->RememberLastFingerprint(FSessionData->SiteKey, SshFingerprintType, Fingerprint);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecureShell::HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType)
+{
+  // Return true, if we have any host key fingerprint of a particular type
+
+  GetRealHost(Host, Port);
+
+  UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
+  bool Result = !StoredKeys.IsEmpty();
+
+  if (!FSessionData->HostKey.IsEmpty())
+  {
+    UnicodeString Buf = FSessionData->HostKey;
+    while (!Result && !Buf.IsEmpty())
+    {
+      UnicodeString ExpectedKey = CutToChar(Buf, HostKeyDelimiter, false);
+      UnicodeString ExpectedKeyType = KeyTypeFromFingerprint(ExpectedKey);
+      Result = SameText(ExpectedKeyType, KeyType);
+    }
+  }
+
+  if (Result)
+  {
+    LogEvent(FORMAT(L"Have a known host key of type %s", (KeyType)));
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::AskAlg(const UnicodeString AlgType,

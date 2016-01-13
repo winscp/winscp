@@ -234,10 +234,17 @@ int verify_ssh_host_key(void * frontend, char * host, int port, const char * key
   void * /*ctx*/)
 {
   DebugAssert(frontend != NULL);
-  ((TSecureShell *)frontend)->VerifyHostKey(host, port, keytype, keystr, fingerprint);
+  static_cast<TSecureShell *>(frontend)->VerifyHostKey(host, port, keytype, keystr, fingerprint);
 
   // We should return 0 when key was not confirmed, we throw exception instead.
   return 1;
+}
+//---------------------------------------------------------------------------
+int have_ssh_host_key(void * frontend, const char * hostname, int port,
+  const char * keytype)
+{
+  DebugAssert(frontend != NULL);
+  return static_cast<TSecureShell *>(frontend)->HaveHostKey(hostname, port, keytype) ? 1 : 0;
 }
 //---------------------------------------------------------------------------
 int askalg(void * frontend, const char * algtype, const char * algname,

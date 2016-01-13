@@ -154,6 +154,7 @@ public:
   const UnicodeString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(UnicodeString Host, int Port,
     const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint);
+  bool __fastcall HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
   void __fastcall AskAlg(const UnicodeString AlgType, const UnicodeString AlgName);
   void __fastcall DisplayBanner(const UnicodeString & Banner);
   void __fastcall OldKeyfileWarning();

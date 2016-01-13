@@ -1215,7 +1215,11 @@ int verify_ssh_host_key(void *frontend, char *host, int port,
  * have_ssh_host_key() just returns true if a key of that type is
  * already chached and false otherwise.
  */
+#ifdef MPEXT
+int have_ssh_host_key(void *frontend, const char *host, int port, const char *keytype);
+#else
 int have_ssh_host_key(const char *host, int port, const char *keytype);
+#endif
 /*
  * askalg has the same set of return values as verify_ssh_host_key.
  */
