@@ -703,6 +703,8 @@ static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, Unico
 {
   int Count = 0;
   const wchar_t NormalizedSeparator = L'-';
+  // We may use find_pubkey_alg, but it gets complicated with normalized fingerprint
+  // as the names have different number of dashes
   const ssh_signkey ** SignKeys = get_hostkey_algs(&Count);
 
   for (int Index = 0; Index < Count; Index++)
