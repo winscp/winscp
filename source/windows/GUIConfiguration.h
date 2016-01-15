@@ -189,6 +189,7 @@ protected:
   virtual LCID __fastcall GetLocale();
   void __fastcall SetLocale(LCID value);
   void __fastcall SetLocaleSafe(LCID value);
+  UnicodeString __fastcall GetLocaleHex();
   virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
     UnicodeString & FileName);
   HANDLE __fastcall GetResourceModule();
@@ -243,6 +244,7 @@ public:
   __property bool SessionRememberPassword = { read = FSessionRememberPassword, write = FSessionRememberPassword };
   __property LCID Locale = { read = GetLocale, write = SetLocale };
   __property LCID LocaleSafe = { read = GetLocale, write = SetLocaleSafe };
+  __property UnicodeString LocaleHex = { read = GetLocaleHex };
   __property TStrings * Locales = { read = GetLocales };
   __property UnicodeString PuttyPath = { read = FPuttyPath, write = FPuttyPath };
   __property UnicodeString DefaultPuttyPath = { read = FDefaultPuttyPath };

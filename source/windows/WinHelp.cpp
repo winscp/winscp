@@ -36,14 +36,14 @@ void __fastcall SearchHelp(const UnicodeString & Message)
   // Message goes last, as it may exceed URL parameters limit (2048) and get truncated.
   // And we need to preserve the other parameters.
   OpenBrowser(FMTLOAD(DOCUMENTATION_SEARCH_URL3,
-    (Configuration->ProductVersion, IntToHex(__int64(GUIConfiguration->Locale), 4),
+    (Configuration->ProductVersion, GUIConfiguration->LocaleHex,
      EncodeUrlString(Message))));
 }
 //---------------------------------------------------------------------------
 void __fastcall InitializeWinHelp()
 {
   InitializeCustomHelp(new TWebHelpSystem(
-      Configuration->ProductVersion, IntToHex(__int64(GUIConfiguration->Locale), 4)));
+      Configuration->ProductVersion, GUIConfiguration->LocaleHex));
 }
 //---------------------------------------------------------------------------
 void __fastcall FinalizeWinHelp()

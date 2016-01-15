@@ -155,7 +155,7 @@ void __fastcall TMessageForm::ReportButtonClick(TObject * /*Sender*/)
   // And we need to preserve the other parameters.
   UnicodeString Url =
     FMTLOAD(ERROR_REPORT_URL2,
-      (Configuration->ProductVersion, IntToHex(__int64(GUIConfiguration->Locale), 4),
+      (Configuration->ProductVersion, GUIConfiguration->LocaleHex,
        EncodeUrlString(GetReportText())));
 
   OpenBrowser(Url);

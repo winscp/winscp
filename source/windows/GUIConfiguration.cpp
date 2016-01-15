@@ -855,6 +855,11 @@ void __fastcall TGUIConfiguration::SetLocaleSafe(LCID value)
   SetLocaleInternal(value, true);
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TGUIConfiguration::GetLocaleHex()
+{
+  return IntToHex(__int64(GUIConfiguration->Locale), 4);
+}
+//---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetLocaleInternal(LCID value, bool Safe)
 {
   if (Locale != value)

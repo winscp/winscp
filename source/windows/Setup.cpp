@@ -786,7 +786,7 @@ UnicodeString __fastcall ProgramUrl(UnicodeString URL)
   UnicodeString Params =
     FORMAT(L"v=%s&lang=%s&isinstalled=%d",
       (CurrentVersionStr,
-      IntToHex(__int64(GUIConfiguration->Locale), 4),
+      GUIConfiguration->LocaleHex,
       int(IsInstalled())));
 
   if (Configuration->IsUnofficial)
