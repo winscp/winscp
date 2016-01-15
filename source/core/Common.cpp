@@ -645,6 +645,7 @@ UnicodeString __fastcall ExpandFileNameCommand(const UnicodeString Command,
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EscapeParam(const UnicodeString & Param)
 {
+  // Make sure this won't break RTF syntax
   return ReplaceStr(Param, L"\"", L"\"\"");
 }
 //---------------------------------------------------------------------------
@@ -2886,4 +2887,67 @@ void __fastcall CheckCertificate(const UnicodeString & Path)
 bool __fastcall IsHttpUrl(const UnicodeString & S)
 {
   return SameText(S.SubString(1, 4), L"http");
+}
+//---------------------------------------------------------------------------
+const UnicodeString RtfPara = L"\\par\n";
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfColor(int Index)
+{
+  return FORMAT(L"\\cf%d", (Index));
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfText(const UnicodeString & Text)
+{
+  UnicodeString Result = Text;
+  int Index = 1;
+  while (Index <= Result.Length())
+  {
+    UnicodeString Replacement;
+    wchar_t Ch = Result[Index];
+    if ((Ch == L'\\') || (Ch == L'{') || (Ch == L'}'))
+    {
+      Replacement = FORMAT(L"\\%s", (Ch));
+    }
+    else if (Ch >= 0x0080)
+    {
+      Replacement = FORMAT(L"\\u%d?", (int(Ch)));
+    }
+
+    if (!Replacement.IsEmpty())
+    {
+      Result.Delete(Index, 1);
+      Result.Insert(Replacement, Index);
+      Index += Replacement.Length();
+    }
+    else
+    {
+      Index++;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfColorText(int Color, const UnicodeString & Text)
+{
+  return RtfColor(Color) + L" " + RtfText(Text) + RtfColor(0) + L" ";
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfColorItalicText(int Color, const UnicodeString & Text)
+{
+  return RtfColor(Color) + L"\\i " + RtfText(Text) + L"\\i0" + RtfColor(0) + L" ";
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfKeyword(const UnicodeString & Text)
+{
+  return RtfColorText(4, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfParameter(const UnicodeString & Text)
+{
+  return RtfColorText(5, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfString(const UnicodeString & Text)
+{
+  return RtfColorText(3, Text);
 }

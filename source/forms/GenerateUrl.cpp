@@ -66,6 +66,16 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl(UnicodeString Path)
   return Url;
 }
 //---------------------------------------------------------------------------
+static UnicodeString __fastcall RtfColorEntry(int Color)
+{
+  return FORMAT(L"\\red%d\\green%d\\blue%d;", ((Color & 0xFF0000) >> 16, (Color & 0x00FF00) >> 8, (Color & 0x0000FF) >> 0));
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfScriptComment(const UnicodeString & Text)
+{
+  return RtfColorItalicText(6, Text);
+}
+//---------------------------------------------------------------------------
 void __fastcall TGenerateUrlDialog::UpdateControls()
 {
   if (!FChanging)
@@ -124,6 +134,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
 
     bool WordWrap = false;
     bool FixedWidth = false;
+    FPlainResult = L"";
     if (OptionsPageControl->ActivePage == UrlSheet)
     {
       if (!IsFileUrl())
@@ -133,13 +144,19 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         {
           Path += L"/";
         }
-        Result = GenerateUrl(Path);
+        FPlainResult = GenerateUrl(Path);
+        Result = RtfText(FPlainResult);
       }
       else
       {
         for (int Index = 0; Index < FPaths->Count; Index++)
         {
-          Result += GenerateUrl(FPaths->Strings[Index]) + L"\n";
+          UnicodeString Url = GenerateUrl(FPaths->Strings[Index]);
+          Result += RtfText(Url) + RtfPara;
+          FPlainResult +=
+            Url +
+            // What CopyToClipboard would have done could we pass in ResultMemo->Lines
+            ((FPaths->Count > 0) ? L"\n" : L"");
         }
       }
       WordWrap = true;
@@ -155,12 +172,12 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       {
         Result =
           FORMAT(
-            L"open %s\n"
-             "\n"
-             "; %s\n"
-             "; %s\n"
-             "\n"
-             "exit\n",
+            RtfKeyword(L"open") + L" %s" + RtfPara +
+            RtfPara +
+            RtfScriptComment("; %s") + RtfPara +
+            RtfScriptComment("; %s") + RtfPara +
+            RtfPara +
+            RtfKeyword(L"exit") + RtfPara,
             (OpenCommand, CommandPlaceholder1, CommandPlaceholder2));
         WordWrap = false;
         FixedWidth = true;
@@ -170,33 +187,35 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         UnicodeString ComExeName = ChangeFileExt(ExeName, L".com");
 
         Result =
-          FORMAT(
-            L"@echo off\n"
-             "\n"
-             "\"%s\" /log=%s.log /ini=nul /command ^\n"
-             "  \"open %s\" ^\n"
-             "  \"%s\" ^\n"
-             "  \"%s\" ^\n"
-             "  \"exit\"\n"
-             "\n"
-             "set WINSCP_RESULT=%%ERRORLEVEL%%\n"
-             "if %%WINSCP_RESULT%% equ 0 (\n"
-             "  echo Success\n"
-             ") else (\n"
-             "  echo Error\n"
-             ")\n"
-             "\n"
-             "exit /b %%WINSCP_RESULT%%\n",
-             (ComExeName, BaseExeName, EscapeParam(ReplaceStr(OpenCommand, L"%", L"%%")), CommandPlaceholder1, CommandPlaceholder2));
+          RtfScriptComment(L"@echo off") + RtfPara +
+          RtfPara +
+          RtfText(L"\"" + ComExeName + "\" ") + RtfParameter(L"/log") + RtfText(L"=" + BaseExeName + L".log ") + RtfParameter(L"/ini") + RtfText(L"=nul ") + RtfParameter(L"/command") + RtfText(L" ^") + RtfPara +
+          RtfText(L"  \"") + RtfKeyword(L"open") + RtfText(L" ") + EscapeParam(ReplaceStr(OpenCommand, L"%", L"%%")) + RtfText(L"\" ^") + RtfPara +
+          RtfText(L"  \"") + RtfScriptComment(CommandPlaceholder1) + RtfText(L"\" ^") + RtfPara +
+          RtfText(L"  \"") + RtfScriptComment(CommandPlaceholder2) + RtfText(L"\" ^") + RtfPara +
+          RtfText(L"  \"") + RtfKeyword(L"exit") + RtfText(L"\"") + RtfPara +
+          RtfPara +
+          RtfKeyword(L"set") + RtfText(L" WINSCP_RESULT=%ERRORLEVEL%") + RtfPara +
+          RtfKeyword(L"if") + RtfText(L" %WINSCP_RESULT% ") + RtfKeyword(L"equ") + RtfText(L" 0 (") + RtfPara +
+          RtfText(L"  ") + RtfKeyword(L"echo") + RtfText(L" Success") + RtfPara +
+          RtfText(L") ") + RtfKeyword(L"else") + RtfText(L" (") + RtfPara +
+          RtfText(L"  ") + RtfKeyword(L"echo") + RtfText(L" Error") + RtfPara +
+          RtfText(L")") + RtfPara +
+          RtfPara +
+          RtfKeyword(L"exit") + RtfText(L" /b %WINSCP_RESULT%") + RtfPara;
         WordWrap = false;
         FixedWidth = true;
       }
       else if (ScriptFormatCombo->ItemIndex == sfCommandLine)
       {
         Result =
-          FORMAT(
-            L"/log=%s.log /ini=nul /command \"open %s\" \"%s\" \"%s\" \"exit\"",
-            (BaseExeName, EscapeParam(OpenCommand), CommandPlaceholder1, CommandPlaceholder2));
+          RtfParameter(L"/log") + RtfText(L"=" + BaseExeName + L".log ") +
+          RtfParameter(L"/ini") + RtfText(L"=nul ") +
+          RtfParameter(L"/command") + RtfText(L" ") +
+            RtfText(L"\"") + RtfKeyword(L"open") + RtfText(L" ") + EscapeParam(OpenCommand) + RtfText(L"\" ") +
+            RtfText(L"\"") + RtfScriptComment(CommandPlaceholder1) + RtfText(L"\" ") +
+            RtfText(L"\"") + RtfScriptComment(CommandPlaceholder2) + RtfText(L"\" ") +
+            RtfText(L"\"") + RtfKeyword(L"exit") + RtfText(L"\"");
         WordWrap = true;
         FixedWidth = false;
       }
@@ -208,18 +227,44 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       FixedWidth = true;
     }
 
-    ResultMemo->WordWrap = WordWrap;
-    ResultMemo->ScrollBars = WordWrap ? ssVertical : ssBoth;
-    ResultMemo->Lines->Text = Result;
-
     if (FixedWidth)
     {
       ResultMemo->Font->Name = CustomWinConfiguration->DefaultFixedWidthFontName;
+      ResultMemo->DefAttributes->Color = clWindowText;
     }
     else
     {
       ResultMemo->ParentFont = true;
     }
+
+    Result =
+      L"{\\rtf1\n"
+       "{\\colortbl ;" +
+       // The same RGB as on wiki
+       RtfColorEntry(0x008000) + // cde comment (green)
+       RtfColorEntry(0x008080) + // class (teal)
+       RtfColorEntry(0x800000) + // string (maroon)
+       RtfColorEntry(0x0000FF) + // keyword (blue)
+       RtfColorEntry(0x993333) + // command-line argument (reddish)
+       RtfColorEntry(0x808080) + // script command (gray)
+      L"}\n"
+       "{\\fonttbl{\\f0\\fnil\\fcharset0 " + ResultMemo->Font->Name + L";}}\n"
+       "\\f0\\fs" + IntToStr(ResultMemo->Font->Size * 2) + L" " +
+       Result +
+      L"}";
+
+    ResultMemo->WordWrap = WordWrap;
+    ResultMemo->ScrollBars = WordWrap ? ssVertical : ssBoth;
+
+    std::unique_ptr<TMemoryStream> Stream(new TMemoryStream());
+    UTF8String ResultUtf = Result;
+    Stream->Write(ResultUtf.c_str(), ResultUtf.Length());
+    Stream->Position = 0;
+
+    Stream->SaveToFile(L"b:\\rtf\\code.rtf");
+    Stream->Position = 0;
+
+    ResultMemo->Lines->LoadFromStream(Stream.get(), TEncoding::UTF8);
   }
 }
 //---------------------------------------------------------------------------
@@ -334,7 +379,34 @@ void __fastcall TGenerateUrlDialog::ControlChange(TObject * /*Sender*/)
 void __fastcall TGenerateUrlDialog::ClipboardButtonClick(TObject * /*Sender*/)
 {
   TInstantOperationVisualizer Visualizer;
-  CopyToClipboard(ResultMemo->Lines);
+  if (ResultMemo->WordWrap)
+  {
+    // Cannot read the text from ResultMemo->Lines as TRichEdit (as opposite to TMemo)
+    // breaks wrapped lines
+
+    if (!FPlainResult.IsEmpty())
+    {
+      CopyToClipboard(FPlainResult);
+    }
+    else
+    {
+      // We get here with command-line only,
+      // where we know to have a single line only
+      DebugAssert((OptionsPageControl->ActivePage == ScriptSheet) && (ScriptFormatCombo->ItemIndex == sfCommandLine));
+      UnicodeString Text;
+      for (int Index = 0; Index < ResultMemo->Lines->Count; Index++)
+      {
+        Text += ResultMemo->Lines->Strings[Index];
+      }
+      CopyToClipboard(Text);
+    }
+  }
+  else
+  {
+    // On the other hand, the FResult contains RTF markup
+    // in which case we want to use ResultMemo->Lines
+    CopyToClipboard(ResultMemo->Lines);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TGenerateUrlDialog::HelpButtonClick(TObject * /*Sender*/)

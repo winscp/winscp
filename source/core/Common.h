@@ -199,6 +199,16 @@ MethodT __fastcall MakeMethod(void * Data, void * Code)
   return Method;
 }
 //---------------------------------------------------------------------------
+extern const UnicodeString RtfPara;
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfText(const UnicodeString & Text);
+UnicodeString __fastcall RtfColor(int Index);
+UnicodeString __fastcall RtfColorItalicText(int Color, const UnicodeString & Text);
+UnicodeString __fastcall RtfColorText(int Color, const UnicodeString & Text);
+UnicodeString __fastcall RtfKeyword(const UnicodeString & Text);
+UnicodeString __fastcall RtfParameter(const UnicodeString & Text);
+UnicodeString __fastcall RtfString(const UnicodeString & Text);
+//---------------------------------------------------------------------------
 #include "Global.h"
 //---------------------------------------------------------------------------
 template<class T>

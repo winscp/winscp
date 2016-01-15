@@ -2524,22 +2524,23 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Switch)
 {
-  Result += FORMAT(L" -%s", (Switch));
+  Result += RtfText(L" ") + RtfParameter(FORMAT(L"-%s", (Switch)));
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddSwitchValue(UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value)
 {
-  AddSwitch(Result, FORMAT(L"%s=%s", (Name, Value)));
+  AddSwitch(Result, Name);
+  Result += L"=" + Value;
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value)
 {
-  AddSwitchValue(Result, Name, FORMAT("\"%s\"", (EscapeParam(Value))));
+  AddSwitchValue(Result, Name, RtfString(FORMAT("\"%s\"", (EscapeParam(Value)))));
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Name, int Value)
 {
-  AddSwitchValue(Result, Name, IntToStr(Value));
+  AddSwitchValue(Result, Name, RtfText(IntToStr(Value)));
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::LookupLastFingerprint()
@@ -2558,6 +2559,16 @@ void __fastcall TSessionData::LookupLastFingerprint()
   {
     HostKey = Configuration->LastFingerprint(SiteKey, FingerprintType);
   }
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfCodeComment(const UnicodeString & Text)
+{
+  return RtfColorItalicText(1, Text);
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfClass(const UnicodeString & Text)
+{
+  return RtfColorText(2, Text);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs()
@@ -2647,15 +2658,15 @@ void __fastcall TSessionData::AddAssemblyProperty(
   switch (Language)
   {
     case alCSharp:
-      PropertyCode = L"    %s = %s.%s,\n";
+      PropertyCode = RtfText(L"    %s = ") + RtfClass("%s") + RtfText(L".%s,") + RtfPara;
       break;
 
     case alVBNET:
-      PropertyCode = L"    .%s = %s.%s\n";
+      PropertyCode = RtfText(L"    .%s = ") + RtfClass("%s") + RtfText(L".%s") + RtfPara;
       break;
 
     case alPowerShell:
-      PropertyCode = L"$sessionOptions.%s = [WinSCP.%s]::%s\n";
+      PropertyCode = RtfText(L"$sessionOptions.%s = [WinSCP.") + RtfClass("%s") + RtfText(L"]::%s") + RtfPara;
       break;
   }
 
@@ -2690,7 +2701,7 @@ UnicodeString __fastcall TSessionData::AssemblyString(TAssemblyLanguage Language
       break;
   }
 
-  return S;
+  return RtfString(S);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddAssemblyPropertyRaw(
@@ -2702,15 +2713,15 @@ void __fastcall TSessionData::AddAssemblyPropertyRaw(
   switch (Language)
   {
     case alCSharp:
-      PropertyCode = L"    %s = %s,\n";
+      PropertyCode = RtfText(L"    %s = %s,") + RtfPara;
       break;
 
     case alVBNET:
-      PropertyCode = L"    .%s = %s\n";
+      PropertyCode = RtfText(L"    .%s = %s") + RtfPara;
       break;
 
     case alPowerShell:
-      PropertyCode = L"$sessionOptions.%s = %s\n";
+      PropertyCode = RtfText(L"$sessionOptions.%s = %s") + RtfPara;
       break;
   }
 
@@ -2768,25 +2779,25 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
   {
     case alCSharp:
       SessionOptionsPreamble =
-        L"// %s\n"
-         "SessionOptions sessionOptions = new SessionOptions\n"
-         "{\n";
+        RtfCodeComment(L"// %s") + RtfPara +
+        RtfClass(L"SessionOptions") + RtfText(L" sessionOptions = ") + RtfKeyword(L"new") + RtfText(" ") + RtfClass(L"SessionOptions") + RtfPara +
+        RtfText(L"{") + RtfPara;
       break;
 
     case alVBNET:
       SessionOptionsPreamble =
-        L"' %s\n"
-         "Dim mySessionOptions As New SessionOptions\n"
-         "With mySessionOptions\n";
+        RtfCodeComment(L"' %s") + RtfPara +
+        RtfKeyword(L"Dim") + RtfText(" mySessionOptions ") + RtfKeyword(L"As") + RtfText(L" ") + RtfKeyword(L"New") + RtfText(" ") + RtfClass(L"SessionOptions") + RtfPara +
+        RtfKeyword(L"With") + RtfText(" mySessionOptions") + RtfPara;
       break;
 
     case alPowerShell:
       SessionOptionsPreamble =
-        FORMAT(L"# %s\n", (LoadStr(CODE_PS_ADD_TYPE))) +
-        L"Add-Type -Path \"WinSCPnet.dll\"\n"
-         "\n"
-         "# %s\n"
-         "$sessionOptions = New-Object WinSCP.SessionOptions\n";
+        RtfCodeComment(FORMAT(L"# %s", (LoadStr(CODE_PS_ADD_TYPE)))) + RtfPara +
+        RtfKeyword(L"Add-Type") + RtfText(" -Path ") + AssemblyString(Language, "WinSCPnet.dll") + RtfPara +
+        RtfPara +
+        RtfCodeComment(L"# %s") + RtfPara +
+        RtfText(L"$sessionOptions = ") + RtfKeyword(L"New-Object") + RtfText(" WinSCP.") + RtfClass(L"SessionOptions") + RtfPara;
       break;
 
     default:
@@ -2930,7 +2941,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
   switch (Language)
   {
     case alCSharp:
-      Result += L"};\n";
+      Result += RtfText(L"};") + RtfPara;
       break;
 
     case alVBNET:
@@ -2943,7 +2954,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
 
   if (RawSettings->Count > 0)
   {
-    Result += L"\n";
+    Result += RtfPara;
 
     for (int Index = 0; Index < RawSettings->Count; Index++)
     {
@@ -2953,18 +2964,18 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
       switch (Language)
       {
         case alCSharp:
-          SettingsCode = L"sessionOptions.AddRawSettings(\"%s\", %s);\n";
+          SettingsCode = RtfText(L"sessionOptions.AddRawSettings(%s, %s);") + RtfPara;
           break;
 
         case alVBNET:
-          SettingsCode = L"    .AddRawSettings(\"%s\", %s)\n";
+          SettingsCode = RtfText(L"    .AddRawSettings(%s, %s)") + RtfPara;
           break;
 
         case alPowerShell:
-          SettingsCode = L"$sessionOptions.AddRawSettings(\"%s\", %s)\n";
+          SettingsCode = RtfText(L"$sessionOptions.AddRawSettings(%s, %s)") + RtfPara;
           break;
       }
-      Result += FORMAT(SettingsCode, (Name, AssemblyString(Language, Value)));
+      Result += FORMAT(SettingsCode, (AssemblyString(Language, Name), AssemblyString(Language, Value)));
     }
   }
 
@@ -2974,44 +2985,44 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
   {
     case alCSharp:
       SessionCode =
-        L"\n"
-         "using (Session session = new Session())\n"
-         "{\n"
-         "    // %s\n"
-         "    session.Open(sessionOptions);\n"
-         "\n"
-         "    // %s\n"
-         "}\n";
+        RtfPara +
+        RtfKeyword(L"using") + RtfText(" (") + RtfClass(L"Session") + RtfText(L" session = ") + RtfKeyword(L"new") + RtfText(" ") + RtfClass(L"Session") + RtfText(L"())") + RtfPara +
+        RtfText(L"{") + RtfPara +
+        RtfCodeComment(L"    // %s") + RtfPara +
+        RtfText(L"    session.Open(sessionOptions);") + RtfPara +
+        RtfPara +
+        RtfCodeComment(L"    // %s") + RtfPara +
+        RtfText(L"}") + RtfPara;
       break;
 
     case alVBNET:
       SessionCode =
-        L"End With\n"
-         "\n"
-         "Using mySession As Session = New Session\n"
-         "    ' %s\n"
-         "    mySession.Open(mySessionOptions)\n"
-         "\n"
-         "    ' %s\n"
-         "End Using\n";
+        RtfKeyword(L"End With") + RtfPara +
+        RtfPara +
+        RtfKeyword(L"Using") + RtfText(" mySession As ") + RtfClass(L"Session") + RtfText(L" = ") + RtfKeyword(L"New") + RtfText(" ") + RtfClass(L"Session") + RtfPara +
+        RtfCodeComment(L"    ' %s") + RtfPara +
+        RtfText(L"    mySession.Open(mySessionOptions)") + RtfPara +
+        RtfPara +
+        RtfCodeComment(L"    ' %s") + RtfPara +
+        RtfKeyword(L"End Using");
       break;
 
     case alPowerShell:
       SessionCode =
-        L"\n"
-         "$session = New-Object WinSCP.Session\n"
-         "\n"
-         "try\n"
-         "{\n"
-         "    # %s\n"
-         "    $session.Open($sessionOptions)\n"
-         "\n"
-         "    # %s\n"
-         "}\n"
-         "finally\n"
-         "{\n"
-         "    $session.Dispose()\n"
-         "}\n";
+        RtfPara +
+        RtfText(L"$session = ") + RtfKeyword(L"New-Object") + RtfText(" WinSCP.") + RtfClass(L"Session") + RtfPara +
+        RtfPara +
+        RtfKeyword(L"try") + RtfPara +
+        RtfText(L"{") + RtfPara +
+        RtfCodeComment(L"    # %s") + RtfPara +
+        RtfText(L"    $session.Open($sessionOptions)") + RtfPara +
+        RtfPara +
+        RtfCodeComment(L"    # %s") + RtfPara +
+        RtfText(L"}") + RtfPara +
+        RtfKeyword(L"finally") + RtfPara +
+        RtfText(L"{") + RtfPara +
+        RtfText(L"    $session.Dispose()") + RtfPara +
+        RtfText(L"}") + RtfPara;
       break;
   }
 

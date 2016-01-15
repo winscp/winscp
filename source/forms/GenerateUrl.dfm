@@ -172,7 +172,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
     DesignSize = (
       468
       176)
-    object ResultMemo: TMemo
+    object ResultMemo: TRichEdit
       Left = 7
       Top = 15
       Width = 454
@@ -182,10 +182,9 @@ object GenerateUrlDialog: TGenerateUrlDialog
       BevelInner = bvNone
       BevelOuter = bvNone
       BorderStyle = bsNone
-      Lines.Strings = (
-        'ResultMemo')
       ScrollBars = ssVertical
       TabOrder = 0
+      Zoom = 100
     end
   end
   object CancelBtn: TButton

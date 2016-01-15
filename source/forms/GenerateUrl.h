@@ -14,7 +14,7 @@ class TGenerateUrlDialog : public TForm
 {
 __published:
   TGroupBox *ResultGroup;
-  TMemo *ResultMemo;
+  TRichEdit *ResultMemo;
   TButton *CancelBtn;
   TButton *HelpButton;
   TButton *ClipboardButton;
@@ -43,6 +43,7 @@ private:
   TSessionData * FData;
   TStrings * FPaths;
   bool FChanging;
+  UnicodeString FPlainResult;
 
 protected:
   void __fastcall UpdateControls();
