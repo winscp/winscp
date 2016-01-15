@@ -182,9 +182,11 @@ object GenerateUrlDialog: TGenerateUrlDialog
       BevelInner = bvNone
       BevelOuter = bvNone
       BorderStyle = bsNone
+      PopupMenu = ResultPopupMenu
       ScrollBars = ssVertical
       TabOrder = 0
       Zoom = 100
+      OnContextPopup = ResultMemoContextPopup
     end
   end
   object CancelBtn: TButton
@@ -217,5 +219,29 @@ object GenerateUrlDialog: TGenerateUrlDialog
     Caption = '&Copy to Clipboard'
     TabOrder = 2
     OnClick = ClipboardButtonClick
+  end
+  object ResultPopupMenu: TPopupMenu
+    Left = 64
+    Top = 160
+    object TMenuItem
+      Action = EditCopyAction
+    end
+    object TMenuItem
+      Action = EditSelectAllAction
+    end
+  end
+  object ResultActionList: TActionList
+    Left = 184
+    Top = 160
+    object EditCopyAction: TEditCopy
+      Category = 'Edit'
+      Caption = '&Copy'
+      ShortCut = 16451
+    end
+    object EditSelectAllAction: TEditSelectAll
+      Category = 'Edit'
+      Caption = 'Select &All'
+      ShortCut = 16449
+    end
   end
 end
