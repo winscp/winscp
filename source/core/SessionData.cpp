@@ -2563,12 +2563,22 @@ void __fastcall TSessionData::LookupLastFingerprint()
 //---------------------------------------------------------------------
 static UnicodeString __fastcall RtfCodeComment(const UnicodeString & Text)
 {
-  return RtfColorItalicText(1, Text);
+  return RtfColorItalicText(2, Text);
 }
 //---------------------------------------------------------------------
 static UnicodeString __fastcall RtfClass(const UnicodeString & Text)
 {
-  return RtfColorText(2, Text);
+  return RtfColorText(3, Text);
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfLibraryClass(const UnicodeString & ClassName)
+{
+  return RtfLink(L"library_" + ClassName.LowerCase(), RtfClass(ClassName));
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfLibraryMethod(const UnicodeString & ClassName, const UnicodeString & MethodName)
+{
+  return RtfLink(L"library_" + ClassName.LowerCase() + L"_" + MethodName.LowerCase(), RtfColorText(1, MethodName));
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs()
@@ -2780,14 +2790,14 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
     case alCSharp:
       SessionOptionsPreamble =
         RtfCodeComment(L"// %s") + RtfPara +
-        RtfClass(L"SessionOptions") + RtfText(L" sessionOptions = ") + RtfKeyword(L"new") + RtfText(" ") + RtfClass(L"SessionOptions") + RtfPara +
+        RtfLibraryClass(L"SessionOptions") + RtfText(L" sessionOptions = ") + RtfKeyword(L"new") + RtfText(" ") + RtfLibraryClass(L"SessionOptions") + RtfPara +
         RtfText(L"{") + RtfPara;
       break;
 
     case alVBNET:
       SessionOptionsPreamble =
         RtfCodeComment(L"' %s") + RtfPara +
-        RtfKeyword(L"Dim") + RtfText(" mySessionOptions ") + RtfKeyword(L"As") + RtfText(L" ") + RtfKeyword(L"New") + RtfText(" ") + RtfClass(L"SessionOptions") + RtfPara +
+        RtfKeyword(L"Dim") + RtfText(" mySessionOptions ") + RtfKeyword(L"As") + RtfText(L" ") + RtfKeyword(L"New") + RtfText(" ") + RtfLibraryClass(L"SessionOptions") + RtfPara +
         RtfKeyword(L"With") + RtfText(" mySessionOptions") + RtfPara;
       break;
 
@@ -2797,7 +2807,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
         RtfKeyword(L"Add-Type") + RtfText(" -Path ") + AssemblyString(Language, "WinSCPnet.dll") + RtfPara +
         RtfPara +
         RtfCodeComment(L"# %s") + RtfPara +
-        RtfText(L"$sessionOptions = ") + RtfKeyword(L"New-Object") + RtfText(" WinSCP.") + RtfClass(L"SessionOptions") + RtfPara;
+        RtfText(L"$sessionOptions = ") + RtfKeyword(L"New-Object") + RtfText(" WinSCP.") + RtfLibraryClass(L"SessionOptions") + RtfPara;
       break;
 
     default:
@@ -2964,15 +2974,15 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
       switch (Language)
       {
         case alCSharp:
-          SettingsCode = RtfText(L"sessionOptions.AddRawSettings(%s, %s);") + RtfPara;
+          SettingsCode = RtfText(L"sessionOptions.") + RtfLibraryMethod(L"SessionOptions", L"AddRawSettings") + RtfText(L"(%s, %s);") + RtfPara;
           break;
 
         case alVBNET:
-          SettingsCode = RtfText(L"    .AddRawSettings(%s, %s)") + RtfPara;
+          SettingsCode = RtfText(L"    .") + RtfLibraryMethod(L"SessionOptions", L"AddRawSettings") + RtfText(L"(%s, %s)") + RtfPara;
           break;
 
         case alPowerShell:
-          SettingsCode = RtfText(L"$sessionOptions.AddRawSettings(%s, %s)") + RtfPara;
+          SettingsCode = RtfText(L"$sessionOptions.") + RtfLibraryMethod(L"SessionOptions", L"AddRawSettings") + RtfText(L"(%s, %s)") + RtfPara;
           break;
       }
       Result += FORMAT(SettingsCode, (AssemblyString(Language, Name), AssemblyString(Language, Value)));
@@ -2986,10 +2996,10 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
     case alCSharp:
       SessionCode =
         RtfPara +
-        RtfKeyword(L"using") + RtfText(" (") + RtfClass(L"Session") + RtfText(L" session = ") + RtfKeyword(L"new") + RtfText(" ") + RtfClass(L"Session") + RtfText(L"())") + RtfPara +
+        RtfKeyword(L"using") + RtfText(" (") + RtfLibraryClass(L"Session") + RtfText(L" session = ") + RtfKeyword(L"new") + RtfText(" ") + RtfLibraryClass(L"Session") + RtfText(L"())") + RtfPara +
         RtfText(L"{") + RtfPara +
         RtfCodeComment(L"    // %s") + RtfPara +
-        RtfText(L"    session.Open(sessionOptions);") + RtfPara +
+        RtfText(L"    session.") + RtfLibraryMethod(L"Session", L"Open") + RtfText(L"(sessionOptions);") + RtfPara +
         RtfPara +
         RtfCodeComment(L"    // %s") + RtfPara +
         RtfText(L"}") + RtfPara;
@@ -2999,9 +3009,9 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
       SessionCode =
         RtfKeyword(L"End With") + RtfPara +
         RtfPara +
-        RtfKeyword(L"Using") + RtfText(" mySession As ") + RtfClass(L"Session") + RtfText(L" = ") + RtfKeyword(L"New") + RtfText(" ") + RtfClass(L"Session") + RtfPara +
+        RtfKeyword(L"Using") + RtfText(" mySession As ") + RtfLibraryClass(L"Session") + RtfText(L" = ") + RtfKeyword(L"New") + RtfText(" ") + RtfLibraryClass(L"Session") + RtfPara +
         RtfCodeComment(L"    ' %s") + RtfPara +
-        RtfText(L"    mySession.Open(mySessionOptions)") + RtfPara +
+        RtfText(L"    mySession.") + RtfLibraryMethod(L"Session", L"Open") + RtfText(L"(mySessionOptions)") + RtfPara +
         RtfPara +
         RtfCodeComment(L"    ' %s") + RtfPara +
         RtfKeyword(L"End Using");
@@ -3010,18 +3020,18 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
     case alPowerShell:
       SessionCode =
         RtfPara +
-        RtfText(L"$session = ") + RtfKeyword(L"New-Object") + RtfText(" WinSCP.") + RtfClass(L"Session") + RtfPara +
+        RtfText(L"$session = ") + RtfKeyword(L"New-Object") + RtfText(" WinSCP.") + RtfLibraryClass(L"Session") + RtfPara +
         RtfPara +
         RtfKeyword(L"try") + RtfPara +
         RtfText(L"{") + RtfPara +
         RtfCodeComment(L"    # %s") + RtfPara +
-        RtfText(L"    $session.Open($sessionOptions)") + RtfPara +
+        RtfText(L"    $session.") + RtfLibraryMethod(L"Session", L"Open") + RtfText(L"($sessionOptions)") + RtfPara +
         RtfPara +
         RtfCodeComment(L"    # %s") + RtfPara +
         RtfText(L"}") + RtfPara +
         RtfKeyword(L"finally") + RtfPara +
         RtfText(L"{") + RtfPara +
-        RtfText(L"    $session.Dispose()") + RtfPara +
+        RtfText(L"    $session.") + RtfLibraryMethod(L"Session", L"Dispose") + RtfText(L"()") + RtfPara +
         RtfText(L"}") + RtfPara;
       break;
   }

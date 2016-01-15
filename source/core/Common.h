@@ -26,6 +26,7 @@ extern const UnicodeString PasswordMask;
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B);
 UnicodeString DeleteChar(UnicodeString Str, wchar_t C);
+int PosFrom(const UnicodeString & SubStr, const UnicodeString & Str, int Index);
 void PackStr(UnicodeString & Str);
 void PackStr(RawByteString & Str);
 void PackStr(AnsiString & Str);
@@ -125,6 +126,7 @@ UnicodeString __fastcall FormatNumber(__int64 Size);
 UnicodeString __fastcall FormatSize(__int64 Size);
 UnicodeString __fastcall ExtractFileBaseName(const UnicodeString & Path);
 TStringList * __fastcall TextToStringList(const UnicodeString & Text);
+UnicodeString __fastcall StringsToText(TStrings * Strings);
 TStrings * __fastcall CloneStrings(TStrings * Strings);
 UnicodeString __fastcall TrimVersion(UnicodeString Version);
 UnicodeString __fastcall FormatVersion(int MajovVersion, int MinorVersion, int Release);
@@ -200,6 +202,8 @@ MethodT __fastcall MakeMethod(void * Data, void * Code)
 }
 //---------------------------------------------------------------------------
 extern const UnicodeString RtfPara;
+extern const UnicodeString RtfHyperlinkField;
+extern const UnicodeString RtfHyperlinkFieldPrefix;
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfText(const UnicodeString & Text);
 UnicodeString __fastcall RtfColor(int Index);
@@ -208,6 +212,7 @@ UnicodeString __fastcall RtfColorText(int Color, const UnicodeString & Text);
 UnicodeString __fastcall RtfKeyword(const UnicodeString & Text);
 UnicodeString __fastcall RtfParameter(const UnicodeString & Text);
 UnicodeString __fastcall RtfString(const UnicodeString & Text);
+UnicodeString __fastcall RtfLink(const UnicodeString & Link, const UnicodeString & RtfText);
 //---------------------------------------------------------------------------
 #include "Global.h"
 //---------------------------------------------------------------------------

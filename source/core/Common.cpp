@@ -50,6 +50,17 @@ UnicodeString DeleteChar(UnicodeString Str, wchar_t C)
   return Str;
 }
 //---------------------------------------------------------------------------
+int PosFrom(const UnicodeString & SubStr, const UnicodeString & Str, int Index)
+{
+  UnicodeString S = Str.SubString(Index, Str.Length() - Index + 1);
+  int Result = S.Pos(SubStr);
+  if (Result > 0)
+  {
+    Result += Index - 1;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 template<typename T>
 void DoPackStr(T & Str)
 {
@@ -2582,6 +2593,20 @@ TStringList * __fastcall TextToStringList(const UnicodeString & Text)
   return List.release();
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall StringsToText(TStrings * Strings)
+{
+  UnicodeString Result;
+  if (Strings->Count == 1)
+  {
+    Result = Strings->Strings[0];
+  }
+  else
+  {
+    Result = Strings->Text;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TStrings * __fastcall CloneStrings(TStrings * Strings)
 {
   std::unique_ptr<TStringList> List(new TStringList());
@@ -2890,6 +2915,8 @@ bool __fastcall IsHttpUrl(const UnicodeString & S)
 }
 //---------------------------------------------------------------------------
 const UnicodeString RtfPara = L"\\par\n";
+const UnicodeString RtfHyperlinkField = L"HYPERLINK";
+const UnicodeString RtfHyperlinkFieldPrefix = RtfHyperlinkField + L" \"";
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfColor(int Index)
 {
@@ -2939,15 +2966,22 @@ UnicodeString __fastcall RtfColorItalicText(int Color, const UnicodeString & Tex
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfKeyword(const UnicodeString & Text)
 {
-  return RtfColorText(4, Text);
+  return RtfColorText(5, Text);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfParameter(const UnicodeString & Text)
 {
-  return RtfColorText(5, Text);
+  return RtfColorText(6, Text);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfString(const UnicodeString & Text)
 {
-  return RtfColorText(3, Text);
+  return RtfColorText(4, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfLink(const UnicodeString & Link, const UnicodeString & RtfText)
+{
+  return
+    L"{\\field{\\*\\fldinst{HYPERLINK \"" + Link + L"\" }}{\\fldrslt{" +
+    RtfText + L"}}}";
 }

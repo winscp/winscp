@@ -538,6 +538,17 @@ void __fastcall OpenBrowser(UnicodeString URL)
   ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 //---------------------------------------------------------------------------
+void __fastcall ShowHelp(const UnicodeString & AHelpKeyword)
+{
+  // see also AppendUrlParams
+  UnicodeString HelpKeyword = AHelpKeyword;
+  const wchar_t FragmentSeparator = L'#';
+  UnicodeString HelpPath = CutToChar(HelpKeyword, FragmentSeparator, false);
+  UnicodeString HelpUrl = FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpPath, Configuration->ProductVersion, GUIConfiguration->LocaleHex));
+  AddToList(HelpUrl, HelpKeyword, FragmentSeparator);
+  OpenBrowser(HelpUrl);
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsFormatInClipboard(unsigned int Format)
 {
   bool Result = OpenClipboard(0);
@@ -870,14 +881,7 @@ void __fastcall CopyToClipboard(TStrings * Strings)
 {
   if (Strings->Count > 0)
   {
-    if (Strings->Count == 1)
-    {
-      CopyToClipboard(Strings->Strings[0]);
-    }
-    else
-    {
-      CopyToClipboard(Strings->Text);
-    }
+    CopyToClipboard(StringsToText(Strings));
   }
 }
 //---------------------------------------------------------------------------

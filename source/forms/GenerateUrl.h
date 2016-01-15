@@ -14,11 +14,13 @@
 #include <Vcl.ActnList.hpp>
 #include <Vcl.StdActns.hpp>
 //---------------------------------------------------------------------------
+class TRichEdit41;
+//---------------------------------------------------------------------------
 class TGenerateUrlDialog : public TForm
 {
 __published:
   TGroupBox *ResultGroup;
-  TRichEdit *ResultMemo;
+  TMemo *ResultMemo;
   TButton *CancelBtn;
   TButton *HelpButton;
   TButton *ClipboardButton;
@@ -47,12 +49,14 @@ __published:
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall WMNCCreate(TWMNCCreate & Message);
   void __fastcall ResultMemoContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall FormShow(TObject *Sender);
 
 private:
   TSessionData * FData;
   TStrings * FPaths;
   bool FChanging;
   UnicodeString FPlainResult;
+  TRichEdit41 * FResultMemo41;
 
 protected:
   void __fastcall UpdateControls();

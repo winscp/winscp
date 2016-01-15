@@ -38,6 +38,7 @@ void __fastcall ValidateMaskEdit(TComboBox * Edit);
 void __fastcall ValidateMaskEdit(TEdit * Edit);
 void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory);
 void __fastcall OpenBrowser(UnicodeString URL);
+void __fastcall ShowHelp(const UnicodeString & HelpKeyword);
 bool __fastcall IsFormatInClipboard(unsigned int Format);
 bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim);
 bool __fastcall NonEmptyTextFromClipboard(UnicodeString & Text);

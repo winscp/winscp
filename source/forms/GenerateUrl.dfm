@@ -14,6 +14,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
   ParentFont = True
   OldCreateOrder = True
   Position = poOwnerFormCenter
+  OnShow = FormShow
   DesignSize = (
     484
     338)
@@ -172,7 +173,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
     DesignSize = (
       468
       176)
-    object ResultMemo: TRichEdit
+    object ResultMemo: TMemo
       Left = 7
       Top = 15
       Width = 454
@@ -183,9 +184,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
       BevelOuter = bvNone
       BorderStyle = bsNone
       PopupMenu = ResultPopupMenu
-      ScrollBars = ssVertical
       TabOrder = 0
-      Zoom = 100
       OnContextPopup = ResultMemoContextPopup
     end
   end
