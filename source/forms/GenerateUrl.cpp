@@ -174,8 +174,8 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
           FORMAT(
             RtfKeyword(L"open") + L" %s" + RtfPara +
             RtfPara +
-            RtfScriptComment("; %s") + RtfPara +
-            RtfScriptComment("; %s") + RtfPara +
+            RtfScriptComment("# %s") + RtfPara +
+            RtfScriptComment("# %s") + RtfPara +
             RtfPara +
             RtfKeyword(L"exit") + RtfPara,
             (OpenCommand, CommandPlaceholder1, CommandPlaceholder2));
