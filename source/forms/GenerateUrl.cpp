@@ -261,9 +261,6 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     Stream->Write(ResultUtf.c_str(), ResultUtf.Length());
     Stream->Position = 0;
 
-    Stream->SaveToFile(L"b:\\rtf\\code.rtf");
-    Stream->Position = 0;
-
     ResultMemo->Lines->LoadFromStream(Stream.get(), TEncoding::UTF8);
   }
 }
