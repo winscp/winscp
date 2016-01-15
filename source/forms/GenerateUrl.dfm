@@ -178,7 +178,6 @@ object GenerateUrlDialog: TGenerateUrlDialog
       Top = 15
       Width = 454
       Height = 152
-      TabStop = False
       Anchors = [akLeft, akTop, akRight, akBottom]
       BevelInner = bvNone
       BevelOuter = bvNone
