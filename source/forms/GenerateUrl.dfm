@@ -68,7 +68,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Width = 216
         Height = 17
         Caption = '&Save extension'
-        TabOrder = 3
+        TabOrder = 5
         OnClick = ControlChange
       end
       object RemoteDirectoryCheck: TCheckBox
@@ -89,7 +89,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Height = 17
         HelpType = htKeyword
         Caption = '&Password'
-        TabOrder = 5
+        TabOrder = 3
         OnClick = ControlChange
       end
     end
