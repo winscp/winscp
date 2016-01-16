@@ -84,21 +84,14 @@ void __fastcall TRichEdit41::Dispatch(void * AMessage)
       TENLink & ENLink = *reinterpret_cast<TENLink *>(Message.LParam);
       if (ENLink.msg == WM_LBUTTONDOWN)
       {
-        TCharRange CharRange;
-        SendGetStructMessage(Handle, EM_EXGETSEL, 0, &CharRange);
-        SendGetStructMessage(Handle, EM_EXSETSEL, 0, &ENLink.chrg);
-        UnicodeString S = SelText;
-        if (DebugAlwaysTrue(StartsStr(RtfHyperlinkFieldPrefix, S)))
+        UnicodeString Text;
+        for (int Index = 0; Index < Lines->Count; Index++)
         {
-          int P1 = RtfHyperlinkFieldPrefix.Length() + 1;
-          int P2 = PosFrom(L"\"", S, P1);
-          if (DebugAlwaysTrue(P2 > 0))
-          {
-            UnicodeString Url = S.SubString(P1, P2 - P1);
-            ShowHelp(Url);
-          }
+          Text += Lines->Strings[Index] + L"\n";
         }
-        SendGetStructMessage(Handle, EM_EXSETSEL, 0, &CharRange);
+
+        UnicodeString Url = Text.SubString(ENLink.chrg.cpMin + 1, ENLink.chrg.cpMax - ENLink.chrg.cpMin);
+        ShowHelp(Url);
       }
     }
     TRichEdit::Dispatch(AMessage);
