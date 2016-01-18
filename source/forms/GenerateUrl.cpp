@@ -276,6 +276,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       UnicodeString OpenCommand = FData->GenerateOpenCommandArgs();
       UnicodeString CommandPlaceholder1 = FMTLOAD(GENERATE_URL_COMMAND, (1));
       UnicodeString CommandPlaceholder2 = FMTLOAD(GENERATE_URL_COMMAND, (2));
+      UnicodeString LogParameter = RtfParameter(L"/log") + RtfText(L"=" + BaseExeName + L".log");
 
       if (ScriptFormatCombo->ItemIndex == sfScriptFile)
       {
@@ -298,7 +299,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         Result =
           RtfScriptComment(L"@echo off") + RtfPara +
           RtfPara +
-          RtfText(L"\"" + ComExeName + "\" ") + RtfParameter(L"/log") + RtfText(L"=" + BaseExeName + L".log ") + RtfParameter(L"/ini") + RtfText(L"=nul ") + RtfParameter(L"/command") + RtfText(L" ^") + RtfPara +
+          RtfText(L"\"" + ComExeName + "\" ") + LogParameter + L" " + RtfParameter(L"/ini") + RtfText(L"=nul ") + RtfParameter(L"/command") + RtfText(L" ^") + RtfPara +
           RtfText(L"  \"") + RtfScriptCommand(L"open") + RtfText(L" ") + EscapeParam(ReplaceStr(OpenCommand, L"%", L"%%")) + RtfText(L"\" ^") + RtfPara +
           RtfText(L"  \"") + RtfScriptComment(CommandPlaceholder1) + RtfText(L"\" ^") + RtfPara +
           RtfText(L"  \"") + RtfScriptComment(CommandPlaceholder2) + RtfText(L"\" ^") + RtfPara +
@@ -318,7 +319,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       else if (ScriptFormatCombo->ItemIndex == sfCommandLine)
       {
         Result =
-          RtfParameter(L"/log") + RtfText(L"=" + BaseExeName + L".log ") +
+          LogParameter + L" " +
           RtfParameter(L"/ini") + RtfText(L"=nul ") +
           RtfParameter(L"/command") + RtfText(L" ") +
             RtfText(L"\"") + RtfScriptCommand(L"open") + RtfText(L" ") + EscapeParam(OpenCommand) + RtfText(L"\" ") +
