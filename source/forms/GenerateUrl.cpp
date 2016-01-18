@@ -180,6 +180,11 @@ static UnicodeString __fastcall RtfScriptComment(const UnicodeString & Text)
   return RtfColorItalicText(7, Text);
 }
 //---------------------------------------------------------------------
+static UnicodeString __fastcall RtfScriptPlaceholder(const UnicodeString & Text)
+{
+  return RtfColorText(7, Text);
+}
+//---------------------------------------------------------------------
 static UnicodeString __fastcall RtfScriptCommand(const UnicodeString & Command)
 {
   return RtfLink(L"scriptcommand_" + Command, RtfKeyword(Command));
@@ -276,7 +281,9 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       UnicodeString OpenCommand = FData->GenerateOpenCommandArgs();
       UnicodeString CommandPlaceholder1 = FMTLOAD(GENERATE_URL_COMMAND, (1));
       UnicodeString CommandPlaceholder2 = FMTLOAD(GENERATE_URL_COMMAND, (2));
-      UnicodeString LogParameter = RtfParameter(L"/log") + RtfText(L"=" + BaseExeName + L".log");
+      UnicodeString LogParameter =
+        RtfParameter(L"/log") + RtfText(L"=") +
+        RtfScriptPlaceholder(LoadStr(GENERATE_URL_WRITABLE_PATH_TO_LOG) + RtfText(BaseExeName + L".log"));
 
       if (ScriptFormatCombo->ItemIndex == sfScriptFile)
       {
@@ -297,13 +304,15 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         UnicodeString ComExeName = ChangeFileExt(ExeName, L".com");
 
         Result =
-          RtfScriptComment(L"@echo off") + RtfPara +
+          RtfScriptPlaceholder(L"@echo off") + RtfPara +
           RtfPara +
-          RtfText(L"\"" + ComExeName + "\" ") + LogParameter + L" " + RtfParameter(L"/ini") + RtfText(L"=nul ") + RtfParameter(L"/command") + RtfText(L" ^") + RtfPara +
-          RtfText(L"  \"") + RtfScriptCommand(L"open") + RtfText(L" ") + EscapeParam(ReplaceStr(OpenCommand, L"%", L"%%")) + RtfText(L"\" ^") + RtfPara +
-          RtfText(L"  \"") + RtfScriptComment(CommandPlaceholder1) + RtfText(L"\" ^") + RtfPara +
-          RtfText(L"  \"") + RtfScriptComment(CommandPlaceholder2) + RtfText(L"\" ^") + RtfPara +
-          RtfText(L"  \"") + RtfScriptCommand(L"exit") + RtfText(L"\"") + RtfPara +
+          RtfText(L"\"" + ComExeName + "\" ^") + RtfPara +
+          RtfText(L"  ") + LogParameter + L" " + RtfParameter(L"/ini") + RtfText(L"=nul ^") + RtfPara +
+          RtfText(L"  ") + RtfParameter(L"/command") + RtfText(L" ^") + RtfPara +
+          RtfText(L"    \"") + RtfScriptCommand(L"open") + RtfText(L" ") + EscapeParam(ReplaceStr(OpenCommand, L"%", L"%%")) + RtfText(L"\" ^") + RtfPara +
+          RtfText(L"    \"") + RtfScriptPlaceholder(CommandPlaceholder1) + RtfText(L"\" ^") + RtfPara +
+          RtfText(L"    \"") + RtfScriptPlaceholder(CommandPlaceholder2) + RtfText(L"\" ^") + RtfPara +
+          RtfText(L"    \"") + RtfScriptCommand(L"exit") + RtfText(L"\"") + RtfPara +
           RtfPara +
           RtfKeyword(L"set") + RtfText(L" WINSCP_RESULT=%ERRORLEVEL%") + RtfPara +
           RtfKeyword(L"if") + RtfText(L" %WINSCP_RESULT% ") + RtfKeyword(L"equ") + RtfText(L" 0 (") + RtfPara +

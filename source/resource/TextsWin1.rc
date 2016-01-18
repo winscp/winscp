@@ -562,6 +562,7 @@ BEGIN
         GENERATE_URL_COMMANDLINE_LABEL, "Command-line arguments"
         GENERATE_URL_COMMANDLINE_DESC, "Command-line arguments for %s"
         GENERATE_URL_HOSTKEY_UNKNOWN, "A server host key is not known. Please connect at least once, before generating the code."
+        GENERATE_URL_WRITABLE_PATH_TO_LOG, "C:\\writable\\path\\to\\log\\"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"
