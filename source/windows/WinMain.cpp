@@ -697,7 +697,7 @@ int __fastcall Execute()
 
     Application->HintHidePause = 3000;
 
-    UnicodeString IniFileName = Params->SwitchValue(L"ini");
+    UnicodeString IniFileName = Params->SwitchValue(INI_SWITCH);
     if (!IniFileName.IsEmpty())
     {
       UnicodeString IniFileNameExpanded = ExpandEnvironmentVariables(IniFileName);
@@ -915,7 +915,7 @@ int __fastcall Execute()
             if (CheckSafe(Params))
             {
               UnicodeString LogFile;
-              if (Params->FindSwitch(L"Log", LogFile))
+              if (Params->FindSwitch(LOG_SWITCH, LogFile))
               {
                 Configuration->TemporaryLogging(LogFile);
               }

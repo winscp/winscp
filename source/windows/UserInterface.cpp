@@ -35,10 +35,10 @@ TConfiguration * __fastcall CreateConfiguration()
   GUIConfiguration = CustomWinConfiguration;
 
   TProgramParams * Params = TProgramParams::Instance();
-  UnicodeString IniFileName = Params->SwitchValue(L"ini");
+  UnicodeString IniFileName = Params->SwitchValue(INI_SWITCH);
   if (!IniFileName.IsEmpty())
   {
-    if (AnsiSameText(IniFileName, L"nul"))
+    if (AnsiSameText(IniFileName, INI_NUL))
     {
       WinConfiguration->SetNulStorage();
     }

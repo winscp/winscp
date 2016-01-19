@@ -2066,8 +2066,10 @@ void __fastcall Usage(TConsole * Console)
   PrintUsageSyntax(Console,
     UnicodeString(!Console->CommandLineOnly() ? L"[/console] " : L"") +
     FORMAT(L"[/script=file] [/%s cmd1...] [/parameter // param1...]", (LowerCase(COMMAND_SWITCH))));
-  PrintUsageSyntax(Console, L"[/log=<logfile> [/loglevel=<level>]] [/xmllog=<logfile> [/xmlgroups]]");
-  PrintUsageSyntax(Console, L"[/ini=<inifile>]");
+  PrintUsageSyntax(Console,
+    FORMAT(L"[/%s=<logfile> [/loglevel=<level>]] [/xmllog=<logfile> [/xmlgroups]]", (LowerCase(LOG_SWITCH))));
+  PrintUsageSyntax(Console,
+    FORMAT(L"[/%s=<inifile>]", (LowerCase(INI_SWITCH))));
   PrintUsageSyntax(Console, L"[/rawconfig config1=value1 config2=value2 ...]");
   PrintUsageSyntax(Console, L"/batchsettings <site_mask> setting1=value1 setting2=value2 ...");
   PrintUsageSyntax(Console, FORMAT(L"/%s keyfile [/%s=output] [/%s] [/%s=comment]",
@@ -2104,11 +2106,11 @@ void __fastcall Usage(TConsole * Console)
   RegisterSwitch(SwitchesUsage, L"/script=", USAGE_SCRIPT);
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(COMMAND_SWITCH), USAGE_COMMAND);
   RegisterSwitch(SwitchesUsage, L"/parameter", USAGE_PARAMETER);
-  RegisterSwitch(SwitchesUsage, L"/log=", USAGE_LOG);
+  RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(LOG_SWITCH) + L"=", USAGE_LOG);
   RegisterSwitch(SwitchesUsage, L"/loglevel=", USAGE_LOGLEVEL);
   RegisterSwitch(SwitchesUsage, L"/xmllog=", USAGE_XMLLOG);
   RegisterSwitch(SwitchesUsage, L"/xmlgroups", USAGE_XMLGROUPS);
-  RegisterSwitch(SwitchesUsage, L"/ini=", USAGE_INI);
+  RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(INI_SWITCH) + L"=", USAGE_INI);
   RegisterSwitch(SwitchesUsage, L"/rawconfig", USAGE_RAWCONFIG);
   RegisterSwitch(SwitchesUsage, L"/batchsettings", USAGE_BATCHSETTINGS);
   UnicodeString KeyGenDesc =
@@ -2485,7 +2487,7 @@ int __fastcall Console(TConsoleMode Mode)
         delete StoredSessions->ParseUrl(Session, Params, DefaultsOnly);
 
         UnicodeString LogFile;
-        if (Params->FindSwitch(L"Log", LogFile) && CheckSafe(Params))
+        if (Params->FindSwitch(LOG_SWITCH, LogFile) && CheckSafe(Params))
         {
           Configuration->Usage->Inc(L"ScriptLog");
           Configuration->TemporaryLogging(LogFile);
