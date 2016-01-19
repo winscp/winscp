@@ -385,6 +385,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     Stream->Write(ResultUtf.c_str(), ResultUtf.Length());
     Stream->Position = 0;
 
+    FResultMemo41->Perform(WM_VSCROLL, SB_TOP, 0);
     FResultMemo41->Lines->LoadFromStream(Stream.get(), TEncoding::UTF8);
   }
 }
