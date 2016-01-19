@@ -84,14 +84,16 @@ void __fastcall TRichEdit41::Dispatch(void * AMessage)
       TENLink & ENLink = *reinterpret_cast<TENLink *>(Message.LParam);
       if (ENLink.msg == WM_LBUTTONDOWN)
       {
-        UnicodeString Text;
-        for (int Index = 0; Index < Lines->Count; Index++)
-        {
-          Text += Lines->Strings[Index] + L"\n";
-        }
+        UnicodeString AText = Text;
+        // The cpMin and cpMax refer to indexes in a script with a single-byte EOL,
+        // while the Text (GetWindowText) uses two-byte EOL
+        AText = ReplaceStr(AText, L"\r\n", L"\n");
 
-        UnicodeString Url = Text.SubString(ENLink.chrg.cpMin + 1, ENLink.chrg.cpMax - ENLink.chrg.cpMin);
-        ShowHelp(Url);
+        if (DebugAlwaysTrue(ENLink.chrg.cpMax < AText.Length()))
+        {
+          UnicodeString Url = AText.SubString(ENLink.chrg.cpMin + 1, ENLink.chrg.cpMax - ENLink.chrg.cpMin);
+          ShowHelp(Url);
+        }
       }
     }
     TRichEdit::Dispatch(AMessage);
@@ -248,7 +250,6 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
 
     bool WordWrap = false;
     bool FixedWidth = false;
-    FPlainResult = L"";
     if (OptionsPageControl->ActivePage == UrlSheet)
     {
       if (!IsFileUrl())
@@ -258,8 +259,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         {
           Path += L"/";
         }
-        FPlainResult = GenerateUrl(Path);
-        Result = RtfText(FPlainResult);
+        Result = RtfText(GenerateUrl(Path));
       }
       else
       {
@@ -267,10 +267,6 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         {
           UnicodeString Url = GenerateUrl(FPaths->Strings[Index]);
           Result += RtfText(Url) + RtfPara;
-          FPlainResult +=
-            Url +
-            // What CopyToClipboard would have done could we pass in FResultMemo41->Lines
-            ((FPaths->Count > 0) ? L"\n" : L"");
         }
       }
       WordWrap = true;
@@ -495,35 +491,25 @@ void __fastcall TGenerateUrlDialog::ControlChange(TObject * /*Sender*/)
 void __fastcall TGenerateUrlDialog::ClipboardButtonClick(TObject * /*Sender*/)
 {
   TInstantOperationVisualizer Visualizer;
-  UnicodeString Text;
-  if (FResultMemo41->WordWrap)
-  {
-    // Cannot read the text from FResultMemo41->Lines as TRichEdit (as opposite to TMemo)
-    // breaks wrapped lines
 
-    if (!FPlainResult.IsEmpty())
-    {
-      Text = FPlainResult;
-    }
-    else
-    {
-      // We get here with command-line only,
-      // where we know to have a single line only
-      DebugAssert((OptionsPageControl->ActivePage == ScriptSheet) && (ScriptFormatCombo->ItemIndex == sfCommandLine));
-      for (int Index = 0; Index < FResultMemo41->Lines->Count; Index++)
-      {
-        Text += FResultMemo41->Lines->Strings[Index];
-      }
-    }
-  }
-  else
+  // Cannot read the text from FResultMemo41->Lines as TRichEdit (as opposite to TMemo)
+  // breaks wrapped lines
+  UnicodeString Text = FResultMemo41->Text;
+  UnicodeString EOL = sLineBreak;
+  int P = Pos(EOL, Text);
+  // Trim the EOL of the only string, what CopyToClipbaord(FResultMemo41->Lines) would have done.
+  // It probably never happens as rich edit does not return EOL on the last line.
+  if (DebugAlwaysFalse(P == Text.Length() - EOL.Length() + 1))
   {
-    // On the other hand, the FResult contains RTF markup
-    // in which case we want to use FResultMemo41->Lines
-    Text = StringsToText(FResultMemo41->Lines);
+    Text.SetLength(Text.Length() - EOL.Length());
+  }
+  // Add trailing EOL, if there are multiple lines (see above)
+  else if ((P > 0) && !EndsStr(EOL, Text))
+  {
+    Text += EOL;
   }
 
-  int P;
+  // Remove all tags HYPERLINK "http://www.example.com"
   int Index = 1;
   while ((P = PosFrom(RtfHyperlinkFieldPrefix, Text, Index)) > 0)
   {

@@ -55,7 +55,6 @@ private:
   TSessionData * FData;
   TStrings * FPaths;
   bool FChanging;
-  UnicodeString FPlainResult;
   TRichEdit41 * FResultMemo41;
 
 protected:
