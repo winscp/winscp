@@ -29,6 +29,7 @@
 #include <PuttyTools.h>
 #include <VCLCommon.h>
 #include <WebBrowserEx.hpp>
+#include <DateUtils.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -1188,6 +1189,7 @@ private:
   std::unique_ptr<Exception> FException;
   std::unique_ptr<THttp> FHttp;
   TUpdatesConfiguration FUpdates;
+  UnicodeString FDownloadUrl;
 };
 //---------------------------------------------------------------------------
 __fastcall TUpdateDownloadThread::TUpdateDownloadThread(TProgressBar * ProgressBar) :
@@ -1207,12 +1209,32 @@ __fastcall TUpdateDownloadThread::~TUpdateDownloadThread()
 //---------------------------------------------------------------------------
 void __fastcall TUpdateDownloadThread::Execute()
 {
+  FDownloadUrl = FUpdates.Results.DownloadUrl;
+
+  // If the download URL is too old (> 2 minutes), get a new one.
+  // If anything goes wrong, just stick with the old one and let it fail.
+  if (FUpdates.LastCheck < IncMinute(Now(), -2))
+  {
+    try
+    {
+      TUpdatesConfiguration Updates2 = FUpdates;
+      QueryUpdates(Updates2);
+      if (!Updates2.Results.DownloadUrl.IsEmpty())
+      {
+        FDownloadUrl = Updates2.Results.DownloadUrl;
+      }
+    }
+    catch (...)
+    {
+    }
+  }
+
   try
   {
     try
     {
       FHttp.reset(CreateHttp(FUpdates));
-      FHttp->URL = FUpdates.Results.DownloadUrl;
+      FHttp->URL = FDownloadUrl;
       FHttp->OnDownload = HttpDownload;
       FHttp->Get();
     }
@@ -1264,7 +1286,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
     DownloadNotVerified();
   }
 
-  UnicodeString FileName = FUpdates.Results.DownloadUrl;
+  UnicodeString FileName = FDownloadUrl;
   int P = FileName.Pos(L"?");
   if (P > 0)
   {
