@@ -337,8 +337,8 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
           IniParameter + L" " +
           CommandParameter + L" " +
             RtfText(L"\"") + RtfScriptCommand(L"open") + RtfText(L" ") + EscapeParam(OpenCommand) + RtfText(L"\" ") +
-            RtfText(L"\"") + RtfScriptComment(CommandPlaceholder1) + RtfText(L"\" ") +
-            RtfText(L"\"") + RtfScriptComment(CommandPlaceholder2) + RtfText(L"\" ") +
+            RtfText(L"\"") + RtfScriptPlaceholder(CommandPlaceholder1) + RtfText(L"\" ") +
+            RtfText(L"\"") + RtfScriptPlaceholder(CommandPlaceholder2) + RtfText(L"\" ") +
             RtfText(L"\"") + RtfScriptCommand(L"exit") + RtfText(L"\"");
         WordWrap = true;
         FixedWidth = false;
