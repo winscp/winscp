@@ -2524,7 +2524,7 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Switch)
 {
-  Result += RtfText(L" ") + RtfParameter(FORMAT(L"-%s", (Switch)));
+  Result += RtfText(L" ") + RtfLink(L"scriptcommand_open#" + Switch.LowerCase(), RtfParameter(FORMAT(L"-%s", (Switch))));
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddSwitchValue(UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value)
@@ -2578,7 +2578,12 @@ static UnicodeString __fastcall RtfLibraryClass(const UnicodeString & ClassName)
 //---------------------------------------------------------------------
 static UnicodeString __fastcall RtfLibraryMethod(const UnicodeString & ClassName, const UnicodeString & MethodName)
 {
-  return RtfLink(L"library_" + ClassName.LowerCase() + L"_" + MethodName.LowerCase(), RtfColorText(1, MethodName));
+  return RtfLink(L"library_" + ClassName.LowerCase() + L"_" + MethodName.LowerCase(), RtfOverrideColorText(MethodName));
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfLibraryProperty(const UnicodeString & ClassName, const UnicodeString & PropertyName)
+{
+  return RtfLink(L"library_" + ClassName.LowerCase() + L"#" + PropertyName.LowerCase(), RtfOverrideColorText(PropertyName));
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs()
@@ -2658,31 +2663,6 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs()
   return Result;
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::AddAssemblyProperty(
-  UnicodeString & Result, TAssemblyLanguage Language,
-  const UnicodeString & Name, const UnicodeString & Type,
-  const UnicodeString & Member)
-{
-  UnicodeString PropertyCode;
-
-  switch (Language)
-  {
-    case alCSharp:
-      PropertyCode = RtfText(L"    %s = ") + RtfClass("%s") + RtfText(L".%s,") + RtfPara;
-      break;
-
-    case alVBNET:
-      PropertyCode = RtfText(L"    .%s = ") + RtfClass("%s") + RtfText(L".%s") + RtfPara;
-      break;
-
-    case alPowerShell:
-      PropertyCode = RtfText(L"$sessionOptions.%s = [WinSCP.") + RtfClass("%s") + RtfText(L"]::%s") + RtfPara;
-      break;
-  }
-
-  Result += FORMAT(PropertyCode, (Name, Type, Member));
-}
-//---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::AssemblyString(TAssemblyLanguage Language, UnicodeString S)
 {
   switch (Language)
@@ -2718,24 +2698,42 @@ void __fastcall TSessionData::AddAssemblyPropertyRaw(
   UnicodeString & Result, TAssemblyLanguage Language,
   const UnicodeString & Name, const UnicodeString & Value)
 {
-  UnicodeString PropertyCode;
+  switch (Language)
+  {
+    case alCSharp:
+      Result += L"    " + RtfLibraryProperty(L"SessionOptions", Name) + L" = " + Value + L"," + RtfPara;
+      break;
+
+    case alVBNET:
+      Result += L"    ." + RtfLibraryProperty(L"SessionOptions", Name) + L" = " + Value + RtfPara;
+      break;
+
+    case alPowerShell:
+      Result += RtfText(L"$sessionOptions.") + RtfLibraryProperty(L"SessionOptions", Name) + L" = " + Value + RtfPara;
+      break;
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::AddAssemblyProperty(
+  UnicodeString & Result, TAssemblyLanguage Language,
+  const UnicodeString & Name, const UnicodeString & Type,
+  const UnicodeString & Member)
+{
+  UnicodeString PropertyValue;
 
   switch (Language)
   {
     case alCSharp:
-      PropertyCode = RtfText(L"    %s = %s,") + RtfPara;
-      break;
-
     case alVBNET:
-      PropertyCode = RtfText(L"    .%s = %s") + RtfPara;
+      PropertyValue = RtfClass(Type) + RtfText(L"." + Member);
       break;
 
     case alPowerShell:
-      PropertyCode = RtfText(L"$sessionOptions.%s = %s") + RtfPara;
+      PropertyValue = RtfText(L"[WinSCP.") + RtfClass(Type) + RtfText(L"]::" + Member);
       break;
   }
 
-  Result += FORMAT(PropertyCode, (Name, Value));
+  AddAssemblyPropertyRaw(Result, Language, Name, PropertyValue);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddAssemblyProperty(

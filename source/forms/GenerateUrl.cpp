@@ -10,6 +10,7 @@
 #include <Tools.h>
 #include <PuttyTools.h>
 #include <TextsWin.h>
+#include <ProgParams.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #ifndef NO_RESOURCES
@@ -191,6 +192,11 @@ static UnicodeString __fastcall RtfScriptCommand(const UnicodeString & Command)
 {
   return RtfLink(L"scriptcommand_" + Command, RtfKeyword(Command));
 }
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfCommandlineSwitch(const UnicodeString & Switch, const UnicodeString & Anchor)
+{
+  return RtfLink(L"commandline#" + Anchor, RtfParameter(TProgramParams::FormatSwitch(Switch.LowerCase())));
+}
 //---------------------------------------------------------------------------
 void __fastcall TGenerateUrlDialog::UpdateControls()
 {
@@ -278,8 +284,11 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       UnicodeString CommandPlaceholder1 = FMTLOAD(GENERATE_URL_COMMAND, (1));
       UnicodeString CommandPlaceholder2 = FMTLOAD(GENERATE_URL_COMMAND, (2));
       UnicodeString LogParameter =
-        RtfParameter(L"/log") + RtfText(L"=") +
-        RtfScriptPlaceholder(LoadStr(GENERATE_URL_WRITABLE_PATH_TO_LOG) + RtfText(BaseExeName + L".log"));
+        RtfCommandlineSwitch(LOG_SWITCH, L"logging") + RtfText(L"=") +
+        RtfScriptPlaceholder(L"\"" + LoadStr(GENERATE_URL_WRITABLE_PATH_TO_LOG) + RtfText(BaseExeName + L".log") + L"\"");
+      UnicodeString IniParameter =
+        RtfCommandlineSwitch(INI_SWITCH, L"configuration") + RtfText(UnicodeString(L"=") + INI_NUL);
+      UnicodeString CommandParameter = RtfCommandlineSwitch(COMMAND_SWITCH, L"scripting");
 
       if (ScriptFormatCombo->ItemIndex == sfScriptFile)
       {
@@ -303,8 +312,8 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
           RtfScriptPlaceholder(L"@echo off") + RtfPara +
           RtfPara +
           RtfText(L"\"" + ComExeName + "\" ^") + RtfPara +
-          RtfText(L"  ") + LogParameter + L" " + RtfParameter(L"/ini") + RtfText(L"=nul ^") + RtfPara +
-          RtfText(L"  ") + RtfParameter(L"/command") + RtfText(L" ^") + RtfPara +
+          RtfText(L"  ") + LogParameter + L" " + IniParameter + RtfText(L" ^") + RtfPara +
+          RtfText(L"  ") + CommandParameter + RtfText(L" ^") + RtfPara +
           RtfText(L"    \"") + RtfScriptCommand(L"open") + RtfText(L" ") + EscapeParam(ReplaceStr(OpenCommand, L"%", L"%%")) + RtfText(L"\" ^") + RtfPara +
           RtfText(L"    \"") + RtfScriptPlaceholder(CommandPlaceholder1) + RtfText(L"\" ^") + RtfPara +
           RtfText(L"    \"") + RtfScriptPlaceholder(CommandPlaceholder2) + RtfText(L"\" ^") + RtfPara +
@@ -325,8 +334,8 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       {
         Result =
           LogParameter + L" " +
-          RtfParameter(L"/ini") + RtfText(L"=nul ") +
-          RtfParameter(L"/command") + RtfText(L" ") +
+          IniParameter + L" " +
+          CommandParameter + L" " +
             RtfText(L"\"") + RtfScriptCommand(L"open") + RtfText(L" ") + EscapeParam(OpenCommand) + RtfText(L"\" ") +
             RtfText(L"\"") + RtfScriptComment(CommandPlaceholder1) + RtfText(L"\" ") +
             RtfText(L"\"") + RtfScriptComment(CommandPlaceholder2) + RtfText(L"\" ") +

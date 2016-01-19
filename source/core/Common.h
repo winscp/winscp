@@ -207,6 +207,7 @@ extern const UnicodeString RtfHyperlinkFieldPrefix;
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfText(const UnicodeString & Text);
 UnicodeString __fastcall RtfColor(int Index);
+UnicodeString __fastcall RtfOverrideColorText(const UnicodeString & Text);
 UnicodeString __fastcall RtfColorItalicText(int Color, const UnicodeString & Text);
 UnicodeString __fastcall RtfColorText(int Color, const UnicodeString & Text);
 UnicodeString __fastcall RtfKeyword(const UnicodeString & Text);

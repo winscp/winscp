@@ -2964,6 +2964,11 @@ UnicodeString __fastcall RtfColorItalicText(int Color, const UnicodeString & Tex
   return RtfColor(Color) + L"\\i " + RtfText(Text) + L"\\i0" + RtfColor(0) + L" ";
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall RtfOverrideColorText(const UnicodeString & Text)
+{
+  return RtfColorText(1, Text);
+}
+//---------------------------------------------------------------------
 UnicodeString __fastcall RtfKeyword(const UnicodeString & Text)
 {
   return RtfColorText(5, Text);
