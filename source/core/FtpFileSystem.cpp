@@ -1633,7 +1633,7 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
     {
       FILE_OPERATION_LOOP_BEGIN
       {
-        int Attrs = FileGetAttr(ApiPath(DestFullName));
+        int Attrs = FileGetAttrFix(ApiPath(DestFullName));
         if (FLAGCLEAR(Attrs, faDirectory))
         {
           EXCEPTION;
@@ -1687,7 +1687,7 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
     int Attrs;
     FILE_OPERATION_LOOP_BEGIN
     {
-      Attrs = FileGetAttr(ApiPath(DestFullName));
+      Attrs = FileGetAttrFix(ApiPath(DestFullName));
       if ((Attrs >= 0) && FLAGSET(Attrs, faDirectory))
       {
         EXCEPTION;
@@ -1725,7 +1725,7 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
     if (DestFileName != UserData.FileName)
     {
       DestFullName = TargetDir + UserData.FileName;
-      Attrs = FileGetAttr(ApiPath(DestFullName));
+      Attrs = FileGetAttrFix(ApiPath(DestFullName));
     }
 
     Action.Destination(ExpandUNCFileName(DestFullName));

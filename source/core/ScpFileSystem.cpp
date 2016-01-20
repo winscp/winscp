@@ -1992,7 +1992,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
   // Get directory attributes
   FILE_OPERATION_LOOP_BEGIN
   {
-    Attrs = FileGetAttr(ApiPath(DirectoryName));
+    Attrs = FileGetAttrFix(ApiPath(DirectoryName));
     if (Attrs < 0) RaiseLastOSError();
   }
   FILE_OPERATION_LOOP_END(FMTLOAD(CANT_GET_ATTRS, (DirectoryName)));
@@ -2435,7 +2435,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         UnicodeString DestFileName =
           IncludeTrailingBackslash(TargetDir) + DestFileNameOnly;
 
-        FileData.Attrs = FileGetAttr(ApiPath(DestFileName));
+        FileData.Attrs = FileGetAttrFix(ApiPath(DestFileName));
         // If getting attrs fails, we suppose, that file/folder doesn't exists
         FileData.Exists = (FileData.Attrs != -1);
         if (Dir)

@@ -1287,6 +1287,19 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   }
 }
 //---------------------------------------------------------------------------
+int __fastcall FileGetAttrFix(const UnicodeString FileName)
+{
+  // The default for FileGetAttr is to follow links
+  bool FollowLink = true;
+  // But the FileGetAttr whe called for link with FollowLink set will always fail
+  // as its calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
+  if (!IsWinVista())
+  {
+    FollowLink = false;
+  }
+  return FileGetAttr(FileName, FollowLink);
+}
+//---------------------------------------------------------------------------
 TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day)
 {
   try

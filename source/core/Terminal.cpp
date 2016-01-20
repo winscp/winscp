@@ -4173,7 +4173,7 @@ bool __fastcall TTerminal::DoCreateLocalFile(const UnicodeString FileName,
       int LastError = GetLastError();
       int FileAttr;
       if (::FileExists(ApiPath(FileName)) &&
-        (((FileAttr = FileGetAttr(ApiPath(FileName))) & (faReadOnly | faHidden)) != 0))
+        (((FileAttr = FileGetAttrFix(ApiPath(FileName))) & (faReadOnly | faHidden)) != 0))
       {
         if (FLAGSET(FileAttr, faReadOnly))
         {
@@ -4264,7 +4264,7 @@ void __fastcall TTerminal::OpenLocalFile(const UnicodeString FileName,
   FILE_OPERATION_LOOP_BEGIN
   {
     UnicodeString FileNameApi = ApiPath(FileName);
-    Attrs = FileGetAttr(FileNameApi);
+    Attrs = FileGetAttrFix(FileNameApi);
     if (Attrs < 0)
     {
       RaiseLastOSError();

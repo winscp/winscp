@@ -1963,7 +1963,7 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
     {
       FILE_OPERATION_LOOP_BEGIN
       {
-        int Attrs = FileGetAttr(ApiPath(DestFullName));
+        int Attrs = FileGetAttrFix(ApiPath(DestFullName));
         if (FLAGCLEAR(Attrs, faDirectory)) { EXCEPTION; }
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(NOT_DIRECTORY_ERROR, (DestFullName)));
@@ -2026,7 +2026,7 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
     int Attrs = -1;
     FILE_OPERATION_LOOP_BEGIN
     {
-      Attrs = FileGetAttr(ApiPath(DestFullName));
+      Attrs = FileGetAttrFix(ApiPath(DestFullName));
       if ((Attrs >= 0) && FLAGSET(Attrs, faDirectory)) { EXCEPTION; }
     }
     FILE_OPERATION_LOOP_END(FMTLOAD(NOT_FILE_ERROR, (DestFullName)));
