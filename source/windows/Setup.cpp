@@ -1173,6 +1173,8 @@ public:
 
   bool __fastcall CancelDownload();
 
+  __property bool Done = { read = FDone };
+
 protected:
   virtual void __fastcall Execute();
   void __fastcall UpdateDownloaded();
@@ -1189,6 +1191,7 @@ private:
   std::unique_ptr<Exception> FException;
   std::unique_ptr<THttp> FHttp;
   TUpdatesConfiguration FUpdates;
+  bool FDone;
 };
 //---------------------------------------------------------------------------
 __fastcall TUpdateDownloadThread::TUpdateDownloadThread(TProgressBar * ProgressBar) :
@@ -1200,6 +1203,7 @@ __fastcall TUpdateDownloadThread::TUpdateDownloadThread(TProgressBar * ProgressB
   FProgressBar = ProgressBar;
   // cache to prevent concurrency
   FUpdates = WinConfiguration->Updates;
+  FDone = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TUpdateDownloadThread::~TUpdateDownloadThread()
@@ -1271,6 +1275,7 @@ void __fastcall TUpdateDownloadThread::Execute()
     Synchronize(ShowException);
   }
 
+  FDone = true;
   Synchronize(CancelForm);
 }
 //---------------------------------------------------------------------------
@@ -1418,9 +1423,15 @@ public:
 static void __fastcall DownloadClose(void * /*Data*/, TObject * Sender, TCloseAction & Action)
 {
   TUpdateDownloadData * UpdateDownloadData = TUpdateDownloadData::Retrieve(Sender);
-  if (UpdateDownloadData->Thread->CancelDownload())
+  // If the form was closed by CancelForm at the end of the thread, do nothing
+  if (!UpdateDownloadData->Thread->Done)
   {
-    Action = caNone;
+    // Otherwise the form is closing because X was clicked (or maybe Cancel).
+    // May this should actually call CancelClicked?
+    if (UpdateDownloadData->Thread->CancelDownload())
+    {
+      Action = caNone;
+    }
   }
 }
 //---------------------------------------------------------------------------
