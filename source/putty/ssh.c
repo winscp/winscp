@@ -9113,8 +9113,14 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 	s->keyfile = conf_get_filename(ssh->conf, CONF_keyfile);
 	if (!filename_is_null(s->keyfile)) {
 	    int keytype;
+	    #ifdef _DEBUG
+	    // To suppress CodeGuard warning
+	    logeventf(ssh, MPEXT_BOM "Reading key file \"%s\"",
+		      filename_to_str(s->keyfile));
+	    #else
 	    logeventf(ssh, MPEXT_BOM "Reading key file \"%.150s\"",
 		      filename_to_str(s->keyfile));
+	    #endif
 	    keytype = key_type(s->keyfile);
 	    if (keytype == SSH_KEYTYPE_SSH2 ||
                 keytype == SSH_KEYTYPE_SSH2_PUBLIC_RFC4716 ||
