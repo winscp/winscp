@@ -1386,7 +1386,6 @@ void __fastcall TUpdateDownloadThread::CancelClicked(TObject * /*Sender*/)
 {
   if (CancelDownload())
   {
-    Terminate();
     WaitFor();
   }
 }
