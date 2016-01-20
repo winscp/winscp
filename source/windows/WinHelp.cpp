@@ -105,6 +105,6 @@ void __fastcall TWebHelpSystem::ShowHelp(const UnicodeString AHelpString)
   }
   else
   {
-    ShowHelp(AHelpString);
+    ::ShowHelp(AHelpString);
   }
 }
