@@ -1189,7 +1189,6 @@ private:
   std::unique_ptr<Exception> FException;
   std::unique_ptr<THttp> FHttp;
   TUpdatesConfiguration FUpdates;
-  UnicodeString FDownloadUrl;
 };
 //---------------------------------------------------------------------------
 __fastcall TUpdateDownloadThread::TUpdateDownloadThread(TProgressBar * ProgressBar) :
@@ -1209,44 +1208,55 @@ __fastcall TUpdateDownloadThread::~TUpdateDownloadThread()
 //---------------------------------------------------------------------------
 void __fastcall TUpdateDownloadThread::Execute()
 {
-  FDownloadUrl = FUpdates.Results.DownloadUrl;
-
-  // If the download URL is too old (> 2 minutes), get a new one.
-  // If anything goes wrong, just stick with the old one and let it fail.
-  if (FUpdates.LastCheck < IncMinute(Now(), -2))
-  {
-    try
-    {
-      TUpdatesConfiguration Updates2 = FUpdates;
-      QueryUpdates(Updates2);
-      if (!Updates2.Results.DownloadUrl.IsEmpty())
-      {
-        FDownloadUrl = Updates2.Results.DownloadUrl;
-      }
-    }
-    catch (...)
-    {
-    }
-  }
-
   try
   {
-    try
+    bool Retried = false;
+    bool Retry;
+
+    do
     {
-      FHttp.reset(CreateHttp(FUpdates));
-      FHttp->URL = FDownloadUrl;
-      FHttp->OnDownload = HttpDownload;
-      FHttp->Get();
+      Retry = false;
+      try
+      {
+        FDownloaded = 0;
+
+        FHttp.reset(CreateHttp(FUpdates));
+        FHttp->URL = FUpdates.Results.DownloadUrl;
+        FHttp->OnDownload = HttpDownload;
+        FHttp->Get();
+      }
+      catch (EAbort &)
+      {
+        throw;
+      }
+      catch (Exception & E)
+      {
+        // The original URL failed, try to get a fresh one and retry
+        if (!Retried)
+        {
+          try
+          {
+            // Check if new update data (URL particlarly) is available
+            if (QueryUpdates(FUpdates) &&
+                !FUpdates.Results.DownloadUrl.IsEmpty())
+            {
+              Retry = true;
+              Retried = true;
+            }
+          }
+          catch (...)
+          {
+          }
+        }
+
+        if (!Retry)
+        {
+          Configuration->Usage->Inc(L"UpdateFailuresDownload");
+          throw ExtException(&E, MainInstructions(LoadStr(UPDATE_DOWNLOAD_ERROR)));
+        }
+      }
     }
-    catch (EAbort &)
-    {
-      throw;
-    }
-    catch (Exception & E)
-    {
-      Configuration->Usage->Inc(L"UpdateFailuresDownload");
-      throw ExtException(&E, MainInstructions(LoadStr(UPDATE_DOWNLOAD_ERROR)));
-    }
+    while (Retry);
 
     Synchronize(UpdateDownloaded);
   }
@@ -1286,7 +1296,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
     DownloadNotVerified();
   }
 
-  UnicodeString FileName = FDownloadUrl;
+  UnicodeString FileName = FUpdates.Results.DownloadUrl;
   int P = FileName.Pos(L"?");
   if (P > 0)
   {
