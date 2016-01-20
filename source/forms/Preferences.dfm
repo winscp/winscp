@@ -2141,7 +2141,7 @@ object PreferencesDialog: TPreferencesDialog
       object CopyParamListSheet: TTabSheet
         Tag = 16
         HelpType = htKeyword
-        HelpKeyword = 'ui_pref_presets'
+        HelpKeyword = 'ui_pref_transfer'
         Caption = 'Transfer'
         ImageIndex = 15
         TabVisible = False

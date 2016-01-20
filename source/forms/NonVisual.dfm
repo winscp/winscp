@@ -1788,7 +1788,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'View'
       Caption = '&Configure...'
-      HelpKeyword = 'ui_pref_presets'
+      HelpKeyword = 'ui_pref_transfer'
       Hint = 'Configure transfers settings presets'
       ImageIndex = 28
     end
