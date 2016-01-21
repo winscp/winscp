@@ -1,0 +1,36 @@
+\define{dash} \u2013{-}
+
+\title PuTTY User Manual
+
+\cfg{xhtml-leaf-level}{1}
+\cfg{xhtml-leaf-smallest-contents}{2}
+\cfg{xhtml-leaf-contains-contents}{true}
+\cfg{xhtml-body-end}{<p>If you want to provide feedback on this manual
+or on the PuTTY tools themselves, see the
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/feedback.html">Feedback
+page</a>.</p>}
+
+\cfg{html-template-fragment}{%k}{%b}
+
+\cfg{info-max-file-size}{0}
+
+\cfg{xhtml-contents-filename}{index.html}
+\cfg{text-filename}{puttydoc.txt}
+\cfg{winhelp-filename}{putty.hlp}
+\cfg{info-filename}{putty.info}
+
+PuTTY is a free (MIT-licensed) Win32 Telnet and SSH client. This
+manual documents PuTTY, and its companion utilities PSCP, PSFTP,
+Plink, Pageant and PuTTYgen.
+
+\e{Note to Unix users:} this manual currently primarily documents the
+Windows versions of the PuTTY utilities. Some options are therefore
+mentioned that are absent from the \i{Unix version}; the Unix version has
+features not described here; and the \i\cw{pterm} and command-line
+\cw{puttygen} utilities are not described at all. The only
+Unix-specific documentation that currently exists is the
+\I{man pages for PuTTY tools}man pages.
+
+\copyright This manual is copyright \shortcopyrightdetails. All
+rights reserved. You may distribute this documentation under the MIT
+licence. See \k{licence} for the licence text in full.

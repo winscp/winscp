@@ -1,0 +1,153 @@
+\C{gs} Getting started with PuTTY
+
+This chapter gives a quick guide to the simplest types of
+interactive login session using PuTTY.
+
+\H{gs-insecure} \ii{Starting a session}
+
+When you start PuTTY, you will see a \i{dialog box}. This dialog box
+allows you to control everything PuTTY can do. See \k{config} for
+details of all the things you can control.
+
+You don't usually need to change most of the configuration options.
+To start the simplest kind of session, all you need to do is to
+enter a few basic parameters.
+
+In the \q{Host Name} box, enter the Internet \i{host name} of the server
+you want to connect to. You should have been told this by the
+provider of your login account.
+
+Now select a login \i{protocol} to use, from the \q{Connection type}
+buttons. For a login session, you should select \i{Telnet},
+\i{Rlogin} or \i{SSH}. See \k{which-one} for a description of the
+differences between the three protocols, and advice on which one to
+use. The fourth protocol, \I{raw protocol}\e{Raw}, is not used for
+interactive login sessions; you would usually use this for debugging
+other Internet services (see \k{using-rawprot}). The fifth option,
+\e{Serial}, is used for connecting to a local serial line, and works
+somewhat differently: see \k{using-serial} for more information on
+this.
+
+When you change the selected protocol, the number in the \q{Port}
+box will change. This is normal: it happens because the various
+login services are usually provided on different network ports by
+the server machine. Most servers will use the standard port numbers,
+so you will not need to change the port setting. If your server
+provides login services on a non-standard port, your system
+administrator should have told you which one. (For example, many
+\i{MUDs} run Telnet service on a port other than 23.)
+
+Once you have filled in the \q{Host Name}, \q{Protocol}, and
+possibly \q{Port} settings, you are ready to connect. Press the
+\q{Open} button at the bottom of the dialog box, and PuTTY will
+begin trying to connect you to the server.
+
+\H{gs-hostkey} \ii{Verifying the host key} (SSH only)
+
+If you are not using the \i{SSH} protocol, you can skip this
+section.
+
+If you are using SSH to connect to a server for the first time, you
+will probably see a message looking something like this:
+
+\c The server's host key is not cached in the registry. You
+\c have no guarantee that the server is the computer you
+\c think it is.
+\c The server's rsa2 key fingerprint is:
+\c ssh-rsa 1024 7b:e5:6f:a7:f4:f9:81:62:5c:e3:1f:bf:8b:57:6c:5a
+\c If you trust this host, hit Yes to add the key to
+\c PuTTY's cache and carry on connecting.
+\c If you want to carry on connecting just once, without
+\c adding the key to the cache, hit No.
+\c If you do not trust this host, hit Cancel to abandon the
+\c connection.
+
+This is a feature of the SSH protocol. It is designed to protect you
+against a network attack known as \i\e{spoofing}: secretly
+redirecting your connection to a different computer, so that you
+send your password to the wrong machine. Using this technique, an
+attacker would be able to learn the password that guards your login
+account, and could then log in as if they were you and use the
+account for their own purposes.
+
+To prevent this attack, each server has a unique identifying code,
+called a \e{host key}. These keys are created in a way that prevents
+one server from forging another server's key. So if you connect to a
+server and it sends you a different host key from the one you were
+expecting, PuTTY can warn you that the server may have been switched
+and that a spoofing attack might be in progress.
+
+PuTTY records the host key for each server you connect to, in the
+Windows \i{Registry}. Every time you connect to a server, it checks
+that the host key presented by the server is the same host key as it
+was the last time you connected. If it is not, you will see a
+warning, and you will have the chance to abandon your connection
+before you type any private information (such as a password) into
+it.
+
+However, when you connect to a server you have not connected to
+before, PuTTY has no way of telling whether the host key is the
+right one or not. So it gives the warning shown above, and asks you
+whether you want to \I{trusting host keys}trust this host key or
+not.
+
+Whether or not to trust the host key is your choice. If you are
+connecting within a company network, you might feel that all the
+network users are on the same side and spoofing attacks are
+unlikely, so you might choose to trust the key without checking it.
+If you are connecting across a hostile network (such as the
+Internet), you should check with your system administrator, perhaps
+by telephone or in person. (Some modern servers have more than one
+host key. If the system administrator sends you more than one
+\I{host key fingerprint}fingerprint, you should make sure the one
+PuTTY shows you is on the list, but it doesn't matter which one it is.)
+
+\# FIXME: this is all very fine but of course in practice the world
+doesn't work that way. Ask the team if they have any good ideas for
+changes to this section!
+
+\H{gs-login} \ii{Logging in}
+
+After you have connected, and perhaps verified the server's host
+key, you will be asked to log in, probably using a \i{username} and
+a \i{password}. Your system administrator should have provided you
+with these. Enter the username and the password, and the server
+should grant you access and begin your session. If you have
+\I{mistyping a password}mistyped your password, most servers will
+give you several chances to get it right.
+
+If you are using SSH, be careful not to type your username wrongly,
+because you will not have a chance to correct it after you press
+Return; many SSH servers do not permit you to make two login attempts
+using \i{different usernames}. If you type your username wrongly, you
+must close PuTTY and start again.
+
+If your password is refused but you are sure you have typed it
+correctly, check that Caps Lock is not enabled. Many login servers,
+particularly Unix computers, treat upper case and lower case as
+different when checking your password; so if Caps Lock is on, your
+password will probably be refused.
+
+\H{gs-session} After logging in
+
+After you log in to the server, what happens next is up to the
+server! Most servers will print some sort of login message and then
+present a \i{prompt}, at which you can type
+\I{commands on the server}commands which the
+server will carry out. Some servers will offer you on-line help;
+others might not. If you are in doubt about what to do next, consult
+your system administrator.
+
+\H{gs-logout} \ii{Logging out}
+
+When you have finished your session, you should log out by typing
+the server's own logout command. This might vary between servers; if
+in doubt, try \c{logout} or \c{exit}, or consult a manual or your
+system administrator. When the server processes your logout command,
+the PuTTY window should close itself automatically.
+
+You \e{can} close a PuTTY session using the \i{Close button} in the
+window border, but this might confuse the server - a bit like
+hanging up a telephone unexpectedly in the middle of a conversation.
+We recommend you do not do this unless the server has stopped
+responding to you and you cannot close the window any other way.

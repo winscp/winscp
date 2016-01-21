@@ -1,0 +1,591 @@
+\C{psftp} Using \i{PSFTP} to transfer files securely
+
+\i{PSFTP}, the PuTTY SFTP client, is a tool for \i{transferring files}
+securely between computers using an SSH connection.
+
+PSFTP differs from PSCP in the following ways:
+
+\b PSCP should work on virtually every SSH server. PSFTP uses the
+new \i{SFTP} protocol, which is a feature of SSH-2 only. (PSCP will also
+use this protocol if it can, but there is an SSH-1 equivalent it can
+fall back to if it cannot.)
+
+\b PSFTP allows you to run an interactive file transfer session,
+much like the Windows \i\c{ftp} program. You can list the contents of
+directories, browse around the file system, issue multiple \c{get}
+and \c{put} commands, and eventually log out. By contrast, PSCP is
+designed to do a single file transfer operation and immediately
+terminate.
+
+\H{psftp-starting} Starting PSFTP
+
+The usual way to start PSFTP is from a command prompt, much like
+PSCP. To do this, it will need either to be on your \i{\c{PATH}} or
+in your current directory.  To add the directory containing PSFTP to
+your \c{PATH} environment variable, type into the console window:
+
+\c set PATH=C:\path\to\putty\directory;%PATH%
+
+Unlike PSCP, however, PSFTP has no complex command-line syntax; you
+just specify a host name and perhaps a user name:
+
+\c psftp server.example.com
+
+or perhaps
+
+\c psftp fred@server.example.com
+
+Alternatively, if you just type \c{psftp} on its own (or
+double-click the PSFTP icon in the Windows GUI), you will see the
+PSFTP prompt, and a message telling you PSFTP has not connected to
+any server:
+
+\c C:\>psftp
+\c psftp: no hostname specified; use "open host.name" to connect
+\c psftp>
+
+At this point you can type \c{open server.example.com} or \c{open
+fred@server.example.com} to start a session.
+
+PSFTP accepts all the general command line options supported by the
+PuTTY tools, except the ones which make no sense in a file transfer
+utility. See \k{using-general-opts} for a description of these
+options. (The ones not supported by PSFTP are clearly marked.)
+
+PSFTP also supports some of its own options. The following sections
+describe PSFTP's specific command-line options.
+
+\S{psftp-option-b} \I{-b-PSFTP}\c{-b}: specify a file containing batch commands
+
+In normal operation, PSFTP is an interactive program which displays
+a command line and accepts commands from the keyboard.
+
+If you need to do automated tasks with PSFTP, you would probably
+prefer to \I{batch scripts in PSFTP}specify a set of commands in
+advance and have them executed automatically. The \c{-b} option
+allows you to do this. You use it with a file name containing batch
+commands. For example, you might create a file called \c{myscript.scr}
+containing lines like this:
+
+\c cd /home/ftp/users/jeff
+\c del jam-old.tar.gz
+\c ren jam.tar.gz jam-old.tar.gz
+\c put jam.tar.gz
+\c chmod a+r jam.tar.gz
+
+and then you could run the script by typing
+
+\c psftp user@hostname -b myscript.scr
+
+When you run a batch script in this way, PSFTP will abort the script
+if any command fails to complete successfully. To change this
+behaviour, you can add the \c{-be} option (\k{psftp-option-be}).
+
+PSFTP will terminate after it finishes executing the batch script.
+
+\S{psftp-option-bc} \I{-bc-PSFTP}\c{-bc}: display batch commands as they are run
+
+The \c{-bc} option alters what PSFTP displays while processing a
+batch script specified with \c{-b}. With the \c{-bc} option, PSFTP
+will display prompts and commands just as if the commands had been
+typed at the keyboard. So instead of seeing this:
+
+\c C:\>psftp fred@hostname -b batchfile
+\c Sent username "fred"
+\c Remote working directory is /home/fred
+\c Listing directory /home/fred/lib
+\c drwxrwsr-x    4 fred     fred         1024 Sep  6 10:42 .
+\c drwxr-sr-x   25 fred     fred         2048 Dec 14 09:36 ..
+\c drwxrwsr-x    3 fred     fred         1024 Apr 17  2000 jed
+\c lrwxrwxrwx    1 fred     fred           24 Apr 17  2000 timber
+\c drwxrwsr-x    2 fred     fred         1024 Mar 13  2000 trn
+
+you might see this:
+
+\c C:\>psftp fred@hostname -bc -b batchfile
+\c Sent username "fred"
+\c Remote working directory is /home/fred
+\c psftp> dir lib
+\c Listing directory /home/fred/lib
+\c drwxrwsr-x    4 fred     fred         1024 Sep  6 10:42 .
+\c drwxr-sr-x   25 fred     fred         2048 Dec 14 09:36 ..
+\c drwxrwsr-x    3 fred     fred         1024 Apr 17  2000 jed
+\c lrwxrwxrwx    1 fred     fred           24 Apr 17  2000 timber
+\c drwxrwsr-x    2 fred     fred         1024 Mar 13  2000 trn
+\c psftp> quit
+
+\S{psftp-option-be} \I{-be-PSFTP}\c{-be}: continue batch processing on errors
+
+When running a batch file, this additional option causes PSFTP to
+continue processing even if a command fails to complete successfully.
+
+You might want this to happen if you wanted to delete a file and
+didn't care if it was already not present, for example.
+
+\S{psftp-usage-options-batch} \I{-batch-PSFTP}\c{-batch}: avoid
+interactive prompts
+
+If you use the \c{-batch} option, PSFTP will never give an
+interactive prompt while establishing the connection. If the
+server's host key is invalid, for example (see \k{gs-hostkey}), then
+the connection will simply be abandoned instead of asking you what
+to do next.
+
+This may help PSFTP's behaviour when it is used in automated
+scripts: using \c{-batch}, if something goes wrong at connection
+time, the batch job will fail rather than hang.
+
+\H{psftp-commands} Running PSFTP
+
+Once you have started your PSFTP session, you will see a \c{psftp>}
+prompt. You can now type commands to perform file-transfer
+functions. This section lists all the available commands.
+
+Any line starting with a \cw{#} will be treated as a \i{comment}
+and ignored.
+
+\S{psftp-quoting} \I{quoting, in PSFTP}General quoting rules for PSFTP commands
+
+Most PSFTP commands are considered by the PSFTP command interpreter
+as a sequence of words, separated by spaces. For example, the
+command \c{ren oldfilename newfilename} splits up into three words:
+\c{ren} (the command name), \c{oldfilename} (the name of the file to
+be renamed), and \c{newfilename} (the new name to give the file).
+
+Sometimes you will need to specify \I{spaces in filenames}file names
+that \e{contain} spaces. In order to do this, you can surround
+the file name with double quotes. This works equally well for
+local file names and remote file names:
+
+\c psftp> get "spacey file name.txt" "save it under this name.txt"
+
+The double quotes themselves will not appear as part of the file
+names; they are removed by PSFTP and their only effect is to stop
+the spaces inside them from acting as word separators.
+
+If you need to \e{use} a double quote (on some types of remote
+system, such as Unix, you are allowed to use double quotes in file
+names), you can do this by doubling it. This works both inside and
+outside double quotes. For example, this command
+
+\c psftp> ren ""this"" "a file with ""quotes"" in it"
+
+will take a file whose current name is \c{"this"} (with a double
+quote character at the beginning and the end) and rename it to a
+file whose name is \c{a file with "quotes" in it}.
+
+(The one exception to the PSFTP quoting rules is the \c{!} command,
+which passes its command line straight to Windows without splitting
+it up into words at all. See \k{psftp-cmd-pling}.)
+
+\S{psftp-wildcards} Wildcards in PSFTP
+
+Several commands in PSFTP support \q{\i{wildcards}} to select multiple
+files.
+
+For \e{local} file specifications (such as the first argument to
+\c{put}), wildcard rules for the local operating system are used. For
+instance, PSFTP running on Windows might require the use of \c{*.*}
+where PSFTP on Unix would need \c{*}.
+
+For \e{remote} file specifications (such as the first argument to
+\c{get}), PSFTP uses a standard wildcard syntax (similar to \i{POSIX}
+wildcards):
+
+\b \c{*} matches any sequence of characters (including a zero-length
+sequence).
+
+\b \c{?} matches exactly one character.
+
+\b \c{[abc]} matches exactly one character which can be \cw{a},
+\cw{b}, or \cw{c}.
+
+\lcont{
+
+\c{[a-z]} matches any character in the range \cw{a} to \cw{z}.
+
+\c{[^abc]} matches a single character that is \e{not} \cw{a}, \cw{b},
+or \cw{c}.
+
+Special cases: \c{[-a]} matches a literal hyphen (\cw{-}) or \cw{a};
+\c{[^-a]} matches all other characters. \c{[a^]} matches a literal
+caret (\cw{^}) or \cw{a}.
+
+}
+
+\b \c{\\} (backslash) before any of the above characters (or itself)
+removes that character's special meaning.
+
+A leading period (\cw{.}) on a filename is not treated specially,
+unlike in some Unix contexts; \c{get *} will fetch all files, whether
+or not they start with a leading period.
+
+\S{psftp-cmd-open} The \c{open} command: start a session
+
+If you started PSFTP by double-clicking in the GUI, or just by
+typing \c{psftp} at the command line, you will need to open a
+connection to an SFTP server before you can issue any other
+commands (except \c{help} and \c{quit}).
+
+To create a connection, type \c{open host.name}, or if you need to
+specify a user name as well you can type \c{open user@host.name}.
+You can optionally specify a port as well:
+\c{open user@host.name 22}.
+
+Once you have issued this command, you will not be able to issue it
+again, \e{even} if the command fails (for example, if you mistype
+the host name or the connection times out). So if the connection is
+not opened successfully, PSFTP will terminate immediately.
+
+\S{psftp-cmd-quit} The \c{quit} command: end your session
+
+When you have finished your session, type the command \c{quit} to
+close the connection, terminate PSFTP and return to the command line
+(or just close the PSFTP console window if you started it from the
+GUI).
+
+You can also use the \c{bye} and \c{exit} commands, which have
+exactly the same effect.
+
+\S{psftp-cmd-close} The \c{close} command: close your connection
+
+If you just want to close the network connection but keep PSFTP
+running, you can use the \c{close} command. You can then use the
+\c{open} command to open a new connection.
+
+\S{psftp-cmd-help} The \c{help} command: get quick online help
+
+If you type \c{help}, PSFTP will give a short list of the available
+commands.
+
+If you type \c{help} with a command name - for example, \c{help get}
+- then PSFTP will give a short piece of help on that particular
+command.
+
+\S{psftp-cmd-cd} The \c{cd} and \c{pwd} commands: changing the
+remote \i{working directory}
+
+PSFTP maintains a notion of your \q{working directory} on the
+server. This is the default directory that other commands will
+operate on. For example, if you type \c{get filename.dat} then PSFTP
+will look for \c{filename.dat} in your remote working directory on
+the server.
+
+To change your remote working directory, use the \c{cd} command. If
+you don't provide an argument, \c{cd} will return you to your home
+directory on the server (more precisely, the remote directory you were
+in at the start of the connection).
+
+To display your current remote working directory, type \c{pwd}.
+
+\S{psftp-cmd-lcd} The \c{lcd} and \c{lpwd} commands: changing the
+local \i{working directory}
+
+As well as having a working directory on the remote server, PSFTP
+also has a working directory on your local machine (just like any
+other Windows process). This is the default local directory that
+other commands will operate on. For example, if you type \c{get
+filename.dat} then PSFTP will save the resulting file as
+\c{filename.dat} in your local working directory.
+
+To change your local working directory, use the \c{lcd} command. To
+display your current local working directory, type \c{lpwd}.
+
+\S{psftp-cmd-get} The \c{get} command: fetch a file from the server
+
+To \i{download a file} from the server and store it on your local PC,
+you use the \c{get} command.
+
+In its simplest form, you just use this with a file name:
+
+\c get myfile.dat
+
+If you want to store the file locally under a different name,
+specify the local file name after the remote one:
+
+\c get myfile.dat newname.dat
+
+This will fetch the file on the server called \c{myfile.dat}, but
+will save it to your local machine under the name \c{newname.dat}.
+
+To fetch an entire directory \i{recursive}ly, you can use the \c{-r}
+option:
+
+\c get -r mydir
+\c get -r mydir newname
+
+(If you want to fetch a file whose name starts with a hyphen, you
+may have to use the \c{--} special argument, which stops \c{get}
+from interpreting anything as a switch after it. For example,
+\cq{get -- -silly-name-}.)
+
+\S{psftp-cmd-put} The \c{put} command: send a file to the server
+
+To \i{upload a file} to the server from your local PC, you use the
+\c{put} command.
+
+In its simplest form, you just use this with a file name:
+
+\c put myfile.dat
+
+If you want to store the file remotely under a different name,
+specify the remote file name after the local one:
+
+\c put myfile.dat newname.dat
+
+This will send the local file called \c{myfile.dat}, but will store
+it on the server under the name \c{newname.dat}.
+
+To send an entire directory \i{recursive}ly, you can use the \c{-r}
+option:
+
+\c put -r mydir
+\c put -r mydir newname
+
+(If you want to send a file whose name starts with a hyphen, you may
+have to use the \c{--} special argument, which stops \c{put} from
+interpreting anything as a switch after it. For example, \cq{put --
+-silly-name-}.)
+
+\S{psftp-cmd-mgetput} The \c{mget} and \c{mput} commands: fetch or
+send multiple files
+
+\c{mget} works almost exactly like \c{get}, except that it allows
+you to specify more than one file to fetch at once. You can do this
+in two ways:
+
+\b by giving two or more explicit file names (\cq{mget file1.txt
+file2.txt})
+
+\b by using a wildcard (\cq{mget *.txt}).
+
+Every argument to \c{mget} is treated as the name of a file to fetch
+(unlike \c{get}, which will interpret at most one argument like
+that, and a second argument will be treated as an alternative name
+under which to store the retrieved file), or a \i{wildcard} expression
+matching more than one file.
+
+The \c{-r} and \c{--} options from \c{get} are also available with
+\c{mget}.
+
+\c{mput} is similar to \c{put}, with the same differences.
+
+\S{psftp-cmd-regetput} The \c{reget} and \c{reput} commands:
+\i{resuming file transfers}
+
+If a file transfer fails half way through, and you end up with half
+the file stored on your disk, you can resume the file transfer using
+the \c{reget} and \c{reput} commands. These work exactly like the
+\c{get} and \c{put} commands, but they check for the presence of the
+half-written destination file and start transferring from where the
+last attempt left off.
+
+The syntax of \c{reget} and \c{reput} is exactly the same as the
+syntax of \c{get} and \c{put}:
+
+\c reget myfile.dat
+\c reget myfile.dat newname.dat
+\c reget -r mydir
+
+These commands are intended mainly for resuming interrupted transfers.
+They assume that the remote file or directory structure has not
+changed in any way; if there have been changes, you may end up with
+corrupted files. In particular, the \c{-r} option will not pick up
+changes to files or directories already transferred in full.
+
+\S{psftp-cmd-dir} The \c{dir} command: \I{listing files}list remote files
+
+To list the files in your remote working directory, just type
+\c{dir}.
+
+You can also list the contents of a different directory by typing
+\c{dir} followed by the directory name:
+
+\c dir /home/fred
+\c dir sources
+
+And you can list a subset of the contents of a directory by
+providing a wildcard:
+
+\c dir /home/fred/*.txt
+\c dir sources/*.c
+
+The \c{ls} command works exactly the same way as \c{dir}.
+
+\S{psftp-cmd-chmod} The \c{chmod} command: change permissions on
+remote files
+
+\I{changing permissions on files}PSFTP
+allows you to modify the file permissions on files and
+directories on the server. You do this using the \c{chmod} command,
+which works very much like the Unix \c{chmod} command.
+
+The basic syntax is \c{chmod modes file}, where \c{modes} represents
+a modification to the file permissions, and \c{file} is the filename
+to modify. You can specify multiple files or wildcards. For example:
+
+\c chmod go-rwx,u+w privatefile
+\c chmod a+r public*
+\c chmod 640 groupfile1 groupfile2
+
+The \c{modes} parameter can be a set of octal digits in the Unix
+style. (If you don't know what this means, you probably don't want
+to be using it!) Alternatively, it can be a list of permission
+modifications, separated by commas. Each modification consists of:
+
+\b The people affected by the modification. This can be \c{u} (the
+owning user), \c{g} (members of the owning group), or \c{o}
+(everybody else - \q{others}), or some combination of those. It can
+also be \c{a} (\q{all}) to affect everybody at once.
+
+\b A \c{+} or \c{-} sign, indicating whether permissions are to be
+added or removed.
+
+\b The actual permissions being added or removed. These can be
+\I{read permission}\c{r} (permission to read the file),
+\I{write permission}\c{w} (permission to write to the file), and
+\I{execute permission}\c{x} (permission to execute the file, or in
+the case of a directory, permission to access files within the
+directory).
+
+So the above examples would do:
+
+\b The first example: \c{go-rwx} removes read, write and execute
+permissions for members of the owning group and everybody else (so
+the only permissions left are the ones for the file owner). \c{u+w}
+adds write permission for the file owner.
+
+\b The second example: \c{a+r} adds read permission for everybody to
+all files and directories starting with \q{public}.
+
+In addition to all this, there are a few extra special cases for
+\i{Unix} systems. On non-Unix systems these are unlikely to be useful:
+
+\b You can specify \c{u+s} and \c{u-s} to add or remove the Unix
+\i{set-user-ID bit}. This is typically only useful for special purposes;
+refer to your Unix documentation if you're not sure about it.
+
+\b You can specify \c{g+s} and \c{g-s} to add or remove the Unix
+\i{set-group-ID bit}. On a file, this works similarly to the set-user-ID
+bit (see your Unix documentation again); on a directory it ensures
+that files created in the directory are accessible by members of the
+group that owns the directory.
+
+\b You can specify \c{+t} and \c{-t} to add or remove the Unix
+\q{\i{sticky bit}}. When applied to a directory, this means that the
+owner of a file in that directory can delete the file (whereas
+normally only the owner of the \e{directory} would be allowed to).
+
+\S{psftp-cmd-del} The \c{del} command: delete remote files
+
+To \I{deleting files}delete a file on the server, type \c{del} and
+then the filename or filenames:
+
+\c del oldfile.dat
+\c del file1.txt file2.txt
+\c del *.o
+
+Files will be deleted without further prompting, even if multiple files
+are specified.
+
+\c{del} will only delete files. You cannot use it to delete
+directories; use \c{rmdir} for that.
+
+The \c{rm} command works exactly the same way as \c{del}.
+
+\S{psftp-cmd-mkdir} The \c{mkdir} command: create remote directories
+
+To \i{create a directory} on the server, type \c{mkdir} and then the
+directory name:
+
+\c mkdir newstuff
+
+You can specify multiple directories to create at once:
+
+\c mkdir dir1 dir2 dir3
+
+\S{psftp-cmd-rmdir} The \c{rmdir} command: remove remote directories
+
+To \i{remove a directory} on the server, type \c{rmdir} and then the
+directory name or names:
+
+\c rmdir oldstuff
+\c rmdir *.old ancient
+
+Directories will be deleted without further prompting, even if
+multiple directories are specified.
+
+Most SFTP servers will probably refuse to remove a directory if the
+directory has anything in it, so you will need to delete the
+contents first.
+
+\S{psftp-cmd-mv} The \c{mv} command: move and \i{rename remote files}
+
+To rename a single file on the server, type \c{mv}, then the current
+file name, and then the new file name:
+
+\c mv oldfile newname
+
+You can also move the file into a different directory and change the
+name:
+
+\c mv oldfile dir/newname
+
+To move one or more files into an existing subdirectory, specify the
+files (using wildcards if desired), and then the destination
+directory:
+
+\c mv file dir
+\c mv file1 dir1/file2 dir2
+\c mv *.c *.h ..
+
+The \c{rename} and \c{ren} commands work exactly the same way as
+\c{mv}.
+
+\S{psftp-cmd-pling} The \c{!} command: run a \i{local Windows command}
+
+You can run local Windows commands using the \c{!} command. This is
+the only PSFTP command that is not subject to the command quoting
+rules given in \k{psftp-quoting}. If any command line begins with
+the \c{!} character, then the rest of the line will be passed
+straight to Windows without further translation.
+
+For example, if you want to move an existing copy of a file out of
+the way before downloading an updated version, you might type:
+
+\c psftp> !ren myfile.dat myfile.bak
+\c psftp> get myfile.dat
+
+using the Windows \c{ren} command to rename files on your local PC.
+
+\H{psftp-pubkey} Using \i{public key authentication} with PSFTP
+
+Like PuTTY, PSFTP can authenticate using a public key instead of a
+password. There are three ways you can do this.
+
+Firstly, PSFTP can use PuTTY saved sessions in place of hostnames.
+So you might do this:
+
+\b Run PuTTY, and create a PuTTY saved session (see
+\k{config-saving}) which specifies your private key file (see
+\k{config-ssh-privkey}). You will probably also want to specify a
+username to log in as (see \k{config-username}).
+
+\b In PSFTP, you can now use the name of the session instead of a
+hostname: type \c{psftp sessionname}, where \c{sessionname} is
+replaced by the name of your saved session.
+
+Secondly, you can supply the name of a private key file on the command
+line, with the \c{-i} option. See \k{using-cmdline-identity} for more
+information.
+
+Thirdly, PSFTP will attempt to authenticate using Pageant if Pageant
+is running (see \k{pageant}). So you would do this:
+
+\b Ensure Pageant is running, and has your private key stored in it.
+
+\b Specify a user and host name to PSFTP as normal. PSFTP will
+automatically detect Pageant and try to use the keys within it.
+
+For more general information on public-key authentication, see
+\k{pubkey}.

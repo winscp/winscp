@@ -1,0 +1,211 @@
+\cfg{man-identity}{plink}{1}{2004-03-24}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{plink-manpage} Man page for Plink
+
+\S{plink-manpage-name} NAME
+
+\cw{plink} \- PuTTY link, command line network connection tool
+
+\S{plink-manpage-synopsis} SYNOPSIS
+
+\c plink [options] [user@]host [command]
+\e bbbbb  iiiiiii   iiiib iiii  iiiiiii
+
+\S{plink-manpage-description} DESCRIPTION
+
+\cw{plink} is a network connection tool supporting several protocols.
+
+\S{plink-manpage-options} OPTIONS
+
+The command-line options supported by \cw{plink} are:
+
+\dt \cw{-V}
+
+\dd Show version information and exit.
+
+\dt \cw{-pgpfp}
+
+\dd Display the fingerprints of the PuTTY PGP Master Keys and exit,
+to aid in verifying new files released by the PuTTY team.
+
+\dt \cw{-v}
+
+\dd Show verbose messages.
+
+\dt \cw{-load} \e{session}
+
+\dd Load settings from saved session.
+
+\dt \cw{-ssh}
+
+\dd Force use of SSH protocol (default).
+
+\dt \cw{-telnet}
+
+\dd Force use of Telnet protocol.
+
+\dt \cw{-rlogin}
+
+\dd Force use of rlogin protocol.
+
+\dt \cw{-raw}
+
+\dd Force raw mode.
+
+\dt \cw{-serial}
+
+\dd Force serial mode.
+
+\dt \cw{-P} \e{port}
+
+\dd Connect to port \e{port}.
+
+\dt \cw{-l} \e{user}
+
+\dd Set remote username to \e{user}.
+
+\dt \cw{-m} \e{path}
+
+\dd Read remote command(s) from local file \e{path}.
+
+\dt \cw{-batch}
+
+\dd Disable interactive prompts.
+
+\dt \cw{-pw} \e{password}
+
+\dd Set remote password to \e{password}. \e{CAUTION:} this will likely
+make the password visible to other users of the local machine (via
+commands such as \q{\c{w}}).
+
+\dt \cw{\-L} \cw{[}\e{srcaddr}\cw{:]}\e{srcport}\cw{:}\e{desthost}\cw{:}\e{destport}
+
+\dd Set up a local port forwarding: listen on \e{srcport} (or
+\e{srcaddr}:\e{srcport} if specified), and forward any connections
+over the SSH connection to the destination address
+\e{desthost}:\e{destport}. Only works in SSH.
+
+\dt \cw{\-R} \cw{[}\e{srcaddr}\cw{:]}\e{srcport}\cw{:}\e{desthost}\cw{:}\e{destport}
+
+\dd Set up a remote port forwarding: ask the SSH server to listen on
+\e{srcport} (or \e{srcaddr}:\e{srcport} if specified), and to
+forward any connections back over the SSH connection where the
+client will pass them on to the destination address
+\e{desthost}:\e{destport}. Only works in SSH.
+
+\dt \cw{\-D} [\e{srcaddr}:]\e{srcport}
+
+\dd Set up dynamic port forwarding. The client listens on
+\e{srcport} (or \e{srcaddr}:\e{srcport} if specified), and
+implements a SOCKS server. So you can point SOCKS-aware applications
+at this port and they will automatically use the SSH connection to
+tunnel all their connections. Only works in SSH.
+
+\dt \cw{-X}
+
+\dd Enable X11 forwarding.
+
+\dt \cw{-x}
+
+\dd Disable X11 forwarding (default).
+
+\dt \cw{-A}
+
+\dd Enable agent forwarding.
+
+\dt \cw{-a}
+
+\dd Disable agent forwarding (default).
+
+\dt \cw{-t}
+
+\dd Enable pty allocation (default if a command is NOT specified).
+
+\dt \cw{-T}
+
+\dd Disable pty allocation (default if a command is specified).
+
+\dt \cw{-1}
+
+\dd Force use of SSH protocol version 1.
+
+\dt \cw{-2}
+
+\dd Force use of SSH protocol version 2.
+
+\dt \cw{-C}
+
+\dd Enable SSH compression.
+
+\dt \cw{-i} \e{path}
+
+\dd Private key file for user authentication.
+
+\dt \cw{\-hostkey} \e{key}
+
+\dd Specify an acceptable host public key. This option may be specified
+multiple times; each key can be either a fingerprint (\cw{99:aa:bb:...}) or
+a base64-encoded blob in OpenSSH's one-line format.
+
+\lcont{ Specifying this option overrides automated host key
+management; \e{only} the key(s) specified on the command-line will be
+accepted (unless a saved session also overrides host keys, in which
+case those will be added to), and the host key cache will not be
+written. }
+
+\dt \cw{-s}
+
+\dd Remote command is SSH subsystem (SSH-2 only).
+
+\dt \cw{-N}
+
+\dd Don't start a remote command or shell at all (SSH-2 only).
+
+\dt \cw{\-sercfg} \e{configuration-string}
+
+\dd Specify the configuration parameters for the serial port, in
+\cw{-serial} mode. \e{configuration-string} should be a
+comma-separated list of configuration parameters as follows:
+
+\lcont{
+
+\b Any single digit from 5 to 9 sets the number of data bits.
+
+\b \cq{1}, \cq{1.5} or \cq{2} sets the number of stop bits.
+
+\b Any other numeric string is interpreted as a baud rate.
+
+\b A single lower-case letter specifies the parity: \cq{n} for none,
+\cq{o} for odd, \cq{e} for even, \cq{m} for mark and \cq{s} for space.
+
+\b A single upper-case letter specifies the flow control: \cq{N} for
+none, \cq{X} for XON/XOFF, \cq{R} for RTS/CTS and \cq{D} for
+DSR/DTR.
+
+}
+
+\dt \cw{\-sshlog} \e{logfile}
+
+\dt \cw{\-sshrawlog} \e{logfile}
+
+\dd For SSH connections, these options make \cw{plink} log protocol
+details to a file. (Some of these may be sensitive, although by default
+an effort is made to suppress obvious passwords.)
+
+\lcont{
+\cw{\-sshlog} logs decoded SSH packets and other events (those that
+\cw{\-v} would print). \cw{\-sshrawlog} additionally logs the raw
+encrypted packet data.
+}
+
+\S{plink-manpage-more-information} MORE INFORMATION
+
+For more information on plink, it's probably best to go and look at
+the manual on the PuTTY web page:
+
+\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/}\cw{http://www.chiark.greenend.org.uk/~sgtatham/putty/}
+
+\S{plink-manpage-bugs} BUGS
+
+This man page isn't terribly complete. See the above web link for
+better documentation.

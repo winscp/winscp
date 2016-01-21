@@ -1,0 +1,677 @@
+\cfg{man-identity}{pterm}{1}{2004-03-24}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{pterm-manpage} Man page for pterm
+
+\S{pterm-manpage-name} NAME
+
+pterm \- yet another X terminal emulator
+
+\S{pterm-manpage-synopsis} SYNOPSIS
+
+\c pterm [ options ]
+\e bbbbb   iiiiiii
+
+\S{pterm-manpage-description} DESCRIPTION
+
+\cw{pterm} is a terminal emulator for X. It is based on a port of
+the terminal emulation engine in the Windows SSH client PuTTY.
+
+\S{pterm-manpage-options} OPTIONS
+
+The command-line options supported by \cw{pterm} are:
+
+\dt \cw{\-e} \e{command} [ \e{arguments} ]
+
+\dd Specify a command to be executed in the new terminal. Everything on
+the command line after this option will be passed straight to the
+\cw{execvp} system call; so if you need the command to redirect its
+input or output, you will have to use \cw{sh}:
+
+\lcont{
+
+\c pterm -e sh -c 'mycommand < inputfile'
+
+}
+
+\dt \cw{\-\-display} \e{display\-name}
+
+\dd Specify the X display on which to open \cw{pterm}. (Note this
+option has a double minus sign, even though none of the others do.
+This is because this option is supplied automatically by GTK.
+Sorry.)
+
+\dt \cw{\-name} \e{name}
+
+\dd Specify the name under which \cw{pterm} looks up X resources.
+Normally it will look them up as (for example) \cw{pterm.Font}. If
+you specify \q{\cw{\-name xyz}}, it will look them up as
+\cw{xyz.Font} instead. This allows you to set up several different
+sets of defaults and choose between them.
+
+\dt \cw{\-fn} \e{font-name}
+
+\dd Specify the font to use for normal text displayed in the terminal.
+
+\dt \cw{\-fb} \e{font-name}
+
+\dd Specify the font to use for bold text displayed in the terminal. If
+the \cw{BoldAsColour} resource is set to 1 (the default), bold text
+will be displayed in different colours instead of a different font,
+so this option will be ignored. If \cw{BoldAsColour} is set to 0 or 2
+and you do not specify a bold font, \cw{pterm} will overprint the
+normal font to make it look bolder.
+
+\dt \cw{\-fw} \e{font-name}
+
+\dd Specify the font to use for double-width characters (typically
+Chinese, Japanese and Korean text) displayed in the terminal.
+
+\dt \cw{\-fwb} \e{font-name}
+
+\dd Specify the font to use for bold double-width characters
+(typically Chinese, Japanese and Korean text). Like \cw{-fb}, this
+will be ignored unless the \cw{BoldAsColour} resource is set to 0 or 2.
+
+\dt \cw{\-geometry} \e{geometry}
+
+\dd Specify the size of the terminal, in rows and columns of text. See
+\e{X(7)} for more information on the syntax of geometry
+specifications.
+
+\dt \cw{\-sl} \e{lines}
+
+\dd Specify the number of lines of scrollback to save off the top of the
+terminal.
+
+\dt \cw{\-fg} \e{colour}
+
+\dd Specify the foreground colour to use for normal text.
+
+\dt \cw{\-bg} \e{colour}
+
+\dd Specify the background colour to use for normal text.
+
+\dt \cw{\-bfg} \e{colour}
+
+\dd Specify the foreground colour to use for bold text, if the
+\cw{BoldAsColour} resource is set to 1 (the default) or 2.
+
+\dt \cw{\-bbg} \e{colour}
+
+\dd Specify the foreground colour to use for bold reverse-video text, if
+the \cw{BoldAsColour} resource is set to 1 (the default) or 2. (This
+colour is best thought of as the bold version of the background
+colour; so it only appears when text is displayed \e{in} the
+background colour.)
+
+\dt \cw{\-cfg} \e{colour}
+
+\dd Specify the foreground colour to use for text covered by the cursor.
+
+\dt \cw{\-cbg} \e{colour}
+
+\dd Specify the background colour to use for text covered by the cursor.
+In other words, this is the main colour of the cursor.
+
+\dt \cw{\-title} \e{title}
+
+\dd Specify the initial title of the terminal window. (This can be
+changed under control of the server.)
+
+\dt \cw{\-ut\-} or \cw{+ut}
+
+\dd Tells \cw{pterm} not to record your login in the \cw{utmp},
+\cw{wtmp} and \cw{lastlog} system log files; so you will not show
+up on \cw{finger} or \cw{who} listings, for example.
+
+\dt \cw{\-ut}
+
+\dd Tells \cw{pterm} to record your login in \cw{utmp}, \cw{wtmp} and
+\cw{lastlog}: this is the opposite of \cw{\-ut\-}. This is the
+default option: you will probably only need to specify it explicitly
+if you have changed the default using the \cw{StampUtmp} resource.
+
+\dt \cw{\-ls\-} or \cw{+ls}
+
+\dd Tells \cw{pterm} not to execute your shell as a login shell.
+
+\dt \cw{\-ls}
+
+\dd Tells \cw{pterm} to execute your shell as a login shell: this is
+the opposite of \cw{\-ls\-}. This is the default option: you will
+probably only need to specify it explicitly if you have changed the
+default using the \cw{LoginShell} resource.
+
+\dt \cw{\-sb\-} or \cw{+sb}
+
+\dd Tells \cw{pterm} not to display a scroll bar.
+
+\dt \cw{\-sb}
+
+\dd Tells \cw{pterm} to display a scroll bar: this is the opposite of
+\cw{\-sb\-}. This is the default option: you will probably only need
+to specify it explicitly if you have changed the default using the
+\cw{ScrollBar} resource.
+
+\dt \cw{\-log} \e{logfile}, \cw{\-sessionlog} \e{logfile}
+
+\dd This option makes \cw{pterm} log all the terminal output to a file
+as well as displaying it in the terminal.
+
+\dt \cw{\-cs} \e{charset}
+
+\dd This option specifies the character set in which \cw{pterm} should
+assume the session is operating. This character set will be used to
+interpret all the data received from the session, and all input you
+type or paste into \cw{pterm} will be converted into this character
+set before being sent to the session.
+
+\lcont{ Any character set name which is valid in a MIME header (and
+supported by \cw{pterm}) should be valid here (examples are
+\q{\cw{ISO-8859-1}}, \q{\cw{windows-1252}} or \q{\cw{UTF-8}}). Also,
+any character encoding which is valid in an X logical font
+description should be valid (\q{\cw{ibm-cp437}}, for example).
+
+\cw{pterm}'s default behaviour is to use the same character encoding
+as its primary font. If you supply a Unicode (\cw{iso10646-1}) font,
+it will default to the UTF-8 character set.
+
+Character set names are case-insensitive.
+}
+
+\dt \cw{\-nethack}
+
+\dd Tells \cw{pterm} to enable NetHack keypad mode, in which the
+numeric keypad generates the NetHack \c{hjklyubn} direction keys.
+This enables you to play NetHack with the numeric keypad without
+having to use the NetHack \c{number_pad} option (which requires you
+to press \q{\cw{n}} before any repeat count). So you can move with
+the numeric keypad, and enter repeat counts with the normal number
+keys.
+
+\dt \cw{\-xrm} \e{resource-string}
+
+\dd This option specifies an X resource string. Useful for setting
+resources which do not have their own command-line options. For
+example:
+
+\lcont{
+
+\c pterm -xrm 'ScrollbarOnLeft: 1'
+
+}
+
+\dt \cw{\-help}, \cw{\-\-help}
+
+\dd Display a message summarizing the available options.
+
+\dt \cw{\-pgpfp}
+
+\dd Display the fingerprints of the PuTTY PGP Master Keys, to aid
+in verifying new files released by the PuTTY team.
+
+\S{pterm-manpage-x-resources} X RESOURCES
+
+\cw{pterm} can be more completely configured by means of X
+resources. All of these resources are of the form \cw{pterm.FOO} for
+some \cw{FOO}; you can make \cw{pterm} look them up under another
+name, such as \cw{xyz.FOO}, by specifying the command-line option
+\q{\cw{\-name xyz}}.
+
+\dt \cw{pterm.CloseOnExit}
+
+\dd This option should be set to 0, 1 or 2; the default is 2. It
+controls what \cw{pterm} does when the process running inside it
+terminates. When set to 2 (the default), \cw{pterm} will close its
+window as soon as the process inside it terminates. When set to 0,
+\cw{pterm} will print the process's exit status, and the window
+will remain present until a key is pressed (allowing you to inspect
+the scrollback, and copy and paste text out of it).
+
+\lcont{
+
+When this setting is set to 1, \cw{pterm} will close
+immediately if the process exits cleanly (with an exit status of
+zero), but the window will stay around if the process exits with a
+non-zero code or on a signal. This enables you to see what went
+wrong if the process suffers an error, but not to have to bother
+closing the window in normal circumstances.
+
+}
+
+\dt \cw{pterm.WarnOnClose}
+
+\dd This option should be set to either 0 or 1; the default is 1.
+When set to 1, \cw{pterm} will ask for confirmation before closing
+its window when you press the close button.
+
+\dt \cw{pterm.TerminalType}
+
+\dd This controls the value set in the \cw{TERM} environment
+variable inside the new terminal. The default is \q{\cw{xterm}}.
+
+\dt \cw{pterm.BackspaceIsDelete}
+
+\dd This option should be set to either 0 or 1; the default is 1.
+When set to 0, the ordinary Backspace key generates the Backspace
+character (\cw{^H}); when set to 1, it generates the Delete
+character (\cw{^?}). Whichever one you set, the terminal device
+inside \cw{pterm} will be set up to expect it.
+
+\dt \cw{pterm.RXVTHomeEnd}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+it is set to 1, the Home and End keys generate the control sequences
+they would generate in the \cw{rxvt} terminal emulator, instead of
+the more usual ones generated by other emulators.
+
+\dt \cw{pterm.LinuxFunctionKeys}
+
+\dd This option can be set to any number between 0 and 5 inclusive;
+the default is 0. The modes vary the control sequences sent by the
+function keys; for more complete documentation, it is probably
+simplest to try each option in \q{\cw{pterm \-e cat}}, and press the
+keys to see what they generate.
+
+\dt \cw{pterm.NoApplicationKeys}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, it stops the server from ever switching the numeric keypad
+into application mode (where the keys send function-key-like
+sequences instead of numbers or arrow keys). You probably only need
+this if some application is making a nuisance of itself.
+
+\dt \cw{pterm.NoApplicationCursors}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, it stops the server from ever switching the cursor keys
+into application mode (where the keys send slightly different
+sequences). You probably only need this if some application is
+making a nuisance of itself.
+
+\dt \cw{pterm.NoMouseReporting}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, it stops the server from ever enabling mouse reporting
+mode (where mouse clicks are sent to the application instead of
+controlling cut and paste).
+
+\dt \cw{pterm.NoRemoteResize}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, it stops the server from being able to remotely control
+the size of the \cw{pterm} window.
+
+\dt \cw{pterm.NoAltScreen}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, it stops the server from using the \q{alternate screen}
+terminal feature, which lets full-screen applications leave the
+screen exactly the way they found it.
+
+\dt \cw{pterm.NoRemoteWinTitle}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, it stops the server from remotely controlling the title of
+the \cw{pterm} window.
+
+\dt \cw{pterm.NoRemoteQTitle}
+
+\dd This option should be set to either 0 or 1; the default is 1. When
+set to 1, it stops the server from remotely requesting the title of
+the \cw{pterm} window.
+
+\lcont{
+This feature is a \e{POTENTIAL SECURITY HAZARD}. If a malicious
+application can write data to your terminal (for example, if you
+merely \cw{cat} a file owned by someone else on the server
+machine), it can change your window title (unless you have disabled
+this using the \cw{NoRemoteWinTitle} resource) and then use this
+service to have the new window title sent back to the server as if
+typed at the keyboard. This allows an attacker to fake keypresses
+and potentially cause your server-side applications to do things you
+didn't want. Therefore this feature is disabled by default, and we
+recommend you do not turn it on unless you \e{really} know what
+you are doing.
+}
+
+\dt \cw{pterm.NoDBackspace}
+
+\dd This option should be set to either 0 or 1; the default is 0.
+When set to 1, it disables the normal action of the Delete (\cw{^?})
+character when sent from the server to the terminal, which is to
+move the cursor left by one space and erase the character now under
+it.
+
+\dt \cw{pterm.ApplicationCursorKeys}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, the default initial state of the cursor keys are
+application mode (where the keys send function-key-like sequences
+instead of numbers or arrow keys). When set to 0, the default state
+is the normal one.
+
+\dt \cw{pterm.ApplicationKeypad}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, the default initial state of the numeric keypad is
+application mode (where the keys send function-key-like sequences
+instead of numbers or arrow keys). When set to 0, the default state
+is the normal one.
+
+\dt \cw{pterm.NetHackKeypad}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, the numeric keypad operates in NetHack mode. This is
+equivalent to the \cw{\-nethack} command-line option.
+
+\dt \cw{pterm.Answerback}
+
+\dd This option controls the string which the terminal sends in
+response to receiving the \cw{^E} character (\q{tell me about
+yourself}). By default this string is \q{\cw{PuTTY}}.
+
+\dt \cw{pterm.HideMousePtr}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+it is set to 1, the mouse pointer will disappear if it is over the
+\cw{pterm} window and you press a key. It will reappear as soon as
+you move it.
+
+\dt \cw{pterm.WindowBorder}
+
+\dd This option controls the number of pixels of space between the text
+in the \cw{pterm} window and the window frame. The default is 1.
+You can increase this value, but decreasing it to 0 is not
+recommended because it can cause the window manager's size hints to
+work incorrectly.
+
+\dt \cw{pterm.CurType}
+
+\dd This option should be set to either 0, 1 or 2; the default is 0.
+When set to 0, the text cursor displayed in the window is a
+rectangular block. When set to 1, the cursor is an underline; when
+set to 2, it is a vertical line.
+
+\dt \cw{pterm.BlinkCur}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+it is set to 1, the text cursor will blink when the window is active.
+
+\dt \cw{pterm.Beep}
+
+\dd This option should be set to either 0 or 2 (yes, 2); the default
+is 0. When it is set to 2, \cw{pterm} will respond to a bell
+character (\cw{^G}) by flashing the window instead of beeping.
+
+\dt \cw{pterm.BellOverload}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+it is set to 1, \cw{pterm} will watch out for large numbers of
+bells arriving in a short time and will temporarily disable the bell
+until they stop. The idea is that if you \cw{cat} a binary file,
+the frantic beeping will mostly be silenced by this feature and will
+not drive you crazy.
+
+\lcont{
+The bell overload mode is activated by receiving N bells in time T;
+after a further time S without any bells, overload mode will turn
+itself off again.
+
+Bell overload mode is always deactivated by any keypress in the
+terminal. This means it can respond to large unexpected streams of
+data, but does not interfere with ordinary command-line activities
+that generate beeps (such as filename completion).
+}
+
+\dt \cw{pterm.BellOverloadN}
+
+\dd This option counts the number of bell characters which will activate
+bell overload if they are received within a length of time T. The
+default is 5.
+
+\dt \cw{pterm.BellOverloadT}
+
+\dd This option specifies the time period in which receiving N or more
+bells will activate bell overload mode. It is measured in
+microseconds, so (for example) set it to 1000000 for one second. The
+default is 2000000 (two seconds).
+
+\dt \cw{pterm.BellOverloadS}
+
+\dd This option specifies the time period of silence required to turn
+off bell overload mode. It is measured in microseconds, so (for
+example) set it to 1000000 for one second. The default is 5000000
+(five seconds of silence).
+
+\dt \cw{pterm.ScrollbackLines}
+
+\dd This option specifies how many lines of scrollback to save above the
+visible terminal screen. The default is 200. This resource is
+equivalent to the \cw{\-sl} command-line option.
+
+\dt \cw{pterm.DECOriginMode}
+
+\dd This option should be set to either 0 or 1; the default is 0. It
+specifies the default state of DEC Origin Mode. (If you don't know
+what that means, you probably don't need to mess with it.)
+
+\dt \cw{pterm.AutoWrapMode}
+
+\dd This option should be set to either 0 or 1; the default is 1. It
+specifies the default state of auto wrap mode. When set to 1, very
+long lines will wrap over to the next line on the terminal; when set
+to 0, long lines will be squashed against the right-hand edge of the
+screen.
+
+\dt \cw{pterm.LFImpliesCR}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, the terminal will return the cursor to the left side of
+the screen when it receives a line feed character.
+
+\dt \cw{pterm.WinTitle}
+
+\dd This resource is the same as the \cw{\-T} command-line option:
+it controls the initial title of the window. The default is
+\q{\cw{pterm}}.
+
+\dt \cw{pterm.TermWidth}
+
+\dd This resource is the same as the width part of the \cw{\-geometry}
+command-line option: it controls the number of columns of text in
+the window. The default is 80.
+
+\dt \cw{pterm.TermHeight}
+
+\dd This resource is the same as the width part of the \cw{\-geometry}
+command-line option: it controls the number of columns of text in
+the window. The defaults is 24.
+
+\dt \cw{pterm.Font}
+
+\dd This resource is the same as the \cw{\-fn} command-line option: it
+controls the font used to display normal text. The default is
+\q{\cw{fixed}}.
+
+\dt \cw{pterm.BoldFont}
+
+\dd This resource is the same as the \cw{\-fb} command-line option: it
+controls the font used to display bold text when \cw{BoldAsColour}
+is set to 0 or 2. The default is unset (the font will be bolded by
+printing it twice at a one-pixel offset).
+
+\dt \cw{pterm.WideFont}
+
+\dd This resource is the same as the \cw{\-fw} command-line option: it
+controls the font used to display double-width characters. The
+default is unset (double-width characters cannot be displayed).
+
+\dt \cw{pterm.WideBoldFont}
+
+\dd This resource is the same as the \cw{\-fwb} command-line option: it
+controls the font used to display double-width characters in bold,
+when \cw{BoldAsColour} is set to 0 or 2. The default is unset
+(double-width characters are displayed in bold by printing them
+twice at a one-pixel offset).
+
+\dt \cw{pterm.ShadowBoldOffset}
+
+\dd This resource can be set to an integer; the default is \-1. It
+specifies the offset at which text is overprinted when using
+\q{shadow bold} mode. The default (1) means that the text will be
+printed in the normal place, and also one character to the right;
+this seems to work well for most X bitmap fonts, which have a blank
+line of pixels down the right-hand side. For some fonts, you may
+need to set this to \-1, so that the text is overprinted one pixel
+to the left; for really large fonts, you may want to set it higher
+than 1 (in one direction or the other).
+
+\dt \cw{pterm.BoldAsColour}
+
+\dd This option should be set to either 0, 1, or 2; the default is 1.
+It specifies how bold text should be displayed. When set to 1, bold
+text is shown by displaying it in a brighter colour; when set to 0,
+bold text is shown by displaying it in a heavier font; when set to 2,
+both effects happen at once (a heavy font \e{and} a brighter colour).
+
+\dt \cw{pterm.Colour0}, \cw{pterm.Colour1}, ..., \cw{pterm.Colour21}
+
+\dd These options control the various colours used to display text
+in the \cw{pterm} window. Each one should be specified as a triple
+of decimal numbers giving red, green and blue values: so that black
+is \q{\cw{0,0,0}}, white is \q{\cw{255,255,255}}, red is
+\q{\cw{255,0,0}} and so on.
+
+\lcont{
+
+Colours 0 and 1 specify the foreground colour and its bold
+equivalent (the \cw{\-fg} and \cw{\-bfg} command-line options).
+Colours 2 and 3 specify the background colour and its bold
+equivalent (the \cw{\-bg} and \cw{\-bbg} command-line options).
+Colours 4 and 5 specify the text and block colours used for the
+cursor (the \cw{\-cfg} and \cw{\-cbg} command-line options). Each
+even number from 6 to 20 inclusive specifies the colour to be used
+for one of the ANSI primary colour specifications (black, red,
+green, yellow, blue, magenta, cyan, white, in that order); the odd
+numbers from 7 to 21 inclusive specify the bold version of each
+colour, in the same order. The defaults are:
+
+\c pterm.Colour0: 187,187,187
+\c pterm.Colour1: 255,255,255
+\c pterm.Colour2: 0,0,0
+\c pterm.Colour3: 85,85,85
+\c pterm.Colour4: 0,0,0
+\c pterm.Colour5: 0,255,0
+\c pterm.Colour6: 0,0,0
+\c pterm.Colour7: 85,85,85
+\c pterm.Colour8: 187,0,0
+\c pterm.Colour9: 255,85,85
+\c pterm.Colour10: 0,187,0
+\c pterm.Colour11: 85,255,85
+\c pterm.Colour12: 187,187,0
+\c pterm.Colour13: 255,255,85
+\c pterm.Colour14: 0,0,187
+\c pterm.Colour15: 85,85,255
+\c pterm.Colour16: 187,0,187
+\c pterm.Colour17: 255,85,255
+\c pterm.Colour18: 0,187,187
+\c pterm.Colour19: 85,255,255
+\c pterm.Colour20: 187,187,187
+\c pterm.Colour21: 255,255,255
+
+}
+
+\dt \cw{pterm.RectSelect}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 0, dragging the mouse over several lines selects to the end
+of each line and from the beginning of the next; when set to 1,
+dragging the mouse over several lines selects a rectangular region.
+In each case, holding down Alt while dragging gives the other
+behaviour.
+
+\dt \cw{pterm.MouseOverride}
+
+\dd This option should be set to either 0 or 1; the default is 1. When
+set to 1, if the application requests mouse tracking (so that mouse
+clicks are sent to it instead of doing selection), holding down
+Shift will revert the mouse to normal selection. When set to 0,
+mouse tracking completely disables selection.
+
+\dt \cw{pterm.Printer}
+
+\dd This option is unset by default. If you set it, then
+server-controlled printing is enabled: the server can send control
+sequences to request data to be sent to a printer. That data will be
+piped into the command you specify here; so you might want to set it
+to \q{\cw{lpr}}, for example, or \q{\cw{lpr \-Pmyprinter}}.
+
+\dt \cw{pterm.ScrollBar}
+
+\dd This option should be set to either 0 or 1; the default is 1. When
+set to 0, the scrollbar is hidden (although Shift-PageUp and
+Shift-PageDown still work). This is the same as the \cw{\-sb}
+command-line option.
+
+\dt \cw{pterm.ScrollbarOnLeft}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, the scrollbar will be displayed on the left of the
+terminal instead of on the right.
+
+\dt \cw{pterm.ScrollOnKey}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, any keypress causes the position of the scrollback to be
+reset to the very bottom.
+
+\dt \cw{pterm.ScrollOnDisp}
+
+\dd This option should be set to either 0 or 1; the default is 1. When
+set to 1, any activity in the display causes the position of the
+scrollback to be reset to the very bottom.
+
+\dt \cw{pterm.LineCodePage}
+
+\dd This option specifies the character set to be used for the session.
+This is the same as the \cw{\-cs} command-line option.
+
+\dt \cw{pterm.NoRemoteCharset}
+
+\dd This option disables the terminal's ability to change its character
+set when it receives escape sequences telling it to. You might need
+to do this to interoperate with programs which incorrectly change
+the character set to something they think is sensible.
+
+\dt \cw{pterm.BCE}
+
+\dd This option should be set to either 0 or 1; the default is 1. When
+set to 1, the various control sequences that erase parts of the
+terminal display will erase in whatever the current background
+colour is; when set to 0, they will erase in black always.
+
+\dt \cw{pterm.BlinkText}
+
+\dd This option should be set to either 0 or 1; the default is 0. When
+set to 1, text specified as blinking by the server will actually
+blink on and off; when set to 0, \cw{pterm} will use the less
+distracting approach of making the text's background colour bold.
+
+\dt \cw{pterm.StampUtmp}
+
+\dd This option should be set to either 0 or 1; the default is 1. When
+set to 1, \cw{pterm} will log the login in the various system log
+files. This resource is equivalent to the \cw{\-ut} command-line
+option.
+
+\dt \cw{pterm.LoginShell}
+
+\dd This option should be set to either 0 or 1; the default is 1. When
+set to 1, \cw{pterm} will execute your shell as a login shell. This
+resource is equivalent to the \cw{\-ls} command-line option.
+
+\S{pterm-manpage-bugs} BUGS
+
+Most of the X resources have silly names. (Historical reasons from
+PuTTY, mostly.)

@@ -1,0 +1,4 @@
+\# Additional configuration for the version of the PuTTY docs
+\# actually published as HTML on the website.
+
+\cfg{xhtml-head-end}{<link rel='stylesheet' href='sitestyle.css' type='text/css' />}

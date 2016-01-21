@@ -1,0 +1,67 @@
+\A{sshnames} SSH-2 names specified for PuTTY
+
+There are various parts of the SSH-2 protocol where things are specified
+using a textual name.  Names ending in \cw{@putty.projects.tartarus.org}
+are reserved for allocation by the PuTTY team.  Allocated names are
+documented here.
+
+\H{sshnames-channel} Connection protocol channel request names
+
+These names can be sent in a \cw{SSH_MSG_CHANNEL_REQUEST} message.
+
+\dt \cw{simple@putty.projects.tartarus.org}
+
+\dd This is sent by a client to announce that it will not have more than
+one channel open at a time in the current connection (that one being
+the one the request is sent on).  The intention is that the server,
+knowing this, can set the window on that one channel to something very
+large, and leave flow control to TCP.  There is no message-specific data.
+
+\dt \cw{winadj@putty.projects.tartarus.org}
+
+\dd PuTTY sends this request along with some
+\cw{SSH_MSG_CHANNEL_WINDOW_ADJUST} messages as part of its window-size
+tuning.  It can be sent on any type of channel.  There is no
+message-specific data. Servers MUST treat it as an unrecognised request
+and respond with \cw{SSH_MSG_CHANNEL_FAILURE}.
+
+\lcont{
+(Some SSH servers get confused by this message, so there is a
+bug-compatibility mode for disabling it. See \k{config-ssh-bug-winadj}.)
+}
+
+\H{sshnames-kex} Key exchange method names
+
+\dt \cw{rsa-sha1-draft-00@putty.projects.tartarus.org}
+
+\dt \cw{rsa-sha256-draft-00@putty.projects.tartarus.org}
+
+\dt \cw{rsa1024-sha1-draft-01@putty.projects.tartarus.org}
+
+\dt \cw{rsa1024-sha256-draft-01@putty.projects.tartarus.org}
+
+\dt \cw{rsa2048-sha256-draft-01@putty.projects.tartarus.org}
+
+\dt \cw{rsa1024-sha1-draft-02@putty.projects.tartarus.org}
+
+\dt \cw{rsa2048-sha512-draft-02@putty.projects.tartarus.org}
+
+\dt \cw{rsa1024-sha1-draft-03@putty.projects.tartarus.org}
+
+\dt \cw{rsa2048-sha256-draft-03@putty.projects.tartarus.org}
+
+\dt \cw{rsa1024-sha1-draft-04@putty.projects.tartarus.org}
+
+\dt \cw{rsa2048-sha256-draft-04@putty.projects.tartarus.org}
+
+\dd These appeared in various drafts of what eventually became RFC\_4432.
+They have been superseded by \cw{rsa1024-sha1} and \cw{rsa2048-sha256}.
+
+\H{sshnames-encrypt} Encryption algorithm names
+
+\dt \cw{arcfour128-draft-00@putty.projects.tartarus.org}
+
+\dt \cw{arcfour256-draft-00@putty.projects.tartarus.org}
+
+\dd These were used in drafts of what eventually became RFC\_4345.
+They have been superseded by \cw{arcfour128} and \cw{arcfour256}.

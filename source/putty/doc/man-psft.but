@@ -1,0 +1,127 @@
+\cfg{man-identity}{psftp}{1}{2004-03-24}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{psftp-manpage} Man page for PSFTP
+
+\S{psftp-manpage-name} NAME
+
+\cw{psftp} \- interactive SFTP (secure file transfer protocol) client
+
+\S{psftp-manpage-synopsis} SYNOPSIS
+
+\c psftp [options] [user@]host
+\e bbbbb  iiiiiii   iiiib iiii
+
+\S{psftp-manpage-description} DESCRIPTION
+
+\cw{psftp} is an interactive text-based client for the SSH-based SFTP
+(secure file transfer) protocol.
+
+\S{psftp-manpage-options} OPTIONS
+
+The command-line options supported by \cw{psftp} are:
+
+\dt \cw{-V}
+
+\dd Show version information and exit.
+
+\dt \cw{-pgpfp}
+
+\dd Display the fingerprints of the PuTTY PGP Master Keys and exit,
+to aid in verifying new files released by the PuTTY team.
+
+\dt \cw{-b} \e{batchfile}
+
+\dd Use specified batchfile.
+
+\dt \cw{-bc}
+
+\dd Output batchfile commands.
+
+\dt \cw{-be}
+
+\dd Don't stop batchfile processing on errors.
+
+\dt \cw{-v}
+
+\dd Show verbose messages.
+
+\dt \cw{-load} \e{session}
+
+\dd Load settings from saved session.
+
+\dt \cw{-P} \e{port}
+
+\dd Connect to port \e{port}.
+
+\dt \cw{-l} \e{user}
+
+\dd Set remote username to \e{user}.
+
+\dt \cw{-batch}
+
+\dd Disable interactive prompts.
+
+\dt \cw{-pw} \e{password}
+
+\dd Set remote password to \e{password}. \e{CAUTION:} this will likely
+make the password visible to other users of the local machine (via
+commands such as \q{\c{w}}).
+
+\dt \cw{-1}
+
+\dd Force use of SSH protocol version 1.
+
+\dt \cw{-2}
+
+\dd Force use of SSH protocol version 2.
+
+\dt \cw{-C}
+
+\dd Enable SSH compression.
+
+\dt \cw{-i} \e{path}
+
+\dd Private key file for user authentication.
+
+\dt \cw{\-hostkey} \e{key}
+
+\dd Specify an acceptable host public key. This option may be specified
+multiple times; each key can be either a fingerprint (\cw{99:aa:bb:...}) or
+a base64-encoded blob in OpenSSH's one-line format.
+
+\lcont{ Specifying this option overrides automated host key
+management; \e{only} the key(s) specified on the command-line will be
+accepted (unless a saved session also overrides host keys, in which
+case those will be added to), and the host key cache will not be
+written. }
+
+\dt \cw{\-sshlog} \e{logfile}
+
+\dt \cw{\-sshrawlog} \e{logfile}
+
+\dd These options make \cw{psftp} log protocol details to a file.
+(Some of these may be sensitive, although by default an effort is made
+to suppress obvious passwords.)
+
+\lcont{
+\cw{\-sshlog} logs decoded SSH packets and other events (those that
+\cw{\-v} would print). \cw{\-sshrawlog} additionally logs the raw
+encrypted packet data.
+}
+
+\S{psftp-manpage-commands} COMMANDS
+
+For a list of commands available inside \cw{psftp}, type \cw{help}
+at the \cw{psftp>} prompt.
+
+\S{psftp-manpage-more-information} MORE INFORMATION
+
+For more information on \cw{psftp} it's probably best to go and look at
+the manual on the PuTTY web page:
+
+\cw{http://www.chiark.greenend.org.uk/~sgtatham/putty/}
+
+\S{psftp-manpage-bugs} BUGS
+
+This man page isn't terribly complete. See the above web link for
+better documentation.
