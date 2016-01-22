@@ -431,6 +431,9 @@ private:
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
   std::unique_ptr<TFont> FSystemIconFont;
+  int FLastMachineInstallations;
+  __property int LastMachineInstallations = { read = FLastMachineInstallations, write = FLastMachineInstallations };
+  int FMachineInstallations;
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);

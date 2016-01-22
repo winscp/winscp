@@ -950,6 +950,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(DateTime, TipsShown); \
     KEY(Integer,  RunsSinceLastTip); \
     KEY(Bool,     HonorDrivePolicy); \
+    KEY(Integer,  LastMachineInstallations); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
@@ -1239,6 +1240,7 @@ void __fastcall TWinConfiguration::LoadAdmin(THierarchicalStorage * Storage)
   TCustomWinConfiguration::LoadAdmin(Storage);
   FDisableOpenEdit = Storage->ReadBool(L"DisableOpenEdit", FDisableOpenEdit);
   FDefaultUpdatesPeriod = Storage->ReadInteger(L"DefaultUpdatesPeriod", FDefaultUpdatesPeriod);
+  FMachineInstallations = Storage->ReadInteger(L"Installations", 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::CopyData(THierarchicalStorage * Source, THierarchicalStorage * Target)
@@ -2387,6 +2389,12 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
     }
   }
   Usage->Set(L"ExternalEditors", ExternalEditors);
+
+  if (LastMachineInstallations < FMachineInstallations)
+  {
+    Usage->Inc(L"InstallationsMachine", (FMachineInstallations - LastMachineInstallations));
+    LastMachineInstallations = FMachineInstallations;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::RestoreFont(

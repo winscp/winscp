@@ -1309,6 +1309,7 @@ var
   OpenGettingStarted: Boolean;
   UsageData: string;
   CanPostInstallRuns: Boolean;
+  Installations: Cardinal;
 begin
   if CurStep = ssPostInstall then
   begin
@@ -1341,6 +1342,16 @@ begin
 
       // old style counter
       UsageData := UsageData + Format('TypicalInstallation:%d,', [Integer(IsTypicalInstallation)]);
+
+      UsageData := UsageData + 'InstallationsUser+,';
+
+      Installations := 0; // default, if the counter does not exist
+      RegQueryDWordValue(HKEY_LOCAL_MACHINE, '{#RegistryKey}', 'Installations', Installations);
+      Inc(Installations);
+      if not RegWriteDWordValue(HKEY_LOCAL_MACHINE, '{#RegistryKey}', 'Installations', Installations) then
+      begin
+        Log('Cannot increment administrator installations counter, probably a non-elevated installation');
+      end;
 
       // new style counters
       if not Upgrade then
@@ -1380,6 +1391,8 @@ begin
         UsageData := UsageData + 'InstallationsRestart+,';
       if Donated then
         UsageData := UsageData + 'InstallationsDonate+,';
+      if not (IsAdminLoggedOn or IsPowerUserLoggedOn) then
+        UsageData := UsageData + 'InstallationsNonElevated+,';
 
       // have to do this before running WinSCP GUI instance below,
       // otherwise it loads the empty/previous counters and overwrites our changes,
