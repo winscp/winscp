@@ -77,7 +77,6 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.Session.#CheckVersions(System.String)")]
 [assembly: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "WinSCP.Logger.#WriteLine(System.String)")]
 [assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.Logger.#WriteEnvironmentInfo()")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.ConsoleSessionProcess.#.ctor(System.String,System.String)")]
 [assembly: SuppressMessage("Microsoft.Design", "CA1003:UseGenericEventHandlerInstances", Scope = "type", Target = "WinSCP.OutputDataReceivedEventHandler")]
 [assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.ExeSessionProcess.#.ctor(WinSCP.Session,System.String,System.String)")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.ExeSessionProcess.#CreateEvent(System.String)")]
