@@ -439,7 +439,7 @@ void __fastcall TFTPFileSystem::Open()
 
     // ask for username if it was not specified in advance, even on retry,
     // but keep previous one as default,
-    if (Data->UserNameExpanded.IsEmpty())
+    if (Data->UserNameExpanded.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
     {
       FTerminal->LogEvent(L"Username prompt (no username provided)");
 
@@ -4114,201 +4114,208 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
     FSessionInfo.CertificateFingerprint =
       BytesToHex(RawByteString((const char*)Data.Hash, Data.HashLen), false, L':');
 
-    UnicodeString CertificateSubject = Data.Subject.Organization;
-    FTerminal->LogEvent(FORMAT(L"Verifying certificate for \"%s\" with fingerprint %s and %d failures", (CertificateSubject, FSessionInfo.CertificateFingerprint, Data.VerificationResult)));
-
-    bool VerificationResult = false;
-    bool TryWindowsSystemCertificateStore = false;
-    UnicodeString VerificationResultStr;
-    switch (Data.VerificationResult)
+    if (FTerminal->SessionData->FingerprintScan)
     {
-      case X509_V_OK:
-        VerificationResult = true;
-        break;
-      case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
-        VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_GET_ISSUER_CERT);
-        TryWindowsSystemCertificateStore = true;
-        break;
-      case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
-        VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE);
-        break;
-      case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
-        VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY);
-        break;
-      case X509_V_ERR_CERT_SIGNATURE_FAILURE:
-        VerificationResultStr = LoadStr(CERT_ERR_CERT_SIGNATURE_FAILURE);
-        break;
-      case X509_V_ERR_CERT_NOT_YET_VALID:
-        VerificationResultStr = LoadStr(CERT_ERR_CERT_NOT_YET_VALID);
-        break;
-      case X509_V_ERR_CERT_HAS_EXPIRED:
-        VerificationResultStr = LoadStr(CERT_ERR_CERT_HAS_EXPIRED);
-        break;
-      case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
-        VerificationResultStr = LoadStr(CERT_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD);
-        break;
-      case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
-        VerificationResultStr = LoadStr(CERT_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD);
-        break;
-      case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
-        VerificationResultStr = LoadStr(CERT_ERR_DEPTH_ZERO_SELF_SIGNED_CERT);
-        TryWindowsSystemCertificateStore = true;
-        break;
-      case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
-        VerificationResultStr = LoadStr(CERT_ERR_SELF_SIGNED_CERT_IN_CHAIN);
-        TryWindowsSystemCertificateStore = true;
-        break;
-      case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-        VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY);
-        TryWindowsSystemCertificateStore = true;
-        break;
-      case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
-        VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE);
-        TryWindowsSystemCertificateStore = true;
-        break;
-      case X509_V_ERR_INVALID_CA:
-        VerificationResultStr = LoadStr(CERT_ERR_INVALID_CA);
-        break;
-      case X509_V_ERR_PATH_LENGTH_EXCEEDED:
-        VerificationResultStr = LoadStr(CERT_ERR_PATH_LENGTH_EXCEEDED);
-        break;
-      case X509_V_ERR_INVALID_PURPOSE:
-        VerificationResultStr = LoadStr(CERT_ERR_INVALID_PURPOSE);
-        break;
-      case X509_V_ERR_CERT_UNTRUSTED:
-        VerificationResultStr = LoadStr(CERT_ERR_CERT_UNTRUSTED);
-        TryWindowsSystemCertificateStore = true;
-        break;
-      case X509_V_ERR_CERT_REJECTED:
-        VerificationResultStr = LoadStr(CERT_ERR_CERT_REJECTED);
-        break;
-      case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
-        VerificationResultStr = LoadStr(CERT_ERR_KEYUSAGE_NO_CERTSIGN);
-        break;
-      case X509_V_ERR_CERT_CHAIN_TOO_LONG:
-        VerificationResultStr = LoadStr(CERT_ERR_CERT_CHAIN_TOO_LONG);
-        break;
-      default:
-        VerificationResultStr =
-          FORMAT(L"%s (%s)",
-            (LoadStr(CERT_ERR_UNKNOWN), X509_verify_cert_error_string(Data.VerificationResult)));
-        break;
+      RequestResult = 0;
     }
-
-    // TryWindowsSystemCertificateStore is set for the same set of failures
-    // as trigger NE_SSL_UNTRUSTED flag in ne_openssl.c's verify_callback()
-    if (!VerificationResult && TryWindowsSystemCertificateStore)
+    else
     {
-      if (WindowsValidateCertificate(Data.Certificate, Data.CertificateLen))
+      UnicodeString CertificateSubject = Data.Subject.Organization;
+      FTerminal->LogEvent(FORMAT(L"Verifying certificate for \"%s\" with fingerprint %s and %d failures", (CertificateSubject, FSessionInfo.CertificateFingerprint, Data.VerificationResult)));
+
+      bool VerificationResult = false;
+      bool TryWindowsSystemCertificateStore = false;
+      UnicodeString VerificationResultStr;
+      switch (Data.VerificationResult)
       {
-        FTerminal->LogEvent(L"Certificate verified against Windows certificate store");
-        VerificationResult = true;
+        case X509_V_OK:
+          VerificationResult = true;
+          break;
+        case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
+          VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_GET_ISSUER_CERT);
+          TryWindowsSystemCertificateStore = true;
+          break;
+        case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
+          VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE);
+          break;
+        case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
+          VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY);
+          break;
+        case X509_V_ERR_CERT_SIGNATURE_FAILURE:
+          VerificationResultStr = LoadStr(CERT_ERR_CERT_SIGNATURE_FAILURE);
+          break;
+        case X509_V_ERR_CERT_NOT_YET_VALID:
+          VerificationResultStr = LoadStr(CERT_ERR_CERT_NOT_YET_VALID);
+          break;
+        case X509_V_ERR_CERT_HAS_EXPIRED:
+          VerificationResultStr = LoadStr(CERT_ERR_CERT_HAS_EXPIRED);
+          break;
+        case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
+          VerificationResultStr = LoadStr(CERT_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD);
+          break;
+        case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
+          VerificationResultStr = LoadStr(CERT_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD);
+          break;
+        case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
+          VerificationResultStr = LoadStr(CERT_ERR_DEPTH_ZERO_SELF_SIGNED_CERT);
+          TryWindowsSystemCertificateStore = true;
+          break;
+        case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
+          VerificationResultStr = LoadStr(CERT_ERR_SELF_SIGNED_CERT_IN_CHAIN);
+          TryWindowsSystemCertificateStore = true;
+          break;
+        case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
+          VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY);
+          TryWindowsSystemCertificateStore = true;
+          break;
+        case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
+          VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE);
+          TryWindowsSystemCertificateStore = true;
+          break;
+        case X509_V_ERR_INVALID_CA:
+          VerificationResultStr = LoadStr(CERT_ERR_INVALID_CA);
+          break;
+        case X509_V_ERR_PATH_LENGTH_EXCEEDED:
+          VerificationResultStr = LoadStr(CERT_ERR_PATH_LENGTH_EXCEEDED);
+          break;
+        case X509_V_ERR_INVALID_PURPOSE:
+          VerificationResultStr = LoadStr(CERT_ERR_INVALID_PURPOSE);
+          break;
+        case X509_V_ERR_CERT_UNTRUSTED:
+          VerificationResultStr = LoadStr(CERT_ERR_CERT_UNTRUSTED);
+          TryWindowsSystemCertificateStore = true;
+          break;
+        case X509_V_ERR_CERT_REJECTED:
+          VerificationResultStr = LoadStr(CERT_ERR_CERT_REJECTED);
+          break;
+        case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
+          VerificationResultStr = LoadStr(CERT_ERR_KEYUSAGE_NO_CERTSIGN);
+          break;
+        case X509_V_ERR_CERT_CHAIN_TOO_LONG:
+          VerificationResultStr = LoadStr(CERT_ERR_CERT_CHAIN_TOO_LONG);
+          break;
+        default:
+          VerificationResultStr =
+            FORMAT(L"%s (%s)",
+              (LoadStr(CERT_ERR_UNKNOWN), X509_verify_cert_error_string(Data.VerificationResult)));
+          break;
       }
-    }
 
-    UnicodeString Summary;
-    if (!VerificationResult)
-    {
-      Summary = VerificationResultStr + L" " + FMTLOAD(CERT_ERRDEPTH, (Data.VerificationDepth + 1));
-    }
+      // TryWindowsSystemCertificateStore is set for the same set of failures
+      // as trigger NE_SSL_UNTRUSTED flag in ne_openssl.c's verify_callback()
+      if (!VerificationResult && TryWindowsSystemCertificateStore)
+      {
+        if (WindowsValidateCertificate(Data.Certificate, Data.CertificateLen))
+        {
+          FTerminal->LogEvent(L"Certificate verified against Windows certificate store");
+          VerificationResult = true;
+        }
+      }
 
-    if (IsIPAddress(FTerminal->SessionData->HostNameExpanded))
-    {
-      VerificationResult = false;
-      AddToList(Summary, FMTLOAD(CERT_IP_CANNOT_VERIFY, (FTerminal->SessionData->HostNameExpanded)), L"\n\n");
-    }
-    else if (!VerifyCertificateHostName(Data))
-    {
-      VerificationResult = false;
-      AddToList(Summary, FMTLOAD(CERT_NAME_MISMATCH, (FTerminal->SessionData->HostNameExpanded)), L"\n\n");
-    }
+      UnicodeString Summary;
+      if (!VerificationResult)
+      {
+        Summary = VerificationResultStr + L" " + FMTLOAD(CERT_ERRDEPTH, (Data.VerificationDepth + 1));
+      }
 
-    if (VerificationResult)
-    {
-      Summary = LoadStr(CERT_OK);
-    }
+      if (IsIPAddress(FTerminal->SessionData->HostNameExpanded))
+      {
+        VerificationResult = false;
+        AddToList(Summary, FMTLOAD(CERT_IP_CANNOT_VERIFY, (FTerminal->SessionData->HostNameExpanded)), L"\n\n");
+      }
+      else if (!VerifyCertificateHostName(Data))
+      {
+        VerificationResult = false;
+        AddToList(Summary, FMTLOAD(CERT_NAME_MISMATCH, (FTerminal->SessionData->HostNameExpanded)), L"\n\n");
+      }
 
-    FSessionInfo.Certificate =
-      FMTLOAD(CERT_TEXT, (
-        FormatContact(Data.Issuer),
-        FormatContact(Data.Subject),
-        FormatValidityTime(Data.ValidFrom),
-        FormatValidityTime(Data.ValidUntil),
-        FSessionInfo.CertificateFingerprint,
-        Summary));
+      if (VerificationResult)
+      {
+        Summary = LoadStr(CERT_OK);
+      }
 
-    RequestResult = 0;
+      FSessionInfo.Certificate =
+        FMTLOAD(CERT_TEXT, (
+          FormatContact(Data.Issuer),
+          FormatContact(Data.Subject),
+          FormatValidityTime(Data.ValidFrom),
+          FormatValidityTime(Data.ValidUntil),
+          FSessionInfo.CertificateFingerprint,
+          Summary));
 
-    if (VerificationResult)
-    {
-      RequestResult = 1;
-    }
+      RequestResult = 0;
 
-    UnicodeString SiteKey = FTerminal->SessionData->SiteKey;
-    if (RequestResult == 0)
-    {
-      if (FTerminal->VerifyCertificate(CertificateStorageKey, SiteKey,
-            FSessionInfo.CertificateFingerprint, CertificateSubject, Data.VerificationResult))
+      if (VerificationResult)
       {
         RequestResult = 1;
       }
-    }
 
-    if (RequestResult == 0)
-    {
-      TClipboardHandler ClipboardHandler;
-      ClipboardHandler.Text = FSessionInfo.CertificateFingerprint;
-
-      TQueryButtonAlias Aliases[1];
-      Aliases[0].Button = qaRetry;
-      Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
-      Aliases[0].OnClick = &ClipboardHandler.Copy;
-
-      TQueryParams Params(qpWaitInBatch);
-      Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;
-      Params.NoBatchAnswers = qaYes | qaRetry;
-      Params.Aliases = Aliases;
-      Params.AliasesCount = LENOF(Aliases);
-      unsigned int Answer = FTerminal->QueryUser(
-        FMTLOAD(VERIFY_CERT_PROMPT3, (FSessionInfo.Certificate)),
-        NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
-
-      switch (Answer)
+      UnicodeString SiteKey = FTerminal->SessionData->SiteKey;
+      if (RequestResult == 0)
       {
-        case qaYes:
-          // 2 = always, as used by FZ's VerifyCertDlg.cpp,
-          // however FZAPI takes all non-zero values equally
-          RequestResult = 2;
-          break;
-
-        case qaNo:
+        if (FTerminal->VerifyCertificate(CertificateStorageKey, SiteKey,
+              FSessionInfo.CertificateFingerprint, CertificateSubject, Data.VerificationResult))
+        {
           RequestResult = 1;
-          break;
-
-        case qaCancel:
-          FTerminal->Configuration->Usage->Inc(L"HostNotVerified");
-          RequestResult = 0;
-          break;
-
-        default:
-          DebugFail();
-          RequestResult = 0;
-          break;
+        }
       }
 
-      if (RequestResult == 2)
+      if (RequestResult == 0)
       {
-        FTerminal->CacheCertificate(
-          CertificateStorageKey, SiteKey,
-          FSessionInfo.CertificateFingerprint, Data.VerificationResult);
-      }
-    }
+        TClipboardHandler ClipboardHandler;
+        ClipboardHandler.Text = FSessionInfo.CertificateFingerprint;
 
-    // Cache only if the certificate was not automatically accepted
-    if (!VerificationResult && (RequestResult != 0))
-    {
-      FTerminal->Configuration->RememberLastFingerprint(
-        FTerminal->SessionData->SiteKey, TlsFingerprintType, FSessionInfo.CertificateFingerprint);
+        TQueryButtonAlias Aliases[1];
+        Aliases[0].Button = qaRetry;
+        Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
+        Aliases[0].OnClick = &ClipboardHandler.Copy;
+
+        TQueryParams Params(qpWaitInBatch);
+        Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;
+        Params.NoBatchAnswers = qaYes | qaRetry;
+        Params.Aliases = Aliases;
+        Params.AliasesCount = LENOF(Aliases);
+        unsigned int Answer = FTerminal->QueryUser(
+          FMTLOAD(VERIFY_CERT_PROMPT3, (FSessionInfo.Certificate)),
+          NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
+
+        switch (Answer)
+        {
+          case qaYes:
+            // 2 = always, as used by FZ's VerifyCertDlg.cpp,
+            // however FZAPI takes all non-zero values equally
+            RequestResult = 2;
+            break;
+
+          case qaNo:
+            RequestResult = 1;
+            break;
+
+          case qaCancel:
+            FTerminal->Configuration->Usage->Inc(L"HostNotVerified");
+            RequestResult = 0;
+            break;
+
+          default:
+            DebugFail();
+            RequestResult = 0;
+            break;
+        }
+
+        if (RequestResult == 2)
+        {
+          FTerminal->CacheCertificate(
+            CertificateStorageKey, SiteKey,
+            FSessionInfo.CertificateFingerprint, Data.VerificationResult);
+        }
+      }
+
+      // Cache only if the certificate was not automatically accepted
+      if (!VerificationResult && (RequestResult != 0))
+      {
+        FTerminal->Configuration->RememberLastFingerprint(
+          FTerminal->SessionData->SiteKey, TlsFingerprintType, FSessionInfo.CertificateFingerprint);
+      }
     }
 
     return true;

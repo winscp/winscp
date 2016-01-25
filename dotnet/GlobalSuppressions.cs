@@ -78,7 +78,7 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "WinSCP.Logger.#WriteLine(System.String)")]
 [assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.Logger.#WriteEnvironmentInfo()")]
 [assembly: SuppressMessage("Microsoft.Design", "CA1003:UseGenericEventHandlerInstances", Scope = "type", Target = "WinSCP.OutputDataReceivedEventHandler")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.ExeSessionProcess.#.ctor(WinSCP.Session,System.String,System.String)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.ExeSessionProcess.#.ctor(WinSCP.Session,System.Boolean,System.String)")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.ExeSessionProcess.#CreateEvent(System.String)")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources", Scope = "member", Target = "WinSCP.ConsoleCommStruct.#_ptr")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.ExeSessionProcess.#InitializeConsole()")]
@@ -158,3 +158,4 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.ExeSessionProcess.#CreateFileMapping(System.String)")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.Logger.#CreateCounters()")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.SessionLogReader.#LogContents()")]
+[assembly: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope = "member", Target = "WinSCP.Session.#SessionOptionsToSwitches(WinSCP.SessionOptions,System.Boolean)")]

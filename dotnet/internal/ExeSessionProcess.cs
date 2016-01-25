@@ -20,7 +20,17 @@ namespace WinSCP
         public bool HasExited { get { return _process.HasExited; } }
         public int ExitCode { get { return _process.ExitCode; } }
 
-        public ExeSessionProcess(Session session)
+        public static ExeSessionProcess CreateForSession(Session session)
+        {
+            return new ExeSessionProcess(session, true, null);
+        }
+
+        public static ExeSessionProcess CreateForConsole(Session session, string additionalArguments)
+        {
+            return new ExeSessionProcess(session, false, additionalArguments);
+        }
+
+        private ExeSessionProcess(Session session, bool useXmlLog, string additionalArguments)
         {
             _session = session;
             _logger = session.Logger;
@@ -64,7 +74,15 @@ namespace WinSCP
                     logSwitch = string.Format(CultureInfo.InvariantCulture, "/log=\"{0}\" ", LogPathEscape(_session.SessionLogPath));
                 }
 
-                string xmlLogSwitch = string.Format(CultureInfo.InvariantCulture, "/xmllog=\"{0}\" ", LogPathEscape(_session.XmlLogPath));
+                string xmlLogSwitch;
+                if (useXmlLog)
+                {
+                    xmlLogSwitch = string.Format(CultureInfo.InvariantCulture, "/xmllog=\"{0}\" /xmlgroups ", LogPathEscape(_session.XmlLogPath));
+                }
+                else
+                {
+                    xmlLogSwitch = "";
+                }
 
                 string assemblyVersionStr =
                     (assemblyVersion == null) ? "unk" :
@@ -74,10 +92,15 @@ namespace WinSCP
                     string.Format(CultureInfo.InvariantCulture, "/dotnet={0} ", assemblyVersionStr);
 
                 string arguments =
-                    xmlLogSwitch + "/xmlgroups /nointeractiveinput " + assemblyVersionSwitch +
+                    xmlLogSwitch + "/nointeractiveinput " + assemblyVersionSwitch +
                     configSwitch + logSwitch + _session.AdditionalExecutableArguments;
 
                 Tools.AddRawParameters(ref arguments, _session.RawConfiguration, "/rawconfig");
+
+                if (!string.IsNullOrEmpty(additionalArguments))
+                {
+                    arguments += " " + additionalArguments;
+                }
 
                 _process = new Process();
                 _process.StartInfo.FileName = executablePath;
@@ -120,6 +143,7 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
+                // The /console is redundant for CreateForConsole
                 _process.StartInfo.Arguments += string.Format(CultureInfo.InvariantCulture, " /console /consoleinstance={0}", _instanceName);
 
                 // When running under IIS in "impersonated" mode, the process starts, but does not do anything.

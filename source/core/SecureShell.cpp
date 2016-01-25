@@ -124,6 +124,11 @@ const TSessionInfo & __fastcall TSecureShell::GetSessionInfo()
   return FSessionInfo;
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall TSecureShell::GetHostKeyFingerprint()
+{
+  return FSessionInfo.HostKeyFingerprint;
+}
+//---------------------------------------------------------------------
 Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
 {
   Conf * conf = conf_new();
@@ -2101,6 +2106,12 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
   GetRealHost(Host, Port);
 
   FSessionInfo.HostKeyFingerprint = Fingerprint;
+
+  if (FSessionData->FingerprintScan)
+  {
+    Abort();
+  }
+
   UnicodeString NormalizedFingerprint = NormalizeFingerprint(Fingerprint);
 
   bool Result = false;

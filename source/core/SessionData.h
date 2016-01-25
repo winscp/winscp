@@ -196,6 +196,7 @@ private:
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FHostKey;
+  bool FFingerprintScan;
   bool FOverrideCachedHostKey;
   UnicodeString FNote;
 
@@ -575,6 +576,7 @@ public:
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString HostKey = { read = FHostKey, write = SetHostKey };
+  __property bool FingerprintScan = { read = FFingerprintScan, write = FFingerprintScan };
   __property bool OverrideCachedHostKey = { read = FOverrideCachedHostKey };
   __property UnicodeString Note = { read = FNote, write = SetNote };
   __property UnicodeString StorageKey = { read = GetStorageKey };

@@ -89,6 +89,7 @@ BEGIN
         UPDATE_TOO_LOW, "Your donation is below the limit required to enable automatic updates."
         TIPS_NONE, "No tips."
         KEYGEN_PUBLIC, "Converting public keys is not supported."
+        FINGERPRINTSCAN_NEED_SECURE_SESSION, "Secure session (SSH or TLS/SSL) not specified."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"

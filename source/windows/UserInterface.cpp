@@ -1267,6 +1267,16 @@ void __fastcall MessageWithNoHelp(const UnicodeString & Message)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall CheckLogParam(TProgramParams * Params)
+{
+  UnicodeString LogFile;
+  if (Params->FindSwitch(LOG_SWITCH, LogFile) && CheckSafe(Params))
+  {
+    Configuration->Usage->Inc(L"ScriptLog");
+    Configuration->TemporaryLogging(LogFile);
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall CheckXmlLogParam(TProgramParams * Params)
 {
   UnicodeString LogFile;

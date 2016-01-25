@@ -39,6 +39,21 @@ void TrimNewLine(UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
+static bool __fastcall ExceptionConsoleMessage(Exception * E, UnicodeString & Message)
+{
+  bool Result = ExceptionMessage(E, Message);
+  if (Result)
+  {
+    Message += L"\n";
+    ExtException * EE = dynamic_cast<ExtException *>(E);
+    if ((EE != NULL) && (EE->MoreMessages != NULL))
+    {
+      Message += EE->MoreMessages->Text + L"\n";
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 class TConsole
 {
 public:
@@ -1741,15 +1756,10 @@ void __fastcall TConsoleRunner::DoShowException(TTerminal * Terminal, Exception 
   }
 
   UnicodeString Message;
-  if (ExceptionMessage(E, Message))
+  if (ExceptionConsoleMessage(E, Message))
   {
     FCommandError = true;
     PrintMessage(Message);
-    ExtException * EE = dynamic_cast<ExtException *>(E);
-    if ((EE != NULL) && (EE->MoreMessages != NULL))
-    {
-      PrintMessage(EE->MoreMessages->Text);
-    }
   }
 
   TTerminal * LoggingTerminal = Terminal;
@@ -2222,6 +2232,16 @@ void __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
   }
 }
 //---------------------------------------------------------------------------
+static int __fastcall HandleException(TConsole * Console, Exception & E)
+{
+  UnicodeString Message;
+  if (ExceptionConsoleMessage(&E, Message))
+  {
+    Console->Print(Message);
+  }
+  return RESULT_ANY_ERROR;
+}
+//---------------------------------------------------------------------------
 bool __fastcall FindPuttygenCompatibleSwitch(
   TProgramParams * Params, const UnicodeString & Name, const UnicodeString & PuttygenName, UnicodeString & Value, bool & Set)
 {
@@ -2375,23 +2395,50 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
   }
   catch (Exception & E)
   {
-    UnicodeString Message;
-    if (ExceptionMessage(&E, Message))
-    {
-      ConsolePrintLine(Console, Message);
-      ExtException * EE = dynamic_cast<ExtException *>(&E);
-      if ((EE != NULL) && (EE->MoreMessages != NULL))
-      {
-        ConsolePrintLine(Console, EE->MoreMessages->Text);
-      }
-    }
-    Result = RESULT_ANY_ERROR;
+    Result = HandleException(Console, E);
   }
 
   Shred(Passphrase);
   Shred(NewPassphrase);
 
   Console->WaitBeforeExit();
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall FingerprintScan(TConsole * Console, TProgramParams * Params)
+{
+  int Result = RESULT_SUCCESS;
+  try
+  {
+    CheckLogParam(Params);
+
+    std::unique_ptr<TSessionData> SessionData;
+
+    if (Params->ParamCount > 0)
+    {
+      UnicodeString SessionUrl = Params->Param[1];
+      bool DefaultsOnly;
+      SessionData.reset(StoredSessions->ParseUrl(SessionUrl, Params, DefaultsOnly));
+      if (DefaultsOnly || !SessionData->CanLogin ||
+          (!SessionData->UsesSsh && (SessionData->Ftps == ftpsNone)))
+      {
+        SessionData.reset(NULL);
+      }
+    }
+
+    if (!SessionData)
+    {
+      throw Exception(LoadStr(FINGERPRINTSCAN_NEED_SECURE_SESSION));
+    }
+
+    std::unique_ptr<TTerminal> Terminal(new TTerminal(SessionData.get(), Configuration));
+    ConsolePrintLine(Console, Terminal->FingerprintScan());
+  }
+  catch (Exception & E)
+  {
+    Result = HandleException(Console, E);
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -2447,6 +2494,14 @@ int __fastcall Console(TConsoleMode Mode)
         Result = KeyGen(Console, Params);
       }
     }
+    else if (Mode == cmFingerprintScan)
+    {
+      if (CheckSafe(Params))
+      {
+        Configuration->Usage->Inc(L"FingerprintScan");
+        Result = FingerprintScan(Console, Params);
+      }
+    }
     else
     {
       Runner = new TConsoleRunner(Console);
@@ -2486,12 +2541,7 @@ int __fastcall Console(TConsoleMode Mode)
         bool DefaultsOnly;
         delete StoredSessions->ParseUrl(Session, Params, DefaultsOnly);
 
-        UnicodeString LogFile;
-        if (Params->FindSwitch(LOG_SWITCH, LogFile) && CheckSafe(Params))
-        {
-          Configuration->Usage->Inc(L"ScriptLog");
-          Configuration->TemporaryLogging(LogFile);
-        }
+        CheckLogParam(Params);
         CheckXmlLogParam(Params);
 
         Result = Runner->Run(Session, Params,

@@ -136,6 +136,7 @@ void __fastcall TSessionData::Default()
   SendBuf = DefaultSendBuf;
   SshSimple = true;
   HostKey = L"";
+  FingerprintScan = false;
   FOverrideCachedHostKey = true;
   Note = L"";
 
@@ -288,6 +289,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(RekeyData); \
   PROPERTY(RekeyTime); \
   PROPERTY(HostKey); \
+  PROPERTY(FingerprintScan); \
   \
   PROPERTY(UpdateDirectories); \
   PROPERTY(CacheDirectories); \

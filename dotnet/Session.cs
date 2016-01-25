@@ -176,7 +176,7 @@ namespace WinSCP
                 {
                     SetupTempPath();
 
-                    _process = new ExeSessionProcess(this);
+                    _process = ExeSessionProcess.CreateForSession(this);
 
                     _process.OutputDataReceived += ProcessOutputDataReceived;
 
@@ -203,7 +203,10 @@ namespace WinSCP
 
                     string command;
                     string log;
-                    SessionOptionsToOpenCommand(sessionOptions, out command, out log);
+                    SessionOptionsToUrlAndSwitches(sessionOptions, false, out command, out log);
+                    const string openCommand = "open ";
+                    command = openCommand + command;
+                    log = openCommand + log;
                     WriteCommand(command, log);
 
                     string logExplanation =
@@ -278,6 +281,65 @@ namespace WinSCP
                     Cleanup();
                     throw;
                 }
+            }
+        }
+
+        public string ScanFingerprint(SessionOptions sessionOptions)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                string result;
+
+                CheckNotDisposed();
+
+                if (Opened)
+                {
+                    throw new InvalidOperationException("Session is already opened");
+                }
+
+                try
+                {
+                    string command;
+                    string log; // unused
+                    SessionOptionsToUrlAndSwitches(sessionOptions, true, out command, out log);
+
+                    string additionalArguments = "/fingerprintscan " + command;
+
+                    _process = ExeSessionProcess.CreateForConsole(this, additionalArguments);
+
+                    _process.OutputDataReceived += ProcessOutputDataReceived;
+
+                    _process.Start();
+
+                    GotOutput();
+
+                    while (!_process.HasExited)
+                    {
+                        Thread.Sleep(50);
+
+                        CheckForTimeout();
+                    }
+
+
+                    string output = string.Join(Environment.NewLine, new List<string>(Output).ToArray());
+                    if (_process.ExitCode == 0)
+                    {
+                        result = output;
+                    }
+                    else
+                    {
+                        throw new SessionRemoteException(this, output);
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    Logger.WriteLine("Exception: {0}", e);
+                    Cleanup();
+                    throw;
+                }
+
+                return result;
             }
         }
 
@@ -1160,7 +1222,7 @@ namespace WinSCP
             }
         }
 
-        private void SessionOptionsToOpenCommand(SessionOptions sessionOptions, out string command, out string log)
+        private void SessionOptionsToUrlAndSwitches(SessionOptions sessionOptions, bool scanFingerprint, out string command, out string log)
         {
             using (Logger.CreateCallstack())
             {
@@ -1202,16 +1264,24 @@ namespace WinSCP
                         throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", sessionOptions.Protocol));
                 }
 
-                bool hasUsername = !string.IsNullOrEmpty(sessionOptions.UserName);
-                if (hasUsername)
+                bool hasUsername;
+                if (!scanFingerprint)
                 {
-                    head += UriEscape(sessionOptions.UserName);
+                    hasUsername = !string.IsNullOrEmpty(sessionOptions.UserName);
+                    if (hasUsername)
+                    {
+                        head += UriEscape(sessionOptions.UserName);
+                    }
+                }
+                else
+                {
+                    hasUsername = false;
                 }
 
                 string url = head;
                 string logUrl = head;
 
-                if (sessionOptions.SecurePassword != null)
+                if ((sessionOptions.SecurePassword != null) && !scanFingerprint)
                 {
                     if (!hasUsername)
                     {
@@ -1242,7 +1312,7 @@ namespace WinSCP
                     tail += ":" + sessionOptions.PortNumber.ToString(CultureInfo.InvariantCulture);
                 }
 
-                if (!string.IsNullOrEmpty(sessionOptions.WebdavRoot))
+                if (!string.IsNullOrEmpty(sessionOptions.WebdavRoot) && !scanFingerprint)
                 {
                     if (sessionOptions.Protocol != Protocol.Webdav)
                     {
@@ -1255,7 +1325,7 @@ namespace WinSCP
                 url += tail;
                 logUrl += tail;
 
-                string arguments = SessionOptionsToOpenSwitches(sessionOptions);
+                string arguments = SessionOptionsToSwitches(sessionOptions, scanFingerprint);
 
                 Tools.AddRawParameters(ref arguments, sessionOptions.RawSettings, "-rawsettings");
 
@@ -1265,19 +1335,19 @@ namespace WinSCP
                 }
 
                 // Switches should (and particularly the -rawsettings MUST) come after the URL
-                command = "open \"" + Tools.ArgumentEscape(url) + "\"" + arguments;
-                log = "open \"" + Tools.ArgumentEscape(logUrl) + "\"" + arguments;
+                command = "\"" + Tools.ArgumentEscape(url) + "\"" + arguments;
+                log = "\"" + Tools.ArgumentEscape(logUrl) + "\"" + arguments;
             }
         }
 
-        private string SessionOptionsToOpenSwitches(SessionOptions sessionOptions)
+        private string SessionOptionsToSwitches(SessionOptions sessionOptions, bool scanFingerprint)
         {
             using (Logger.CreateCallstack())
             {
                 List<string> switches = new List<string>();
 
                 if (!string.IsNullOrEmpty(sessionOptions.SshHostKeyFingerprint) ||
-                    sessionOptions.GiveUpSecurityAndAcceptAnySshHostKey)
+                    (sessionOptions.GiveUpSecurityAndAcceptAnySshHostKey && !scanFingerprint))
                 {
                     if (!sessionOptions.IsSsh)
                     {
@@ -1293,13 +1363,13 @@ namespace WinSCP
                 }
                 else
                 {
-                    if (sessionOptions.IsSsh && DefaultConfigurationInternal)
+                    if (sessionOptions.IsSsh && DefaultConfigurationInternal && !scanFingerprint)
                     {
                         throw new ArgumentException("SessionOptions.Protocol is Protocol.Sftp or Protocol.Scp, but SessionOptions.SshHostKeyFingerprint is not set.");
                     }
                 }
 
-                if (!string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath))
+                if (!string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && !scanFingerprint)
                 {
                     if (!sessionOptions.IsSsh)
                     {
@@ -1308,7 +1378,7 @@ namespace WinSCP
                     switches.Add(FormatSwitch("privatekey", sessionOptions.SshPrivateKeyPath));
                 }
 
-                if (!string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
+                if (!string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath) && !scanFingerprint)
                 {
                     if (!sessionOptions.IsTls)
                     {
@@ -1317,7 +1387,7 @@ namespace WinSCP
                     switches.Add(FormatSwitch("clientcert", sessionOptions.TlsClientCertificatePath));
                 }
 
-                if (!string.IsNullOrEmpty(sessionOptions.PrivateKeyPassphrase))
+                if (!string.IsNullOrEmpty(sessionOptions.PrivateKeyPassphrase) && !scanFingerprint)
                 {
                     if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
                     {
@@ -1348,8 +1418,9 @@ namespace WinSCP
                     }
                 }
 
-                if (!string.IsNullOrEmpty(sessionOptions.TlsHostCertificateFingerprint) ||
-                    sessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate)
+                if ((!string.IsNullOrEmpty(sessionOptions.TlsHostCertificateFingerprint) ||
+                     sessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate) &&
+                    !scanFingerprint)
                 {
                     if (!sessionOptions.IsTls)
                     {
@@ -1364,7 +1435,7 @@ namespace WinSCP
                     switches.Add(FormatSwitch("certificate", tlsHostCertificateFingerprint));
                 }
 
-                if (sessionOptions.Protocol == Protocol.Ftp)
+                if ((sessionOptions.Protocol == Protocol.Ftp) && !scanFingerprint)
                 {
                     switches.Add(FormatSwitch("passive", (sessionOptions.FtpMode == FtpMode.Passive)));
                 }

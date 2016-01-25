@@ -206,6 +206,7 @@ private:
   bool FRememberedPasswordTried;
   bool FRememberedTunnelPasswordTried;
   int FNesting;
+  UnicodeString FFingerprintScanned;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -398,6 +399,7 @@ public:
   __fastcall ~TTerminal();
   void __fastcall Open();
   void __fastcall Close();
+  UnicodeString __fastcall FingerprintScan();
   void __fastcall Reopen(int Params);
   virtual void __fastcall DirectoryModified(const UnicodeString Path, bool SubDirs);
   virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);

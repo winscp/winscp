@@ -36,6 +36,7 @@ const int mpAllowContinueOnError = 0x02;
 #define KEYGEN_CHANGE_PASSPHRASE_SWITCH L"ChangePassphrase"
 #define LOG_SWITCH L"Log"
 #define INI_SWITCH L"Ini"
+#define FINGERPRINTSCAN_SWITCH L"FingerprintScan"
 
 struct TMessageParams
 {
@@ -84,6 +85,7 @@ void __fastcall MessageWithNoHelp(const UnicodeString & Message);
 
 class TProgramParams;
 bool __fastcall CheckSafe(TProgramParams * Params);
+void __fastcall CheckLogParam(TProgramParams * Params);
 bool __fastcall CheckXmlLogParam(TProgramParams * Params);
 
 UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent);
@@ -384,7 +386,7 @@ void __fastcall InsertPanelToMessageDialog(TCustomForm * Form, TPanel * Panel);
 void __fastcall NavigateMessageDialogToUrl(TCustomForm * Form, const UnicodeString & Url);
 
 // windows\Console.cpp
-enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen };
+enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan };
 int __fastcall Console(TConsoleMode Mode);
 
 // forms\EditorPreferences.cpp

@@ -864,6 +864,27 @@ void __fastcall TTerminal::ResetConnection()
   // as they can still be referenced in the GUI atm
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminal::FingerprintScan()
+{
+  SessionData->FingerprintScan = true;
+  try
+  {
+    Open();
+    // we should never get here
+    Abort();
+  }
+  catch (...)
+  {
+    if (!FFingerprintScanned.IsEmpty())
+    {
+      return FFingerprintScanned;
+    }
+    throw;
+  }
+  DebugFail();
+  return UnicodeString();
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::Open()
 {
   TAutoNestingCounter OpeningCounter(FOpening);
@@ -944,6 +965,10 @@ void __fastcall TTerminal::Open()
                 catch(Exception & E)
                 {
                   DebugAssert(!FSecureShell->Active);
+                  if (SessionData->FingerprintScan)
+                  {
+                    FFingerprintScanned = FSecureShell->GetHostKeyFingerprint();
+                  }
                   if (!FSecureShell->Active && !FTunnelError.IsEmpty())
                   {
                     // the only case where we expect this to happen
@@ -1024,6 +1049,11 @@ void __fastcall TTerminal::Open()
         {
           delete FDirectoryChangesCache;
           FDirectoryChangesCache = NULL;
+        }
+        if (SessionData->FingerprintScan && (FFileSystem != NULL) &&
+            DebugAlwaysTrue(SessionData->Ftps != ftpsNone))
+        {
+          FFingerprintScanned = FFileSystem->GetSessionInfo().CertificateFingerprint;
         }
         throw;
       }
