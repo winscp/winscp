@@ -1987,6 +1987,11 @@ void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
          ((FServerCapabilities->GetCapability(mdtm_command) == yes))))
     {
       TTouchSessionAction TouchAction(FTerminal->ActionLog, DestFullName, Modification);
+
+      if (!FFileZillaIntf->UsingMlsd())
+      {
+        FUploadedTimes[DestFullName] = Modification;
+      }
     }
 
     FTerminal->LogFileDone(OperationProgress);
@@ -4487,6 +4492,27 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
         TDateTime Modification;
         TModificationFmt ModificationFmt;
         RemoteFileTimeToDateTimeAndPrecision(Entry->Time, Modification, ModificationFmt);
+
+        if (ModificationFmt != mfFull)
+        {
+          UnicodeString FullPath = UnixIncludeTrailingBackslash(Path) + File->FileName;
+          TUploadedTimes::iterator Iterator = FUploadedTimes.find(FullPath);
+          if (Iterator != FUploadedTimes.end())
+          {
+            TDateTime UploadModification = Iterator->second;
+            TDateTime UploadModificationReduced = ReduceDateTimePrecision(UploadModification, ModificationFmt);
+            if (UploadModificationReduced == Modification)
+            {
+              Modification = UploadModification;
+              ModificationFmt = mfFull;
+            }
+            else
+            {
+              FUploadedTimes.erase(Iterator);
+            }
+          }
+        }
+
         File->Modification = Modification;
         File->ModificationFmt = ModificationFmt;
         File->LastAccess = File->Modification;
