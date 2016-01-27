@@ -239,6 +239,7 @@ class TCustomCommandType;
 class TShortCuts;
 enum TCustomCommandsMode { ccmAdd, ccmEdit, ccmAdHoc };
 const ccoDisableRemote = 0x01;
+const ccoDisableRemoteFiles = 0x02;
 typedef void __fastcall (__closure *TCustomCommandValidate)
   (const TCustomCommandType & Command);
 bool __fastcall DoCustomCommandDialog(TCustomCommandType & Command,

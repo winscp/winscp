@@ -1627,7 +1627,7 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     else
     {
       // other local custom commands can be executed only on remote side
-      Result = (FCurrentSide == osRemote) && EnableSelectedOperation[osRemote];
+      Result = EnableSelectedOperation[FCurrentSide];
     }
   }
 
@@ -1700,21 +1700,22 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
     UnicodeString Command = InteractiveCustomCommand.Complete(ACommand.Command, false);
 
+    bool FileListCommand = LocalCustomCommand.IsFileListCommand(Command);
+    bool LocalFileCommand = LocalCustomCommand.HasLocalFileName(Command);
+
     Configuration->Usage->Inc(L"LocalCustomCommandRuns2");
 
     if (!LocalCustomCommand.IsFileCommand(Command))
     {
       ExecuteShellAndWait(LocalCustomCommand.Complete(Command, true));
     }
-    else
+    // remote files?
+    else if ((FCurrentSide == osRemote) || LocalFileCommand)
     {
       TStrings * LocalFileList = NULL;
       TStrings * RemoteFileList = NULL;
       try
       {
-        bool FileListCommand = LocalCustomCommand.IsFileListCommand(Command);
-        bool LocalFileCommand = LocalCustomCommand.HasLocalFileName(Command);
-
         if (LocalFileCommand)
         {
           if (ALocalFileList == NULL)
@@ -1923,6 +1924,75 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
         {
           delete LocalFileList;
         }
+      }
+    }
+    // local files
+    else
+    {
+      std::unique_ptr<TStrings> SelectedFileList(DirView(osLocal)->CreateFileList(false, true, NULL));
+
+      std::unique_ptr<TStrings> LocalFileList(new TStringList());
+
+      for (int Index = 0; Index < SelectedFileList->Count; Index++)
+      {
+        UnicodeString FileName = SelectedFileList->Strings[Index];
+        if (DirectoryExists(FileName))
+        {
+          if (FLAGSET(ACommand.Params, ccApplyToDirectories))
+          {
+            LocalFileList->Add(FileName);
+          }
+
+          if (FLAGSET(ACommand.Params, ccRecursive))
+          {
+            TMakeLocalFileListParams MakeFileListParam;
+            MakeFileListParam.FileList = LocalFileList.get();
+            MakeFileListParam.FileTimes = NULL;
+            MakeFileListParam.IncludeDirs = FLAGSET(ACommand.Params, ccApplyToDirectories);
+            MakeFileListParam.Recursive = true;
+
+            ProcessLocalDirectory(FileName, Terminal->MakeLocalFileList, &MakeFileListParam);
+          }
+        }
+        else
+        {
+          LocalFileList->Add(FileName);
+        }
+      }
+
+      TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
+
+      Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : LocalFileList->Count);
+      DebugAssert(FProgressForm != NULL);
+      FProgressForm->ReadOnly = true;
+
+      try
+      {
+        if (FileListCommand)
+        {
+          UnicodeString FileList = MakeFileList(LocalFileList.get());
+          TCustomCommandData Data(FTerminal);
+          TLocalCustomCommand CustomCommand(
+            Data, Terminal->CurrentDirectory,
+            L"", L"", FileList);
+          ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+        }
+        else
+        {
+          for (int Index = 0; Index < LocalFileList->Count; Index++)
+          {
+            UnicodeString FileName = LocalFileList->Strings[Index];
+            TCustomCommandData Data(FTerminal);
+            TLocalCustomCommand CustomCommand(
+              Data, Terminal->CurrentDirectory,
+              FileName, L"", L"");
+            ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+          }
+        }
+      }
+      __finally
+      {
+        Progress.Stop();
       }
     }
   }
@@ -7732,7 +7802,10 @@ void __fastcall TCustomScpExplorerForm::AdHocCustomCommand(bool OnFocused)
   }
   Command.Name = LoadStr(CUSTOM_COMMAND_AD_HOC_NAME);
   FEditingFocusedAdHocCommand = OnFocused;
-  int Options = FLAGMASK(!RemoteAllowed, ccoDisableRemote);
+  bool LocalSide = (FCurrentSide == osLocal);
+  int Options =
+    FLAGMASK((!RemoteAllowed || LocalSide), ccoDisableRemote) |
+    FLAGMASK(LocalSide, ccoDisableRemoteFiles);
   if (DoCustomCommandDialog(Command, WinConfiguration->CustomCommandList,
        ccmAdHoc, Options, AdHocCustomCommandValidate, NULL))
   {

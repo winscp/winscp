@@ -95,13 +95,15 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner,
     InitializeShortCutCombo(ShortCutCombo, *ShortCuts);
   }
 
-  EnableControl(RemoteCommandButton, FLAGCLEAR(Options, ccoDisableRemote));
+  FOptions = Options;
 
   UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::UpdateControls()
 {
+  EnableControl(RemoteCommandButton, FLAGCLEAR(FOptions, ccoDisableRemote));
+
   UnicodeString Command = CommandEdit->Text;
   EnableControl(OkButton, !Command.IsEmpty() && !DescriptionEdit->Text.IsEmpty());
 
@@ -135,7 +137,9 @@ void __fastcall TCustomCommandDialog::UpdateControls()
   EnableControl(ApplyToDirectoriesCheck, AllowApplyToDirectories);
   EnableControl(ShowResultsCheck, RemoteCommand);
   EnableControl(CopyResultsCheck, RemoteCommand);
-  EnableControl(RemoteFilesCheck, AllowRemoteFiles && (!RecursiveCheck->Enabled || !RecursiveCheck->Checked));
+  EnableControl(RemoteFilesCheck,
+    FLAGCLEAR(FOptions, ccoDisableRemoteFiles) && AllowRemoteFiles &&
+    (!RecursiveCheck->Enabled || !RecursiveCheck->Checked));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::SetParams(int value)
