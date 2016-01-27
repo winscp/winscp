@@ -1991,6 +1991,12 @@ void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
       if (!FFileZillaIntf->UsingMlsd())
       {
         FUploadedTimes[DestFullName] = Modification;
+        if ((FTerminal->Configuration->ActualLogProtocol >= 2))
+        {
+          FTerminal->LogEvent(
+            FORMAT(L"Remembering modification time of \"%s\" as [%s]",
+                   (DestFullName, StandardTimestamp(FUploadedTimes[DestFullName]))));
+        }
       }
     }
 
@@ -4503,11 +4509,23 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
             TDateTime UploadModificationReduced = ReduceDateTimePrecision(UploadModification, ModificationFmt);
             if (UploadModificationReduced == Modification)
             {
+              if ((FTerminal->Configuration->ActualLogProtocol >= 2))
+              {
+                FTerminal->LogEvent(
+                  FORMAT(L"Enriching modification time of \"%s\" from [%s] to [%s]",
+                         (FullPath, StandardTimestamp(Modification), StandardTimestamp(UploadModification))));
+              }
               Modification = UploadModification;
               ModificationFmt = mfFull;
             }
             else
             {
+              if ((FTerminal->Configuration->ActualLogProtocol >= 2))
+              {
+                FTerminal->LogEvent(
+                  FORMAT(L"Remembered modification time [%s]/[%s] of \"%s\" is obsolete, keeping [%s]",
+                         (StandardTimestamp(UploadModification), StandardTimestamp(UploadModificationReduced), FullPath, StandardTimestamp(Modification))));
+              }
               FUploadedTimes.erase(Iterator);
             }
           }
