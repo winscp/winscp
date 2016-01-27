@@ -2424,7 +2424,7 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 
   AutoDetectTimeDifference(FileList);
 
-  if (FTimeDifference != 0) // optimization
+  if ((FTimeDifference != 0) || !FUploadedTimes.empty())// optimization
   {
     for (int Index = 0; Index < FileList->Count; Index++)
     {
@@ -2439,6 +2439,37 @@ void __fastcall TFTPFileSystem::ApplyTimeDifference(TRemoteFile * File)
 {
   DebugAssert(File->Modification == File->LastAccess);
   File->ShiftTimeInSeconds(FTimeDifference);
+
+  if (File->ModificationFmt != mfFull)
+  {
+    TUploadedTimes::iterator Iterator = FUploadedTimes.find(File->FullFileName);
+    if (Iterator != FUploadedTimes.end())
+    {
+      TDateTime UploadModification = Iterator->second;
+      TDateTime UploadModificationReduced = ReduceDateTimePrecision(UploadModification, File->ModificationFmt);
+      if (UploadModificationReduced == File->Modification)
+      {
+        if ((FTerminal->Configuration->ActualLogProtocol >= 2))
+        {
+          FTerminal->LogEvent(
+            FORMAT(L"Enriching modification time of \"%s\" from [%s] to [%s]",
+                   (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UploadModification))));
+        }
+        // implicitly sets ModificationFmt to mfFull
+        File->Modification = UploadModification;
+      }
+      else
+      {
+        if ((FTerminal->Configuration->ActualLogProtocol >= 2))
+        {
+          FTerminal->LogEvent(
+            FORMAT(L"Remembered modification time [%s]/[%s] of \"%s\" is obsolete, keeping [%s]",
+                   (StandardTimestamp(UploadModification), StandardTimestamp(UploadModificationReduced), File->FullFileName, StandardTimestamp(File->Modification))));
+        }
+        FUploadedTimes.erase(Iterator);
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileList)
@@ -4498,39 +4529,6 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
         TDateTime Modification;
         TModificationFmt ModificationFmt;
         RemoteFileTimeToDateTimeAndPrecision(Entry->Time, Modification, ModificationFmt);
-
-        if (ModificationFmt != mfFull)
-        {
-          UnicodeString FullPath = UnixIncludeTrailingBackslash(Path) + File->FileName;
-          TUploadedTimes::iterator Iterator = FUploadedTimes.find(FullPath);
-          if (Iterator != FUploadedTimes.end())
-          {
-            TDateTime UploadModification = Iterator->second;
-            TDateTime UploadModificationReduced = ReduceDateTimePrecision(UploadModification, ModificationFmt);
-            if (UploadModificationReduced == Modification)
-            {
-              if ((FTerminal->Configuration->ActualLogProtocol >= 2))
-              {
-                FTerminal->LogEvent(
-                  FORMAT(L"Enriching modification time of \"%s\" from [%s] to [%s]",
-                         (FullPath, StandardTimestamp(Modification), StandardTimestamp(UploadModification))));
-              }
-              Modification = UploadModification;
-              ModificationFmt = mfFull;
-            }
-            else
-            {
-              if ((FTerminal->Configuration->ActualLogProtocol >= 2))
-              {
-                FTerminal->LogEvent(
-                  FORMAT(L"Remembered modification time [%s]/[%s] of \"%s\" is obsolete, keeping [%s]",
-                         (StandardTimestamp(UploadModification), StandardTimestamp(UploadModificationReduced), FullPath, StandardTimestamp(Modification))));
-              }
-              FUploadedTimes.erase(Iterator);
-            }
-          }
-        }
-
         File->Modification = Modification;
         File->ModificationFmt = ModificationFmt;
         File->LastAccess = File->Modification;
