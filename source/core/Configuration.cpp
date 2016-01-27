@@ -1341,6 +1341,7 @@ void __fastcall TConfiguration::TemporaryActionsLogging(const UnicodeString ALog
 void __fastcall TConfiguration::TemporaryLogProtocol(int ALogProtocol)
 {
   FLogProtocol = ALogProtocol;
+  UpdateActualLogProtocol();
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::TemporaryLogSensitive(bool ALogSensitive)
