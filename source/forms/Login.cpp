@@ -790,7 +790,7 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
       }
       if (!SitesIncrementalSearch(FSitesIncrementalSearch + Key, false, false))
       {
-        MessageBeep(0);
+        MessageBeep(MB_ICONHAND);
       }
       Key = 0;
     }
@@ -1495,7 +1495,7 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
       bool Reverse = Shift.Contains(ssShift);
       if (!SitesIncrementalSearch(FSitesIncrementalSearch, true, Reverse))
       {
-        MessageBeep(0);
+        MessageBeep(MB_ICONHAND);
       }
       Message.Result = 1;
       return;

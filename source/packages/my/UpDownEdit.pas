@@ -319,7 +319,7 @@ begin
   if not IsValidChar(Key) then
   begin
     Key := #0;
-    MessageBeep(0)
+    MessageBeep(MB_ICONHAND)
   end;
   if Key <> #0 then
   begin
@@ -437,7 +437,7 @@ procedure TUpDownEdit.UpClick(Sender: TObject);
 var
   OldText: string;
 begin
-  if ReadOnly then MessageBeep(0)
+  if ReadOnly then MessageBeep(MB_ICONHAND)
   else begin
     FChanging := True;
     try
@@ -459,7 +459,7 @@ procedure TUpDownEdit.DownClick(Sender: TObject);
 var
   OldText: string;
 begin
-  if ReadOnly then MessageBeep(0)
+  if ReadOnly then MessageBeep(MB_ICONHAND)
   else begin
     FChanging := True;
     try
