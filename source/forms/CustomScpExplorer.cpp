@@ -1047,8 +1047,9 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
     int OutputOptions =
       FLAGMASK(DragDrop && (WinConfiguration->DDTransferConfirmation == asAuto),
         cooDoNotShowAgain);
+    std::unique_ptr<TSessionData> SessionData(SessionDataForCode());
     Result = DoCopyDialog(Direction == tdToRemote, Type == ttMove,
-      FileList, TargetDirectory, &CopyParam, Options, CopyParamAttrs, &OutputOptions);
+      FileList, TargetDirectory, &CopyParam, Options, CopyParamAttrs, SessionData.get(), &OutputOptions);
 
     if (Result)
     {
@@ -2486,8 +2487,10 @@ void __fastcall TCustomScpExplorerForm::ExecuteCopyOperationCommand(
   {
     Flags &= ~cocShortCutHint;
   }
+  TCustomDirView * DView = DirView(Side);
   Param.Options =
-    FLAGMASK(FLAGSET(Flags, cocShortCutHint), coShortCutHint);
+    FLAGMASK(FLAGSET(Flags, cocShortCutHint), coShortCutHint) |
+    FLAGMASK((DView->SelCount == DView->FilesCount), coAllFiles);
   if (FLAGSET(Flags, cocQueue))
   {
     Param.Queue = asOn;
@@ -7048,6 +7051,11 @@ TDragDropFilesEx * __fastcall TCustomScpExplorerForm::DragDropFiles(TObject * Se
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::DraggingAllFilesFromDirView(TOperationSide Side, TStrings * FileList)
+{
+  return HasDirView[Side] && (DropSourceControl == DirView(Side)) && (FileList->Count == DirView(Side)->FilesCount);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFileControlDragDropFileOperation(
   TObject * Sender, int Effect, UnicodeString TargetPath, bool ForceQueue)
 {
@@ -7084,6 +7092,8 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDragDropFileOperation(
       // upload, no temp dirs
       Param.Temp = false;
       Param.DragDrop = true;
+      Param.Options =
+        FLAGMASK(DraggingAllFilesFromDirView(osLocal, FileList), coAllFiles);
       if (ForceQueue)
       {
         Param.Queue = asOn;
@@ -8051,11 +8061,17 @@ void __fastcall TCustomScpExplorerForm::FileSystemInfo()
     OnGetSpaceAvailable);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::GenerateUrl(TStrings * Paths)
+TSessionData * __fastcall TCustomScpExplorerForm::SessionDataForCode()
 {
   std::unique_ptr<TSessionData> Data(CloneCurrentSessionData());
   const TSessionInfo & SessionInfo = Terminal->GetSessionInfo();
   Data->HostKey = SessionInfo.HostKeyFingerprint;
+  return Data.release();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::GenerateUrl(TStrings * Paths)
+{
+  std::unique_ptr<TSessionData> Data(SessionDataForCode());
   DoGenerateUrlDialog(Data.get(), Paths);
 }
 //---------------------------------------------------------------------------

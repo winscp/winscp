@@ -1473,7 +1473,8 @@ void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
         {
           TransferType = ttMove;
         }
-        int Options = 0;
+        int Options =
+          FLAGMASK(DraggingAllFilesFromDirView(osRemote, FInternalDDDownloadList), coAllFiles);
         if (CopyParamDialog(tdToLocal, TransferType,
               false, FInternalDDDownloadList, TargetDirectory, CopyParams,
               (WinConfiguration->DDTransferConfirmation != asOff), true, Options))

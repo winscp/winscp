@@ -2074,6 +2074,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcRemoveBOMUpload:
     case fcMoveToQueue:
     case fcPreservingTimestampDirs:
+    case fcResumeSupport:
       return true;
 
     case fcRename:

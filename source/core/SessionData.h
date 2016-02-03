@@ -373,8 +373,7 @@ private:
   static RawByteString __fastcall StronglyRecryptPassword(const RawByteString & Password, UnicodeString Key);
   static bool __fastcall DoIsProtocolUrl(const UnicodeString & Url, const UnicodeString & Protocol, int & ProtocolLen);
   static bool __fastcall IsProtocolUrl(const UnicodeString & Url, const UnicodeString & Protocol, int & ProtocolLen);
-  static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Switch);
-  static void __fastcall AddSwitchValue(UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value);
+  static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name);
   static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value);
   static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name, int Value);
   static UnicodeString __fastcall AssemblyString(TAssemblyLanguage Language, UnicodeString S);

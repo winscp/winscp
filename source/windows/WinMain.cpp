@@ -103,7 +103,7 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaul
   int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Upload;
   if (UseDefaults ||
       DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options,
-        CopyParamAttrs, NULL))
+        CopyParamAttrs, NULL, NULL))
   {
     Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, 0);
   }
@@ -136,7 +136,7 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
     int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Download;
     if (UseDefaults ||
         DoCopyDialog(false, false, FileList, TargetDirectory, &CopyParam,
-          Options, CopyParamAttrs, NULL))
+          Options, CopyParamAttrs, NULL, NULL))
     {
       Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, 0);
     }
@@ -668,7 +668,7 @@ int __fastcall Execute()
   // We have to check for /console only after the other options,
   // as the /console is always used when we are run by winscp.com
   // (ambiguous use to pass console version)
-  else if (Params->FindSwitch(L"Console") || Params->FindSwitch(L"script") ||
+  else if (Params->FindSwitch(L"Console") || Params->FindSwitch(SCRIPT_SWITCH) ||
       Params->FindSwitch(COMMAND_SWITCH))
   {
     Mode = cmScripting;

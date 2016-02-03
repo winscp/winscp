@@ -2524,25 +2524,21 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
   return Url;
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Switch)
-{
-  Result += RtfText(L" ") + RtfLink(L"scriptcommand_open#" + Switch.LowerCase(), RtfParameter(FORMAT(L"-%s", (Switch))));
-}
+UnicodeString ScriptCommandOpenLink = ScriptCommandLink(L"open");
 //---------------------------------------------------------------------
-void __fastcall TSessionData::AddSwitchValue(UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value)
+void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Name)
 {
-  AddSwitch(Result, Name);
-  Result += L"=" + Value;
+  Result += RtfSwitch(Name, ScriptCommandOpenLink);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value)
 {
-  AddSwitchValue(Result, Name, RtfString(FORMAT("\"%s\"", (EscapeParam(Value)))));
+  Result += RtfSwitch(Name, ScriptCommandOpenLink, Value);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Name, int Value)
 {
-  AddSwitchValue(Result, Name, RtfText(IntToStr(Value)));
+  Result += RtfSwitch(Name, ScriptCommandOpenLink, Value);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::LookupLastFingerprint()

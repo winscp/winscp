@@ -461,6 +461,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcMoveToQueue:
     case fcLocking:
     case fcPreservingTimestampDirs:
+    case fcResumeSupport:
       return false;
 
     default:

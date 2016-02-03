@@ -561,6 +561,8 @@ protected:
   virtual void __fastcall StartingDisconnected();
   void __fastcall DoTerminalListChanged(bool Force);
   void __fastcall NeedSession(bool ReloadSessions);
+  bool __fastcall DraggingAllFilesFromDirView(TOperationSide Side, TStrings * FileList);
+  TSessionData * __fastcall SessionDataForCode();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

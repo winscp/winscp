@@ -203,8 +203,6 @@ MethodT __fastcall MakeMethod(void * Data, void * Code)
 }
 //---------------------------------------------------------------------------
 extern const UnicodeString RtfPara;
-extern const UnicodeString RtfHyperlinkField;
-extern const UnicodeString RtfHyperlinkFieldPrefix;
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfText(const UnicodeString & Text);
 UnicodeString __fastcall RtfColor(int Index);
@@ -215,6 +213,13 @@ UnicodeString __fastcall RtfKeyword(const UnicodeString & Text);
 UnicodeString __fastcall RtfParameter(const UnicodeString & Text);
 UnicodeString __fastcall RtfString(const UnicodeString & Text);
 UnicodeString __fastcall RtfLink(const UnicodeString & Link, const UnicodeString & RtfText);
+UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeString & Link);
+UnicodeString __fastcall RtfSwitchValue(const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value);
+UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value);
+UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeString & Link, int Value);
+UnicodeString __fastcall RtfEscapeParam(UnicodeString Param);
+UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text);
+UnicodeString __fastcall ScriptCommandLink(const UnicodeString & Command);
 //---------------------------------------------------------------------------
 #include "Global.h"
 //---------------------------------------------------------------------------

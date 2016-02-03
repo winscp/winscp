@@ -339,7 +339,7 @@ void __fastcall TFullSynchronizeDialog::CopyParamClick(TObject * Sender)
   // user really confirms it on custom dialog
   TCopyParamType ACopyParams = CopyParams;
   if (CopyParamListPopupClick(Sender, ACopyParams, FPreset,
-        ActualCopyParamAttrs()))
+        ActualCopyParamAttrs()) > 0)
   {
     FCopyParams = ACopyParams;
     UpdateControls();

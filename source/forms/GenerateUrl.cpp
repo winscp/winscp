@@ -19,7 +19,17 @@
 //---------------------------------------------------------------------------
 void __fastcall DoGenerateUrlDialog(TSessionData * Data, TStrings * Paths)
 {
-  std::unique_ptr<TGenerateUrlDialog> Dialog(new TGenerateUrlDialog(GetFormOwner(), Data, Paths));
+  std::unique_ptr<TGenerateUrlDialog> Dialog(
+    new TGenerateUrlDialog(GetFormOwner(), Data, fsList, Paths, false, false, false, 0, UnicodeString(), TCopyParamType()));
+  Dialog->Execute();
+}
+//---------------------------------------------------------------------------
+void __fastcall DoGenerateTransferCodeDialog(
+  bool ToRemote, bool Move, int CopyParamAttrs, TSessionData * Data, TFilesSelected FilesSelected, TStrings * FileList, const UnicodeString & Path,
+  const TCopyParamType & CopyParam)
+{
+  std::unique_ptr<TGenerateUrlDialog> Dialog(
+    new TGenerateUrlDialog(GetFormOwner(), Data, FilesSelected, FileList, true, ToRemote, Move, CopyParamAttrs, Path, CopyParam));
   Dialog->Execute();
 }
 //---------------------------------------------------------------------------
@@ -117,12 +127,51 @@ void __fastcall TRichEdit41::DestroyWnd()
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
-  TComponent * Owner, TSessionData * Data, TStrings * Paths)
+  TComponent * Owner, TSessionData * Data, TFilesSelected FilesSelected, TStrings * Paths,
+  bool Transfer, bool ToRemote, bool Move, int CopyParamAttrs, const UnicodeString & Path, const TCopyParamType & CopyParam)
   : TForm(Owner)
 {
   UseSystemSettings(this);
   FData = Data;
-  FPaths = Paths;
+
+  if (Paths != NULL)
+  {
+    FPaths.reset(new TStringList());
+    FPaths->AddStrings(Paths);
+  }
+
+  FTransfer = Transfer;
+  FToRemote = ToRemote;
+  FMove = Move;
+  FCopyParamAttrs = CopyParamAttrs;
+  FCopyParam = CopyParam;
+
+  if (FTransfer)
+  {
+    DebugAssert(FPaths.get() != NULL);
+
+    if (FToRemote)
+    {
+      UnicodeString FirstPath = Paths->Strings[0];
+      FSourcePath = FToRemote ? ExcludeTrailingBackslash(ExtractFilePath(FirstPath)) : UnixExtractFilePath(FirstPath);
+      for (int Index = 0; Index < FPaths->Count; Index++)
+      {
+        FPaths->Strings[Index] = ExtractFileName(FPaths->Strings[Index]);
+      }
+    }
+    else
+    {
+      FSourcePath = Data->RemoteDirectory;
+      // should be noop as we get only file names for remote files
+      for (int Index = 0; Index < FPaths->Count; Index++)
+      {
+        FPaths->Strings[Index] = UnixExtractFileName(FPaths->Strings[Index]);
+      }
+    }
+  }
+
+  FPath = Path;
+  FFilesSelected = FilesSelected;
   FChanging = false;
 
   FResultMemo41 = new TRichEdit41(this);
@@ -142,7 +191,7 @@ __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
 //---------------------------------------------------------------------------
 bool __fastcall TGenerateUrlDialog::IsFileUrl()
 {
-  return (FPaths != NULL);
+  return (FPaths.get() != NULL) && !FTransfer;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl(UnicodeString Path)
@@ -190,7 +239,7 @@ static UnicodeString __fastcall RtfScriptPlaceholder(const UnicodeString & Text)
 //---------------------------------------------------------------------
 static UnicodeString __fastcall RtfScriptCommand(const UnicodeString & Command)
 {
-  return RtfLink(L"scriptcommand_" + Command, RtfKeyword(Command));
+  return RtfLink(ScriptCommandLink(Command), RtfKeyword(Command));
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfCommandlineSwitch(const UnicodeString & Switch, const UnicodeString & Anchor)
@@ -198,13 +247,34 @@ UnicodeString __fastcall RtfCommandlineSwitch(const UnicodeString & Switch, cons
   return RtfLink(L"commandline#" + Anchor, RtfParameter(TProgramParams::FormatSwitch(Switch.LowerCase())));
 }
 //---------------------------------------------------------------------------
+static UnicodeString __fastcall QuoteStringParam(UnicodeString S)
+{
+  return AddQuotes(RtfEscapeParam(S));
+}
+//---------------------------------------------------------------------------
+// Keep in sync with .NET Session.EscapeFileMask
+static UnicodeString __fastcall EscapeFileMask(UnicodeString S)
+{
+  return ReplaceStr(ReplaceStr(ReplaceStr(S, L"[", L"[[]"), L"*", L"[*]"), L"?", L"[?]");
+}
+//---------------------------------------------------------------------------
 void __fastcall TGenerateUrlDialog::UpdateControls()
 {
   if (!FChanging)
   {
     UnicodeString ExeName = Application->ExeName;
-    Caption = LoadStr(IsFileUrl() ? GENERATE_URL_FILE_TITLE : GENERATE_URL_SESSION_TITLE);
+    int CaptionId;
+    if (FTransfer)
+    {
+      CaptionId = GENERATE_URL_TRANSFER_TITLE;
+    }
+    else
+    {
+      CaptionId = IsFileUrl() ? GENERATE_URL_FILE_TITLE : GENERATE_URL_SESSION_TITLE;
+    }
+    Caption = LoadStr(CaptionId);
 
+    UrlSheet->TabVisible = !FTransfer;
     ScriptSheet->TabVisible = !IsFileUrl();
     AssemblySheet->TabVisible = !IsFileUrl();
 
@@ -217,21 +287,14 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     }
     else if (OptionsPageControl->ActivePage == ScriptSheet)
     {
-      UnicodeString ScriptDescription;
       if (ScriptFormatCombo->ItemIndex == sfCommandLine)
       {
         ResultGroupCaption = LoadStr(GENERATE_URL_COMMANDLINE_LABEL);
-        ScriptDescription = FMTLOAD(GENERATE_URL_COMMANDLINE_DESC, (FORMAT("\"%s\"", (ExeName)))) + L"\n";
       }
       else
       {
         ResultGroupCaption = ScriptFormatCombo->Items->Strings[ScriptFormatCombo->ItemIndex];
       }
-      if (HostKeyUnknown)
-      {
-        ScriptDescription += LoadStr(GENERATE_URL_HOSTKEY_UNKNOWN) + L"\n";
-      }
-      ScriptDescriptionLabel->Caption = ScriptDescription;
     }
     else if (DebugAlwaysTrue(OptionsPageControl->ActivePage == AssemblySheet))
     {
@@ -283,24 +346,101 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       UnicodeString OpenCommand = FData->GenerateOpenCommandArgs();
       UnicodeString CommandPlaceholder1 = FMTLOAD(GENERATE_URL_COMMAND, (1));
       UnicodeString CommandPlaceholder2 = FMTLOAD(GENERATE_URL_COMMAND, (2));
+      UnicodeString LogPath = LoadStr(GENERATE_URL_WRITABLE_PATH_TO_LOG) + RtfText(BaseExeName + L".log");
       UnicodeString LogParameter =
         RtfCommandlineSwitch(LOG_SWITCH, L"logging") + RtfText(L"=") +
-        RtfScriptPlaceholder(L"\"" + LoadStr(GENERATE_URL_WRITABLE_PATH_TO_LOG) + RtfText(BaseExeName + L".log") + L"\"");
+        RtfScriptPlaceholder(L"\"" + LogPath + L"\"");
       UnicodeString IniParameter =
         RtfCommandlineSwitch(INI_SWITCH, L"configuration") + RtfText(UnicodeString(L"=") + INI_NUL);
       UnicodeString CommandParameter = RtfCommandlineSwitch(COMMAND_SWITCH, L"scripting");
 
+      typedef std::vector<UnicodeString> TCommands;
+      TCommands Commands;
+
+      Commands.push_back(RtfScriptCommand(L"open") + L" " + OpenCommand);
+      Commands.push_back(UnicodeString());
+
+      bool NoArgs = false;
+
+      if (FTransfer)
+      {
+        UnicodeString TransferCommand;
+
+        if (FToRemote)
+        {
+          Commands.push_back(RtfScriptCommand(L"lcd") + L" " + RtfText(QuoteStringParam(FSourcePath)));
+          Commands.push_back(RtfScriptCommand(L"cd") + L" " + RtfText(QuoteStringParam(UnixExcludeTrailingBackslash(FPath))));
+          TransferCommand = L"put";
+        }
+        else
+        {
+          Commands.push_back(RtfScriptCommand(L"cd") + L" " + RtfText(QuoteStringParam(FSourcePath)));
+          Commands.push_back(RtfScriptCommand(L"lcd") + L" " + RtfText(QuoteStringParam(ExcludeTrailingBackslash(FPath))));
+          TransferCommand = L"get";
+        }
+
+        Commands.push_back(UnicodeString());
+
+        UnicodeString TransferCommandLink = ScriptCommandLink(TransferCommand);
+        UnicodeString TransferCommandArgs;
+        if (FMove)
+        {
+          TransferCommandArgs += RtfSwitch(DELETE_SWITCH, TransferCommandLink);
+        }
+        TransferCommandArgs += FCopyParam.GenerateTransferCommandArgs(FCopyParamAttrs, TransferCommandLink, NoArgs);
+
+        TransferCommand = RtfScriptCommand(TransferCommand) + TransferCommandArgs;
+
+        if (FFilesSelected == fsList)
+        {
+          for (int Index = 0; Index < FPaths->Count; Index++)
+          {
+            Commands.push_back(TransferCommand + L" " + RtfText(QuoteStringParam(EscapeFileMask(FPaths->Strings[Index]))));
+          }
+        }
+        else
+        {
+          Commands.push_back(TransferCommand + L" " + RtfText(QuoteStringParam(FSourcePath + L"*")));
+        }
+      }
+      else
+      {
+        Commands.push_back(L"# " + CommandPlaceholder1);
+        Commands.push_back(L"# " + CommandPlaceholder2);
+      }
+
+      Commands.push_back(UnicodeString());
+      Commands.push_back(RtfScriptCommand(L"exit"));
+
+      UnicodeString ScriptDescription;
+
       if (ScriptFormatCombo->ItemIndex == sfScriptFile)
       {
-        Result =
-          FORMAT(
-            RtfScriptCommand(L"open") + L" %s" + RtfPara +
-            RtfPara +
-            RtfScriptComment("# %s") + RtfPara +
-            RtfScriptComment("# %s") + RtfPara +
-            RtfPara +
-            RtfScriptCommand(L"exit") + RtfPara,
-            (OpenCommand, CommandPlaceholder1, CommandPlaceholder2));
+        for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
+        {
+          UnicodeString Command = *I;
+          if (!Command.IsEmpty())
+          {
+            if (Command[1] == L'#')
+            {
+              Result += RtfScriptComment(Command);
+            }
+            else
+            {
+              Result += Command;
+            }
+          }
+          Result += RtfPara;
+        }
+
+        UnicodeString ScriptCommandLine =
+          FORMAT("\"%s\" /%s=\"%s\" /%s=%s /%s=\"%s\"",
+            (ExeName, LowerCase(LOG_SWITCH), LogPath, LowerCase(INI_SWITCH), INI_NUL, LowerCase(SCRIPT_SWITCH), LoadStr(GENERATE_URL_PATH_TO_SCRIPT)));
+        Result +=
+          RtfPara +
+          RtfScriptComment(L"# " + LoadStr(GENERATE_URL_SCRIPT_DESC)) + RtfPara +
+          RtfScriptComment(L"# " + ScriptCommandLine) + RtfPara;
+
         WordWrap = false;
         FixedWidth = true;
       }
@@ -313,11 +453,32 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
           RtfPara +
           RtfText(L"\"" + ComExeName + "\" ^") + RtfPara +
           RtfText(L"  ") + LogParameter + L" " + IniParameter + RtfText(L" ^") + RtfPara +
-          RtfText(L"  ") + CommandParameter + RtfText(L" ^") + RtfPara +
-          RtfText(L"    \"") + RtfScriptCommand(L"open") + RtfText(L" ") + EscapeParam(ReplaceStr(OpenCommand, L"%", L"%%")) + RtfText(L"\" ^") + RtfPara +
-          RtfText(L"    \"") + RtfScriptPlaceholder(CommandPlaceholder1) + RtfText(L"\" ^") + RtfPara +
-          RtfText(L"    \"") + RtfScriptPlaceholder(CommandPlaceholder2) + RtfText(L"\" ^") + RtfPara +
-          RtfText(L"    \"") + RtfScriptCommand(L"exit") + RtfText(L"\"") + RtfPara +
+          RtfText(L"  ") + CommandParameter;
+
+        for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
+        {
+          UnicodeString Command = *I;
+          if (!Command.IsEmpty())
+          {
+            Result +=
+              RtfText(L" ^") + RtfPara +
+              RtfText(L"    \"");
+
+            if (Command[1] == L'#')
+            {
+              Command.Delete(1, 1);
+              Result += RtfScriptPlaceholder(Command.TrimLeft());
+            }
+            else
+            {
+              Result += RtfEscapeParam(ReplaceStr(Command, L"%", L"%%"));
+            }
+            Result += L"\"";
+          }
+        }
+
+        Result +=
+          RtfPara +
           RtfPara +
           RtfKeyword(L"set") + RtfText(L" WINSCP_RESULT=%ERRORLEVEL%") + RtfPara +
           RtfKeyword(L"if") + RtfText(L" %WINSCP_RESULT% ") + RtfKeyword(L"equ") + RtfText(L" 0 (") + RtfPara +
@@ -335,14 +496,43 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         Result =
           LogParameter + L" " +
           IniParameter + L" " +
-          CommandParameter + L" " +
-            RtfText(L"\"") + RtfScriptCommand(L"open") + RtfText(L" ") + EscapeParam(OpenCommand) + RtfText(L"\" ") +
-            RtfText(L"\"") + RtfScriptPlaceholder(CommandPlaceholder1) + RtfText(L"\" ") +
-            RtfText(L"\"") + RtfScriptPlaceholder(CommandPlaceholder2) + RtfText(L"\" ") +
-            RtfText(L"\"") + RtfScriptCommand(L"exit") + RtfText(L"\"");
+          CommandParameter;
+
+        for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
+        {
+          UnicodeString Command = *I;
+          if (!Command.IsEmpty())
+          {
+            Result += RtfText(L" \"");
+            if (Command[1] == L'#')
+            {
+              Command.Delete(1, 1);
+              Result += RtfScriptPlaceholder(Command.TrimLeft());
+            }
+            else
+            {
+              Result += RtfEscapeParam(Command);
+            }
+            Result += L"\"";
+          }
+        }
+
         WordWrap = true;
         FixedWidth = false;
+
+        ScriptDescription = FMTLOAD(GENERATE_URL_COMMANDLINE_DESC, (FORMAT("\"%s\"", (ExeName)))) + L"\n";
       }
+
+      if (HostKeyUnknown)
+      {
+        ScriptDescription += LoadStr(GENERATE_URL_HOSTKEY_UNKNOWN) + L"\n";
+      }
+      if (NoArgs)
+      {
+        ScriptDescription += LoadStr(GENERATE_URL_COPY_PARAM_SCRIPT_REMAINING) + L"\n";
+      }
+
+      ScriptDescriptionLabel->Caption = ScriptDescription;
     }
     else if (DebugAlwaysTrue(OptionsPageControl->ActivePage == AssemblySheet))
     {
@@ -519,22 +709,7 @@ void __fastcall TGenerateUrlDialog::ClipboardButtonClick(TObject * /*Sender*/)
     Text += EOL;
   }
 
-  // Remove all tags HYPERLINK "http://www.example.com"
-  int Index = 1;
-  while ((P = PosFrom(RtfHyperlinkFieldPrefix, Text, Index)) > 0)
-  {
-    int Index2 = P + RtfHyperlinkFieldPrefix.Length();
-    UnicodeString RtfHyperlinkFieldSuffix = L"\" ";
-    int P2 = PosFrom(RtfHyperlinkFieldSuffix, Text, Index2);
-    if (P2 > 0)
-    {
-      Text.Delete(P, P2 - P + RtfHyperlinkFieldSuffix.Length());
-    }
-    else
-    {
-      Index = Index2;
-    }
-  }
+  Text = RtfRemoveHyperlinks(Text);
 
   CopyToClipboard(Text);
 }

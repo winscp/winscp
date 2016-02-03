@@ -7,6 +7,10 @@
 #include "CopyParam.h"
 #include "HierarchicalStorage.h"
 #include "TextsCore.h"
+#include "Interface.h"
+//---------------------------------------------------------------------------
+const wchar_t * TransferModeNames[] = { L"binary", L"ascii", L"automatic" };
+const int TransferModeNamesCount = LENOF(TransferModeNames);
 //---------------------------------------------------------------------------
 __fastcall TCopyParamType::TCopyParamType()
 {
@@ -57,7 +61,9 @@ UnicodeString __fastcall TCopyParamType::GetInfoStr(
 {
   UnicodeString Result;
   bool SomeAttrIncluded;
-  DoGetInfoStr(Separator, Attrs, Result, SomeAttrIncluded);
+  UnicodeString ScriptArgs;
+  bool NoScriptArgs;
+  DoGetInfoStr(Separator, Attrs, Result, SomeAttrIncluded, UnicodeString(), ScriptArgs, NoScriptArgs);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -65,17 +71,30 @@ bool __fastcall TCopyParamType::AnyUsableCopyParam(int Attrs) const
 {
   UnicodeString Result;
   bool SomeAttrIncluded;
-  DoGetInfoStr(L";", Attrs, Result, SomeAttrIncluded);
+  UnicodeString ScriptArgs;
+  bool NoScriptArgs;
+  DoGetInfoStr(L";", Attrs, Result, SomeAttrIncluded, UnicodeString(), ScriptArgs, NoScriptArgs);
   return SomeAttrIncluded;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCopyParamType::GenerateTransferCommandArgs(int Attrs, const UnicodeString & Link, bool & NoScriptArgs) const
+{
+  UnicodeString Result;
+  bool SomeAttrIncluded;
+  UnicodeString ScriptArgs;
+  DoGetInfoStr(L";", Attrs, Result, SomeAttrIncluded, Link, ScriptArgs, NoScriptArgs);
+  return ScriptArgs;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::DoGetInfoStr(
   UnicodeString Separator, int Options,
-  UnicodeString & Result, bool & SomeAttrIncluded) const
+  UnicodeString & Result, bool & SomeAttrIncluded,
+  const UnicodeString & Link, UnicodeString & ScriptArgs, bool & NoScriptArgs) const
 {
   TCopyParamType Defaults;
 
   bool SomeAttrExcluded = false;
+  NoScriptArgs = false;
   SomeAttrIncluded = false;
   #define ADD(STR, EXCEPT) \
     if (FLAGCLEAR(Options, EXCEPT)) \
@@ -88,9 +107,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       SomeAttrExcluded = true; \
     }
 
-  bool TransferModeDiffers =
-    ((TransferMode != Defaults.TransferMode) ||
-     ((TransferMode == tmAutomatic) && !(AsciiFileMask == Defaults.AsciiFileMask)));
+  bool AsciiFileMaskDiffers = (TransferMode == tmAutomatic) && !(AsciiFileMask == Defaults.AsciiFileMask);
+  bool TransferModeDiffers = ((TransferMode != Defaults.TransferMode) || AsciiFileMaskDiffers);
 
   if (FLAGCLEAR(Options, cpaIncludeMaskOnly | cpaNoTransferMode))
   {
@@ -124,6 +142,12 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     if (TransferModeDiffers)
     {
       ADD("", cpaIncludeMaskOnly | cpaNoTransferMode);
+
+      ScriptArgs += RtfSwitchValue(TRANSFER_SWITCH, Link, TransferModeNames[TransferMode]);
+      if (AsciiFileMaskDiffers)
+      {
+        NoScriptArgs = true;
+      }
     }
   }
   else
@@ -131,6 +155,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     if (TransferModeDiffers)
     {
       SomeAttrExcluded = true;
+      NoScriptArgs = true;
     }
   }
 
@@ -139,6 +164,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     ADD(FORMAT(LoadStrPart(COPY_INFO_FILENAME, 1),
       (LoadStrPart(COPY_INFO_FILENAME, FileNameCase + 2))),
       cpaIncludeMaskOnly);
+
+    NoScriptArgs = true;
   }
 
   if ((InvalidCharsReplacement == NoReplacement) !=
@@ -149,15 +176,16 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       ADD(LoadStr(COPY_INFO_DONT_REPLACE_INV_CHARS), cpaIncludeMaskOnly);
     }
+
+    NoScriptArgs = true;
   }
 
   if ((PreserveRights != Defaults.PreserveRights) ||
       (PreserveRights &&
        ((Rights != Defaults.Rights) || (AddXToDirectories != Defaults.AddXToDirectories))))
   {
-    DebugAssert(PreserveRights);
-
-    if (PreserveRights)
+    const int Except = cpaIncludeMaskOnly | cpaNoRights;
+    if (DebugAlwaysTrue(PreserveRights))
     {
       UnicodeString RightsStr = Rights.Text;
       if (AddXToDirectories)
@@ -165,7 +193,17 @@ void __fastcall TCopyParamType::DoGetInfoStr(
         RightsStr += L", " + LoadStr(COPY_INFO_ADD_X_TO_DIRS);
       }
       ADD(FORMAT(LoadStr(COPY_INFO_PERMISSIONS), (RightsStr)),
-        cpaIncludeMaskOnly | cpaNoRights);
+        Except);
+
+      if (FLAGCLEAR(Options, Except))
+      {
+        ScriptArgs += RtfSwitchValue(PERMISSIONS_SWITCH, Link, Rights.Octal);
+      }
+    }
+
+    if (AddXToDirectories != Defaults.AddXToDirectories)
+    {
+      NoScriptArgs = NoScriptArgs || FLAGCLEAR(Options, Except);
     }
   }
 
@@ -175,63 +213,83 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     UnicodeString Str = LoadStr(PreserveTime ? COPY_INFO_TIMESTAMP : COPY_INFO_DONT_PRESERVE_TIME);
 
+    const int Except = cpaIncludeMaskOnly | cpaNoPreserveTime;
+    const int ExceptDirs = cpaNoPreserveTimeDirs;
     if (APreserveTimeDirs != Defaults.PreserveTimeDirs)
     {
       if (DebugAlwaysTrue(PreserveTimeDirs))
       {
-        if (FLAGCLEAR(Options, cpaNoPreserveTimeDirs))
+        if (FLAGCLEAR(Options, ExceptDirs))
         {
           Str = FMTLOAD(COPY_INFO_PRESERVE_TIME_DIRS, (Str));
           AddPreserveTime = true;
         }
       }
-      ADD("", cpaIncludeMaskOnly | cpaNoPreserveTime | cpaNoPreserveTimeDirs);
+      ADD("", Except | ExceptDirs);
     }
 
     if (AddPreserveTime)
     {
-      ADD(Str, cpaIncludeMaskOnly | cpaNoPreserveTime);
+      ADD(Str, Except);
+    }
+
+    if (FLAGCLEAR(Options, Except))
+    {
+      if (PreserveTime)
+      {
+        if (PreserveTimeDirs && FLAGCLEAR(Options, ExceptDirs))
+        {
+          ScriptArgs += RtfSwitchValue(PRESERVETIME_SWITCH, Link, PRESERVETIMEDIRS_SWITCH_VALUE);
+        }
+        else
+        {
+          ScriptArgs += RtfSwitch(PRESERVETIME_SWITCH, Link);
+        }
+      }
+      else
+      {
+        ScriptArgs += RtfSwitch(NOPRESERVETIME_SWITCH, Link);
+      }
     }
   }
 
   if ((PreserveRights || PreserveTime) &&
       (IgnorePermErrors != Defaults.IgnorePermErrors))
   {
-    DebugAssert(IgnorePermErrors);
-
-    if (IgnorePermErrors)
+    if (DebugAlwaysTrue(IgnorePermErrors))
     {
-      ADD(LoadStr(COPY_INFO_IGNORE_PERM_ERRORS),
-        cpaIncludeMaskOnly | cpaNoIgnorePermErrors);
+      const int Except = cpaIncludeMaskOnly | cpaNoIgnorePermErrors;
+      ADD(LoadStr(COPY_INFO_IGNORE_PERM_ERRORS), Except);
+      NoScriptArgs = NoScriptArgs || (FLAGCLEAR(Options, Except));
     }
   }
 
   if (PreserveReadOnly != Defaults.PreserveReadOnly)
   {
-    DebugAssert(PreserveReadOnly);
-    if (PreserveReadOnly)
+    if (DebugAlwaysTrue(PreserveReadOnly))
     {
-      ADD(LoadStr(COPY_INFO_PRESERVE_READONLY),
-        cpaIncludeMaskOnly | cpaNoPreserveReadOnly);
+      const int Except = cpaIncludeMaskOnly | cpaNoPreserveReadOnly;
+      ADD(LoadStr(COPY_INFO_PRESERVE_READONLY), Except);
+      NoScriptArgs = NoScriptArgs || (FLAGCLEAR(Options, Except));
     }
   }
 
   if (CalculateSize != Defaults.CalculateSize)
   {
-    DebugAssert(!CalculateSize);
-    if (!CalculateSize)
+    if (DebugAlwaysTrue(!CalculateSize))
     {
       ADD(LoadStr(COPY_INFO_DONT_CALCULATE_SIZE), cpaIncludeMaskOnly);
+      // Always false in scripting, in assembly controlled by use of FileTransferProgress
     }
   }
 
   if (ClearArchive != Defaults.ClearArchive)
   {
-    DebugAssert(ClearArchive);
-    if (ClearArchive)
+    if (DebugAlwaysTrue(ClearArchive))
     {
-      ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE),
-        cpaIncludeMaskOnly | cpaNoClearArchive);
+      const int Except = cpaIncludeMaskOnly | cpaNoClearArchive;
+      ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE), Except);
+      NoScriptArgs = NoScriptArgs || (FLAGCLEAR(Options, Except));
     }
   }
 
@@ -241,8 +299,9 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (DebugAlwaysTrue(RemoveBOM))
       {
-        ADD(LoadStr(COPY_INFO_REMOVE_BOM),
-          cpaIncludeMaskOnly | cpaNoRemoveBOM | cpaNoTransferMode);
+        const int Except = cpaIncludeMaskOnly | cpaNoRemoveBOM | cpaNoTransferMode;
+        ADD(LoadStr(COPY_INFO_REMOVE_BOM), Except);
+        NoScriptArgs = NoScriptArgs || (FLAGCLEAR(Options, Except));
       }
     }
 
@@ -250,8 +309,9 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (DebugAlwaysTrue(RemoveCtrlZ))
       {
-        ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ),
-          cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode);
+        const int Except = cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode;
+        ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ),Except);
+        NoScriptArgs = NoScriptArgs || (FLAGCLEAR(Options, Except));
       }
     }
   }
@@ -260,6 +320,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     ADD(FORMAT(LoadStr(COPY_INFO_FILE_MASK), (IncludeFileMask.Masks)),
       cpaNoIncludeMask);
+
+    ScriptArgs += RtfSwitch(FILEMASK_SWITCH, Link, IncludeFileMask.Masks);
   }
 
   DebugAssert(FTransferSkipList.get() == NULL);
@@ -267,15 +329,45 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
   if (CPSLimit > 0)
   {
-    ADD(FMTLOAD(COPY_INFO_CPS_LIMIT2, (int(CPSLimit / 1024))), cpaIncludeMaskOnly);
+    int LimitKB = int(CPSLimit / 1024);
+    ADD(FMTLOAD(COPY_INFO_CPS_LIMIT2, (LimitKB)), cpaIncludeMaskOnly);
+
+    ScriptArgs += RtfSwitch(SPEED_SWITCH, Link, LimitKB);
   }
 
   if (NewerOnly != Defaults.NewerOnly)
   {
     if (DebugAlwaysTrue(NewerOnly))
     {
-      ADD(StripHotkey(LoadStr(COPY_PARAM_NEWER_ONLY)), cpaIncludeMaskOnly | cpaNoNewerOnly);
+      const int Except = cpaIncludeMaskOnly | cpaNoNewerOnly;
+      ADD(StripHotkey(LoadStr(COPY_PARAM_NEWER_ONLY)), Except);
+      if (FLAGCLEAR(Options, Except))
+      {
+        ScriptArgs += RtfSwitch(NEWERONLY_SWICH, Link);
+      }
     }
+  }
+
+  if (((ResumeSupport != Defaults.ResumeSupport) ||
+       ((ResumeSupport == rsSmart) && (ResumeThreshold != Defaults.ResumeThreshold))) &&
+      (TransferMode != tmAscii) && FLAGCLEAR(Options, cpaNoResumeSupport))
+  {
+    UnicodeString Value;
+    switch (ResumeSupport)
+    {
+      case rsOff:
+        Value = ToggleNames[ToggleOff];
+        break;
+
+      case rsOn:
+        Value = ToggleNames[ToggleOn];
+        break;
+
+      case rsSmart:
+        Value = IntToStr(ResumeThreshold / 1024);
+        break;
+    }
+    ScriptArgs += RtfSwitchValue(RESUMESUPPORT_SWITCH, Link, Value);
   }
 
   if (SomeAttrExcluded)

@@ -3224,7 +3224,8 @@ TUsableCopyParamAttrs __fastcall TTerminal::UsableCopyParamAttrs(int Params)
     FLAGMASK(!IsCapable[fcModeChangingUpload], cpaNoRights) |
     FLAGMASK(!IsCapable[fcRemoveCtrlZUpload], cpaNoRemoveCtrlZ) |
     FLAGMASK(!IsCapable[fcRemoveBOMUpload], cpaNoRemoveBOM) |
-    FLAGMASK(!IsCapable[fcPreservingTimestampDirs], cpaNoPreserveTimeDirs);
+    FLAGMASK(!IsCapable[fcPreservingTimestampDirs], cpaNoPreserveTimeDirs) |
+    FLAGMASK(!IsCapable[fcResumeSupport], cpaNoResumeSupport);
   Result.Download = Result.General | cpaNoClearArchive |
     cpaNoIgnorePermErrors |
     // May be already set in General flags, but it's unconditional here

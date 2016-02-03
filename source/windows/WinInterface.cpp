@@ -754,6 +754,7 @@ const int cpiDefault = -1;
 const int cpiConfigure = -2;
 const int cpiCustom = -3;
 const int cpiSaveSettings = -4;
+const int cpiGenerateCode = -5;
 //---------------------------------------------------------------------------
 void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
   const TCopyParamType & Param, UnicodeString Preset, TNotifyEvent OnClick,
@@ -840,24 +841,38 @@ void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
   Item->OnClick = OnClick;
   Menu->Items->Add(Item);
 
+  if (FLAGSET(Options, cplGenerateCode))
+  {
+    Item = new TMenuItem(Menu);
+    Item->Caption = L"-";
+    Menu->Items->Add(Item);
+
+    Item = new TMenuItem(Menu);
+    Item->Caption = LoadStr(COPY_PARAM_GENERATE_CODE);
+    Item->Tag = cpiGenerateCode;
+    Item->OnClick = OnClick;
+    Menu->Items->Add(Item);
+  }
+
+
   MenuPopup(Menu, Rect, NULL);
 }
 //---------------------------------------------------------------------------
-bool __fastcall CopyParamListPopupClick(TObject * Sender,
+int __fastcall CopyParamListPopupClick(TObject * Sender,
   TCopyParamType & Param, UnicodeString & Preset, int CopyParamAttrs,
   bool * SaveSettings)
 {
   TComponent * Item = dynamic_cast<TComponent *>(Sender);
   DebugAssert(Item != NULL);
-  DebugAssert((Item->Tag >= cpiSaveSettings) && (Item->Tag < GUIConfiguration->CopyParamList->Count));
+  DebugAssert((Item->Tag >= cpiGenerateCode) && (Item->Tag < GUIConfiguration->CopyParamList->Count));
 
-  bool Result;
+  int Result;
   if (Item->Tag == cpiConfigure)
   {
     bool MatchedPreset = (GUIConfiguration->CopyParamPreset[Preset] == Param);
     DoPreferencesDialog(pmPresets);
-    Result = (MatchedPreset && GUIConfiguration->HasCopyParamPreset[Preset]);
-    if (Result)
+    Result = (MatchedPreset && GUIConfiguration->HasCopyParamPreset[Preset]) ? 1 : 0;
+    if (Result > 0)
     {
       // For cast, see a comment below
       Param = TCopyParamType(GUIConfiguration->CopyParamPreset[Preset]);
@@ -865,7 +880,7 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
   }
   else if (Item->Tag == cpiCustom)
   {
-    Result = DoCopyParamCustomDialog(Param, CopyParamAttrs);
+    Result = DoCopyParamCustomDialog(Param, CopyParamAttrs) ? 1 : 0;
   }
   else if (Item->Tag == cpiSaveSettings)
   {
@@ -873,7 +888,11 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
     {
       *SaveSettings = !*SaveSettings;
     }
-    Result = false;
+    Result = 0;
+  }
+  else if (Item->Tag == cpiGenerateCode)
+  {
+    Result = -cplGenerateCode;
   }
   else
   {
@@ -882,7 +901,7 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
     // The cast strips away the "queue" properties of the TGUICopyParamType
     // that are not configurable in presets
     Param = TCopyParamType(GUIConfiguration->CopyParamPreset[Preset]);
-    Result = true;
+    Result = 1;
   }
   return Result;
 }

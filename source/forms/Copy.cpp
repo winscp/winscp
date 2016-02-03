@@ -23,10 +23,11 @@
 //---------------------------------------------------------------------------
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
-  TGUICopyParamType * Params, int Options, int CopyParamAttrs, int * OutputOptions)
+  TGUICopyParamType * Params, int Options, int CopyParamAttrs, TSessionData * SessionData,
+  int * OutputOptions)
 {
   bool Result;
-  TCopyDialog *CopyDialog = new TCopyDialog(Application, ToRemote, Move, FileList, Options, CopyParamAttrs);
+  TCopyDialog *CopyDialog = new TCopyDialog(Application, ToRemote, Move, FileList, Options, CopyParamAttrs, SessionData);
   try
   {
     if (FLAGSET(CopyParamAttrs, cpaNoTransferMode))
@@ -60,14 +61,15 @@ bool __fastcall DoCopyDialog(bool ToRemote,
 }
 //---------------------------------------------------------------------------
 __fastcall TCopyDialog::TCopyDialog(
-  TComponent* Owner, bool ToRemote, bool Move, TStrings * FileList, int Options, int CopyParamAttrs)
-        : TForm(Owner)
+  TComponent* Owner, bool ToRemote, bool Move, TStrings * FileList, int Options,
+  int CopyParamAttrs, TSessionData * SessionData) : TForm(Owner)
 {
   FToRemote = ToRemote;
   FMove = Move;
   FOptions = Options;
   FCopyParamAttrs = CopyParamAttrs;
   FFileList = FileList;
+  FSessionData = SessionData;
 
   FOutputOptions = 0;
 
@@ -485,24 +487,41 @@ void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCopyDialog::GenerateCode()
+{
+  TFilesSelected FilesSelected = FLAGSET(FOptions, coAllFiles) ? fsAll : fsList;
+  DoGenerateTransferCodeDialog(FToRemote, FMove, FCopyParamAttrs, FSessionData, FilesSelected, FFileList, Directory, Params);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCopyDialog::CopyParamClick(TObject * Sender)
 {
   // Save including the preset-unspecific queue properties,
   // so that they are preserved when assigning back later
   TGUICopyParamType Param = Params;
   bool PrevSaveSettings = FSaveSettings;
-  if (CopyParamListPopupClick(Sender, Param, FPreset, FCopyParamAttrs, &FSaveSettings))
+  int Result = CopyParamListPopupClick(Sender, Param, FPreset, FCopyParamAttrs, &FSaveSettings);
+  if (Result < 0)
   {
-    Params = Param;
+    if (DebugAlwaysTrue(Result == -cplGenerateCode))
+    {
+      GenerateCode();
+    }
   }
   else
   {
-    UpdateControls();
-  }
+    if (Result > 0)
+    {
+      Params = Param;
+    }
+    else
+    {
+      UpdateControls();
+    }
 
-  if (PrevSaveSettings && !FSaveSettings)
-  {
-    NeverShowAgainCheck->Checked = false;
+    if (PrevSaveSettings && !FSaveSettings)
+    {
+      NeverShowAgainCheck->Checked = false;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -541,7 +560,8 @@ void __fastcall TCopyDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
     cplCustomize | AdditionalOptions |
       FLAGMASK(
           FLAGCLEAR(FOptions, coDisableSaveSettings) && !RemoteTransfer,
-        cplSaveSettings),
+        cplSaveSettings) |
+      FLAGMASK(FLAGCLEAR(FOutputOptions, cooRemoteTransfer) && FLAGCLEAR(FOptions, coTemp), cplGenerateCode),
     FCopyParamAttrs,
     FSaveSettings);
 }

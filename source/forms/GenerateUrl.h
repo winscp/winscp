@@ -13,6 +13,7 @@
 #include <System.Actions.hpp>
 #include <Vcl.ActnList.hpp>
 #include <Vcl.StdActns.hpp>
+#include <WinInterface.h>
 //---------------------------------------------------------------------------
 class TRichEdit41;
 //---------------------------------------------------------------------------
@@ -53,9 +54,17 @@ __published:
 
 private:
   TSessionData * FData;
-  TStrings * FPaths;
+  std::unique_ptr<TStrings> FPaths;
   bool FChanging;
   TRichEdit41 * FResultMemo41;
+  bool FTransfer;
+  bool FToRemote;
+  bool FMove;
+  int FCopyParamAttrs;
+  UnicodeString FPath;
+  TFilesSelected FFilesSelected;
+  UnicodeString FSourcePath;
+  TCopyParamType FCopyParam;
 
 protected:
   void __fastcall UpdateControls();
@@ -65,7 +74,9 @@ protected:
   virtual void __fastcall Dispatch(void * AMessage);
 
 public:
-  __fastcall TGenerateUrlDialog(TComponent * Owner, TSessionData * Data, TStrings * Paths);
+  __fastcall TGenerateUrlDialog(
+    TComponent * Owner, TSessionData * Data, TFilesSelected FilesSelected, TStrings * Paths,
+    bool Transfer, bool ToRemote, bool Move, int CopyParamAttrs, const UnicodeString & Path, const TCopyParamType & CopyParam);
   void __fastcall Execute();
 };
 //---------------------------------------------------------------------------

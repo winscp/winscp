@@ -2320,6 +2320,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcRemoveCtrlZUpload:
     case fcLocking:
     case fcPreservingTimestampDirs:
+    case fcResumeSupport:
       return false;
 
     default:

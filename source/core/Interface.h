@@ -5,9 +5,26 @@
 #include "Configuration.h"
 #include "SessionData.h"
 #define HELP_NONE ""
+#define SCRIPT_SWITCH "script"
 #define COMMAND_SWITCH L"Command"
 #define SESSIONNAME_SWICH L"SessionName"
 #define INI_NUL L"nul"
+#define PRESERVETIME_SWITCH L"preservetime"
+#define PRESERVETIMEDIRS_SWITCH_VALUE L"all"
+#define NOPRESERVETIME_SWITCH L"nopreservetime"
+#define PERMISSIONS_SWITCH L"permissions"
+#define NOPERMISSIONS_SWITCH L"nopermissions"
+#define SPEED_SWITCH L"speed"
+#define TRANSFER_SWITCH L"transfer"
+#define FILEMASK_SWITCH L"filemask"
+#define RESUMESUPPORT_SWITCH L"resumesupport"
+#define NEWERONLY_SWICH L"neweronly"
+#define NONEWERONLY_SWICH L"noneweronly"
+#define DELETE_SWITCH L"delete"
+extern const wchar_t * TransferModeNames[];
+extern const int TransferModeNamesCount;
+extern const wchar_t * ToggleNames[];
+enum TToggle { ToggleOff, ToggleOn };
 //---------------------------------------------------------------------------
 TConfiguration * __fastcall CreateConfiguration();
 class TOptions;

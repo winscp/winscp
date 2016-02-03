@@ -14,9 +14,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-static const wchar_t * TransferModeNames[] = { L"binary", L"ascii", L"automatic" };
-enum { Off, On };
-static const wchar_t * ToggleNames[] = { L"off", L"on" };
+const wchar_t * ToggleNames[] = { L"off", L"on" };
 //---------------------------------------------------------------------------
 __fastcall TScriptProcParams::TScriptProcParams(UnicodeString ParamsStr)
 {
@@ -936,7 +934,7 @@ void __fastcall TScript::TransferParamParams(int & Params, TScriptProcParams * P
 {
   Params |= FLAGMASK(!FConfirm, cpNoConfirmation);
 
-  if (Parameters->FindSwitch(L"delete"))
+  if (Parameters->FindSwitch(DELETE_SWITCH))
   {
     Params |= cpDelete;
   }
@@ -961,34 +959,34 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
     CopyParam.CalculateSize = false;
   }
 
-  if (Parameters->FindSwitch(L"nopreservetime"))
+  if (Parameters->FindSwitch(NOPRESERVETIME_SWITCH))
   {
     CopyParam.PreserveTime = false;
     CopyParam.PreserveTimeDirs = false;
   }
 
-  if (Parameters->FindSwitch(L"preservetime", Value))
+  if (Parameters->FindSwitch(PRESERVETIME_SWITCH, Value))
   {
     CopyParam.PreserveTime = true;
 
-    if (SameText(Value, L"all"))
+    if (SameText(Value, PRESERVETIMEDIRS_SWITCH_VALUE))
     {
       CopyParam.PreserveTimeDirs = true;
     }
   }
 
-  if (Parameters->FindSwitch(L"nopermissions"))
+  if (Parameters->FindSwitch(NOPERMISSIONS_SWITCH))
   {
     CopyParam.PreserveRights = false;
   }
 
-  if (Parameters->FindSwitch(L"permissions", Value))
+  if (Parameters->FindSwitch(PERMISSIONS_SWITCH, Value))
   {
     CopyParam.PreserveRights = true;
     CopyParam.Rights.Octal = Value;
   }
 
-  if (Parameters->FindSwitch(L"speed", Value))
+  if (Parameters->FindSwitch(SPEED_SWITCH, Value))
   {
     int CPSLimit;
     if (Value.IsEmpty())
@@ -1006,12 +1004,12 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
     CopyParam.CPSLimit = CPSLimit;
   }
 
-  if (Parameters->FindSwitch(L"transfer", Value))
+  if (Parameters->FindSwitch(TRANSFER_SWITCH, Value))
   {
     CopyParam.TransferMode = ParseTransferModeName(Value);
   }
 
-  if (Parameters->FindSwitch(L"filemask", Value))
+  if (Parameters->FindSwitch(FILEMASK_SWITCH, Value))
   {
     CopyParam.IncludeFileMask = Value;
     if (FIncludeFileMaskOptionUsed)
@@ -1020,7 +1018,7 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
     }
   }
 
-  if (Parameters->FindSwitch(L"resumesupport", Value))
+  if (Parameters->FindSwitch(RESUMESUPPORT_SWITCH, Value))
   {
     int ToggleValue = TScriptCommands::FindCommand(ToggleNames,
       LENOF(ToggleNames), Value);
@@ -1028,11 +1026,11 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
     {
       switch (ToggleValue)
       {
-        case Off:
+        case ToggleOff:
           CopyParam.ResumeSupport = rsOff;
           break;
 
-        case On:
+        case ToggleOn:
           CopyParam.ResumeSupport = rsOn;
           break;
 
@@ -1046,19 +1044,19 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
       int ThresholdValue;
       if (!TryStrToInt(Value, ThresholdValue))
       {
-        throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (L"resumesupport", Value)));
+        throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (RESUMESUPPORT_SWITCH, Value)));
       }
       CopyParam.ResumeSupport = rsSmart;
       CopyParam.ResumeThreshold = ThresholdValue * 1024;
     }
   }
 
-  if (Parameters->FindSwitch(L"noneweronly"))
+  if (Parameters->FindSwitch(NONEWERONLY_SWICH))
   {
     CopyParam.NewerOnly = false;
   }
 
-  if (Parameters->FindSwitch(L"neweronly"))
+  if (Parameters->FindSwitch(NEWERONLY_SWICH))
   {
     CopyParam.NewerOnly = true;
   }
@@ -1484,7 +1482,7 @@ TTransferMode __fastcall TScript::ParseTransferModeName(UnicodeString Name)
   DebugAssert((tmBinary == 0) && (tmAscii == 1) && (tmAutomatic == 2));
 
   int Value = TScriptCommands::FindCommand(TransferModeNames,
-    LENOF(TransferModeNames), Name);
+    TransferModeNamesCount, Name);
   if (Value < 0)
   {
     throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (L"transfer", Name)));
@@ -1530,10 +1528,10 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
       }
-      FEcho = (Value == On);
+      FEcho = (Value == ToggleOn);
     }
 
-    PrintLine(FORMAT(ListFormat, (Names[Echo], ToggleNames[FEcho ? On : Off])));
+    PrintLine(FORMAT(ListFormat, (Names[Echo], ToggleNames[FEcho ? ToggleOn : ToggleOff])));
   }
 
   if (OPT(Batch))
@@ -1568,11 +1566,11 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
       }
-      FConfirm = (Value == On);
+      FConfirm = (Value == ToggleOn);
       FInteractiveConfirm = FConfirm;
     }
 
-    PrintLine(FORMAT(ListFormat, (Names[Confirm], ToggleNames[FConfirm ? On : Off])));
+    PrintLine(FORMAT(ListFormat, (Names[Confirm], ToggleNames[FConfirm ? ToggleOn : ToggleOff])));
   }
 
   // omit the option in listing
@@ -1583,7 +1581,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
       FCopyParam.TransferMode = ParseTransferModeName(ValueName);
     }
 
-    DebugAssert(FCopyParam.TransferMode < (TTransferMode)LENOF(TransferModeNames));
+    DebugAssert(FCopyParam.TransferMode < (TTransferMode)TransferModeNamesCount);
     const wchar_t * Value = TransferModeNames[FCopyParam.TransferMode];
     PrintLine(FORMAT(ListFormat, (Names[Transfer], Value)));
   }
@@ -1600,11 +1598,11 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
       }
       FSynchronizeParams =
         (FSynchronizeParams & ~TTerminal::spDelete) |
-        FLAGMASK(Value == On, TTerminal::spDelete);
+        FLAGMASK(Value == ToggleOn, TTerminal::spDelete);
     }
 
     PrintLine(FORMAT(ListFormat, (Names[SynchDelete],
-      ToggleNames[FLAGSET(FSynchronizeParams, TTerminal::spDelete) ? On : Off])));
+      ToggleNames[FLAGSET(FSynchronizeParams, TTerminal::spDelete) ? ToggleOn : ToggleOff])));
   }
 
   static const wchar_t * Clear = L"clear";
@@ -1641,7 +1639,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
     if (SetValue && !PrintReconnectTime)
     {
       int Value;
-      if (AnsiSameText(ValueName, ToggleNames[Off]))
+      if (AnsiSameText(ValueName, ToggleNames[ToggleOff]))
       {
         Value = 0;
       }
@@ -1661,7 +1659,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
 
     if (FSessionReopenTimeout == 0)
     {
-      ValueName = ToggleNames[Off];
+      ValueName = ToggleNames[ToggleOff];
     }
     else
     {
@@ -1679,10 +1677,10 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
       }
-      FFailOnNoMatch = (Value == On);
+      FFailOnNoMatch = (Value == ToggleOn);
     }
 
-    PrintLine(FORMAT(ListFormat, (Names[FailOnNoMatch], ToggleNames[FFailOnNoMatch ? On : Off])));
+    PrintLine(FORMAT(ListFormat, (Names[FailOnNoMatch], ToggleNames[FFailOnNoMatch ? ToggleOn : ToggleOff])));
   }
 
   #undef OPT

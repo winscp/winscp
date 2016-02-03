@@ -186,13 +186,14 @@ const coAllowRemoteTransfer = 0x100;
 const coNoQueue             = 0x200;
 const coNoQueueIndividually = 0x400;
 const coShortCutHint        = 0x800;
+const coAllFiles            = 0x1000;
 const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
-  int * OutputOptions);
+  TSessionData * SessionData, int * OutputOptions);
 
 // forms\CreateDirectory.cpp
 bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
@@ -405,16 +406,21 @@ bool __fastcall DoFileFindDialog(UnicodeString Directory,
 
 // forms\GenerateUrl.cpp
 void __fastcall DoGenerateUrlDialog(TSessionData * Data, TStrings * Paths);
+enum TFilesSelected { fsList, fsAll };
+void __fastcall DoGenerateTransferCodeDialog(
+  bool ToRemote, bool Move, int CopyParamAttrs, TSessionData * Data, TFilesSelected FilesSelected,
+  TStrings * FileList, const UnicodeString & Path, const TCopyParamType & CopyParam);
 
 void __fastcall CopyParamListButton(TButton * Button);
 const int cplNone =             0x00;
 const int cplCustomize =        0x01;
 const int cplCustomizeDefault = 0x02;
 const int cplSaveSettings =     0x04;
+const int cplGenerateCode =     0x08;
 void __fastcall CopyParamListPopup(TRect R, TPopupMenu * Menu,
   const TCopyParamType & Param, UnicodeString Preset, TNotifyEvent OnClick,
   int Options, int CopyParamAttrs, bool SaveSettings = false);
-bool __fastcall CopyParamListPopupClick(TObject * Sender,
+int __fastcall CopyParamListPopupClick(TObject * Sender,
   TCopyParamType & Param, UnicodeString & Preset, int CopyParamAttrs,
   bool * SaveSettings = NULL);
 

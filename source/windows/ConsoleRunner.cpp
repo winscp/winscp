@@ -2511,7 +2511,7 @@ int __fastcall Console(TConsoleMode Mode)
         if (CheckSafe(Params))
         {
           UnicodeString Value;
-          if (Params->FindSwitch(L"script", Value) && !Value.IsEmpty())
+          if (Params->FindSwitch(SCRIPT_SWITCH, Value) && !Value.IsEmpty())
           {
             Configuration->Usage->Inc(L"ScriptFile");
             LoadScriptFromFile(Value, ScriptCommands);

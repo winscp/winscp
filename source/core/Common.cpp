@@ -2930,6 +2930,7 @@ bool __fastcall IsHttpUrl(const UnicodeString & S)
 const UnicodeString RtfPara = L"\\par\n";
 const UnicodeString RtfHyperlinkField = L"HYPERLINK";
 const UnicodeString RtfHyperlinkFieldPrefix = RtfHyperlinkField + L" \"";
+const UnicodeString RtfHyperlinkFieldSuffix = L"\" ";
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfColor(int Index)
 {
@@ -3000,6 +3001,87 @@ UnicodeString __fastcall RtfString(const UnicodeString & Text)
 UnicodeString __fastcall RtfLink(const UnicodeString & Link, const UnicodeString & RtfText)
 {
   return
-    L"{\\field{\\*\\fldinst{HYPERLINK \"" + Link + L"\" }}{\\fldrslt{" +
+    L"{\\field{\\*\\fldinst{" + RtfHyperlinkFieldPrefix + Link + RtfHyperlinkFieldSuffix + L"}}{\\fldrslt{" +
     RtfText + L"}}}";
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall ScriptCommandLink(const UnicodeString & Command)
+{
+  return L"scriptcommand_" + Command;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfSwitch(const UnicodeString & Switch, const UnicodeString & Link)
+{
+  return RtfText(L" ") + RtfLink(Link + L"#" + Switch.LowerCase(), RtfParameter(FORMAT(L"-%s", (Switch))));
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfSwitchValue(const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value)
+{
+  return RtfSwitch(Name, Link) + L"=" + Value;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value)
+{
+  return RtfSwitchValue(Name, Link, RtfText(FORMAT("\"%s\"", (EscapeParam(Value)))));
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeString & Link, int Value)
+{
+  return RtfSwitchValue(Name, Link, RtfText(IntToStr(Value)));
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text)
+{
+  // Remove all tags HYPERLINK "http://www.example.com".
+  // See also RtfEscapeParam
+  int Index = 1;
+  int P;
+  while ((P = PosFrom(RtfHyperlinkFieldPrefix, Text, Index)) > 0)
+  {
+    int Index2 = P + RtfHyperlinkFieldPrefix.Length();
+    int P2 = PosFrom(RtfHyperlinkFieldSuffix, Text, Index2);
+    if (P2 > 0)
+    {
+      Text.Delete(P, P2 - P + RtfHyperlinkFieldSuffix.Length());
+    }
+    else
+    {
+      Index = Index2;
+    }
+  }
+  return Text;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfEscapeParam(UnicodeString Param)
+{
+  const UnicodeString Quote(L"\"");
+  // Equivalent of EscapeParam, except that it does not double quotes in HYPERLINK.
+  // See also RtfRemoveHyperlinks.
+  int Index = 1;
+  while (true)
+  {
+    int P1 = PosFrom(Quote, Param, Index);
+    if (P1 == 0)
+    {
+      // no more quotes
+      break;
+    }
+    else
+    {
+      int P2 = PosFrom(RtfHyperlinkFieldPrefix, Param, Index);
+      int P3;
+      if ((P2 > 0) && (P2 < P1) && ((P3 = PosFrom(RtfHyperlinkFieldSuffix, Param, P2)) > 0))
+      {
+        // skip HYPERLINK
+        Index = P3 + RtfHyperlinkFieldSuffix.Length();
+      }
+      else
+      {
+        Param.Insert(Quote, P1);
+        Index = P1 + (Quote.Length() * 2);
+      }
+    }
+  }
+
+  return Param;
 }

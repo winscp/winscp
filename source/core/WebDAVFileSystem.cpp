@@ -650,6 +650,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcRemoveBOMUpload:
     case fcRemoteCopy:
     case fcPreservingTimestampDirs:
+    case fcResumeSupport:
       return false;
 
     case fcLocking:
