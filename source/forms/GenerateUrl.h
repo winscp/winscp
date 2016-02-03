@@ -72,6 +72,9 @@ protected:
   bool __fastcall IsFileUrl();
   virtual void __fastcall CreateParams(TCreateParams & Params);
   virtual void __fastcall Dispatch(void * AMessage);
+  UnicodeString __fastcall GenerateUrl();
+  UnicodeString __fastcall GenerateScript(UnicodeString & ScriptDescription);
+  UnicodeString __fastcall GenerateAssemblyCode();
 
 public:
   __fastcall TGenerateUrlDialog(

@@ -258,11 +258,234 @@ static UnicodeString __fastcall EscapeFileMask(UnicodeString S)
   return ReplaceStr(ReplaceStr(ReplaceStr(S, L"[", L"[[]"), L"*", L"[*]"), L"?", L"[?]");
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl()
+{
+  UnicodeString Result;
+  if (!IsFileUrl())
+  {
+    UnicodeString Path = FData->RemoteDirectory;
+    if (!Path.IsEmpty() && !EndsStr(L"/", Path))
+    {
+      Path += L"/";
+    }
+    Result = RtfText(GenerateUrl(Path));
+  }
+  else
+  {
+    for (int Index = 0; Index < FPaths->Count; Index++)
+    {
+      UnicodeString Url = GenerateUrl(FPaths->Strings[Index]);
+      Result += RtfText(Url) + RtfPara;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & ScriptDescription)
+{
+  UnicodeString Result;
+
+  UnicodeString ExeName = Application->ExeName;
+  UnicodeString BaseExeName = ExtractFileBaseName(ExeName);
+  UnicodeString OpenCommand = FData->GenerateOpenCommandArgs();
+  UnicodeString CommandPlaceholder1 = FMTLOAD(GENERATE_URL_COMMAND, (1));
+  UnicodeString CommandPlaceholder2 = FMTLOAD(GENERATE_URL_COMMAND, (2));
+  UnicodeString LogPath = LoadStr(GENERATE_URL_WRITABLE_PATH_TO_LOG) + RtfText(BaseExeName + L".log");
+  UnicodeString LogParameter =
+    RtfCommandlineSwitch(LOG_SWITCH, L"logging") + RtfText(L"=") +
+    RtfScriptPlaceholder(L"\"" + LogPath + L"\"");
+  UnicodeString IniParameter =
+    RtfCommandlineSwitch(INI_SWITCH, L"configuration") + RtfText(UnicodeString(L"=") + INI_NUL);
+  UnicodeString CommandParameter = RtfCommandlineSwitch(COMMAND_SWITCH, L"scripting");
+
+  typedef std::vector<UnicodeString> TCommands;
+  TCommands Commands;
+
+  Commands.push_back(RtfScriptCommand(L"open") + L" " + OpenCommand);
+  Commands.push_back(UnicodeString());
+
+  if (FTransfer)
+  {
+    UnicodeString TransferCommand;
+
+    if (FToRemote)
+    {
+      Commands.push_back(RtfScriptCommand(L"lcd") + L" " + RtfText(QuoteStringParam(FSourcePath)));
+      Commands.push_back(RtfScriptCommand(L"cd") + L" " + RtfText(QuoteStringParam(UnixExcludeTrailingBackslash(FPath))));
+      TransferCommand = L"put";
+    }
+    else
+    {
+      Commands.push_back(RtfScriptCommand(L"cd") + L" " + RtfText(QuoteStringParam(FSourcePath)));
+      Commands.push_back(RtfScriptCommand(L"lcd") + L" " + RtfText(QuoteStringParam(ExcludeTrailingBackslash(FPath))));
+      TransferCommand = L"get";
+    }
+
+    Commands.push_back(UnicodeString());
+
+    UnicodeString TransferCommandLink = ScriptCommandLink(TransferCommand);
+    UnicodeString TransferCommandArgs;
+    if (FMove)
+    {
+      TransferCommandArgs += RtfSwitch(DELETE_SWITCH, TransferCommandLink);
+    }
+    bool NoArgs;
+    TransferCommandArgs += FCopyParam.GenerateTransferCommandArgs(FCopyParamAttrs, TransferCommandLink, NoArgs);
+
+    if (NoArgs)
+    {
+      ScriptDescription += LoadStr(GENERATE_URL_COPY_PARAM_SCRIPT_REMAINING) + L"\n";
+    }
+
+    TransferCommand = RtfScriptCommand(TransferCommand) + TransferCommandArgs;
+
+    if (FFilesSelected == fsList)
+    {
+      for (int Index = 0; Index < FPaths->Count; Index++)
+      {
+        Commands.push_back(TransferCommand + L" " + RtfText(QuoteStringParam(EscapeFileMask(FPaths->Strings[Index]))));
+      }
+    }
+    else
+    {
+      Commands.push_back(TransferCommand + L" " + RtfText(QuoteStringParam(FSourcePath + L"*")));
+    }
+  }
+  else
+  {
+    Commands.push_back(L"# " + CommandPlaceholder1);
+    Commands.push_back(L"# " + CommandPlaceholder2);
+  }
+
+  Commands.push_back(UnicodeString());
+  Commands.push_back(RtfScriptCommand(L"exit"));
+
+  if (ScriptFormatCombo->ItemIndex == sfScriptFile)
+  {
+    for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
+    {
+      UnicodeString Command = *I;
+      if (!Command.IsEmpty())
+      {
+        if (Command[1] == L'#')
+        {
+          Result += RtfScriptComment(Command);
+        }
+        else
+        {
+          Result += Command;
+        }
+      }
+      Result += RtfPara;
+    }
+
+    UnicodeString ScriptCommandLine =
+      FORMAT("\"%s\" /%s=\"%s\" /%s=%s /%s=\"%s\"",
+        (ExeName, LowerCase(LOG_SWITCH), LogPath, LowerCase(INI_SWITCH), INI_NUL, LowerCase(SCRIPT_SWITCH), LoadStr(GENERATE_URL_PATH_TO_SCRIPT)));
+    Result +=
+      RtfPara +
+      RtfScriptComment(L"# " + LoadStr(GENERATE_URL_SCRIPT_DESC)) + RtfPara +
+      RtfScriptComment(L"# " + ScriptCommandLine) + RtfPara;
+  }
+  else if (ScriptFormatCombo->ItemIndex == sfBatchFile)
+  {
+    UnicodeString ComExeName = ChangeFileExt(ExeName, L".com");
+
+    Result =
+      RtfScriptPlaceholder(L"@echo off") + RtfPara +
+      RtfPara +
+      RtfText(L"\"" + ComExeName + "\" ^") + RtfPara +
+      RtfText(L"  ") + LogParameter + L" " + IniParameter + RtfText(L" ^") + RtfPara +
+      RtfText(L"  ") + CommandParameter;
+
+    for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
+    {
+      UnicodeString Command = *I;
+      if (!Command.IsEmpty())
+      {
+        Result +=
+          RtfText(L" ^") + RtfPara +
+          RtfText(L"    \"");
+
+        if (Command[1] == L'#')
+        {
+          Command.Delete(1, 1);
+          Result += RtfScriptPlaceholder(Command.TrimLeft());
+        }
+        else
+        {
+          Result += RtfEscapeParam(ReplaceStr(Command, L"%", L"%%"));
+        }
+        Result += L"\"";
+      }
+    }
+
+    Result +=
+      RtfPara +
+      RtfPara +
+      RtfKeyword(L"set") + RtfText(L" WINSCP_RESULT=%ERRORLEVEL%") + RtfPara +
+      RtfKeyword(L"if") + RtfText(L" %WINSCP_RESULT% ") + RtfKeyword(L"equ") + RtfText(L" 0 (") + RtfPara +
+      RtfText(L"  ") + RtfKeyword(L"echo") + RtfText(L" Success") + RtfPara +
+      RtfText(L") ") + RtfKeyword(L"else") + RtfText(L" (") + RtfPara +
+      RtfText(L"  ") + RtfKeyword(L"echo") + RtfText(L" Error") + RtfPara +
+      RtfText(L")") + RtfPara +
+      RtfPara +
+      RtfKeyword(L"exit") + RtfText(L" /b %WINSCP_RESULT%") + RtfPara;
+  }
+  else if (ScriptFormatCombo->ItemIndex == sfCommandLine)
+  {
+    Result =
+      LogParameter + L" " +
+      IniParameter + L" " +
+      CommandParameter;
+
+    for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
+    {
+      UnicodeString Command = *I;
+      if (!Command.IsEmpty())
+      {
+        Result += RtfText(L" \"");
+        if (Command[1] == L'#')
+        {
+          Command.Delete(1, 1);
+          Result += RtfScriptPlaceholder(Command.TrimLeft());
+        }
+        else
+        {
+          Result += RtfEscapeParam(Command);
+        }
+        Result += L"\"";
+      }
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode()
+{
+  TAssemblyLanguage Language = static_cast<TAssemblyLanguage>(AssemblyLanguageCombo->ItemIndex);
+
+  UnicodeString Head;
+  UnicodeString Tail;
+  int Indent;
+
+  FData->GenerateAssemblyCode(Language, Head, Tail, Indent);
+
+  UnicodeString Indentation = UnicodeString::StringOfChar(L' ', Indent);
+
+  UnicodeString Result =
+    Head +
+    Indentation + AssemblyCommentLine(Language, LoadStr(GENERATE_URL_YOUR_CODE)) +
+    Tail;
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TGenerateUrlDialog::UpdateControls()
 {
   if (!FChanging)
   {
-    UnicodeString ExeName = Application->ExeName;
     int CaptionId;
     if (FTransfer)
     {
@@ -317,239 +540,47 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
 
     UnicodeString Result;
 
-    bool WordWrap = false;
-    bool FixedWidth = false;
+    bool WordWrap = false; // shut up
+    bool FixedWidth = false; // shut up
     if (OptionsPageControl->ActivePage == UrlSheet)
     {
-      if (!IsFileUrl())
-      {
-        UnicodeString Path = FData->RemoteDirectory;
-        if (!Path.IsEmpty() && !EndsStr(L"/", Path))
-        {
-          Path += L"/";
-        }
-        Result = RtfText(GenerateUrl(Path));
-      }
-      else
-      {
-        for (int Index = 0; Index < FPaths->Count; Index++)
-        {
-          UnicodeString Url = GenerateUrl(FPaths->Strings[Index]);
-          Result += RtfText(Url) + RtfPara;
-        }
-      }
+      Result = GenerateUrl();
       WordWrap = true;
+      FixedWidth = false;
     }
     else if (OptionsPageControl->ActivePage == ScriptSheet)
     {
-      UnicodeString BaseExeName = ExtractFileBaseName(ExeName);
-      UnicodeString OpenCommand = FData->GenerateOpenCommandArgs();
-      UnicodeString CommandPlaceholder1 = FMTLOAD(GENERATE_URL_COMMAND, (1));
-      UnicodeString CommandPlaceholder2 = FMTLOAD(GENERATE_URL_COMMAND, (2));
-      UnicodeString LogPath = LoadStr(GENERATE_URL_WRITABLE_PATH_TO_LOG) + RtfText(BaseExeName + L".log");
-      UnicodeString LogParameter =
-        RtfCommandlineSwitch(LOG_SWITCH, L"logging") + RtfText(L"=") +
-        RtfScriptPlaceholder(L"\"" + LogPath + L"\"");
-      UnicodeString IniParameter =
-        RtfCommandlineSwitch(INI_SWITCH, L"configuration") + RtfText(UnicodeString(L"=") + INI_NUL);
-      UnicodeString CommandParameter = RtfCommandlineSwitch(COMMAND_SWITCH, L"scripting");
-
-      typedef std::vector<UnicodeString> TCommands;
-      TCommands Commands;
-
-      Commands.push_back(RtfScriptCommand(L"open") + L" " + OpenCommand);
-      Commands.push_back(UnicodeString());
-
-      bool NoArgs = false;
-
-      if (FTransfer)
-      {
-        UnicodeString TransferCommand;
-
-        if (FToRemote)
-        {
-          Commands.push_back(RtfScriptCommand(L"lcd") + L" " + RtfText(QuoteStringParam(FSourcePath)));
-          Commands.push_back(RtfScriptCommand(L"cd") + L" " + RtfText(QuoteStringParam(UnixExcludeTrailingBackslash(FPath))));
-          TransferCommand = L"put";
-        }
-        else
-        {
-          Commands.push_back(RtfScriptCommand(L"cd") + L" " + RtfText(QuoteStringParam(FSourcePath)));
-          Commands.push_back(RtfScriptCommand(L"lcd") + L" " + RtfText(QuoteStringParam(ExcludeTrailingBackslash(FPath))));
-          TransferCommand = L"get";
-        }
-
-        Commands.push_back(UnicodeString());
-
-        UnicodeString TransferCommandLink = ScriptCommandLink(TransferCommand);
-        UnicodeString TransferCommandArgs;
-        if (FMove)
-        {
-          TransferCommandArgs += RtfSwitch(DELETE_SWITCH, TransferCommandLink);
-        }
-        TransferCommandArgs += FCopyParam.GenerateTransferCommandArgs(FCopyParamAttrs, TransferCommandLink, NoArgs);
-
-        TransferCommand = RtfScriptCommand(TransferCommand) + TransferCommandArgs;
-
-        if (FFilesSelected == fsList)
-        {
-          for (int Index = 0; Index < FPaths->Count; Index++)
-          {
-            Commands.push_back(TransferCommand + L" " + RtfText(QuoteStringParam(EscapeFileMask(FPaths->Strings[Index]))));
-          }
-        }
-        else
-        {
-          Commands.push_back(TransferCommand + L" " + RtfText(QuoteStringParam(FSourcePath + L"*")));
-        }
-      }
-      else
-      {
-        Commands.push_back(L"# " + CommandPlaceholder1);
-        Commands.push_back(L"# " + CommandPlaceholder2);
-      }
-
-      Commands.push_back(UnicodeString());
-      Commands.push_back(RtfScriptCommand(L"exit"));
-
       UnicodeString ScriptDescription;
-
       if (ScriptFormatCombo->ItemIndex == sfScriptFile)
       {
-        for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
-        {
-          UnicodeString Command = *I;
-          if (!Command.IsEmpty())
-          {
-            if (Command[1] == L'#')
-            {
-              Result += RtfScriptComment(Command);
-            }
-            else
-            {
-              Result += Command;
-            }
-          }
-          Result += RtfPara;
-        }
-
-        UnicodeString ScriptCommandLine =
-          FORMAT("\"%s\" /%s=\"%s\" /%s=%s /%s=\"%s\"",
-            (ExeName, LowerCase(LOG_SWITCH), LogPath, LowerCase(INI_SWITCH), INI_NUL, LowerCase(SCRIPT_SWITCH), LoadStr(GENERATE_URL_PATH_TO_SCRIPT)));
-        Result +=
-          RtfPara +
-          RtfScriptComment(L"# " + LoadStr(GENERATE_URL_SCRIPT_DESC)) + RtfPara +
-          RtfScriptComment(L"# " + ScriptCommandLine) + RtfPara;
-
         WordWrap = false;
         FixedWidth = true;
       }
       else if (ScriptFormatCombo->ItemIndex == sfBatchFile)
       {
-        UnicodeString ComExeName = ChangeFileExt(ExeName, L".com");
-
-        Result =
-          RtfScriptPlaceholder(L"@echo off") + RtfPara +
-          RtfPara +
-          RtfText(L"\"" + ComExeName + "\" ^") + RtfPara +
-          RtfText(L"  ") + LogParameter + L" " + IniParameter + RtfText(L" ^") + RtfPara +
-          RtfText(L"  ") + CommandParameter;
-
-        for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
-        {
-          UnicodeString Command = *I;
-          if (!Command.IsEmpty())
-          {
-            Result +=
-              RtfText(L" ^") + RtfPara +
-              RtfText(L"    \"");
-
-            if (Command[1] == L'#')
-            {
-              Command.Delete(1, 1);
-              Result += RtfScriptPlaceholder(Command.TrimLeft());
-            }
-            else
-            {
-              Result += RtfEscapeParam(ReplaceStr(Command, L"%", L"%%"));
-            }
-            Result += L"\"";
-          }
-        }
-
-        Result +=
-          RtfPara +
-          RtfPara +
-          RtfKeyword(L"set") + RtfText(L" WINSCP_RESULT=%ERRORLEVEL%") + RtfPara +
-          RtfKeyword(L"if") + RtfText(L" %WINSCP_RESULT% ") + RtfKeyword(L"equ") + RtfText(L" 0 (") + RtfPara +
-          RtfText(L"  ") + RtfKeyword(L"echo") + RtfText(L" Success") + RtfPara +
-          RtfText(L") ") + RtfKeyword(L"else") + RtfText(L" (") + RtfPara +
-          RtfText(L"  ") + RtfKeyword(L"echo") + RtfText(L" Error") + RtfPara +
-          RtfText(L")") + RtfPara +
-          RtfPara +
-          RtfKeyword(L"exit") + RtfText(L" /b %WINSCP_RESULT%") + RtfPara;
         WordWrap = false;
         FixedWidth = true;
       }
       else if (ScriptFormatCombo->ItemIndex == sfCommandLine)
       {
-        Result =
-          LogParameter + L" " +
-          IniParameter + L" " +
-          CommandParameter;
-
-        for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
-        {
-          UnicodeString Command = *I;
-          if (!Command.IsEmpty())
-          {
-            Result += RtfText(L" \"");
-            if (Command[1] == L'#')
-            {
-              Command.Delete(1, 1);
-              Result += RtfScriptPlaceholder(Command.TrimLeft());
-            }
-            else
-            {
-              Result += RtfEscapeParam(Command);
-            }
-            Result += L"\"";
-          }
-        }
-
         WordWrap = true;
         FixedWidth = false;
 
-        ScriptDescription = FMTLOAD(GENERATE_URL_COMMANDLINE_DESC, (FORMAT("\"%s\"", (ExeName)))) + L"\n";
+        ScriptDescription = FMTLOAD(GENERATE_URL_COMMANDLINE_DESC, (FORMAT("\"%s\"", (Application->ExeName)))) + L"\n";
       }
 
       if (HostKeyUnknown)
       {
         ScriptDescription += LoadStr(GENERATE_URL_HOSTKEY_UNKNOWN) + L"\n";
       }
-      if (NoArgs)
-      {
-        ScriptDescription += LoadStr(GENERATE_URL_COPY_PARAM_SCRIPT_REMAINING) + L"\n";
-      }
+
+      Result = GenerateScript(ScriptDescription);
 
       ScriptDescriptionLabel->Caption = ScriptDescription;
     }
     else if (DebugAlwaysTrue(OptionsPageControl->ActivePage == AssemblySheet))
     {
-      TAssemblyLanguage Language = static_cast<TAssemblyLanguage>(AssemblyLanguageCombo->ItemIndex);
-
-      UnicodeString Head;
-      UnicodeString Tail;
-      int Indent;
-
-      FData->GenerateAssemblyCode(Language, Head, Tail, Indent);
-
-      UnicodeString Indentation = UnicodeString::StringOfChar(L' ', Indent);
-
-      Result =
-        Head +
-        Indentation + AssemblyCommentLine(Language, LoadStr(GENERATE_URL_YOUR_CODE)) +
-        Tail;
+      Result = GenerateAssemblyCode();
 
       WordWrap = false;
       FixedWidth = true;
