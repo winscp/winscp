@@ -435,7 +435,7 @@ public:
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
   UnicodeString __fastcall GenerateOpenCommandArgs();
-  UnicodeString __fastcall GenerateAssemblyCode(TAssemblyLanguage Language);
+  void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
   void __fastcall LookupLastFingerprint();
   bool __fastcall IsSecure();
   static void __fastcall ValidatePath(const UnicodeString Path);

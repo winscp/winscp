@@ -2559,11 +2559,6 @@ void __fastcall TSessionData::LookupLastFingerprint()
   }
 }
 //---------------------------------------------------------------------
-static UnicodeString __fastcall RtfCodeComment(const UnicodeString & Text)
-{
-  return RtfColorItalicText(2, Text);
-}
-//---------------------------------------------------------------------
 static UnicodeString __fastcall RtfClass(const UnicodeString & Text)
 {
   return RtfColorText(3, Text);
@@ -2772,37 +2767,37 @@ void __fastcall TSessionData::AddAssemblyProperty(
   AddAssemblyPropertyRaw(Result, Language, Name, PropertyValue);
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
-  TAssemblyLanguage Language)
+void __fastcall TSessionData::GenerateAssemblyCode(
+  TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent)
 {
   std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
   std::unique_ptr<TSessionData> SessionData(Clone());
 
-  UnicodeString Result;
+  UnicodeString SessionOptionsCommentLine =
+    AssemblyCommentLine(Language, LoadStr(CODE_SESSION_OPTIONS));
 
-  UnicodeString SessionOptionsPreamble;
   switch (Language)
   {
     case alCSharp:
-      SessionOptionsPreamble =
-        RtfCodeComment(L"// %s") + RtfPara +
+      Head +=
+        SessionOptionsCommentLine +
         RtfLibraryClass(L"SessionOptions") + RtfText(L" sessionOptions = ") + RtfKeyword(L"new") + RtfText(" ") + RtfLibraryClass(L"SessionOptions") + RtfPara +
         RtfText(L"{") + RtfPara;
       break;
 
     case alVBNET:
-      SessionOptionsPreamble =
-        RtfCodeComment(L"' %s") + RtfPara +
+      Head +=
+        SessionOptionsCommentLine +
         RtfKeyword(L"Dim") + RtfText(" mySessionOptions ") + RtfKeyword(L"As") + RtfText(L" ") + RtfKeyword(L"New") + RtfText(" ") + RtfLibraryClass(L"SessionOptions") + RtfPara +
         RtfKeyword(L"With") + RtfText(" mySessionOptions") + RtfPara;
       break;
 
     case alPowerShell:
-      SessionOptionsPreamble =
-        RtfCodeComment(FORMAT(L"# %s", (LoadStr(CODE_PS_ADD_TYPE)))) + RtfPara +
+      Head +=
+        AssemblyCommentLine(Language, LoadStr(CODE_PS_ADD_TYPE)) +
         RtfKeyword(L"Add-Type") + RtfText(" -Path ") + AssemblyString(Language, "WinSCPnet.dll") + RtfPara +
         RtfPara +
-        RtfCodeComment(L"# %s") + RtfPara +
+        SessionOptionsCommentLine +
         RtfText(L"$sessionOptions = ") + RtfKeyword(L"New-Object") + RtfText(" WinSCP.") + RtfLibraryClass(L"SessionOptions") + RtfPara;
       break;
 
@@ -2810,8 +2805,6 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
       DebugFail();
       break;
   }
-
-  Result = FORMAT(SessionOptionsPreamble, (LoadStr(CODE_SESSION_OPTIONS)));
 
   UnicodeString ProtocolMember;
   switch (SessionData->FSProtocol)
@@ -2841,7 +2834,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
   bool AUsesSsh = SessionData->UsesSsh;
 
   // Protocol is set unconditionally, we want even the default SFTP
-  AddAssemblyProperty(Result, Language, L"Protocol", L"Protocol", ProtocolMember);
+  AddAssemblyProperty(Head, Language, L"Protocol", L"Protocol", ProtocolMember);
   // SFTP-only is not reflected by the protocol prefix, we have to use rawsettings for that
   if (SessionData->FSProtocol != fsSFTPonly)
   {
@@ -2849,22 +2842,22 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
   }
   if (SessionData->HostName != FactoryDefaults->HostName)
   {
-    AddAssemblyProperty(Result, Language, L"HostName", HostName);
+    AddAssemblyProperty(Head, Language, L"HostName", HostName);
     SessionData->HostName = FactoryDefaults->HostName;
   }
   if (SessionData->PortNumber != FactoryDefaults->PortNumber)
   {
-    AddAssemblyProperty(Result, Language, L"PortNumber", PortNumber);
+    AddAssemblyProperty(Head, Language, L"PortNumber", PortNumber);
     SessionData->PortNumber = FactoryDefaults->PortNumber;
   }
   if (SessionData->UserName != FactoryDefaults->UserName)
   {
-    AddAssemblyProperty(Result, Language, L"UserName", UserName);
+    AddAssemblyProperty(Head, Language, L"UserName", UserName);
     SessionData->UserName = FactoryDefaults->UserName;
   }
   if (SessionData->Password != FactoryDefaults->Password)
   {
-    AddAssemblyProperty(Result, Language, L"Password", Password);
+    AddAssemblyProperty(Head, Language, L"Password", Password);
     SessionData->Password = FactoryDefaults->Password;
   }
 
@@ -2897,12 +2890,12 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
               DebugFail();
               break;
           }
-          AddAssemblyProperty(Result, Language, L"FtpSecure", L"FtpSecure", FtpSecureMember);
+          AddAssemblyProperty(Head, Language, L"FtpSecure", L"FtpSecure", FtpSecureMember);
         }
         break;
 
       case fsWebDAV:
-        AddAssemblyProperty(Result, Language, L"WebdavSecure", (SessionData->Ftps != ftpsNone));
+        AddAssemblyProperty(Head, Language, L"WebdavSecure", (SessionData->Ftps != ftpsNone));
         break;
 
       default:
@@ -2915,39 +2908,39 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
   if (SessionData->HostKey != FactoryDefaults->HostKey)
   {
     UnicodeString PropertyName = AUsesSsh ? L"SshHostKeyFingerprint" : L"TlsHostCertificateFingerprint";
-    AddAssemblyProperty(Result, Language, PropertyName, SessionData->HostKey);
+    AddAssemblyProperty(Head, Language, PropertyName, SessionData->HostKey);
     SessionData->HostKey = FactoryDefaults->HostKey;
   }
   if (SessionData->PublicKeyFile != FactoryDefaults->PublicKeyFile)
   {
-    AddAssemblyProperty(Result, Language, L"SshPrivateKeyPath", SessionData->PublicKeyFile);
+    AddAssemblyProperty(Head, Language, L"SshPrivateKeyPath", SessionData->PublicKeyFile);
     SessionData->PublicKeyFile = FactoryDefaults->PublicKeyFile;
   }
   if (SessionData->TlsCertificateFile != FactoryDefaults->TlsCertificateFile)
   {
-    AddAssemblyProperty(Result, Language, L"TlsClientCertificatePath", SessionData->TlsCertificateFile);
+    AddAssemblyProperty(Head, Language, L"TlsClientCertificatePath", SessionData->TlsCertificateFile);
     SessionData->TlsCertificateFile = FactoryDefaults->TlsCertificateFile;
   }
   if (SessionData->Passphrase != FactoryDefaults->Passphrase)
   {
-    AddAssemblyProperty(Result, Language, L"PrivateKeyPassphrase", SessionData->Passphrase);
+    AddAssemblyProperty(Head, Language, L"PrivateKeyPassphrase", SessionData->Passphrase);
     SessionData->Passphrase = FactoryDefaults->Passphrase;
   }
   if (SessionData->FtpPasvMode != FactoryDefaults->FtpPasvMode)
   {
-    AddAssemblyProperty(Result, Language, L"FtpMode", L"FtpMode", (SessionData->FtpPasvMode ? L"Passive" : L"Active"));
+    AddAssemblyProperty(Head, Language, L"FtpMode", L"FtpMode", (SessionData->FtpPasvMode ? L"Passive" : L"Active"));
     SessionData->FtpPasvMode = FactoryDefaults->FtpPasvMode;
   }
   if (SessionData->Timeout != FactoryDefaults->Timeout)
   {
-    AddAssemblyProperty(Result, Language, L"TimeoutInMilliseconds", SessionData->Timeout);
+    AddAssemblyProperty(Head, Language, L"TimeoutInMilliseconds", SessionData->Timeout);
     SessionData->Timeout = FactoryDefaults->Timeout;
   }
 
   switch (Language)
   {
     case alCSharp:
-      Result += RtfText(L"};") + RtfPara;
+      Head += RtfText(L"};") + RtfPara;
       break;
 
     case alVBNET:
@@ -2960,7 +2953,7 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
 
   if (RawSettings->Count > 0)
   {
-    Result += RtfPara;
+    Head += RtfPara;
 
     for (int Index = 0; Index < RawSettings->Count; Index++)
     {
@@ -2981,49 +2974,49 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
           SettingsCode = RtfText(L"$sessionOptions.") + RtfLibraryMethod(L"SessionOptions", L"AddRawSettings") + RtfText(L"(%s, %s)") + RtfPara;
           break;
       }
-      Result += FORMAT(SettingsCode, (AssemblyString(Language, Name), AssemblyString(Language, Value)));
+      Head += FORMAT(SettingsCode, (AssemblyString(Language, Name), AssemblyString(Language, Value)));
     }
   }
 
-  UnicodeString SessionCode;
+  UnicodeString CodeCommentLine = L"    " + AssemblyCommentLine(Language, LoadStr(CODE_CONNECT));
 
   switch (Language)
   {
     case alCSharp:
-      SessionCode =
+      Head +=
         RtfPara +
         RtfKeyword(L"using") + RtfText(" (") + RtfLibraryClass(L"Session") + RtfText(L" session = ") + RtfKeyword(L"new") + RtfText(" ") + RtfLibraryClass(L"Session") + RtfText(L"())") + RtfPara +
         RtfText(L"{") + RtfPara +
-        RtfCodeComment(L"    // %s") + RtfPara +
-        RtfText(L"    session.") + RtfLibraryMethod(L"Session", L"Open") + RtfText(L"(sessionOptions);") + RtfPara +
-        RtfPara +
-        RtfCodeComment(L"    // %s") + RtfPara +
+        CodeCommentLine +
+        RtfText(L"    session.") + RtfLibraryMethod(L"Session", L"Open") + RtfText(L"(sessionOptions);") + RtfPara;
+
+      Tail =
         RtfText(L"}") + RtfPara;
       break;
 
     case alVBNET:
-      SessionCode =
+      Head +=
         RtfKeyword(L"End With") + RtfPara +
         RtfPara +
         RtfKeyword(L"Using") + RtfText(" mySession As ") + RtfLibraryClass(L"Session") + RtfText(L" = ") + RtfKeyword(L"New") + RtfText(" ") + RtfLibraryClass(L"Session") + RtfPara +
-        RtfCodeComment(L"    ' %s") + RtfPara +
-        RtfText(L"    mySession.") + RtfLibraryMethod(L"Session", L"Open") + RtfText(L"(mySessionOptions)") + RtfPara +
-        RtfPara +
-        RtfCodeComment(L"    ' %s") + RtfPara +
+        CodeCommentLine +
+        RtfText(L"    mySession.") + RtfLibraryMethod(L"Session", L"Open") + RtfText(L"(mySessionOptions)") + RtfPara;
+
+      Tail =
         RtfKeyword(L"End Using");
       break;
 
     case alPowerShell:
-      SessionCode =
+      Head +=
         RtfPara +
         RtfText(L"$session = ") + RtfKeyword(L"New-Object") + RtfText(" WinSCP.") + RtfLibraryClass(L"Session") + RtfPara +
         RtfPara +
         RtfKeyword(L"try") + RtfPara +
         RtfText(L"{") + RtfPara +
-        RtfCodeComment(L"    # %s") + RtfPara +
-        RtfText(L"    $session.") + RtfLibraryMethod(L"Session", L"Open") + RtfText(L"($sessionOptions)") + RtfPara +
-        RtfPara +
-        RtfCodeComment(L"    # %s") + RtfPara +
+        CodeCommentLine +
+        RtfText(L"    $session.") + RtfLibraryMethod(L"Session", L"Open") + RtfText(L"($sessionOptions)") + RtfPara;
+
+      Tail =
         RtfText(L"}") + RtfPara +
         RtfKeyword(L"finally") + RtfPara +
         RtfText(L"{") + RtfPara +
@@ -3032,9 +3025,9 @@ UnicodeString __fastcall TSessionData::GenerateAssemblyCode(
       break;
   }
 
-  Result += FORMAT(SessionCode, (LoadStr(CODE_CONNECT), LoadStr(CODE_YOUR_CODE)));
+  Head += RtfPara;
 
-  return Result;
+  Indent = 4; // the same for all languages so far
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetTimeDifference(TDateTime value)

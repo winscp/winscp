@@ -450,7 +450,6 @@
 #define SCRIPT_SITE_WARNING     549
 #define CODE_SESSION_OPTIONS    550
 #define CODE_CONNECT            551
-#define CODE_YOUR_CODE          552
 #define CODE_PS_ADD_TYPE        553
 #define COPY_INFO_PRESERVE_TIME_DIRS 554
 

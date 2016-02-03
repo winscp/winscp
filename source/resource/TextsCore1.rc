@@ -420,7 +420,6 @@ BEGIN
   SCRIPT_SITE_WARNING, "In scripting you should not rely on saved sites, use this command instead:"
   CODE_SESSION_OPTIONS, "Setup session options"
   CODE_CONNECT, "Connect"
-  CODE_YOUR_CODE, "Your code"
   CODE_PS_ADD_TYPE, "Load WinSCP .NET assembly"
   COPY_INFO_PRESERVE_TIME_DIRS, "%s (including directories)"
 

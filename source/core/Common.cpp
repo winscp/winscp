@@ -3085,3 +3085,29 @@ UnicodeString __fastcall RtfEscapeParam(UnicodeString Param)
 
   return Param;
 }
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfCodeComment(const UnicodeString & Text)
+{
+  return RtfColorItalicText(2, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyCommentLine(TAssemblyLanguage Language, const UnicodeString & Text)
+{
+  UnicodeString Prefix;
+  switch (Language)
+  {
+    case alCSharp:
+      Prefix = L"//";
+      break;
+
+    case alVBNET:
+      Prefix = L"'";
+      break;
+
+    case alPowerShell:
+      Prefix = L"#";
+      break;
+  }
+
+  return RtfCodeComment(Prefix + L" " + Text) + RtfPara;
+}

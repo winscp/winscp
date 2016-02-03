@@ -536,7 +536,21 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     }
     else if (DebugAlwaysTrue(OptionsPageControl->ActivePage == AssemblySheet))
     {
-      Result = FData->GenerateAssemblyCode(static_cast<TAssemblyLanguage>(AssemblyLanguageCombo->ItemIndex));
+      TAssemblyLanguage Language = static_cast<TAssemblyLanguage>(AssemblyLanguageCombo->ItemIndex);
+
+      UnicodeString Head;
+      UnicodeString Tail;
+      int Indent;
+
+      FData->GenerateAssemblyCode(Language, Head, Tail, Indent);
+
+      UnicodeString Indentation = UnicodeString::StringOfChar(L' ', Indent);
+
+      Result =
+        Head +
+        Indentation + AssemblyCommentLine(Language, LoadStr(GENERATE_URL_YOUR_CODE)) +
+        Tail;
+
       WordWrap = false;
       FixedWidth = true;
     }

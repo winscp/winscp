@@ -569,6 +569,7 @@ BEGIN
         GENERATE_URL_COPY_PARAM_SCRIPT_REMAINING, "Some configured transfer settings do not have a scripting equivalent. Use the /rawconfig command-line switch instead."
         GENERATE_URL_SCRIPT_DESC, "Execute the script using a command like:"
         GENERATE_URL_PATH_TO_SCRIPT, "C:\\path\\to\\script\\script.txt"
+        GENERATE_URL_YOUR_CODE, "Your code"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"

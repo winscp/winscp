@@ -202,6 +202,7 @@ MethodT __fastcall MakeMethod(void * Data, void * Code)
   return Method;
 }
 //---------------------------------------------------------------------------
+enum TAssemblyLanguage { alCSharp, alVBNET, alPowerShell };
 extern const UnicodeString RtfPara;
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfText(const UnicodeString & Text);
@@ -220,6 +221,7 @@ UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeStri
 UnicodeString __fastcall RtfEscapeParam(UnicodeString Param);
 UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text);
 UnicodeString __fastcall ScriptCommandLink(const UnicodeString & Command);
+UnicodeString __fastcall AssemblyCommentLine(TAssemblyLanguage Language, const UnicodeString & Text);
 //---------------------------------------------------------------------------
 #include "Global.h"
 //---------------------------------------------------------------------------

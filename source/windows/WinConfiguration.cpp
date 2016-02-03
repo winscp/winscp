@@ -1,8 +1,8 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
-#include "WinConfiguration.h"
 #include "Common.h"
+#include "WinConfiguration.h"
 #include "Exceptions.h"
 #include "Bookmarks.h"
 #include "Terminal.h"
