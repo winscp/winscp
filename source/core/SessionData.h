@@ -376,13 +376,9 @@ private:
   static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name);
   static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value);
   static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name, int Value);
-  static UnicodeString __fastcall AssemblyString(TAssemblyLanguage Language, UnicodeString S);
-  static void __fastcall AddAssemblyPropertyRaw(
-    UnicodeString & Result, TAssemblyLanguage Language,
-    const UnicodeString & Name, const UnicodeString & Value);
   static void __fastcall AddAssemblyProperty(
     UnicodeString & Result, TAssemblyLanguage Language,
-    const UnicodeString & Name, UnicodeString Value);
+    const UnicodeString & Name, const UnicodeString & Value);
   static void __fastcall AddAssemblyProperty(
     UnicodeString & Result, TAssemblyLanguage Language,
     const UnicodeString & Name, const UnicodeString & Type,

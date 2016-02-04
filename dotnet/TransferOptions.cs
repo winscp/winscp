@@ -32,7 +32,7 @@ namespace WinSCP
         public FilePermissions FilePermissions { get; set; }
         public TransferMode TransferMode { get; set; }
         public string FileMask { get; set; }
-        public TransferResumeSupport ResumeSupport { get; private set; }
+        public TransferResumeSupport ResumeSupport { get; set; }
         public int SpeedLimit { get; set; }
         public OverwriteMode OverwriteMode { get; set; }
 

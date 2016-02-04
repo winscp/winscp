@@ -2928,6 +2928,8 @@ bool __fastcall IsHttpUrl(const UnicodeString & S)
 }
 //---------------------------------------------------------------------------
 const UnicodeString RtfPara = L"\\par\n";
+const UnicodeString AssemblyNamespace = L"WinSCP";
+const UnicodeString TransferOptionsClassName(L"TransferOptions");
 const UnicodeString RtfHyperlinkField = L"HYPERLINK";
 const UnicodeString RtfHyperlinkFieldPrefix = RtfHyperlinkField + L" \"";
 const UnicodeString RtfHyperlinkFieldSuffix = L"\" ";
@@ -3110,4 +3112,257 @@ UnicodeString __fastcall AssemblyCommentLine(TAssemblyLanguage Language, const U
   }
 
   return RtfCodeComment(Prefix + L" " + Text) + RtfPara;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyString(TAssemblyLanguage Language, UnicodeString S)
+{
+  switch (Language)
+  {
+    case alCSharp:
+      if (S.Pos(L"\\") > 0)
+      {
+        S = FORMAT(L"@\"%s\"", (ReplaceStr(S, L"\"", L"\"\"")));
+      }
+      else
+      {
+        S = FORMAT(L"\"%s\"", (ReplaceStr(S, L"\"", L"\\\"")));
+      }
+      break;
+
+    case alVBNET:
+      S = FORMAT(L"\"%s\"", (ReplaceStr(S, L"\"", L"\"\"")));
+      break;
+
+    case alPowerShell:
+      S = FORMAT(L"\"%s\"", (ReplaceStr(S, L"\"", L"`\"")));
+      break;
+
+    default:
+      DebugFail();
+      break;
+  }
+
+  return RtfString(S);
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfClass(const UnicodeString & Text)
+{
+  return RtfColorText(3, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfLibraryClass(const UnicodeString & ClassName)
+{
+  return RtfLink(L"library_" + ClassName.LowerCase(), RtfClass(ClassName));
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfLibraryProperty(const UnicodeString & ClassName, const UnicodeString & PropertyName)
+{
+  return RtfLink(L"library_" + ClassName.LowerCase() + L"#" + PropertyName.LowerCase(), RtfOverrideColorText(PropertyName));
+}
+//---------------------------------------------------------------------
+UnicodeString AssemblyVariableName(const UnicodeString & ClassName)
+{
+  return ClassName.SubString(1, 1).LowerCase() + ClassName.SubString(2, ClassName.Length() - 1);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyPropertyRaw(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name,
+  const UnicodeString & Value, bool Inline)
+{
+  UnicodeString Result;
+  UnicodeString RtfPropertyAndValue = RtfLibraryProperty(ClassName, Name) + L" = " + Value;
+  UnicodeString Indetation = (Inline ? L"" : L"    ");
+  UnicodeString SpaceOrPara = (Inline ? UnicodeString(L" ") : RtfPara);
+  switch (Language)
+  {
+    case alCSharp:
+      Result = Indetation + RtfPropertyAndValue + (Inline ? L"" : L",") + SpaceOrPara;
+      break;
+
+    case alVBNET:
+      Result = Indetation + L"." + RtfPropertyAndValue + SpaceOrPara;
+      break;
+
+    case alPowerShell:
+      Result = Indetation + RtfPropertyAndValue + SpaceOrPara;
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name,
+  const UnicodeString & Type, const UnicodeString & Member, bool Inline)
+{
+  UnicodeString PropertyValue;
+
+  switch (Language)
+  {
+    case alCSharp:
+    case alVBNET:
+      PropertyValue = RtfClass(Type) + RtfText(L"." + Member);
+      break;
+
+    case alPowerShell:
+      PropertyValue = RtfText(L"[" + AssemblyNamespace + L".") + RtfClass(Type) + RtfText(L"]::" + Member);
+      break;
+  }
+
+  return AssemblyPropertyRaw(Language, ClassName, Name, PropertyValue, Inline);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName,
+  const UnicodeString & Name, const UnicodeString & Value, bool Inline)
+{
+  return AssemblyPropertyRaw(Language, ClassName, Name, AssemblyString(Language, Value), Inline);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName,
+  const UnicodeString & Name, int Value, bool Inline)
+{
+  return AssemblyPropertyRaw(Language, ClassName, Name, IntToStr(Value), Inline);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name, bool Value, bool Inline)
+{
+  UnicodeString PropertyValue;
+
+  switch (Language)
+  {
+    case alCSharp:
+      PropertyValue = (Value ? L"true" : L"false");
+      break;
+
+    case alVBNET:
+      PropertyValue = (Value ? L"True" : L"False");
+      break;
+
+    case alPowerShell:
+      PropertyValue = (Value ? L"$True" : L"$False");
+      break;
+  }
+
+  return AssemblyPropertyRaw(Language, ClassName, Name, PropertyValue, Inline);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyNewClassInstance(TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline)
+{
+  UnicodeString VariableName = AssemblyVariableName(ClassName);
+  UnicodeString RtfClass = RtfLibraryClass(ClassName);
+
+  UnicodeString Result;
+  switch (Language)
+  {
+    case alCSharp:
+      if (!Inline)
+      {
+        Result += RtfClass + RtfText(L" " + VariableName  + L" = ");
+      }
+      Result += RtfKeyword(L"new") + RtfText(L" ") + RtfClass;
+      break;
+
+    case alVBNET:
+      if (!Inline)
+      {
+        Result += RtfText(VariableName + L" ") + RtfKeyword(L"As") + RtfText(L" ");
+      }
+      Result += RtfKeyword(L"New") + RtfText(" ") + RtfClass;
+      break;
+
+    case alPowerShell:
+      if (!Inline)
+      {
+        Result += RtfText(L"$" + VariableName + L" = ");
+      }
+      Result += RtfKeyword(L"New-Object") + RtfText(L" " + AssemblyNamespace + L".") + RtfClass;
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyNewClassInstanceStart(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline)
+{
+  UnicodeString NewClassInstance = AssemblyNewClassInstance(Language, ClassName, Inline);
+  UnicodeString SpaceOrPara = (Inline ? UnicodeString(L" ") : RtfPara);
+
+  UnicodeString Result;
+  switch (Language)
+  {
+    case alCSharp:
+      Result =
+        NewClassInstance + SpaceOrPara +
+        RtfText(L"{") + SpaceOrPara;
+      break;
+
+    case alVBNET:
+      // Historically we use Dim .. With instead of object initilizer.
+      // But for inline use, we have to use object initialize.
+      // We should consistently always use object initilizers.
+      if (!Inline)
+      {
+        Result += RtfKeyword(L"Dim") + RtfText(L" ");
+      }
+      Result += NewClassInstance + SpaceOrPara + RtfKeyword(L"With");
+      if (Inline)
+      {
+        Result += RtfText(L" { ");
+      }
+      else
+      {
+        Result += RtfText(L" " + AssemblyVariableName(ClassName)) + RtfPara;
+      }
+      break;
+
+    case alPowerShell:
+      Result = NewClassInstance + RtfText(" -Property @{") + SpaceOrPara;
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language, bool Inline)
+{
+  UnicodeString InlineEnd = RtfText(L"}");
+
+  UnicodeString Result;
+  switch (Language)
+  {
+    case alCSharp:
+      if (Inline)
+      {
+        Result = InlineEnd;
+      }
+      else
+      {
+        Result = RtfText(L"};") + RtfPara;
+      }
+      break;
+
+    case alVBNET:
+      if (Inline)
+      {
+        Result = InlineEnd;
+      }
+      else
+      {
+        Result = RtfKeyword(L"End With") + RtfPara;
+      }
+      break;
+
+    case alPowerShell:
+      if (Inline)
+      {
+        Result = InlineEnd;
+      }
+      else
+      {
+        Result = RtfText(L"}") + RtfPara;
+      }
+      break;
+  }
+  return Result;
 }

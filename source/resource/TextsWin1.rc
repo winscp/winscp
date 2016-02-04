@@ -570,6 +570,7 @@ BEGIN
         GENERATE_URL_SCRIPT_DESC, "Execute the script using a command like:"
         GENERATE_URL_PATH_TO_SCRIPT, "C:\\path\\to\\script\\script.txt"
         GENERATE_URL_YOUR_CODE, "Your code"
+        GENERATE_URL_COPY_PARAM_CODE_REMAINING, "Some configured transfer settings do not have an equivalent in .NET assembly API. Use the Session.AddRawConfiguration instead."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"

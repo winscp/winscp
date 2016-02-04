@@ -1,9 +1,9 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
+#include <Common.h>
 #include "GUIConfiguration.h"
 #include "GUITools.h"
-#include <Common.h>
 #include <FileInfo.h>
 #include <TextsCore.h>
 #include <TextsWin.h>

@@ -63,7 +63,11 @@ UnicodeString __fastcall TCopyParamType::GetInfoStr(
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
   bool NoScriptArgs;
-  DoGetInfoStr(Separator, Attrs, Result, SomeAttrIncluded, UnicodeString(), ScriptArgs, NoScriptArgs);
+  UnicodeString AssemblyCode;
+  bool NoCodeProperties;
+  DoGetInfoStr(
+    Separator, Attrs, Result, SomeAttrIncluded,
+    UnicodeString(), ScriptArgs, NoScriptArgs, TAssemblyLanguage(0), AssemblyCode, NoCodeProperties);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -73,7 +77,11 @@ bool __fastcall TCopyParamType::AnyUsableCopyParam(int Attrs) const
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
   bool NoScriptArgs;
-  DoGetInfoStr(L";", Attrs, Result, SomeAttrIncluded, UnicodeString(), ScriptArgs, NoScriptArgs);
+  UnicodeString AssemblyCode;
+  bool NoCodeProperties;
+  DoGetInfoStr(
+    L";", Attrs, Result, SomeAttrIncluded,
+    UnicodeString(), ScriptArgs, NoScriptArgs, TAssemblyLanguage(0), AssemblyCode, NoCodeProperties);
   return SomeAttrIncluded;
 }
 //---------------------------------------------------------------------------
@@ -82,19 +90,37 @@ UnicodeString __fastcall TCopyParamType::GenerateTransferCommandArgs(int Attrs, 
   UnicodeString Result;
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
-  DoGetInfoStr(L";", Attrs, Result, SomeAttrIncluded, Link, ScriptArgs, NoScriptArgs);
+  UnicodeString AssemblyCode;
+  bool NoCodeProperties;
+  DoGetInfoStr(
+    L";", Attrs, Result, SomeAttrIncluded,
+    Link, ScriptArgs, NoScriptArgs, TAssemblyLanguage(0), AssemblyCode, NoCodeProperties);
   return ScriptArgs;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCopyParamType::GenerateAssemblyCode(
+  TAssemblyLanguage Language, int Attrs, bool & NoCodeProperties) const
+{
+  UnicodeString Result;
+  bool SomeAttrIncluded;
+  UnicodeString ScriptArgs;
+  bool NoScriptArgs;
+  UnicodeString AssemblyCode;
+  DoGetInfoStr(L";", Attrs, Result, SomeAttrIncluded, UnicodeString(), ScriptArgs, NoScriptArgs, Language, AssemblyCode, NoCodeProperties);
+  return AssemblyCode;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::DoGetInfoStr(
   UnicodeString Separator, int Options,
   UnicodeString & Result, bool & SomeAttrIncluded,
-  const UnicodeString & Link, UnicodeString & ScriptArgs, bool & NoScriptArgs) const
+  const UnicodeString & Link, UnicodeString & ScriptArgs, bool & NoScriptArgs, TAssemblyLanguage Language, UnicodeString & AssemblyCode,
+  bool & NoCodeProperties) const
 {
   TCopyParamType Defaults;
 
   bool SomeAttrExcluded = false;
   NoScriptArgs = false;
+  NoCodeProperties = false;
   SomeAttrIncluded = false;
   #define ADD(STR, EXCEPT) \
     if (FLAGCLEAR(Options, EXCEPT)) \
@@ -144,9 +170,13 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       ADD("", cpaIncludeMaskOnly | cpaNoTransferMode);
 
       ScriptArgs += RtfSwitchValue(TRANSFER_SWITCH, Link, TransferModeNames[TransferMode]);
+      const wchar_t * TransferModeMembers[] = { L"Binary", L"Ascii", L"Automatic" };
+      AssemblyCode += AssemblyProperty(
+        Language, TransferOptionsClassName, L"TransferMode", L"TransferMode", TransferModeMembers[TransferMode], false);
       if (AsciiFileMaskDiffers)
       {
         NoScriptArgs = true;
+        NoCodeProperties = true;
       }
     }
   }
@@ -156,6 +186,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       SomeAttrExcluded = true;
       NoScriptArgs = true;
+      NoCodeProperties = true;
     }
   }
 
@@ -166,6 +197,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       cpaIncludeMaskOnly);
 
     NoScriptArgs = true;
+    NoCodeProperties = true;
   }
 
   if ((InvalidCharsReplacement == NoReplacement) !=
@@ -178,6 +210,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     }
 
     NoScriptArgs = true;
+    NoCodeProperties = true;
   }
 
   if ((PreserveRights != Defaults.PreserveRights) ||
@@ -198,12 +231,22 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       if (FLAGCLEAR(Options, Except))
       {
         ScriptArgs += RtfSwitchValue(PERMISSIONS_SWITCH, Link, Rights.Octal);
+
+        const UnicodeString FilePermissionsClassName = L"FilePermissions";
+        const bool Inline = true;
+        UnicodeString FilePermissions =
+          AssemblyNewClassInstanceStart(Language, FilePermissionsClassName, Inline) +
+          AssemblyProperty(Language, FilePermissionsClassName, L"Octal", Rights.Octal, Inline) +
+          AssemblyNewClassInstanceEnd(Language, Inline);
+
+        AssemblyCode += AssemblyPropertyRaw(Language, TransferOptionsClassName, L"FilePermissions", FilePermissions, false);
       }
     }
 
-    if (AddXToDirectories != Defaults.AddXToDirectories)
+    if ((AddXToDirectories != Defaults.AddXToDirectories) && FLAGCLEAR(Options, Except))
     {
-      NoScriptArgs = NoScriptArgs || FLAGCLEAR(Options, Except);
+      NoScriptArgs = true;
+      NoCodeProperties = true;
     }
   }
 
@@ -240,15 +283,18 @@ void __fastcall TCopyParamType::DoGetInfoStr(
         if (PreserveTimeDirs && FLAGCLEAR(Options, ExceptDirs))
         {
           ScriptArgs += RtfSwitchValue(PRESERVETIME_SWITCH, Link, PRESERVETIMEDIRS_SWITCH_VALUE);
+          NoCodeProperties = true;
         }
         else
         {
+          DebugFail(); // should never get here
           ScriptArgs += RtfSwitch(PRESERVETIME_SWITCH, Link);
         }
       }
       else
       {
         ScriptArgs += RtfSwitch(NOPRESERVETIME_SWITCH, Link);
+        AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"PreserveTimestamp", false, false);
       }
     }
   }
@@ -260,7 +306,11 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       const int Except = cpaIncludeMaskOnly | cpaNoIgnorePermErrors;
       ADD(LoadStr(COPY_INFO_IGNORE_PERM_ERRORS), Except);
-      NoScriptArgs = NoScriptArgs || (FLAGCLEAR(Options, Except));
+      if (FLAGCLEAR(Options, Except))
+      {
+        NoScriptArgs = true;
+        NoCodeProperties = true;
+      }
     }
   }
 
@@ -270,7 +320,11 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       const int Except = cpaIncludeMaskOnly | cpaNoPreserveReadOnly;
       ADD(LoadStr(COPY_INFO_PRESERVE_READONLY), Except);
-      NoScriptArgs = NoScriptArgs || (FLAGCLEAR(Options, Except));
+      if (FLAGCLEAR(Options, Except))
+      {
+        NoScriptArgs = true;
+        NoCodeProperties = true;
+      }
     }
   }
 
@@ -289,7 +343,11 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       const int Except = cpaIncludeMaskOnly | cpaNoClearArchive;
       ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE), Except);
-      NoScriptArgs = NoScriptArgs || (FLAGCLEAR(Options, Except));
+      if (FLAGCLEAR(Options, Except))
+      {
+        NoScriptArgs = true;
+        NoCodeProperties = true;
+      }
     }
   }
 
@@ -301,7 +359,11 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       {
         const int Except = cpaIncludeMaskOnly | cpaNoRemoveBOM | cpaNoTransferMode;
         ADD(LoadStr(COPY_INFO_REMOVE_BOM), Except);
-        NoScriptArgs = NoScriptArgs || (FLAGCLEAR(Options, Except));
+        if (FLAGCLEAR(Options, Except))
+        {
+          NoScriptArgs = true;
+          NoCodeProperties = true;
+        }
       }
     }
 
@@ -311,7 +373,11 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       {
         const int Except = cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode;
         ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ),Except);
-        NoScriptArgs = NoScriptArgs || (FLAGCLEAR(Options, Except));
+        if (FLAGCLEAR(Options, Except))
+        {
+          NoScriptArgs = true;
+          NoCodeProperties = true;
+        }
       }
     }
   }
@@ -322,6 +388,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       cpaNoIncludeMask);
 
     ScriptArgs += RtfSwitch(FILEMASK_SWITCH, Link, IncludeFileMask.Masks);
+    AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"FileMask", IncludeFileMask.Masks, false);
   }
 
   DebugAssert(FTransferSkipList.get() == NULL);
@@ -333,6 +400,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     ADD(FMTLOAD(COPY_INFO_CPS_LIMIT2, (LimitKB)), cpaIncludeMaskOnly);
 
     ScriptArgs += RtfSwitch(SPEED_SWITCH, Link, LimitKB);
+    AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"Speed", LimitKB, false);
   }
 
   if (NewerOnly != Defaults.NewerOnly)
@@ -344,30 +412,51 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       if (FLAGCLEAR(Options, Except))
       {
         ScriptArgs += RtfSwitch(NEWERONLY_SWICH, Link);
+        NoCodeProperties = true;
       }
     }
   }
 
-  if (((ResumeSupport != Defaults.ResumeSupport) ||
-       ((ResumeSupport == rsSmart) && (ResumeThreshold != Defaults.ResumeThreshold))) &&
+  bool ResumeThresholdDiffers = ((ResumeSupport == rsSmart) && (ResumeThreshold != Defaults.ResumeThreshold));
+  if (((ResumeSupport != Defaults.ResumeSupport) || ResumeThresholdDiffers) &&
       (TransferMode != tmAscii) && FLAGCLEAR(Options, cpaNoResumeSupport))
   {
     UnicodeString Value;
+    UnicodeString CodeState;
+    int ResumeThresholdKB = (ResumeThreshold / 1024);
     switch (ResumeSupport)
     {
       case rsOff:
         Value = ToggleNames[ToggleOff];
+        CodeState = L"Off";
         break;
 
       case rsOn:
         Value = ToggleNames[ToggleOn];
+        CodeState = L"On";
         break;
 
       case rsSmart:
-        Value = IntToStr(ResumeThreshold / 1024);
+        Value = IntToStr(ResumeThresholdKB);
         break;
     }
     ScriptArgs += RtfSwitchValue(RESUMESUPPORT_SWITCH, Link, Value);
+
+    const UnicodeString ResumeSupportClassName = L"TransferResumeSupport";
+    const bool Inline = true;
+    UnicodeString ResumeSupportCode =
+      AssemblyNewClassInstanceStart(Language, ResumeSupportClassName, Inline);
+    if (ResumeSupport == rsSmart)
+    {
+      ResumeSupportCode += AssemblyProperty(Language, ResumeSupportClassName, L"Threshold", ResumeThresholdKB, Inline);
+    }
+    else
+    {
+      ResumeSupportCode += AssemblyProperty(Language, ResumeSupportClassName, L"State", L"TransferResumeSupportState", CodeState, Inline);
+    }
+    ResumeSupportCode += AssemblyNewClassInstanceEnd(Language, Inline);
+
+    AssemblyCode += AssemblyPropertyRaw(Language, TransferOptionsClassName, L"ResumeSupport", ResumeSupportCode, false);
   }
 
   if (SomeAttrExcluded)

@@ -74,7 +74,7 @@ protected:
   virtual void __fastcall Dispatch(void * AMessage);
   UnicodeString __fastcall GenerateUrl();
   UnicodeString __fastcall GenerateScript(UnicodeString & ScriptDescription);
-  UnicodeString __fastcall GenerateAssemblyCode();
+  UnicodeString __fastcall GenerateAssemblyCode(UnicodeString & AssemblyDescription);
 
 public:
   __fastcall TGenerateUrlDialog(

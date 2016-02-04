@@ -204,6 +204,8 @@ MethodT __fastcall MakeMethod(void * Data, void * Code)
 //---------------------------------------------------------------------------
 enum TAssemblyLanguage { alCSharp, alVBNET, alPowerShell };
 extern const UnicodeString RtfPara;
+extern const UnicodeString AssemblyNamespace;
+extern const UnicodeString TransferOptionsClassName;
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfText(const UnicodeString & Text);
 UnicodeString __fastcall RtfColor(int Index);
@@ -221,7 +223,28 @@ UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeStri
 UnicodeString __fastcall RtfEscapeParam(UnicodeString Param);
 UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text);
 UnicodeString __fastcall ScriptCommandLink(const UnicodeString & Command);
+UnicodeString __fastcall AssemblyString(TAssemblyLanguage Language, UnicodeString S);
 UnicodeString __fastcall AssemblyCommentLine(TAssemblyLanguage Language, const UnicodeString & Text);
+UnicodeString __fastcall AssemblyPropertyRaw(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name,
+  const UnicodeString & Value, bool Inline);
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name,
+  const UnicodeString & Type, const UnicodeString & Member, bool Inline);
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name,
+  const UnicodeString & Value, bool Inline);
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name, int Value, bool Inline);
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name, bool Value, bool Inline);
+UnicodeString __fastcall RtfLibraryClass(const UnicodeString & ClassName);
+UnicodeString AssemblyVariableName(const UnicodeString & ClassName);
+UnicodeString __fastcall AssemblyNewClassInstance(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline);
+UnicodeString __fastcall AssemblyNewClassInstanceStart(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline);
+UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language, bool Inline);
 //---------------------------------------------------------------------------
 #include "Global.h"
 //---------------------------------------------------------------------------

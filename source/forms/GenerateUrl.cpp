@@ -462,7 +462,7 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode()
+UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode(UnicodeString & AssemblyDescription)
 {
   TAssemblyLanguage Language = static_cast<TAssemblyLanguage>(AssemblyLanguageCombo->ItemIndex);
 
@@ -472,12 +472,43 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode()
 
   FData->GenerateAssemblyCode(Language, Head, Tail, Indent);
 
-  UnicodeString Indentation = UnicodeString::StringOfChar(L' ', Indent);
+  UnicodeString Result = Head;
 
-  UnicodeString Result =
-    Head +
-    Indentation + AssemblyCommentLine(Language, LoadStr(GENERATE_URL_YOUR_CODE)) +
-    Tail;
+  UnicodeString Code;
+  if (FTransfer)
+  {
+    bool NoCodeProperties;
+    UnicodeString CopyParamProperties =
+      FCopyParam.GenerateAssemblyCode(Language, FCopyParamAttrs, NoCodeProperties);
+
+    if (NoCodeProperties)
+    {
+      AssemblyDescription += LoadStr(GENERATE_URL_COPY_PARAM_CODE_REMAINING) + L"\n";
+    }
+
+    if (!CopyParamProperties.IsEmpty())
+    {
+      Code +=
+        AssemblyNewClassInstanceStart(Language, TransferOptionsClassName, false) +
+        CopyParamProperties +
+        AssemblyNewClassInstanceEnd(Language, false);
+    }
+  }
+  else
+  {
+    Code = AssemblyCommentLine(Language, LoadStr(GENERATE_URL_YOUR_CODE));
+  }
+
+  UnicodeString Indentation = UnicodeString::StringOfChar(L' ', Indent);
+  Code = Indentation + ReplaceStr(Code, RtfPara, RtfPara + Indentation);
+  if (DebugAlwaysTrue(Code.SubString(Code.Length() - Indentation.Length() + 1, Indentation.Length()) == Indentation))
+  {
+    Code.SetLength(Code.Length() - Indentation.Length());
+  }
+
+  Result += Code;
+
+  Result += Tail;
 
   return Result;
 }
@@ -522,12 +553,6 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     else if (DebugAlwaysTrue(OptionsPageControl->ActivePage == AssemblySheet))
     {
       ResultGroupCaption = LoadStr(GENERATE_URL_CODE);
-      UnicodeString AssemblyDescription;
-      if (HostKeyUnknown)
-      {
-        AssemblyDescription += LoadStr(GENERATE_URL_HOSTKEY_UNKNOWN) + L"\n";
-      }
-      AssemblyDescriptionLabel->Caption = AssemblyDescription;
     }
     ResultGroup->Caption = ResultGroupCaption;
 
@@ -580,7 +605,15 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     }
     else if (DebugAlwaysTrue(OptionsPageControl->ActivePage == AssemblySheet))
     {
-      Result = GenerateAssemblyCode();
+      UnicodeString AssemblyDescription;
+      if (HostKeyUnknown)
+      {
+        AssemblyDescription += LoadStr(GENERATE_URL_HOSTKEY_UNKNOWN) + L"\n";
+      }
+
+      Result = GenerateAssemblyCode(AssemblyDescription);
+
+      AssemblyDescriptionLabel->Caption = AssemblyDescription;
 
       WordWrap = false;
       FixedWidth = true;
