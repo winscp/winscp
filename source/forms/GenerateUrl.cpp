@@ -198,6 +198,7 @@ __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
   FResultMemo41->PopupMenu = ResultMemo->PopupMenu;
   FResultMemo41->TabOrder = ResultMemo->TabOrder;
   FResultMemo41->PlainText = false;
+  FResultMemo41->WantReturns = false; // affects Esc too, what we want
   ResultMemo->Visible = false;
 
   ReadOnlyControl(FResultMemo41);
