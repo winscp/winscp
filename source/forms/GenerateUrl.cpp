@@ -840,6 +840,12 @@ void __fastcall TGenerateUrlDialog::Execute()
 
   UpdateControls();
 
+  if (OptionsPageControl->ActivePage != UrlSheet)
+  {
+    ClientWidth = ScaleByTextHeightRunTime(this, 700);
+    ClientHeight = ScaleByTextHeightRunTime(this, 600);
+  }
+
   ShowModal();
 
   // Do not save the selection for files as the "URL" was selected implicitly
