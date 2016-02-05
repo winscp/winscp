@@ -26,7 +26,6 @@ extern const UnicodeString PasswordMask;
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B);
 UnicodeString DeleteChar(UnicodeString Str, wchar_t C);
-int PosFrom(const UnicodeString & SubStr, const UnicodeString & Str, int Index);
 void PackStr(UnicodeString & Str);
 void PackStr(RawByteString & Str);
 void PackStr(AnsiString & Str);

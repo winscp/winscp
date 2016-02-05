@@ -50,17 +50,6 @@ UnicodeString DeleteChar(UnicodeString Str, wchar_t C)
   return Str;
 }
 //---------------------------------------------------------------------------
-int PosFrom(const UnicodeString & SubStr, const UnicodeString & Str, int Index)
-{
-  UnicodeString S = Str.SubString(Index, Str.Length() - Index + 1);
-  int Result = S.Pos(SubStr);
-  if (Result > 0)
-  {
-    Result += Index - 1;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 template<typename T>
 void DoPackStr(T & Str)
 {
@@ -3039,10 +3028,10 @@ UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text)
   // See also RtfEscapeParam
   int Index = 1;
   int P;
-  while ((P = PosFrom(RtfHyperlinkFieldPrefix, Text, Index)) > 0)
+  while ((P = PosEx(RtfHyperlinkFieldPrefix, Text, Index)) > 0)
   {
     int Index2 = P + RtfHyperlinkFieldPrefix.Length();
-    int P2 = PosFrom(RtfHyperlinkFieldSuffix, Text, Index2);
+    int P2 = PosEx(RtfHyperlinkFieldSuffix, Text, Index2);
     if (P2 > 0)
     {
       Text.Delete(P, P2 - P + RtfHyperlinkFieldSuffix.Length());
@@ -3063,7 +3052,7 @@ UnicodeString __fastcall RtfEscapeParam(UnicodeString Param)
   int Index = 1;
   while (true)
   {
-    int P1 = PosFrom(Quote, Param, Index);
+    int P1 = PosEx(Quote, Param, Index);
     if (P1 == 0)
     {
       // no more quotes
@@ -3071,9 +3060,9 @@ UnicodeString __fastcall RtfEscapeParam(UnicodeString Param)
     }
     else
     {
-      int P2 = PosFrom(RtfHyperlinkFieldPrefix, Param, Index);
+      int P2 = PosEx(RtfHyperlinkFieldPrefix, Param, Index);
       int P3;
-      if ((P2 > 0) && (P2 < P1) && ((P3 = PosFrom(RtfHyperlinkFieldSuffix, Param, P2)) > 0))
+      if ((P2 > 0) && (P2 < P1) && ((P3 = PosEx(RtfHyperlinkFieldSuffix, Param, P2)) > 0))
       {
         // skip HYPERLINK
         Index = P3 + RtfHyperlinkFieldSuffix.Length();
