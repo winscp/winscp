@@ -296,6 +296,14 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl()
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TGenerateUrlDialog::AddSampleDescription(UnicodeString & Description)
+{
+  if (FPathsSample)
+  {
+    Description += LoadStr(GENERATE_URL_FILE_SAMPLE) + L"\n";
+  }
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & ScriptDescription)
 {
   UnicodeString Result;
