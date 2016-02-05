@@ -2490,7 +2490,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteCopyOperationCommand(
   TCustomDirView * DView = DirView(Side);
   Param.Options =
     FLAGMASK(FLAGSET(Flags, cocShortCutHint), coShortCutHint) |
-    FLAGMASK((DView->SelCount == DView->FilesCount), coAllFiles);
+    FLAGMASK(SelectedAllFilesInDirView(DView), coAllFiles);
   if (FLAGSET(Flags, cocQueue))
   {
     Param.Queue = asOn;
@@ -6465,6 +6465,10 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
           {
             Param.Queue = asOn;
           }
+          if (Sender == RemoteDirView)
+          {
+            Param.Options = FLAGMASK(SelectedAllFilesInDirView(RemoteDirView), coAllFiles);
+          }
 
           if (RemoteFileControlFileOperation(Sender, Operation,
                 (WinConfiguration->DDTransferConfirmation == asOff), &Param))
@@ -7049,6 +7053,11 @@ TDragDropFilesEx * __fastcall TCustomScpExplorerForm::DragDropFiles(TObject * Se
   }
   DebugAssert(Result != NULL);
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::SelectedAllFilesInDirView(TCustomDirView * DView)
+{
+  return (DView->SelCount == DView->FilesCount);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DraggingAllFilesFromDirView(TOperationSide Side, TStrings * FileList)

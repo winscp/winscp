@@ -562,6 +562,7 @@ protected:
   void __fastcall DoTerminalListChanged(bool Force);
   void __fastcall NeedSession(bool ReloadSessions);
   bool __fastcall DraggingAllFilesFromDirView(TOperationSide Side, TStrings * FileList);
+  bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
   TSessionData * __fastcall SessionDataForCode();
 
 public:
