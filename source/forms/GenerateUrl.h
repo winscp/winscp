@@ -55,6 +55,7 @@ __published:
 private:
   TSessionData * FData;
   std::unique_ptr<TStrings> FPaths;
+  bool FPathsSample;
   bool FChanging;
   TRichEdit41 * FResultMemo41;
   bool FTransfer;
@@ -75,6 +76,7 @@ protected:
   UnicodeString __fastcall GenerateUrl();
   UnicodeString __fastcall GenerateScript(UnicodeString & ScriptDescription);
   UnicodeString __fastcall GenerateAssemblyCode(UnicodeString & AssemblyDescription);
+ void __fastcall AddSampleDescription(UnicodeString & Description);
 
 public:
   __fastcall TGenerateUrlDialog(

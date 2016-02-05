@@ -2930,6 +2930,7 @@ bool __fastcall IsHttpUrl(const UnicodeString & S)
 const UnicodeString RtfPara = L"\\par\n";
 const UnicodeString AssemblyNamespace = L"WinSCP";
 const UnicodeString TransferOptionsClassName(L"TransferOptions");
+const UnicodeString SessionClassName(L"Session");
 const UnicodeString RtfHyperlinkField = L"HYPERLINK";
 const UnicodeString RtfHyperlinkFieldPrefix = RtfHyperlinkField + L" \"";
 const UnicodeString RtfHyperlinkFieldSuffix = L"\" ";
@@ -3155,14 +3156,41 @@ UnicodeString __fastcall RtfLibraryClass(const UnicodeString & ClassName)
   return RtfLink(L"library_" + ClassName.LowerCase(), RtfClass(ClassName));
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall RtfLibraryMethod(const UnicodeString & ClassName, const UnicodeString & MethodName, bool InPage)
+{
+  return RtfLink(L"library_" + ClassName.LowerCase() + (InPage ? L"#" : L"_") + MethodName.LowerCase(), RtfOverrideColorText(MethodName));
+}
+//---------------------------------------------------------------------
 static UnicodeString __fastcall RtfLibraryProperty(const UnicodeString & ClassName, const UnicodeString & PropertyName)
 {
   return RtfLink(L"library_" + ClassName.LowerCase() + L"#" + PropertyName.LowerCase(), RtfOverrideColorText(PropertyName));
 }
 //---------------------------------------------------------------------
-UnicodeString AssemblyVariableName(const UnicodeString & ClassName)
+UnicodeString __fastcall AssemblyVariableName(TAssemblyLanguage Language, const UnicodeString & ClassName)
 {
-  return ClassName.SubString(1, 1).LowerCase() + ClassName.SubString(2, ClassName.Length() - 1);
+  UnicodeString Result = ClassName.SubString(1, 1).LowerCase() + ClassName.SubString(2, ClassName.Length() - 1);
+  if (Language == alPowerShell)
+  {
+    Result = L"$" + Result;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyStatementSeparator(TAssemblyLanguage Language)
+{
+  UnicodeString Result;
+  switch (Language)
+  {
+    case alCSharp:
+      Result = L";";
+      break;
+
+    case alVBNET:
+    case alPowerShell:
+      // noop
+      break;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall AssemblyPropertyRaw(
@@ -3225,32 +3253,39 @@ UnicodeString __fastcall AssemblyProperty(
   return AssemblyPropertyRaw(Language, ClassName, Name, IntToStr(Value), Inline);
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall AssemblyProperty(
-  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name, bool Value, bool Inline)
+UnicodeString __fastcall AssemblyBoolean(TAssemblyLanguage Language, bool Value)
 {
-  UnicodeString PropertyValue;
+  UnicodeString Result;
 
   switch (Language)
   {
     case alCSharp:
-      PropertyValue = (Value ? L"true" : L"false");
+      Result = (Value ? L"true" : L"false");
       break;
 
     case alVBNET:
-      PropertyValue = (Value ? L"True" : L"False");
+      Result = (Value ? L"True" : L"False");
       break;
 
     case alPowerShell:
-      PropertyValue = (Value ? L"$True" : L"$False");
+      Result = (Value ? L"$True" : L"$False");
       break;
   }
+
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name, bool Value, bool Inline)
+{
+  UnicodeString PropertyValue = AssemblyBoolean(Language, Value);
 
   return AssemblyPropertyRaw(Language, ClassName, Name, PropertyValue, Inline);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall AssemblyNewClassInstance(TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline)
 {
-  UnicodeString VariableName = AssemblyVariableName(ClassName);
+  UnicodeString VariableName = AssemblyVariableName(Language, ClassName);
   UnicodeString RtfClass = RtfLibraryClass(ClassName);
 
   UnicodeString Result;
@@ -3275,7 +3310,7 @@ UnicodeString __fastcall AssemblyNewClassInstance(TAssemblyLanguage Language, co
     case alPowerShell:
       if (!Inline)
       {
-        Result += RtfText(L"$" + VariableName + L" = ");
+        Result += RtfText(VariableName + L" = ");
       }
       Result += RtfKeyword(L"New-Object") + RtfText(L" " + AssemblyNamespace + L".") + RtfClass;
       break;
@@ -3313,7 +3348,7 @@ UnicodeString __fastcall AssemblyNewClassInstanceStart(
       }
       else
       {
-        Result += RtfText(L" " + AssemblyVariableName(ClassName)) + RtfPara;
+        Result += RtfText(L" " + AssemblyVariableName(Language, ClassName)) + RtfPara;
       }
       break;
 

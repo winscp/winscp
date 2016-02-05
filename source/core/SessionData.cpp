@@ -2559,11 +2559,6 @@ void __fastcall TSessionData::LookupLastFingerprint()
   }
 }
 //---------------------------------------------------------------------
-static UnicodeString __fastcall RtfLibraryMethod(const UnicodeString & ClassName, const UnicodeString & MethodName)
-{
-  return RtfLink(L"library_" + ClassName.LowerCase() + L"_" + MethodName.LowerCase(), RtfOverrideColorText(MethodName));
-}
-//---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs()
 {
   std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
@@ -2642,7 +2637,6 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs()
 }
 //---------------------------------------------------------------------
 UnicodeString SessionOptionsClassName(L"SessionOptions");
-UnicodeString SessionClassName(L"Session");
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddAssemblyProperty(
   UnicodeString & Result, TAssemblyLanguage Language,
@@ -2848,7 +2842,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
 
   std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get()));
 
-  UnicodeString SessionOptionsVariableName = AssemblyVariableName(SessionOptionsClassName);
+  UnicodeString SessionOptionsVariableName = AssemblyVariableName(Language, SessionOptionsClassName);
 
   if (RawSettings->Count > 0)
   {
@@ -2859,7 +2853,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
       UnicodeString Name = RawSettings->Names[Index];
       UnicodeString Value = RawSettings->ValueFromIndex[Index];
       UnicodeString AddRawSettingsMethod =
-        RtfLibraryMethod(SessionOptionsClassName, L"AddRawSettings") +
+        RtfLibraryMethod(SessionOptionsClassName, L"AddRawSettings", false) +
         FORMAT(L"(%s, %s)", (AssemblyString(Language, Name), AssemblyString(Language, Value)));
       switch (Language)
       {
@@ -2872,18 +2866,22 @@ void __fastcall TSessionData::GenerateAssemblyCode(
           break;
 
         case alPowerShell:
-          Head += RtfText(L"$" + SessionOptionsVariableName + L".") + AddRawSettingsMethod + RtfPara;
+          Head += RtfText(SessionOptionsVariableName + L".") + AddRawSettingsMethod + RtfPara;
           break;
       }
     }
   }
 
-  UnicodeString CodeCommentLine = L"    " + AssemblyCommentLine(Language, LoadStr(CODE_CONNECT));
-  UnicodeString SessionVariableName = AssemblyVariableName(SessionClassName);
+  UnicodeString Indentation = L"    ";
+  UnicodeString SessionVariableName = AssemblyVariableName(Language, SessionClassName);
   UnicodeString RtfSessionClass = RtfLibraryClass(SessionClassName);
-  UnicodeString RtfSessionOpenMethod = RtfLibraryMethod(SessionClassName, L"Open");
+  UnicodeString RtfSessionOpenMethod = RtfLibraryMethod(SessionClassName, L"Open", false);
 
   UnicodeString NewSessionInstance = AssemblyNewClassInstance(Language, SessionClassName, false);
+  UnicodeString OpenCall =
+    Indentation + AssemblyCommentLine(Language, LoadStr(CODE_CONNECT)) +
+    Indentation + RtfText(SessionVariableName + L".") + RtfSessionOpenMethod + RtfText(L"(" + SessionOptionsVariableName + L")") +
+      AssemblyStatementSeparator(Language) + RtfPara;
 
   switch (Language)
   {
@@ -2892,8 +2890,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
         RtfPara +
         RtfKeyword(L"using") + RtfText(" (") + NewSessionInstance + RtfText(L"())") + RtfPara +
         RtfText(L"{") + RtfPara +
-        CodeCommentLine +
-        RtfText(L"    " + SessionVariableName + L".") + RtfSessionOpenMethod + RtfText(L"(" + SessionOptionsVariableName + L");") + RtfPara;
+        OpenCall;
 
       Tail =
         RtfText(L"}") + RtfPara;
@@ -2904,8 +2901,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
         AssemblyNewClassInstanceEnd(Language, false) +
         RtfPara +
         RtfKeyword(L"Using") + RtfText(L" ") + NewSessionInstance + RtfPara +
-        CodeCommentLine +
-        RtfText(L"    " + SessionVariableName + L".") + RtfSessionOpenMethod + RtfText(L"(" + SessionOptionsVariableName + L")") + RtfPara;
+        OpenCall;
 
       Tail =
         RtfKeyword(L"End Using");
@@ -2918,14 +2914,14 @@ void __fastcall TSessionData::GenerateAssemblyCode(
         RtfPara +
         RtfKeyword(L"try") + RtfPara +
         RtfText(L"{") + RtfPara +
-        CodeCommentLine +
-        RtfText(L"    $" + SessionVariableName + L".") + RtfSessionOpenMethod + RtfText(L"($" + SessionOptionsVariableName + L")") + RtfPara;
+        OpenCall;
 
       Tail =
         RtfText(L"}") + RtfPara +
         RtfKeyword(L"finally") + RtfPara +
         RtfText(L"{") + RtfPara +
-        RtfText(L"    $" + SessionVariableName + L".") + RtfLibraryMethod(SessionClassName, L"Dispose") + RtfText(L"()") + RtfPara +
+        RtfText(Indentation + SessionVariableName + L".") +
+          RtfLibraryMethod(SessionClassName, L"Dispose", false) + RtfText(L"()") + RtfPara +
         RtfText(L"}") + RtfPara;
       break;
   }

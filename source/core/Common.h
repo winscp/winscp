@@ -205,6 +205,7 @@ MethodT __fastcall MakeMethod(void * Data, void * Code)
 enum TAssemblyLanguage { alCSharp, alVBNET, alPowerShell };
 extern const UnicodeString RtfPara;
 extern const UnicodeString AssemblyNamespace;
+extern const UnicodeString SessionClassName;
 extern const UnicodeString TransferOptionsClassName;
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfText(const UnicodeString & Text);
@@ -223,6 +224,7 @@ UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeStri
 UnicodeString __fastcall RtfEscapeParam(UnicodeString Param);
 UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text);
 UnicodeString __fastcall ScriptCommandLink(const UnicodeString & Command);
+UnicodeString __fastcall AssemblyBoolean(TAssemblyLanguage Language, bool Value);
 UnicodeString __fastcall AssemblyString(TAssemblyLanguage Language, UnicodeString S);
 UnicodeString __fastcall AssemblyCommentLine(TAssemblyLanguage Language, const UnicodeString & Text);
 UnicodeString __fastcall AssemblyPropertyRaw(
@@ -238,8 +240,10 @@ UnicodeString __fastcall AssemblyProperty(
   TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name, int Value, bool Inline);
 UnicodeString __fastcall AssemblyProperty(
   TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name, bool Value, bool Inline);
+UnicodeString __fastcall RtfLibraryMethod(const UnicodeString & ClassName, const UnicodeString & MethodName, bool Inpage);
 UnicodeString __fastcall RtfLibraryClass(const UnicodeString & ClassName);
-UnicodeString AssemblyVariableName(const UnicodeString & ClassName);
+UnicodeString __fastcall AssemblyVariableName(TAssemblyLanguage Language, const UnicodeString & ClassName);
+UnicodeString __fastcall AssemblyStatementSeparator(TAssemblyLanguage Language);
 UnicodeString __fastcall AssemblyNewClassInstance(
   TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline);
 UnicodeString __fastcall AssemblyNewClassInstanceStart(

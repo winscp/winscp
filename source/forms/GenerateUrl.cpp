@@ -17,6 +17,9 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
+const UnicodeString AllFilesMask(L"*");
+const UnicodeString NoOpOperationMask(L"*");
+//---------------------------------------------------------------------------
 void __fastcall DoGenerateUrlDialog(TSessionData * Data, TStrings * Paths)
 {
   std::unique_ptr<TGenerateUrlDialog> Dialog(
@@ -145,10 +148,22 @@ __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
   FMove = Move;
   FCopyParamAttrs = CopyParamAttrs;
   FCopyParam = CopyParam;
+  FFilesSelected = FilesSelected;
+  FPathsSample = false;
 
   if (FTransfer)
   {
     DebugAssert(FPaths.get() != NULL);
+
+    const int MaxSample = 3;
+    if ((FFilesSelected == fsList) && (FPaths->Count > MaxSample))
+    {
+      FPathsSample = true;
+      while (FPaths->Count > MaxSample)
+      {
+        FPaths->Delete(FPaths->Count - 1);
+      }
+    }
 
     if (FToRemote)
     {
@@ -171,7 +186,6 @@ __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
   }
 
   FPath = Path;
-  FFilesSelected = FilesSelected;
   FChanging = false;
 
   FResultMemo41 = new TRichEdit41(this);
@@ -337,18 +351,25 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
       ScriptDescription += LoadStr(GENERATE_URL_COPY_PARAM_SCRIPT_REMAINING) + L"\n";
     }
 
+    AddSampleDescription(ScriptDescription);
+
     TransferCommand = RtfScriptCommand(TransferCommand) + TransferCommandArgs;
 
     if (FFilesSelected == fsList)
     {
       for (int Index = 0; Index < FPaths->Count; Index++)
       {
-        Commands.push_back(TransferCommand + L" " + RtfText(QuoteStringParam(EscapeFileMask(FPaths->Strings[Index]))));
+        UnicodeString Path = ExtractFileName(FPaths->Strings[Index], !FToRemote);
+        if (!FToRemote)
+        {
+          Path = EscapeFileMask(Path);
+        }
+        Commands.push_back(TransferCommand + L" " + RtfText(QuoteStringParam(Path)));
       }
     }
     else
     {
-      Commands.push_back(TransferCommand + L" " + RtfText(QuoteStringParam(FSourcePath + L"*")));
+      Commands.push_back(TransferCommand + L" " + RtfText(AllFilesMask));
     }
   }
   else
@@ -486,12 +507,118 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode(UnicodeString 
       AssemblyDescription += LoadStr(GENERATE_URL_COPY_PARAM_CODE_REMAINING) + L"\n";
     }
 
-    if (!CopyParamProperties.IsEmpty())
+    bool HasTransferOptions = !CopyParamProperties.IsEmpty();
+    if (HasTransferOptions)
     {
       Code +=
+        AssemblyCommentLine(Language, LoadStr(GENERATE_URL_COPY_PARAM)) +
         AssemblyNewClassInstanceStart(Language, TransferOptionsClassName, false) +
         CopyParamProperties +
-        AssemblyNewClassInstanceEnd(Language, false);
+        AssemblyNewClassInstanceEnd(Language, false) +
+        RtfPara;
+    }
+
+    Code += AssemblyCommentLine(Language, LoadStr(GENERATE_URL_TRANSFER_FILES));
+
+    AddSampleDescription(AssemblyDescription);
+
+    UnicodeString DestPath = FPath;
+    UnicodeString TransferMethodName;
+    if (FToRemote)
+    {
+      TransferMethodName = L"PutFiles";
+      DestPath = UnixIncludeTrailingBackslash(DestPath);
+    }
+    else
+    {
+      TransferMethodName = L"GetFiles";
+      DestPath = IncludeTrailingBackslash(DestPath);
+    }
+    DestPath += NoOpOperationMask;
+
+    UnicodeString DestPathVariableName = AssemblyVariableName(Language, L"remotePath");
+    UnicodeString StatementSeparator = AssemblyStatementSeparator(Language);
+    UnicodeString DestPathString = AssemblyString(Language, DestPath);
+    UnicodeString DestPathCode;
+    if ((FFilesSelected != fsList) || (FPaths->Count == 1))
+    {
+      DestPathCode = DestPathString;
+    }
+    else
+    {
+      switch (Language)
+      {
+        case alCSharp:
+          Code += RtfKeyword(L"const") + L" " + RtfKeyword(L"string") + L" " + DestPathVariableName;
+          break;
+
+        case alVBNET:
+          Code += RtfKeyword(L"Const") + L" " + DestPathVariableName;
+          break;
+
+        case alPowerShell:
+          Code += DestPathVariableName;
+          break;
+      }
+      Code += L" = " + DestPathString + StatementSeparator + RtfPara;
+      DestPathCode = DestPathVariableName;
+    }
+
+    UnicodeString TransferMethodCallStart =
+      AssemblyVariableName(Language, SessionClassName) + L"." +
+      RtfLibraryMethod(SessionClassName, TransferMethodName, false) + L"(";
+    const UnicodeString ParameterSeparator = L", ";
+    UnicodeString TransferMethodCallEnd = ParameterSeparator + DestPathCode;
+    if (FMove || HasTransferOptions)
+    {
+      TransferMethodCallEnd += ParameterSeparator + AssemblyBoolean(Language, FMove);
+    }
+    if (HasTransferOptions)
+    {
+      TransferMethodCallEnd += ParameterSeparator + AssemblyVariableName(Language, TransferOptionsClassName);
+    }
+
+    TransferMethodCallEnd +=
+      L")." + RtfLibraryMethod(L"OperationResultBase", L"Check", true) + L"()" +
+      StatementSeparator + RtfPara;
+
+    if (FFilesSelected == fsList)
+    {
+      for (int Index = 0; Index < FPaths->Count; Index++)
+      {
+        UnicodeString FileName = FPaths->Strings[Index];
+        UnicodeString Path;
+        if (!FToRemote)
+        {
+          Path = UnixIncludeTrailingBackslash(FSourcePath) + FileName;
+        }
+        else
+        {
+          Path = IncludeTrailingBackslash(FSourcePath) + FileName;
+        }
+        UnicodeString PathCode = AssemblyString(Language, Path);
+        if (!FToRemote && (FileName != EscapeFileMask(FileName)))
+        {
+          PathCode =
+            AssemblyVariableName(Language, SessionClassName) + L"." +
+            RtfLibraryMethod(SessionClassName, L"EscapeFileMask", false) + L"(" + PathCode + L")";
+        }
+        Code += TransferMethodCallStart + PathCode + TransferMethodCallEnd;
+      }
+    }
+    else
+    {
+      UnicodeString SourcePath = FSourcePath;
+      if (FToRemote)
+      {
+        SourcePath = IncludeTrailingBackslash(SourcePath);
+      }
+      else
+      {
+        SourcePath = UnixIncludeTrailingBackslash(SourcePath);
+      }
+      SourcePath += AllFilesMask;
+      Code += TransferMethodCallStart + AssemblyString(Language, SourcePath) + TransferMethodCallEnd;
     }
   }
   else
