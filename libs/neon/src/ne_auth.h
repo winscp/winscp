@@ -134,6 +134,10 @@ void ne_add_server_auth(ne_session *sess, unsigned protocol,
 void ne_add_proxy_auth(ne_session *sess, unsigned protocol, 
                        ne_auth_creds creds, void *userdata);
 
+#ifdef WINSCP
+void ne_remove_server_auth(ne_session *sess);
+#endif
+
 /* Clear any cached authentication credentials for the given
  * session. */
 void ne_forget_auth(ne_session *sess);

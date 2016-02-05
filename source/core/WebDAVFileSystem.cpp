@@ -68,6 +68,7 @@ struct TWebDAVCertificateData
 #define SESSION_FS_KEY "filesystem"
 static const char CertificateStorageKey[] = "HttpsCertificates";
 static const UnicodeString CONST_WEBDAV_PROTOCOL_BASE_NAME = L"WebDAV";
+static const int HttpUnauthorized = 401;
 //---------------------------------------------------------------------------
 #define DAV_PROP_NAMESPACE "DAV:"
 #define MODDAV_PROP_NAMESPACE "http://apache.org/dav/props/"
@@ -414,12 +415,7 @@ void TWebDAVFileSystem::NeonOpen(UnicodeString & CorrectedUrl, const UnicodeStri
 
   ne_set_connect_timeout(FNeonSession, Data->Timeout);
 
-  unsigned int NeonAuthTypes = NE_AUTH_BASIC | NE_AUTH_DIGEST;
-  if (Ssl)
-  {
-    NeonAuthTypes |= NE_AUTH_NEGOTIATE;
-  }
-  ne_add_server_auth(FNeonSession, NeonAuthTypes, NeonRequestAuth, this);
+  NeonAddAuthentiation(Ssl);
 
   if (Ssl)
   {
@@ -439,9 +435,20 @@ void TWebDAVFileSystem::NeonOpen(UnicodeString & CorrectedUrl, const UnicodeStri
   ne_hook_create_request(FNeonSession, NeonCreateRequest, this);
   ne_hook_pre_send(FNeonSession, NeonPreSend, this);
   ne_hook_post_send(FNeonSession, NeonPostSend, this);
+  ne_hook_post_headers(FNeonSession, NeonPostHeaders, this);
 
   TAutoFlag Flag(FInitialHandshake);
   ExchangeCapabilities(Path.c_str(), CorrectedUrl);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWebDAVFileSystem::NeonAddAuthentiation(bool UseNegotiate)
+{
+  unsigned int NeonAuthTypes = NE_AUTH_BASIC | NE_AUTH_DIGEST;
+  if (UseNegotiate)
+  {
+    NeonAuthTypes |= NE_AUTH_NEGOTIATE;
+  }
+  ne_add_server_auth(FNeonSession, NeonAuthTypes, NeonRequestAuth, this);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TWebDAVFileSystem::GetRedirectUrl()
@@ -454,7 +461,15 @@ UnicodeString __fastcall TWebDAVFileSystem::GetRedirectUrl()
 void TWebDAVFileSystem::ExchangeCapabilities(const char * Path, UnicodeString & CorrectedUrl)
 {
   ClearNeonError();
-  int NeonStatus = ne_options2(FNeonSession, Path, &FCapabilities);
+
+  int NeonStatus;
+  FAuthenticationRetry = false;
+  do
+  {
+    NeonStatus = ne_options2(FNeonSession, Path, &FCapabilities);
+  }
+  while ((NeonStatus == NE_AUTH) && FAuthenticationRetry);
+
   if (NeonStatus == NE_REDIRECT)
   {
     CorrectedUrl = GetRedirectUrl();
@@ -1734,6 +1749,21 @@ void TWebDAVFileSystem::NeonPreSend(
 {
   TWebDAVFileSystem * FileSystem = static_cast<TWebDAVFileSystem *>(UserData);
 
+  FileSystem->FAuthorizationProtocol = L"";
+  UnicodeString HeaderBuf(StrFromNeon(AnsiString(Header->data, Header->used)));
+  const UnicodeString AuthorizationHeaderName(L"Authorization:");
+  int P = HeaderBuf.Pos(AuthorizationHeaderName);
+  if (P > 0)
+  {
+    P += AuthorizationHeaderName.Length();
+    int P2 = PosEx(L"\n", HeaderBuf, P);
+    if (DebugAlwaysTrue(P2 > 0))
+    {
+      UnicodeString AuthorizationHeader = HeaderBuf.SubString(P, P2 - P).Trim();
+      FileSystem->FAuthorizationProtocol = CutToChar(AuthorizationHeader, L' ', false);
+    }
+  }
+
   if (FileSystem->FDownloading)
   {
     // Needed by IIS server to make it download source code, not code output,
@@ -1757,7 +1787,7 @@ void TWebDAVFileSystem::NeonPreSend(
     {
       // all neon request types that use ne_add_request_header
       // use XML content-type, so it's text-based
-      DebugAssert(ContainsStr(AnsiString(Header->data, Header->used), "Content-Type: " NE_XML_MEDIA_TYPE));
+      DebugAssert(ContainsStr(HeaderBuf, L"Content-Type: " NE_XML_MEDIA_TYPE));
       FileSystem->FTerminal->Log->Add(llInput, UnicodeString(UTF8String(Buffer, Size)));
     }
   }
@@ -1780,6 +1810,35 @@ int TWebDAVFileSystem::NeonPostSend(ne_request * /*Req*/, void * UserData,
     FileSystem->FTerminal->Log->Add(llOutput, FileSystem->FResponse);
   }
   return NE_OK;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWebDAVFileSystem::IsNtlmAuthentication()
+{
+  return
+    SameText(FAuthorizationProtocol, L"NTLM") ||
+    SameText(FAuthorizationProtocol, L"Negotiate");
+}
+//---------------------------------------------------------------------------
+void TWebDAVFileSystem::NeonPostHeaders(ne_request * /*Req*/, void * UserData, const ne_status * Status)
+{
+  TWebDAVFileSystem * FileSystem = static_cast<TWebDAVFileSystem *>(UserData);
+  if (Status->code == HttpUnauthorized)
+  {
+    // NTLM/GSSAPI failed
+    if (FileSystem->IsNtlmAuthentication())
+    {
+      // Next time do not try Negotiate (NTLM/GSSAPI),
+      // otherwise we end up in an endless loop.
+      // If the server returns all other challenges in the response, removing the Negotiate
+      // protocol will itself ensure that other protocols are tried (we haven't seen this behaviour).
+      // IIS will return only Negotiate response in the request was Negotiate, so there's no fallback.
+      // We have to retry with a fresh request. That's what FAuthenticationRetry does.
+      FileSystem->FTerminal->LogEvent(FORMAT(L"%s challenge failed, will try different challenge", (FileSystem->FAuthorizationProtocol)));
+      ne_remove_server_auth(FileSystem->FNeonSession);
+      FileSystem->NeonAddAuthentiation(false);
+      FileSystem->FAuthenticationRetry = true;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 ssize_t TWebDAVFileSystem::NeonUploadBodyProvider(void * UserData, char * /*Buffer*/, size_t /*BufLen*/)
@@ -1812,8 +1871,10 @@ int TWebDAVFileSystem::NeonBodyAccepter(void * UserData, ne_request * Request, c
   TWebDAVFileSystem * FileSystem =
     static_cast<TWebDAVFileSystem *>(ne_get_request_private(Request, SESSION_FS_KEY));
 
-  bool AuthenticationFailed = (Status->code == 401) && FileSystem->FAuthenticationRequested;
-  bool AuthenticationNeeded = (Status->code == 401) && !FileSystem->FAuthenticationRequested;
+  bool AuthenticationFailureCode = (Status->code == HttpUnauthorized);
+  bool PasswordAuthenticationFailed = AuthenticationFailureCode && FileSystem->FAuthenticationRequested;
+  bool AuthenticationFailed = PasswordAuthenticationFailed || (AuthenticationFailureCode && FileSystem->IsNtlmAuthentication());
+  bool AuthenticationNeeded = AuthenticationFailureCode && !AuthenticationFailed;
 
   if (FileSystem->FInitialHandshake)
   {
@@ -1862,7 +1923,7 @@ int TWebDAVFileSystem::NeonBodyAccepter(void * UserData, ne_request * Request, c
   // (note AuthenticationFailed vs. AuthenticationNeeded)
   // what likely fails, but we do not want to reset out password
   // (as it was not even tried yet for this request).
-  if (AuthenticationFailed)
+  if (PasswordAuthenticationFailed)
   {
     if (FileSystem->FIgnoreAuthenticationFailure == iafNo)
     {

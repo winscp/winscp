@@ -130,6 +130,7 @@ protected:
   static void NeonNotifier(void * UserData, ne_session_status Status, const ne_session_status_info * StatusInfo);
   static ssize_t NeonUploadBodyProvider(void * UserData, char * Buffer, size_t BufLen);
   static int NeonPostSend(ne_request * Req, void * UserData, const ne_status * Status);
+  static void NeonPostHeaders(ne_request * Req, void * UserData, const ne_status * Status);
   void ExchangeCapabilities(const char * Path, UnicodeString & CorrectedUrl);
   static int NeonServerSSLCallback(void * UserData, int Failures, const struct ne_ssl_certificate_s * Certificate);
   static void NeonProvideClientCert(void * UserData, ne_session * Sess, const ne_ssl_dname * const * DNames, int DNCount);
@@ -144,6 +145,7 @@ protected:
   void __fastcall RequireLockStore();
   static void InitSslSession(ssl_st * Ssl, ne_session * Session);
   void __fastcall InitSslSessionImpl(ssl_st * Ssl);
+  void __fastcall NeonAddAuthentiation(bool UseNegotiate);
 
 private:
   TFileSystemInfo FFileSystemInfo;
@@ -169,6 +171,8 @@ private:
   UnicodeString FHostName;
   int FPortNumber;
   enum TIgnoreAuthenticationFailure { iafNo, iafWaiting, iafPasswordFailed } FIgnoreAuthenticationFailure;
+  UnicodeString FAuthorizationProtocol;
+  bool FAuthenticationRetry;
 
   void __fastcall CustomReadFile(UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
@@ -189,6 +193,7 @@ private:
   UnicodeString __fastcall FilePath(const TRemoteFile * File);
   struct ne_lock * __fastcall FindLock(const RawByteString & Path);
   void __fastcall DiscardLock(const RawByteString & Path);
+  bool __fastcall IsNtlmAuthentication();
 };
 //------------------------------------------------------------------------------
 void __fastcall NeonInitialize();
