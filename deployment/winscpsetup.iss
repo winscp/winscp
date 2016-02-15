@@ -540,6 +540,11 @@ begin
   ShellExec('open', Url, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
 end;
 
+function IsRestartingApplicationsPage: Boolean;
+begin
+  Result := WizardForm.PreparingMemo.Visible;
+end;
+
 procedure OpenHelp;
 begin
   OpenBrowser('{#WebDocumentation}installation?page=' + IntToStr(WizardForm.CurPageID) + '&' + ExpandConstant('{#WebArguments}'));
@@ -1233,8 +1238,9 @@ begin
     else
   if CurPageID = wpPreparing then
   begin
-    // Are we at the "Restart applications?" screen
-    if WizardForm.PreparingLabel.Visible then
+    // Are we at the "Restart applications?" screen.
+    // If PreparingMemo is hidden, it's "installation/removal was not completed" screen
+    if IsRestartingApplicationsPage then
     begin
       WizardForm.PreparingLabel.Caption :=
         CustomMessage('ApplicationsFoundDragExt');
