@@ -2401,6 +2401,8 @@ void TWebDAVFileSystem::NeonProvideClientCert(void * UserData, ne_session * Sess
 int TWebDAVFileSystem::NeonRequestAuth(
   void * UserData, const char * Realm, int Attempt, char * UserName, char * Password)
 {
+  DebugUsedParam(Realm);
+  DebugUsedParam(Attempt);
   TWebDAVFileSystem * FileSystem = static_cast<TWebDAVFileSystem *>(UserData);
 
   TTerminal * Terminal = FileSystem->FTerminal;
