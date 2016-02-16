@@ -228,7 +228,7 @@ Name: "{sendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
 Type: files; Name: "{app}\license"
 ; Remove pre-520 start menu folders
 Type: filesandordirs; Name: "{commonprograms}\WinSCP"
-Type: filesandordirs; Name: "{userprograms}\WinSCP"
+Type: filesandordirs; Name: "{userprograms}\WinSCP"; Check: HasUserPrograms
 
 [Run]
 Filename: "{app}\WinSCP.exe"; Parameters: "/RegisterForDefaultProtocols"; \
@@ -1323,6 +1323,20 @@ begin
   if UninstallSilent then
     CreateMutex('WinSCPSilentUninstall');
   Result := True;
+end;
+
+function HasUserPrograms: Boolean;
+begin
+  // To avoid the installer failing when the {userprograms}
+  // cannot be resolved (when installing via system account or SCCM)
+  try
+    ExpandConstant('{userprograms}');
+    Log('Have user programs');
+    Result := True;
+  except
+    Log('Does not have user programs');
+    Result := False;
+  end;
 end;
 
 #expr SaveToFile(AddBackslash(SourcePath) + "Preprocessed.iss")
