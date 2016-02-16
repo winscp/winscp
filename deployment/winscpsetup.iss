@@ -854,6 +854,15 @@ begin
     RegQueryStringValue(HKLM, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S) or
     RegQueryStringValue(HKCU, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S);
 
+  if Upgrade then
+  begin
+    Log('Upgrade');
+  end
+    else
+  begin
+    Log('New installation');
+  end;
+
   if Upgrade and GetVersionNumbersString(AddBackslash(WizardDirValue) + '{#MainFileName}', PrevVersion) and
      (PrevVersion[2] = '.') and (PrevVersion[4] = '.') and (PrevVersion[6] = '.') then
   begin
