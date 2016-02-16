@@ -387,11 +387,6 @@ begin
   Result := (Lang = ActiveLanguage);
 end;
 
-function IsWin8: Boolean;
-begin
-  Result := (GetWindowsVersion >= $06020000);
-end;
-
 function IsWinVista: Boolean;
 begin
   Result := (GetWindowsVersion >= $06000000);
@@ -1251,11 +1246,6 @@ begin
   WizardForm.YesRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   WizardForm.NoRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   UpdatePostInstallRunCheckboxes(nil);
-
-  if IsWin8 then
-  begin
-    WizardForm.NoIconsCheck.Checked := True;
-  end;
 
   // 100% images are automatically loaded by
   // WizardImageFile and WizardSmallImageFile
