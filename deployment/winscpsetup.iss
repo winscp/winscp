@@ -390,7 +390,11 @@ end;
 function IsWin8: Boolean;
 begin
   Result := (GetWindowsVersion >= $06020000);
+end;
 
+function IsWinVista: Boolean;
+begin
+  Result := (GetWindowsVersion >= $06000000);
 end;
 
 procedure CutVersionPart(var VersionString: string; var VersionPart: Word);
@@ -825,6 +829,77 @@ begin
   Result := True;
 end;
 
+function IsElevated: Boolean;
+begin
+  Result := IsAdminLoggedOn or IsPowerUserLoggedOn;
+end;
+
+function HaveWriteAccessToApp: Boolean;
+var
+  FileName: string;
+begin
+  FileName := AddBackslash(WizardDirValue) + 'writetest.tmp';
+  Result := SaveStringToFile(FileName, 'test', False);
+  if Result then
+  begin
+    Log(Format('Have write access to the last installation path [%s]', [WizardDirValue]));
+    DeleteFile(FileName);
+  end
+    else
+  begin
+    Log(Format('Does not have write access to the last installation path [%s]', [WizardDirValue]));
+  end;
+end;
+
+procedure ExitProcess(uExitCode: UINT);
+  external 'ExitProcess@kernel32.dll stdcall';
+function ShellExecute(hwnd: HWND; lpOperation: string; lpFile: string;
+  lpParameters: string; lpDirectory: string; nShowCmd: Integer): THandle;
+  external 'ShellExecuteW@shell32.dll stdcall';
+
+function Elevate: Boolean;
+var
+  I: Integer;
+  RetVal: Integer;
+  Params: string;
+  S: string;
+begin
+  // Collect current instance parameters
+  for I := 1 to ParamCount do
+  begin
+    S := ParamStr(I);
+    // Unique log file name for the elevated instance
+    if CompareText(Copy(S, 1, 5), '/LOG=') = 0 then
+    begin
+      S := S + '-elevated';
+    end;
+    // Do not pass our /SL5 switch
+    if CompareText(Copy(S, 1, 5), '/SL5=') <> 0 then
+    begin
+      Params := Params + AddQuotes(S) + ' ';
+    end;
+  end;
+
+  // ... and add selected language
+  Params := Params + '/LANG=' + ActiveLanguage;
+
+  Log(Format('Elevating setup with parameters [%s]', [Params]));
+  RetVal := ShellExecute(0, 'runas', ExpandConstant('{srcexe}'), Params, '', SW_SHOW);
+  Log(Format('Running elevated setup returned [%d]', [RetVal]));
+  Result := (RetVal > 32);
+  // if elevated executing of this setup succeeded, then...
+  if Result then
+  begin
+    Log('Elevation succeeded');
+    // exit this non-elevated setup instance
+    ExitProcess(0);
+  end
+    else
+  begin
+    Log(Format('Elevation failed [%s]', [SysErrorMessage(RetVal)]));
+  end;
+end;
+
 procedure InitializeWizard;
 var
   DefaultLang: Boolean;
@@ -901,6 +976,37 @@ begin
   HelpButton.Height := WizardForm.CancelButton.Height;
   HelpButton.Caption := CustomMessage('HelpButton');
   HelpButton.OnClick := @HelpButtonClick;
+
+  // elevate
+
+  if not IsWinVista then
+  begin
+    Log(Format('This version of Windows [%x] does not support elevation', [GetWindowsVersion]));
+  end
+    else
+  if IsElevated then
+  begin
+    Log('Running elevated');
+  end
+    else
+  begin
+    Log('Running non-elevated');
+    if Upgrade then
+    begin
+      if not HaveWriteAccessToApp then
+      begin
+        Elevate;
+      end;
+    end
+      else
+    begin
+      if not Elevate then
+      begin
+        WizardForm.DirEdit.Text := ExpandConstant('{localappdata}\WinSCP');
+        Log(Format('Falling back to local application user folder [%s]', [WizardForm.DirEdit.Text]));
+      end;
+    end;
+  end;
 
   // installation type page
 
@@ -1439,7 +1545,7 @@ begin
         UsageData := UsageData + 'InstallationsRestart+,';
       if Donated then
         UsageData := UsageData + 'InstallationsDonate+,';
-      if not (IsAdminLoggedOn or IsPowerUserLoggedOn) then
+      if not IsElevated then
         UsageData := UsageData + 'InstallationsNonElevated+,';
 
       // have to do this before running WinSCP GUI instance below,
