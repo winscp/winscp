@@ -347,8 +347,6 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/UnregisterForProtocols"; \
 
 [Code]
 const
-  wpSetupType = 100;
-  wpInterface = 101;
   NewLine = #13#10;
 
 var
@@ -1228,7 +1226,7 @@ begin
       InitTasks := SaveCheckListBoxState(WizardForm.TasksList);
   end
     else
-  if CurPageID = wpInterface then
+  if CurPageID = InterfacePage.ID then
   begin
     if InitInterface < 0 then
       InitInterface := Integer(CommanderRadioButton.Checked);
@@ -1279,7 +1277,7 @@ begin
 #endif
   end
     else
-  if CurPageID = wpSetupType then
+  if CurPageID = SetupTypePage.ID then
   begin
     Log('License accepted');
     LicenseAccepted := True;
@@ -1503,7 +1501,7 @@ begin
     ((PageID = wpSelectDir) or (PageID = wpSelectComponents) or
      (PageID = wpSelectTasks) or
      { Hide Interface page for upgrades only, show for fresh installs }
-     ((PageID = wpInterface) and Upgrade));
+     ((PageID = InterfacePage.ID) and Upgrade));
 end;
 
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,
