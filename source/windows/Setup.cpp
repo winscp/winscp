@@ -1598,6 +1598,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
     Params.MoreMessagesSize = Updates.Results.NewsSize;
     // alias "ok" button to "upgrade" only if we have new version
     Params.AliasesCount = LENOF(Aliases) - (New ? 0 : 1);
+    Params.CustomCaption = LoadStr(CHECK_FOR_UPDATES_TITLE);
 
     if (New)
     {

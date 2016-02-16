@@ -574,6 +574,7 @@ BEGIN
         GENERATE_URL_COPY_PARAM, "Set up transfer options"
         GENERATE_URL_TRANSFER_FILES, "Transfer files"
         GENERATE_URL_FILE_SAMPLE, "A sample file list is used only, consider using a file mask to select files for the transfer."
+        CHECK_FOR_UPDATES_TITLE, "Check for Updates"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"
