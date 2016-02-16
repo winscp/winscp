@@ -102,6 +102,7 @@ WizardImageFile={#ImagesDir}\{#WizardImageFileBase} 100.bmp
 WizardSmallImageFile={#ImagesDir}\{#WizardSmallImageFileBase} 100.bmp
 ShowTasksTreeLines=yes
 PrivilegesRequired=none
+ShowLanguageDialog=auto
 UsePreviousLanguage=yes
 DisableProgramGroupPage=yes
 MinVersion=0,5.1
