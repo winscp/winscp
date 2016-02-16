@@ -1506,7 +1506,7 @@ void __fastcall TWebDAVFileSystem::Source(const UnicodeString FileName,
             // changing getlastmodified.
             // The only server we found that supports this is TradeMicro SafeSync.
             // But it announces itself as "Server: Apache",
-            // so it's not reliably autodetect the support.
+            // so it's not reliable to autodetect the support.
             TouchAction.Cancel();
           }
           else
