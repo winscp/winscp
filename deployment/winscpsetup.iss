@@ -388,14 +388,9 @@ begin
 end;
 
 function IsWin8: Boolean;
-var
-  Version: TWindowsVersion;
 begin
-  GetWindowsVersionEx(Version);
+  Result := (GetWindowsVersion >= $06020000);
 
-  Result :=
-    (Version.Major > 6) or
-    ((Version.Major = 6) and (Version.Minor >= 2));
 end;
 
 procedure CutVersionPart(var VersionString: string; var VersionPart: Word);
