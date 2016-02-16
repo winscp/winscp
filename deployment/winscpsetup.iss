@@ -852,7 +852,7 @@ begin
 
   Upgrade :=
     RegQueryStringValue(HKLM, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S) or
-    RegQueryStringValue(HKCU, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S)
+    RegQueryStringValue(HKCU, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S);
 
   if Upgrade and GetVersionNumbersString(AddBackslash(WizardDirValue) + '{#MainFileName}', PrevVersion) and
      (PrevVersion[2] = '.') and (PrevVersion[4] = '.') and (PrevVersion[6] = '.') then
