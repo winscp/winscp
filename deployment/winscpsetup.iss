@@ -375,6 +375,8 @@ var
   InitTasks: string;
   InitInterface: Integer;
   Donated: Boolean;
+  InterfacePage: TWizardPage;
+  SetupTypePage: TWizardPage;
 
 procedure ShowMessage(Text: string);
 begin
@@ -545,9 +547,48 @@ begin
   Result := WizardForm.PreparingMemo.Visible;
 end;
 
-procedure OpenHelp;
+function IsRestartPage: Boolean;
 begin
-  OpenBrowser('{#WebDocumentation}installation?page=' + IntToStr(WizardForm.CurPageID) + '&' + ExpandConstant('{#WebArguments}'));
+  Result := WizardForm.YesRadio.Visible;
+end;
+
+procedure OpenHelp;
+var
+  HelpKeyword: string;
+begin
+  HelpKeyword := 'ui_installer'; // default
+
+  case WizardForm.CurPageID of
+    wpLicense:
+      HelpKeyword := 'ui_installer_license';
+
+    wpSelectDir:
+      HelpKeyword := 'ui_installer_selectdir';
+
+    wpSelectComponents:
+      HelpKeyword := 'ui_installer_selectcomponents';
+
+    wpSelectTasks:
+      HelpKeyword := 'ui_installer_selecttasks';
+
+    wpReady:
+      HelpKeyword := 'ui_installer_ready';
+
+    wpPreparing:
+      if IsRestartingApplicationsPage then
+        HelpKeyword := 'ui_installer_restartingapplications';
+
+    wpFinished:
+      HelpKeyword := 'ui_installer_finished';
+
+    SetupTypePage.ID:
+      HelpKeyword := 'ui_installer_setuptype';
+
+    InterfacePage.ID:
+      HelpKeyword := 'ui_installer_interface';
+  end;
+
+  OpenBrowser('{#WebDocumentation}' + HelpKeyword + '?' + ExpandConstant('{#WebArguments}'));
 end;
 
 procedure HelpButtonClick(Sender: TObject);
@@ -795,8 +836,6 @@ var
   DefaultLang: Boolean;
   UserInterface: Cardinal;
   UpdatesPeriod: Cardinal;
-  InterfacePage: TWizardPage;
-  SetupTypePage: TWizardPage;
   Caption: TLabel;
   Image: TBitmapImage;
   HelpButton: TButton;
@@ -1190,7 +1229,7 @@ begin
     LineHeight := (WizardForm.NoRadio.Top - WizardForm.YesRadio.Top);
 
     // Are we at the "Restart?" screen
-    if WizardForm.YesRadio.Visible then
+    if IsRestartPage then
     begin
       WizardForm.FinishedLabel.Caption :=
         CustomMessage('FinishedRestartDragExtLabel') + NewLine;
@@ -1252,7 +1291,7 @@ end;
 
 function AskedRestart: Boolean;
 begin
-  Result := WizardForm.YesRadio.Visible;
+  Result := IsRestartPage;
 end;
 
 procedure DeinitializeSetup;
