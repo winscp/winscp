@@ -196,6 +196,7 @@ const UnicodeString CopySiteCommand(L"COPY");
 const UnicodeString HashCommand(L"HASH"); // Cerberos + FileZilla servers
 const UnicodeString AvblCommand(L"AVBL");
 const UnicodeString XQuotaCommand(L"XQUOTA");
+const UnicodeString DirectoryHasBytesPrefix(L"226-Directory has");
 //---------------------------------------------------------------------------
 struct TSinkFileParams
 {
@@ -271,6 +272,8 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FSupportedSiteCommands.reset(CreateSortedStringList());
   FCertificate = NULL;
   FPrivateKey = NULL;
+  FBytesAvailable = -1;
+  FBytesAvailableSuppoted = false;
 
   FChecksumAlgs.reset(new TStringList());
   FChecksumCommands.reset(new TStringList());
@@ -2303,7 +2306,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
       return FSupportsAnyChecksumFeature;
 
     case fcCheckingSpaceAvailable:
-      return SupportsCommand(AvblCommand) || SupportsCommand(XQuotaCommand);
+      return FBytesAvailableSuppoted || SupportsCommand(AvblCommand) || SupportsCommand(XQuotaCommand);
 
     case fcModeChangingUpload:
     case fcLoadingAdditionalProperties:
@@ -2407,6 +2410,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 {
+  FBytesAvailable = -1;
   FileList->Reset();
   // FZAPI does not list parent directory, add it
   FileList->AddFile(new TRemoteParentDirectory(FTerminal));
@@ -2808,7 +2812,14 @@ TStrings * __fastcall TFTPFileSystem::GetFixedPaths()
 void __fastcall TFTPFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & ASpaceAvailable)
 {
-  if (SupportsCommand(XQuotaCommand))
+  if (FBytesAvailableSuppoted)
+  {
+    std::unique_ptr<TRemoteFileList> DummyFileList(new TRemoteFileList());
+    DummyFileList->Directory = Path;
+    ReadDirectory(DummyFileList.get());
+    ASpaceAvailable.UnusedBytesAvailableToUser = FBytesAvailable;
+  }
+  else if (SupportsCommand(XQuotaCommand))
   {
     // WS_FTP:
     // XQUOTA
@@ -3615,6 +3626,21 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     if (FMultineResponse || (Response.Length() >= Start))
     {
       StoreLastResponse(Response.SubString(Start, Response.Length() - Start + 1));
+    }
+  }
+
+
+  if (StartsStr(DirectoryHasBytesPrefix, Response))
+  {
+    UnicodeString Buf = Response;
+    Buf.Delete(1, DirectoryHasBytesPrefix.Length());
+    Buf = Buf.TrimLeft();
+    UnicodeString BytesStr = CutToChar(Buf, L' ', true);
+    BytesStr = ReplaceStr(BytesStr, L",", L"");
+    FBytesAvailable = StrToInt64Def(BytesStr, -1);
+    if (FBytesAvailable >= 0)
+    {
+      FBytesAvailableSuppoted = true;
     }
   }
 

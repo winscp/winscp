@@ -276,6 +276,8 @@ private:
   EVP_PKEY * FPrivateKey;
   bool FTransferActiveImmediately;
   bool FWindowsServer;
+  __int64 FBytesAvailable;
+  bool FBytesAvailableSuppoted;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------
