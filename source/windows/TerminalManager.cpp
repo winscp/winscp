@@ -814,7 +814,7 @@ bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
       if ((Form != NULL) && Form->Active)
       {
         // Send it only to windows we tested it with.
-        // Though we should sooner or later remote this test and pass it to all our windows.
+        // Though we should sooner or later remove this test and pass it to all our windows.
         if (Form->Perform(WM_WANTS_MOUSEWHEEL, 0, 0) == 1)
         {
           SendMessage(Control->Handle, WM_MOUSEWHEEL, WParam, LParam);
