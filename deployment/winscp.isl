@@ -31,7 +31,7 @@ ProgramComment2=WinSCP: SFTP, FTP, WebDAV and SCP client
 
 ; WinSCP Runtime
 Recommended=%1 (recommended)
-SetupTypeTitle=Setup type
+SetupTypeTitle=Setup Type
 SetupTypePrompt=What type of setup do you want?
 TypicalType=&Typical installation
 TypicalType1=- installs to default destination
@@ -47,7 +47,7 @@ CustomType1=- allows full selection of destination, components and features
 CustomUpgradeType=&Custom upgrade or new installation
 CustomUpgradeType1=- allows custom upgrade of existing installation or
 CustomUpgradeType2=- new installation to different destination
-UserSettingsTitle=Initial user settings
+UserSettingsTitle=Initial User Settings
 UserSettingsPrompt=Please, select your preferred user interface options.
 UserInterfaceStyle=User interface style
 NortonCommanderInterfaceC=&Commander
