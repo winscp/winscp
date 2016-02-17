@@ -952,18 +952,18 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 382
+          Height = 374
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Editor preference'
           TabOrder = 0
           DesignSize = (
             389
-            382)
+            374)
           object EditorListView3: TListView
             Left = 16
             Top = 24
             Width = 356
-            Height = 284
+            Height = 277
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -999,7 +999,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddEditorButton: TButton
             Left = 16
-            Top = 315
+            Top = 307
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1009,7 +1009,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditEditorButton: TButton
             Left = 112
-            Top = 315
+            Top = 307
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1019,7 +1019,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object UpEditorButton: TButton
             Left = 290
-            Top = 315
+            Top = 307
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1029,7 +1029,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownEditorButton: TButton
             Left = 290
-            Top = 346
+            Top = 338
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1039,7 +1039,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveEditorButton: TButton
             Left = 16
-            Top = 346
+            Top = 338
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1162,7 +1162,7 @@ object PreferencesDialog: TPreferencesDialog
             Left = 16
             Top = 24
             Width = 356
-            Height = 266
+            Height = 277
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -1202,7 +1202,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddCommandButton: TButton
             Left = 16
-            Top = 301
+            Top = 307
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1212,7 +1212,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveCommandButton: TButton
             Left = 16
-            Top = 333
+            Top = 338
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1222,7 +1222,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object UpCommandButton: TButton
             Left = 290
-            Top = 301
+            Top = 307
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1232,7 +1232,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownCommandButton: TButton
             Left = 290
-            Top = 333
+            Top = 338
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1242,7 +1242,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditCommandButton: TButton
             Left = 112
-            Top = 301
+            Top = 307
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2819,7 +2819,7 @@ object PreferencesDialog: TPreferencesDialog
             374)
           object LanguageChangeLabel: TLabel
             Left = 16
-            Top = 344
+            Top = 343
             Width = 177
             Height = 13
             Anchors = [akLeft, akBottom]
@@ -2829,7 +2829,7 @@ object PreferencesDialog: TPreferencesDialog
             Left = 16
             Top = 24
             Width = 356
-            Height = 309
+            Height = 308
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -2846,8 +2846,8 @@ object PreferencesDialog: TPreferencesDialog
             OnSelectItem = ListViewSelectItem
           end
           object LanguagesGetMoreButton: TButton
-            Left = 272
-            Top = 339
+            Left = 273
+            Top = 338
             Width = 100
             Height = 25
             Anchors = [akRight, akBottom]
