@@ -267,3 +267,12 @@ int __fastcall CalculateCompoundVersion(int MajorVer,
     100 * MajorVer));
   return CompoundVer;
 }
+//---------------------------------------------------------------------------
+int __fastcall StrToCompoundVersion(UnicodeString S)
+{
+  int MajorVer = StrToInt(CutToChar(S, L'.', false));
+  int MinorVer = StrToInt(CutToChar(S, L'.', false));
+  int Release = S.IsEmpty() ? 0 : StrToInt(CutToChar(S, L'.', false));
+  int Build = S.IsEmpty() ? 0 : StrToInt(CutToChar(S, L'.', false));
+  return CalculateCompoundVersion(MajorVer, MinorVer, Release, Build);
+}

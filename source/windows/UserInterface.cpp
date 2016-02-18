@@ -514,10 +514,11 @@ void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall AddMenuSeparator(TTBCustomItem * Menu)
+TTBXSeparatorItem * __fastcall AddMenuSeparator(TTBCustomItem * Menu)
 {
   TTBXSeparatorItem * Item = new TTBXSeparatorItem(Menu);
   Menu->Add(Item);
+  return Item;
 }
 //---------------------------------------------------------------------------
 static TComponent * LastPopupComponent = NULL;

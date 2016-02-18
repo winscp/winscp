@@ -916,11 +916,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     UnicodeString Name = CutToChar(Line, L'=', false);
     if (AnsiSameText(Name, "Version"))
     {
-      int MajorVer = StrToInt(CutToChar(Line, L'.', false));
-      int MinorVer = StrToInt(CutToChar(Line, L'.', false));
-      int Release = StrToInt(CutToChar(Line, L'.', false));
-      int Build = StrToInt(CutToChar(Line, L'.', false));
-      int NewVersion = CalculateCompoundVersion(MajorVer, MinorVer, Release, Build);
+      int NewVersion = StrToCompoundVersion(Line);
       Changed |= (NewVersion != PrevResults.Version);
       if (NewVersion <= CurrentCompoundVer)
       {

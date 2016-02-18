@@ -3958,6 +3958,21 @@ void __fastcall TCustomScpExplorerForm::KeyProcessed(Word & Key, TShiftState Shi
   Key = 0;
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CheckCustomCommandShortCut(
+  TCustomCommandList * List, Word & Key, Classes::TShiftState Shift, TShortCut KeyShortCut)
+{
+  const TCustomCommandType * Command = List->Find(KeyShortCut);
+  if (Command != NULL)
+  {
+    KeyProcessed(Key, Shift);
+    if (CustomCommandState(*Command, false) > 0)
+    {
+      ExecuteFileOperationCommand(foCustomCommand, osRemote,
+        false, false, const_cast<TCustomCommandType *>(Command));
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState Shift)
 {
   if (QueueView3->Focused() && (QueueView3->OnKeyDown != NULL))
@@ -4004,16 +4019,8 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
 
     if (IsCustomShortCut(KeyShortCut))
     {
-      const TCustomCommandType * Command = WinConfiguration->CustomCommandList->Find(KeyShortCut);
-      if (Command != NULL)
-      {
-        KeyProcessed(Key, Shift);
-        if (CustomCommandState(*Command, false) > 0)
-        {
-          ExecuteFileOperationCommand(foCustomCommand, osRemote,
-            false, false, const_cast<TCustomCommandType *>(Command));
-        }
-      }
+      CheckCustomCommandShortCut(WinConfiguration->CustomCommandList, Key, Shift, KeyShortCut);
+      CheckCustomCommandShortCut(WinConfiguration->ExtensionList, Key, Shift, KeyShortCut);
 
       if (WinConfiguration->SharedBookmarks != NULL)
       {

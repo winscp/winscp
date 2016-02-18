@@ -2013,11 +2013,6 @@ void __fastcall TConsoleRunner::ConfigurationChange(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
-{
-  Lines->LoadFromFile(FileName, TEncoding::UTF8);
-}
-//---------------------------------------------------------------------------
 void __fastcall ConsolePrintLine(TConsole * Console, const UnicodeString & Str)
 {
   Console->Print(Str + L"\n");

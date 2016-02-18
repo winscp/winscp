@@ -1195,7 +1195,7 @@ object PreferencesDialog: TPreferencesDialog
             OnDblClick = CustomCommandsViewDblClick
             OnEndDrag = ListViewEndDrag
             OnDragDrop = CustomCommandsViewDragDrop
-            OnDragOver = ListViewDragOver
+            OnDragOver = CustomCommandsViewDragOver
             OnKeyDown = CustomCommandsViewKeyDown
             OnSelectItem = ListViewSelectItem
             OnStartDrag = ListViewStartDrag

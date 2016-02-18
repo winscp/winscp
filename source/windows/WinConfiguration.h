@@ -364,6 +364,9 @@ private:
   UnicodeString FTemporaryKeyFile;
   TBookmarks * FBookmarks;
   TCustomCommandList * FCustomCommandList;
+  TCustomCommandList * FExtensionList;
+  UnicodeString FExtensionsDeleted;
+  UnicodeString FExtensionsOrder;
   bool FCustomCommandsDefaults;
   TEditorConfiguration FEditor;
   TQueueViewConfiguration FQueueView;
@@ -473,6 +476,7 @@ private:
   void __fastcall SetQueueView(TQueueViewConfiguration value);
   void __fastcall SetEnableQueueByDefault(bool value);
   void __fastcall SetCustomCommandList(TCustomCommandList * value);
+  void __fastcall SetExtensionList(TCustomCommandList * value);
   void __fastcall SetTemporaryDirectoryAppendSession(bool value);
   void __fastcall SetTemporaryDirectoryAppendPath(bool value);
   void __fastcall SetTemporaryDirectoryDeterministic(bool value);
@@ -561,6 +565,7 @@ protected:
   bool __fastcall CanWriteToStorage();
   bool __fastcall DoIsBeta(const UnicodeString & ReleaseType);
   void __fastcall AskForMasterPassword();
+  void __fastcall DoLoadExtensionList(const UnicodeString & Path, const UnicodeString & PathId, TStringList * DeletedExtensions);
 
 public:
   __fastcall TWinConfiguration();
@@ -591,6 +596,8 @@ public:
   void __fastcall UpdateJumpList();
   virtual void __fastcall UpdateStaticUsage();
   void __fastcall MinimizeToTrayOnce();
+  void __fastcall LoadExtensionList();
+  void __fastcall CustomCommandShortCuts(TShortCuts & ShortCuts) const;
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
@@ -639,6 +646,7 @@ public:
   __property bool DefaultDirIsHome = { read = FDefaultDirIsHome, write = SetDefaultDirIsHome };
   __property bool DisableOpenEdit = { read = FDisableOpenEdit };
   __property TCustomCommandList * CustomCommandList = { read = FCustomCommandList, write = SetCustomCommandList };
+  __property TCustomCommandList * ExtensionList = { read = FExtensionList, write = SetExtensionList };
   __property int DDDeleteDelay = { read = FDDDeleteDelay };
   __property bool TemporaryDirectoryAppendSession = { read = FTemporaryDirectoryAppendSession, write = SetTemporaryDirectoryAppendSession };
   __property bool TemporaryDirectoryAppendPath = { read = FTemporaryDirectoryAppendPath, write = SetTemporaryDirectoryAppendPath };
@@ -698,16 +706,22 @@ public:
   TCustomCommandType & operator=(const TCustomCommandType & Other);
   bool __fastcall Equals(const TCustomCommandType * Other) const;
 
+  void __fastcall LoadExtension(const UnicodeString & Path);
+
   __property UnicodeString Name = { read = FName, write = FName };
   __property UnicodeString Command = { read = FCommand, write = FCommand };
   __property int Params = { read = FParams, write = FParams };
   __property TShortCut ShortCut = { read = FShortCut, write = FShortCut };
+  __property UnicodeString Id = { read = FId, write = FId };
+  __property UnicodeString FileName = { read = FFileName, write = FFileName };
 
 private:
   UnicodeString FName;
   UnicodeString FCommand;
   int FParams;
   TShortCut FShortCut;
+  UnicodeString FId;
+  UnicodeString FFileName;
 };
 //---------------------------------------------------------------------------
 class TCustomCommandList
@@ -728,7 +742,9 @@ public:
   void __fastcall Change(int Index, TCustomCommandType * Command);
   void __fastcall Move(int CurIndex, int NewIndex);
   void __fastcall Delete(int Index);
+  void __fastcall SortBy(TStrings * Ids);
 
+  int FindIndex(const UnicodeString & Name, bool CaseSensitive) const;
   const TCustomCommandType * Find(const UnicodeString Name) const;
   const TCustomCommandType * Find(TShortCut ShortCut) const;
 

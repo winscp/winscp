@@ -67,6 +67,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   FAfterFilenameEditDialog = false;
   FCustomCommandList = new TCustomCommandList();
   FCustomCommandChanging = false;
+  FExtensionList = new TCustomCommandList();
   FListViewDragDest = -1;
   FCopyParamList = new TCopyParamList();
   FEditorList = new TEditorList();
@@ -80,6 +81,9 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   FixListColumnWidth(CopyParamListView, -1);
   FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView3, true);
   FixListColumnWidth(EditorListView3, -1);
+
+  FOrigCustomCommandsViewWindowProc = CustomCommandsView->WindowProc;
+  CustomCommandsView->WindowProc = CustomCommandsViewWindowProc;
 
   ComboAutoSwitchInitialize(UpdatesBetaVersionsCombo);
   EnableControl(UpdatesBetaVersionsCombo, !WinConfiguration->IsBeta);
@@ -119,6 +123,8 @@ __fastcall TPreferencesDialog::~TPreferencesDialog()
   SAFE_DESTROY(FCustomCommandsScrollOnDragOver);
   delete FCustomCommandList;
   FCustomCommandList = NULL;
+  delete FExtensionList;
+  FExtensionList = NULL;
   delete FCopyParamList;
   FCopyParamList = NULL;
   delete FEditorList;
@@ -349,6 +355,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     RandomSeedFileEdit->Visible = WinConfiguration->ExpertMode;
 
     FCustomCommandList->Assign(WinConfiguration->CustomCommandList);
+    FExtensionList->Assign(WinConfiguration->ExtensionList);
     UpdateCustomCommandsView();
 
     PuttyPathEdit->Text = GUIConfiguration->PuttyPath;
@@ -710,6 +717,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->SessionReopenTimeout = (SessionReopenTimeoutEdit->AsInteger * MSecsPerSec);
 
     WinConfiguration->CustomCommandList = FCustomCommandList;
+    WinConfiguration->ExtensionList = FExtensionList;
 
     GUIConfiguration->PuttyPath = PuttyPathEdit->Text;
     GUIConfiguration->PuttyPassword = PuttyPasswordCheck2->Checked;
@@ -999,6 +1007,27 @@ UnicodeString __fastcall TPreferencesDialog::TabSample(UnicodeString Values)
   return Result;
 }
 //---------------------------------------------------------------------------
+TCustomCommandList * __fastcall TPreferencesDialog::GetCommandList(int Index)
+{
+  if (Index < FCustomCommandList->Count)
+  {
+    return FCustomCommandList;
+  }
+  else
+  {
+    return FExtensionList;
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall TPreferencesDialog::GetCommandIndex(int Index)
+{
+  if (Index >= FCustomCommandList->Count)
+  {
+    Index -= FCustomCommandList->Count;
+  }
+  return Index;
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateControls()
 {
   if (FNoUpdate == 0)
@@ -1055,13 +1084,15 @@ void __fastcall TPreferencesDialog::UpdateControls()
     }
     EditorFontLabel->Color = GetWindowColor(FEditorBackgroundColor);
 
+    TCustomCommandList * CommandList = GetCommandList(CustomCommandsView->ItemIndex);
+    int CommandIndex = GetCommandIndex(CustomCommandsView->ItemIndex);
     bool CommandSelected = (CustomCommandsView->Selected != NULL);
-    EnableControl(EditCommandButton, CommandSelected);
+    bool CustomCommandSelected = CommandSelected && (CommandList == FCustomCommandList);
+    bool ExtensionSelected = CommandSelected && (CommandList == FExtensionList);
+    EnableControl(EditCommandButton, CustomCommandSelected);
     EnableControl(RemoveCommandButton, CommandSelected);
-    EnableControl(UpCommandButton, CommandSelected &&
-      CustomCommandsView->ItemIndex > 0);
-    EnableControl(DownCommandButton, CommandSelected &&
-      (CustomCommandsView->ItemIndex < CustomCommandsView->Items->Count - 1));
+    EnableControl(UpCommandButton, CommandSelected && (CommandIndex > 0));
+    EnableControl(DownCommandButton, CommandSelected && (CommandIndex < CommandList->Count - 1));
 
     bool CopyParamSelected = (CopyParamListView->Selected != NULL);
     EnableControl(EditCopyParamButton, CopyParamSelected);
@@ -1321,11 +1352,10 @@ void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
       TListItem * Item)
 {
   // WORKAROUND We get here on Wine after destructor is called
-  if (FCustomCommandList != NULL)
+  if ((FCustomCommandList != NULL) && (FExtensionList != NULL))
   {
     int Index = Item->Index;
-    DebugAssert(Index >= 0 && Index <= FCustomCommandList->Count);
-    const TCustomCommandType * Command = FCustomCommandList->Commands[Index];
+    const TCustomCommandType * Command = GetCommandList(Index)->Commands[GetCommandIndex(Index)];
     UnicodeString Caption = StripHotkey(Command->Name);
     if (Command->ShortCut != 0)
     {
@@ -1356,7 +1386,7 @@ void __fastcall TPreferencesDialog::ListViewSelectItem(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateCustomCommandsView()
 {
-  CustomCommandsView->Items->Count = FCustomCommandList->Count;
+  CustomCommandsView->Items->Count = FCustomCommandList->Count + FExtensionList->Count;
   AutoSizeListColumnsWidth(CustomCommandsView);
   CustomCommandsView->Invalidate();
 }
@@ -1392,9 +1422,9 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
   if (Edit)
   {
     int Index = CustomCommandsView->ItemIndex;
-    DebugAssert(Index >= 0 && Index <= FCustomCommandList->Count);
+    DebugAssert(GetCommandList(Index) == FCustomCommandList);
 
-    Command = *FCustomCommandList->Commands[Index];
+    Command = *FCustomCommandList->Commands[GetCommandIndex(Index)];
   }
 
   TShortCuts ShortCuts;
@@ -1403,14 +1433,24 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
     WinConfiguration->SharedBookmarks->ShortCuts(ShortCuts);
   }
   FCustomCommandList->ShortCuts(ShortCuts);
+  FExtensionList->ShortCuts(ShortCuts);
 
   if (DoCustomCommandDialog(Command, FCustomCommandList,
         (Edit ? ccmEdit : ccmAdd), 0, NULL, &ShortCuts))
   {
-    int Index = CustomCommandsView->ItemIndex;
+    int Index;
+    if (GetCommandList(CustomCommandsView->ItemIndex) == FCustomCommandList)
+    {
+      Index = GetCommandIndex(CustomCommandsView->ItemIndex);
+    }
+    else
+    {
+      Index = -1;
+    }
     TCustomCommandType * ACommand = new TCustomCommandType(Command);
     if (Edit)
     {
+      DebugAssert(Index < FCustomCommandList->Count);
       FCustomCommandList->Change(Index, ACommand);
     }
     else
@@ -1427,6 +1467,7 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
     }
 
     UpdateCustomCommandsView();
+    // assumes that the custom command are the first
     CustomCommandsView->ItemIndex = Index;
     UpdateControls();
   }
@@ -1435,26 +1476,25 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
 void __fastcall TPreferencesDialog::RemoveCommandButtonClick(
       TObject * /*Sender*/)
 {
-  DebugAssert(CustomCommandsView->ItemIndex >= 0 &&
-    CustomCommandsView->ItemIndex < FCustomCommandList->Count);
-  FCustomCommandList->Delete(CustomCommandsView->ItemIndex);
+  TCustomCommandList * List = GetCommandList(CustomCommandsView->ItemIndex);
+  int Index = GetCommandIndex(CustomCommandsView->ItemIndex);
+  List->Delete(Index);
   UpdateCustomCommandsView();
   UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandMove(int Source, int Dest)
 {
-  if (Source >= 0 && Source < FCustomCommandList->Count &&
-      Dest >= 0 && Dest < FCustomCommandList->Count)
-  {
-    FCustomCommandList->Move(Source, Dest);
-    // workaround for bug in VCL
-    CustomCommandsView->ItemIndex = -1;
-    CustomCommandsView->ItemFocused = CustomCommandsView->Selected;
-    CustomCommandsView->ItemIndex = Dest;
-    UpdateCustomCommandsView();
-    UpdateControls();
-  }
+  TCustomCommandList * List = GetCommandList(CustomCommandsView->ItemIndex);
+  int SourceIndex = GetCommandIndex(Source);
+  int DestIndex = GetCommandIndex(Dest);
+  List->Move(SourceIndex, DestIndex);
+  // workaround for bug in VCL
+  CustomCommandsView->ItemIndex = -1;
+  CustomCommandsView->ItemFocused = CustomCommandsView->Selected;
+  CustomCommandsView->ItemIndex = Dest;
+  UpdateCustomCommandsView();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpDownCommandButtonClick(TObject * Sender)
@@ -1492,10 +1532,15 @@ void __fastcall TPreferencesDialog::ListViewStartDrag(
   ScrollOnDragOver(Sender)->StartDrag();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TPreferencesDialog::AllowListViewDrag(TObject * Sender, int X, int Y)
+static int __fastcall PointToListViewIndex(TObject * Sender, int X, int Y)
 {
   TListItem * Item = dynamic_cast<TListView*>(Sender)->GetItemAt(X, Y);
-  FListViewDragDest = Item ? Item->Index : -1;
+  return Item ? Item->Index : -1;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TPreferencesDialog::AllowListViewDrag(TObject * Sender, int X, int Y)
+{
+  FListViewDragDest = PointToListViewIndex(Sender, X, Y);
   return (FListViewDragDest >= 0) && (FListViewDragDest != FListViewDragSource);
 }
 //---------------------------------------------------------------------------
@@ -1504,9 +1549,25 @@ void __fastcall TPreferencesDialog::CustomCommandsViewDragDrop(
 {
   if (Source == CustomCommandsView)
   {
-    if (AllowListViewDrag(Sender, X, Y))
+    if (AllowListViewDrag(Sender, X, Y) &&
+        (GetCommandList(FListViewDragSource) == GetCommandList(FListViewDragDest)))
     {
       CustomCommandMove(FListViewDragSource, FListViewDragDest);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomCommandsViewDragOver(
+  TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool & Accept)
+{
+  ListViewDragOver(Sender, Source, X, Y, State, Accept);
+
+  if (Source == Sender)
+  {
+    int Dest = PointToListViewIndex(Sender, X, Y);
+    if (GetCommandList(FListViewDragSource) != GetCommandList(Dest))
+    {
+      Accept = false;
     }
   }
 }
@@ -2275,5 +2336,43 @@ void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject *
 void __fastcall TPreferencesDialog::UpdatesLinkClick(TObject * /*Sender*/)
 {
   EnableAutomaticUpdates();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomCommandsViewWindowProc(TMessage & Message)
+{
+  FOrigCustomCommandsViewWindowProc(Message);
+
+  if (Message.Msg == CN_NOTIFY)
+  {
+    TWMNotify & NotifyMessage = reinterpret_cast<TWMNotify &>(Message);
+
+    if (NotifyMessage.NMHdr->code == NM_CUSTOMDRAW)
+    {
+      // request CDDS_ITEMPOSTPAINT notification
+      Message.Result |= CDRF_NOTIFYPOSTPAINT | CDRF_NOTIFYSUBITEMDRAW;
+
+      TNMLVCustomDraw * CustomDraw = reinterpret_cast<TNMLVCustomDraw *>(NotifyMessage.NMHdr);
+      int Index = CustomDraw->nmcd.dwItemSpec;
+      int CommandIndex = GetCommandIndex(Index);
+      TCustomCommandList * List = GetCommandList(Index);
+      // after end of every list, except for the last last list
+      if ((CommandIndex == List->Count - 1) && (Index < CustomCommandsView->Items->Count - 1) &&
+          FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_ITEMPOSTPAINT))
+      {
+        TRect Rect;
+        Rect.Top = CustomDraw->iSubItem;
+        Rect.Left = LVIR_BOUNDS;
+        CustomCommandsView->Perform(LVM_GETSUBITEMRECT, CustomDraw->nmcd.dwItemSpec, reinterpret_cast<LPARAM>(&Rect));
+
+        HDC DC = CustomDraw->nmcd.hdc;
+
+        SelectObject(DC, GetStockObject(DC_PEN));
+        SetDCPenColor(DC, ColorToRGB(clWindowFrame));
+
+        MoveToEx(DC, Rect.Left, Rect.Bottom - 1, NULL);
+        LineTo(DC, Rect.Right, Rect.Bottom - 1);
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------

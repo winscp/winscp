@@ -1034,12 +1034,17 @@ UnicodeString __fastcall TNonVisualDataModule::CustomCommandHint(const TCustomCo
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
-  TTBCustomItem * Menu, bool OnFocused, bool Toolbar, bool Both)
+const int CustomCommandOnFocused = 0x0100;
+const int CustomCommandBoth = 0x0200;
+const int CustomCommandExtension = 0x0400;
+const int CustomCommandIndexMask = 0x00FF;
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
+  TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused, bool Toolbar, bool Both, int Tag)
 {
-  for (int Index = 0; Index < WinConfiguration->CustomCommandList->Count; Index++)
+  for (int Index = 0; Index < List->Count; Index++)
   {
-    const TCustomCommandType * Command = WinConfiguration->CustomCommandList->Commands[Index];
+    const TCustomCommandType * Command = List->Commands[Index];
     int State;
 
     if (!Both)
@@ -1055,15 +1060,15 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     {
       TTBCustomItem * Item = new TTBXItem(Owner);
       Item->Caption = CustomCommandCaption(Command, Toolbar);
-      Item->Tag = Index;
+      Item->Tag = Index | Tag;
       Item->Enabled = (State > 0);
       if (OnFocused)
       {
-        Item->Tag = Item->Tag | 0x0100;
+        Item->Tag = Item->Tag | CustomCommandOnFocused;
       }
       if (Both)
       {
-        Item->Tag = Item->Tag | 0x0200;
+        Item->Tag = Item->Tag | CustomCommandBoth;
       }
       UnicodeString Name = StripHotkey(Command->Name);
       UnicodeString ShortHint = FMTLOAD(CUSTOM_COMMAND_HINT, (Name));
@@ -1078,6 +1083,12 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
       Menu->Add(Item);
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
+  TTBCustomItem * Menu, bool OnFocused, bool Toolbar, bool Both)
+{
+  CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Menu, OnFocused, Toolbar, Both, 0);
 
   TTBCustomItem * Item;
 
@@ -1095,6 +1106,11 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     }
     Menu->Add(Item);
   }
+
+  TTBXSeparatorItem * Separator = AddMenuSeparator(Menu);
+  Separator->Visible = (WinConfiguration->ExtensionList->Count > 0);
+
+  CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Menu, OnFocused, Toolbar, Both, CustomCommandExtension);
 
   AddMenuSeparator(Menu);
 
@@ -1138,6 +1154,39 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TNonVisualDataModule::CheckCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index)
+{
+  bool Changed = false;
+  int CommandIndex = 0;
+  while (!Changed && (CommandIndex < List->Count))
+  {
+    TTBCustomItem * Item = Toolbar->Items->Items[Index];
+    const TCustomCommandType * Command = List->Commands[CommandIndex];
+
+    Changed =
+      (Item->Caption != CustomCommandCaption(Command, true)) ||
+      (Item->Hint != CustomCommandHint(Command));
+
+    Index++;
+    CommandIndex++;
+  }
+  return Changed;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index)
+{
+  int CommandIndex = 0;
+  for (int CommandIndex = 0; CommandIndex < List->Count; CommandIndex++, Index++)
+  {
+    TTBCustomItem * Item = Toolbar->Items->Items[Index];
+    int CommandIndex2 = (Item->Tag & CustomCommandIndexMask);
+    DebugAssert(CommandIndex2 == CommandIndex);
+    int State = ScpExplorer->CustomCommandState(*List->Commands[CommandIndex], false);
+    DebugAssert(State >= 0);
+    Item->Enabled = (State > 0);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * Toolbar)
 {
   // can be called while explorer is being created
@@ -1146,22 +1195,28 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
     return;
   }
 
-  int AdditionalCommands = 4;
   TCustomCommandList * CustomCommandList = WinConfiguration->CustomCommandList;
-  bool Changed = (CustomCommandList->Count != (Toolbar->Items->Count - AdditionalCommands));
+  TCustomCommandList * ExtensionList = WinConfiguration->ExtensionList;
+  int ExtensionSeparatorCount = (ExtensionList->Count > 0) ? 1 : 0;
+  int AfterCustomCommandsCommandCount = 2; // ad hoc, last
+  int AdditionalCommands = AfterCustomCommandsCommandCount + 3; // custom/ext separator + separator, customize
+  int CommandCount = CustomCommandList->Count + ExtensionList->Count;
+  bool Changed = (CommandCount + AdditionalCommands != Toolbar->Items->Count);
   if (!Changed)
   {
     int Index = 0;
-    while (!Changed && (Index < CustomCommandList->Count))
+    Changed = CheckCustomCommandsToolbarList(Toolbar, CustomCommandList, Index);
+
+    if (!Changed)
     {
-      TTBCustomItem * Item = Toolbar->Items->Items[Index];
-      const TCustomCommandType * Command = CustomCommandList->Commands[Index];
-
-      Changed =
-        (Item->Caption != CustomCommandCaption(Command, true)) ||
-        (Item->Hint != CustomCommandHint(Command));
-
+      Index += AfterCustomCommandsCommandCount;
+      Changed = (dynamic_cast<TTBXSeparatorItem *>(Toolbar->Items->Items[Index]) == NULL);
       Index++;
+
+      if (!Changed)
+      {
+        Changed = CheckCustomCommandsToolbarList(Toolbar, ExtensionList, Index);
+      }
     }
   }
 
@@ -1172,7 +1227,7 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
     {
       Toolbar->Items->Clear();
       CreateCustomCommandsMenu(Toolbar->Items, false, true, false);
-      DebugAssert(CustomCommandList->Count == (Toolbar->Items->Count - AdditionalCommands));
+      DebugAssert(CommandCount + AdditionalCommands == Toolbar->Items->Count);
     }
     __finally
     {
@@ -1181,16 +1236,10 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
   }
   else
   {
-    for (int Index = 0; Index < Toolbar->Items->Count - AdditionalCommands; Index++)
-    {
-      TTBCustomItem * Item = Toolbar->Items->Items[Index];
-      int CommandIndex = (Item->Tag & 0x00FF);
-      DebugAssert(CommandIndex == Index);
-      int State = ScpExplorer->CustomCommandState(
-        *CustomCommandList->Commands[CommandIndex], false);
-      DebugAssert(State >= 0);
-      Item->Enabled = (State > 0);
-    }
+    int Index = 0;
+    UpdateCustomCommandsToolbarList(Toolbar, CustomCommandList, Index);
+    Index += AfterCustomCommandsCommandCount + 1;
+    UpdateCustomCommandsToolbarList(Toolbar, ExtensionList, Index);
   }
 }
 //---------------------------------------------------------------------------
@@ -1198,11 +1247,12 @@ void __fastcall TNonVisualDataModule::CustomCommandClick(TObject * Sender)
 {
   TTBCustomItem * Item = dynamic_cast<TTBCustomItem *>(Sender);
   DebugAssert(Item);
-  const TCustomCommandType * Command = WinConfiguration->CustomCommandList->Commands[Item->Tag & 0x00FF];
-  if (FLAGCLEAR(Item->Tag, 0x0200))
+  const TCustomCommandList * List = FLAGSET(Item->Tag, CustomCommandExtension) ? WinConfiguration->ExtensionList : WinConfiguration->CustomCommandList;
+  const TCustomCommandType * Command = List->Commands[Item->Tag & CustomCommandIndexMask];
+  if (FLAGCLEAR(Item->Tag, CustomCommandBoth))
   {
     ScpExplorer->ExecuteFileOperationCommand(foCustomCommand, osRemote,
-      FLAGSET(Item->Tag, 0x0100), false, const_cast<TCustomCommandType *>(Command));
+      FLAGSET(Item->Tag, CustomCommandOnFocused), false, const_cast<TCustomCommandType *>(Command));
   }
   else
   {

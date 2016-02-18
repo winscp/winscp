@@ -575,6 +575,9 @@ BEGIN
         GENERATE_URL_TRANSFER_FILES, "Transfer files"
         GENERATE_URL_FILE_SAMPLE, "A sample file list is used only, consider using a file mask to select files for the transfer."
         CHECK_FOR_UPDATES_TITLE, "Check for Updates"
+        EXTENSION_DEPENDENCY_ERROR, "The extension requires %s"
+        EXTENSION_DIRECTIVE_ERROR, "Invalid value \"%s\" of extension directive %s"
+        EXTENSION_DIRECTIVE_MISSING, "Missing mandatory extension directive %s"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"

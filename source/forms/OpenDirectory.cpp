@@ -591,7 +591,7 @@ void __fastcall TOpenDirectoryDialog::ShortCutBookmarkButtonClick(
   DebugAssert(Bookmark != NULL);
 
   TShortCuts ShortCuts;
-  WinConfiguration->CustomCommandList->ShortCuts(ShortCuts);
+  WinConfiguration->CustomCommandShortCuts(ShortCuts);
   BookmarkList->ShortCuts(ShortCuts);
   TShortCut ShortCut = Bookmark->ShortCut;
   if (DoShortCutDialog(ShortCut, ShortCuts, HelpKeyword))

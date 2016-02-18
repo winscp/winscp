@@ -294,6 +294,7 @@ private:
   void __fastcall UpdateSessionsPageControlHeight();
   TDragDropFilesEx * __fastcall CreateDragDropFilesEx();
   void __fastcall KeyProcessed(Word & Key, TShiftState Shift);
+  void __fastcall CheckCustomCommandShortCut(TCustomCommandList * List, Word & Key, Classes::TShiftState Shift, TShortCut KeyShortCut);
   bool __fastcall CanPasteToDirViewFromClipBoard();
   void __fastcall CMShowingChanged(TMessage & Message);
   void __fastcall WMClose(TMessage & Message);

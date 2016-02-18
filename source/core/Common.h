@@ -141,6 +141,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
   const UnicodeString & Passphrase, X509 *& Certificate, EVP_PKEY *& PrivateKey,
   bool & WrongPassphrase);
 bool __fastcall IsHttpUrl(const UnicodeString & S);
+void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const UnicodeString FileName, const TSearchRec Rec, void * Param);

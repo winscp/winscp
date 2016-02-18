@@ -92,7 +92,8 @@ UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent);
 void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString LayoutStr);
 
 namespace Tb2item { class TTBCustomItem; }
-void __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Menu);
+namespace Tbx { class TTBXSeparatorItem; }
+Tbx::TTBXSeparatorItem * __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Menu);
 void __fastcall AddMenuLabel(Tb2item::TTBCustomItem * Menu, const UnicodeString & Label);
 
 // windows\WinHelp.cpp

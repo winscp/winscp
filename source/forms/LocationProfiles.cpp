@@ -1083,7 +1083,7 @@ void __fastcall TLocationProfilesDialog::ShortCutBookmarkButtonClick(
   TBookmark * Bookmark = static_cast<TBookmark *>(Node->Data);
 
   TShortCuts ShortCuts;
-  WinConfiguration->CustomCommandList->ShortCuts(ShortCuts);
+  WinConfiguration->CustomCommandShortCuts(ShortCuts);
   BookmarkList->ShortCuts(ShortCuts);
   TShortCut ShortCut = Bookmark->ShortCut;
   if (DoShortCutDialog(ShortCut, ShortCuts, HelpKeyword))

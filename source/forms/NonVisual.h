@@ -644,7 +644,10 @@ protected:
   UnicodeString __fastcall GetSessionFolderRoot(TSessionData * Data, int Level);
   void __fastcall CreateWorkspacesMenu(TAction * Action);
   void __fastcall WorkspaceItemClick(TObject * Sender);
+  void __fastcall CreateCustomCommandsListMenu(TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused, bool Toolbar, bool Both, int Tag);
   void __fastcall CreateCustomCommandsMenu(TAction * Action);
+  bool __fastcall CheckCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index);
+  void __fastcall UpdateCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index);
   void __fastcall CreateSessionColorMenu(TAction * Action);
   void __fastcall SessionColorChange(TColor Color);
   void __fastcall CreateOpenedSessionListMenu(TAction * Action);

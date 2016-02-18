@@ -388,6 +388,7 @@ __published:
   void __fastcall EditorBackgroundColorButtonClick(TObject *Sender);
   void __fastcall UpdatesAuthenticationEmailEditExit(TObject *Sender);
   void __fastcall UpdatesLinkClick(TObject *Sender);
+  void __fastcall CustomCommandsViewDragOver(TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool &Accept);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -395,6 +396,7 @@ private:
   TColor FEditorBackgroundColor;
   std::unique_ptr<TFont> FPanelFont;
   TCustomCommandList * FCustomCommandList;
+  TCustomCommandList * FExtensionList;
   TCopyParamList * FCopyParamList;
   TEditorList * FEditorList;
   bool FCustomCommandChanging;
@@ -412,6 +414,7 @@ private:
   std::unique_ptr<TPopupMenu> FColorPopupMenu;
   UnicodeString FVerifiedUpdatesAuthenticationEmail;
   bool FAutomaticUpdatesPossible;
+  TWndMethod FOrigCustomCommandsViewWindowProc;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
@@ -420,6 +423,9 @@ private:
   void __fastcall SelectPuttyRegistryStorageKey(const UnicodeString & Key);
   TInterface __fastcall GetInterface();
   TUpdatesConfiguration __fastcall SaveUpdates();
+  void __fastcall CustomCommandsViewWindowProc(TMessage & Message);
+  TCustomCommandList * __fastcall GetCommandList(int Index);
+  int __fastcall GetCommandIndex(int Index);
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);
