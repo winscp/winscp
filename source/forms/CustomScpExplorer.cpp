@@ -8869,7 +8869,7 @@ bool __fastcall TCustomScpExplorerForm::IsBusy()
   // That's why the TNonVisualDataModule::GetBusy calls this method.
   // Among other this prevents a panel auto update to occur while
   // directory is changing.
-  return (FLockLevel > 0);
+  return (FLockLevel > 0) || DirView(osCurrent)->IsEditing();
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TCustomScpExplorerForm::AllowedAction(TAction * /*Action*/, TActionAllowed Allowed)
