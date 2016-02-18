@@ -2739,6 +2739,7 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             Increment = 15.000000000000000000
             MaxValue = 9999.000000000000000000
+            MinValue = 10.000000000000000000
             MaxLength = 3
             TabOrder = 3
             OnChange = ControlChange
