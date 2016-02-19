@@ -114,6 +114,8 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   LoadDialogImage(ExplorerInterfacePicture, L"Explorer");
 
   LinkLabel(UpdatesLink);
+
+  HideComponentsPanel(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()

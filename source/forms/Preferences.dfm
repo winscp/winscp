@@ -6,7 +6,7 @@ object PreferencesDialog: TPreferencesDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Preferences'
-  ClientHeight = 439
+  ClientHeight = 489
   ClientWidth = 545
   Color = clBtnFace
   ParentFont = True
@@ -16,7 +16,7 @@ object PreferencesDialog: TPreferencesDialog
   OnShow = FormShow
   DesignSize = (
     545
-    439)
+    489)
   PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
@@ -3068,9 +3068,20 @@ object PreferencesDialog: TPreferencesDialog
     TabOrder = 3
     OnClick = HelpButtonClick
   end
+  object ComponentsPanel: TPanel
+    Left = 0
+    Top = 439
+    Width = 545
+    Height = 50
+    Align = alBottom
+    BevelOuter = bvNone
+    Color = clWindow
+    ParentBackground = False
+    TabOrder = 4
+  end
   object RegisterAsUrlHandlerMenu: TPopupMenu
     Left = 56
-    Top = 384
+    Top = 443
     object RegisterAsUrlHandlerItem: TMenuItem
       Caption = 'Register'
       OnClick = RegisterAsUrlHandlerItemClick

@@ -700,17 +700,25 @@ void __fastcall HideComponentsPanel(TForm * Form)
   Panel->Visible = false;
   Form->Height -= Offset;
 
-  // Shift back bottom-anchored controls
-  // (needed for toolbar panel on Progress window)
   for (int Index = 0; Index < Form->ControlCount; Index++)
   {
     TControl * Control = Form->Controls[Index];
 
+    // Shift back bottom-anchored controls
+    // (needed for toolbar panel on Progress window and butons on Preferences dialog),
     if ((Control->Align == alNone) &&
         Control->Anchors.Contains(akBottom) &&
         !Control->Anchors.Contains(akTop))
     {
       Control->Top += Offset;
+    }
+
+    // Resize back all-anchored controls
+    // (needed for main panel on Preferences dialog),
+    if (Control->Anchors.Contains(akBottom) &&
+        Control->Anchors.Contains(akTop))
+    {
+      Control->Height += Offset;
     }
   }
 }

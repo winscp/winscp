@@ -308,6 +308,7 @@ __published:
   TEdit *UpdatesAuthenticationEmailEdit;
   TStaticText *UpdatesLink;
   TCheckBox *ShowTipsCheck;
+  TPanel *ComponentsPanel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
