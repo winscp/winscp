@@ -1003,7 +1003,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
-            Caption = '&Add ...'
+            Caption = '&Add...'
             TabOrder = 1
             OnClick = AddEditEditorButtonClick
           end
@@ -1013,7 +1013,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
-            Caption = '&Edit ...'
+            Caption = '&Edit...'
             TabOrder = 2
             OnClick = AddEditEditorButtonClick
           end
@@ -1206,7 +1206,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
-            Caption = '&Add ...'
+            Caption = '&Add...'
             TabOrder = 1
             OnClick = AddEditCommandButtonClick
           end
@@ -1246,7 +1246,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
-            Caption = '&Edit ...'
+            Caption = '&Edit...'
             TabOrder = 2
             OnClick = AddEditCommandButtonClick
           end
@@ -2211,7 +2211,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
-            Caption = '&Add ...'
+            Caption = '&Add...'
             TabOrder = 1
             OnClick = AddCopyParamButtonClick
           end
@@ -2251,7 +2251,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
-            Caption = '&Edit ...'
+            Caption = '&Edit...'
             TabOrder = 2
             OnClick = EditCopyParamButtonClick
           end
@@ -2261,7 +2261,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
-            Caption = 'Du&plicate ...'
+            Caption = 'Du&plicate...'
             TabOrder = 4
             OnClick = DuplicateCopyParamButtonClick
           end

@@ -215,7 +215,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 122
       Width = 125
       Height = 17
-      Caption = 'Rep&lace '#39'\:*?'#39' ...'
+      Caption = 'Rep&lace '#39'\:*?'#39'...'
       TabOrder = 4
       OnClick = ControlChange
     end

@@ -122,7 +122,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
         Width = 83
         Height = 25
         Anchors = [akTop, akRight]
-        Caption = '&Add ...'
+        Caption = '&Add...'
         TabOrder = 1
         OnClick = AddBookmarkButtonClick
       end
@@ -177,7 +177,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
         Width = 83
         Height = 25
         Anchors = [akTop, akRight]
-        Caption = '&Move to ...'
+        Caption = '&Move To...'
         TabOrder = 4
         OnClick = BookmarkMoveToButtonClick
       end
@@ -234,7 +234,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
         Width = 83
         Height = 25
         Anchors = [akTop, akRight]
-        Caption = '&Add ...'
+        Caption = '&Add...'
         TabOrder = 1
         OnClick = AddBookmarkButtonClick
       end
@@ -267,7 +267,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
         Width = 83
         Height = 25
         Anchors = [akTop, akRight]
-        Caption = '&Move to ...'
+        Caption = '&Move To...'
         TabOrder = 4
         OnClick = BookmarkMoveToButtonClick
       end
