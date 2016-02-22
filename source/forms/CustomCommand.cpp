@@ -218,7 +218,7 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
       }
 
       if (((FMode == ccmAdd) || ((FMode == ccmEdit) && (Desc != FOrigDescription))) &&
-          (FCustomCommandList->Find(Desc) != 0))
+          (FCustomCommandList->Find(Desc) != NULL))
       {
         DescriptionEdit->SetFocus();
         throw Exception(FMTLOAD(CUSTOM_COMMAND_DUPLICATE, (Desc)));
