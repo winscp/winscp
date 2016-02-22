@@ -74,10 +74,10 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   FCopyParamList = new TCopyParamList();
   FEditorList = new TEditorList();
   FAutomaticUpdatesPossible = IsInstalled();
+  FCustomCommandsHintItem = NULL;
   UseSystemSettings(this);
 
   FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
-  FixListColumnWidth(CustomCommandsView, -2);
   FixListColumnWidth(CustomCommandsView, -1);
   FCopyParamScrollOnDragOver = new TListViewScrollOnDragOver(CopyParamListView, true);
   FixListColumnWidth(CopyParamListView, -1);
@@ -969,6 +969,8 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
   InstallPathWordBreakProc(LogFileNameEdit3);
   InstallPathWordBreakProc(ActionsLogFileNameEdit);
 
+  ListView_SetExtendedListViewStyle(CustomCommandsView->Handle, (ListView_GetExtendedListViewStyle(CustomCommandsView->Handle) & ~LVS_EX_INFOTIP));
+
   PrepareNavigationTree(NavigationTree);
 
   switch (FPreferencesMode) {
@@ -1391,17 +1393,8 @@ void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
     Item->Caption = Caption;
     DebugAssert(!Item->SubItems->Count);
     Item->SubItems->Add(Command->Command);
-    int Params = Command->Params;
     Item->SubItems->Add(LoadStr(
-      FLAGSET(Params, ccLocal) ? CUSTOM_COMMAND_LOCAL : CUSTOM_COMMAND_REMOTE));
-    UnicodeString ParamsStr;
-    #define ADDPARAM(PARAM, STR) \
-      if (FLAGSET(Params, PARAM)) \
-        ParamsStr += (ParamsStr.IsEmpty() ? L"" : L"/") + LoadStr(STR);
-    ADDPARAM(ccApplyToDirectories, CUSTOM_COMMAND_DIRECTORIES);
-    ADDPARAM(ccRecursive, CUSTOM_COMMAND_RECURSE);
-    #undef ADDPARAM
-    Item->SubItems->Add(ParamsStr);
+      FLAGSET(Command->Params, ccLocal) ? CUSTOM_COMMAND_LOCAL : CUSTOM_COMMAND_REMOTE));
   }
 }
 //---------------------------------------------------------------------------
@@ -2426,6 +2419,8 @@ void __fastcall TPreferencesDialog::AddExtension()
         Path = CampaignUrl(ProgramUrl(Path));
       }
 
+      TOperationVisualizer Visualizer;
+
       std::unique_ptr<THttp> Http(CreateHttp());
       Http->URL = Path;
       std::unique_ptr<TStrings> Headers(new TStringList());
@@ -2564,5 +2559,31 @@ void __fastcall TPreferencesDialog::AddCommandButtonDropDownClick(TObject * /*Se
   AddCustomCommandMenuItem->Default = (GetCommandList(CustomCommandsView->ItemIndex) == FCustomCommandList);
   AddExtensionMenuItem->Default = (GetCommandList(CustomCommandsView->ItemIndex) == FExtensionList);
   MenuPopup(AddCommandMenu, AddCommandButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Sender*/, TShiftState /*Shift*/, int X, int Y)
+{
+  TListItem * Item = CustomCommandsView->GetItemAt(X, Y);
+  int Index = (Item != NULL) ? Item->Index : -1;
+  if (Index != FCustomCommandsHintItem)
+  {
+    Application->CancelHint();
+
+    UnicodeString Hint;
+    if (Index >= 0)
+    {
+      TCustomCommandList * List = GetCommandList(Index);
+      const TCustomCommandType * Command = List->Commands[GetCommandIndex(Index)];
+      Hint = Item->Caption + L"\n" + Command->Command;
+      if (List == FExtensionList)
+      {
+        Hint += L"\n" + Command->FileName;
+      }
+    }
+
+    CustomCommandsView->Hint = Hint;
+
+    FCustomCommandsHintItem = Index;
+  }
 }
 //---------------------------------------------------------------------------

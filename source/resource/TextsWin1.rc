@@ -343,8 +343,6 @@ BEGIN
         SAVE_SESSION_PASSWORD, "Save &password (not recommended)"
         PROGRESS_CUSTOM_COMAND, "Executing custom command"
         CUSTOM_COMMAND_HINT, "Execute custom command '%s'"
-        CUSTOM_COMMAND_DIRECTORIES, "D"
-        CUSTOM_COMMAND_RECURSE, "R"
         EDITOR_FONT_FMT, "%s, %d pt\nThe Quick Brown Fox Jumps Over The Lazy Dog"
         PROPERTIES_UNKNOWN_SIZE, "Unknown"
         PROGRESS_CALCULATE_SIZE, "Calculating directory size"

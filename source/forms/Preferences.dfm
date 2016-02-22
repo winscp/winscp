@@ -1176,10 +1176,6 @@ object PreferencesDialog: TPreferencesDialog
               item
                 Caption = 'L/R'
                 Width = 35
-              end
-              item
-                Caption = 'D/R'
-                Width = 40
               end>
             ColumnClick = False
             DoubleBuffered = True
@@ -1189,6 +1185,8 @@ object PreferencesDialog: TPreferencesDialog
             ReadOnly = True
             RowSelect = True
             ParentDoubleBuffered = False
+            ParentShowHint = False
+            ShowHint = True
             TabOrder = 0
             ViewStyle = vsReport
             OnData = CustomCommandsViewData
@@ -1197,6 +1195,7 @@ object PreferencesDialog: TPreferencesDialog
             OnDragDrop = CustomCommandsViewDragDrop
             OnDragOver = CustomCommandsViewDragOver
             OnKeyDown = CustomCommandsViewKeyDown
+            OnMouseMove = CustomCommandsViewMouseMove
             OnSelectItem = ListViewSelectItem
             OnStartDrag = ListViewStartDrag
           end

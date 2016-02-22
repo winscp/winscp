@@ -397,6 +397,7 @@ __published:
   void __fastcall AddExtensionMenuItemClick(TObject *Sender);
   void __fastcall EditCommandButtonClick(TObject *Sender);
   void __fastcall AddCommandButtonDropDownClick(TObject *Sender);
+  void __fastcall CustomCommandsViewMouseMove(TObject *Sender, TShiftState Shift, int X, int Y);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -423,6 +424,7 @@ private:
   UnicodeString FVerifiedUpdatesAuthenticationEmail;
   bool FAutomaticUpdatesPossible;
   TWndMethod FOrigCustomCommandsViewWindowProc;
+  int FCustomCommandsHintItem;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
