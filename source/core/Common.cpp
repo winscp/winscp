@@ -961,42 +961,42 @@ UnicodeString __fastcall MakeUnicodeLargePath(UnicodeString Path)
 
   if (!Path.IsEmpty())
   {
-      // Determine the type of the existing prefix
-      PATH_PREFIX_TYPE PrefixType;
-      GetOffsetAfterPathRoot(Path, PrefixType);
+    // Determine the type of the existing prefix
+    PATH_PREFIX_TYPE PrefixType;
+    GetOffsetAfterPathRoot(Path, PrefixType);
 
-      // Assume path to be without change
-      Result = Path;
+    // Assume path to be without change
+    Result = Path;
 
-      switch (PrefixType)
-      {
-        case PPT_ABSOLUTE:
+    switch (PrefixType)
+    {
+      case PPT_ABSOLUTE:
+        {
+          // First we need to check if its an absolute path relative to the root
+          bool AddPrefix = true;
+          if ((Path.Length() >= 1) &&
+              ((Path[1] == L'\\') || (Path[1] == L'/')))
           {
-            // First we need to check if its an absolute path relative to the root
-            bool AddPrefix = true;
-            if ((Path.Length() >= 1) &&
-                ((Path[1] == L'\\') || (Path[1] == L'/')))
-            {
-              AddPrefix = FALSE;
+            AddPrefix = FALSE;
 
-              // Get current root path
-              UnicodeString CurrentDir = GetCurrentDir();
-              PATH_PREFIX_TYPE PrefixType2; // unused
-              int Following = GetOffsetAfterPathRoot(CurrentDir, PrefixType2);
-              if (Following > 0)
-              {
-                AddPrefix = true;
-                Result = CurrentDir.SubString(1, Following - 1) + Result.SubString(2, Result.Length() - 1);
-              }
-            }
-
-            if (AddPrefix)
+            // Get current root path
+            UnicodeString CurrentDir = GetCurrentDir();
+            PATH_PREFIX_TYPE PrefixType2; // unused
+            int Following = GetOffsetAfterPathRoot(CurrentDir, PrefixType2);
+            if (Following > 0)
             {
-              // Add \\?\ prefix
-              Result = L"\\\\?\\" + Result;
+              AddPrefix = true;
+              Result = CurrentDir.SubString(1, Following - 1) + Result.SubString(2, Result.Length() - 1);
             }
           }
-          break;
+
+          if (AddPrefix)
+          {
+            // Add \\?\ prefix
+            Result = L"\\\\?\\" + Result;
+          }
+        }
+        break;
 
       case PPT_UNC:
         // First we need to remove the opening slashes for UNC share
