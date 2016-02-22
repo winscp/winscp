@@ -90,6 +90,12 @@ BEGIN
         TIPS_NONE, "No tips."
         KEYGEN_PUBLIC, "Converting public keys is not supported."
         FINGERPRINTSCAN_NEED_SECURE_SESSION, "Secure session (SSH or TLS/SSL) not specified."
+        EXTENSION_NOT_FOUND, "No extension found in the document."
+        EXTENSION_DEPENDENCY_ERROR, "The extension requires %s."
+        EXTENSION_DIRECTIVE_ERROR, "Invalid value \"%s\" of extension directive %s."
+        EXTENSION_DIRECTIVE_MISSING, "Missing mandatory extension directive %s."
+        EXTENSION_DUPLICATE, "There is already an extension with the name \"%s\"."
+        EXTENSION_INSTALLED_ALREADY, "The extension is installed already."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"
@@ -148,6 +154,7 @@ BEGIN
         CONFIRM_UNREGISTER_URL, "Do you want to unregister WinSCP from handling all URL addresses?"
         INTERNAL_EDITOR_LARGE_FILE, "**Try to open large file?**\n\nThe file you are trying to open in an internal editor is too large (%s). WinSCP internal editor is not designed for editing large files. Consider using an external editor capable of editing large files.\n\nYou may try to open the file anyway, but you may run out of memory."
         CLOSE_BUTTON, "Close"
+        EXTENSION_UNTRUSTED, "The extension does not come from a trusted source or has not been reviewed yet. Are you sure you want to install it?"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         COMPARE_NO_DIFFERENCES, "No differences found."
@@ -575,9 +582,9 @@ BEGIN
         GENERATE_URL_TRANSFER_FILES, "Transfer files"
         GENERATE_URL_FILE_SAMPLE, "A sample file list is used only, consider using a file mask to select files for the transfer."
         CHECK_FOR_UPDATES_TITLE, "Check for Updates"
-        EXTENSION_DEPENDENCY_ERROR, "The extension requires %s"
-        EXTENSION_DIRECTIVE_ERROR, "Invalid value \"%s\" of extension directive %s"
-        EXTENSION_DIRECTIVE_MISSING, "Missing mandatory extension directive %s"
+        ADD_EXTENSION_CAPTION, "Add Extension"
+        ADD_EXTENSION_PROMPT, "Enter URL or path to the &extension:"
+        EXTENSION_INSTALLED, "Extension was installed. Please restart WinSCP."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"

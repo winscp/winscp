@@ -24,6 +24,10 @@ extern const wchar_t TokenReplacement;
 extern const UnicodeString LocalInvalidChars;
 extern const UnicodeString PasswordMask;
 //---------------------------------------------------------------------------
+extern const UnicodeString HttpProtocol;
+extern const UnicodeString HttpsProtocol;
+extern const UnicodeString ProtocolSeparator;
+//---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B);
 UnicodeString DeleteChar(UnicodeString Str, wchar_t C);
 void PackStr(UnicodeString & Str);
@@ -96,6 +100,7 @@ UnicodeString __fastcall DecodeUrlChars(UnicodeString S);
 UnicodeString __fastcall EncodeUrlString(UnicodeString S);
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S);
 UnicodeString __fastcall AppendUrlParams(UnicodeString URL, UnicodeString Params);
+UnicodeString __fastcall ExtractFileNameFromUrl(const UnicodeString & Url);
 bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin);
 void __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin);
 void __fastcall DeleteFileChecked(const UnicodeString & FileName);
@@ -141,6 +146,8 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
   const UnicodeString & Passphrase, X509 *& Certificate, EVP_PKEY *& PrivateKey,
   bool & WrongPassphrase);
 bool __fastcall IsHttpUrl(const UnicodeString & S);
+bool __fastcall IsHttpOrHttpsUrl(const UnicodeString & S);
+UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const UnicodeString & Protocol);
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)

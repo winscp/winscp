@@ -99,7 +99,7 @@ void __fastcall TWebHelpSystem::ShowTableOfContents()
 //---------------------------------------------------------------------------
 void __fastcall TWebHelpSystem::ShowHelp(const UnicodeString AHelpString)
 {
-  if (IsHttpUrl(AHelpString))
+  if (IsHttpOrHttpsUrl(AHelpString))
   {
     OpenBrowser(AHelpString);
   }

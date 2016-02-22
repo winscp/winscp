@@ -566,6 +566,7 @@ protected:
   bool __fastcall DoIsBeta(const UnicodeString & ReleaseType);
   void __fastcall AskForMasterPassword();
   void __fastcall DoLoadExtensionList(const UnicodeString & Path, const UnicodeString & PathId, TStringList * DeletedExtensions);
+  TStrings * __fastcall GetExtensionsPaths();
 
 public:
   __fastcall TWinConfiguration();
@@ -598,6 +599,8 @@ public:
   void __fastcall MinimizeToTrayOnce();
   void __fastcall LoadExtensionList();
   void __fastcall CustomCommandShortCuts(TShortCuts & ShortCuts) const;
+  UnicodeString __fastcall GetUserExtensionsPath();
+  UnicodeString __fastcall GetExtensionId(const UnicodeString & ExtensionPath);
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
@@ -707,6 +710,8 @@ public:
   bool __fastcall Equals(const TCustomCommandType * Other) const;
 
   void __fastcall LoadExtension(const UnicodeString & Path);
+  void __fastcall LoadExtension(TStrings * Lines);
+  static UnicodeString __fastcall GetExtensionId(const UnicodeString & Name);
 
   __property UnicodeString Name = { read = FName, write = FName };
   __property UnicodeString Command = { read = FCommand, write = FCommand };
@@ -744,9 +749,9 @@ public:
   void __fastcall Delete(int Index);
   void __fastcall SortBy(TStrings * Ids);
 
-  int FindIndex(const UnicodeString & Name, bool CaseSensitive) const;
   const TCustomCommandType * Find(const UnicodeString Name) const;
   const TCustomCommandType * Find(TShortCut ShortCut) const;
+  int FindIndexByFileName(const UnicodeString & FileName) const;
 
   bool __fastcall Equals(const TCustomCommandList * Other) const;
   void __fastcall Assign(const TCustomCommandList * Other);
@@ -766,5 +771,6 @@ private:
 };
 //---------------------------------------------------------------------------
 extern TWinConfiguration * WinConfiguration;
+extern const UnicodeString WinSCPExtensionExt;
 //---------------------------------------------------------------------------
 #endif

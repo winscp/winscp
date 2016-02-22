@@ -1207,8 +1207,10 @@ object PreferencesDialog: TPreferencesDialog
             Height = 25
             Anchors = [akLeft, akBottom]
             Caption = '&Add...'
+            Style = bsSplitButton
             TabOrder = 1
-            OnClick = AddEditCommandButtonClick
+            OnClick = AddCommandButtonClick
+            OnDropDownClick = AddCommandButtonDropDownClick
           end
           object RemoveCommandButton: TButton
             Left = 16
@@ -1248,7 +1250,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akBottom]
             Caption = '&Edit...'
             TabOrder = 2
-            OnClick = AddEditCommandButtonClick
+            OnClick = EditCommandButtonClick
           end
         end
       end
@@ -3093,6 +3095,18 @@ object PreferencesDialog: TPreferencesDialog
     object UnregisterForDefaultProtocolsItem: TMenuItem
       Caption = 'Unregister'
       OnClick = UnregisterForDefaultProtocolsItemClick
+    end
+  end
+  object AddCommandMenu: TPopupMenu
+    Left = 208
+    Top = 443
+    object AddCustomCommandMenuItem: TMenuItem
+      Caption = 'Add &Custom Command...'
+      OnClick = AddCustomCommandMenuItemClick
+    end
+    object AddExtensionMenuItem: TMenuItem
+      Caption = 'Add &Extension...'
+      OnClick = AddExtensionMenuItemClick
     end
   end
 end

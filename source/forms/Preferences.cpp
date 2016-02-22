@@ -15,12 +15,14 @@
 #include "VCLCommon.h"
 #include "GUITools.h"
 #include "Tools.h"
+#include "TextsCore.h"
 #include "TextsWin.h"
 #include "HelpWin.h"
 #include "WinInterface.h"
 #include "WinConfiguration.h"
 #include "Setup.h"
 #include "ProgParams.h"
+#include "Http.h"
 //---------------------------------------------------------------------
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
@@ -1030,6 +1032,29 @@ int __fastcall TPreferencesDialog::GetCommandIndex(int Index)
   return Index;
 }
 //---------------------------------------------------------------------------
+int __fastcall TPreferencesDialog::GetListCommandIndex(TCustomCommandList * List)
+{
+  int Index;
+  if (GetCommandList(CustomCommandsView->ItemIndex) == List)
+  {
+    Index = GetCommandIndex(CustomCommandsView->ItemIndex);
+  }
+  else
+  {
+    Index = -1;
+  }
+  return Index;
+}
+//---------------------------------------------------------------------------
+int __fastcall TPreferencesDialog::GetCommandListIndex(TCustomCommandList * List, int Index)
+{
+  if (List == FExtensionList)
+  {
+    Index += FCustomCommandList->Count;
+  }
+  return Index;
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateControls()
 {
   if (FNoUpdate == 0)
@@ -1403,7 +1428,7 @@ void __fastcall TPreferencesDialog::CustomCommandsViewKeyDown(
 
   if (AddCommandButton->Enabled && (Key == VK_INSERT))
   {
-    AddEditCommandButtonClick(AddCommandButton);
+    AddEditCommand(false);
   }
 }
 //---------------------------------------------------------------------------
@@ -1412,13 +1437,26 @@ void __fastcall TPreferencesDialog::CustomCommandsViewDblClick(
 {
   if (EditCommandButton->Enabled)
   {
-    AddEditCommandButtonClick(EditCommandButton);
+    AddEditCommand(true);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
+static int __fastcall AddCommandToList(TCustomCommandList * List, int Index, TCustomCommandType * Command)
 {
-  bool Edit = (Sender == EditCommandButton);
+  if (Index >= 0)
+  {
+    List->Insert(Index, Command);
+  }
+  else
+  {
+    List->Add(Command);
+    Index = List->Count - 1;
+  }
+  return Index;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddEditCommand(bool Edit)
+{
   TCustomCommandType Command;
 
   if (Edit)
@@ -1440,15 +1478,7 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
   if (DoCustomCommandDialog(Command, FCustomCommandList,
         (Edit ? ccmEdit : ccmAdd), 0, NULL, &ShortCuts))
   {
-    int Index;
-    if (GetCommandList(CustomCommandsView->ItemIndex) == FCustomCommandList)
-    {
-      Index = GetCommandIndex(CustomCommandsView->ItemIndex);
-    }
-    else
-    {
-      Index = -1;
-    }
+    int Index = GetListCommandIndex(FCustomCommandList);
     TCustomCommandType * ACommand = new TCustomCommandType(Command);
     if (Edit)
     {
@@ -1457,20 +1487,11 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
     }
     else
     {
-      if (Index >= 0)
-      {
-        FCustomCommandList->Insert(Index, ACommand);
-      }
-      else
-      {
-        FCustomCommandList->Add(ACommand);
-        Index = FCustomCommandList->Count - 1;
-      }
+      Index = AddCommandToList(FCustomCommandList, Index, ACommand);
     }
 
     UpdateCustomCommandsView();
-    // assumes that the custom command are the first
-    CustomCommandsView->ItemIndex = Index;
+    CustomCommandsView->ItemIndex = GetCommandListIndex(FCustomCommandList, Index);
     UpdateControls();
   }
 }
@@ -2376,5 +2397,172 @@ void __fastcall TPreferencesDialog::CustomCommandsViewWindowProc(TMessage & Mess
       }
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddExtension()
+{
+  const UnicodeString HistoryKey(L"ExtensionPath");
+  std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[HistoryKey]));
+  UnicodeString Path;
+  if (InputDialog(LoadStr(ADD_EXTENSION_CAPTION), LoadStr(ADD_EXTENSION_PROMPT), Path,
+        HELP_NONE, History.get(), true) &&
+      !Path.IsEmpty())
+  {
+    CustomWinConfiguration->History[HistoryKey] = History.get();
+
+    bool Trusted;
+    UnicodeString FileName;
+    UnicodeString ExtensionPath;
+    std::unique_ptr<TStringList> Lines(new TStringList());
+    if (IsHttpOrHttpsUrl(Path))
+    {
+      bool WinSCPURL = IsWinSCPUrl(Path);
+      if (WinSCPURL)
+      {
+        if (IsHttpUrl(Path))
+        {
+          Path = ChangeUrlProtocol(Path, HttpsProtocol);
+        }
+        Path = CampaignUrl(ProgramUrl(Path));
+      }
+
+      std::unique_ptr<THttp> Http(CreateHttp());
+      Http->URL = Path;
+      std::unique_ptr<TStrings> Headers(new TStringList());
+      Headers->Values[L"Accept"] = L"text/winscpextension,text/plain";
+      Http->RequestHeaders = Headers.get();
+      Http->Get();
+
+      UnicodeString TrustedStr = Http->ResponseHeaders->Values["WinSCP-Extension-Trusted"];
+      Trusted = WinSCPURL && (StrToIntDef(TrustedStr, 0) != 0);
+
+      FileName = MakeValidFileName(Http->ResponseHeaders->Values["WinSCP-Extension-Id"]);
+      if (FileName.IsEmpty())
+      {
+        FileName = MakeValidFileName(ExtractFileNameFromUrl(Path));
+      }
+      Lines->Text = Http->Response;
+    }
+    else
+    {
+      if (!FileExists(Path))
+      {
+        throw Exception(MainInstructions(FMTLOAD(FILE_NOT_EXISTS, (Path))));
+      }
+
+      Trusted = true;
+
+      int Index = FExtensionList->FindIndexByFileName(Path);
+      if (Index > 0)
+      {
+        CustomCommandsView->ItemIndex = GetCommandListIndex(FExtensionList, Index);
+        CustomCommandsView->SetFocus();
+        throw Exception(MainInstructions(LoadStr(EXTENSION_INSTALLED_ALREADY)));
+      }
+
+      UnicodeString Id = WinConfiguration->GetExtensionId(Path);
+      FileName = ExtractFileName(Path);
+      if (!Id.IsEmpty())
+      {
+        ExtensionPath = Path;
+      }
+
+      LoadScriptFromFile(Path, Lines.get());
+    }
+
+    // validate syntax
+    std::unique_ptr<TCustomCommandType> CustomCommand(new TCustomCommandType());
+    CustomCommand->LoadExtension(Lines.get());
+
+    if (FExtensionList->Find(CustomCommand->Name) != NULL)
+    {
+      throw Exception(MainInstructions(FMTLOAD(EXTENSION_DUPLICATE, (StripHotkey(CustomCommand->Name)))));
+    }
+
+    if (ExtensionPath.IsEmpty())
+    {
+      if (TCustomCommandType::GetExtensionId(FileName).IsEmpty())
+      {
+        UnicodeString FileNameOnly = ExtractFileNameOnly(FileName);
+        if (FileNameOnly.IsEmpty())
+        {
+          FileName = MakeValidFileName(StripHotkey(CustomCommand->Name)) + WinSCPExtensionExt;
+        }
+        else
+        {
+          FileName = ExtractFileNameOnly(FileName) + WinSCPExtensionExt + ExtractFileExt(FileName);
+        }
+      }
+    }
+
+    if (Trusted ||
+        (MessageDialog(MainInstructions(LoadStr(EXTENSION_UNTRUSTED)), qtWarning, qaOK | qaCancel) == qaOK))
+    {
+      if (ExtensionPath.IsEmpty())
+      {
+        UnicodeString UserExtensionsPath = WinConfiguration->GetUserExtensionsPath();
+        if (!DirectoryExists(UserExtensionsPath) &&
+            !ForceDirectories(UserExtensionsPath))
+        {
+          throw EOSExtException(MainInstructions(FMTLOAD(CREATE_LOCAL_DIR_ERROR, (UserExtensionsPath))));
+        }
+
+        ExtensionPath = IncludeTrailingBackslash(UserExtensionsPath) + FileName;
+
+        if (FileExists(ExtensionPath) &&
+            (MessageDialog(MainInstructions(FMTLOAD(FILE_OVERWRITE, (ExtensionPath))), qtConfirmation, qaOK | qaCancel) == qaCancel))
+        {
+          Abort();
+        }
+        Lines->SaveToFile(ExtensionPath);
+      }
+
+      int Index = GetListCommandIndex(FExtensionList);
+
+      std::unique_ptr<TCustomCommandType> CustomCommand(new TCustomCommandType());
+      CustomCommand->Id = WinConfiguration->GetExtensionId(ExtensionPath);
+      CustomCommand->LoadExtension(ExtensionPath);
+
+      Index = AddCommandToList(FExtensionList, Index, CustomCommand.release());
+
+      UpdateCustomCommandsView();
+      CustomCommandsView->ItemIndex = GetCommandListIndex(FExtensionList, Index);
+      UpdateControls();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddCommandButtonClick(TObject * /*Sender*/)
+{
+  if (GetCommandList(CustomCommandsView->ItemIndex) == FCustomCommandList)
+  {
+    AddEditCommand(false);
+  }
+  else
+  {
+    AddExtension();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddCustomCommandMenuItemClick(TObject * /*Sender*/)
+{
+  AddEditCommand(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddExtensionMenuItemClick(TObject * /*Sender*/)
+{
+  AddExtension();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditCommandButtonClick(TObject * /*Sender*/)
+{
+  AddEditCommand(true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddCommandButtonDropDownClick(TObject * /*Sender*/)
+{
+  AddCustomCommandMenuItem->Default = (GetCommandList(CustomCommandsView->ItemIndex) == FCustomCommandList);
+  AddExtensionMenuItem->Default = (GetCommandList(CustomCommandsView->ItemIndex) == FExtensionList);
+  MenuPopup(AddCommandMenu, AddCommandButton);
 }
 //---------------------------------------------------------------------------

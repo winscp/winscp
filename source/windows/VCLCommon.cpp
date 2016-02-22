@@ -1813,7 +1813,7 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
     StaticText->Caption = Url;
   }
 
-  bool IsUrl = IsHttpUrl(StaticText->Caption);
+  bool IsUrl = IsHttpOrHttpsUrl(StaticText->Caption);
   if (IsUrl)
   {
     DebugAssert(StaticText->PopupMenu == NULL);

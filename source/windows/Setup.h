@@ -8,6 +8,8 @@
 void __fastcall SetupInitialize();
 void __fastcall AddSearchPath(const UnicodeString Path);
 void __fastcall RemoveSearchPath(const UnicodeString Path);
+class THttp;
+THttp * __fastcall CreateHttp();
 void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New, TQueryType & Type, bool Force);
 bool __fastcall CheckForUpdates(bool CachedResults);
 bool __fastcall QueryUpdates(TUpdatesConfiguration & Updates);

@@ -525,14 +525,21 @@ void __fastcall ExitActiveControl(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall OpenBrowser(UnicodeString URL)
+bool __fastcall IsWinSCPUrl(const UnicodeString & Url)
 {
   UnicodeString HomePageUrl = LoadStr(HOMEPAGE_URL);
-  UnicodeString HttpHomePageUrl = ReplaceStr(L"http://", L"https://", HomePageUrl);
+  UnicodeString HttpHomePageUrl = ChangeUrlProtocol(HomePageUrl, HttpProtocol);
   DebugAssert(HomePageUrl != HttpHomePageUrl);
-  if (SameText(URL.SubString(1, HomePageUrl.Length()), HomePageUrl) ||
-      DebugAlwaysFalse(SameText(URL.SubString(1, HttpHomePageUrl.Length()), HttpHomePageUrl)))
+  return
+    StartsText(HomePageUrl, Url) ||
+    StartsText(HttpHomePageUrl, Url);
+}
+//---------------------------------------------------------------------------
+void __fastcall OpenBrowser(UnicodeString URL)
+{
+  if (IsWinSCPUrl(URL))
   {
+    DebugAssert(!IsHttpUrl(URL));
     URL = CampaignUrl(URL);
   }
   ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);

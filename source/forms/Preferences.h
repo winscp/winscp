@@ -309,6 +309,9 @@ __published:
   TStaticText *UpdatesLink;
   TCheckBox *ShowTipsCheck;
   TPanel *ComponentsPanel;
+  TPopupMenu *AddCommandMenu;
+  TMenuItem *AddCustomCommandMenuItem;
+  TMenuItem *AddExtensionMenuItem;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -319,7 +322,6 @@ __published:
           TListItem *Item, bool Selected);
   void __fastcall CustomCommandsViewKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
-  void __fastcall AddEditCommandButtonClick(TObject *Sender);
   void __fastcall RemoveCommandButtonClick(TObject *Sender);
   void __fastcall UpDownCommandButtonClick(TObject *Sender);
   void __fastcall ListViewStartDrag(TObject *Sender,
@@ -390,6 +392,11 @@ __published:
   void __fastcall UpdatesAuthenticationEmailEditExit(TObject *Sender);
   void __fastcall UpdatesLinkClick(TObject *Sender);
   void __fastcall CustomCommandsViewDragOver(TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool &Accept);
+  void __fastcall AddCommandButtonClick(TObject *Sender);
+  void __fastcall AddCustomCommandMenuItemClick(TObject *Sender);
+  void __fastcall AddExtensionMenuItemClick(TObject *Sender);
+  void __fastcall EditCommandButtonClick(TObject *Sender);
+  void __fastcall AddCommandButtonDropDownClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -427,6 +434,8 @@ private:
   void __fastcall CustomCommandsViewWindowProc(TMessage & Message);
   TCustomCommandList * __fastcall GetCommandList(int Index);
   int __fastcall GetCommandIndex(int Index);
+  int __fastcall GetCommandListIndex(TCustomCommandList * List, int Index);
+  int __fastcall GetListCommandIndex(TCustomCommandList * List);
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);
@@ -453,6 +462,8 @@ protected:
     UnicodeString Message, TStrings * RecryptPasswordErrors);
   void __fastcall EditorFontColorChange(TColor Color);
   void __fastcall EditorBackgroundColorChange(TColor Color);
+  void __fastcall AddEditCommand(bool Edit);
+  void __fastcall AddExtension();
 };
 //----------------------------------------------------------------------------
 #endif

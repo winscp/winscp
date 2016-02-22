@@ -2367,6 +2367,22 @@ UnicodeString __fastcall AppendUrlParams(UnicodeString AURL, UnicodeString Param
   return URL;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall ExtractFileNameFromUrl(const UnicodeString & Url)
+{
+  UnicodeString Result = Url;
+  int P = Result.Pos(L"?");
+  if (P > 0)
+  {
+    Result.SetLength(P - 1);
+  }
+  P = Result.LastDelimiter("/");
+  if (DebugAlwaysTrue(P > 0))
+  {
+    Result.Delete(1, P);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption)
 {
   return ReplaceStr(Caption, L"&", L"&&");
@@ -2911,9 +2927,27 @@ void __fastcall CheckCertificate(const UnicodeString & Path)
   }
 }
 //---------------------------------------------------------------------------
+const UnicodeString HttpProtocol(L"http");
+const UnicodeString HttpsProtocol(L"https");
+const UnicodeString ProtocolSeparator(L"://");
+//---------------------------------------------------------------------------
 bool __fastcall IsHttpUrl(const UnicodeString & S)
 {
-  return SameText(S.SubString(1, 4), L"http");
+  return StartsText(HttpProtocol + ProtocolSeparator, S);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsHttpOrHttpsUrl(const UnicodeString & S)
+{
+  return
+    IsHttpUrl(S) ||
+    StartsText(HttpsProtocol + ProtocolSeparator, S);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const UnicodeString & Protocol)
+{
+  int P = S.Pos(ProtocolSeparator);
+  DebugAssert(P > 0);
+  return Protocol + ProtocolSeparator + RightStr(S, S.Length() - P - ProtocolSeparator.Length() + 1);
 }
 //---------------------------------------------------------------------------
 const UnicodeString RtfPara = L"\\par\n";

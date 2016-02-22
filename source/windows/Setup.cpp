@@ -858,6 +858,11 @@ static THttp * __fastcall CreateHttp(const TUpdatesConfiguration & Updates)
   return Http.release();
 }
 //---------------------------------------------------------------------------
+THttp * __fastcall CreateHttp()
+{
+  return CreateHttp(WinConfiguration->Updates);
+}
+//---------------------------------------------------------------------------
 static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool CollectUsage)
 {
   bool Complete = false;
@@ -1297,17 +1302,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
     DownloadNotVerified();
   }
 
-  UnicodeString FileName = FUpdates.Results.DownloadUrl;
-  int P = FileName.Pos(L"?");
-  if (P > 0)
-  {
-    FileName.SetLength(P - 1);
-  }
-  P = FileName.LastDelimiter("/");
-  if (DebugAlwaysTrue(P > 0))
-  {
-    FileName.Delete(1, P);
-  }
+  UnicodeString FileName = ExtractFileNameFromUrl(FUpdates.Results.DownloadUrl);
   UnicodeString TemporaryDirectory = WinConfiguration->ExpandedTemporaryDirectory();
   UnicodeString SetupPathBase = IncludeTrailingBackslash(TemporaryDirectory) + FileName;
   UnicodeString SetupPath = SetupPathBase;

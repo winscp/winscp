@@ -24,8 +24,10 @@ public:
   __property UnicodeString URL = { read = FURL, write = FURL };
   __property UnicodeString ProxyHost = { read = FProxyHost, write = FProxyHost };
   __property int ProxyPort = { read = FProxyPort, write = FProxyPort };
+  __property TStrings * RequestHeaders = { read = FRequestHeaders, write = FRequestHeaders };
   __property UnicodeString Response = { read = GetResponse };
   __property RawByteString ResponseRaw = { read = FResponse };
+  __property TStrings * ResponseHeaders = { read = FResponseHeaders };
   __property __int64 ResponseLength = { read = GetResponseLength };
   __property __int64 ResponseLimit = { read = FResponseLimit, write = FResponseLimit };
   __property THttpDownloadEvent OnDownload = { read = FOnDownload, write = FOnDownload};
@@ -40,6 +42,8 @@ private:
   THttpDownloadEvent FOnDownload;
   UnicodeString FHostName;
   UnicodeString FCertificateError;
+  TStrings * FRequestHeaders;
+  TStrings * FResponseHeaders;
 
   static int NeonBodyReader(void * UserData, const char * Buf, size_t Len);
   int NeonBodyReaderImpl(const char * Buf, size_t Len);
