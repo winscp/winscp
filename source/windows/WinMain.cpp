@@ -699,7 +699,11 @@ int __fastcall Execute()
 
     LogForm = NULL;
 
-    Application->HintHidePause = 3000;
+    // The default in 2.5s.
+    // 20s is used by Office 2010 and Windows 10 Explorer.
+    // Some applications use an infinite (Thunderbird, Firefox).
+    // Overriden for some controls using THintInfo.HideTimeout
+    Application->HintHidePause = 20000;
 
     UnicodeString IniFileName = Params->SwitchValue(INI_SWITCH);
     if (!IniFileName.IsEmpty())
