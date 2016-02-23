@@ -719,6 +719,7 @@ public:
   __property TShortCut ShortCut = { read = FShortCut, write = FShortCut };
   __property UnicodeString Id = { read = FId, write = FId };
   __property UnicodeString FileName = { read = FFileName, write = FFileName };
+  __property UnicodeString Description = { read = FDescription, write = FDescription };
 
 private:
   UnicodeString FName;
@@ -727,6 +728,7 @@ private:
   TShortCut FShortCut;
   UnicodeString FId;
   UnicodeString FFileName;
+  UnicodeString FDescription;
 };
 //---------------------------------------------------------------------------
 class TCustomCommandList

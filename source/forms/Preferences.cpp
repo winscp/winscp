@@ -2587,7 +2587,12 @@ void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Send
     {
       TCustomCommandList * List = GetCommandList(Index);
       const TCustomCommandType * Command = List->Commands[GetCommandIndex(Index)];
-      Hint = Item->Caption + L"\n" + Command->Command;
+      Hint = Item->Caption;
+      if (!Command->Description.IsEmpty())
+      {
+        Hint += L"\n" + Command->Description;
+      }
+      Hint += L"\n" + Command->Command;
       if (List == FExtensionList)
       {
         Hint += L"\n" + Command->FileName;

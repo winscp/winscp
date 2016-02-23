@@ -2602,7 +2602,8 @@ __fastcall TCustomCommandType::TCustomCommandType(const TCustomCommandType & Oth
   FParams(Other.FParams),
   FShortCut(Other.FShortCut),
   FId(Other.FId),
-  FFileName(Other.FFileName)
+  FFileName(Other.FFileName),
+  FDescription(Other.FDescription)
 {
 }
 //---------------------------------------------------------------------------
@@ -2614,6 +2615,7 @@ TCustomCommandType & TCustomCommandType::operator=(const TCustomCommandType & Ot
   FShortCut = Other.FShortCut;
   FId = Other.FId;
   FFileName = Other.FFileName;
+  FDescription = Other.FDescription;
   return *this;
 }
 //---------------------------------------------------------------------------
@@ -2625,7 +2627,8 @@ bool __fastcall TCustomCommandType::Equals(const TCustomCommandType * Other) con
     (FParams == Other->FParams) &&
     (FShortCut == Other->FShortCut) &&
     (FId == Other->FId) &&
-    (FFileName == Other->FFileName);
+    (FFileName == Other->FFileName) &&
+    (FDescription == Other->FDescription);
 }
 //---------------------------------------------------------------------------
 const UnicodeString ExtensionNameDirective(L"name");
@@ -2780,7 +2783,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
           }
           else if (Key == L"description")
           {
-            // noop
+            Description = Value;
           }
           else if (Key == L"author")
           {

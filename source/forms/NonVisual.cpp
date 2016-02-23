@@ -1072,7 +1072,8 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
       }
       UnicodeString Name = StripHotkey(Command->Name);
       UnicodeString ShortHint = FMTLOAD(CUSTOM_COMMAND_HINT, (Name));
-      UnicodeString LongHint = FMTLOAD(CUSTOM_COMMAND_HINT_LONG, (Name, Command->Command));
+      UnicodeString LongHint =
+        !Command->Description.IsEmpty() ? Command->Description : FMTLOAD(CUSTOM_COMMAND_HINT_LONG, (Name, Command->Command));
       Item->Hint = FORMAT(L"%s|%s", (ShortHint, LongHint));
       if (!Both)
       {
