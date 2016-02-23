@@ -1016,6 +1016,7 @@ UnicodeString __fastcall MakeUnicodeLargePath(UnicodeString Path)
         // nothing to do
         break;
     }
+
   }
 
   return Result;
