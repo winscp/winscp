@@ -87,7 +87,7 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
           for (int Index = 0; Index < FRequestHeaders->Count; Index++)
           {
             ne_add_request_header(
-              NeonRequest, StrToNeon(FRequestHeaders->Names[Index]), StrToNeon(FRequestHeaders->Values[Index]));
+              NeonRequest, StrToNeon(FRequestHeaders->Names[Index]), StrToNeon(FRequestHeaders->ValueFromIndex[Index]));
           }
         }
 
