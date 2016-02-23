@@ -2719,7 +2719,11 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
         Line.Delete(1, 2);
       }
 
-      if (IsComment)
+      if (!IsComment)
+      {
+        break;
+      }
+      else
       {
         Line = Line.Trim();
         int P;
@@ -2837,10 +2841,6 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
             AnythingFound = true;
           }
         }
-      }
-      else
-      {
-        break;
       }
     }
   }
