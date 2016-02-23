@@ -35,6 +35,9 @@
 #ifndef BinariesDir64
   #define BinariesDir64 SourceDir + "\Win64\Release"
 #endif
+#ifndef BinariesDirAssembly
+  #define BinariesDirAssembly "..\dotnet\Win32\Release"
+#endif
 #ifndef AllTranslations
   #define AllTranslations
 #endif
@@ -52,6 +55,7 @@
 #define ShellExt64FileSource BinariesDir64+"\"+ShellExt64FileName
 #define ConsoleFileSource BinariesDir+"\WinSCP.com"
 #define MapFileSource BinariesDir+"\WinSCP.map"
+#define AssemblyFileSource BinariesDirAssembly+"\WinSCPnet.dll"
 
 #ifdef Donations
 #define PayPalCardImage "PayPalCard.bmp"
@@ -252,6 +256,8 @@ Source: "{#ConsoleFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#MapFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
+Source: "{#AssemblyFileSource}"; DestDir: "{app}"; \
+  Components: main; Flags: ignoreversion
 Source: "license.txt"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
@@ -270,6 +276,7 @@ Source: "{#PuttySourceDir}\pageant.exe"; DestDir: "{app}\PuTTY"; \
   Components: pageant; Flags: ignoreversion
 Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
   Components: puttygen; Flags: ignoreversion
+Source: "Extensions\*.*"; DestDir: "{app}\Extensions"
 
 [Registry]
 Root: HKCU; Subkey: "{#ParentRegistryKey}"; Flags: uninsdeletekeyifempty
