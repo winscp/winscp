@@ -2631,7 +2631,7 @@ bool __fastcall TCustomCommandType::Equals(const TCustomCommandType * Other) con
 const UnicodeString ExtensionNameDirective(L"name");
 const UnicodeString ExtensionCommandDirective(L"command");
 const wchar_t ExtensionMark = L'@';
-const UnicodeString WinSCPExtensionExt(".WinSCPextension");
+const UnicodeString WinSCPExtensionExt(L".WinSCPextension");
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomCommandType::GetExtensionId(const UnicodeString & Name)
 {
