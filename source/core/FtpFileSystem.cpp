@@ -2387,6 +2387,10 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 
         if (Result)
         {
+          if ((Path.Length() > 0) && (Path[1] != L'/'))
+          {
+            Path = L"/" + Path;
+          }
           FCurrentDirectory = UnixExcludeTrailingBackslash(Path);
           FReadCurrentDirectory = false;
         }
