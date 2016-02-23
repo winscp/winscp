@@ -2831,6 +2831,10 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
           {
             // noop
           }
+          else if (Key == L"source")
+          {
+            // noop
+          }
           else
           {
             KnownKey = false;
