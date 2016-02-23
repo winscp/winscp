@@ -180,6 +180,8 @@ bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Param
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
+//---------------------------------------------------------------------------
+static bool __fastcall DoExecuteShell(HWND ApplicationHandle, const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle)
 {
   bool Result;
@@ -188,7 +190,7 @@ bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Param
   memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
   ExecuteInfo.cbSize = sizeof(ExecuteInfo);
   ExecuteInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-  ExecuteInfo.hwnd = Application->Handle;
+  ExecuteInfo.hwnd = ApplicationHandle;
   ExecuteInfo.lpFile = (wchar_t*)Path.data();
   ExecuteInfo.lpParameters = (wchar_t*)Params.data();
   ExecuteInfo.nShow = SW_SHOW;
@@ -201,21 +203,18 @@ bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Param
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
+  HANDLE & Handle)
+{
+  return DoExecuteShell(Application->Handle, Path, Params, Handle);
+}
+//---------------------------------------------------------------------------
 bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
   const UnicodeString Params, TProcessMessagesEvent ProcessMessages)
 {
-  bool Result;
+  HANDLE ProcessHandle;
+  bool Result = DoExecuteShell(Handle, Path, Params, ProcessHandle);
 
-  TShellExecuteInfoW ExecuteInfo;
-  memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
-  ExecuteInfo.cbSize = sizeof(ExecuteInfo);
-  ExecuteInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-  ExecuteInfo.hwnd = Handle;
-  ExecuteInfo.lpFile = (wchar_t*)Path.data();
-  ExecuteInfo.lpParameters = (wchar_t*)Params.data();
-  ExecuteInfo.nShow = SW_SHOW;
-
-  Result = (ShellExecuteEx(&ExecuteInfo) != 0);
   if (Result)
   {
     if (ProcessMessages != NULL)
@@ -223,7 +222,7 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
       unsigned long WaitResult;
       do
       {
-        WaitResult = WaitForSingleObject(ExecuteInfo.hProcess, 200);
+        WaitResult = WaitForSingleObject(ProcessHandle, 200);
         if (WaitResult == WAIT_FAILED)
         {
           throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));
@@ -234,7 +233,7 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
     }
     else
     {
-      WaitForSingleObject(ExecuteInfo.hProcess, INFINITE);
+      WaitForSingleObject(ProcessHandle, INFINITE);
     }
   }
   return Result;
