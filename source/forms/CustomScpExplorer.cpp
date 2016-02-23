@@ -1708,7 +1708,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
     if (!LocalCustomCommand.IsFileCommand(Command))
     {
-      ExecuteShellAndWait(LocalCustomCommand.Complete(Command, true));
+      ExecuteShell(LocalCustomCommand.Complete(Command, true));
     }
     // remote files?
     else if ((FCurrentSide == osRemote) || LocalFileCommand)
@@ -1782,11 +1782,16 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
             ProcessLocalDirectory(TempDir, Terminal->MakeLocalFileList, &MakeFileListParam);
           }
 
+          bool NonBlocking = FileListCommand && RemoteFiles;
+
           TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
 
-          Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : FileList->Count);
-          DebugAssert(FProgressForm != NULL);
-          FProgressForm->ReadOnly = true;
+          if (!NonBlocking)
+          {
+            Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : FileList->Count);
+            DebugAssert(FProgressForm != NULL);
+            FProgressForm->ReadOnly = true;
+          }
 
           try
           {
@@ -1805,7 +1810,16 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
               TCustomCommandData Data(FTerminal);
               TLocalCustomCommand CustomCommand(Data,
                 Terminal->CurrentDirectory, L"", LocalFile, FileList);
-              ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+              UnicodeString ShellCommand = CustomCommand.Complete(Command, true);
+
+              if (NonBlocking)
+              {
+                ExecuteShell(ShellCommand);
+              }
+              else
+              {
+                ExecuteShellAndWait(ShellCommand);
+              }
             }
             else if (LocalFileCommand)
             {
@@ -1866,7 +1880,10 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
           }
           __finally
           {
-            Progress.Stop();
+            if (!NonBlocking)
+            {
+              Progress.Stop();
+            }
           }
 
           DebugAssert(!FAutoOperation);
@@ -1961,24 +1978,24 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
         }
       }
 
-      TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
-
-      Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : LocalFileList->Count);
-      DebugAssert(FProgressForm != NULL);
-      FProgressForm->ReadOnly = true;
-
-      try
+      if (FileListCommand)
       {
-        if (FileListCommand)
-        {
-          UnicodeString FileList = MakeFileList(LocalFileList.get());
-          TCustomCommandData Data(FTerminal);
-          TLocalCustomCommand CustomCommand(
-            Data, Terminal->CurrentDirectory,
-            L"", L"", FileList);
-          ExecuteShellAndWait(CustomCommand.Complete(Command, true));
-        }
-        else
+        UnicodeString FileList = MakeFileList(LocalFileList.get());
+        TCustomCommandData Data(FTerminal);
+        TLocalCustomCommand CustomCommand(
+          Data, Terminal->CurrentDirectory,
+          L"", L"", FileList);
+        ExecuteShell(CustomCommand.Complete(Command, true));
+      }
+      else
+      {
+        TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
+
+        Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : LocalFileList->Count);
+        DebugAssert(FProgressForm != NULL);
+        FProgressForm->ReadOnly = true;
+
+        try
         {
           for (int Index = 0; Index < LocalFileList->Count; Index++)
           {
@@ -1990,10 +2007,10 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
             ExecuteShellAndWait(CustomCommand.Complete(Command, true));
           }
         }
-      }
-      __finally
-      {
-        Progress.Stop();
+        __finally
+        {
+          Progress.Stop();
+        }
       }
     }
   }

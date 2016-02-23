@@ -179,7 +179,12 @@ bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Param
     (wchar_t*)Params.data(), NULL, SW_SHOWNORMAL) > 32);
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
+bool __fastcall ExecuteShell(const UnicodeString Command)
+{
+  UnicodeString Program, Params, Dir;
+  SplitCommand(Command, Program, Params, Dir);
+  return ExecuteShell(Program, Params);
+}
 //---------------------------------------------------------------------------
 static bool __fastcall DoExecuteShell(HWND ApplicationHandle, const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle)
