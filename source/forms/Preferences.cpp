@@ -2407,46 +2407,72 @@ void __fastcall TPreferencesDialog::AddExtension()
     UnicodeString FileName;
     UnicodeString ExtensionPath;
     std::unique_ptr<TStringList> Lines(new TStringList());
-    if (IsHttpOrHttpsUrl(Path))
+    std::unique_ptr<TCustomCommandType> CustomCommand;
+
+    try
     {
-      bool WinSCPURL = IsWinSCPUrl(Path);
-      if (WinSCPURL)
+      if (IsHttpOrHttpsUrl(Path))
       {
-        if (IsHttpUrl(Path))
+        UnicodeString Url = Path;
+        bool WinSCPURL = IsWinSCPUrl(Url);
+        if (WinSCPURL)
         {
-          Path = ChangeUrlProtocol(Path, HttpsProtocol);
+          if (IsHttpUrl(Url))
+          {
+            Url = ChangeUrlProtocol(Url, HttpsProtocol);
+          }
+          Url = CampaignUrl(ProgramUrl(Url));
         }
-        Path = CampaignUrl(ProgramUrl(Path));
+
+        TOperationVisualizer Visualizer;
+
+        std::unique_ptr<THttp> Http(CreateHttp());
+        Http->URL = Url;
+        std::unique_ptr<TStrings> Headers(new TStringList());
+        Headers->Values[L"Accept"] = L"text/winscpextension,text/plain";
+        Http->RequestHeaders = Headers.get();
+        Http->Get();
+
+        UnicodeString TrustedStr = Http->ResponseHeaders->Values["WinSCP-Extension-Trusted"];
+        Trusted = WinSCPURL && (StrToIntDef(TrustedStr, 0) != 0);
+
+        FileName = MakeValidFileName(Http->ResponseHeaders->Values["WinSCP-Extension-Id"]);
+        if (FileName.IsEmpty())
+        {
+          FileName = MakeValidFileName(ExtractFileNameFromUrl(Path));
+        }
+        Lines->Text = Http->Response;
       }
-
-      TOperationVisualizer Visualizer;
-
-      std::unique_ptr<THttp> Http(CreateHttp());
-      Http->URL = Path;
-      std::unique_ptr<TStrings> Headers(new TStringList());
-      Headers->Values[L"Accept"] = L"text/winscpextension,text/plain";
-      Http->RequestHeaders = Headers.get();
-      Http->Get();
-
-      UnicodeString TrustedStr = Http->ResponseHeaders->Values["WinSCP-Extension-Trusted"];
-      Trusted = WinSCPURL && (StrToIntDef(TrustedStr, 0) != 0);
-
-      FileName = MakeValidFileName(Http->ResponseHeaders->Values["WinSCP-Extension-Id"]);
-      if (FileName.IsEmpty())
+      else
       {
-        FileName = MakeValidFileName(ExtractFileNameFromUrl(Path));
+        if (!FileExists(Path))
+        {
+          throw Exception(MainInstructions(FMTLOAD(FILE_NOT_EXISTS, (Path))));
+        }
+
+        Trusted = true;
+
+        UnicodeString Id = WinConfiguration->GetExtensionId(Path);
+        FileName = ExtractFileName(Path);
+        if (!Id.IsEmpty())
+        {
+          ExtensionPath = Path;
+        }
+
+        LoadScriptFromFile(Path, Lines.get());
       }
-      Lines->Text = Http->Response;
+
+      // validate syntax
+      CustomCommand.reset(new TCustomCommandType());
+      CustomCommand->LoadExtension(Lines.get());
     }
-    else
+    catch (Exception & E)
     {
-      if (!FileExists(Path))
-      {
-        throw Exception(MainInstructions(FMTLOAD(FILE_NOT_EXISTS, (Path))));
-      }
+      throw ExtException(&E, MainInstructions(FMTLOAD(EXTENSION_LOAD_ERROR, (Path))));
+    }
 
-      Trusted = true;
-
+    if (!ExtensionPath.IsEmpty())
+    {
       int Index = FExtensionList->FindIndexByFileName(Path);
       if (Index > 0)
       {
@@ -2454,20 +2480,7 @@ void __fastcall TPreferencesDialog::AddExtension()
         CustomCommandsView->SetFocus();
         throw Exception(MainInstructions(LoadStr(EXTENSION_INSTALLED_ALREADY)));
       }
-
-      UnicodeString Id = WinConfiguration->GetExtensionId(Path);
-      FileName = ExtractFileName(Path);
-      if (!Id.IsEmpty())
-      {
-        ExtensionPath = Path;
-      }
-
-      LoadScriptFromFile(Path, Lines.get());
     }
-
-    // validate syntax
-    std::unique_ptr<TCustomCommandType> CustomCommand(new TCustomCommandType());
-    CustomCommand->LoadExtension(Lines.get());
 
     if (FExtensionList->Find(CustomCommand->Name) != NULL)
     {

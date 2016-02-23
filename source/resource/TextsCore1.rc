@@ -225,7 +225,7 @@ BEGIN
   CERT_IP_CANNOT_VERIFY, "When connecting using an IP address, it is not possible to verify if the certificate was issued for the server. Use a hostname instead of the IP address."
   HOSTKEY_NOT_CONFIGURED, "Expected host key was not configured, use -hostkey switch."
   UNENCRYPTED_REDIRECT, "Redirected to an unencrypted URL."
-  HTTP_ERROR, "Received response %d %s from %s"
+  HTTP_ERROR2, "Received response %d \"%s\" from %s."
   FILEZILLA_SITE_MANAGER_NOT_FOUND, "FileZilla site manager file not found (%s)."
   FILEZILLA_NO_SITES, "No sites found in FileZilla site manager file (%s)."
   FILEZILLA_SITE_NOT_EXIST, "FileZilla site \"%s\" was not found."

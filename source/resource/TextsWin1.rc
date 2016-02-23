@@ -96,6 +96,7 @@ BEGIN
         EXTENSION_DIRECTIVE_MISSING, "Missing mandatory extension directive %s."
         EXTENSION_DUPLICATE, "There is already an extension with the name \"%s\"."
         EXTENSION_INSTALLED_ALREADY, "The extension is installed already."
+        EXTENSION_LOAD_ERROR, "Error loading an extension from \"%s\"."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"
