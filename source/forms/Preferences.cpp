@@ -1485,6 +1485,7 @@ void __fastcall TPreferencesDialog::AddEditCommand(bool Edit)
 
     UpdateCustomCommandsView();
     CustomCommandsView->ItemIndex = GetCommandListIndex(FCustomCommandList, Index);
+    CustomCommandsView->ItemFocused->MakeVisible(false);
     UpdateControls();
   }
 }
@@ -2479,6 +2480,7 @@ void __fastcall TPreferencesDialog::AddExtension()
       if (Index > 0)
       {
         CustomCommandsView->ItemIndex = GetCommandListIndex(FExtensionList, Index);
+        CustomCommandsView->ItemFocused->MakeVisible(false);
         CustomCommandsView->SetFocus();
         throw Exception(MainInstructions(LoadStr(EXTENSION_INSTALLED_ALREADY)));
       }
@@ -2537,6 +2539,7 @@ void __fastcall TPreferencesDialog::AddExtension()
 
       UpdateCustomCommandsView();
       CustomCommandsView->ItemIndex = GetCommandListIndex(FExtensionList, Index);
+      CustomCommandsView->ItemFocused->MakeVisible(false);
       UpdateControls();
 
       if (IsUrl)
