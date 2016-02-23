@@ -75,6 +75,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   FEditorList = new TEditorList();
   FAutomaticUpdatesPossible = IsInstalled();
   FCustomCommandsHintItem = NULL;
+  FAddedExtensions.reset(new TStringList());
   UseSystemSettings(this);
 
   FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
@@ -144,6 +145,13 @@ bool __fastcall TPreferencesDialog::Execute(TPreferencesDialogData * DialogData)
   {
     SaveConfiguration();
     CustomWinConfiguration->History[L"PuttyPath"] = PuttyPathEdit->Items;
+  }
+  else
+  {
+    for (int Index = 0; Index < FAddedExtensions->Count; Index++)
+    {
+      DeleteFile(ApiPath(FAddedExtensions->Strings[Index]));
+    }
   }
   return Result;
 }
@@ -2527,6 +2535,7 @@ void __fastcall TPreferencesDialog::AddExtension()
           Abort();
         }
         Lines->SaveToFile(ExtensionPath);
+        FAddedExtensions->Add(ExtensionPath);
       }
 
       int Index = GetListCommandIndex(FExtensionList);

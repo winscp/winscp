@@ -425,6 +425,7 @@ private:
   bool FAutomaticUpdatesPossible;
   TWndMethod FOrigCustomCommandsViewWindowProc;
   int FCustomCommandsHintItem;
+  std::unique_ptr<TStrings> FAddedExtensions;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
