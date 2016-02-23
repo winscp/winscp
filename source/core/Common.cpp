@@ -3428,5 +3428,5 @@ UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language,
 //---------------------------------------------------------------------------
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
 {
-  Lines->LoadFromFile(FileName, TEncoding::UTF8);
+  Lines->LoadFromFile(ApiPath(FileName), TEncoding::UTF8);
 }

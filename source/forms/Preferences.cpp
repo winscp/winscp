@@ -2534,7 +2534,7 @@ void __fastcall TPreferencesDialog::AddExtension()
         {
           Abort();
         }
-        Lines->SaveToFile(ExtensionPath);
+        Lines->SaveToFile(ApiPath(ExtensionPath));
         FAddedExtensions->Add(ExtensionPath);
       }
 
