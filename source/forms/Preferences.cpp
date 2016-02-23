@@ -2409,9 +2409,11 @@ void __fastcall TPreferencesDialog::AddExtension()
     std::unique_ptr<TStringList> Lines(new TStringList());
     std::unique_ptr<TCustomCommandType> CustomCommand;
 
+    bool IsUrl = IsHttpOrHttpsUrl(Path);
+
     try
     {
-      if (IsHttpOrHttpsUrl(Path))
+      if (IsUrl)
       {
         UnicodeString Url = Path;
         bool WinSCPURL = IsWinSCPUrl(Url);
@@ -2536,6 +2538,15 @@ void __fastcall TPreferencesDialog::AddExtension()
       UpdateCustomCommandsView();
       CustomCommandsView->ItemIndex = GetCommandListIndex(FExtensionList, Index);
       UpdateControls();
+
+      if (IsUrl)
+      {
+        Configuration->Usage->Inc(L"ExtensionAddsFromUrl");
+      }
+      else
+      {
+        Configuration->Usage->Inc(L"ExtensionAddsFromFile");
+      }
     }
   }
 }

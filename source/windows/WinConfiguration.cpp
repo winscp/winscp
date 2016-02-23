@@ -1238,6 +1238,9 @@ void __fastcall ParseExtensionList(TStrings * Strings, UnicodeString S)
 }
 //---------------------------------------------------------------------------
 const UnicodeString ExtensionsSubFolder(L"Extensions");
+const UnicodeString ExtensionsCommonPathId(L"common");
+const UnicodeString ExtensionsCommonExtPathId(L"commonext");
+const UnicodeString ExtensionsUserExtPathId(L"userext");
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TWinConfiguration::GetUserExtensionsPath()
 {
@@ -1248,10 +1251,10 @@ TStrings * __fastcall TWinConfiguration::GetExtensionsPaths()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
   UnicodeString ExeParentPath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
-  Result->Values[L"common"] = ExeParentPath;
+  Result->Values[ExtensionsCommonPathId] = ExeParentPath;
   UnicodeString CommonExtensions = IncludeTrailingBackslash(ExeParentPath) + ExtensionsSubFolder;
-  Result->Values[L"commonext"] = CommonExtensions;
-  Result->Values[L"userext"] = GetUserExtensionsPath();
+  Result->Values[ExtensionsCommonExtPathId] = CommonExtensions;
+  Result->Values[ExtensionsUserExtPathId] = GetUserExtensionsPath();
   return Result.release();
 }
 //---------------------------------------------------------------------------
@@ -2535,7 +2538,6 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
 
   Usage->Set(L"Interface", Interface);
   Usage->Set(L"CustomCommandsCount", (FCustomCommandsDefaults ? 0 : FCustomCommandList->Count));
-  Usage->Set(L"ExtensionsCount", (FExtensionList->Count));
   Usage->Set(L"UsingLocationProfiles", UseLocationProfiles);
   Usage->Set(L"UsingMasterPassword", UseMasterPassword);
   Usage->Set(L"UsingAutoSaveWorkspace", AutoSaveWorkspace);
@@ -2570,6 +2572,34 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
     Usage->Inc(L"InstallationsMachine", (FMachineInstallations - LastMachineInstallations));
     LastMachineInstallations = FMachineInstallations;
   }
+
+  int ExtensionsPortable = 0;
+  int ExtensionsInstalled = 0;
+  int ExtensionsUser = 0;
+  for (int Index = 0; Index < FExtensionList->Count; Index++)
+  {
+    const TCustomCommandType * CustomCommand = FExtensionList->Commands[Index];
+    UnicodeString PathId = ExcludeTrailingBackslash(ExtractFilePath(CustomCommand->Id));
+    if (SameText(PathId, ExtensionsCommonPathId))
+    {
+      ExtensionsPortable++;
+    }
+    else if (SameText(PathId, ExtensionsCommonExtPathId))
+    {
+      ExtensionsInstalled++;
+    }
+    else if (SameText(PathId, ExtensionsUserExtPathId))
+    {
+      ExtensionsUser++;
+    }
+  }
+  Usage->Set(L"ExtensionsPortableCount", (ExtensionsPortable));
+  Usage->Set(L"ExtensionsInstalledCount", (ExtensionsInstalled));
+  Usage->Set(L"ExtensionsUserCount", (ExtensionsUser));
+
+  std::unique_ptr<TStringList> DeletedExtensions(CreateSortedStringList());
+  ParseExtensionList(DeletedExtensions.get(), FExtensionsDeleted);
+  Usage->Set(L"ExtensionsDeleted", (DeletedExtensions->Count));
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::RestoreFont(
