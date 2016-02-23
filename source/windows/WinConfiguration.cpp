@@ -2134,7 +2134,8 @@ void __fastcall TWinConfiguration::SetExtensionList(TCustomCommandList * value)
     for (int Index = 0; Index < ExtensionList->Count; Index++)
     {
       const TCustomCommandType * CustomCommand = ExtensionList->Commands[Index];
-      if (!value->Find(CustomCommand->Name))
+      int Index = value->FindIndexByFileName(CustomCommand->FileName);
+      if (Index < 0)
       {
         if (FileExists(CustomCommand->FileName) &&
             !DeleteFile(CustomCommand->FileName))
@@ -3150,7 +3151,7 @@ int TCustomCommandList::FindIndexByFileName(const UnicodeString & FileName) cons
       return Index;
     }
   }
-  return NULL;
+  return -1;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandList::ShortCuts(TShortCuts & ShortCuts) const
