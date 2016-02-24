@@ -2689,6 +2689,63 @@ void __fastcall TCustomCommandType::LoadExtension(const UnicodeString & Path)
   Command = ReplaceStr(Command, L"%EXTENSION_PATH%", Path);
 }
 //---------------------------------------------------------------------------
+int NetVersion = -1;
+//---------------------------------------------------------------------------
+static void ReadNetVersion(TRegistryStorage * Registry)
+{
+  try
+  {
+    UnicodeString VersionStr = Registry->ReadString(L"Version", L"");
+    if (!VersionStr.IsEmpty())
+    {
+      int Version = StrToCompoundVersion(VersionStr);
+      NetVersion = Max(NetVersion, Version);
+    }
+  }
+  catch (...)
+  {
+    // StrToCompoundVersion throws if there's no dot or the components are not numbers
+  }
+}
+//---------------------------------------------------------------------------
+static int GetNetVersion()
+{
+  if (NetVersion < 0)
+  {
+    NetVersion = 0; // not to retry on failure
+
+    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP", HKEY_LOCAL_MACHINE));
+    if (Registry->OpenRootKey(false))
+    {
+      std::unique_ptr<TStringList> Keys(new TStringList());
+      Registry->GetSubKeyNames(Keys.get());
+      for (int Index = 0; Index < Keys->Count; Index++)
+      {
+        UnicodeString Key = Keys->Strings[Index];
+        if (Registry->OpenSubKey(Key, false))
+        {
+          ReadNetVersion(Registry.get());
+
+          if (Registry->OpenSubKey(L"Full", false))
+          {
+            ReadNetVersion(Registry.get());
+            Registry->CloseSubKey();
+          }
+          if (Registry->OpenSubKey(L"Client", false))
+          {
+            ReadNetVersion(Registry.get());
+            Registry->CloseSubKey();
+          }
+
+          Registry->CloseSubKey();
+        }
+      }
+    }
+  }
+
+  return NetVersion;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
 {
   Params = ccLocal;
@@ -2746,11 +2803,17 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
           {
             UnicodeString DependencyVersion = Value;
             UnicodeString Dependency = CutToChar(Value, L' ', true).LowerCase();
+            Value = Value.Trim();
             bool Failed = false;
             if (Dependency == L"winscp")
             {
               int Version = StrToCompoundVersion(Value);
               Failed = (Version > WinConfiguration->CompoundVersion);
+            }
+            else if (Dependency == L".net")
+            {
+              int Version = StrToCompoundVersion(Value);
+              Failed = (Version > GetNetVersion());
             }
             else
             {

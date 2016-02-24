@@ -5,6 +5,7 @@
 #include <Common.h>
 #include <Exceptions.h>
 #include <Windows.hpp>
+#include <Math.hpp>
 #include "FileInfo.h"
 #include "FileBuffer.h"
 //---------------------------------------------------------------------------
@@ -270,9 +271,9 @@ int __fastcall CalculateCompoundVersion(int MajorVer,
 //---------------------------------------------------------------------------
 int __fastcall StrToCompoundVersion(UnicodeString S)
 {
-  int MajorVer = StrToInt(CutToChar(S, L'.', false));
-  int MinorVer = StrToInt(CutToChar(S, L'.', false));
-  int Release = S.IsEmpty() ? 0 : StrToInt(CutToChar(S, L'.', false));
-  int Build = S.IsEmpty() ? 0 : StrToInt(CutToChar(S, L'.', false));
+  int MajorVer = Min(StrToInt(CutToChar(S, L'.', false)), 99);
+  int MinorVer = Min(StrToInt(CutToChar(S, L'.', false)), 99);
+  int Release = S.IsEmpty() ? 0 : Min(StrToInt(CutToChar(S, L'.', false)), 99);
+  int Build = S.IsEmpty() ? 0 : Min(StrToInt(CutToChar(S, L'.', false)), 9999);
   return CalculateCompoundVersion(MajorVer, MinorVer, Release, Build);
 }
