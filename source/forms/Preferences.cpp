@@ -75,7 +75,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   FEditorList = new TEditorList();
   FAutomaticUpdatesPossible = IsInstalled();
   FCustomCommandsHintItem = NULL;
-  FAddedExtensions.reset(new TStringList());
+  FAddedExtensions.reset(CreateSortedStringList());
   UseSystemSettings(this);
 
   FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
@@ -1503,6 +1503,18 @@ void __fastcall TPreferencesDialog::RemoveCommandButtonClick(
 {
   TCustomCommandList * List = GetCommandList(CustomCommandsView->ItemIndex);
   int Index = GetCommandIndex(CustomCommandsView->ItemIndex);
+  if (List == FExtensionList)
+  {
+    const TCustomCommandType * CustomComand = List->Commands[Index];
+
+    // If the extension was added in this "preferences session", remove the file
+    int PathIndex = FAddedExtensions->IndexOf(CustomComand->FileName);
+    if (PathIndex >= 0)
+    {
+      FAddedExtensions->Delete(PathIndex);
+      DeleteFile(ApiPath(CustomComand->FileName));
+    }
+  }
   List->Delete(Index);
   UpdateCustomCommandsView();
   UpdateControls();
