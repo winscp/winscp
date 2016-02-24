@@ -2468,7 +2468,7 @@ void __fastcall TPreferencesDialog::AddExtension()
       }
       else
       {
-        if (!FileExists(Path))
+        if (!FileExists(ApiPath(Path)))
         {
           throw Exception(MainInstructions(FMTLOAD(FILE_NOT_EXISTS, (Path))));
         }
