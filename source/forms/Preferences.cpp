@@ -2541,12 +2541,18 @@ void __fastcall TPreferencesDialog::AddExtension()
 
         ExtensionPath = IncludeTrailingBackslash(UserExtensionsPath) + FileName;
 
-        if (FileExists(ExtensionPath) &&
-            (MessageDialog(MainInstructions(FMTLOAD(FILE_OVERWRITE, (ExtensionPath))), qtConfirmation, qaOK | qaCancel) == qaCancel))
+        int Counter = 1;
+        UnicodeString OriginalExtensionPath = ExtensionPath;
+        int P = Pos(UpperCase(WinSCPExtensionExt), UpperCase(OriginalExtensionPath));
+
+        while (FileExists(ApiPath(ExtensionPath)))
         {
-          Abort();
+          Counter++;
+          ExtensionPath = LeftStr(OriginalExtensionPath, P - 1) + IntToStr(Counter) + RightStr(OriginalExtensionPath, OriginalExtensionPath.Length() - P + 1);
         }
+
         Lines->SaveToFile(ApiPath(ExtensionPath));
+
         FAddedExtensions->Add(ExtensionPath);
       }
 
