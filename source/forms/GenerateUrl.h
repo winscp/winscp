@@ -66,6 +66,9 @@ private:
   TFilesSelected FFilesSelected;
   UnicodeString FSourcePath;
   TCopyParamType FCopyParam;
+  bool FUrlCounted;
+  bool FScriptCounted;
+  bool FAssemblyCounted;
 
 protected:
   void __fastcall UpdateControls();

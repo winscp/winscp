@@ -150,6 +150,9 @@ __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
   FCopyParam = CopyParam;
   FFilesSelected = FilesSelected;
   FPathsSample = false;
+  FUrlCounted = false;
+  FScriptCounted = false;
+  FAssemblyCounted = false;
 
   if (FTransfer)
   {
@@ -701,16 +704,24 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
 
     UnicodeString Result;
 
+    bool * Counted = NULL;
+    UnicodeString CounterName;
     bool WordWrap = false; // shut up
     bool FixedWidth = false; // shut up
     if (OptionsPageControl->ActivePage == UrlSheet)
     {
+      Counted = &FUrlCounted;
+      CounterName = L"GeneratedUrls";
+
       Result = GenerateUrl();
       WordWrap = true;
       FixedWidth = false;
     }
     else if (OptionsPageControl->ActivePage == ScriptSheet)
     {
+      Counted = &FScriptCounted;
+      CounterName = FTransfer ? L"GeneratedScriptsTransfer" : L"GeneratedScripts";
+
       UnicodeString ScriptDescription;
       if (ScriptFormatCombo->ItemIndex == sfScriptFile)
       {
@@ -741,6 +752,9 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     }
     else if (DebugAlwaysTrue(OptionsPageControl->ActivePage == AssemblySheet))
     {
+      Counted = &FAssemblyCounted;
+      CounterName = FTransfer ? L"GeneratedCodesTransfer" : L"GeneratedCodes";
+
       UnicodeString AssemblyDescription;
       if (HostKeyUnknown)
       {
@@ -762,6 +776,12 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     else
     {
       FResultMemo41->ParentFont = true;
+    }
+
+    if (!CounterName.IsEmpty() && !(*Counted))
+    {
+      (*Counted) = true;
+      Configuration->Usage->Inc(CounterName);
     }
 
     Result =
