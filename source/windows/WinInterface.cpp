@@ -23,6 +23,7 @@
 #include "JclHookExcept.hpp"
 #include <StrUtils.hpp>
 #include <WinApi.h>
+#include "Tools.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

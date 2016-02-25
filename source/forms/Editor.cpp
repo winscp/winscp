@@ -726,7 +726,7 @@ __fastcall TEditorForm::~TEditorForm()
 
   if (FStandaloneEditor)
   {
-    Application->Terminate();
+    TerminateApplication();
   }
 }
 //---------------------------------------------------------------------------

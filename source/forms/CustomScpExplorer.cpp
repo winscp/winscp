@@ -5740,7 +5740,7 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool ReloadSessions)
     if (!WinConfiguration->KeepOpenWhenNoSession &&
         (!Terminal || !Terminal->Active))
     {
-      Application->Terminate();
+      TerminateApplication();
     }
   }
 }

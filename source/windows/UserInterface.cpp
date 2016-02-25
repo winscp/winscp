@@ -125,6 +125,11 @@ void __fastcall ShowExtendedException(Exception * E)
   ShowExtendedExceptionEx(NULL, E);
 }
 //---------------------------------------------------------------------------
+void __fastcall TerminateApplication()
+{
+  Application->Terminate();
+}
+//---------------------------------------------------------------------------
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   Exception * E)
 {
@@ -231,7 +236,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
         DebugAssert(CloseOnCompletion);
         DebugAssert(Terminate != NULL);
         DebugAssert(Terminate->Operation != odoIdle);
-        Application->Terminate();
+        TerminateApplication();
 
         switch (Terminate->Operation)
         {

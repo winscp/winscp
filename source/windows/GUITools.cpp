@@ -684,9 +684,14 @@ void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
   }
   // When showing an exception from wWinMain, the glyphs module does not exist anymore.
   // We expect errors only.
-  else if (DebugAlwaysTrue(ImageName == L"Error"))
+  else if (ImageName == L"Error")
   {
     Image->Picture->Icon->Handle = LoadIcon(0, IDI_HAND);
+  }
+  // For showing an information about trace files
+  else if (DebugAlwaysTrue(ImageName == L"Information"))
+  {
+    Image->Picture->Icon->Handle = LoadIcon(0, IDI_APPLICATION);
   }
 }
 //---------------------------------------------------------------------------
@@ -867,6 +872,25 @@ void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeSt
   {
     BrowserViewer->NavigateToUrl(Url);
   }
+}
+//---------------------------------------------------------------------------
+TComponent * __fastcall FindComponentRecursively(TComponent * Root, const UnicodeString & Name)
+{
+  for (int Index = 0; Index < Root->ComponentCount; Index++)
+  {
+    TComponent * Component = Root->Components[Index];
+    if (CompareText(Component->Name, Name) == 0)
+    {
+      return Component;
+    }
+
+    Component = FindComponentRecursively(Component, Name);
+    if (Component != NULL)
+    {
+      return Component;
+    }
+  }
+  return NULL;
 }
 //---------------------------------------------------------------------------
 TLocalCustomCommand::TLocalCustomCommand()

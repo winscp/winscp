@@ -22,6 +22,11 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+const UnicodeString MessagePanelName(L"Panel");
+const UnicodeString MainMessageLabelName(L"MainMessage");
+const UnicodeString MessageLabelName(L"Message");
+const UnicodeString YesButtonName(L"Yes");
+//---------------------------------------------------------------------------
 class TMessageButton : public TButton
 {
 public:
@@ -736,7 +741,7 @@ void __fastcall AnswerNameAndCaption(
   {
     case qaYes:
       Caption = LoadStr(_SMsgDlgYes.Identifier);
-      Name = L"Yes";
+      Name = YesButtonName;
       break;
 
     case qaNo:
@@ -1014,7 +1019,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
   TPanel * Panel = CreateBlankPanel(Result);
   Result->ContentsPanel = Panel;
-  Panel->Name = L"Panel";
+  Panel->Name = MessagePanelName;
   Panel->Parent = Result;
   Panel->Color = clWindow;
   Panel->ParentBackground = false;
@@ -1094,14 +1099,14 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     {
       case 0:
         LabelMsg = MainMsg;
-        LabelName = L"MainMessage";
+        LabelName = MainMessageLabelName;
         LabelColor = MainInstructionColor;
         LabelFont = MainInstructionFont;
         break;
 
       case 1:
         LabelMsg = BodyMsg;
-        LabelName = L"Message";
+        LabelName = MessageLabelName;
         break;
 
       default:

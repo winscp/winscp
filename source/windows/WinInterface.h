@@ -78,6 +78,7 @@ extern const UnicodeString AppName;
 void __fastcall SetOnForeground(bool OnForeground);
 void __fastcall FlashOnBackground();
 
+void __fastcall TerminateApplication();
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal, Exception * E);
 void __fastcall FormHelp(TCustomForm * Form);
 void __fastcall SearchHelp(const UnicodeString & Message);
@@ -387,6 +388,10 @@ TForm * __fastcall CreateMoreMessageDialogEx(const UnicodeString Message, TStrin
 unsigned int __fastcall ExecuteMessageDialog(TForm * Dialog, unsigned int Answers, const TMessageParams * Params);
 void __fastcall InsertPanelToMessageDialog(TCustomForm * Form, TPanel * Panel);
 void __fastcall NavigateMessageDialogToUrl(TCustomForm * Form, const UnicodeString & Url);
+extern const UnicodeString MessagePanelName;
+extern const UnicodeString MainMessageLabelName;
+extern const UnicodeString MessageLabelName;
+extern const UnicodeString YesButtonName;
 
 // windows\Console.cpp
 enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan };

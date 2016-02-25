@@ -1331,7 +1331,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   }
 
   Configuration->Usage->Inc(L"UpdateRuns");
-  Application->Terminate();
+  TerminateApplication();
 }
 //---------------------------------------------------------------------------
 void __fastcall TUpdateDownloadThread::DownloadNotVerified()
@@ -1954,13 +1954,12 @@ static void __fastcall UpdateTipsForm(TCustomForm * Form)
 {
   TTipsData * TipsData = TTipsData::Retrieve(Form);
 
-  TButton * PrevButton = DebugNotNull(dynamic_cast<TButton *>(Form->FindComponent(L"Yes")));
+  TButton * PrevButton = DebugNotNull(dynamic_cast<TButton *>(Form->FindComponent(YesButtonName)));
   PrevButton->Enabled = (TipsData->Index > 0);
   TButton * NextButton = DebugNotNull(dynamic_cast<TButton *>(Form->FindComponent(L"No")));
   NextButton->Enabled = (TipsData->Index < TipsData->Tips->Count - 1);
 
-  TPanel * Panel = DebugNotNull(dynamic_cast<TPanel *>(Form->FindComponent(L"Panel")));
-  TLabel * MessageLabel = DebugNotNull(dynamic_cast<TLabel *>(Panel->FindComponent(L"MainMessage")));
+  TLabel * MessageLabel = DebugNotNull(dynamic_cast<TLabel *>(FindComponentRecursively(Form, MainMessageLabelName)));
   MessageLabel->Caption = TipsMessage(TipsData);
 }
 //---------------------------------------------------------------------------
