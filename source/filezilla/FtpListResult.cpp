@@ -524,6 +524,13 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
   if (parseAsIBMMVSPDS2(lineToParse, linelen, direntry))
     return TRUE;
 
+  // name-only entries
+  if (strchr(lineToParse, ' ') == NULL)
+  {
+    copyStr(direntry.name, 0, lineToParse, strlen(lineToParse));
+    return TRUE;
+  }
+
   return FALSE;
 }
 
