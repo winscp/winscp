@@ -2239,13 +2239,22 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data)
         (Data.Subject, Data.Fingerprint, Data.Failures)));
 
     int Failures = Data.Failures;
-    if (NeonWindowsValidateCertificate(Failures, Data.AsciiCert))
+
+    UnicodeString SiteKey = TSessionData::FormatSiteKey(FHostName, FPortNumber);
+    Result =
+      FTerminal->VerifyCertificate(CertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Failures);
+
+    if (!Result)
     {
-      FTerminal->LogEvent(L"Certificate verified against Windows certificate store");
+      if (NeonWindowsValidateCertificate(Failures, Data.AsciiCert))
+      {
+        FTerminal->LogEvent(L"Certificate verified against Windows certificate store");
+        // There can be also other flags, not just the NE_SSL_UNTRUSTED.
+        Result = (Failures == 0);
+      }
     }
 
     UnicodeString Summary;
-
     if (Failures == 0)
     {
       Summary = LoadStr(CERT_OK);
@@ -2265,53 +2274,41 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data)
         Data.Fingerprint,
         Summary));
 
-    Result = (Failures == 0);
-
     if (!Result)
     {
-      UnicodeString SiteKey = TSessionData::FormatSiteKey(FHostName, FPortNumber);
-      if (!Result)
+      TClipboardHandler ClipboardHandler;
+      ClipboardHandler.Text = Data.Fingerprint;
+
+      TQueryButtonAlias Aliases[1];
+      Aliases[0].Button = qaRetry;
+      Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
+      Aliases[0].OnClick = &ClipboardHandler.Copy;
+
+      TQueryParams Params;
+      Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;
+      Params.NoBatchAnswers = qaYes | qaRetry;
+      Params.Aliases = Aliases;
+      Params.AliasesCount = LENOF(Aliases);
+      unsigned int Answer = FTerminal->QueryUser(
+        FMTLOAD(VERIFY_CERT_PROMPT3, (FSessionInfo.Certificate)),
+        NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
+      switch (Answer)
       {
-        Result = FTerminal->VerifyCertificate(
-          CertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Failures);
-      }
+        case qaYes:
+          FTerminal->CacheCertificate(CertificateStorageKey, SiteKey, Data.Fingerprint, Failures);
+          Result = true;
+          break;
 
-      if (!Result)
-      {
-        TClipboardHandler ClipboardHandler;
-        ClipboardHandler.Text = Data.Fingerprint;
+        case qaNo:
+          Result = true;
+          break;
 
-        TQueryButtonAlias Aliases[1];
-        Aliases[0].Button = qaRetry;
-        Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
-        Aliases[0].OnClick = &ClipboardHandler.Copy;
-
-        TQueryParams Params;
-        Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;
-        Params.NoBatchAnswers = qaYes | qaRetry;
-        Params.Aliases = Aliases;
-        Params.AliasesCount = LENOF(Aliases);
-        unsigned int Answer = FTerminal->QueryUser(
-          FMTLOAD(VERIFY_CERT_PROMPT3, (FSessionInfo.Certificate)),
-          NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
-        switch (Answer)
-        {
-          case qaYes:
-            FTerminal->CacheCertificate(CertificateStorageKey, SiteKey, Data.Fingerprint, Failures);
-            Result = true;
-            break;
-
-          case qaNo:
-            Result = true;
-            break;
-
-          default:
-            DebugFail();
-          case qaCancel:
-            FTerminal->Configuration->Usage->Inc(L"HostNotVerified");
-            Result = false;
-            break;
-        }
+        default:
+          DebugFail();
+        case qaCancel:
+          FTerminal->Configuration->Usage->Inc(L"HostNotVerified");
+          Result = false;
+          break;
       }
 
       if (Result)

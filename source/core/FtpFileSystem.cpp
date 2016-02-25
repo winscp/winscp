@@ -4199,13 +4199,13 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
       UnicodeString CertificateSubject = Data.Subject.Organization;
       FTerminal->LogEvent(FORMAT(L"Verifying certificate for \"%s\" with fingerprint %s and %d failures", (CertificateSubject, FSessionInfo.CertificateFingerprint, Data.VerificationResult)));
 
-      bool VerificationResult = false;
+      bool Trusted = false;
       bool TryWindowsSystemCertificateStore = false;
       UnicodeString VerificationResultStr;
       switch (Data.VerificationResult)
       {
         case X509_V_OK:
-          VerificationResult = true;
+          Trusted = true;
           break;
         case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
           VerificationResultStr = LoadStr(CERT_ERR_UNABLE_TO_GET_ISSUER_CERT);
@@ -4277,35 +4277,62 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
           break;
       }
 
+      bool IsHostNameIPAddress = IsIPAddress(FTerminal->SessionData->HostNameExpanded);
+      bool CertificateHostNameVerified = !IsHostNameIPAddress && VerifyCertificateHostName(Data);
+
+      bool VerificationResult = Trusted;
+
+      if (IsHostNameIPAddress || !CertificateHostNameVerified)
+      {
+        VerificationResult = false;
+        TryWindowsSystemCertificateStore = false;
+      }
+
+      UnicodeString SiteKey = FTerminal->SessionData->SiteKey;
+
+      if (!VerificationResult)
+      {
+        if (FTerminal->VerifyCertificate(CertificateStorageKey, SiteKey,
+              FSessionInfo.CertificateFingerprint, CertificateSubject, Data.VerificationResult))
+        {
+          // certificate is trusted, but for not purposes of info dialog
+          VerificationResult = true;
+        }
+      }
+
       // TryWindowsSystemCertificateStore is set for the same set of failures
-      // as trigger NE_SSL_UNTRUSTED flag in ne_openssl.c's verify_callback()
+      // as trigger NE_SSL_UNTRUSTED flag in ne_openssl.c's verify_callback().
+      // Use WindowsValidateCertificate only as a last resort (after checking the cached fiungerprint)
+      // as it can take a very long time (up to 1 minute).
       if (!VerificationResult && TryWindowsSystemCertificateStore)
       {
         if (WindowsValidateCertificate(Data.Certificate, Data.CertificateLen))
         {
           FTerminal->LogEvent(L"Certificate verified against Windows certificate store");
           VerificationResult = true;
+          // certificate is trusted for all purposes
+          Trusted = true;
         }
       }
 
+      const UnicodeString SummarySeparator = L"\n\n";
       UnicodeString Summary;
-      if (!VerificationResult)
+      // even if the fingerprint is cached, the certificate is still not trusted for a purposes of the info dialog.
+      if (!Trusted)
       {
-        Summary = VerificationResultStr + L" " + FMTLOAD(CERT_ERRDEPTH, (Data.VerificationDepth + 1));
+        AddToList(Summary, VerificationResultStr + L" " + FMTLOAD(CERT_ERRDEPTH, (Data.VerificationDepth + 1)), SummarySeparator);
       }
 
-      if (IsIPAddress(FTerminal->SessionData->HostNameExpanded))
+      if (IsHostNameIPAddress)
       {
-        VerificationResult = false;
-        AddToList(Summary, FMTLOAD(CERT_IP_CANNOT_VERIFY, (FTerminal->SessionData->HostNameExpanded)), L"\n\n");
+        AddToList(Summary, FMTLOAD(CERT_IP_CANNOT_VERIFY, (FTerminal->SessionData->HostNameExpanded)), SummarySeparator);
       }
-      else if (!VerifyCertificateHostName(Data))
+      else if (!CertificateHostNameVerified)
       {
-        VerificationResult = false;
-        AddToList(Summary, FMTLOAD(CERT_NAME_MISMATCH, (FTerminal->SessionData->HostNameExpanded)), L"\n\n");
+        AddToList(Summary, FMTLOAD(CERT_NAME_MISMATCH, (FTerminal->SessionData->HostNameExpanded)), SummarySeparator);
       }
 
-      if (VerificationResult)
+      if (Summary.IsEmpty())
       {
         Summary = LoadStr(CERT_OK);
       }
@@ -4319,22 +4346,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
           FSessionInfo.CertificateFingerprint,
           Summary));
 
-      RequestResult = 0;
-
-      if (VerificationResult)
-      {
-        RequestResult = 1;
-      }
-
-      UnicodeString SiteKey = FTerminal->SessionData->SiteKey;
-      if (RequestResult == 0)
-      {
-        if (FTerminal->VerifyCertificate(CertificateStorageKey, SiteKey,
-              FSessionInfo.CertificateFingerprint, CertificateSubject, Data.VerificationResult))
-        {
-          RequestResult = 1;
-        }
-      }
+      RequestResult = VerificationResult ? 1 : 0;
 
       if (RequestResult == 0)
       {
@@ -4386,7 +4398,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
         }
       }
 
-      // Cache only if the certificate was not automatically accepted
+      // Cache only if the certificate was accepted manually
       if (!VerificationResult && (RequestResult != 0))
       {
         FTerminal->Configuration->RememberLastFingerprint(
