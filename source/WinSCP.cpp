@@ -43,6 +43,8 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
         // Capture most errors before Usage class is released,
         // so that we can count them
         Configuration->Usage->Inc(L"GlobalFailures");
+        // After we get WM_QUIT (posted by Application->Terminate()), i.e once Application->Run() exits,
+        // the message just blinks
         ShowExtendedException(&E);
       }
     }
