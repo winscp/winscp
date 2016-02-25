@@ -22,7 +22,7 @@ namespace WinSCP
         public TransferResumeSupportState State { get; set; }
         public int Threshold { get { return GetThreshold(); } set { SetThreshold(value); } }
 
-        internal TransferResumeSupport()
+        public TransferResumeSupport()
         {
             State = TransferResumeSupportState.Default;
             _threshold = 100; // (100 KB)
