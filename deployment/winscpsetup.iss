@@ -3,11 +3,10 @@
 #define ParentRegistryKey "Software\Martin Prikryl"
 #define RegistryKey ParentRegistryKey+"\WinSCP 2"
 #define DefaultLang "en"
-#define WebRoot "http://winscp.net/"
+#define WebRoot "https://winscp.net/"
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
-#define WebReport WebRoot+"install.php"
-#define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
+#define WebReport "http://winscp.net/install.php"
 #define Year 2016
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
@@ -113,7 +112,7 @@ MinVersion=0,5.1
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
 #ifdef Sign
-SignTool=sign $f "WinSCP Installer" http://winscp.net/eng/docs/installation
+SignTool=sign $f "WinSCP Installer" https://winscp.net/eng/docs/installation
 #endif
 
 [Languages]

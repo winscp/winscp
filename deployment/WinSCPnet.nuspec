@@ -7,8 +7,8 @@
     <authors>Martin Prikryl</authors>
     <owners>Martin Prikryl</owners>
     <licenseUrl>http://www.mozilla.org/MPL/2.0/</licenseUrl>
-    <projectUrl>http://winscp.net/eng/docs/library</projectUrl>
-    <iconUrl>http://winscp.net/pad/winscp.png</iconUrl>
+    <projectUrl>https://winscp.net/eng/docs/library</projectUrl>
+    <iconUrl>https://winscp.net/pad/winscp.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>The WinSCP .NET assembly is a .NET wrapper around WinSCP’s scripting interface.</summary>
     <description>The WinSCP .NET assembly is a .NET wrapper around WinSCP’s scripting interface that allows your code to connect to a remote machine and manipulate remote files over SFTP, SCP, WebDAV and FTP sessions.

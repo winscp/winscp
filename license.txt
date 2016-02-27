@@ -696,7 +696,7 @@ distributes.
   C. WinSCP Privacy Policy
 
 Please take time to read WinSCP Privacy policy at
-http://winscp.net/eng/docs/privacy
+https://winscp.net/eng/docs/privacy
 
 WinSCP includes functionality to collect and send non-personal WinSCP
 Usage statistics and to automatically check for application updates. The only

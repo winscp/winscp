@@ -1,5 +1,5 @@
 You can also review this license and further details online at:
-http://winscp.net/eng/docs/license
+https://winscp.net/eng/docs/license
 
 
   A. GNU General Public License
@@ -274,7 +274,7 @@ You agree that all ownership and copyright of the licensed stock icons remain th
 
   C. WinSCP Privacy Policy
 
-Please take time to read WinSCP Privacy policy at http://winscp.net/eng/docs/privacy
+Please take time to read WinSCP Privacy policy at https://winscp.net/eng/docs/privacy
 
 WinSCP includes functionality to collect and send non-personal WinSCP Usage statistics and to automatically check for application updates. The only potentially personal information sent to WinSCP is IP addresses. Users can opt-out from using this functionality in the installer or anytime later in WinSCP Preferences. WinSCP Usage statistics help improve future versions of WinSCP. Once sent, usage statistics are stored for analysis (except IP addresses) and made available to the core WinSCP team only.
 
