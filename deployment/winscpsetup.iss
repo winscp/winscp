@@ -1409,7 +1409,7 @@ begin
   // (with privacy policy)
   if LicenseAccepted then
   begin
-    Log('Preparing intallation report');
+    Log('Preparing installation report');
 
     ReportData := Format(
       'installed=%d&silent=%d&ver=%s&lang=%s&prevver=%s&', [
