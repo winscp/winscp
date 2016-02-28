@@ -666,7 +666,7 @@ void __fastcall LaunchAdvancedAssociationUI()
 
   if (IsWin10())
   {
-    ExecuteShell(L"control.exe", L"/name Microsoft.DefaultPrograms");
+    ExecuteShell(L"control.exe", L"/name Microsoft.DefaultPrograms /page pageDefaultProgram");
   }
   else
   {
