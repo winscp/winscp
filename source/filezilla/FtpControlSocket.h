@@ -128,6 +128,7 @@ protected:
   BOOL SendAuthSsl();
 
   void DiscardLine(CStringA line);
+  int FileTransferListState(bool get);
   bool NeedModeCommand();
   bool NeedOptsCommand();
   CString GetListingCmd();

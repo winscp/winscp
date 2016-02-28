@@ -1715,6 +1715,7 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
       FFileTransferPreserveTime = CopyParam->PreserveTime;
       // not used for downloads anyway
       FFileTransferRemoveBOM = CopyParam->RemoveBOM;
+      FFileTransferNoList = CanTransferSkipList(Params, Flags);
       UserData.FileName = DestFileName;
       UserData.Params = Params;
       UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
@@ -1882,6 +1883,16 @@ void __fastcall TFTPFileSystem::SourceRobust(const UnicodeString FileName,
   while (RobustLoop.Retry());
 }
 //---------------------------------------------------------------------------
+bool __fastcall TFTPFileSystem::CanTransferSkipList(int Params, unsigned int Flags)
+{
+  return
+    FLAGSET(Params, cpNoConfirmation) &&
+    // cpAppend is not supported with FTP
+    DebugAlwaysTrue(FLAGCLEAR(Params, cpAppend)) &&
+    FLAGCLEAR(Params, cpResume) &&
+    FLAGCLEAR(Flags, tfAutoResume);
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
   const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, unsigned int Flags,
@@ -1965,6 +1976,7 @@ void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
       // not used for uploads anyway
       FFileTransferPreserveTime = CopyParam->PreserveTime;
       FFileTransferRemoveBOM = CopyParam->RemoveBOM;
+      FFileTransferNoList = CanTransferSkipList(Params, Flags);
       // not used for uploads, but we get new name (if any) back in this field
       UserData.FileName = DestFileName;
       UserData.Params = Params;
@@ -3108,6 +3120,10 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
 
     case OPTION_MPEXT_NODELAY:
       Result = Data->TcpNoDelay;
+      break;
+
+    case OPTION_MPEXT_NOLIST:
+      Result = FFileTransferNoList ? TRUE : FALSE;
       break;
 
     default:

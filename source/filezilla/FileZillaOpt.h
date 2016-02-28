@@ -51,5 +51,6 @@
 #define OPTION_MPEXT_LOG_SENSITIVE 1008
 #define OPTION_MPEXT_HOST 1009
 #define OPTION_MPEXT_NODELAY 1010
+#define OPTION_MPEXT_NOLIST 1011
 //---------------------------------------------------------------------------
 #endif // FileZillaOptH

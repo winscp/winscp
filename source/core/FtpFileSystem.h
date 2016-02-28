@@ -201,6 +201,7 @@ protected:
   bool __fastcall SupportsCommand(const UnicodeString & Command) const;
   void __fastcall RegisterChecksumAlgCommand(const UnicodeString & Alg, const UnicodeString & Command);
   void __fastcall SendCommand(const UnicodeString & Command);
+  bool __fastcall CanTransferSkipList(int Params, unsigned int Flags);
 
   static bool __fastcall Unquote(UnicodeString & Str);
 
@@ -253,6 +254,7 @@ private:
   __int64 FFileTransferResumed;
   bool FFileTransferPreserveTime;
   bool FFileTransferRemoveBOM;
+  bool FFileTransferNoList;
   unsigned long FFileTransferCPSLimit;
   bool FAwaitingProgress;
   TCaptureOutputEvent FOnCaptureOutput;

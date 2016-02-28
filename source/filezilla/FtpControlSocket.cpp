@@ -2831,7 +2831,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           {
             delete m_pDirectoryListing;
             m_pDirectoryListing=0;
-            m_Operation.nOpState = NeedModeCommand() ? FILETRANSFER_LIST_MODE : (NeedOptsCommand() ? FILETRANSFER_LIST_OPTS : FILETRANSFER_LIST_TYPE);
+            m_Operation.nOpState = FileTransferListState(transferfile->get);
             break;
           }
         }
@@ -2860,7 +2860,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       }
       else
       {
-        m_Operation.nOpState = NeedModeCommand() ? FILETRANSFER_LIST_MODE : (NeedOptsCommand() ? FILETRANSFER_LIST_OPTS : FILETRANSFER_LIST_TYPE);
+        m_Operation.nOpState = FileTransferListState(transferfile->get);
       }
     }
     else
@@ -2905,7 +2905,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 
       if (m_pOwner->GetCurrentPath() == pData->transferfile.remotepath)
       {
-        m_Operation.nOpState = NeedModeCommand() ? FILETRANSFER_LIST_MODE : (NeedOptsCommand() ? FILETRANSFER_LIST_OPTS : FILETRANSFER_LIST_TYPE);
+        m_Operation.nOpState = FileTransferListState(pData->transferfile.get);
       }
       else
         m_Operation.nOpState = LIST_CWD;
@@ -3089,7 +3089,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
         else
         {
-          m_Operation.nOpState = NeedModeCommand() ? FILETRANSFER_LIST_MODE : (NeedOptsCommand() ? FILETRANSFER_LIST_OPTS : FILETRANSFER_LIST_TYPE);
+          m_Operation.nOpState = FileTransferListState(pData->transferfile.get);
         }
       }
       break;
@@ -6097,6 +6097,20 @@ void CFtpControlSocket::DiscardLine(CStringA line)
   {
     m_ListFile = line;
   }
+}
+
+int CFtpControlSocket::FileTransferListState(bool get)
+{
+  int Result;
+  if (GetOptionVal(OPTION_MPEXT_NOLIST) && !get)
+  {
+    Result = FILETRANSFER_TYPE;
+  }
+  else
+  {
+    Result = NeedModeCommand() ? FILETRANSFER_LIST_MODE : (NeedOptsCommand() ? FILETRANSFER_LIST_OPTS : FILETRANSFER_LIST_TYPE);
+  }
+  return Result;
 }
 
 bool CFtpControlSocket::NeedModeCommand()
