@@ -1692,6 +1692,7 @@ void __fastcall TConsoleRunner::SynchronizeControllerAbort(TObject * /*Sender*/,
   bool /*Close*/)
 {
   FSynchronizeAborted = true;
+  NotifyAbort();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::SynchronizeControllerSynchronize(
@@ -1975,7 +1976,7 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
       FLastProgressLen = 0;
     }
 
-    ExitCode = AnyError ? RESULT_ANY_ERROR : RESULT_SUCCESS;
+    ExitCode = (AnyError || FAborted) ? RESULT_ANY_ERROR : RESULT_SUCCESS;
 
     if (FScript != NULL)
     {
