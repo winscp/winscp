@@ -343,6 +343,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   {
     conf_set_int_int(conf, CONF_ssh_gsslist, Index, gsslibkeywords[Index].v);
   }
+  conf_set_int(conf, CONF_proxy_log_to_term, FORCE_OFF);
   return conf;
 }
 //---------------------------------------------------------------------------
