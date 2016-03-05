@@ -1885,12 +1885,13 @@ void __fastcall TFTPFileSystem::SourceRobust(const UnicodeString FileName,
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::CanTransferSkipList(int Params, unsigned int Flags)
 {
-  return
+  bool Result =
     FLAGSET(Params, cpNoConfirmation) &&
     // cpAppend is not supported with FTP
     DebugAlwaysTrue(FLAGCLEAR(Params, cpAppend)) &&
     FLAGCLEAR(Params, cpResume) &&
     FLAGCLEAR(Flags, tfAutoResume);
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
