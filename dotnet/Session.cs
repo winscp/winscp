@@ -818,7 +818,7 @@ namespace WinSCP
                 CommandExecutionResult result = new CommandExecutionResult();
 
                 // registering before creating group reader, so that
-                // it is still registered, when group reader is read to the end in it's .Dispose();
+                // it is still registered, when group reader is read to the end in its .Dispose();
                 using (RegisterOperationResult(result))
                 using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
                 using (ElementLogReader callReader = groupReader.WaitForNonEmptyElementAndCreateLogReader("call", LogReadFlags.ThrowFailures))
