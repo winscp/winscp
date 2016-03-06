@@ -173,7 +173,8 @@ int proxy_socks5_selectchap(Proxy_Socket p)
 	chapbuf[5] = '\x02'; /* Second attribute - username */
 
 	ulen = strlen(username);
-	if (ulen > 255) ulen = 255; if (ulen < 1) ulen = 1;
+	if (ulen > 255) ulen = 255;
+	if (ulen < 1) ulen = 1;
 
 	chapbuf[6] = ulen;
 	memcpy(chapbuf+7, username, ulen);
