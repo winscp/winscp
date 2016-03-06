@@ -41,7 +41,7 @@ use Plink:
 
 \c Z:\sysosd>plink
 \c Plink: command-line connection utility
-\c Release 0.66
+\c Release 0.67
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
@@ -80,8 +80,9 @@ use Plink:
 \c   -N        don't start a shell/command (SSH-2 only)
 \c   -nc host:port
 \c             open tunnel in place of session (SSH-2 only)
-\c   -shareexists
-\c             test whether a connection-sharing upstream exists
+\c   -sshlog file
+\c   -sshrawlog file
+\c             log protocol details to a file
 
 Once this works, you are ready to use Plink.
 

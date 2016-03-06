@@ -187,4 +187,9 @@ void debug_memdump(const void *buf, int len, int L);
   (cp)[0] = (unsigned char)((value) >> 8), \
   (cp)[1] = (unsigned char)(value) )
 
+/* Replace NULL with the empty string, permitting an idiom in which we
+ * get a string (pointer,length) pair that might be NULL,0 and can
+ * then safely say things like printf("%.*s", length, NULLTOEMPTY(ptr)) */
+#define NULLTOEMPTY(s) ((s)?(s):"")
+
 #endif

@@ -44,6 +44,9 @@ PSID get_user_sid(void)
     DWORD toklen, sidlen;
     PSID sid = NULL, ret = NULL;
 
+    if (usersid)
+        return usersid;
+
     if (!got_advapi())
         goto cleanup;
 
@@ -73,7 +76,7 @@ PSID get_user_sid(void)
 
     /* Success. Move sid into the return value slot, and null it out
      * to stop the cleanup code freeing it. */
-    ret = sid;
+    ret = usersid = sid;
     sid = NULL;
 
   cleanup:
@@ -140,8 +143,6 @@ int make_private_security_descriptor(DWORD permissions,
                                      PACL *acl,
                                      char **error)
 {
-    SID_IDENTIFIER_AUTHORITY world_auth = SECURITY_WORLD_SID_AUTHORITY;
-    SID_IDENTIFIER_AUTHORITY nt_auth = SECURITY_NT_AUTHORITY;
     EXPLICIT_ACCESS ea[3];
     int acl_err;
     int ret = FALSE;
@@ -225,8 +226,6 @@ int make_private_security_descriptor(DWORD permissions,
 
 int setprocessacl(char *error)
 {
-    SID_IDENTIFIER_AUTHORITY world_auth = SECURITY_WORLD_SID_AUTHORITY;
-    SID_IDENTIFIER_AUTHORITY nt_auth = SECURITY_NT_AUTHORITY;
     EXPLICIT_ACCESS ea[2];
     int acl_err;
     int ret=FALSE;

@@ -39,7 +39,7 @@ use PSCP:
 
 \c Z:\owendadmin>pscp
 \c PuTTY Secure Copy client
-\c Release 0.66
+\c Release 0.67
 \c Usage: pscp [options] [user@]host:source target
 \c        pscp [options] source [source...] [user@]host:target
 \c        pscp [options] -ls [user@]host:filespec
@@ -66,6 +66,9 @@ use PSCP:
 \c   -unsafe   allow server-side wildcards (DANGEROUS)
 \c   -sftp     force use of SFTP protocol
 \c   -scp      force use of SCP protocol
+\c   -sshlog file
+\c   -sshrawlog file
+\c             log protocol details to a file
 
 (PSCP's interface is much like the Unix \c{scp} command, if you're
 familiar with that.)

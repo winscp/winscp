@@ -22,11 +22,11 @@ the origin of files distributed by the PuTTY team.)
 
 \H{pgpkeys-pubkey} Public keys
 
-We maintain a set of three keys, stored with different levels of
-security due to being used in different ways. See \k{pgpkeys-security}
-below for details.
+We maintain multiple keys, stored with different levels of security
+due to being used in different ways. See \k{pgpkeys-security} below
+for details.
 
-The three keys we provide are:
+The keys we provide are:
 
 \dt Snapshot Key
 
@@ -38,15 +38,20 @@ we send to particular users.
 
 \dd Used to sign manually released versions of PuTTY.
 
+\dt Secure Contact Key
+
+\dd An encryption-capable key suitable for people to send confidential
+messages to the PuTTY team, e.g. reports of vulnerabilities.
+
 \dt Master Key
 
-\dd Used to tie the other two keys into the GPG web of trust. The
-Master Key signs the other two keys, and other GPG users have signed
+\dd Used to tie all the above keys into the GPG web of trust. The
+Master Key signs all the other keys, and other GPG users have signed
 it in turn.
 
-The current issue of those three keys are available for download from
-the PuTTY website, and are also available on PGP keyservers using the
-key IDs listed below.
+The current issue of those keys are available for download from the
+PuTTY website, and are also available on PGP keyservers using the key
+IDs listed below.
 
 \dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-2015.asc}{\s{Master Key}}
 
@@ -59,6 +64,14 @@ key IDs listed below.
 \dd RSA, 2048-bit. Key ID: \cw{2048R/B43434E4} (long version:
 \cw{2048R/9DFE2648B43434E4}). Fingerprint:
 \cw{0054\_DDAA\_8ADA\_15D2\_768A\_\_6DE7\_9DFE\_2648\_B434\_34E4}
+
+\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/contact-2016.asc}{\s{Secure Contact Key}}
+
+\dd RSA, 2048-bit. Main key ID: \cw{2048R/8A0AF00B} (long version:
+\cw{2048R/C4FCAAD08A0AF00B}). Encryption subkey ID:
+\cw{2048R/50C2CF5C} (long version: \cw{2048R/9EB39CC150C2CF5C}.
+Fingerprint:
+\cw{8A26\_250E\_763F\_E359\_75F3\_\_118F\_C4FC\_AAD0\_8A0A\_F00B}
 
 \dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-2015.asc}{\s{Snapshot Key}}
 
@@ -115,6 +128,12 @@ The Releases private key is kept encrypted on the developers' own
 local machines. So an attacker wanting to steal it would have to also
 steal the passphrase.
 
+\S{pgpkeys-contact} The Secure Contact Key
+
+The Secure Contact Key is stored with a similar level of security to
+the Release Key: it is stored with a passphrase, and no automated
+script has access to it.
+
 \S{pgpkeys-master} The Master Keys
 
 The Master Key signs almost nothing. Its purpose is to bind the other
@@ -137,11 +156,15 @@ once.
 
 \H{pgpkeys-rollover} Key rollover
 
-Our current three keys were generated in September 2015. Prior to
-that, we had a much older set of keys generated in 2000. For each of
-the three key types above, we provided both an RSA key \e{and} a DSA
-key (because at the time we generated them, RSA was not in practice
-available to everyone, due to export restrictions).
+Our current keys were generated in September 2015, except for the
+Secure Contact Key which was generated in February 2016 (we didn't
+think of it until later).
+
+Prior to that, we had a much older set of keys generated in 2000. For
+each of the key types above (other than the Secure Contact Key), we
+provided both an RSA key \e{and} a DSA key (because at the time we
+generated them, RSA was not in practice available to everyone, due to
+export restrictions).
 
 The new Master Key is signed with both of the old ones, to show that
 it really is owned by the same people and not substituted by an
