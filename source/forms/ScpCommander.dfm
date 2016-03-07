@@ -1050,7 +1050,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           TextTruncation = twEndEllipsis
         end
         item
-          Alignment = taCenter
+          Alignment = taRightJustify
           Framed = False
           Hint = 'Click to show hidden files'
           MaxSize = 120
@@ -1060,7 +1060,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           TextTruncation = twEndEllipsis
         end
         item
-          Alignment = taCenter
+          Alignment = taRightJustify
           Framed = False
           Hint = 'Click to modify or clear the filter'
           MaxSize = 120
@@ -1348,7 +1348,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           TextTruncation = twEndEllipsis
         end
         item
-          Alignment = taCenter
+          Alignment = taRightJustify
           Framed = False
           Hint = 'Click to show hidden files'
           MaxSize = 120
@@ -1358,7 +1358,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           TextTruncation = twEndEllipsis
         end
         item
-          Alignment = taCenter
+          Alignment = taRightJustify
           Framed = False
           Hint = 'Click to modify or clear the filter'
           MaxSize = 120
