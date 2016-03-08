@@ -75,7 +75,6 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
   FShowAsModalStorage = NULL;
   FStarted = Now();
   FModalBeginHooked = false;
-  FPrevApplicationModalBegin = NULL;
   FModalLevel = -1;
   UseSystemSettings(this);
 
@@ -114,13 +113,6 @@ __fastcall TProgressForm::~TProgressForm()
     ShowNotification(
       NULL, MainInstructions(LoadStr(BALLOON_OPERATION_COMPLETE)),
       qtInformation);
-  }
-
-  if (FModalBeginHooked)
-  {
-    DebugAssert(Application->OnModalBegin == ApplicationModalBegin);
-    Application->OnModalBegin = FPrevApplicationModalBegin;
-    FModalBeginHooked = false;
   }
 
   ReleaseAsModal(this, FShowAsModalStorage);
@@ -337,8 +329,7 @@ bool __fastcall TProgressForm::ReceiveData(bool Force, int ModalLevelOffset)
       {
         // record state as of time, the window should be shown,
         // had not we implemented delayed show
-        FPrevApplicationModalBegin = Application->OnModalBegin;
-        Application->OnModalBegin = ApplicationModalBegin;
+        ApplicationEvents->OnModalBegin = ApplicationModalBegin;
         FModalBeginHooked = true;
         FModalLevel = Application->ModalLevel;
       }
@@ -355,11 +346,6 @@ void __fastcall TProgressForm::ApplicationModalBegin(TObject * Sender)
   // The Application->ModalLevel is already incremented, but we should treat it as
   // if it were not as the dialog is not created yet (so we can popup if we are not yet).
   ReceiveData(true, -1);
-
-  if (FPrevApplicationModalBegin != NULL)
-  {
-    FPrevApplicationModalBegin(Sender);
-  }
 }
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & AData)

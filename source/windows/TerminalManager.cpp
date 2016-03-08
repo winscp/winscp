@@ -73,16 +73,13 @@ __fastcall TTerminalManager::TTerminalManager() :
   FTaskbarList = NULL;
   FAuthenticating = 0;
 
-  DebugAssert(Application && !Application->OnException);
-  Application->OnException = ApplicationException;
-  DebugAssert(Application->OnShowHint == NULL);
-  Application->OnShowHint = ApplicationShowHint;
-  DebugAssert(Application->OnMessage == NULL);
-  Application->OnMessage = ApplicationMessage;
-  DebugAssert(Application->OnModalBegin == NULL);
-  Application->OnModalBegin = ApplicationModalBegin;
-  DebugAssert(Application->OnModalEnd == NULL);
-  Application->OnModalEnd = ApplicationModalEnd;
+  FApplicationsEvents.reset(new TApplicationEvents(Application));
+  FApplicationsEvents->OnException = ApplicationException;
+  FApplicationsEvents->OnShowHint = ApplicationShowHint;
+  FApplicationsEvents->OnMessage = ApplicationMessage;
+  FApplicationsEvents->OnModalBegin = ApplicationModalBegin;
+  FApplicationsEvents->OnModalEnd = ApplicationModalEnd;
+
   DebugAssert(WinConfiguration->OnMasterPasswordPrompt == NULL);
   WinConfiguration->OnMasterPasswordPrompt = MasterPasswordPrompt;
 
@@ -107,16 +104,8 @@ __fastcall TTerminalManager::~TTerminalManager()
   DebugAssert(Configuration->OnChange == ConfigurationChange);
   Configuration->OnChange = NULL;
 
-  DebugAssert(Application && (Application->OnException == ApplicationException));
-  Application->OnException = NULL;
-  DebugAssert(Application->OnShowHint == ApplicationShowHint);
-  Application->OnShowHint = ApplicationShowHint;
-  DebugAssert(Application->OnMessage == ApplicationMessage);
-  Application->OnMessage = NULL;
-  DebugAssert(Application->OnModalBegin == ApplicationModalBegin);
-  Application->OnModalBegin = NULL;
-  DebugAssert(Application->OnModalEnd == ApplicationModalEnd);
-  Application->OnModalEnd = NULL;
+  FApplicationsEvents.reset(NULL);
+
   DebugAssert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
   WinConfiguration->OnMasterPasswordPrompt = NULL;
 

@@ -4597,4 +4597,8 @@ object ProgressForm: TProgressForm
     Top = 240
     Bitmap = {}
   end
+  object ApplicationEvents: TApplicationEvents
+    Left = 128
+    Top = 192
+  end
 end

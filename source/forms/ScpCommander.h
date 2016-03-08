@@ -36,6 +36,7 @@
 #include "TBXStatusBars.hpp"
 #include "TBXToolPals.hpp"
 #include "ThemePageControl.h"
+#include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TScpCommanderForm : public TCustomScpExplorerForm
 {

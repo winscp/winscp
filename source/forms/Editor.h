@@ -24,6 +24,7 @@
 #include "PngImageList.hpp"
 #include <System.Actions.hpp>
 #include "TBXExtItems.hpp"
+#include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TRichEdit20;
 //---------------------------------------------------------------------------
@@ -79,6 +80,7 @@ __published:
   TPngImageList *EditorImages120;
   TPngImageList *EditorImages144;
   TPngImageList *EditorImages192;
+  TApplicationEvents *ApplicationEvents;
   void __fastcall EditorActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall EditorActionsExecute(TBasicAction *Action,
           bool &Handled);
@@ -93,6 +95,7 @@ __published:
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
   void __fastcall FormActivate(TObject *Sender);
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall ApplicationHint(TObject * Sender);
 private:
   UnicodeString FFileName;
   TNotifyEvent FOnFileChanged;
@@ -122,7 +125,6 @@ private:
   static unsigned int FInstances;
   void __fastcall SetFileName(const UnicodeString value);
   void __fastcall SetParentForm(TCustomForm * value);
-  void __fastcall ApplicationHint(TObject * Sender);
   void __fastcall SetBackgroundColor(TColor Color);
 public:
   __fastcall TEditorForm(TComponent* Owner);

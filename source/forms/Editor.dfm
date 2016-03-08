@@ -9303,4 +9303,9 @@ object EditorForm: TEditorForm
     Top = 272
     Bitmap = {}
   end
+  object ApplicationEvents: TApplicationEvents
+    OnHint = ApplicationHint
+    Left = 464
+    Top = 208
+  end
 end

@@ -316,4 +316,11 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Caption = 'TabSheet1'
     end
   end
+  object ApplicationEvents: TApplicationEvents
+    OnHint = ApplicationHint
+    OnMinimize = ApplicationMinimize
+    OnRestore = ApplicationRestore
+    Left = 88
+    Top = 200
+  end
 end

@@ -32,6 +32,7 @@
 #include "PngImageList.hpp"
 #include "ThemePageControl.h"
 #include "PathLabel.hpp"
+#include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TProgressForm;
 class TSynchronizeProgressForm;
@@ -94,6 +95,9 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem57;
   TTBXItem *QueueDeleteAllDoneQueueToolbarItem;
   TTBXItem *TBXItem173;
+  TApplicationEvents *ApplicationEvents;
+  void __fastcall ApplicationMinimize(TObject * Sender);
+  void __fastcall ApplicationRestore(TObject * Sender);
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
     const TPoint &MousePos, bool &Handled);
   void __fastcall RemoteDirViewGetSelectFilter(
@@ -268,8 +272,6 @@ private:
   void __fastcall AdHocCustomCommandValidate(const TCustomCommandType & Command);
   void __fastcall SetDockAllowDrag(bool value);
   void __fastcall QueueSplitterDblClick(TObject * Sender);
-  void __fastcall ApplicationMinimize(TObject * Sender);
-  void __fastcall ApplicationRestore(TObject * Sender);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TTransferDirection Direction,
     TStrings * FileList, const UnicodeString TargetDirectory,
     const TCopyParamType & CopyParam, int Params);

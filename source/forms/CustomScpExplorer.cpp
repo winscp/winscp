@@ -168,8 +168,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   RemoteDirView->Invalidate();
   DebugAssert(NonVisualDataModule && !NonVisualDataModule->ScpExplorer);
   NonVisualDataModule->ScpExplorer = this;
-  Application->OnMinimize = ApplicationMinimize;
-  Application->OnRestore = ApplicationRestore;
   FAutoOperation = false;
   FForceExecution = false;
   FShowStatusBarHint = false;
@@ -298,14 +296,6 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
   delete FSystemImageList;
   FSystemImageList = NULL;
 
-  if (Application->OnHint == ApplicationHint)
-  {
-    Application->OnHint = NULL;
-  }
-  DebugAssert(Application->OnMinimize == ApplicationMinimize);
-  Application->OnMinimize = NULL;
-  DebugAssert(Application->OnRestore == ApplicationRestore);
-  Application->OnRestore = NULL;
   delete FTrayIcon;
   FTrayIcon = NULL;
 
@@ -8496,7 +8486,7 @@ void __fastcall TCustomScpExplorerForm::DirViewEditing(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FormActivate(TObject * /*Sender*/)
 {
-  Application->OnHint = ApplicationHint;
+  ApplicationEvents->OnHint = ApplicationHint;
 }
 //---------------------------------------------------------------------------
 TDragDropFilesEx * __fastcall TCustomScpExplorerForm::CreateDragDropFilesEx()

@@ -719,11 +719,6 @@ __fastcall TEditorForm::~TEditorForm()
     DoWindowClose(true);
   }
 
-  if (Application->OnHint == ApplicationHint)
-  {
-    Application->OnHint = NULL;
-  }
-
   if (FStandaloneEditor)
   {
     TerminateApplication();
@@ -1591,7 +1586,7 @@ void __fastcall TEditorForm::ApplicationHint(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::FormActivate(TObject * /*Sender*/)
 {
-  Application->OnHint = ApplicationHint;
+  ApplicationEvents->OnHint = ApplicationHint;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::FormKeyDown(TObject * /*Sender*/, WORD & Key, TShiftState Shift)

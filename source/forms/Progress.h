@@ -22,6 +22,7 @@
 #include "TBX.hpp"
 #include "TB2ExtItems.hpp"
 #include "TBXExtItems.hpp"
+#include <Vcl.AppEvnts.hpp>
 #include <list>
 //----------------------------------------------------------------------------
 class TProgressForm : public TForm
@@ -64,6 +65,7 @@ __published:
   TPngImageList *ImageList120;
   TPngImageList *ImageList144;
   TPngImageList *ImageList192;
+  TApplicationEvents *ApplicationEvents;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormHide(TObject *Sender);
@@ -78,6 +80,7 @@ __published:
   void __fastcall SpeedComboBoxItemAdjustImageIndex(TTBXComboBoxItem *Sender, const UnicodeString AText,
           int AIndex, int &ImageIndex);
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall ApplicationModalBegin(TObject * Sender);
 
 private:
   TCancelStatus FCancel;
@@ -100,7 +103,6 @@ private:
   TDateTime FStarted;
   int FSinceLastUpdate;
   bool FModalBeginHooked;
-  TNotifyEvent FPrevApplicationModalBegin;
   int FModalLevel;
   TFrameAnimation FFrameAnimation;
   typedef BiDiMap<TOnceDoneOperation, TTBCustomItem *> TOnceDoneItems;
@@ -114,7 +116,6 @@ private:
   bool __fastcall GetAllowMinimize();
   void __fastcall SetReadOnly(bool value);
   void __fastcall GlobalMinimize(TObject * Sender);
-  void __fastcall ApplicationModalBegin(TObject * Sender);
   UnicodeString __fastcall ItemSpeed(const UnicodeString & Text, TTBXComboBoxItem * Item);
   bool __fastcall ApplicationHook(TMessage & Message);
 

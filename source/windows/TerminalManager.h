@@ -6,6 +6,7 @@
 #include <Queue.h>
 #include <FileOperationProgress.h>
 #include <WinInterface.h>
+#include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm;
 class TLogMemo;
@@ -98,6 +99,7 @@ private:
   int FAuthenticating;
   void * FBusyToken;
   bool FAuthenticationCancelled;
+  std::unique_ptr<TApplicationEvents> FApplicationsEvents;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
