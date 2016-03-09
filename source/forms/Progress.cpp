@@ -339,7 +339,7 @@ bool __fastcall TProgressForm::ReceiveData(bool Force, int ModalLevelOffset)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::ApplicationModalBegin(TObject * Sender)
+void __fastcall TProgressForm::ApplicationModalBegin(TObject * /*Sender*/)
 {
   // Popup before any modal dialog shows (typically overwrite confirmation,
   // as that popups nearly instantly, i.e. less than DelayStartInterval).
