@@ -1093,14 +1093,14 @@ inherited ScpExplorerForm: TScpExplorerForm
     Top = 209
     Width = 632
   end
-  object LeftDock: TTBXDock
+  object LeftDock: TTBXDock [5]
     Left = 0
     Top = 230
     Width = 9
     Height = 102
     Position = dpLeft
   end
-  object RightDock: TTBXDock
+  object RightDock: TTBXDock [6]
     Left = 623
     Top = 230
     Width = 9

@@ -30,6 +30,7 @@
 #include "TBXLists.hpp"
 #include "ThemePageControl.h"
 #include "PathLabel.hpp"
+#include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TScpExplorerForm : public TCustomScpExplorerForm
 {

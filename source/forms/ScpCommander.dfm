@@ -1197,7 +1197,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object RemoteFileToolbar: TTBXToolbar
-        Left = 1
+        Left = 0
         Top = 53
         Caption = 'Remote Files'
         DockPos = 1
@@ -1251,7 +1251,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object RemoteSelectionToolbar: TTBXToolbar
-        Left = 347
+        Left = 350
         Top = 53
         Caption = 'Remote Selection'
         DockPos = 347
@@ -1303,7 +1303,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Top = 156
     Width = 829
   end
-  object LocalPanel: TPanel
+  object LocalPanel: TPanel [6]
     Left = 0
     Top = 177
     Width = 395
@@ -1625,7 +1625,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Position = dpBottom
     end
   end
-  object BottomDock: TTBXDock
+  object BottomDock: TTBXDock [7]
     Left = 0
     Top = 475
     Width = 829
@@ -1708,7 +1708,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
   end
-  object StatusBar: TTBXStatusBar
+  object StatusBar: TTBXStatusBar [8]
     Left = 0
     Top = 648
     Width = 829
@@ -1756,7 +1756,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     UseSystemFont = False
     OnPanelDblClick = StatusBarPanelDblClick
   end
-  object QueueSeparatorPanel: TPanel
+  object QueueSeparatorPanel: TPanel [9]
     Left = 0
     Top = 528
     Width = 829

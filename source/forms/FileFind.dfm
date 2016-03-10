@@ -1521,8 +1521,6 @@ object FileFindDialog: TFileFindDialog
     Width = 562
     Height = 19
     Panels = <>
-    ParentShowHint = False
-    ShowHint = True
     SimplePanel = True
   end
   object FocusButton: TButton
