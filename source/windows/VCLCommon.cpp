@@ -1678,13 +1678,6 @@ void __fastcall HintLabel(TStaticText * StaticText, UnicodeString Hint)
   StaticText->WindowProc = WindowProc;
 }
 //---------------------------------------------------------------------------
-void __fastcall HintLabelRestore(TStaticText * StaticText)
-{
-  StaticText->WindowProc = ControlWndProc(StaticText);
-  StaticText->ShowHint = false;
-  StaticText->Cursor = crDefault;
-}
-//---------------------------------------------------------------------------
 static void __fastcall ComboBoxFixWindowProc(void * Data, TMessage & Message)
 {
   // it is TCustomComboxBox, but the properties are published only by TComboBox
