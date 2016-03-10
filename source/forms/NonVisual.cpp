@@ -103,10 +103,10 @@ void __fastcall TNonVisualDataModule::LogActionsUpdate(
   bool ValidLogMemo = LogMemo && LogMemo->Parent;
   UPD(LogClearAction, ValidLogMemo && LogMemo->Lines->Count)
   // removed potentially CPU intensive check for "all selected already"
-  UPD(LogSelectAllAction, ValidLogMemo && LogMemo->Lines->Count)
+  UPD(LogSelectAllAction2, ValidLogMemo && LogMemo->Lines->Count)
   UPD(LogCopyAction, ValidLogMemo && LogMemo->SelLength)
 
-  UPD(LogPreferencesAction, true)
+  UPD(LogPreferencesAction2, true)
   ;
 }
 //---------------------------------------------------------------------------
@@ -120,10 +120,10 @@ void __fastcall TNonVisualDataModule::LogActionsExecute(
     TLogMemo * LogMemo = TTerminalManager::Instance()->LogMemo;
     DebugAssert(LogMemo && LogMemo->Parent);
     EXE(LogClearAction, LogMemo->SessionLog->Clear())
-    EXE(LogSelectAllAction, LogMemo->SelectAll())
+    EXE(LogSelectAllAction2, LogMemo->SelectAll())
     EXE(LogCopyAction, LogMemo->CopyToClipboard())
 
-    EXE(LogPreferencesAction, PreferencesDialog(pmLogging));
+    EXE(LogPreferencesAction2, PreferencesDialog(pmLogging));
     ;
   }
 
@@ -1352,7 +1352,6 @@ void __fastcall TNonVisualDataModule::CreateSessionListMenuLevel(
           TTBCustomItem * Item = new TTBXSubmenuItem(Menu);
           Item->Caption = Name;
           Item->Tag = ((Level + 1) << 16) | Index; // MAKELONG
-          Item->Hint = FMTLOAD(SAVEDSESSIONFOLDER_HINT, (Root + Name));
           Item->ImageIndex = SavedSessionsAction2->ImageIndex;
           Item->OnClick = SessionFolderItemClick;
 

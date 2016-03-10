@@ -22,6 +22,7 @@
 #include <Animations.h>
 #include <PasTools.hpp>
 #include <VCLCommon.h>
+#include <Vcl.ScreenTips.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -1139,3 +1140,164 @@ void __fastcall TFrameAnimation::CalculateNextFrameTick()
   FNextFrameTick += StrToInt(Duration) * 10;
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// Hints use:
+// - Cleanup list tooltip (multi line)
+// - Combo edit button
+// - Transfer settings label (multi line, follows label size and font)
+// - HintLabel (hint and persistent hint, multipline)
+// - status bar hints
+//---------------------------------------------------------------------------
+__fastcall TScreenTipHintWindow::TScreenTipHintWindow(TComponent * Owner) :
+  THintWindow(Owner)
+{
+  FParentPainting = false;
+  FMargin = ScaleByPixelsPerInch(6);
+}
+//---------------------------------------------------------------------------
+int __fastcall TScreenTipHintWindow::GetTextFlags()
+{
+  return DT_LEFT | DT_WORDBREAK | DT_NOPREFIX | DrawTextBiDiModeFlagsReadingOnly();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TScreenTipHintWindow::UseBoldShortHint(TControl * HintControl)
+{
+  return
+    (dynamic_cast<TTBCustomDockableWindow *>(HintControl) != NULL) ||
+    (dynamic_cast<TTBPopupWindow *>(HintControl) != NULL);
+}
+//---------------------------------------------------------------------------
+TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeString AHint, void * AData)
+{
+  const UnicodeString ShortHint = GetShortHint(AHint);
+  const UnicodeString LongHint = GetLongHintIfAny(AHint);
+
+  // we do not have a parent form here, so we cannot scale by text height
+  const int ScreenTipTextOnlyWidth = ScaleByPixelsPerInch(cScreenTipTextOnlyWidth);
+
+  if (!LongHint.IsEmpty())
+  {
+    // double-margin on the right
+    MaxWidth = ScreenTipTextOnlyWidth - (3 * FMargin);
+  }
+
+  const int Flags = DT_CALCRECT | GetTextFlags();
+
+  // Multi line short hints can be twice as wide, to not break the individual lines unless really necessary.
+  // (login site tree, clean up dialog list, preferences custom command list, persistent hint, etc).
+  // And they also can be twice as wide, to not break the individual lines unless really necessary.
+  if (ShortHint.Pos(L"\n") > 0)
+  {
+    MaxWidth *= 2;
+  }
+
+  if (UseBoldShortHint(GetHintControl(AData)))
+  {
+    Canvas->Font->Style = TFontStyles() << fsBold;
+  }
+  TRect ShortRect(0, 0, MaxWidth, 0);
+  DrawText(Canvas->Handle, ShortHint.c_str(), -1, &ShortRect, Flags);
+  Canvas->Font->Style = TFontStyles();
+
+  TRect Result;
+
+  if (LongHint.IsEmpty())
+  {
+    Result = ShortRect;
+    Result.Right += 3 * FMargin;
+    Result.Bottom += 2 * FMargin;
+  }
+  else
+  {
+    const int LongIndentation = FMargin * 3 / 2;
+    TRect LongRect(0, 0, MaxWidth - LongIndentation, 0);
+    DrawText(Canvas->Handle, LongHint.c_str(), -1, &LongRect, Flags);
+
+    Result.Right = ScreenTipTextOnlyWidth;
+    Result.Bottom = FMargin + ShortRect.Height() + (FMargin / 3 * 5) + LongRect.Height() + FMargin;
+  }
+
+  // To counter the increase in THintWindow::ActivateHintData
+  Result.Bottom -= 4;
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScreenTipHintWindow::ActivateHintData(const TRect & ARect, const UnicodeString AHint, void * AData)
+{
+  FShortHint = GetShortHint(AHint);
+  FLongHint = GetLongHintIfAny(AHint);
+  FHintControl = GetHintControl(AData);
+
+  THintWindow::ActivateHintData(ARect, FShortHint, AData);
+}
+//---------------------------------------------------------------------------
+TControl * __fastcall TScreenTipHintWindow::GetHintControl(void * Data)
+{
+  return reinterpret_cast<TControl *>(DebugNotNull(Data));
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TScreenTipHintWindow::GetLongHintIfAny(const UnicodeString & AHint)
+{
+  UnicodeString Result;
+  int P = Pos(L"|", AHint);
+  if (P > 0)
+  {
+    Result = GetLongHint(AHint);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScreenTipHintWindow::Dispatch(void * AMessage)
+{
+  TMessage * Message = static_cast<TMessage*>(AMessage);
+  switch (Message->Msg)
+  {
+    case WM_GETTEXTLENGTH:
+      if (FParentPainting)
+      {
+        // make THintWindow::Paint() not paint the Caption
+        Message->Result = 0;
+      }
+      else
+      {
+        THintWindow::Dispatch(AMessage);
+      }
+      break;
+
+    default:
+      THintWindow::Dispatch(AMessage);
+      break;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScreenTipHintWindow::Paint()
+{
+  // paint frame/background
+  {
+    TAutoFlag ParentPaintingFlag(FParentPainting);
+    THintWindow::Paint();
+  }
+
+  const int Flags = GetTextFlags();
+  const int Margin = FMargin - 1; // 1 = border
+
+  TRect Rect = ClientRect;
+  Rect.Inflate(-Margin, -Margin);
+  Rect.Right -= FMargin;
+  if (UseBoldShortHint(FHintControl))
+  {
+    Canvas->Font->Style = TFontStyles() << fsBold;
+  }
+  DrawText(Canvas->Handle, FShortHint.c_str(), -1, &Rect, Flags);
+  TRect ShortRect = Rect;
+  DrawText(Canvas->Handle, FShortHint.c_str(), -1, &ShortRect, DT_CALCRECT | Flags);
+  Canvas->Font->Style = TFontStyles();
+
+  if (!FLongHint.IsEmpty())
+  {
+    Rect.Left += FMargin * 3 / 2;
+    Rect.Top += ShortRect.Height() + (FMargin / 3 * 5);
+    DrawText(Canvas->Handle, FLongHint.c_str(), -1, &Rect, Flags);
+  }
+}

@@ -1356,7 +1356,6 @@ object EditorForm: TEditorForm
     0000000300000001000000000000000000000010000000390000FFFF0000}
   KeyPreview = True
   OldCreateOrder = False
-  OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
@@ -1374,6 +1373,7 @@ object EditorForm: TEditorForm
       Top = 0
       Caption = 'ToolBar'
       Images = EditorImages
+      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
@@ -1381,7 +1381,7 @@ object EditorForm: TEditorForm
         Action = SaveAction
       end
       object TBXItem1: TTBXItem
-        Action = SaveAllAction
+        Action = SaveAllAction2
       end
       object TBXItem16: TTBXItem
         Action = ReloadAction
@@ -1503,8 +1503,9 @@ object EditorForm: TEditorForm
         'F2')
       ShortCut = 16467
     end
-    object SaveAllAction: TAction
+    object SaveAllAction2: TAction
       Caption = 'Save &All'
+      Hint = 'Save files in all editors'
       ImageIndex = 15
       ShortCut = 24659
     end
@@ -3358,6 +3359,7 @@ object EditorForm: TEditorForm
   end
   object EditorPopup: TTBXPopupMenu
     Images = EditorImages
+    Options = [tboShowHint]
     Left = 464
     Top = 136
     object Undo1: TTBXItem
@@ -9302,10 +9304,5 @@ object EditorForm: TEditorForm
     Left = 552
     Top = 272
     Bitmap = {}
-  end
-  object ApplicationEvents: TApplicationEvents
-    OnHint = ApplicationHint
-    Left = 464
-    Top = 208
   end
 end

@@ -452,7 +452,6 @@ BEGIN
         LOGIN_DELETE_SPECIAL_SESSION, "Cannot delete special site '%s'."
         LOGIN_NEW_SESSION_FOLDER_CAPTION, "Create Site Folder"
         LOGIN_NEW_SESSION_FOLDER_PROMPT, "New folder name:"
-        SAVEDSESSIONFOLDER_HINT, "Open site folder '%s'"
         ABOUT_REGISTRATION_LINK, "How to purchase a license..."
         REMOTE_COPY_COMMAND_SESSION2, "**Do you want to open separate shell session to duplicate the file(s)?**\n \nCurrent session does not support direct duplication of remote files. Separate shell session may be opened to process the duplication. Alternatively your may duplicate the file(s) via local temporary copy."
         EDITOR_AD_HOC, "Editor"

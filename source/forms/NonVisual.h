@@ -75,13 +75,13 @@ class TNonVisualDataModule : public TDataModule
 __published:    // IDE-managed Components
   TActionList *LogActions;
   TAction *LogClearAction;
-  TAction *LogSelectAllAction;
+  TAction *LogSelectAllAction2;
   TAction *LogCopyAction;
   TTBXPopupMenu *LogMemoPopup;
   TTBXItem *Clear1;
   TTBXItem *Close1;
   TTBXItem *Selectall1;
-  TAction *LogPreferencesAction;
+  TAction *LogPreferencesAction2;
   TAction *LocalSortByNameAction;
   TAction *LocalSortAscendingAction;
   TAction *LocalSortBySizeAction;

@@ -233,7 +233,7 @@ object ProgressForm: TProgressForm
           OnClick = MoveToQueueItemClick
         end
         object CycleOnceDoneItem: TTBXSubmenuItem
-          Caption = 'Once FinishedX'
+          Caption = 'Once Finished'
           DropdownCombo = True
           Hint = 'Action to perform once the operation finishes'
           ImageIndex = 2

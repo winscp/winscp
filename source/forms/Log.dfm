@@ -1397,12 +1397,12 @@ object LogForm: TLogForm
         Action = NonVisualDataModule.LogCopyAction
       end
       object TBXItem4: TTBXItem
-        Action = NonVisualDataModule.LogSelectAllAction
+        Action = NonVisualDataModule.LogSelectAllAction2
       end
       object TBXSeparatorItem2: TTBXSeparatorItem
       end
       object TBXItem5: TTBXItem
-        Action = NonVisualDataModule.LogPreferencesAction
+        Action = NonVisualDataModule.LogPreferencesAction2
       end
     end
   end

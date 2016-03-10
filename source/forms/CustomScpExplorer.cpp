@@ -170,7 +170,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   NonVisualDataModule->ScpExplorer = this;
   FAutoOperation = false;
   FForceExecution = false;
-  FShowStatusBarHint = false;
   FIgnoreNextDialogChar = 0;
   FErrorList = NULL;
   FSynchronizeProgressForm = NULL;
@@ -259,6 +258,8 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   UseDesktopFont(RemoteStatusBar);
 
   reinterpret_cast<TLabel*>(QueueSplitter)->OnDblClick = QueueSplitterDblClick;
+  QueueSplitter->ShowHint = true;
+  RemotePanelSplitter->ShowHint = true;
 
   FSystemImageList = SharedSystemImageList(false);
   FSystemImageList->DrawingStyle = dsTransparent;
@@ -876,11 +877,10 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferList()
     // this way we get name for "default" settings (COPY_PARAM_DEFAULT)
     UnicodeString Name = TransferList->Strings->Strings[TransferList->ItemIndex];
     TransferDropDown->Text = StripHotkey(Name);
-    TransferDropDown->Hint = FORMAT(L"%s\n \n%s:\n%s|%s",
+    TransferDropDown->Hint = FORMAT(L"%s|%s:\n%s",
       (FTransferDropDownHint, StripHotkey(Name),
        GUIConfiguration->CurrentCopyParam.GetInfoStr(L"; ",
-         FLAGMASK(Terminal != NULL, Terminal->UsableCopyParamAttrs(0).General)),
-       FTransferDropDownHint));
+         FLAGMASK(Terminal != NULL, Terminal->UsableCopyParamAttrs(0).General))));
     // update the label, otherwise when it is updated only on the first draw
     // of the list, it is drawn "bold" for some reason
     FTransferListHoverIndex = TransferList->ItemIndex;
@@ -4113,12 +4113,7 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
     SessionStatusBar->SimplePanel = false;
     const TSessionInfo & SessionInfo = Terminal->GetSessionInfo();
 
-    if (FShowStatusBarHint)
-    {
-      // escape hotkeys particularly because of the custom commands names
-      SessionStatusBar->Panels->Items[0]->Caption = EscapeHotkey(FStatusBarHint);
-    }
-    else if (!FNote.IsEmpty())
+    if (!FNote.IsEmpty())
     {
       SessionStatusBar->Panels->Items[0]->Caption = FNote;
     }
@@ -4221,23 +4216,6 @@ void __fastcall TCustomScpExplorerForm::UserActionTimer(TObject * /*Sender*/)
   {
     FPendingQueueActionItem = NULL;
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ApplicationHint(TObject * /*Sender*/)
-{
-  DebugAssert(Application);
-  // Application->Hint contains long hint only
-  UnicodeString AHint = Application->Hint;
-  FShowStatusBarHint = Active && !AHint.IsEmpty();
-  if (FShowStatusBarHint)
-  {
-    FStatusBarHint = AHint;
-  }
-  else
-  {
-    FStatusBarHint = L"";
-  }
-  UpdateStatusBar();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ApplicationMinimize(TObject * /*Sender*/)
@@ -8484,10 +8462,6 @@ void __fastcall TCustomScpExplorerForm::DirViewEditing(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::FormActivate(TObject * /*Sender*/)
-{
-  ApplicationEvents->OnHint = ApplicationHint;
-}
 //---------------------------------------------------------------------------
 TDragDropFilesEx * __fastcall TCustomScpExplorerForm::CreateDragDropFilesEx()
 {

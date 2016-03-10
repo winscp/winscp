@@ -8,7 +8,6 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   ParentFont = True
   KeyPreview = True
   OldCreateOrder = False
-  OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnConstrainedResize = FormConstrainedResize
@@ -227,6 +226,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         Top = 0
         Caption = 'QueueToolbar'
         Images = GlyphsModule.ExplorerImages
+        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
@@ -317,7 +317,6 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     end
   end
   object ApplicationEvents: TApplicationEvents
-    OnHint = ApplicationHint
     OnMinimize = ApplicationMinimize
     OnRestore = ApplicationRestore
     Left = 88

@@ -704,6 +704,7 @@ int __fastcall Execute()
     // Some applications use an infinite (Thunderbird, Firefox).
     // Overriden for some controls using THintInfo.HideTimeout
     Application->HintHidePause = 20000;
+    HintWindowClass = __classid(TScreenTipHintWindow);
 
     UnicodeString IniFileName = Params->SwitchValue(INI_SWITCH);
     if (!IniFileName.IsEmpty())

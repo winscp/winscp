@@ -674,7 +674,6 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   FCaretPos = TPoint(-1, -1);
   FLastFindDialog = NULL;
   FCloseAnnounced = false;
-  FShowStatusBarHint = false;
   ApplyConfiguration();
   FFindDialog = new TFindDialogEx(this);
   FFindDialog->OnFind = FindDialogFind;
@@ -776,7 +775,7 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   {
     SaveAction->Enabled = IsFileModified();
   }
-  else if (Action == SaveAllAction)
+  else if (Action == SaveAllAction2)
   {
     bool Enabled = !FStandaloneEditor;
     if (Enabled)
@@ -788,7 +787,7 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
         FOnAnyModified(this, Enabled);
       }
     }
-    SaveAllAction->Enabled = Enabled;
+    SaveAllAction2->Enabled = Enabled;
   }
   else if (Action == FindNextAction)
   {
@@ -859,7 +858,7 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   {
     SaveFile();
   }
-  else if (Action == SaveAllAction)
+  else if (Action == SaveAllAction2)
   {
     OnSaveAll(this);
   }
@@ -1010,83 +1009,73 @@ void __fastcall TEditorForm::FileUploadComplete()
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::UpdateControls()
 {
-  if (FShowStatusBarHint)
-  {
-    StatusBar->SimplePanel = true;
-    StatusBar->SimpleText = FStatusBarHint;
-    FCaretPos = TPoint(-1, -1);
-  }
-  else
-  {
-    TPoint ACaretPos = EditorMemo->CaretPos;
+  TPoint ACaretPos = EditorMemo->CaretPos;
 
-    if (ACaretPos.x != FCaretPos.x || ACaretPos.y != FCaretPos.y)
+  if (ACaretPos.x != FCaretPos.x || ACaretPos.y != FCaretPos.y)
+  {
+    FCaretPos = ACaretPos;
+    int Count = EditorMemo->Lines->Count;
+    StatusBar->Panels->Items[0]->Caption = FMTLOAD(EDITOR_LINE_STATUS,
+      ((int)FCaretPos.y+1, Count));
+    int Column = 0;
+    UnicodeString Character;
+    if (FCaretPos.y >= 0 && FCaretPos.y < EditorMemo->Lines->Count)
     {
-      FCaretPos = ACaretPos;
-      int Count = EditorMemo->Lines->Count;
-      StatusBar->Panels->Items[0]->Caption = FMTLOAD(EDITOR_LINE_STATUS,
-        ((int)FCaretPos.y+1, Count));
-      int Column = 0;
-      UnicodeString Character;
-      if (FCaretPos.y >= 0 && FCaretPos.y < EditorMemo->Lines->Count)
+      UnicodeString Line = EditorMemo->Lines->Strings[FCaretPos.y];
+      int TabSize = WinConfiguration->Editor.TabSize;
+      for (int Index = 1; Index <= FCaretPos.x + 1; Index++)
       {
-        UnicodeString Line = EditorMemo->Lines->Strings[FCaretPos.y];
-        int TabSize = WinConfiguration->Editor.TabSize;
-        for (int Index = 1; Index <= FCaretPos.x + 1; Index++)
+        if ((Index - 1 >= 1) && (Index - 1 <= Line.Length()) && (Line[Index - 1] == L'\t') &&
+            (TabSize > 0)) // sanity check
         {
-          if ((Index - 1 >= 1) && (Index - 1 <= Line.Length()) && (Line[Index - 1] == L'\t') &&
-              (TabSize > 0)) // sanity check
-          {
-            Column = (((Column / TabSize) + 1) * TabSize) + 1;
-          }
-          else
-          {
-            Column++;
-          }
+          Column = (((Column / TabSize) + 1) * TabSize) + 1;
         }
-
-        if (FCaretPos.x+1 <= Line.Length())
+        else
         {
-          int Code;
-          wchar_t Ch = Line[FCaretPos.x + 1];
-          if (FEncoding == TEncoding::Default)
-          {
-            char Buf[10];
-            BOOL UsedDefaultChar = FALSE;
-            int Conversion =
-              WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, &Ch, 1,
-                Buf, sizeof(Buf), NULL, &UsedDefaultChar);
-            // actually with multibyte encoding it may be > 1,
-            if ((Conversion == 1) && !UsedDefaultChar)
-            {
-              Code = static_cast<int>(static_cast<unsigned char>(Buf[0]));
-            }
-            else
-            {
-              Code = -1;
-            }
-          }
-          else
-          {
-            Code = static_cast<int>(Ch);
-          }
-
-          if (Code >= 0)
-          {
-            Character = FMTLOAD(EDITOR_CHARACTER_STATUS2, (Code, Code));
-          }
+          Column++;
         }
       }
-      StatusBar->Panels->Items[1]->Caption =
-        (Column > 0) ? FMTLOAD(EDITOR_COLUMN_STATUS, (Column)) : UnicodeString();
-      StatusBar->Panels->Items[2]->Caption = Character;
+
+      if (FCaretPos.x+1 <= Line.Length())
+      {
+        int Code;
+        wchar_t Ch = Line[FCaretPos.x + 1];
+        if (FEncoding == TEncoding::Default)
+        {
+          char Buf[10];
+          BOOL UsedDefaultChar = FALSE;
+          int Conversion =
+            WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, &Ch, 1,
+              Buf, sizeof(Buf), NULL, &UsedDefaultChar);
+          // actually with multibyte encoding it may be > 1,
+          if ((Conversion == 1) && !UsedDefaultChar)
+          {
+            Code = static_cast<int>(static_cast<unsigned char>(Buf[0]));
+          }
+          else
+          {
+            Code = -1;
+          }
+        }
+        else
+        {
+          Code = static_cast<int>(Ch);
+        }
+
+        if (Code >= 0)
+        {
+          Character = FMTLOAD(EDITOR_CHARACTER_STATUS2, (Code, Code));
+        }
+      }
     }
-    StatusBar->Panels->Items[3]->Caption = FMTLOAD(EDITOR_ENCODING_STATUS, (FEncodingName));
-    StatusBar->Panels->Items[4]->Caption =
-      (FSaving ? LoadStr(EDITOR_SAVING) :
-        (IsFileModified() ? LoadStr(EDITOR_MODIFIED) : UnicodeString(L"")));
-    StatusBar->SimplePanel = false;
+    StatusBar->Panels->Items[1]->Caption =
+      (Column > 0) ? FMTLOAD(EDITOR_COLUMN_STATUS, (Column)) : UnicodeString();
+    StatusBar->Panels->Items[2]->Caption = Character;
   }
+  StatusBar->Panels->Items[3]->Caption = FMTLOAD(EDITOR_ENCODING_STATUS, (FEncodingName));
+  StatusBar->Panels->Items[4]->Caption =
+    (FSaving ? LoadStr(EDITOR_SAVING) :
+      (IsFileModified() ? LoadStr(EDITOR_MODIFIED) : UnicodeString(L"")));
 
   EditorActions->UpdateAction(SaveAction);
 }
@@ -1565,28 +1554,6 @@ void __fastcall TEditorForm::Reload()
     }
     LoadFile();
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TEditorForm::ApplicationHint(TObject * /*Sender*/)
-{
-  DebugAssert(Application);
-  // Application->Hint contains long hint only
-  UnicodeString AHint = Application->Hint;
-  FShowStatusBarHint = Active && !AHint.IsEmpty();
-  if (FShowStatusBarHint)
-  {
-    FStatusBarHint = AHint;
-  }
-  else
-  {
-    FStatusBarHint = L"";
-  }
-  UpdateControls();
-}
-//---------------------------------------------------------------------------
-void __fastcall TEditorForm::FormActivate(TObject * /*Sender*/)
-{
-  ApplicationEvents->OnHint = ApplicationHint;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::FormKeyDown(TObject * /*Sender*/, WORD & Key, TShiftState Shift)

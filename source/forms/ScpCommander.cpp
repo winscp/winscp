@@ -110,6 +110,7 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
 
   SetShortcuts();
   Splitter->ShowHint = True;
+  LocalPanelSplitter->ShowHint = true;
   reinterpret_cast<TLabel*>(Splitter)->OnDblClick = SplitterDblClick;
   reinterpret_cast<TLabel*>(LocalPanelSplitter)->OnDblClick = PanelSplitterDblClick;
   reinterpret_cast<TLabel*>(RemotePanelSplitter)->OnDblClick = PanelSplitterDblClick;
@@ -782,8 +783,13 @@ void __fastcall TScpCommanderForm::UpdateControls()
   TCustomScpExplorerForm::UpdateControls();
 
   UnicodeString SplitterLongHint = Splitter->Hint;
-  SplitterLongHint.Delete(1, SplitterLongHint.Pos(L"|"));
-  Splitter->Hint = FORMAT(L"%0.0f%%|%s", (LeftPanelWidth*100, SplitterLongHint));
+  int P = SplitterLongHint.Pos(L"|");
+  if (P == 0)
+  {
+    P = SplitterLongHint.Pos(L"\n");
+  }
+  SplitterLongHint.Delete(1, P);
+  Splitter->Hint = FORMAT(L"%0.0f%%\n%s", (LeftPanelWidth*100, SplitterLongHint));
   UnicodeString ACommandLinePromptLabel = LoadStr(COMMAND_LINE_LABEL) + " " +
     ((FCurrentSide == osRemote) ? L"$" : L">");
   if (CommandLinePromptLabel->Caption != ACommandLinePromptLabel)

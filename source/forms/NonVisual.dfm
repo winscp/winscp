@@ -15,10 +15,10 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 0
       ShortCut = 16430
     end
-    object LogSelectAllAction: TAction
+    object LogSelectAllAction2: TAction
       Category = 'LogMemo'
       Caption = 'Select &All'
-      Hint = 'Select all'
+      Hint = 'Select all text'
       ImageIndex = 2
       ShortCut = 16449
     end
@@ -29,15 +29,16 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 1
       ShortCut = 16451
     end
-    object LogPreferencesAction: TAction
+    object LogPreferencesAction2: TAction
       Category = 'LogForm'
-      Caption = 'LogPreferencesAction'
+      Caption = '&Preferences...'
       Hint = 'Configure logging'
       ImageIndex = 3
     end
   end
   object LogMemoPopup: TTBXPopupMenu
     Images = GlyphsModule.LogImages
+    Options = [tboShowHint]
     Left = 32
     Top = 152
     object Clear1: TTBXItem
@@ -47,11 +48,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = LogCopyAction
     end
     object Selectall1: TTBXItem
-      Action = LogSelectAllAction
+      Action = LogSelectAllAction2
     end
   end
   object RemoteFilePopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 424
     Top = 336
     object TBXItem23: TTBXItem
@@ -2256,6 +2258,7 @@ object NonVisualDataModule: TNonVisualDataModule
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 192
     Top = 336
     object Address2: TTBXItem
@@ -2341,6 +2344,7 @@ object NonVisualDataModule: TNonVisualDataModule
   end
   object CommanderBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 424
     Top = 264
     object CommandsButtons2: TTBXItem
@@ -2470,6 +2474,7 @@ object NonVisualDataModule: TNonVisualDataModule
   end
   object RemotePanelPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 312
     Top = 264
     object TBXItem32: TTBXItem
@@ -2520,6 +2525,7 @@ object NonVisualDataModule: TNonVisualDataModule
   end
   object LocalPanelPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 312
     Top = 336
     object TBXItem34: TTBXItem
@@ -2570,6 +2576,7 @@ object NonVisualDataModule: TNonVisualDataModule
   end
   object LocalDirViewColumnPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 248
     Top = 88
     object SortAscending1: TTBXItem
@@ -2625,6 +2632,7 @@ object NonVisualDataModule: TNonVisualDataModule
   end
   object RemoteDirViewColumnPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 424
     Top = 88
     object MenuItem1: TTBXItem
@@ -2692,6 +2700,7 @@ object NonVisualDataModule: TNonVisualDataModule
   object QueuePopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
     OnPopup = QueuePopupPopup
+    Options = [tboShowHint]
     Left = 392
     Top = 176
     object ShowQuery1: TTBXItem
@@ -2805,6 +2814,7 @@ object NonVisualDataModule: TNonVisualDataModule
   object RemoteDirViewPopup: TTBXPopupMenu
     AutoPopup = False
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 360
     Top = 400
     object GoTo4: TTBXSubmenuItem
@@ -2866,6 +2876,7 @@ object NonVisualDataModule: TNonVisualDataModule
   object LocalDirViewPopup: TTBXPopupMenu
     AutoPopup = False
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 480
     Top = 400
     object GoTo5: TTBXSubmenuItem
@@ -2926,6 +2937,7 @@ object NonVisualDataModule: TNonVisualDataModule
   end
   object RemoteAddressPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 248
     Top = 400
     object TBXItem33: TTBXItem
@@ -2967,6 +2979,7 @@ object NonVisualDataModule: TNonVisualDataModule
   end
   object SessionsPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 480
     Top = 176
     object TBXItem124: TTBXItem
@@ -3013,6 +3026,7 @@ object NonVisualDataModule: TNonVisualDataModule
   end
   object LocalFilePopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
     Left = 536
     Top = 336
     object LocalOpenMenuItem: TTBXItem

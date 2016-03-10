@@ -468,6 +468,7 @@ type
   protected
     procedure Paint(const Canvas: TCanvas; const ClientAreaRect: TRect;
       IsHoverItem, IsPushed, UseDisabledShadow: Boolean); override;
+    function CaptionShown: Boolean; override;
   end;
 
   TTBXChevronPopupWindow = class(TTBXPopupWindow);
@@ -2930,6 +2931,11 @@ begin
   else ItemInfo.HoverKind := hkNone;
   ItemInfo.IsVertical := View.Orientation = tbvoVertical;
   CurrentTheme.PaintChevron(Canvas, ClientAreaRect, ItemInfo);
+end;
+
+function TTBXChevronItemViewer.CaptionShown: Boolean;
+begin
+  Result := False;
 end;
 
 

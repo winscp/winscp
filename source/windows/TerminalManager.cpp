@@ -756,6 +756,7 @@ void __fastcall TTerminalManager::ApplicationException(TObject * /*Sender*/,
 void __fastcall TTerminalManager::ApplicationShowHint(UnicodeString & HintStr,
   bool & /*CanShow*/, THintInfo & HintInfo)
 {
+  HintInfo.HintData = HintInfo.HintControl;
   TLabel * HintLabel = dynamic_cast<TLabel *>(HintInfo.HintControl);
   if ((HintLabel != NULL) && (HintLabel->Caption == HintStr))
   {

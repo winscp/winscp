@@ -119,6 +119,30 @@ private:
   void __fastcall Repaint();
 };
 //---------------------------------------------------------------------------
+class TScreenTipHintWindow : public THintWindow
+{
+public:
+  __fastcall TScreenTipHintWindow(TComponent * Owner);
+  virtual TRect __fastcall CalcHintRect(int MaxWidth, const UnicodeString AHint, void * AData);
+  virtual void __fastcall ActivateHintData(const TRect & Rect, const UnicodeString AHint, void * AData);
+
+protected:
+  virtual void __fastcall Paint();
+  virtual void __fastcall Dispatch(void * AMessage);
+
+private:
+  bool FParentPainting;
+  int FMargin;
+  UnicodeString FShortHint;
+  UnicodeString FLongHint;
+  TControl * FHintControl;
+
+  UnicodeString __fastcall GetLongHintIfAny(const UnicodeString & AHint);
+  int __fastcall GetTextFlags();
+  bool __fastcall UseBoldShortHint(TControl * HintControl);
+  TControl * __fastcall GetHintControl(void * Data);
+};
+//---------------------------------------------------------------------------
 extern const UnicodeString PageantTool;
 extern const UnicodeString PuttygenTool;
 //---------------------------------------------------------------------------

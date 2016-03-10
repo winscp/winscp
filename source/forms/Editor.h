@@ -75,12 +75,11 @@ __published:
   TAction *UTF8EncodingAction;
   TTBXColorItem *ColorItem;
   TAction *ColorAction;
-  TAction *SaveAllAction;
+  TAction *SaveAllAction2;
   TTBXItem *TBXItem1;
   TPngImageList *EditorImages120;
   TPngImageList *EditorImages144;
   TPngImageList *EditorImages192;
-  TApplicationEvents *ApplicationEvents;
   void __fastcall EditorActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall EditorActionsExecute(TBasicAction *Action,
           bool &Handled);
@@ -93,9 +92,7 @@ __published:
   void __fastcall FindDialogFind(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
-  void __fastcall FormActivate(TObject *Sender);
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
-  void __fastcall ApplicationHint(TObject * Sender);
 private:
   UnicodeString FFileName;
   TNotifyEvent FOnFileChanged;
@@ -110,8 +107,6 @@ private:
   TReplaceDialog * FReplaceDialog;
   bool FCloseAnnounced;
   TRichEdit20 * EditorMemo;
-  bool FShowStatusBarHint;
-  UnicodeString FStatusBarHint;
   bool FFormRestored;
   UnicodeString FWindowParams;
   unsigned int FInstance;

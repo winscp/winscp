@@ -1567,7 +1567,7 @@ void __fastcall ShowPersistentHint(TControl * Control, TPoint HintPos)
   {
     PersistentHintControl = Control;
 
-    PersistentHintWindow = new THintWindow(Application);
+    PersistentHintWindow = new TScreenTipHintWindow(Application);
     PersistentHintWindow->BiDiMode = Control->BiDiMode;
     PersistentHintWindow->Color = HintInfo.HintColor;
 

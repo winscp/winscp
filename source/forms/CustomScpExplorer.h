@@ -102,7 +102,6 @@ __published:
     const TPoint &MousePos, bool &Handled);
   void __fastcall RemoteDirViewGetSelectFilter(
     TCustomDirView *Sender, bool Select, TFileFilter &Filter);
-  void __fastcall ApplicationHint(TObject * Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall RemoteDirViewDisplayProperties(TObject *Sender);
   void __fastcall DirViewColumnRightClick(TObject *Sender,
@@ -173,7 +172,6 @@ __published:
   void __fastcall RemotePathComboBoxCancel(TObject * Sender);
   void __fastcall DirViewEditing(TObject *Sender, TListItem *Item,
           bool &AllowEdit);
-  void __fastcall FormActivate(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionsPageControlChange(TObject *Sender);
   void __fastcall SessionsPageControlMouseDown(TObject *Sender, TMouseButton Button,
@@ -199,8 +197,6 @@ private:
   bool FFormRestored;
   bool FAutoOperation;
   bool FForceExecution;
-  bool FShowStatusBarHint;
-  UnicodeString FStatusBarHint;
   unsigned short FIgnoreNextDialogChar;
   TStringList * FErrorList;
   HANDLE FDDExtMutex;

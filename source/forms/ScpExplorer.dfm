@@ -24,6 +24,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       CloseButton = False
       Images = GlyphsModule.ExplorerImages
       MenuBar = True
+      Options = [tboNoAutoHint, tboShowHint]
       ShrinkMode = tbsmWrap
       Stretch = True
       TabOrder = 0
@@ -593,6 +594,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       DockPos = -8
       DockRow = 2
       Images = GlyphsModule.ExplorerImages
+      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 2
@@ -694,6 +696,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       DockPos = -4
       DockRow = 3
       Images = GlyphsModule.ExplorerImages
+      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 3
@@ -725,6 +728,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       DockPos = -4
       DockRow = 4
       Images = GlyphsModule.ExplorerImages
+      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 4
@@ -756,6 +760,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       DockPos = -4
       DockRow = 5
       Images = GlyphsModule.ExplorerImages
+      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 5
@@ -811,6 +816,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       DockPos = 0
       DockRow = 6
       Images = GlyphsModule.ExplorerImages
+      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 6
@@ -854,6 +860,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       DockPos = -8
       DockRow = 1
       Images = GlyphsModule.ExplorerImages
+      Options = [tboShowHint]
       ParentShowHint = False
       PopupMenu = NonVisualDataModule.RemoteAddressPopup
       Resizable = False
@@ -893,6 +900,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       DockPos = -7
       DockRow = 7
       Images = GlyphsModule.ExplorerImages
+      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 7
@@ -934,6 +942,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       DockPos = 44
       DockRow = 7
       Images = GlyphsModule.ExplorerImages
+      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 8
