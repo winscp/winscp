@@ -8547,27 +8547,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlMouseDown(
   int Index = SessionsPageControl->IndexOfTabAt(X, Y);
   if (Index >= 0)
   {
-    if (Button == mbRight)
-    {
-      SessionsPageControl->ActivePageIndex = Index;
-      // do not popup menu when we click "New session" tab
-      // (it would popup only after login dialog > auth dialog, what is strange)
-      if (SessionTabSwitched())
-      {
-        // copied from TControl.WMContextMenu
-        SendCancelMode(SessionsPageControl);
-
-        // explicit popup instead of using PopupMenu property
-        // to avoid menu to popup somewhere within SessionTabSwitched above,
-        // while connecting yet not-connected session and hence
-        // allowing an access to commands over not-completelly connected session
-        TPoint Point = SessionsPageControl->ClientToScreen(TPoint(X, Y));
-        TPopupMenu * PopupMenu = NonVisualDataModule->SessionsPopup;
-        PopupMenu->PopupComponent = SessionsPageControl;
-        PopupMenu->Popup(Point.x, Point.y);
-      }
-    }
-    else if (Button == mbLeft)
+    if (Button == mbLeft)
     {
       // "Mouse down" is raised only after tab is switched.
       // If switching tab (switching session) takes long enough for user
@@ -8902,5 +8882,31 @@ void __fastcall TCustomScpExplorerForm::DirViewBusy(TObject * /*Sender*/, int Bu
   {
     State = NonVisualDataModule->Busy;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SessionsPageControlContextPopup(TObject * /*Sender*/, TPoint & MousePos, bool & Handled)
+{
+  int Index = SessionsPageControl->IndexOfTabAt(MousePos.X, MousePos.Y);
+  // no context menu for "New session tab"
+  if ((Index >= 0) && (GetSessionTabTerminal(SessionsPageControl->Pages[Index]) != NULL))
+  {
+    SessionsPageControl->ActivePageIndex = Index;
+
+    if (DebugAlwaysTrue(SessionTabSwitched()))
+    {
+      // copied from TControl.WMContextMenu
+      SendCancelMode(SessionsPageControl);
+
+      // explicit popup instead of using PopupMenu property
+      // to avoid menu to popup somewhere within SessionTabSwitched above,
+      // while connecting yet not-connected session and hence
+      // allowing an access to commands over not-completelly connected session
+      TPoint Point = SessionsPageControl->ClientToScreen(MousePos);
+      TPopupMenu * PopupMenu = NonVisualDataModule->SessionsPopup;
+      PopupMenu->PopupComponent = SessionsPageControl;
+      PopupMenu->Popup(Point.x, Point.y);
+    }
+  }
+  Handled = true;
 }
 //---------------------------------------------------------------------------

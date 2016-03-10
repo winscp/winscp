@@ -186,6 +186,7 @@ __published:
   void __fastcall QueueView3Exit(TObject *Sender);
   void __fastcall EditMenuItemPopup(TTBCustomItem *Sender, bool FromLink);
   void __fastcall DirViewBusy(TObject *Sender, int Busy, bool & Allow);
+  void __fastcall SessionsPageControlContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
 
 private:
   TTerminal * FTerminal;

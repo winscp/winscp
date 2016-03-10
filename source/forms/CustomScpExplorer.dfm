@@ -309,6 +309,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     TabOrder = 3
     TabStop = False
     OnChange = SessionsPageControlChange
+    OnContextPopup = SessionsPageControlContextPopup
     OnDragDrop = SessionsPageControlDragDrop
     OnDragOver = SessionsPageControlDragOver
     OnMouseDown = SessionsPageControlMouseDown
