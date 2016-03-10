@@ -536,7 +536,7 @@ begin
           PNG.CreateAlpha;
           for Y := 0 to PNG.Height - 1 do begin
             AlphaLineA := JoinedPNG.AlphaScanline[Y + OffsetY];
-            AlphaLineB := JoinedPNG.AlphaScanline[Y];
+            AlphaLineB := PNG.AlphaScanline[Y];
             for X := 0 to PNG.Width - 1 do
               AlphaLineB[X] := AlphaLineA[X + OffsetX];
           end;
