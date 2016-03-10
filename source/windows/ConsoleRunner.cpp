@@ -1189,6 +1189,12 @@ void __fastcall TConsoleRunner::NotifyAbort()
   if (FBatchScript)
   {
     FAborted = true;
+
+    if (FScript->Terminal != NULL)
+    {
+      std::unique_ptr<TStringList> Failure(TextToStringList(LoadStr(USER_TERMINATED)));
+      FScript->Terminal->ActionLog->AddFailure(Failure.get());
+    }
   }
 }
 //---------------------------------------------------------------------------
