@@ -80,4 +80,8 @@ void win_misc_cleanup();
 
 const char * get_putty_version();
 
+// from winsecur.c
+
+void win_secur_cleanup(void);
+
 #endif
