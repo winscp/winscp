@@ -302,16 +302,16 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object DirectoryOptionsGroup: TGroupBox
-          Left = 0
-          Top = 198
+          Left = 1
+          Top = 195
           Width = 393
-          Height = 93
+          Height = 116
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Directory reading options'
           TabOrder = 1
           DesignSize = (
             393
-            93)
+            116)
           object CacheDirectoriesCheck: TCheckBox
             Left = 12
             Top = 19
@@ -349,6 +349,15 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Anchors = [akTop, akRight]
             Caption = '&Permanent cache'
             TabOrder = 2
+          end
+          object FollowDirectorySymlinksCheck: TCheckBox
+            Left = 12
+            Top = 88
+            Width = 369
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Follow symbolic links to directories'
+            TabOrder = 4
           end
         end
       end

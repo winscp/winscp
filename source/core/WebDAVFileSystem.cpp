@@ -2021,7 +2021,7 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
   if (File->IsDirectory)
   {
     Action.Cancel();
-    if (DebugAlwaysTrue(!File->IsSymLink))
+    if (DebugAlwaysTrue(FTerminal->CanRecurseToDirectory(File)))
     {
       FILE_OPERATION_LOOP_BEGIN
       {

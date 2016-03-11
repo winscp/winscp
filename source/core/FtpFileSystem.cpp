@@ -972,7 +972,7 @@ void __fastcall TFTPFileSystem::ChangeFileProperties(const UnicodeString AFileNa
         File = OwnedFile;
       }
 
-      if ((File != NULL) && File->IsDirectory && !File->IsSymLink && Properties->Recursive)
+      if ((File != NULL) && File->IsDirectory && FTerminal->CanRecurseToDirectory(File) && Properties->Recursive)
       {
         try
         {
@@ -1146,7 +1146,7 @@ void __fastcall TFTPFileSystem::DoCalculateFilesChecksum(bool UsingHashCommand,
 
     if (File->IsDirectory)
     {
-      if (!File->IsSymLink &&
+      if (FTerminal->CanRecurseToDirectory(File) &&
           !File->IsParentDirectory && !File->IsThisDirectory &&
           // recurse into subdirectories only if we have callback function
           (OnCalculatedChecksum != NULL))
@@ -1632,7 +1632,7 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
   if (File->IsDirectory)
   {
     Action.Cancel();
-    if (!File->IsSymLink)
+    if (FTerminal->CanRecurseToDirectory(File))
     {
       FILE_OPERATION_LOOP_BEGIN
       {
@@ -2201,7 +2201,7 @@ void __fastcall TFTPFileSystem::DeleteFile(const UnicodeString AFileName,
   UnicodeString FileNameOnly = UnixExtractFileName(FileName);
   UnicodeString FilePath = UnixExtractFilePath(FileName);
 
-  bool Dir = (File != NULL) && File->IsDirectory && !File->IsSymLink;
+  bool Dir = (File != NULL) && File->IsDirectory && FTerminal->CanRecurseToDirectory(File);
 
   if (Dir && FLAGCLEAR(Params, dfNoRecursive))
   {

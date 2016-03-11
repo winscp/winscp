@@ -168,6 +168,7 @@ void __fastcall TSessionData::Default()
   PreserveDirectoryChanges = true;
   LockInHome = false;
   ResolveSymlinks = true;
+  FollowDirectorySymlinks = false;
   DSTMode = dstmUnix;
   DeleteToRecycleBin = false;
   OverwrittenToRecycleBin = false;
@@ -294,6 +295,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(PreserveDirectoryChanges); \
   \
   PROPERTY(ResolveSymlinks); \
+  PROPERTY(FollowDirectorySymlinks); \
   PROPERTY(DSTMode); \
   PROPERTY(LockInHome); \
   PROPERTY(Special); \
@@ -558,6 +560,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   PreserveDirectoryChanges = Storage->ReadBool(L"PreserveDirectoryChanges", PreserveDirectoryChanges);
 
   ResolveSymlinks = Storage->ReadBool(L"ResolveSymlinks", ResolveSymlinks);
+  FollowDirectorySymlinks = Storage->ReadBool(L"FollowDirectorySymlinks", FollowDirectorySymlinks);
   DSTMode = (TDSTMode)Storage->ReadInteger(L"ConsiderDST", DSTMode);
   LockInHome = Storage->ReadBool(L"LockInHome", LockInHome);
   Special = Storage->ReadBool(L"Special", Special);
@@ -869,6 +872,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Bool, PreserveDirectoryChanges);
 
     WRITE_DATA(Bool, ResolveSymlinks);
+    WRITE_DATA(Bool, FollowDirectorySymlinks);
     WRITE_DATA_EX(Integer, L"ConsiderDST", DSTMode, );
     WRITE_DATA(Bool, LockInHome);
     // Special is never stored (if it would, login dialog must be modified not to
@@ -2976,6 +2980,11 @@ void __fastcall TSessionData::SetPreserveDirectoryChanges(bool value)
 void __fastcall TSessionData::SetResolveSymlinks(bool value)
 {
   SET_SESSION_PROPERTY(ResolveSymlinks);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetFollowDirectorySymlinks(bool value)
+{
+  SET_SESSION_PROPERTY(FollowDirectorySymlinks);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionData::SetDSTMode(TDSTMode value)

@@ -150,6 +150,7 @@ private:
   UnicodeString FCustomParam1;
   UnicodeString FCustomParam2;
   bool FResolveSymlinks;
+  bool FFollowDirectorySymlinks;
   TDateTime FTimeDifference;
   bool FTimeDifferenceAuto;
   int FSFTPDownloadQueue;
@@ -300,6 +301,7 @@ private:
   void __fastcall SetCustomParam1(UnicodeString value);
   void __fastcall SetCustomParam2(UnicodeString value);
   void __fastcall SetResolveSymlinks(bool value);
+  void __fastcall SetFollowDirectorySymlinks(bool value);
   void __fastcall SetSFTPDownloadQueue(int value);
   void __fastcall SetSFTPUploadQueue(int value);
   void __fastcall SetSFTPListingQueue(int value);
@@ -525,6 +527,7 @@ public:
   __property UnicodeString CustomParam2 = { read = FCustomParam2, write = SetCustomParam2 };
   __property UnicodeString SessionKey = { read = GetSessionKey };
   __property bool ResolveSymlinks = { read = FResolveSymlinks, write = SetResolveSymlinks };
+  __property bool FollowDirectorySymlinks = { read = FFollowDirectorySymlinks, write = SetFollowDirectorySymlinks };
   __property int SFTPDownloadQueue = { read = FSFTPDownloadQueue, write = SetSFTPDownloadQueue };
   __property int SFTPUploadQueue = { read = FSFTPUploadQueue, write = SetSFTPUploadQueue };
   __property int SFTPListingQueue = { read = FSFTPListingQueue, write = SetSFTPListingQueue };

@@ -391,6 +391,7 @@ protected:
   void __fastcall StartOperationWithFile(
     const UnicodeString & FileName, TFileOperation Operation1, TFileOperation Operation2 = foNone);
   void __fastcall CommandSessionClose(TObject * Sender);
+  bool __fastcall CanRecurseToDirectory(const TRemoteFile * File);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 

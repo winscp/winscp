@@ -120,6 +120,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     CacheDirectoryChangesCheck->Checked = FSessionData->CacheDirectoryChanges;
     PreserveDirectoryChangesCheck->Checked = FSessionData->PreserveDirectoryChanges;
     ResolveSymlinksCheck->Checked = FSessionData->ResolveSymlinks;
+    FollowDirectorySymlinksCheck->Checked = FSessionData->FollowDirectorySymlinks;
 
     // Environment page
     switch (FSessionData->DSTMode)
@@ -474,6 +475,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->CacheDirectoryChanges = CacheDirectoryChangesCheck->Checked;
   FSessionData->PreserveDirectoryChanges = PreserveDirectoryChangesCheck->Checked;
   FSessionData->ResolveSymlinks = ResolveSymlinksCheck->Checked;
+  FSessionData->FollowDirectorySymlinks = FollowDirectorySymlinksCheck->Checked;
 
   // Environment page
   if (DSTModeUnixCheck->Checked)

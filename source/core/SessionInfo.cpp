@@ -1153,9 +1153,9 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
            EnumName(Data->LookupUserGroups, AutoSwitchNames)));
         ADF(L"Shell: %s", ((Data->Shell.IsEmpty()? UnicodeString(L"default") : Data->Shell)));
         ADF(L"EOL: %s, UTF: %s", (EnumName(Data->EOLType, EOLTypeNames), EnumName(Data->NotUtf, NotAutoSwitchNames))); // NotUtf duplicated in FTP branch
-        ADF(L"Clear aliases: %s, Unset nat.vars: %s, Resolve symlinks: %s",
+        ADF(L"Clear aliases: %s, Unset nat.vars: %s, Resolve symlinks: %s; Follow directory symlinks: %s",
           (BooleanToEngStr(Data->ClearAliases), BooleanToEngStr(Data->UnsetNationalVars),
-           BooleanToEngStr(Data->ResolveSymlinks)));
+           BooleanToEngStr(Data->ResolveSymlinks), BooleanToEngStr(Data->FollowDirectorySymlinks)));
         ADF(L"LS: %s, Ign LS warn: %s, Scp1 Comp: %s",
           (Data->ListingCommand,
            BooleanToEngStr(Data->IgnoreLsWarnings),

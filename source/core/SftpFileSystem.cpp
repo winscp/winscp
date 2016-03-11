@@ -3681,7 +3681,7 @@ void __fastcall TSFTPFileSystem::DeleteFile(const UnicodeString FileName,
   const TRemoteFile * File, int Params, TRmSessionAction & Action)
 {
   unsigned char Type;
-  if (File && File->IsDirectory && !File->IsSymLink)
+  if (File && File->IsDirectory && FTerminal->CanRecurseToDirectory(File))
   {
     if (FLAGCLEAR(Params, dfNoRecursive))
     {
@@ -3867,7 +3867,7 @@ void __fastcall TSFTPFileSystem::ChangeFileProperties(const UnicodeString FileNa
   {
     DebugAssert(File);
 
-    if (File->IsDirectory && !File->IsSymLink && AProperties->Recursive)
+    if (File->IsDirectory && FTerminal->CanRecurseToDirectory(File) && AProperties->Recursive)
     {
       try
       {
@@ -3978,7 +3978,7 @@ void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(
     {
       TRemoteFile * File = (TRemoteFile *)FileList->Objects[Index];
       DebugAssert(File != NULL);
-      if (File->IsDirectory && !File->IsSymLink &&
+      if (File->IsDirectory && FTerminal->CanRecurseToDirectory(File) &&
           !File->IsParentDirectory && !File->IsThisDirectory)
       {
         OperationProgress->SetFile(File->FileName);
@@ -5553,7 +5553,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
   if (File->IsDirectory)
   {
     Action.Cancel();
-    if (!File->IsSymLink)
+    if (FTerminal->CanRecurseToDirectory(File))
     {
       FILE_OPERATION_LOOP_BEGIN
       {

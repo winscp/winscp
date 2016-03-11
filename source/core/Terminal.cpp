@@ -3457,7 +3457,7 @@ void __fastcall TTerminal::CustomCommandOnFiles(UnicodeString Command,
     for (int i = 0; i < Files->Count; i++)
     {
       TRemoteFile * File = static_cast<TRemoteFile *>(Files->Objects[i]);
-      bool Dir = File->IsDirectory && !File->IsSymLink;
+      bool Dir = File->IsDirectory && CanRecurseToDirectory(File);
 
       if (!Dir || FLAGSET(Params, ccApplyToDirectories))
       {
@@ -3600,7 +3600,7 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
   {
     if (File->IsDirectory)
     {
-      if (!File->IsSymLink)
+      if (CanRecurseToDirectory(File))
       {
         if (!AParams->AllowDirs)
         {
@@ -4916,7 +4916,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
 
       bool Modified = false;
       bool New = false;
-      if (File->IsDirectory && File->IsSymLink)
+      if (File->IsDirectory && !CanRecurseToDirectory(File))
       {
         LogEvent(FORMAT(L"Skipping symlink to directory \"%s\".", (File->FileName)));
       }
@@ -6033,6 +6033,12 @@ UnicodeString __fastcall TTerminal::ChangeFileName(const TCopyParamType * CopyPa
   FileName = CopyParam->ChangeFileName(FileName, Side, FirstLevel);
   return FileName;
 }
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::CanRecurseToDirectory(const TRemoteFile * File)
+{
+  return !File->IsSymLink || FSessionData->FollowDirectorySymlinks;
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
   TSessionData * ASessionData, TConfiguration * Configuration, const UnicodeString & Name) :

@@ -214,6 +214,7 @@ void __fastcall TPropertiesDialog::LoadInfo()
     if (File->IsDirectory)
     {
       Stats.Directories++;
+      // we should use TTerminal::CanRecurseToDirectory instead
       if (!File->IsSymLink)
       {
         FAllowCalculateStats = true;

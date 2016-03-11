@@ -253,6 +253,7 @@ __published:
   TFilenameEdit *TlsCertificateFileEdit;
   TCheckBox *TrimVMSVersionsCheck;
   TComboBox *SshProtCombo;
+  TCheckBox *FollowDirectorySymlinksCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

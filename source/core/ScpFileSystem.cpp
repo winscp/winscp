@@ -1289,7 +1289,7 @@ void __fastcall TSCPFileSystem::CustomCommandOnFile(const UnicodeString FileName
     TCaptureOutputEvent OutputEvent)
 {
   DebugAssert(File);
-  bool Dir = File->IsDirectory && !File->IsSymLink;
+  bool Dir = File->IsDirectory && FTerminal->CanRecurseToDirectory(File);
   if (Dir && (Params & ccRecursive))
   {
     TCustomCommandParams AParams;
