@@ -29,7 +29,7 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
-bool __fastcall TProgressForm::IsIndetermiateOperation(TFileOperation Operation)
+bool __fastcall TProgressForm::IsIndeterminateOperation(TFileOperation Operation)
 {
   return (Operation == foCalculateSize);
 }
@@ -52,7 +52,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(TFileOperationProgressType *
     DebugAssert(Id != 0);
   }
   UnicodeString Result = LoadStr(Id);
-  if (!IsIndetermiateOperation(ProgressData->Operation))
+  if (!IsIndeterminateOperation(ProgressData->Operation))
   {
     Result = FORMAT(L"%d%% %s", (ProgressData->OverallProgress(), Result));
   }
@@ -206,7 +206,7 @@ void __fastcall TProgressForm::UpdateControls()
 
     CancelItem->Caption = CancelCaption;
 
-    TopProgress->Style = IsIndetermiateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
+    TopProgress->Style = IsIndeterminateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
 
     FFrameAnimation.Init(AnimationPaintBox, Animation);
     FFrameAnimation.Start();

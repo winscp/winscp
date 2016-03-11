@@ -127,7 +127,7 @@ protected:
   void __fastcall Minimize(TObject * Sender);
   virtual void __fastcall Dispatch(void * Message);
 
-  static bool __fastcall IsIndetermiateOperation(TFileOperation Operation);
+  static bool __fastcall IsIndeterminateOperation(TFileOperation Operation);
 
 public:
   static UnicodeString __fastcall ProgressStr(TFileOperationProgressType * ProgressData);
