@@ -312,6 +312,7 @@ __published:
   TPopupMenu *AddCommandMenu;
   TMenuItem *AddCustomCommandMenuItem;
   TMenuItem *AddExtensionMenuItem;
+  TStaticText *BackgroundConfirmationsLink;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -398,6 +399,7 @@ __published:
   void __fastcall EditCommandButtonClick(TObject *Sender);
   void __fastcall AddCommandButtonDropDownClick(TObject *Sender);
   void __fastcall CustomCommandsViewMouseMove(TObject *Sender, TShiftState Shift, int X, int Y);
+  void __fastcall BackgroundConfirmationsLinkClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;

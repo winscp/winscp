@@ -117,6 +117,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   LoadDialogImage(ExplorerInterfacePicture, L"Explorer");
 
   LinkLabel(UpdatesLink);
+  LinkAppLabel(BackgroundConfirmationsLink);
 
   HideComponentsPanel(this);
 }
@@ -2644,5 +2645,13 @@ void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Send
 
     FCustomCommandsHintItem = Index;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::BackgroundConfirmationsLinkClick(TObject * /*Sender*/)
+{
+  PageControl->ActivePage = QueueSheet;
+  PageControlChange(NULL);
+  QueueNoConfirmationCheck->SetFocus();
+  QueueNoConfirmationCheck->Perform(WM_CHANGEUISTATE, MAKEWPARAM(UIS_CLEAR, UISF_HIDEFOCUS), 0);
 }
 //---------------------------------------------------------------------------

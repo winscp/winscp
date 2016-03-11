@@ -1792,15 +1792,26 @@ static void __fastcall LinkLabelContextMenuClick(void * Data, TObject * Sender)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
-  TNotifyEvent OnEnter)
+static void __fastcall DoLinkLabel(TStaticText * StaticText)
 {
   StaticText->Transparent = false;
   StaticText->ParentFont = true;
   StaticText->Font->Style = StaticText->Font->Style << fsUnderline;
-  StaticText->Font->Color = LinkColor;
   StaticText->Cursor = crHandPoint;
+
+  TWndMethod WindowProc;
+  ((TMethod*)&WindowProc)->Data = StaticText;
+  ((TMethod*)&WindowProc)->Code = LinkLabelWindowProc;
+  StaticText->WindowProc = WindowProc;
+}
+//---------------------------------------------------------------------------
+void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
+  TNotifyEvent OnEnter)
+{
+  DoLinkLabel(StaticText);
+
   reinterpret_cast<TButton*>(StaticText)->OnEnter = OnEnter;
+
   if (!Url.IsEmpty())
   {
     StaticText->Caption = Url;
@@ -1841,10 +1852,12 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
     }
   }
 
-  TWndMethod WindowProc;
-  ((TMethod*)&WindowProc)->Data = StaticText;
-  ((TMethod*)&WindowProc)->Code = LinkLabelWindowProc;
-  StaticText->WindowProc = WindowProc;
+  StaticText->Font->Color = LinkColor;
+}
+//---------------------------------------------------------------------------
+void __fastcall LinkAppLabel(TStaticText * StaticText)
+{
+  DoLinkLabel(StaticText);
 }
 //---------------------------------------------------------------------------
 static void __fastcall HotTrackLabelMouseEnter(void * /*Data*/, TObject * Sender)

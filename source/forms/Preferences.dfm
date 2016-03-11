@@ -76,13 +76,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 256
+          Height = 272
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Confirmations'
           TabOrder = 0
           DesignSize = (
             389
-            256)
+            272)
           object ConfirmOverwritingCheck: TCheckBox
             Left = 16
             Top = 44
@@ -95,82 +95,82 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmDeletingCheck: TCheckBox
             Left = 16
-            Top = 67
+            Top = 106
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Deleting of files (recommended)'
-            TabOrder = 2
+            TabOrder = 4
             OnClick = ControlChange
           end
           object ConfirmClosingSessionCheck2: TCheckBox
             Left = 16
-            Top = 136
+            Top = 152
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Closing sessions when exiting appli&cation'
-            TabOrder = 5
+            TabOrder = 6
             OnClick = ControlChange
           end
           object DDTransferConfirmationCheck: TCheckBox
             Left = 16
-            Top = 182
+            Top = 198
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'D&rag && drop operations'
-            TabOrder = 7
+            TabOrder = 8
             OnClick = ControlChange
           end
           object ContinueOnErrorCheck: TCheckBox
             Left = 16
-            Top = 228
+            Top = 244
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Continue on &error (advanced users)'
-            TabOrder = 9
+            TabOrder = 10
             OnClick = ControlChange
           end
           object ConfirmExitOnCompletionCheck: TCheckBox
             Left = 16
-            Top = 159
+            Top = 175
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Exiting application on o&peration completion'
-            TabOrder = 6
+            TabOrder = 7
             OnClick = ControlChange
           end
           object ConfirmResumeCheck: TCheckBox
             Left = 16
-            Top = 113
+            Top = 67
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Trans&fer resuming'
-            TabOrder = 4
+            TabOrder = 2
             OnClick = ControlChange
           end
           object ConfirmCommandSessionCheck: TCheckBox
             Left = 16
-            Top = 205
+            Top = 221
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Opening separate &shell session'
-            TabOrder = 8
+            TabOrder = 9
             OnClick = ControlChange
           end
           object ConfirmRecyclingCheck: TCheckBox
             Left = 16
-            Top = 90
+            Top = 129
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Moving files to Recycle bin'
-            TabOrder = 3
+            TabOrder = 5
             OnClick = ControlChange
           end
           object ConfirmTransferringCheck: TCheckBox
@@ -183,10 +183,22 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 0
             OnClick = ControlChange
           end
+          object BackgroundConfirmationsLink: TStaticText
+            Left = 32
+            Top = 88
+            Width = 345
+            Height = 17
+            Alignment = taRightJustify
+            AutoSize = False
+            Caption = 'Change confirmations of background transfers'
+            TabOrder = 3
+            TabStop = True
+            OnClick = BackgroundConfirmationsLinkClick
+          end
         end
         object NotificationsGroup: TGroupBox
           Left = 8
-          Top = 271
+          Top = 286
           Width = 389
           Height = 73
           Anchors = [akLeft, akTop, akRight]
