@@ -263,7 +263,7 @@ void __fastcall TProgressForm::UpdateControls()
   }
   int OverallProgress = FData.OverallProgress();
   FOperationProgress->Position = OverallProgress;
-  FOperationProgress->Hint = FORMAT(L"%d%%", (OverallProgress));
+  FOperationProgress->Hint = IsIndeterminateOperation(FData.Operation) ? UnicodeString() : FORMAT(L"%d%%", (OverallProgress));
   Caption = FormatFormCaption(this, ProgressStr(&FData));
 
   if (TransferOperation)
