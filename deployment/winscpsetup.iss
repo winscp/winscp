@@ -703,18 +703,19 @@ begin
   Donated := true;
 end;
 
-procedure CreateDonateLink(Amount: Integer; Row: Integer; Top: Integer);
+procedure CreateDonateLink(Amount: Integer; var Top: Integer);
 var
   Caption: TLabel;
 begin
   Caption := TLabel.Create(DonationPanel);
   Caption.Left := 0;
-  Caption.Top := Top + Row * ScaleY(16);
+  Caption.Top := Top;
   Caption.Tag := Amount;
   Caption.Parent := DonationPanel;
   Caption.Caption := Format(CustomMessage('Donate'), ['$' + IntToStr(Amount)]);
   Caption.OnClick := @DonateLinkClick;
   LinkLabel(Caption);
+  Top := Top + ScaleY(16);
 end;
 
 #endif
@@ -909,7 +910,7 @@ var
   Caption: TLabel;
   Image: TBitmapImage;
   HelpButton: TButton;
-  P: Integer;
+  P, P2: Integer;
   S: string;
   Completeness: Integer;
 begin
@@ -1220,15 +1221,15 @@ begin
   Caption.Parent := DonationPanel;
 
   P := GetBottom(Caption) + ScaleY(12);
+  P2 := P;
 
-  CreateDonateLink( 9, 0, P);
-  CreateDonateLink(19, 1, P);
-  CreateDonateLink(29, 2, P);
-  CreateDonateLink(49, 3, P);
+  CreateDonateLink( 9, P);
+  CreateDonateLink(19, P);
+  CreateDonateLink(49, P);
 
   AboutDonationCaption := TLabel.Create(DonationPanel);
   AboutDonationCaption.Left := 0;
-  AboutDonationCaption.Top := P + 3 * ScaleY(16) + ScaleY(24);
+  AboutDonationCaption.Top := P;
   AboutDonationCaption.Parent := DonationPanel;
   AboutDonationCaption.Caption := CustomMessage('AboutDonations');
   AboutDonationCaption.OnClick := @AboutDonationsLinkClick;
@@ -1239,8 +1240,8 @@ begin
   Image.AutoSize := True;
   Image.Cursor := crHand;
   Image.Parent := DonationPanel;
-  Image.Left := ScaleX(100);
-  Image.Top := P + ScaleX(8);
+  Image.Left := ScaleX(108);
+  Image.Top := P2 + ScaleX(8);
   Image.Hint := CustomMessage('AboutDonations');
   Image.ShowHint := True;
   Image.OnClick := @AboutDonationsLinkClick;
