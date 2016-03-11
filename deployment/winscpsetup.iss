@@ -939,7 +939,7 @@ begin
   end;
 
   Completeness := LanguageCompleteness(ActiveLanguage);
-  if Completeness < 100 then
+  if (Completeness < 100) and (not WizardSilent) then
   begin
     ShowMessage(FmtMessage(CustomMessage('IncompleteTranslation'), [IntToStr(Completeness)]));
   end;
