@@ -250,13 +250,12 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     }
   }
 
-  bool AddPreserveTime = (PreserveTime != Defaults.PreserveTime);
   bool APreserveTimeDirs = PreserveTime && PreserveTimeDirs;
-  if (AddPreserveTime || (APreserveTimeDirs != Defaults.PreserveTimeDirs))
+  if ((PreserveTime != Defaults.PreserveTime) || (APreserveTimeDirs != Defaults.PreserveTimeDirs))
   {
+    bool AddPreserveTime = false;
     UnicodeString Str = LoadStr(PreserveTime ? COPY_INFO_TIMESTAMP : COPY_INFO_DONT_PRESERVE_TIME);
 
-    const int Except = cpaIncludeMaskOnly | cpaNoPreserveTime;
     const int ExceptDirs = cpaNoPreserveTimeDirs;
     if (APreserveTimeDirs != Defaults.PreserveTimeDirs)
     {
@@ -268,12 +267,22 @@ void __fastcall TCopyParamType::DoGetInfoStr(
           AddPreserveTime = true;
         }
       }
-      ADD("", Except | ExceptDirs);
+      ADD("", ExceptDirs);
+    }
+
+    const int Except = cpaIncludeMaskOnly | cpaNoPreserveTime;
+    if (PreserveTime != Defaults.PreserveTime)
+    {
+      if (FLAGCLEAR(Options, Except))
+      {
+        AddPreserveTime = true;
+      }
+      ADD(L"", Except);
     }
 
     if (AddPreserveTime)
     {
-      ADD(Str, Except);
+      AddToList(Result, Str, Separator);
     }
 
     if (FLAGCLEAR(Options, Except))

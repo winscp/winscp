@@ -199,8 +199,10 @@ void __fastcall TCopyParamsFrame::UpdateControls()
     Enabled);
   EnableControl(PreserveTimeCheck, FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTime) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
+  // The checkbox can be enabled even then "preserve time" checkbox is not (such as on the Synchronize dialog);
   EnableControl(PreserveTimeDirsCheck,
-    PreserveTimeCheck->Enabled && FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTimeDirs) &&
+    FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTimeDirs) &&
+    FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled &&
     PreserveTimeCheck->Checked);
   EnableControl(ChangeCaseGroup, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(IgnorePermErrorsCheck,
