@@ -1041,7 +1041,7 @@ protected:
   inline void __fastcall Print(const UnicodeString & Str, bool FromBeginning = false);
   inline void __fastcall PrintLine(const UnicodeString & Str);
   void __fastcall UpdateTitle();
-  inline void __fastcall NotifyAbort();
+  inline bool __fastcall NotifyAbort();
   inline bool __fastcall Aborted(bool AllowCompleteAbort = true);
   void __fastcall MasterPasswordPrompt();
   void __fastcall DoShowException(TTerminal * Terminal, Exception * E);
@@ -1184,18 +1184,14 @@ void __fastcall TConsoleRunner::PrintMessage(const UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleRunner::NotifyAbort()
+bool __fastcall TConsoleRunner::NotifyAbort()
 {
-  if (FBatchScript)
+  bool Result = FBatchScript;
+  if (Result)
   {
     FAborted = true;
-
-    if (FScript->Terminal != NULL)
-    {
-      std::unique_ptr<TStringList> Failure(TextToStringList(LoadStr(USER_TERMINATED)));
-      FScript->Terminal->ActionLog->AddFailure(Failure.get());
-    }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TConsoleRunner::Aborted(bool AllowCompleteAbort)
@@ -1211,9 +1207,14 @@ bool __fastcall TConsoleRunner::Aborted(bool AllowCompleteAbort)
     if (Result)
     {
       PrintMessage(LoadStr(USER_TERMINATED));
-      if (AllowCompleteAbort)
+
+      if (AllowCompleteAbort && NotifyAbort())
       {
-        NotifyAbort();
+        if (FScript->Terminal != NULL)
+        {
+          std::unique_ptr<TStringList> Failure(TextToStringList(LoadStr(USER_TERMINATED)));
+          FScript->Terminal->ActionLog->AddFailure(Failure.get());
+        }
       }
     }
   }
