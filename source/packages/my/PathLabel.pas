@@ -173,8 +173,8 @@ procedure TCustomPathLabel.CMHintShow(var Message: TMessage);
 begin
   with TCMHintShow(Message).HintInfo^ do
   begin
-    HintPos.X := ClientOrigin.X + IndentHorizontal - 3;
-    HintPos.Y := ClientOrigin.Y + IndentVertical - 3;
+    HintPos.X := ClientOrigin.X + IndentHorizontal;
+    HintPos.Y := ClientOrigin.Y + IndentVertical;
     if UseHotTrack then Inc(HintPos.Y, Height);
   end;
 end; { CMHintShow }

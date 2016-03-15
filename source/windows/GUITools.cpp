@@ -1166,6 +1166,11 @@ bool __fastcall TScreenTipHintWindow::UseBoldShortHint(TControl * HintControl)
     (dynamic_cast<TTBPopupWindow *>(HintControl) != NULL);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TScreenTipHintWindow::IsPathLabel(TControl * HintControl)
+{
+  return (dynamic_cast<TPathLabel *>(HintControl) != NULL);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TScreenTipHintWindow::IsHintPopup(TControl * HintControl, const UnicodeString & Hint)
 {
   TLabel * HintLabel = dynamic_cast<TLabel *>(HintControl);
@@ -1176,7 +1181,7 @@ int __fastcall TScreenTipHintWindow::GetMargin(TControl * HintControl, const Uni
 {
   int Result;
 
-  if (IsHintPopup(HintControl, Hint))
+  if (IsHintPopup(HintControl, Hint) || IsPathLabel(HintControl))
   {
     Result = 3;
   }
@@ -1192,11 +1197,10 @@ int __fastcall TScreenTipHintWindow::GetMargin(TControl * HintControl, const Uni
 //---------------------------------------------------------------------------
 TFont * __fastcall TScreenTipHintWindow::GetFont(TControl * HintControl, const UnicodeString & Hint)
 {
-  bool HintPopup = IsHintPopup(HintControl, Hint);
   TFont * Result;
-  if (HintPopup)
+  if (IsHintPopup(HintControl, Hint) || IsPathLabel(HintControl))
   {
-    Result = dynamic_cast<TLabel *>(HintControl)->Font;
+    Result = reinterpret_cast<TLabel *>(dynamic_cast<TCustomLabel *>(HintControl))->Font;
   }
   else
   {
@@ -1299,6 +1303,10 @@ void __fastcall TScreenTipHintWindow::ActivateHintData(const TRect & ARect, cons
   if (FHintPopup)
   {
     Rect.SetLocation(FHintControl->ClientToScreen(TPoint(-FMargin, -FMargin)));
+  }
+  if (IsPathLabel(FHintControl))
+  {
+    Rect.Offset(-FMargin, -FMargin);
   }
 
   THintWindow::ActivateHintData(Rect, FShortHint, AData);
