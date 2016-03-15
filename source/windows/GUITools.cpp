@@ -1278,7 +1278,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
     Result.Bottom = Margin + ShortRect.Height() + (Margin / 3 * 5) + LongRect.Height() + Margin;
   }
 
-  // To counter the increase in THintWindow::ActivateHintData
+  // VCLCOPY: To counter the increase in THintWindow::ActivateHintData
   Result.Bottom -= 4;
 
   return Result;
