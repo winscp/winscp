@@ -126,6 +126,8 @@ public:
   virtual TRect __fastcall CalcHintRect(int MaxWidth, const UnicodeString AHint, void * AData);
   virtual void __fastcall ActivateHintData(const TRect & Rect, const UnicodeString AHint, void * AData);
 
+  static void __fastcall CalcHintTextRect(TControl * Control, TCanvas * Canvas, TRect & Rect, const UnicodeString & Hint);
+
 protected:
   virtual void __fastcall Paint();
   virtual void __fastcall Dispatch(void * AMessage);
@@ -136,10 +138,14 @@ private:
   UnicodeString FShortHint;
   UnicodeString FLongHint;
   TControl * FHintControl;
+  bool FHintPopup;
 
   UnicodeString __fastcall GetLongHintIfAny(const UnicodeString & AHint);
-  int __fastcall GetTextFlags();
+  static int __fastcall GetTextFlags(TControl * Control);
+  bool __fastcall IsHintPopup(TControl * HintControl, const UnicodeString & Hint);
   bool __fastcall UseBoldShortHint(TControl * HintControl);
+  int __fastcall GetMargin(TControl * HintControl, const UnicodeString & Hint);
+  TFont * __fastcall GetFont(TControl * HintControl, const UnicodeString & Hint);
   TControl * __fastcall GetHintControl(void * Data);
 };
 //---------------------------------------------------------------------------

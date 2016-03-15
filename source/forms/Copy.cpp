@@ -332,10 +332,7 @@ void __fastcall TCopyDialog::UpdateControls()
   }
 
   UnicodeString InfoStr = FCopyParams.GetInfoStr(L"; ", FCopyParamAttrs);
-  CopyParamLabel->Caption = InfoStr;
-  CopyParamLabel->Hint = InfoStr;
-  CopyParamLabel->ShowHint =
-    (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
+  SetLabelHintPopup(CopyParamLabel, InfoStr);
 
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
   EnableControl(QueueCheck2,

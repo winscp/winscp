@@ -154,10 +154,7 @@ void __fastcall TSynchronizeDialog::UpdateControls()
     OptionsGroup->Enabled && FLAGSET(FOptions, soAllowSelectedOnly));
 
   UnicodeString InfoStr = CopyParams.GetInfoStr(L"; ", ActualCopyParamAttrs());
-  CopyParamLabel->Caption = InfoStr;
-  CopyParamLabel->Hint = InfoStr;
-  CopyParamLabel->ShowHint =
-    (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
+  SetLabelHintPopup(CopyParamLabel, InfoStr);
 
   TransferSettingsButton->Style =
     FLAGCLEAR(Options, soDoNotUsePresets) ?

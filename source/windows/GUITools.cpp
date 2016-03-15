@@ -1152,12 +1152,11 @@ __fastcall TScreenTipHintWindow::TScreenTipHintWindow(TComponent * Owner) :
   THintWindow(Owner)
 {
   FParentPainting = false;
-  FMargin = ScaleByPixelsPerInch(6);
 }
 //---------------------------------------------------------------------------
-int __fastcall TScreenTipHintWindow::GetTextFlags()
+int __fastcall TScreenTipHintWindow::GetTextFlags(TControl * Control)
 {
-  return DT_LEFT | DT_WORDBREAK | DT_NOPREFIX | DrawTextBiDiModeFlagsReadingOnly();
+  return DT_LEFT | DT_WORDBREAK | DT_NOPREFIX | Control->DrawTextBiDiModeFlagsReadingOnly();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScreenTipHintWindow::UseBoldShortHint(TControl * HintControl)
@@ -1167,10 +1166,59 @@ bool __fastcall TScreenTipHintWindow::UseBoldShortHint(TControl * HintControl)
     (dynamic_cast<TTBPopupWindow *>(HintControl) != NULL);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TScreenTipHintWindow::IsHintPopup(TControl * HintControl, const UnicodeString & Hint)
+{
+  TLabel * HintLabel = dynamic_cast<TLabel *>(HintControl);
+  return (HintLabel != NULL) && HasLabelHintPopup(HintLabel, Hint);
+}
+//---------------------------------------------------------------------------
+int __fastcall TScreenTipHintWindow::GetMargin(TControl * HintControl, const UnicodeString & Hint)
+{
+  int Result;
+
+  if (IsHintPopup(HintControl, Hint))
+  {
+    Result = 3;
+  }
+  else
+  {
+    Result = 6;
+  }
+
+  Result = ScaleByPixelsPerInch(Result);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+TFont * __fastcall TScreenTipHintWindow::GetFont(TControl * HintControl, const UnicodeString & Hint)
+{
+  bool HintPopup = IsHintPopup(HintControl, Hint);
+  TFont * Result;
+  if (HintPopup)
+  {
+    Result = dynamic_cast<TLabel *>(HintControl)->Font;
+  }
+  else
+  {
+    Result = Screen->HintFont;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScreenTipHintWindow::CalcHintTextRect(TControl * Control, TCanvas * Canvas, TRect & Rect, const UnicodeString & Hint)
+{
+  const int Flags = DT_CALCRECT | GetTextFlags(Control);
+  DrawText(Canvas->Handle, Hint.c_str(), -1, &Rect, Flags);
+}
+//---------------------------------------------------------------------------
 TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeString AHint, void * AData)
 {
+  TControl * HintControl = GetHintControl(AData);
+  int Margin = GetMargin(HintControl, AHint);
   const UnicodeString ShortHint = GetShortHint(AHint);
   const UnicodeString LongHint = GetLongHintIfAny(AHint);
+
+  Canvas->Font->Assign(GetFont(HintControl, AHint));
 
   // we do not have a parent form here, so we cannot scale by text height
   const int ScreenTipTextOnlyWidth = ScaleByPixelsPerInch(cScreenTipTextOnlyWidth);
@@ -1178,10 +1226,8 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
   if (!LongHint.IsEmpty())
   {
     // double-margin on the right
-    MaxWidth = ScreenTipTextOnlyWidth - (3 * FMargin);
+    MaxWidth = ScreenTipTextOnlyWidth - (3 * Margin);
   }
-
-  const int Flags = DT_CALCRECT | GetTextFlags();
 
   // Multi line short hints can be twice as wide, to not break the individual lines unless really necessary.
   // (login site tree, clean up dialog list, preferences custom command list, persistent hint, etc).
@@ -1191,12 +1237,18 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
     MaxWidth *= 2;
   }
 
-  if (UseBoldShortHint(GetHintControl(AData)))
+  bool HintPopup = IsHintPopup(HintControl, AHint);
+  if (HintPopup)
+  {
+    MaxWidth = HintControl->Width;
+  }
+
+  if (UseBoldShortHint(HintControl))
   {
     Canvas->Font->Style = TFontStyles() << fsBold;
   }
   TRect ShortRect(0, 0, MaxWidth, 0);
-  DrawText(Canvas->Handle, ShortHint.c_str(), -1, &ShortRect, Flags);
+  CalcHintTextRect(this, Canvas, ShortRect, ShortHint);
   Canvas->Font->Style = TFontStyles();
 
   TRect Result;
@@ -1204,17 +1256,26 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
   if (LongHint.IsEmpty())
   {
     Result = ShortRect;
-    Result.Right += 3 * FMargin;
-    Result.Bottom += 2 * FMargin;
+
+    if (HintPopup)
+    {
+      Result.Right = MaxWidth + 2 * Margin;
+    }
+    else
+    {
+      Result.Right += 3 * Margin;
+    }
+
+    Result.Bottom += 2 * Margin;
   }
   else
   {
-    const int LongIndentation = FMargin * 3 / 2;
+    const int LongIndentation = Margin * 3 / 2;
     TRect LongRect(0, 0, MaxWidth - LongIndentation, 0);
-    DrawText(Canvas->Handle, LongHint.c_str(), -1, &LongRect, Flags);
+    CalcHintTextRect(this, Canvas, LongRect, LongHint);
 
     Result.Right = ScreenTipTextOnlyWidth;
-    Result.Bottom = FMargin + ShortRect.Height() + (FMargin / 3 * 5) + LongRect.Height() + FMargin;
+    Result.Bottom = Margin + ShortRect.Height() + (Margin / 3 * 5) + LongRect.Height() + Margin;
   }
 
   // To counter the increase in THintWindow::ActivateHintData
@@ -1228,8 +1289,19 @@ void __fastcall TScreenTipHintWindow::ActivateHintData(const TRect & ARect, cons
   FShortHint = GetShortHint(AHint);
   FLongHint = GetLongHintIfAny(AHint);
   FHintControl = GetHintControl(AData);
+  FMargin = GetMargin(FHintControl, AHint);
+  FHintPopup = IsHintPopup(FHintControl, AHint);
 
-  THintWindow::ActivateHintData(ARect, FShortHint, AData);
+  Canvas->Font->Assign(GetFont(FHintControl, AHint));
+
+  TRect Rect = ARect;
+
+  if (FHintPopup)
+  {
+    Rect.SetLocation(FHintControl->ClientToScreen(TPoint(-FMargin, -FMargin)));
+  }
+
+  THintWindow::ActivateHintData(Rect, FShortHint, AData);
 }
 //---------------------------------------------------------------------------
 TControl * __fastcall TScreenTipHintWindow::GetHintControl(void * Data)
@@ -1279,12 +1351,15 @@ void __fastcall TScreenTipHintWindow::Paint()
     THintWindow::Paint();
   }
 
-  const int Flags = GetTextFlags();
+  const int Flags = GetTextFlags(this);
   const int Margin = FMargin - 1; // 1 = border
 
   TRect Rect = ClientRect;
   Rect.Inflate(-Margin, -Margin);
-  Rect.Right -= FMargin;
+  if (!FHintPopup)
+  {
+    Rect.Right -= FMargin;
+  }
   if (UseBoldShortHint(FHintControl))
   {
     Canvas->Font->Style = TFontStyles() << fsBold;

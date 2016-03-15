@@ -758,12 +758,10 @@ void __fastcall TTerminalManager::ApplicationShowHint(UnicodeString & HintStr,
 {
   HintInfo.HintData = HintInfo.HintControl;
   TLabel * HintLabel = dynamic_cast<TLabel *>(HintInfo.HintControl);
-  if ((HintLabel != NULL) && (HintLabel->Caption == HintStr))
+  if ((HintLabel != NULL) && HasLabelHintPopup(HintLabel, HintStr))
   {
     // Hack for transfer setting labels.
     // Should be converted to something like HintLabel()
-    HintInfo.HintPos = HintLabel->ClientToScreen(TPoint(0, 0));
-    HintInfo.HintMaxWidth = HintLabel->Width;
     HintInfo.HideTimeout = 100000; // "almost" never
   }
   else if (dynamic_cast<TProgressBar *>(HintInfo.HintControl) != NULL)

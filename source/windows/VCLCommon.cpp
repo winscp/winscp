@@ -1879,6 +1879,20 @@ void __fastcall HotTrackLabel(TLabel * Label)
   Label->OnMouseLeave = MakeMethod<TNotifyEvent>(NULL, HotTrackLabelMouseLeave);
 }
 //---------------------------------------------------------------------------
+void __fastcall SetLabelHintPopup(TLabel * Label, const UnicodeString & Hint)
+{
+  Label->Caption = Hint;
+  Label->Hint = Hint;
+  TRect Rect(0, 0, Label->Width, 0);
+  TScreenTipHintWindow::CalcHintTextRect(Label, Label->Canvas, Rect, Label->Caption);
+  Label->ShowHint = (Rect.Bottom > Label->Height);
+}
+//---------------------------------------------------------------------------
+bool __fastcall HasLabelHintPopup(TLabel * Label, const UnicodeString & HintStr)
+{
+  return (Label->Caption == HintStr);
+}
+//---------------------------------------------------------------------------
 Forms::TMonitor *  __fastcall FormMonitor(TCustomForm * Form)
 {
   Forms::TMonitor * Result;

@@ -1159,10 +1159,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
         }
       }
     }
-    CopyParamLabel->Caption = InfoStr;
-    CopyParamLabel->Hint = InfoStr;
-    CopyParamLabel->ShowHint =
-      (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
+    SetLabelHintPopup(CopyParamLabel, InfoStr);
 
     EnableControl(DDExtEnabledButton, WinConfiguration->DDExtInstalled);
     EnableControl(DDExtEnabledLabel, WinConfiguration->DDExtInstalled);

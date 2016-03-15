@@ -109,10 +109,8 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
     !RemoteDirectoryEdit->Text.IsEmpty());
 
   UnicodeString InfoStr = FCopyParams.GetInfoStr(L"; ", ActualCopyParamAttrs());
-  CopyParamLabel->Caption = InfoStr;
-  CopyParamLabel->Hint = InfoStr;
-  CopyParamLabel->ShowHint =
-    (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
+  SetLabelHintPopup(CopyParamLabel, InfoStr);
+
   SynchronizeBySizeCheck->Caption = SynchronizeTimestampsButton->Checked ?
     LoadStr(SYNCHRONIZE_SAME_SIZE) : UnicodeString(FSynchronizeBySizeCaption);
 
