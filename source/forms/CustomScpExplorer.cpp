@@ -1617,7 +1617,6 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     }
     else
     {
-      // other local custom commands can be executed only on remote side
       Result = EnableSelectedOperation[FCurrentSide];
     }
   }
