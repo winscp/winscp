@@ -1392,10 +1392,6 @@ void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
     int Index = Item->Index;
     const TCustomCommandType * Command = GetCommandList(Index)->Commands[GetCommandIndex(Index)];
     UnicodeString Caption = StripHotkey(Command->Name);
-    if (Command->ShortCut != 0)
-    {
-      Caption = FORMAT(L"%s (%s)", (Caption, ShortCutToText(Command->ShortCut)));
-    }
     Item->Caption = Caption;
     DebugAssert(!Item->SubItems->Count);
     Item->SubItems->Add(Command->Command);
@@ -1413,7 +1409,7 @@ void __fastcall TPreferencesDialog::ListViewSelectItem(
 void __fastcall TPreferencesDialog::UpdateCustomCommandsView()
 {
   CustomCommandsView->Items->Count = FCustomCommandList->Count + FExtensionList->Count;
-  AutoSizeListColumnsWidth(CustomCommandsView);
+  AutoSizeListColumnsWidth(CustomCommandsView, 1);
   CustomCommandsView->Invalidate();
 }
 //---------------------------------------------------------------------------
@@ -2626,7 +2622,11 @@ void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Send
     {
       TCustomCommandList * List = GetCommandList(Index);
       const TCustomCommandType * Command = List->Commands[GetCommandIndex(Index)];
-      Hint = Item->Caption;
+      Hint = StripHotkey(Command->Name);
+      if (Command->ShortCut != 0)
+      {
+        Hint = FORMAT(L"%s (%s)", (Hint, ShortCutToText(Command->ShortCut)));
+      }
       if (!Command->Description.IsEmpty())
       {
         Hint += L"\n" + Command->Description;
