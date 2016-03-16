@@ -160,7 +160,7 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
         TListColumn * ColumnToShrink = ListView->Columns->Items[ColumnToShrinkIndex];
         int ColumnToShrinkCaptionWidth = GetColumnTextWidth(ListView, ColumnPadding, ColumnToShrink->Caption);
         int ColumnToShrinkMinWidth = Max(ColumnShrinkMinWidth, ColumnToShrinkCaptionWidth);
-        // This falls back to proprotionak shrinking when the shrink column would fall below min width.
+        // This falls back to proprotional shrinking when the shrink column would fall below min width.
         // Question is whether we should not shrink to min width instead.
         if ((ResizableWidth - ColumnToShrink->Width) < (Remaining - ColumnToShrinkMinWidth))
         {
