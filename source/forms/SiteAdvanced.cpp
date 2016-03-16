@@ -912,6 +912,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       CacheDirectoryChangesCheck->Enabled && CacheDirectoryChangesCheck->Checked &&
       DirectoriesSheet->Enabled);
     EnableControl(ResolveSymlinksCheck, (SftpProtocol || ScpProtocol) && DirectoriesSheet->Enabled);
+    EnableControl(FollowDirectorySymlinksCheck, (SftpProtocol || ScpProtocol || FtpProtocol));
 
     // environment sheet
     EnableControl(EOLTypeCombo, (SftpProtocol || ScpProtocol) && EnvironmentSheet->Enabled);
