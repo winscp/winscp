@@ -392,6 +392,7 @@ extern const UnicodeString MessagePanelName;
 extern const UnicodeString MainMessageLabelName;
 extern const UnicodeString MessageLabelName;
 extern const UnicodeString YesButtonName;
+extern const UnicodeString OKButtonName;
 
 // windows\Console.cpp
 enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan };

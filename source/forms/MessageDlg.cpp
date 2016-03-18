@@ -26,6 +26,7 @@ const UnicodeString MessagePanelName(L"Panel");
 const UnicodeString MainMessageLabelName(L"MainMessage");
 const UnicodeString MessageLabelName(L"Message");
 const UnicodeString YesButtonName(L"Yes");
+const UnicodeString OKButtonName(L"OK");
 //---------------------------------------------------------------------------
 class TMessageButton : public TButton
 {
@@ -751,7 +752,7 @@ void __fastcall AnswerNameAndCaption(
 
     case qaOK:
       Caption = LoadStr(_SMsgDlgOK.Identifier);
-      Name = L"OK";
+      Name = OKButtonName;
       break;
 
     case qaCancel:
