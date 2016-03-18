@@ -3350,6 +3350,9 @@ void __fastcall TTerminal::DoDeleteFile(const UnicodeString FileName,
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::DeleteFiles(TStrings * FilesToDelete, int Params)
 {
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
+  FUseBusyCursor = false;
+
   // TODO: avoid resolving symlinks while reading subdirectories.
   // Resolving does not work anyway for relative symlinks in subdirectories
   // (at least for SFTP).
@@ -3546,6 +3549,9 @@ void __fastcall TTerminal::DoChangeFileProperties(const UnicodeString FileName,
 void __fastcall TTerminal::ChangeFilesProperties(TStrings * FileList,
   const TRemoteProperties * Properties)
 {
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
+  FUseBusyCursor = false;
+
   AnnounceFileListOperation();
   ProcessFiles(FileList, foSetProperties, ChangeFileProperties, (void *)Properties);
 }
