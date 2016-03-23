@@ -1440,6 +1440,7 @@ bool __fastcall TScpCommanderForm::DDGetTarget(
     FDDExtTarget = L"";
     Result = true;
     Internal = true;
+    ForceQueue = false;
   }
   else
   {
