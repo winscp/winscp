@@ -26,9 +26,6 @@ const
   DefaultHistoryCount = 200;
 
 const
-  DDMaxSlowCount = 3;
-  DDVScrollDelay = 2000000;
-  DDHScrollDelay = 2000000;
   DDDragStartDelay = 500000;
   DirAttrMask = SysUtils.faDirectory or SysUtils.faSysFile or SysUtils.faHidden;
 
