@@ -5944,7 +5944,7 @@ void __fastcall TCustomScpExplorerForm::WMAppCommand(TMessage & Message)
   TShiftState Shift = KeyDataToShiftState(GET_KEYSTATE_LPARAM(Message.LParam));
   if ((Shift * (TShiftState() << ssShift << ssAlt << ssCtrl)).Empty())
   {
-    if (Command == _APPCOMMAND_BROWSER_FAVORITES)
+    if (Command == APPCOMMAND_BROWSER_FAVORITES)
     {
       OpenDirectory(GetSide(osCurrent));
       Message.Result = 1;
@@ -7889,7 +7889,7 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       CMDialogChar(*M);
       break;
 
-    case _WM_APPCOMMAND:
+    case WM_APPCOMMAND:
       WMAppCommand(*M);
       break;
 

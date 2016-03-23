@@ -29,30 +29,9 @@ const
   DDDragStartDelay = 500000;
   DirAttrMask = SysUtils.faDirectory or SysUtils.faSysFile or SysUtils.faHidden;
 
-{ Win2000 and newer only }
 const
-  _WM_XBUTTONUP = $020C;
-  _WM_APPCOMMAND = $0319;
   _XBUTTON1 =     $0001;
   _XBUTTON2 =     $0002;
-  _APPCOMMAND_BROWSER_BACKWARD   = 1;
-  _APPCOMMAND_BROWSER_FORWARD    = 2;
-  _APPCOMMAND_BROWSER_REFRESH    = 3;
-  _APPCOMMAND_BROWSER_STOP       = 4;
-  _APPCOMMAND_BROWSER_SEARCH     = 5;
-  _APPCOMMAND_BROWSER_FAVORITES  = 6;
-  _APPCOMMAND_BROWSER_HOME       = 7;
-  _VK_BROWSER_BACK =      $A6;
-  _VK_BROWSER_FORWARD =   $A7;
-  _VK_BROWSER_REFRESH =   $A8;
-  _VK_BROWSER_STOP =      $A9;
-  _VK_BROWSER_SEARCH =    $AA;
-  _VK_BROWSER_FAVORITES = $AB;
-  _VK_BROWSER_HOME =      $AC;
-  _FAPPCOMMAND_MOUSE =    $8000;
-  _FAPPCOMMAND_KEY =      0;
-  _FAPPCOMMAND_OEM =      $1000;
-  _FAPPCOMMAND_MASK =     $F000;
 
 type
   TStatusFileInfo = record
@@ -205,8 +184,8 @@ type
     procedure WMContextMenu(var Message: TWMContextMenu); message WM_CONTEXTMENU;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
-    procedure WMXButtonUp(var Message: TWMXMouse); message _WM_XBUTTONUP;
-    procedure WMAppCommand(var Message: TMessage); message _WM_APPCOMMAND;
+    procedure WMXButtonUp(var Message: TWMXMouse); message WM_XBUTTONUP;
+    procedure WMAppCommand(var Message: TMessage); message WM_APPCOMMAND;
     procedure CMColorChanged(var Message: TMessage); message CM_COLORCHANGED;
     procedure LVMSetExtendedListViewStyle(var Message: TMessage); message LVM_SETEXTENDEDLISTVIEWSTYLE;
 
@@ -2722,30 +2701,30 @@ var
   Command: Integer;
   Shift: TShiftState;
 begin
-  Command := HiWord(Message.lParam) and (not _FAPPCOMMAND_MASK);
-  Shift := KeyDataToShiftState(HiWord(Message.lParam) and _FAPPCOMMAND_MASK);
+  Command := HiWord(Message.lParam) and (not FAPPCOMMAND_MASK);
+  Shift := KeyDataToShiftState(HiWord(Message.lParam) and FAPPCOMMAND_MASK);
 
   if Shift * [ssShift, ssAlt, ssCtrl] = [] then
   begin
-    if Command = _APPCOMMAND_BROWSER_BACKWARD then
+    if Command = APPCOMMAND_BROWSER_BACKWARD then
     begin
       Message.Result := 1;
       if BackCount >= 1 then DoHistoryGo(-1);
     end
       else
-    if Command = _APPCOMMAND_BROWSER_FORWARD then
+    if Command = APPCOMMAND_BROWSER_FORWARD then
     begin
       Message.Result := 1;
       if ForwardCount >= 1 then DoHistoryGo(1);
     end
       else
-    if Command = _APPCOMMAND_BROWSER_REFRESH then
+    if Command = APPCOMMAND_BROWSER_REFRESH then
     begin
       Message.Result := 1;
       BusyOperation(ReloadDirectory);
     end
       else
-    if Command = _APPCOMMAND_BROWSER_HOME then
+    if Command = APPCOMMAND_BROWSER_HOME then
     begin
       Message.Result := 1;
       BusyOperation(ExecuteHomeDirectory);
