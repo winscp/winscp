@@ -330,7 +330,6 @@ namespace WinSCP
                     {
                         throw new SessionRemoteException(this, output);
                     }
-
                 }
                 catch (Exception e)
                 {
