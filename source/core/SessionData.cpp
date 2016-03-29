@@ -1864,11 +1864,18 @@ bool __fastcall TSessionData::GetCanLogin()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetSessionKey()
 {
-  return FORMAT(L"%s@%s", (UserName, HostName));
+  UnicodeString Result = FORMAT(L"%s@%s", (UserName, HostName));
+  if (PortNumber != DefaultPort(FSProtocol, Ftps))
+  {
+    Result += FORMAT(L":%d", (PortNumber));
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetInternalStorageKey()
 {
+  // This is probably useless remnant of previous use of this method from OpenSessionInPutty
+  // that needs the method to return something even for ad-hoc sessions
   if (Name.IsEmpty())
   {
     return SessionKey;
