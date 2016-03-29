@@ -2464,7 +2464,7 @@ void __fastcall TFTPFileSystem::ApplyTimeDifference(TRemoteFile * File)
 
   if (File->ModificationFmt != mfFull)
   {
-    TUploadedTimes::iterator Iterator = FUploadedTimes.find(File->FullFileName);
+    TUploadedTimes::iterator Iterator = FUploadedTimes.find(AbsolutePath(File->FullFileName, false));
     if (Iterator != FUploadedTimes.end())
     {
       TDateTime UploadModification = Iterator->second;
