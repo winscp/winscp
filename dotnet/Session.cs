@@ -334,8 +334,11 @@ namespace WinSCP
                 catch (Exception e)
                 {
                     Logger.WriteLine("Exception: {0}", e);
-                    Cleanup();
                     throw;
+                }
+                finally
+                {
+                    Cleanup();
                 }
 
                 return result;
