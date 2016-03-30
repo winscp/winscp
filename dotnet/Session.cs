@@ -942,10 +942,19 @@ namespace WinSCP
                 WriteCommand(string.Format(CultureInfo.InvariantCulture, "mv \"{0}\" \"{1}\"", Tools.ArgumentEscape(sourcePath), Tools.ArgumentEscape(targetPath)));
 
                 using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
-                using (ElementLogReader mvReader = groupReader.WaitForNonEmptyElementAndCreateLogReader("mv", LogReadFlags.ThrowFailures))
                 {
-                    ReadElement(mvReader, 0);
-                    groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
+                    if (!groupReader.TryWaitForNonEmptyElement("mv", LogReadFlags.ThrowFailures))
+                    {
+                        throw new SessionRemoteException(this, string.Format(CultureInfo.CurrentCulture, "{0} not found.", sourcePath));
+                    }
+                    else
+                    {
+                        using (ElementLogReader mvReader = groupReader.CreateLogReader())
+                        {
+                            ReadElement(mvReader, 0);
+                            groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
+                        }
+                    }
                 }
             }
         }
