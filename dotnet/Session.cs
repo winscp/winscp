@@ -1027,6 +1027,59 @@ namespace WinSCP
             return localPath;
         }
 
+        public string TranslateLocalPathToRemote(string localPath, string localRoot, string remoteRoot)
+        {
+            if (localPath == null)
+            {
+                throw new ArgumentNullException("localPath");
+            }
+
+            if (localRoot == null)
+            {
+                throw new ArgumentNullException("localRoot");
+            }
+
+            if (remoteRoot == null)
+            {
+                throw new ArgumentNullException("remoteRoot");
+            }
+
+            if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
+            {
+                localRoot += "\\";
+            }
+
+            // not adding to empty root paths, because the path may not even start with slash
+            if ((remoteRoot.Length > 0) && !remoteRoot.EndsWith("/", StringComparison.Ordinal))
+            {
+                remoteRoot += "/";
+            }
+
+            string remotePath;
+            // special case
+            if (localPath == localRoot)
+            {
+                remotePath = remoteRoot;
+            }
+            else
+            {
+                if (!localPath.StartsWith(localRoot, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "{0} does not start with {1}", localPath, localRoot));
+                }
+
+                string subPath = localPath.Substring(localRoot.Length);
+                // can happen only when localRoot is empty
+                if (subPath.StartsWith("\\", StringComparison.Ordinal))
+                {
+                    subPath = subPath.Substring(1);
+                }
+                subPath = subPath.Replace('\\', '/');
+                remotePath = remoteRoot + subPath;
+            }
+            return remotePath;
+        }
+
         public string CombinePaths(string path1, string path2)
         {
             if (path1 == null)
