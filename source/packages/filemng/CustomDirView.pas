@@ -2782,7 +2782,9 @@ begin
   end
     else
   if not Start then
+  begin
     FreeAndNil(FAnimation);
+  end;
 end; { DoAnimation }
 
 function TCustomDirView.GetForwardCount: Integer;
