@@ -124,7 +124,6 @@ type
     FFullDriveScan: Boolean;
     FShowVolLabel: Boolean;
     FVolDisplayStyle: TVolumeDisplayStyle;
-    FShowAnimation: Boolean;
     FChangeFlag: Boolean;
     FLastDir: string;
     FValidateFlag: Boolean;
@@ -321,8 +320,6 @@ type
     property ShowVolLabel: Boolean read FShowVolLabel write SetShowVolLabel default True;
     {How to display the drives volume labels:}
     property VolDisplayStyle: TVolumeDisplayStyle read FVolDisplayStyle write SetVolDisplayStyle default doPrettyName;
-    {Show AVI-animation when performing a full drive scan:}
-    property ShowAnimation: Boolean read FShowAnimation write FShowAnimation default False;
     property CompressedColor: TColor read FCompressedColor write SetCompressedColor default clBlue;
     {Additional events:}
     property OnDisplayContextMenu: TNotifyEvent read FOnDisplayContextMenu
@@ -522,7 +519,6 @@ begin
   FLastDir := EmptyStr;
   FValidateFlag := False;
   FConfirmDelete := True;
-  FShowAnimation := False;
   FDirectory := EmptyStr;
   FForceRename := False;
   FLastRenameName := '';
@@ -1420,7 +1416,6 @@ var
   DosError: Integer;
   RootNode: TTreeNode;
   SaveCursor: TCursor;
-  FAnimate: TAnimate;
 
   procedure ScanPath(const Path: string; ParentNode: TTreeNode);
   var
@@ -1467,20 +1462,9 @@ begin {ScanDrive}
     end
       else
     begin
-      FAnimate := nil;
       SaveCursor := Screen.Cursor;
       Screen.Cursor := crHourGlass;
       Items.BeginUpdate;
-
-      if FShowAnimation then
-      begin
-        FAnimate := TAnimate.Create(Self);
-        FAnimate.Top := (Height - FAnimate.Height) div 2;
-        FAnimate.Left := ((Width - FAnimate.Width) * 2) div 3;
-        FAnimate.Parent := Self;
-        FAnimate.CommonAVI := aviFindFolder;
-        FAnimate.Active := True;
-      end;
 
       try
         RootNode := DriveStatus[Drive].RootNode;
@@ -1497,8 +1481,6 @@ begin {ScanDrive}
       finally
         SortChildren(DriveStatus[Drive].RootNode, True);
         EndUpdate;
-        if Assigned(FAnimate) then
-          FAnimate.Free;
       end;
       RootNode.Expand(False);
 
