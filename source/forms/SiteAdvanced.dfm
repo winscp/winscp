@@ -2074,9 +2074,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = AuthGSSAPICheck3Click
           end
           object GSSAPIFwdTGTCheck: TCheckBox
-            Left = 12
+            Left = 32
             Top = 42
-            Width = 373
+            Width = 353
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Allow GSSAPI &credential delegation'
