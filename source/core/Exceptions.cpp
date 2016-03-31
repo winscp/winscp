@@ -33,12 +33,14 @@ static bool __fastcall WellKnownException(
     Clone.reset(new EAccessViolation(E->Message));
   }
   // EIntError and EMathError are EExternal
+  // EClassNotFound is EFilerError
   else if ((dynamic_cast<EListError*>(E) != NULL) ||
            (dynamic_cast<EStringListError*>(E) != NULL) ||
            (dynamic_cast<EIntError*>(E) != NULL) ||
            (dynamic_cast<EMathError*>(E) != NULL) ||
            (dynamic_cast<EVariantError*>(E) != NULL) ||
-           (dynamic_cast<EInvalidOperation*>(E) != NULL))
+           (dynamic_cast<EInvalidOperation*>(E) != NULL) ||
+           (dynamic_cast<EFilerError*>(E) != NULL))
   {
     if (Rethrow)
     {
