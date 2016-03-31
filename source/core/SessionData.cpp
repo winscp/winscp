@@ -27,8 +27,7 @@ const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", 
 const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-gex-sha1", L"rsa", L"ecdh"};
 const wchar_t SshProtList[][10] = {L"1 only", L"1", L"2", L"2 only"};
 const TCipher DefaultCipherList[CIPHER_COUNT] =
-  // Contrary to PuTTY, we put chacha below AES, as we want to field-test it before promoting it
-  { cipAES, cipBlowfish, cipChaCha20, cip3DES, cipWarn, cipArcfour, cipDES };
+  { cipAES, cipChaCha20, cipBlowfish, cip3DES, cipWarn, cipArcfour, cipDES };
 const TKex DefaultKexList[KEX_COUNT] =
   { kexECDH, kexDHGEx, kexDHGroup14, kexDHGroup1, kexRSA, kexWarn };
 const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16] = { L"SCP", L"SFTP (SCP)", L"SFTP", L"", L"", L"FTP", L"WebDAV" };
