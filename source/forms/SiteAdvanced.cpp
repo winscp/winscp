@@ -780,6 +780,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       AuthenticationGroup->Enabled &&
       ((AuthTISCheck->Enabled && AuthTISCheck->Checked) ||
        (AuthKICheck->Enabled && AuthKICheck->Checked)));
+    EnableControl(AuthenticationParamsGroup, AuthenticationGroup->Enabled);
     EnableControl(AuthGSSAPICheck3,
       AuthenticationGroup->Enabled && (GetSshProt() != ssh1only));
     EnableControl(GSSAPIFwdTGTCheck,
