@@ -117,7 +117,7 @@ object LoginDialog: TLoginDialog
           Caption = 'Po&rt number:'
           FocusControl = PortNumberEdit
         end
-        object Label3: TLabel
+        object UserNameLabel: TLabel
           Left = 12
           Top = 122
           Width = 55
@@ -125,7 +125,7 @@ object LoginDialog: TLoginDialog
           Caption = '&User name:'
           FocusControl = UserNameEdit
         end
-        object Label4: TLabel
+        object PasswordLabel: TLabel
           Left = 178
           Top = 122
           Width = 50

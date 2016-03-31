@@ -82,8 +82,8 @@ __published:
   TGroupBox *BasicGroup;
   TLabel *Label1;
   TLabel *Label2;
-  TLabel *Label3;
-  TLabel *Label4;
+  TLabel *UserNameLabel;
+  TLabel *PasswordLabel;
   TLabel *Label22;
   TLabel *FtpsLabel;
   TLabel *WebDavsLabel;

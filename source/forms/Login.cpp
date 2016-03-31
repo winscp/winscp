@@ -591,8 +591,12 @@ void __fastcall TLoginDialog::UpdateControls()
     ReadOnlyControl(HostNameEdit, !Editable);
     ReadOnlyControl(PortNumberEdit, !Editable);
     PortNumberEdit->ButtonsVisible = Editable;
-    ReadOnlyControl(UserNameEdit, !Editable);
-    ReadOnlyControl(PasswordEdit, !Editable);
+    // FSessionData may be NULL temporary even when Editable while switching nodes
+    bool NoAuth = Editable && SshProtocol && (FSessionData != NULL) && FSessionData->SshNoUserAuth;
+    ReadOnlyAndEnabledControl(UserNameEdit, !Editable, !NoAuth);
+    EnableControl(UserNameLabel, UserNameEdit->Enabled);
+    ReadOnlyAndEnabledControl(PasswordEdit, !Editable, !NoAuth);
+    EnableControl(PasswordLabel, PasswordEdit->Enabled);
 
     // sites
     if (SitesIncrementalSearchLabel->Visible != !FSitesIncrementalSearch.IsEmpty())

@@ -251,6 +251,33 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
   }
 };
 //---------------------------------------------------------------------------
+void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, bool Enabled)
+{
+  if (dynamic_cast<TCustomEdit *>(Control) != NULL)
+  {
+    DebugAssert(dynamic_cast<TWinControl *>(Control)->ControlCount == 0);
+    DebugAssert(dynamic_cast<TMemo *>(Control) == NULL);
+
+    if (ReadOnly)
+    {
+      Control->Enabled = Enabled;
+      ReadOnlyControl(Control, true);
+    }
+    else
+    {
+      // ReadOnlyControl(..., false) would set color to clWindow,
+      // but we want to reflect the Enabled state and avoid flicker.
+      ((TEdit*)Control)->ReadOnly = false;
+
+      EnableControl(Control, Enabled);
+    }
+  }
+  else
+  {
+    DebugFail();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
 {
   if (dynamic_cast<TCustomEdit *>(Control) != NULL)
