@@ -174,10 +174,27 @@ bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
+static bool __fastcall CopyShellCommandToClipboard(const UnicodeString & Path, const UnicodeString & Params)
+{
+  bool Result = UseAlternativeFunction() && IsKeyPressed(VK_CONTROL);
+  if (Result)
+  {
+    TInstantOperationVisualizer Visualizer;
+    CopyToClipboard(FormatCommand(Path, Params));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params)
 {
-  return ((int)ShellExecute(NULL, L"open", (wchar_t*)Path.data(),
-    (wchar_t*)Params.data(), NULL, SW_SHOWNORMAL) > 32);
+  bool Result = true;
+  if (!CopyShellCommandToClipboard(Path, Params))
+  {
+    Result =
+      ((int)ShellExecute(NULL, L"open", (wchar_t*)Path.data(),
+        (wchar_t*)Params.data(), NULL, SW_SHOWNORMAL) > 32);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShell(const UnicodeString Command)
@@ -219,27 +236,31 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
   const UnicodeString Params, TProcessMessagesEvent ProcessMessages)
 {
   HANDLE ProcessHandle;
-  bool Result = DoExecuteShell(Handle, Path, Params, ProcessHandle);
-
-  if (Result)
+  bool Result = true;
+  if (!CopyShellCommandToClipboard(Path, Params))
   {
-    if (ProcessMessages != NULL)
+    Result = DoExecuteShell(Handle, Path, Params, ProcessHandle);
+
+    if (Result)
     {
-      unsigned long WaitResult;
-      do
+      if (ProcessMessages != NULL)
       {
-        WaitResult = WaitForSingleObject(ProcessHandle, 200);
-        if (WaitResult == WAIT_FAILED)
+        unsigned long WaitResult;
+        do
         {
-          throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));
+          WaitResult = WaitForSingleObject(ProcessHandle, 200);
+          if (WaitResult == WAIT_FAILED)
+          {
+            throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));
+          }
+          ProcessMessages();
         }
-        ProcessMessages();
+        while (WaitResult == WAIT_TIMEOUT);
       }
-      while (WaitResult == WAIT_TIMEOUT);
-    }
-    else
-    {
-      WaitForSingleObject(ProcessHandle, INFINITE);
+      else
+      {
+        WaitForSingleObject(ProcessHandle, INFINITE);
+      }
     }
   }
   return Result;

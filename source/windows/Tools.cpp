@@ -307,9 +307,14 @@ bool __fastcall ExecuteShellAndWait(const UnicodeString Command)
     &Application->ProcessMessages);
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsKeyPressed(int VirtualKey)
+{
+  return FLAGSET(GetAsyncKeyState(VirtualKey), 0x8000);
+}
+//---------------------------------------------------------------------------
 bool __fastcall UseAlternativeFunction()
 {
-  return FLAGSET(GetAsyncKeyState(VK_SHIFT), 0x8000);
+  return IsKeyPressed(VK_SHIFT);
 }
 //---------------------------------------------------------------------------
 bool __fastcall OpenInNewWindow()
