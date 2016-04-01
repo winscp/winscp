@@ -258,6 +258,12 @@ int askalg(void * frontend, const char * algtype, const char * algname,
   return 1;
 }
 //---------------------------------------------------------------------------
+int askhk(void * /*frontend*/, const char * /*algname*/, const char * /*betteralgs*/,
+  void (*/*callback*/)(void *ctx, int result), void * /*ctx*/)
+{
+  return 1;
+}
+//---------------------------------------------------------------------------
 void old_keyfile_warning(void)
 {
   // no reference to TSecureShell instace available
@@ -702,11 +708,13 @@ bool __fastcall HasGSSAPI(UnicodeString CustomPath)
 //---------------------------------------------------------------------------
 static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, UnicodeString & KeyType)
 {
-  int Count = 0;
   const wchar_t NormalizedSeparator = L'-';
+  const int MaxCount = 10;
+  const ssh_signkey * SignKeys[MaxCount];
+  int Count = LENOF(SignKeys);
   // We may use find_pubkey_alg, but it gets complicated with normalized fingerprint
   // as the names have different number of dashes
-  const ssh_signkey ** SignKeys = get_hostkey_algs(&Count);
+  get_hostkey_algs(&Count, SignKeys);
 
   for (int Index = 0; Index < Count; Index++)
   {

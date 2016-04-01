@@ -21,7 +21,8 @@ int get_ssh_exitcode(void * handle);
 const unsigned int * ssh2_remmaxpkt(void * handle);
 const unsigned int * ssh2_remwindow(void * handle);
 void md5checksum(const char * buffer, int len, unsigned char output[16]);
-const struct ssh_signkey ** get_hostkey_algs(int * count);
+typedef const struct ssh_signkey * cp_ssh_signkey;
+void get_hostkey_algs(int * count, cp_ssh_signkey * SignKeys);
 
 // from wingss.c
 
