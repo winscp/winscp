@@ -850,7 +850,9 @@ saved sessions from
 
 \IM{logical host name} logical host name
 \IM{logical host name} host name, logical
-\IM{logical host name} host key, caching policy
+
+\IM{host key cache}{host key management} host key management
+\IM{host key cache}{host key management} cache, of SSH host keys
 
 \IM{web browsers} web browser
 

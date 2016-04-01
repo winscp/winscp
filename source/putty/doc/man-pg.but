@@ -64,6 +64,13 @@ and \c{rsa1} (to generate SSH-1 keys).
 
 \dd Suppress the progress display when generating a new key.
 
+\dt \cw{\-\-old\-passphrase} \e{file}
+
+\dd Specify a file name; the first line will be read from this file
+(removing any trailing newline) and used as the old passphrase.
+\s{CAUTION:} If the passphrase is important, the file should be stored
+on a temporary filesystem or else securely erased after use.
+
 In the second phase, \c{puttygen} optionally alters properties of
 the key it has loaded or generated. The options to control this are:
 
@@ -156,6 +163,14 @@ fingerprint. Otherwise, the \c{\-o} option is required.
 
 \dd Synonym for \q{\cw{-O public}}.
 
+\dt \cw{\-\-new\-passphrase} \e{file}
+
+\dd Specify a file name; the first line will be read from this file
+(removing any trailing newline) and used as the new passphrase. If the
+file is empty then the saved key will be unencrypted. \s{CAUTION:} If
+the passphrase is important, the file should be stored on a temporary
+filesystem or else securely erased after use.
+
 The following options do not run PuTTYgen as normal, but print
 informational messages and then quit:
 
@@ -210,8 +225,3 @@ To add the OpenSSH-format public half of a key to your authorised
 keys file:
 
 \c puttygen -L mykey.ppk >> $HOME/.ssh/authorized_keys
-
-\S{puttygen-manpage-bugs} BUGS
-
-There's currently no way to supply passphrases in batch mode, or
-even just to specify that you don't want a passphrase at all.

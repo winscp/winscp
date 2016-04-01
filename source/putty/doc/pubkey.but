@@ -131,22 +131,6 @@ key will be completely useless.
 The SSH-2 protocol supports more than one key type. The types
 supported by PuTTY are RSA, DSA, ECDSA, and Ed25519.
 
-The PuTTY developers \e{strongly} recommend you use RSA.
-\#{FIXME: ECDSA, Ed25519!}
-\I{security risk}\i{DSA} has an intrinsic weakness which makes it very
-easy to create a signature which contains enough information to give
-away the \e{private} key!
-This would allow an attacker to pretend to be you for any number of
-future sessions. PuTTY's implementation has taken very careful
-precautions to avoid this weakness, but we cannot be 100% certain we
-have managed it, and if you have the choice we strongly recommend
-using RSA keys instead.
-
-If you really need to connect to an SSH server which only supports
-DSA, then you probably have no choice but to use DSA. If you do use
-DSA, we recommend you do not use the same key to authenticate with
-more than one server.
-
 \S{puttygen-strength} Selecting the size (strength) of the key
 
 \cfg{winhelp-topic}{puttygen.bits}
@@ -391,7 +375,7 @@ OpenSSH; for newer key types like Ed25519, it will use the newer
 format as that is the only legal option. If you have some specific
 reason for wanting to use OpenSSH's newer format even for RSA, DSA,
 or ECDSA keys, you can choose \q{Export OpenSSH key (force new file
-format}.
+format)}.
 
 Note that since only SSH-2 keys come in different formats, the export
 options are not available if you have generated an SSH-1 key.

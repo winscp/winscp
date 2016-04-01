@@ -1747,7 +1747,7 @@ arbitrary port (say, \cw{localhost} port 10022) were forwarded to a
 second machine's SSH port (say, \cw{foovax} port 22), and then
 started a second PuTTY connecting to the forwarded port.
 
-In normal usage, the second PuTTY will access the host key cache
+In normal usage, the second PuTTY will access the \i{host key cache}
 under the host name and port it actually connected to (i.e.
 \cw{localhost} port 10022 in this example). Using the logical host
 name option, however, you can configure the second PuTTY to cache
@@ -1762,7 +1762,7 @@ you to reconfirm its host key. Conversely, if you expect to use the
 same local port number for port forwardings to lots of different
 servers, you probably didn't want any particular server's host key
 cached under that local port number. (For this latter case, you
-could also explicitly configure host keys in the relevant sessions;
+could instead explicitly configure host keys in the relevant sessions;
 see \k{config-ssh-kex-manual-hostkeys}.)
 
 If you just enter a host name for this option, PuTTY will cache the
@@ -2483,6 +2483,53 @@ when the SSH connection is idle, so they shouldn't cause the same
 problems.  The SSH-1 protocol, incidentally, has even weaker integrity
 protection than SSH-2 without rekeys.
 
+\H{config-ssh-hostkey} The Host Keys panel
+
+The Host Keys panel allows you to configure options related to SSH-2
+\i{host key management}.
+
+Host keys are used to prove the server's identity, and assure you that
+the server is not being spoofed (either by a man-in-the-middle attack
+or by completely replacing it on the network). See \k{gs-hostkey} for
+a basic introduction to host keys.
+
+This entire panel is only relevant to SSH protocol version 2; none of
+these settings affect SSH-1 at all.
+
+\S{config-ssh-hostkey-order} \ii{Host key type} selection
+
+\cfg{winhelp-topic}{ssh.hostkey.order}
+
+PuTTY supports a variety of SSH-2 host key types, and allows you to
+choose which one you prefer to use to identify the server.
+Configuration is similar to cipher selection (see
+\k{config-ssh-encryption}).
+
+PuTTY currently supports the following host key types:
+
+\b \q{Ed25519}: \i{Edwards-curve} \i{DSA} using a twisted Edwards
+curve with modulus \cw{2^255-19}.
+
+\b \q{ECDSA}: \i{elliptic curve} \i{DSA} using one of the
+NIST-standardised elliptic curves.
+
+\b \q{DSA}: straightforward \i{DSA} using modular exponentiation.
+
+\b \q{RSA}: the ordinary \i{RSA} algorithm.
+
+If PuTTY already has one or more host keys stored for the server,
+it will prefer to use one of those, even if the server has a key
+type that is higher in the preference order. You can add such a
+key to PuTTY's cache from within an existing session using the
+\q{Special Commands} menu; see \k{using-specials}.
+
+Otherwise, PuTTY will choose a key type based purely on the
+preference order you specify in the configuration.
+
+If the first key type PuTTY finds is below the \q{warn below here}
+line, you will see a warning box when you make the connection, similar
+to that for cipher selection (see \k{config-ssh-encryption}).
+
 \S{config-ssh-kex-manual-hostkeys} \ii{Manually configuring host keys}
 
 \cfg{winhelp-topic}{ssh.kex.manualhostkeys}
@@ -2531,8 +2578,8 @@ If this box contains at least one host key or fingerprint when PuTTY
 makes an SSH connection, then PuTTY's automated host key management is
 completely bypassed: the connection will be permitted if and only if
 the host key presented by the server is one of the keys listed in this
-box, and the host key store in the Registry will be neither read
-\e{nor written}.
+box, and the \I{host key cache}host key store in the Registry will be
+neither read \e{nor written}, unless you explicitly do so.
 
 If the box is empty (as it usually is), then PuTTY's automated host
 key management will work as normal.
@@ -2596,22 +2643,6 @@ recommended ciphers.
 The Auth panel allows you to configure \i{authentication} options for
 SSH sessions.
 
-\S{config-ssh-noauth} \q{Bypass authentication entirely}
-
-\cfg{winhelp-topic}{ssh.auth.bypass}
-
-In SSH-2, it is possible to establish a connection without using SSH's
-mechanisms to identify or authenticate oneself to the server. Some
-servers may prefer to handle authentication in the data channel, for
-instance, or may simply require no authentication whatsoever.
-
-By default, PuTTY assumes the server requires authentication (most
-do), and thus must provide a username. If you find you are getting
-unwanted username prompts, you could try checking this option.
-
-This option only affects SSH-2 connections. SSH-1 connections always
-require an authentication step.
-
 \S{config-ssh-banner} \q{Display pre-authentication banner}
 
 \cfg{winhelp-topic}{ssh.auth.banner}
@@ -2626,6 +2657,34 @@ password or similar credentials (although, unfortunately, not before
 prompting for a login name, due to the nature of the protocol design).
 By unchecking this option, display of the banner can be suppressed
 entirely.
+
+\S{config-ssh-noauth} \q{Bypass authentication entirely}
+
+\cfg{winhelp-topic}{ssh.auth.bypass}
+
+In SSH-2, it is in principle possible to establish a connection
+without using SSH's mechanisms to identify or prove who you are
+to the server. An SSH server could prefer to handle authentication
+in the data channel, for instance, or simply require no user
+authentication whatsoever.
+
+By default, PuTTY assumes the server requires authentication (we've
+never heard of one that doesn't), and thus must start this process
+with a username. If you find you are getting username prompts that
+you cannot answer, you could try enabling this option. However,
+most SSH servers will reject this.
+
+This is not the option you want if you have a username and just want
+PuTTY to remember it; for that see \k{config-username}.
+It's also probably not what if you're trying to set up passwordless
+login to a mainstream SSH server; depending on the server, you
+probably wanted public-key authentication (\k{pubkey})
+or perhaps GSSAPI authentication (\k{config-ssh-auth-gssapi}).
+(These are still forms of authentication, even if you don't have to
+interact with them.)
+
+This option only affects SSH-2 connections. SSH-1 connections always
+require an authentication step.
 
 \S{config-ssh-tryagent} \q{Attempt authentication using Pageant}
 
@@ -2729,11 +2788,15 @@ private key in another format that you want to use with PuTTY, see
 \k{puttygen-conversions}.
 
 You can use the authentication agent \i{Pageant} so that you do not
-need to explicitly configure a key here; see \k{pageant}. If a file
-is specified here with Pageant running, PuTTY will first try asking
-Pageant to authenticate with that key, and ignore any other keys
-Pageant may have. If that fails, PuTTY will ask for a passphrase as
-normal.
+need to explicitly configure a key here; see \k{pageant}.
+
+If a private key file is specified here with Pageant running, PuTTY
+will first try asking Pageant to authenticate with that key, and
+ignore any other keys Pageant may have. If that fails, PuTTY will ask
+for a passphrase as normal. You can also specify a \e{public} key file
+in this case (in RFC 4716 or OpenSSH format), as that's sufficient to
+identify the key to Pageant, but of course if Pageant isn't present
+PuTTY can't fall back to using this file itself.
 
 \H{config-ssh-auth-gssapi} The \i{GSSAPI} panel
 
@@ -2744,7 +2807,7 @@ GSSAPI authentication. This is a mechanism which delegates the
 authentication exchange to a library elsewhere on the client
 machine, which in principle can authenticate in many different ways
 but in practice is usually used with the \i{Kerberos} \i{single sign-on}
-protocol.
+protocol to implement \i{passwordless login}.
 
 GSSAPI is only available in the SSH-2 protocol.
 

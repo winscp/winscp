@@ -50,6 +50,9 @@ the URL; that way, we don't have to download it unless we decide we
 actually need it, and only one of us needs to download it instead of
 it being automatically copied to all the developers.
 
+(If the file contains confidential information, then you could encrypt
+it with our Secure Contact Key; see \k{pgpkeys-pubkey} for details.)
+
 Some people like to send mail in MS Word format. Please \e{don't}
 send us bug reports, or any other mail, as a Word document. Word
 documents are roughly fifty times larger than writing the same
@@ -200,6 +203,20 @@ documentation, we suggest posting to a newsgroup (see
 will explain what you need to know. \e{Then}, if you think the
 documentation could usefully have told you that, send us a bug
 report and explain how you think we should change it.
+
+\H{feedback-vulns} Reporting security vulnerabilities
+
+If you've found a security vulnerability in PuTTY, you might well want
+to notify us using an encrypted communications channel, to avoid
+disclosing information about the vulnerability before a fixed release
+is available.
+
+For this purpose, we provide a GPG key suitable for encryption: the
+Secure Contact Key. See \k{pgpkeys-pubkey} for details of this.
+
+(Of course, vulnerabilities are also bugs, so please do include as
+much information as possible about them, the same way you would with
+any other bug report.)
 
 \H{feedback-features} Requesting extra features 
 

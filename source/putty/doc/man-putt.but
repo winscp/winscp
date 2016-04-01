@@ -30,6 +30,7 @@ Sorry.)
 \dt \cw{\-fn} \e{font-name}
 
 \dd Specify the font to use for normal text displayed in the terminal.
+For example, \cw{\-fn\_fixed}, \cw{\-fn\_"Monospace\_12"}.
 
 \dt \cw{\-fb} \e{font-name}
 
@@ -232,9 +233,13 @@ pseudo-terminal at the server end.
 
 \dt \cw{\-i} \e{keyfile}
 
-\dd Specify a private key file to use for user authentication. For SSH-2
-keys, this key file must be in PuTTY's format, not OpenSSH's or
-anyone else's.
+\dd Private key file for user authentication. For SSH-2 keys, this key
+file must be in PuTTY's PPK format, not OpenSSH's format or anyone
+else's.
+
+\lcont{ If you are using an authentication agent, you can also specify
+a \e{public} key here (in RFC 4716 or OpenSSH format), to identify
+which of the agent's keys to use. }
 
 \dt \cw{\-hostkey} \e{key}
 

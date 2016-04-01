@@ -69,7 +69,7 @@ IDs listed below.
 
 \dd RSA, 2048-bit. Main key ID: \cw{2048R/8A0AF00B} (long version:
 \cw{2048R/C4FCAAD08A0AF00B}). Encryption subkey ID:
-\cw{2048R/50C2CF5C} (long version: \cw{2048R/9EB39CC150C2CF5C}.
+\cw{2048R/50C2CF5C} (long version: \cw{2048R/9EB39CC150C2CF5C}).
 Fingerprint:
 \cw{8A26\_250E\_763F\_E359\_75F3\_\_118F\_C4FC\_AAD0\_8A0A\_F00B}
 

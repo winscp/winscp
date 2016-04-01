@@ -137,9 +137,15 @@ tunnel all their connections. Only works in SSH.
 
 \dd Enable SSH compression.
 
-\dt \cw{-i} \e{path}
+\dt \cw{-i} \e{keyfile}
 
-\dd Private key file for user authentication.
+\dd Private key file for user authentication. For SSH-2 keys, this key
+file must be in PuTTY's PPK format, not OpenSSH's format or anyone
+else's.
+
+\lcont{ If you are using an authentication agent, you can also specify
+a \e{public} key here (in RFC 4716 or OpenSSH format), to identify
+which of the agent's keys to use. }
 
 \dt \cw{\-hostkey} \e{key}
 

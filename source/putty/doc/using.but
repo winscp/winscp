@@ -121,6 +121,9 @@ and hit the Copy button to copy them to the \i{clipboard}. If you
 are reporting a bug, it's often useful to paste the contents of the
 Event Log into your bug report.
 
+(The Event Log is not the same as the facility to create a log file
+of your session; that's described in \k{using-logging}.)
+
 \S2{using-specials} \ii{Special commands}
 
 Depending on the protocol used for the current session, there may be
@@ -196,6 +199,29 @@ Should have no effect.
 Only available in SSH-2. Forces a \i{repeat key exchange} immediately (and
 resets associated timers and counters). For more information about
 repeat key exchanges, see \k{config-ssh-kex-rekey}.
+}
+
+\b \I{host key cache}Cache new host key type
+
+\lcont{
+Only available in SSH-2. This submenu appears only if the server has
+host keys of a type that PuTTY doesn't already have cached, and so
+won't consider. Selecting a key here will allow PuTTY to use that key
+now and in future: PuTTY will do a fresh key-exchange with the selected
+key, and immediately add that key to its permanent cache (relying on
+the host key used at the start of the connection to cross-certify the
+new key). That key will be used for the rest of the current session;
+it may not actually be used for future sessions, depending on your
+preferences (see \k{config-ssh-hostkey-order}).
+
+Normally, PuTTY will carry on using a host key it already knows, even
+if the server offers key formats that PuTTY would otherwise prefer,
+to avoid host key prompts. As a result, if you've been using a server
+for some years, you may still be using an older key than a new user
+would use, due to server upgrades in the meantime. The SSH protocol
+unfortunately does not have organised facilities for host key migration
+and rollover, but this allows you to \I{host keys, upgrading}manually
+upgrade.
 }
 
 \b \I{Break, SSH special command}Break
@@ -316,8 +342,9 @@ If you find that special characters (\i{accented characters}, for
 example, or \i{line-drawing characters}) are not being displayed
 correctly in your PuTTY session, it may be that PuTTY is interpreting
 the characters sent by the server according to the wrong \e{character
-set}. There are a lot of different character sets available, so it's
-entirely possible for this to happen.
+set}. There are a lot of different character sets available, and no
+good way for PuTTY to know which to use, so it's entirely possible
+for this to happen.
 
 If you click \q{Change Settings} and look at the \q{Translation}
 panel, you should see a large number of character sets which you can
@@ -894,6 +921,10 @@ The \c{-i} option allows you to specify the name of a private key
 file in \c{*.\i{PPK}} format which PuTTY will use to authenticate with the
 server. This option is only meaningful if you are using SSH.
 
+If you are using Pageant, you can also specify a \e{public} key file
+(in RFC 4716 or OpenSSH format) to identify a specific key file to use.
+(This won't work if you're not running Pageant, of course.)
+
 For general information on \i{public-key authentication}, see
 \k{pubkey}.
 
@@ -904,22 +935,22 @@ authentication} box in the Auth panel of the PuTTY configuration box
 \S2{using-cmdline-loghost} \i\c{-loghost}: specify a \i{logical host
 name}
 
-This option overrides PuTTY's normal SSH host key caching policy by
-telling it the name of the host you expect your connection to end up
-at (in cases where this differs from the location PuTTY thinks it's
-connecting to). It can be a plain host name, or a host name followed
-by a colon and a port number. See \k{config-loghost} for more detail
-on this.
+This option overrides PuTTY's normal SSH \I{host key cache}host key
+caching policy by telling it the name of the host you expect your
+connection to end up at (in cases where this differs from the location
+PuTTY thinks it's connecting to). It can be a plain host name, or a
+host name followed by a colon and a port number. See
+\k{config-loghost} for more detail on this.
 
 \S2{using-cmdline-hostkey} \i\c{-hostkey}: \I{manually configuring
 host keys}manually specify an expected host key
 
-This option overrides PuTTY's normal SSH host key caching policy by
-telling it exactly what host key to expect, which can be useful if the
-normal automatic host key store in the Registry is unavailable. The
-argument to this option should be either a host key fingerprint, or an
-SSH-2 public key blob. See \k{config-ssh-kex-manual-hostkeys} for more
-information.
+This option overrides PuTTY's normal SSH \I{host key cache}host key
+caching policy by telling it exactly what host key to expect, which
+can be useful if the normal automatic host key store in the Registry
+is unavailable. The argument to this option should be either a host key
+fingerprint, or an SSH-2 public key blob. See
+\k{config-ssh-kex-manual-hostkeys} for more information.
 
 You can specify this option more than once if you want to configure
 more than one key to be accepted.

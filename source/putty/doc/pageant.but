@@ -64,8 +64,8 @@ The large list box in the Pageant main window lists the private keys
 that are currently loaded into Pageant. The list might look
 something like this:
 
-\c ssh1    1024 22:c3:68:3b:09:41:36:c3:39:83:91:ae:71:b2:0f:04 k1
-\c ssh-rsa 1023 74:63:08:82:95:75:e1:7c:33:31:bb:cb:00:c0:89:8b k2
+\c ssh-rsa 2048 22:d6:69:c9:22:51:ac:cb:b9:15:67:47:f7:65:6d:d7 k1
+\c ssh-dss 2048 e4:6c:69:f3:4f:fc:cf:fc:96:c0:88:34:a7:1e:59:d7 k2
 
 For each key, the list box will tell you:
 
@@ -260,10 +260,10 @@ as long as they want.
 However, the sysadmin of the server machine can always pretend to be
 you \e{on that machine}. So if you forward your agent to a server
 machine, then the sysadmin of that machine can access the forwarded
-agent connection and request signatures from your private keys, and
-can therefore log in to other machines as you. They can only do this
-to a limited extent - when the agent forwarding disappears they lose
-the ability - but using Pageant doesn't actually \e{prevent} the
+agent connection and request signatures from any of your private keys,
+and can therefore log in to other machines as you. They can only do
+this to a limited extent - when the agent forwarding disappears they
+lose the ability - but using Pageant doesn't actually \e{prevent} the
 sysadmin (or hackers) on the server from doing this.
 
 Therefore, if you don't trust the sysadmin of a server machine, you

@@ -2937,6 +2937,9 @@ const unsigned char *ec_alg_oid(const struct ssh_signkey *alg,
     return extra->oid;
 }
 
+const int ec_nist_curve_lengths[] = { 256, 384, 521 };
+const int n_ec_nist_curve_lengths = lenof(ec_nist_curve_lengths);
+
 const int ec_nist_alg_and_curve_by_bits(int bits,
                                         const struct ec_curve **curve,
                                         const struct ssh_signkey **alg)

@@ -222,14 +222,14 @@ processors that are backward-compatible with that architecture.
 (We used to also provide executables for Windows for the Alpha
 processor, but stopped after 0.58 due to lack of interest.)
 
-In the development code, partial ports to the Mac OSes exist (see
+In the development code, a partial port to Mac OS exists (see
 \k{faq-mac-port}).
 
 Currently PuTTY does \e{not} run on Windows CE (see \k{faq-wince}).
 
 We do not have release-quality ports for any other systems at the
-present time. If anyone told you we had an EPOC port, or an iPaq port,
-or any other port of PuTTY, they were mistaken. We don't.
+present time. If anyone told you we had an Android port, or an iOS
+port, or any other port of PuTTY, they were mistaken. We don't.
 
 There are some third-party ports to various platforms, mentioned
 on the 
@@ -246,15 +246,11 @@ including the usual \c{configure}/\c{make}; see the file \c{README}
 in the source distribution. This should build you Unix
 ports of Plink, PuTTY itself, PuTTYgen, PSCP, PSFTP, and also
 \i\c{pterm} - an \cw{xterm}-type program which supports the same
-terminal emulation as PuTTY. We do not yet have a Unix port of
-Pageant.
+terminal emulation as PuTTY. \#{XXX-REVIEW-BEFORE-RELEASE:}
+We do not yet have a Unix port of Pageant.
 
 If you don't have \i{Gtk}, you should still be able to build the
 command-line tools.
-
-Note that Unix PuTTY has mostly only been tested on Linux so far;
-portability problems such as BSD-style ptys or different header file
-requirements are expected.
 
 \S{faq-unix-why}{Question} What's the point of the Unix port? Unix
 has OpenSSH.
@@ -301,23 +297,24 @@ you'll need the right kind of C compiler - modern versions of Visual
 C at least have stopped being backwards compatible to Win32s. Also,
 the last time we tried this it didn't work very well.
 
-If you're interested in running PuTTY under Windows 3.1, help and
-testing in this area would be very welcome!
-
 \S{faq-mac-port}{Question} Will there be a port to the \I{Mac OS}Mac?
 
-There are several answers to this question:
+We hope so!
 
-\b The Unix/Gtk port is already fully working under Mac OS X as an X11
-application.
+We attempted one around 2005, written as a native Cocoa application,
+but it turned out to be very slow to redraw its window for some reason
+we never got to the bottom of.
 
-\b A native (Cocoa) Mac OS X port has been started. It's just about
-usable, but is of nowhere near release quality yet, and is likely to
-behave in unexpected ways. Currently it's unlikely to be completed
-unless someone steps in to help.
+In 2015, after porting the GTK front end to work with GTK 3, we began
+another attempt based on making small changes to the GTK code and
+building it against the OS X Quartz version of GTK 3. This doesn't
+seem to have the window redrawing problem any more, so it's already
+got further than the last effort, but it is still substantially
+unfinished.
 
-\b A separate port to the classic Mac OS (pre-OSX) is also in
-progress; it too is not ready yet.
+If any OS X and/or GTK programming experts are keen to have a finished
+version of this, we urge them to help out with some of the remaining
+problems!
 
 \S{faq-epoc}{Question} Will there be a port to EPOC?
 
@@ -334,8 +331,7 @@ for various third-party ports.
 
 We have no plans to write such a port ourselves; none of us has an
 iPhone, and developing and publishing applications for it looks
-awkward and expensive. Such a port would probably depend upon the
-stalled Mac OS X port (see \k{faq-mac-port}).
+awkward and expensive.
 
 However, there is a third-party SSH client for the iPhone and
 iPod\_Touch called \W{http://www.instantcocoa.com/products/pTerm/}{pTerm},
@@ -1106,8 +1102,13 @@ The PuTTY policy changed because the developers were informed of
 ways to implement DSA which do not suffer nearly as badly from this
 weakness, and indeed which don't need to rely on random numbers at
 all. For this reason we now believe PuTTY's DSA implementation is
-probably OK. However, if you have the choice, we still recommend you
-use RSA instead.
+probably OK.
+
+The recently added elliptic-curve signature methods are also DSA-style
+algorithms, so they have this same weakness in principle. Our ECDSA
+implementation uses the same defence as DSA, while our Ed25519
+implementation uses the similar system (but different in details) that
+the Ed25519 spec mandates.
 
 \S{faq-virtuallock}{Question} Couldn't Pageant use
 \cw{VirtualLock()} to stop private keys being written to disk?

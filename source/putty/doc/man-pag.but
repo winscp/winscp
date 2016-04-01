@@ -4,7 +4,7 @@
 
 \S{pageant-manpage-name} NAME
 
-\cw{pageant} - SSH authentication agent for the PuTTY tools
+\cw{pageant} - PuTTY SSH authentication agent
 
 \S{pageant-manpage-synopsis} SYNOPSIS
 
@@ -36,6 +36,10 @@ that the server they are connecting to will accept.
 \c{pageant} can also act as a client program itself, communicating
 with an already-running agent to add or remove keys, list the keys, or
 extract their public half.
+
+The agent protocol used by \c{pageant} is compatible with the PuTTY
+tools and also with other implementations such as OpenSSH's SSH client
+and \e{ssh-agent(1)}.
 
 To run \c{pageant} as an agent, you must provide an option to tell it
 what its \e{lifetime} should be. Typically you would probably want
@@ -71,9 +75,9 @@ extra command-line arguments, e.g.
 
 in which case Pageant will prompt for the keys' passphrases (if any)
 and start the agent with those keys already loaded. Passphrase prompts
-will use the controlling terminal if one is available, or the GUI if
-one of those is available. If neither is available, no passphrase
-prompting can be done.
+will use the controlling terminal if one is available, or failing that
+the GUI if one of those is available. If neither is available, no
+passphrase prompting can be done.
 
 To use Pageant to talk to an existing agent, you can add new keys
 using \cw{-a}, list the current set of keys' fingerprints and comments
@@ -155,7 +159,7 @@ before it manages to happen.
 \dt \cw{--debug}
 
 \dd Pageant will run in the foreground, without forking. It will print
-its enviroment variable setup commands on standard output, and then it
+its environment variable setup commands on standard output, and then it
 will log all agent activity to standard output as well. This is useful
 for debugging what Pageant itself is doing, or what another process is
 doing to it.
@@ -255,6 +259,14 @@ by-product of the program's main purpose). Using \cw{-v} in
 output.
 
 }
+
+\dt \cw{-s}, \cw{-c}
+
+\dd Force Pageant to output its environment setup commands in the
+style of POSIX / Bourne shells (\cw{-s}) or C shells (\cw{-c})
+respectively. If neither option is given, Pageant will guess based on
+whether the environment variable \cw{SHELL} has a value ending in
+\cq{csh}.
 
 \dt \cw{--help}
 

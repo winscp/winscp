@@ -31,6 +31,7 @@ Sorry.)
 \dt \cw{\-fn} \e{font-name}
 
 \dd Specify the font to use for normal text displayed in the terminal.
+For example, \cw{\-fn\_fixed}, \cw{\-fn\_"Monospace\_12"}.
 
 \dt \cw{\-fb} \e{font-name}
 
