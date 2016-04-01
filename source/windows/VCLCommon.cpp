@@ -82,38 +82,26 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
       }
       else
       {
-        // For the first column, we can simulate header double-click
-        if (Index == 0)
+        Width = 0;
+        for (int ItemIndex = 0; ItemIndex < ListView->Items->Count; ItemIndex++)
         {
-          HWND HeaderHandle = ListView_GetHeader(ListView->Handle);
-          UINT_PTR From = GetDlgCtrlID(HeaderHandle);
-          NMHEADER NMHeader;
-          NMHeader.hdr.idFrom = From;
-          NMHeader.hdr.hwndFrom = HeaderHandle;
-          NMHeader.hdr.code = HDN_DIVIDERDBLCLICK;
-          NMHeader.iItem = Index;
-          NMHeader.iButton = 0;
-          NMHeader.pitem = NULL;
-          SendMessage(ListView->Handle, WM_NOTIFY, From, reinterpret_cast<LPARAM>(&NMHeader));
-          Width = ListView_GetColumnWidth(ListView->Handle, Index);
-        }
-        else
-        {
-          // For sub columns, header double click does not work reliably.
-          // It resizes based on the focused line only and even then not consistently.
-          Width = 0;
-          for (int ItemIndex = 0; ItemIndex < ListView->Items->Count; ItemIndex++)
+          TListItem * Item = ListView->Items->Item[ItemIndex];
+
+          UnicodeString Text;
+          if (Index == 0)
           {
-            TListItem * Item = ListView->Items->Item[ItemIndex];
-            if (Index < Item->SubItems->Count)
-            {
-              UnicodeString Text = Item->SubItems->Strings[Index - 1];
-              int TextWidth = GetColumnTextWidth(ListView, ColumnPadding, Text);
-              if (TextWidth > Width)
-              {
-                Width = TextWidth;
-              }
-            }
+            Text = Item->Caption;
+          }
+          // Particularly EditorListView3 on Preferences dialog does not have all subitems filled for internal editor
+          else if (Index <= Item->SubItems->Count)
+          {
+            Text = Item->SubItems->Strings[Index - 1];
+          }
+
+          int TextWidth = GetColumnTextWidth(ListView, ColumnPadding, Text);
+          if (TextWidth > Width)
+          {
+            Width = TextWidth;
           }
         }
       }
