@@ -182,7 +182,14 @@ typedef enum {
     /* Pseudo-specials used for constructing the specials menu. */
     TS_SEP,	    /* Separator */
     TS_SUBMENU,	    /* Start a new submenu with specified name */
-    TS_EXITMENU	    /* Exit current submenu or end of specials */
+    TS_EXITMENU,    /* Exit current submenu or end of specials */
+    /* Starting point for protocols to invent special-action codes
+     * that can't live in this enum at all, e.g. because they change
+     * with every session.
+     *
+     * Of course, this must remain the last value in this
+     * enumeration. */
+    TS_LOCALSTART
 } Telnet_Special;
 
 struct telnet_special {
@@ -257,6 +264,18 @@ enum {
     KEX_RSA,
     KEX_ECDH,
     KEX_MAX
+};
+
+enum {
+    /*
+     * SSH-2 host key algorithms
+     */
+    HK_WARN,
+    HK_RSA,
+    HK_DSA,
+    HK_ECDSA,
+    HK_ED25519,
+    HK_MAX
 };
 
 enum {
@@ -688,6 +707,7 @@ void cleanup_exit(int);
     X(INT, NONE, nopty) \
     X(INT, NONE, compression) \
     X(INT, INT, ssh_kexlist) \
+    X(INT, INT, ssh_hklist) \
     X(INT, NONE, ssh_rekey_time) /* in minutes */ \
     X(STR, NONE, ssh_rekey_data) /* string encoding e.g. "100K", "2M", "1G" */ \
     X(INT, NONE, tryagent) \
@@ -1213,7 +1233,7 @@ int verify_ssh_host_key(void *frontend, char *host, int port,
                         void (*callback)(void *ctx, int result), void *ctx);
 /*
  * have_ssh_host_key() just returns true if a key of that type is
- * already chached and false otherwise.
+ * already cached and false otherwise.
  */
 #ifdef MPEXT
 int have_ssh_host_key(void *frontend, const char *host, int port, const char *keytype);
@@ -1221,10 +1241,17 @@ int have_ssh_host_key(void *frontend, const char *host, int port, const char *ke
 int have_ssh_host_key(const char *host, int port, const char *keytype);
 #endif
 /*
- * askalg has the same set of return values as verify_ssh_host_key.
+ * askalg and askhk have the same set of return values as
+ * verify_ssh_host_key.
+ *
+ * (askhk is used in the case where we're using a host key below the
+ * warning threshold because that's all we have cached, but at least
+ * one acceptable algorithm is available that we don't have cached.)
  */
 int askalg(void *frontend, const char *algtype, const char *algname,
 	   void (*callback)(void *ctx, int result), void *ctx);
+int askhk(void *frontend, const char *algname, const char *betteralgs,
+          void (*callback)(void *ctx, int result), void *ctx);
 /*
  * askappend can return four values:
  *
@@ -1337,7 +1364,7 @@ void filename_free(Filename *fn);
 int filename_serialise(const Filename *f, void *data);
 Filename *filename_deserialise(void *data, int maxsize, int *used);
 char *get_username(void);	       /* return value needs freeing */
-char *get_random_data(int bytes);      /* used in cmdgen.c */
+char *get_random_data(int bytes, const char *device); /* used in cmdgen.c */
 char filename_char_sanitise(char c);   /* rewrite special pathname chars */
 
 /*
