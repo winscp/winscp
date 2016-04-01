@@ -1893,7 +1893,7 @@ void __fastcall TPreferencesDialog::NavigationTreeChange(TObject * /*Sender*/,
     // reshow the accelerators, etc
     ResetSystemSettings(this);
     // This is particularly here to enable EditCopyParamButton,
-    // as to some reason CopyParamListView->Selected is NULL until
+    // as for some reason CopyParamListView->Selected is NULL until
     // its page is shown for the first time
     UpdateControls();
   }
