@@ -66,8 +66,10 @@ class TLocalCustomCommand : public TFileCustomCommand
 {
 public:
   TLocalCustomCommand();
-  TLocalCustomCommand(const TCustomCommandData & Data, const UnicodeString & Path);
-  TLocalCustomCommand(const TCustomCommandData & Data, const UnicodeString & Path,
+  TLocalCustomCommand(
+    const TCustomCommandData & Data, const UnicodeString & RemotePath, const UnicodeString & LocalPath);
+  TLocalCustomCommand(
+    const TCustomCommandData & Data, const UnicodeString & RemotePath, const UnicodeString & LocalPath,
     const UnicodeString & FileName, const UnicodeString & LocalFileName,
     const UnicodeString & FileList);
 
@@ -81,6 +83,7 @@ protected:
   virtual void __fastcall DelimitReplacement(UnicodeString & Replacement, wchar_t Quote);
 
 private:
+  UnicodeString FLocalPath;
   UnicodeString FLocalFileName;
 };
 //---------------------------------------------------------------------------

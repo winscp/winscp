@@ -1684,7 +1684,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   else
   {
     TCustomCommandData Data(Terminal);
-    TLocalCustomCommand LocalCustomCommand(Data, Terminal->CurrentDirectory);
+    TLocalCustomCommand LocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory());
     TWinInteractiveCustomCommand InteractiveCustomCommand(
       &LocalCustomCommand, ACommand.Name);
 
@@ -1798,7 +1798,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
               TCustomCommandData Data(FTerminal);
               TLocalCustomCommand CustomCommand(Data,
-                Terminal->CurrentDirectory, L"", LocalFile, FileList);
+                Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), L"", LocalFile, FileList);
               UnicodeString ShellCommand = CustomCommand.Complete(Command, true);
 
               if (NonBlocking)
@@ -1821,7 +1821,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   UnicodeString FileName = RemoteFileList->Strings[Index];
                   TCustomCommandData Data(FTerminal);
                   TLocalCustomCommand CustomCommand(Data,
-                    Terminal->CurrentDirectory, FileName, LocalFile, L"");
+                    Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), FileName, LocalFile, L"");
                   ExecuteShellAndWait(CustomCommand.Complete(Command, true));
                 }
               }
@@ -1833,7 +1833,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                 {
                   TCustomCommandData Data(FTerminal);
                   TLocalCustomCommand CustomCommand(
-                    Data, Terminal->CurrentDirectory,
+                    Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                     FileName, LocalFileList->Strings[Index], L"");
                   ExecuteShellAndWait(CustomCommand.Complete(Command, true));
                 }
@@ -1850,7 +1850,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   UnicodeString FileName = RemoteFileList->Strings[Index];
                   TCustomCommandData Data(FTerminal);
                   TLocalCustomCommand CustomCommand(
-                    Data, Terminal->CurrentDirectory,
+                    Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                     FileName, LocalFileList->Strings[Index], L"");
                   ExecuteShellAndWait(CustomCommand.Complete(Command, true));
                 }
@@ -1862,7 +1862,8 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
               {
                 TCustomCommandData Data(FTerminal);
                 TLocalCustomCommand CustomCommand(Data,
-                  Terminal->CurrentDirectory, RemoteFileList->Strings[Index], L"", L"");
+                  Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
+                  RemoteFileList->Strings[Index], L"", L"");
                 ExecuteShellAndWait(CustomCommand.Complete(Command, true));
               }
             }
@@ -1972,7 +1973,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
         UnicodeString FileList = MakeFileList(LocalFileList.get());
         TCustomCommandData Data(FTerminal);
         TLocalCustomCommand CustomCommand(
-          Data, Terminal->CurrentDirectory,
+          Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
           L"", L"", FileList);
         ExecuteShell(CustomCommand.Complete(Command, true));
       }
@@ -1991,7 +1992,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
             UnicodeString FileName = LocalFileList->Strings[Index];
             TCustomCommandData Data(FTerminal);
             TLocalCustomCommand CustomCommand(
-              Data, Terminal->CurrentDirectory,
+              Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
               FileName, L"", L"");
             ExecuteShellAndWait(CustomCommand.Complete(Command, true));
           }

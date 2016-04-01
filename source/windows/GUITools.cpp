@@ -898,24 +898,30 @@ TLocalCustomCommand::TLocalCustomCommand()
 {
 }
 //---------------------------------------------------------------------------
-TLocalCustomCommand::TLocalCustomCommand(const TCustomCommandData & Data,
-    const UnicodeString & Path) :
-  TFileCustomCommand(Data, Path)
+TLocalCustomCommand::TLocalCustomCommand(
+    const TCustomCommandData & Data, const UnicodeString & RemotePath, const UnicodeString & LocalPath) :
+  TFileCustomCommand(Data, RemotePath)
 {
+  FLocalPath = LocalPath;
 }
 //---------------------------------------------------------------------------
 TLocalCustomCommand::TLocalCustomCommand(const TCustomCommandData & Data,
-  const UnicodeString & Path, const UnicodeString & FileName,
+  const UnicodeString & RemotePath, const UnicodeString & LocalPath, const UnicodeString & FileName,
   const UnicodeString & LocalFileName, const UnicodeString & FileList) :
-  TFileCustomCommand(Data, Path, FileName, FileList)
+  TFileCustomCommand(Data, RemotePath, FileName, FileList)
 {
+  FLocalPath = LocalPath;
   FLocalFileName = LocalFileName;
 }
 //---------------------------------------------------------------------------
 int __fastcall TLocalCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  if ((Index < Command.Length()) && (Command[Index + 1] == L'^'))
+  if ((Index < Command.Length()) && (Command[Index + 1] == L'\\'))
+  {
+    Len = 2;
+  }
+  else if ((Index < Command.Length()) && (Command[Index + 1] == L'^'))
   {
     Len = 3;
   }
@@ -930,7 +936,14 @@ bool __fastcall TLocalCustomCommand::PatternReplacement(
   const UnicodeString & Pattern, UnicodeString & Replacement, bool & Delimit)
 {
   bool Result;
-  if (Pattern == L"!^!")
+  if (Pattern == L"!\\")
+  {
+    // When used as "!\" in an argument to PowerShell, the trailing \ would escpae the ",
+    // so we exclude it
+    Replacement = ExcludeTrailingBackslash(FLocalPath);
+    Result = true;
+  }
+  else if (Pattern == L"!^!")
   {
     Replacement = FLocalFileName;
     Result = true;
