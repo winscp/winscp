@@ -85,4 +85,8 @@ const char * get_putty_version();
 
 void win_secur_cleanup(void);
 
+// from sshecc.c
+
+void ec_cleanup(void);
+
 #endif

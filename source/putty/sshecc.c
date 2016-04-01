@@ -37,6 +37,45 @@
 
 #include "ssh.h"
 
+#ifdef MPEXT
+int ec_curve_cleanup = 0;
+
+static void finalize_ec_point(struct ec_point *point)
+{
+    if (point->x != NULL) freebn(point->x);
+    if (point->y != NULL) freebn(point->y);
+    if (point->z != NULL) freebn(point->z);
+}
+
+static void finalize_wcurve(struct ec_curve *curve)
+{
+    if (curve->p != NULL) freebn(curve->p);
+
+    if (curve->w.a != NULL) freebn(curve->w.a);
+    if (curve->w.b != NULL) freebn(curve->w.b);
+    if (curve->w.n != NULL) freebn(curve->w.n);
+    finalize_ec_point(&curve->w.G);
+}
+
+static void finalize_mcurve(struct ec_curve *curve)
+{
+    if (curve->p != NULL) freebn(curve->p);
+
+    if (curve->m.a != NULL) freebn(curve->m.a);
+    if (curve->m.b != NULL) freebn(curve->m.b);
+    finalize_ec_point(&curve->m.G);
+}
+
+static void finalize_ecurve(struct ec_curve *curve)
+{
+    if (curve->p != NULL) freebn(curve->p);
+
+    if (curve->e.l != NULL) freebn(curve->e.l);
+    if (curve->e.d != NULL) freebn(curve->e.d);
+    finalize_ec_point(&curve->e.B);
+}
+#endif
+
 /* ----------------------------------------------------------------------
  * Elliptic curve definitions
  */
@@ -121,6 +160,15 @@ static struct ec_curve *ec_p256(void)
     static struct ec_curve curve = { 0 };
     static unsigned char initialised = 0;
 
+    #ifdef MPEXT
+    if (ec_curve_cleanup)
+    {
+        if (initialised) finalize_wcurve(&curve);
+        initialised = 0;
+        return NULL;
+    }
+    #endif
+
     if (!initialised)
     {
         static const unsigned char p[] = {
@@ -174,6 +222,15 @@ static struct ec_curve *ec_p384(void)
 {
     static struct ec_curve curve = { 0 };
     static unsigned char initialised = 0;
+
+    #ifdef MPEXT
+    if (ec_curve_cleanup)
+    {
+        if (initialised) finalize_wcurve(&curve);
+        initialised = 0;
+        return NULL;
+    }
+    #endif
 
     if (!initialised)
     {
@@ -240,6 +297,15 @@ static struct ec_curve *ec_p521(void)
 {
     static struct ec_curve curve = { 0 };
     static unsigned char initialised = 0;
+
+    #ifdef MPEXT
+    if (ec_curve_cleanup)
+    {
+        if (initialised) finalize_wcurve(&curve);
+        initialised = 0;
+        return NULL;
+    }
+    #endif
 
     if (!initialised)
     {
@@ -325,6 +391,15 @@ static struct ec_curve *ec_curve25519(void)
     static struct ec_curve curve = { 0 };
     static unsigned char initialised = 0;
 
+    #ifdef MPEXT
+    if (ec_curve_cleanup)
+    {
+        if (initialised) finalize_mcurve(&curve);
+        initialised = 0;
+        return NULL;
+    }
+    #endif
+
     if (!initialised)
     {
         static const unsigned char p[] = {
@@ -369,6 +444,15 @@ static struct ec_curve *ec_ed25519(void)
 {
     static struct ec_curve curve = { 0 };
     static unsigned char initialised = 0;
+
+    #ifdef MPEXT
+    if (ec_curve_cleanup)
+    {
+        if (initialised) finalize_ecurve(&curve);
+        initialised = 0;
+        return NULL;
+    }
+    #endif
 
     if (!initialised)
     {
@@ -2965,3 +3049,19 @@ const int ec_ed_alg_and_curve_by_bits(int bits,
     *curve = ((struct ecsign_extra *)(*alg)->extra)->curve();
     return TRUE;
 }
+
+#ifdef MPEXT
+
+void ec_cleanup(void)
+{
+  ec_curve_cleanup = 1;
+  ec_p256();
+  ec_p384();
+  ec_p521();
+  ec_curve25519();
+  ec_ed25519();
+  // in case we want to restart (unlikely)
+  ec_curve_cleanup = 0;
+}
+
+#endif
