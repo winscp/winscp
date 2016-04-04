@@ -61,7 +61,7 @@ namespace WinSCP
         public string AdditionalExecutableArguments { get { return _additionalExecutableArguments; } set { CheckNotOpened(); _additionalExecutableArguments = value; } }
         [Obsolete("Use AddRawConfiguration")]
         public bool DefaultConfiguration { get { return _defaultConfiguration; } set { CheckNotOpened(); _defaultConfiguration = value; } }
-        public bool DisableVersionCheck { get { return _disableVersionCheck; } set { CheckNotOpened(); _disableVersionCheck = value; } }
+        public bool DisableVersionCheck { get { return GetDisableVersionCheck(); } set { CheckNotOpened(); _disableVersionCheck = value; } }
         [Obsolete("Use AddRawConfiguration")]
         public string IniFilePath { get { return _iniFilePath; } set { CheckNotOpened(); _iniFilePath = value; } }
         public TimeSpan ReconnectTime { get { return _reconnectTime; } set { CheckNotOpened(); _reconnectTime = value; } }
@@ -1807,6 +1807,22 @@ namespace WinSCP
                     _xmlLogPath = filename;
                 }
             }
+        }
+
+        private bool GetDisableVersionCheck()
+        {
+            bool result = _disableVersionCheck;
+
+            #if DEBUG
+            string env = Environment.GetEnvironmentVariable("WINSCPNET_DISABLE_VERSION_CHECK");
+            int envFlag;
+            if (!string.IsNullOrEmpty(env) && int.TryParse(env, out envFlag))
+            {
+                result = (envFlag != 0);
+            }
+            #endif
+
+            return result;
         }
 
         private static string GetTypeLibKey(Type t)
