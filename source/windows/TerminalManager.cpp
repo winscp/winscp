@@ -788,6 +788,7 @@ void __fastcall TTerminalManager::ApplicationShowHint(UnicodeString & HintStr,
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
 {
+  // WORKAROUND This is no longer necessary on Windows 10
   bool Result = false;
   if (Application->Active)
   {
