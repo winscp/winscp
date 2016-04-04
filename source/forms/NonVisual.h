@@ -644,8 +644,9 @@ protected:
   UnicodeString __fastcall GetSessionFolderRoot(TSessionData * Data, int Level);
   void __fastcall CreateWorkspacesMenu(TAction * Action);
   void __fastcall WorkspaceItemClick(TObject * Sender);
-  void __fastcall CreateCustomCommandsListMenu(TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused, bool Toolbar, bool Both, int Tag);
-  void __fastcall CreateCustomCommandsMenu(TAction * Action);
+  void __fastcall CreateCustomCommandsListMenu(TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused,
+    bool Toolbar, TCustomCommandListType ListType, int Tag);
+  void __fastcall CreateCustomCommandsMenu(TAction * Action, TCustomCommandListType ListType);
   bool __fastcall CheckCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index);
   void __fastcall UpdateCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index);
   void __fastcall CreateSessionColorMenu(TAction * Action);
@@ -685,8 +686,8 @@ public:
   void __fastcall QueueSpeedComboBoxItem(TTBXComboBoxItem * Item);
   void __fastcall QueueSpeedComboBoxItemUpdate(TTBXComboBoxItem * Item);
   void __fastcall CreateCustomCommandsMenu(TTBCustomItem * Menu, bool OnFocused,
-    bool Toolbar, bool Both);
-  void __fastcall CreateCustomCommandsMenu(TAction * Action, bool OnFocused, bool Both);
+    bool Toolbar, TCustomCommandListType ListType);
+  void __fastcall CreateCustomCommandsMenu(TAction * Action, bool OnFocused, TCustomCommandListType ListType);
   TOnceDoneOperation __fastcall CurrentQueueOnceEmptyOperation();
   void __fastcall ResetQueueOnceEmptyOperation();
   void __fastcall StartBusy();

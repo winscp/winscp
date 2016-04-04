@@ -1550,24 +1550,8 @@ bool __fastcall TCustomScpExplorerForm::CustomCommandRemoteAllowed()
   return (FTerminal != NULL) && (FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsCapable[fcShellAnyCommand]);
 }
 //---------------------------------------------------------------------------
-int __fastcall TCustomScpExplorerForm::BothCustomCommandState(const TCustomCommandType & Command)
-{
-  bool Result = FLAGSET(Command.Params, ccLocal);
-  if (Result)
-  {
-    TLocalCustomCommand LocalCustomCommand;
-    TInteractiveCustomCommand InteractiveCustomCommand(&LocalCustomCommand);
-    UnicodeString Cmd = InteractiveCustomCommand.Complete(Command.Command, false);
-
-    Result =
-      LocalCustomCommand.IsFileCommand(Cmd) &&
-      LocalCustomCommand.HasLocalFileName(Cmd);
-  }
-  return Result ? 1 : -1;
-}
-//---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::CustomCommandState(
-  const TCustomCommandType & Command, bool OnFocused)
+  const TCustomCommandType & Command, bool /*OnFocused*/, TCustomCommandListType ListType)
 {
   int Result;
 
@@ -1580,20 +1564,29 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
 
   if (FLAGCLEAR(Command.Params, ccLocal))
   {
-    Result = CustomCommandRemoteAllowed();
-    if (Result)
+    int AllowedState = CustomCommandRemoteAllowed() ? 1 : 0;
+    // custom command that does not operate with files can be executed anytime ...
+    if (!NonInteractiveCustomCommand->IsFileCommand(Cmd))
     {
-      // custom command that does not operate with files can be executed anytime ...
-      if (!NonInteractiveCustomCommand->IsFileCommand(Cmd))
+      if ((ListType == ccltAll) || (ListType == ccltNonFile))
       {
-        // ... but do not show such command in remote file menu
-        // (TODO, currently custom commands are in file menu only, so we cannot hide
-        // such command, because it won't be accessible from elsewhere)
-        Result = OnFocused ? /*-1*/ true : true;
+        // ... but do not show such command in remote file menu (TODO)
+        Result = AllowedState;
       }
       else
       {
-        Result = (FCurrentSide == osRemote) && EnableSelectedOperation[osRemote];
+        Result = -1;
+      }
+    }
+    else
+    {
+      if (ListType == ccltAll)
+      {
+        Result = ((FCurrentSide == osRemote) && EnableSelectedOperation[osRemote]) ? AllowedState : 0;
+      }
+      else
+      {
+        Result = -1;
       }
     }
   }
@@ -1602,22 +1595,40 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     // custom command that does not operate with files can be executed anytime
     if (!NonInteractiveCustomCommand->IsFileCommand(Cmd))
     {
-      Result = true;
+      Result = ((ListType == ccltAll) || (ListType == ccltNonFile)) ? 1 : -1;
     }
     else if (LocalCustomCommand.HasLocalFileName(Cmd))
     {
-      // special case is "diff"-style command that can be executed over any side,
-      // if we have both sides
-      Result =
-        // Cannot have focus on both panels, so we have to call AnyFileSelected
-        // directly (instead of EnableSelectedOperation) to pass
-        // false to FocusedFileOnlyWhenFocused when panel is inactive.
-        (HasDirView[osLocal] && DirView(osLocal)->AnyFileSelected(false, false, (FCurrentSide == osLocal))) &&
-        DirView(osRemote)->AnyFileSelected(false, false, (FCurrentSide == osRemote));
+      if (ListType == ccltAll)
+      {
+        // special case is "diff"-style command that can be executed over any side,
+        // if we have both sides
+        Result =
+          // Cannot have focus on both panels, so we have to call AnyFileSelected
+          // directly (instead of EnableSelectedOperation) to pass
+          // false to FocusedFileOnlyWhenFocused when panel is inactive.
+          ((HasDirView[osLocal] && DirView(osLocal)->AnyFileSelected(false, false, (FCurrentSide == osLocal))) &&
+            DirView(osRemote)->AnyFileSelected(false, false, (FCurrentSide == osRemote))) ? 1 : 0;
+      }
+      else if (ListType == ccltBoth)
+      {
+        Result = 1;
+      }
+      else
+      {
+        Result = -1;
+      }
     }
     else
     {
-      Result = EnableSelectedOperation[FCurrentSide];
+      if (ListType == ccltAll)
+      {
+        Result = EnableSelectedOperation[FCurrentSide] ? 1 : 0;
+      }
+      else
+      {
+        Result = -1;
+      }
     }
   }
 
@@ -2053,12 +2064,12 @@ void __fastcall TCustomScpExplorerForm::CustomCommandMenu(
   {
     FCustomCommandMenu->Items->Clear();
 
-    NonVisualDataModule->CreateCustomCommandsMenu(FCustomCommandMenu->Items, false, false, true);
+    NonVisualDataModule->CreateCustomCommandsMenu(FCustomCommandMenu->Items, false, false, ccltBoth);
     MenuPopup(FCustomCommandMenu, Button);
   }
   else
   {
-    NonVisualDataModule->CreateCustomCommandsMenu(Action, false, true);
+    NonVisualDataModule->CreateCustomCommandsMenu(Action, false, ccltBoth);
   }
 }
 //---------------------------------------------------------------------------
@@ -3972,7 +3983,7 @@ void __fastcall TCustomScpExplorerForm::CheckCustomCommandShortCut(
   if (Command != NULL)
   {
     KeyProcessed(Key, Shift);
-    if (CustomCommandState(*Command, false) > 0)
+    if (CustomCommandState(*Command, false, ccltAll) > 0)
     {
       ExecuteFileOperationCommand(foCustomCommand, osRemote,
         false, false, const_cast<TCustomCommandType *>(Command));
@@ -7792,7 +7803,7 @@ void __fastcall TCustomScpExplorerForm::PreferencesDialog(
 void __fastcall TCustomScpExplorerForm::AdHocCustomCommandValidate(
   const TCustomCommandType & Command)
 {
-  if (CustomCommandState(Command, FEditingFocusedAdHocCommand) <= 0)
+  if (CustomCommandState(Command, FEditingFocusedAdHocCommand, ccltAll) <= 0)
   {
     throw Exception(FMTLOAD(CUSTOM_COMMAND_IMPOSSIBLE, (Command.Command)));
   }
@@ -7830,7 +7841,7 @@ void __fastcall TCustomScpExplorerForm::LastCustomCommand(bool OnFocused)
 {
   DebugAssert(!FLastCustomCommand.Command.IsEmpty());
 
-  int State = CustomCommandState(FLastCustomCommand, OnFocused);
+  int State = CustomCommandState(FLastCustomCommand, OnFocused, ccltAll);
   DebugAssert(State > 0);
   if (State <= 0)
   {
@@ -7849,7 +7860,7 @@ bool __fastcall TCustomScpExplorerForm::GetLastCustomCommand(bool OnFocused,
   {
     Command = FLastCustomCommand;
 
-    State = CustomCommandState(FLastCustomCommand, OnFocused);
+    State = CustomCommandState(FLastCustomCommand, OnFocused, ccltAll);
   }
 
   return Result;

@@ -56,6 +56,7 @@ enum TPanelExportDestination { pedClipboard, pedCommandLine };
 enum TCopyOperationCommandFlag {
   cocNone = 0x00, cocShortCutHint = 0x01, cocQueue = 0x02, cocNonQueue = 0x04
 };
+enum TCustomCommandListType { ccltAll, ccltBoth, ccltNonFile };
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
 {
@@ -584,8 +585,7 @@ public:
   virtual bool __fastcall DirViewEnabled(TOperationSide Side);
   virtual void __fastcall ChangePath(TOperationSide Side) = 0;
   virtual void __fastcall StoreParams();
-  int __fastcall CustomCommandState(const TCustomCommandType & Command, bool OnFocused);
-  int __fastcall BothCustomCommandState(const TCustomCommandType & Command);
+  int __fastcall CustomCommandState(const TCustomCommandType & Command, bool OnFocused, TCustomCommandListType ListType);
   bool __fastcall GetLastCustomCommand(bool OnFocused,
     TCustomCommandType & CustomCommand, int & State);
   void __fastcall LastCustomCommand(bool OnFocused);

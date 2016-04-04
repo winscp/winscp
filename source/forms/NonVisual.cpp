@@ -779,7 +779,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(EditorListCustomizeAction, PreferencesDialog(pmEditor))
 
     // CUSTOM COMMANDS
-    EXE(CustomCommandsAction, CreateCustomCommandsMenu(CustomCommandsAction))
+    EXE(CustomCommandsAction, CreateCustomCommandsMenu(CustomCommandsAction, ccltAll))
     EXE(CustomCommandsEnterAction, ScpExplorer->AdHocCustomCommand(false))
     EXE(CustomCommandsEnterFocusedAction, ScpExplorer->AdHocCustomCommand(true))
     EXE(CustomCommandsLastAction, ScpExplorer->LastCustomCommand(false))
@@ -1041,21 +1041,12 @@ const int CustomCommandExtension = 0x0400;
 const int CustomCommandIndexMask = 0x00FF;
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
-  TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused, bool Toolbar, bool Both, int Tag)
+  TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType, int Tag)
 {
   for (int Index = 0; Index < List->Count; Index++)
   {
     const TCustomCommandType * Command = List->Commands[Index];
-    int State;
-
-    if (!Both)
-    {
-      State = ScpExplorer->CustomCommandState(*Command, OnFocused);
-    }
-    else
-    {
-      State = ScpExplorer->BothCustomCommandState(*Command);
-    }
+    int State = ScpExplorer->CustomCommandState(*Command, OnFocused, ListType);
 
     if (State >= 0)
     {
@@ -1067,12 +1058,12 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
       {
         Item->Tag = Item->Tag | CustomCommandOnFocused;
       }
-      if (Both)
+      if (ListType == ccltBoth)
       {
         Item->Tag = Item->Tag | CustomCommandBoth;
       }
       Item->Hint = CustomCommandHint(Command);
-      if (!Both)
+      if (ListType != ccltBoth)
       {
         Item->ShortCut = Command->ShortCut;
       }
@@ -1084,13 +1075,13 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
-  TTBCustomItem * Menu, bool OnFocused, bool Toolbar, bool Both)
+  TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType)
 {
-  CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Menu, OnFocused, Toolbar, Both, 0);
+  CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Menu, OnFocused, Toolbar, ListType, 0);
 
   TTBCustomItem * Item;
 
-  if (!Both)
+  if (ListType == ccltAll)
   {
     Item = new TTBXItem(Menu);
     Item->Action = OnFocused ? CustomCommandsEnterFocusedAction : CustomCommandsEnterAction;
@@ -1108,11 +1099,11 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   TTBXSeparatorItem * Separator = AddMenuSeparator(Menu);
   Separator->Visible = (WinConfiguration->ExtensionList->Count > 0);
 
-  CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Menu, OnFocused, Toolbar, Both, CustomCommandExtension);
+  CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Menu, OnFocused, Toolbar, ListType, CustomCommandExtension);
 
   AddMenuSeparator(Menu);
 
-  if (!Toolbar && !Both)
+  if (!Toolbar && (ListType != ccltBoth))
   {
     Item = new TTBXItem(Menu);
     Item->Action = CustomCommandsBandAction;
@@ -1125,7 +1116,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
-  TAction * Action, bool OnFocused, bool Both)
+  TAction * Action, bool OnFocused, TCustomCommandListType ListType)
 {
   DebugAssert(Action);
   TTBCustomItem * Menu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
@@ -1133,7 +1124,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   {
     int PrevCount = Menu->Count;
 
-    CreateCustomCommandsMenu(Menu, OnFocused, false, Both);
+    CreateCustomCommandsMenu(Menu, OnFocused, false, ListType);
 
     for (int Index = 0; Index < PrevCount; Index++)
     {
@@ -1142,13 +1133,13 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
+void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action, TCustomCommandListType ListType)
 {
   TTBCustomItem * Menu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
   if (DebugAlwaysTrue(Menu != NULL))
   {
     bool OnFocused = (Menu == RemoteDirViewCustomCommandsMenu);
-    CreateCustomCommandsMenu(Action, OnFocused, false);
+    CreateCustomCommandsMenu(Action, OnFocused, ListType);
   }
 }
 //---------------------------------------------------------------------------
@@ -1179,7 +1170,7 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbarList(TTBXToolba
     TTBCustomItem * Item = Toolbar->Items->Items[Index];
     int CommandIndex2 = (Item->Tag & CustomCommandIndexMask);
     DebugAssert(CommandIndex2 == CommandIndex);
-    int State = ScpExplorer->CustomCommandState(*List->Commands[CommandIndex], false);
+    int State = ScpExplorer->CustomCommandState(*List->Commands[CommandIndex], false, ccltAll);
     DebugAssert(State >= 0);
     Item->Enabled = (State > 0);
   }
@@ -1224,7 +1215,7 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
     try
     {
       Toolbar->Items->Clear();
-      CreateCustomCommandsMenu(Toolbar->Items, false, true, false);
+      CreateCustomCommandsMenu(Toolbar->Items, false, true, ccltAll);
       DebugAssert(CommandCount + AdditionalCommands == Toolbar->Items->Count);
     }
     __finally
