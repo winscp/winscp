@@ -343,7 +343,9 @@ void sk_cleanup(void)
     }
 
     if (p_WSACleanup)
+    {
 	p_WSACleanup();
+    }
     if (winsock_module)
 	FreeLibrary(winsock_module);
 #ifndef NO_IPV6
