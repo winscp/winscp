@@ -3094,13 +3094,15 @@ begin
       dwEffect := DropEffect_Link
     end
       else
-    if DragOnDriveIsMove and
-       (not DDOwnerIsSource or Assigned(DropTarget)) and
-       (((DragDrive = Upcase(Path[1])) and (dwEffect = DropEffect_Copy) and
-       (DragDropFilesEx.AvailableDropEffects and DropEffect_Move <> 0))
-         or IsRecycleBin) then
     begin
-      dwEffect := DropEffect_Move;
+      if DragOnDriveIsMove and
+         (not DDOwnerIsSource or Assigned(DropTarget)) and
+         (((DragDrive = Upcase(Path[1])) and (dwEffect = DropEffect_Copy) and
+         (DragDropFilesEx.AvailableDropEffects and DropEffect_Move <> 0))
+           or IsRecycleBin) then
+      begin
+        dwEffect := DropEffect_Move;
+      end;
     end;
   end;
 
