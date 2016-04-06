@@ -2854,7 +2854,7 @@ begin
     OperandFrom.Clear;
     OperandTo.Clear;
     OperandFrom.Add(ItemFullFileName(Item));
-    OperandTo.Add(fPath + '\' + HItem.pszText);
+    OperandTo.Add(FPath + '\' + HItem.pszText);
   end;
 
   try
