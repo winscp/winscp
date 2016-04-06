@@ -6427,14 +6427,29 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
       // to steal focus most of the time)
       Application->BringToFront();
 
-      // note that we seem to never get drMove here, see also comment below
+      // On older version of Windows we never got drMove here, see also comment below.
+      // On Windows 10, we get the "move".
       if ((DDResult == drCopy) || (DDResult == drMove) || (DDResult == drInvalid))
       {
         UnicodeString TargetDirectory;
         TFileOperation Operation;
 
         // drInvalid may mean drMove, see comment below
-        Operation = (DDResult == drCopy) ? foCopy : foMove;
+        switch (DDResult)
+        {
+          case drCopy:
+            Operation = foCopy;
+            break;
+          case drMove:
+            Operation = foMove;
+            break;
+          default:
+            DebugFail();
+          case drInvalid:
+            // prefer "copy" for safety
+            Operation = FLAGSET(FLastDropEffect, DROPEFFECT_MOVE) ? foMove : foCopy;
+            break;
+        }
 
         if (FDDMoveSlipped)
         {
@@ -6446,7 +6461,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
         bool ForceQueue;
         if (!DDGetTarget(Param.TargetDirectory, ForceQueue, Internal))
         {
-          // we get drInvalid both if move-d&d was intercepted by ddext,
+          // we get drInvalid both if d&d was intercepted by ddext,
           // and when users drops on no-drop location.
           // we tell the difference by existence of response from ddext,
           // so we ignore absence of response in this case
