@@ -715,7 +715,20 @@ void cleanup_exit(int);
     X(INT, NONE, change_username) /* allow username switching in SSH-2 */ \
     X(INT, INT, ssh_cipherlist) \
     X(FILENAME, NONE, keyfile) \
-    X(INT, NONE, sshprot) /* use v1 or v2 when both available */ \
+    /* \
+     * Which SSH protocol to use. \
+     * For historical reasons, the current legal values for CONF_sshprot \
+     * are: \
+     *  0 = SSH-1 only \
+     *  3 = SSH-2 only \
+     * We used to also support \
+     *  1 = SSH-1 with fallback to SSH-2 \
+     *  2 = SSH-2 with fallback to SSH-1 \
+     * and we continue to use 0/3 in storage formats rather than the more \
+     * obvious 1/2 to avoid surprises if someone saves a session and later \
+     * downgrades PuTTY. So it's easier to use these numbers internally too. \
+     */ \
+    X(INT, NONE, sshprot) \
     X(INT, NONE, ssh2_des_cbc) /* "des-cbc" unrecommended SSH-2 cipher */ \
     X(INT, NONE, ssh_no_userauth) /* bypass "ssh-userauth" (SSH-2 only) */ \
     X(INT, NONE, ssh_show_banner) /* show USERAUTH_BANNERs (SSH-2 only) */ \
@@ -1462,6 +1475,7 @@ unsigned long schedule_timer(int ticks, timer_fn_t fn, void *ctx);
 void expire_timer_context(void *ctx);
 int run_timers(unsigned long now, unsigned long *next);
 void timer_change_notify(unsigned long next);
+unsigned long timing_last_clock(void);
 
 /*
  * Exports from callback.c.
