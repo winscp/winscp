@@ -661,22 +661,6 @@ unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Ty
   return ExceptionMessageDialog(E, Type, MessageFormat, Answers, HelpKeyword, &AParams);
 }
 //---------------------------------------------------------------------------
-static void __fastcall DoExceptNotify(TObject * ExceptObj, void * ExceptAddr,
-  bool OSException, void * BaseOfStack)
-{
-  if (ExceptObj != NULL)
-  {
-    Exception * E = dynamic_cast<Exception *>(ExceptObj);
-    if ((E != NULL) && IsInternalException(E)) // optimization
-    {
-      DoExceptionStackTrace(ExceptObj, ExceptAddr, OSException, BaseOfStack);
-
-      TJclStackInfoList * StackInfoList = JclLastExceptStackList();
-
-      if (DebugAlwaysTrue(StackInfoList != NULL))
-      {
-        std::unique_ptr<TStrings> StackTrace(StackInfoListToStrings(StackInfoList));
-
         DWORD ThreadID = GetCurrentThreadId();
 
         TGuard Guard(StackTraceCriticalSection.get());
@@ -700,6 +684,8 @@ static void __fastcall DoExceptNotify(TObject * ExceptObj, void * ExceptAddr,
   }
 }
 //---------------------------------------------------------------------------
+#endif // ifdef _DEBUG
+//!CLEANEND
 void * __fastcall BusyStart()
 {
   void * Token = reinterpret_cast<void *>(Screen->Cursor);
