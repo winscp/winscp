@@ -220,7 +220,14 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // SSH page
     Ssh2LegacyDESCheck->Checked = FSessionData->Ssh2DES;
     CompressionCheck->Checked = FSessionData->Compression;
-    SshProtCombo->ItemIndex = FSessionData->SshProt;
+    if (FSessionData->SshProt == ssh1only)
+    {
+      SshProtCombo2->ItemIndex = 0;
+    }
+    else
+    {
+      SshProtCombo2->ItemIndex = 1;
+    }
 
     CipherListBox->Items->Clear();
     DebugAssert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_CHACHA20);
@@ -394,7 +401,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 //---------------------------------------------------------------------
 TSshProt __fastcall TSiteAdvancedDialog::GetSshProt()
 {
-  return (TSshProt)SshProtCombo->ItemIndex;
+  return (SshProtCombo2->ItemIndex == 0) ? ssh1only : ssh2only;
 }
 //---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::SaveSession()
@@ -771,18 +778,18 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // ssh/authentication sheet
     AuthSheet->Enabled = SshProtocol;
-    EnableControl(SshNoUserAuthCheck, (GetSshProt() != ssh1only));
+    EnableControl(SshNoUserAuthCheck, (GetSshProt() == ssh2only));
     EnableControl(AuthenticationGroup,
       !SshNoUserAuthCheck->Enabled || !SshNoUserAuthCheck->Checked);
-    EnableControl(AuthTISCheck, AuthenticationGroup->Enabled && (GetSshProt() != ssh2only));
-    EnableControl(AuthKICheck, AuthenticationGroup->Enabled && (GetSshProt() != ssh1only));
+    EnableControl(AuthTISCheck, AuthenticationGroup->Enabled && (GetSshProt() == ssh1only));
+    EnableControl(AuthKICheck, AuthenticationGroup->Enabled && (GetSshProt() == ssh2only));
     EnableControl(AuthKIPasswordCheck,
       AuthenticationGroup->Enabled &&
       ((AuthTISCheck->Enabled && AuthTISCheck->Checked) ||
        (AuthKICheck->Enabled && AuthKICheck->Checked)));
     EnableControl(AuthenticationParamsGroup, AuthenticationGroup->Enabled);
     EnableControl(AuthGSSAPICheck3,
-      AuthenticationGroup->Enabled && (GetSshProt() != ssh1only));
+      AuthenticationGroup->Enabled && (GetSshProt() == ssh2only));
     EnableControl(GSSAPIFwdTGTCheck,
       AuthGSSAPICheck3->Enabled && AuthGSSAPICheck3->Checked);
 
@@ -791,10 +798,10 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(CipherUpButton, CipherListBox->ItemIndex > 0);
     EnableControl(CipherDownButton, CipherListBox->ItemIndex >= 0 &&
       CipherListBox->ItemIndex < CipherListBox->Items->Count-1);
-    EnableControl(Ssh2LegacyDESCheck, (GetSshProt() != ssh1only));
+    EnableControl(Ssh2LegacyDESCheck, (GetSshProt() == ssh2only));
 
     // ssh/kex sheet
-    KexSheet->Enabled = SshProtocol && (GetSshProt() != ssh1only) &&
+    KexSheet->Enabled = SshProtocol && (GetSshProt() == ssh2only) &&
       (BugRekey2Combo->ItemIndex != 2);
     EnableControl(KexUpButton, KexListBox->ItemIndex > 0);
     EnableControl(KexDownButton, KexListBox->ItemIndex >= 0 &&
@@ -802,27 +809,27 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // ssh/bugs sheet
     BugsSheet->Enabled = SshProtocol;
-    EnableControl(BugIgnore1Combo, (GetSshProt() != ssh2only));
+    EnableControl(BugIgnore1Combo, (GetSshProt() == ssh1only));
     EnableControl(BugIgnore1Label, BugIgnore1Combo->Enabled);
-    EnableControl(BugPlainPW1Combo, (GetSshProt() != ssh2only));
+    EnableControl(BugPlainPW1Combo, (GetSshProt() == ssh1only));
     EnableControl(BugPlainPW1Label, BugPlainPW1Combo->Enabled);
-    EnableControl(BugRSA1Combo, (GetSshProt() != ssh2only));
+    EnableControl(BugRSA1Combo, (GetSshProt() == ssh1only));
     EnableControl(BugRSA1Label, BugRSA1Combo->Enabled);
-    EnableControl(BugHMAC2Combo, (GetSshProt() != ssh1only));
+    EnableControl(BugHMAC2Combo, (GetSshProt() == ssh2only));
     EnableControl(BugHMAC2Label, BugHMAC2Combo->Enabled);
-    EnableControl(BugDeriveKey2Combo, (GetSshProt() != ssh1only));
+    EnableControl(BugDeriveKey2Combo, (GetSshProt() == ssh2only));
     EnableControl(BugDeriveKey2Label, BugDeriveKey2Combo->Enabled);
-    EnableControl(BugRSAPad2Combo, (GetSshProt() != ssh1only));
+    EnableControl(BugRSAPad2Combo, (GetSshProt() == ssh2only));
     EnableControl(BugRSAPad2Label, BugRSAPad2Combo->Enabled);
-    EnableControl(BugPKSessID2Combo, (GetSshProt() != ssh1only));
+    EnableControl(BugPKSessID2Combo, (GetSshProt() == ssh2only));
     EnableControl(BugPKSessID2Label, BugPKSessID2Combo->Enabled);
-    EnableControl(BugRekey2Combo, (GetSshProt() != ssh1only));
+    EnableControl(BugRekey2Combo, (GetSshProt() == ssh2only));
     EnableControl(BugRekey2Label, BugRekey2Combo->Enabled);
-    EnableControl(BugMaxPkt2Combo, (GetSshProt() != ssh1only));
+    EnableControl(BugMaxPkt2Combo, (GetSshProt() == ssh2only));
     EnableControl(BugMaxPkt2Label, BugMaxPkt2Combo->Enabled);
-    EnableControl(BugIgnore2Combo, (GetSshProt() != ssh1only));
+    EnableControl(BugIgnore2Combo, (GetSshProt() == ssh2only));
     EnableControl(BugIgnore2Label, BugIgnore2Combo->Enabled);
-    EnableControl(BugWinAdjCombo, (GetSshProt() != ssh1only));
+    EnableControl(BugWinAdjCombo, (GetSshProt() == ssh2only));
     EnableControl(BugWinAdjLabel, BugWinAdjCombo->Enabled);
 
     // connection/proxy sheet
@@ -1238,7 +1245,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyEdit2AfterDialog(TObject * Sender
   TFilenameEdit * Edit = dynamic_cast<TFilenameEdit *>(Sender);
   if (Name != Edit->Text)
   {
-    VerifyAndConvertKey(Name);
+    VerifyAndConvertKey(Name, GetSshProt());
   }
 }
 //---------------------------------------------------------------------------
@@ -1248,9 +1255,9 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
   if (ModalResult == DefaultResult(this))
   {
     // StripPathQuotes should not be needed as we do not feed quotes anymore
-    VerifyKeyIncludingVersion(StripPathQuotes(PrivateKeyEdit2->Text), GetSshProt());
-    // for tunnel key do not check SSH version as it is not configurable
-    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit2->Text));
+    VerifyKey(StripPathQuotes(PrivateKeyEdit2->Text), GetSshProt());
+    // for tunnel SSH version is not configurable
+    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit2->Text), ssh2only);
     VerifyCertificate(StripPathQuotes(TlsCertificateFileEdit->Text));
   }
 }

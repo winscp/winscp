@@ -1720,6 +1720,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 152
             Height = 13
             Caption = 'Preferred SSH protocol version:'
+            FocusControl = SshProtCombo2
           end
           object CompressionCheck: TCheckBox
             Left = 16
@@ -1731,7 +1732,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 0
             OnClick = DataChange
           end
-          object SshProtCombo: TComboBox
+          object SshProtCombo2: TComboBox
             Left = 303
             Top = 37
             Width = 80
@@ -1741,10 +1742,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 1
             OnChange = DataChange
             Items.Strings = (
-              '1 only'
-              '1 preferred'
-              '2 preferred'
-              '2 only')
+              '1'
+              '2')
           end
         end
         object EncryptionGroup: TGroupBox

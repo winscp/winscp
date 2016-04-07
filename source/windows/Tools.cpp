@@ -1006,7 +1006,7 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 }
 //---------------------------------------------------------------------------
 static void __fastcall DoVerifyKey(
-  UnicodeString & FileName, bool TypeOnly, TSshProt SshProt, bool Convert)
+  UnicodeString & FileName, TSshProt SshProt, bool Convert)
 {
   if (!FileName.Trim().IsEmpty())
   {
@@ -1051,18 +1051,12 @@ static void __fastcall DoVerifyKey(
 
       case ktSSH1:
       case ktSSH2:
-        // on file select do not check for SSH version as user may
-        // intend to change it only after he/she selects key file
-        if (!TypeOnly)
+        if ((Type == ktSSH1) != (SshProt == ssh1only))
         {
-          if ((Type == ktSSH1) !=
-                ((SshProt == ssh1only) || (SshProt == ssh1)))
-          {
-            Message =
-              MainInstructions(
-                FMTLOAD(KEY_TYPE_DIFFERENT_SSH,
-                  (FileName, (Type == ktSSH1 ? L"SSH-1" : L"PuTTY SSH-2"))));
-          }
+          Message =
+            MainInstructions(
+              FMTLOAD(KEY_TYPE_DIFFERENT_SSH,
+                (FileName, (Type == ktSSH1 ? L"SSH-1" : L"PuTTY SSH-2"))));
         }
         break;
 
@@ -1101,19 +1095,14 @@ static void __fastcall DoVerifyKey(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyAndConvertKey(UnicodeString & FileName)
+void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt)
 {
-  DoVerifyKey(FileName, true, TSshProt(0), true);
+  DoVerifyKey(FileName, SshProt, true);
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyKey(UnicodeString FileName)
+void __fastcall VerifyKey(UnicodeString FileName, TSshProt SshProt)
 {
-  DoVerifyKey(FileName, true, TSshProt(0), false);
-}
-//---------------------------------------------------------------------------
-void __fastcall VerifyKeyIncludingVersion(UnicodeString FileName, TSshProt SshProt)
-{
-  DoVerifyKey(FileName, false, SshProt, false);
+  DoVerifyKey(FileName, SshProt, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall VerifyCertificate(const UnicodeString & FileName)

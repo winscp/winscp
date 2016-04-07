@@ -252,7 +252,7 @@ __published:
   TLabel *Label4;
   TFilenameEdit *TlsCertificateFileEdit;
   TCheckBox *TrimVMSVersionsCheck;
-  TComboBox *SshProtCombo;
+  TComboBox *SshProtCombo2;
   TCheckBox *FollowDirectorySymlinksCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);

@@ -25,7 +25,7 @@ const wchar_t * ProxyMethodNames = L"None;SOCKS4;SOCKS5;HTTP;Telnet;Cmd";
 const wchar_t * DefaultName = L"Default Settings";
 const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", L"aes", L"des", L"arcfour", L"chacha20"};
 const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-gex-sha1", L"rsa", L"ecdh"};
-const wchar_t SshProtList[][10] = {L"1 only", L"1", L"2", L"2 only"};
+const wchar_t SshProtList[][10] = {L"1", L"1>2", L"2>1", L"2"};
 const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipChaCha20, cipBlowfish, cip3DES, cipWarn, cipArcfour, cipDES };
 const TKex DefaultKexList[KEX_COUNT] =
@@ -538,7 +538,17 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   GSSAPIServerRealm = Storage->ReadString(L"GSSAPIServerRealm", Storage->ReadString(L"KerbPrincipal", GSSAPIServerRealm));
   ChangeUsername = Storage->ReadBool(L"ChangeUsername", ChangeUsername);
   Compression = Storage->ReadBool(L"Compression", Compression);
-  SshProt = (TSshProt)Storage->ReadInteger(L"SshProt", SshProt);
+  TSshProt ASshProt = (TSshProt)Storage->ReadInteger(L"SshProt", SshProt);
+  // Old sessions may contain the values correponding to the fallbacks we used to allow; migrate them
+  if (ASshProt == ssh2deprecated)
+  {
+    ASshProt = ssh2only;
+  }
+  else if (ASshProt == ssh1deprecated)
+  {
+    ASshProt = ssh1only;
+  }
+  SshProt = ASshProt;
   Ssh2DES = Storage->ReadBool(L"Ssh2DES", Ssh2DES);
   SshNoUserAuth = Storage->ReadBool(L"SshNoUserAuth", SshNoUserAuth);
   CipherList = Storage->ReadString(L"Cipher", CipherList);
