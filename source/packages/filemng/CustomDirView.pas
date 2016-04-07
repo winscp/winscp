@@ -1187,6 +1187,8 @@ begin
   // to force drag&drop re-registration when recreating handle
   // (occurs when changing ViewStyle)
   FDragDropFilesEx.DragDropControl := nil;
+  // Destroy the animation, as we keep getting reports that the animation fails to recreate
+  DoAnimation(False);
   inherited;
 end;
 
