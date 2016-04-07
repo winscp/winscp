@@ -64,7 +64,11 @@ files into PuTTY's format.
 Yes. SSH-1 support has always been available in PuTTY.
 
 However, the SSH-1 protocol has many weaknesses and is no longer
-considered secure; it should be avoided if at all possible.
+considered secure; you should use SSH-2 instead if at all possible.
+
+\#{XXX-REVIEW-BEFORE-RELEASE:
+As of 0.68, PuTTY will no longer fall back to SSH-1 if the server
+doesn't appear to support SSH-2; you must explicitly ask for SSH-1. }
 
 \S{faq-localecho}{Question} Does PuTTY support \i{local echo}?
 

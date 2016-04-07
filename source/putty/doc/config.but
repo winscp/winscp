@@ -1667,7 +1667,7 @@ Keepalives are only supported in Telnet and SSH; the Rlogin and Raw
 protocols offer no way of implementing them. (For an alternative, see
 \k{config-tcp-keepalives}.)
 
-Note that if you are using \i{SSH-1} and the server has a bug that makes
+Note that if you are using SSH-1 and the server has a bug that makes
 it unable to deal with SSH-1 ignore messages (see
 \k{config-ssh-bug-ignore1}), enabling keepalives will have no effect.
 
@@ -2267,30 +2267,28 @@ client end. Likewise, data sent by PuTTY to the server is compressed
 first and the server decompresses it at the other end. This can help
 make the most of a low-\i{bandwidth} connection.
 
-\S{config-ssh-prot} \q{Preferred \i{SSH protocol version}}
+\S{config-ssh-prot} \q{\i{SSH protocol version}}
 
 \cfg{winhelp-topic}{ssh.protocol}
 
-This allows you to select whether you would prefer to use \i{SSH protocol
-version 1} or \I{SSH-2}version 2, and whether to permit falling back
-to the other version.
+This allows you to select whether to use \i{SSH protocol version 2}
+or the older \I{SSH-1}version 1.
 
-With the settings \q{1} and \q{2}, PuTTY will attempt to use protocol 1
-if the server you connect to does not offer protocol 2, and vice versa.
+You should normally leave this at the default of \q{2}. As well as
+having fewer features, the older SSH-1 protocol is no longer
+developed, has many known cryptographic weaknesses, and is generally
+not considered to be secure. PuTTY's protocol 1 implementation is
+provided mainly for compatibility, and is no longer being enhanced.
 
-If you select \q{1 only} or \q{2 only} here, PuTTY will only connect
-if the server you connect to offers the SSH protocol version you
-have specified.
+If a server offers both versions, prefer \q{2}. If you have some
+server or piece of equipment that only talks SSH-1, select \q{1}
+here, and do not treat the resulting connection as secure.
 
-You should normally leave this at the default, \q{2 only}. The older
-SSH-1 protocol is no longer developed, has many known cryptographic
-weaknesses, and is generally not considered to be secure. If you
-permit use of SSH-1 by selecting \q{2} instead of \q{2 only}, an
-active attacker can force downgrade to SSH-1 even if the server
-you're connecting to supports SSH-2.
-
-PuTTY's protocol 1 implementation is provided mainly for
-compatibility, and is no longer being enhanced.
+PuTTY will not automatically fall back to the other version of the
+protocol if the server turns out not to match your selection here;
+instead, it will put up an error message and abort the connection.
+This prevents an active attacker downgrading an intended SSH-2
+connection to SSH-1.
 
 \S{config-ssh-sharing} Sharing an SSH connection between PuTTY tools
 

@@ -59,10 +59,14 @@ void base64_encode_atom(const unsigned char *data, int n, char *out);
 int base64_decode_atom(const char *atom, unsigned char *out);
 
 struct bufchain_granule;
-typedef struct bufchain_tag {
+struct bufchain_tag {
     struct bufchain_granule *head, *tail;
     int buffersize;		       /* current amount of buffered data */
-} bufchain;
+};
+#ifndef BUFCHAIN_TYPEDEF
+typedef struct bufchain_tag bufchain;  /* rest of declaration in misc.c */
+#define BUFCHAIN_TYPEDEF
+#endif
 
 void bufchain_init(bufchain *ch);
 void bufchain_clear(bufchain *ch);

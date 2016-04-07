@@ -900,9 +900,8 @@ The \c{-1} and \c{-2} options force PuTTY to use version \I{SSH-1}1
 or version \I{SSH-2}2 of the SSH protocol. These options are only
 meaningful if you are using SSH.
 
-These options are equivalent to selecting your preferred SSH
-protocol version as \q{1 only} or \q{2 only} in the SSH panel of the
-PuTTY configuration box (see \k{config-ssh-prot}).
+These options are equivalent to selecting the SSH protocol version in
+the SSH panel of the PuTTY configuration box (see \k{config-ssh-prot}).
 
 \S2{using-cmdline-ipversion} \i\c{-4} and \i\c{-6}: specify an
 \i{Internet protocol version}

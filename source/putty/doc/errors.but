@@ -56,6 +56,25 @@ in the same way as you would if it was new.
 
 See \k{gs-hostkey} for more information on host keys.
 
+\H{errors-ssh-protocol} \q{SSH protocol version 2 required by our
+configuration but server only provides (old, insecure) SSH-1}
+
+By default, PuTTY only supports connecting to SSH servers that
+implement \i{SSH protocol version 2}. If you see this message, the
+server you're trying to connect to only supports the older SSH-1
+protocol.
+
+If the server genuinely only supports SSH-1, then you need to either
+change the \q{SSH protocol version} setting (see \k{config-ssh-prot}),
+or use the \c{-1} command-line option; in any case, you should not
+treat the resulting connection as secure.
+
+You might start seeing this message with new versions of PuTTY
+\#{XXX-REVIEW-BEFORE-RELEASE: (from 0.XX onwards)}
+where you didn't before, because it used to be possible to configure
+PuTTY to automatically fall back from SSH-2 to SSH-1. This is no
+longer supported, to prevent the possibility of a downgrade attack.
+
 \H{errors-cipher-warning} \q{The first cipher supported by the server is
 ... below the configured warning threshold}
 
