@@ -1010,8 +1010,12 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
           for (int Index = 0; Index < OutputCopy->Count; Index++)
           {
-            File = CreateRemoteFile(OutputCopy->Strings[Index]);
-            FileList->AddFile(File);
+            UnicodeString OutputLine = OutputCopy->Strings[Index];
+            if (!OutputLine.IsEmpty())
+            {
+              File = CreateRemoteFile(OutputCopy->Strings[Index]);
+              FileList->AddFile(File);
+            }
           }
         }
         __finally
