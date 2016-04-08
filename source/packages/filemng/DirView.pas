@@ -752,7 +752,9 @@ begin
   begin
     Result := UserDocumentDirectory;
     if IsUNCPath(Result) then
+    begin
       Result := AnyValidPath;
+    end;
   end;
 end; { GetHomeDirectory }
 
