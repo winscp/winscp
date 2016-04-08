@@ -2400,7 +2400,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 
         if (Result)
         {
-          if ((Path.Length() > 0) && (Path[1] != L'/'))
+          if ((Path.Length() > 0) && !UnixIsAbsolutePath(Path))
           {
             Path = L"/" + Path;
           }
