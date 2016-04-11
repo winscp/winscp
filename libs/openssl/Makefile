@@ -39,7 +39,7 @@ CP=copy
 RM=del
 MKDIR=-mkdir
 MKLIB=tlib /P128 /C
-ASM=nasm -f obj -d__omf__
+ASM=..\..\buildtools\tools\nasm -f obj -d__omf__
 
 ######################################################
 # You should not need to touch anything below this point
