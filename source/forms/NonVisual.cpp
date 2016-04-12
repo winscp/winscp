@@ -1168,8 +1168,7 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbarList(TTBXToolba
   for (int CommandIndex = 0; CommandIndex < List->Count; CommandIndex++, Index++)
   {
     TTBCustomItem * Item = Toolbar->Items->Items[Index];
-    int CommandIndex2 = (Item->Tag & CustomCommandIndexMask);
-    DebugAssert(CommandIndex2 == CommandIndex);
+    DebugAssert((Item->Tag & CustomCommandIndexMask) == CommandIndex);
     int State = ScpExplorer->CustomCommandState(*List->Commands[CommandIndex], false, ccltAll);
     DebugAssert(State >= 0);
     Item->Enabled = (State > 0);

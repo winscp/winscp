@@ -154,7 +154,6 @@ void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::MakeLogItemVisible(int Index)
 {
-  int CountVisible = LogView->Height / LogView->ItemHeight;
   if (Index < LogView->TopIndex)
   {
     LogView->TopIndex = Index;
@@ -534,7 +533,6 @@ void __fastcall TAuthenticateForm::LogViewDrawItem(TWinControl * /*Control*/, in
 
   LogView->Canvas->FillRect(Rect);
 
-  int Height = LogItemHeight(Index);
   // tfVerticalCenter does not seem to center the text,
   // so we need to deflate the vertical size too
   Rect.Inflate(-FHorizontalLogPadding,  -FVerticalLogPadding);

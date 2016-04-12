@@ -2804,7 +2804,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
             UnicodeString DependencyVersion = Value;
             UnicodeString Dependency = CutToChar(Value, L' ', true).LowerCase();
             Value = Value.Trim();
-            bool Failed = false;
+            bool Failed;
             if (Dependency == L"winscp")
             {
               int Version = StrToCompoundVersion(Value);

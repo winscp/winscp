@@ -4113,6 +4113,7 @@ void __fastcall TTerminal::AnyCommand(const UnicodeString Command,
   TCaptureOutputEvent OutputEvent)
 {
 
+  #pragma warn -inl
   class TOutputProxy
   {
   public:
@@ -4147,6 +4148,7 @@ void __fastcall TTerminal::AnyCommand(const UnicodeString Command,
     TCallSessionAction & FAction;
     TCaptureOutputEvent FOutputEvent;
   };
+  #pragma warn .inl
 
   TCallSessionAction Action(ActionLog, Command, CurrentDirectory);
   TOutputProxy ProxyOutputEvent(Action, OutputEvent);

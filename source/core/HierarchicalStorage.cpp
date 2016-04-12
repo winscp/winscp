@@ -1087,7 +1087,7 @@ size_t __fastcall TCustomIniFileStorage::ReadBinaryData(const UnicodeString Name
   size_t Len;
   if (HandleReadByMasterStorage(Name))
   {
-    Len = FMasterStorage->ReadBinaryData(Name, Buffer, Size);
+    FMasterStorage->ReadBinaryData(Name, Buffer, Size);
   }
   else
   {

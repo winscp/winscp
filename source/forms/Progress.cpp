@@ -350,7 +350,6 @@ void __fastcall TProgressForm::ApplicationModalBegin(TObject * /*Sender*/)
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & AData)
 {
-  TDateTime N = Now();
   bool InstantUpdate = false;
 
   // workaround: to force displaing first file data immediately,

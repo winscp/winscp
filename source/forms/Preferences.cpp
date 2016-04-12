@@ -1126,7 +1126,6 @@ void __fastcall TPreferencesDialog::UpdateControls()
     int CommandIndex = GetCommandIndex(CustomCommandsView->ItemIndex);
     bool CommandSelected = (CustomCommandsView->Selected != NULL);
     bool CustomCommandSelected = CommandSelected && (CommandList == FCustomCommandList);
-    bool ExtensionSelected = CommandSelected && (CommandList == FExtensionList);
     EnableControl(EditCommandButton, CustomCommandSelected);
     EnableControl(RemoveCommandButton, CommandSelected);
     EnableControl(UpCommandButton, CommandSelected && (CommandIndex > 0));
