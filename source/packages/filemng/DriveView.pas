@@ -980,7 +980,9 @@ begin
     end;
 
     if Result and (csDestroying in ComponentState) then
+    begin
       Result := False;
+    end;
 
     if Result and
        (not FCanChange) and
@@ -993,7 +995,9 @@ begin
       Result := False;
     end
       else
-    DropTarget := nil;
+    begin
+      DropTarget := nil;
+    end;
   end;
 end; {CanChange}
 
