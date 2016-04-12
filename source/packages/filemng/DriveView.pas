@@ -1258,6 +1258,7 @@ var
   WasValid: Boolean;
   WFirstDrive: TDrive;
   NodeData: TNodeData;
+  NewDrive: Char;
 begin
   {Fetch disabled drives from the registry:}
 
@@ -1348,7 +1349,27 @@ begin
         begin
           if (Directory <> '') and (Directory[1] = Drive) then
           begin
-            Directory := NodePathName(DriveStatus[Drive].RootNode.GetPrevSibling);
+            NewDrive := Drive;
+
+            repeat
+              if NewDrive < FirstFixedDrive then NewDrive := FirstFixedDrive
+                else
+              if NewDrive = FirstFixedDrive then NewDrive := LastDrive
+                else Dec(NewDrive);
+              DriveInfo.ReadDriveStatus(NewDrive, dsSize or dsImageIndex);
+
+              if NewDrive = Drive then
+              begin
+                Break;
+              end;
+
+              if DriveInfo[NewDrive].Valid and DriveInfo[NewDrive].DriveReady and Assigned(DriveStatus[NewDrive].RootNode) then
+              begin
+                Directory := NodePathName(DriveStatus[NewDrive].RootNode);
+                break;
+              end;
+            until False;
+
             if not Assigned(Selected) then
             begin
               Directory := NodePathName(DriveStatus[FirstFixedDrive].RootNode);
