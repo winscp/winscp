@@ -269,7 +269,7 @@ Source: "{#ShellExt64FileSource}"; DestDir: "{app}"; \
   Check: IsWin64 and IsShellExtNewer(ExpandConstant('{app}\{#ShellExt64FileName}'), '{#GetFileVersion(ShellExt64FileSource)}')
 Source: "{#PuttySourceDir}\LICENCE"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
-Source: "{#PuttySourceDir}\putty.hlp"; DestDir: "{app}\PuTTY"; \
+Source: "{#PuttySourceDir}\putty.chm"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
 Source: "{#PuttySourceDir}\pageant.exe"; DestDir: "{app}\PuTTY"; \
   Components: pageant; Flags: ignoreversion
