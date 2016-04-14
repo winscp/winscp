@@ -1343,16 +1343,16 @@ void __fastcall TEditorForm::CheckFileSize()
 {
   TEditorConfiguration EditorConfiguration = WinConfiguration->Editor;
 
-  if (EditorConfiguration.WarnOrLargeFileSize)
+  TWin32FileAttributeData FileAttributeData;
+  if (GetFileAttributesEx(ApiPath(FFileName).c_str(), GetFileExInfoStandard, &FileAttributeData))
   {
-    TWin32FileAttributeData FileAttributeData;
-    if (GetFileAttributesEx(ApiPath(FFileName).c_str(), GetFileExInfoStandard, &FileAttributeData))
+    const __int64 MaxSize = 100 * 1024 * 1024;
+    __int64 Size =
+      (static_cast<__int64>(FileAttributeData.nFileSizeHigh) << 32) +
+      FileAttributeData.nFileSizeLow;
+    if (Size > MaxSize)
     {
-      const __int64 MaxSize = 100 * 1024 * 1024;
-      __int64 Size =
-        (static_cast<__int64>(FileAttributeData.nFileSizeHigh) << 32) +
-        FileAttributeData.nFileSizeLow;
-      if (Size > MaxSize)
+      if (EditorConfiguration.WarnOrLargeFileSize)
       {
         TMessageParams Params(mpNeverAskAgainCheck);
         unsigned int Answer =
@@ -1378,6 +1378,8 @@ void __fastcall TEditorForm::CheckFileSize()
             DebugFail();
         }
       }
+
+      IgnoreException(typeid(EOutOfMemory));
     }
   }
 }

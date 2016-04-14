@@ -32,6 +32,7 @@ TOptions * __fastcall GetGlobalOptions();
 
 void __fastcall ShowExtendedException(Exception * E);
 bool __fastcall AppendExceptionStackTraceAndForget(TStrings *& MoreMessages);
+void __fastcall IgnoreException(const std::type_info & ExceptionType);
 
 UnicodeString __fastcall GetCompanyRegistryKey();
 UnicodeString __fastcall GetRegistryKey();

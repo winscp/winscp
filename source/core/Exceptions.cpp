@@ -9,8 +9,26 @@
 #include "Configuration.h"
 #include "CoreMain.h"
 #include "Interface.h"
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+static std::unique_ptr<TCriticalSection> IgnoredExceptionsCriticalSection(new TCriticalSection());
+typedef std::set<UnicodeString> TIgnoredExceptions;
+static TIgnoredExceptions IgnoredExceptions;
+//---------------------------------------------------------------------------
+static UnicodeString __fastcall NormalizeClassName(const UnicodeString & ClassName)
+{
+  return ReplaceStr(ClassName, L".", L"::").LowerCase();
+}
+//---------------------------------------------------------------------------
+void __fastcall IgnoreException(const std::type_info & ExceptionType)
+{
+  TGuard Guard(IgnoredExceptionsCriticalSection.get());
+  // We should better use type_index as a key, instead of a class name,
+  // but type_index is not available in 32-bit version of STL in XE6.
+  IgnoredExceptions.insert(NormalizeClassName(UnicodeString(AnsiString(ExceptionType.name()))));
+}
 //---------------------------------------------------------------------------
 static bool __fastcall WellKnownException(
   Exception * E, UnicodeString * AMessage, const wchar_t ** ACounterName, Exception ** AClone, bool Rethrow)
@@ -19,10 +37,23 @@ static bool __fastcall WellKnownException(
   const wchar_t * CounterName;
   std::unique_ptr<Exception> Clone;
 
-  bool Result = true;
 
+  bool Result = true;
+  bool IgnoreException;
+
+  if (!IgnoredExceptions.empty())
+  {
+    TGuard Guard(IgnoredExceptionsCriticalSection.get());
+    UnicodeString ClassName = NormalizeClassName(E->QualifiedClassName());
+    IgnoreException = (IgnoredExceptions.find(ClassName) != IgnoredExceptions.end());
+  }
+
+  if (IgnoreException)
+  {
+    Result = false;
+  }
   // EAccessViolation is EExternal
-  if (dynamic_cast<EAccessViolation*>(E) != NULL)
+  else if (dynamic_cast<EAccessViolation*>(E) != NULL)
   {
     if (Rethrow)
     {
