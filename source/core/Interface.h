@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #include "Configuration.h"
 #include "SessionData.h"
+#include <typeinfo>
 #define HELP_NONE ""
 #define SCRIPT_SWITCH "script"
 #define COMMAND_SWITCH L"Command"
