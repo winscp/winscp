@@ -7,11 +7,6 @@
 //---------------------------------------------------------------------------
 #define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
 //---------------------------------------------------------------------------
-#ifdef _MSC_VER
-#include <objbase.h>
-#define snwprintf _snwprintf
-#endif
-//---------------------------------------------------------------------------
 #include <initguid.h>
 #include <shlguid.h>
 #include <stdlib.h>
