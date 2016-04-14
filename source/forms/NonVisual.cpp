@@ -1164,7 +1164,6 @@ bool __fastcall TNonVisualDataModule::CheckCustomCommandsToolbarList(TTBXToolbar
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index)
 {
-  int CommandIndex = 0;
   for (int CommandIndex = 0; CommandIndex < List->Count; CommandIndex++, Index++)
   {
     TTBCustomItem * Item = Toolbar->Items->Items[Index];
@@ -1185,7 +1184,6 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
 
   TCustomCommandList * CustomCommandList = WinConfiguration->CustomCommandList;
   TCustomCommandList * ExtensionList = WinConfiguration->ExtensionList;
-  int ExtensionSeparatorCount = (ExtensionList->Count > 0) ? 1 : 0;
   int AfterCustomCommandsCommandCount = 2; // ad hoc, last
   int AdditionalCommands = AfterCustomCommandsCommandCount + 3; // custom/ext separator + separator, customize
   int CommandCount = CustomCommandList->Count + ExtensionList->Count;
