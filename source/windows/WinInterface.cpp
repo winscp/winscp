@@ -668,7 +668,7 @@ static void __fastcall DoExceptNotify(TObject * ExceptObj, void * ExceptAddr,
   if (ExceptObj != NULL)
   {
     Exception * E = dynamic_cast<Exception *>(ExceptObj);
-    if ((E != NULL) && IsInternalException(E)) // optimization
+    if ((E != NULL) && IsInternalException(E))
     {
       DoExceptionStackTrace(ExceptObj, ExceptAddr, OSException, BaseOfStack);
 
