@@ -29,7 +29,7 @@ const wchar_t SshProtList[][10] = {L"1", L"1>2", L"2>1", L"2"};
 const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipChaCha20, cipBlowfish, cip3DES, cipWarn, cipArcfour, cipDES };
 const TKex DefaultKexList[KEX_COUNT] =
-  { kexECDH, kexDHGEx, kexDHGroup14, kexDHGroup1, kexRSA, kexWarn };
+  { kexECDH, kexDHGEx, kexDHGroup14, kexRSA, kexWarn, kexDHGroup1 };
 const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16] = { L"SCP", L"SFTP (SCP)", L"SFTP", L"", L"", L"FTP", L"WebDAV" };
 const int SshPortNumber = 22;
 const int FtpPortNumber = 21;
