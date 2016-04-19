@@ -1158,7 +1158,7 @@ void ser_setup_config_box(struct controlbox *b, int midsession,
 /*
  * Exports from version.c.
  */
-extern char ver[];
+extern const char ver[];
 
 /*
  * Exports from unicode.c.

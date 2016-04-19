@@ -231,7 +231,7 @@ int setprocessacl(char *error)
     int ret=FALSE;
     PACL acl = NULL;
 
-    static const nastyace=WRITE_DAC | WRITE_OWNER |
+    static const DWORD nastyace=WRITE_DAC | WRITE_OWNER |
 	PROCESS_CREATE_PROCESS | PROCESS_CREATE_THREAD |
 	PROCESS_DUP_HANDLE |
 	PROCESS_SET_QUOTA | PROCESS_SET_INFORMATION |

@@ -2394,15 +2394,16 @@ PuTTY currently supports the following key exchange methods:
 2048-bit group.
 
 \b \q{Group 1}: Diffie-Hellman key exchange with a well-known
-1024-bit group. This is less secure \#{FIXME better words} than
-group 14, but may be faster with slow client or server machines,
-and may be the only method supported by older server software.
+1024-bit group. We no longer recommend using this method, and it's
+not used by default in new installations; however, it may be the
+only method supported by very old server software.
 
 \b \q{\ii{Group exchange}}: with this method, instead of using a fixed
 group, PuTTY requests that the server suggest a group to use for key
 exchange; the server can avoid groups known to be weak, and possibly
 invent new ones over time, without any changes required to PuTTY's
-configuration. We recommend use of this method, if possible.
+configuration. We recommend use of this method instead of the
+well-known groups, if possible.
 
 \b \q{\i{RSA key exchange}}: this requires much less computational
 effort on the part of the client, and somewhat less on the part of
