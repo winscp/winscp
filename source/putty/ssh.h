@@ -504,7 +504,11 @@ void aes_ssh2_decrypt_blk(void *handle, unsigned char *blk, int len);
 /*
  * PuTTY version number formatted as an SSH version string. 
  */
-extern const char sshver[];
+extern
+#ifndef MPEXT
+  const
+#endif
+  char sshver[];
 
 /*
  * Gross hack: pscp will try to start SFTP but fall back to scp1 if
