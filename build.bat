@@ -2,11 +2,7 @@
 rem See 'readme' file
 if "%PROCESSOR_ARCHITECTURE%"=="x86" set BDS=%ProgramFiles%\Embarcadero\Studio\14.0
 if "%PROCESSOR_ARCHITECTURE%"=="AMD64" set BDS=%ProgramFiles(x86)%\Embarcadero\Studio\14.0
-set WITH_DRAGEXT64=0
 set WITH_DOTNET=1
-rem set DRAGEXT64CL=<path to x64 cl.exe>
-rem set DRAGEXT64INCL=<path to x64 includes>
-rem set DRAGEXT64LIB=<path to x64 libraries>
 if "%BUILD_TARGET%"=="" set BUILD_TARGET=Build
 if "%BUILD_CONFIG%"=="" set BUILD_CONFIG=Release
 
