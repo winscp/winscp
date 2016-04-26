@@ -4652,28 +4652,39 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
 
           if (DestFileExists)
           {
+            FTerminal->LogEvent(FORMAT(L"File exists: %s", (FTerminal->GetRemoteFileInfo(File))));
             OpenParams.DestFileSize = File->Size;
             FileParams.DestSize = OpenParams.DestFileSize;
             FileParams.DestTimestamp = File->Modification;
             DestRights = *File->Rights;
-            // - If destination file is symlink, never do resumable transfer,
+            // If destination file is symlink, never do resumable transfer,
             // as it would delete the symlink.
-            // - Also bit of heuristics to detect symlink on SFTP-3 and older
+            if (File->IsSymLink)
+            {
+              ResumeAllowed = false;
+              FTerminal->LogEvent(L"Existing file is symbolic link, not doing resumable transfer.");
+            }
+            // Also bit of heuristics to detect symlink on SFTP-3 and older
             // (which does not indicate symlink in SSH_FXP_ATTRS).
             // if file has all permissions and is small, then it is likely symlink.
             // also it is not likely that such a small file (if it is not symlink)
             // gets overwritten by large file (that would trigger resumable transfer).
-            // - Also never do resumable transfer for file owned by other user
+            else if ((FVersion < 4) &&
+                     ((*File->Rights & TRights::rfAll) == TRights::rfAll) &&
+                     (File->Size < 100))
+            {
+              ResumeAllowed = false;
+              FTerminal->LogEvent(L"Existing file looks like a symbolic link, not doing resumable transfer.");
+            }
+            // Also never do resumable transfer for file owned by other user
             // as deleting and recreating the file would change ownership.
             // This won't for work for SFTP-3 (OpenSSH) as it does not provide
             // owner name (only UID) and we know only logged in user name (not UID)
-            if (File->IsSymLink ||
-                ((FVersion < 4) &&
-                 ((*File->Rights & TRights::rfAll) == TRights::rfAll) &&
-                 (File->Size < 100)) ||
-                (!File->Owner.Name.IsEmpty() && !SameUserName(File->Owner.Name, FTerminal->UserName)))
+            else if (!File->Owner.Name.IsEmpty() && !SameUserName(File->Owner.Name, FTerminal->UserName))
             {
               ResumeAllowed = false;
+              FTerminal->LogEvent(
+                FORMAT(L"Existing file is owned by another user [%s], not doing resumable transfer.", (File->Owner.Name)));
             }
 
             delete File;

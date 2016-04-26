@@ -2732,15 +2732,21 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminal::GetRemoteFileInfo(TRemoteFile * File)
+{
+  return
+    FORMAT(L"%s;%s;%d;%s;%d;%s;%s;%s;%d",
+      (File->FileName, File->Type, File->Size, StandardTimestamp(File->Modification), int(File->ModificationFmt),
+       File->Owner.LogText, File->Group.LogText, File->Rights->Text,
+       File->Attr));
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::LogRemoteFile(TRemoteFile * File)
 {
   // optimization
   if (Log->Logging)
   {
-    LogEvent(FORMAT(L"%s;%s;%d;%s;%d;%s;%s;%s;%d",
-      (File->FileName, File->Type, File->Size, StandardTimestamp(File->Modification), int(File->ModificationFmt),
-       File->Owner.LogText, File->Group.LogText, File->Rights->Text,
-       File->Attr)));
+    LogEvent(GetRemoteFileInfo(File));
   }
 }
 //---------------------------------------------------------------------------
