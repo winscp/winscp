@@ -1119,6 +1119,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
             SSL_alert_type_string_long(ret),
             desc);
         pLayer->LogSocketMessageRaw(FZ_LOG_WARNING, A2T(buffer));
+        pLayer->PrintLastErrorMsg();
         delete [] buffer;
       }
     }
@@ -1133,6 +1134,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
           str,
           SSL_state_string_long(s));
       pLayer->LogSocketMessageRaw(FZ_LOG_WARNING, A2T(buffer));
+      pLayer->PrintLastErrorMsg();
       delete [] buffer;
       if (!pLayer->m_bFailureSent)
       {
