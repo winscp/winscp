@@ -1805,10 +1805,12 @@ void CAsyncSslSocketLayer::PrintLastErrorMsg()
   while (err)
   {
     char *buffer = new char[512];
+    const char *reason = ERR_reason_error_string(err);
     ERR_error_string(err, buffer);
     err = ERR_get_error();
     USES_CONVERSION;
-    LogSocketMessageRaw(FZ_LOG_WARNING, A2T(buffer));
+    LogSocketMessageRaw(FZ_LOG_PROGRESS, A2T(buffer));
+    LogSocketMessageRaw(FZ_LOG_WARNING, A2T(reason));
     delete [] buffer;
   }
 }
