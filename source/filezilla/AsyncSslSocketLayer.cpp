@@ -1631,13 +1631,16 @@ void CAsyncSslSocketLayer::PrintSessionInfo()
      * otherwise we should print their lengths too */
   }
 
-  char *buffer = new char[4096];
+  const int buffer_size = 4096;
+  char *buffer = new char[buffer_size];
+  char *buffer2 = new char[buffer_size];
   // see also ne_ssl_get_version and ne_ssl_get_cipher
   m_TlsVersionStr = SSL_get_version(m_ssl);
-  sprintf(buffer, "%s: %s, %s",
+  sprintf(buffer, "%s: %s, %s, %s",
       SSL_CIPHER_get_version(ciph),
       SSL_CIPHER_get_name(ciph),
-      enc);
+      enc,
+      SSL_CIPHER_description(ciph, buffer2, buffer_size));
   m_CipherName = buffer;
   // see TWebDAVFileSystem::CollectTLSSessionInfo()
   sprintf(buffer, "Using %s, cipher %s",
