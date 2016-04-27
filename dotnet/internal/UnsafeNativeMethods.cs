@@ -146,6 +146,17 @@ namespace WinSCP
             StandardRights.Required
     }
 
+    internal enum RegistryFlags
+    {
+        RegSz = 0x02,
+        SubKeyWow6432Key = 0x00020000,
+    }
+
+    internal enum RegistryType
+    {
+        RegNone = 0,
+    }
+
     internal static class UnsafeNativeMethods
     {
         public const int ERROR_ALREADY_EXISTS = 183;
@@ -178,5 +189,8 @@ namespace WinSCP
 
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern int GetCurrentThreadId();
+
+        [DllImport("advapi32", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern int RegGetValue(UIntPtr hkey, string lpSubKey, string lpValue, RegistryFlags dwFlags, out RegistryType pdwType, IntPtr pvData, ref uint pcbData);
     }
 }

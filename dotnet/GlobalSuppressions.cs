@@ -159,3 +159,5 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.Logger.#CreateCounters()")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "WinSCP.SessionLogReader.#LogContents()")]
 [assembly: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope = "member", Target = "WinSCP.Session.#SessionOptionsToSwitches(WinSCP.SessionOptions,System.Boolean)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "WinSCP.UnsafeNativeMethods.#RegGetValue(System.UIntPtr,System.String,System.String,WinSCP.RegistryFlags,WinSCP.RegistryType&,System.IntPtr,System.UInt32&)")]
+[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.ExeSessionProcess.#GetInstallationPath(Microsoft.Win32.RegistryHive)")]
