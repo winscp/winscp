@@ -146,6 +146,7 @@ protected:
   static void InitSslSession(ssl_st * Ssl, ne_session * Session);
   void __fastcall InitSslSessionImpl(ssl_st * Ssl);
   void __fastcall NeonAddAuthentiation(bool UseNegotiate);
+  void __fastcall HttpAuthenticationFailed();
 
 private:
   TFileSystemInfo FFileSystemInfo;

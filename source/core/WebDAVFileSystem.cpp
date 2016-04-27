@@ -1819,25 +1819,30 @@ bool __fastcall TWebDAVFileSystem::IsNtlmAuthentication()
     SameText(FAuthorizationProtocol, L"Negotiate");
 }
 //---------------------------------------------------------------------------
+void __fastcall TWebDAVFileSystem::HttpAuthenticationFailed()
+{
+  // NTLM/GSSAPI failed
+  if (IsNtlmAuthentication())
+  {
+    // Next time do not try Negotiate (NTLM/GSSAPI),
+    // otherwise we end up in an endless loop.
+    // If the server returns all other challenges in the response, removing the Negotiate
+    // protocol will itself ensure that other protocols are tried (we haven't seen this behaviour).
+    // IIS will return only Negotiate response if the request was Negotiate, so there's no fallback.
+    // We have to retry with a fresh request. That's what FAuthenticationRetry does.
+    FTerminal->LogEvent(FORMAT(L"%s challenge failed, will try different challenge", (FAuthorizationProtocol)));
+    ne_remove_server_auth(FNeonSession);
+    NeonAddAuthentiation(false);
+    FAuthenticationRetry = true;
+  }
+}
+//---------------------------------------------------------------------------
 void TWebDAVFileSystem::NeonPostHeaders(ne_request * /*Req*/, void * UserData, const ne_status * Status)
 {
   TWebDAVFileSystem * FileSystem = static_cast<TWebDAVFileSystem *>(UserData);
   if (Status->code == HttpUnauthorized)
   {
-    // NTLM/GSSAPI failed
-    if (FileSystem->IsNtlmAuthentication())
-    {
-      // Next time do not try Negotiate (NTLM/GSSAPI),
-      // otherwise we end up in an endless loop.
-      // If the server returns all other challenges in the response, removing the Negotiate
-      // protocol will itself ensure that other protocols are tried (we haven't seen this behaviour).
-      // IIS will return only Negotiate response if the request was Negotiate, so there's no fallback.
-      // We have to retry with a fresh request. That's what FAuthenticationRetry does.
-      FileSystem->FTerminal->LogEvent(FORMAT(L"%s challenge failed, will try different challenge", (FileSystem->FAuthorizationProtocol)));
-      ne_remove_server_auth(FileSystem->FNeonSession);
-      FileSystem->NeonAddAuthentiation(false);
-      FileSystem->FAuthenticationRetry = true;
-    }
+    FileSystem->HttpAuthenticationFailed();
   }
 }
 //---------------------------------------------------------------------------
