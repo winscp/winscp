@@ -1831,7 +1831,7 @@ void TWebDAVFileSystem::NeonPostHeaders(ne_request * /*Req*/, void * UserData, c
       // otherwise we end up in an endless loop.
       // If the server returns all other challenges in the response, removing the Negotiate
       // protocol will itself ensure that other protocols are tried (we haven't seen this behaviour).
-      // IIS will return only Negotiate response in the request was Negotiate, so there's no fallback.
+      // IIS will return only Negotiate response if the request was Negotiate, so there's no fallback.
       // We have to retry with a fresh request. That's what FAuthenticationRetry does.
       FileSystem->FTerminal->LogEvent(FORMAT(L"%s challenge failed, will try different challenge", (FileSystem->FAuthorizationProtocol)));
       ne_remove_server_auth(FileSystem->FNeonSession);
