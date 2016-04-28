@@ -2021,7 +2021,18 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   {
     //stimeyear has delimiter, so it's a time
     direntry.date.hour = static_cast<int>(strntoi64(stimeyear, strpos - stimeyear));
-    direntry.date.minute = static_cast<int>(strntoi64(strpos + 1, stimeyearlen - (strpos - stimeyear) - 1));
+    int stimeyearrem = stimeyearlen - (strpos - stimeyear) - 1;
+    const char *strpos2 = strnchr(strpos + 1, stimeyearrem, ':');
+    if (strpos2 == NULL)
+    {
+      direntry.date.minute = static_cast<int>(strntoi64(strpos + 1, stimeyearrem));
+    }
+    else
+    {
+      direntry.date.minute = static_cast<int>(strntoi64(strpos + 1, strpos2 - strpos - 1));
+      direntry.date.second = static_cast<int>(strntoi64(strpos2 + 1, stimeyearlen - (strpos2 - stimeyear) - 1));
+      direntry.date.hasseconds = TRUE;
+    }
     direntry.date.hastime = TRUE;
 
     //Problem: Some servers use times only for files newer than 6 months,
