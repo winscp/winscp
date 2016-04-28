@@ -802,7 +802,7 @@ namespace WinSCP
 
         private static string GetInstallationPath(RegistryHive hive)
         {
-            // In .NET 4 we can use RegistryKey.OpenBaseKey(hive, RegistryView.Registry32); 
+            // In .NET 4 we can use RegistryKey.OpenBaseKey(hive, RegistryView.Registry32);
             const string uninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\winscp3_is1";
             const string appPathValue = @"Inno Setup: App Path";
 
