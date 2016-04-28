@@ -30,7 +30,9 @@ __fastcall TCustomDialog::TCustomDialog(UnicodeString AHelpKeyword)
 {
   UseSystemSettings(this);
 
+  FControlPadding = ScaleByTextHeight(this, 8);
   FPos = ScaleByTextHeight(this, 8);
+  FPrePos = FPos;
   FHorizontalMargin = ScaleByTextHeight(this, 8);
   FIndent = FHorizontalMargin;
 
@@ -75,9 +77,14 @@ void __fastcall TCustomDialog::Change(TObject * /*Sender*/)
   Changed();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomDialog::HelpButtonClick(TObject * /*Sender*/)
+void __fastcall TCustomDialog::DoHelp()
 {
   FormHelp(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  DoHelp();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::DoShow()
@@ -113,6 +120,18 @@ void __fastcall TCustomDialog::AddImage(const UnicodeString & ImageName)
   FIndent += Image->Width + ScaleByTextHeight(this, 12);
 }
 //---------------------------------------------------------------------------
+int __fastcall TCustomDialog::GetMaxControlWidth(TControl * Control)
+{
+  return ClientWidth - Control->Left - FHorizontalMargin;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AdjustHeight(TControl * Control)
+{
+  FPos = Control->Top + Control->Height + FControlPadding;
+  ClientHeight = ClientHeight + (FPos - FPrePos);
+  FPrePos = FPos;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddWinControl(TWinControl * Control)
 {
   Control->TabOrder = FCount;
@@ -134,21 +153,41 @@ TLabel * __fastcall TCustomDialog::CreateLabel(UnicodeString Label)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * Label)
+void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * Label, bool OneLine)
 {
   int PrePos = FPos;
-  Label->Parent = this;
-  Label->Left = FIndent;
-  Label->Top = FPos;
-  FPos += Label->Height + ScaleByTextHeight(this, 4);
 
   Edit->Parent = this;
-  Edit->Left = FIndent;
-  Edit->Top = FPos;
-  Edit->Width = ClientWidth - Edit->Left - FHorizontalMargin;
   // this updates Height property to real value
   Edit->HandleNeeded();
-  FPos += Edit->Height + ScaleByTextHeight(this, 8);
+
+  Label->Parent = this;
+  Label->Left = FIndent;
+
+  if (OneLine)
+  {
+    DebugAssert(Edit->Height > Label->Height);
+    Label->Top = FPos + ((Edit->Height - Label->Height) / 2);
+  }
+  else
+  {
+    Label->Top = FPos;
+
+    FPos += Label->Height + ScaleByTextHeight(this, 4);
+  }
+
+  Edit->Top = FPos;
+  if (OneLine)
+  {
+    Edit->Left = ClientWidth - FHorizontalMargin - Edit->Width;
+  }
+  else
+  {
+    Edit->Left = FIndent;
+    Edit->Width = GetMaxControlWidth(Edit);
+  }
+
+  AdjustHeight(Edit);
 
   if (Label->FocusControl == NULL)
   {
@@ -159,14 +198,12 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
     DebugAssert(Label->FocusControl == Edit);
   }
 
-  ClientHeight = ClientHeight + (FPos - PrePos);
-
   AddWinControl(Edit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddEdit(TCustomEdit * Edit, TLabel * Label)
 {
-  AddEditLikeControl(Edit, Label);
+  AddEditLikeControl(Edit, Label, false);
 
   TEdit * PublicEdit = reinterpret_cast<TEdit *>(Edit);
   if (PublicEdit->OnChange == NULL)
@@ -175,9 +212,29 @@ void __fastcall TCustomDialog::AddEdit(TCustomEdit * Edit, TLabel * Label)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label)
+void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label, TStrings * Items, bool OneLine)
 {
-  AddEditLikeControl(Combo, Label);
+  AddEditLikeControl(Combo, Label, OneLine);
+
+  if (Items != NULL)
+  {
+    Combo->Items = Items;
+  }
+
+  if (OneLine)
+  {
+    int Width = 0;
+    for (int Index = 0; Index < Combo->Items->Count; Index++)
+    {
+      Width = Max(Width, Combo->Canvas->TextWidth(Combo->Items->Strings[Index]));
+    }
+
+    Width += ScaleByTextHeight(Combo, 4 + 16 + 14);
+    Width = Max(Width, HelpButton->Width);
+
+    Combo->Width = Width;
+    Combo->Left = ClientWidth - FHorizontalMargin - Width;
+  }
 
   TComboBox * PublicCombo = reinterpret_cast<TComboBox *>(Combo);
   if (PublicCombo->OnChange == NULL)
@@ -186,20 +243,23 @@ void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
+void __fastcall TCustomDialog::ScaleButtonControl(TButtonControl * Control)
 {
-  int PrePos = FPos;
-  Control->Parent = this;
-  Control->Left = FIndent + ScaleByTextHeight(this, 6);
-  Control->Top = FPos;
-  Control->Width = ClientWidth - Control->Left - FHorizontalMargin;
   // this updates Height property to real value
   Control->HandleNeeded();
   // buttons do not scale with text on their own
   Control->Height = ScaleByTextHeight(Control, Control->Height);
-  FPos += Control->Height + ScaleByTextHeight(this, 8);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
+{
+  Control->Parent = this;
+  Control->Left = FIndent + ScaleByTextHeight(this, 6);
+  Control->Top = FPos;
+  Control->Width = GetMaxControlWidth(Control);
+  ScaleButtonControl(Control);
 
-  ClientHeight = ClientHeight + (FPos - PrePos);
+  AdjustHeight(Control);
 
   AddWinControl(Control);
 
@@ -208,6 +268,39 @@ void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
   {
     PublicControl->OnClick = Change;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddText(TLabel * Label)
+{
+  Label->Parent = this;
+
+  Label->WordWrap = true;
+  Label->Left = FIndent;
+  Label->Width = GetMaxControlWidth(Label);
+  Label->Top = FPos;
+  Label->ShowAccelChar = false;
+
+  TRect TextRect;
+  SetRect(&TextRect, 0, 0, Label->Width, 0);
+  DrawText(Label->Canvas->Handle, Label->Caption.c_str(), Label->Caption.Length() + 1, &TextRect,
+    DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
+    Label->DrawTextBiDiModeFlagsReadingOnly());
+  Label->Height = TextRect.Height();
+
+  AdjustHeight(Label);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddText(TStaticText * Label)
+{
+  Label->Parent = this;
+
+  Label->Left = FIndent;
+  Label->Width = GetMaxControlWidth(Label);
+  Label->Top = FPos;
+  Label->ShowAccelChar = false;
+
+  AdjustHeight(Label);
+  AddWinControl(Label);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

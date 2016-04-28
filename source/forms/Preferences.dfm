@@ -1230,7 +1230,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 25
             Anchors = [akLeft, akBottom]
             Caption = '&Remove'
-            TabOrder = 3
+            TabOrder = 4
             OnClick = RemoveCommandButtonClick
           end
           object UpCommandButton: TButton
@@ -1240,7 +1240,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 25
             Anchors = [akRight, akBottom]
             Caption = '&Up'
-            TabOrder = 4
+            TabOrder = 5
             OnClick = UpDownCommandButtonClick
           end
           object DownCommandButton: TButton
@@ -1250,7 +1250,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 25
             Anchors = [akRight, akBottom]
             Caption = '&Down'
-            TabOrder = 5
+            TabOrder = 6
             OnClick = UpDownCommandButtonClick
           end
           object EditCommandButton: TButton
@@ -1262,6 +1262,16 @@ object PreferencesDialog: TPreferencesDialog
             Caption = '&Edit...'
             TabOrder = 2
             OnClick = EditCommandButtonClick
+          end
+          object ConfigureCommandButton: TButton
+            Left = 112
+            Top = 307
+            Width = 83
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Configure...'
+            TabOrder = 3
+            OnClick = ConfigureCommandButtonClick
           end
         end
       end

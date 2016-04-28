@@ -57,5 +57,6 @@
 #define HELP_KEY_TYPE_UNSUPPORTED    "ui_puttygen#other_formats"
 #define HELP_TIPS                    "ui_tips"
 #define HELP_DEBUGGING               "debugging"
+#define HELP_EXTENSION_OPTIONS       "ui_pref_commands"
 
 #endif // TextsWin

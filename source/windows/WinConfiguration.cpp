@@ -443,6 +443,8 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   FMasterPasswordSession = 0;
   FMasterPasswordSessionAsked = false;
   FSystemIconFont.reset(new TFont());
+  FCustomCommandOptions.reset(new TStringList());
+  FCustomCommandOptionsModified = false;
   UpdateSystemIconFont();
   Default();
 
@@ -471,6 +473,7 @@ __fastcall TWinConfiguration::~TWinConfiguration()
 void __fastcall TWinConfiguration::Default()
 {
   FCustomCommandsDefaults = true;
+  FCustomCommandOptionsModified = false;
 
   TCustomWinConfiguration::Default();
 
@@ -1104,6 +1107,15 @@ void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool
     FCustomCommandList->Save(Storage);
   }
 
+  if ((All || FCustomCommandOptionsModified) &&
+      Storage->OpenSubKey(L"CustomCommandOptions", true))
+  {
+    Storage->ClearValues();
+    Storage->WriteValues(FCustomCommandOptions.get(), true);
+    Storage->CloseSubKey();
+    FCustomCommandOptionsModified = false;
+  }
+
   if ((All || FEditorList->Modified) &&
       Storage->OpenSubKey(L"Interface\\Editor", true, true))
   try
@@ -1334,6 +1346,13 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     FCustomCommandsDefaults = false;
   }
   FCustomCommandList->Reset();
+
+  if (Storage->OpenSubKey(L"CustomCommandOptions", false))
+  {
+    Storage->ReadValues(FCustomCommandOptions.get(), true);
+    Storage->CloseSubKey();
+    FCustomCommandOptionsModified = false;
+  }
 
   if (Storage->OpenSubKey(L"Interface\\Editor", false, true))
   try
@@ -2427,6 +2446,20 @@ void __fastcall TWinConfiguration::SetEditorList(const TEditorList * value)
   }
 }
 //---------------------------------------------------------------------------
+TStrings * __fastcall TWinConfiguration::GetCustomCommandOptions()
+{
+  return FCustomCommandOptions.get();
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetCustomCommandOptions(TStrings * value)
+{
+  if (!FCustomCommandOptions->Equals(value))
+  {
+    FCustomCommandOptions->Assign(value);
+    FCustomCommandOptionsModified = true;
+  }
+}
+//---------------------------------------------------------------------------
 TStringList * __fastcall TWinConfiguration::LoadJumpList(
   THierarchicalStorage * Storage, UnicodeString Name)
 {
@@ -2634,7 +2667,10 @@ __fastcall TCustomCommandType::TCustomCommandType(const TCustomCommandType & Oth
   FShortCut(Other.FShortCut),
   FId(Other.FId),
   FFileName(Other.FFileName),
-  FDescription(Other.FDescription)
+  FDescription(Other.FDescription),
+  FHomePage(Other.FHomePage),
+  FOptionsPage(Other.FOptionsPage),
+  FOptions(Other.FOptions)
 {
 }
 //---------------------------------------------------------------------------
@@ -2647,6 +2683,9 @@ TCustomCommandType & TCustomCommandType::operator=(const TCustomCommandType & Ot
   FId = Other.FId;
   FFileName = Other.FFileName;
   FDescription = Other.FDescription;
+  FHomePage = Other.FHomePage;
+  FOptionsPage = Other.FOptionsPage;
+  FOptions = Other.FOptions;
   return *this;
 }
 //---------------------------------------------------------------------------
@@ -2659,7 +2698,10 @@ bool __fastcall TCustomCommandType::Equals(const TCustomCommandType * Other) con
     (FShortCut == Other->FShortCut) &&
     (FId == Other->FId) &&
     (FFileName == Other->FFileName) &&
-    (FDescription == Other->FDescription);
+    (FDescription == Other->FDescription) &&
+    (FHomePage == Other->FHomePage) &&
+    (FOptionsPage == Other->FOptionsPage) &&
+    (FOptions == Other->FOptions);
 }
 //---------------------------------------------------------------------------
 const UnicodeString ExtensionNameDirective(L"name");
@@ -2750,6 +2792,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
 {
   Params = ccLocal;
   bool AnythingFound = false;
+  std::set<UnicodeString> OptionIds;
 
   for (int Index = 0; Index < Lines->Count; Index++)
   {
@@ -2879,6 +2922,23 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
               throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
             }
           }
+          else if (Key == L"option")
+          {
+            TOption Option;
+            if (!ParseOption(Value, Option) ||
+                (Option.IsControl && (OptionIds.find(Option.Id.LowerCase()) != OptionIds.end())))
+            {
+              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+            }
+            else
+            {
+              FOptions.push_back(Option);
+              if (!Option.IsControl)
+              {
+                OptionIds.insert(Option.Id.LowerCase());
+              }
+            }
+          }
           else if (Key == L"description")
           {
             Description = Value;
@@ -2893,7 +2953,11 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
           }
           else if (Key == L"homepage")
           {
-            // noop
+            HomePage = Value;
+          }
+          else if (Key == L"optionspage")
+          {
+            OptionsPage = Value;
           }
           else if (Key == L"source")
           {
@@ -2927,6 +2991,152 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
   {
     throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_MISSING, (UnicodeString(ExtensionMark) + ExtensionCommandDirective))));
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOption & Option)
+{
+  UnicodeString Buf = Value;
+  UnicodeString KindName;
+  bool Result =
+    CutToken(Buf, Option.Id) &&
+    CutToken(Buf, KindName) &&
+    CutToken(Buf, Option.Caption);
+    (CutToken(Buf, Option.Default) || !Option.IsControl);
+
+  if (Result)
+  {
+    KindName = KindName.LowerCase();
+    if (KindName == L"label")
+    {
+      Option.Kind = okLabel;
+      Result = !Option.IsControl;
+    }
+    else if (KindName == L"link")
+    {
+      Option.Kind = okLink;
+      Result = !Option.IsControl;
+    }
+    else if (KindName == L"textbox")
+    {
+      Option.Kind = okTextBox;
+      Result = Option.IsControl;
+    }
+    else if (KindName == L"file")
+    {
+      Option.Kind = okFile;
+      Result = Option.IsControl;
+    }
+    else if (KindName == L"dropdownlist")
+    {
+      Option.Kind = okDropDownList;
+      Result = Option.IsControl;
+    }
+    else if (KindName == L"combobox")
+    {
+      Option.Kind = okComboBox;
+      Result = Option.IsControl;
+    }
+    else if (KindName == L"checkbox")
+    {
+      Option.Kind = okCheckBox;
+      Result = Option.IsControl;
+    }
+    else
+    {
+      Option.Kind = okUnknown;
+    }
+
+    UnicodeString Param;
+    while (CutToken(Buf, Param))
+    {
+      Option.Params.push_back(Param);
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomCommandType::GetOptionsCount() const
+{
+  return FOptions.size();
+}
+//---------------------------------------------------------------------------
+const TCustomCommandType::TOption & __fastcall TCustomCommandType::GetOption(int Index) const
+{
+  return FOptions[Index];
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandType::GetOptionKey(const TCustomCommandType::TOption & Option) const
+{
+  return Id + L"\\" + Option.Id;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandType::GetCommandWithExpandedOptions(TStrings * CustomCommandOptions) const
+{
+  UnicodeString Result = Command;
+  for (int Index = 0; Index < OptionsCount; Index++)
+  {
+    const TCustomCommandType::TOption & Option = GetOption(Index);
+    if (Option.IsControl)
+    {
+      UnicodeString OptionKey = GetOptionKey(Option);
+      UnicodeString OptionValue;
+      if (CustomCommandOptions->IndexOfName(OptionKey) >= 0)
+      {
+        OptionValue = CustomCommandOptions->Values[OptionKey];
+      }
+      else
+      {
+        OptionValue = Option.Default;
+      }
+      UnicodeString OptionCommand = GetOptionCommand(Option, OptionValue);
+      Result = ReplaceText(Result, FORMAT(L"%%%s%%", (Option.Id)), OptionCommand);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandType::GetOptionCommand(const TOption & Option, const UnicodeString & Value) const
+{
+  UnicodeString Result = Value;
+
+  switch (Option.Kind)
+  {
+    case okUnknown:
+    case okTextBox:
+    case okDropDownList:
+    case okComboBox:
+    case okCheckBox:
+      // noop
+      break;
+
+    case okFile:
+      Result = ExpandEnvironmentVariables(Result);
+      break;
+
+    case okLabel:
+    case okLink:
+    default:
+      DebugFail();
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandType::TOption::GetIsControl() const
+{
+  return (Id != L"-");
+}
+//---------------------------------------------------------------------------
+bool TCustomCommandType::TOption::operator==(const TCustomCommandType::TOption & Other) const
+{
+  return
+    (Id == Other.Id) &&
+    (Kind == Other.Kind) &&
+    (Caption == Other.Caption) &&
+    (Default == Other.Default) &&
+    (Params == Other.Params);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

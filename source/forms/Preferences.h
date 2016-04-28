@@ -313,6 +313,7 @@ __published:
   TMenuItem *AddCustomCommandMenuItem;
   TMenuItem *AddExtensionMenuItem;
   TStaticText *BackgroundConfirmationsLink;
+  TButton *ConfigureCommandButton;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -400,6 +401,7 @@ __published:
   void __fastcall AddCommandButtonDropDownClick(TObject *Sender);
   void __fastcall CustomCommandsViewMouseMove(TObject *Sender, TShiftState Shift, int X, int Y);
   void __fastcall BackgroundConfirmationsLinkClick(TObject *Sender);
+  void __fastcall ConfigureCommandButtonClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -428,6 +430,7 @@ private:
   TWndMethod FOrigCustomCommandsViewWindowProc;
   int FCustomCommandsHintItem;
   std::unique_ptr<TStrings> FAddedExtensions;
+  std::unique_ptr<TStringList> FCustomCommandOptions;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
@@ -469,6 +472,7 @@ protected:
   void __fastcall EditorBackgroundColorChange(TColor Color);
   void __fastcall AddEditCommand(bool Edit);
   void __fastcall AddExtension();
+  void __fastcall ConfigureCommand();
 };
 //----------------------------------------------------------------------------
 #endif

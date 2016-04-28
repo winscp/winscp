@@ -583,6 +583,9 @@ BEGIN
         ADD_EXTENSION_CAPTION, "Add Extension"
         ADD_EXTENSION_PROMPT, "Enter URL or path to the &extension:"
         EXTENSION_INSTALLED, "Extension was installed. Please restart WinSCP."
+        EXTENSION_OPTIONS_CAPTION, "Options for extension '%s'"
+        EXTENSION_OPTIONS_BROWSE, "Browse..."
+        EXTENSION_OPTIONS_BROWSE_TITLE, "Select '%s'"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"

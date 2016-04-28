@@ -434,6 +434,8 @@ private:
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
   std::unique_ptr<TFont> FSystemIconFont;
+  std::unique_ptr<TStringList> FCustomCommandOptions;
+  bool FCustomCommandOptionsModified;
   int FLastMachineInstallations;
   __property int LastMachineInstallations = { read = FLastMachineInstallations, write = FLastMachineInstallations };
   int FMachineInstallations;
@@ -528,6 +530,8 @@ private:
   void __fastcall SetHonorDrivePolicy(bool value);
   bool __fastcall GetIsBeta();
   TFont * __fastcall GetSystemIconFont();
+  TStrings * __fastcall GetCustomCommandOptions();
+  void __fastcall SetCustomCommandOptions(TStrings * value);
 
   bool __fastcall GetDDExtInstalled();
   void __fastcall AddVersionToHistory();
@@ -698,6 +702,7 @@ public:
   __property bool HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
   __property TFont * SystemIconFont = { read = GetSystemIconFont };
+  __property TStrings * CustomCommandOptions = { read = GetCustomCommandOptions, write = SetCustomCommandOptions };
 };
 //---------------------------------------------------------------------------
 class TCustomCommandType
@@ -705,6 +710,27 @@ class TCustomCommandType
 public:
   __fastcall TCustomCommandType();
   __fastcall TCustomCommandType(const TCustomCommandType & Other);
+
+  enum TOptionKind { okUnknown, okLabel, okLink, okTextBox, okFile, okDropDownList, okComboBox, okCheckBox };
+
+  class TOption
+  {
+  public:
+    __fastcall TOption() {}
+
+    UnicodeString Id;
+    TOptionKind Kind;
+    UnicodeString Caption;
+    UnicodeString Default;
+    typedef std::vector<UnicodeString> TParams;
+    TParams Params;
+
+    bool operator==(const TOption & Other) const;
+    __property bool IsControl = { read = GetIsControl };
+
+  private:
+    bool __fastcall GetIsControl() const;
+  };
 
   TCustomCommandType & operator=(const TCustomCommandType & Other);
   bool __fastcall Equals(const TCustomCommandType * Other) const;
@@ -720,6 +746,18 @@ public:
   __property UnicodeString Id = { read = FId, write = FId };
   __property UnicodeString FileName = { read = FFileName, write = FFileName };
   __property UnicodeString Description = { read = FDescription, write = FDescription };
+  __property UnicodeString HomePage = { read = FHomePage, write = FHomePage };
+  __property UnicodeString OptionsPage = { read = FOptionsPage, write = FOptionsPage };
+
+  __property int OptionsCount = { read = GetOptionsCount };
+  const TOption & __fastcall GetOption(int Index) const;
+  UnicodeString __fastcall GetOptionKey(const TOption & Option) const;
+  UnicodeString __fastcall GetCommandWithExpandedOptions(TStrings * CustomCommandOptions) const;
+
+protected:
+  bool __fastcall ParseOption(const UnicodeString & Value, TOption & Option);
+  int __fastcall GetOptionsCount() const;
+  UnicodeString __fastcall GetOptionCommand(const TOption & Option, const UnicodeString & Value) const;
 
 private:
   UnicodeString FName;
@@ -729,6 +767,9 @@ private:
   UnicodeString FId;
   UnicodeString FFileName;
   UnicodeString FDescription;
+  UnicodeString FHomePage;
+  UnicodeString FOptionsPage;
+  std::vector<TOption> FOptions;
 };
 //---------------------------------------------------------------------------
 class TCustomCommandList

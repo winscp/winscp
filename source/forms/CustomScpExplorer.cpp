@@ -1638,6 +1638,9 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
 void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   const TCustomCommandType & ACommand, TStrings * ALocalFileList)
 {
+
+  UnicodeString CommandCommand = ACommand.GetCommandWithExpandedOptions(WinConfiguration->CustomCommandOptions);
+
   if (FLAGCLEAR(ACommand.Params, ccLocal))
   {
     if (EnsureCommandSessionFallback(fcShellAnyCommand))
@@ -1647,7 +1650,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
       TWinInteractiveCustomCommand InteractiveCustomCommand(
         &RemoteCustomCommand, ACommand.Name);
 
-      UnicodeString Command = InteractiveCustomCommand.Complete(ACommand.Command, false);
+      UnicodeString Command = InteractiveCustomCommand.Complete(CommandCommand, false);
 
       Configuration->Usage->Inc(L"RemoteCustomCommandRuns2");
 
@@ -1699,7 +1702,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
     TWinInteractiveCustomCommand InteractiveCustomCommand(
       &LocalCustomCommand, ACommand.Name);
 
-    UnicodeString Command = InteractiveCustomCommand.Complete(ACommand.Command, false);
+    UnicodeString Command = InteractiveCustomCommand.Complete(CommandCommand, false);
 
     bool FileListCommand = LocalCustomCommand.IsFileListCommand(Command);
     bool LocalFileCommand = LocalCustomCommand.HasLocalFileName(Command);

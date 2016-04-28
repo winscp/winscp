@@ -7,6 +7,7 @@
 #include <math.h>
 
 #include "Preferences.h"
+#include "Custom.h"
 
 #include <CoreMain.h>
 #include <Terminal.h>
@@ -76,6 +77,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   FAutomaticUpdatesPossible = IsInstalled();
   FCustomCommandsHintItem = NULL;
   FAddedExtensions.reset(CreateSortedStringList());
+  FCustomCommandOptions.reset(new TStringList());
   UseSystemSettings(this);
 
   FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
@@ -370,6 +372,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     FCustomCommandList->Assign(WinConfiguration->CustomCommandList);
     FExtensionList->Assign(WinConfiguration->ExtensionList);
     UpdateCustomCommandsView();
+    FCustomCommandOptions->Assign(WinConfiguration->CustomCommandOptions);
 
     PuttyPathEdit->Text = GUIConfiguration->PuttyPath;
     PuttyPasswordCheck2->Checked = GUIConfiguration->PuttyPassword;
@@ -731,6 +734,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     WinConfiguration->CustomCommandList = FCustomCommandList;
     WinConfiguration->ExtensionList = FExtensionList;
+    WinConfiguration->CustomCommandOptions = FCustomCommandOptions.get();
 
     GUIConfiguration->PuttyPath = PuttyPathEdit->Text;
     GUIConfiguration->PuttyPassword = PuttyPasswordCheck2->Checked;
@@ -1126,7 +1130,11 @@ void __fastcall TPreferencesDialog::UpdateControls()
     int CommandIndex = GetCommandIndex(CustomCommandsView->ItemIndex);
     bool CommandSelected = (CustomCommandsView->Selected != NULL);
     bool CustomCommandSelected = CommandSelected && (CommandList == FCustomCommandList);
+    bool ExtensionSelected = CommandSelected && (CommandList == FExtensionList);
     EnableControl(EditCommandButton, CustomCommandSelected);
+    EditCommandButton->Visible = !ExtensionSelected;
+    EnableControl(ConfigureCommandButton, ExtensionSelected && (CommandList->Commands[CommandIndex]->OptionsCount > 0));
+    ConfigureCommandButton->Visible = ExtensionSelected;
     EnableControl(RemoveCommandButton, CommandSelected);
     EnableControl(UpCommandButton, CommandSelected && (CommandIndex > 0));
     EnableControl(DownCommandButton, CommandSelected && (CommandIndex < CommandList->Count - 1));
@@ -1410,6 +1418,9 @@ void __fastcall TPreferencesDialog::UpdateCustomCommandsView()
   CustomCommandsView->Items->Count = FCustomCommandList->Count + FExtensionList->Count;
   AutoSizeListColumnsWidth(CustomCommandsView, 1);
   CustomCommandsView->Invalidate();
+  // particularly after command is edited/configured, make sure the hint is updated,
+  // even if we manage to display a hint for the same command as before the change
+  FCustomCommandsHintItem = NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandsViewKeyDown(
@@ -1432,6 +1443,10 @@ void __fastcall TPreferencesDialog::CustomCommandsViewDblClick(
   if (EditCommandButton->Enabled)
   {
     AddEditCommand(true);
+  }
+  else if (ConfigureCommandButton->Enabled)
+  {
+    ConfigureCommand();
   }
 }
 //---------------------------------------------------------------------------
@@ -2430,13 +2445,10 @@ void __fastcall TPreferencesDialog::AddExtension()
       if (IsUrl)
       {
         UnicodeString Url = Path;
+        Url = SecureUrl(Url);
         bool WinSCPURL = IsWinSCPUrl(Url);
         if (WinSCPURL)
         {
-          if (IsHttpUrl(Url))
-          {
-            Url = ChangeUrlProtocol(Url, HttpsProtocol);
-          }
           Url = CampaignUrl(ProgramUrl(Url));
         }
 
@@ -2630,7 +2642,7 @@ void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Send
       {
         Hint += L"\n" + Command->Description;
       }
-      Hint += L"\n" + Command->Command;
+      Hint += L"\n" + Command->GetCommandWithExpandedOptions(FCustomCommandOptions.get());
       if (List == FExtensionList)
       {
         Hint += L"\n" + Command->FileName;
@@ -2649,5 +2661,388 @@ void __fastcall TPreferencesDialog::BackgroundConfirmationsLinkClick(TObject * /
   PageControlChange(NULL);
   QueueNoConfirmationCheck->SetFocus();
   QueueNoConfirmationCheck->Perform(WM_CHANGEUISTATE, MAKEWPARAM(UIS_CLEAR, UISF_HIDEFOCUS), 0);
+}
+//---------------------------------------------------------------------------
+class TCustomCommandOptionsDialog : public TCustomDialog
+{
+public:
+  __fastcall TCustomCommandOptionsDialog(const TCustomCommandType * Command, TStrings * CustomCommandOptions);
+
+  bool __fastcall Execute();
+
+protected:
+  virtual void __fastcall DoHelp();
+
+private:
+  const TCustomCommandType * FCommand;
+  TStrings * FCustomCommandOptions;
+  std::vector<TControl *> FControls;
+  std::vector<std::vector<UnicodeString> > FValues;
+
+  UnicodeString __fastcall HistoryKey(const TCustomCommandType::TOption & Option);
+  THistoryComboBox * __fastcall CreateHistoryComboBox(const TCustomCommandType::TOption & Option, const UnicodeString & Value);
+  void __fastcall BrowseButtonClick(TObject * Sender);
+  void __fastcall LinkLabelClick(TObject * Sender);
+  UnicodeString __fastcall SaveHistoryComboBoxValue(TControl * Control, const TCustomCommandType::TOption & Option);
+  void __fastcall AddOptionComboBox(
+    TComboBox * ComboBox, const UnicodeString & Value, const TCustomCommandType::TOption & Option,
+    std::vector<UnicodeString> & Values);
+  UnicodeString __fastcall GetComboBoxValue(TControl * Control, const UnicodeString & Default);
+};
+//---------------------------------------------------------------------------
+__fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
+    const TCustomCommandType * Command, TStrings * CustomCommandOptions) :
+  TCustomDialog(HELP_EXTENSION_OPTIONS)
+{
+  FCommand = Command;
+  FCustomCommandOptions = CustomCommandOptions;
+  Caption = FMTLOAD(EXTENSION_OPTIONS_CAPTION, (StripHotkey(FCommand->Name)));
+  Width = ScaleByTextHeight(this, 400);
+
+  for (int Index = 0; Index < FCommand->OptionsCount; Index++)
+  {
+    const TCustomCommandType::TOption & Option = FCommand->GetOption(Index);
+
+    UnicodeString OptionKey = FCommand->GetOptionKey(Option);
+    UnicodeString Value;
+    if (FCustomCommandOptions->IndexOfName(OptionKey) >= 0)
+    {
+      Value = FCustomCommandOptions->Values[OptionKey];
+    }
+    else
+    {
+      Value = Option.Default;
+    }
+
+    TControl * Control = NULL;
+    std::vector<UnicodeString> Values;
+    if (Option.Kind == TCustomCommandType::okUnknown)
+    {
+      Control = NULL;
+    }
+    else if (Option.Kind == TCustomCommandType::okLabel)
+    {
+      TLabel * Label = CreateLabel(Option.Caption);
+      AddText(Label);
+      Control = Label;
+    }
+    else if (Option.Kind == TCustomCommandType::okLink)
+    {
+      TStaticText * Label = new TStaticText(this);
+      Label->Caption = Option.Caption;
+      if (IsHttpOrHttpsUrl(Label->Caption))
+      {
+        Label->Caption = SecureUrl(Label->Caption);
+        LinkLabel(Label);
+        Label->TabStop = true;
+      }
+      else if (!Option.Default.IsEmpty() && IsHttpOrHttpsUrl(Option.Default))
+      {
+        Label->OnClick = LinkLabelClick;
+        LinkLabel(Label);
+        Label->TabStop = true;
+      }
+      else
+      {
+        // keep it plain text, as we have no URL
+      }
+      AddText(Label);
+      Control = Label;
+    }
+    else if (Option.Kind == TCustomCommandType::okTextBox)
+    {
+      Control = CreateHistoryComboBox(Option, Value);
+    }
+    else if (Option.Kind == TCustomCommandType::okFile)
+    {
+      THistoryComboBox * ComboBox = CreateHistoryComboBox(Option, Value);
+      TButton * Button = new TButton(this);
+      Button->Parent = this;
+      Button->Width = HelpButton->Width;
+      Button->Left = HelpButton->Left;
+      ComboBox->Width = HelpButton->Left - ComboBox->Left - ScaleByTextHeight(this, 6);
+      Button->Top = ComboBox->Top - ScaleByTextHeight(this, 2);
+      Button->Tag = Index;
+      Button->Caption = LoadStr(EXTENSION_OPTIONS_BROWSE);
+      Button->OnClick = BrowseButtonClick;
+      ScaleButtonControl(Button);
+      AddWinControl(Button);
+      Control = ComboBox;
+    }
+    else if (Option.Kind == TCustomCommandType::okDropDownList)
+    {
+      TComboBox * ComboBox = new TComboBox(this);
+      ComboBox->Style = csDropDownList;
+
+      AddOptionComboBox(ComboBox, Value, Option, Values);
+
+      Control = ComboBox;
+    }
+    else if (Option.Kind == TCustomCommandType::okComboBox)
+    {
+      TComboBox * ComboBox = new TComboBox(this);
+      ComboBox->Style = csDropDown;
+
+      AddOptionComboBox(ComboBox, Value, Option, Values);
+      if (ComboBox->ItemIndex < 0)
+      {
+        ComboBox->Text = Value;
+      }
+
+      Control = ComboBox;
+    }
+    else if (Option.Kind == TCustomCommandType::okCheckBox)
+    {
+      TCheckBox * CheckBox = CreateAndAddCheckBox(Option.Caption);
+
+      CheckBox->Checked =
+        (Option.Params.size() >= 1) &&
+        (Value == Option.Params[0]);
+
+      Control = CheckBox;
+    }
+    else
+    {
+      DebugFail();
+    }
+
+    if (Control != NULL)
+    {
+      Control->Tag = Index;
+    }
+    FControls.push_back(Control);
+    FValues.push_back(Values);
+  }
+
+  DebugAssert(FCommand->OptionsCount == static_cast<int>(FControls.size()));
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandOptionsDialog::AddOptionComboBox(
+  TComboBox * ComboBox, const UnicodeString & Value, const TCustomCommandType::TOption & Option, std::vector<UnicodeString> & Values)
+{
+  std::unique_ptr<TStringList> Items(new TStringList());
+  int ItemIndex = -1;
+
+  TCustomCommandType::TOption::TParams::const_iterator ParamI = Option.Params.begin();
+  while (ParamI != Option.Params.end())
+  {
+    UnicodeString Item = (*ParamI);
+    int P = Item.Pos(L"=");
+    UnicodeString ParamValue;
+    if (P > 0)
+    {
+      ParamValue = Item.SubString(1, P - 1);
+      Item.Delete(1, P);
+    }
+    else
+    {
+      ParamValue = Item;
+    }
+    Items->Add(Item);
+    if (Value == ParamValue)
+    {
+      ItemIndex = Items->Count - 1;
+    }
+    Values.push_back(ParamValue);
+    ParamI++;
+  }
+
+  AddComboBox(ComboBox, CreateLabel(Option.Caption), Items.get(), true);
+
+  ComboBox->ItemIndex = ItemIndex;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandOptionsDialog::LinkLabelClick(TObject * Sender)
+{
+  TStaticText * Label = DebugNotNull(dynamic_cast<TStaticText *>(Sender));
+  const TCustomCommandType::TOption & Option = FCommand->GetOption(Label->Tag);
+  OpenBrowser(SecureUrl(Option.Default));
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandOptionsDialog::BrowseButtonClick(TObject * Sender)
+{
+  TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
+  int Index = Button->Tag;
+  THistoryComboBox * ComboBox = dynamic_cast<THistoryComboBox *>(FControls[Index]);
+
+  std::unique_ptr<TOpenDialog> OpenDialog(new TOpenDialog(Application));
+  UnicodeString Caption = FCommand->GetOption(Index).Caption;
+  Caption = StripHotkey(Caption);
+  if (!Caption.IsEmpty() && (Caption[Caption.Length()] == L':'))
+  {
+    Caption.SetLength(Caption.Length() - 1);
+  }
+  OpenDialog->Title = FMTLOAD(EXTENSION_OPTIONS_BROWSE_TITLE, (Caption));
+  UnicodeString ExpandedValue = ExpandEnvironmentVariables(ComboBox->Text);
+  OpenDialog->FileName = ExpandedValue;
+  UnicodeString InitialDir = ExtractFilePath(ExpandedValue);
+  if (!InitialDir.IsEmpty())
+  {
+    OpenDialog->InitialDir = InitialDir;
+  }
+
+  if (OpenDialog->Execute())
+  {
+    if (OpenDialog->FileName != ExpandedValue)
+    {
+      ComboBox->Text = OpenDialog->FileName;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+THistoryComboBox * __fastcall TCustomCommandOptionsDialog::CreateHistoryComboBox(
+  const TCustomCommandType::TOption & Option, const UnicodeString & Value)
+{
+  THistoryComboBox * ComboBox = new THistoryComboBox(this);
+  ComboBox->AutoComplete = false;
+  AddComboBox(ComboBox, CreateLabel(Option.Caption));
+  ComboBox->Items = CustomWinConfiguration->History[HistoryKey(Option)];
+  ComboBox->Text = Value;
+  return ComboBox;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandOptionsDialog::HistoryKey(const TCustomCommandType::TOption & Option)
+{
+  UnicodeString Result = FCommand->GetOptionKey(Option);
+  for (int Index = 1; Index < Result.Length(); Index++)
+  {
+    if (!IsLetter(Result[Index]) && !IsDigit(Result[Index]))
+    {
+      Result[Index] = L'_';
+    }
+  }
+  return L"CustomCommandOption_" + Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandOptionsDialog::Execute()
+{
+  bool Result = TCustomDialog::Execute();
+
+  if (Result)
+  {
+    DebugAssert(FCommand->OptionsCount == static_cast<int>(FControls.size()));
+
+    for (int Index = 0; Index < FCommand->OptionsCount; Index++)
+    {
+      const TCustomCommandType::TOption & Option = FCommand->GetOption(Index);
+      if ((Option.Kind != TCustomCommandType::okUnknown) &&
+          Option.IsControl)
+      {
+        UnicodeString OptionKey = FCommand->GetOptionKey(Option);
+
+        TControl * Control = FControls[Index];
+
+        UnicodeString Value;
+        if (Option.Kind == TCustomCommandType::okTextBox)
+        {
+          Value = SaveHistoryComboBoxValue(Control, Option);
+        }
+        else if (Option.Kind == TCustomCommandType::okFile)
+        {
+          Value = SaveHistoryComboBoxValue(Control, Option);
+        }
+        else if (Option.Kind == TCustomCommandType::okDropDownList)
+        {
+          Value = GetComboBoxValue(Control, Option.Default);
+        }
+        else if (Option.Kind == TCustomCommandType::okComboBox)
+        {
+          TComboBox * ComboBox = DebugNotNull(dynamic_cast<TComboBox *>(Control));
+          Value = GetComboBoxValue(Control, ComboBox->Text);
+        }
+        else if (Option.Kind == TCustomCommandType::okCheckBox)
+        {
+          TCheckBox * CheckBox = DebugNotNull(dynamic_cast<TCheckBox *>(Control));
+          int Index = (CheckBox->Checked ? 0 : 1);
+          Value = (Index < static_cast<int>(Option.Params.size())) ? Option.Params[Index] : UnicodeString();
+        }
+        else
+        {
+          DebugFail();
+        }
+
+        // The default value setter deletes the "name" when the value is empty.
+        // It would cause us to fall back to the default value, but we want to remember the empty value.
+        if (Value.IsEmpty())
+        {
+          int Index = FCustomCommandOptions->IndexOfName(OptionKey);
+          if (Index < 0)
+          {
+            Index = FCustomCommandOptions->Add(L"");
+          }
+          UnicodeString Line = OptionKey + FCustomCommandOptions->NameValueSeparator;
+          FCustomCommandOptions->Strings[Index] = Line;
+        }
+        else
+        {
+          FCustomCommandOptions->Values[OptionKey] = Value;
+        }
+      }
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandOptionsDialog::GetComboBoxValue(
+  TControl * Control, const UnicodeString & Default)
+{
+  TComboBox * ComboBox = DebugNotNull(dynamic_cast<TComboBox *>(Control));
+  UnicodeString Result;
+  if (ComboBox->ItemIndex < 0)
+  {
+    Result = Default;
+  }
+  else
+  {
+    Result = FValues[Control->Tag][ComboBox->ItemIndex];
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandOptionsDialog::SaveHistoryComboBoxValue(
+  TControl * Control, const TCustomCommandType::TOption & Option)
+{
+  THistoryComboBox * ComboBox = DebugNotNull(dynamic_cast<THistoryComboBox *>(Control));
+  ComboBox->SaveToHistory();
+  CustomWinConfiguration->History[HistoryKey(Option)] = ComboBox->Items;
+  return ComboBox->Text;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandOptionsDialog::DoHelp()
+{
+  UnicodeString HelpPage;
+  if (!FCommand->OptionsPage.IsEmpty())
+  {
+    HelpPage = FCommand->OptionsPage;
+  }
+  else
+  {
+    HelpPage = FCommand->HomePage;
+  }
+
+  if (!HelpPage.IsEmpty())
+  {
+    OpenBrowser(HelpPage);
+  }
+  else
+  {
+    TCustomDialog::DoHelp();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ConfigureCommandButtonClick(TObject * /*Sender*/)
+{
+  ConfigureCommand();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ConfigureCommand()
+{
+  int Index = CustomCommandsView->ItemIndex;
+  const TCustomCommandType * Command = GetCommandList(Index)->Commands[GetCommandIndex(Index)];
+
+  std::unique_ptr<TCustomCommandOptionsDialog> Dialog(new TCustomCommandOptionsDialog(Command, FCustomCommandOptions.get()));
+  Dialog->Execute();
+  UpdateCustomCommandsView();
 }
 //---------------------------------------------------------------------------

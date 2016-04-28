@@ -540,6 +540,16 @@ bool __fastcall IsWinSCPUrl(const UnicodeString & Url)
     StartsText(HttpHomePageUrl, Url);
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall SecureUrl(const UnicodeString & Url)
+{
+  UnicodeString Result = Url;
+  if (IsWinSCPUrl(Url) && IsHttpUrl(Url))
+  {
+    Result = ChangeUrlProtocol(Result, HttpsProtocol);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall OpenBrowser(UnicodeString URL)
 {
   if (IsWinSCPUrl(URL))
