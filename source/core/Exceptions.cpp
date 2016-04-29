@@ -39,7 +39,7 @@ static bool __fastcall WellKnownException(
 
 
   bool Result = true;
-  bool IgnoreException;
+  bool IgnoreException = false;
 
   if (!IgnoredExceptions.empty())
   {
