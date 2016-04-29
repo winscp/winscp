@@ -364,6 +364,11 @@ namespace WinSCP
             {
                 _lastFromBeginning = message;
                 _logger.WriteLine("Buffered from-beginning message [{0}]", _lastFromBeginning);
+
+                if (OutputDataReceived != null)
+                {
+                    OutputDataReceived(this, null);
+                }
             }
             else
             {

@@ -1592,14 +1592,22 @@ namespace WinSCP
 
         private void ProcessOutputDataReceived(object sender, OutputDataReceivedEventArgs e)
         {
-            Logger.WriteLine("Scheduling output: [{0}]", e.Data);
-            Output.InternalAdd(e.Data);
-            if (Output.Count > 1000)
+            if (e == null)
             {
-                Output.InternalRemoveFirst();
+                Logger.WriteLine("Got incomplete progress output");
             }
+            else
+            {
+                Logger.WriteLine("Scheduling output: [{0}]", e.Data);
+                Output.InternalAdd(e.Data);
+                if (Output.Count > 1000)
+                {
+                    Output.InternalRemoveFirst();
+                }
+                ScheduleEvent(() => RaiseOutputDataReceived(e.Data));
+            }
+
             GotOutput();
-            ScheduleEvent(() => RaiseOutputDataReceived(e.Data));
         }
 
         private void ScheduleEvent(Action action)
