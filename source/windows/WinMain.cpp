@@ -345,7 +345,8 @@ void __fastcall UpdateStaticUsage()
 
   Configuration->Usage->UpdateCurrentVersion();
 
-  UnicodeString WindowsVersion = FORMAT("%d.%d.%d %s", (Win32MajorVersion, Win32MinorVersion, Win32BuildNumber, Win32CSDVersion));
+  UnicodeString WindowsVersion = FORMAT("%d.%d.%d", (Win32MajorVersion, Win32MinorVersion, Win32BuildNumber));
+  AddToList(WindowsVersion, Win32CSDVersion, L" ");
   Configuration->Usage->Set(L"WindowsVersion", (WindowsVersion));
   Configuration->Usage->Set(L"WindowsProductName", (WindowsProductName()));
   DWORD Type;
