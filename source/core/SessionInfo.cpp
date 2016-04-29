@@ -1203,11 +1203,14 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         {
           ADF(L"Transfer active immediately: %s", (EnumName(Data->FtpTransferActiveImmediately, AutoSwitchNames)));
         }
-        ADF(L"FTP: FTPS: %s [Client certificate: %s]; Passive: %s [Force IP: %s]; MLSD: %s [List all: %s]",
-          (Ftps, LogSensitive(Data->TlsCertificateFile), BooleanToEngStr(Data->FtpPasvMode),
+        ADF(L"FTPS: %s [Client certificate: %s]",
+          (Ftps, LogSensitive(Data->TlsCertificateFile)));
+        ADF(L"FTP: Passive: %s [Force IP: %s]; MLSD: %s [List all: %s]; HOST: %s",
+          (BooleanToEngStr(Data->FtpPasvMode),
            EnumName(Data->FtpForcePasvIp, AutoSwitchNames),
            EnumName(Data->FtpUseMlsd, AutoSwitchNames),
-           EnumName(Data->FtpListAll, AutoSwitchNames)));
+           EnumName(Data->FtpListAll, AutoSwitchNames),
+           EnumName(Data->FtpHost, AutoSwitchNames)));
       }
       if (Data->FSProtocol == fsWebDAV)
       {
