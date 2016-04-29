@@ -155,8 +155,6 @@ TLabel * __fastcall TCustomDialog::CreateLabel(UnicodeString Label)
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * Label, bool OneLine)
 {
-  int PrePos = FPos;
-
   Edit->Parent = this;
   // this updates Height property to real value
   Edit->HandleNeeded();
