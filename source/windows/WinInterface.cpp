@@ -571,6 +571,38 @@ static std::unique_ptr<TCriticalSection> StackTraceCriticalSection(new TCritical
 typedef std::map<DWORD, TStrings *> TStackTraceMap;
 static TStackTraceMap StackTraceMap;
 //---------------------------------------------------------------------------
+UnicodeString __fastcall GetExceptionDebugInfo()
+{
+  UnicodeString Result;
+  TGuard Guard(StackTraceCriticalSection.get());
+  TStackTraceMap::iterator Iterator = StackTraceMap.find(GetCurrentThreadId());
+  if (Iterator != StackTraceMap.end())
+  {
+    TStrings * StackTrace = Iterator->second;
+    for (int Index = 0; Index < StackTrace->Count; Index++)
+    {
+      UnicodeString Frame = StackTrace->Strings[Index];
+      int P = Frame.Pos(L")");
+      if (DebugAlwaysTrue(P > 0))
+      {
+        UnicodeString Symbol = Frame.SubString(P + 1, Frame.Length() - P).Trim();
+
+        if ((Symbol != L"KERNELBASE.dll.RaiseException") &&
+            (Symbol != L"Jclhookexcept::JclAddExceptNotifier") &&
+            (Symbol != L"_ReThrowException") &&
+            (Symbol != L"____ExceptionHandler") &&
+            (Symbol != L"__ExceptionHandler") &&
+            (Symbol != L"___doGlobalUnwind") &&
+            (Symbol != L"_ThrowExceptionLDTC"))
+        {
+          AddToList(Result, Symbol, L";");
+        }
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall AppendExceptionStackTraceAndForget(TStrings *& MoreMessages)
 {
   bool Result = false;

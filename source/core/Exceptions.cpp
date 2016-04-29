@@ -163,6 +163,9 @@ static bool __fastcall ExceptionMessage(Exception * E, bool Count,
   if (Count && (CounterName != NULL) && (Configuration->Usage != NULL))
   {
     Configuration->Usage->Inc(CounterName);
+    UnicodeString ExceptionDebugInfo =
+      E->ClassName() + L":" + GetExceptionDebugInfo();
+    Configuration->Usage->Set(L"LastInternalException", ExceptionDebugInfo);
   }
 
   return Result;
