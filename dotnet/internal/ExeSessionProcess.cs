@@ -266,6 +266,12 @@ namespace WinSCP
                         _logger.WriteLineLevel(1, "Got request event");
                         ProcessEvent();
                     }
+
+                    if (_logger.LogLevel >= 1)
+                    {
+                        _logger.WriteLine(string.Format("2nd generation collection count: {0}", GC.CollectionCount(2)));
+                        _logger.WriteLine(string.Format("Total memory allocated: {0}", GC.GetTotalMemory(false)));
+                    }
                 }
             }
         }
