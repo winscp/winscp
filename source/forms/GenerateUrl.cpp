@@ -937,7 +937,7 @@ void __fastcall TGenerateUrlDialog::ClipboardButtonClick(TObject * /*Sender*/)
   UnicodeString Text = FResultMemo41->Text;
   UnicodeString EOL = sLineBreak;
   int P = Pos(EOL, Text);
-  // Trim the EOL of the only string, what CopyToClipbaord(FResultMemo41->Lines) would have done.
+  // Trim the EOL of the only string, what CopyToClipboard(FResultMemo41->Lines) would have done.
   // It probably never happens as rich edit does not return EOL on the last line.
   if (DebugAlwaysFalse(P == Text.Length() - EOL.Length() + 1))
   {
