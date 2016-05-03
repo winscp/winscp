@@ -71,6 +71,7 @@ public:
   virtual bool __fastcall CommandLineOnly() = 0;
   virtual bool __fastcall WantsProgress() = 0;
   virtual void __fastcall Progress(const TScriptProgress & Progress) = 0;
+  virtual UnicodeString __fastcall FinalLogMessage() { return UnicodeString(); }
 };
 //---------------------------------------------------------------------------
 class TOwnConsole : public TConsole
@@ -556,6 +557,7 @@ public:
   virtual bool __fastcall CommandLineOnly();
   virtual bool __fastcall WantsProgress();
   virtual void __fastcall Progress(const TScriptProgress & Progress);
+  virtual UnicodeString __fastcall FinalLogMessage();
 
 private:
   bool FPendingAbort;
@@ -569,6 +571,7 @@ private:
   bool FNoInteractiveInput;
   bool FWantsProgress;
   static const int PrintTimeout = 30000;
+  unsigned int FMaxSend;
 
   inline TConsoleCommStruct * __fastcall GetCommStruct();
   inline void __fastcall FreeCommStruct(TConsoleCommStruct * CommStruct);
@@ -621,6 +624,7 @@ __fastcall TExternalConsole::TExternalConsole(
   SetTimer(Application->Handle, 1, 500, NULL);
 
   FNoInteractiveInput = NoInteractiveInput;
+  FMaxSend = 0;
 
   Init();
 }
@@ -662,7 +666,18 @@ void __fastcall TExternalConsole::FreeCommStruct(TConsoleCommStruct * CommStruct
 void __fastcall TExternalConsole::SendEvent(int Timeout)
 {
   SetEvent(FRequestEvent);
+  unsigned int Start;
+  if (Configuration->LogProtocol >= 1)
+  {
+    Start = GetTickCount();
+  }
   unsigned int Result = WaitForSingleObject(FResponseEvent, Timeout);
+  if (Configuration->LogProtocol >= 1)
+  {
+    unsigned int End = GetTickCount();
+    unsigned int Duration = End - Start;
+    FMaxSend = std::max(Duration, FMaxSend);
+  }
   if (Result != WAIT_OBJECT_0)
   {
     UnicodeString Message = LoadStr(CONSOLE_SEND_TIMEOUT);
@@ -672,6 +687,11 @@ void __fastcall TExternalConsole::SendEvent(int Timeout)
     }
     throw Exception(Message);
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TExternalConsole::FinalLogMessage()
+{
+  return FORMAT(L"Max roundtrip: %d", (static_cast<int>(FMaxSend)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning)
@@ -1988,6 +2008,14 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
     if (FScript != NULL)
     {
       FScript->Log(llMessage, FORMAT(L"Exit code: %d", (ExitCode)));
+      if (Configuration->LogProtocol >= 1)
+      {
+        UnicodeString LogMessage = FConsole->FinalLogMessage();
+        if (!LogMessage.IsEmpty())
+        {
+          FScript->Log(llMessage, LogMessage);
+        }
+      }
     }
   }
   __finally

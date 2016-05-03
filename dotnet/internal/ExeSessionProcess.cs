@@ -84,6 +84,12 @@ namespace WinSCP
                     xmlLogSwitch = "";
                 }
 
+                string logLevelSwitch = null;
+                if (_session.DebugLogLevel > 0)
+                {
+                    logLevelSwitch = string.Format(CultureInfo.InvariantCulture, "/loglevel={0} ", _session.DebugLogLevel);
+                }
+
                 string assemblyVersionStr =
                     (assemblyVersion == null) ? "unk" :
                     string.Format(CultureInfo.InvariantCulture, "{0}{1}{2} ", assemblyVersion.ProductMajorPart, assemblyVersion.ProductMinorPart, assemblyVersion.ProductBuildPart);
@@ -93,7 +99,7 @@ namespace WinSCP
 
                 string arguments =
                     xmlLogSwitch + "/nointeractiveinput " + assemblyVersionSwitch +
-                    configSwitch + logSwitch + _session.AdditionalExecutableArguments;
+                    configSwitch + logSwitch + logLevelSwitch + _session.AdditionalExecutableArguments;
 
                 Tools.AddRawParameters(ref arguments, _session.RawConfiguration, "/rawconfig");
 
