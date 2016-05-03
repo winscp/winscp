@@ -2826,7 +2826,7 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
       {
         if (SearchRec.Name != L".")
         {
-          TDateTime DateTime = SearchRec.TimeStamp;
+          TDateTime DateTime = FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime);
           UnicodeString TimeStr = FormatDateTime(TimeFormat, DateTime);
           UnicodeString DateStr = FormatDateTime(DateFormat, DateTime);
           if (First)
