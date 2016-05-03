@@ -2,6 +2,8 @@
 #ifndef CommonH
 #define CommonH
 //---------------------------------------------------------------------------
+#include <vector>
+//---------------------------------------------------------------------------
 #define EXCEPTION throw ExtException(NULL, L"")
 #define THROWOSIFFALSE(C) { if (!(C)) RaiseLastOSError(); }
 #define SAFE_DESTROY_EX(CLASS, OBJ) { CLASS * PObj = OBJ; OBJ = NULL; delete PObj; }
@@ -215,7 +217,7 @@ extern const UnicodeString AssemblyNamespace;
 extern const UnicodeString SessionClassName;
 extern const UnicodeString TransferOptionsClassName;
 //---------------------------------------------------------------------
-UnicodeString __fastcall RtfText(const UnicodeString & Text);
+UnicodeString __fastcall RtfText(const UnicodeString & Text, bool Rtf = true);
 UnicodeString __fastcall RtfColor(int Index);
 UnicodeString __fastcall RtfOverrideColorText(const UnicodeString & Text);
 UnicodeString __fastcall RtfColorItalicText(int Color, const UnicodeString & Text);
@@ -224,10 +226,14 @@ UnicodeString __fastcall RtfKeyword(const UnicodeString & Text);
 UnicodeString __fastcall RtfParameter(const UnicodeString & Text);
 UnicodeString __fastcall RtfString(const UnicodeString & Text);
 UnicodeString __fastcall RtfLink(const UnicodeString & Link, const UnicodeString & RtfText);
-UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeString & Link);
-UnicodeString __fastcall RtfSwitchValue(const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value);
-UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value);
-UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeString & Link, int Value);
+UnicodeString __fastcall RtfSwitch(
+  const UnicodeString & Name, const UnicodeString & Link, bool Rtf = true);
+UnicodeString __fastcall RtfSwitchValue(
+  const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value, bool Rtf = true);
+UnicodeString __fastcall RtfSwitch(
+  const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value, bool Rtf = true);
+UnicodeString __fastcall RtfSwitch(
+  const UnicodeString & Name, const UnicodeString & Link, int Value, bool Rtf = true);
 UnicodeString __fastcall RtfEscapeParam(UnicodeString Param);
 UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text);
 UnicodeString __fastcall ScriptCommandLink(const UnicodeString & Command);
@@ -373,5 +379,7 @@ private:
   typedef std::map<T2, T1> TSecondToFirst;
   TSecondToFirst FSecondToFirst;
 };
+//---------------------------------------------------------------------------
+typedef std::vector<UnicodeString> TUnicodeStringVector;
 //---------------------------------------------------------------------------
 #endif

@@ -2578,7 +2578,7 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
         DataWithFingerprint->LookupLastFingerprint();
 
         PrintLine(LoadStr(SCRIPT_SITE_WARNING));
-        PrintLine(L"open " + DataWithFingerprint->GenerateOpenCommandArgs());
+        PrintLine(L"open " + DataWithFingerprint->GenerateOpenCommandArgs(false));
       }
 
       DebugAssert(Data != NULL);

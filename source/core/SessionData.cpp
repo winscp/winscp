@@ -2543,19 +2543,22 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
 //---------------------------------------------------------------------
 UnicodeString ScriptCommandOpenLink = ScriptCommandLink(L"open");
 //---------------------------------------------------------------------
-void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Name)
+void __fastcall TSessionData::AddSwitch(
+  UnicodeString & Result, const UnicodeString & Name, bool Rtf)
 {
-  Result += RtfSwitch(Name, ScriptCommandOpenLink);
+  Result += RtfSwitch(Name, ScriptCommandOpenLink, Rtf);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value)
+void __fastcall TSessionData::AddSwitch(
+  UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value, bool Rtf)
 {
-  Result += RtfSwitch(Name, ScriptCommandOpenLink, Value);
+  Result += RtfSwitch(Name, ScriptCommandOpenLink, Value, Rtf);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::AddSwitch(UnicodeString & Result, const UnicodeString & Name, int Value)
+void __fastcall TSessionData::AddSwitch(
+  UnicodeString & Result, const UnicodeString & Name, int Value, bool Rtf)
 {
-  Result += RtfSwitch(Name, ScriptCommandOpenLink, Value);
+  Result += RtfSwitch(Name, ScriptCommandOpenLink, Value, Rtf);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::LookupLastFingerprint()
@@ -2576,7 +2579,7 @@ void __fastcall TSessionData::LookupLastFingerprint()
   }
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs()
+UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs(bool Rtf)
 {
   std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
   std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
@@ -2602,32 +2605,32 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs()
   if (SessionData->HostKey != FactoryDefaults->HostKey)
   {
     UnicodeString SwitchName = AUsesSsh ? L"hostkey" : L"certificate";
-    AddSwitch(Result, SwitchName, SessionData->HostKey);
+    AddSwitch(Result, SwitchName, SessionData->HostKey, Rtf);
     SessionData->HostKey = FactoryDefaults->HostKey;
   }
   if (SessionData->PublicKeyFile != FactoryDefaults->PublicKeyFile)
   {
-    AddSwitch(Result, L"privatekey", SessionData->PublicKeyFile);
+    AddSwitch(Result, L"privatekey", SessionData->PublicKeyFile, Rtf);
     SessionData->PublicKeyFile = FactoryDefaults->PublicKeyFile;
   }
   if (SessionData->TlsCertificateFile != FactoryDefaults->TlsCertificateFile)
   {
-    AddSwitch(Result, L"clientcert", SessionData->TlsCertificateFile);
+    AddSwitch(Result, L"clientcert", SessionData->TlsCertificateFile, Rtf);
     SessionData->TlsCertificateFile = FactoryDefaults->TlsCertificateFile;
   }
   if (SessionData->Passphrase != FactoryDefaults->Passphrase)
   {
-    AddSwitch(Result, PassphraseOption, SessionData->Passphrase);
+    AddSwitch(Result, PassphraseOption, SessionData->Passphrase, Rtf);
     SessionData->Passphrase = FactoryDefaults->Passphrase;
   }
   if (SessionData->FtpPasvMode != FactoryDefaults->FtpPasvMode)
   {
-    AddSwitch(Result, L"passive", SessionData->FtpPasvMode ? 1 : 0);
+    AddSwitch(Result, L"passive", SessionData->FtpPasvMode ? 1 : 0, Rtf);
     SessionData->FtpPasvMode = FactoryDefaults->FtpPasvMode;
   }
   if (SessionData->Timeout != FactoryDefaults->Timeout)
   {
-    AddSwitch(Result, L"timeout", SessionData->Timeout);
+    AddSwitch(Result, L"timeout", SessionData->Timeout, Rtf);
     SessionData->Timeout = FactoryDefaults->Timeout;
   }
 
@@ -2635,7 +2638,7 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs()
 
   if (RawSettings->Count > 0)
   {
-    AddSwitch(Result, L"rawsettings");
+    AddSwitch(Result, L"rawsettings", Rtf);
 
     for (int Index = 0; Index < RawSettings->Count; Index++)
     {

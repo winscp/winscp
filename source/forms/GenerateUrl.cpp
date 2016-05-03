@@ -313,7 +313,7 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
 
   UnicodeString ExeName = Application->ExeName;
   UnicodeString BaseExeName = ExtractFileBaseName(ExeName);
-  UnicodeString OpenCommand = FData->GenerateOpenCommandArgs();
+  UnicodeString OpenCommand = FData->GenerateOpenCommandArgs(true);
   UnicodeString CommandPlaceholder1 = FMTLOAD(GENERATE_URL_COMMAND, (1));
   UnicodeString CommandPlaceholder2 = FMTLOAD(GENERATE_URL_COMMAND, (2));
   UnicodeString LogPath = LoadStr(GENERATE_URL_WRITABLE_PATH_TO_LOG) + RtfText(BaseExeName + L".log");

@@ -374,9 +374,10 @@ private:
   static RawByteString __fastcall StronglyRecryptPassword(const RawByteString & Password, UnicodeString Key);
   static bool __fastcall DoIsProtocolUrl(const UnicodeString & Url, const UnicodeString & Protocol, int & ProtocolLen);
   static bool __fastcall IsProtocolUrl(const UnicodeString & Url, const UnicodeString & Protocol, int & ProtocolLen);
-  static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name);
-  static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value);
-  static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name, int Value);
+  static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name, bool Rtf);
+  static void __fastcall AddSwitch(
+    UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value, bool Rtf);
+  static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name, int Value, bool Rtf);
   static void __fastcall AddAssemblyProperty(
     UnicodeString & Result, TAssemblyLanguage Language,
     const UnicodeString & Name, const UnicodeString & Value);
@@ -431,7 +432,7 @@ public:
   bool __fastcall IsSameSite(const TSessionData * Default);
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
-  UnicodeString __fastcall GenerateOpenCommandArgs();
+  UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
   void __fastcall LookupLastFingerprint();
   bool __fastcall IsSecure();

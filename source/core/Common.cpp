@@ -2964,32 +2964,35 @@ UnicodeString __fastcall RtfColor(int Index)
   return FORMAT(L"\\cf%d", (Index));
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall RtfText(const UnicodeString & Text)
+UnicodeString __fastcall RtfText(const UnicodeString & Text, bool Rtf)
 {
   UnicodeString Result = Text;
-  int Index = 1;
-  while (Index <= Result.Length())
+  if (Rtf)
   {
-    UnicodeString Replacement;
-    wchar_t Ch = Result[Index];
-    if ((Ch == L'\\') || (Ch == L'{') || (Ch == L'}'))
+    int Index = 1;
+    while (Index <= Result.Length())
     {
-      Replacement = FORMAT(L"\\%s", (Ch));
-    }
-    else if (Ch >= 0x0080)
-    {
-      Replacement = FORMAT(L"\\u%d?", (int(Ch)));
-    }
+      UnicodeString Replacement;
+      wchar_t Ch = Result[Index];
+      if ((Ch == L'\\') || (Ch == L'{') || (Ch == L'}'))
+      {
+        Replacement = FORMAT(L"\\%s", (Ch));
+      }
+      else if (Ch >= 0x0080)
+      {
+        Replacement = FORMAT(L"\\u%d?", (int(Ch)));
+      }
 
-    if (!Replacement.IsEmpty())
-    {
-      Result.Delete(Index, 1);
-      Result.Insert(Replacement, Index);
-      Index += Replacement.Length();
-    }
-    else
-    {
-      Index++;
+      if (!Replacement.IsEmpty())
+      {
+        Result.Delete(Index, 1);
+        Result.Insert(Replacement, Index);
+        Index += Replacement.Length();
+      }
+      else
+      {
+        Index++;
+      }
     }
   }
   return Result;
@@ -3037,24 +3040,33 @@ UnicodeString __fastcall ScriptCommandLink(const UnicodeString & Command)
   return L"scriptcommand_" + Command;
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall RtfSwitch(const UnicodeString & Switch, const UnicodeString & Link)
+UnicodeString __fastcall RtfSwitch(
+  const UnicodeString & Switch, const UnicodeString & Link, bool Rtf)
 {
-  return RtfText(L" ") + RtfLink(Link + L"#" + Switch.LowerCase(), RtfParameter(FORMAT(L"-%s", (Switch))));
+  UnicodeString Result = FORMAT(L"-%s", (Switch));
+  if (Rtf)
+  {
+    Result = RtfLink(Link + L"#" + Switch.LowerCase(), RtfParameter(Result));
+  }
+  return L" " + Result;
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall RtfSwitchValue(const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value)
+UnicodeString __fastcall RtfSwitchValue(
+  const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value, bool Rtf)
 {
-  return RtfSwitch(Name, Link) + L"=" + Value;
+  return RtfSwitch(Name, Link, Rtf) + L"=" + Value;
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value)
+UnicodeString __fastcall RtfSwitch(
+  const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value, bool Rtf)
 {
-  return RtfSwitchValue(Name, Link, RtfText(FORMAT("\"%s\"", (EscapeParam(Value)))));
+  return RtfSwitchValue(Name, Link, RtfText(FORMAT("\"%s\"", (EscapeParam(Value))), Rtf), Rtf);
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall RtfSwitch(const UnicodeString & Name, const UnicodeString & Link, int Value)
+UnicodeString __fastcall RtfSwitch(
+  const UnicodeString & Name, const UnicodeString & Link, int Value, bool Rtf)
 {
-  return RtfSwitchValue(Name, Link, RtfText(IntToStr(Value)));
+  return RtfSwitchValue(Name, Link, RtfText(IntToStr(Value), Rtf), Rtf);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text)
