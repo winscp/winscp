@@ -25,6 +25,7 @@ extern const wchar_t NoReplacement;
 extern const wchar_t TokenReplacement;
 extern const UnicodeString LocalInvalidChars;
 extern const UnicodeString PasswordMask;
+extern const UnicodeString Ellipsis;
 //---------------------------------------------------------------------------
 extern const UnicodeString HttpProtocol;
 extern const UnicodeString HttpsProtocol;
@@ -151,6 +152,7 @@ bool __fastcall IsHttpUrl(const UnicodeString & S);
 bool __fastcall IsHttpOrHttpsUrl(const UnicodeString & S);
 UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const UnicodeString & Protocol);
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines);
+UnicodeString __fastcall StripEllipsis(const UnicodeString & S);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const UnicodeString FileName, const TSearchRec Rec, void * Param);

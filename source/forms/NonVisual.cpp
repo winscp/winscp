@@ -1646,7 +1646,7 @@ void __fastcall TNonVisualDataModule::CustomCommandsLastUpdate(TAction * Action)
     int MaxTitleCommandLen = 20;
     if (TitleCommand.Length() > MaxTitleCommandLen)
     {
-      TitleCommand = TitleCommand.SubString(1, MaxTitleCommandLen - 3) + "...";
+      TitleCommand = TitleCommand.SubString(1, MaxTitleCommandLen - 3) + Ellipsis;
     }
     Action->Caption = FMTLOAD(CUSTOM_COMMAND_LAST, (TitleCommand));
     Action->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (Command.Command));

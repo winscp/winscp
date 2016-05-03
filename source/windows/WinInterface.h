@@ -504,17 +504,23 @@ struct TCopyDataMessage
 class TWinInteractiveCustomCommand : public TInteractiveCustomCommand
 {
 public:
-  TWinInteractiveCustomCommand(TCustomCommand * ChildCustomCommand,
-    const UnicodeString CustomCommandName);
+  TWinInteractiveCustomCommand(
+    TCustomCommand * ChildCustomCommand, const UnicodeString CustomCommandName, const UnicodeString HelpKeyword);
 
 protected:
-  virtual void __fastcall Prompt(const UnicodeString & Prompt,
+  virtual void __fastcall Prompt(int Index, const UnicodeString & Prompt,
     UnicodeString & Value);
   virtual void __fastcall Execute(const UnicodeString & Command,
     UnicodeString & Value);
+  virtual void __fastcall PatternHint(int Index, const UnicodeString & Pattern);
 
 private:
   UnicodeString FCustomCommandName;
+  std::map<int, size_t> FIndexes;
+  TUnicodeStringVector FPrompts;
+  TUnicodeStringVector FDefaults;
+  TUnicodeStringVector FValues;
+  UnicodeString FHelpKeyword;
 };
 //---------------------------------------------------------------------------
 class TTrayIcon

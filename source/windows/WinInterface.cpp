@@ -16,6 +16,8 @@
 #include <Glyphs.h>
 #include <PasTools.hpp>
 #include <DateUtils.hpp>
+#include <Custom.h>
+#include <HistoryComboBox.hpp>
 
 #include "WinInterface.h"
 #include "GUITools.h"
@@ -940,30 +942,130 @@ int __fastcall CopyParamListPopupClick(TObject * Sender,
   return Result;
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TCustomCommandPromptsDialog : public TCustomDialog
+{
+public:
+  __fastcall TCustomCommandPromptsDialog(
+    const UnicodeString & CustomCommandName, const UnicodeString & HelpKeyword,
+    const TUnicodeStringVector & Prompts, const TUnicodeStringVector & Defaults);
+
+  bool __fastcall Execute(TUnicodeStringVector & Values);
+
+private:
+  UnicodeString __fastcall HistoryKey(int Index);
+
+  std::vector<THistoryComboBox *> FEdits;
+  TUnicodeStringVector FPrompts;
+  UnicodeString FCustomCommandName;
+};
+//---------------------------------------------------------------------------
+__fastcall TCustomCommandPromptsDialog::TCustomCommandPromptsDialog(
+    const UnicodeString & CustomCommandName, const UnicodeString & HelpKeyword,
+    const TUnicodeStringVector & Prompts, const TUnicodeStringVector & Defaults) :
+  TCustomDialog(HelpKeyword)
+{
+
+  FCustomCommandName = CustomCommandName;
+  Caption = FMTLOAD(CUSTOM_COMMANDS_PARAMS_TITLE, (StripEllipsis(FCustomCommandName)));
+
+  FPrompts = Prompts;
+  DebugAssert(FPrompts.size() == Defaults.size());
+  for (size_t Index = 0; Index < FPrompts.size(); Index++)
+  {
+    UnicodeString Prompt = FPrompts[Index];
+    if (Prompt.IsEmpty())
+    {
+      Prompt = LoadStr(CUSTOM_COMMANDS_PARAM_PROMPT2);
+    }
+    THistoryComboBox * ComboBox = new THistoryComboBox(this);
+    ComboBox->AutoComplete = false;
+    AddComboBox(ComboBox, CreateLabel(Prompt));
+    ComboBox->Items = CustomWinConfiguration->History[HistoryKey(Index)];
+    ComboBox->Text = Defaults[Index];
+    FEdits.push_back(ComboBox);
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandPromptsDialog::HistoryKey(int Index)
+{
+  UnicodeString Result = FPrompts[Index];
+  if (Result.IsEmpty())
+  {
+    Result = IntToStr(Index);
+  }
+  Result = FORMAT(L"%s_%s", (FCustomCommandName, Result));
+  Result = CustomWinConfiguration->GetValidHistoryKey(Result);
+  return L"CustomCommandParam_" + Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandPromptsDialog::Execute(TUnicodeStringVector & Values)
+{
+
+  bool Result = TCustomDialog::Execute();
+
+  if (Result)
+  {
+    for (size_t Index = 0; Index < FEdits.size(); Index++)
+    {
+      Values.push_back(FEdits[Index]->Text);
+      FEdits[Index]->SaveToHistory();
+      CustomWinConfiguration->History[HistoryKey(Index)] = FEdits[Index]->Items;
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 TWinInteractiveCustomCommand::TWinInteractiveCustomCommand(
-  TCustomCommand * ChildCustomCommand, const UnicodeString CustomCommandName) :
+  TCustomCommand * ChildCustomCommand, const UnicodeString CustomCommandName, const UnicodeString HelpKeyword) :
   TInteractiveCustomCommand(ChildCustomCommand)
 {
   FCustomCommandName = StripHotkey(CustomCommandName);
+  FHelpKeyword = HelpKeyword;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinInteractiveCustomCommand::PatternHint(int Index, const UnicodeString & Pattern)
+{
+  if (IsPromptPattern(Pattern))
+  {
+    UnicodeString Prompt;
+    UnicodeString Default;
+    bool Delimit = false;
+    ParsePromptPattern(Pattern, Prompt, Default, Delimit);
+    FIndexes.insert(std::make_pair(Index, FPrompts.size()));
+    FPrompts.push_back(Prompt);
+    FDefaults.push_back(Default);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinInteractiveCustomCommand::Prompt(
-  const UnicodeString & Prompt, UnicodeString & Value)
+  int Index, const UnicodeString & /*Prompt*/, UnicodeString & Value)
 {
-  UnicodeString APrompt = Prompt;
-  if (APrompt.IsEmpty())
+  if (DebugAlwaysTrue(FIndexes.find(Index) != FIndexes.end()))
   {
-    APrompt = FMTLOAD(CUSTOM_COMMANDS_PARAM_PROMPT, (FCustomCommandName));
-  }
-  std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[L"CustomCommandParam"]));
-  if (InputDialog(FMTLOAD(CUSTOM_COMMANDS_PARAM_TITLE, (FCustomCommandName)),
-        APrompt, Value, HELP_CUSTOM_COMMAND_PARAM, History.get()))
-  {
-    CustomWinConfiguration->History[L"CustomCommandParam"] = History.get();
-  }
-  else
-  {
-    Abort();
+    size_t PromptIndex = FIndexes[Index];
+    if (FValues.empty())
+    {
+      UnicodeString HelpKeyword = FHelpKeyword;
+      if (HelpKeyword.IsEmpty())
+      {
+        HelpKeyword = HELP_CUSTOM_COMMAND_PARAM;
+      }
+      std::unique_ptr<TCustomCommandPromptsDialog> Dialog(
+        new TCustomCommandPromptsDialog(FCustomCommandName, HelpKeyword, FPrompts, FDefaults));
+      if (!Dialog->Execute(FValues))
+      {
+        Abort();
+      }
+    }
+
+    if (DebugAlwaysTrue(FValues.size() == FPrompts.size()) &&
+        DebugAlwaysTrue(PromptIndex < FValues.size()))
+    {
+      Value = FValues[PromptIndex];
+    }
   }
 }
 //---------------------------------------------------------------------------

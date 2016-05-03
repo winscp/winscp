@@ -2904,13 +2904,7 @@ THistoryComboBox * __fastcall TCustomCommandOptionsDialog::CreateHistoryComboBox
 UnicodeString __fastcall TCustomCommandOptionsDialog::HistoryKey(const TCustomCommandType::TOption & Option)
 {
   UnicodeString Result = FCommand->GetOptionKey(Option);
-  for (int Index = 1; Index < Result.Length(); Index++)
-  {
-    if (!IsLetter(Result[Index]) && !IsDigit(Result[Index]))
-    {
-      Result[Index] = L'_';
-    }
-  }
+  Result = CustomWinConfiguration->GetValidHistoryKey(Result);
   return L"CustomCommandOption_" + Result;
 }
 //---------------------------------------------------------------------------

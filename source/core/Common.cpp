@@ -32,6 +32,7 @@ const wchar_t NoReplacement = wchar_t(false);
 const wchar_t TokenReplacement = wchar_t(true);
 const UnicodeString LocalInvalidChars = L"/\\:*?\"<>|";
 const UnicodeString PasswordMask = L"***";
+const UnicodeString Ellipsis = L"...";
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
@@ -3441,4 +3442,15 @@ UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language,
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
 {
   Lines->LoadFromFile(ApiPath(FileName), TEncoding::UTF8);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall StripEllipsis(const UnicodeString & S)
+{
+  UnicodeString Result = S;
+  if (Result.SubString(Result.Length() - Ellipsis.Length() + 1, Ellipsis.Length()) == Ellipsis)
+  {
+    Result.SetLength(Result.Length() - Ellipsis.Length());
+    Result = Result.TrimRight();
+  }
+  return Result;
 }

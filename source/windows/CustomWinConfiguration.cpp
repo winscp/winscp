@@ -445,6 +445,35 @@ TStrings * __fastcall TCustomWinConfiguration::GetHistory(const UnicodeString In
   return I >= 0 ? dynamic_cast<TStrings *>(FHistory->Objects[I]) : FEmptyHistory;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomWinConfiguration::GetValidHistoryKey(UnicodeString Key)
+{
+  for (int Index = 1; Index <= Key.Length(); Index++)
+  {
+    if (!IsLetter(Key[Index]) && !IsDigit(Key[Index]))
+    {
+      Key[Index] = L'_';
+    }
+  }
+
+  while (!Key.IsEmpty() && (Key[1] == L'_'))
+  {
+    Key.Delete(1, 1);
+  }
+
+  while (!Key.IsEmpty() && (Key[Key.Length()] == L'_'))
+  {
+    Key.Delete(Key.Length(), 1);
+  }
+
+  int P;
+  while ((P = Key.Pos(L"__")) > 0)
+  {
+    Key.Delete(P, 1);
+  }
+
+  return Key;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SetSynchronizeChecklist(TSynchronizeChecklistConfiguration value)
 {
   SET_CONFIG_PROPERTY(SynchronizeChecklist);

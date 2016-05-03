@@ -281,7 +281,7 @@ static void __fastcall CutFirstDirectory(UnicodeString & S, bool Unix)
     if (P)
     {
       S.Delete(1, P);
-      S = L"..." + Sep + S;
+      S = Ellipsis + Sep + S;
     }
     else
     {
@@ -328,9 +328,9 @@ UnicodeString __fastcall MinimizeName(const UnicodeString FileName, int MaxLen, 
 
   while ((!Dir.IsEmpty() || !Drive.IsEmpty()) && (Result.Length() > MaxLen))
   {
-    if (Dir == Sep + L"..." + Sep)
+    if (Dir == Sep + Ellipsis + Sep)
     {
-      Dir = L"..." + Sep;
+      Dir = Ellipsis + Sep;
     }
     else if (Dir == L"")
     {

@@ -62,7 +62,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
     TCustomCommandData Data(SessionData, SessionData->UserName, Password);
     TRemoteCustomCommand RemoteCustomCommand(Data, SessionData->RemoteDirectory);
     TWinInteractiveCustomCommand InteractiveCustomCommand(
-      &RemoteCustomCommand, L"PuTTY");
+      &RemoteCustomCommand, L"PuTTY", UnicodeString());
 
     UnicodeString Params =
       RemoteCustomCommand.Complete(InteractiveCustomCommand.Complete(AParams, false), true);
@@ -954,7 +954,7 @@ int __fastcall TLocalCustomCommand::PatternLen(const UnicodeString & Command, in
 }
 //---------------------------------------------------------------------------
 bool __fastcall TLocalCustomCommand::PatternReplacement(
-  const UnicodeString & Pattern, UnicodeString & Replacement, bool & Delimit)
+  int Index, const UnicodeString & Pattern, UnicodeString & Replacement, bool & Delimit)
 {
   bool Result;
   if (Pattern == L"!\\")
@@ -971,7 +971,7 @@ bool __fastcall TLocalCustomCommand::PatternReplacement(
   }
   else
   {
-    Result = TFileCustomCommand::PatternReplacement(Pattern, Replacement, Delimit);
+    Result = TFileCustomCommand::PatternReplacement(Index, Pattern, Replacement, Delimit);
   }
   return Result;
 }

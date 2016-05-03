@@ -89,6 +89,7 @@ public:
   virtual void __fastcall Default();
   virtual void __fastcall AskForMasterPasswordIfNotSet() = 0;
   void __fastcall AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(TSessionData * SessionData);
+  static UnicodeString __fastcall GetValidHistoryKey(UnicodeString Key);
 
   __property TLogView LogView = { read = FLogView, write = SetLogView };
   __property TInterface Interface = { read = FInterface, write = SetInterface };

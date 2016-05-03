@@ -1648,7 +1648,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
       TCustomCommandData Data(Terminal);
       TRemoteCustomCommand RemoteCustomCommand(Data, Terminal->CurrentDirectory);
       TWinInteractiveCustomCommand InteractiveCustomCommand(
-        &RemoteCustomCommand, ACommand.Name);
+        &RemoteCustomCommand, ACommand.Name, ACommand.HomePage);
 
       UnicodeString Command = InteractiveCustomCommand.Complete(CommandCommand, false);
 
@@ -1700,7 +1700,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
     TCustomCommandData Data(Terminal);
     TLocalCustomCommand LocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory());
     TWinInteractiveCustomCommand InteractiveCustomCommand(
-      &LocalCustomCommand, ACommand.Name);
+      &LocalCustomCommand, ACommand.Name, ACommand.HomePage);
 
     UnicodeString Command = InteractiveCustomCommand.Complete(CommandCommand, false);
 
@@ -5919,7 +5919,6 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferLabel()
       int MaxWidth = TransferList->MinWidth - (2 * TransferLabel->Margin) - ScaleByTextHeight(this, 10);
       if (Canvas->TextExtent(InfoStr).cx > MaxWidth)
       {
-        UnicodeString Ellipsis = L"...";
         while (Canvas->TextExtent(InfoStr + Ellipsis).cx > MaxWidth)
         {
           InfoStr.SetLength(InfoStr.Length() - 1);

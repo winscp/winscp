@@ -145,7 +145,7 @@ void __fastcall TScpCommanderForm::UpdateToolbar2ItemCaption(TTBCustomItem * Ite
 {
   Item->Caption =
     ShortCutToText(Item->ShortCut) + L" " +
-    Trim(ReplaceStr(StripHotkey(Item->Caption), L"...", L""));
+    StripEllipsis(StripHotkey(Item->Caption));
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestoreFormParams()

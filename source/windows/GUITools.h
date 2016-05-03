@@ -78,7 +78,7 @@ public:
 
 protected:
   virtual int __fastcall PatternLen(const UnicodeString & Command, int Index);
-  virtual bool __fastcall PatternReplacement(const UnicodeString & Pattern,
+  virtual bool __fastcall PatternReplacement(int Index, const UnicodeString & Pattern,
     UnicodeString & Replacement, bool & Delimit);
   virtual void __fastcall DelimitReplacement(UnicodeString & Replacement, wchar_t Quote);
 
