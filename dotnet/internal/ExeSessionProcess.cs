@@ -336,6 +336,10 @@ namespace WinSCP
                 {
                     e.Result = e.Break;
                 }
+
+                _logger.WriteLine(
+                    "Options: [{0}], Timer: [{1}], Timeouting: [{2}], Timeouted: [{3}], Break: [{4}], Result: [{5}]",
+                    e.Options, e.Timer, e.Timeouting, e.Timeouted, e.Break, e.Result);
             }
         }
 
@@ -420,6 +424,7 @@ namespace WinSCP
 
         private void ProcessPrintEvent(ConsolePrintEventStruct e)
         {
+            _logger.WriteLineLevel(1, string.Format(CultureInfo.CurrentCulture, "Print: {0}", e.Message));
             Print(e.FromBeginning, e.Message);
         }
 
