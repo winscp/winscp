@@ -1651,6 +1651,7 @@ void CAsyncSslSocketLayer::PrintSessionInfo()
   USES_CONVERSION;
   LogSocketMessageRaw(FZ_LOG_WARNING, A2T(buffer));
   delete [] buffer;
+  delete [] buffer2;
 }
 
 void CAsyncSslSocketLayer::OnConnect(int nErrorCode)
