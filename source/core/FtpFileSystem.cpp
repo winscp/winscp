@@ -2539,14 +2539,16 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
         // Note that FormatTimeZone reverses the value.
         FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
 
+        UnicodeString FileLog =
+          FORMAT(L"%s (Listing: %s, UTF: %s)", (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UtcModification)));
         UnicodeString LogMessage;
         if (FTimeDifference == 0)
         {
-          LogMessage = FORMAT(L"No timezone difference detected using file %s", (File->FullFileName));
+          LogMessage = FORMAT(L"No timezone difference detected using file %s", (FileLog));
         }
         else
         {
-          LogMessage = FORMAT(L"Timezone difference of %s detected using file %s", (FormatTimeZone(FTimeDifference), File->FullFileName));
+          LogMessage = FORMAT(L"Timezone difference of %s detected using file %s", (FormatTimeZone(FTimeDifference), FileLog));
         }
         FTerminal->LogEvent(LogMessage);
 
