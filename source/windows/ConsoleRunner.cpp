@@ -570,7 +570,6 @@ private:
   bool FPipeOutput;
   bool FNoInteractiveInput;
   bool FWantsProgress;
-  static const int PrintTimeout = 30000;
   unsigned int FMaxSend;
 
   inline TConsoleCommStruct * __fastcall GetCommStruct();
@@ -723,7 +722,7 @@ void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning)
       FreeCommStruct(CommStruct);
     }
 
-    SendEvent(PrintTimeout);
+    SendEvent(INFINITE);
   }
   while (!Str.IsEmpty());
 }
