@@ -2511,8 +2511,6 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
       if (!File->IsDirectory && !File->IsSymLink &&
           File->IsTimeShiftingApplicable())
       {
-        FDetectTimeDifference = false;
-
         TRemoteFile * UtcFile = NULL;
         try
         {
@@ -2520,6 +2518,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
         }
         catch (Exception & E)
         {
+          FDetectTimeDifference = false;
           if (!FTerminal->Active)
           {
             throw;
@@ -2531,28 +2530,39 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
         TDateTime UtcModification = UtcFile->Modification;
         delete UtcFile;
 
-        // MDTM returns seconds, trim those
-        UtcModification = ReduceDateTimePrecision(UtcModification, File->ModificationFmt);
-
-        // Time difference between timestamp retrieved using MDTM (UTC converted to local timezone)
-        // and using LIST (no conversion, expecting the server uses the same timezone as the client).
-        // Note that FormatTimeZone reverses the value.
-        FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
-
-        UnicodeString FileLog =
-          FORMAT(L"%s (Listing: %s, UTF: %s)", (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UtcModification)));
-        UnicodeString LogMessage;
-        if (FTimeDifference == 0)
+        if (UtcModification > Now())
         {
-          LogMessage = FORMAT(L"No timezone difference detected using file %s", (FileLog));
+          FTerminal->LogEvent(
+            FORMAT(L"Not using file %s to detect timezone difference as it has the timestamp in the future [%s]",
+              (File->FullFileName, StandardTimestamp(UtcModification))));
         }
         else
         {
-          LogMessage = FORMAT(L"Timezone difference of %s detected using file %s", (FormatTimeZone(FTimeDifference), FileLog));
-        }
-        FTerminal->LogEvent(LogMessage);
+          FDetectTimeDifference = false;
 
-        break;
+          // MDTM returns seconds, trim those
+          UtcModification = ReduceDateTimePrecision(UtcModification, File->ModificationFmt);
+
+          // Time difference between timestamp retrieved using MDTM (UTC converted to local timezone)
+          // and using LIST (no conversion, expecting the server uses the same timezone as the client).
+          // Note that FormatTimeZone reverses the value.
+          FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
+
+          UnicodeString FileLog =
+            FORMAT(L"%s (Listing: %s, UTF: %s)", (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UtcModification)));
+          UnicodeString LogMessage;
+          if (FTimeDifference == 0)
+          {
+            LogMessage = FORMAT(L"No timezone difference detected using file %s", (FileLog));
+          }
+          else
+          {
+            LogMessage = FORMAT(L"Timezone difference of %s detected using file %s", (FormatTimeZone(FTimeDifference), FileLog));
+          }
+          FTerminal->LogEvent(LogMessage);
+
+          break;
+        }
       }
     }
 
