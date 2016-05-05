@@ -71,7 +71,7 @@ public:
   virtual bool __fastcall CommandLineOnly() = 0;
   virtual bool __fastcall WantsProgress() = 0;
   virtual void __fastcall Progress(const TScriptProgress & Progress) = 0;
-  virtual UnicodeString __fastcall FinalLogMessage() { return UnicodeString(); }
+  virtual UnicodeString __fastcall FinalLogMessage() = 0;
 };
 //---------------------------------------------------------------------------
 class TOwnConsole : public TConsole
@@ -92,6 +92,7 @@ public:
   virtual bool __fastcall CommandLineOnly();
   virtual bool __fastcall WantsProgress();
   virtual void __fastcall Progress(const TScriptProgress & Progress);
+  virtual UnicodeString __fastcall FinalLogMessage();
 
 protected:
   static TOwnConsole * FInstance;
@@ -538,6 +539,11 @@ void __fastcall TOwnConsole::Progress(const TScriptProgress & /*Progress*/)
   DebugFail();
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TOwnConsole::FinalLogMessage()
+{
+  return UnicodeString();
+}
+//---------------------------------------------------------------------------
 class TExternalConsole : public TConsole
 {
 public:
@@ -665,7 +671,7 @@ void __fastcall TExternalConsole::FreeCommStruct(TConsoleCommStruct * CommStruct
 void __fastcall TExternalConsole::SendEvent(int Timeout)
 {
   SetEvent(FRequestEvent);
-  unsigned int Start;
+  unsigned int Start = 0; // shut up
   if (Configuration->LogProtocol >= 1)
   {
     Start = GetTickCount();
@@ -957,6 +963,7 @@ public:
 
   virtual bool __fastcall WantsProgress();
   virtual void __fastcall Progress(const TScriptProgress & Progress);
+  virtual UnicodeString __fastcall FinalLogMessage();
 };
 //---------------------------------------------------------------------------
 __fastcall TNullConsole::TNullConsole()
@@ -1037,6 +1044,11 @@ bool __fastcall TNullConsole::WantsProgress()
 void __fastcall TNullConsole::Progress(const TScriptProgress & /*Progress*/)
 {
   DebugFail();
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TNullConsole::FinalLogMessage()
+{
+  return UnicodeString();
 }
 //---------------------------------------------------------------------------
 static UnicodeString TimestampVarName(L"TIMESTAMP");
