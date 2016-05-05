@@ -275,8 +275,8 @@ namespace WinSCP
 
                     if (_logger.LogLevel >= 1)
                     {
-                        _logger.WriteLine(string.Format("2nd generation collection count: {0}", GC.CollectionCount(2)));
-                        _logger.WriteLine(string.Format("Total memory allocated: {0}", GC.GetTotalMemory(false)));
+                        _logger.WriteLine(string.Format(CultureInfo.InvariantCulture, "2nd generation collection count: {0}", GC.CollectionCount(2)));
+                        _logger.WriteLine(string.Format(CultureInfo.InvariantCulture, "Total memory allocated: {0}", GC.GetTotalMemory(false)));
                     }
                 }
             }
