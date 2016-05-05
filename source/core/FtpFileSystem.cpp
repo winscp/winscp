@@ -2681,7 +2681,6 @@ void __fastcall TFTPFileSystem::DoReadFile(const UnicodeString & AFileName,
     if (File != NULL)
     {
       AFile = File->Duplicate();
-      ApplyTimeDifference(AFile);
     }
 
     FLastDataSent = Now();
@@ -4497,7 +4496,6 @@ void __fastcall TFTPFileSystem::RemoteFileTimeToDateTimeAndPrecision(const TRemo
       ModificationFmt = Source.HasSeconds ? mfFull : mfMDHM;
 
       // With IIS, the Utc should be false only for MDTM
-      // Though we should probably remove the !Utc check as in DST, the MDTM gets shifted too.
       if (FWindowsServer && !Source.Utc)
       {
         DateTime -= DSTDifferenceForTime(DateTime);
