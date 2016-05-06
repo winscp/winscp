@@ -201,7 +201,7 @@ protected:
   bool __fastcall SupportsCommand(const UnicodeString & Command) const;
   void __fastcall RegisterChecksumAlgCommand(const UnicodeString & Alg, const UnicodeString & Command);
   void __fastcall SendCommand(const UnicodeString & Command);
-  bool __fastcall CanTransferSkipList(int Params, unsigned int Flags);
+  bool __fastcall CanTransferSkipList(int Params, unsigned int Flags, const TCopyParamType * CopyParam);
 
   static bool __fastcall Unquote(UnicodeString & Str);
 
