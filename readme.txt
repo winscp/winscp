@@ -6,6 +6,9 @@ To build WinSCP you need:
 - Microsoft .NET Framework 3.5 (for MSBuild)
   https://www.microsoft.com/netframework
 - nasm from http://www.nasm.us/
+  (store it to buildtools/tools/nasm.exe)
+- Object file converter from http://www.agner.org/optimize/#objconv
+  (store it to buildtools/tools/objconv.exe)
 - Build MFC (see readme_mfc.txt).
 - To build WinSCP .NET assembly, you need Microsoft Visual Studio 2013
   https://www.microsoft.com/visualstudio
