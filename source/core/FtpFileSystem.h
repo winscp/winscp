@@ -190,6 +190,10 @@ protected:
   bool __fastcall SupportsReadingFile();
   void __fastcall AutoDetectTimeDifference(TRemoteFileList * FileList);
   void __fastcall ApplyTimeDifference(TRemoteFile * File);
+  void __fastcall ApplyTimeDifference(
+    const UnicodeString & FileName, TDateTime & Modification, TModificationFmt & ModificationFmt);
+  bool __fastcall LookupUploadModificationTime(
+    const UnicodeString & FileName, TDateTime & Modification, TModificationFmt ModificationFmt);
   UnicodeString __fastcall DoCalculateFileChecksum(bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File);
   void __fastcall DoCalculateFilesChecksum(bool UsingHashCommand, const UnicodeString & Alg,
     TStrings * FileList, TStrings * Checksums,

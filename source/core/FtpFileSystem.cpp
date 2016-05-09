@@ -2463,23 +2463,46 @@ void __fastcall TFTPFileSystem::ApplyTimeDifference(TRemoteFile * File)
   DebugAssert(File->Modification == File->LastAccess);
   File->ShiftTimeInSeconds(FTimeDifference);
 
-  if (File->ModificationFmt != mfFull)
+  TDateTime Modification = File->Modification;
+  if (LookupUploadModificationTime(File->FullFileName, Modification, File->ModificationFmt))
   {
-    TUploadedTimes::iterator Iterator = FUploadedTimes.find(AbsolutePath(File->FullFileName, false));
+    // implicitly sets ModificationFmt to mfFull
+    File->Modification = Modification;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::ApplyTimeDifference(
+  const UnicodeString & FileName, TDateTime & Modification, TModificationFmt & ModificationFmt)
+{
+  TRemoteFile::ShiftTimeInSeconds(Modification, ModificationFmt, FTimeDifference);
+
+  if (LookupUploadModificationTime(FileName, Modification, ModificationFmt))
+  {
+    ModificationFmt = mfFull;
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFTPFileSystem::LookupUploadModificationTime(
+  const UnicodeString & FileName, TDateTime & Modification, TModificationFmt ModificationFmt)
+{
+  bool Result = false;
+  if (ModificationFmt != mfFull)
+  {
+    TUploadedTimes::iterator Iterator = FUploadedTimes.find(AbsolutePath(FileName, false));
     if (Iterator != FUploadedTimes.end())
     {
       TDateTime UploadModification = Iterator->second;
-      TDateTime UploadModificationReduced = ReduceDateTimePrecision(UploadModification, File->ModificationFmt);
-      if (UploadModificationReduced == File->Modification)
+      TDateTime UploadModificationReduced = ReduceDateTimePrecision(UploadModification, ModificationFmt);
+      if (UploadModificationReduced == Modification)
       {
         if ((FTerminal->Configuration->ActualLogProtocol >= 2))
         {
           FTerminal->LogEvent(
             FORMAT(L"Enriching modification time of \"%s\" from [%s] to [%s]",
-                   (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UploadModification))));
+                   (FileName, StandardTimestamp(Modification), StandardTimestamp(UploadModification))));
         }
-        // implicitly sets ModificationFmt to mfFull
-        File->Modification = UploadModification;
+        Modification = UploadModification;
+        Result = true;
       }
       else
       {
@@ -2487,12 +2510,14 @@ void __fastcall TFTPFileSystem::ApplyTimeDifference(TRemoteFile * File)
         {
           FTerminal->LogEvent(
             FORMAT(L"Remembered modification time [%s]/[%s] of \"%s\" is obsolete, keeping [%s]",
-                   (StandardTimestamp(UploadModification), StandardTimestamp(UploadModificationReduced), File->FullFileName, StandardTimestamp(File->Modification))));
+                   (StandardTimestamp(UploadModification), StandardTimestamp(UploadModificationReduced), FileName, StandardTimestamp(Modification))));
         }
         FUploadedTimes.erase(Iterator);
       }
     }
   }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileList)
@@ -3946,7 +3971,7 @@ TDateTime __fastcall TFTPFileSystem::ConvertLocalTimestamp(time_t Time)
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
   wchar_t * FileName1, size_t FileName1Len, const wchar_t * FileName2,
-  const wchar_t * /*Path1*/, const wchar_t * Path2,
+  const wchar_t * Path1, const wchar_t * Path2,
   __int64 Size1, __int64 Size2, time_t LocalTime,
   bool /*HasLocalTime*/, const TRemoteFileTime & RemoteTime, void * AUserData, int & RequestResult)
 {
@@ -3967,6 +3992,22 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
       TFileOperationProgressType * OperationProgress = FTerminal->OperationProgress;
       UnicodeString TargetFileName = FileName1;
       DebugAssert(UserData.FileName == TargetFileName);
+
+      UnicodeString SourceFullFileName = Path2;
+      UnicodeString TargetFullFileName = Path1;
+      if (OperationProgress->Side == osLocal)
+      {
+        SourceFullFileName = IncludeTrailingBackslash(SourceFullFileName);
+        TargetFullFileName = UnixIncludeTrailingBackslash(TargetFullFileName);
+      }
+      else
+      {
+        SourceFullFileName = UnixIncludeTrailingBackslash(SourceFullFileName);
+        TargetFullFileName = IncludeTrailingBackslash(TargetFullFileName);
+      }
+      SourceFullFileName += FileName2;
+      TargetFullFileName += FileName1;
+
       TOverwriteMode OverwriteMode = omOverwrite;
       TOverwriteFileParams FileParams;
       bool NoFileParams =
@@ -3977,28 +4018,28 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
         FileParams.SourceSize = Size2;
         FileParams.DestSize = Size1;
 
+        // Time is coming from LIST (not from MLSD or MDTM)
+        bool NeedApplyTimeDifference = !RemoteTime.Utc && DebugAlwaysTrue(!FFileZillaIntf->UsingMlsd());
+
         if (OperationProgress->Side == osLocal)
         {
           FileParams.SourceTimestamp = ConvertLocalTimestamp(LocalTime);
           RemoteFileTimeToDateTimeAndPrecision(RemoteTime, FileParams.DestTimestamp, FileParams.DestPrecision);
+          if (NeedApplyTimeDifference)
+          {
+            ApplyTimeDifference(TargetFullFileName, FileParams.DestTimestamp, FileParams.DestPrecision);
+          }
         }
         else
         {
           FileParams.DestTimestamp = ConvertLocalTimestamp(LocalTime);
           RemoteFileTimeToDateTimeAndPrecision(RemoteTime, FileParams.SourceTimestamp, FileParams.SourcePrecision);
+          if (NeedApplyTimeDifference)
+          {
+            ApplyTimeDifference(SourceFullFileName, FileParams.SourceTimestamp, FileParams.SourcePrecision);
+          }
         }
       }
-
-      UnicodeString SourceFullFileName = Path2;
-      if (OperationProgress->Side == osLocal)
-      {
-        SourceFullFileName = IncludeTrailingBackslash(SourceFullFileName);
-      }
-      else
-      {
-        SourceFullFileName = UnixIncludeTrailingBackslash(SourceFullFileName);
-      }
-      SourceFullFileName += FileName2;
 
       if (ConfirmOverwrite(SourceFullFileName, TargetFileName, OverwriteMode, OperationProgress,
             (NoFileParams ? NULL : &FileParams), UserData.CopyParam, UserData.Params,

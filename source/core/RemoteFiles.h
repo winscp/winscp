@@ -145,6 +145,9 @@ public:
   bool __fastcall IsTimeShiftingApplicable();
   void __fastcall Complete();
 
+  static bool __fastcall IsTimeShiftingApplicable(TModificationFmt ModificationFmt);
+  static void __fastcall ShiftTimeInSeconds(TDateTime & DateTime, TModificationFmt ModificationFmt, __int64 Seconds);
+
   __property int Attr = { read = GetAttr };
   __property bool BrokenLink = { read = GetBrokenLink };
   __property TRemoteFileList * Directory = { read = FDirectory, write = FDirectory };

@@ -989,17 +989,26 @@ bool __fastcall TRemoteFile::GetBrokenLink()
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteFile::IsTimeShiftingApplicable()
 {
+  return IsTimeShiftingApplicable(ModificationFmt);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteFile::IsTimeShiftingApplicable(TModificationFmt ModificationFmt)
+{
   return (ModificationFmt == mfMDHM) || (ModificationFmt == mfFull);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::ShiftTimeInSeconds(__int64 Seconds)
 {
-  if ((Seconds != 0) && IsTimeShiftingApplicable())
+  ShiftTimeInSeconds(FModification, ModificationFmt, Seconds);
+  ShiftTimeInSeconds(FLastAccess, ModificationFmt, Seconds);
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteFile::ShiftTimeInSeconds(TDateTime & DateTime, TModificationFmt ModificationFmt, __int64 Seconds)
+{
+  if ((Seconds != 0) && IsTimeShiftingApplicable(ModificationFmt))
   {
-    DebugAssert(int(FModification) != 0);
-    FModification = IncSecond(FModification, Seconds);
-    DebugAssert(int(FLastAccess) != 0);
-    FLastAccess = IncSecond(FLastAccess, Seconds);
+    DebugAssert(int(DateTime) != 0);
+    DateTime = IncSecond(DateTime, Seconds);
   }
 }
 //---------------------------------------------------------------------------
