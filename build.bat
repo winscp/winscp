@@ -1,7 +1,10 @@
 @echo off
 rem See 'readme' file
-if "%PROCESSOR_ARCHITECTURE%"=="x86" set BDS=%ProgramFiles%\Embarcadero\Studio\14.0
-if "%PROCESSOR_ARCHITECTURE%"=="AMD64" set BDS=%ProgramFiles(x86)%\Embarcadero\Studio\14.0
+if "%PROCESSOR_ARCHITECTURE%"=="x86" set PROGRAMFILES32=%ProgramFiles%
+if "%PROCESSOR_ARCHITECTURE%"=="AMD64" set PROGRAMFILES32=%ProgramFiles(x86)%
+set BDS=%PROGRAMFILES32%\Embarcadero\Studio\14.0
+set MSBUILD=%PROGRAMFILES32%\MSBuild\14.0\Bin\MSBuild.exe
+
 set WITH_DOTNET=1
 if "%BUILD_TARGET%"=="" set BUILD_TARGET=Build
 if "%BUILD_CONFIG%"=="" set BUILD_CONFIG=Release
@@ -10,9 +13,9 @@ cd libs
 call buildlibs.bat
 
 cd ..\source
-%WINDIR%\Microsoft.NET\Framework\v3.5\MSBuild.exe WinSCP.groupproj /t:%BUILD_TARGET% /p:RELEASE_TYPE=%RELEASE_TYPE%;CONFIG=%BUILD_CONFIG%;INTERM_PATH=.;FINAL_PATH=.
+"%MSBUILD%" WinSCP.groupproj /t:%BUILD_TARGET% /p:RELEASE_TYPE=%RELEASE_TYPE%;CONFIG=%BUILD_CONFIG%;INTERM_PATH=.;FINAL_PATH=.
 
 if "%WITH_DOTNET%"=="0" goto SKIP_DOTNET
 cd ..\dotnet
-%WINDIR%\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe WinSCPnet.csproj /t:Build "/p:Configuration=%BUILD_CONFIG%;Platform=AnyCPU;INTERM_PATH=.;FINAL_PATH=."
+"%MSBUILD%" WinSCPnet.csproj /t:Build "/p:Configuration=%BUILD_CONFIG%;Platform=AnyCPU;INTERM_PATH=.;FINAL_PATH=."
 :SKIP_DOTNET
