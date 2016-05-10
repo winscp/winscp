@@ -3,16 +3,13 @@ This is the README file for source code package of WinSCP.
 To build WinSCP you need:
 - Embarcadero C++ Builder XE6 Professional.
   http://www.embarcadero.com/products/cbuilder
-- Microsoft .NET Framework 3.5 (for MSBuild)
-  https://www.microsoft.com/netframework
+- Visual Studio 2015 (for MSBuild 14.0)
+  https://www.visualstudio.com/
 - nasm from http://www.nasm.us/
   (store it to buildtools/tools/nasm.exe)
 - Object file converter from http://www.agner.org/optimize/#objconv
   (store it to buildtools/tools/objconv.exe)
 - Build MFC (see readme_mfc.txt).
-- To build WinSCP .NET assembly, you need Microsoft Visual Studio 2013
-  https://www.microsoft.com/visualstudio
-  and Microsoft .NET Framework 4.0
 
 To build WinSCP from source by yourself, modify and use 'build.bat' in root
 folder of source code package.
