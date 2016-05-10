@@ -19,5 +19,5 @@ set BDS_BUILD_PROPERTIES=RELEASE_TYPE=%RELEASE_TYPE%;CONFIG=%BUILD_CONFIG%;INTER
 
 if "%WITH_DOTNET%"=="0" goto SKIP_DOTNET
 cd ..\dotnet
-"%MSBUILD%" WinSCPnet.csproj /t:Build "/p:Configuration=%BUILD_CONFIG%;Platform=AnyCPU;INTERM_PATH=.;FINAL_PATH=."
+"%MSBUILD%" WinSCPnet.csproj /t:Build /p:Configuration=%BUILD_CONFIG%;Platform=AnyCPU;INTERM_PATH=.;FINAL_PATH=.
 :SKIP_DOTNET
