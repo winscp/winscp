@@ -3690,12 +3690,15 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
 
         TTerminalManager::Instance()->ActiveTerminal = Session;
 
-        TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-        CopyParam.FileMask = FileMask;
+        if (TemporaryFilesList->Count > 0)
+        {
+          TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
+          CopyParam.FileMask = FileMask;
 
-        DebugAssert(!FAutoOperation);
-        FAutoOperation = true;
-        FTerminal->CopyToRemote(TemporaryFilesList, Target, &CopyParam, cpTemporary);
+          DebugAssert(!FAutoOperation);
+          FAutoOperation = true;
+          FTerminal->CopyToRemote(TemporaryFilesList, Target, &CopyParam, cpTemporary);
+        }
       }
       __finally
       {
