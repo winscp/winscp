@@ -20,7 +20,11 @@
 #endif
 
 #ifndef PuttySourceDir
-  #define PuttySourceDir "c:\Program Files\PuTTY"
+  #if DirExists("c:\Program Files (x86)\PuTTY")
+    #define PuttySourceDir "c:\Program Files (x86)\PuTTY"
+  #else
+    #define PuttySourceDir "c:\Program Files\PuTTY"
+  #endif
 #endif
 #ifndef Status
   #define Status "unofficial"
@@ -42,7 +46,6 @@
 #endif
 
 #define TranslationDir "translations"
-#define ImagesDir "images"
 #define OutputDir "."
 
 #define TranslationFileMask "WinSCP.???"
@@ -101,8 +104,10 @@ AppVersion={#Version}
 AppVerName=WinSCP {#Version}
 OutputBaseFilename=WinSCP-{#FTag}-Setup
 SolidCompression=yes
+#ifdef ImagesDir
 WizardImageFile={#ImagesDir}\{#WizardImageFileBase} 100.bmp
 WizardSmallImageFile={#ImagesDir}\{#WizardSmallImageFileBase} 100.bmp
+#endif
 ShowTasksTreeLines=yes
 PrivilegesRequired=none
 ShowLanguageDialog=auto
@@ -235,6 +240,7 @@ Type: files; Name: "{app}\WinSCP.ini"
 Type: files; Name: "{app}\WinSCP.cgl"
 
 [Files]
+#ifdef ImagesDir
 ; Put these to the top as we extract them on demand and
 ; that can take long with solid compression enabled
 Source: "{#ImagesDir}\{#ExplorerFileBase} *.bmp"; Flags: dontcopy
@@ -248,6 +254,7 @@ Source: "{#ImagesDir}\{#WizardSmallImageFileBase} *.bmp"; Excludes: "* 100.bmp";
 Source: "{#ImagesDir}\{#SelectDirFileBase} *.bmp"; Flags: dontcopy
 #ifdef Donations
 Source: "{#ImagesDir}\{#PayPalCardImage}"; Flags: dontcopy
+#endif
 #endif
 Source: "{#MainFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
@@ -275,7 +282,9 @@ Source: "{#PuttySourceDir}\pageant.exe"; DestDir: "{app}\PuTTY"; \
   Components: pageant; Flags: ignoreversion
 Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
   Components: puttygen; Flags: ignoreversion
-Source: "Extensions\*.*"; DestDir: "{app}\Extensions"
+#ifdef ExtensionsDir
+Source: "{#ExtensionsDir}\*.*"; DestDir: "{app}\Extensions"
+#endif
 
 [Registry]
 Root: HKCU; Subkey: "{#ParentRegistryKey}"; Flags: uninsdeletekeyifempty
@@ -908,9 +917,16 @@ var
   UserInterface: Cardinal;
   UpdatesPeriod: Cardinal;
   Caption: TLabel;
+#ifdef ImagesDir
   Image: TBitmapImage;
+#endif
   HelpButton: TButton;
-  P, P2: Integer;
+#ifdef Donations
+  P: Integer;
+#ifdef ImagesDir
+  P2: Integer;
+#endif
+#endif
   S: string;
   Completeness: Integer;
 begin
@@ -1135,6 +1151,7 @@ begin
   ScaleFixedHeightControl(CommanderRadioButton);
   CommanderRadioButton.Parent := InterfacePage.Surface;
 
+#ifdef ImagesDir
   Image := TBitmapImage.Create(InterfacePage);
   Image.Top := GetBottom(CommanderRadioButton) + ScaleY(6);
   Image.Left := CommanderRadioButton.Left + ScaleX(45);
@@ -1142,6 +1159,7 @@ begin
   LoadEmbededScaledIcon(Image, '{#CommanderFileBase}', 32, InterfacePage.Surface.Color);
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(CommanderRadioButton);
+#endif
 
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
@@ -1165,6 +1183,7 @@ begin
   ScaleFixedHeightControl(ExplorerRadioButton);
   ExplorerRadioButton.Parent := InterfacePage.Surface;
 
+#ifdef ImagesDir
   Image := TBitmapImage.Create(InterfacePage);
   Image.Top := GetBottom(ExplorerRadioButton) + ScaleY(6);
   Image.Left := ExplorerRadioButton.Left + ScaleX(45);
@@ -1172,6 +1191,7 @@ begin
   LoadEmbededScaledIcon(Image, '{#ExplorerFileBase}', 32, InterfacePage.Surface.Color);
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(ExplorerRadioButton);
+#endif
 
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
@@ -1221,7 +1241,9 @@ begin
   Caption.Parent := DonationPanel;
 
   P := GetBottom(Caption) + ScaleY(12);
+#ifdef ImagesDir
   P2 := P;
+#endif
 
   CreateDonateLink( 9, P);
   CreateDonateLink(19, P);
@@ -1235,6 +1257,7 @@ begin
   AboutDonationCaption.OnClick := @AboutDonationsLinkClick;
   LinkLabel(AboutDonationCaption);
 
+#ifdef ImagesDir
   Image := TBitmapImage.Create(DonationPanel);
   LoadEmbededBitmap(Image, '{#PayPalCardImage}', DonationPanel.Color);
   Image.AutoSize := True;
@@ -1245,6 +1268,7 @@ begin
   Image.Hint := CustomMessage('AboutDonations');
   Image.ShowHint := True;
   Image.OnClick := @AboutDonationsLinkClick;
+#endif
 
   DonationPanel.Height := GetBottom(AboutDonationCaption);
 
@@ -1263,6 +1287,7 @@ begin
     LoadEmbededScaledBitmap(WizardForm.WizardSmallBitmapImage, '{#WizardSmallImageFileBase}', 100, 0);
   end;
 
+#ifdef ImagesDir
   // Text does not scale as quick as with DPI,
   // so the icon may overlap the labels. Shift them.
   P := WizardForm.SelectDirBitmapImage.Width;
@@ -1273,6 +1298,7 @@ begin
   WizardForm.SelectDirBrowseLabel.Top := WizardForm.SelectDirBrowseLabel.Top + P;
   WizardForm.DirEdit.Top := WizardForm.DirEdit.Top + P;
   WizardForm.DirBrowseButton.Top := WizardForm.DirBrowseButton.Top + P;
+#endif
 end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);
