@@ -19,13 +19,13 @@
 //---------------------------------------------------------------------------
 bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
   TDirectRemoteCopy AllowDirectCopy, void *& Session, UnicodeString & Target, UnicodeString & FileMask,
-  bool & DirectCopy)
+  bool & DirectCopy, void * CurrentSession)
 {
   bool Result;
   TRemoteTransferDialog * Dialog = SafeFormCreate<TRemoteTransferDialog>();
   try
   {
-    Dialog->Init(Sessions, Directories, AllowDirectCopy);
+    Dialog->Init(Sessions, Directories, AllowDirectCopy, CurrentSession);
     Result = Dialog->Execute(Session, Target, FileMask, DirectCopy);
   }
   __finally
@@ -44,33 +44,31 @@ __fastcall TRemoteTransferDialog::TRemoteTransferDialog(TComponent * Owner)
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteTransferDialog::Init(TStrings * Sessions,
-  TStrings * Directories, TDirectRemoteCopy AllowDirectCopy)
+  TStrings * Directories, TDirectRemoteCopy AllowDirectCopy, void * CurrentSession)
 {
   SessionCombo->Items = Sessions;
   FDirectories = Directories;
   assert(SessionCombo->Items->Count > 0);
   assert(SessionCombo->Items->Count == FDirectories->Count);
   FAllowDirectCopy = AllowDirectCopy;
+  FCurrentSession = CurrentSession;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteTransferDialog::Execute(void *& Session, UnicodeString & Target,
   UnicodeString & FileMask, bool & DirectCopy)
 {
-  FCurrentSession = -1;
   for (int Index = 0; Index < SessionCombo->Items->Count; Index++)
   {
     if (SessionCombo->Items->Objects[Index] == Session)
     {
-      FCurrentSession = Index;
       SessionCombo->ItemIndex = Index;
       break;
     }
   }
-  assert(FCurrentSession >= 0);
   DirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteTarget"];
   DirectoryEdit->Text = UnixIncludeTrailingBackslash(Target) + FileMask;
   FDirectCopy = DirectCopy;
-  NotDirectCopyCheck->Checked = !DirectCopy;
+  UpdateNotDirectCopyCheck();
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
@@ -86,7 +84,7 @@ bool __fastcall TRemoteTransferDialog::Execute(void *& Session, UnicodeString & 
 void __fastcall TRemoteTransferDialog::UpdateControls()
 {
   EnableControl(NotDirectCopyCheck,
-    (SessionCombo->ItemIndex == FCurrentSession) &&
+    IsCurrentSessionSelected() &&
     (FAllowDirectCopy != drcDisallow));
   EnableControl(OkButton, !DirectoryEdit->Text.IsEmpty());
 }
@@ -114,7 +112,13 @@ void __fastcall TRemoteTransferDialog::SessionComboChange(TObject * /*Sender*/)
   DirectoryEdit->Text =
     UnixIncludeTrailingBackslash(FDirectories->Strings[SessionCombo->ItemIndex]) +
     UnixExtractFileName(DirectoryEdit->Text);
-  if (SessionCombo->ItemIndex == FCurrentSession)
+  UpdateNotDirectCopyCheck();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteTransferDialog::UpdateNotDirectCopyCheck()
+{
+  if (IsCurrentSessionSelected())
   {
     NotDirectCopyCheck->Checked = !FDirectCopy;
   }
@@ -122,7 +126,6 @@ void __fastcall TRemoteTransferDialog::SessionComboChange(TObject * /*Sender*/)
   {
     NotDirectCopyCheck->Checked = true;
   }
-  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteTransferDialog::FormCloseQuery(TObject * /*Sender*/,
@@ -130,7 +133,7 @@ void __fastcall TRemoteTransferDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult == DefaultResult(this))
   {
-    if ((SessionCombo->ItemIndex == FCurrentSession) &&
+    if (IsCurrentSessionSelected() &&
         (FAllowDirectCopy == drcConfirmCommandSession) &&
         !NotDirectCopyCheck->Checked &&
         GUIConfiguration->ConfirmCommandSession)
@@ -153,9 +156,14 @@ void __fastcall TRemoteTransferDialog::FormCloseQuery(TObject * /*Sender*/,
 void __fastcall TRemoteTransferDialog::NotDirectCopyCheckClick(
   TObject * /*Sender*/)
 {
-  if (SessionCombo->ItemIndex == FCurrentSession)
+  if (IsCurrentSessionSelected())
   {
     FDirectCopy = !NotDirectCopyCheck->Checked;
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteTransferDialog::IsCurrentSessionSelected()
+{
+  return (SessionCombo->Items->Objects[SessionCombo->ItemIndex] == FCurrentSession);
 }
 //---------------------------------------------------------------------------

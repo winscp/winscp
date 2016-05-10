@@ -288,7 +288,7 @@ bool __fastcall DoRemoteMoveDialog(UnicodeString & Target, UnicodeString & FileM
 enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession };
 bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
   TDirectRemoteCopy AllowDirectCopy, void *& Session, UnicodeString & Target, UnicodeString & FileMask,
-  bool & DirectCopy);
+  bool & DirectCopy, void * CurrentSession);
 
 // forms\SelectMask.cpp
 #ifdef CustomdirviewHPP

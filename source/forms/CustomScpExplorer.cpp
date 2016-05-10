@@ -3434,7 +3434,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TTerminal *& Sessio
         }
         void * ASession = Session;
         Result = DoRemoteCopyDialog(Sessions, Directories, AllowDirectCopy,
-          ASession, Target, FileMask, DirectCopy);
+          ASession, Target, FileMask, DirectCopy, TTerminalManager::Instance()->ActiveTerminal);
         Session = static_cast<TTerminal *>(ASession);
       }
       __finally
