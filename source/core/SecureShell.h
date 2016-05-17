@@ -67,6 +67,8 @@ private:
   UnicodeString FLastTunnelError;
   UnicodeString FUserName;
   bool FUtfStrings;
+  DWORD FLastSendBufferUpdate;
+  int FSendBuf;
 
   static TCipher __fastcall FuncToSsh1Cipher(const void * Cipher);
   static TCipher __fastcall FuncToSsh2Cipher(const void * Cipher);

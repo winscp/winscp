@@ -15,6 +15,7 @@
 #ifndef AUTO_WINSOCK
 #include <winsock2.h>
 #endif
+#include <ws2ipdef.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -362,6 +363,7 @@ void __fastcall TSecureShell::Open()
 
   FAuthenticating = false;
   FAuthenticated = false;
+  FLastSendBufferUpdate = 0;
 
   // do not use UTF-8 until decided otherwise (see TSCPFileSystem::DetectUtf())
   FUtfStrings = false;
@@ -378,6 +380,7 @@ void __fastcall TSecureShell::Open()
     FreeBackend(); // in case we are reconnecting
     const char * InitError;
     Conf * conf = StoreToConfig(FSessionData, Simple);
+    FSendBuf = FSessionData->SendBuf;
     try
     {
       InitError = FBackend->init(this, &FBackendHandle, conf,
@@ -1942,6 +1945,23 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       {
         MSec -= Ticks;
       }
+    }
+
+    if ((FSendBuf > 0) && (TicksAfter - FLastSendBufferUpdate >= 1000))
+    {
+      DWORD BufferLen = 0;
+      DWORD OutLen = 0;
+      if (WSAIoctl(FSocket, SIO_IDEAL_SEND_BACKLOG_QUERY, NULL, 0, &BufferLen, sizeof(BufferLen), &OutLen, 0, 0) == 0)
+      {
+        DebugAssert(OutLen == sizeof(BufferLen));
+        if (FSendBuf < BufferLen)
+        {
+          LogEvent(FORMAT(L"Increasing send buffer from %d to %d", (FSendBuf, static_cast<int>(BufferLen))));
+          FSendBuf = BufferLen;
+          setsockopt(FSocket, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char *>(&BufferLen), sizeof(BufferLen));
+        }
+      }
+      FLastSendBufferUpdate = TicksAfter;
     }
   }
   while (ReadEventRequired && (MSec > 0) && !Result);
