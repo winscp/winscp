@@ -56,7 +56,7 @@ enum TPanelExportDestination { pedClipboard, pedCommandLine };
 enum TCopyOperationCommandFlag {
   cocNone = 0x00, cocShortCutHint = 0x01, cocQueue = 0x02, cocNonQueue = 0x04
 };
-enum TCustomCommandListType { ccltAll, ccltBoth, ccltNonFile };
+enum TCustomCommandListType { ccltAll, ccltBoth, ccltNonFile, ccltFile };
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
 {

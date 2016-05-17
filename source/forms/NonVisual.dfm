@@ -96,8 +96,8 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N45: TTBXSeparatorItem
     end
-    object RemoteDirViewCustomCommandsMenu: TTBXSubmenuItem
-      Action = CustomCommandsAction
+    object RemoteFilePopupCustomCommandsMenu: TTBXSubmenuItem
+      Action = CustomCommandsFileAction
       object TTBXItem
       end
     end
@@ -1453,12 +1453,19 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Create link|Create new link/shortcut'
       ImageIndex = 60
     end
-    object CustomCommandsAction: TAction
+    object CustomCommandsFileAction: TAction
       Tag = 14
       Category = 'Command'
-      Caption = '&Custom Commands'
+      Caption = 'File &Custom Commands'
       HelpKeyword = 'remote_command#custom_commands'
       Hint = 'Execute custom commands with selected file(s)'
+    end
+    object CustomCommandsNonFileAction: TAction
+      Tag = 15
+      Category = 'Command'
+      Caption = 'Static &Custom Commands'
+      HelpKeyword = 'remote_command#custom_commands'
+      Hint = 'Execute custom commands that do not operate with files'
     end
     object CustomCommandsCustomizeAction: TAction
       Tag = 15
@@ -2872,6 +2879,9 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = NewLinkAction
       end
     end
+    object RemoteDirViewPopupCustomCommandsMenu: TTBXSubmenuItem
+      Action = CustomCommandsNonFileAction
+    end
   end
   object LocalDirViewPopup: TTBXPopupMenu
     AutoPopup = False
@@ -3060,8 +3070,8 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSeparatorItem3: TTBXSeparatorItem
     end
-    object TBXSubmenuItem4: TTBXSubmenuItem
-      Action = CustomCommandsAction
+    object LocalFilePopupCustomCommandsMenu: TTBXSubmenuItem
+      Action = CustomCommandsFileAction
       object TTBXItem
       end
     end

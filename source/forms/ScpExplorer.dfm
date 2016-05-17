@@ -99,7 +99,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem9: TTBXSeparatorItem
         end
         object CustomCommandsMenu: TTBXSubmenuItem
-          Action = NonVisualDataModule.CustomCommandsAction
+          Action = NonVisualDataModule.CustomCommandsFileAction
         end
         object TBXSubmenuItem6: TTBXSubmenuItem
           Caption = '&File Names'
@@ -215,6 +215,9 @@ inherited ScpExplorerForm: TScpExplorerForm
               Action = NonVisualDataModule.QueueDeleteAllDoneAction
             end
           end
+        end
+        object TBXSubmenuItem28: TTBXSubmenuItem
+          Action = NonVisualDataModule.CustomCommandsNonFileAction
         end
         object TBXSeparatorItem13: TTBXSeparatorItem
         end

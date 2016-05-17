@@ -1580,7 +1580,7 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     }
     else
     {
-      if (ListType == ccltAll)
+      if ((ListType == ccltAll) || (ListType == ccltFile))
       {
         Result = ((FCurrentSide == osRemote) && EnableSelectedOperation[osRemote]) ? AllowedState : 0;
       }
@@ -1599,7 +1599,7 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     }
     else if (LocalCustomCommand.HasLocalFileName(Cmd))
     {
-      if (ListType == ccltAll)
+      if ((ListType == ccltAll) || (ListType == ccltFile))
       {
         // special case is "diff"-style command that can be executed over any side,
         // if we have both sides
@@ -1621,7 +1621,7 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     }
     else
     {
-      if (ListType == ccltAll)
+      if ((ListType == ccltAll) || (ListType == ccltFile))
       {
         Result = EnableSelectedOperation[FCurrentSide] ? 1 : 0;
       }

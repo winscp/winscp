@@ -201,7 +201,7 @@ __published:    // IDE-managed Components
   TAction *CurrentAddEditLinkAction;
   TAction *CloseApplicationAction;
   TAction *OpenedSessionsAction;
-  TAction *CustomCommandsAction;
+  TAction *CustomCommandsFileAction;
   TAction *CustomCommandsCustomizeAction;
   TAction *CheckForUpdatesAction;
   TAction *PuttyAction;
@@ -306,7 +306,7 @@ __published:    // IDE-managed Components
   TTBXItem *Delete1;
   TTBXItem *Rename1;
   TTBXSeparatorItem *N45;
-  TTBXSubmenuItem *RemoteDirViewCustomCommandsMenu;
+  TTBXSubmenuItem *RemoteFilePopupCustomCommandsMenu;
   TTBXSubmenuItem *FileNames3;
   TTBXItem *InserttoCommandLine2;
   TTBXItem *CopytoClipboard3;
@@ -555,7 +555,7 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem57;
   TTBXItem *TBXItem58;
   TTBXSeparatorItem *TBXSeparatorItem3;
-  TTBXSubmenuItem *TBXSubmenuItem4;
+  TTBXSubmenuItem *LocalFilePopupCustomCommandsMenu;
   TTBXSubmenuItem *TBXSubmenuItem5;
   TTBXItem *TBXItem59;
   TTBXItem *TBXItem60;
@@ -613,6 +613,8 @@ __published:    // IDE-managed Components
   TAction *LockAction;
   TAction *UnlockAction;
   TAction *TipsAction;
+  TAction *CustomCommandsNonFileAction;
+  TTBXSubmenuItem *RemoteDirViewPopupCustomCommandsMenu;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -644,7 +646,7 @@ protected:
   UnicodeString __fastcall GetSessionFolderRoot(TSessionData * Data, int Level);
   void __fastcall CreateWorkspacesMenu(TAction * Action);
   void __fastcall WorkspaceItemClick(TObject * Sender);
-  void __fastcall CreateCustomCommandsListMenu(TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused,
+  int __fastcall CreateCustomCommandsListMenu(TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused,
     bool Toolbar, TCustomCommandListType ListType, int Tag);
   void __fastcall CreateCustomCommandsMenu(TAction * Action, TCustomCommandListType ListType);
   bool __fastcall CheckCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index);
