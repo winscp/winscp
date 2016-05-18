@@ -660,6 +660,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_log'
       Hint = 'Show/hide log window'
       ImageIndex = 24
+      Visible = False
     end
     object NewSessionAction: TAction
       Tag = 15

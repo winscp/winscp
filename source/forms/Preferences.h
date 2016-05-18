@@ -252,13 +252,8 @@ __published:
   TLabel *LanguageChangeLabel;
   TButton *LanguagesGetMoreButton;
   TGroupBox *LoggingGroup;
-  TLabel *LogWindowLinesText;
   TCheckBox *LogToFileCheck;
   TFilenameEdit *LogFileNameEdit3;
-  TCheckBox *LogShowWindowCheck;
-  TRadioButton *LogWindowCompleteButton;
-  TRadioButton *LogWindowLinesButton;
-  TUpDownEdit *LogWindowLinesEdit;
   TPanel *LogFilePanel;
   TRadioButton *LogFileAppendButton;
   TRadioButton *LogFileOverwriteButton;

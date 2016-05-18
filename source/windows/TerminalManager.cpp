@@ -286,19 +286,6 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
     try
     {
       DebugAssert(ActiveTerminal);
-      bool ShowLogPending = false;
-
-      if (Configuration->Logging && (WinConfiguration->LogView == lvWindow))
-      {
-        if (WinConfiguration->LogWindowOnStartup)
-        {
-          RequireLogForm(LogMemo);
-        }
-        else
-        {
-          ShowLogPending = true;
-        }
-      }
 
       ConnectTerminal(ActiveTerminal, Reopen);
 
@@ -309,16 +296,6 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
       }
 
       WinConfiguration->ClearTemporaryLoginData();
-
-      if (LogForm && (WinConfiguration->LogView != lvWindow))
-      {
-        FreeLogForm();
-      }
-
-      if (ShowLogPending)
-      {
-        RequireLogForm(LogMemo);
-      }
 
       Result = true;
     }
@@ -622,10 +599,6 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
     }
     else
     {
-      if (LogForm)
-      {
-        FreeLogForm();
-      }
       FreeLogMemo();
       if (OnLastTerminalClosed)
       {
@@ -1195,19 +1168,6 @@ void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)
 {
   DebugAssert(Configuration);
   DebugAssert(Configuration == WinConfiguration);
-
-  if (!Application->Terminated && Configuration->Logging &&
-      (WinConfiguration->LogView == lvWindow))
-  {
-    if (ActiveTerminal)
-    {
-      RequireLogForm(LogMemo);
-    }
-  }
-    else
-  {
-    FreeLogForm();
-  }
 
   TTerminalQueue * Queue;
   for (int Index = 0; Index < Count; Index++)

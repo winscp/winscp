@@ -575,24 +575,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     {
       LogFileOverwriteButton->Checked = true;
     }
-    LogShowWindowCheck->Checked = (CustomWinConfiguration->LogView == lvWindow);
-    if (Configuration->LogWindowComplete)
-    {
-      LogWindowCompleteButton->Checked = true;
-    }
-    else
-    {
-      LogWindowLinesButton->Checked = true;
-    }
-
-    if (!Configuration->LogWindowComplete)
-    {
-      LogWindowLinesEdit->AsInteger = Configuration->LogWindowLines;
-    }
-    else
-    {
-      LogWindowLinesEdit->AsInteger = 500;
-    }
     BOOLPROP(LogSensitive);
 
     EnableActionsLoggingCheck->Checked = Configuration->LogActions;
@@ -874,12 +856,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->LogProtocol = LogProtocolCombo->ItemIndex;
     Configuration->LogFileName = LogToFileCheck->Checked ? LogFileNameEdit3->Text : UnicodeString();
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
-    CustomWinConfiguration->LogView = LogShowWindowCheck->Checked ? lvWindow : lvNone;
-    Configuration->LogWindowComplete = LogWindowCompleteButton->Checked;
-    if (!LogWindowCompleteButton->Checked)
-    {
-      Configuration->LogWindowLines = LogWindowLinesEdit->AsInteger;
-    }
     BOOLPROP(LogSensitive);
 
     Configuration->LogActions = EnableActionsLoggingCheck->Checked;
@@ -1254,12 +1230,6 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(LogFileNameHintText, LogFileNameEdit3->Enabled);
     EnableControl(LogFileAppendButton, LogFileNameEdit3->Enabled);
     EnableControl(LogFileOverwriteButton, LogFileNameEdit3->Enabled);
-
-    EnableControl(LogShowWindowCheck, LogProtocolCombo->Enabled);
-    EnableControl(LogWindowCompleteButton, LogShowWindowCheck->Enabled && LogShowWindowCheck->Checked);
-    EnableControl(LogWindowLinesButton, LogWindowCompleteButton->Enabled);
-    EnableControl(LogWindowLinesEdit, LogWindowLinesButton->Enabled && LogWindowLinesButton->Checked);
-    EnableControl(LogWindowLinesText, LogWindowLinesEdit->Enabled);
 
     EnableControl(LogSensitiveCheck, LogProtocolCombo->Enabled);
 
