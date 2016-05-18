@@ -2433,6 +2433,7 @@ void __fastcall TPreferencesDialog::AddExtension()
     CustomWinConfiguration->History[HistoryKey] = History.get();
 
     bool Trusted;
+    bool Latest;
     UnicodeString FileName;
     UnicodeString ExtensionPath;
     std::unique_ptr<TStringList> Lines(new TStringList());
@@ -2470,6 +2471,8 @@ void __fastcall TPreferencesDialog::AddExtension()
           FileName = MakeValidFileName(ExtractFileNameFromUrl(Path));
         }
         Lines->Text = Http->Response;
+
+        Latest = Http->ResponseHeaders->Values["WinSCP-Extension-Skipped"].Trim().IsEmpty();
       }
       else
       {
@@ -2479,6 +2482,7 @@ void __fastcall TPreferencesDialog::AddExtension()
         }
 
         Trusted = true;
+        Latest = true;
 
         UnicodeString Id = WinConfiguration->GetExtensionId(Path);
         FileName = ExtractFileName(Path);
@@ -2573,6 +2577,11 @@ void __fastcall TPreferencesDialog::AddExtension()
       CustomCommandsView->ItemIndex = GetCommandListIndex(FExtensionList, Index);
       CustomCommandsView->ItemFocused->MakeVisible(false);
       UpdateControls();
+
+      if (!Latest)
+      {
+        MessageDialog(LoadStr(EXTENSION_NOT_LATEST), qtInformation, qaOK);
+      }
 
       if (IsUrl)
       {

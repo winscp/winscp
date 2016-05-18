@@ -155,7 +155,8 @@ BEGIN
         CONFIRM_UNREGISTER_URL, "Do you want to unregister WinSCP from handling all URL addresses?"
         INTERNAL_EDITOR_LARGE_FILE, "**Try to open large file?**\n\nThe file you are trying to open in an internal editor is too large (%s). WinSCP internal editor is not designed for editing large files. Consider using an external editor capable of editing large files.\n\nYou may try to open the file anyway, but you may run out of memory."
         CLOSE_BUTTON, "Close"
-        EXTENSION_UNTRUSTED, "The extension does not come from a trusted source or has not been reviewed yet. Are you sure you want to install it?"
+        EXTENSION_UNTRUSTED, "The extension does not come from a trusted source. Are you sure you want to install it?"
+        EXTENSION_NOT_LATEST, "**Using the last compatible and trusted version of the extension.**\n\nThe latest version of the extension is either not reviewed yet or is not compatible with this version of WinSCP."
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         COMPARE_NO_DIFFERENCES, "No differences found."
