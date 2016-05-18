@@ -1954,7 +1954,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       if (WSAIoctl(FSocket, SIO_IDEAL_SEND_BACKLOG_QUERY, NULL, 0, &BufferLen, sizeof(BufferLen), &OutLen, 0, 0) == 0)
       {
         DebugAssert(OutLen == sizeof(BufferLen));
-        if (FSendBuf < BufferLen)
+        if (FSendBuf < static_cast<int>(BufferLen))
         {
           LogEvent(FORMAT(L"Increasing send buffer from %d to %d", (FSendBuf, static_cast<int>(BufferLen))));
           FSendBuf = BufferLen;
