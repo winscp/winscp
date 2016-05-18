@@ -508,6 +508,7 @@ private:
   void __fastcall SetShortcuts();
   void __fastcall UpdatePanelsPathLabelsStatus();
   void __fastcall LocalDefaultDirectory();
+  TOperationSide __fastcall GetOtherSize(TOperationSide Side);
 
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,

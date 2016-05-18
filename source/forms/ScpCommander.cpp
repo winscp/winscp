@@ -2041,8 +2041,16 @@ void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * /*Sende
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::HomeDirectory(TOperationSide Side)
 {
+  bool SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
+
   TSynchronizedBrowsingGuard SynchronizedBrowsingGuard;
+
   TCustomScpExplorerForm::HomeDirectory(Side);
+
+  if (SynchronizeBrowsing)
+  {
+    TCustomScpExplorerForm::HomeDirectory(GetOtherSize(Side));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::QueueSubmenuItemPopup(
@@ -2057,9 +2065,15 @@ void __fastcall TScpCommanderForm::DoFocusRemotePath(UnicodeString Path)
   TCustomScpExplorerForm::DoFocusRemotePath(Path);
 }
 //---------------------------------------------------------------------------
+TOperationSide __fastcall TScpCommanderForm::GetOtherSize(TOperationSide Side)
+{
+  Side = GetSide(Side);
+  return ((Side == osLocal) ? osRemote : osLocal);
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::HistoryGo(TOperationSide Side, int Index)
 {
-  TOperationSide OtherSide = ((Side == osLocal) ? osRemote : osLocal);
+  TOperationSide OtherSide = GetOtherSize(Side);
   if (NonVisualDataModule->SynchronizeBrowsingAction->Checked &&
       ((Index < 0) ? (-Index < DirView(OtherSide)->BackCount) : (Index < DirView(OtherSide)->ForwardCount)))
   {
