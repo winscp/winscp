@@ -4323,6 +4323,17 @@ void CFtpControlSocket::TransferHandleListError()
   m_Operation.nOpState = FILETRANSFER_NOLIST_SIZE;
 }
 
+static int atoui(const wchar_t * s)
+{
+  wchar_t * endptr;
+  int result = wcstol(s, &endptr, 10);
+  if ((*s == L'\0') || (*endptr != L'\0'))
+  {
+    result = -1;
+  }
+  return result;
+}
+
 bool CFtpControlSocket::HandleMdtm(int code, t_directory::t_direntry::t_date & date)
 {
   bool result = false;
@@ -4334,24 +4345,24 @@ bool CFtpControlSocket::HandleMdtm(int code, t_directory::t_direntry::t_date & d
       int y=0, M=0, d=0, h=0, m=0, s=0;
       bool hasseconds = false;
       line=line.Mid(4);
-      y=_ttoi(line.Left(4));
-      if (y && line.GetLength()>4)
+      y=atoui(line.Left(4));
+      if ((y >= 0) && (line.GetLength() > 4))
       {
         line=line.Mid(4);
-        M=_ttoi(line.Left(2));
-        if (M && line.GetLength()>2)
+        M=atoui(line.Left(2));
+        if ((M >= 0) && (line.GetLength() > 2))
         {
           line=line.Mid(2);
-          d=_ttoi(line.Left(2));
-          if (d && line.GetLength()>2)
+          d=atoui(line.Left(2));
+          if ((d >= 0) && (line.GetLength() > 2))
           {
             line=line.Mid(2);
-            h=_ttoi(line.Left(2));
-            if (h && line.GetLength()>2)
+            h=atoui(line.Left(2));
+            if ((h >= 0) && (line.GetLength() > 2))
             {
               line=line.Mid(2);
-              m=_ttoi(line.Left(2));
-              if (m && line.GetLength()>2)
+              m=atoui(line.Left(2));
+              if ((m >= 0) && (line.GetLength() > 2))
               {
                 line=line.Mid(2);
                 s=_ttoi(line.Left(2));
