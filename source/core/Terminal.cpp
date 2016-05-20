@@ -40,7 +40,7 @@ class TLoopDetector
 public:
   __fastcall TLoopDetector();
   void __fastcall RecordVisitedDirectory(const UnicodeString & Directory);
-  bool __fastcall IsUnvisitedDirectory(const TRemoteFile * File);
+  bool __fastcall IsUnvisitedDirectory(const UnicodeString & Directory);
 
 private:
   std::unique_ptr<TStringList> FVisitedDirectories;
@@ -57,21 +57,9 @@ void __fastcall TLoopDetector::RecordVisitedDirectory(const UnicodeString & Dire
   FVisitedDirectories->Add(VisitedDirectory);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoopDetector::IsUnvisitedDirectory(const TRemoteFile * File)
+bool __fastcall TLoopDetector::IsUnvisitedDirectory(const UnicodeString & Directory)
 {
-  DebugAssert(File->IsDirectory);
-  UnicodeString Directory = UnixExcludeTrailingBackslash(File->FullFileName);
   bool Result = (FVisitedDirectories->IndexOf(Directory) < 0);
-  if (Result)
-  {
-    if (File->IsSymLink)
-    {
-      UnicodeString BaseDirectory = UnixExtractFileDir(Directory);
-      UnicodeString SymlinkDirectory =
-        UnixExcludeTrailingBackslash(AbsolutePath(BaseDirectory, File->LinkTo));
-      Result = (FVisitedDirectories->IndexOf(SymlinkDirectory) < 0);
-    }
-  }
 
   if (Result)
   {
@@ -95,6 +83,7 @@ struct TFilesFindParams
   TFindingFileEvent OnFindingFile;
   bool Cancel;
   TLoopDetector LoopDetector;
+  UnicodeString RealDirectory;
 };
 //---------------------------------------------------------------------------
 TCalculateSizeStats::TCalculateSizeStats()
@@ -5373,21 +5362,32 @@ void __fastcall TTerminal::FileFind(UnicodeString FileName,
 
       if (File->IsDirectory)
       {
-        if (!AParams->LoopDetector.IsUnvisitedDirectory(File))
+        UnicodeString RealDirectory;
+        if (!File->IsSymLink || File->LinkTo.IsEmpty())
         {
-          LogEvent(FORMAT(L"Already searched \"%s\" directory, link loop detected", (FullFileName)));
+          RealDirectory = UnixIncludeTrailingBackslash(AParams->RealDirectory) + File->FileName;
         }
         else
         {
-          DoFilesFind(FullFileName, *AParams);
+          RealDirectory = ::AbsolutePath(AParams->RealDirectory, File->LinkTo);
+        }
+
+        if (!AParams->LoopDetector.IsUnvisitedDirectory(RealDirectory))
+        {
+          LogEvent(FORMAT(L"Already searched \"%s\" directory (real path \"%s\"), link loop detected", (FullFileName, RealDirectory)));
+        }
+        else
+        {
+          DoFilesFind(FullFileName, *AParams, RealDirectory);
         }
       }
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoFilesFind(UnicodeString Directory, TFilesFindParams & Params)
+void __fastcall TTerminal::DoFilesFind(UnicodeString Directory, TFilesFindParams & Params, UnicodeString RealDirectory)
 {
+  LogEvent(FORMAT(L"Searching directory \"%s\" (real path \"%s\")", (Directory, RealDirectory)));
   Params.OnFindingFile(this, Directory, Params.Cancel);
   if (!Params.Cancel)
   {
@@ -5396,12 +5396,15 @@ void __fastcall TTerminal::DoFilesFind(UnicodeString Directory, TFilesFindParams
     // of the directory listing, so we at least reset the handler in
     // FileFind
     FOnFindingFile = Params.OnFindingFile;
+    UnicodeString PrevRealDirectory = Params.RealDirectory;
     try
     {
+      Params.RealDirectory = RealDirectory;
       ProcessDirectory(Directory, FileFind, &Params, false, true);
     }
     __finally
     {
+      Params.RealDirectory = PrevRealDirectory;
       FOnFindingFile = NULL;
     }
   }
@@ -5418,7 +5421,7 @@ void __fastcall TTerminal::FilesFind(UnicodeString Directory, const TFileMasks &
 
   Params.LoopDetector.RecordVisitedDirectory(Directory);
 
-  DoFilesFind(Directory, Params);
+  DoFilesFind(Directory, Params, Directory);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::SpaceAvailable(const UnicodeString Path,

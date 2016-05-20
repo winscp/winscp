@@ -338,7 +338,7 @@ protected:
     UnicodeString Name, UnicodeString Instructions, UnicodeString Prompt, bool Echo,
     int MaxLen, UnicodeString & Result);
   void __fastcall FileFind(UnicodeString FileName, const TRemoteFile * File, void * Param);
-  void __fastcall DoFilesFind(UnicodeString Directory, TFilesFindParams & Params);
+  void __fastcall DoFilesFind(UnicodeString Directory, TFilesFindParams & Params, UnicodeString RealDirectory);
   bool __fastcall DoCreateLocalFile(const UnicodeString FileName,
     TFileOperationProgressType * OperationProgress, HANDLE * AHandle,
     bool NoConfirmation);
