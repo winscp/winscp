@@ -1714,12 +1714,12 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           DesignSize = (
             393
             71)
-          object Label7: TLabel
+          object Label37: TLabel
             Left = 12
             Top = 42
-            Width = 152
+            Width = 103
             Height = 13
-            Caption = 'Preferred SSH protocol version:'
+            Caption = 'SSH protocol version:'
             FocusControl = SshProtCombo2
           end
           object CompressionCheck: TCheckBox
@@ -1742,7 +1742,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 1
             OnChange = DataChange
             Items.Strings = (
-              '1'
+              '1 (insecure)'
               '2')
           end
         end

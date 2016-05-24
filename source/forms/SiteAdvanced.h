@@ -29,7 +29,7 @@ __published:
   TPageControl *PageControl;
   TTabSheet *AdvancedSheet;
   TGroupBox *ProtocolGroup;
-  TLabel *Label7;
+  TLabel *Label37;
   TCheckBox *CompressionCheck;
   TTabSheet *EnvironmentSheet;
   TTabSheet *ScpSheet;
