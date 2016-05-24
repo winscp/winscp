@@ -220,6 +220,8 @@ Name: "{sendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
   Parameters: "/upload"; Tasks: sendtohook
 
 [InstallDelete]
+; Remove pre-5.8.2 PuTTY help file
+Type: files; Name: "{app}\PuTTY\putty.hlp"
 ; Remove pre-524 licence file (without .txt extension)
 Type: files; Name: "{app}\license"
 ; Remove pre-520 start menu folders
