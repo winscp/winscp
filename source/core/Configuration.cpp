@@ -759,29 +759,6 @@ RawByteString __fastcall TConfiguration::StronglyRecryptPassword(RawByteString P
   return Password;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetOSVersionStr()
-{
-  UnicodeString Result;
-  OSVERSIONINFO OSVersionInfo;
-  OSVersionInfo.dwOSVersionInfoSize = sizeof(OSVersionInfo);
-  if (GetVersionEx(&OSVersionInfo) != 0)
-  {
-    Result = FORMAT(L"%d.%d.%d", (int(OSVersionInfo.dwMajorVersion),
-      int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber)));
-    UnicodeString CSDVersion = OSVersionInfo.szCSDVersion;
-    if (!CSDVersion.IsEmpty())
-    {
-      Result += L" " + CSDVersion;
-    }
-    UnicodeString ProductName = WindowsProductName();
-    if (!ProductName.IsEmpty())
-    {
-      Result += L" - " + ProductName;
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 TVSFixedFileInfo *__fastcall TConfiguration::GetFixedApplicationInfo()
 {
   return GetFixedFileInfo(ApplicationInfo);

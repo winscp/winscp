@@ -2575,6 +2575,27 @@ UnicodeString __fastcall WindowsProductName()
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall WindowsVersion()
+{
+  UnicodeString Result;
+  OSVERSIONINFO OSVersionInfo;
+  OSVersionInfo.dwOSVersionInfoSize = sizeof(OSVersionInfo);
+  // Cannot use the VCL Win32MajorVersion+Win32MinorVersion+Win32BuildNumber as
+  // on Windows 10 due to some hacking in InitPlatformId, the Win32BuildNumber is lost
+  if (GetVersionEx(&OSVersionInfo) != 0)
+  {
+    Result = FORMAT(L"%d.%d.%d", (int(OSVersionInfo.dwMajorVersion), int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber)));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall WindowsVersionLong()
+{
+  UnicodeString Result = WindowsVersion();
+  AddToList(Result, Win32CSDVersion, L" ");
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path)
 {
   UnicodeString FileName =

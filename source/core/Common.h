@@ -128,6 +128,8 @@ LCID __fastcall GetDefaultLCID();
 UnicodeString __fastcall DefaultEncodingName();
 UnicodeString __fastcall WindowsProductName();
 bool _fastcall GetWindowsProductType(DWORD & Type);
+UnicodeString __fastcall WindowsVersion();
+UnicodeString __fastcall WindowsVersionLong();
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path);
 UnicodeString __fastcall FormatNumber(__int64 Size);
 UnicodeString __fastcall FormatSize(__int64 Size);

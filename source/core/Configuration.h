@@ -71,7 +71,6 @@ private:
   bool FDisableAcceptingHostKeys;
   bool FDefaultCollectUsage;
 
-  UnicodeString __fastcall GetOSVersionStr();
   TVSFixedFileInfo *__fastcall GetFixedApplicationInfo();
   void * __fastcall GetApplicationInfo();
   virtual UnicodeString __fastcall GetVersionStr();
@@ -235,7 +234,6 @@ public:
   __property UnicodeString ProductVersion = { read=GetProductVersion };
   __property UnicodeString ProductName = { read=GetProductName };
   __property UnicodeString CompanyName = { read=GetCompanyName };
-  __property UnicodeString OSVersionStr = { read = GetOSVersionStr };
   __property bool IsUnofficial = { read = GetIsUnofficial };
   __property bool Logging  = { read=FLogging, write=SetLogging };
   __property UnicodeString LogFileName  = { read=FLogFileName, write=SetLogFileName };
