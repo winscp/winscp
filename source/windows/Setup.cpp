@@ -40,6 +40,8 @@
 /* Command line options. */
 UnicodeString LastPathError;
 //---------------------------------------------------------------------------
+UnicodeString NetVersionStr;
+//---------------------------------------------------------------------------
 // Display the error "err_msg".
 void err_out(LPCTSTR err_msg)
 {
@@ -2086,4 +2088,51 @@ void __fastcall TipsUpdateStaticUsage()
   Configuration->Usage->Set(L"TipsCount", Tips->Count);
   std::unique_ptr<TStringList> TipsSeen(TextToTipList(WinConfiguration->TipsSeen));
   Configuration->Usage->Set(L"TipsSeen", TipsSeen->Count);
+}
+//---------------------------------------------------------------------------
+static void ReadNetVersion(TRegistryStorage * Registry)
+{
+  UnicodeString VersionStr = Registry->ReadString(L"Version", L"");
+  if (CompareVersion(VersionStr, NetVersionStr) > 0)
+  {
+    NetVersionStr = VersionStr;
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetNetVersionStr()
+{
+  if (NetVersionStr.IsEmpty())
+  {
+    NetVersionStr = L"0"; // not to retry on failure
+
+    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP", HKEY_LOCAL_MACHINE));
+    if (Registry->OpenRootKey(false))
+    {
+      std::unique_ptr<TStringList> Keys(new TStringList());
+      Registry->GetSubKeyNames(Keys.get());
+      for (int Index = 0; Index < Keys->Count; Index++)
+      {
+        UnicodeString Key = Keys->Strings[Index];
+        if (Registry->OpenSubKey(Key, false))
+        {
+          ReadNetVersion(Registry.get());
+
+          if (Registry->OpenSubKey(L"Full", false))
+          {
+            ReadNetVersion(Registry.get());
+            Registry->CloseSubKey();
+          }
+          if (Registry->OpenSubKey(L"Client", false))
+          {
+            ReadNetVersion(Registry.get());
+            Registry->CloseSubKey();
+          }
+
+          Registry->CloseSubKey();
+        }
+      }
+    }
+  }
+
+  return NetVersionStr;
 }

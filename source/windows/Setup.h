@@ -32,5 +32,7 @@ void __fastcall AutoShowNewTip();
 void __fastcall ShowTips();
 UnicodeString __fastcall FirstUnshownTip();
 void __fastcall TipsUpdateStaticUsage();
+int __fastcall GetNetVersion();
+UnicodeString __fastcall GetNetVersionStr();
 //---------------------------------------------------------------------------
 #endif

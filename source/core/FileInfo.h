@@ -33,4 +33,6 @@ int __fastcall CalculateCompoundVersion(int MajorVer,
 
 int __fastcall StrToCompoundVersion(UnicodeString S);
 
+int __fastcall CompareVersion(UnicodeString V1, UnicodeString V2);
+
 #endif // FileInfoH

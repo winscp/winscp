@@ -2420,7 +2420,10 @@ void __fastcall TPreferencesDialog::AddExtension()
         bool WinSCPURL = IsWinSCPUrl(Url);
         if (WinSCPURL)
         {
-          Url = CampaignUrl(ProgramUrl(Url));
+          Url = ProgramUrl(Url);
+          // The EncodeUrlString should not be necessary, but as we get the value from regitry, let's be safe
+          Url = AppendUrlParams(Url, FORMAT(L"netframework=%s", (EncodeUrlString(GetNetVersionStr()))));
+          Url = CampaignUrl(Url);
         }
 
         TOperationVisualizer Visualizer;
