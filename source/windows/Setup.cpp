@@ -41,6 +41,7 @@
 UnicodeString LastPathError;
 //---------------------------------------------------------------------------
 UnicodeString NetVersionStr;
+UnicodeString PowerShellVersionStr;
 //---------------------------------------------------------------------------
 // Display the error "err_msg".
 void err_out(LPCTSTR err_msg)
@@ -2135,4 +2136,35 @@ UnicodeString __fastcall GetNetVersionStr()
   }
 
   return NetVersionStr;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetPowerShellVersionStr()
+{
+  if (PowerShellVersionStr.IsEmpty())
+  {
+    PowerShellVersionStr = 0; // not to retry on failure
+
+    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\PowerShell", HKEY_LOCAL_MACHINE));
+    if (Registry->OpenRootKey(false))
+    {
+      std::unique_ptr<TStringList> Keys(new TStringList());
+      Registry->GetSubKeyNames(Keys.get());
+      for (int Index = 0; Index < Keys->Count; Index++)
+      {
+        UnicodeString Key = Keys->Strings[Index];
+        if (Registry->OpenSubKey(Key + L"\\PowerShellEngine", false, true))
+        {
+          UnicodeString VersionStr = Registry->ReadString(L"PowerShellVersion", L"");
+          if (!VersionStr.IsEmpty() && (CompareVersion(VersionStr, PowerShellVersionStr) > 0))
+          {
+            PowerShellVersionStr = VersionStr;
+          }
+
+          Registry->CloseSubKey();
+        }
+      }
+    }
+  }
+
+  return PowerShellVersionStr;
 }

@@ -2800,6 +2800,14 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
             {
               Failed = (CompareVersion(Value, GetNetVersionStr()) > 0);
             }
+            else if (Dependency == L"powershell")
+            {
+              Failed = (CompareVersion(Value, GetPowerShellVersionStr()) > 0);
+            }
+            else if (Dependency == L"windows")
+            {
+              Failed = (CompareVersion(Value, WindowsVersion()) > 0);
+            }
             else
             {
               Failed = true;
