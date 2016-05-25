@@ -967,7 +967,7 @@ __fastcall TCustomCommandPromptsDialog::TCustomCommandPromptsDialog(
 {
 
   FCustomCommandName = CustomCommandName;
-  Caption = FMTLOAD(CUSTOM_COMMANDS_PARAMS_TITLE, (StripEllipsis(FCustomCommandName)));
+  Caption = FMTLOAD(CUSTOM_COMMANDS_PARAMS_TITLE, (FCustomCommandName));
 
   FPrompts = Prompts;
   DebugAssert(FPrompts.size() == Defaults.size());
@@ -1022,7 +1022,7 @@ TWinInteractiveCustomCommand::TWinInteractiveCustomCommand(
   TCustomCommand * ChildCustomCommand, const UnicodeString CustomCommandName, const UnicodeString HelpKeyword) :
   TInteractiveCustomCommand(ChildCustomCommand)
 {
-  FCustomCommandName = StripHotkey(CustomCommandName);
+  FCustomCommandName = StripEllipsis(StripHotkey(CustomCommandName));
   FHelpKeyword = HelpKeyword;
 }
 //---------------------------------------------------------------------------

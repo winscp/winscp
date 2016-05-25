@@ -2680,7 +2680,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
 {
   FCommand = Command;
   FCustomCommandOptions = CustomCommandOptions;
-  Caption = FMTLOAD(EXTENSION_OPTIONS_CAPTION, (StripHotkey(FCommand->Name)));
+  Caption = FMTLOAD(EXTENSION_OPTIONS_CAPTION, (StripEllipsis(StripHotkey(FCommand->Name))));
   Width = ScaleByTextHeight(this, 400);
 
   for (int Index = 0; Index < FCommand->OptionsCount; Index++)
