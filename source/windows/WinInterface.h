@@ -485,11 +485,11 @@ void __fastcall ReleaseAnimationsModule();
 void __fastcall ForceTracing();
 #endif
 //---------------------------------------------------------------------------
-#define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow2"
+#define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow3"
 //---------------------------------------------------------------------------
 struct TCopyDataMessage
 {
-  enum { CommandCanCommandLine, CommandCommandLine };
+  enum { CommandCanCommandLine, CommandCommandLine, MainWindowCheck };
   static const unsigned int Version1 = 1;
 
   unsigned int Version;
@@ -499,6 +499,12 @@ struct TCopyDataMessage
   {
     wchar_t CommandLine[10240];
   };
+
+  TCopyDataMessage()
+  {
+    Version = TCopyDataMessage::Version1;
+    Command = static_cast<unsigned int>(-1);
+  }
 };
 //---------------------------------------------------------------------------
 class TWinInteractiveCustomCommand : public TInteractiveCustomCommand

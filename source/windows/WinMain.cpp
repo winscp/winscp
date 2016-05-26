@@ -447,95 +447,122 @@ void __fastcall MaintenanceTask()
   CoreMaintenanceTask();
 }
 //---------------------------------------------------------------------------
-struct TFindProcessMainWindowParam
-{
-  unsigned long ProcessId;
-  HWND HiddenWindow;
-  HWND MainWindow;
-};
+typedef std::vector<HWND> THandles;
+typedef std::map<unsigned long, THandles> TProcesses;
 //---------------------------------------------------------------------------
-BOOL __stdcall FindProcessMainWindow(HWND Handle, LPARAM AParam)
+BOOL __stdcall EnumOtherInstances(HWND Handle, LPARAM AParam)
 {
-  TFindProcessMainWindowParam & Param = *reinterpret_cast<TFindProcessMainWindowParam *>(AParam);
+  TProcesses & Processes = *reinterpret_cast<TProcesses *>(AParam);
 
   unsigned long ProcessId;
-  if ((Handle != Param.HiddenWindow) &&
-      (Param.MainWindow == 0) && // optimization
-      (GetWindowThreadProcessId(Handle, &ProcessId) != 0) &&
-      (ProcessId == Param.ProcessId))
+  if (GetWindowThreadProcessId(Handle, &ProcessId) != 0)
   {
-    TCopyDataMessage Message;
-    Message.Version = TCopyDataMessage::Version1;
-
-    COPYDATASTRUCT CopyData;
-    CopyData.cbData = sizeof(Message);
-    CopyData.lpData = &Message;
-
-    Message.Command = TCopyDataMessage::CommandCanCommandLine;
-
-    LRESULT SendResult =
-      SendMessage(Handle, WM_COPYDATA, reinterpret_cast<WPARAM>(HInstance),
-        reinterpret_cast<LPARAM>(&CopyData));
-
-    if (SendResult > 0)
-    {
-      Param.MainWindow = Handle;
-    }
+    Processes[ProcessId].push_back(Handle);
   }
 
   return TRUE;
 }
 //---------------------------------------------------------------------------
-bool __fastcall SendToAnotherInstance()
+static bool __fastcall SendCopyDataMessage(HWND Window, TCopyDataMessage & Message)
 {
-  HWND HiddenWindow = FindWindow(HIDDEN_WINDOW_NAME, NULL);
-  bool Result = (HiddenWindow != NULL);
-  if (Result)
+  COPYDATASTRUCT CopyData;
+  CopyData.cbData = sizeof(Message);
+  CopyData.lpData = &Message;
+
+  LRESULT SendResult =
+    SendMessage(Window, WM_COPYDATA,
+       reinterpret_cast<WPARAM>(HInstance), reinterpret_cast<LPARAM>(&CopyData));
+  bool Result = (SendResult > 0);
+  return Result;
+}
+//---------------------------------------------------------------------------
+static void __fastcall FindOtherInstances(THandles & OtherInstances)
+{
+  TProcesses Processes;
+
+  // FindWindow is optimization (if there's no hidden window, no point enumerating all windows to find some)
+  if ((FindWindow(HIDDEN_WINDOW_NAME, NULL) != NULL) &&
+      EnumWindows(EnumOtherInstances, reinterpret_cast<LPARAM>(&Processes)))
   {
     TCopyDataMessage Message;
-    Message.Version = TCopyDataMessage::Version1;
 
-    COPYDATASTRUCT CopyData;
-    CopyData.cbData = sizeof(Message);
-    CopyData.lpData = &Message;
+    Message.Command = TCopyDataMessage::MainWindowCheck;
 
-    // this test is actually redundant, it just a kind of optimization to avoid expensive
-    // EnumWindows, we can achieve the same by testing FindProcessMainWindowParam.MainWindow,
-    // before sending CommandCommandLine
-    Message.Command = TCopyDataMessage::CommandCanCommandLine;
-    LRESULT SendResult =
-      SendMessage(HiddenWindow, WM_COPYDATA, reinterpret_cast<WPARAM>(HInstance),
-        reinterpret_cast<LPARAM>(&CopyData));
-    Result = (SendResult > 0);
-
-    if (Result)
+    TProcesses::const_iterator ProcessI = Processes.begin();
+    while (ProcessI != Processes.end())
     {
-      TFindProcessMainWindowParam FindProcessMainWindowParam;
-      if (GetWindowThreadProcessId(HiddenWindow, &FindProcessMainWindowParam.ProcessId) != 0)
+      HWND HiddenWindow = NULL;
+      THandles::const_iterator WindowI = ProcessI->second.begin();
+
+      while ((HiddenWindow == NULL) && (WindowI != ProcessI->second.end()))
       {
-        FindProcessMainWindowParam.HiddenWindow = HiddenWindow;
-        FindProcessMainWindowParam.MainWindow = 0;
-        if (EnumWindows(FindProcessMainWindow, reinterpret_cast<LPARAM>(&FindProcessMainWindowParam)) &&
-            (FindProcessMainWindowParam.MainWindow != 0))
+        wchar_t ClassName[1024];
+        if (GetClassName(*WindowI, ClassName, LENOF(ClassName)) != 0)
         {
-          // Restore window, if minimized
-          ShowWindow(FindProcessMainWindowParam.MainWindow, SW_RESTORE);
-          // bring it to foreground
-          SetForegroundWindow(FindProcessMainWindowParam.MainWindow);
+          NULL_TERMINATE(ClassName);
+
+          if (wcscmp(ClassName, HIDDEN_WINDOW_NAME) == 0)
+          {
+            HiddenWindow = *WindowI;
+          }
+        }
+        WindowI++;
+      }
+
+      if (HiddenWindow != NULL)
+      {
+        WindowI = ProcessI->second.begin();
+
+        while (WindowI != ProcessI->second.end())
+        {
+          if (*WindowI != HiddenWindow) // optimization
+          {
+            if (SendCopyDataMessage(*WindowI, Message))
+            {
+              OtherInstances.push_back(*WindowI);
+              break;
+            }
+          }
+          WindowI++;
         }
       }
+
+      ProcessI++;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall SendToAnotherInstance()
+{
+  THandles OtherInstances;
+  FindOtherInstances(OtherInstances);
+
+  bool Result = false;
+  THandles::const_iterator I = OtherInstances.begin();
+  while (!Result && (I != OtherInstances.end()))
+  {
+    HWND Handle = *I;
+
+    TCopyDataMessage Message;
+    Message.Command = TCopyDataMessage::CommandCanCommandLine;
+
+    if (SendCopyDataMessage(Handle, Message))
+    {
+      // Restore window, if minimized
+      ShowWindow(Handle, SW_RESTORE);
+      // bring it to foreground
+      SetForegroundWindow(Handle);
 
       Message.Command = TCopyDataMessage::CommandCommandLine;
       wcsncpy(Message.CommandLine, CmdLine, LENOF(Message.CommandLine));
       NULL_TERMINATE(Message.CommandLine);
 
-
-      LRESULT SendResult =
-        SendMessage(HiddenWindow, WM_COPYDATA,
-          reinterpret_cast<WPARAM>(HInstance), reinterpret_cast<LPARAM>(&CopyData));
-      Result = (SendResult > 0);
+      Result = SendCopyDataMessage(Handle, Message);
     }
+
+    I++;
   }
+
   return Result;
 }
 //---------------------------------------------------------------------------

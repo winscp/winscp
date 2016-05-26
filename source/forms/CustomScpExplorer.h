@@ -289,7 +289,6 @@ private:
   void __fastcall EnableDDTransferConfirmation(TObject * Sender);
   void __fastcall CollectItemsWithTextDisplayMode(TWinControl * Control);
   void __fastcall CreateHiddenWindow();
-  static LRESULT WINAPI HiddenWindowProc(HWND HWnd, UINT Message, WPARAM WParam, LPARAM LParam);
   bool __fastcall IsQueueAutoPopup();
   void __fastcall UpdateSessionsPageControlHeight();
   TDragDropFilesEx * __fastcall CreateDragDropFilesEx();

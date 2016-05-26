@@ -367,31 +367,6 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 
 }
 //---------------------------------------------------------------------------
-LRESULT WINAPI TCustomScpExplorerForm::HiddenWindowProc(
-  HWND HWnd, UINT Message, WPARAM WParam, LPARAM LParam)
-{
-  LRESULT Result;
-  if (Message == WM_COPYDATA)
-  {
-    LONG_PTR Ptr = GetWindowLongPtr(HWnd, GWLP_USERDATA);
-    TCustomScpExplorerForm * Form = reinterpret_cast<TCustomScpExplorerForm *>(Ptr);
-
-    TMessage AMessage;
-    AMessage.Msg = Message;
-    AMessage.WParam = WParam;
-    AMessage.LParam = LParam;
-    AMessage.Result = 0;
-    Form->WMCopyData(AMessage);
-
-    Result = AMessage.Result;
-  }
-  else
-  {
-    Result = DefWindowProc(HWnd, Message, WParam, LParam);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMCopyData(TMessage & Message)
 {
   PCOPYDATASTRUCT CopyData = reinterpret_cast<PCOPYDATASTRUCT>(Message.LParam);
@@ -419,9 +394,13 @@ void __fastcall TCustomScpExplorerForm::WMCopyData(TMessage & Message)
           }
           break;
 
-      default:
-        Result = false;
-        break;
+        case TCopyDataMessage::MainWindowCheck:
+          Result = true;
+          break;
+
+        default:
+          Result = false;
+          break;
       }
     }
   }
@@ -432,7 +411,7 @@ void __fastcall TCustomScpExplorerForm::WMCopyData(TMessage & Message)
 void __fastcall TCustomScpExplorerForm::CreateHiddenWindow()
 {
   WNDCLASS WindowClass = {0};
-  WindowClass.lpfnWndProc = HiddenWindowProc;
+  WindowClass.lpfnWndProc = DefWindowProc;
   WindowClass.hInstance = HInstance;
   WindowClass.lpszClassName = HIDDEN_WINDOW_NAME;
 
@@ -442,10 +421,6 @@ void __fastcall TCustomScpExplorerForm::CreateHiddenWindow()
   {
     FHiddenWindow = CreateWindow(HIDDEN_WINDOW_NAME, L"",
       WS_POPUP, 0, 0, 0, 0, 0, 0, HInstance, NULL);
-    if (FHiddenWindow != NULL)
-    {
-      SetWindowLongPtr(FHiddenWindow, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-    }
   }
 }
 //---------------------------------------------------------------------------
