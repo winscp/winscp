@@ -2109,6 +2109,7 @@ void __fastcall Usage(TConsole * Console)
     PrintUsageSyntax(Console, L"[mysession] /edit <path>");
     PrintUsageSyntax(Console, L"[mysession] /synchronize [local_dir] [remote_dir] [/defaults]");
     PrintUsageSyntax(Console, L"[mysession] /keepuptodate [local_dir] [remote_dir] [/defaults]");
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [path]", (LowerCase(REFRESH_SWITCH))));
     PrintUsageSyntax(Console, L"[mysession] [/privatekey=<file>] [/hostkey=<fingerprint>]");
     PrintUsageSyntax(Console, L"[mysession] [/clientcert=<file>] [/certificate=<fingerprint>]");
     PrintUsageSyntax(Console, L"[mysession] [/passive[=on|off]] [/implicit|explicit]");

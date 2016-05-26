@@ -367,6 +367,44 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RefreshPanel(const UnicodeString & Session, const UnicodeString & Path)
+{
+
+  std::unique_ptr<TSessionData> Data;
+  if (!Session.IsEmpty())
+  {
+    bool DefaultsOnly;
+    Data.reset(StoredSessions->ParseUrl(Session, NULL, DefaultsOnly));
+  }
+
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  for (int Index = 0; Index < Manager->Count; Index++)
+  {
+    TTerminal * Terminal = Manager->Terminals[Index];
+    if (Session.IsEmpty() ||
+        Terminal->SessionData->IsSameSite(Data.get()))
+    {
+      if (Path.IsEmpty())
+      {
+        Terminal->ClearCaches();
+      }
+      else
+      {
+        Terminal->DirectoryModified(Path, true);
+      }
+    }
+  }
+
+  // We should flag a pending refresh for the background terminals or busy foreground terminals
+  if ((Terminal != NULL) && Terminal->Active &&
+      CanCommandLineFromAnotherInstance() &&
+      (Session.IsEmpty() || Terminal->SessionData->IsSameSite(Data.get())) &&
+      (Path.IsEmpty() || UnixIsChildPath(Path, Terminal->CurrentDirectory)))
+  {
+    Terminal->ReloadDirectory();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMCopyData(TMessage & Message)
 {
   PCOPYDATASTRUCT CopyData = reinterpret_cast<PCOPYDATASTRUCT>(Message.LParam);
@@ -392,6 +430,10 @@ void __fastcall TCustomScpExplorerForm::WMCopyData(TMessage & Message)
             UnicodeString CommandLine(Message.CommandLine);
             Result = CommandLineFromAnotherInstance(CommandLine);
           }
+          break;
+
+        case TCopyDataMessage::RefreshPanel:
+          RefreshPanel(Message.Refresh.Session, Message.Refresh.Path);
           break;
 
         case TCopyDataMessage::MainWindowCheck:

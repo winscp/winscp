@@ -564,6 +564,7 @@ protected:
   bool __fastcall DraggingAllFilesFromDirView(TOperationSide Side, TStrings * FileList);
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
   TSessionData * __fastcall SessionDataForCode();
+  void __fastcall RefreshPanel(const UnicodeString & Session, const UnicodeString & Path);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

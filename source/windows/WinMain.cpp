@@ -566,6 +566,29 @@ bool __fastcall SendToAnotherInstance()
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall Refresh(const UnicodeString & Session, const UnicodeString & Path)
+{
+  THandles OtherInstances;
+  FindOtherInstances(OtherInstances);
+
+  THandles::const_iterator I = OtherInstances.begin();
+  while (I != OtherInstances.end())
+  {
+    HWND Handle = *I;
+
+    TCopyDataMessage Message;
+    Message.Command = TCopyDataMessage::RefreshPanel;
+    wcsncpy(Message.Refresh.Session, Session.c_str(), LENOF(Message.Refresh.Session));
+    NULL_TERMINATE(Message.Refresh.Session);
+    wcsncpy(Message.Refresh.Path, Path.c_str(), LENOF(Message.Refresh.Path));
+    NULL_TERMINATE(Message.Refresh.Path);
+
+    SendCopyDataMessage(Handle, Message);
+
+    I++;
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall ShowUpdatesIfAvailable()
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -838,7 +861,7 @@ int __fastcall Execute()
     }
     else
     {
-      enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize, pcEdit } ParamCommand;
+      enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize, pcEdit, pcRefresh } ParamCommand;
       ParamCommand = pcNone;
       UnicodeString AutoStartSession;
       UnicodeString DownloadFile;
@@ -888,10 +911,17 @@ int __fastcall Execute()
         {
           ParamCommand = pcEdit;
         }
+        else if (Params->FindSwitch(REFRESH_SWITCH, CommandParams, 1))
+        {
+          ParamCommand = pcRefresh;
+        }
       }
 
       if (Params->ParamCount > 0)
       {
+        AutoStartSession = Params->Param[1];
+        Params->ParamsProcessed(1, 1);
+
         if ((ParamCommand == pcNone) &&
             (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
             !Params->FindSwitch(NEWINSTANCE_SWICH) &&
@@ -900,8 +930,6 @@ int __fastcall Execute()
           Configuration->Usage->Inc(L"SendToAnotherInstance");
           return 0;
         }
-        AutoStartSession = Params->Param[1];
-        Params->ParamsProcessed(1, 1);
         UnicodeString CounterName;
         if (Params->FindSwitch(JUMPLIST_SWITCH))
         {
@@ -928,6 +956,12 @@ int __fastcall Execute()
       else
       {
         AutoStartSession = WinConfiguration->AutoStartSession;
+      }
+
+      if (ParamCommand == pcRefresh)
+      {
+        Refresh(AutoStartSession, (CommandParams->Count > 0 ? CommandParams->Strings[0] : UnicodeString()));
+        return 0;
       }
 
       // from now flash message boxes on background

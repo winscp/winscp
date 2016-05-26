@@ -489,7 +489,7 @@ void __fastcall ForceTracing();
 //---------------------------------------------------------------------------
 struct TCopyDataMessage
 {
-  enum { CommandCanCommandLine, CommandCommandLine, MainWindowCheck };
+  enum { CommandCanCommandLine, CommandCommandLine, MainWindowCheck, RefreshPanel };
   static const unsigned int Version1 = 1;
 
   unsigned int Version;
@@ -498,6 +498,12 @@ struct TCopyDataMessage
   union
   {
     wchar_t CommandLine[10240];
+
+    struct
+    {
+      wchar_t Session[1024];
+      wchar_t Path[1024];
+    } Refresh;
   };
 
   TCopyDataMessage()
