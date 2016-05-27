@@ -2969,6 +2969,11 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
       Option.Kind = okSeparator;
       Result = !Option.IsControl;
     }
+    else if (KindName == L"group")
+    {
+      Option.Kind = okGroup;
+      Result = !Option.IsControl;
+    }
     else if (KindName == L"textbox")
     {
       Option.Kind = okTextBox;
@@ -3082,6 +3087,7 @@ UnicodeString __fastcall TCustomCommandType::GetOptionCommand(const TOption & Op
     case okLabel:
     case okLink:
     case okSeparator:
+    case okGroup:
     default:
       DebugFail();
   }

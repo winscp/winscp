@@ -16,7 +16,7 @@ object CustomDialog: TCustomDialog
   PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
-    Left = 69
+    Left = 68
     Top = 9
     Width = 75
     Height = 25
@@ -27,7 +27,7 @@ object CustomDialog: TCustomDialog
     TabOrder = 2
   end
   object CancelButton: TButton
-    Left = 157
+    Left = 156
     Top = 9
     Width = 75
     Height = 25
@@ -38,7 +38,7 @@ object CustomDialog: TCustomDialog
     TabOrder = 0
   end
   object HelpButton: TButton
-    Left = 244
+    Left = 243
     Top = 9
     Width = 75
     Height = 25

@@ -2733,6 +2733,10 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
       AddText(Label);
       Control = Label;
     }
+    else if (Option.Kind == TCustomCommandType::okGroup)
+    {
+      StartGroup(Option.Caption);
+    }
     else if (Option.Kind == TCustomCommandType::okSeparator)
     {
       AddSeparator();
@@ -2745,10 +2749,10 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
     {
       THistoryComboBox * ComboBox = CreateHistoryComboBox(Option, Value);
       TButton * Button = new TButton(this);
-      Button->Parent = this;
+      Button->Parent = GetDefaultParent();
       Button->Width = HelpButton->Width;
-      Button->Left = HelpButton->Left;
-      ComboBox->Width = HelpButton->Left - ComboBox->Left - ScaleByTextHeight(this, 6);
+      Button->Left = GetDefaultParent()->ClientWidth - Button->Width - HorizontalMargin;
+      ComboBox->Width = Button->Left - ComboBox->Left - ScaleByTextHeight(this, 6);
       Button->Top = ComboBox->Top - ScaleByTextHeight(this, 2);
       Button->Tag = Index;
       Button->Caption = LoadStr(EXTENSION_OPTIONS_BROWSE);

@@ -35,6 +35,7 @@ __fastcall TCustomDialog::TCustomDialog(UnicodeString AHelpKeyword)
   FPrePos = FPos;
   FHorizontalMargin = ScaleByTextHeight(this, 8);
   FIndent = FHorizontalMargin;
+  FGroupBox = NULL;
 
   HelpKeyword = AHelpKeyword;
 
@@ -114,7 +115,7 @@ void __fastcall TCustomDialog::AddImage(const UnicodeString & ImageName)
 {
   TImage * Image = new TImage(this);
   Image->Name = L"Image";
-  Image->Parent = this;
+  Image->Parent = GetDefaultParent();
   LoadDialogImage(Image, ImageName);
   Image->SetBounds(FIndent, FPos + ScaleByTextHeight(this, 3), Image->Picture->Width, Image->Picture->Height);
   FIndent += Image->Width + ScaleByTextHeight(this, 12);
@@ -122,13 +123,23 @@ void __fastcall TCustomDialog::AddImage(const UnicodeString & ImageName)
 //---------------------------------------------------------------------------
 int __fastcall TCustomDialog::GetMaxControlWidth(TControl * Control)
 {
-  return ClientWidth - Control->Left - FHorizontalMargin;
+  return GetDefaultParent()->ClientWidth - Control->Left - FHorizontalMargin;
+}
+//---------------------------------------------------------------------------
+TWinControl * __fastcall TCustomDialog::GetDefaultParent()
+{
+  return (FGroupBox != NULL) ? FGroupBox : static_cast<TWinControl *>(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AdjustHeight(TControl * Control)
 {
   FPos = Control->Top + Control->Height + FControlPadding;
-  ClientHeight = ClientHeight + (FPos - FPrePos);
+  int Delta = (FPos - FPrePos);
+  ClientHeight = ClientHeight + Delta;
+  if (FGroupBox != NULL)
+  {
+    FGroupBox->Height = FGroupBox->Height + Delta;
+  }
   FPrePos = FPos;
 }
 //---------------------------------------------------------------------------
@@ -155,11 +166,11 @@ TLabel * __fastcall TCustomDialog::CreateLabel(UnicodeString Label)
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * Label, bool OneLine)
 {
-  Edit->Parent = this;
+  Edit->Parent = GetDefaultParent();
   // this updates Height property to real value
   Edit->HandleNeeded();
 
-  Label->Parent = this;
+  Label->Parent = GetDefaultParent();
   Label->Left = FIndent;
 
   if (OneLine)
@@ -177,7 +188,7 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
   Edit->Top = FPos;
   if (OneLine)
   {
-    Edit->Left = ClientWidth - FHorizontalMargin - Edit->Width;
+    Edit->Left = GetDefaultParent()->ClientWidth - FHorizontalMargin - Edit->Width;
   }
   else
   {
@@ -231,7 +242,7 @@ void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label,
     Width = Max(Width, HelpButton->Width);
 
     Combo->Width = Width;
-    Combo->Left = ClientWidth - FHorizontalMargin - Width;
+    Combo->Left = GetDefaultParent()->ClientWidth - FHorizontalMargin - Width;
   }
 
   TComboBox * PublicCombo = reinterpret_cast<TComboBox *>(Combo);
@@ -251,7 +262,7 @@ void __fastcall TCustomDialog::ScaleButtonControl(TButtonControl * Control)
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
 {
-  Control->Parent = this;
+  Control->Parent = GetDefaultParent();
   Control->Left = FIndent + ScaleByTextHeight(this, 6);
   Control->Top = FPos;
   Control->Width = GetMaxControlWidth(Control);
@@ -270,7 +281,7 @@ void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddText(TLabel * Label)
 {
-  Label->Parent = this;
+  Label->Parent = GetDefaultParent();
 
   Label->WordWrap = true;
   Label->Left = FIndent;
@@ -290,7 +301,7 @@ void __fastcall TCustomDialog::AddText(TLabel * Label)
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddText(TStaticText * Label)
 {
-  Label->Parent = this;
+  Label->Parent = GetDefaultParent();
 
   Label->Left = FIndent;
   Label->Width = GetMaxControlWidth(Label);
@@ -304,7 +315,7 @@ void __fastcall TCustomDialog::AddText(TStaticText * Label)
 void __fastcall TCustomDialog::AddSeparator()
 {
   TBevel * Bevel = new TBevel(this);
-  Bevel->Parent = this;
+  Bevel->Parent = GetDefaultParent();
 
   Bevel->Left = FIndent;
   Bevel->Top = FPos;
@@ -312,6 +323,34 @@ void __fastcall TCustomDialog::AddSeparator()
   Bevel->Width = GetMaxControlWidth(Bevel);
 
   AdjustHeight(Bevel);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::StartGroup(const UnicodeString & Caption)
+{
+  if (FGroupBox != NULL)
+  {
+    FIndent = FGroupBox->Left;
+    FPos = FGroupBox->Top + FGroupBox->Height + FControlPadding;
+    FPrePos = FPos;
+    FGroupBox = NULL;
+  }
+
+  TGroupBox * GroupBox = new TGroupBox(this);
+  GroupBox->Parent = this;
+  GroupBox->Caption = Caption;
+
+  GroupBox->Left = FIndent;
+  GroupBox->Top = FPos;
+  GroupBox->Height = ScaleByTextHeight(GroupBox, 20);
+  GroupBox->Width = GetMaxControlWidth(GroupBox);
+
+  AdjustHeight(GroupBox);
+
+  FPos = ScaleByTextHeight(this, 16);
+  FPrePos = FPos;
+  FIndent = FHorizontalMargin;
+
+  FGroupBox = GroupBox;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

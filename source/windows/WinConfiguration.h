@@ -711,7 +711,7 @@ public:
   __fastcall TCustomCommandType();
   __fastcall TCustomCommandType(const TCustomCommandType & Other);
 
-  enum TOptionKind { okUnknown, okLabel, okLink, okSeparator, okTextBox, okFile, okDropDownList, okComboBox, okCheckBox };
+  enum TOptionKind { okUnknown, okLabel, okLink, okSeparator, okGroup, okTextBox, okFile, okDropDownList, okComboBox, okCheckBox };
 
   class TOption
   {

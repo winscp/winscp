@@ -23,10 +23,12 @@ private:
   int FHorizontalMargin;
   int FControlPadding;
   short FCount;
+  TGroupBox * FGroupBox;
 
   void __fastcall Change(TObject * Sender);
   void __fastcall Changed();
   int __fastcall GetMaxControlWidth(TControl * Control);
+  int __fastcall GetParentClientWidth();
   void __fastcall AdjustHeight(TControl * Control);
 
 protected:
@@ -40,6 +42,7 @@ protected:
 public:
   __fastcall TCustomDialog(UnicodeString HelpKeyword);
 
+  void __fastcall StartGroup(const UnicodeString & Caption);
   TLabel * __fastcall CreateLabel(UnicodeString Label);
   TCheckBox * __fastcall CreateAndAddCheckBox(const UnicodeString & Caption);
   void __fastcall AddEditLikeControl(TWinControl * Edit, TLabel * Label, bool OneLine = false);
@@ -53,6 +56,8 @@ public:
   void __fastcall AddSeparator();
 
   void __fastcall ScaleButtonControl(TButtonControl * Control);
+  TWinControl * __fastcall GetDefaultParent();
+  __property int HorizontalMargin = { read = FHorizontalMargin };
 
   bool __fastcall Execute();
 };
