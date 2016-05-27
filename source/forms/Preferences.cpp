@@ -2733,6 +2733,10 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
       AddText(Label);
       Control = Label;
     }
+    else if (Option.Kind == TCustomCommandType::okSeparator)
+    {
+      AddSeparator();
+    }
     else if (Option.Kind == TCustomCommandType::okTextBox)
     {
       Control = CreateHistoryComboBox(Option, Value);

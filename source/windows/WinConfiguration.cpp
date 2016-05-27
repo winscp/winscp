@@ -2949,9 +2949,7 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
   UnicodeString KindName;
   bool Result =
     CutToken(Buf, Option.Id) &&
-    CutToken(Buf, KindName) &&
-    CutToken(Buf, Option.Caption);
-    (CutToken(Buf, Option.Default) || !Option.IsControl);
+    CutToken(Buf, KindName);
 
   if (Result)
   {
@@ -2964,6 +2962,11 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
     else if (KindName == L"link")
     {
       Option.Kind = okLink;
+      Result = !Option.IsControl;
+    }
+    else if (KindName == L"separator")
+    {
+      Option.Kind = okSeparator;
       Result = !Option.IsControl;
     }
     else if (KindName == L"textbox")
@@ -2996,10 +2999,22 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
       Option.Kind = okUnknown;
     }
 
-    UnicodeString Param;
-    while (CutToken(Buf, Param))
+    if ((Option.Kind != okUnknown) &&
+        (Option.Kind != okSeparator))
     {
-      Option.Params.push_back(Param);
+      Result = CutToken(Buf, Option.Caption);
+
+      if (Result && Option.IsControl)
+      {
+        if (CutToken(Buf, Option.Default))
+        {
+          UnicodeString Param;
+          while (CutToken(Buf, Param))
+          {
+            Option.Params.push_back(Param);
+          }
+        }
+      }
     }
   }
 
@@ -3066,6 +3081,7 @@ UnicodeString __fastcall TCustomCommandType::GetOptionCommand(const TOption & Op
 
     case okLabel:
     case okLink:
+    case okSeparator:
     default:
       DebugFail();
   }

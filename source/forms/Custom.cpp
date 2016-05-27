@@ -301,6 +301,19 @@ void __fastcall TCustomDialog::AddText(TStaticText * Label)
   AddWinControl(Label);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddSeparator()
+{
+  TBevel * Bevel = new TBevel(this);
+  Bevel->Parent = this;
+
+  Bevel->Left = FIndent;
+  Bevel->Top = FPos;
+  Bevel->Height = 2;
+  Bevel->Width = GetMaxControlWidth(Bevel);
+
+  AdjustHeight(Bevel);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 class TSaveSessionDialog : public TCustomDialog
 {

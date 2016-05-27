@@ -50,6 +50,7 @@ public:
   void __fastcall AddWinControl(TWinControl * Control);
   void __fastcall AddText(TLabel * Label);
   void __fastcall AddText(TStaticText * Label);
+  void __fastcall AddSeparator();
 
   void __fastcall ScaleButtonControl(TButtonControl * Control);
 
