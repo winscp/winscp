@@ -2391,8 +2391,8 @@ UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption)
 }
 //---------------------------------------------------------------------------
 // duplicated in console's Main.cpp
-bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
-  UnicodeString * RawToken, UnicodeString * Separator)
+static bool __fastcall DoCutToken(UnicodeString & Str, UnicodeString & Token,
+  UnicodeString * RawToken, UnicodeString * Separator, bool EscapeQuotesInQuotesOnly)
 {
   bool Result;
 
@@ -2416,11 +2416,10 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
       {
         break;
       }
-      // We should escape quotes only within quotes
+      // With EscapeQuotesInQuotesOnly we escape quotes only within quotes
       // otherwise the "" means " (quote), but it should mean empty string.
-      // Or have a special case for bare "".
       else if ((Str[Index] == L'"') && (Index + 1 <= Str.Length()) &&
-        (Str[Index + 1] == L'"'))
+        (Str[Index + 1] == L'"') && (!EscapeQuotesInQuotesOnly || Quoting))
       {
         Index += 2;
         Token += L'"';
@@ -2469,6 +2468,18 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
+  UnicodeString * RawToken, UnicodeString * Separator)
+{
+  return DoCutToken(Str, Token, RawToken, Separator, false);
+}
+//---------------------------------------------------------------------------
+bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
+  UnicodeString * RawToken, UnicodeString * Separator)
+{
+  return DoCutToken(Str, Token, RawToken, Separator, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter)

@@ -2948,8 +2948,8 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
   UnicodeString Buf = Value;
   UnicodeString KindName;
   bool Result =
-    CutToken(Buf, Option.Id) &&
-    CutToken(Buf, KindName);
+    CutTokenEx(Buf, Option.Id) &&
+    CutTokenEx(Buf, KindName);
 
   if (Result)
   {
@@ -3007,14 +3007,14 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
     if ((Option.Kind != okUnknown) &&
         (Option.Kind != okSeparator))
     {
-      Result = CutToken(Buf, Option.Caption);
+      Result = CutTokenEx(Buf, Option.Caption);
 
       if (Result && Option.IsControl)
       {
-        if (CutToken(Buf, Option.Default))
+        if (CutTokenEx(Buf, Option.Default))
         {
           UnicodeString Param;
-          while (CutToken(Buf, Param))
+          while (CutTokenEx(Buf, Param))
           {
             Option.Params.push_back(Param);
           }

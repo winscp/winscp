@@ -115,6 +115,8 @@ UnicodeString __fastcall LoadStrPart(int Ident, int Part);
 UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption);
 bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
   UnicodeString * RawToken = NULL, UnicodeString * Separator = NULL);
+bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
+  UnicodeString * RawToken = NULL, UnicodeString * Separator = NULL);
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 bool __fastcall IsWinVista();
 bool __fastcall IsWin7();
