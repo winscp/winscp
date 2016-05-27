@@ -38,7 +38,7 @@ __fastcall TGlyphsModule::TGlyphsModule(TComponent* Owner)
   {
     // Do not have a separate 96 DPI module, as this module needs to
     // have the images loaded as they are used on design time.
-    // Performace impact of loading 96 DPI images when they are not needed is not that big.
+    // Performance impact of loading 96 DPI images when they are not needed is not that big.
     ScaledModule = NULL;
   }
 
