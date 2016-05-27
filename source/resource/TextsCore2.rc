@@ -188,7 +188,7 @@ BEGIN
     "  chmod 644 *.html\n"
   SCRIPT_LN_HELP,
     "ln <target> <symlink>\n"
-    "  Creates remote symlink.\n"
+    "  Creates remote symbolic link.\n"
     "alias:\n"
     "  symlink\n"
     "example:\n"
