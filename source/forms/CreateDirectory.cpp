@@ -63,6 +63,7 @@ void __fastcall TCreateDirectoryDialog::UpdateControls()
   EnableControl(OKBtn, !DirectoryEdit->Text.Trim().IsEmpty());
   EnableControl(SetRightsCheck, FLAGSET(FAllowedChanges, cpMode));
   EnableControl(RightsFrame, SetRightsCheck->Enabled && SetRightsCheck->Checked);
+  EnableControl(SaveSettingsCheck, (FAllowedChanges != 0));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCreateDirectoryDialog::Execute(UnicodeString & Directory,
