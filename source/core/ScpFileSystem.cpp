@@ -1437,12 +1437,11 @@ void __fastcall TSCPFileSystem::SCPResponse(bool * GotLastLine)
           throw;
         }
       }
-        else
-      if (Resp == 1)
+      else if (Resp == 1)
       {
         FTerminal->LogEvent(L"SCP remote side error (1):");
       }
-        else
+      else
       {
         FTerminal->LogEvent(L"SCP remote side fatal error (2):");
       }
@@ -1451,7 +1450,7 @@ void __fastcall TSCPFileSystem::SCPResponse(bool * GotLastLine)
       {
         THROW_FILE_SKIPPED(NULL, Msg);
       }
-        else
+      else
       {
         THROW_SCP_ERROR(NULL, Msg);
       }
