@@ -143,7 +143,9 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     AddToList(PuttyParams, Params, L" ");
 
-    if (!ExecuteShell(Program, PuttyParams))
+    // PuTTY is started in its binary directory to allow relative paths in private key,
+    // when opening PuTTY's own stored session.
+    if (!ExecuteShell(Program, PuttyParams, true))
     {
       throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
     }
@@ -185,14 +187,16 @@ static bool __fastcall CopyShellCommandToClipboard(const UnicodeString & Path, c
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params)
+bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params, bool ChangeWorkingDirectory)
 {
   bool Result = true;
   if (!CopyShellCommandToClipboard(Path, Params))
   {
+    UnicodeString Directory = ExtractFilePath(Path);
+    const wchar_t * PDirectory = (ChangeWorkingDirectory ? Directory.c_str() : NULL);
     Result =
       ((int)ShellExecute(NULL, L"open", (wchar_t*)Path.data(),
-        (wchar_t*)Params.data(), NULL, SW_SHOWNORMAL) > 32);
+        (wchar_t*)Params.data(), PDirectory, SW_SHOWNORMAL) > 32);
   }
   return Result;
 }

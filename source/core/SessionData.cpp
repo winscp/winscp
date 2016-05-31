@@ -865,7 +865,9 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   if (PuttyExport)
   {
     WRITE_DATA(StringRaw, UserName);
-    WRITE_DATA(StringRaw, PublicKeyFile);
+    // PuTTY is started in its binary directory to allow relative paths when opening PuTTY's own stored session.
+    // To allow relative paths in our sessions, we have to expand them for PuTTY.
+    WRITE_DATA_EX(StringRaw, L"PublicKeyFile", PublicKeyFile, ExpandFileName);
   }
   else
   {
