@@ -131,7 +131,8 @@ bool __fastcall DoSaveWorkspaceDialog(UnicodeString & WorkspaceName,
 class TShortCuts;
 bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
   const TShortCuts & ShortCuts, UnicodeString HelpKeyword);
-bool __fastcall DoCustomCommandOptionsDialog(const TCustomCommandType * Command, TStrings * CustomCommandOptions);
+bool __fastcall DoCustomCommandOptionsDialog(
+  const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags);
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();

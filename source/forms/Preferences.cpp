@@ -1109,7 +1109,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     bool ExtensionSelected = CommandSelected && (CommandList == FExtensionList);
     EnableControl(EditCommandButton, CustomCommandSelected);
     EditCommandButton->Visible = !ExtensionSelected;
-    EnableControl(ConfigureCommandButton, ExtensionSelected && (CommandList->Commands[CommandIndex]->OptionsCount > 0));
+    EnableControl(ConfigureCommandButton, ExtensionSelected && CommandList->Commands[CommandIndex]->AnyOptionWithFlag(TCustomCommandType::ofConfig));
     ConfigureCommandButton->Visible = ExtensionSelected;
     EnableControl(RemoveCommandButton, CommandSelected);
     EnableControl(UpCommandButton, CommandSelected && (CommandIndex > 0));
@@ -2657,7 +2657,7 @@ void __fastcall TPreferencesDialog::ConfigureCommand()
   int Index = CustomCommandsView->ItemIndex;
   const TCustomCommandType * Command = GetCommandList(Index)->Commands[GetCommandIndex(Index)];
 
-  DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get());
+  DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get(), TCustomCommandType::ofConfig);
   UpdateCustomCommandsView();
 }
 //---------------------------------------------------------------------------

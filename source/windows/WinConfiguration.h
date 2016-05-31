@@ -1,3 +1,4 @@
+
 //---------------------------------------------------------------------------
 #ifndef WinConfigurationH
 #define WinConfigurationH
@@ -712,6 +713,7 @@ public:
   __fastcall TCustomCommandType(const TCustomCommandType & Other);
 
   enum TOptionKind { okUnknown, okLabel, okLink, okSeparator, okGroup, okTextBox, okFile, okDropDownList, okComboBox, okCheckBox };
+  enum TOptionFlag { ofRun = 0x01, ofConfig = 0x02 };
 
   class TOption
   {
@@ -719,6 +721,7 @@ public:
     __fastcall TOption() {}
 
     UnicodeString Id;
+    unsigned int Flags;
     TOptionKind Kind;
     UnicodeString Caption;
     UnicodeString Default;
@@ -751,6 +754,7 @@ public:
 
   __property int OptionsCount = { read = GetOptionsCount };
   const TOption & __fastcall GetOption(int Index) const;
+  bool __fastcall AnyOptionWithFlag(unsigned int Flag) const;
   UnicodeString __fastcall GetOptionKey(const TOption & Option) const;
   UnicodeString __fastcall GetCommandWithExpandedOptions(TStrings * CustomCommandOptions) const;
 

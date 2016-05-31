@@ -1656,7 +1656,16 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   const TCustomCommandType & ACommand, TStrings * ALocalFileList)
 {
 
-  UnicodeString CommandCommand = ACommand.GetCommandWithExpandedOptions(WinConfiguration->CustomCommandOptions);
+  std::unique_ptr<TStrings> CustomCommandOptions(CloneStrings(WinConfiguration->CustomCommandOptions));
+  if (ACommand.AnyOptionWithFlag(TCustomCommandType::ofRun))
+  {
+    if (!DoCustomCommandOptionsDialog(&ACommand, CustomCommandOptions.get(), TCustomCommandType::ofRun))
+    {
+      Abort();
+    }
+  }
+
+  UnicodeString CommandCommand = ACommand.GetCommandWithExpandedOptions(CustomCommandOptions.get());
 
   if (FLAGCLEAR(ACommand.Params, ccLocal))
   {

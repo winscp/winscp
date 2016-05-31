@@ -2947,76 +2947,104 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
 {
   UnicodeString Buf = Value;
   UnicodeString KindName;
-  bool Result =
-    CutTokenEx(Buf, Option.Id) &&
-    CutTokenEx(Buf, KindName);
+  bool Result = CutTokenEx(Buf, Option.Id);
 
   if (Result)
   {
-    KindName = KindName.LowerCase();
-    if (KindName == L"label")
-    {
-      Option.Kind = okLabel;
-      Result = !Option.IsControl;
-    }
-    else if (KindName == L"link")
-    {
-      Option.Kind = okLink;
-      Result = !Option.IsControl;
-    }
-    else if (KindName == L"separator")
-    {
-      Option.Kind = okSeparator;
-      Result = !Option.IsControl;
-    }
-    else if (KindName == L"group")
-    {
-      Option.Kind = okGroup;
-      Result = !Option.IsControl;
-    }
-    else if (KindName == L"textbox")
-    {
-      Option.Kind = okTextBox;
-      Result = Option.IsControl;
-    }
-    else if (KindName == L"file")
-    {
-      Option.Kind = okFile;
-      Result = Option.IsControl;
-    }
-    else if (KindName == L"dropdownlist")
-    {
-      Option.Kind = okDropDownList;
-      Result = Option.IsControl;
-    }
-    else if (KindName == L"combobox")
-    {
-      Option.Kind = okComboBox;
-      Result = Option.IsControl;
-    }
-    else if (KindName == L"checkbox")
-    {
-      Option.Kind = okCheckBox;
-      Result = Option.IsControl;
-    }
-    else
-    {
-      Option.Kind = okUnknown;
-    }
+    Option.Flags = 0;
 
-    if ((Option.Kind != okUnknown) &&
-        (Option.Kind != okSeparator))
+    UnicodeString FlagName;
+    while (CutTokenEx(Buf, FlagName) && (FlagName.SubString(1, 1) == L"-"))
     {
-      Result = CutTokenEx(Buf, Option.Caption);
-
-      if (Result && Option.IsControl)
+      FlagName = FlagName.LowerCase();
+      if (FlagName == L"-run")
       {
-        if (CutTokenEx(Buf, Option.Default))
+        Option.Flags |= ofRun;
+      }
+      else if (FlagName == L"-config")
+      {
+        Option.Flags |= ofConfig;
+      }
+      else
+      {
+        Result = false;
+      }
+    }
+
+    if (Option.Flags == 0)
+    {
+      Option.Flags = ofConfig;
+    }
+
+    KindName = FlagName;
+
+    if (Result)
+    {
+      KindName = KindName.LowerCase();
+      if (KindName == L"label")
+      {
+        Option.Kind = okLabel;
+        Result = !Option.IsControl;
+      }
+      else if (KindName == L"link")
+      {
+        Option.Kind = okLink;
+        Result = !Option.IsControl;
+      }
+      else if (KindName == L"separator")
+      {
+        Option.Kind = okSeparator;
+        Result = !Option.IsControl;
+      }
+      else if (KindName == L"group")
+      {
+        Option.Kind = okGroup;
+        Result = !Option.IsControl;
+      }
+      else if (KindName == L"textbox")
+      {
+        Option.Kind = okTextBox;
+        Result = Option.IsControl;
+      }
+      else if (KindName == L"file")
+      {
+        Option.Kind = okFile;
+        Result = Option.IsControl;
+      }
+      else if (KindName == L"dropdownlist")
+      {
+        Option.Kind = okDropDownList;
+        Result = Option.IsControl;
+      }
+      else if (KindName == L"combobox")
+      {
+        Option.Kind = okComboBox;
+        Result = Option.IsControl;
+      }
+      else if (KindName == L"checkbox")
+      {
+        Option.Kind = okCheckBox;
+        Result = Option.IsControl;
+      }
+      else
+      {
+        Option.Kind = okUnknown;
+      }
+
+      if ((Option.Kind != okUnknown) &&
+          (Option.Kind != okSeparator))
+      {
+        Result = CutTokenEx(Buf, Option.Caption);
+
+        if (Result && Option.IsControl)
         {
-          UnicodeString Param;
-          while (CutTokenEx(Buf, Param))
+          if (CutTokenEx(Buf, Option.Default))
           {
-            Option.Params.push_back(Param);
+            UnicodeString Param;
+            while (CutTokenEx(Buf, Param))
+            {
+              Option.Params.push_back(Param);
+            }
           }
         }
       }
@@ -3039,6 +3067,17 @@ const TCustomCommandType::TOption & __fastcall TCustomCommandType::GetOption(int
 UnicodeString __fastcall TCustomCommandType::GetOptionKey(const TCustomCommandType::TOption & Option) const
 {
   return Id + L"\\" + Option.Id;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandType::AnyOptionWithFlag(unsigned int Flag) const
+{
+  bool Result = false;
+  for (int Index = 0; !Result && (Index < OptionsCount); Index++)
+  {
+    const TCustomCommandType::TOption & Option = GetOption(Index);
+    Result = FLAGSET(Option.Flags, Flag);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomCommandType::GetCommandWithExpandedOptions(TStrings * CustomCommandOptions) const
@@ -3105,6 +3144,7 @@ bool TCustomCommandType::TOption::operator==(const TCustomCommandType::TOption &
 {
   return
     (Id == Other.Id) &&
+    (Flags == Other.Flags) &&
     (Kind == Other.Kind) &&
     (Caption == Other.Caption) &&
     (Default == Other.Default) &&
