@@ -843,6 +843,7 @@ public:
 
 protected:
   virtual void __fastcall DoHelp();
+  DYNAMIC void __fastcall DoShow();
 
 private:
   const TCustomCommandType * FCommand;
@@ -1211,6 +1212,27 @@ void __fastcall TCustomCommandOptionsDialog::DoHelp()
   else
   {
     TCustomDialog::DoHelp();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandOptionsDialog::DoShow()
+{
+  TCustomDialog::DoShow();
+
+  int ControlIndex = 0;
+  for (int OptionIndex = 0; OptionIndex < FCommand->OptionsCount; OptionIndex++)
+  {
+    const TCustomCommandType::TOption & Option = FCommand->GetOption(OptionIndex);
+
+    if ((Option.Flags & FFlags) != 0)
+    {
+      if (Option.Kind == TCustomCommandType::okFile)
+      {
+        TControl * Control = FControls[ControlIndex];
+        InstallPathWordBreakProc(DebugNotNull(dynamic_cast<TWinControl *>(Control)));
+      }
+      ControlIndex++;
+    }
   }
 }
 //---------------------------------------------------------------------------
