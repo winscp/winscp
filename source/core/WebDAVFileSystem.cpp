@@ -125,7 +125,7 @@ void ne_debug(void * Context, int Channel, const char * Format, ...)
     UTFMessage.vprintf(Format, Args);
     va_end(Args);
 
-    UnicodeString Message = UTFMessage;
+    UnicodeString Message = TrimRight(UTFMessage);
 
     if (DoLog)
     {
