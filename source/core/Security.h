@@ -12,6 +12,6 @@ UnicodeString DecryptPassword(RawByteString Password, UnicodeString Key, Integer
 RawByteString SetExternalEncryptedPassword(RawByteString Password);
 bool GetExternalEncryptedPassword(RawByteString Encrypted, RawByteString & Password);
 //---------------------------------------------------------------------------
-bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len);
+bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, UnicodeString & Error);
 //---------------------------------------------------------------------------
 #endif

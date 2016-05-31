@@ -243,7 +243,7 @@ AnsiString NeonExportCertificate(const ne_ssl_certificate * Certificate)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool NeonWindowsValidateCertificate(int & Failures, const AnsiString & AsciiCert)
+bool NeonWindowsValidateCertificate(int & Failures, const AnsiString & AsciiCert, UnicodeString & Error)
 {
   bool Result = false;
   // We can accept only unknown certificate authority.
@@ -254,7 +254,7 @@ bool NeonWindowsValidateCertificate(int & Failures, const AnsiString & AsciiCert
 
     if (CertificateLen > 0)
     {
-      if (WindowsValidateCertificate(Certificate, CertificateLen))
+      if (WindowsValidateCertificate(Certificate, CertificateLen, Error))
       {
         Failures &= ~NE_SSL_UNTRUSTED;
         Result = true;

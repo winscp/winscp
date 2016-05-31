@@ -2260,11 +2260,17 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data)
 
     if (!Result)
     {
-      if (NeonWindowsValidateCertificate(Failures, Data.AsciiCert))
+      UnicodeString WindowsCertificateError;
+      if (NeonWindowsValidateCertificate(Failures, Data.AsciiCert, WindowsCertificateError))
       {
         FTerminal->LogEvent(L"Certificate verified against Windows certificate store");
         // There can be also other flags, not just the NE_SSL_UNTRUSTED.
         Result = (Failures == 0);
+      }
+      else
+      {
+        FTerminal->LogEvent(
+          FORMAT(L"Certificate failed to verify against Windows certificate store: %s", (DefaultStr(WindowsCertificateError, L"no details"))));
       }
     }
 

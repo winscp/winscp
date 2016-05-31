@@ -4376,12 +4376,18 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
       // as it can take a very long time (up to 1 minute).
       if (!VerificationResult && TryWindowsSystemCertificateStore)
       {
-        if (WindowsValidateCertificate(Data.Certificate, Data.CertificateLen))
+        UnicodeString WindowsCertificateError;
+        if (WindowsValidateCertificate(Data.Certificate, Data.CertificateLen, WindowsCertificateError))
         {
           FTerminal->LogEvent(L"Certificate verified against Windows certificate store");
           VerificationResult = true;
           // certificate is trusted for all purposes
           Trusted = true;
+        }
+        else
+        {
+          FTerminal->LogEvent(
+            FORMAT(L"Certificate failed to verify against Windows certificate store: %s", (DefaultStr(WindowsCertificateError, L"no details"))));
         }
       }
 

@@ -226,14 +226,16 @@ int THttp::NeonServerSSLCallbackImpl(int Failures, const ne_ssl_certificate * Ce
 {
   AnsiString AsciiCert = NeonExportCertificate(Certificate);
 
+  UnicodeString WindowsCertificateError;
   if (Failures != 0)
   {
-    NeonWindowsValidateCertificate(Failures, AsciiCert);
+    NeonWindowsValidateCertificate(Failures, AsciiCert, WindowsCertificateError);
   }
 
   if (Failures != 0)
   {
     FCertificateError = NeonCertificateFailuresErrorStr(Failures, FHostName);
+    AddToList(FCertificateError, WindowsCertificateError, L"\n");
   }
 
   return (Failures == 0) ? NE_OK : NE_ERROR;
