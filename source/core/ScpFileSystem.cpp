@@ -1439,11 +1439,27 @@ void __fastcall TSCPFileSystem::SCPResponse(bool * GotLastLine)
       }
       else if (Resp == 1)
       {
-        FTerminal->LogEvent(L"SCP remote side error (1):");
+        // While the OpenSSH scp client distinguishes the 1 for error and 2 for fatal errors,
+        // the OpenSSH scp server always sends 1 even for fatal errors. Using the error message to tell
+        // which errors are fatal and which are not.
+        // This error list is valid for OpenSSH 5.3p1 and 7.2p2
+        if (SameText(Msg, L"scp: ambiguous target") ||
+            StartsText(L"scp: error: unexpected filename: ", Msg) ||
+            StartsText(L"scp: protocol error: ", Msg))
+        {
+          FTerminal->LogEvent(L"SCP remote side error (1), fatal error detected from error message");
+          Resp = 2;
+          FScpFatalError = true;
+        }
+        else
+        {
+          FTerminal->LogEvent(L"SCP remote side error (1)");
+        }
       }
       else
       {
-        FTerminal->LogEvent(L"SCP remote side fatal error (2):");
+        FTerminal->LogEvent(L"SCP remote side fatal error (2)");
+        FScpFatalError = true;
       }
 
       if (Resp == 1)
@@ -1478,6 +1494,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
   if (CopyParam->PreserveRights) Options = L"-p";
   if (FTerminal->SessionData->Scp1Compatibility) Options += L" -1";
 
+  FScpFatalError = false;
   SendCommand(FCommandSet->FullCommand(fsCopyToRemote,
     ARRAYOFCONST((Options, DelimitStr(UnixExcludeTrailingBackslash(TargetDir))))));
   SkipFirstLine();
@@ -1649,7 +1666,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
       {
         if (!GotLastLine)
         {
-          if (CopyBatchStarted)
+          if (CopyBatchStarted && !FScpFatalError)
           {
             // What about case, remote side sends fatal error ???
             // (Not sure, if it causes remote side to terminate scp)

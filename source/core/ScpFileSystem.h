@@ -91,6 +91,7 @@ private:
   bool FProcessingCommand;
   int FLsFullTime;
   TCaptureOutputEvent FOnCaptureOutput;
+  bool FScpFatalError;
 
   void __fastcall DetectUtf();
   void __fastcall ClearAliases();
