@@ -684,6 +684,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   FSaving = false;
   FStandaloneEditor = false;
   FClosePending = false;
+  FReloading = false;
   SetSubmenu(ColorItem);
 
   InitCodePage();
@@ -800,9 +801,13 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   }
   else if (Action == PreferencesAction ||
     Action == FindAction || Action == ReplaceAction || Action == GoToLineAction ||
-    Action == HelpAction || Action == ReloadAction || Action == ColorAction)
+    Action == HelpAction || Action == ColorAction)
   {
     ((TAction *)Action)->Enabled = true;
+  }
+  else if (Action == ReloadAction)
+  {
+    ReloadAction->Enabled = !FReloading;
   }
   else if (Action == DefaultEncodingAction)
   {
@@ -1546,6 +1551,7 @@ void __fastcall TEditorForm::CreateParams(TCreateParams & Params)
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::Reload()
 {
+  TAutoFlag ReloadingFlag(FReloading);
   if (!IsFileModified() ||
       (MessageDialog(MainInstructions(LoadStr(EDITOR_MODIFIED_RELOAD)), qtConfirmation,
         qaOK | qaCancel) != qaCancel))

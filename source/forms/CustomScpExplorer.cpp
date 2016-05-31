@@ -3338,6 +3338,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
 
   TTerminal * PrevTerminal = TTerminalManager::Instance()->ActiveTerminal;
   TTerminalManager::Instance()->ActiveTerminal = Data->Terminal;
+  NonVisualDataModule->StartBusy();
   try
   {
     std::unique_ptr<TRemoteFile> File;
@@ -3372,6 +3373,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
   }
   __finally
   {
+    NonVisualDataModule->EndBusy();
     // it actually may not exist anymore...
     TTerminalManager::Instance()->ActiveTerminal = PrevTerminal;
   }

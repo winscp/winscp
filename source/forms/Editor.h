@@ -116,6 +116,7 @@ private:
   bool FStandaloneEditor;
   bool FClosePending;
   TColor FBackgroundColor;
+  bool FReloading;
 
   static unsigned int FInstances;
   void __fastcall SetFileName(const UnicodeString value);
