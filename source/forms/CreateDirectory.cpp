@@ -23,7 +23,7 @@ bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
   TRemoteProperties * Properties, int AllowedChanges, bool & SaveSettings)
 {
   bool Result;
-  TCreateDirectoryDialog * Dialog = new TCreateDirectoryDialog(Application, AllowedChanges);
+  TCreateDirectoryDialog * Dialog = new TCreateDirectoryDialog(Application, AllowedChanges, (Properties != NULL));
   try
   {
     Result = Dialog->Execute(Directory, Properties, SaveSettings);
@@ -35,13 +35,18 @@ bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
   return Result;
 }
 //---------------------------------------------------------------------
-__fastcall TCreateDirectoryDialog::TCreateDirectoryDialog(TComponent * AOwner, int AllowedChanges):
+__fastcall TCreateDirectoryDialog::TCreateDirectoryDialog(TComponent * AOwner, int AllowedChanges, bool Remote):
   TForm(AOwner)
 {
   UseSystemSettings(this);
 
   RightsFrame->AllowAddXToDirectories = false;
   FAllowedChanges = AllowedChanges;
+  if (!Remote)
+  {
+    AttributesGroup->Visible = false;
+    ClientHeight = ClientHeight - AttributesGroup->Height;
+  }
 }
 //---------------------------------------------------------------------
 __fastcall TCreateDirectoryDialog::~TCreateDirectoryDialog()
