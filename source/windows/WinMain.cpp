@@ -437,6 +437,8 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"InProgramFiles", InProgramFiles);
   Configuration->Usage->Set(L"IsInstalled", IsInstalled());
   Configuration->Usage->Set(L"Wine", IsWine());
+  Configuration->Usage->Set(L"NetFrameworkVersion", GetNetVersionStr());
+  Configuration->Usage->Set(L"PowerShellVersion", GetPowerShellVersionStr());
 
   WinConfiguration->UpdateStaticUsage();
 
