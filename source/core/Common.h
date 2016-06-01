@@ -125,7 +125,7 @@ bool __fastcall IsWin10();
 bool __fastcall IsWine();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
-bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime);
+bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add);
 LCID __fastcall GetDefaultLCID();
 UnicodeString __fastcall DefaultEncodingName();
 UnicodeString __fastcall WindowsProductName();

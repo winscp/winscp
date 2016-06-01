@@ -1877,18 +1877,32 @@ UnicodeString TConsoleRunner::ExpandCommand(UnicodeString Command, TStrings * Sc
   int P2;
   do
   {
-    int P = Pos(UpperCase(L"%" + TimestampVarName + L"#"), UpperCase(Command.SubString(Offset, Command.Length() - Offset + 1)));
+    int P = Pos(UpperCase(L"%" + TimestampVarName), UpperCase(Command), Offset);
     if (P > 0)
     {
-      P += Offset - 1;
-      Offset = P + 1 + TimestampVarName.Length() + 1;
-      P2 = Pos(L"%", Command.SubString(Offset, Command.Length() - Offset + 1));
-      if (P2 > 0)
+      Offset = P + 1 + TimestampVarName.Length();
+      P2 = Pos(L"%", Command, Offset);
+      int P3 = Pos(L"#", Command, Offset);
+      if ((P2 > 0) && (P3 > 0) && (P3 < P2) &&
+          ((P3 == Offset) || (Command[Offset] == L'+') || (Command[Offset] == L'-')))
       {
-        UnicodeString TimestampFormat = Command.SubString(Offset, P2 - 1);
-        UnicodeString TimestampValue = FormatDateTime(TimestampFormat, N);
-        Command = Command.SubString(1, P - 1) + TimestampValue + Command.SubString(Offset + P2, Command.Length() - Offset - P2 + 1);
-        Offset = P + TimestampValue.Length();
+        bool Valid = true;
+        TDateTime T = N;
+        if (P3 > Offset)
+        {
+          bool Add = (Command[Offset] == L'+');
+          Offset++;
+          Valid = TryRelativeStrToDateTime(Command.SubString(Offset, P3 - Offset), T, Add);
+        }
+
+        Offset = P3 + 1;
+        if (Valid)
+        {
+          UnicodeString TimestampFormat = Command.SubString(Offset, P2 - Offset);
+          UnicodeString TimestampValue = FormatDateTime(TimestampFormat, T);
+          Command = Command.SubString(1, P - 1) + TimestampValue + Command.SubString(P2 + 1, Command.Length() - P2);
+          Offset = P + TimestampValue.Length();
+        }
       }
     }
     else

@@ -1586,7 +1586,7 @@ __int64 __fastcall Round(double Number)
   return static_cast<__int64>(((Number - Floor) > (Ceil - Number)) ? Ceil : Floor);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime)
+bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add)
 {
   S = S.Trim();
   int Index = 1;
@@ -1599,29 +1599,33 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime)
   bool Result = TryStrToInt(NumberStr, Number);
   if (Result)
   {
+    if (!Add)
+    {
+      Number = -Number;
+    }
     S.Delete(1, Index - 1);
     S = S.Trim().UpperCase();
     DateTime = Now();
     // These may not overlap with ParseSize (K, M and G)
     if (S == "S")
     {
-      DateTime = IncSecond(DateTime, -Number);
+      DateTime = IncSecond(DateTime, Number);
     }
     else if (S == "N")
     {
-      DateTime = IncMinute(DateTime, -Number);
+      DateTime = IncMinute(DateTime, Number);
     }
     else if (S == "H")
     {
-      DateTime = IncHour(DateTime, -Number);
+      DateTime = IncHour(DateTime, Number);
     }
     else if (S == "D")
     {
-      DateTime = IncDay(DateTime, -Number);
+      DateTime = IncDay(DateTime, Number);
     }
     else if (S == "Y")
     {
-      DateTime = IncYear(DateTime, -Number);
+      DateTime = IncYear(DateTime, Number);
     }
     else
     {
