@@ -727,6 +727,10 @@ public:
     UnicodeString Default;
     typedef std::vector<UnicodeString> TParams;
     TParams Params;
+    UnicodeString FileCaption;
+    UnicodeString FileFilter;
+    UnicodeString FileInitial;
+    UnicodeString FileExt;
 
     bool operator==(const TOption & Other) const;
     __property bool IsControl = { read = GetIsControl };
@@ -739,7 +743,7 @@ public:
   bool __fastcall Equals(const TCustomCommandType * Other) const;
 
   void __fastcall LoadExtension(const UnicodeString & Path);
-  void __fastcall LoadExtension(TStrings * Lines);
+  void __fastcall LoadExtension(TStrings * Lines, const UnicodeString & PathForBaseName);
   static UnicodeString __fastcall GetExtensionId(const UnicodeString & Name);
 
   __property UnicodeString Name = { read = FName, write = FName };
@@ -759,7 +763,7 @@ public:
   UnicodeString __fastcall GetCommandWithExpandedOptions(TStrings * CustomCommandOptions) const;
 
 protected:
-  bool __fastcall ParseOption(const UnicodeString & Value, TOption & Option);
+  bool __fastcall ParseOption(const UnicodeString & Value, TOption & Option, const UnicodeString & ExtensionBaseName);
   int __fastcall GetOptionsCount() const;
   UnicodeString __fastcall GetOptionCommand(const TOption & Option, const UnicodeString & Value) const;
 

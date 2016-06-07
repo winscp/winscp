@@ -2471,7 +2471,7 @@ void __fastcall TPreferencesDialog::AddExtension()
 
       // validate syntax
       CustomCommand.reset(new TCustomCommandType());
-      CustomCommand->LoadExtension(Lines.get());
+      CustomCommand->LoadExtension(Lines.get(), FileName);
     }
     catch (Exception & E)
     {

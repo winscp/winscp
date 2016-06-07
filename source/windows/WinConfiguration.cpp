@@ -2727,15 +2727,19 @@ void __fastcall TCustomCommandType::LoadExtension(const UnicodeString & Path)
   std::unique_ptr<TStringList> Lines(new TStringList());
   FileName = Path;
   LoadScriptFromFile(Path, Lines.get());
-  LoadExtension(Lines.get());
+  LoadExtension(Lines.get(), Path);
   Command = ReplaceStr(Command, L"%EXTENSION_PATH%", Path);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
+void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const UnicodeString & PathForBaseName)
 {
   Params = ccLocal;
   bool AnythingFound = false;
   std::set<UnicodeString> OptionIds;
+
+  UnicodeString ExtensionBaseName = ExtractFileName(PathForBaseName);
+  // ExtractFileNameOnly trims the last extension only, we want to trim all extensions
+  ExtensionBaseName = CutToChar(ExtensionBaseName, L'.', true);
 
   for (int Index = 0; Index < Lines->Count; Index++)
   {
@@ -2875,7 +2879,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
           else if (Key == L"option")
           {
             TOption Option;
-            if (!ParseOption(Value, Option) ||
+            if (!ParseOption(Value, Option, ExtensionBaseName) ||
                 (Option.IsControl && (OptionIds.find(Option.Id.LowerCase()) != OptionIds.end())))
             {
               throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
@@ -2943,7 +2947,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOption & Option)
+bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOption & Option, const UnicodeString & ExtensionBaseName)
 {
   UnicodeString Buf = Value;
   UnicodeString KindName;
@@ -2980,6 +2984,10 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
 
     if (Result)
     {
+      UnicodeString DefaultCaption;
+      UnicodeString DefaultDefault;
+      TOption::TParams DefaultParams;
+
       KindName = KindName.LowerCase();
       if (KindName == L"label")
       {
@@ -3011,6 +3019,17 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
         Option.Kind = okFile;
         Result = Option.IsControl;
       }
+      else if (KindName == L"sessionlogfile")
+      {
+        Option.Kind = okFile;
+        Result = Option.IsControl;
+        DefaultCaption = LoadStr(EXTENSION_SESSIONLOG_FILE);
+        Option.FileCaption = LoadStr(EXTENSION_SESSIONLOG_CAPTION);
+        Option.FileFilter = LoadStr(EXTENSION_SESSIONLOG_FILTER);
+        // Similar to TConfiguration::GetDefaultLogFileName
+        Option.FileInitial = L"%TEMP%\\" + ExtensionBaseName + L".log";
+        Option.FileExt = L"log";
+      }
       else if (KindName == L"dropdownlist")
       {
         Option.Kind = okDropDownList;
@@ -3026,6 +3045,14 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
         Option.Kind = okCheckBox;
         Result = Option.IsControl;
       }
+      else if (KindName == L"pausecheckbox")
+      {
+        Option.Kind = okCheckBox;
+        Result = Option.IsControl;
+        DefaultCaption = LoadStr(EXTENSION_PAUSE_CHECKBOX);
+        DefaultDefault = L"-pause";
+        DefaultParams.push_back(L"-pause");
+      }
       else
       {
         Option.Kind = okUnknown;
@@ -3034,7 +3061,14 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
       if ((Option.Kind != okUnknown) &&
           (Option.Kind != okSeparator))
       {
-        Result = CutTokenEx(Buf, Option.Caption);
+        Result =
+          CutTokenEx(Buf, Option.Caption);
+
+        if (!Result && !DefaultCaption.IsEmpty())
+        {
+          Option.Caption = DefaultCaption;
+          Result = true;
+        }
 
         if (Result && Option.IsControl)
         {
@@ -3045,6 +3079,15 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
             {
               Option.Params.push_back(Param);
             }
+          }
+          else
+          {
+            Option.Default = DefaultDefault;
+          }
+
+          if (Option.Params.size() == 0)
+          {
+            Option.Params = DefaultParams;
           }
         }
       }
@@ -3142,13 +3185,18 @@ bool __fastcall TCustomCommandType::TOption::GetIsControl() const
 //---------------------------------------------------------------------------
 bool TCustomCommandType::TOption::operator==(const TCustomCommandType::TOption & Other) const
 {
+  // needed by vector<> but probably never used
   return
     (Id == Other.Id) &&
     (Flags == Other.Flags) &&
     (Kind == Other.Kind) &&
     (Caption == Other.Caption) &&
     (Default == Other.Default) &&
-    (Params == Other.Params);
+    (Params == Other.Params) &&
+    (FileCaption == Other.FileCaption) &&
+    (FileFilter == Other.FileFilter) &&
+    (FileInitial == Other.FileInitial) &&
+    (FileExt == Other.FileExt);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

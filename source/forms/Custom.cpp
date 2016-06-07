@@ -861,6 +861,8 @@ private:
     TComboBox * ComboBox, const UnicodeString & Value, const TCustomCommandType::TOption & Option,
     std::vector<UnicodeString> & Values);
   UnicodeString __fastcall GetComboBoxValue(TControl * Control, const UnicodeString & Default);
+  int __fastcall GetOptionIndex(TControl * Control);
+  int __fastcall GetControlIndex(TControl * Control);
 };
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
@@ -891,6 +893,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
         Value = Option.Default;
       }
 
+      int Tag = (OptionIndex << 16) + ControlIndex;
       TControl * Control = NULL;
       std::vector<UnicodeString> Values;
       if (Option.Kind == TCustomCommandType::okUnknown)
@@ -947,7 +950,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
         Button->Left = GetDefaultParent()->ClientWidth - Button->Width - HorizontalMargin;
         ComboBox->Width = Button->Left - ComboBox->Left - ScaleByTextHeight(this, 6);
         Button->Top = ComboBox->Top - ScaleByTextHeight(this, 2);
-        Button->Tag = ControlIndex;
+        Button->Tag = Tag;
         Button->Caption = LoadStr(EXTENSION_OPTIONS_BROWSE);
         Button->OnClick = BrowseButtonClick;
         ScaleButtonControl(Button);
@@ -993,7 +996,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
 
       if (Control != NULL)
       {
-        Control->Tag = ControlIndex;
+        Control->Tag = Tag;
       }
       FControls.push_back(Control);
       FValues.push_back(Values);
@@ -1038,40 +1041,80 @@ void __fastcall TCustomCommandOptionsDialog::AddOptionComboBox(
   ComboBox->ItemIndex = ItemIndex;
 }
 //---------------------------------------------------------------------------
+int __fastcall TCustomCommandOptionsDialog::GetOptionIndex(TControl * Control)
+{
+  return (Control->Tag >> 16);
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomCommandOptionsDialog::GetControlIndex(TControl * Control)
+{
+  return (Control->Tag & 0xFFFF);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomCommandOptionsDialog::LinkLabelClick(TObject * Sender)
 {
   TStaticText * Label = DebugNotNull(dynamic_cast<TStaticText *>(Sender));
-  const TCustomCommandType::TOption & Option = FCommand->GetOption(Label->Tag);
+  const TCustomCommandType::TOption & Option = FCommand->GetOption(GetOptionIndex(Label));
   OpenBrowser(SecureUrl(Option.Default));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandOptionsDialog::BrowseButtonClick(TObject * Sender)
 {
   TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
-  int Index = Button->Tag;
-  THistoryComboBox * ComboBox = dynamic_cast<THistoryComboBox *>(FControls[Index]);
+  int OptionIndex = GetOptionIndex(Button);
+  const TCustomCommandType::TOption & Option = FCommand->GetOption(OptionIndex);
+  int ControlIndex = GetControlIndex(Button);
+  THistoryComboBox * ComboBox = dynamic_cast<THistoryComboBox *>(FControls[ControlIndex]);
 
   std::unique_ptr<TOpenDialog> OpenDialog(new TOpenDialog(Application));
-  UnicodeString Caption = FCommand->GetOption(Index).Caption;
-  Caption = StripHotkey(Caption);
-  if (!Caption.IsEmpty() && (Caption[Caption.Length()] == L':'))
+
+  UnicodeString Title;
+  if (!Option.FileCaption.IsEmpty())
   {
-    Caption.SetLength(Caption.Length() - 1);
+    Title = Option.FileCaption;
   }
-  OpenDialog->Title = FMTLOAD(EXTENSION_OPTIONS_BROWSE_TITLE, (Caption));
-  UnicodeString ExpandedValue = ExpandEnvironmentVariables(ComboBox->Text);
+  else
+  {
+    UnicodeString Caption = Option.Caption;
+    Caption = StripHotkey(Caption);
+    if (!Caption.IsEmpty() && (Caption[Caption.Length()] == L':'))
+    {
+      Caption.SetLength(Caption.Length() - 1);
+    }
+    Title = FMTLOAD(EXTENSION_OPTIONS_BROWSE_TITLE, (Caption));
+  }
+  OpenDialog->Title = Title;
+
+  UnicodeString Value;
+  if (ComboBox->Text.IsEmpty())
+  {
+    Value = Option.FileInitial;
+  }
+  else
+  {
+    Value = ComboBox->Text;
+  }
+  UnicodeString ExpandedValue = ExpandEnvironmentVariables(Value);
   OpenDialog->FileName = ExpandedValue;
   UnicodeString InitialDir = ExtractFilePath(ExpandedValue);
   if (!InitialDir.IsEmpty())
   {
     OpenDialog->InitialDir = InitialDir;
   }
+  OpenDialog->Filter = Option.FileFilter;
+  OpenDialog->DefaultExt = Option.FileExt;
 
   if (OpenDialog->Execute())
   {
     if (OpenDialog->FileName != ExpandedValue)
     {
       ComboBox->Text = OpenDialog->FileName;
+    }
+    // If user just confirms the initial value, persist it
+    else if (ComboBox->Text.IsEmpty())
+    {
+      DebugAssert(Option.FileInitial == Value);
+      ComboBox->Text = Value;
     }
   }
 }
@@ -1179,7 +1222,7 @@ UnicodeString __fastcall TCustomCommandOptionsDialog::GetComboBoxValue(
   }
   else
   {
-    Result = FValues[Control->Tag][ComboBox->ItemIndex];
+    Result = FValues[GetControlIndex(Control)][ComboBox->ItemIndex];
   }
   return Result;
 }

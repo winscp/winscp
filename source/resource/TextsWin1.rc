@@ -587,6 +587,10 @@ BEGIN
         EXTENSION_OPTIONS_CAPTION, "Options for extension '%s'"
         EXTENSION_OPTIONS_BROWSE, "Browse..."
         EXTENSION_OPTIONS_BROWSE_TITLE, "Select '%s'"
+        EXTENSION_PAUSE_CHECKBOX, "&Pause at the end"
+        EXTENSION_SESSIONLOG_FILE, "&Session log file:"
+        EXTENSION_SESSIONLOG_CAPTION, "Select file for session log"
+        EXTENSION_SESSIONLOG_FILTER, "Session log files (*.log)|*.log|All files (*.*)|*.*"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"

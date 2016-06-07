@@ -293,7 +293,7 @@ object PreferencesDialog: TPreferencesDialog
             DefaultExt = 'log'
             Filter = 'Session log files (*.log)|*.log|All files (*.*)|*.*'
             DialogOptions = [ofHideReadOnly, ofPathMustExist]
-            DialogTitle = 'Select file for session log.'
+            DialogTitle = 'Select file for session log'
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 3
