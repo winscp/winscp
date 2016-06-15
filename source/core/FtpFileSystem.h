@@ -192,6 +192,8 @@ protected:
   void __fastcall ApplyTimeDifference(TRemoteFile * File);
   void __fastcall ApplyTimeDifference(
     const UnicodeString & FileName, TDateTime & Modification, TModificationFmt & ModificationFmt);
+  void __fastcall CheckTimeDifference();
+  bool __fastcall NeedAutoDetectTimeDifference();
   bool __fastcall LookupUploadModificationTime(
     const UnicodeString & FileName, TDateTime & Modification, TModificationFmt ModificationFmt);
   UnicodeString __fastcall DoCalculateFileChecksum(bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File);

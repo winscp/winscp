@@ -2447,15 +2447,28 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 
   AutoDetectTimeDifference(FileList);
 
-  if ((FTimeDifference != 0) || !FUploadedTimes.empty())// optimization
+  if (!IsEmptyFileList(FileList))
   {
-    for (int Index = 0; Index < FileList->Count; Index++)
+    CheckTimeDifference();
+
+    if ((FTimeDifference != 0) || !FUploadedTimes.empty())// optimization
     {
-      ApplyTimeDifference(FileList->Files[Index]);
+      for (int Index = 0; Index < FileList->Count; Index++)
+      {
+        ApplyTimeDifference(FileList->Files[Index]);
+      }
     }
   }
 
   FLastDataSent = Now();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::CheckTimeDifference()
+{
+  if (NeedAutoDetectTimeDifference())
+  {
+    FTerminal->LogEvent("Warning: Timezone difference was not detected yet, timestamps may be incorrect");
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ApplyTimeDifference(TRemoteFile * File)
@@ -2474,6 +2487,7 @@ void __fastcall TFTPFileSystem::ApplyTimeDifference(TRemoteFile * File)
 void __fastcall TFTPFileSystem::ApplyTimeDifference(
   const UnicodeString & FileName, TDateTime & Modification, TModificationFmt & ModificationFmt)
 {
+  CheckTimeDifference();
   TRemoteFile::ShiftTimeInSeconds(Modification, ModificationFmt, FTimeDifference);
 
   if (LookupUploadModificationTime(FileName, Modification, ModificationFmt))
@@ -2520,11 +2534,17 @@ bool __fastcall TFTPFileSystem::LookupUploadModificationTime(
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TFTPFileSystem::NeedAutoDetectTimeDifference()
+{
+  return
+    FDetectTimeDifference &&
+    // Does not support MLST/MLSD, but supports MDTM at least
+    !FFileZillaIntf->UsingMlsd() && SupportsReadingFile();
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileList)
 {
-  if (FDetectTimeDifference &&
-      // Does not support MLST/MLSD, but supports MDTM at least
-      !FFileZillaIntf->UsingMlsd() && SupportsReadingFile())
+  if (NeedAutoDetectTimeDifference())
   {
     FTerminal->LogEvent(L"Detecting timezone difference...");
 
