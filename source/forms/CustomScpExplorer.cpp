@@ -5739,7 +5739,15 @@ void __fastcall TCustomScpExplorerForm::LastTerminalClosed(TObject * /*Sender*/)
   UpdateControls();
   SessionColor = TColor(0);
   UpdateRemotePathComboBox(false);
-  NeedSession(true);
+  try
+  {
+    NeedSession(true);
+  }
+  catch (EAbort &)
+  {
+    // swallow
+    // The TTerminalManager does not expect the OnLastTerminalClose to throw without trying to connect
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::NeedSession(bool ReloadSessions)
