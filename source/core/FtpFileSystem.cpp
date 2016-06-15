@@ -767,6 +767,25 @@ void __fastcall TFTPFileSystem::CollectUsage()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::DummyReadDirectory(const UnicodeString & Directory)
+{
+  std::unique_ptr<TRemoteDirectory> Files(new TRemoteDirectory(FTerminal));
+  try
+  {
+    Files->Directory = Directory;
+    DoReadDirectory(Files.get());
+  }
+  catch(...)
+  {
+    // ignore non-fatal errors
+    // (i.e. current directory may not exist anymore)
+    if (!FTerminal->Active)
+    {
+      throw;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::Idle()
 {
   if (FActive && !FWaitingForReply)
@@ -778,30 +797,9 @@ void __fastcall TFTPFileSystem::Idle()
         (double(Now() - FLastDataSent) > double(FTerminal->SessionData->FtpPingIntervalDT) * 4))
     {
       FTerminal->LogEvent(L"Dummy directory read to keep session alive.");
-      FLastDataSent = Now();
+      FLastDataSent = Now(); // probably redundant to the same statement in DoReadDirectory
 
-      TRemoteDirectory * Files = new TRemoteDirectory(FTerminal);
-      try
-      {
-        try
-        {
-          Files->Directory = CurrentDirectory;
-          DoReadDirectory(Files);
-        }
-        catch(...)
-        {
-          // ignore non-fatal errors
-          // (i.e. current directory may not exist anymore)
-          if (!FTerminal->Active)
-          {
-            throw;
-          }
-        }
-      }
-      __finally
-      {
-        delete Files;
-      }
+      DummyReadDirectory(CurrentDirectory);
     }
   }
 }
@@ -1675,6 +1673,8 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
   }
   else
   {
+    AutoDetectTimeDifference(UnixExtractFileDir(FileName), CopyParam, Params);
+
     FTerminal->LogEvent(FORMAT(L"Copying \"%s\" to local directory started.", (FileName)));
 
     // Will we use ASCII of BINARY file transfer?
@@ -1798,6 +1798,8 @@ void __fastcall TFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
   TOnceDoneOperation & OnceDoneOperation)
 {
   DebugAssert((FilesToCopy != NULL) && (OperationProgress != NULL));
+
+  AutoDetectTimeDifference(ATargetDir, CopyParam, Params);
 
   Params &= ~cpAppend;
   UnicodeString FileName, FileNameOnly;
@@ -2052,6 +2054,8 @@ void __fastcall TFTPFileSystem::DirectorySource(const UnicodeString DirectoryNam
       ExtractFileName(ExcludeTrailingBackslash(DirectoryName)),
       osLocal, FLAGSET(Flags, tfFirstLevel));
   UnicodeString DestFullName = UnixIncludeTrailingBackslash(TargetDir + DestDirectoryName);
+
+  AutoDetectTimeDifference(TargetDir, CopyParam, Params);
 
   OperationProgress->SetFile(DirectoryName);
 
@@ -2542,6 +2546,15 @@ bool __fastcall TFTPFileSystem::NeedAutoDetectTimeDifference()
     !FFileZillaIntf->UsingMlsd() && SupportsReadingFile();
 }
 //---------------------------------------------------------------------------
+bool __fastcall TFTPFileSystem::IsEmptyFileList(TRemoteFileList * FileList)
+{
+  return
+    // (note that it's actually never empty here, there's always at least parent directory,
+    // added explicitly by DoReadDirectory)
+    (FileList->Count == 0) ||
+    ((FileList->Count == 1) && FileList->Files[0]->IsParentDirectory);
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileList)
 {
   if (NeedAutoDetectTimeDifference())
@@ -2619,6 +2632,20 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::AutoDetectTimeDifference(
+  const UnicodeString & Directory, const TCopyParamType * CopyParam, int Params)
+{
+  if (NeedAutoDetectTimeDifference() &&
+      // do we need FTimeDifference for the operation?
+      // (tmAutomatic - AsciiFileMask can theoretically include time constraints, while it is unlikely)
+      (!FLAGSET(Params, cpNoConfirmation) ||
+       CopyParam->NewerOnly || (!CopyParam->TransferMode == tmAutomatic) || !CopyParam->IncludeFileMask.Masks.IsEmpty()))
+  {
+    FTerminal->LogEvent(L"Retrieving listing to detect timezone difference");
+    DummyReadDirectory(Directory);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 {
   // whole below "-a" logic is for LIST,
@@ -2650,10 +2677,7 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         else if (FListAll == asAuto)
         {
           // some servers take "-a" as a mask and return empty directory listing
-          // (note that it's actually never empty here, there's always at least parent directory,
-          // added explicitly by DoReadDirectory)
-          if ((FileList->Count == 0) ||
-              ((FileList->Count == 1) && FileList->Files[0]->IsParentDirectory))
+          if (IsEmptyFileList(FileList))
           {
             Repeat = true;
             FListAll = asOff;

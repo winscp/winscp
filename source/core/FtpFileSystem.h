@@ -189,11 +189,14 @@ protected:
   bool __fastcall VerifyCertificateHostName(const TFtpsCertificateData & Data);
   bool __fastcall SupportsReadingFile();
   void __fastcall AutoDetectTimeDifference(TRemoteFileList * FileList);
+  void __fastcall AutoDetectTimeDifference(const UnicodeString & Directory, const TCopyParamType * CopyParam, int Params);
   void __fastcall ApplyTimeDifference(TRemoteFile * File);
   void __fastcall ApplyTimeDifference(
     const UnicodeString & FileName, TDateTime & Modification, TModificationFmt & ModificationFmt);
+  void __fastcall DummyReadDirectory(const UnicodeString & Directory);
+  bool __fastcall IsEmptyFileList(TRemoteFileList * FileList);
   void __fastcall CheckTimeDifference();
-  bool __fastcall NeedAutoDetectTimeDifference();
+  inline bool __fastcall NeedAutoDetectTimeDifference();
   bool __fastcall LookupUploadModificationTime(
     const UnicodeString & FileName, TDateTime & Modification, TModificationFmt ModificationFmt);
   UnicodeString __fastcall DoCalculateFileChecksum(bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File);
