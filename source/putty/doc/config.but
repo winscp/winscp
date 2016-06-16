@@ -2922,8 +2922,9 @@ a sensible value.
 \lcont{
 
 PuTTY proper will send modes that it has an opinion on (currently only
-the code for the Backspace key, \cw{ERASE}). Plink on Unix
-will propagate appropriate modes from the local terminal, if any.
+the code for the Backspace key, \cw{ERASE}, and whether the character
+set is UTF-8, \cw{IUTF8}). Plink on Unix will propagate appropriate
+modes from the local terminal, if any.
 
 }
 
@@ -2970,6 +2971,17 @@ character or turn it off entirely.
 \b Boolean modes such as \cw{ECHO} and \cw{ICANON} can be specified in
 PuTTY in a variety of ways, such as \cw{true}/\cw{false},
 \cw{yes}/\cw{no}, and \cw{0}/\cw{1}.
+
+\b The boolean mode \I{IUTF8 terminal mode}\cw{IUTF8} signals to the
+server whether the terminal character set is \i{UTF-8} or not.
+If this is set incorrectly, actions like backspace may behave
+incorrectly in some circumstances. However, setting this is not usually
+sufficient to cause servers to expect the terminal to be in UTF-8 mode;
+POSIX servers will generally require the locale to be set (by some
+server-dependent means), although many default to UTF-8. Also,
+\#{circa 2016} many servers (particularly older servers) do not honour
+this mode sent over SSH. When set to \q{Auto}, this follows the
+local configured character set (see \k{config-charset}).
 
 \b Terminal speeds are configured elsewhere; see \k{config-termspeed}.
 

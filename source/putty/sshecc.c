@@ -2760,7 +2760,7 @@ void *ssh_ecdhkex_newkey(const struct ssh_kex *kex)
         bytes[0] &= 248;
         bytes[31] &= 127;
         bytes[31] |= 64;
-        key->privateKey = bignum_from_bytes(bytes, sizeof(bytes));
+        key->privateKey = bignum_from_bytes_le(bytes, sizeof(bytes));
         smemclr(bytes, sizeof(bytes));
         if (!key->privateKey) {
             sfree(key);

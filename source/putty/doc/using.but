@@ -1000,3 +1000,13 @@ different logging modes, all available from the GUI too:
 \b \c{-sshrawlog} selects \q{SSH packets and raw data} logging mode.
 
 For more information on logging configuration, see \k{config-logging}.
+
+\S2{using-cmdline-proxycmd} \i\c{-proxycmd}: specify a local proxy
+command
+
+This option enables PuTTY's mode for running a \I{Local proxy}command
+on the local machine and using it as a proxy for the network
+connection. It expects a shell command string as an argument.
+
+See \k{config-proxy-type} for more information on this, and on other
+proxy settings.
