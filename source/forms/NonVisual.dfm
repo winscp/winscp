@@ -136,7 +136,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Download in &Background...'
       HelpKeyword = 'task_download'
       Hint = 
-        'Download|Download selected remote file(s) to local directory in ' +
+        'Download selected remote file(s) to local directory in ' +
         'background'
       ImageIndex = 107
     end
@@ -146,7 +146,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Download in &Background...'
       HelpKeyword = 'task_download'
       Hint = 
-        'Download|Download selected remote file(s) to local directory in ' +
+        'Download selected remote file(s) to local directory in ' +
         'background'
       ImageIndex = 107
     end
@@ -156,7 +156,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Upload in &Background...'
       HelpKeyword = 'task_upload'
       Hint = 
-        'Upload|Upload selected local file(s) to remote directory in back' +
+        'Upload selected local file(s) to remote directory in back' +
         'ground'
       ImageIndex = 108
     end
@@ -166,7 +166,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Upload in &Background...'
       HelpKeyword = 'task_upload'
       Hint = 
-        'Upload|Upload selected local file(s) to remote directory in back' +
+        'Upload selected local file(s) to remote directory in back' +
         'ground'
       ImageIndex = 108
     end
@@ -2247,13 +2247,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Selected Operation'
       Caption = '&Lock'
-      Hint = 'Lock|Lock selected file(s)'
+      Hint = 'Lock selected file(s)'
     end
     object UnlockAction: TAction
       Tag = 15
       Category = 'Selected Operation'
       Caption = '&Unlock'
-      Hint = 'Unlock|Unlock selected file(s)'
+      Hint = 'Unlock selected file(s)'
     end
     object TipsAction: TAction
       Tag = 15
