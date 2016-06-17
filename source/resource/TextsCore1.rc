@@ -418,7 +418,7 @@ BEGIN
   SCRIPT_CMDLINE_PARAMETERS, "Scripting does not use standalone parameters. The parameters you have specified on command-line will not be used. Your command-line syntax is probably wrong."
   SCRIPTING_USE_HOSTKEY, "In scripting, you should use a -hostkey switch to configure the expected host key."
   SCRIPT_SITE_WARNING, "In scripting you should not rely on saved sites, use this command instead:"
-  CODE_SESSION_OPTIONS, "Setup session options"
+  CODE_SESSION_OPTIONS, "Set up session options"
   CODE_CONNECT, "Connect"
   CODE_PS_ADD_TYPE, "Load WinSCP .NET assembly"
   COPY_INFO_PRESERVE_TIME_DIRS, "%s (including directories)"
