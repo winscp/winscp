@@ -1,0 +1,282 @@
+\cfg{man-identity}{pageant}{1}{2015-05-19}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{pageant-manpage} Man page for Pageant
+
+\S{pageant-manpage-name} NAME
+
+\cw{pageant} - PuTTY SSH authentication agent
+
+\S{pageant-manpage-synopsis} SYNOPSIS
+
+\c pageant ( -X | -T | --permanent | --debug ) [ key-file... ]
+\e bbbbbbb   bb   bb   bbbbbbbbbbb   bbbbbbb     iiiiiiii
+\c pageant [ key-file... ] --exec command [ args... ]
+\e bbbbbbb   iiiiiiii      bbbbbb iiiiiii   iiii
+\c pageant -a key-file...
+\e bbbbbbb bb iiiiiiii
+\c pageant ( -d | --public | --public-openssh ) key-identifier...
+\e bbbbbbb   bb   bbbbbbbb   bbbbbbbbbbbbbbbb   iiiiiiiiiiiiii
+\c pageant -D
+\e bbbbbbb bb
+\c pageant -l
+\e bbbbbbb bb
+
+\S{pageant-manpage-description} DESCRIPTION
+
+\c{pageant} is both an SSH authentication agent, and also a tool for
+communicating with an already-running agent.
+
+When running as an SSH agent, it listens on a Unix-domain socket for
+connections from client processes running under your user id. Clients
+can load SSH private keys into the agent, or request signatures on a
+given message from a key already in the agent. This permits one-touch
+authentication by SSH client programs, if Pageant is holding a key
+that the server they are connecting to will accept.
+
+\c{pageant} can also act as a client program itself, communicating
+with an already-running agent to add or remove keys, list the keys, or
+extract their public half.
+
+The agent protocol used by \c{pageant} is compatible with the PuTTY
+tools and also with other implementations such as OpenSSH's SSH client
+and \e{ssh-agent(1)}.
+
+To run \c{pageant} as an agent, you must provide an option to tell it
+what its \e{lifetime} should be. Typically you would probably want
+Pageant to last for the duration of a login session, in which case you
+should use either \cw{-X} or \cw{-T}, depending on whether your login
+session is GUI or purely terminal-based respectively. For example, in
+your X session startup script you might write
+
+\c eval $(pageant -X)
+\e bbbbbbbbbbbbbbbbbb
+
+which will cause Pageant to start running, monitor the X server to
+notice when your session terminates (and then it will terminate too),
+and print on standard output some shell commands to set environment
+variables that client processes will need to find the running agent.
+
+In a terminal-based login, you could do almost exactly the same thing
+but with \cw{-T}:
+
+\c eval $(pageant -T)
+\e bbbbbbbbbbbbbbbbbb
+
+This will cause Pageant to tie its lifetime to that of your
+controlling terminal: when you log out, and the terminal device ceases
+to be associated with your session, Pageant will notice that it has no
+controlling terminal any more, and will terminate automatically.
+
+In either of these modes, you can also add one or more private keys as
+extra command-line arguments, e.g.
+
+\c eval $(pageant -T ~/.ssh/key.ppk)
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+in which case Pageant will prompt for the keys' passphrases (if any)
+and start the agent with those keys already loaded. Passphrase prompts
+will use the controlling terminal if one is available, or failing that
+the GUI if one of those is available. If neither is available, no
+passphrase prompting can be done.
+
+To use Pageant to talk to an existing agent, you can add new keys
+using \cw{-a}, list the current set of keys' fingerprints and comments
+with \cw{-l}, extract the full public half of any key using
+\cw{--public} or \cw{--public-openssh}, delete a key using \cw{-d}, or
+delete all keys using \cw{-D}.
+
+\S{pageant-manpage-lifetime} LIFETIME
+
+The following options are called \e{lifetime modes}. They all request
+Pageant to operate in agent mode; each one specifies a different
+method for Pageant to start up and know when to shut down.
+
+\dt \cw{-X}
+
+\dd Pageant will open a connection to your X display, and when that
+connection is lost, it will terminate. This gives it the same lifetime
+as your GUI login session, so in this mode it is suitable for running
+from a startup script such as \cw{.xsession}. The actual agent will be
+a subprocess; the main Pageant process will terminate immediately,
+after printing environment-variable setting commands on standard
+output which should be installed in any process wanting to communicate
+with the agent.
+
+\lcont{
+
+The usual approach would be to run
+
+\c eval $(pageant -X)
+\e bbbbbbbbbbbbbbbbbb
+
+in an X session startup script. However, other possibilities exist,
+such as directing the standard output of \cq{pageant -X} to a file
+which is then sourced by any new shell.
+
+}
+
+\dt \cw{-T}
+
+\dd Pageant will tie its lifetime to that of the login session running
+on its controlling terminal, by noticing when it ceases to have a
+controlling terminal (which will automatically happen as a side effect
+of the session leader process terminating). Like \cw{-X}, Pageant will
+print environment-variable commands on standard output.
+
+\dt \cw{--exec} \e{command}
+
+\dd Pageant will run the provided command as a subprocess, preloaded
+with the appropriate environment variables to access the agent it
+starts up. When the subprocess terminates, Pageant will terminate as
+well.
+
+\lcont{
+
+All arguments on Pageant's command line after \cw{--exec} will be
+treated as part of the command to run, even if they look like other
+valid Pageant options or key files.
+
+}
+
+\dt \cw{--permanent}
+
+\dd Pageant will fork off a subprocess to be the agent, and print
+environment-variable commands on standard output, like \cw{-X} and
+\cw{-T}. However, in this case, it will make no effort to limit its
+lifetime in any way; it will simply run permanently, unless manually
+killed. The environment variable \cw{SSH_AGENT_PID}, set by the
+commands printed by Pageant, permits the agent process to be found for
+this purpose.
+
+\lcont{
+
+This option is not recommended, because any method of manually killing
+the agent carries the risk of the session terminating unexpectedly
+before it manages to happen.
+
+}
+
+\dt \cw{--debug}
+
+\dd Pageant will run in the foreground, without forking. It will print
+its environment variable setup commands on standard output, and then it
+will log all agent activity to standard output as well. This is useful
+for debugging what Pageant itself is doing, or what another process is
+doing to it.
+
+\S{pageant-manpage-client} CLIENT OPTIONS
+
+The following options tell Pageant to operate in client mode,
+contacting an existing agent via environment variables that it should
+already have set.
+
+\dt \cw{-a} \e{key-files}
+
+\dd Load the specified private key file(s), decrypt them if necessary
+by prompting for their passphrases, and add them to the
+already-running agent.
+
+\lcont{
+
+The private key files must be in PuTTY's \cw{.ppk} file format.
+
+}
+
+\dt \cw{-l}
+
+\dd List the keys currently in the running agent. Each key's
+fingerprint and comment string will be shown.
+
+\dt \cw{--public} \e{key-identifiers}
+
+\dd Print the public half of each specified key, in the RFC 4716
+standard format (multiple lines, starting with \cq{---- BEGIN SSH2
+PUBLIC KEY ----}).
+
+\lcont{
+
+Each \e{key-identifier} can be any of the following:
+
+\b The name of a file containing the key, either the whole key (again
+in \cw{.ppk} format) or just its public half.
+
+\b The key's comment string, as shown by \cw{pageant -l}.
+
+\b Enough hex digits of the key's fingerprint to be unique among keys
+currently loaded into the agent.
+
+If Pageant can uniquely identify one key by interpreting the
+\e{key-identifier} in any of these ways, it will assume that key was
+the one you meant. If it cannot, you will have to specify more detail.
+
+If you find that your desired \e{key-identifier} string can be validly
+interpreted as more than one of the above \e{kinds} of identification,
+you can disambiguate by prefixing it with \cq{file:}, \cq{comment:} or
+\cq{fp:} to indicate that it is a filename, comment string or
+fingerprint prefix respectively.
+
+}
+
+\dt \cw{--public-openssh} \e{key-identifiers}
+
+\dd Print the public half of each specified key, in the one-line
+format used by OpenSSH, suitable for putting in
+\cw{.ssh/authorized_keys} files.
+
+\dt \cw{-d} \e{key-identifiers}
+
+\dd Delete each specified key from the agent's memory, so that the
+agent will no longer serve it to clients unless it is loaded in again
+using \cw{pageant -a}.
+
+\dt \cw{-D}
+
+\dd Delete all keys from the agent's memory, leaving it completely
+empty.
+
+\S{pageant-manpage-options} OPTIONS
+
+\dt \cw{-v}
+
+\dd Verbose mode. When Pageant runs in agent mode, this option causes
+it to log all agent activity to its standard error. For example, you
+might run
+
+\lcont{
+
+\c eval $(pageant -X -v 2>~/.pageant.log)
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+and expect a list of all signatures requested by agent clients to
+build up in that log file.
+
+The log information is the same as that produced by the \cw{--debug}
+lifetime option, but \cw{--debug} sends it to standard output (since
+that is the main point of debugging mode) whereas \cw{-v} in all other
+lifetime modes sends the same log data to standard error (being a
+by-product of the program's main purpose). Using \cw{-v} in
+\cw{--debug} mode has no effect: the log still goes to standard
+output.
+
+}
+
+\dt \cw{-s}, \cw{-c}
+
+\dd Force Pageant to output its environment setup commands in the
+style of POSIX / Bourne shells (\cw{-s}) or C shells (\cw{-c})
+respectively. If neither option is given, Pageant will guess based on
+whether the environment variable \cw{SHELL} has a value ending in
+\cq{csh}.
+
+\dt \cw{--help}
+
+\dd Print a brief summary of command-line options and terminate.
+
+\dt \cw{--version}
+
+\dd Print the version of Pageant.
+
+\dt \cw{--}
+
+\dd Cause all subsequent arguments to be treated as key file names,
+even if they look like options.

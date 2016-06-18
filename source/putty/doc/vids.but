@@ -1,0 +1,4 @@
+\# Fallback versionid for use when the build system hasn't provided a
+better one.
+
+\versionid no version information available

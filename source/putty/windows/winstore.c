@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <assert.h>
 #include "putty.h"
 #include "storage.h"
 
@@ -152,7 +153,7 @@ void *open_settings_r(const char *sessionname)
 
 char *read_setting_s(void *handle, const char *key)
 {
-    DWORD type, size;
+    DWORD type, allocsize, size;
     char *ret;
 
     if (!handle)
@@ -164,13 +165,17 @@ char *read_setting_s(void *handle, const char *key)
 	type != REG_SZ)
 	return NULL;
 
-    ret = snewn(size+1, char);
+    allocsize = size+1;         /* allow for an extra NUL if needed */
+    ret = snewn(allocsize, char);
     if (RegQueryValueEx((HKEY) handle, key, 0,
 			&type, ret, &size) != ERROR_SUCCESS ||
 	type != REG_SZ) {
         sfree(ret);
         return NULL;
     }
+    assert(size < allocsize);
+    ret[size] = '\0'; /* add an extra NUL in case RegQueryValueEx
+                       * didn't supply one */
 
     return ret;
 }
@@ -449,6 +454,16 @@ int verify_host_key(const char *hostname, int port,
 	return 0;		       /* key matched OK in registry */
 }
 
+int have_ssh_host_key(const char *hostname, int port,
+		      const char *keytype)
+{
+    /*
+     * If we have a host key, verify_host_key will return 0 or 2.
+     * If we don't have one, it'll return 1.
+     */
+    return verify_host_key(hostname, port, keytype, "") != 1;
+}
+
 void store_host_key(const char *hostname, int port,
 		    const char *keytype, const char *key)
 {
@@ -642,7 +657,7 @@ static int transform_jumplist_registry
     int ret;
     HKEY pjumplist_key, psettings_tmp;
     DWORD type;
-    int value_length;
+    DWORD value_length;
     char *old_value, *new_value;
     char *piterator_old, *piterator_new, *piterator_tmp;
 

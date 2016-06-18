@@ -45,8 +45,23 @@ struct RandPool {
     int stir_pending;
 };
 
-static struct RandPool pool;
 int random_active = 0;
+
+#ifdef FUZZING
+/*
+ * Special dummy version of the RNG for use when fuzzing.
+ */
+void random_add_noise(void *noise, int length) { }
+void random_add_heavynoise(void *noise, int length) { }
+void random_ref(void) { }
+void random_unref(void) { }
+int random_byte(void)
+{
+    return 0x45; /* Chosen by eight fair coin tosses */
+}
+void random_get_savedata(void **data, int *len) { }
+#else /* !FUZZING */
+static struct RandPool pool;
 long next_noise_collection;
 
 #ifdef RANDOM_DIAGNOSTICS
@@ -288,14 +303,13 @@ void random_ref(void)
     if (!random_active) {
 	memset(&pool, 0, sizeof(pool));    /* just to start with */
 
-        random_active++;
-
 	noise_get_heavy(random_add_heavynoise_bitbybit);
 	random_stir();
 
 	next_noise_collection =
 	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer, &pool);
     }
+    random_active++;
 }
 
 void random_unref(void)
@@ -327,3 +341,4 @@ void random_get_savedata(void **data, int *len)
     *data = buf;
     random_stir();
 }
+#endif

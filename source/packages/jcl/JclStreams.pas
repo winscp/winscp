@@ -2061,7 +2061,6 @@ end;
 function TJclSplitStream.InternalLoadVolume(Index: Integer): Boolean;
 var
   OldVolumeIndex: Integer;
-  OldVolumeMaxSize: Int64;
   OldVolumePosition: Int64;
   OldVolume: TStream;
 begin
@@ -2071,22 +2070,21 @@ begin
   begin
     // save current pointers
     OldVolumeIndex := FVolumeIndex;
-    OldVolumeMaxSize := FVolumeMaxSize;
     OldVolumePosition := FVolumePosition;
     OldVolume := FVolume;
 
     FVolumeIndex := Index;
     FVolumePosition := 0;
     FVolume := GetVolume(Index);
-    FVolumeMaxSize := GetVolumeMaxSize(Index);
     Result := Assigned(FVolume);
-    if Result then
+    if Result then begin
+      FVolumeMaxSize := GetVolumeMaxSize(Index);
       FVolume.Seek(0, soBeginning)
+    end
     else
     begin
       // restore old pointers if volume load failed
       FVolumeIndex := OldVolumeIndex;
-      FVolumeMaxSize := OldVolumeMaxSize;
       FVolumePosition := OldVolumePosition;
       FVolume := OldVolume;
     end;
@@ -2122,8 +2120,8 @@ begin
       Break;
 
     // with next volume
-    Dec(Count, Result);
-    Inc(Data, Result);
+    Dec(Count, LoopRead);
+    Inc(Data, LoopRead);
     if not InternalLoadVolume(FVolumeIndex + 1) then
       Break;
   until False;
@@ -2196,8 +2194,10 @@ begin
         RemainingOffset := RemainingOffset - FVolumeMaxSize + FVolumePosition;
         Result := Result + FVolumeMaxSize - FVolumePosition;
         FPosition := Result;
-        if not InternalLoadVolume(FVolumeIndex + 1) then
+        if not InternalLoadVolume(FVolumeIndex + 1) then begin
+          FVolumePosition := FVolumeMaxSize;
           Break;
+        end;
       end;
     end;
   until RemainingOffset = 0;

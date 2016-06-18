@@ -366,7 +366,7 @@ const
 begin
   if ((ExceptionFlags = cNonContinuable) or (ExceptionFlags = cNonContinuableException)) and
     (ExceptionCode = cDelphiException) and
-    (NumberOfArguments in [DelphiNumberOfArguments,CBuilderNumberOfArguments])
+    (NumberOfArguments in [DelphiNumberOfArguments, CBuilderNumberOfArguments])
     //TODO: The difference for Win64 is bigger than 100 Byte and the comment of JVCS revision 0.3 of
     //  JclDebug.pas, where HookedRaiseException has been added by Petr, isn't very informative
     {$IFDEF CPU32}
