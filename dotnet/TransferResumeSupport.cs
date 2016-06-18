@@ -22,7 +22,7 @@ namespace WinSCP
         public TransferResumeSupportState State { get; set; }
         public int Threshold { get { return GetThreshold(); } set { SetThreshold(value); } }
 
-        public TransferResumeSupport()
+        internal TransferResumeSupport()
         {
             State = TransferResumeSupportState.Default;
             _threshold = 100; // (100 KB)
@@ -54,23 +54,25 @@ namespace WinSCP
 
         private int GetThreshold()
         {
-            if (State != TransferResumeSupportState.Smart)
-            {
-                throw new InvalidOperationException("Threshold is undefined when state is not Smart");
-            }
+            CheckSmart();
             return _threshold;
         }
 
         private void SetThreshold(int threshold)
         {
-            if (_threshold != threshold)
+            if (threshold <= 0)
             {
-                if (threshold <= 0)
-                {
-                    throw new ArgumentOutOfRangeException("threshold", "Threshold must be positive");
-                }
-                State = TransferResumeSupportState.Smart;
-                _threshold = threshold;
+                throw new ArgumentOutOfRangeException("threshold", "Threshold must be positive");
+            }
+            CheckSmart();
+            _threshold = threshold;
+        }
+
+        private void CheckSmart()
+        {
+            if (State != TransferResumeSupportState.Smart)
+            {
+                throw new InvalidOperationException("Threshold is undefined when state is not Smart");
             }
         }
 

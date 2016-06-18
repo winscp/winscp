@@ -19,7 +19,6 @@
 #define smallsigma0(x) ( ror((x),7) ^ ror((x),18) ^ shr((x),3) )
 #define smallsigma1(x) ( ror((x),17) ^ ror((x),19) ^ shr((x),10) )
 
-#ifndef WINSCP_VS
 void SHA256_Core_Init(SHA256_State *s) {
     s->h[0] = 0x6a09e667;
     s->h[1] = 0xbb67ae85;
@@ -30,11 +29,7 @@ void SHA256_Core_Init(SHA256_State *s) {
     s->h[6] = 0x1f83d9ab;
     s->h[7] = 0x5be0cd19;
 }
-#endif // !WINSCP_VS
 
-#ifndef WINSCP_VS
-void SHA256_Block(SHA256_State *s, uint32 *block);
-#else
 void SHA256_Block(SHA256_State *s, uint32 *block) {
     uint32 w[80];
     uint32 a,b,c,d,e,f,g,h;
@@ -89,9 +84,7 @@ void SHA256_Block(SHA256_State *s, uint32 *block) {
     s->h[0] += a; s->h[1] += b; s->h[2] += c; s->h[3] += d;
     s->h[4] += e; s->h[5] += f; s->h[6] += g; s->h[7] += h;
 }
-#endif // !WINSCP_VS
 
-#ifndef WINSCP_VS
 /* ----------------------------------------------------------------------
  * Outer SHA256 algorithm: take an arbitrary length byte string,
  * convert it into 16-word blocks with the prescribed padding at
@@ -191,7 +184,6 @@ void SHA256_Simple(const void *p, int len, unsigned char *output) {
     SHA256_Init(&s);
     SHA256_Bytes(&s, p, len);
     SHA256_Final(&s, output);
-    smemclr(&s, sizeof(s));
 }
 
 /*
@@ -207,25 +199,7 @@ static void *sha256_init(void)
     return s;
 }
 
-static void *sha256_copy(const void *vold)
-{
-    const SHA256_State *old = (const SHA256_State *)vold;
-    SHA256_State *s;
-
-    s = snew(SHA256_State);
-    *s = *old;
-    return s;
-}
-
-static void sha256_free(void *handle)
-{
-    SHA256_State *s = handle;
-
-    smemclr(s, sizeof(*s));
-    sfree(s);
-}
-
-static void sha256_bytes(void *handle, const void *p, int len)
+static void sha256_bytes(void *handle, void *p, int len)
 {
     SHA256_State *s = handle;
 
@@ -237,12 +211,11 @@ static void sha256_final(void *handle, unsigned char *output)
     SHA256_State *s = handle;
 
     SHA256_Final(s, output);
-    sha256_free(s);
+    sfree(s);
 }
 
 const struct ssh_hash ssh_sha256 = {
-    sha256_init, sha256_copy, sha256_bytes, sha256_final, sha256_free,
-    32, "SHA-256"
+    sha256_init, sha256_bytes, sha256_final, 32, "SHA-256"
 };
 
 /* ----------------------------------------------------------------------
@@ -250,14 +223,13 @@ const struct ssh_hash ssh_sha256 = {
  * HMAC wrapper on it.
  */
 
-static void *sha256_make_context(void *cipher_ctx)
+static void *sha256_make_context(void)
 {
     return snewn(3, SHA256_State);
 }
 
 static void sha256_free_context(void *handle)
 {
-    smemclr(handle, 3 * sizeof(SHA256_State));
     sfree(handle);
 }
 
@@ -335,7 +307,7 @@ static int hmacsha256_verresult(void *handle, unsigned char const *hmac)
 {
     unsigned char correct[32];
     hmacsha256_genresult(handle, correct);
-    return smemeq(correct, hmac, 32);
+    return !memcmp(correct, hmac, 32);
 }
 
 static int sha256_verify(void *handle, unsigned char *blk, int len,
@@ -343,7 +315,7 @@ static int sha256_verify(void *handle, unsigned char *blk, int len,
 {
     unsigned char correct[32];
     sha256_do_hmac(handle, blk, len, seq, correct);
-    return smemeq(correct, blk + len, 32);
+    return !memcmp(correct, blk + len, 32);
 }
 
 const struct ssh_mac ssh_hmac_sha256 = {
@@ -351,11 +323,10 @@ const struct ssh_mac ssh_hmac_sha256 = {
     sha256_generate, sha256_verify,
     hmacsha256_start, hmacsha256_bytes,
     hmacsha256_genresult, hmacsha256_verresult,
-    "hmac-sha2-256", "hmac-sha2-256-etm@openssh.com",
-    32, 32,
+    "hmac-sha2-256",
+    32,
     "HMAC-SHA-256"
 };
-#endif // !WINSCP_VS
 
 #ifdef TEST
 

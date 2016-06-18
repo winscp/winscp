@@ -245,13 +245,9 @@ begin
       if Pointers[I].OldPtr <> nil then begin
         Patch := TMethodPatch.Create;
         if PatchPtr(Pointers[I].OldPtr, Pointers[I].NewPtr, Pointers[I].Name, Patch) then
-        begin
           MethodPatches.Add(Patch)
-        end
-          else
-        begin
+        else
           Patch.Free;
-        end;
       end;
     end;
   end;
@@ -260,9 +256,7 @@ end;
 procedure RevertPatchedMethods;
 begin
   if ImageListCount = 0 then
-  begin
     FreeAndNil(MethodPatches);
-  end;
 end;
 
 { TMethodPatch }
@@ -276,9 +270,7 @@ end;
 destructor TMethodPatch.Destroy;
 begin
   if OldPointer <> nil then
-  begin
     PatchBack;
-  end;
   inherited Destroy;
 end;
 
@@ -477,12 +469,13 @@ var
   Png: TPngImage;
 begin
   if TObject(Self) is TPngImageList then begin
-    Png := TPngImage.Create;
+    // MP
+    Png := nil;
     try
       CreatePNGMasked(Image, MaskColor, Png);
       result := AddPng(Png);
     finally
-      Png.Free;
+      if Assigned(Png) then Png.Free;
     end;
   end
   else begin
@@ -1011,7 +1004,8 @@ begin
       BeginUpdate;
       try
         Item := FPngImages[Index];
-        CreatePNG(Image, Mask, Item.PngImage);
+        Item.FPngImage.Free;
+        CreatePNG(Image, Mask, Item.FPngImage);
         Icon := PngToIcon(Item.PngImage, Item.Background);
         ImageList_ReplaceIcon(Handle, Index, Icon);
         DestroyIcon(Icon);
@@ -1046,7 +1040,8 @@ begin
       BeginUpdate;
       try
         Item := FPngImages[Index];
-        ConvertToPNG(Image, Item.PngImage);
+        Item.FPngImage.Free;
+        ConvertToPNG(Image, Item.FPngImage);
         Icon := PngToIcon(Item.PngImage, Item.Background);
         ImageList_ReplaceIcon(Handle, Index, Icon);
         DestroyIcon(Icon);
@@ -1081,7 +1076,8 @@ begin
       BeginUpdate;
       try
         Item := FPngImages[Index];
-        CreatePNGMasked(NewImage, MaskColor, Item.PngImage);
+        Item.FPngImage.Free;
+        CreatePNGMasked(NewImage, MaskColor, Item.FPngImage);
         Icon := PngToIcon(Item.PngImage, Item.Background);
         ImageList_ReplaceIcon(Handle, Index, Icon);
         DestroyIcon(Icon);

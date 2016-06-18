@@ -147,7 +147,7 @@ procedure Register;
 implementation
 
 uses
-  CommCtrl, PasTools, Math;
+  CommCtrl;
 
 procedure Register;
 begin
@@ -156,7 +156,8 @@ end;
 
 function DefBtnWidth: Integer;
 begin
-  Result := Min(GetSystemMetrics(SM_CXVSCROLL), ScaleByPixelsPerInch(15));
+  Result := GetSystemMetrics(SM_CXVSCROLL);
+  if Result > 15 then Result := 15;
 end;
 
 type
@@ -319,7 +320,7 @@ begin
   if not IsValidChar(Key) then
   begin
     Key := #0;
-    MessageBeep(MB_ICONHAND)
+    MessageBeep(0)
   end;
   if Key <> #0 then
   begin
@@ -437,7 +438,7 @@ procedure TUpDownEdit.UpClick(Sender: TObject);
 var
   OldText: string;
 begin
-  if ReadOnly then MessageBeep(MB_ICONHAND)
+  if ReadOnly then MessageBeep(0)
   else begin
     FChanging := True;
     try
@@ -459,7 +460,7 @@ procedure TUpDownEdit.DownClick(Sender: TObject);
 var
   OldText: string;
 begin
-  if ReadOnly then MessageBeep(MB_ICONHAND)
+  if ReadOnly then MessageBeep(0)
   else begin
     FChanging := True;
     try

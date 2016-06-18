@@ -17,8 +17,6 @@ CRITICAL_SECTION putty_section;
 bool SaveRandomSeed;
 char appname_[50];
 const char *const appname = appname_;
-extern const int share_can_be_downstream = FALSE;
-extern const int share_can_be_upstream = FALSE;
 //---------------------------------------------------------------------------
 extern "C"
 {
@@ -43,11 +41,11 @@ void __fastcall PuttyInitialize()
 
   sk_init();
 
-  AnsiString VersionString = AnsiString(SshVersionString());
-  DebugAssert(!VersionString.IsEmpty() && (static_cast<size_t>(VersionString.Length()) < LENOF(sshver)));
+  AnsiString VersionString = SshVersionString();
+  assert(!VersionString.IsEmpty() && (static_cast<size_t>(VersionString.Length()) < LENOF(sshver)));
   strcpy(sshver, VersionString.c_str());
-  AnsiString AppName = AnsiString(AppNameString());
-  DebugAssert(!AppName.IsEmpty() && (static_cast<size_t>(AppName.Length()) < LENOF(appname_)));
+  AnsiString AppName = AppNameString();
+  assert(!AppName.IsEmpty() && (static_cast<size_t>(AppName.Length()) < LENOF(appname_)));
   strcpy(appname_, AppName.c_str());
 }
 //---------------------------------------------------------------------------
@@ -61,8 +59,6 @@ void __fastcall PuttyFinalize()
 
   sk_cleanup();
   win_misc_cleanup();
-  win_secur_cleanup();
-  ec_cleanup();
   DeleteCriticalSection(&putty_section);
 }
 //---------------------------------------------------------------------------
@@ -90,7 +86,7 @@ extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
   }
 
   frontend = get_ssh_frontend(plug);
-  DebugAssert(frontend);
+  assert(frontend);
 
   TSecureShell * SecureShell = reinterpret_cast<TSecureShell*>(frontend);
   if (!pfwd)
@@ -107,15 +103,15 @@ extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
 //---------------------------------------------------------------------------
 int from_backend(void * frontend, int is_stderr, const char * data, int datalen)
 {
-  DebugAssert(frontend);
+  assert(frontend);
   if (is_stderr >= 0)
   {
-    DebugAssert((is_stderr == 0) || (is_stderr == 1));
+    assert((is_stderr == 0) || (is_stderr == 1));
     ((TSecureShell *)frontend)->FromBackend((is_stderr == 1), reinterpret_cast<const unsigned char *>(data), datalen);
   }
   else
   {
-    DebugAssert(is_stderr == -1);
+    assert(is_stderr == -1);
     ((TSecureShell *)frontend)->CWrite(data, datalen);
   }
   return 0;
@@ -133,58 +129,34 @@ int from_backend_eof(void * /*frontend*/)
   return FALSE;
 }
 //---------------------------------------------------------------------------
-int get_userpass_input(prompts_t * p, const unsigned char * /*in*/, int /*inlen*/)
+int get_userpass_input(prompts_t * p, unsigned char * /*in*/, int /*inlen*/)
 {
-  DebugAssert(p != NULL);
+  assert(p != NULL);
   TSecureShell * SecureShell = reinterpret_cast<TSecureShell *>(p->frontend);
-  DebugAssert(SecureShell != NULL);
+  assert(SecureShell != NULL);
 
   int Result;
   TStrings * Prompts = new TStringList();
   TStrings * Results = new TStringList();
   try
   {
-    UnicodeString Name = UTF8ToString(p->name);
-    UnicodeString AName = Name;
-    TPromptKind PromptKind = SecureShell->IdentifyPromptKind(AName);
-    bool UTF8Prompt = (PromptKind != pkPassphrase);
-
     for (int Index = 0; Index < int(p->n_prompts); Index++)
     {
       prompt_t * Prompt = p->prompts[Index];
-      UnicodeString S;
-      if (UTF8Prompt)
-      {
-        S = UTF8ToString(Prompt->prompt);
-      }
-      else
-      {
-        S = UnicodeString(AnsiString(Prompt->prompt));
-      }
-      Prompts->AddObject(S, (TObject *)(FLAGMASK(Prompt->echo, pupEcho)));
+      Prompts->AddObject(Prompt->prompt, (TObject *)(FLAGMASK(Prompt->echo, pupEcho)));
       // this fails, when new passwords do not match on change password prompt,
       // and putty retries the prompt
-      DebugAssert(Prompt->resultsize == 0);
+      assert(Prompt->resultsize == 0);
       Results->Add(L"");
     }
 
-    UnicodeString Instructions = UTF8ToString(p->instruction);
-    if (SecureShell->PromptUser(p->to_server, Name, p->name_reqd,
-          Instructions, p->instr_reqd, Prompts, Results))
+    if (SecureShell->PromptUser(p->to_server, p->name, p->name_reqd,
+          p->instruction, p->instr_reqd, Prompts, Results))
     {
       for (int Index = 0; Index < int(p->n_prompts); Index++)
       {
         prompt_t * Prompt = p->prompts[Index];
-        RawByteString S;
-        if (UTF8Prompt)
-        {
-          S = RawByteString(UTF8String(Results->Strings[Index]));
-        }
-        else
-        {
-          S = RawByteString(AnsiString(Results->Strings[Index]));
-        }
-        prompt_set_result(Prompt, S.c_str());
+        prompt_set_result(Prompt, AnsiString(Results->Strings[Index]).c_str());
       }
       Result = 1;
     }
@@ -205,7 +177,7 @@ int get_userpass_input(prompts_t * p, const unsigned char * /*in*/, int /*inlen*
 char * get_ttymode(void * /*frontend*/, const char * /*mode*/)
 {
   // should never happen when Config.nopty == TRUE
-  DebugFail();
+  FAIL;
   return NULL;
 }
 //---------------------------------------------------------------------------
@@ -218,7 +190,7 @@ void logevent(void * frontend, const char * string)
   }
 }
 //---------------------------------------------------------------------------
-void connection_fatal(void * frontend, const char * fmt, ...)
+void connection_fatal(void * frontend, char * fmt, ...)
 {
   va_list Param;
   char Buf[200];
@@ -227,41 +199,28 @@ void connection_fatal(void * frontend, const char * fmt, ...)
   Buf[LENOF(Buf) - 1] = '\0'; \
   va_end(Param);
 
-  DebugAssert(frontend != NULL);
+  assert(frontend != NULL);
   ((TSecureShell *)frontend)->PuttyFatalError(Buf);
 }
 //---------------------------------------------------------------------------
-int verify_ssh_host_key(void * frontend, char * host, int port, const char * keytype,
+int verify_ssh_host_key(void * frontend, char * host, int port, char * keytype,
   char * keystr, char * fingerprint, void (*/*callback*/)(void * ctx, int result),
   void * /*ctx*/)
 {
-  DebugAssert(frontend != NULL);
-  static_cast<TSecureShell *>(frontend)->VerifyHostKey(host, port, keytype, keystr, fingerprint);
+  assert(frontend != NULL);
+  ((TSecureShell *)frontend)->VerifyHostKey(host, port, keytype, keystr, fingerprint);
 
   // We should return 0 when key was not confirmed, we throw exception instead.
   return 1;
 }
 //---------------------------------------------------------------------------
-int have_ssh_host_key(void * frontend, const char * hostname, int port,
-  const char * keytype)
-{
-  DebugAssert(frontend != NULL);
-  return static_cast<TSecureShell *>(frontend)->HaveHostKey(hostname, port, keytype) ? 1 : 0;
-}
-//---------------------------------------------------------------------------
 int askalg(void * frontend, const char * algtype, const char * algname,
   void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
 {
-  DebugAssert(frontend != NULL);
+  assert(frontend != NULL);
   ((TSecureShell *)frontend)->AskAlg(algtype, algname);
 
   // We should return 0 when alg was not confirmed, we throw exception instead.
-  return 1;
-}
-//---------------------------------------------------------------------------
-int askhk(void * /*frontend*/, const char * /*algname*/, const char * /*betteralgs*/,
-  void (*/*callback*/)(void *ctx, int result), void * /*ctx*/)
-{
   return 1;
 }
 //---------------------------------------------------------------------------
@@ -272,8 +231,8 @@ void old_keyfile_warning(void)
 //---------------------------------------------------------------------------
 void display_banner(void * frontend, const char * banner, int size)
 {
-  DebugAssert(frontend);
-  UnicodeString Banner(UTF8String(banner, size));
+  assert(frontend);
+  UnicodeString Banner(banner, size);
   ((TSecureShell *)frontend)->DisplayBanner(Banner);
 }
 //---------------------------------------------------------------------------
@@ -289,7 +248,7 @@ static void SSHFatalError(const char * Format, va_list Param)
   throw ESshFatal(NULL, Buf);
 }
 //---------------------------------------------------------------------------
-void fatalbox(const char * fmt, ...)
+void fatalbox(char * fmt, ...)
 {
   va_list Param;
   va_start(Param, fmt);
@@ -297,7 +256,7 @@ void fatalbox(const char * fmt, ...)
   va_end(Param);
 }
 //---------------------------------------------------------------------------
-void modalfatalbox(const char * fmt, ...)
+void modalfatalbox(char * fmt, ...)
 {
   va_list Param;
   va_start(Param, fmt);
@@ -305,7 +264,7 @@ void modalfatalbox(const char * fmt, ...)
   va_end(Param);
 }
 //---------------------------------------------------------------------------
-void nonfatal(const char * fmt, ...)
+void nonfatal(char * fmt, ...)
 {
   va_list Param;
   va_start(Param, fmt);
@@ -322,19 +281,24 @@ int askappend(void * /*frontend*/, Filename * /*filename*/,
   void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
 {
   // this is called from logging.c of putty, which is never used with WinSCP
-  DebugFail();
+  FAIL;
   return 0;
 }
 //---------------------------------------------------------------------------
-void ldisc_echoedit_update(void * /*handle*/)
+void ldisc_send(void * /*handle*/, char * /*buf*/, int len, int /*interactive*/)
 {
-  DebugFail();
+  // This is only here because of the calls to ldisc_send(NULL,
+  // 0) in ssh.c. Nothing in PSCP actually needs to use the ldisc
+  // as an ldisc. So if we get called with any real data, I want
+  // to know about it.
+  assert(len == 0);
+  USEDPARAM(len);
 }
 //---------------------------------------------------------------------------
 void agent_schedule_callback(void (* /*callback*/)(void *, void *, int),
   void * /*callback_ctx*/, void * /*data*/, int /*len*/)
 {
-  DebugFail();
+  FAIL;
 }
 //---------------------------------------------------------------------------
 void notify_remote_exit(void * /*frontend*/)
@@ -401,18 +365,18 @@ char * get_remote_username(Conf * conf)
 static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool CanCreate)
 {
   long R;
-  DebugAssert(Configuration != NULL);
+  assert(Configuration != NULL);
 
-  DebugAssert(Key == HKEY_CURRENT_USER);
-  DebugUsedParam(Key);
+  assert(Key == HKEY_CURRENT_USER);
+  USEDPARAM(Key);
 
   UnicodeString RegKey = SubKey;
   int PuttyKeyLen = OriginalPuttyRegistryStorageKey.Length();
-  DebugAssert(RegKey.SubString(1, PuttyKeyLen) == OriginalPuttyRegistryStorageKey);
+  assert(RegKey.SubString(1, PuttyKeyLen) == OriginalPuttyRegistryStorageKey);
   RegKey = RegKey.SubString(PuttyKeyLen + 1, RegKey.Length() - PuttyKeyLen);
   if (!RegKey.IsEmpty())
   {
-    DebugAssert(RegKey[1] == L'\\');
+    assert(RegKey[1] == L'\\');
     RegKey.Delete(1, 1);
   }
 
@@ -424,7 +388,7 @@ static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool Can
   else
   {
     // we expect this to be called only from verify_host_key() or store_host_key()
-    DebugAssert(RegKey == L"SshHostKeys");
+    assert(RegKey == L"SshHostKeys");
 
     THierarchicalStorage * Storage = Configuration->CreateConfigStorage();
     Storage->AccessMode = (CanCreate ? smReadWrite : smRead);
@@ -457,7 +421,7 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
   unsigned long * Type, unsigned char * Data, unsigned long * DataSize)
 {
   long R;
-  DebugAssert(Configuration != NULL);
+  assert(Configuration != NULL);
 
   THierarchicalStorage * Storage = reinterpret_cast<THierarchicalStorage *>(Key);
   AnsiString Value;
@@ -465,12 +429,12 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
   {
     if (UnicodeString(ValueName) == L"RandSeedFile")
     {
-      Value = AnsiString(Configuration->RandomSeedFileName);
+      Value = Configuration->RandomSeedFileName;
       R = ERROR_SUCCESS;
     }
     else
     {
-      DebugFail();
+      FAIL;
       R = ERROR_READ_FAULT;
     }
   }
@@ -478,7 +442,7 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
   {
     if (Storage->ValueExists(ValueName))
     {
-      Value = AnsiString(Storage->ReadStringRaw(ValueName, L""));
+      Value = Storage->ReadStringRaw(ValueName, L"");
       R = ERROR_SUCCESS;
     }
     else
@@ -489,7 +453,7 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
 
   if (R == ERROR_SUCCESS)
   {
-    DebugAssert(Type != NULL);
+    assert(Type != NULL);
     *Type = REG_SZ;
     char * DataStr = reinterpret_cast<char *>(Data);
     strncpy(DataStr, Value.c_str(), *DataSize);
@@ -503,12 +467,12 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
 long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long /*Reserved*/,
   unsigned long Type, const unsigned char * Data, unsigned long DataSize)
 {
-  DebugAssert(Configuration != NULL);
+  assert(Configuration != NULL);
 
-  DebugAssert(Type == REG_SZ);
-  DebugUsedParam(Type);
+  assert(Type == REG_SZ);
+  USEDPARAM(Type);
   THierarchicalStorage * Storage = reinterpret_cast<THierarchicalStorage *>(Key);
-  DebugAssert(Storage != NULL);
+  assert(Storage != NULL);
   if (Storage != NULL)
   {
     UnicodeString Value(reinterpret_cast<const char*>(Data), DataSize - 1);
@@ -520,7 +484,7 @@ long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long /*R
 //---------------------------------------------------------------------------
 long reg_close_winscp_key(HKEY Key)
 {
-  DebugAssert(Configuration != NULL);
+  assert(Configuration != NULL);
 
   THierarchicalStorage * Storage = reinterpret_cast<THierarchicalStorage *>(Key);
   if (Storage != NULL)
@@ -533,9 +497,8 @@ long reg_close_winscp_key(HKEY Key)
 //---------------------------------------------------------------------------
 TKeyType KeyType(UnicodeString FileName)
 {
-  DebugAssert(ktUnopenable == SSH_KEYTYPE_UNOPENABLE);
-  DebugAssert(ktSSHCom == SSH_KEYTYPE_SSHCOM);
-  DebugAssert(ktSSH2PublicOpenSSH == SSH_KEYTYPE_SSH2_PUBLIC_OPENSSH);
+  assert(ktUnopenable == SSH_KEYTYPE_UNOPENABLE);
+  assert(ktSSHCom == SSH_KEYTYPE_SSHCOM);
   UTF8String UtfFileName = UTF8String(FileName);
   Filename * KeyFile = filename_from_str(UtfFileName.c_str());
   TKeyType Result = (TKeyType)key_type(KeyFile);
@@ -543,130 +506,14 @@ TKeyType KeyType(UnicodeString FileName)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeString & Comment)
+UnicodeString KeyTypeName(TKeyType KeyType)
 {
-  UTF8String UtfFileName = UTF8String(FileName);
-  Filename * KeyFile = filename_from_str(UtfFileName.c_str());
-  bool Result;
-  char * CommentStr = NULL;
-  switch (KeyType)
-  {
-    case ktSSH2:
-      Result = (ssh2_userkey_encrypted(KeyFile, &CommentStr) != 0);
-      break;
-
-    case ktOpenSSHPEM:
-    case ktOpenSSHNew:
-    case ktSSHCom:
-      Result = (import_encrypted(KeyFile, KeyType, &CommentStr) != NULL);
-      break;
-
-    default:
-      DebugFail();
-      Result = false;
-      break;
-  }
-
-  if (CommentStr != NULL)
-  {
-    Comment = UnicodeString(AnsiString(CommentStr));
-    // ktOpenSSH has no comment, PuTTY defaults to file path
-    if (Comment == FileName)
-    {
-      Comment = ExtractFileName(FileName);
-    }
-    sfree(CommentStr);
-  }
-
-  return Result;
-}
-//---------------------------------------------------------------------------
-TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase)
-{
-  UTF8String UtfFileName = UTF8String(FileName);
-  Filename * KeyFile = filename_from_str(UtfFileName.c_str());
-  AnsiString AnsiPassphrase = Passphrase;
-  struct ssh2_userkey * Ssh2Key = NULL;
-  const char * ErrorStr = NULL;
-
-  switch (KeyType)
-  {
-    case ktSSH2:
-      Ssh2Key = ssh2_load_userkey(KeyFile, AnsiPassphrase.c_str(), &ErrorStr);
-      break;
-
-    case ktOpenSSHPEM:
-    case ktOpenSSHNew:
-    case ktSSHCom:
-      Ssh2Key = import_ssh2(KeyFile, KeyType, AnsiPassphrase.c_str(), &ErrorStr);
-      break;
-
-    default:
-      DebugFail();
-      break;
-  }
-
-  Shred(AnsiPassphrase);
-
-  if (Ssh2Key == NULL)
-  {
-    UnicodeString Error = AnsiString(ErrorStr);
-    // While theoretically we may get "unable to open key file" and
-    // so we should check system error code,
-    // we actully never get here unless we call KeyType previously
-    // and handle ktUnopenable accordingly.
-    throw Exception(Error);
-  }
-  else if (Ssh2Key == SSH2_WRONG_PASSPHRASE)
-  {
-    throw Exception(LoadStr(AUTH_TRANSL_WRONG_PASSPHRASE));
-  }
-
-  return reinterpret_cast<TPrivateKey *>(Ssh2Key);
-}
-//---------------------------------------------------------------------------
-void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment)
-{
-  AnsiString AnsiComment(Comment);
-  struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
-  sfree(Ssh2Key->comment);
-  Ssh2Key->comment = dupstr(AnsiComment.c_str());
-}
-//---------------------------------------------------------------------------
-void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
-  const UnicodeString & Passphrase, TPrivateKey * PrivateKey)
-{
-  UTF8String UtfFileName = UTF8String(FileName);
-  Filename * KeyFile = filename_from_str(UtfFileName.c_str());
-  struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
-  AnsiString AnsiPassphrase = Passphrase;
-  char * PassphrasePtr = (AnsiPassphrase.IsEmpty() ? NULL : AnsiPassphrase.c_str());
-  switch (KeyType)
-  {
-    case ktSSH2:
-      if (!ssh2_save_userkey(KeyFile, Ssh2Key, PassphrasePtr))
-      {
-        int Error = errno;
-        throw EOSExtException(FMTLOAD(KEY_SAVE_ERROR, (FileName)), Error);
-      }
-      break;
-
-    default:
-      DebugFail();
-      break;
-  }
-}
-//---------------------------------------------------------------------------
-void FreeKey(TPrivateKey * PrivateKey)
-{
-  struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
-  Ssh2Key->alg->freekey(Ssh2Key->data);
-  sfree(Ssh2Key);
+  return key_type_to_str(KeyType);
 }
 //---------------------------------------------------------------------------
 __int64 __fastcall ParseSize(UnicodeString SizeStr)
 {
-  AnsiString AnsiSizeStr = AnsiString(SizeStr);
+  AnsiString AnsiSizeStr = SizeStr;
   return parse_blocksize64(AnsiSizeStr.c_str());
 }
 //---------------------------------------------------------------------------
@@ -707,71 +554,47 @@ bool __fastcall HasGSSAPI(UnicodeString CustomPath)
   return (has > 0);
 }
 //---------------------------------------------------------------------------
-static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, UnicodeString & KeyType)
-{
-  const wchar_t NormalizedSeparator = L'-';
-  const int MaxCount = 10;
-  const ssh_signkey * SignKeys[MaxCount];
-  int Count = LENOF(SignKeys);
-  // We may use find_pubkey_alg, but it gets complicated with normalized fingerprint
-  // as the names have different number of dashes
-  get_hostkey_algs(&Count, SignKeys);
-
-  for (int Index = 0; Index < Count; Index++)
-  {
-    const ssh_signkey * SignKey = SignKeys[Index];
-    UnicodeString Name = UnicodeString(SignKey->name);
-    if (StartsStr(Name + L" ", Fingerprint))
-    {
-      int LenStart = Name.Length() + 1;
-      Fingerprint[LenStart] = NormalizedSeparator;
-      int Space = Fingerprint.Pos(L" ");
-      DebugAssert(IsNumber(Fingerprint.SubString(LenStart + 1, Space - LenStart - 1)));
-      Fingerprint.Delete(LenStart + 1, Space - LenStart);
-      Fingerprint = ReplaceChar(Fingerprint, L':', NormalizedSeparator);
-      KeyType = UnicodeString(SignKey->keytype);
-      return;
-    }
-    else if (StartsStr(Name + NormalizedSeparator, Fingerprint))
-    {
-      KeyType = UnicodeString(SignKey->keytype);
-      return;
-    }
-  }
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall NormalizeFingerprint(UnicodeString Fingerprint)
 {
-  UnicodeString KeyType; // unused
-  DoNormalizeFingerprint(Fingerprint, KeyType);
+  UnicodeString DssName = UnicodeString(ssh_dss.name) + L" ";
+  UnicodeString RsaName = UnicodeString(ssh_rsa.name) + L" ";
+
+  bool IsFingerprint = false;
+  int LenStart;
+  if (StartsStr(DssName, Fingerprint))
+  {
+    LenStart = DssName.Length() + 1;
+    IsFingerprint = true;
+  }
+  else if (StartsStr(RsaName, Fingerprint))
+  {
+    LenStart = RsaName.Length() + 1;
+    IsFingerprint = true;
+  }
+
+  if (IsFingerprint)
+  {
+    Fingerprint[LenStart - 1] = L'-';
+    int Space = Fingerprint.Pos(L" ");
+    assert(IsNumber(Fingerprint.SubString(LenStart, Space - LenStart)));
+    Fingerprint.Delete(LenStart, Space - LenStart + 1);
+    Fingerprint = ReplaceChar(Fingerprint, L':', L'-');
+  }
   return Fingerprint;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall KeyTypeFromFingerprint(UnicodeString Fingerprint)
 {
-  UnicodeString KeyType;
-  DoNormalizeFingerprint(Fingerprint, KeyType);
-  return KeyType;
+  Fingerprint = NormalizeFingerprint(Fingerprint);
+  UnicodeString Type;
+  if (StartsStr(UnicodeString(ssh_dss.name) + L"-", Fingerprint))
+  {
+    Type = ssh_dss.keytype;
+  }
+  else if (StartsStr(UnicodeString(ssh_rsa.name) + L"-", Fingerprint))
+  {
+    Type = ssh_rsa.keytype;
+  }
+  return Type;
 }
-//---------------------------------------------------------------------------
-UnicodeString __fastcall GetPuTTYVersion()
-{
-  // "Release 0.64"
-  // "Pre-release 0.65:2015-07-20.95501a1"
-  // "Development snapshot 2015-12-22.51465fa"
-  UnicodeString Result = get_putty_version();
-  // Skip "Release", "Pre-release", "Development snapshot"
-  int P = Result.LastDelimiter(L" ");
-  Result.Delete(1, P);
-  return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall Sha256(const char * Data, size_t Size)
-{
-  unsigned char Digest[32];
-  SHA256_Simple(Data, Size, Digest);
-  UnicodeString Result(BytesToHex(Digest, LENOF(Digest)));
-  return Result;
-}
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

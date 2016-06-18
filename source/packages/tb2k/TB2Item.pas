@@ -701,7 +701,6 @@ type
     FAnimationDirection: TTBAnimationDirection;
     FView: TTBView;
     procedure CMHintShow(var Message: TCMHintShow); message CM_HINTSHOW;
-    procedure CMHintShowPause(var Message: TMessage); message CM_HINTSHOWPAUSE;
     procedure CMShowingChanged(var Message: TMessage); message CM_SHOWINGCHANGED;
     procedure WMClose(var Message: TWMClose); message WM_CLOSE;
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
@@ -2744,27 +2743,15 @@ begin
 end;
 
 function TTBItemViewer.GetHintText: String;
-var
-  P: Integer;
-  LongHint: string;
-  HintStyleCaption: string;
+var P: Integer;
 begin
-  if Pos('|', Item.Hint) > 0 then
-  begin
-    Result := GetShortHint(Item.Hint);
-    LongHint := GetLongHint(Item.Hint);
-  end
-    else
-  begin
-    LongHint := Item.Hint;
-  end;
-  HintStyleCaption := StripAccelChars(StripTrailingPunctuation(GetCaptionText));
+  Result := GetShortHint(Item.Hint);
   { If there is no short hint, use the caption for the hint. Like Office,
     strip any trailing colon or ellipsis. }
-  if (Result = '') and (not(tboNoAutoHint in Item.EffectiveOptions) or (LongHint <> '')) and
+  if (Result = '') and not(tboNoAutoHint in Item.EffectiveOptions) and
      (not(tbisSubmenu in Item.ItemStyle) or (tbisCombo in Item.ItemStyle) or
       not CaptionShown) then
-    Result := HintStyleCaption;
+    Result := StripAccelChars(StripTrailingPunctuation(GetCaptionText));
   { Call associated action's OnHint event handler to post-process the hint }
   if Assigned(Item.ActionLink) and
      (Item.ActionLink.Action is TCustomAction) then begin
@@ -2773,13 +2760,6 @@ begin
     { Note: TControlActionLink.DoShowHint actually misinterprets the result
       of DoHint, but we get it right... }
   end;
-  if Result = '' then
-    Result := LongHint;
-  // "Select all" and "Select All" are still the same
-  if SameText(LongHint, Result) then
-    LongHint := '';
-  if CaptionShown and (LongHint = '') and SameText(Result, HintStyleCaption) then
-    Result := '';
   { Add shortcut text }
   if (Result <> '') and Application.HintShortCuts then
   begin
@@ -2791,8 +2771,6 @@ begin
       if (Item.ShortCut <> scNone) then
         Result := Format('%s (%s)', [Result, ShortCutToText(Item.ShortCut)]);
   end;
-  if LongHint <> '' then
-    Result := Result + '|' + GetLongHint(LongHint);
 end;
 
 function TTBItemViewer.CaptionShown: Boolean;
@@ -6692,15 +6670,6 @@ begin
       CursorRect := FView.Selected.BoundsRect;
       HintStr := FView.FSelected.GetHintText;
     end;
-  end;
-end;
-
-procedure TTBPopupWindow.CMHintShowPause(var Message: TMessage);
-begin
-  // Hint was not active previously
-  if not Boolean(Message.WParam) then
-  begin
-    PInteger(Message.LParam)^ := PInteger(Message.LParam)^ * 2;
   end;
 end;
 

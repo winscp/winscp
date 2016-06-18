@@ -14,7 +14,6 @@
 #include "WinConfiguration.h"
 #include "Custom.h"
 #include <Math.hpp>
-#include <GUITools.h>
 //---------------------------------------------------------------------
 #pragma link "IEComboBox"
 #pragma link "PngImageList"
@@ -199,8 +198,6 @@ __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner)
   FSharedScrollOnDragOver = new TTreeViewScrollOnDragOver(SharedProfilesView, true);
 
   UseSystemSettings(this);
-  SelectScaledImageList(BookmarkImageList);
-  LoadDialogImage(Image, L"Open folder");
 }
 //---------------------------------------------------------------------
 __fastcall TLocationProfilesDialog::~TLocationProfilesDialog()
@@ -368,7 +365,7 @@ void __fastcall TLocationProfilesDialog::LoadBookmarks(
 
   Configuration->Usage->SetMax(L"MaxBookmarks", BookmarkList->Count);
 
-  DebugAssert(BookmarkList != NULL);
+  assert(BookmarkList != NULL);
 
   Folders->Clear();
   for (int Index = 0; Index < BookmarkList->Count; Index++)
@@ -397,7 +394,7 @@ void __fastcall TLocationProfilesDialog::LoadBookmarks(
     TTreeNode * Parent = NULL;
     if (!Bookmark->Node.IsEmpty())
     {
-      DebugAssert(Folders->IndexOf(Bookmark->Node) >= 0);
+      assert(Folders->IndexOf(Bookmark->Node) >= 0);
       Parent = dynamic_cast<TTreeNode *>(Folders->Objects[Folders->IndexOf(Bookmark->Node)]);
     }
     ProfilesView->Items->AddChildObject(Parent, BookmarkText(Bookmark), Bookmark);
@@ -444,12 +441,12 @@ template<class T>
 typename T * GetProfilesObject(TObject * Sender, T * SessionObject, T * SharedObject)
 {
   TControl * Control = dynamic_cast<TControl *>(Sender);
-  DebugAssert(Control != NULL);
+  assert(Control != NULL);
   switch (abs(Control->Tag))
   {
     case 1: return SessionObject;
     case 2: return SharedObject;
-    default: DebugFail(); return NULL;
+    default: FAIL; return NULL;
   }
 }
 //---------------------------------------------------------------------------
@@ -461,8 +458,8 @@ TBookmarkList * TLocationProfilesDialog::GetBookmarkList(TObject * Sender)
 TStringList * TLocationProfilesDialog::GetFolders(TObject * Sender)
 {
   #ifdef _DEBUG
-  DebugAssert(FSessionProfilesViewHandle == SessionProfilesView->Handle);
-  DebugAssert(FSharedProfilesViewHandle == SharedProfilesView->Handle);
+  assert(FSessionProfilesViewHandle == SessionProfilesView->Handle);
+  assert(FSharedProfilesViewHandle == SharedProfilesView->Handle);
   #endif
   return GetProfilesObject(Sender, FSessionFolders, FSharedFolders);
 }
@@ -482,7 +479,7 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool In
   TBookmarkList * BookmarkList = GetBookmarkList(Sender);
   TTreeView * ProfilesView = GetProfilesView(Sender);
 
-  DebugAssert(!LocalDirectory.IsEmpty() || !RemoteDirectory.IsEmpty());
+  assert(!LocalDirectory.IsEmpty() || !RemoteDirectory.IsEmpty());
 
   bool Result;
   UnicodeString BookmarkName;
@@ -501,7 +498,7 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool In
   UnicodeString SelectedNode;
   if (Selected != NULL)
   {
-    DebugAssert(!Initial);
+    assert(!Initial);
     SelectedBookmark = (TBookmark *)Selected->Data;
     if (SelectedBookmark != NULL)
     {
@@ -570,7 +567,7 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool In
           else if ((Selected != NULL) && (SelectedBookmark == NULL))
           {
             // must be a folder
-            DebugAssert(!Selected->Parent); // more than one level of folders is not supported
+            assert(!Selected->Parent); // more than one level of folders is not supported
             Bookmark->Node = Selected->Text;
             BookmarkList->Add(Bookmark);
             Selected = ProfilesView->Items->AddChildObject(Selected, BookmarkText(Bookmark), Bookmark);
@@ -609,7 +606,7 @@ void __fastcall TLocationProfilesDialog::RemoveBookmark(TObject * Sender)
   TTreeView * ProfilesView = GetProfilesView(Sender);
   TStringList * Folders = GetFolders(Sender);
 
-  DebugAssert(ProfilesView->Selected);
+  assert(ProfilesView->Selected);
   TTreeNode * Node = ProfilesView->Selected;
   if (Node->Data)
   {
@@ -618,7 +615,7 @@ void __fastcall TLocationProfilesDialog::RemoveBookmark(TObject * Sender)
     Node->Delete();
     if (ParentNode && !ParentNode->Count)
     {
-      DebugAssert(Folders->IndexOfObject(ParentNode) >= 0);
+      assert(Folders->IndexOfObject(ParentNode) >= 0);
       Folders->Delete(Folders->IndexOfObject(ParentNode));
       ParentNode->Delete();
     }
@@ -629,12 +626,12 @@ void __fastcall TLocationProfilesDialog::RemoveBookmark(TObject * Sender)
     if (MessageDialog(Message, qtConfirmation,
           qaYes | qaNo, HELP_LOCATION_PROFILE_DELETE) == qaYes)
     {
-      DebugAssert(Node->Count);
+      assert(Node->Count);
       for (int i = 0; i < Node->Count; i++)
       {
         BookmarkList->Delete((TBookmark *)Node->Item[i]->Data);
       }
-      DebugAssert(Folders->IndexOfObject(Node) >= 0);
+      assert(Folders->IndexOfObject(Node) >= 0);
       Folders->Delete(Folders->IndexOfObject(Node));
       Node->Delete();
     }
@@ -654,7 +651,7 @@ void __fastcall TLocationProfilesDialog::BookmarkMove(TObject * Sender,
   TTreeView * ProfilesView = GetProfilesView(Sender);
   TStringList * Folders = GetFolders(Sender);
 
-  DebugAssert(Source && Source->Data);
+  assert(Source && Source->Data);
 
   TBookmark * Bookmark = (TBookmark *)Source->Data;
   TTreeNode * PrevFolderNode = Source->Parent;
@@ -689,7 +686,7 @@ void __fastcall TLocationProfilesDialog::BookmarkMove(TObject * Sender,
 
   if (PrevFolderNode && !PrevFolderNode->Count)
   {
-    DebugAssert(Folders->IndexOfObject(PrevFolderNode) >= 0);
+    assert(Folders->IndexOfObject(PrevFolderNode) >= 0);
     Folders->Delete(Folders->IndexOfObject(PrevFolderNode));
     PrevFolderNode->Delete();
   }
@@ -702,14 +699,14 @@ void __fastcall TLocationProfilesDialog::BookmarkButtonClick(TObject * Sender)
 {
   TControl * Control = dynamic_cast<TControl *>(Sender);
   TTreeNode * Node = GetProfilesView(Sender)->Selected;
-  DebugAssert(Node);
-  DebugAssert(Node->Data);
+  assert(Node);
+  assert(Node->Data);
 
   TTreeNode * TargetNode;
   if (Control->Tag < 0)
   {
     TargetNode = Node->getPrevSibling();
-    DebugAssert(TargetNode);
+    assert(TargetNode);
   }
   else
   {
@@ -754,7 +751,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewDragDrop(
   if ((Source == ProfilesView) && (ProfilesView->DropTarget != NULL) &&
       (FBookmarkDragSource != ProfilesView->DropTarget))
   {
-    DebugAssert(FBookmarkDragSource);
+    assert(FBookmarkDragSource);
 
     TTreeNode * Target = ProfilesView->DropTarget;
     BookmarkMove(Sender, FBookmarkDragSource, Target);
@@ -775,7 +772,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewDblClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::FormShow(TObject * /*Sender*/)
 {
-  if (DebugAlwaysTrue(Terminal != NULL))
+  if (Terminal)
   {
     // cache session key, in case terminal is closed while the window is open
     FSessionKey = Terminal->SessionData->SessionKey;
@@ -845,7 +842,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewChange(
 {
   if (Node && Node->Data)
   {
-    DebugAssert(!FChanging);
+    assert(!FChanging);
     FChanging = true;
     try
     {
@@ -868,7 +865,7 @@ void __fastcall TLocationProfilesDialog::BookmarkMoveToButtonClick(TObject * Sen
   TTreeView * ProfilesView = GetProfilesView(Sender);
   TStringList * Folders = GetFolders(Sender);
 
-  DebugAssert(ProfilesView->Selected->Data);
+  assert(ProfilesView->Selected->Data);
   TBookmark * Bookmark = (TBookmark *)ProfilesView->Selected->Data;
 
   TBookmarkFolderDialog * Dialog = new TBookmarkFolderDialog(Folders);
@@ -887,7 +884,7 @@ void __fastcall TLocationProfilesDialog::BookmarkMoveToButtonClick(TObject * Sen
       else if (I >= 0)
       {
         FolderNode = dynamic_cast<TTreeNode *>(Folders->Objects[I]);
-        DebugAssert(FolderNode);
+        assert(FolderNode);
       }
       else
       {
@@ -897,7 +894,7 @@ void __fastcall TLocationProfilesDialog::BookmarkMoveToButtonClick(TObject * Sen
         if (I < Folders->Count-1)
         {
           NextNode = dynamic_cast<TTreeNode *>(Folders->Objects[I+1]);
-          DebugAssert(NextNode);
+          assert(NextNode);
         }
         else if (Folders->Count > 1)
         {
@@ -905,11 +902,11 @@ void __fastcall TLocationProfilesDialog::BookmarkMoveToButtonClick(TObject * Sen
         }
         else
         {
-          DebugAssert(ProfilesView->Items->Count);
+          assert(ProfilesView->Items->Count);
           NextNode = ProfilesView->Items->Item[0];
         }
         FolderNode = ProfilesView->Items->Insert(NextNode, NodeName);
-        DebugAssert(FolderNode);
+        assert(FolderNode);
         Folders->Objects[I] = FolderNode;
       }
 
@@ -926,7 +923,7 @@ void __fastcall TLocationProfilesDialog::RenameBookmark(TObject * Sender)
 {
   TTreeView * ProfilesView = GetProfilesView(Sender);
 
-  DebugAssert(ProfilesView->Selected != NULL);
+  assert(ProfilesView->Selected != NULL);
   if (ProfilesView->Selected != NULL)
   {
     ProfilesView->SetFocus();
@@ -975,16 +972,16 @@ void __fastcall TLocationProfilesDialog::HelpButtonClick(TObject * /*Sender*/)
 void __fastcall TLocationProfilesDialog::ProfilesViewCollapsed(
   TObject * Sender, TTreeNode * Node)
 {
-  DebugAssert(Node != NULL);
-  DebugAssert(Node->Data == NULL);
+  assert(Node != NULL);
+  assert(Node->Data == NULL);
   GetBookmarkList(Sender)->NodeOpened[Node->Text] = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::ProfilesViewExpanded(
   TObject * Sender, TTreeNode * Node)
 {
-  DebugAssert(Node != NULL);
-  DebugAssert(Node->Data == NULL);
+  assert(Node != NULL);
+  assert(Node->Data == NULL);
   GetBookmarkList(Sender)->NodeOpened[Node->Text] = true;
 }
 //---------------------------------------------------------------------------
@@ -1011,7 +1008,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewEdited(
     {
       throw Exception(FMTLOAD(DUPLICATE_BOOKMARK_FOLDER, (S)));
     }
-    DebugAssert(Node->Count);
+    assert(Node->Count);
     Folders->Delete(Folders->IndexOf(Node->Text));
     int I = Folders->AddObject(S, Node);
 
@@ -1020,7 +1017,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewEdited(
     if (I < Folders->Count-1)
     {
       NextNode = dynamic_cast<TTreeNode *>(Folders->Objects[I+1]);
-      DebugAssert(NextNode);
+      assert(NextNode);
     }
     else if (Folders->Count > 1)
     {
@@ -1028,7 +1025,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewEdited(
     }
     else
     {
-      DebugAssert(ProfilesView->Items->Count);
+      assert(ProfilesView->Items->Count);
       NextNode = ProfilesView->Items->Item[0];
     }
 
@@ -1076,14 +1073,14 @@ void __fastcall TLocationProfilesDialog::ShortCutBookmarkButtonClick(
   TBookmarkList * BookmarkList = GetBookmarkList(Sender);
   TTreeView * ProfilesView = GetProfilesView(Sender);
 
-  DebugAssert(ProfilesView->Selected != NULL);
+  assert(ProfilesView->Selected != NULL);
   TTreeNode * Node = ProfilesView->Selected;
-  DebugAssert(Node->Data != NULL);
+  assert(Node->Data != NULL);
 
   TBookmark * Bookmark = static_cast<TBookmark *>(Node->Data);
 
   TShortCuts ShortCuts;
-  WinConfiguration->CustomCommandShortCuts(ShortCuts);
+  WinConfiguration->CustomCommandList->ShortCuts(ShortCuts);
   BookmarkList->ShortCuts(ShortCuts);
   TShortCut ShortCut = Bookmark->ShortCut;
   if (DoShortCutDialog(ShortCut, ShortCuts, HelpKeyword))

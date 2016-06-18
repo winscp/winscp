@@ -226,7 +226,7 @@ void __fastcall TCopyParamPresetDialog::FormCloseQuery(TObject * /*Sender*/,
 void __fastcall TCopyParamPresetDialog::CurrentRuleButtonClick(
   TObject * /*Sender*/)
 {
-  DebugAssert(FCurrentRuleData != NULL);
+  assert(FCurrentRuleData != NULL);
   SetRuleData(*FCurrentRuleData);
 }
 //---------------------------------------------------------------------------

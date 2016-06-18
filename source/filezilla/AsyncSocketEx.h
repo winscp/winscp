@@ -60,289 +60,306 @@ and this copyright notice stays intact in the source files.
 If you use this class in commercial applications, please send a short message
 to tim.kosse@gmx.de
 */
-//---------------------------------------------------------------------------
-#ifndef AsyncSocketExH
-#define AsyncSocketExH
-//---------------------------------------------------------------------------
+
+#if !defined(AFX_ASYNCSOCKETEX_H__AA9E4531_63B1_442F_9A71_09B2FEEDF34E__INCLUDED_)
+#define AFX_ASYNCSOCKETEX_H__AA9E4531_63B1_442F_9A71_09B2FEEDF34E__INCLUDED_
+
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
 #define FD_FORCEREAD (1<<15)
-//---------------------------------------------------------------------------
+
 #include <winsock2.h>
 #include <Ws2tcpip.h>
-//---------------------------------------------------------------------------
+
 class CAsyncSocketExHelperWindow;
+
+#ifndef NOLAYERS
 class CAsyncSocketExLayer;
-class CCriticalSectionWrapper;
-//---------------------------------------------------------------------------
+
 struct t_callbackMsg
 {
-  CAsyncSocketExLayer* pLayer;
-  int nType;
-  int nParam1;
-  int nParam2;
-  char* str;
+	CAsyncSocketExLayer* pLayer;
+	int nType;
+	int nParam1;
+	int nParam2;
+	char* str;
 };
-//---------------------------------------------------------------------------
+
+#endif //NOLAYERS
+
+class CCriticalSectionWrapper;
 class CAsyncSocketEx
 {
 public:
-  CAsyncSocketEx();
-  virtual ~CAsyncSocketEx();
+	///////////////////////////////////////
+	//Functions that imitate CAsyncSocket//
+	///////////////////////////////////////
 
-  BOOL Create(UINT nSocketPort = 0, int nSocketType = SOCK_STREAM,
-     long lEvent = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT |  FD_CONNECT | FD_CLOSE,
-     LPCTSTR lpszSocketAddress = NULL, int nFamily = AF_INET);
+	//Construction
+	//------------
 
-  // Attaches a socket handle to a CAsyncSocketEx object.
-  BOOL Attach(SOCKET hSocket,
-      long lEvent = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE);
+	//Constructs a CAsyncSocketEx object.
+	CAsyncSocketEx();
+	virtual ~CAsyncSocketEx();
 
-  // Detaches a socket handle from a CAsyncSocketEx object.
-  SOCKET Detach( );
+	//Creates a socket.
+	BOOL Create(UINT nSocketPort = 0, int nSocketType = SOCK_STREAM,
+				long lEvent = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT |	FD_CONNECT | FD_CLOSE,
+				LPCTSTR lpszSocketAddress = NULL, int nFamily = AF_INET);
 
-  // Gets the error status for the last operation that failed.
-  static int GetLastError();
+	//Attributes
+	//---------
 
-  // Gets the address of the peer socket to which the socket is connected.
-  BOOL GetPeerName(CString& rPeerAddress, UINT& rPeerPort);
-  BOOL GetPeerName(SOCKADDR* lpSockAddr, int* lpSockAddrLen);
+	//Attaches a socket handle to a CAsyncSocketEx object.
+	BOOL Attach( SOCKET hSocket,
+				long lEvent = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT |
+				FD_CONNECT | FD_CLOSE );
 
-  // Gets the local name for a socket.
-  BOOL GetSockName(CString& rSocketAddress, UINT& rSocketPort);
-  BOOL GetSockName(SOCKADDR* lpSockAddr, int* lpSockAddrLen);
+	//Detaches a socket handle from a CAsyncSocketEx object.
+	SOCKET Detach( );
 
-  // Retrieves a socket option.
-  BOOL GetSockOpt(int nOptionName, void* lpOptionValue, int* lpOptionLen, int nLevel = SOL_SOCKET);
+	//Gets the error status for the last operation that failed.
+	static int GetLastError();
 
-  // Sets a socket option.
-  BOOL SetSockOpt(int nOptionName, const void* lpOptionValue, int nOptionLen, int nLevel = SOL_SOCKET);
+	//Gets the address of the peer socket to which the socket is connected.
+#ifdef _AFX
+	BOOL GetPeerName( CString& rPeerAddress, UINT& rPeerPort );
+#endif
+	BOOL GetPeerName( SOCKADDR* lpSockAddr, int* lpSockAddrLen );
 
-  // Gets the socket family
-  int GetFamily() const;
+	//Gets the local name for a socket.
+#ifdef _AFX
+	BOOL GetSockName( CString& rSocketAddress, UINT& rSocketPort );
+#endif
+	BOOL GetSockName( SOCKADDR* lpSockAddr, int* lpSockAddrLen );
 
-  // Sets the socket family
-  bool SetFamily(int nFamily);
+	//Retrieves a socket option.
+	BOOL GetSockOpt(int nOptionName, void* lpOptionValue, int* lpOptionLen, int nLevel = SOL_SOCKET);
 
-  // Operations
+	//Sets a socket option.
+	BOOL SetSockOpt(int nOptionName, const void* lpOptionValue, int nOptionLen, int nLevel = SOL_SOCKET);
 
-  // Accepts a connection on the socket.
-  virtual BOOL Accept(CAsyncSocketEx& rConnectedSocket, SOCKADDR * lpSockAddr = NULL, int * lpSockAddrLen = NULL);
+	//Gets the socket family
+	int GetFamily() const;
 
-  // Requests event notification for the socket.
-  BOOL AsyncSelect(long lEvent = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE);
+	//Sets the socket family
+	bool SetFamily(int nFamily);
 
-  // Associates a local address with the socket.
-  BOOL Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress);
-  BOOL Bind(const SOCKADDR* lpSockAddr, int nSockAddrLen);
+	//Operations
+	//----------
 
-  // Closes the socket.
-  virtual void Close();
+	//Accepts a connection on the socket.
+	virtual BOOL Accept( CAsyncSocketEx& rConnectedSocket, SOCKADDR* lpSockAddr = NULL, int* lpSockAddrLen = NULL );
 
-  // Establishes a connection to a peer socket.
-  virtual BOOL Connect(LPCTSTR lpszHostAddress, UINT nHostPort);
-  virtual BOOL Connect(const SOCKADDR * lpSockAddr, int nSockAddrLen);
+	//Requests event notification for the socket.
+	BOOL AsyncSelect( long lEvent = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE );
 
-  // Controls the mode of the socket.
-  BOOL IOCtl(long lCommand, DWORD * lpArgument);
+	//Associates a local address with the socket.
+	BOOL Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress);
+	BOOL Bind(const SOCKADDR* lpSockAddr, int nSockAddrLen);
 
-  // Establishes a socket to listen for incoming connection requests.
-  BOOL Listen(int nConnectionBacklog = 5);
+	//Closes the socket.
+	virtual void Close();
 
-  // Receives data from the socket.
-  virtual int Receive(void * lpBuf, int nBufLen, int nFlags = 0);
+	//Establishes a connection to a peer socket.
+	virtual BOOL Connect(LPCTSTR lpszHostAddress, UINT nHostPort);
+	virtual BOOL Connect(const SOCKADDR* lpSockAddr, int nSockAddrLen);
 
-  // Sends data to a connected socket.
-  virtual int Send(const void * lpBuf, int nBufLen, int nFlags = 0);
+	//Controls the mode of the socket.
+	BOOL IOCtl( long lCommand, DWORD* lpArgument );
 
-  // Disables Send and/or Receive calls on the socket.
-  BOOL ShutDown(int nHow = sends);
-  enum { receives = 0, sends = 1, both = 2 };
+	//Establishes a socket to listen for incoming connection requests.
+	BOOL Listen( int nConnectionBacklog = 5 );
 
-  // Overridable Notification Functions
-  //----------------------------------
+	//Receives data from the socket.
+	virtual int Receive(void* lpBuf, int nBufLen, int nFlags = 0);
 
-  // Notifies a listening socket that it can accept pending connection requests by calling Accept.
-  virtual void OnAccept(int nErrorCode);
+	//Sends data to a connected socket.
+	virtual int Send(const void* lpBuf, int nBufLen, int nFlags = 0);
 
-  // Notifies a socket that the socket connected to it has closed.
-  virtual void OnClose(int nErrorCode);
+	//Disables Send and/or Receive calls on the socket.
+	BOOL ShutDown( int nHow = sends );
+	enum { receives = 0, sends = 1, both = 2 };
 
-  // Notifies a connecting socket that the connection attempt is complete, whether successfully or in error.
-  virtual void OnConnect(int nErrorCode);
+	//Overridable Notification Functions
+	//----------------------------------
 
-  // Notifies a listening socket that there is data to be retrieved by calling Receive.
-  virtual void OnReceive(int nErrorCode);
+	//Notifies a listening socket that it can accept pending connection requests by calling Accept.
+	virtual void OnAccept(int nErrorCode);
 
-  // Notifies a socket that it can send data by calling Send.
-  virtual void OnSend(int nErrorCode);
+	//Notifies a socket that the socket connected to it has closed.
+	virtual void OnClose(int nErrorCode);
 
-  // Additional functions
+	//Notifies a connecting socket that the connection attempt is complete, whether successfully or in error.
+	virtual void OnConnect(int nErrorCode);
 
-  // Resets layer chain.
-  void RemoveAllLayers();
+	//Notifies a listening socket that there is data to be retrieved by calling Receive.
+	virtual void OnReceive(int nErrorCode);
 
-  // Attaches a new layer to the socket.
-  BOOL AddLayer(CAsyncSocketExLayer * pLayer);
+	//Notifies a socket that it can send data by calling Send.
+	virtual void OnSend(int nErrorCode);
 
-  // Is a layer attached to the socket?
-  BOOL IsLayerAttached() const;
+	////////////////////////
+	//Additional functions//
+	////////////////////////
 
-  // Returns the handle of the socket.
-  SOCKET GetSocketHandle();
+#ifndef NOLAYERS
+	//Resets layer chain.
+	void RemoveAllLayers();
 
-  // Trigers an event on the socket
-  // Any combination of FD_READ, FD_WRITE, FD_CLOSE, FD_ACCEPT, FD_CONNECT and FD_FORCEREAD is valid for lEvent.
-  BOOL TriggerEvent(long lEvent);
+	//Attaches a new layer to the socket.
+	BOOL AddLayer(CAsyncSocketExLayer *pLayer);
+
+	//Is a layer attached to the socket?
+	BOOL IsLayerAttached() const;
+#endif //NOLAYERS
+
+	//Returns the handle of the socket.
+	SOCKET GetSocketHandle();
+
+	//Trigers an event on the socket
+	// Any combination of FD_READ, FD_WRITE, FD_CLOSE, FD_ACCEPT, FD_CONNECT and FD_FORCEREAD is valid for lEvent.
+	BOOL TriggerEvent(long lEvent);
 
 protected:
-  // Strucure to hold the socket data
-  struct t_AsyncSocketExData
-  {
-    SOCKET hSocket; // Socket handle
-    int nSocketIndex; // Index of socket, required by CAsyncSocketExHelperWindow
-    int nFamily;
-    addrinfo * addrInfo, * nextAddr; // Iterate through protocols on connect failure
-    bool onCloseCalled; // Set to true on first received OnClose event
-  } m_SocketData;
+	//Strucure to hold the socket data
+	struct t_AsyncSocketExData
+	{
+		SOCKET hSocket; //Socket handle
+		int nSocketIndex; //Index of socket, required by CAsyncSocketExHelperWindow
+		int nFamily;
+		addrinfo *addrInfo, *nextAddr; // Iterate through protocols on connect failure
+		bool onCloseCalled; // Set to true on first received OnClose event
+	} m_SocketData;
 
-  // If using layers, only the events specified with m_lEvent will send to the event handlers.
-  long m_lEvent;
+	//If using layers, only the events specified with m_lEvent will send to the event handlers.
+	long m_lEvent;
 
-  // AsyncGetHostByName
-  char *m_pAsyncGetHostByNameBuffer; // Buffer for hostend structure
-  HANDLE m_hAsyncGetHostByNameHandle; // TaskHandle
-  int m_nAsyncGetHostByNamePort; // Port to connect to
+	//AsyncGetHostByName
+	char *m_pAsyncGetHostByNameBuffer; //Buffer for hostend structure
+	HANDLE m_hAsyncGetHostByNameHandle; //TaskHandle
+	int m_nAsyncGetHostByNamePort; //Port to connect to
 
-  // Returns the handle of the helper window
-  HWND GetHelperWindowHandle();
+	//Returns the handle of the helper window
+	HWND GetHelperWindowHandle();
 
-  // Attaches socket handle to helper window
-  void AttachHandle(SOCKET hSocket);
+	//Attaches socket handle to helper window
+	void AttachHandle(SOCKET hSocket);
 
-  // Detaches socket handle to helper window
-  void DetachHandle(SOCKET hSocket);
+	//Detaches socket handle to helper window
+	void DetachHandle(SOCKET hSocket);
 
-  // Critical section for thread synchronization
-  static CCriticalSectionWrapper m_sGlobalCriticalSection;
+	//Critical section for thread synchronization
+	static CCriticalSectionWrapper m_sGlobalCriticalSection;
 
-  // Pointer to the data of the local thread
-  struct t_AsyncSocketExThreadData
-  {
-    CAsyncSocketExHelperWindow * m_pHelperWindow;
-    int nInstanceCount;
-    DWORD nThreadId;
-    std::list<CAsyncSocketEx *> layerCloseNotify;
-  } * m_pLocalAsyncSocketExThreadData;
+	//Pointer to the data of the local thread
+	struct t_AsyncSocketExThreadData
+	{
+		CAsyncSocketExHelperWindow *m_pHelperWindow;
+		int nInstanceCount;
+		DWORD nThreadId;
+		std::list<CAsyncSocketEx*> layerCloseNotify;
+	} *m_pLocalAsyncSocketExThreadData;
 
-  // List of the data structures for all threads
-  static struct t_AsyncSocketExThreadDataList
-  {
-    t_AsyncSocketExThreadDataList * pNext;
-    t_AsyncSocketExThreadData * pThreadData;
-  } *m_spAsyncSocketExThreadDataList;
+	//List of the data structures for all threads
+	static struct t_AsyncSocketExThreadDataList
+	{
+		t_AsyncSocketExThreadDataList *pNext;
+		t_AsyncSocketExThreadData *pThreadData;
+	} *m_spAsyncSocketExThreadDataList;
 
-  // Initializes Thread data and helper window, fills m_pLocalAsyncSocketExThreadData
-  BOOL InitAsyncSocketExInstance();
+	//Initializes Thread data and helper window, fills m_pLocalAsyncSocketExThreadData
+	BOOL InitAsyncSocketExInstance();
 
-  // Destroys helper window after last instance of CAsyncSocketEx in current thread has been closed
-  void FreeAsyncSocketExInstance();
+	//Destroys helper window after last instance of CAsyncSocketEx in current thread has been closed
+	void FreeAsyncSocketExInstance();
 
-  // Iterate through protocols on failure
-  bool TryNextProtocol();
+	// Iterate through protocols on failure
+	bool TryNextProtocol();
 
-  void ResendCloseNotify();
+	void ResendCloseNotify();
 
-  // Add a new notification to the list of pending callbacks
-  void AddCallbackNotification(const t_callbackMsg & msg);
+#ifndef NOLAYERS
+	// Add a new notification to the list of pending callbacks
+	void AddCallbackNotification(const t_callbackMsg& msg);
+#endif // NOLAYERS
 
-  int m_nPendingEvents;
+#ifndef NOSOCKETSTATES
+	int m_nPendingEvents;
 
-  int GetState() const;
-  virtual void SetState(int nState);
-  static const TCHAR * GetStateDesc(int nState);
-  static bool LogStateChange(int nState1, int nState2);
+	int GetState() const;
+	void SetState(int nState);
+	static const TCHAR * GetStateDesc(int nState);
+	static bool LogStateChange(int nState1, int nState2);
 
-  int m_nState;
+	int m_nState;
+#endif //NOSOCKETSTATES
 
-  // Layer chain
-  CAsyncSocketExLayer * m_pFirstLayer;
-  CAsyncSocketExLayer * m_pLastLayer;
+#ifndef NOLAYERS
+	//Layer chain
+	CAsyncSocketExLayer *m_pFirstLayer;
+	CAsyncSocketExLayer *m_pLastLayer;
 
-  friend CAsyncSocketExLayer;
+	friend CAsyncSocketExLayer;
 
-  // Called by the layers to notify application of some events
-  virtual int OnLayerCallback(std::list<t_callbackMsg> & callbacks);
+	//Called by the layers to notify application of some events
+	virtual int OnLayerCallback(std::list<t_callbackMsg>& callbacks);
+#endif //NOLAYERS
 
-  // Used by Bind with AF_UNSPEC sockets
-  UINT m_nSocketPort;
-  LPTSTR m_lpszSocketAddress;
+	// Used by Bind with AF_UNSPEC sockets
+	UINT m_nSocketPort;
+	LPTSTR m_lpszSocketAddress;
 
-  friend CAsyncSocketExHelperWindow;
+	friend CAsyncSocketExHelperWindow;
 
-  // Pending callbacks
-  std::list<t_callbackMsg> m_pendingCallbacks;
+#ifndef NOLAYERS
+	// Pending callbacks
+	std::list<t_callbackMsg> m_pendingCallbacks;
+#endif // NOLAYERS
 
-  virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg) {};
-  virtual bool LoggingSocketMessage(int nMessageType) { return true; };
-  virtual void ConfigureSocket() {};
+	virtual void LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat) {};
+	virtual bool LoggingSocketMessage(int nMessageType) { return true; };
+	virtual void ConfigureSocket() {};
 };
-//---------------------------------------------------------------------------
+
+#ifndef NOLAYERS
 #define LAYERCALLBACK_STATECHANGE 0
 #define LAYERCALLBACK_LAYERSPECIFIC 1
-//---------------------------------------------------------------------------
+#endif //NOLAYERS
+
 enum SocketState
 {
-  notsock,
-  unconnected,
-  connecting,
-  listening,
-  connected,
-  closed,
-  aborted,
-  attached
+	notsock,
+	unconnected,
+	connecting,
+	listening,
+	connected,
+	closed,
+	aborted,
+	attached
 };
-//---------------------------------------------------------------------------
-inline TCHAR* Inet6AddrToString(in6_addr & addr)
+
+#ifndef MPEXT
+#ifdef _UNICODE
+#define _sntprintf _snwprintf
+#else
+#define _sntprintf _snprintf
+#endif
+#endif
+
+inline TCHAR* Inet6AddrToString(in6_addr& addr)
 {
-  LPTSTR buf = new TCHAR[512];
+	LPTSTR buf = new TCHAR[512];
 
-  _sntprintf(buf, 512, L"%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
-       addr.s6_bytes[0], addr.s6_bytes[1], addr.s6_bytes[2], addr.s6_bytes[3],
-       addr.s6_bytes[4], addr.s6_bytes[5], addr.s6_bytes[6], addr.s6_bytes[7],
-       addr.s6_bytes[8], addr.s6_bytes[9], addr.s6_bytes[10], addr.s6_bytes[11],
-       addr.s6_bytes[12], addr.s6_bytes[13], addr.s6_bytes[14], addr.s6_bytes[15]);
+	_sntprintf(buf, 512, _T("%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x"),
+			 addr.s6_bytes[0], addr.s6_bytes[1], addr.s6_bytes[2], addr.s6_bytes[3],
+			 addr.s6_bytes[4], addr.s6_bytes[5], addr.s6_bytes[6], addr.s6_bytes[7],
+			 addr.s6_bytes[8], addr.s6_bytes[9], addr.s6_bytes[10], addr.s6_bytes[11],
+			 addr.s6_bytes[12], addr.s6_bytes[13], addr.s6_bytes[14], addr.s6_bytes[15]);
 
-  return buf;
+	return buf ;
 }
-//---------------------------------------------------------------------------
-class CCriticalSectionWrapper
-{
-public:
-  CCriticalSectionWrapper()
-  {
-    m_bInitialized = TRUE;
-    InitializeCriticalSection(&m_criticalSection);
-  }
 
-  ~CCriticalSectionWrapper()
-  {
-    if (m_bInitialized)
-      DeleteCriticalSection(&m_criticalSection);
-    m_bInitialized = FALSE;
-  }
-
-  void Lock()
-  {
-    if (m_bInitialized)
-      EnterCriticalSection(&m_criticalSection);
-  }
-  void Unlock()
-  {
-    if (m_bInitialized)
-      LeaveCriticalSection(&m_criticalSection);
-  }
-protected:
-  CRITICAL_SECTION m_criticalSection;
-  BOOL m_bInitialized;
-};
-//---------------------------------------------------------------------------
-#endif // AsyncSocketExH
+#endif // !defined(AFX_ASYNCSOCKETEX_H__AA9E4531_63B1_442F_9A71_09B2FEEDF34E__INCLUDED_)

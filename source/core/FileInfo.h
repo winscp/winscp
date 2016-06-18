@@ -31,8 +31,4 @@ UnicodeString __fastcall GetFileInfoString(void * FileInfo,
 int __fastcall CalculateCompoundVersion(int MajorVer,
   int MinorVer, int Release, int Build);
 
-int __fastcall StrToCompoundVersion(UnicodeString S);
-
-int __fastcall CompareVersion(UnicodeString V1, UnicodeString V2);
-
 #endif // FileInfoH

@@ -27,6 +27,7 @@ __published:
   TButton *CancelButton;
   TPageControl *PageControl;
   TTabSheet *CommonSheet;
+  TImage *FilesIconImage;
   TBevel *Bevel1;
   TLabel *FileLabel;
   TLabel *Label1;

@@ -23,7 +23,7 @@ bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
   TRemoteProperties * Properties, int AllowedChanges, bool & SaveSettings)
 {
   bool Result;
-  TCreateDirectoryDialog * Dialog = new TCreateDirectoryDialog(Application, AllowedChanges, (Properties != NULL));
+  TCreateDirectoryDialog * Dialog = new TCreateDirectoryDialog(Application, AllowedChanges);
   try
   {
     Result = Dialog->Execute(Directory, Properties, SaveSettings);
@@ -35,18 +35,13 @@ bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
   return Result;
 }
 //---------------------------------------------------------------------
-__fastcall TCreateDirectoryDialog::TCreateDirectoryDialog(TComponent * AOwner, int AllowedChanges, bool Remote):
+__fastcall TCreateDirectoryDialog::TCreateDirectoryDialog(TComponent * AOwner, int AllowedChanges):
   TForm(AOwner)
 {
   UseSystemSettings(this);
 
   RightsFrame->AllowAddXToDirectories = false;
   FAllowedChanges = AllowedChanges;
-  if (!Remote)
-  {
-    AttributesGroup->Visible = false;
-    ClientHeight = ClientHeight - AttributesGroup->Height;
-  }
 }
 //---------------------------------------------------------------------
 __fastcall TCreateDirectoryDialog::~TCreateDirectoryDialog()
@@ -63,7 +58,6 @@ void __fastcall TCreateDirectoryDialog::UpdateControls()
   EnableControl(OKBtn, !DirectoryEdit->Text.Trim().IsEmpty());
   EnableControl(SetRightsCheck, FLAGSET(FAllowedChanges, cpMode));
   EnableControl(RightsFrame, SetRightsCheck->Enabled && SetRightsCheck->Checked);
-  EnableControl(SaveSettingsCheck, (FAllowedChanges != 0));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCreateDirectoryDialog::Execute(UnicodeString & Directory,

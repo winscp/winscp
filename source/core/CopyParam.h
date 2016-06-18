@@ -23,8 +23,6 @@ const int cpaNoIgnorePermErrors = 0x80;
 const int cpaNoNewerOnly        = 0x100;
 const int cpaNoRemoveCtrlZ      = 0x200;
 const int cpaNoRemoveBOM        = 0x400;
-const int cpaNoPreserveTimeDirs = 0x800;
-const int cpaNoResumeSupport    = 0x1000;
 //---------------------------------------------------------------------------
 struct TUsableCopyParamAttrs
 {
@@ -40,7 +38,6 @@ private:
   TFileNameCase FFileNameCase;
   bool FPreserveReadOnly;
   bool FPreserveTime;
-  bool FPreserveTimeDirs;
   TRights FRights;
   TTransferMode FTransferMode;
   bool FAddXToDirectories;
@@ -71,9 +68,7 @@ private:
   void __fastcall SetReplaceInvalidChars(bool value);
   UnicodeString __fastcall RestoreChars(UnicodeString FileName) const;
   void __fastcall DoGetInfoStr(UnicodeString Separator, int Attrs,
-    UnicodeString & Result, bool & SomeAttrIncluded,
-    const UnicodeString & Link, UnicodeString & ScriptArgs, bool & NoScriptArgs,
-    TAssemblyLanguage Language, UnicodeString & AssemblyCode, bool & NoCodeProperties) const;
+    UnicodeString & Result, bool & SomeAttrIncluded) const;
   TStrings * __fastcall GetTransferSkipList() const;
   void __fastcall SetTransferSkipList(TStrings * value);
 
@@ -103,9 +98,6 @@ public:
   void __fastcall Save(THierarchicalStorage * Storage) const;
   UnicodeString __fastcall GetInfoStr(UnicodeString Separator, int Attrs) const;
   bool __fastcall AnyUsableCopyParam(int Attrs) const;
-  UnicodeString __fastcall GenerateTransferCommandArgs(
-    int Attrs, const UnicodeString & Link, bool & NoScriptArgs) const;
-  UnicodeString __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, int Attrs, bool & NoCodeProperties) const;
 
   bool __fastcall operator==(const TCopyParamType & rhp) const;
 
@@ -113,7 +105,6 @@ public:
   __property TFileNameCase FileNameCase = { read = FFileNameCase, write = FFileNameCase };
   __property bool PreserveReadOnly = { read = FPreserveReadOnly, write = FPreserveReadOnly };
   __property bool PreserveTime = { read = FPreserveTime, write = FPreserveTime };
-  __property bool PreserveTimeDirs = { read = FPreserveTimeDirs, write = FPreserveTimeDirs };
   __property TRights Rights = { read = FRights, write = FRights };
   __property TTransferMode TransferMode = { read = FTransferMode, write = FTransferMode };
   __property UnicodeString LogStr  = { read=GetLogStr };
@@ -139,6 +130,5 @@ public:
 //---------------------------------------------------------------------------
 unsigned long __fastcall GetSpeedLimit(const UnicodeString & Text);
 UnicodeString __fastcall SetSpeedLimit(unsigned long Limit);
-void __fastcall CopySpeedLimits(TStrings * Source, TStrings * Dest);
 //---------------------------------------------------------------------------
 #endif

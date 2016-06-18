@@ -212,7 +212,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
           else
           {
             UnicodeString ChildPath = UnixIncludeTrailingBackslash(Path) + File->FileName;
-            DebugAssert(!IsUnixRootPath(ChildPath));
+            assert(!IsUnixRootPath(ChildPath));
 
             LoadPathEasy(Node, ChildPath, File);
           }
@@ -253,9 +253,9 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     }
   }
   #else
-  DebugUsedParam(Node);
-  DebugUsedParam(Force);
-  DebugUsedParam(CanLoad);
+  USEDPARAM(Node);
+  USEDPARAM(Force);
+  USEDPARAM(CanLoad);
   #endif
 }
 //---------------------------------------------------------------------------
@@ -263,7 +263,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPathEasy(TTreeNode * Parent,
   UnicodeString Path, TRemoteFile * File)
 {
   #ifndef DESIGN_ONLY
-  DebugAssert(Path == UnixExcludeTrailingBackslash(Path));
+  assert(Path == UnixExcludeTrailingBackslash(Path));
 
   UnicodeString DirName;
   if (IsUnixRootPath(Path))
@@ -286,8 +286,8 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPathEasy(TTreeNode * Parent,
 
   return Node;
   #else
-  DebugUsedParam(Parent);
-  DebugUsedParam(File);
+  USEDPARAM(Parent);
+  USEDPARAM(File);
   return NULL;
   #endif
 }
@@ -352,12 +352,12 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPath(UnicodeString Path)
 void __fastcall TCustomUnixDriveView::LoadDirectory()
 {
   #ifndef DESIGN_ONLY
-  DebugAssert(!FIgnoreChange);
+  assert(!FIgnoreChange);
   FIgnoreChange = true;
   try
   {
     Selected = LoadPath(FTerminal->Files->Directory);
-    DebugAssert(Selected != NULL);
+    assert(Selected != NULL);
     FPrevSelected = Selected;
   }
   __finally
@@ -370,21 +370,21 @@ void __fastcall TCustomUnixDriveView::LoadDirectory()
 //---------------------------------------------------------------------------
 TNodeData * __fastcall TCustomUnixDriveView::NodeData(const TTreeNode * Node)
 {
-  DebugAssert(Node->Data != NULL);
+  assert(Node->Data != NULL);
 
   return static_cast<TNodeData*>(Node->Data);
 }
 //---------------------------------------------------------------------------
 TRemoteFileList * __fastcall TCustomUnixDriveView::NodeFileList(const TTreeNode * Node)
 {
-  DebugAssert(Node->Data != NULL);
+  assert(Node->Data != NULL);
 
   return static_cast<TNodeData*>(Node->Data)->FileList;
 }
 //---------------------------------------------------------------------------
 TRemoteFile * __fastcall TCustomUnixDriveView::NodeFile(const TTreeNode * Node)
 {
-  DebugAssert(Node->Data != NULL);
+  assert(Node->Data != NULL);
 
   return static_cast<TNodeData*>(Node->Data)->File;
 }
@@ -479,7 +479,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         {
           if (!FDirectoryLoaded)
           {
-            DebugAssert(!FIgnoreChange);
+            assert(!FIgnoreChange);
             Expand = false;
             FIgnoreChange = true;
             try
@@ -531,7 +531,7 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
     // see a comment in TUnixDirView::PerformItemDragDropOperation
     if (DragDropFilesEx->FileList->Count > 0)
     {
-      DebugAssert(Node != NULL);
+      assert(Node != NULL);
 
       UnicodeString SourceDirectory;
       UnicodeString TargetDirectory;
@@ -588,7 +588,7 @@ void __fastcall TCustomUnixDriveView::UpdateDropSource()
 //---------------------------------------------------------------------------
 TStrings * __fastcall TCustomUnixDriveView::DragFileList()
 {
-  DebugAssert(DragNode != NULL);
+  assert(DragNode != NULL);
   TStrings * FileList = new TStringList();
   try
   {
@@ -669,7 +669,7 @@ bool __fastcall TCustomUnixDriveView::NodePathExists(TTreeNode * /*Node*/)
 //---------------------------------------------------------------------------
 TColor __fastcall TCustomUnixDriveView::NodeColor(TTreeNode * Node)
 {
-  DebugAssert(Node != NULL);
+  assert(Node != NULL);
   TColor Result = static_cast<TColor>(clDefaultItemColor);
   #ifndef DESIGN_ONLY
   if (FDimmHiddenDirs && !Node->Selected)
@@ -680,7 +680,7 @@ TColor __fastcall TCustomUnixDriveView::NodeColor(TTreeNode * Node)
     }
   }
   #else
-  DebugUsedParam(Node);
+  USEDPARAM(Node);
   #endif
   return Result;
 }
@@ -702,7 +702,7 @@ Word __fastcall TCustomUnixDriveView::NodeOverlayIndexes(TTreeNode * Node)
   }
   return Result;
 #else
-  DebugUsedParam(Node);
+  USEDPARAM(Node);
   return 0;
 #endif
 }
@@ -786,7 +786,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindPathNode(UnicodeString Path)
       Result = FindNodeToPath(Path);
       if (Result == NULL)
       {
-        DebugAssert(!IsUnixRootPath(Path));
+        assert(!IsUnixRootPath(Path));
         Path = UnixExtractFileDir(UnixExcludeTrailingBackslash(Path));
       }
     }

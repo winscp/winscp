@@ -967,7 +967,6 @@ resourcestring
   RsCompressionWriteNotSupported     = 'write is not an supported operation.';
   RsCompressionResetNotSupported     = 'reset is not an supported operation.';
   RsCompressionSeekNotSupported      = 'seek is not an supported operation.';
-  RsCompressionUserAbort             = 'User abort';
   RsCompressionZLibZErrNo            = 'zlib returned: ERRNO';
   RsCompressionZLibZStreamError      = 'zlib returned: Stream error';
   RsCompressionZLibZDataError        = 'zlib returned: data error';
@@ -1006,7 +1005,6 @@ resourcestring
   RsCompressionUnknownError          = 'Unknown error';
   RsCompression7zLoadError           = 'Sevenzip: Failed to load 7z.dll';
   RsCompression7zReturnError         = 'Sevenzip: Error result (%.8x) "%s"';
-  RsCompression7zUnassignedStream    = 'Sevenzip: Stream object is not assigned';
   RsCompression7zOutArchiveError     = 'Sevenzip: Failed to get out archive interface for class %s';
   RsCompression7zInArchiveError      = 'Sevenzip: Failed to get in archive interface for class %s';
   RsCompression7zUnknownValueType    = 'Sevenzip: Unknown value type (%d) for property ID %d';
@@ -1940,8 +1938,6 @@ resourcestring
   RsOSVersionWin81              = 'Windows 8.1';
   RsOSVersionWin81RT            = 'Windows RT 8.1';
   RsOSVersionWinServer2012R2    = 'Windows Server 2012 R2';
-  RsOSVersionWin10              = 'Windows 10';
-  RsOSVersionWinServer2016      = 'Windows Server 2016';
 
   RsEditionWinXPHome            = 'Home Edition';
   RsEditionWinXPPro             = 'Professional';
@@ -1974,10 +1970,6 @@ resourcestring
   RsEditionWin81Pro             = 'Pro';
   RsEditionWin81Enterprise      = 'Enterprise';
   RsEditionWin81RT              = 'RT';
-  RsEditionWin10Home            = 'Home';
-  RsEditionWin10Pro             = 'Pro';
-  RsEditionWin10Enterprise      = 'Enterprise';
-  RsEditionWin10Education       = 'Education';
 
   RsProductTypeWorkStation      = 'Workstation';
   RsProductTypeServer           = 'Server';

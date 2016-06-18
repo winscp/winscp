@@ -145,8 +145,6 @@ friend class TFTPFileSystem;
 friend class TWebDAVFileSystem;
 friend class TTunnelUI;
 friend class TCallbackGuard;
-friend class TSecondaryTerminal;
-friend class TRetryOperationLoop;
 
 private:
   TSessionData * FSessionData;
@@ -175,6 +173,7 @@ private:
   bool FUseBusyCursor;
   TRemoteDirectoryCache * FDirectoryCache;
   TRemoteDirectoryChangesCache * FDirectoryChangesCache;
+  TCustomFileSystem * FFileSystem;
   TSecureShell * FSecureShell;
   UnicodeString FLastDirectoryChange;
   TCurrentFSProtocol FFSProtocol;
@@ -206,7 +205,6 @@ private:
   bool FRememberedPasswordTried;
   bool FRememberedTunnelPasswordTried;
   int FNesting;
-  UnicodeString FFingerprintScanned;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -240,7 +238,6 @@ protected:
   bool FReadCurrentDirectoryPending;
   bool FReadDirectoryPending;
   bool FTunnelOpening;
-  TCustomFileSystem * FFileSystem;
 
   void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectoryProgress(int Progress, int ResolvedLinks, bool & Cancel);
@@ -338,14 +335,10 @@ protected:
     UnicodeString Name, UnicodeString Instructions, UnicodeString Prompt, bool Echo,
     int MaxLen, UnicodeString & Result);
   void __fastcall FileFind(UnicodeString FileName, const TRemoteFile * File, void * Param);
-  void __fastcall DoFilesFind(UnicodeString Directory, TFilesFindParams & Params, UnicodeString RealDirectory);
+  void __fastcall DoFilesFind(UnicodeString Directory, TFilesFindParams & Params);
   bool __fastcall DoCreateLocalFile(const UnicodeString FileName,
     TFileOperationProgressType * OperationProgress, HANDLE * AHandle,
     bool NoConfirmation);
-  void __fastcall LockFile(const UnicodeString FileName, const TRemoteFile * File, void * Param);
-  void __fastcall UnlockFile(const UnicodeString FileName, const TRemoteFile * File, void * Param);
-  void __fastcall DoLockFile(const UnicodeString & FileName, const TRemoteFile * File);
-  void __fastcall DoUnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
 
   virtual void __fastcall Information(const UnicodeString & Str, bool Status);
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,
@@ -372,7 +365,6 @@ protected:
   TRemoteFileList * __fastcall DoReadDirectoryListing(UnicodeString Directory, bool UseCache);
   RawByteString __fastcall EncryptPassword(const UnicodeString & Password);
   UnicodeString __fastcall DecryptPassword(const RawByteString & Password);
-  UnicodeString __fastcall GetRemoteFileInfo(TRemoteFile * File);
   void __fastcall LogRemoteFile(TRemoteFile * File);
   UnicodeString __fastcall FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
   void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
@@ -386,13 +378,6 @@ protected:
   void __fastcall CacheCertificate(const UnicodeString & CertificateStorageKey,
     const UnicodeString & SiteKey, const UnicodeString & Fingerprint, int Failures);
   void __fastcall CollectTlsUsage(const UnicodeString & TlsVersionStr);
-  bool __fastcall LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& PrivateKey);
-  bool __fastcall TryStartOperationWithFile(
-    const UnicodeString & FileName, TFileOperation Operation1, TFileOperation Operation2 = foNone);
-  void __fastcall StartOperationWithFile(
-    const UnicodeString & FileName, TFileOperation Operation1, TFileOperation Operation2 = foNone);
-  void __fastcall CommandSessionClose(TObject * Sender);
-  bool __fastcall CanRecurseToDirectory(const TRemoteFile * File);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -401,7 +386,6 @@ public:
   __fastcall ~TTerminal();
   void __fastcall Open();
   void __fastcall Close();
-  UnicodeString __fastcall FingerprintScan();
   void __fastcall Reopen(int Params);
   virtual void __fastcall DirectoryModified(const UnicodeString Path, bool SubDirs);
   virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);
@@ -476,8 +460,6 @@ public:
   void __fastcall FilesFind(UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
   void __fastcall SpaceAvailable(const UnicodeString Path, TSpaceAvailable & ASpaceAvailable);
-  void __fastcall LockFiles(TStrings * FileList);
-  void __fastcall UnlockFiles(TStrings * FileList);
   bool __fastcall DirectoryFileList(const UnicodeString Path,
     TRemoteFileList *& FileList, bool CanLoad);
   void __fastcall MakeLocalFileList(const UnicodeString FileName,
@@ -497,9 +479,6 @@ public:
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);
   void __fastcall inline LogEvent(const UnicodeString & Str);
   void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
-  UnicodeString __fastcall ChangeFileName(const TCopyParamType * CopyParam,
-    UnicodeString FileName, TOperationSide Side, bool FirstLevel);
-  UnicodeString __fastcall GetBaseFileName(UnicodeString FileName);
 
   static UnicodeString __fastcall ExpandFileName(UnicodeString Path,
     const UnicodeString BasePath);
@@ -553,8 +532,6 @@ public:
   __fastcall TSecondaryTerminal(TTerminal * MainTerminal,
     TSessionData * SessionData, TConfiguration * Configuration,
     const UnicodeString & Name);
-
-  void __fastcall UpdateFromMain();
 
   __property TTerminal * MainTerminal = { read = FMainTerminal };
 

@@ -27,9 +27,9 @@
 // Sheet tag:
 // 01 top, 02 indented
 //---------------------------------------------------------------------------
-bool __fastcall DoSiteAdvancedDialog(TSessionData * SessionData)
+bool __fastcall DoSiteAdvancedDialog(TSessionData * SessionData, int Options)
 {
-  TSiteAdvancedDialog * SiteAdvancedDialog = new TSiteAdvancedDialog(Application);
+  TSiteAdvancedDialog * SiteAdvancedDialog = new TSiteAdvancedDialog(Application, Options);
   bool Result;
   try
   {
@@ -44,10 +44,12 @@ bool __fastcall DoSiteAdvancedDialog(TSessionData * SessionData)
 //---------------------------------------------------------------------
 static const UnicodeString DefaultRecycleBinPath = L"/tmp";
 //---------------------------------------------------------------------
-__fastcall TSiteAdvancedDialog::TSiteAdvancedDialog(TComponent * AOwner) :
+__fastcall TSiteAdvancedDialog::TSiteAdvancedDialog(
+    TComponent * AOwner, int Options) :
   TForm(AOwner)
 {
   NoUpdate = 0;
+  FOptions = Options;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -102,6 +104,17 @@ void __fastcall TSiteAdvancedDialog::InitControls()
 
   UpdateNavigationTree();
 
+  if (FLAGCLEAR(FOptions, loLocalDirectory))
+  {
+    LocalDirectoryLabel->Visible = false;
+    LocalDirectoryEdit->Visible = false;
+    LocalDirectoryDescLabel->Visible = false;
+    DirectoriesGroup->Height = RemoteDirectoryEdit->Top + RemoteDirectoryEdit->Height + ScaleByTextHeight(this, 12);
+    DirectoryOptionsGroup->Top = DirectoriesGroup->Top + DirectoriesGroup->Height + ScaleByTextHeight(this, 8);
+  }
+
+  ColorButton->Visible = (FOptions & loColor);
+
   SetSessionColor((TColor)0);
 }
 //---------------------------------------------------------------------
@@ -120,7 +133,6 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     CacheDirectoryChangesCheck->Checked = FSessionData->CacheDirectoryChanges;
     PreserveDirectoryChangesCheck->Checked = FSessionData->PreserveDirectoryChanges;
     ResolveSymlinksCheck->Checked = FSessionData->ResolveSymlinks;
-    FollowDirectorySymlinksCheck->Checked = FSessionData->FollowDirectorySymlinks;
 
     // Environment page
     switch (FSessionData->DSTMode)
@@ -167,8 +179,6 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     TimeDifferenceEdit->AsInteger = TimeDifferenceMin / MinsPerHour;
     TimeDifferenceMinutesEdit->AsInteger = TimeDifferenceMin % MinsPerHour;
     TimeDifferenceAutoCheck->Checked = FSessionData->TimeDifferenceAuto;
-
-    TrimVMSVersionsCheck->Checked = FSessionData->TrimVMSVersions;
 
     // Environment/Recycle bin page
     DeleteToRecycleBinCheck->Checked = FSessionData->DeleteToRecycleBin;
@@ -220,17 +230,17 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // SSH page
     Ssh2LegacyDESCheck->Checked = FSessionData->Ssh2DES;
     CompressionCheck->Checked = FSessionData->Compression;
-    if (FSessionData->SshProt == ssh1only)
+
+    switch (FSessionData->SshProt)
     {
-      SshProtCombo2->ItemIndex = 0;
-    }
-    else
-    {
-      SshProtCombo2->ItemIndex = 1;
+      case ssh1only:  SshProt1onlyButton->Checked = true; break;
+      case ssh1:      SshProt1Button->Checked = true; break;
+      case ssh2:      SshProt2Button->Checked = true; break;
+      case ssh2only:  SshProt2onlyButton->Checked = true; break;
     }
 
     CipherListBox->Items->Clear();
-    DebugAssert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_CHACHA20);
+    assert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_ARCFOUR);
     for (int Index = 0; Index < CIPHER_COUNT; Index++)
     {
       CipherListBox->Items->AddObject(
@@ -241,7 +251,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // KEX page
 
     KexListBox->Items->Clear();
-    DebugAssert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_ECDH);
+    assert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_RSA);
     for (int Index = 0; Index < KEX_COUNT; Index++)
     {
       KexListBox->Items->AddObject(
@@ -387,7 +397,6 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     MinTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MinTlsVersion);
     MaxTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MaxTlsVersion);
     SslSessionReuseCheck->Checked = FSessionData->SslSessionReuse;
-    TlsCertificateFileEdit->Text = FSessionData->TlsCertificateFile;
 
     // Note page
     NoteMemo->Lines->Text = FSessionData->Note;
@@ -401,7 +410,22 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 //---------------------------------------------------------------------
 TSshProt __fastcall TSiteAdvancedDialog::GetSshProt()
 {
-  return (SshProtCombo2->ItemIndex == 0) ? ssh1only : ssh2only;
+  if (SshProt1onlyButton->Checked)
+  {
+    return ssh1only;
+  }
+  else if (SshProt1Button->Checked)
+  {
+    return ssh1;
+  }
+  else if (SshProt2Button->Checked)
+  {
+    return ssh2;
+  }
+  else
+  {
+    return ssh2only;
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::SaveSession()
@@ -482,7 +506,6 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->CacheDirectoryChanges = CacheDirectoryChangesCheck->Checked;
   FSessionData->PreserveDirectoryChanges = PreserveDirectoryChangesCheck->Checked;
   FSessionData->ResolveSymlinks = ResolveSymlinksCheck->Checked;
-  FSessionData->FollowDirectorySymlinks = FollowDirectorySymlinksCheck->Checked;
 
   // Environment page
   if (DSTModeUnixCheck->Checked)
@@ -526,8 +549,6 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
     (double(TimeDifferenceMinutesEdit->AsInteger) / MinsPerDay);
   FSessionData->TimeDifferenceAuto = TimeDifferenceAutoCheck->Checked;
 
-  FSessionData->TrimVMSVersions = TrimVMSVersionsCheck->Checked;
-
   // Environment/Recycle bin page
   FSessionData->DeleteToRecycleBin = DeleteToRecycleBinCheck->Checked;
   FSessionData->OverwrittenToRecycleBin = OverwrittenToRecycleBinCheck->Checked;
@@ -558,12 +579,12 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   {
     if (AllowScpFallbackCheck->Checked)
     {
-      DebugAssert(FSessionData->FSProtocol == fsSFTPonly);
+      assert(FSessionData->FSProtocol == fsSFTPonly);
       FSessionData->FSProtocol = fsSFTP;
     }
     else
     {
-      DebugAssert(FSessionData->FSProtocol == fsSFTP);
+      assert(FSessionData->FSProtocol == fsSFTP);
       FSessionData->FSProtocol = fsSFTPonly;
     }
   }
@@ -628,7 +649,6 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
   FSessionData->MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
   FSessionData->SslSessionReuse = SslSessionReuseCheck->Checked;
-  FSessionData->TlsCertificateFile = TlsCertificateFileEdit->Text;
 
   // Note page
   FSessionData->Note = NoteMemo->Lines->Text;
@@ -656,7 +676,7 @@ void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
         TTreeNode * Node;
         if (PrevNode == NULL)
         {
-          DebugAssert(!Indented);
+          assert(!Indented);
           Node = NavigationTree->Items->GetFirstNode();
         }
         else
@@ -778,18 +798,17 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // ssh/authentication sheet
     AuthSheet->Enabled = SshProtocol;
-    EnableControl(SshNoUserAuthCheck, (GetSshProt() == ssh2only));
+    EnableControl(SshNoUserAuthCheck, !SshProt1onlyButton->Checked);
     EnableControl(AuthenticationGroup,
       !SshNoUserAuthCheck->Enabled || !SshNoUserAuthCheck->Checked);
-    EnableControl(AuthTISCheck, AuthenticationGroup->Enabled && (GetSshProt() == ssh1only));
-    EnableControl(AuthKICheck, AuthenticationGroup->Enabled && (GetSshProt() == ssh2only));
+    EnableControl(AuthTISCheck, AuthenticationGroup->Enabled && !SshProt2onlyButton->Checked);
+    EnableControl(AuthKICheck, AuthenticationGroup->Enabled && !SshProt1onlyButton->Checked);
     EnableControl(AuthKIPasswordCheck,
       AuthenticationGroup->Enabled &&
       ((AuthTISCheck->Enabled && AuthTISCheck->Checked) ||
        (AuthKICheck->Enabled && AuthKICheck->Checked)));
-    EnableControl(AuthenticationParamsGroup, AuthenticationGroup->Enabled);
     EnableControl(AuthGSSAPICheck3,
-      AuthenticationGroup->Enabled && (GetSshProt() == ssh2only));
+      AuthenticationGroup->Enabled && !SshProt1onlyButton->Checked);
     EnableControl(GSSAPIFwdTGTCheck,
       AuthGSSAPICheck3->Enabled && AuthGSSAPICheck3->Checked);
 
@@ -798,10 +817,10 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(CipherUpButton, CipherListBox->ItemIndex > 0);
     EnableControl(CipherDownButton, CipherListBox->ItemIndex >= 0 &&
       CipherListBox->ItemIndex < CipherListBox->Items->Count-1);
-    EnableControl(Ssh2LegacyDESCheck, (GetSshProt() == ssh2only));
+    EnableControl(Ssh2LegacyDESCheck, !SshProt1onlyButton->Checked);
 
     // ssh/kex sheet
-    KexSheet->Enabled = SshProtocol && (GetSshProt() == ssh2only) &&
+    KexSheet->Enabled = SshProtocol && !SshProt1onlyButton->Checked &&
       (BugRekey2Combo->ItemIndex != 2);
     EnableControl(KexUpButton, KexListBox->ItemIndex > 0);
     EnableControl(KexDownButton, KexListBox->ItemIndex >= 0 &&
@@ -809,27 +828,27 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // ssh/bugs sheet
     BugsSheet->Enabled = SshProtocol;
-    EnableControl(BugIgnore1Combo, (GetSshProt() == ssh1only));
+    EnableControl(BugIgnore1Combo, !SshProt2onlyButton->Checked);
     EnableControl(BugIgnore1Label, BugIgnore1Combo->Enabled);
-    EnableControl(BugPlainPW1Combo, (GetSshProt() == ssh1only));
+    EnableControl(BugPlainPW1Combo, !SshProt2onlyButton->Checked);
     EnableControl(BugPlainPW1Label, BugPlainPW1Combo->Enabled);
-    EnableControl(BugRSA1Combo, (GetSshProt() == ssh1only));
+    EnableControl(BugRSA1Combo, !SshProt2onlyButton->Checked);
     EnableControl(BugRSA1Label, BugRSA1Combo->Enabled);
-    EnableControl(BugHMAC2Combo, (GetSshProt() == ssh2only));
+    EnableControl(BugHMAC2Combo, !SshProt1onlyButton->Checked);
     EnableControl(BugHMAC2Label, BugHMAC2Combo->Enabled);
-    EnableControl(BugDeriveKey2Combo, (GetSshProt() == ssh2only));
+    EnableControl(BugDeriveKey2Combo, !SshProt1onlyButton->Checked);
     EnableControl(BugDeriveKey2Label, BugDeriveKey2Combo->Enabled);
-    EnableControl(BugRSAPad2Combo, (GetSshProt() == ssh2only));
+    EnableControl(BugRSAPad2Combo, !SshProt1onlyButton->Checked);
     EnableControl(BugRSAPad2Label, BugRSAPad2Combo->Enabled);
-    EnableControl(BugPKSessID2Combo, (GetSshProt() == ssh2only));
+    EnableControl(BugPKSessID2Combo, !SshProt1onlyButton->Checked);
     EnableControl(BugPKSessID2Label, BugPKSessID2Combo->Enabled);
-    EnableControl(BugRekey2Combo, (GetSshProt() == ssh2only));
+    EnableControl(BugRekey2Combo, !SshProt1onlyButton->Checked);
     EnableControl(BugRekey2Label, BugRekey2Combo->Enabled);
-    EnableControl(BugMaxPkt2Combo, (GetSshProt() == ssh2only));
+    EnableControl(BugMaxPkt2Combo, !SshProt1onlyButton->Checked);
     EnableControl(BugMaxPkt2Label, BugMaxPkt2Combo->Enabled);
-    EnableControl(BugIgnore2Combo, (GetSshProt() == ssh2only));
+    EnableControl(BugIgnore2Combo, !SshProt1onlyButton->Checked);
     EnableControl(BugIgnore2Label, BugIgnore2Combo->Enabled);
-    EnableControl(BugWinAdjCombo, (GetSshProt() == ssh2only));
+    EnableControl(BugWinAdjCombo, !SshProt1onlyButton->Checked);
     EnableControl(BugWinAdjLabel, BugWinAdjCombo->Enabled);
 
     // connection/proxy sheet
@@ -920,7 +939,6 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       CacheDirectoryChangesCheck->Enabled && CacheDirectoryChangesCheck->Checked &&
       DirectoriesSheet->Enabled);
     EnableControl(ResolveSymlinksCheck, (SftpProtocol || ScpProtocol) && DirectoriesSheet->Enabled);
-    EnableControl(FollowDirectorySymlinksCheck, (SftpProtocol || ScpProtocol || FtpProtocol));
 
     // environment sheet
     EnableControl(EOLTypeCombo, (SftpProtocol || ScpProtocol) && EnvironmentSheet->Enabled);
@@ -1016,7 +1034,6 @@ void __fastcall TSiteAdvancedDialog::FormShow(TObject * /*Sender*/)
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RecycleBinPathEdit);
-  InstallPathWordBreakProc(TlsCertificateFileEdit);
 
   ChangePage(EnvironmentSheet);
 
@@ -1081,7 +1098,7 @@ void __fastcall TSiteAdvancedDialog::PageControlChange(TObject *Sender)
     }
   }
 
-  if (DebugAlwaysTrue(Found))
+  if (ALWAYS_TRUE(Found))
   {
     DataChange(Sender);
   }
@@ -1128,7 +1145,7 @@ void __fastcall TSiteAdvancedDialog::CMDialogKey(TWMKeyDown & Message)
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::WMHelp(TWMHelp & Message)
 {
-  DebugAssert(Message.HelpInfo != NULL);
+  assert(Message.HelpInfo != NULL);
 
   if (Message.HelpInfo->iContextType == HELPINFO_WINDOW)
   {
@@ -1142,7 +1159,7 @@ void __fastcall TSiteAdvancedDialog::WMHelp(TWMHelp & Message)
 void __fastcall TSiteAdvancedDialog::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
-  DebugAssert(M);
+  assert(M);
   if (M->Msg == CM_DIALOGKEY)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
@@ -1238,14 +1255,17 @@ void __fastcall TSiteAdvancedDialog::HelpButtonClick(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::PrivateKeyEdit2AfterDialog(TObject * Sender,
-  UnicodeString & Name, bool & Action)
+  UnicodeString & Name, bool & /*Action*/)
 {
-  PathEditAfterDialog(Sender, Name, Action);
+  if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
+  {
+    Name = FBeforeDialogPath;
+  }
 
   TFilenameEdit * Edit = dynamic_cast<TFilenameEdit *>(Sender);
   if (Name != Edit->Text)
   {
-    VerifyAndConvertKey(Name, GetSshProt());
+    VerifyKey(Name);
   }
 }
 //---------------------------------------------------------------------------
@@ -1254,11 +1274,9 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult == DefaultResult(this))
   {
-    // StripPathQuotes should not be needed as we do not feed quotes anymore
-    VerifyKey(StripPathQuotes(PrivateKeyEdit2->Text), GetSshProt());
-    // for tunnel SSH version is not configurable
-    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit2->Text), ssh2only);
-    VerifyCertificate(StripPathQuotes(TlsCertificateFileEdit->Text));
+    VerifyKeyIncludingVersion(StripPathQuotes(PrivateKeyEdit2->Text), GetSshProt());
+    // for tunnel key do not check SSH version as it is not configurable
+    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit2->Text));
   }
 }
 //---------------------------------------------------------------------------
@@ -1267,15 +1285,6 @@ void __fastcall TSiteAdvancedDialog::PathEditBeforeDialog(TObject * /*Sender*/,
 {
   FBeforeDialogPath = Name;
   Name = ExpandEnvironmentVariables(Name);
-}
-//---------------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::PathEditAfterDialog(TObject * /*Sender*/,
-  UnicodeString & Name, bool & /*Action*/)
-{
-  if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
-  {
-    Name = FBeforeDialogPath;
-  }
 }
 //---------------------------------------------------------------------------
 int __fastcall TSiteAdvancedDialog::LastSupportedFtpProxyMethod()
@@ -1337,7 +1346,7 @@ TProxyMethod __fastcall TSiteAdvancedDialog::GetProxyMethod()
   }
   else
   {
-    DebugFail();
+    FAIL;
     Result = ::pmNone;
   }
   return Result;
@@ -1380,14 +1389,9 @@ void __fastcall TSiteAdvancedDialog::ProxyLocalCommandBrowseButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::ColorButtonClick(TObject * /*Sender*/)
 {
-  // WORKAROUND: Compiler keeps crashing randomly (but frequently) with
-  // "internal error" when passing menu directly to unique_ptr.
-  // Splitting it to two statements seems to help.
-  // The same hack exists in TPreferencesDialog::EditorFontColorButtonClick
-  TPopupMenu * Menu = CreateSessionColorPopupMenu(FColor, SessionColorChange);
   // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
-  FColorPopupMenu.reset(Menu);
-  MenuPopup(Menu, ColorButton);
+  FColorPopupMenu.reset(CreateSessionColorPopupMenu(FColor, SessionColorChange));
+  MenuPopup(FColorPopupMenu.get(), ColorButton);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::SessionColorChange(TColor Color)
@@ -1416,7 +1420,7 @@ TTlsVersion __fastcall TSiteAdvancedDialog::IndexToTlsVersion(int Index)
   switch (Index)
   {
     default:
-      DebugFail();
+      FAIL;
     case 0:
       return ssl3;
     case 1:
@@ -1433,7 +1437,7 @@ int __fastcall TSiteAdvancedDialog::TlsVersionToIndex(TTlsVersion TlsVersion)
   switch (TlsVersion)
   {
     default:
-      DebugFail();
+      FAIL;
     case ssl2:
     case ssl3:
       return 0;
@@ -1469,12 +1473,11 @@ void __fastcall TSiteAdvancedDialog::MaxTlsVersionComboChange(TObject * /*Sender
 void __fastcall TSiteAdvancedDialog::ProxyAutodetectButtonClick(TObject * /*Sender*/)
 {
   TInstantOperationVisualizer Visualizer;
-  UnicodeString ProxyHost;
-  int ProxyPort;
-  if (AutodetectProxy(ProxyHost, ProxyPort))
+  UnicodeString Proxy;
+  if (AutodetectProxyUrl(Proxy) && !Proxy.IsEmpty())
   {
-    ProxyHostEdit->Text = ProxyHost;
-    ProxyPortEdit->AsInteger = ProxyPort;
+    ProxyHostEdit->Text = ::CutToChar(Proxy, L':', true);
+    ProxyPortEdit->AsInteger = StrToIntDef(Proxy, ProxyPortNumber);
 
     SshProxyMethodCombo->ItemIndex = pmHTTP;
     FtpProxyMethodCombo->ItemIndex = pmHTTP;
@@ -1488,17 +1491,5 @@ void __fastcall TSiteAdvancedDialog::NoteMemoKeyDown(
   TObject * Sender, WORD & Key, TShiftState Shift)
 {
   MemoKeyDown(Sender, Key, Shift);
-}
-//---------------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::TlsCertificateFileEditAfterDialog(TObject *Sender,
-  UnicodeString &Name, bool &Action)
-{
-  PathEditAfterDialog(Sender, Name, Action);
-
-  TFilenameEdit * Edit = dynamic_cast<TFilenameEdit *>(Sender);
-  if (Name != Edit->Text)
-  {
-    VerifyCertificate(Name);
-  }
 }
 //---------------------------------------------------------------------------

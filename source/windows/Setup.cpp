@@ -13,9 +13,8 @@
 #include <CoreMain.h>
 #include <Exceptions.h>
 #include <TextsWin.h>
-#include <TextsCore.h>
 #include <HelpWin.h>
-#include <Http.h>
+#include <TcpIp.hpp>
 #include <CompThread.hpp>
 #include <FileInfo.h>
 #include "WinConfiguration.h"
@@ -25,11 +24,6 @@
 #include <StrUtils.hpp>
 #include "ProgParams.h"
 #include <Consts.hpp>
-#include <GUITools.h>
-#include <PuttyTools.h>
-#include <VCLCommon.h>
-#include <WebBrowserEx.hpp>
-#include <DateUtils.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -39,9 +33,6 @@
 
 /* Command line options. */
 UnicodeString LastPathError;
-//---------------------------------------------------------------------------
-UnicodeString NetVersionStr;
-UnicodeString PowerShellVersionStr;
 //---------------------------------------------------------------------------
 // Display the error "err_msg".
 void err_out(LPCTSTR err_msg)
@@ -497,7 +488,7 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
     Abort();
   }
 
-  UnicodeString Description = LoadStr(REGISTERED_APP_DESC2);
+  UnicodeString Description = LoadStr(REGISTERED_APP_DESC);
   Registry->WriteString(L"ApplicationDescription", Description);
 
   if (!Registry->OpenKey(L"UrlAssociations", true))
@@ -570,10 +561,8 @@ static void __fastcall RegisterProtocolsForDefaultPrograms(HKEY RootKey)
 
   RegisterProtocolForDefaultPrograms(RootKey, FtpProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, FtpsProtocol);
-  RegisterProtocolForDefaultPrograms(RootKey, FtpesProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, SftpProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, ScpProtocol);
-  RegisterProtocolForDefaultPrograms(RootKey, SshProtocol);
   // deliberately not including WebDAV/http,
   // it's unlikely that anyone would like to change http handler
   // to non-browser application
@@ -583,10 +572,8 @@ static void __fastcall UnregisterProtocolsForDefaultPrograms(HKEY RootKey, bool 
 {
   UnregisterProtocolForDefaultPrograms(RootKey, FtpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, FtpsProtocol, ForceHandlerUnregistration);
-  UnregisterProtocolForDefaultPrograms(RootKey, FtpesProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, SftpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, ScpProtocol, ForceHandlerUnregistration);
-  UnregisterProtocolForDefaultPrograms(RootKey, SshProtocol, ForceHandlerUnregistration);
 
   // we should not really need the "force" flag here, but why not
   UnregisterAsUrlHandler(RootKey, GenericUrlHandler, true, true);
@@ -633,10 +620,8 @@ void __fastcall RegisterForDefaultProtocols()
   RegisterAsNonBrowserUrlHandler(WinSCPProtocolPrefix);
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase());
-  RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpesProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVSProtocol.UpperCase());
-  RegisterAsUrlHandler(WinSCPProtocolPrefix + SshProtocol.UpperCase());
 
   NotifyChangedAssociations();
 }
@@ -647,10 +632,8 @@ void __fastcall UnregisterForProtocols()
   UnregisterAsUrlHandlers(WinSCPProtocolPrefix, true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase(), true);
-  UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpesProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVSProtocol.UpperCase(), true);
-  UnregisterAsUrlHandler(WinSCPProtocolPrefix + SshProtocol.UpperCase(), true);
 
   UnregisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER, false);
   UnregisterProtocolsForDefaultPrograms(HKEY_LOCAL_MACHINE, false);
@@ -660,29 +643,22 @@ void __fastcall UnregisterForProtocols()
 //---------------------------------------------------------------------------
 void __fastcall LaunchAdvancedAssociationUI()
 {
-  DebugAssert(IsWinVista());
+  assert(IsWinVista());
 
   RegisterForDefaultPrograms();
   NotifyChangedAssociations();
   // sleep recommended by http://msdn.microsoft.com/en-us/library/windows/desktop/cc144154.aspx#browser
   Sleep(1000);
 
-  if (IsWin10())
-  {
-    ExecuteShell(L"control.exe", L"/name Microsoft.DefaultPrograms /page pageDefaultProgram");
-  }
-  else
-  {
-    IApplicationAssociationRegistrationUI * AppAssocRegUI;
+  IApplicationAssociationRegistrationUI * AppAssocRegUI;
 
-    HRESULT Result =
-      CoCreateInstance(CLSID_ApplicationAssociationRegistrationUI,
-        NULL, CLSCTX_INPROC, __uuidof(IApplicationAssociationRegistrationUI), (void**)&AppAssocRegUI);
-    if (SUCCEEDED(Result))
-    {
-      AppAssocRegUI->LaunchAdvancedAssociationUI(AppNameString().c_str());
-      AppAssocRegUI->Release();
-    }
+  HRESULT Result =
+    CoCreateInstance(CLSID_ApplicationAssociationRegistrationUI,
+      NULL, CLSCTX_INPROC, __uuidof(IApplicationAssociationRegistrationUI), (void**)&AppAssocRegUI);
+  if (SUCCEEDED(Result))
+  {
+    AppAssocRegUI->LaunchAdvancedAssociationUI(AppNameString().c_str());
+    AppAssocRegUI->Release();
   }
 }
 //---------------------------------------------------------------------------
@@ -767,7 +743,7 @@ UnicodeString __fastcall VersionStrFromCompoundVersion(int Version)
 UnicodeString __fastcall CampaignUrl(UnicodeString URL)
 {
   int CurrentCompoundVer = Configuration->CompoundVersion;
-  UnicodeString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
+  AnsiString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
   // Beware that these parameters may get truncated if URL is too long,
   // such as with ERROR_REPORT_URL2
   UnicodeString Params = FORMAT(L"utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
@@ -790,7 +766,7 @@ UnicodeString __fastcall ProgramUrl(UnicodeString URL)
   UnicodeString Params =
     FORMAT(L"v=%s&lang=%s&isinstalled=%d",
       (CurrentVersionStr,
-      GUIConfiguration->LocaleHex,
+      IntToHex(__int64(GUIConfiguration->Locale), 4),
       int(IsInstalled())));
 
   if (Configuration->IsUnofficial)
@@ -832,234 +808,144 @@ static UnicodeString __fastcall WantBetaUrl(UnicodeString URL, bool Force)
   return URL;
 }
 //---------------------------------------------------------------------------
-static THttp * __fastcall CreateHttp(const TUpdatesConfiguration & Updates)
-{
-  std::unique_ptr<THttp> Http(new THttp());
-
-  UnicodeString ProxyHost;
-  int ProxyPort = 0;
-
-  switch (Updates.ConnectionType)
-  {
-    case ctAuto:
-      if (AutodetectProxy(ProxyHost, ProxyPort))
-      {
-        Configuration->Usage->Inc(L"UpdateProxyAutodetected");
-      }
-      break;
-
-    case ctProxy:
-      ProxyHost = Updates.ProxyHost;
-      ProxyPort = Updates.ProxyPort;
-      Configuration->Usage->Inc(L"UpdateProxyManual");
-      break;
-  }
-
-  Http->ProxyHost = ProxyHost;
-  Http->ProxyPort = ProxyPort;
-
-  return Http.release();
-}
-//---------------------------------------------------------------------------
-THttp * __fastcall CreateHttp()
-{
-  return CreateHttp(WinConfiguration->Updates);
-}
-//---------------------------------------------------------------------------
-static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool CollectUsage)
+void __fastcall QueryUpdates()
 {
   bool Complete = false;
-  UnicodeString Response;
-  THttp * CheckForUpdatesHTTP = CreateHttp(Updates);
   try
   {
-    UnicodeString URL = ProgramUrl(LoadStr(UPDATES_URL));
-    URL = WantBetaUrl(URL, false);
-    URL += L"&dotnet=" + Updates.DotNetVersion;
-    URL += L"&console=" + Updates.ConsoleVersion;
-    UnicodeString LocaleVersion = WinConfiguration->LocaleVersion();
-    if (!LocaleVersion.IsEmpty())
-    {
-      URL += L"&localever=" + LocaleVersion;
-      URL += L"&localecompl=" + LoadStr(TRANSLATION_COMPLETENESS);
-    }
-    if (!Updates.AuthenticationEmail.IsEmpty())
-    {
-      RawByteString AuthenticationEmailBuf = RawByteString(UTF8String(Updates.AuthenticationEmail.LowerCase()));
-      URL += L"&authentication=" + Sha256(AuthenticationEmailBuf.c_str(), AuthenticationEmailBuf.Length()).LowerCase();
-    }
+    UnicodeString Response;
 
-    CheckForUpdatesHTTP->URL = URL;
-    // sanity check
-    CheckForUpdatesHTTP->ResponseLimit = 102400;
-    if (CollectUsage)
-    {
-      UnicodeString Usage = GetUsageData();
+    int CurrentCompoundVer = Configuration->CompoundVersion;
 
-      CheckForUpdatesHTTP->Post(Usage);
-    }
-    else
-    {
-      CheckForUpdatesHTTP->Get();
-    }
-    Response = CheckForUpdatesHTTP->Response;
-  }
-  __finally
-  {
-    delete CheckForUpdatesHTTP;
-  }
-
-  int CurrentCompoundVer = Configuration->CompoundVersion;
-
-  bool Changed = !Updates.HaveResults;
-  Updates.LastCheck = Now();
-  Updates.HaveResults = true;
-  TUpdatesData PrevResults = Updates.Results;
-  Updates.Results.Reset();
-  Updates.Results.ForVersion = CurrentCompoundVer;
-
-  while (!Response.IsEmpty())
-  {
-    UnicodeString Line = CutToChar(Response, L'\n', false);
-    UnicodeString Name = CutToChar(Line, L'=', false);
-    if (AnsiSameText(Name, "Version"))
-    {
-      int NewVersion = StrToCompoundVersion(Line);
-      Changed |= (NewVersion != PrevResults.Version);
-      if (NewVersion <= CurrentCompoundVer)
-      {
-        NewVersion = 0;
-      }
-      Updates.Results.Version = NewVersion;
-      Complete = true;
-    }
-    else if (AnsiSameText(Name, L"Message"))
-    {
-      Changed |= (PrevResults.Message != Line);
-      Updates.Results.Message = Line;
-    }
-    else if (AnsiSameText(Name, L"Critical"))
-    {
-      bool NewCritical = (StrToIntDef(Line, 0) != 0);
-      Changed |= (PrevResults.Critical != NewCritical);
-      Updates.Results.Critical = NewCritical;
-    }
-    else if (AnsiSameText(Name, L"Release"))
-    {
-      Changed |= (PrevResults.Release != Line);
-      Updates.Results.Release = Line;
-    }
-    else if (AnsiSameText(Name, L"Disabled"))
-    {
-      bool NewDisabled = (StrToIntDef(Line, 0) != 0);
-      Changed |= (PrevResults.Disabled != NewDisabled);
-      Updates.Results.Disabled = NewDisabled;
-      Complete = true;
-    }
-    else if (AnsiSameText(Name, L"Url"))
-    {
-      Changed |= (PrevResults.Url != Line);
-      Updates.Results.Url = Line;
-    }
-    else if (AnsiSameText(Name, L"UrlButton"))
-    {
-      Changed |= (PrevResults.UrlButton != Line);
-      Updates.Results.UrlButton = Line;
-    }
-    else if (AnsiSameText(Name, L"NewsUrl"))
-    {
-      Changed |= (PrevResults.NewsUrl != Line);
-      Updates.Results.NewsUrl = Line;
-    }
-    else if (AnsiSameText(Name, L"NewsSize"))
-    {
-      TSize NewsSize;
-      NewsSize.Width = StrToIntDef(CutToChar(Line, L',', true), 0);
-      NewsSize.Height = StrToIntDef(CutToChar(Line, L',', true), 0);
-      Changed |= (PrevResults.NewsSize != NewsSize);
-      Updates.Results.NewsSize = NewsSize;
-    }
-    else if (AnsiSameText(Name, L"DownloadUrl"))
-    {
-      Changed |= (PrevResults.DownloadUrl != Line);
-      Updates.Results.DownloadUrl = Line;
-    }
-    else if (AnsiSameText(Name, L"DownloadSize"))
-    {
-      Updates.Results.DownloadSize = StrToInt64Def(Line, 0);
-    }
-    else if (AnsiSameText(Name, L"DownloadSha256"))
-    {
-      Updates.Results.DownloadSha256 = Line;
-    }
-    else if (AnsiSameText(Name, L"AuthenticationError"))
-    {
-      Changed |= (PrevResults.AuthenticationError != Line);
-      Updates.Results.AuthenticationError = Line;
-    }
-    else if (AnsiSameText(Name, L"OpenGettingStarted"))
-    {
-      Updates.Results.OpenGettingStarted = (StrToIntDef(Line, 0) != 0);
-    }
-    else if (AnsiSameText(Name, L"DownloadingUrl"))
-    {
-      Updates.Results.DownloadingUrl = Line;
-    }
-    else if (AnsiSameText(Name, L"TipsSize"))
-    {
-      TSize TipsSize;
-      TipsSize.Width = StrToIntDef(CutToChar(Line, L',', true), 0);
-      TipsSize.Height = StrToIntDef(CutToChar(Line, L',', true), 0);
-      Updates.Results.TipsSize = TipsSize;
-    }
-    else if (AnsiSameText(Name, L"TipsUrl"))
-    {
-      Updates.Results.TipsUrl = Line;
-    }
-    else if (AnsiSameText(Name, L"Tips"))
-    {
-      Updates.Results.Tips = Line;
-    }
-    else if (AnsiSameText(Name, L"TipsIntervalDays"))
-    {
-      int TipsIntervalDays = StrToIntDef(Line, Updates.Results.TipsIntervalDays);
-      if (TipsIntervalDays < 0)
-      {
-        TipsIntervalDays = Updates.Results.TipsIntervalDays;
-      }
-      Updates.Results.TipsIntervalDays = TipsIntervalDays;
-    }
-    else if (AnsiSameText(Name, L"TipsIntervalRuns"))
-    {
-      int TipsIntervalRuns = StrToIntDef(Line, Updates.Results.TipsIntervalRuns);
-      if (TipsIntervalRuns < 0)
-      {
-        TipsIntervalRuns = Updates.Results.TipsIntervalRuns;
-      }
-      Updates.Results.TipsIntervalRuns = TipsIntervalRuns;
-    }
-  }
-
-  if (Changed)
-  {
-    Updates.ShownResults = false;
-  }
-
-  return Complete;
-}
-//---------------------------------------------------------------------------
-bool __fastcall QueryUpdates(TUpdatesConfiguration & Updates)
-{
-  return DoQueryUpdates(Updates, false);
-}
-//---------------------------------------------------------------------------
-static void __fastcall DoQueryUpdates(bool CollectUsage)
-{
-  try
-  {
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
+    THttp * CheckForUpdatesHTTP = new THttp(Application);
+    try
+    {
+      UnicodeString URL = ProgramUrl(LoadStr(UPDATES_URL));
+      URL = WantBetaUrl(URL, false);
+      URL += L"&dotnet=" + Updates.DotNetVersion;
+      URL += L"&console=" + Updates.ConsoleVersion;
+      UnicodeString Proxy;
+      switch (Updates.ConnectionType)
+      {
+        case ctAuto:
+          AutodetectProxyUrl(Proxy);
+          if (!Proxy.IsEmpty())
+          {
+            Configuration->Usage->Inc(L"UpdateProxyAutodetected");
+          }
+          break;
 
-    bool Complete = DoQueryUpdates(Updates, CollectUsage);
+        case ctProxy:
+          Proxy = FORMAT(L"%s:%d", (Updates.ProxyHost, Updates.ProxyPort));
+          Configuration->Usage->Inc(L"UpdateProxyManual");
+          break;
+      }
+      CheckForUpdatesHTTP->Proxy = Proxy;
+      CheckForUpdatesHTTP->URL = URL;
+      if (Configuration->CollectUsage)
+      {
+        UTF8String UtfUsage = UTF8String(GetUsageData());
+        CheckForUpdatesHTTP->Stream->Write(UtfUsage.c_str(), UtfUsage.Length());
+        CheckForUpdatesHTTP->Post();
+      }
+      else
+      {
+        CheckForUpdatesHTTP->Action();
+      }
+      // sanity check
+      if (CheckForUpdatesHTTP->Stream->Size > 102400)
+      {
+        Abort();
+      }
+      UTF8String UtfResponse;
+      UtfResponse.SetLength(static_cast<int>(CheckForUpdatesHTTP->Stream->Size));
+      CheckForUpdatesHTTP->Stream->Read(UtfResponse.c_str(), UtfResponse.Length());
+      Response = UnicodeString(UtfResponse);
+    }
+    __finally
+    {
+      delete CheckForUpdatesHTTP;
+    }
+
+    bool Changed = !Updates.HaveResults;
+    Updates.LastCheck = Now();
+    Updates.HaveResults = true;
+    TUpdatesData PrevResults = Updates.Results;
+    Updates.Results.Reset();
+    Updates.Results.ForVersion = CurrentCompoundVer;
+
+    while (!Response.IsEmpty())
+    {
+      UnicodeString Line = ::CutToChar(Response, L'\n', false);
+      UnicodeString Name = ::CutToChar(Line, L'=', false);
+      if (AnsiSameText(Name, "Version"))
+      {
+        int MajorVer = StrToInt(::CutToChar(Line, L'.', false));
+        int MinorVer = StrToInt(::CutToChar(Line, L'.', false));
+        int Release = StrToInt(::CutToChar(Line, L'.', false));
+        int Build = StrToInt(::CutToChar(Line, L'.', false));
+        int NewVersion = CalculateCompoundVersion(MajorVer, MinorVer, Release, Build);
+        Changed |= (NewVersion != PrevResults.Version);
+        if (NewVersion <= CurrentCompoundVer)
+        {
+          NewVersion = 0;
+        }
+        Updates.Results.Version = NewVersion;
+        Complete = true;
+      }
+      else if (AnsiSameText(Name, L"Message"))
+      {
+        Changed |= (PrevResults.Message != Line);
+        Updates.Results.Message = Line;
+      }
+      else if (AnsiSameText(Name, L"Critical"))
+      {
+        bool NewCritical = (StrToIntDef(Line, 0) != 0);
+        Changed |= (PrevResults.Critical != NewCritical);
+        Updates.Results.Critical = NewCritical;
+      }
+      else if (AnsiSameText(Name, L"Release"))
+      {
+        Changed |= (PrevResults.Release != Line);
+        Updates.Results.Release = Line;
+      }
+      else if (AnsiSameText(Name, L"Disabled"))
+      {
+        bool NewDisabled = (StrToIntDef(Line, 0) != 0);
+        Changed |= (PrevResults.Disabled != NewDisabled);
+        Updates.Results.Disabled = NewDisabled;
+        Complete = true;
+      }
+      else if (AnsiSameText(Name, L"Url"))
+      {
+        Changed |= (PrevResults.Url != Line);
+        Updates.Results.Url = Line;
+      }
+      else if (AnsiSameText(Name, L"UrlButton"))
+      {
+        Changed |= (PrevResults.UrlButton != Line);
+        Updates.Results.UrlButton = Line;
+      }
+      else if (AnsiSameText(Name, L"NewsUrl"))
+      {
+        Changed |= (PrevResults.NewsUrl != Line);
+        Updates.Results.NewsUrl = Line;
+      }
+      else if (AnsiSameText(Name, L"NewsSize"))
+      {
+        TSize NewsSize;
+        NewsSize.Width = StrToIntDef(::CutToChar(Line, L',', true), 0);
+        NewsSize.Height = StrToIntDef(::CutToChar(Line, L',', true), 0);
+        Changed |= (PrevResults.NewsSize != NewsSize);
+        Updates.Results.NewsSize = NewsSize;
+      }
+    }
+
+    if (Changed)
+    {
+      Updates.ShownResults = false;
+    }
 
     WinConfiguration->Updates = Updates;
 
@@ -1078,22 +964,11 @@ static void __fastcall DoQueryUpdates(bool CollectUsage)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatUpdatesMessage(UnicodeString Message)
-{
-  Message = ReplaceStr(Message, "%UPDATE_UNAUTHORIZED%", LoadStr(UPDATE_UNAUTHORIZED));
-  Message = ReplaceStr(Message, "%UPDATE_EXPIRED%", LoadStr(UPDATE_EXPIRED));
-  Message = ReplaceStr(Message, "%UPDATE_TOO_MANY%", LoadStr(UPDATE_TOO_MANY));
-  Message = ReplaceStr(Message, "%UPDATE_MISSING_ADDRESS%", LoadStr(UPDATE_MISSING_ADDRESS));
-  Message = ReplaceStr(Message, "%UPDATE_TOO_LOW%", LoadStr(UPDATE_TOO_LOW));
-  Message = ReplaceStr(Message, L"|", L"\n");
-  return Message;
-}
-//---------------------------------------------------------------------------
 void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
   TQueryType & Type, bool Force)
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
-  DebugAssert(Updates.HaveResults);
+  assert(Updates.HaveResults);
   if (Updates.HaveResults)
   {
     if (Updates.Results.Disabled)
@@ -1130,13 +1005,8 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
     if (!Updates.Results.Message.IsEmpty())
     {
       Message +=
-        FMTLOAD(UPDATE_MESSAGE, (FormatUpdatesMessage(Updates.Results.Message)));
-    }
-
-    if (!Updates.Results.AuthenticationError.IsEmpty())
-    {
-      Message +=
-        FMTLOAD(UPDATE_MESSAGE, (FormatUpdatesMessage(Updates.Results.AuthenticationError)));
+        FMTLOAD(UPDATE_MESSAGE,
+          (ReplaceStr(Updates.Results.Message, L"|", L"\n")));
     }
     Type = (Updates.Results.Critical ? qtWarning : qtInformation);
   }
@@ -1146,362 +1016,10 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetEnableAutomaticUpdatesUrl()
-{
-  return AppendUrlParams(LoadStr(DONATE_URL), L"automaticupdates=1");
-}
-//---------------------------------------------------------------------------
-void __fastcall EnableAutomaticUpdates()
-{
-  OpenBrowser(GetEnableAutomaticUpdatesUrl());
-}
-//---------------------------------------------------------------------------
 static void __fastcall OpenHistory(void * /*Data*/, TObject * /*Sender*/)
 {
   Configuration->Usage->Inc(L"UpdateHistoryOpens");
   OpenBrowser(LoadStr(HISTORY_URL));
-}
-//---------------------------------------------------------------------------
-static int __fastcall DownloadSizeToProgress(__int64 Size)
-{
-  return static_cast<int>(Size / 1024);
-}
-//---------------------------------------------------------------------------
-class TUpdateDownloadThread : public TCompThread
-{
-public:
-  __fastcall TUpdateDownloadThread(TProgressBar * ProgressBar);
-  virtual __fastcall ~TUpdateDownloadThread();
-
-  void __fastcall CancelClicked(TObject * Sender);
-
-  bool __fastcall CancelDownload();
-
-  __property bool Done = { read = FDone };
-
-protected:
-  virtual void __fastcall Execute();
-  void __fastcall UpdateDownloaded();
-  void __fastcall HttpDownload(THttp * Sender, __int64 Size, bool & Cancel);
-  void __fastcall UpdateProgress();
-  void __fastcall ShowException();
-  void __fastcall DownloadNotVerified();
-  void __fastcall CancelForm();
-
-private:
-  TCustomForm * FForm;
-  TProgressBar * FProgressBar;
-  __int64 FDownloaded;
-  std::unique_ptr<Exception> FException;
-  std::unique_ptr<THttp> FHttp;
-  TUpdatesConfiguration FUpdates;
-  bool FDone;
-};
-//---------------------------------------------------------------------------
-__fastcall TUpdateDownloadThread::TUpdateDownloadThread(TProgressBar * ProgressBar) :
-  TCompThread(true)
-{
-  // cache, as the progress bar miht be destroyed already when
-  // we need the form at the end of Execute()
-  FForm = GetParentForm(ProgressBar);
-  FProgressBar = ProgressBar;
-  // cache to prevent concurrency
-  FUpdates = WinConfiguration->Updates;
-  FDone = false;
-}
-//---------------------------------------------------------------------------
-__fastcall TUpdateDownloadThread::~TUpdateDownloadThread()
-{
-}
-//---------------------------------------------------------------------------
-void __fastcall TUpdateDownloadThread::Execute()
-{
-  try
-  {
-    bool Retried = false;
-    bool Retry;
-
-    do
-    {
-      Retry = false;
-      try
-      {
-        FDownloaded = 0;
-
-        FHttp.reset(CreateHttp(FUpdates));
-        FHttp->URL = FUpdates.Results.DownloadUrl;
-        FHttp->OnDownload = HttpDownload;
-        FHttp->Get();
-      }
-      catch (EAbort &)
-      {
-        throw;
-      }
-      catch (Exception & E)
-      {
-        // The original URL failed, try to get a fresh one and retry
-        if (!Retried)
-        {
-          try
-          {
-            // Check if new update data (URL particlarly) is available
-            if (QueryUpdates(FUpdates) &&
-                !FUpdates.Results.DownloadUrl.IsEmpty())
-            {
-              Retry = true;
-              Retried = true;
-            }
-          }
-          catch (...)
-          {
-          }
-        }
-
-        if (!Retry)
-        {
-          Configuration->Usage->Inc(L"UpdateFailuresDownload");
-          throw ExtException(&E, MainInstructions(LoadStr(UPDATE_DOWNLOAD_ERROR)));
-        }
-      }
-    }
-    while (Retry);
-
-    Synchronize(UpdateDownloaded);
-  }
-  catch (EAbort &)
-  {
-    // noop
-  }
-  catch (Exception & E)
-  {
-    Configuration->Usage->Inc(L"UpdateFailures");
-    FException.reset(CloneException(&E));
-    Synchronize(ShowException);
-  }
-
-  FDone = true;
-  Synchronize(CancelForm);
-}
-//---------------------------------------------------------------------------
-void __fastcall TUpdateDownloadThread::CancelForm()
-{
-  FForm->ModalResult = mrCancel;
-}
-//---------------------------------------------------------------------------
-void __fastcall TUpdateDownloadThread::UpdateDownloaded()
-{
-  size_t Size = static_cast<size_t>(FHttp->ResponseLength);
-  const char * Buffer = FHttp->ResponseRaw.c_str();
-
-  if (FHttp->ResponseLength != FUpdates.Results.DownloadSize)
-  {
-    DownloadNotVerified();
-  }
-
-  UnicodeString Digest = Sha256(Buffer, Size);
-
-  if (!SameText(FUpdates.Results.DownloadSha256, Digest))
-  {
-    DownloadNotVerified();
-  }
-
-  UnicodeString FileName = ExtractFileNameFromUrl(FUpdates.Results.DownloadUrl);
-  UnicodeString TemporaryDirectory = WinConfiguration->ExpandedTemporaryDirectory();
-  UnicodeString SetupPathBase = IncludeTrailingBackslash(TemporaryDirectory) + FileName;
-  UnicodeString SetupPath = SetupPathBase;
-  int Index = 0;
-  while (FileExists(SetupPath))
-  {
-    Index++;
-    SetupPath =
-     ExtractFilePath(SetupPathBase) + ExtractFileNameOnly(SetupPathBase) +
-     FORMAT(".%d", (Index)) + ExtractFileExt(SetupPathBase);
-  }
-
-  std::unique_ptr<TFileStream> FileStream(new TFileStream(SetupPath, fmCreate));
-  FileStream->Write(Buffer, Size);
-  FileStream.reset(NULL);
-
-  UnicodeString Params = L"/SILENT /NORESTART /AutomaticUpdate";
-  if (FUpdates.Results.OpenGettingStarted)
-  {
-    Params += L" /OpenGettingStarted";
-  }
-
-  if (!ExecuteShell(SetupPath, Params))
-  {
-    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (SetupPath)));
-  }
-
-  Configuration->Usage->Inc(L"UpdateRuns");
-  TerminateApplication();
-}
-//---------------------------------------------------------------------------
-void __fastcall TUpdateDownloadThread::DownloadNotVerified()
-{
-  throw Exception(MainInstructions(LoadStr(UPDATE_VERIFY_ERROR)));
-}
-//---------------------------------------------------------------------------
-void __fastcall TUpdateDownloadThread::HttpDownload(THttp * /*Sender*/, __int64 Size, bool & Cancel)
-{
-  FDownloaded = Size;
-  Synchronize(UpdateProgress);
-
-  // Do not waste bandwidth, if something goes wrong
-  if (FDownloaded > FUpdates.Results.DownloadSize)
-  {
-    DownloadNotVerified();
-  }
-
-  if (Terminated)
-  {
-    Cancel = true;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TUpdateDownloadThread::UpdateProgress()
-{
-  FProgressBar->Position = DownloadSizeToProgress(FDownloaded);
-}
-//---------------------------------------------------------------------------
-void __fastcall TUpdateDownloadThread::ShowException()
-{
-  DebugAssert(FException.get() != NULL);
-  ShowExtendedException(FException.get());
-}
-//---------------------------------------------------------------------------
-bool __fastcall TUpdateDownloadThread::CancelDownload()
-{
-  bool Result = !Terminated;
-  if (Result)
-  {
-    Configuration->Usage->Inc(L"UpdateDownloadCancels");
-    Terminate();
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall TUpdateDownloadThread::CancelClicked(TObject * /*Sender*/)
-{
-  if (CancelDownload())
-  {
-    WaitFor();
-  }
-}
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-class TUpdateDownloadData : public TComponent
-{
-public:
-  TUpdateDownloadThread * Thread;
-
-  __fastcall TUpdateDownloadData() :
-    TComponent(NULL)
-  {
-  }
-
-  virtual __fastcall ~TUpdateDownloadData()
-  {
-    // will stop the thread
-    delete Thread;
-  }
-
-  static TUpdateDownloadData * __fastcall Retrieve(TObject * Object)
-  {
-    TComponent * Component = DebugNotNull(dynamic_cast<TComponent *>(Object));
-    TComponent * UpdateDownloadDataComponent = Component->FindComponent(QualifiedClassName());
-    return DebugNotNull(dynamic_cast<TUpdateDownloadData *>(UpdateDownloadDataComponent));
-  }
-};
-//---------------------------------------------------------------------------
-static void __fastcall DownloadClose(void * /*Data*/, TObject * Sender, TCloseAction & Action)
-{
-  TUpdateDownloadData * UpdateDownloadData = TUpdateDownloadData::Retrieve(Sender);
-  // If the form was closed by CancelForm at the end of the thread, do nothing
-  if (!UpdateDownloadData->Thread->Done)
-  {
-    // Otherwise the form is closing because X was clicked (or maybe Cancel).
-    // May this should actually call CancelClicked?
-    if (UpdateDownloadData->Thread->CancelDownload())
-    {
-      Action = caNone;
-    }
-  }
-}
-//---------------------------------------------------------------------------
-static void __fastcall DownloadUpdate(void * /*Data*/, TObject * Sender)
-{
-  Configuration->Usage->Inc(L"UpdateDownloadStarts");
-  TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
-  TForm * Form = DebugNotNull(dynamic_cast<TForm *>(GetParentForm(Button)));
-  TPanel * Panel = CreateBlankPanel(Form);
-
-  TProgressBar * ProgressBar = new TProgressBar(Panel);
-  ProgressBar->Anchors = TAnchors() << akLeft << akTop << akRight;
-  ProgressBar->Top = 0;
-  ProgressBar->Left = 0;
-  ProgressBar->Width = Panel->Width;
-  ProgressBar->Parent = Panel;
-  ProgressBar->Max = DownloadSizeToProgress(WinConfiguration->Updates.Results.DownloadSize);
-  Panel->Height = ProgressBar->Height;
-
-  InsertPanelToMessageDialog(Form, Panel);
-
-  Button->Enabled = false;
-
-  TButton * CancelButton = dynamic_cast<TButton *>(Form->FindComponent(L"Cancel"));
-  CancelButton->Caption = Vcl_Consts_SMsgDlgCancel;
-
-  TUpdateDownloadThread * Thread = new TUpdateDownloadThread(ProgressBar);
-  // The form becomes owner of the thread (via TUpdateDownloadData),
-  // so the thread is automatically stopped when the form closes, if the "cancel" is pressed.
-  // But it gets done only after the form controls are gone, and the thread
-  // might try to access them meanwhile. So we stop the thread explicitly.
-  CancelButton->OnClick = Thread->CancelClicked;
-
-  TUpdateDownloadData * Data = new TUpdateDownloadData();
-  Data->Name = TUpdateDownloadData::QualifiedClassName();
-  Data->Thread = Thread;
-  Form->InsertComponent(Data);
-
-  UnicodeString DownloadingUrl = WinConfiguration->Updates.Results.DownloadingUrl;
-  if (!DownloadingUrl.IsEmpty())
-  {
-    NavigateMessageDialogToUrl(Form, DownloadingUrl);
-  }
-
-  DebugAssert(Form->OnClose == NULL);
-  Form->OnClose = MakeMethod<TCloseEvent>(NULL, DownloadClose);
-
-  Thread->Resume();
-}
-//---------------------------------------------------------------------------
-static void __fastcall UpdatesDonateClick(void * /*Data*/, TObject * /*Sender*/)
-{
-  EnableAutomaticUpdates();
-}
-//---------------------------------------------------------------------------
-static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
-{
-  TForm * Dialog = DebugNotNull(dynamic_cast<TForm *>(Sender));
-  TPanel * Panel = CreateBlankPanel(Dialog);
-
-  TStaticText * StaticText = new TStaticText(Panel);
-  StaticText->Top = 0;
-  StaticText->Left = 0;
-  StaticText->AutoSize = true;
-  StaticText->Caption = LoadStr(UPDATES_DONATE_LINK);
-  StaticText->Parent = Panel;
-  StaticText->OnClick = MakeMethod<TNotifyEvent>(NULL, UpdatesDonateClick);
-  StaticText->TabStop = true;
-
-  LinkLabel(StaticText);
-
-  Panel->Height = StaticText->Height;
-
-  // Currently this is noop (will fail assertion), if MoreMessagesUrl is not set
-  // (what should not happen)
-  InsertPanelToMessageDialog(Dialog, Panel);
 }
 //---------------------------------------------------------------------------
 bool __fastcall CheckForUpdates(bool CachedResults)
@@ -1515,7 +1033,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
   {
     if (ActiveForm)
     {
-      DebugAssert(ActiveForm->Enabled);
+      assert(ActiveForm->Enabled);
       ActiveForm->Enabled = false;
     }
 
@@ -1525,7 +1043,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
       CachedResults;
     if (!Cached)
     {
-      DoQueryUpdates(WinConfiguration->CollectUsage);
+      QueryUpdates();
       // reread new data
       Updates = WinConfiguration->Updates;
     }
@@ -1535,7 +1053,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
       Updates.ShownResults = true;
       WinConfiguration->Updates = Updates;
     }
-    DebugAssert(Updates.HaveResults);
+    assert(Updates.HaveResults);
 
     UnicodeString Message;
     bool New;
@@ -1577,42 +1095,18 @@ bool __fastcall CheckForUpdates(bool CachedResults)
     Aliases[1].OnClick = MakeMethod<TNotifyEvent>(NULL, OpenHistory);
     Aliases[2].Button = qaCancel;
     Aliases[2].Alias = Vcl_Consts_SMsgDlgClose;
-    // Used only when New == true, see AliasesCount below
     Aliases[3].Button = qaOK;
     Aliases[3].Alias = LoadStr(UPGRADE_BUTTON);
-    if (!Updates.Results.DownloadUrl.IsEmpty())
-    {
-      Aliases[3].OnClick = MakeMethod<TNotifyEvent>(NULL, DownloadUpdate);
-      Aliases[3].ElevationRequired = true;
-    }
 
     TMessageParams Params;
     Params.Aliases = Aliases;
     Params.MoreMessagesUrl = Updates.Results.NewsUrl;
     Params.MoreMessagesSize = Updates.Results.NewsSize;
-    // alias "ok" button to "upgrade" only if we have new version
+    // alias "ok" button to "download" only if we have new version
     Params.AliasesCount = LENOF(Aliases) - (New ? 0 : 1);
-    Params.CustomCaption = LoadStr(CHECK_FOR_UPDATES_TITLE);
-
-    if (New)
-    {
-      Params.ImageName = L"Installer";
-    }
-
-    std::unique_ptr<TForm> Dialog(
-      CreateMoreMessageDialogEx(Message, NULL, Type, Answers, HELP_UPDATES, &Params));
-
-    if (New)
-    {
-      if (Updates.Results.DownloadUrl.IsEmpty() && IsInstalled())
-      {
-        DebugAssert(Dialog->OnShow == NULL);
-        // InsertDonateLink need to be called only after MessageBrowser is created
-        Dialog->OnShow = MakeMethod<TNotifyEvent>(NULL, InsertDonateLink);
-      }
-    }
-
-    unsigned int Answer = ExecuteMessageDialog(Dialog.get(), Answers, &Params);
+    unsigned int Answer =
+      MessageDialog(Message, Type,
+        Answers, HELP_UPDATES, &Params);
     switch (Answer)
     {
       case qaOK:
@@ -1632,7 +1126,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
         break;
 
       case qaAll:
-        DebugFail();
+        FAIL;
         break;
     }
   }
@@ -1667,7 +1161,7 @@ void __fastcall TUpdateThread::Execute()
 {
   try
   {
-    DoQueryUpdates(WinConfiguration->CollectUsage);
+    QueryUpdates();
     if (FOnUpdatesChecked != NULL)
     {
       Synchronize(FOnUpdatesChecked);
@@ -1681,7 +1175,7 @@ void __fastcall TUpdateThread::Execute()
 //---------------------------------------------------------------------------
 void __fastcall StartUpdateThread(TThreadMethod OnUpdatesChecked)
 {
-  DebugAssert(UpdateThread == NULL);
+  assert(UpdateThread == NULL);
   UpdateThread = new TUpdateThread(OnUpdatesChecked);
 }
 //---------------------------------------------------------------------------
@@ -1726,7 +1220,7 @@ static bool __fastcall AddJumpListCategory(TStrings * Names,
           {
             try
             {
-              DebugCheck(SUCCEEDED(Collection->AddObject(Link)));
+              CHECK(SUCCEEDED(Collection->AddObject(Link)));
               Count++;
             }
             __finally
@@ -1784,7 +1278,7 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
       unsigned int * PMinSlots = &MinSlots;
       void ** PRemovedArray = (void**)&RemovedArray;
       HRESULT Result = DestinationList->BeginList(PMinSlots, IID_IObjectArray, PRemovedArray);
-      if (SUCCEEDED(Result) && DebugAlwaysTrue(RemovedArray != NULL))
+      if (SUCCEEDED(Result) && ALWAYS_TRUE(RemovedArray != NULL))
       {
         Removed = new TStringList();
 
@@ -1894,277 +1388,4 @@ bool __fastcall IsInstalled()
   return
     DoIsInstalled(HKEY_LOCAL_MACHINE) ||
     DoIsInstalled(HKEY_CURRENT_USER);
-}
-//---------------------------------------------------------------------------
-static TStringList * __fastcall TextToTipList(const UnicodeString & Text)
-{
-  std::unique_ptr<TStringList> List(new TStringList());
-  List->CommaText = Text;
-  return List.release();
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall FirstUnshownTip()
-{
-  TUpdatesConfiguration Updates = WinConfiguration->Updates;
-  std::unique_ptr<TStringList> Tips(TextToTipList(Updates.Results.Tips));
-  Tips->CaseSensitive = false;
-  std::unique_ptr<TStringList> TipsSeen(TextToTipList(WinConfiguration->TipsSeen));
-  TipsSeen->CaseSensitive = false;
-
-  int LastTipSeen = -1;
-  for (int Index = 0; Index < TipsSeen->Count; Index++)
-  {
-    int TipIndex = Tips->IndexOf(TipsSeen->Names[Index]);
-    if (TipIndex >= 0)
-    {
-      LastTipSeen = TipIndex;
-    }
-  }
-
-  UnicodeString Result;
-  if (LastTipSeen < Tips->Count - 1)
-  {
-    Result = Tips->Strings[LastTipSeen + 1];
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-class TTipsData : public TComponent
-{
-public:
-  __fastcall TTipsData() :
-    TComponent(NULL)
-  {
-  }
-
-  int Index;
-  TStringList * Tips;
-
-  static TTipsData * __fastcall Retrieve(TObject * Object)
-  {
-    TComponent * Component = DebugNotNull(dynamic_cast<TComponent *>(Object));
-    TComponent * TipsDataComponent = Component->FindComponent(QualifiedClassName());
-    return DebugNotNull(dynamic_cast<TTipsData *>(TipsDataComponent));
-  }
-};
-//---------------------------------------------------------------------------
-static UnicodeString __fastcall TipsMessage(TTipsData * TipsData)
-{
-  return FMTLOAD(TIPS_MESSAGE, (TipsData->Index + 1, TipsData->Tips->Count));
-}
-//---------------------------------------------------------------------------
-static void __fastcall UpdateTipsForm(TCustomForm * Form)
-{
-  TTipsData * TipsData = TTipsData::Retrieve(Form);
-
-  TButton * PrevButton = DebugNotNull(dynamic_cast<TButton *>(Form->FindComponent(YesButtonName)));
-  PrevButton->Enabled = (TipsData->Index > 0);
-  TButton * NextButton = DebugNotNull(dynamic_cast<TButton *>(Form->FindComponent(L"No")));
-  NextButton->Enabled = (TipsData->Index < TipsData->Tips->Count - 1);
-
-  TLabel * MessageLabel = DebugNotNull(dynamic_cast<TLabel *>(FindComponentRecursively(Form, MainMessageLabelName)));
-  MessageLabel->Caption = TipsMessage(TipsData);
-}
-//---------------------------------------------------------------------------
-static UnicodeString __fastcall TipUrl(TTipsData * TipsData)
-{
-  UnicodeString Tip = TipsData->Tips->Strings[TipsData->Index];
-  UnicodeString TipParams = FORMAT(L"tip=%s", (Tip));
-  return AppendUrlParams(WinConfiguration->Updates.Results.TipsUrl, TipParams);
-}
-//---------------------------------------------------------------------------
-static void __fastcall TipSeen(const UnicodeString & Tip)
-{
-  std::unique_ptr<TStringList> TipsSeen(TextToTipList(WinConfiguration->TipsSeen));
-  TipsSeen->Values[Tip] = FormatDateTime(L"yyyy-mm-dd", Now());
-  WinConfiguration->TipsSeen = TipsSeen->CommaText;
-  WinConfiguration->TipsShown = Now();
-  WinConfiguration->RunsSinceLastTip = 0;
-  // prevent parallel app instances showing the same tip
-  WinConfiguration->Save();
-}
-//---------------------------------------------------------------------------
-static void __fastcall PrevNextTipClick(void * Data, TObject * Sender)
-{
-  TCustomForm * Form = GetParentForm(dynamic_cast<TControl *>(Sender));
-  TTipsData * TipsData = TTipsData::Retrieve(Form);
-  TipsData->Index += reinterpret_cast<int>(Data);
-  UpdateTipsForm(Form);
-  TipSeen(TipsData->Tips->Strings[TipsData->Index]);
-  UnicodeString Url = TipUrl(TipsData);
-  NavigateMessageDialogToUrl(Form, Url);
-}
-//---------------------------------------------------------------------------
-static void __fastcall ShowTip(bool AutoShow)
-{
-  TUpdatesConfiguration Updates = WinConfiguration->Updates;
-  UnicodeString Tip = FirstUnshownTip();
-  std::unique_ptr<TStringList> Tips(TextToTipList(Updates.Results.Tips));
-  Tips->CaseSensitive = false;
-  int Index;
-  if (Tip.IsEmpty())
-  {
-    Index = Tips->Count - 1;
-    Tip = Tips->Strings[Index];
-  }
-  else
-  {
-    Index = Tips->IndexOf(Tip);
-  }
-
-  std::unique_ptr<TTipsData> TipsData(new TTipsData());
-  TipsData->Name = TTipsData::QualifiedClassName();
-  TipsData->Index = Index;
-  TipsData->Tips = Tips.get();
-
-  UnicodeString Message = MainInstructions(TipsMessage(TipsData.get()));
-
-  TQueryButtonAlias Aliases[3];
-  Aliases[0].Button = qaYes;
-  Aliases[0].Alias = LoadStr(PREV_BUTTON);
-  Aliases[0].OnClick = MakeMethod<TNotifyEvent>(reinterpret_cast<void *>(-1), PrevNextTipClick);
-  Aliases[1].Button = qaNo;
-  Aliases[1].Alias = LoadStr(NEXT_BUTTON);
-  Aliases[1].OnClick = MakeMethod<TNotifyEvent>(reinterpret_cast<void *>(+1), PrevNextTipClick);
-  Aliases[2].Button = qaCancel;
-  Aliases[2].Alias = LoadStr(CLOSE_BUTTON);
-
-  TMessageParams Params;
-  Params.CustomCaption = LoadStr(TIPS_TITLE);
-  Params.MoreMessagesSize = Updates.Results.TipsSize;
-  Params.MoreMessagesUrl = TipUrl(TipsData.get());
-  Params.Aliases = Aliases;
-  Params.AliasesCount = LENOF(Aliases);
-  Params.ImageName = L"Bulb On n p";
-
-  if (AutoShow)
-  {
-    // Won't be used automatically as we have more than the "OK" button
-    Params.NeverAskAgainTitle = LoadStr(NEVER_SHOW_AGAIN);
-    Params.NeverAskAgainAnswer = qaCancel;
-    Params.Params |= mpNeverAskAgainCheck;
-  }
-
-  int Answers = qaYes | qaNo | qaCancel;
-  std::unique_ptr<TForm> Dialog(CreateMoreMessageDialogEx(Message, NULL, qtInformation, Answers, HELP_TIPS, &Params));
-  Dialog->InsertComponent(TipsData.release());
-  UpdateTipsForm(Dialog.get());
-  TipSeen(Tip);
-  unsigned int Result = ExecuteMessageDialog(Dialog.get(), Answers, &Params);
-
-  if ((Result == qaNeverAskAgain) && DebugAlwaysTrue(AutoShow))
-  {
-    WinConfiguration->ShowTips = false;
-  }
-
-  WinConfiguration->Updates = Updates;
-}
-//---------------------------------------------------------------------------
-void __fastcall AutoShowNewTip()
-{
-  Configuration->Usage->Inc(L"TipsShownAuto");
-  ShowTip(true);
-}
-//---------------------------------------------------------------------------
-void __fastcall ShowTips()
-{
-  {
-    TOperationVisualizer Visualizer;
-    DoQueryUpdates(false);
-  }
-
-  if (WinConfiguration->Updates.Results.Tips.IsEmpty())
-  {
-    throw Exception(MainInstructions(LoadStr(TIPS_NONE)));
-  }
-
-  Configuration->Usage->Inc(L"TipsShownCommand");
-  ShowTip(false);
-}
-//---------------------------------------------------------------------------
-void __fastcall TipsUpdateStaticUsage()
-{
-  TUpdatesConfiguration Updates = WinConfiguration->Updates;
-  std::unique_ptr<TStringList> Tips(TextToTipList(Updates.Results.Tips));
-  Configuration->Usage->Set(L"TipsCount", Tips->Count);
-  std::unique_ptr<TStringList> TipsSeen(TextToTipList(WinConfiguration->TipsSeen));
-  Configuration->Usage->Set(L"TipsSeen", TipsSeen->Count);
-}
-//---------------------------------------------------------------------------
-static void ReadNetVersion(TRegistryStorage * Registry)
-{
-  UnicodeString VersionStr = Registry->ReadString(L"Version", L"");
-  if (CompareVersion(VersionStr, NetVersionStr) > 0)
-  {
-    NetVersionStr = VersionStr;
-  }
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall GetNetVersionStr()
-{
-  if (NetVersionStr.IsEmpty())
-  {
-    NetVersionStr = L"0"; // not to retry on failure
-
-    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP", HKEY_LOCAL_MACHINE));
-    if (Registry->OpenRootKey(false))
-    {
-      std::unique_ptr<TStringList> Keys(new TStringList());
-      Registry->GetSubKeyNames(Keys.get());
-      for (int Index = 0; Index < Keys->Count; Index++)
-      {
-        UnicodeString Key = Keys->Strings[Index];
-        if (Registry->OpenSubKey(Key, false))
-        {
-          ReadNetVersion(Registry.get());
-
-          if (Registry->OpenSubKey(L"Full", false))
-          {
-            ReadNetVersion(Registry.get());
-            Registry->CloseSubKey();
-          }
-          if (Registry->OpenSubKey(L"Client", false))
-          {
-            ReadNetVersion(Registry.get());
-            Registry->CloseSubKey();
-          }
-
-          Registry->CloseSubKey();
-        }
-      }
-    }
-  }
-
-  return NetVersionStr;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall GetPowerShellVersionStr()
-{
-  if (PowerShellVersionStr.IsEmpty())
-  {
-    PowerShellVersionStr = 0; // not to retry on failure
-
-    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\PowerShell", HKEY_LOCAL_MACHINE));
-    if (Registry->OpenRootKey(false))
-    {
-      std::unique_ptr<TStringList> Keys(new TStringList());
-      Registry->GetSubKeyNames(Keys.get());
-      for (int Index = 0; Index < Keys->Count; Index++)
-      {
-        UnicodeString Key = Keys->Strings[Index];
-        if (Registry->OpenSubKey(Key + L"\\PowerShellEngine", false, true))
-        {
-          UnicodeString VersionStr = Registry->ReadString(L"PowerShellVersion", L"");
-          if (!VersionStr.IsEmpty() && (CompareVersion(VersionStr, PowerShellVersionStr) > 0))
-          {
-            PowerShellVersionStr = VersionStr;
-          }
-
-          Registry->CloseSubKey();
-        }
-      }
-    }
-  }
-
-  return PowerShellVersionStr;
 }

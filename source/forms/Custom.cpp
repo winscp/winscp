@@ -14,7 +14,6 @@
 #include <PasTools.hpp>
 #include <ProgParams.h>
 #include <Tools.h>
-#include <GUITools.h>
 #include <HistoryComboBox.hpp>
 #include <Math.hpp>
 
@@ -30,12 +29,9 @@ __fastcall TCustomDialog::TCustomDialog(UnicodeString AHelpKeyword)
 {
   UseSystemSettings(this);
 
-  FControlPadding = ScaleByTextHeight(this, 8);
   FPos = ScaleByTextHeight(this, 8);
-  FPrePos = FPos;
   FHorizontalMargin = ScaleByTextHeight(this, 8);
   FIndent = FHorizontalMargin;
-  FGroupBox = NULL;
 
   HelpKeyword = AHelpKeyword;
 
@@ -78,14 +74,9 @@ void __fastcall TCustomDialog::Change(TObject * /*Sender*/)
   Changed();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomDialog::DoHelp()
-{
-  FormHelp(this);
-}
-//---------------------------------------------------------------------------
 void __fastcall TCustomDialog::HelpButtonClick(TObject * /*Sender*/)
 {
-  DoHelp();
+  FormHelp(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::DoShow()
@@ -115,32 +106,10 @@ void __fastcall TCustomDialog::AddImage(const UnicodeString & ImageName)
 {
   TImage * Image = new TImage(this);
   Image->Name = L"Image";
-  Image->Parent = GetDefaultParent();
-  LoadDialogImage(Image, ImageName);
-  Image->SetBounds(FIndent, FPos + ScaleByTextHeight(this, 3), Image->Picture->Width, Image->Picture->Height);
+  Image->Parent = this;
+  LoadResourceImage(Image, ImageName);
+  Image->SetBounds(FIndent, FPos + ScaleByTextHeight(this, 3), 32, 32);
   FIndent += Image->Width + ScaleByTextHeight(this, 12);
-}
-//---------------------------------------------------------------------------
-int __fastcall TCustomDialog::GetMaxControlWidth(TControl * Control)
-{
-  return GetDefaultParent()->ClientWidth - Control->Left - FHorizontalMargin;
-}
-//---------------------------------------------------------------------------
-TWinControl * __fastcall TCustomDialog::GetDefaultParent()
-{
-  return (FGroupBox != NULL) ? FGroupBox : static_cast<TWinControl *>(this);
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AdjustHeight(TControl * Control)
-{
-  FPos = Control->Top + Control->Height + FControlPadding;
-  int Delta = (FPos - FPrePos);
-  ClientHeight = ClientHeight + Delta;
-  if (FGroupBox != NULL)
-  {
-    FGroupBox->Height = FGroupBox->Height + Delta;
-  }
-  FPrePos = FPos;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddWinControl(TWinControl * Control)
@@ -164,39 +133,21 @@ TLabel * __fastcall TCustomDialog::CreateLabel(UnicodeString Label)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * Label, bool OneLine)
+void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * Label)
 {
-  Edit->Parent = GetDefaultParent();
+  int PrePos = FPos;
+  Label->Parent = this;
+  Label->Left = FIndent;
+  Label->Top = FPos;
+  FPos += Label->Height + ScaleByTextHeight(this, 4);
+
+  Edit->Parent = this;
+  Edit->Left = FIndent;
+  Edit->Top = FPos;
+  Edit->Width = ClientWidth - Edit->Left - FHorizontalMargin;
   // this updates Height property to real value
   Edit->HandleNeeded();
-
-  Label->Parent = GetDefaultParent();
-  Label->Left = FIndent;
-
-  if (OneLine)
-  {
-    DebugAssert(Edit->Height > Label->Height);
-    Label->Top = FPos + ((Edit->Height - Label->Height) / 2);
-  }
-  else
-  {
-    Label->Top = FPos;
-
-    FPos += Label->Height + ScaleByTextHeight(this, 4);
-  }
-
-  Edit->Top = FPos;
-  if (OneLine)
-  {
-    Edit->Left = GetDefaultParent()->ClientWidth - FHorizontalMargin - Edit->Width;
-  }
-  else
-  {
-    Edit->Left = FIndent;
-    Edit->Width = GetMaxControlWidth(Edit);
-  }
-
-  AdjustHeight(Edit);
+  FPos += Edit->Height + ScaleByTextHeight(this, 8);
 
   if (Label->FocusControl == NULL)
   {
@@ -204,15 +155,17 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
   }
   else
   {
-    DebugAssert(Label->FocusControl == Edit);
+    assert(Label->FocusControl == Edit);
   }
+
+  ClientHeight = ClientHeight + (FPos - PrePos);
 
   AddWinControl(Edit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddEdit(TCustomEdit * Edit, TLabel * Label)
 {
-  AddEditLikeControl(Edit, Label, false);
+  AddEditLikeControl(Edit, Label);
 
   TEdit * PublicEdit = reinterpret_cast<TEdit *>(Edit);
   if (PublicEdit->OnChange == NULL)
@@ -221,29 +174,9 @@ void __fastcall TCustomDialog::AddEdit(TCustomEdit * Edit, TLabel * Label)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label, TStrings * Items, bool OneLine)
+void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label)
 {
-  AddEditLikeControl(Combo, Label, OneLine);
-
-  if (Items != NULL)
-  {
-    Combo->Items = Items;
-  }
-
-  if (OneLine)
-  {
-    int Width = 0;
-    for (int Index = 0; Index < Combo->Items->Count; Index++)
-    {
-      Width = Max(Width, Combo->Canvas->TextWidth(Combo->Items->Strings[Index]));
-    }
-
-    Width += ScaleByTextHeight(Combo, 4 + 16 + 14);
-    Width = Max(Width, HelpButton->Width);
-
-    Combo->Width = Width;
-    Combo->Left = GetDefaultParent()->ClientWidth - FHorizontalMargin - Width;
-  }
+  AddEditLikeControl(Combo, Label);
 
   TComboBox * PublicCombo = reinterpret_cast<TComboBox *>(Combo);
   if (PublicCombo->OnChange == NULL)
@@ -252,23 +185,20 @@ void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomDialog::ScaleButtonControl(TButtonControl * Control)
+void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
 {
+  int PrePos = FPos;
+  Control->Parent = this;
+  Control->Left = FIndent + ScaleByTextHeight(this, 6);
+  Control->Top = FPos;
+  Control->Width = ClientWidth - Control->Left - FHorizontalMargin;
   // this updates Height property to real value
   Control->HandleNeeded();
   // buttons do not scale with text on their own
   Control->Height = ScaleByTextHeight(Control, Control->Height);
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
-{
-  Control->Parent = GetDefaultParent();
-  Control->Left = FIndent + ScaleByTextHeight(this, 6);
-  Control->Top = FPos;
-  Control->Width = GetMaxControlWidth(Control);
-  ScaleButtonControl(Control);
+  FPos += Control->Height + ScaleByTextHeight(this, 8);
 
-  AdjustHeight(Control);
+  ClientHeight = ClientHeight + (FPos - PrePos);
 
   AddWinControl(Control);
 
@@ -277,80 +207,6 @@ void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
   {
     PublicControl->OnClick = Change;
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddText(TLabel * Label)
-{
-  Label->Parent = GetDefaultParent();
-
-  Label->WordWrap = true;
-  Label->Left = FIndent;
-  Label->Width = GetMaxControlWidth(Label);
-  Label->Top = FPos;
-  Label->ShowAccelChar = false;
-
-  TRect TextRect;
-  SetRect(&TextRect, 0, 0, Label->Width, 0);
-  DrawText(Label->Canvas->Handle, Label->Caption.c_str(), Label->Caption.Length() + 1, &TextRect,
-    DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
-    Label->DrawTextBiDiModeFlagsReadingOnly());
-  Label->Height = TextRect.Height();
-
-  AdjustHeight(Label);
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddText(TStaticText * Label)
-{
-  Label->Parent = GetDefaultParent();
-
-  Label->Left = FIndent;
-  Label->Width = GetMaxControlWidth(Label);
-  Label->Top = FPos;
-  Label->ShowAccelChar = false;
-
-  AdjustHeight(Label);
-  AddWinControl(Label);
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddSeparator()
-{
-  TBevel * Bevel = new TBevel(this);
-  Bevel->Parent = GetDefaultParent();
-
-  Bevel->Left = FIndent;
-  Bevel->Top = FPos;
-  Bevel->Height = 2;
-  Bevel->Width = GetMaxControlWidth(Bevel);
-
-  AdjustHeight(Bevel);
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomDialog::StartGroup(const UnicodeString & Caption)
-{
-  if (FGroupBox != NULL)
-  {
-    FIndent = FGroupBox->Left;
-    FPos = FGroupBox->Top + FGroupBox->Height + FControlPadding;
-    FPrePos = FPos;
-    FGroupBox = NULL;
-  }
-
-  TGroupBox * GroupBox = new TGroupBox(this);
-  GroupBox->Parent = this;
-  GroupBox->Caption = Caption;
-
-  GroupBox->Left = FIndent;
-  GroupBox->Top = FPos;
-  GroupBox->Height = ScaleByTextHeight(GroupBox, 20);
-  GroupBox->Width = GetMaxControlWidth(GroupBox);
-
-  AdjustHeight(GroupBox);
-
-  FPos = ScaleByTextHeight(this, 16);
-  FPrePos = FPos;
-  FIndent = FHorizontalMargin;
-
-  FGroupBox = GroupBox;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -414,7 +270,7 @@ void __fastcall TSaveSessionDialog::Init(bool CanSavePassword,
     }
   }
 
-  DebugAssert(!Folders->CaseSensitive);
+  assert(!Folders->CaseSensitive);
   Folders->Sort();
 
   FolderCombo = new TComboBox(this);
@@ -577,7 +433,7 @@ void __fastcall SessionNameValidate(const UnicodeString & Text,
 {
   TSessionData::ValidatePath(Text);
 
-  DebugAssert(StoredSessions);
+  assert(StoredSessions);
   TSessionData * Data = (TSessionData *)StoredSessions->FindByName(Text);
   if (Data && Data->Special)
   {
@@ -755,30 +611,25 @@ bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
 class TRemoteMoveDialog : public TCustomDialog
 {
 public:
-  __fastcall TRemoteMoveDialog(bool Multi);
+  __fastcall TRemoteMoveDialog();
 
   bool __fastcall Execute(UnicodeString & Target, UnicodeString & FileMask);
 
 protected:
   DYNAMIC void __fastcall DoShow();
-  virtual void __fastcall DoValidate();
-  UnicodeString __fastcall GetFileMask();
 
 private:
   THistoryComboBox * Combo;
-  bool FMulti;
 };
 //---------------------------------------------------------------------------
-__fastcall TRemoteMoveDialog::TRemoteMoveDialog(bool Multi) :
+__fastcall TRemoteMoveDialog::TRemoteMoveDialog() :
   TCustomDialog(HELP_REMOTE_MOVE)
 {
   Caption = LoadStr(REMOTE_MOVE_TITLE);
   // The same as TRemoteTransferDialog
   ClientWidth = ScaleByTextHeight(this, 420);
 
-  FMulti = Multi;
-
-  AddImage(L"Move To");
+  AddImage(L"REMOTE_MOVE_FILE");
 
   Combo = new THistoryComboBox(this);
   Combo->AutoComplete = false;
@@ -793,16 +644,11 @@ bool __fastcall TRemoteMoveDialog::Execute(UnicodeString & Target, UnicodeString
   if (Result)
   {
     Target = UnixExtractFilePath(Combo->Text);
-    FileMask = GetFileMask();
+    FileMask = UnixExtractFileName(Combo->Text);
     Combo->SaveToHistory();
     CustomWinConfiguration->History[L"RemoteTarget"] = Combo->Items;
   }
   return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TRemoteMoveDialog::GetFileMask()
-{
-  return UnixExtractFileName(Combo->Text);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteMoveDialog::DoShow()
@@ -811,478 +657,8 @@ void __fastcall TRemoteMoveDialog::DoShow()
   InstallPathWordBreakProc(Combo);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteMoveDialog::DoValidate()
+bool __fastcall DoRemoteMoveDialog(UnicodeString & Target, UnicodeString & FileMask)
 {
-  if (!IsFileNameMask(GetFileMask()) && FMulti)
-  {
-    UnicodeString Message =
-      FormatMultiFilesToOneConfirmation(Combo->Text, true);
-    if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_NONE) == qaCancel)
-    {
-      Abort();
-    }
-  }
-
-  TCustomDialog::DoValidate();
-}
-//---------------------------------------------------------------------------
-bool __fastcall DoRemoteMoveDialog(bool Multi, UnicodeString & Target, UnicodeString & FileMask)
-{
-  std::unique_ptr<TRemoteMoveDialog> Dialog(new TRemoteMoveDialog(Multi));
+  std::unique_ptr<TRemoteMoveDialog> Dialog(new TRemoteMoveDialog());
   return Dialog->Execute(Target, FileMask);
-}
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-class TCustomCommandOptionsDialog : public TCustomDialog
-{
-public:
-  __fastcall TCustomCommandOptionsDialog(
-    const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags);
-
-  bool __fastcall Execute();
-
-protected:
-  virtual void __fastcall DoHelp();
-  DYNAMIC void __fastcall DoShow();
-
-private:
-  const TCustomCommandType * FCommand;
-  TStrings * FCustomCommandOptions;
-  std::vector<TControl *> FControls;
-  std::vector<std::vector<UnicodeString> > FValues;
-  unsigned int FFlags;
-
-  UnicodeString __fastcall HistoryKey(const TCustomCommandType::TOption & Option);
-  THistoryComboBox * __fastcall CreateHistoryComboBox(const TCustomCommandType::TOption & Option, const UnicodeString & Value);
-  void __fastcall BrowseButtonClick(TObject * Sender);
-  void __fastcall LinkLabelClick(TObject * Sender);
-  UnicodeString __fastcall SaveHistoryComboBoxValue(TControl * Control, const TCustomCommandType::TOption & Option);
-  void __fastcall AddOptionComboBox(
-    TComboBox * ComboBox, const UnicodeString & Value, const TCustomCommandType::TOption & Option,
-    std::vector<UnicodeString> & Values);
-  UnicodeString __fastcall GetComboBoxValue(TControl * Control, const UnicodeString & Default);
-  int __fastcall GetOptionIndex(TControl * Control);
-  int __fastcall GetControlIndex(TControl * Control);
-};
-//---------------------------------------------------------------------------
-__fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
-    const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags) :
-  TCustomDialog(HELP_EXTENSION_OPTIONS)
-{
-  FCommand = Command;
-  FFlags = Flags;
-  FCustomCommandOptions = CustomCommandOptions;
-  Caption = FMTLOAD(EXTENSION_OPTIONS_CAPTION, (StripEllipsis(StripHotkey(FCommand->Name))));
-  Width = ScaleByTextHeight(this, 400);
-
-  int ControlIndex = 0;
-  for (int OptionIndex = 0; OptionIndex < FCommand->OptionsCount; OptionIndex++)
-  {
-    const TCustomCommandType::TOption & Option = FCommand->GetOption(OptionIndex);
-
-    if ((Option.Flags & FFlags) != 0)
-    {
-      UnicodeString OptionKey = FCommand->GetOptionKey(Option);
-      UnicodeString Value;
-      if (FCustomCommandOptions->IndexOfName(OptionKey) >= 0)
-      {
-        Value = FCustomCommandOptions->Values[OptionKey];
-      }
-      else
-      {
-        Value = Option.Default;
-      }
-
-      int Tag = (OptionIndex << 16) + ControlIndex;
-      TControl * Control = NULL;
-      std::vector<UnicodeString> Values;
-      if (Option.Kind == TCustomCommandType::okUnknown)
-      {
-        Control = NULL;
-      }
-      else if (Option.Kind == TCustomCommandType::okLabel)
-      {
-        TLabel * Label = CreateLabel(Option.Caption);
-        AddText(Label);
-        Control = Label;
-      }
-      else if (Option.Kind == TCustomCommandType::okLink)
-      {
-        TStaticText * Label = new TStaticText(this);
-        Label->Caption = Option.Caption;
-        if (IsHttpOrHttpsUrl(Label->Caption))
-        {
-          Label->Caption = SecureUrl(Label->Caption);
-          LinkLabel(Label);
-          Label->TabStop = true;
-        }
-        else if (!Option.Default.IsEmpty() && IsHttpOrHttpsUrl(Option.Default))
-        {
-          Label->OnClick = LinkLabelClick;
-          LinkLabel(Label);
-          Label->TabStop = true;
-        }
-        else
-        {
-          // keep it plain text, as we have no URL
-        }
-        AddText(Label);
-        Control = Label;
-      }
-      else if (Option.Kind == TCustomCommandType::okGroup)
-      {
-        StartGroup(Option.Caption);
-      }
-      else if (Option.Kind == TCustomCommandType::okSeparator)
-      {
-        AddSeparator();
-      }
-      else if (Option.Kind == TCustomCommandType::okTextBox)
-      {
-        Control = CreateHistoryComboBox(Option, Value);
-      }
-      else if (Option.Kind == TCustomCommandType::okFile)
-      {
-        THistoryComboBox * ComboBox = CreateHistoryComboBox(Option, Value);
-        TButton * Button = new TButton(this);
-        Button->Parent = GetDefaultParent();
-        Button->Width = HelpButton->Width;
-        Button->Left = GetDefaultParent()->ClientWidth - Button->Width - HorizontalMargin;
-        ComboBox->Width = Button->Left - ComboBox->Left - ScaleByTextHeight(this, 6);
-        Button->Top = ComboBox->Top - ScaleByTextHeight(this, 2);
-        Button->Tag = Tag;
-        Button->Caption = LoadStr(EXTENSION_OPTIONS_BROWSE);
-        Button->OnClick = BrowseButtonClick;
-        ScaleButtonControl(Button);
-        AddWinControl(Button);
-        Control = ComboBox;
-      }
-      else if (Option.Kind == TCustomCommandType::okDropDownList)
-      {
-        TComboBox * ComboBox = new TComboBox(this);
-        ComboBox->Style = csDropDownList;
-
-        AddOptionComboBox(ComboBox, Value, Option, Values);
-
-        Control = ComboBox;
-      }
-      else if (Option.Kind == TCustomCommandType::okComboBox)
-      {
-        TComboBox * ComboBox = new TComboBox(this);
-        ComboBox->Style = csDropDown;
-
-        AddOptionComboBox(ComboBox, Value, Option, Values);
-        if (ComboBox->ItemIndex < 0)
-        {
-          ComboBox->Text = Value;
-        }
-
-        Control = ComboBox;
-      }
-      else if (Option.Kind == TCustomCommandType::okCheckBox)
-      {
-        TCheckBox * CheckBox = CreateAndAddCheckBox(Option.Caption);
-
-        CheckBox->Checked =
-          (Option.Params.size() >= 1) &&
-          (Value == Option.Params[0]);
-
-        Control = CheckBox;
-      }
-      else
-      {
-        DebugFail();
-      }
-
-      if (Control != NULL)
-      {
-        Control->Tag = Tag;
-      }
-      FControls.push_back(Control);
-      FValues.push_back(Values);
-      ControlIndex++;
-      DebugAssert(static_cast<int>(FControls.size()) == ControlIndex);
-    }
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomCommandOptionsDialog::AddOptionComboBox(
-  TComboBox * ComboBox, const UnicodeString & Value, const TCustomCommandType::TOption & Option, std::vector<UnicodeString> & Values)
-{
-  std::unique_ptr<TStringList> Items(new TStringList());
-  int ItemIndex = -1;
-
-  TCustomCommandType::TOption::TParams::const_iterator ParamI = Option.Params.begin();
-  while (ParamI != Option.Params.end())
-  {
-    UnicodeString Item = (*ParamI);
-    int P = Item.Pos(L"=");
-    UnicodeString ParamValue;
-    if (P > 0)
-    {
-      ParamValue = Item.SubString(1, P - 1);
-      Item.Delete(1, P);
-    }
-    else
-    {
-      ParamValue = Item;
-    }
-    Items->Add(Item);
-    if (Value == ParamValue)
-    {
-      ItemIndex = Items->Count - 1;
-    }
-    Values.push_back(ParamValue);
-    ParamI++;
-  }
-
-  AddComboBox(ComboBox, CreateLabel(Option.Caption), Items.get(), true);
-
-  ComboBox->ItemIndex = ItemIndex;
-}
-//---------------------------------------------------------------------------
-int __fastcall TCustomCommandOptionsDialog::GetOptionIndex(TControl * Control)
-{
-  return (Control->Tag >> 16);
-}
-//---------------------------------------------------------------------------
-int __fastcall TCustomCommandOptionsDialog::GetControlIndex(TControl * Control)
-{
-  return (Control->Tag & 0xFFFF);
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomCommandOptionsDialog::LinkLabelClick(TObject * Sender)
-{
-  TStaticText * Label = DebugNotNull(dynamic_cast<TStaticText *>(Sender));
-  const TCustomCommandType::TOption & Option = FCommand->GetOption(GetOptionIndex(Label));
-  OpenBrowser(SecureUrl(Option.Default));
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomCommandOptionsDialog::BrowseButtonClick(TObject * Sender)
-{
-  TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
-  int OptionIndex = GetOptionIndex(Button);
-  const TCustomCommandType::TOption & Option = FCommand->GetOption(OptionIndex);
-  int ControlIndex = GetControlIndex(Button);
-  THistoryComboBox * ComboBox = dynamic_cast<THistoryComboBox *>(FControls[ControlIndex]);
-
-  std::unique_ptr<TOpenDialog> OpenDialog(new TOpenDialog(Application));
-
-  UnicodeString Title;
-  if (!Option.FileCaption.IsEmpty())
-  {
-    Title = Option.FileCaption;
-  }
-  else
-  {
-    UnicodeString Caption = Option.Caption;
-    Caption = StripHotkey(Caption);
-    if (!Caption.IsEmpty() && (Caption[Caption.Length()] == L':'))
-    {
-      Caption.SetLength(Caption.Length() - 1);
-    }
-    Title = FMTLOAD(EXTENSION_OPTIONS_BROWSE_TITLE, (Caption));
-  }
-  OpenDialog->Title = Title;
-
-  UnicodeString Value;
-  if (ComboBox->Text.IsEmpty())
-  {
-    Value = Option.FileInitial;
-  }
-  else
-  {
-    Value = ComboBox->Text;
-  }
-  UnicodeString ExpandedValue = ExpandEnvironmentVariables(Value);
-  OpenDialog->FileName = ExpandedValue;
-  UnicodeString InitialDir = ExtractFilePath(ExpandedValue);
-  if (!InitialDir.IsEmpty())
-  {
-    OpenDialog->InitialDir = InitialDir;
-  }
-  OpenDialog->Filter = Option.FileFilter;
-  OpenDialog->DefaultExt = Option.FileExt;
-
-  if (OpenDialog->Execute())
-  {
-    if (OpenDialog->FileName != ExpandedValue)
-    {
-      ComboBox->Text = OpenDialog->FileName;
-    }
-    // If user just confirms the initial value, persist it
-    else if (ComboBox->Text.IsEmpty())
-    {
-      DebugAssert(Option.FileInitial == Value);
-      ComboBox->Text = Value;
-    }
-  }
-}
-//---------------------------------------------------------------------------
-THistoryComboBox * __fastcall TCustomCommandOptionsDialog::CreateHistoryComboBox(
-  const TCustomCommandType::TOption & Option, const UnicodeString & Value)
-{
-  THistoryComboBox * ComboBox = new THistoryComboBox(this);
-  ComboBox->AutoComplete = false;
-  AddComboBox(ComboBox, CreateLabel(Option.Caption));
-  ComboBox->Items = CustomWinConfiguration->History[HistoryKey(Option)];
-  ComboBox->Text = Value;
-  return ComboBox;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomCommandOptionsDialog::HistoryKey(const TCustomCommandType::TOption & Option)
-{
-  UnicodeString Result = FCommand->GetOptionKey(Option);
-  Result = CustomWinConfiguration->GetValidHistoryKey(Result);
-  return L"CustomCommandOption_" + Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TCustomCommandOptionsDialog::Execute()
-{
-  bool Result = TCustomDialog::Execute();
-
-  if (Result)
-  {
-    int ControlIndex = 0;
-    for (int OptionIndex = 0; OptionIndex < FCommand->OptionsCount; OptionIndex++)
-    {
-      const TCustomCommandType::TOption & Option = FCommand->GetOption(OptionIndex);
-      if ((Option.Flags & FFlags) != 0)
-      {
-        if ((Option.Kind != TCustomCommandType::okUnknown) &&
-            Option.IsControl)
-        {
-          UnicodeString OptionKey = FCommand->GetOptionKey(Option);
-
-          TControl * Control = FControls[ControlIndex];
-
-          UnicodeString Value;
-          if (Option.Kind == TCustomCommandType::okTextBox)
-          {
-            Value = SaveHistoryComboBoxValue(Control, Option);
-          }
-          else if (Option.Kind == TCustomCommandType::okFile)
-          {
-            Value = SaveHistoryComboBoxValue(Control, Option);
-          }
-          else if (Option.Kind == TCustomCommandType::okDropDownList)
-          {
-            Value = GetComboBoxValue(Control, Option.Default);
-          }
-          else if (Option.Kind == TCustomCommandType::okComboBox)
-          {
-            TComboBox * ComboBox = DebugNotNull(dynamic_cast<TComboBox *>(Control));
-            Value = GetComboBoxValue(Control, ComboBox->Text);
-          }
-          else if (Option.Kind == TCustomCommandType::okCheckBox)
-          {
-            TCheckBox * CheckBox = DebugNotNull(dynamic_cast<TCheckBox *>(Control));
-            int Index = (CheckBox->Checked ? 0 : 1);
-            Value = (Index < static_cast<int>(Option.Params.size())) ? Option.Params[Index] : UnicodeString();
-          }
-          else
-          {
-            DebugFail();
-          }
-
-          // The default value setter deletes the "name" when the value is empty.
-          // It would cause us to fall back to the default value, but we want to remember the empty value.
-          if (Value.IsEmpty())
-          {
-            int Index = FCustomCommandOptions->IndexOfName(OptionKey);
-            if (Index < 0)
-            {
-              Index = FCustomCommandOptions->Add(L"");
-            }
-            UnicodeString Line = OptionKey + FCustomCommandOptions->NameValueSeparator;
-            FCustomCommandOptions->Strings[Index] = Line;
-          }
-          else
-          {
-            FCustomCommandOptions->Values[OptionKey] = Value;
-          }
-        }
-
-        ControlIndex++;
-      }
-    }
-  }
-
-  return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomCommandOptionsDialog::GetComboBoxValue(
-  TControl * Control, const UnicodeString & Default)
-{
-  TComboBox * ComboBox = DebugNotNull(dynamic_cast<TComboBox *>(Control));
-  UnicodeString Result;
-  if (ComboBox->ItemIndex < 0)
-  {
-    Result = Default;
-  }
-  else
-  {
-    Result = FValues[GetControlIndex(Control)][ComboBox->ItemIndex];
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomCommandOptionsDialog::SaveHistoryComboBoxValue(
-  TControl * Control, const TCustomCommandType::TOption & Option)
-{
-  THistoryComboBox * ComboBox = DebugNotNull(dynamic_cast<THistoryComboBox *>(Control));
-  ComboBox->SaveToHistory();
-  CustomWinConfiguration->History[HistoryKey(Option)] = ComboBox->Items;
-  return ComboBox->Text;
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomCommandOptionsDialog::DoHelp()
-{
-  UnicodeString HelpPage;
-  if (!FCommand->OptionsPage.IsEmpty())
-  {
-    HelpPage = FCommand->OptionsPage;
-  }
-  else
-  {
-    HelpPage = FCommand->HomePage;
-  }
-
-  if (!HelpPage.IsEmpty())
-  {
-    OpenBrowser(HelpPage);
-  }
-  else
-  {
-    TCustomDialog::DoHelp();
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomCommandOptionsDialog::DoShow()
-{
-  TCustomDialog::DoShow();
-
-  int ControlIndex = 0;
-  for (int OptionIndex = 0; OptionIndex < FCommand->OptionsCount; OptionIndex++)
-  {
-    const TCustomCommandType::TOption & Option = FCommand->GetOption(OptionIndex);
-
-    if ((Option.Flags & FFlags) != 0)
-    {
-      if (Option.Kind == TCustomCommandType::okFile)
-      {
-        TControl * Control = FControls[ControlIndex];
-        InstallPathWordBreakProc(DebugNotNull(dynamic_cast<TWinControl *>(Control)));
-      }
-      ControlIndex++;
-    }
-  }
-}
-//---------------------------------------------------------------------------
-bool __fastcall DoCustomCommandOptionsDialog(
-  const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags)
-{
-  std::unique_ptr<TCustomCommandOptionsDialog> Dialog(
-    new TCustomCommandOptionsDialog(Command, CustomCommandOptions, Flags));
-  return Dialog->Execute();
 }

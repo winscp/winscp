@@ -120,7 +120,7 @@ void __fastcall TCleanupDialog::InitControls()
         break;
 
       default:
-        DebugFail();
+        FAIL;
         break;
     }
 
@@ -133,7 +133,7 @@ void __fastcall TCleanupDialog::InitControls()
     }
 
     Item->SubItems->Add(Location);
-    DebugAssert(Item->Index == i - 1);
+    assert(Item->Index == i - 1);
   }
 
   AutoSizeListColumnsWidth(DataListView);

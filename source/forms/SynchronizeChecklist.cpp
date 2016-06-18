@@ -16,7 +16,6 @@
 #include <BaseUtils.hpp>
 #include <Math.hpp>
 #include <WinConfiguration.h>
-#include <GUITools.h>
 //---------------------------------------------------------------------
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
@@ -66,8 +65,6 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FChangingItemMass = false;
   FGeneralHint = StatusBar->Hint;
 
-  SelectScaledImageList(ActionImages);
-
   FOrigListViewWindowProc = ListView->WindowProc;
   ListView->WindowProc = ListViewWindowProc;
 
@@ -107,7 +104,7 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
 
     UnicodeString WindowParams = FormConfiguration.WindowParams;
     // if there is no main window, keep previous "custom pos" indication,
-    bool CustomPos = (StrToIntDef(CutToChar(WindowParams, L';', true), 0) != 0);
+    bool CustomPos = (StrToIntDef(::CutToChar(WindowParams, L';', true), 0) != 0);
     if (Application->MainForm != NULL)
     {
       CustomPos = (Application->MainForm->BoundsRect != BoundsRect);
@@ -171,7 +168,7 @@ void __fastcall TSynchronizeChecklistDialog::CreateParams(TCreateParams & Params
   {
     FFormRestored = True;
     UnicodeString WindowParams = CustomWinConfiguration->SynchronizeChecklist.WindowParams;
-    bool CustomPos = (StrToIntDef(CutToChar(WindowParams, L';', true), 0) != 0);
+    bool CustomPos = (StrToIntDef(::CutToChar(WindowParams, L';', true), 0) != 0);
 
     if (!CustomPos && (Application->MainForm != NULL))
     {
@@ -198,7 +195,7 @@ void __fastcall TSynchronizeChecklistDialog::AddSubItem(TListItem * Item, int & 
   }
   else
   {
-    DebugAssert(Index == Item->SubItems->Count);
+    assert(Index == Item->SubItems->Count);
     Item->SubItems->Add(S);
   }
   Index++;
@@ -245,7 +242,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     }
     else
     {
-      DebugFail();
+      FAIL;
     }
     AddSubItem(Item, Index, S);
     if (Action == TSynchronizeChecklist::saDownloadNew)
@@ -271,7 +268,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
   }
 
   AddSubItem(Item, Index, L"");
-  DebugAssert(Index == ImageColumnIndex);
+  assert(Index == ImageColumnIndex);
 
   if (Action == TSynchronizeChecklist::saDeleteLocal)
   {
@@ -289,7 +286,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     }
     else
     {
-      DebugFail();
+      FAIL;
     }
     AddSubItem(Item, Index, S);
     if (Action == TSynchronizeChecklist::saUploadNew)
@@ -399,7 +396,7 @@ __int64 __fastcall TSynchronizeChecklistDialog::GetItemSize(const TSynchronizeCh
         return Item->Remote.Size;
 
       default:
-        DebugFail();
+        FAIL;
         return 0;
     }
   }
@@ -530,7 +527,7 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
         break;
 
       default:
-        DebugFail();
+        FAIL;
         Possible = false;
         break;
     }
@@ -612,7 +609,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewChange(
   {
     if (!FChangingItemIgnore)
     {
-      DebugAssert(Item->Data != NULL);
+      assert(Item->Data != NULL);
       if ((FChangingItemChecked != Item->Checked) && (Item->Data != NULL))
       {
         const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
@@ -651,7 +648,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewChanging(
   }
   else
   {
-    DebugAssert(FChangingItem == NULL);
+    assert(FChangingItem == NULL);
     FChangingItem = NULL;
   }
 }
@@ -857,7 +854,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
     }
     else
     {
-      DebugAssert(!ChecklistItem1->Remote.Directory.IsEmpty());
+      assert(!ChecklistItem1->Remote.Directory.IsEmpty());
       Compare = AnsiCompareText(ChecklistItem1->Remote.Directory, ChecklistItem2->Remote.Directory);
     }
 
@@ -903,15 +900,15 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsActionExecute(
   try
   {
     TListItem * Item = ListView->Selected;
-    DebugAssert(Item != NULL);
+    assert(Item != NULL);
 
     while (Item != NULL)
     {
       const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
 
-      DebugAssert((GetChecklistItemAction(ChecklistItem) == TSynchronizeChecklist::saUploadUpdate) ||
+      assert((GetChecklistItemAction(ChecklistItem) == TSynchronizeChecklist::saUploadUpdate) ||
              (GetChecklistItemAction(ChecklistItem) == TSynchronizeChecklist::saDownloadUpdate));
-      DebugAssert(ChecklistItem->RemoteFile != NULL);
+      assert(ChecklistItem->RemoteFile != NULL);
 
       UnicodeString LocalPath =
         IncludeTrailingBackslash(ChecklistItem->Local.Directory) +
@@ -935,7 +932,7 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsActionExecute(
     throw;
   }
 
-  DebugAssert(FOnCustomCommandMenu != NULL);
+  assert(FOnCustomCommandMenu != NULL);
   FOnCustomCommandMenu(CustomCommandsAction, LocalFileList, RemoteFileList);
 }
 //---------------------------------------------------------------------------
@@ -981,7 +978,7 @@ void __fastcall TSynchronizeChecklistDialog::ReverseActionExecute(TObject * /*Se
     TSynchronizeChecklist::TAction & Action = GetChecklistItemAction(ChecklistItem);
     TSynchronizeChecklist::TAction NewAction = TSynchronizeChecklist::Reverse(Action);
 
-    if (DebugAlwaysTrue(Action != NewAction))
+    if (ALWAYS_TRUE(Action != NewAction))
     {
       int ActionIndex = int(Action);
 
@@ -1037,22 +1034,6 @@ void __fastcall TSynchronizeChecklistDialog::ListViewClick(TObject * /*Sender*/)
       UpdateControls();
       ReverseAction->Execute();
     }
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::Dispatch(void * Message)
-{
-  TMessage * M = reinterpret_cast<TMessage*>(Message);
-  if (M->Msg == WM_SYSCOMMAND)
-  {
-    if (!HandleMinimizeSysCommand(*M))
-    {
-      TForm::Dispatch(Message);
-    }
-  }
-  else
-  {
-    TForm::Dispatch(Message);
   }
 }
 //---------------------------------------------------------------------------

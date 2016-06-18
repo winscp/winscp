@@ -6,6 +6,7 @@ USEFORM("forms\CustomScpExplorer.cpp", CustomScpExplorerForm);
 USEFORM("forms\NonVisual.cpp", NonVisualDataModule); /* TDataModule: File Type */
 USEFORM("forms\ScpCommander.cpp", ScpCommanderForm);
 USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
+USEFORM("forms\Glyphs.cpp", GlyphsModule); /* TDataModule: File Type */
 //---------------------------------------------------------------------------
 #include <CoreMain.h>
 #include <WinInterface.h>
@@ -27,6 +28,9 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     CoreInitialize();
     InitializeWinHelp();
     InitializeSystemSettings();
+    // now everything is setup and mainly the configured locale is already loaded,
+    // detect scaling type and possibly forbid further runtime changes to locale
+    GUIConfiguration->DetectScalingType();
 
     try
     {
@@ -43,8 +47,6 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
         // Capture most errors before Usage class is released,
         // so that we can count them
         Configuration->Usage->Inc(L"GlobalFailures");
-        // After we get WM_QUIT (posted by Application->Terminate()), i.e once Application->Run() exits,
-        // the message just blinks
         ShowExtendedException(&E);
       }
     }

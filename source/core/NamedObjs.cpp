@@ -76,7 +76,6 @@ __fastcall TNamedObjectList::TNamedObjectList():
 {
   AutoSort = True;
   FHiddenCount = 0;
-  FControlledAdd = false;
 }
 //---------------------------------------------------------------------------
 TNamedObject * __fastcall TNamedObjectList::AtObject(Integer Index)
@@ -97,43 +96,12 @@ void __fastcall TNamedObjectList::AlphaSort()
   Recount();
 }
 //---------------------------------------------------------------------------
-int __fastcall TNamedObjectList::Add(TObject * AObject)
-{
-  int Result;
-  TAutoFlag ControlledAddFlag(FControlledAdd);
-  TNamedObject * NamedObject = static_cast<TNamedObject *>(AObject);
-  // If temporarily not auto-sorting (when loading session list),
-  // keep the hidden objects in front, so that HiddenCount is correct
-  if (!AutoSort && NamedObject->Hidden)
-  {
-    Result = 0;
-    Insert(Result, AObject);
-    FHiddenCount++;
-  }
-  else
-  {
-    Result = TObjectList::Add(AObject);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void __fastcall TNamedObjectList::Notify(void *Ptr, TListNotification Action)
 {
-  if (Action == lnDeleted)
-  {
-    TNamedObject * NamedObject = static_cast<TNamedObject *>(Ptr);
-    if (NamedObject->Hidden && (FHiddenCount >= 0))
-    {
-      FHiddenCount--;
-    }
-  }
   TObjectList::Notify(Ptr, Action);
   if (Action == lnAdded)
   {
-    if (!FControlledAdd)
-    {
-      FHiddenCount = -1;
-    }
+    FHiddenCount = -1;
     if (AutoSort)
     {
       AlphaSort();
@@ -163,12 +131,12 @@ void __fastcall TNamedObjectList::SetCount(int value)
 //---------------------------------------------------------------------------
 int __fastcall TNamedObjectList::GetCount()
 {
-  DebugAssert(FHiddenCount >= 0);
+  assert(FHiddenCount >= 0);
   return TObjectList::Count - FHiddenCount;
 }
 //---------------------------------------------------------------------------
 int __fastcall TNamedObjectList::GetCountIncludingHidden()
 {
-  DebugAssert(FHiddenCount >= 0);
+  assert(FHiddenCount >= 0);
   return TObjectList::Count;
 }

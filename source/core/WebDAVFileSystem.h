@@ -13,10 +13,8 @@ struct TWebDAVCertificateData;
 struct ne_ssl_certificate_s;
 struct ne_session_s;
 struct ne_prop_result_set_s;
-struct ne_lock_store_s;
 struct TOverwriteFileParams;
 struct ssl_st;
-struct ne_lock;
 //------------------------------------------------------------------------------
 class TWebDAVFileSystem : public TCustomFileSystem
 {
@@ -79,11 +77,9 @@ public:
   virtual bool __fastcall GetStoredCredentialsTried();
   virtual UnicodeString __fastcall GetUserName();
   virtual void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
-  virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File);
-  virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
-  virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem);
 
   void __fastcall NeonDebug(const UnicodeString & Message);
+  void __fastcall InitSslSession(ssl_st * Ssl);
 
 protected:
   virtual UnicodeString __fastcall GetCurrentDirectory();
@@ -127,26 +123,18 @@ protected:
   static int NeonRequestAuth(void * UserData, const char * Realm, int Attempt, char * UserName, char * Password);
   void NeonOpen(UnicodeString & CorrectedUrl, const UnicodeString & Url);
   void NeonClientOpenSessionInternal(UnicodeString & CorrectedUrl, UnicodeString Url);
+  static int NeonProxyAuth(
+    void * UserData, const char * Realm, int Attempt, char * UserName, char * Password);
   static void NeonNotifier(void * UserData, ne_session_status Status, const ne_session_status_info * StatusInfo);
   static ssize_t NeonUploadBodyProvider(void * UserData, char * Buffer, size_t BufLen);
   static int NeonPostSend(ne_request * Req, void * UserData, const ne_status * Status);
-  static void NeonPostHeaders(ne_request * Req, void * UserData, const ne_status * Status);
   void ExchangeCapabilities(const char * Path, UnicodeString & CorrectedUrl);
   static int NeonServerSSLCallback(void * UserData, int Failures, const struct ne_ssl_certificate_s * Certificate);
-  static void NeonProvideClientCert(void * UserData, ne_session * Sess, const ne_ssl_dname * const * DNames, int DNCount);
   void __fastcall CloseNeonSession();
   bool __fastcall CancelTransfer();
   UnicodeString __fastcall GetNeonError();
   static void NeonQuotaResult(void * UserData, const ne_uri * Uri, const ne_prop_result_set_s * Results);
-  static const char * __fastcall GetProp(const ne_prop_result_set_s * Results,
-    const char * Name, const char * NameSpace = NULL);
-  static void LockResult(void * UserData, const struct ne_lock * Lock,
-   const ne_uri * Uri, const ne_status * Status);
-  void __fastcall RequireLockStore();
-  static void InitSslSession(ssl_st * Ssl, ne_session * Session);
-  void __fastcall InitSslSessionImpl(ssl_st * Ssl);
-  void __fastcall NeonAddAuthentiation(bool UseNegotiate);
-  void __fastcall HttpAuthenticationFailed();
+  static const char * __fastcall GetProp(const ne_prop_result_set_s * Results, const char * Name);
 
 private:
   TFileSystemInfo FFileSystemInfo;
@@ -161,20 +149,14 @@ private:
   bool FUploading;
   bool FDownloading;
   ne_session_s * FNeonSession;
-  ne_lock_store_s * FNeonLockStore;
-  TCriticalSection * FNeonLockStoreSection;
   bool FInitialHandshake;
   bool FAuthenticationRequested;
   UnicodeString FResponse;
   RawByteString FPassword;
   UnicodeString FTlsVersionStr;
-  unsigned int FCapabilities;
   UnicodeString FHostName;
   int FPortNumber;
   enum TIgnoreAuthenticationFailure { iafNo, iafWaiting, iafPasswordFailed } FIgnoreAuthenticationFailure;
-  UnicodeString FAuthorizationProtocol;
-  bool FAuthenticationRetry;
-  bool FNtlmAuthenticationFailed;
 
   void __fastcall CustomReadFile(UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
@@ -192,10 +174,6 @@ private:
   int __fastcall RenameFileInternal(const UnicodeString & FileName, const UnicodeString & NewName);
   bool __fastcall IsValidRedirect(int NeonStatus, UnicodeString & Path);
   UnicodeString __fastcall DirectoryPath(UnicodeString Path);
-  UnicodeString __fastcall FilePath(const TRemoteFile * File);
-  struct ne_lock * __fastcall FindLock(const RawByteString & Path);
-  void __fastcall DiscardLock(const RawByteString & Path);
-  bool __fastcall IsNtlmAuthentication();
 };
 //------------------------------------------------------------------------------
 void __fastcall NeonInitialize();

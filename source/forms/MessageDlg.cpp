@@ -22,12 +22,6 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-const UnicodeString MessagePanelName(L"Panel");
-const UnicodeString MainMessageLabelName(L"MainMessage");
-const UnicodeString MessageLabelName(L"Message");
-const UnicodeString YesButtonName(L"Yes");
-const UnicodeString OKButtonName(L"OK");
-//---------------------------------------------------------------------------
 class TMessageButton : public TButton
 {
 public:
@@ -75,11 +69,9 @@ public:
     const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
     unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName,
     const UnicodeString & NeverAskAgainCaption, const UnicodeString & MoreMessagesUrl,
-    TSize MoreMessagesSize, const UnicodeString & CustomCaption);
+    TSize MoreMessagesSize);
 
   virtual int __fastcall ShowModal();
-  void __fastcall InsertPanel(TPanel * Panel);
-  void __fastcall NavigateToUrl(const UnicodeString & Url);
 
 protected:
   __fastcall TMessageForm(TComponent * AOwner);
@@ -102,7 +94,6 @@ private:
   typedef std::map<unsigned int, TButton *> TAnswerButtons;
 
   UnicodeString MessageText;
-  TPanel * ContentsPanel;
   TMemo * MessageMemo;
   TPanel * MessageBrowserPanel;
   TWebBrowserEx * MessageBrowser;
@@ -120,8 +111,9 @@ private:
   TButton * __fastcall CreateButton(
     UnicodeString Name, UnicodeString Caption, unsigned int Answer,
     TNotifyEvent OnClick, bool IsTimeoutButton,
-    int GroupWith, TShiftState GrouppedShiftState, bool ElevationRequired,
+    int GroupWith, TShiftState GrouppedShiftState,
     TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidths);
+  bool __fastcall ApplicationHook(TMessage & Message);
 };
 //---------------------------------------------------------------------------
 __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
@@ -161,7 +153,7 @@ void __fastcall TMessageForm::ReportButtonClick(TObject * /*Sender*/)
   // And we need to preserve the other parameters.
   UnicodeString Url =
     FMTLOAD(ERROR_REPORT_URL2,
-      (Configuration->ProductVersion, GUIConfiguration->LocaleHex,
+      (Configuration->ProductVersion, IntToHex(__int64(GUIConfiguration->Locale), 4),
        EncodeUrlString(GetReportText())));
 
   OpenBrowser(Url);
@@ -171,7 +163,8 @@ void __fastcall TMessageForm::UpdateForShiftState()
 {
 
   TShiftState ShiftState =
-    KeyboardStateToShiftState() * AllKeyShiftStates();
+    KeyboardStateToShiftState() *
+    (TShiftState() << ssShift << ssCtrl << ssAlt);
 
   if (FShiftState != ShiftState)
   {
@@ -193,8 +186,8 @@ void __fastcall TMessageForm::UpdateForShiftState()
           {
             Button->Caption = CopyToChar(Item->Caption, L'\t', false);
             Button->ModalResult = Item->Tag & 0xFFFF;
-            DebugAssert(Button->OnClick == NULL);
-            DebugAssert(Item->OnClick == MenuItemClick);
+            assert(Button->OnClick == NULL);
+            assert(Item->OnClick == MenuItemClick);
             break;
           }
         }
@@ -283,7 +276,7 @@ UnicodeString __fastcall TMessageForm::GetFormText()
   {
     MessageBrowser->SelectAll();
     MessageBrowser->CopyToClipBoard();
-    if (NonEmptyTextFromClipboard(MoreMessages))
+    if (TextFromClipboard(MoreMessages, true))
     {
       if (!EndsStr(sLineBreak, MoreMessages))
       {
@@ -311,7 +304,7 @@ UnicodeString __fastcall TMessageForm::GetReportText()
   }
   // Currently we use browser for updates box only and it has help context,
   // and does not have Report button, so we cannot get here.
-  DebugAssert(MessageBrowser == NULL);
+  assert(MessageBrowser == NULL);
   Text = NormalizeNewLines(Text);
   UnicodeString ReportErrorText = NormalizeNewLines(FMTLOAD(REPORT_ERROR, (L"")));
   Text = ReplaceStr(Text, ReportErrorText, L"");
@@ -375,7 +368,7 @@ int __fastcall TMessageForm::ShowModal()
 
   int Result = TForm::ShowModal();
 
-  UnhookFormActivation(this);
+  Application->UnhookMainWindow(ApplicationHook);
 
   return Result;
 }
@@ -392,6 +385,26 @@ void __fastcall TMessageForm::SetZOrder(bool TopMost)
   {
     TForm::SetZOrder(TopMost);
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TMessageForm::ApplicationHook(TMessage & Message)
+{
+  bool Result = false;
+  // If application is restored, message box is not activated, do it manually.
+  // We cannot do this from TApplication::OnActivate because
+  // TApplication.WndProc resets focus to the last active window afterwards.
+  // So we override CM_ACTIVATE implementation here completelly.
+  if ((Message.Msg == CM_ACTIVATE) && FShowNoActivate)
+  {
+    ::SetFocus(Handle);
+    // VCLCOPY
+    if (Application->OnActivate != NULL)
+    {
+      Application->OnActivate(Application);
+    }
+    Result = true;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::CMShowingChanged(TMessage & Message)
@@ -411,7 +424,7 @@ void __fastcall TMessageForm::CMShowingChanged(TMessage & Message)
     DoShow();
 
     // - also we skip applying TForm::Position (VCLCOPY)
-    if (DebugAlwaysTrue(Position == poOwnerFormCenter))
+    if (ALWAYS_TRUE(Position == poOwnerFormCenter))
     {
       TCustomForm * CenterForm = Application->MainForm;
       TCustomForm * OwnerForm = dynamic_cast<TCustomForm *>(Owner);
@@ -441,13 +454,12 @@ void __fastcall TMessageForm::CMShowingChanged(TMessage & Message)
       }
       SetBounds(X, Y, Width, Height);
       // We cannot call SetWindowToMonitor().
-      // We cannot set FPosition = poDesigned, so workarea-checking code
+      // We cannot set FPosition = poDesigned, so worlarea-checking code
       // in DoFormWindowProc is not triggered
     }
 
-    // If application is restored, message box is not activated, do it manually.
-    // Wait for application to be activate to activate ourself.
-    HookFormActivation(this);
+    // wait for application to be activate to activate ourself
+    Application->HookMainWindow(ApplicationHook);
   }
   else
   {
@@ -486,6 +498,8 @@ void __fastcall TMessageForm::DoShow()
 {
   UseSystemSettingsPost(this);
 
+  TForm::DoShow();
+
   if (!MessageBrowserUrl.IsEmpty() &&
       // Guard against repeated calls to DoOpen()
       (MessageBrowser == NULL))
@@ -499,16 +513,11 @@ void __fastcall TMessageForm::DoShow()
 
     MessageBrowser->Navigate(MessageBrowserUrl.c_str());
   }
-
-  // Need OnShow to be called only after MessageBrowser is created,
-  // so that the implementation (InsertDonateLink) can call InsertPanelToMessageDialog
-  TForm::DoShow();
-
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::MenuItemClick(TObject * Sender)
 {
-  TMenuItem * Item = DebugNotNull(dynamic_cast<TMenuItem *>(Sender));
+  TMenuItem * Item = NOT_NULL(dynamic_cast<TMenuItem *>(Sender));
   ModalResult = (Item->Tag & 0xFFFF);
 }
 //---------------------------------------------------------------------------
@@ -534,8 +543,8 @@ void __fastcall TMessageForm::ButtonDropDownClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
   &_SMsgDlgConfirm, NULL };
-const wchar_t * ImageNames[] = { L"Warning", L"Error", L"Information",
-  L"Help Blue", NULL };
+const wchar_t * IconIDs[] = { IDI_EXCLAMATION, IDI_HAND, IDI_ASTERISK,
+  IDI_QUESTION, NULL };
 const int mcHorzMargin = 10;
 const int mcVertMargin = 13;
 const int mcHorzSpacing = 12;
@@ -568,7 +577,7 @@ static UnicodeString __fastcall GetKeyNameStr(int Key)
 TButton * __fastcall TMessageForm::CreateButton(
   UnicodeString Name, UnicodeString Caption, unsigned int Answer,
   TNotifyEvent OnClick, bool IsTimeoutButton,
-  int GroupWith, TShiftState GrouppedShiftState, bool ElevationRequired,
+  int GroupWith, TShiftState GrouppedShiftState,
   TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidths)
 {
   UnicodeString MeasureCaption = Caption;
@@ -583,17 +592,12 @@ TButton * __fastcall TMessageForm::CreateButton(
     &TextRect, DT_CALCRECT | DT_LEFT | DT_SINGLELINE |
     DrawTextBiDiModeFlagsReadingOnly());
   int CurButtonWidth = TextRect.Right - TextRect.Left + ScaleByTextHeightRunTime(this, 16);
-  if (ElevationRequired && IsVista())
-  {
-    // Elevation icon
-    CurButtonWidth += ScaleByTextHeightRunTime(this, 16);
-  }
 
   TButton * Button = NULL;
 
   if (SupportsSplitButton() &&
       (GroupWith >= 0) &&
-      DebugAlwaysTrue(AnswerButtons.find(GroupWith) != AnswerButtons.end()))
+      ALWAYS_TRUE(AnswerButtons.find(GroupWith) != AnswerButtons.end()))
   {
     TButton * GroupWithButton = AnswerButtons[GroupWith];
 
@@ -604,7 +608,7 @@ TButton * __fastcall TMessageForm::CreateButton(
       // cannot handle subitems with shift state,
       // if the button has its own handler
       // (though it may not be the case still here)
-      DebugAssert(GroupWithButton->OnClick == NULL);
+      assert(GroupWithButton->OnClick == NULL);
 
       TMenuItem * Item = new TMenuItem(GroupWithButton->DropDownMenu);
       GroupWithButton->DropDownMenu->Items->Add(Item);
@@ -612,7 +616,7 @@ TButton * __fastcall TMessageForm::CreateButton(
 
       Item->Caption = GroupWithButton->Caption;
       Item->OnClick = MenuItemClick;
-      DebugAssert(GroupWithButton->ModalResult <= 0xFFFF);
+      assert(GroupWithButton->ModalResult <= 0xFFFF);
       Item->Tag = GroupWithButton->ModalResult;
       Item->Default = true;
     }
@@ -636,7 +640,7 @@ TButton * __fastcall TMessageForm::CreateButton(
     else
     {
       // do not support combined shift states yet
-      DebugAssert(GrouppedShiftState == TShiftState());
+      assert(GrouppedShiftState == TShiftState());
     }
 
     Item->Caption = Caption;
@@ -647,7 +651,7 @@ TButton * __fastcall TMessageForm::CreateButton(
     else
     {
       Item->OnClick = MenuItemClick;
-      DebugAssert((Answer <= 0xFFFF) && (GrouppedShiftState.ToInt() <= 0xFFFF));
+      assert((Answer <= 0xFFFF) && (GrouppedShiftState.ToInt() <= 0xFFFF));
       Item->Tag = Answer + (GrouppedShiftState.ToInt() << 16);
     }
 
@@ -663,8 +667,6 @@ TButton * __fastcall TMessageForm::CreateButton(
       ButtonWidths += CurButtonWidth - GroupWithButton->Width;
       GroupWithButton->Width = CurButtonWidth;
     }
-
-    DebugAssert(!ElevationRequired);
   }
   else
   {
@@ -698,41 +700,10 @@ TButton * __fastcall TMessageForm::CreateButton(
     {
       Button->Width = CurButtonWidth;
     }
-
-    Button->ElevationRequired = ElevationRequired;
     ButtonWidths += Button->Width;
   }
 
   return Button;
-}
-//---------------------------------------------------------------------------
-void __fastcall TMessageForm::InsertPanel(TPanel * Panel)
-{
-  if (DebugAlwaysTrue(MessageBrowser != NULL))
-  {
-    // we currently use this for updates message box only
-    TControl * ContentsControl = static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
-
-    Panel->Width = ContentsControl->Width;
-    Panel->Left = ContentsControl->Left;
-    int ContentsBottom = ContentsControl->Top + ContentsControl->Height;
-    Panel->Top = ContentsBottom + ((ContentsPanel->Height - ContentsBottom) / 2);
-    Height = Height + Panel->Height;
-    ContentsPanel->Height = ContentsPanel->Height + Panel->Height;
-    Panel->Parent = ContentsPanel;
-    // The panel itself does not need this, as the ParentBackground (true by default)
-    // has the same effect, but an eventual TStaticText on the panel
-    // uses a wrong background color, if panel's ParentColor is not set.
-    Panel->ParentColor = true;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TMessageForm::NavigateToUrl(const UnicodeString & Url)
-{
-  if (DebugAlwaysTrue(MessageBrowser != NULL))
-  {
-    NavigateBrowserToUrl(MessageBrowser, Url);
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall AnswerNameAndCaption(
@@ -742,7 +713,7 @@ void __fastcall AnswerNameAndCaption(
   {
     case qaYes:
       Caption = LoadStr(_SMsgDlgYes.Identifier);
-      Name = YesButtonName;
+      Name = L"Yes";
       break;
 
     case qaNo:
@@ -752,7 +723,7 @@ void __fastcall AnswerNameAndCaption(
 
     case qaOK:
       Caption = LoadStr(_SMsgDlgOK.Identifier);
-      Name = OKButtonName;
+      Name = L"OK";
       break;
 
     case qaCancel:
@@ -810,7 +781,7 @@ void __fastcall AnswerNameAndCaption(
       break;
 
     default:
-      DebugFail();
+      FAIL;
       throw Exception(L"Undefined answer");
   }
 }
@@ -824,9 +795,9 @@ static int __fastcall CalculateWidthOnCanvas(UnicodeString Text, void * Arg)
 TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
-  unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & AImageName,
+  unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName,
   const UnicodeString & NeverAskAgainCaption, const UnicodeString & MoreMessagesUrl,
-  TSize MoreMessagesSize, const UnicodeString & CustomCaption)
+  TSize MoreMessagesSize)
 {
   unsigned int DefaultAnswer;
   if (FLAGSET(Answers, qaOK))
@@ -915,7 +886,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   {
     if (FLAGSET(Answers, Answer))
     {
-      DebugAssert(Answer != mrCancel);
+      assert(Answer != mrCancel);
       UnicodeString Caption;
       UnicodeString Name;
 
@@ -924,7 +895,6 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       TNotifyEvent OnClick = NULL;
       int GroupWith = -1;
       TShiftState GrouppedShiftState;
-      bool ElevationRequired = false;
       if (Aliases != NULL)
       {
         for (unsigned int i = 0; i < AliasesCount; i++)
@@ -938,8 +908,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
             OnClick = Aliases[i].OnClick;
             GroupWith = Aliases[i].GroupWith;
             GrouppedShiftState = Aliases[i].GrouppedShiftState;
-            ElevationRequired = Aliases[i].ElevationRequired;
-            DebugAssert((OnClick == NULL) || (GrouppedShiftState == TShiftState()));
+            assert((OnClick == NULL) || (GrouppedShiftState == TShiftState()));
             break;
           }
         }
@@ -949,10 +918,10 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       // value that the answer to be grouped with
       if (GroupWith >= 0)
       {
-        if (DebugAlwaysFalse(GroupWith >= static_cast<int>(Answer)) ||
-            DebugAlwaysFalse(Answer == TimeoutAnswer) &&
-            DebugAlwaysFalse(Answer == DefaultAnswer) &&
-            DebugAlwaysFalse(Answer == CancelAnswer))
+        if (ALWAYS_FALSE(GroupWith >= static_cast<int>(Answer)) ||
+            ALWAYS_FALSE(Answer == TimeoutAnswer) &&
+            ALWAYS_FALSE(Answer == DefaultAnswer) &&
+            ALWAYS_FALSE(Answer == CancelAnswer))
         {
           GroupWith = -1;
         }
@@ -962,19 +931,19 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
       if (Answer == qaHelp)
       {
-        DebugAssert(OnClick == NULL);
+        assert(OnClick == NULL);
         OnClick = Result->HelpButtonClick;
       }
 
       if (Answer == qaReport)
       {
-        DebugAssert(OnClick == NULL);
+        assert(OnClick == NULL);
         OnClick = Result->ReportButtonClick;
       }
 
       TButton * Button = Result->CreateButton(
         Name, Caption, Answer,
-        OnClick, IsTimeoutButton, GroupWith, GrouppedShiftState, ElevationRequired,
+        OnClick, IsTimeoutButton, GroupWith, GrouppedShiftState,
         AnswerButtons, HasMoreMessages, ButtonWidths);
 
       if (Button != NULL)
@@ -987,7 +956,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         {
           ButtonHeight = Button->Height;
         }
-        DebugAssert(ButtonHeight == Button->Height);
+        assert(ButtonHeight == Button->Height);
 
         AnswerButtons.insert(TAnswerButtons::value_type(Answer, Button));
 
@@ -1016,33 +985,38 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       ButtonSpacing * (ButtonControls.size() - 1);
   }
 
-  DebugAssert((ButtonHeight > 0) && (ButtonWidths > 0));
+  assert((ButtonHeight > 0) && (ButtonWidths > 0));
 
-  TPanel * Panel = CreateBlankPanel(Result);
-  Result->ContentsPanel = Panel;
-  Panel->Name = MessagePanelName;
+  TPanel * Panel = new TPanel(Result);
+  Panel->Name = L"Panel";
   Panel->Parent = Result;
   Panel->Color = clWindow;
   Panel->ParentBackground = false;
   Panel->Anchors = TAnchors() << akLeft << akRight << akTop;
+  Panel->BevelOuter = bvNone;
+  Panel->BevelKind = bkNone;
   Panel->Caption = L"";
 
   int IconWidth = 0;
   int IconHeight = 0;
+  const wchar_t * IconID = IconIDs[DlgType];
 
-  UnicodeString ImageName = AImageName;
-  if (ImageName.IsEmpty() &&
-      DebugAlwaysTrue(ImageNames[DlgType] != NULL))
-  {
-    ImageName = ImageNames[DlgType];
-  }
-
-  if (DebugAlwaysTrue(!ImageName.IsEmpty()))
+  if ((IconID != NULL) || !ImageName.IsEmpty())
   {
     TImage * Image = new TImage(Panel);
     Image->Name = L"Image";
     Image->Parent = Panel;
-    LoadDialogImage(Image, ImageName);
+    if (!ImageName.IsEmpty())
+    {
+      LoadResourceImage(Image, ImageName);
+    }
+    else
+    {
+      // Until Windows 8, LoadIcon for IDI_XXX always returns 32x32 image.
+      // Since Windows 8.1, it returns image adjusted for DPI.
+      // For 125%, it's scaled version. For 150%, there's native larger version.
+      Image->Picture->Icon->Handle = LoadIcon(0, IconID);
+    }
     Image->SetBounds(HorzMargin, VertMargin, Image->Picture->Width, Image->Picture->Height);
     IconWidth = Image->Width + HorzSpacing;
     IconHeight = Image->Height;
@@ -1084,7 +1058,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     ApplyTabs(BodyMsg, HairSpace, CalculateWidthOnCanvas, Result->Canvas);
   }
 
-  DebugAssert(MainMsg.Pos(L"\t") == 0);
+  assert(MainMsg.Pos(L"\t") == 0);
 
   int IconTextWidth = -1;
   int IconTextHeight = 0;
@@ -1100,18 +1074,18 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     {
       case 0:
         LabelMsg = MainMsg;
-        LabelName = MainMessageLabelName;
+        LabelName = L"MainMessage";
         LabelColor = MainInstructionColor;
         LabelFont = MainInstructionFont;
         break;
 
       case 1:
         LabelMsg = BodyMsg;
-        LabelName = MessageLabelName;
+        LabelName = L"Message";
         break;
 
       default:
-        DebugFail();
+        FAIL;
         break;
     }
 
@@ -1129,7 +1103,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       if (LabelFont != 0)
       {
         Message->Font->Handle = LabelFont;
-        if (DebugAlwaysTrue(LabelFont == MainInstructionFont))
+        if (ALWAYS_TRUE(LabelFont == MainInstructionFont))
         {
           Configuration->Usage->Set(L"ThemeMainInstructionFontSize", Message->Font->Size);
         }
@@ -1162,7 +1136,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     }
   }
 
-  DebugAssert((IconTextWidth > 0) && (IconTextHeight > 0));
+  assert((IconTextWidth > 0) && (IconTextHeight > 0));
 
   IconTextHeight = Max(IconTextHeight, IconHeight);
 
@@ -1177,7 +1151,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   {
     if (MoreMessages != NULL)
     {
-      DebugAssert(MoreMessagesUrl.IsEmpty());
+      assert(MoreMessagesUrl.IsEmpty());
 
       TMemo * MessageMemo = new TMemo(Panel);
       MoreMessagesControl = MessageMemo;
@@ -1191,12 +1165,14 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
       Result->MessageMemo = MessageMemo;
     }
-    else if (DebugAlwaysTrue(!MoreMessagesUrl.IsEmpty()))
+    else if (ALWAYS_TRUE(!MoreMessagesUrl.IsEmpty()))
     {
-      TPanel * MessageBrowserPanel = CreateBlankPanel(Panel);
+      TPanel * MessageBrowserPanel = new TPanel(Panel);
       MessageBrowserPanel->Parent = Panel;
       MessageBrowserPanel->Anchors = TAnchors() << akLeft << akRight << akTop;
-      MessageBrowserPanel->BevelKind = bkTile; // flat border
+      MessageBrowserPanel->BevelOuter = bvNone;
+      MessageBrowserPanel->BevelInner = bvNone; // default
+      MessageBrowserPanel->BevelKind = bkTile;
       Result->MessageBrowserPanel = MessageBrowserPanel;
 
       MoreMessagesControl = Result->MessageBrowserPanel;
@@ -1221,11 +1197,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     Panel->Height + ButtonVertMargin + ButtonHeight + ButtonVertMargin;
   Result->Left = (Monitor->Width / 2) - (Result->Width / 2);
   Result->Top = (Monitor->Height / 2) - (Result->Height / 2);
-  if (!CustomCaption.IsEmpty())
-  {
-    Result->Caption = CustomCaption;
-  }
-  else if (DebugAlwaysTrue(DlgType != mtCustom))
+  if (DlgType != mtCustom)
   {
     Result->Caption = LoadResourceString(Captions[DlgType]);
   }
@@ -1278,21 +1250,9 @@ TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
   unsigned int TimeoutAnswer, TButton ** TimeoutButton, const UnicodeString & ImageName,
   const UnicodeString & NeverAskAgainCaption, const UnicodeString & MoreMessagesUrl,
-  TSize MoreMessagesSize, const UnicodeString & CustomCaption)
+  TSize MoreMessagesSize)
 {
   return TMessageForm::Create(Msg, MoreMessages, DlgType, Answers,
     Aliases, AliasesCount, TimeoutAnswer, TimeoutButton, ImageName,
-    NeverAskAgainCaption, MoreMessagesUrl, MoreMessagesSize, CustomCaption);
-}
-//---------------------------------------------------------------------------
-void __fastcall InsertPanelToMessageDialog(TCustomForm * Form, TPanel * Panel)
-{
-  TMessageForm * MessageForm = DebugNotNull(dynamic_cast<TMessageForm *>(Form));
-  MessageForm->InsertPanel(Panel);
-}
-//---------------------------------------------------------------------------
-void __fastcall NavigateMessageDialogToUrl(TCustomForm * Form, const UnicodeString & Url)
-{
-  TMessageForm * MessageForm = DebugNotNull(dynamic_cast<TMessageForm *>(Form));
-  MessageForm->NavigateToUrl(Url);
+    NeverAskAgainCaption, MoreMessagesUrl, MoreMessagesSize);
 }

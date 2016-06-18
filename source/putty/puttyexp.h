@@ -21,8 +21,6 @@ int get_ssh_exitcode(void * handle);
 const unsigned int * ssh2_remmaxpkt(void * handle);
 const unsigned int * ssh2_remwindow(void * handle);
 void md5checksum(const char * buffer, int len, unsigned char output[16]);
-typedef const struct ssh_signkey * cp_ssh_signkey;
-void get_hostkey_algs(int * count, cp_ssh_signkey * SignKeys);
 
 // from wingss.c
 
@@ -33,6 +31,7 @@ void get_hostkey_algs(int * count, cp_ssh_signkey * SignKeys);
 // from portfwd.c
 
 int is_pfwd(void * handle);
+int is_pfwd_listener(void * handle);
 void * get_pfwd_backend(void * handle);
 
 // for winstore.c
@@ -76,17 +75,5 @@ void call_sha1_key_internal(void * handle, unsigned char * key, int len);
 // from winmisc.c
 
 void win_misc_cleanup();
-
-// from misc.c
-
-const char * get_putty_version();
-
-// from winsecur.c
-
-void win_secur_cleanup(void);
-
-// from sshecc.c
-
-void ec_cleanup(void);
 
 #endif

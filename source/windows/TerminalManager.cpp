@@ -55,7 +55,7 @@ TTerminalManager * __fastcall TTerminalManager::Instance(bool ForceCreation)
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::DestroyInstance()
 {
-  DebugAssert(FInstance);
+  assert(FInstance);
   SAFE_DESTROY(FInstance);
 }
 //---------------------------------------------------------------------------
@@ -73,19 +73,22 @@ __fastcall TTerminalManager::TTerminalManager() :
   FTaskbarList = NULL;
   FAuthenticating = 0;
 
-  FApplicationsEvents.reset(new TApplicationEvents(Application));
-  FApplicationsEvents->OnException = ApplicationException;
-  FApplicationsEvents->OnShowHint = ApplicationShowHint;
-  FApplicationsEvents->OnMessage = ApplicationMessage;
-  FApplicationsEvents->OnModalBegin = ApplicationModalBegin;
-  FApplicationsEvents->OnModalEnd = ApplicationModalEnd;
-
-  DebugAssert(WinConfiguration->OnMasterPasswordPrompt == NULL);
+  assert(Application && !Application->OnException);
+  Application->OnException = ApplicationException;
+  assert(Application->OnShowHint == NULL);
+  Application->OnShowHint = ApplicationShowHint;
+  assert(Application->OnMessage == NULL);
+  Application->OnMessage = ApplicationMessage;
+  assert(Application->OnModalBegin == NULL);
+  Application->OnModalBegin = ApplicationModalBegin;
+  assert(Application->OnModalEnd == NULL);
+  Application->OnModalEnd = ApplicationModalEnd;
+  assert(WinConfiguration->OnMasterPasswordPrompt == NULL);
   WinConfiguration->OnMasterPasswordPrompt = MasterPasswordPrompt;
 
   InitTaskbarButtonCreatedMessage();
 
-  DebugAssert(Configuration && !Configuration->OnChange);
+  assert(Configuration && !Configuration->OnChange);
   Configuration->OnChange = ConfigurationChange;
   FOnLastTerminalClosed = NULL;
   FOnTerminalListChanged = NULL;
@@ -99,14 +102,22 @@ __fastcall TTerminalManager::~TTerminalManager()
 {
   FreeAll();
 
-  DebugAssert(!ScpExplorer);
+  assert(!ScpExplorer);
 
-  DebugAssert(Configuration->OnChange == ConfigurationChange);
+  assert(Configuration->OnChange == ConfigurationChange);
   Configuration->OnChange = NULL;
 
-  FApplicationsEvents.reset(NULL);
-
-  DebugAssert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
+  assert(Application && (Application->OnException == ApplicationException));
+  Application->OnException = NULL;
+  assert(Application->OnShowHint == ApplicationShowHint);
+  Application->OnShowHint = ApplicationShowHint;
+  assert(Application->OnMessage == ApplicationMessage);
+  Application->OnMessage = NULL;
+  assert(Application->OnModalBegin == ApplicationModalBegin);
+  Application->OnModalBegin = NULL;
+  assert(Application->OnModalEnd == ApplicationModalEnd);
+  Application->OnModalEnd = NULL;
+  assert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
   WinConfiguration->OnMasterPasswordPrompt = NULL;
 
   delete FQueues;
@@ -199,12 +210,12 @@ void __fastcall TTerminalManager::FreeActiveTerminal()
 {
   if (FTerminalPendingAction == tpNull)
   {
-    DebugAssert(ActiveTerminal);
+    assert(ActiveTerminal);
     FreeTerminal(ActiveTerminal);
   }
   else
   {
-    DebugAssert(FTerminalPendingAction == ::tpNone);
+    assert(FTerminalPendingAction == ::tpNone);
     FTerminalPendingAction = tpFree;
   }
 }
@@ -213,7 +224,7 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
 {
   TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
   // it must be managed terminal, unless it is secondary terminal (of managed terminal)
-  DebugAssert((ManagedTerminal != NULL) || (dynamic_cast<TSecondaryTerminal *>(Terminal) != NULL));
+  assert((ManagedTerminal != NULL) || (dynamic_cast<TSecondaryTerminal *>(Terminal) != NULL));
 
   // particularly when we are reconnecting RemoteDirectory of managed terminal
   // hold the last used remote directory as opposite to session data, which holds
@@ -234,7 +245,7 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
           ManagedTerminal->ReopenStart = Now();
         }
 
-        DebugAssert(ManagedTerminal->TerminalThread == NULL);
+        assert(ManagedTerminal->TerminalThread == NULL);
         ManagedTerminal->TerminalThread = TerminalThread;
       }
 
@@ -285,27 +296,50 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
     Result = false;
     try
     {
-      DebugAssert(ActiveTerminal);
+      assert(ActiveTerminal);
+      bool ShowLogPending = false;
+
+      if (Configuration->Logging && (WinConfiguration->LogView == lvWindow))
+      {
+        if (WinConfiguration->LogWindowOnStartup)
+        {
+          RequireLogForm(LogMemo);
+        }
+        else
+        {
+          ShowLogPending = true;
+        }
+      }
 
       ConnectTerminal(ActiveTerminal, Reopen);
 
       if (ScpExplorer)
       {
-        DebugAssert(ActiveTerminal->Status == ssOpened);
+        assert(ActiveTerminal->Status == ssOpened);
         TerminalReady();
       }
 
       WinConfiguration->ClearTemporaryLoginData();
 
+      if (LogForm && (WinConfiguration->LogView != lvWindow))
+      {
+        FreeLogForm();
+      }
+
+      if (ShowLogPending)
+      {
+        RequireLogForm(LogMemo);
+      }
+
       Result = true;
     }
     catch(Exception & E)
     {
-      DebugAssert(FTerminalPendingAction == tpNull);
+      assert(FTerminalPendingAction == tpNull);
       FTerminalPendingAction = ::tpNone;
       try
       {
-        DebugAssert(ActiveTerminal != NULL);
+        assert(ActiveTerminal != NULL);
         ActiveTerminal->ShowExtendedException(&E);
         Action = FTerminalPendingAction;
       }
@@ -374,7 +408,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::DisconnectActiveTerminal()
 {
-  DebugAssert(ActiveTerminal);
+  assert(ActiveTerminal);
 
   int Index = IndexOf(ActiveTerminal);
 
@@ -389,7 +423,7 @@ void __fastcall TTerminalManager::DisconnectActiveTerminal()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ReconnectActiveTerminal()
 {
-  DebugAssert(ActiveTerminal);
+  assert(ActiveTerminal);
 
   if (ScpExplorer)
   {
@@ -498,7 +532,7 @@ void __fastcall TTerminalManager::SetScpExplorer(TCustomScpExplorerForm * value)
   if (ScpExplorer != value)
   {
     // changing explorer is not supported yet
-    DebugAssert(!ScpExplorer || !value);
+    assert(!ScpExplorer || !value);
     FScpExplorer = value;
     if (FScpExplorer)
     {
@@ -562,7 +596,7 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
       {
         CreateLogMemo();
       }
-      DebugAssert(LogMemo);
+      assert(LogMemo);
       LogMemo->SessionLog = ActiveTerminal->Log;
       SwitchLogFormSessionLog();
 
@@ -593,6 +627,10 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
     }
     else
     {
+      if (LogForm)
+      {
+        FreeLogForm();
+      }
       FreeLogMemo();
       if (OnLastTerminalClosed)
       {
@@ -660,7 +698,7 @@ void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
   if (Data != NULL)
   {
     TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-    DebugAssert(ManagedTerminal != NULL);
+    assert(ManagedTerminal != NULL);
 
     bool Changed = false;
     if (Terminal->SessionData->UpdateDirectories)
@@ -679,8 +717,8 @@ void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::CreateLogMemo()
 {
-  DebugAssert(!FLogMemo);
-  DebugAssert(ActiveTerminal);
+  assert(!FLogMemo);
+  assert(ActiveTerminal);
   FLogMemo = new TLogMemo(Application);
   try
   {
@@ -696,7 +734,7 @@ void __fastcall TTerminalManager::CreateLogMemo()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::FreeLogMemo()
 {
-  DebugAssert(LogMemo);
+  assert(LogMemo);
   LogMemo->PopupMenu = NULL;
   SAFE_DESTROY(FLogMemo);
 }
@@ -723,12 +761,13 @@ void __fastcall TTerminalManager::ApplicationException(TObject * /*Sender*/,
 void __fastcall TTerminalManager::ApplicationShowHint(UnicodeString & HintStr,
   bool & /*CanShow*/, THintInfo & HintInfo)
 {
-  HintInfo.HintData = HintInfo.HintControl;
   TLabel * HintLabel = dynamic_cast<TLabel *>(HintInfo.HintControl);
-  if ((HintLabel != NULL) && HasLabelHintPopup(HintLabel, HintStr))
+  if ((HintLabel != NULL) && (HintLabel->Caption == HintStr))
   {
     // Hack for transfer setting labels.
     // Should be converted to something like HintLabel()
+    HintInfo.HintPos = HintLabel->ClientToScreen(TPoint(0, 0));
+    HintInfo.HintMaxWidth = HintLabel->Width;
     HintInfo.HideTimeout = 100000; // "almost" never
   }
   else if (dynamic_cast<TProgressBar *>(HintInfo.HintControl) != NULL)
@@ -739,23 +778,12 @@ void __fastcall TTerminalManager::ApplicationShowHint(UnicodeString & HintStr,
   }
   else
   {
-    int HintMaxWidth = 300;
-
-    TControl * ScaleControl = HintInfo.HintControl;
-    if (DebugAlwaysFalse(HintInfo.HintControl == NULL) ||
-        (GetParentForm(HintInfo.HintControl) == NULL))
-    {
-      ScaleControl = ScpExplorer;
-    }
-    HintMaxWidth = ScaleByTextHeight(ScaleControl, HintMaxWidth);
-
-    HintInfo.HintMaxWidth = HintMaxWidth;
+    HintInfo.HintMaxWidth = 300;
   }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
 {
-  // WORKAROUND This is no longer necessary on Windows 10
   bool Result = false;
   if (Application->Active)
   {
@@ -766,11 +794,11 @@ bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
       TCustomForm * Form = GetParentForm(Control);
       // Only case we expect the parent form to be NULL is on the Find/Replace dialog,
       // which is owned by VCL's internal TRedirectorWindow.
-      DebugAssert((Form != NULL) || (Control->ClassName() == L"TRedirectorWindow"));
+      assert((Form != NULL) || (Control->ClassName() == L"TRedirectorWindow"));
       if ((Form != NULL) && Form->Active)
       {
         // Send it only to windows we tested it with.
-        // Though we should sooner or later remove this test and pass it to all our windows.
+        // Though we should sooner or later remote this test and pass it to all our windows.
         if (Form->Perform(WM_WANTS_MOUSEWHEEL, 0, 0) == 1)
         {
           SendMessage(Control->Handle, WM_MOUSEWHEEL, WParam, LParam);
@@ -861,7 +889,10 @@ void __fastcall TTerminalManager::UpdateTaskbarList()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::DeleteLocalFile(const UnicodeString FileName, bool Alternative)
 {
-  RecursiveDeleteFileChecked(FileName, (WinConfiguration->DeleteToRecycleBin != Alternative));
+  if (!RecursiveDeleteFile(FileName, (WinConfiguration->DeleteToRecycleBin != Alternative)))
+  {
+    throw EOSExtException(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalQueryUser(TObject * Sender,
@@ -902,7 +933,7 @@ void __fastcall TTerminalManager::TerminalQueryUser(TObject * Sender,
 void __fastcall TTerminalManager::AuthenticateFormCancel(TObject * Sender)
 {
   TAuthenticateForm * Form = dynamic_cast<TAuthenticateForm *>(Sender);
-  DebugAssert(Form != NULL);
+  assert(Form != NULL);
   TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Form->Terminal);
   // will be null e.g. for background transfers
   if (ManagedTerminal != NULL)
@@ -923,7 +954,7 @@ TAuthenticateForm * __fastcall TTerminalManager::MakeAuthenticateForm(
 {
   TAuthenticateForm * Dialog = SafeFormCreate<TAuthenticateForm>();
   Dialog->Init(Terminal);
-  DebugAssert(Dialog->OnCancel == NULL);
+  assert(Dialog->OnCancel == NULL);
   Dialog->OnCancel = AuthenticateFormCancel;
   return Dialog;
 }
@@ -941,9 +972,9 @@ void __fastcall TTerminalManager::TerminalPromptUser(
   if (((Kind == pkPrompt) || (Kind == pkFileName)) && (FAuthenticateForm == NULL) &&
       (Terminal->Status != ssOpening))
   {
-    DebugAssert(Instructions.IsEmpty());
-    DebugAssert(Prompts->Count == 1);
-    DebugAssert(FLAGSET(int(Prompts->Objects[0]), pupEcho));
+    assert(Instructions.IsEmpty());
+    assert(Prompts->Count == 1);
+    assert(FLAGSET(int(Prompts->Objects[0]), pupEcho));
     UnicodeString AResult = Results->Strings[0];
 
     TInputDialogInitialize InputDialogInitialize = NULL;
@@ -985,7 +1016,7 @@ void __fastcall TTerminalManager::TerminalDisplayBanner(
   TTerminal * Terminal, UnicodeString SessionName,
   const UnicodeString & Banner, bool & NeverShowAgain, int Options)
 {
-  DebugAssert(FAuthenticateForm != NULL);
+  assert(FAuthenticateForm != NULL);
   TAuthenticateForm * AuthenticateForm = FAuthenticateForm;
   if (AuthenticateForm == NULL)
   {
@@ -1027,7 +1058,6 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
   {
     if (ScpExplorer != NULL)
     {
-      // See also TCustomScpExplorerForm::RemoteDirViewBusy
       ScpExplorer->LockWindow();
     }
     FDirectoryReadingStart = Now();
@@ -1098,7 +1128,7 @@ void __fastcall TTerminalManager::TerminalInformation(
   }
   else if (Phase == 0)
   {
-    DebugAssert(FAuthenticating > 0);
+    assert(FAuthenticating > 0);
     FAuthenticating--;
     if (FAuthenticating == 0)
     {
@@ -1130,9 +1160,17 @@ void __fastcall TTerminalManager::OperationFinished(::TFileOperation Operation,
   TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success,
   TOnceDoneOperation & OnceDoneOperation)
 {
-  DebugAssert(ScpExplorer);
+  assert(ScpExplorer);
   ScpExplorer->OperationFinished(Operation, Side, Temp, FileName, Success,
     OnceDoneOperation);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminalManager::ProgressTitle(TFileOperationProgressType * ProgressData)
+{
+  return
+    FORMAT(L"%d%% %s",
+      (ProgressData->OverallProgress(),
+       TProgressForm::OperationName(ProgressData->Operation, ProgressData->Side)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationProgress(
@@ -1140,7 +1178,7 @@ void __fastcall TTerminalManager::OperationProgress(
 {
   if (ProgressData.InProgress)
   {
-    FProgressTitle = TProgressForm::ProgressStr(&ProgressData);
+    FProgressTitle = ProgressTitle(&ProgressData);
   }
   else
   {
@@ -1148,7 +1186,7 @@ void __fastcall TTerminalManager::OperationProgress(
   }
 
   UpdateAppTitle();
-  DebugAssert(ScpExplorer);
+  assert(ScpExplorer);
   ScpExplorer->OperationProgress(ProgressData);
 }
 //---------------------------------------------------------------------------
@@ -1160,13 +1198,26 @@ void __fastcall TTerminalManager::QueueEvent(TTerminalQueue * Queue, TQueueEvent
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)
 {
-  DebugAssert(Configuration);
-  DebugAssert(Configuration == WinConfiguration);
+  assert(Configuration);
+  assert(Configuration == WinConfiguration);
+
+  if (!Application->Terminated && Configuration->Logging &&
+      (WinConfiguration->LogView == lvWindow))
+  {
+    if (ActiveTerminal)
+    {
+      RequireLogForm(LogMemo);
+    }
+  }
+    else
+  {
+    FreeLogForm();
+  }
 
   TTerminalQueue * Queue;
   for (int Index = 0; Index < Count; Index++)
   {
-    DebugAssert(Terminals[Index]->Log);
+    assert(Terminals[Index]->Log);
     Terminals[Index]->Log->ReflectSettings();
     Terminals[Index]->ActionLog->ReflectSettings();
     Queue = reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index]);
@@ -1296,7 +1347,7 @@ void __fastcall TTerminalManager::OpenInPutty()
     else
     {
       Data = new TSessionData(L"");
-      DebugAssert(ActiveTerminal != NULL);
+      assert(ActiveTerminal != NULL);
       Data->Assign(ActiveTerminal->SessionData);
       UpdateSessionCredentials(Data);
     }
@@ -1317,17 +1368,12 @@ void __fastcall TTerminalManager::OpenInPutty()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeString & SessionUrl, bool ReloadSessions)
+void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeString & SessionUrl)
 {
-  if (ReloadSessions)
-  {
-    StoredSessions->Load();
-  }
-
   UnicodeString DownloadFile; // unused
   std::unique_ptr<TObjectList> DataList(new TObjectList());
 
-  GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile, true);
+  GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile);
 
   if (DataList->Count > 0)
   {
@@ -1343,7 +1389,7 @@ void __fastcall TTerminalManager::Idle()
     try
     {
       TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-      DebugAssert(ManagedTerminal != NULL);
+      assert(ManagedTerminal != NULL);
       // make sure Idle is called on the thread that runs the terminal
       if (ManagedTerminal->TerminalThread != NULL)
       {
@@ -1359,7 +1405,7 @@ void __fastcall TTerminalManager::Idle()
 
       if (Terminal->Active)
       {
-        DebugAssert(Index < FQueues->Count);
+        assert(Index < FQueues->Count);
         if (Index < FQueues->Count)
         {
           reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index])->Idle();
@@ -1378,7 +1424,7 @@ void __fastcall TTerminalManager::Idle()
       {
         // we may not have inactive terminal, unless there is a explorer,
         // also Idle is called from explorer anyway
-        DebugAssert(ScpExplorer != NULL);
+        assert(ScpExplorer != NULL);
         if (ScpExplorer != NULL)
         {
           ScpExplorer->InactiveTerminalException(Terminal, &E);
@@ -1420,7 +1466,7 @@ void __fastcall TTerminalManager::Idle()
       {
         TTerminal * Terminal = Terminals[Index];
         // we can hardly have a queue event without explorer
-        DebugAssert(ScpExplorer != NULL);
+        assert(ScpExplorer != NULL);
         if (ScpExplorer != NULL)
         {
           ScpExplorer->QueueEvent(Terminal, QueueWithEvent, QueueEvent);

@@ -467,60 +467,10 @@ void BreakInput()
 DWORD WINAPI InputTimerThreadProc(void* Parameter)
 {
   unsigned int Timer = reinterpret_cast<unsigned int>(Parameter);
-  unsigned int Remaining = Timer;
-  const unsigned int Step = 1000;
-  const int FirstKey = VK_LBUTTON; // 0x01
-  const int LastKey = VK_OEM_CLEAR; // 0xFE
 
-  // reset key state
-  for (int Key = FirstKey; Key <= LastKey; Key++)
+  if (WaitForSingleObject(InputTimerEvent, Timer) == WAIT_TIMEOUT)
   {
-    GetAsyncKeyState(Key);
-  }
-
-  while (Remaining > 0)
-  {
-    unsigned long WaitResult = WaitForSingleObject(InputTimerEvent, Step);
-
-    if (WaitResult == WAIT_OBJECT_0)
-    {
-      // input entered
-      Remaining = 0;
-    }
-    else if (WaitResult == WAIT_TIMEOUT)
-    {
-      bool Input = false;
-
-      for (int Key = FirstKey; Key <= LastKey; Key++)
-      {
-        if ((GetAsyncKeyState(Key) & 0x01) != 0)
-        {
-          Input = true;
-          // Finishing the loop nevertheless to reset state of all keys
-        }
-      }
-
-      if (Input)
-      {
-        // If we have new input, reset timer
-        Remaining = Timer;
-      }
-      else if (Remaining > Step)
-      {
-        Remaining -= Step;
-      }
-      else
-      {
-        BreakInput();
-        Remaining = 0;
-      }
-    }
-    else
-    {
-      // abort input on (unlikely) error
-      BreakInput();
-      Remaining = 0;
-    }
+    BreakInput();
   }
 
   return 0;

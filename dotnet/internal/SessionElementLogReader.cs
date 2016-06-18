@@ -1,4 +1,8 @@
-﻿namespace WinSCP
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace WinSCP
 {
     internal class SessionElementLogReader : ElementLogReader
     {

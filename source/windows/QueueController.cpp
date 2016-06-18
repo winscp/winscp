@@ -16,12 +16,12 @@
 __fastcall TQueueController::TQueueController(TListView * ListView)
 {
   FListView = ListView;
-  DebugAssert(FListView != NULL);
-  DebugAssert(FListView->OnDblClick == NULL);
+  assert(FListView != NULL);
+  assert(FListView->OnDblClick == NULL);
   FListView->OnDblClick = QueueViewDblClick;
-  DebugAssert(FListView->OnKeyDown == NULL);
+  assert(FListView->OnKeyDown == NULL);
   FListView->OnKeyDown = QueueViewKeyDown;
-  DebugAssert(FListView->OnCustomDrawItem == NULL);
+  assert(FListView->OnCustomDrawItem == NULL);
   FListView->OnCustomDrawItem = QueueViewCustomDrawItem;
 
   FQueueStatus = NULL;
@@ -32,11 +32,11 @@ __fastcall TQueueController::TQueueController(TListView * ListView)
 //---------------------------------------------------------------------------
 __fastcall TQueueController::~TQueueController()
 {
-  DebugAssert(FListView->OnDblClick == QueueViewDblClick);
+  assert(FListView->OnDblClick == QueueViewDblClick);
   FListView->OnDblClick = NULL;
-  DebugAssert(FListView->OnKeyDown == QueueViewKeyDown);
+  assert(FListView->OnKeyDown == QueueViewKeyDown);
   FListView->OnKeyDown = NULL;
-  DebugAssert(FListView->OnCustomDrawItem == QueueViewCustomDrawItem);
+  assert(FListView->OnCustomDrawItem == QueueViewCustomDrawItem);
   FListView->OnCustomDrawItem = NULL;
 }
 //---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ bool __fastcall TQueueController::AllowOperation(
       return (FQueueStatus != NULL) && (FQueueStatus->Count > 0);
 
     default:
-      DebugFail();
+      FAIL;
       return false;
   }
 }
@@ -285,7 +285,7 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
       break;
 
     default:
-      DebugFail();
+      FAIL;
       break;
   }
 }
@@ -293,9 +293,9 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
 void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
   TQueueItemProxy * QueueItem, bool Detail)
 {
-  DebugAssert(!Detail || (QueueItem->Status != TQueueItem::qsPending));
+  assert(!Detail || (QueueItem->Status != TQueueItem::qsPending));
 
-  DebugAssert((Item->Data == NULL) || (Item->Data == QueueItem));
+  assert((Item->Data == NULL) || (Item->Data == QueueItem));
   Item->Data = QueueItem;
 
   UnicodeString ProgressStr;
@@ -455,7 +455,7 @@ TListItem * __fastcall TQueueController::InsertItemFor(TQueueItemProxy * QueueIt
   else
   {
     Item = FListView->Items->Item[Index];
-    DebugAssert(Item->Data == QueueItem);
+    assert(Item->Data == QueueItem);
   }
   return Item;
 }
@@ -494,7 +494,7 @@ void __fastcall TQueueController::UpdateQueueStatus(
       FillQueueViewItem(Item, QueueItem, false);
       Index++;
 
-      DebugAssert((QueueItem->Status != TQueueItem::qsPending) ==
+      assert((QueueItem->Status != TQueueItem::qsPending) ==
         (ItemIndex < FQueueStatus->DoneAndActiveCount));
 
       if (UseDetailsLine(ItemIndex, QueueItem))
@@ -532,7 +532,7 @@ void __fastcall TQueueController::RefreshQueueItem(TQueueItemProxy * QueueItem)
   TListItem * ListItem;
 
   ListItem = FListView->FindData(0, QueueItem, true, false);
-  DebugAssert(ListItem != NULL);
+  assert(ListItem != NULL);
 
   int Index = ListItem->Index;
   if (Index + 1 < FListView->Items->Count)

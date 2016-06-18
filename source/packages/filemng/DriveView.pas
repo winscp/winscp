@@ -124,6 +124,7 @@ type
     FFullDriveScan: Boolean;
     FShowVolLabel: Boolean;
     FVolDisplayStyle: TVolumeDisplayStyle;
+    FShowAnimation: Boolean;
     FChangeFlag: Boolean;
     FLastDir: string;
     FValidateFlag: Boolean;
@@ -320,6 +321,8 @@ type
     property ShowVolLabel: Boolean read FShowVolLabel write SetShowVolLabel default True;
     {How to display the drives volume labels:}
     property VolDisplayStyle: TVolumeDisplayStyle read FVolDisplayStyle write SetVolDisplayStyle default doPrettyName;
+    {Show AVI-animation when performing a full drive scan:}
+    property ShowAnimation: Boolean read FShowAnimation write FShowAnimation default False;
     property CompressedColor: TColor read FCompressedColor write SetCompressedColor default clBlue;
     {Additional events:}
     property OnDisplayContextMenu: TNotifyEvent read FOnDisplayContextMenu
@@ -519,6 +522,7 @@ begin
   FLastDir := EmptyStr;
   FValidateFlag := False;
   FConfirmDelete := True;
+  FShowAnimation := False;
   FDirectory := EmptyStr;
   FForceRename := False;
   FLastRenameName := '';
@@ -980,9 +984,7 @@ begin
     end;
 
     if Result and (csDestroying in ComponentState) then
-    begin
       Result := False;
-    end;
 
     if Result and
        (not FCanChange) and
@@ -995,9 +997,7 @@ begin
       Result := False;
     end
       else
-    begin
-      DropTarget := nil;
-    end;
+    DropTarget := nil;
   end;
 end; {CanChange}
 
@@ -1258,7 +1258,6 @@ var
   WasValid: Boolean;
   WFirstDrive: TDrive;
   NodeData: TNodeData;
-  NewDrive: Char;
 begin
   {Fetch disabled drives from the registry:}
 
@@ -1347,29 +1346,9 @@ begin
         if WasValid then
         {Drive has been removed => delete rootnode:}
         begin
-          if (Directory <> '') and (Directory[1] = Drive) then
+          if Directory[1] = Drive then
           begin
-            NewDrive := Drive;
-
-            repeat
-              if NewDrive < FirstFixedDrive then NewDrive := FirstFixedDrive
-                else
-              if NewDrive = FirstFixedDrive then NewDrive := LastDrive
-                else Dec(NewDrive);
-              DriveInfo.ReadDriveStatus(NewDrive, dsSize or dsImageIndex);
-
-              if NewDrive = Drive then
-              begin
-                Break;
-              end;
-
-              if DriveInfo[NewDrive].Valid and DriveInfo[NewDrive].DriveReady and Assigned(DriveStatus[NewDrive].RootNode) then
-              begin
-                Directory := NodePathName(DriveStatus[NewDrive].RootNode);
-                break;
-              end;
-            until False;
-
+            Directory := NodePathName(DriveStatus[Drive].RootNode.GetPrevSibling);
             if not Assigned(Selected) then
             begin
               Directory := NodePathName(DriveStatus[FirstFixedDrive].RootNode);
@@ -1441,6 +1420,7 @@ var
   DosError: Integer;
   RootNode: TTreeNode;
   SaveCursor: TCursor;
+  FAnimate: TAnimate;
 
   procedure ScanPath(const Path: string; ParentNode: TTreeNode);
   var
@@ -1487,9 +1467,20 @@ begin {ScanDrive}
     end
       else
     begin
+      FAnimate := nil;
       SaveCursor := Screen.Cursor;
       Screen.Cursor := crHourGlass;
       Items.BeginUpdate;
+
+      if FShowAnimation then
+      begin
+        FAnimate := TAnimate.Create(Self);
+        FAnimate.Top := (Height - FAnimate.Height) div 2;
+        FAnimate.Left := ((Width - FAnimate.Width) * 2) div 3;
+        FAnimate.Parent := Self;
+        FAnimate.CommonAVI := aviFindFolder;
+        FAnimate.Active := True;
+      end;
 
       try
         RootNode := DriveStatus[Drive].RootNode;
@@ -1506,6 +1497,8 @@ begin {ScanDrive}
       finally
         SortChildren(DriveStatus[Drive].RootNode, True);
         EndUpdate;
+        if Assigned(FAnimate) then
+          FAnimate.Free;
       end;
       RootNode.Expand(False);
 

@@ -6,7 +6,6 @@
 #include <Queue.h>
 #include <FileOperationProgress.h>
 #include <WinInterface.h>
-#include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm;
 class TLogMemo;
@@ -37,6 +36,8 @@ public:
   static TTerminalManager * __fastcall Instance(bool ForceCreation = true);
   static void __fastcall DestroyInstance();
 
+  static UnicodeString __fastcall ProgressTitle(TFileOperationProgressType * ProgressData);
+
   __fastcall TTerminalManager();
   __fastcall ~TTerminalManager();
 
@@ -53,7 +54,7 @@ public:
   void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
-  void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl, bool ReloadSessions = true);
+  void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl);
   void __fastcall Idle();
   UnicodeString __fastcall TerminalTitle(TTerminal * Terminal);
   void __fastcall HandleException(Exception * E);
@@ -99,7 +100,6 @@ private:
   int FAuthenticating;
   void * FBusyToken;
   bool FAuthenticationCancelled;
-  std::unique_ptr<TApplicationEvents> FApplicationsEvents;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();

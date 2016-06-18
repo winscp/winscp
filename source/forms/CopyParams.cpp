@@ -52,7 +52,7 @@ __fastcall TCopyParamsFrame::~TCopyParamsFrame()
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
 {
-  DebugAssert((value.TransferMode == tmAscii) ||
+  assert((value.TransferMode == tmAscii) ||
     (value.TransferMode == tmBinary) || (value.TransferMode == tmAutomatic));
   switch (value.TransferMode) {
     case tmAscii: TMTextButton->Checked = True; break;
@@ -70,7 +70,8 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
     case ncLowerCaseShort: CCLowerCaseShortButton->Checked = True; break;
   }
 
-  ReplaceInvalidCharsCheck->Checked = value.ReplaceInvalidChars;
+  ReplaceInvalidCharsCheck->Checked =
+    (value.InvalidCharsReplacement != TCopyParamType::NoReplacement);
 
   FRightsFrame->AddXToDirectories = value.AddXToDirectories;
   FRightsFrame->Rights = value.Rights;
@@ -79,7 +80,6 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   PreserveReadOnlyCheck->Checked = value.PreserveReadOnly;
 
   PreserveTimeCheck->Checked = value.PreserveTime;
-  PreserveTimeDirsCheck->Checked = value.PreserveTimeDirs;
 
   CommonCalculateSizeCheck->Checked = value.CalculateSize;
 
@@ -92,7 +92,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   }
   else
   {
-    DebugAssert(FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM));
+    assert(FLAGCLEAR(CopyParamAttrs, cpaNoRemoveBOM));
     RemoveCtrlZAndBOMCheck->Checked = value.RemoveCtrlZ && value.RemoveBOM;
   }
 
@@ -109,7 +109,7 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
 {
   TCopyParamType Result = *FParams;
 
-  DebugAssert(TMTextButton->Checked || TMBinaryButton->Checked || TMAutomaticButton->Checked);
+  assert(TMTextButton->Checked || TMBinaryButton->Checked || TMAutomaticButton->Checked);
   if (TMTextButton->Checked) Result.TransferMode = tmAscii;
     else
   if (TMBinaryButton->Checked) Result.TransferMode = tmBinary;
@@ -133,7 +133,6 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   Result.PreserveReadOnly = PreserveReadOnlyCheck->Checked;
 
   Result.PreserveTime = PreserveTimeCheck->Checked;
-  Result.PreserveTimeDirs = PreserveTimeDirsCheck->Checked;
 
   Result.CalculateSize = CommonCalculateSizeCheck->Checked;
 
@@ -199,11 +198,6 @@ void __fastcall TCopyParamsFrame::UpdateControls()
     Enabled);
   EnableControl(PreserveTimeCheck, FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTime) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
-  // The checkbox can be enabled even then "preserve time" checkbox is not (such as on the Synchronize dialog);
-  EnableControl(PreserveTimeDirsCheck,
-    FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTimeDirs) &&
-    FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled &&
-    PreserveTimeCheck->Checked);
   EnableControl(ChangeCaseGroup, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(IgnorePermErrorsCheck,
     ((PreserveRightsCheck->Enabled && PreserveRightsCheck->Checked) ||
@@ -229,15 +223,15 @@ void __fastcall TCopyParamsFrame::BeforeExecute()
 
   // adding TRightsFrame on run-time corrupts the tab order, fix it
   TransferModeGroup->TabOrder = 0;
-  DebugAssert(CustomWinConfiguration);
+  assert(CustomWinConfiguration);
   AsciiFileMaskCombo->Items = CustomWinConfiguration->History[L"Mask"];
   IncludeFileMaskCombo->Items = CustomWinConfiguration->History[L"IncludeMask"];
-  CopySpeedLimits(CustomWinConfiguration->History[L"SpeedLimit"], SpeedCombo->Items);
+  SpeedCombo->Items = CustomWinConfiguration->History[L"SpeedLimit"];
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::AfterExecute()
 {
-  DebugAssert(CustomWinConfiguration);
+  assert(CustomWinConfiguration);
   AsciiFileMaskCombo->SaveToHistory();
   CustomWinConfiguration->History[L"Mask"] = AsciiFileMaskCombo->Items;
   IncludeFileMaskCombo->SaveToHistory();

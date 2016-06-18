@@ -6,7 +6,7 @@
 #include "FileOperationProgress.h"
 #include "CoreMain.h"
 //---------------------------------------------------------------------------
-#define TRANSFER_BUF_SIZE 32768
+#define TRANSFER_BUF_SIZE 4096
 //---------------------------------------------------------------------------
 __fastcall TFileOperationProgressType::TFileOperationProgressType()
 {
@@ -26,8 +26,8 @@ __fastcall TFileOperationProgressType::TFileOperationProgressType(
 //---------------------------------------------------------------------------
 __fastcall TFileOperationProgressType::~TFileOperationProgressType()
 {
-  DebugAssert(!InProgress || FReset);
-  DebugAssert(!Suspended || FReset);
+  assert(!InProgress || FReset);
+  assert(!Suspended || FReset);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::AssignButKeepSuspendState(const TFileOperationProgressType & Other)
@@ -131,7 +131,7 @@ void __fastcall TFileOperationProgressType::Stop()
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Suspend()
 {
-  DebugAssert(!Suspended);
+  assert(!Suspended);
   Suspended = true;
   FSuspendTime = GetTickCount();
   DoProgress();
@@ -139,7 +139,7 @@ void __fastcall TFileOperationProgressType::Suspend()
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Resume()
 {
-  DebugAssert(Suspended);
+  assert(Suspended);
   Suspended = false;
 
   // shift timestamps for CPS calculation in advance
@@ -157,7 +157,7 @@ void __fastcall TFileOperationProgressType::Resume()
 //---------------------------------------------------------------------------
 int __fastcall TFileOperationProgressType::OperationProgress()
 {
-  DebugAssert(Count);
+  assert(Count);
   int Result = (FFilesFinished * 100)/Count;
   return Result;
 }
@@ -178,7 +178,7 @@ int __fastcall TFileOperationProgressType::TransferProgress()
 //---------------------------------------------------------------------------
 int __fastcall TFileOperationProgressType::TotalTransferProgress()
 {
-  DebugAssert(TotalSizeSet);
+  assert(TotalSizeSet);
   int Result = TotalSize > 0 ? (int)(((TotalTransfered + TotalSkipped) * 100)/TotalSize) : 0;
   return Result < 100 ? Result : 100;
 }
@@ -187,7 +187,7 @@ int __fastcall TFileOperationProgressType::OverallProgress()
 {
   if (TotalSizeSet)
   {
-    DebugAssert((Operation == foCopy) || (Operation == foMove));
+    assert((Operation == foCopy) || (Operation == foMove));
     return TotalTransferProgress();
   }
   else
@@ -210,7 +210,7 @@ void __fastcall TFileOperationProgressType::DoProgress()
 void __fastcall TFileOperationProgressType::Finish(UnicodeString FileName,
   bool Success, TOnceDoneOperation & OnceDoneOperation)
 {
-  DebugAssert(InProgress);
+  assert(InProgress);
 
   FOnFinished(Operation, Side, Temp, FileName,
     /* TODO : There wasn't 'Success' condition, was it by mistake or by purpose? */
@@ -238,7 +238,7 @@ void __fastcall TFileOperationProgressType::SetFile(UnicodeString AFileName, boo
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::SetFileInProgress()
 {
-  DebugAssert(!FileInProgress);
+  assert(!FileInProgress);
   FileInProgress = true;
   DoProgress();
 }
@@ -261,7 +261,7 @@ void __fastcall TFileOperationProgressType::AddLocallyUsed(__int64 ASize)
 //---------------------------------------------------------------------------
 bool __fastcall TFileOperationProgressType::IsLocallyDone()
 {
-  DebugAssert(LocallyUsed <= LocalSize);
+  assert(LocallyUsed <= LocalSize);
   return (LocallyUsed == LocalSize);
 }
 //---------------------------------------------------------------------------
@@ -364,9 +364,9 @@ void __fastcall TFileOperationProgressType::ChangeTransferSize(__int64 ASize)
 void __fastcall TFileOperationProgressType::RollbackTransfer()
 {
   TransferedSize -= SkippedSize;
-  DebugAssert(TransferedSize <= TotalTransfered);
+  assert(TransferedSize <= TotalTransfered);
   TotalTransfered -= TransferedSize;
-  DebugAssert(SkippedSize <= TotalSkipped);
+  assert(SkippedSize <= TotalSkipped);
   FTicks.clear();
   FTotalTransferredThen.clear();
   TotalSkipped -= SkippedSize;
@@ -444,7 +444,7 @@ unsigned long __fastcall TFileOperationProgressType::StaticBlockSize()
 //---------------------------------------------------------------------------
 bool __fastcall TFileOperationProgressType::IsTransferDone()
 {
-  DebugAssert(TransferedSize <= TransferSize);
+  assert(TransferedSize <= TransferSize);
   return (TransferedSize == TransferSize);
 }
 //---------------------------------------------------------------------------
@@ -508,7 +508,7 @@ TDateTime __fastcall TFileOperationProgressType::TimeExpected()
 //---------------------------------------------------------------------------
 TDateTime __fastcall TFileOperationProgressType::TotalTimeExpected()
 {
-  DebugAssert(TotalSizeSet);
+  assert(TotalSizeSet);
   unsigned int CurCps = CPS();
   // sanity check
   if ((CurCps > 0) && (TotalSize > TotalSkipped))
@@ -524,7 +524,7 @@ TDateTime __fastcall TFileOperationProgressType::TotalTimeExpected()
 //---------------------------------------------------------------------------
 TDateTime __fastcall TFileOperationProgressType::TotalTimeLeft()
 {
-  DebugAssert(TotalSizeSet);
+  assert(TotalSizeSet);
   unsigned int CurCps = CPS();
   // sanity check
   if ((CurCps > 0) && (TotalSize > TotalSkipped + TotalTransfered))

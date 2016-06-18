@@ -12,7 +12,6 @@
 #include "Console.h"
 #include <Tools.h>
 #include <PasTools.hpp>
-#include <GUITools.h>
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma link "PathLabel"
@@ -50,8 +49,6 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   OutputMemo->Font->Color = (TColor)0x00BBBBBB;
   FixComboBoxResizeBug(CommandEdit);
   UseSystemSettings(this);
-  SelectScaledImageList(Images);
-  LoadDialogImage(Image, L"Open console window");
   OutputMemo->Font->Name = CustomWinConfiguration->DefaultFixedWidthFontName;
   OutputMemo->Font->Size = CustomWinConfiguration->DefaultFixedWidthFontSize;
 }
@@ -72,9 +69,9 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
         FTerminal->ExceptionOnFail = false;
         FClearExceptionOnFail = false;
       }
-      DebugAssert(FTerminal->OnClose == TerminalClose);
+      assert(FTerminal->OnClose == TerminalClose);
       FTerminal->OnClose = FPrevTerminalClose;
-      DebugAssert(FTerminal->OnChangeDirectory == DoChangeDirectory);
+      assert(FTerminal->OnChangeDirectory == DoChangeDirectory);
       FTerminal->OnChangeDirectory = FOldChangeDirectory;
       FOldChangeDirectory = NULL;
       if (FDirectoryChanged)
@@ -216,7 +213,7 @@ void __fastcall TConsoleDialog::DoExecuteCommand()
     if (FTerminal)
     {
       FTerminal->ExceptionOnFail = false;
-      DebugAssert(FClearExceptionOnFail);
+      assert(FClearExceptionOnFail);
       FClearExceptionOnFail = false;
       if (FTerminal->Active)
       {
@@ -241,7 +238,7 @@ void __fastcall TConsoleDialog::ExecuteCommand()
   }
   catch(Exception & E)
   {
-    DebugAssert(FLastTerminal != NULL);
+    assert(FLastTerminal != NULL);
     FLastTerminal->ShowExtendedException(&E);
   }
 }
@@ -355,21 +352,5 @@ void __fastcall TConsoleDialog::FormCloseQuery(TObject * /*Sender*/, bool & CanC
   // Probably not necessary as this is called from top-level dialog loop,
   // where we do not get until ExecuteButtonClick exists.
   CanClose = !FExecuting;
-}
-//---------------------------------------------------------------------------
-void __fastcall TConsoleDialog::Dispatch(void * Message)
-{
-  TMessage * M = reinterpret_cast<TMessage*>(Message);
-  if (M->Msg == WM_SYSCOMMAND)
-  {
-    if (!HandleMinimizeSysCommand(*M))
-    {
-      TForm::Dispatch(Message);
-    }
-  }
-  else
-  {
-    TForm::Dispatch(Message);
-  }
 }
 //---------------------------------------------------------------------------

@@ -18,7 +18,6 @@
 #include <Vcl.StdCtrls.hpp>
 //----------------------------------------------------------------------------
 #include <Configuration.h>
-#include <CustomWinConfiguration.h>
 #include <SessionData.h>
 #include <PasTools.hpp>
 #include <System.Actions.hpp>
@@ -82,8 +81,8 @@ __published:
   TGroupBox *BasicGroup;
   TLabel *Label1;
   TLabel *Label2;
-  TLabel *UserNameLabel;
-  TLabel *PasswordLabel;
+  TLabel *Label3;
+  TLabel *Label4;
   TLabel *Label22;
   TLabel *FtpsLabel;
   TLabel *WebDavsLabel;
@@ -168,43 +167,13 @@ __published:
   TMenuItem *OpeninPuTTY3;
   TAction *PasteUrlAction;
   TMenuItem *Paste1;
-  TAction *GenerateUrlAction2;
+  TAction *GenerateUrlAction;
   TMenuItem *GenerateSessionURL1;
   TMenuItem *GenerateSessionURL2;
   TAction *CopyParamRuleAction;
   TMenuItem *TransferSettingsRule1;
   TGroupBox *NoteGroup;
   TMemo *NoteMemo;
-  TPanel *ComponentsPanel;
-  TPngImageList *SessionImageList120;
-  TPngImageList *ActionImageList120;
-  TAction *SearchSiteNameStartOnlyAction;
-  TAction *SearchSiteNameAction;
-  TAction *SearchSiteAction;
-  TMenuItem *Options1;
-  TMenuItem *IncrementalSearch1;
-  TMenuItem *SearchSiteNameStartOnly1;
-  TMenuItem *SearchSiteName1;
-  TMenuItem *SearchSite1;
-  TMenuItem *Options2;
-  TMenuItem *IncrementalSearch2;
-  TMenuItem *AllMajorSiteFields1;
-  TMenuItem *AnyPartofSiteName1;
-  TMenuItem *BeginningofSiteNameOnly1;
-  TMenuItem *Options3;
-  TMenuItem *IncrementalSearch3;
-  TMenuItem *AllMajorSiteFields2;
-  TMenuItem *AnyPartofSiteName2;
-  TMenuItem *BeginningofSiteNameOnly2;
-  TMenuItem *Options4;
-  TMenuItem *IncrementalSearch4;
-  TMenuItem *AllMajorSiteFields3;
-  TMenuItem *AnyPartofSiteName3;
-  TMenuItem *BeginningofSiteNameOnly3;
-  TPngImageList *SessionImageList144;
-  TPngImageList *SessionImageList192;
-  TPngImageList *ActionImageList144;
-  TPngImageList *ActionImageList192;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -276,11 +245,8 @@ __published:
   void __fastcall LoginButtonDropDownClick(TObject *Sender);
   void __fastcall PasteUrlActionExecute(TObject *Sender);
   void __fastcall HostNameEditExit(TObject *Sender);
-  void __fastcall GenerateUrlAction2Execute(TObject *Sender);
+  void __fastcall GenerateUrlActionExecute(TObject *Sender);
   void __fastcall CopyParamRuleActionExecute(TObject *Sender);
-  void __fastcall SearchSiteNameStartOnlyActionExecute(TObject *Sender);
-  void __fastcall SearchSiteNameActionExecute(TObject *Sender);
-  void __fastcall SearchSiteActionExecute(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -288,7 +254,10 @@ private:
   bool FNewSiteKeepName;
   TSessionData * FSessionData;
   TStoredSessionList * FStoredSessions;
+  int FOptions;
   bool FInitialized;
+  bool FLocaleChanging;
+  void * FSystemSettings;
   TWndMethod FOldSessionTreeProc;
   TTreeNode * FHintNode;
   TTreeViewScrollOnDragOver * FScrollOnDragOver;
@@ -300,13 +269,13 @@ private:
   bool FSitesIncrementalSearchHaveNext;
   int FBasicGroupBaseHeight;
   int FNoteGroupOffset;
+  TRect FSavedBounds;
   bool FEditing;
   bool FRenaming;
+  TSize FOriginalSize;
   bool FForceNewSite;
   bool FLoading;
   bool FSortEnablePending;
-  std::unique_ptr<TImageList> FButtonImageList;
-  TSiteSearch FSiteSearch;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -340,6 +309,8 @@ private:
   bool __fastcall SessionAllowDrop(TTreeNode * DropTarget);
   int __fastcall DefaultPort();
   void __fastcall MasterPasswordRecrypt(TObject * Sender);
+  void __fastcall SaveOpenedStoredSessionFolders(
+    TTreeNode * Node, TStrings * OpenedStoredSessionFolders);
   void __fastcall LoadOpenedStoredSessionFolders(
     TTreeNode * Node, TStrings * OpenedStoredSessionFolders);
   bool __fastcall HasNodeAnySession(TTreeNode * Node, bool NeedCanLogin = false);
@@ -387,7 +358,6 @@ private:
   void __fastcall ParseHostName();
   void __fastcall ResetNewSiteData();
   TModalResult __fastcall DefaultResult();
-  int __fastcall AddLoginButtonImage(bool Enabled);
 
 protected:
   void __fastcall Default();
@@ -406,7 +376,7 @@ protected:
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);
   __fastcall ~TLoginDialog();
-  void __fastcall Init(TStoredSessionList *SessionList);
+  void __fastcall Init(TStoredSessionList *SessionList, int Options);
   bool __fastcall Execute(TList * DataList);
 };
 //----------------------------------------------------------------------------

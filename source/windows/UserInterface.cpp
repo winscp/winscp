@@ -14,7 +14,9 @@
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
 #include "TextsWin.h"
-#include "WinInterface.h"
+#include "TBXThemes.hpp"
+#include "TBXOfficeXPTheme.hpp"
+#include "TBXOffice2003Theme.hpp"
 #include "PasswordEdit.hpp"
 #include "ProgParams.h"
 #include "Tools.h"
@@ -35,10 +37,10 @@ TConfiguration * __fastcall CreateConfiguration()
   GUIConfiguration = CustomWinConfiguration;
 
   TProgramParams * Params = TProgramParams::Instance();
-  UnicodeString IniFileName = Params->SwitchValue(INI_SWITCH);
+  UnicodeString IniFileName = Params->SwitchValue(L"ini");
   if (!IniFileName.IsEmpty())
   {
-    if (AnsiSameText(IniFileName, INI_NUL))
+    if (AnsiSameText(IniFileName, L"nul"))
     {
       WinConfiguration->SetNulStorage();
     }
@@ -108,7 +110,7 @@ void __fastcall SetOnForeground(bool OnForeground)
 //---------------------------------------------------------------------------
 void __fastcall FlashOnBackground()
 {
-  DebugAssert(Application);
+  assert(Application);
   if (!ForcedOnForeground && !ForegroundTask())
   {
     FlashWindow(Application->MainFormHandle, true);
@@ -123,11 +125,6 @@ void __fastcall LocalSystemSettings(TCustomForm * /*Control*/)
 void __fastcall ShowExtendedException(Exception * E)
 {
   ShowExtendedExceptionEx(NULL, E);
-}
-//---------------------------------------------------------------------------
-void __fastcall TerminateApplication()
-{
-  Application->Terminate();
 }
 //---------------------------------------------------------------------------
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
@@ -196,7 +193,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
           SuspendWindows();
         }
 
-        DebugAssert(Show);
+        assert(Show);
         if (ConfirmExitOnCompletion)
         {
           TMessageParams Params(mpNeverAskAgainCheck);
@@ -233,10 +230,10 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
 
       if (Result == qaYes)
       {
-        DebugAssert(CloseOnCompletion);
-        DebugAssert(Terminate != NULL);
-        DebugAssert(Terminate->Operation != odoIdle);
-        TerminateApplication();
+        assert(CloseOnCompletion);
+        assert(Terminate != NULL);
+        assert(Terminate->Operation != odoIdle);
+        Application->Terminate();
 
         switch (Terminate->Operation)
         {
@@ -252,7 +249,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
             break;
 
           default:
-            DebugFail();
+            FAIL;
         }
       }
       else if (Result == qaRetry)
@@ -270,7 +267,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       // on inactive terminal
       if (CloseOnCompletion)
       {
-        DebugAssert(Show);
+        assert(Show);
         if (ConfirmExitOnCompletion)
         {
           TMessageParams Params(mpNeverAskAgainCheck);
@@ -296,29 +293,50 @@ void __fastcall ShowNotification(TTerminal * Terminal, const UnicodeString & Str
   TQueryType Type)
 {
   TTerminalManager * Manager = TTerminalManager::Instance(false);
-  DebugAssert(Manager != NULL);
+  assert(Manager != NULL);
 
   Manager->ScpExplorer->PopupTrayBalloon(Terminal, Str, Type);
 }
 //---------------------------------------------------------------------------
 void __fastcall ConfigureInterface()
 {
-  int BidiModeFlag =
-    AdjustLocaleFlag(LoadStr(BIDI_MODE), WinConfiguration->BidiModeOverride, false, bdRightToLeft, bdLeftToRight);
-  Application->BiDiMode = static_cast<TBiDiMode>(BidiModeFlag);
+  UnicodeString S;
+  S = LoadStr(MIDDLE_EAST);
+  if (!S.IsEmpty())
+  {
+    SysLocale.MiddleEast = static_cast<bool>(StrToInt(S));
+  }
+  else
+  {
+    SysLocale.MiddleEast = false;
+  }
+  S = LoadStr(BIDI_MODE);
+  if (!S.IsEmpty())
+  {
+    Application->BiDiMode = static_cast<TBiDiMode>(StrToInt(bdRightToLeft));
+  }
+  else
+  {
+    Application->BiDiMode = bdLeftToRight;
+  }
   SetTBXSysParam(TSP_XPVISUALSTYLE, XPVS_AUTOMATIC);
+  // Can be called during configuration creation.
+  // Skip now, will be called again later.
+  if (Configuration != NULL)
+  {
+    TBXSetTheme(WinConfiguration->Theme);
+  }
   // Has any effect on Wine only
   // (otherwise initial UserDocumentDirectory is equivalent to GetPersonalFolder())
   UserDocumentDirectory = GetPersonalFolder();
 }
 //---------------------------------------------------------------------------
-#ifdef _DEBUG
-void __fastcall ForceTracing()
+// dummy function to force linking of TBXOfficeXPTheme.pas
+void __fastcall CreateThemes()
 {
-  Tracing::ForceTraceOn();
-  SetTraceFile((HANDLE)Tracing::GetTraceFile());
+  new TTBXOfficeXPTheme(THEME_OFFICEXP);
+  new TTBXOffice2003Theme(THEME_OFFICE2003);
 }
-#endif
 //---------------------------------------------------------------------------
 void __fastcall DoAboutDialog(TConfiguration *Configuration)
 {
@@ -435,7 +453,7 @@ static void __fastcall ToolbarWriteInt(const UnicodeString ToolbarName,
     TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
     UnicodeString ToolbarKey;
     GetToolbarKey(ToolbarName, Value, ToolbarKey);
-    DebugAssert(Storage->IndexOfName(ToolbarKey) < 0);
+    assert(Storage->IndexOfName(ToolbarKey) < 0);
     Storage->Values[ToolbarKey] = IntToStr(Data);
   }
 }
@@ -446,7 +464,7 @@ static void __fastcall ToolbarWriteString(const UnicodeString ToolbarName,
   TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
   UnicodeString ToolbarKey;
   GetToolbarKey(ToolbarName, Value, ToolbarKey);
-  DebugAssert(Storage->IndexOfName(ToolbarKey) < 0);
+  assert(Storage->IndexOfName(ToolbarKey) < 0);
   Storage->Values[ToolbarKey] = Data;
 }
 //---------------------------------------------------------------------------
@@ -487,7 +505,7 @@ void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString
         if ((Toolbar != NULL) && Toolbar->Stretch &&
             (Toolbar->OnGetBaseSize != NULL) &&
             // we do not support floating of stretched toolbars
-            DebugAlwaysTrue(!Toolbar->Floating))
+            ALWAYS_TRUE(!Toolbar->Floating))
         {
           TTBXToolbar * FollowingToolbar = NULL;
           for (int Index2 = 0; Index2 < OwnerComponent->ComponentCount; Index2++)
@@ -519,81 +537,15 @@ void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString
   }
 }
 //---------------------------------------------------------------------------
-TTBXSeparatorItem * __fastcall AddMenuSeparator(TTBCustomItem * Menu)
+void __fastcall AddMenuSeparator(TTBCustomItem * Menu)
 {
   TTBXSeparatorItem * Item = new TTBXSeparatorItem(Menu);
   Menu->Add(Item);
-  return Item;
 }
 //---------------------------------------------------------------------------
 static TComponent * LastPopupComponent = NULL;
 static TRect LastPopupRect(-1, -1, -1, -1);
 static TDateTime LastCloseUp;
-//---------------------------------------------------------------------------
-static void __fastcall ConvertMenu(TMenuItem * AItems, TTBCustomItem * Items)
-{
-  for (int Index = 0; Index < AItems->Count; Index++)
-  {
-    TMenuItem * AItem = AItems->Items[Index];
-    TTBCustomItem * Item;
-
-    if (!AItem->Enabled && !AItem->Visible && (AItem->Action == NULL) &&
-        (AItem->OnClick == NULL) && DebugAlwaysTrue(AItem->Count == 0))
-    {
-      TTBXLabelItem * LabelItem = new TTBXLabelItem(Items->Owner);
-      // TTBXLabelItem has it's own Caption
-      LabelItem->Caption = AItem->Caption;
-      LabelItem->SectionHeader = true;
-      Item = LabelItem;
-    }
-    else
-    {
-      // see TB2DsgnConverter.pas DoConvert
-      if (AItem->Caption == L"-")
-      {
-        Item = new TTBXSeparatorItem(Items->Owner);
-      }
-      else
-      {
-        if (AItem->Count > 0)
-        {
-          Item = new TTBXSubmenuItem(Items->Owner);
-        }
-        else
-        {
-          Item = new TTBXItem(Items->Owner);
-        }
-        Item->Action = AItem->Action;
-        Item->AutoCheck = AItem->AutoCheck;
-        Item->Caption = AItem->Caption;
-        Item->Checked = AItem->Checked;
-        if (AItem->Default)
-        {
-          Item->Options = Item->Options << tboDefault;
-        }
-        Item->Enabled = AItem->Enabled;
-        Item->GroupIndex = AItem->GroupIndex;
-        Item->HelpContext = AItem->HelpContext;
-        Item->ImageIndex = AItem->ImageIndex;
-        Item->RadioItem = AItem->RadioItem;
-        Item->ShortCut = AItem->ShortCut;
-        Item->SubMenuImages = AItem->SubMenuImages;
-        Item->OnClick = AItem->OnClick;
-      }
-      Item->Hint = AItem->Hint;
-      Item->Tag = AItem->Tag;
-      Item->Visible = AItem->Visible;
-
-      // recurse is supported only for empty submenus (as used for custom commands)
-      if (AItem->Count > 0)
-      {
-        ConvertMenu(AItem, Item);
-      }
-    }
-
-    Items->Add(Item);
-  }
-}
 //---------------------------------------------------------------------------
 void __fastcall MenuPopup(TPopupMenu * AMenu, TRect Rect,
   TComponent * PopupComponent)
@@ -623,7 +575,68 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TRect Rect,
       Menu->OnPopup = AMenu->OnPopup;
       Menu->Items->SubMenuImages = AMenu->Images;
 
-      ConvertMenu(AMenu->Items, Menu->Items);
+      for (int Index = 0; Index < AMenu->Items->Count; Index++)
+      {
+        TMenuItem * AItem = AMenu->Items->Items[Index];
+        TTBCustomItem * Item;
+
+        if (!AItem->Enabled && !AItem->Visible && (AItem->Action == NULL) &&
+                 (AItem->OnClick == NULL) && ALWAYS_TRUE(AItem->Count == 0))
+        {
+          TTBXLabelItem * LabelItem = new TTBXLabelItem(Menu);
+          // TTBXLabelItem has it's own Caption
+          LabelItem->Caption = AItem->Caption;
+          LabelItem->SectionHeader = true;
+          Item = LabelItem;
+        }
+        else
+        {
+          // see TB2DsgnConverter.pas DoConvert
+          if (AItem->Caption == L"-")
+          {
+            Item = new TTBXSeparatorItem(Menu);
+          }
+          else
+          {
+            if (AItem->Count > 0)
+            {
+              Item = new TTBXSubmenuItem(Menu);
+            }
+            else
+            {
+              Item = new TTBXItem(Menu);
+            }
+            Item->Action = AItem->Action;
+            Item->AutoCheck = AItem->AutoCheck;
+            Item->Caption = AItem->Caption;
+            Item->Checked = AItem->Checked;
+            if (AItem->Default)
+            {
+              Item->Options = Item->Options << tboDefault;
+            }
+            Item->Enabled = AItem->Enabled;
+            Item->GroupIndex = AItem->GroupIndex;
+            Item->HelpContext = AItem->HelpContext;
+            Item->ImageIndex = AItem->ImageIndex;
+            Item->RadioItem = AItem->RadioItem;
+            Item->ShortCut = AItem->ShortCut;
+            Item->SubMenuImages = AItem->SubMenuImages;
+            Item->OnClick = AItem->OnClick;
+          }
+          Item->Hint = AItem->Hint;
+          Item->Tag = AItem->Tag;
+          Item->Visible = AItem->Visible;
+
+          // recurse is supported only for empty submenus (as used for custom commands)
+          if ((AItem->Count > 0) &&
+              ALWAYS_TRUE((AItem->Count == 1) && (AItem->Items[0]->Caption == L"")))
+          {
+            Item->Add(new TTBXItem(Menu));
+          }
+        }
+
+        Menu->Items->Add(Item);
+      }
     }
 
     Menu->PopupComponent = PopupComponent;
@@ -668,7 +681,7 @@ static void __fastcall GetStandardSessionColorInfo(
   COLOR_INFO(6, 1, L"Light Purple",      0xD9C1CC)
   COLOR_INFO(7, 1, L"Light Aqua",        0xE8DDB7)
 
-  DebugFail();
+  FAIL;
   #undef COLOR_INFO
 }
 //---------------------------------------------------------------------------
@@ -690,7 +703,7 @@ static UnicodeString __fastcall StoreColor(TColor Color)
 //---------------------------------------------------------------------------
 static UnicodeString __fastcall ExtractColorStr(UnicodeString & Colors)
 {
-  return CutToChar(Colors, ColorSeparator, true);
+  return ::CutToChar(Colors, ColorSeparator, true);
 }
 //---------------------------------------------------------------------------
 static bool __fastcall IsStandardColor(TColor Color)
@@ -714,7 +727,7 @@ static bool __fastcall IsStandardColor(TColor Color)
 class TColorChangeData : public TComponent
 {
 public:
-  __fastcall TColorChangeData(TColorChangeEvent OnColorChange, TColor Color, bool SessionColors);
+  __fastcall TColorChangeData(TColorChangeEvent OnColorChange, TColor Color);
 
   static TColorChangeData * __fastcall Retrieve(TObject * Object);
 
@@ -722,43 +735,29 @@ public:
 
   __property TColor Color = { read = FColor };
 
-  __property bool SessionColors = { read = FSessionColors };
-
 private:
   TColorChangeEvent FOnColorChange;
   TColor FColor;
-  bool FSessionColors;
 };
 //---------------------------------------------------------------------------
-__fastcall TColorChangeData::TColorChangeData(
-    TColorChangeEvent OnColorChange, TColor Color, bool SessionColors) :
+__fastcall TColorChangeData::TColorChangeData(TColorChangeEvent OnColorChange, TColor Color) :
   TComponent(NULL)
 {
   Name = QualifiedClassName();
   FOnColorChange = OnColorChange;
   FColor = Color;
-  FSessionColors = SessionColors;
 }
 //---------------------------------------------------------------------------
 TColorChangeData * __fastcall TColorChangeData::Retrieve(TObject * Object)
 {
-  TComponent * Component = DebugNotNull(dynamic_cast<TComponent *>(Object));
+  TComponent * Component = NOT_NULL(dynamic_cast<TComponent *>(Object));
   TComponent * ColorChangeDataComponent = Component->FindComponent(QualifiedClassName());
-  return DebugNotNull(dynamic_cast<TColorChangeData *>(ColorChangeDataComponent));
+  return NOT_NULL(dynamic_cast<TColorChangeData *>(ColorChangeDataComponent));
 }
 //---------------------------------------------------------------------------
 void __fastcall TColorChangeData::ColorChange(TColor Color)
 {
-  // Color palette returns clNone when no color is selected,
-  // though it should not really happen.
-  // See also CreateColorPalette
-  if (Color == Vcl::Graphics::clNone)
-  {
-    Color = TColor(0);
-  }
-
-  if (SessionColors &&
-      (Color != TColor(0)) &&
+  if ((Color != TColor(0)) &&
       !IsStandardColor(Color))
   {
     UnicodeString SessionColors = StoreColor(Color);
@@ -784,8 +783,9 @@ static void __fastcall ColorDefaultClick(void * /*Data*/, TObject * Sender)
 //---------------------------------------------------------------------------
 static void __fastcall ColorPaletteChange(void * /*Data*/, TObject * Sender)
 {
-  TTBXColorPalette * ColorPalette = DebugNotNull(dynamic_cast<TTBXColorPalette *>(Sender));
-  TColorChangeData::Retrieve(Sender)->ColorChange(GetNonZeroColor(ColorPalette->Color));
+  TTBXColorPalette * ColorPalette = NOT_NULL(dynamic_cast<TTBXColorPalette *>(Sender));
+  TColor Color = (ColorPalette->Color != Vcl::Graphics::clNone ? ColorPalette->Color : (TColor)0);
+  TColorChangeData::Retrieve(Sender)->ColorChange(Color);
 }
 //---------------------------------------------------------------------------
 static UnicodeString __fastcall CustomColorName(int Index)
@@ -801,56 +801,50 @@ static void __fastcall ColorPickClick(void * /*Data*/, TObject * Sender)
   Dialog->Options = Dialog->Options << cdFullOpen << cdAnyColor;
   Dialog->Color = (ColorChangeData->Color != 0 ? ColorChangeData->Color : clSkyBlue);
 
-  if (ColorChangeData->SessionColors)
+  UnicodeString Temp = CustomWinConfiguration->SessionColors;
+  int StandardColorIndex = 0;
+  int CustomColors = Min(MaxCustomColors, StandardColorCount);
+  for (int Index = 0; Index < CustomColors; Index++)
   {
-    UnicodeString Temp = CustomWinConfiguration->SessionColors;
-    int StandardColorIndex = 0;
-    int CustomColors = Min(MaxCustomColors, StandardColorCount);
-    for (int Index = 0; Index < CustomColors; Index++)
+    TColor CustomColor;
+    if (!Temp.IsEmpty())
     {
-      TColor CustomColor;
-      if (!Temp.IsEmpty())
-      {
-        CustomColor = RestoreColor(ExtractColorStr(Temp));
-      }
-      else
-      {
-        UnicodeString Name; // not used
-        DebugAssert(StandardColorIndex < StandardColorCount);
-        GetStandardSessionColorInfo(
-          StandardColorIndex % ColorCols, StandardColorIndex / ColorCols,
-          CustomColor, Name);
-        StandardColorIndex++;
-      }
-      Dialog->CustomColors->Values[CustomColorName(Index)] = StoreColor(CustomColor);
+      CustomColor = RestoreColor(ExtractColorStr(Temp));
     }
+    else
+    {
+      UnicodeString Name; // not used
+      assert(StandardColorIndex < StandardColorCount);
+      GetStandardSessionColorInfo(
+        StandardColorIndex % ColorCols, StandardColorIndex / ColorCols,
+        CustomColor, Name);
+      StandardColorIndex++;
+    }
+    Dialog->CustomColors->Values[CustomColorName(Index)] = StoreColor(CustomColor);
   }
 
   if (Dialog->Execute())
   {
-    if (ColorChangeData->SessionColors)
+    // so that we do not have to try to preserve the excess colors
+    assert(UserColorCount <= MaxCustomColors);
+    UnicodeString SessionColors;
+    for (int Index = 0; Index < MaxCustomColors; Index++)
     {
-      // so that we do not have to try to preserve the excess colors
-      DebugAssert(UserColorCount <= MaxCustomColors);
-      UnicodeString SessionColors;
-      for (int Index = 0; Index < MaxCustomColors; Index++)
+      UnicodeString CStr = Dialog->CustomColors->Values[CustomColorName(Index)];
+      if (!CStr.IsEmpty())
       {
-        UnicodeString CStr = Dialog->CustomColors->Values[CustomColorName(Index)];
-        if (!CStr.IsEmpty())
+        TColor CustomColor = RestoreColor(CStr);
+        if (!IsStandardColor(CustomColor))
         {
-          TColor CustomColor = RestoreColor(CStr);
-          if (!IsStandardColor(CustomColor))
-          {
-            AddToList(SessionColors, StoreColor(CustomColor), ColorSeparator);
-          }
+          AddToList(SessionColors, StoreColor(CustomColor), ColorSeparator);
         }
       }
-      CustomWinConfiguration->SessionColors = SessionColors;
     }
+    CustomWinConfiguration->SessionColors = SessionColors;
 
     // call color change only after copying custom colors back,
     // so that it can add selected color to the user list
-    ColorChangeData->ColorChange(GetNonZeroColor(Dialog->Color));
+    ColorChangeData->ColorChange(Dialog->Color);
   }
 }
 //---------------------------------------------------------------------------
@@ -885,124 +879,81 @@ static void __fastcall UserSessionColorSetGetColorInfo(
 }
 //---------------------------------------------------------------------------
 void __fastcall CreateColorPalette(TTBCustomItem * Owner, TColor Color, int Rows,
-  TCSGetColorInfo OnGetColorInfo, TColorChangeEvent OnColorChange, bool SessionColors)
+  TCSGetColorInfo OnGetColorInfo, TColorChangeEvent OnColorChange)
 {
+  TTBXCustomColorSet * ColorSet = new TTBXCustomColorSet(Owner);
+
   TTBXColorPalette * ColorPalette = new TTBXColorPalette(Owner);
+  ColorPalette->InsertComponent(ColorSet);
+  ColorPalette->ColorSet = ColorSet;
 
-  if (OnGetColorInfo != NULL)
-  {
-    TTBXCustomColorSet * ColorSet = new TTBXCustomColorSet(Owner);
-    ColorPalette->InsertComponent(ColorSet);
-    ColorPalette->ColorSet = ColorSet;
+  // has to be set only after it's assigned to color palette
+  ColorSet->ColCount = ColorCols;
+  ColorSet->RowCount = Rows;
+  ColorSet->OnGetColorInfo = OnGetColorInfo;
 
-    // has to be set only after it's assigned to color palette
-    ColorSet->ColCount = ColorCols;
-    ColorSet->RowCount = Rows;
-    ColorSet->OnGetColorInfo = OnGetColorInfo;
-  }
-
-  // clNone = no selection, see also ColorChange
   ColorPalette->Color = (Color != 0) ? Color : Vcl::Graphics::clNone;
   ColorPalette->OnChange = MakeMethod<TNotifyEvent>(NULL, ColorPaletteChange);
-  ColorPalette->InsertComponent(new TColorChangeData(OnColorChange, Color, SessionColors));
+  ColorPalette->InsertComponent(new TColorChangeData(OnColorChange, Color));
   Owner->Add(ColorPalette);
 
   Owner->Add(new TTBXSeparatorItem(Owner));
 }
 //---------------------------------------------------------------------------
-static void __fastcall CreateColorMenu(TComponent * AOwner, TColor Color,
-  TColorChangeEvent OnColorChange, bool SessionColors,
-  const UnicodeString & DefaultColorCaption, const UnicodeString & DefaultColorHint,
-  const UnicodeString & HelpKeyword,
-  const UnicodeString & ColorPickHint)
+void __fastcall CreateSessionColorMenu(TComponent * AOwner, TColor Color,
+  TColorChangeEvent OnColorChange)
 {
   TTBCustomItem * Owner = dynamic_cast<TTBCustomItem *>(AOwner);
-  if (DebugAlwaysTrue(Owner != NULL))
+  if (ALWAYS_TRUE(Owner != NULL))
   {
     Owner->Clear();
 
     TTBCustomItem * Item;
 
     Item = new TTBXItem(Owner);
-    Item->Caption = DefaultColorCaption;
-    Item->Hint = DefaultColorHint;
-    Item->HelpKeyword = HelpKeyword;
+    Item->Caption = LoadStr(COLOR_DEFAULT_CAPTION);
+    Item->Hint = LoadStr(COLOR_DEFAULT_HINT);
+    Item->HelpKeyword = HELP_COLOR;
     Item->OnClick = MakeMethod<TNotifyEvent>(NULL, ColorDefaultClick);
     Item->Checked = (Color == TColor(0));
-    Item->InsertComponent(new TColorChangeData(OnColorChange, Color, SessionColors));
+    Item->InsertComponent(new TColorChangeData(OnColorChange, Color));
     Owner->Add(Item);
 
     Owner->Add(new TTBXSeparatorItem(Owner));
 
-    if (SessionColors)
+    int SessionColorCount = 0;
+    UnicodeString Temp = CustomWinConfiguration->SessionColors;
+    while (!Temp.IsEmpty())
     {
-      int SessionColorCount = 0;
-      UnicodeString Temp = CustomWinConfiguration->SessionColors;
-      while (!Temp.IsEmpty())
-      {
-        SessionColorCount++;
-        ExtractColorStr(Temp);
-      }
-
-      if (SessionColorCount > 0)
-      {
-        SessionColorCount = Min(SessionColorCount, UserColorCount);
-        int RowCount = ((SessionColorCount + ColorCols - 1) / ColorCols);
-        DebugAssert(RowCount <= UserColorRows);
-
-        CreateColorPalette(Owner, Color, RowCount,
-          MakeMethod<TCSGetColorInfo>(NULL, UserSessionColorSetGetColorInfo),
-          OnColorChange, SessionColors);
-      }
-
-      CreateColorPalette(Owner, Color, StandardColorRows,
-        MakeMethod<TCSGetColorInfo>(NULL, SessionColorSetGetColorInfo),
-        OnColorChange, SessionColors);
+      SessionColorCount++;
+      ExtractColorStr(Temp);
     }
-    else
+
+    if (SessionColorCount > 0)
     {
-      CreateColorPalette(Owner, Color, -1, NULL, OnColorChange, SessionColors);
+      SessionColorCount = Min(SessionColorCount, UserColorCount);
+      int RowCount = ((SessionColorCount + ColorCols - 1) / ColorCols);
+      assert(RowCount <= UserColorRows);
+
+      CreateColorPalette(Owner, Color, RowCount,
+        MakeMethod<TCSGetColorInfo>(NULL, UserSessionColorSetGetColorInfo),
+        OnColorChange);
     }
+
+    CreateColorPalette(Owner, Color, StandardColorRows,
+      MakeMethod<TCSGetColorInfo>(NULL, SessionColorSetGetColorInfo),
+      OnColorChange);
 
     Owner->Add(new TTBXSeparatorItem(Owner));
 
     Item = new TTBXItem(Owner);
     Item->Caption = LoadStr(COLOR_PICK_CAPTION);
-    Item->Hint = ColorPickHint;
-    Item->HelpKeyword = HelpKeyword;
+    Item->Hint = LoadStr(COLOR_PICK_HINT);
+    Item->HelpKeyword = HELP_COLOR;
     Item->OnClick = MakeMethod<TNotifyEvent>(NULL, ColorPickClick);
-    Item->InsertComponent(new TColorChangeData(OnColorChange, Color, SessionColors));
+    Item->InsertComponent(new TColorChangeData(OnColorChange, Color));
     Owner->Add(Item);
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall CreateSessionColorMenu(TComponent * AOwner, TColor Color,
-  TColorChangeEvent OnColorChange)
-{
-  CreateColorMenu(
-    AOwner, Color, OnColorChange, true,
-    LoadStr(COLOR_TRUE_DEFAULT_CAPTION), LoadStr(EDITOR_BACKGROUND_COLOR_HINT),
-    HELP_COLOR, LoadStr(COLOR_PICK_HINT));
-}
-//---------------------------------------------------------------------------
-void __fastcall CreateEditorBackgroundColorMenu(TComponent * AOwner, TColor Color,
-  TColorChangeEvent OnColorChange)
-{
-  CreateColorMenu(
-    AOwner, Color, OnColorChange, true,
-    LoadStr(COLOR_TRUE_DEFAULT_CAPTION), LoadStr(EDITOR_BACKGROUND_COLOR_HINT),
-    HELP_COLOR, LoadStr(EDITOR_BACKGROUND_COLOR_PICK_HINT));
-}
-//---------------------------------------------------------------------------
-TPopupMenu * __fastcall CreateColorPopupMenu(TColor Color,
-  TColorChangeEvent OnColorChange)
-{
-  std::unique_ptr<TTBXPopupMenu> PopupMenu(new TTBXPopupMenu(Application));
-  CreateColorMenu(
-    PopupMenu->Items, Color, OnColorChange, false,
-    LoadStr(COLOR_TRUE_DEFAULT_CAPTION), UnicodeString(),
-    HELP_NONE, UnicodeString());
-  return PopupMenu.release();
 }
 //---------------------------------------------------------------------------
 void __fastcall UpgradeSpeedButton(TSpeedButton * /*Button*/)
@@ -1088,13 +1039,13 @@ void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value)
     }
     else if (AShortCut < Value)
     {
-      DebugAssert(Value != 0);
+      assert(Value != 0);
       ComboBox->Items->InsertObject(Index + 1, ShortCutToText(Value),
         reinterpret_cast<TObject* >(Value));
       ComboBox->ItemIndex = Index + 1;
       break;
     }
-    DebugAssert(Index > 0);
+    assert(Index > 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -1211,7 +1162,7 @@ void __fastcall TMasterPasswordDialog::DoValidate()
     int Valid = IsValidPassword(NewEdit->Text);
     if (Valid <= 0)
     {
-      DebugAssert(Valid == 0);
+      assert(Valid == 0);
       if (MessageDialog(LoadStr(MASTER_PASSWORD_SIMPLE2), qtWarning,
             qaOK | qaCancel, HELP_MASTER_PASSWORD_SIMPLE) == qaCancel)
       {
@@ -1235,7 +1186,7 @@ static bool __fastcall DoMasterPasswordDialog(bool Current,
     if (Result)
     {
       if ((Current || WinConfiguration->UseMasterPassword) &&
-          DebugAlwaysTrue(!CurrentPassword.IsEmpty()))
+          ALWAYS_TRUE(!CurrentPassword.IsEmpty()))
       {
         WinConfiguration->SetMasterPassword(CurrentPassword);
       }
@@ -1252,7 +1203,7 @@ bool __fastcall DoMasterPasswordDialog()
 {
   UnicodeString NewPassword;
   bool Result = DoMasterPasswordDialog(true, NewPassword);
-  DebugAssert(NewPassword.IsEmpty());
+  assert(NewPassword.IsEmpty());
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1270,16 +1221,6 @@ void __fastcall MessageWithNoHelp(const UnicodeString & Message)
         qaOK | qaCancel, HELP_NONE, &Params) == qaOK)
   {
     SearchHelp(Message);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall CheckLogParam(TProgramParams * Params)
-{
-  UnicodeString LogFile;
-  if (Params->FindSwitch(LOG_SWITCH, LogFile) && CheckSafe(Params))
-  {
-    Configuration->Usage->Inc(L"ScriptLog");
-    Configuration->TemporaryLogging(LogFile);
   }
 }
 //---------------------------------------------------------------------------

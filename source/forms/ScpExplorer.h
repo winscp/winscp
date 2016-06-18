@@ -30,7 +30,6 @@
 #include "TBXLists.hpp"
 #include "ThemePageControl.h"
 #include "PathLabel.hpp"
-#include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TScpExplorerForm : public TCustomScpExplorerForm
 {
@@ -45,9 +44,9 @@ __published:
   TTBXItem *TBXItem112;
   TTBXSubmenuItem *TBXSubmenuItem5;
   TTBXItem *TBXItem25;
-  TTBXSubmenuItem *TBXItem26;
+  TTBXItem *TBXItem26;
   TTBXSeparatorItem *TBXSeparatorItem7;
-  TTBXSubmenuItem *TBXItem30;
+  TTBXItem *TBXItem30;
   TTBXItem *TBXItem31;
   TTBXItem *TBXItem32;
   TTBXItem *TBXItem33;
@@ -174,7 +173,7 @@ __published:
   TTBXItem *TBXItem29;
   TTBXItem *TBXItem37;
   TTBXSeparatorItem *TBXSeparatorItem15;
-  TTBXSubmenuItem *TBXItem42;
+  TTBXItem *TBXItem42;
   TTBXItem *TBXItem45;
   TTBXItem *TBXItem58;
   TTBXItem *TBXItem59;
@@ -253,6 +252,7 @@ __published:
   TTBXSubmenuItem *TBXSubmenuItem13;
   TTBXItem *TBXItem198;
   TTBXItem *TBXItem199;
+  TTBXSubmenuItem *TBXSubmenuItem9;
   TTBXItem *TBXItem27;
   TTBXItem *TBXItem134;
   TTBXSubmenuItem *TBXSubmenuItem26;
@@ -287,7 +287,7 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem24;
   TTBXLabelItem *TransferSettingsLabelItem;
   TTBXItem *TBXItem140;
-  TTBXSubmenuItem *TBXItem141;
+  TTBXItem *TBXItem141;
   TTBXItem *TBXItem142;
   TTBXSeparatorItem *TBXSeparatorItem27;
   TTBXItem *TBXItem143;
@@ -297,21 +297,6 @@ __published:
   TTBXItem *TBXItem144;
   TTBXItem *TBXItem148;
   TTBXItem *TBXItem154;
-  TTBXItem *TBXItem155;
-  TTBXItem *TBXItem156;
-  TTBXItem *TBXItem157;
-  TTBXSeparatorItem *TBXSeparatorItem38;
-  TTBXItem *TBXItem158;
-  TTBXSeparatorItem *TBXSeparatorItem39;
-  TTBXSeparatorItem *TBXSeparatorItem41;
-  TTBXSeparatorItem *TBXSeparatorItem61;
-  TTBXItem *TBXItem212;
-  TTBXItem *TBXItem213;
-  TTBXSubmenuItem *TBXSubmenuItem25;
-  TTBXItem *TBXItem214;
-  TTBXItem *TBXItem216;
-  TTBXItem *TBXItem159;
-  TTBXSubmenuItem *TBXSubmenuItem28;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
@@ -340,11 +325,11 @@ protected:
   virtual void __fastcall FixControlsPlacement();
   DYNAMIC void __fastcall DoShow();
   virtual void __fastcall UpdateStatusPanelText(TTBXStatusPanel * Panel);
-  virtual void __fastcall UpdateRemotePathComboBox(bool TextOnly);
+  virtual void __fastcall UpdateRemotePathComboBox(
+    TTBXComboBoxItem * RemotePathComboBox, bool TextOnly);
   UnicodeString __fastcall RemotePathComboBoxText();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   virtual bool __fastcall UpdateToolbarDisplayMode();
-  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
 
 public:
   __fastcall TScpExplorerForm(TComponent* Owner);
@@ -353,7 +338,6 @@ public:
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall ChangePath(TOperationSide Side);
-  virtual void __fastcall GoToAddress();
 };
 //---------------------------------------------------------------------------
 #endif

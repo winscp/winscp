@@ -27,7 +27,7 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
     GUIConfiguration->SelectPuttySessionsForImport(StoredSessions, Error));
   Errors->Add(Error);
   std::unique_ptr<TStoredSessionList> FilezillaImportSessionList(
-    Configuration->SelectFilezillaSessionsForImport(StoredSessions, Error));
+    GUIConfiguration->SelectFilezillaSessionsForImport(StoredSessions, Error));
   Errors->Add(Error);
 
   std::unique_ptr<TList> SessionListsList(new TList());

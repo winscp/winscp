@@ -112,7 +112,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     OnSelect = SourceComboBoxSelect
     Items.Strings = (
       'PuTTY'
-      'FileZilla')
+      'Filezilla')
   end
   object ErrorPanel: TPanel
     Left = 48

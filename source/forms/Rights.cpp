@@ -43,8 +43,6 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
   UpgradeSpeedButton(OwnerButton);
   UpgradeSpeedButton(GroupButton);
   UpgradeSpeedButton(OthersButton);
-
-  SelectScaledImageList(RightsImages);
 }
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::~TRightsFrame()
@@ -53,7 +51,7 @@ __fastcall TRightsFrame::~TRightsFrame()
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::SetStates(TRights::TRight Right, TRights::TState value)
 {
-  DebugAssert(((value == TRights::rsNo) || (value == TRights::rsYes) || (value == TRights::rsUndef)));
+  assert(((value == TRights::rsNo) || (value == TRights::rsYes) || (value == TRights::rsUndef)));
   TCheckBox * CheckBox = Checks[Right];
   if (CheckBox != NULL)
   {
@@ -142,7 +140,7 @@ bool __fastcall TRightsFrame::GetAllowUndef()
       }
       else if (Result != Check->AllowGrayed)
       {
-        DebugFail();
+        FAIL;
       }
     }
   }
@@ -311,7 +309,7 @@ void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
     else if (Action == CopyOctalAction)
     {
       TRights R = Rights;
-      DebugAssert(!R.IsUndef);
+      assert(!R.IsUndef);
       if (!R.IsUndef)
       {
         TInstantOperationVisualizer Visualizer;
@@ -539,14 +537,14 @@ void __fastcall TRightsFrame::DropDown()
     {
       if (Button->Default)
       {
-        DebugAssert(FDefaultButton == NULL);
+        assert(FDefaultButton == NULL);
         FDefaultButton = Button;
         Button->Default = false;
       }
 
       if (Button->Cancel)
       {
-        DebugAssert(FCancelButton == NULL);
+        assert(FCancelButton == NULL);
         FCancelButton = Button;
         Button->Cancel = false;
       }
@@ -567,8 +565,8 @@ void __fastcall TRightsFrame::DropDown()
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::CloseUp()
 {
-  DebugAssert(FPopup);
-  DebugAssert(Visible);
+  assert(FPopup);
+  assert(Visible);
   if (!Focused())
   {
     // this can happen only if called from on-click handler of drop down button

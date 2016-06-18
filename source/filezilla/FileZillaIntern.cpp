@@ -9,11 +9,16 @@
 TFileZillaIntern::TFileZillaIntern(TFileZillaIntf * AOwner) :
   FOwner(AOwner)
 {
-  FDebugLevel = 0;
+  // not being initialied by CApiLog
+  m_nLogMessage = 0;
 }
 //---------------------------------------------------------------------------
-bool TFileZillaIntern::PostMessage(WPARAM wParam, LPARAM lParam) const
+BOOL TFileZillaIntern::PostMessage(HWND hWnd, UINT Msg, WPARAM wParam,
+  LPARAM lParam) const
 {
+  ASSERT(hWnd == NULL);
+  ASSERT(Msg == 0);
+
   bool Result;
   unsigned int MessageID = FZ_MSG_ID(wParam);
 
@@ -28,32 +33,28 @@ bool TFileZillaIntern::PostMessage(WPARAM wParam, LPARAM lParam) const
       Result = FOwner->PostMessage(wParam, lParam);
       break;
 
+    // ignored for performace
+    case FZ_MSG_SOCKETSTATUS:
+      Result = false;
+      break;
+
+    // ignore
+    // not useful. although FTP allows switching between secure and unsecure
+    // connection during session, filezilla does not support it,
+    // so we are either secure or not for whole session
+    case FZ_MSG_SECURESERVER:
+      ASSERT(lParam == 0);
+      Result = false;
+      break;
+
+    // should never get here, call compiled out in filezilla code
+    case FZ_MSG_QUITCOMPLETE:
     default:
-      DebugFail();
+      ASSERT(FALSE);
       Result = false;
       break;
   }
 
-  return Result;
-}
-//---------------------------------------------------------------------------
-CString TFileZillaIntern::GetOption(int OptionID) const
-{
-  return FOwner->Option(OptionID);
-}
-//---------------------------------------------------------------------------
-int TFileZillaIntern::GetOptionVal(int OptionID) const
-{
-  return FOwner->OptionVal(OptionID);
-}
-//---------------------------------------------------------------------------
-int TFileZillaIntern::GetDebugLevel() const
-{
-  return FDebugLevel;
-}
-//---------------------------------------------------------------------------
-void TFileZillaIntern::SetDebugLevel(int DebugLevel)
-{
-  FDebugLevel = DebugLevel;
+  return (Result ? TRUE : FALSE);
 }
 //---------------------------------------------------------------------------

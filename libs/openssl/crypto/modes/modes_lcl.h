@@ -25,49 +25,39 @@ typedef unsigned int u32;
 typedef unsigned char u8;
 
 #define STRICT_ALIGNMENT 1
-#ifndef PEDANTIC
-# if defined(__i386)    || defined(__i386__)    || \
-     defined(__x86_64)  || defined(__x86_64__)  || \
-     defined(_M_IX86)   || defined(_M_AMD64)    || defined(_M_X64) || \
-     defined(__aarch64__)                       || \
-     defined(__s390__)  || defined(__s390x__)
-#  undef STRICT_ALIGNMENT
-# endif
+#if defined(__i386)     || defined(__i386__)    || \
+    defined(__x86_64)   || defined(__x86_64__)  || \
+    defined(_M_IX86)    || defined(_M_AMD64)    || defined(_M_X64) || \
+    defined(__s390__)   || defined(__s390x__)
+# undef STRICT_ALIGNMENT
 #endif
 
 #if !defined(PEDANTIC) && !defined(OPENSSL_NO_ASM) && !defined(OPENSSL_NO_INLINE_ASM)
 # if defined(__GNUC__) && __GNUC__>=2
 #  if defined(__x86_64) || defined(__x86_64__)
-#   define BSWAP8(x) ({ u64 ret_=(x);                   \
+#   define BSWAP8(x) ({ u64 ret=(x);                    \
                         asm ("bswapq %0"                \
-                        : "+r"(ret_));   ret_;          })
-#   define BSWAP4(x) ({ u32 ret_=(x);                   \
+                        : "+r"(ret));   ret;            })
+#   define BSWAP4(x) ({ u32 ret=(x);                    \
                         asm ("bswapl %0"                \
-                        : "+r"(ret_));   ret_;          })
+                        : "+r"(ret));   ret;            })
 #  elif (defined(__i386) || defined(__i386__)) && !defined(I386_ONLY)
-#   define BSWAP8(x) ({ u32 lo_=(u64)(x)>>32,hi_=(x);   \
+#   define BSWAP8(x) ({ u32 lo=(u64)(x)>>32,hi=(x);     \
                         asm ("bswapl %0; bswapl %1"     \
-                        : "+r"(hi_),"+r"(lo_));         \
-                        (u64)hi_<<32|lo_;               })
-#   define BSWAP4(x) ({ u32 ret_=(x);                   \
+                        : "+r"(hi),"+r"(lo));           \
+                        (u64)hi<<32|lo;                 })
+#   define BSWAP4(x) ({ u32 ret=(x);                    \
                         asm ("bswapl %0"                \
-                        : "+r"(ret_));   ret_;          })
-#  elif defined(__aarch64__)
-#   define BSWAP8(x) ({ u64 ret_;                       \
-                        asm ("rev %0,%1"                \
-                        : "=r"(ret_) : "r"(x)); ret_;   })
-#   define BSWAP4(x) ({ u32 ret_;                       \
-                        asm ("rev %w0,%w1"              \
-                        : "=r"(ret_) : "r"(x)); ret_;   })
+                        : "+r"(ret));   ret;            })
 #  elif (defined(__arm__) || defined(__arm)) && !defined(STRICT_ALIGNMENT)
-#   define BSWAP8(x) ({ u32 lo_=(u64)(x)>>32,hi_=(x);   \
+#   define BSWAP8(x) ({  u32 lo=(u64)(x)>>32,hi=(x);     \
                         asm ("rev %0,%0; rev %1,%1"     \
-                        : "+r"(hi_),"+r"(lo_));         \
-                        (u64)hi_<<32|lo_;               })
-#   define BSWAP4(x) ({ u32 ret_;                       \
+                        : "+r"(hi),"+r"(lo));           \
+                        (u64)hi<<32|lo;                 })
+#   define BSWAP4(x) ({ u32 ret;                        \
                         asm ("rev %0,%1"                \
-                        : "=r"(ret_) : "r"((u32)(x)));  \
-                        ret_;                           })
+                        : "=r"(ret) : "r"((u32)(x)));   \
+                        ret;                            })
 #  endif
 # elif defined(_MSC_VER)
 #  if _MSC_VER>=1300

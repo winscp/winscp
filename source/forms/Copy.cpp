@@ -9,7 +9,6 @@
 #include <VCLCommon.h>
 #include <CustomWinConfiguration.h>
 #include <Tools.h>
-#include <GUITools.h>
 
 #include "Copy.h"
 //---------------------------------------------------------------------------
@@ -23,11 +22,10 @@
 //---------------------------------------------------------------------------
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
-  TGUICopyParamType * Params, int Options, int CopyParamAttrs, TSessionData * SessionData,
-  int * OutputOptions)
+  TGUICopyParamType * Params, int Options, int CopyParamAttrs, int * OutputOptions)
 {
   bool Result;
-  TCopyDialog *CopyDialog = new TCopyDialog(Application, ToRemote, Move, FileList, Options, CopyParamAttrs, SessionData);
+  TCopyDialog *CopyDialog = new TCopyDialog(Application, ToRemote, Move, FileList, Options, CopyParamAttrs);
   try
   {
     if (FLAGSET(CopyParamAttrs, cpaNoTransferMode))
@@ -61,15 +59,14 @@ bool __fastcall DoCopyDialog(bool ToRemote,
 }
 //---------------------------------------------------------------------------
 __fastcall TCopyDialog::TCopyDialog(
-  TComponent* Owner, bool ToRemote, bool Move, TStrings * FileList, int Options,
-  int CopyParamAttrs, TSessionData * SessionData) : TForm(Owner)
+  TComponent* Owner, bool ToRemote, bool Move, TStrings * FileList, int Options, int CopyParamAttrs)
+        : TForm(Owner)
 {
   FToRemote = ToRemote;
   FMove = Move;
   FOptions = Options;
   FCopyParamAttrs = CopyParamAttrs;
   FFileList = FileList;
-  FSessionData = SessionData;
 
   FOutputOptions = 0;
 
@@ -136,26 +133,26 @@ void __fastcall TCopyDialog::AdjustTransferControls()
     }
   }
 
-  UnicodeString ImageName;
+  TImage * Image;
   UnicodeString ACaption;
   if (!FMove)
   {
     if (!FToRemote && FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
       ACaption = LoadStr(REMOTE_COPY_TITLE);
-      ImageName = L"Duplicate";
+      Image = CopyImage;
     }
     else
     {
       if (RemotePaths())
       {
         ACaption = LoadStr(COPY_COPY_TOREMOTE_CAPTION);
-        ImageName = L"Upload File";
+        Image = CopyUploadImage;
       }
       else
       {
         ACaption = LoadStr(COPY_COPY_TOLOCAL_CAPTION);
-        ImageName = L"Download File";
+        Image = CopyDownloadImage;
       }
     }
   }
@@ -164,29 +161,34 @@ void __fastcall TCopyDialog::AdjustTransferControls()
     if (!FToRemote && FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
       ACaption = LoadStr(COPY_MOVE_CAPTION);
-      ImageName = L"Move To";
+      Image = MoveImage;
     }
     else
     {
       if (RemotePaths())
       {
         ACaption = LoadStr(COPY_MOVE_TOREMOTE_CAPTION);
-        ImageName = L"Upload File Remove Original";
+        Image = MoveUploadImage;
       }
       else
       {
         ACaption = LoadStr(COPY_MOVE_TOLOCAL_CAPTION);
-        ImageName = L"Download File Remove Original";
+        Image = MoveDownloadImage;
       }
     }
   }
 
   Caption = FormatFormCaption(this, ACaption);
 
-  LoadDialogImage(Image, ImageName);
+  CopyImage->Visible = (Image == CopyImage) || (Image == NULL);
+  MoveImage->Visible = (Image == MoveImage);
+  CopyUploadImage->Visible = (Image == CopyUploadImage);
+  CopyDownloadImage->Visible = (Image == CopyDownloadImage);
+  MoveUploadImage->Visible = (Image == MoveUploadImage);
+  MoveDownloadImage->Visible = (Image == MoveDownloadImage);
 
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
-  DebugAssert(FLAGSET(FOptions, coAllowRemoteTransfer) || !RemoteTransfer);
+  assert(FLAGSET(FOptions, coAllowRemoteTransfer) || !RemoteTransfer);
 
   EnableControl(TransferSettingsButton, !RemoteTransfer);
   EnableControl(CopyParamGroup, !RemoteTransfer);
@@ -294,7 +296,7 @@ void __fastcall TCopyDialog::SetDirectory(UnicodeString value)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCopyDialog::GetDirectory()
 {
-  DebugAssert(DirectoryEdit);
+  assert(DirectoryEdit);
 
   UnicodeString Result = DirectoryEdit->Text;
   if (RemotePaths())
@@ -332,7 +334,10 @@ void __fastcall TCopyDialog::UpdateControls()
   }
 
   UnicodeString InfoStr = FCopyParams.GetInfoStr(L"; ", FCopyParamAttrs);
-  SetLabelHintPopup(CopyParamLabel, InfoStr);
+  CopyParamLabel->Caption = InfoStr;
+  CopyParamLabel->Hint = InfoStr;
+  CopyParamLabel->ShowHint =
+    (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
 
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
   EnableControl(QueueCheck2,
@@ -349,7 +354,7 @@ void __fastcall TCopyDialog::UpdateControls()
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::FormShow(TObject * /*Sender*/)
 {
-  DebugAssert(FFileList && (FFileList->Count > 0));
+  assert(FFileList && (FFileList->Count > 0));
   if (DirectoryEdit->Enabled && DirectoryEdit->Visible)
   {
     ActiveControl = DirectoryEdit;
@@ -431,15 +436,7 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
         DirectoryEdit->SelectAll();
         DirectoryEdit->SetFocus();
       }
-    }
-
-    if (CanClose && !IsFileNameMask(GetFileMask()) && (FFileList->Count > 1))
-    {
-      UnicodeString Message =
-        FormatMultiFilesToOneConfirmation(DirectoryEdit->Text, RemotePaths());
-      CanClose =
-        (MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaCancel);
-    }
+    };
 
     if (CanClose)
     {
@@ -451,7 +448,7 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
 void __fastcall TCopyDialog::LocalDirectoryBrowseButtonClick(
   TObject * /*Sender*/)
 {
-  DebugAssert(!FToRemote);
+  assert(!FToRemote);
   UnicodeString ADirectory;
   // if we are duplicating, we have remote path there
   if (!RemotePaths())
@@ -484,41 +481,22 @@ void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyDialog::GenerateCode()
-{
-  TFilesSelected FilesSelected = FLAGSET(FOptions, coAllFiles) ? fsAll : fsList;
-  DoGenerateTransferCodeDialog(FToRemote, FMove, FCopyParamAttrs, FSessionData, FilesSelected, FFileList, Directory, Params);
-}
-//---------------------------------------------------------------------------
 void __fastcall TCopyDialog::CopyParamClick(TObject * Sender)
 {
-  // Save including the preset-unspecific queue properties,
-  // so that they are preserved when assigning back later
-  TGUICopyParamType Param = Params;
+  TCopyParamType Param = Params;
   bool PrevSaveSettings = FSaveSettings;
-  int Result = CopyParamListPopupClick(Sender, Param, FPreset, FCopyParamAttrs, &FSaveSettings);
-  if (Result < 0)
+  if (CopyParamListPopupClick(Sender, Param, FPreset, FCopyParamAttrs, &FSaveSettings))
   {
-    if (DebugAlwaysTrue(Result == -cplGenerateCode))
-    {
-      GenerateCode();
-    }
+    Params = Param;
   }
   else
   {
-    if (Result > 0)
-    {
-      Params = Param;
-    }
-    else
-    {
-      UpdateControls();
-    }
+    UpdateControls();
+  }
 
-    if (PrevSaveSettings && !FSaveSettings)
-    {
-      NeverShowAgainCheck->Checked = false;
-    }
+  if (PrevSaveSettings && !FSaveSettings)
+  {
+    NeverShowAgainCheck->Checked = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -557,8 +535,7 @@ void __fastcall TCopyDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
     cplCustomize | AdditionalOptions |
       FLAGMASK(
           FLAGCLEAR(FOptions, coDisableSaveSettings) && !RemoteTransfer,
-        cplSaveSettings) |
-      FLAGMASK(FLAGCLEAR(FOutputOptions, cooRemoteTransfer) && FLAGCLEAR(FOptions, coTemp), cplGenerateCode),
+        cplSaveSettings),
     FCopyParamAttrs,
     FSaveSettings);
 }

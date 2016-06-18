@@ -37,8 +37,7 @@ static void sha512_mpint(SHA512_State * s, Bignum b)
     smemclr(lenbuf, sizeof(lenbuf));
 }
 
-static void getstring(const char **data, int *datalen,
-                      const char **p, int *length)
+static void getstring(char **data, int *datalen, char **p, int *length)
 {
     *p = NULL;
     if (*datalen < 4)
@@ -54,9 +53,9 @@ static void getstring(const char **data, int *datalen,
     *data += *length;
     *datalen -= *length;
 }
-static Bignum getmp(const char **data, int *datalen)
+static Bignum getmp(char **data, int *datalen)
 {
-    const char *p;
+    char *p;
     int length;
     Bignum b;
 
@@ -65,18 +64,18 @@ static Bignum getmp(const char **data, int *datalen)
 	return NULL;
     if (p[0] & 0x80)
 	return NULL;		       /* negative mp */
-    b = bignum_from_bytes((const unsigned char *)p, length);
+    b = bignum_from_bytes((unsigned char *)p, length);
     return b;
 }
 
-static Bignum get160(const char **data, int *datalen)
+static Bignum get160(char **data, int *datalen)
 {
     Bignum b;
 
     if (*datalen < 20)
         return NULL;
 
-    b = bignum_from_bytes((const unsigned char *)*data, 20);
+    b = bignum_from_bytes((unsigned char *)*data, 20);
     *data += 20;
     *datalen -= 20;
 
@@ -85,10 +84,9 @@ static Bignum get160(const char **data, int *datalen)
 
 static void dss_freekey(void *key);    /* forward reference */
 
-static void *dss_newkey(const struct ssh_signkey *self,
-                        const char *data, int len)
+static void *dss_newkey(char *data, int len)
 {
-    const char *p;
+    char *p;
     int slen;
     struct dss_key *dss;
 
@@ -191,11 +189,48 @@ static char *dss_fmtkey(void *key)
     return p;
 }
 
-static int dss_verifysig(void *key, const char *sig, int siglen,
-			 const char *data, int datalen)
+static char *dss_fingerprint(void *key)
 {
     struct dss_key *dss = (struct dss_key *) key;
-    const char *p;
+    struct MD5Context md5c;
+    unsigned char digest[16], lenbuf[4];
+    char buffer[16 * 3 + 40];
+    char *ret;
+    int numlen, i;
+
+    MD5Init(&md5c);
+    MD5Update(&md5c, (unsigned char *)"\0\0\0\7ssh-dss", 11);
+
+#define ADD_BIGNUM(bignum) \
+    numlen = (bignum_bitcount(bignum)+8)/8; \
+    PUT_32BIT(lenbuf, numlen); MD5Update(&md5c, lenbuf, 4); \
+    for (i = numlen; i-- ;) { \
+        unsigned char c = bignum_byte(bignum, i); \
+        MD5Update(&md5c, &c, 1); \
+    }
+    ADD_BIGNUM(dss->p);
+    ADD_BIGNUM(dss->q);
+    ADD_BIGNUM(dss->g);
+    ADD_BIGNUM(dss->y);
+#undef ADD_BIGNUM
+
+    MD5Final(digest, &md5c);
+
+    sprintf(buffer, "ssh-dss %d ", bignum_bitcount(dss->p));
+    for (i = 0; i < 16; i++)
+	sprintf(buffer + strlen(buffer), "%s%02x", i ? ":" : "",
+		digest[i]);
+    ret = snewn(strlen(buffer) + 1, char);
+    if (ret)
+	strcpy(ret, buffer);
+    return ret;
+}
+
+static int dss_verifysig(void *key, char *sig, int siglen,
+			 char *data, int datalen)
+{
+    struct dss_key *dss = (struct dss_key *) key;
+    char *p;
     int slen;
     char hash[20];
     Bignum r, s, w, gu1p, yu2p, gu1yu2p, u1, u2, sha, v;
@@ -367,19 +402,18 @@ static unsigned char *dss_private_blob(void *key, int *len)
     return blob;
 }
 
-static void *dss_createkey(const struct ssh_signkey *self,
-                           const unsigned char *pub_blob, int pub_len,
-			   const unsigned char *priv_blob, int priv_len)
+static void *dss_createkey(unsigned char *pub_blob, int pub_len,
+			   unsigned char *priv_blob, int priv_len)
 {
     struct dss_key *dss;
-    const char *pb = (const char *) priv_blob;
-    const char *hash;
+    char *pb = (char *) priv_blob;
+    char *hash;
     int hashlen;
     SHA_State s;
     unsigned char digest[20];
     Bignum ytest;
 
-    dss = dss_newkey(self, (char *) pub_blob, pub_len);
+    dss = dss_newkey((char *) pub_blob, pub_len);
     if (!dss)
         return NULL;
     dss->x = getmp(&pb, &priv_len);
@@ -419,10 +453,9 @@ static void *dss_createkey(const struct ssh_signkey *self,
     return dss;
 }
 
-static void *dss_openssh_createkey(const struct ssh_signkey *self,
-                                   const unsigned char **blob, int *len)
+static void *dss_openssh_createkey(unsigned char **blob, int *len)
 {
-    const char **b = (const char **) blob;
+    char **b = (char **) blob;
     struct dss_key *dss;
 
     dss = snew(struct dss_key);
@@ -471,13 +504,12 @@ static int dss_openssh_fmtkey(void *key, unsigned char *blob, int len)
     return bloblen;
 }
 
-static int dss_pubkey_bits(const struct ssh_signkey *self,
-                           const void *blob, int len)
+static int dss_pubkey_bits(void *blob, int len)
 {
     struct dss_key *dss;
     int ret;
 
-    dss = dss_newkey(self, (const char *) blob, len);
+    dss = dss_newkey((char *) blob, len);
     if (!dss)
         return -1;
     ret = bignum_bitcount(dss->p);
@@ -486,8 +518,7 @@ static int dss_pubkey_bits(const struct ssh_signkey *self,
     return ret;
 }
 
-Bignum *dss_gen_k(const char *id_string, Bignum modulus, Bignum private_key,
-                  unsigned char *digest, int digest_len)
+static unsigned char *dss_sign(void *key, char *data, int datalen, int *siglen)
 {
     /*
      * The basic DSS signing algorithm is:
@@ -560,16 +591,21 @@ Bignum *dss_gen_k(const char *id_string, Bignum modulus, Bignum private_key,
      * Computer Security Group for helping to argue out all the
      * fine details.
      */
+    struct dss_key *dss = (struct dss_key *) key;
     SHA512_State ss;
-    unsigned char digest512[64];
-    Bignum proto_k, k;
+    unsigned char digest[20], digest512[64];
+    Bignum proto_k, k, gkp, hash, kinv, hxr, r, s;
+    unsigned char *bytes;
+    int nbytes, i;
+
+    SHA_Simple(data, datalen, digest);
 
     /*
      * Hash some identifying text plus x.
      */
     SHA512_Init(&ss);
-    SHA512_Bytes(&ss, id_string, strlen(id_string) + 1);
-    sha512_mpint(&ss, private_key);
+    SHA512_Bytes(&ss, "DSA deterministic k generator", 30);
+    sha512_mpint(&ss, dss->x);
     SHA512_Final(&ss, digest512);
 
     /*
@@ -577,7 +613,7 @@ Bignum *dss_gen_k(const char *id_string, Bignum modulus, Bignum private_key,
      */
     SHA512_Init(&ss);
     SHA512_Bytes(&ss, digest512, sizeof(digest512));
-    SHA512_Bytes(&ss, digest, digest_len);
+    SHA512_Bytes(&ss, digest, sizeof(digest));
 
     while (1) {
         SHA512_State ss2 = ss;         /* structure copy */
@@ -589,38 +625,23 @@ Bignum *dss_gen_k(const char *id_string, Bignum modulus, Bignum private_key,
          * Now convert the result into a bignum, and reduce it mod q.
          */
         proto_k = bignum_from_bytes(digest512, 64);
-        k = bigmod(proto_k, modulus);
+        k = bigmod(proto_k, dss->q);
         freebn(proto_k);
-
-        if (bignum_cmp(k, One) != 0 && bignum_cmp(k, Zero) != 0) {
-            smemclr(&ss, sizeof(ss));
-            smemclr(digest512, sizeof(digest512));
-            return k;
+        kinv = modinv(k, dss->q);	       /* k^-1 mod q */
+        if (!kinv) {                           /* very unlikely */
+            freebn(k);
+            /* Perturb the hash to think of a different k. */
+            SHA512_Bytes(&ss, "x", 1);
+            /* Go round and try again. */
+            continue;
         }
 
-        /* Very unlikely we get here, but if so, k was unsuitable. */
-        freebn(k);
-        /* Perturb the hash to think of a different k. */
-        SHA512_Bytes(&ss, "x", 1);
-        /* Go round and try again. */
+        break;
     }
-}
 
-static unsigned char *dss_sign(void *key, const char *data, int datalen,
-                               int *siglen)
-{
-    struct dss_key *dss = (struct dss_key *) key;
-    Bignum k, gkp, hash, kinv, hxr, r, s;
-    unsigned char digest[20];
-    unsigned char *bytes;
-    int nbytes, i;
+    smemclr(&ss, sizeof(ss));
 
-    SHA_Simple(data, datalen, digest);
-
-    k = dss_gen_k("DSA deterministic k generator", dss->q, dss->x,
-                  digest, sizeof(digest));
-    kinv = modinv(k, dss->q);	       /* k^-1 mod q */
-    assert(kinv);
+    smemclr(digest512, sizeof(digest512));
 
     /*
      * Now we have k, so just go ahead and compute the signature.
@@ -670,11 +691,10 @@ const struct ssh_signkey ssh_dss = {
     dss_createkey,
     dss_openssh_createkey,
     dss_openssh_fmtkey,
-    5 /* p,q,g,y,x */,
     dss_pubkey_bits,
+    dss_fingerprint,
     dss_verifysig,
     dss_sign,
     "ssh-dss",
-    "dss",
-    NULL,
+    "dss"
 };

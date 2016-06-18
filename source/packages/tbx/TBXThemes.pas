@@ -642,6 +642,8 @@ begin
 end;
 
 function GetTBXDockedCloseButtonRect(const ToolbarInfo: TTBXToolbarInfo): TRect;
+const
+  DragHandleSizes: array [Boolean, 0..2] of Integer = ((9, 0, 6), (14, 14, 14));
 var
   X, Y, Z: Integer;
 begin
@@ -669,7 +671,7 @@ begin
   with ToolbarInfo do
   begin
     if AllowDrag then
-      Result := MulDiv(DragHandleSizes[(CloseButtonState and CDBS_VISIBLE) <> 0, DragHandleStyle], Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI)
+      Result := DragHandleSizes[(CloseButtonState and CDBS_VISIBLE) <> 0, DragHandleStyle]
     else
       Result := 0;
   end;

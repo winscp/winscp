@@ -97,12 +97,12 @@ bool GetExternalEncryptedPassword(RawByteString Encrypted, RawByteString & Passw
     (SimpleDecryptNextChar(Encrypted) == PWALG_SIMPLE_EXTERNAL);
   if (Result)
   {
-    Password = HexToBytes(UTF8ToString(Encrypted));
+    Password = HexToBytes(UnicodeString(UTF8String(Encrypted.c_str(), Encrypted.Length())));
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, UnicodeString & Error)
+bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len)
 {
   bool Result = false;
 
@@ -156,10 +156,6 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, U
         {
           // Windows thinks the certificate is valid.
           Result = (PolicyStatus.dwError == S_OK);
-          if (!Result)
-          {
-            Error = FORMAT(L"Error: %x, Chain index: %d, Element index: %d", (PolicyStatus.dwError, PolicyStatus.lChainIndex, PolicyStatus.lElementIndex));
-          }
         }
 
         CertFreeCertificateChain(ChainContext);

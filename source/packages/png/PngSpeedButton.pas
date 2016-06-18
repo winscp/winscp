@@ -79,8 +79,6 @@ begin
       Caption, Layout, Margin, Spacing, GlyphPos, TextPos, DrawTextBiDiModeFlags(0));
     PaintRect := Bounds(GlyphPos.X, GlyphPos.Y, FPngImage.Width, FPngImage.Height);
 
-    if csLoading in ComponentState then Exit;
-
     if Enabled then
       DrawPNG(FPngImage, Canvas, PaintRect, [])
     else

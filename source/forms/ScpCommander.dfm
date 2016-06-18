@@ -36,7 +36,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       CloseButton = False
       Images = GlyphsModule.ExplorerImages
       MenuBar = True
-      Options = [tboNoAutoHint, tboShowHint]
       ShrinkMode = tbsmWrap
       Stretch = True
       TabOrder = 4
@@ -170,8 +169,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem110: TTBXItem
           Action = NonVisualDataModule.SelectAllAction
         end
-        object TBXSeparatorItem60: TTBXSeparatorItem
-        end
         object TBXItem111: TTBXItem
           Action = NonVisualDataModule.InvertSelectionAction
         end
@@ -180,14 +177,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXItem27: TTBXItem
           Action = NonVisualDataModule.RestoreSelectionAction
-        end
-        object TBXSeparatorItem61: TTBXSeparatorItem
-        end
-        object TBXItem212: TTBXItem
-          Action = NonVisualDataModule.SelectSameExtAction
-        end
-        object TBXItem213: TTBXItem
-          Action = NonVisualDataModule.UnselectSameExtAction
         end
       end
       object TBXSubmenuItem5: TTBXSubmenuItem
@@ -213,30 +202,22 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem25: TTBXItem
           Action = NonVisualDataModule.CurrentOpenAction
         end
-        object TBXItem26: TTBXSubmenuItem
+        object TBXItem26: TTBXItem
           Action = NonVisualDataModule.CurrentEditAction
-          DropdownCombo = True
-          OnPopup = EditMenuItemPopup
+        end
+        object TBXSubmenuItem25: TTBXSubmenuItem
+          Action = NonVisualDataModule.CurrentEditAlternative2Action
         end
         object TBXItem29: TTBXItem
           Action = NonVisualDataModule.CurrentAddEditLinkAction
         end
         object TBXSeparatorItem7: TTBXSeparatorItem
         end
-        object CurrentCopyItem: TTBXSubmenuItem
+        object CurrentCopyItem: TTBXItem
           Action = NonVisualDataModule.RemoteCopyAction
-          DropdownCombo = True
-          object CurrentCopyNonQueueItem: TTBXItem
-            Action = NonVisualDataModule.RemoteCopyNonQueueAction
-          end
-          object CurrentCopyQueueItem: TTBXItem
-            Action = NonVisualDataModule.RemoteCopyQueueAction
-          end
-          object TBXSeparatorItem51: TTBXSeparatorItem
-          end
-          object CurrentMoveItem: TTBXItem
-            Action = NonVisualDataModule.RemoteMoveAction
-          end
+        end
+        object CurrentMoveItem: TTBXItem
+          Action = NonVisualDataModule.RemoteMoveAction
         end
         object TBXItem31: TTBXItem
           Action = NonVisualDataModule.RemoteCopyToAction
@@ -256,7 +237,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXSeparatorItem8: TTBXSeparatorItem
         end
         object CustomCommandsMenu: TTBXSubmenuItem
-          Action = NonVisualDataModule.CustomCommandsFileAction
+          Action = NonVisualDataModule.CustomCommandsAction
         end
         object TBXSubmenuItem6: TTBXSubmenuItem
           Caption = '&File Names'
@@ -272,17 +253,7 @@ inherited ScpCommanderForm: TScpCommanderForm
             Action = NonVisualDataModule.FullFileListToClipboardAction
           end
           object TBXItem40: TTBXItem
-            Action = NonVisualDataModule.FileGenerateUrlAction2
-          end
-        end
-        object TBXSubmenuItem25: TTBXSubmenuItem
-          Caption = '&Locking'
-          Hint = 'Manage file locks'
-          object TBXItem214: TTBXItem
-            Action = NonVisualDataModule.LockAction
-          end
-          object TBXItem216: TTBXItem
-            Action = NonVisualDataModule.UnlockAction
+            Action = NonVisualDataModule.FileGenerateUrlAction
           end
         end
         object TBXSeparatorItem9: TTBXSeparatorItem
@@ -379,9 +350,6 @@ inherited ScpCommanderForm: TScpCommanderForm
             end
           end
         end
-        object TBXSubmenuItem28: TTBXSubmenuItem
-          Action = NonVisualDataModule.CustomCommandsNonFileAction
-        end
         object TBXSeparatorItem13: TTBXSeparatorItem
         end
         object TBXItem54: TTBXItem
@@ -423,7 +391,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.FileSystemInfoAction
         end
         object TBXItem135: TTBXItem
-          Action = NonVisualDataModule.SessionGenerateUrlAction2
+          Action = NonVisualDataModule.SessionGenerateUrlAction
         end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
@@ -584,14 +552,14 @@ inherited ScpCommanderForm: TScpCommanderForm
               RadioItem = True
             end
             object TBXItem223: TTBXItem
-              Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction2
+              Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
               RadioItem = True
             end
             object TBXItem141: TTBXItem
-              Action = NonVisualDataModule.QueueSuspendOnceEmptyAction2
+              Action = NonVisualDataModule.QueueSuspendOnceEmptyAction
             end
             object TBXItem224: TTBXItem
-              Action = NonVisualDataModule.QueueShutDownOnceEmptyAction2
+              Action = NonVisualDataModule.QueueShutDownOnceEmptyAction
               RadioItem = True
             end
           end
@@ -747,9 +715,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem116: TTBXItem
           Action = NonVisualDataModule.TableOfContentsAction
         end
-        object TBXItem217: TTBXItem
-          Action = NonVisualDataModule.TipsAction
-        end
         object TBXSeparatorItem30: TTBXSeparatorItem
         end
         object TBXItem117: TTBXItem
@@ -785,7 +750,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       DockPos = 0
       DockRow = 2
       Images = GlyphsModule.ExplorerImages
-      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 1
@@ -822,7 +786,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       DockPos = 0
       DockRow = 1
       Images = GlyphsModule.ExplorerImages
-      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
@@ -854,7 +817,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       DockPos = -8
       DockRow = 5
       Images = GlyphsModule.ExplorerImages
-      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 2
@@ -895,7 +857,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       DockPos = 0
       DockRow = 6
       Images = GlyphsModule.ExplorerImages
-      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 3
@@ -930,7 +891,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       DockPos = -7
       DockRow = 7
       Images = GlyphsModule.ExplorerImages
-      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 5
@@ -966,13 +926,12 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     object TransferToolbar: TTBXToolbar
-      Left = 45
+      Left = 44
       Top = 129
       Caption = 'Transfer Settings'
       DockPos = 44
       DockRow = 7
       Images = GlyphsModule.ExplorerImages
-      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = True
       TabOrder = 6
@@ -1002,7 +961,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 300
+      Left = 299
       Top = 129
       Caption = 'Custom Commands'
       DockPos = 168
@@ -1060,7 +1019,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           TextTruncation = twEndEllipsis
         end
         item
-          Alignment = taRightJustify
+          Alignment = taCenter
           Framed = False
           Hint = 'Click to show hidden files'
           MaxSize = 120
@@ -1070,7 +1029,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           TextTruncation = twEndEllipsis
         end
         item
-          Alignment = taRightJustify
+          Alignment = taCenter
           Framed = False
           Hint = 'Click to modify or clear the filter'
           MaxSize = 120
@@ -1117,7 +1076,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         DockPos = -6
         DockRow = 1
         Images = GlyphsModule.ExplorerImages
-        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
@@ -1131,13 +1089,12 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object RemoteNavigationToolbar: TTBXToolbar
-        Left = 80
+        Left = 70
         Top = 27
         Caption = 'Remote Navigation'
-        DockPos = 72
+        DockPos = 68
         DockRow = 1
         Images = GlyphsModule.ExplorerImages
-        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
@@ -1173,7 +1130,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         DockMode = dmCannotFloat
         DockPos = 0
         Images = GlyphsModule.ExplorerImages
-        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         Stretch = True
@@ -1200,39 +1156,27 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object RemoteFileToolbar: TTBXToolbar
-        Left = 0
+        Left = 1
         Top = 53
         Caption = 'Remote Files'
         DockPos = 1
         DockRow = 2
         Images = GlyphsModule.ExplorerImages
-        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
-        object TBXItem238: TTBXSubmenuItem
+        object TBXItem238: TTBXItem
           Action = NonVisualDataModule.RemoteCopyAction
           DisplayMode = nbdmImageAndText
-          DropdownCombo = True
-          object TBXItem143: TTBXItem
-            Action = NonVisualDataModule.RemoteCopyNonQueueAction
-          end
-          object TBXItem200: TTBXItem
-            Action = NonVisualDataModule.RemoteCopyQueueAction
-          end
-          object TBXSeparatorItem59: TTBXSeparatorItem
-          end
-          object TBXItem239: TTBXItem
-            Action = NonVisualDataModule.RemoteMoveAction
-          end
+        end
+        object TBXItem239: TTBXItem
+          Action = NonVisualDataModule.RemoteMoveAction
         end
         object TBXSeparatorItem55: TTBXSeparatorItem
         end
-        object TBXItem242: TTBXSubmenuItem
+        object TBXItem242: TTBXItem
           Action = NonVisualDataModule.RemoteEditAction
           DisplayMode = nbdmImageAndText
-          DropdownCombo = True
-          OnPopup = EditMenuItemPopup
         end
         object TBXItem241: TTBXItem
           Action = NonVisualDataModule.RemoteDeleteAction
@@ -1254,13 +1198,12 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object RemoteSelectionToolbar: TTBXToolbar
-        Left = 350
+        Left = 347
         Top = 53
         Caption = 'Remote Selection'
         DockPos = 347
         DockRow = 2
         Images = GlyphsModule.ExplorerImages
-        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
@@ -1306,7 +1249,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Top = 156
     Width = 829
   end
-  object LocalPanel: TPanel [6]
+  object LocalPanel: TPanel
     Left = 0
     Top = 177
     Width = 395
@@ -1363,7 +1306,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           TextTruncation = twEndEllipsis
         end
         item
-          Alignment = taRightJustify
+          Alignment = taCenter
           Framed = False
           Hint = 'Click to show hidden files'
           MaxSize = 120
@@ -1373,7 +1316,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           TextTruncation = twEndEllipsis
         end
         item
-          Alignment = taRightJustify
+          Alignment = taCenter
           Framed = False
           Hint = 'Click to modify or clear the filter'
           MaxSize = 120
@@ -1428,7 +1371,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnHistoryChange = DirViewHistoryChange
       OnHistoryGo = DirViewHistoryGo
       OnPathChange = LocalDirViewPathChange
-      OnBusy = DirViewBusy
     end
     object LocalTopDock: TTBXDock
       Left = 0
@@ -1444,7 +1386,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         DockPos = -6
         DockRow = 1
         Images = GlyphsModule.ExplorerImages
-        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
@@ -1458,13 +1399,12 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object LocalNavigationToolbar: TTBXToolbar
-        Left = 80
+        Left = 70
         Top = 27
         Caption = 'Local Navigation'
         DockPos = 68
         DockRow = 1
         Images = GlyphsModule.ExplorerImages
-        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
@@ -1494,7 +1434,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         DockMode = dmCannotFloat
         DockPos = 0
         Images = GlyphsModule.ExplorerImages
-        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         Stretch = True
@@ -1525,33 +1464,21 @@ inherited ScpCommanderForm: TScpCommanderForm
         DockPos = 0
         DockRow = 2
         Images = GlyphsModule.ExplorerImages
-        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
-        object TBXItem231: TTBXSubmenuItem
+        object TBXItem231: TTBXItem
           Action = NonVisualDataModule.LocalCopyAction
           DisplayMode = nbdmImageAndText
-          DropdownCombo = True
-          object TBXItem144: TTBXItem
-            Action = NonVisualDataModule.LocalCopyNonQueueAction
-          end
-          object TBXItem174: TTBXItem
-            Action = NonVisualDataModule.LocalCopyQueueAction
-          end
-          object TBXSeparatorItem58: TTBXSeparatorItem
-          end
-          object TBXItem232: TTBXItem
-            Action = NonVisualDataModule.LocalMoveAction
-          end
+        end
+        object TBXItem232: TTBXItem
+          Action = NonVisualDataModule.LocalMoveAction
         end
         object TBXSeparatorItem54: TTBXSeparatorItem
         end
-        object TBXItem235: TTBXSubmenuItem
+        object TBXItem235: TTBXItem
           Action = NonVisualDataModule.LocalEditAction
           DisplayMode = nbdmImageAndText
-          DropdownCombo = True
-          OnPopup = EditMenuItemPopup
         end
         object TBXItem234: TTBXItem
           Action = NonVisualDataModule.LocalDeleteAction
@@ -1579,7 +1506,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         DockPos = 329
         DockRow = 2
         Images = GlyphsModule.ExplorerImages
-        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
@@ -1628,7 +1554,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Position = dpBottom
     end
   end
-  object BottomDock: TTBXDock [7]
+  object BottomDock: TTBXDock
     Left = 0
     Top = 475
     Width = 829
@@ -1642,7 +1568,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       DockPos = 0
       DockRow = 1
       Images = GlyphsModule.ExplorerImages
-      Options = [tboShowHint]
       ParentShowHint = False
       ShowHint = False
       Stretch = True
@@ -1711,7 +1636,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
   end
-  object StatusBar: TTBXStatusBar [8]
+  object StatusBar: TTBXStatusBar
     Left = 0
     Top = 648
     Width = 829
@@ -1759,7 +1684,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     UseSystemFont = False
     OnPanelDblClick = StatusBarPanelDblClick
   end
-  object QueueSeparatorPanel: TPanel [9]
+  object QueueSeparatorPanel: TPanel
     Left = 0
     Top = 528
     Width = 829
@@ -1768,9 +1693,5 @@ inherited ScpCommanderForm: TScpCommanderForm
     BevelEdges = [beBottom]
     BevelKind = bkFlat
     TabOrder = 7
-  end
-  inherited ApplicationEvents: TApplicationEvents
-    Left = 72
-    Top = 352
   end
 end

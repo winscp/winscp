@@ -13,3 +13,4 @@
 {$DEFINE NEWCOLORPROPERTY}     // register alternative color property editor
 
 {$DEFINE NARROWCOMBOBUTTON}
+

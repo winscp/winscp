@@ -87,8 +87,6 @@ struct TNeedPassRequestData
 //---------------------------------------------------------------------------
 class t_server;
 class TFTPServerCapabilities;
-typedef struct x509_st X509;
-typedef struct evp_pkey_st EVP_PKEY;
 //---------------------------------------------------------------------------
 class TFileZillaIntf : public CFileZillaTools
 {
@@ -101,6 +99,7 @@ public:
     LOG_ERROR = 1,
     LOG_COMMAND = 2,
     LOG_REPLY = 3,
+    LOG_LIST = 4,
     LOG_APIERROR = 5,
     LOG_WARNING = 6,
     LOG_PROGRESS = 7,
@@ -117,10 +116,12 @@ public:
   enum
   {
     FILEEXISTS_OVERWRITE = 0,
-    FILEEXISTS_RESUME = 1,
-    FILEEXISTS_RENAME = 2,
-    FILEEXISTS_SKIP = 3,
-    FILEEXISTS_COMPLETE = 4,
+    // 1 is FILEEXISTS_OVERWRITEIFNEWER what we do not use
+    FILEEXISTS_RESUME = 2,
+    FILEEXISTS_RENAME = 3,
+    FILEEXISTS_SKIP = 4,
+    // 5 is FILEEXISTS_RESUME_ASKONFAIL what we do not use
+    FILEEXISTS_COMPLETE = 6,
   };
 
   enum
@@ -172,14 +173,16 @@ public:
   bool __fastcall Cancel();
 
   bool __fastcall Connect(const wchar_t * Host, int Port, const wchar_t * User,
-    const wchar_t * Pass, const wchar_t * Account,
+    const wchar_t * Pass, const wchar_t * Account, bool FwByPass,
     const wchar_t * Path, int ServerType, int Pasv, int TimeZoneOffset, int UTF8,
-    int iForcePasvIp, int iUseMlsd,
-    X509 * Certificate, EVP_PKEY * PrivateKey);
+    int iForcePasvIp, int iUseMlsd);
   bool __fastcall Close(bool AllowBusy);
 
+  bool __fastcall List();
   bool __fastcall List(const wchar_t * Path);
+#ifdef MPEXT
   bool __fastcall ListFile(const wchar_t * FileName, const wchar_t * APath);
+#endif
 
   bool __fastcall CustomCommand(const wchar_t * Command);
 
@@ -216,7 +219,8 @@ protected:
   virtual bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries,
     unsigned int Count) = 0;
   virtual bool __fastcall HandleTransferStatus(bool Valid, __int64 TransferSize,
-    __int64 Bytes, bool FileTransfer) = 0;
+    __int64 Bytes, int Percent, int TimeElapsed, int TimeLeft, int TransferRate,
+    bool FileTransfer) = 0;
   virtual bool __fastcall HandleReply(int Command, unsigned int Reply) = 0;
   virtual bool __fastcall HandleCapabilities(TFTPServerCapabilities * ServerCapabilities) = 0;
   virtual bool __fastcall CheckError(int ReturnCode, const wchar_t * Context);
@@ -228,6 +232,8 @@ private:
   TFileZillaIntern * FIntern;
   t_server * FServer;
 };
+//---------------------------------------------------------------------------
+#ifdef MPEXT
 //---------------------------------------------------------------------------
 enum ftp_capabilities_t
 {
@@ -285,5 +291,6 @@ protected:
 
   std::map<ftp_capability_names_t, t_cap> FCapabilityMap;
 };
+#endif
 //---------------------------------------------------------------------------
 #endif // FileZillaIntfH

@@ -1,4 +1,6 @@
-﻿namespace WinSCP
+﻿using System.Reflection;
+
+namespace WinSCP
 {
     internal class CallstackAndLock : Callstack
     {

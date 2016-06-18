@@ -84,7 +84,6 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner)
 
   HotTrackLabel(CopyParamLabel);
   CopyParamListButton(TransferSettingsButton);
-  LoadDialogImage(Image, L"Keep remote directory up to date");
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
 }
@@ -154,7 +153,10 @@ void __fastcall TSynchronizeDialog::UpdateControls()
     OptionsGroup->Enabled && FLAGSET(FOptions, soAllowSelectedOnly));
 
   UnicodeString InfoStr = CopyParams.GetInfoStr(L"; ", ActualCopyParamAttrs());
-  SetLabelHintPopup(CopyParamLabel, InfoStr);
+  CopyParamLabel->Caption = InfoStr;
+  CopyParamLabel->Hint = InfoStr;
+  CopyParamLabel->ShowHint =
+    (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
 
   TransferSettingsButton->Style =
     FLAGCLEAR(Options, soDoNotUsePresets) ?
@@ -282,7 +284,7 @@ void __fastcall TSynchronizeDialog::DoStartStop(bool Start, bool Synchronize)
       FLAGMASK(Synchronize, soSynchronize);
     if (Start)
     {
-      DebugAssert(*FOnFeedSynchronizeError == NULL);
+      assert(*FOnFeedSynchronizeError == NULL);
       *FOnFeedSynchronizeError =
         (FLAGSET(SParams.Options, soContinueOnError) ? &FeedSynchronizeError : TFeedSynchronizeError(NULL));
       delete FSynchronizeOptions;
@@ -300,7 +302,7 @@ void __fastcall TSynchronizeDialog::DoStartStop(bool Start, bool Synchronize)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::Dispatch(void * AMessage)
 {
-  DebugAssert(AMessage != NULL);
+  assert(AMessage != NULL);
   TMessage & Message = *reinterpret_cast<TMessage *>(AMessage);
   if ((Message.Msg == WM_USER_STOP) && FAbort)
   {
@@ -421,7 +423,7 @@ void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
 
   if (Continue)
   {
-    DebugAssert(!FSynchronizing);
+    assert(!FSynchronizing);
 
     LocalDirectoryEdit->SaveToHistory();
     CustomWinConfiguration->History[L"LocalDirectory"] = LocalDirectoryEdit->Items;
@@ -547,12 +549,12 @@ int __fastcall TSynchronizeDialog::ActualCopyParamAttrs()
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::CopyParamClick(TObject * Sender)
 {
-  DebugAssert(FLAGCLEAR(FOptions, soDoNotUsePresets));
+  assert(FLAGCLEAR(FOptions, soDoNotUsePresets));
   // PreserveTime is forced for some settings, but avoid hard-setting it until
   // user really confirms it on custom dialog
   TCopyParamType ACopyParams = CopyParams;
   if (CopyParamListPopupClick(Sender, ACopyParams, FPreset,
-        ActualCopyParamAttrs()) > 0)
+        ActualCopyParamAttrs()))
   {
     FCopyParams = ACopyParams;
     UpdateControls();

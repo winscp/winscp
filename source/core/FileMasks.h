@@ -121,7 +121,6 @@ private:
 };
 //---------------------------------------------------------------------------
 UnicodeString __fastcall MaskFileName(UnicodeString FileName, const UnicodeString Mask);
-bool __fastcall IsFileNameMask(const UnicodeString & Mask);
 bool __fastcall IsEffectiveFileNameMask(const UnicodeString & Mask);
 UnicodeString __fastcall DelimitFileNameMask(UnicodeString Mask);
 //---------------------------------------------------------------------------
@@ -151,8 +150,7 @@ protected:
     int Index, int Len, wchar_t PatternCmd, void * Arg);
 
   virtual int __fastcall PatternLen(const UnicodeString & Command, int Index) = 0;
-  virtual void __fastcall PatternHint(int Index, const UnicodeString & Pattern);
-  virtual bool __fastcall PatternReplacement(int Index, const UnicodeString & Pattern,
+  virtual bool __fastcall PatternReplacement(const UnicodeString & Pattern,
     UnicodeString & Replacement, bool & Delimit) = 0;
   virtual void __fastcall DelimitReplacement(UnicodeString & Replacement, wchar_t Quote);
 };
@@ -163,16 +161,13 @@ public:
   TInteractiveCustomCommand(TCustomCommand * ChildCustomCommand);
 
 protected:
-  virtual void __fastcall Prompt(int Index, const UnicodeString & Prompt,
+  virtual void __fastcall Prompt(const UnicodeString & Prompt,
     UnicodeString & Value);
   virtual void __fastcall Execute(const UnicodeString & Command,
     UnicodeString & Value);
   virtual int __fastcall PatternLen(const UnicodeString & Command, int Index);
-  virtual bool __fastcall PatternReplacement(int Index, const UnicodeString & Pattern,
+  virtual bool __fastcall PatternReplacement(const UnicodeString & Pattern,
     UnicodeString & Replacement, bool & Delimit);
-  void __fastcall ParsePromptPattern(
-    const UnicodeString & Pattern, UnicodeString & Prompt, UnicodeString & Default, bool & Delimit);
-  bool __fastcall IsPromptPattern(const UnicodeString & Pattern);
 
 private:
   TCustomCommand * FChildCustomCommand;
@@ -220,7 +215,7 @@ public:
 
 protected:
   virtual int __fastcall PatternLen(const UnicodeString & Command, int Index);
-  virtual bool __fastcall PatternReplacement(int Index, const UnicodeString & Pattern,
+  virtual bool __fastcall PatternReplacement(const UnicodeString & Pattern,
     UnicodeString & Replacement, bool & Delimit);
 
 private:

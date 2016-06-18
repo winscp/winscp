@@ -77,7 +77,7 @@ namespace WinSCP
 
         private bool DoRead()
         {
-            int interval = 50;
+            int interval = 125;
             bool result;
 
             do
@@ -120,10 +120,6 @@ namespace WinSCP
                 {
                     Cleanup();
 
-                    // We hope this code is not needed anymore.
-                    // keeping it just in case the XmlLogReader by passes
-                    // our override of PatientFileStream.Read uing other read method.
-#if !DEBUG
                     if (!_closed)
                     {
                         // If log was not closed, it is likely the XML is not well-formed
@@ -133,7 +129,6 @@ namespace WinSCP
                         result = false;
                     }
                     else
-#endif
                     {
                         // check if the the root cause was session abort
                         Session.CheckForTimeout();
@@ -170,7 +165,7 @@ namespace WinSCP
                 {
                     // alterative to File.ReadAllText with write-sharing
                     // (note that the StreamReader disposes the Stream)
-                    using (StreamReader reader = new StreamReader(new FileStream(Session.XmlLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), Encoding.UTF8))
+                    using (StreamReader reader = new StreamReader(OpenLogFileWithWriteSharing(), Encoding.UTF8))
                     {
                         string contents = reader.ReadToEnd();
                         if ((_logged == null) || (_logged != contents))
@@ -204,7 +199,7 @@ namespace WinSCP
                 // First try to open file without write sharing.
                 // This fails, if WinSCP is still writing to the log file.
                 // This is done only as a way to detect that log file is not complete yet.
-                _stream = new PatientFileStream(Session, Session.XmlLogPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                _stream = File.Open(Session.XmlLogPath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 _closed = true;
                 LogContents();
             }
@@ -212,7 +207,7 @@ namespace WinSCP
             {
                 Session.Logger.WriteLine("Opening log with write sharing");
                 // If log file is still being written to, open it with write sharing
-                _stream = new PatientFileStream(Session, Session.XmlLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                _stream = OpenLogFileWithWriteSharing();
                 _closed = false;
             }
 
@@ -232,6 +227,11 @@ namespace WinSCP
             }
         }
 
+        private FileStream OpenLogFileWithWriteSharing()
+        {
+            return File.Open(Session.XmlLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        }
+
         internal override XmlReader Reader
         {
             get
@@ -246,7 +246,7 @@ namespace WinSCP
 
         private int _position;
         private XmlReader _reader;
-        private PatientFileStream _stream;
+        private FileStream _stream;
         private bool _closed;
         private string _logged;
     }

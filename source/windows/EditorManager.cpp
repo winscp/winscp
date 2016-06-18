@@ -41,7 +41,7 @@ __fastcall TEditorManager::~TEditorManager()
     TFileData * FileData = &FFiles[Index];
 
     // pending should be only external editors and files being uploaded
-    DebugAssert(FileData->Closed || FileData->External);
+    assert(FileData->Closed || FileData->External);
 
     if (!FileData->Closed)
     {
@@ -339,8 +339,8 @@ void __fastcall TEditorManager::FileChanged(TObject * Token)
 {
   int Index = FindFile(Token);
 
-  DebugAssert(Index >= 0);
-  DebugAssert(!FFiles[Index].External);
+  assert(Index >= 0);
+  assert(!FFiles[Index].External);
 
   CheckFileChange(Index, true);
 }
@@ -349,9 +349,9 @@ void __fastcall TEditorManager::FileReload(TObject * Token)
 {
   int Index = FindFile(Token);
 
-  DebugAssert(Index >= 0);
+  assert(Index >= 0);
   TFileData * FileData = &FFiles[Index];
-  DebugAssert(!FileData->External);
+  assert(!FileData->External);
 
   OnFileReload(FileData->FileName, FileData->Data);
   FileAge(FileData->FileName, FileData->Timestamp);
@@ -361,8 +361,8 @@ void __fastcall TEditorManager::FileClosed(TObject * Token, bool Forced)
 {
   int Index = FindFile(Token);
 
-  DebugAssert(Index >= 0);
-  DebugAssert(!FFiles[Index].External);
+  assert(Index >= 0);
+  assert(!FFiles[Index].External);
 
   CheckFileChange(Index, false);
   CloseFile(Index, false, !Forced);
@@ -389,7 +389,7 @@ void __fastcall TEditorManager::UploadComplete(int Index)
 {
   TFileData * FileData = &FFiles[Index];
 
-  DebugAssert(FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE);
+  assert(FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE);
 
   CloseHandle(FileData->UploadCompleteEvent);
   FUploadCompleteEvents.erase(std::find(FUploadCompleteEvents.begin(),
@@ -419,7 +419,7 @@ void __fastcall TEditorManager::CloseProcess(int Index)
   TFileData * FileData = &FFiles[Index];
 
   FProcesses.erase(std::find(FProcesses.begin(), FProcesses.end(), FileData->Process));
-  DebugCheck(CloseHandle(FileData->Process));
+  CHECK(CloseHandle(FileData->Process));
   FileData->Process = INVALID_HANDLE_VALUE;
 }
 //---------------------------------------------------------------------------
@@ -442,7 +442,7 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
 
   if (FileData->Monitor != INVALID_HANDLE_VALUE)
   {
-    DebugCheck(FindCloseChangeNotification(FileData->Monitor));
+    CHECK(FindCloseChangeNotification(FileData->Monitor));
     FMonitors.erase(std::find(FMonitors.begin(), FMonitors.end(), FileData->Monitor));
     FileData->Monitor = INVALID_HANDLE_VALUE;
   }
@@ -498,7 +498,7 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
 
     try
     {
-      DebugAssert(OnFileChange != NULL);
+      assert(OnFileChange != NULL);
       OnFileChange(FileData->FileName, FileData->Data,
         FileData->UploadCompleteEvent);
     }
@@ -547,7 +547,7 @@ int __fastcall TEditorManager::WaitFor(unsigned int Count, const HANDLE * Handle
     else if (WaitResult != WAIT_TIMEOUT)
     {
       // WAIT_OBJECT_0 is zero
-      DebugAssert(WaitResult < WAIT_OBJECT_0 + Count);
+      assert(WaitResult < WAIT_OBJECT_0 + Count);
 
       HANDLE Handle = Handles[WaitResult - WAIT_OBJECT_0];
 
@@ -576,7 +576,7 @@ int __fastcall TEditorManager::WaitFor(unsigned int Count, const HANDLE * Handle
           break;
         }
       }
-      DebugAssert(Result >= 0);
+      assert(Result >= 0);
     }
 
     Start += C;

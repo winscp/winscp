@@ -1,6 +1,5 @@
 [CustomMessages]
 LanguageISOCode=en
-LocalLanguageName=English
 
 ApplicationComponent=WinSCP application
 ShellExtComponent=Drag & drop shell extension (allows direct downloads, may require restart)
@@ -27,11 +26,11 @@ Launch=Launch &WinSCP
 OpenGettingStarted=Open &Getting started page
 
 HelpButton=&Help
-ProgramComment2=WinSCP: SFTP, FTP, WebDAV and SCP client
+ProgramComment=SFTP, FTP and SCP client
 
 ; WinSCP Runtime
 Recommended=%1 (recommended)
-SetupTypeTitle=Setup Type
+SetupTypeTitle=Setup type
 SetupTypePrompt=What type of setup do you want?
 TypicalType=&Typical installation
 TypicalType1=- installs to default destination
@@ -47,7 +46,7 @@ CustomType1=- allows full selection of destination, components and features
 CustomUpgradeType=&Custom upgrade or new installation
 CustomUpgradeType1=- allows custom upgrade of existing installation or
 CustomUpgradeType2=- new installation to different destination
-UserSettingsTitle=Initial User Settings
+UserSettingsTitle=Initial user settings
 UserSettingsPrompt=Please, select your preferred user interface options.
 UserInterfaceStyle=User interface style
 NortonCommanderInterfaceC=&Commander
@@ -67,7 +66,3 @@ Currency=USD
 ImportSites=Looking for sites to import...
 ApplicationsFoundDragExt=The following applications have loaded WinSCP Drag & drop shell extension that needs to be updated by Setup. It is recommended that you allow Setup to automatically close these applications. After the installation has completed, Setup will attempt to restart the applications. You can restart your computer later instead, if you do not need to use the extension.
 AcceptButton=&Accept >
-IncompleteTranslation=You are about to use an incomplete translation. It is completed by %1%% only.%n%nUntranslated parts of the user interface will be shown in their original English version.%n%nVisit WinSCP website at winscp.net to check, if newer version of the translation is available.
-
-[CustomOptions]
-TranslationCompleteness=100

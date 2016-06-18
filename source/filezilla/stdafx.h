@@ -4,10 +4,20 @@
 //---------------------------------------------------------------------------
 #define _int64 __int64
 //---------------------------------------------------------------------------
+#define MPEXT
 #define MPEXT_NO_ZLIB
 #define MPEXT_NO_GSS
+#define MPEXT_NO_SFTP
+#define MPEXT_NO_IDENT
+#define MPEXT_NO_CACHE
+#define MPEXT_NO_SPEED_LIM_RULES
 #define _AFX_ENABLE_INLINES
 #define _AFX_NOFORCE_LIBS
+#define _MPT(T) _T(T)
+#define _MPAT(T) T
+//---------------------------------------------------------------------------
+#define GetOption(OPTION) GetInstanceOption(this->m_pApiLogParent, OPTION)
+#define GetOptionVal(OPTION) GetInstanceOptionVal(this->m_pApiLogParent, OPTION)
 //---------------------------------------------------------------------------
 #define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
 //---------------------------------------------------------------------------
@@ -15,7 +25,7 @@
 #include "wtypes.h"
 #include <afxmt.h>
 
-// STL includes
+//STL includes
 #include <list>
 #include <map>
 #include <vector>
@@ -26,17 +36,12 @@
 class CFileFix;
 #define CFile CFileFix
 //---------------------------------------------------------------------------
-#pragma hdrstop
-//---------------------------------------------------------------------------
-#include <Global.h>
-// these create conflict with afxwin.h
-#undef BEGIN_MESSAGE_MAP
-#undef END_MESSAGE_MAP
-//---------------------------------------------------------------------------
 #include "MFC64bitFix.h"
 #include <ApiLog.h>
 #include <FileZillaApi.h>
 #include <FileZillaOpt.h>
+#include <Options.h>
+#include <Crypt.h>
 #include <TextsFileZilla.h>
 #include <structures.h>
 //---------------------------------------------------------------------------
@@ -45,12 +50,36 @@ class CFileFix;
 #include <afxconv.h>
 //---------------------------------------------------------------------------
 #define _strlwr strlwr
+#define USEDPARAM(p) ((p) == (p))
 //---------------------------------------------------------------------------
+#ifdef _DEBUG
+#ifndef ASSERT
+#error ASSERT should be defined here by afx.h
+#endif
+#undef ASSERT
+// Copy of afx.h ASSERT with TRACE added.
+// Better would be to hook afxAssertFailedLine
+#define ASSERT(f) \
+	do \
+	{ \
+		if (!(f)) \
+		{ \
+			if (AfxAssertFailedLine(THIS_FILE, __LINE__)) \
+			{ \
+				AfxDebugBreak(); \
+			} \
+		} \
+	} while (0) 
+#endif
+//---------------------------------------------------------------------------
+const int FILEEXISTS_ASK = -1;
 const int FILEEXISTS_OVERWRITE = 0;
-const int FILEEXISTS_RESUME = 1;
-const int FILEEXISTS_RENAME = 2;
-const int FILEEXISTS_SKIP = 3;
-const int FILEEXISTS_COMPLETE = 4;
+const int FILEEXISTS_OVERWRITEIFNEWER = 1;
+const int FILEEXISTS_RESUME = 2;
+const int FILEEXISTS_RENAME = 3;
+const int FILEEXISTS_SKIP = 4;
+const int FILEEXISTS_RESUME_ASKONFAIL = 5; // Used by queue for automatic resuming. If APPE failes, ask what to do instead.
+const int FILEEXISTS_COMPLETE = 6;
 //---------------------------------------------------------------------------
 class t_ffam_statusmessage
 {
@@ -63,7 +92,13 @@ public:
 typedef struct
 {
   __int64 bytes;
+#ifdef MPEXT
   __int64 transfersize;
+#endif
+  int percent;
+  int timeelapsed;
+  int timeleft;
+  int transferrate;
   BOOL bFileTransfer;
 } t_ffam_transferstatus;
 //---------------------------------------------------------------------------
@@ -76,15 +111,15 @@ public:
   UINT Read(void * lpBuf, UINT nCount)
   {
     ASSERT_VALID(this);
-    DebugAssert(m_hFile != (UINT)hFileNull);
+    ASSERT(m_hFile != (UINT)hFileNull);
 
     if (nCount == 0)
     {
       return 0;   // avoid Win32 "null-read"
     }
 
-    DebugAssert(lpBuf != NULL);
-    DebugAssert(AfxIsValidAddress(lpBuf, nCount));
+    ASSERT(lpBuf != NULL);
+    ASSERT(AfxIsValidAddress(lpBuf, nCount));
 
     DWORD dwRead;
     if (!::ReadFile((HANDLE)m_hFile, lpBuf, nCount, &dwRead, NULL))
@@ -99,7 +134,7 @@ public:
   // MFC allocates CObject (ancestor of CFile) with new, but deallocates with free,
   // what codeguard dislikes, this is fix, not sure if it is necessary for
   // release version, but probably causes no harm
-  void PASCAL operator delete(void * p)
+  void PASCAL operator delete(void* p)
   {
     delete p;
   }
@@ -112,11 +147,11 @@ struct CStringDataA
   long nRefs;             // reference count
   int nDataLength;        // length of data (including terminator)
   int nAllocLength;       // length of allocation
-  // char data[nAllocLength];
+  //char data[nAllocLength];
 
-  CHAR * data()           // CHAR* to managed data
+  CHAR* data()           // CHAR* to managed data
   {
-    return (CHAR *)(this+1);
+    return (CHAR*)(this+1);
   }
 };
 //---------------------------------------------------------------------------
@@ -134,10 +169,10 @@ public:
 
   CStringA(const CStringA& stringSrc)
   {
-    DebugAssert(stringSrc.GetData()->nRefs != 0);
+    ASSERT(stringSrc.GetData()->nRefs != 0);
     if (stringSrc.GetData()->nRefs >= 0)
     {
-      DebugAssert(stringSrc.GetData() != _afxDataNilA);
+      ASSERT(stringSrc.GetData() != _afxDataNilA);
       m_pchData = stringSrc.m_pchData;
       InterlockedIncrement(&GetData()->nRefs);
     }
@@ -153,7 +188,7 @@ public:
     Init();
     if (lpsz != NULL && HIWORD(lpsz) == NULL)
     {
-      DebugFail();
+      ASSERT(false);
     }
     else
     {
@@ -185,8 +220,8 @@ public:
   char operator[](int nIndex) const
   {
     // same as GetAt
-    DebugAssert(nIndex >= 0);
-    DebugAssert(nIndex < GetData()->nDataLength);
+    ASSERT(nIndex >= 0);
+    ASSERT(nIndex < GetData()->nDataLength);
     return m_pchData[nIndex];
   }
 
@@ -205,7 +240,7 @@ public:
       {
         // can just copy references around
         Release();
-        DebugAssert(stringSrc.GetData() != _afxDataNilA);
+        ASSERT(stringSrc.GetData() != _afxDataNilA);
         m_pchData = stringSrc.m_pchData;
         InterlockedIncrement(&GetData()->nRefs);
       }
@@ -213,20 +248,20 @@ public:
     return *this;
   }
 
-  const CStringA & operator=(LPCSTR lpsz)
+  const CStringA& operator=(LPCSTR lpsz)
   {
-    DebugAssert(lpsz == NULL || AfxIsValidString(lpsz));
+    ASSERT(lpsz == NULL || AfxIsValidString(lpsz));
     AssignCopy(SafeStrlen(lpsz), lpsz);
     return *this;
   }
 
-  const CStringA & operator+=(char ch)
+  const CStringA& operator+=(char ch)
   {
     ConcatInPlace(1, &ch);
     return *this;
   }
 
-  friend CStringA AFXAPI operator+(const CStringA & string, char ch);
+  friend CStringA AFXAPI operator+(const CStringA& string, char ch);
 
   operator LPCSTR() const
   {
@@ -235,7 +270,7 @@ public:
 
   int Compare(LPCSTR lpsz) const
   {
-    DebugAssert(AfxIsValidString(lpsz));
+    ASSERT(AfxIsValidString(lpsz));
     return strcmp(m_pchData, lpsz);
   }
 
@@ -260,8 +295,8 @@ public:
       nCount = 0;
     }
 
-    DebugAssert(nFirst >= 0);
-    DebugAssert(nFirst + nCount <= GetData()->nDataLength);
+    ASSERT(nFirst >= 0);
+    ASSERT(nFirst + nCount <= GetData()->nDataLength);
 
     // optimize case of returning entire string
     if (nFirst == 0 && nFirst + nCount == GetData()->nDataLength)
@@ -318,7 +353,7 @@ public:
 
   int Find(LPCSTR lpszSub, int nStart) const
   {
-    DebugAssert(AfxIsValidString(lpszSub));
+    ASSERT(AfxIsValidString(lpszSub));
 
     int nLength = GetData()->nDataLength;
     if (nStart > nLength)
@@ -342,9 +377,9 @@ public:
 protected:
   LPSTR m_pchData;   // pointer to ref counted string data
 
-  CStringDataA * GetData() const
+  CStringDataA* GetData() const
   {
-    DebugAssert(m_pchData != NULL); return ((CStringDataA*)m_pchData)-1;
+    ASSERT(m_pchData != NULL); return ((CStringDataA*)m_pchData)-1;
   }
 
   void Init()
@@ -352,7 +387,7 @@ protected:
     m_pchData = afxEmptyStringA.m_pchData;
   }
 
-  void AllocCopy(CStringA & dest, int nCopyLen, int nCopyIndex, int nExtraLen) const
+  void AllocCopy(CStringA& dest, int nCopyLen, int nCopyIndex, int nExtraLen) const
   {
     // will clone the data attached to this string
     // allocating 'nExtraLen' characters
@@ -375,8 +410,8 @@ protected:
   // always allocate one extra character for '\0' termination
   // assumes [optimistically] that data length will equal allocation length
   {
-    DebugAssert(nLen >= 0);
-    DebugAssert(nLen <= INT_MAX-1);    // max size (enough room for 1 extra)
+    ASSERT(nLen >= 0);
+    ASSERT(nLen <= INT_MAX-1);    // max size (enough room for 1 extra)
 
     if (nLen == 0)
     {
@@ -405,16 +440,16 @@ protected:
     m_pchData[nSrcLen] = '\0';
   }
 
-  void FASTCALL FreeData(CStringDataA * pData)
+  void FASTCALL FreeData(CStringDataA* pData)
   {
     delete[] (BYTE*)pData;
   }
 
-  void PASCAL Release(CStringDataA * pData)
+  void PASCAL Release(CStringDataA* pData)
   {
     if (pData != _afxDataNilA)
     {
-      DebugAssert(pData->nRefs != 0);
+      ASSERT(pData->nRefs != 0);
       if (InterlockedDecrement(&pData->nRefs) <= 0)
       {
         FreeData(pData);
@@ -426,7 +461,7 @@ protected:
   {
     if (GetData() != _afxDataNilA)
     {
-      DebugAssert(GetData()->nRefs != 0);
+      ASSERT(GetData()->nRefs != 0);
       if (InterlockedDecrement(&GetData()->nRefs) <= 0)
       {
         FreeData(GetData());
@@ -467,7 +502,7 @@ protected:
       // we have to grow the buffer, use the ConcatCopy routine
       CStringDataA* pOldData = GetData();
       ConcatCopy(GetData()->nDataLength, m_pchData, nSrcLen, lpszSrcData);
-      DebugAssert(pOldData != NULL);
+      ASSERT(pOldData != NULL);
       CStringA::Release(pOldData);
     }
     else
@@ -475,7 +510,7 @@ protected:
       // fast concatenation when buffer big enough
       memcpy(m_pchData+GetData()->nDataLength, lpszSrcData, nSrcLen*sizeof(char));
       GetData()->nDataLength += nSrcLen;
-      DebugAssert(GetData()->nDataLength <= GetData()->nAllocLength);
+      ASSERT(GetData()->nDataLength <= GetData()->nAllocLength);
       m_pchData[GetData()->nDataLength] = '\0';
     }
   }
@@ -489,7 +524,7 @@ protected:
       AllocBuffer(pData->nDataLength);
       memcpy(m_pchData, pData->data(), (pData->nDataLength+1)*sizeof(char));
     }
-    DebugAssert(GetData()->nRefs <= 1);
+    ASSERT(GetData()->nRefs <= 1);
   }
 
   void AllocBeforeWrite(int nLen)
@@ -499,7 +534,7 @@ protected:
       Release();
       AllocBuffer(nLen);
     }
-    DebugAssert(GetData()->nRefs <= 1);
+    ASSERT(GetData()->nRefs <= 1);
   }
 
   static int PASCAL SafeStrlen(LPCSTR lpsz)
@@ -508,17 +543,17 @@ protected:
   }
 };
 //---------------------------------------------------------------------------
-inline bool AFXAPI operator==(const CStringA & s1, LPCSTR s2)
+inline bool AFXAPI operator==(const CStringA& s1, LPCSTR s2)
 {
   return s1.Compare(s2) == 0;
 }
 //---------------------------------------------------------------------------
-inline bool AFXAPI operator!=(const CStringA & s1, LPCSTR s2)
+inline bool AFXAPI operator!=(const CStringA& s1, LPCSTR s2)
 {
   return s1.Compare(s2) != 0;
 }
 //---------------------------------------------------------------------------
-inline CStringA AFXAPI operator+(const CStringA & string1, char ch)
+inline CStringA AFXAPI operator+(const CStringA& string1, char ch)
 {
   CStringA s;
   s.ConcatCopy(string1.GetData()->nDataLength, string1.m_pchData, 1, &ch);

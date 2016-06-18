@@ -6,7 +6,7 @@ object AuthenticateForm: TAuthenticateForm
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'AuthenticateForm'
-  ClientHeight = 380
+  ClientHeight = 359
   ClientWidth = 375
   Color = clBtnFace
   Constraints.MinHeight = 200
@@ -18,51 +18,27 @@ object AuthenticateForm: TAuthenticateForm
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
-  object TopPanel: TPanel
+  object LogView: TListView
     Left = 0
     Top = 0
     Width = 375
-    Height = 65
+    Height = 44
     Align = alClient
-    BevelOuter = bvNone
+    Columns = <
+      item
+        Width = 100
+      end>
+    DoubleBuffered = True
+    ReadOnly = True
+    RowSelect = True
+    ParentDoubleBuffered = False
+    ShowColumnHeaders = False
     TabOrder = 0
-    object LogView: TListBox
-      Left = 48
-      Top = 0
-      Width = 327
-      Height = 65
-      Style = lbOwnerDrawVariable
-      Align = alClient
-      BevelInner = bvNone
-      BevelOuter = bvNone
-      BorderStyle = bsNone
-      DoubleBuffered = True
-      ParentDoubleBuffered = False
-      TabOrder = 0
-      OnDrawItem = LogViewDrawItem
-      OnMeasureItem = LogViewMeasureItem
-    end
-    object LeftPanel: TPanel
-      Left = 0
-      Top = 0
-      Width = 48
-      Height = 65
-      Align = alLeft
-      BevelOuter = bvNone
-      Color = clWindow
-      ParentBackground = False
-      TabOrder = 1
-      object AnimationPaintBox: TPaintBox
-        Left = 8
-        Top = 11
-        Width = 32
-        Height = 32
-      end
-    end
+    ViewStyle = vsReport
   end
   object PasswordPanel: TPanel
     Left = 0
-    Top = 65
+    Top = 44
     Width = 375
     Height = 233
     Align = alBottom
@@ -219,7 +195,7 @@ object AuthenticateForm: TAuthenticateForm
   end
   object BannerPanel: TPanel
     Left = 0
-    Top = 298
+    Top = 277
     Width = 375
     Height = 82
     Align = alBottom

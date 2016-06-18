@@ -33,7 +33,6 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   FShowAsModalStorage = NULL;
   FFocusControl = NULL;
   UseDesktopFont(LogView);
-  FAnimationPainted = false;
 
   FPromptParent = InstructionsLabel->Parent;
   FPromptLeft = InstructionsLabel->Left;
@@ -43,9 +42,6 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   FPromptsGap = PromptLabel2->Top - PromptEdit1->Top - PromptEdit1->Height;
 
   ClientHeight = ScaleByTextHeight(this, 270);
-  FHorizontalLogPadding = ScaleByTextHeight(this, 4);
-  FVerticalLogPadding = ScaleByTextHeight(this, 3);
-  FLogTextFormat << tfNoPrefix << tfWordBreak << tfVerticalCenter;
 
   ClearLog();
 }
@@ -122,10 +118,6 @@ void __fastcall TAuthenticateForm::FormShow(TObject * /*Sender*/)
   {
     ActiveControl = FFocusControl;
   }
-
-  UnicodeString AnimationName = FSessionData->IsSecure() ? L"ConnectingSecure" : L"ConnectingInsecure";
-  FFrameAnimation.Init(AnimationPaintBox, AnimationName);
-  FFrameAnimation.Start();
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::ClearLog()
@@ -137,44 +129,11 @@ void __fastcall TAuthenticateForm::ClearLog()
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
 {
-  // HACK
-  // The first call to Repaint from TFrameAnimation happens
-  // even before the form is showing. After it is shown it takes sometime too long
-  // before the animation is painted, so that the form is closed before the first frame even appers
-  if (!FAnimationPainted && Showing)
-  {
-    AnimationPaintBox->Repaint();
-    FAnimationPainted = true;
-  }
-
-  int Index = LogView->Items->Add(Message);
-  MakeLogItemVisible(Index);
+  TListItem * Item = LogView->Items->Add();
+  Item->Caption = Message;
+  Item->MakeVisible(false);
+  AdjustLogView();
   LogView->Repaint();
-}
-//---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::MakeLogItemVisible(int Index)
-{
-  if (Index < LogView->TopIndex)
-  {
-    LogView->TopIndex = Index;
-  }
-  else
-  {
-    int TotalHeight = 0;
-    int Index2 = Index;
-    while ((Index2 >= 0) && TotalHeight < LogView->ClientHeight)
-    {
-      TotalHeight += LogItemHeight(Index2);
-      Index2--;
-    }
-
-    // Index2 is the last item above the first fully visible,
-    // were the Index on the very bottom.
-    if (LogView->TopIndex <= Index2 + 1)
-    {
-      LogView->TopIndex = Index2 + 2;
-    }
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::AdjustControls()
@@ -205,6 +164,7 @@ TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString 
   Result->Caption = Caption;
   int Width = FPromptParent->ClientWidth - FPromptLeft - FPromptRight;
   Result->Width = Width;
+  Result->AutoSize = true;
 
   return Result;
 }
@@ -285,7 +245,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
     if (!ShowSavePasswordPanel &&
         (Prompts->Count == 1) &&
         FLAGSET(int(Prompts->Objects[0]), pupRemember) &&
-        DebugAlwaysTrue(IsPasswordOrPassphrasePrompt(Kind, Prompts)))
+        ALWAYS_TRUE(IsPasswordOrPassphrasePrompt(Kind, Prompts)))
     {
       ShowSessionRememberPasswordPanel = true;
     }
@@ -302,7 +262,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
     }
     PasswordPanel->Realign();
 
-    DebugAssert(Results->Count == Edits->Count);
+    assert(Results->Count == Edits->Count);
     for (int Index = 0; Index < Edits->Count; Index++)
     {
       TCustomEdit * Edit = reinterpret_cast<TCustomEdit *>(Edits->Items[Index]);
@@ -328,8 +288,8 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
 
       if (SavePasswordCheck->Checked)
       {
-        DebugAssert(Data != NULL);
-        DebugAssert(Results->Count >= 1);
+        assert(Data != NULL);
+        assert(Results->Count >= 1);
         FSessionData->Password = Results->Strings[0];
         Data->Password = Results->Strings[0];
         // modified only, explicit
@@ -367,12 +327,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
   TAlign Align = Panel->Align;
   try
   {
-    // If not visible yet, the animation was not even initialized yet
-    if (Visible)
-    {
-      FFrameAnimation.Stop();
-    }
-    DebugAssert(FStatus.IsEmpty());
+    assert(FStatus.IsEmpty());
     FStatus = Status;
     DefaultButton->Default = true;
     CancelButton->Cancel = true;
@@ -399,30 +354,25 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
       {
         if (Zoom)
         {
-          TopPanel->Hide();
+          LogView->Hide();
         }
         else
         {
           if (LogView->Items->Count > 0)
           {
-            // To avoid the scrolling effect when setting TopIndex
-            LogView->Items->BeginUpdate();
-            try
+            TListItem * Item = LogView->ItemFocused;
+            if (Item == NULL)
             {
-              MakeLogItemVisible(LogView->Items->Count - 1);
+              Item = LogView->Items->Item[LogView->Items->Count - 1];
             }
-            __finally
-            {
-              LogView->Items->EndUpdate();
-              RedrawLog();
-            }
+            Item->MakeVisible(false);
           }
         }
         Screen->Cursor = crDefault;
 
         if (!Visible)
         {
-          DebugAssert(ForceLog);
+          assert(ForceLog);
           ShowAsModal();
         }
 
@@ -441,7 +391,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
         Screen->Cursor = PrevCursor;
         if (Zoom)
         {
-          TopPanel->Show();
+          LogView->Show();
         }
         Repaint();
       }
@@ -460,7 +410,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
           Constraints->MinHeight = Height;
           Constraints->MaxHeight = Height;
         }
-        TopPanel->Hide();
+        LogView->Hide();
         Panel->Show();
         FFocusControl = FocusControl;
 
@@ -473,7 +423,7 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
         Constraints->MinHeight = PrevMinHeight;
         Constraints->MaxHeight = PrevMaxHeight;
         Panel->Hide();
-        TopPanel->Show();
+        LogView->Show();
       }
     }
   }
@@ -484,14 +434,13 @@ bool __fastcall TAuthenticateForm::Execute(UnicodeString Status, TPanel * Panel,
     CancelButton->Cancel = false;
     FStatus = L"";
     AdjustControls();
-    FFrameAnimation.Start();
   }
 
   bool Result = (ModalResult == DefaultButtonResult);
 
   if (!Result)
   {
-    // This is not nice as it may ultimately route to
+    // This is not nice as it may untimately route to
     // TTerminalThread::Cancel() and throw fatal exception,
     // what actually means that any PromptUser call during authentication never
     // return false and their fall back/alternative code never occurs.
@@ -507,67 +456,13 @@ void __fastcall TAuthenticateForm::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-int __fastcall TAuthenticateForm::LogItemHeight(int Index)
+void __fastcall TAuthenticateForm::AdjustLogView()
 {
-  UnicodeString S = LogView->Items->Strings[Index];
-  TRect TextRect(0, 0, LogView->ClientWidth - (2 * FHorizontalLogPadding), 0);
-  LogView->Canvas->Font = LogView->Font;
-  LogView->Canvas->TextRect(TextRect, S, FLogTextFormat + (TTextFormat() << tfCalcRect));
-  int Result = TextRect.Height() + (2 * FVerticalLogPadding);
-  return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::LogViewMeasureItem(TWinControl * /*Control*/, int Index,
-  int & Height)
-{
-  Height = LogItemHeight(Index);
-}
-//---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::LogViewDrawItem(TWinControl * /*Control*/, int Index,
-  TRect & Rect, TOwnerDrawState /*State*/)
-{
-  // Reset back to base colors. We do not want to render selection.
-  // + At initial phases the canvas font will not yet reflect he desktop font.
-  LogView->Canvas->Font = LogView->Font;
-  LogView->Canvas->Brush->Color = LogView->Color;
-
-  LogView->Canvas->FillRect(Rect);
-
-  // tfVerticalCenter does not seem to center the text,
-  // so we need to deflate the vertical size too
-  Rect.Inflate(-FHorizontalLogPadding,  -FVerticalLogPadding);
-  UnicodeString S = LogView->Items->Strings[Index];
-  LogView->Canvas->TextRect(Rect, S, FLogTextFormat);
-}
-//---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::RedrawLog()
-{
-  // Redraw including the scrollbar (RDW_FRAME)
-  RedrawWindow(LogView->Handle, NULL, NULL, RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
+  ListView_SetColumnWidth(LogView->Handle, 0, LVSCW_AUTOSIZE);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::FormResize(TObject * /*Sender*/)
 {
-  if (LogView->Showing)
-  {
-    // Mainly to avoid the scrolling effect when setting TopIndex
-    LogView->Items->BeginUpdate();
-    try
-    {
-      // Rebuild the list view to force Windows to resend WM_MEASUREITEM
-      int ItemIndex = LogView->ItemIndex;
-      int TopIndex = LogView->TopIndex;
-      std::unique_ptr<TStringList> Items(new TStringList);
-      Items->Assign(LogView->Items);
-      LogView->Items->Assign(Items.get());
-      LogView->ItemIndex = ItemIndex;
-      LogView->TopIndex = TopIndex;
-    }
-    __finally
-    {
-      LogView->Items->EndUpdate();
-      RedrawLog();
-    }
-  }
+  AdjustLogView();
 }
 //---------------------------------------------------------------------------

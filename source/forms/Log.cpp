@@ -29,7 +29,7 @@ TLogForm *LogForm = NULL;
 //---------------------------------------------------------------------------
 TLogForm * __fastcall CreateLogForm(TLogMemo *ALogMemo)
 {
-  DebugAssert(!LogForm);
+  assert(!LogForm);
   Configuration->Usage->Inc(L"LogWindowDisplays");
   TLogForm * aLogForm = new TLogForm(Application);
   try
@@ -84,7 +84,7 @@ __fastcall TLogForm::TLogForm(TComponent* Owner)
   ShowWindow(Handle, SW_SHOWNA);
   UseSystemSettings(this);
   UseDesktopFont(StatusBar);
-  FixFormIcons(this);
+  SetFormIcons(this, L"Z_ICON_LOG_BIG", L"Z_ICON_LOG_SMALL");
 }
 //---------------------------------------------------------------------------
 __fastcall TLogForm::~TLogForm()
@@ -105,7 +105,7 @@ void __fastcall TLogForm::SetLogMemo(TLogMemo * value)
 
     if (OldLogMemo)
     {
-      DebugAssert((OldLogMemo->Parent == this) && (OldLogMemo->OnChange == LogMemoChange));
+      assert((OldLogMemo->Parent == this) && (OldLogMemo->OnChange == LogMemoChange));
       OldLogMemo->OnChange = NULL;
       if (SessionLog == OldLogMemo->SessionLog) SessionLog = NULL;
       OldLogMemo->Parent = NULL;
@@ -126,7 +126,7 @@ void __fastcall TLogForm::SetLogMemo(TLogMemo * value)
 //---------------------------------------------------------------------------
 void __fastcall TLogForm::LogMemoChange(TObject * /*Sender*/)
 {
-  DebugAssert(LogMemo);
+  assert(LogMemo);
   Application->ProcessMessages();
   if (!ComponentState.Contains(csDestroying))
   {
@@ -136,7 +136,7 @@ void __fastcall TLogForm::LogMemoChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLogForm::FormClose(TObject * /*Sender*/, TCloseAction & Action)
 {
-  DebugAssert(Configuration);
+  assert(Configuration);
   // If log window feature is turned off (log window is being closed
   // by turning off this feature e.g. in Preferences Window), really close it
   // If log window feature is turned on (log window is being closed by
@@ -162,13 +162,13 @@ void __fastcall TLogForm::SetSessionLog(TSessionLog * value)
   {
     if (SessionLog)
     {
-      DebugAssert(SessionLog->OnStateChange == SessionLogStateChange);
+      assert(SessionLog->OnStateChange == SessionLogStateChange);
       SessionLog->OnStateChange = NULL;
     }
     FSessionLog = value;
     if (SessionLog)
     {
-      DebugAssert(SessionLog->OnStateChange == NULL);
+      assert(SessionLog->OnStateChange == NULL);
       SessionLog->OnStateChange = SessionLogStateChange;
     }
     UpdateControls();
@@ -210,7 +210,7 @@ void __fastcall TLogForm::CreateParams(TCreateParams & Params)
   if (!FFormRestored)
   {
     FFormRestored = True;
-    DebugAssert(Configuration);
+    assert(Configuration);
     RestoreForm(WinConfiguration->LogWindowParams, this);
   }
   TForm::CreateParams(Params);

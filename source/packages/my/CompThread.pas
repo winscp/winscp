@@ -92,7 +92,11 @@ begin
           FSynchronizeException := nil;
           FMethod;
         except
-          FSynchronizeException := AcquireExceptionObject;
+          if RaiseList <> nil then
+          begin
+            FSynchronizeException := PRaiseFrame(RaiseList)^.ExceptObject;
+            PRaiseFrame(RaiseList)^.ExceptObject := nil;
+          end;
         end;
       end;
     CM_DESTROYWINDOW:

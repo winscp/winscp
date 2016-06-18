@@ -99,7 +99,7 @@ void __fastcall TUnixDirView::ExecuteFile(TListItem * Item)
     DisplayPropertiesMenu();
   }
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
 #endif
 }
 //---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ bool __fastcall TUnixDirView::ItemIsDirectory(TListItem * Item)
   ASSERT_VALID_ITEM;
   return ITEMFILE->IsDirectory;
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
   return false;
 #endif
 }
@@ -183,7 +183,7 @@ bool __fastcall TUnixDirView::ItemIsFile(TListItem * Item)
   ASSERT_VALID_ITEM;
   return !(ITEMFILE->IsParentDirectory);
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
   return false;
 #endif
 }
@@ -194,7 +194,7 @@ bool __fastcall TUnixDirView::ItemIsParentDirectory(TListItem * Item)
   ASSERT_VALID_ITEM;
   return ITEMFILE->IsParentDirectory;
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
   return false;
 #endif
 }
@@ -205,7 +205,7 @@ UnicodeString __fastcall TUnixDirView::ItemFileName(TListItem * Item)
   ASSERT_VALID_ITEM;
   return ITEMFILE->FileName;
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
   return UnicodeString();
 #endif
 }
@@ -216,7 +216,7 @@ __int64 __fastcall TUnixDirView::ItemFileSize(TListItem * Item)
   ASSERT_VALID_ITEM;
   return ITEMFILE->Size;
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
   return 0;
 #endif
 }
@@ -227,7 +227,7 @@ UnicodeString __fastcall TUnixDirView::ItemFullFileName(TListItem * Item)
   ASSERT_VALID_ITEM;
   return ITEMFILE->FullFileName;
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
   return UnicodeString();
 #endif
 }
@@ -240,7 +240,7 @@ int __fastcall TUnixDirView::ItemImageIndex(TListItem * Item, bool /*Cache*/)
   // so we don't need it here. But it's implemented anyway.
   return ITEMFILE->IconIndex;
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
   return 0;
 #endif
 }
@@ -265,8 +265,8 @@ bool __fastcall TUnixDirView::ItemMatchesFilter(TListItem * Item,
      (File->IsDirectory && Filter.Directories &&
       FileNameMatchesMasks(File->FileName, false, File->Size, File->Modification, Filter.Masks, false)));
 #else
-  DebugUsedParam(Item);
-  DebugUsedParam(Filter);
+  USEDPARAM(Item);
+  USEDPARAM(Filter);
   return false;
 #endif
 }
@@ -286,7 +286,7 @@ Word __fastcall TUnixDirView::ItemOverlayIndexes(TListItem * Item)
   }
   return Result;
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
   return 0;
 #endif
 }
@@ -294,7 +294,7 @@ Word __fastcall TUnixDirView::ItemOverlayIndexes(TListItem * Item)
 void __fastcall TUnixDirView::LoadFiles()
 {
 #ifndef DESIGN_ONLY
-  DebugAssert(Terminal);
+  assert(Terminal);
   if (DirOK)
   {
     // it's enough if we reach this point, we don't require that loading files into
@@ -310,7 +310,7 @@ void __fastcall TUnixDirView::LoadFiles()
     for (int Index = 0; Index < Terminal->Files->Count; Index++)
     {
       TRemoteFile *File = Terminal->Files->Files[Index];
-      DebugAssert(File);
+      assert(File);
       if ((!ShowHiddenFiles && File->IsHidden) ||
           (!ShowInaccesibleDirectories && File->IsInaccesibleDirectory))
       {
@@ -384,7 +384,7 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
         case uvExt: Value = File->Extension; break;
         case uvLinkTarget: Value = File->LinkTo; break;
         case uvType: Value = File->TypeName; break;
-        default: DebugFail();
+        default: FAIL;
       }
       StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax);
     }
@@ -395,8 +395,8 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
       DispInfo.mask |= LVIF_DI_SETITEM;
     }
 #else
-  DebugUsedParam(Item);
-  DebugUsedParam(DispInfo);
+  USEDPARAM(Item);
+  USEDPARAM(DispInfo);
 #endif
   }
 }
@@ -440,7 +440,7 @@ void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item,
       SourceDirectory = ExtractFilePath(DragDropFilesEx->FileList->Items[0]->Name);
       if (Item)
       {
-        DebugAssert(ITEMFILE->IsDirectory && (Terminal->Files->IndexOf(ITEMFILE) >= 0));
+        assert(ITEMFILE->IsDirectory && (Terminal->Files->IndexOf(ITEMFILE) >= 0));
         TargetDirectory = ITEMFILE->FullFileName;
       }
       else
@@ -454,8 +454,8 @@ void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item,
     }
   }
 #else
-  DebugUsedParam(Item);
-  DebugUsedParam(Effect);
+  USEDPARAM(Item);
+  USEDPARAM(Effect);
 #endif
 }
 //---------------------------------------------------------------------------
@@ -495,11 +495,11 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
   {
     if (FTerminal)
     {
-      DebugAssert(FTerminal->OnReadDirectory == DoReadDirectory);
+      assert(FTerminal->OnReadDirectory == DoReadDirectory);
       FTerminal->OnReadDirectory = NULL;
-      DebugAssert(FTerminal->OnStartReadDirectory == DoStartReadDirectory);
+      assert(FTerminal->OnStartReadDirectory == DoStartReadDirectory);
       FTerminal->OnStartReadDirectory = NULL;
-      DebugAssert(FTerminal->OnChangeDirectory == DoChangeDirectory);
+      assert(FTerminal->OnChangeDirectory == DoChangeDirectory);
       FTerminal->OnChangeDirectory = NULL;
       if (!value || !value->Files->Loaded)
       {
@@ -525,14 +525,13 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
         DoReadDirectoryImpl(FTerminal, false);
       }
     }
-    UpdatePathLabel();
   }
 }
 #endif
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DoStartReadDirectory(TObject * /*Sender*/)
 {
-  DebugAssert(!FLoading);
+  assert(!FLoading);
   FLoading = true;
 }
 //---------------------------------------------------------------------------
@@ -547,7 +546,7 @@ void __fastcall TUnixDirView::DoReadDirectory(TObject * Sender, bool ReloadOnly)
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DoReadDirectoryImpl(TObject * /*Sender*/, bool ReloadOnly)
 {
-  DebugAssert(FLoading);
+  assert(FLoading);
   FLoading = false;
 
 #ifndef DESIGN_ONLY
@@ -578,7 +577,7 @@ void __fastcall TUnixDirView::DoReadDirectoryImpl(TObject * /*Sender*/, bool Rel
     Load();
   }
 #else
-  DebugUsedParam(ReloadOnly);
+  USEDPARAM(ReloadOnly);
 #endif
 }
 //---------------------------------------------------------------------------
@@ -634,9 +633,9 @@ void __fastcall TUnixDirView::SetPath(UnicodeString Value)
 //---------------------------------------------------------------------------
 int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * DirView)
 {
-  DebugAssert((Item1 != NULL) && (Item2 != NULL));
-  TRemoteFile * File1 = DebugNotNull((TRemoteFile *)(Item1->Data));
-  TRemoteFile * File2 = DebugNotNull((TRemoteFile *)(Item2->Data));
+  assert((Item1 != NULL) && (Item2 != NULL));
+  TRemoteFile * File1 = NOT_NULL((TRemoteFile *)(Item1->Data));
+  TRemoteFile * File2 = NOT_NULL((TRemoteFile *)(Item2->Data));
 
   int Result;
   if (File1->IsParentDirectory && !File2->IsParentDirectory)
@@ -711,7 +710,7 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
         break;
 
       default:
-        DebugFail();
+        FAIL;
     }
 
     if (Result == 0)
@@ -734,7 +733,7 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
 void __fastcall TUnixDirView::SortItems()
 {
 #ifndef DESIGN_ONLY
-  DebugAssert(Terminal);
+  assert(Terminal);
   if (HandleAllocated())
   {
     CustomSortItems(CompareFile);
@@ -790,7 +789,7 @@ void __fastcall TUnixDirView::SetDDAllowMove(bool value)
 {
   if (DDAllowMove != value)
   {
-    DebugAssert(DragDropFilesEx);
+    assert(DragDropFilesEx);
     FDDAllowMove = value;
     DragDropFilesEx->SourceEffects = DragSourceEffects;
   }
@@ -844,10 +843,10 @@ void __fastcall TUnixDirView::ChangeDirectory(UnicodeString Path)
 bool __fastcall TUnixDirView::CanEdit(TListItem* Item)
 {
 #ifndef DESIGN_ONLY
-  DebugAssert(Terminal);
+  assert(Terminal);
   return TCustomUnixDirView::CanEdit(Item) && Terminal->IsCapable[fcRename];
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
   return false;
 #endif
 }
@@ -864,7 +863,7 @@ void __fastcall TUnixDirView::InternalEdit(const tagLVITEMW & HItem)
     Terminal->RenameFile(ITEMFILE, HItem.pszText, true);
   }
 #else
-  DebugUsedParam(HItem);
+  USEDPARAM(HItem);
 #endif
 }
 //---------------------------------------------------------------------------
@@ -886,7 +885,7 @@ void __fastcall TUnixDirView::CreateDirectory(UnicodeString DirName)
 void __fastcall TUnixDirView::CreateDirectoryEx(UnicodeString DirName, const TRemoteProperties * Properties)
 {
 #ifndef DESIGN_ONLY
-  DebugAssert(Terminal);
+  assert(Terminal);
   // if file would be created in current directory, select it after reload
   if (UnixExtractFileName(DirName) == DirName)
   {
@@ -894,7 +893,7 @@ void __fastcall TUnixDirView::CreateDirectoryEx(UnicodeString DirName, const TRe
   }
   Terminal->CreateDirectory(DirName, Properties);
 #else
-  DebugUsedParam(Properties);
+  USEDPARAM(Properties);
 #endif
 }
 //---------------------------------------------------------------------------
@@ -909,7 +908,7 @@ bool __fastcall TUnixDirView::GetIsRoot()
 //---------------------------------------------------------------------------
 TColor __fastcall TUnixDirView::ItemColor(TListItem * Item)
 {
-  DebugAssert(Item);
+  assert(Item);
 #ifndef DESIGN_ONLY
   if (DimmHiddenFiles && !Item->Selected && ITEMFILE->IsHidden)
   {
@@ -917,7 +916,7 @@ TColor __fastcall TUnixDirView::ItemColor(TListItem * Item)
   }
   else
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
 #endif
   {
     return (TColor)clDefaultItemColor;
@@ -927,7 +926,7 @@ TColor __fastcall TUnixDirView::ItemColor(TListItem * Item)
 TDateTime __fastcall TUnixDirView::ItemFileTime(TListItem * Item,
   TDateTimePrecision & Precision)
 {
-  DebugAssert(Item);
+  assert(Item);
 #ifndef DESIGN_ONLY
   switch (ITEMFILE->ModificationFmt)
   {
@@ -950,7 +949,7 @@ TDateTime __fastcall TUnixDirView::ItemFileTime(TListItem * Item,
   }
   return ITEMFILE->Modification;
 #else
-  DebugUsedParam(Item);
+  USEDPARAM(Item);
   Precision = tpSecond;
   return Now();
 #endif
@@ -976,17 +975,4 @@ void __fastcall TUnixDirView::AddToDragFileList(TFileList * FileList,
   }
   #endif
   FileList->AddItem(NULL, FileName);
-}
-//---------------------------------------------------------------------------
-void __fastcall TUnixDirView::UpdatePathLabelCaption()
-{
-  if (Terminal != NULL)
-  {
-    TCustomDirView::UpdatePathLabelCaption();
-  }
-  else
-  {
-    PathLabel->Caption = UnicodeString();
-    PathLabel->Mask = UnicodeString();
-  }
 }

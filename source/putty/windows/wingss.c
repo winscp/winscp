@@ -2,7 +2,6 @@
 
 #include "putty.h"
 
-#define SECURITY_WIN32
 #include <security.h>
 
 #include "pgssapi.h"
@@ -392,7 +391,7 @@ static Ssh_gss_stat ssh_sspi_display_status(struct ssh_gss_library *lib,
 					    Ssh_gss_ctx ctx, Ssh_gss_buf *buf)
 {
     winSsh_gss_ctx *winctx = (winSsh_gss_ctx *) ctx;
-    const char *msg;
+    char *msg;
 
     if (winctx == NULL) return SSH_GSS_FAILURE;
 

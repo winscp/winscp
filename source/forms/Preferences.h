@@ -19,7 +19,6 @@
 #include <WinInterface.h>
 #include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
-#include <WinConfiguration.h>
 //----------------------------------------------------------------------------
 class TCustomCommandList;
 class TEditorList;
@@ -35,7 +34,7 @@ __published:
   TGroupBox *CommonPreferencesGroup;
   TCheckBox *ConfirmOverwritingCheck;
   TCheckBox *ConfirmDeletingCheck;
-  TCheckBox *ConfirmClosingSessionCheck2;
+  TCheckBox *ConfirmClosingSessionCheck;
   TCheckBox *DDTransferConfirmationCheck;
   TCheckBox *ContinueOnErrorCheck;
   TTabSheet *LogSheet;
@@ -62,6 +61,9 @@ __published:
   TCheckBox *ShowFullAddressCheck;
   TTabSheet *EditorSheet;
   TGroupBox *EditorPreferenceGroup;
+  TGroupBox *InternalEditorGroup;
+  TLabel *EditorFontLabel;
+  TButton *EditorFontButton;
   TTabSheet *IntegrationSheet;
   TGroupBox *ShellIconsGroup;
   TButton *DesktopIconButton;
@@ -131,12 +133,13 @@ __published:
   TCheckBox *PreservePanelStateCheck;
   TButton *AddSearchPathButton;
   TCheckBox *QueueNoConfirmationCheck;
+  TCheckBox *EditorWordWrapCheck;
   TGroupBox *PathInCaptionGroup;
   TRadioButton *PathInCaptionFullButton;
   TRadioButton *PathInCaptionShortButton;
   TRadioButton *PathInCaptionNoneButton;
   TTabSheet *UpdatesSheet;
-  TGroupBox *UpdatesGroup2;
+  TGroupBox *UpdatesGroup;
   TGroupBox *UpdatesProxyGroup;
   TLabel *UpdatesProxyHostLabel;
   TLabel *UpdatesProxyPortLabel;
@@ -154,6 +157,9 @@ __published:
   TButton *DuplicateCopyParamButton;
   TCheckBox *CopyParamAutoSelectNoticeCheck;
   TButton *HelpButton;
+  TGroupBox *ThemeGroup;
+  TLabel *Label7;
+  TComboBox *ThemeCombo;
   TListView *EditorListView3;
   TButton *AddEditorButton;
   TButton *EditEditorButton;
@@ -189,6 +195,8 @@ __published:
   TCheckBox *TelnetForFtpInPuttyCheck;
   TRadioButton *UpdatesDirectCheck;
   TRadioButton *UpdatesAutoCheck;
+  TLabel *Label9;
+  TUpDownEdit *EditorTabSizeEdit;
   TCheckBox *ConfirmTransferringCheck;
   TGroupBox *UpdatesOptionsGroup;
   TCheckBox *QueueIndividuallyCheck;
@@ -214,6 +222,8 @@ __published:
   TUpDownEdit *SessionReopenAutoStallEdit;
   TLabel *SessionReopenAutoStallSecLabel;
   TCheckBox *EnableQueueByDefaultCheck;
+  TLabel *Label11;
+  TComboBox *EditorEncodingCombo;
   TCheckBox *RefreshRemotePanelCheck;
   TUpDownEdit *RefreshRemotePanelIntervalEdit;
   TLabel *RefreshRemoteDirectoryUnitLabel;
@@ -252,8 +262,13 @@ __published:
   TLabel *LanguageChangeLabel;
   TButton *LanguagesGetMoreButton;
   TGroupBox *LoggingGroup;
+  TLabel *LogWindowLinesText;
   TCheckBox *LogToFileCheck;
   TFilenameEdit *LogFileNameEdit3;
+  TCheckBox *LogShowWindowCheck;
+  TRadioButton *LogWindowCompleteButton;
+  TRadioButton *LogWindowLinesButton;
+  TUpDownEdit *LogWindowLinesEdit;
   TPanel *LogFilePanel;
   TRadioButton *LogFileAppendButton;
   TRadioButton *LogFileOverwriteButton;
@@ -286,29 +301,6 @@ __published:
   TButton *PanelFontButton;
   TCheckBox *PanelFontCheck;
   TCheckBox *LogSensitiveCheck;
-  TTabSheet *EditorInternalSheet;
-  TGroupBox *InternalEditorGroup;
-  TLabel *Label9;
-  TLabel *Label11;
-  TCheckBox *EditorWordWrapCheck;
-  TUpDownEdit *EditorTabSizeEdit;
-  TComboBox *EditorEncodingCombo;
-  TGroupBox *FontGroup;
-  TLabel *EditorFontLabel;
-  TButton *EditorFontButton;
-  TButton *EditorFontColorButton;
-  TButton *EditorBackgroundColorButton;
-  TCheckBox *KeepOpenWhenNoSessionCheck;
-  TLabel *UpdatesAuthenticationEmailLabel;
-  TEdit *UpdatesAuthenticationEmailEdit;
-  TStaticText *UpdatesLink;
-  TCheckBox *ShowTipsCheck;
-  TPanel *ComponentsPanel;
-  TPopupMenu *AddCommandMenu;
-  TMenuItem *AddCustomCommandMenuItem;
-  TMenuItem *AddExtensionMenuItem;
-  TStaticText *BackgroundConfirmationsLink;
-  TButton *ConfigureCommandButton;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -319,6 +311,7 @@ __published:
           TListItem *Item, bool Selected);
   void __fastcall CustomCommandsViewKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
+  void __fastcall AddEditCommandButtonClick(TObject *Sender);
   void __fastcall RemoveCommandButtonClick(TObject *Sender);
   void __fastcall UpDownCommandButtonClick(TObject *Sender);
   void __fastcall ListViewStartDrag(TObject *Sender,
@@ -362,6 +355,8 @@ __published:
           TTreeNode *Node, bool &AllowCollapse);
   void __fastcall ListViewEndDrag(TObject *Sender,
           TObject *Target, int X, int Y);
+  void __fastcall PathEditCreateEditDialog(TObject *Sender,
+          TFileDialogKind DialogKind, TOpenDialog *&Dialog);
   void __fastcall SessionReopenTimeoutEditSetValue(TObject *Sender,
           Extended Value, UnicodeString &Text, bool &Handed);
   void __fastcall SessionReopenTimeoutEditGetValue(TObject *Sender,
@@ -384,27 +379,12 @@ __published:
   void __fastcall MakeDefaultHandlerItemClick(TObject *Sender);
   void __fastcall PanelFontLabelDblClick(TObject *Sender);
   void __fastcall PanelFontButtonClick(TObject *Sender);
-  void __fastcall EditorFontColorButtonClick(TObject *Sender);
-  void __fastcall EditorBackgroundColorButtonClick(TObject *Sender);
-  void __fastcall UpdatesAuthenticationEmailEditExit(TObject *Sender);
-  void __fastcall UpdatesLinkClick(TObject *Sender);
-  void __fastcall CustomCommandsViewDragOver(TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool &Accept);
-  void __fastcall AddCommandButtonClick(TObject *Sender);
-  void __fastcall AddCustomCommandMenuItemClick(TObject *Sender);
-  void __fastcall AddExtensionMenuItemClick(TObject *Sender);
-  void __fastcall EditCommandButtonClick(TObject *Sender);
-  void __fastcall AddCommandButtonDropDownClick(TObject *Sender);
-  void __fastcall CustomCommandsViewMouseMove(TObject *Sender, TShiftState Shift, int X, int Y);
-  void __fastcall BackgroundConfirmationsLinkClick(TObject *Sender);
-  void __fastcall ConfigureCommandButtonClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;
   std::unique_ptr<TFont> FEditorFont;
-  TColor FEditorBackgroundColor;
   std::unique_ptr<TFont> FPanelFont;
   TCustomCommandList * FCustomCommandList;
-  TCustomCommandList * FExtensionList;
   TCopyParamList * FCopyParamList;
   TEditorList * FEditorList;
   bool FCustomCommandChanging;
@@ -419,13 +399,6 @@ private:
   TListViewScrollOnDragOver * FEditorScrollOnDragOver;
   bool FNoUpdate;
   bool FLanguagesLoaded;
-  std::unique_ptr<TPopupMenu> FColorPopupMenu;
-  UnicodeString FVerifiedUpdatesAuthenticationEmail;
-  bool FAutomaticUpdatesPossible;
-  TWndMethod FOrigCustomCommandsViewWindowProc;
-  int FCustomCommandsHintItem;
-  std::unique_ptr<TStrings> FAddedExtensions;
-  std::unique_ptr<TStringList> FCustomCommandOptions;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
@@ -433,12 +406,6 @@ private:
   const TCopyParamType * GetCopyParam(int Index);
   void __fastcall SelectPuttyRegistryStorageKey(const UnicodeString & Key);
   TInterface __fastcall GetInterface();
-  TUpdatesConfiguration __fastcall SaveUpdates();
-  void __fastcall CustomCommandsViewWindowProc(TMessage & Message);
-  TCustomCommandList * __fastcall GetCommandList(int Index);
-  int __fastcall GetCommandIndex(int Index);
-  int __fastcall GetCommandListIndex(TCustomCommandList * List, int Index);
-  int __fastcall GetListCommandIndex(TCustomCommandList * List);
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);
@@ -463,11 +430,6 @@ protected:
   void __fastcall ChangeMasterPassword(UnicodeString Message);
   void __fastcall MasterPasswordChanged(
     UnicodeString Message, TStrings * RecryptPasswordErrors);
-  void __fastcall EditorFontColorChange(TColor Color);
-  void __fastcall EditorBackgroundColorChange(TColor Color);
-  void __fastcall AddEditCommand(bool Edit);
-  void __fastcall AddExtension();
-  void __fastcall ConfigureCommand();
 };
 //----------------------------------------------------------------------------
 #endif

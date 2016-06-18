@@ -51,7 +51,7 @@ __fastcall TSymlinkDialog::TSymlinkDialog(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TSymlinkDialog::UpdateControls()
 {
-  DebugAssert(Side == osLocal || Side == osRemote);
+  assert(Side == osLocal || Side == osRemote);
   FileNameEdit->Color = !Edit ? clWindow : clBtnFace;
   FileNameEdit->ReadOnly = Edit;
   FileNameEdit->TabStop = !Edit;

@@ -24,7 +24,6 @@ TQueryButtonAlias::TQueryButtonAlias()
 {
   OnClick = NULL;
   GroupWith = -1;
-  ElevationRequired = false;
 }
 //---------------------------------------------------------------------------
 TQueryParams::TQueryParams(unsigned int AParams, UnicodeString AHelpKeyword)
@@ -126,7 +125,7 @@ void CoreInitialize()
   CryptographyInitialize();
 
   // we do not expect configuration re-creation
-  DebugAssert(Configuration == NULL);
+  assert(Configuration == NULL);
   // configuration needs to be created and loaded before putty is initialized,
   // so that random seed path is known
   Configuration = CreateConfiguration();
@@ -170,7 +169,7 @@ void CoreSetResourceModule(void * ResourceHandle)
   #ifndef NO_FILEZILLA
   TFileZillaIntf::SetResourceModule(ResourceHandle);
   #else
-  DebugUsedParam(ResourceHandle);
+  USEDPARAM(ResourceHandle);
   #endif
 }
 //---------------------------------------------------------------------------

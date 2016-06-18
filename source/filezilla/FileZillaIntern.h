@@ -4,23 +4,17 @@
 //---------------------------------------------------------------------------
 class TFileZillaIntf;
 //---------------------------------------------------------------------------
-class TFileZillaIntern
+class TFileZillaIntern : public CApiLog
 {
 public:
   TFileZillaIntern(TFileZillaIntf * AOwner);
 
-  bool PostMessage(WPARAM wParam, LPARAM lParam) const;
-  CString GetOption(int OptionID) const;
-  int GetOptionVal(int OptionID) const;
+  virtual BOOL PostMessage(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) const;
 
   inline const TFileZillaIntf * GetOwner() const { return FOwner; }
 
-  int GetDebugLevel() const;
-  void SetDebugLevel(int DebugLevel);
-
 protected:
   TFileZillaIntf * FOwner;
-  int FDebugLevel;
 };
 //---------------------------------------------------------------------------
 #endif // FileZillaInternH

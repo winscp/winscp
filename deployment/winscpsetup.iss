@@ -1,30 +1,20 @@
 #define AppId "winscp3"
-#define AppMutex "WinSCP"
 #define ParentRegistryKey "Software\Martin Prikryl"
 #define RegistryKey ParentRegistryKey+"\WinSCP 2"
 #define DefaultLang "en"
-#define WebRoot "https://winscp.net/"
+#define WebRoot "http://winscp.net/"
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
-#define WebReport "http://winscp.net/install.php"
+#define WebReport WebRoot+"install.php"
+#define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
 #define Year 2016
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
 #define InnoSetupAppPathReg "Inno Setup: App Path"
 
-#ifndef CompletenessThreshold
-  #define CompletenessThreshold 100
-#else
-  #define CompletenessThreshold Int(CompletenessThreshold)
-#endif
-
 #ifndef PuttySourceDir
-  #if DirExists("c:\Program Files (x86)\PuTTY")
-    #define PuttySourceDir "c:\Program Files (x86)\PuTTY"
-  #else
-    #define PuttySourceDir "c:\Program Files\PuTTY"
-  #endif
+  #define PuttySourceDir "c:\Program Files\PuTTY"
 #endif
 #ifndef Status
   #define Status "unofficial"
@@ -33,18 +23,16 @@
   #define SourceDir "..\source"
 #endif
 #ifndef BinariesDir
-  #define BinariesDir SourceDir + "\Win32\Release"
+  #define BinariesDir SourceDir + "\Release"
 #endif
-#ifndef BinariesDir64
-  #define BinariesDir64 SourceDir + "\Win64\Release"
-#endif
-#ifndef BinariesDirAssembly
-  #define BinariesDirAssembly "..\dotnet\Win32\Release"
+#ifndef OutputSuffix
+  #define OutputSuffix
 #endif
 #ifndef AllTranslations
   #define AllTranslations
 #endif
 
+#define TranslationDirRel "translations"
 #define TranslationDir "translations"
 #define OutputDir "."
 
@@ -54,13 +42,13 @@
 #define ShellExtFileName "DragExt.dll"
 #define ShellExtFileSource BinariesDir+"\"+ShellExtFileName
 #define ShellExt64FileName "DragExt64.dll"
-#define ShellExt64FileSource BinariesDir64+"\"+ShellExt64FileName
+#define ShellExt64FileSource BinariesDir+"\"+ShellExt64FileName
 #define ConsoleFileSource BinariesDir+"\WinSCP.com"
+#define IconFileSource SourceDir+"\resource\Icon256.ico"
 #define MapFileSource BinariesDir+"\WinSCP.map"
-#define AssemblyFileSource BinariesDirAssembly+"\WinSCPnet.dll"
 
 #ifdef Donations
-#define PayPalCardImage "PayPalCard.bmp"
+#define PayPalCardImage "paypalcard.bmp"
 #endif
 
 #define Major
@@ -70,100 +58,116 @@
 #expr ParseVersion(MainFileSource, Major, Minor, Rev, Build)
 #define VersionOnly Str(Major)+"."+Str(Minor)+(Rev > 0 ? "."+Str(Rev) : "")
 #define Version VersionOnly+(Status != "" ? " "+Status : "")
-#define FTag VersionOnly+(Status != "" ? "."+Status : "")
 
 #define WebArguments "ver=" +VersionOnly + "&lang={language}&utm_source=winscp&utm_medium=setup&utm_campaign=" + VersionOnly
 #define WebGettingStarted WebRoot + "eng/installed.php?" + WebArguments + "&prevver="
 
-#define MessagesPath(L) TranslationDir + "\" + "WinSCP." + L + ".islu"
+; Some features of ISCC requires path relative to script,
+; some path relative to CWD
+#define MessagesPathRel(L) TranslationDirRel + "\" + "WinSCP." + L + ".isl"
 
-#define ExplorerFileBase "Explorer"
-#define CommanderFileBase "Commander"
-#define WizardImageFileBase "Tall"
-#define WizardSmallImageFileBase "Square"
-#define SelectDirFileBase "Opened bookmark folder-stored session folder"
+#define ExplorerFile "explorer.bmp"
+#define CommanderFile "commander.bmp"
 
 [Setup]
 AppId={#AppId}
 AppName=WinSCP
+AppMutex=WinSCP
 AppPublisher=Martin Prikryl
 AppPublisherURL={#WebRoot}
 AppSupportURL={#WebForum}
 AppUpdatesURL={#WebRoot}eng/download.php
 VersionInfoCompany=Martin Prikryl
-VersionInfoDescription=Setup for WinSCP {#Version} (SFTP, FTP, WebDAV and SCP client)
+VersionInfoDescription=Setup for WinSCP {#Version} (SFTP, FTP and SCP client)
 VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
 VersionInfoTextVersion={#Version}
 VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
 DefaultDirName={pf}\WinSCP
+DefaultGroupName=WinSCP
+AllowNoIcons=yes
 LicenseFile=license.setup.txt
 UninstallDisplayIcon={app}\WinSCP.exe
 OutputDir={#OutputDir}
 DisableStartupPrompt=yes
 AppVersion={#Version}
 AppVerName=WinSCP {#Version}
-OutputBaseFilename=WinSCP-{#FTag}-Setup
+OutputBaseFilename=winscp{#Major}{#Minor}{#Rev}setup{#OutputSuffix}
 SolidCompression=yes
-#ifdef ImagesDir
-WizardImageFile={#ImagesDir}\{#WizardImageFileBase} 100.bmp
-WizardSmallImageFile={#ImagesDir}\{#WizardSmallImageFileBase} 100.bmp
-#endif
+WizardImageFile=compiler:WizModernImage-IS.bmp
+WizardSmallImageFile=compiler:WizModernSmallImage-IS.bmp
 ShowTasksTreeLines=yes
 PrivilegesRequired=none
-ShowLanguageDialog=auto
 UsePreviousLanguage=yes
 DisableProgramGroupPage=yes
 MinVersion=0,5.1
 SetupIconFile=winscpsetup.ico
-DisableDirPage=no
 #ifdef Sign
-SignTool=sign $f "WinSCP Installer" https://winscp.net/eng/docs/installation
+SignTool=sign $f "WinSCP Installer" http://winscp.net/eng/docs/installation
 #endif
 
 [Languages]
 ; English has to be first so that it is pre-selected
 ; on Setup Select Language window, when no translation matching
 ; Windows UI locale is available
-Name: {#DefaultLang}; MessagesFile: {#MessagesPath(DefaultLang)}
+Name: {#DefaultLang}; MessagesFile: {#MessagesPathRel(DefaultLang)}
 
 #define FindHandle
 #dim Languages[200]
 #define LanguageCount 0
 #define AnyLanguageComplete 0
 #define LangI
+#define Complete
+#define DirName
+#define DirNameRel
 
 #sub ProcessTranslationFile
 
   #define FileName FindGetFileName(FindHandle)
   #define Lang Copy(FileName, Pos(".", FileName)+1)
+  #define MessagesPath DirName + "\" + "WinSCP." + Lang + ".isl"
 
-  #define LangNameFull ReadIni(MessagesPath(Lang), "LangOptions", "LanguageName")
-  #define Sep Pos(" -", LangNameFull)
+  #define LangNameFull ReadIni(MessagesPath, "LangOptions", "LanguageName")
+  #define Sep Pos(" - ", LangNameFull)
   #if Sep > 0
     #define LangName Copy(LangNameFull, 1, Sep - 1)
   #else
     #define LangName LangNameFull
   #endif
-  #define LangID ReadIni(MessagesPath(Lang), "LangOptions", "LanguageID")
-  #define LangCompleteness Int(ReadIni(MessagesPath(Lang), "CustomOptions", "TranslationCompleteness"))
+  #define LangID ReadIni(MessagesPath, "LangOptions", "LanguageID")
 
   #expr Languages[LanguageCount*4] = Lang
   #expr Languages[LanguageCount*4+1] = LangName
   #expr Languages[LanguageCount*4+2] = LangID
-  #expr Languages[LanguageCount*4+3] = LangCompleteness
+  #expr Languages[LanguageCount*4+3] = Complete
   #expr LanguageCount++
 
-#if LangCompleteness > CompletenessThreshold
-Name: {#Lang}; MessagesFile: {#MessagesPath(Lang)}
+#if Complete == 1
+Name: {#Lang}; MessagesFile: {#MessagesPathRel(Lang)}
   #expr AnyLanguageComplete = 1
 #endif
 
 #endsub /* sub ProcessTranslationFile */
 
-#if FindHandle = FindFirst(TranslationDir + "\" + TranslationFileMask, 0)
-  #define FResult 1
-  #for {0; FResult; FResult = FindNext(FindHandle)} ProcessTranslationFile
-  #expr FindClose(FindHandle)
+#sub ProcessTranslationDir
+
+  #if FindHandle = FindFirst(DirNameRel + "\" + TranslationFileMask, 0)
+    #define FResult 1
+    #for {0; FResult; FResult = FindNext(FindHandle)} ProcessTranslationFile
+    #expr FindClose(FindHandle)
+  #endif
+
+#endsub /* sub ProcessTranslationDir */
+
+#expr Complete = 1
+#expr DirName = TranslationDir
+#expr DirNameRel = TranslationDirRel
+#emit ProcessTranslationDir
+
+#ifdef TranslationIncompleteDir
+  #expr Complete = 0
+  #expr DirName = TranslationIncompleteDir
+  #expr DirNameRel = TranslationIncompleteDirRel
+  #emit ProcessTranslationDir
 #endif
 
 ; Types are not used anymore, they are preserved only to let setup
@@ -206,12 +210,12 @@ Name: searchpath; Description: {cm:AddSearchPath}; \
 
 [Icons]
 Name: "{commonprograms}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
-  Comment: "{cm:ProgramComment2}"
+  Comment: "{cm:ProgramComment}"
 ; This is created when desktopicon task is selected
 Name: "{userdesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
-  Tasks: desktopicon\user; Comment: "{cm:ProgramComment2}"
+  Tasks: desktopicon\user
 Name: "{commondesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
-  Tasks: desktopicon\common; Comment: "{cm:ProgramComment2}"
+  Tasks: desktopicon\common
 ; This is created when quicklaunchicon task is selected
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\WinSCP"; \
   Filename: "{app}\WinSCP.exe"; Tasks: quicklaunchicon
@@ -220,8 +224,6 @@ Name: "{sendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
   Parameters: "/upload"; Tasks: sendtohook
 
 [InstallDelete]
-; Remove pre-5.8.2 PuTTY help file
-Type: files; Name: "{app}\PuTTY\putty.hlp"
 ; Remove pre-524 licence file (without .txt extension)
 Type: files; Name: "{app}\license"
 ; Remove pre-520 start menu folders
@@ -242,29 +244,11 @@ Type: files; Name: "{app}\WinSCP.ini"
 Type: files; Name: "{app}\WinSCP.cgl"
 
 [Files]
-#ifdef ImagesDir
-; Put these to the top as we extract them on demand and
-; that can take long with solid compression enabled
-Source: "{#ImagesDir}\{#ExplorerFileBase} *.bmp"; Flags: dontcopy
-Source: "{#ImagesDir}\{#CommanderFileBase} *.bmp"; Flags: dontcopy
-; We do not need 100% images here, they are embedded already automatically
-; by WizardImageFile and WizardSmallImageFile
-Source: "{#ImagesDir}\{#WizardImageFileBase} *.bmp"; Excludes: "* 100.bmp"; \
-  Flags: dontcopy
-Source: "{#ImagesDir}\{#WizardSmallImageFileBase} *.bmp"; Excludes: "* 100.bmp"; \
-  Flags: dontcopy
-Source: "{#ImagesDir}\{#SelectDirFileBase} *.bmp"; Flags: dontcopy
-#ifdef Donations
-Source: "{#ImagesDir}\{#PayPalCardImage}"; Flags: dontcopy
-#endif
-#endif
 Source: "{#MainFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#ConsoleFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#MapFileSource}"; DestDir: "{app}"; \
-  Components: main; Flags: ignoreversion
-Source: "{#AssemblyFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "license.txt"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
@@ -278,14 +262,17 @@ Source: "{#ShellExt64FileSource}"; DestDir: "{app}"; \
   Check: IsWin64 and IsShellExtNewer(ExpandConstant('{app}\{#ShellExt64FileName}'), '{#GetFileVersion(ShellExt64FileSource)}')
 Source: "{#PuttySourceDir}\LICENCE"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
-Source: "{#PuttySourceDir}\putty.chm"; DestDir: "{app}\PuTTY"; \
+Source: "{#PuttySourceDir}\putty.hlp"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
 Source: "{#PuttySourceDir}\pageant.exe"; DestDir: "{app}\PuTTY"; \
   Components: pageant; Flags: ignoreversion
 Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
   Components: puttygen; Flags: ignoreversion
-#ifdef ExtensionsDir
-Source: "{#ExtensionsDir}\*.*"; DestDir: "{app}\Extensions"
+Source: "{#ExplorerFile}"; Flags: dontcopy
+Source: "{#CommanderFile}"; Flags: dontcopy
+#ifdef Donations
+Source: "{#PayPalCardImage}"; \
+  Flags: dontcopy
 #endif
 
 [Registry]
@@ -329,7 +316,7 @@ Name: transl\eng; Description: {#EnglishLang}; Types: full custom compact; \
 
 #sub EmitLang
 
-  #if Languages[LangI*4+3] > CompletenessThreshold
+  #if Languages[LangI*4+3] == 1
 
 [Components]
 Name: transl\{#Languages[LangI*4]}; Description: {#Languages[LangI*4+1]}; \
@@ -338,7 +325,7 @@ Name: transl\{#Languages[LangI*4]}; Description: {#Languages[LangI*4+1]}; \
   Check: not IsLang('{#Languages[LangI*4]}')
 
 [Files]
-Source: "{#TranslationDir}\WinSCP.{#Languages[LangI*4]}"; DestDir: "{app}"; \
+Source: "{#TranslationDirRel}\WinSCP.{#Languages[LangI*4]}"; DestDir: "{app}"; \
   Components: transl\{#Languages[LangI*4]}; Flags: ignoreversion
 
 [Registry]
@@ -364,6 +351,8 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/UnregisterForProtocols"; \
 
 [Code]
 const
+  wpSetupType = 100;
+  wpInterface = 101;
   NewLine = #13#10;
 
 var
@@ -374,7 +363,6 @@ var
   LaunchCheckbox: TCheckbox;
   OpenGettingStartedCheckbox: TCheckbox;
   AreUpdatesEnabled: Boolean;
-  AutomaticUpdate: Boolean;
   Upgrade: Boolean;
   MissingTranslations: string;
   PrevVersion: string;
@@ -382,7 +370,6 @@ var
   ShellExtNewerCacheResult: Boolean;
 #ifdef Donations
   DonationPanel: TPanel;
-  AboutDonationCaption: TLabel;
 #endif
   InstallationDone: Boolean;
   LicenseAccepted: Boolean;
@@ -391,8 +378,6 @@ var
   InitTasks: string;
   InitInterface: Integer;
   Donated: Boolean;
-  InterfacePage: TWizardPage;
-  SetupTypePage: TWizardPage;
 
 procedure ShowMessage(Text: string);
 begin
@@ -404,9 +389,15 @@ begin
   Result := (Lang = ActiveLanguage);
 end;
 
-function IsWinVista: Boolean;
+function IsWin8: Boolean;
+var
+  Version: TWindowsVersion;
 begin
-  Result := (GetWindowsVersion >= $06000000);
+  GetWindowsVersionEx(Version);
+
+  Result :=
+    (Version.Major > 6) or
+    ((Version.Major = 6) and (Version.Minor >= 2));
 end;
 
 procedure CutVersionPart(var VersionString: string; var VersionPart: Word);
@@ -518,7 +509,7 @@ end;
 function ContainsLanguage(Lang: string): Boolean;
 begin
   #sub EmitLang3
-    #if Languages[LangI*4+3] > CompletenessThreshold
+    #if Languages[LangI*4+3] == 1
   if (Lang = '{#Languages[LangI*4]}') then Result := True
     else
     #endif
@@ -529,22 +520,6 @@ begin
   Result := False;
 end;
 
-function LanguageCompleteness(Lang: string): Integer;
-begin
-  #sub EmitLang4
-  if (Lang = '{#Languages[LangI*4]}') then
-  begin
-    Result := {#Languages[LangI*4+3]};
-  end
-    else
-  #endsub /* sub EmitLang4 */
-
-  #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang4
-
-  // used also for the default language
-  Result := 100;
-end;
-
 procedure OpenBrowser(Url: string);
 var
   ErrorCode: Integer;
@@ -552,59 +527,34 @@ begin
   ShellExec('open', Url, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
 end;
 
-function IsRestartingApplicationsPage: Boolean;
-begin
-  Result := WizardForm.PreparingMemo.Visible;
-end;
-
-function IsRestartPage: Boolean;
-begin
-  Result := WizardForm.YesRadio.Visible;
-end;
-
 procedure OpenHelp;
-var
-  HelpKeyword: string;
 begin
-  HelpKeyword := 'ui_installer'; // default
-
-  case WizardForm.CurPageID of
-    wpLicense:
-      HelpKeyword := 'ui_installer_license';
-
-    wpSelectDir:
-      HelpKeyword := 'ui_installer_selectdir';
-
-    wpSelectComponents:
-      HelpKeyword := 'ui_installer_selectcomponents';
-
-    wpSelectTasks:
-      HelpKeyword := 'ui_installer_selecttasks';
-
-    wpReady:
-      HelpKeyword := 'ui_installer_ready';
-
-    wpPreparing:
-      if IsRestartingApplicationsPage then
-        HelpKeyword := 'ui_installer_restartingapplications';
-
-    wpFinished:
-      HelpKeyword := 'ui_installer_finished';
-
-    SetupTypePage.ID:
-      HelpKeyword := 'ui_installer_setuptype';
-
-    InterfacePage.ID:
-      HelpKeyword := 'ui_installer_interface';
-  end;
-
-  OpenBrowser('{#WebDocumentation}' + HelpKeyword + '?' + ExpandConstant('{#WebArguments}'));
+  OpenBrowser('{#WebDocumentation}installation?page=' + IntToStr(WizardForm.CurPageID) + '&' + ExpandConstant('{#WebArguments}'));
 end;
 
 procedure HelpButtonClick(Sender: TObject);
 begin
   OpenHelp;
 end;
+
+#ifdef Donations
+
+procedure AboutDonationsLinkClick(Sender: TObject);
+begin
+  OpenBrowser('{#WebRoot}eng/donate.php?' + ExpandConstant('{#WebArguments}'));
+  Donated := true;
+end;
+
+procedure DonateLinkClick(Sender: TObject);
+var
+  Control: TControl;
+begin
+  Control := TControl(Sender);
+  OpenBrowser('{#WebRoot}eng/donate.php?amount=' + IntToStr(Control.Tag) + '&currency=' + ExpandConstant('{cm:Currency}') + '&' + ExpandConstant('{#WebArguments}'));
+  Donated := true;
+end;
+
+#endif
 
 procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
@@ -649,7 +599,7 @@ var
 begin
   Path := AddBackslash(WizardDirValue);
 
-  if FindFirst(Path + '{#TranslationFileMask}', FindRec) then
+  if FindFirst(ExpandConstant(Path + '{#TranslationFileMask}'), FindRec) then
   begin
     try
       repeat
@@ -699,80 +649,26 @@ end;
 
 #ifdef Donations
 
-procedure AboutDonationsLinkClick(Sender: TObject);
-begin
-  OpenBrowser('{#WebRoot}eng/donate.php?' + ExpandConstant('{#WebArguments}'));
-  Donated := true;
-end;
-
-procedure DonateLinkClick(Sender: TObject);
-var
-  Control: TControl;
-begin
-  Control := TControl(Sender);
-  OpenBrowser('{#WebRoot}eng/donate.php?amount=' + IntToStr(Control.Tag) + '&currency=' + CustomMessage('Currency') + '&' + ExpandConstant('{#WebArguments}'));
-  Donated := true;
-end;
-
-procedure CreateDonateLink(Amount: Integer; var Top: Integer);
+procedure CreateDonateLink(Amount: Integer; Row: Integer; Top: Integer);
 var
   Caption: TLabel;
 begin
   Caption := TLabel.Create(DonationPanel);
   Caption.Left := 0;
-  Caption.Top := Top;
+  Caption.Top := Top + Row * ScaleY(16);
   Caption.Tag := Amount;
   Caption.Parent := DonationPanel;
-  Caption.Caption := Format(CustomMessage('Donate'), ['$' + IntToStr(Amount)]);
+  Caption.Caption := Format(ExpandConstant('{cm:Donate}'), ['$' + IntToStr(Amount)]);
   Caption.OnClick := @DonateLinkClick;
   LinkLabel(Caption);
-  Top := Top + ScaleY(16);
 end;
 
 #endif
 
-const
-  fsSurface = 0;
-
-procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string; BackgroundColor: TColor);
-var
-  FileName: string;
-  Bitmap: TAlphaBitmap;
+procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string);
 begin
   ExtractTemporaryFile(Name);
-  Bitmap := TAlphaBitmap.Create();
-  Bitmap.AlphaFormat := afDefined;
-  FileName := ExpandConstant('{tmp}\' + Name);
-  Bitmap.LoadFromFile(FileName);
-  // we won't need this anymore
-  DeleteFile(FileName);
-
-  Image.Bitmap := Bitmap;
-  Bitmap.Free;
-  Image.BackColor := BackgroundColor;
-end;
-
-function GetScalingFactor: Integer;
-begin
-  if WizardForm.Font.PixelsPerInch >= 192 then Result := 200
-    else
-  if WizardForm.Font.PixelsPerInch >= 144 then Result := 150
-    else
-  if WizardForm.Font.PixelsPerInch >= 120 then Result := 125
-    else Result := 100;
-end;
-
-procedure LoadEmbededScaledBitmap(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
-var
-  Name: String;
-begin
-  Name := Format('%s %d.bmp', [NameBase, SizeBase * GetScalingFactor div 100]);
-  LoadEmbededBitmap(Image, Name, BackgroundColor);
-end;
-
-procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
-begin
-  LoadEmbededScaledBitmap(Image, NameBase, SizeBase, BackgroundColor);
+  Image.Bitmap.LoadFromFile(ExpandConstant('{tmp}\' + Name));
   Image.AutoSize := True;
 end;
 
@@ -784,153 +680,20 @@ begin
   Control.Height := ScaleY(Control.Height);
 end;
 
-function GetBottom(Control: TControl): Integer;
-begin
-  Result := Control.Top + Control.Height;
-end;
-
-function CmdLineParamExists(const Value: string): Boolean;
-var
-  I: Integer;
-begin
-  Result := False;
-  for I := 1 to ParamCount do
-  begin
-    if CompareText(ParamStr(I), Value) = 0 then
-    begin
-      Result := True;
-      Exit;
-    end;
-  end;
-end;
-
-function InitializeSetup: Boolean;
-var
-  WaitInterval: Integer;
-  Wait: Integer;
-begin
-  AutomaticUpdate := CmdLineParamExists('/AutomaticUpdate');
-  if AutomaticUpdate then
-  begin
-    Log('Automatic update');
-
-    Wait := 10000;
-  end
-    else
-  begin
-    Wait := 0;
-  end;
-
-  WaitInterval := 250;
-  while (Wait > 0) and CheckForMutexes('{#AppMutex}') do
-  begin
-    Log('Application is still running, waiting');
-    Sleep(WaitInterval);
-    Wait := Wait - WaitInterval;
-  end;
-
-  while CheckForMutexes('{#AppMutex}') do
-  begin
-    if MsgBox(
-         FmtMessage(SetupMessage(msgSetupAppRunningError), ['WinSCP']),
-         mbError, MB_OKCANCEL) <> IDOK then
-    begin
-      Abort;
-    end;
-  end;
-
-  Result := True;
-end;
-
-function IsElevated: Boolean;
-begin
-  Result := IsAdminLoggedOn or IsPowerUserLoggedOn;
-end;
-
-function HaveWriteAccessToApp: Boolean;
-var
-  FileName: string;
-begin
-  FileName := AddBackslash(WizardDirValue) + 'writetest.tmp';
-  Result := SaveStringToFile(FileName, 'test', False);
-  if Result then
-  begin
-    Log(Format('Have write access to the last installation path [%s]', [WizardDirValue]));
-    DeleteFile(FileName);
-  end
-    else
-  begin
-    Log(Format('Does not have write access to the last installation path [%s]', [WizardDirValue]));
-  end;
-end;
-
-procedure ExitProcess(uExitCode: UINT);
-  external 'ExitProcess@kernel32.dll stdcall';
-function ShellExecute(hwnd: HWND; lpOperation: string; lpFile: string;
-  lpParameters: string; lpDirectory: string; nShowCmd: Integer): THandle;
-  external 'ShellExecuteW@shell32.dll stdcall';
-
-function Elevate: Boolean;
-var
-  I: Integer;
-  RetVal: Integer;
-  Params: string;
-  S: string;
-begin
-  // Collect current instance parameters
-  for I := 1 to ParamCount do
-  begin
-    S := ParamStr(I);
-    // Unique log file name for the elevated instance
-    if CompareText(Copy(S, 1, 5), '/LOG=') = 0 then
-    begin
-      S := S + '-elevated';
-    end;
-    // Do not pass our /SL5 switch
-    if CompareText(Copy(S, 1, 5), '/SL5=') <> 0 then
-    begin
-      Params := Params + AddQuotes(S) + ' ';
-    end;
-  end;
-
-  // ... and add selected language
-  Params := Params + '/LANG=' + ActiveLanguage;
-
-  Log(Format('Elevating setup with parameters [%s]', [Params]));
-  RetVal := ShellExecute(0, 'runas', ExpandConstant('{srcexe}'), Params, '', SW_SHOW);
-  Log(Format('Running elevated setup returned [%d]', [RetVal]));
-  Result := (RetVal > 32);
-  // if elevated executing of this setup succeeded, then...
-  if Result then
-  begin
-    Log('Elevation succeeded');
-    // exit this non-elevated setup instance
-    ExitProcess(0);
-  end
-    else
-  begin
-    Log(Format('Elevation failed [%s]', [SysErrorMessage(RetVal)]));
-  end;
-end;
-
 procedure InitializeWizard;
 var
   DefaultLang: Boolean;
   UserInterface: Cardinal;
   UpdatesPeriod: Cardinal;
+  InterfacePage: TWizardPage;
+  SetupTypePage: TWizardPage;
   Caption: TLabel;
-#ifdef ImagesDir
   Image: TBitmapImage;
-#endif
   HelpButton: TButton;
 #ifdef Donations
   P: Integer;
-#ifdef ImagesDir
-  P2: Integer;
-#endif
 #endif
   S: string;
-  Completeness: Integer;
 begin
   InstallationDone := False;
   LicenseAccepted := False;
@@ -940,27 +703,12 @@ begin
 
   Upgrade :=
     RegQueryStringValue(HKLM, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S) or
-    RegQueryStringValue(HKCU, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S);
-
-  if Upgrade then
-  begin
-    Log('Upgrade');
-  end
-    else
-  begin
-    Log('New installation');
-  end;
+    RegQueryStringValue(HKCU, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S)
 
   if Upgrade and GetVersionNumbersString(AddBackslash(WizardDirValue) + '{#MainFileName}', PrevVersion) and
      (PrevVersion[2] = '.') and (PrevVersion[4] = '.') and (PrevVersion[6] = '.') then
   begin
     PrevVersion := Copy(PrevVersion, 1, 5);
-  end;
-
-  Completeness := LanguageCompleteness(ActiveLanguage);
-  if (Completeness < 100) and (not WizardSilent) then
-  begin
-    ShowMessage(FmtMessage(CustomMessage('IncompleteTranslation'), [IntToStr(Completeness)]));
   end;
 
   ProcessMissingTranslations(@CollectNames);
@@ -975,13 +723,14 @@ begin
   WizardForm.LicenseAcceptedRadio.Visible := False;
   WizardForm.LicenseNotAcceptedRadio.Visible := False;
   WizardForm.LicenseMemo.Height :=
-    GetBottom(WizardForm.LicenseNotAcceptedRadio) -
+    WizardForm.LicenseNotAcceptedRadio.Top +
+    WizardForm.LicenseNotAcceptedRadio.Height -
     WizardForm.LicenseMemo.Top - 5;
 
   // hide installation types combo
   WizardForm.TypesCombo.Visible := False;
   WizardForm.ComponentsList.Height :=
-    GetBottom(WizardForm.ComponentsList) -
+    WizardForm.ComponentsList.Top + WizardForm.ComponentsList.Height -
     WizardForm.TypesCombo.Top;
   WizardForm.ComponentsList.Top := WizardForm.TypesCombo.Top;
 
@@ -994,53 +743,22 @@ begin
   HelpButton.Top := WizardForm.CancelButton.Top;
   HelpButton.Width := WizardForm.CancelButton.Width;
   HelpButton.Height := WizardForm.CancelButton.Height;
-  HelpButton.Caption := CustomMessage('HelpButton');
+  HelpButton.Caption := ExpandConstant('{cm:HelpButton}');
   HelpButton.OnClick := @HelpButtonClick;
-
-  // elevate
-
-  if not IsWinVista then
-  begin
-    Log(Format('This version of Windows [%x] does not support elevation', [GetWindowsVersion]));
-  end
-    else
-  if IsElevated then
-  begin
-    Log('Running elevated');
-  end
-    else
-  begin
-    Log('Running non-elevated');
-    if Upgrade then
-    begin
-      if not HaveWriteAccessToApp then
-      begin
-        Elevate;
-      end;
-    end
-      else
-    begin
-      if not Elevate then
-      begin
-        WizardForm.DirEdit.Text := ExpandConstant('{localappdata}\WinSCP');
-        Log(Format('Falling back to local application user folder [%s]', [WizardForm.DirEdit.Text]));
-      end;
-    end;
-  end;
 
   // installation type page
 
   SetupTypePage := CreateCustomPage(wpLicense,
-    CustomMessage('SetupTypeTitle'),
-    CustomMessage('SetupTypePrompt'));
+    ExpandConstant('{cm:SetupTypeTitle}'),
+    ExpandConstant('{cm:SetupTypePrompt}'));
 
   TypicalTypeButton := TRadioButton.Create(SetupTypePage);
   if not Upgrade then
-    S := CustomMessage('TypicalType')
+    S := ExpandConstant('{cm:TypicalType}')
   else
-    S := CustomMessage('TypicalUpgradeType');
+    S := ExpandConstant('{cm:TypicalUpgradeType}');
   TypicalTypeButton.Caption :=
-    FmtMessage(CustomMessage('Recommended'), [S]);
+    FmtMessage(ExpandConstant('{cm:Recommended}'), [S]);
   // check typical install, if typical install was installed before or
   // when version without setup type support was installed with
   // "full" installation or when there were no installation before
@@ -1060,47 +778,47 @@ begin
   if not Upgrade then
   begin
     if DefaultLang then
-      S := CustomMessage('TypicalType2Eng')
+      S := ExpandConstant('{cm:TypicalType2Eng}')
     else
-      S := FmtMessage(CustomMessage('TypicalType2Intl'), [CustomMessage('LocalLanguageName')]);
+      S := FmtMessage(ExpandConstant('{cm:TypicalType2Intl}'), [LanguageName(ActiveLanguage, 'Unknown')]);
     Caption.Caption :=
-      CustomMessage('TypicalType1') + NewLine +
+      ExpandConstant('{cm:TypicalType1}') + NewLine +
       S + NewLine +
-      CustomMessage('TypicalType3');
+      ExpandConstant('{cm:TypicalType3}');
   end
     else
   begin
     if Length(MissingTranslations) > 0 then
     begin
       #if AnyLanguageComplete
-        S := FmtMessage(CustomMessage('TypicalUpgradeTypeMissingTransl'), [MissingTranslations]);
+        S := FmtMessage(ExpandConstant('{cm:TypicalUpgradeTypeMissingTransl}'), [MissingTranslations]);
       #else
-        S := CustomMessage('TypicalUpgradeTypeNoTransl');
+        S := ExpandConstant('{cm:TypicalUpgradeTypeNoTransl}');
       #endif
       S := NewLine + S;
     end
       else S := '';
 
     Caption.Caption :=
-      CustomMessage('TypicalUpgradeType1') + S;
+      ExpandConstant('{cm:TypicalUpgradeType1}') + S;
   end;
   Caption.Left := ScaleX(4) + ScaleX(20);
   Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
-  Caption.Top := GetBottom(TypicalTypeButton) + ScaleY(6);
+  Caption.Top := TypicalTypeButton.Top + TypicalTypeButton.Height + ScaleY(6);
   Caption.Parent := SetupTypePage.Surface;
   Caption.FocusControl := TypicalTypeButton;
   Caption.OnClick := @CaptionClick;
 
   CustomTypeButton := TRadioButton.Create(SetupTypePage);
   if not Upgrade then
-    CustomTypeButton.Caption := CustomMessage('CustomType')
+    CustomTypeButton.Caption := ExpandConstant('{cm:CustomType}')
   else
-    CustomTypeButton.Caption := CustomMessage('CustomUpgradeType');
+    CustomTypeButton.Caption := ExpandConstant('{cm:CustomUpgradeType}');
   CustomTypeButton.Checked := (not TypicalTypeButton.Checked);
   CustomTypeButton.Left := ScaleX(4);
   CustomTypeButton.Width := SetupTypePage.SurfaceWidth -
     CustomTypeButton.Left;
-  CustomTypeButton.Top := GetBottom(Caption) + ScaleY(10);
+  CustomTypeButton.Top := Caption.Top + Caption.Height + ScaleY(10);
   ScaleFixedHeightControl(CustomTypeButton);
   CustomTypeButton.Parent := SetupTypePage.Surface;
 
@@ -1109,17 +827,18 @@ begin
   if not Upgrade then
   begin
     Caption.Caption :=
-      CustomMessage('CustomType1');
+      ExpandConstant('{cm:CustomType1}');
   end
     else
   begin
     Caption.Caption :=
-      CustomMessage('CustomUpgradeType1') + NewLine +
-      CustomMessage('CustomUpgradeType2');
+      ExpandConstant('{cm:CustomUpgradeType1}') + NewLine +
+      ExpandConstant('{cm:CustomUpgradeType2}');
   end;
   Caption.Left := ScaleX(4) + ScaleX(20);
   Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
-  Caption.Top := GetBottom(CustomTypeButton) + ScaleY(6);
+  Caption.Top := CustomTypeButton.Top + CustomTypeButton.Height +
+    ScaleY(6);
   Caption.Parent := SetupTypePage.Surface;
   Caption.FocusControl := CustomTypeButton;
   Caption.OnClick := @CaptionClick;
@@ -1127,8 +846,8 @@ begin
   // interface page
 
   InterfacePage := CreateCustomPage(wpSelectTasks,
-    CustomMessage('UserSettingsTitle'),
-    CustomMessage('UserSettingsPrompt'));
+    ExpandConstant('{cm:UserSettingsTitle}'),
+    ExpandConstant('{cm:UserSettingsPrompt}'));
 
   UpdatesPeriod := 0;
   RegQueryDWordValue(HKCU, '{#RegistryKey}\Configuration\Interface\Updates',
@@ -1140,35 +859,35 @@ begin
     'Interface', UserInterface);
 
   Caption := TLabel.Create(InterfacePage);
-  Caption.Caption := CustomMessage('UserInterfaceStyle');
+  Caption.Caption := ExpandConstant('{cm:UserInterfaceStyle}');
   Caption.Width := InterfacePage.SurfaceWidth;
   Caption.Parent := InterfacePage.Surface;
 
   CommanderRadioButton := TRadioButton.Create(InterfacePage);
-  CommanderRadioButton.Caption := CustomMessage('NortonCommanderInterfaceC');
+  CommanderRadioButton.Caption := ExpandConstant('{cm:NortonCommanderInterfaceC}');
   CommanderRadioButton.Checked := (UserInterface = 0);
   CommanderRadioButton.Left := ScaleX(4);
   CommanderRadioButton.Width := ScaleX(116);
-  CommanderRadioButton.Top := GetBottom(Caption) + ScaleY(6);
+  CommanderRadioButton.Top := Caption.Top + Caption.Height + ScaleY(6);
   ScaleFixedHeightControl(CommanderRadioButton);
   CommanderRadioButton.Parent := InterfacePage.Surface;
 
-#ifdef ImagesDir
   Image := TBitmapImage.Create(InterfacePage);
-  Image.Top := GetBottom(CommanderRadioButton) + ScaleY(6);
+  Image.Top := CommanderRadioButton.Top + CommanderRadioButton.Height + ScaleY(6);
   Image.Left := CommanderRadioButton.Left + ScaleX(45);
   Image.Parent := InterfacePage.Surface;
-  LoadEmbededScaledIcon(Image, '{#CommanderFileBase}', 32, InterfacePage.Surface.Color);
+  LoadEmbededBitmap(Image, '{#CommanderFile}');
+  Image.ReplaceColor := $FF00FF;
+  Image.ReplaceWithColor := InterfacePage.Surface.Color;
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(CommanderRadioButton);
-#endif
 
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
   Caption.Caption :=
-      CustomMessage('NortonCommanderInterface1') + NewLine +
-      CustomMessage('NortonCommanderInterface2') + NewLine +
-      CustomMessage('NortonCommanderInterface3');
+      ExpandConstant('{cm:NortonCommanderInterface1}') + NewLine +
+      ExpandConstant('{cm:NortonCommanderInterface2}') + NewLine +
+      ExpandConstant('{cm:NortonCommanderInterface3}');
   Caption.Left := CommanderRadioButton.Left + CommanderRadioButton.Width;
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Top := CommanderRadioButton.Top;
@@ -1177,30 +896,30 @@ begin
   Caption.OnClick := @CaptionClick;
 
   ExplorerRadioButton := TRadioButton.Create(InterfacePage);
-  ExplorerRadioButton.Caption := CustomMessage('ExplorerInterfaceC');
+  ExplorerRadioButton.Caption := ExpandConstant('{cm:ExplorerInterfaceC}');
   ExplorerRadioButton.Checked := (UserInterface <> 0);
   ExplorerRadioButton.Left := ScaleX(4);
   ExplorerRadioButton.Width := CommanderRadioButton.Width;
-  ExplorerRadioButton.Top := GetBottom(Caption) + ScaleY(10);
+  ExplorerRadioButton.Top := Caption.Top + Caption.Height + ScaleY(10);
   ScaleFixedHeightControl(ExplorerRadioButton);
   ExplorerRadioButton.Parent := InterfacePage.Surface;
 
-#ifdef ImagesDir
   Image := TBitmapImage.Create(InterfacePage);
-  Image.Top := GetBottom(ExplorerRadioButton) + ScaleY(6);
+  Image.Top := ExplorerRadioButton.Top + ExplorerRadioButton.Height + ScaleY(6);
   Image.Left := ExplorerRadioButton.Left + ScaleX(45);
   Image.Parent := InterfacePage.Surface;
-  LoadEmbededScaledIcon(Image, '{#ExplorerFileBase}', 32, InterfacePage.Surface.Color);
+  LoadEmbededBitmap(Image, '{#ExplorerFile}');
+  Image.ReplaceColor := $C020E0;
+  Image.ReplaceWithColor := InterfacePage.Surface.Color;
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(ExplorerRadioButton);
-#endif
 
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
   Caption.Caption :=
-      CustomMessage('ExplorerInterface1') + NewLine +
-      CustomMessage('ExplorerInterface2') + NewLine +
-      CustomMessage('ExplorerInterface3');
+      ExpandConstant('{cm:ExplorerInterface1}') + NewLine +
+      ExpandConstant('{cm:ExplorerInterface2}') + NewLine +
+      ExpandConstant('{cm:ExplorerInterface3}');
   Caption.Left := ExplorerRadioButton.Left + ExplorerRadioButton.Width;
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Top := ExplorerRadioButton.Top;
@@ -1210,14 +929,14 @@ begin
 
   // run checkbox
   LaunchCheckbox := TCheckbox.Create(WizardForm.FinishedPage);
-  LaunchCheckbox.Caption := CustomMessage('Launch');
+  LaunchCheckbox.Caption := ExpandConstant('{cm:Launch}');
   LaunchCheckbox.Checked := True;
   LaunchCheckbox.Left := WizardForm.YesRadio.Left;
   LaunchCheckbox.Width := WizardForm.YesRadio.Width;
   ScaleFixedHeightControl(LaunchCheckbox);
   LaunchCheckbox.Parent := WizardForm.FinishedPage;
   OpenGettingStartedCheckbox := TCheckbox.Create(WizardForm.FinishedPage);
-  OpenGettingStartedCheckbox.Caption := CustomMessage('OpenGettingStarted');
+  OpenGettingStartedCheckbox.Caption := ExpandConstant('{cm:OpenGettingStarted}');
   OpenGettingStartedCheckbox.Checked := True;
   OpenGettingStartedCheckbox.Left := WizardForm.YesRadio.Left;
   OpenGettingStartedCheckbox.Width := WizardForm.YesRadio.Width;
@@ -1230,49 +949,45 @@ begin
   DonationPanel.Left := WizardForm.YesRadio.Left;
   DonationPanel.Width := WizardForm.YesRadio.Width;
   DonationPanel.Parent := WizardForm.FinishedPage;
+  DonationPanel.Top := ScaleY(190);
+  DonationPanel.Height := ScaleY(110);
   DonationPanel.BevelInner := bvNone;
   DonationPanel.BevelOuter := bvNone;
   DonationPanel.Color := WizardForm.FinishedPage.Color;
 
   Caption := TLabel.Create(DonationPanel);
-  Caption.WordWrap := True;
-  Caption.Caption := CustomMessage('PleaseDonate');
   Caption.Left := 0;
   Caption.Top := 0;
   Caption.Width := DonationPanel.Width;
   Caption.Parent := DonationPanel;
+  Caption.Caption := ExpandConstant('{cm:PleaseDonate}');
 
-  P := GetBottom(Caption) + ScaleY(12);
-#ifdef ImagesDir
-  P2 := P;
-#endif
+  P := Caption.Top + Caption.Height + ScaleY(12);
 
-  CreateDonateLink( 9, P);
-  CreateDonateLink(19, P);
-  CreateDonateLink(49, P);
+  CreateDonateLink( 9, 0, P);
+  CreateDonateLink(19, 1, P);
+  CreateDonateLink(29, 2, P);
+  CreateDonateLink(49, 3, P);
 
-  AboutDonationCaption := TLabel.Create(DonationPanel);
-  AboutDonationCaption.Left := 0;
-  AboutDonationCaption.Top := P;
-  AboutDonationCaption.Parent := DonationPanel;
-  AboutDonationCaption.Caption := CustomMessage('AboutDonations');
-  AboutDonationCaption.OnClick := @AboutDonationsLinkClick;
-  LinkLabel(AboutDonationCaption);
+  Caption := TLabel.Create(DonationPanel);
+  Caption.Left := 0;
+  Caption.Top := P + 3 * ScaleY(16) + ScaleY(24);
+  Caption.Parent := DonationPanel;
+  Caption.Caption := ExpandConstant('{cm:AboutDonations}');
+  Caption.OnClick := @AboutDonationsLinkClick;
+  LinkLabel(Caption);
 
-#ifdef ImagesDir
   Image := TBitmapImage.Create(DonationPanel);
-  LoadEmbededBitmap(Image, '{#PayPalCardImage}', DonationPanel.Color);
-  Image.AutoSize := True;
+  LoadEmbededBitmap(Image, '{#PayPalCardImage}');
   Image.Cursor := crHand;
   Image.Parent := DonationPanel;
-  Image.Left := ScaleX(108);
-  Image.Top := P2 + ScaleX(8);
-  Image.Hint := CustomMessage('AboutDonations');
+  Image.Left := ScaleX(100);
+  Image.Top := P + ScaleX(8);
+  Image.ReplaceColor := $FCFE04;
+  Image.ReplaceWithColor := WizardForm.FinishedPage.Color;
+  Image.Hint := ExpandConstant('{cm:AboutDonations}');
   Image.ShowHint := True;
   Image.OnClick := @AboutDonationsLinkClick;
-#endif
-
-  DonationPanel.Height := GetBottom(AboutDonationCaption);
 
 #endif
 
@@ -1280,27 +995,10 @@ begin
   WizardForm.NoRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   UpdatePostInstallRunCheckboxes(nil);
 
-  // 100% images are automatically loaded by
-  // WizardImageFile and WizardSmallImageFile
-  if GetScalingFactor > 100 then
+  if IsWin8 then
   begin
-    LoadEmbededScaledBitmap(WizardForm.WizardBitmapImage, '{#WizardImageFileBase}', 100, 0);
-    LoadEmbededScaledBitmap(WizardForm.WizardBitmapImage2, '{#WizardImageFileBase}', 100, 0);
-    LoadEmbededScaledBitmap(WizardForm.WizardSmallBitmapImage, '{#WizardSmallImageFileBase}', 100, 0);
+    WizardForm.NoIconsCheck.Checked := True;
   end;
-
-#ifdef ImagesDir
-  // Text does not scale as quick as with DPI,
-  // so the icon may overlap the labels. Shift them.
-  P := WizardForm.SelectDirBitmapImage.Width;
-  LoadEmbededScaledIcon(WizardForm.SelectDirBitmapImage, '{#SelectDirFileBase}', 32, WizardForm.SelectDirPage.Color);
-  P := (WizardForm.SelectDirBitmapImage.Width - P);
-  // Vertical change should be the same as horizontal
-  WizardForm.SelectDirLabel.Left := WizardForm.SelectDirLabel.Left + P;
-  WizardForm.SelectDirBrowseLabel.Top := WizardForm.SelectDirBrowseLabel.Top + P;
-  WizardForm.DirEdit.Top := WizardForm.DirEdit.Top + P;
-  WizardForm.DirBrowseButton.Top := WizardForm.DirBrowseButton.Top + P;
-#endif
 end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);
@@ -1331,7 +1029,7 @@ var
 begin
   if CurPageID = wpLicense then
   begin
-    WizardForm.NextButton.Caption := CustomMessage('AcceptButton')
+    WizardForm.NextButton.Caption := ExpandConstant('{cm:AcceptButton}')
   end;
 
   if CurPageID = wpSelectDir then
@@ -1352,7 +1050,7 @@ begin
       InitTasks := SaveCheckListBoxState(WizardForm.TasksList);
   end
     else
-  if CurPageID = InterfacePage.ID then
+  if CurPageID = wpInterface then
   begin
     if InitInterface < 0 then
       InitInterface := Integer(CommanderRadioButton.Checked);
@@ -1363,10 +1061,10 @@ begin
     LineHeight := (WizardForm.NoRadio.Top - WizardForm.YesRadio.Top);
 
     // Are we at the "Restart?" screen
-    if IsRestartPage then
+    if WizardForm.YesRadio.Visible then
     begin
       WizardForm.FinishedLabel.Caption :=
-        CustomMessage('FinishedRestartDragExtLabel') + NewLine;
+        ExpandConstant('{cm:FinishedRestartDragExtLabel}') + NewLine;
 
       Delta := WizardForm.AdjustLabelHeight(WizardForm.FinishedLabel);
       WizardForm.YesRadio.Top := WizardForm.YesRadio.Top + Delta;
@@ -1386,24 +1084,9 @@ begin
     OpenGettingStartedCheckbox.Top := LaunchCheckbox.Top + LineHeight;
 
     UpdatePostInstallRunCheckboxes(nil);
-
-#ifdef Donations
-    if DonationPanel.Visible then
-    begin
-      DonationPanel.Top := GetBottom(OpenGettingStartedCheckbox) + ScaleY(12);
-
-      // Hide "about donations" if it does not fit nicely
-      // (happens on "long" languages, as German)
-      if (DonationPanel.Top + GetBottom(AboutDonationCaption)) >
-         (WizardForm.FinishedPage.Height - ScaleY(8)) then
-      begin
-        AboutDonationCaption.Visible := False;
-      end;
-    end;
-#endif
   end
     else
-  if CurPageID = SetupTypePage.ID then
+  if CurPageID = wpSetupType then
   begin
     Log('License accepted');
     LicenseAccepted := True;
@@ -1411,12 +1094,11 @@ begin
     else
   if CurPageID = wpPreparing then
   begin
-    // Are we at the "Restart applications?" screen.
-    // If PreparingMemo is hidden, it's "installation/removal was not completed" screen
-    if IsRestartingApplicationsPage then
+    // Are we at the "Restart applications?" screen
+    if WizardForm.PreparingLabel.Visible then
     begin
       WizardForm.PreparingLabel.Caption :=
-        CustomMessage('ApplicationsFoundDragExt');
+        ExpandConstant('{cm:ApplicationsFoundDragExt}');
       WizardForm.IncTopDecHeight(WizardForm.PreparingMemo,
         WizardForm.AdjustLabelHeight(WizardForm.PreparingLabel));
     end;
@@ -1425,7 +1107,7 @@ end;
 
 function AskedRestart: Boolean;
 begin
-  Result := IsRestartPage;
+  Result := WizardForm.YesRadio.Visible;
 end;
 
 procedure DeinitializeSetup;
@@ -1438,16 +1120,16 @@ begin
   // (with privacy policy)
   if LicenseAccepted then
   begin
-    Log('Preparing installation report');
+    Log('Preparing intallation report');
 
     ReportData := Format(
       'installed=%d&silent=%d&ver=%s&lang=%s&prevver=%s&', [
        Integer(InstallationDone), Integer(WizardSilent),
-       '{#VersionOnly}', ActiveLanguage,
+       ExpandConstant('{#VersionOnly}'), ActiveLanguage,
        PrevVersion]);
 
     try
-      ReportUrl := '{#WebReport}?' + ReportData;
+      ReportUrl := ExpandConstant('{#WebReport}?') + ReportData;
 
       Log('Sending installation report: ' + ReportUrl);
 
@@ -1462,33 +1144,15 @@ begin
   end;
 end;
 
-procedure ExecApp(Params: string; ShowCmd: Integer; Wait: TExecWait);
-var
-  Path: string;
-  ErrorCode: Integer;
-begin
-  Path := ExpandConstant('{app}\{#MainFileName}');
-  ExecAsOriginalUser(Path, Params, '', ShowCmd, Wait, ErrorCode)
-end;
-
-procedure OpenBrowserGettingStarted;
-var
-  WebGettingStarted: string;
-begin
-  WebGettingStarted :=
-    ExpandConstant('{#WebGettingStarted}') + PrevVersion +
-    '&automatic=' + IntToStr(Integer(AutomaticUpdate));
-  Log('Opening getting started page: ' + WebGettingStarted);
-  OpenBrowser(WebGettingStarted);
-end;
-
 procedure CurStepChanged(CurStep: TSetupStep);
 var
+  ErrorCode: Integer;
   ShowCmd: Integer;
+  Path: string;
+  WebGettingStarted: string;
   OpenGettingStarted: Boolean;
   UsageData: string;
   CanPostInstallRuns: Boolean;
-  Installations: Cardinal;
 begin
   if CurStep = ssPostInstall then
   begin
@@ -1497,7 +1161,7 @@ begin
     begin
       Log('Removing obsolete translations');
       WizardForm.StatusLabel.Caption :=
-        CustomMessage('RemovingObsoleteTranslations');
+        ExpandConstant('{cm:RemovingObsoleteTranslations}');
       ProcessMissingTranslations(@DeleteTranslation);
     end;
     InstallationDone := True;
@@ -1511,6 +1175,8 @@ begin
     // installation. double check that ssPostInstall was called
     if InstallationDone then
     begin
+      Path := ExpandConstant('{app}\{#MainFileName}');
+
       CanPostInstallRuns := (not WizardSilent) and (not WillRestart);
 
       OpenGettingStarted :=
@@ -1518,20 +1184,10 @@ begin
          OpenGettingStartedCheckbox.Checked;
 
       UsageData := '/Usage=';
-
+      
       // old style counter
       UsageData := UsageData + Format('TypicalInstallation:%d,', [Integer(IsTypicalInstallation)]);
-
-      UsageData := UsageData + 'InstallationsUser+,';
-
-      Installations := 0; // default, if the counter does not exist
-      RegQueryDWordValue(HKEY_LOCAL_MACHINE, '{#RegistryKey}', 'Installations', Installations);
-      Inc(Installations);
-      if not RegWriteDWordValue(HKEY_LOCAL_MACHINE, '{#RegistryKey}', 'Installations', Installations) then
-      begin
-        Log('Cannot increment administrator installations counter, probably a non-elevated installation');
-      end;
-
+      
       // new style counters
       if not Upgrade then
       begin
@@ -1542,14 +1198,12 @@ begin
       end
         else
       begin
-        if AutomaticUpdate then
-          UsageData := UsageData + 'InstallationsUpgradeAutomatic+,'
-        else if IsTypicalInstallation then
+        if IsTypicalInstallation then
           UsageData := UsageData + 'InstallationsUpgradeTypical+,'
         else
           UsageData := UsageData + 'InstallationsUpgradeCustom+,';
       end;
-
+      
       if (InitDir <> '') and (InitDir <> WizardForm.DirEdit.Text) then
         UsageData := UsageData + 'InstallationsCustomDir+,';
       if (InitComponents <> '') and (InitComponents <> SaveCheckListBoxState(WizardForm.ComponentsList)) then
@@ -1570,8 +1224,6 @@ begin
         UsageData := UsageData + 'InstallationsRestart+,';
       if Donated then
         UsageData := UsageData + 'InstallationsDonate+,';
-      if not IsElevated then
-        UsageData := UsageData + 'InstallationsNonElevated+,';
 
       // have to do this before running WinSCP GUI instance below,
       // otherwise it loads the empty/previous counters and overwrites our changes,
@@ -1579,24 +1231,16 @@ begin
       Log('Recording installer usage statistics: ' + UsageData);
       // make sure we write the counters using the "normal" account
       // (the account that will be used to report the counters)
-      ExecApp(UsageData, SW_HIDE, ewWaitUntilTerminated);
+      ExecAsOriginalUser(Path, UsageData, '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
 
-      if AutomaticUpdate then
-      begin
-        Log('Launching WinSCP after automatic update');
-        ExecApp('', SW_SHOWNORMAL, ewNoWait);
-
-        if CmdLineParamExists('/OpenGettingStarted') then
-        begin
-          OpenBrowserGettingStarted;
-        end;
-      end
-        else
       if CanPostInstallRuns then
       begin
         if OpenGettingStarted then
         begin
-          OpenBrowserGettingStarted;
+          WebGettingStarted :=
+            ExpandConstant('{#WebGettingStarted}') + PrevVersion;
+          Log('Opening getting started page: ' + WebGettingStarted);
+          OpenBrowser(WebGettingStarted);
         end;
 
         if LaunchCheckbox.Checked then
@@ -1612,7 +1256,7 @@ begin
           end;
 
           Log('Launching WinSCP');
-          ExecApp('', ShowCmd, ewNoWait);
+          ExecAsOriginalUser(Path, '', '', ShowCmd, ewNoWait, ErrorCode)
         end;
       end;
     end;
@@ -1627,7 +1271,7 @@ begin
     ((PageID = wpSelectDir) or (PageID = wpSelectComponents) or
      (PageID = wpSelectTasks) or
      { Hide Interface page for upgrades only, show for fresh installs }
-     ((PageID = InterfacePage.ID) and Upgrade));
+     ((PageID = wpInterface) and Upgrade));
 end;
 
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,
@@ -1642,13 +1286,13 @@ begin
 
   if not Upgrade then
   begin
-    if IsTypicalInstallation then S2 := CustomMessage('TypicalType')
-      else S2 := CustomMessage('CustomType');
+    if IsTypicalInstallation then S2 := ExpandConstant('{cm:TypicalType}')
+      else S2 := ExpandConstant('{cm:CustomType}');
   end
     else
   begin
-    if IsTypicalInstallation then S2 := CustomMessage('TypicalUpgradeType')
-      else S2 := CustomMessage('CustomUpgradeType');
+    if IsTypicalInstallation then S2 := ExpandConstant('{cm:TypicalUpgradeType}')
+      else S2 := ExpandConstant('{cm:CustomUpgradeType}');
   end;
   StringChange(S2, '&', '');
   S := S + SetupMessage(msgReadyMemoType) + NewLine + Space + S2 + NewLine + NewLine;
@@ -1661,10 +1305,10 @@ begin
   if Length(MemoTasksInfo) > 0 then
     S := S + MemoTasksInfo + NewLine + NewLine;
 
-  S := S + CustomMessage('UserSettingsOverview') + NewLine;
+  S := S + ExpandConstant('{cm:UserSettingsOverview}') + NewLine;
   S := S + Space;
-  if CommanderRadioButton.Checked then S2 := CustomMessage('NortonCommanderInterfaceC')
-    else S2 := CustomMessage('ExplorerInterfaceC');
+  if CommanderRadioButton.Checked then S2 := ExpandConstant('{cm:NortonCommanderInterfaceC}')
+    else S2 := ExpandConstant('{cm:ExplorerInterfaceC}');
   StringChange(S2, '&', '');
   S := S + S2;
   S := S + NewLine;

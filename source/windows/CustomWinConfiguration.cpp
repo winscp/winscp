@@ -47,7 +47,7 @@ __fastcall TCustomWinConfiguration::~TCustomWinConfiguration()
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::ClearHistory()
 {
-  DebugAssert(FHistory != NULL);
+  assert(FHistory != NULL);
 
   THistoryStrings * HistoryStrings;
   for (int Index = 0; Index < FHistory->Count; Index++)
@@ -65,12 +65,8 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
 
   std::unique_ptr<THistoryStrings> Strings;
 
-  // Defaults for speed limits.
+  // defaults for speed limits
   Strings.reset(new THistoryStrings());
-  // This is language-specifics, what has to be dealt with when changing language.
-  // There's ad-hoc workaround in CopySpeedLimits.
-  // If we need to solve this for another history, we should introduce
-  // a generic solution, like language-specific history ("SpeedLimitEN")
   Strings->Add(LoadStr(SPEED_UNLIMITED));
   unsigned long Speed = 8192;
   while (Speed >= 8)
@@ -84,7 +80,7 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
   Strings->Add(FormatCommand(DefaultPuttyPath, L""));
   Strings->Add(FormatCommand(DefaultPuttyPath, L"-t -m \"%TEMP%\\putty.txt\" !`cmd.exe /c echo cd '!/' ; /bin/bash -login > \"%TEMP%\\putty.txt\"`"));
   Strings->Add(KittyExecutable);
-  Strings->Add(FORMAT(L"%s -cmd \"cd '!/'\" !U@!@ -P !# -title \"!N\"", (KittyExecutable)));
+  Strings->Add(FORMAT(L"%s -cmd \"cd '!/'\" !U@!@", (KittyExecutable)));
   FHistory->AddObject(L"PuttyPath", Strings.release());
 }
 //---------------------------------------------------------------------------
@@ -111,7 +107,6 @@ void __fastcall TCustomWinConfiguration::Default()
   FFindFile.ListParams = L"3;1|125,1;181,1;80,1;122,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3";
   FConsoleWin.WindowSize = FormatDefaultWindowSize(570, 430);
   FLoginDialog.WindowSize = FormatDefaultWindowSize(640, 430);
-  FLoginDialog.SiteSearch = ssSiteName;
   FConfirmExitOnCompletion = true;
   FOperationProgressOnTop = true;
   FSessionColors = L"";
@@ -128,7 +123,7 @@ void __fastcall TCustomWinConfiguration::Saved()
   for (int Index = 0; Index < FHistory->Count; Index++)
   {
     HistoryStrings = dynamic_cast<THistoryStrings *>(FHistory->Objects[Index]);
-    DebugAssert(HistoryStrings != NULL);
+    assert(HistoryStrings != NULL);
     HistoryStrings->Modified = false;
   }
 }
@@ -161,7 +156,6 @@ void __fastcall TCustomWinConfiguration::Saved()
   ); \
   BLOCK(L"Interface\\LoginDialog", CANCREATE, \
     KEY(String,   LoginDialog.WindowSize); \
-    KEY(Integer,  LoginDialog.SiteSearch); \
   ); \
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SaveData(
@@ -184,7 +178,7 @@ void __fastcall TCustomWinConfiguration::SaveData(
         for (int Index = 0; Index < FHistory->Count; Index++)
         {
           HistoryStrings = dynamic_cast<THistoryStrings *>(FHistory->Objects[Index]);
-          DebugAssert(HistoryStrings != NULL);
+          assert(HistoryStrings != NULL);
           if (All || HistoryStrings->Modified)
           {
             if (Storage->OpenSubKey(FHistory->Strings[Index], true))
@@ -215,7 +209,7 @@ void __fastcall TCustomWinConfiguration::SaveData(
         for (int Index = 0; Index < FHistory->Count; Index++)
         {
           HistoryStrings = dynamic_cast<THistoryStrings *>(FHistory->Objects[Index]);
-          DebugAssert(HistoryStrings != NULL);
+          assert(HistoryStrings != NULL);
           if (All || HistoryStrings->Modified)
           {
             bool HasData = false;
@@ -443,35 +437,6 @@ TStrings * __fastcall TCustomWinConfiguration::GetHistory(const UnicodeString In
 {
   int I = FHistory->IndexOf(Index);
   return I >= 0 ? dynamic_cast<TStrings *>(FHistory->Objects[I]) : FEmptyHistory;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomWinConfiguration::GetValidHistoryKey(UnicodeString Key)
-{
-  for (int Index = 1; Index <= Key.Length(); Index++)
-  {
-    if (!IsLetter(Key[Index]) && !IsDigit(Key[Index]))
-    {
-      Key[Index] = L'_';
-    }
-  }
-
-  while (!Key.IsEmpty() && (Key[1] == L'_'))
-  {
-    Key.Delete(1, 1);
-  }
-
-  while (!Key.IsEmpty() && (Key[Key.Length()] == L'_'))
-  {
-    Key.Delete(Key.Length(), 1);
-  }
-
-  int P;
-  while ((P = Key.Pos(L"__")) > 0)
-  {
-    Key.Delete(P, 1);
-  }
-
-  return Key;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SetSynchronizeChecklist(TSynchronizeChecklistConfiguration value)

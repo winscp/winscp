@@ -105,27 +105,6 @@ bool __fastcall SameFont(TFont * Font1, TFont * Font2)
       (Font1->Charset == Font2->Charset) && (Font1->Style == Font2->Style);
 }
 //---------------------------------------------------------------------------
-TColor __fastcall GetWindowTextColor(TColor Color)
-{
-  return (Color == TColor(0)) ? clWindowText : Color;
-}
-//---------------------------------------------------------------------------
-TColor __fastcall GetWindowColor(TColor Color)
-{
-  return (Color == TColor(0)) ? clWindow : Color;
-}
-//---------------------------------------------------------------------------
-TColor __fastcall GetNonZeroColor(TColor Color)
-{
-  // 0,0,0 is "default color"
-  if (Color == TColor(0))
-  {
-    // use near-black instead
-    Color = TColor(RGB(1, 1, 1));
-  }
-  return Color;
-}
-//---------------------------------------------------------------------------
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn)
 {
   TPoint ScreenPoint = CenterOn->ClientToScreen(TPoint(0, 0));
@@ -152,13 +131,13 @@ UnicodeString __fastcall GetListViewStr(TListView * ListView)
 //---------------------------------------------------------------------------
 void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
 {
-  UnicodeString LayoutStr = CutToChar(ALayoutStr, L';', true);
-  int PixelsPerInch = LoadPixelsPerInch(CutToChar(ALayoutStr, L';', true));
+  UnicodeString LayoutStr = ::CutToChar(ALayoutStr, L';', true);
+  int PixelsPerInch = LoadPixelsPerInch(::CutToChar(ALayoutStr, L';', true));
   int Index = 0;
   while (!LayoutStr.IsEmpty() && (Index < ListView->Columns->Count))
   {
     int Width;
-    if (TryStrToInt(CutToChar(LayoutStr, L',', true), Width))
+    if (TryStrToInt(::CutToChar(LayoutStr, L',', true), Width))
     {
       ListView->Column[Index]->Width = LoadDimension(Width, PixelsPerInch);
     }
@@ -168,17 +147,17 @@ void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
 //---------------------------------------------------------------------------
 void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
 {
-  DebugAssert(Form);
+  assert(Form);
   if (!Data.IsEmpty())
   {
     Forms::TMonitor * Monitor = FormMonitor(Form);
 
-    UnicodeString LeftStr = CutToChar(Data, L';', true);
-    UnicodeString TopStr = CutToChar(Data, L';', true);
-    UnicodeString RightStr = CutToChar(Data, L';', true);
-    UnicodeString BottomStr = CutToChar(Data, L';', true);
-    TWindowState State = (TWindowState)StrToIntDef(CutToChar(Data, L';', true), (int)wsNormal);
-    int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L';', true));
+    UnicodeString LeftStr = ::CutToChar(Data, L';', true);
+    UnicodeString TopStr = ::CutToChar(Data, L';', true);
+    UnicodeString RightStr = ::CutToChar(Data, L';', true);
+    UnicodeString BottomStr = ::CutToChar(Data, L';', true);
+    TWindowState State = (TWindowState)StrToIntDef(::CutToChar(Data, L';', true), (int)wsNormal);
+    int PixelsPerInch = LoadPixelsPerInch(::CutToChar(Data, L';', true));
 
     TRect Bounds = Form->BoundsRect;
     int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Bounds.Left);
@@ -265,7 +244,7 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall StoreForm(TCustomForm * Form)
 {
-  DebugAssert(Form);
+  assert(Form);
   TRect Bounds = Form->BoundsRect;
   OffsetRect(Bounds, -Form->Monitor->Left, -Form->Monitor->Top);
   return FORMAT(L"%d;%d;%d;%d;%d;%s", (SaveDimension(Bounds.Left), SaveDimension(Bounds.Top),
@@ -281,9 +260,9 @@ void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form)
 {
   // This has to be called only after DoFormWindowProc(CM_SHOWINGCHANGED).
   // See comment in ResizeForm.
-  UnicodeString WidthStr = CutToChar(Data, L',', true);
-  UnicodeString HeightStr = CutToChar(Data, L',', true);
-  int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L',', true));
+  UnicodeString WidthStr = ::CutToChar(Data, L',', true);
+  UnicodeString HeightStr = ::CutToChar(Data, L',', true);
+  int PixelsPerInch = LoadPixelsPerInch(::CutToChar(Data, L',', true));
 
   int Width = StrToDimensionDef(WidthStr, PixelsPerInch, Form->Width);
   int Height = StrToDimensionDef(HeightStr, PixelsPerInch, Form->Height);
@@ -307,14 +286,9 @@ bool __fastcall ExecuteShellAndWait(const UnicodeString Command)
     &Application->ProcessMessages);
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsKeyPressed(int VirtualKey)
-{
-  return FLAGSET(GetAsyncKeyState(VirtualKey), 0x8000);
-}
-//---------------------------------------------------------------------------
 bool __fastcall UseAlternativeFunction()
 {
-  return IsKeyPressed(VK_SHIFT);
+  return FLAGSET(GetAsyncKeyState(VK_SHIFT), 0x8000);
 }
 //---------------------------------------------------------------------------
 bool __fastcall OpenInNewWindow()
@@ -457,7 +431,7 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   {
     // this should not be done for workspaces and folders
     TSessionData * SessionData =
-      StoredSessions->ParseUrl(EncodeUrlString(SessionName), NULL, DefaultsOnly);
+      StoredSessions->ParseUrl(SessionName, NULL, DefaultsOnly);
     InfoTip =
       FMTLOAD(SHORTCUT_INFO_TIP, (SessionName, SessionData->InfoTip));
     if (Name.IsEmpty())
@@ -470,14 +444,14 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
 
   return
     CreateDesktopShortCut(ValidLocalFileName(Name), Application->ExeName,
-      FORMAT(L"\"%s\"%s%s", (EncodeUrlString(SessionName), (AdditionalParams.IsEmpty() ? L"" : L" "), AdditionalParams)),
+      FORMAT(L"\"%s\"%s%s", (SessionName, (AdditionalParams.IsEmpty() ? L"" : L" "), AdditionalParams)),
       InfoTip, SpecialFolder, IconIndex, Return);
 }
 //---------------------------------------------------------------------------
 template<class TEditControl>
 void __fastcall ValidateMaskEditT(const UnicodeString & Mask, TEditControl * Edit, int ForceDirectoryMasks)
 {
-  DebugAssert(Edit != NULL);
+  assert(Edit != NULL);
   TFileMasks Masks(ForceDirectoryMasks);
   try
   {
@@ -530,45 +504,14 @@ void __fastcall ExitActiveControl(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsWinSCPUrl(const UnicodeString & Url)
-{
-  UnicodeString HomePageUrl = LoadStr(HOMEPAGE_URL);
-  UnicodeString HttpHomePageUrl = ChangeUrlProtocol(HomePageUrl, HttpProtocol);
-  DebugAssert(HomePageUrl != HttpHomePageUrl);
-  return
-    StartsText(HomePageUrl, Url) ||
-    StartsText(HttpHomePageUrl, Url);
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall SecureUrl(const UnicodeString & Url)
-{
-  UnicodeString Result = Url;
-  if (IsWinSCPUrl(Url) && IsHttpUrl(Url))
-  {
-    Result = ChangeUrlProtocol(Result, HttpsProtocol);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void __fastcall OpenBrowser(UnicodeString URL)
 {
-  if (IsWinSCPUrl(URL))
+  UnicodeString HomePageUrl = LoadStr(HOMEPAGE_URL);
+  if (SameText(URL.SubString(1, HomePageUrl.Length()), HomePageUrl))
   {
-    DebugAssert(!IsHttpUrl(URL));
     URL = CampaignUrl(URL);
   }
   ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
-}
-//---------------------------------------------------------------------------
-void __fastcall ShowHelp(const UnicodeString & AHelpKeyword)
-{
-  // see also AppendUrlParams
-  UnicodeString HelpKeyword = AHelpKeyword;
-  const wchar_t FragmentSeparator = L'#';
-  UnicodeString HelpPath = CutToChar(HelpKeyword, FragmentSeparator, false);
-  UnicodeString HelpUrl = FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpPath, Configuration->ProductVersion, GUIConfiguration->LocaleHex));
-  AddToList(HelpUrl, HelpKeyword, FragmentSeparator);
-  OpenBrowser(HelpUrl);
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsFormatInClipboard(unsigned int Format)
@@ -627,13 +570,6 @@ bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall NonEmptyTextFromClipboard(UnicodeString & Text)
-{
-  return
-    TextFromClipboard(Text, true) &&
-    !Text.IsEmpty();
-}
-//---------------------------------------------------------------------------
 static bool __fastcall GetResource(
   const UnicodeString ResName, void *& Content, unsigned long & Size)
 {
@@ -673,7 +609,7 @@ bool __fastcall DumpResourceToFile(const UnicodeString ResName,
 
   if (Result)
   {
-    FILE * f = _wfopen(ApiPath(FileName).c_str(), L"wb");
+    FILE * f = _wfopen(::ApiPath(FileName).c_str(), L"wb");
     if (!f)
     {
       throw Exception(FORMAT(L"Cannot create file %s", (FileName)));
@@ -903,7 +839,14 @@ void __fastcall CopyToClipboard(TStrings * Strings)
 {
   if (Strings->Count > 0)
   {
-    CopyToClipboard(StringsToText(Strings));
+    if (Strings->Count == 1)
+    {
+      CopyToClipboard(Strings->Strings[0]);
+    }
+    else
+    {
+      CopyToClipboard(Strings->Text);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -978,45 +921,8 @@ void __fastcall EditSelectBaseName(HWND Edit)
   }
 }
 //---------------------------------------------------------------------------
-static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
-{
-  UnicodeString Passphrase;
-
-  UnicodeString Comment;
-  if (IsKeyEncrypted(Type, FileName, Comment))
-  {
-    if (!InputDialog(
-          LoadStr(PASSPHRASE_TITLE),
-          FORMAT(LoadStr(PROMPT_KEY_PASSPHRASE), (Comment)),
-          Passphrase, HELP_NONE, NULL, false, NULL, false))
-    {
-      Abort();
-    }
-  }
-
-  TPrivateKey * PrivateKey = LoadKey(Type, FileName, Passphrase);
-
-  try
-  {
-    FileName = ChangeFileExt(FileName, ".ppk");
-
-    if (!SaveDialog(LoadStr(CONVERTKEY_SAVE_TITLE), LoadStr(CONVERTKEY_SAVE_FILTER), L"ppk", FileName))
-    {
-      Abort();
-    }
-
-    SaveKey(ktSSH2, FileName, Passphrase, PrivateKey);
-
-    MessageDialog(MainInstructions(FMTLOAD(CONVERTKEY_SAVED, (FileName))), qtInformation, qaOK);
-  }
-  __finally
-  {
-    FreeKey(PrivateKey);
-  }
-}
-//---------------------------------------------------------------------------
 static void __fastcall DoVerifyKey(
-  UnicodeString & FileName, TSshProt SshProt, bool Convert)
+  UnicodeString FileName, bool TypeOnly, TSshProt SshProt)
 {
   if (!FileName.Trim().IsEmpty())
   {
@@ -1028,53 +934,38 @@ static void __fastcall DoVerifyKey(
     UnicodeString HelpKeyword = HELP_LOGIN_KEY_TYPE;
     UnicodeString PuttygenPath;
     std::unique_ptr<TStrings> MoreMessages;
+    bool TryPuttygen = false;
     switch (Type)
     {
-      case ktOpenSSHPEM:
-      case ktOpenSSHNew:
+      case ktOpenSSH:
       case ktSSHCom:
         {
-          UnicodeString TypeName = ((Type == ktOpenSSHPEM) || (Type == ktOpenSSHNew)) ? L"OpenSSH" : L"ssh.com";
-          Message = FMTLOAD(KEY_TYPE_UNSUPPORTED2, (FileName, TypeName));
-
-          if (Convert)
+          UnicodeString TypeName = (Type == ktOpenSSH) ? L"OpenSSH SSH-2" : L"ssh.com SSH-2";
+          TryPuttygen = FindTool(PuttygenTool, PuttygenPath);
+          Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, TypeName));
+          if (TryPuttygen)
           {
-            Configuration->Usage->Inc(L"PrivateKeyConvertSuggestionsNative");
-            UnicodeString ConvertMessage = FMTLOAD(KEY_TYPE_CONVERT3, (TypeName, RemoveMainInstructionsTag(Message)));
-            Message = UnicodeString();
-            if (MoreMessageDialog(ConvertMessage, NULL, qtConfirmation, qaOK | qaCancel, HelpKeyword) == qaOK)
-            {
-              ConvertKey(FileName, Type);
-              Configuration->Usage->Inc(L"PrivateKeyConverted");
-            }
-            else
-            {
-              Abort();
-            }
-          }
-          else
-          {
-            HelpKeyword = HELP_KEY_TYPE_UNSUPPORTED;
+            Message = FMTLOAD(KEY_TYPE_CONVERT2, (TypeName, RemoveMainInstructionsTag(Message)));
           }
         }
+        HelpKeyword = HELP_KEY_TYPE_UNSUPPORTED;
         break;
 
       case ktSSH1:
       case ktSSH2:
-        if ((Type == ktSSH1) != (SshProt == ssh1only))
+        // on file select do not check for SSH version as user may
+        // intend to change it only after he/she selects key file
+        if (!TypeOnly)
         {
-          Message =
-            MainInstructions(
-              FMTLOAD(KEY_TYPE_DIFFERENT_SSH,
-                (FileName, (Type == ktSSH1 ? L"SSH-1" : L"PuTTY SSH-2"))));
+          if ((Type == ktSSH1) !=
+                ((SshProt == ssh1only) || (SshProt == ssh1)))
+          {
+            Message =
+              MainInstructions(
+                FMTLOAD(KEY_TYPE_DIFFERENT_SSH,
+                  (FileName, (Type == ktSSH1 ? L"SSH-1" : L"PuTTY SSH-2"))));
+          }
         }
-        break;
-
-      case ktSSH1Public:
-      case ktSSH2PublicRFC4716:
-      case ktSSH2PublicOpenSSH:
-        // noop
-        // Do not even bother checking SSH protocol version
         break;
 
       case ktUnopenable:
@@ -1086,7 +977,7 @@ static void __fastcall DoVerifyKey(
         break;
 
       default:
-        DebugFail();
+        FAIL;
         // fallthru
       case ktUnknown:
         Message = MainInstructions(FMTLOAD(KEY_TYPE_UNKNOWN2, (FileName)));
@@ -1095,42 +986,39 @@ static void __fastcall DoVerifyKey(
 
     if (!Message.IsEmpty())
     {
-      Configuration->Usage->Inc(L"PrivateKeySelectErrors");
-      if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, qaIgnore | qaAbort,
-           HelpKeyword) == qaAbort)
+      if (TryPuttygen)
       {
+        Configuration->Usage->Inc(L"PrivateKeyConvertSuggestions");
+        if (MoreMessageDialog(Message, MoreMessages.get(), qtConfirmation, qaOK | qaCancel, HelpKeyword) == qaOK)
+        {
+          if (!ExecuteShell(PuttygenPath, AddPathQuotes(FileName)))
+          {
+            throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (PuttygenPath)));
+          }
+        }
         Abort();
+      }
+      else
+      {
+        Configuration->Usage->Inc(L"PrivateKeySelectErrors");
+        if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, qaIgnore | qaAbort,
+             HelpKeyword) == qaAbort)
+        {
+          Abort();
+        }
       }
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt)
+void __fastcall VerifyKey(UnicodeString FileName)
 {
-  DoVerifyKey(FileName, SshProt, true);
+  DoVerifyKey(FileName, true, TSshProt(0));
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyKey(UnicodeString FileName, TSshProt SshProt)
+void __fastcall VerifyKeyIncludingVersion(UnicodeString FileName, TSshProt SshProt)
 {
-  DoVerifyKey(FileName, SshProt, false);
-}
-//---------------------------------------------------------------------------
-void __fastcall VerifyCertificate(const UnicodeString & FileName)
-{
-  if (!FileName.Trim().IsEmpty())
-  {
-    try
-    {
-      CheckCertificate(FileName);
-    }
-    catch (Exception & E)
-    {
-      if (ExceptionMessageDialog(&E, qtWarning, L"", qaIgnore | qaAbort) == qaAbort)
-      {
-        Abort();
-      }
-    }
-  }
+  DoVerifyKey(FileName, false, SshProt);
 }
 //---------------------------------------------------------------------------
 bool __fastcall DetectSystemExternalEditor(
@@ -1140,14 +1028,14 @@ bool __fastcall DetectSystemExternalEditor(
 {
   bool Result = false;
   UnicodeString TempName = ExcludeTrailingBackslash(WinConfiguration->TemporaryDir()) + L".txt";
-  if (FileExists(ApiPath(TempName)))
+  if (FileExists(::ApiPath(TempName)))
   {
     TryNextTime = true;
     UsageState = "F";
   }
   else
   {
-    unsigned int File = FileCreate(ApiPath(TempName));
+    unsigned int File = FileCreate(::ApiPath(TempName));
     if (File == (unsigned int)INVALID_HANDLE_VALUE)
     {
       TryNextTime = true;
@@ -1168,7 +1056,7 @@ bool __fastcall DetectSystemExternalEditor(
         {
           Executable = ExecutableBuf;
           if (Executable.IsEmpty() ||
-              !FileExists(ApiPath(Executable)))
+              !FileExists(::ApiPath(Executable)))
           {
             UsageState = "N";
           }
@@ -1208,7 +1096,7 @@ bool __fastcall DetectSystemExternalEditor(
       }
       __finally
       {
-        DeleteFile(ApiPath(TempName));
+        DeleteFile(::ApiPath(TempName));
       }
     }
   }
@@ -1233,14 +1121,14 @@ static bool __fastcall GetProxyUrlFromIE(UnicodeString & Proxy)
       Proxy = L"";
       while (Proxy.IsEmpty() && !IEProxy.IsEmpty())
       {
-        UnicodeString Str = CutToChar(IEProxy, L';', true);
+        UnicodeString Str = ::CutToChar(IEProxy, L';', true);
         if (Str.Pos(L"=") == 0)
         {
           Proxy = Str;
         }
         else
         {
-          UnicodeString Protocol = CutToChar(Str, L'=', true);
+          UnicodeString Protocol = ::CutToChar(Str, L'=', true);
           if (SameText(Protocol, L"http"))
           {
             Proxy = Str;
@@ -1263,13 +1151,12 @@ static bool __fastcall GetProxyUrlFromIE(UnicodeString & Proxy)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall AutodetectProxy(UnicodeString & HostName, int & PortNumber)
+bool __fastcall AutodetectProxyUrl(UnicodeString & Proxy)
 {
   bool Result = false;
 
   /* First we try for proxy info direct from the registry if
      it's available. */
-  UnicodeString Proxy;
   WINHTTP_PROXY_INFO ProxyInfo;
   memset(&ProxyInfo, 0, sizeof(ProxyInfo));
   if (WinHttpGetDefaultProxyConfiguration(&ProxyInfo))
@@ -1296,19 +1183,6 @@ bool __fastcall AutodetectProxy(UnicodeString & HostName, int & PortNumber)
   if (!Result)
   {
     Result = GetProxyUrlFromIE(Proxy);
-  }
-
-  if (Result)
-  {
-    if (Proxy.Trim().IsEmpty())
-    {
-      Result = false;
-    }
-    else
-    {
-      HostName = CutToChar(Proxy, L':', true);
-      PortNumber = StrToIntDef(Proxy, ProxyPortNumber);
-    }
   }
 
   // We can also use WinHttpGetProxyForUrl, but it is lengthy
@@ -1380,20 +1254,20 @@ bool __fastcall TWinHelpTester::CanShowALink(const UnicodeString ALink,
 bool __fastcall TWinHelpTester::CanShowTopic(const UnicodeString Topic,
   const UnicodeString FileName)
 {
-  DebugFail();
+  FAIL;
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinHelpTester::CanShowContext(const int /*Context*/,
   const UnicodeString FileName)
 {
-  DebugFail();
+  FAIL;
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinHelpTester::GetHelpStrings(const UnicodeString ALink)
 {
-  DebugFail();
+  FAIL;
   TStringList * Result = new TStringList();
   Result->Add(ViewerName + L": " + ALink);
   return Result;
@@ -1418,7 +1292,7 @@ __fastcall TCustomHelpSelector::TCustomHelpSelector(const UnicodeString & Name) 
 //---------------------------------------------------------------------------
 int __fastcall TCustomHelpSelector::SelectKeyword(TStrings * /*Keywords*/)
 {
-  DebugFail();
+  FAIL;
   return 0;
 }
 //---------------------------------------------------------------------------

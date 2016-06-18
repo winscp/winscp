@@ -103,9 +103,9 @@ void __fastcall TLogMemo::SetSessionLog(TSessionLog * value)
 //---------------------------------------------------------------------------
 void __fastcall TLogMemo::SessionLogChange(TObject * Sender)
 {
-  DebugUsedParam(Sender);
+  USEDPARAM(Sender);
 #ifndef DESIGN_ONLY
-  DebugAssert(Sender && (Sender == (TObject*)SessionLog));
+  assert(Sender && (Sender == (TObject*)SessionLog));
 #endif
   if (HandleAllocated())
   {
@@ -132,7 +132,7 @@ void __fastcall TLogMemo::UpdateFromLog()
 #ifndef DESIGN_ONLY
   if (SessionLog && Parent && !Application->Terminated)
   {
-    DebugAssert(FIndexes->Count == Lines->Count);
+    assert(FIndexes->Count == Lines->Count);
     FUpdating = true;
     bool Updated = false;
     SessionLog->Lock();
@@ -204,7 +204,7 @@ void __fastcall TLogMemo::UpdateFromLog()
               {
                 FIndexes->Delete(FIndexes->Count - 1);
               }
-              DebugAssert(FIndexes->Count == Lines->Count);
+              assert(FIndexes->Count == Lines->Count);
               // LastIndex is strangely reset to 0 when exception is caught
               LastIndex = Indexes[Lines->Count-1];
             }
@@ -223,7 +223,7 @@ void __fastcall TLogMemo::UpdateFromLog()
         }
       }
 
-      DebugAssert(!Parent || FIndexes->Count == Lines->Count);
+      assert(!Parent || FIndexes->Count == Lines->Count);
 
       FLastUpdate = GetTickCount();
     }
@@ -263,7 +263,7 @@ void __fastcall TLogMemo::ReloadFromLog()
 //---------------------------------------------------------------------------
 int __fastcall TLogMemo::GetIndexes(int Index)
 {
-  DebugAssert((Index >= 0) && (Index < Lines->Count) && (FIndexes->Count == Lines->Count));
+  assert((Index >= 0) && (Index < Lines->Count) && (FIndexes->Count == Lines->Count));
   return ((int)FIndexes->Items[Index]);
 }
 //---------------------------------------------------------------------------

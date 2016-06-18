@@ -7,9 +7,13 @@
 //---------------------------------------------------------------------------
 #define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
 //---------------------------------------------------------------------------
+#ifdef _MSC_VER
+#include <objbase.h>
+#define snwprintf _snwprintf
+#endif
+//---------------------------------------------------------------------------
 #include <initguid.h>
 #include <shlguid.h>
-#include <stdlib.h>
 #include <stdio.h>
 #pragma warn -inl
 #include <shlobj.h>
@@ -23,10 +27,10 @@
 #define STDAPI EXTERN_C __declspec(dllexport) HRESULT STDAPICALLTYPE
 #endif
 //---------------------------------------------------------------------------
-#define Debug(MSG) \
+#define DEBUG(MSG) \
   if (GLogOn) \
   { \
-    DoDebug(__FUNC__, MSG); \
+    Debug(MSG); \
   }
 //---------------------------------------------------------------------------
 #define DRAG_EXT_REG_KEY L"Software\\Martin Prikryl\\WinSCP 2\\DragExt"
@@ -53,11 +57,6 @@ protected:
   unsigned long FReferenceCounter;
 };
 //---------------------------------------------------------------------------
-#ifdef _WIN64
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpadded"
-#endif
-//---------------------------------------------------------------------------
 class CShellExt : public IShellExtInit, ICopyHook
 {
 public:
@@ -83,10 +82,6 @@ protected:
   unsigned long FLastTicks;
 };
 //---------------------------------------------------------------------------
-#ifdef WIN64
-#pragma clang diagnostic pop
-#endif
-//---------------------------------------------------------------------------
 unsigned int GRefThisDll = 0;
 bool GEnabled = false;
 wchar_t GLogFile[MAX_PATH] = L"";
@@ -95,7 +90,7 @@ FILE* GLogHandle = NULL;
 HANDLE GLogMutex;
 HINSTANCE GInstance;
 //---------------------------------------------------------------------------
-static void DoDebug(const char* Func, const wchar_t* Message)
+void Debug(const wchar_t* Message)
 {
   if (GLogOn)
   {
@@ -130,17 +125,9 @@ static void DoDebug(const char* Func, const wchar_t* Message)
           SYSTEMTIME Time;
           GetSystemTime(&Time);
 
-          // cannot use TEXT(__FUNC__) as that does not work in clang,
-          // where __FUCT__ behaves like a static variable
-          const size_t FuncLen = strlen(Func) + 1;
-          wchar_t* WideFunc = new wchar_t[FuncLen];
-          mbstowcs(WideFunc, Func, FuncLen);
-
-          fwprintf(GLogHandle, L"[%2d/%2d/%4d %2d:%02d:%02d.%03d][%04x] [%s] %s\n",
+          fwprintf(GLogHandle, L"[%2d/%2d/%4d %2d:%02d:%02d.%03d][%04x] %s\n",
             Time.wDay, Time.wMonth, Time.wYear, Time.wHour, Time.wMinute,
-            Time.wSecond, Time.wMilliseconds, GetCurrentThreadId(), WideFunc, Message);
-
-          delete[] WideFunc;
+            Time.wSecond, Time.wMilliseconds, GetCurrentThreadId(), Message);
         }
       }
       catch(...)
@@ -151,7 +138,7 @@ static void DoDebug(const char* Func, const wchar_t* Message)
   }
 }
 //---------------------------------------------------------------------------
-static void LogVersion(HINSTANCE HInstance)
+void LogVersion(HINSTANCE HInstance)
 {
   if (GLogOn)
   {
@@ -174,7 +161,7 @@ static void LogVersion(HINSTANCE HInstance)
                 &VersionInfoSize) != 0)
           {
             wchar_t VersionStr[100];
-            snwprintf(VersionStr, LENOF(VersionStr), L"%d.%d.%d.%d",
+            snwprintf(VersionStr, LENOF(VersionStr), L"LogVersion %d.%d.%d.%d",
               HIWORD(VersionInfo->dwFileVersionMS),
               LOWORD(VersionInfo->dwFileVersionMS),
               HIWORD(VersionInfo->dwFileVersionLS),
@@ -183,17 +170,17 @@ static void LogVersion(HINSTANCE HInstance)
           }
           else
           {
-            Debug(L"no fixed version info");
+            Debug(L"LogVersion no fixed version info");
           }
         }
         else
         {
-          Debug(L"cannot read version info");
+          Debug(L"LogVersion cannot read version info");
         }
       }
       else
       {
-        Debug(L"no version info");
+        Debug(L"LogVersion no version info");
       }
     }
   }
@@ -244,43 +231,25 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
           RegCloseKey(Key);
         }
       }
-
-      if (GLogOn)
-      {
-        Debug(L"loaded settings");
-        Debug(GEnabled ? L"enabled" : L"disabled");
-        #ifdef UNICODE
-        Debug(L"Unicode");
-        #else
-        Debug(L"Ansi");
-        #endif
-        #ifdef _WIN64
-        Debug(L"Win64");
-        #else
-        Debug(L"Win32");
-        #endif
-        LogVersion(HInstance);
-
-        TDragExtCommStruct CommStruct;
-        const char * CommStructPtr = reinterpret_cast<const char *>(&CommStruct);
-        wchar_t Buf[1024];
-        swprintf(Buf, L"Comm struct layout - Size %d - Version @%d + %d - Dragging @%d + %d - DropDest @%d + %d",
-          sizeof(CommStruct), reinterpret_cast<const char *>(&CommStruct.Version) - CommStructPtr, sizeof(CommStruct.Version),
-          reinterpret_cast<const char *>(&CommStruct.Dragging) - CommStructPtr, sizeof(CommStruct.Dragging),
-          reinterpret_cast<const char *>(&CommStruct.DropDest) - CommStructPtr, sizeof(CommStruct.DropDest));
-        Debug(Buf);
-      }
+      DEBUG(L"DllMain loaded settings");
+      DEBUG(GEnabled ? L"DllMain enabled" : L"DllMain disabled");
+      #ifdef UNICODE
+      DEBUG(L"Unicode");
+      #else
+      DEBUG(L"Ansi");
+      #endif
+      LogVersion(HInstance);
     }
     else
     {
-      Debug(L"settings already loaded");
+      DEBUG(L"DllMain settings already loaded");
     }
 
-    Debug(L"attach leave");
+    DEBUG(L"DllMain attach leave");
   }
   else if (Reason == DLL_PROCESS_DETACH)
   {
-    Debug(L"detach enter");
+    DEBUG(L"DllMain detach enter");
     CloseHandle(GLogMutex);
   }
 
@@ -290,19 +259,19 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
 STDAPI DllCanUnloadNow(void)
 {
   bool CanUnload = (GRefThisDll == 0);
-  Debug(CanUnload ? L"can" : L"cannot");
+  DEBUG(CanUnload ? L"DllCanUnloadNow can" : L"DllCanUnloadNow cannot");
   return (CanUnload ? S_OK : S_FALSE);
 }
 //---------------------------------------------------------------------------
 STDAPI DllGetClassObject(REFCLSID Rclsid, REFIID Riid, LPVOID* PpvOut)
 {
-  Debug(L"enter");
+  DEBUG(L"DllGetClassObject");
 
   *PpvOut = NULL;
 
   if (IsEqualIID(Rclsid, CLSID_ShellExtension))
   {
-    Debug(L"is ShellExtension");
+    DEBUG(L"DllGetClassObject is ShellExtension");
 
     CShellExtClassFactory* Pcf = new CShellExtClassFactory;
 
@@ -312,11 +281,11 @@ STDAPI DllGetClassObject(REFCLSID Rclsid, REFIID Riid, LPVOID* PpvOut)
   return CLASS_E_CLASSNOTAVAILABLE;
 }
 //---------------------------------------------------------------------------
-static bool RegisterServer(bool AllUsers)
+bool RegisterServer(bool AllUsers)
 {
-  Debug(L"enter");
+  DEBUG(L"RegisterServer enter");
 
-  Debug(AllUsers ? L"all users" : L"current users");
+  DEBUG(AllUsers ? L"RegisterServer all users" : L"RegisterServer current users");
 
   bool Result = false;
   HKEY RootKey = AllUsers ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
@@ -332,18 +301,18 @@ static bool RegisterServer(bool AllUsers)
          REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &HKey, &Unused) ==
            ERROR_SUCCESS))
   {
-    Debug(L"CLSID created");
+    DEBUG(L"RegisterServer CLSID created");
 
     if (RegCreateKey(HKey, ClassID, &HKey) == ERROR_SUCCESS)
     {
-      Debug(L"class ID created");
+      DEBUG(L"RegisterServer class ID created");
 
       RegSetValueEx(HKey, NULL, 0, REG_SZ,
         reinterpret_cast<const unsigned char*>(DRAG_EXT_NAME), sizeof(DRAG_EXT_NAME));
 
       if (RegCreateKey(HKey, L"InProcServer32", &HKey) == ERROR_SUCCESS)
       {
-        Debug(L"InProcServer32 created");
+        DEBUG(L"RegisterServer InProcServer32 created");
 
         wchar_t Filename[MAX_PATH];
         GetModuleFileName(GInstance, Filename, LENOF(Filename));
@@ -364,7 +333,7 @@ static bool RegisterServer(bool AllUsers)
            0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &HKey,
            &Unused) == ERROR_SUCCESS))
     {
-      Debug(L"WinSCPCopyHook created");
+      DEBUG(L"RegisterServer WinSCPCopyHook created");
 
       RegSetValueEx(HKey, NULL, 0, REG_SZ,
         reinterpret_cast<unsigned char*>(ClassID), (wcslen(ClassID) + 1) * sizeof(wchar_t));
@@ -374,7 +343,7 @@ static bool RegisterServer(bool AllUsers)
              0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &HKey,
              &Unused) == ERROR_SUCCESS))
       {
-        Debug(L"drag ext key created");
+        DEBUG(L"RegisterServer drag ext key created");
 
         unsigned long Value = 1;
         RegSetValueEx(HKey, L"Enable", 0, REG_DWORD,
@@ -389,14 +358,14 @@ static bool RegisterServer(bool AllUsers)
     }
   }
 
-  Debug(L"leave");
+  DEBUG(L"RegisterServer leave");
 
   return Result;
 }
 //---------------------------------------------------------------------------
 STDAPI DllRegisterServer()
 {
-  Debug(L"enter");
+  DEBUG(L"DllRegisterServer enter");
 
   HRESULT Result;
   if (RegisterServer(true) || RegisterServer(false))
@@ -408,16 +377,16 @@ STDAPI DllRegisterServer()
     Result = SELFREG_E_CLASS;
   }
 
-  Debug(L"leave");
+  DEBUG(L"DllRegisterServer leave");
 
   return Result;
 }
 //---------------------------------------------------------------------------
-static bool UnregisterServer(bool AllUsers)
+bool UnregisterServer(bool AllUsers)
 {
-  Debug(L"enter");
+  DEBUG(L"UnregisterServer enter");
 
-  Debug(AllUsers ? L"all users" : L"current users");
+  DEBUG(AllUsers ? L"UnregisterServer all users" : L"UnregisterServer current users");
 
   bool Result = false;
   wchar_t ClassID[CLSID_SIZE];
@@ -479,14 +448,14 @@ static bool UnregisterServer(bool AllUsers)
 
   SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, 0, 0);
 
-  Debug(L"leave");
+  DEBUG(L"UnregisterServer leave");
 
   return Result;
 }
 //---------------------------------------------------------------------------
 STDAPI DllUnregisterServer()
 {
-  Debug(L"enter");
+  DEBUG(L"DllUnregisterServer enter");
 
   HRESULT Result = SELFREG_E_CLASS;
   if (UnregisterServer(true))
@@ -499,14 +468,14 @@ STDAPI DllUnregisterServer()
     Result = S_OK;
   }
 
-  Debug(L"leave");
+  DEBUG(L"DllUnregisterServer leave");
 
   return Result;
 }
 //---------------------------------------------------------------------------
 CShellExtClassFactory::CShellExtClassFactory()
 {
-  Debug(L"enter");
+  DEBUG(L"CShellExtClassFactory");
 
   FReferenceCounter = 0;
 
@@ -515,14 +484,14 @@ CShellExtClassFactory::CShellExtClassFactory()
 //---------------------------------------------------------------------------
 CShellExtClassFactory::~CShellExtClassFactory()
 {
-  Debug(L"enter");
+  DEBUG(L"~CShellExtClassFactory");
 
   GRefThisDll--;
 }
 //---------------------------------------------------------------------------
 STDMETHODIMP CShellExtClassFactory::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
 {
-  Debug(L"enter");
+  DEBUG(L"QueryInterface");
 
   *Ppv = NULL;
 
@@ -530,7 +499,7 @@ STDMETHODIMP CShellExtClassFactory::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
 
   if (IsEqualIID(Riid, IID_IUnknown) || IsEqualIID(Riid, IID_IClassFactory))
   {
-    Debug(L"is IUnknown or IClassFactory");
+    DEBUG(L"QueryInterface is IUnknown or IClassFactory");
 
     *Ppv = (LPCLASSFACTORY)this;
 
@@ -544,13 +513,13 @@ STDMETHODIMP CShellExtClassFactory::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
 //---------------------------------------------------------------------------
 STDMETHODIMP_(ULONG) CShellExtClassFactory::AddRef()
 {
-  Debug(L"enter");
+  DEBUG(L"AddRef");
   return ++FReferenceCounter;
 }
 //---------------------------------------------------------------------------
 STDMETHODIMP_(ULONG) CShellExtClassFactory::Release()
 {
-  Debug(L"enter");
+  DEBUG(L"Release");
 
   if (--FReferenceCounter)
   {
@@ -565,7 +534,7 @@ STDMETHODIMP_(ULONG) CShellExtClassFactory::Release()
 STDMETHODIMP CShellExtClassFactory::CreateInstance(LPUNKNOWN UnkOuter,
   REFIID Riid, LPVOID* PpvObj)
 {
-  Debug(L"enter");
+  DEBUG(L"CreateInstance");
 
   *PpvObj = NULL;
 
@@ -587,7 +556,7 @@ STDMETHODIMP CShellExtClassFactory::CreateInstance(LPUNKNOWN UnkOuter,
 //---------------------------------------------------------------------------
 STDMETHODIMP CShellExtClassFactory::LockServer(BOOL /*Lock*/)
 {
-  Debug(L"enter");
+  DEBUG(L"LockServer");
 
   return NOERROR;
 }
@@ -595,7 +564,7 @@ STDMETHODIMP CShellExtClassFactory::LockServer(BOOL /*Lock*/)
 // CShellExt
 CShellExt::CShellExt()
 {
-  Debug(L"enter");
+  DEBUG(L"CShellExt enter");
 
   FReferenceCounter = 0L;
   FDataObj = NULL;
@@ -605,12 +574,12 @@ CShellExt::CShellExt()
 
   GRefThisDll++;
 
-  Debug(L"leave");
+  DEBUG(L"CShellExt leave");
 }
 //---------------------------------------------------------------------------
 CShellExt::~CShellExt()
 {
-  Debug(L"enter");
+  DEBUG(L"~CShellExt enter");
 
   if (FDataObj)
   {
@@ -621,30 +590,30 @@ CShellExt::~CShellExt()
 
   GRefThisDll--;
 
-  Debug(L"leave");
+  DEBUG(L"~CShellExt leave");
 }
 //---------------------------------------------------------------------------
 STDMETHODIMP CShellExt::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
 {
-  Debug(L"enter");
+  DEBUG(L"CShellExt::QueryInterface enter");
 
   HRESULT Result = E_NOINTERFACE;
   *Ppv = NULL;
 
   if (!GEnabled)
   {
-    Debug(L"shellext disabled");
+    DEBUG(L"CShellExt::QueryInterface shellext disabled");
   }
   else
   {
     if (IsEqualIID(Riid, IID_IShellExtInit) || IsEqualIID(Riid, IID_IUnknown))
     {
-      Debug(L"is IShellExtInit or IUnknown");
+      DEBUG(L"CShellExt::QueryInterface is IShellExtInit or IUnknown");
       *Ppv = (LPSHELLEXTINIT)this;
     }
     else if (IsEqualIID(Riid, IID_IShellCopyHook))
     {
-      Debug(L"is IShellCopyHook");
+      DEBUG(L"CShellExt::QueryInterface is IShellCopyHook");
       *Ppv = (LPCOPYHOOK)this;
     }
 
@@ -656,21 +625,21 @@ STDMETHODIMP CShellExt::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
     }
   }
 
-  Debug(L"leave");
+  DEBUG(L"CShellExt::QueryInterface leave");
 
   return Result;
 }
 //---------------------------------------------------------------------------
 STDMETHODIMP_(ULONG) CShellExt::AddRef()
 {
-  Debug(L"enter");
+  DEBUG(L"CShellExt::AddRef");
 
   return ++FReferenceCounter;
 }
 //---------------------------------------------------------------------------
 STDMETHODIMP_(ULONG) CShellExt::Release()
 {
-  Debug(L"enter");
+  DEBUG(L"CShellExt::Release");
   if (--FReferenceCounter)
   {
     return FReferenceCounter;
@@ -684,7 +653,7 @@ STDMETHODIMP_(ULONG) CShellExt::Release()
 STDMETHODIMP CShellExt::Initialize(LPCITEMIDLIST /*IDFolder*/,
   LPDATAOBJECT DataObj, HKEY /*RegKey*/)
 {
-  Debug(L"enter");
+  DEBUG(L"CShellExt::Initialize enter");
 
   if (FDataObj != NULL)
   {
@@ -700,7 +669,7 @@ STDMETHODIMP CShellExt::Initialize(LPCITEMIDLIST /*IDFolder*/,
     DataObj->AddRef();
   }
 
-  Debug(L"leave");
+  DEBUG(L"CShellExt::Initialize leave");
 
   return NOERROR;
 }
@@ -708,23 +677,23 @@ STDMETHODIMP CShellExt::Initialize(LPCITEMIDLIST /*IDFolder*/,
 STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Flags*/,
   LPCWSTR SrcFile, DWORD /*SrcAttribs*/, LPCWSTR DestFile, DWORD /*DestAttribs*/)
 {
-  Debug(L"enter");
+  DEBUG(L"CShellExt::CopyCallback enter");
 
   UINT Result = IDYES;
 
   if (GEnabled && ((Func == FO_COPY) || (Func == FO_MOVE)))
   {
-    Debug(L"copy or move");
+    DEBUG(L"CShellExt::CopyCallback copy or move");
 
     unsigned long Ticks = GetTickCount();
     if (((Ticks - FLastTicks) >= 100) ||
         (FLastTicks > Ticks))
     {
-      Debug(L"interval elapsed");
+      DEBUG(L"CShellExt::CopyCallback interval elapsed");
 
-      Debug(L"source / dest:");
-      Debug(SrcFile);
-      Debug(DestFile);
+      DEBUG(L"CShellExt::CopyCallback source / dest:");
+      DEBUG(SrcFile);
+      DEBUG(DestFile);
 
       FLastTicks = Ticks;
       const wchar_t* BackPtr = wcsrchr(SrcFile, L'\\');
@@ -733,14 +702,14 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
           (wcsncmp(BackPtr + 1, DRAG_EXT_DUMMY_DIR_PREFIX,
             DRAG_EXT_DUMMY_DIR_PREFIX_LEN) == 0))
       {
-        Debug(L"filename has prefix");
+        DEBUG(L"CShellExt::CopyCallback filename has prefix");
 
         HANDLE MapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS,
           false, DRAG_EXT_MAPPING);
 
         if (MapFile != NULL)
         {
-          Debug(L"mapfile found");
+          DEBUG(L"CShellExt::CopyCallback mapfile found");
 
           TDragExtCommStruct* CommStruct;
           CommStruct = static_cast<TDragExtCommStruct*>(MapViewOfFile(MapFile,
@@ -748,23 +717,23 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
 
           if (CommStruct != NULL)
           {
-            Debug(L"mapview created");
+            DEBUG(L"CShellExt::CopyCallback mapview created");
             unsigned long WaitResult = WaitForSingleObject(FMutex, 1000);
             if (WaitResult != WAIT_TIMEOUT)
             {
-              Debug(L"mutex got");
+              DEBUG(L"CShellExt::CopyCallback mutex got");
               if (CommStruct->Version >= TDragExtCommStruct::MinVersion)
               {
-                Debug(L"supported structure version");
+                DEBUG(L"CShellExt::CopyCallback supported structure version");
                 if (CommStruct->Dragging)
                 {
-                  Debug(L"dragging");
-                  Debug(CommStruct->DropDest);
+                  DEBUG(L"CShellExt::CopyCallback dragging");
+                  DEBUG(CommStruct->DropDest);
                   bool IsDropDest;
                   if (_wcsicmp(CommStruct->DropDest, SrcFile) == 0)
                   {
                     IsDropDest = true;
-                    Debug(L"dragged file match as is");
+                    DEBUG(L"CShellExt::CopyCallback dragged file match as is");
                   }
                   else
                   {
@@ -776,28 +745,28 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
                       SrcFileShort, LENOF(SrcFileShort));
                     if ((DropDestSize == 0) || (SrcFileSize == 0))
                     {
-                      Debug(L"cannot convert paths to short form");
+                      DEBUG(L"CShellExt::CopyCallback cannot convert paths to short form");
                       IsDropDest = false;
                     }
                     else if ((DropDestSize >= LENOF(DropDestShort)) ||
                         (SrcFileSize >= LENOF(SrcFileShort)))
                     {
-                      Debug(L"short paths too long");
+                      DEBUG(L"CShellExt::CopyCallback short paths too long");
                       IsDropDest = false;
                     }
                     else
                     {
-                      Debug(DropDestShort);
-                      Debug(SrcFileShort);
+                      DEBUG(DropDestShort);
+                      DEBUG(SrcFileShort);
 
                       if (_wcsicmp(DropDestShort, SrcFileShort) == 0)
                       {
-                        Debug(L"dragged file match after converted to short form");
+                        DEBUG(L"CShellExt::CopyCallback dragged file match after converted to short form");
                         IsDropDest = true;
                       }
                       else
                       {
-                        Debug(L"dragged file does NOT match");
+                        DEBUG(L"CShellExt::CopyCallback dragged file does NOT match");
                         IsDropDest = false;
                       }
                     }
@@ -809,67 +778,68 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
                     wcsncpy(CommStruct->DropDest, DestFile, LENOF(CommStruct->DropDest));
                     CommStruct->DropDest[LENOF(CommStruct->DropDest)-1] = L'\0';
                     Result = IDNO;
-                    Debug(L"dragging refused");
+                    DEBUG(L"CShellExt::CopyCallback dragging refused");
                   }
                 }
                 else
                 {
-                  Debug(L"NOT dragging");
+                  DEBUG(L"CShellExt::CopyCallback NOT dragging");
                 }
               }
               else
               {
-                Debug(L"unsupported structure version");
+                DEBUG(L"CShellExt::CopyCallback unsupported structure version");
               }
               ReleaseMutex(FMutex);
-              Debug(L"mutex released");
+              DEBUG(L"CShellExt::CopyCallback mutex released");
             }
             else
             {
-              Debug(L"mutex timeout");
+              DEBUG(L"CShellExt::CopyCallback mutex timeout");
             }
             UnmapViewOfFile(CommStruct);
           }
           else
           {
-            Debug(L"mapview NOT created");
+            DEBUG(L"CShellExt::CopyCallback mapview NOT created");
           }
 
           CloseHandle(MapFile);
         }
         else
         {
-          Debug(L"mapfile NOT found");
+          DEBUG(L"CShellExt::CopyCallback mapfile NOT found");
         }
       }
       else
       {
-        Debug(L"filename has NOT prefix");
+        DEBUG(L"CShellExt::CopyCallback filename has NOT prefix");
       }
     }
     else
     {
-      Debug(L"interval NOT elapsed");
+      DEBUG(L"CShellExt::CopyCallback interval NOT elapsed");
     }
   }
   else
   {
-    if (GLogOn)
+    if (!GEnabled)
     {
-      if (!GEnabled)
-      {
-        Debug(L"disabled");
-      }
-      else
-      {
-        wchar_t Buf[1024];
-        swprintf(Buf, L"NOT copy nor move - %d", Func);
-        Debug(Buf);
-      }
+      DEBUG(L"CShellExt::CopyCallback Disabled");
+    }
+    else
+    {
+      wchar_t Buf[1024];
+      wcscpy(Buf, L"CShellExt::CopyCallback NOT copy nor move - X");
+      // This is to avoid using swprintf, what's in a lib,
+      // we do not link yet, in 64-bit build (maybe this changes, once
+      // we switch to BCB build)
+      Buf[wcslen(Buf) - 1] = L'0' + Func;
+      DEBUG(Buf);
     }
   }
 
-  Debug(L"leave");
+  DEBUG(L"CShellExt::CopyCallback leave");
 
   return Result;
 }

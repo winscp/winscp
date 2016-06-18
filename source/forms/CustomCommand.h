@@ -46,7 +46,6 @@ private:
   UnicodeString FOrigDescription;
   const TCustomCommandList * FCustomCommandList;
   TCustomCommandValidate FOnValidate;
-  int FOptions;
 
   void __fastcall SetParams(int value);
   int __fastcall GetParams();
