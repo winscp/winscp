@@ -212,14 +212,11 @@ void GetProductVersion(wchar_t* ProductVersion)
         int ProductMajor = HIWORD(FixedFileInfo->dwProductVersionMS);
         int ProductMinor = LOWORD(FixedFileInfo->dwProductVersionMS);
         int ProductBuild = HIWORD(FixedFileInfo->dwProductVersionLS);
-        if ((ProductMajor >= 0) && (ProductMajor <= 9) &&
-            (ProductMinor >= 0) && (ProductMinor <= 9) &&
-            (ProductBuild >= 0) && (ProductBuild <= 9))
+        if ((ProductMajor >= 1) && (ProductMajor <= 99) &&
+            (ProductMinor >= 0) && (ProductMinor <= 99) &&
+            (ProductBuild >= 0) && (ProductBuild <= 99))
         {
-          ProductVersion[0] = static_cast<wchar_t>(L'0' + ProductMajor);
-          ProductVersion[1] = static_cast<wchar_t>(L'0' + ProductMinor);
-          ProductVersion[2] = static_cast<wchar_t>(L'0' + ProductBuild);
-          ProductVersion[3] = L'\0';
+          wsprintf(ProductVersion, L"%d.%d.%d", ProductMajor, ProductMinor, ProductBuild);
         }
       }
     }
@@ -289,7 +286,7 @@ void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HA
     wcscat(ChildPath, L".exe");
   }
 
-  wchar_t ProductVersion[4];
+  wchar_t ProductVersion[32];
   GetProductVersion(ProductVersion);
 
   wchar_t* Parameters = new wchar_t[(CommandLineLen * 2) + 100 + (Count * 3) + 1];

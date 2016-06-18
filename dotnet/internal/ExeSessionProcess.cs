@@ -92,7 +92,7 @@ namespace WinSCP
 
                 string assemblyVersionStr =
                     (assemblyVersion == null) ? "unk" :
-                    string.Format(CultureInfo.InvariantCulture, "{0}{1}{2} ", assemblyVersion.ProductMajorPart, assemblyVersion.ProductMinorPart, assemblyVersion.ProductBuildPart);
+                    string.Format(CultureInfo.InvariantCulture, "{0}.{1}.{2} ", assemblyVersion.ProductMajorPart, assemblyVersion.ProductMinorPart, assemblyVersion.ProductBuildPart);
 
                 string assemblyVersionSwitch =
                     string.Format(CultureInfo.InvariantCulture, "/dotnet={0} ", assemblyVersionStr);
