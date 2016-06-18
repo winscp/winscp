@@ -1217,11 +1217,7 @@ static void c_write(Ssh ssh, const char *buf, int len)
     if (flags & FLAG_STDERR)
 	c_write_stderr(1, buf, len);
     else
-#ifdef MPEXT
-	from_backend(ssh->frontend, -1, buf, len);
-#else
 	from_backend(ssh->frontend, 1, buf, len);
-#endif
 }
 
 static void c_write_untrusted(Ssh ssh, const char *buf, int len)
@@ -1691,9 +1687,7 @@ static void s_wrpkt(Ssh ssh, struct Packet *pkt)
     len = s_wrpkt_prepare(ssh, pkt, &offset);
     backlog = s_write(ssh, pkt->data + offset, len);
     if (backlog > SSH_MAX_BACKLOG)
-	{
 	ssh_throttle_all(ssh, 1, backlog);
-	}
     ssh_free_packet(pkt);
 }
 
@@ -2079,9 +2073,7 @@ static void ssh2_pkt_send_noqueue(Ssh ssh, struct Packet *pkt)
     len = ssh2_pkt_construct(ssh, pkt);
     backlog = s_write(ssh, pkt->data, len);
     if (backlog > SSH_MAX_BACKLOG)
-	{
 	ssh_throttle_all(ssh, 1, backlog);
-	}
 
     ssh->outgoing_data_size += pkt->encrypted_len;
     if (!ssh->kex_in_progress &&
@@ -2182,9 +2174,7 @@ static void ssh_pkt_defersend(Ssh ssh)
     sfree(ssh->deferred_send_data);
     ssh->deferred_send_data = NULL;
     if (backlog > SSH_MAX_BACKLOG)
-	{
 	ssh_throttle_all(ssh, 1, backlog);
-	}
 
     ssh->outgoing_data_size += ssh->deferred_data_size;
     if (!ssh->kex_in_progress &&
@@ -3061,9 +3051,7 @@ static void ssh_sent(Plug plug, int bufsize)
      * should unthrottle the whole world if it was throttled.
      */
     if (bufsize < SSH_MAX_BACKLOG)
-	{
 	ssh_throttle_all(ssh, 0, bufsize);
-	}
 }
 
 /*
@@ -3114,11 +3102,6 @@ static const char *connect_to_host(Ssh ssh, char *host, int port,
 	ssh->savedport = port;
     }
 
-    #ifdef MPEXT
-    // make sure the field is initialized, in case lookup below fails
-    ssh->fullhostname = NULL;
-    #endif
-    
     /*
      * Try to find host.
      */
@@ -3661,7 +3644,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
     s->keyfile = conf_get_filename(ssh->conf, CONF_keyfile);
     if (!filename_is_null(s->keyfile)) {
 	int keytype;
-	logeventf(ssh, MPEXT_BOM "Reading private key file \"%.150s\"",
+	logeventf(ssh, "Reading private key file \"%.150s\"",
 		  filename_to_str(s->keyfile));
 	keytype = key_type(s->keyfile);
 	if (keytype == SSH_KEYTYPE_SSH1) {
@@ -3674,7 +3657,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
 	    } else {
 		char *msgbuf;
 		logeventf(ssh, "Unable to load private key (%s)", error);
-		msgbuf = dupprintf(MPEXT_BOM "Unable to load private key file "
+		msgbuf = dupprintf("Unable to load private key file "
 				   "\"%.150s\" (%s)\r\n",
 				   filename_to_str(s->keyfile),
 				   error);
@@ -3686,7 +3669,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
 	    char *msgbuf;
 	    logeventf(ssh, "Unable to use this key file (%s)",
 		      key_type_to_str(keytype));
-	    msgbuf = dupprintf(MPEXT_BOM "Unable to use key file \"%.150s\""
+	    msgbuf = dupprintf("Unable to use key file \"%.150s\""
 			       " (%s)\r\n",
 			       filename_to_str(s->keyfile),
 			       key_type_to_str(keytype));
@@ -3891,7 +3874,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
 	    if (flags & FLAG_VERBOSE)
 		c_write_str(ssh, "Trying public key authentication.\r\n");
 	    s->keyfile = conf_get_filename(ssh->conf, CONF_keyfile);
-	    logeventf(ssh, MPEXT_BOM "Trying public key \"%s\"",
+	    logeventf(ssh, "Trying public key \"%s\"",
 		      filename_to_str(s->keyfile));
 	    s->tried_publickey = 1;
 	    got_passphrase = FALSE;
@@ -3944,7 +3927,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
 		    /* Correct passphrase. */
 		    got_passphrase = TRUE;
 		} else if (ret == 0) {
-		    c_write_str(ssh, MPEXT_BOM "Couldn't load private key from ");
+		    c_write_str(ssh, "Couldn't load private key from ");
 		    c_write_str(ssh, filename_to_str(s->keyfile));
 		    c_write_str(ssh, " (");
 		    c_write_str(ssh, error);
@@ -6416,18 +6399,10 @@ static void do_ssh2_transport(Ssh ssh, void *vin, int inlen,
 	smemclr(keyspace, sizeof(keyspace));
     }
 
-    #ifdef _DEBUG
-	// To suppress CodeGuard warning
-    logeventf(ssh, "Initialised %s client->server encryption",
-	      ssh->cscipher->text_name);
-    logeventf(ssh, "Initialised %s client->server MAC algorithm",
-	      ssh->csmac->text_name);
-    #else
     logeventf(ssh, "Initialised %.200s client->server encryption",
 	      ssh->cscipher->text_name);
     logeventf(ssh, "Initialised %.200s client->server MAC algorithm",
 	      ssh->csmac->text_name);
-    #endif
     if (ssh->cscomp->text_name)
 	logeventf(ssh, "Initialised %s compression",
 		  ssh->cscomp->text_name);
@@ -6489,18 +6464,10 @@ static void do_ssh2_transport(Ssh ssh, void *vin, int inlen,
 	ssh->scmac->setkey(ssh->sc_mac_ctx, keyspace);
 	smemclr(keyspace, sizeof(keyspace));
     }
-    #ifdef _DEBUG
-	// To suppress CodeGuard warning
-    logeventf(ssh, "Initialised %s server->client encryption",
-	      ssh->sccipher->text_name);
-    logeventf(ssh, "Initialised %s server->client MAC algorithm",
-	      ssh->scmac->text_name);
-    #else
     logeventf(ssh, "Initialised %.200s server->client encryption",
 	      ssh->sccipher->text_name);
     logeventf(ssh, "Initialised %.200s server->client MAC algorithm",
 	      ssh->scmac->text_name);
-    #endif
     if (ssh->sccomp->text_name)
 	logeventf(ssh, "Initialised %s decompression",
 		  ssh->sccomp->text_name);
@@ -8029,7 +7996,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 	s->keyfile = conf_get_filename(ssh->conf, CONF_keyfile);
 	if (!filename_is_null(s->keyfile)) {
 	    int keytype;
-	    logeventf(ssh, MPEXT_BOM "Reading private key file \"%.150s\"",
+	    logeventf(ssh, "Reading private key file \"%.150s\"",
 		      filename_to_str(s->keyfile));
 	    keytype = key_type(s->keyfile);
 	    if (keytype == SSH_KEYTYPE_SSH2) {
@@ -8046,7 +8013,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		    char *msgbuf;
 		    logeventf(ssh, "Unable to load private key (%s)", 
 			      error);
-		    msgbuf = dupprintf(MPEXT_BOM "Unable to load private key file "
+		    msgbuf = dupprintf("Unable to load private key file "
 				       "\"%.150s\" (%s)\r\n",
 				       filename_to_str(s->keyfile),
 				       error);
@@ -8057,7 +8024,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		char *msgbuf;
 		logeventf(ssh, "Unable to use this key file (%s)",
 			  key_type_to_str(keytype));
-		msgbuf = dupprintf(MPEXT_BOM "Unable to use key file \"%.150s\""
+		msgbuf = dupprintf("Unable to use key file \"%.150s\""
 				   " (%s)\r\n",
 				   filename_to_str(s->keyfile),
 				   key_type_to_str(keytype));
@@ -8301,9 +8268,6 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		if (size && (flags & (FLAG_VERBOSE | FLAG_INTERACTIVE))) {
 		    char *banner = snewn(size, char);
 		    bufchain_fetch(&ssh->banner, banner, size);
-#ifdef MPEXT
-		    display_banner(ssh->frontend, banner, size);
-#endif
 		    c_write_untrusted(ssh, banner, size);
 		    sfree(banner);
 		}
@@ -8544,9 +8508,6 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 					     GET_32BIT(s->ret + 5));
 			    ssh2_pkt_send(ssh, s->pktout);
 			    s->type = AUTH_TYPE_PUBLICKEY;
-			    #ifdef MPEXT
-			    sfree(s->ret);
-			    #endif
 			} else {
 			    /* FIXME: less drastic response */
 			    bombout(("Pageant failed to answer challenge"));
@@ -9109,12 +9070,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		s->cur_prompt = new_prompts(ssh->frontend);
 		s->cur_prompt->to_server = TRUE;
 		s->cur_prompt->name = dupstr("SSH password");
-		#ifdef _DEBUG
-		// To suppress CodeGuard warning
 		add_prompt(s->cur_prompt, dupprintf("%s@%s's password: ",
-		#else
-		add_prompt(s->cur_prompt, dupprintf("%.90s@%.90s's password: ",
-		#endif
 						    ssh->username,
 						    ssh->savedhost),
 			   FALSE);
@@ -9543,13 +9499,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		 * back to it before complaining.
 		 */
 		if (!ssh->fallback_cmd &&
-		    (*conf_get_str(ssh->conf, CONF_remote_cmd2)
-#ifdef MPEXT
-		    ||
-		    conf_get_int(ssh->conf, CONF_force_remote_cmd2)
-#endif
-        )
-        ) {
+		    *conf_get_str(ssh->conf, CONF_remote_cmd2)) {
 		    logevent("Primary command failed; attempting fallback");
 		    ssh->fallback_cmd = TRUE;
 		    continue;
@@ -9757,12 +9707,7 @@ static void ssh2_timer(void *ctx, unsigned long now)
 	return;
 
     if (!ssh->kex_in_progress && conf_get_int(ssh->conf, CONF_ssh_rekey_time) != 0 &&
-#ifdef MPEXT
-// our call from call_ssh_timer() does not guarantee the `now` to be exactly as scheduled
-	(now >= ssh->next_rekey)) {
-#else
 	now == ssh->next_rekey) {
-#endif
 	do_ssh2_transport(ssh, "timeout", -1, NULL);
     }
 }
@@ -9874,12 +9819,6 @@ static const char *ssh_init(void *frontend_handle, void **backend_handle,
 
     *backend_handle = ssh;
 
-#ifdef MPEXT
-    // random_unref is always called from ssh_free,
-    // so we must call random_ref also always, even if we fail, to match it
-    random_ref();
-#endif
-
 #ifdef MSCRYPTOAPI
     if (crypto_startup() == 0)
 	return "Microsoft high encryption pack not installed!";
@@ -9920,9 +9859,7 @@ static const char *ssh_init(void *frontend_handle, void **backend_handle,
     if (p != NULL)
 	return p;
 
-#ifndef MPEXT
     random_ref();
-#endif
 
     return NULL;
 }

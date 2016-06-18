@@ -1,4 +1,3 @@
-{ MP }
 unit TB2Item;
 
 {
@@ -40,7 +39,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, CommCtrl, Menus, ActnList, ImgList, TB2Anim, UITypes;
+  StdCtrls, CommCtrl, Menus, ActnList, ImgList, TB2Anim;
 
 const
   WM_TB2K_POPUPSHOWING = WM_USER + 554;
@@ -62,7 +61,7 @@ type
   TTBView = class;
 
   TTBDoneAction = (tbdaNone, tbdaCancel, tbdaClickItem, tbdaOpenSystemMenu,
-    tbdaHelpContext { MP }, tbdaHelpKeyword { /MP });
+    tbdaHelpContext);
   PTBDoneActionData = ^TTBDoneActionData;
   TTBDoneActionData = record
     DoneAction: TTBDoneAction;
@@ -70,8 +69,6 @@ type
       tbdaClickItem: (ClickItem: TTBCustomItem; Sound: Boolean);
       tbdaOpenSystemMenu: (Wnd: HWND; Key: Cardinal);
       tbdaHelpContext: (ContextID: Integer);
-      { MP }
-      tbdaHelpKeyword: (HelpKeyword: String[100]);
   end;
   TTBInsertItemProc = procedure(AParent: TComponent; AItem: TTBCustomItem) of object;
   TTBItemChangedAction = (tbicInserted, tbicDeleting, tbicSubitemsChanged,
@@ -132,8 +129,6 @@ type
     FEffectiveOptions: TTBItemOptions;
     FGroupIndex: Integer;
     FHelpContext: THelpContext;
-    { MP }
-    FHelpKeyword: String;
     FHint: String;
     FImageIndex: TImageIndex;
     FImages: TCustomImageList;
@@ -222,7 +217,7 @@ type
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     function OpenPopup(const SelectFirstItem, TrackRightButton: Boolean;
       const PopupPoint: TPoint; const Alignment: TTBPopupAlignment;
-      const ReturnClickedItemOnly: Boolean; PositionAsSubmenu: Boolean): TTBCustomItem;
+      const ReturnClickedItemOnly: Boolean): TTBCustomItem;
     procedure RecreateItemViewers;
     procedure SetChildOrder(Child: TComponent; Order: Integer); override;
     procedure SetName(const NewName: TComponentName); override;
@@ -249,8 +244,7 @@ type
     procedure Move(CurIndex, NewIndex: Integer);
     function Popup(X, Y: Integer; TrackRightButton: Boolean;
       Alignment: TTBPopupAlignment = tbpaLeft;
-      ReturnClickedItemOnly: Boolean = False;
-      PositionAsSubmenu: Boolean = False): TTBCustomItem;
+      ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
     procedure PostClick;
     procedure RegisterNotification(ANotify: TTBItemChangedProc);
     procedure Remove(Item: TTBCustomItem);
@@ -268,8 +262,6 @@ type
     property Enabled: Boolean read FEnabled write SetEnabled stored IsEnabledStored default True;
     property GroupIndex: Integer read FGroupIndex write SetGroupIndex default 0;
     property HelpContext: THelpContext read FHelpContext write FHelpContext stored IsHelpContextStored default 0;
-    { MP }
-    property HelpKeyword: String read FHelpKeyword write FHelpKeyword stored IsHelpContextStored;
     property Hint: String read FHint write FHint stored IsHintStored;
     property ImageIndex: TImageIndex read FImageIndex write SetImageIndex stored IsImageIndexStored default -1;
     property Images: TCustomImageList read FImages write SetImages;
@@ -300,8 +292,6 @@ type
     function IsCheckedLinked: Boolean; override;
     function IsEnabledLinked: Boolean; override;
     function IsHelpContextLinked: Boolean; override;
-    { MP }
-    function IsHelpLinked: Boolean; override;
     function IsHintLinked: Boolean; override;
     function IsImageIndexLinked: Boolean; override;
     function IsShortCutLinked: Boolean; override;
@@ -314,8 +304,6 @@ type
     procedure SetChecked(Value: Boolean); override;
     procedure SetEnabled(Value: Boolean); override;
     procedure SetHelpContext(Value: THelpContext); override;
-    { MP }
-    procedure SetHelpKeyword(const Value: string); override;
     procedure SetHint(const Value: String); override;
     procedure SetImageIndex(Value: Integer); override;
     procedure SetShortCut(Value: TShortCut); override;
@@ -507,10 +495,7 @@ type
     procedure DrawSubitems(ACanvas: TCanvas);
     procedure EndModal;
     procedure EndModalWithClick(AViewer: TTBItemViewer);
-    { MP }
-    procedure EndModalWithHelp(AContextID: Integer); overload;
-    procedure EndModalWithHelp(HelpKeyword: string); overload;
-    { /MP }
+    procedure EndModalWithHelp(AContextID: Integer);
     procedure EndModalWithSystemMenu(AWnd: HWND; AKey: Cardinal);
     procedure EndUpdate;
     procedure EnterToolbarLoop(Options: TTBEnterToolbarLoopOptions);
@@ -583,8 +568,6 @@ type
     property Enabled;
     property GroupIndex;
     property HelpContext;
-    { MP }
-    property HelpKeyword;
     property Hint;
     property ImageIndex;
     property Images;
@@ -626,8 +609,6 @@ type
     property Enabled;
     property GroupIndex;
     property HelpContext;
-    { MP }
-    property HelpKeyword;
     property Hint;
     property ImageIndex;
     property Images;
@@ -721,8 +702,6 @@ type
     procedure Paint; override;
     procedure PaintScrollArrows; virtual;
     property AnimationDirection: TTBAnimationDirection read FAnimationDirection;
-    {MP}
-    procedure Cancel; dynamic;
   public
     constructor CreatePopupWindow(AOwner: TComponent; const AParentView: TTBView;
       const AItem: TTBCustomItem; const ACustomizing: Boolean); virtual;
@@ -770,6 +749,7 @@ type
     {$IFNDEF JR_D5}
     procedure DoPopup(Sender: TObject);
     {$ENDIF}
+    procedure GetChildren(Proc: TGetChildProc; Root: TComponent); override;
     function GetRootItemClass: TTBRootItemClass; dynamic;
     procedure SetChildOrder(Child: TComponent; Order: Integer); override;
   public
@@ -778,7 +758,6 @@ type
     function IsShortCut(var Message: TWMKey): Boolean; override;
     procedure Popup(X, Y: Integer); override;
     function PopupEx(X, Y: Integer; ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
-    procedure GetChildren(Proc: TGetChildProc; Root: TComponent); override;
   published
     property Images: TCustomImageList read GetImages write SetImages;
     property Items: TTBRootItem read FItem;
@@ -887,7 +866,7 @@ function ProcessDoneAction(const DoneActionData: TTBDoneActionData;
 implementation
 
 uses
-  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc, Winapi.oleacc, Types;
+  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc;
 
 var
   LastPos: TPoint;
@@ -959,7 +938,7 @@ end;
 procedure RemoveFromClickList(const AItem: TObject);
 { Any class that potentially calls QueueClick needs to call RemoveFromClickList
   before an instance is destroyed to ensure that any references to the
-  instance still in ClickList are removed. }
+  instance still in ClickList are removed. }                                                                
 var
   I: Integer;
 begin
@@ -986,7 +965,7 @@ begin
     tbdaNone: ;
     tbdaClickItem: begin
         if DoneActionData.Sound and NeedToPlaySound('MenuCommand') then
-          PlaySoundA('MenuCommand', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
+          PlaySound('MenuCommand', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
         Result := DoneActionData.ClickItem;
         if not ReturnClickedItemOnly then
           Result.PostClick;
@@ -1002,11 +981,6 @@ begin
         else
           Application.HelpContext(DoneActionData.ContextID);
       end;
-    { MP }
-    tbdaHelpKeyword: begin
-        Application.HelpKeyword(string(DoneActionData.HelpKeyword));
-      end;
-    { /MP }
   end;
 end;
 
@@ -1094,16 +1068,6 @@ begin
     (FClient.HelpContext = (Action as TCustomAction).HelpContext);
 end;
 
-{ MP }
-function TTBCustomItemActionLink.IsHelpLinked: Boolean;
-begin
-  Result := inherited IsHelpLinked and
-    (FClient.HelpContext = (Action as TCustomAction).HelpContext) and
-    (FClient.HelpKeyword = (Action as TCustomAction).HelpKeyword){ and
-    (FClient.HelpType = (Action as TCustomAction).HelpType);} // TODO
-end;
-{ /MP }
-
 function TTBCustomItemActionLink.IsHintLinked: Boolean;
 begin
   Result := inherited IsHintLinked and
@@ -1158,15 +1122,8 @@ end;
 
 procedure TTBCustomItemActionLink.SetHelpContext(Value: THelpContext);
 begin
-  if { MP } IsHelpLinked { /MP } then FClient.HelpContext := Value;
+  if IsHelpContextLinked then FClient.HelpContext := Value;
 end;
-
-{ MP }
-procedure TTBCustomItemActionLink.SetHelpKeyword(const Value: String);
-begin
-  if IsHelpLinked then FClient.HelpKeyword := Value;
-end;
-{ /MP }
 
 procedure TTBCustomItemActionLink.SetHint(const Value: string);
 begin
@@ -1271,8 +1228,7 @@ end;
 
 function TTBCustomItem.IsHelpContextStored: Boolean;
 begin
-  { MP }
-  Result := (ActionLink = nil) or not FActionLink.IsHelpLinked;
+  Result := (ActionLink = nil) or not FActionLink.IsHelpContextLinked;
 end;
 
 function TTBCustomItem.IsImageIndexStored: Boolean;
@@ -1330,10 +1286,6 @@ begin
         Self.Enabled := Enabled;
       if not CheckDefaults or (Self.HelpContext = 0) then
         Self.HelpContext := HelpContext;
-      { MP }
-      if not CheckDefaults or (Self.HelpKeyword = '') then
-        Self.HelpKeyword := HelpKeyword;
-      { /MP }
       if not CheckDefaults or (Self.Hint = '') then
         Self.Hint := Hint;
       if not CheckDefaults or (Self.ImageIndex = -1) then
@@ -1965,11 +1917,8 @@ begin
       if not IsRectEmpty(ParentView.FMonitorRect) then
         MonitorRect := ParentView.FMonitorRect
       else
-        { MP (display menu on correct monitor) }
-        MonitorRect := GetRectOfMonitorContainingRect(ParentItemRect, True);
         {MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, False);} {vb-}
-        { MP }
-        {MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, True);} {vb+}
+        MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, True); {vb+}
     end
     else begin
       ParentItemRect.TopLeft := APopupPoint;
@@ -2078,14 +2027,14 @@ begin
         PlayedSound := True;
         Result.Visible := True;
         Result.Update;
-        PlaySoundA('MenuPopup', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
+        PlaySound('MenuPopup', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
       end
       else begin
-        PlaySoundA('MenuPopup', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
+        PlaySound('MenuPopup', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
         Result.Visible := True;
       end;
     end;
-    NotifyWinEvent(EVENT_SYSTEM_MENUPOPUPSTART, Result.View.FWindow.Handle,
+    CallNotifyWinEvent(EVENT_SYSTEM_MENUPOPUPSTART, Result.View.FWindow.Handle,
       OBJID_CLIENT, CHILDID_SELF);
     { Call NotifyFocusEvent now that the window is visible }
     if Assigned(Result.View.Selected) then
@@ -2098,7 +2047,7 @@ end;
 
 function TTBCustomItem.OpenPopup(const SelectFirstItem, TrackRightButton: Boolean;
   const PopupPoint: TPoint; const Alignment: TTBPopupAlignment;
-  const ReturnClickedItemOnly: Boolean; PositionAsSubmenu: Boolean): TTBCustomItem;
+  const ReturnClickedItemOnly: Boolean): TTBCustomItem;
 var
   ModalHandler: TTBModalHandler;
   Popup: TTBPopupWindow;
@@ -2106,7 +2055,7 @@ var
 begin
   ModalHandler := TTBModalHandler.Create(0);
   try
-    Popup := CreatePopup(nil, nil, PositionAsSubmenu, SelectFirstItem, False, PopupPoint,
+    Popup := CreatePopup(nil, nil, False, SelectFirstItem, False, PopupPoint,
       Alignment);
     try
       Include(Popup.View.FState, vsIgnoreFirstMouseUp);
@@ -2128,15 +2077,14 @@ end;
 
 function TTBCustomItem.Popup(X, Y: Integer; TrackRightButton: Boolean;
   Alignment: TTBPopupAlignment = tbpaLeft;
-  ReturnClickedItemOnly: Boolean = False;
-  PositionAsSubmenu: Boolean = False): TTBCustomItem;
+  ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
 var
   P: TPoint;
 begin
   P.X := X;
   P.Y := Y;
   Result := OpenPopup(False, TrackRightButton, P, Alignment,
-    ReturnClickedItemOnly, PositionAsSubmenu);
+    ReturnClickedItemOnly);
 end;
 
 function TTBCustomItem.FindItemWithShortCut(AShortCut: TShortCut;
@@ -2196,7 +2144,7 @@ begin
       EventItem := ItemContainingItems(Item);
       if not(csDesigning in ComponentState) then begin
         for I := 0 to EventItem.Count-1 do
-          EventItem.Items[I].InitiateAction;
+          EventItem.Items[I].InitiateAction; 
       end;
       if not(tbisEmbeddedGroup in Item.ItemStyle) then begin
         if EventItem <> Item then begin
@@ -2697,6 +2645,10 @@ end;
 function TTBItemViewer.GetAccObject: IDispatch;
 begin
   if FAccObjectInstance = nil then begin
+    if not InitializeOleAcc then begin
+      Result := nil;
+      Exit;
+    end;
     FAccObjectInstance := TTBItemViewerAccObject.Create(Self);
   end;
   Result := FAccObjectInstance;
@@ -2737,9 +2689,6 @@ begin
   P := Pos(#9, Result);
   if P <> 0 then
     SetLength(Result, P-1);
-  { MP }
-  if IsToolbarStyle and not (vsMenuBar in View.Style) then
-    Result := StripAccelChars(StripTrailingPunctuation(Result), True);
 end;
 
 function TTBItemViewer.GetHintText: String;
@@ -3481,7 +3430,7 @@ end;
 
 function TTBItemViewer.GetAccValue(var Value: WideString): Boolean;
 { Gets the MSAA "value" text of the viewer. Returns True if something was
-  assigned to Value, or False if the viewer does not possess a "value". }
+  assigned to Value, or False if the viewer does not possess a "value". } 
 begin
   Result := False;
 end;
@@ -3544,6 +3493,10 @@ end;
 function TTBView.GetAccObject: IDispatch;
 begin
   if FAccObjectInstance = nil then begin
+    if not InitializeOleAcc then begin
+      Result := nil;
+      Exit;
+    end;
     FAccObjectInstance := TTBViewAccObject.Create(Self);
     { Strictly as an optimization, take a reference for ourself and keep it
       for the lifetime of the view. (Destroy calls _Release.) }
@@ -3554,8 +3507,8 @@ end;
 
 function TTBView.HandleWMGetObject(var Message: TMessage): Boolean;
 begin
-  if (Message.LParam = Integer(OBJID_CLIENT)) then begin
-    Message.Result := LresultFromObject(ITBAccessible, Message.WParam, GetAccObject);
+  if (Message.LParam = Integer(OBJID_CLIENT)) and InitializeOleAcc then begin
+    Message.Result := LresultFromObjectFunc(ITBAccessible, Message.WParam, GetAccObject);
     Result := True;
   end
   else
@@ -4066,9 +4019,6 @@ procedure TTBView.CancelChildPopups;
 begin
   if FIsToolbar then
     Exclude(FState, vsDropDownMenus);
-  {MP}
-  if Assigned(FOpenViewerWindow) then
-    FOpenViewerWindow.Cancel;
   CloseChildPopups;
 end;
 
@@ -4129,7 +4079,7 @@ begin
           when a standard context menu has no selection. }
         ChildID := CHILDID_SELF;
       end;
-      NotifyWinEvent(EVENT_OBJECT_FOCUS, FWindow.Handle, OBJID_CLIENT, ChildID);
+      CallNotifyWinEvent(EVENT_OBJECT_FOCUS, FWindow.Handle, OBJID_CLIENT, ChildID);
     end;
   end;
 end;
@@ -5586,8 +5536,6 @@ procedure TTBView.KeyDown(var Key: Word; Shift: TShiftState);
   var
     V: TTBView;
     ContextID: Integer;
-    { MP }
-    HelpKeyword: string;
   begin
     ContextID := 0;
     V := Self;
@@ -5598,25 +5546,8 @@ procedure TTBView.KeyDown(var Key: Word; Shift: TShiftState);
       end;
       V := V.FParentView;
     end;
-    { MP }
     if ContextID <> 0 then
-    begin
       EndModalWithHelp(ContextID);
-      Exit;
-    end;
-
-    HelpKeyword := '';
-    V := Self;
-    while Assigned(V) do begin
-      if Assigned(V.FSelected) then begin
-        HelpKeyword := V.FSelected.Item.HelpKeyword;
-        if HelpKeyword <> '' then Break;
-      end;
-      V := V.FParentView;
-    end;
-    if HelpKeyword <> '' then
-      EndModalWithHelp(HelpKeyword);
-    { /MP }
   end;
 
 var
@@ -5713,17 +5644,6 @@ begin
   RootView.FDoneActionData.ContextID := AContextID;
   RootView.FDoneActionData.DoneAction := tbdaHelpContext;
 end;
-
-{ MP }
-procedure TTBView.EndModalWithHelp(HelpKeyword: string);
-var
-  RootView: TTBView;
-begin
-  RootView := GetRootView;
-  RootView.FDoneActionData.HelpKeyword := ShortString(HelpKeyword);
-  RootView.FDoneActionData.DoneAction := tbdaHelpKeyword;
-end;
-{ /MP }
 
 procedure TTBView.EndModalWithSystemMenu(AWnd: HWND; AKey: Cardinal);
 var
@@ -5885,7 +5805,7 @@ begin
   end;
   SetCapture(FWnd);
   SetCursor(LoadCursor(0, IDC_ARROW));
-  NotifyWinEvent(EVENT_SYSTEM_MENUSTART, FWnd, OBJID_CLIENT, CHILDID_SELF);
+  CallNotifyWinEvent(EVENT_SYSTEM_MENUSTART, FWnd, OBJID_CLIENT, CHILDID_SELF);
   FInited := True;
 end;
 
@@ -5897,7 +5817,7 @@ begin
     if GetCapture = FWnd then
       ReleaseCapture;
     if FInited then
-      NotifyWinEvent(EVENT_SYSTEM_MENUEND, FWnd, OBJID_CLIENT, CHILDID_SELF);
+      CallNotifyWinEvent(EVENT_SYSTEM_MENUEND, FWnd, OBJID_CLIENT, CHILDID_SELF);
     if FCreatedWnd then
       {$IFDEF JR_D6}Classes.{$ENDIF} DeallocateHWnd(FWnd);
   end;
@@ -6312,9 +6232,7 @@ begin
         DispatchMessage(Msg);
       end;
       if not ContinueLoop then
-      begin
         Exit;
-      end;
       if LastPos.X = Low(LastPos.X) then begin
         LastPos := SmallPointToPoint(TSmallPoint(GetMessagePos()));
         MouseMoved;
@@ -6403,18 +6321,12 @@ destructor TTBPopupWindow.Destroy;
 begin
   Destroying;
   { Ensure window handle is destroyed *before* FView is freed, since
-    DestroyWindowHandle calls NotifyWinEvent which may result in
+    DestroyWindowHandle calls CallNotifyWinEvent which may result in
     FView.HandleWMObject being called }
   if HandleAllocated then
     DestroyWindowHandle;
   FreeAndNil(FView);
   inherited;
-end;
-
-{MP}
-procedure TTBPopupWindow.Cancel;
-begin
-  { noop }
 end;
 
 procedure TTBPopupWindow.BeforeDestruction;
@@ -6447,7 +6359,9 @@ begin
     Style := (Style and not (WS_CHILD or WS_GROUP or WS_TABSTOP)) or WS_POPUP;
     ExStyle := ExStyle or WS_EX_TOPMOST or WS_EX_TOOLWINDOW;
     WindowClass.Style := WindowClass.Style or CS_SAVEBITS;
-    WindowClass.Style := WindowClass.Style or CS_DROPSHADOW;
+    { Enable drop shadow effect on Windows XP and later }
+    if IsWindowsXP then
+      WindowClass.Style := WindowClass.Style or CS_DROPSHADOW;
   end;
 end;
 
@@ -6480,7 +6394,7 @@ begin
   { Cleanly destroy any timers before the window handle is destroyed }
   if Assigned(FView) then
     FView.StopAllTimers;
-  NotifyWinEvent(EVENT_SYSTEM_MENUPOPUPEND, WindowHandle, OBJID_CLIENT,
+  CallNotifyWinEvent(EVENT_SYSTEM_MENUPOPUPEND, WindowHandle, OBJID_CLIENT,
     CHILDID_SELF);
   inherited;
 end;
@@ -6979,9 +6893,7 @@ var
 begin
   NonClientMetrics.cbSize := SizeOf(NonClientMetrics);
   if SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, @NonClientMetrics, 0) then
-  begin
     ToolbarFont.Handle := CreateFontIndirect(NonClientMetrics.lfMenuFont);
-  end;
 end;
 
 initialization

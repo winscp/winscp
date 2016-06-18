@@ -144,21 +144,15 @@ type
   TJclCriticalSectionEx = class(TJclCriticalSection)
   private
     FSpinCount: Cardinal;
-    {$IFNDEF WINSCP}
     function GetSpinCount: Cardinal;
     procedure SetSpinCount(const Value: Cardinal);
-    {$ENDIF ~WINSCP}
   public
     constructor Create; override;
     constructor CreateEx(SpinCount: Cardinal; NoFailEnter: Boolean); virtual;
-    {$IFNDEF WINSCP}
     class function GetSpinTimeOut: Cardinal;
     class procedure SetSpinTimeOut(const Value: Cardinal);
-    {$ENDIF ~WINSCP}
     function TryEnter: Boolean;
-    {$IFNDEF WINSCP}
     property SpinCount: Cardinal read GetSpinCount write SetSpinCount;
-    {$ENDIF ~WINSCP}
   end;
 
   TJclEvent = class(TJclDispatcherObject)
@@ -207,8 +201,6 @@ type
     RecursionCount: Integer; // number of times the optex is owned, 0 if free
   end;
 
-{$IFNDEF WINSCP}
-
   TJclOptex = class(TObject)
   private
     FEvent: TJclEvent;
@@ -230,8 +222,6 @@ type
     property SpinCount: Integer read GetSpinCount write SetSpinCount;
     property UniProcess: Boolean read GetUniProcess;
   end;
-
-{$ENDIF ~WINSCP}
 
   TMrewPreferred = (mpReaders, mpWriters, mpEqual);
 
@@ -372,8 +362,8 @@ uses
   {$ELSE ~HAS_UNITSCOPE}
   SysUtils,
   {$ENDIF ~HAS_UNITSCOPE}
-  {$IFNDEF WINSCP}JclLogic, JclRegistry,{$ELSE}Math,{$ENDIF ~WINSCP} JclResources,
-  {$IFNDEF WINSCP}JclSysInfo,{$ENDIF ~WINSCP} JclStrings;
+  JclLogic, JclRegistry, JclResources,
+  JclSysInfo, JclStrings;
 
 const
   RegSessionManager = {HKLM\} 'SYSTEM\CurrentControlSet\Control\Session Manager';
@@ -910,7 +900,6 @@ begin
     raise EJclCriticalSectionError.CreateRes(@RsSynchInitCriticalSection);
 end;
 
-{$IFNDEF WINSCP}
 function TJclCriticalSectionEx.GetSpinCount: Cardinal;
 begin
   // Spinning only makes sense on multiprocessor systems. On a single processor
@@ -939,7 +928,6 @@ begin
   RegWriteInteger(HKEY_LOCAL_MACHINE, RegSessionManager, RegCritSecTimeout,
     Integer(Value));
 end;
-{$ENDIF ~WINSCP}
 
 { TODO: Use RTLD version of TryEnterCriticalSection }
 function TJclCriticalSectionEx.TryEnter: Boolean;
@@ -1108,8 +1096,6 @@ begin
   Result := {$IFDEF HAS_UNITSCOPE}Winapi.{$ENDIF}Windows.ReleaseMutex(FHandle);
 end;
 
-{$IFNDEF WINSCP}
-
 //=== { TJclOptex } ==========================================================
 
 constructor TJclOptex.Create(const Name: string; SpinCount: Integer);
@@ -1247,8 +1233,6 @@ begin
   until ThreadOwnsOptex or (SpinCount <= 0);
   Result := ThreadOwnsOptex;
 end;
-
-{$ENDIF ~WINSCP}
 
 //=== { TJclMultiReadExclusiveWrite } ========================================
 

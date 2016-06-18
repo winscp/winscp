@@ -98,17 +98,13 @@ function ExpandEnvironmentVar(var Value: string): Boolean;
 function ExpandEnvironmentVarCustom(var Value: string; Vars: TStrings): Boolean;
 function GetEnvironmentVar(const Name: string; out Value: string): Boolean; overload;
 function GetEnvironmentVar(const Name: string; out Value: string; Expand: Boolean): Boolean; overload;
-{$IFNDEF WINSCP}
 function GetEnvironmentVars(const Vars: TStrings): Boolean; overload;
 function GetEnvironmentVars(const Vars: TStrings; Expand: Boolean): Boolean; overload;
-{$ENDIF ~WINSCP}
 function SetEnvironmentVar(const Name, Value: string): Boolean;
 {$IFDEF MSWINDOWS}
-{$IFNDEF WINSCP}
 function CreateEnvironmentBlock(const Options: TEnvironmentOptions; const AdditionalVars: TStrings): PChar;
 procedure DestroyEnvironmentBlock(var Env: PChar);
 procedure SetGlobalEnvironmentVariable(VariableName, VariableContent: string);
-{$ENDIF ~WINSCP}
 {$ENDIF MSWINDOWS}
 
 // Common Folder Locations
@@ -125,11 +121,8 @@ function GetWindowsTempFolder: string;
 function GetDesktopFolder: string;
 function GetProgramsFolder: string;
 {$ENDIF MSWINDOWS}
-{$IFNDEF WINSCP}
 function GetPersonalFolder: string;
-{$ENDIF ~WINSCP}
 {$IFDEF MSWINDOWS}
-{$IFNDEF WINSCP}
 function GetFavoritesFolder: string;
 function GetStartupFolder: string;
 function GetRecentFolder: string;
@@ -153,7 +146,6 @@ function GetTemplatesFolder: string;
 function GetInternetCacheFolder: string;
 function GetCookiesFolder: string;
 function GetHistoryFolder: string;
-{$ENDIF ~WINSCP}
 
 // Advanced Power Management (APM)
 type
@@ -191,12 +183,10 @@ type
 
   TFileSystemFlags = set of TFileSystemFlag;
 
-{$IFNDEF WINSCP}
 function GetVolumeName(const Drive: string): string;
 function GetVolumeSerialNumber(const Drive: string): string;
 function GetVolumeFileSystem(const Drive: string): string;
 function GetVolumeFileSystemFlags(const Volume: string): TFileSystemFlags;
-{$ENDIF ~WINSCP}
 {$ENDIF MSWINDOWS}
 function GetIPAddress(const HostName: string): string;
 {$IFDEF MSWINDOWS}
@@ -216,9 +206,7 @@ function GetRegisteredOwner: string;
 function GetBIOSName: string;
 function GetBIOSCopyright: string;
 function GetBIOSExtendedInfo: string;
-{$IFNDEF WINSCP}
 function GetBIOSDate: TDateTime;
-{$ENDIF ~WINSCP}
 {$ENDIF MSWINDOWS}
 
 // Processes, Tasks and Modules
@@ -330,9 +318,7 @@ function NtProductTypeString: string;
 function GetWindowsBuildNumber: Integer;
 function GetWindowsServicePackVersion: Integer;
 function GetWindowsServicePackVersionString: string;
-{$IFNDEF WINSCP}
 function GetOpenGLVersion(const Win: THandle; out Version, Vendor: AnsiString): Boolean;
-{$ENDIF ~WINSCP}
 function GetNativeSystemInfo(var SystemInfo: TSystemInfo): Boolean;
 function GetProcessorArchitecture: TProcessorArchitecture;
 function IsWindows64: Boolean;
@@ -343,9 +329,7 @@ function GetOSVersionString: string;
 
 // Hardware
 {$IFDEF MSWINDOWS}
-{$IFNDEF WINSCP}
 function GetMacAddresses(const Machine: string; const Addresses: TStrings): Integer;
-{$ENDIF ~WINSCP}
 {$ENDIF MSWINDOWS}
 function ReadTimeStampCounter: Int64;
 
@@ -1322,9 +1306,7 @@ const
     (D: $FF; Family: cfOther;              Size: 0;     WaysOfAssoc: 0;  LineSize: 0;  LinePerSector: 0; Entries: 0;   I: @RsIntelCacheDescrFF)
   );
 
-{$IFNDEF WINSCP}
 procedure GetCpuInfo(var CpuInfo: TCpuInfo);
-{$ENDIF ~WINSCP}
 
 function GetIntelCacheDescription(const D: Byte): string;
 function RoundFrequency(const Frequency: Integer): Integer;
@@ -1337,9 +1319,7 @@ type
 
 function GetOSEnabledFeatures: TOSEnabledFeatures;
 {$ENDIF MSWINDOWS}
-{$IFNDEF WINSCP}
 function CPUID: TCpuInfo;
-{$ENDIF ~WINSCP}
 function TestFDIVInstruction: Boolean;
 
 // Memory Information
@@ -1421,22 +1401,17 @@ const
 implementation
 
 uses
-  {$IFDEF WINSCP}
-  Registry,
-  {$ENDIF ~WINSCP}
   {$IFDEF HAS_UNITSCOPE}
   System.SysUtils, System.Math,
   {$IFDEF MSWINDOWS}
-  Winapi.Messages, Winapi.Winsock, {$IFNDEF WINSCP}Snmp,{$ENDIF ~WINSCP}
+  Winapi.Messages, Winapi.Winsock, Snmp,
   {$IFDEF FPC}
   JwaTlHelp32, JwaPsApi,
   {$ELSE ~FPC}
   Winapi.TLHelp32, Winapi.PsApi,
-  {$IFNDEF WINSCP}
   JclShell,
-  {$ENDIF ~WINSCP}
   {$ENDIF ~FPC}
-  {$IFNDEF WINSCP}JclRegistry,{$ENDIF ~WINSCP} JclWin32,
+  JclRegistry, JclWin32,
   {$ENDIF MSWINDOWS}
   {$ELSE ~HAS_UNITSCOPE}
   SysUtils,
@@ -1452,39 +1427,10 @@ uses
   JclRegistry, JclWin32,
   {$ENDIF MSWINDOWS}
   {$ENDIF ~HAS_UNITSCOPE}
-  {$IFNDEF WINSCP}Jcl8087, JclIniFiles,{$ENDIF ~WINSCP}
-  JclSysUtils, JclFileUtils, {$IFNDEF WINSCP}JclAnsiStrings,{$ENDIF ~WINSCP} JclStrings;
+  Jcl8087, JclIniFiles,
+  JclSysUtils, JclFileUtils, JclAnsiStrings, JclStrings;
 
-{$IFDEF WINSCP}
-
-type
-  DelphiHKEY = {$IFDEF CPUX64}type Winapi.Windows.HKEY{$ELSE}Longword{$ENDIF CPUX64};
-
-function RegReadStringDef(const RootKey: DelphiHKEY; const Key, Name: string; Def: string): string;
-var
-  Registry: TRegistry;
-begin
-  Result := Def;
-  try
-    Registry := TRegistry.Create;
-    try
-      Registry.Access := KEY_READ;
-      Registry.RootKey := RootKey;
-      if Registry.OpenKey(Key, False) and
-         Registry.ValueExists(Name) then
-      begin
-        Result := Registry.ReadString(Name);
-      end;
-    finally
-      Registry.Free;
-    end;
-  except
-  end;
-end;
-
-{$ENDIF ~WINSCP}
-
-{.$IFDEF FPC}
+{$IFDEF FPC}
 {$IFDEF MSWINDOWS}
 
 function PidlToPath(IdList: PItemIdList): string;
@@ -1518,7 +1464,7 @@ end;
 //----------------------------------------------------------------------------
 
 {$ENDIF MSWINDOWS}
-{.$ENDIF FPC}
+{$ENDIF FPC}
 
 //=== Environment ============================================================
 
@@ -1721,7 +1667,6 @@ end;
 {$ENDIF LINUX}
 
 {$IFDEF MSWINDOWS}
-{$IFNDEF WINSCP}
 function GetEnvironmentVars(const Vars: TStrings): Boolean;
 begin
   Result := GetEnvironmentVars(Vars, True);
@@ -1756,7 +1701,6 @@ begin
     Vars.EndUpdate;
   end;
 end;
-{$ENDIF ~WINSCP}
 
 {$ENDIF MSWINDOWS}
 
@@ -1773,7 +1717,6 @@ end;
 
 {$IFDEF MSWINDOWS}
 
-{$IFNDEF WINSCP}
 function CreateEnvironmentBlock(const Options: TEnvironmentOptions; const AdditionalVars: TStrings): PChar;
 const
   RegLocalEnvironment = 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
@@ -1838,12 +1781,10 @@ begin
     FreeAndNil(TempList);
   end;
 end;
-{$ENDIF ~WINSCP}
 
 // frees an environment block allocated by CreateEnvironmentBlock and
 // sets Env to nil
 
-{$IFNDEF WINSCP}
 procedure DestroyEnvironmentBlock(var Env: PChar);
 begin
   FreeMultiSz(Env);
@@ -1867,7 +1808,6 @@ begin
   end;
   SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE, 0, LPARAM(PChar(cEnvironment)));
 end;
-{$ENDIF ~WINSCP}
 
 //=== Common Folders =========================================================
 
@@ -1990,7 +1930,6 @@ begin
 end;
 
 {$ENDIF MSWINDOWS}
-{$IFNDEF WINSCP}
 function GetPersonalFolder: string;
 begin
   {$IFDEF UNIX}
@@ -2116,7 +2055,6 @@ function GetProfileFolder: string;
 begin
   Result := GetSpecialFolderLocation(CSIDL_PROFILE);
 end;
-{$ENDIF ~WINSCP}
 
 // the following special folders are pure virtual and cannot be
 // mapped to a directory path:
@@ -2296,7 +2234,7 @@ begin
       end
       else
         Host := HostName;
-
+        
       HostEnt := GetHostByName(PAnsiChar(Host));
       if HostEnt <> nil then
       begin
@@ -2574,7 +2512,6 @@ end;
 // http://support.microsoft.com/default.aspx?scid=kb;en-us;q195268
 
 { TODO : the date string can be e.g. 00/00/00 }
-{$IFNDEF WINSCP}
 function GetBIOSDate: TDateTime;
 const
   WinNT_REG_PATH = 'HARDWARE\DESCRIPTION\System';
@@ -2627,7 +2564,6 @@ begin
   end;
   {$ENDIF ~RTL150_UP}
 end;
-{$ENDIF ~WINSCP}
 
 {$ENDIF MSWINDOWS}
 
@@ -3278,9 +3214,8 @@ const
 begin
   if IsWinNT then
     Result := RegReadStringDef(HKEY_LOCAL_MACHINE, cShellKey, cShellValue, '')
-{$IFNDEF WINSCP}
   else
-    Result := IniReadString(PathAddSeparator(GetWindowsFolder) + cShellSystemIniFileName, cShellBootSection, cShellValue){$ENDIF ~WINSCP};
+    Result := IniReadString(PathAddSeparator(GetWindowsFolder) + cShellSystemIniFileName, cShellBootSection, cShellValue);
   if Result = '' then
     Result := cShellDefault;
 end;
@@ -3847,9 +3782,7 @@ function GetWindowsServicePackVersion: Integer;
 const
   RegWindowsControl = 'SYSTEM\CurrentControlSet\Control\Windows';
 var
-{$IFNDEF WINSCP}
   SP: Integer;
-{$ENDIF ~WINSCP}
   VersionInfo: TOSVersionInfoEx;
 begin
   Result := 0;
@@ -3860,13 +3793,11 @@ begin
     if GetVersionEx(VersionInfo) then
       Result := VersionInfo.wServicePackMajor;
   end
-{$IFNDEF WINSCP}
-  // WINSCP: We support Windows XP (5.1) and newer only
   else
   begin
     SP := RegReadIntegerDef(HKEY_LOCAL_MACHINE, RegWindowsControl, 'CSDVersion', 0);
     Result := StrToInt(IntToHex(SP, 4)) div 100;
-  end{$ENDIF ~WINSCP};
+  end;
 end;
 
 function GetWindowsServicePackVersionString: string;
@@ -3879,8 +3810,6 @@ begin
   else
     Result := '';
 end;
-
-{$IFNDEF WINSCP}
 
 // Imports copied from OpenGL unit. Direct using of OpenGL unit might cause unexpected problems due
 // setting 8087CW in the intialization section
@@ -4081,8 +4010,6 @@ begin
   end;
 end;
 
-{$ENDIF ~WINSCP}
-
 function GetNativeSystemInfo(var SystemInfo: TSystemInfo): Boolean;
 type
   TGetNativeSystemInfo = procedure (var SystemInfo: TSystemInfo); stdcall;
@@ -4175,8 +4102,6 @@ begin
     Integer(Adapter[2]), Integer(Adapter[3]),
     Integer(Adapter[4]), Integer(Adapter[5])]);
 end;
-
-{$IFNDEF WINSCP}
 
 { TODO: RTLD version of NetBios }
 {$IFDEF MSWINDOWS}
@@ -4383,7 +4308,6 @@ begin
     Addresses.EndUpdate;
   end;
 end;
-{$ENDIF ~WINSCP}
 {$ENDIF MSWINDOWS}
 function ReadTimeStampCounter: Int64; assembler;
 asm
@@ -4413,8 +4337,6 @@ begin
     Result := Format(LoadResString(@RsIntelUnknownCache),[D]);
 end;
 
-{$IFNDEF WINSCP}
-
 procedure GetCpuInfo(var CpuInfo: TCpuInfo);
 begin
   CpuInfo := CPUID;
@@ -4427,8 +4349,6 @@ begin
     {$ENDIF MSWINDOWS}
   end;
 end;
-
-{$ENDIF ~WINSCP}
 
 function RoundFrequency(const Frequency: Integer): Integer;
 const
@@ -4597,8 +4517,6 @@ begin
     Result := [];
 end;
 {$ENDIF MSWINDOWS}
-
-{$IFNDEF WINSCP}
 
 function CPUID: TCpuInfo;
   function HasCPUIDInstruction: Boolean;
@@ -5353,8 +5271,6 @@ begin
     Result.CpuName := 'Unknown';
   end;
 end;
-
-{$ENDIF ~WINSCP}
 
 function TestFDIVInstruction: Boolean;
 {$IFDEF CPU32}

@@ -430,8 +430,6 @@ type
   TDigitValue = -1..35;  // invalid, '0'..'9', 'A'..'Z'
   TNumericSystemBase = 2..Succ(High(TDigitValue));
 
-{$IFNDEF WINSCP}
-
   TJclNumericFormat = class(TObject)
   private
     FWantedPrecision: TDigitCount;
@@ -488,8 +486,6 @@ type
     property NegativeSign: Char read GetNegativeSign write SetNegativeSign;
     property PositiveSign: Char read GetPositiveSign write SetPositiveSign;
   end;
-
-{$ENDIF ~WINSCP}
 
 function IntToStrZeroPad(Value, Count: Integer): string;
 
@@ -569,10 +565,8 @@ type
     property Output: string read GetOutput;
   end;
 
-{$IFNDEF WINSCP}
 // Console Utilities
 function ReadKey: Char;
-{$ENDIF ~WINSCP}
 
 // Loading of modules (DLLs)
 type
@@ -607,7 +601,6 @@ function TryStrToUInt(const Value: string; out Res: Cardinal): Boolean;
 function StrToUIntDef(const Value: string; const Default: Cardinal): Cardinal;
 function StrToUInt(const Value: string): Cardinal;
 
-{$IFNDEF WINSCP}
 const
   {$IFDEF MSWINDOWS}
   ListSeparator = ';';
@@ -615,7 +608,6 @@ const
   {$IFDEF LINUX}
   ListSeparator = ':';
   {$ENDIF LINUX}
-{$ENDIF}
 
 // functions to handle items in a separated list of items
 // add items at the end
@@ -673,7 +665,6 @@ type
   TFileHandle = THandle;
   {$ENDIF ~BORLAND}
 
-{$IFNDEF WINSCP}
   TJclSimpleLog = class (TObject)
   private
     FDateTimeFormatStr: String;
@@ -703,7 +694,6 @@ type
     property LoggingActive: Boolean read FLoggingActive write FLoggingActive default True;
     property LogOpen: Boolean read GetLogOpen;
   end;
-{$ENDIF ~WINSCP}
 
 type
   TJclFormatSettings = class
@@ -778,7 +768,6 @@ type
 var
   JclFormatSettings: TJclFormatSettings;
 
-{$IFNDEF WINSCP}
 // Procedure to initialize the SimpleLog Variable
 procedure InitSimpleLog(const ALogFileName: string = ''; AOpenLog: Boolean = true);
 
@@ -786,7 +775,6 @@ procedure InitSimpleLog(const ALogFileName: string = ''; AOpenLog: Boolean = tru
 // Must be initialized with InitSimpleLog before using
 var
   SimpleLog : TJclSimpleLog;
-{$ENDIF ~WINSCP}
 
 
 // Validates if then variant value is null or is empty
@@ -814,9 +802,7 @@ uses
   Libc,
   {$ENDIF HAS_UNIT_LIBC}
   {$IFDEF MSWINDOWS}
-  {$IFNDEF WINSCP}
   JclConsole,
-  {$ENDIF ~WINSCP}
   {$ENDIF MSWINDOWS}
   {$IFDEF HAS_UNITSCOPE}
   System.Variants, System.Types, System.Contnrs,
@@ -829,8 +815,8 @@ uses
   AnsiStrings,
   {$ENDIF HAS_UNIT_ANSISTRINGS}
   {$ENDIF ~HAS_UNITSCOPE}
-  JclFileUtils, {$IFNDEF WINSCP}JclMath,{$ENDIF ~WINSCP} JclResources, JclStrings,
-  {$IFNDEF WINSCP}JclStringConversions,{$ENDIF ~WINSCP} JclSysInfo, JclWin32;
+  JclFileUtils, JclMath, JclResources, JclStrings,
+  JclStringConversions, JclSysInfo, JclWin32;
 
 // memory initialization
 procedure ResetMemory(out P; Size: Longint);
@@ -2306,8 +2292,6 @@ const
   BinaryPrecision = 24;
   {$ENDIF MATH_SINGLE_PRECISION}
 
-{$IFNDEF WINSCP}
-
 constructor TJclNumericFormat.Create;
 begin
   inherited Create;
@@ -2687,8 +2671,6 @@ begin
   FSignChars[True] := Value;
 end;
 
-{$ENDIF ~WINSCP}
-
 //=== Child processes ========================================================
 
 const
@@ -2867,8 +2849,8 @@ begin
 
   InterlockedIncrement(AsyncPipeCounter);
   // In some (not so) rare instances there is a race condition
-  // where the counter is the same for two threads at the same
-  // time. This makes the CreateNamedPipe call below fail
+  // where the counter is the same for two threads at the same 
+  // time. This makes the CreateNamedPipe call below fail 
   // because of the limit set to 1 in the call.
   // So, to be sure this call succeeds, we put both the process
   // and thread id in the name of the pipe.
@@ -3298,7 +3280,6 @@ end;
 
 //=== Console Utilities ======================================================
 
-{$IFNDEF WINSCP}
 function ReadKey: Char;
 {$IFDEF MSWINDOWS}
 { TODO -cHelp : Contributor: Robert Rossmair }
@@ -3355,7 +3336,6 @@ begin
   end;
 end;
 {$ENDIF UNIX}
-{$ENDIF ~WINSCP}
 
 //=== Loading of modules (DLLs) ==============================================
 
@@ -3777,8 +3757,6 @@ begin
   Result := -1;
 end;
 
-{$IFNDEF WINSCP}
-
 //=== { TJclSimpleLog } ======================================================
 
 {$IFDEF LINUX}
@@ -3976,8 +3954,6 @@ begin
   if AOpenLog then
     SimpleLog.OpenLog;
 end;
-
-{$ENDIF ~WINSCP}
 
 function TJclFormatSettings.GetCurrencyDecimals: Byte;
 begin
@@ -4354,9 +4330,7 @@ end;
 
 
 initialization
-  {$IFNDEF WINSCP}
   SimpleLog := nil;
-  {$ENDIF ~WINSCP}
   {$IFDEF UNITVERSIONING}
   RegisterUnitVersion(HInstance, UnitVersioning);
   {$ENDIF UNITVERSIONING}
@@ -4374,8 +4348,6 @@ finalization
   FreeAndNil(GlobalMMFHandleListCS);
   {$ENDIF THREADSAFE}
   {$ENDIF MSWINDOWS}
-  {$IFNDEF WINSCP}
   if Assigned(SimpleLog) then
     FreeAndNil(SimpleLog);
-  {$ENDIF ~WINSCP}
 end.

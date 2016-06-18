@@ -10,6 +10,7 @@
 #include "storage.h"
 
 #include <wincrypt.h>
+
 DECL_WINDOWS_FUNCTION(static, BOOL, CryptAcquireContextA,
                       (HCRYPTPROV *, LPCTSTR, LPCTSTR, DWORD, DWORD));
 DECL_WINDOWS_FUNCTION(static, BOOL, CryptGenRandom,
@@ -110,7 +111,6 @@ void noise_regular(void)
     MEMORYSTATUS memstat;
     FILETIME times[4];
 
-    MPEXT_PUTTY_SECTION_ENTER;
     w = GetForegroundWindow();
     random_add_noise(&w, sizeof(w));
     w = GetCapture();
@@ -132,7 +132,6 @@ void noise_regular(void)
     GetProcessTimes(GetCurrentProcess(), times, times + 1, times + 2,
 		    times + 3);
     random_add_noise(&times, sizeof(times));
-    MPEXT_PUTTY_SECTION_LEAVE;
 }
 
 /*
@@ -146,7 +145,6 @@ void noise_ultralight(unsigned long data)
     DWORD wintime;
     LARGE_INTEGER perftime;
 
-    MPEXT_PUTTY_SECTION_ENTER;
     random_add_noise(&data, sizeof(DWORD));
 
     wintime = GetTickCount();
@@ -154,5 +152,4 @@ void noise_ultralight(unsigned long data)
 
     if (QueryPerformanceCounter(&perftime))
 	random_add_noise(&perftime, sizeof(perftime));
-    MPEXT_PUTTY_SECTION_LEAVE;
 }

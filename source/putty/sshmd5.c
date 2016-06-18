@@ -160,9 +160,6 @@ void MD5Update(struct MD5Context *s, unsigned char const *p, unsigned len)
 	    MD5_Block(&s->core, wordblock);
 	    s->blkused = 0;
 	}
-#ifdef MPEXT
-	if (len > 0)
-#endif
 	memcpy(s->block, q, len);
 	s->blkused = len;
     }

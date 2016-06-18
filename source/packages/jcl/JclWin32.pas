@@ -1907,7 +1907,7 @@ type
   {$EXTERNALSYM TImageTlsDirectory32}
   PImageTlsDirectory32 = PIMAGE_TLS_DIRECTORY32;
   {$EXTERNALSYM PImageTlsDirectory32}
-
+  
 const
   IMAGE_ORDINAL_FLAG = IMAGE_ORDINAL_FLAG32;
   {$EXTERNALSYM IMAGE_ORDINAL_FLAG}
@@ -2132,7 +2132,7 @@ type
   {$EXTERNALSYM IMAGE_RESOURCE_DATA_ENTRY}
   TImageResourceDataEntry = IMAGE_RESOURCE_DATA_ENTRY;
   PImageResourceDataEntry = PIMAGE_RESOURCE_DATA_ENTRY;
-
+  
 //
 // Load Configuration Directory Entry
 //
@@ -2727,7 +2727,7 @@ type
   {$EXTERNALSYM POSVERSIONINFOEX}
   LPOSVERSIONINFOEX = LPOSVERSIONINFOEXA;
   {$EXTERNALSYM LPOSVERSIONINFOEX}
-  TOSVersionInfoEx = TOSVersionInfoExA;
+  TOSVersionInfoEx = TOSVersionInfoExA;  
 
 {$ENDIF ~SUPPORTS_UNICODE}
 
@@ -2992,7 +2992,7 @@ type
 function GlobalMemoryStatusEx(out lpBuffer: TMemoryStatusEx): BOOL; stdcall;
 
 // line 3189
-
+  
 
 function BackupSeek(hFile: THandle; dwLowBytesToSeek, dwHighBytesToSeek: DWORD;
   out lpdwLowByteSeeked, lpdwHighByteSeeked: DWORD;
@@ -4956,7 +4956,7 @@ const
   {$EXTERNALSYM USER_PRIV_ADMIN}
 
 // line 1177
-
+  
 //
 // Group Class
 //
@@ -6571,7 +6571,7 @@ const
 
   FSCTL_FIND_FILES_BY_SID = (
     (FILE_DEVICE_FILE_SYSTEM shl 16) or (FILE_ANY_ACCESS shl 14) or
-    (35 shl 2) or METHOD_NEITHER);
+    (35 shl 2) or METHOD_NEITHER);  
   {$EXTERNALSYM FSCTL_FIND_FILES_BY_SID}
 
 // decommissioned fsctl value                                             36
@@ -7023,7 +7023,7 @@ const
   MAXIMUM_RESERVED_MANIFEST_RESOURCE_ID = MAKEINTRESOURCE(16{inclusive});
   {$EXTERNALSYM MAXIMUM_RESERVED_MANIFEST_RESOURCE_ID}
 
-// line 1451
+// line 1451  
 
   KLF_SETFORPROCESS = $00000100;
   {$EXTERNALSYM KLF_SETFORPROCESS}
@@ -9056,7 +9056,7 @@ end;
 
 const
   PowrprofLib = 'PowrProf.dll';
-
+  
 type
   TIsPwrSuspendAllowed = function : BOOL; stdcall;
 
@@ -9113,7 +9113,7 @@ type
   TStgCreateStorageEx = function (const pwcsName: PWideChar; grfMode: DWORD;
     stgfmt: DWORD; grfAttrs: DWORD; pStgOptions: PSTGOPTIONS; reserved2: Pointer;
     riid: PGUID; out stgOpen: IInterface): HResult; stdcall;
-
+  
 var
   _StgCreateStorageEx: TStgCreateStorageEx = nil;
 
@@ -9299,3 +9299,6 @@ finalization
 {$ENDIF UNITVERSIONING}
 
 end.
+
+
+

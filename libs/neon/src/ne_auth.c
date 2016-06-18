@@ -485,7 +485,6 @@ static void make_gss_error(ne_buffer *buf, int *flag,
 static int continue_negotiate(auth_session *sess, const char *token,
                               ne_buffer **errmsg)
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     unsigned int major, minor;
     gss_buffer_desc input = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc output = GSS_C_EMPTY_BUFFER;
@@ -575,7 +574,6 @@ static int negotiate_challenge(auth_session *sess, int attempt,
 static int verify_negotiate_response(struct auth_request *req, auth_session *sess,
                                      const char *hdr)
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char *duphdr = ne_strdup(hdr);
     char *sep, *ptr = strchr(duphdr, ' ');
     int ret;
@@ -626,7 +624,6 @@ static char *request_sspi(auth_session *sess, struct auth_request *request)
 
 static int continue_sspi(auth_session *sess, int ntlm, const char *hdr)
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int status;
     char *response = NULL;
     
@@ -665,7 +662,6 @@ static int sspi_challenge(auth_session *sess, int attempt,
 static int verify_sspi(struct auth_request *req, auth_session *sess,
                        const char *hdr)
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int ntlm = ne_strncasecmp(hdr, "NTLM ", 5) == 0;
     char *ptr = strchr(hdr, ' ');
 
@@ -692,7 +688,6 @@ static int verify_sspi(struct auth_request *req, auth_session *sess,
  * in the session appropriately. */
 static int parse_domain(auth_session *sess, const char *domain)
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char *cp = ne_strdup(domain), *p = cp;
     ne_uri base;
     int invalid = 0;
@@ -766,7 +761,6 @@ static int ntlm_challenge(auth_session *sess, int attempt,
                           struct auth_challenge *parms,
                           ne_buffer **errmsg) 
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int status;
     
     NE_DEBUG(NE_DBG_HTTPAUTH, "auth: NTLM challenge.\n");
@@ -802,7 +796,6 @@ static int digest_challenge(auth_session *sess, int attempt,
                             struct auth_challenge *parms,
                             ne_buffer **errmsg) 
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char password[NE_ABUFSIZ];
 
     if (parms->alg == auth_alg_unknown) {
@@ -918,7 +911,6 @@ static int digest_challenge(auth_session *sess, int attempt,
  * domain defined for the session. */
 static int inside_domain(auth_session *sess, const char *req_uri)
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int inside = 0;
     size_t n;
     ne_uri uri;
@@ -947,7 +939,6 @@ static int inside_domain(auth_session *sess, const char *req_uri)
  * session. */
 static char *request_digest(auth_session *sess, struct auth_request *req) 
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     struct ne_md5_ctx *a2, *rdig;
     char a2_md5_ascii[33], rdig_md5_ascii[33];
     char nc_value[9] = {0};
@@ -1108,7 +1099,6 @@ static int tokenize(char **hdr, char **key, char **value, char *sep,
 static int verify_digest_response(struct auth_request *req, auth_session *sess,
                                   const char *value) 
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char *hdr, *pnt, *key, *val;
     auth_qop qop = auth_qop_none;
     char *nextnonce, *rspauth, *cnonce, *nc, *qop_value;
@@ -1312,7 +1302,6 @@ static void challenge_error(ne_buffer **errbuf, const char *fmt, ...)
 static int auth_challenge(auth_session *sess, int attempt,
                           const char *value) 
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char *pnt, *key, *val, *hdr, sep;
     struct auth_challenge *chall = NULL, *challenges = NULL;
     ne_buffer *errmsg = NULL;
@@ -1442,7 +1431,6 @@ static void ah_create(ne_request *req, void *session, const char *method,
 		      const char *uri)
 {
     auth_session *sess = session;
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int is_connect = strcmp(method, "CONNECT") == 0;
 
     if (sess->context == AUTH_ANY ||
@@ -1471,7 +1459,6 @@ static void ah_create(ne_request *req, void *session, const char *method,
 static void ah_pre_send(ne_request *r, void *cookie, ne_buffer *request)
 {
     auth_session *sess = cookie;
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     struct auth_request *req = ne_get_request_private(r, sess->spec->id);
 
     if (sess->protocol && req) {
@@ -1493,7 +1480,6 @@ static void ah_pre_send(ne_request *r, void *cookie, ne_buffer *request)
 static int ah_post_send(ne_request *req, void *cookie, const ne_status *status)
 {
     auth_session *sess = cookie;
-    NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     struct auth_request *areq = ne_get_request_private(req, sess->spec->id);
     const char *auth_hdr, *auth_info_hdr;
     int ret = NE_OK;

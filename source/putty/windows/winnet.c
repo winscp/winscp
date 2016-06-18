@@ -14,10 +14,6 @@
 #include "network.h"
 #include "tree234.h"
 
-#ifdef MPEXT
-// ws2tcpip.h does not compile without _MSC_VER defined
-#define _MSC_VER 1000
-#endif
 #include <ws2tcpip.h>
 
 #ifndef NO_IPV6
@@ -167,10 +163,6 @@ DECL_WINDOWS_FUNCTION(static, int, connect,
 		      (SOCKET, const struct sockaddr FAR *, int));
 DECL_WINDOWS_FUNCTION(static, int, bind,
 		      (SOCKET, const struct sockaddr FAR *, int));
-#ifdef MPEXT
-DECL_WINDOWS_FUNCTION(static, int, getsockopt,
-		      (SOCKET, int, int, char FAR *, int *));
-#endif
 DECL_WINDOWS_FUNCTION(static, int, setsockopt,
 		      (SOCKET, int, int, const char FAR *, int));
 DECL_WINDOWS_FUNCTION(static, SOCKET, socket, (int, int, int));
@@ -242,9 +234,7 @@ void sk_init(void)
 	winsock_module = load_system32_dll("wsock32.dll");
     }
     if (!winsock_module)
-    {
 	fatalbox("Unable to load any WinSock library");
-    }
 
 #ifndef NO_IPV6
     /* Check if we have getaddrinfo in Winsock */
@@ -299,9 +289,6 @@ void sk_init(void)
     GET_WINDOWS_FUNCTION(winsock_module, inet_ntoa);
     GET_WINDOWS_FUNCTION(winsock_module, connect);
     GET_WINDOWS_FUNCTION(winsock_module, bind);
-    #ifdef MPEXT
-    GET_WINDOWS_FUNCTION(winsock_module, getsockopt);
-    #endif
     GET_WINDOWS_FUNCTION(winsock_module, setsockopt);
     GET_WINDOWS_FUNCTION(winsock_module, socket);
     GET_WINDOWS_FUNCTION(winsock_module, listen);
@@ -539,9 +526,7 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
 	    hints.ai_family = hint_family;
 	    hints.ai_flags = AI_CANONNAME;
 	    if ((err = p_getaddrinfo(host, NULL, &hints, &ret->ais)) == 0)
-	    {
 		ret->resolved = TRUE;
-	    }	
 	} else
 #endif
 	{
@@ -575,11 +560,9 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
 		/* Are we in IPv4 fallback mode? */
 		/* We put the IPv4 address into the a variable so we can further-on use the IPv4 code... */
 		if (ret->ais->ai_family == AF_INET)
-		{
 		    memcpy(&a,
 			   (char *) &((SOCKADDR_IN *) ret->ais->
 				      ai_addr)->sin_addr, sizeof(a));
-		}
 
 		if (ret->ais->ai_canonname)
 		    strncpy(realhost, ret->ais->ai_canonname, lenof(realhost));
@@ -850,11 +833,7 @@ static void *sk_tcp_get_private_ptr(Socket s);
 static void sk_tcp_set_frozen(Socket s, int is_frozen);
 static const char *sk_tcp_socket_error(Socket s);
 
-#ifdef MPEXT
-extern char *do_select(Plug plug, SOCKET skt, int startup);
-#else
 extern char *do_select(SOCKET skt, int startup);
-#endif
 
 Socket sk_register(void *sock, Plug plug)
 {
@@ -905,11 +884,7 @@ Socket sk_register(void *sock, Plug plug)
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
-#ifdef MPEXT
-    errstr = do_select(plug, ret->s, 1);
-#else
     errstr = do_select(ret->s, 1);
-#endif
     if (errstr) {
 	ret->error = errstr;
 	return (Socket) ret;
@@ -920,12 +895,7 @@ Socket sk_register(void *sock, Plug plug)
     return (Socket) ret;
 }
 
-static DWORD try_connect(Actual_Socket sock,
-#ifdef MPEXT
-                         int timeout,
-                         int sndbuf
-#endif
-)
+static DWORD try_connect(Actual_Socket sock)
 {
     SOCKET s;
 #ifndef NO_IPV6
@@ -936,16 +906,9 @@ static DWORD try_connect(Actual_Socket sock,
     char *errstr;
     short localport;
     int family;
-#ifdef MPEXT
-    struct timeval rcvtimeo;
-#endif
 
     if (sock->s != INVALID_SOCKET) {
-#ifdef MPEXT
-	do_select(sock->plug, sock->s, 0);
-#else
 	do_select(sock->s, 0);
-#endif
         p_closesocket(sock->s);
     }
 
@@ -986,16 +949,6 @@ static DWORD try_connect(Actual_Socket sock,
     if (sock->keepalive) {
 	BOOL b = TRUE;
 	p_setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (void *) &b, sizeof(b));
-    }
-
-    if (sndbuf > 0)
-    {
-	int rcvbuf = 4 * 1024 * 1024;
-	p_setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *) &sndbuf, sizeof(sndbuf));
-
-	// For now we increase receive buffer, whenever send buffer is set.
-	// The size is not configurable. The constant taken from FZ.
-	p_setsockopt(s, SOL_SOCKET, SO_RCVBUF, (void*) &rcvbuf, sizeof(rcvbuf));
     }
 
     /*
@@ -1079,7 +1032,6 @@ static DWORD try_connect(Actual_Socket sock,
 	a.sin_port = p_htons((short) sock->port);
     }
 
-#ifndef MPEXT
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
     errstr = do_select(s, 1);
@@ -1088,24 +1040,6 @@ static DWORD try_connect(Actual_Socket sock,
 	err = 1;
 	goto ret;
     }
-#endif
-
-#ifdef MPEXT
-    if (timeout > 0)
-    {
-        if (p_getsockopt (s, SOL_SOCKET, SO_RCVTIMEO, (char *)&rcvtimeo, &rcvtimeo) < 0)
-        {
-            rcvtimeo.tv_sec = -1;
-        }
-        else
-        {
-            struct timeval timeoutval;
-            timeoutval.tv_sec = timeout / 1000;
-            timeoutval.tv_usec = (timeout % 1000) * 1000;
-            p_setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (void *) &timeoutval, sizeof(timeoutval));
-        }
-    }
-#endif
 
     if ((
 #ifndef NO_IPV6
@@ -1125,10 +1059,6 @@ static DWORD try_connect(Actual_Socket sock,
 	 * asynchronously.
 	 */
 	if ( err != WSAEWOULDBLOCK ) {
-#ifdef MPEXT
-    // unselect on error
-    do_select(sock->plug, s, 0);
-#endif
 	    sock->error = winsock_error_string(err);
 	    goto ret;
 	}
@@ -1140,23 +1070,6 @@ static DWORD try_connect(Actual_Socket sock,
 	sock->writable = 1;
     }
 
-#ifdef MPEXT
-    if ((timeout > 0) && (rcvtimeo.tv_sec >= 0))
-    {
-        p_setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (void *) &rcvtimeo, sizeof(rcvtimeo));
-    }
-
-    // MP: Calling EventSelect only after connect makes sure we receive FD_CLOSE.
-    /* Set up a select mechanism. This could be an AsyncSelect on a
-     * window, or an EventSelect on an event object. */
-    errstr = do_select(sock->plug, s, 1);
-    if (errstr) {
-	sock->error = errstr;
-	err = 1;
-	goto ret;
-    }
-#endif
-
     err = 0;
 
     ret:
@@ -1167,19 +1080,12 @@ static DWORD try_connect(Actual_Socket sock,
     add234(sktree, sock);
 
     if (err)
-	{
 	plug_log(sock->plug, 1, sock->addr, sock->port, sock->error, err);
-	}
     return err;
 }
 
 Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
-	      int nodelay, int keepalive, Plug plug,
-#ifdef MPEXT
-	      int timeout,
-	      int sndbuf
-#endif
-	      )
+	      int nodelay, int keepalive, Plug plug)
 {
     static const struct socket_function_table fn_table = {
 	sk_tcp_plug,
@@ -1225,14 +1131,7 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 
     err = 0;
     do {
-#ifdef MPEXT
-        ret->error = NULL;
-#endif
-        err = try_connect(ret
-#ifdef MPEXT
-            , timeout, sndbuf
-#endif
-        );
+        err = try_connect(ret);
     } while (err && sk_nextaddr(ret->addr, &ret->step));
 
     return (Socket) ret;
@@ -1396,11 +1295,7 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only,
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
-#ifdef MPEXT
-    errstr = do_select(plug, s, 1);
-#else
     errstr = do_select(s, 1);
-#endif
     if (errstr) {
 	p_closesocket(s);
 	ret->error = errstr;
@@ -1436,22 +1331,14 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only,
 
 static void sk_tcp_close(Socket sock)
 {
-#ifdef MPEXT
-    extern char *do_select(Plug plug, SOCKET skt, int startup);
-#else
     extern char *do_select(SOCKET skt, int startup);
-#endif
     Actual_Socket s = (Actual_Socket) sock;
 
     if (s->child)
 	sk_tcp_close((Socket)s->child);
 
     del234(sktree, s);
-#ifdef MPEXT
-    do_select(s->plug, s->s, 0);
-#else
     do_select(s->s, 0);
-#endif
     p_closesocket(s->s);
     if (s->addr)
 	sk_addr_free(s->addr);
@@ -1647,11 +1534,7 @@ int select_result(WPARAM wParam, LPARAM lParam)
 	    plug_log(s->plug, 1, s->addr, s->port,
 		     winsock_error_string(err), err);
 	    while (s->addr && sk_nextaddr(s->addr, &s->step)) {
-		err = try_connect(s
-#ifdef MPEXT
-		    , 0, 0
-#endif
-		);
+		err = try_connect(s);
 	    }
 	}
 	if (err != 0)
@@ -1843,11 +1726,7 @@ static void sk_tcp_set_frozen(Socket sock, int is_frozen)
 	return;
     s->frozen = is_frozen;
     if (!is_frozen) {
-#ifdef MPEXT
-	do_select(s->plug, s->s, 1);
-#else
 	do_select(s->s, 1);
-#endif
 	if (s->frozen_readable) {
 	    char c;
 	    p_recv(s->s, &c, 1, MSG_PEEK);
@@ -1863,11 +1742,7 @@ void socket_reselect_all(void)
 
     for (i = 0; (s = index234(sktree, i)) != NULL; i++) {
 	if (!s->frozen)
-#ifdef MPEXT
-	    do_select(s->plug, s->s, 1);
-#else
 	    do_select(s->s, 1);
-#endif
     }
 }
 

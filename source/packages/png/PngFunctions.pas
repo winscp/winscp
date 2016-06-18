@@ -551,3 +551,4 @@ finalization
   TPicture.UnregisterGraphicClass(TPNGObject);
 {$IFEND}
 end.
+

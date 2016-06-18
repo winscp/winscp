@@ -54,13 +54,6 @@
 #include "ne_dates.h"
 
 int ne_debug_mask = 0;
-
-#ifdef WINSCP
-
-void * ne_debug_context = NULL;
-
-#else
-
 FILE *ne_debug_stream = NULL;
 
 void ne_debug_init(FILE *stream, int mask)
@@ -85,8 +78,6 @@ void ne_debug(int ch, const char *template, ...)
     if ((ch & NE_DBG_FLUSH) == NE_DBG_FLUSH)
 	fflush(ne_debug_stream);
 }
-
-#endif /* WINSCP */
 
 #define NE_STRINGIFY(x) # x
 #define NE_EXPAT_VER(x,y,z) NE_STRINGIFY(x) "." NE_STRINGIFY(y) "." NE_STRINGIFY(z)

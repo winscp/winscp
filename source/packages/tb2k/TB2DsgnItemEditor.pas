@@ -35,7 +35,7 @@ uses
   StdCtrls, ExtCtrls, Buttons, ComCtrls, ImgList, Menus,
   TB2Item, TB2Toolbar, TB2Dock,
   {$IFDEF JR_D6}
-    DesignWindows, DesignEditors, DesignIntf;
+    DesignIntf, DesignWindows, DesignEditors;
   {$ELSE}
     DsgnIntf, DsgnWnds, LibIntf;
   {$ENDIF}
@@ -207,7 +207,7 @@ begin
   IC.Free;
 end;
 
-procedure UnregisterModuleItemClasses(AModule: NativeInt);
+procedure UnregisterModuleItemClasses(AModule: {$IFDEF JR_D5} LongWord {$ELSE} Integer {$ENDIF});
 var
   I: Integer;
   Info: PItemClassInfo;
@@ -215,7 +215,7 @@ begin
   I := 0;
   while I < ItemClasses.Count do begin
     Info := ItemClasses[I];
-    if FindClassHInstance(Info.ItemClass) = HINST(AModule) then begin
+    if FindClassHInstance(Info.ItemClass) = AModule then begin
       ItemClasses.Delete(I);
       Dispose(Info);
     end
@@ -944,14 +944,14 @@ begin
     GetPropList(SelItem.ClassInfo, [tkMethod], Props);
     for I := PropCount-1 downto 0 do begin
       PropInfo := Props[I];
-      if CompareText({MP}string(PropInfo.Name), 'OnClick') = 0 then begin
+      if CompareText(PropInfo.Name, 'OnClick') = 0 then begin
         Method := GetMethodProp(SelItem, PropInfo);
         MethodName := Designer.GetMethodName(Method);
         if MethodName = '' then begin
           MethodName := SelItem.Name + 'Click';
           Method := Designer.CreateMethod(MethodName, GetTypeData(PropInfo.PropType^));
           SetMethodProp(SelItem,
-            {$IFDEF JR_D5} {MP}string(PropInfo.Name) {$ELSE} PropInfo {$ENDIF},
+            {$IFDEF JR_D5} PropInfo.Name {$ELSE} PropInfo {$ENDIF},
             Method);
           Designer.Modified;
         end;
@@ -1004,7 +1004,7 @@ end;
 
 procedure TTBItemEditForm.TreeViewKeyPress(Sender: TObject; var Key: Char);
 begin
-  if {MP} CharInSet(Key, [#33..#126]) then begin
+  if Key in [#33..#126] then begin
     ActivateInspector(Key);
     Key := #0;
   end
@@ -1018,7 +1018,7 @@ begin
     NewSepButtonClick(Sender);
     Key := #0;
   end
-  else if {MP} CharInSet(Key, [#33..#126]) then begin
+  else if Key in [#33..#126] then begin
     ActivateInspector(Key);
     Key := #0;
   end;

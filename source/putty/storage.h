@@ -74,10 +74,6 @@ void enum_settings_finish(void *handle);
  * Functions to access PuTTY's host key database.
  */
 
-#ifdef MPEXT
-int retrieve_host_key(const char *hostname, int port,
-		    const char *keytype, char *key, int maxlen);
-#else
 /*
  * See if a host key matches the database entry. Return values can
  * be 0 (entry matches database), 1 (entry is absent in database),
@@ -85,7 +81,6 @@ int retrieve_host_key(const char *hostname, int port,
  */
 int verify_host_key(const char *hostname, int port,
 		    const char *keytype, const char *key);
-#endif
 
 /*
  * Write a host key into the database, overwriting any previous

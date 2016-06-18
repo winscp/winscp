@@ -1779,10 +1779,6 @@ int ne_sock_connect_ssl(ne_socket *sock, ne_ssl_context *ctx, void *userdata)
     if (ctx->sess)
 	SSL_set_session(ssl, ctx->sess);
 
-#ifdef WINSCP
-    ne_init_ssl_session(ssl, userdata);
-#endif
-
     ret = SSL_connect(ssl);
     if (ret != 1) {
 	error_ossl(sock, ret);

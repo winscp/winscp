@@ -59,9 +59,6 @@ typedef struct winSsh_gss_ctx {
 } winSsh_gss_ctx;
 
 
-#ifdef MPEXT
-static
-#endif
 const Ssh_gss_buf gss_mech_krb5={9,"\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"};
 
 const char *gsslogmsg = NULL;
@@ -264,38 +261,7 @@ static Ssh_gss_stat ssh_sspi_acquire_cred(struct ssh_gss_library *lib,
     return SSH_GSS_OK;
 }
 
-#ifdef MPEXT
-static SecBuffer ssh_gss_init_sec_buffer(unsigned long buffersize,
-  unsigned long buffertype, void * buffer)
-{
-  SecBuffer result;
-  result.cbBuffer = buffersize;
-  result.BufferType = buffertype;
-  result.pvBuffer = buffer;
-  return result;
-}
 
-static SecBufferDesc ssh_gss_init_sec_buffer_desc(unsigned long version,
-  unsigned long bufferscount, PSecBuffer buffers)
-{
-  SecBufferDesc result;
-  result.ulVersion = version;
-  result.cBuffers = bufferscount;
-  result.pBuffers = buffers;
-  return result;
-}
-
-#define MPEXT_INIT_SEC_BUFFER(BUFFERSIZE, BUFFERTYPE, BUFFER) \
-  ssh_gss_init_sec_buffer(BUFFERSIZE, BUFFERTYPE, BUFFER)
-#define MPEXT_INIT_SEC_BUFFERDESC(VERSION, BUFFERSCOUNT, BUFFERS) \
-  ssh_gss_init_sec_buffer_desc(VERSION, BUFFERSCOUNT, BUFFERS)
-
-#else
-#define MPEXT_INIT_SEC_BUFFER(BUFFERSIZE, BUFFERTYPE, BUFFER) \
-  {BUFFERSIZE, BUFFERTYPE, BUFFER}
-#define MPEXT_INIT_SEC_BUFFERDESC(VERSION, BUFFERSCOUNT, BUFFERS) \
-  {VERSION, BUFFERSCOUNT, BUFFERS}
-#endif
 static Ssh_gss_stat ssh_sspi_init_sec_context(struct ssh_gss_library *lib,
 					      Ssh_gss_ctx *ctx,
 					      Ssh_gss_name srv_name,
@@ -304,10 +270,10 @@ static Ssh_gss_stat ssh_sspi_init_sec_context(struct ssh_gss_library *lib,
 					      Ssh_gss_buf *send_tok)
 {
     winSsh_gss_ctx *winctx = (winSsh_gss_ctx *) *ctx;
-    SecBuffer wsend_tok = MPEXT_INIT_SEC_BUFFER(send_tok->length,SECBUFFER_TOKEN,send_tok->value);
-    SecBuffer wrecv_tok = MPEXT_INIT_SEC_BUFFER(recv_tok->length,SECBUFFER_TOKEN,recv_tok->value);
-    SecBufferDesc output_desc= MPEXT_INIT_SEC_BUFFERDESC(SECBUFFER_VERSION,1,&wsend_tok);
-    SecBufferDesc input_desc = MPEXT_INIT_SEC_BUFFERDESC(SECBUFFER_VERSION,1,&wrecv_tok);
+    SecBuffer wsend_tok = {send_tok->length,SECBUFFER_TOKEN,send_tok->value};
+    SecBuffer wrecv_tok = {recv_tok->length,SECBUFFER_TOKEN,recv_tok->value};
+    SecBufferDesc output_desc={SECBUFFER_VERSION,1,&wsend_tok};
+    SecBufferDesc input_desc ={SECBUFFER_VERSION,1,&wrecv_tok};
     unsigned long flags=ISC_REQ_MUTUAL_AUTH|ISC_REQ_REPLAY_DETECT|
 	ISC_REQ_CONFIDENTIALITY|ISC_REQ_ALLOCATE_MEMORY;
     unsigned long ret_flags=0;
@@ -362,9 +328,6 @@ static Ssh_gss_stat ssh_sspi_release_cred(struct ssh_gss_library *lib,
 
     /* free Windows data */
     p_FreeCredentialsHandle(&winctx->cred_handle);
-    #ifdef MPEXT
-    if (winctx->context_handle != NULL)
-    #endif
     p_DeleteSecurityContext(&winctx->context);
 
     /* delete our "wrapper" structure */

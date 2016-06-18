@@ -791,7 +791,7 @@ begin
         Module := HMODULE(ModulesList.Objects[I]);
         if GetProcAddress(Module, JclHookExceptDebugHookName) <> nil then
           HookModule(Module);
-      end;
+      end;    
   finally
     FModules.UnlockList;
     ModulesList.Free;

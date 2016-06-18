@@ -13,19 +13,12 @@
 
 #include "tree234.h"
 
-#ifndef MPEXT
 #include "winhelp.h"
-#endif
 
 struct Filename {
     char *path;
 };
-#ifdef MPEXT
-FILE * mp_wfopen(const char *filename, const char *mode);
-#define f_open(filename, mode, isprivate) ( mp_wfopen((filename)->path, (mode)) )
-#else
 #define f_open(filename, mode, isprivate) ( fopen((filename)->path, (mode)) )
-#endif
 
 struct FontSpec {
     char *name;
@@ -499,11 +492,7 @@ int handle_write(struct handle *h, const void *data, int len);
 void handle_write_eof(struct handle *h);
 HANDLE *handle_get_events(int *nevents);
 void handle_free(struct handle *h);
-#ifdef MPEXT
-int handle_got_event(HANDLE event);
-#else
 void handle_got_event(HANDLE event);
-#endif
 void handle_unthrottle(struct handle *h, int backlog);
 int handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);

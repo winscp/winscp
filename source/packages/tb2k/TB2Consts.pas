@@ -14,15 +14,11 @@ resourcestring
   { TTBChevronItem }
   STBChevronItemMoreButtonsHint = 'More Buttons|';
 
-  {$IFNDEF MPEXCLUDE}
   { TTBMRUListItem }
   STBMRUListItemDefCaption = '(MRU List)';
-  {$ENDIF}
 
-  {$IFNDEF MPEXCLUDE}
   { TTBMDIWindowItem }
   STBMDIWindowItemDefCaption = '(Window List)';
-  {$ENDIF}
 
   { TTBDock exception messages }
   STBDockParentNotAllowed = 'A TTBDock control cannot be placed inside a tool window or another TTBDock';

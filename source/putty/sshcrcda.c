@@ -47,13 +47,7 @@ typedef unsigned short uint16;
 
 #define CMP(a, b)	(memcmp(a, b, SSH_BLOCKSIZE))
 
-#ifdef MPEXT
-static
-#endif
 uchar ONE[4] = { 1, 0, 0, 0 };
-#ifdef MPEXT
-static
-#endif
 uchar ZERO[4] = { 0, 0, 0, 0 };
 
 struct crcda_ctx {

@@ -329,21 +329,6 @@ static const struct options_map {
     { "extended-mkcol", NE_CAP_EXT_MKCOL }
 };
 
-#ifdef WINSCP
-const char * ne_capability_name(unsigned int cap)
-{
-    unsigned n;
-    for (n = 0; n < sizeof(options_map)/sizeof(options_map[0]); n++)
-    {
-        if (options_map[n].cap == cap)
-        {
-            return options_map[n].name;
-        }
-    }
-    return NULL;
-}
-#endif
-
 static void parse_dav_header(const char *value, unsigned int *caps)
 {
     char *tokens = ne_strdup(value), *pnt = tokens;

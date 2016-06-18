@@ -35,7 +35,7 @@ typedef unsigned long long BignumDblInt;
     __asm__("div %2" : \
 	    "=d" (r), "=a" (q) : \
 	    "r" (w), "d" (hi), "a" (lo))
-#elif (defined _MSC_VER && defined _M_IX86) || defined(MPEXT)
+#elif defined _MSC_VER && defined _M_IX86
 typedef unsigned __int32 BignumInt;
 typedef unsigned __int64 BignumDblInt;
 #define BIGNUM_INT_MASK  0xFFFFFFFFUL
@@ -45,16 +45,6 @@ typedef unsigned __int64 BignumDblInt;
 /* Note: MASM interprets array subscripts in the macro arguments as
  * assembler syntax, which gives the wrong answer. Don't supply them.
  * <http://msdn2.microsoft.com/en-us/library/bf1dw62z.aspx> */
-#ifdef MPEXT
-// BCC requires semicolons
-#define DIVMOD_WORD(q, r, hi, lo, w) do { \
-    __asm mov edx, hi; \
-    __asm mov eax, lo; \
-    __asm div w; \
-    __asm mov r, edx; \
-    __asm mov q, eax; \
-} while(0)
-#else
 #define DIVMOD_WORD(q, r, hi, lo, w) do { \
     __asm mov edx, hi \
     __asm mov eax, lo \
@@ -62,7 +52,6 @@ typedef unsigned __int64 BignumDblInt;
     __asm mov r, edx \
     __asm mov q, eax \
 } while(0)
-#endif
 #elif defined _LP64
 /* 64-bit architectures can do 32x32->64 chunks at a time */
 typedef unsigned int BignumInt;

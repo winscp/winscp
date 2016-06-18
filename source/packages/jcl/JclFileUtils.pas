@@ -204,9 +204,7 @@ procedure EnumDirectories(const Root: string; const HandleDirectory: TFileHandle
 procedure CreateEmptyFile(const FileName: string);
 function CloseVolume(var Volume: THandle): Boolean;
 {$IFNDEF FPC}
-{$IFNDEF WINSCP}
 function DeleteDirectory(const DirectoryName: string; MoveToRecycleBin: Boolean): Boolean;
-{$ENDIF ~WINSCP}
 function CopyDirectory(ExistingDirectoryName, NewDirectoryName: string): Boolean;
 function MoveDirectory(ExistingDirectoryName, NewDirectoryName: string): Boolean;
 {$ENDIF ~FPC}
@@ -216,14 +214,10 @@ function DiskInDrive(Drive: Char): Boolean;
 {$ENDIF MSWINDOWS}
 function DirectoryExists(const Name: string {$IFDEF UNIX}; ResolveSymLinks: Boolean = True {$ENDIF}): Boolean;
 function FileCreateTemp(var Prefix: string): THandle;
-{$IFNDEF WINSCP}
 function FileBackup(const FileName: string; Move: Boolean = False): Boolean;
-{$ENDIF ~WINSCP}
 function FileCopy(const ExistingFileName, NewFileName: string; ReplaceExisting: Boolean = False): Boolean;
 function FileDateTime(const FileName: string): TDateTime;
-{$IFNDEF WINSCP}
 function FileDelete(const FileName: string; MoveToRecycleBin: Boolean = False): Boolean;
-{$ENDIF ~WINSCP}
 function FileExists(const FileName: string): Boolean;
 /// <summary>procedure FileHistory Creates a list of history files of a specified
 /// source file. Each version of the file get's an extention .~<Nr>~ The file with
@@ -240,19 +234,15 @@ function FileExists(const FileName: string): Boolean;
 /// extention should replace the current extention or should be added at the
 /// end</param>
 /// </param>
-{$IFNDEF WINSCP}
 procedure FileHistory(const FileName: string; HistoryPath: string = ''; MaxHistoryCount: Integer = 100; MinFileDate:
     TDateTime = 0; ReplaceExtention: Boolean = true);
 function FileMove(const ExistingFileName, NewFileName: string; ReplaceExisting: Boolean = False): Boolean;
 function FileRestore(const FileName: string): Boolean;
-{$ENDIF ~WINSCP}
 function GetBackupFileName(const FileName: string): string;
 function IsBackupFileName(const FileName: string): Boolean;
 function FileGetDisplayName(const FileName: string): string;
-{$IFNDEF WINSCP}
 function FileGetGroupName(const FileName: string {$IFDEF UNIX}; ResolveSymLinks: Boolean = True {$ENDIF}): string;
 function FileGetOwnerName(const FileName: string {$IFDEF UNIX}; ResolveSymLinks: Boolean = True {$ENDIF}): string;
-{$ENDIF ~WINSCP}
 function FileGetSize(const FileName: string): Int64;
 function FileGetTempName(const Prefix: string): string;
 {$IFDEF MSWINDOWS}
@@ -277,17 +267,11 @@ function GetFileStatus(const FileName: string; out StatBuf: TStatBuf64;
 {$ENDIF UNIX}
 {$IFDEF MSWINDOWS}
 function GetFileLastWrite(const FileName: string): TFileTime; overload;
-{$IFNDEF WINSCP}
 function GetFileLastWrite(const FileName: string; out LocalTime: TDateTime): Boolean; overload;
-{$ENDIF ~WINSCP}
 function GetFileLastAccess(const FileName: string): TFileTime; overload;
-{$IFNDEF WINSCP}
 function GetFileLastAccess(const FileName: string; out LocalTime: TDateTime): Boolean; overload;
-{$ENDIF ~WINSCP}
 function GetFileCreation(const FileName: string): TFileTime; overload;
-{$IFNDEF WINSCP}
 function GetFileCreation(const FileName: string; out LocalTime: TDateTime): Boolean; overload;
-{$ENDIF ~WINSCP}
 {$ENDIF MSWINDOWS}
 {$IFDEF UNIX}
 function GetFileLastWrite(const FileName: string; out TimeStamp: Integer; ResolveSymLinks: Boolean = True): Boolean; overload;
@@ -312,11 +296,9 @@ function IsRootDirectory(const CanonicFileName: string): Boolean;
 {$IFDEF MSWINDOWS}
 function LockVolume(const Volume: string; var Handle: THandle): Boolean;
 function OpenVolume(const Drive: Char): THandle;
-{$IFNDEF WINSCP}
 function SetDirLastWrite(const DirName: string; const DateTime: TDateTime; RequireBackupRestorePrivileges: Boolean = True): Boolean;
 function SetDirLastAccess(const DirName: string; const DateTime: TDateTime; RequireBackupRestorePrivileges: Boolean = True): Boolean;
 function SetDirCreation(const DirName: string; const DateTime: TDateTime; RequireBackupRestorePrivileges: Boolean = True): Boolean;
-{$ENDIF ~WINSCP}
 {$ENDIF MSWINDOWS}
 function SetFileLastWrite(const FileName: string; const DateTime: TDateTime): Boolean;
 function SetFileLastAccess(const FileName: string; const DateTime: TDateTime): Boolean;
@@ -1106,7 +1088,7 @@ uses
   System.Math,
   {$IFDEF MSWINDOWS}
   Winapi.ShellApi, Winapi.ActiveX, System.Win.ComObj, Winapi.ShlObj,
-  {$IFNDEF WINSCP}JclShell,{$ENDIF ~WINSCP} JclSysInfo, {$IFNDEF WINSCP}JclSecurity,{$ENDIF ~WINSCP}
+  JclShell, JclSysInfo, JclSecurity,
   {$ENDIF MSWINDOWS}
   {$ELSE ~HAS_UNITSCOPE}
   {$IFDEF HAS_UNIT_CHARACTER}
@@ -1118,7 +1100,7 @@ uses
   JclShell, JclSysInfo, JclSecurity,
   {$ENDIF MSWINDOWS}
   {$ENDIF ~HAS_UNITSCOPE}
-  {$IFNDEF WINSCP}JclDateTime,{$ENDIF ~WINSCP} JclResources,
+  JclDateTime, JclResources,
   JclStrings;
 
 { Some general notes:
@@ -3283,7 +3265,6 @@ end;
 
 {$IFNDEF FPC}  // needs JclShell
 
-{$IFNDEF WINSCP}
 function DeleteDirectory(const DirectoryName: string; MoveToRecycleBin: Boolean): Boolean;
 begin
   if MoveToRecycleBin then
@@ -3291,7 +3272,6 @@ begin
   else
     Result := DelTree(DirectoryName);
 end;
-{$ENDIF ~WINSCP}
 
 function CopyDirectory(ExistingDirectoryName, NewDirectoryName: string): Boolean;
 var
@@ -3480,7 +3460,6 @@ begin
 end;
 {$ENDIF UNIX}
 
-{$IFNDEF WINSCP}
 function FileBackup(const FileName: string; Move: Boolean = False): Boolean;
 begin
   if Move then
@@ -3488,7 +3467,6 @@ begin
   else
     Result := FileCopy(FileName, GetBackupFileName(FileName), True);
 end;
-{$ENDIF ~WINSCP}
 
 function FileCopy(const ExistingFileName, NewFileName: string; ReplaceExisting: Boolean = False): Boolean;
 var
@@ -3548,7 +3526,6 @@ begin
   {$ENDIF COMPILER10_UP}
 end;
 
-{$IFNDEF WINSCP}
 function FileDelete(const FileName: string; MoveToRecycleBin: Boolean = False): Boolean;
 {$IFDEF MSWINDOWS}
 begin
@@ -3564,7 +3541,6 @@ begin
   Result := remove(PChar(FileName)) <> -1;
 end;
 {$ENDIF UNIX}
-{$ENDIF ~WINSCP}
 
 function FileExists(const FileName: string): Boolean;
 {$IFDEF MSWINDOWS}
@@ -3587,7 +3563,6 @@ begin
     Result := False;
 end;
 
-{$IFNDEF WINSCP}
 procedure FileHistory(const FileName: string; HistoryPath: string = ''; MaxHistoryCount: Integer = 100; MinFileDate:
     TDateTime = 0; ReplaceExtention: Boolean = true);
 
@@ -3635,10 +3610,8 @@ begin
   RenameToNumber(FirstFile, 2);
   FileCopy(FileName, FirstFile, True);
 end;
-{$ENDIF ~WINSCP}
 
 
-{$IFNDEF WINSCP}
 function FileMove(const ExistingFileName, NewFileName: string; ReplaceExisting: Boolean = False): Boolean;
 {$IFDEF MSWINDOWS}
 const
@@ -3670,7 +3643,6 @@ begin
     if FileBackup(FileName, False) then
       Result := FileMove(TempFileName, FileName, True);
 end;
-{$ENDIF ~WINSCP}
 
 function GetBackupFileName(const FileName: string): string;
 var
@@ -3710,7 +3682,6 @@ begin
 end;
 {$ENDIF ~MSWINDOWS}
 
-{$IFNDEF WINSCP}
 function FileGetGroupName(const FileName: string {$IFDEF UNIX}; ResolveSymLinks: Boolean = True {$ENDIF}): string;
 {$IFDEF MSWINDOWS}
 var
@@ -3795,7 +3766,6 @@ begin
   end;
 end;
 {$ENDIF ~UNIX}
-{$ENDIF ~WINSCP}
 
 function FileGetSize(const FileName: string): Int64;
 {$IFDEF MSWINDOWS}
@@ -4141,7 +4111,6 @@ begin
   Result := GetFileInformation(FileName).FindData.ftLastWriteTime;
 end;
 
-{$IFNDEF WINSCP}
 function GetFileLastWrite(const FileName: string; out LocalTime: TDateTime): Boolean;
 var
   FileInfo: TSearchRec;
@@ -4150,7 +4119,6 @@ begin
   if Result then
     LocalTime := FileTimeToLocalDateTime(FileInfo.FindData.ftLastWriteTime);
 end;
-{$ENDIF ~WINSCP}
 
 {$ENDIF MSWINDOWS}
 
@@ -4193,7 +4161,6 @@ begin
   Result := GetFileInformation(FileName).FindData.ftLastAccessTime;
 end;
 
-{$IFNDEF WINSCP}
 function GetFileLastAccess(const FileName: string; out LocalTime: TDateTime): Boolean;
 var
   FileInfo: TSearchRec;
@@ -4202,7 +4169,6 @@ begin
   if Result then
     LocalTime := FileTimeToLocalDateTime(GetFileInformation(FileName).FindData.ftLastAccessTime);
 end;
-{$ENDIF ~WINSCP}
 
 {$ENDIF MSWINDOWS}
 
@@ -4245,7 +4211,6 @@ begin
   Result := GetFileInformation(FileName).FindData.ftCreationTime;
 end;
 
-{$IFNDEF WINSCP}
 function GetFileCreation(const FileName: string; out LocalTime: TDateTime): Boolean;
 var
   FileInfo: TSearchRec;
@@ -4254,7 +4219,6 @@ begin
   if Result then
     LocalTime := FileTimeToLocalDateTime(GetFileInformation(FileName).FindData.ftCreationTime);
 end;
-{$ENDIF ~WINSCP}
 
 {$ENDIF MSWINDOWS}
 
@@ -4562,7 +4526,6 @@ end;
 
 // utility function for SetDirTimesHelper
 
-{$IFNDEF WINSCP}
 function BackupPrivilegesEnabled: Boolean;
 begin
   Result := IsPrivilegeEnabled(SE_BACKUP_NAME) and IsPrivilegeEnabled(SE_RESTORE_NAME);
@@ -4614,7 +4577,6 @@ function SetDirCreation(const DirName: string; const DateTime: TDateTime; Requir
 begin
   Result := SetDirTimesHelper(DirName, DateTime, ftCreation, RequireBackupRestorePrivileges);
 end;
-{$ENDIF ~WINSCP}
 
 procedure FillByteArray(var Bytes: array of Byte; Count: Cardinal; B: Byte);
 begin

@@ -187,11 +187,7 @@ struct X11Display *x11_setup_display(char *display, int authtype, Conf *conf)
 	    /* Create trial connection to see if there is a useful Unix-domain
 	     * socket */
 	    const struct plug_function_table *dummy = &dummy_plug;
-	    Socket s = sk_new(sk_addr_dup(ux), 0, 0, 0, 0, 0, (Plug)&dummy,
-	    #ifdef MPEXT
-	    0, 0
-	    #endif
-	    );
+	    Socket s = sk_new(sk_addr_dup(ux), 0, 0, 0, 0, 0, (Plug)&dummy);
 	    err = sk_socket_error(s);
 	    sk_close(s);
 	}

@@ -856,11 +856,6 @@ void cleanup_exit(int);
     X(INT, NONE, shadowboldoffset) \
     X(INT, NONE, crhaslf) \
     X(STR, NONE, winclass) \
-    /* MPEXT BEGIN */ \
-    X(INT, NONE, connect_timeout) \
-    X(INT, NONE, sndbuf) \
-    X(INT, NONE, force_remote_cmd2) \
-    /* MPEXT END */ \
 
 /* Now define the actual enum of option keywords using that macro. */
 #define CONF_ENUM_DEF(valtype, keytype, keyword) CONF_ ## keyword,
@@ -1204,9 +1199,6 @@ int askalg(void *frontend, const char *algtype, const char *algname,
 int askappend(void *frontend, Filename *filename,
 	      void (*callback)(void *ctx, int result), void *ctx);
 
-#ifdef MPEXT
-void display_banner(void *frontend, const char* banner, int size);
-#endif
 /*
  * Exports from console frontends (wincons.c, uxcons.c)
  * that aren't equivalents to things in windlg.c et al.
@@ -1463,21 +1455,4 @@ void request_callback_notifications(toplevel_callback_notify_fn_t notify,
 #define FROM_SURROGATES(wch1, wch2) \
     (0x10000 + (((wch1) & 0x3FF) << 10) + ((wch2) & 0x3FF))
 
-#ifdef MPEXT
-extern CRITICAL_SECTION putty_section;
-void putty_initialize();
-void putty_finalize();
-#define MPEXT_PUTTY_SECTION_ENTER EnterCriticalSection(&putty_section);
-#define MPEXT_PUTTY_SECTION_LEAVE LeaveCriticalSection(&putty_section);
-#else
-#define MPEXT_PUTTY_SECTION_ENTER
-#define MPEXT_PUTTY_SECTION_LEAVE
-#endif
-
-#ifdef MPEXT
-// To mark carefully selected messages from PuTTY code as UTF-8.
-// Only for messages that are certain not to ever get ansi-encoded component,
-// but known to get UTF-8 encoded component (currently private key path only)
-#define MPEXT_BOM "\xEF\xBB\xBF"
-#endif
 #endif

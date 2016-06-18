@@ -55,7 +55,7 @@ uses
   {$ELSE ~HAS_UNITSCOPE}
   Windows, Classes, SysUtils, TypInfo, Contnrs,
   {$ENDIF ~HAS_UNITSCOPE}
-  JclBase, {$IFNDEF WINSCP}JclDateTime,{$ENDIF ~WINSCP} JclFileUtils, JclWin32;
+  JclBase, JclDateTime, JclFileUtils, JclWin32;
 
 type
   // Smart name compare function
@@ -604,9 +604,7 @@ type
     function GetDirectories(Directory: Word): TImageDataDirectory;
     function GetDirectoryExists(Directory: Word): Boolean;
     function GetExportList: TJclPeExportFuncList;
-    {$IFNDEF WINSCP}
     function GetFileProperties: TJclPeFileProperties;
-    {$ENDIF ~WINSCP}
     function GetImageSectionCount: Integer;
     function GetImageSectionHeaders(Index: Integer): TImageSectionHeader;
     function GetImageSectionNames(Index: Integer): string;
@@ -676,9 +674,7 @@ type
     property DirectoryExists[Directory: Word]: Boolean read GetDirectoryExists;
     property ExportList: TJclPeExportFuncList read GetExportList;
     property FileName: TFileName read FFileName write SetFileName;
-    {$IFNDEF WINSCP}
     property FileProperties: TJclPeFileProperties read GetFileProperties;
-    {$ENDIF ~WINSCP}
     property HeaderValues[Index: TJclPeHeader]: string read GetHeaderValues;
     property ImageSectionCount: Integer read GetImageSectionCount;
     property ImageSectionHeaders[Index: Integer]: TImageSectionHeader read GetImageSectionHeaders;
@@ -1127,7 +1123,7 @@ uses
   Character,
   {$ENDIF HAS_UNIT_CHARACTER}
   {$ENDIF ~HAS_UNITSCOPE}
-  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math, System.AnsiStrings, {$ENDIF ~WINSCP} JclResources, JclSysUtils, {$IFNDEF WINSCP}JclAnsiStrings,{$ENDIF ~WINSCP} JclStrings{$IFNDEF WINSCP}, JclStringConversions{$ENDIF ~WINSCP};
+  JclLogic, JclResources, JclSysUtils, JclAnsiStrings, JclStrings, JclStringConversions;
 
 const
   MANIFESTExtension = '.manifest';
@@ -1146,47 +1142,6 @@ const
   PackageOptionsResName = 'PACKAGEOPTIONS';
   DVclAlResName         = 'DVCLAL';
   {$ENDIF BORLAND}
-
-{$IFDEF WINSCP}
-// Stubs for JclStringConversions functions
-
-function TryUTF8ToString(const S: TUTF8String; out D: string): Boolean;
-begin
-  Result := False;
-end;
-
-function TryStringToUTF8(const S: string; out D: TUTF8String): Boolean;
-begin
-  Result := False;
-end;
-
-// stub for JclDateTime constant
-const
-  UnixTimeStart = UnixDateDelta;
-
-// from JclAnsiStrings.pas
-
-function StrLCompA(const Str1, Str2: PAnsiChar; MaxLen: Cardinal): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrLComp(Str1, Str2, MaxLen);
-end;
-
-function StrPLCopyA(Dest: PAnsiChar; const Source: AnsiString; MaxLen: Cardinal): PAnsiChar;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrPLCopy(Dest, Source, MaxLen);
-end;
-
-function StrICompA(const Str1, Str2: PAnsiChar): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrIComp(Str1, Str2);
-end;
-
-function StrLenA(S: PAnsiChar): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrLen(S);
-end;
-
-{$ENDIF}
 
 // Helper routines
 function AddFlagTextRes(var Text: string; const FlagText: PResStringRec; const Value, Mask: Cardinal): Boolean;
@@ -3431,7 +3386,6 @@ begin
   Result := FExportList;
 end;
 
-{$IFNDEF WINSCP}
 function TJclPeImage.GetFileProperties: TJclPeFileProperties;
 var
   FileAttributesEx: WIN32_FILE_ATTRIBUTE_DATA;
@@ -3449,7 +3403,6 @@ begin
     Result.Attributes := FileAttributesEx.dwFileAttributes;
   end;
 end;
-{$ENDIF ~WINSCP}
 
 function TJclPeImage.GetHeaderValues(Index: TJclPeHeader): string;
 

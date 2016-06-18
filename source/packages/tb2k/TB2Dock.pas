@@ -51,9 +51,7 @@ type
   TTBDockableTo = set of TTBDockPosition;
 
   TTBCustomDockableWindow = class;
-  {$IFNDEF MPEXCLUDE}
   TTBBasicBackground = class;
-  {$ENDIF}
 
   TTBInsertRemoveEvent = procedure(Sender: TObject; Inserting: Boolean;
     Bar: TTBCustomDockableWindow) of object;
@@ -66,9 +64,7 @@ type
     FPosition: TTBDockPosition;
     FAllowDrag: Boolean;
     FBoundLines: TTBDockBoundLines;
-    {$IFNDEF MPEXCLUDE}
     FBackground: TTBBasicBackground;
-    {$ENDIF}
     FBkgOnToolbars: Boolean;
     FFixAlign: Boolean;
     FCommitNewPositions: Boolean;
@@ -87,10 +83,8 @@ type
     { Property access methods }
     //function GetVersion: TToolbar97Version;
     procedure SetAllowDrag(Value: Boolean);
-    {$IFNDEF MPEXCLUDE}
     procedure SetBackground(Value: TTBBasicBackground);
     procedure SetBackgroundOnToolbars(Value: Boolean);
-    {$ENDIF}
     procedure SetBoundLines(Value: TTBDockBoundLines);
     procedure SetFixAlign(Value: Boolean);
     procedure SetPosition(Value: TTBDockPosition);
@@ -100,9 +94,7 @@ type
     function GetToolbars(Index: Integer): TTBCustomDockableWindow;
 
     { Internal }
-    {$IFNDEF MPEXCLUDE}
     procedure BackgroundChanged(Sender: TObject);
-    {$ENDIF}
     procedure ChangeDockList(const Insert: Boolean; const Bar: TTBCustomDockableWindow);
     procedure CommitPositions;
     procedure DrawNCArea(const DrawToDC: Boolean; const ADC: HDC;
@@ -115,9 +107,7 @@ type
     { Messages }
     procedure CMDialogChar(var Message: TCMDialogChar); message CM_DIALOGCHAR;
     procedure CMDialogKey(var Message: TCMDialogKey); message CM_DIALOGKEY;
-    {$IFNDEF MPEXCLUDE}
     procedure CMSysColorChange(var Message: TMessage); message CM_SYSCOLORCHANGE;
-    {$ENDIF}
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     procedure WMMove(var Message: TWMMove); message WM_MOVE;
     {$IFNDEF JR_D4}
@@ -136,9 +126,7 @@ type
     procedure AlignControls(AControl: TControl; var Rect: TRect); override;
     procedure ChangeWidthHeight(const NewWidth, NewHeight: Integer);
     procedure DrawBackground(DC: HDC; const DrawRect: TRect); virtual;
-    {$IFNDEF MPEXCLUDE}
     function GetPalette: HPALETTE; override;
-    {$ENDIF}
     function HasVisibleToolbars: Boolean;
     procedure InvalidateBackgrounds;
     procedure Loaded; override;
@@ -169,10 +157,8 @@ type
     property Toolbars[Index: Integer]: TTBCustomDockableWindow read GetToolbars;
   published
     property AllowDrag: Boolean read FAllowDrag write SetAllowDrag default True;
-    {$IFNDEF MPEXCLUDE}
     property Background: TTBBasicBackground read FBackground write SetBackground;
     property BackgroundOnToolbars: Boolean read FBkgOnToolbars write SetBackgroundOnToolbars default True;
-    {$ENDIF}
     property BoundLines: TTBDockBoundLines read FBoundLines write SetBoundLines default [];
     property Color default clBtnFace;
     property FixAlign: Boolean read FFixAlign write SetFixAlign default False;
@@ -513,7 +499,6 @@ type
     property Width stored IsWidthAndHeightStored;
   end;
 
-  {$IFNDEF MPEXCLUDE}
   TTBBasicBackground = class(TComponent)
   protected
     procedure Draw(DC: HDC; const DrawRect: TRect); virtual; abstract;
@@ -549,7 +534,6 @@ type
     property BkColor: TColor read FBkColor write SetBkColor default clBtnFace;
     property Transparent: Boolean read FTransparent write SetTransparent default False;
   end;
-  {$ENDIF}
 
 procedure TBRegLoadPositions(const OwnerComponent: TComponent;
   const RootKey: DWORD; const BaseRegistryKey: String);
@@ -577,7 +561,7 @@ implementation
 
 uses
   Registry, IniFiles, Consts, Menus,
-  TB2Common, TB2Hook, TB2Consts, Types;
+  TB2Common, TB2Hook, TB2Consts;
 
 type
   TControlAccess = class(TControl);
@@ -805,7 +789,7 @@ begin
   if Ctl.HandleAllocated then
     RedrawWindow(Ctl.Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE or
       RDW_ERASE or RDW_NOCHILDREN);
-end;
+end;                   
 
 type
   TSetCloseButtonStateProc = procedure(Pushed: Boolean) of object;
@@ -900,10 +884,8 @@ end;
 
 destructor TTBDock.Destroy;
 begin
-  {$IFNDEF MPEXCLUDE}
   if Assigned(FBackground) then
     FBackground.UnregisterChanges(BackgroundChanged);
-  {$ENDIF}
   inherited;
   DockVisibleList.Free;
   DockList.Free;
@@ -1324,7 +1306,7 @@ begin
           P.MinimumSize := 0;
           T.GetMinShrinkSize(P.MinimumSize);
           if P.MinimumSize > P.FullSize then
-            { don't allow minimum shrink size to be less than full size }
+            { don't allow minimum shrink size to be less than full size } 
             P.MinimumSize := P.FullSize;
           if P.ShrinkMode = tbsmChevron then
             Inc(MinRealPos, P.MinimumSize)
@@ -1504,11 +1486,6 @@ begin
             if P.Size < MaxSize - CurPos then
               P.Size := MaxSize - CurPos;
             FoundNextToolbar:
-            { MP }
-            { When dock shrinks, shrink the stretched toolbars too }
-            if P.Size > MaxSize - CurPos then
-              P.Size := MaxSize - CurPos;
-            { /MP }
           end;
           P.Pos := CurPos;
           Inc(CurPos, P.Size);
@@ -1697,17 +1674,15 @@ procedure TTBDock.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   inherited;
   if Operation = opRemove then begin
-    {$IFNDEF MPEXCLUDE}
     if AComponent = FBackground then
       Background := nil
-    else {$ENDIF} if AComponent is TTBCustomDockableWindow then begin
+    else if AComponent is TTBCustomDockableWindow then begin
       DockList.Remove(AComponent);
       DockVisibleList.Remove(AComponent);
     end;
   end;
 end;
 
-{$IFNDEF MPEXCLUDE}
 function TTBDock.GetPalette: HPALETTE;
 begin
   if UsingBackground and Assigned(FBackground) then
@@ -1717,7 +1692,6 @@ begin
   else
     Result := 0;
 end;
-{$ENDIF}
 
 procedure TTBDock.WMEraseBkgnd(var Message: TWMEraseBkgnd);
 var
@@ -1890,14 +1864,12 @@ begin
   HandleWMPrintClient(Self, Message);
 end;
 
-{$IFNDEF MPEXCLUDE}
 procedure TTBDock.CMSysColorChange(var Message: TMessage);
 begin
   inherited;
   if Assigned(FBackground) then
     FBackground.SysColorChanged;
 end;
-{$ENDIF}
 
 procedure TTBDock.RelayMsgToFloatingBars(var Message: TMessage);
 var
@@ -1952,18 +1924,12 @@ end;
 
 function TTBDock.UsingBackground: Boolean;
 begin
-  {$IFNDEF MPEXCLUDE}
   Result := Assigned(FBackground) and FBackground.UsingBackground;
-  {$ELSE}
-  Result := False;
-  {$ENDIF}
 end;
 
 procedure TTBDock.DrawBackground(DC: HDC; const DrawRect: TRect);
 begin
-  {$IFNDEF MPEXCLUDE}
   FBackground.Draw(DC, DrawRect);
-  {$ENDIF}
 end;
 
 procedure TTBDock.InvalidateBackgrounds;
@@ -1982,7 +1948,6 @@ begin
   end;
 end;
 
-{$IFNDEF MPEXCLUDE}
 procedure TTBDock.SetBackground(Value: TTBBasicBackground);
 begin
   if FBackground <> Value then begin
@@ -2009,7 +1974,6 @@ begin
     InvalidateBackgrounds;
   end;
 end;
-{$ENDIF}
 
 procedure TTBDock.SetBoundLines(Value: TTBDockBoundLines);
 var
@@ -2592,6 +2556,7 @@ begin
   if not(csDesigning in ComponentState) then
     InstallHookProc(Self, ToolbarHookProc, [hpSendActivate, hpSendActivateApp,
       hpSendWindowPosChanged, hpPreDestroy]);
+  InitTrackMouseEvent;
 end;
 
 destructor TTBCustomDockableWindow.Destroy;
@@ -2714,7 +2679,7 @@ procedure TTBCustomDockableWindow.UpdateCaptionState;
   begin
     Result := GetActiveWindow;
     { If the active window is a TTBFloatingWindowParent (i.e. a control on a
-      floating toolbar is focused), return the parent form handle instead }
+      floating toolbar is focused), return the parent form handle instead } 
     Ctl := FindControl(Result);
     if Assigned(Ctl) and (Ctl is TTBFloatingWindowParent) then begin
       Ctl := TTBFloatingWindowParent(Ctl).ParentForm;
@@ -3074,7 +3039,7 @@ end;
 
 function TTBCustomDockableWindow.CanDockTo(ADock: TTBDock): Boolean;
 begin
-  Result := ADock.Position in DockableTo;
+  Result := ADock.Position in DockableTo; 
 end;
 
 function TTBCustomDockableWindow.IsAutoResized: Boolean;
@@ -3969,10 +3934,8 @@ var
       { Check if it can dock }
       MouseOverDock := nil;
       if StartDocking and not PreventDocking then
-        { MP }
-        { reversal of for cycle proposed by 'rl' is rejected as it suffers a bug:
-        { whenever toolbar is "catched", it is moved to different row }
-        for I := 0 to DockList.Count-1 do begin
+        {for I := 0 to DockList.Count-1 do begin} {rl-}
+        for I := DockList.Count-1 downto 0 do begin {rl+} // Robert Lee: CurrentDock should not have the priority
           Dock := DockList[I];
           if CheckIfCanDockTo(Dock, FindDockedSize(Dock).BoundsRect) then begin
             MouseOverDock := Dock;
@@ -4446,7 +4409,9 @@ var
 begin
   inherited;
   { Note: TME_NONCLIENT was introduced in Windows 98 and 2000 }
-  CallTrackMouseEvent(Handle, TME_LEAVE or $10 {TME_NONCLIENT});
+  if (Win32MajorVersion >= 5) or
+     (Win32MajorVersion = 4) and (Win32MinorVersion >= 10) then
+    CallTrackMouseEvent(Handle, TME_LEAVE or $10 {TME_NONCLIENT});
   InArea := Message.HitTest = HT_TB2k_Close;
   if FCloseButtonHover <> InArea then begin
     FCloseButtonHover := InArea;
@@ -5137,8 +5102,6 @@ begin
 end;*)
 
 
-{$IFNDEF MPEXCLUDE}
-
 { TTBBackground }
 
 type
@@ -5327,8 +5290,6 @@ begin
     BitmapChanged(nil);
   end;
 end;
-
-{$ENDIF}
 
 
 { Global procedures }

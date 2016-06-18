@@ -129,20 +129,10 @@ void sk_addr_free(SockAddr addr);
  * implementation. */
 SockAddr sk_addr_dup(SockAddr addr);
 
-#ifdef MPEXT
-// Resolve ambiguity with OpenSSL
-#define sk_new putty_sk_new
-#endif
-
 /* NB, control of 'addr' is passed via sk_new, which takes responsibility
  * for freeing it, as for new_connection() */
 Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
-	      int nodelay, int keepalive, Plug p,
-#ifdef MPEXT
-              int timeout,
-              int sndbuf
-#endif
-	      );
+	      int nodelay, int keepalive, Plug p);
 
 Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only, int address_family);
 

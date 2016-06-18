@@ -339,13 +339,8 @@ static void hostkey_regname(char *buffer, const char *hostname,
     mungestr(hostname, buffer + strlen(buffer));
 }
 
-#ifdef MPEXT
-int retrieve_host_key(const char *hostname, int port,
-		    const char *keytype, char *key, int maxlen)
-#else
 int verify_host_key(const char *hostname, int port,
 		    const char *keytype, const char *key)
-#endif
 {
     char *otherstr, *regname;
     int len;
@@ -354,11 +349,7 @@ int verify_host_key(const char *hostname, int port,
     DWORD type;
     int ret, compare;
 
-#ifdef MPEXT
-    len = maxlen;
-#else
     len = 1 + strlen(key);
-#endif
 
     /*
      * Now read a saved key in from the registry and see what it
@@ -444,28 +435,15 @@ int verify_host_key(const char *hostname, int port,
 
     RegCloseKey(rkey);
 
-#ifdef MPEXT
-    // make sure it is zero terminated, what it is not, particularly when
-    // RegQueryValueEx fails (the key is unknown)
-    otherstr[len - 1] = '\0';
-#endif
-#ifdef MPEXT
-    strncpy(key, otherstr, maxlen);
-    key[maxlen - 1] = '\0';
-#else
     compare = strcmp(otherstr, key);
-#endif
 
     sfree(otherstr);
     sfree(regname);
 
-#ifndef MPEXT
     if (ret == ERROR_MORE_DATA ||
 	(ret == ERROR_SUCCESS && type == REG_SZ && compare))
 	return 2;		       /* key is different in registry */
-    else
-#endif
-    if (ret != ERROR_SUCCESS || type != REG_SZ)
+    else if (ret != ERROR_SUCCESS || type != REG_SZ)
 	return 1;		       /* key does not exist in registry */
     else
 	return 0;		       /* key matched OK in registry */

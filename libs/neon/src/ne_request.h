@@ -84,14 +84,6 @@ typedef ssize_t (*ne_provide_body)(void *userdata,
 void ne_set_request_body_provider(ne_request *req, ne_off_t length,
                                   ne_provide_body provider, void *userdata);
 
-#ifdef WINSCP
-void ne_set_request_body_provider_pre(ne_request *req,
-  ne_provide_body provider, void * ud);
-
-int ne_get_request_body_buffer(ne_request *req, const char **buffer,
-			       size_t * size);
-#endif
-
 /* Handling response bodies; two callbacks must be provided:
  *
  * 1) 'acceptance' callback: determines whether you want to handle the

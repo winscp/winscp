@@ -1,9 +1,5 @@
 unit TB2Hook;
 
-// Workaround for bug in C++Builder XE2 that makes threadvar's in this unit
-// overwrite each other when optimization is enabled
-{$O-}
-
 {
   Toolbar2000
   Copyright (C) 1998-2005 by Jordan Russell
@@ -158,7 +154,7 @@ var
   T: THookType;
 begin
   { Don't increment reference counts for hook types that were already
-    installed previously }
+    installed previously } 
   ATypes := ATypes - InstalledTypes;
 
   { Increment reference counts first. This should never raise an exception. }
@@ -179,8 +175,12 @@ begin
           This is needed for compatibility with the combination of Tnt Unicode
           Controls and Keyman. See "Widechar's and tb2k" thread on the
           newsgroup from 2003-09-23 for more information. }
-        HookHandles[T] := SetWindowsHookExW(HookIDs[T], HookProcs[T],
-          0, GetCurrentThreadId)
+        if Win32Platform = VER_PLATFORM_WIN32_NT then
+          HookHandles[T] := SetWindowsHookExW(HookIDs[T], HookProcs[T],
+            0, GetCurrentThreadId)
+        else
+          HookHandles[T] := SetWindowsHookEx(HookIDs[T], HookProcs[T],
+            0, GetCurrentThreadId);
       end;
     end;
 end;
@@ -214,9 +214,7 @@ var
 label 1;
 begin
   if HookProcList = nil then
-  begin
     HookProcList := TList.Create;
-  end;
   Found := False;
   UserData := nil;  { avoid warning }
   for I := 0 to HookProcList.Count-1 do begin

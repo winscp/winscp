@@ -145,8 +145,6 @@ type
     property Enabled;
     property GroupIndex;
     property HelpContext;
-    { MP }
-    property HelpKeyword;
     property Hint;
     property ImageIndex;
     property RadioItem;
@@ -190,7 +188,6 @@ type
     property EditControl: TEdit read FEditControl;
   end;
 
-  {$IFNDEF MPEXCLUDE}
   { TTBVisibilityToggleItem }
 
   TTBVisibilityToggleItem = class(TTBCustomItem)
@@ -209,8 +206,6 @@ type
     property DisplayMode;
     property Enabled;
     property HelpContext;
-    { MP }
-    property HelpKeyword;
     property Hint;
     property ImageIndex;
     property Images;
@@ -223,8 +218,7 @@ type
     property OnClick;
     property OnSelect;
   end;
-  {$ENDIF}
-
+  
 
 implementation
 
@@ -255,9 +249,9 @@ var
   I: Integer;
 begin
   if FEditCaption <> Value then begin
-    for I := 0 to ClientCount - 1 do
-      if TBasicActionLink(Clients[I]) is TTBEditItemActionLink then
-        TTBEditItemActionLink(Clients[I]).SetEditCaption(Value);
+    for I := 0 to FClients.Count - 1 do
+      if TBasicActionLink(FClients[I]) is TTBEditItemActionLink then
+        TTBEditItemActionLink(FClients[I]).SetEditCaption(Value);
     FEditCaption := Value;
     Change;
   end;
@@ -268,9 +262,9 @@ var
   I: Integer;
 begin
   if FEditOptions <> Value then begin
-    for I := 0 to ClientCount - 1 do
-      if TBasicActionLink(Clients[I]) is TTBEditItemActionLink then
-        TTBEditItemActionLink(Clients[I]).SetEditOptions(Value);
+    for I := 0 to FClients.Count - 1 do
+      if TBasicActionLink(FClients[I]) is TTBEditItemActionLink then
+        TTBEditItemActionLink(FClients[I]).SetEditOptions(Value);
     FEditOptions := Value;
     Change;
   end;
@@ -281,9 +275,9 @@ var
   I: Integer;
 begin
   if FEditWidth <> Value then begin
-    for I := 0 to ClientCount - 1 do
-      if TBasicActionLink(Clients[I]) is TTBEditItemActionLink then
-        TTBEditItemActionLink(Clients[I]).SetEditWidth(Value);
+    for I := 0 to FClients.Count - 1 do
+      if TBasicActionLink(FClients[I]) is TTBEditItemActionLink then
+        TTBEditItemActionLink(FClients[I]).SetEditWidth(Value);
     FEditWidth := Value;
     Change;
   end;
@@ -294,9 +288,9 @@ var
   I: Integer;
 begin
   if not MethodsEqual(TMethod(FOnAcceptText), TMethod(Value)) then begin
-    for I := 0 to ClientCount - 1 do
-      if TBasicActionLink(Clients[I]) is TTBEditItemActionLink then
-        TTBEditItemActionLink(Clients[I]).SetOnAcceptText(Value);
+    for I := 0 to FClients.Count - 1 do
+      if TBasicActionLink(FClients[I]) is TTBEditItemActionLink then
+        TTBEditItemActionLink(FClients[I]).SetOnAcceptText(Value);
     FOnAcceptText := Value;
     Change;
   end;
@@ -307,9 +301,9 @@ var
   I: Integer;
 begin
   if FText <> Value then begin
-    for I := 0 to ClientCount - 1 do
-      if TBasicActionLink(Clients[I]) is TTBEditItemActionLink then
-        TTBEditItemActionLink(Clients[I]).SetText(Value);
+    for I := 0 to FClients.Count - 1 do
+      if TBasicActionLink(FClients[I]) is TTBEditItemActionLink then
+        TTBEditItemActionLink(FClients[I]).SetText(Value);
     FText := Value;
     Change;
   end;
@@ -970,8 +964,6 @@ begin
 end;
 
 
-{$IFNDEF MPEXCLUDE}
-
 { TTBToolbarVisibilityItem }
 
 procedure TTBVisibilityToggleItem.Click;
@@ -1012,7 +1004,5 @@ begin
   if (ComponentState * [csDesigning, csLoading, csDestroying] = []) then
     Checked := Assigned(FControl) and FControl.Visible;
 end;
-
-{$ENDIF}
 
 end.

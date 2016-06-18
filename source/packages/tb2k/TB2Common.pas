@@ -70,8 +70,10 @@ procedure HandleWMPrint(const Wnd: HWND; var Message: TMessage;
   const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: Longint);
 procedure HandleWMPrintClient(const Control: TWinControl;
   var Message: TMessage);
+function IsWindowsXP: Boolean;
 procedure ListSortEx(const List: TList; const Compare: TListSortExCompare;
   const ExtraData: Pointer);
+procedure InitTrackMouseEvent;
 function Max(A, B: Integer): Integer;
 function Min(A, B: Integer): Integer;
 function MethodsEqual(const M1, M2: TMethod): Boolean;
@@ -80,13 +82,13 @@ procedure ProcessPaintMessages;
 procedure RemoveMessages(const AMin, AMax: Integer);
 procedure RemoveFromList(var List: TList; Item: Pointer);
 procedure SelectNCUpdateRgn(Wnd: HWND; DC: HDC; Rgn: HRGN);
-function StripAccelChars(const S: String; IncludingStandaloneKey: Boolean = False {MP}): String;
+function StripAccelChars(const S: String): String;
 function StripTrailingPunctuation(const S: String): String;
 function UsingMultipleMonitors: Boolean;
 
 const
   PopupMenuWindowNCSize = 3;
-  DT_HIDEPREFIX = $00100000;{$EXTERNALSYM DT_HIDEPREFIX}
+  DT_HIDEPREFIX = $00100000;
 
 var
   TrackMouseEventFunc: function(var EventTrack: TTrackMouseEvent): BOOL; stdcall;
@@ -94,7 +96,7 @@ var
 implementation
 
 uses
-  TB2Version, Types, System.Character {MP};
+  TB2Version;
 
 function ApplicationIsActive: Boolean;
 { Returns True if the application is in the foreground }
@@ -308,32 +310,16 @@ begin
   Result := TextMetric.tmHeight;
 end;
 
-function StripAccelChars(const S: String; IncludingStandaloneKey: Boolean {MP}): String;
+function StripAccelChars(const S: String): String;
 var
   I: Integer;
 begin
   Result := S;
   I := 1;
   while I <= Length(Result) do begin
-    if not CharInSet(Result[I], LeadBytes) then begin
+    if not(Result[I] in LeadBytes) then begin
       if Result[I] = '&' then
-      begin
-        {MP}
-        // Trim trailing artificial accelerators typical for asian translation
-        // e.g. "ローカル(&L)"
-        if IncludingStandaloneKey and
-           (I = Length(Result) - 2) and
-           (Result[I - 1] = '(') and
-           Result[I + 1].IsLetter() and
-           (Result[I + 2] = ')') then
-        begin
-          System.Delete(Result, I - 1, 4);
-        end
-          else
-        begin
-          System.Delete(Result, I, 1);
-        end;
-      end;
+        System.Delete(Result, I, 1);
       Inc(I);
     end
     else
@@ -349,7 +335,7 @@ begin
   Result := S;
   I := 1;
   while I <= Length(Result) do begin
-    if not CharInSet(Result[I], LeadBytes) then begin
+    if not(Result[I] in LeadBytes) then begin
       if Result[I] = '&' then begin
         Inc(I);
         Insert('&', Result, I);
@@ -524,7 +510,11 @@ const
 var
   FlatMenusEnabled: BOOL;
 begin
-  Result := SystemParametersInfo(SPI_GETFLATMENU, 0,
+  { Interestingly, on Windows 2000, SystemParametersInfo(SPI_GETFLATMENU, ...)
+    succeeds and can return True in pvParam^ if the proper bit is set in
+    UserPreferencesMask. Since flat menus are not really used on Windows
+    2000, call IsWindowsXP first to see if we're running at least XP. }
+  Result := IsWindowsXP and SystemParametersInfo(SPI_GETFLATMENU, 0,
     @FlatMenusEnabled, 0) and FlatMenusEnabled;
 end;
 
@@ -536,7 +526,7 @@ const
 var
   CuesEnabled: BOOL;
 begin
-  Result :=
+  Result := (Win32MajorVersion < 5) or
     not SystemParametersInfo(SPI_GETKEYBOARDCUES, 0, @CuesEnabled, 0) or
     CuesEnabled;
 end;
@@ -682,8 +672,8 @@ end;
 
 type
   HMONITOR = type Integer;
-  PMonitorInfo = ^TMonitorInfo;
-  TMonitorInfo = record
+  PMonitorInfoA = ^TMonitorInfoA;
+  TMonitorInfoA = record
     cbSize: DWORD;
     rcMonitor: TRect;
     rcWork: TRect;
@@ -696,7 +686,7 @@ type
     funcMonitorFromRect: function(lprcScreenCoords: PRect; dwFlags: DWORD): HMONITOR; stdcall;
     funcMonitorFromPoint: function(ptScreenCoords: TPoint; dwFlags: DWORD): HMONITOR; stdcall;
     funcMonitorFromWindow: function(hWnd: HWND; dwFlags: DWORD): HMONITOR; stdcall;
-    funcGetMonitorInfoW: function(hMonitor: HMONITOR; lpMonitorInfo: PMonitorInfo): BOOL; stdcall;
+    funcGetMonitorInfoA: function(hMonitor: HMONITOR; lpMonitorInfo: PMonitorInfoA): BOOL; stdcall;
   end;
 
 { Under D4 I could be using the MultiMon unit for the multiple monitor
@@ -711,9 +701,9 @@ begin
   Apis.funcMonitorFromRect := GetProcAddress(User32Handle, 'MonitorFromRect');
   Apis.funcMonitorFromPoint := GetProcAddress(User32Handle, 'MonitorFromPoint');
   Apis.funcMonitorFromWindow := GetProcAddress(User32Handle, 'MonitorFromWindow');
-  Apis.funcGetMonitorInfoW := GetProcAddress(User32Handle, 'GetMonitorInfoW');
+  Apis.funcGetMonitorInfoA := GetProcAddress(User32Handle, 'GetMonitorInfoA');
   Result := Assigned(Apis.funcMonitorFromRect) and
-    Assigned(Apis.funcMonitorFromPoint) and Assigned(Apis.funcGetMonitorInfoW);
+    Assigned(Apis.funcMonitorFromPoint) and Assigned(Apis.funcGetMonitorInfoA);
 end;
 
 function GetRectOfMonitorContainingRect(const R: TRect;
@@ -723,12 +713,12 @@ function GetRectOfMonitorContainingRect(const R: TRect;
 var
   Apis: TMultiMonApis;
   M: HMONITOR;
-  MonitorInfo: TMonitorInfo;
+  MonitorInfo: TMonitorInfoA;
 begin
   if UsingMultipleMonitors and InitMultiMonApis(Apis) then begin
     M := Apis.funcMonitorFromRect(@R, MONITOR_DEFAULTTONEAREST);
     MonitorInfo.cbSize := SizeOf(MonitorInfo);
-    if Apis.funcGetMonitorInfoW(M, @MonitorInfo) then begin
+    if Apis.funcGetMonitorInfoA(M, @MonitorInfo) then begin
       if not WorkArea then
         Result := MonitorInfo.rcMonitor
       else
@@ -746,12 +736,12 @@ function GetRectOfMonitorContainingPoint(const P: TPoint;
 var
   Apis: TMultiMonApis;
   M: HMONITOR;
-  MonitorInfo: TMonitorInfo;
+  MonitorInfo: TMonitorInfoA;
 begin
   if UsingMultipleMonitors and InitMultiMonApis(Apis) then begin
     M := Apis.funcMonitorFromPoint(P, MONITOR_DEFAULTTONEAREST);
     MonitorInfo.cbSize := SizeOf(MonitorInfo);
-    if Apis.funcGetMonitorInfoW(M, @MonitorInfo) then begin
+    if Apis.funcGetMonitorInfoA(M, @MonitorInfo) then begin
       if not WorkArea then
         Result := MonitorInfo.rcMonitor
       else
@@ -767,12 +757,12 @@ function GetRectOfMonitorContainingWindow(const W: HWND;
 var
   Apis: TMultiMonApis;
   M: HMONITOR;
-  MonitorInfo: TMonitorInfo;
+  MonitorInfo: TMonitorInfoA;
 begin
   if UsingMultipleMonitors and InitMultiMonApis(Apis) then begin
     M := Apis.funcMonitorFromWindow(W, MONITOR_DEFAULTTONEAREST);
     MonitorInfo.cbSize := SizeOf(MonitorInfo);
-    if Apis.funcGetMonitorInfoW(M, @MonitorInfo) then begin
+    if Apis.funcGetMonitorInfoA(M, @MonitorInfo) then begin
       if not WorkArea then
         Result := MonitorInfo.rcMonitor
       else
@@ -783,15 +773,42 @@ begin
   Result := GetRectOfPrimaryMonitor(WorkArea);
 end;
 
+var
+  TrackMouseEventInited: BOOL;
+
+procedure InitTrackMouseEvent;
+var
+  TrackMouseEventComCtlModule: THandle;
+begin
+  { First look for TrackMouseEvent which is available on Windows 98 & NT 4 only.
+    If it doesn't exist, look for _TrackMouseEvent which is available on
+    Windows 95 if IE 3.0 or later is installed. }
+  if not TrackMouseEventInited then begin
+    TrackMouseEventFunc := GetProcAddress(GetModuleHandle(user32),
+      'TrackMouseEvent');
+    if @TrackMouseEventFunc = nil then begin
+      TrackMouseEventComCtlModule :=
+        {$IFDEF JR_D5} SafeLoadLibrary {$ELSE} LoadLibrary {$ENDIF} (comctl32);
+      if TrackMouseEventComCtlModule <> 0 then
+        TrackMouseEventFunc := GetProcAddress(TrackMouseEventComCtlModule,
+          '_TrackMouseEvent');
+    end;
+    InterlockedExchange(Integer(TrackMouseEventInited), Ord(True));
+  end;
+end;
+
 function CallTrackMouseEvent(const Wnd: HWND; const Flags: DWORD): Boolean;
 var
   Track: TTrackMouseEvent;
 begin
-  Track.cbSize := SizeOf(Track);
-  Track.dwFlags := Flags;
-  Track.hwndTrack := Wnd;
-  Track.dwHoverTime := 0;
-  Result := TrackMouseEvent(Track);
+  Result := False;
+  if Assigned(TrackMouseEventFunc) then begin
+    Track.cbSize := SizeOf(Track);
+    Track.dwFlags := Flags;
+    Track.hwndTrack := Wnd;
+    Track.dwHoverTime := 0;
+    Result := TrackMouseEventFunc(Track);
+  end;
 end;
 
 {$IFNDEF JR_D5}
@@ -904,7 +921,7 @@ begin
   I := 1;
   if (AFormat and DT_NOPREFIX) <> DT_NOPREFIX then
     while I <= Length(AText) do begin
-      if CharInSet(AText[I], LeadBytes) then
+      if AText[I] in LeadBytes then
         Inc(I)
       else if AText[I] = '&' then begin
         Delete(AText, I, 1);
@@ -982,6 +999,12 @@ var
   DataSize: DWORD;
   ErrorCode: Longint;
 begin
+  if (Win32MajorVersion < 5) or (Win32Platform <> VER_PLATFORM_WIN32_NT) then begin
+    { No need to check pre-Windows 2000 versions since their PlaySound
+      functions don't have the delay; always return True. }
+    Result := True;
+    Exit;
+  end;
   Result := False;
   if RegOpenKeyEx(HKEY_CURRENT_USER,
      PChar('AppEvents\Schemes\Apps\.Default\' + Alias + '\.Current'),
@@ -1030,6 +1053,13 @@ begin
     end;
     Inc(P);
   end;
+end;
+
+function IsWindowsXP: Boolean;
+begin
+  Result := (Win32Platform = VER_PLATFORM_WIN32_NT) and
+    ((Win32MajorVersion > 5) or
+     ((Win32MajorVersion = 5) and (Win32MinorVersion >= 1)));
 end;
 
 function GetInputLocaleCodePage: UINT;

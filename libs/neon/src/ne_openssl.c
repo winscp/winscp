@@ -370,7 +370,6 @@ static int verify_callback(int ok, X509_STORE_CTX *ctx)
     int depth = X509_STORE_CTX_get_error_depth(ctx);
     int err = X509_STORE_CTX_get_error(ctx);
     int failures = 0;
-    NE_DEBUG_WINSCP_CONTEXT(sess);
 
     /* If there's no error, nothing to do here. */
     if (ok) return ok;
@@ -425,12 +424,10 @@ static ne_ssl_certificate *make_chain(STACK_OF(X509) *chain)
         ne_ssl_certificate *cert = ne_malloc(sizeof *cert);
         populate_cert(cert, X509_dup(sk_X509_value(chain, n)));
 #ifdef NE_DEBUGGING
-#ifndef WINSCP
         if (ne_debug_mask & NE_DBG_SSL) {
             fprintf(ne_debug_stream, "Cert #%d:\n", n);
             X509_print_fp(ne_debug_stream, cert->subject);
         }
-#endif
 #endif
         if (top == NULL) {
             current = top = cert;
@@ -512,7 +509,6 @@ static ne_ssl_client_cert *dup_client_cert(const ne_ssl_client_cert *cc)
 static int provide_client_cert(SSL *ssl, X509 **cert, EVP_PKEY **pkey)
 {
     ne_session *const sess = SSL_get_app_data(ssl);
-    NE_DEBUG_WINSCP_CONTEXT(sess);
 
     if (!sess->client_cert && sess->ssl_provide_fn) {
 	ne_ssl_dname **dnames = NULL, *dnarray = NULL;
@@ -682,7 +678,6 @@ static int SSL_SESSION_cmp(SSL_SESSION *a, SSL_SESSION *b)
 /* For internal use only. */
 int ne__negotiate_ssl(ne_session *sess)
 {
-    NE_DEBUG_WINSCP_CONTEXT(sess);
     ne_ssl_context *ctx = sess->ssl_context;
     SSL *ssl;
     STACK_OF(X509) *chain;
@@ -1268,58 +1263,3 @@ void ne__ssl_exit(void)
     }
 #endif
 }
-
-#ifdef WINSCP
-
-// see also CAsyncSslSocketLayer::PrintSessionInfo()
-const char * ne_ssl_get_version(ne_session *sess)
-{
-    ne_ssl_socket ssl_socket = ne__sock_sslsock(sess->socket);
-    if (ssl_socket != NULL)
-    {
-        return SSL_get_version(ssl_socket);
-    }
-    else
-    {
-        return "";
-    }
-}
-
-char * ne_ssl_get_cipher(ne_session *sess)
-{
-    SSL * ssl = ne__sock_sslsock(sess->socket);
-    X509 * cert = SSL_get_peer_certificate(ssl);
-    const SSL_CIPHER * ciph  = SSL_get_current_cipher(ssl);
-    char * buffer = ne_malloc(4096);
-    char enc[4096] = {0};
-	
-    if (cert != NULL)
-    {
-        EVP_PKEY * pkey = X509_get_pubkey(cert);
-        if (pkey != NULL)
-        {
-            if ((pkey->type == EVP_PKEY_RSA) && (pkey->pkey.rsa != NULL) &&
-                (pkey->pkey.rsa->n != NULL))
-            {
-                ne_snprintf(enc, sizeof(enc), "%d bit RSA", BN_num_bits(pkey->pkey.rsa->n));
-            }
-            else if ((pkey->type == EVP_PKEY_DSA) && (pkey->pkey.dsa != NULL) &&
-                     (pkey->pkey.dsa->p != NULL))
-            {
-                ne_snprintf(enc, sizeof(enc), "%d bit DSA", BN_num_bits(pkey->pkey.dsa->p));
-            }
-            EVP_PKEY_free(pkey);
-        }
-        X509_free(cert);
-    }
-
-    ne_snprintf(buffer, 4096,
-        "%s: %s, %s",
-        SSL_CIPHER_get_version(ciph),
-	SSL_CIPHER_get_name(ciph),
-	enc);
-
-    return buffer;	
-}
-
-#endif

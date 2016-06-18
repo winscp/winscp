@@ -59,7 +59,7 @@ uses
   {$IFDEF HAS_UNIT_LIBC}
   Libc,
   {$ENDIF HAS_UNIT_LIBC}
-  JclBase{$IFNDEF WINSCP}, JclStringConversions{$ENDIF ~WINSCP};
+  JclBase, JclStringConversions;
 
 const
   StreamDefaultBufferSize = 4096;
@@ -128,7 +128,6 @@ type
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
   end;
 
-{$IFNDEF WINSCP}
   TJclNullStream = class(TJclStream)
   private
     FPosition: Int64;
@@ -151,8 +150,6 @@ type
     function Read(var Buffer; Count: Longint): Longint; override;
     property RandSeed: Longint read GetRandSeed write SetRandSeed;
   end;
-
-{$ENDIF ~WINSCP}
 
   TJclMultiplexStream = class(TJclStream)
   private
@@ -368,7 +365,6 @@ type
     procedure Flush; override;
   end;
 
-{$IFNDEF WINSCP}
   TJclCRC16Stream = class(TJclSectoredStream)
   protected
     procedure AfterBlockRead; override;
@@ -384,7 +380,6 @@ type
   public
     constructor Create(AStorageStream: TStream; AOwnsStream: Boolean = False);
   end;
-{$ENDIF ~WINSCP}
 
   {$IFDEF COMPILER7_UP}
     {$DEFINE SIZE64}
@@ -457,8 +452,6 @@ type
     property Volumes[Index: Integer]: TStream read GetVolume;
     property VolumeMaxSizes[Index: Integer]: Int64 read GetVolumeMaxSize;
   end;
-
-{$IFNDEF WINSCP}
 
   TJclStringStream = class
   protected
@@ -575,19 +568,15 @@ type
     property Encoding: TJclStringEncoding read FEncoding;
   end;
 
-{$ENDIF ~WINSCP}
-
 // buffered copy of all available bytes from Source to Dest
 // returns the number of bytes that were copied
 function StreamCopy(Source: TStream; Dest: TStream; BufferSize: Longint = StreamDefaultBufferSize): Int64;
 
-{$IFNDEF WINSCP}
 // buffered copy of all available characters from Source to Dest
 // retuns the number of characters (in specified encoding) that were copied
 function StringStreamCopy(Source, Dest: TJclStringStream; BufferLength: Longint = StreamDefaultBufferSize): Int64;
 function AnsiStringStreamCopy(Source, Dest: TJclStringStream; BufferLength: Longint = StreamDefaultBufferSize): Int64;
 function WideStringStreamCopy(Source, Dest: TJclStringStream; BufferLength: Longint = StreamDefaultBufferSize): Int64;
-{$ENDIF ~WINSCP}
 
 // compares 2 streams for differencies
 function CompareStreams(A, B : TStream; BufferSize: Longint = StreamDefaultBufferSize): Boolean;
@@ -612,10 +601,10 @@ uses
   {$IFDEF HAS_UNITSCOPE}
   System.Types,
   {$ENDIF HAS_UNITSCOPE}
-  JclResources{$IFNDEF WINSCP},
-  JclCharsets{$ENDIF ~WINSCP}{,
+  JclResources,
+  JclCharsets,
   JclMath,
-  JclSysUtils};
+  JclSysUtils;
 
 function StreamCopy(Source: TStream; Dest: TStream; BufferSize: Longint): Int64;
 var
@@ -631,7 +620,6 @@ begin
   until ByteCount < BufferSize;
 end;
 
-{$IFNDEF WINSCP}
 function StringStreamCopy(Source, Dest: TJclStringStream; BufferLength: Longint): Int64;
 var
   Buffer: string;
@@ -673,7 +661,6 @@ begin
     CharCount := Dest.WriteWideString(Buffer, 1, CharCount);
   until CharCount = 0;
 end;
-{$ENDIF ~WINSCP}
 
 function CompareStreams(A, B : TStream; BufferSize: Longint): Boolean;
 var
@@ -941,8 +928,6 @@ begin
     Result := 0;
 end;
 
-{$IFNDEF WINSCP}
-
 //=== { TJclNullStream } =====================================================
 
 // a stream which only keeps position and size, but no data
@@ -1050,8 +1035,6 @@ begin
   end;
   Result := Count;
 end;
-
-{$ENDIF ~WINSCP}
 
 //=== { TJclMultiplexStream } ================================================
 
@@ -1983,8 +1966,6 @@ begin
   inherited SetSize(FlatToSectored(NewSize));
 end;
 
-{$IFNDEF WINSCP}
-
 //=== { TJclCRC16Stream } ====================================================
 
 procedure TJclCRC16Stream.AfterBlockRead;
@@ -2038,8 +2019,6 @@ constructor TJclCRC32Stream.Create(AStorageStream: TStream;
 begin
   inherited Create(AStorageStream, AOwnsStream, 4);
 end;
-
-{$ENDIF ~WINSCP}
 
 //=== { TJclSplitStream } ====================================================
 
@@ -2365,8 +2344,6 @@ function TJclStaticSplitStream.GetVolumeMaxSize(Index: Integer): Int64;
 begin
   Result := TJclSplitVolume(FVolumes.Items[Index]).MaxSize;
 end;
-
-{$IFNDEF WINSCP}
 
 //=== { TJclStringStream } ====================================================
 
@@ -3135,8 +3112,6 @@ begin
   Result := 0;
   InvalidateBuffers;
 end;
-
-{$ENDIF ~WINSCP}
 
 {$IFDEF UNITVERSIONING}
 initialization

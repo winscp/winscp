@@ -124,10 +124,6 @@ int ne_options(ne_session *sess, const char *path,
  * describing the advertised resource capabilities. */
 int ne_options2(ne_session *sess, const char *path, unsigned int *caps);
 
-#ifdef WINSCP
-const char * ne_capability_name(unsigned int cap);
-#endif
-
 /* Defines a range of bytes, starting at 'start' and ending
  * at 'end'.  'total' is the number of bytes in the range.
  */

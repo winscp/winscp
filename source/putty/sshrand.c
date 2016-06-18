@@ -235,9 +235,6 @@ void random_add_noise(void *noise, int length)
 	pool.incomingpos = 0;
     }
 
-#ifdef MPEXT
-    if (length > 0)
-#endif
     memcpy(pool.incomingb + pool.incomingpos, p, length);
     pool.incomingpos += length;
 }
@@ -288,9 +285,10 @@ static void random_timer(void *ctx, unsigned long now)
 
 void random_ref(void)
 {
-    MPEXT_PUTTY_SECTION_ENTER;
     if (!random_active) {
 	memset(&pool, 0, sizeof(pool));    /* just to start with */
+
+        random_active++;
 
 	noise_get_heavy(random_add_heavynoise_bitbybit);
 	random_stir();
@@ -298,69 +296,34 @@ void random_ref(void)
 	next_noise_collection =
 	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer, &pool);
     }
-    random_active++;
-    MPEXT_PUTTY_SECTION_LEAVE;
 }
 
 void random_unref(void)
 {
-    MPEXT_PUTTY_SECTION_ENTER;
     assert(random_active > 0);
     if (random_active == 1) {
-        #ifndef MPEXT
-        // We control this on our own in PuttyFinalize()
         random_save_seed();
-        #endif
         expire_timer_context(&pool);
     }
     random_active--;
-    MPEXT_PUTTY_SECTION_LEAVE;
 }
 
 int random_byte(void)
 {
-#ifdef MPEXT
-    int pos;
-
-    assert(random_active);
-
-    pos = pool.poolpos;
-
-    if (pos < sizeof(pool.incoming) || pos >= POOLSIZE)
-    {
-      MPEXT_PUTTY_SECTION_ENTER;
-      if (pool.poolpos >= POOLSIZE)
-      {
-        random_stir();
-      }
-      pos = pool.poolpos;
-      pool.poolpos++;
-      MPEXT_PUTTY_SECTION_LEAVE;
-    }
-    else
-    {
-      pool.poolpos++;
-    }
-
-    return pool.pool[pos];
-#else
     assert(random_active);
 
     if (pool.poolpos >= POOLSIZE)
 	random_stir();
 
     return pool.pool[pool.poolpos++];
-#endif
 }
 
 void random_get_savedata(void **data, int *len)
 {
     void *buf = snewn(POOLSIZE / 2, char);
-    MPEXT_PUTTY_SECTION_ENTER;
     random_stir();
     memcpy(buf, pool.pool + pool.poolpos, POOLSIZE / 2);
     *len = POOLSIZE / 2;
     *data = buf;
     random_stir();
-    MPEXT_PUTTY_SECTION_LEAVE;
 }

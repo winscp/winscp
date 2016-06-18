@@ -294,13 +294,6 @@ typedef void (*ne_ssl_provide_fn)(void *userdata, ne_session *sess,
 void ne_ssl_provide_clicert(ne_session *sess, 
                             ne_ssl_provide_fn fn, void *userdata);
 
-#ifdef WINSCP
-const char * ne_ssl_get_version(ne_session *sess);
-char * ne_ssl_get_cipher(ne_session *sess);
-struct ssl_st;
-void ne_init_ssl_session(struct ssl_st *ssl, ne_session *sess);
-#endif                            
-
 /* Set the timeout (in seconds) used when reading from a socket.  The
  * timeout value must be greater than zero. */
 void ne_set_read_timeout(ne_session *sess, int timeout);

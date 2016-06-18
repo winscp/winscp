@@ -33,7 +33,7 @@ interface
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Dialogs, ActnList, ImgList,
   {$IFDEF JR_D6} DesignIntf, DesignEditors, VCLEditors, {$ELSE} DsgnIntf, {$ENDIF}
-  TB2Toolbar, {$IFNDEF MPEXCLUDE}TB2ToolWindow,{$ENDIF} TB2Dock, TB2Item, TB2ExtItems, {$IFNDEF MPEXCLUDE} TB2MRU, TB2MDI, {$ENDIF}
+  TB2Toolbar, TB2ToolWindow, TB2Dock, TB2Item, TB2ExtItems, TB2MRU, TB2MDI,
   TB2DsgnItemEditor;
 
 {$IFDEF JR_D5}
@@ -41,7 +41,7 @@ uses
 { TTBImageIndexPropertyEditor }
 
 { Unfortunately TComponentImageIndexPropertyEditor seems to be gone in
-  Delphi 6, so we have to use our own image index property editor class }
+  Delphi 6, so we have to use our own image index property editor class } 
 
 type
   TTBImageIndexPropertyEditor = class(TIntegerProperty
@@ -75,7 +75,7 @@ procedure Register;
 implementation
 
 uses
-  ImgEdit, Actions, UITypes;
+  ImgEdit;
 
 {$IFDEF JR_D5}
 
@@ -213,20 +213,21 @@ begin
     Result := '';
 end;
 
+
 procedure Register;
 begin
-  RegisterComponents('Toolbar2000', [TTBDock, TTBToolbar, {$IFNDEF MPEXCLUDE}TTBToolWindow,{$ENDIF}
-    TTBPopupMenu, TTBImageList, TTBItemContainer{$IFNDEF MPEXCLUDE}, TTBBackground, TTBMRUList,
-    TTBMDIHandler{$ENDIF}]);
+  RegisterComponents('Toolbar2000', [TTBDock, TTBToolbar, TTBToolWindow,
+    TTBPopupMenu, TTBImageList, TTBItemContainer, TTBBackground, TTBMRUList,
+    TTBMDIHandler]);
   {$IFDEF JR_D4}
   RegisterActions('', [TTBEditAction], nil);
   {$ENDIF}
   RegisterNoIcon([TTBItem, TTBGroupItem, TTBSubmenuItem, TTBSeparatorItem,
-    TTBEditItem, {$IFNDEF MPEXCLUDE} TTBMRUListItem,{$ENDIF} TTBControlItem{$IFNDEF MPEXCLUDE}, TTBMDIWindowItem,
-    TTBVisibilityToggleItem{$ENDIF}]);
+    TTBEditItem, TTBMRUListItem, TTBControlItem, TTBMDIWindowItem,
+    TTBVisibilityToggleItem]);
   RegisterClasses([TTBItem, TTBGroupItem, TTBSubmenuItem, TTBSeparatorItem,
-    TTBEditItem, {$IFNDEF MPEXCLUDE}TTBMRUListItem,{$ENDIF} TTBControlItem{$IFNDEF MPEXCLUDE}, TTBMDIWindowItem,
-    TTBVisibilityToggleItem{$ENDIF}]);
+    TTBEditItem, TTBMRUListItem, TTBControlItem, TTBMDIWindowItem,
+    TTBVisibilityToggleItem]);
 
   RegisterComponentEditor(TTBCustomToolbar, TTBItemsEditor);
   RegisterComponentEditor(TTBItemContainer, TTBItemsEditor);
@@ -248,11 +249,9 @@ begin
   {$R TB2DsgnItemEditor.res}
   TBRegisterItemClass(TTBEditItem, 'New &Edit', HInstance);
   TBRegisterItemClass(TTBGroupItem, 'New &Group Item', HInstance);
-  {$IFNDEF MPEXCLUDE}
   TBRegisterItemClass(TTBMRUListItem, 'New &MRU List Item', HInstance);
   TBRegisterItemClass(TTBMDIWindowItem, 'New MDI &Windows List', HInstance);
   TBRegisterItemClass(TTBVisibilityToggleItem, 'New &Visibility-Toggle Item', HInstance);
-  {$ENDIF}
 end;
 
 end.

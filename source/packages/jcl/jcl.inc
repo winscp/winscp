@@ -41,11 +41,7 @@
 {$DEFINITIONINFO ON}  // Symbol definition information
 {$REFERENCEINFO ON}   // Symbol reference information
 
-{$IFDEF WINSCP}
-{$I jedi.inc} // Pull in the JCL/J-VCL shared directives
-{$ELSE}
 {$I jedi\jedi.inc} // Pull in the JCL/J-VCL shared directives
-{$ENDIF}
 
 {$IFNDEF JEDI_INC}
 ALERT_jedi_inc_incompatible

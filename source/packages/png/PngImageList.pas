@@ -469,13 +469,12 @@ var
   Png: TPngImage;
 begin
   if TObject(Self) is TPngImageList then begin
-    // MP
-    Png := nil;
+    Png := TPngImage.Create;
     try
       CreatePNGMasked(Image, MaskColor, Png);
       result := AddPng(Png);
     finally
-      if Assigned(Png) then Png.Free;
+      Png.Free;
     end;
   end
   else begin
@@ -1290,6 +1289,9 @@ begin
 end;
 
 initialization
+
 finalization
   MethodPatches.Free;
+
 end.
+

@@ -64,9 +64,7 @@ uses
   {$ENDIF ~HAS_UNITSCOPE}
   JclBase, JclFileUtils, JclPeImage,
   {$IFDEF BORLAND}
-  {$IFNDEF WINSCP}
   JclTD32,
-  {$ENDIF ~WINSCP}
   {$ENDIF BORLAND}
   JclSynch;
 
@@ -528,7 +526,6 @@ type
   end;
 
   {$IFDEF BORLAND}
-  {$IFNDEF WINSCP}
   TJclDebugInfoTD32 = class(TJclDebugInfoSource)
   private
     FImage: TJclPeBorTD32Image;
@@ -537,7 +534,6 @@ type
     function InitializeSource: Boolean; override;
     function GetLocationInfo(const Addr: Pointer; out Info: TJclLocationInfo): Boolean; override;
   end;
-  {$ENDIF ~WINSCP}
   {$ENDIF BORLAND}
 
   TJclDebugInfoSymbols = class(TJclDebugInfoSource)
@@ -694,12 +690,6 @@ type
     property Count: Integer read GetCount;
     property Raw: Boolean read FRaw;
   end;
-
-{$IFDEF WINSCP}
-procedure DoExceptionStackTrace(ExceptObj: TObject; ExceptAddr: Pointer; OSException: Boolean;
-  BaseOfStack: Pointer);
-procedure DoExceptFrameTrace;
-{$ENDIF}
 
 function JclCreateStackList(Raw: Boolean; AIgnoreLevels: Integer; FirstCaller: Pointer): TJclStackInfoList; overload;
 function JclCreateStackList(Raw: Boolean; AIgnoreLevels: Integer; FirstCaller: Pointer;
@@ -981,9 +971,7 @@ function JclThreadsHooked: Boolean;
 
 // Miscellanuous
 {$IFDEF MSWINDOWS}
-{$IFNDEF WINSCP}
 function EnableCrashOnCtrlScroll(const Enable: Boolean): Boolean;
-{$ENDIF ~WINSCP}
 function IsDebuggerAttached: Boolean;
 function IsHandleValid(Handle: THandle): Boolean;
 {$ENDIF MSWINDOWS}
@@ -1069,30 +1057,10 @@ uses
   {$ENDIF SUPPORTS_GENERICS}
   {$ENDIF ~HAS_UNITSCOPE}
   {$IFDEF MSWINDOWS}
-  {$IFNDEF WINSCP}
   JclRegistry,
-  {$ELSE}
-  System.AnsiStrings,
-  {$ENDIF ~WINSCP}
   {$ENDIF MSWINDOWS}
-  JclHookExcept, {$IFNDEF WINSCP}JclAnsiStrings,{$ENDIF ~WINSCP} JclStrings, JclSysInfo, JclSysUtils, JclWin32,
-  {$IFNDEF WINSCP}JclStringConversions,{$ENDIF ~WINSCP} JclResources;
-
-{$IFDEF WINSCP}
-
-// from JclAnsiStrings.pas
-
-function StrLICompA(const Str1, Str2: PAnsiChar; MaxLen: Cardinal): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrIComp(Str1, Str2);
-end;
-
-function StrPLCopyA(Dest: PAnsiChar; const Source: AnsiString; MaxLen: Cardinal): PAnsiChar;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrPLCopy(Dest, Source, MaxLen);
-end;
-
-{$ENDIF}
+  JclHookExcept, JclAnsiStrings, JclStrings, JclSysInfo, JclSysUtils, JclWin32,
+  JclStringConversions, JclResources;
 
 //=== Helper assembler routines ==============================================
 
@@ -2394,7 +2362,7 @@ begin
 
         JclDebugSectionPosition := ImageSectionHeadersPosition + (SizeOf(ImageSectionHeaders[0]) * Length(ImageSectionHeaders));
         LastSection := @ImageSectionHeaders[High(ImageSectionHeaders)];
-
+        
         // Increase the number of sections
         Inc(NtHeaders32.FileHeader.NumberOfSections);
 
@@ -3489,9 +3457,7 @@ begin
     InfoSourceClassList.Add(Pointer(TJclDebugInfoBinary));
     {$ENDIF !DEBUG_NO_BINARY}
     {$IFNDEF DEBUG_NO_TD32}
-    {$IFNDEF WINSCP}
     InfoSourceClassList.Add(Pointer(TJclDebugInfoTD32));
-    {$ENDIF ~WINSCP}
     {$ENDIF !DEBUG_NO_TD32}
     {$IFNDEF DEBUG_NO_MAP}
     InfoSourceClassList.Add(Pointer(TJclDebugInfoMap));
@@ -3730,11 +3696,7 @@ begin
           if not IsAddressInThisExportedFunction(Addr, FModule + Items[I].Address) then
           begin
             //Info.UnitName := '[' + AnsiLowerCase(ExtractFileName(GetModulePath(FModule))) + ']'
-            {$IFNDEF WINSCP}
             Info.ProcedureName := Format(LoadResString(@RsUnknownFunctionAt), [Info.ProcedureName]);
-            {$ELSE}
-            Info.ProcedureName := '';
-            {$ENDIF ~WINSCP}
           end;
 
           Break;
@@ -3756,8 +3718,6 @@ begin
 end;
 
 {$IFDEF BORLAND}
-
-{$IFNDEF WINSCP}
 
 //=== { TJclDebugInfoTD32 } ==================================================
 
@@ -3796,8 +3756,6 @@ begin
     Result := False;
   end;
 end;
-
-{$ENDIF ~WINSCP}
 
 {$ENDIF BORLAND}
 
@@ -4286,11 +4244,6 @@ var
   Info, StartProcInfo: TJclLocationInfo;
   OffsetStr, StartProcOffsetStr, FixedProcedureName, UnitNameWithoutUnitscope: string;
   Module : HMODULE;
-  {$IFDEF WINSCP}
-  MainModule: HMODULE;
-  ModuleName: string;
-  ModulePosition: Integer;
-  {$ENDIF ~WINSCP}
 begin
   OffsetStr := '';
   if GetLocationInfo(Addr, Info) then
@@ -4322,23 +4275,16 @@ begin
         else
           OffsetStr := Format(' - $%x', [-OffsetFromLineNumber])
       end;
-      {$IFDEF WINSCP}
-      Result := Format('[%p] %s (Line %u, "%s"%s)%s', [Addr, FixedProcedureName, LineNumber,
-        SourceName, StartProcOffsetStr, OffsetStr]);
-      {$ELSE}
       Result := Format('[%p] %s.%s (Line %u, "%s"%s)%s', [Addr, UnitName, FixedProcedureName, LineNumber,
         SourceName, StartProcOffsetStr, OffsetStr]);
-      {$ENDIF}
     end
     else
     begin
       if IncludeAddressOffset then
         OffsetStr := Format(' + $%x', [OffsetFromProcName]);
-      {$IFNDEF WINSCP}
       if UnitName <> '' then
         Result := Format('[%p] %s.%s%s', [Addr, UnitName, FixedProcedureName, OffsetStr])
       else
-      {$ENDIF}
         Result := Format('[%p] %s%s', [Addr, FixedProcedureName, OffsetStr]);
     end;
   end
@@ -4356,23 +4302,7 @@ begin
       Result := OffsetStr + Result;
     end;
     if IncludeModuleName then
-    {$IFDEF WINSCP}
-    begin
-      MainModule := GetModuleHandle(nil);
-      if MainModule <> Module then
-      begin
-        ModuleName := ExtractFileName(GetModulePath(Module));
-        ModulePosition := 12 {$IFDEF CPU64}+8{$ENDIF};
-        if IncludeVAddress then
-          ModulePosition := 2 * (ModulePosition - 1) + 1;
-        if ModulePosition < Length(Result) then
-          ModuleName := ModuleName + '.';
-        Insert(ModuleName, Result, ModulePosition);
-      end;
-    end;
-    {$ELSE}
       Insert(Format('{%-12s}', [ExtractFileName(GetModulePath(Module))]), Result, 11 {$IFDEF CPU64}+8{$ENDIF});
-    {$ENDIF ~WINSCP}
   end;
 end;
 
@@ -6742,7 +6672,6 @@ end;
 
 {$IFDEF MSWINDOWS}
 
-{$IFNDEF WINSCP}
 function EnableCrashOnCtrlScroll(const Enable: Boolean): Boolean;
 const
   CrashCtrlScrollKey = 'SYSTEM\CurrentControlSet\Services\i8042prt\Parameters';
@@ -6756,7 +6685,6 @@ begin
   RegWriteInteger(HKEY_LOCAL_MACHINE, CrashCtrlScrollKey, CrashCtrlScrollName, Enabled);
   Result := RegReadInteger(HKEY_LOCAL_MACHINE, CrashCtrlScrollKey, CrashCtrlScrollName) = Enabled;
 end;
-{$ENDIF ~WINSCP}
 
 function IsDebuggerAttached: Boolean;
 var

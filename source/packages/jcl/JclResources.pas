@@ -1490,7 +1490,7 @@ resourcestring
   // TJclPeImage
   RsPeCantOpen                = 'Cannot open file "%s"';
   RsPeNotPE                   = 'This is not a PE format';
-  RsPeUnknownTarget           = 'Unknown PE target';
+  RsPeUnknownTarget           = 'Unknown PE target'; 
   RsPeNotResDir               = 'Not a resource directory';
   RsPeNotAvailableForAttached = 'Feature is not available for attached images';
   RsPeSectionNotFound         = 'Section "%s" not found';
@@ -1653,7 +1653,7 @@ resourcestring
   RsRTTIValueOutOfRange   = 'Value %s out of range %s..%s.';
   RsRTTIUnknownIdentifier = 'Unknown identifier ''%s''.';
   RsRTTIInvalidBaseType   = 'Invalid base type (%s is of type %s).';
-  RsRTTINoStringValue     = 'The property %s of type %s has no string value';
+  RsRTTINoStringValue     = 'The property %s of type %s has no string value'; 
 
   RsRTTIVar           = 'var ';
   RsRTTIConst         = 'const ';
@@ -1719,7 +1719,7 @@ resourcestring
 resourcestring
   RsInvalidSID = 'Invalid SID';
   RsSIDBufferTooSmall = 'SID buffer too small.';
-  RsLsaError = 'LSA Error: NT Status = %.8x, message: %s';
+  RsLsaError = 'LSA Error: NT Status = %.8x, message: %s'; 
 
 //=== JclSimpleXml ===========================================================
 resourcestring

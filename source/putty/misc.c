@@ -19,10 +19,10 @@
  * All numbers are decimal, and suffixes refer to powers of two.
  * Case-insensitive.
  */
-__int64 parse_blocksize64(const char *bs)
+unsigned long parse_blocksize(const char *bs)
 {
     char *suf;
-    __int64 r = strtoul(bs, &suf, 10);
+    unsigned long r = strtoul(bs, &suf, 10);
     if (*suf != '\0') {
 	while (*suf && isspace((unsigned char)*suf)) suf++;
 	switch (*suf) {
@@ -41,11 +41,6 @@ __int64 parse_blocksize64(const char *bs)
 	}
     }
     return r;
-}
-
-unsigned long parse_blocksize(const char *bs)
-{
-  return (unsigned long)parse_blocksize64(bs);
 }
 
 /*
@@ -392,10 +387,7 @@ void base64_encode_atom(unsigned char *data, int n, char *out)
  *  - return the current size of the buffer chain in bytes
  */
 
-/* MP:
-* Default granule of 512 leads to low performance.
-*/
-#define BUFFER_MIN_GRANULE  512*2*32
+#define BUFFER_MIN_GRANULE  512
 
 struct bufchain_granule {
     struct bufchain_granule *next;

@@ -59,9 +59,6 @@ type
 
   TTBChevronPriorityForNewItems = (tbcpHighest, tbcpLowest);
 
-  { MP }
-  TToolbarGetBaseSizeEvent = procedure(Toolbar: TTBCustomToolbar; var ASize: TPoint) of object;
-
   TTBCustomToolbar = class(TTBCustomDockableWindow, ITBItems)
   private
     FBaseSize: TPoint;
@@ -81,8 +78,6 @@ type
     FSizeData: Pointer;
     FSystemFont: Boolean;
     FUpdateActions: Boolean;
-    { MP }
-    FOnGetBaseSize: TToolbarGetBaseSizeEvent;
 
     procedure CancelHover;
     function CalcChevronOffset(const ADock: TTBDock;
@@ -146,6 +141,7 @@ type
     procedure DoContextPopup(MousePos: TPoint; var Handled: Boolean); override;
     {$ENDIF}
     procedure GetBaseSize(var ASize: TPoint); override;
+    procedure GetChildren(Proc: TGetChildProc; Root: TComponent); override;
     procedure GetMinBarSize(var MinimumSize: TPoint);
     procedure GetMinShrinkSize(var AMinimumSize: Integer); override;
     function GetShrinkMode: TTBShrinkMode; override;
@@ -177,7 +173,6 @@ type
     function KeyboardOpen(Key: Char; RequirePrimaryAccel: Boolean): Boolean;
     procedure ReadPositionData(const Data: TTBReadPositionData); override;
     procedure WritePositionData(const Data: TTBWritePositionData); override;
-    procedure GetChildren(Proc: TGetChildProc; Root: TComponent); override;
 
     property ChevronHint: String read GetChevronHint write SetChevronHint stored IsChevronHintStored;
     property ChevronMoveItems: Boolean read FChevronMoveItems write SetChevronMoveItems default True;
@@ -193,8 +188,6 @@ type
     property ShrinkMode: TTBShrinkMode read FShrinkMode write SetShrinkMode default tbsmChevron;
     property UpdateActions: Boolean read FUpdateActions write FUpdateActions default True;
     property View: TTBToolbarView read FView;
-    { MP }
-    property OnGetBaseSize: TToolbarGetBaseSizeEvent read FOnGetBaseSize write FOnGetBaseSize;
   published
     property Hint stored False;  { Hint is set dynamically; don't save it }
   end;
@@ -266,8 +259,6 @@ type
     property OnResize;
     property OnShortCut;
     property OnVisibleChanged;
-    { MP }
-    property OnGetBaseSize;
   end;
 
 { TTBChevronItem & TTBChevronItemViewer }
@@ -546,8 +537,6 @@ begin
   FSystemFont := True;
   Color := clBtnFace;
   SetBounds(Left, Top, 23, 22);{}
-  { MP }
-  FOnGetBaseSize := nil;
 end;
 
 destructor TTBCustomToolbar.Destroy;
@@ -663,7 +652,7 @@ var
 begin
   Result := TTBControlItem.CreateControlItem(Owner, Ctl);
   if (csDesigning in ComponentState) and Assigned(Owner) then begin
-    { Needs a name for compatibility with form inheritance }
+    { Needs a name for compatibility with form inheritance } 
     I := 1;
     while True do begin
       S := Format('TBControlItem%d', [I]);
@@ -791,12 +780,32 @@ begin
 end;
 
 procedure TTBCustomToolbar.WMSysCommand(var Message: TWMSysCommand);
+var
+  AnsiKey: Char;
 begin
   if FMenuBar and Enabled and Showing then
     with Message do
       if (CmdType and $FFF0 = SC_KEYMENU) and (Key <> VK_SPACE) and
          (GetCapture = 0) then begin
-        if not KeyboardOpen(Char(Key), False) then begin
+        if Win32Platform = VER_PLATFORM_WIN32_NT then begin
+          { On Windows NT 4/2000/XP, Key is a wide character, so we have to
+            convert it. Pressing Alt+N in a Russian input locale, for example,
+            results in a Key value of $0442.
+            This could perhaps be considered a bug in Windows NT since the
+            character codes in other messages such as WM_SYSCHAR aren't left
+            in Unicode form.
+            The conversion isn't done with the system code page, but rather
+            with the code page of the currently active input locale, like
+            Windows does when sending WM_(SYS)CHAR messages. }
+          if WideCharToMultiByte(GetInputLocaleCodePage, 0, @WideChar(Key), 1,
+             @AnsiKey, 1, nil, nil) <> 1 then
+            Exit;  { shouldn't fail, but if it does, we can't continue }
+        end
+        else begin
+          { On Windows 95/98/Me, Key is not a wide character. }
+          AnsiKey := Char(Key);
+        end;
+        if not KeyboardOpen(AnsiKey, False) then begin
           if Key = Ord('-') then Exit;
           MessageBeep(0);
         end;
@@ -885,7 +894,7 @@ begin
         Hint := Item.Hint
       else
         Hint := '';
-
+        
       with TTBItemViewerAccess(FView.Find(Item)) do
       begin
         MouseMove(X - BoundsRect.Left, Y - BoundsRect.Top);
@@ -1225,8 +1234,6 @@ procedure TTBCustomToolbar.GetBaseSize(var ASize: TPoint);
 begin
   FView.ValidatePositions;
   ASize := FBaseSize;
-  { MP }
-  if Assigned(FOnGetBaseSize) then FOnGetBaseSize(Self, ASize);
 end;
 
 function TTBCustomToolbar.DoArrange(CanMoveControls: Boolean;
