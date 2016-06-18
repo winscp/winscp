@@ -11,10 +11,19 @@ function IsVistaHard: Boolean;
 
 function IsVista: Boolean;
 
+// Prevent name conflict with C++ IsWin8.
+{$HPPEMIT '#define IsWin7 IsWin7Pas'}
+{$HPPEMIT END '#undef IsWin7'}
 function IsWin7: Boolean;
 
+// Prevent name conflict with C++ IsWin8.
+{$HPPEMIT '#define IsWin8 IsWin8Pas'}
+{$HPPEMIT END '#undef IsWin8'}
 function IsWin8: Boolean;
 
+// Prevent name conflict with C++ CutToChar.
+{$HPPEMIT '#define CutToChar CutToCharPas'}
+{$HPPEMIT END '#undef CutToChar'}
 function CutToChar(var Str: string; Ch: Char; Trim: Boolean): string;
 
 procedure FilterToFileTypes(Filter: string; FileTypes: TFileTypeItems);
@@ -25,6 +34,7 @@ function LoadDimension(Dimension: Integer; PixelsPerInch: Integer): Integer;
 function StrToDimensionDef(Str: string; PixelsPerInch: Integer; Default: Integer): Integer;
 function SaveDimension(Dimension: Integer): Integer;
 function DimensionToDefaultPixelsPerInch(Dimension: Integer): Integer;
+function ScaleByPixelsPerInch(Dimension: Integer): Integer;
 
 function LoadPixelsPerInch(S: string): Integer;
 function SavePixelsPerInch: string;
@@ -47,6 +57,10 @@ type
 var
   OnApiPath: TApiPathEvent = nil;
 
+// Prevent name conflict with C++ ApiPath.
+// We would not want to call this implementation in any case anyway.
+{$HPPEMIT '#define ApiPath ApiPathPas'}
+{$HPPEMIT END '#undef ApiPath'}
 function ApiPath(Path: string): string;
 
 type
@@ -194,6 +208,11 @@ begin
   Result := MulDiv(Dimension, USER_DEFAULT_SCREEN_DPI, Screen.PixelsPerInch);
 end;
 
+function ScaleByPixelsPerInch(Dimension: Integer): Integer;
+begin
+  Result := MulDiv(Dimension, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+end;
+
 function LoadPixelsPerInch(S: string): Integer;
 begin
   // for backward compatibility with version that did not save the DPI,
@@ -258,9 +277,17 @@ begin
   // RTL_COPY (TCustomForm.ReadState)
   Form := ValidParentForm(Control);
   TextHeight := Form.RetrieveTextHeight;
-  // that's our design text-size, we do not expect any other value
-  Assert(TextHeight = OurDesignTimeTextHeight);
-  Result := ScaleByTextHeightImpl(Control, Dimension, TextHeight);
+  // runtime form (such as TTBFloatingWindowParent)
+  if TextHeight = 0 then
+  begin
+    Result := ScaleByTextHeightRunTime(Control, Dimension);
+  end
+    else
+  begin
+    // that's our design text-size, we do not expect any other value
+    Assert(TextHeight = OurDesignTimeTextHeight);
+    Result := ScaleByTextHeightImpl(Control, Dimension, TextHeight);
+  end;
 end;
 
 // this differs from ScaleByTextHeight only by enforcing

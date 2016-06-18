@@ -333,11 +333,6 @@ int ne_sock_init(void)
     if (err != 0) {
 	return init_state = -1;
     }
-#ifdef HAVE_SSPI
-    if (ne_sspi_init() < 0) {
-        return init_state = -1;
-    }
-#endif
 #endif
 
 #ifdef NE_HAVE_SOCKS
@@ -359,6 +354,16 @@ int ne_sock_init(void)
 #endif
 
     init_state = 1;
+
+#ifdef WIN32    
+#ifdef HAVE_SSPI
+    // This fails on Wine, and we do not want to abort
+    // whole Neon initialization because of that
+    if (ne_sspi_init() < 0) {
+        return -2;
+    }
+#endif
+#endif
     return 0;
 }
 

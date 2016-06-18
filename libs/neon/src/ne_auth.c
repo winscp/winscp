@@ -1722,6 +1722,23 @@ void ne_add_proxy_auth(ne_session *sess, unsigned protocol,
                   creds, userdata);
 }
 
+#ifdef WINSCP
+void ne_remove_server_auth(ne_session *sess)
+{
+    auth_session *as;
+    if ((as = ne_get_session_private(sess, HOOK_SERVER_ID)) != NULL)
+    {
+        // copied from free_auth
+        struct auth_handler *hdl, *next;
+        for (hdl = as->handlers; hdl; hdl = next) {
+            next = hdl->next;
+            ne_free(hdl);
+        }
+        as->handlers = NULL;
+    }
+}
+#endif
+
 void ne_forget_auth(ne_session *sess)
 {
     auth_session *as;

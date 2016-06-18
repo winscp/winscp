@@ -13,20 +13,22 @@
 #define SET_SESSION_PROPERTY(Property) \
   if (F##Property != value) { F##Property = value; Modify(); }
 //---------------------------------------------------------------------------
-enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour };
-#define CIPHER_COUNT (cipArcfour+1)
+enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour, cipChaCha20 };
+#define CIPHER_COUNT (cipChaCha20+1)
 // explicit values to skip obsoleted fsExternalSSH, fsExternalSFTP
 enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDAV = 6 };
 #define FSPROTOCOL_COUNT (fsWebDAV+1)
+extern const wchar_t * ProxyMethodNames;
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
-enum TSshProt { ssh1only, ssh1, ssh2, ssh2only };
-enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA };
-#define KEX_COUNT (kexRSA+1)
+enum TSshProt { ssh1only, ssh1deprecated, ssh2deprecated, ssh2only };
+enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA, kexECDH };
+#define KEX_COUNT (kexECDH+1)
 enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
   sbPKSessID2, sbRekey2, sbMaxPkt2, sbIgnore2, sbOldGex2, sbWinAdj };
 #define BUG_COUNT (sbWinAdj+1)
 enum TSftpBug { sbSymlink, sbSignedTS };
 #define SFTP_BUG_COUNT (sbSignedTS+1)
+extern const wchar_t * PingTypeNames;
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
 enum TAddressFamily { afAuto, afIPv4, afIPv6 };
 enum TFtps { ftpsNone, ftpsImplicit, ftpsExplicitSsl, ftpsExplicitTls };
@@ -39,13 +41,13 @@ enum TSessionUrlFlags
   sufUserName = 0x02,
   sufPassword = 0x04,
   sufHostKey = 0x08,
-  sufComplete = sufUserName | sufPassword | sufHostKey
+  sufComplete = sufUserName | sufPassword | sufHostKey,
+  sufOpen = sufUserName | sufPassword
 };
 //---------------------------------------------------------------------------
-extern const wchar_t CipherNames[CIPHER_COUNT][10];
-extern const wchar_t KexNames[KEX_COUNT][20];
+extern const UnicodeString CipherNames[CIPHER_COUNT];
+extern const UnicodeString KexNames[KEX_COUNT];
 extern const wchar_t SshProtList[][10];
-extern const wchar_t ProxyMethodList[][10];
 extern const TCipher DefaultCipherList[CIPHER_COUNT];
 extern const TKex DefaultKexList[KEX_COUNT];
 extern const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16];
@@ -65,14 +67,16 @@ extern const UnicodeString SftpProtocol;
 extern const UnicodeString ScpProtocol;
 extern const UnicodeString FtpProtocol;
 extern const UnicodeString FtpsProtocol;
-extern const UnicodeString WebDAVProtocol;
-extern const UnicodeString WebDAVSProtocol;
-extern const UnicodeString ProtocolSeparator;
+extern const UnicodeString FtpesProtocol;
+#define WebDAVProtocol HttpProtocol
+#define WebDAVSProtocol HttpsProtocol
+extern const UnicodeString SshProtocol;
 extern const UnicodeString WinSCPProtocolPrefix;
 extern const wchar_t UrlParamSeparator;
 extern const wchar_t UrlParamValueSeparator;
 extern const UnicodeString UrlHostKeyParamName;
 extern const UnicodeString UrlSaveParamName;
+extern const UnicodeString PassphraseOption;
 //---------------------------------------------------------------------------
 class TStoredSessionList;
 //---------------------------------------------------------------------------
@@ -105,6 +109,7 @@ private:
   TKex FKex[KEX_COUNT];
   bool FClearAliases;
   TEOLType FEOLType;
+  bool FTrimVMSVersions;
   UnicodeString FPublicKeyFile;
   UnicodeString FPassphrase;
   UnicodeString FPuttyProtocol;
@@ -145,6 +150,7 @@ private:
   UnicodeString FCustomParam1;
   UnicodeString FCustomParam2;
   bool FResolveSymlinks;
+  bool FFollowDirectorySymlinks;
   TDateTime FTimeDifference;
   bool FTimeDifferenceAuto;
   int FSFTPDownloadQueue;
@@ -162,6 +168,7 @@ private:
   TAutoSwitch FFtpListAll;
   TAutoSwitch FFtpHost;
   bool FSslSessionReuse;
+  UnicodeString FTlsCertificateFile;
   TAddressFamily FAddressFamily;
   UnicodeString FRekeyData;
   unsigned int FRekeyTime;
@@ -189,6 +196,7 @@ private:
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FHostKey;
+  bool FFingerprintScan;
   bool FOverrideCachedHostKey;
   UnicodeString FNote;
 
@@ -258,6 +266,7 @@ private:
   void __fastcall SetClearAliases(bool value);
   void __fastcall SetDefaultShell(bool value);
   void __fastcall SetEOLType(TEOLType value);
+  void __fastcall SetTrimVMSVersions(bool value);
   void __fastcall SetLookupUserGroups(TAutoSwitch value);
   void __fastcall SetReturnVar(UnicodeString value);
   void __fastcall SetScp1Compatibility(bool value);
@@ -292,6 +301,7 @@ private:
   void __fastcall SetCustomParam1(UnicodeString value);
   void __fastcall SetCustomParam2(UnicodeString value);
   void __fastcall SetResolveSymlinks(bool value);
+  void __fastcall SetFollowDirectorySymlinks(bool value);
   void __fastcall SetSFTPDownloadQueue(int value);
   void __fastcall SetSFTPUploadQueue(int value);
   void __fastcall SetSFTPListingQueue(int value);
@@ -303,6 +313,7 @@ private:
   void __fastcall SetFtpListAll(TAutoSwitch value);
   void __fastcall SetFtpHost(TAutoSwitch value);
   void __fastcall SetSslSessionReuse(bool value);
+  void __fastcall SetTlsCertificateFile(UnicodeString value);
   UnicodeString __fastcall GetStorageKey();
   UnicodeString __fastcall GetInternalStorageKey();
   UnicodeString __fastcall GetSiteKey();
@@ -342,29 +353,55 @@ private:
   void __fastcall SetHostKey(UnicodeString value);
   void __fastcall SetNote(UnicodeString value);
   TDateTime __fastcall GetTimeoutDT();
-  void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport);
+  void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords);
   UnicodeString __fastcall GetLocalName();
   UnicodeString __fastcall GetFolderName();
   void __fastcall Modify();
   UnicodeString __fastcall GetSource();
   void __fastcall DoLoad(THierarchicalStorage * Storage, bool & RewritePassword);
+  void __fastcall DoSave(THierarchicalStorage * Storage,
+    bool PuttyExport, const TSessionData * Default, bool DoNotEncryptPasswords);
   UnicodeString __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
   int __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, int Default);
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties);
   UnicodeString __fastcall GetNameWithoutHiddenPrefix();
   bool __fastcall HasStateData();
   void __fastcall CopyStateData(TSessionData * SourceData);
+  void __fastcall CopyNonCoreData(TSessionData * SourceData);
+  UnicodeString __fastcall GetNormalizedPuttyProtocol() const;
   static RawByteString __fastcall EncryptPassword(const UnicodeString & Password, UnicodeString Key);
   static UnicodeString __fastcall DecryptPassword(const RawByteString & Password, UnicodeString Key);
   static RawByteString __fastcall StronglyRecryptPassword(const RawByteString & Password, UnicodeString Key);
   static bool __fastcall DoIsProtocolUrl(const UnicodeString & Url, const UnicodeString & Protocol, int & ProtocolLen);
   static bool __fastcall IsProtocolUrl(const UnicodeString & Url, const UnicodeString & Protocol, int & ProtocolLen);
+  static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name, bool Rtf);
+  static void __fastcall AddSwitch(
+    UnicodeString & Result, const UnicodeString & Name, const UnicodeString & Value, bool Rtf);
+  static void __fastcall AddSwitch(UnicodeString & Result, const UnicodeString & Name, int Value, bool Rtf);
+  static void __fastcall AddAssemblyProperty(
+    UnicodeString & Result, TAssemblyLanguage Language,
+    const UnicodeString & Name, const UnicodeString & Value);
+  static void __fastcall AddAssemblyProperty(
+    UnicodeString & Result, TAssemblyLanguage Language,
+    const UnicodeString & Name, const UnicodeString & Type,
+    const UnicodeString & Member);
+  static void __fastcall AddAssemblyProperty(
+    UnicodeString & Result, TAssemblyLanguage Language,
+    const UnicodeString & Name, int Value);
+  void __fastcall AddAssemblyProperty(
+    UnicodeString & Result, TAssemblyLanguage Language,
+    const UnicodeString & Name, bool Value);
+  TStrings * __fastcall SaveToOptions(const TSessionData * Default);
+  template<class AlgoT>
+  void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
+    int Count, AlgoT WarnAlgo, UnicodeString value);
 
   __property UnicodeString InternalStorageKey = { read = GetInternalStorageKey };
 
 public:
   __fastcall TSessionData(UnicodeString aName);
   virtual __fastcall ~TSessionData();
+  TSessionData * __fastcall Clone();
   void __fastcall Default();
   void __fastcall NonPersistant();
   void __fastcall Load(THierarchicalStorage * Storage);
@@ -395,6 +432,10 @@ public:
   bool __fastcall IsSameSite(const TSessionData * Default);
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
+  UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
+  void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
+  void __fastcall LookupLastFingerprint();
+  bool __fastcall IsSecure();
   static void __fastcall ValidatePath(const UnicodeString Path);
   static void __fastcall ValidateName(const UnicodeString Name);
   static UnicodeString __fastcall MakeValidName(const UnicodeString & Name);
@@ -456,6 +497,7 @@ public:
   __property bool DefaultShell = { read = GetDefaultShell, write = SetDefaultShell };
   __property bool DetectReturnVar = { read = GetDetectReturnVar, write = SetDetectReturnVar };
   __property TEOLType EOLType = { read = FEOLType, write = SetEOLType };
+  __property bool TrimVMSVersions = { read = FTrimVMSVersions, write = SetTrimVMSVersions };
   __property TAutoSwitch LookupUserGroups = { read = FLookupUserGroups, write = SetLookupUserGroups };
   __property UnicodeString ReturnVar = { read = FReturnVar, write = SetReturnVar };
   __property bool Scp1Compatibility = { read = FScp1Compatibility, write = SetScp1Compatibility };
@@ -486,6 +528,7 @@ public:
   __property UnicodeString CustomParam2 = { read = FCustomParam2, write = SetCustomParam2 };
   __property UnicodeString SessionKey = { read = GetSessionKey };
   __property bool ResolveSymlinks = { read = FResolveSymlinks, write = SetResolveSymlinks };
+  __property bool FollowDirectorySymlinks = { read = FFollowDirectorySymlinks, write = SetFollowDirectorySymlinks };
   __property int SFTPDownloadQueue = { read = FSFTPDownloadQueue, write = SetSFTPDownloadQueue };
   __property int SFTPUploadQueue = { read = FSFTPUploadQueue, write = SetSFTPUploadQueue };
   __property int SFTPListingQueue = { read = FSFTPListingQueue, write = SetSFTPListingQueue };
@@ -496,6 +539,7 @@ public:
   __property TAutoSwitch FtpListAll = { read = FFtpListAll, write = SetFtpListAll };
   __property TAutoSwitch FtpHost = { read = FFtpHost, write = SetFtpHost };
   __property bool SslSessionReuse = { read = FSslSessionReuse, write = SetSslSessionReuse };
+  __property UnicodeString TlsCertificateFile = { read=FTlsCertificateFile, write=SetTlsCertificateFile };
   __property TDSTMode DSTMode = { read = FDSTMode, write = SetDSTMode };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool OverwrittenToRecycleBin = { read = FOverwrittenToRecycleBin, write = SetOverwrittenToRecycleBin };
@@ -530,6 +574,7 @@ public:
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString HostKey = { read = FHostKey, write = SetHostKey };
+  __property bool FingerprintScan = { read = FFingerprintScan, write = FFingerprintScan };
   __property bool OverrideCachedHostKey = { read = FOverrideCachedHostKey };
   __property UnicodeString Note = { read = FNote, write = SetNote };
   __property UnicodeString StorageKey = { read = GetStorageKey };

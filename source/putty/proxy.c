@@ -142,18 +142,6 @@ static void sk_proxy_flush (Socket s)
     sk_flush(ps->sub_socket);
 }
 
-static void sk_proxy_set_private_ptr (Socket s, void *ptr)
-{
-    Proxy_Socket ps = (Proxy_Socket) s;
-    sk_set_private_ptr(ps->sub_socket, ptr);
-}
-
-static void * sk_proxy_get_private_ptr (Socket s)
-{
-    Proxy_Socket ps = (Proxy_Socket) s;
-    return sk_get_private_ptr(ps->sub_socket);
-}
-
 static void sk_proxy_set_frozen (Socket s, int is_frozen)
 {
     Proxy_Socket ps = (Proxy_Socket) s;
@@ -261,24 +249,26 @@ static void plug_proxy_sent (Plug p, int bufsize)
     plug_sent(ps->plug, bufsize);
 }
 
-static int plug_proxy_accepting (Plug p, OSSocket sock)
+static int plug_proxy_accepting(Plug p,
+                                accept_fn_t constructor, accept_ctx_t ctx)
 {
     Proxy_Plug pp = (Proxy_Plug) p;
     Proxy_Socket ps = pp->proxy_socket;
 
     if (ps->state != PROXY_STATE_ACTIVE) {
-	ps->accepting_sock = sock;
+	ps->accepting_constructor = constructor;
+	ps->accepting_ctx = ctx;
 	return ps->negotiate(ps, PROXY_CHANGE_ACCEPTING);
     }
-    return plug_accepting(ps->plug, sock);
+    return plug_accepting(ps->plug, constructor, ctx);
 }
 
 /*
  * This function can accept a NULL pointer as `addr', in which case
  * it will only check the host name.
  */
-static int proxy_for_destination (SockAddr addr, const char *hostname,
-                                  int port, Conf *conf)
+int proxy_for_destination (SockAddr addr, const char *hostname,
+                           int port, Conf *conf)
 {
     int s = 0, e = 0;
     char hostip[64];
@@ -372,20 +362,45 @@ static int proxy_for_destination (SockAddr addr, const char *hostname,
     return 1;
 }
 
-SockAddr name_lookup(char *host, int port, char **canonicalname,
-		     Conf *conf, int addressfamily)
+static char *dns_log_msg(const char *host, int addressfamily,
+                         const char *reason)
 {
+    return dupprintf("Looking up host \"%s\"%s for %s", host,
+                     (addressfamily == ADDRTYPE_IPV4 ? " (IPv4)" :
+                      addressfamily == ADDRTYPE_IPV6 ? " (IPv6)" :
+                      ""), reason);
+}
+
+SockAddr name_lookup(const char *host, int port, char **canonicalname,
+		     Conf *conf, int addressfamily, void *frontend,
+                     const char *reason)
+{
+    char *logmsg;
     if (conf_get_int(conf, CONF_proxy_type) != PROXY_NONE &&
 	do_proxy_dns(conf) &&
 	proxy_for_destination(NULL, host, port, conf)) {
+
+        if (frontend) {
+            logmsg = dupprintf("Leaving host lookup to proxy of \"%s\""
+                               " (for %s)", host, reason);
+            logevent(frontend, logmsg);
+            sfree(logmsg);
+        }
+
 	*canonicalname = dupstr(host);
 	return sk_nonamelookup(host);
-    }
+    } else {
+        if (frontend) {
+            logmsg = dns_log_msg(host, addressfamily, reason);
+            logevent(frontend, logmsg);
+            sfree(logmsg);
+        }
 
-    return sk_namelookup(host, canonicalname, addressfamily);
+        return sk_namelookup(host, canonicalname, addressfamily);
+    }
 }
 
-Socket new_connection(SockAddr addr, char *hostname,
+Socket new_connection(SockAddr addr, const char *hostname,
 		      int port, int privport,
 		      int oobinline, int nodelay, int keepalive,
 		      Plug plug, Conf *conf)
@@ -397,10 +412,9 @@ Socket new_connection(SockAddr addr, char *hostname,
 	sk_proxy_write_oob,
 	sk_proxy_write_eof,
 	sk_proxy_flush,
-	sk_proxy_set_private_ptr,
-	sk_proxy_get_private_ptr,
 	sk_proxy_set_frozen,
-	sk_proxy_socket_error
+	sk_proxy_socket_error,
+        NULL, /* peer_info */
     };
 
     static const struct plug_function_table plug_fn_table = {
@@ -418,6 +432,7 @@ Socket new_connection(SockAddr addr, char *hostname,
 	Proxy_Plug pplug;
 	SockAddr proxy_addr;
 	char *proxy_canonical_name;
+        const char *proxy_type;
 	Socket sret;
 	int type;
 
@@ -450,22 +465,44 @@ Socket new_connection(SockAddr addr, char *hostname,
 	type = conf_get_int(conf, CONF_proxy_type);
 	if (type == PROXY_HTTP) {
 	    ret->negotiate = proxy_http_negotiate;
+            proxy_type = "HTTP";
 	} else if (type == PROXY_SOCKS4) {
             ret->negotiate = proxy_socks4_negotiate;
+            proxy_type = "SOCKS 4";
 	} else if (type == PROXY_SOCKS5) {
             ret->negotiate = proxy_socks5_negotiate;
+            proxy_type = "SOCKS 5";
 	} else if (type == PROXY_TELNET) {
 	    ret->negotiate = proxy_telnet_negotiate;
+            proxy_type = "Telnet";
 	} else {
 	    ret->error = "Proxy error: Unknown proxy method";
 	    return (Socket) ret;
 	}
+
+        {
+            char *logmsg = dupprintf("Will use %s proxy at %s:%d to connect"
+                                      " to %s:%d", proxy_type,
+                                      conf_get_str(conf, CONF_proxy_host),
+                                      conf_get_int(conf, CONF_proxy_port),
+                                      hostname, port);
+            plug_log(plug, 2, NULL, 0, logmsg, 0);
+            sfree(logmsg);
+        }
 
 	/* create the proxy plug to map calls from the actual
 	 * socket into our proxy socket layer */
 	pplug = snew(struct Plug_proxy_tag);
 	pplug->fn = &plug_fn_table;
 	pplug->proxy_socket = ret;
+
+        {
+            char *logmsg = dns_log_msg(conf_get_str(conf, CONF_proxy_host),
+                                       conf_get_int(conf, CONF_addressfamily),
+                                       "proxy");
+            plug_log(plug, 2, NULL, 0, logmsg, 0);
+            sfree(logmsg);
+        }
 
 	/* look-up proxy */
 	proxy_addr = sk_namelookup(conf_get_str(conf, CONF_proxy_host),
@@ -478,6 +515,16 @@ Socket new_connection(SockAddr addr, char *hostname,
 	    return (Socket)ret;
 	}
 	sfree(proxy_canonical_name);
+
+        {
+            char addrbuf[256], *logmsg;
+            sk_getaddr(addr, addrbuf, lenof(addrbuf));
+            logmsg = dupprintf("Connecting to %s proxy at %s port %d",
+                               proxy_type, addrbuf,
+                               conf_get_int(conf, CONF_proxy_port));
+            plug_log(plug, 2, NULL, 0, logmsg, 0);
+            sfree(logmsg);
+        }
 
 	/* create the actual socket we will be using,
 	 * connected to our proxy server and port.
@@ -508,8 +555,8 @@ Socket new_connection(SockAddr addr, char *hostname,
       );
 }
 
-Socket new_listener(char *srcaddr, int port, Plug plug, int local_host_only,
-		    Conf *conf, int addressfamily)
+Socket new_listener(const char *srcaddr, int port, Plug plug,
+                    int local_host_only, Conf *conf, int addressfamily)
 {
     /* TODO: SOCKS (and potentially others) support inbound
      * TODO: connections via the proxy. support them.
@@ -625,7 +672,8 @@ int proxy_http_negotiate (Proxy_Socket p, int change)
 	 * what should we do? close the socket with an appropriate
 	 * error message?
 	 */
-	return plug_accepting(p->plug, p->accepting_sock);
+	return plug_accepting(p->plug,
+                              p->accepting_constructor, p->accepting_ctx);
     }
 
     if (change == PROXY_CHANGE_RECEIVE) {
@@ -827,7 +875,8 @@ int proxy_socks4_negotiate (Proxy_Socket p, int change)
 	 * what should we do? close the socket with an appropriate
 	 * error message?
 	 */
-	return plug_accepting(p->plug, p->accepting_sock);
+	return plug_accepting(p->plug,
+                              p->accepting_constructor, p->accepting_ctx);
     }
 
     if (change == PROXY_CHANGE_RECEIVE) {
@@ -966,7 +1015,8 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
 	 * what should we do? close the socket with an appropriate
 	 * error message?
 	 */
-	return plug_accepting(p->plug, p->accepting_sock);
+	return plug_accepting(p->plug,
+                              p->accepting_constructor, p->accepting_ctx);
     }
 
     if (change == PROXY_CHANGE_RECEIVE) {
@@ -1204,9 +1254,11 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
 		char userpwbuf[255 + 255 + 3];
 		int ulen, plen;
 		ulen = strlen(username);
-		if (ulen > 255) ulen = 255; if (ulen < 1) ulen = 1;
+		if (ulen > 255) ulen = 255;
+		if (ulen < 1) ulen = 1;
 		plen = strlen(password);
-		if (plen > 255) plen = 255; if (plen < 1) plen = 1;
+		if (plen > 255) plen = 255;
+		if (plen < 1) plen = 1;
 		userpwbuf[0] = 1;      /* version number of subnegotiation */
 		userpwbuf[1] = ulen;
 		memcpy(userpwbuf+2, username, ulen);
@@ -1470,6 +1522,39 @@ int proxy_telnet_negotiate (Proxy_Socket p, int change)
 	formatted_cmd = format_telnet_command(p->remote_addr, p->remote_port,
 					      p->conf);
 
+        {
+            /*
+             * Re-escape control chars in the command, for logging.
+             */
+            char *reescaped = snewn(4*strlen(formatted_cmd) + 1, char);
+            const char *in;
+            char *out;
+            char *logmsg;
+
+            for (in = formatted_cmd, out = reescaped; *in; in++) {
+                if (*in == '\n') {
+                    *out++ = '\\'; *out++ = 'n';
+                } else if (*in == '\r') {
+                    *out++ = '\\'; *out++ = 'r';
+                } else if (*in == '\t') {
+                    *out++ = '\\'; *out++ = 't';
+                } else if (*in == '\\') {
+                    *out++ = '\\'; *out++ = '\\';
+                } else if ((unsigned)(((unsigned char)*in) - 0x20) <
+                           (0x7F-0x20)) {
+                    *out++ = *in;
+                } else {
+                    out += sprintf(out, "\\x%02X", (unsigned)*in & 0xFF);
+                }
+            }
+            *out = '\0';
+
+            logmsg = dupprintf("Sending Telnet proxy command: %s", reescaped);
+            plug_log(p->plug, 2, NULL, 0, logmsg, 0);
+            sfree(logmsg);
+            sfree(reescaped);
+        }
+
 	sk_write(p->sub_socket, formatted_cmd, strlen(formatted_cmd));
 	sfree(formatted_cmd);
 
@@ -1504,7 +1589,8 @@ int proxy_telnet_negotiate (Proxy_Socket p, int change)
 	 * what should we do? close the socket with an appropriate
 	 * error message?
 	 */
-	return plug_accepting(p->plug, p->accepting_sock);
+	return plug_accepting(p->plug,
+                              p->accepting_constructor, p->accepting_ctx);
     }
 
     if (change == PROXY_CHANGE_RECEIVE) {

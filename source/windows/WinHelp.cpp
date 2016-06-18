@@ -36,14 +36,14 @@ void __fastcall SearchHelp(const UnicodeString & Message)
   // Message goes last, as it may exceed URL parameters limit (2048) and get truncated.
   // And we need to preserve the other parameters.
   OpenBrowser(FMTLOAD(DOCUMENTATION_SEARCH_URL3,
-    (Configuration->ProductVersion, IntToHex(__int64(GUIConfiguration->Locale), 4),
+    (Configuration->ProductVersion, GUIConfiguration->LocaleHex,
      EncodeUrlString(Message))));
 }
 //---------------------------------------------------------------------------
 void __fastcall InitializeWinHelp()
 {
   InitializeCustomHelp(new TWebHelpSystem(
-      Configuration->ProductVersion, IntToHex(__int64(GUIConfiguration->Locale), 4)));
+      Configuration->ProductVersion, GUIConfiguration->LocaleHex));
 }
 //---------------------------------------------------------------------------
 void __fastcall FinalizeWinHelp()
@@ -99,11 +99,12 @@ void __fastcall TWebHelpSystem::ShowTableOfContents()
 //---------------------------------------------------------------------------
 void __fastcall TWebHelpSystem::ShowHelp(const UnicodeString AHelpString)
 {
-  // see also CampaignUrl
-  UnicodeString HelpString = AHelpString;
-  const wchar_t FragmentSeparator = L'#';
-  UnicodeString HelpPath = CutToChar(HelpString, FragmentSeparator, false);
-  UnicodeString HelpUrl = FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpPath, FVersion, FLanguage));
-  AddToList(HelpUrl, HelpString, FragmentSeparator);
-  OpenBrowser(HelpUrl);
+  if (IsHttpOrHttpsUrl(AHelpString))
+  {
+    OpenBrowser(AHelpString);
+  }
+  else
+  {
+    ::ShowHelp(AHelpString);
+  }
 }

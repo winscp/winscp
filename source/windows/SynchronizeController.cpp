@@ -29,7 +29,7 @@ __fastcall TSynchronizeController::TSynchronizeController(
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeController::~TSynchronizeController()
 {
-  assert(FSynchronizeMonitor == NULL);
+  DebugAssert(FSynchronizeMonitor == NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::StartStop(TObject * Sender,
@@ -44,7 +44,7 @@ void __fastcall TSynchronizeController::StartStop(TObject * Sender,
 
     try
     {
-      assert(OnSynchronizeLog != NULL);
+      DebugAssert(OnSynchronizeLog != NULL);
       FSynchronizeLog = OnSynchronizeLog;
 
       FOptions = Options;
@@ -59,7 +59,7 @@ void __fastcall TSynchronizeController::StartStop(TObject * Sender,
       FCopyParam = CopyParam;
       FSynchronizeParams = Params;
 
-      assert(OnAbort);
+      DebugAssert(OnAbort);
       FSynchronizeAbort = OnAbort;
 
       if (FLAGSET(FSynchronizeParams.Options, soRecurse))
@@ -118,7 +118,7 @@ void __fastcall TSynchronizeController::SynchronizeChange(
 
     UnicodeString LocalDirectory = IncludeTrailingBackslash(Directory);
 
-    assert(LocalDirectory.SubString(1, RootLocalDirectory.Length()) ==
+    DebugAssert(LocalDirectory.SubString(1, RootLocalDirectory.Length()) ==
       RootLocalDirectory);
     RemoteDirectory = RemoteDirectory +
       ToUnixPath(LocalDirectory.SubString(RootLocalDirectory.Length() + 1,
@@ -143,7 +143,7 @@ void __fastcall TSynchronizeController::SynchronizeChange(
           if (FLAGSET(FSynchronizeParams.Options, soRecurse))
           {
             SubdirsChanged = false;
-            assert(Checklist != NULL);
+            DebugAssert(Checklist != NULL);
             for (int Index = 0; Index < Checklist->Count; Index++)
             {
               const TSynchronizeChecklist::TItem * Item = Checklist->Item[Index];
@@ -159,7 +159,7 @@ void __fastcall TSynchronizeController::SynchronizeChange(
                 }
                 else
                 {
-                  FAIL;
+                  DebugFail();
                 }
               }
             }
@@ -188,7 +188,7 @@ void __fastcall TSynchronizeController::SynchronizeAbort(bool Close)
   {
     FSynchronizeMonitor->Close();
   }
-  assert(FSynchronizeAbort);
+  DebugAssert(FSynchronizeAbort);
   FSynchronizeAbort(NULL, Close);
 }
 //---------------------------------------------------------------------------
@@ -205,7 +205,7 @@ void __fastcall TSynchronizeController::LogOperation(TSynchronizeOperation Opera
       break;
 
     default:
-      FAIL;
+      DebugFail();
       // fallthru
 
     case soUpload:
@@ -238,6 +238,7 @@ void __fastcall TSynchronizeController::SynchronizeFilter(TObject * /*Sender*/,
     }
   }
   TFileMasks::TParams MaskParams; // size/time does not matter for directories
+  // Missing call to GetBaseFileName
   Add = Add && FCopyParam.AllowTransfer(DirectoryName, osLocal, true, MaskParams);
 }
 //---------------------------------------------------------------------------

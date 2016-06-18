@@ -32,6 +32,7 @@ private:
   void __fastcall SetCount(int value);
 protected:
   int FHiddenCount;
+  bool FControlledAdd;
   void __fastcall Recount();
 public:
   static const UnicodeString HiddenPrefix;
@@ -40,6 +41,7 @@ public:
 
   __fastcall TNamedObjectList();
   void __fastcall AlphaSort();
+  int __fastcall Add(TObject * AObject);
   virtual TNamedObject * __fastcall AtObject(Integer Index);
   TNamedObject * __fastcall FindByName(const UnicodeString & Name);
   __property int Count = { read = GetCount, write = SetCount };

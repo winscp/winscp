@@ -29,9 +29,7 @@ __published:
   TPageControl *PageControl;
   TTabSheet *AdvancedSheet;
   TGroupBox *ProtocolGroup;
-  TLabel *Label7;
-  TRadioButton *SshProt1Button;
-  TRadioButton *SshProt2Button;
+  TLabel *Label37;
   TCheckBox *CompressionCheck;
   TTabSheet *EnvironmentSheet;
   TTabSheet *ScpSheet;
@@ -76,8 +74,6 @@ __published:
   TComboBox *BugDeriveKey2Combo;
   TLabel *BugRSAPad2Label;
   TComboBox *BugRSAPad2Combo;
-  TRadioButton *SshProt1onlyButton;
-  TRadioButton *SshProt2onlyButton;
   TTabSheet *AuthSheet;
   TGroupBox *AuthenticationGroup;
   TCheckBox *AuthTISCheck;
@@ -252,6 +248,12 @@ __published:
   TCheckBox *TimeDifferenceAutoCheck;
   TLabel *Label3;
   TComboBox *FtpHostCombo;
+  TGroupBox *TlsAuthenticationGroup;
+  TLabel *Label4;
+  TFilenameEdit *TlsCertificateFileEdit;
+  TCheckBox *TrimVMSVersionsCheck;
+  TComboBox *SshProtCombo2;
+  TCheckBox *FollowDirectorySymlinksCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -270,6 +272,8 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall PathEditBeforeDialog(TObject *Sender, UnicodeString &Name,
     bool &Action);
+  void __fastcall PathEditAfterDialog(TObject * Sender,
+    UnicodeString & Name, bool & Action);
   void __fastcall NavigationTreeCollapsing(TObject *Sender,
     TTreeNode *Node, bool &AllowCollapse);
   void __fastcall ProxyLocalCommandBrowseButtonClick(TObject *Sender);
@@ -280,10 +284,12 @@ __published:
   void __fastcall MaxTlsVersionComboChange(TObject *Sender);
   void __fastcall ProxyAutodetectButtonClick(TObject *Sender);
   void __fastcall NoteMemoKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall TlsCertificateFileEditAfterDialog(TObject *Sender, UnicodeString &Name,
+          bool &Action);
 
 
 public:
-  virtual __fastcall TSiteAdvancedDialog(TComponent * AOwner, int Options);
+  virtual __fastcall TSiteAdvancedDialog(TComponent * AOwner);
   bool __fastcall Execute(TSessionData * SessionData);
 
 protected:

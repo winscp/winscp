@@ -50,9 +50,18 @@ static const unsigned char P14[] = {
  */
 static const unsigned char G[] = { 2 };
 
+struct dh_extra {
+    const unsigned char *pdata, *gdata; /* NULL means group exchange */
+    int plen, glen;
+};
+
+static const struct dh_extra extra_group1 = {
+    P1, G, lenof(P1), lenof(G),
+};
+
 static const struct ssh_kex ssh_diffiehellman_group1_sha1 = {
     "diffie-hellman-group1-sha1", "group1",
-    KEXTYPE_DH, P1, G, lenof(P1), lenof(G), &ssh_sha1
+    KEXTYPE_DH, &ssh_sha1, &extra_group1,
 };
 
 static const struct ssh_kex *const group1_list[] = {
@@ -64,9 +73,13 @@ const struct ssh_kexes ssh_diffiehellman_group1 = {
     group1_list
 };
 
+static const struct dh_extra extra_group14 = {
+    P14, G, lenof(P14), lenof(G),
+};
+
 static const struct ssh_kex ssh_diffiehellman_group14_sha1 = {
     "diffie-hellman-group14-sha1", "group14",
-    KEXTYPE_DH, P14, G, lenof(P14), lenof(G), &ssh_sha1
+    KEXTYPE_DH, &ssh_sha1, &extra_group14,
 };
 
 static const struct ssh_kex *const group14_list[] = {
@@ -78,14 +91,18 @@ const struct ssh_kexes ssh_diffiehellman_group14 = {
     group14_list
 };
 
+static const struct dh_extra extra_gex = {
+    NULL, NULL, 0, 0,
+};
+
 static const struct ssh_kex ssh_diffiehellman_gex_sha256 = {
     "diffie-hellman-group-exchange-sha256", NULL,
-    KEXTYPE_DH, NULL, NULL, 0, 0, &ssh_sha256
+    KEXTYPE_DH, &ssh_sha256, &extra_gex,
 };
 
 static const struct ssh_kex ssh_diffiehellman_gex_sha1 = {
     "diffie-hellman-group-exchange-sha1", NULL,
-    KEXTYPE_DH, NULL, NULL, 0, 0, &ssh_sha1
+    KEXTYPE_DH, &ssh_sha1, &extra_gex,
 };
 
 static const struct ssh_kex *const gex_list[] = {
@@ -115,14 +132,21 @@ static void dh_init(struct dh_ctx *ctx)
     ctx->x = ctx->e = NULL;
 }
 
+int dh_is_gex(const struct ssh_kex *kex)
+{
+    const struct dh_extra *extra = (const struct dh_extra *)kex->extra;
+    return extra->pdata == NULL;
+}
+
 /*
  * Initialise DH for a standard group.
  */
 void *dh_setup_group(const struct ssh_kex *kex)
 {
+    const struct dh_extra *extra = (const struct dh_extra *)kex->extra;
     struct dh_ctx *ctx = snew(struct dh_ctx);
-    ctx->p = bignum_from_bytes(kex->pdata, kex->plen);
-    ctx->g = bignum_from_bytes(kex->gdata, kex->glen);
+    ctx->p = bignum_from_bytes(extra->pdata, extra->plen);
+    ctx->g = bignum_from_bytes(extra->gdata, extra->glen);
     dh_init(ctx);
     return ctx;
 }

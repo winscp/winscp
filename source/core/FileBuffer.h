@@ -4,6 +4,7 @@
 
 #include <classes.hpp>
 //---------------------------------------------------------------------------
+extern const wchar_t * EOLTypeNames;
 enum TEOLType { eolLF /* \n */, eolCRLF /* \r\n */, eolCR /* \r */ };
 const int cpRemoveCtrlZ = 0x01;
 const int cpRemoveBOM =   0x02;

@@ -81,6 +81,9 @@ public:
   virtual bool __fastcall GetStoredCredentialsTried();
   virtual UnicodeString __fastcall GetUserName();
   virtual void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
+  virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File);
+  virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
+  virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem);
 
 protected:
   TSecureShell * FSecureShell;
@@ -131,12 +134,12 @@ protected:
   void __fastcall ReserveResponse(const TSFTPPacket * Packet,
     TSFTPPacket * Response);
   int __fastcall ReceivePacket(TSFTPPacket * Packet, int ExpectedType = -1,
-    int AllowStatus = -1);
+    int AllowStatus = -1, bool TryOnly = false);
   bool __fastcall PeekPacket();
   void __fastcall RemoveReservation(int Reservation);
   void __fastcall SendPacket(const TSFTPPacket * Packet);
   int __fastcall ReceiveResponse(const TSFTPPacket * Packet,
-    TSFTPPacket * Response, int ExpectedType = -1, int AllowStatus = -1);
+    TSFTPPacket * Response, int ExpectedType = -1, int AllowStatus = -1, bool TryOnly = false);
   int __fastcall SendPacketAndReceiveResponse(const TSFTPPacket * Packet,
     TSFTPPacket * Response, int ExpectedType = -1, int AllowStatus = -1);
   void __fastcall UnreserveResponse(TSFTPPacket * Response);

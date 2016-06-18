@@ -19,7 +19,8 @@ enum TFSCommand { fsNull = 0, fsVarValue, fsLastLine, fsFirstLine,
   fsListFile, fsLookupUsersGroups, fsCopyToRemote, fsCopyToLocal, fsDeleteFile,
   fsRenameFile, fsCreateDirectory, fsChangeMode, fsChangeGroup, fsChangeOwner,
   fsHomeDirectory, fsUnset, fsUnalias, fsCreateLink, fsCopyFile,
-  fsAnyCommand, fsLang, fsReadSymlink, fsChangeProperties, fsMoveFile };
+  fsAnyCommand, fsLang, fsReadSymlink, fsChangeProperties, fsMoveFile,
+  fsLock };
 //---------------------------------------------------------------------------
 const int dfNoRecursive = 0x01;
 const int dfAlternative = 0x02;
@@ -86,6 +87,9 @@ public:
   virtual bool __fastcall GetStoredCredentialsTried() = 0;
   virtual UnicodeString __fastcall GetUserName() = 0;
   virtual void __fastcall GetSupportedChecksumAlgs(TStrings * Algs) = 0;
+  virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File) = 0;
+  virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File) = 0;
+  virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem) = 0;
 
   __property UnicodeString CurrentDirectory = { read = GetCurrentDirectory };
 

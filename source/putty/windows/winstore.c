@@ -3,9 +3,25 @@
  * defined in storage.h.
  */
 
+#ifdef MPEXT
+
+#include "puttyexp.h"
+
+#pragma option push -w-dup
+#define RegOpenKey reg_open_winscp_key
+#define RegCreateKey reg_create_winscp_key
+#define RegCreateKey reg_create_winscp_key
+#define RegQueryValueEx reg_query_winscp_value_ex
+#define RegSetValueEx reg_set_winscp_value_ex
+#define RegCloseKey reg_close_winscp_key
+#pragma option pop
+
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <assert.h>
 #include "putty.h"
 #include "storage.h"
 
@@ -25,7 +41,7 @@ static const char hex[16] = "0123456789ABCDEF";
 
 static int tried_shgetfolderpath = FALSE;
 static HMODULE shell32_module = NULL;
-DECL_WINDOWS_FUNCTION(static, HRESULT, SHGetFolderPathA, 
+DECL_WINDOWS_FUNCTION(static, HRESULT, SHGetFolderPathA,
 		      (HWND, int, HANDLE, DWORD, LPSTR));
 
 static void mungestr(const char *in, char *out)
@@ -152,7 +168,7 @@ void *open_settings_r(const char *sessionname)
 
 char *read_setting_s(void *handle, const char *key)
 {
-    DWORD type, size;
+    DWORD type, allocsize, size;
     char *ret;
 
     if (!handle)
@@ -164,13 +180,17 @@ char *read_setting_s(void *handle, const char *key)
 	type != REG_SZ)
 	return NULL;
 
-    ret = snewn(size+1, char);
+    allocsize = size+1;         /* allow for an extra NUL if needed */
+    ret = snewn(allocsize, char);
     if (RegQueryValueEx((HKEY) handle, key, 0,
 			&type, ret, &size) != ERROR_SUCCESS ||
 	type != REG_SZ) {
         sfree(ret);
         return NULL;
     }
+    assert(size < allocsize);
+    ret[size] = '\0'; /* add an extra NUL in case RegQueryValueEx
+                       * didn't supply one */
 
     return ret;
 }
@@ -471,6 +491,18 @@ int verify_host_key(const char *hostname, int port,
 	return 0;		       /* key matched OK in registry */
 }
 
+#ifndef MPEXT
+int have_ssh_host_key(const char *hostname, int port,
+		      const char *keytype)
+{
+    /*
+     * If we have a host key, verify_host_key will return 0 or 2.
+     * If we don't have one, it'll return 1.
+     */
+    return verify_host_key(hostname, port, keytype, "") != 1;
+}
+#endif
+
 void store_host_key(const char *hostname, int port,
 		    const char *keytype, const char *key)
 {
@@ -527,7 +559,7 @@ static HANDLE access_random_seed(int action)
     /*
      * Iterate over a selection of possible random seed paths until
      * we find one that works.
-     * 
+     *
      * We do this iteration separately for reading and writing,
      * meaning that we will automatically migrate random seed files
      * if a better location becomes available (by reading from the
@@ -664,7 +696,7 @@ static int transform_jumplist_registry
     int ret;
     HKEY pjumplist_key, psettings_tmp;
     DWORD type;
-    int value_length;
+    DWORD value_length;
     char *old_value, *new_value;
     char *piterator_old, *piterator_new, *piterator_tmp;
 
@@ -888,3 +920,17 @@ void cleanup_all(void)
      * Now we're done.
      */
 }
+
+#ifdef MPEXT
+
+void putty_mungestr(const char *in, char *out)
+{
+  mungestr(in, out);
+}
+
+void putty_unmungestr(const char *in, char *out, int outlen)
+{
+  unmungestr(in, out, outlen);
+}
+
+#endif

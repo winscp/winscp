@@ -387,7 +387,7 @@ void __fastcall AES256EncyptWithMAC(RawByteString Input, UnicodeString Password,
   {
     Salt = AES256Salt();
   }
-  assert(Salt.Length() == SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
+  DebugAssert(Salt.Length() == SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
   UTF8String UtfPassword = Password;
   fcrypt_init(PASSWORD_MANAGER_AES_MODE,
     reinterpret_cast<const unsigned char *>(UtfPassword.c_str()), UtfPassword.Length(),
@@ -413,7 +413,7 @@ bool __fastcall AES256DecryptWithMAC(RawByteString Input, UnicodeString Password
   RawByteString Salt, RawByteString & Output, RawByteString Mac)
 {
   fcrypt_ctx aes;
-  assert(Salt.Length() == SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
+  DebugAssert(Salt.Length() == SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
   UTF8String UtfPassword = Password;
   fcrypt_init(PASSWORD_MANAGER_AES_MODE,
     reinterpret_cast<const unsigned char *>(UtfPassword.c_str()), UtfPassword.Length(),
@@ -423,7 +423,7 @@ bool __fastcall AES256DecryptWithMAC(RawByteString Input, UnicodeString Password
   fcrypt_decrypt(reinterpret_cast<unsigned char *>(Output.c_str()), Output.Length(), &aes);
   RawByteString Mac2;
   Mac2.SetLength(MAC_LENGTH(PASSWORD_MANAGER_AES_MODE));
-  assert(Mac.Length() == Mac2.Length());
+  DebugAssert(Mac.Length() == Mac2.Length());
   fcrypt_end(reinterpret_cast<unsigned char *>(Mac2.c_str()), &aes);
   return (Mac2 == Mac);
 }
@@ -470,7 +470,7 @@ bool __fastcall AES256Verify(UnicodeString Input, RawByteString Verifier)
   RawByteString Mac2;
   AES256EncyptWithMAC(Dummy, Input, Salt, Encrypted, Mac2);
 
-  assert(Mac2.Length() == Mac.Length());
+  DebugAssert(Mac2.Length() == Mac.Length());
 
   return (Mac == Mac2);
 }
@@ -567,7 +567,7 @@ bool __fastcall UnscramblePassword(RawByteString Scrambled, UnicodeString & Pass
   }
   if (Result)
   {
-    Password = UTF8String(Scrambled.c_str(), Scrambled.Length());
+    Password = UTF8ToString(Scrambled);
   }
   else
   {

@@ -385,6 +385,7 @@ type
     property OnHistoryChange;
     property OnHistoryGo;
     property OnPathChange;
+    property OnBusy;
 
     property ColumnClick;
     property MultiSelect;
@@ -751,7 +752,9 @@ begin
   begin
     Result := UserDocumentDirectory;
     if IsUNCPath(Result) then
+    begin
       Result := AnyValidPath;
+    end;
   end;
 end; { GetHomeDirectory }
 
@@ -2853,7 +2856,7 @@ begin
     OperandFrom.Clear;
     OperandTo.Clear;
     OperandFrom.Add(ItemFullFileName(Item));
-    OperandTo.Add(fPath + '\' + HItem.pszText);
+    OperandTo.Add(FPath + '\' + HItem.pszText);
   end;
 
   try
@@ -3081,18 +3084,28 @@ procedure TDirView.DDChooseEffect(grfKeyState: Integer;
 begin
   if DragDropFilesEx.OwnerIsSource and
      (dwEffect = DropEffect_Copy) and (not Assigned(DropTarget)) then
-        dwEffect := DropEffect_None
+  begin
+    dwEffect := DropEffect_None
+  end
     else
   if (grfKeyState and (MK_CONTROL or MK_SHIFT) = 0) then
   begin
     if ExeDrag and (Path[1] >= FirstFixedDrive) and
-      (DragDrive >= FirstFixedDrive) then dwEffect := DropEffect_Link
+      (DragDrive >= FirstFixedDrive) then
+    begin
+      dwEffect := DropEffect_Link
+    end
       else
-    if DragOnDriveIsMove and
-       (not DDOwnerIsSource or Assigned(DropTarget)) and
-       (((DragDrive = Upcase(Path[1])) and (dwEffect = DropEffect_Copy) and
-       (DragDropFilesEx.AvailableDropEffects and DropEffect_Move <> 0))
-         or IsRecycleBin) then dwEffect := DropEffect_Move;
+    begin
+      if DragOnDriveIsMove and
+         (not DDOwnerIsSource or Assigned(DropTarget)) and
+         (((DragDrive = Upcase(Path[1])) and (dwEffect = DropEffect_Copy) and
+         (DragDropFilesEx.AvailableDropEffects and DropEffect_Move <> 0))
+           or IsRecycleBin) then
+      begin
+        dwEffect := DropEffect_Move;
+      end;
+    end;
   end;
 
   inherited;

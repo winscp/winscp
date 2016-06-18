@@ -53,7 +53,7 @@ public:
   virtual __fastcall ~TScript();
 
   void __fastcall Command(UnicodeString Cmd);
-  void __fastcall Log(TLogLineType Type, AnsiString Str);
+  void __fastcall Log(TLogLineType Type, UnicodeString Str);
   void __fastcall PrintLine(const UnicodeString Str);
   void __fastcall StartInteractive();
 
@@ -115,12 +115,14 @@ protected:
     fltDefault =     0x00,
     fltDirectories = 0x01,
     fltQueryServer = 0x02,
-    fltMask =        0x04
+    fltMask =        0x04,
+    fltLatest =      0x08
   };
   TStrings * __fastcall CreateFileList(TScriptProcParams * Parameters, int Start,
     int End, TFileListType ListType = fltDefault);
   TStrings * __fastcall CreateLocalFileList(TScriptProcParams * Parameters,
     int Start, int End, TFileListType ListType);
+  void __fastcall FreeFiles(TStrings * FileList);
   void __fastcall FreeFileList(TStrings * FileList);
   void __fastcall LogPendingLines(TTerminal * ATerminal);
 
@@ -173,6 +175,7 @@ private:
   bool __fastcall HasNonDefaultCopyParams();
   void __fastcall CheckDefaultSynchronizeParams();
   void __fastcall NotSupported();
+  void __fastcall CheckMultiFilesToOne(TStrings * FileList, const UnicodeString & Target, bool Unix);
   void __fastcall LogOption(const UnicodeString & LogStr);
 };
 //---------------------------------------------------------------------------
@@ -188,6 +191,8 @@ public:
 
   void __fastcall Connect(const UnicodeString Session, TOptions * Options, bool CheckParams);
   void __fastcall ReflectSettings();
+
+  void __fastcall MaskPasswordInCommandLine(UnicodeString & Command, bool Recurse);
 
   __property TScriptInputEvent OnInput = { read = FOnInput, write = FOnInput };
   __property TScriptQueryCancelEvent OnQueryCancel = { read = FOnQueryCancel, write = FOnQueryCancel };
@@ -238,6 +243,8 @@ protected:
   inline void __fastcall ShowPendingProgress();
   virtual UnicodeString __fastcall GetLogCmd(const UnicodeString & FullCommand,
     const UnicodeString & Command, const UnicodeString & Params);
+  UnicodeString __fastcall MaskPasswordInCommand(const UnicodeString & FullCommand,
+    const UnicodeString & Command);
 
   void __fastcall ExitProc(TScriptProcParams * Parameters);
   void __fastcall OpenProc(TScriptProcParams * Parameters);

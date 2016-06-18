@@ -8,6 +8,13 @@
 #include <Forms.hpp>
 #include "PathLabel.hpp"
 #include <ExtCtrls.hpp>
+#include "PngImageList.hpp"
+#include "TB2Dock.hpp"
+#include "TB2Item.hpp"
+#include "TB2Toolbar.hpp"
+#include "TBX.hpp"
+#include <Vcl.ImgList.hpp>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TSynchronizeProgressForm : public TForm
 {
@@ -20,12 +27,22 @@ __published:
   TLabel *Label4;
   TLabel *Label3;
   TLabel *TimeElapsedLabel;
-  TButton *CancelButton;
   TTimer *UpdateTimer;
-  TButton *MinimizeButton;
-  void __fastcall CancelButtonClick(TObject *Sender);
+  TPngImageList *ImageList;
+  TPanel *ToolbarPanel;
+  TTBXDock *Dock;
+  TTBXToolbar *Toolbar;
+  TTBXItem *CancelItem;
+  TTBXItem *MinimizeItem;
+  TPaintBox *AnimationPaintBox;
+  TPanel *ComponentsPanel;
+  TPngImageList *ImageList120;
+  TPngImageList *ImageList144;
+  TPngImageList *ImageList192;
   void __fastcall UpdateTimerTimer(TObject *Sender);
-  void __fastcall MinimizeButtonClick(TObject *Sender);
+  void __fastcall MinimizeItemClick(TObject *Sender);
+  void __fastcall CancelItemClick(TObject *Sender);
+  void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 
 public:
   __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize,
@@ -49,6 +66,7 @@ private:
   void * FShowAsModalStorage;
   bool FMinimizedByMe;
   bool FCompareOnly;
+  TFrameAnimation FFrameAnimation;
 
   void __fastcall UpdateControls();
   void __fastcall GlobalMinimize(TObject * Sender);

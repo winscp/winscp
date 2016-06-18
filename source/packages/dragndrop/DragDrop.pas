@@ -1637,8 +1637,10 @@ begin
               if LOWORD(wParam)<>SB_ENDSCROLL then FTargetScrolling:=FTargetScrolling or 1
               else FTargetScrolling:=FTargetScrolling and not 1;
             WM_VSCROLL:
-              if LOWORD(wParam)<>SB_ENDSCROLL then FTargetScrolling:=FTargetScrolling or 2
-              else FTargetScrolling:=FTargetScrolling and not 2;
+              begin
+                if LOWORD(wParam)<>SB_ENDSCROLL then FTargetScrolling:=FTargetScrolling or 2
+                else FTargetScrolling:=FTargetScrolling and not 2;
+              end;
             WM_MOUSEMOVE:
               if (MouseHookHandle<>0) and (wParam and (MK_LBUTTON or MK_RBUTTON)=0) then
               begin

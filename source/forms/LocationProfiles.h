@@ -53,6 +53,9 @@ __published:
   TButton *DownSharedBookmarkButton;
   TButton *ShortCutSharedBookmarkButton;
   TImage *Image;
+  TPngImageList *BookmarkImageList120;
+  TPngImageList *BookmarkImageList144;
+  TPngImageList *BookmarkImageList192;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall AddBookmarkButtonClick(TObject *Sender);
   void __fastcall RemoveBookmarkButtonClick(TObject *Sender);

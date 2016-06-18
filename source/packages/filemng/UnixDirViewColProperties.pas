@@ -41,8 +41,6 @@ type
   public
     constructor Create(DirView: TCustomListView);
   published
-    property MaxWidth;
-    property MinWidth;
     property SortAscending;
 
     property SortDirColumn: TUnixDirViewCol read GetSortDirColumn write SetSortDirColumn default uvName;
@@ -91,7 +89,7 @@ type
     property TypeWidth: Integer index uvType read GetWidths write SetWidths stored StoreWidth;
     property TypeVisible: Boolean index uvType read GetVisible write SetVisible default True;
     property TypeAlignment: TAlignment index uvType read GetAlignments write SetAlignments stored StoreAlignment;
-  end; { TDirViewColProperties }
+  end; { TUnixDirViewColProperties }
 
 
 implementation

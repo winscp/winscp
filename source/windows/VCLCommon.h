@@ -13,20 +13,21 @@ void __fastcall FixListColumnWidth(TListView * TListView, int Index);
 void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrinkIndex = -1);
 void __fastcall EnableControl(TControl* Control, bool Enable);
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly = true);
+void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, bool Enabled);
 void __fastcall InitializeSystemSettings();
 void __fastcall FinalizeSystemSettings();
 void __fastcall LocalSystemSettings(TCustomForm * Control);
-void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings = NULL);
-void __fastcall UseSystemSettingsPost(TCustomForm * Control, void * Settings = NULL);
-void __fastcall UseSystemSettings(TCustomForm * Control, void ** Settings = NULL);
+void __fastcall UseSystemSettingsPre(TCustomForm * Control);
+void __fastcall UseSystemSettingsPost(TCustomForm * Control);
+void __fastcall UseSystemSettings(TCustomForm * Control);
 void __fastcall ResetSystemSettings(TCustomForm * Control);
-void __fastcall RevokeSystemSettings(TCustomForm * Control, void * Settings);
-void __fastcall DeleteSystemSettings(TCustomForm * Control, void * Settings);
 void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url = L"",
   TNotifyEvent OnEnter = NULL);
+void __fastcall LinkAppLabel(TStaticText * StaticText);
 void __fastcall HintLabel(TStaticText * StaticText, UnicodeString Hint = L"");
-void __fastcall HintLabelRestore(TStaticText * StaticText);
 void __fastcall HotTrackLabel(TLabel * Label);
+void __fastcall SetLabelHintPopup(TLabel * Label, const UnicodeString & Hint);
+bool __fastcall HasLabelHintPopup(TLabel * Label, const UnicodeString & HintStr);
 void __fastcall FixComboBoxResizeBug(TCustomComboBox * ComboBox);
 void __fastcall ShowAsModal(TForm * Form, void *& Storage);
 void __fastcall HideAsModal(TForm * Form, void *& Storage);
@@ -54,8 +55,7 @@ TComponent * __fastcall GetFormOwner();
 TForm * __fastcall GetMainForm();
 void __fastcall SetCorrectFormParent(TForm * Form);
 void __fastcall InvokeHelp(TWinControl * Control);
-void __fastcall SetFormIcons(TForm * Form, const UnicodeString & BigIconName,
-  const UnicodeString & SmallIconName);
+void __fastcall FixFormIcons(TForm * Form);
 Forms::TMonitor *  __fastcall FormMonitor(TCustomForm * Form);
 int __fastcall GetLastMonitor();
 void __fastcall SetLastMonitor(int MonitorNum);
@@ -70,9 +70,12 @@ TModalResult __fastcall DefaultResult(TCustomForm * Form, TButton * DefaultButto
 void __fastcall DefaultButton(TButton * Button, bool Default);
 void __fastcall MemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
 void __fastcall UseDesktopFont(TControl * Control);
-void __fastcall LoadResourceImage(TImage * Image, const UnicodeString & ImageName);
 UnicodeString __fastcall FormatFormCaption(TCustomForm * Form, const UnicodeString & Caption);
 UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption);
+TShiftState __fastcall AllKeyShiftStates();
 void __fastcall RealignControl(TControl * Control);
+void __fastcall HookFormActivation(TCustomForm * Form);
+void __fastcall UnhookFormActivation(TCustomForm * Form);
+TPanel * __fastcall CreateBlankPanel(TComponent * Owner);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

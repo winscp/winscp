@@ -10,7 +10,7 @@ namespace WinSCP
         public string Output { get; internal set; }
         public string ErrorOutput { get; internal set; }
         public int ExitCode { get; internal set; }
-        
+
         internal CommandExecutionResult()
         {
         }

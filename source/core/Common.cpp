@@ -14,37 +14,13 @@
 #include <limits>
 #include <shlwapi.h>
 #include <CoreMain.h>
+#include <openssl/pkcs12.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-// TGuard
-//---------------------------------------------------------------------------
-__fastcall TGuard::TGuard(TCriticalSection * ACriticalSection) :
-  FCriticalSection(ACriticalSection)
-{
-  assert(ACriticalSection != NULL);
-  FCriticalSection->Enter();
-}
-//---------------------------------------------------------------------------
-__fastcall TGuard::~TGuard()
-{
-  FCriticalSection->Leave();
-}
-//---------------------------------------------------------------------------
-// TUnguard
-//---------------------------------------------------------------------------
-__fastcall TUnguard::TUnguard(TCriticalSection * ACriticalSection) :
-  FCriticalSection(ACriticalSection)
-{
-  assert(ACriticalSection != NULL);
-  FCriticalSection->Leave();
-}
-//---------------------------------------------------------------------------
-__fastcall TUnguard::~TUnguard()
-{
-  FCriticalSection->Enter();
-}
+const wchar_t * DSTModeNames = L"Win;Unix;Keep";
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 const wchar_t EngShortMonthNames[12][4] =
@@ -56,6 +32,7 @@ const wchar_t NoReplacement = wchar_t(false);
 const wchar_t TokenReplacement = wchar_t(true);
 const UnicodeString LocalInvalidChars = L"/\\:*?\"<>|";
 const UnicodeString PasswordMask = L"***";
+const UnicodeString Ellipsis = L"...";
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
@@ -74,19 +51,30 @@ UnicodeString DeleteChar(UnicodeString Str, wchar_t C)
   return Str;
 }
 //---------------------------------------------------------------------------
-void PackStr(UnicodeString &Str)
+template<typename T>
+void DoPackStr(T & Str)
 {
   // Following will free unnecessary bytes
   Str = Str.c_str();
 }
 //---------------------------------------------------------------------------
-void PackStr(RawByteString &Str)
+void PackStr(UnicodeString & Str)
 {
-  // Following will free unnecessary bytes
-  Str = Str.c_str();
+  DoPackStr(Str);
 }
 //---------------------------------------------------------------------------
-void __fastcall Shred(UnicodeString & Str)
+void PackStr(RawByteString & Str)
+{
+  DoPackStr(Str);
+}
+//---------------------------------------------------------------------------
+void PackStr(AnsiString & Str)
+{
+  DoPackStr(Str);
+}
+//---------------------------------------------------------------------------
+template<typename T>
+void __fastcall DoShred(T & Str)
 {
   if (!Str.IsEmpty())
   {
@@ -94,6 +82,21 @@ void __fastcall Shred(UnicodeString & Str)
     memset(Str.c_str(), 0, Str.Length() * sizeof(*Str.c_str()));
     Str = L"";
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall Shred(UnicodeString & Str)
+{
+  DoShred(Str);
+}
+//---------------------------------------------------------------------------
+void __fastcall Shred(UTF8String & Str)
+{
+  DoShred(Str);
+}
+//---------------------------------------------------------------------------
+void __fastcall Shred(AnsiString & Str)
+{
+  DoShred(Str);
 }
 //---------------------------------------------------------------------------
 UnicodeString AnsiToString(const RawByteString & S)
@@ -279,7 +282,7 @@ UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote)
 //---------------------------------------------------------------------------
 UnicodeString ExceptionLogString(Exception *E)
 {
-  assert(E);
+  DebugAssert(E);
   if (E->InheritsFrom(__classid(Exception)))
   {
     UnicodeString Msg;
@@ -309,6 +312,11 @@ UnicodeString __fastcall MainInstructions(const UnicodeString & S)
   return MainMsgTag + S + MainMsgTag;
 }
 //---------------------------------------------------------------------------
+bool __fastcall HasParagraphs(const UnicodeString & S)
+{
+  return (S.Pos(L"\n\n") > 0);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall MainInstructionsFirstParagraph(const UnicodeString & S)
 {
   // WORKAROUND, we consider it bad practice, the highlighting should better
@@ -316,7 +324,7 @@ UnicodeString __fastcall MainInstructionsFirstParagraph(const UnicodeString & S)
   UnicodeString Result;
   int Pos = S.Pos(L"\n\n");
   // we would not be calling this on single paragraph message
-  if (ALWAYS_TRUE(Pos > 0))
+  if (DebugAlwaysTrue(Pos > 0))
   {
     Result =
       MainInstructions(S.SubString(1, Pos - 1)) +
@@ -345,8 +353,8 @@ bool ExtractMainInstructions(UnicodeString & S, UnicodeString & MainInstructions
     }
   }
 
-  assert(MainInstructions.Pos(MainMsgTag) == 0);
-  assert(S.Pos(MainMsgTag) == 0);
+  DebugAssert(MainInstructions.Pos(MainMsgTag) == 0);
+  DebugAssert(S.Pos(MainMsgTag) == 0);
 
   return Result;
 }
@@ -401,6 +409,14 @@ UnicodeString RemoveInteractiveMsgTag(UnicodeString S)
   return S;
 }
 //---------------------------------------------------------------------------
+UnicodeString RemoveEmptyLines(const UnicodeString & S)
+{
+  return
+    ReplaceStr(
+      ReplaceStr(S.TrimRight(), L"\n\n", L"\n"),
+      L"\n \n", L"\n");
+}
+//---------------------------------------------------------------------------
 bool IsNumber(const UnicodeString Str)
 {
   int Value;
@@ -441,14 +457,19 @@ UnicodeString __fastcall StripPathQuotes(const UnicodeString Path)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall AddQuotes(UnicodeString Str)
+{
+  if (Str.Pos(L" ") > 0)
+  {
+    Str = L"\"" + Str + L"\"";
+  }
+  return Str;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall AddPathQuotes(UnicodeString Path)
 {
   Path = StripPathQuotes(Path);
-  if (Path.Pos(L" "))
-  {
-    Path = L"\"" + Path + L"\"";
-  }
-  return Path;
+  return AddQuotes(Path);
 }
 //---------------------------------------------------------------------------
 static wchar_t * __fastcall ReplaceChar(
@@ -596,7 +617,7 @@ UnicodeString __fastcall FormatCommand(UnicodeString Program, UnicodeString Para
   Program = Program.Trim();
   Params = Params.Trim();
   if (!Params.IsEmpty()) Params = L" " + Params;
-  if (Program.Pos(L" ")) Program = L"\"" + Program + L"\"";
+  Program = AddQuotes(Program);
   return Program + Params;
 }
 //---------------------------------------------------------------------------
@@ -621,6 +642,12 @@ UnicodeString __fastcall ExpandFileNameCommand(const UnicodeString Command,
 {
   return AnsiReplaceStr(Command, ShellCommandFileNamePattern,
     AddPathQuotes(FileName));
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall EscapeParam(const UnicodeString & Param)
+{
+  // Make sure this won't break RTF syntax
+  return ReplaceStr(Param, L"\"", L"\"\"");
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param)
@@ -935,42 +962,42 @@ UnicodeString __fastcall MakeUnicodeLargePath(UnicodeString Path)
 
   if (!Path.IsEmpty())
   {
-      // Determine the type of the existing prefix
-      PATH_PREFIX_TYPE PrefixType;
-      GetOffsetAfterPathRoot(Path, PrefixType);
+    // Determine the type of the existing prefix
+    PATH_PREFIX_TYPE PrefixType;
+    GetOffsetAfterPathRoot(Path, PrefixType);
 
-      // Assume path to be without change
-      Result = Path;
+    // Assume path to be without change
+    Result = Path;
 
-      switch (PrefixType)
-      {
-        case PPT_ABSOLUTE:
+    switch (PrefixType)
+    {
+      case PPT_ABSOLUTE:
+        {
+          // First we need to check if its an absolute path relative to the root
+          bool AddPrefix = true;
+          if ((Path.Length() >= 1) &&
+              ((Path[1] == L'\\') || (Path[1] == L'/')))
           {
-            // First we need to check if its an absolute path relative to the root
-            bool AddPrefix = true;
-            if ((Path.Length() >= 1) &&
-                ((Path[1] == L'\\') || (Path[1] == L'/')))
-            {
-              AddPrefix = FALSE;
+            AddPrefix = FALSE;
 
-              // Get current root path
-              UnicodeString CurrentDir = GetCurrentDir();
-              PATH_PREFIX_TYPE PrefixType2; // unused
-              int Following = GetOffsetAfterPathRoot(CurrentDir, PrefixType2);
-              if (Following > 0)
-              {
-                AddPrefix = true;
-                Result = CurrentDir.SubString(1, Following - 1) + Result.SubString(2, Result.Length() - 1);
-              }
-            }
-
-            if (AddPrefix)
+            // Get current root path
+            UnicodeString CurrentDir = GetCurrentDir();
+            PATH_PREFIX_TYPE PrefixType2; // unused
+            int Following = GetOffsetAfterPathRoot(CurrentDir, PrefixType2);
+            if (Following > 0)
             {
-              // Add \\?\ prefix
-              Result = L"\\\\?\\" + Result;
+              AddPrefix = true;
+              Result = CurrentDir.SubString(1, Following - 1) + Result.SubString(2, Result.Length() - 1);
             }
           }
-          break;
+
+          if (AddPrefix)
+          {
+            // Add \\?\ prefix
+            Result = L"\\\\?\\" + Result;
+          }
+        }
+        break;
 
       case PPT_UNC:
         // First we need to remove the opening slashes for UNC share
@@ -984,7 +1011,13 @@ UnicodeString __fastcall MakeUnicodeLargePath(UnicodeString Path)
         // Add \\?\UNC\ prefix
         Result = L"\\\\?\\UNC\\" + Result;
         break;
+
+      case PPT_LONG_UNICODE:
+      case PPT_LONG_UNICODE_UNC:
+        // nothing to do
+        break;
     }
+
   }
 
   return Result;
@@ -1129,7 +1162,7 @@ RawByteString __fastcall HexToBytes(const UnicodeString Hex)
 unsigned char __fastcall HexToByte(const UnicodeString Hex)
 {
   static UnicodeString Digits = L"0123456789ABCDEF";
-  assert(Hex.Length() == 2);
+  DebugAssert(Hex.Length() == 2);
   int P1 = Digits.Pos((wchar_t)toupper(Hex[1]));
   int P2 = Digits.Pos((wchar_t)toupper(Hex[2]));
 
@@ -1188,12 +1221,18 @@ int __fastcall FindFirstChecked(const UnicodeString & Path, int Attr, TSearchRec
   return FindCheck(Result, F.Path);
 }
 //---------------------------------------------------------------------------
+// Equivalent to FindNext, just to complement to FindFirstUnchecked
+int __fastcall FindNextUnchecked(TSearchRecChecked & F)
+{
+  return FindNext(F);
+}
+//---------------------------------------------------------------------------
 // It can make sense to use FindNextChecked, even if unchecked FindFirst is used.
 // I.e. even if we do not care that FindFirst failed, if FindNext
-// failes after successfull FindFirst, it mean some terrible problem
+// fails after successful FindFirst, it means some terrible problem
 int __fastcall FindNextChecked(TSearchRecChecked & F)
 {
-  return FindCheck(FindNext(F), F.Path);
+  return FindCheck(FindNextUnchecked(F), F.Path);
 }
 //---------------------------------------------------------------------------
 bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec)
@@ -1211,7 +1250,7 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param,
   int FindAttrs)
 {
-  assert(CallBackFunc);
+  DebugAssert(CallBackFunc);
   if (FindAttrs < 0)
   {
     FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
@@ -1237,6 +1276,19 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
       FindClose(SearchRec);
     }
   }
+}
+//---------------------------------------------------------------------------
+int __fastcall FileGetAttrFix(const UnicodeString FileName)
+{
+  // The default for FileGetAttr is to follow links
+  bool FollowLink = true;
+  // But the FileGetAttr whe called for link with FollowLink set will always fail
+  // as its calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
+  if (!IsWinVista())
+  {
+    FollowLink = false;
+  }
+  return FileGetAttr(FileName, FollowLink);
 }
 //---------------------------------------------------------------------------
 TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day)
@@ -1496,7 +1548,7 @@ bool __fastcall UsesDaylightHack()
 //---------------------------------------------------------------------------
 TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode)
 {
-  assert(int(EncodeDateVerbose(1970, 1, 1)) == UnixDateDelta);
+  DebugAssert(int(EncodeDateVerbose(1970, 1, 1)) == UnixDateDelta);
 
   TDateTime Result = UnixDateDelta + (double(TimeStamp) / SecsPerDay);
 
@@ -1521,8 +1573,7 @@ TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode)
 
   if ((DSTMode == dstmUnix) || (DSTMode == dstmKeep))
   {
-    Result -= (IsDateInDST(Result) ?
-      Params->DaylightDifference : Params->StandardDifference);
+    Result -= DSTDifferenceForTime(Result);
   }
 
   return Result;
@@ -1535,7 +1586,7 @@ __int64 __fastcall Round(double Number)
   return static_cast<__int64>(((Number - Floor) > (Ceil - Number)) ? Ceil : Floor);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime)
+bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add)
 {
   S = S.Trim();
   int Index = 1;
@@ -1548,29 +1599,33 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime)
   bool Result = TryStrToInt(NumberStr, Number);
   if (Result)
   {
+    if (!Add)
+    {
+      Number = -Number;
+    }
     S.Delete(1, Index - 1);
     S = S.Trim().UpperCase();
     DateTime = Now();
     // These may not overlap with ParseSize (K, M and G)
     if (S == "S")
     {
-      DateTime = IncSecond(DateTime, -Number);
+      DateTime = IncSecond(DateTime, Number);
     }
     else if (S == "N")
     {
-      DateTime = IncMinute(DateTime, -Number);
+      DateTime = IncMinute(DateTime, Number);
     }
     else if (S == "H")
     {
-      DateTime = IncHour(DateTime, -Number);
+      DateTime = IncHour(DateTime, Number);
     }
     else if (S == "D")
     {
-      DateTime = IncDay(DateTime, -Number);
+      DateTime = IncDay(DateTime, Number);
     }
     else if (S == "Y")
     {
-      DateTime = IncYear(DateTime, -Number);
+      DateTime = IncYear(DateTime, Number);
     }
     else
     {
@@ -1584,7 +1639,7 @@ static __int64 __fastcall DateTimeToUnix(const TDateTime DateTime)
 {
   const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
 
-  assert(int(EncodeDateVerbose(1970, 1, 1)) == UnixDateDelta);
+  DebugAssert(int(EncodeDateVerbose(1970, 1, 1)) == UnixDateDelta);
 
   return Round(double(DateTime - UnixDateDelta) * SecsPerDay) +
     CurrentParams->CurrentDifferenceSec;
@@ -1698,9 +1753,7 @@ TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
 {
 
   const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
-  DateTime +=
-    (IsDateInDST(DateTime) ?
-      Params->DaylightDifference : Params->StandardDifference);
+  DateTime += DSTDifferenceForTime(DateTime);
   DateTime += Params->BaseDifference;
 
   if (Params->DaylightHack)
@@ -1716,9 +1769,7 @@ TDateTime __fastcall ConvertTimestampFromUTC(TDateTime DateTime)
 {
 
   const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
-  DateTime -=
-    (IsDateInDST(DateTime) ?
-      Params->DaylightDifference : Params->StandardDifference);
+  DateTime -= DSTDifferenceForTime(DateTime);
   DateTime -= Params->BaseDifference;
 
   if (Params->DaylightHack)
@@ -1742,6 +1793,21 @@ __int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
   else
   {
     Result = ConvertTimestampToUnix(FileTime, DSTMode);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+double __fastcall DSTDifferenceForTime(TDateTime DateTime)
+{
+  double Result;
+  const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
+  if (IsDateInDST(DateTime))
+  {
+    Result = Params->DaylightDifference;
+  }
+  else
+  {
+    Result = Params->StandardDifference;
   }
   return Result;
 }
@@ -1774,14 +1840,7 @@ TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, TDSTMode DSTMode
   {
     if (DSTMode == dstmWin)
     {
-      if (IsDateInDST(DateTime))
-      {
-        DateTime = DateTime + Params->DaylightDifference;
-      }
-      else
-      {
-        DateTime = DateTime + Params->StandardDifference;
-      }
+      DateTime = DateTime + DSTDifferenceForTime(DateTime);
     }
   }
 
@@ -1976,41 +2035,121 @@ int __fastcall TimeToMinutes(TDateTime T)
   return TimeToSeconds(T) / SecsPerMin;
 }
 //---------------------------------------------------------------------------
-bool __fastcall RecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin)
+static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin, UnicodeString & ErrorPath)
 {
-  SHFILEOPSTRUCT Data;
+  bool Result;
 
-  memset(&Data, 0, sizeof(Data));
-  Data.hwnd = NULL;
-  Data.wFunc = FO_DELETE;
-  // SHFileOperation does not support long paths anyway
-  UnicodeString FileList(ApiPath(FileName));
-  FileList.SetLength(FileList.Length() + 2);
-  FileList[FileList.Length() - 1] = L'\0';
-  FileList[FileList.Length()] = L'\0';
-  Data.pFrom = FileList.c_str();
-  Data.pTo = L"\0\0"; // this will actually give one null more than needed
-  Data.fFlags = FOF_NOCONFIRMATION | FOF_RENAMEONCOLLISION | FOF_NOCONFIRMMKDIR |
-    FOF_NOERRORUI | FOF_SILENT;
-  if (ToRecycleBin)
+  UnicodeString AErrorPath = FileName;
+
+  if (!ToRecycleBin)
   {
-    Data.fFlags |= FOF_ALLOWUNDO;
+    TSearchRecChecked SearchRec;
+    Result = FileSearchRec(FileName, SearchRec);
+    if (Result)
+    {
+      if (FLAGCLEAR(SearchRec.Attr, faDirectory))
+      {
+        Result = DeleteFile(ApiPath(FileName));
+      }
+      else
+      {
+        Result = (FindFirstUnchecked(FileName + L"\\*", faAnyFile, SearchRec) == 0);
+
+        if (Result)
+        {
+          try
+          {
+            do
+            {
+              UnicodeString FileName2 = FileName + L"\\" + SearchRec.Name;
+              if (FLAGSET(SearchRec.Attr, faDirectory))
+              {
+                if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+                {
+                  Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath);
+                }
+              }
+              else
+              {
+                Result = DeleteFile(ApiPath(FileName2));
+                if (!Result)
+                {
+                  AErrorPath = FileName2;
+                }
+              }
+            }
+            while (Result && (FindNextUnchecked(SearchRec) == 0));
+          }
+          __finally
+          {
+            FindClose(SearchRec);
+          }
+
+          if (Result)
+          {
+            Result = RemoveDir(ApiPath(FileName));
+          }
+        }
+      }
+    }
   }
-  int ErrorCode = SHFileOperation(&Data);
-  bool Result = (ErrorCode == 0);
+  else
+  {
+    SHFILEOPSTRUCT Data;
+
+    memset(&Data, 0, sizeof(Data));
+    Data.hwnd = NULL;
+    Data.wFunc = FO_DELETE;
+    // SHFileOperation does not support long paths anyway
+    UnicodeString FileList(ApiPath(FileName));
+    FileList.SetLength(FileList.Length() + 2);
+    FileList[FileList.Length() - 1] = L'\0';
+    FileList[FileList.Length()] = L'\0';
+    Data.pFrom = FileList.c_str();
+    Data.pTo = L"\0\0"; // this will actually give one null more than needed
+    Data.fFlags = FOF_NOCONFIRMATION | FOF_RENAMEONCOLLISION | FOF_NOCONFIRMMKDIR |
+      FOF_NOERRORUI | FOF_SILENT;
+    if (DebugAlwaysTrue(ToRecycleBin))
+    {
+      Data.fFlags |= FOF_ALLOWUNDO;
+    }
+    int ErrorCode = SHFileOperation(&Data);
+    Result = (ErrorCode == 0);
+    if (!Result)
+    {
+      // according to MSDN, SHFileOperation may return following non-Win32
+      // error codes
+      if (((ErrorCode >= 0x71) && (ErrorCode <= 0x88)) ||
+          (ErrorCode == 0xB7) || (ErrorCode == 0x402) || (ErrorCode == 0x10000) ||
+          (ErrorCode == 0x10074))
+      {
+        ErrorCode = 0;
+      }
+      SetLastError(ErrorCode);
+    }
+  }
+
   if (!Result)
   {
-    // according to MSDN, SHFileOperation may return following non-Win32
-    // error codes
-    if (((ErrorCode >= 0x71) && (ErrorCode <= 0x88)) ||
-        (ErrorCode == 0xB7) || (ErrorCode == 0x402) || (ErrorCode == 0x10000) ||
-        (ErrorCode == 0x10074))
-    {
-      ErrorCode = 0;
-    }
-    SetLastError(ErrorCode);
+    ErrorPath = AErrorPath;
   }
+
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin)
+{
+  UnicodeString ErrorPath; // unused
+  return DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath);
+}
+//---------------------------------------------------------------------------
+void __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin)
+{
+  UnicodeString ErrorPath;
+  if (!DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath))
+  {
+    throw EOSExtException(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (ErrorPath)));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall DeleteFileChecked(const UnicodeString & FileName)
@@ -2042,7 +2181,7 @@ unsigned int __fastcall CancelAnswer(unsigned int Answers)
   }
   else
   {
-    FAIL;
+    DebugFail();
     Result = qaCancel;
   }
   return Result;
@@ -2114,7 +2253,7 @@ TLibModule * __fastcall FindModule(void * Instance)
 UnicodeString __fastcall LoadStr(int Ident, unsigned int MaxLength)
 {
   TLibModule * MainModule = FindModule(HInstance);
-  assert(MainModule != NULL);
+  DebugAssert(MainModule != NULL);
 
   UnicodeString Result;
   Result.SetLength(MaxLength);
@@ -2161,8 +2300,7 @@ UnicodeString __fastcall DecodeUrlChars(UnicodeString S)
           if (!Hex.IsEmpty())
           {
             RawByteString Bytes = HexToBytes(Hex);
-            UTF8String UTF8(Bytes.c_str(), Bytes.Length());
-            UnicodeString Chars(UTF8);
+            UnicodeString Chars(UTF8ToString(Bytes));
             S.Insert(Chars, i);
             i += Chars.Length() - 1;
           }
@@ -2174,44 +2312,30 @@ UnicodeString __fastcall DecodeUrlChars(UnicodeString S)
   return S;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall DoEncodeUrl(UnicodeString S, UnicodeString Chars)
+UnicodeString __fastcall DoEncodeUrl(UnicodeString S, bool EncodeSlash)
 {
-  int i = 1;
-  while (i <= S.Length())
+  int Index = 1;
+  while (Index <= S.Length())
   {
-    if (Chars.Pos(S[i]) > 0)
-    {
-      UnicodeString H = ByteToHex(AnsiString(UnicodeString(S[i]))[1]);
-      S.Insert(H, i + 1);
-      S[i] = '%';
-      i += H.Length();
-    }
-    i++;
-  }
-  return S;
-}
-//---------------------------------------------------------------------------
-// we should probably replace all uses with EncodeUrlString
-UnicodeString __fastcall EncodeUrlChars(UnicodeString S)
-{
-  return DoEncodeUrl(S, L" /");
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall NonUrlChars()
-{
-  UnicodeString S;
-  for (unsigned int I = 0; I <= 127; I++)
-  {
-    wchar_t C = static_cast<wchar_t>(I);
+    wchar_t C = S[Index];
     if (IsLetter(C) ||
         IsDigit(C) ||
-        (C == L'_') || (C == L'-') || (C == L'.'))
+        (C == L'_') || (C == L'-') || (C == L'.') ||
+        ((C == L'/') && !EncodeSlash))
     {
-      // noop
+      Index++;
     }
     else
     {
-      S += C;
+      UTF8String UtfS(S.SubString(Index, 1));
+      UnicodeString H;
+      for (int Index2 = 1; Index2 <= UtfS.Length(); Index2++)
+      {
+        H += L"%" + ByteToHex(static_cast<unsigned char>(UtfS[Index2]));
+      }
+      S.Delete(Index, 1);
+      S.Insert(H, Index);
+      Index += H.Length();
     }
   }
   return S;
@@ -2219,25 +2343,19 @@ UnicodeString __fastcall NonUrlChars()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EncodeUrlString(UnicodeString S)
 {
-  return DoEncodeUrl(S, NonUrlChars());
+  return DoEncodeUrl(S, true);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S)
 {
-  UnicodeString Ignore = NonUrlChars();
-  int P = Ignore.Pos(L"/");
-  if (ALWAYS_TRUE(P > 0))
-  {
-    Ignore.Delete(P, 1);
-  }
-  return DoEncodeUrl(S, Ignore);
+  return DoEncodeUrl(S, false);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall AppendUrlParams(UnicodeString AURL, UnicodeString Params)
 {
   // see also TWebHelpSystem::ShowHelp
   const wchar_t FragmentSeparator = L'#';
-  UnicodeString URL = ::CutToChar(AURL, FragmentSeparator, false);
+  UnicodeString URL = CutToChar(AURL, FragmentSeparator, false);
 
   if (URL.Pos(L"?") == 0)
   {
@@ -2255,14 +2373,30 @@ UnicodeString __fastcall AppendUrlParams(UnicodeString AURL, UnicodeString Param
   return URL;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall ExtractFileNameFromUrl(const UnicodeString & Url)
+{
+  UnicodeString Result = Url;
+  int P = Result.Pos(L"?");
+  if (P > 0)
+  {
+    Result.SetLength(P - 1);
+  }
+  P = Result.LastDelimiter("/");
+  if (DebugAlwaysTrue(P > 0))
+  {
+    Result.Delete(1, P);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption)
 {
   return ReplaceStr(Caption, L"&", L"&&");
 }
 //---------------------------------------------------------------------------
 // duplicated in console's Main.cpp
-bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
-  UnicodeString * RawToken)
+static bool __fastcall DoCutToken(UnicodeString & Str, UnicodeString & Token,
+  UnicodeString * RawToken, UnicodeString * Separator, bool EscapeQuotesInQuotesOnly)
 {
   bool Result;
 
@@ -2286,8 +2420,10 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
       {
         break;
       }
+      // With EscapeQuotesInQuotesOnly we escape quotes only within quotes
+      // otherwise the "" means " (quote), but it should mean empty string.
       else if ((Str[Index] == L'"') && (Index + 1 <= Str.Length()) &&
-        (Str[Index + 1] == L'"'))
+        (Str[Index + 1] == L'"') && (!EscapeQuotesInQuotesOnly || Quoting))
       {
         Index += 2;
         Token += L'"';
@@ -2311,7 +2447,18 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
 
     if (Index <= Str.Length())
     {
+      if (Separator != NULL)
+      {
+        *Separator = Str.SubString(Index, 1);
+      }
       Index++;
+    }
+    else
+    {
+      if (Separator != NULL)
+      {
+        *Separator = UnicodeString();
+      }
     }
 
     Str = Str.SubString(Index, Str.Length());
@@ -2325,6 +2472,18 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
+  UnicodeString * RawToken, UnicodeString * Separator)
+{
+  return DoCutToken(Str, Token, RawToken, Separator, false);
+}
+//---------------------------------------------------------------------------
+bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
+  UnicodeString * RawToken, UnicodeString * Separator)
+{
+  return DoCutToken(Str, Token, RawToken, Separator, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter)
@@ -2355,11 +2514,21 @@ bool __fastcall IsWin7()
   return CheckWin32Version(6, 1);
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsWin8()
+{
+  return CheckWin32Version(6, 2);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsWin10()
+{
+  return CheckWin32Version(10, 0);
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsWine()
 {
   HMODULE NtDll = GetModuleHandle(L"ntdll.dll");
   return
-    ALWAYS_TRUE(NtDll != NULL) &&
+    DebugAlwaysTrue(NtDll != NULL) &&
     (GetProcAddress(NtDll, "wine_get_version") != NULL);
 }
 //---------------------------------------------------------------------------
@@ -2421,6 +2590,27 @@ UnicodeString __fastcall WindowsProductName()
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall WindowsVersion()
+{
+  UnicodeString Result;
+  OSVERSIONINFO OSVersionInfo;
+  OSVersionInfo.dwOSVersionInfoSize = sizeof(OSVersionInfo);
+  // Cannot use the VCL Win32MajorVersion+Win32MinorVersion+Win32BuildNumber as
+  // on Windows 10 due to some hacking in InitPlatformId, the Win32BuildNumber is lost
+  if (GetVersionEx(&OSVersionInfo) != 0)
+  {
+    Result = FORMAT(L"%d.%d.%d", (int(OSVersionInfo.dwMajorVersion), int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber)));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall WindowsVersionLong()
+{
+  UnicodeString Result = WindowsVersion();
+  AddToList(Result, Win32CSDVersion, L" ");
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path)
 {
   UnicodeString FileName =
@@ -2457,6 +2647,20 @@ TStringList * __fastcall TextToStringList(const UnicodeString & Text)
   std::unique_ptr<TStringList> List(new TStringList());
   List->Text = Text;
   return List.release();
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall StringsToText(TStrings * Strings)
+{
+  UnicodeString Result;
+  if (Strings->Count == 1)
+  {
+    Result = Strings->Strings[0];
+  }
+  else
+  {
+    Result = Strings->Text;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall CloneStrings(TStrings * Strings)
@@ -2531,4 +2735,758 @@ UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Ident
     }
   }
   return Ident;
+}
+//---------------------------------------------------------------------------
+static UnicodeString __fastcall GetTlsErrorStr(int Err)
+{
+  char * Buffer = new char[512];
+  ERR_error_string(Err, Buffer);
+  // not sure about the UTF8
+  return UnicodeString(UTF8String(Buffer));
+}
+//---------------------------------------------------------------------------
+static FILE * __fastcall OpenCertificate(const UnicodeString & Path)
+{
+  FILE * Result = _wfopen(ApiPath(Path).c_str(), L"rb");
+  if (Result == NULL)
+  {
+    int Error = errno;
+    throw EOSExtException(MainInstructions(FMTLOAD(CERTIFICATE_OPEN_ERROR, (Path))), Error);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+struct TPemPasswordCallbackData
+{
+  UnicodeString * Passphrase;
+};
+//---------------------------------------------------------------------------
+static int PemPasswordCallback(char * Buf, int Size, int /*RWFlag*/, void * UserData)
+{
+  TPemPasswordCallbackData & Data = *reinterpret_cast<TPemPasswordCallbackData *>(UserData);
+  UTF8String UtfPassphrase = UTF8String(*Data.Passphrase);
+  strncpy(Buf, UtfPassphrase.c_str(), Size);
+  Shred(UtfPassphrase);
+  Buf[Size - 1] = '\0';
+  return strlen(Buf);
+}
+//---------------------------------------------------------------------------
+static bool __fastcall IsTlsPassphraseError(int Error, bool HasPassphrase)
+{
+  int ErrorLib = ERR_GET_LIB(Error);
+  int ErrorReason = ERR_GET_REASON(Error);
+
+  bool Result =
+    ((ErrorLib == ERR_LIB_PKCS12) &&
+     (ErrorReason == PKCS12_R_MAC_VERIFY_FAILURE)) ||
+    ((ErrorLib == ERR_LIB_PEM) &&
+     (ErrorReason == PEM_R_BAD_PASSWORD_READ)) ||
+    (HasPassphrase && (ERR_LIB_EVP == ERR_LIB_EVP) &&
+     ((ErrorReason == PEM_R_BAD_DECRYPT) || (ErrorReason == PEM_R_BAD_BASE64_DECODE)));
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+static void __fastcall ThrowTlsCertificateErrorIgnorePassphraseErrors(const UnicodeString & Path, bool HasPassphrase)
+{
+  int Error = ERR_get_error();
+  if (!IsTlsPassphraseError(Error, HasPassphrase))
+  {
+    throw ExtException(MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (Path))), GetTlsErrorStr(Error));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ParseCertificate(const UnicodeString & Path,
+  const UnicodeString & Passphrase, X509 *& Certificate, EVP_PKEY *& PrivateKey,
+  bool & WrongPassphrase)
+{
+  Certificate = NULL;
+  PrivateKey = NULL;
+  bool HasPassphrase = !Passphrase.IsEmpty();
+
+  FILE * File;
+
+  // Inspired by neon's ne_ssl_clicert_read
+  File = OpenCertificate(Path);
+  // openssl pkcs12 -inkey cert.pem -in cert.crt -export -out cert.pfx
+  // Binary file
+  PKCS12 * Pkcs12 = d2i_PKCS12_fp(File, NULL);
+  fclose(File);
+
+  if (Pkcs12 != NULL)
+  {
+    // Not sure about the UTF-8 encoding, but there's no wchar_t API
+    bool Result =
+      (PKCS12_parse(Pkcs12, UTF8String(Passphrase).c_str(), &PrivateKey, &Certificate, NULL) == 1);
+    PKCS12_free(Pkcs12);
+
+    if (!Result)
+    {
+      ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
+      WrongPassphrase = true;
+    }
+  }
+  else
+  {
+    ERR_clear_error();
+
+    TPemPasswordCallbackData CallbackUserData;
+    // PemPasswordCallback never writes to the .Passphrase
+    CallbackUserData.Passphrase = const_cast<UnicodeString *>(&Passphrase);
+
+    File = OpenCertificate(Path);
+    // Encrypted:
+    // openssl req -x509 -newkey rsa:2048 -keyout cert.pem -out cert.crt
+    // -----BEGIN ENCRYPTED PRIVATE KEY-----
+    // ...
+    // -----END ENCRYPTED PRIVATE KEY-----
+
+    // Not encrypted (add -nodes):
+    // -----BEGIN PRIVATE KEY-----
+    // ...
+    // -----END PRIVATE KEY-----
+    // Or (openssl genrsa -out client.key 1024   # used for certificate signing request)
+    // -----BEGIN RSA PRIVATE KEY-----
+    // ...
+    // -----END RSA PRIVATE KEY-----
+    PrivateKey = PEM_read_PrivateKey(File, NULL, PemPasswordCallback, &CallbackUserData);
+    fclose(File);
+
+    try
+    {
+      if (PrivateKey == NULL)
+      {
+        ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
+        WrongPassphrase = true;
+      }
+
+      File = OpenCertificate(Path);
+      // The file can contain both private and public key
+      // (basically cert.pem and cert.crt appended one to each other)
+      // -----BEGIN ENCRYPTED PRIVATE KEY-----
+      // ...
+      // -----END ENCRYPTED PRIVATE KEY-----
+      // -----BEGIN CERTIFICATE-----
+      // ...
+      // -----END CERTIFICATE-----
+      Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
+      fclose(File);
+
+      if (Certificate == NULL)
+      {
+        int Error = ERR_get_error();
+        // unlikely
+        if (IsTlsPassphraseError(Error, HasPassphrase))
+        {
+          WrongPassphrase = true;
+        }
+        else
+        {
+          UnicodeString CertificatePath = ChangeFileExt(Path, L".cer");
+          if (!FileExists(CertificatePath))
+          {
+            CertificatePath = ChangeFileExt(Path, L".crt");
+          }
+
+          if (!FileExists(CertificatePath))
+          {
+            throw Exception(MainInstructions(FMTLOAD(CERTIFICATE_PUBLIC_KEY_NOT_FOUND, (Path))));
+          }
+          else
+          {
+            File = OpenCertificate(CertificatePath);
+            // -----BEGIN CERTIFICATE-----
+            // ...
+            // -----END CERTIFICATE-----
+            Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
+            fclose(File);
+
+            if (Certificate == NULL)
+            {
+              int Base64Error = ERR_get_error();
+
+              File = OpenCertificate(CertificatePath);
+              // Binary DER-encoded certificate
+              // (as above, with BEGIN/END removed, and decoded from Base64 to binary)
+              // openssl x509 -in cert.crt -out client.der.crt -outform DER
+              Certificate = d2i_X509_fp(File, NULL);
+              fclose(File);
+
+              if (Certificate == NULL)
+              {
+                int DERError = ERR_get_error();
+
+                UnicodeString Message = MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (CertificatePath)));
+                UnicodeString MoreMessages =
+                  FORMAT(L"Base64: %s\nDER: %s", (GetTlsErrorStr(Base64Error), GetTlsErrorStr(DERError)));
+                throw ExtException(Message, MoreMessages);
+              }
+            }
+          }
+        }
+      }
+    }
+    __finally
+    {
+      // We loaded private key, but failed to load certificate, discard the certificate
+      // (either exception was thrown or WrongPassphrase)
+      if ((PrivateKey != NULL) && (Certificate == NULL))
+      {
+        EVP_PKEY_free(PrivateKey);
+        PrivateKey = NULL;
+      }
+      // Certificate was verified, but passphrase was wrong when loading private key,
+      // so discard the certificate
+      else if ((Certificate != NULL) && (PrivateKey == NULL))
+      {
+        X509_free(Certificate);
+        Certificate = NULL;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall CheckCertificate(const UnicodeString & Path)
+{
+  X509 * Certificate;
+  EVP_PKEY * PrivateKey;
+  bool WrongPassphrase;
+
+  ParseCertificate(Path, L"", Certificate, PrivateKey, WrongPassphrase);
+
+  if (PrivateKey != NULL)
+  {
+    EVP_PKEY_free(PrivateKey);
+  }
+  if (Certificate != NULL)
+  {
+    X509_free(Certificate);
+  }
+}
+//---------------------------------------------------------------------------
+const UnicodeString HttpProtocol(L"http");
+const UnicodeString HttpsProtocol(L"https");
+const UnicodeString ProtocolSeparator(L"://");
+//---------------------------------------------------------------------------
+bool __fastcall IsHttpUrl(const UnicodeString & S)
+{
+  return StartsText(HttpProtocol + ProtocolSeparator, S);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsHttpOrHttpsUrl(const UnicodeString & S)
+{
+  return
+    IsHttpUrl(S) ||
+    StartsText(HttpsProtocol + ProtocolSeparator, S);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const UnicodeString & Protocol)
+{
+  int P = S.Pos(ProtocolSeparator);
+  DebugAssert(P > 0);
+  return Protocol + ProtocolSeparator + RightStr(S, S.Length() - P - ProtocolSeparator.Length() + 1);
+}
+//---------------------------------------------------------------------------
+const UnicodeString RtfPara = L"\\par\n";
+const UnicodeString AssemblyNamespace = L"WinSCP";
+const UnicodeString TransferOptionsClassName(L"TransferOptions");
+const UnicodeString SessionClassName(L"Session");
+const UnicodeString RtfHyperlinkField = L"HYPERLINK";
+const UnicodeString RtfHyperlinkFieldPrefix = RtfHyperlinkField + L" \"";
+const UnicodeString RtfHyperlinkFieldSuffix = L"\" ";
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfColor(int Index)
+{
+  return FORMAT(L"\\cf%d", (Index));
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfText(const UnicodeString & Text, bool Rtf)
+{
+  UnicodeString Result = Text;
+  if (Rtf)
+  {
+    int Index = 1;
+    while (Index <= Result.Length())
+    {
+      UnicodeString Replacement;
+      wchar_t Ch = Result[Index];
+      if ((Ch == L'\\') || (Ch == L'{') || (Ch == L'}'))
+      {
+        Replacement = FORMAT(L"\\%s", (Ch));
+      }
+      else if (Ch >= 0x0080)
+      {
+        Replacement = FORMAT(L"\\u%d?", (int(Ch)));
+      }
+
+      if (!Replacement.IsEmpty())
+      {
+        Result.Delete(Index, 1);
+        Result.Insert(Replacement, Index);
+        Index += Replacement.Length();
+      }
+      else
+      {
+        Index++;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfColorText(int Color, const UnicodeString & Text)
+{
+  return RtfColor(Color) + L" " + RtfText(Text) + RtfColor(0) + L" ";
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfColorItalicText(int Color, const UnicodeString & Text)
+{
+  return RtfColor(Color) + L"\\i " + RtfText(Text) + L"\\i0" + RtfColor(0) + L" ";
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfOverrideColorText(const UnicodeString & Text)
+{
+  return RtfColorText(1, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfKeyword(const UnicodeString & Text)
+{
+  return RtfColorText(5, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfParameter(const UnicodeString & Text)
+{
+  return RtfColorText(6, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfString(const UnicodeString & Text)
+{
+  return RtfColorText(4, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfLink(const UnicodeString & Link, const UnicodeString & RtfText)
+{
+  return
+    L"{\\field{\\*\\fldinst{" + RtfHyperlinkFieldPrefix + Link + RtfHyperlinkFieldSuffix + L"}}{\\fldrslt{" +
+    RtfText + L"}}}";
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall ScriptCommandLink(const UnicodeString & Command)
+{
+  return L"scriptcommand_" + Command;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfSwitch(
+  const UnicodeString & Switch, const UnicodeString & Link, bool Rtf)
+{
+  UnicodeString Result = FORMAT(L"-%s", (Switch));
+  if (Rtf)
+  {
+    Result = RtfLink(Link + L"#" + Switch.LowerCase(), RtfParameter(Result));
+  }
+  return L" " + Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfSwitchValue(
+  const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value, bool Rtf)
+{
+  return RtfSwitch(Name, Link, Rtf) + L"=" + Value;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfSwitch(
+  const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value, bool Rtf)
+{
+  return RtfSwitchValue(Name, Link, RtfText(FORMAT("\"%s\"", (EscapeParam(Value))), Rtf), Rtf);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfSwitch(
+  const UnicodeString & Name, const UnicodeString & Link, int Value, bool Rtf)
+{
+  return RtfSwitchValue(Name, Link, RtfText(IntToStr(Value), Rtf), Rtf);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text)
+{
+  // Remove all tags HYPERLINK "http://www.example.com".
+  // See also RtfEscapeParam
+  int Index = 1;
+  int P;
+  while ((P = PosEx(RtfHyperlinkFieldPrefix, Text, Index)) > 0)
+  {
+    int Index2 = P + RtfHyperlinkFieldPrefix.Length();
+    int P2 = PosEx(RtfHyperlinkFieldSuffix, Text, Index2);
+    if (P2 > 0)
+    {
+      Text.Delete(P, P2 - P + RtfHyperlinkFieldSuffix.Length());
+    }
+    else
+    {
+      Index = Index2;
+    }
+  }
+  return Text;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfEscapeParam(UnicodeString Param)
+{
+  const UnicodeString Quote(L"\"");
+  // Equivalent of EscapeParam, except that it does not double quotes in HYPERLINK.
+  // See also RtfRemoveHyperlinks.
+  int Index = 1;
+  while (true)
+  {
+    int P1 = PosEx(Quote, Param, Index);
+    if (P1 == 0)
+    {
+      // no more quotes
+      break;
+    }
+    else
+    {
+      int P2 = PosEx(RtfHyperlinkFieldPrefix, Param, Index);
+      int P3;
+      if ((P2 > 0) && (P2 < P1) && ((P3 = PosEx(RtfHyperlinkFieldSuffix, Param, P2)) > 0))
+      {
+        // skip HYPERLINK
+        Index = P3 + RtfHyperlinkFieldSuffix.Length();
+      }
+      else
+      {
+        Param.Insert(Quote, P1);
+        Index = P1 + (Quote.Length() * 2);
+      }
+    }
+  }
+
+  return Param;
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfCodeComment(const UnicodeString & Text)
+{
+  return RtfColorItalicText(2, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyCommentLine(TAssemblyLanguage Language, const UnicodeString & Text)
+{
+  UnicodeString Prefix;
+  switch (Language)
+  {
+    case alCSharp:
+      Prefix = L"//";
+      break;
+
+    case alVBNET:
+      Prefix = L"'";
+      break;
+
+    case alPowerShell:
+      Prefix = L"#";
+      break;
+  }
+
+  return RtfCodeComment(Prefix + L" " + Text) + RtfPara;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyString(TAssemblyLanguage Language, UnicodeString S)
+{
+  switch (Language)
+  {
+    case alCSharp:
+      if (S.Pos(L"\\") > 0)
+      {
+        S = FORMAT(L"@\"%s\"", (ReplaceStr(S, L"\"", L"\"\"")));
+      }
+      else
+      {
+        S = FORMAT(L"\"%s\"", (ReplaceStr(S, L"\"", L"\\\"")));
+      }
+      break;
+
+    case alVBNET:
+      S = FORMAT(L"\"%s\"", (ReplaceStr(S, L"\"", L"\"\"")));
+      break;
+
+    case alPowerShell:
+      S = FORMAT(L"\"%s\"", (ReplaceStr(S, L"\"", L"`\"")));
+      break;
+
+    default:
+      DebugFail();
+      break;
+  }
+
+  return RtfString(S);
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfClass(const UnicodeString & Text)
+{
+  return RtfColorText(3, Text);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfLibraryClass(const UnicodeString & ClassName)
+{
+  return RtfLink(L"library_" + ClassName.LowerCase(), RtfClass(ClassName));
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall RtfLibraryMethod(const UnicodeString & ClassName, const UnicodeString & MethodName, bool InPage)
+{
+  return RtfLink(L"library_" + ClassName.LowerCase() + (InPage ? L"#" : L"_") + MethodName.LowerCase(), RtfOverrideColorText(MethodName));
+}
+//---------------------------------------------------------------------
+static UnicodeString __fastcall RtfLibraryProperty(const UnicodeString & ClassName, const UnicodeString & PropertyName)
+{
+  return RtfLink(L"library_" + ClassName.LowerCase() + L"#" + PropertyName.LowerCase(), RtfOverrideColorText(PropertyName));
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyVariableName(TAssemblyLanguage Language, const UnicodeString & ClassName)
+{
+  UnicodeString Result = ClassName.SubString(1, 1).LowerCase() + ClassName.SubString(2, ClassName.Length() - 1);
+  if (Language == alPowerShell)
+  {
+    Result = L"$" + Result;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyStatementSeparator(TAssemblyLanguage Language)
+{
+  UnicodeString Result;
+  switch (Language)
+  {
+    case alCSharp:
+      Result = L";";
+      break;
+
+    case alVBNET:
+    case alPowerShell:
+      // noop
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyPropertyRaw(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name,
+  const UnicodeString & Value, bool Inline)
+{
+  UnicodeString Result;
+  UnicodeString RtfPropertyAndValue = RtfLibraryProperty(ClassName, Name) + L" = " + Value;
+  UnicodeString Indetation = (Inline ? L"" : L"    ");
+  UnicodeString SpaceOrPara = (Inline ? UnicodeString(L" ") : RtfPara);
+  switch (Language)
+  {
+    case alCSharp:
+      Result = Indetation + RtfPropertyAndValue + (Inline ? L"" : L",") + SpaceOrPara;
+      break;
+
+    case alVBNET:
+      Result = Indetation + L"." + RtfPropertyAndValue + SpaceOrPara;
+      break;
+
+    case alPowerShell:
+      Result = Indetation + RtfPropertyAndValue + SpaceOrPara;
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name,
+  const UnicodeString & Type, const UnicodeString & Member, bool Inline)
+{
+  UnicodeString PropertyValue;
+
+  switch (Language)
+  {
+    case alCSharp:
+    case alVBNET:
+      PropertyValue = RtfClass(Type) + RtfText(L"." + Member);
+      break;
+
+    case alPowerShell:
+      PropertyValue = RtfText(L"[" + AssemblyNamespace + L".") + RtfClass(Type) + RtfText(L"]::" + Member);
+      break;
+  }
+
+  return AssemblyPropertyRaw(Language, ClassName, Name, PropertyValue, Inline);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName,
+  const UnicodeString & Name, const UnicodeString & Value, bool Inline)
+{
+  return AssemblyPropertyRaw(Language, ClassName, Name, AssemblyString(Language, Value), Inline);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName,
+  const UnicodeString & Name, int Value, bool Inline)
+{
+  return AssemblyPropertyRaw(Language, ClassName, Name, IntToStr(Value), Inline);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyBoolean(TAssemblyLanguage Language, bool Value)
+{
+  UnicodeString Result;
+
+  switch (Language)
+  {
+    case alCSharp:
+      Result = (Value ? L"true" : L"false");
+      break;
+
+    case alVBNET:
+      Result = (Value ? L"True" : L"False");
+      break;
+
+    case alPowerShell:
+      Result = (Value ? L"$True" : L"$False");
+      break;
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyProperty(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, const UnicodeString & Name, bool Value, bool Inline)
+{
+  UnicodeString PropertyValue = AssemblyBoolean(Language, Value);
+
+  return AssemblyPropertyRaw(Language, ClassName, Name, PropertyValue, Inline);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyNewClassInstance(TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline)
+{
+  UnicodeString VariableName = AssemblyVariableName(Language, ClassName);
+  UnicodeString RtfClass = RtfLibraryClass(ClassName);
+
+  UnicodeString Result;
+  switch (Language)
+  {
+    case alCSharp:
+      if (!Inline)
+      {
+        Result += RtfClass + RtfText(L" " + VariableName  + L" = ");
+      }
+      Result += RtfKeyword(L"new") + RtfText(L" ") + RtfClass;
+      break;
+
+    case alVBNET:
+      if (!Inline)
+      {
+        Result += RtfText(VariableName + L" ") + RtfKeyword(L"As") + RtfText(L" ");
+      }
+      Result += RtfKeyword(L"New") + RtfText(" ") + RtfClass;
+      break;
+
+    case alPowerShell:
+      if (!Inline)
+      {
+        Result += RtfText(VariableName + L" = ");
+      }
+      Result += RtfKeyword(L"New-Object") + RtfText(L" " + AssemblyNamespace + L".") + RtfClass;
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyNewClassInstanceStart(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline)
+{
+  UnicodeString NewClassInstance = AssemblyNewClassInstance(Language, ClassName, Inline);
+  UnicodeString SpaceOrPara = (Inline ? UnicodeString(L" ") : RtfPara);
+
+  UnicodeString Result;
+  switch (Language)
+  {
+    case alCSharp:
+      Result =
+        NewClassInstance + SpaceOrPara +
+        RtfText(L"{") + SpaceOrPara;
+      break;
+
+    case alVBNET:
+      // Historically we use Dim .. With instead of object initilizer.
+      // But for inline use, we have to use object initialize.
+      // We should consistently always use object initilizers.
+      if (!Inline)
+      {
+        Result += RtfKeyword(L"Dim") + RtfText(L" ");
+      }
+      Result += NewClassInstance + SpaceOrPara + RtfKeyword(L"With");
+      if (Inline)
+      {
+        Result += RtfText(L" { ");
+      }
+      else
+      {
+        Result += RtfText(L" " + AssemblyVariableName(Language, ClassName)) + RtfPara;
+      }
+      break;
+
+    case alPowerShell:
+      Result = NewClassInstance + RtfText(" -Property @{") + SpaceOrPara;
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language, bool Inline)
+{
+  UnicodeString InlineEnd = RtfText(L"}");
+
+  UnicodeString Result;
+  switch (Language)
+  {
+    case alCSharp:
+      if (Inline)
+      {
+        Result = InlineEnd;
+      }
+      else
+      {
+        Result = RtfText(L"};") + RtfPara;
+      }
+      break;
+
+    case alVBNET:
+      if (Inline)
+      {
+        Result = InlineEnd;
+      }
+      else
+      {
+        Result = RtfKeyword(L"End With") + RtfPara;
+      }
+      break;
+
+    case alPowerShell:
+      if (Inline)
+      {
+        Result = InlineEnd;
+      }
+      else
+      {
+        Result = RtfText(L"}") + RtfPara;
+      }
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
+{
+  Lines->LoadFromFile(ApiPath(FileName), TEncoding::UTF8);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall StripEllipsis(const UnicodeString & S)
+{
+  UnicodeString Result = S;
+  if (Result.SubString(Result.Length() - Ellipsis.Length() + 1, Ellipsis.Length()) == Ellipsis)
+  {
+    Result.SetLength(Result.Length() - Ellipsis.Length());
+    Result = Result.TrimRight();
+  }
+  return Result;
 }

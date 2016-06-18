@@ -1,9 +1,9 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
+#include <Common.h>
 #include "GUIConfiguration.h"
 #include "GUITools.h"
-#include <Common.h>
 #include <FileInfo.h>
 #include <TextsCore.h>
 #include <TextsWin.h>
@@ -335,9 +335,9 @@ void __fastcall TCopyParamList::Add(const UnicodeString Name,
 void __fastcall TCopyParamList::Insert(int Index, const UnicodeString Name,
   TCopyParamType * CopyParam, TCopyParamRule * Rule)
 {
-  assert(FNames->IndexOf(Name) < 0);
+  DebugAssert(FNames->IndexOf(Name) < 0);
   FNames->Insert(Index, Name);
-  assert(CopyParam != NULL);
+  DebugAssert(CopyParam != NULL);
   FCopyParams->Insert(Index, reinterpret_cast<TObject *>(CopyParam));
   FRules->Insert(Index, reinterpret_cast<TObject *>(Rule));
   Modify();
@@ -375,7 +375,7 @@ void __fastcall TCopyParamList::Move(int CurIndex, int NewIndex)
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamList::Delete(int Index)
 {
-  assert((Index >= 0) && (Index < Count));
+  DebugAssert((Index >= 0) && (Index < Count));
   FNames->Delete(Index);
   delete CopyParams[Index];
   FCopyParams->Delete(Index);
@@ -526,21 +526,12 @@ __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
   FLastLocalesExts = L"*";
   FCopyParamList = new TCopyParamList();
   CoreSetResourceModule(GetResourceModule());
-  // allow loading configured locale, DetectScalingType needs to get called
-  // only after that, but before user can ever try to change the locale
-  FCanApplyLocaleImmediately = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TGUIConfiguration::~TGUIConfiguration()
 {
   delete FLocales;
   delete FCopyParamList;
-}
-//---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::DetectScalingType()
-{
-  // USER_DEFAULT_SCREEN_DPI (96) DPI is 100%
-  FCanApplyLocaleImmediately = (Screen->PixelsPerInch == USER_DEFAULT_SCREEN_DPI);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::Default()
@@ -565,7 +556,7 @@ void __fastcall TGUIConfiguration::Default()
   FQueueKeepDoneItems = true;
   FQueueKeepDoneItemsFor = 15;
   FQueueAutoPopup = true;
-  FSessionRememberPassword = false;
+  FSessionRememberPassword = true;
   UnicodeString ProgramsFolder;
   SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
   FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + L"PuTTY\\" + OriginalPuttyExecutable;
@@ -673,7 +664,7 @@ void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool
 
     if (FCopyParamListDefaults)
     {
-      assert(!FCopyParamList->Modified);
+      DebugAssert(!FCopyParamList->Modified);
       Storage->WriteInteger(L"CopyParamList", -1);
     }
     else if (All || FCopyParamList->Modified)
@@ -768,7 +759,7 @@ void __fastcall TGUIConfiguration::Saved()
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
-  UnicodeString * FileName)
+  UnicodeString & FileName)
 {
   UnicodeString LibraryFileName;
   HINSTANCE NewInstance = 0;
@@ -784,7 +775,7 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
       wchar_t LocaleStr[4];
       GetLocaleInfo(ALocale, LOCALE_SABBREVLANGNAME, LocaleStr, LENOF(LocaleStr));
       LocaleName = LocaleStr;
-      assert(!LocaleName.IsEmpty());
+      DebugAssert(!LocaleName.IsEmpty());
     }
     else
     {
@@ -823,10 +814,7 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
     }
   }
 
-  if (FileName != NULL)
-  {
-    *FileName = LibraryFileName;
-  }
+  FileName = LibraryFileName;
 
   return NewInstance;
 }
@@ -842,7 +830,7 @@ LCID __fastcall TGUIConfiguration::InternalLocale()
   }
   else
   {
-    FAIL;
+    DebugFail();
     Result = 0;
   }
   return Result;
@@ -867,16 +855,22 @@ void __fastcall TGUIConfiguration::SetLocaleSafe(LCID value)
   SetLocaleInternal(value, true);
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TGUIConfiguration::GetLocaleHex()
+{
+  return IntToHex(__int64(GUIConfiguration->Locale), 4);
+}
+//---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetLocaleInternal(LCID value, bool Safe)
 {
   if (Locale != value)
   {
     HINSTANCE Module;
+    UnicodeString FileName;
 
     try
     {
-      Module = LoadNewResourceModule(value);
-      assert(Module != NULL);
+      Module = LoadNewResourceModule(value, FileName);
+      DebugAssert(Module != NULL);
     }
     catch(...)
     {
@@ -898,9 +892,47 @@ void __fastcall TGUIConfiguration::SetLocaleInternal(LCID value, bool Safe)
       {
         FAppliedLocale = value;
         SetResourceModule(Module);
+        FLocaleModuleName = FileName;
       }
     }
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TGUIConfiguration::GetCanApplyLocaleImmediately()
+{
+  return
+    (Screen->FormCount == 0) &&
+    (Screen->DataModuleCount == 0);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TGUIConfiguration::LocaleCopyright()
+{
+  UnicodeString Result;
+  if ((FAppliedLocale == 0) || (FAppliedLocale == InternalLocale()))
+  {
+    DebugFail(); // we do not expect to get called with internal locale
+    Result = UnicodeString();
+  }
+  else
+  {
+    DebugAssert(!FLocaleModuleName.IsEmpty());
+    Result = GetFileFileInfoString(L"LegalCopyright", FLocaleModuleName);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TGUIConfiguration::LocaleVersion()
+{
+  UnicodeString Result;
+  if ((FAppliedLocale == 0) || (FAppliedLocale == InternalLocale()))
+  {
+    // noop
+  }
+  else
+  {
+    Result = GetFileVersion(FLocaleModuleName);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetInitialLocale(LCID value)
@@ -916,6 +948,11 @@ void __fastcall TGUIConfiguration::FreeResourceModule(HANDLE Instance)
   {
     FreeLibrary(static_cast<HMODULE>(Instance));
   }
+}
+//---------------------------------------------------------------------------
+HANDLE __fastcall TGUIConfiguration::ChangeToDefaultResourceModule()
+{
+  return ChangeResourceModule(NULL);
 }
 //---------------------------------------------------------------------------
 HANDLE __fastcall TGUIConfiguration::ChangeResourceModule(HANDLE Instance)
@@ -1130,11 +1167,11 @@ TGUICopyParamType __fastcall TGUIConfiguration::GetCopyParamPreset(UnicodeString
   if (!Name.IsEmpty())
   {
     int Index = FCopyParamList->IndexOfName(Name);
-    assert(Index >= 0);
+    DebugAssert(Index >= 0);
     if (Index >= 0)
     {
       const TCopyParamType * Preset = FCopyParamList->CopyParams[Index];
-      assert(Preset != NULL);
+      DebugAssert(Preset != NULL);
       Result.Assign(Preset); // overwrite all but GUI options
       // reset all options known not to be configurable per-preset
       // kind of hack
@@ -1209,51 +1246,6 @@ bool __fastcall TGUIConfiguration::AnyPuttySessionForImport(TStoredSessionList *
   {
     UnicodeString Error;
     std::unique_ptr<TStoredSessionList> Sesssions(SelectPuttySessionsForImport(Sessions, Error));
-    return (Sesssions->Count > 0);
-  }
-  catch (...)
-  {
-    return false;
-  }
-}
-//---------------------------------------------------------------------
-TStoredSessionList * __fastcall TGUIConfiguration::SelectFilezillaSessionsForImport(
-  TStoredSessionList * Sessions, UnicodeString & Error)
-{
-  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
-  ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
-
-  UnicodeString AppDataPath = GetShellFolderPath(CSIDL_APPDATA);
-  UnicodeString FilezillaSiteManagerFile =
-    IncludeTrailingBackslash(AppDataPath) + L"FileZilla\\sitemanager.xml";
-
-  if (FileExists(ApiPath(FilezillaSiteManagerFile)))
-  {
-    ImportSessionList->ImportFromFilezilla(FilezillaSiteManagerFile);
-
-    if (ImportSessionList->Count > 0)
-    {
-      ImportSessionList->SelectSessionsToImport(Sessions, true);
-    }
-    else
-    {
-      Error = FMTLOAD(FILEZILLA_NO_SITES, (FilezillaSiteManagerFile));
-    }
-  }
-  else
-  {
-    Error = FMTLOAD(FILEZILLA_SITE_MANAGER_NOT_FOUND, (FilezillaSiteManagerFile));
-  }
-
-  return ImportSessionList.release();
-}
-//---------------------------------------------------------------------
-bool __fastcall TGUIConfiguration::AnyFilezillaSessionForImport(TStoredSessionList * Sessions)
-{
-  try
-  {
-    UnicodeString Error;
-    std::unique_ptr<TStoredSessionList> Sesssions(SelectFilezillaSessionsForImport(Sessions, Error));
     return (Sesssions->Count > 0);
   }
   catch (...)

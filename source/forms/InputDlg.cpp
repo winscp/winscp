@@ -8,6 +8,7 @@
 #include <Consts.hpp>
 #include <HistoryComboBox.hpp>
 #include <PasTools.hpp>
+#include <PasswordEdit.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -42,7 +43,7 @@ void __fastcall InputDialogShow(void * Data, TObject * Sender)
 //---------------------------------------------------------------------------
 bool __fastcall InputDialog(const UnicodeString ACaption,
   const UnicodeString APrompt, UnicodeString & Value, UnicodeString HelpKeyword,
-  TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize)
+  TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize, bool Echo)
 {
   bool Result = False;
   TInputDialogToken Token;
@@ -88,20 +89,28 @@ bool __fastcall InputDialog(const UnicodeString ACaption,
     Prompt->Top = ScaleByTextHeightRunTime(Form, 13);
     Prompt->Caption = APrompt;
 
-    TEdit * Edit;
+    TCustomEdit * Edit;
     THistoryComboBox * HistoryCombo;
     if (History == NULL)
     {
-      Edit = new TEdit(Form);
+      if (Echo)
+      {
+        Edit = new TEdit(Form);
+      }
+      else
+      {
+        Edit = new TPasswordEdit(Form);
+      }
       Edit->Parent = Form;
       Edit->Text = Value;
       Edit->SelectAll();
-      Edit->MaxLength = 255;
+      reinterpret_cast<TEdit *>(Edit)->MaxLength = 255;
       Token.Data.Edit = Edit;
       Token.EditControl = Edit;
     }
     else
     {
+      DebugAssert(Echo);
       HistoryCombo = new THistoryComboBox(Form);
       HistoryCombo->Parent = Form;
       HistoryCombo->Text = Value;

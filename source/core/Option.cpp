@@ -29,12 +29,14 @@ void __fastcall TOptions::Add(UnicodeString Value)
   {
     bool Switch = false;
     int Index = 0; // shut up
+    wchar_t SwitchMark = L'\0';
     if (!FNoMoreSwitches &&
         (Value.Length() >= 2) &&
         (FSwitchMarks.Pos(Value[1]) > 0))
     {
       Index = 2;
       Switch = true;
+      SwitchMark = Value[1];
       while (Switch && (Index <= Value.Length()))
       {
         if (Value.IsDelimiter(FSwitchValueDelimiters, Index))
@@ -51,24 +53,27 @@ void __fastcall TOptions::Add(UnicodeString Value)
       }
     }
 
+    TOption Option;
+
     if (Switch)
     {
-      TOption Option;
       Option.Type = otSwitch;
       Option.Name = Value.SubString(2, Index - 2);
       Option.Value = Value.SubString(Index + 1, Value.Length());
-      Option.Used = false;
-      FOptions.push_back(Option);
+      Option.ValueSet = (Index <= Value.Length());
     }
     else
     {
-      TOption Option;
       Option.Type = otParam;
       Option.Value = Value;
-      Option.Used = false;
-      FOptions.push_back(Option);
+      Option.ValueSet = false; // unused
       ++FParamCount;
     }
+
+    Option.Used = false;
+    Option.SwitchMark = SwitchMark;
+
+    FOptions.push_back(Option);
   }
 
   FOriginalOptions = FOptions;
@@ -76,7 +81,7 @@ void __fastcall TOptions::Add(UnicodeString Value)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TOptions::GetParam(int Index)
 {
-  assert((Index >= 1) && (Index <= FParamCount));
+  DebugAssert((Index >= 1) && (Index <= FParamCount));
 
   UnicodeString Result;
   size_t I = 0;
@@ -103,9 +108,10 @@ bool __fastcall TOptions::GetEmpty()
 }
 //---------------------------------------------------------------------------
 bool __fastcall TOptions::FindSwitch(const UnicodeString Switch,
-  UnicodeString & Value, int & ParamsStart, int & ParamsCount)
+  UnicodeString & Value, int & ParamsStart, int & ParamsCount, bool CaseSensitive, bool & ValueSet)
 {
   ParamsStart = 0;
+  ValueSet = false;
   int Index = 0;
   bool Found = false;
   while ((Index < int(FOptions.size())) && !Found)
@@ -116,10 +122,12 @@ bool __fastcall TOptions::FindSwitch(const UnicodeString Switch,
     }
     else if (FOptions[Index].Type == otSwitch)
     {
-      if (AnsiSameText(FOptions[Index].Name, Switch))
+      if ((!CaseSensitive && AnsiSameText(FOptions[Index].Name, Switch)) ||
+          (CaseSensitive && AnsiSameStr(FOptions[Index].Name, Switch)))
       {
         Found = true;
         Value = FOptions[Index].Value;
+        ValueSet = FOptions[Index].ValueSet;
         FOptions[Index].Used = true;
       }
     }
@@ -146,9 +154,15 @@ bool __fastcall TOptions::FindSwitch(const UnicodeString Switch,
 //---------------------------------------------------------------------------
 bool __fastcall TOptions::FindSwitch(const UnicodeString Switch, UnicodeString & Value)
 {
+  bool ValueSet;
+  return FindSwitch(Switch, Value, ValueSet);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TOptions::FindSwitch(const UnicodeString Switch, UnicodeString & Value, bool & ValueSet)
+{
   int ParamsStart;
   int ParamsCount;
-  return FindSwitch(Switch, Value, ParamsStart, ParamsCount);
+  return FindSwitch(Switch, Value, ParamsStart, ParamsCount, false, ValueSet);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TOptions::FindSwitch(const UnicodeString Switch)
@@ -156,16 +170,39 @@ bool __fastcall TOptions::FindSwitch(const UnicodeString Switch)
   UnicodeString Value;
   int ParamsStart;
   int ParamsCount;
-  return FindSwitch(Switch, Value, ParamsStart, ParamsCount);
+  bool ValueSet;
+  return FindSwitch(Switch, Value, ParamsStart, ParamsCount, false, ValueSet);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TOptions::FindSwitchCaseSensitive(const UnicodeString Switch)
+{
+  UnicodeString Value;
+  int ParamsStart;
+  int ParamsCount;
+  bool ValueSet;
+  return FindSwitch(Switch, Value, ParamsStart, ParamsCount, true, ValueSet);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TOptions::FindSwitch(const UnicodeString Switch,
   TStrings * Params, int ParamsMax)
 {
+  return DoFindSwitch(Switch, Params, ParamsMax, false);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TOptions::FindSwitchCaseSensitive(const UnicodeString Switch,
+  TStrings * Params, int ParamsMax)
+{
+  return DoFindSwitch(Switch, Params, ParamsMax, true);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TOptions::DoFindSwitch(const UnicodeString Switch,
+  TStrings * Params, int ParamsMax, bool CaseSensitive)
+{
   UnicodeString Value;
   int ParamsStart;
   int ParamsCount;
-  bool Result = FindSwitch(Switch, Value, ParamsStart, ParamsCount);
+  bool ValueSet;
+  bool Result = FindSwitch(Switch, Value, ParamsStart, ParamsCount, CaseSensitive, ValueSet);
   if (Result)
   {
     if ((ParamsMax >= 0) && (ParamsCount > ParamsMax))
@@ -251,14 +288,16 @@ bool __fastcall TOptions::UnusedSwitch(UnicodeString & Switch)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TOptions::WasSwitchAdded(UnicodeString & Switch)
+bool __fastcall TOptions::WasSwitchAdded(UnicodeString & Switch, wchar_t & SwitchMark)
 {
   bool Result =
-    ALWAYS_TRUE(FOptions.size() > 0) &&
+    DebugAlwaysTrue(FOptions.size() > 0) &&
     (FOptions.back().Type == otSwitch);
   if (Result)
   {
-    Switch = FOptions.back().Name;
+    TOption & Option = FOptions.back();
+    Switch = Option.Name;
+    SwitchMark = Option.SwitchMark;
   }
   return Result;
 }
@@ -267,7 +306,7 @@ void __fastcall TOptions::ParamsProcessed(int ParamsStart, int ParamsCount)
 {
   if (ParamsCount > 0)
   {
-    assert((ParamsStart >= 0) && ((ParamsStart - ParamsCount + 1) <= FParamCount));
+    DebugAssert((ParamsStart >= 0) && ((ParamsStart - ParamsCount + 1) <= FParamCount));
 
     size_t Index = 0;
     while ((Index < FOptions.size()) && (ParamsStart > 0))
@@ -280,8 +319,8 @@ void __fastcall TOptions::ParamsProcessed(int ParamsStart, int ParamsCount)
         {
           while (ParamsCount > 0)
           {
-            assert(Index < FOptions.size());
-            assert(FOptions[Index].Type == otParam);
+            DebugAssert(Index < FOptions.size());
+            DebugAssert(FOptions[Index].Type == otParam);
             FOptions.erase(FOptions.begin() + Index);
             --FParamCount;
             --ParamsCount;
@@ -303,7 +342,7 @@ void __fastcall TOptions::LogOptions(TLogOptionEvent OnLogOption)
     {
       case otParam:
         LogStr = FORMAT(L"Parameter: %s", (Option.Value));
-        assert(Option.Name.IsEmpty());
+        DebugAssert(Option.Name.IsEmpty());
         break;
 
       case otSwitch:
@@ -313,7 +352,7 @@ void __fastcall TOptions::LogOptions(TLogOptionEvent OnLogOption)
         break;
 
       default:
-        FAIL;
+        DebugFail();
         break;
     }
     OnLogOption(LogStr);

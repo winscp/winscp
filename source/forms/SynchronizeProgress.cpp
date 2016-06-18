@@ -14,6 +14,11 @@
 #pragma package(smart_init)
 #pragma link "PathLabel"
 #ifndef NO_RESOURCES
+#pragma link "PngImageList"
+#pragma link "TB2Dock"
+#pragma link "TB2Item"
+#pragma link "TB2Toolbar"
+#pragma link "TBX"
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
@@ -28,16 +33,17 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner
   FMinimizedByMe = false;
   FCompareOnly = CompareOnly;
   UseSystemSettings(this);
+  HideComponentsPanel(this);
+  SelectScaledImageList(ImageList);
   if (!AllowMinimize)
   {
-    CancelButton->Left = CancelButton->Left +
-      (MinimizeButton->Left - CancelButton->Left) / 2;
-    MinimizeButton->Visible = false;
+    MinimizeItem->Visible = false;
   }
   else
   {
     SetGlobalMinimizeHandler(this, GlobalMinimize);
   }
+  FFrameAnimation.Init(AnimationPaintBox, L"SynchronizeDirectories");
 }
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()
@@ -45,6 +51,7 @@ __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()
   ClearGlobalMinimizeHandler(GlobalMinimize);
 
   ReleaseAsModal(this, FShowAsModalStorage);
+  UnhookFormActivation(this);
 
   if (IsApplicationMinimized() && FMinimizedByMe)
   {
@@ -63,20 +70,23 @@ void __fastcall TSynchronizeProgressForm::Start()
   Caption = FormatFormCaption(this, LoadStr(FCompareOnly ? SYNCHRONIZE_PROGRESS_COMPARE : SYNCHRONIZE_PROGRESS_SYNCHRONIZE2));
   if (!IsApplicationMinimized())
   {
-    // Do not showing the progress when the application is minimized,
+    // Do not show the progress when the application is minimized,
     // otherwise the form popups up unminimized.
     // Quick and dirty hack: with this form, we do not support showing it
     // once the application restores,
     // otherwise we would have to synchronize it somehow with the TProgressForm,
     // not to show it over the TProgressForm
+    // See solution in TMessageForm::CMShowingChanged.
     ShowAsModal(this, FShowAsModalStorage);
+    HookFormActivation(this);
   }
+  FFrameAnimation.Start();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::SetData(const UnicodeString LocalDirectory,
   const UnicodeString RemoteDirectory, bool & Continue)
 {
-  assert(FStarted);
+  DebugAssert(FStarted);
   LocalDirectoryLabel->Caption = LocalDirectory;
   RemoteDirectoryLabel->Caption = RemoteDirectory;
   Continue = !FCanceled;
@@ -92,7 +102,7 @@ void __fastcall TSynchronizeProgressForm::UpdateControls()
     FElapsed = Now() - FStartTime;
   }
   TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FElapsed);
-  CancelButton->Enabled = !FCanceled;
+  CancelItem->Enabled = !FCanceled;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::CancelOperation()
@@ -101,20 +111,9 @@ void __fastcall TSynchronizeProgressForm::CancelOperation()
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeProgressForm::CancelButtonClick(TObject * /*Sender*/)
-{
-  CancelOperation();
-}
-//---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
 {
   UpdateControls();
-}
-//---------------------------------------------------------------------------
-void __fastcall TSynchronizeProgressForm::MinimizeButtonClick(
-  TObject * Sender)
-{
-  CallGlobalMinimizeHandler(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::GlobalMinimize(TObject * /*Sender*/)
@@ -133,6 +132,27 @@ void __fastcall TSynchronizeProgressForm::Dispatch(void * AMessage)
   else
   {
     TForm::Dispatch(AMessage);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeProgressForm::CancelItemClick(TObject * /*Sender*/)
+{
+  CancelOperation();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeProgressForm::MinimizeItemClick(TObject * Sender)
+{
+  CallGlobalMinimizeHandler(Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeProgressForm::FormKeyDown(
+  TObject * /*Sender*/, WORD & Key, TShiftState /*Shift*/)
+{
+  // We do not have Cancel button, so we have to handle Esc key explicitly
+  if (Key == VK_ESCAPE)
+  {
+    CancelOperation();
+    Key = 0;
   }
 }
 //---------------------------------------------------------------------------

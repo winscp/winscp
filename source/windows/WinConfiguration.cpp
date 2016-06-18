@@ -1,8 +1,8 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
-#include "WinConfiguration.h"
 #include "Common.h"
+#include "WinConfiguration.h"
 #include "Exceptions.h"
 #include "Bookmarks.h"
 #include "Terminal.h"
@@ -18,10 +18,15 @@
 #include <InitGUID.h>
 #include <DragExt.h>
 #include <Math.hpp>
+#include <StrUtils.hpp>
+#include <Generics.Defaults.hpp>
+#include "FileInfo.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 TWinConfiguration * WinConfiguration = NULL;
+//---------------------------------------------------------------------------
+static UnicodeString NotepadName(L"notepad.exe");
 //---------------------------------------------------------------------------
 __fastcall TEditorData::TEditorData() :
   FileMask(L"*.*"),
@@ -67,9 +72,10 @@ bool __fastcall TEditorData::DecideExternalEditorText(UnicodeString ExternalEdit
   ReformatFileNameCommand(ExternalEditor);
   UnicodeString ProgramName = ExtractProgramName(ExternalEditor);
   // We explicitly do not use TEditorPreferences::GetDefaultExternalEditor(),
-  // as we need to expliclty refer to Notepad, even if the default external
+  // as we need to explicitly refer to the Notepad, even if the default external
   // editor ever changes
-  if (SameText(ProgramName, "notepad"))
+  UnicodeString NotepadProgramName = ExtractProgramName(NotepadName);
+  if (SameText(ProgramName, NotepadProgramName))
   {
     Result = true;
   }
@@ -107,7 +113,7 @@ bool __fastcall TEditorPreferences::Matches(const UnicodeString FileName,
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TEditorPreferences::GetDefaultExternalEditor()
 {
-  return L"notepad.exe";
+  return NotepadName;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferences::LegacyDefaults()
@@ -118,7 +124,7 @@ void __fastcall TEditorPreferences::LegacyDefaults()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TEditorPreferences::ExtractExternalEditorName() const
 {
-  assert(FData.Editor == edExternal);
+  DebugAssert(FData.Editor == edExternal);
   UnicodeString ExternalEditor = FData.ExternalEditor;
   ReformatFileNameCommand(ExternalEditor);
   // Trim is a workaround for unknown problem with "notepad  " (2 trailing spaces)
@@ -303,7 +309,7 @@ void __fastcall TEditorList::Move(int CurIndex, int NewIndex)
 //---------------------------------------------------------------------------
 void __fastcall TEditorList::Delete(int Index)
 {
-  assert((Index >= 0) && (Index < Count));
+  DebugAssert((Index >= 0) && (Index < Count));
   delete Editors[Index];
   FEditors->Delete(Index);
   Modify();
@@ -430,12 +436,15 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   FDDExtInstalled = -1;
   FBookmarks = new TBookmarks();
   FCustomCommandList = new TCustomCommandList();
+  FExtensionList = new TCustomCommandList();
   FEditorList = new TEditorList();
   FDefaultUpdatesPeriod = 0;
   FDontDecryptPasswords = 0;
   FMasterPasswordSession = 0;
   FMasterPasswordSessionAsked = false;
   FSystemIconFont.reset(new TFont());
+  FCustomCommandOptions.reset(new TStringList());
+  FCustomCommandOptionsModified = false;
   UpdateSystemIconFont();
   Default();
 
@@ -452,17 +461,19 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::~TWinConfiguration()
 {
-  if (!FTemporarySessionFile.IsEmpty()) DeleteFile(::ApiPath(FTemporarySessionFile));
+  if (!FTemporarySessionFile.IsEmpty()) DeleteFile(ApiPath(FTemporarySessionFile));
   ClearTemporaryLoginData();
 
   delete FBookmarks;
   delete FCustomCommandList;
+  delete FExtensionList;
   delete FEditorList;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::Default()
 {
   FCustomCommandsDefaults = true;
+  FCustomCommandOptionsModified = false;
 
   TCustomWinConfiguration::Default();
 
@@ -504,7 +515,6 @@ void __fastcall TWinConfiguration::Default()
   FTemporaryDirectoryCleanup = true;
   FConfirmTemporaryDirectoryCleanup = true;
   FPreservePanelState = true;
-  FTheme = THEME_OFFICEXP;
   FLastStoredSession = L"";
   // deliberately not being saved, so that when saving ad-hoc workspace,
   // we do not offer to overwrite the last saved workspace, what may be undesirable
@@ -539,14 +549,28 @@ void __fastcall TWinConfiguration::Default()
   FOpenedStoredSessionFolders = L"";
   FAutoImportedFromPuttyOrFilezilla = false;
   FGenerateUrlComponents = -1;
+  FGenerateUrlCodeTarget = guctUrl;
+  FGenerateUrlScriptFormat = sfScriptFile;
+  FGenerateUrlAssemblyLanguage = alCSharp;
   FExternalSessionInExistingInstance = true;
+  FKeepOpenWhenNoSession = false;
   FLocalIconsByExt = false;
+  FBidiModeOverride = lfoLanguageIfRecommended;
+  FFlipChildrenOverride = lfoLanguageIfRecommended;
+  FShowTips = true;
+  FTipsSeen = L"";
+  FTipsShown = Now();
+  FRunsSinceLastTip = 0;
+  FExtensionsDeleted = L"";
+
   HonorDrivePolicy = true;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
   FEditor.Font.FontSize = DefaultFixedWidthFontSize;
   FEditor.Font.FontStyle = 0;
   FEditor.Font.FontCharset = DEFAULT_CHARSET;
+  FEditor.FontColor = TColor(0);
+  FEditor.BackgroundColor = TColor(0);
   FEditor.WordWrap = false;
   FEditor.FindText = L"";
   FEditor.ReplaceText = L"";
@@ -582,6 +606,7 @@ void __fastcall TWinConfiguration::Default()
   FUpdates.ShownResults = false;
   FUpdates.BetaVersions = asAuto;
   FUpdates.ShowOnStartup = true;
+  FUpdates.AuthenticationEmail = L"";
   // for backward compatibility the default is decided based on value of ProxyHost
   FUpdates.ConnectionType = (TConnectionType)-1;
   FUpdates.ProxyHost = L""; // keep empty (see above)
@@ -778,7 +803,7 @@ TStorage __fastcall TWinConfiguration::GetStorage()
     }
 
     FStorage = stIniFile;
-    if (!FileExists(::ApiPath(IniFileStorageNameForReading)))
+    if (!FileExists(ApiPath(IniFileStorageNameForReading)))
     {
       if (DetectRegistryStorage(HKEY_CURRENT_USER) ||
           DetectRegistryStorage(HKEY_LOCAL_MACHINE) ||
@@ -810,7 +835,7 @@ void __fastcall TWinConfiguration::RecryptPasswords(TStrings * RecryptPasswordEr
   try
   {
     TTerminalManager * Manager = TTerminalManager::Instance(false);
-    assert(Manager != NULL);
+    DebugAssert(Manager != NULL);
     if (Manager != NULL)
     {
       Manager->RecryptPasswords();
@@ -894,7 +919,6 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     TemporaryDirectoryCleanup); \
     KEY(Bool,     ConfirmTemporaryDirectoryCleanup); \
     KEY(Bool,     PreservePanelState); \
-    KEY(String,   Theme); \
     KEY(String,   LastStoredSession); \
     KEY(Bool,     AutoSaveWorkspace); \
     KEY(Bool,     AutoSaveWorkspacePasswords); \
@@ -922,15 +946,30 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   OpenedStoredSessionFolders); \
     KEY(Bool,     AutoImportedFromPuttyOrFilezilla); \
     KEY(Integer,  GenerateUrlComponents); \
+    KEY(Integer,  GenerateUrlCodeTarget); \
+    KEY(Integer,  GenerateUrlScriptFormat); \
+    KEY(Integer,  GenerateUrlAssemblyLanguage); \
     KEY(Bool,     ExternalSessionInExistingInstance); \
+    KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     LocalIconsByExt); \
+    KEY(Integer,  BidiModeOverride); \
+    KEY(Integer,  FlipChildrenOverride); \
+    KEY(Bool,     ShowTips); \
+    KEY(String,   TipsSeen); \
+    KEY(DateTime, TipsShown); \
+    KEY(Integer,  RunsSinceLastTip); \
     KEY(Bool,     HonorDrivePolicy); \
+    KEY(Integer,  LastMachineInstallations); \
+    KEYEX(String, FExtensionsDeleted, L"ExtensionsDeleted"); \
+    KEYEX(String, FExtensionsOrder, L"ExtensionsOrder"); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
     KEY(Integer,  Editor.Font.FontSize); \
     KEY(Integer,  Editor.Font.FontStyle); \
     KEY(Integer,  Editor.Font.FontCharset); \
+    KEY(Integer,  Editor.FontColor); \
+    KEY(Integer,  Editor.BackgroundColor); \
     KEY(Bool,     Editor.WordWrap); \
     KEY(String,   Editor.FindText); \
     KEY(String,   Editor.ReplaceText); \
@@ -962,6 +1001,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  FUpdates.ShownResults); \
     KEY(Integer,  FUpdates.BetaVersions); \
     KEY(Bool,     FUpdates.ShowOnStartup); \
+    KEY(String,   FUpdates.AuthenticationEmail); \
     KEY(Integer,  FUpdates.ConnectionType); \
     KEY(String,   FUpdates.ProxyHost); \
     KEY(Integer,  FUpdates.ProxyPort); \
@@ -976,6 +1016,18 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   FUpdates.Results.NewsUrl); \
     KEYEX(Integer,FUpdates.Results.NewsSize.Width, L"NewsWidth"); \
     KEYEX(Integer,FUpdates.Results.NewsSize.Height, L"NewsHeight"); \
+    KEY(String,   FUpdates.Results.DownloadUrl); \
+    KEY(Int64,    FUpdates.Results.DownloadSize); \
+    KEY(String,   FUpdates.Results.DownloadSha256); \
+    KEY(String,   FUpdates.Results.AuthenticationError); \
+    KEY(Bool,     FUpdates.Results.OpenGettingStarted); \
+    KEY(String,   FUpdates.Results.DownloadingUrl); \
+    KEYEX(Integer,FUpdates.Results.TipsSize.Width, L"TipsWidth"); \
+    KEYEX(Integer,FUpdates.Results.TipsSize.Height, L"TipsHeight"); \
+    KEY(String,   FUpdates.Results.TipsUrl); \
+    KEY(String,   FUpdates.Results.Tips); \
+    KEY(Integer,  FUpdates.Results.TipsIntervalDays); \
+    KEY(Integer,  FUpdates.Results.TipsIntervalRuns); \
     KEY(String,   FUpdates.DotNetVersion); \
     KEY(String,   FUpdates.ConsoleVersion); \
   ); \
@@ -1053,6 +1105,15 @@ void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool
   if ((All && !FCustomCommandsDefaults) || FCustomCommandList->Modified)
   {
     FCustomCommandList->Save(Storage);
+  }
+
+  if ((All || FCustomCommandOptionsModified) &&
+      Storage->OpenSubKey(L"CustomCommandOptions", true))
+  {
+    Storage->ClearValues();
+    Storage->WriteValues(FCustomCommandOptions.get(), true);
+    Storage->CloseSubKey();
+    FCustomCommandOptionsModified = false;
   }
 
   if ((All || FEditorList->Modified) &&
@@ -1133,6 +1194,121 @@ void __fastcall TWinConfiguration::LoadFrom(THierarchicalStorage * Storage)
   AddVersionToHistory();
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::DoLoadExtensionList(
+  const UnicodeString & Path, const UnicodeString & PathId, TStringList * DeletedExtensions)
+{
+  TSearchRecChecked SearchRec;
+  int FindAttrs = faReadOnly | faArchive;
+  if (FindFirstUnchecked(IncludeTrailingBackslash(Path) + L"*.*", FindAttrs, SearchRec) == 0)
+  {
+    try
+    {
+      do
+      {
+        UnicodeString Id = TCustomCommandType::GetExtensionId(SearchRec.Name);
+        if (!Id.IsEmpty())
+        {
+          Id = IncludeTrailingBackslash(PathId) + Id;
+          if (DeletedExtensions->IndexOf(Id) >= 0)
+          {
+            // reconstruct the list, so that we remove the commands that no longer exists
+            AddToList(FExtensionsDeleted, Id, L"|");
+          }
+          else
+          {
+            std::unique_ptr<TCustomCommandType> CustomCommand(new TCustomCommandType());
+            CustomCommand->Id = Id;
+
+            try
+            {
+              CustomCommand->LoadExtension(IncludeTrailingBackslash(Path) + SearchRec.Name);
+              FExtensionList->Add(CustomCommand.release());
+            }
+            catch (...)
+            {
+              // skip invalid extension files
+            }
+          }
+        }
+      }
+      while (FindNextChecked(SearchRec) == 0);
+    }
+    __finally
+    {
+      FindClose(SearchRec);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ParseExtensionList(TStrings * Strings, UnicodeString S)
+{
+  while (!S.IsEmpty())
+  {
+    UnicodeString Extension = CutToChar(S, L'|', false);
+    Strings->Add(Extension);
+  }
+}
+//---------------------------------------------------------------------------
+const UnicodeString ExtensionsSubFolder(L"Extensions");
+const UnicodeString ExtensionsCommonPathId(L"common");
+const UnicodeString ExtensionsCommonExtPathId(L"commonext");
+const UnicodeString ExtensionsUserExtPathId(L"userext");
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TWinConfiguration::GetUserExtensionsPath()
+{
+  return IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) + L"WinSCP\\" + ExtensionsSubFolder;
+}
+//---------------------------------------------------------------------------
+TStrings * __fastcall TWinConfiguration::GetExtensionsPaths()
+{
+  std::unique_ptr<TStrings> Result(new TStringList());
+  UnicodeString ExeParentPath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
+  Result->Values[ExtensionsCommonPathId] = ExeParentPath;
+  UnicodeString CommonExtensions = IncludeTrailingBackslash(ExeParentPath) + ExtensionsSubFolder;
+  Result->Values[ExtensionsCommonExtPathId] = CommonExtensions;
+  Result->Values[ExtensionsUserExtPathId] = GetUserExtensionsPath();
+  return Result.release();
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TWinConfiguration::GetExtensionId(const UnicodeString & ExtensionPath)
+{
+  UnicodeString Path = ExcludeTrailingBackslash(ExtractFilePath(ExtensionPath));
+
+  UnicodeString NameId = TCustomCommandType::GetExtensionId(ExtractFileName(ExtensionPath));
+  if (!NameId.IsEmpty())
+  {
+    std::unique_ptr<TStrings> ExtensionsPaths(GetExtensionsPaths());
+    for (int Index = 0; Index < ExtensionsPaths->Count; Index++)
+    {
+      if (CompareFileName(Path, ExtensionsPaths->ValueFromIndex[Index]))
+      {
+        return IncludeTrailingBackslash(ExtensionsPaths->Names[Index]) + NameId;
+      }
+    }
+  }
+  return L"";
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::LoadExtensionList()
+{
+  FExtensionList->Clear();
+
+  std::unique_ptr<TStringList> DeletedExtensions(CreateSortedStringList());
+  ParseExtensionList(DeletedExtensions.get(), FExtensionsDeleted);
+  // will reconstruct the list in DoLoadExtensionList
+  FExtensionsDeleted = L"";
+
+  std::unique_ptr<TStrings> ExtensionsPaths(GetExtensionsPaths());
+  for (int Index = 0; Index < ExtensionsPaths->Count; Index++)
+  {
+    DoLoadExtensionList(ExtensionsPaths->ValueFromIndex[Index], ExtensionsPaths->Names[Index], DeletedExtensions.get());
+  }
+
+  std::unique_ptr<TStringList> OrderedExtensions(new TStringList());
+  ParseExtensionList(OrderedExtensions.get(), FExtensionsOrder);
+  FExtensionList->SortBy(OrderedExtensions.get());
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
 {
   TCustomWinConfiguration::LoadData(Storage);
@@ -1144,6 +1320,9 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   #pragma warn +eas
   #undef KEYEX
 
+  // Load after the ExtensionsDeleted and ExtensionsOrder
+  LoadExtensionList();
+
   // to reflect changes to PanelFont
   UpdateIconFont();
 
@@ -1153,7 +1332,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
   }
 
-  if (Storage->HasSubKey("CustomCommands"))
+  if (Storage->HasSubKey(L"CustomCommands"))
   {
     FCustomCommandList->Load(Storage);
     FCustomCommandsDefaults = false;
@@ -1162,11 +1341,18 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   {
     // can this (=reloading of configuration) even happen?
     // if it does, shouldn't we reset default commands?
-    FAIL;
+    DebugFail();
     FCustomCommandList->Clear();
     FCustomCommandsDefaults = false;
   }
   FCustomCommandList->Reset();
+
+  if (Storage->OpenSubKey(L"CustomCommandOptions", false))
+  {
+    Storage->ReadValues(FCustomCommandOptions.get(), true);
+    Storage->CloseSubKey();
+    FCustomCommandOptionsModified = false;
+  }
 
   if (Storage->OpenSubKey(L"Interface\\Editor", false, true))
   try
@@ -1180,7 +1366,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   }
 
   // load legacy editor configuration
-  assert(FLegacyEditor != NULL);
+  DebugAssert(FLegacyEditor != NULL);
   if (Storage->OpenSubKey(L"Interface\\Editor", false, true))
   {
     try
@@ -1199,6 +1385,7 @@ void __fastcall TWinConfiguration::LoadAdmin(THierarchicalStorage * Storage)
   TCustomWinConfiguration::LoadAdmin(Storage);
   FDisableOpenEdit = Storage->ReadBool(L"DisableOpenEdit", FDisableOpenEdit);
   FDefaultUpdatesPeriod = Storage->ReadInteger(L"DefaultUpdatesPeriod", FDefaultUpdatesPeriod);
+  FMachineInstallations = Storage->ReadInteger(L"Installations", 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::CopyData(THierarchicalStorage * Source, THierarchicalStorage * Target)
@@ -1221,7 +1408,7 @@ void __fastcall TWinConfiguration::ClearTemporaryLoginData()
 {
   if (!FTemporaryKeyFile.IsEmpty())
   {
-    DeleteFile(::ApiPath(FTemporaryKeyFile));
+    DeleteFile(ApiPath(FTemporaryKeyFile));
     FTemporaryKeyFile = L"";
   }
 }
@@ -1235,7 +1422,7 @@ void __fastcall TWinConfiguration::AddVersionToHistory()
   while (!CurrentVersionPresent && (From < FVersionHistory.Length()))
   {
     UnicodeString VersionInfo = CopyToChars(FVersionHistory, From, L";", true);
-    UnicodeString VersionStr = ::CutToChar(VersionInfo, L',', true);
+    UnicodeString VersionStr = CutToChar(VersionInfo, L',', true);
     int Version;
 
     if (TryStrToInt(VersionStr, Version) &&
@@ -1279,8 +1466,8 @@ bool __fastcall TWinConfiguration::GetAnyBetaInVersionHistory()
   while (!AnyBeta && (From < VersionHistory.Length()))
   {
     UnicodeString VersionInfo = CopyToChars(VersionHistory, From, L";", true);
-    ::CutToChar(VersionInfo, L',', true);
-    UnicodeString ReleaseType = ::CutToChar(VersionInfo, ',', true);
+    CutToChar(VersionInfo, L',', true);
+    UnicodeString ReleaseType = CutToChar(VersionInfo, ',', true);
 
     if (DoIsBeta(ReleaseType))
     {
@@ -1409,8 +1596,8 @@ void __fastcall TWinConfiguration::SetMasterPassword(UnicodeString value)
   {
     FPlainMasterPasswordDecrypt = value;
   }
-  else if (ALWAYS_TRUE(FUseMasterPassword) &&
-      ALWAYS_TRUE(ValidateMasterPassword(value)))
+  else if (DebugAlwaysTrue(FUseMasterPassword) &&
+      DebugAlwaysTrue(ValidateMasterPassword(value)))
   {
     FPlainMasterPasswordEncrypt = value;
     FPlainMasterPasswordDecrypt = value;
@@ -1437,8 +1624,8 @@ void __fastcall TWinConfiguration::ChangeMasterPassword(
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::ValidateMasterPassword(UnicodeString value)
 {
-  assert(UseMasterPassword);
-  assert(!FMasterPasswordVerifier.IsEmpty());
+  DebugAssert(UseMasterPassword);
+  DebugAssert(!FMasterPasswordVerifier.IsEmpty());
   bool Result = AES256Verify(value, HexToBytes(FMasterPasswordVerifier));
   return Result;
 }
@@ -1479,7 +1666,7 @@ void __fastcall TWinConfiguration::AskForMasterPassword()
   {
     FOnMasterPasswordPrompt();
 
-    assert(!FPlainMasterPasswordDecrypt.IsEmpty());
+    DebugAssert(!FPlainMasterPasswordDecrypt.IsEmpty());
   }
 }
 //---------------------------------------------------------------------------
@@ -1494,15 +1681,15 @@ void __fastcall TWinConfiguration::AskForMasterPasswordIfNotSet()
 void __fastcall TWinConfiguration::BeginMasterPasswordSession()
 {
   // We do not expect nesting
-  assert(FMasterPasswordSession == 0);
-  assert(!FMasterPasswordSessionAsked || (FMasterPasswordSession > 0));
+  DebugAssert(FMasterPasswordSession == 0);
+  DebugAssert(!FMasterPasswordSessionAsked || (FMasterPasswordSession > 0));
   // This should better be thread-specific
   FMasterPasswordSession++;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::EndMasterPasswordSession()
 {
-  if (ALWAYS_TRUE(FMasterPasswordSession > 0))
+  if (DebugAlwaysTrue(FMasterPasswordSession > 0))
   {
     FMasterPasswordSession--;
   }
@@ -1726,11 +1913,6 @@ void __fastcall TWinConfiguration::SetPreservePanelState(bool value)
   SET_CONFIG_PROPERTY(PreservePanelState);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetTheme(UnicodeString value)
-{
-  SET_CONFIG_PROPERTY_EX(Theme, ConfigureInterface());
-}
-//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLastStoredSession(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(LastStoredSession);
@@ -1838,7 +2020,7 @@ void __fastcall TWinConfiguration::UpdateIconFont()
   }
   else
   {
-    if (ALWAYS_TRUE(FSystemIconFont.get() != NULL) &&
+    if (DebugAlwaysTrue(FSystemIconFont.get() != NULL) &&
         !SameFont(Screen->IconFont, FSystemIconFont.get()))
     {
       Screen->IconFont->Assign(FSystemIconFont.get());
@@ -1877,14 +2059,64 @@ void __fastcall TWinConfiguration::SetGenerateUrlComponents(int value)
   SET_CONFIG_PROPERTY(GenerateUrlComponents);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetGenerateUrlCodeTarget(TGenerateUrlCodeTarget value)
+{
+  SET_CONFIG_PROPERTY(GenerateUrlCodeTarget);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetGenerateUrlScriptFormat(TScriptFormat value)
+{
+  SET_CONFIG_PROPERTY(GenerateUrlScriptFormat);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetGenerateUrlAssemblyLanguage(TAssemblyLanguage value)
+{
+  SET_CONFIG_PROPERTY(GenerateUrlAssemblyLanguage);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetExternalSessionInExistingInstance(bool value)
 {
   SET_CONFIG_PROPERTY(ExternalSessionInExistingInstance);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetKeepOpenWhenNoSession(bool value)
+{
+  SET_CONFIG_PROPERTY(KeepOpenWhenNoSession);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLocalIconsByExt(bool value)
 {
   SET_CONFIG_PROPERTY(LocalIconsByExt);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetBidiModeOverride(TLocaleFlagOverride value)
+{
+  SET_CONFIG_PROPERTY(BidiModeOverride);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetFlipChildrenOverride(TLocaleFlagOverride value)
+{
+  SET_CONFIG_PROPERTY(FlipChildrenOverride);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetShowTips(bool value)
+{
+  SET_CONFIG_PROPERTY(ShowTips);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTipsSeen(UnicodeString value)
+{
+  SET_CONFIG_PROPERTY(TipsSeen);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTipsShown(TDateTime value)
+{
+  SET_CONFIG_PROPERTY(TipsShown);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetRunsSinceLastTip(int value)
+{
+  SET_CONFIG_PROPERTY(RunsSinceLastTip);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::GetHonorDrivePolicy()
@@ -1903,12 +2135,64 @@ void __fastcall TWinConfiguration::SetHonorDrivePolicy(bool value)
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCustomCommandList(TCustomCommandList * value)
 {
-  assert(FCustomCommandList);
+  DebugAssert(FCustomCommandList);
   if (!FCustomCommandList->Equals(value))
   {
     FCustomCommandList->Assign(value);
     FCustomCommandsDefaults = false;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetExtensionList(TCustomCommandList * value)
+{
+  if (!ExtensionList->Equals(value))
+  {
+    std::unique_ptr<TStringList> DeletedExtensions(CreateSortedStringList());
+    ParseExtensionList(DeletedExtensions.get(), FExtensionsDeleted);
+
+    for (int Index = 0; Index < ExtensionList->Count; Index++)
+    {
+      const TCustomCommandType * CustomCommand = ExtensionList->Commands[Index];
+      int Index = value->FindIndexByFileName(CustomCommand->FileName);
+      if (Index < 0)
+      {
+        if (FileExists(CustomCommand->FileName) &&
+            !DeleteFile(CustomCommand->FileName))
+        {
+          DeletedExtensions->Add(CustomCommand->Id);
+        }
+      }
+    }
+
+    FExtensionsOrder = L"";
+    for (int Index = 0; Index < value->Count; Index++)
+    {
+      const TCustomCommandType * CustomCommand = value->Commands[Index];
+      AddToList(FExtensionsOrder, CustomCommand->Id, L"|");
+
+      int DeletedIndex = DeletedExtensions->IndexOf(CustomCommand->Id);
+      if (DeletedIndex >= 0)
+      {
+        DeletedExtensions->Delete(DeletedIndex);
+      }
+    }
+
+    FExtensionList->Assign(value);
+
+    FExtensionsDeleted = L"";
+    for (int Index = 0; Index < DeletedExtensions->Count; Index++)
+    {
+      AddToList(FExtensionsDeleted, DeletedExtensions->Strings[Index], L"|");
+    }
+
+    Changed();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::CustomCommandShortCuts(TShortCuts & ShortCuts) const
+{
+  CustomCommandList->ShortCuts(ShortCuts);
+  ExtensionList->ShortCuts(ShortCuts);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetBookmarks(UnicodeString Key,
@@ -1951,7 +2235,13 @@ int __fastcall TWinConfiguration::GetLastMonitor()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TWinConfiguration::ExpandedTemporaryDirectory()
 {
-  return ExpandFileName(ExpandEnvironmentVariables(DDTemporaryDirectory));
+  UnicodeString Result =
+    ExpandFileName(ExpandEnvironmentVariables(DDTemporaryDirectory));
+  if (Result.IsEmpty())
+  {
+    Result = SystemTemporaryDirectory();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TWinConfiguration::TemporaryDir(bool Mask)
@@ -2011,7 +2301,7 @@ void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
   {
     try
     {
-      if (ALWAYS_TRUE(F->Count > 0))
+      if (DebugAlwaysTrue(F->Count > 0))
       {
         Usage->Inc(L"TemporaryDirectoryCleanups");
       }
@@ -2043,104 +2333,6 @@ void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
   }
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-#pragma warn -inl
-//---------------------------------------------------------------------------
-class TAsInheritedReader : public TReader
-{
-public:
-  __fastcall TAsInheritedReader(TStream * Stream, int BufSize) :
-    TReader(Stream, BufSize)
-  {
-    OnAncestorNotFound = AncestorNotFound;
-  }
-
-  virtual void __fastcall ReadPrefix(TFilerFlags & Flags, int & AChildPos)
-  {
-    TReader::ReadPrefix(Flags, AChildPos);
-    Flags << ffInherited;
-  }
-
-  void __fastcall AncestorNotFound(TReader * Reader,
-    const UnicodeString ComponentName, TMetaClass * ComponentClass,
-    TComponent *& Component)
-  {
-    assert(!Component);
-    if (ComponentName.IsEmpty())
-    {
-      for (int Index = 0; Index < LookupRoot->ComponentCount; Index++)
-      {
-        Component = LookupRoot->Components[Index];
-        if (Component->Name.IsEmpty())
-        {
-          return;
-        }
-      }
-      Component = NULL;
-    }
-  }
-};
-//---------------------------------------------------------------------------
-#pragma warn .inl
-//---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::InternalReloadComponentRes(const UnicodeString ResName,
-  HINSTANCE HInst, TComponent * Instance)
-{
-  HANDLE HRsrc;
-  bool Result;
-
-  if (!HInst)
-  {
-    HInst = HInstance;
-  }
-  HRsrc = FindResource(HInst, ResName.c_str(), RT_RCDATA);
-  Result = (HRsrc != 0);
-  if (Result)
-  {
-    TResourceStream * ResStream = new TResourceStream(
-      reinterpret_cast<int>(HInst), ResName, RT_RCDATA);
-    try
-    {
-      TReader * Reader;
-      Reader = new TAsInheritedReader(ResStream, 4096);
-
-      try
-      {
-        /*Instance =*/ Reader->ReadRootComponent(Instance);
-      }
-      __finally
-      {
-        delete Reader;
-      }
-    }
-    __finally
-    {
-      delete ResStream;
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::InitComponent(TComponent * Instance,
-  TClass RootAncestor, TClass ClassType)
-{
-  bool Result = false;
-  if ((ClassType != __classid(TComponent)) && (ClassType != RootAncestor))
-  {
-    if (InitComponent(Instance, RootAncestor, ClassType->ClassParent()))
-    {
-      Result = true;
-    }
-    if (InternalReloadComponentRes(ClassType->ClassName(),
-          reinterpret_cast<HINSTANCE>(FindResourceHInstance(FindClassHInstance(ClassType))),
-          Instance))
-    {
-      Result = true;
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 LCID __fastcall TWinConfiguration::GetLocale()
 {
   if (!FLocale)
@@ -2157,7 +2349,7 @@ LCID __fastcall TWinConfiguration::GetLocale()
 
       Count = Langs->Count;
       Index = 0;
-      while ((Index < Count) && !FLocale)
+      while ((Index < Count) && (FLocale == 0))
       {
         if (Langs->Ext[Index] == ResourceExt)
         {
@@ -2169,6 +2361,10 @@ LCID __fastcall TWinConfiguration::GetLocale()
             MAKELANGID(PRIMARYLANGID(Langs->LocaleID[Index]),
               SUBLANG_DEFAULT));
         }
+        if (FLocale != 0)
+        {
+          FLocaleModuleName = ResourceModule;
+        }
         Index++;
       }
     }
@@ -2178,20 +2374,14 @@ LCID __fastcall TWinConfiguration::GetLocale()
 }
 //---------------------------------------------------------------------------
 HINSTANCE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
-  UnicodeString * FileName)
+  UnicodeString & FileName)
 {
-  UnicodeString FileNameStorage;
-  if (FileName == NULL)
-  {
-    FileName = &FileNameStorage;
-  }
-
   HINSTANCE Instance = TCustomWinConfiguration::LoadNewResourceModule(ALocale, FileName);
   if (Instance != NULL)
   {
     try
     {
-      CheckTranslationVersion(*FileName, false);
+      CheckTranslationVersion(FileName, false);
     }
     catch(...)
     {
@@ -2200,66 +2390,6 @@ HINSTANCE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
     }
   }
   return Instance;
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetResourceModule(HINSTANCE Instance)
-{
-  TCustomWinConfiguration::SetResourceModule(Instance);
-
-  TOperationVisualizer Visualizer;
-
-  int Count;
-  UnicodeString OrigName;
-  int OrigLeft;
-  int OrigTop;
-
-  TForm * Form;
-  Count = Screen->FormCount;
-
-  for (int Index = 0; Index < Count; Index++)
-  {
-    Form = Screen->Forms[Index];
-    SendMessage(Form->Handle, WM_LOCALE_CHANGE, 0, 1);
-  }
-
-  ConfigureInterface();
-
-  for (int Index = 0; Index < Count; Index++)
-  {
-    Form = Screen->Forms[Index];
-    TComponent * Component;
-    for (int Index = 0; Index < Form->ComponentCount; Index++)
-    {
-      Component = Form->Components[Index];
-      if (dynamic_cast<TFrame*>(Component))
-      {
-        OrigName = Component->Name;
-        InitComponent(Component, __classid(TFrame), Component->ClassType());
-        Component->Name = OrigName;
-      }
-    }
-
-    OrigLeft = Form->Left;
-    OrigTop = Form->Top;
-    OrigName = Form->Name;
-    InitComponent(Form, __classid(TForm), Form->ClassType());
-    Form->Name = OrigName;
-
-    Form->Position = poDesigned;
-    Form->Left = OrigLeft;
-    Form->Top = OrigTop;
-    SendMessage(Form->Handle, WM_LOCALE_CHANGE, 1, 1);
-  }
-
-  TDataModule * DataModule;
-  Count = Screen->DataModuleCount;
-  for (int Index = 0; Index < Count; Index++)
-  {
-    DataModule = Screen->DataModules[Index];
-    OrigName = DataModule->Name;
-    InitComponent(DataModule, __classid(TDataModule), DataModule->ClassType());
-    DataModule->Name = OrigName;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::CheckTranslationVersion(const UnicodeString FileName,
@@ -2313,6 +2443,20 @@ void __fastcall TWinConfiguration::SetEditorList(const TEditorList * value)
   {
     *FEditorList = *value;
     Changed();
+  }
+}
+//---------------------------------------------------------------------------
+TStrings * __fastcall TWinConfiguration::GetCustomCommandOptions()
+{
+  return FCustomCommandOptions.get();
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetCustomCommandOptions(TStrings * value)
+{
+  if (!FCustomCommandOptions->Equals(value))
+  {
+    FCustomCommandOptions->Assign(value);
+    FCustomCommandOptionsModified = true;
   }
 }
 //---------------------------------------------------------------------------
@@ -2436,6 +2580,8 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
       ScpExplorer.DriveView :
       (ScpCommander.LocalPanel.DriveView || ScpCommander.RemotePanel.DriveView));
   Usage->Set(L"MinimizeToTray", MinimizeToTray);
+  Usage->Set(L"ShowingTips", ShowTips);
+  TipsUpdateStaticUsage();
 
   Usage->Set(L"CommanderNortonLikeMode", int(ScpCommander.NortonLikeMode));
   Usage->Set(L"CommanderExplorerKeyboardShortcuts", ScpCommander.ExplorerKeyboardShortcuts);
@@ -2455,7 +2601,39 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   }
   Usage->Set(L"ExternalEditors", ExternalEditors);
 
-  Usage->Set(L"ThemeNotOfficeXP", (Theme != THEME_OFFICEXP));
+  if (LastMachineInstallations < FMachineInstallations)
+  {
+    Usage->Inc(L"InstallationsMachine", (FMachineInstallations - LastMachineInstallations));
+    LastMachineInstallations = FMachineInstallations;
+  }
+
+  int ExtensionsPortable = 0;
+  int ExtensionsInstalled = 0;
+  int ExtensionsUser = 0;
+  for (int Index = 0; Index < FExtensionList->Count; Index++)
+  {
+    const TCustomCommandType * CustomCommand = FExtensionList->Commands[Index];
+    UnicodeString PathId = ExcludeTrailingBackslash(ExtractFilePath(CustomCommand->Id));
+    if (SameText(PathId, ExtensionsCommonPathId))
+    {
+      ExtensionsPortable++;
+    }
+    else if (SameText(PathId, ExtensionsCommonExtPathId))
+    {
+      ExtensionsInstalled++;
+    }
+    else if (SameText(PathId, ExtensionsUserExtPathId))
+    {
+      ExtensionsUser++;
+    }
+  }
+  Usage->Set(L"ExtensionsPortableCount", (ExtensionsPortable));
+  Usage->Set(L"ExtensionsInstalledCount", (ExtensionsInstalled));
+  Usage->Set(L"ExtensionsUserCount", (ExtensionsUser));
+
+  std::unique_ptr<TStringList> DeletedExtensions(CreateSortedStringList());
+  ParseExtensionList(DeletedExtensions.get(), FExtensionsDeleted);
+  Usage->Set(L"ExtensionsDeleted", (DeletedExtensions->Count));
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::RestoreFont(
@@ -2486,7 +2664,13 @@ __fastcall TCustomCommandType::TCustomCommandType(const TCustomCommandType & Oth
   FName(Other.FName),
   FCommand(Other.FCommand),
   FParams(Other.FParams),
-  FShortCut(Other.FShortCut)
+  FShortCut(Other.FShortCut),
+  FId(Other.FId),
+  FFileName(Other.FFileName),
+  FDescription(Other.FDescription),
+  FHomePage(Other.FHomePage),
+  FOptionsPage(Other.FOptionsPage),
+  FOptions(Other.FOptions)
 {
 }
 //---------------------------------------------------------------------------
@@ -2496,6 +2680,12 @@ TCustomCommandType & TCustomCommandType::operator=(const TCustomCommandType & Ot
   FCommand = Other.FCommand;
   FParams = Other.FParams;
   FShortCut = Other.FShortCut;
+  FId = Other.FId;
+  FFileName = Other.FFileName;
+  FDescription = Other.FDescription;
+  FHomePage = Other.FHomePage;
+  FOptionsPage = Other.FOptionsPage;
+  FOptions = Other.FOptions;
   return *this;
 }
 //---------------------------------------------------------------------------
@@ -2505,7 +2695,508 @@ bool __fastcall TCustomCommandType::Equals(const TCustomCommandType * Other) con
     (FName == Other->FName) &&
     (FCommand == Other->FCommand) &&
     (FParams == Other->FParams) &&
-    (FShortCut == Other->FShortCut);
+    (FShortCut == Other->FShortCut) &&
+    (FId == Other->FId) &&
+    (FFileName == Other->FFileName) &&
+    (FDescription == Other->FDescription) &&
+    (FHomePage == Other->FHomePage) &&
+    (FOptionsPage == Other->FOptionsPage) &&
+    (FOptions == Other->FOptions);
+}
+//---------------------------------------------------------------------------
+const UnicodeString ExtensionNameDirective(L"name");
+const UnicodeString ExtensionCommandDirective(L"command");
+const wchar_t ExtensionMark = L'@';
+const UnicodeString WinSCPExtensionExt(L".WinSCPextension");
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandType::GetExtensionId(const UnicodeString & Name)
+{
+  UnicodeString Result;
+  int P = Pos(UpperCase(WinSCPExtensionExt), UpperCase(Name));
+  // Ends with Ext or there's another extension after it
+  if ((P > 1) &&
+      ((Name.Length() == (P + WinSCPExtensionExt.Length() - 1)) || (Name[P + WinSCPExtensionExt.Length()] == L'.')))
+  {
+    Result = Name.SubString(1, P - 1);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandType::LoadExtension(const UnicodeString & Path)
+{
+  std::unique_ptr<TStringList> Lines(new TStringList());
+  FileName = Path;
+  LoadScriptFromFile(Path, Lines.get());
+  LoadExtension(Lines.get(), Path);
+  Command = ReplaceStr(Command, L"%EXTENSION_PATH%", Path);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const UnicodeString & PathForBaseName)
+{
+  Params = ccLocal;
+  bool AnythingFound = false;
+  std::set<UnicodeString> OptionIds;
+
+  UnicodeString ExtensionBaseName = ExtractFileName(PathForBaseName);
+  // ExtractFileNameOnly trims the last extension only, we want to trim all extensions
+  ExtensionBaseName = CutToChar(ExtensionBaseName, L'.', true);
+
+  for (int Index = 0; Index < Lines->Count; Index++)
+  {
+    UnicodeString Line = Lines->Strings[Index].Trim();
+    if (!Line.IsEmpty())
+    {
+      bool IsComment = false;
+      if (StartsText(ExtensionMark, Line))
+      {
+        IsComment = true;
+      }
+      else if (StartsText(L"rem ", Line))
+      {
+        IsComment = true;
+        Line.Delete(1, 4);
+      }
+      else if (StartsText(L"#", Line) || StartsText(L";", Line) || StartsText(L"'", Line))
+      {
+        IsComment = true;
+        Line.Delete(1, 1);
+      }
+      else if (StartsText(L"//", Line))
+      {
+        IsComment = true;
+        Line.Delete(1, 2);
+      }
+
+      if (!IsComment)
+      {
+        break;
+      }
+      else
+      {
+        Line = Line.Trim();
+        int P;
+        if (!Line.IsEmpty() && (Line[1] == ExtensionMark) && ((P = Pos(L" ", Line)) >= 2))
+        {
+          UnicodeString Key = Line.SubString(2, P - 2).LowerCase();
+          UnicodeString Directive = UnicodeString(ExtensionMark) + Key;
+          UnicodeString Value = Line.SubString(P + 1, Line.Length() - P).Trim();
+          bool KnownKey = true;
+          if (Key == ExtensionNameDirective)
+          {
+            Name = Value;
+          }
+          else if (Key == ExtensionCommandDirective)
+          {
+            Command = Value;
+          }
+          else if (Key == L"require")
+          {
+            UnicodeString DependencyVersion = Value;
+            UnicodeString Dependency = CutToChar(Value, L' ', true).LowerCase();
+            Value = Value.Trim();
+            bool Failed;
+            if (Dependency == L"winscp")
+            {
+              int Version = StrToCompoundVersion(Value);
+              Failed = (Version > WinConfiguration->CompoundVersion);
+            }
+            else if (Dependency == L".net")
+            {
+              Failed = (CompareVersion(Value, GetNetVersionStr()) > 0);
+            }
+            else if (Dependency == L"powershell")
+            {
+              Failed = (CompareVersion(Value, GetPowerShellVersionStr()) > 0);
+            }
+            else if (Dependency == L"windows")
+            {
+              Failed = (CompareVersion(Value, WindowsVersion()) > 0);
+            }
+            else
+            {
+              Failed = true;
+            }
+
+            if (Failed)
+            {
+              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DEPENDENCY_ERROR, (DependencyVersion))));
+            }
+          }
+          else if (Key == L"side")
+          {
+            if (SameText(Value, L"Local"))
+            {
+              Params |= ccLocal;
+            }
+            else if (SameText(Value, L"Remote"))
+            {
+              Params &= ~ccLocal;
+            }
+            else
+            {
+              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+            }
+          }
+          else if (Key == L"flag")
+          {
+            if (SameText(Value, L"ApplyToDirectories"))
+            {
+              Params |= ccApplyToDirectories;
+            }
+            else if (SameText(Value, L"Recursive"))
+            {
+              Params |= ccRecursive;
+            }
+            else if (SameText(Value, L"ShowResults"))
+            {
+              Params |= ccShowResults;
+            }
+            else if (SameText(Value, L"CopyResults"))
+            {
+              Params |= ccCopyResults;
+            }
+            else if (SameText(Value, L"RemoteFiles"))
+            {
+              Params |= ccRemoteFiles;
+            }
+            else
+            {
+              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+            }
+          }
+          else if (Key == L"shortcut")
+          {
+            TShortCut AShortCut = TextToShortCut(Value);
+            if (IsCustomShortCut(AShortCut))
+            {
+              ShortCut = AShortCut;
+            }
+            else
+            {
+              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+            }
+          }
+          else if (Key == L"option")
+          {
+            TOption Option;
+            if (!ParseOption(Value, Option, ExtensionBaseName) ||
+                (Option.IsControl && (OptionIds.find(Option.Id.LowerCase()) != OptionIds.end())))
+            {
+              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+            }
+            else
+            {
+              FOptions.push_back(Option);
+              if (!Option.IsControl)
+              {
+                OptionIds.insert(Option.Id.LowerCase());
+              }
+            }
+          }
+          else if (Key == L"description")
+          {
+            Description = Value;
+          }
+          else if (Key == L"author")
+          {
+            // noop
+          }
+          else if (Key == L"version")
+          {
+            // noop
+          }
+          else if (Key == L"homepage")
+          {
+            HomePage = Value;
+          }
+          else if (Key == L"optionspage")
+          {
+            OptionsPage = Value;
+          }
+          else if (Key == L"source")
+          {
+            // noop
+          }
+          else
+          {
+            KnownKey = false;
+          }
+
+          if (KnownKey)
+          {
+            AnythingFound = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (!AnythingFound)
+  {
+    throw Exception(MainInstructions(LoadStr(EXTENSION_NOT_FOUND)));
+  }
+
+  if (Name.IsEmpty())
+  {
+    throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_MISSING, (UnicodeString(ExtensionMark) + ExtensionNameDirective))));
+  }
+
+  if (Command.IsEmpty())
+  {
+    throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_MISSING, (UnicodeString(ExtensionMark) + ExtensionCommandDirective))));
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOption & Option, const UnicodeString & ExtensionBaseName)
+{
+  UnicodeString Buf = Value;
+  UnicodeString KindName;
+  bool Result = CutTokenEx(Buf, Option.Id);
+
+  if (Result)
+  {
+    Option.Flags = 0;
+
+    UnicodeString FlagName;
+    while (CutTokenEx(Buf, FlagName) && (FlagName.SubString(1, 1) == L"-"))
+    {
+      FlagName = FlagName.LowerCase();
+      if (FlagName == L"-run")
+      {
+        Option.Flags |= ofRun;
+      }
+      else if (FlagName == L"-config")
+      {
+        Option.Flags |= ofConfig;
+      }
+      else
+      {
+        Result = false;
+      }
+    }
+
+    if (Option.Flags == 0)
+    {
+      Option.Flags = ofConfig;
+    }
+
+    KindName = FlagName;
+
+    if (Result)
+    {
+      UnicodeString DefaultCaption;
+      UnicodeString DefaultDefault;
+      TOption::TParams DefaultParams;
+
+      KindName = KindName.LowerCase();
+      if (KindName == L"label")
+      {
+        Option.Kind = okLabel;
+        Result = !Option.IsControl;
+      }
+      else if (KindName == L"link")
+      {
+        Option.Kind = okLink;
+        Result = !Option.IsControl;
+      }
+      else if (KindName == L"separator")
+      {
+        Option.Kind = okSeparator;
+        Result = !Option.IsControl;
+      }
+      else if (KindName == L"group")
+      {
+        Option.Kind = okGroup;
+        Result = !Option.IsControl;
+      }
+      else if (KindName == L"textbox")
+      {
+        Option.Kind = okTextBox;
+        Result = Option.IsControl;
+      }
+      else if (KindName == L"file")
+      {
+        Option.Kind = okFile;
+        Result = Option.IsControl;
+      }
+      else if (KindName == L"sessionlogfile")
+      {
+        Option.Kind = okFile;
+        Result = Option.IsControl;
+        DefaultCaption = LoadStr(EXTENSION_SESSIONLOG_FILE);
+        Option.FileCaption = LoadStr(EXTENSION_SESSIONLOG_CAPTION);
+        Option.FileFilter = LoadStr(EXTENSION_SESSIONLOG_FILTER);
+        // Similar to TConfiguration::GetDefaultLogFileName
+        Option.FileInitial = L"%TEMP%\\" + ExtensionBaseName + L".log";
+        Option.FileExt = L"log";
+      }
+      else if (KindName == L"dropdownlist")
+      {
+        Option.Kind = okDropDownList;
+        Result = Option.IsControl;
+      }
+      else if (KindName == L"combobox")
+      {
+        Option.Kind = okComboBox;
+        Result = Option.IsControl;
+      }
+      else if (KindName == L"checkbox")
+      {
+        Option.Kind = okCheckBox;
+        Result = Option.IsControl;
+      }
+      else if (KindName == L"pausecheckbox")
+      {
+        Option.Kind = okCheckBox;
+        Result = Option.IsControl;
+        DefaultCaption = LoadStr(EXTENSION_PAUSE_CHECKBOX);
+        DefaultDefault = L"-pause";
+        DefaultParams.push_back(L"-pause");
+      }
+      else
+      {
+        Option.Kind = okUnknown;
+      }
+
+      if ((Option.Kind != okUnknown) &&
+          (Option.Kind != okSeparator))
+      {
+        Result =
+          CutTokenEx(Buf, Option.Caption);
+
+        if (!Result && !DefaultCaption.IsEmpty())
+        {
+          Option.Caption = DefaultCaption;
+          Result = true;
+        }
+
+        if (Result && Option.IsControl)
+        {
+          if (CutTokenEx(Buf, Option.Default))
+          {
+            UnicodeString Param;
+            while (CutTokenEx(Buf, Param))
+            {
+              Option.Params.push_back(Param);
+            }
+          }
+          else
+          {
+            Option.Default = DefaultDefault;
+          }
+
+          if (Option.Params.size() == 0)
+          {
+            Option.Params = DefaultParams;
+          }
+        }
+      }
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomCommandType::GetOptionsCount() const
+{
+  return FOptions.size();
+}
+//---------------------------------------------------------------------------
+const TCustomCommandType::TOption & __fastcall TCustomCommandType::GetOption(int Index) const
+{
+  return FOptions[Index];
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandType::GetOptionKey(const TCustomCommandType::TOption & Option) const
+{
+  return Id + L"\\" + Option.Id;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandType::AnyOptionWithFlag(unsigned int Flag) const
+{
+  bool Result = false;
+  for (int Index = 0; !Result && (Index < OptionsCount); Index++)
+  {
+    const TCustomCommandType::TOption & Option = GetOption(Index);
+    Result = FLAGSET(Option.Flags, Flag);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandType::GetCommandWithExpandedOptions(TStrings * CustomCommandOptions) const
+{
+  UnicodeString Result = Command;
+  for (int Index = 0; Index < OptionsCount; Index++)
+  {
+    const TCustomCommandType::TOption & Option = GetOption(Index);
+    if (Option.IsControl)
+    {
+      UnicodeString OptionKey = GetOptionKey(Option);
+      UnicodeString OptionValue;
+      if (CustomCommandOptions->IndexOfName(OptionKey) >= 0)
+      {
+        OptionValue = CustomCommandOptions->Values[OptionKey];
+      }
+      else
+      {
+        OptionValue = Option.Default;
+      }
+      UnicodeString OptionCommand = GetOptionCommand(Option, OptionValue);
+      Result = ReplaceText(Result, FORMAT(L"%%%s%%", (Option.Id)), OptionCommand);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommandType::GetOptionCommand(const TOption & Option, const UnicodeString & Value) const
+{
+  UnicodeString Result = Value;
+
+  switch (Option.Kind)
+  {
+    case okUnknown:
+    case okTextBox:
+    case okDropDownList:
+    case okComboBox:
+    case okCheckBox:
+      // noop
+      break;
+
+    case okFile:
+      Result = ExpandEnvironmentVariables(Result);
+      break;
+
+    case okLabel:
+    case okLink:
+    case okSeparator:
+    case okGroup:
+    default:
+      DebugFail();
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandType::TOption::GetIsControl() const
+{
+  return (Id != L"-");
+}
+//---------------------------------------------------------------------------
+bool TCustomCommandType::TOption::operator==(const TCustomCommandType::TOption & Other) const
+{
+  // needed by vector<> but probably never used
+  return
+    (Id == Other.Id) &&
+    (Flags == Other.Flags) &&
+    (Kind == Other.Kind) &&
+    (Caption == Other.Caption) &&
+    (Default == Other.Default) &&
+    (Params == Other.Params) &&
+    (FileCaption == Other.FileCaption) &&
+    (FileFilter == Other.FileFilter) &&
+    (FileInitial == Other.FileInitial) &&
+    (FileExt == Other.FileExt);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -2671,10 +3362,56 @@ void __fastcall TCustomCommandList::Move(int CurIndex, int NewIndex)
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandList::Delete(int Index)
 {
-  assert((Index >= 0) && (Index < Count));
+  DebugAssert((Index >= 0) && (Index < Count));
   delete GetCommand(Index);
   FCommands->Delete(Index);
   Modify();
+}
+//---------------------------------------------------------------------------
+class TCustomCommandCompareFunc : public TCppInterfacedObject<TListSortCompareFunc>
+{
+public:
+  TCustomCommandCompareFunc(TStrings * Ids)
+  {
+    FIds = Ids;
+  }
+
+  virtual int __fastcall Invoke(void * Item1, void * Item2)
+  {
+    TCustomCommandType * CustomCommand1 = static_cast<TCustomCommandType *>(Item1);
+    TCustomCommandType * CustomCommand2 = static_cast<TCustomCommandType *>(Item2);
+    int Index1 = FIds->IndexOf(CustomCommand1->Id);
+    int Index2 = FIds->IndexOf(CustomCommand2->Id);
+    int Result;
+    // new items to the end
+    if ((Index1 < 0) && (Index2 >= 0))
+    {
+      Result = 1;
+    }
+    else if ((Index2 < 0) && (Index1 >= 0))
+    {
+      Result = -1;
+    }
+    // fallback to comparing by name
+    else if ((Index1 < 0) && (Index2 < 0))
+    {
+      Result = TComparer__1<UnicodeString>::Default()->Compare(CustomCommand1->Name, CustomCommand2->Name);
+    }
+    else
+    {
+      Result = TComparer__1<int>::Default()->Compare(Index1, Index2);
+    }
+    return Result;
+  }
+
+private:
+  TStrings * FIds;
+};
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::SortBy(TStrings * Ids)
+{
+  TCustomCommandCompareFunc * Func = new TCustomCommandCompareFunc(Ids);
+  FCommands->SortList(Func);
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomCommandList::GetCount() const
@@ -2736,6 +3473,18 @@ const TCustomCommandType * TCustomCommandList::Find(TShortCut ShortCut) const
     }
   }
   return NULL;
+}
+//---------------------------------------------------------------------------
+int TCustomCommandList::FindIndexByFileName(const UnicodeString & FileName) const
+{
+  for (int Index = 0; Index < FCommands->Count; Index++)
+  {
+    if (CompareFileName(Commands[Index]->FileName, FileName))
+    {
+      return Index;
+    }
+  }
+  return -1;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandList::ShortCuts(TShortCuts & ShortCuts) const

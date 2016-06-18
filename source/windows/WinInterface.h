@@ -5,7 +5,7 @@
 #include <Classes.hpp>
 #include <Buttons.hpp>
 #include <Interface.h>
-#include <GUIConfiguration.h>
+#include <WinConfiguration.h>
 #include <SynchronizeController.h>
 
 #ifdef LOCALINTERFACE
@@ -30,10 +30,13 @@ const int mpAllowContinueOnError = 0x02;
 #define SEND_TO_HOOK_SWITCH L"SendToHook"
 #define UNSAFE_SWITCH L"Unsafe"
 #define NEWINSTANCE_SWICH L"NewInstance"
-
-#define THEME_OFFICEXP L"OfficeXP"
-#define THEME_OFFICE2003 L"Office2003"
-#define THEME_DEFAULT L"Default"
+#define KEYGEN_SWITCH L"KeyGen"
+#define KEYGEN_OUTPUT_SWITCH L"Output"
+#define KEYGEN_COMMENT_SWITCH L"Comment"
+#define KEYGEN_CHANGE_PASSPHRASE_SWITCH L"ChangePassphrase"
+#define LOG_SWITCH L"Log"
+#define INI_SWITCH L"Ini"
+#define FINGERPRINTSCAN_SWITCH L"FingerprintScan"
 
 struct TMessageParams
 {
@@ -57,6 +60,7 @@ struct TMessageParams
   UnicodeString ImageName;
   UnicodeString MoreMessagesUrl;
   TSize MoreMessagesSize;
+  UnicodeString CustomCaption;
 
 private:
   inline void Reset();
@@ -74,6 +78,7 @@ extern const UnicodeString AppName;
 void __fastcall SetOnForeground(bool OnForeground);
 void __fastcall FlashOnBackground();
 
+void __fastcall TerminateApplication();
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal, Exception * E);
 void __fastcall FormHelp(TCustomForm * Form);
 void __fastcall SearchHelp(const UnicodeString & Message);
@@ -81,13 +86,15 @@ void __fastcall MessageWithNoHelp(const UnicodeString & Message);
 
 class TProgramParams;
 bool __fastcall CheckSafe(TProgramParams * Params);
+void __fastcall CheckLogParam(TProgramParams * Params);
 bool __fastcall CheckXmlLogParam(TProgramParams * Params);
 
 UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent);
 void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString LayoutStr);
 
 namespace Tb2item { class TTBCustomItem; }
-void __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Menu);
+namespace Tbx { class TTBXSeparatorItem; }
+Tbx::TTBXSeparatorItem * __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Menu);
 void __fastcall AddMenuLabel(Tb2item::TTBCustomItem * Menu, const UnicodeString & Label);
 
 // windows\WinHelp.cpp
@@ -124,6 +131,8 @@ bool __fastcall DoSaveWorkspaceDialog(UnicodeString & WorkspaceName,
 class TShortCuts;
 bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
   const TShortCuts & ShortCuts, UnicodeString HelpKeyword);
+bool __fastcall DoCustomCommandOptionsDialog(
+  const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags);
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();
@@ -132,19 +141,19 @@ bool __fastcall DoChangeMasterPasswordDialog(UnicodeString & NewPassword);
 // windows\WinMain.cpp
 int __fastcall Execute();
 void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
-  TObjectList * DataList, UnicodeString & DownloadFile);
+  TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession);
 
 // forms\InputDlg.cpp
 struct TInputDialogData
 {
-  TEdit * Edit;
+  TCustomEdit * Edit;
 };
 typedef void __fastcall (__closure *TInputDialogInitialize)
   (TObject * Sender, TInputDialogData * Data);
 bool __fastcall InputDialog(const UnicodeString ACaption,
   const UnicodeString APrompt, UnicodeString & Value, UnicodeString HelpKeyword = HELP_NONE,
   TStrings * History = NULL, bool PathInput = false,
-  TInputDialogInitialize OnInitialize = NULL);
+  TInputDialogInitialize OnInitialize = NULL, bool Echo = true);
 
 // forms\About.cpp
 struct TRegistration
@@ -181,13 +190,14 @@ const coAllowRemoteTransfer = 0x100;
 const coNoQueue             = 0x200;
 const coNoQueueIndividually = 0x400;
 const coShortCutHint        = 0x800;
+const coAllFiles            = 0x1000;
 const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
-  int * OutputOptions);
+  TSessionData * SessionData, int * OutputOptions);
 
 // forms\CreateDirectory.cpp
 bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
@@ -200,21 +210,10 @@ bool __fastcall DoImportSessionsDialog(TList * Imported);
 enum TLicense { lcNoLicense = -1, lcWinScp, lcExpat };
 void __fastcall DoLicenseDialog(TLicense License);
 
-// forms\Login.cpp
-// these flags are used in navigation tree of login dialog, change with care
-const loLocalDirectory = 0x01;
-const loExternalTools  = 0x04;
-
-const loColor          = 0x80;
-
-const loNone           = 0x00;
-const loAddSession     = (loLocalDirectory | loColor);
-const loStartup        = (loLocalDirectory | loExternalTools | loColor);
-bool __fastcall DoLoginDialog(TStoredSessionList * SessionList,
-  TList * DataList, int Options);
+bool __fastcall DoLoginDialog(TStoredSessionList * SessionList, TList * DataList);
 
   // forms\SiteAdvanced.cpp
-bool __fastcall DoSiteAdvancedDialog(TSessionData * SessionData, int Options);
+bool __fastcall DoSiteAdvancedDialog(TSessionData * SessionData);
 
 // forms\OpenDirectory.cpp
 enum TOpenDirectoryMode { odBrowse, odAddBookmark };
@@ -229,7 +228,8 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
 
 // forms\Preferences.cpp
 enum TPreferencesMode { pmDefault, pmEditor, pmCustomCommands,
-    pmQueue, pmLogging, pmUpdates, pmPresets, pmEditors, pmCommander };
+    pmQueue, pmLogging, pmUpdates, pmPresets, pmEditors, pmCommander,
+    pmEditorInternal };
 class TCopyParamRuleData;
 struct TPreferencesDialogData
 {
@@ -244,6 +244,7 @@ class TCustomCommandType;
 class TShortCuts;
 enum TCustomCommandsMode { ccmAdd, ccmEdit, ccmAdHoc };
 const ccoDisableRemote = 0x01;
+const ccoDisableRemoteFiles = 0x02;
 typedef void __fastcall (__closure *TCustomCommandValidate)
   (const TCustomCommandType & Command);
 bool __fastcall DoCustomCommandDialog(TCustomCommandType & Command,
@@ -284,11 +285,11 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
 
-bool __fastcall DoRemoteMoveDialog(UnicodeString & Target, UnicodeString & FileMask);
+bool __fastcall DoRemoteMoveDialog(bool Multi, UnicodeString & Target, UnicodeString & FileMask);
 enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession };
 bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
-  TDirectRemoteCopy AllowDirectCopy, void *& Session, UnicodeString & Target, UnicodeString & FileMask,
-  bool & DirectCopy, void * CurrentSession);
+  TDirectRemoteCopy AllowDirectCopy, bool Multi, void *& Session,
+  UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy, void * CurrentSession);
 
 // forms\SelectMask.cpp
 #ifdef CustomdirviewHPP
@@ -350,11 +351,16 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
 // forms\Editor.cpp
 typedef void __fastcall (__closure *TFileClosedEvent)
   (TObject * Sender, bool Forced);
+typedef void __fastcall (__closure *TAnyModifiedEvent)
+  (TObject * Sender, bool & Modified);
 TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TCustomForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
+  TNotifyEvent OnSaveAll, TAnyModifiedEvent OnAnyModified,
   const UnicodeString Caption, bool StandaloneEditor, TColor Color);
 void __fastcall ReconfigureEditorForm(TForm * Form);
 void __fastcall EditorFormFileUploadComplete(TForm * Form);
+void __fastcall EditorFormFileSave(TForm * Form);
+bool __fastcall IsEditorFormModified(TForm * Form);
 
 bool __fastcall DoSymlinkDialog(UnicodeString & FileName, UnicodeString & PointTo,
   TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic);
@@ -377,10 +383,21 @@ TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
   unsigned int TimeoutAnswer, TButton ** TimeoutButton,
   const UnicodeString & ImageName, const UnicodeString & NeverAskAgainCaption,
-  const UnicodeString & MoreMessagesUrl, TSize MoreMessagesSize);
+  const UnicodeString & MoreMessagesUrl, TSize MoreMessagesSize,
+  const UnicodeString & CustomCaption);
+TForm * __fastcall CreateMoreMessageDialogEx(const UnicodeString Message, TStrings * MoreMessages,
+  TQueryType Type, unsigned int Answers, UnicodeString HelpKeyword, const TMessageParams * Params);
+unsigned int __fastcall ExecuteMessageDialog(TForm * Dialog, unsigned int Answers, const TMessageParams * Params);
+void __fastcall InsertPanelToMessageDialog(TCustomForm * Form, TPanel * Panel);
+void __fastcall NavigateMessageDialogToUrl(TCustomForm * Form, const UnicodeString & Url);
+extern const UnicodeString MessagePanelName;
+extern const UnicodeString MainMessageLabelName;
+extern const UnicodeString MessageLabelName;
+extern const UnicodeString YesButtonName;
+extern const UnicodeString OKButtonName;
 
 // windows\Console.cpp
-enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings };
+enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan };
 int __fastcall Console(TConsoleMode Mode);
 
 // forms\EditorPreferences.cpp
@@ -398,16 +415,21 @@ bool __fastcall DoFileFindDialog(UnicodeString Directory,
 
 // forms\GenerateUrl.cpp
 void __fastcall DoGenerateUrlDialog(TSessionData * Data, TStrings * Paths);
+enum TFilesSelected { fsList, fsAll };
+void __fastcall DoGenerateTransferCodeDialog(
+  bool ToRemote, bool Move, int CopyParamAttrs, TSessionData * Data, TFilesSelected FilesSelected,
+  TStrings * FileList, const UnicodeString & Path, const TCopyParamType & CopyParam);
 
 void __fastcall CopyParamListButton(TButton * Button);
 const int cplNone =             0x00;
 const int cplCustomize =        0x01;
 const int cplCustomizeDefault = 0x02;
 const int cplSaveSettings =     0x04;
+const int cplGenerateCode =     0x08;
 void __fastcall CopyParamListPopup(TRect R, TPopupMenu * Menu,
   const TCopyParamType & Param, UnicodeString Preset, TNotifyEvent OnClick,
   int Options, int CopyParamAttrs, bool SaveSettings = false);
-bool __fastcall CopyParamListPopupClick(TObject * Sender,
+int __fastcall CopyParamListPopupClick(TObject * Sender,
   TCopyParamType & Param, UnicodeString & Preset, int CopyParamAttrs,
   bool * SaveSettings = NULL);
 
@@ -425,12 +447,17 @@ TPopupMenu * __fastcall CreateSessionColorPopupMenu(TColor Color,
   TColorChangeEvent OnColorChange);
 void __fastcall CreateSessionColorMenu(TComponent * AOwner, TColor Color,
   TColorChangeEvent OnColorChange);
+void __fastcall CreateEditorBackgroundColorMenu(TComponent * AOwner, TColor Color,
+  TColorChangeEvent OnColorChange);
+TPopupMenu * __fastcall CreateColorPopupMenu(TColor Color,
+  TColorChangeEvent OnColorChange);
 
 void __fastcall FixButtonImage(TButton * Button);
 void __fastcall CenterButtonImage(TButton * Button);
-void __fastcall UncenterButtonImage(TButton * Button);
 
 void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
+
+int __fastcall AdjustLocaleFlag(const UnicodeString & S, TLocaleFlagOverride LocaleFlagOverride, bool Recommended, int On, int Off);
 
 void __fastcall SetGlobalMinimizeHandler(TCustomForm * Form, TNotifyEvent OnMinimize);
 void __fastcall ClearGlobalMinimizeHandler(TNotifyEvent OnMinimize);
@@ -438,6 +465,8 @@ void __fastcall CallGlobalMinimizeHandler(TObject * Sender);
 bool __fastcall IsApplicationMinimized();
 void __fastcall ApplicationMinimize();
 void __fastcall ApplicationRestore();
+bool __fastcall HandleMinimizeSysCommand(TMessage & Message);
+
 void __fastcall WinInitialize();
 void __fastcall WinFinalize();
 
@@ -449,12 +478,20 @@ void __fastcall InitializeShortCutCombo(TComboBox * ComboBox,
 void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value);
 TShortCut __fastcall GetShortCutCombo(TComboBox * ComboBox);
 bool __fastcall IsCustomShortCut(TShortCut ShortCut);
+
+class TAnimationsModule;
+TAnimationsModule * __fastcall GetAnimationsModule();
+void __fastcall ReleaseAnimationsModule();
+
+#ifdef _DEBUG
+void __fastcall ForceTracing();
+#endif
 //---------------------------------------------------------------------------
-#define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow2"
+#define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow3"
 //---------------------------------------------------------------------------
 struct TCopyDataMessage
 {
-  enum { CommandCanCommandLine, CommandCommandLine };
+  enum { CommandCanCommandLine, CommandCommandLine, MainWindowCheck, RefreshPanel };
   static const unsigned int Version1 = 1;
 
   unsigned int Version;
@@ -463,23 +500,41 @@ struct TCopyDataMessage
   union
   {
     wchar_t CommandLine[10240];
+
+    struct
+    {
+      wchar_t Session[1024];
+      wchar_t Path[1024];
+    } Refresh;
   };
+
+  TCopyDataMessage()
+  {
+    Version = TCopyDataMessage::Version1;
+    Command = static_cast<unsigned int>(-1);
+  }
 };
 //---------------------------------------------------------------------------
 class TWinInteractiveCustomCommand : public TInteractiveCustomCommand
 {
 public:
-  TWinInteractiveCustomCommand(TCustomCommand * ChildCustomCommand,
-    const UnicodeString CustomCommandName);
+  TWinInteractiveCustomCommand(
+    TCustomCommand * ChildCustomCommand, const UnicodeString CustomCommandName, const UnicodeString HelpKeyword);
 
 protected:
-  virtual void __fastcall Prompt(const UnicodeString & Prompt,
+  virtual void __fastcall Prompt(int Index, const UnicodeString & Prompt,
     UnicodeString & Value);
   virtual void __fastcall Execute(const UnicodeString & Command,
     UnicodeString & Value);
+  virtual void __fastcall PatternHint(int Index, const UnicodeString & Pattern);
 
 private:
   UnicodeString FCustomCommandName;
+  std::map<int, size_t> FIndexes;
+  TUnicodeStringVector FPrompts;
+  TUnicodeStringVector FDefaults;
+  TUnicodeStringVector FValues;
+  UnicodeString FHelpKeyword;
 };
 //---------------------------------------------------------------------------
 class TTrayIcon

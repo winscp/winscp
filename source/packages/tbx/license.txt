@@ -2,39 +2,39 @@ LICENSE
 
 Copyright © 2001-2003 Alex A. Denisov. All rights reserved.
 
-This notice is only applicable to TBX package; it does not apply 
+This notice is only applicable to TBX package; it does not apply
 to Toolbar2000 package, where the separate license is provided.
 
-TBX is distributed as freeware. You are free to use it in any 
-kind of application as well as redistribute source code in the 
+TBX is distributed as freeware. You are free to use it in any
+kind of application as well as redistribute source code in the
 original form, provided the following conditions are met:
 
-- All redistributions of source code must be in the original form, 
-  they must include all the original files, including but not 
-  limited to original documentation, license agreement, copyright 
-  notice, and web site address. 
+- All redistributions of source code must be in the original form,
+  they must include all the original files, including but not
+  limited to original documentation, license agreement, copyright
+  notice, and web site address.
 
-- Redistribution of TBX package or any part of TBX code in modified 
-  form is allowed only with express written permission from the 
-  author (Alex A. Denisov). 
+- Redistribution of TBX package or any part of TBX code in modified
+  form is allowed only with express written permission from the
+  author (Alex A. Denisov).
 
-- You are not allowed to make modifications to TBX documentation. 
-  You may only redistribute the documentation with original 
+- You are not allowed to make modifications to TBX documentation.
+  You may only redistribute the documentation with original
   unmodified package.
- 
-- If TBX is used in your software in the compiled form, an 
-  acknowledgement in product documentation and/or in the About box 
-  is required. Only registered users are allowed to omit the 
-  acknowledgement. 
 
-- The origin of this software must not be misrepresented; you must 
-  not claim your authorship. 
+- If TBX is used in your software in the compiled form, an
+  acknowledgement in product documentation and/or in the About box
+  is required. Only registered users are allowed to omit the
+  acknowledgement.
 
-If you do not agree to all of the above terms, you are not 
+- The origin of this software must not be misrepresented; you must
+  not claim your authorship.
+
+If you do not agree to all of the above terms, you are not
 permitted to use this package.
 
-This software is provided 'as-is', without warranty of any kind, 
-either expressed or implied. In no event shall the author be held 
+This software is provided 'as-is', without warranty of any kind,
+either expressed or implied. In no event shall the author be held
 liable for any damages arising from the use of this software.
 
 Alex A. Denisov
@@ -42,6 +42,3 @@ Alex A. Denisov
 alex@g32.org
 
 http://g32.org
-
-
-

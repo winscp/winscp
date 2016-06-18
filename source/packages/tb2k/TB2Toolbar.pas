@@ -286,6 +286,7 @@ type
   protected
     procedure Paint(const Canvas: TCanvas; const ClientAreaRect: TRect;
       IsSelected, IsPushed, UseDisabledShadow: Boolean); override;
+    function CaptionShown: Boolean; override;
   end;
 
 const
@@ -447,6 +448,10 @@ begin
   end;
 end;
 
+function TTBChevronItemViewer.CaptionShown: Boolean;
+begin
+  Result := False;
+end;
 
 { TTBToolbarView }
 

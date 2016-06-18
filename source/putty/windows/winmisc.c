@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "putty.h"
+#ifndef SECURITY_WIN32
+#define SECURITY_WIN32
+#endif
 #include <security.h>
 #ifdef MPEXT
 #include <assert.h>
@@ -69,6 +72,13 @@ Filename *filename_deserialise(void *vdata, int maxsize, int *used)
     end++;
     *used = end - data;
     return filename_from_str(data);
+}
+
+char filename_char_sanitise(char c)
+{
+    if (strchr("<>:\"/\\|?*", c))
+        return '.';
+    return c;
 }
 
 #ifdef MPEXT
@@ -258,26 +268,23 @@ const char *win_strerror(int error)
     es = find234(errstrings, &error, errstring_find);
 
     if (!es) {
-        int bufsize;
+        char msgtext[65536]; /* maximum size for FormatMessage is 64K */
 
         es = snew(struct errstring);
         es->error = error;
-        /* maximum size for FormatMessage is 64K */
-        bufsize = 65535;
-        es->text = snewn(bufsize, char);
         if (!FormatMessage((FORMAT_MESSAGE_FROM_SYSTEM |
                             FORMAT_MESSAGE_IGNORE_INSERTS), NULL, error,
                            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                           es->text, bufsize, NULL)) {
-            sprintf(es->text,
-                    "Windows error code %d (and FormatMessage returned %d)", 
-                    error, GetLastError());
+                           msgtext, lenof(msgtext)-1, NULL)) {
+            sprintf(msgtext,
+                    "(unable to format: FormatMessage returned %u)",
+                    (unsigned int)GetLastError());
         } else {
-            int len = strlen(es->text);
-            if (len > 0 && es->text[len-1] == '\n')
-                es->text[len-1] = '\0';
+            int len = strlen(msgtext);
+            if (len > 0 && msgtext[len-1] == '\n')
+                msgtext[len-1] = '\0';
         }
-        es->text = sresize(es->text, strlen(es->text) + 1, char);
+        es->text = dupprintf("Error %d: %s", error, msgtext);
         add234(errstrings, es);
     }
 
@@ -289,7 +296,7 @@ static FILE *debug_fp = NULL;
 static HANDLE debug_hdl = INVALID_HANDLE_VALUE;
 static int debug_got_console = 0;
 
-void dputs(char *buf)
+void dputs(const char *buf)
 {
     DWORD dw;
 

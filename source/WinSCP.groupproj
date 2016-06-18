@@ -39,8 +39,11 @@
 			<Projects Include="ScpForms.cbproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="ScpResources.cbproj">
+				<Dependencies/>
+			</Projects>
 			<Projects Include="WinSCP.cbproj">
-				<Dependencies>Putty.cbproj;FileZilla.cbproj;ScpCore.cbproj;RScpComp.cbproj;ScpForms.cbproj</Dependencies>
+				<Dependencies>Putty.cbproj;FileZilla.cbproj;ScpCore.cbproj;RScpComp.cbproj;ScpForms.cbproj;ScpResources.cbproj</Dependencies>
 			</Projects>
 			<Projects Include="Console.cbproj">
 				<Dependencies/>
@@ -164,13 +167,22 @@
 		<Target Name="ScpForms:Make">
 			<MSBuild Projects="ScpForms.cbproj" Targets="Make"/>
 		</Target>
-		<Target Name="WinSCP" DependsOnTargets="Putty;FileZilla;ScpCore;RScpComp;ScpForms">
+		<Target Name="ScpResources">
+			<MSBuild Projects="ScpResources.cbproj"/>
+		</Target>
+		<Target Name="ScpResources:Clean">
+			<MSBuild Projects="ScpResources.cbproj" Targets="Clean"/>
+		</Target>
+		<Target Name="ScpResources:Make">
+			<MSBuild Projects="ScpResources.cbproj" Targets="Make"/>
+		</Target>
+		<Target Name="WinSCP" DependsOnTargets="Putty;FileZilla;ScpCore;RScpComp;ScpForms;ScpResources">
 			<MSBuild Projects="WinSCP.cbproj"/>
 		</Target>
-		<Target Name="WinSCP:Clean" DependsOnTargets="Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean">
+		<Target Name="WinSCP:Clean" DependsOnTargets="Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;ScpResources:Clean">
 			<MSBuild Projects="WinSCP.cbproj" Targets="Clean"/>
 		</Target>
-		<Target Name="WinSCP:Make" DependsOnTargets="Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make">
+		<Target Name="WinSCP:Make" DependsOnTargets="Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;ScpResources:Make">
 			<MSBuild Projects="WinSCP.cbproj" Targets="Make"/>
 		</Target>
 		<Target Name="Console">
@@ -192,13 +204,13 @@
 			<MSBuild Projects="DragExt.cbproj" Targets="Make"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="Moje;DragDropP;DriveDir;tb2k;tbxp;Jcl;PngComponents;Putty;FileZilla;ScpCore;RScpComp;ScpForms;WinSCP;Console;DragExt"/>
+			<CallTarget Targets="Moje;DragDropP;DriveDir;tb2k;tbxp;Jcl;PngComponents;Putty;FileZilla;ScpCore;RScpComp;ScpForms;ScpResources;WinSCP;Console;DragExt"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="Moje:Clean;DragDropP:Clean;DriveDir:Clean;tb2k:Clean;tbxp:Clean;Jcl:Clean;PngComponents:Clean;Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;WinSCP:Clean;Console:Clean;DragExt:Clean"/>
+			<CallTarget Targets="Moje:Clean;DragDropP:Clean;DriveDir:Clean;tb2k:Clean;tbxp:Clean;Jcl:Clean;PngComponents:Clean;Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;ScpResources:Clean;WinSCP:Clean;Console:Clean;DragExt:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="Moje:Make;DragDropP:Make;DriveDir:Make;tb2k:Make;tbxp:Make;Jcl:Make;PngComponents:Make;Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;WinSCP:Make;Console:Make;DragExt:Make"/>
+			<CallTarget Targets="Moje:Make;DragDropP:Make;DriveDir:Make;tb2k:Make;tbxp:Make;Jcl:Make;PngComponents:Make;Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;ScpResources:Make;WinSCP:Make;Console:Make;DragExt:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>

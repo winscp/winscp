@@ -3,8 +3,8 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
   Top = 128
   BorderIcons = [biSystemMenu]
   Caption = 'Editing PngImageList'
-  ClientHeight = 288
-  ClientWidth = 461
+  ClientHeight = 565
+  ClientWidth = 618
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
@@ -22,18 +22,18 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
   object pnlMain: TPanel
     Left = 0
     Top = 0
-    Width = 461
-    Height = 249
+    Width = 618
+    Height = 526
     BevelOuter = bvNone
     TabOrder = 0
     DesignSize = (
-      461
-      249)
+      618
+      526)
     object gbxProperties: TGroupBox
       Left = 8
       Top = 4
       Width = 177
-      Height = 128
+      Height = 405
       Anchors = [akLeft, akTop, akBottom]
       Caption = 'Image properties'
       TabOrder = 0
@@ -86,8 +86,8 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
     object lbxImages: TListBox
       Left = 276
       Top = 8
-      Width = 177
-      Height = 209
+      Width = 334
+      Height = 486
       Style = lbOwnerDrawVariable
       Anchors = [akLeft, akTop, akRight, akBottom]
       DragCursor = crDefault
@@ -108,8 +108,8 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
     end
     object cmbPreviewBackground: TComboBox
       Left = 276
-      Top = 220
-      Width = 177
+      Top = 497
+      Width = 334
       Height = 21
       Style = csOwnerDrawFixed
       Anchors = [akLeft, akRight, akBottom]
@@ -126,7 +126,7 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
     end
     object gbxImageInfo: TGroupBox
       Left = 8
-      Top = 136
+      Top = 413
       Width = 177
       Height = 105
       Anchors = [akLeft, akBottom]
@@ -220,7 +220,7 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
     end
     object pnlActionButtons: TPanel
       Left = 193
-      Top = 35
+      Top = 173
       Width = 75
       Height = 178
       Anchors = [akLeft]
@@ -458,16 +458,16 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
   end
   object pnlButtons: TPanel
     Left = 0
-    Top = 249
-    Width = 461
+    Top = 526
+    Width = 618
     Height = 37
     BevelOuter = bvNone
     TabOrder = 1
     DesignSize = (
-      461
+      618
       37)
     object pnlModalButtons: TPanel
-      Left = 152
+      Left = 231
       Top = 4
       Width = 158
       Height = 25
@@ -542,7 +542,7 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
       end
     end
     object chkUseFilenames: TCheckBox
-      Left = 341
+      Left = 498
       Top = 7
       Width = 112
       Height = 17

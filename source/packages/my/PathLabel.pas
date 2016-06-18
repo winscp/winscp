@@ -27,9 +27,9 @@ type
     FHotTrack: Boolean;
     FMouseInView: Boolean;
     FIsActive: Boolean;
+    FIsEnabled: Boolean;
     FMask: string;
     FAutoSizeVertical: Boolean;
-    FAutoHotTrackColors: Boolean;
     procedure CMHintShow(var Message: TMessage); message CM_HINTSHOW;
     procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
     procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
@@ -42,11 +42,10 @@ type
     procedure SetAutoSizeVertical(Value: Boolean);
     procedure SetFocusControl(Value: TWinControl);
     function GetFocusControl: TWinControl;
-    function HotTrackColorsStored(Index: Integer): Boolean;
-    procedure SetAutoHotTrackColors(Value: Boolean);
     function CalculateAutoHotTrackColor(C: TColor): TColor;
     procedure CalculateAutoHotTrackColors;
     function CalculateAutoHotTrackColorComponent(C: Byte; Bright: Boolean): Byte;
+    function UseHotTrack: Boolean;
   protected
     procedure AdjustBounds; override;
     procedure Click; override;
@@ -60,17 +59,18 @@ type
     function HotTrackPath(Path: string): string;
     procedure MouseMove(Shift: TShiftState; X: Integer; Y: Integer); override;
     procedure DoPathClick(Path: string); virtual;
+    procedure DblClick; override;
+    procedure DoContextPopup(MousePos: TPoint; var Handled: Boolean); override;
 
   public
     constructor Create(AnOwner: TComponent); override;
     procedure UpdateStatus;
+    function UseRightToLeftAlignment: Boolean; override;
 
     property ActiveColor: TColor index 1 read GetColors write SetColors
       default clActiveCaption;
     property ActiveTextColor: TColor index 3 read GetColors write SetColors
       default clCaptionText;
-    property ActiveHotTrackColor: TColor index 5 read GetColors write SetColors
-      stored HotTrackColorsStored;
     property UnixPath: Boolean read FUnixPath write SetUnixPath default False;
     property IndentHorizontal: Integer read FIndentHorizontal
       write SetIndentHorizontal default 5;
@@ -80,14 +80,11 @@ type
       default clInactiveCaption;
     property InactiveTextColor: TColor index 2 read GetColors write SetColors
       default clInactiveCaptionText;
-    property InactiveHotTrackColor: TColor index 4 read GetColors write SetColors
-      stored HotTrackColorsStored;
     property OnGetStatus: TPathLabelGetStatusEvent read FOnGetStatus write FOnGetStatus;
     property OnPathClick: TPathLabelPathClickEvent read FOnPathClick write FOnPathClick;
     property HotTrack: Boolean read FHotTrack write FHotTrack default False;
     property Mask: string read FMask write SetMask;
     property AutoSizeVertical: Boolean read FAutoSizeVertical write SetAutoSizeVertical default False;
-    property AutoHotTrackColors: Boolean read FAutoHotTrackColors write SetAutoHotTrackColors default True;
 
     property FocusControl: TWinControl read GetFocusControl write SetFocusControl;
     property Caption;
@@ -100,18 +97,15 @@ type
   published
     property ActiveColor;
     property ActiveTextColor;
-    property ActiveHotTrackColor;
     property UnixPath;
     property IndentHorizontal;
     property IndentVertical;
     property InactiveColor;
     property InactiveTextColor;
-    property InactiveHotTrackColor;
     property AutoSizeVertical;
     property HotTrack;
     property OnGetStatus;
     property OnPathClick;
-    property AutoHotTrackColors;
 
     property Align;
     property Alignment;
@@ -167,11 +161,11 @@ begin
   FIndentVertical := 1;
   FUnixPath := False;
   FHotTrack := False;
-  FAutoHotTrackColors := True;
   FColors[0] := clInactiveCaption;
   FColors[1] := clActiveCaption;
   FColors[2] := clInactiveCaptionText;
   FColors[3] := clCaptionText;
+  FIsEnabled := True;
   CalculateAutoHotTrackColors;
 end;
 
@@ -179,9 +173,9 @@ procedure TCustomPathLabel.CMHintShow(var Message: TMessage);
 begin
   with TCMHintShow(Message).HintInfo^ do
   begin
-    HintPos.X := ClientOrigin.X + IndentHorizontal - 3;
-    HintPos.Y := ClientOrigin.Y + IndentVertical - 3;
-    if HotTrack then Inc(HintPos.Y, Height);
+    HintPos.X := ClientOrigin.X + IndentHorizontal;
+    HintPos.Y := ClientOrigin.Y + IndentVertical;
+    if UseHotTrack then Inc(HintPos.Y, Height);
   end;
 end; { CMHintShow }
 
@@ -190,33 +184,37 @@ var
   HotPath: string;
   RemainingPath: string;
 begin
-  HotPath := HotTrackPath(FDisplayPath);
-  if HotPath <> '' then
+  if FIsEnabled then
   begin
-    if FDisplayPath = Caption then DoPathClick(HotPath)
-      else
+    HotPath := HotTrackPath(FDisplayPath);
+    if HotPath <> '' then
     begin
-      // Displayed path is shortened.
-      // The below is based on knowledge in MinimizeName algorithm
-      RemainingPath := Copy(FDisplayPath, Length(HotPath) + 1,
-        Length(FDisplayPath) - Length(HotPath));
-
-      if RemainingPath = Copy(Caption, Length(Caption) - Length(RemainingPath) + 1,
-           Length(RemainingPath)) then
-      begin
-        DoPathClick(Copy(Caption, 1, Length(Caption) - Length(RemainingPath)));
-      end
+      if FDisplayPath = Caption then DoPathClick(HotPath)
         else
-      if HotPath = Copy(Caption, 1, Length(HotPath)) then
       begin
-        DoPathClick(HotPath);
-      end
-        else Assert(False);
-    end;
-  end;
+        // Displayed path is shortened.
+        // The below is based on knowledge in MinimizeName algorithm
+        RemainingPath := Copy(FDisplayPath, Length(HotPath) + 1,
+          Length(FDisplayPath) - Length(HotPath));
 
-  if Assigned(FocusControl) then FocusControl.SetFocus;
-  inherited;
+        if RemainingPath = Copy(Caption, Length(Caption) - Length(RemainingPath) + 1,
+             Length(RemainingPath)) then
+        begin
+          DoPathClick(Copy(Caption, 1, Length(Caption) - Length(RemainingPath)));
+        end
+          else
+        if HotPath = Copy(Caption, 1, Length(HotPath)) then
+        begin
+          DoPathClick(HotPath);
+        end
+          else Assert(False);
+      end;
+    end;
+
+    if Assigned(FocusControl) then FocusControl.SetFocus;
+
+    inherited;
+  end;
 end; { Click }
 
 procedure TCustomPathLabel.SetUnixPath(AUnixPath: Boolean);
@@ -241,34 +239,16 @@ end;
 
 procedure TCustomPathLabel.SetColors(Index: integer; Value: TColor);
 begin
-  Assert(Index in [0..5]);
+  Assert(Index in [0..3]);
   if FColors[Index] <> Value then
   begin
     FColors[Index] := Value;
 
-    if (Index = 4) or (Index = 5) then
-      FAutoHotTrackColors := False
-    else
-      CalculateAutoHotTrackColors;
+    CalculateAutoHotTrackColors;
 
     UpdateStatus;
   end;
 end; { SetColors }
-
-function TCustomPathLabel.HotTrackColorsStored(Index: Integer): Boolean;
-begin
-  Result := not AutoHotTrackColors;
-end;
-
-procedure TCustomPathLabel.SetAutoHotTrackColors(Value: Boolean);
-begin
-  if AutoHotTrackColors <> Value then
-  begin
-    FAutoHotTrackColors := Value;
-    CalculateAutoHotTrackColors;
-    UpdateStatus;
-  end;
-end;
 
 // taken from PngImageListEditor
 
@@ -441,13 +421,10 @@ end;
 
 procedure TCustomPathLabel.CalculateAutoHotTrackColors;
 begin
-  if AutoHotTrackColors then
-  begin
-    FColors[4] := CalculateAutoHotTrackColor(FColors[2]);
-    SetContrast(FColors[4], FColors[0], 50);
-    FColors[5] := CalculateAutoHotTrackColor(FColors[3]);
-    SetContrast(FColors[5], FColors[1], 50);
-  end;
+  FColors[4] := CalculateAutoHotTrackColor(FColors[2]);
+  SetContrast(FColors[4], FColors[0], 50);
+  FColors[5] := CalculateAutoHotTrackColor(FColors[3]);
+  SetContrast(FColors[5], FColors[1], 50);
 end;
 
 procedure TCustomPathLabel.SetIndentHorizontal(AIndent: Integer);
@@ -508,7 +485,7 @@ begin
   if (Flags and DT_CALCRECT <> 0) and ((S = '') or ShowAccelChar and
     (S[1] = '&') and (S[2] = #0)) then S := S + ' ';
   if not ShowAccelChar then Flags := Flags or DT_NOPREFIX;
-  Flags := DrawTextBiDiModeFlags(Flags);
+  // have to apply DrawTextBiDiModeFlags if we ever deal with dibi
   Canvas.Font := Font;
 
   Width := (Rect.Right - Rect.Left);
@@ -586,12 +563,8 @@ begin
     else Hint := S + Mask;
 
   Str := FDisplayPath + FDisplayMask;
-  if not Enabled then
+  if not FIsEnabled then
   begin
-    OffsetRect(Rect, 1, 1);
-    Canvas.Font.Color := clBtnHighlight;
-    DrawText(Canvas.Handle, PChar(Str), Length(Str), Rect, Flags);
-    OffsetRect(Rect, -1, -1);
     Canvas.Font.Color := clBtnShadow;
     DrawText(Canvas.Handle, PChar(Str), Length(Str), Rect, Flags);
   end
@@ -648,7 +621,7 @@ var
   Len: Integer;
 begin
   Result := '';
-  if FHotTrack and FMouseInView and (Path <> '') then
+  if UseHotTrack and FMouseInView and (Path <> '') then
   begin
     P := ScreenToClient(Mouse.CursorPos);
     Len := P.X - FIndentHorizontal;
@@ -683,6 +656,13 @@ begin
   Assert(Index in [0..5]);
   Result := FColors[Index];
 end; { GetColors }
+
+function TCustomPathLabel.UseRightToLeftAlignment: Boolean;
+begin
+  // Not sure how to properly deal with RTL atm.
+  // See also a comment on DrawTextBiDiModeFlags in DoDrawTextIntern
+  Result := False;
+end;
 
 procedure TCustomPathLabel.Paint;
 const
@@ -777,15 +757,22 @@ end;
 procedure TCustomPathLabel.UpdateStatus;
 var
   NewIsActive: Boolean;
+  NewIsEnabled: Boolean;
   NewColor: TColor;
 begin
   if TrackingActive then
   begin
     NewIsActive := IsActive;
+    NewIsEnabled :=
+      Enabled and
+      ((not Assigned(FocusControl)) or FocusControl.Enabled);
     NewColor := FColors[Integer(NewIsActive)];
-    if (NewIsActive <> FIsActive) or (NewColor <> Color) then
+    if (NewIsActive <> FIsActive) or
+       (NewIsEnabled <> FIsEnabled) or
+       (NewColor <> Color) then
     begin
       FIsActive := NewIsActive;
+      FIsEnabled := NewIsEnabled;
       Color := NewColor;
       Invalidate;
     end;
@@ -807,10 +794,15 @@ begin
   if NeedUpdate then UpdateStatus;
 end; { Notification }
 
+function TCustomPathLabel.UseHotTrack: Boolean;
+begin
+  Result := HotTrack and FIsEnabled;
+end;
+
 procedure TCustomPathLabel.MouseMove(Shift: TShiftState; X: Integer; Y: Integer);
 begin
   inherited;
-  if FMouseInView and HotTrack and (FDisplayHotTrack <> HotTrackPath(FDisplayPath)) then
+  if FMouseInView and UseHotTrack and (FDisplayHotTrack <> HotTrackPath(FDisplayPath)) then
   begin
     Invalidate;
   end;
@@ -820,6 +812,26 @@ procedure TCustomPathLabel.DoPathClick(Path: string);
 begin
   if Assigned(OnPathClick) then
     OnPathClick(Self, Path);
+end;
+
+procedure TCustomPathLabel.DblClick;
+begin
+  if FIsEnabled then
+  begin
+    inherited;
+  end;
+end;
+
+procedure TCustomPathLabel.DoContextPopup(MousePos: TPoint; var Handled: Boolean);
+begin
+  if FIsEnabled then
+  begin
+    inherited;
+  end
+    else
+  begin
+    Handled := True;
+  end;
 end;
 
 procedure TCustomPathLabel.CMMouseEnter(var Message: TMessage);

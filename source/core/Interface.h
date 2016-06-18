@@ -4,7 +4,29 @@
 //---------------------------------------------------------------------------
 #include "Configuration.h"
 #include "SessionData.h"
+#include <typeinfo>
 #define HELP_NONE ""
+#define SCRIPT_SWITCH "script"
+#define COMMAND_SWITCH L"Command"
+#define SESSIONNAME_SWICH L"SessionName"
+#define INI_NUL L"nul"
+#define PRESERVETIME_SWITCH L"preservetime"
+#define PRESERVETIMEDIRS_SWITCH_VALUE L"all"
+#define NOPRESERVETIME_SWITCH L"nopreservetime"
+#define PERMISSIONS_SWITCH L"permissions"
+#define NOPERMISSIONS_SWITCH L"nopermissions"
+#define SPEED_SWITCH L"speed"
+#define TRANSFER_SWITCH L"transfer"
+#define FILEMASK_SWITCH L"filemask"
+#define RESUMESUPPORT_SWITCH L"resumesupport"
+#define NEWERONLY_SWICH L"neweronly"
+#define NONEWERONLY_SWICH L"noneweronly"
+#define DELETE_SWITCH L"delete"
+#define REFRESH_SWITCH L"refresh"
+extern const wchar_t * TransferModeNames[];
+extern const int TransferModeNamesCount;
+extern const wchar_t * ToggleNames[];
+enum TToggle { ToggleOff, ToggleOn };
 //---------------------------------------------------------------------------
 TConfiguration * __fastcall CreateConfiguration();
 class TOptions;
@@ -12,12 +34,14 @@ TOptions * __fastcall GetGlobalOptions();
 
 void __fastcall ShowExtendedException(Exception * E);
 bool __fastcall AppendExceptionStackTraceAndForget(TStrings *& MoreMessages);
+void __fastcall IgnoreException(const std::type_info & ExceptionType);
+UnicodeString __fastcall GetExceptionDebugInfo();
 
 UnicodeString __fastcall GetCompanyRegistryKey();
 UnicodeString __fastcall GetRegistryKey();
 void * __fastcall BusyStart();
 void __fastcall BusyEnd(void * Token);
-const unsigned int GUIUpdateInterval = 200;
+const unsigned int GUIUpdateInterval = 100;
 void __fastcall SetNoGUI();
 bool __fastcall ProcessGUI(bool Force = false);
 UnicodeString __fastcall AppNameString();
@@ -53,6 +77,7 @@ const int qpFatalAbort =           0x01;
 const int qpNeverAskAgainCheck =   0x02;
 const int qpAllowContinueOnError = 0x04;
 const int qpIgnoreAbort =          0x08;
+const int qpWaitInBatch =          0x10;
 
 struct TQueryButtonAlias
 {
@@ -63,6 +88,7 @@ struct TQueryButtonAlias
   TNotifyEvent OnClick;
   int GroupWith;
   TShiftState GrouppedShiftState;
+  bool ElevationRequired;
 };
 
 typedef void __fastcall (__closure *TQueryParamsTimerEvent)(unsigned int & Result);

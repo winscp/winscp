@@ -48,7 +48,7 @@ void __fastcall TThemeTabSheet::SetShadowed(bool Value)
     FShadowed = Value;
 
     TThemePageControl * ThemePageControl = dynamic_cast<TThemePageControl *>(Parent);
-    if (ALWAYS_TRUE(ThemePageControl != NULL))
+    if (DebugAlwaysTrue(ThemePageControl != NULL))
     {
       ThemePageControl->InvalidateTab(TabIndex);
     }
@@ -75,15 +75,24 @@ int __fastcall TThemePageControl::GetTabsHeight()
   ::SendMessage(Handle, TCM_ADJUSTRECT, FALSE, (LPARAM)&Rect);
   int Result = Rect.Top - 1;
 
-  // two different ways to calculate the same, not sure which one is more reliable,
-  // so we want to know in case they differ
-  if (ALWAYS_TRUE(PageCount >= 0))
+  // Two different ways to calculate the same, not sure which one is more reliable,
+  // so we want to know in case they differ.
+  if (DebugAlwaysTrue(PageCount >= 0))
   {
     TRect Rect = TabRect(0);
     int Result2 = Rect.Bottom + 1;
-    if (ALWAYS_FALSE(Result != Result2))
+    if (Result != Result2)
     {
-      Result = Result2;
+      // On Windows 10 with 200% scaling, the first is 40, the second is 42.
+      // The correct size is probably 41. Will wait for final release before settling on solution.
+      if (DebugAlwaysTrue(IsWin10() && (Result - 2) == Result2))
+      {
+        Result--;
+      }
+      else
+      {
+        Result = Result2;
+      }
     }
   }
 
@@ -298,4 +307,11 @@ void __fastcall TThemePageControl::Change()
 
   TPageControl::Change();
 }
+//----------------------------------------------------------------------------------------------------------
+#ifdef _DEBUG
+void __fastcall TThemePageControl::RequestAlign()
+{
+  TPageControl::RequestAlign();
+}
+#endif
 //----------------------------------------------------------------------------------------------------------

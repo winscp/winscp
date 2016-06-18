@@ -75,14 +75,16 @@ var
   Drive: TDrive;
 begin
   for Drive := 'C' to 'Z' do
-    if (DriveInfo[Drive].DriveType = DRIVE_FIXED) and
+    if DriveInfo[Drive].Valid and
+       (DriveInfo[Drive].DriveType = DRIVE_FIXED) and
        DirectoryExists(ApiPath(Drive + ':\')) then
     begin
       Result := Drive + ':\';
       Exit;
     end;
   for Drive := 'C' to 'Z' do
-    if (DriveInfo[Drive].DriveType = DRIVE_REMOTE) and
+    if DriveInfo[Drive].Valid and
+       (DriveInfo[Drive].DriveType = DRIVE_REMOTE) and
        DirectoryExists(ApiPath(Drive + ':\')) then
     begin
       Result := Drive + ':\';

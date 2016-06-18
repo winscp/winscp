@@ -7,13 +7,15 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+const wchar_t * EOLTypeNames = L"LF;CRLF;CR";
+//---------------------------------------------------------------------------
 char * __fastcall EOLToStr(TEOLType EOLType)
 {
   switch (EOLType) {
     case eolLF: return "\n";
     case eolCRLF: return "\r\n";
     case eolCR: return "\r";
-    default: FAIL; return "";
+    default: DebugFail(); return "";
   }
 }
 //---------------------------------------------------------------------------
@@ -95,8 +97,8 @@ DWORD __fastcall TFileBuffer::LoadStream(TStream * Stream, const DWORD Len, bool
 void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,
   bool & Token)
 {
-  assert(strlen(Source) <= 2);
-  assert(strlen(Dest) <= 2);
+  DebugAssert(strlen(Source) <= 2);
+  DebugAssert(strlen(Dest) <= 2);
 
   if (FLAGSET(Params, cpRemoveBOM) && (Size >= 3) &&
       (memcmp(Data, Bom, sizeof(Bom)) == 0))
@@ -260,7 +262,7 @@ int __fastcall TSafeHandleStream::Write(const void * Buffer, int Count)
 //---------------------------------------------------------------------------
 int __fastcall TSafeHandleStream::Read(System::DynamicArray<System::Byte> Buffer, int Offset, int Count)
 {
-  FAIL; // untested
+  DebugFail(); // untested
   int Result = FileRead(FHandle, Buffer, Offset, Count);
   if (Result == -1)
   {
@@ -271,7 +273,7 @@ int __fastcall TSafeHandleStream::Read(System::DynamicArray<System::Byte> Buffer
 //---------------------------------------------------------------------------
 int __fastcall TSafeHandleStream::Write(const System::DynamicArray<System::Byte> Buffer, int Offset, int Count)
 {
-  FAIL; // untested
+  DebugFail(); // untested
   int Result = FileWrite(FHandle, Buffer, Offset, Count);
   if (Result == -1)
   {
