@@ -432,9 +432,9 @@
 #define CIPHER_NAME_WARN        1794
 #define CIPHER_NAME_3DES        1795
 #define CIPHER_NAME_BLOWFISH    1796
-#define CIPHER_NAME_AES         1797
+#define CIPHER_NAME_AES2        1797
 #define CIPHER_NAME_DES         1798
-#define CIPHER_NAME_ARCFOUR     1799
+#define CIPHER_NAME_ARCFOUR2    1799
 #define CIPHER_NAME_CHACHA20    1800
 #define KEX_NAME_WARN           1801
 #define KEX_NAME_DHGROUP1       1802
