@@ -6056,6 +6056,13 @@ bool __fastcall TTerminal::CanRecurseToDirectory(const TRemoteFile * File)
   return !File->IsSymLink || FSessionData->FollowDirectorySymlinks;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::IsThisOrChild(TTerminal * Terminal)
+{
+  return
+    (this == Terminal) ||
+    ((FCommandSession != NULL) && (FCommandSession == Terminal));
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
   TSessionData * ASessionData, TConfiguration * Configuration, const UnicodeString & Name) :

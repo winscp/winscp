@@ -7315,10 +7315,10 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
       // If downloading fails we need to cancel drag&drop, otherwise
       // Explorer shows error
       // But by the way exception probably never reach this point as
-      // it's catched on way
+      // it's catched on way.
+      // Fatal exceptions get here (like when opening a secondary shell extension for file duplication fails).
       Result = DRAGDROP_S_CANCEL;
-      DebugAssert(Terminal != NULL);
-      Terminal->ShowExtendedException(&E);
+      ShowExtendedException(Terminal, &E);
     }
   }
 }

@@ -492,6 +492,7 @@ public:
   void __fastcall FatalAbort();
   void __fastcall ReflectSettings();
   void __fastcall CollectUsage();
+  bool __fastcall IsThisOrChild(TTerminal * Terminal);
 
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);
