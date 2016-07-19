@@ -77,6 +77,7 @@ private:
   TSynchronizeParamType FParams;
   TSynchronizeStartStopEvent FOnStartStop;
   TGetSynchronizeOptionsEvent FOnGetOptions;
+  TSynchronizeSessionLog FOnSynchronizeSessionLog;
   int FOptions;
   int FCopyParamAttrs;
   bool FSynchronizing;
@@ -125,6 +126,7 @@ public:
   __fastcall TSynchronizeDialog(TComponent * Owner);
   void __fastcall Init(TSynchronizeStartStopEvent OnStartStop,
     TGetSynchronizeOptionsEvent OnGetOptions,
+    TSynchronizeSessionLog OnSynchronizeSessionLog,
     TFeedSynchronizeError & OnFeedSynchronizeError, bool StartImmediately);
   virtual __fastcall ~TSynchronizeDialog();
 

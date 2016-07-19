@@ -4800,7 +4800,7 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
       FLAGMASK(SynchronizeAllowSelectedOnly(), soAllowSelectedOnly);
     DebugAssert(FOnFeedSynchronizeError == NULL);
     Result = DoSynchronizeDialog(Params, &CopyParam, Controller.StartStop,
-      SaveSettings, Options, CopyParamAttrs, GetSynchronizeOptions,
+      SaveSettings, Options, CopyParamAttrs, GetSynchronizeOptions, SynchronizeSessionLog,
       FOnFeedSynchronizeError, UseDefaults);
     if (Result)
     {
@@ -4971,6 +4971,11 @@ bool __fastcall TCustomScpExplorerForm::SynchronizeAllowSelectedOnly()
   return Visible &&
     ((DirView(osRemote)->SelCount > 0) ||
      (HasDirView[osLocal] && (DirView(osLocal)->SelCount > 0)));
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SynchronizeSessionLog(const UnicodeString & Message)
+{
+  LogSynchronizeEvent(Terminal, Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::GetSynchronizeOptions(

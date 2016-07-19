@@ -267,3 +267,11 @@ void __fastcall TSynchronizeController::SynchronizeDirectoriesChange(
 {
   SynchronizeLog(slDirChange, FMTLOAD(SYNCHRONIZE_START, (Directories)));
 }
+//---------------------------------------------------------------------------
+void __fastcall LogSynchronizeEvent(TTerminal * Terminal, const UnicodeString & Message)
+{
+  if (Terminal != NULL)
+  {
+    Terminal->LogEvent(FORMAT("Keep up to date: %s", (Message)));
+  }
+}

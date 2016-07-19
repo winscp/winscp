@@ -318,6 +318,8 @@ const soNoMinimize =       0x02;
 const soAllowSelectedOnly = 0x04;
 typedef void __fastcall (__closure *TGetSynchronizeOptionsEvent)
   (int Params, TSynchronizeOptions & Options);
+typedef void __fastcall (__closure *TSynchronizeSessionLog)
+  (const UnicodeString & Message);
 typedef void __fastcall (__closure *TFeedSynchronizeError)
   (const UnicodeString & Message, TStrings * MoreMessages, TQueryType Type,
    const UnicodeString & HelpKeyword);
@@ -325,6 +327,7 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
   bool & SaveSettings, int Options, int CopyParamAttrs,
   TGetSynchronizeOptionsEvent OnGetOptions,
+  TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
   bool Start);
 
