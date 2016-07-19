@@ -1808,6 +1808,7 @@ void __fastcall TSessionData::ConfigureTunnel(int APortNumber)
   PortNumber = APortNumber;
   // proxy settings is used for tunnel
   ProxyMethod = ::pmNone;
+  FLogicalHostName = FOrigHostName;
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::RollbackTunnel()
@@ -1815,6 +1816,7 @@ void __fastcall TSessionData::RollbackTunnel()
   HostName = FOrigHostName;
   PortNumber = FOrigPortNumber;
   ProxyMethod = FOrigProxyMethod;
+  FLogicalHostName = L"";
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ExpandEnvironmentVariables()
