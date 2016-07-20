@@ -3070,7 +3070,7 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
           Result = true;
         }
 
-        if (Result && Option.IsControl)
+        if (Result)
         {
           if (CutTokenEx(Buf, Option.Default))
           {
