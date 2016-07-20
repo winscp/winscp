@@ -2106,7 +2106,7 @@ void __fastcall TSecureShell::GetRealHost(UnicodeString & Host, int & Port)
 {
   if (FSessionData->Tunnel)
   {
-    // Not that we set the CONF_loghost, the hostname is correct already
+    // Now that we set the CONF_loghost, the hostname is correct already
     Host = FSessionData->OrigHostName;
     Port = FSessionData->OrigPortNumber;
   }
