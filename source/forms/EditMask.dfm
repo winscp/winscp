@@ -208,9 +208,9 @@ object EditMaskDialog: TEditMaskDialog
     end
   end
   object MaskHintText: TStaticText
-    Left = 312
+    Left = 288
     Top = 369
-    Width = 105
+    Width = 129
     Height = 17
     Alignment = taRightJustify
     AutoSize = False

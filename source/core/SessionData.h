@@ -205,6 +205,7 @@ private:
   TProxyMethod FOrigProxyMethod;
   TSessionSource FSource;
   bool FSaveOnly;
+  UnicodeString FLogicalHostName;
 
   void __fastcall SetHostName(UnicodeString value);
   UnicodeString __fastcall GetHostNameExpanded();
@@ -580,6 +581,7 @@ public:
   __property UnicodeString StorageKey = { read = GetStorageKey };
   __property UnicodeString SiteKey = { read = GetSiteKey };
   __property UnicodeString OrigHostName = { read = FOrigHostName };
+  __property UnicodeString LogicalHostName = { read = FLogicalHostName };
   __property int OrigPortNumber = { read = FOrigPortNumber };
   __property UnicodeString LocalName = { read = GetLocalName };
   __property UnicodeString FolderName = { read = GetFolderName };

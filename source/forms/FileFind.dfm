@@ -1426,9 +1426,9 @@ object FileFindDialog: TFileFindDialog
       OnExit = MaskEditExit
     end
     object MaskHintText: TStaticText
-      Left = 248
+      Left = 240
       Top = 59
-      Width = 116
+      Width = 124
       Height = 17
       Alignment = taRightJustify
       Anchors = [akTop, akRight]

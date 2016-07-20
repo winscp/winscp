@@ -333,9 +333,9 @@ object CopyParamsFrame: TCopyParamsFrame
       OnClick = ControlChange
     end
     object IncludeFileMaskHintText: TStaticText
-      Left = 204
+      Left = 184
       Top = 58
-      Width = 105
+      Width = 125
       Height = 17
       Alignment = taRightJustify
       AutoSize = False

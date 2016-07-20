@@ -394,6 +394,7 @@ protected:
     const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType & CopyParam, int Params, TSynchronizeChecklist ** Checklist,
     TSynchronizeOptions * Options);
+  void __fastcall SynchronizeSessionLog(const UnicodeString & Message);
   void __fastcall GetSynchronizeOptions(int Params, TSynchronizeOptions & Options);
   bool __fastcall SynchronizeAllowSelectedOnly();
   virtual void __fastcall BatchStart(void *& Storage);

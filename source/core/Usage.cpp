@@ -9,6 +9,8 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+const UnicodeString LastInternalExceptionCounter(L"LastInternalException2");
+//---------------------------------------------------------------------------
 __fastcall TUsage::TUsage(TConfiguration * Configuration)
 {
   FCriticalSection = new TCriticalSection();
@@ -160,6 +162,7 @@ void __fastcall TUsage::Reset()
   TGuard Guard(FCriticalSection);
   UpdateLastReport();
   FPeriodCounters.clear();
+  ResetLastInternalException();
 }
 //---------------------------------------------------------------------------
 void __fastcall TUsage::UpdateCurrentVersion()
@@ -181,8 +184,23 @@ void __fastcall TUsage::UpdateCurrentVersion()
     {
       Inc(L"Downgrades");
     }
+
+    if (PrevVersion != CompoundVersion)
+    {
+      ResetLastInternalException();
+    }
   }
   Set(L"CurrentVersion", CompoundVersion);
+}
+//---------------------------------------------------------------------------
+void __fastcall TUsage::ResetLastInternalException()
+{
+  TGuard Guard(FCriticalSection);
+  int Index = FValues->IndexOfName(LastInternalExceptionCounter);
+  if (Index >= 0)
+  {
+    FValues->Delete(Index);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TUsage::Inc(const UnicodeString & Key, int Increment)

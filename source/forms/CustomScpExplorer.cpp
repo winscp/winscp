@@ -4800,7 +4800,7 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
       FLAGMASK(SynchronizeAllowSelectedOnly(), soAllowSelectedOnly);
     DebugAssert(FOnFeedSynchronizeError == NULL);
     Result = DoSynchronizeDialog(Params, &CopyParam, Controller.StartStop,
-      SaveSettings, Options, CopyParamAttrs, GetSynchronizeOptions,
+      SaveSettings, Options, CopyParamAttrs, GetSynchronizeOptions, SynchronizeSessionLog,
       FOnFeedSynchronizeError, UseDefaults);
     if (Result)
     {
@@ -4971,6 +4971,11 @@ bool __fastcall TCustomScpExplorerForm::SynchronizeAllowSelectedOnly()
   return Visible &&
     ((DirView(osRemote)->SelCount > 0) ||
      (HasDirView[osLocal] && (DirView(osLocal)->SelCount > 0)));
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SynchronizeSessionLog(const UnicodeString & Message)
+{
+  LogSynchronizeEvent(Terminal, Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::GetSynchronizeOptions(
@@ -7315,10 +7320,10 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
       // If downloading fails we need to cancel drag&drop, otherwise
       // Explorer shows error
       // But by the way exception probably never reach this point as
-      // it's catched on way
+      // it's catched on way.
+      // Fatal exceptions get here (like when opening a secondary shell extension for file duplication fails).
       Result = DRAGDROP_S_CANCEL;
-      DebugAssert(Terminal != NULL);
-      Terminal->ShowExtendedException(&E);
+      ShowExtendedException(Terminal, &E);
     }
   }
 }

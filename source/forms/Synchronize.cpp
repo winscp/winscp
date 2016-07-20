@@ -31,13 +31,14 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
   bool & SaveSettings, int Options, int CopyParamAttrs,
   TGetSynchronizeOptionsEvent OnGetOptions,
+  TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
   bool Start)
 {
   bool Result;
   TSynchronizeDialog * Dialog = SafeFormCreate<TSynchronizeDialog>(Application);
 
-  Dialog->Init(OnStartStop, OnGetOptions, OnFeedSynchronizeError, Start);
+  Dialog->Init(OnStartStop, OnGetOptions, OnSynchronizeSessionLog, OnFeedSynchronizeError, Start);
 
   try
   {
@@ -91,11 +92,13 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::Init(TSynchronizeStartStopEvent OnStartStop,
   TGetSynchronizeOptionsEvent OnGetOptions,
+  TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
   bool StartImmediately)
 {
   FOnStartStop = OnStartStop;
   FOnGetOptions = OnGetOptions;
+  FOnSynchronizeSessionLog = OnSynchronizeSessionLog;
   FOnFeedSynchronizeError = &OnFeedSynchronizeError;
   FStartImmediately = StartImmediately;
 }
@@ -375,6 +378,8 @@ void __fastcall TSynchronizeDialog::DoLogInternal(
       LogView->Repaint();
     }
   }
+
+  FOnSynchronizeSessionLog(Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::DoLog(TSynchronizeController * /*Controller*/,

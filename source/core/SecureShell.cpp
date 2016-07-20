@@ -353,6 +353,8 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_int_int(conf, CONF_ssh_hklist, 4, HK_WARN);
   DebugAssert(HK_MAX == 5);
 
+  conf_set_str(conf, CONF_loghost, AnsiString(Data->LogicalHostName).c_str());
+
   return conf;
 }
 //---------------------------------------------------------------------------
@@ -2104,6 +2106,7 @@ void __fastcall TSecureShell::GetRealHost(UnicodeString & Host, int & Port)
 {
   if (FSessionData->Tunnel)
   {
+    // Not that we set the CONF_loghost, the hostname is correct already
     Host = FSessionData->OrigHostName;
     Port = FSessionData->OrigPortNumber;
   }

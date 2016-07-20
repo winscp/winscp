@@ -51,6 +51,9 @@ private:
   void __fastcall SetMax(const UnicodeString & Key, int Value, TCounters & Counters);
   void __fastcall Serialize(UnicodeString& List,
     const UnicodeString & Name, const TCounters & Counters) const;
+  void __fastcall ResetLastInternalException();
 };
+//---------------------------------------------------------------------------
+extern const UnicodeString LastInternalExceptionCounter;
 //---------------------------------------------------------------------------
 #endif

@@ -10000,6 +10000,10 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 		int micoffset, len;
 		char *data;
 		Ssh_gss_buf mic;
+#ifdef MPEXT
+		const char * fullhostname;
+		char *loghost;
+#endif
 		s->type = AUTH_TYPE_GSSAPI;
 		s->tried_gssapi = TRUE;
 		s->gotit = TRUE;
@@ -10079,6 +10083,14 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 		}
 
 		/* now start running */
+#ifdef MPEXT
+		fullhostname = ssh->fullhostname;
+		loghost = conf_get_str(ssh->conf, CONF_loghost);
+		if (loghost[0] != '\0')
+		{
+		  fullhostname = loghost;
+		}
+#endif
 		s->gss_stat = s->gsslib->import_name(s->gsslib,
 						     ssh->fullhostname,
 						     &s->gss_srv_name);

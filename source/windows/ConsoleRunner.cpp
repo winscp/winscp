@@ -1724,6 +1724,7 @@ void __fastcall TConsoleRunner::SynchronizeControllerLog(
   const UnicodeString Message)
 {
   PrintMessage(Message);
+  LogSynchronizeEvent(FScript->Terminal, Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::SynchronizeControllerAbort(TObject * /*Sender*/,
