@@ -2158,6 +2158,7 @@ void __fastcall Usage(TConsole * Console)
     RegisterSwitch(SwitchesUsage, L"/edit", USAGE_EDIT);
     RegisterSwitch(SwitchesUsage, L"/synchronize", USAGE_SYNCHRONIZE);
     RegisterSwitch(SwitchesUsage, L"/keepuptodate", USAGE_KEEPUPTODATE);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(REFRESH_SWITCH), USAGE_REFRESH);
     RegisterSwitch(SwitchesUsage, L"/defaults", USAGE_DEFAULTS);
     RegisterSwitch(SwitchesUsage, L"/privatekey=", USAGE_PRIVATEKEY);
     RegisterSwitch(SwitchesUsage, L"/hostkey=", USAGE_HOSTKEY);
