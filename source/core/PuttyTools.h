@@ -32,4 +32,6 @@ UnicodeString __fastcall GetPuTTYVersion();
 //---------------------------------------------------------------------------
 UnicodeString __fastcall Sha256(const char * Data, size_t Size);
 //---------------------------------------------------------------------------
+void __fastcall DllHijackingProtection();
+//---------------------------------------------------------------------------
 #endif
