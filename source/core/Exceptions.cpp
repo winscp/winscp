@@ -165,7 +165,7 @@ static bool __fastcall ExceptionMessage(Exception * E, bool Count,
     Configuration->Usage->Inc(CounterName);
     UnicodeString ExceptionDebugInfo =
       E->ClassName() + L":" + GetExceptionDebugInfo();
-    Configuration->Usage->Set(L"LastInternalException", ExceptionDebugInfo);
+    Configuration->Usage->Set(LastInternalExceptionCounter, ExceptionDebugInfo);
   }
 
   return Result;
