@@ -12,7 +12,7 @@
 #include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 extern const wchar_t IncludeExcludeFileMasksDelimiter = L'|';
-static UnicodeString FileMasksDelimiters = L";,";
+UnicodeString FileMasksDelimiters = L";,";
 static UnicodeString AllFileMasksDelimiters = FileMasksDelimiters + IncludeExcludeFileMasksDelimiter;
 static UnicodeString DirectoryMaskDelimiters = L"/\\";
 static UnicodeString FileMasksDelimiterStr = UnicodeString(FileMasksDelimiters[1]) + L' ';
