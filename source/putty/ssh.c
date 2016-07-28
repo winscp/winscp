@@ -10092,7 +10092,11 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 		}
 #endif
 		s->gss_stat = s->gsslib->import_name(s->gsslib,
+#ifdef MPEXT
+						     fullhostname,
+#else
 						     ssh->fullhostname,
+#endif
 						     &s->gss_srv_name);
 		if (s->gss_stat != SSH_GSS_OK) {
 		    if (s->gss_stat == SSH_GSS_BAD_HOST_NAME)
