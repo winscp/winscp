@@ -539,7 +539,7 @@ void __fastcall TScpCommanderForm::LocalDefaultDirectory()
   }
   catch(Exception & E)
   {
-    Terminal->ShowExtendedException(&E);
+    ShowExtendedException(NULL, &E);
     LocalDirView->Path = ExtractFilePath(Application->ExeName);
   }
 }
