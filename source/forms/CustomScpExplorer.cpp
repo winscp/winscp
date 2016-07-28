@@ -7358,7 +7358,7 @@ void __fastcall TCustomScpExplorerForm::DirViewGetOverlay(
     Ext = ExtractFileExt(DirView->ItemFileName(Item));
   }
 
-  if (AnsiSameText(Ext, Configuration->PartialExt))
+  if (SameText(Ext, Configuration->PartialExt))
   {
     Indexes |= oiPartial;
   }

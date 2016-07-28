@@ -122,8 +122,8 @@ bool __fastcall TOptions::FindSwitch(const UnicodeString Switch,
     }
     else if (FOptions[Index].Type == otSwitch)
     {
-      if ((!CaseSensitive && AnsiSameText(FOptions[Index].Name, Switch)) ||
-          (CaseSensitive && AnsiSameStr(FOptions[Index].Name, Switch)))
+      if ((!CaseSensitive && SameText(FOptions[Index].Name, Switch)) ||
+          (CaseSensitive && SameStr(FOptions[Index].Name, Switch)))
       {
         Found = true;
         Value = FOptions[Index].Value;

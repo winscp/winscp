@@ -1403,7 +1403,7 @@ bool __fastcall TSessionData::IsProtocolUrl(
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option)
 {
-  return AnsiSameText(Option, PassphraseOption);
+  return SameText(Option, PassphraseOption);
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
@@ -1629,7 +1629,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       {
         UnicodeString ConnectionParam = CutToChar(ConnectionParams, UrlParamSeparator, false);
         UnicodeString ConnectionParamName = CutToChar(ConnectionParam, UrlParamValueSeparator, false);
-        if (AnsiSameText(ConnectionParamName, UrlHostKeyParamName))
+        if (SameText(ConnectionParamName, UrlHostKeyParamName))
         {
           HostKey = ConnectionParam;
           FOverrideCachedHostKey = false;
@@ -1652,7 +1652,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       {
         UnicodeString SessionParam = CutToChar(SessionParams, UrlParamSeparator, false);
         UnicodeString SessionParamName = CutToChar(SessionParam, UrlParamValueSeparator, false);
-        if (AnsiSameText(SessionParamName, UrlSaveParamName))
+        if (SameText(SessionParamName, UrlSaveParamName))
         {
           FSaveOnly = (StrToIntDef(SessionParam, 1) != 0);
         }

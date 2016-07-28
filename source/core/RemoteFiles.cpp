@@ -465,7 +465,7 @@ int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs,
   }
   // this should be somewhere else, probably in TUnixDirView,
   // as the "partial" overlay is added there too
-  if (AnsiSameText(UnixExtractFileExt(FileName), PARTIAL_EXT))
+  if (SameText(UnixExtractFileExt(FileName), PARTIAL_EXT))
   {
     static const size_t PartialExtLen = LENOF(PARTIAL_EXT) - 1;
     FileName.SetLength(FileName.Length() - PartialExtLen);

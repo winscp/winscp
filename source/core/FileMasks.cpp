@@ -1196,7 +1196,7 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
 {
   // keep consistent with TSessionLog::OpenLogFile
 
-  if (AnsiSameText(Pattern, L"!s"))
+  if (SameText(Pattern, L"!s"))
   {
     Replacement = FData.SessionData->GenerateSessionUrl(sufComplete);
   }
@@ -1204,15 +1204,15 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
   {
     Replacement = FData.SessionData->HostNameExpanded;
   }
-  else if (AnsiSameText(Pattern, L"!u"))
+  else if (SameText(Pattern, L"!u"))
   {
     Replacement = FData.SessionData->UserName;
   }
-  else if (AnsiSameText(Pattern, L"!p"))
+  else if (SameText(Pattern, L"!p"))
   {
     Replacement = FData.SessionData->Password;
   }
-  else if (AnsiSameText(Pattern, L"!#"))
+  else if (SameText(Pattern, L"!#"))
   {
     Replacement = IntToStr(FData.SessionData->PortNumber);
   }
@@ -1226,7 +1226,7 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
     // already delimited
     Delimit = false;
   }
-  else if (AnsiSameText(Pattern, L"!n"))
+  else if (SameText(Pattern, L"!n"))
   {
     Replacement = FData.SessionData->SessionName;
   }

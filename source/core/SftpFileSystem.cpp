@@ -2009,7 +2009,7 @@ const TFileSystemInfo & __fastcall TSFTPFileSystem::GetFileSystemInfo(bool /*Ret
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::TemporaryTransferFile(const UnicodeString & FileName)
 {
-  return AnsiSameText(UnixExtractFileExt(FileName), PARTIAL_EXT);
+  return SameText(UnixExtractFileExt(FileName), PARTIAL_EXT);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::GetStoredCredentialsTried()
