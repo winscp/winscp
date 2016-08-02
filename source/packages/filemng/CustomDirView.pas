@@ -326,12 +326,12 @@ type
     procedure DoDisplayPropertiesMenu;
     procedure DoExecute(Item: TListItem);
     procedure DoExecuteParentDirectory;
+    procedure Load(DoFocusSomething: Boolean); virtual;
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    procedure Load; virtual;
     procedure Reload(CacheIcons: Boolean); virtual;
     function CreateFocusedFileList(FullPath: Boolean; FileList: TStrings = nil): TStrings;
     function CreateFileList(Focused: Boolean; FullPath: Boolean; FileList: TStrings = nil): TStrings;
@@ -1795,7 +1795,7 @@ begin
         end;
       end;
 
-      Load;
+      Load(False);
 
       OldSelection.Sort;
       if CacheIcons then IconCache.Sort;
@@ -1841,8 +1841,9 @@ begin
       FocusItem(ItemToFocus);
     end;
 
-    // cannot scroll when focus is not visible because
-    // of hack-implementation of FocusItem()
+    // could not scroll when focus is not visible because
+    // of previous hack-implementation of FocusItem()
+    // - no longer true, this can be re-enabled after some testing
     {$IF False}
     // previously focus item was not visible, scroll to the same position
     // as before
@@ -1864,7 +1865,7 @@ begin
   end;
 end;
 
-procedure TCustomDirView.Load;
+procedure TCustomDirView.Load(DoFocusSomething: Boolean);
 var
   SaveCursor: TCursor;
   Delimiters: string;
@@ -1943,7 +1944,10 @@ begin
 
         FNotifyEnabled := True;
 
-        FocusSomething;
+        if DoFocusSomething then
+        begin
+          FocusSomething;
+        end;
 
         if Assigned(FOnLoaded) then
         begin

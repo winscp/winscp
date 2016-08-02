@@ -237,6 +237,7 @@ type
     procedure StartFileDeleteThread;
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
+    procedure Load(DoFocusSomething: Boolean); override;
     function HiddenCount: Integer; override;
     function FilteredCount: Integer; override;
 
@@ -300,7 +301,6 @@ type
     function GetFileRec(Index: Integer): PFileRec;
 
     {Populate / repopulate the filelist:}
-    procedure Load; override;
     procedure Reload(CacheIcons : Boolean); override;
     procedure Reload2;
 
@@ -805,7 +805,7 @@ begin
       SetLength(Value, Length(Value) - 1);
     PathChanging(True);
     FPath := Value;
-    Load;
+    Load(True);
   finally
     PathChanged;
   end;
@@ -1163,7 +1163,7 @@ begin
   end;
 end;
 
-procedure TDirView.Load;
+procedure TDirView.Load(DoFocusSomething: Boolean);
 begin
   try
     StopIconUpdateThread;
@@ -2813,7 +2813,7 @@ begin
   try
     PathChanging(False);
     FPath := ExtractFileDrive(Path);
-    Load;
+    Load(True);
   finally
     PathChanged;
   end;

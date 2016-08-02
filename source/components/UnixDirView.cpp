@@ -561,7 +561,7 @@ void __fastcall TUnixDirView::DoReadDirectoryImpl(TObject * /*Sender*/, bool Rel
     }
     else
     {
-      Load();
+      Load(true);
       PathChanged();
     }
 
@@ -575,7 +575,7 @@ void __fastcall TUnixDirView::DoReadDirectoryImpl(TObject * /*Sender*/, bool Rel
     // Make sure file list is cleared, to remove all references to invalid
     // file objects. LoadFiles check for disconnected terminal, so no reloading
     // actually occures.
-    Load();
+    Load(true);
   }
 #else
   DebugUsedParam(ReloadOnly);
