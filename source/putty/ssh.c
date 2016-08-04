@@ -9634,6 +9634,9 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 		    logevent("Further authentication required");
 		}
 
+#ifdef MPEXT	
+		logeventf(ssh, "Server offered these authentication methods: %s", methods);
+#endif
 		s->can_pubkey =
 		    in_commasep_string("publickey", methods, methlen);
 		s->can_passwd =
