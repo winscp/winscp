@@ -4934,6 +4934,8 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
   BatchStart(BatchStorage);
   FAutoOperation = true;
 
+  bool AnyOperation = false;
+  TDateTime StartTime = Now();
   TSynchronizeChecklist * AChecklist = NULL;
   try
   {
@@ -4956,6 +4958,12 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
       FSynchronizeProgressForm->Start();
     }
 
+    for (int Index = 0; !AnyOperation && (Index < AChecklist->Count); Index++)
+    {
+      AnyOperation = AChecklist->Item[Index]->Checked;
+    }
+
+    // No need to call if !AnyOperation
     Terminal->SynchronizeApply(AChecklist, LocalDirectory, RemoteDirectory,
       &CopyParam, Params | spNoConfirmation, TerminalSynchronizeDirectory);
   }
@@ -4974,6 +4982,10 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
     SAFE_DESTROY(FSynchronizeProgressForm);
     BatchEnd(BatchStorage);
     ReloadLocalDirectory();
+    if (AnyOperation)
+    {
+      OperationComplete(StartTime);
+    }
   }
 }
 //---------------------------------------------------------------------------
