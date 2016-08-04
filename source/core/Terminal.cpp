@@ -1116,6 +1116,8 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->TunnelPortFwd = FORMAT(L"L%d\t%s:%d",
       (FTunnelLocalPortNumber, FSessionData->HostNameExpanded, FSessionData->PortNumber));
     FTunnelData->HostKey = FSessionData->TunnelHostKey;
+
+    // inherit proxy options on the main session
     FTunnelData->ProxyMethod = FSessionData->ProxyMethod;
     FTunnelData->ProxyHost = FSessionData->ProxyHost;
     FTunnelData->ProxyPort = FSessionData->ProxyPort;
@@ -1125,6 +1127,25 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->ProxyLocalCommand = FSessionData->ProxyLocalCommand;
     FTunnelData->ProxyDNS = FSessionData->ProxyDNS;
     FTunnelData->ProxyLocalhost = FSessionData->ProxyLocalhost;
+
+    // inherit most SSH options of the main session (except for private key and bugs)
+    FTunnelData->Compression = FSessionData->Compression;
+    FTunnelData->SshProt = FSessionData->SshProt;
+    FTunnelData->CipherList = FSessionData->CipherList;
+    FTunnelData->Ssh2DES = FSessionData->Ssh2DES;
+
+    FTunnelData->KexList = FSessionData->KexList;
+    FTunnelData->RekeyData = FSessionData->RekeyData;
+    FTunnelData->RekeyTime = FSessionData->RekeyTime;
+
+    FTunnelData->SshNoUserAuth = FSessionData->SshNoUserAuth;
+    FTunnelData->AuthGSSAPI = FSessionData->AuthGSSAPI;
+    FTunnelData->GSSAPIFwdTGT = FSessionData->GSSAPIFwdTGT;
+    FTunnelData->TryAgent = FSessionData->TryAgent;
+    FTunnelData->AgentFwd = FSessionData->AgentFwd;
+    FTunnelData->AuthTIS = FSessionData->AuthTIS;
+    FTunnelData->AuthKI = FSessionData->AuthKI;
+    FTunnelData->AuthKIPassword = FSessionData->AuthKIPassword;
 
     FTunnelLog = new TSessionLog(this, FTunnelData, Configuration);
     FTunnelLog->Parent = FLog;
