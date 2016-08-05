@@ -466,6 +466,11 @@ void __fastcall TCustomScpExplorerForm::CreateHiddenWindow()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::CanConsole()
+{
+  return (Terminal != NULL) && (Terminal->IsCapable[fcAnyCommand] || Terminal->IsCapable[fcSecondaryShell]);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CanCommandLineFromAnotherInstance()
 {
   bool Result = !NonVisualDataModule->Busy;
