@@ -892,15 +892,26 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     CheckForUpdatesHTTP->URL = URL;
     // sanity check
     CheckForUpdatesHTTP->ResponseLimit = 102400;
-    if (CollectUsage)
+    try
     {
-      UnicodeString Usage = GetUsageData();
+      if (CollectUsage)
+      {
+        UnicodeString Usage = GetUsageData();
 
-      CheckForUpdatesHTTP->Post(Usage);
+        CheckForUpdatesHTTP->Post(Usage);
+      }
+      else
+      {
+        CheckForUpdatesHTTP->Get();
+      }
     }
-    else
+    catch (...)
     {
-      CheckForUpdatesHTTP->Get();
+      if (CheckForUpdatesHTTP->IsCertificateError())
+      {
+        Configuration->Usage->Inc(L"UpdateCertificateErrors");
+      }
+      throw;
     }
     Response = CheckForUpdatesHTTP->Response;
   }

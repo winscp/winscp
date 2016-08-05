@@ -241,3 +241,8 @@ int THttp::NeonServerSSLCallbackImpl(int Failures, const ne_ssl_certificate * Ce
   return (Failures == 0) ? NE_OK : NE_ERROR;
 }
 //---------------------------------------------------------------------------
+bool THttp::IsCertificateError()
+{
+  return !FCertificateError.IsEmpty();
+}
+//---------------------------------------------------------------------------
