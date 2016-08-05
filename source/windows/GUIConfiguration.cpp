@@ -568,6 +568,7 @@ void __fastcall TGUIConfiguration::Default()
   FPuttySession = L"WinSCP temporary session";
   FBeepOnFinish = false;
   FBeepOnFinishAfter = TDateTime(0, 0, 30, 0);
+  FBeepSound = L"SystemDefault";
   FCopyParamCurrent = L"";
   FKeepUpToDateChangeDelay = 500;
   FChecksumAlg = L"sha1";
@@ -643,6 +644,7 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEY(DateTime, IgnoreCancelBeforeFinish); \
     KEY(Bool,     BeepOnFinish); \
     KEY(DateTime, BeepOnFinishAfter); \
+    KEY(String,   BeepSound); \
     KEY(Integer,  KeepUpToDateChangeDelay); \
     KEY(String,   ChecksumAlg); \
     KEY(Integer,  SessionReopenAutoIdle); \

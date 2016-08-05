@@ -1376,7 +1376,17 @@ void __fastcall TCustomScpExplorerForm::OperationComplete(
   if (GUIConfiguration->BeepOnFinish &&
       (Now() - StartTime > GUIConfiguration->BeepOnFinishAfter))
   {
-    MessageBeep(MB_OK);
+    UnicodeString BeepSound = GUIConfiguration->BeepSound;
+    DWORD Sound;
+    if (!ExtractFileExt(BeepSound).IsEmpty())
+    {
+      Sound = SND_FILENAME;
+    }
+    else
+    {
+      Sound = SND_ALIAS;
+    }
+    PlaySound(BeepSound.c_str(), NULL, Sound | SND_ASYNC);
   }
 }
 //---------------------------------------------------------------------------
