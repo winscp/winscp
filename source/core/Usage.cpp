@@ -10,6 +10,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const UnicodeString LastInternalExceptionCounter(L"LastInternalException2");
+const UnicodeString LastUpdateExceptionCounter(L"LastUpdateException");
 //---------------------------------------------------------------------------
 __fastcall TUsage::TUsage(TConfiguration * Configuration)
 {
@@ -162,7 +163,7 @@ void __fastcall TUsage::Reset()
   TGuard Guard(FCriticalSection);
   UpdateLastReport();
   FPeriodCounters.clear();
-  ResetLastInternalException();
+  ResetLastExceptions();
 }
 //---------------------------------------------------------------------------
 void __fastcall TUsage::UpdateCurrentVersion()
@@ -187,20 +188,26 @@ void __fastcall TUsage::UpdateCurrentVersion()
 
     if (PrevVersion != CompoundVersion)
     {
-      ResetLastInternalException();
+      ResetLastExceptions();
     }
   }
   Set(L"CurrentVersion", CompoundVersion);
 }
 //---------------------------------------------------------------------------
-void __fastcall TUsage::ResetLastInternalException()
+void __fastcall TUsage::ResetValue(const UnicodeString & Key)
 {
-  TGuard Guard(FCriticalSection);
-  int Index = FValues->IndexOfName(LastInternalExceptionCounter);
+  int Index = FValues->IndexOfName(Key);
   if (Index >= 0)
   {
     FValues->Delete(Index);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TUsage::ResetLastExceptions()
+{
+  TGuard Guard(FCriticalSection);
+  ResetValue(LastInternalExceptionCounter);
+  ResetValue(LastUpdateExceptionCounter);
 }
 //---------------------------------------------------------------------------
 void __fastcall TUsage::Inc(const UnicodeString & Key, int Increment)

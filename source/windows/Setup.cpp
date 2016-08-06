@@ -1085,6 +1085,11 @@ static void __fastcall DoQueryUpdates(bool CollectUsage)
   catch(Exception & E)
   {
     Configuration->Usage->Inc(L"UpdateChecksFailed");
+    UnicodeString Message;
+    if (DebugAlwaysTrue(ExceptionFullMessage(&E, Message)))
+    {
+      Configuration->Usage->Set(LastUpdateExceptionCounter, Message);
+    }
     throw ExtException(&E, MainInstructions(LoadStr(CHECK_FOR_UPDATES_ERROR)));
   }
 }
