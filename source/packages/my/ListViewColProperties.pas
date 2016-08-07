@@ -277,6 +277,7 @@ begin
     for Index := 0 to Count - 1 do
       GetProperties(Index).Order := -1;
 
+    // First order invisible columns (not True), then visible (not not True)
     Phase := True;
     Order := 0;
 
@@ -294,19 +295,19 @@ begin
           Inc(Order);
         end;
       end;
-    until Phase;
 
-    // this does not make sure hidden columns are first,
-    // but it gets fixed on the next run
-    for Index := 0 to Count - 1 do
-    begin
-      Properties := GetProperties(Index);
-      if Properties.Order < 0 then
+      // add missing columns from the same visibility class
+      for Index := 0 to Count - 1 do
       begin
-        Properties.Order := Order;
-        Inc(Order);
+        Properties := GetProperties(Index);
+        if (Properties.Visible = Phase) and
+           (Properties.Order < 0) then
+        begin
+          Properties.Order := Order;
+          Inc(Order);
+        end;
       end;
-    end;
+    until Phase;
 
     if ColumnsExists then
       UpdateListViewOrder;
@@ -325,12 +326,11 @@ begin
   S := CutToChar(Value, '|', True);
   WidthsStr := CutToChar(S, '@', True);
   PixelsPerInch := LoadPixelsPerInch(S);
-  OrderStr := CutToChar(Value, '|', True);
-  // set first orders, only than the widths/visibility,
-  // as setting visibility can reorder hidden/visible columns
-  // as needed, while setting order cannot ensure this
-  SetOrderStr(OrderStr);
   SetWidthsStr(WidthsStr, PixelsPerInch);
+  // Have to set order after visibility, otherwise we lost ordering of columns that are invisible by default,
+  // but visible by configuration (as they would get ordered to the front)
+  OrderStr := CutToChar(Value, '|', True);
+  SetOrderStr(OrderStr);
 end;
 
 procedure TCustomListViewColProperties.SetVisible(Index: Integer; Value: Boolean);
