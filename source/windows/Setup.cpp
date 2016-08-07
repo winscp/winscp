@@ -669,7 +669,20 @@ void __fastcall LaunchAdvancedAssociationUI()
 
   if (IsWin10())
   {
-    ExecuteShell(L"control.exe", L"/name Microsoft.DefaultPrograms /page pageDefaultProgram");
+    // WORKAROUND: On Windows 10, the IApplicationAssociationRegistrationUI::LaunchAdvancedAssociationUI does not work.
+    // http://stackoverflow.com/q/32178986/850848
+    // This approach (IOpenControlPanel::Open) works on Windows 7 too, but not on Windows Vista.
+    IOpenControlPanel * OpenControlPanel;
+
+    HRESULT Result =
+      CoCreateInstance(CLSID_OpenControlPanel,
+        NULL, CLSCTX_INPROC, __uuidof(IOpenControlPanel), (void**)&OpenControlPanel);
+    if (SUCCEEDED(Result))
+    {
+      UnicodeString Page = FORMAT(L"pageDefaultProgram\\pageAdvancedSettings?pszAppName=%s", (AppNameString()));
+      OpenControlPanel->Open(L"Microsoft.DefaultPrograms", Page.c_str(), NULL);
+      OpenControlPanel->Release();
+    }
   }
   else
   {
