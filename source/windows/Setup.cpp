@@ -605,6 +605,7 @@ static void __fastcall RegisterForDefaultPrograms()
   {
     try
     {
+      // Maybe we should skip this if HKLM key existed already (we are running non-privileged)
       RegisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER);
     }
     catch (Exception & E)
