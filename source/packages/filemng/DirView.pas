@@ -2705,7 +2705,6 @@ procedure TDirView.ExecuteFile(Item: TListItem);
 var
   DefDir: string;
   FileName: string;
-  Node: TTreeNode;
 begin
   if (UpperCase(PFileRec(Item.Data)^.FileExt) = 'LNK') or
      PFileRec(Item.Data)^.IsDirectory then
@@ -2727,27 +2726,8 @@ begin
 
     if DirExists(FileName) then
     begin
-      if Assigned(FDriveView) then
-        with TDriveView(FDriveView) do
-        begin
-          Node := FindNodeToPath(FileName);
-          if not Assigned(Node) then
-          begin
-            ValidateDirectory(GetDriveStatus(FileName[1]).RootNode);
-            Node := FindNodeToPath(FileName);
-          end;
-          if Assigned(Node) then
-          begin
-            Directory := FileName;
-            CenterNode(Selected);
-          end;
-          Exit;
-        end
-      else
-      begin
-        Path := FileName;
-        Exit;
-      end;
+      Path := FileName;
+      Exit;
     end
       else
     if not FileExists(ApiPath(FileName)) then
