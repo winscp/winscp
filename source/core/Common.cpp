@@ -2140,7 +2140,8 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
 bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin)
 {
   UnicodeString ErrorPath; // unused
-  return DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath);
+  bool Result = DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath);
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin)
