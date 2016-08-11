@@ -3478,7 +3478,16 @@ UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language,
 //---------------------------------------------------------------------------
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
 {
-  Lines->LoadFromFile(ApiPath(FileName), TEncoding::UTF8);
+  std::auto_ptr<TFileStream> Stream(new TFileStream(ApiPath(FileName), fmOpenRead | fmShareDenyWrite));
+  Lines->DefaultEncoding = TEncoding::UTF8;
+  try
+  {
+    Lines->LoadFromStream(Stream.get());
+  }
+  catch (EEncodingError & E)
+  {
+    throw ExtException(LoadStr(TEXT_FILE_ENCODING), &E);
+  }
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall StripEllipsis(const UnicodeString & S)
