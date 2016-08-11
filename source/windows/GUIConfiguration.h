@@ -169,6 +169,7 @@ private:
   TGUICopyParamType FDefaultCopyParam;
   bool FBeepOnFinish;
   TDateTime FBeepOnFinishAfter;
+  UnicodeString FBeepSound;
   UnicodeString FDefaultPuttyPathOnly;
   UnicodeString FDefaultPuttyPath;
   TCopyParamList * FCopyParamList;
@@ -256,6 +257,7 @@ public:
   __property TGUICopyParamType DefaultCopyParam = { read = FDefaultCopyParam, write = SetDefaultCopyParam };
   __property bool BeepOnFinish = { read = FBeepOnFinish, write = FBeepOnFinish };
   __property TDateTime BeepOnFinishAfter = { read = FBeepOnFinishAfter, write = FBeepOnFinishAfter };
+  __property UnicodeString BeepSound = { read = FBeepSound, write = FBeepSound };
   __property const TCopyParamList * CopyParamList = { read = GetCopyParamList, write = SetCopyParamList };
   __property UnicodeString CopyParamCurrent = { read = FCopyParamCurrent, write = SetCopyParamCurrent };
   __property int CopyParamIndex = { read = GetCopyParamIndex, write = SetCopyParamIndex };

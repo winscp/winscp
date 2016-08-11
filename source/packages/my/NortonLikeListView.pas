@@ -35,7 +35,6 @@ type
     FLButtonDownShiftState: TShiftState;
     FLButtonDownPos: TPoint;
     FLastSelectMethod: TSelectMethod;
-    FPendingInternalFocus: TListItem;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
@@ -80,7 +79,6 @@ type
     function GetSelCount: Integer; override;
     procedure DDBeforeDrag;
     function CanEdit(Item: TListItem): Boolean; override;
-    procedure DoEnter; override;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -126,7 +124,6 @@ begin
   FUpdatingSelection := 0;
   FFocusingItem := False;
   FLastSelectMethod := smNoneYet;
-  FPendingInternalFocus := nil;
   // On Windows Vista, native GetNextItem for selection stops working once we
   // disallow deselecting any item (see ExCanChange).
   // So we need to manage selection state ourselves
@@ -222,10 +219,6 @@ begin
   if (FLastDeletedItem <> Item) and Item.Selected then
   begin
     ItemUnselected(Item, -1);
-  end;
-  if FPendingInternalFocus = Item then
-  begin
-    FPendingInternalFocus := nil;
   end;
   FLastDeletedItem := Item;
   inherited;
@@ -605,71 +598,16 @@ begin
 end;
 
 procedure TCustomNortonLikeListView.FocusItem(Item: TListItem);
-var
-  P: TPoint;
-  PLastSelectMethod: TSelectMethod;
-  PDontUnSelectItem: Boolean;
-  PDontSelectItem: Boolean;
-  WParam: UINT_PTR;
-  LParam: INT_PTR;
 begin
-  // This whole is replacement for mere ItemFocused := Item
-  // because that does not reset some internal focused pointer,
-  // causing subsequent Shift-Click selects range from the first item,
-  // not from focused item.
-  Item.MakeVisible(False);
-  if Focused then
-  begin
-    P := Item.GetPosition;
-    PLastSelectMethod := FLastSelectMethod;
-    PDontSelectItem := FDontSelectItem;
-    PDontUnSelectItem := FDontUnSelectItem;
-    FLastSelectMethod := smNoneYet;
-    FDontSelectItem := True;
-    FDontUnSelectItem := True;
-    FFocusingItem := True;
-    try
-      // HACK
-      // WM_LBUTTONDOWN enters loop, waiting for WM_LBUTTONUP,
-      // so we have to post it in advance to break the loop immediately
-
-      // Without MK_CONTROL, if there are more items selected,
-      // they won't get unselected on subsequent focus change
-      // (with explorer-style selection).
-      // And it also makes the click the least obtrusive, affecting the focused
-      // file only.
-      WParam := MK_LBUTTON or MK_CONTROL;
-      LParam := MAKELPARAM(P.X, P.Y);
-      PostMessage(Handle, WM_LBUTTONUP, WParam, LParam);
-      SendMessage(Handle, WM_LBUTTONDOWN, WParam, LParam);
-    finally
-      FFocusingItem := False;
-      FLastSelectMethod := PLastSelectMethod;
-      FDontSelectItem := PDontSelectItem;
-      FDontUnSelectItem := PDontUnSelectItem;
-    end;
-    FPendingInternalFocus := nil;
-  end
-    else
-  begin
-    FPendingInternalFocus := Item;
-  end;
-  if ItemFocused <> Item then
-    ItemFocused := Item;
-end;
-
-procedure TCustomNortonLikeListView.DoEnter;
-begin
-  inherited;
-
-  if Assigned(FPendingInternalFocus) then
-  begin
-    if FPendingInternalFocus = ItemFocused then
-    begin
-      FocusItem(FPendingInternalFocus);
-    end;
-    FPendingInternalFocus := nil;
-  end;
+  // This method was introduced in 3.7.6 for reasons long forgotten.
+  // It simulated a mouse click on the item. Possibly because the mere ItemFocused := Item
+  // did not work due to at-the-time-not-realized conflict with FocusSomething.
+  // Now that this is fixed, the method is no longer needed.
+  // Keeping it for a while with this comment, in case some regression is discovered.
+  // References:
+  // - 3.7.6: When reloading directory content, file panel tries to preserve its position.
+  // - Bugs 999 and 1161
+  ItemFocused := Item;
 end;
 
 procedure TCustomNortonLikeListView.SelectAll(Mode: TSelectMode; Exclude: TListItem);

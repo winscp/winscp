@@ -1264,7 +1264,7 @@ void __fastcall TIniFileStorage::ApplyOverrides()
   {
     UnicodeString Section = FSections->Strings[i];
 
-    if (AnsiSameText(OverridesKey,
+    if (SameText(OverridesKey,
           Section.SubString(1, OverridesKey.Length())))
     {
       UnicodeString SubKey = Section.SubString(OverridesKey.Length() + 1,

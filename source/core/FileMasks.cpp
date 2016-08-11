@@ -12,7 +12,7 @@
 #include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 extern const wchar_t IncludeExcludeFileMasksDelimiter = L'|';
-static UnicodeString FileMasksDelimiters = L";,";
+UnicodeString FileMasksDelimiters = L";,";
 static UnicodeString AllFileMasksDelimiters = FileMasksDelimiters + IncludeExcludeFileMasksDelimiter;
 static UnicodeString DirectoryMaskDelimiters = L"/\\";
 static UnicodeString FileMasksDelimiterStr = UnicodeString(FileMasksDelimiters[1]) + L' ';
@@ -974,7 +974,7 @@ bool __fastcall TCustomCommand::FindPattern(const UnicodeString & Command,
     int Len;
     wchar_t APatternCmd;
     GetToken(Command, Index, Len, APatternCmd);
-    if (((PatternCmd != L'!') && (PatternCmd == APatternCmd)) ||
+    if (((PatternCmd != L'!') && (tolower(PatternCmd) == tolower(APatternCmd))) ||
         ((PatternCmd == L'!') && (Len == 1) && (APatternCmd != TEXT_TOKEN)))
     {
       Result = true;
@@ -1170,17 +1170,17 @@ TFileCustomCommand::TFileCustomCommand(const TCustomCommandData & Data,
 int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  wchar_t PatternCmd = (Index < Command.Length()) ? Command[Index + 1] : L'\0';
+  wchar_t PatternCmd = (Index < Command.Length()) ? tolower(Command[Index + 1]) : L'\0';
   switch (PatternCmd)
   {
-    case L'S':
+    case L's':
     case L'@':
-    case L'U':
-    case L'P':
+    case L'u':
+    case L'p':
     case L'#':
     case L'/':
     case L'&':
-    case L'N':
+    case L'n':
       Len = 2;
       break;
 
@@ -1196,7 +1196,7 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
 {
   // keep consistent with TSessionLog::OpenLogFile
 
-  if (AnsiSameText(Pattern, L"!s"))
+  if (SameText(Pattern, L"!s"))
   {
     Replacement = FData.SessionData->GenerateSessionUrl(sufComplete);
   }
@@ -1204,15 +1204,15 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
   {
     Replacement = FData.SessionData->HostNameExpanded;
   }
-  else if (AnsiSameText(Pattern, L"!u"))
+  else if (SameText(Pattern, L"!u"))
   {
     Replacement = FData.SessionData->UserName;
   }
-  else if (AnsiSameText(Pattern, L"!p"))
+  else if (SameText(Pattern, L"!p"))
   {
     Replacement = FData.SessionData->Password;
   }
-  else if (AnsiSameText(Pattern, L"!#"))
+  else if (SameText(Pattern, L"!#"))
   {
     Replacement = IntToStr(FData.SessionData->PortNumber);
   }
@@ -1226,7 +1226,7 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
     // already delimited
     Delimit = false;
   }
-  else if (AnsiSameText(Pattern, L"!n"))
+  else if (SameText(Pattern, L"!n"))
   {
     Replacement = FData.SessionData->SessionName;
   }

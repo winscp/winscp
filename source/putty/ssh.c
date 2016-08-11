@@ -9634,6 +9634,9 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 		    logevent("Further authentication required");
 		}
 
+#ifdef MPEXT	
+		logeventf(ssh, "Server offered these authentication methods: %s", methods);
+#endif
 		s->can_pubkey =
 		    in_commasep_string("publickey", methods, methlen);
 		s->can_passwd =
@@ -10092,7 +10095,11 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 		}
 #endif
 		s->gss_stat = s->gsslib->import_name(s->gsslib,
+#ifdef MPEXT
+						     fullhostname,
+#else
 						     ssh->fullhostname,
+#endif
 						     &s->gss_srv_name);
 		if (s->gss_stat != SSH_GSS_OK) {
 		    if (s->gss_stat == SSH_GSS_BAD_HOST_NAME)

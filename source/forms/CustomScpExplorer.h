@@ -678,6 +678,7 @@ public:
   void __fastcall UpdateTaskbarList(ITaskbarList3 * TaskbarList);
   virtual void __fastcall DisplaySystemContextMenu();
   virtual void __fastcall GoToAddress() = 0;
+  bool __fastcall CanConsole();
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

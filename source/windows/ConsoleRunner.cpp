@@ -39,21 +39,6 @@ void TrimNewLine(UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
-static bool __fastcall ExceptionConsoleMessage(Exception * E, UnicodeString & Message)
-{
-  bool Result = ExceptionMessage(E, Message);
-  if (Result)
-  {
-    Message += L"\n";
-    ExtException * EE = dynamic_cast<ExtException *>(E);
-    if ((EE != NULL) && (EE->MoreMessages != NULL))
-    {
-      Message += EE->MoreMessages->Text + L"\n";
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 class TConsole
 {
 public:
@@ -1796,7 +1781,7 @@ void __fastcall TConsoleRunner::DoShowException(TTerminal * Terminal, Exception 
   }
 
   UnicodeString Message;
-  if (ExceptionConsoleMessage(E, Message))
+  if (ExceptionFullMessage(E, Message))
   {
     FCommandError = true;
     PrintMessage(Message);
@@ -2294,7 +2279,7 @@ void __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
 static int __fastcall HandleException(TConsole * Console, Exception & E)
 {
   UnicodeString Message;
-  if (ExceptionConsoleMessage(&E, Message))
+  if (ExceptionFullMessage(&E, Message))
   {
     Console->Print(Message);
   }

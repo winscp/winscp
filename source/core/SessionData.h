@@ -98,8 +98,7 @@ private:
   bool FAuthKI;
   bool FAuthKIPassword;
   bool FAuthGSSAPI;
-  bool FGSSAPIFwdTGT; // not supported anymore
-  UnicodeString FGSSAPIServerRealm; // not supported anymore
+  bool FGSSAPIFwdTGT;
   bool FChangeUsername;
   bool FCompression;
   TSshProt FSshProt;
@@ -222,7 +221,6 @@ private:
   void __fastcall SetAuthKIPassword(bool value);
   void __fastcall SetAuthGSSAPI(bool value);
   void __fastcall SetGSSAPIFwdTGT(bool value);
-  void __fastcall SetGSSAPIServerRealm(UnicodeString value);
   void __fastcall SetChangeUsername(bool value);
   void __fastcall SetCompression(bool value);
   void __fastcall SetSshProt(TSshProt value);
@@ -461,7 +459,6 @@ public:
   __property bool AuthKIPassword  = { read=FAuthKIPassword, write=SetAuthKIPassword };
   __property bool AuthGSSAPI  = { read=FAuthGSSAPI, write=SetAuthGSSAPI };
   __property bool GSSAPIFwdTGT = { read=FGSSAPIFwdTGT, write=SetGSSAPIFwdTGT };
-  __property UnicodeString GSSAPIServerRealm = { read=FGSSAPIServerRealm, write=SetGSSAPIServerRealm };
   __property bool ChangeUsername  = { read=FChangeUsername, write=SetChangeUsername };
   __property bool Compression  = { read=FCompression, write=SetCompression };
   __property TSshProt SshProt  = { read=FSshProt, write=SetSshProt };

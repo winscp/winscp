@@ -111,7 +111,6 @@ void __fastcall TSessionData::Default()
   AuthKIPassword = true;
   AuthGSSAPI = false;
   GSSAPIFwdTGT = false;
-  GSSAPIServerRealm = L"";
   ChangeUsername = false;
   Compression = false;
   SshProt = ssh2only;
@@ -320,7 +319,6 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(AuthKIPassword); \
   PROPERTY(AuthGSSAPI); \
   PROPERTY(GSSAPIFwdTGT); \
-  PROPERTY(GSSAPIServerRealm); \
   PROPERTY(DeleteToRecycleBin); \
   PROPERTY(OverwrittenToRecycleBin); \
   PROPERTY(RecycleBinPath); \
@@ -535,7 +533,6 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   // Both vaclav tomec and official putty use AuthGSSAPI
   AuthGSSAPI = Storage->ReadBool(L"AuthGSSAPI", Storage->ReadBool(L"AuthSSPI", AuthGSSAPI));
   GSSAPIFwdTGT = Storage->ReadBool(L"GSSAPIFwdTGT", Storage->ReadBool(L"GssapiFwd", Storage->ReadBool(L"SSPIFwdTGT", GSSAPIFwdTGT)));
-  GSSAPIServerRealm = Storage->ReadString(L"GSSAPIServerRealm", Storage->ReadString(L"KerbPrincipal", GSSAPIServerRealm));
   ChangeUsername = Storage->ReadBool(L"ChangeUsername", ChangeUsername);
   Compression = Storage->ReadBool(L"Compression", Compression);
   TSshProt ASshProt = (TSshProt)Storage->ReadInteger(L"SshProt", SshProt);
@@ -834,7 +831,6 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
 
   WRITE_DATA(Bool, AuthGSSAPI);
   WRITE_DATA(Bool, GSSAPIFwdTGT);
-  WRITE_DATA(String, GSSAPIServerRealm);
   Storage->DeleteValue(L"TryGSSKEX");
   Storage->DeleteValue(L"UserNameFromEnvironment");
   Storage->DeleteValue("GSSAPIServerChoosesUserName");
@@ -844,7 +840,6 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     // duplicate kerberos setting with keys of the vintela quest putty
     WRITE_DATA_EX(Bool, L"AuthSSPI", AuthGSSAPI, );
     WRITE_DATA_EX(Bool, L"SSPIFwdTGT", GSSAPIFwdTGT, );
-    WRITE_DATA_EX(String, L"KerbPrincipal", GSSAPIServerRealm, );
     // duplicate kerberos setting with keys of the official putty
     WRITE_DATA_EX(Bool, L"GssapiFwd", GSSAPIFwdTGT, );
   }
@@ -1403,7 +1398,7 @@ bool __fastcall TSessionData::IsProtocolUrl(
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option)
 {
-  return AnsiSameText(Option, PassphraseOption);
+  return SameText(Option, PassphraseOption);
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
@@ -1629,7 +1624,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       {
         UnicodeString ConnectionParam = CutToChar(ConnectionParams, UrlParamSeparator, false);
         UnicodeString ConnectionParamName = CutToChar(ConnectionParam, UrlParamValueSeparator, false);
-        if (AnsiSameText(ConnectionParamName, UrlHostKeyParamName))
+        if (SameText(ConnectionParamName, UrlHostKeyParamName))
         {
           HostKey = ConnectionParam;
           FOverrideCachedHostKey = false;
@@ -1652,7 +1647,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       {
         UnicodeString SessionParam = CutToChar(SessionParams, UrlParamSeparator, false);
         UnicodeString SessionParamName = CutToChar(SessionParam, UrlParamValueSeparator, false);
-        if (AnsiSameText(SessionParamName, UrlSaveParamName))
+        if (SameText(SessionParamName, UrlSaveParamName))
         {
           FSaveOnly = (StrToIntDef(SessionParam, 1) != 0);
         }
@@ -2044,11 +2039,6 @@ void __fastcall TSessionData::SetAuthGSSAPI(bool value)
 void __fastcall TSessionData::SetGSSAPIFwdTGT(bool value)
 {
   SET_SESSION_PROPERTY(GSSAPIFwdTGT);
-}
-//---------------------------------------------------------------------
-void __fastcall TSessionData::SetGSSAPIServerRealm(UnicodeString value)
-{
-  SET_SESSION_PROPERTY(GSSAPIServerRealm);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetChangeUsername(bool value)

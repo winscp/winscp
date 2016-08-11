@@ -466,6 +466,11 @@ void __fastcall TCustomScpExplorerForm::CreateHiddenWindow()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::CanConsole()
+{
+  return (Terminal != NULL) && (Terminal->IsCapable[fcAnyCommand] || Terminal->IsCapable[fcSecondaryShell]);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CanCommandLineFromAnotherInstance()
 {
   bool Result = !NonVisualDataModule->Busy;
@@ -1371,7 +1376,17 @@ void __fastcall TCustomScpExplorerForm::OperationComplete(
   if (GUIConfiguration->BeepOnFinish &&
       (Now() - StartTime > GUIConfiguration->BeepOnFinishAfter))
   {
-    MessageBeep(MB_OK);
+    UnicodeString BeepSound = GUIConfiguration->BeepSound;
+    DWORD Sound;
+    if (!ExtractFileExt(BeepSound).IsEmpty())
+    {
+      Sound = SND_FILENAME;
+    }
+    else
+    {
+      Sound = SND_ALIAS;
+    }
+    PlaySound(BeepSound.c_str(), NULL, Sound | SND_ASYNC);
   }
 }
 //---------------------------------------------------------------------------
@@ -2635,83 +2650,95 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
   {
     Name = LoadStr(NEW_FILE);
   }
+  UnicodeString Names = Name;
   std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[L"EditFile"]));
-  if (InputDialog(LoadStr(EDIT_FILE_CAPTION), LoadStr(EDIT_FILE_PROMPT), Name,
+  if (InputDialog(LoadStr(EDIT_FILE_CAPTION), LoadStr(EDIT_FILE_PROMPT), Names,
         HELP_EDIT_NEW, History.get(), true))
   {
-    CustomWinConfiguration->History[L"EditFile"] = History.get();
-    UnicodeString TargetFileName;
-    UnicodeString LocalFileName;
-    UnicodeString RootTempDir;
-    UnicodeString TempDir;
-    UnicodeString RemoteDirectory;
-    if (Side == osRemote)
+    while (!Names.IsEmpty())
     {
-      Name = AbsolutePath(FTerminal->CurrentDirectory, Name);
-
-      TRemoteFile * File = NULL;
-      if (FTerminal->FileExists(Name, &File))
+      Name = CutToChar(Names, FileMasksDelimiters[1], false);
+      CustomWinConfiguration->History[L"EditFile"] = History.get();
+      UnicodeString TargetFileName;
+      UnicodeString LocalFileName;
+      UnicodeString RootTempDir;
+      UnicodeString TempDir;
+      UnicodeString RemoteDirectory;
+      bool ExistingFile = false;
+      if (Side == osRemote)
       {
-        try
-        {
-          ExecuteRemoteFile(Name, File, efDefaultEditor);
-          return;
-        }
-        __finally
-        {
-          delete File;
-        }
-      }
+        Name = AbsolutePath(FTerminal->CurrentDirectory, Name);
 
-      RemoteDirectory = UnixExtractFilePath(Name);
-      TemporaryDirectoryForRemoteFiles(
-        RemoteDirectory, GUIConfiguration->CurrentCopyParam, TempDir, RootTempDir);
+        TRemoteFile * File = NULL;
+        if (FTerminal->FileExists(Name, &File))
+        {
+          try
+          {
+            ExecuteRemoteFile(Name, File, efDefaultEditor);
+            ExistingFile = true;
+          }
+          __finally
+          {
+            delete File;
+          }
+        }
 
-      TargetFileName = UnixExtractFileName(Name);
-      TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-      LocalFileName = TempDir +
-        // We probably do not want to trim the VMS version here
-        FTerminal->ChangeFileName(&CopyParam, TargetFileName, osRemote, false);
-    }
-    else
-    {
-      if (ExtractFilePath(Name).IsEmpty())
-      {
-        LocalFileName = IncludeTrailingBackslash(DirView(Side)->PathName) + Name;
+        if (!ExistingFile)
+        {
+          RemoteDirectory = UnixExtractFilePath(Name);
+          TemporaryDirectoryForRemoteFiles(
+            RemoteDirectory, GUIConfiguration->CurrentCopyParam, TempDir, RootTempDir);
+
+          TargetFileName = UnixExtractFileName(Name);
+          TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
+          LocalFileName = TempDir +
+            // We probably do not want to trim the VMS version here
+            FTerminal->ChangeFileName(&CopyParam, TargetFileName, osRemote, false);
+        }
       }
       else
       {
-        LocalFileName = ExpandFileName(Name);
-      }
-
-      TargetFileName = ExtractFileName(Name);
-    }
-
-    if (!FileExists(ApiPath(LocalFileName)))
-    {
-      int File = FileCreate(ApiPath(LocalFileName));
-      if (File < 0)
-      {
-        if (!RootTempDir.IsEmpty())
+        if (ExtractFilePath(Name).IsEmpty())
         {
-          RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+          LocalFileName = IncludeTrailingBackslash(DirView(Side)->PathName) + Name;
         }
-        throw Exception(FMTLOAD(CREATE_FILE_ERROR, (LocalFileName)));
+        else
+        {
+          LocalFileName = ExpandFileName(Name);
+        }
+
+        TargetFileName = ExtractFileName(Name);
       }
-      else
+
+      if (!ExistingFile)
       {
-        FileClose(File);
+        if (!FileExists(ApiPath(LocalFileName)))
+        {
+          int File = FileCreate(ApiPath(LocalFileName));
+          if (File < 0)
+          {
+            if (!RootTempDir.IsEmpty())
+            {
+              RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+            }
+            throw Exception(FMTLOAD(CREATE_FILE_ERROR, (LocalFileName)));
+          }
+          else
+          {
+            FileClose(File);
+          }
+        }
+
+        TExecuteFileBy ExecuteFileBy = efDefaultEditor;
+        const TEditorData * ExternalEditor = NULL;
+        TFileMasks::TParams MaskParams; // size not known
+        ExecuteFileNormalize(ExecuteFileBy, ExternalEditor, TargetFileName,
+          false, MaskParams);
+
+        CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, TargetFileName,
+          ExternalEditor, RootTempDir, RemoteDirectory);
       }
     }
-
-    TExecuteFileBy ExecuteFileBy = efDefaultEditor;
-    const TEditorData * ExternalEditor = NULL;
-    TFileMasks::TParams MaskParams; // size not known
-    ExecuteFileNormalize(ExecuteFileBy, ExternalEditor, TargetFileName,
-      false, MaskParams);
-
-    CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, TargetFileName,
-      ExternalEditor, RootTempDir, RemoteDirectory);
   }
 }
 //---------------------------------------------------------------------------
@@ -4922,6 +4949,8 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
   BatchStart(BatchStorage);
   FAutoOperation = true;
 
+  bool AnyOperation = false;
+  TDateTime StartTime = Now();
   TSynchronizeChecklist * AChecklist = NULL;
   try
   {
@@ -4944,6 +4973,12 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
       FSynchronizeProgressForm->Start();
     }
 
+    for (int Index = 0; !AnyOperation && (Index < AChecklist->Count); Index++)
+    {
+      AnyOperation = AChecklist->Item[Index]->Checked;
+    }
+
+    // No need to call if !AnyOperation
     Terminal->SynchronizeApply(AChecklist, LocalDirectory, RemoteDirectory,
       &CopyParam, Params | spNoConfirmation, TerminalSynchronizeDirectory);
   }
@@ -4962,6 +4997,10 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
     SAFE_DESTROY(FSynchronizeProgressForm);
     BatchEnd(BatchStorage);
     ReloadLocalDirectory();
+    if (AnyOperation)
+    {
+      OperationComplete(StartTime);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -7358,7 +7397,7 @@ void __fastcall TCustomScpExplorerForm::DirViewGetOverlay(
     Ext = ExtractFileExt(DirView->ItemFileName(Item));
   }
 
-  if (AnsiSameText(Ext, Configuration->PartialExt))
+  if (SameText(Ext, Configuration->PartialExt))
   {
     Indexes |= oiPartial;
   }

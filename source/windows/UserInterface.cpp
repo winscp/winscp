@@ -38,7 +38,7 @@ TConfiguration * __fastcall CreateConfiguration()
   UnicodeString IniFileName = Params->SwitchValue(INI_SWITCH);
   if (!IniFileName.IsEmpty())
   {
-    if (AnsiSameText(IniFileName, INI_NUL))
+    if (SameText(IniFileName, INI_NUL))
     {
       WinConfiguration->SetNulStorage();
     }

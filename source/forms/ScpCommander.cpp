@@ -539,7 +539,7 @@ void __fastcall TScpCommanderForm::LocalDefaultDirectory()
   }
   catch(Exception & E)
   {
-    Terminal->ShowExtendedException(&E);
+    ShowExtendedException(NULL, &E);
     LocalDirView->Path = ExtractFilePath(Application->ExeName);
   }
 }
@@ -818,7 +818,7 @@ void __fastcall TScpCommanderForm::UpdateControls()
     UpdateToolbar2ItemCaption(CurrentMoveToolbar2Item);
   }
 
-  CommandLineCombo->Enabled = (Terminal != NULL);
+  CommandLineCombo->Enabled = CanConsole();
   CommandLinePromptLabel->Enabled = CommandLineCombo->Enabled;
 }
 //---------------------------------------------------------------------------

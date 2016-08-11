@@ -435,7 +435,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CompareDirectoriesAction, HasTerminal)
   UPD(SynchronizeAction, HasTerminal)
   UPD(FullSynchronizeAction, HasTerminal)
-  UPD(ConsoleAction, HasTerminal && (ScpExplorer->Terminal->IsCapable[fcAnyCommand] || ScpExplorer->Terminal->IsCapable[fcSecondaryShell]))
+  UPD(ConsoleAction, ScpExplorer->CanConsole())
   UPD(PuttyAction, HasTerminal && TTerminalManager::Instance()->CanOpenInPutty())
   UPD(SynchronizeBrowsingAction, HasTerminal)
   UPD(CloseApplicationAction, true)

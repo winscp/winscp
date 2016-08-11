@@ -186,7 +186,7 @@ int __fastcall TScriptCommands::FindCommand(TStrings * Commands,
     for (int i = 0; i < Commands->Count; i++)
     {
       if ((Command.Length() <= Commands->Strings[i].Length()) &&
-          AnsiSameText(Command, Commands->Strings[i].SubString(1, Command.Length())))
+          SameText(Command, Commands->Strings[i].SubString(1, Command.Length())))
       {
         if (Matches != NULL)
         {
@@ -1639,7 +1639,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
     if (SetValue && !PrintReconnectTime)
     {
       int Value;
-      if (AnsiSameText(ValueName, ToggleNames[ToggleOff]))
+      if (SameText(ValueName, ToggleNames[ToggleOff]))
       {
         Value = 0;
       }

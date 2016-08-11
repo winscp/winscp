@@ -605,6 +605,7 @@ static void __fastcall RegisterForDefaultPrograms()
   {
     try
     {
+      // Maybe we should skip this if HKLM key existed already (we are running non-privileged)
       RegisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER);
     }
     catch (Exception & E)
@@ -669,7 +670,20 @@ void __fastcall LaunchAdvancedAssociationUI()
 
   if (IsWin10())
   {
-    ExecuteShell(L"control.exe", L"/name Microsoft.DefaultPrograms /page pageDefaultProgram");
+    // WORKAROUND: On Windows 10, the IApplicationAssociationRegistrationUI::LaunchAdvancedAssociationUI does not work.
+    // http://stackoverflow.com/q/32178986/850848
+    // This approach (IOpenControlPanel::Open) works on Windows 7 too, but not on Windows Vista.
+    IOpenControlPanel * OpenControlPanel;
+
+    HRESULT Result =
+      CoCreateInstance(CLSID_OpenControlPanel,
+        NULL, CLSCTX_INPROC, __uuidof(IOpenControlPanel), (void**)&OpenControlPanel);
+    if (SUCCEEDED(Result))
+    {
+      UnicodeString Page = FORMAT(L"pageDefaultProgram\\pageAdvancedSettings?pszAppName=%s", (AppNameString()));
+      OpenControlPanel->Open(L"Microsoft.DefaultPrograms", Page.c_str(), NULL);
+      OpenControlPanel->Release();
+    }
   }
   else
   {
@@ -892,15 +906,26 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     CheckForUpdatesHTTP->URL = URL;
     // sanity check
     CheckForUpdatesHTTP->ResponseLimit = 102400;
-    if (CollectUsage)
+    try
     {
-      UnicodeString Usage = GetUsageData();
+      if (CollectUsage)
+      {
+        UnicodeString Usage = GetUsageData();
 
-      CheckForUpdatesHTTP->Post(Usage);
+        CheckForUpdatesHTTP->Post(Usage);
+      }
+      else
+      {
+        CheckForUpdatesHTTP->Get();
+      }
     }
-    else
+    catch (...)
     {
-      CheckForUpdatesHTTP->Get();
+      if (CheckForUpdatesHTTP->IsCertificateError())
+      {
+        Configuration->Usage->Inc(L"UpdateCertificateErrors");
+      }
+      throw;
     }
     Response = CheckForUpdatesHTTP->Response;
   }
@@ -922,7 +947,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
   {
     UnicodeString Line = CutToChar(Response, L'\n', false);
     UnicodeString Name = CutToChar(Line, L'=', false);
-    if (AnsiSameText(Name, "Version"))
+    if (SameText(Name, "Version"))
     {
       int NewVersion = StrToCompoundVersion(Line);
       Changed |= (NewVersion != PrevResults.Version);
@@ -933,45 +958,45 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
       Updates.Results.Version = NewVersion;
       Complete = true;
     }
-    else if (AnsiSameText(Name, L"Message"))
+    else if (SameText(Name, L"Message"))
     {
       Changed |= (PrevResults.Message != Line);
       Updates.Results.Message = Line;
     }
-    else if (AnsiSameText(Name, L"Critical"))
+    else if (SameText(Name, L"Critical"))
     {
       bool NewCritical = (StrToIntDef(Line, 0) != 0);
       Changed |= (PrevResults.Critical != NewCritical);
       Updates.Results.Critical = NewCritical;
     }
-    else if (AnsiSameText(Name, L"Release"))
+    else if (SameText(Name, L"Release"))
     {
       Changed |= (PrevResults.Release != Line);
       Updates.Results.Release = Line;
     }
-    else if (AnsiSameText(Name, L"Disabled"))
+    else if (SameText(Name, L"Disabled"))
     {
       bool NewDisabled = (StrToIntDef(Line, 0) != 0);
       Changed |= (PrevResults.Disabled != NewDisabled);
       Updates.Results.Disabled = NewDisabled;
       Complete = true;
     }
-    else if (AnsiSameText(Name, L"Url"))
+    else if (SameText(Name, L"Url"))
     {
       Changed |= (PrevResults.Url != Line);
       Updates.Results.Url = Line;
     }
-    else if (AnsiSameText(Name, L"UrlButton"))
+    else if (SameText(Name, L"UrlButton"))
     {
       Changed |= (PrevResults.UrlButton != Line);
       Updates.Results.UrlButton = Line;
     }
-    else if (AnsiSameText(Name, L"NewsUrl"))
+    else if (SameText(Name, L"NewsUrl"))
     {
       Changed |= (PrevResults.NewsUrl != Line);
       Updates.Results.NewsUrl = Line;
     }
-    else if (AnsiSameText(Name, L"NewsSize"))
+    else if (SameText(Name, L"NewsSize"))
     {
       TSize NewsSize;
       NewsSize.Width = StrToIntDef(CutToChar(Line, L',', true), 0);
@@ -979,48 +1004,48 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
       Changed |= (PrevResults.NewsSize != NewsSize);
       Updates.Results.NewsSize = NewsSize;
     }
-    else if (AnsiSameText(Name, L"DownloadUrl"))
+    else if (SameText(Name, L"DownloadUrl"))
     {
       Changed |= (PrevResults.DownloadUrl != Line);
       Updates.Results.DownloadUrl = Line;
     }
-    else if (AnsiSameText(Name, L"DownloadSize"))
+    else if (SameText(Name, L"DownloadSize"))
     {
       Updates.Results.DownloadSize = StrToInt64Def(Line, 0);
     }
-    else if (AnsiSameText(Name, L"DownloadSha256"))
+    else if (SameText(Name, L"DownloadSha256"))
     {
       Updates.Results.DownloadSha256 = Line;
     }
-    else if (AnsiSameText(Name, L"AuthenticationError"))
+    else if (SameText(Name, L"AuthenticationError"))
     {
       Changed |= (PrevResults.AuthenticationError != Line);
       Updates.Results.AuthenticationError = Line;
     }
-    else if (AnsiSameText(Name, L"OpenGettingStarted"))
+    else if (SameText(Name, L"OpenGettingStarted"))
     {
       Updates.Results.OpenGettingStarted = (StrToIntDef(Line, 0) != 0);
     }
-    else if (AnsiSameText(Name, L"DownloadingUrl"))
+    else if (SameText(Name, L"DownloadingUrl"))
     {
       Updates.Results.DownloadingUrl = Line;
     }
-    else if (AnsiSameText(Name, L"TipsSize"))
+    else if (SameText(Name, L"TipsSize"))
     {
       TSize TipsSize;
       TipsSize.Width = StrToIntDef(CutToChar(Line, L',', true), 0);
       TipsSize.Height = StrToIntDef(CutToChar(Line, L',', true), 0);
       Updates.Results.TipsSize = TipsSize;
     }
-    else if (AnsiSameText(Name, L"TipsUrl"))
+    else if (SameText(Name, L"TipsUrl"))
     {
       Updates.Results.TipsUrl = Line;
     }
-    else if (AnsiSameText(Name, L"Tips"))
+    else if (SameText(Name, L"Tips"))
     {
       Updates.Results.Tips = Line;
     }
-    else if (AnsiSameText(Name, L"TipsIntervalDays"))
+    else if (SameText(Name, L"TipsIntervalDays"))
     {
       int TipsIntervalDays = StrToIntDef(Line, Updates.Results.TipsIntervalDays);
       if (TipsIntervalDays < 0)
@@ -1029,7 +1054,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
       }
       Updates.Results.TipsIntervalDays = TipsIntervalDays;
     }
-    else if (AnsiSameText(Name, L"TipsIntervalRuns"))
+    else if (SameText(Name, L"TipsIntervalRuns"))
     {
       int TipsIntervalRuns = StrToIntDef(Line, Updates.Results.TipsIntervalRuns);
       if (TipsIntervalRuns < 0)
@@ -1074,6 +1099,11 @@ static void __fastcall DoQueryUpdates(bool CollectUsage)
   catch(Exception & E)
   {
     Configuration->Usage->Inc(L"UpdateChecksFailed");
+    UnicodeString Message;
+    if (DebugAlwaysTrue(ExceptionFullMessage(&E, Message)))
+    {
+      Configuration->Usage->Set(LastUpdateExceptionCounter, Message);
+    }
     throw ExtException(&E, MainInstructions(LoadStr(CHECK_FOR_UPDATES_ERROR)));
   }
 }

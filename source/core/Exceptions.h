@@ -10,6 +10,7 @@
 bool __fastcall ShouldDisplayException(Exception * E);
 bool __fastcall ExceptionMessage(Exception * E, UnicodeString & Message);
 bool __fastcall ExceptionMessageFormatted(Exception * E, UnicodeString & Message);
+bool __fastcall ExceptionFullMessage(Exception * E, UnicodeString & Message);
 UnicodeString __fastcall SysErrorMessageForError(int LastError);
 UnicodeString __fastcall LastSysErrorMessage();
 TStrings * __fastcall ExceptionToMoreMessages(Exception * E);

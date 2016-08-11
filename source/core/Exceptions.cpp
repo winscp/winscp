@@ -212,6 +212,21 @@ TStrings * __fastcall ExceptionToMoreMessages(Exception * E)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall ExceptionFullMessage(Exception * E, UnicodeString & Message)
+{
+  bool Result = ExceptionMessage(E, Message);
+  if (Result)
+  {
+    Message += L"\n";
+    ExtException * EE = dynamic_cast<ExtException *>(E);
+    if ((EE != NULL) && (EE->MoreMessages != NULL))
+    {
+      Message += EE->MoreMessages->Text + L"\n";
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall GetExceptionHelpKeyword(Exception * E)
 {
   UnicodeString HelpKeyword;
