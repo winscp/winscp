@@ -422,7 +422,7 @@ namespace WinSCP
             }
         }
 
-        private IEnumerable<RemoteFileInfo> DoEnumerateRemoteFiles(string path, Regex regex, EnumerationOptions options)
+        private IEnumerable<RemoteFileInfo> DoEnumerateRemoteFiles(string path, Regex regex, EnumerationOptions options, bool throwReadErrors)
         {
             bool allDirectories = ((options & EnumerationOptions.AllDirectories) == EnumerationOptions.AllDirectories);
             bool matchDirectories = ((options & EnumerationOptions.MatchDirectories) == EnumerationOptions.MatchDirectories);
@@ -438,47 +438,66 @@ namespace WinSCP
                 throw new ArgumentException("Cannot combine enumeration option EnumerateDirectories with MatchDirectories");
             }
 
-            // Need to use guarded method for the listing, see a comment in EnumerateRemoteFiles
-            RemoteDirectoryInfo directoryInfo = ListDirectory(path);
+            RemoteDirectoryInfo directoryInfo;
 
-            foreach (RemoteFileInfo fileInfo in directoryInfo.Files)
+            try
             {
-                if (!fileInfo.IsThisDirectory && !fileInfo.IsParentDirectory)
+                // Need to use guarded method for the listing, see a comment in EnumerateRemoteFiles
+                directoryInfo = ListDirectory(path);
+            }
+            catch (SessionRemoteException e)
+            {
+                if (throwReadErrors)
                 {
-                    bool matches = regex.IsMatch(fileInfo.Name);
+                    throw;
+                }
+                else
+                {
+                    directoryInfo = null;
+                }
+            }
 
-                    bool enumerate;
-                    if (!fileInfo.IsDirectory)
+            if (directoryInfo != null)
+            {
+                foreach (RemoteFileInfo fileInfo in directoryInfo.Files)
+                {
+                    if (!fileInfo.IsThisDirectory && !fileInfo.IsParentDirectory)
                     {
-                        enumerate = matches;
-                    }
-                    else
-                    {
-                        if (enumerateDirectories)
-                        {
-                            enumerate = true;
-                        }
-                        else if (matchDirectories)
+                        bool matches = regex.IsMatch(fileInfo.Name);
+
+                        bool enumerate;
+                        if (!fileInfo.IsDirectory)
                         {
                             enumerate = matches;
                         }
                         else
                         {
-                            enumerate = false;
+                            if (enumerateDirectories)
+                            {
+                                enumerate = true;
+                            }
+                            else if (matchDirectories)
+                            {
+                                enumerate = matches;
+                            }
+                            else
+                            {
+                                enumerate = false;
+                            }
                         }
-                    }
 
-                    if (enumerate)
-                    {
-                        yield return fileInfo;
-                    }
-
-
-                    if (fileInfo.IsDirectory && allDirectories)
-                    {
-                        foreach (RemoteFileInfo fileInfo2 in DoEnumerateRemoteFiles(CombinePaths(path, fileInfo.Name), regex, options))
+                        if (enumerate)
                         {
-                            yield return fileInfo2;
+                            yield return fileInfo;
+                        }
+
+
+                        if (fileInfo.IsDirectory && allDirectories)
+                        {
+                            foreach (RemoteFileInfo fileInfo2 in DoEnumerateRemoteFiles(CombinePaths(path, fileInfo.Name), regex, options, false))
+                            {
+                                yield return fileInfo2;
+                            }
                         }
                     }
                 }
@@ -497,7 +516,7 @@ namespace WinSCP
 
                 Regex regex = MaskToRegex(mask);
 
-                return DoEnumerateRemoteFiles(path, regex, options);
+                return DoEnumerateRemoteFiles(path, regex, options, true);
             }
         }
 
