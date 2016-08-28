@@ -3789,9 +3789,13 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
       if (FLastCode == 215)
       {
         FSystem = FLastResponse->Text.TrimRight();
-        // full name is "Personal FTP Server PRO K6.0"
         if ((FListAll == asAuto) &&
-            (FSystem.Pos(L"Personal FTP Server") > 0))
+             // full name is "Personal FTP Server PRO K6.0"
+            ((FSystem.Pos(L"Personal FTP Server") > 0) ||
+             // full name is "MVS is the operating system of this server. FTP Server is running on ..."
+             // (the ... can be "z/OS")
+             // https://www.ibm.com/support/knowledgecenter/SSLTBW_2.1.0/com.ibm.zos.v2r1.cs3cod0/ftp215-02.htm
+             (FSystem.SubString(1, 3) == L"MVS")))
         {
           FTerminal->LogEvent(L"Server is known not to support LIST -a");
           FListAll = asOff;
