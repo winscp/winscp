@@ -813,7 +813,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     TranslatePuttyMessage(InstructionTranslation, 1, Instructions);
   }
 
-  // some servers add leading blank line to make the prompt look prettier
+  // some servers add leading or trailing blank line to make the prompt look prettier
   // on terminal console
   Instructions = Instructions.Trim();
 

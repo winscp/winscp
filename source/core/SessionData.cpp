@@ -721,34 +721,34 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
 
 #ifdef TEST
   #define KEX_TEST(VALUE, EXPECTED) KexList = VALUE; DebugAssert(KexList == EXPECTED);
-  #define KEX_DEFAULT L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN"
+  #define KEX_DEFAULT L"ecdh,dh-gex-sha1,dh-group14-sha1,rsa,WARN,dh-group1-sha1"
   // Empty source should result in default list
   KEX_TEST(L"", KEX_DEFAULT);
-  // Default of pre 5.8.1 should result in new default
-  KEX_TEST(L"dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN", KEX_DEFAULT);
-  // Missing first two priority algos, and last non-priority algo => default
+  // Default of pre 5.8.1
+  KEX_TEST(L"dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN", L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN");
+  // Missing first two priority algos, and last non-priority algo
   KEX_TEST(L"dh-group14-sha1,dh-group1-sha1,WARN", L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN");
-  // Missing first two priority algos, last non-priority algo and WARN => default
+  // Missing first two priority algos, last non-priority algo and WARN
   KEX_TEST(L"dh-group14-sha1,dh-group1-sha1", L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN");
   // Old algos, with all but the first below WARN
   KEX_TEST(L"dh-gex-sha1,WARN,dh-group14-sha1,dh-group1-sha1,rsa", L"ecdh,dh-gex-sha1,WARN,dh-group14-sha1,dh-group1-sha1,rsa");
   // Unknown algo at front
-  KEX_TEST(L"unknown,ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN", KEX_DEFAULT);
+  KEX_TEST(L"unknown,ecdh,dh-gex-sha1,dh-group14-sha1,rsa,WARN,dh-group1-sha1", KEX_DEFAULT);
   // Unknown algo at back
-  KEX_TEST(L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN,unknown", KEX_DEFAULT);
+  KEX_TEST(L"ecdh,dh-gex-sha1,dh-group14-sha1,rsa,WARN,dh-group1-sha1,unknown", KEX_DEFAULT);
   // Unknown algo in the middle
-  KEX_TEST(L"ecdh,dh-gex-sha1,dh-group14-sha1,unknown,dh-group1-sha1,rsa,WARN", KEX_DEFAULT);
+  KEX_TEST(L"ecdh,dh-gex-sha1,dh-group14-sha1,unknown,rsa,WARN,dh-group1-sha1", KEX_DEFAULT);
   #undef KEX_DEFAULT
   #undef KEX_TEST
 
   #define CIPHER_TEST(VALUE, EXPECTED) CipherList = VALUE; DebugAssert(CipherList == EXPECTED);
-  #define CIPHER_DEFAULT L"aes,blowfish,chacha20,3des,WARN,arcfour,des"
+  #define CIPHER_DEFAULT L"aes,chacha20,blowfish,3des,WARN,arcfour,des"
   // Empty source should result in default list
   CIPHER_TEST(L"", CIPHER_DEFAULT);
   // Default of pre 5.8.1
   CIPHER_TEST(L"aes,blowfish,3des,WARN,arcfour,des", L"aes,blowfish,3des,chacha20,WARN,arcfour,des");
   // Missing priority algo
-  CIPHER_TEST(L"blowfish,chacha20,3des,WARN,arcfour,des", CIPHER_DEFAULT);
+  CIPHER_TEST(L"chacha20,blowfish,3des,WARN,arcfour,des", CIPHER_DEFAULT);
   // Missing non-priority algo
   CIPHER_TEST(L"aes,chacha20,3des,WARN,arcfour,des", L"aes,chacha20,3des,blowfish,WARN,arcfour,des");
   // Missing last warn algo

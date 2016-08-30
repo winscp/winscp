@@ -445,7 +445,7 @@ namespace WinSCP
                 // Need to use guarded method for the listing, see a comment in EnumerateRemoteFiles
                 directoryInfo = ListDirectory(path);
             }
-            catch (SessionRemoteException e)
+            catch (SessionRemoteException)
             {
                 if (throwReadErrors)
                 {

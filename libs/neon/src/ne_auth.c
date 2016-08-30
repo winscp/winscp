@@ -1680,7 +1680,12 @@ static void auth_register(ne_session *sess, int isproxy, unsigned protomask,
             ne_fill_server_uri(sess, &uri);
         }
 
+#ifdef WINSCP
+        // bug fix
+        ahs->sspi_host = ne_strdup(uri.host);
+#else
         ahs->sspi_host = uri.host;
+#endif
 
         uri.host = NULL;
 
