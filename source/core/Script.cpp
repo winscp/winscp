@@ -2576,6 +2576,10 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
       {
         std::unique_ptr<TSessionData> DataWithFingerprint(Data->Clone());
         DataWithFingerprint->LookupLastFingerprint();
+        if (!DataWithFingerprint->Password.IsEmpty())
+        {
+          DataWithFingerprint->Password = PasswordMask;
+        }
 
         PrintLine(LoadStr(SCRIPT_SITE_WARNING));
         PrintLine(L"open " + DataWithFingerprint->GenerateOpenCommandArgs(false));
