@@ -740,7 +740,7 @@ void __fastcall HideComponentsPanel(TForm * Form)
     TControl * Control = Form->Controls[Index];
 
     // Shift back bottom-anchored controls
-    // (needed for toolbar panel on Progress window and butons on Preferences dialog),
+    // (needed for toolbar panel on Progress window and buttons on Preferences dialog),
     if ((Control->Align == alNone) &&
         Control->Anchors.Contains(akBottom) &&
         !Control->Anchors.Contains(akTop))
