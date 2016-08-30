@@ -453,6 +453,7 @@
 #define CODE_PS_ADD_TYPE        553
 #define COPY_INFO_PRESERVE_TIME_DIRS 554
 #define TEXT_FILE_ENCODING      555
+#define AND_STR                 556
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601

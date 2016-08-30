@@ -423,6 +423,7 @@ BEGIN
   CODE_PS_ADD_TYPE, "Load WinSCP .NET assembly"
   COPY_INFO_PRESERVE_TIME_DIRS, "%s (including directories)"
   TEXT_FILE_ENCODING, "The file must be in UTF-8 or UTF-16 encoding."
+  AND_STR, "%s and %s"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"
