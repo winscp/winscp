@@ -25,11 +25,14 @@ const wchar_t * ProxyMethodNames = L"None;SOCKS4;SOCKS5;HTTP;Telnet;Cmd";
 const wchar_t * DefaultName = L"Default Settings";
 const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", L"aes", L"des", L"arcfour", L"chacha20"};
 const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-gex-sha1", L"rsa", L"ecdh"};
+const UnicodeString GssLibNames[GSSLIB_COUNT] = {L"gssapi32", L"sspi", L"custom"};
 const wchar_t SshProtList[][10] = {L"1", L"1>2", L"2>1", L"2"};
 const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipChaCha20, cipBlowfish, cip3DES, cipWarn, cipArcfour, cipDES };
 const TKex DefaultKexList[KEX_COUNT] =
   { kexECDH, kexDHGEx, kexDHGroup14, kexRSA, kexWarn, kexDHGroup1 };
+const TGssLib DefaultGssLibList[GSSLIB_COUNT] =
+  { gssGssApi32, gssSspi, gssCustom };
 const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16] = { L"SCP", L"SFTP (SCP)", L"SFTP", L"", L"", L"FTP", L"WebDAV" };
 const int SshPortNumber = 22;
 const int FtpPortNumber = 21;
@@ -124,6 +127,11 @@ void __fastcall TSessionData::Default()
   {
     Kex[Index] = DefaultKexList[Index];
   }
+  for (int Index = 0; Index < GSSLIB_COUNT; Index++)
+  {
+    GssLib[Index] = DefaultGssLibList[Index];
+  }
+  GssLibCustom = L"";
   PublicKeyFile = L"";
   Passphrase = L"";
   FPuttyProtocol = L"";
@@ -281,6 +289,8 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(SshNoUserAuth); \
   PROPERTY(CipherList); \
   PROPERTY(KexList); \
+  PROPERTY(GssLibList); \
+  PROPERTY(GssLibCustom); \
   PROPERTY(AddressFamily); \
   PROPERTY(RekeyData); \
   PROPERTY(RekeyTime); \
@@ -550,6 +560,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   SshNoUserAuth = Storage->ReadBool(L"SshNoUserAuth", SshNoUserAuth);
   CipherList = Storage->ReadString(L"Cipher", CipherList);
   KexList = Storage->ReadString(L"KEX", KexList);
+  GssLibList = Storage->ReadString(L"GSSLibs", GssLibList);
+  GssLibCustom = Storage->ReadString(L"GSSCustom", GssLibCustom);
   PublicKeyFile = Storage->ReadString(L"PublicKeyFile", PublicKeyFile);
   AddressFamily = static_cast<TAddressFamily>
     (Storage->ReadInteger(L"AddressFamily", AddressFamily));
@@ -851,6 +863,8 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   WRITE_DATA(Bool, SshNoUserAuth);
   WRITE_DATA_EX(String, L"Cipher", CipherList, );
   WRITE_DATA_EX(String, L"KEX", KexList, );
+  WRITE_DATA_EX(String, L"GSSLibs", GssLibList, );
+  WRITE_DATA_EX(String, L"GSSCustom", GssLibCustom, );
   WRITE_DATA(Integer, AddressFamily);
   WRITE_DATA_EX(String, L"RekeyBytes", RekeyData, );
   WRITE_DATA(Integer, RekeyTime);
@@ -2095,9 +2109,20 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
   std::vector<bool> Used(Count); // initialized to false
   std::vector<AlgoT> NewList(Count);
 
-  const AlgoT * WarnPtr = std::find(DefaultList, DefaultList + Count, WarnAlgo);
-  DebugAssert(WarnPtr != NULL);
-  int WarnDefaultIndex = (WarnPtr - DefaultList);
+  bool HasWarnAlgo = (WarnAlgo >= AlgoT());
+  const AlgoT * WarnPtr;
+  int WarnDefaultIndex;
+  if (!HasWarnAlgo)
+  {
+    WarnPtr = NULL;
+    WarnDefaultIndex = -1;
+  }
+  else
+  {
+    WarnPtr = std::find(DefaultList, DefaultList + Count, WarnAlgo);
+    DebugAssert(WarnPtr != NULL);
+    WarnDefaultIndex = (WarnPtr - DefaultList);
+  }
 
   int Index = 0;
   while (!value.IsEmpty())
@@ -2116,14 +2141,18 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
     }
   }
 
-  if (!Used[WarnAlgo] && DebugAlwaysTrue(Index < Count))
+  if (HasWarnAlgo && !Used[WarnAlgo] && DebugAlwaysTrue(Index < Count))
   {
     NewList[Index] = WarnAlgo;
     Used[WarnAlgo] = true;
     Index++;
   }
 
-  int WarnIndex = std::find(NewList.begin(), NewList.end(), WarnAlgo) - NewList.begin();
+  int WarnIndex = -1;
+  if (HasWarnAlgo)
+  {
+    WarnIndex = std::find(NewList.begin(), NewList.end(), WarnAlgo) - NewList.begin();
+  }
 
   bool Priority = true;
   for (int DefaultIndex = 0; (DefaultIndex < Count); DefaultIndex++)
@@ -2140,7 +2169,7 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
       }
       else
       {
-        if (DefaultIndex < WarnDefaultIndex)
+        if (HasWarnAlgo && (DefaultIndex < WarnDefaultIndex))
         {
           TargetIndex = WarnIndex;
         }
@@ -2154,7 +2183,7 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
       DebugAssert(NewList.back() == AlgoT());
       NewList.pop_back();
 
-      if (TargetIndex <= WarnIndex)
+      if (HasWarnAlgo && (TargetIndex <= WarnIndex))
       {
         WarnIndex++;
       }
@@ -2214,6 +2243,38 @@ UnicodeString __fastcall TSessionData::GetKexList() const
     Result += UnicodeString(Index ? L"," : L"") + KexNames[Kex[Index]];
   }
   return Result;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetGssLib(int Index, TGssLib value)
+{
+  DebugAssert(Index >= 0 && Index < GSSLIB_COUNT);
+  SET_SESSION_PROPERTY(GssLib[Index]);
+}
+//---------------------------------------------------------------------
+TGssLib __fastcall TSessionData::GetGssLib(int Index) const
+{
+  DebugAssert(Index >= 0 && Index < GSSLIB_COUNT);
+  return FGssLib[Index];
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetGssLibList(UnicodeString value)
+{
+  SetAlgoList(FGssLib, DefaultGssLibList, GssLibNames, GSSLIB_COUNT, TGssLib(-1), value);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::GetGssLibList() const
+{
+  UnicodeString Result;
+  for (int Index = 0; Index < GSSLIB_COUNT; Index++)
+  {
+    Result += UnicodeString(Index ? L"," : L"") + GssLibNames[GssLib[Index]];
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetGssLibCustom(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(GssLibCustom);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetPublicKeyFile(UnicodeString value)

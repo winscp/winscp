@@ -209,6 +209,22 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
     conf_set_int_int(conf, CONF_ssh_kexlist, k, pkex);
   }
 
+  DebugAssert(ngsslibs == GSSLIB_COUNT);
+  for (int g = 0; g < GSSLIB_COUNT; g++)
+  {
+    int pgsslib;
+    switch (Data->GssLib[g]) {
+      case gssGssApi32: pgsslib = 0; break;
+      case gssSspi: pgsslib = 1; break;
+      case gssCustom: pgsslib = 2; break;
+      default: DebugFail();
+    }
+    conf_set_int_int(conf, CONF_ssh_gsslist, g, pgsslib);
+  }
+  Filename * GssLibCustomFileName = filename_from_str(UTF8String(Data->GssLibCustom).c_str());
+  conf_set_filename(conf, CONF_ssh_gss_custom, GssLibCustomFileName);
+  filename_free(GssLibCustomFileName);
+
   UnicodeString SPublicKeyFile = Data->PublicKeyFile;
   if (SPublicKeyFile.IsEmpty()) SPublicKeyFile = Configuration->DefaultKeyFile;
   // StripPathQuotes should not be needed as we do not feed quotes anymore
