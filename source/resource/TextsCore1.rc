@@ -76,7 +76,7 @@ BEGIN
   SFTP_NON_ONE_FXP_NAME_PACKET, "Received SSH_FXP_NAME packet with zero or multiple records."
   SFTP_REALPATH_ERROR, "Cannot get real path for '%s'."
   CHANGE_PROPERTIES_ERROR, "Cannot change properties of file '%s'."
-  SFTP_INITIALIZE_ERROR, "Cannot initialize SFTP protocol. Is the host running a SFTP server?"
+  SFTP_INITIALIZE_ERROR, "Cannot initialize SFTP protocol. Is the host running an SFTP server?"
   TIMEZONE_ERROR, "Cannot read time zone information"
   SFTP_CREATE_FILE_ERROR, "Cannot create remote file '%s'."
   SFTP_OPEN_FILE_ERROR, "Cannot open remote file '%s'."
