@@ -1180,6 +1180,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(UpdatesProxyPortLabel, UpdatesProxyPortEdit->Enabled);
 
     bool IsSiteCommand = false;
+    bool IsPasswordCommand = false;
     try
     {
       TRemoteCustomCommand RemoteCustomCommand;
@@ -1187,17 +1188,19 @@ void __fastcall TPreferencesDialog::UpdateControls()
       UnicodeString PuttyPath = PuttyPathEdit->Text;
       PuttyPath = InteractiveCustomCommand.Complete(PuttyPath, false);
       IsSiteCommand = RemoteCustomCommand.IsSiteCommand(PuttyPath);
+      IsPasswordCommand = RemoteCustomCommand.IsPasswordCommand(PuttyPath);
     }
     catch (...)
     {
       // noop
     }
-    EnableControl(PuttyPasswordCheck2, !PuttyPathEdit->Text.IsEmpty());
-    EnableControl(AutoOpenInPuttyCheck, PuttyPasswordCheck2->Enabled);
+    bool AnyPuttyPath = !PuttyPathEdit->Text.IsEmpty();
+    EnableControl(PuttyPasswordCheck2, AnyPuttyPath && !IsPasswordCommand);
+    EnableControl(AutoOpenInPuttyCheck, AnyPuttyPath);
     EnableControl(TelnetForFtpInPuttyCheck,
-      PuttyPasswordCheck2->Enabled && !IsSiteCommand);
+      AnyPuttyPath && !IsSiteCommand);
     EnableControl(PuttyRegistryStorageKeyEdit,
-      PuttyPasswordCheck2->Enabled && !IsSiteCommand);
+      AnyPuttyPath && !IsSiteCommand);
     EnableControl(PuttyRegistryStorageKeyLabel, PuttyRegistryStorageKeyEdit->Enabled);
 
     EnableControl(SetMasterPasswordButton, WinConfiguration->UseMasterPassword);

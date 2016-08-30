@@ -1107,7 +1107,24 @@ void __fastcall TGUIConfiguration::SetDefaultCopyParam(const TGUICopyParamType &
 //---------------------------------------------------------------------------
 bool __fastcall TGUIConfiguration::GetRememberPassword()
 {
-  return SessionRememberPassword || PuttyPassword;
+  bool Result = SessionRememberPassword || PuttyPassword;
+
+  if (!Result)
+  {
+    try
+    {
+      TRemoteCustomCommand RemoteCustomCommand;
+      TInteractiveCustomCommand InteractiveCustomCommand(&RemoteCustomCommand);
+      UnicodeString APuttyPath = InteractiveCustomCommand.Complete(PuttyPath, false);
+      Result = RemoteCustomCommand.IsPasswordCommand(PuttyPath);
+    }
+    catch (...)
+    {
+      // noop
+    }
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 const TCopyParamList * __fastcall TGUIConfiguration::GetCopyParamList()
