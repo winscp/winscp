@@ -1081,7 +1081,59 @@ int __fastcall TSessionData::ReadXmlNode(_di_IXMLNode Node, const UnicodeString 
   return Result;
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path)
+_di_IXMLNode __fastcall TSessionData::FindSettingsNode(_di_IXMLNode Node, const UnicodeString & Name)
+{
+  for (int Index = 0; Index < Node->ChildNodes->Count; Index++)
+  {
+    _di_IXMLNode ChildNode = Node->ChildNodes->Get(Index);
+    if (ChildNode->NodeName == L"Setting")
+    {
+       OleVariant SettingName = ChildNode->GetAttribute(L"name");
+       if (SettingName == Name)
+       {
+         return ChildNode;
+       }
+    }
+  }
+
+  return NULL;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::ReadSettingsNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default)
+{
+  _di_IXMLNode TheNode = FindSettingsNode(Node, Name);
+  UnicodeString Result;
+  if (TheNode != NULL)
+  {
+    Result = TheNode->Text.Trim();
+  }
+
+  if (Result.IsEmpty())
+  {
+    Result = Default;
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------
+int __fastcall TSessionData::ReadSettingsNode(_di_IXMLNode Node, const UnicodeString & Name, int Default)
+{
+  _di_IXMLNode TheNode = FindSettingsNode(Node, Name);
+  int Result;
+  if (TheNode != NULL)
+  {
+    Result = StrToIntDef(TheNode->Text.Trim(), Default);
+  }
+  else
+  {
+    Result = Default;
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::ImportFromFilezilla(
+  _di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode)
 {
   Name = UnixIncludeTrailingBackslash(Path) + MakeValidName(ReadXmlNode(Node, L"Name", Name));
   HostName = ReadXmlNode(Node, L"Host", HostName);
@@ -1192,6 +1244,77 @@ void __fastcall TSessionData::ImportFromFilezilla(_di_IXMLNode Node, const Unico
   }
 
   SynchronizeBrowsing = (ReadXmlNode(Node, L"SyncBrowsing", SynchronizeBrowsing ? 1 : 0) != 0);
+
+  bool BypassProxy = (ReadXmlNode(Node, L"BypassProxy", 0) != 0);
+
+  if ((SettingsNode != NULL) && !BypassProxy)
+  {
+    int FtpProxyType = ReadSettingsNode(SettingsNode, L"FTP Proxy type", -1);
+    if (FtpProxyType > 0)
+    {
+      switch (FtpProxyType)
+      {
+        case 1:
+          FtpProxyLogonType = 2;
+          break;
+        case 2:
+          FtpProxyLogonType = 1;
+          break;
+        case 3:
+          FtpProxyLogonType = 3;
+          break;
+        case 4:
+          // custom
+          // TODO: map known sequences to our enumeration
+          FtpProxyLogonType = 0;
+          break;
+        default:
+          DebugFail();
+          FtpProxyLogonType = 0;
+          break;
+      }
+
+      ProxyHost = ReadSettingsNode(SettingsNode, L"FTP Proxy host", ProxyHost);
+      ProxyUsername = ReadSettingsNode(SettingsNode, L"FTP Proxy user", ProxyUsername);
+      ProxyPassword = ReadSettingsNode(SettingsNode, L"FTP Proxy password", ProxyPassword);
+      // ProxyPort is not used with FtpProxyLogonType
+    }
+    else
+    {
+      int ProxyType = ReadSettingsNode(SettingsNode, L"Proxy type", -1);
+      if (ProxyType >= 0)
+      {
+        switch (ProxyType)
+        {
+          case 0:
+            ProxyMethod = ::pmNone;
+            break;
+
+          case 1:
+            ProxyMethod = pmHTTP;
+            break;
+
+          case 2:
+            ProxyMethod = pmSocks5;
+            break;
+
+          case 3:
+            ProxyMethod = pmSocks4;
+            break;
+
+          default:
+            DebugFail();
+            ProxyMethod = ::pmNone;
+            break;
+        }
+
+        ProxyHost = ReadSettingsNode(SettingsNode, L"Proxy host", ProxyHost);
+        ProxyPort = ReadSettingsNode(SettingsNode, L"Proxy port", ProxyPort);
+        ProxyUsername = ReadSettingsNode(SettingsNode, L"Proxy user", ProxyUsername);
+        ProxyPassword = ReadSettingsNode(SettingsNode, L"Proxy password", ProxyPassword);
+      }
+    }
+  }
 
 }
 //---------------------------------------------------------------------
@@ -3712,7 +3835,8 @@ void __fastcall TStoredSessionList::Saved()
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path)
+void __fastcall TStoredSessionList::ImportLevelFromFilezilla(
+  _di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode)
 {
   for (int Index = 0; Index < Node->ChildNodes->Count; Index++)
   {
@@ -3721,7 +3845,7 @@ void __fastcall TStoredSessionList::ImportLevelFromFilezilla(_di_IXMLNode Node, 
     {
       std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
       SessionData->CopyData(DefaultSettings);
-      SessionData->ImportFromFilezilla(ChildNode, Path);
+      SessionData->ImportFromFilezilla(ChildNode, Path, SettingsNode);
       Add(SessionData.release());
     }
     else if (ChildNode->NodeName == L"Folder")
@@ -3740,13 +3864,30 @@ void __fastcall TStoredSessionList::ImportLevelFromFilezilla(_di_IXMLNode Node, 
 
       Name = TSessionData::MakeValidName(Name).Trim();
 
-      ImportLevelFromFilezilla(ChildNode, TSessionData::ComposePath(Path, Name));
+      ImportLevelFromFilezilla(ChildNode, TSessionData::ComposePath(Path, Name), SettingsNode);
     }
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::ImportFromFilezilla(const UnicodeString FileName)
+void __fastcall TStoredSessionList::ImportFromFilezilla(
+  const UnicodeString FileName, const UnicodeString ConfigurationFileName)
 {
+
+  // not sure if the document must exists if we want to use its node
+  _di_IXMLDocument ConfigurationDocument;
+  _di_IXMLNode SettingsNode;
+
+  if (FileExists(ApiPath(ConfigurationFileName)))
+  {
+    ConfigurationDocument = interface_cast<Xmlintf::IXMLDocument>(new TXMLDocument(NULL));
+    ConfigurationDocument->LoadFromFile(ConfigurationFileName);
+    _di_IXMLNode FileZilla3Node = ConfigurationDocument->ChildNodes->FindNode(L"FileZilla3");
+    if (FileZilla3Node != NULL)
+    {
+      SettingsNode = FileZilla3Node->ChildNodes->FindNode(L"Settings");
+    }
+  }
+
   const _di_IXMLDocument Document = interface_cast<Xmlintf::IXMLDocument>(new TXMLDocument(NULL));
   Document->LoadFromFile(FileName);
   _di_IXMLNode FileZilla3Node = Document->ChildNodes->FindNode(L"FileZilla3");
@@ -3755,7 +3896,7 @@ void __fastcall TStoredSessionList::ImportFromFilezilla(const UnicodeString File
     _di_IXMLNode ServersNode = FileZilla3Node->ChildNodes->FindNode(L"Servers");
     if (ServersNode != NULL)
     {
-      ImportLevelFromFilezilla(ServersNode, L"");
+      ImportLevelFromFilezilla(ServersNode, L"", SettingsNode);
     }
   }
 }

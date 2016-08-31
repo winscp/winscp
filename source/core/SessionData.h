@@ -373,6 +373,9 @@ private:
     bool PuttyExport, const TSessionData * Default, bool DoNotEncryptPasswords);
   UnicodeString __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
   int __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, int Default);
+  _di_IXMLNode __fastcall FindSettingsNode(_di_IXMLNode Node, const UnicodeString & Name);
+  UnicodeString __fastcall ReadSettingsNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
+  int __fastcall ReadSettingsNode(_di_IXMLNode Node, const UnicodeString & Name, int Default);
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties);
   UnicodeString __fastcall GetNameWithoutHiddenPrefix();
   bool __fastcall HasStateData();
@@ -416,7 +419,7 @@ public:
   void __fastcall NonPersistant();
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall ApplyRawSettings(THierarchicalStorage * Storage);
-  void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path);
+  void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
     const TSessionData * Default = NULL);
   void __fastcall SaveRecryptedPasswords(THierarchicalStorage * Storage);
@@ -607,7 +610,7 @@ public:
   void __fastcall Load();
   void __fastcall Save(bool All, bool Explicit);
   void __fastcall Saved();
-  void __fastcall ImportFromFilezilla(const UnicodeString FileName);
+  void __fastcall ImportFromFilezilla(const UnicodeString FileName, const UnicodeString ConfigurationFileName);
   void __fastcall Export(const UnicodeString FileName);
   void __fastcall Load(THierarchicalStorage * Storage, bool AsModified = false,
     bool UseDefaults = false);
@@ -658,7 +661,7 @@ private:
   bool __fastcall IsFolderOrWorkspace(const UnicodeString & Name, bool Workspace);
   TSessionData * __fastcall CheckIsInFolderOrWorkspaceAndResolve(
     TSessionData * Data, const UnicodeString & Name);
-  void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path);
+  void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
 };
 //---------------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TSessionData * SessionData);

@@ -1199,10 +1199,12 @@ TStoredSessionList * __fastcall TConfiguration::SelectFilezillaSessionsForImport
   UnicodeString AppDataPath = GetShellFolderPath(CSIDL_APPDATA);
   UnicodeString FilezillaSiteManagerFile =
     IncludeTrailingBackslash(AppDataPath) + L"FileZilla\\sitemanager.xml";
+  UnicodeString FilezillaConfigurationFile =
+    IncludeTrailingBackslash(AppDataPath) + L"FileZilla\\filezilla.xml";
 
   if (FileExists(ApiPath(FilezillaSiteManagerFile)))
   {
-    ImportSessionList->ImportFromFilezilla(FilezillaSiteManagerFile);
+    ImportSessionList->ImportFromFilezilla(FilezillaSiteManagerFile, FilezillaConfigurationFile);
 
     if (ImportSessionList->Count > 0)
     {
