@@ -112,7 +112,7 @@ void __fastcall TSessionData::Default()
   AuthTIS = false;
   AuthKI = true;
   AuthKIPassword = true;
-  AuthGSSAPI = false;
+  AuthGSSAPI = true;
   GSSAPIFwdTGT = false;
   ChangeUsername = false;
   Compression = false;
