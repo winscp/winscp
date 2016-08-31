@@ -357,7 +357,7 @@ private:
   UnicodeString __fastcall GetFolderName();
   void __fastcall Modify();
   UnicodeString __fastcall GetSource();
-  void __fastcall DoLoad(THierarchicalStorage * Storage, bool & RewritePassword);
+  void __fastcall DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword);
   void __fastcall DoSave(THierarchicalStorage * Storage,
     bool PuttyExport, const TSessionData * Default, bool DoNotEncryptPasswords);
   UnicodeString __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
@@ -403,7 +403,7 @@ public:
   TSessionData * __fastcall Clone();
   void __fastcall Default();
   void __fastcall NonPersistant();
-  void __fastcall Load(THierarchicalStorage * Storage);
+  void __fastcall Load(THierarchicalStorage * Storage, bool PuttyImport);
   void __fastcall ApplyRawSettings(THierarchicalStorage * Storage);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
@@ -596,7 +596,7 @@ public:
   void __fastcall ImportFromFilezilla(const UnicodeString FileName);
   void __fastcall Export(const UnicodeString FileName);
   void __fastcall Load(THierarchicalStorage * Storage, bool AsModified = false,
-    bool UseDefaults = false);
+    bool UseDefaults = false, bool PuttyImport = false);
   void __fastcall Save(THierarchicalStorage * Storage, bool All = false);
   void __fastcall SelectAll(bool Select);
   void __fastcall Import(TStoredSessionList * From, bool OnlySelected, TList * Imported);
