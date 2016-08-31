@@ -1765,7 +1765,7 @@ void __fastcall TLoginDialog::CheckIsSessionFolder(TTreeNode * Node)
 void __fastcall TLoginDialog::SessionTreeEdited(TObject * /*Sender*/,
   TTreeNode * Node, UnicodeString & S)
 {
-  if (Node->Text != S)
+  if ((Node->Text != S) && !S.IsEmpty())
   {
     TSessionData * Session = SelectedSession;
 
