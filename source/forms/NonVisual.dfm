@@ -2880,6 +2880,9 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = NewLinkAction
       end
     end
+    object TBXItem75: TTBXItem
+      Action = PasteAction2
+    end
     object RemoteDirViewPopupCustomCommandsMenu: TTBXSubmenuItem
       Action = CustomCommandsNonFileAction
     end
@@ -2944,6 +2947,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object TBXItem71: TTBXItem
         Action = NewDirAction
       end
+    end
+    object TBXItem76: TTBXItem
+      Action = PasteAction2
     end
   end
   object RemoteAddressPopup: TTBXPopupMenu

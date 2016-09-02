@@ -615,6 +615,8 @@ __published:    // IDE-managed Components
   TAction *TipsAction;
   TAction *CustomCommandsNonFileAction;
   TTBXSubmenuItem *RemoteDirViewPopupCustomCommandsMenu;
+  TTBXItem *TBXItem75;
+  TTBXItem *TBXItem76;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
