@@ -1583,7 +1583,7 @@ bool __fastcall TCustomScpExplorerForm::CustomCommandRemoteAllowed()
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::CustomCommandState(
-  const TCustomCommandType & Command, bool /*OnFocused*/, TCustomCommandListType ListType)
+  const TCustomCommandType & Command, bool OnFocused, TCustomCommandListType ListType)
 {
   int Result;
 
@@ -1614,7 +1614,7 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     {
       if ((ListType == ccltAll) || (ListType == ccltFile))
       {
-        Result = ((FCurrentSide == osRemote) && EnableSelectedOperation[osRemote]) ? AllowedState : 0;
+        Result = ((FCurrentSide == osRemote) && DirView(osRemote)->AnyFileSelected(OnFocused, false, true)) ? AllowedState : 0;
       }
       else
       {
@@ -1655,7 +1655,7 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     {
       if ((ListType == ccltAll) || (ListType == ccltFile))
       {
-        Result = EnableSelectedOperation[FCurrentSide] ? 1 : 0;
+        Result = DirView(FCurrentSide)->AnyFileSelected(OnFocused, false, true) ? 1 : 0;
       }
       else
       {
