@@ -369,6 +369,7 @@ void __fastcall TFTPFileSystem::Open()
   TSessionData * Data = FTerminal->SessionData;
 
   FWindowsServer = false;
+  FMVS = false;
   FTransferActiveImmediately = (Data->FtpTransferActiveImmediately == asOn);
 
   FSessionInfo.LoginTime = Now();
@@ -760,6 +761,14 @@ void __fastcall TFTPFileSystem::CollectUsage()
   else if (ContainsText(FWelcomeMessage, L"Idea FTP Server"))
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPIdea");
+  }
+  // 220-FTPD1 IBM FTP CS V2R1 at name.test.com, 13:49:38 on 2016-01-28.
+  // ...
+  // SYST
+  // 215 MVS is the operating system of this server. FTP Server is running on z/OS.
+  else if (FMVS)
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPMVS");
   }
   else
   {
@@ -3789,13 +3798,14 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
       if (FLastCode == 215)
       {
         FSystem = FLastResponse->Text.TrimRight();
+        // full name is "MVS is the operating system of this server. FTP Server is running on ..."
+        // (the ... can be "z/OS")
+        // https://www.ibm.com/support/knowledgecenter/SSLTBW_2.1.0/com.ibm.zos.v2r1.cs3cod0/ftp215-02.htm
+        FMVS = (FSystem.SubString(1, 3) == L"MVS");
         if ((FListAll == asAuto) &&
              // full name is "Personal FTP Server PRO K6.0"
             ((FSystem.Pos(L"Personal FTP Server") > 0) ||
-             // full name is "MVS is the operating system of this server. FTP Server is running on ..."
-             // (the ... can be "z/OS")
-             // https://www.ibm.com/support/knowledgecenter/SSLTBW_2.1.0/com.ibm.zos.v2r1.cs3cod0/ftp215-02.htm
-             (FSystem.SubString(1, 3) == L"MVS")))
+             FMVS))
         {
           FTerminal->LogEvent(L"Server is known not to support LIST -a");
           FListAll = asOff;
