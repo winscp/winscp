@@ -136,8 +136,8 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Download in &Background...'
       HelpKeyword = 'task_download'
       Hint = 
-        'Download selected remote file(s) to local directory in ' +
-        'background'
+        'Download selected remote file(s) to local directory in backgroun' +
+        'd'
       ImageIndex = 107
     end
     object RemoteCopyFocusedQueueAction: TAction
@@ -146,8 +146,8 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Download in &Background...'
       HelpKeyword = 'task_download'
       Hint = 
-        'Download selected remote file(s) to local directory in ' +
-        'background'
+        'Download selected remote file(s) to local directory in backgroun' +
+        'd'
       ImageIndex = 107
     end
     object LocalCopyQueueAction: TAction
@@ -155,9 +155,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Local Selected Operation'
       Caption = 'Upload in &Background...'
       HelpKeyword = 'task_upload'
-      Hint = 
-        'Upload selected local file(s) to remote directory in back' +
-        'ground'
+      Hint = 'Upload selected local file(s) to remote directory in background'
       ImageIndex = 108
     end
     object LocalCopyFocusedQueueAction: TAction
@@ -165,9 +163,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Local Focused Operation'
       Caption = 'Upload in &Background...'
       HelpKeyword = 'task_upload'
-      Hint = 
-        'Upload selected local file(s) to remote directory in back' +
-        'ground'
+      Hint = 'Upload selected local file(s) to remote directory in background'
       ImageIndex = 108
     end
     object RemoteCopyNonQueueAction: TAction
