@@ -24,7 +24,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
-  TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession)
+  TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm)
 {
   bool DefaultsOnly = false;
 
@@ -85,7 +85,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
     // - the specified session does not contain enough information to login [= not even hostname]
 
     DebugAssert(DataList->Count <= 1);
-    if (!DoLoginDialog(StoredSessions, DataList))
+    if (!DoLoginDialog(StoredSessions, DataList, LinkedForm))
     {
       Abort();
     }
@@ -979,7 +979,7 @@ int __fastcall Execute()
         TObjectList * DataList = new TObjectList();
         try
         {
-          GetLoginData(AutoStartSession, Params, DataList, DownloadFile, NeedSession);
+          GetLoginData(AutoStartSession, Params, DataList, DownloadFile, NeedSession, NULL);
           // GetLoginData now Aborts when session is needed and none is selected
           if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
           {

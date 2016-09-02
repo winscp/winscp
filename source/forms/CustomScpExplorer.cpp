@@ -497,7 +497,7 @@ bool __fastcall TCustomScpExplorerForm::CommandLineFromAnotherInstance(
       UnicodeString SessionName = Params.Param[1];
       std::unique_ptr<TObjectList> DataList(new TObjectList());
       UnicodeString DownloadFile; // unused
-      GetLoginData(SessionName, &Params, DataList.get(), DownloadFile, true);
+      GetLoginData(SessionName, &Params, DataList.get(), DownloadFile, true, this);
       if (DataList->Count > 0)
       {
         TTerminalManager * Manager = TTerminalManager::Instance();
@@ -5798,7 +5798,7 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool ReloadSessions)
 {
   try
   {
-    TTerminalManager::Instance()->NewSession(false, L"", ReloadSessions);
+    TTerminalManager::Instance()->NewSession(false, L"", ReloadSessions, this);
   }
   __finally
   {

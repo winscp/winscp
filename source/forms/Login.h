@@ -307,6 +307,7 @@ private:
   bool FSortEnablePending;
   std::unique_ptr<TImageList> FButtonImageList;
   TSiteSearch FSiteSearch;
+  TForm * FLinkedForm;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -388,6 +389,7 @@ private:
   void __fastcall ResetNewSiteData();
   TModalResult __fastcall DefaultResult();
   int __fastcall AddLoginButtonImage(bool Enabled);
+  void __fastcall WMMoving(TMessage & Message);
 
 protected:
   void __fastcall Default();
@@ -406,7 +408,7 @@ protected:
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);
   __fastcall ~TLoginDialog();
-  void __fastcall Init(TStoredSessionList *SessionList);
+  void __fastcall Init(TStoredSessionList *SessionList, TForm * LinkedForm);
   bool __fastcall Execute(TList * DataList);
 };
 //----------------------------------------------------------------------------
