@@ -3142,6 +3142,7 @@ UnicodeString __fastcall TCustomCommandType::GetCommandWithExpandedOptions(TStri
         OptionValue = Option.Default;
       }
       UnicodeString OptionCommand = GetOptionCommand(Option, OptionValue);
+      OptionCommand = TCustomCommand::Escape(OptionCommand);
       Result = ReplaceText(Result, FORMAT(L"%%%s%%", (Option.Id)), OptionCommand);
     }
   }

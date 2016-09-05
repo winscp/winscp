@@ -789,6 +789,11 @@ void __fastcall TFileMasks::SetStr(const UnicodeString Str, bool SingleMask)
 const wchar_t TCustomCommand::NoQuote = L'\0';
 const UnicodeString TCustomCommand::Quotes = L"\"'";
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommand::Escape(const UnicodeString & S)
+{
+  return ReplaceStr(S, L"!", L"!!");
+}
+//---------------------------------------------------------------------------
 TCustomCommand::TCustomCommand()
 {
 }
@@ -915,7 +920,7 @@ UnicodeString __fastcall TCustomCommand::Complete(const UnicodeString & Command,
       {
         if (!LastPass)
         {
-          Replacement = ReplaceStr(Replacement, L"!", L"!!");
+          Replacement = Escape(Replacement);
         }
         if (Delimit)
         {
