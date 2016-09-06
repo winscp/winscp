@@ -734,6 +734,7 @@ public:
 
     bool operator==(const TOption & Other) const;
     __property bool IsControl = { read = GetIsControl };
+    bool HasPatterns(TCustomCommand * CustomCommandForOptions) const;
 
   private:
     bool __fastcall GetIsControl() const;

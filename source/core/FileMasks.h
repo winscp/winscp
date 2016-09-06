@@ -138,6 +138,7 @@ public:
 
   UnicodeString __fastcall Complete(const UnicodeString & Command, bool LastPass);
   virtual void __fastcall Validate(const UnicodeString & Command);
+  bool __fastcall HasAnyPatterns(const UnicodeString & Command);
 
   static UnicodeString __fastcall Escape(const UnicodeString & S);
 

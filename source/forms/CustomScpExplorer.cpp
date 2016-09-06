@@ -1671,10 +1671,21 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   const TCustomCommandType & ACommand, TStrings * ALocalFileList)
 {
 
+  TCustomCommandData Data(Terminal);
+  std::unique_ptr<TCustomCommand> CustomCommandForOptions;
+  if (FLAGCLEAR(ACommand.Params, ccLocal))
+  {
+    CustomCommandForOptions.reset(new TRemoteCustomCommand(Data, Terminal->CurrentDirectory));
+  }
+  else
+  {
+    CustomCommandForOptions.reset(new TLocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory()));
+  }
+
   std::unique_ptr<TStrings> CustomCommandOptions(CloneStrings(WinConfiguration->CustomCommandOptions));
   if (ACommand.AnyOptionWithFlag(TCustomCommandType::ofRun))
   {
-    if (!DoCustomCommandOptionsDialog(&ACommand, CustomCommandOptions.get(), TCustomCommandType::ofRun))
+    if (!DoCustomCommandOptionsDialog(&ACommand, CustomCommandOptions.get(), TCustomCommandType::ofRun, CustomCommandForOptions.get()))
     {
       Abort();
     }
@@ -1686,7 +1697,6 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   {
     if (EnsureCommandSessionFallback(fcShellAnyCommand))
     {
-      TCustomCommandData Data(Terminal);
       TRemoteCustomCommand RemoteCustomCommand(Data, Terminal->CurrentDirectory);
       TWinInteractiveCustomCommand InteractiveCustomCommand(
         &RemoteCustomCommand, ACommand.Name, ACommand.HomePage);
@@ -1738,7 +1748,6 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   }
   else
   {
-    TCustomCommandData Data(Terminal);
     TLocalCustomCommand LocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory());
     TWinInteractiveCustomCommand InteractiveCustomCommand(
       &LocalCustomCommand, ACommand.Name, ACommand.HomePage);
@@ -1851,7 +1860,6 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                 LocalFile = LocalFileList->Strings[0];
               }
 
-              TCustomCommandData Data(FTerminal);
               TLocalCustomCommand CustomCommand(Data,
                 Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), L"", LocalFile, FileList);
               UnicodeString ShellCommand = CustomCommand.Complete(Command, true);
@@ -1874,7 +1882,6 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                 for (int Index = 0; Index < RemoteFileList->Count; Index++)
                 {
                   UnicodeString FileName = RemoteFileList->Strings[Index];
-                  TCustomCommandData Data(FTerminal);
                   TLocalCustomCommand CustomCommand(Data,
                     Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), FileName, LocalFile, L"");
                   ExecuteShellAndWait(CustomCommand.Complete(Command, true));
@@ -1886,7 +1893,6 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
                 for (int Index = 0; Index < LocalFileList->Count; Index++)
                 {
-                  TCustomCommandData Data(FTerminal);
                   TLocalCustomCommand CustomCommand(
                     Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                     FileName, LocalFileList->Strings[Index], L"");
@@ -1903,7 +1909,6 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                 for (int Index = 0; Index < LocalFileList->Count; Index++)
                 {
                   UnicodeString FileName = RemoteFileList->Strings[Index];
-                  TCustomCommandData Data(FTerminal);
                   TLocalCustomCommand CustomCommand(
                     Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                     FileName, LocalFileList->Strings[Index], L"");
@@ -1915,7 +1920,6 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
             {
               for (int Index = 0; Index < RemoteFileList->Count; Index++)
               {
-                TCustomCommandData Data(FTerminal);
                 TLocalCustomCommand CustomCommand(Data,
                   Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                   RemoteFileList->Strings[Index], L"", L"");
@@ -2026,7 +2030,6 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
       if (FileListCommand)
       {
         UnicodeString FileList = MakeFileList(LocalFileList.get());
-        TCustomCommandData Data(FTerminal);
         TLocalCustomCommand CustomCommand(
           Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
           L"", L"", FileList);
@@ -2045,7 +2048,6 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
           for (int Index = 0; Index < LocalFileList->Count; Index++)
           {
             UnicodeString FileName = LocalFileList->Strings[Index];
-            TCustomCommandData Data(FTerminal);
             TLocalCustomCommand CustomCommand(
               Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
               FileName, L"", L"");

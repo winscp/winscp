@@ -980,7 +980,8 @@ bool __fastcall TCustomCommand::FindPattern(const UnicodeString & Command,
     wchar_t APatternCmd;
     GetToken(Command, Index, Len, APatternCmd);
     if (((PatternCmd != L'!') && (tolower(PatternCmd) == tolower(APatternCmd))) ||
-        ((PatternCmd == L'!') && (Len == 1) && (APatternCmd != TEXT_TOKEN)))
+        ((PatternCmd == L'!') && (Len == 1) && (APatternCmd != TEXT_TOKEN)) ||
+        ((PatternCmd == L'\0') && (APatternCmd != TEXT_TOKEN)))
     {
       Result = true;
     }
@@ -989,6 +990,11 @@ bool __fastcall TCustomCommand::FindPattern(const UnicodeString & Command,
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommand::HasAnyPatterns(const UnicodeString & Command)
+{
+  return FindPattern(Command, L'\0');
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommand::ValidatePattern(const UnicodeString & /*Command*/,
