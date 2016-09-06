@@ -6633,6 +6633,8 @@ bool __fastcall TCustomScpExplorerForm::DDGetTarget(
   }
   else
   {
+    ForceQueue = false;
+
     Enabled = false;
     try
     {
