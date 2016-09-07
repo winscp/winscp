@@ -43,7 +43,7 @@ class TConsole
 {
 public:
   virtual __fastcall ~TConsole() {};
-  virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false) = 0;
+  virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false) = 0;
   virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer) = 0;
   virtual int __fastcall Choice(UnicodeString Options, int Cancel, int Break,
     int Timeouted, bool Timeouting, unsigned int Timer) = 0;
@@ -64,7 +64,7 @@ class TOwnConsole : public TConsole
 public:
   static TOwnConsole * __fastcall Instance();
 
-  virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false);
+  virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false);
   virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer);
   virtual int __fastcall Choice(UnicodeString Options, int Cancel, int Break,
     int Timeouted, bool Timeouting, unsigned int Timer);
@@ -269,7 +269,7 @@ bool __fastcall TOwnConsole::PendingAbort()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TOwnConsole::Print(UnicodeString Str, bool FromBeginning)
+void __fastcall TOwnConsole::Print(UnicodeString Str, bool FromBeginning, bool /*Error*/)
 {
   if (FromBeginning)
   {
@@ -535,7 +535,7 @@ public:
   __fastcall TExternalConsole(const UnicodeString Instance, bool NoInteractiveInput);
   virtual __fastcall ~TExternalConsole();
 
-  virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false);
+  virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false);
   virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer);
   virtual int __fastcall Choice(UnicodeString Options, int Cancel, int Break,
     int Timeouted, bool Timeouting, unsigned int Timer);
@@ -684,7 +684,7 @@ UnicodeString __fastcall TExternalConsole::FinalLogMessage()
   return FORMAT(L"Max roundtrip: %d", (static_cast<int>(FMaxSend)));
 }
 //---------------------------------------------------------------------------
-void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning)
+void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning, bool Error)
 {
   // need to do at least one iteration, even when Str is empty (new line)
   do
@@ -699,6 +699,7 @@ void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning)
       CommStruct->Event = TConsoleCommStruct::PRINT;
       wcscpy(CommStruct->PrintEvent.Message, Piece.c_str());
       CommStruct->PrintEvent.FromBeginning = FromBeginning;
+      CommStruct->PrintEvent.Error = Error;
 
       // In the next iteration we need to append never overwrite.
       // Note that this won't work properly for disk/pipe outputs,
@@ -934,7 +935,7 @@ class TNullConsole : public TConsole
 public:
   __fastcall TNullConsole();
 
-  virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false);
+  virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false);
   virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer);
   virtual int __fastcall Choice(UnicodeString Options, int Cancel, int Break,
     int Timeouted, bool Timeouting, unsigned int Timer);
@@ -955,7 +956,7 @@ __fastcall TNullConsole::TNullConsole()
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TNullConsole::Print(UnicodeString /*Str*/, bool /*FromBeginning*/)
+void __fastcall TNullConsole::Print(UnicodeString /*Str*/, bool /*FromBeginning*/, bool /*Error*/)
 {
   // noop
 }
@@ -1047,15 +1048,15 @@ public:
   int __fastcall Run(const UnicodeString Session, TOptions * Options,
     TStrings * ScriptCommands, TStrings * ScriptParameters);
   void __fastcall ShowException(Exception * E);
-  inline void __fastcall PrintMessage(const UnicodeString & Str);
+  inline void __fastcall PrintMessage(const UnicodeString & Str, bool Error = false);
 
 protected:
   bool __fastcall DoInput(UnicodeString & Str, bool Echo, unsigned int Timer,
     bool Interactive);
   void __fastcall Input(const UnicodeString Prompt, UnicodeString & Str,
     bool Echo, bool Interactive);
-  inline void __fastcall Print(const UnicodeString & Str, bool FromBeginning = false);
-  inline void __fastcall PrintLine(const UnicodeString & Str);
+  inline void __fastcall Print(const UnicodeString & Str, bool FromBeginning = false, bool Error = false);
+  inline void __fastcall PrintLine(const UnicodeString & Str, bool Error = false);
   void __fastcall UpdateTitle();
   inline bool __fastcall NotifyAbort();
   inline bool __fastcall Aborted(bool AllowCompleteAbort = true);
@@ -1074,7 +1075,7 @@ private:
   TTimer * Timer;
   bool FExternalTimestampVar;
 
-  void __fastcall ScriptPrint(TScript * Script, const UnicodeString Str);
+  void __fastcall ScriptPrint(TScript * Script, const UnicodeString Str, bool Error);
   void __fastcall ScriptPrintProgress(TScript * Script, bool First, const UnicodeString Str);
   void __fastcall ScriptInput(TScript * Script, const UnicodeString Prompt, UnicodeString & Str);
   void __fastcall ScriptTerminalPromptUser(TTerminal * Terminal,
@@ -1167,36 +1168,36 @@ void __fastcall TConsoleRunner::ScriptInput(TScript * /*Script*/,
   Input(Prompt, Str, true, true);
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleRunner::Print(const UnicodeString & Str, bool FromBeginning)
+void __fastcall TConsoleRunner::Print(const UnicodeString & Str, bool FromBeginning, bool Error)
 {
   if (FLastProgressLen > 0)
   {
-    FConsole->Print(L"\n" + Str, FromBeginning);
+    FConsole->Print(L"\n" + Str, FromBeginning, Error);
     FLastProgressLen = 0;
   }
   else
   {
-    FConsole->Print(Str, FromBeginning);
+    FConsole->Print(Str, FromBeginning, Error);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleRunner::PrintLine(const UnicodeString & Str)
+void __fastcall TConsoleRunner::PrintLine(const UnicodeString & Str, bool Error)
 {
-  Print(Str + L"\n");
+  Print(Str + L"\n", false, Error);
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleRunner::PrintMessage(const UnicodeString & Str)
+void __fastcall TConsoleRunner::PrintMessage(const UnicodeString & Str, bool Error)
 {
   UnicodeString Line = RemoveEmptyLines(Str);
 
   if (FScript != NULL)
   {
     // this also logs the message
-    FScript->PrintLine(Line);
+    FScript->PrintLine(Line, Error);
   }
   else
   {
-    PrintLine(Line);
+    PrintLine(Line, Error);
   }
 }
 //---------------------------------------------------------------------------
@@ -1222,7 +1223,7 @@ bool __fastcall TConsoleRunner::Aborted(bool AllowCompleteAbort)
     Result = FConsole->PendingAbort();
     if (Result)
     {
-      PrintMessage(LoadStr(USER_TERMINATED));
+      PrintMessage(LoadStr(USER_TERMINATED), true);
 
       if (AllowCompleteAbort && NotifyAbort())
       {
@@ -1238,9 +1239,9 @@ bool __fastcall TConsoleRunner::Aborted(bool AllowCompleteAbort)
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptPrint(TScript * /*Script*/,
-  const UnicodeString Str)
+  const UnicodeString Str, bool Error)
 {
-  Print(Str);
+  Print(Str, false, Error);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptPrintProgress(TScript * /*Script*/,
@@ -1737,16 +1738,16 @@ void __fastcall TConsoleRunner::SynchronizeControllerSynchronizeInvalid(
 {
   if (!Directory.IsEmpty())
   {
-    PrintMessage(FMTLOAD(WATCH_ERROR_DIRECTORY, (Directory)));
+    PrintMessage(FMTLOAD(WATCH_ERROR_DIRECTORY, (Directory)), true);
   }
   else
   {
-    PrintMessage(LoadStr(WATCH_ERROR_GENERAL));
+    PrintMessage(LoadStr(WATCH_ERROR_GENERAL), true);
   }
 
   if (!ErrorStr.IsEmpty())
   {
-    PrintMessage(ErrorStr);
+    PrintMessage(ErrorStr, true);
   }
 }
 //---------------------------------------------------------------------------
@@ -1784,7 +1785,7 @@ void __fastcall TConsoleRunner::DoShowException(TTerminal * Terminal, Exception 
   if (ExceptionFullMessage(E, Message))
   {
     FCommandError = true;
-    PrintMessage(Message);
+    PrintMessage(Message, true);
   }
 
   TTerminal * LoggingTerminal = Terminal;

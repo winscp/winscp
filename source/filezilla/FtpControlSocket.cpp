@@ -1949,13 +1949,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
             break;
           }
 
-          unsigned int tmpPort;
-          if (!GetPeerName(pData->host, tmpPort))
-          {
-            LogMessage(FZ_LOG_WARNING, L"GetPeerName failed");
-            error = TRUE;
-            break;
-          }
+          pData->host = m_CurrentServer.host;
         }
         else
         {
@@ -3214,13 +3208,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
             break;
           }
 
-          unsigned int tmpPort;
-          if (!GetPeerName(pData->host, tmpPort))
-          {
-            LogMessage(FZ_LOG_WARNING, L"GetPeerName failed");
-            nReplyError = FZ_REPLY_ERROR;
-            break;
-          }
+          pData->host = m_CurrentServer.host;
         }
 
         m_pTransferSocket = new CTransferSocket(this, CSMODE_LIST);
@@ -3490,13 +3478,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
               break;
             }
 
-            unsigned int tmpPort;
-            if (!GetPeerName(pData->host, tmpPort))
-            {
-              LogMessage(FZ_LOG_WARNING, L"GetPeerName failed");
-              nReplyError = FZ_REPLY_ERROR;
-              break;
-            }
+            pData->host = m_CurrentServer.host;
           }
           else
           {

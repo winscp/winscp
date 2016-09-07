@@ -34,14 +34,14 @@ const int WorkspaceImageIndex = 4;
 const int NewSiteImageIndex = 6;
 const int SiteColorMaskImageIndex = 8;
 //---------------------------------------------------------------------------
-bool __fastcall DoLoginDialog(TStoredSessionList *SessionList, TList * DataList)
+bool __fastcall DoLoginDialog(TStoredSessionList *SessionList, TList * DataList, TForm * LinkedForm)
 {
   DebugAssert(DataList != NULL);
   TLoginDialog * LoginDialog = SafeFormCreate<TLoginDialog>();
   bool Result;
   try
   {
-    LoginDialog->Init(SessionList);
+    LoginDialog->Init(SessionList, LinkedForm);
     Result = LoginDialog->Execute(DataList);
   }
   __finally
@@ -71,6 +71,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FLoading = false;
   FSortEnablePending = false;
   FSiteSearch = ssSiteName;
+  FLinkedForm = NULL;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -94,9 +95,10 @@ void __fastcall TLoginDialog::InvalidateSessionData()
   FSessionData = NULL;
 }
 //---------------------------------------------------------------------
-void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList)
+void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList, TForm * LinkedForm)
 {
   FStoredSessions = SessionList;
+  FLinkedForm = LinkedForm;
   LoadSessions();
   UnicodeString Dummy;
   RunPageantAction->Visible = FindTool(PageantTool, Dummy);
@@ -1517,6 +1519,20 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoginDialog::WMMoving(TMessage & Message)
+{
+  TForm::Dispatch(&Message);
+
+  if (FLinkedForm != NULL)
+  {
+    RECT & Rect = *reinterpret_cast<RECT*>(Message.LParam);
+    FLinkedForm->SetBounds(
+      FLinkedForm->Left + (Rect.left - Left),
+      FLinkedForm->Top + (Rect.top - Top),
+      FLinkedForm->Width, FLinkedForm->Height);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -1550,6 +1566,10 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
     {
       TForm::Dispatch(Message);
     }
+  }
+  else if (M->Msg == WM_MOVING)
+  {
+    WMMoving(*M);
   }
   else
   {
@@ -1765,7 +1785,7 @@ void __fastcall TLoginDialog::CheckIsSessionFolder(TTreeNode * Node)
 void __fastcall TLoginDialog::SessionTreeEdited(TObject * /*Sender*/,
   TTreeNode * Node, UnicodeString & S)
 {
-  if (Node->Text != S)
+  if ((Node->Text != S) && !S.IsEmpty())
   {
     TSessionData * Session = SelectedSession;
 

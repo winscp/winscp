@@ -2660,7 +2660,7 @@ void __fastcall TPreferencesDialog::ConfigureCommand()
   int Index = CustomCommandsView->ItemIndex;
   const TCustomCommandType * Command = GetCommandList(Index)->Commands[GetCommandIndex(Index)];
 
-  DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get(), TCustomCommandType::ofConfig);
+  DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get(), TCustomCommandType::ofConfig, NULL);
   UpdateCustomCommandsView();
 }
 //---------------------------------------------------------------------------

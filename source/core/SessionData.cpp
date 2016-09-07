@@ -493,7 +493,7 @@ bool __fastcall TSessionData::IsInFolderOrWorkspace(UnicodeString AFolder)
   return StartsText(UnixIncludeTrailingBackslash(AFolder), Name);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & RewritePassword)
+void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword)
 {
   // Make sure we only ever use methods supported by TOptionsStorage
   // (implemented by TOptionsIniFile)
@@ -603,7 +603,11 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
   TrimVMSVersions = Storage->ReadBool(L"TrimVMSVersions", TrimVMSVersions);
   NotUtf = TAutoSwitch(Storage->ReadInteger(L"Utf", Storage->ReadInteger(L"SFTPUtfBug", NotUtf)));
 
-  TcpNoDelay = Storage->ReadBool(L"TcpNoDelay", TcpNoDelay);
+  // PuTTY defaults to TcpNoDelay, but the psftp/pscp ignores this preference, and always set this to off (what is our default too)
+  if (!PuttyImport)
+  {
+    TcpNoDelay = Storage->ReadBool(L"TcpNoDelay", TcpNoDelay);
+  }
   SendBuf = Storage->ReadInteger(L"SendBuf", Storage->ReadInteger("SshSendBuf", SendBuf));
   SshSimple = Storage->ReadBool(L"SshSimple", SshSimple);
 
@@ -760,7 +764,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool & Rewr
 #endif
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
+void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImport)
 {
   bool RewritePassword = false;
   if (Storage->OpenSubKey(InternalStorageKey, False))
@@ -773,7 +777,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     ClearSessionPasswords();
     FProxyPassword = L"";
 
-    DoLoad(Storage, RewritePassword);
+    DoLoad(Storage, PuttyImport, RewritePassword);
 
     Storage->CloseSubKey();
   }
@@ -1927,7 +1931,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
 void __fastcall TSessionData::ApplyRawSettings(THierarchicalStorage * Storage)
 {
   bool Dummy;
-  DoLoad(Storage, Dummy);
+  DoLoad(Storage, false, Dummy);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ConfigureTunnel(int APortNumber)
@@ -3631,7 +3635,7 @@ __fastcall TStoredSessionList::~TStoredSessionList()
 }
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
-  bool AsModified, bool UseDefaults)
+  bool AsModified, bool UseDefaults, bool PuttyImport)
 {
   TStringList *SubKeys = new TStringList();
   TList * Loaded = new TList;
@@ -3692,7 +3696,7 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
             Add(SessionData);
           }
           Loaded->Add(SessionData);
-          SessionData->Load(Storage);
+          SessionData->Load(Storage, PuttyImport);
           if (AsModified)
           {
             SessionData->Modified = true;

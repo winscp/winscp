@@ -1317,7 +1317,7 @@ void __fastcall TTerminalManager::OpenInPutty()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeString & SessionUrl, bool ReloadSessions)
+void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeString & SessionUrl, bool ReloadSessions, TForm * LinkedForm)
 {
   if (ReloadSessions)
   {
@@ -1327,7 +1327,7 @@ void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeStr
   UnicodeString DownloadFile; // unused
   std::unique_ptr<TObjectList> DataList(new TObjectList());
 
-  GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile, true);
+  GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile, true, LinkedForm);
 
   if (DataList->Count > 0)
   {

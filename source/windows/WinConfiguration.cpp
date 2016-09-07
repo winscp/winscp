@@ -3142,6 +3142,7 @@ UnicodeString __fastcall TCustomCommandType::GetCommandWithExpandedOptions(TStri
         OptionValue = Option.Default;
       }
       UnicodeString OptionCommand = GetOptionCommand(Option, OptionValue);
+      OptionCommand = TCustomCommand::Escape(OptionCommand);
       Result = ReplaceText(Result, FORMAT(L"%%%s%%", (Option.Id)), OptionCommand);
     }
   }
@@ -3181,6 +3182,29 @@ UnicodeString __fastcall TCustomCommandType::GetOptionCommand(const TOption & Op
 bool __fastcall TCustomCommandType::TOption::GetIsControl() const
 {
   return (Id != L"-");
+}
+//---------------------------------------------------------------------------
+bool TCustomCommandType::TOption::HasPatterns(TCustomCommand * CustomCommandForOptions) const
+{
+  bool CanHavePatterns;
+  switch (Kind)
+  {
+    case okTextBox:
+    case okFile:
+      CanHavePatterns = true;
+      break;
+
+    default:
+      CanHavePatterns = false;
+      break;
+  }
+
+  bool Result =
+    CanHavePatterns &&
+    FLAGSET(Flags, TCustomCommandType::ofRun) &&
+    FLAGCLEAR(Flags, TCustomCommandType::ofConfig) &&
+    CustomCommandForOptions->HasAnyPatterns(Default);
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool TCustomCommandType::TOption::operator==(const TCustomCommandType::TOption & Other) const

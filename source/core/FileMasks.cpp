@@ -789,6 +789,11 @@ void __fastcall TFileMasks::SetStr(const UnicodeString Str, bool SingleMask)
 const wchar_t TCustomCommand::NoQuote = L'\0';
 const UnicodeString TCustomCommand::Quotes = L"\"'";
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommand::Escape(const UnicodeString & S)
+{
+  return ReplaceStr(S, L"!", L"!!");
+}
+//---------------------------------------------------------------------------
 TCustomCommand::TCustomCommand()
 {
 }
@@ -915,7 +920,7 @@ UnicodeString __fastcall TCustomCommand::Complete(const UnicodeString & Command,
       {
         if (!LastPass)
         {
-          Replacement = ReplaceStr(Replacement, L"!", L"!!");
+          Replacement = Escape(Replacement);
         }
         if (Delimit)
         {
@@ -975,7 +980,8 @@ bool __fastcall TCustomCommand::FindPattern(const UnicodeString & Command,
     wchar_t APatternCmd;
     GetToken(Command, Index, Len, APatternCmd);
     if (((PatternCmd != L'!') && (tolower(PatternCmd) == tolower(APatternCmd))) ||
-        ((PatternCmd == L'!') && (Len == 1) && (APatternCmd != TEXT_TOKEN)))
+        ((PatternCmd == L'!') && (Len == 1) && (APatternCmd != TEXT_TOKEN)) ||
+        ((PatternCmd == L'\0') && (APatternCmd != TEXT_TOKEN)))
     {
       Result = true;
     }
@@ -984,6 +990,11 @@ bool __fastcall TCustomCommand::FindPattern(const UnicodeString & Command,
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommand::HasAnyPatterns(const UnicodeString & Command)
+{
+  return FindPattern(Command, L'\0');
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommand::ValidatePattern(const UnicodeString & /*Command*/,

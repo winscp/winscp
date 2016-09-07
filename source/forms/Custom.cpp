@@ -837,7 +837,8 @@ class TCustomCommandOptionsDialog : public TCustomDialog
 {
 public:
   __fastcall TCustomCommandOptionsDialog(
-    const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags);
+    const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags,
+    TCustomCommand * CustomCommandForOptions);
 
   bool __fastcall Execute();
 
@@ -866,7 +867,8 @@ private:
 };
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
-    const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags) :
+    const TCustomCommandType * Command, TStrings * CustomCommandOptions,
+    unsigned int Flags, TCustomCommand * CustomCommandForOptions) :
   TCustomDialog(HELP_EXTENSION_OPTIONS)
 {
   FCommand = Command;
@@ -884,13 +886,21 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
     {
       UnicodeString OptionKey = FCommand->GetOptionKey(Option);
       UnicodeString Value;
-      if (FCustomCommandOptions->IndexOfName(OptionKey) >= 0)
+      if ((CustomCommandForOptions != NULL) &&
+          Option.HasPatterns(CustomCommandForOptions))
       {
-        Value = FCustomCommandOptions->Values[OptionKey];
+        Value = CustomCommandForOptions->Complete(Option.Default, true);
       }
       else
       {
-        Value = Option.Default;
+        if (FCustomCommandOptions->IndexOfName(OptionKey) >= 0)
+        {
+          Value = FCustomCommandOptions->Values[OptionKey];
+        }
+        else
+        {
+          Value = Option.Default;
+        }
       }
 
       int Tag = (OptionIndex << 16) + ControlIndex;
@@ -1280,9 +1290,10 @@ void __fastcall TCustomCommandOptionsDialog::DoShow()
 }
 //---------------------------------------------------------------------------
 bool __fastcall DoCustomCommandOptionsDialog(
-  const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags)
+  const TCustomCommandType * Command, TStrings * CustomCommandOptions,
+  unsigned int Flags, TCustomCommand * CustomCommandForOptions)
 {
   std::unique_ptr<TCustomCommandOptionsDialog> Dialog(
-    new TCustomCommandOptionsDialog(Command, CustomCommandOptions, Flags));
+    new TCustomCommandOptionsDialog(Command, CustomCommandOptions, Flags, CustomCommandForOptions));
   return Dialog->Execute();
 }

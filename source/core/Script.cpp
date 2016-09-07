@@ -861,18 +861,18 @@ void __fastcall TScript::ConnectTerminal(TTerminal * ATerminal)
   ATerminal->Open();
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::Print(const UnicodeString Str)
+void __fastcall TScript::Print(const UnicodeString Str, bool Error)
 {
   if (FOnPrint != NULL)
   {
-    FOnPrint(this, Str);
+    FOnPrint(this, Str, Error);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::PrintLine(const UnicodeString Str)
+void __fastcall TScript::PrintLine(const UnicodeString Str, bool Error)
 {
   Log(llOutput, Str);
-  Print(Str + L"\n");
+  Print(Str + L"\n", Error);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScript::HandleExtendedException(Exception * E, TTerminal * ATerminal)
@@ -2599,6 +2599,7 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
         DebugAssert(Data->CanLogin);
       }
 
+      bool WasLogActions = Configuration->LogActions;
       TTerminal * ATerminal = FTerminalList->NewTerminal(Data);
       try
       {
@@ -2616,6 +2617,14 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
       }
       catch(Exception & E)
       {
+        // fatal error, most probably caused by XML logging failure (as it has been turned off),
+        // and XML log is required => abort
+        if ((dynamic_cast<EFatal *>(&E) != NULL) &&
+            WasLogActions && !Configuration->LogActions &&
+            Configuration->LogActionsRequired)
+        {
+          FContinue = false;
+        }
         // make sure errors (mainly fatal ones) are associated
         // with this terminal, not the last active one
         bool Handled = HandleExtendedException(&E, ATerminal);

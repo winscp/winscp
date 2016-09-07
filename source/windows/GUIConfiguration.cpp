@@ -1238,7 +1238,7 @@ TStoredSessionList * __fastcall TGUIConfiguration::SelectPuttySessionsForImport(
   Storage->ForceAnsi = true;
   if (Storage->OpenRootKey(false))
   {
-    ImportSessionList->Load(Storage.get(), false, true);
+    ImportSessionList->Load(Storage.get(), false, true, true);
   }
 
   TSessionData * PuttySessionData =
