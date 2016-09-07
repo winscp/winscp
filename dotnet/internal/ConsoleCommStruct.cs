@@ -11,7 +11,7 @@ namespace WinSCP
     {
         public uint InputType;
         public uint OutputType;
-        public bool WantsProgress;
+        public bool WantsProgress; // since version 6
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -21,6 +21,8 @@ namespace WinSCP
         public string Message; // wide since version 4
         [MarshalAs(UnmanagedType.I1)]
         public bool FromBeginning;
+        [MarshalAs(UnmanagedType.I1)]
+        public bool Error; // since version 7
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -89,7 +91,7 @@ namespace WinSCP
 
     internal class ConsoleCommStruct : IDisposable
     {
-        public const int CurrentVersion = 0x0006;
+        public const int CurrentVersion = 0x0007;
 
         public ConsoleCommStruct(Session session, SafeFileHandle fileMapping)
         {

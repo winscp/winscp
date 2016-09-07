@@ -12,8 +12,8 @@ struct TConsoleCommStruct
 {
   enum TVersion
   {
-    CurrentVersion =          0x0006,
-    CurrentVersionConfirmed = 0x0106
+    CurrentVersion =          0x0007,
+    CurrentVersionConfirmed = 0x0107
   };
 
   struct TInitEvent
@@ -27,6 +27,7 @@ struct TConsoleCommStruct
   {
     wchar_t Message[10240]; // wide since version 4
     bool FromBeginning;
+    bool Error; // since vesion 7
   };
 
   struct TInputEvent

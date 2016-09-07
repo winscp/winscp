@@ -25,7 +25,7 @@ public:
   unsigned int CPS;
 };
 //---------------------------------------------------------------------------
-typedef void __fastcall (__closure *TScriptPrintEvent)(TScript * Script, const UnicodeString Str);
+typedef void __fastcall (__closure *TScriptPrintEvent)(TScript * Script, const UnicodeString Str, bool Error);
 typedef void __fastcall (__closure *TScriptSynchronizeStartStop)(TScript * Script,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   const TCopyParamType & CopyParam, int SynchronizeParams);
@@ -54,7 +54,7 @@ public:
 
   void __fastcall Command(UnicodeString Cmd);
   void __fastcall Log(TLogLineType Type, UnicodeString Str);
-  void __fastcall PrintLine(const UnicodeString Str);
+  void __fastcall PrintLine(const UnicodeString Str, bool Error = false);
   void __fastcall StartInteractive();
 
   void __fastcall Synchronize(const UnicodeString LocalDirectory,
@@ -105,7 +105,7 @@ protected:
   virtual void __fastcall ConnectTerminal(TTerminal * ATerminal);
   bool __fastcall EnsureCommandSessionFallback(
     TFSCapability Capability, TSessionAction & Action);
-  void __fastcall Print(const UnicodeString Str);
+  void __fastcall Print(const UnicodeString Str, bool Error = false);
   void __fastcall CheckSession();
   void __fastcall CheckParams(TScriptProcParams * Parameters);
   void __fastcall CopyParamParams(TCopyParamType & CopyParam, TScriptProcParams * Parameters);

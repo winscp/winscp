@@ -1293,6 +1293,11 @@ bool __fastcall CheckXmlLogParam(TProgramParams * Params)
   {
     Configuration->Usage->Inc(L"ScriptXmlLog");
     Configuration->TemporaryActionsLogging(LogFile);
+
+    if (Params->FindSwitch(L"XmlLogRequired"))
+    {
+      Configuration->LogActionsRequired = true;
+    }
   }
   return Result;
 }
