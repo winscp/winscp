@@ -116,6 +116,8 @@ DisableProgramGroupPage=yes
 MinVersion=0,5.1
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
+; We do not want the Explorer restarts as that is not pleasant to the user
+CloseApplications=no
 #ifdef Sign
 SignTool=sign $f "WinSCP Installer" https://winscp.net/eng/docs/installation
 #endif
@@ -270,12 +272,12 @@ Source: "license.txt"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
-  Flags: regserver restartreplace uninsrestartdelete; \
-  Check: not IsWin64 and IsShellExtNewer(ExpandConstant('{app}\{#ShellExtFileName}'), '{#GetFileVersion(ShellExtFileSource)}')
+  Flags: regserver restartreplace uninsrestartdelete ignoreversion; \
+  Check: not IsWin64 and ShouldInstallShellExt(ExpandConstant('{app}\{#ShellExtFileName}'), '{#GetFileVersion(ShellExtFileSource)}')
 Source: "{#ShellExt64FileSource}"; DestDir: "{app}"; \
   Components: shellext; \
-  Flags: regserver restartreplace uninsrestartdelete; \
-  Check: IsWin64 and IsShellExtNewer(ExpandConstant('{app}\{#ShellExt64FileName}'), '{#GetFileVersion(ShellExt64FileSource)}')
+  Flags: regserver restartreplace uninsrestartdelete ignoreversion; \
+  Check: IsWin64 and ShouldInstallShellExt(ExpandConstant('{app}\{#ShellExt64FileName}'), '{#GetFileVersion(ShellExt64FileSource)}')
 Source: "{#PuttySourceDir}\LICENCE"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
 Source: "{#PuttySourceDir}\putty.chm"; DestDir: "{app}\PuTTY"; \
@@ -380,6 +382,7 @@ var
   PrevVersion: string;
   ShellExtNewerCacheFileName: string;
   ShellExtNewerCacheResult: Boolean;
+  ShellExtNoRestart: Boolean;
 #ifdef Donations
   DonationPanel: TPanel;
   AboutDonationCaption: TLabel;
@@ -426,7 +429,7 @@ begin
   end;
 end;
 
-function IsShellExtNewer(FileName: string; InstalledVersion: string): Boolean;
+function ShouldInstallShellExt(FileName: string; InstalledVersion: string): Boolean;
 var
   ExistingMS, ExistingLS: Cardinal;
   ExistingMajor, ExistingMinor, ExistingRev, ExistingBuild: Cardinal;
@@ -444,17 +447,20 @@ begin
       Log(Format('Skipping installation of shell extension %s as already decided', [FileName]));
       Result := False;
     end;
+    // Keeping ShellExtNoRestart value
   end
     else
   if not FileExists(FileName) then
   begin
     Log(Format('Shell extension %s does not exist yet, allowing installation', [FileName]));
+    ShellExtNoRestart := False;
     Result := True;
   end
     else
   if not GetVersionNumbers(FileName, ExistingMS, ExistingLS) then
   begin
     Log(Format('Cannot retrieve version of existing shell extension %s, allowing installation', [FileName]));
+    ShellExtNoRestart := False;
     Result := True;
   end
     else
@@ -472,16 +478,36 @@ begin
     CutVersionPart(InstalledVersion, InstalledBuild);
     Log(Format('Installed extension version: %d.%d.%d[.%d]', [InstalledMajor, InstalledMinor, InstalledRev, InstalledBuild]));
 
-    if ((InstalledMajor > ExistingMajor)) or
-       ((InstalledMajor = ExistingMajor) and (InstalledMinor > ExistingMinor)) or
-       ((InstalledMajor = ExistingMajor) and (InstalledMinor = ExistingMinor) and (InstalledRev > ExistingRev)) then
+    if (InstalledMajor <> ExistingMajor) or
+       ((ExistingMajor = 1) and (ExistingMinor <= 1)) then
     begin
-      Log('Installed extension is newer than existing extension, allowing installation');
+      // Still on 1.x, so this won't be used when upgrading,
+      // but it will be useful, if downgrading from future version with a different major version.
+      if InstalledMajor <> ExistingMajor then
+      begin
+        Log('Installed extension has different major version, allowing installation, and will require restart, if it is locked.')
+      end
+        else
+      begin
+        // 1.1 uses Ansi encoding, and is incompatible with 1.2 and newer which uses Unicode
+        Log('Installed extension is 1.1 or older, allowing installation, and will require restart, if it is locked.');
+      end;
+
       Result := True;
+      ShellExtNoRestart := False;
+    end
+      else
+    if (InstalledMinor > ExistingMinor) or
+       ((InstalledMinor = ExistingMinor) and (InstalledRev > ExistingRev)) then
+    begin
+      Log('Installed extension is newer than existing extension, but major version is the same, allowing installation, but we will delay replacing the extension until the next system start, if it is locked.');
+      Result := True;
+      ShellExtNoRestart := True;
     end
       else
     begin
-      Log('Installed extension is same or older than existing extension, skipping installation');
+      Log('Installed extension is same or older than existing extension (but the same major version), skipping installation');
+      ShellExtNoRestart := False;
       Result := False;
     end;
   end;
@@ -552,11 +578,6 @@ begin
   ShellExec('open', Url, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
 end;
 
-function IsRestartingApplicationsPage: Boolean;
-begin
-  Result := WizardForm.PreparingMemo.Visible;
-end;
-
 function IsRestartPage: Boolean;
 begin
   Result := WizardForm.YesRadio.Visible;
@@ -583,10 +604,6 @@ begin
 
     wpReady:
       HelpKeyword := 'ui_installer_ready';
-
-    wpPreparing:
-      if IsRestartingApplicationsPage then
-        HelpKeyword := 'ui_installer_restartingapplications';
 
     wpFinished:
       HelpKeyword := 'ui_installer_finished';
@@ -1328,6 +1345,7 @@ var
   Delta: Integer;
   LineHeight: Integer;
   LaunchCheckboxTop: Integer;
+  S: string;
 begin
   if CurPageID = wpLicense then
   begin
@@ -1363,19 +1381,42 @@ begin
     LineHeight := (WizardForm.NoRadio.Top - WizardForm.YesRadio.Top);
 
     // Are we at the "Restart?" screen
+    // Note that it's not possible to get to the "finished" page more than once,
+    // so the code below does not expect re-entry
     if IsRestartPage then
     begin
-      WizardForm.FinishedLabel.Caption :=
-        CustomMessage('FinishedRestartDragExtLabel') + NewLine;
+      if ShellExtNoRestart then
+      begin
+        Log('Hiding restart page as it''s not critical to replace the shell extension');
+        WizardForm.YesRadio.Visible := False;
+        WizardForm.NoRadio.Visible := False;
+        WizardForm.NoRadio.Checked := True;
 
-      Delta := WizardForm.AdjustLabelHeight(WizardForm.FinishedLabel);
-      WizardForm.YesRadio.Top := WizardForm.YesRadio.Top + Delta;
-      WizardForm.NoRadio.Top := WizardForm.NoRadio.Top + Delta;
+        S := SetupMessage(msgFinishedLabel);
+        StringChange(S, '[name]', 'WinSCP');
+        WizardForm.FinishedLabel.Caption :=
+          S + NewLine + NewLine +
+          // The additional new line is a padding for the "launch check box",
+          // as the same padding is there for the YesRadio too.
+          SetupMessage(msgClickFinish) + NewLine;
+        Log(WizardForm.FinishedLabel.Caption);
+        Delta := WizardForm.AdjustLabelHeight(WizardForm.FinishedLabel);
+        LaunchCheckboxTop := WizardForm.YesRadio.Top + Delta;
+      end
+        else
+      begin
+        WizardForm.FinishedLabel.Caption :=
+          CustomMessage('FinishedRestartDragExtLabel') + NewLine;
 
-      LaunchCheckboxTop := WizardForm.NoRadio.Top + LineHeight;
+        Delta := WizardForm.AdjustLabelHeight(WizardForm.FinishedLabel);
+        WizardForm.YesRadio.Top := WizardForm.YesRadio.Top + Delta;
+        WizardForm.NoRadio.Top := WizardForm.NoRadio.Top + Delta;
+
+        LaunchCheckboxTop := WizardForm.NoRadio.Top + LineHeight;
 #ifdef Donations
-      DonationPanel.Visible := False;
+        DonationPanel.Visible := False;
 #endif
+      end;
     end
       else
     begin
@@ -1407,19 +1448,6 @@ begin
   begin
     Log('License accepted');
     LicenseAccepted := True;
-  end
-    else
-  if CurPageID = wpPreparing then
-  begin
-    // Are we at the "Restart applications?" screen.
-    // If PreparingMemo is hidden, it's "installation/removal was not completed" screen
-    if IsRestartingApplicationsPage then
-    begin
-      WizardForm.PreparingLabel.Caption :=
-        CustomMessage('ApplicationsFoundDragExt');
-      WizardForm.IncTopDecHeight(WizardForm.PreparingMemo,
-        WizardForm.AdjustLabelHeight(WizardForm.PreparingLabel));
-    end;
   end;
 end;
 

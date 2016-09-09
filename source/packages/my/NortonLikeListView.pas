@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ComCtrls, ListViewColProperties, CommCtrl;
+  ComCtrls, ListViewColProperties, CommCtrl, Menus;
 
 type
   TCustomNortonLikeListView = class;
@@ -79,6 +79,7 @@ type
     function GetSelCount: Integer; override;
     procedure DDBeforeDrag;
     function CanEdit(Item: TListItem): Boolean; override;
+    function GetPopupMenu: TPopupMenu; override;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -318,6 +319,22 @@ begin
       Result := nil;
   end
     else Result := Item;
+end;
+
+function TCustomNortonLikeListView.GetPopupMenu: TPopupMenu;
+begin
+  // While editing pretend that we do not have a popup menu.
+  // Otherwise Ctrl+V is swallowed by the TWinControl.CNKeyDown,
+  // when it finds out (TWinControl.IsMenuKey) that there's a command with Ctrl+V shortcut in the list view context menu
+  // (the "paste" file action)
+  if IsEditing then
+  begin
+    Result := nil;
+  end
+    else
+  begin
+    Result := inherited;
+  end;
 end;
 
 procedure TCustomNortonLikeListView.WMNotify(var Message: TWMNotify);
