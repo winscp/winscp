@@ -6,7 +6,7 @@ project(expat)
 cmake_minimum_required(VERSION 2.6)
 set(PACKAGE_BUGREPORT "expat-bugs@libexpat.org")
 set(PACKAGE_NAME "expat")
-set(PACKAGE_VERSION "2.1.0")
+set(PACKAGE_VERSION "2.2.0")
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 set(PACKAGE_TARNAME "${PACKAGE_NAME}")
 
@@ -41,6 +41,10 @@ include_directories(${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/lib)
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -wd4996)
 endif(MSVC)
+if(WIN32)
+    add_definitions(-DWIN32)
+    set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "Add a suffix, usually d on Windows")
+endif(WIN32)
 
 set(expat_SRCS
     lib/xmlparse.c
@@ -50,17 +54,30 @@ set(expat_SRCS
     lib/xmltok_ns.c
 )
 
-if(WIN32 AND BUILD_shared)
-    set(expat_SRCS ${expat_SRCS} lib/libexpat.def)
-endif(WIN32 AND BUILD_shared)
-
 if(BUILD_shared)
     set(_SHARED SHARED)
+    if(WIN32)
+        set(expat_SRCS ${expat_SRCS} lib/libexpat.def)
+    endif(WIN32)
 else(BUILD_shared)
     set(_SHARED STATIC)
+    if(WIN32)
+        add_definitions(-DXML_STATIC)
+    endif(WIN32)
 endif(BUILD_shared)
 
 add_library(expat ${_SHARED} ${expat_SRCS})
+
+set(LIBCURRENT 7)   # sync
+set(LIBREVISION 2)  # with
+set(LIBAGE 6)       # configure.ac!
+math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
+
+if(NOT WIN32)
+    set_property(TARGET expat PROPERTY VERSION ${LIBCURRENT_MINUS_AGE}.${LIBAGE}.${LIBREVISION})
+    set_property(TARGET expat PROPERTY SOVERSION ${LIBCURRENT_MINUS_AGE})
+    set_property(TARGET expat PROPERTY NO_SONAME ${NO_SONAME})
+endif(NOT WIN32)
 
 install(TARGETS expat RUNTIME DESTINATION bin
                       LIBRARY DESTINATION lib
@@ -76,6 +93,7 @@ install(FILES lib/expat.h lib/expat_external.h DESTINATION include)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/expat.pc DESTINATION lib/pkgconfig)
 
 
+add_custom_command(TARGET expat PRE_BUILD COMMAND $(MAKE) -C doc xmlwf.1)
 
 if(BUILD_tools AND NOT WINCE)
     set(xmlwf_SRCS
@@ -86,6 +104,7 @@ if(BUILD_tools AND NOT WINCE)
     )
 
     add_executable(xmlwf ${xmlwf_SRCS})
+    set_property(TARGET xmlwf PROPERTY RUNTIME_OUTPUT_DIRECTORY xmlwf)
     target_link_libraries(xmlwf expat)
     install(TARGETS xmlwf DESTINATION bin)
     install(FILES doc/xmlwf.1 DESTINATION share/man/man1)
@@ -93,19 +112,23 @@ endif(BUILD_tools AND NOT WINCE)
 
 if(BUILD_examples)
     add_executable(elements examples/elements.c)
+    set_property(TARGET elements PROPERTY RUNTIME_OUTPUT_DIRECTORY examples)
     target_link_libraries(elements expat)
 
     add_executable(outline examples/outline.c)
+    set_property(TARGET outline PROPERTY RUNTIME_OUTPUT_DIRECTORY examples)
     target_link_libraries(outline expat)
 endif(BUILD_examples)
 
 if(BUILD_tests)
     ## these are unittests that can be run on any platform
     add_executable(runtests tests/runtests.c tests/chardata.c tests/minicheck.c)
+    set_property(TARGET runtests PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
     target_link_libraries(runtests expat)
-    add_test(runtests runtests)
+    add_test(runtests tests/runtests)
 
     add_executable(runtestspp tests/runtestspp.cpp tests/chardata.c tests/minicheck.c)
+    set_property(TARGET runtestspp PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
     target_link_libraries(runtestspp expat)
-    add_test(runtestspp runtestspp)
+    add_test(runtestspp tests/runtestspp)
 endif(BUILD_tests)
