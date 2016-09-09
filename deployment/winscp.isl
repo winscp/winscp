@@ -65,7 +65,6 @@ AboutDonations=About donations
 Donate=Donate %s
 Currency=USD
 ImportSites=Looking for sites to import...
-ApplicationsFoundDragExt=The following applications have loaded WinSCP Drag & drop shell extension that needs to be updated by Setup. It is recommended that you allow Setup to automatically close these applications. After the installation has completed, Setup will attempt to restart the applications. You can restart your computer later instead, if you do not need to use the extension.
 AcceptButton=&Accept >
 IncompleteTranslation=You are about to use an incomplete translation. It is completed by %1%% only.%n%nUntranslated parts of the user interface will be shown in their original English version.%n%nVisit WinSCP website at winscp.net to check, if newer version of the translation is available.
 
