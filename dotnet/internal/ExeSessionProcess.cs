@@ -267,6 +267,7 @@ namespace WinSCP
                 while (!AbortedOrExited())
                 {
                     _logger.WriteLineLevel(1, "Waiting for request event");
+                    // Keep in sync with a delay in SessionLogReader.DoRead
                     if (_requestEvent.WaitOne(100, false))
                     {
                         _logger.WriteLineLevel(1, "Got request event");

@@ -1339,6 +1339,7 @@ void __fastcall TActionLog::Init(TSessionUI * UI, TSessionData * SessionData,
   FCurrentFileName = L"";
   FLogging = false;
   FClosed = false;
+  FFailed = false;
   FPendingActions = new TList();
   FIndent = L"  ";
   FInGroup = false;
@@ -1371,30 +1372,47 @@ void __fastcall TActionLog::Add(const UnicodeString & Line)
       try
       {
         UTF8String UtfLine = UTF8String(Line);
-        fwrite(UtfLine.c_str(), 1, UtfLine.Length(), (FILE *)FFile);
-        fwrite("\n", 1, 1, (FILE *)FFile);
+        size_t Written =
+          fwrite(UtfLine.c_str(), 1, UtfLine.Length(), (FILE *)FFile);
+        if (Written != static_cast<size_t>(UtfLine.Length()))
+        {
+          throw ECRTExtException(L"");
+        }
+        #ifdef _DEBUG
+        #endif
+        Written =
+          fwrite("\n", 1, 1, (FILE *)FFile);
+        if (Written != 1)
+        {
+          throw ECRTExtException(L"");
+        }
       }
       catch (Exception &E)
       {
         FCriticalSection->Release();
 
-        // We failed logging, turn it off and notify user.
-        FConfiguration->LogActions = false;
-        if (FConfiguration->LogActionsRequired)
+        // avoid endless loop when trying to close tags when closing log, when logging has failed
+        if (!FFailed)
         {
-          throw EFatal(&E, LoadStr(LOG_FATAL_ERROR));
-        }
-        else
-        {
-          try
+          FFailed = true;
+          // We failed logging, turn it off and notify user.
+          FConfiguration->LogActions = false;
+          if (FConfiguration->LogActionsRequired)
           {
-            throw ExtException(&E, LoadStr(LOG_GEN_ERROR));
+            throw EFatal(&E, LoadStr(LOG_FATAL_ERROR));
           }
-          catch (Exception &E)
+          else
           {
-            if (FUI != NULL)
+            try
             {
-              FUI->HandleExtendedException(&E);
+              throw ExtException(&E, LoadStr(LOG_GEN_ERROR));
+            }
+            catch (Exception &E)
+            {
+              if (FUI != NULL)
+              {
+                FUI->HandleExtendedException(&E);
+              }
             }
           }
         }

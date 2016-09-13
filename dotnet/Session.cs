@@ -218,19 +218,13 @@ namespace WinSCP
                         {
                             if (_error.Count > 0)
                             {
-                                string[] error = new string[_error.Count];
-                                _error.CopyTo(error, 0);
-                                logExplanation =
-                                    string.Format(
-                                        CultureInfo.CurrentCulture, "Error output was \"{0}\". ", string.Join(Environment.NewLine, error));
+                                logExplanation = GetErrorOutputMessage();
                             }
                             else if (Output.Count > 0)
                             {
-                                string[] output = new string[Output.Count];
-                                Output.CopyTo(output, 0);
                                 logExplanation =
                                     string.Format(
-                                        CultureInfo.CurrentCulture, "Output was \"{0}\". ", string.Join(Environment.NewLine, output));
+                                        CultureInfo.CurrentCulture, "Output was \"{0}\". ", ListToString(Output));
                             }
                             else
                             {
@@ -296,13 +290,31 @@ namespace WinSCP
                     }
 
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Logger.WriteLine("Exception: {0}", e);
                     Cleanup();
                     throw;
                 }
             }
+        }
+
+        internal string GetErrorOutputMessage()
+        {
+            string result = null;
+            if (_error.Count > 0)
+            {
+                result = string.Format(CultureInfo.CurrentCulture, "Error output was \"{0}\". ", ListToString(_error));
+            }
+            return result;
+        }
+
+        private static string ListToString(StringCollection list)
+        {
+            string[] error = new string[list.Count];
+            list.CopyTo(error, 0);
+            string s = string.Join(Environment.NewLine, error);
+            return s;
         }
 
         public string ScanFingerprint(SessionOptions sessionOptions)
@@ -340,7 +352,6 @@ namespace WinSCP
 
                         CheckForTimeout();
                     }
-
 
                     string output = string.Join(Environment.NewLine, new List<string>(Output).ToArray());
                     if (_process.ExitCode == 0)
