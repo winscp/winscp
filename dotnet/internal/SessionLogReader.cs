@@ -122,7 +122,7 @@ namespace WinSCP
 
                     // We hope this code is not needed anymore.
                     // keeping it just in case the XmlLogReader by passes
-                    // our override of PatientFileStream.Read uing other read method.
+                    // our override of PatientFileStream.Read using other read method.
 #if !DEBUG
                     if (!_closed)
                     {
