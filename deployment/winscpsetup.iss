@@ -485,12 +485,12 @@ begin
       // but it will be useful, if downgrading from future version with a different major version.
       if InstalledMajor <> ExistingMajor then
       begin
-        Log('Installed extension has different major version, allowing installation, and will require restart, if it is locked.')
+        Log('Existing extension has different major version, allowing installation, and will require restart, if it is locked.')
       end
         else
       begin
         // 1.1 uses Ansi encoding, and is incompatible with 1.2 and newer which uses Unicode
-        Log('Installed extension is 1.1 or older, allowing installation, and will require restart, if it is locked.');
+        Log('Existing extension is 1.1 or older, allowing installation, and will require restart, if it is locked.');
       end;
 
       Result := True;

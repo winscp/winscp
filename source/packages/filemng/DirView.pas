@@ -1610,6 +1610,36 @@ begin
   end;
 end; {GetAttrString}
 
+type
+  TSHGetFileInfoThread = class(TCompThread)
+  private
+    FPIDL: PItemIDList;
+    FFileAttributes: DWORD;
+    FFlags: UINT;
+    FFileInfo: TSHFileInfo;
+
+  protected
+    procedure Execute; override;
+
+  public
+    constructor Create(PIDL: PItemIDList; FileAttributes: DWORD; Flags: UINT);
+
+    property FileInfo: TSHFileInfo read FFileInfo;
+  end;
+
+constructor TSHGetFileInfoThread.Create(PIDL: PItemIDList; FileAttributes: DWORD; Flags: UINT);
+begin
+  inherited Create(True);
+  FPIDL := PIDL;
+  FFileAttributes := FileAttributes;
+  FFlags := Flags;
+end;
+
+procedure TSHGetFileInfoThread.Execute;
+begin
+  SHGetFileInfo(PChar(FPIDL), FFileAttributes, FFileInfo, SizeOf(FFileInfo), FFlags);
+end;
+
 procedure TDirView.GetDisplayData(Item: TListItem; FetchIcon: Boolean);
 var
   FileInfo: TShFileInfo;
@@ -1621,6 +1651,7 @@ var
   Eaten: ULONG;
   shAttr: ULONG;
   FileIconForName, FullName: string;
+  Thread: TSHGetFileInfoThread;
 begin
   Assert(Assigned(Item) and Assigned(Item.Data));
   with PFileRec(Item.Data)^ do
@@ -1726,8 +1757,25 @@ begin
             end;
             if (not ForceByName) and Assigned(PIDL) then
             begin
-              SHGetFileInfo(PChar(PIDL), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
-                SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL)
+              // Files with PIDL are typically .exe files.
+              // It may take long to retrieve an icon from exe file.
+              Thread :=
+                TSHGetFileInfoThread.Create(
+                  PIDL, FILE_ATTRIBUTE_NORMAL, SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL);
+              Thread.Resume;
+              if Thread.WaitFor(MSecsPerSec div 4) then
+              begin
+                FileInfo := Thread.FileInfo;
+                Thread.Free;
+              end
+                else
+              begin
+                // There's a chance for memory leak, if thread is terminated
+                // between WaitFor() and this line
+                Thread.FreeOnTerminate := True;
+                FileInfo.szTypeName[0] := #0;
+                FileInfo.iIcon := DefaultExeIcon;
+              end;
             end
               else
             begin

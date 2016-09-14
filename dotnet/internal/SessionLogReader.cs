@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Xml;
 using System.Text;
+using System.Threading;
 
 namespace WinSCP
 {
@@ -122,7 +123,7 @@ namespace WinSCP
 
                     // We hope this code is not needed anymore.
                     // keeping it just in case the XmlLogReader by passes
-                    // our override of PatientFileStream.Read uing other read method.
+                    // our override of PatientFileStream.Read using other read method.
 #if !DEBUG
                     if (!_closed)
                     {
@@ -138,7 +139,16 @@ namespace WinSCP
                         // check if the the root cause was session abort
                         Session.CheckForTimeout();
                         LogContents();
-                        throw new SessionLocalException(Session, "Error parsing session log file", e);
+                        string message = "Error parsing session log file";
+                        // This is possibly a race condition, as we may not have processed the event with the error yet
+                        // The ExeSessionProcess loops every 100ms
+                        Thread.Sleep(200);
+                        string s = Session.GetErrorOutputMessage();
+                        if (!string.IsNullOrEmpty(s))
+                        {
+                            message += " - " + s;
+                        }
+                        throw new SessionLocalException(Session, message, e);
                     }
                 }
 
