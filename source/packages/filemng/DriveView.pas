@@ -570,7 +570,7 @@ begin
        ((wParam = {DBT_CONFIGCHANGED} $0018) or (wParam = {DBT_DEVICEARRIVAL} $8000) or
           (wParam = {DBT_DEVICEREMOVECOMPLETE} $8004)) then
     begin
-      // Delay refresing drives for a sec.
+      // Delay refreshing drives for a sec.
       // Particularly with CD/DVD drives, if we query display name
       // immediately after receiving DBT_DEVICEARRIVAL, we do not get media label.
       // Actually one sec does not help usually, but we do not want to wait any longer,
