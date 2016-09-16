@@ -171,7 +171,15 @@ int EVP_PBE_CipherInit(ASN1_OBJECT *pbe_obj, const char *pass, int passlen,
     if (!pass)
         passlen = 0;
     else if (passlen == -1)
+    {
+    #if defined(WINSCP) && defined(PBE_UNICODE)
+        // OPENSSL_asc2uni adds the trailing \0 to the length,
+        // even if input ascii password length does not include it
+        passlen = (wcslen((const wchar_t*)pass) * sizeof(wchar_t)) + sizeof(wchar_t);
+    #else
         passlen = strlen(pass);
+    #endif
+    }
 
     if (cipher_nid == -1)
         cipher = NULL;
