@@ -2295,10 +2295,15 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
 
         try
         {
+          TStrings * PermanentFileList;
+          std::unique_ptr<TStrings> PermanentFileListOwner;
+
           try
           {
             if (Side == osLocal)
             {
+              PermanentFileList = FileList;
+
               Params |= FLAGMASK(Temp, cpTemporary);
               Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
               if (Operation == foMove)
@@ -2313,6 +2318,13 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
             }
             else
             {
+              // Clone the file list as it may refer to current directory files,
+              // which get destroyed, when the source directory is reloaded after foMove operation.
+              // We should actually clone the file list for whole ExecuteFileOperation to protect against reloads.
+              // But for a hotfix, we are not going to do such a big change.
+              PermanentFileListOwner.reset(TRemoteFileList::CloneStrings(FileList));
+              PermanentFileList = PermanentFileListOwner.get();
+
               try
               {
                 Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam,
@@ -2355,7 +2367,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
 
               Configuration->Usage->Inc("MovesToBackground");
 
-              AddQueueItem(Queue, Direction, FileList, TargetDirectory, CopyParam, Params);
+              AddQueueItem(Queue, Direction, PermanentFileList, TargetDirectory, CopyParam, Params);
               ClearTransferSourceSelection(Direction);
             }
 
