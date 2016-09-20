@@ -104,6 +104,7 @@ void __fastcall TFileFindDialog::UpdateControls()
   {
     case ffInit:
       StatusBar->SimpleText = L"";
+      break;
 
     case ffFinding:
     case ffAborting:
