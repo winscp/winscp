@@ -998,6 +998,7 @@ void __fastcall TEditorForm::ApplyConfiguration()
   UpdateBackgroundColor();
   EditorMemo->Modified = PrevModified;
   EditorMemo->ClearUndo();
+  Enabled = !WinConfiguration->LockedInterface;
   UpdateControls();
 }
 //---------------------------------------------------------------------------

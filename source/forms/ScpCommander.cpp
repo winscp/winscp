@@ -2059,10 +2059,10 @@ void __fastcall TScpCommanderForm::QueueSubmenuItemPopup(
   NonVisualDataModule->QueueSpeedComboBoxItemUpdate(QueueSpeedComboBoxItem);
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::DoFocusRemotePath(UnicodeString Path)
+void __fastcall TScpCommanderForm::DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path)
 {
   TSynchronizedBrowsingGuard SynchronizedBrowsingGuard;
-  TCustomScpExplorerForm::DoFocusRemotePath(Path);
+  TCustomScpExplorerForm::DoFocusRemotePath(Terminal, Path);
 }
 //---------------------------------------------------------------------------
 TOperationSide __fastcall TScpCommanderForm::GetOtherSize(TOperationSide Side)

@@ -22,7 +22,6 @@ class TFileFindDialog : public TForm
 {
 __published:
   TGroupBox *FilterGroup;
-  TButton *CancelButton;
   TLabel *MaskLabel;
   TLabel *RemoteDirectoryLabel;
   THistoryComboBox *RemoteDirectoryEdit;
@@ -32,7 +31,6 @@ __published:
   TIEListView *FileView;
   TStatusBar *StatusBar;
   TButton *FocusButton;
-  TButton *MinimizeButton;
   TStaticText *MaskHintText;
   TButton *MaskButton;
   TPaintBox *AnimationPaintBox;
@@ -40,7 +38,6 @@ __published:
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall StartStopButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);
-  void __fastcall MinimizeButtonClick(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall HelpButtonClick(TObject *Sender);
@@ -53,12 +50,14 @@ __published:
           bool Selected);
   void __fastcall MaskButtonClick(TObject *Sender);
   void __fastcall CopyButtonClick(TObject *Sender);
+  void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 
 public:
-  __fastcall TFileFindDialog(TComponent * Owner, TFindEvent OnFind);
+  __fastcall TFileFindDialog(TComponent * Owner);
   virtual __fastcall ~TFileFindDialog();
 
-  bool __fastcall Execute(UnicodeString Directory, UnicodeString & Path);
+  void __fastcall Init(
+    TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile);
 
 protected:
   void __fastcall Clear();
@@ -69,22 +68,31 @@ protected:
   void __fastcall UpdateControls();
   bool __fastcall IsFinding();
 
+  virtual void __fastcall CreateParams(TCreateParams & Params);
   virtual void __fastcall Dispatch(void * Message);
 
 private:
   enum { ffInit, ffFinding, ffAborting, ffAborted, ffDone } FState;
   bool FMinimizedByMe;
+  TTerminal * FTerminal;
+  UnicodeString FTerminalName;
   UnicodeString FFindingInDirectory;
   UnicodeString FDirectory;
+  UnicodeString FWindowParams;
   TFindEvent FOnFind;
+  TFocusFileEvent FOnFocusFile;
   TImageList * FSystemImageList;
   TFrameAnimation FFrameAnimation;
+  UnicodeString FFocusPath;
 
   void __fastcall FileFound(TTerminal * Terminal,
     const UnicodeString FileName, const TRemoteFile * File, bool & Cancel);
   void __fastcall FindingFile(TTerminal * Terminal, const UnicodeString Directory,
     bool & Cancel);
   void __fastcall CopyToClipboard();
+  void __fastcall FocusFile();
+  void __fastcall DoFocusFile(const UnicodeString & Path);
+  void __fastcall CMDialogKey(TWMKeyDown & Message);
 };
 //---------------------------------------------------------------------------
 #endif

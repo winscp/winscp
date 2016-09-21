@@ -412,10 +412,13 @@ bool __fastcall DoEditorPreferencesDialog(TEditorData * Editor,
 
 // forms\Find.cpp
 typedef void __fastcall (__closure *TFindEvent)
-  (UnicodeString Directory, const TFileMasks & FileMask,
+  (TTerminal * Terminal, UnicodeString Directory, const TFileMasks & FileMask,
    TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
-bool __fastcall DoFileFindDialog(UnicodeString Directory,
-  TFindEvent OnFind, UnicodeString & Path);
+typedef void __fastcall (__closure *TFocusFileEvent)
+  (TTerminal * Terminal, const UnicodeString & Path);
+void __fastcall ShowFileFindDialog(
+  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile);
+void __fastcall HideFileFindDialog();
 
 // forms\GenerateUrl.cpp
 void __fastcall DoGenerateUrlDialog(TSessionData * Data, TStrings * Paths);

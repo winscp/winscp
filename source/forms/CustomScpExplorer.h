@@ -253,6 +253,7 @@ private:
   bool FStandaloneEditing;
   TFeedSynchronizeError FOnFeedSynchronizeError;
   bool FNeedSession;
+  TTerminal * FFileFindTerminal;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -516,9 +517,9 @@ protected:
   virtual void __fastcall DestroyWnd();
   void __fastcall ClickToolbarItem(TTBCustomItem * Item, bool PositionCursor);
   virtual bool __fastcall OpenBookmark(UnicodeString Local, UnicodeString Remote);
-  void __fastcall DoFindFiles(UnicodeString Directory, const TFileMasks & FileMask,
+  void __fastcall DoFindFiles(TTerminal * Terminal, UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
-  virtual void __fastcall DoFocusRemotePath(UnicodeString Path);
+  virtual void __fastcall DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path);
   bool __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
   void __fastcall UpdateCopyParamCounters(const TCopyParamType & CopyParam);
@@ -591,7 +592,7 @@ public:
     TCustomCommandType & CustomCommand, int & State);
   void __fastcall LastCustomCommand(bool OnFocused);
   void __fastcall BothCustomCommand(const TCustomCommandType & Command);
-  void __fastcall LockWindow();
+  void __fastcall LockWindow(bool Force = false);
   void __fastcall UnlockWindow();
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();

@@ -1359,6 +1359,7 @@ object FileFindDialog: TFileFindDialog
   KeyPreview = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
+  OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
@@ -1448,17 +1449,6 @@ object FileFindDialog: TFileFindDialog
       OnClick = MaskButtonClick
     end
   end
-  object CancelButton: TButton
-    Left = 476
-    Top = 43
-    Width = 80
-    Height = 25
-    Anchors = [akTop, akRight]
-    Cancel = True
-    Caption = 'Close'
-    ModalResult = 2
-    TabOrder = 2
-  end
   object StartStopButton: TButton
     Left = 476
     Top = 11
@@ -1472,12 +1462,12 @@ object FileFindDialog: TFileFindDialog
   end
   object HelpButton: TButton
     Left = 476
-    Top = 75
+    Top = 42
     Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Help'
-    TabOrder = 4
+    TabOrder = 2
     OnClick = HelpButtonClick
   end
   object FileView: TIEListView
@@ -1490,7 +1480,7 @@ object FileFindDialog: TFileFindDialog
     FullDrag = True
     ReadOnly = True
     RowSelect = True
-    TabOrder = 5
+    TabOrder = 3
     ViewStyle = vsReport
     OnDblClick = FileViewDblClick
     NortonLike = nlOff
@@ -1530,19 +1520,8 @@ object FileFindDialog: TFileFindDialog
     Height = 25
     Anchors = [akTop, akRight]
     Caption = 'Fo&cus'
-    ModalResult = 1
-    TabOrder = 6
+    TabOrder = 4
     OnClick = FocusButtonClick
-  end
-  object MinimizeButton: TButton
-    Left = 476
-    Top = 43
-    Width = 80
-    Height = 25
-    Anchors = [akTop, akRight]
-    Caption = '&Minimize'
-    TabOrder = 3
-    OnClick = MinimizeButtonClick
   end
   object CopyButton: TButton
     Left = 475
@@ -1551,7 +1530,7 @@ object FileFindDialog: TFileFindDialog
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Copy'
-    TabOrder = 7
+    TabOrder = 5
     OnClick = CopyButtonClick
   end
 end

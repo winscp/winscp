@@ -562,6 +562,7 @@ void __fastcall TWinConfiguration::Default()
   FTipsShown = Now();
   FRunsSinceLastTip = 0;
   FExtensionsDeleted = L"";
+  FLockedInterface = false;
 
   HonorDrivePolicy = true;
 
@@ -2458,6 +2459,11 @@ void __fastcall TWinConfiguration::SetCustomCommandOptions(TStrings * value)
     FCustomCommandOptions->Assign(value);
     FCustomCommandOptionsModified = true;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetLockedInterface(bool value)
+{
+  SET_CONFIG_PROPERTY(LockedInterface);
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinConfiguration::LoadJumpList(

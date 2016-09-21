@@ -306,6 +306,8 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
   ForceCloseLocalEditors();
   delete FLocalEditors;
 
+  HideFileFindDialog();
+
   if (FDelayedDeletionTimer)
   {
     DoDelayedDeletion(NULL);
@@ -5778,6 +5780,12 @@ void __fastcall TCustomScpExplorerForm::ExecuteCurrentFileWith(bool OnFocused)
 void __fastcall TCustomScpExplorerForm::TerminalRemoved(TObject * Sender)
 {
   FEditorManager->ProcessFiles(FileTerminalRemoved, Sender);
+
+  if (FFileFindTerminal == Sender)
+  {
+    FFileFindTerminal = NULL;
+    HideFileFindDialog();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FileTerminalRemoved(const UnicodeString FileName,
@@ -8381,15 +8389,17 @@ void __fastcall TCustomScpExplorerForm::StatusBarPanelDblClick(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::LockWindow()
+void __fastcall TCustomScpExplorerForm::LockWindow(bool Force)
 {
   // workaround:
   // 1) for unknown reason, disabling window, while minimized,
   // prevents it from restoring, even if it was enabled again meanwhile
   // 2) when disabling the main window, while another has focus
-  // minimize is no longer possible ("keep up to date" dialog)
-  // Whouldn't we use IsApplicationMinimized() here?
-  if ((FLockSuspendLevel == 0) && !IsIconic(Application->Handle) && (Screen->ActiveForm == this))
+  // minimize is no longer possible
+  // ("keep up to date" dialog - though does not seem to be the case with "find file" -
+  // so it has probably something to do with the semi-modalness of the "keep up to date" dialog)
+  // Shouldn't we use IsApplicationMinimized() here?
+  if ((FLockSuspendLevel == 0) && !IsIconic(Application->Handle) && (Force || (Screen->ActiveForm == this)))
   {
     Enabled = false;
   }
@@ -8635,32 +8645,50 @@ void __fastcall TCustomScpExplorerForm::FormShow(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoFindFiles(
-  UnicodeString Directory, const TFileMasks & FileMask,
+  TTerminal * ATerminal, UnicodeString Directory, const TFileMasks & FileMask,
   TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile)
 {
-  Configuration->Usage->Inc(L"FileFinds");
-  FTerminal->FilesFind(Directory, FileMask, OnFileFound, OnFindingFile);
+  if (!NonVisualDataModule->Busy)
+  {
+    TTerminalManager::Instance()->ActiveTerminal = ATerminal;
+    Configuration->Usage->Inc(L"FileFinds");
+    LockWindow(true);
+    NonVisualDataModule->StartBusy();
+    WinConfiguration->LockedInterface = true;
+    try
+    {
+      FTerminal->FilesFind(Directory, FileMask, OnFileFound, OnFindingFile);
+    }
+    __finally
+    {
+      WinConfiguration->LockedInterface = false;
+      NonVisualDataModule->EndBusy();
+      UnlockWindow();
+    }
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DoFocusRemotePath(UnicodeString Path)
+void __fastcall TCustomScpExplorerForm::DoFocusRemotePath(TTerminal * ATerminal, const UnicodeString & Path)
 {
-  RemoteDirView->Path = UnixExtractFilePath(Path);
-  TListItem * Item = RemoteDirView->FindFileItem(UnixExtractFileName(Path));
-  if (Item != NULL)
+  if (!NonVisualDataModule->Busy)
   {
-    RemoteDirView->ItemFocused = Item;
-    RemoteDirView->ItemFocused->MakeVisible(false);
-    RemoteDirView->SetFocus();
+    TTerminalManager::Instance()->ActiveTerminal = ATerminal;
+    SetFocus();
+    RemoteDirView->Path = UnixExtractFilePath(Path);
+    TListItem * Item = RemoteDirView->FindFileItem(UnixExtractFileName(Path));
+    if (Item != NULL)
+    {
+      RemoteDirView->ItemFocused = Item;
+      RemoteDirView->ItemFocused->MakeVisible(false);
+      RemoteDirView->SetFocus();
+    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFindFiles()
 {
-  UnicodeString Path;
-  if (DoFileFindDialog(RemoteDirView->Path, DoFindFiles, Path))
-  {
-    DoFocusRemotePath(Path);
-  }
+  FFileFindTerminal = Terminal;
+  ShowFileFindDialog(Terminal, RemoteDirView->Path, DoFindFiles, DoFocusRemotePath);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateTaskbarList(ITaskbarList3 * TaskbarList)

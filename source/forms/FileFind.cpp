@@ -10,6 +10,7 @@
 #include <CoreMain.h>
 #include <Tools.h>
 #include <BaseUtils.hpp>
+#include <Terminal.h>
 #include "FileFind.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -21,30 +22,32 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-bool __fastcall DoFileFindDialog(UnicodeString Directory,
-  TFindEvent OnFind, UnicodeString & Path)
+TFileFindDialog * FileFindDialog = NULL;
+//---------------------------------------------------------------------------
+void __fastcall ShowFileFindDialog(
+  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile)
 {
-  bool Result;
-  TFileFindDialog * Dialog = new TFileFindDialog(Application, OnFind);
-  try
+  if (FileFindDialog == NULL)
   {
-    Result = Dialog->Execute(Directory, Path);
+    FileFindDialog = new TFileFindDialog(Application);
   }
-  __finally
-  {
-    delete Dialog;
-  }
-
-  return Result;
+  FileFindDialog->Init(Terminal, Directory, OnFind, OnFocusFile);
+  FileFindDialog->Show();
 }
 //---------------------------------------------------------------------------
-__fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner, TFindEvent OnFind)
+void __fastcall HideFileFindDialog()
+{
+  if (FileFindDialog != NULL)
+  {
+    FileFindDialog->Close();
+  }
+}
+//---------------------------------------------------------------------------
+__fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner)
   : TForm(Owner)
 {
   UseSystemSettings(this);
-  FOnFind = OnFind;
   FState = ffInit;
-  FMinimizedByMe = false;
 
   FixComboBoxResizeBug(MaskEdit);
   FixComboBoxResizeBug(RemoteDirectoryEdit);
@@ -61,17 +64,27 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner, TFindEvent OnFin
   UseDesktopFont(FileView);
   UseDesktopFont(StatusBar);
 
-  SetGlobalMinimizeHandler(this, GlobalMinimize);
   FFrameAnimation.Init(AnimationPaintBox, L"Find");
   FixFormIcons(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TFileFindDialog::~TFileFindDialog()
 {
-  ClearGlobalMinimizeHandler(GlobalMinimize);
+  TFindFileConfiguration FormConfiguration = CustomWinConfiguration->FindFile;
+  FormConfiguration.ListParams = FileView->ColProperties->ParamsStr;
+  UnicodeString WindowParams = StoreFormSize(this);
+  // this is particularly to prevent saving the form state
+  // for the first time, keeping default positioning by a system
+  if (!FWindowParams.IsEmpty() && (FWindowParams != WindowParams))
+  {
+    FormConfiguration.WindowParams = WindowParams;
+  }
+  CustomWinConfiguration->FindFile = FormConfiguration;
 
   Clear();
   delete FSystemImageList;
+  DebugAssert(FileFindDialog == this);
+  FileFindDialog = NULL;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileFindDialog::IsFinding()
@@ -82,7 +95,7 @@ bool __fastcall TFileFindDialog::IsFinding()
 void __fastcall TFileFindDialog::UpdateControls()
 {
   bool Finding = IsFinding();
-  Caption = LoadStr(Finding ? FIND_FILE_FINDING : FIND_FILE_TITLE);
+  Caption = FORMAT("%s - %s", (LoadStr(Finding ? FIND_FILE_FINDING : FIND_FILE_TITLE), FTerminalName));
   UnicodeString StartStopCaption;
   if (Finding)
   {
@@ -95,9 +108,7 @@ void __fastcall TFileFindDialog::UpdateControls()
     StartStopCaption = LoadStr(FIND_FILE_START);
   }
   StartStopButton->Caption = StartStopCaption;
-  CancelButton->Visible = !Finding;
   EnableControl(FilterGroup, !Finding);
-  MinimizeButton->Visible = Finding;
   EnableControl(FocusButton, (FileView->ItemFocused != NULL));
   EnableControl(CopyButton, (FileView->Items->Count > 0));
   switch (FState)
@@ -137,30 +148,30 @@ void __fastcall TFileFindDialog::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileFindDialog::Execute(UnicodeString Directory, UnicodeString & Path)
+void __fastcall TFileFindDialog::Init(
+  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile)
 {
-  MaskEdit->Text = WinConfiguration->SelectMask;
-  RemoteDirectoryEdit->Text = UnixExcludeTrailingBackslash(Directory);
-
-  // have to set history after value, to prevent autocompletition
-  MaskEdit->Items = WinConfiguration->History[L"Mask"];
-  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
-
-  bool Result = (ShowModal() == FocusButton->ModalResult);
-  if (Result)
+  if (FTerminal != Terminal)
   {
-    Path = static_cast<TRemoteFile *>(FileView->ItemFocused->Data)->FullFileName;
-    // To make focussing directories work,
-    // otherwise it would try to focus "empty-named file" in the Path
-    Path = UnixExcludeTrailingBackslash(Path);
+    FTerminal = Terminal;
+    FTerminalName = Terminal->SessionData->SessionName;
+    Clear();
+    FState = ffInit;
+    ActiveControl = MaskEdit;
   }
 
-  TFindFileConfiguration FormConfiguration = CustomWinConfiguration->FindFile;
-  FormConfiguration.ListParams = FileView->ColProperties->ParamsStr;
-  FormConfiguration.WindowParams = StoreFormSize(this);
-  CustomWinConfiguration->FindFile = FormConfiguration;
+  FOnFind = OnFind;
+  FOnFocusFile = OnFocusFile;
 
-  return Result;
+  MaskEdit->Text = WinConfiguration->SelectMask;
+  RemoteDirectoryEdit->Text = UnixExcludeTrailingBackslash(Directory);
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::CreateParams(TCreateParams & Params)
+{
+  TForm::CreateParams(Params);
+  Params.WndParent = GetDesktopWindow();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::Clear()
@@ -209,7 +220,7 @@ void __fastcall TFileFindDialog::Start()
       FDirectory = UnicodeString();
     }
 
-    FOnFind(Directory, MaskEdit->Text, FileFound, FindingFile);
+    FOnFind(FTerminal, Directory, MaskEdit->Text, FileFound, FindingFile);
   }
   __finally
   {
@@ -223,13 +234,20 @@ void __fastcall TFileFindDialog::Start()
       FState = ffAborted;
     }
     FFrameAnimation.Stop();
-    if (IsApplicationMinimized() && FMinimizedByMe)
+    if (WindowState == wsMinimized)
     {
       ShowNotification(
         NULL, MainInstructions(LoadStr(BALLOON_OPERATION_COMPLETE)),
         qtInformation);
-      FMinimizedByMe = false;
     }
+
+    if (!FFocusPath.IsEmpty())
+    {
+      UnicodeString FocusPath = FFocusPath;
+      FFocusPath = L"";
+      DoFocusFile(FocusPath);
+    }
+
     UpdateControls();
   }
 }
@@ -317,25 +335,25 @@ void __fastcall TFileFindDialog::Stop()
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::MinimizeButtonClick(TObject * Sender)
-{
-  CallGlobalMinimizeHandler(Sender);
-}
-//---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::GlobalMinimize(TObject * /*Sender*/)
-{
-  ApplicationMinimize();
-  FMinimizedByMe = true;
-}
-//---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FormShow(TObject * /*Sender*/)
 {
   InstallPathWordBreakProc(MaskEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
 
+  // have to set history after value, to prevent autocompletition
+  MaskEdit->Items = WinConfiguration->History[L"Mask"];
+  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
+
   UpdateFormPosition(this, poOwnerFormCenter);
   RestoreFormSize(CustomWinConfiguration->FindFile.WindowParams, this);
   FileView->ColProperties->ParamsStr = CustomWinConfiguration->FindFile.ListParams;
+
+  DebugAssert(FWindowParams.IsEmpty());
+  if (FWindowParams.IsEmpty())
+  {
+    FWindowParams = StoreFormSize(this);
+  }
+
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -360,18 +378,46 @@ void __fastcall TFileFindDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == CM_DIALOGKEY)
+  {
+    CMDialogKey(*((TWMKeyDown *)Message));
+  }
+  else
+  {
+    TForm::Dispatch(Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::CMDialogKey(TWMKeyDown & Message)
+{
+  // Handling VK_ESCAPE in FormKeyDown causes a beep when any "edit" has focus.
+  // Moreover FormKeyDown is called when the the "esc" is pressed while drop down list is unrolled.
+  if (Message.CharCode == VK_ESCAPE)
+  {
+    Close();
+    Message.Result = 1;
+    return;
+  }
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FormKeyDown(TObject * /*Sender*/, WORD & Key,
   TShiftState Shift)
 {
-  if ((Key == VK_ESCAPE) && StopIfFinding())
-  {
-    Key = 0;
-  }
   if ((Key == L'C') && Shift.Contains(ssCtrl) &&
       (dynamic_cast<TCustomCombo *>(ActiveControl) == NULL))
   {
     CopyToClipboard();
     Key = 0;
+  }
+  else if ((Key == VK_F10) && Shift.Empty())
+  {
+    Key = 0;
+    StopIfFinding();
+    Close();
   }
 }
 //---------------------------------------------------------------------------
@@ -380,18 +426,39 @@ void __fastcall TFileFindDialog::MaskEditExit(TObject * /*Sender*/)
   ValidateMaskEdit(MaskEdit);
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::DoFocusFile(const UnicodeString & Path)
+{
+  FOnFocusFile(FTerminal, Path);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::FocusFile()
+{
+  UnicodeString Path = static_cast<TRemoteFile *>(FileView->ItemFocused->Data)->FullFileName;
+  // To make focussing directories work,
+  // otherwise it would try to focus "empty-named file" in the Path
+  Path = UnixExcludeTrailingBackslash(Path);
+
+  if (StopIfFinding())
+  {
+    FFocusPath = Path;
+  }
+  else
+  {
+    DoFocusFile(Path);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FileViewDblClick(TObject * /*Sender*/)
 {
   if (FileView->ItemFocused != NULL)
   {
-    StopIfFinding();
-    ModalResult = FocusButton->ModalResult;
+    FocusFile();
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FocusButtonClick(TObject * /*Sender*/)
 {
-  StopIfFinding();
+  FocusFile();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FileViewSelectItem(TObject * /*Sender*/,
@@ -427,19 +494,9 @@ void __fastcall TFileFindDialog::CopyButtonClick(TObject * /*Sender*/)
   CopyToClipboard();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::Dispatch(void * Message)
+void __fastcall TFileFindDialog::FormClose(TObject * /*Sender*/, TCloseAction & Action)
 {
-  TMessage * M = reinterpret_cast<TMessage*>(Message);
-  if (M->Msg == WM_SYSCOMMAND)
-  {
-    if (!HandleMinimizeSysCommand(*M))
-    {
-      TForm::Dispatch(Message);
-    }
-  }
-  else
-  {
-    TForm::Dispatch(Message);
-  }
+  StopIfFinding();
+  Action = caFree;
 }
 //---------------------------------------------------------------------------

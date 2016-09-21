@@ -562,7 +562,7 @@ protected:
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall DoOpenBookmark(UnicodeString Local, UnicodeString Remote);
   virtual bool __fastcall OpenBookmark(UnicodeString Local, UnicodeString Remote);
-  virtual void __fastcall DoFocusRemotePath(UnicodeString Path);
+  virtual void __fastcall DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path);
   UnicodeString __fastcall ChangeFilePath(UnicodeString Path, TOperationSide Side);
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
   virtual bool __fastcall UpdateToolbarDisplayMode();

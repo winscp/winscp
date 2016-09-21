@@ -431,6 +431,7 @@ private:
   UnicodeString FTipsSeen;
   TDateTime FTipsShown;
   int FRunsSinceLastTip;
+  bool FLockedInterface;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
@@ -533,6 +534,7 @@ private:
   TFont * __fastcall GetSystemIconFont();
   TStrings * __fastcall GetCustomCommandOptions();
   void __fastcall SetCustomCommandOptions(TStrings * value);
+  void __fastcall SetLockedInterface(bool value);
 
   bool __fastcall GetDDExtInstalled();
   void __fastcall AddVersionToHistory();
@@ -704,6 +706,7 @@ public:
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
   __property TFont * SystemIconFont = { read = GetSystemIconFont };
   __property TStrings * CustomCommandOptions = { read = GetCustomCommandOptions, write = SetCustomCommandOptions };
+  __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
 };
 //---------------------------------------------------------------------------
 class TCustomCommandType
