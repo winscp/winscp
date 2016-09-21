@@ -133,6 +133,8 @@ Name: {#DefaultLang}; MessagesFile: {#MessagesPath(DefaultLang)}
 #define LanguageCount 0
 #define AnyLanguageComplete 0
 #define LangI
+; For some reason the variable cannot be defined near the code where we use it
+#define AllTranslationsBuf
 
 #sub ProcessTranslationFile
 
@@ -340,7 +342,7 @@ Name: transl\{#Languages[LangI*4]}; Description: {#Languages[LangI*4+1]}; \
   Check: not IsLang('{#Languages[LangI*4]}')
 
 [Files]
-Source: "{#TranslationDir}\WinSCP.{#Languages[LangI*4]}"; DestDir: "{app}"; \
+Source: "{#TranslationDir}\WinSCP.{#Languages[LangI*4]}"; DestDir: "{app}\Translations"; \
   Components: transl\{#Languages[LangI*4]}; Flags: ignoreversion
 
 [Registry]
@@ -354,6 +356,20 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; \
 #endsub /* sub EmitLang */
 
 #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang
+
+; Delete translations from instalation root folder (pre-5.10)
+[InstallDelete]
+#expr AllTranslationsBuf = AllTranslations + '-'
+
+#sub DeleteRootTranslation
+  #pragma message AllTranslationsBuf
+  #define P Pos('-', AllTranslationsBuf)
+  #define Lang Copy(AllTranslationsBuf, 1, P - 1)
+  #expr AllTranslationsBuf = Copy(AllTranslationsBuf, P + 1) 
+Type: files; Name: "{app}\WinSCP.{#Lang}"
+#endsub
+
+#for { 0; Len(AllTranslationsBuf) > 0; 0 } DeleteRootTranslation
 
 [UninstallRun]
 ; Make sure no later uninstall task recreate the configuration
@@ -650,11 +666,6 @@ begin
   if Length(MissingTranslations) > 0 then
     MissingTranslations := MissingTranslations + ', ';
   MissingTranslations := MissingTranslations + LanguageName(Lang, Lang);
-end;
-
-procedure DeleteTranslation(Lang: string; FileName: string);
-begin
-  DeleteFile(FileName);
 end;
 
 procedure ProcessMissingTranslations(OnProcessTranslation: TProcessTranslationEvent);
@@ -1521,13 +1532,6 @@ begin
   if CurStep = ssPostInstall then
   begin
     Log('Post install');
-    if Length(MissingTranslations) > 0 then
-    begin
-      Log('Removing obsolete translations');
-      WizardForm.StatusLabel.Caption :=
-        CustomMessage('RemovingObsoleteTranslations');
-      ProcessMissingTranslations(@DeleteTranslation);
-    end;
     InstallationDone := True;
   end
     else

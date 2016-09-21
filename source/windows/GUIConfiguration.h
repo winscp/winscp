@@ -216,6 +216,9 @@ protected:
   void __fastcall SetLocaleInternal(LCID value, bool Safe);
   void __fastcall SetInitialLocale(LCID value);
   bool __fastcall GetCanApplyLocaleImmediately();
+  UnicodeString __fastcall GetTranslationModule(const UnicodeString & Path);
+  UnicodeString __fastcall AddTranslationsSubFolder(const UnicodeString & Path);
+  void __fastcall FindLocales(const UnicodeString & LocalesMask, TStrings * Exts, UnicodeString & LocalesExts);
 
 public:
   __fastcall TGUIConfiguration();

@@ -21,6 +21,7 @@ const int ccSet = 0x80000000;
 //---------------------------------------------------------------------------
 static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;
 static const UnicodeString AdditionaLanguagePrefix(L"XX");
+static const UnicodeString TranslationsSubFolder(L"Translations");
 //---------------------------------------------------------------------------
 TGUIConfiguration * GUIConfiguration = NULL;
 //---------------------------------------------------------------------------
@@ -760,6 +761,29 @@ void __fastcall TGUIConfiguration::Saved()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TGUIConfiguration::GetTranslationModule(const UnicodeString & Path)
+{
+  UnicodeString SubPath = AddTranslationsSubFolder(Path);
+  UnicodeString Result;
+  // Prefer the SubPath. Default to SubPath.
+  if (FileExists(Path) && !FileExists(SubPath))
+  {
+    Result = Path;
+  }
+  else
+  {
+    Result = SubPath;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TGUIConfiguration::AddTranslationsSubFolder(const UnicodeString & Path)
+{
+  return
+    IncludeTrailingBackslash(IncludeTrailingBackslash(ExtractFilePath(Path)) + TranslationsSubFolder) +
+    ExtractFileName(Path);
+}
+//---------------------------------------------------------------------------
 HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
   UnicodeString & FileName)
 {
@@ -787,20 +811,22 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
 
     Module = ChangeFileExt(Module, UnicodeString(L".") + LocaleName);
     // Look for a potential language/country translation
-    NewInstance = LoadLibraryEx(Module.c_str(), 0, LOAD_LIBRARY_AS_DATAFILE);
+    UnicodeString ModulePath = GetTranslationModule(Module);
+    NewInstance = LoadLibraryEx(ModulePath.c_str(), 0, LOAD_LIBRARY_AS_DATAFILE);
     if (!NewInstance)
     {
       // Finally look for a language only translation
       Module.SetLength(Module.Length() - 1);
-      NewInstance = LoadLibraryEx(Module.c_str(), 0, LOAD_LIBRARY_AS_DATAFILE);
+      ModulePath = GetTranslationModule(Module);
+      NewInstance = LoadLibraryEx(ModulePath.c_str(), 0, LOAD_LIBRARY_AS_DATAFILE);
       if (NewInstance)
       {
-        LibraryFileName = Module;
+        LibraryFileName = ModulePath;
       }
     }
     else
     {
-      LibraryFileName = Module;
+      LibraryFileName = ModulePath;
     }
   }
 
@@ -983,39 +1009,47 @@ void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)
   DefaultLocalized();
 }
 //---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::FindLocales(const UnicodeString & LocalesMask, TStrings * Exts, UnicodeString & LocalesExts)
+{
+  int FindAttrs = faReadOnly | faArchive;
+  TSearchRecChecked SearchRec;
+  bool Found;
+
+  Found =
+    (FindFirstUnchecked(LocalesMask, FindAttrs, SearchRec) == 0);
+  try
+  {
+    UnicodeString Ext;
+    while (Found)
+    {
+      Ext = ExtractFileExt(SearchRec.Name).UpperCase();
+      // DLL is a remnant from times the .NET assembly was winscp.dll, not winscpnet.dll
+      if ((Ext.Length() >= 3) && (Ext != L".EXE") && (Ext != L".COM") &&
+          (Ext != L".DLL") && (Ext != L".INI") && (Ext != L".MAP"))
+      {
+        Ext = Ext.SubString(2, Ext.Length() - 1);
+        LocalesExts += Ext;
+        Exts->Add(Ext);
+      }
+      Found = (FindNextChecked(SearchRec) == 0);
+    }
+  }
+  __finally
+  {
+    FindClose(SearchRec);
+  }
+}
+//---------------------------------------------------------------------------
 TStrings * __fastcall TGUIConfiguration::GetLocales()
 {
   UnicodeString LocalesExts;
   TStringList * Exts = CreateSortedStringList();
   try
   {
-    int FindAttrs = faReadOnly | faArchive;
-    TSearchRecChecked SearchRec;
-    bool Found;
-
-    Found =
-      (FindFirstUnchecked(ChangeFileExt(ModuleFileName(), L".*"),
-         FindAttrs, SearchRec) == 0);
-    try
-    {
-      UnicodeString Ext;
-      while (Found)
-      {
-        Ext = ExtractFileExt(SearchRec.Name).UpperCase();
-        if ((Ext.Length() >= 3) && (Ext != L".EXE") && (Ext != L".COM") &&
-            (Ext != L".DLL") && (Ext != L".INI"))
-        {
-          Ext = Ext.SubString(2, Ext.Length() - 1);
-          LocalesExts += Ext;
-          Exts->Add(Ext);
-        }
-        Found = (FindNextChecked(SearchRec) == 0);
-      }
-    }
-    __finally
-    {
-      FindClose(SearchRec);
-    }
+    UnicodeString LocalesMask = ChangeFileExt(ModuleFileName(), L".*");
+    UnicodeString SubLocalesMask = AddTranslationsSubFolder(LocalesMask);
+    FindLocales(SubLocalesMask, Exts, LocalesExts);
+    FindLocales(LocalesMask, Exts, LocalesExts);
 
     if (FLastLocalesExts != LocalesExts)
     {
@@ -1080,8 +1114,9 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
             (Exts->Strings[Index].Length() == 3) &&
             SameText(Exts->Strings[Index].SubString(1, 2), AdditionaLanguagePrefix))
         {
-          UnicodeString LangName = GetFileFileInfoString(L"LangName",
-            ChangeFileExt(ModuleFileName(), UnicodeString(L".") + Exts->Strings[Index]));
+          UnicodeString ModulePath = ChangeFileExt(ModuleFileName(), UnicodeString(L".") + Exts->Strings[Index]);
+          ModulePath = GetTranslationModule(ModulePath);
+          UnicodeString LangName = GetFileFileInfoString(L"LangName", ModulePath);
           if (!LangName.IsEmpty())
           {
             FLocales->AddObject(LangName, reinterpret_cast<TObject*>(

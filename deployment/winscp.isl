@@ -20,7 +20,6 @@ EnableCollectUsage=Enable collecting &anonymous usage statistics
 
 RegisteringAsUrlHandlers=Registering to handle URL addresses...
 AddingSearchPath=Adding installation directory to search path (%PATH%)
-RemovingObsoleteTranslations=Removing obsolete translations
 
 SendToHookNew=WinSCP (for upload)
 Launch=Launch &WinSCP
