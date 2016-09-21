@@ -862,9 +862,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->ActionsLogFileName = ActionsLogFileNameEdit->Text;
 
     // languages
-    // As this dialog does not explicitly support run-time locale changing,
-    // make this last, otherwise we lose some settings (or even worse
-    // we end-up saving default text box values=control names as our configuration)
     if (LanguagesView->ItemFocused != NULL)
     {
       GUIConfiguration->Locale =
