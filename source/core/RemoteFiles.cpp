@@ -1479,6 +1479,17 @@ void __fastcall TRemoteFileList::AddFile(TRemoteFile * File)
   File->Directory = this;
 }
 //---------------------------------------------------------------------------
+TStrings * __fastcall TRemoteFileList::CloneStrings(TStrings * List)
+{
+  std::unique_ptr<TStringList> Result(new TStringList());
+  for (int Index = 0; Index < List->Count; Index++)
+  {
+    TRemoteFile * File = static_cast<TRemoteFile *>(List->Objects[Index]);
+    Result->AddObject(List->Strings[Index], File);
+  }
+  return Result.release();
+}
+//---------------------------------------------------------------------------
 void __fastcall TRemoteFileList::DuplicateTo(TRemoteFileList * Copy)
 {
   Copy->Reset();

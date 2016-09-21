@@ -106,7 +106,12 @@ int PKCS12_parse(PKCS12 *p12, const char *pass, EVP_PKEY **pkey, X509 **cert,
      * password are two different things...
      */
 
-    if (!pass || !*pass) {
+    if (!pass ||
+        (!pass[0]
+        #if defined(WINSCP) && defined(PBE_UNICODE)
+        && !pass[1]
+        #endif
+        )) {
         if (PKCS12_verify_mac(p12, NULL, 0))
             pass = NULL;
         else if (PKCS12_verify_mac(p12, "", 0))

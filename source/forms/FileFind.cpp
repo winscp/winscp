@@ -104,6 +104,7 @@ void __fastcall TFileFindDialog::UpdateControls()
   {
     case ffInit:
       StatusBar->SimpleText = L"";
+      break;
 
     case ffFinding:
     case ffAborting:
@@ -149,6 +150,9 @@ bool __fastcall TFileFindDialog::Execute(UnicodeString Directory, UnicodeString 
   if (Result)
   {
     Path = static_cast<TRemoteFile *>(FileView->ItemFocused->Data)->FullFileName;
+    // To make focussing directories work,
+    // otherwise it would try to focus "empty-named file" in the Path
+    Path = UnixExcludeTrailingBackslash(Path);
   }
 
   TFindFileConfiguration FormConfiguration = CustomWinConfiguration->FindFile;

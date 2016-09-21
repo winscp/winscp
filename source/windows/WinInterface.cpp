@@ -584,20 +584,24 @@ UnicodeString __fastcall GetExceptionDebugInfo()
     for (int Index = 0; Index < StackTrace->Count; Index++)
     {
       UnicodeString Frame = StackTrace->Strings[Index];
-      int P = Frame.Pos(L")");
-      if (DebugAlwaysTrue(P > 0))
+      // The last line might be empty
+      if (!Frame.IsEmpty())
       {
-        UnicodeString Symbol = Frame.SubString(P + 1, Frame.Length() - P).Trim();
-
-        if ((Symbol != L"KERNELBASE.dll.RaiseException") &&
-            (Symbol != L"Jclhookexcept::JclAddExceptNotifier") &&
-            (Symbol != L"_ReThrowException") &&
-            (Symbol != L"____ExceptionHandler") &&
-            (Symbol != L"__ExceptionHandler") &&
-            (Symbol != L"___doGlobalUnwind") &&
-            (Symbol != L"_ThrowExceptionLDTC"))
+        int P = Frame.Pos(L")");
+        if (DebugAlwaysTrue(P > 0))
         {
-          AddToList(Result, Symbol, L";");
+          UnicodeString Symbol = Frame.SubString(P + 1, Frame.Length() - P).Trim();
+
+          if ((Symbol != L"KERNELBASE.dll.RaiseException") &&
+              (Symbol != L"Jclhookexcept::JclAddExceptNotifier") &&
+              (Symbol != L"_ReThrowException") &&
+              (Symbol != L"____ExceptionHandler") &&
+              (Symbol != L"__ExceptionHandler") &&
+              (Symbol != L"___doGlobalUnwind") &&
+              (Symbol != L"_ThrowExceptionLDTC"))
+          {
+            AddToList(Result, Symbol, L";");
+          }
         }
       }
     }
