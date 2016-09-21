@@ -1570,6 +1570,7 @@ bool __fastcall TScpCommanderForm::ExecuteCommandLine()
 {
   UnicodeString Command = CommandLineCombo->Text;
   bool Result =
+    !NonVisualDataModule->Busy &&
     !Command.IsEmpty() &&
       ((FCurrentSide != osRemote) ||
        (Terminal->AllowedAnyCommand(Command) &&
