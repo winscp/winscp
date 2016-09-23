@@ -222,7 +222,7 @@ void __fastcall TAboutDialog::LoadThirdParty()
 
     AddPara(ThirdParty,
       TranslationHeader + Br +
-      FMTLOAD(ABOUT_TRANSLATIONS_COPYRIGHT, (GUIConfiguration->LocaleCopyright())) + Br +
+      FMTLOAD(ABOUT_TRANSLATIONS_COPYRIGHT, (GUIConfiguration->AppliedLocaleCopyright())) + Br +
       (!TranslatorInfo.IsEmpty() ? TranslatorInfo + Br : UnicodeString()) +
       (!TranslatorUrl.IsEmpty() ? CreateLink(TranslatorUrl) : UnicodeString()));
   }

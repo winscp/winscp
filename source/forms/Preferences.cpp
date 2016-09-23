@@ -165,14 +165,21 @@ void __fastcall TPreferencesDialog::LoadLanguages()
   {
     LanguagesView->Items->Clear();
 
-    TStrings * Locales = GUIConfiguration->Locales;
+    LCID Locale = GUIConfiguration->Locale;
+    if (Locale == NULL)
+    {
+      DebugAssert(GUIConfiguration->AppliedLocale == WinConfiguration->DefaultLocale);
+      Locale = WinConfiguration->DefaultLocale;
+    }
+
+    TObjectList * Locales = GUIConfiguration->Locales;
     for (int Index = 0; Index < Locales->Count; Index++)
     {
       TListItem * Item = LanguagesView->Items->Add();
-      Item->Caption = Locales->Strings[Index];
-      Item->Data = Locales->Objects[Index];
-      Item->Focused =
-        (reinterpret_cast<LCID>(Locales->Objects[Index]) == GUIConfiguration->Locale);
+      TLocaleInfo * LocaleInfo = DebugNotNull(dynamic_cast<TLocaleInfo *>(Locales->Items[Index]));
+      Item->Caption = LocaleInfo->Name;
+      Item->Data = LocaleInfo;
+      Item->Focused = (LocaleInfo->Locale == Locale);
       Item->Selected = Item->Focused;
     }
 
@@ -864,8 +871,20 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     // languages
     if (LanguagesView->ItemFocused != NULL)
     {
-      GUIConfiguration->Locale =
-        reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data);
+      TLocaleInfo * LocaleInfo = static_cast<TLocaleInfo *>(LanguagesView->ItemFocused->Data);
+      LCID Locale;
+      // Do not change the locale settings, unless changed explicitly by user
+      // to allow an automatic upgrade to new translation once the UI language translation
+      // becomes available
+      if (LocaleInfo->Locale == WinConfiguration->DefaultLocale)
+      {
+        Locale = NULL;
+      }
+      else
+      {
+        Locale = LocaleInfo->Locale;
+      }
+      GUIConfiguration->Locale = Locale;
     }
 
     // This possibly fails, make it last, so that the other settings are preserved.
@@ -1221,7 +1240,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     LanguageChangeLabel->Visible =
       DebugAlwaysTrue(!GUIConfiguration->CanApplyLocaleImmediately) &&
       (LanguagesView->ItemFocused != NULL) &&
-      (reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data) != GUIConfiguration->AppliedLocale);
+      (static_cast<TLocaleInfo *>(LanguagesView->ItemFocused->Data)->Locale != GUIConfiguration->AppliedLocale);
 
     // logging
     EnableControl(LogProtocolCombo, EnableLoggingCheck->Checked);
@@ -2659,5 +2678,24 @@ void __fastcall TPreferencesDialog::ConfigureCommand()
 
   DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get(), TCustomCommandType::ofConfig, NULL);
   UpdateCustomCommandsView();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::LanguagesViewCustomDrawItem(
+  TCustomListView * Sender, TListItem * Item, TCustomDrawState /*State*/, bool & /*DefaultDraw*/)
+{
+  TLocaleInfo * LocaleInfo = static_cast<TLocaleInfo *>(Item->Data);
+  if (LocaleInfo->Locale == WinConfiguration->DefaultLocale)
+  {
+    Sender->Canvas->Font->Style = Sender->Canvas->Font->Style << fsBold;
+  }
+
+  if (LocaleInfo->Completeness < 0)
+  {
+    Sender->Canvas->Font->Color = clRed;
+  }
+  else if (LocaleInfo->Completeness < 100)
+  {
+    Sender->Canvas->Font->Color = clGrayText;
+  }
 }
 //---------------------------------------------------------------------------

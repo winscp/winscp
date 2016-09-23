@@ -804,7 +804,7 @@ UnicodeString __fastcall ProgramUrl(UnicodeString URL)
   UnicodeString Params =
     FORMAT(L"v=%s&lang=%s&isinstalled=%d",
       (CurrentVersionStr,
-      GUIConfiguration->LocaleHex,
+      GUIConfiguration->AppliedLocaleHex,
       int(IsInstalled())));
 
   if (Configuration->IsUnofficial)
@@ -891,7 +891,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     URL = WantBetaUrl(URL, false);
     URL += L"&dotnet=" + Updates.DotNetVersion;
     URL += L"&console=" + Updates.ConsoleVersion;
-    UnicodeString LocaleVersion = WinConfiguration->LocaleVersion();
+    UnicodeString LocaleVersion = WinConfiguration->AppliedLocaleVersion();
     if (!LocaleVersion.IsEmpty())
     {
       URL += L"&localever=" + LocaleVersion;

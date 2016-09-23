@@ -2251,17 +2251,27 @@ TLibModule * __fastcall FindModule(void * Instance)
   return CurModule;
 }
 //---------------------------------------------------------------------------
+static UnicodeString __fastcall DoLoadStrFrom(HINSTANCE Module, int Ident, unsigned int MaxLength)
+{
+  UnicodeString Result;
+  Result.SetLength(MaxLength);
+  int Length = LoadString(Module, Ident, Result.c_str(), MaxLength);
+  Result.SetLength(Length);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall LoadStrFrom(HINSTANCE Module, int Ident)
+{
+  // 1024 = what VCL LoadStr limits the string to
+  return DoLoadStrFrom(Module, Ident, 1024);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall LoadStr(int Ident, unsigned int MaxLength)
 {
   TLibModule * MainModule = FindModule(HInstance);
   DebugAssert(MainModule != NULL);
-
-  UnicodeString Result;
-  Result.SetLength(MaxLength);
-  int Length = LoadString((HINSTANCE)MainModule->ResInstance, Ident, Result.c_str(), MaxLength);
-  Result.SetLength(Length);
-
-  return Result;
+  return DoLoadStrFrom((HINSTANCE)MainModule->ResInstance, Ident, MaxLength);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall LoadStrPart(int Ident, int Part)

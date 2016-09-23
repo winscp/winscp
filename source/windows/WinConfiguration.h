@@ -441,6 +441,7 @@ private:
   int FLastMachineInstallations;
   __property int LastMachineInstallations = { read = FLastMachineInstallations, write = FLastMachineInstallations };
   int FMachineInstallations;
+  LCID FDefaultLocale;
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -535,6 +536,7 @@ private:
   TStrings * __fastcall GetCustomCommandOptions();
   void __fastcall SetCustomCommandOptions(TStrings * value);
   void __fastcall SetLockedInterface(bool value);
+  int __fastcall GetLocaleCompletenessTreshold();
 
   bool __fastcall GetDDExtInstalled();
   void __fastcall AddVersionToHistory();
@@ -564,7 +566,6 @@ protected:
   bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2);
   virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
     UnicodeString & FileName);
-  virtual LCID __fastcall GetLocale();
   void __fastcall CheckTranslationVersion(const UnicodeString FileName,
     bool InternalLocaleOnError);
   virtual void __fastcall DefaultLocalized();
@@ -574,6 +575,8 @@ protected:
   void __fastcall AskForMasterPassword();
   void __fastcall DoLoadExtensionList(const UnicodeString & Path, const UnicodeString & PathId, TStringList * DeletedExtensions);
   TStrings * __fastcall GetExtensionsPaths();
+  virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
+  virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
 
 public:
   __fastcall TWinConfiguration();
@@ -707,6 +710,8 @@ public:
   __property TFont * SystemIconFont = { read = GetSystemIconFont };
   __property TStrings * CustomCommandOptions = { read = GetCustomCommandOptions, write = SetCustomCommandOptions };
   __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
+  __property LCID DefaultLocale = { read = FDefaultLocale };
+  __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
 };
 //---------------------------------------------------------------------------
 class TCustomCommandType

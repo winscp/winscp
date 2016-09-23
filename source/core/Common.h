@@ -111,6 +111,7 @@ unsigned int __fastcall CancelAnswer(unsigned int Answers);
 unsigned int __fastcall AbortAnswer(unsigned int Answers);
 unsigned int __fastcall ContinueAnswer(unsigned int Answers);
 UnicodeString __fastcall LoadStr(int Ident, unsigned int MaxLength);
+UnicodeString __fastcall LoadStrFrom(HINSTANCE Module, int Ident);
 UnicodeString __fastcall LoadStrPart(int Ident, int Part);
 UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption);
 bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,

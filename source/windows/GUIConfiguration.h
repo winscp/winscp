@@ -86,6 +86,14 @@ private:
   bool __fastcall GetEmpty() const;
 };
 //---------------------------------------------------------------------------
+class TLocaleInfo : public TObject
+{
+public:
+  LCID Locale;
+  UnicodeString Name;
+  int Completeness;
+};
+//---------------------------------------------------------------------------
 class TCopyParamList
 {
 friend class TGUIConfiguration;
@@ -146,7 +154,7 @@ private:
 class TGUIConfiguration : public TConfiguration
 {
 private:
-  TStrings * FLocales;
+  TObjectList * FLocales;
   UnicodeString FLastLocalesExts;
   bool FContinueOnError;
   bool FConfirmCommandSession;
@@ -180,22 +188,24 @@ private:
   UnicodeString FChecksumAlg;
   int FSessionReopenAutoIdle;
   LCID FAppliedLocale;
+  // Corresponds to FAppliedLocale
+  UnicodeString FLocaleModuleName;
 
 protected:
   LCID FLocale;
-  UnicodeString FLocaleModuleName;
 
   virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
   virtual void __fastcall LoadData(THierarchicalStorage * Storage);
-  virtual LCID __fastcall GetLocale();
+  LCID __fastcall GetLocale();
   void __fastcall SetLocale(LCID value);
   void __fastcall SetLocaleSafe(LCID value);
-  UnicodeString __fastcall GetLocaleHex();
+  UnicodeString __fastcall GetAppliedLocaleHex();
   virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
     UnicodeString & FileName);
   HANDLE __fastcall GetResourceModule();
   void __fastcall SetResourceModule(HINSTANCE Instance);
-  TStrings * __fastcall GetLocales();
+  TObjectList * __fastcall GetLocales();
+  void __fastcall AddLocale(LCID Locale, const UnicodeString & Name);
   void __fastcall FreeResourceModule(HANDLE Instance);
   void __fastcall SetDefaultCopyParam(const TGUICopyParamType & value);
   virtual bool __fastcall GetRememberPassword();
@@ -213,12 +223,15 @@ protected:
   void __fastcall SetQueueTransfersLimit(int value);
   void __fastcall SetQueueKeepDoneItems(bool value);
   void __fastcall SetQueueKeepDoneItemsFor(int value);
-  void __fastcall SetLocaleInternal(LCID value, bool Safe);
-  void __fastcall SetInitialLocale(LCID value);
+  void __fastcall SetLocaleInternal(LCID value, bool Safe, bool CompleteOnly);
+  void __fastcall SetAppliedLocale(LCID AppliedLocale, const UnicodeString & LocaleModuleName);
   bool __fastcall GetCanApplyLocaleImmediately();
   UnicodeString __fastcall GetTranslationModule(const UnicodeString & Path);
   UnicodeString __fastcall AddTranslationsSubFolder(const UnicodeString & Path);
   void __fastcall FindLocales(const UnicodeString & LocalesMask, TStrings * Exts, UnicodeString & LocalesExts);
+  virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
+  virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
+  static int __fastcall LocalesCompare(void * Item1, void * Item2);
 
 public:
   __fastcall TGUIConfiguration();
@@ -229,8 +242,8 @@ public:
   HANDLE __fastcall ChangeToDefaultResourceModule();
   HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
   LCID __fastcall InternalLocale();
-  UnicodeString __fastcall LocaleCopyright();
-  UnicodeString __fastcall LocaleVersion();
+  UnicodeString __fastcall AppliedLocaleCopyright();
+  UnicodeString __fastcall AppliedLocaleVersion();
   TStoredSessionList * __fastcall SelectPuttySessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
   bool __fastcall AnyPuttySessionForImport(TStoredSessionList * Sessions);
 
@@ -248,8 +261,8 @@ public:
   __property bool SessionRememberPassword = { read = FSessionRememberPassword, write = FSessionRememberPassword };
   __property LCID Locale = { read = GetLocale, write = SetLocale };
   __property LCID LocaleSafe = { read = GetLocale, write = SetLocaleSafe };
-  __property UnicodeString LocaleHex = { read = GetLocaleHex };
-  __property TStrings * Locales = { read = GetLocales };
+  __property UnicodeString AppliedLocaleHex = { read = GetAppliedLocaleHex };
+  __property TObjectList * Locales = { read = GetLocales };
   __property UnicodeString PuttyPath = { read = FPuttyPath, write = FPuttyPath };
   __property UnicodeString DefaultPuttyPath = { read = FDefaultPuttyPath };
   __property UnicodeString PSftpPath = { read = FPSftpPath, write = FPSftpPath };

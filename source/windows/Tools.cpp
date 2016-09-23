@@ -566,7 +566,7 @@ void __fastcall ShowHelp(const UnicodeString & AHelpKeyword)
   UnicodeString HelpKeyword = AHelpKeyword;
   const wchar_t FragmentSeparator = L'#';
   UnicodeString HelpPath = CutToChar(HelpKeyword, FragmentSeparator, false);
-  UnicodeString HelpUrl = FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpPath, Configuration->ProductVersion, GUIConfiguration->LocaleHex));
+  UnicodeString HelpUrl = FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpPath, Configuration->ProductVersion, GUIConfiguration->AppliedLocaleHex));
   AddToList(HelpUrl, HelpKeyword, FragmentSeparator);
   OpenBrowser(HelpUrl);
 }

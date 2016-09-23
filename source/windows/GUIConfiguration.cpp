@@ -522,8 +522,9 @@ bool __fastcall TCopyParamList::GetAnyRule() const
 //---------------------------------------------------------------------------
 __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
 {
-  SetInitialLocale(0);
-  FLocales = CreateSortedStringList();
+  FLocale = 0;
+  SetAppliedLocale(InternalLocale(), UnicodeString());
+  FLocales = new TObjectList();
   FLastLocalesExts = L"*";
   FCopyParamList = new TCopyParamList();
   CoreSetResourceModule(GetResourceModule());
@@ -813,20 +814,29 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
     // Look for a potential language/country translation
     UnicodeString ModulePath = GetTranslationModule(Module);
     NewInstance = LoadLibraryEx(ModulePath.c_str(), 0, LOAD_LIBRARY_AS_DATAFILE);
-    if (!NewInstance)
+    if (NewInstance)
     {
-      // Finally look for a language only translation
-      Module.SetLength(Module.Length() - 1);
-      ModulePath = GetTranslationModule(Module);
-      NewInstance = LoadLibraryEx(ModulePath.c_str(), 0, LOAD_LIBRARY_AS_DATAFILE);
-      if (NewInstance)
-      {
-        LibraryFileName = ModulePath;
-      }
+      LibraryFileName = ModulePath;
     }
     else
     {
-      LibraryFileName = ModulePath;
+      DWORD PrimaryLang = PRIMARYLANGID(ALocale);
+      DWORD SubLang = SUBLANGID(ALocale);
+      DebugAssert(SUBLANG_DEFAULT == SUBLANG_CHINESE_TRADITIONAL);
+      // Finally look for a language-only translation.
+      // But for Chinese, never use "traditional" (what is the "default" Chinese), if we want "Simplified"
+      // (the same what Inno Setup does)
+      if ((PrimaryLang != LANG_CHINESE) ||
+          (SubLang == SUBLANG_CHINESE_TRADITIONAL))
+      {
+        Module.SetLength(Module.Length() - 1);
+        ModulePath = GetTranslationModule(Module);
+        NewInstance = LoadLibraryEx(ModulePath.c_str(), 0, LOAD_LIBRARY_AS_DATAFILE);
+        if (NewInstance)
+        {
+          LibraryFileName = ModulePath;
+        }
+      }
     }
   }
 
@@ -866,62 +876,85 @@ LCID __fastcall TGUIConfiguration::InternalLocale()
 //---------------------------------------------------------------------------
 LCID __fastcall TGUIConfiguration::GetLocale()
 {
-  if (!FLocale)
-  {
-    SetInitialLocale(InternalLocale());
-  }
   return FLocale;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetLocale(LCID value)
 {
-  SetLocaleInternal(value, false);
+  if (Locale != value)
+  {
+    SetLocaleInternal(value, false, false);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetLocaleSafe(LCID value)
 {
-  SetLocaleInternal(value, true);
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TGUIConfiguration::GetLocaleHex()
-{
-  return IntToHex(__int64(GUIConfiguration->Locale), 4);
-}
-//---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::SetLocaleInternal(LCID value, bool Safe)
-{
   if (Locale != value)
   {
-    HINSTANCE Module;
-    UnicodeString FileName;
+    SetLocaleInternal(value, true, false);
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TGUIConfiguration::GetAppliedLocaleHex()
+{
+  return IntToHex(__int64(AppliedLocale), 4);
+}
+//---------------------------------------------------------------------------
+int __fastcall TGUIConfiguration::GetResourceModuleCompleteness(HINSTANCE /*Module*/)
+{
+  return 100;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TGUIConfiguration::IsTranslationComplete(HINSTANCE /*Module*/)
+{
+  return true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::SetLocaleInternal(LCID value, bool Safe, bool CompleteOnly)
+{
+  LCID L = value;
+  if (L == NULL)
+  {
+    L = GetUserDefaultUILanguage();
+  }
 
-    try
-    {
-      Module = LoadNewResourceModule(value, FileName);
-      DebugAssert(Module != NULL);
-    }
-    catch(...)
-    {
-      if (Safe)
-      {
-        // ignore any exception while loading locale
-        Module = NULL;
-      }
-      else
-      {
-        throw;
-      }
-    }
+  HINSTANCE Module = NULL;
+  UnicodeString FileName;
 
+  try
+  {
+    Module = LoadNewResourceModule(L, FileName);
+    DebugAssert(Module != NULL);
+    if (CompleteOnly && !IsTranslationComplete(Module))
+    {
+      Abort();
+    }
+  }
+  catch (...)
+  {
     if (Module != NULL)
     {
-      FLocale = value;
-      if (CanApplyLocaleImmediately)
-      {
-        FAppliedLocale = value;
-        SetResourceModule(Module);
-        FLocaleModuleName = FileName;
-      }
+      FreeResourceModule(Module);
+      Module = NULL;
+    }
+
+    if (Safe)
+    {
+      // ignore any exception while loading locale
+    }
+    else
+    {
+      throw;
+    }
+  }
+
+  if (Module != NULL)
+  {
+    FLocale = value;
+    if (CanApplyLocaleImmediately)
+    {
+      SetAppliedLocale(L, FileName);
+      SetResourceModule(Module);
     }
   }
 }
@@ -933,7 +966,7 @@ bool __fastcall TGUIConfiguration::GetCanApplyLocaleImmediately()
     (Screen->DataModuleCount == 0);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TGUIConfiguration::LocaleCopyright()
+UnicodeString __fastcall TGUIConfiguration::AppliedLocaleCopyright()
 {
   UnicodeString Result;
   if ((FAppliedLocale == 0) || (FAppliedLocale == InternalLocale()))
@@ -949,7 +982,7 @@ UnicodeString __fastcall TGUIConfiguration::LocaleCopyright()
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TGUIConfiguration::LocaleVersion()
+UnicodeString __fastcall TGUIConfiguration::AppliedLocaleVersion()
 {
   UnicodeString Result;
   if ((FAppliedLocale == 0) || (FAppliedLocale == InternalLocale()))
@@ -963,10 +996,10 @@ UnicodeString __fastcall TGUIConfiguration::LocaleVersion()
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::SetInitialLocale(LCID value)
+void __fastcall TGUIConfiguration::SetAppliedLocale(LCID AppliedLocale, const UnicodeString & LocaleModuleName)
 {
-  FLocale = value;
-  FAppliedLocale = value;
+  FAppliedLocale = AppliedLocale;
+  FLocaleModuleName = LocaleModuleName;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::FreeResourceModule(HANDLE Instance)
@@ -1040,95 +1073,127 @@ void __fastcall TGUIConfiguration::FindLocales(const UnicodeString & LocalesMask
   }
 }
 //---------------------------------------------------------------------------
-TStrings * __fastcall TGUIConfiguration::GetLocales()
+void __fastcall TGUIConfiguration::AddLocale(LCID Locale, const UnicodeString & Name)
 {
-  UnicodeString LocalesExts;
-  TStringList * Exts = CreateSortedStringList();
+  std::unique_ptr<TLocaleInfo> LocaleInfo(new TLocaleInfo());
+  LocaleInfo->Locale = Locale;
+  LocaleInfo->Name = Name;
+
   try
   {
-    UnicodeString LocalesMask = ChangeFileExt(ModuleFileName(), L".*");
-    UnicodeString SubLocalesMask = AddTranslationsSubFolder(LocalesMask);
-    FindLocales(SubLocalesMask, Exts, LocalesExts);
-    FindLocales(LocalesMask, Exts, LocalesExts);
-
-    if (FLastLocalesExts != LocalesExts)
+    UnicodeString FileName;
+    HINSTANCE Module = LoadNewResourceModule(Locale, FileName);
+    try
     {
-      FLastLocalesExts = LocalesExts;
-      FLocales->Clear();
+      LocaleInfo->Completeness = GetResourceModuleCompleteness(Module);
+    }
+    __finally
+    {
+      FreeResourceModule(Module);
+    }
+  }
+  catch (...)
+  {
+    LocaleInfo->Completeness = -1;
+  }
 
-      TLanguages * Langs = Languages();
-      int Ext, Index, Count;
-      wchar_t LocaleStr[255];
+  FLocales->Add(LocaleInfo.release());
+}
+//---------------------------------------------------------------------------
+int __fastcall TGUIConfiguration::LocalesCompare(void * Item1, void * Item2)
+{
+  TLocaleInfo * LocaleInfo1 = static_cast<TLocaleInfo *>(Item1);
+  TLocaleInfo * LocaleInfo2 = static_cast<TLocaleInfo *>(Item2);
+  return CompareText(LocaleInfo1->Name, LocaleInfo2->Name);
+}
+//---------------------------------------------------------------------------
+TObjectList * __fastcall TGUIConfiguration::GetLocales()
+{
+  UnicodeString LocalesMask = ChangeFileExt(ModuleFileName(), L".*");
+  UnicodeString SubLocalesMask = AddTranslationsSubFolder(LocalesMask);
+
+  UnicodeString LocalesExts;
+  std::unique_ptr<TStringList> Exts(CreateSortedStringList());
+  FindLocales(SubLocalesMask, Exts.get(), LocalesExts);
+  FindLocales(LocalesMask, Exts.get(), LocalesExts);
+
+  if (FLastLocalesExts != LocalesExts)
+  {
+    FLastLocalesExts = LocalesExts;
+    FLocales->Clear();
+
+    TLanguages * Langs = Languages();
+
+    int Count = Langs->Count;
+    int Index = -1;
+    while (Index < Count)
+    {
       LCID Locale;
-
-      Count = Langs->Count;
-      Index = -1;
-      while (Index < Count)
+      if (Index >= 0)
       {
-        if (Index >= 0)
+        Locale = Langs->LocaleID[Index];
+        DWORD SubLang = SUBLANGID(Locale);
+        int Ext = Exts->IndexOf(Langs->Ext[Index]);
+        if ((Ext >= 0) && (Exts->Objects[Ext] == NULL))
         {
-          Locale = Langs->LocaleID[Index];
-          Ext = Exts->IndexOf(Langs->Ext[Index]);
-          if (Ext < 0)
+          // noop
+        }
+        else if (SubLang == SUBLANG_DEFAULT)
+        {
+          Ext = Exts->IndexOf(Langs->Ext[Index].SubString(1, 2));
+          if ((Ext >= 0) && (Exts->Objects[Ext] == NULL))
           {
-            Ext = Exts->IndexOf(Langs->Ext[Index].SubString(1, 2));
-            if (Ext >= 0)
-            {
-              Locale = MAKELANGID(PRIMARYLANGID(Locale), SUBLANG_DEFAULT);
-            }
+            Locale = MAKELANGID(PRIMARYLANGID(Locale), SUBLANG_DEFAULT);
           }
+        }
 
-          if (Ext >= 0)
-          {
-            Exts->Objects[Ext] = reinterpret_cast<TObject*>(Locale);
-          }
-          else
-          {
-            Locale = 0;
-          }
+        if (Ext >= 0)
+        {
+          Exts->Objects[Ext] = reinterpret_cast<TObject*>(Locale);
         }
         else
         {
-          Locale = InternalLocale();
+          Locale = 0;
         }
-
-        if (Locale)
-        {
-          UnicodeString Name;
-          GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE,
-            LocaleStr, LENOF(LocaleStr));
-          Name = LocaleStr;
-          Name += L" - ";
-          // LOCALE_SNATIVELANGNAME
-          GetLocaleInfo(Locale, LOCALE_SLANGUAGE,
-            LocaleStr, LENOF(LocaleStr));
-          Name += LocaleStr;
-          FLocales->AddObject(Name, reinterpret_cast<TObject*>(Locale));
-        }
-        Index++;
+      }
+      else
+      {
+        Locale = InternalLocale();
       }
 
-      for (int Index = 0; Index < Exts->Count; Index++)
+      if (Locale)
       {
-        if ((Exts->Objects[Index] == NULL) &&
-            (Exts->Strings[Index].Length() == 3) &&
-            SameText(Exts->Strings[Index].SubString(1, 2), AdditionaLanguagePrefix))
+        wchar_t LocaleStr[255];
+        GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE,
+          LocaleStr, LENOF(LocaleStr));
+        UnicodeString Name = LocaleStr;
+        Name += L" - ";
+        // LOCALE_SNATIVELANGNAME
+        GetLocaleInfo(Locale, LOCALE_SLANGUAGE,
+          LocaleStr, LENOF(LocaleStr));
+        Name += LocaleStr;
+        AddLocale(Locale, Name);
+      }
+      Index++;
+    }
+
+    for (int Index = 0; Index < Exts->Count; Index++)
+    {
+      if ((Exts->Objects[Index] == NULL) &&
+          (Exts->Strings[Index].Length() == 3) &&
+          SameText(Exts->Strings[Index].SubString(1, 2), AdditionaLanguagePrefix))
+      {
+        UnicodeString ModulePath = ChangeFileExt(ModuleFileName(), UnicodeString(L".") + Exts->Strings[Index]);
+        ModulePath = GetTranslationModule(ModulePath);
+        UnicodeString LangName = GetFileFileInfoString(L"LangName", ModulePath);
+        if (!LangName.IsEmpty())
         {
-          UnicodeString ModulePath = ChangeFileExt(ModuleFileName(), UnicodeString(L".") + Exts->Strings[Index]);
-          ModulePath = GetTranslationModule(ModulePath);
-          UnicodeString LangName = GetFileFileInfoString(L"LangName", ModulePath);
-          if (!LangName.IsEmpty())
-          {
-            FLocales->AddObject(LangName, reinterpret_cast<TObject*>(
-              AdditionaLanguageMask + Exts->Strings[Index][3]));
-          }
+          AddLocale(AdditionaLanguageMask + Exts->Strings[Index][3], LangName);
         }
       }
     }
-  }
-  __finally
-  {
-    delete Exts;
+
+    FLocales->Sort(LocalesCompare);
   }
 
   return FLocales;

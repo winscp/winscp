@@ -448,15 +448,20 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   UpdateSystemIconFont();
   Default();
 
+  // This matters only if the translations are in the executable folder and auto-loaded by VCL (System.Pas - DelayLoadResourceModule)
   try
   {
-    CheckTranslationVersion(
-      GetResourceModuleName(Application->Name, ModuleFileName().c_str()), true);
+    UnicodeString ResourceModuleName = GetResourceModuleName(Application->Name, ModuleFileName().c_str());
+    CheckTranslationVersion(ResourceModuleName, true);
   }
   catch(Exception & E)
   {
     FInvalidDefaultTranslationMessage = E.Message;
   }
+
+  // Load complete locale according to the UI language
+  SetLocaleInternal(NULL, true, true);
+  FDefaultLocale = AppliedLocale;
 }
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::~TWinConfiguration()
@@ -2334,44 +2339,20 @@ void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
   }
 }
 //---------------------------------------------------------------------------
-LCID __fastcall TWinConfiguration::GetLocale()
+int __fastcall TWinConfiguration::GetResourceModuleCompleteness(HINSTANCE Module)
 {
-  if (!FLocale)
-  {
-    UnicodeString ResourceModule =
-      GetResourceModuleName(Application->Name, ModuleFileName().c_str());
-    if (!ResourceModule.IsEmpty())
-    {
-      UnicodeString ResourceExt = ExtractFileExt(ResourceModule).UpperCase();
-      ResourceExt.Delete(1, 1);
-
-      TLanguages * Langs = Languages();
-      int Index, Count;
-
-      Count = Langs->Count;
-      Index = 0;
-      while ((Index < Count) && (FLocale == 0))
-      {
-        if (Langs->Ext[Index] == ResourceExt)
-        {
-          SetInitialLocale(Langs->LocaleID[Index]);
-        }
-        else if (Langs->Ext[Index].SubString(1, 2) == ResourceExt)
-        {
-          SetInitialLocale(
-            MAKELANGID(PRIMARYLANGID(Langs->LocaleID[Index]),
-              SUBLANG_DEFAULT));
-        }
-        if (FLocale != 0)
-        {
-          FLocaleModuleName = ResourceModule;
-        }
-        Index++;
-      }
-    }
-  }
-
-  return TCustomWinConfiguration::GetLocale();
+  UnicodeString CompletenessStr = LoadStrFrom(Module, TRANSLATION_COMPLETENESS);
+  return StrToIntDef(CompletenessStr, -1);
+}
+//---------------------------------------------------------------------------
+int __fastcall TWinConfiguration::GetLocaleCompletenessTreshold()
+{
+  return 80;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::IsTranslationComplete(HINSTANCE Module)
+{
+  return (GetResourceModuleCompleteness(Module) >= LocaleCompletenessTreshold);
 }
 //---------------------------------------------------------------------------
 HINSTANCE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,

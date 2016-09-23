@@ -397,6 +397,7 @@ __published:
   void __fastcall CustomCommandsViewMouseMove(TObject *Sender, TShiftState Shift, int X, int Y);
   void __fastcall BackgroundConfirmationsLinkClick(TObject *Sender);
   void __fastcall ConfigureCommandButtonClick(TObject *Sender);
+  void __fastcall LanguagesViewCustomDrawItem(TCustomListView * Sender, TListItem * Item, TCustomDrawState State, bool & DefaultDraw);
 
 private:
   TPreferencesMode FPreferencesMode;

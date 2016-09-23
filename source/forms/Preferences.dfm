@@ -2817,6 +2817,7 @@ object PreferencesDialog: TPreferencesDialog
             ShowColumnHeaders = False
             TabOrder = 0
             ViewStyle = vsReport
+            OnCustomDrawItem = LanguagesViewCustomDrawItem
             OnSelectItem = ListViewSelectItem
           end
           object LanguagesGetMoreButton: TButton
