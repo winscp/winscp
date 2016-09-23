@@ -1,8 +1,8 @@
 %ifidn __OUTPUT_FORMAT__,obj
-section	code	use32 class=code align=256
+section	code	use32 class=code align=64
 %elifidn __OUTPUT_FORMAT__,win32
 $@feat.00 equ 1
-section	.text	code align=256
+section	.text	code align=64
 %else
 section	.text	code
 %endif
