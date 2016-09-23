@@ -183,7 +183,8 @@ void __fastcall TPreferencesDialog::LoadLanguages()
       Item->Selected = Item->Focused;
     }
 
-    FLanguagesLoaded = false;
+    AutoSizeListColumnsWidth(LanguagesView);
+    FLanguagesLoaded = true;
   }
 }
 //---------------------------------------------------------------------------
