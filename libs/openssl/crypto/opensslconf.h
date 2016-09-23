@@ -267,3 +267,11 @@ extern "C" {
 #ifdef  __cplusplus
 }
 #endif
+ 
+#ifndef _timeb 
+#define _timeb timeb 
+#endif 
+ 
+#ifndef _ftime 
+#define _ftime ftime 
+#endif 
