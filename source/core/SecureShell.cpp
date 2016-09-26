@@ -356,10 +356,6 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_int(conf, CONF_nopty, TRUE);
   conf_set_int(conf, CONF_tcp_keepalives, 0);
   conf_set_int(conf, CONF_ssh_show_banner, TRUE);
-  for (int Index = 0; Index < ngsslibs; Index++)
-  {
-    conf_set_int_int(conf, CONF_ssh_gsslist, Index, gsslibkeywords[Index].v);
-  }
   conf_set_int(conf, CONF_proxy_log_to_term, FORCE_OFF);
 
   conf_set_int_int(conf, CONF_ssh_hklist, 0, HK_ED25519);
