@@ -17,6 +17,9 @@
 #include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.ImgList.hpp>
 #include "PngImageList.hpp"
+#include <System.Actions.hpp>
+#include <Vcl.ActnList.hpp>
+#include <Vcl.Menus.hpp>
 //---------------------------------------------------------------------------
 class TFileFindDialog : public TForm
 {
@@ -35,6 +38,20 @@ __published:
   TButton *MaskButton;
   TPaintBox *AnimationPaintBox;
   TButton *CopyButton;
+  TButton *DeleteButton;
+  TPopupMenu *FileViewPopupMenu;
+  TMenuItem *N2;
+  TMenuItem *SelectAllItem;
+  TActionList *ActionList;
+  TAction *SelectAllAction;
+  TAction *DeleteAction;
+  TAction *FocusAction;
+  TAction *CopyAction;
+  TMenuItem *Focus1;
+  TMenuItem *Delete1;
+  TMenuItem *N1;
+  TMenuItem *N3;
+  TMenuItem *CopyResults1;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall StartStopButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);
@@ -45,19 +62,22 @@ __published:
           TShiftState Shift);
   void __fastcall MaskEditExit(TObject *Sender);
   void __fastcall FileViewDblClick(TObject *Sender);
-  void __fastcall FocusButtonClick(TObject *Sender);
   void __fastcall FileViewSelectItem(TObject *Sender, TListItem *Item,
           bool Selected);
   void __fastcall MaskButtonClick(TObject *Sender);
-  void __fastcall CopyButtonClick(TObject *Sender);
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
+  void __fastcall FileViewContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall DeleteActionExecute(TObject *Sender);
+  void __fastcall CopyActionExecute(TObject *Sender);
+  void __fastcall FocusActionExecute(TObject *Sender);
+  void __fastcall SelectAllActionExecute(TObject *Sender);
 
 public:
   __fastcall TFileFindDialog(TComponent * Owner);
   virtual __fastcall ~TFileFindDialog();
 
   void __fastcall Init(
-    TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile);
+    TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile, TDeleteFilesEvent OnDeleteFiles);
 
 protected:
   void __fastcall Clear();
@@ -81,9 +101,12 @@ private:
   UnicodeString FWindowParams;
   TFindEvent FOnFind;
   TFocusFileEvent FOnFocusFile;
+  TDeleteFilesEvent FOnDeleteFiles;
   TImageList * FSystemImageList;
   TFrameAnimation FFrameAnimation;
   UnicodeString FFocusPath;
+  typedef std::map<UnicodeString, TListItem *> TFileItemMap;
+  TFileItemMap FFileItemMap;
 
   void __fastcall FileFound(TTerminal * Terminal,
     const UnicodeString FileName, const TRemoteFile * File, bool & Cancel);
@@ -93,6 +116,8 @@ private:
   void __fastcall FocusFile();
   void __fastcall DoFocusFile(const UnicodeString & Path);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
+  void __fastcall ClearItem(TListItem * Item);
+  void __fastcall FileDeleteFinished(const UnicodeString & FileName, bool Success);
 };
 //---------------------------------------------------------------------------
 #endif

@@ -25,13 +25,13 @@
 TFileFindDialog * FileFindDialog = NULL;
 //---------------------------------------------------------------------------
 void __fastcall ShowFileFindDialog(
-  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile)
+  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile, TDeleteFilesEvent OnDeleteFiles)
 {
   if (FileFindDialog == NULL)
   {
     FileFindDialog = new TFileFindDialog(Application);
   }
-  FileFindDialog->Init(Terminal, Directory, OnFind, OnFocusFile);
+  FileFindDialog->Init(Terminal, Directory, OnFind, OnFocusFile, OnDeleteFiles);
   FileFindDialog->Show();
 }
 //---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ void __fastcall HideFileFindDialog()
 {
   if (FileFindDialog != NULL)
   {
-    FileFindDialog->Close();
+    delete FileFindDialog;
   }
 }
 //---------------------------------------------------------------------------
@@ -109,8 +109,11 @@ void __fastcall TFileFindDialog::UpdateControls()
   }
   StartStopButton->Caption = StartStopCaption;
   EnableControl(FilterGroup, !Finding);
-  EnableControl(FocusButton, (FileView->ItemFocused != NULL));
-  EnableControl(CopyButton, (FileView->Items->Count > 0));
+  FocusAction->Enabled = (FileView->ItemFocused != NULL);
+  DeleteAction->Enabled = (FileView->SelCount > 0);
+  CopyAction->Enabled = (FileView->Items->Count > 0);
+  SelectAllAction->Enabled = (FileView->SelCount < FileView->Items->Count);
+
   switch (FState)
   {
     case ffInit:
@@ -141,6 +144,9 @@ void __fastcall TFileFindDialog::UpdateControls()
       DebugFail();
       break;
   }
+
+  FocusButton->Default = FileView->Focused() && (FState != ffInit);
+  StartStopButton->Default = !FocusButton->Default;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::ControlChange(TObject * /*Sender*/)
@@ -149,7 +155,7 @@ void __fastcall TFileFindDialog::ControlChange(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::Init(
-  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile)
+  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile, TDeleteFilesEvent OnDeleteFiles)
 {
   if (FTerminal != Terminal)
   {
@@ -162,6 +168,7 @@ void __fastcall TFileFindDialog::Init(
 
   FOnFind = OnFind;
   FOnFocusFile = OnFocusFile;
+  FOnDeleteFiles = OnDeleteFiles;
 
   MaskEdit->Text = WinConfiguration->SelectMask;
   RemoteDirectoryEdit->Text = UnixExcludeTrailingBackslash(Directory);
@@ -174,14 +181,18 @@ void __fastcall TFileFindDialog::CreateParams(TCreateParams & Params)
   Params.WndParent = GetDesktopWindow();
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::ClearItem(TListItem * Item)
+{
+  TRemoteFile * File = static_cast<TRemoteFile *>(Item->Data);
+  Item->Data = NULL;
+  delete File;
+}
+//---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::Clear()
 {
   for (int Index = 0; Index < FileView->Items->Count; Index++)
   {
-    TListItem * Item = FileView->Items->Item[Index];
-    TRemoteFile * File = static_cast<TRemoteFile *>(Item->Data);
-    Item->Data = NULL;
-    delete File;
+    ClearItem(FileView->Items->Item[Index]);
   }
 
   FileView->Items->Clear();
@@ -456,7 +467,7 @@ void __fastcall TFileFindDialog::FileViewDblClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FocusButtonClick(TObject * /*Sender*/)
+void __fastcall TFileFindDialog::FocusActionExecute(TObject * /*Sender*/)
 {
   FocusFile();
 }
@@ -489,7 +500,7 @@ void __fastcall TFileFindDialog::CopyToClipboard()
   ::CopyToClipboard(Strings.get());
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::CopyButtonClick(TObject * /*Sender*/)
+void __fastcall TFileFindDialog::CopyActionExecute(TObject * /*Sender*/)
 {
   CopyToClipboard();
 }
@@ -498,5 +509,62 @@ void __fastcall TFileFindDialog::FormClose(TObject * /*Sender*/, TCloseAction & 
 {
   StopIfFinding();
   Action = caFree;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::FileViewContextPopup(TObject * Sender, TPoint & MousePos, bool & Handled)
+{
+  // to update source popup menu before TBX menu is created
+  UpdateControls();
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::FileDeleteFinished(const UnicodeString & FileName, bool Success)
+{
+  TFileItemMap::iterator I = FFileItemMap.find(FileName);
+
+  if (DebugAlwaysTrue(I != FFileItemMap.end()))
+  {
+    TListItem * Item = I->second;
+    FileView->MakeProgressVisible(Item);
+    if (Success)
+    {
+      ClearItem(Item);
+      Item->Delete();
+    }
+
+    FFileItemMap.erase(I);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::DeleteActionExecute(TObject * /*Sender*/)
+{
+  std::unique_ptr<TStrings> FileList(new TStringList());
+
+  DebugAssert(FFileItemMap.empty());
+  TListItem * Item = FileView->Selected;
+  while (Item != NULL)
+  {
+    TRemoteFile * File = static_cast<TRemoteFile *>(Item->Data);
+    FileList->AddObject(File->FullFileName, File);
+    FFileItemMap.insert(std::make_pair(File->FullFileName, Item));
+    Item = FileView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
+  }
+
+  try
+  {
+    FOnDeleteFiles(FTerminal, FileList.get(), FileDeleteFinished);
+  }
+  __finally
+  {
+    // can be non-empty only when not all files were deleted
+    FFileItemMap.clear();
+  }
+
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::SelectAllActionExecute(TObject * /*Sender*/)
+{
+  FileView->SelectAll(smAll);
 }
 //---------------------------------------------------------------------------

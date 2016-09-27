@@ -89,6 +89,7 @@ type
     procedure SelectCurrentItem(FocusNext: Boolean);
     function GetNextItem(StartItem: TListItem; Direction: TSearchDirection;
       States: TItemStates): TListItem;
+    procedure MakeProgressVisible(Item: TListItem);
 
     property ColProperties: TCustomListViewColProperties read FColProperties write FColProperties stored False;
 
@@ -216,10 +217,24 @@ begin
 end;
 
 procedure TCustomNortonLikeListView.Delete(Item: TListItem);
+var
+  Index: Integer;
 begin
-  if (FLastDeletedItem <> Item) and Item.Selected then
+  if FLastDeletedItem <> Item then
   begin
-    ItemUnselected(Item, -1);
+    Index := Item.Index;
+
+    if Item.Selected then
+      ItemUnselected(Item, Index);
+
+    if FManageSelection then
+    begin
+      if (FLastSelected >= 0) and (Index <= FLastSelected) then
+        Dec(FLastSelected);
+
+      if (FFirstSelected >= 0) and (Index <= FFirstSelected) then
+        Dec(FFirstSelected);
+    end;
   end;
   FLastDeletedItem := Item;
   inherited;
@@ -959,6 +974,23 @@ begin
 
   if IsEditing and (Message.CharCode = VK_TAB) then
     Message.Result := 1;
+end;
+
+procedure TCustomNortonLikeListView.MakeProgressVisible(Item: TListItem);
+var
+  DisplayRect: TRect;
+begin
+  if ViewStyle = vsReport then
+  begin
+    DisplayRect := Item.DisplayRect(drBounds);
+
+    if DisplayRect.Bottom > ClientHeight then
+    begin
+      Scroll(0, Item.Top - TopItem.Top);
+    end;
+  end;
+
+  Item.MakeVisible(False);
 end;
 
 end.

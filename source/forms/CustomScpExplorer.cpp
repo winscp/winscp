@@ -169,6 +169,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   DebugAssert(NonVisualDataModule && !NonVisualDataModule->ScpExplorer);
   NonVisualDataModule->ScpExplorer = this;
   FAutoOperation = false;
+  FOnFileOperationFinished = NULL;
   FForceExecution = false;
   FIgnoreNextDialogChar = 0;
   FErrorList = NULL;
@@ -1418,22 +1419,21 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
         Visible && (Operation != foCalculateSize) &&
         (Operation != foGetProperties) && (Operation != foCalculateChecksum))
     {
-      TCustomDirView * DView = DirView(Side);
-      UnicodeString FileNameOnly = ExtractFileName(FileName, (Side == osRemote));
-      TListItem *Item = DView->FindFileItem(FileNameOnly);
-      // this can happen when local drive is unplugged in the middle of the operation
-      if (Item != NULL)
+      if (FOnFileOperationFinished != NULL)
       {
-        if (Success) Item->Selected = false;
-        if (DView->ViewStyle == vsReport)
+        FOnFileOperationFinished(FileName, Success);
+      }
+      else
+      {
+        TCustomDirView * DView = DirView(Side);
+        UnicodeString FileNameOnly = ExtractFileName(FileName, (Side == osRemote));
+        TListItem *Item = DView->FindFileItem(FileNameOnly);
+        // this can happen when local drive is unplugged in the middle of the operation
+        if (Item != NULL)
         {
-          TRect DisplayRect = Item->DisplayRect(drBounds);
-          if (DisplayRect.Bottom > DView->ClientHeight)
-          {
-            DView->Scroll(0, Item->Top - DView->TopItem->Top);
-          }
+          if (Success) Item->Selected = false;
+          DView->MakeProgressVisible(Item);
         }
-        Item->MakeVisible(false);
       }
     }
 
@@ -8685,10 +8685,30 @@ void __fastcall TCustomScpExplorerForm::DoFocusRemotePath(TTerminal * ATerminal,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoDeleteFoundFiles(
+  TTerminal * ATerminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished)
+{
+  if (!NonVisualDataModule->Busy)
+  {
+    TTerminalManager::Instance()->ActiveTerminal = ATerminal;
+
+    DebugAssert(FOnFileOperationFinished == NULL);
+    FOnFileOperationFinished = OnFileOperationFinished;
+    try
+    {
+      ExecuteFileOperation(foDelete, osRemote, FileList, false, NULL);
+    }
+    __finally
+    {
+      FOnFileOperationFinished = NULL;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFindFiles()
 {
   FFileFindTerminal = Terminal;
-  ShowFileFindDialog(Terminal, RemoteDirView->Path, DoFindFiles, DoFocusRemotePath);
+  ShowFileFindDialog(Terminal, RemoteDirView->Path, DoFindFiles, DoFocusRemotePath, DoDeleteFoundFiles);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateTaskbarList(ITaskbarList3 * TaskbarList)

@@ -198,6 +198,7 @@ private:
   bool FQueueItemInvalidated;
   bool FFormRestored;
   bool FAutoOperation;
+  TFileOperationFinishedEvent FOnFileOperationFinished;
   bool FForceExecution;
   unsigned short FIgnoreNextDialogChar;
   TStringList * FErrorList;
@@ -520,6 +521,7 @@ protected:
   void __fastcall DoFindFiles(TTerminal * Terminal, UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
   virtual void __fastcall DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path);
+  void __fastcall DoDeleteFoundFiles(TTerminal * Terminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
   bool __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
   void __fastcall UpdateCopyParamCounters(const TCopyParamType & CopyParam);
