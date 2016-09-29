@@ -444,7 +444,7 @@ void CTransferSocket::OnClose(int nErrorCode)
     return;
   }
 
-  m_pOwner->ShowStatus(L"Data connection closed", FZ_LOG_INFO);
+  m_pOwner->ShowStatus(L"Data connection closed", FZ_LOG_PROGRESS);
 
   OnReceive(0);
   CloseAndEnsureSendClose(0);

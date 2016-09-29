@@ -2274,20 +2274,11 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 
     if (pData->bPasv)
     {
-      CString hostname;
-      hostname.Format(L"%s:%d", pData->host, pData->port);
-      CString str;
-      str.Format(IDS_STATUSMSG_CONNECTING, hostname);
-      ShowStatus(str, FZ_LOG_PROGRESS);
-
       // if PASV create the socket & initiate outbound data channel connection
-      if (!m_pTransferSocket->Connect(pData->host,pData->port))
+      if (!ConnectTransferSocket(pData->host, pData->port))
       {
-        if (GetLastError()!=WSAEWOULDBLOCK)
-        {
-          ResetOperation(FZ_REPLY_ERROR);
-          return;
-        }
+        ResetOperation(FZ_REPLY_ERROR);
+        return;
       }
     }
 
@@ -2295,6 +2286,25 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
   }
   if (cmd != L"")
     Send(cmd);
+}
+
+bool CFtpControlSocket::ConnectTransferSocket(const CString & host, UINT port)
+{
+  CString hostname;
+  hostname.Format(L"%s:%d", host, port);
+  CString str;
+  str.Format(IDS_STATUSMSG_CONNECTING, hostname);
+  ShowStatus(str, FZ_LOG_PROGRESS);
+
+  bool result = true;
+  if (!m_pTransferSocket->Connect(host, port))
+  {
+    if (GetLastError() != WSAEWOULDBLOCK)
+    {
+      result = false;
+    }
+  }
+  return result;
 }
 
 void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
@@ -4023,14 +4033,10 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         bError=TRUE;
       else if(pData->bPasv)
       {
-        // if PASV create the socket & initiate outbound data channel connection
-        if (!m_pTransferSocket->Connect(pData->host,pData->port))
+        if (!ConnectTransferSocket(pData->host, pData->port))
         {
-          if (GetLastError()!=WSAEWOULDBLOCK)
-          {
-            bError=TRUE;
-            ShowStatus(IDS_ERRORMSG_CANTGETLIST,FZ_LOG_ERROR);
-          }
+          bError=TRUE;
+          ShowStatus(IDS_ERRORMSG_CANTGETLIST,FZ_LOG_ERROR);
         }
       }
     }
@@ -4280,11 +4286,11 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     else
     {
       if (pData->bPasv)
-      {// if PASV create the socket & initiate outbound data channel connection
-        if (!m_pTransferSocket->Connect(pData->host,pData->port))
+      {
+        // if PASV create the socket & initiate outbound data channel connection
+        if (!ConnectTransferSocket(pData->host, pData->port))
         {
-          if (GetLastError()!=WSAEWOULDBLOCK)
-            bError=TRUE;
+          bError=TRUE;
         }
       }
     }
