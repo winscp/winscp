@@ -1578,6 +1578,8 @@ begin
           UsageData := UsageData + 'InstallationsUpgradeCustom+,';
       end;
 
+      UsageData := UsageData + Format('LastInstallationAutomaticUpgrade:%d,', [Integer(AutomaticUpdate)]);
+
       if (InitDir <> '') and (InitDir <> WizardForm.DirEdit.Text) then
         UsageData := UsageData + 'InstallationsCustomDir+,';
       if (InitComponents <> '') and (InitComponents <> SaveCheckListBoxState(WizardForm.ComponentsList)) then
