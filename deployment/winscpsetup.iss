@@ -350,7 +350,6 @@ Source: "{#TranslationDir}\WinSCP.{#Languages[LangI*4]}"; DestDir: "{app}\Transl
 #expr AllTranslationsBuf = AllTranslations + '-'
 
 #sub DeleteRootTranslation
-  #pragma message AllTranslationsBuf
   #define P Pos('-', AllTranslationsBuf)
   #define Lang Copy(AllTranslationsBuf, 1, P - 1)
   #expr AllTranslationsBuf = Copy(AllTranslationsBuf, P + 1)
