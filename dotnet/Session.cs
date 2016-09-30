@@ -114,8 +114,7 @@ namespace WinSCP
             {
                 Timeout = new TimeSpan(0, 1, 0);
                 _reconnectTime = new TimeSpan(0, 2, 0); // keep in sync with TScript::OptionImpl
-                Output = new StringCollection();
-                _error = new StringCollection();
+                ResetOutput();
                 _operationResults = new List<OperationResultBase>();
                 _events = new List<Action>();
                 _eventsEvent = new AutoResetEvent(false);
@@ -125,6 +124,12 @@ namespace WinSCP
                 _guardProcessWithJob = true;
                 RawConfiguration = new Dictionary<string, string>();
             }
+        }
+
+        private void ResetOutput()
+        {
+            Output = new StringCollection();
+            _error = new StringCollection();
         }
 
         public void Dispose()
@@ -176,6 +181,7 @@ namespace WinSCP
                 try
                 {
                     SetupTempPath();
+                    ResetOutput();
 
                     _process = ExeSessionProcess.CreateForSession(this);
 
@@ -332,6 +338,8 @@ namespace WinSCP
 
                 try
                 {
+                    ResetOutput();
+
                     string command;
                     string log; // unused
                     SessionOptionsToUrlAndSwitches(sessionOptions, true, out command, out log);
