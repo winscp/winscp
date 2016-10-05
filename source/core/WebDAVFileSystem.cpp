@@ -2355,7 +2355,9 @@ void __fastcall TWebDAVFileSystem::CollectTLSSessionInfo()
   FTlsVersionStr = StrFromNeon(ne_ssl_get_version(FNeonSession));
   AddToList(FSessionInfo.SecurityProtocolName, FTlsVersionStr, L", ");
 
-  UnicodeString Cipher = StrFromNeon(ne_ssl_get_cipher(FNeonSession));
+  char * Buf = ne_ssl_get_cipher(FNeonSession);
+  UnicodeString Cipher = StrFromNeon(Buf);
+  ne_free(Buf);
   FSessionInfo.CSCipher = Cipher;
   FSessionInfo.SCCipher = Cipher;
 
