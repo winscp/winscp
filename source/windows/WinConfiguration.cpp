@@ -2733,6 +2733,8 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
     UnicodeString Line = Lines->Strings[Index].Trim();
     if (!Line.IsEmpty())
     {
+      Line = ReplaceChar(Line, L'\t', L' ');
+
       bool IsComment = false;
       if (StartsText(ExtensionMark, Line))
       {
