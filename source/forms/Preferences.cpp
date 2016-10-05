@@ -2457,17 +2457,17 @@ void __fastcall TPreferencesDialog::AddExtension()
         Http->RequestHeaders = Headers.get();
         Http->Get();
 
-        UnicodeString TrustedStr = Http->ResponseHeaders->Values["WinSCP-Extension-Trusted"];
+        UnicodeString TrustedStr = Http->ResponseHeaders->Values[L"WinSCP-Extension-Trusted"];
         Trusted = WinSCPURL && (StrToIntDef(TrustedStr, 0) != 0);
 
-        FileName = MakeValidFileName(Http->ResponseHeaders->Values["WinSCP-Extension-Id"]);
+        FileName = MakeValidFileName(Http->ResponseHeaders->Values[L"WinSCP-Extension-Id"]);
         if (FileName.IsEmpty())
         {
           FileName = MakeValidFileName(ExtractFileNameFromUrl(Path));
         }
         Lines->Text = Http->Response;
 
-        Latest = Http->ResponseHeaders->Values["WinSCP-Extension-Skipped"].Trim().IsEmpty();
+        Latest = Http->ResponseHeaders->Values[L"WinSCP-Extension-Skipped"].Trim().IsEmpty();
       }
       else
       {
