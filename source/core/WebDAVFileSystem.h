@@ -132,7 +132,9 @@ protected:
   static int NeonPostSend(ne_request * Req, void * UserData, const ne_status * Status);
   static void NeonPostHeaders(ne_request * Req, void * UserData, const ne_status * Status);
   void ExchangeCapabilities(const char * Path, UnicodeString & CorrectedUrl);
-  static int NeonServerSSLCallback(void * UserData, int Failures, const struct ne_ssl_certificate_s * Certificate);
+  static int DoNeonServerSSLCallback(void * UserData, int Failures, const struct ne_ssl_certificate_s * Certificate, bool Aux);
+  static int NeonServerSSLCallbackMain(void * UserData, int Failures, const struct ne_ssl_certificate_s * Certificate);
+  static int NeonServerSSLCallbackAux(void * UserData, int Failures, const struct ne_ssl_certificate_s * Certificate);
   static void NeonProvideClientCert(void * UserData, ne_session * Sess, const ne_ssl_dname * const * DNames, int DNCount);
   void __fastcall CloseNeonSession();
   bool __fastcall CancelTransfer();
@@ -173,6 +175,7 @@ private:
   int FPortNumber;
   enum TIgnoreAuthenticationFailure { iafNo, iafWaiting, iafPasswordFailed } FIgnoreAuthenticationFailure;
   UnicodeString FAuthorizationProtocol;
+  UnicodeString FLastAuthorizationProtocol;
   bool FAuthenticationRetry;
   bool FNtlmAuthenticationFailed;
 
@@ -182,8 +185,7 @@ private:
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
   void __fastcall RegisterForDebug();
   void __fastcall UnregisterFromDebug();
-  bool VerifyCertificate(
-    const TWebDAVCertificateData & Data);
+  bool VerifyCertificate(const TWebDAVCertificateData & Data, bool Aux);
   void OpenUrl(const UnicodeString & Url);
   void __fastcall CollectTLSSessionInfo();
   UnicodeString __fastcall GetRedirectUrl();
@@ -196,6 +198,9 @@ private:
   struct ne_lock * __fastcall FindLock(const RawByteString & Path);
   void __fastcall DiscardLock(const RawByteString & Path);
   bool __fastcall IsNtlmAuthentication();
+  static void NeonAuxRequestInit(ne_session_s * Session, ne_request * Request, void * UserData);
+  void __fastcall SetSessionTls(ne_session_s * Session, bool Aux);
+  void __fastcall InitSession(ne_session_s * Session);
 };
 //------------------------------------------------------------------------------
 void __fastcall NeonInitialize();

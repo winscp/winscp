@@ -199,6 +199,12 @@ typedef struct {
     unsigned int nonce_count;
     /* The ASCII representation of the session's H(A1) value */
     char h_a1[33];
+#ifdef WINSCP
+    char * passport;
+    /* In the current implementation, we actually possibly never reuse these two fields */
+    ne_uri passport_login_uri;
+    char * passport_cookies;
+#endif
 
     /* Temporary store for half of the Request-Digest
      * (an optimisation - used in the response-digest calculation) */
@@ -225,6 +231,9 @@ struct auth_request {
 #define AUTH_FLAG_VERIFY_NON40x (0x0002)
 /* Used for broken the connection-based auth schemes. */
 #define AUTH_FLAG_CONN_AUTH (0x0004)
+#ifdef WINSCP
+#define AUTH_FLAG_FULL_HEADER (0x0008)
+#endif
 
 struct auth_protocol {
     unsigned id; /* public NE_AUTH_* id. */
@@ -239,7 +248,11 @@ struct auth_protocol {
      * On failure, challenge_error() should be used to append an error
      * message to the error buffer 'errmsg'. */
     int (*challenge)(auth_session *sess, int attempt,
-                     struct auth_challenge *chall, ne_buffer **errmsg);
+                     struct auth_challenge *chall, ne_buffer **errmsg
+#ifdef WINSCP
+                     , struct auth_request* areq
+#endif
+                    );
 
     /* Return the string to send in the -Authenticate request header:
      * (ne_malloc-allocated, NUL-terminated string) */
@@ -307,6 +320,19 @@ static void clean_session(auth_session *sess)
     if (sess->ntlm_context) {
         ne__ntlm_destroy_context(sess->ntlm_context);
         sess->ntlm_context = NULL;
+    }
+#endif
+#ifdef WINSCP
+    ne_uri_free(&sess->passport_login_uri);
+    if (sess->passport)
+    {
+        ne_free(sess->passport);
+        sess->passport = NULL;
+    }
+    if (sess->passport_cookies)
+    {
+        ne_free(sess->passport_cookies);
+        sess->passport_cookies = NULL;
     }
 #endif
 
@@ -393,7 +419,11 @@ static int get_credentials(auth_session *sess, ne_buffer **errmsg, int attempt,
  * Returns 0 if an valid challenge, else non-zero. */
 static int basic_challenge(auth_session *sess, int attempt,
                            struct auth_challenge *parms,
-                           ne_buffer **errmsg) 
+                           ne_buffer **errmsg
+#ifdef WINSCP
+                           , struct auth_request* areq
+#endif
+                           )
 {
     char *tmp, password[NE_ABUFSIZ];
 
@@ -556,7 +586,11 @@ static int continue_negotiate(auth_session *sess, const char *token,
  * if challenge is accepted. */
 static int negotiate_challenge(auth_session *sess, int attempt,
                                struct auth_challenge *chall,
-                               ne_buffer **errmsg) 
+                               ne_buffer **errmsg
+#ifdef WINSCP
+                               , struct auth_request* areq
+#endif
+                               )
 {
     const char *token = chall->opaque;
 
@@ -655,7 +689,11 @@ static int continue_sspi(auth_session *sess, int ntlm, const char *hdr)
 
 static int sspi_challenge(auth_session *sess, int attempt,
                           struct auth_challenge *parms,
-                          ne_buffer **errmsg) 
+                          ne_buffer **errmsg
+#ifdef WINSCP
+                           , struct auth_request* areq
+#endif
+                          )
 {
     int ntlm = ne_strcasecmp(parms->protocol->name, "NTLM") == 0;
 
@@ -764,7 +802,11 @@ static char *request_ntlm(auth_session *sess, struct auth_request *request)
 
 static int ntlm_challenge(auth_session *sess, int attempt,
                           struct auth_challenge *parms,
-                          ne_buffer **errmsg) 
+                          ne_buffer **errmsg
+#ifdef WINSCP
+                          , struct auth_request* areq
+#endif
+                          )
 {
     NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     int status;
@@ -800,7 +842,11 @@ static int ntlm_challenge(auth_session *sess, int attempt,
  * else non-zero. */
 static int digest_challenge(auth_session *sess, int attempt,
                             struct auth_challenge *parms,
-                            ne_buffer **errmsg) 
+                            ne_buffer **errmsg
+#ifdef WINSCP
+                            , struct auth_request* areq
+#endif
+                            )
 {
     NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char password[NE_ABUFSIZ];
@@ -1230,6 +1276,369 @@ static int verify_digest_response(struct auth_request *req, auth_session *sess,
     return ret;
 }
 
+#ifdef WINSCP
+
+#define PASSPORT_REQ_ID "http://www.webdav.org/neon/hooks/http-passport-req"
+#define PASSPORT_NAME "Passport1.4"
+
+struct aux_request_init_data
+{
+    ne_aux_request_init aux_request_init;
+    void * userdata;
+};
+
+static void free_aux_request_init(void * cookie)
+{
+    ne_free(cookie);
+}
+
+void ne_set_aux_request_init(ne_session * sess, ne_aux_request_init aux_request_init, void * userdata)
+{
+    struct aux_request_init_data * data = ne_malloc(sizeof(*data));
+    data->aux_request_init = aux_request_init;
+    data->userdata = userdata;
+    ne_set_session_private(sess, PASSPORT_REQ_ID, data);
+    ne_hook_destroy_session(sess, free_aux_request_init, data);
+}
+
+int is_passport_challenge(ne_request *req, const ne_status *status)
+{
+    const char *auth = ne_get_response_header(req, "WWW-Authenticate");
+    return 
+        (status->code == 302) &&
+        (auth != NULL) &&
+        (ne_strncasecmp(auth, PASSPORT_NAME, strlen(PASSPORT_NAME)) == 0);
+}
+
+static int passport_challenge(auth_session *sess, int attempt,
+                              struct auth_challenge *parms,
+                              ne_buffer **errmsg,
+                              struct auth_request* areq)
+{
+    char *tmp, password[NE_ABUFSIZ];
+    char *tmp_username;
+    char *tmp_password;
+    const char *auth_hdr;
+    ne_session * sign_session;
+    ne_request * sign_request;
+    int status;
+    ne_session * session = ne_get_session(areq->request);
+    ne_uri orig_uri = {0};
+    char * org_url;
+    int result;
+
+    if (sess->passport == NULL)
+    {
+        struct aux_request_init_data * init_data = ne_get_session_private(session, PASSPORT_REQ_ID);
+
+        if (init_data == NULL)
+        {
+            challenge_error(errmsg, _("No init ptr"));
+            return -1;
+        }
+
+        clean_session(sess);
+
+        if (sess->passport_login_uri.host == NULL)
+        {
+            ne_session * nexus_session;
+            ne_request * nexus_request;
+            int status;
+            const char * host = "nexus.passport.com";
+            const char * scheme = "https";
+            int result = 0;
+
+            NE_DEBUG(NE_DBG_HTTPAUTH, "Retrieving Passport Nexus URL");
+
+            nexus_session = ne_session_create(scheme, host, ne_uri_defaultport(scheme));
+            nexus_request = ne_request_create(nexus_session, "GET", "/rdr/pprdr.asp");
+            init_data->aux_request_init(nexus_session, nexus_request, init_data->userdata);
+            status = ne_request_dispatch(nexus_request);
+
+            if (status != NE_OK)
+            {
+                challenge_error(errmsg, _("Error contacting %s: %s"), host, ne_get_error(nexus_session));
+                result = -1;
+            }
+            else
+            {
+                const char * urls = ne_get_response_header(nexus_request, "PassportURLs");
+                if (urls == NULL)
+                {
+                    challenge_error(errmsg, _("Missing PassportURLs header"));
+                    result = -1;
+                }
+                else
+                {
+                    char * buf, * pnt, * key, * val;
+                    pnt = buf = ne_strdup(urls);
+                    while ((sess->passport_login_uri.host == NULL) &&
+                           (tokenize(&pnt, &key, &val, NULL, 0) == 0))
+                    {
+                        if (ne_strcasecmp(key, "DALogin") == 0)
+                        {
+                            char * uri = ne_concat(scheme, "://", val, NULL);
+                            NE_DEBUG(NE_DBG_HTTPAUTH, "Passport Nexus URL is %s", uri);
+                            ne_uri_parse(uri, &sess->passport_login_uri);
+                            if (sess->passport_login_uri.port == 0)
+                            {
+                                sess->passport_login_uri.port = ne_uri_defaultport(sess->passport_login_uri.scheme);
+                            }
+                            ne_free(uri);
+                        }
+                    }
+
+                    ne_free(buf);
+
+                    if (sess->passport_login_uri.host == NULL)
+                    {
+                        challenge_error(errmsg, _("Missing DALogin URL"));
+                        result = -1;
+                    }
+                }
+            }
+
+            ne_request_destroy(nexus_request);
+            ne_session_destroy(nexus_session);
+
+            if (result != 0)
+            {
+                return result;
+            }
+        }
+
+        auth_hdr = ne_get_response_header(areq->request, "WWW-Authenticate");
+        if (auth_hdr == NULL)
+        {
+            challenge_error(errmsg, _("missing WWW-Authenticate header"));
+            return -1;
+        }
+
+        if (get_credentials(sess, errmsg, attempt, parms, password)) {
+            /* Failed to get credentials */
+            return -1;
+        }
+
+        tmp_username = ne_path_escape(sess->username);
+        tmp_password = ne_path_escape(password);
+
+        /* There must be some, othewise we won't be here */
+        auth_hdr = strchr(auth_hdr, ' ');
+        if (auth_hdr == NULL) {
+            challenge_error(errmsg, _("missing space in WWW-Authenticate header"));
+            return -1;
+        }
+        while (*auth_hdr == ' ') auth_hdr++;
+
+        ne_fill_server_uri(session, &orig_uri);
+        orig_uri.path = ne_strdup(areq->uri);
+        org_url = ne_uri_unparse(&orig_uri);
+        ne_uri_free(&orig_uri);
+
+        tmp =
+            ne_concat(
+                PASSPORT_NAME, " sign-in=", tmp_username, ",pwd=", tmp_password, ",OrgVerb=", areq->method,
+                ",OrgUrl=", org_url, ",", auth_hdr, NULL);
+        ne_free(org_url);
+        /* Paranoia. */
+        memset(password, 0, sizeof password);
+        memset(tmp_password, 0, strlen(tmp_password));
+        ne_free(tmp_username);
+        ne_free(tmp_password);
+
+        NE_DEBUG(NE_DBG_HTTPAUTH, "Signing into Nexus");
+
+        sign_session = ne_session_create(sess->passport_login_uri.scheme, sess->passport_login_uri.host, sess->passport_login_uri.port);
+        sign_request = ne_request_create(sign_session, "GET", sess->passport_login_uri.path);
+        ne_add_request_header(sign_request, "Authorization", tmp);
+        init_data->aux_request_init(sign_session, sign_request, init_data->userdata);
+        status = ne_request_dispatch(sign_request);
+
+        memset(tmp, 0, strlen(tmp));
+        ne_free(tmp);
+
+        result = 0;
+        if (status != NE_OK)
+        {
+            challenge_error(errmsg, _("Error signing into Nexus: %s"), ne_get_error(sign_session));
+            result = -1;
+        }
+        else
+        {
+            const char * auth_info = ne_get_response_header(sign_request, "Authentication-Info");
+            if (auth_info == NULL)
+            {
+                challenge_error(errmsg, _("Missing Authentication-Info header"));
+                result = -1;
+            }
+            else
+            {
+                int success = -1;
+
+                char * buf, * pnt, * key, * val;
+                pnt = buf = ne_strdup(auth_info);
+                while (((sess->passport == NULL) || (success < 0)) &&
+                       (tokenize(&pnt, &key, &val, NULL, 1) == 0))
+                {
+                    if (val == NULL)
+                    {
+                        if (ne_strcasecmp(key, PASSPORT_NAME) != 0)
+                        {
+                            challenge_error(errmsg, _("Wrong Authentication-Info header"));
+                            result = -1;
+                        }
+                    }
+                    else if (ne_strcasecmp(key, "da-status") == 0)
+                    {
+                        if (ne_strcasecmp(val, "success") == 0)
+                        {
+                            success = 1;
+                        }
+                        else
+                        {
+                            challenge_error(errmsg, _("Authentication failure"));
+                            result = -1;
+                            success = 0;
+                        }
+                    }
+                    else if (ne_strcasecmp(key, "from-PP") == 0)
+                    {
+                        sess->passport = ne_concat("Authorization: ", PASSPORT_NAME, " ", key, "=", val, "\r\n", NULL);
+                    }
+                }
+
+                ne_free(buf);
+
+                if ((sess->passport == NULL) || (success < 0))
+                {
+                    challenge_error(errmsg, _("Cannot parse Nexus response"));
+                    result = -1;
+                }
+                else
+                {
+                    NE_DEBUG(NE_DBG_HTTPAUTH, "Signed into Nexus");
+                }
+            }
+        }
+
+        ne_request_destroy(sign_request);
+        ne_session_destroy(sign_session);
+    }
+
+    return result;
+}
+
+static char *request_passport(auth_session *sess, struct auth_request *req)
+{
+    return ne_strdup(sess->passport);
+}
+
+static void lower_case(char * s)
+{
+    int i;
+    for (i = 0; i < strlen(s); i++)
+    {
+        s[i] = ne_tolower(s[i]);
+    }
+}
+
+static int verify_passport_response(struct auth_request *req, auth_session *sess,
+                                    const char *value)
+{
+    int result = 0;
+
+    {
+        ne_buffer * names = ne_buffer_create();
+        char * buf, * pnt, * key, * val;
+        /* We should really send all cookies, but for now, we send only those we know we have to.
+           ClientCanary cookie is needed for the modify operations (PUT, DELETE, etc). */
+        ne_buffer_zappend(names, "=clientcanary=");
+        pnt = buf = ne_strdup(value);
+        while (tokenize(&pnt, &key, &val, NULL, 1) == 0)
+        {
+            if (val == NULL)
+            {
+                if (ne_strcasecmp(key, PASSPORT_NAME) != 0)
+                {
+                    NE_DEBUG(NE_DBG_HTTPAUTH, "Wrong Authentication-Info header");
+                    result = -1;
+                }
+            }
+            else if (ne_strcasecmp(key, "tname") == 0)
+            {
+                lower_case(val);
+                ne_buffer_concat(names, val, "=", NULL);
+            }
+        }
+
+        ne_free(buf);
+
+        /* We should update cookies based on future responses, for what we preserve list of cookies to cache,
+           but we do not do that atm, so this field is not used actually */
+        sess->passport_cookies = ne_buffer_finish(names);
+    }
+
+    {
+        const char * set_cookies_header = ne_get_response_header(req->request, "Set-Cookie");
+        if (set_cookies_header == NULL)
+        {
+            NE_DEBUG(NE_DBG_HTTPAUTH, "No Cookies");
+            result = -1;
+        }
+        else
+        {
+            ne_buffer * cookie_header = NULL;
+            char * cookies = ne_strdup(set_cookies_header);
+            char * p = cookies;
+            while (p != NULL)
+            {
+                /* Far from perfect, as it does not distringuish a comma from merged Set-Cookie header [seeadd_response_header],
+                   and command e.g. in "expires=Thu, 30-Oct-1980 16:00:00 GMT".
+                   But it is good enough for now, when we need only name and value */
+                char * cookie = ne_shave(ne_token(&p, ','), " \t");
+                char * cookie_name = ne_token(&cookie, '=');
+                char * s = ne_concat("=", cookie_name, "=", NULL);
+                lower_case(s);
+
+                if (strstr(sess->passport_cookies, s) != NULL)
+                {
+                    char * val = ne_token(&cookie, ';');
+
+                    if (cookie_header == NULL)
+                    {
+                        cookie_header = ne_buffer_create();
+                        ne_buffer_zappend(cookie_header, "Cookie: ");
+                    }
+                    else
+                    {
+                        ne_buffer_zappend(cookie_header, "; ");
+                    }
+
+                    ne_buffer_concat(cookie_header, cookie_name, "=", val, NULL);
+                }
+
+                ne_free(s);
+            }
+
+            ne_free(cookies);
+
+            if (cookie_header != NULL)
+            {
+                if (sess->passport != NULL)
+                {
+                    ne_free(sess->passport);
+                }
+                ne_buffer_zappend(cookie_header, "\r\n");
+                sess->passport = ne_buffer_finish(cookie_header);
+            }
+        }
+    }
+
+    return result;
+}
+
+#endif
+
 static const struct auth_protocol protocols[] = {
     { NE_AUTH_BASIC, 10, "Basic",
       basic_challenge, request_basic, NULL,
@@ -1254,6 +1663,11 @@ static const struct auth_protocol protocols[] = {
     { NE_AUTH_NTLM, 30, "NTLM",
       ntlm_challenge, request_ntlm, NULL,
       AUTH_FLAG_OPAQUE_PARAM|AUTH_FLAG_VERIFY_NON40x|AUTH_FLAG_CONN_AUTH },
+#endif
+#ifdef WINSCP
+    { NE_AUTH_PASSPORT, 30, PASSPORT_NAME,
+      passport_challenge, request_passport, verify_passport_response,
+      AUTH_FLAG_FULL_HEADER|AUTH_FLAG_CONN_AUTH /* just a guess */ },
 #endif
     { 0 }
 };
@@ -1310,7 +1724,11 @@ static void challenge_error(ne_buffer **errbuf, const char *fmt, ...)
  * Returns 0 if valid challenge was accepted; non-zero if no valid
  * challenge was found. */
 static int auth_challenge(auth_session *sess, int attempt,
-                          const char *value) 
+                          const char *value
+#ifdef WINSCP
+                          , struct auth_request* areq
+#endif
+                          )
 {
     NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char *pnt, *key, *val, *hdr, sep;
@@ -1412,7 +1830,11 @@ static int auth_challenge(auth_session *sess, int attempt,
     for (chall = challenges; chall != NULL; chall = chall->next) {
         NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Trying %s challenge...\n",
                  chall->protocol->name);
-        if (chall->protocol->challenge(sess, attempt, chall, &errmsg) == 0) {
+        if (chall->protocol->challenge(sess, attempt, chall, &errmsg
+#ifdef WINSCP
+            , areq
+#endif
+            ) == 0) {
             NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Accepted %s challenge.\n", 
                      chall->protocol->name);
             sess->protocol = chall->protocol;
@@ -1483,7 +1905,18 @@ static void ah_pre_send(ne_request *r, void *cookie, ne_buffer *request)
         value = sess->protocol->response(sess, req);
 
 	if (value != NULL) {
+#ifdef WINSCP
+	    if (sess->protocol->flags & AUTH_FLAG_FULL_HEADER)
+	    {
+	    	    ne_buffer_zappend(request, value);
+	    }
+	    else
+	    {
+#endif
 	    ne_buffer_concat(request, sess->spec->req_hdr, ": ", value, NULL);
+#ifdef WINSCP
+	    }
+#endif
 	    ne_free(value);
 	}
     }
@@ -1541,12 +1974,19 @@ static int ah_post_send(ne_request *req, void *cookie, const ne_status *status)
         ret = sess->protocol->verify(areq, sess, auth_hdr);
     }
     else if ((status->code == sess->spec->status_code ||
+#ifdef WINSCP
+              is_passport_challenge(req, status) ||
+#endif
               (status->code == 401 && sess->context == AUTH_CONNECT)) &&
 	       auth_hdr) {
         /* note above: allow a 401 in response to a CONNECT request
          * from a proxy since some buggy proxies send that. */
 	NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Got challenge (code %d).\n", status->code);
-	if (!auth_challenge(sess, areq->attempt++, auth_hdr)) {
+	if (!auth_challenge(sess, areq->attempt++, auth_hdr
+#ifdef WINSCP
+                                                     , areq
+#endif
+                                                     )) {
 	    ret = NE_RETRY;
 	} else {
 	    clean_session(sess);

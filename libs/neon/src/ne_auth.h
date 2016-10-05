@@ -101,6 +101,10 @@ void ne_set_proxy_auth(ne_session *sess, ne_auth_creds creds, void *userdata);
  * this must not be used over an unsecured channel. */
 #define NE_AUTH_GSSAPI_ONLY (0x0040)
 
+#ifdef WINSCP
+#define NE_AUTH_PASSPORT (0x0080)
+#endif
+
 /* The default set of supported protocols, as deemed appropriate for
  * the given session scheme. */
 #define NE_AUTH_DEFAULT (0x1000)
@@ -136,6 +140,12 @@ void ne_add_proxy_auth(ne_session *sess, unsigned protocol,
 
 #ifdef WINSCP
 void ne_remove_server_auth(ne_session *sess);
+
+typedef void (*ne_aux_request_init)(ne_session * sess, ne_request * req, void * userdata);
+
+void ne_set_aux_request_init(ne_session * sess, ne_aux_request_init aux_request_init, void * userdata);
+
+int is_passport_challenge(ne_request *req, const ne_status *status);
 #endif
 
 /* Clear any cached authentication credentials for the given

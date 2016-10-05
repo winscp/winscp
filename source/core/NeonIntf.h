@@ -11,7 +11,8 @@
 //---------------------------------------------------------------------------
 void NeonParseUrl(const UnicodeString & Url, ne_uri & uri);
 bool IsTlsUri(const ne_uri & uri);
-ne_session * CreateNeonSession(const ne_uri & uri, TProxyMethod ProxyMethod, const UnicodeString & ProxyHost,
+ne_session * CreateNeonSession(const ne_uri & uri);
+void InitNeonSession(ne_session * Session, TProxyMethod ProxyMethod, const UnicodeString & ProxyHost,
   int ProxyPort, const UnicodeString & ProxyUsername, const UnicodeString & ProxyPassword);
 void DestroyNeonSession(ne_session * Session);
 UnicodeString GetNeonError(ne_session * Session);
