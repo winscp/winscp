@@ -1546,6 +1546,9 @@ void __fastcall TWebDAVFileSystem::Source(const UnicodeString FileName,
             // The only server we found that supports this is TradeMicro SafeSync.
             // But it announces itself as "Server: Apache",
             // so it's not reliable to autodetect the support.
+            // Microsoft Office alegedly uses <Win32LastModifiedTime>
+            // http://sabre.io/dav/clients/msoffice/
+            // Carot DAV does that too. But we do not know what server does support this.
             TouchAction.Cancel();
           }
           else
