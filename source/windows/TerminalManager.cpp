@@ -159,6 +159,7 @@ TTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
     Terminal->OnDeleteLocalFile = DeleteLocalFile;
     Terminal->OnReadDirectoryProgress = TerminalReadDirectoryProgress;
     Terminal->OnInformation = TerminalInformation;
+    Terminal->OnCustomCommand = TerminalCustomCommand;
   }
   catch(...)
   {
@@ -1082,6 +1083,13 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
       UpdateAppTitle();
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::TerminalCustomCommand(
+  TTerminal * /*Terminal*/, const UnicodeString & Command, bool & Handled)
+{
+  // Implementation has to be thread-safe
+  Handled = CopyCommandToClipboard(Command);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalInformation(

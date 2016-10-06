@@ -28,6 +28,7 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
   const UnicodeString Params, TProcessMessagesEvent ProcessMessages);
 bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
   TProcessMessagesEvent ProcessMessages);
+bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData);
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);

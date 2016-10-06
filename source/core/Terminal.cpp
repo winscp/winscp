@@ -670,6 +670,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FOnDisplayBanner = NULL;
   FOnShowExtendedException = NULL;
   FOnInformation = NULL;
+  FOnCustomCommand = NULL;
   FOnClose = NULL;
   FOnFindingFile = NULL;
 
@@ -3493,8 +3494,21 @@ void __fastcall TTerminal::CustomCommandOnFiles(UnicodeString Command,
     UnicodeString Cmd =
       TRemoteCustomCommand(Data, CurrentDirectory, L"", FileList).
         Complete(Command, true);
-    DoAnyCommand(Cmd, OutputEvent, NULL);
+    if (!DoOnCustomCommand(Cmd))
+    {
+      DoAnyCommand(Cmd, OutputEvent, NULL);
+    }
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::DoOnCustomCommand(const UnicodeString & Command)
+{
+  bool Result = false;
+  if (FOnCustomCommand != NULL)
+  {
+    FOnCustomCommand(this, Command, Result);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ChangeFileProperties(UnicodeString FileName,
@@ -4104,6 +4118,7 @@ TTerminal * __fastcall TTerminal::GetCommandSession()
       FCommandSession->OnProgress = OnProgress;
       FCommandSession->OnFinished = OnFinished;
       FCommandSession->OnInformation = OnInformation;
+      FCommandSession->OnCustomCommand = OnCustomCommand;
       FCommandSession->OnClose = CommandSessionClose;
       // do not copy OnDisplayBanner to avoid it being displayed
     }

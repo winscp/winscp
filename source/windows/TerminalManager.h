@@ -132,6 +132,7 @@ private:
     int ResolvedLinks, bool & Cancel);
   void __fastcall TerminalInformation(TTerminal * Terminal, const UnicodeString & Str,
     bool Status, int Phase);
+  void __fastcall TerminalCustomCommand(TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
   void __fastcall FreeAll();
   void __fastcall TerminalReady();
   TStrings * __fastcall GetTerminalList();

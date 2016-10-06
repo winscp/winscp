@@ -1311,7 +1311,10 @@ void __fastcall TSCPFileSystem::CustomCommandOnFile(const UnicodeString FileName
       Data, FTerminal->CurrentDirectory, FileName, L"").
       Complete(Command, true);
 
-    AnyCommand(Cmd, OutputEvent);
+    if (!FTerminal->DoOnCustomCommand(Cmd))
+    {
+      AnyCommand(Cmd, OutputEvent);
+    }
   }
 }
 //---------------------------------------------------------------------------

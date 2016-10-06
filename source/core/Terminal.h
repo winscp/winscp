@@ -58,6 +58,8 @@ typedef int __fastcall (__closure *TDirectoryModifiedEvent)
   (TTerminal * Terminal, const UnicodeString Directory, bool SubDirs);
 typedef void __fastcall (__closure *TInformationEvent)
   (TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase);
+typedef void __fastcall (__closure *TCustomCommandEvent)
+  (TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
 //---------------------------------------------------------------------------
 #define THROW_SKIP_FILE(EXCEPTION, MESSAGE) \
   throw EScpSkipFile(EXCEPTION, MESSAGE)
@@ -198,6 +200,7 @@ private:
   TDisplayBannerEvent FOnDisplayBanner;
   TExtendedExceptionEvent FOnShowExtendedException;
   TInformationEvent FOnInformation;
+  TCustomCommandEvent FOnCustomCommand;
   TNotifyEvent FOnClose;
   TCallbackGuard * FCallbackGuard;
   TFindingFileEvent FOnFindingFile;
@@ -393,6 +396,7 @@ protected:
     const UnicodeString & FileName, TFileOperation Operation1, TFileOperation Operation2 = foNone);
   void __fastcall CommandSessionClose(TObject * Sender);
   bool __fastcall CanRecurseToDirectory(const TRemoteFile * File);
+  bool __fastcall DoOnCustomCommand(const UnicodeString & Command);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -544,6 +548,7 @@ public:
   __property TDisplayBannerEvent OnDisplayBanner = { read = FOnDisplayBanner, write = FOnDisplayBanner };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
   __property TInformationEvent OnInformation = { read = FOnInformation, write = FOnInformation };
+  __property TCustomCommandEvent OnCustomCommand = { read = FOnCustomCommand, write = FOnCustomCommand };
   __property TNotifyEvent OnClose = { read = FOnClose, write = FOnClose };
   __property int TunnelLocalPortNumber = { read = FTunnelLocalPortNumber };
 };

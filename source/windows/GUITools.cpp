@@ -176,15 +176,20 @@ bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
-static bool __fastcall CopyShellCommandToClipboard(const UnicodeString & Path, const UnicodeString & Params)
+bool __fastcall CopyCommandToClipboard(const UnicodeString & Command)
 {
   bool Result = UseAlternativeFunction() && IsKeyPressed(VK_CONTROL);
   if (Result)
   {
     TInstantOperationVisualizer Visualizer;
-    CopyToClipboard(FormatCommand(Path, Params));
+    CopyToClipboard(Command);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+static bool __fastcall CopyShellCommandToClipboard(const UnicodeString & Path, const UnicodeString & Params)
+{
+  return CopyCommandToClipboard(FormatCommand(Path, Params));
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params, bool ChangeWorkingDirectory)
