@@ -1249,73 +1249,87 @@ void __fastcall TSessionData::ImportFromFilezilla(
 
   SynchronizeBrowsing = (ReadXmlNode(Node, L"SyncBrowsing", SynchronizeBrowsing ? 1 : 0) != 0);
 
-  bool BypassProxy = (ReadXmlNode(Node, L"BypassProxy", 0) != 0);
-
-  if ((SettingsNode != NULL) && !BypassProxy)
+  if (SettingsNode != NULL)
   {
-    int FtpProxyType = ReadSettingsNode(SettingsNode, L"FTP Proxy type", -1);
-    if (FtpProxyType > 0)
+    if (UsesSsh)
     {
-      switch (FtpProxyType)
+      UnicodeString KeyFiles = ReadSettingsNode(SettingsNode, L"SFTP keyfiles", UnicodeString());
+      UnicodeString KeyFile = CutToChar(KeyFiles, L'\n', true).Trim();
+      KeyFiles = KeyFiles.Trim();
+      // If there are more keys, ignore them, as we do not know which one to use
+      if (!KeyFile.IsEmpty() && KeyFiles.IsEmpty())
       {
-        case 1:
-          FtpProxyLogonType = 2;
-          break;
-        case 2:
-          FtpProxyLogonType = 1;
-          break;
-        case 3:
-          FtpProxyLogonType = 3;
-          break;
-        case 4:
-          // custom
-          // TODO: map known sequences to our enumeration
-          FtpProxyLogonType = 0;
-          break;
-        default:
-          DebugFail();
-          FtpProxyLogonType = 0;
-          break;
+        PublicKeyFile = KeyFile;
       }
-
-      ProxyHost = ReadSettingsNode(SettingsNode, L"FTP Proxy host", ProxyHost);
-      ProxyUsername = ReadSettingsNode(SettingsNode, L"FTP Proxy user", ProxyUsername);
-      ProxyPassword = ReadSettingsNode(SettingsNode, L"FTP Proxy password", ProxyPassword);
-      // ProxyPort is not used with FtpProxyLogonType
     }
-    else
+
+    bool BypassProxy = (ReadXmlNode(Node, L"BypassProxy", 0) != 0);
+    if (!BypassProxy)
     {
-      int ProxyType = ReadSettingsNode(SettingsNode, L"Proxy type", -1);
-      if (ProxyType >= 0)
+      int FtpProxyType = ReadSettingsNode(SettingsNode, L"FTP Proxy type", -1);
+      if (FtpProxyType > 0)
       {
-        switch (ProxyType)
+        switch (FtpProxyType)
         {
-          case 0:
-            ProxyMethod = ::pmNone;
-            break;
-
           case 1:
-            ProxyMethod = pmHTTP;
+            FtpProxyLogonType = 2;
             break;
-
           case 2:
-            ProxyMethod = pmSocks5;
+            FtpProxyLogonType = 1;
             break;
-
           case 3:
-            ProxyMethod = pmSocks4;
+            FtpProxyLogonType = 3;
             break;
-
+          case 4:
+            // custom
+            // TODO: map known sequences to our enumeration
+            FtpProxyLogonType = 0;
+            break;
           default:
             DebugFail();
-            ProxyMethod = ::pmNone;
+            FtpProxyLogonType = 0;
             break;
         }
 
-        ProxyHost = ReadSettingsNode(SettingsNode, L"Proxy host", ProxyHost);
-        ProxyPort = ReadSettingsNode(SettingsNode, L"Proxy port", ProxyPort);
-        ProxyUsername = ReadSettingsNode(SettingsNode, L"Proxy user", ProxyUsername);
-        ProxyPassword = ReadSettingsNode(SettingsNode, L"Proxy password", ProxyPassword);
+        ProxyHost = ReadSettingsNode(SettingsNode, L"FTP Proxy host", ProxyHost);
+        ProxyUsername = ReadSettingsNode(SettingsNode, L"FTP Proxy user", ProxyUsername);
+        ProxyPassword = ReadSettingsNode(SettingsNode, L"FTP Proxy password", ProxyPassword);
+        // ProxyPort is not used with FtpProxyLogonType
+      }
+      else
+      {
+        int ProxyType = ReadSettingsNode(SettingsNode, L"Proxy type", -1);
+        if (ProxyType >= 0)
+        {
+          switch (ProxyType)
+          {
+            case 0:
+              ProxyMethod = ::pmNone;
+              break;
+
+            case 1:
+              ProxyMethod = pmHTTP;
+              break;
+
+            case 2:
+              ProxyMethod = pmSocks5;
+              break;
+
+            case 3:
+              ProxyMethod = pmSocks4;
+              break;
+
+            default:
+              DebugFail();
+              ProxyMethod = ::pmNone;
+              break;
+          }
+
+          ProxyHost = ReadSettingsNode(SettingsNode, L"Proxy host", ProxyHost);
+          ProxyPort = ReadSettingsNode(SettingsNode, L"Proxy port", ProxyPort);
+          ProxyUsername = ReadSettingsNode(SettingsNode, L"Proxy user", ProxyUsername);
+          ProxyPassword = ReadSettingsNode(SettingsNode, L"Proxy password", ProxyPassword);
+        }
       }
     }
   }
