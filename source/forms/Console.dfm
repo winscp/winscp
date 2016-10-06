@@ -1447,6 +1447,7 @@ object ConsoleDialog: TConsoleDialog
     Height = 21
     AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
+    MaxLength = 2048
     TabOrder = 0
     OnChange = CommandEditChange
   end
