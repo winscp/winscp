@@ -72,6 +72,7 @@ object CustomCommandDialog: TCustomCommandDialog
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
+      MaxLength = 2048
       TabOrder = 1
       OnChange = ControlChange
       OnGetData = CommandEditGetData
