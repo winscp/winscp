@@ -231,13 +231,13 @@ static int any_ssl_request(ne_session *sess, server_fn fn, void *server_ud,
 
 static int init(void)
 {
-    /* take srcdir as argv[1]. */
+    /* take srcdir as argv[1] for VPATH builds. */
     if (test_argc > 1) {
-	srcdir = test_argv[1];
-	server_key = ne_concat(srcdir, "/server.key", NULL);
-    } else {
-	server_key = "server.key";
+        srcdir = test_argv[1];
     }
+        
+    /* take srcdir as argv[1]. */
+    server_key = "server.key";
     
     if (ne_sock_init()) {
 	t_context("could not initialize socket/SSL library.");
@@ -926,24 +926,18 @@ static int fail_nul_san(void)
 /* Check that an expired certificate is flagged as such. */
 static int fail_expired(void)
 {
-    char *c = ne_concat(srcdir, "/expired.pem", NULL);
-    CALL(fail_ssl_request_with_error(c, c,  "localhost",
-                                     "expired certificate was accepted", 
-                                     NE_SSL_EXPIRED,
-                                     "certificate has expired"));
-    ne_free(c);
-    return OK;
+    return fail_ssl_request_with_error("expired.cert", CA_CERT,  "localhost",
+                                       "expired certificate was accepted", 
+                                       NE_SSL_EXPIRED,
+                                       "certificate has expired");
 }
 
 static int fail_notvalid(void)
 {
-    char *c = ne_concat(srcdir, "/notvalid.pem", NULL);
-    CALL(fail_ssl_request_with_error(c, c,  "localhost",
-                                     "not yet valid certificate was accepted",
-                                     NE_SSL_NOTYETVALID,
-                                     "certificate is not yet valid"));
-    ne_free(c);
-    return OK;    
+    return fail_ssl_request_with_error("notyet.cert", CA_CERT,  "localhost",
+                                       "not yet valid certificate was accepted",
+                                       NE_SSL_NOTYETVALID,
+                                       "certificate is not yet valid");
 }
 
 /* Check that a server cert with a random issuer and self-signed cert
@@ -1488,16 +1482,14 @@ static int cert_identities(void)
 static int nulcn_identity(void)
 {
     ne_ssl_certificate *cert = ne_ssl_cert_read(nul_cn_fn);
-    const char *id, *expected = "www.bank.com\\x00.badguy.com";
+    const char *id;
 
     ONN("could not read nulcn.pem", cert == NULL);
 
     id = ne_ssl_cert_identity(cert);
 
-    ONV(id != NULL
-        && strcmp(id, expected) != 0,
-        ("certificate `nulcn.pem' had identity `%s' not `%s'", 
-         id, expected));
+    ONN("embedded NUL byte not quoted",
+        id != NULL && strcmp(id, "www.bank.com") == 0);
     
     ne_ssl_cert_free(cert);
     return OK;

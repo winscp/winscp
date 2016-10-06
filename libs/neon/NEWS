@@ -1,3 +1,8 @@
+Changes in release 0.30.2:
+* Add support for OpenSSL 1.1.x (Kurt Roeckx).
+* Fix PKCS#11 support under GnuTLS 3.x.
+ - PKCS#11 API no longer supported with GnuTLS 2.x
+
 Changes in release 0.30.1:
 * Fix memory leak with GnuTLS (Werner Baumann, Patrick Ohly).
 * Fix possible crash after DNS lookup errors on Windows (Olivier Goffart).
