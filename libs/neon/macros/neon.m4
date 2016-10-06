@@ -137,7 +137,7 @@ AC_DEFUN([NE_VERSIONS_BUNDLED], [
 # Define the current versions.
 NE_VERSION_MAJOR=0
 NE_VERSION_MINOR=30
-NE_VERSION_PATCH=1
+NE_VERSION_PATCH=2
 NE_VERSION_TAG=
 
 # 0.30.x is backwards-compatible to 0.27.x, so AGE=3
@@ -982,10 +982,11 @@ gnutls)
 
    # Check for functions in later releases
    NE_CHECK_FUNCS([gnutls_session_get_data2 gnutls_x509_dn_get_rdn_ava \
-                  gnutls_sign_callback_set \
                   gnutls_certificate_get_issuer \
                   gnutls_certificate_get_x509_cas \
-                  gnutls_x509_crt_sign2])
+                  gnutls_x509_crt_sign2 \
+                  gnutls_certificate_set_retrieve_function2 \
+                  gnutls_privkey_import_ext])
 
    # fail if gnutls_x509_crt_sign2 is not found (it was introduced in 1.2.0, which is required)
    if test x${ac_cv_func_gnutls_x509_crt_sign2} != xyes; then
@@ -1039,7 +1040,7 @@ posix|yes)
   ;;
 esac
 
-case ${with_pakchois}X${ac_cv_func_gnutls_sign_callback_set}Y${ne_cv_lib_ssl097} in
+case ${with_pakchois}X${ac_cv_func_gnutls_privkey_import_ext}Y${ne_cv_lib_ssl097} in
 noX*Y*) ;;
 *X*Yyes|*XyesY*)
     # PKCS#11... ho!

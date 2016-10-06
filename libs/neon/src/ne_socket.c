@@ -1802,11 +1802,6 @@ int ne_sock_connect_ssl(ne_socket *sock, ne_ssl_context *ctx, void *userdata)
     gnutls_session_set_ptr(sock->ssl, userdata);
     gnutls_credentials_set(sock->ssl, GNUTLS_CRD_CERTIFICATE, ctx->cred);
 
-#ifdef HAVE_GNUTLS_SIGN_CALLBACK_SET
-    if (ctx->sign_func)
-        gnutls_sign_callback_set(sock->ssl, ctx->sign_func, ctx->sign_data);    
-#endif
-
     if (ctx->hostname) {
         gnutls_server_name_set(sock->ssl, GNUTLS_NAME_DNS, ctx->hostname,
                                strlen(ctx->hostname));
@@ -1872,6 +1867,8 @@ int ne_sock_sessid(ne_socket *sock, unsigned char *buf, size_t *buflen)
     }
 #else
     SSL_SESSION *sess;
+    const unsigned char *idbuf;
+    unsigned int idlen;
 
     if (!sock->ssl) {
         return -1;
@@ -1879,17 +1876,18 @@ int ne_sock_sessid(ne_socket *sock, unsigned char *buf, size_t *buflen)
 
     sess = SSL_get0_session(sock->ssl);
 
+    idbuf = SSL_SESSION_get_id(sess, &idlen);
     if (!buf) {
-        *buflen = sess->session_id_length;
+        *buflen = idlen;
         return 0;
     }
 
-    if (*buflen < sess->session_id_length) {
+    if (*buflen < idlen) {
         return -1;
     }
 
-    *buflen = sess->session_id_length;
-    memcpy(buf, sess->session_id, *buflen);
+    *buflen = idlen;
+    memcpy(buf, idbuf, idlen);
     return 0;
 #endif
 #else

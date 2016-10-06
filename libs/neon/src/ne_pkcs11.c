@@ -40,6 +40,9 @@ struct ne_ssl_pkcs11_provider_s {
     ne_ssl_client_cert *clicert;
     ck_object_handle_t privkey;
     ck_key_type_t keytype;
+#ifdef HAVE_OPENSSL
+    RSA_METHOD *method;
+#endif
 };
 
 /* To do list for PKCS#11 support:
@@ -69,14 +72,37 @@ struct ne_ssl_pkcs11_provider_s {
 #include <openssl/rsa.h>
 #include <openssl/err.h>
 
+#if defined(RSA_F_RSA_PRIVATE_ENCRYPT)
+#define PK11_RSA_ERR (RSA_F_RSA_PRIVATE_ENCRYPT)
+#else
 #define PK11_RSA_ERR (RSA_F_RSA_EAY_PRIVATE_ENCRYPT)
+#endif
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+/* Compatibility functions for OpenSSL < 1.1.0: */
+#define RSA_meth_get0_app_data(rsa) (void *)(rsa->app_data)
+static RSA_METHOD *RSA_meth_new(const char *name, int flags)
+{
+    RSA_METHOD *m = ne_calloc(sizeof *m);
+
+    m->name = name;
+    m->flags = flags;
+
+    return m;
+
+}
+#define RSA_meth_free ne_free
+#define RSA_meth_set_priv_enc(m, f) (m)->rsa_priv_enc = (f)
+#define RSA_meth_set0_app_data(m, f) (m)->app_data = (void *)(f)
+#endif
 
 /* RSA_METHOD ->rsa_private_encrypt calback. */
 static int pk11_rsa_encrypt(int mlen, const unsigned char *m, 
                             unsigned char *sigret,
                             RSA *r, int padding)
 {
-    ne_ssl_pkcs11_provider *prov = (ne_ssl_pkcs11_provider *)r->meth->app_data;
+    const RSA_METHOD *method = RSA_get_method(r);
+    ne_ssl_pkcs11_provider *prov = RSA_meth_get0_app_data(method);
     ck_rv_t rv;
     struct ck_mechanism mech;
     unsigned long len;
@@ -118,42 +144,24 @@ static int pk11_rsa_encrypt(int mlen, const unsigned char *m,
     return len;
 }
 
-/* RSA_METHOD ->rsa_finish implementation; called during
- * RSA_free(rsa). */
-static int pk11_rsa_finish(RSA *rsa)
-{
-    RSA_METHOD *meth = (RSA_METHOD *)rsa->meth;
-
-    /* Freeing the dynamically allocated method here works as well as
-     * doing anything else: */
-    ne_free(meth);
-    /* Does not appear that rsa->meth will be used after this, but in
-     * case it is, ensure a NULL pointer dereference rather than a
-     * random pointer dereference. */
-    rsa->meth = NULL;
-
-    return 0;
-}
-
 /* Return an RSA_METHOD which will use the PKCS#11 provider to
  * implement the signing operation. */
 static RSA_METHOD *pk11_rsa_method(ne_ssl_pkcs11_provider *prov)
 {
-    RSA_METHOD *m = ne_calloc(sizeof *m);
+    RSA_METHOD *m = RSA_meth_new("neon PKCS#11", RSA_METHOD_FLAG_NO_CHECK);
 
-    m->name = "neon PKCS#11";
-    m->rsa_priv_enc = pk11_rsa_encrypt;
-    
-    m->finish = pk11_rsa_finish;
-    
-    /* This is hopefully under complete control of the RSA_METHOD,
-     * otherwise there is nowhere to put this. */
-    m->app_data = (char *)prov;
+    RSA_meth_set_priv_enc(m, pk11_rsa_encrypt);
+    RSA_meth_set0_app_data(m, prov);
 
-    m->flags = RSA_METHOD_FLAG_NO_CHECK;
-    
-    return m;    
+    return m;
 }
+#endif
+
+#ifdef HAVE_GNUTLS
+static int pk11_sign_callback(gnutls_privkey_t pkey,
+                              void *userdata,
+                              const gnutls_datum_t *raw_data,
+                              gnutls_datum_t *signature);
 #endif
 
 static int pk11_find_x509(ne_ssl_pkcs11_provider *prov,
@@ -203,9 +211,9 @@ static int pk11_find_x509(ne_ssl_pkcs11_provider *prov,
             ne_ssl_client_cert *cc;
             
 #ifdef HAVE_GNUTLS
-            cc = ne__ssl_clicert_exkey_import(value, a[0].value_len);
+            cc = ne__ssl_clicert_exkey_import(value, a[0].value_len, pk11_sign_callback, prov);
 #else
-            cc = ne__ssl_clicert_exkey_import(value, a[0].value_len, pk11_rsa_method(prov));
+            cc = ne__ssl_clicert_exkey_import(value, a[0].value_len, prov->method);
 #endif
             if (cc) {
                 NE_DEBUG(NE_DBG_SSL, "pk11: Imported X.509 cert.\n");
@@ -298,10 +306,8 @@ static int find_client_cert(ne_ssl_pkcs11_provider *prov,
 #ifdef HAVE_GNUTLS
 /* Callback invoked by GnuTLS to provide the signature.  The signature
  * operation is handled here by the PKCS#11 provider.  */
-static int pk11_sign_callback(gnutls_session_t session,
+static int pk11_sign_callback(gnutls_privkey_t pkey,
                               void *userdata,
-                              gnutls_certificate_type_t cert_type,
-                              const gnutls_datum_t *cert,
                               const gnutls_datum_t *hash,
                               gnutls_datum_t *signature)
 {
@@ -528,6 +534,10 @@ static int pk11_init(ne_ssl_pkcs11_provider **provider,
     prov->module = module;
     prov->privkey = CK_INVALID_HANDLE;
 
+#ifdef HAVE_OPENSSL
+    prov->method = pk11_rsa_method(prov);
+#endif    
+    
     return NE_PK11_OK;
 }
 
@@ -572,11 +582,6 @@ void ne_ssl_pkcs11_provider_pin(ne_ssl_pkcs11_provider *provider,
 void ne_ssl_set_pkcs11_provider(ne_session *sess, 
                                 ne_ssl_pkcs11_provider *provider)
 {
-#ifdef HAVE_GNUTLS
-    sess->ssl_context->sign_func = pk11_sign_callback;
-    sess->ssl_context->sign_data = provider;
-#endif
-
     ne_ssl_provide_clicert(sess, pk11_provide, provider);
 }
 
@@ -589,6 +594,9 @@ void ne_ssl_pkcs11_provider_destroy(ne_ssl_pkcs11_provider *prov)
         ne_ssl_clicert_free(prov->clicert);
     }
     pakchois_module_destroy(prov->module);
+#ifdef HAVE_OPENSSL
+    RSA_meth_free(prov->method);
+#endif
     ne_free(prov);
 }
 
