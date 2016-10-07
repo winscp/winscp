@@ -1763,7 +1763,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
     if (!LocalCustomCommand.IsFileCommand(Command))
     {
-      ExecuteShell(LocalCustomCommand.Complete(Command, true));
+      ExecuteShellChecked(LocalCustomCommand.Complete(Command, true));
     }
     // remote files?
     else if ((FCurrentSide == osRemote) || LocalFileCommand)
@@ -1868,11 +1868,11 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
               if (NonBlocking)
               {
-                ExecuteShell(ShellCommand);
+                ExecuteShellChecked(ShellCommand);
               }
               else
               {
-                ExecuteShellAndWait(ShellCommand);
+                ExecuteShellCheckedAndWait(ShellCommand);
               }
             }
             else if (LocalFileCommand)
@@ -1886,7 +1886,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   UnicodeString FileName = RemoteFileList->Strings[Index];
                   TLocalCustomCommand CustomCommand(Data,
                     Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), FileName, LocalFile, L"");
-                  ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+                  ExecuteShellCheckedAndWait(CustomCommand.Complete(Command, true));
                 }
               }
               else if (RemoteFileList->Count == 1)
@@ -1898,7 +1898,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   TLocalCustomCommand CustomCommand(
                     Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                     FileName, LocalFileList->Strings[Index], L"");
-                  ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+                  ExecuteShellCheckedAndWait(CustomCommand.Complete(Command, true));
                 }
               }
               else
@@ -1914,7 +1914,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   TLocalCustomCommand CustomCommand(
                     Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                     FileName, LocalFileList->Strings[Index], L"");
-                  ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+                  ExecuteShellCheckedAndWait(CustomCommand.Complete(Command, true));
                 }
               }
             }
@@ -1925,7 +1925,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                 TLocalCustomCommand CustomCommand(Data,
                   Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                   RemoteFileList->Strings[Index], L"", L"");
-                ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+                ExecuteShellCheckedAndWait(CustomCommand.Complete(Command, true));
               }
             }
           }
@@ -2035,7 +2035,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
         TLocalCustomCommand CustomCommand(
           Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
           L"", L"", FileList);
-        ExecuteShell(CustomCommand.Complete(Command, true));
+        ExecuteShellChecked(CustomCommand.Complete(Command, true));
       }
       else
       {
@@ -2053,7 +2053,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
             TLocalCustomCommand CustomCommand(
               Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
               FileName, L"", L"");
-            ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+            ExecuteShellCheckedAndWait(CustomCommand.Complete(Command, true));
           }
         }
         __finally
@@ -2845,7 +2845,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       Program = ExpandEnvironmentVariables(Program);
       if (!ExecuteShell(Program, Params, Process))
       {
-        throw Exception(FMTLOAD(EDITOR_ERROR, (Program)));
+        throw EOSExtException(FMTLOAD(EDITOR_ERROR, (Program)));
       }
     }
     else
@@ -2853,7 +2853,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       DebugAssert(Side == osRemote);
       if (!ExecuteShell(FileName, L"", Process))
       {
-        throw Exception(FMTLOAD(EXECUTE_FILE_ERROR, (FileName)));
+        throw EOSExtException(FMTLOAD(EXECUTE_FILE_ERROR, (FileName)));
       }
     }
 

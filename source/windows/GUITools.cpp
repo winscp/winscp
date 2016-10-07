@@ -145,10 +145,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     // PuTTY is started in its binary directory to allow relative paths in private key,
     // when opening PuTTY's own stored session.
-    if (!ExecuteShell(Program, PuttyParams, true))
-    {
-      throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
-    }
+    ExecuteShellChecked(Program, PuttyParams, true);
   }
   else
   {
@@ -187,91 +184,90 @@ bool __fastcall CopyCommandToClipboard(const UnicodeString & Command)
   return Result;
 }
 //---------------------------------------------------------------------------
-static bool __fastcall CopyShellCommandToClipboard(const UnicodeString & Path, const UnicodeString & Params)
+static bool __fastcall DoExecuteShell(const UnicodeString Path, const UnicodeString Params,
+  bool ChangeWorkingDirectory, HANDLE * Handle)
 {
-  return CopyCommandToClipboard(FormatCommand(Path, Params));
-}
-//---------------------------------------------------------------------------
-bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params, bool ChangeWorkingDirectory)
-{
-  bool Result = true;
-  if (!CopyShellCommandToClipboard(Path, Params))
+  bool Result = CopyCommandToClipboard(FormatCommand(Path, Params));
+
+  if (!Result)
   {
     UnicodeString Directory = ExtractFilePath(Path);
-    const wchar_t * PDirectory = (ChangeWorkingDirectory ? Directory.c_str() : NULL);
-    Result =
-      ((int)ShellExecute(NULL, L"open", (wchar_t*)Path.data(),
-        (wchar_t*)Params.data(), PDirectory, SW_SHOWNORMAL) > 32);
+
+    TShellExecuteInfoW ExecuteInfo;
+    memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
+    ExecuteInfo.cbSize = sizeof(ExecuteInfo);
+    ExecuteInfo.fMask =
+      SEE_MASK_FLAG_NO_UI |
+      FLAGMASK((Handle != NULL), SEE_MASK_NOCLOSEPROCESS);
+    ExecuteInfo.hwnd = Application->Handle;
+    ExecuteInfo.lpFile = (wchar_t*)Path.data();
+    ExecuteInfo.lpParameters = (wchar_t*)Params.data();
+    ExecuteInfo.lpDirectory = (ChangeWorkingDirectory ? Directory.c_str() : NULL);
+    ExecuteInfo.nShow = SW_SHOW;
+
+    Result = (ShellExecuteEx(&ExecuteInfo) != 0);
+    if (Result)
+    {
+      if (Handle != NULL)
+      {
+        *Handle = ExecuteInfo.hProcess;
+      }
+    }
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShell(const UnicodeString Command)
+void __fastcall ExecuteShellChecked(const UnicodeString Path, const UnicodeString Params, bool ChangeWorkingDirectory)
+{
+  if (!DoExecuteShell(Path, Params, ChangeWorkingDirectory, NULL))
+  {
+    throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Path)));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ExecuteShellChecked(const UnicodeString Command)
 {
   UnicodeString Program, Params, Dir;
   SplitCommand(Command, Program, Params, Dir);
-  return ExecuteShell(Program, Params);
-}
-//---------------------------------------------------------------------------
-static bool __fastcall DoExecuteShell(HWND ApplicationHandle, const UnicodeString Path, const UnicodeString Params,
-  HANDLE & Handle)
-{
-  bool Result;
-
-  TShellExecuteInfoW ExecuteInfo;
-  memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
-  ExecuteInfo.cbSize = sizeof(ExecuteInfo);
-  ExecuteInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-  ExecuteInfo.hwnd = ApplicationHandle;
-  ExecuteInfo.lpFile = (wchar_t*)Path.data();
-  ExecuteInfo.lpParameters = (wchar_t*)Params.data();
-  ExecuteInfo.nShow = SW_SHOW;
-
-  Result = (ShellExecuteEx(&ExecuteInfo) != 0);
-  if (Result)
-  {
-    Handle = ExecuteInfo.hProcess;
-  }
-  return Result;
+  ExecuteShellChecked(Program, Params);
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle)
 {
-  return DoExecuteShell(Application->Handle, Path, Params, Handle);
+  return DoExecuteShell(Path, Params, false, &Handle);
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
+void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command,
   TProcessMessagesEvent ProcessMessages)
 {
   UnicodeString Program, Params, Dir;
   SplitCommand(Command, Program, Params, Dir);
   HANDLE ProcessHandle;
-  bool Result = true;
-  if (!CopyShellCommandToClipboard(Program, Params))
+  bool Result = DoExecuteShell(Program, Params, false, &ProcessHandle);
+  if (!Result)
   {
-    Result = DoExecuteShell(Handle, Program, Params, ProcessHandle);
-
-    if (Result)
+    throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
+  }
+  else
+  {
+    if (ProcessMessages != NULL)
     {
-      if (ProcessMessages != NULL)
+      unsigned long WaitResult;
+      do
       {
-        unsigned long WaitResult;
-        do
+        WaitResult = WaitForSingleObject(ProcessHandle, 200);
+        if (WaitResult == WAIT_FAILED)
         {
-          WaitResult = WaitForSingleObject(ProcessHandle, 200);
-          if (WaitResult == WAIT_FAILED)
-          {
-            throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));
-          }
-          ProcessMessages();
+          throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));
         }
-        while (WaitResult == WAIT_TIMEOUT);
+        ProcessMessages();
       }
-      else
-      {
-        WaitForSingleObject(ProcessHandle, INFINITE);
-      }
+      while (WaitResult == WAIT_TIMEOUT);
+    }
+    else
+    {
+      WaitForSingleObject(ProcessHandle, INFINITE);
     }
   }
 }

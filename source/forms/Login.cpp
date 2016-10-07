@@ -2358,11 +2358,12 @@ void __fastcall TLoginDialog::SessionTreeExpanding(TObject * /*Sender*/,
 void __fastcall TLoginDialog::ExecuteTool(const UnicodeString & Name)
 {
   UnicodeString Path;
-  if (!FindTool(Name, Path) ||
-      !ExecuteShell(Path, L""))
+  if (!FindTool(Name, Path))
   {
     throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Name)));
   }
+
+  ExecuteShellChecked(Path, L"");
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::RunPageantActionExecute(TObject * /*Sender*/)

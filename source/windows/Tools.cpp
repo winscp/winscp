@@ -295,10 +295,9 @@ UnicodeString __fastcall StoreFormSize(TForm * Form)
   return FORMAT(L"%d,%d,%s", (Form->Width, Form->Height, SavePixelsPerInch()));
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(const UnicodeString Command)
+void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command)
 {
-  return ExecuteShellAndWait(Application->Handle, Command,
-    &Application->ProcessMessages);
+  ExecuteShellCheckedAndWait(Command, &Application->ProcessMessages);
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsKeyPressed(int VirtualKey)
@@ -324,10 +323,7 @@ void __fastcall ExecuteNewInstance(const UnicodeString & Param)
     Arg = FORMAT(L"\"%s\" %s", (Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH)));
   }
 
-  if (!ExecuteShell(Application->ExeName, Arg))
-  {
-    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Application->ExeName)));
-  }
+  ExecuteShellChecked(Application->ExeName, Arg);
 }
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,

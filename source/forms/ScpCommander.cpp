@@ -1586,12 +1586,7 @@ bool __fastcall TScpCommanderForm::ExecuteCommandLine()
     }
     else
     {
-      UnicodeString Program, Params, Dir;
-      SplitCommand(Command, Program, Params, Dir);
-      if (!ExecuteShell(Program, Params))
-      {
-        throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
-      }
+      ExecuteShellChecked(Command);
     }
   }
   return Result;

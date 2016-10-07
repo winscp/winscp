@@ -20,12 +20,12 @@ typedef void __fastcall (__closure* TProcessMessagesEvent)();
 //---------------------------------------------------------------------------
 bool __fastcall FindFile(UnicodeString & Path);
 bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path);
-bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params, bool ChangeWorkingDirectory = false);
-bool __fastcall ExecuteShell(const UnicodeString Command);
+void __fastcall ExecuteShellChecked(const UnicodeString Path, const UnicodeString Params,
+  bool ChangeWorkingDirectory = false);
+void __fastcall ExecuteShellChecked(const UnicodeString Command);
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle);
-bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
-  TProcessMessagesEvent ProcessMessages);
+void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command, TProcessMessagesEvent ProcessMessages);
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData);

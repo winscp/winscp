@@ -1358,10 +1358,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
     Params += L" /OpenGettingStarted";
   }
 
-  if (!ExecuteShell(SetupPath, Params))
-  {
-    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (SetupPath)));
-  }
+  ExecuteShellChecked(SetupPath, Params);
 
   Configuration->Usage->Inc(L"UpdateRuns");
   TerminateApplication();

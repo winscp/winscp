@@ -10,7 +10,7 @@
 #include <Vcl.Graphics.hpp>
 //---------------------------------------------------------------------------
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn);
-bool __fastcall ExecuteShellAndWait(const UnicodeString Command);
+void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command);
 bool __fastcall IsKeyPressed(int VirtualKey);
 bool __fastcall UseAlternativeFunction();
 bool __fastcall OpenInNewWindow();
