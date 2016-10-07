@@ -1344,8 +1344,8 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   {
     Index++;
     SetupPath =
-     ExtractFilePath(SetupPathBase) + ExtractFileNameOnly(SetupPathBase) +
-     FORMAT(".%d", (Index)) + ExtractFileExt(SetupPathBase);
+      ExtractFilePath(SetupPathBase) + ExtractFileNameOnly(SetupPathBase) +
+      FORMAT(".%d", (Index)) + ExtractFileExt(SetupPathBase);
   }
 
   std::unique_ptr<TFileStream> FileStream(new TFileStream(SetupPath, fmCreate));
