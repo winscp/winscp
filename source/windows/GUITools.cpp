@@ -241,14 +241,16 @@ bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Param
   return DoExecuteShell(Application->Handle, Path, Params, Handle);
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
-  const UnicodeString Params, TProcessMessagesEvent ProcessMessages)
+bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
+  TProcessMessagesEvent ProcessMessages)
 {
+  UnicodeString Program, Params, Dir;
+  SplitCommand(Command, Program, Params, Dir);
   HANDLE ProcessHandle;
   bool Result = true;
-  if (!CopyShellCommandToClipboard(Path, Params))
+  if (!CopyShellCommandToClipboard(Program, Params))
   {
-    Result = DoExecuteShell(Handle, Path, Params, ProcessHandle);
+    Result = DoExecuteShell(Handle, Program, Params, ProcessHandle);
 
     if (Result)
     {
@@ -272,15 +274,6 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
       }
     }
   }
-  return Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
-  TProcessMessagesEvent ProcessMessages)
-{
-  UnicodeString Program, Params, Dir;
-  SplitCommand(Command, Program, Params, Dir);
-  return ExecuteShellAndWait(Handle, Program, Params, ProcessMessages);
 }
 //---------------------------------------------------------------------------
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path)

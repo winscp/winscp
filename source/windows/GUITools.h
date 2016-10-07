@@ -24,8 +24,6 @@ bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Param
 bool __fastcall ExecuteShell(const UnicodeString Command);
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle);
-bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
-  const UnicodeString Params, TProcessMessagesEvent ProcessMessages);
 bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
   TProcessMessagesEvent ProcessMessages);
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);

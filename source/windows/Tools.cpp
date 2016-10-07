@@ -295,12 +295,6 @@ UnicodeString __fastcall StoreFormSize(TForm * Form)
   return FORMAT(L"%d,%d,%s", (Form->Width, Form->Height, SavePixelsPerInch()));
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(const UnicodeString Path, const UnicodeString Params)
-{
-  return ExecuteShellAndWait(Application->Handle, Path, Params,
-    &Application->ProcessMessages);
-}
-//---------------------------------------------------------------------------
 bool __fastcall ExecuteShellAndWait(const UnicodeString Command)
 {
   return ExecuteShellAndWait(Application->Handle, Command,
