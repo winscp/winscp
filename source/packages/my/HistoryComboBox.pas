@@ -54,6 +54,9 @@ procedure Register;
 
 implementation
 
+uses
+  PasTools;
+
 procedure Register;
 begin
   RegisterComponents('Martin', [THistoryComboBox]);
@@ -110,9 +113,9 @@ begin
   if soDropDown in SaveOn then SaveToHistory;
 
   // taken from TIECustomComboBox:
-  ItemWidth := GetMaxItemWidth + 8;
+  ItemWidth := GetMaxItemWidth + ScaleByPixelsPerInch(8);
   if Items.Count > DropDowncount then
-    Inc(ItemWidth, 16);
+    Inc(ItemWidth, GetSystemMetrics(SM_CXVSCROLL));
   Self.Perform(CB_SETDROPPEDWIDTH, ItemWidth, 0);
 end;
 

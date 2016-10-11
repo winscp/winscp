@@ -160,7 +160,7 @@ procedure Register;
 implementation
 
 uses
-  SysUtils, Forms, Dialogs, Imglist, ShellAPI, CommCtrl, Math, Windows;
+  SysUtils, Forms, Dialogs, Imglist, ShellAPI, CommCtrl, Math, Windows, PasTools;
 
 procedure Register;
 begin
@@ -213,9 +213,9 @@ begin
       Self.Perform(CB_SETDROPPEDWIDTH, FDropDownFixedWidth, 0)
     else
   begin
-    ItemWidth := GetMaxItemWidth + 8;
+    ItemWidth := GetMaxItemWidth + ScaleByPixelsPerInch(8);
     if Items.Count > DropDowncount then
-      Inc(ItemWidth, 16);
+      Inc(ItemWidth, GetSystemMetrics(SM_CXVSCROLL));
     Self.Perform(CB_SETDROPPEDWIDTH, ItemWidth, 0);
   end;
 
