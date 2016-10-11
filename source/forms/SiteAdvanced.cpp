@@ -1017,6 +1017,8 @@ void __fastcall TSiteAdvancedDialog::FormShow(TObject * /*Sender*/)
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RecycleBinPathEdit);
   InstallPathWordBreakProc(TlsCertificateFileEdit);
+  InstallPathWordBreakProc(SftpServerEdit);
+  InstallPathWordBreakProc(ShellEdit);
 
   ChangePage(EnvironmentSheet);
 
