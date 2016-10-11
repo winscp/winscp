@@ -295,9 +295,96 @@ UnicodeString __fastcall StoreFormSize(TForm * Form)
   return FORMAT(L"%d,%d,%s", (Form->Width, Form->Height, SavePixelsPerInch()));
 }
 //---------------------------------------------------------------------------
-void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command)
+static void __fastcall ExecuteProcessAndReadOutput(const UnicodeString & Command, UnicodeString & Output)
 {
-  ExecuteShellCheckedAndWait(Command, &Application->ProcessMessages);
+  SECURITY_ATTRIBUTES SecurityAttributes;
+  ZeroMemory(&SecurityAttributes, sizeof(SecurityAttributes));
+  SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
+  SecurityAttributes.bInheritHandle = TRUE;
+  SecurityAttributes.lpSecurityDescriptor = NULL;
+
+  HANDLE PipeRead = INVALID_HANDLE_VALUE;
+  HANDLE PipeWrite = INVALID_HANDLE_VALUE;
+
+  if (!CreatePipe(&PipeRead, &PipeWrite, &SecurityAttributes, 0) ||
+      !SetHandleInformation(PipeRead, HANDLE_FLAG_INHERIT, 0))
+  {
+    throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
+  }
+
+  PROCESS_INFORMATION ProcessInformation;
+  ZeroMemory(&ProcessInformation, sizeof(ProcessInformation));
+
+  try
+  {
+    try
+    {
+      STARTUPINFO StartupInfo;
+      ZeroMemory(&StartupInfo, sizeof(StartupInfo));
+      StartupInfo.cb = sizeof(STARTUPINFO);
+      StartupInfo.hStdError = PipeWrite;
+      StartupInfo.hStdOutput = PipeWrite;
+      StartupInfo.wShowWindow = SW_HIDE;
+      StartupInfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+
+      if (!CreateProcess(NULL, Command.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &ProcessInformation))
+      {
+        throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
+      }
+    }
+    __finally
+    {
+      // If we do not close the handle here, the ReadFile below would get stuck once the app finishes writting,
+      // as it still sees that someone "can" write to the pipe.
+      CloseHandle(PipeWrite);
+    }
+
+    char Buffer[4096];
+    DWORD BytesRead;
+    while (ReadFile(PipeRead, Buffer, sizeof(Buffer), &BytesRead, NULL))
+    {
+      Output += UnicodeString(UTF8String(Buffer, BytesRead));
+      // Same as in ExecuteShellCheckedAndWait
+      Sleep(200);
+      Application->ProcessMessages();
+    }
+
+    DWORD ExitCode;
+    if (DebugAlwaysTrue(GetExitCodeProcess(ProcessInformation.hProcess, &ExitCode)) &&
+        (ExitCode != 0))
+    {
+      throw ExtException(MainInstructions(FMTLOAD(COMMAND_FAILED_CODEONLY, (static_cast<int>(ExitCode)))), Output);
+    }
+  }
+  __finally
+  {
+    CloseHandle(ProcessInformation.hProcess);
+    CloseHandle(ProcessInformation.hThread);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ExecuteProcessChecked(const UnicodeString & Command, UnicodeString * Output)
+{
+  if (Output == NULL)
+  {
+    ExecuteShellChecked(Command);
+  }
+  else
+  {
+    ExecuteProcessAndReadOutput(Command, *Output);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ExecuteProcessCheckedAndWait(const UnicodeString & Command, UnicodeString * Output)
+{
+  if (Output == NULL)
+  {
+    ExecuteShellCheckedAndWait(Command, &Application->ProcessMessages);
+  }
+  else
+  {
+    ExecuteProcessAndReadOutput(Command, *Output);
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsKeyPressed(int VirtualKey)

@@ -2848,6 +2848,10 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
             {
               Params |= ccRemoteFiles;
             }
+            else if (SameText(Value, L"ShowResultsInMsgBox"))
+            {
+              Params |= ccShowResultsInMsgBox;
+            }
             else
             {
               throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));

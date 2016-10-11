@@ -1708,7 +1708,10 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
       Configuration->Usage->Inc(L"RemoteCustomCommandRuns2");
 
-      bool Capture = FLAGSET(ACommand.Params, ccShowResults) || FLAGSET(ACommand.Params, ccCopyResults);
+      bool Capture =
+        FLAGSET(ACommand.Params, ccShowResults) ||
+        FLAGSET(ACommand.Params, ccCopyResults) ||
+        FLAGSET(ACommand.Params, ccShowResultsInMsgBox);
       TCaptureOutputEvent OutputEvent = NULL;
 
       DebugAssert(FCapturedLog == NULL);
@@ -1741,6 +1744,10 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
           {
             DoConsoleDialog(Terminal, L"", FCapturedLog);
           }
+          else if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox))
+          {
+            MessageDialog(FCapturedLog->Text, qtInformation, qaOK);
+          }
         }
       }
       __finally
@@ -1762,9 +1769,16 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
     Configuration->Usage->Inc(L"LocalCustomCommandRuns2");
 
+    std::unique_ptr<UnicodeString> POutput;
+    if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox) ||
+        FLAGSET(ACommand.Params, ccCopyResults))
+    {
+      POutput.reset(new UnicodeString());
+    }
+
     if (!LocalCustomCommand.IsFileCommand(Command))
     {
-      ExecuteShellChecked(LocalCustomCommand.Complete(Command, true));
+      ExecuteProcessChecked(LocalCustomCommand.Complete(Command, true), POutput.get());
     }
     // remote files?
     else if ((FCurrentSide == osRemote) || LocalFileCommand)
@@ -1838,7 +1852,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
             ProcessLocalDirectory(TempDir, Terminal->MakeLocalFileList, &MakeFileListParam);
           }
 
-          bool NonBlocking = FileListCommand && RemoteFiles;
+          bool NonBlocking = FileListCommand && RemoteFiles && !POutput;
 
           TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
 
@@ -1869,11 +1883,12 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
               if (NonBlocking)
               {
+                DebugAssert(!POutput);
                 ExecuteShellChecked(ShellCommand);
               }
               else
               {
-                ExecuteShellCheckedAndWait(ShellCommand);
+                ExecuteProcessCheckedAndWait(ShellCommand, POutput.get());
               }
             }
             else if (LocalFileCommand)
@@ -1887,7 +1902,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   UnicodeString FileName = RemoteFileList->Strings[Index];
                   TLocalCustomCommand CustomCommand(Data,
                     Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), FileName, LocalFile, L"");
-                  ExecuteShellCheckedAndWait(CustomCommand.Complete(Command, true));
+                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), POutput.get());
                 }
               }
               else if (RemoteFileList->Count == 1)
@@ -1899,7 +1914,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   TLocalCustomCommand CustomCommand(
                     Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                     FileName, LocalFileList->Strings[Index], L"");
-                  ExecuteShellCheckedAndWait(CustomCommand.Complete(Command, true));
+                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), POutput.get());
                 }
               }
               else
@@ -1915,7 +1930,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   TLocalCustomCommand CustomCommand(
                     Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                     FileName, LocalFileList->Strings[Index], L"");
-                  ExecuteShellCheckedAndWait(CustomCommand.Complete(Command, true));
+                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), POutput.get());
                 }
               }
             }
@@ -1926,7 +1941,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                 TLocalCustomCommand CustomCommand(Data,
                   Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                   RemoteFileList->Strings[Index], L"", L"");
-                ExecuteShellCheckedAndWait(CustomCommand.Complete(Command, true));
+                ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), POutput.get());
               }
             }
           }
@@ -2036,7 +2051,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
         TLocalCustomCommand CustomCommand(
           Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
           L"", L"", FileList);
-        ExecuteShellChecked(CustomCommand.Complete(Command, true));
+        ExecuteProcessChecked(CustomCommand.Complete(Command, true), POutput.get());
       }
       else
       {
@@ -2054,13 +2069,35 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
             TLocalCustomCommand CustomCommand(
               Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
               FileName, L"", L"");
-            ExecuteShellCheckedAndWait(CustomCommand.Complete(Command, true));
+            ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), POutput.get());
           }
         }
         __finally
         {
           Progress.Stop();
         }
+      }
+    }
+
+    if (POutput.get() != NULL)
+    {
+      // If the output is single-line, we do not want the trailing CRLF, as the CopyToClipboard(TStrings *) does
+      int P = POutput->Pos(sLineBreak);
+      if (P == POutput->Length() - static_cast<int>(strlen(sLineBreak)) + 1)
+      {
+        POutput->SetLength(P - 1);
+      }
+      // Copy even empty output to clipboard
+      if (FLAGSET(ACommand.Params, ccCopyResults))
+      {
+        CopyToClipboard(*POutput);
+      }
+      // But do not show an empty message box.
+      // This way the ShowResultsInMsgBox can be used to suppress a console window of commands with no output
+      if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox) &&
+          !POutput->IsEmpty())
+      {
+        MessageDialog(*POutput, qtInformation, qaOK);
       }
     }
   }

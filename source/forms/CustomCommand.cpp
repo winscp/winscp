@@ -136,7 +136,6 @@ void __fastcall TCustomCommandDialog::UpdateControls()
   EnableControl(RecursiveCheck, AllowRecursive && (!RemoteFilesCheck->Enabled || !RemoteFilesCheck->Checked));
   EnableControl(ApplyToDirectoriesCheck, AllowApplyToDirectories);
   EnableControl(ShowResultsCheck, RemoteCommand);
-  EnableControl(CopyResultsCheck, RemoteCommand);
   EnableControl(RemoteFilesCheck,
     FLAGCLEAR(FOptions, ccoDisableRemoteFiles) && AllowRemoteFiles &&
     (!RecursiveCheck->Enabled || !RecursiveCheck->Checked));

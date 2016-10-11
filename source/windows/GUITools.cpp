@@ -256,6 +256,7 @@ void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command,
       unsigned long WaitResult;
       do
       {
+        // Same as in ExecuteProcessAndReadOutput
         WaitResult = WaitForSingleObject(ProcessHandle, 200);
         if (WaitResult == WAIT_FAILED)
         {
