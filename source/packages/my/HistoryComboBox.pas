@@ -114,7 +114,7 @@ begin
 
   // taken from TIECustomComboBox:
   ItemWidth := GetMaxItemWidth + ScaleByPixelsPerInch(8);
-  if Items.Count > DropDowncount then
+  if Items.Count > DropDownCount then
     Inc(ItemWidth, GetSystemMetrics(SM_CXVSCROLL));
   Self.Perform(CB_SETDROPPEDWIDTH, ItemWidth, 0);
 end;
