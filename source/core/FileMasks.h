@@ -135,6 +135,8 @@ friend class TInteractiveCustomCommand;
 
 public:
   TCustomCommand();
+  // Needs an explicit virtual destructor, as is has virtual methods
+  virtual ~TCustomCommand() {}
 
   UnicodeString __fastcall Complete(const UnicodeString & Command, bool LastPass);
   virtual void __fastcall Validate(const UnicodeString & Command);
