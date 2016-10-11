@@ -213,6 +213,7 @@ begin
       Self.Perform(CB_SETDROPPEDWIDTH, FDropDownFixedWidth, 0)
     else
   begin
+    // The same code is in THistoryComboBox.DropDown
     ItemWidth := GetMaxItemWidth + ScaleByPixelsPerInch(8);
     if Items.Count > DropDownCount then
       Inc(ItemWidth, GetSystemMetrics(SM_CXVSCROLL));
