@@ -366,6 +366,7 @@ UnicodeString __fastcall FormatFormCaption(TCustomForm * Form, const UnicodeStri
 class TPublicWinControl : public TWinControl
 {
 friend TWndMethod __fastcall ControlWndProc(TWinControl * Control);
+friend void __fastcall InstallPathWordBreakProc(TWinControl * Control);
 };
 //---------------------------------------------------------------------------
 TWndMethod __fastcall ControlWndProc(TWinControl * Control)
@@ -1094,6 +1095,42 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
   return Result;
 }
 //---------------------------------------------------------------------------
+static void __fastcall PathEditKeyPress(void * /*Data*/, TObject * Sender, char & Key)
+{
+  // Ctrl+Backspace
+  // Have to use OnKeyPress as the Ctrl+Backspace is handled in WM_CHAR as any other char,
+  // so we have to swallow it here to prevent it getting inserted to the text
+  if (Key == '\x7F')
+  {
+    Key = '\0';
+
+    TCustomEdit * Edit = dynamic_cast<TCustomEdit *>(Sender);
+    TCustomComboBox * ComboBox = dynamic_cast<TCustomComboBox *>(Sender);
+    TWinControl * WinControl = DebugNotNull(dynamic_cast<TWinControl *>(Sender));
+
+    if (((Edit != NULL) && (Edit->SelLength == 0)) ||
+        ((ComboBox != NULL) && (ComboBox->SelLength == 0)))
+    {
+      // See TCustomMaskEdit.SetCursor
+      TKeyboardState KeyState;
+      GetKeyboardState(KeyState);
+      TKeyboardState NewKeyState;
+      memset(NewKeyState, 0, sizeof(NewKeyState));
+      NewKeyState[VK_CONTROL] = 0x81;
+      NewKeyState[VK_SHIFT] = 0x81;
+      SetKeyboardState(NewKeyState);
+
+      SendMessage(WinControl->Handle, WM_KEYDOWN, VK_LEFT, 1);
+      NewKeyState[VK_SHIFT] = 0;
+      NewKeyState[VK_CONTROL] = 0;
+      SetKeyboardState(NewKeyState);
+
+      SendMessage(WinControl->Handle, WM_KEYDOWN, VK_DELETE, 1);
+      SetKeyboardState(KeyState);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 class TPublicCustomCombo : public TCustomCombo
 {
 friend void __fastcall InstallPathWordBreakProc(TWinControl * Control);
@@ -1118,6 +1155,12 @@ void __fastcall InstallPathWordBreakProc(TWinControl * Control)
     Wnd = Control->Handle;
   }
   SendMessage(Wnd, EM_SETWORDBREAKPROC, 0, (LPARAM)(EDITWORDBREAKPROC)PathWordBreakProc);
+
+  TPublicWinControl * PublicWinControl = static_cast<TPublicWinControl *>(Control);
+  if (DebugAlwaysTrue(PublicWinControl->OnKeyDown == NULL))
+  {
+    PublicWinControl->OnKeyPress = MakeMethod<TKeyPressEvent>(NULL, PathEditKeyPress);
+  }
 }
 //---------------------------------------------------------------------------
 static void __fastcall RemoveHiddenControlsFromOrder(TControl ** ControlsOrder, int & Count)
