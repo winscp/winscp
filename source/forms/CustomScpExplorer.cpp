@@ -1674,19 +1674,20 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 {
 
   TCustomCommandData Data(Terminal);
-  std::unique_ptr<TCustomCommand> CustomCommandForOptions;
-  if (FLAGCLEAR(ACommand.Params, ccLocal))
-  {
-    CustomCommandForOptions.reset(new TRemoteCustomCommand(Data, Terminal->CurrentDirectory));
-  }
-  else
-  {
-    CustomCommandForOptions.reset(new TLocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory()));
-  }
 
   std::unique_ptr<TStrings> CustomCommandOptions(CloneStrings(WinConfiguration->CustomCommandOptions));
   if (ACommand.AnyOptionWithFlag(TCustomCommandType::ofRun))
   {
+    std::unique_ptr<TCustomCommand> CustomCommandForOptions;
+    if (FLAGCLEAR(ACommand.Params, ccLocal))
+    {
+      CustomCommandForOptions.reset(new TRemoteCustomCommand(Data, Terminal->CurrentDirectory));
+    }
+    else
+    {
+      CustomCommandForOptions.reset(new TLocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory()));
+    }
+
     if (!DoCustomCommandOptionsDialog(&ACommand, CustomCommandOptions.get(), TCustomCommandType::ofRun, CustomCommandForOptions.get()))
     {
       Abort();
