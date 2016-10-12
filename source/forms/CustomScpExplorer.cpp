@@ -1674,6 +1674,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 {
 
   TCustomCommandData Data(Terminal);
+  UnicodeString Site = Terminal->SessionData->SessionKey;
 
   std::unique_ptr<TStrings> CustomCommandOptions(CloneStrings(WinConfiguration->CustomCommandOptions));
   if (ACommand.AnyOptionWithFlag(TCustomCommandType::ofRun))
@@ -1688,13 +1689,14 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
       CustomCommandForOptions.reset(new TLocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory()));
     }
 
-    if (!DoCustomCommandOptionsDialog(&ACommand, CustomCommandOptions.get(), TCustomCommandType::ofRun, CustomCommandForOptions.get()))
+    if (!DoCustomCommandOptionsDialog(
+           &ACommand, CustomCommandOptions.get(), TCustomCommandType::ofRun, CustomCommandForOptions.get(), Site))
     {
       Abort();
     }
   }
 
-  UnicodeString CommandCommand = ACommand.GetCommandWithExpandedOptions(CustomCommandOptions.get());
+  UnicodeString CommandCommand = ACommand.GetCommandWithExpandedOptions(CustomCommandOptions.get(), Site);
 
   if (FLAGCLEAR(ACommand.Params, ccLocal))
   {

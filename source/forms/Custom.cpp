@@ -838,7 +838,7 @@ class TCustomCommandOptionsDialog : public TCustomDialog
 public:
   __fastcall TCustomCommandOptionsDialog(
     const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags,
-    TCustomCommand * CustomCommandForOptions);
+    TCustomCommand * CustomCommandForOptions, const UnicodeString & Site);
 
   bool __fastcall Execute();
 
@@ -852,6 +852,7 @@ private:
   std::vector<TControl *> FControls;
   std::vector<std::vector<UnicodeString> > FValues;
   unsigned int FFlags;
+  UnicodeString FSite;
 
   UnicodeString __fastcall HistoryKey(const TCustomCommandType::TOption & Option);
   THistoryComboBox * __fastcall CreateHistoryComboBox(const TCustomCommandType::TOption & Option, const UnicodeString & Value);
@@ -868,12 +869,14 @@ private:
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
     const TCustomCommandType * Command, TStrings * CustomCommandOptions,
-    unsigned int Flags, TCustomCommand * CustomCommandForOptions) :
+    unsigned int Flags, TCustomCommand * CustomCommandForOptions,
+    const UnicodeString & Site) :
   TCustomDialog(HELP_EXTENSION_OPTIONS)
 {
   FCommand = Command;
   FFlags = Flags;
   FCustomCommandOptions = CustomCommandOptions;
+  FSite = Site;
   Caption = FMTLOAD(EXTENSION_OPTIONS_CAPTION, (StripEllipsis(StripHotkey(FCommand->Name))));
   Width = ScaleByTextHeight(this, 400);
 
@@ -884,7 +887,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
 
     if ((Option.Flags & FFlags) != 0)
     {
-      UnicodeString OptionKey = FCommand->GetOptionKey(Option);
+      UnicodeString OptionKey = FCommand->GetOptionKey(Option, FSite);
       UnicodeString Value;
       if ((CustomCommandForOptions != NULL) &&
           Option.HasPatterns(CustomCommandForOptions))
@@ -1142,7 +1145,7 @@ THistoryComboBox * __fastcall TCustomCommandOptionsDialog::CreateHistoryComboBox
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomCommandOptionsDialog::HistoryKey(const TCustomCommandType::TOption & Option)
 {
-  UnicodeString Result = FCommand->GetOptionKey(Option);
+  UnicodeString Result = FCommand->GetOptionKey(Option, FSite);
   Result = CustomWinConfiguration->GetValidHistoryKey(Result);
   return L"CustomCommandOption_" + Result;
 }
@@ -1162,7 +1165,7 @@ bool __fastcall TCustomCommandOptionsDialog::Execute()
         if ((Option.Kind != TCustomCommandType::okUnknown) &&
             Option.IsControl)
         {
-          UnicodeString OptionKey = FCommand->GetOptionKey(Option);
+          UnicodeString OptionKey = FCommand->GetOptionKey(Option, FSite);
 
           TControl * Control = FControls[ControlIndex];
 
@@ -1291,9 +1294,10 @@ void __fastcall TCustomCommandOptionsDialog::DoShow()
 //---------------------------------------------------------------------------
 bool __fastcall DoCustomCommandOptionsDialog(
   const TCustomCommandType * Command, TStrings * CustomCommandOptions,
-  unsigned int Flags, TCustomCommand * CustomCommandForOptions)
+  unsigned int Flags, TCustomCommand * CustomCommandForOptions,
+  const UnicodeString & Site)
 {
   std::unique_ptr<TCustomCommandOptionsDialog> Dialog(
-    new TCustomCommandOptionsDialog(Command, CustomCommandOptions, Flags, CustomCommandForOptions));
+    new TCustomCommandOptionsDialog(Command, CustomCommandOptions, Flags, CustomCommandForOptions, Site));
   return Dialog->Execute();
 }

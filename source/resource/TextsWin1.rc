@@ -97,6 +97,7 @@ BEGIN
         EXTENSION_DUPLICATE, "There is already an extension with the name \"%s\"."
         EXTENSION_INSTALLED_ALREADY, "The extension is installed already."
         EXTENSION_LOAD_ERROR, "Error loading an extension from \"%s\"."
+        NO_SITE_FOR_COMMAND, "**No session is opened**\nThe selected command has site-specific options, but no session is opened."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"

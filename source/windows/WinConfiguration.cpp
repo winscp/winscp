@@ -2962,15 +2962,19 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
       {
         Option.Flags |= ofConfig;
       }
+      else if (FlagName == L"-site")
+      {
+        Option.Flags |= ofSite;
+      }
       else
       {
         Result = false;
       }
     }
 
-    if (Option.Flags == 0)
+    if ((Option.Flags & (ofRun | ofConfig)) == 0)
     {
-      Option.Flags = ofConfig;
+      Option.Flags |= ofConfig;
     }
 
     KindName = FlagName;
@@ -3100,9 +3104,15 @@ const TCustomCommandType::TOption & __fastcall TCustomCommandType::GetOption(int
   return FOptions[Index];
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomCommandType::GetOptionKey(const TCustomCommandType::TOption & Option) const
+UnicodeString __fastcall TCustomCommandType::GetOptionKey(
+  const TCustomCommandType::TOption & Option, const UnicodeString & Site) const
 {
-  return Id + L"\\" + Option.Id;
+  UnicodeString Result = Id + L"\\" + Option.Id;
+  if (FLAGSET(Option.Flags, ofSite))
+  {
+    Result += L"\\" + Site;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomCommandType::AnyOptionWithFlag(unsigned int Flag) const
@@ -3116,7 +3126,8 @@ bool __fastcall TCustomCommandType::AnyOptionWithFlag(unsigned int Flag) const
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomCommandType::GetCommandWithExpandedOptions(TStrings * CustomCommandOptions) const
+UnicodeString __fastcall TCustomCommandType::GetCommandWithExpandedOptions(
+  TStrings * CustomCommandOptions, const UnicodeString & Site) const
 {
   UnicodeString Result = Command;
   for (int Index = 0; Index < OptionsCount; Index++)
@@ -3124,7 +3135,7 @@ UnicodeString __fastcall TCustomCommandType::GetCommandWithExpandedOptions(TStri
     const TCustomCommandType::TOption & Option = GetOption(Index);
     if (Option.IsControl)
     {
-      UnicodeString OptionKey = GetOptionKey(Option);
+      UnicodeString OptionKey = GetOptionKey(Option, Site);
       UnicodeString OptionValue;
       if (CustomCommandOptions->IndexOfName(OptionKey) >= 0)
       {

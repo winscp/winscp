@@ -721,7 +721,7 @@ public:
   __fastcall TCustomCommandType(const TCustomCommandType & Other);
 
   enum TOptionKind { okUnknown, okLabel, okLink, okSeparator, okGroup, okTextBox, okFile, okDropDownList, okComboBox, okCheckBox };
-  enum TOptionFlag { ofRun = 0x01, ofConfig = 0x02 };
+  enum TOptionFlag { ofRun = 0x01, ofConfig = 0x02, ofSite = 0x04 };
 
   class TOption
   {
@@ -768,8 +768,9 @@ public:
   __property int OptionsCount = { read = GetOptionsCount };
   const TOption & __fastcall GetOption(int Index) const;
   bool __fastcall AnyOptionWithFlag(unsigned int Flag) const;
-  UnicodeString __fastcall GetOptionKey(const TOption & Option) const;
-  UnicodeString __fastcall GetCommandWithExpandedOptions(TStrings * CustomCommandOptions) const;
+  UnicodeString __fastcall GetOptionKey(const TOption & Option, const UnicodeString & Site) const;
+  UnicodeString __fastcall GetCommandWithExpandedOptions(
+    TStrings * CustomCommandOptions, const UnicodeString & Site) const;
 
 protected:
   bool __fastcall ParseOption(const UnicodeString & Value, TOption & Option, const UnicodeString & ExtensionBaseName);
