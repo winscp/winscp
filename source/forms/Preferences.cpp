@@ -24,6 +24,7 @@
 #include "Setup.h"
 #include "ProgParams.h"
 #include "Http.h"
+#include "TerminalManager.h"
 //---------------------------------------------------------------------
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
@@ -2608,6 +2609,17 @@ void __fastcall TPreferencesDialog::AddCommandButtonDropDownClick(TObject * /*Se
   MenuPopup(AddCommandMenu, AddCommandButton);
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TPreferencesDialog::GetSessionKey()
+{
+  TTerminal * Terminal = TTerminalManager::Instance()->ActiveTerminal;
+  UnicodeString Result;
+  if (Terminal != NULL)
+  {
+    Result = Terminal->SessionData->SessionKey;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Sender*/, TShiftState /*Shift*/, int X, int Y)
 {
   TListItem * Item = CustomCommandsView->GetItemAt(X, Y);
@@ -2630,7 +2642,7 @@ void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Send
       {
         Hint += L"\n" + Command->Description;
       }
-      Hint += L"\n" + Command->GetCommandWithExpandedOptions(FCustomCommandOptions.get());
+      Hint += L"\n" + Command->GetCommandWithExpandedOptions(FCustomCommandOptions.get(), GetSessionKey());
       if (List == FExtensionList)
       {
         Hint += L"\n" + Command->FileName;
@@ -2661,7 +2673,13 @@ void __fastcall TPreferencesDialog::ConfigureCommand()
   int Index = CustomCommandsView->ItemIndex;
   const TCustomCommandType * Command = GetCommandList(Index)->Commands[GetCommandIndex(Index)];
 
-  DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get(), TCustomCommandType::ofConfig, NULL);
+  UnicodeString Site = GetSessionKey();
+  if (Command->AnyOptionWithFlag(TCustomCommandType::ofSite) &&
+      Site.IsEmpty())
+  {
+    throw Exception(LoadStr(NO_SITE_FOR_COMMAND));
+  }
+  DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get(), TCustomCommandType::ofConfig, NULL, GetSessionKey());
   UpdateCustomCommandsView();
 }
 //---------------------------------------------------------------------------

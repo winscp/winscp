@@ -439,6 +439,7 @@ private:
   int __fastcall GetCommandIndex(int Index);
   int __fastcall GetCommandListIndex(TCustomCommandList * List, int Index);
   int __fastcall GetListCommandIndex(TCustomCommandList * List);
+  UnicodeString __fastcall GetSessionKey();
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);
