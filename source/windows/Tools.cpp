@@ -295,7 +295,8 @@ UnicodeString __fastcall StoreFormSize(TForm * Form)
   return FORMAT(L"%d,%d,%s", (Form->Width, Form->Height, SavePixelsPerInch()));
 }
 //---------------------------------------------------------------------------
-static void __fastcall ExecuteProcessAndReadOutput(const UnicodeString & Command, UnicodeString & Output)
+static void __fastcall ExecuteProcessAndReadOutput(const
+  UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString & Output)
 {
   SECURITY_ATTRIBUTES SecurityAttributes;
   ZeroMemory(&SecurityAttributes, sizeof(SecurityAttributes));
@@ -353,7 +354,16 @@ static void __fastcall ExecuteProcessAndReadOutput(const UnicodeString & Command
     if (DebugAlwaysTrue(GetExitCodeProcess(ProcessInformation.hProcess, &ExitCode)) &&
         (ExitCode != 0))
     {
-      throw ExtException(MainInstructions(FMTLOAD(COMMAND_FAILED_CODEONLY, (static_cast<int>(ExitCode)))), Output);
+      UnicodeString Buf = Output;
+      UnicodeString Buf2;
+      if (ExtractMainInstructions(Buf, Buf2))
+      {
+        throw ExtException(Output, UnicodeString(), HelpKeyword);
+      }
+      else
+      {
+        throw ExtException(MainInstructions(FMTLOAD(COMMAND_FAILED_CODEONLY, (static_cast<int>(ExitCode)))), Output, HelpKeyword);
+      }
     }
   }
   __finally
@@ -363,7 +373,8 @@ static void __fastcall ExecuteProcessAndReadOutput(const UnicodeString & Command
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall ExecuteProcessChecked(const UnicodeString & Command, UnicodeString * Output)
+void __fastcall ExecuteProcessChecked(
+  const UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString * Output)
 {
   if (Output == NULL)
   {
@@ -371,11 +382,12 @@ void __fastcall ExecuteProcessChecked(const UnicodeString & Command, UnicodeStri
   }
   else
   {
-    ExecuteProcessAndReadOutput(Command, *Output);
+    ExecuteProcessAndReadOutput(Command, HelpKeyword, *Output);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall ExecuteProcessCheckedAndWait(const UnicodeString & Command, UnicodeString * Output)
+void __fastcall ExecuteProcessCheckedAndWait(
+  const UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString * Output)
 {
   if (Output == NULL)
   {
@@ -383,7 +395,7 @@ void __fastcall ExecuteProcessCheckedAndWait(const UnicodeString & Command, Unic
   }
   else
   {
-    ExecuteProcessAndReadOutput(Command, *Output);
+    ExecuteProcessAndReadOutput(Command, HelpKeyword, *Output);
   }
 }
 //---------------------------------------------------------------------------

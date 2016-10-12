@@ -1675,6 +1675,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
   TCustomCommandData Data(Terminal);
   UnicodeString Site = Terminal->SessionData->SessionKey;
+  UnicodeString HelpKeyword = ACommand.HomePage;
 
   std::unique_ptr<TStrings> CustomCommandOptions(CloneStrings(WinConfiguration->CustomCommandOptions));
   if (ACommand.AnyOptionWithFlag(TCustomCommandType::ofRun))
@@ -1780,7 +1781,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
     if (!LocalCustomCommand.IsFileCommand(Command))
     {
-      ExecuteProcessChecked(LocalCustomCommand.Complete(Command, true), POutput.get());
+      ExecuteProcessChecked(LocalCustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
     }
     // remote files?
     else if ((FCurrentSide == osRemote) || LocalFileCommand)
@@ -1890,7 +1891,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
               }
               else
               {
-                ExecuteProcessCheckedAndWait(ShellCommand, POutput.get());
+                ExecuteProcessCheckedAndWait(ShellCommand, HelpKeyword, POutput.get());
               }
             }
             else if (LocalFileCommand)
@@ -1904,7 +1905,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   UnicodeString FileName = RemoteFileList->Strings[Index];
                   TLocalCustomCommand CustomCommand(Data,
                     Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), FileName, LocalFile, L"");
-                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), POutput.get());
+                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
                 }
               }
               else if (RemoteFileList->Count == 1)
@@ -1916,7 +1917,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   TLocalCustomCommand CustomCommand(
                     Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                     FileName, LocalFileList->Strings[Index], L"");
-                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), POutput.get());
+                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
                 }
               }
               else
@@ -1932,7 +1933,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   TLocalCustomCommand CustomCommand(
                     Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                     FileName, LocalFileList->Strings[Index], L"");
-                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), POutput.get());
+                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
                 }
               }
             }
@@ -1943,7 +1944,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                 TLocalCustomCommand CustomCommand(Data,
                   Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
                   RemoteFileList->Strings[Index], L"", L"");
-                ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), POutput.get());
+                ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
               }
             }
           }
@@ -2053,7 +2054,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
         TLocalCustomCommand CustomCommand(
           Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
           L"", L"", FileList);
-        ExecuteProcessChecked(CustomCommand.Complete(Command, true), POutput.get());
+        ExecuteProcessChecked(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
       }
       else
       {
@@ -2071,7 +2072,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
             TLocalCustomCommand CustomCommand(
               Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
               FileName, L"", L"");
-            ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), POutput.get());
+            ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
           }
         }
         __finally
@@ -2099,7 +2100,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
       if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox) &&
           !POutput->IsEmpty())
       {
-        MessageDialog(*POutput, qtInformation, qaOK);
+        MessageDialog(*POutput, qtInformation, qaOK, HelpKeyword);
       }
     }
   }
