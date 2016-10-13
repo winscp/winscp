@@ -79,8 +79,8 @@ __published:
   void __fastcall SpeedComboBoxItemItemClick(TObject *Sender);
   void __fastcall SpeedComboBoxItemAdjustImageIndex(TTBXComboBoxItem *Sender, const UnicodeString AText,
           int AIndex, int &ImageIndex);
-  void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
   void __fastcall ApplicationModalBegin(TObject * Sender);
+  void __fastcall SpeedComboBoxItemClick(TObject *Sender);
 
 private:
   TCancelStatus FCancel;
@@ -118,6 +118,7 @@ private:
   void __fastcall GlobalMinimize(TObject * Sender);
   UnicodeString __fastcall ItemSpeed(const UnicodeString & Text, TTBXComboBoxItem * Item);
   bool __fastcall ApplicationHook(TMessage & Message);
+  void __fastcall CMDialogKey(TCMDialogKey & Message);
 
 protected:
   void __fastcall CancelOperation();

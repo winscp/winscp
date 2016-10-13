@@ -42,7 +42,6 @@ __published:
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall MinimizeItemClick(TObject *Sender);
   void __fastcall CancelItemClick(TObject *Sender);
-  void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 
 public:
   __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize,
@@ -71,6 +70,7 @@ private:
   void __fastcall UpdateControls();
   void __fastcall GlobalMinimize(TObject * Sender);
   void __fastcall CancelOperation();
+  void __fastcall CMDialogKey(TCMDialogKey & Message);
 };
 //---------------------------------------------------------------------------
 #endif

@@ -13,7 +13,6 @@ object ProgressForm: TProgressForm
   OldCreateOrder = False
   Position = poOwnerFormCenter
   OnHide = FormHide
-  OnKeyDown = FormKeyDown
   OnShow = FormShow
   DesignSize = (
     360
@@ -214,22 +213,26 @@ object ProgressForm: TProgressForm
         DragHandleStyle = dhNone
         Images = ImageList
         ParentShowHint = False
+        ProcessShortCuts = True
         ShowHint = True
         TabOrder = 0
         Color = clWindow
         object CancelItem: TTBXItem
           Caption = '&CancelX'
           ImageIndex = 0
+          ShortCut = 27
           OnClick = CancelItemClick
         end
         object MinimizeItem: TTBXItem
           Caption = '&Minimize'
           ImageIndex = 1
+          ShortCut = 32845
           OnClick = MinimizeItemClick
         end
         object MoveToQueueItem: TTBXItem
           Caption = 'Proceed in &Background'
           ImageIndex = 7
+          ShortCut = 32834
           OnClick = MoveToQueueItemClick
         end
         object CycleOnceDoneItem: TTBXSubmenuItem
@@ -237,6 +240,7 @@ object ProgressForm: TProgressForm
           DropdownCombo = True
           Hint = 'Action to perform once the operation finishes'
           ImageIndex = 2
+          ShortCut = 32838
           OnClick = CycleOnceDoneItemClick
           object IdleOnceDoneItem: TTBXItem
             Caption = '&Stay Idle'
@@ -268,7 +272,9 @@ object ProgressForm: TProgressForm
           EditWidth = 110
           Hint = 'Speed limit (KB/s)'
           ImageIndex = 6
+          ShortCut = 32851
           OnAcceptText = SpeedComboBoxItemAcceptText
+          OnClick = SpeedComboBoxItemClick
           ShowImage = True
           OnAdjustImageIndex = SpeedComboBoxItemAdjustImageIndex
           OnItemClick = SpeedComboBoxItemItemClick

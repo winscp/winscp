@@ -514,7 +514,6 @@ protected:
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   virtual void __fastcall CreateWnd();
   virtual void __fastcall DestroyWnd();
-  void __fastcall ClickToolbarItem(TTBCustomItem * Item, bool PositionCursor);
   virtual bool __fastcall OpenBookmark(UnicodeString Local, UnicodeString Remote);
   void __fastcall DoFindFiles(UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);

@@ -122,12 +122,29 @@ void __fastcall TSynchronizeProgressForm::GlobalMinimize(TObject * /*Sender*/)
   FMinimizedByMe = true;
 }
 //---------------------------------------------------------------------------
+void __fastcall TSynchronizeProgressForm::CMDialogKey(TCMDialogKey & Message)
+{
+  if (Message.CharCode == VK_TAB)
+  {
+    Toolbar->KeyboardOpen(L'\0', false);
+    Message.Result = 1;
+  }
+  else
+  {
+    TForm::Dispatch(&Message);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::Dispatch(void * AMessage)
 {
   TMessage & Message = *reinterpret_cast<TMessage *>(AMessage);
   if (Message.Msg == WM_CLOSE)
   {
     CancelOperation();
+  }
+  else if (Message.Msg == CM_DIALOGKEY)
+  {
+    CMDialogKey(reinterpret_cast<TCMDialogKey &>(Message));
   }
   else
   {
@@ -143,16 +160,5 @@ void __fastcall TSynchronizeProgressForm::CancelItemClick(TObject * /*Sender*/)
 void __fastcall TSynchronizeProgressForm::MinimizeItemClick(TObject * Sender)
 {
   CallGlobalMinimizeHandler(Sender);
-}
-//---------------------------------------------------------------------------
-void __fastcall TSynchronizeProgressForm::FormKeyDown(
-  TObject * /*Sender*/, WORD & Key, TShiftState /*Shift*/)
-{
-  // We do not have Cancel button, so we have to handle Esc key explicitly
-  if (Key == VK_ESCAPE)
-  {
-    CancelOperation();
-    Key = 0;
-  }
 }
 //---------------------------------------------------------------------------
