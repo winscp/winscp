@@ -2100,7 +2100,18 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
       if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox) &&
           !POutput->IsEmpty())
       {
-        MessageDialog(*POutput, qtInformation, qaOK, HelpKeyword);
+        TClipboardHandler ClipboardHandler;
+        ClipboardHandler.Text = *POutput;
+
+        TMessageParams Params;
+        TQueryButtonAlias Aliases[1];
+        Aliases[0].Button = qaRetry;
+        Aliases[0].Alias = LoadStr(URL_LINK_COPY); // misuse
+        Aliases[0].OnClick = &ClipboardHandler.Copy;
+        Params.Aliases = Aliases;
+        Params.AliasesCount = LENOF(Aliases);
+
+        MessageDialog(*POutput, qtInformation, qaOK | qaRetry, HelpKeyword, &Params);
       }
     }
   }
