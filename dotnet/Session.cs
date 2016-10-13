@@ -44,6 +44,14 @@ namespace WinSCP
         EnumerateDirectories = 0x04,
     }
 
+    [Guid("16B6D8F6-C0B4-487D-9546-A25BBF582ED6")]
+    [ComVisible(true)]
+    public enum ProgressSide
+    {
+        Local = 0,
+        Remote = 1,
+    }
+
     public delegate void OutputDataReceivedEventHandler(object sender, OutputDataReceivedEventArgs e);
     public delegate void FileTransferredEventHandler(object sender, TransferEventArgs e);
     public delegate void FileTransferProgressEventHandler(object sender, FileTransferProgressEventArgs e);
@@ -611,7 +619,7 @@ namespace WinSCP
                         if (groupReader.IsNonEmptyElement(TransferEventArgs.UploadTag))
                         {
                             AddTransfer(result, args);
-                            args = TransferEventArgs.Read(groupReader);
+                            args = TransferEventArgs.Read(ProgressSide.Local, groupReader);
                             mkdir = false;
                         }
                         else if (groupReader.IsNonEmptyElement(TransferEventArgs.MkDirTag))
@@ -691,7 +699,7 @@ namespace WinSCP
                         if (groupReader.IsNonEmptyElement(TransferEventArgs.DownloadTag))
                         {
                             AddTransfer(result, args);
-                            args = TransferEventArgs.Read(groupReader);
+                            args = TransferEventArgs.Read(ProgressSide.Remote, groupReader);
                         }
                         else if (groupReader.IsNonEmptyElement(RemovalEventArgs.Tag))
                         {
@@ -827,18 +835,24 @@ namespace WinSCP
                 using (RegisterOperationResult(result))
                 using (CreateProgressHandler())
                 {
-                    bool transferIsUpload = false;
                     TransferEventArgs transfer = null;
 
                     while (groupReader.Read(0))
                     {
-                        bool transferWillBeUpload;
-                        if ((transferWillBeUpload = groupReader.IsNonEmptyElement(TransferEventArgs.UploadTag)) ||
-                            groupReader.IsNonEmptyElement(TransferEventArgs.DownloadTag))
+                        ProgressSide? newSide = null;
+                        if (groupReader.IsNonEmptyElement(TransferEventArgs.UploadTag))
                         {
-                            AddSynchronizationTransfer(result, transferIsUpload, transfer);
-                            transfer = TransferEventArgs.Read(groupReader);
-                            transferIsUpload = transferWillBeUpload;
+                            newSide = ProgressSide.Local;
+                        }
+                        else if (groupReader.IsNonEmptyElement(TransferEventArgs.DownloadTag))
+                        {
+                            newSide = ProgressSide.Remote;
+                        }
+
+                        if (newSide.HasValue)
+                        {
+                            AddSynchronizationTransfer(result, transfer);
+                            transfer = TransferEventArgs.Read(newSide.Value, groupReader);
                         }
                         else if (groupReader.IsNonEmptyElement(RemovalEventArgs.Tag))
                         {
@@ -862,7 +876,7 @@ namespace WinSCP
                         }
                     }
 
-                    AddSynchronizationTransfer(result, transferIsUpload, transfer);
+                    AddSynchronizationTransfer(result, transfer);
                 }
                 return result;
             }
@@ -1236,11 +1250,11 @@ namespace WinSCP
             return flag ? string.Format(CultureInfo.InvariantCulture, "-{0}", onName) : string.Format(CultureInfo.InvariantCulture, "-{0}", offName);
         }
 
-        private void AddSynchronizationTransfer(SynchronizationResult result, bool transferIsUpload, TransferEventArgs transfer)
+        private void AddSynchronizationTransfer(SynchronizationResult result, TransferEventArgs transfer)
         {
             if (transfer != null)
             {
-                if (transferIsUpload)
+                if (transfer.Side == ProgressSide.Local)
                 {
                     result.AddUpload(transfer);
                 }
