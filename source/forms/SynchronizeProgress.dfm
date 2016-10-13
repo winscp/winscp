@@ -10,7 +10,6 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   ParentFont = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
-  OnKeyDown = FormKeyDown
   DesignSize = (
     424
     193)
@@ -112,17 +111,20 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
         DragHandleStyle = dhNone
         Images = ImageList
         ParentShowHint = False
+        ProcessShortCuts = True
         ShowHint = True
         TabOrder = 0
         Color = clWindow
         object CancelItem: TTBXItem
           Caption = 'Cancel'
           ImageIndex = 0
+          ShortCut = 27
           OnClick = CancelItemClick
         end
         object MinimizeItem: TTBXItem
           Caption = '&Minimize'
           ImageIndex = 1
+          ShortCut = 32845
           OnClick = MinimizeItemClick
         end
       end

@@ -96,6 +96,7 @@ namespace Tb2item { class TTBCustomItem; }
 namespace Tbx { class TTBXSeparatorItem; }
 Tbx::TTBXSeparatorItem * __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Menu);
 void __fastcall AddMenuLabel(Tb2item::TTBCustomItem * Menu, const UnicodeString & Label);
+void __fastcall ClickToolbarItem(Tb2item::TTBCustomItem * Item, bool PositionCursor);
 
 // windows\WinHelp.cpp
 void __fastcall InitializeWinHelp();

@@ -1422,6 +1422,29 @@ bool __fastcall HandleMinimizeSysCommand(TMessage & Message)
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall ClickToolbarItem(TTBCustomItem * Item, bool PositionCursor)
+{
+  TTBCustomItem * TopItem = Item;
+  while (TopItem->Parent != NULL)
+  {
+    TopItem = TopItem->Parent;
+  }
+  TTBCustomToolbar * Toolbar = dynamic_cast<TTBCustomToolbar *>(TopItem->ParentComponent);
+  DebugAssert(Toolbar != NULL);
+  TTBItemViewer * Viewer = Toolbar->View->Find(Item);
+  DebugAssert(Viewer != NULL);
+
+  int X = Viewer->BoundsRect.Left + (Viewer->BoundsRect.Width() / 2);
+  int Y = Viewer->BoundsRect.Top + (Viewer->BoundsRect.Height() / 2);
+
+  if (PositionCursor)
+  {
+    Mouse->CursorPos = Toolbar->ClientToScreen(TPoint(X, Y));
+  }
+
+  PostMessage(Toolbar->Handle, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(X, Y));
+}
+//---------------------------------------------------------------------------
 void __fastcall WinInitialize()
 {
   if (JclHookExceptions())

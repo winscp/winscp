@@ -573,12 +573,29 @@ void __fastcall TProgressForm::ResetOnceDoneOperation()
   SetOnceDoneOperation(odoIdle);
 }
 //---------------------------------------------------------------------------
+void __fastcall TProgressForm::CMDialogKey(TCMDialogKey & Message)
+{
+  if (Message.CharCode == VK_TAB)
+  {
+    Toolbar->KeyboardOpen(L'\0', false);
+    Message.Result = 1;
+  }
+  else
+  {
+    TForm::Dispatch(&Message);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TProgressForm::Dispatch(void * AMessage)
 {
   TMessage & Message = *reinterpret_cast<TMessage *>(AMessage);
   if (Message.Msg == WM_CLOSE)
   {
     CancelOperation();
+  }
+  else if (Message.Msg == CM_DIALOGKEY)
+  {
+    CMDialogKey(reinterpret_cast<TCMDialogKey &>(Message));
   }
   else
   {
@@ -646,14 +663,8 @@ void __fastcall TProgressForm::SpeedComboBoxItemAdjustImageIndex(
   ImageIndex = Sender->ImageIndex;
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::FormKeyDown(
-  TObject * /*Sender*/, WORD & Key, TShiftState /*Shift*/)
+void __fastcall TProgressForm::SpeedComboBoxItemClick(TObject * Sender)
 {
-  // We do not have Cancel button, so we have to handle Esc key explicitly
-  if (Key == VK_ESCAPE)
-  {
-    CancelOperation();
-    Key = 0;
-  }
+  ClickToolbarItem(DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender)), false);
 }
 //---------------------------------------------------------------------------
