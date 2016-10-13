@@ -114,6 +114,7 @@ void __fastcall TSessionData::Default()
   AuthKIPassword = true;
   AuthGSSAPI = true;
   GSSAPIFwdTGT = false;
+  LogicalHostName = L"";
   ChangeUsername = false;
   Compression = false;
   SshProt = ssh2only;
@@ -282,6 +283,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(TryAgent); \
   PROPERTY(AgentFwd); \
   PROPERTY(AuthTIS); \
+  PROPERTY(LogicalHostName); \
   PROPERTY(ChangeUsername); \
   PROPERTY(Compression); \
   PROPERTY(SshProt); \
@@ -543,6 +545,9 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   // Both vaclav tomec and official putty use AuthGSSAPI
   AuthGSSAPI = Storage->ReadBool(L"AuthGSSAPI", Storage->ReadBool(L"AuthSSPI", AuthGSSAPI));
   GSSAPIFwdTGT = Storage->ReadBool(L"GSSAPIFwdTGT", Storage->ReadBool(L"GssapiFwd", Storage->ReadBool(L"SSPIFwdTGT", GSSAPIFwdTGT)));
+  // KerbPrincipal was used by Quest PuTTY
+  // GSSAPIServerRealm was used by Vaclav Tomec
+  LogicalHostName = Storage->ReadString(L"LogicalHostName", Storage->ReadString(L"GSSAPIServerRealm", Storage->ReadString(L"KerbPrincipal", LogicalHostName)));
   ChangeUsername = Storage->ReadBool(L"ChangeUsername", ChangeUsername);
   Compression = Storage->ReadBool(L"Compression", Compression);
   TSshProt ASshProt = (TSshProt)Storage->ReadInteger(L"SshProt", SshProt);
@@ -851,11 +856,13 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   Storage->DeleteValue(L"UserNameFromEnvironment");
   Storage->DeleteValue("GSSAPIServerChoosesUserName");
   Storage->DeleteValue(L"GSSAPITrustDNS");
+  WRITE_DATA(String, LogicalHostName);
   if (PuttyExport)
   {
     // duplicate kerberos setting with keys of the vintela quest putty
     WRITE_DATA_EX(Bool, L"AuthSSPI", AuthGSSAPI, );
     WRITE_DATA_EX(Bool, L"SSPIFwdTGT", GSSAPIFwdTGT, );
+    WRITE_DATA_EX(String, L"KerbPrincipal", LogicalHostName, );
     // duplicate kerberos setting with keys of the official putty
     WRITE_DATA_EX(Bool, L"GssapiFwd", GSSAPIFwdTGT, );
   }
@@ -3520,6 +3527,11 @@ void __fastcall TSessionData::SetMinTlsVersion(TTlsVersion value)
 void __fastcall TSessionData::SetMaxTlsVersion(TTlsVersion value)
 {
   SET_SESSION_PROPERTY(MaxTlsVersion);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetLogicalHostName(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(LogicalHostName);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetFtpListAll(TAutoSwitch value)
