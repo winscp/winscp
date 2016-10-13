@@ -346,6 +346,8 @@ void __fastcall TCustomDialog::StartGroup(const UnicodeString & Caption)
 
   AdjustHeight(GroupBox);
 
+  AddWinControl(GroupBox);
+
   FPos = ScaleByTextHeight(this, 16);
   FPrePos = FPos;
   FIndent = FHorizontalMargin;
