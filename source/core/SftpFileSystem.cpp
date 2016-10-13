@@ -3754,7 +3754,7 @@ void __fastcall TSFTPFileSystem::CreateDirectory(const UnicodeString DirName)
 void __fastcall TSFTPFileSystem::CreateLink(const UnicodeString FileName,
   const UnicodeString PointTo, bool Symbolic)
 {
-  // Cerberus server does not even response to LINK or SYMLINK,
+  // Cerberus server does not even respond to LINK or SYMLINK,
   // Although its log says:
   // Unrecognized SFTP client command: (20)
   // Unknown SFTP packet - Sending Unsupported OP response
