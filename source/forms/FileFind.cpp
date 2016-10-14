@@ -110,7 +110,8 @@ void __fastcall TFileFindDialog::UpdateControls()
   StartStopButton->Caption = StartStopCaption;
   EnableControl(FilterGroup, !Finding);
   FocusAction->Enabled = (FileView->ItemFocused != NULL);
-  DeleteAction->Enabled = (FileView->SelCount > 0);
+  bool EnableFileOperations = !Finding && (FileView->SelCount > 0);
+  DeleteAction->Enabled = EnableFileOperations;
   CopyAction->Enabled = (FileView->Items->Count > 0);
   SelectAllAction->Enabled = (FileView->SelCount < FileView->Items->Count);
 
