@@ -11,6 +11,7 @@ object ProgressForm: TProgressForm
   Color = clWindow
   ParentFont = True
   OldCreateOrder = False
+  PopupMode = pmAuto
   Position = poOwnerFormCenter
   OnHide = FormHide
   OnShow = FormShow
