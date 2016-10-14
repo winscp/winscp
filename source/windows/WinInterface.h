@@ -419,10 +419,11 @@ typedef void __fastcall (__closure *TFocusFileEvent)
   (TTerminal * Terminal, const UnicodeString & Path);
 typedef void __fastcall (__closure *TFileOperationFinishedEvent)
   (const UnicodeString & FileName, bool Success);
-typedef void __fastcall (__closure *TDeleteFilesEvent)
+typedef void __fastcall (__closure *TFileListOperationEvent)
   (TTerminal * Terminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
 void __fastcall ShowFileFindDialog(
-  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile, TDeleteFilesEvent OnDeleteFiles);
+  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile,
+  TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles);
 void __fastcall HideFileFindDialog();
 
 // forms\GenerateUrl.cpp

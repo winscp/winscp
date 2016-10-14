@@ -52,6 +52,9 @@ __published:
   TMenuItem *N1;
   TMenuItem *N3;
   TMenuItem *CopyResults1;
+  TButton *DownloadButton;
+  TAction *DownloadAction;
+  TMenuItem *Download1;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall StartStopButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);
@@ -71,13 +74,15 @@ __published:
   void __fastcall CopyActionExecute(TObject *Sender);
   void __fastcall FocusActionExecute(TObject *Sender);
   void __fastcall SelectAllActionExecute(TObject *Sender);
+  void __fastcall DownloadActionExecute(TObject *Sender);
 
 public:
   __fastcall TFileFindDialog(TComponent * Owner);
   virtual __fastcall ~TFileFindDialog();
 
   void __fastcall Init(
-    TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile, TDeleteFilesEvent OnDeleteFiles);
+    TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile,
+    TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles);
 
 protected:
   void __fastcall Clear();
@@ -101,7 +106,8 @@ private:
   UnicodeString FWindowParams;
   TFindEvent FOnFind;
   TFocusFileEvent FOnFocusFile;
-  TDeleteFilesEvent FOnDeleteFiles;
+  TFileListOperationEvent FOnDeleteFiles;
+  TFileListOperationEvent FOnDownloadFiles;
   TImageList * FSystemImageList;
   TFrameAnimation FFrameAnimation;
   UnicodeString FFocusPath;
@@ -118,6 +124,9 @@ private:
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall ClearItem(TListItem * Item);
   void __fastcall FileDeleteFinished(const UnicodeString & FileName, bool Success);
+  void __fastcall FileDownloadFinished(const UnicodeString & FileName, bool Success);
+  TListItem * __fastcall FileOperationFinished(const UnicodeString & FileName);
+  void __fastcall FileListOperation(TFileListOperationEvent Operation, TFileOperationFinishedEvent OnFileOperationFinished);
 };
 //---------------------------------------------------------------------------
 #endif

@@ -1532,14 +1532,23 @@ object FileFindDialog: TFileFindDialog
     Height = 25
     Action = CopyAction
     Anchors = [akRight, akBottom]
-    TabOrder = 6
+    TabOrder = 7
   end
   object DeleteButton: TButton
+    Left = 448
+    Top = 204
+    Width = 108
+    Height = 25
+    Action = DeleteAction
+    Anchors = [akTop, akRight]
+    TabOrder = 6
+  end
+  object DownloadButton: TButton
     Left = 448
     Top = 173
     Width = 108
     Height = 25
-    Action = DeleteAction
+    Action = DownloadAction
     Anchors = [akTop, akRight]
     TabOrder = 5
   end
@@ -1552,6 +1561,9 @@ object FileFindDialog: TFileFindDialog
     end
     object N1: TMenuItem
       Caption = '-'
+    end
+    object Download1: TMenuItem
+      Action = DownloadAction
     end
     object Delete1: TMenuItem
       Action = DeleteAction
@@ -1592,6 +1604,11 @@ object FileFindDialog: TFileFindDialog
       Caption = '&Copy Results'
       ShortCut = 16451
       OnExecute = CopyActionExecute
+    end
+    object DownloadAction: TAction
+      Caption = 'Down&load'
+      ShortCut = 116
+      OnExecute = DownloadActionExecute
     end
   end
 end

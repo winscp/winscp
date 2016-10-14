@@ -25,13 +25,14 @@
 TFileFindDialog * FileFindDialog = NULL;
 //---------------------------------------------------------------------------
 void __fastcall ShowFileFindDialog(
-  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile, TDeleteFilesEvent OnDeleteFiles)
+  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile,
+  TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles)
 {
   if (FileFindDialog == NULL)
   {
     FileFindDialog = new TFileFindDialog(Application);
   }
-  FileFindDialog->Init(Terminal, Directory, OnFind, OnFocusFile, OnDeleteFiles);
+  FileFindDialog->Init(Terminal, Directory, OnFind, OnFocusFile, OnDeleteFiles, OnDownloadFiles);
   FileFindDialog->Show();
 }
 //---------------------------------------------------------------------------
@@ -112,6 +113,7 @@ void __fastcall TFileFindDialog::UpdateControls()
   FocusAction->Enabled = (FileView->ItemFocused != NULL);
   bool EnableFileOperations = !Finding && (FileView->SelCount > 0);
   DeleteAction->Enabled = EnableFileOperations;
+  DownloadAction->Enabled = EnableFileOperations;
   CopyAction->Enabled = (FileView->Items->Count > 0);
   SelectAllAction->Enabled = (FileView->SelCount < FileView->Items->Count);
 
@@ -156,7 +158,8 @@ void __fastcall TFileFindDialog::ControlChange(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::Init(
-  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile, TDeleteFilesEvent OnDeleteFiles)
+  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile,
+  TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles)
 {
   if (FTerminal != Terminal)
   {
@@ -170,6 +173,7 @@ void __fastcall TFileFindDialog::Init(
   FOnFind = OnFind;
   FOnFocusFile = OnFocusFile;
   FOnDeleteFiles = OnDeleteFiles;
+  FOnDownloadFiles = OnDownloadFiles;
 
   MaskEdit->Text = WinConfiguration->SelectMask;
   RemoteDirectoryEdit->Text = UnixExcludeTrailingBackslash(Directory);
@@ -522,25 +526,52 @@ void __fastcall TFileFindDialog::FileViewContextPopup(TObject * Sender, TPoint &
   MenuPopup(Sender, MousePos, Handled);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileDeleteFinished(const UnicodeString & FileName, bool Success)
+TListItem * __fastcall TFileFindDialog::FileOperationFinished(const UnicodeString & FileName)
 {
   TFileItemMap::iterator I = FFileItemMap.find(FileName);
 
+  TListItem * Result = NULL;
   if (DebugAlwaysTrue(I != FFileItemMap.end()))
   {
-    TListItem * Item = I->second;
-    FileView->MakeProgressVisible(Item);
-    if (Success)
-    {
-      ClearItem(Item);
-      Item->Delete();
-    }
-
+    Result = I->second;
+    FileView->MakeProgressVisible(Result);
     FFileItemMap.erase(I);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::FileDeleteFinished(const UnicodeString & FileName, bool Success)
+{
+  // Delete in queue not supported
+  DebugAssert(!FileName.IsEmpty());
+  TListItem * Item = FileOperationFinished(FileName);
+  if (DebugAlwaysTrue(Item != NULL) && Success)
+  {
+    ClearItem(Item);
+    Item->Delete();
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::DeleteActionExecute(TObject * /*Sender*/)
+void __fastcall TFileFindDialog::FileDownloadFinished(const UnicodeString & FileName, bool Success)
+{
+  if (FileName.IsEmpty())
+  {
+    DebugAssert(Success);
+    // Moved to queue, see call in TCustomScpExplorerForm::CopyParamDialog
+    FileView->SelectAll(smNone);
+  }
+  else
+  {
+    TListItem * Item = FileOperationFinished(FileName);
+    if (DebugAlwaysTrue(Item != NULL) && Success)
+    {
+      Item->Selected = false;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::FileListOperation(
+  TFileListOperationEvent Operation, TFileOperationFinishedEvent OnFileOperationFinished)
 {
   std::unique_ptr<TStrings> FileList(new TStringList());
 
@@ -556,19 +587,29 @@ void __fastcall TFileFindDialog::DeleteActionExecute(TObject * /*Sender*/)
 
   try
   {
-    FOnDeleteFiles(FTerminal, FileList.get(), FileDeleteFinished);
+    Operation(FTerminal, FileList.get(), OnFileOperationFinished);
   }
   __finally
   {
-    // can be non-empty only when not all files were deleted
+    // can be non-empty only when not all files were processed
     FFileItemMap.clear();
   }
 
   UpdateControls();
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::DeleteActionExecute(TObject * /*Sender*/)
+{
+  FileListOperation(FOnDeleteFiles, FileDeleteFinished);
+}
+//---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::SelectAllActionExecute(TObject * /*Sender*/)
 {
   FileView->SelectAll(smAll);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::DownloadActionExecute(TObject * /*Sender*/)
+{
+  FileListOperation(FOnDownloadFiles, FileDownloadFinished);
 }
 //---------------------------------------------------------------------------

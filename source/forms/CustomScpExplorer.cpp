@@ -1135,10 +1135,17 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ClearTransferSourceSelection(TTransferDirection Direction)
 {
-  TOperationSide Side = ((Direction == tdToRemote) ? osLocal : osRemote);
-  if (HasDirView[Side])
+  if (FOnFileOperationFinished != NULL)
   {
-    DirView(Side)->SelectAll(smNone);
+    FOnFileOperationFinished(UnicodeString(), true);
+  }
+  else
+  {
+    TOperationSide Side = ((Direction == tdToRemote) ? osLocal : osRemote);
+    if (HasDirView[Side])
+    {
+      DirView(Side)->SelectAll(smNone);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -8713,8 +8720,8 @@ void __fastcall TCustomScpExplorerForm::DoFocusRemotePath(TTerminal * ATerminal,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DoDeleteFoundFiles(
-  TTerminal * ATerminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished)
+void __fastcall TCustomScpExplorerForm::DoOperationOnFoundFiles(
+  TFileOperation Operation, TTerminal * ATerminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished)
 {
   if (!NonVisualDataModule->Busy)
   {
@@ -8724,7 +8731,7 @@ void __fastcall TCustomScpExplorerForm::DoDeleteFoundFiles(
     FOnFileOperationFinished = OnFileOperationFinished;
     try
     {
-      ExecuteFileOperation(foDelete, osRemote, FileList, false, NULL);
+      ExecuteFileOperation(Operation, osRemote, FileList, false, NULL);
     }
     __finally
     {
@@ -8733,10 +8740,22 @@ void __fastcall TCustomScpExplorerForm::DoDeleteFoundFiles(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoDeleteFoundFiles(
+  TTerminal * ATerminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished)
+{
+  DoOperationOnFoundFiles(foDelete, ATerminal, FileList, OnFileOperationFinished);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoDownloadFoundFiles(
+  TTerminal * ATerminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished)
+{
+  DoOperationOnFoundFiles(foCopy, ATerminal, FileList, OnFileOperationFinished);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFindFiles()
 {
   FFileFindTerminal = Terminal;
-  ShowFileFindDialog(Terminal, RemoteDirView->Path, DoFindFiles, DoFocusRemotePath, DoDeleteFoundFiles);
+  ShowFileFindDialog(Terminal, RemoteDirView->Path, DoFindFiles, DoFocusRemotePath, DoDeleteFoundFiles, DoDownloadFoundFiles);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateTaskbarList(ITaskbarList3 * TaskbarList)
