@@ -409,7 +409,10 @@ void __fastcall TFileFindDialog::CMDialogKey(TWMKeyDown & Message)
   // Moreover FormKeyDown is called when the the "esc" is pressed while drop down list is unrolled.
   if (Message.CharCode == VK_ESCAPE)
   {
-    Close();
+    if (!StopIfFinding())
+    {
+      Close();
+    }
     Message.Result = 1;
     return;
   }
