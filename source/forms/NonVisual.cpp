@@ -1117,10 +1117,11 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     Item->Action = (ListType == ccltFile) ? CustomCommandsNonFileAction : CustomCommandsFileAction;
     Item->Action = NULL;
     TCustomCommandListType SubListType = (ListType == ccltFile) ? ccltNonFile : ccltFile;
-    CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Item, OnFocused, Toolbar, SubListType, 0);
+    int CustomCommandItems = CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Item, OnFocused, Toolbar, SubListType, 0);
     TTBXSeparatorItem * Separator = AddMenuSeparator(Item);
     int ExtensionItems = CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Item, OnFocused, Toolbar, SubListType, CustomCommandExtension);
     Separator->Visible = (ExtensionItems > 0);
+    Item->Enabled = (CustomCommandItems + ExtensionItems > 0);
 
     Menu->Add(Item);
   }
