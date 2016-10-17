@@ -365,7 +365,8 @@ namespace WinSCP
                             e.Str = _input[0];
                             e.Result = true;
                             _input.RemoveAt(0);
-                            Print(false, false, e.Str + "\n");
+                            Print(false, false, _log[0] + "\n");
+                            _log.RemoveAt(0);
                             return;
                         }
                     }
@@ -653,7 +654,7 @@ namespace WinSCP
             }
         }
 
-        private void AddInput(string str)
+        private void AddInput(string str, string log)
         {
             Type structType = typeof(ConsoleInputEventStruct);
             FieldInfo strField = structType.GetField("Str");
@@ -674,15 +675,16 @@ namespace WinSCP
             lock (_input)
             {
                 _input.Add(str);
+                _log.Add(log);
                 _inputEvent.Set();
             }
         }
 
-        public void ExecuteCommand(string command)
+        public void ExecuteCommand(string command, string log)
         {
             using (_logger.CreateCallstack())
             {
-                AddInput(command);
+                AddInput(command, log);
             }
         }
 
@@ -938,6 +940,7 @@ namespace WinSCP
         private string _lastFromBeginning;
         private string _incompleteLine;
         private readonly List<string> _input = new List<string>();
+        private readonly List<string> _log = new List<string>();
         private AutoResetEvent _inputEvent = new AutoResetEvent(false);
         private Job _job;
     }

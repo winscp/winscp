@@ -1349,7 +1349,7 @@ namespace WinSCP
         private void WriteCommand(string command, string log)
         {
             Logger.WriteLine("Command: [{0}]", log);
-            _process.ExecuteCommand(command);
+            _process.ExecuteCommand(command, log);
             GotOutput();
         }
 
