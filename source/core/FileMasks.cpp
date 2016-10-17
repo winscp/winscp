@@ -584,7 +584,8 @@ void __fastcall TFileMasks::CreateMask(
       FormatSettings.ShortTimeFormat = "hh:nn:ss";
 
       TDateTime Modification;
-      if (TryStrToDateTime(PartStr, Modification, FormatSettings) ||
+      __int64 DummySize;
+      if ((!TryStrToInt64(PartStr, DummySize) && TryStrToDateTime(PartStr, Modification, FormatSettings)) ||
           TryRelativeStrToDateTime(PartStr, Modification, false))
       {
         TMask::TMaskBoundary & ModificationMask =
@@ -611,7 +612,10 @@ void __fastcall TFileMasks::CreateMask(
         }
 
         SizeMask = Boundary;
-        Size = ParseSize(PartStr);
+        if (!TryStrToSize(PartStr, Size))
+        {
+          ThrowError(PartStart, PartEnd);
+        }
       }
     }
     else if (!PartStr.IsEmpty())

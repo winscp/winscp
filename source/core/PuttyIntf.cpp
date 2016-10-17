@@ -664,12 +664,6 @@ void FreeKey(TPrivateKey * PrivateKey)
   sfree(Ssh2Key);
 }
 //---------------------------------------------------------------------------
-__int64 __fastcall ParseSize(UnicodeString SizeStr)
-{
-  AnsiString AnsiSizeStr = AnsiString(SizeStr);
-  return parse_blocksize64(AnsiSizeStr.c_str());
-}
-//---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI(UnicodeString CustomPath)
 {
   static int has = -1;

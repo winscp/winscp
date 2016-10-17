@@ -1635,6 +1635,45 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
   return Result;
 }
 //---------------------------------------------------------------------------
+// Keep consistent with parse_blocksize64
+bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size)
+{
+  int Index = 0;
+  while ((Index + 1 <= SizeStr.Length()) && IsDigit(SizeStr[Index + 1]))
+  {
+    Index++;
+  }
+  bool Result =
+    (Index > 0) && TryStrToInt64(SizeStr.SubString(1, Index), Size);
+  if (Result)
+  {
+    SizeStr = SizeStr.SubString(Index + 1, SizeStr.Length() - Index).Trim();
+    if (!SizeStr.IsEmpty())
+    {
+      Result = (SizeStr.Length() == 1);
+      if (Result)
+      {
+        wchar_t Unit = (wchar_t)toupper(SizeStr[1]);
+        switch (Unit)
+        {
+          case 'G':
+            Size *= 1024;
+            // fallthru
+          case 'M':
+            Size *= 1024;
+            // fallthru
+          case 'K':
+            Size *= 1024;
+            break;
+          default:
+            Result = false;
+        }
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 static __int64 __fastcall DateTimeToUnix(const TDateTime DateTime)
 {
   const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
