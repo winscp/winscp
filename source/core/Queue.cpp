@@ -2198,10 +2198,12 @@ void __fastcall TTerminalThread::RunAction(TNotifyEvent Action)
       TriggerEvent();
 
       bool Done = false;
+      const unsigned int MaxWait = 50;
+      unsigned int Wait = MaxWait;
 
       do
       {
-        switch (WaitForSingleObject(FActionEvent, 50))
+        switch (WaitForSingleObject(FActionEvent, Wait))
         {
           case WAIT_OBJECT_0:
             Done = true;
@@ -2221,6 +2223,7 @@ void __fastcall TTerminalThread::RunAction(TNotifyEvent Action)
 
               FUserAction = NULL;
               TriggerEvent();
+              Wait = 0;
             }
             else
             {
@@ -2228,6 +2231,7 @@ void __fastcall TTerminalThread::RunAction(TNotifyEvent Action)
               {
                 FOnIdle(NULL);
               }
+              Wait = std::min(Wait + 10, MaxWait);
             }
             break;
 
