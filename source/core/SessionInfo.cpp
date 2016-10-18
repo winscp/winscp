@@ -625,11 +625,11 @@ TFileSystemInfo::TFileSystemInfo()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-FILE * __fastcall OpenFile(UnicodeString LogFileName, TSessionData * SessionData, bool Append, UnicodeString & NewFileName)
+FILE * __fastcall OpenFile(UnicodeString LogFileName, TDateTime Started, TSessionData * SessionData, bool Append, UnicodeString & NewFileName)
 {
   FILE * Result;
-  UnicodeString ANewFileName = GetExpandedLogFileName(LogFileName, SessionData);
-  Result = _wfopen(ApiPath(ANewFileName).c_str(), (Append ? L"a" : L"w"));
+  UnicodeString ANewFileName = GetExpandedLogFileName(LogFileName, Started, SessionData);
+  Result = _wfopen(ApiPath(ANewFileName).c_str(), (Append ? L"ab" : L"wb"));
   if (Result != NULL)
   {
     setvbuf(Result, NULL, _IONBF, BUFSIZ);
@@ -644,7 +644,7 @@ FILE * __fastcall OpenFile(UnicodeString LogFileName, TSessionData * SessionData
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 const wchar_t *LogLineMarks = L"<>!.*";
-__fastcall TSessionLog::TSessionLog(TSessionUI* UI, TSessionData * SessionData,
+__fastcall TSessionLog::TSessionLog(TSessionUI* UI, TDateTime Started, TSessionData * SessionData,
   TConfiguration * Configuration):
   TStringList()
 {
@@ -654,6 +654,7 @@ __fastcall TSessionLog::TSessionLog(TSessionUI* UI, TSessionData * SessionData,
   FParent = NULL;
   FUI = UI;
   FSessionData = SessionData;
+  FStarted = Started;
   FFile = NULL;
   FLoggedLines = 0;
   FTopIndex = -1;
@@ -723,9 +724,71 @@ void __fastcall TSessionLog::DoAddToSelf(TLogLineType Type, const UnicodeString 
     if (FFile != NULL)
     {
       UnicodeString Timestamp = FormatDateTime(L" yyyy-mm-dd hh:nn:ss.zzz ", Now());
-      UTF8String UtfLine = UTF8String(UnicodeString(LogLineMarks[Type]) + Timestamp + Line + "\n");
-      fwrite(UtfLine.c_str(), UtfLine.Length(), 1, (FILE *)FFile);
+      UTF8String UtfLine = UTF8String(UnicodeString(LogLineMarks[Type]) + Timestamp + Line + L"\r\n");
+      for (int Index = 1; Index <= UtfLine.Length(); Index++)
+      {
+        if ((UtfLine[Index] == '\n') &&
+            ((Index == 1) || (UtfLine[Index - 1] != '\r')))
+        {
+          UtfLine.Insert('\r', Index);
+        }
+      }
+      int Writting = UtfLine.Length();
+      CheckSize(Writting);
+      FCurrentFileSize += fwrite(UtfLine.c_str(), 1, Writting, (FILE *)FFile);
     }
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TSessionLog::LogPartFileName(const UnicodeString & BaseName, int Index)
+{
+  UnicodeString Result;
+  if (Index >= 1)
+  {
+    Result = FORMAT(L"%s.%d", (BaseName, Index));
+  }
+  else
+  {
+    Result = BaseName;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionLog::CheckSize(__int64 Addition)
+{
+  __int64 MaxSize = FConfiguration->LogMaxSize;
+  if ((MaxSize > 0) && (FCurrentFileSize + Addition >= MaxSize))
+  {
+    // Before we close it
+    UnicodeString BaseName = FCurrentFileName;
+    CloseLogFile();
+    FCurrentFileSize = 0;
+
+    int Index = 0;
+
+    while (FileExists(LogPartFileName(BaseName, Index + 1)))
+    {
+      Index++;
+    }
+
+    int MaxCount = FConfiguration->LogMaxCount;
+
+    do
+    {
+      UnicodeString LogPart = LogPartFileName(BaseName, Index);
+      if ((MaxCount > 0) && (Index >= MaxCount))
+      {
+        DeleteFileChecked(LogPart);
+      }
+      else
+      {
+        THROWOSIFFALSE(RenameFile(LogPart, LogPartFileName(BaseName, Index + 1)));
+      }
+      Index--;
+    }
+    while (Index >= 0);
+
+    OpenLogFile();
   }
 }
 //---------------------------------------------------------------------------
@@ -821,6 +884,11 @@ void __fastcall TSessionLog::ReflectSettings()
     CloseLogFile();
   }
 
+  if (FFile != NULL)
+  {
+    CheckSize(0);
+  }
+
   DeleteUnnecessary();
 
   // trigger event only once we are in a consistent state
@@ -855,7 +923,16 @@ void __fastcall TSessionLog::OpenLogFile()
     DebugAssert(FFile == NULL);
     DebugAssert(FConfiguration != NULL);
     FCurrentLogFileName = FConfiguration->LogFileName;
-    FFile = OpenFile(FCurrentLogFileName, FSessionData, FConfiguration->LogFileAppend, FCurrentFileName);
+    FFile = OpenFile(FCurrentLogFileName, FStarted, FSessionData, FConfiguration->LogFileAppend, FCurrentFileName);
+    TSearchRec SearchRec;
+    if (FileSearchRec(FCurrentFileName, SearchRec))
+    {
+      FCurrentFileSize = SearchRec.Size;
+    }
+    else
+    {
+      FCurrentFileSize = 0;
+    }
   }
   catch (Exception & E)
   {
@@ -872,6 +949,12 @@ void __fastcall TSessionLog::OpenLogFile()
       AddException(&E);
       FUI->HandleExtendedException(&E);
     }
+  }
+
+  // in case we are appending and the existing log file is already too large
+  if (FFile != NULL)
+  {
+    CheckSize(0);
   }
   StateChange();
 }
@@ -1046,6 +1129,14 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       if (FConfiguration->LogSensitive)
       {
         LogStr += L", Logging passwords";
+      }
+      if (FConfiguration->LogMaxSize > 0)
+      {
+        LogStr += FORMAT(L", Rotating after: %s", (SizeToStr(FConfiguration->LogMaxSize)));
+        if (FConfiguration->LogMaxCount > 0)
+        {
+          LogStr += FORMAT(L", Keeping at most %d logs", (FConfiguration->LogMaxCount));
+        }
       }
       ADF(L"Log level: %s", (LogStr));
       ADF(L"Local account: %s", (UserName));
@@ -1312,28 +1403,29 @@ void __fastcall TSessionLog::Clear()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TActionLog::TActionLog(TSessionUI * UI, TSessionData * SessionData,
+__fastcall TActionLog::TActionLog(TSessionUI * UI, TDateTime Started, TSessionData * SessionData,
   TConfiguration * Configuration)
 {
   DebugAssert(UI != NULL);
   DebugAssert(SessionData != NULL);
-  Init(UI, SessionData, Configuration);
+  Init(UI, Started, SessionData, Configuration);
 }
 //---------------------------------------------------------------------------
-__fastcall TActionLog::TActionLog(TConfiguration * Configuration)
+__fastcall TActionLog::TActionLog(TDateTime Started, TConfiguration * Configuration)
 {
-  Init(NULL, NULL, Configuration);
+  Init(NULL, Started, NULL, Configuration);
   // not associated with session, so no need to waiting for anything
   ReflectSettings();
 }
 //---------------------------------------------------------------------------
-void __fastcall TActionLog::Init(TSessionUI * UI, TSessionData * SessionData,
+void __fastcall TActionLog::Init(TSessionUI * UI, TDateTime Started, TSessionData * SessionData,
   TConfiguration * Configuration)
 {
   FCriticalSection = new TCriticalSection;
   FConfiguration = Configuration;
   FUI = UI;
   FSessionData = SessionData;
+  FStarted = Started;
   FFile = NULL;
   FCurrentLogFileName = L"";
   FCurrentFileName = L"";
@@ -1509,7 +1601,7 @@ void __fastcall TActionLog::OpenLogFile()
     DebugAssert(FFile == NULL);
     DebugAssert(FConfiguration != NULL);
     FCurrentLogFileName = FConfiguration->ActionsLogFileName;
-    FFile = OpenFile(FCurrentLogFileName, FSessionData, false, FCurrentFileName);
+    FFile = OpenFile(FCurrentLogFileName, FStarted, FSessionData, false, FCurrentFileName);
   }
   catch (Exception & E)
   {

@@ -35,6 +35,8 @@ const int mpAllowContinueOnError = 0x02;
 #define KEYGEN_COMMENT_SWITCH L"Comment"
 #define KEYGEN_CHANGE_PASSPHRASE_SWITCH L"ChangePassphrase"
 #define LOG_SWITCH L"Log"
+#define LOGSIZE_SWITCH L"LogSize"
+#define LOGSIZE_SEPARATOR L"*"
 #define INI_SWITCH L"Ini"
 #define FINGERPRINTSCAN_SWITCH L"FingerprintScan"
 

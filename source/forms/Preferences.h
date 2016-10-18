@@ -309,6 +309,11 @@ __published:
   TMenuItem *AddExtensionMenuItem;
   TStaticText *BackgroundConfirmationsLink;
   TButton *ConfigureCommandButton;
+  TCheckBox *LogMaxSizeCheck;
+  TComboBox *LogMaxSizeCombo;
+  TCheckBox *LogMaxSizeCountCheck;
+  TUpDownEdit *LogMaxSizeCountEdit;
+  TLabel *LogMaxSizeCountFilesLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -398,6 +403,7 @@ __published:
   void __fastcall BackgroundConfirmationsLinkClick(TObject *Sender);
   void __fastcall ConfigureCommandButtonClick(TObject *Sender);
   void __fastcall LanguagesViewCustomDrawItem(TCustomListView * Sender, TListItem * Item, TCustomDrawState State, bool & DefaultDraw);
+  void __fastcall LogMaxSizeComboExit(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;

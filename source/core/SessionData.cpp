@@ -4466,11 +4466,10 @@ bool __fastcall TStoredSessionList::CanLogin(TSessionData * Data)
   return (Data != NULL) && Data->CanLogin;
 }
 //---------------------------------------------------------------------
-UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TSessionData * SessionData)
+UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TDateTime Started, TSessionData * SessionData)
 {
   // StripPathQuotes should not be needed as we do not feed quotes anymore
   UnicodeString ANewFileName = StripPathQuotes(ExpandEnvironmentVariables(LogFileName));
-  TDateTime N = Now();
   for (int Index = 1; Index < ANewFileName.Length(); Index++)
   {
     if (ANewFileName[Index] == L'!')
@@ -4480,19 +4479,19 @@ UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TSessionData * S
       switch (tolower(ANewFileName[Index + 1]))
       {
         case L'y':
-          Replacement = FormatDateTime(L"yyyy", N);
+          Replacement = FormatDateTime(L"yyyy", Started);
           break;
 
         case L'm':
-          Replacement = FormatDateTime(L"mm", N);
+          Replacement = FormatDateTime(L"mm", Started);
           break;
 
         case L'd':
-          Replacement = FormatDateTime(L"dd", N);
+          Replacement = FormatDateTime(L"dd", Started);
           break;
 
         case L't':
-          Replacement = FormatDateTime(L"hhnnss", N);
+          Replacement = FormatDateTime(L"hhnnss", Started);
           break;
 
         case 'p':

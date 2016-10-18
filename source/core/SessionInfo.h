@@ -222,7 +222,7 @@ public:
 class TSessionLog : protected TStringList
 {
 public:
-  __fastcall TSessionLog(TSessionUI* UI, TSessionData * SessionData,
+  __fastcall TSessionLog(TSessionUI* UI, TDateTime Started, TSessionData * SessionData,
     TConfiguration * Configuration);
   __fastcall ~TSessionLog();
   HIDESBASE void __fastcall Add(TLogLineType Type, const UnicodeString & Line);
@@ -262,10 +262,12 @@ private:
   void * FFile;
   UnicodeString FCurrentLogFileName;
   UnicodeString FCurrentFileName;
+  __int64 FCurrentFileSize;
   int FLoggedLines;
   int FTopIndex;
   TSessionUI * FUI;
   TSessionData * FSessionData;
+  TDateTime FStarted;
   UnicodeString FName;
   bool FClosed;
   TNotifyEvent FOnStateChange;
@@ -290,6 +292,8 @@ private:
   void __fastcall AddOption(const UnicodeString & LogStr);
   void __fastcall AddOptions(TOptions * Options);
   UnicodeString __fastcall GetCmdLineLog();
+  void __fastcall CheckSize(__int64 Addition);
+  UnicodeString __fastcall LogPartFileName(const UnicodeString & BaseName, int Index);
 };
 //---------------------------------------------------------------------------
 class TActionLog
@@ -297,9 +301,10 @@ class TActionLog
 friend class TSessionAction;
 friend class TSessionActionRecord;
 public:
-  __fastcall TActionLog(TSessionUI* UI, TSessionData * SessionData,
+  __fastcall TActionLog(TSessionUI* UI, TDateTime Started, TSessionData * SessionData,
     TConfiguration * Configuration);
-  __fastcall TActionLog(TConfiguration * Configuration);
+  // For fatal failures for .NET assembly
+  __fastcall TActionLog(TDateTime Started, TConfiguration * Configuration);
   __fastcall ~TActionLog();
 
   void __fastcall ReflectSettings();
@@ -318,7 +323,7 @@ protected:
   void __fastcall Add(const UnicodeString & Line);
   void __fastcall AddIndented(const UnicodeString & Line);
   void __fastcall AddMessages(UnicodeString Indent, TStrings * Messages);
-  void __fastcall Init(TSessionUI * UI, TSessionData * SessionData,
+  void __fastcall Init(TSessionUI * UI, TDateTime Started, TSessionData * SessionData,
     TConfiguration * Configuration);
 
 private:
@@ -330,6 +335,7 @@ private:
   UnicodeString FCurrentFileName;
   TSessionUI * FUI;
   TSessionData * FSessionData;
+  TDateTime FStarted;
   TList * FPendingActions;
   bool FFailed;
   bool FClosed;

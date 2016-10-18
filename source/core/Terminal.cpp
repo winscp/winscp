@@ -650,8 +650,9 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FConfiguration = Configuration;
   FSessionData = new TSessionData(L"");
   FSessionData->Assign(SessionData);
-  FLog = new TSessionLog(this, FSessionData, Configuration);
-  FActionLog = new TActionLog(this, FSessionData, Configuration);
+  TDateTime Started = Now(); // use the same time for session and XML log
+  FLog = new TSessionLog(this, Started, FSessionData, Configuration);
+  FActionLog = new TActionLog(this, Started, FSessionData, Configuration);
   FFiles = new TRemoteDirectory(this);
   FExceptionOnFail = 0;
   FInTransaction = 0;
@@ -1148,7 +1149,8 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->AuthKI = FSessionData->AuthKI;
     FTunnelData->AuthKIPassword = FSessionData->AuthKIPassword;
 
-    FTunnelLog = new TSessionLog(this, FTunnelData, Configuration);
+    // The Started argument is not used with Parent being set
+    FTunnelLog = new TSessionLog(this, TDateTime(), FTunnelData, Configuration);
     FTunnelLog->Parent = FLog;
     FTunnelLog->Name = L"Tunnel";
     FTunnelLog->ReflectSettings();

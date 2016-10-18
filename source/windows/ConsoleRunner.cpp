@@ -2121,7 +2121,8 @@ void __fastcall Usage(TConsole * Console)
     UnicodeString(!Console->CommandLineOnly() ? L"[/console] " : L"") +
     FORMAT(L"[/script=file] [/%s cmd1...] [/parameter // param1...]", (LowerCase(COMMAND_SWITCH))));
   PrintUsageSyntax(Console,
-    FORMAT(L"[/%s=<logfile> [/loglevel=<level>]] [/xmllog=<logfile> [/xmlgroups]]", (LowerCase(LOG_SWITCH))));
+    FORMAT(L"[/%s=<logfile> [/loglevel=<level>]] [/%s=[<count>%s]<size>]", (LowerCase(LOG_SWITCH), LowerCase(LOGSIZE_SWITCH), LOGSIZE_SEPARATOR)));
+  PrintUsageSyntax(Console, L"[/xmllog=<logfile> [/xmlgroups]]");
   PrintUsageSyntax(Console,
     FORMAT(L"[/%s=<inifile>]", (LowerCase(INI_SWITCH))));
   PrintUsageSyntax(Console, L"[/rawconfig config1=value1 config2=value2 ...]");
@@ -2163,6 +2164,7 @@ void __fastcall Usage(TConsole * Console)
   RegisterSwitch(SwitchesUsage, L"/parameter", USAGE_PARAMETER);
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(LOG_SWITCH) + L"=", USAGE_LOG);
   RegisterSwitch(SwitchesUsage, L"/loglevel=", USAGE_LOGLEVEL);
+  RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(LOGSIZE_SWITCH) + L"=", USAGE_LOGSIZE);
   RegisterSwitch(SwitchesUsage, L"/xmllog=", USAGE_XMLLOG);
   RegisterSwitch(SwitchesUsage, L"/xmlgroups", USAGE_XMLGROUPS);
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(INI_SWITCH) + L"=", USAGE_INI);

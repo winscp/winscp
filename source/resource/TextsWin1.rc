@@ -285,6 +285,7 @@ BEGIN
         USAGE_CERTIFICATE, "Fingerprint of server TLS/SSL certificate (FTPS protocol only)."
         USAGE_SESSIONNAME, "Gives a name to the session"
         USAGE_REFRESH, "Reloads remote panel of all running instances of WinSCP. If session (and optionally a path) is specified, refreshes only the instances with that session (and path)."
+        USAGE_LOGSIZE, "Enables log rotation and optionally deleting of old logs."
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         LOG_NOLOG, "No session log."

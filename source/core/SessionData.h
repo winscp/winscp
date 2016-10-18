@@ -665,7 +665,7 @@ private:
   void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
 };
 //---------------------------------------------------------------------------
-UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TSessionData * SessionData);
+UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TDateTime Started, TSessionData * SessionData);
 bool __fastcall IsSshProtocol(TFSProtocol FSProtocol);
 int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps);
 //---------------------------------------------------------------------------

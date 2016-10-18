@@ -147,7 +147,9 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       DoNotDisplay = true;
       if (Show && CheckXmlLogParam(Params))
       {
-        std::unique_ptr<TActionLog> ActionLog(new TActionLog(Configuration));
+        // The Started argument won't be used with .NET assembly, as it never uses patterns in XML log file name.
+        // But it theoretically can be used, when started manually.
+        std::unique_ptr<TActionLog> ActionLog(new TActionLog(Now(), Configuration));
         ActionLog->AddFailure(E);
         // unnecessary explicit release
         ActionLog.reset(NULL);

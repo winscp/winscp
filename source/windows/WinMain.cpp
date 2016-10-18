@@ -698,6 +698,30 @@ int __fastcall Execute()
     }
   }
 
+  if (Params->FindSwitch(LOGSIZE_SWITCH, SwitchValue))
+  {
+    int StarPos = SwitchValue.Pos(LOGSIZE_SEPARATOR);
+    int LogMaxCount = 0;
+    if (StarPos > 1)
+    {
+      if (!TryStrToInt(SwitchValue.SubString(1, StarPos - 1), LogMaxCount))
+      {
+        LogMaxCount = -1;
+      }
+      SwitchValue.Delete(1, StarPos);
+      SwitchValue = SwitchValue.Trim();
+    }
+
+    __int64 LogMaxSize;
+    if ((LogMaxCount >= 0) &&
+        !SwitchValue.IsEmpty() &&
+        TryStrToSize(SwitchValue, LogMaxSize))
+    {
+      Configuration->TemporaryLogMaxCount(LogMaxCount);
+      Configuration->TemporaryLogMaxSize(LogMaxSize);
+    }
+  }
+
   TConsoleMode Mode = cmNone;
   if (Params->FindSwitch(L"help") || Params->FindSwitch(L"h") || Params->FindSwitch(L"?"))
   {

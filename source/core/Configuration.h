@@ -37,6 +37,10 @@ private:
   bool FLogFileAppend;
   bool FLogSensitive;
   bool FPermanentLogSensitive;
+  __int64 FLogMaxSize;
+  __int64 FPermanentLogMaxSize;
+  int FLogMaxCount;
+  int FPermanentLogMaxCount;
   int FLogProtocol;
   int FPermanentLogProtocol;
   int FActualLogProtocol;
@@ -97,6 +101,8 @@ private:
   bool __fastcall GetLogWindowComplete();
   void __fastcall SetLogFileAppend(bool value);
   void __fastcall SetLogSensitive(bool value);
+  void __fastcall SetLogMaxSize(__int64 value);
+  void __fastcall SetLogMaxCount(int value);
   void __fastcall SetLogProtocol(int value);
   void __fastcall SetLogActions(bool value);
   void __fastcall SetActionsLogFileName(UnicodeString value);
@@ -172,6 +178,8 @@ protected:
   __property UnicodeString PermanentActionsLogFileName  = { read=FPermanentActionsLogFileName, write=SetActionsLogFileName };
   __property int PermanentLogProtocol  = { read=FPermanentLogProtocol, write=SetLogProtocol };
   __property bool PermanentLogSensitive  = { read=FPermanentLogSensitive, write=SetLogSensitive };
+  __property __int64 PermanentLogMaxSize  = { read=FPermanentLogMaxSize, write=SetLogMaxSize };
+  __property int PermanentLogMaxCount  = { read=FPermanentLogMaxCount, write=SetLogMaxCount };
 
 public:
   __fastcall TConfiguration();
@@ -206,6 +214,8 @@ public:
   void __fastcall TemporaryActionsLogging(const UnicodeString ALogFileName);
   void __fastcall TemporaryLogProtocol(int ALogProtocol);
   void __fastcall TemporaryLogSensitive(bool ALogSensitive);
+  void __fastcall TemporaryLogMaxSize(__int64 ALogMaxSize);
+  void __fastcall TemporaryLogMaxCount(int ALogMaxCount);
   virtual RawByteString __fastcall EncryptPassword(UnicodeString Password, UnicodeString Key);
   virtual UnicodeString __fastcall DecryptPassword(RawByteString Password, UnicodeString Key);
   virtual RawByteString __fastcall StronglyRecryptPassword(RawByteString Password, UnicodeString Key);
@@ -241,6 +251,8 @@ public:
   __property bool LogToFile  = { read=GetLogToFile };
   __property bool LogFileAppend  = { read=FLogFileAppend, write=SetLogFileAppend };
   __property bool LogSensitive  = { read=FLogSensitive, write=SetLogSensitive };
+  __property __int64 LogMaxSize  = { read=FLogMaxSize, write=SetLogMaxSize };
+  __property int LogMaxCount  = { read=FLogMaxCount, write=SetLogMaxCount };
   __property int LogProtocol  = { read=FLogProtocol, write=SetLogProtocol };
   __property int ActualLogProtocol  = { read=FActualLogProtocol };
   __property bool LogActions  = { read=FLogActions, write=SetLogActions };

@@ -109,6 +109,10 @@ void __fastcall TConfiguration::Default()
   FLogFileAppend = true;
   FLogSensitive = false;
   FPermanentLogSensitive = FLogSensitive;
+  FLogMaxSize = 0;
+  FPermanentLogMaxSize = FLogMaxSize;
+  FLogMaxCount = 0;
+  FPermanentLogMaxCount = FLogMaxCount;
   FLogWindowLines = 100;
   FLogProtocol = 0;
   FPermanentLogProtocol = FLogProtocol;
@@ -219,6 +223,8 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEYEX(String,PermanentLogFileName, L"LogFileName"); \
     KEY(Bool,    LogFileAppend); \
     KEYEX(Bool,  PermanentLogSensitive, L"LogSensitive"); \
+    KEYEX(Int64, PermanentLogMaxSize, L"LogMaxSize"); \
+    KEYEX(Integer, PermanentLogMaxCount, L"LogMaxCount"); \
     KEY(Integer, LogWindowLines); \
     KEYEX(Integer,PermanentLogProtocol, L"LogProtocol"); \
     KEYEX(Bool,  PermanentLogActions, L"LogActions"); \
@@ -1329,6 +1335,16 @@ void __fastcall TConfiguration::TemporaryLogSensitive(bool ALogSensitive)
   FLogSensitive = ALogSensitive;
 }
 //---------------------------------------------------------------------
+void __fastcall TConfiguration::TemporaryLogMaxSize(__int64 ALogMaxSize)
+{
+  FLogMaxSize = ALogMaxSize;
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::TemporaryLogMaxCount(int ALogMaxCount)
+{
+  FLogMaxCount = ALogMaxCount;
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogging(bool value)
 {
   if (Logging != value)
@@ -1402,6 +1418,26 @@ void __fastcall TConfiguration::SetLogSensitive(bool value)
   {
     FPermanentLogSensitive = value;
     FLogSensitive = value;
+    Changed();
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::SetLogMaxSize(__int64 value)
+{
+  if (LogMaxSize != value)
+  {
+    FPermanentLogMaxSize = value;
+    FLogMaxSize = value;
+    Changed();
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::SetLogMaxCount(int value)
+{
+  if (LogMaxCount != value)
+  {
+    FPermanentLogMaxCount = value;
+    FLogMaxCount = value;
     Changed();
   }
 }

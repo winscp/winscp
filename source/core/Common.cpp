@@ -1635,6 +1635,10 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
   return Result;
 }
 //---------------------------------------------------------------------------
+const wchar_t KiloSize = L'K';
+const wchar_t MegaSize = L'M';
+const wchar_t GigaSize = L'G';
+//---------------------------------------------------------------------------
 // Keep consistent with parse_blocksize64
 bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size)
 {
@@ -1656,18 +1660,49 @@ bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size)
         wchar_t Unit = (wchar_t)toupper(SizeStr[1]);
         switch (Unit)
         {
-          case 'G':
+          case GigaSize:
             Size *= 1024;
             // fallthru
-          case 'M':
+          case MegaSize:
             Size *= 1024;
             // fallthru
-          case 'K':
+          case KiloSize:
             Size *= 1024;
             break;
           default:
             Result = false;
         }
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall SizeToStr(__int64 Size)
+{
+  UnicodeString Result;
+  if ((Size <= 0) || ((Size % 1024) != 0))
+  {
+    Result = IntToStr(Size);
+  }
+  else
+  {
+    Size /= 1024;
+    if ((Size % 1024) != 0)
+    {
+      Result = IntToStr(Size) + KiloSize;
+    }
+    else
+    {
+      Size /= 1024;
+      if ((Size % 1024) != 0)
+      {
+        Result = IntToStr(Size) + MegaSize;
+      }
+      else
+      {
+        Size /= 1024;
+        Result = IntToStr(Size) + GigaSize;
       }
     }
   }

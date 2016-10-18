@@ -584,6 +584,10 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     {
       LogFileOverwriteButton->Checked = true;
     }
+    LogMaxSizeCheck->Checked = (Configuration->LogMaxSize > 0);
+    LogMaxSizeCombo->Text = SizeToStr((Configuration->LogMaxSize > 0) ? Configuration->LogMaxSize : (1 * 1024 * 1024));
+    LogMaxSizeCountCheck->Checked = (Configuration->LogMaxCount > 0);
+    LogMaxSizeCountEdit->AsInteger = ((Configuration->LogMaxCount > 0) ? Configuration->LogMaxCount : 5);
     BOOLPROP(LogSensitive);
 
     EnableActionsLoggingCheck->Checked = Configuration->LogActions;
@@ -865,6 +869,16 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->LogProtocol = LogProtocolCombo->ItemIndex;
     Configuration->LogFileName = LogToFileCheck->Checked ? LogFileNameEdit3->Text : UnicodeString();
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
+    __int64 LogMaxSize;
+    if (LogMaxSizeCheck->Checked && DebugAlwaysTrue(TryStrToSize(LogMaxSizeCombo->Text, LogMaxSize)))
+    {
+      Configuration->LogMaxSize = LogMaxSize;
+    }
+    else
+    {
+      Configuration->LogMaxSize = 0;
+    }
+    Configuration->LogMaxCount = (LogMaxSizeCountCheck->Checked ? LogMaxSizeCountEdit->AsInteger : 0);
     BOOLPROP(LogSensitive);
 
     Configuration->LogActions = EnableActionsLoggingCheck->Checked;
@@ -1251,6 +1265,11 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(LogFileNameHintText, LogFileNameEdit3->Enabled);
     EnableControl(LogFileAppendButton, LogFileNameEdit3->Enabled);
     EnableControl(LogFileOverwriteButton, LogFileNameEdit3->Enabled);
+    EnableControl(LogMaxSizeCheck, LogFileNameEdit3->Enabled);
+    EnableControl(LogMaxSizeCombo, LogMaxSizeCheck->Enabled && LogMaxSizeCheck->Checked);
+    EnableControl(LogMaxSizeCountCheck, LogMaxSizeCombo->Enabled);
+    EnableControl(LogMaxSizeCountEdit, LogMaxSizeCountCheck->Enabled && LogMaxSizeCountCheck->Checked);
+    EnableControl(LogMaxSizeCountFilesLabel, LogMaxSizeCountEdit->Enabled);
 
     EnableControl(LogSensitiveCheck, LogProtocolCombo->Enabled);
 
@@ -2715,6 +2734,20 @@ void __fastcall TPreferencesDialog::LanguagesViewCustomDrawItem(
   else if (LocaleInfo->Completeness < 100)
   {
     Sender->Canvas->Font->Color = clGrayText;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::LogMaxSizeComboExit(TObject * /*Sender*/)
+{
+  __int64 Size;
+  if (!TryStrToSize(LogMaxSizeCombo->Text, Size))
+  {
+    LogMaxSizeCombo->SetFocus();
+    throw Exception(FMTLOAD(SIZE_INVALID, (LogMaxSizeCombo->Text)));
+  }
+  else
+  {
+    LogMaxSizeCombo->Text = SizeToStr(Size);
   }
 }
 //---------------------------------------------------------------------------

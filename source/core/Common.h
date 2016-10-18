@@ -128,6 +128,7 @@ TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
 bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add);
 bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size);
+UnicodeString __fastcall SizeToStr(__int64 Size);
 LCID __fastcall GetDefaultLCID();
 UnicodeString __fastcall DefaultEncodingName();
 UnicodeString __fastcall WindowsProductName();
