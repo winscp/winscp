@@ -117,7 +117,6 @@ private:
   void __fastcall SetReadOnly(bool value);
   void __fastcall GlobalMinimize(TObject * Sender);
   UnicodeString __fastcall ItemSpeed(const UnicodeString & Text, TTBXComboBoxItem * Item);
-  bool __fastcall ApplicationHook(TMessage & Message);
   void __fastcall CMDialogKey(TCMDialogKey & Message);
 
 protected:
