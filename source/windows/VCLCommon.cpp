@@ -2219,7 +2219,7 @@ TShiftState __fastcall AllKeyShiftStates()
 static bool __fastcall FormActivationHook(void * Data, TMessage & Message)
 {
   bool Result = false;
-  // Some dialogs, when application is restord from minimization,
+  // Some dialogs, when application is restored from minimization,
   // do not get activated. So we do it explicitly here.
   // We cannot do this from TApplication::OnActivate because
   // TApplication.WndProc resets focus to the last active window afterwards.

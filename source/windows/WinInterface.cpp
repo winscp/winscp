@@ -259,7 +259,7 @@ unsigned int __fastcall ExecuteMessageDialog(TForm * Dialog, unsigned int Answer
   unsigned int Answer = Dialog->ShowModal();
   // mrCancel is returned always when X button is pressed, despite
   // no Cancel button was on the dialog. Find valid "cancel" answer.
-  // mrNone is retuned when Windows session is closing (log off)
+  // mrNone is returned when Windows session is closing (log off)
   if ((Answer == mrCancel) || (Answer == mrNone))
   {
     Answer = CancelAnswer(Answers);
