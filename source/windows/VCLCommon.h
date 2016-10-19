@@ -29,7 +29,7 @@ void __fastcall HotTrackLabel(TLabel * Label);
 void __fastcall SetLabelHintPopup(TLabel * Label, const UnicodeString & Hint);
 bool __fastcall HasLabelHintPopup(TLabel * Label, const UnicodeString & HintStr);
 void __fastcall FixComboBoxResizeBug(TCustomComboBox * ComboBox);
-void __fastcall ShowAsModal(TForm * Form, void *& Storage);
+void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront = true);
 void __fastcall HideAsModal(TForm * Form, void *& Storage);
 void __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
 TImageList * __fastcall SharedSystemImageList(bool Large);
@@ -76,6 +76,7 @@ TShiftState __fastcall AllKeyShiftStates();
 void __fastcall RealignControl(TControl * Control);
 void __fastcall HookFormActivation(TCustomForm * Form);
 void __fastcall UnhookFormActivation(TCustomForm * Form);
+void __fastcall ShowFormNoActivate(TForm * Form);
 TPanel * __fastcall CreateBlankPanel(TComponent * Owner);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

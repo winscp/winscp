@@ -78,6 +78,7 @@ protected:
   void __fastcall MakeLogItemVisible(int Index);
   int __fastcall LogItemHeight(int Index);
   void __fastcall RedrawLog();
+  void __fastcall CMShowingChanged(TMessage & Message);
 
 private:
   void * FShowAsModalStorage;
@@ -97,6 +98,7 @@ private:
   int FHorizontalLogPadding;
   int FVerticalLogPadding;
   TTextFormat FLogTextFormat;
+  bool FShowNoActivate;
 };
 //---------------------------------------------------------------------------
 #endif

@@ -34,6 +34,7 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   FFocusControl = NULL;
   UseDesktopFont(LogView);
   FAnimationPainted = false;
+  FShowNoActivate = false;
 
   FPromptParent = InstructionsLabel->Parent;
   FPromptLeft = InstructionsLabel->Left;
@@ -57,12 +58,33 @@ __fastcall TAuthenticateForm::~TAuthenticateForm()
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::ShowAsModal()
 {
-  ::ShowAsModal(this, FShowAsModalStorage);
+  if (IsApplicationMinimized())
+  {
+    FShowNoActivate = true;
+  }
+
+  // Do not call BringToFront when minimized, so that we do not have to use the same hack as in TMessageForm::SetZOrder
+  ::ShowAsModal(this, FShowAsModalStorage, !FShowNoActivate);
+  HookFormActivation(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::HideAsModal()
 {
   ::HideAsModal(this, FShowAsModalStorage);
+
+  UnhookFormActivation(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::CMShowingChanged(TMessage & Message)
+{
+  if (Showing && FShowNoActivate)
+  {
+    ShowFormNoActivate(this);
+  }
+  else
+  {
+    TForm::Dispatch(&Message);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::WMNCCreate(TWMNCCreate & Message)
@@ -96,6 +118,10 @@ void __fastcall TAuthenticateForm::Dispatch(void * AMessage)
   {
     // caption managed in TAuthenticateForm::AdjustControls()
     Message.Result = 1;
+  }
+  else if (Message.Msg == CM_SHOWINGCHANGED)
+  {
+    CMShowingChanged(Message);
   }
   else
   {

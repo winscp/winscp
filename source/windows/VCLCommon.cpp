@@ -795,8 +795,9 @@ void __fastcall ResetSystemSettings(TCustomForm * /*Control*/)
 //---------------------------------------------------------------------------
 class TPublicForm : public TForm
 {
-friend void __fastcall ShowAsModal(TForm * Form, void *& Storage);
+friend void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront);
 friend void __fastcall HideAsModal(TForm * Form, void *& Storage);
+friend void __fastcall ShowFormNoActivate(TForm * Form);
 };
 //---------------------------------------------------------------------------
 struct TShowAsModalStorage
@@ -808,7 +809,7 @@ struct TShowAsModalStorage
   int SaveCount;
 };
 //---------------------------------------------------------------------------
-void __fastcall ShowAsModal(TForm * Form, void *& Storage)
+void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront)
 {
   SetCorrectFormParent(Form);
   CancelDrag();
@@ -832,7 +833,14 @@ void __fastcall ShowAsModal(TForm * Form, void *& Storage)
   Screen->Cursor = crDefault;
   AStorage->SaveCount = Screen->CursorCount;
   AStorage->FocusWindowList = DisableTaskWindows(0);
-  Form->Show();
+
+  // VCLCOPY (TCustomForm::Show)
+  Form->Visible = true;
+  if (BringToFront)
+  {
+    Form->BringToFront();
+  }
+
   SendMessage(Form->Handle, CM_ACTIVATE, 0, 0);
 
   Storage = AStorage;
@@ -2241,6 +2249,62 @@ void __fastcall HookFormActivation(TCustomForm * Form)
 void __fastcall UnhookFormActivation(TCustomForm * Form)
 {
   Application->UnhookMainWindow(MakeMethod<TWindowHook>(Form, FormActivationHook));
+}
+//---------------------------------------------------------------------------
+void __fastcall ShowFormNoActivate(TForm * Form)
+{
+  TPublicForm * PublicForm = static_cast<TPublicForm *>(Form);
+
+  // This is same as SendToBack, except for added SWP_NOACTIVATE (VCLCOPY)
+  SetWindowPos(PublicForm->WindowHandle, HWND_BOTTOM, 0, 0, 0, 0,
+    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+  // This replaces TCustomForm::CMShowingChanged()
+  // which calls ShowWindow(Handle, SW_SHOWNORMAL).
+
+  ShowWindow(Form->Handle, SW_SHOWNOACTIVATE);
+
+  // - so we have to call DoShow explicitly.
+  PublicForm->DoShow();
+
+  // - also we skip applying TForm::Position (VCLCOPY)
+  if (DebugAlwaysTrue(Form->Position == poOwnerFormCenter))
+  {
+    TCustomForm * CenterForm = Application->MainForm;
+    TCustomForm * OwnerForm = dynamic_cast<TCustomForm *>(Form->Owner);
+    if (OwnerForm != NULL)
+    {
+      CenterForm = OwnerForm;
+    }
+    int X, Y;
+    if ((CenterForm != NULL) && (CenterForm != Form))
+    {
+      TRect Bounds = CenterForm->BoundsRect;
+      X = ((Bounds.Width() - Form->Width) / 2) + CenterForm->Left;
+      Y = ((Bounds.Height() - Form->Height) / 2) + CenterForm->Top;
+    }
+    else
+    {
+      X = (Screen->Width - Form->Width) / 2;
+      Y = (Screen->Height - Form->Height) / 2;
+    }
+    if (X < Screen->DesktopLeft)
+    {
+      X = Screen->DesktopLeft;
+    }
+    if (Y < Screen->DesktopTop)
+    {
+      Y = Screen->DesktopTop;
+    }
+    Form->SetBounds(X, Y, Form->Width, Form->Height);
+    // We cannot call SetWindowToMonitor().
+    // We cannot set FPosition = poDesigned, so workarea-checking code
+    // in DoFormWindowProc is not triggered
+
+    // If application is restored, dialog is not activated, do it manually.
+    // Wait for application to be activated to activate ourself.
+    HookFormActivation(Form);
+  }
 }
 //---------------------------------------------------------------------------
 TPanel * __fastcall CreateBlankPanel(TComponent * Owner)

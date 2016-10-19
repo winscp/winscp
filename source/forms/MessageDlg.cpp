@@ -398,56 +398,7 @@ void __fastcall TMessageForm::CMShowingChanged(TMessage & Message)
 {
   if (Showing && FShowNoActivate)
   {
-    // With is same as SendToBack, except for added SWP_NOACTIVATE (VCLCOPY)
-    SetWindowPos(WindowHandle, HWND_BOTTOM, 0, 0, 0, 0,
-      SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-
-    // This replaces TCustomForm::CMShowingChanged()
-    // which calls ShowWindow(Handle, SW_SHOWNORMAL).
-
-    ShowWindow(Handle, SW_SHOWNOACTIVATE);
-
-    // - so we have to call DoShow explicitly.
-    DoShow();
-
-    // - also we skip applying TForm::Position (VCLCOPY)
-    if (DebugAlwaysTrue(Position == poOwnerFormCenter))
-    {
-      TCustomForm * CenterForm = Application->MainForm;
-      TCustomForm * OwnerForm = dynamic_cast<TCustomForm *>(Owner);
-      if (OwnerForm != NULL)
-      {
-        CenterForm = OwnerForm;
-      }
-      int X, Y;
-      if ((CenterForm != NULL) && (CenterForm != this))
-      {
-        TRect Bounds = CenterForm->BoundsRect;
-        X = ((Bounds.Width() - Width) / 2) + CenterForm->Left;
-        Y = ((Bounds.Height() - Height) / 2) + CenterForm->Top;
-      }
-      else
-      {
-        X = (Screen->Width - Width) / 2;
-        Y = (Screen->Height - Height) / 2;
-      }
-      if (X < Screen->DesktopLeft)
-      {
-        X = Screen->DesktopLeft;
-      }
-      if (Y < Screen->DesktopTop)
-      {
-        Y = Screen->DesktopTop;
-      }
-      SetBounds(X, Y, Width, Height);
-      // We cannot call SetWindowToMonitor().
-      // We cannot set FPosition = poDesigned, so workarea-checking code
-      // in DoFormWindowProc is not triggered
-    }
-
-    // If application is restored, message box is not activated, do it manually.
-    // Wait for application to be activate to activate ourself.
-    HookFormActivation(this);
+    ShowFormNoActivate(this);
   }
   else
   {
