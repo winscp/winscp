@@ -577,6 +577,7 @@ protected:
   TStrings * __fastcall GetExtensionsPaths();
   virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
   virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
+  void __fastcall LoadExtensionList();
 
 public:
   __fastcall TWinConfiguration();
@@ -607,7 +608,6 @@ public:
   void __fastcall UpdateJumpList();
   virtual void __fastcall UpdateStaticUsage();
   void __fastcall MinimizeToTrayOnce();
-  void __fastcall LoadExtensionList();
   void __fastcall CustomCommandShortCuts(TShortCuts & ShortCuts) const;
   UnicodeString __fastcall GetUserExtensionsPath();
   UnicodeString __fastcall GetExtensionId(const UnicodeString & ExtensionPath);
