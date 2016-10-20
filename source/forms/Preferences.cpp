@@ -2453,6 +2453,8 @@ void __fastcall TPreferencesDialog::AddExtension()
 
     try
     {
+      UnicodeString ProvisionaryId;
+
       if (IsUrl)
       {
         UnicodeString Url = Path;
@@ -2485,6 +2487,7 @@ void __fastcall TPreferencesDialog::AddExtension()
         {
           FileName = MakeValidFileName(ExtractFileNameFromUrl(Path));
         }
+        ProvisionaryId = WinConfiguration->GetProvisionaryExtensionId(FileName);
         Lines->Text = Http->Response;
 
         Latest = Http->ResponseHeaders->Values[L"WinSCP-Extension-Skipped"].Trim().IsEmpty();
@@ -2504,6 +2507,11 @@ void __fastcall TPreferencesDialog::AddExtension()
         if (!Id.IsEmpty())
         {
           ExtensionPath = Path;
+          ProvisionaryId = Id;
+        }
+        else
+        {
+          ProvisionaryId = WinConfiguration->GetProvisionaryExtensionId(FileName);
         }
 
         LoadScriptFromFile(Path, Lines.get());
@@ -2511,6 +2519,8 @@ void __fastcall TPreferencesDialog::AddExtension()
 
       // validate syntax
       CustomCommand.reset(new TCustomCommandType());
+      // Provisionary Id, just for the ExtensionStringTranslation, so that the test for EXTENSION_DUPLICATE below works
+      CustomCommand->Id = ProvisionaryId;
       CustomCommand->LoadExtension(Lines.get(), FileName);
     }
     catch (Exception & E)
@@ -2572,7 +2582,7 @@ void __fastcall TPreferencesDialog::AddExtension()
         while (FileExists(ApiPath(ExtensionPath)))
         {
           Counter++;
-          ExtensionPath = LeftStr(OriginalExtensionPath, P - 1) + IntToStr(Counter) + RightStr(OriginalExtensionPath, OriginalExtensionPath.Length() - P + 1);
+          ExtensionPath = WinConfiguration->UniqueExtensionName(LeftStr(OriginalExtensionPath, P - 1), Counter) + RightStr(OriginalExtensionPath, OriginalExtensionPath.Length() - P + 1);
         }
 
         Lines->SaveToFile(ApiPath(ExtensionPath));

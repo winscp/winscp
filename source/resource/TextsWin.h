@@ -614,4 +614,6 @@
 #define ERROR_REPORT_URL2       4013
 #define UPGRADE_URL             4014
 
+#define EXTENSION_STRINGS       5000
+
 #endif // TextsWin

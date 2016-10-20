@@ -445,6 +445,7 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   FSystemIconFont.reset(new TFont());
   FCustomCommandOptions.reset(new TStringList());
   FCustomCommandOptionsModified = false;
+  FExtensionTranslations.reset(new TStringList());
   UpdateSystemIconFont();
   Default();
 
@@ -468,6 +469,7 @@ __fastcall TWinConfiguration::~TWinConfiguration()
 {
   if (!FTemporarySessionFile.IsEmpty()) DeleteFile(ApiPath(FTemporarySessionFile));
   ClearTemporaryLoginData();
+  ReleaseExtensionTranslations();
 
   delete FBookmarks;
   delete FCustomCommandList;
@@ -1260,6 +1262,19 @@ const UnicodeString ExtensionsCommonPathId(L"common");
 const UnicodeString ExtensionsCommonExtPathId(L"commonext");
 const UnicodeString ExtensionsUserExtPathId(L"userext");
 //---------------------------------------------------------------------------
+static UnicodeString __fastcall ExtractExtensionBaseName(const UnicodeString & FileName)
+{
+  UnicodeString S = ExtractFileName(FileName);
+  // ExtractFileNameOnly trims the last extension only, we want to trim all extensions
+  UnicodeString Result = CutToChar(S, L'.', true);
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TWinConfiguration::GetProvisionaryExtensionId(const UnicodeString & FileName)
+{
+  return IncludeTrailingBackslash(ExtensionsUserExtPathId) + ExtractExtensionBaseName(FileName);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TWinConfiguration::GetUserExtensionsPath()
 {
   return IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) + L"WinSCP\\" + ExtensionsSubFolder;
@@ -1295,6 +1310,78 @@ UnicodeString __fastcall TWinConfiguration::GetExtensionId(const UnicodeString &
   return L"";
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::ReleaseExtensionTranslations()
+{
+  for (int Index = 0; Index < FExtensionTranslations->Count; Index++)
+  {
+    delete FExtensionTranslations->Objects[Index];
+  }
+  FExtensionTranslations->Clear();
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::LoadExtensionTranslations()
+{
+  ReleaseExtensionTranslations();
+  FExtensionTranslations.reset(new TStringList());
+  int Index = EXTENSION_STRINGS;
+  UnicodeString S;
+  while (!((S = LoadStr(Index)).IsEmpty()))
+  {
+    UnicodeString ExtensionName = CutToChar(S, L'.', false);
+    UnicodeString Original = CutToChar(S, L'=', false);
+    UnicodeString Translation = S;
+
+    int ExtensionIndex = FExtensionTranslations->IndexOf(ExtensionName);
+    if (ExtensionIndex < 0)
+    {
+      ExtensionIndex = FExtensionTranslations->AddObject(ExtensionName, new TStringList());
+    }
+    TStringList * ExtensionTranslation = DebugNotNull(dynamic_cast<TStringList *>(FExtensionTranslations->Objects[ExtensionIndex]));
+    ExtensionTranslation->Values[Original] = Translation;
+    Index++;
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TWinConfiguration::UniqueExtensionName(const UnicodeString & ExtensionName, int Counter)
+{
+  // See how the digits are removed in the ExtensionStringTranslation
+  return ExtensionName + IntToStr(Counter);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TWinConfiguration::ExtensionStringTranslation(const UnicodeString & ExtensionId, const UnicodeString & S)
+{
+  UnicodeString Result = S;
+  if (!ExtensionId.IsEmpty())
+  {
+    UnicodeString ExtensionName = ExtractFileName(ExtensionId);
+    int ExtensionIndex;
+    bool Retry;
+    do
+    {
+      ExtensionIndex = FExtensionTranslations->IndexOf(ExtensionName);
+
+      // Try without trailing digits, possibly added by UniqueExtensionName
+      Retry = (ExtensionIndex < 0) && !ExtensionName.IsEmpty() && IsDigit(*ExtensionName.LastChar());
+      if (Retry)
+      {
+        ExtensionName.SetLength(ExtensionName.Length() - 1);
+      }
+    }
+    while (Retry);
+
+    if (ExtensionIndex >= 0)
+    {
+      TStrings * ExtensionTranslation = DebugNotNull(dynamic_cast<TStrings *>(FExtensionTranslations->Objects[ExtensionIndex]));
+      int StringIndex = ExtensionTranslation->IndexOfName(S);
+      if (StringIndex >= 0)
+      {
+        Result = ExtensionTranslation->ValueFromIndex[StringIndex];
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::LoadExtensionList()
 {
   FExtensionList->Clear();
@@ -1326,6 +1413,8 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   #pragma warn +eas
   #undef KEYEX
 
+  // Load after Locale
+  LoadExtensionTranslations();
   // Load after the ExtensionsDeleted and ExtensionsOrder
   LoadExtensionList();
 
@@ -2724,9 +2813,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
   bool AnythingFound = false;
   std::set<UnicodeString> OptionIds;
 
-  UnicodeString ExtensionBaseName = ExtractFileName(PathForBaseName);
-  // ExtractFileNameOnly trims the last extension only, we want to trim all extensions
-  ExtensionBaseName = CutToChar(ExtensionBaseName, L'.', true);
+  UnicodeString ExtensionBaseName = ExtractExtensionBaseName(PathForBaseName);
 
   for (int Index = 0; Index < Lines->Count; Index++)
   {
@@ -2772,7 +2859,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
           bool KnownKey = true;
           if (Key == ExtensionNameDirective)
           {
-            Name = Value;
+            Name = WinConfiguration->ExtensionStringTranslation(Id, Value);
           }
           else if (Key == ExtensionCommandDirective)
           {
@@ -2888,7 +2975,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
           }
           else if (Key == L"description")
           {
-            Description = Value;
+            Description = WinConfiguration->ExtensionStringTranslation(Id, Value);
           }
           else if (Key == L"author")
           {
@@ -3069,6 +3156,8 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
 
         if (Result)
         {
+          Option.Caption = WinConfiguration->ExtensionStringTranslation(Id, Option.Caption);
+
           if (CutTokenEx(Buf, Option.Default))
           {
             UnicodeString Param;

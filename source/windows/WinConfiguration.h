@@ -442,6 +442,7 @@ private:
   __property int LastMachineInstallations = { read = FLastMachineInstallations, write = FLastMachineInstallations };
   int FMachineInstallations;
   LCID FDefaultLocale;
+  std::unique_ptr<TStrings> FExtensionTranslations;
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -578,6 +579,8 @@ protected:
   virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
   virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
   void __fastcall LoadExtensionList();
+  void __fastcall ReleaseExtensionTranslations();
+  void __fastcall LoadExtensionTranslations();
 
 public:
   __fastcall TWinConfiguration();
@@ -611,6 +614,9 @@ public:
   void __fastcall CustomCommandShortCuts(TShortCuts & ShortCuts) const;
   UnicodeString __fastcall GetUserExtensionsPath();
   UnicodeString __fastcall GetExtensionId(const UnicodeString & ExtensionPath);
+  UnicodeString __fastcall ExtensionStringTranslation(const UnicodeString & ExtensionId, const UnicodeString & S);
+  UnicodeString __fastcall UniqueExtensionName(const UnicodeString & ExtensionName, int Counter);
+  UnicodeString __fastcall GetProvisionaryExtensionId(const UnicodeString & FileName);
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
