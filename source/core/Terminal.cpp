@@ -3686,6 +3686,7 @@ void __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString FileName
     }
     catch(Exception & E)
     {
+      // We can probably replace the csIgnoreErrors with IgnoreErrors argument of the ProcessDirectory
       if (!Active || ((Params->Params & csIgnoreErrors) == 0))
       {
         RetryLoop.Error(E, FMTLOAD(CALCULATE_SIZE_ERROR, (FileName)));
