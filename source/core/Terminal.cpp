@@ -4504,43 +4504,55 @@ void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
 {
   TCalculateSizeParams * AParams = static_cast<TCalculateSizeParams*>(Params);
 
-  bool Dir = FLAGSET(Rec.Attr, faDirectory);
-
-  bool AllowTransfer = (AParams->CopyParam == NULL);
-  // SearchRec.Size in C++B2010 is __int64,
-  // so we should be able to use it instead of FindData.nFileSize*
-  __int64 Size =
-    (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
-    Rec.FindData.nFileSizeLow;
-  if (!AllowTransfer)
+  if (!TryStartOperationWithFile(FileName, foCalculateSize))
   {
-    TFileMasks::TParams MaskParams;
-    MaskParams.Size = Size;
-    MaskParams.Modification = FileTimeToDateTime(Rec.FindData.ftLastWriteTime);
-
-    UnicodeString BaseFileName = GetBaseFileName(FileName);
-    AllowTransfer = AParams->CopyParam->AllowTransfer(BaseFileName, osLocal, Dir, MaskParams);
+    AParams->Result = false;
   }
-
-  if (AllowTransfer)
+  else
   {
-    if (!Dir)
+    try
     {
-      AParams->Size += Size;
+      bool Dir = FLAGSET(Rec.Attr, faDirectory);
+
+      bool AllowTransfer = (AParams->CopyParam == NULL);
+      // SearchRec.Size in C++B2010 is __int64,
+      // so we should be able to use it instead of FindData.nFileSize*
+      __int64 Size =
+        (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
+        Rec.FindData.nFileSizeLow;
+      if (!AllowTransfer)
+      {
+        TFileMasks::TParams MaskParams;
+        MaskParams.Size = Size;
+        MaskParams.Modification = FileTimeToDateTime(Rec.FindData.ftLastWriteTime);
+
+        UnicodeString BaseFileName = GetBaseFileName(FileName);
+        AllowTransfer = AParams->CopyParam->AllowTransfer(BaseFileName, osLocal, Dir, MaskParams);
+      }
+
+      if (AllowTransfer)
+      {
+        if (!Dir)
+        {
+          AParams->Size += Size;
+        }
+        else
+        {
+          ProcessLocalDirectory(FileName, CalculateLocalFileSize, Params);
+        }
+      }
     }
-    else
+    catch (...)
     {
-      ProcessLocalDirectory(FileName, CalculateLocalFileSize, Params);
+      // ignore
     }
   }
-
-  StartOperationWithFile(FileName, foCalculateSize);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
   __int64 & Size, const TCopyParamType * CopyParam, bool AllowDirs)
 {
-  bool Result = true;
+  bool Result = false;
   TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
   TOnceDoneOperation OnceDoneOperation = odoIdle;
   OperationProgress.Start(foCalculateSize, osLocal, FileList->Count);
@@ -4550,10 +4562,11 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
     Params.Size = 0;
     Params.Params = 0;
     Params.CopyParam = CopyParam;
+    Params.Result = true;
 
     DebugAssert(!FOperationProgress);
     FOperationProgress = &OperationProgress;
-    for (int Index = 0; Result && (Index < FileList->Count); Index++)
+    for (int Index = 0; Params.Result && (Index < FileList->Count); Index++)
     {
       UnicodeString FileName = FileList->Strings[Index];
       TSearchRec Rec;
@@ -4561,7 +4574,7 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
       {
         if (FLAGSET(Rec.Attr, faDirectory) && !AllowDirs)
         {
-          Result = false;
+          Params.Result = false;
         }
         else
         {
@@ -4572,6 +4585,7 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
     }
 
     Size = Params.Size;
+    Result = Params.Result;
   }
   __finally
   {
