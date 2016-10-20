@@ -3618,6 +3618,8 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
   if (!TryStartOperationWithFile(FileName, foCalculateSize))
   {
     AParams->Result = false;
+    // Combined with csIgnoreErrors, this will not abort completelly, but we get called again
+    // with next sibling of our parent directory (and we get again to this branch, throwing again)
     Abort();
   }
 
