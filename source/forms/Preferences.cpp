@@ -2521,7 +2521,7 @@ void __fastcall TPreferencesDialog::AddExtension()
     if (!ExtensionPath.IsEmpty())
     {
       int Index = FExtensionList->FindIndexByFileName(Path);
-      if (Index > 0)
+      if (Index >= 0)
       {
         CustomCommandsView->ItemIndex = GetCommandListIndex(FExtensionList, Index);
         CustomCommandsView->ItemFocused->MakeVisible(false);
