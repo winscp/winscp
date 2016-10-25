@@ -364,7 +364,6 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem35;
   TTBXItem *TBXItem236;
   TTBXSeparatorItem *TBXSeparatorItem54;
-  TTBXItem *TBXItem237;
   TTBXToolbar *RemoteFileToolbar;
   TTBXSubmenuItem *TBXItem238;
   TTBXItem *TBXItem239;
@@ -374,9 +373,6 @@ __published:
   TTBXSubmenuItem *TBXItem242;
   TTBXItem *TBXItem243;
   TTBXSeparatorItem *TBXSeparatorItem56;
-  TTBXItem *TBXItem244;
-  TTBXItem *TBXItem245;
-  TTBXItem *TBXItem246;
   TTBXItem *TBXItem59;
   TTBXItem *TBXItem136;
   TTBXLabelItem *TransferSettingsLabelItem;
@@ -421,6 +417,14 @@ __published:
   TTBXItem *TBXItem217;
   TTBXSubmenuItem *TBXSubmenuItem28;
   TTBXItem *TBXItem227;
+  TTBXSubmenuItem *RemoteNewSubmenuItem;
+  TTBXItem *TBXItem244;
+  TTBXItem *TBXItem246;
+  TTBXItem *TBXItem247;
+  TTBXSubmenuItem *LocalNewSubmenuItem;
+  TTBXItem *TBXItem248;
+  TTBXItem *TBXItem249;
+  TTBXItem *TBXItem250;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);

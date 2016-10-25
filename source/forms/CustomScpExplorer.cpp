@@ -2714,12 +2714,12 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
 
   Side = GetSide(Side);
 
-  TCustomDirView * CurrentDirView = DirView(osCurrent);
-  TListItem * FocusedItem = CurrentDirView->ItemFocused;
+  TCustomDirView * DView = DirView(Side);
+  TListItem * FocusedItem = DView->ItemFocused;
   UnicodeString Name;
-  if ((FocusedItem != NULL) && !CurrentDirView->ItemIsParentDirectory(FocusedItem))
+  if ((FocusedItem != NULL) && !DView->ItemIsParentDirectory(FocusedItem))
   {
-    Name = CurrentDirView->ItemFileName(FocusedItem);
+    Name = DView->ItemFileName(FocusedItem);
   }
   else
   {
@@ -2775,7 +2775,7 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
       {
         if (ExtractFilePath(Name).IsEmpty())
         {
-          LocalFileName = IncludeTrailingBackslash(DirView(Side)->PathName) + Name;
+          LocalFileName = IncludeTrailingBackslash(DView->PathName) + Name;
         }
         else
         {

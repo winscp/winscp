@@ -2063,10 +2063,10 @@ object NonVisualDataModule: TNonVisualDataModule
         'ory and delete original'
       ImageIndex = 98
     end
-    object LocalCreateDirAction: TAction
+    object LocalCreateDirAction2: TAction
       Tag = 12
       Category = 'Local Selected Operation'
-      Caption = '&Create Directory...'
+      Caption = '&Directory...'
       HelpKeyword = 'task_create_directory'
       Hint = 'Create directory|Create new local directory'
       ImageIndex = 5
@@ -2087,10 +2087,10 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Properties|Display/change properties of selected local file(s)'
       ImageIndex = 4
     end
-    object LocalAddEditLinkAction: TAction
+    object LocalAddEditLinkAction2: TAction
       Tag = 12
       Category = 'Local Selected Operation'
-      Caption = 'Edit &Link...'
+      Caption = '&Shortcut...'
       HelpKeyword = 'task_link'
       Hint = 
         'Add/edit shortcut|Add new local shortcut or edit selected local ' +
@@ -2123,10 +2123,10 @@ object NonVisualDataModule: TNonVisualDataModule
         'rectory and delete original'
       ImageIndex = 97
     end
-    object RemoteCreateDirAction: TAction
+    object RemoteCreateDirAction2: TAction
       Tag = 12
       Category = 'Remote Selected Operation'
-      Caption = '&Create Directory...'
+      Caption = '&Directory...'
       HelpKeyword = 'task_create_directory'
       Hint = 'Create directory|Create new remote directory'
       ImageIndex = 5
@@ -2149,10 +2149,10 @@ object NonVisualDataModule: TNonVisualDataModule
         'ties of selected remote file(s) '
       ImageIndex = 4
     end
-    object RemoteAddEditLinkAction: TAction
+    object RemoteAddEditLinkAction2: TAction
       Tag = 12
       Category = 'Remote Selected Operation'
-      Caption = 'Edit &Link...'
+      Caption = '&Link...'
       HelpKeyword = 'task_link'
       Hint = 'Add/edit link|Add new remote link or edit selected remote link'
       ImageIndex = 60
@@ -2265,6 +2265,22 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Change Password...'
       HelpKeyword = 'task_change_password'
       Hint = 'Change account password'
+    end
+    object RemoteNewFileAction: TAction
+      Tag = 15
+      Category = 'Remote Selected Operation'
+      Caption = '&File...'
+      HelpKeyword = 'task_edit'
+      Hint = 'Create file|Create new file and open it in editor'
+      ImageIndex = 77
+    end
+    object LocalNewFileAction: TAction
+      Tag = 15
+      Category = 'Local Selected Operation'
+      Caption = '&File...'
+      HelpKeyword = 'task_edit'
+      Hint = 'Create file|Create new file and open it in editor'
+      ImageIndex = 77
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu

@@ -205,10 +205,11 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(LocalRenameAction, EnabledLocalSelectedOperation)
   UPD(LocalEditAction, EnabledLocalSelectedFileOperation && !WinConfiguration->DisableOpenEdit)
   UPD(LocalMoveAction, HasTerminal && EnabledLocalSelectedOperation)
-  UPD(LocalCreateDirAction, true)
+  UPD(LocalCreateDirAction2, true)
   UPD(LocalDeleteAction, EnabledLocalSelectedOperation)
   UPD(LocalPropertiesAction, EnabledLocalSelectedOperation)
-  UPD(LocalAddEditLinkAction, ScpExplorer->CanAddEditLink(osLocal))
+  UPD(LocalAddEditLinkAction2, ScpExplorer->CanAddEditLink(osLocal))
+  UPD(LocalNewFileAction, !WinConfiguration->DisableOpenEdit)
   // local focused operation
   UPD(LocalCopyFocusedAction, HasTerminal && EnabledLocalFocusedOperation)
   UPD(LocalCopyFocusedQueueAction, HasTerminal && EnabledLocalFocusedOperation)
@@ -222,10 +223,11 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     ScpExplorer->Terminal->IsCapable[fcRename])
   UPD(RemoteEditAction, EnabledRemoteSelectedFileOperation && !WinConfiguration->DisableOpenEdit)
   UPD(RemoteMoveAction, EnabledRemoteSelectedOperation)
-  UPD(RemoteCreateDirAction, DirViewEnabled(osRemote))
+  UPD(RemoteCreateDirAction2, DirViewEnabled(osRemote))
+  UPD(RemoteNewFileAction, DirViewEnabled(osRemote) && !WinConfiguration->DisableOpenEdit)
   UPD(RemoteDeleteAction, EnabledRemoteSelectedOperation)
   UPD(RemotePropertiesAction, EnabledRemoteSelectedOperation)
-  UPD(RemoteAddEditLinkAction, ScpExplorer->CanAddEditLink(osRemote))
+  UPD(RemoteAddEditLinkAction2, ScpExplorer->CanAddEditLink(osRemote))
   // remote focused operation
   UPD(RemoteCopyFocusedAction, EnabledRemoteFocusedOperation)
   UPD(RemoteCopyFocusedQueueAction, EnabledRemoteFocusedOperation)
@@ -556,10 +558,11 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(LocalRenameAction, ScpExplorer->ExecuteFileOperationCommand(foRename, osLocal, false))
     EXE(LocalEditAction, ScpExplorer->ExecuteFile(osLocal, efDefaultEditor, NULL, true, false))
     EXE(LocalMoveAction, ScpExplorer->ExecuteFileOperationCommand(foMove, osLocal, false))
-    EXE(LocalCreateDirAction, ScpExplorer->CreateDirectory(osLocal))
+    EXE(LocalCreateDirAction2, ScpExplorer->CreateDirectory(osLocal))
     EXE(LocalDeleteAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osLocal, false))
     EXE(LocalPropertiesAction, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osLocal, false))
-    EXE(LocalAddEditLinkAction, ScpExplorer->AddEditLink(osLocal, false))
+    EXE(LocalAddEditLinkAction2, ScpExplorer->AddEditLink(osLocal, false))
+    EXE(LocalNewFileAction, ScpExplorer->EditNew(osLocal))
     // local focused operation
     EXE(LocalCopyFocusedAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, true, ShortCutFlag))
     EXE(LocalCopyFocusedQueueAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, true, cocQueue))
@@ -572,12 +575,13 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(RemoteRenameAction, ScpExplorer->ExecuteFileOperationCommand(foRename, osRemote, false))
     EXE(RemoteEditAction, ScpExplorer->ExecuteFile(osRemote, efDefaultEditor, NULL, true, false))
     EXE(RemoteMoveAction, ScpExplorer->ExecuteFileOperationCommand(foMove, osRemote, false))
-    EXE(RemoteCreateDirAction, ScpExplorer->CreateDirectory(osRemote))
+    EXE(RemoteCreateDirAction2, ScpExplorer->CreateDirectory(osRemote))
+    EXE(RemoteNewFileAction, ScpExplorer->EditNew(osRemote))
     EXE(RemoteDeleteAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osRemote, false))
     EXE(RemotePropertiesAction, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osRemote, false))
     EXE(RemoteMoveToAction, ScpExplorer->ExecuteFileOperationCommand(foRemoteMove, osCurrent, false))
     EXE(RemoteCopyToAction, ScpExplorer->ExecuteFileOperationCommand(foRemoteCopy, osCurrent, false))
-    EXE(RemoteAddEditLinkAction, ScpExplorer->AddEditLink(osRemote, false))
+    EXE(RemoteAddEditLinkAction2, ScpExplorer->AddEditLink(osRemote, false))
     // remote focused operation
     EXE(RemoteCopyFocusedAction, ScpExplorer->ExecuteCopyOperationCommand(osRemote, true, ShortCutFlag))
     EXE(RemoteCopyFocusedQueueAction, ScpExplorer->ExecuteCopyOperationCommand(osRemote, true, cocQueue))
@@ -948,12 +952,14 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CloneShortcuts()
 {
-  // Directory
+  // Commands
   NewDirAction->ShortCut = CurrentCreateDirAction->ShortCut;
   // File operation
   CurrentAddEditLinkContextAction->ShortCut = CurrentAddEditLinkAction->ShortCut;
-  LocalAddEditLinkAction->ShortCut = CurrentAddEditLinkAction->ShortCut;
-  RemoteAddEditLinkAction->ShortCut = CurrentAddEditLinkAction->ShortCut;
+  LocalAddEditLinkAction2->ShortCut = CurrentAddEditLinkAction->ShortCut;
+  RemoteAddEditLinkAction2->ShortCut = CurrentAddEditLinkAction->ShortCut;
+  RemoteNewFileAction->ShortCut = NewFileAction->ShortCut;
+  LocalNewFileAction->ShortCut = NewFileAction->ShortCut;
   // local directory
   LocalOpenDirAction->ShortCut = RemoteOpenDirAction->ShortCut;
   LocalRefreshAction->ShortCut = RemoteRefreshAction->ShortCut;
@@ -966,7 +972,7 @@ void __fastcall TNonVisualDataModule::CloneShortcuts()
   LocalRenameAction->ShortCut = CurrentRenameAction->ShortCut;
   LocalEditAction->ShortCut = CurrentEditAction->ShortCut;
   LocalMoveAction->ShortCut = RemoteMoveAction->ShortCut;
-  LocalCreateDirAction->ShortCut = CurrentCreateDirAction->ShortCut;
+  LocalCreateDirAction2->ShortCut = CurrentCreateDirAction->ShortCut;
   LocalDeleteAction->ShortCut = CurrentDeleteAction->ShortCut;
   LocalPropertiesAction->ShortCut = CurrentPropertiesAction->ShortCut;
   // local focused operation
@@ -975,7 +981,7 @@ void __fastcall TNonVisualDataModule::CloneShortcuts()
   // remote selected operation
   RemoteRenameAction->ShortCut = CurrentRenameAction->ShortCut;
   RemoteEditAction->ShortCut = CurrentEditAction->ShortCut;
-  RemoteCreateDirAction->ShortCut = CurrentCreateDirAction->ShortCut;
+  RemoteCreateDirAction2->ShortCut = CurrentCreateDirAction->ShortCut;
   RemoteDeleteAction->ShortCut = CurrentDeleteAction->ShortCut;
   RemotePropertiesAction->ShortCut = CurrentPropertiesAction->ShortCut;
   // remote focused operation
