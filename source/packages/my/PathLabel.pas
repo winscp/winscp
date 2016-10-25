@@ -21,6 +21,7 @@ type
     FUnixPath: Boolean;
     FOnGetStatus: TPathLabelGetStatusEvent;
     FOnPathClick: TPathLabelPathClickEvent;
+    FOnMaskClick: TNotifyEvent;
     FDisplayPath: string;
     FDisplayHotTrack: string;
     FDisplayMask: string;
@@ -56,9 +57,11 @@ type
     procedure Paint; override;
     function IsActive: Boolean;
     function TrackingActive: Boolean;
-    function HotTrackPath(Path: string): string;
+    function HotTrackPath: string;
+    function GetSeparator: Char;
     procedure MouseMove(Shift: TShiftState; X: Integer; Y: Integer); override;
     procedure DoPathClick(Path: string); virtual;
+    procedure DoMaskClick;
     procedure DblClick; override;
     procedure DoContextPopup(MousePos: TPoint; var Handled: Boolean); override;
 
@@ -82,6 +85,7 @@ type
       default clInactiveCaptionText;
     property OnGetStatus: TPathLabelGetStatusEvent read FOnGetStatus write FOnGetStatus;
     property OnPathClick: TPathLabelPathClickEvent read FOnPathClick write FOnPathClick;
+    property OnMaskClick: TNotifyEvent read FOnMaskClick write FOnMaskClick;
     property HotTrack: Boolean read FHotTrack write FHotTrack default False;
     property Mask: string read FMask write SetMask;
     property AutoSizeVertical: Boolean read FAutoSizeVertical write SetAutoSizeVertical default False;
@@ -106,6 +110,7 @@ type
     property HotTrack;
     property OnGetStatus;
     property OnPathClick;
+    property OnMaskClick;
 
     property Align;
     property Alignment;
@@ -143,6 +148,10 @@ implementation
 uses
   { SysUtils must overload deprecated FileCtrl (implements MinimizeName) }
   FileCtrl, SysUtils, Math;
+
+const
+  // magic value
+  HotTrackMask: string = #1;
 
 procedure Register;
 begin
@@ -186,9 +195,14 @@ var
 begin
   if FIsEnabled then
   begin
-    HotPath := HotTrackPath(FDisplayPath);
+    HotPath := HotTrackPath;
     if HotPath <> '' then
     begin
+      if Copy(HotPath, Length(HotPath), 1) = GetSeparator then
+        SetLength(HotPath, Length(HotPath) - 1);
+
+      if HotPath = HotTrackMask then DoMaskClick
+        else
       if FDisplayPath = Caption then DoPathClick(HotPath)
         else
       begin
@@ -196,6 +210,8 @@ begin
         // The below is based on knowledge of MinimizeName algorithm
         RemainingPath := Copy(FDisplayPath, Length(HotPath) + 1,
           Length(FDisplayPath) - Length(HotPath));
+        if Copy(RemainingPath, Length(RemainingPath), 1) = GetSeparator then
+          SetLength(RemainingPath, Length(RemainingPath) - 1);
 
         if RemainingPath = Copy(Caption, Length(Caption) - Length(RemainingPath) + 1,
              Length(RemainingPath)) then
@@ -481,6 +497,10 @@ var
   HotTrackBottom: Integer;
   Separator: string;
   Str: string;
+  HotTrackColor: TColor;
+  VirtualMask: string;
+  IsEmptyMask: Boolean;
+  IsVirtualMask: Boolean;
 begin
   if (Flags and DT_CALCRECT <> 0) and ((S = '') or ShowAccelChar and
     (S[1] = '&') and (S[2] = #0)) then S := S + ' ';
@@ -491,26 +511,25 @@ begin
   Width := (Rect.Right - Rect.Left);
 
   FDisplayPath := S;
-  FDisplayMask := Mask;
-  Separator := '';
 
-  if FDisplayMask <> '' then
+  VirtualMask := Mask;
+  IsVirtualMask := False;
+  IsEmptyMask := (VirtualMask = '');
+  if IsEmptyMask then
   begin
-    if FUnixPath then
-    begin
-      if (Length(FDisplayPath) > 0) and (FDisplayPath[Length(FDisplayPath)] <> '/') then
-        Separator := '/';
-    end
-      else
-    begin
-      if (Length(FDisplayPath) > 0) and (FDisplayPath[Length(FDisplayPath)] <> '\') then
-        Separator := '\';
-    end;
+    VirtualMask := '*.*';
+    IsVirtualMask := not FMouseInView;
+  end;
+
+  if VirtualMask <> '' then
+  begin
+    if (Length(FDisplayPath) > 0) and (FDisplayPath[Length(FDisplayPath)] <> GetSeparator) then
+      Separator := GetSeparator;
 
     FDisplayPath := FDisplayPath + Separator;
     S := S + Separator;
 
-    WidthMask := Canvas.TextWidth(FDisplayMask);
+    WidthMask := Canvas.TextWidth(VirtualMask);
     if WidthMask > Width div 3 then
       WidthPath := Width - (Width div 3)
     else
@@ -542,27 +561,37 @@ begin
 
   WidthPath := Canvas.TextWidth(FDisplayPath);
 
-  if FDisplayMask <> '' then
+  if VirtualMask <> '' then
   begin
     if WidthMask > Width - WidthPath then
     begin
-      FDisplayMask := FDisplayMask + '...';
+      VirtualMask := VirtualMask + '...';
       repeat
-        Delete(FDisplayMask, Length(FDisplayMask) - 3, 1);
-        WidthMask := Canvas.TextWidth(FDisplayMask);
-      until (WidthMask <= Width - WidthPath) or (Length(FDisplayMask) = 3);
+        Delete(VirtualMask, Length(VirtualMask) - 3, 1);
+        WidthMask := Canvas.TextWidth(VirtualMask);
+      until (WidthMask <= Width - WidthPath) or (Length(VirtualMask) = 3);
     end;
+  end;
+
+  Str := FDisplayPath;
+  if not IsVirtualMask then
+  begin
+    Str := Str + VirtualMask;
+    FDisplayMask := VirtualMask;
+  end
+    else
+  begin
+    FDisplayMask := '';
   end;
 
   ShowHint :=
     (FDisplayPath <> S) or
-    (FDisplayMask <> Mask) or
+    ((not IsEmptyMask) and (FDisplayMask <> Mask)) or
     (WidthPath + WidthMask > Width);
 
   if not ShowHint then Hint := ''
     else Hint := S + Mask;
 
-  Str := FDisplayPath + FDisplayMask;
   if not FIsEnabled then
   begin
     Canvas.Font.Color := clBtnShadow;
@@ -570,12 +599,14 @@ begin
   end
     else
   begin
-    FDisplayHotTrack := HotTrackPath(FDisplayPath);
+    FDisplayHotTrack := HotTrackPath;
+
+    HotTrackColor := TColor(0); // shut up
     if FDisplayHotTrack <> '' then
     begin
       if TrackingActive then
       begin
-        Canvas.Font.Color := FColors[4 + Integer(FIsActive)]
+        HotTrackColor := FColors[4 + Integer(FIsActive)]
       end
         else
       begin
@@ -583,8 +614,13 @@ begin
         // so this is untested branch
         Assert(False);
         // As if it were active
-        Canvas.Font.Color := FColors[2 + 1];
+        HotTrackColor := FColors[2 + 1];
       end;
+    end;
+
+    if (FDisplayHotTrack <> '') and (FDisplayHotTrack <> HotTrackMask) then
+    begin
+      Canvas.Font.Color := HotTrackColor;
       DrawText(Canvas.Handle, PChar(FDisplayHotTrack), Length(FDisplayHotTrack), Rect, Flags);
       HotTrackOffset := Canvas.TextWidth(FDisplayHotTrack);
       Inc(Rect.Left, HotTrackOffset);
@@ -601,7 +637,21 @@ begin
       Canvas.Font.Color := FColors[2 + Integer(FIsActive)]
     else
       Canvas.Font.Color := clWindowText;
-    DrawText(Canvas.Handle, PChar(Str), Length(Str), Rect, Flags);
+
+    if FDisplayHotTrack = HotTrackMask then
+    begin
+      DrawText(Canvas.Handle, PChar(FDisplayPath), Length(FDisplayPath), Rect, Flags);
+      HotTrackOffset := Canvas.TextWidth(FDisplayPath);
+      HotTrackBottom := Rect.Bottom;
+      Inc(Rect.Left, HotTrackOffset);
+      Canvas.Font.Color := HotTrackColor;
+      DrawText(Canvas.Handle, PChar(VirtualMask), Length(VirtualMask), Rect, Flags);
+    end
+      else
+    begin
+      DrawText(Canvas.Handle, PChar(Str), Length(Str), Rect, Flags);
+
+    end;
 
     Dec(Rect.Left, HotTrackOffset);
     Rect.Bottom := Max(Rect.Bottom, HotTrackBottom);
@@ -613,40 +663,52 @@ begin
   DoDrawTextIntern(Rect, Flags, Caption);
 end;
 
-function TCustomPathLabel.HotTrackPath(Path: string): string;
+function TCustomPathLabel.GetSeparator: Char;
+begin
+  if FUnixPath then Result := '/'
+    else Result := '\';
+end;
+
+function TCustomPathLabel.HotTrackPath: string;
 var
   P: TPoint;
   DelimPos: Integer;
-  Delim: Char;
   Len: Integer;
+  Path: string;
 begin
   Result := '';
-  if UseHotTrack and FMouseInView and (Path <> '') then
+  if UseHotTrack and FMouseInView and (FDisplayPath <> '') then
   begin
     P := ScreenToClient(Mouse.CursorPos);
     Len := P.X - FIndentHorizontal;
-    if (Len >= 0) and (Len < Canvas.TextWidth(Path)) then
+    if Len >= 0 then
     begin
-      if FUnixPath then Delim := '/'
-        else Delim := '\';
+      if Len < Canvas.TextWidth(FDisplayPath) then
+      begin
+        Result := '';
+        Path := FDisplayPath;
+        repeat
+          Assert(Path <> '');
 
-      Result := '';
-      repeat
-        Assert(Path <> '');
+          DelimPos := Pos(GetSeparator, Path);
+          if DelimPos > 0 then
+          begin
+            Result := Result + Copy(Path, 1, DelimPos);
+            Delete(Path, 1, DelimPos);
+          end
+            else
+          begin
+            Result := Result + Path;
+            Path := '';
+          end;
 
-        DelimPos := Pos(Delim, Path);
-        if DelimPos > 0 then
-        begin
-          Result := Result + Copy(Path, 1, DelimPos);
-          Delete(Path, 1, DelimPos);
-        end
-          else
-        begin
-          Result := Result + Path;
-          Path := '';
-        end;
-
-      until (Canvas.TextWidth(Result) >= Len) or (Path = '');
+        until (Canvas.TextWidth(Result) >= Len) or (Path = '');
+      end
+        else
+      if Len < Canvas.TextWidth(FDisplayPath + FDisplayMask) then
+      begin
+        Result := HotTrackMask;
+      end;
     end;
   end;
 end;
@@ -802,7 +864,7 @@ end;
 procedure TCustomPathLabel.MouseMove(Shift: TShiftState; X: Integer; Y: Integer);
 begin
   inherited;
-  if FMouseInView and UseHotTrack and (FDisplayHotTrack <> HotTrackPath(FDisplayPath)) then
+  if FMouseInView and UseHotTrack and (FDisplayHotTrack <> HotTrackPath) then
   begin
     Invalidate;
   end;
@@ -812,6 +874,12 @@ procedure TCustomPathLabel.DoPathClick(Path: string);
 begin
   if Assigned(OnPathClick) then
     OnPathClick(Self, Path);
+end;
+
+procedure TCustomPathLabel.DoMaskClick;
+begin
+  if Assigned(OnMaskClick) then
+    OnMaskClick(Self);
 end;
 
 procedure TCustomPathLabel.DblClick;
@@ -838,6 +906,7 @@ procedure TCustomPathLabel.CMMouseEnter(var Message: TMessage);
 begin
   inherited;
   FMouseInView := True;
+  Invalidate;
 end;
 
 procedure TCustomPathLabel.CMMouseLeave(var Message: TMessage);

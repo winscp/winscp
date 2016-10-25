@@ -1036,6 +1036,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       HotTrack = True
       OnGetStatus = RemotePathLabelGetStatus
       OnPathClick = RemotePathLabelPathClick
+      OnMaskClick = RemotePathLabelMaskClick
       AutoSize = False
       Transparent = False
       OnDblClick = PathLabelDblClick
@@ -1341,6 +1342,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       HotTrack = True
       OnGetStatus = LocalPathLabelGetStatus
       OnPathClick = LocalPathLabelPathClick
+      OnMaskClick = LocalPathLabelMaskClick
       AutoSize = False
       PopupMenu = NonVisualDataModule.LocalPanelPopup
       Transparent = False

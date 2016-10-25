@@ -482,6 +482,8 @@ __published:
   void __fastcall LocalDirViewContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall LocalStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
   void __fastcall RemoteStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
+  void __fastcall RemotePathLabelMaskClick(TObject *Sender);
+  void __fastcall LocalPathLabelMaskClick(TObject *Sender);
 
 private:
   bool FConstructed;

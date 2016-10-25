@@ -2161,3 +2161,13 @@ void __fastcall TScpCommanderForm::GoToAddress()
   OpenDirectory(GetSide(osCurrent));
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::RemotePathLabelMaskClick(TObject * /*Sender*/)
+{
+  Filter(osRemote);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalPathLabelMaskClick(TObject * /*Sender*/)
+{
+  Filter(osLocal);
+}
+//---------------------------------------------------------------------------
