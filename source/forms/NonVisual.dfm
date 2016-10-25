@@ -2259,6 +2259,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Displays tips on using WinSCP'
       ImageIndex = 110
     end
+    object ChangePasswordAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Change Password...'
+      HelpKeyword = 'task_change_password'
+      Hint = 'Change account password'
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages

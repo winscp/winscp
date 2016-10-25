@@ -301,6 +301,9 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem144: TTBXItem
           Action = NonVisualDataModule.SessionGenerateUrlAction2
         end
+        object TBXItem160: TTBXItem
+          Action = NonVisualDataModule.ChangePasswordAction
+        end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
         object TBXSubmenuItem21: TTBXSubmenuItem

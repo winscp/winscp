@@ -444,6 +444,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(ClearCachesAction, HasTerminal && !ScpExplorer->Terminal->AreCachesEmpty)
   UPD(NewFileAction, DirViewEnabled(osCurrent) && !WinConfiguration->DisableOpenEdit)
   UPD(EditorListCustomizeAction, true)
+  UPD(ChangePasswordAction, ScpExplorer->CanChangePassword())
 
   // CUSTOM COMMANDS
   UPD(CustomCommandsFileAction, true)
@@ -778,6 +779,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(ClearCachesAction, ScpExplorer->Terminal->ClearCaches())
     EXE(NewFileAction, ScpExplorer->EditNew(osCurrent))
     EXE(EditorListCustomizeAction, PreferencesDialog(pmEditor))
+    EXE(ChangePasswordAction, ScpExplorer->ChangePassword())
 
     // CUSTOM COMMANDS
     EXE(CustomCommandsFileAction, CreateCustomCommandsMenu(CustomCommandsFileAction, ccltFile))

@@ -5599,20 +5599,9 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CommandSessionFallback()
 {
-  bool Result = true;
-
   DebugAssert(!FTerminal->CommandSessionOpened);
 
-  try
-  {
-    TTerminalManager::ConnectTerminal(FTerminal->CommandSession, false);
-  }
-  catch(Exception & E)
-  {
-    ShowExtendedExceptionEx(FTerminal->CommandSession, &E);
-    Result = false;
-  }
-  return Result;
+  return TTerminalManager::Instance()->ConnectTerminal(FTerminal->CommandSession);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::EnsureCommandSessionFallback(TFSCapability Capability)
@@ -9132,3 +9121,28 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlContextPopup(TObject 
   Handled = true;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::CanChangePassword()
+{
+  return (Terminal != NULL) && Terminal->Active && Terminal->IsCapable[fcChangePassword];
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ChangePassword()
+{
+  Configuration->Usage->Inc(L"PasswordChanges");
+  std::unique_ptr<TSessionData> ChangePasswordData(Terminal->SessionData->Clone());
+  ChangePasswordData->DisableAuthentationsExceptPassword();
+  ChangePasswordData->ChangePassword = true;
+
+  std::unique_ptr<TTerminal> ChangePasswordSession(
+    Terminal->CreateSecondarySession(L"ChangePassword", ChangePasswordData.get()));
+  ChangePasswordSession->AutoReadDirectory = false;
+
+  if (TTerminalManager::Instance()->ConnectTerminal(ChangePasswordSession.get()))
+  {
+    MessageDialog(MainInstructions(LoadStr(PASSWORD_CHANGED)), qtInformation, qaOK, HELP_CHANGE_PASSWORD);
+  }
+  else
+  {
+    Configuration->Usage->Inc(L"PasswordChangesFailed");
+  }
+}

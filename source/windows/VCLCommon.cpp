@@ -892,12 +892,14 @@ void __fastcall HideAsModal(TForm * Form, void *& Storage)
   delete AStorage;
 }
 //---------------------------------------------------------------------------
-void __fastcall ReleaseAsModal(TForm * Form, void *& Storage)
+bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage)
 {
-  if (Storage != NULL)
+  bool Result = (Storage != NULL);
+  if (Result)
   {
     HideAsModal(Form, Storage);
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,

@@ -425,6 +425,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem135: TTBXItem
           Action = NonVisualDataModule.SessionGenerateUrlAction2
         end
+        object TBXItem227: TTBXItem
+          Action = NonVisualDataModule.ChangePasswordAction
+        end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
         object TBXSubmenuItem21: TTBXSubmenuItem

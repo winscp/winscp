@@ -104,6 +104,8 @@ void __fastcall TSessionData::Default()
   PortNumber = SshPortNumber;
   UserName = L"";
   Password = L"";
+  NewPassword = L"";
+  ChangePassword = false;
   PingInterval = 30;
   PingType = ptOff;
   Timeout = 15;
@@ -277,6 +279,8 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(Note);
 //---------------------------------------------------------------------
 #define ADVANCED_PROPERTIES \
+  PROPERTY(NewPassword); \
+  PROPERTY(ChangePassword); \
   PROPERTY(PingInterval); \
   PROPERTY(PingType); \
   PROPERTY(Timeout); \
@@ -1420,6 +1424,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
 void __fastcall TSessionData::RecryptPasswords()
 {
   Password = Password;
+  NewPassword = NewPassword;
   ProxyPassword = ProxyPassword;
   TunnelPassword = TunnelPassword;
   Passphrase = Passphrase;
@@ -1437,12 +1442,17 @@ bool __fastcall TSessionData::HasAnySessionPassword()
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::HasAnyPassword()
 {
-  return HasAnySessionPassword() || !FProxyPassword.IsEmpty();
+  return
+    HasAnySessionPassword() ||
+    !FProxyPassword.IsEmpty() ||
+    // will probably be never used
+    FNewPassword.IsEmpty();
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ClearSessionPasswords()
 {
   FPassword = L"";
+  FNewPassword = L"";
   FTunnelPassword = L"";
 }
 //---------------------------------------------------------------------
@@ -1560,7 +1570,9 @@ bool __fastcall TSessionData::IsProtocolUrl(
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option)
 {
-  return SameText(Option, PassphraseOption);
+  return
+    SameText(Option, PassphraseOption) ||
+    SameText(Option, NEWPASSWORD_SWITCH);
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
@@ -1869,6 +1881,11 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     {
       Name = Value;
     }
+    if (Options->FindSwitch(NEWPASSWORD_SWITCH, Value))
+    {
+      ChangePassword = true;
+      NewPassword = Value;
+    }
     if (Options->FindSwitch(L"privatekey", Value))
     {
       PublicKeyFile = Value;
@@ -2077,6 +2094,7 @@ void __fastcall TSessionData::SetHostName(UnicodeString value)
   {
     // HostName is key for password encryption
     UnicodeString XPassword = Password;
+    UnicodeString XNewPassword = Password;
 
     // This is now hardly used as hostname is parsed directly on login dialog.
     // But can be used when importing sites from PuTTY, as it allows same format too.
@@ -2090,7 +2108,9 @@ void __fastcall TSessionData::SetHostName(UnicodeString value)
     Modify();
 
     Password = XPassword;
+    NewPassword = XNewPassword;
     Shred(XPassword);
+    Shred(XNewPassword);
   }
 }
 //---------------------------------------------------------------------
@@ -2141,9 +2161,12 @@ void __fastcall TSessionData::SetUserName(UnicodeString value)
   {
     // UserName is key for password encryption
     UnicodeString XPassword = Password;
+    UnicodeString XNewPassword = NewPassword;
     SET_SESSION_PROPERTY(UserName);
     Password = XPassword;
+    NewPassword = XNewPassword;
     Shred(XPassword);
+    Shred(XNewPassword);
   }
 }
 //---------------------------------------------------------------------
@@ -2161,6 +2184,22 @@ void __fastcall TSessionData::SetPassword(UnicodeString avalue)
 UnicodeString __fastcall TSessionData::GetPassword() const
 {
   return DecryptPassword(FPassword, UserName+HostName);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetNewPassword(UnicodeString avalue)
+{
+  RawByteString value = EncryptPassword(avalue, UserName+HostName);
+  SET_SESSION_PROPERTY(NewPassword);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::GetNewPassword() const
+{
+  return DecryptPassword(FNewPassword, UserName+HostName);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetChangePassword(bool value)
+{
+  SET_SESSION_PROPERTY(ChangePassword);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetPingInterval(int value)
@@ -3645,6 +3684,19 @@ UnicodeString __fastcall TSessionData::ComposePath(
   const UnicodeString & Path, const UnicodeString & Name)
 {
   return UnixIncludeTrailingBackslash(Path) + Name;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::DisableAuthentationsExceptPassword()
+{
+  SshNoUserAuth = false;
+  AuthTIS = false;
+  AuthKI = false;
+  AuthKIPassword = false;
+  AuthGSSAPI = false;
+  PublicKeyFile = L"";
+  TlsCertificateFile = L"";
+  Passphrase = L"";
+  TryAgent = false;
 }
 //=== TStoredSessionList ----------------------------------------------
 __fastcall TStoredSessionList::TStoredSessionList(bool aReadOnly):

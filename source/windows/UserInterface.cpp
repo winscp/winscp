@@ -175,7 +175,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       WinConfiguration->ConfirmExitOnCompletion;
 
     if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
-        (Manager != NULL) && (Manager->ActiveTerminal != NULL) && Manager->ActiveTerminal->IsThisOrChild(Terminal))
+        (Manager != NULL) && (Manager->ActiveTerminal == Terminal))
     {
       int SessionReopenTimeout = 0;
       TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Manager->ActiveTerminal);

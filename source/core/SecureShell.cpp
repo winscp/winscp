@@ -166,6 +166,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_str(conf, CONF_username, UTF8String(Data->UserNameExpanded).c_str());
   conf_set_int(conf, CONF_port, Data->PortNumber);
   conf_set_int(conf, CONF_protocol, PROT_SSH);
+  conf_set_int(conf, CONF_change_password, Data->ChangePassword);
   // always set 0, as we will handle keepalives ourselves to avoid
   // multi-threaded issues in putty timer list
   conf_set_int(conf, CONF_ping_interval, 0);
@@ -866,6 +867,24 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       FStoredPassphraseTried = true;
     }
   }
+  else if (PromptKind == pkNewPassword)
+  {
+    if (FSessionData->ChangePassword)
+    {
+      FUI->Information(LoadStr(AUTH_CHANGING_PASSWORD), false);
+
+      if (!FSessionData->Password.IsEmpty() && !FSessionData->NewPassword.IsEmpty() && !FStoredPasswordTried)
+      {
+        LogEvent(L"Using stored password and new password.");
+        Result = true;
+        DebugAssert(Results->Count == 3);
+        Results->Strings[0] = FSessionData->Password;
+        Results->Strings[1] = FSessionData->NewPassword;
+        Results->Strings[2] = FSessionData->NewPassword;
+        FStoredPasswordTried = true;
+      }
+    }
+  }
 
   if (!Result)
   {
@@ -896,7 +915,10 @@ void __fastcall TSecureShell::GotHostKey()
   if (!FAuthenticating && !FAuthenticated)
   {
     FAuthenticating = true;
-    FUI->Information(LoadStr(STATUS_AUTHENTICATE), true);
+    if (!FSessionData->ChangePassword)
+    {
+      FUI->Information(LoadStr(STATUS_AUTHENTICATE), true);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2519,4 +2541,12 @@ void __fastcall TSecureShell::CollectUsage()
   {
     Configuration->Usage->Inc(L"OpenedSessionsSSHOther");
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecureShell::CanChangePassword()
+{
+  return
+    // These major SSH servers explicitly do not support password change.
+    (SshImplementation != sshiOpenSSH) && // See userauth_passwd
+    (SshImplementation != sshiProFTPD); // See sftp_auth_password
 }

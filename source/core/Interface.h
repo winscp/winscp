@@ -9,6 +9,7 @@
 #define SCRIPT_SWITCH "script"
 #define COMMAND_SWITCH L"Command"
 #define SESSIONNAME_SWICH L"SessionName"
+#define NEWPASSWORD_SWITCH L"newpassword"
 #define INI_NUL L"nul"
 #define PRESERVETIME_SWITCH L"preservetime"
 #define PRESERVETIMEDIRS_SWITCH_VALUE L"all"

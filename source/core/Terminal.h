@@ -394,7 +394,6 @@ protected:
     const UnicodeString & FileName, TFileOperation Operation1, TFileOperation Operation2 = foNone);
   void __fastcall StartOperationWithFile(
     const UnicodeString & FileName, TFileOperation Operation1, TFileOperation Operation2 = foNone);
-  void __fastcall CommandSessionClose(TObject * Sender);
   bool __fastcall CanRecurseToDirectory(const TRemoteFile * File);
   bool __fastcall DoOnCustomCommand(const UnicodeString & Command);
 
@@ -497,6 +496,7 @@ public:
   void __fastcall ReflectSettings();
   void __fastcall CollectUsage();
   bool __fastcall IsThisOrChild(TTerminal * Terminal);
+  TTerminal * __fastcall CreateSecondarySession(const UnicodeString & Name, TSessionData * SessionData);
 
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);

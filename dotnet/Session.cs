@@ -1463,22 +1463,27 @@ namespace WinSCP
                 url += tail;
                 logUrl += tail;
 
-                string arguments = SessionOptionsToSwitches(sessionOptions, scanFingerprint);
+                string arguments;
+                string logArguments;
+                SessionOptionsToSwitches(sessionOptions, scanFingerprint, out arguments, out logArguments);
 
+                const string switchName = "-rawsettings";
                 Tools.AddRawParameters(ref arguments, sessionOptions.RawSettings, "-rawsettings");
+                Tools.AddRawParameters(ref logArguments, sessionOptions.RawSettings, switchName);
 
                 if (!string.IsNullOrEmpty(arguments))
                 {
                     arguments = " " + arguments;
+                    logArguments = " " + logArguments;
                 }
 
                 // Switches should (and particularly the -rawsettings MUST) come after the URL
                 command = "\"" + Tools.ArgumentEscape(url) + "\"" + arguments;
-                log = "\"" + Tools.ArgumentEscape(logUrl) + "\"" + arguments;
+                log = "\"" + Tools.ArgumentEscape(logUrl) + "\"" + logArguments;
             }
         }
 
-        private string SessionOptionsToSwitches(SessionOptions sessionOptions, bool scanFingerprint)
+        private void SessionOptionsToSwitches(SessionOptions sessionOptions, bool scanFingerprint, out string arguments, out string logArguments)
         {
             using (Logger.CreateCallstack())
             {
@@ -1580,7 +1585,20 @@ namespace WinSCP
 
                 switches.Add(FormatSwitch("timeout", (int)sessionOptions.Timeout.TotalSeconds));
 
-                return string.Join(" ", switches.ToArray());
+                List<string> logSwitches = new List<string>(switches);
+
+                if ((sessionOptions.SecureNewPassword != null) && !scanFingerprint)
+                {
+                    if (sessionOptions.SecurePassword == null)
+                    {
+                        throw new ArgumentException("SessionOptions.SecureNewPassword is set, but SessionOptions.SecurePassword is not.");
+                    }
+                    switches.Add(FormatSwitch("newpassword", sessionOptions.NewPassword));
+                    logSwitches.Add(FormatSwitch("newpassword", "***"));
+                }
+
+                arguments = string.Join(" ", switches.ToArray());
+                logArguments = string.Join(" ", logSwitches.ToArray());
             }
         }
 

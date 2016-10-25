@@ -913,6 +913,7 @@ void cleanup_exit(int);
     X(INT, NONE, connect_timeout) \
     X(INT, NONE, sndbuf) \
     X(INT, NONE, force_remote_cmd2) \
+    X(INT, NONE, change_password) \
     /* MPEXT END */ \
 
 /* Now define the actual enum of option keywords using that macro. */

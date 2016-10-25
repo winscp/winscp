@@ -822,8 +822,7 @@ void __fastcall TTerminal::Close()
 {
   FFileSystem->Close();
 
-  // Cannot rely on CommandSessionOpened here as Status is set to ssClosed
-  // only after the OnClose is called
+  // Cannot rely on CommandSessionOpened here as Status is set to ssClosed too late
   if ((FCommandSession != NULL) && FCommandSession->Active)
   {
     // prevent recursion
@@ -1262,14 +1261,6 @@ void __fastcall TTerminal::Reopen(int Params)
     if (SessionData->FSProtocol == fsSFTP)
     {
       SessionData->FSProtocol = (FFSProtocol == cfsSCP ? fsSCPonly : fsSFTPonly);
-    }
-
-    // Could be active before, if fatal error occured in the secondary terminal.
-    // But now, since we handle the secondary terminal's OnClose,
-    // by closing outselves, it should not happen anymore.
-    if (DebugAlwaysFalse(Active))
-    {
-      Close();
     }
 
     Open();
@@ -4088,6 +4079,25 @@ bool __fastcall TTerminal::GetCommandSessionOpened()
     (FCommandSession->Status == ssOpened);
 }
 //---------------------------------------------------------------------------
+TTerminal * __fastcall TTerminal::CreateSecondarySession(const UnicodeString & Name, TSessionData * SessionData)
+{
+  std::unique_ptr<TTerminal> Result(new TSecondaryTerminal(this, SessionData, Configuration, Name));
+
+  Result->AutoReadDirectory = false;
+
+  Result->FExceptionOnFail = FExceptionOnFail;
+
+  Result->OnQueryUser = OnQueryUser;
+  Result->OnPromptUser = OnPromptUser;
+  Result->OnShowExtendedException = OnShowExtendedException;
+  Result->OnProgress = OnProgress;
+  Result->OnFinished = OnFinished;
+  Result->OnInformation = OnInformation;
+  Result->OnCustomCommand = OnCustomCommand;
+  // do not copy OnDisplayBanner to avoid it being displayed
+  return Result.release();
+}
+//---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminal::GetCommandSession()
 {
   if ((FCommandSession != NULL) && !FCommandSession->Active)
@@ -4101,48 +4111,30 @@ TTerminal * __fastcall TTerminal::GetCommandSession()
     // levels between main and command session
     DebugAssert(FInTransaction == 0);
 
-    try
-    {
-      FCommandSession = new TSecondaryTerminal(this, SessionData,
-        Configuration, L"Shell");
+    std::unique_ptr<TSessionData> CommandSessionData(SessionData->Clone());
+    CommandSessionData->RemoteDirectory = CurrentDirectory;
+    CommandSessionData->FSProtocol = fsSCPonly;
+    CommandSessionData->ClearAliases = false;
+    CommandSessionData->UnsetNationalVars = false;
+    CommandSessionData->LookupUserGroups = asOff;
 
-      FCommandSession->AutoReadDirectory = false;
+    FCommandSession = CreateSecondarySession(L"Shell", CommandSessionData.get());
 
-      TSessionData * CommandSessionData = FCommandSession->FSessionData;
-      CommandSessionData->RemoteDirectory = CurrentDirectory;
-      CommandSessionData->FSProtocol = fsSCPonly;
-      CommandSessionData->ClearAliases = false;
-      CommandSessionData->UnsetNationalVars = false;
-      CommandSessionData->LookupUserGroups = asOff;
+    FCommandSession->AutoReadDirectory = false;
 
-      FCommandSession->FExceptionOnFail = FExceptionOnFail;
+    FCommandSession->FExceptionOnFail = FExceptionOnFail;
 
-      FCommandSession->OnQueryUser = OnQueryUser;
-      FCommandSession->OnPromptUser = OnPromptUser;
-      FCommandSession->OnShowExtendedException = OnShowExtendedException;
-      FCommandSession->OnProgress = OnProgress;
-      FCommandSession->OnFinished = OnFinished;
-      FCommandSession->OnInformation = OnInformation;
-      FCommandSession->OnCustomCommand = OnCustomCommand;
-      FCommandSession->OnClose = CommandSessionClose;
-      // do not copy OnDisplayBanner to avoid it being displayed
-    }
-    catch(...)
-    {
-      SAFE_DESTROY(FCommandSession);
-      throw;
-    }
+    FCommandSession->OnQueryUser = OnQueryUser;
+    FCommandSession->OnPromptUser = OnPromptUser;
+    FCommandSession->OnShowExtendedException = OnShowExtendedException;
+    FCommandSession->OnProgress = OnProgress;
+    FCommandSession->OnFinished = OnFinished;
+    FCommandSession->OnInformation = OnInformation;
+    FCommandSession->OnCustomCommand = OnCustomCommand;
+    // do not copy OnDisplayBanner to avoid it being displayed
   }
 
   return FCommandSession;
-}
-//---------------------------------------------------------------------------
-void __fastcall TTerminal::CommandSessionClose(TObject * /*Sender*/)
-{
-  // Keep the states in sync.
-  // This is particularly to invoke ours OnClose,
-  // So that it is triggered before Reopen is called
-  Close();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::AnyCommand(const UnicodeString Command,

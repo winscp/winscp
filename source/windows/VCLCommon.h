@@ -31,7 +31,7 @@ bool __fastcall HasLabelHintPopup(TLabel * Label, const UnicodeString & HintStr)
 void __fastcall FixComboBoxResizeBug(TCustomComboBox * ComboBox);
 void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront = true);
 void __fastcall HideAsModal(TForm * Form, void *& Storage);
-void __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
+bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
 TImageList * __fastcall SharedSystemImageList(bool Large);
 bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,
   bool PreserveFileName);

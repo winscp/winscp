@@ -2161,6 +2161,9 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcLocking:
       return false;
 
+    case fcChangePassword:
+      return FSecureShell->CanChangePassword();
+
     default:
       DebugFail();
       return false;

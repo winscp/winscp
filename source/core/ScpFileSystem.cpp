@@ -464,6 +464,9 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcResumeSupport:
       return false;
 
+    case fcChangePassword:
+      return FSecureShell->CanChangePassword();
+
     default:
       DebugFail();
       return false;

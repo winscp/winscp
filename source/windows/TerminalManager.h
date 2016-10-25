@@ -48,7 +48,7 @@ public:
   void __fastcall ReconnectActiveTerminal();
   void __fastcall FreeActiveTerminal();
   void __fastcall CycleTerminals(bool Forward);
-  static void ConnectTerminal(TTerminal * Terminal, bool Reopen);
+  bool __fastcall ConnectTerminal(TTerminal * Terminal);
   void __fastcall SetActiveTerminalWithAutoReconnect(TTerminal * value);
   void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
@@ -62,6 +62,7 @@ public:
   TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
   void __fastcall UpdateSessionCredentials(TSessionData * Data);
+  void __fastcall DoConnectTerminal(TTerminal * Terminal, bool Reopen);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };

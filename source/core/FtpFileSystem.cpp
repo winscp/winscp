@@ -2351,6 +2351,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcLocking:
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
+    case fcChangePassword:
       return false;
 
     default:

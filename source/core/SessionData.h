@@ -93,6 +93,8 @@ private:
   int FPortNumber;
   UnicodeString FUserName;
   RawByteString FPassword;
+  RawByteString FNewPassword;
+  bool FChangePassword;
   int FPingInterval;
   TPingType FPingType;
   bool FTryAgent;
@@ -219,6 +221,9 @@ private:
   UnicodeString __fastcall GetUserNameExpanded();
   void __fastcall SetPassword(UnicodeString value);
   UnicodeString __fastcall GetPassword() const;
+  void __fastcall SetNewPassword(UnicodeString value);
+  UnicodeString __fastcall GetNewPassword() const;
+  void __fastcall SetChangePassword(bool value);
   void __fastcall SetPingInterval(int value);
   void __fastcall SetTryAgent(bool value);
   void __fastcall SetAgentFwd(bool value);
@@ -442,6 +447,7 @@ public:
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
   void __fastcall ExpandEnvironmentVariables();
+  void __fastcall DisableAuthentationsExceptPassword();
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly);
   bool __fastcall IsSameSite(const TSessionData * Default);
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
@@ -465,6 +471,8 @@ public:
   __property UnicodeString UserName  = { read=FUserName, write=SetUserName };
   __property UnicodeString UserNameExpanded  = { read=GetUserNameExpanded };
   __property UnicodeString Password  = { read=GetPassword, write=SetPassword };
+  __property UnicodeString NewPassword  = { read=GetNewPassword, write=SetNewPassword };
+  __property bool ChangePassword  = { read=FChangePassword, write=SetChangePassword };
   __property int PingInterval  = { read=FPingInterval, write=SetPingInterval };
   __property bool TryAgent  = { read=FTryAgent, write=SetTryAgent };
   __property bool AgentFwd  = { read=FAgentFwd, write=SetAgentFwd };

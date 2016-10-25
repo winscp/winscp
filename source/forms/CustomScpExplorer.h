@@ -684,6 +684,8 @@ public:
   virtual void __fastcall DisplaySystemContextMenu();
   virtual void __fastcall GoToAddress() = 0;
   bool __fastcall CanConsole();
+  bool __fastcall CanChangePassword();
+  void __fastcall ChangePassword();
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

@@ -210,7 +210,7 @@ void __fastcall TTerminalManager::FreeActiveTerminal()
   }
 }
 //---------------------------------------------------------------------------
-void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
+void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool Reopen)
 {
   TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
   // it must be managed terminal, unless it is secondary terminal (of managed terminal)
@@ -271,6 +271,21 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::ConnectTerminal(TTerminal * Terminal)
+{
+  bool Result = true;
+  try
+  {
+    DoConnectTerminal(Terminal, false);
+  }
+  catch (Exception & E)
+  {
+    ShowExtendedExceptionEx(Terminal, &E);
+    Result = false;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalThreadIdle(void * /*Data*/, TObject * /*Sender*/)
 {
   Application->ProcessMessages();
@@ -288,7 +303,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
     {
       DebugAssert(ActiveTerminal);
 
-      ConnectTerminal(ActiveTerminal, Reopen);
+      DoConnectTerminal(ActiveTerminal, Reopen);
 
       if (ScpExplorer)
       {
