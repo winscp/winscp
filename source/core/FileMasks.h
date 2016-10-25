@@ -116,7 +116,6 @@ private:
   static bool __fastcall MatchesMasks(const UnicodeString FileName, bool Directory,
     const UnicodeString Path, const TParams * Params, const TMasks & Masks, bool Recurse);
   static inline bool __fastcall MatchesMaskMask(const TMaskMask & MaskMask, const UnicodeString & Str);
-  static inline bool __fastcall IsAnyMask(const UnicodeString & Mask);
   void __fastcall ThrowError(int Start, int End);
 };
 //---------------------------------------------------------------------------

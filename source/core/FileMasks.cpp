@@ -151,14 +151,9 @@ bool __fastcall TFileMasks::IsMask(const UnicodeString Mask)
   return (Mask.LastDelimiter(L"?*[") > 0);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileMasks::IsAnyMask(const UnicodeString & Mask)
-{
-  return Mask.IsEmpty() || (Mask == AnyMask) || (Mask == L"*");
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall TFileMasks::NormalizeMask(const UnicodeString & Mask, const UnicodeString & AnyMask)
 {
-  if (IsAnyMask(Mask))
+  if (!IsEffectiveFileNameMask(Mask))
   {
     return AnyMask;
   }
@@ -502,7 +497,7 @@ void __fastcall TFileMasks::CreateMaskMask(const UnicodeString & Mask, int Start
   try
   {
     DebugAssert(MaskMask.Mask == NULL);
-    if (Ex && IsAnyMask(Mask))
+    if (Ex && !IsEffectiveFileNameMask(Mask))
     {
       MaskMask.Kind = TMaskMask::Any;
       MaskMask.Mask = NULL;
