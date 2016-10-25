@@ -29,7 +29,7 @@ TWinConfiguration * WinConfiguration = NULL;
 static UnicodeString NotepadName(L"notepad.exe");
 //---------------------------------------------------------------------------
 __fastcall TEditorData::TEditorData() :
-  FileMask(L"*.*"),
+  FileMask(AnyMask),
   Editor(edInternal),
   ExternalEditor(L""),
   ExternalEditorText(false),
@@ -498,7 +498,7 @@ void __fastcall TWinConfiguration::Default()
   FDDExtTimeout = MSecsPerSec;
   FDeleteToRecycleBin = true;
   FSelectDirectories = false;
-  FSelectMask = L"*.*";
+  FSelectMask = AnyMask;
   FShowHiddenFiles = false;
   FFormatSizeBytes = fbKilobytes;
   FShowInaccesibleDirectories = true;

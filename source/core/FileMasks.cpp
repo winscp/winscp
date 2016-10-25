@@ -16,6 +16,7 @@ UnicodeString FileMasksDelimiters = L";,";
 static UnicodeString AllFileMasksDelimiters = FileMasksDelimiters + IncludeExcludeFileMasksDelimiter;
 static UnicodeString DirectoryMaskDelimiters = L"/\\";
 static UnicodeString FileMasksDelimiterStr = UnicodeString(FileMasksDelimiters[1]) + L' ';
+UnicodeString AnyMask = L"*.*";
 //---------------------------------------------------------------------------
 __fastcall EFileMasksException::EFileMasksException(
     UnicodeString Message, int AErrorStart, int AErrorLen) :
@@ -117,7 +118,7 @@ bool __fastcall IsFileNameMask(const UnicodeString & Mask)
 //---------------------------------------------------------------------------
 bool __fastcall IsEffectiveFileNameMask(const UnicodeString & Mask)
 {
-  return !Mask.IsEmpty() && (Mask != L"*") && (Mask != L"*.*");
+  return !Mask.IsEmpty() && (Mask != L"*") && (Mask != AnyMask);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall DelimitFileNameMask(UnicodeString Mask)
@@ -152,7 +153,7 @@ bool __fastcall TFileMasks::IsMask(const UnicodeString Mask)
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::IsAnyMask(const UnicodeString & Mask)
 {
-  return Mask.IsEmpty() || (Mask == L"*.*") || (Mask == L"*");
+  return Mask.IsEmpty() || (Mask == AnyMask) || (Mask == L"*");
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TFileMasks::NormalizeMask(const UnicodeString & Mask, const UnicodeString & AnyMask)

@@ -237,5 +237,6 @@ private:
 //---------------------------------------------------------------------------
 typedef TFileCustomCommand TRemoteCustomCommand;
 extern UnicodeString FileMasksDelimiters;
+extern UnicodeString AnyMask;
 //---------------------------------------------------------------------------
 #endif

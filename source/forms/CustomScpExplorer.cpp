@@ -3731,7 +3731,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TTerminal *& Sessio
   }
   else
   {
-    FileMask = L"*.*";
+    FileMask = AnyMask;
   }
   DirectCopy = FTerminal->IsCapable[fcRemoteCopy] || FTerminal->IsCapable[fcSecondaryShell];
   bool Result = true;
