@@ -53,7 +53,10 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::~TAuthenticateForm()
 {
-  ReleaseAsModal(this, FShowAsModalStorage);
+  if (ReleaseAsModal(this, FShowAsModalStorage))
+  {
+    UnhookFormActivation(this);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::ShowAsModal()
@@ -66,13 +69,6 @@ void __fastcall TAuthenticateForm::ShowAsModal()
   // Do not call BringToFront when minimized, so that we do not have to use the same hack as in TMessageForm::SetZOrder
   ::ShowAsModal(this, FShowAsModalStorage, !FShowNoActivate);
   HookFormActivation(this);
-}
-//---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::HideAsModal()
-{
-  ::HideAsModal(this, FShowAsModalStorage);
-
-  UnhookFormActivation(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::CMShowingChanged(TMessage & Message)

@@ -51,7 +51,6 @@ public:
 
   void __fastcall Init(TTerminal * Terminal);
   void __fastcall ShowAsModal();
-  void __fastcall HideAsModal();
   void __fastcall Log(const UnicodeString Message);
   bool __fastcall PromptUser(TPromptKind Kind, UnicodeString Name, UnicodeString Instructions,
     TStrings * Prompts, TStrings * Results, bool ForceLog, bool StoredCredentialsTried);
