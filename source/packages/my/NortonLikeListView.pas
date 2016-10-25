@@ -482,7 +482,13 @@ begin
   begin
     if Items.Count > 0 then
     begin
-      SelectCurrentItem(True);
+      PLastSelectMethod := FLastSelectMethod;
+      FLastSelectMethod := smKeyboard;
+      try
+        SelectCurrentItem(True);
+      finally
+        FLastSelectMethod := PLastSelectMethod;
+      end;
       Message.Result := 1;
     end;
   end
@@ -526,7 +532,13 @@ begin
     // prevent Ctrl+Space landing in else branch below,
     // this can safely get processed by default handler as Ctrl+Space
     // toggles only focused item, not affecting others
-    inherited;
+    PLastSelectMethod := FLastSelectMethod;
+    FLastSelectMethod := smKeyboard;
+    try
+      inherited;
+    finally
+      FLastSelectMethod := PLastSelectMethod;
+    end;
   end
     else
   if (Message.CharCode in [VK_SPACE, VK_PRIOR, VK_NEXT, VK_END, VK_HOME, VK_LEFT,
