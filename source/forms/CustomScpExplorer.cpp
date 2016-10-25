@@ -3885,7 +3885,14 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewGetSelectFilter(
       TCustomDirView *Sender, bool Select, TFileFilter &Filter)
 {
   DebugAssert(Sender);
-  if (!DoSelectMaskDialog(Sender, Select, &Filter, Configuration)) Abort();
+  if (DoSelectMaskDialog(Sender, Select, &Filter, Configuration))
+  {
+    Configuration->Usage->Inc(L"MaskSelections");
+  }
+  else
+  {
+    Abort();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CalculateSize(
@@ -6975,6 +6982,7 @@ void __fastcall TCustomScpExplorerForm::Filter(TOperationSide Side)
   if (DoFilterMaskDialog(DirView, &Filter))
   {
     DirView->Mask = TFileMasks::NormalizeMask(Filter.Masks);
+    Configuration->Usage->Inc(L"Filters");
   }
 }
 //---------------------------------------------------------------------------
