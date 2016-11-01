@@ -48,6 +48,8 @@ void __fastcall DoAssert(wchar_t * Message, wchar_t * Filename, int LineNumber);
 #define DebugAlwaysTrue(p) (p)
 #define DebugAlwaysFalse(p) (p)
 #define DebugNotNull(p) (p)
+#define TraceInitPtr(p) (p)
+#define TraceInitStr(p) (p)
 #define DebugUsedParam(p) ((&p) == (&p))
 //---------------------------------------------------------------------------
 #endif

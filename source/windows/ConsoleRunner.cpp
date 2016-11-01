@@ -106,7 +106,7 @@ private:
 };
 //---------------------------------------------------------------------------
 TOwnConsole * TOwnConsole::FInstance = NULL;
-std::unique_ptr<TCriticalSection> TOwnConsole::FSection(new TCriticalSection());
+std::unique_ptr<TCriticalSection> TOwnConsole::FSection(TraceInitPtr(new TCriticalSection()));
 //---------------------------------------------------------------------------
 __fastcall TOwnConsole::TOwnConsole()
 {

@@ -81,7 +81,7 @@ static const int HttpUnauthorized = 401;
 #define PROP_EXECUTABLE "executable"
 #define PROP_OWNER "owner"
 //---------------------------------------------------------------------------
-static std::unique_ptr<TCriticalSection> DebugSection(new TCriticalSection);
+static std::unique_ptr<TCriticalSection> DebugSection(TraceInitPtr(new TCriticalSection));
 static std::set<TWebDAVFileSystem *> FileSystems;
 //---------------------------------------------------------------------------
 extern "C"

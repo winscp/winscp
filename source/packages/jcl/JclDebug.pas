@@ -1178,10 +1178,12 @@ begin
   OutputDebugString(PChar(StrDoubleQuote(Msg)));
 end;
 
+{$IFNDEF WINSCP}
 procedure TraceFmt(const Fmt: string; const Args: array of const);
 begin
   OutputDebugString(PChar(Format(StrDoubleQuote(Fmt), Args)));
 end;
+{$ENDIF}
 
 procedure TraceLoc(const Msg: string);
 begin

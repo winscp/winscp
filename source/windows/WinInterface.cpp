@@ -569,7 +569,7 @@ static TStrings * __fastcall StackInfoListToStrings(
   return StackTrace.release();
 }
 //---------------------------------------------------------------------------
-static std::unique_ptr<TCriticalSection> StackTraceCriticalSection(new TCriticalSection());
+static std::unique_ptr<TCriticalSection> StackTraceCriticalSection(TraceInitPtr(new TCriticalSection()));
 typedef std::map<DWORD, TStrings *> TStackTraceMap;
 static TStackTraceMap StackTraceMap;
 //---------------------------------------------------------------------------

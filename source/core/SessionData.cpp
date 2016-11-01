@@ -2783,7 +2783,7 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
   return Url;
 }
 //---------------------------------------------------------------------
-UnicodeString ScriptCommandOpenLink = ScriptCommandLink(L"open");
+UnicodeString ScriptCommandOpenLink(TraceInitStr(ScriptCommandLink(L"open")));
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddSwitch(
   UnicodeString & Result, const UnicodeString & Name, bool Rtf)

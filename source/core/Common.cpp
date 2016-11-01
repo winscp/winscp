@@ -30,9 +30,9 @@ const char Bom[3] = "\xEF\xBB\xBF";
 const wchar_t TokenPrefix = L'%';
 const wchar_t NoReplacement = wchar_t(false);
 const wchar_t TokenReplacement = wchar_t(true);
-const UnicodeString LocalInvalidChars = L"/\\:*?\"<>|";
-const UnicodeString PasswordMask = L"***";
-const UnicodeString Ellipsis = L"...";
+const UnicodeString LocalInvalidChars(TraceInitStr(L"/\\:*?\"<>|"));
+const UnicodeString PasswordMask(TraceInitStr(L"***"));
+const UnicodeString Ellipsis(TraceInitStr(L"..."));
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
@@ -1372,7 +1372,7 @@ struct TDateTimeParams
 };
 typedef std::map<int, TDateTimeParams> TYearlyDateTimeParams;
 static TYearlyDateTimeParams YearlyDateTimeParams;
-static std::unique_ptr<TCriticalSection> DateTimeParamsSection(new TCriticalSection());
+static std::unique_ptr<TCriticalSection> DateTimeParamsSection(TraceInitPtr(new TCriticalSection()));
 static void __fastcall EncodeDSTMargin(const SYSTEMTIME & Date, unsigned short Year,
   TDateTime & Result);
 //---------------------------------------------------------------------------
@@ -3081,13 +3081,13 @@ UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const Unicod
   return Protocol + ProtocolSeparator + RightStr(S, S.Length() - P - ProtocolSeparator.Length() + 1);
 }
 //---------------------------------------------------------------------------
-const UnicodeString RtfPara = L"\\par\n";
-const UnicodeString AssemblyNamespace = L"WinSCP";
-const UnicodeString TransferOptionsClassName(L"TransferOptions");
-const UnicodeString SessionClassName(L"Session");
-const UnicodeString RtfHyperlinkField = L"HYPERLINK";
-const UnicodeString RtfHyperlinkFieldPrefix = RtfHyperlinkField + L" \"";
-const UnicodeString RtfHyperlinkFieldSuffix = L"\" ";
+const UnicodeString RtfPara(TraceInitStr(L"\\par\n"));
+const UnicodeString AssemblyNamespace(TraceInitStr(L"WinSCP"));
+const UnicodeString TransferOptionsClassName(TraceInitStr(L"TransferOptions"));
+const UnicodeString SessionClassName(TraceInitStr(L"Session"));
+const UnicodeString RtfHyperlinkField(TraceInitStr(L"HYPERLINK"));
+const UnicodeString RtfHyperlinkFieldPrefix(TraceInitStr(RtfHyperlinkField + L" \""));
+const UnicodeString RtfHyperlinkFieldSuffix(TraceInitStr(L"\" "));
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfColor(int Index)
 {
