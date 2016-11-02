@@ -1452,10 +1452,18 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
     OperationProgress->AddTransfered(Diff);
   }
 
-  if (OperationProgress->Cancel == csCancel)
+  if (OperationProgress->Cancel != csContinue)
   {
+    if (OperationProgress->Cancel == csCancelFile)
+    {
+      OperationProgress->Cancel = csContinue;
+      FFileTransferAbort = ftaSkip;
+    }
+    else
+    {
+      FFileTransferAbort = ftaCancel;
+    }
     FFileTransferCancelled = true;
-    FFileTransferAbort = ftaCancel;
     FFileZillaIntf->Cancel();
   }
 
@@ -2318,6 +2326,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcRemoteMove:
     case fcRemoveBOMUpload:
     case fcMoveToQueue:
+    case fsSkipTransfer:
       return true;
 
     case fcPreservingTimestampUpload:

@@ -677,6 +677,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     // Only to make double-click on file edit/open the file,
     // instead of trying to open it as directory
     case fcResolveSymlink:
+    case fsSkipTransfer:
       return true;
 
     case fcUserGroupListing:
@@ -730,6 +731,7 @@ void __fastcall TWebDAVFileSystem::DoStartup()
 void __fastcall TWebDAVFileSystem::ClearNeonError()
 {
   FCancelled = false;
+  FSkipped = false;
   FAuthenticationRequested = false;
   ne_set_error(FNeonSession, "");
 }
@@ -741,10 +743,20 @@ UnicodeString __fastcall TWebDAVFileSystem::GetNeonError()
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::CheckStatus(int NeonStatus)
 {
-  if ((NeonStatus == NE_ERROR) && FCancelled)
+  if ((NeonStatus == NE_ERROR) && (FCancelled || FSkipped))
   {
-    FCancelled = false;
-    Abort();
+    if (FCancelled)
+    {
+      FCancelled = false;
+      FSkipped = false; // just in case
+      Abort();
+    }
+    else
+    {
+      DebugAssert(FSkipped);
+      FSkipped = false;
+      THROW_SKIP_FILE_NULL;
+    }
   }
   else
   {
@@ -2003,7 +2015,15 @@ bool __fastcall TWebDAVFileSystem::CancelTransfer()
       (FTerminal->OperationProgress != NULL) &&
       (FTerminal->OperationProgress->Cancel != csContinue))
   {
-    FCancelled = true;
+    if (FTerminal->OperationProgress->Cancel == csCancelFile)
+    {
+      FTerminal->OperationProgress->Cancel = csContinue;
+      FSkipped = true;
+    }
+    else
+    {
+      FCancelled = true;
+    }
     Result = true;
   }
   return Result;

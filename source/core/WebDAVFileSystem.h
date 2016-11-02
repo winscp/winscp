@@ -158,6 +158,7 @@ private:
   UnicodeString FUserName;
   bool FActive;
   bool FHasTrailingSlash;
+  bool FSkipped;
   bool FCancelled;
   bool FStoredPasswordTried;
   bool FUploading;

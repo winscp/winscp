@@ -66,6 +66,7 @@ __published:
   TPngImageList *ImageList144;
   TPngImageList *ImageList192;
   TApplicationEvents *ApplicationEvents;
+  TTBXItem *SkipItem;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormHide(TObject *Sender);
@@ -81,9 +82,11 @@ __published:
           int AIndex, int &ImageIndex);
   void __fastcall ApplicationModalBegin(TObject * Sender);
   void __fastcall SpeedComboBoxItemClick(TObject *Sender);
+  void __fastcall SkipItemClick(TObject *Sender);
 
 private:
   TCancelStatus FCancel;
+  bool FPendingSkip;
   bool FMoveToQueue;
   TFileOperationProgressType FData;
   bool FDataGot;
@@ -126,16 +129,18 @@ protected:
   bool __fastcall ReceiveData(bool Force, int ModalLevelOffset);
   void __fastcall Minimize(TObject * Sender);
   virtual void __fastcall Dispatch(void * Message);
+  void __fastcall SetCancelLower(TCancelStatus ACancel);
+  void __fastcall SetCancel(TCancelStatus value);
 
   static bool __fastcall IsIndeterminateOperation(TFileOperation Operation);
 
 public:
   static UnicodeString __fastcall ProgressStr(TFileOperationProgressType * ProgressData);
 
-  virtual __fastcall TProgressForm(TComponent * AOwner, bool AllowMoveToQueue);
+  virtual __fastcall TProgressForm(TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip);
   virtual __fastcall ~TProgressForm();
   void __fastcall SetProgressData(TFileOperationProgressType & AData);
-  __property TCancelStatus Cancel = { read = FCancel };
+  __property TCancelStatus Cancel = { read = FCancel, write = SetCancel };
   __property bool MoveToQueue = { read = FMoveToQueue };
   __property TOnceDoneOperation OnceDoneOperation = { read=GetOnceDoneOperation, write=SetOnceDoneOperation };
   __property bool AllowMinimize = { read=GetAllowMinimize, write=SetAllowMinimize };

@@ -1283,7 +1283,10 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
   // operation is being executed and we still didn't show up progress form
   if (ProgressData.InProgress && !FProgressForm)
   {
-    FProgressForm = new TProgressForm(Application, (FTransferResumeList != NULL));
+    bool AllowSkip =
+      ((ProgressData.Operation == foCopy) || (ProgressData.Operation == foMove)) &&
+      Terminal->IsCapable[fsSkipTransfer];
+    FProgressForm = new TProgressForm(Application, (FTransferResumeList != NULL), AllowSkip);
     // As progress window has delayed show now, we need to lock ourselves,
     // (at least) until then
     LockWindow();
@@ -1352,6 +1355,10 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
       if (FProgressForm->Cancel > ProgressData.Cancel)
       {
         ProgressData.Cancel = FProgressForm->Cancel;
+      }
+      if (FProgressForm->Cancel == csCancelFile)
+      {
+        FProgressForm->Cancel = csContinue;
       }
       // cancel cancels even the move
       FMoveToQueue = false;

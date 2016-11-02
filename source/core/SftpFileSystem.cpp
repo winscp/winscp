@@ -2075,6 +2075,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcMoveToQueue:
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
+    case fsSkipTransfer:
       return true;
 
     case fcRename:
@@ -4846,7 +4847,15 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
           {
             if (OperationProgress->Cancel)
             {
-              Abort();
+              if (OperationProgress->Cancel == csCancelFile)
+              {
+                OperationProgress->Cancel = csContinue;
+                THROW_SKIP_FILE_NULL;
+              }
+              else
+              {
+                Abort();
+              }
             }
           }
 
@@ -5998,9 +6007,17 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
               OperationProgress->AddLocallyUsed(BlockBuf.Size);
             }
 
-            if (OperationProgress->Cancel == csCancel)
+            if (OperationProgress->Cancel != csContinue)
             {
-              Abort();
+              if (OperationProgress->Cancel == csCancelFile)
+              {
+                OperationProgress->Cancel = csContinue;
+                THROW_SKIP_FILE_NULL;
+              }
+              else
+              {
+                Abort();
+              }
             }
           };
 
