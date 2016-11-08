@@ -95,6 +95,7 @@ protected:
   UnicodeString FSynchronizeIntro;
   bool FLimitedOutput;
   int FSessionReopenTimeout;
+  int FInteractiveSessionReopenTimeout;
   bool FGroups;
   bool FWantsProgress;
   TStrings * FPendingLogLines;

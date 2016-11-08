@@ -306,11 +306,13 @@ void __fastcall TScriptCommands::Execute(const UnicodeString & Command, const Un
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+// keep in sync with Session constructor in .NET
+const int BatchSessionReopenTimeout = 2 * MSecsPerSec * SecsPerMin; // 2 mins
+//---------------------------------------------------------------------------
 __fastcall TScript::TScript(bool LimitedOutput)
 {
   FLimitedOutput = LimitedOutput;
   FTerminal = NULL;
-  FSessionReopenTimeout = Configuration->SessionReopenTimeout;
   FGroups = false;
   FWantsProgress = false;
   FIncludeFileMaskOptionUsed = false;
@@ -331,6 +333,13 @@ void __fastcall TScript::Init()
   FInteractiveBatch = BatchOff;
   FConfirm = false;
   FInteractiveConfirm = true;
+  FSessionReopenTimeout = Configuration->SessionReopenTimeout;
+  FInteractiveSessionReopenTimeout = FSessionReopenTimeout;
+  if (FSessionReopenTimeout == 0)
+  {
+    FSessionReopenTimeout = BatchSessionReopenTimeout;
+  }
+
   FEcho = false;
   FFailOnNoMatch = false;
   FSynchronizeParams = 0;
@@ -475,6 +484,7 @@ void __fastcall TScript::StartInteractive()
 {
   FBatch = FInteractiveBatch;
   FConfirm = FInteractiveConfirm;
+  FSessionReopenTimeout = FInteractiveSessionReopenTimeout;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::Command(UnicodeString Cmd)
@@ -1548,8 +1558,8 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
 
       if (SetValue && (FBatch != BatchOff) && (FSessionReopenTimeout == 0))
       {
-        // keep in sync with Session constructor in .NET
-        FSessionReopenTimeout = 2 * MSecsPerSec * SecsPerMin; // 2 mins
+        FSessionReopenTimeout = BatchSessionReopenTimeout;
+        FInteractiveSessionReopenTimeout = FSessionReopenTimeout;
         PrintReconnectTime = true;
       }
     }
@@ -1655,6 +1665,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
         }
       }
       FSessionReopenTimeout = Value;
+      FInteractiveSessionReopenTimeout = FSessionReopenTimeout;
     }
 
     if (FSessionReopenTimeout == 0)
