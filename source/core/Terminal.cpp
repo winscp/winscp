@@ -517,18 +517,54 @@ void __fastcall TCallbackGuard::Verify()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-TRobustOperationLoop::TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress) :
+TRobustOperationLoop::TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress, bool * AnyTransfer) :
   FTerminal(Terminal),
   FOperationProgress(OperationProgress),
-  FRetry(false)
+  FRetry(false),
+  FAnyTransfer(AnyTransfer)
 {
+  if (FAnyTransfer != NULL)
+  {
+    FPrevAnyTransfer = *FAnyTransfer;
+    *FAnyTransfer = false;
+    FStart = Now();
+  }
+}
+//---------------------------------------------------------------------------
+TRobustOperationLoop::~TRobustOperationLoop()
+{
+  if (FAnyTransfer != NULL)
+  {
+    *FAnyTransfer = FPrevAnyTransfer;
+  }
 }
 //---------------------------------------------------------------------------
 bool TRobustOperationLoop::TryReopen(Exception & E)
 {
-  FRetry =
-    !FTerminal->Active &&
-    FTerminal->QueryReopen(&E, ropNoReadDirectory, FOperationProgress);
+  FRetry = !FTerminal->Active;
+  if (FRetry)
+  {
+    if (FAnyTransfer != NULL)
+    {
+      // if there was any transfer, reset the global timestamp
+      if (*FAnyTransfer)
+      {
+        FStart = Now();
+        FPrevAnyTransfer = true;
+        *FAnyTransfer = false;
+      }
+      else
+      {
+        FRetry = FTerminal->ContinueReopen(FStart);
+      }
+    }
+
+    if (FRetry)
+    {
+      FRetry =
+        FTerminal->QueryReopen(&E, ropNoReadDirectory, FOperationProgress);
+    }
+  }
   return FRetry;
 }
 //---------------------------------------------------------------------------
@@ -1651,6 +1687,13 @@ bool __fastcall TTerminal::DoQueryReopen(Exception * E)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::ContinueReopen(TDateTime Start)
+{
+  return
+    (Configuration->SessionReopenTimeout == 0) ||
+    (int(double(Now() - Start) * MSecsPerDay) < Configuration->SessionReopenTimeout);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,
   TFileOperationProgressType * OperationProgress)
 {
@@ -1672,8 +1715,7 @@ bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,
         if (!Active)
         {
           Result =
-            ((Configuration->SessionReopenTimeout == 0) ||
-             (int(double(Now() - Start) * MSecsPerDay) < Configuration->SessionReopenTimeout)) &&
+            ContinueReopen(Start) &&
             DoQueryReopen(&E);
         }
         else

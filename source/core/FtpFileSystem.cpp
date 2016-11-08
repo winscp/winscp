@@ -1450,6 +1450,7 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
   if (DebugAlwaysTrue(Diff >= 0))
   {
     OperationProgress->AddTransfered(Diff);
+    FFileTransferAny = true;
   }
 
   if (OperationProgress->Cancel != csContinue)
@@ -1573,7 +1574,7 @@ void __fastcall TFTPFileSystem::SinkRobust(const UnicodeString FileName,
   // the same in TSFTPFileSystem
 
   TDownloadSessionAction Action(FTerminal->ActionLog);
-  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress);
+  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress, &FFileTransferAny);
 
   do
   {
@@ -1871,7 +1872,7 @@ void __fastcall TFTPFileSystem::SourceRobust(const UnicodeString FileName,
   // the same in TSFTPFileSystem
 
   TUploadSessionAction Action(FTerminal->ActionLog);
-  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress);
+  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress, &FFileTransferAny);
 
   do
   {

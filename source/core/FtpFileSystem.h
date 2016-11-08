@@ -290,6 +290,7 @@ private:
   __int64 FBytesAvailable;
   bool FBytesAvailableSuppoted;
   bool FMVS;
+  bool FFileTransferAny;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------

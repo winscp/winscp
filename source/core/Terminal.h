@@ -489,6 +489,7 @@ public:
     TFileOperationProgressType * OperationProgress, const UnicodeString Message,
     bool AllowSkip, UnicodeString SpecialRetry = L"", UnicodeString HelpKeyword = L"");
   TUsableCopyParamAttrs __fastcall UsableCopyParamAttrs(int Params);
+  bool __fastcall ContinueReopen(TDateTime Start);
   bool __fastcall QueryReopen(Exception * E, int Params,
     TFileOperationProgressType * OperationProgress);
   UnicodeString __fastcall PeekCurrentDirectory();
@@ -735,7 +736,8 @@ struct TSpaceAvailable
 class TRobustOperationLoop
 {
 public:
-  TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress);
+  TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress, bool * AnyTransfer = NULL);
+  ~TRobustOperationLoop();
   bool TryReopen(Exception & E);
   bool ShouldRetry();
   bool Retry();
@@ -744,6 +746,9 @@ private:
   TTerminal * FTerminal;
   TFileOperationProgressType * FOperationProgress;
   bool FRetry;
+  bool * FAnyTransfer;
+  bool FPrevAnyTransfer;
+  TDateTime FStart;
 };
 //---------------------------------------------------------------------------
 #endif
