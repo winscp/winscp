@@ -789,11 +789,6 @@ UnicodeString __fastcall CampaignUrl(UnicodeString URL)
   return AppendUrlParams(URL, Params);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetUsageData()
-{
-  return Configuration->Usage->Serialize();
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall ProgramUrl(UnicodeString URL)
 {
   TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
@@ -910,7 +905,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     {
       if (CollectUsage)
       {
-        UnicodeString Usage = GetUsageData();
+        UnicodeString Usage = Configuration->Usage->Serialize();
 
         CheckForUpdatesHTTP->Post(Usage);
       }

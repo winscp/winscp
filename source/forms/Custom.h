@@ -46,7 +46,7 @@ public:
   TLabel * __fastcall CreateLabel(UnicodeString Label);
   TCheckBox * __fastcall CreateAndAddCheckBox(const UnicodeString & Caption);
   void __fastcall AddEditLikeControl(TWinControl * Edit, TLabel * Label, bool OneLine = false);
-  void __fastcall AddEdit(TCustomEdit * Edit, TLabel * Label);
+  void __fastcall AddEdit(TCustomEdit * Edit, TLabel * Label, bool OneLine = false);
   void __fastcall AddComboBox(TCustomCombo * Combo, TLabel * Label, TStrings * Items = NULL, bool OneLine = false);
   void __fastcall AddButtonControl(TButtonControl * Control);
   void __fastcall AddImage(const UnicodeString & ImageName);
@@ -54,6 +54,9 @@ public:
   void __fastcall AddText(TLabel * Label);
   void __fastcall AddText(TStaticText * Label);
   void __fastcall AddSeparator();
+
+  void __fastcall AddDialogButton(TButton * Button);
+  void __fastcall RemoveCancelButton();
 
   void __fastcall ScaleButtonControl(TButtonControl * Control);
   TWinControl * __fastcall GetDefaultParent();

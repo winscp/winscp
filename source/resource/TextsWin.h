@@ -231,7 +231,7 @@
 #define MASK_HELP               1521
 #define UTF8_NAME               1522
 #define USAGE_DATA2             1523
-#define USAGE_DATA_NONE         1524
+#define USAGE_DATA_NONE2        1524
 #define SHORTCUT_INFO_TIP_FOLDER 1525
 #define SHORTCUT_INFO_TIP_WORKSPACE 1526
 #define JUMPLIST_WORKSPACES     1527
@@ -591,6 +591,9 @@
 #define EXTENSION_SESSIONLOG_FILE 1980
 #define EXTENSION_SESSIONLOG_CAPTION 1981
 #define EXTENSION_SESSIONLOG_FILTER 1982
+#define USAGE_CAPTION           1983
+#define USAGE_FILTER            1984
+#define USAGE_COPY              1985
 
 // 2xxx is reserved for TextsFileZilla.h
 

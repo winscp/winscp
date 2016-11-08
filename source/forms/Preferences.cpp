@@ -2272,10 +2272,7 @@ void __fastcall TPreferencesDialog::SetMasterPasswordButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UsageViewButtonClick(TObject * /*Sender*/)
 {
-  std::unique_ptr<TStrings> Data(TextToStringList(GetUsageData()));
-  UnicodeString Message =
-    Data->Text.IsEmpty() ? MainInstructions(LoadStr(USAGE_DATA_NONE)) : LoadStr(USAGE_DATA2);
-  MoreMessageDialog(Message, Data.get(), qtInformation, qaOK, HELP_USAGE);
+  DoUsageStatisticsDialog();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CopyParamLabelClick(TObject * /*Sender*/)

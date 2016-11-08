@@ -137,6 +137,7 @@ bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
 bool __fastcall DoCustomCommandOptionsDialog(
   const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags,
   TCustomCommand * CustomCommandForOptions, const UnicodeString & Site);
+void __fastcall DoUsageStatisticsDialog();
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();
