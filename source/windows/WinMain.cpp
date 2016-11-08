@@ -992,8 +992,7 @@ int __fastcall Execute()
       // from now flash message boxes on background
       SetOnForeground(false);
 
-      bool CommandLineOperation = (ParamCommand != pcNone) || !DownloadFile.IsEmpty();
-      bool NeedSession = CommandLineOperation;
+      bool NeedSession = (ParamCommand != pcNone);
 
       bool Retry;
       do
@@ -1056,7 +1055,7 @@ int __fastcall Execute()
                   // moved inside try .. __finally, because it can fail as well
                   TerminalManager->ScpExplorer = ScpExplorer;
 
-                  if (CommandLineOperation)
+                  if ((ParamCommand != pcNone) || !DownloadFile.IsEmpty())
                   {
                     Configuration->Usage->Inc(L"CommandLineOperation");
                   }
