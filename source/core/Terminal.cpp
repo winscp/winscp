@@ -2830,7 +2830,10 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
   DebugAssert(FileList);
   DebugAssert(FFileSystem);
 
-  TRobustOperationLoop RobustLoop(this, OperationProgress);
+  // To match FTP upload/download, we also limit directory listing.
+  // For simiplicity, we limit it unconditionally, for all protocols for any kind of errors.
+  bool FileTransferAny = false;
+  TRobustOperationLoop RobustLoop(this, OperationProgress, &FileTransferAny);
 
   do
   {
