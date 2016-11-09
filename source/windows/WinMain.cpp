@@ -115,15 +115,21 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
   UnicodeString TargetDirectory;
   TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
   TStrings * FileList = NULL;
+  TRemoteFile * File = NULL;
 
   try
   {
     FileList = new TStringList();
-    TRemoteFile * File = Terminal->Files->FindFile(FileName);
-    if (File == NULL)
+    Terminal->ExceptionOnFail = true;
+    try
     {
-      throw Exception(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
+      Terminal->ReadFile(FileName, File);
     }
+    __finally
+    {
+      Terminal->ExceptionOnFail = false;
+    }
+    File->FullFileName = FileName;
     FileList->AddObject(FileName, File);
     UnicodeString LocalDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
     if (LocalDirectory.IsEmpty())
@@ -140,9 +146,14 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
     {
       Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, 0);
     }
+
+    UnicodeString Directory = UnixExtractFilePath(FileName);
+    Terminal->AutoReadDirectory = true;
+    Terminal->ChangeDirectory(Directory);
   }
   __finally
   {
+    delete File;
     delete FileList;
   }
 }
@@ -1025,8 +1036,16 @@ int __fastcall Execute()
               bool CanStart;
               if (DataList->Count > 0)
               {
-                TerminalManager->ActiveTerminal =
-                  TerminalManager->NewTerminals(DataList);
+                TTerminal * Terminal = TerminalManager->NewTerminals(DataList);
+                if (!DownloadFile.IsEmpty())
+                {
+                  Terminal->AutoReadDirectory = false;
+                  DownloadFile = UnixIncludeTrailingBackslash(Terminal->SessionData->RemoteDirectory) + DownloadFile;
+                  Terminal->SessionData->RemoteDirectory = L"";
+                  TManagedTerminal * ManagedTerminal = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal));
+                  ManagedTerminal->StateData->RemoteDirectory = Terminal->SessionData->RemoteDirectory;
+                }
+                TerminalManager->ActiveTerminal = Terminal;
                 CanStart = (TerminalManager->Count > 0);
               }
               else
