@@ -246,11 +246,13 @@ namespace WinSCP
                 Protocol = Protocol.Ftp;
                 FtpSecure = FtpSecure.Explicit;
             }
-            else if (protocol.Equals("http", StringComparison.OrdinalIgnoreCase))
+            else if (protocol.Equals("dav", StringComparison.OrdinalIgnoreCase) ||
+                     protocol.Equals("http", StringComparison.OrdinalIgnoreCase))
             {
                 Protocol = Protocol.Webdav;
             }
-            else if (protocol.Equals("https", StringComparison.OrdinalIgnoreCase))
+            else if (protocol.Equals("davs", StringComparison.OrdinalIgnoreCase) ||
+                     protocol.Equals("https", StringComparison.OrdinalIgnoreCase))
             {
                 Protocol = Protocol.Webdav;
                 WebdavSecure = true;

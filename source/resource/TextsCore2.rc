@@ -61,7 +61,7 @@ BEGIN
     "  bye\n"
   SCRIPT_OPEN_HELP9,
     "open <site>\n"
-    "open sftp|scp|ftp[es]|http[s] :// [ <user> [ :password ] @ ] <host> [ :<port> ]\n"
+    "open sftp|scp|ftp[es]|dav[s] :// [ <user> [ :password ] @ ] <host> [ :<port> ]\n"
     "  Establishes connection to given host. Use either name of the site or\n"
     "  specify host, username, port and protocol directly.\n"
     "switches:\n"

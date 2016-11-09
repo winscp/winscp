@@ -465,12 +465,16 @@ static void __fastcall RegisterAsNonBrowserUrlHandler(const UnicodeString & Pref
 {
   RegisterAsUrlHandler(Prefix + SftpProtocol.UpperCase());
   RegisterAsUrlHandler(Prefix + ScpProtocol.UpperCase());
+  RegisterAsUrlHandler(Prefix + WebDAVProtocol.UpperCase());
+  RegisterAsUrlHandler(Prefix + WebDAVSProtocol.UpperCase());
 }
 //---------------------------------------------------------------------------
 static void __fastcall UnregisterAsUrlHandlers(const UnicodeString & Prefix, bool UnregisterProtocol)
 {
   UnregisterAsUrlHandler(Prefix + SftpProtocol, UnregisterProtocol);
   UnregisterAsUrlHandler(Prefix + ScpProtocol, UnregisterProtocol);
+  UnregisterAsUrlHandler(Prefix + WebDAVProtocol, UnregisterProtocol);
+  UnregisterAsUrlHandler(Prefix + WebDAVSProtocol, UnregisterProtocol);
 }
 //---------------------------------------------------------------------------
 static const UnicodeString GenericUrlHandler(L"WinSCP.Url");
@@ -574,7 +578,9 @@ static void __fastcall RegisterProtocolsForDefaultPrograms(HKEY RootKey)
   RegisterProtocolForDefaultPrograms(RootKey, SftpProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, ScpProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, SshProtocol);
-  // deliberately not including WebDAV/http,
+  RegisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol);
+  RegisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol);
+  // deliberately not including http,
   // it's unlikely that anyone would like to change http handler
   // to non-browser application
 }
@@ -586,7 +592,8 @@ static void __fastcall UnregisterProtocolsForDefaultPrograms(HKEY RootKey, bool 
   UnregisterProtocolForDefaultPrograms(RootKey, FtpesProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, SftpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, ScpProtocol, ForceHandlerUnregistration);
-  UnregisterProtocolForDefaultPrograms(RootKey, SshProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol, ForceHandlerUnregistration);
 
   // we should not really need the "force" flag here, but why not
   UnregisterAsUrlHandler(RootKey, GenericUrlHandler, true, true);
@@ -635,8 +642,8 @@ void __fastcall RegisterForDefaultProtocols()
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpesProtocol.UpperCase());
-  RegisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVProtocol.UpperCase());
-  RegisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVSProtocol.UpperCase());
+  RegisterAsUrlHandler(WinSCPProtocolPrefix + HttpProtocol.UpperCase());
+  RegisterAsUrlHandler(WinSCPProtocolPrefix + HttpsProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + SshProtocol.UpperCase());
 
   NotifyChangedAssociations();
@@ -649,8 +656,8 @@ void __fastcall UnregisterForProtocols()
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpesProtocol.UpperCase(), true);
-  UnregisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVProtocol.UpperCase(), true);
-  UnregisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVSProtocol.UpperCase(), true);
+  UnregisterAsUrlHandler(WinSCPProtocolPrefix + HttpProtocol.UpperCase(), true);
+  UnregisterAsUrlHandler(WinSCPProtocolPrefix + HttpsProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + SshProtocol.UpperCase(), true);
 
   UnregisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER, false);

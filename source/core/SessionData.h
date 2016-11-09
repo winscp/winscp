@@ -72,8 +72,8 @@ extern const UnicodeString ScpProtocol;
 extern const UnicodeString FtpProtocol;
 extern const UnicodeString FtpsProtocol;
 extern const UnicodeString FtpesProtocol;
-#define WebDAVProtocol HttpProtocol
-#define WebDAVSProtocol HttpsProtocol
+extern const UnicodeString WebDAVProtocol;
+extern const UnicodeString WebDAVSProtocol;
 extern const UnicodeString SshProtocol;
 extern const UnicodeString WinSCPProtocolPrefix;
 extern const wchar_t UrlParamSeparator;

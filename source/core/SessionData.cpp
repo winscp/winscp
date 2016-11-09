@@ -51,6 +51,8 @@ const UnicodeString ScpProtocol(L"scp");
 const UnicodeString FtpProtocol(L"ftp");
 const UnicodeString FtpsProtocol(L"ftps");
 const UnicodeString FtpesProtocol(L"ftpes");
+const UnicodeString WebDAVProtocol(L"dav");
+const UnicodeString WebDAVSProtocol(L"davs");
 const UnicodeString SshProtocol(L"ssh");
 const UnicodeString WinSCPProtocolPrefix(L"winscp-");
 const wchar_t UrlParamSeparator = L';';
@@ -1623,7 +1625,8 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
-  else if (IsProtocolUrl(Url, WebDAVProtocol, ProtocolLen))
+  else if (IsProtocolUrl(Url, WebDAVProtocol, ProtocolLen) ||
+           IsProtocolUrl(Url, HttpProtocol, ProtocolLen))
   {
     AFSProtocol = fsWebDAV;
     AFtps = ftpsNone;
@@ -1631,7 +1634,8 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
-  else if (IsProtocolUrl(Url, WebDAVSProtocol, ProtocolLen))
+  else if (IsProtocolUrl(Url, WebDAVSProtocol, ProtocolLen) ||
+           IsProtocolUrl(Url, HttpsProtocol, ProtocolLen))
   {
     AFSProtocol = fsWebDAV;
     AFtps = ftpsImplicit;

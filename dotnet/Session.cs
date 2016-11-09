@@ -1390,11 +1390,11 @@ namespace WinSCP
                     case Protocol.Webdav:
                         if (!sessionOptions.WebdavSecure)
                         {
-                            head = "http://";
+                            head = "dav://";
                         }
                         else
                         {
-                            head = "https://";
+                            head = "davs://";
                         }
                         break;
 

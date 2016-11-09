@@ -2104,7 +2104,7 @@ void __fastcall Usage(TConsole * Console)
   if (!Console->CommandLineOnly())
   {
     PrintUsageSyntax(Console, L"site|workspace|folder");
-    PrintUsageSyntax(Console, L"(sftp|scp|ftp[es]|http[s])://[user[:password]@]host[:port][/path/[file]]");
+    PrintUsageSyntax(Console, L"(sftp|scp|ftp[es]|dav[s])://[user[:password]@]host[:port][/path/[file]]");
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s=<name>", (LowerCase(SESSIONNAME_SWICH))));
     PrintUsageSyntax(Console, L"[mysession] /newinstance");
     PrintUsageSyntax(Console, L"[mysession] /edit <path>");
