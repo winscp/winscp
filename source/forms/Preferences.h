@@ -23,6 +23,7 @@
 //----------------------------------------------------------------------------
 class TCustomCommandList;
 class TEditorList;
+class THttp;
 //----------------------------------------------------------------------------
 class TPreferencesDialog : public TForm
 {
@@ -440,6 +441,7 @@ private:
   int __fastcall GetCommandListIndex(TCustomCommandList * List, int Index);
   int __fastcall GetListCommandIndex(TCustomCommandList * List);
   UnicodeString __fastcall GetSessionKey();
+  void __fastcall ExtensionHttpError(THttp * Sender, int Status, const UnicodeString & Message);
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);
