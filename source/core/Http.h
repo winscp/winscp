@@ -11,6 +11,7 @@ struct ssl_st;
 //---------------------------------------------------------------------------
 class THttp;
 typedef void __fastcall (__closure * THttpDownloadEvent)(THttp * Sender, __int64 Size, bool & Cancel);
+typedef void __fastcall (__closure * THttpErrorEvent)(THttp * Sender, int Status, const UnicodeString & Message);
 //---------------------------------------------------------------------------
 class THttp
 {
@@ -31,7 +32,8 @@ public:
   __property TStrings * ResponseHeaders = { read = FResponseHeaders };
   __property __int64 ResponseLength = { read = GetResponseLength };
   __property __int64 ResponseLimit = { read = FResponseLimit, write = FResponseLimit };
-  __property THttpDownloadEvent OnDownload = { read = FOnDownload, write = FOnDownload};
+  __property THttpDownloadEvent OnDownload = { read = FOnDownload, write = FOnDownload };
+  __property THttpErrorEvent OnError = { read = FOnError, write = FOnError };
 
 private:
   UnicodeString FURL;
@@ -41,6 +43,7 @@ private:
   __int64 FResponseLimit;
   std::unique_ptr<Exception> FException;
   THttpDownloadEvent FOnDownload;
+  THttpErrorEvent FOnError;
   UnicodeString FHostName;
   UnicodeString FCertificateError;
   TStrings * FRequestHeaders;

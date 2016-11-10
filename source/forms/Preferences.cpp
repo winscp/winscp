@@ -2428,6 +2428,15 @@ void __fastcall TPreferencesDialog::CustomCommandsViewWindowProc(TMessage & Mess
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ExtensionHttpError(THttp * /*Sender*/, int Status, const UnicodeString & Message)
+{
+  if ((Status / 10) == 49)
+  {
+    // HTTP 49x indicate user-friendly error message from winscp.net, throw it without HTTP status code
+    throw Exception(Message);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::AddExtension()
 {
   const UnicodeString HistoryKey(L"ExtensionPath");
@@ -2474,6 +2483,7 @@ void __fastcall TPreferencesDialog::AddExtension()
         std::unique_ptr<TStrings> Headers(new TStringList());
         Headers->Values[L"Accept"] = L"text/winscpextension,text/plain";
         Http->RequestHeaders = Headers.get();
+        Http->OnError = ExtensionHttpError;
         Http->Get();
 
         UnicodeString TrustedStr = Http->ResponseHeaders->Values[L"WinSCP-Extension-Trusted"];
