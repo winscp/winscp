@@ -30,7 +30,9 @@ struct TListDataEntry
   const wchar_t * Name;
   const wchar_t * Permissions;
   const wchar_t * HumanPerm;
-  const wchar_t * OwnerGroup;
+  const wchar_t * OwnerGroup; // deprecated, to be replaced with Owner/Group
+  const wchar_t * Owner;
+  const wchar_t * Group;
   __int64 Size;
   bool Dir;
   bool Link;

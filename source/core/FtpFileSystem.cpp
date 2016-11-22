@@ -4688,15 +4688,24 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
 
         File->HumanRights = Entry->HumanPerm;
 
-        const wchar_t * Space = wcschr(Entry->OwnerGroup, L' ');
-        if (Space != NULL)
+        // deprecated, to be replaced with Owner/Group
+        if (wcslen(Entry->OwnerGroup) > 0)
         {
-          File->Owner.Name = UnicodeString(Entry->OwnerGroup, Space - Entry->OwnerGroup);
-          File->Group.Name = Space + 1;
+          const wchar_t * Space = wcschr(Entry->OwnerGroup, L' ');
+          if (Space != NULL)
+          {
+            File->Owner.Name = UnicodeString(Entry->OwnerGroup, Space - Entry->OwnerGroup);
+            File->Group.Name = Space + 1;
+          }
+          else
+          {
+            File->Owner.Name = Entry->OwnerGroup;
+          }
         }
         else
         {
-          File->Owner.Name = Entry->OwnerGroup;
+          File->Owner.Name = Entry->Owner;
+          File->Group.Name = Entry->Group;
         }
 
         File->Size = Entry->Size;
@@ -4729,8 +4738,8 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
       {
         delete File;
         UnicodeString EntryData =
-          FORMAT(L"%s/%s/%s/%s/%s/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d",
-            (Entry->Name, Entry->Permissions, Entry->HumanPerm, Entry->OwnerGroup, IntToStr(Entry->Size),
+          FORMAT(L"%s/%s/%s/%s/%s/%s/%s/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d",
+            (Entry->Name, Entry->Permissions, Entry->HumanPerm, Entry->Owner, Entry->Group, Entry->OwnerGroup, IntToStr(Entry->Size),
              int(Entry->Dir), int(Entry->Link), Entry->Time.Year, Entry->Time.Month, Entry->Time.Day,
              Entry->Time.Hour, Entry->Time.Minute, int(Entry->Time.HasTime),
              int(Entry->Time.HasSeconds), int(Entry->Time.HasDate)));

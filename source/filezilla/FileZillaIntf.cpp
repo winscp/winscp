@@ -445,6 +445,8 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
           Dest.Permissions = Source.permissionstr;
           Dest.HumanPerm = Source.humanpermstr;
           Dest.OwnerGroup = Source.ownergroup;
+          Dest.Owner = Source.owner;
+          Dest.Group = Source.group;
           Dest.Size = Source.size;
           Dest.Dir = Source.dir;
           Dest.Link = Source.bLink;

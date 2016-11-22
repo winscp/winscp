@@ -484,6 +484,8 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
 
   nFTPServerType = 0;
   direntry.ownergroup = L"";
+  direntry.owner = L"";
+  direntry.group = L"";
 
   if (parseAsMlsd(lineToParse, linelen, direntry, mlst))
     return TRUE;
@@ -1294,6 +1296,8 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   direntry.dir = FALSE;
   direntry.bLink = FALSE;
   direntry.ownergroup = L"";
+  direntry.owner = L"";
+  direntry.group = L"";
   direntry.permissionstr = L"";
 
   CString owner, group, uid, gid;
@@ -1422,16 +1426,16 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
     facts = facts.Mid(delim + 1);
   }
 
-  // The order of the facts is undefined, so assemble ownerGroup in correct
-  // order
+  // The order of the facts is undefined
   if (!owner.IsEmpty())
-    direntry.ownergroup += owner;
+    direntry.owner = owner;
   else if (!uid.IsEmpty())
-    direntry.ownergroup += uid;
+    direntry.owner = uid;
+
   if (!group.IsEmpty())
-    direntry.ownergroup += L" " + group;
+    direntry.group = group;
   else if (!gid.IsEmpty())
-    direntry.ownergroup += L" " + gid;
+    direntry.group = gid;
 
   if (line[pos] != L' ')
   {
