@@ -1300,7 +1300,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   direntry.group = L"";
   direntry.permissionstr = L"";
 
-  CString owner, group, uid, gid;
+  CString owner, group, uid, gid, ownername, groupname;
 
   while (!facts.IsEmpty())
   {
@@ -1422,17 +1422,29 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
     {
       gid = value;
     }
+    else if (factname == L"unix.ownername")
+    {
+      ownername = value;
+    }
+    else if (factname == L"unix.groupname")
+    {
+      groupname = value;
+    }
 
     facts = facts.Mid(delim + 1);
   }
 
   // The order of the facts is undefined
-  if (!owner.IsEmpty())
+  if (!ownername.IsEmpty())
+    direntry.owner = ownername;
+  else if (!owner.IsEmpty())
     direntry.owner = owner;
   else if (!uid.IsEmpty())
     direntry.owner = uid;
 
-  if (!group.IsEmpty())
+  if (!groupname.IsEmpty())
+    direntry.group = groupname;
+  else if (!group.IsEmpty())
     direntry.group = group;
   else if (!gid.IsEmpty())
     direntry.group = gid;
