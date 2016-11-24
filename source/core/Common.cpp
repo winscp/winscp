@@ -715,7 +715,7 @@ UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str)
   return Buf;
 }
 //---------------------------------------------------------------------------
-bool __fastcall CompareFileName(const UnicodeString & Path1, const UnicodeString & Path2)
+bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2)
 {
   UnicodeString ShortPath1 = ExtractShortPathName(Path1);
   UnicodeString ShortPath2 = ExtractShortPathName(Path2);
@@ -733,7 +733,7 @@ bool __fastcall CompareFileName(const UnicodeString & Path1, const UnicodeString
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ComparePaths(const UnicodeString & Path1, const UnicodeString & Path2)
+bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2)
 {
   // TODO: ExpandUNCFileName
   return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));

@@ -738,7 +738,7 @@ void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
   // it should be called only for custom users path, let's expect that the user
   // can take care of it.
   if ((FPuttyPath.SubString(1, 1) != L"\"") &&
-      (CompareFileName(ExpandEnvironmentVariables(FPuttyPath), FDefaultPuttyPathOnly) ||
+      (IsPathToSameFile(ExpandEnvironmentVariables(FPuttyPath), FDefaultPuttyPathOnly) ||
        FileExists(ApiPath(ExpandEnvironmentVariables(FPuttyPath)))))
   {
     FPuttyPath = FormatCommand(FPuttyPath, L"");

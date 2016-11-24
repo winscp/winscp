@@ -1913,7 +1913,7 @@ static bool __fastcall DoIsInstalled(HKEY RootKey)
     UnicodeString ExePath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
     Result =
       !InstallPath.IsEmpty() &&
-      CompareFileName(ExePath, InstallPath);
+      IsPathToSameFile(ExePath, InstallPath);
   }
   return Result;
 }

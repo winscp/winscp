@@ -2123,7 +2123,7 @@ void __fastcall TPreferencesDialog::PathEditBeforeDialog(
 void __fastcall TPreferencesDialog::PathEditAfterDialog(
   TObject * /*Sender*/, UnicodeString & Name, bool & /*Action*/)
 {
-  if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
+  if (IsPathToSameFile(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
   {
     Name = FBeforeDialogPath;
   }

@@ -427,7 +427,7 @@ bool __fastcall TScpCommanderForm::IsFileControl(TObject * Control,
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ReloadLocalDirectory(const UnicodeString Directory)
 {
-  if (Directory.IsEmpty() || ComparePaths(Directory, LocalDirView->Path))
+  if (Directory.IsEmpty() || SamePaths(Directory, LocalDirView->Path))
   {
     LocalDirView->ReloadDirectory();
     LocalDriveView->ValidateDirectory(LocalDriveView->Selected);
@@ -1042,7 +1042,7 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsingLocal(
       PrevPath = IncludeTrailingBackslash(PrevPath);
       CommonPath = IncludeTrailingBackslash(CommonPath);
       NewPath = RemoteDirView->Path;
-      while (!ComparePaths(PrevPath, CommonPath))
+      while (!SamePaths(PrevPath, CommonPath))
       {
         if (NewPath == UnixExcludeTrailingBackslash(NewPath))
         {
@@ -1746,7 +1746,7 @@ void __fastcall TScpCommanderForm::RemotePathLabelGetStatus(
 void __fastcall TScpCommanderForm::LocalPathLabelPathClick(
   TCustomPathLabel * /*Sender*/, UnicodeString Path)
 {
-  if (ComparePaths(Path, LocalDirView->Path))
+  if (SamePaths(Path, LocalDirView->Path))
   {
     OpenDirectory(osLocal);
   }
@@ -1896,7 +1896,7 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdate()
 
     int Index = 0;
     while ((Index < FLocalPathComboBoxPaths->Count) &&
-           !ComparePaths(FLocalPathComboBoxPaths->Strings[Index],
+           !SamePaths(FLocalPathComboBoxPaths->Strings[Index],
              LocalDirView->Path.SubString(1, FLocalPathComboBoxPaths->Strings[Index].Length())))
     {
       Index++;

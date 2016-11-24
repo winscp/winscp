@@ -827,7 +827,7 @@ void __fastcall BrowseForExecutableT(T * Control, UnicodeString Title,
       try
       {
         // preserve unexpanded file, if the destination has not changed actually
-        if (!CompareFileName(ExpandedProgram, FileDialog->FileName))
+        if (!IsPathToSameFile(ExpandedProgram, FileDialog->FileName))
         {
           Program = FileDialog->FileName;
           if (Escape)

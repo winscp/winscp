@@ -1274,7 +1274,7 @@ void __fastcall TSiteAdvancedDialog::PathEditBeforeDialog(TObject * /*Sender*/,
 void __fastcall TSiteAdvancedDialog::PathEditAfterDialog(TObject * /*Sender*/,
   UnicodeString & Name, bool & /*Action*/)
 {
-  if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
+  if (IsPathToSameFile(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
   {
     Name = FBeforeDialogPath;
   }

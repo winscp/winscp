@@ -1301,7 +1301,7 @@ UnicodeString __fastcall TWinConfiguration::GetExtensionId(const UnicodeString &
     std::unique_ptr<TStrings> ExtensionsPaths(GetExtensionsPaths());
     for (int Index = 0; Index < ExtensionsPaths->Count; Index++)
     {
-      if (CompareFileName(Path, ExtensionsPaths->ValueFromIndex[Index]))
+      if (IsPathToSameFile(Path, ExtensionsPaths->ValueFromIndex[Index]))
       {
         return IncludeTrailingBackslash(ExtensionsPaths->Names[Index]) + NameId;
       }
@@ -3596,7 +3596,7 @@ int TCustomCommandList::FindIndexByFileName(const UnicodeString & FileName) cons
 {
   for (int Index = 0; Index < FCommands->Count; Index++)
   {
-    if (CompareFileName(Commands[Index]->FileName, FileName))
+    if (IsPathToSameFile(Commands[Index]->FileName, FileName))
     {
       return Index;
     }
