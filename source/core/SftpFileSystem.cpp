@@ -4571,11 +4571,11 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
   OpenParams.OverwriteMode = omOverwrite;
 
   HANDLE File;
-  __int64 MTime, ATime;
+  __int64 MTime;
   __int64 Size;
 
   FTerminal->OpenLocalFile(FileName, GENERIC_READ, &OpenParams.LocalFileAttrs,
-    &File, NULL, &MTime, &ATime, &Size);
+    &File, NULL, &MTime, NULL, &Size);
 
   bool Dir = FLAGSET(OpenParams.LocalFileAttrs, faDirectory);
 
@@ -4805,8 +4805,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
         PropertiesRequest.AddProperties(
           SetRights ? &RightsNumber : NULL, NULL, NULL,
           CopyParam->PreserveTime ? &MTime : NULL,
-          CopyParam->PreserveTime ? &ATime : NULL,
-          NULL, false, FVersion, FUtfStrings);
+          NULL, NULL, false, FVersion, FUtfStrings);
       }
 
       try
