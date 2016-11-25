@@ -572,6 +572,7 @@ void __fastcall TPropertiesDialog::CalculateSizeButtonClick(
   DebugAssert(FOnCalculateSize != NULL);
 
   bool DoClose = false;
+  Enabled = false;
   try
   {
     __int64 Size;
@@ -582,6 +583,7 @@ void __fastcall TPropertiesDialog::CalculateSizeButtonClick(
   }
   __finally
   {
+    Enabled = true;
     if (DoClose)
     {
       Close();
