@@ -947,6 +947,8 @@ void __fastcall TSessionLog::OpenLogFile()
     catch (Exception & E)
     {
       AddException(&E);
+      // not to deadlock with TSessionLog::ReflectSettings invoked by FConfiguration->LogFileName setter above
+      TUnguard Unguard(FCriticalSection);
       FUI->HandleExtendedException(&E);
     }
   }
@@ -1086,8 +1088,6 @@ UnicodeString __fastcall EnumName(T Value, UnicodeString Names)
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
 {
-  TGuard Guard(FCriticalSection);
-
   BeginUpdate();
   try
   {
@@ -1623,6 +1623,8 @@ void __fastcall TActionLog::OpenLogFile()
       {
         if (FUI != NULL)
         {
+          // not to deadlock with TSessionLog::ReflectSettings invoked by FConfiguration->LogFileName setter above
+          TUnguard Unguard(FCriticalSection);
           FUI->HandleExtendedException(&E);
         }
       }

@@ -94,6 +94,9 @@ private:
   TDateTime FDirectoryReadingStart;
   TAuthenticateForm * FAuthenticateForm;
   TCriticalSection * FQueueSection;
+  DWORD FMainThread;
+  int FPendingConfigurationChange;
+  std::unique_ptr<TCriticalSection> FChangeSection;
   std::vector<std::pair<TTerminalQueue *, TQueueEvent> > FQueueEvents;
   unsigned int FTaskbarButtonCreatedMessage;
   ITaskbarList3 * FTaskbarList;
@@ -164,6 +167,7 @@ private:
   void __fastcall ApplicationModalBegin(TObject * Sender);
   void __fastcall ApplicationModalEnd(TObject * Sender);
   bool __fastcall HandleMouseWheel(WPARAM WParam, LPARAM LParam);
+  void __fastcall DoConfigurationChange();
 };
 //---------------------------------------------------------------------------
 #endif
