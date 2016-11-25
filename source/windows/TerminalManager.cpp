@@ -72,6 +72,9 @@ __fastcall TTerminalManager::TTerminalManager() :
   FAuthenticateForm = NULL;
   FTaskbarList = NULL;
   FAuthenticating = 0;
+  FMainThread = GetCurrentThreadId();
+  FChangeSection.reset(new TCriticalSection());
+  FPendingConfigurationChange = 0;
 
   FApplicationsEvents.reset(new TApplicationEvents(Application));
   FApplicationsEvents->OnException = ApplicationException;
@@ -1158,7 +1161,7 @@ void __fastcall TTerminalManager::QueueEvent(TTerminalQueue * Queue, TQueueEvent
   FQueueEvents.push_back(std::make_pair(Queue, Event));
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)
+void __fastcall TTerminalManager::DoConfigurationChange()
 {
   DebugAssert(Configuration);
   DebugAssert(Configuration == WinConfiguration);
@@ -1176,6 +1179,19 @@ void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)
   if (ScpExplorer)
   {
     ScpExplorer->ConfigurationChanged();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)
+{
+  if (FMainThread == GetCurrentThreadId())
+  {
+    DoConfigurationChange();
+  }
+  else
+  {
+    TGuard Guard(FChangeSection.get());
+    FPendingConfigurationChange++;
   }
 }
 //---------------------------------------------------------------------------
@@ -1337,6 +1353,26 @@ void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeStr
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::Idle()
 {
+
+  if (FPendingConfigurationChange > 0) // optimization
+  {
+    bool Changed = false;
+
+    {
+      TGuard Guard(FChangeSection.get());
+      if (DebugAlwaysTrue(FPendingConfigurationChange > 0))
+      {
+        FPendingConfigurationChange--;
+        Changed = true;
+      }
+    }
+
+    if (Changed)
+    {
+      DoConfigurationChange();
+    }
+  }
+
   for (int Index = 0; Index < Count; Index++)
   {
     TTerminal * Terminal = Terminals[Index];
