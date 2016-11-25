@@ -94,7 +94,9 @@ private:
   UnicodeString __fastcall GetConfigurationSubKey();
   TEOLType __fastcall GetLocalEOLType();
   void __fastcall SetLogging(bool value);
+  bool __fastcall GetLogging();
   void __fastcall SetLogFileName(UnicodeString value);
+  UnicodeString __fastcall GetLogFileName();
   bool __fastcall GetLogToFile();
   void __fastcall SetLogWindowLines(int value);
   void __fastcall SetLogWindowComplete(bool value);
@@ -102,10 +104,15 @@ private:
   void __fastcall SetLogFileAppend(bool value);
   void __fastcall SetLogSensitive(bool value);
   void __fastcall SetLogMaxSize(__int64 value);
+  __int64 __fastcall GetLogMaxSize();
   void __fastcall SetLogMaxCount(int value);
+  int __fastcall GetLogMaxCount();
   void __fastcall SetLogProtocol(int value);
   void __fastcall SetLogActions(bool value);
+  bool __fastcall GetLogActions();
   void __fastcall SetActionsLogFileName(UnicodeString value);
+  UnicodeString __fastcall GetPermanentActionsLogFileName();
+  UnicodeString __fastcall GetActionsLogFileName();
   UnicodeString __fastcall GetDefaultLogFileName();
   UnicodeString __fastcall GetTimeFormat();
   void __fastcall SetStorage(TStorage value);
@@ -172,14 +179,14 @@ protected:
   UnicodeString __fastcall GetFileProductName(const UnicodeString FileName);
   UnicodeString __fastcall GetFileCompanyName(const UnicodeString FileName);
 
-  __property bool PermanentLogging  = { read=FPermanentLogging, write=SetLogging };
-  __property UnicodeString PermanentLogFileName  = { read=FPermanentLogFileName, write=SetLogFileName };
-  __property bool PermanentLogActions  = { read=FPermanentLogActions, write=SetLogActions };
-  __property UnicodeString PermanentActionsLogFileName  = { read=FPermanentActionsLogFileName, write=SetActionsLogFileName };
+  __property bool PermanentLogging  = { read=GetLogging, write=SetLogging };
+  __property UnicodeString PermanentLogFileName  = { read=GetLogFileName, write=SetLogFileName };
+  __property bool PermanentLogActions  = { read=GetLogActions, write=SetLogActions };
+  __property UnicodeString PermanentActionsLogFileName  = { read=GetPermanentActionsLogFileName, write=SetActionsLogFileName };
   __property int PermanentLogProtocol  = { read=FPermanentLogProtocol, write=SetLogProtocol };
   __property bool PermanentLogSensitive  = { read=FPermanentLogSensitive, write=SetLogSensitive };
-  __property __int64 PermanentLogMaxSize  = { read=FPermanentLogMaxSize, write=SetLogMaxSize };
-  __property int PermanentLogMaxCount  = { read=FPermanentLogMaxCount, write=SetLogMaxCount };
+  __property __int64 PermanentLogMaxSize  = { read=GetLogMaxSize, write=SetLogMaxSize };
+  __property int PermanentLogMaxCount  = { read=GetLogMaxCount, write=SetLogMaxCount };
 
 public:
   __fastcall TConfiguration();
@@ -257,7 +264,7 @@ public:
   __property int ActualLogProtocol  = { read=FActualLogProtocol };
   __property bool LogActions  = { read=FLogActions, write=SetLogActions };
   __property bool LogActionsRequired  = { read=FLogActionsRequired, write=FLogActionsRequired };
-  __property UnicodeString ActionsLogFileName  = { read=FActionsLogFileName, write=SetActionsLogFileName };
+  __property UnicodeString ActionsLogFileName  = { read=GetActionsLogFileName, write=SetActionsLogFileName };
   __property int LogWindowLines  = { read=FLogWindowLines, write=SetLogWindowLines };
   __property bool LogWindowComplete  = { read=GetLogWindowComplete, write=SetLogWindowComplete };
   __property UnicodeString DefaultLogFileName  = { read=GetDefaultLogFileName };

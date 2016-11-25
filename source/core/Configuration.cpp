@@ -153,6 +153,7 @@ THierarchicalStorage * TConfiguration::CreateConfigStorage()
 //---------------------------------------------------------------------------
 THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
 {
+  TGuard Guard(FCriticalSection);
   THierarchicalStorage * Result;
   if (Storage == stRegistry)
   {
@@ -621,21 +622,30 @@ UnicodeString __fastcall TConfiguration::LastFingerprint(const UnicodeString & S
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Changed()
 {
-  if (FUpdating == 0)
+  TNotifyEvent AOnChange = NULL;
+
   {
-    if (OnChange)
+    TGuard Guard(FCriticalSection);
+    if (FUpdating == 0)
     {
-      OnChange(this);
+      AOnChange = OnChange;
+    }
+    else
+    {
+      FChanged = true;
     }
   }
-  else
+
+  // No specific reason to call this outside of a guard, just that it is less of a change to a previous unguarded code
+  if (AOnChange != NULL)
   {
-    FChanged = true;
+    AOnChange(this);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::BeginUpdate()
 {
+  FCriticalSection->Enter();
   if (FUpdating == 0)
   {
     FChanged = false;
@@ -654,6 +664,7 @@ void __fastcall TConfiguration::EndUpdate()
     FChanged = false;
     Changed();
   }
+  FCriticalSection->Leave();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::CleanupConfiguration()
@@ -1091,6 +1102,7 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetOptionsStorage(TStrings * value)
 {
+  TGuard Guard(FCriticalSection);
   if (FOptionsStorage.get() == NULL)
   {
     FOptionsStorage.reset(new TStringList());
@@ -1183,6 +1195,7 @@ void __fastcall TConfiguration::Saved()
 //---------------------------------------------------------------------------
 TStorage __fastcall TConfiguration::GetStorage()
 {
+  TGuard Guard(FCriticalSection);
   if (FStorage == stDetect)
   {
     if (FileExists(ApiPath(IniFileStorageNameForReading)))
@@ -1347,6 +1360,7 @@ void __fastcall TConfiguration::TemporaryLogMaxCount(int ALogMaxCount)
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogging(bool value)
 {
+  TGuard Guard(FCriticalSection);
   if (Logging != value)
   {
     FPermanentLogging = value;
@@ -1356,8 +1370,15 @@ void __fastcall TConfiguration::SetLogging(bool value)
   }
 }
 //---------------------------------------------------------------------
+bool __fastcall TConfiguration::GetLogging()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentLogging;
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogFileName(UnicodeString value)
 {
+  TGuard Guard(FCriticalSection);
   if (LogFileName != value)
   {
     FPermanentLogFileName = value;
@@ -1366,8 +1387,15 @@ void __fastcall TConfiguration::SetLogFileName(UnicodeString value)
   }
 }
 //---------------------------------------------------------------------
+UnicodeString  __fastcall TConfiguration::GetLogFileName()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentLogFileName;
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetActionsLogFileName(UnicodeString value)
 {
+  TGuard Guard(FCriticalSection);
   if (ActionsLogFileName != value)
   {
     FPermanentActionsLogFileName = value;
@@ -1376,8 +1404,21 @@ void __fastcall TConfiguration::SetActionsLogFileName(UnicodeString value)
   }
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetPermanentActionsLogFileName()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentActionsLogFileName;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetActionsLogFileName()
+{
+  TGuard Guard(FCriticalSection);
+  return FActionsLogFileName;
+}
+//---------------------------------------------------------------------
 bool __fastcall TConfiguration::GetLogToFile()
 {
+  // guarded within GetLogFileName
   return !LogFileName.IsEmpty();
 }
 //---------------------------------------------------------------------
@@ -1388,6 +1429,7 @@ void __fastcall TConfiguration::UpdateActualLogProtocol()
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogProtocol(int value)
 {
+  TGuard Guard(FCriticalSection);
   if (LogProtocol != value)
   {
     FPermanentLogProtocol = value;
@@ -1399,12 +1441,19 @@ void __fastcall TConfiguration::SetLogProtocol(int value)
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogActions(bool value)
 {
+  TGuard Guard(FCriticalSection);
   if (LogActions != value)
   {
     FPermanentLogActions = value;
     FLogActions = value;
     Changed();
   }
+}
+//---------------------------------------------------------------------
+bool __fastcall TConfiguration::GetLogActions()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentLogActions;
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogFileAppend(bool value)
@@ -1424,12 +1473,19 @@ void __fastcall TConfiguration::SetLogSensitive(bool value)
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogMaxSize(__int64 value)
 {
+  TGuard Guard(FCriticalSection);
   if (LogMaxSize != value)
   {
     FPermanentLogMaxSize = value;
     FLogMaxSize = value;
     Changed();
   }
+}
+//---------------------------------------------------------------------
+__int64 __fastcall TConfiguration::GetLogMaxSize()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentLogMaxSize;
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogMaxCount(int value)
@@ -1440,6 +1496,12 @@ void __fastcall TConfiguration::SetLogMaxCount(int value)
     FLogMaxCount = value;
     Changed();
   }
+}
+//---------------------------------------------------------------------
+int __fastcall TConfiguration::GetLogMaxCount()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentLogMaxCount;
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogWindowLines(int value)
