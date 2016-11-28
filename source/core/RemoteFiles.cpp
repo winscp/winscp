@@ -830,6 +830,7 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone) const
     COPY_FP(ModificationFmt);
     COPY_FP(Size);
     COPY_FP(FileName);
+    COPY_FP(DisplayName);
     COPY_FP(INodeBlocks);
     COPY_FP(Modification);
     COPY_FP(LastAccess);

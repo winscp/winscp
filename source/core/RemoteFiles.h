@@ -87,6 +87,7 @@ private:
   TModificationFmt FModificationFmt;
   __int64 FSize;
   UnicodeString FFileName;
+  UnicodeString FDisplayName;
   Integer FINodeBlocks;
   TDateTime FModification;
   TDateTime FLastAccess;
@@ -156,6 +157,7 @@ public:
   __property TRemoteToken Owner = { read = FOwner, write = FOwner };
   __property TRemoteToken Group = { read = FGroup, write = FGroup };
   __property UnicodeString FileName = { read = FFileName, write = FFileName };
+  __property UnicodeString DisplayName = { read = FDisplayName, write = FDisplayName };
   __property int INodeBlocks = { read = FINodeBlocks };
   __property TDateTime Modification = { read = FModification, write = SetModification };
   __property UnicodeString ModificationStr = { read = GetModificationStr };

@@ -112,14 +112,10 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaul
 void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
   bool UseDefaults)
 {
-  UnicodeString TargetDirectory;
-  TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
-  TStrings * FileList = NULL;
   TRemoteFile * File = NULL;
 
   try
   {
-    FileList = new TStringList();
     Terminal->ExceptionOnFail = true;
     try
     {
@@ -130,21 +126,44 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
       Terminal->ExceptionOnFail = false;
     }
     File->FullFileName = FileName;
-    FileList->AddObject(FileName, File);
     UnicodeString LocalDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
     if (LocalDirectory.IsEmpty())
     {
       LocalDirectory = GetPersonalFolder();
     }
-    TargetDirectory = IncludeTrailingBackslash(LocalDirectory);
+    UnicodeString TargetDirectory = IncludeTrailingBackslash(LocalDirectory);
+
+    TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
+    UnicodeString DisplayName = File->FileName;
+
+    bool CustomDisplayName =
+      !File->DisplayName.IsEmpty() &&
+      (File->DisplayName != DisplayName);
+    if (CustomDisplayName)
+    {
+      DisplayName = File->DisplayName;
+    }
+
+    UnicodeString FriendyFileName = UnixIncludeTrailingBackslash(UnixExtractFilePath(FileName)) + DisplayName;
+    std::unique_ptr<TStrings> FileListFriendly(new TStringList());
+    FileListFriendly->AddObject(FriendyFileName, File);
 
     int Options = coDisableQueue;
     int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Download;
     if (UseDefaults ||
-        DoCopyDialog(false, false, FileList, TargetDirectory, &CopyParam,
+        DoCopyDialog(false, false, FileListFriendly.get(), TargetDirectory, &CopyParam,
           Options, CopyParamAttrs, NULL, NULL))
     {
-      Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, 0);
+      if (CustomDisplayName)
+      {
+        // Set only now, so that it is not redundantly displayed on the copy dialog.
+        // We should escape the * and ?'s.
+        CopyParam.FileMask = DisplayName;
+      }
+
+      std::unique_ptr<TStrings> FileList(new TStringList());
+      FileList->AddObject(FileName, File);
+      Terminal->CopyToLocal(FileList.get(), TargetDirectory, &CopyParam, 0);
     }
 
     UnicodeString Directory = UnixExtractFilePath(FileName);
@@ -154,7 +173,6 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
   __finally
   {
     delete File;
-    delete FileList;
   }
 }
 //---------------------------------------------------------------------------

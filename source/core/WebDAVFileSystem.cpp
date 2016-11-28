@@ -80,6 +80,7 @@ static const int HttpUnauthorized = 401;
 #define PROP_QUOTA_USED "quota-used-bytes"
 #define PROP_EXECUTABLE "executable"
 #define PROP_OWNER "owner"
+#define PROP_DISPLAY_NAME "displayname"
 //---------------------------------------------------------------------------
 static std::unique_ptr<TCriticalSection> DebugSection(TraceInitPtr(new TCriticalSection));
 static std::set<TWebDAVFileSystem *> FileSystems;
@@ -1024,6 +1025,12 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
   if (Owner != NULL)
   {
     File->Owner.Name = Owner;
+  }
+
+  const char * DisplayName = GetProp(Results, PROP_DISPLAY_NAME);
+  if (DisplayName != NULL)
+  {
+    File->DisplayName = StrFromNeon(DisplayName);
   }
 
   const UnicodeString RightsDelimiter(L", ");
