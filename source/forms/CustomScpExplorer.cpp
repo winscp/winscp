@@ -843,9 +843,13 @@ void __fastcall TCustomScpExplorerForm::SetQueueProgress()
     {
       if (FQueueStatus->ActiveCount == 1)
       {
-        TFileOperationProgressType * ProgressData;
-        if ((FQueueStatus->Items[FQueueStatus->DoneCount] != NULL) &&
-            ((ProgressData = FQueueStatus->Items[FQueueStatus->DoneCount]->ProgressData) != NULL) &&
+        TFileOperationProgressType * ProgressData = NULL;
+        if (FQueueStatus->Items[FQueueStatus->DoneCount] != NULL)
+        {
+          ProgressData = FQueueStatus->Items[FQueueStatus->DoneCount]->ProgressData;
+        }
+
+        if ((ProgressData != NULL) &&
             ProgressData->InProgress)
         {
           SetTaskbarListProgressValue(ProgressData);
@@ -1352,24 +1356,15 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
 
     if (FProgressForm->Cancel > csContinue)
     {
-      if (FProgressForm->Cancel > ProgressData.Cancel)
-      {
-        ProgressData.Cancel = FProgressForm->Cancel;
-      }
-      if (FProgressForm->Cancel == csCancelFile)
-      {
-        FProgressForm->Cancel = csContinue;
-      }
+      ProgressData.SetCancelAtLeast(FProgressForm->Cancel);
+      ProgressData.ClearCancelFile();
       // cancel cancels even the move
       FMoveToQueue = false;
     }
     else if (FProgressForm->MoveToQueue)
     {
       FMoveToQueue = true;
-      if (ProgressData.Cancel < csCancel)
-      {
-        ProgressData.Cancel = csCancel;
-      }
+      ProgressData.SetCancelAtLeast(csCancel);
     }
 
     if ((FTransferResumeList != NULL) &&

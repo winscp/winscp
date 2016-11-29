@@ -1368,10 +1368,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
       }
       else
       {
-        if (!OperationProgress->Cancel)
-        {
-          OperationProgress->Cancel = csCancel;
-        }
+        OperationProgress->SetCancelAtLeast(csCancel);
         FFileTransferAbort = ftaCancel;
         Result = false;
       }
@@ -1382,10 +1379,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
       break;
 
     case qaCancel:
-      if (!OperationProgress->Cancel)
-      {
-        OperationProgress->Cancel = csCancel;
-      }
+      OperationProgress->SetCancelAtLeast(csCancel);
       FFileTransferAbort = ftaCancel;
       Result = false;
       break;
@@ -1455,9 +1449,8 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
 
   if (OperationProgress->Cancel != csContinue)
   {
-    if (OperationProgress->Cancel == csCancelFile)
+    if (OperationProgress->ClearCancelFile())
     {
-      OperationProgress->Cancel = csContinue;
       FFileTransferAbort = ftaSkip;
     }
     else
@@ -1716,8 +1709,6 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
     }
     FILE_OPERATION_LOOP_END(FMTLOAD(NOT_FILE_ERROR, (DestFullName)));
 
-    OperationProgress->TransferingFile = false; // not set with FTP protocol
-
     ResetFileTransfer();
 
     TFileTransferData UserData;
@@ -1958,7 +1949,6 @@ void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
     // Suppose same data size to transfer as to read
     // (not true with ASCII transfer)
     OperationProgress->SetTransferSize(OperationProgress->LocalSize);
-    OperationProgress->TransferingFile = false;
 
     TDateTime Modification;
     // Inspired by SysUtils::FileAge

@@ -2298,7 +2298,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 
   if (QueryCancel())
   {
-    ProgressData.Cancel = csCancel;
+    ProgressData.SetCancel(csCancel);
   }
 }
 //---------------------------------------------------------------------------

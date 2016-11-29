@@ -1586,7 +1586,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
               break;
 
             case qaCancel:
-              if (!OperationProgress->Cancel) OperationProgress->Cancel = csCancel;
+              OperationProgress->SetCancelAtLeast(csCancel);
             case qaNo:
               CanProceed = false;
               break;
@@ -1634,7 +1634,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
           if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (FileName)), &E,
             qaOK | qaAbort, &Params, qtError) == qaAbort)
           {
-            OperationProgress->Cancel = csCancel;
+            OperationProgress->SetCancel(csCancel);
           }
           OperationProgress->Finish(FileName, false, OnceDoneOperation);
           if (!FTerminal->HandleException(&E))
@@ -1746,7 +1746,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
       // Suppose same data size to transfer as to read
       // (not true with ASCII transfer)
       OperationProgress->SetTransferSize(OperationProgress->LocalSize);
-      OperationProgress->TransferingFile = false;
+      OperationProgress->SetTransferingFile(false);
 
       TDateTime Modification = UnixToDateTime(MTime, FTerminal->SessionData->DSTMode);
 
@@ -1854,7 +1854,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
             SCPResponse();
             // Indicate we started transferring file, we need to finish it
             // If not, it's fatal error
-            OperationProgress->TransferingFile = true;
+            OperationProgress->SetTransferingFile(true);
 
             // If we're doing ASCII transfer, this is last pass
             // so we send whole file
@@ -1916,19 +1916,19 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         catch (EScp &E)
         {
           // SCP protocol fatal error
-          OperationProgress->TransferingFile = false;
+          OperationProgress->SetTransferingFile(false);
           throw;
         }
         catch (EScpFileSkipped &E)
         {
           // SCP protocol non-fatal error
-          OperationProgress->TransferingFile = false;
+          OperationProgress->SetTransferingFile(false);
           throw;
         }
 
         // We succeeded transferring file, from now we can handle exceptions
         // normally -> no fatal error
-        OperationProgress->TransferingFile = false;
+        OperationProgress->SetTransferingFile(false);
       }
       catch (Exception &E)
       {
@@ -2074,7 +2074,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
           if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (FileName)), &E,
                 qaOK | qaAbort, &Params, qtError) == qaAbort)
           {
-            OperationProgress->Cancel = csCancel;
+            OperationProgress->SetCancel(csCancel);
           }
           if (!FTerminal->HandleException(&E))
           {
@@ -2173,7 +2173,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
         // remote side closed SCP, but we continue with next file
         if (OperationProgress->Cancel == csRemoteAbort)
         {
-          OperationProgress->Cancel = csContinue;
+          OperationProgress->SetCancel(csContinue);
         }
 
         // Move operation -> delete file/directory afterwards
@@ -2212,7 +2212,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
             // is closed already
             if (OperationProgress->Cancel == csCancel)
             {
-              OperationProgress->Cancel = csRemoteAbort;
+              OperationProgress->SetCancel(csRemoteAbort);
             }
             Success = false;
           }
@@ -2322,7 +2322,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
       {
         // Remote side finished copying, so remote SCP was closed
         // and we don't need to terminate it manually, see CopyToLocal()
-        OperationProgress->Cancel = csRemoteAbort;
+        OperationProgress->SetCancel(csRemoteAbort);
         /* TODO 1 : Show stderror to user? */
         FSecureShell->ClearStdError();
         try
@@ -2522,7 +2522,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                   switch (Answer)
                   {
                     case qaCancel:
-                      OperationProgress->Cancel = csCancel; // continue on next case
+                      OperationProgress->SetCancel(csCancel); // continue on next case
                     case qaNo:
                       SkipConfirmed = true;
                       EXCEPTION;
@@ -2550,7 +2550,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
               // We succeeded, so we confirm transfer to remote side
               FSecureShell->SendNull();
               // From now we need to finish file transfer, if not it's fatal error
-              OperationProgress->TransferingFile = true;
+              OperationProgress->SetTransferingFile(true);
 
               // Suppose same data size to transfer as to write
               // (not true with ASCII transfer)
@@ -2610,7 +2610,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                   FMTLOAD(COPY_FATAL, (OperationProgress->FileName)));
               }
 
-              OperationProgress->TransferingFile = false;
+              OperationProgress->SetTransferingFile(false);
 
               try
               {
@@ -2679,7 +2679,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (AbsoluteFileName)),
               &E, qaOK | qaAbort, &Params, qtError) == qaAbort)
         {
-          OperationProgress->Cancel = csCancel;
+          OperationProgress->SetCancel(csCancel);
         }
         FTerminal->Log->AddException(&E);
       }

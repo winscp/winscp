@@ -1781,7 +1781,7 @@ bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
     if (Answer == qaAll)
     {
       DebugAssert(OperationProgress != NULL);
-      OperationProgress->SkipToAll = true;
+      OperationProgress->SetSkipToAll();
       Answer = qaSkip;
     }
     if (Answer == qaYes)
@@ -1795,7 +1795,7 @@ bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
   {
     if ((Answer == qaAbort) && (OperationProgress != NULL))
     {
-      OperationProgress->Cancel = csCancel;
+      OperationProgress->SetCancel(csCancel);
     }
 
     if (AllowSkip)
@@ -2263,7 +2263,7 @@ unsigned int __fastcall TTerminal::CommandError(Exception * E, const UnicodeStri
       if (Result == qaAll)
       {
         DebugAssert(OperationProgress != NULL);
-        OperationProgress->SkipToAll = true;
+        OperationProgress->SetSkipToAll();
         Result = qaSkip;
       }
     }
@@ -2421,7 +2421,7 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
     // to current transfer (see condition above)
     if (BatchOverwrite != boNo)
     {
-      OperationProgress->BatchOverwrite = BatchOverwrite;
+      OperationProgress->SetBatchOverwrite(BatchOverwrite);
     }
   }
 
@@ -4305,9 +4305,9 @@ bool __fastcall TTerminal::DoCreateLocalFile(const UnicodeString FileName,
             }
 
             switch (Answer) {
-              case qaYesToAll: OperationProgress->BatchOverwrite = boAll; break;
-              case qaCancel: OperationProgress->Cancel = csCancel; // continue on next case
-              case qaNoToAll: OperationProgress->BatchOverwrite = boNone;
+              case qaYesToAll: OperationProgress->SetBatchOverwrite(boAll); break;
+              case qaCancel: OperationProgress->SetCancel(csCancel); // continue on next case
+              case qaNoToAll: OperationProgress->SetBatchOverwrite(boNone);
               case qaNo: Result = false; break;
             }
           }

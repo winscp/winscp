@@ -1245,10 +1245,7 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
     default:
       DebugFail();
     case qaCancel:
-      if (!OperationProgress->Cancel)
-      {
-        OperationProgress->Cancel = csCancel;
-      }
+      OperationProgress->SetCancelAtLeast(csCancel);
       Abort();
       break;
   }
@@ -1475,7 +1472,6 @@ void __fastcall TWebDAVFileSystem::Source(const UnicodeString FileName,
       // Suppose same data size to transfer as to read
       // (not true with ASCII transfer)
       OperationProgress->SetTransferSize(OperationProgress->LocalSize);
-      OperationProgress->TransferingFile = false;
 
       UnicodeString DestFullName = TargetDir + DestFileName;
 
@@ -2022,9 +2018,8 @@ bool __fastcall TWebDAVFileSystem::CancelTransfer()
       (FTerminal->OperationProgress != NULL) &&
       (FTerminal->OperationProgress->Cancel != csContinue))
   {
-    if (FTerminal->OperationProgress->Cancel == csCancelFile)
+    if (FTerminal->OperationProgress->ClearCancelFile())
     {
-      FTerminal->OperationProgress->Cancel = csContinue;
       FSkipped = true;
     }
     else
@@ -2177,8 +2172,6 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
       if ((Attrs >= 0) && FLAGSET(Attrs, faDirectory)) { EXCEPTION; }
     }
     FILE_OPERATION_LOOP_END(FMTLOAD(NOT_FILE_ERROR, (DestFullName)));
-
-    OperationProgress->TransferingFile = false; // not set with WebDAV protocol
 
     UnicodeString FilePath = ::UnixExtractFilePath(FileName);
     if (FilePath.IsEmpty())

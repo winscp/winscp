@@ -4399,15 +4399,12 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
 
         case qaNoToAll:
           OverwriteMode = omResume;
-          OperationProgress->BatchOverwrite = boAlternateResume;
+          OperationProgress->SetBatchOverwrite(boAlternateResume);
           break;
 
         default: DebugFail(); //fallthru
         case qaCancel:
-          if (!OperationProgress->Cancel)
-          {
-            OperationProgress->Cancel = csCancel;
-          }
+          OperationProgress->SetCancelAtLeast(csCancel);
           Abort();
           break;
       }
@@ -4422,10 +4419,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
     }
     else
     {
-      if (!OperationProgress->Cancel)
-      {
-        OperationProgress->Cancel = csCancel;
-      }
+      OperationProgress->SetCancelAtLeast(csCancel);
       Abort();
     }
   }
@@ -4435,10 +4429,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
     switch (Answer)
     {
       case qaCancel:
-        if (!OperationProgress->Cancel)
-        {
-          OperationProgress->Cancel = csCancel;
-        }
+        OperationProgress->SetCancelAtLeast(csCancel);
         Abort();
         break;
 
@@ -4466,10 +4457,7 @@ bool TSFTPFileSystem::SFTPConfirmResume(const UnicodeString DestFileName,
 
     if (Answer == qaAbort)
     {
-      if (!OperationProgress->Cancel)
-      {
-        OperationProgress->Cancel = csCancel;
-      }
+      OperationProgress->SetCancelAtLeast(csCancel);
       Abort();
     }
     ResumeTransfer = false;
@@ -4500,10 +4488,7 @@ bool TSFTPFileSystem::SFTPConfirmResume(const UnicodeString DestFileName,
         break;
 
       case qaCancel:
-        if (!OperationProgress->Cancel)
-        {
-          OperationProgress->Cancel = csCancel;
-        }
+        OperationProgress->SetCancelAtLeast(csCancel);
         Abort();
         break;
     }
@@ -4619,7 +4604,6 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
       // Suppose same data size to transfer as to read
       // (not true with ASCII transfer)
       OperationProgress->SetTransferSize(OperationProgress->LocalSize);
-      OperationProgress->TransferingFile = false;
 
       TDateTime Modification = UnixToDateTime(MTime, FTerminal->SessionData->DSTMode);
 
@@ -4846,9 +4830,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
           {
             if (OperationProgress->Cancel)
             {
-              if (OperationProgress->Cancel == csCancelFile)
+              if (OperationProgress->ClearCancelFile())
               {
-                OperationProgress->Cancel = csContinue;
                 THROW_SKIP_FILE_NULL;
               }
               else
@@ -5677,8 +5660,6 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
     }
     FILE_OPERATION_LOOP_END(FMTLOAD(NOT_FILE_ERROR, (DestFullName)));
 
-    OperationProgress->TransferingFile = false; // not set with SFTP protocol
-
     HANDLE LocalHandle = NULL;
     TStream * FileStream = NULL;
     bool DeleteLocalFile = false;
@@ -6008,9 +5989,8 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
 
             if (OperationProgress->Cancel != csContinue)
             {
-              if (OperationProgress->Cancel == csCancelFile)
+              if (OperationProgress->ClearCancelFile())
               {
-                OperationProgress->Cancel = csContinue;
                 THROW_SKIP_FILE_NULL;
               }
               else

@@ -395,7 +395,7 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
   }
   FUpdateCounter++;
 
-  AData.CPSLimit = FCPSLimit;
+  AData.SetCPSLimit(FCPSLimit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateTimerTimer(TObject * /*Sender*/)

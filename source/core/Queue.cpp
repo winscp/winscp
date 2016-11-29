@@ -1515,11 +1515,11 @@ void __fastcall TTerminalItem::OperationProgress(
   {
     if (ProgressData.TransferingFile)
     {
-      ProgressData.Cancel = csCancelTransfer;
+      ProgressData.SetCancel(csCancelTransfer);
     }
     else
     {
-      ProgressData.Cancel = csCancel;
+      ProgressData.SetCancel(csCancel);
     }
   }
 
@@ -1613,7 +1613,7 @@ void __fastcall TQueueItem::SetProgress(
     // wait until the real transfer operation starts
     if ((FCPSLimit >= 0) && ((ProgressData.Operation == foMove) || (ProgressData.Operation == foCopy)))
     {
-      ProgressData.CPSLimit = static_cast<unsigned long>(FCPSLimit);
+      ProgressData.SetCPSLimit(static_cast<unsigned long>(FCPSLimit));
       FCPSLimit = -1;
     }
 
