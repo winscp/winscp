@@ -1714,7 +1714,7 @@ __int64 __fastcall TQueueItemProxy::GetTotalTransferred()
   // for which GetProgressData() is NULL
   return
     (FProgressData->Operation == Info->Operation) || (Status == TQueueItem::qsDone) ?
-      FProgressData->TotalTransfered : -1;
+      FProgressData->TotalTransferred : -1;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TQueueItemProxy::Update()

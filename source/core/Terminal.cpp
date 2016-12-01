@@ -2821,7 +2821,7 @@ void __fastcall TTerminal::LogFileDone(TFileOperationProgressType * OperationPro
   // optimization
   if (Log->Logging)
   {
-    LogEvent(FORMAT("Transfer done: '%s' [%s]", (OperationProgress->FullFileName, IntToStr(OperationProgress->TransferedSize))));
+    LogEvent(FORMAT("Transfer done: '%s' [%s]", (OperationProgress->FullFileName, IntToStr(OperationProgress->TransferredSize))));
   }
 }
 //---------------------------------------------------------------------------

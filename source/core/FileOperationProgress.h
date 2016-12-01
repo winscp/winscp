@@ -34,14 +34,14 @@ private:
   __int64 FLocalSize;
   __int64 FLocallyUsed;
   __int64 FTransferSize;
-  __int64 FTransferedSize;
+  __int64 FTransferredSize;
   __int64 FSkippedSize;
   bool FInProgress;
   bool FFileInProgress;
   TCancelStatus FCancel;
   int FCount;
   TDateTime FStartTime;
-  __int64 FTotalTransfered;
+  __int64 FTotalTransferred;
   __int64 FTotalSkipped;
   __int64 FTotalSize;
   TBatchOverwrite FBatchOverwrite;
@@ -52,7 +52,7 @@ private:
 
   // when it was last time suspended (to calculate suspend time in Resume())
   unsigned int FSuspendTime;
-  // when current file was started being transfered
+  // when current file was started being transferred
   TDateTime FFileStartTime;
   int FFilesFinished;
   TFileOperationProgressEvent FOnProgress;
@@ -86,7 +86,7 @@ public:
   __property __int64 LocalSize = { read = FLocalSize };
   __property __int64 LocallyUsed = { read = FLocallyUsed };
   __property __int64 TransferSize = { read = FTransferSize };
-  __property __int64 TransferedSize = { read = FTransferedSize };
+  __property __int64 TransferredSize = { read = FTransferredSize };
   __property __int64 SkippedSize = { read = FSkippedSize };
   __property bool InProgress = { read = FInProgress };
   __property bool FileInProgress = { read = FFileInProgress };
@@ -94,8 +94,8 @@ public:
   __property int Count = { read = FCount };
   // when operation started
   __property TDateTime StartTime = { read = FStartTime };
-  // bytes transfered
-  __property __int64 TotalTransfered = { read = FTotalTransfered };
+  // bytes transferred
+  __property __int64 TotalTransferred = { read = FTotalTransferred };
   __property __int64 TotalSkipped = { read = FTotalSkipped };
   __property __int64 TotalSize = { read = FTotalSize };
 
@@ -113,7 +113,7 @@ public:
   __fastcall ~TFileOperationProgressType();
   void __fastcall AssignButKeepSuspendState(const TFileOperationProgressType & Other);
   void __fastcall AddLocallyUsed(__int64 ASize);
-  void __fastcall AddTransfered(__int64 ASize, bool AddToTotals = true);
+  void __fastcall AddTransferred(__int64 ASize, bool AddToTotals = true);
   void __fastcall AddResumed(__int64 ASize);
   void __fastcall AddSkippedFileSize(__int64 ASize);
   void __fastcall Clear();

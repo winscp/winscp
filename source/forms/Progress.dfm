@@ -142,7 +142,7 @@ object ProgressForm: TProgressForm
       AutoSize = False
       Caption = '00:00:00'
     end
-    object BytesTransferedLabel: TLabel
+    object BytesTransferredLabel: TLabel
       Left = 88
       Top = 18
       Width = 65

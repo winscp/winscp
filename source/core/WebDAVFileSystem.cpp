@@ -2598,7 +2598,7 @@ void TWebDAVFileSystem::NeonNotifier(void * UserData, ne_session_status Status, 
       DebugAlwaysTrue(OperationProgress != NULL))
   {
     __int64 Progress = StatusInfo->sr.progress;
-    __int64 Diff = Progress - OperationProgress->TransferedSize;
+    __int64 Diff = Progress - OperationProgress->TransferredSize;
 
     if (Diff > 0)
     {
@@ -2612,18 +2612,18 @@ void TWebDAVFileSystem::NeonNotifier(void * UserData, ne_session_status Status, 
     {
       if (Diff >= 0)
       {
-        OperationProgress->AddTransfered(Diff);
+        OperationProgress->AddTransferred(Diff);
       }
       else
       {
         // Session total has been reset. A new stream started
-        OperationProgress->AddTransfered(Progress);
+        OperationProgress->AddTransferred(Progress);
       }
     }
     else
     {
       OperationProgress->SetTransferSize(Total);
-      OperationProgress->AddTransfered(Diff);
+      OperationProgress->AddTransferred(Diff);
     }
   }
 }

@@ -1446,11 +1446,11 @@ public:
   }
   virtual __fastcall ~TSFTPDownloadQueue(){}
 
-  bool __fastcall Init(int QueueLen, const RawByteString & AHandle,__int64 ATransfered,
+  bool __fastcall Init(int QueueLen, const RawByteString & AHandle,__int64 ATransferred,
     TFileOperationProgressType * AOperationProgress)
   {
     FHandle = AHandle;
-    FTransfered = ATransfered;
+    FTransferred = ATransferred;
     OperationProgress = AOperationProgress;
 
     return TSFTPFixedLenQueue::Init(QueueLen);
@@ -1474,9 +1474,9 @@ protected:
   virtual bool __fastcall InitRequest(TSFTPQueuePacket * Request)
   {
     unsigned int BlockSize = FFileSystem->DownloadBlockSize(OperationProgress);
-    InitRequest(Request, FTransfered, BlockSize);
+    InitRequest(Request, FTransferred, BlockSize);
     Request->Token = reinterpret_cast<void*>(BlockSize);
-    FTransfered += BlockSize;
+    FTransferred += BlockSize;
     return true;
   }
 
@@ -1496,7 +1496,7 @@ protected:
 
 private:
   TFileOperationProgressType * OperationProgress;
-  __int64 FTransfered;
+  __int64 FTransferred;
   RawByteString FHandle;
 };
 //---------------------------------------------------------------------------
@@ -1520,14 +1520,14 @@ public:
 
   bool __fastcall Init(const UnicodeString AFileName,
     HANDLE AFile, TFileOperationProgressType * AOperationProgress,
-    const RawByteString AHandle, __int64 ATransfered,
+    const RawByteString AHandle, __int64 ATransferred,
     int ConvertParams)
   {
     FFileName = AFileName;
     FStream = new TSafeHandleStream((THandle)AFile);
     OperationProgress = AOperationProgress;
     FHandle = AHandle;
-    FTransfered = ATransfered;
+    FTransferred = ATransferred;
     FConvertParams = ConvertParams;
 
     return TSFTPAsynchronousQueue::Init();
@@ -1571,16 +1571,16 @@ protected:
         if (FFileSystem->FTerminal->Configuration->ActualLogProtocol >= 1)
         {
           FFileSystem->FTerminal->LogEvent(FORMAT(L"Write request offset: %d, len: %d",
-            (int(FTransfered), int(BlockBuf.Size))));
+            (int(FTransferred), int(BlockBuf.Size))));
         }
 
         Request->ChangeType(SSH_FXP_WRITE);
         Request->AddString(FHandle);
-        Request->AddInt64(FTransfered);
+        Request->AddInt64(FTransferred);
         Request->AddData(BlockBuf.Data, BlockBuf.Size);
         FLastBlockSize = BlockBuf.Size;
 
-        FTransfered += BlockBuf.Size;
+        FTransferred += BlockBuf.Size;
       }
     }
 
@@ -1590,7 +1590,7 @@ protected:
   virtual void __fastcall SendPacket(TSFTPQueuePacket * Packet)
   {
     TSFTPAsynchronousQueue::SendPacket(Packet);
-    OperationProgress->AddTransfered(FLastBlockSize);
+    OperationProgress->AddTransferred(FLastBlockSize);
   }
 
   virtual void __fastcall ReceiveResponse(
@@ -1644,7 +1644,7 @@ private:
   UnicodeString FFileName;
   unsigned long FLastBlockSize;
   bool FEnd;
-  __int64 FTransfered;
+  __int64 FTransferred;
   RawByteString FHandle;
   bool FConvertToken;
   int FConvertParams;
@@ -4682,7 +4682,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
 
           if (ResumeAllowed)
           {
-            FTerminal->LogEvent(L"Checking existence of partially transfered file.");
+            FTerminal->LogEvent(L"Checking existence of partially transferred file.");
             if (RemoteFileExists(DestPartialFullName, &File))
             {
               ResumeOffset = File->Size;
@@ -4823,7 +4823,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
             FLAGMASK(CopyParam->RemoveBOM, cpRemoveBOM);
           Queue.Init(FileName, File, OperationProgress,
             OpenParams.RemoteFileHandle,
-            DestWriteOffset + OperationProgress->TransferedSize,
+            DestWriteOffset + OperationProgress->TransferredSize,
             ConvertParams);
 
           while (Queue.Continue())
@@ -5674,10 +5674,10 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
         DestPartialFullName = DestFullName + FTerminal->Configuration->PartialExt;
         LocalFileName = DestPartialFullName;
 
-        FTerminal->LogEvent(L"Checking existence of partially transfered file.");
+        FTerminal->LogEvent(L"Checking existence of partially transferred file.");
         if (FileExists(ApiPath(DestPartialFullName)))
         {
-          FTerminal->LogEvent(L"Partially transfered file exists.");
+          FTerminal->LogEvent(L"Partially transferred file exists.");
           FTerminal->OpenLocalFile(DestPartialFullName, GENERIC_WRITE,
             NULL, &LocalHandle, NULL, NULL, NULL, &ResumeOffset);
 
@@ -5692,7 +5692,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
             ResumeTransfer = !PartialBiggerThanSource;
             if (!ResumeTransfer)
             {
-              FTerminal->LogEvent(L"Partially transfered file is bigger that original file.");
+              FTerminal->LogEvent(L"Partially transferred file is bigger that original file.");
             }
           }
 
@@ -5873,7 +5873,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
           {
             QueueLen = 1;
           }
-          Queue.Init(QueueLen, RemoteHandle, OperationProgress->TransferedSize,
+          Queue.Init(QueueLen, RemoteHandle, OperationProgress->TransferredSize,
             OperationProgress);
 
           bool Eof = false;
@@ -5889,7 +5889,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
           {
             if (Missing > 0)
             {
-              Queue.InitFillGapRequest(OperationProgress->TransferedSize, Missing,
+              Queue.InitFillGapRequest(OperationProgress->TransferredSize, Missing,
                 &DataPacket);
               GapFillCount++;
               SendPacketAndReceiveResponse(&DataPacket, &DataPacket,
@@ -5923,7 +5923,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
                 FTerminal->LogEvent(FORMAT(
                   L"Received incomplete data packet before end of file, "
                    "offset: %s, size: %d, requested: %d",
-                  (IntToStr(OperationProgress->TransferedSize), int(DataLen),
+                  (IntToStr(OperationProgress->TransferredSize), int(DataLen),
                   int(BlockSize))));
                 FTerminal->TerminalError(NULL, LoadStr(SFTP_INCOMPLETE_BEFORE_EOF));
               }
@@ -5941,7 +5941,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
               }
               else if (DataLen < BlockSize)
               {
-                if (OperationProgress->TransferedSize + DataLen !=
+                if (OperationProgress->TransferredSize + DataLen !=
                       OperationProgress->TransferSize)
                 {
                   // with native text transfer mode (SFTP>=4), do not bother about
@@ -5961,7 +5961,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
               DebugAssert(DataLen <= BlockSize);
               BlockBuf.Insert(0, reinterpret_cast<const char *>(DataPacket.GetNextData(DataLen)), DataLen);
               DataPacket.DataConsumed(DataLen);
-              OperationProgress->AddTransfered(DataLen);
+              OperationProgress->AddTransferred(DataLen);
 
               if ((FVersion >= 6) && DataPacket.CanGetBool() && (Missing == 0))
               {

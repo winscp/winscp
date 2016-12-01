@@ -1440,10 +1440,10 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
     FFileTransferResumed = 0;
   }
 
-  __int64 Diff = Bytes - OperationProgress->TransferedSize;
+  __int64 Diff = Bytes - OperationProgress->TransferredSize;
   if (DebugAlwaysTrue(Diff >= 0))
   {
-    OperationProgress->AddTransfered(Diff);
+    OperationProgress->AddTransferred(Diff);
     FFileTransferAny = true;
   }
 

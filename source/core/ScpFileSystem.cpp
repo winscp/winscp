@@ -1869,9 +1869,9 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
               {
                 unsigned long BlockSize = OperationProgress->TransferBlockSize();
                 FSecureShell->Send(
-                  reinterpret_cast<unsigned char *>(AsciiBuf.Data + (unsigned int)OperationProgress->TransferedSize),
+                  reinterpret_cast<unsigned char *>(AsciiBuf.Data + (unsigned int)OperationProgress->TransferredSize),
                   BlockSize);
-                OperationProgress->AddTransfered(BlockSize);
+                OperationProgress->AddTransferred(BlockSize);
                 if (OperationProgress->Cancel == csCancelTransfer)
                 {
                   throw Exception(MainInstructions(LoadStr(USER_TERMINATED)));
@@ -1883,7 +1883,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
           // At end of BINARY transfer pass, send current block
           if (!OperationProgress->AsciiTransfer)
           {
-            if (!OperationProgress->TransferedSize)
+            if (!OperationProgress->TransferredSize)
             {
               FTerminal->LogEvent(FORMAT(L"Sending BINARY data (first block, %u bytes)",
                 (BlockBuf.Size)));
@@ -1894,7 +1894,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
                 (BlockBuf.Size)));
             }
             FSecureShell->Send(reinterpret_cast<const unsigned char *>(BlockBuf.Data), BlockBuf.Size);
-            OperationProgress->AddTransfered(BlockBuf.Size);
+            OperationProgress->AddTransferred(BlockBuf.Size);
           }
 
           if ((OperationProgress->Cancel == csCancelTransfer) ||
@@ -2574,7 +2574,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                   BlockBuf.Position = 0;
 
                   FSecureShell->Receive(reinterpret_cast<unsigned char *>(BlockBuf.Data), BlockBuf.Size);
-                  OperationProgress->AddTransfered(BlockBuf.Size);
+                  OperationProgress->AddTransferred(BlockBuf.Size);
 
                   if (OperationProgress->AsciiTransfer)
                   {

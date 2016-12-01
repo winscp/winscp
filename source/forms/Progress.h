@@ -40,7 +40,7 @@ __published:
   TLabel *StartTimeLabelLabel;
   TLabel *StartTimeLabel;
   TLabel *Label4;
-  TLabel *BytesTransferedLabel;
+  TLabel *BytesTransferredLabel;
   TLabel *Label12;
   TLabel *CPSLabel;
   TProgressBar *BottomProgress;

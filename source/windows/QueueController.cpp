@@ -416,7 +416,7 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       if (ProgressData->Operation == Info->Operation)
       {
         Values[2] =
-          FormatPanelBytes(ProgressData->TransferedSize, WinConfiguration->FormatSizeBytes);
+          FormatPanelBytes(ProgressData->TransferredSize, WinConfiguration->FormatSizeBytes);
         Values[5] = FORMAT(L"%d%%", (ProgressData->TransferProgress()));
       }
     }

@@ -51,7 +51,7 @@ void __fastcall TFileOperationProgressType::Clear()
   FSuspendTime = 0;
   FInProgress = false;
   FFileInProgress = false;
-  FTotalTransfered = 0;
+  FTotalTransferred = 0;
   FTotalSkipped = 0;
   FTotalSize = 0;
   FSkippedSize = 0;
@@ -71,16 +71,16 @@ void __fastcall TFileOperationProgressType::Clear()
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::ClearTransfer()
 {
-  if ((TransferSize > 0) && (TransferedSize < TransferSize))
+  if ((TransferSize > 0) && (TransferredSize < TransferSize))
   {
-    __int64 RemainingSize = (TransferSize - TransferedSize);
+    __int64 RemainingSize = (TransferSize - TransferredSize);
     FTotalSkipped += RemainingSize;
   }
   FLocalSize = 0;
   FTransferSize = 0;
   FLocallyUsed = 0;
   FSkippedSize = 0;
-  FTransferedSize = 0;
+  FTransferredSize = 0;
   FTransferingFile = false;
   FLastSecond = 0;
 }
@@ -169,7 +169,7 @@ int __fastcall TFileOperationProgressType::TransferProgress()
   int Result;
   if (TransferSize)
   {
-    Result = (int)((TransferedSize * 100)/TransferSize);
+    Result = (int)((TransferredSize * 100)/TransferSize);
   }
   else
   {
@@ -181,7 +181,7 @@ int __fastcall TFileOperationProgressType::TransferProgress()
 int __fastcall TFileOperationProgressType::TotalTransferProgress()
 {
   DebugAssert(TotalSizeSet);
-  int Result = TotalSize > 0 ? (int)(((TotalTransfered + TotalSkipped) * 100)/TotalSize) : 0;
+  int Result = TotalSize > 0 ? (int)(((TotalTransferred + TotalSkipped) * 100)/TotalSize) : 0;
   return Result < 100 ? Result : 100;
 }
 //---------------------------------------------------------------------------
@@ -408,44 +408,44 @@ void __fastcall TFileOperationProgressType::ChangeTransferSize(__int64 ASize)
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::RollbackTransfer()
 {
-  FTransferedSize -= SkippedSize;
-  DebugAssert(TransferedSize <= TotalTransfered);
-  FTotalTransfered -= TransferedSize;
+  FTransferredSize -= SkippedSize;
+  DebugAssert(TransferredSize <= TotalTransferred);
+  FTotalTransferred -= TransferredSize;
   DebugAssert(SkippedSize <= TotalSkipped);
   FTicks.clear();
   FTotalTransferredThen.clear();
   FTotalSkipped -= SkippedSize;
   FSkippedSize = 0;
-  FTransferedSize = 0;
+  FTransferredSize = 0;
   FTransferSize = 0;
   FLocallyUsed = 0;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileOperationProgressType::AddTransfered(__int64 ASize,
+void __fastcall TFileOperationProgressType::AddTransferred(__int64 ASize,
   bool AddToTotals)
 {
-  FTransferedSize += ASize;
-  if (TransferedSize > TransferSize)
+  FTransferredSize += ASize;
+  if (TransferredSize > TransferSize)
   {
     // this can happen with SFTP when downloading file that
     // grows while being downloaded
     if (TotalSizeSet)
     {
       // we should probably guard this with AddToTotals
-      FTotalSize += (TransferedSize - TransferSize);
+      FTotalSize += (TransferredSize - TransferSize);
     }
-    FTransferSize = TransferedSize;
+    FTransferSize = TransferredSize;
   }
   if (AddToTotals)
   {
-    FTotalTransfered += ASize;
+    FTotalTransferred += ASize;
     unsigned long Ticks = GetTickCount();
     if (FTicks.empty() ||
         (FTicks.back() > Ticks) || // ticks wrap after 49.7 days
         ((Ticks - FTicks.back()) >= MSecsPerSec))
     {
       FTicks.push_back(Ticks);
-      FTotalTransferredThen.push_back(TotalTransfered);
+      FTotalTransferredThen.push_back(TotalTransferred);
     }
 
     if (FTicks.size() > 10)
@@ -461,7 +461,7 @@ void __fastcall TFileOperationProgressType::AddResumed(__int64 ASize)
 {
   FTotalSkipped += ASize;
   FSkippedSize += ASize;
-  AddTransfered(ASize, false);
+  AddTransferred(ASize, false);
   AddLocallyUsed(ASize);
 }
 //---------------------------------------------------------------------------
@@ -474,9 +474,9 @@ void __fastcall TFileOperationProgressType::AddSkippedFileSize(__int64 ASize)
 unsigned long __fastcall TFileOperationProgressType::TransferBlockSize()
 {
   unsigned long Result = TRANSFER_BUF_SIZE;
-  if (TransferedSize + Result > TransferSize)
+  if (TransferredSize + Result > TransferSize)
   {
-    Result = (unsigned long)(TransferSize - TransferedSize);
+    Result = (unsigned long)(TransferSize - TransferredSize);
   }
   Result = AdjustToCPSLimit(Result);
   return Result;
@@ -489,8 +489,8 @@ unsigned long __fastcall TFileOperationProgressType::StaticBlockSize()
 //---------------------------------------------------------------------------
 bool __fastcall TFileOperationProgressType::IsTransferDone()
 {
-  DebugAssert(TransferedSize <= TransferSize);
-  return (TransferedSize == TransferSize);
+  DebugAssert(TransferredSize <= TransferSize);
+  return (TransferredSize == TransferSize);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::SetAsciiTransfer(bool AAsciiTransfer)
@@ -531,7 +531,7 @@ unsigned int __fastcall TFileOperationProgressType::CPS()
     }
     else
     {
-      __int64 Transferred = (TotalTransfered - FTotalTransferredThen.front());
+      __int64 Transferred = (TotalTransferred - FTotalTransferredThen.front());
       Result = (unsigned int)(Transferred * MSecsPerSec / TimeSpan);
     }
   }
@@ -543,7 +543,7 @@ TDateTime __fastcall TFileOperationProgressType::TimeExpected()
   unsigned int CurCps = CPS();
   if (CurCps)
   {
-    return TDateTime((double)(((double)(TransferSize - TransferedSize)) / CurCps) / SecsPerDay);
+    return TDateTime((double)(((double)(TransferSize - TransferredSize)) / CurCps) / SecsPerDay);
   }
   else
   {
@@ -572,9 +572,9 @@ TDateTime __fastcall TFileOperationProgressType::TotalTimeLeft()
   DebugAssert(TotalSizeSet);
   unsigned int CurCps = CPS();
   // sanity check
-  if ((CurCps > 0) && (TotalSize > TotalSkipped + TotalTransfered))
+  if ((CurCps > 0) && (TotalSize > TotalSkipped + TotalTransferred))
   {
-    return TDateTime((double)((double)(TotalSize - TotalSkipped - TotalTransfered) / CurCps) /
+    return TDateTime((double)((double)(TotalSize - TotalSkipped - TotalTransferred) / CurCps) /
       SecsPerDay);
   }
   else

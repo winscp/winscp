@@ -2265,19 +2265,19 @@ void __fastcall TManagementScript::TerminalOperationProgress(
         {
           FileName = ProgressFileName;
         }
-        UnicodeString TransferedSizeStr;
-        if (ProgressData.TransferedSize < 1024)
+        UnicodeString TransferredSizeStr;
+        if (ProgressData.TransferredSize < 1024)
         {
-          TransferedSizeStr = FORMAT("%d B", (static_cast<int>(ProgressData.TransferedSize)));
+          TransferredSizeStr = FORMAT("%d B", (static_cast<int>(ProgressData.TransferredSize)));
         }
         else
         {
-          TransferedSizeStr = FORMAT("%d KB", (static_cast<int>(ProgressData.TransferedSize / 1024)));
+          TransferredSizeStr = FORMAT("%d KB", (static_cast<int>(ProgressData.TransferredSize / 1024)));
         }
 
         UnicodeString ProgressMessage = FORMAT(L"%-*s | %14s | %6.1f KB/s | %-6.6s | %3d%%",
           (WidthFileName, FileName,
-           TransferedSizeStr,
+           TransferredSizeStr,
            static_cast<float>(ProgressData.CPS()) / 1024,
            ProgressData.AsciiTransfer ? L"ascii" : L"binary",
            ProgressData.TransferProgress()));
