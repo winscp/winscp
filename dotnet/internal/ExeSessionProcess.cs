@@ -890,24 +890,31 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
-                FileVersionInfo version = FileVersionInfo.GetVersionInfo(exePath);
-
-                _logger.WriteLine("Version of {0} is {1}, product {2} version is {3}", exePath, version.FileVersion, version.ProductName, version.ProductVersion);
-
-                if (_session.DisableVersionCheck)
-                {
-                    _logger.WriteLine("Version check disabled (not recommended)");
-                }
-                else if (assemblyVersion == null)
+                if (assemblyVersion == null)
                 {
                     _logger.WriteLine("Assembly version not known, cannot check version");
                 }
-                else if (assemblyVersion.ProductVersion != version.ProductVersion)
+                else if (assemblyVersion.ProductVersion == AssemblyConstants.UndefinedProductVersion)
                 {
-                    throw new SessionLocalException(
-                        _session, string.Format(CultureInfo.CurrentCulture,
-                            "The version of {0} ({1}) does not match version of this assembly {2} ({3}).",
-                            exePath, version.ProductVersion, _logger.GetAssemblyFilePath(), assemblyVersion.ProductVersion));
+                    _logger.WriteLine("Undefined assembly version, cannot check version");
+                }
+                else
+                {
+                    FileVersionInfo version = FileVersionInfo.GetVersionInfo(exePath);
+
+                    _logger.WriteLine("Version of {0} is {1}, product {2} version is {3}", exePath, version.FileVersion, version.ProductName, version.ProductVersion);
+
+                    if (_session.DisableVersionCheckInternal)
+                    {
+                        _logger.WriteLine("Version check disabled (not recommended)");
+                    }
+                    else if (assemblyVersion.ProductVersion != version.ProductVersion)
+                    {
+                        throw new SessionLocalException(
+                            _session, string.Format(CultureInfo.CurrentCulture,
+                                "The version of {0} ({1}) does not match version of this assembly {2} ({3}).",
+                                exePath, version.ProductVersion, _logger.GetAssemblyFilePath(), assemblyVersion.ProductVersion));
+                    }
                 }
             }
         }

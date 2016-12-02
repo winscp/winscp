@@ -22,14 +22,17 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyVersion(WinSCP.AssemblyConstants.Version)]
 [assembly: AssemblyFileVersion(WinSCP.AssemblyConstants.Version)]
-[assembly: AssemblyInformationalVersionAttribute(WinSCP.AssemblyConstants.Version)]
+[assembly: AssemblyInformationalVersionAttribute(WinSCP.AssemblyConstants.ProductVersion)]
 
 [assembly: CLSCompliant(true)]
 
 namespace WinSCP
 {
-    internal class AssemblyConstants
+    internal static class AssemblyConstants
     {
+        public const string UndefinedProductVersion = "9.9.9.9";
+
         public const string Version = "1.4.0.0";
+        public const string ProductVersion = "5.10.0.0";
     }
 }
