@@ -473,7 +473,7 @@ void __fastcall TProgressForm::CancelOperation()
     try
     {
       TCancelStatus ACancel;
-      if (FData.TransferingFile &&
+      if (FData.TransferringFile &&
           (FData.TimeExpected() > GUIConfiguration->IgnoreCancelBeforeFinish))
       {
         int Result = MessageDialog(LoadStr(CANCEL_OPERATION_FATAL2), qtWarning,

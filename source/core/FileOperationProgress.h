@@ -29,7 +29,7 @@ private:
   UnicodeString FFullFileName;
   UnicodeString FDirectory;
   bool FAsciiTransfer;
-  bool FTransferingFile;
+  bool FTransferringFile;
   bool FTemp;
   __int64 FLocalSize;
   __int64 FLocallyUsed;
@@ -79,7 +79,7 @@ public:
   __property UnicodeString Directory = { read = FDirectory };
   __property bool AsciiTransfer = { read = FAsciiTransfer };
   // Can be true with SCP protocol only
-  __property bool TransferingFile = { read = FTransferingFile };
+  __property bool TransferringFile = { read = FTransferringFile };
   __property bool Temp = { read = FTemp };
 
   // file size to read/write
@@ -154,7 +154,7 @@ public:
   int __fastcall OverallProgress();
   int __fastcall TotalTransferProgress();
   void __fastcall SetSpeedCounters();
-  void __fastcall SetTransferingFile(bool ATransferingFile);
+  void __fastcall SetTransferringFile(bool ATransferringFile);
   void __fastcall SetCancel(TCancelStatus ACancel);
   void __fastcall SetCancelAtLeast(TCancelStatus ACancel);
   bool __fastcall ClearCancelFile();

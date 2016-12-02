@@ -81,7 +81,7 @@ void __fastcall TFileOperationProgressType::ClearTransfer()
   FLocallyUsed = 0;
   FSkippedSize = 0;
   FTransferredSize = 0;
-  FTransferingFile = false;
+  FTransferringFile = false;
   FLastSecond = 0;
 }
 //---------------------------------------------------------------------------
@@ -351,9 +351,9 @@ void __fastcall TFileOperationProgressType::SetTransferSize(__int64 ASize)
   DoProgress();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileOperationProgressType::SetTransferingFile(bool ATransferingFile)
+void __fastcall TFileOperationProgressType::SetTransferringFile(bool ATransferringFile)
 {
-  FTransferingFile = ATransferingFile;
+  FTransferringFile = ATransferringFile;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::SetCancel(TCancelStatus ACancel)

@@ -1746,7 +1746,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
       // Suppose same data size to transfer as to read
       // (not true with ASCII transfer)
       OperationProgress->SetTransferSize(OperationProgress->LocalSize);
-      OperationProgress->SetTransferingFile(false);
+      OperationProgress->SetTransferringFile(false);
 
       TDateTime Modification = UnixToDateTime(MTime, FTerminal->SessionData->DSTMode);
 
@@ -1786,7 +1786,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
           }
           FILE_OPERATION_LOOP_END_EX(
             FMTLOAD(READ_ERROR, (FileName)),
-            !OperationProgress->TransferingFile);
+            !OperationProgress->TransferringFile);
 
           OperationProgress->AddLocallyUsed(BlockBuf.Size);
 
@@ -1828,7 +1828,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
           // we will be able to read whole, so we send file info to remote side
           // This is done, because when reading fails we can't interrupt sending
           // (don't know how to tell other side that it failed)
-          if (!OperationProgress->TransferingFile &&
+          if (!OperationProgress->TransferringFile &&
               (!OperationProgress->AsciiTransfer || OperationProgress->IsLocallyDone()))
           {
             UnicodeString Buf;
@@ -1854,7 +1854,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
             SCPResponse();
             // Indicate we started transferring file, we need to finish it
             // If not, it's fatal error
-            OperationProgress->SetTransferingFile(true);
+            OperationProgress->SetTransferringFile(true);
 
             // If we're doing ASCII transfer, this is last pass
             // so we send whole file
@@ -1898,7 +1898,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
           }
 
           if ((OperationProgress->Cancel == csCancelTransfer) ||
-              (OperationProgress->Cancel == csCancel && !OperationProgress->TransferingFile))
+              (OperationProgress->Cancel == csCancel && !OperationProgress->TransferringFile))
           {
             throw Exception(MainInstructions(LoadStr(USER_TERMINATED)));
           }
@@ -1916,19 +1916,19 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         catch (EScp &E)
         {
           // SCP protocol fatal error
-          OperationProgress->SetTransferingFile(false);
+          OperationProgress->SetTransferringFile(false);
           throw;
         }
         catch (EScpFileSkipped &E)
         {
           // SCP protocol non-fatal error
-          OperationProgress->SetTransferingFile(false);
+          OperationProgress->SetTransferringFile(false);
           throw;
         }
 
         // We succeeded transferring file, from now we can handle exceptions
         // normally -> no fatal error
-        OperationProgress->SetTransferingFile(false);
+        OperationProgress->SetTransferringFile(false);
       }
       catch (Exception &E)
       {
@@ -1944,7 +1944,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         }
 
         // Every exception during file transfer is fatal
-        if (OperationProgress->TransferingFile)
+        if (OperationProgress->TransferringFile)
         {
           FTerminal->FatalError(&E, FMTLOAD(COPY_FATAL, (FileName)));
         }
@@ -2550,7 +2550,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
               // We succeeded, so we confirm transfer to remote side
               FSecureShell->SendNull();
               // From now we need to finish file transfer, if not it's fatal error
-              OperationProgress->SetTransferingFile(true);
+              OperationProgress->SetTransferringFile(true);
 
               // Suppose same data size to transfer as to write
               // (not true with ASCII transfer)
@@ -2610,7 +2610,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                   FMTLOAD(COPY_FATAL, (OperationProgress->FileName)));
               }
 
-              OperationProgress->SetTransferingFile(false);
+              OperationProgress->SetTransferringFile(false);
 
               try
               {

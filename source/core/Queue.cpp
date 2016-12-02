@@ -1513,7 +1513,7 @@ void __fastcall TTerminalItem::OperationProgress(
 
   if (FTerminated || FCancel)
   {
-    if (ProgressData.TransferingFile)
+    if (ProgressData.TransferringFile)
     {
       ProgressData.SetCancel(csCancelTransfer);
     }
