@@ -91,7 +91,6 @@ public:
   __property bool InProgress = { read = FInProgress };
   __property bool FileInProgress = { read = FFileInProgress };
   __property TCancelStatus Cancel = { read = FCancel };
-  __property int Count = { read = FCount };
   // when operation started
   __property TDateTime StartTime = { read = FStartTime };
   // bytes transferred

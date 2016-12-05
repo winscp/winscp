@@ -44,7 +44,7 @@ void __fastcall TFileOperationProgressType::Clear()
   FFullFileName = L"";
   FDirectory = L"";
   FAsciiTransfer = false;
-  FCount = 0;
+  FCount = -1;
   FFilesFinished = 0;
   FStartTime = Now();
   FSuspended = false;
@@ -159,8 +159,8 @@ void __fastcall TFileOperationProgressType::Resume()
 //---------------------------------------------------------------------------
 int __fastcall TFileOperationProgressType::OperationProgress()
 {
-  DebugAssert(Count);
-  int Result = (FFilesFinished * 100)/Count;
+  DebugAssert(FCount > 0);
+  int Result = (FFilesFinished * 100)/FCount;
   return Result;
 }
 //---------------------------------------------------------------------------
