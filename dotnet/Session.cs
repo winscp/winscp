@@ -1531,15 +1531,6 @@ namespace WinSCP
                     switches.Add(FormatSwitch("clientcert", sessionOptions.TlsClientCertificatePath));
                 }
 
-                if (!string.IsNullOrEmpty(sessionOptions.PrivateKeyPassphrase) && !scanFingerprint)
-                {
-                    if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
-                    {
-                        throw new ArgumentException("SessionOptions.PrivateKeyPassphrase is set, but neither SessionOptions.SshPrivateKeyPath nor SessionOptions.TlsClientCertificatePath is set.");
-                    }
-                    switches.Add(FormatSwitch("passphrase", sessionOptions.PrivateKeyPassphrase));
-                }
-
                 if (sessionOptions.FtpSecure != FtpSecure.None)
                 {
                     if (sessionOptions.Protocol != Protocol.Ftp)
@@ -1587,6 +1578,16 @@ namespace WinSCP
                 switches.Add(FormatSwitch("timeout", (int)sessionOptions.Timeout.TotalSeconds));
 
                 List<string> logSwitches = new List<string>(switches);
+
+                if (!string.IsNullOrEmpty(sessionOptions.PrivateKeyPassphrase) && !scanFingerprint)
+                {
+                    if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
+                    {
+                        throw new ArgumentException("SessionOptions.PrivateKeyPassphrase is set, but neither SessionOptions.SshPrivateKeyPath nor SessionOptions.TlsClientCertificatePath is set.");
+                    }
+                    switches.Add(FormatSwitch("passphrase", sessionOptions.PrivateKeyPassphrase));
+                    logSwitches.Add(FormatSwitch("passphrase", "***"));
+                }
 
                 if ((sessionOptions.SecureNewPassword != null) && !scanFingerprint)
                 {
