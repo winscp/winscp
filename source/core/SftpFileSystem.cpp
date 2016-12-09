@@ -2076,6 +2076,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
     case fsSkipTransfer:
+    case fsParallelTransfers:
       return true;
 
     case fcRename:
@@ -4357,57 +4358,65 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
   if (CanAppend &&
       ((Answer == qaRetry) || (Answer == qaSkip)))
   {
-    // duplicated in TTerminal::ConfirmFileOverwrite
-    bool CanAlternateResume =
-      (FileParams->DestSize < FileParams->SourceSize) && !OperationProgress->AsciiTransfer;
-    TBatchOverwrite BatchOverwrite =
-      FTerminal->EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, true);
-    // when mode is forced by batch, never query user
-    if (BatchOverwrite == boAppend)
+    OperationProgress->LockUserSelections();
+    try
     {
-      OverwriteMode = omAppend;
-    }
-    else if (CanAlternateResume &&
-             ((BatchOverwrite == boResume) || (BatchOverwrite == boAlternateResume)))
-    {
-      OverwriteMode = omResume;
-    }
-    // no other option, but append
-    else if (!CanAlternateResume)
-    {
-      OverwriteMode = omAppend;
-    }
-    else
-    {
-      TQueryParams Params(0, HELP_APPEND_OR_RESUME);
-
+      // duplicated in TTerminal::ConfirmFileOverwrite
+      bool CanAlternateResume =
+        (FileParams->DestSize < FileParams->SourceSize) && !OperationProgress->AsciiTransfer;
+      TBatchOverwrite BatchOverwrite =
+        FTerminal->EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, true);
+      // when mode is forced by batch, never query user
+      if (BatchOverwrite == boAppend)
       {
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        Answer = FTerminal->QueryUser(FORMAT(LoadStr(APPEND_OR_RESUME2), (SourceFullFileName)),
-          NULL, qaYes | qaNo | qaNoToAll | qaCancel, &Params);
+        OverwriteMode = omAppend;
       }
-
-      switch (Answer)
+      else if (CanAlternateResume &&
+               ((BatchOverwrite == boResume) || (BatchOverwrite == boAlternateResume)))
       {
-        case qaYes:
-          OverwriteMode = omAppend;
-          break;
-
-        case qaNo:
-          OverwriteMode = omResume;
-          break;
-
-        case qaNoToAll:
-          OverwriteMode = omResume;
-          OperationProgress->SetBatchOverwrite(boAlternateResume);
-          break;
-
-        default: DebugFail(); //fallthru
-        case qaCancel:
-          OperationProgress->SetCancelAtLeast(csCancel);
-          Abort();
-          break;
+        OverwriteMode = omResume;
       }
+      // no other option, but append
+      else if (!CanAlternateResume)
+      {
+        OverwriteMode = omAppend;
+      }
+      else
+      {
+        TQueryParams Params(0, HELP_APPEND_OR_RESUME);
+
+        {
+          TSuspendFileOperationProgress Suspend(OperationProgress);
+          Answer = FTerminal->QueryUser(FORMAT(LoadStr(APPEND_OR_RESUME2), (SourceFullFileName)),
+            NULL, qaYes | qaNo | qaNoToAll | qaCancel, &Params);
+        }
+
+        switch (Answer)
+        {
+          case qaYes:
+            OverwriteMode = omAppend;
+            break;
+
+          case qaNo:
+            OverwriteMode = omResume;
+            break;
+
+          case qaNoToAll:
+            OverwriteMode = omResume;
+            OperationProgress->SetBatchOverwrite(boAlternateResume);
+            break;
+
+          default: DebugFail(); //fallthru
+          case qaCancel:
+            OperationProgress->SetCancelAtLeast(csCancel);
+            Abort();
+            break;
+        }
+      }
+    }
+    __finally
+    {
+      OperationProgress->UnlockUserSelections();
     }
   }
   else if (Answer == qaIgnore)
@@ -5341,82 +5350,85 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const UnicodeString Directo
     Flags |= tfNewDirectory;
   }
 
-  int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-  TSearchRecChecked SearchRec;
-  bool FindOK;
-
-  FILE_OPERATION_LOOP_BEGIN
+  if (FLAGCLEAR(Params, cpNoRecurse))
   {
-    FindOK =
-      (FindFirstChecked(DirectoryName + L"*.*", FindAttrs, SearchRec) == 0);
-  }
-  FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
+    int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
+    TSearchRecChecked SearchRec;
+    bool FindOK;
 
-  try
-  {
-    while (FindOK && !OperationProgress->Cancel)
+    FILE_OPERATION_LOOP_BEGIN
     {
-      UnicodeString FileName = DirectoryName + SearchRec.Name;
-      try
-      {
-        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
-        {
-          SFTPSourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
-            Flags & ~tfFirstLevel);
-        }
-      }
-      catch (EScpSkipFile &E)
-      {
-        // If ESkipFile occurs, just log it and continue with next file
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        // here a message to user was displayed, which was not appropriate
-        // when user refused to overwrite the file in subdirectory.
-        // hopefully it won't be missing in other situations.
-        if (!FTerminal->HandleException(&E))
-        {
-          throw;
-        }
-      }
+      FindOK =
+        (FindFirstChecked(DirectoryName + L"*.*", FindAttrs, SearchRec) == 0);
+    }
+    FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
 
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        FindOK = (FindNextChecked(SearchRec) == 0);
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
-    };
-  }
-  __finally
-  {
-    FindClose(SearchRec);
-  }
-
-  /* TODO : Delete also read-only directories. */
-  /* TODO : Show error message on failure. */
-  if (!OperationProgress->Cancel)
-  {
-    if (CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
+    try
     {
-      TRemoteProperties Properties;
-      Properties.Valid << vpModification;
+      while (FindOK && !OperationProgress->Cancel)
+      {
+        UnicodeString FileName = DirectoryName + SearchRec.Name;
+        try
+        {
+          if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+          {
+            SFTPSourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
+              Flags & ~tfFirstLevel);
+          }
+        }
+        catch (EScpSkipFile &E)
+        {
+          // If ESkipFile occurs, just log it and continue with next file
+          TSuspendFileOperationProgress Suspend(OperationProgress);
+          // here a message to user was displayed, which was not appropriate
+          // when user refused to overwrite the file in subdirectory.
+          // hopefully it won't be missing in other situations.
+          if (!FTerminal->HandleException(&E))
+          {
+            throw;
+          }
+        }
 
-      FTerminal->OpenLocalFile(
-        ExcludeTrailingBackslash(DirectoryName), GENERIC_READ, NULL, NULL, NULL,
-        &Properties.Modification, &Properties.LastAccess, NULL);
-
-      FTerminal->ChangeFileProperties(DestFullName, NULL, &Properties);
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          FindOK = (FindNextChecked(SearchRec) == 0);
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
+      };
+    }
+    __finally
+    {
+      FindClose(SearchRec);
     }
 
-    if (FLAGSET(Params, cpDelete))
+    /* TODO : Delete also read-only directories. */
+    /* TODO : Show error message on failure. */
+    if (!OperationProgress->Cancel)
     {
-      RemoveDir(ApiPath(DirectoryName));
-    }
-    else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
-    {
-      FILE_OPERATION_LOOP_BEGIN
+      if (CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
       {
-        THROWOSIFFALSE(FileSetAttr(ApiPath(DirectoryName), Attrs & ~faArchive) == 0);
+        TRemoteProperties Properties;
+        Properties.Valid << vpModification;
+
+        FTerminal->OpenLocalFile(
+          ExcludeTrailingBackslash(DirectoryName), GENERIC_READ, NULL, NULL, NULL,
+          &Properties.Modification, &Properties.LastAccess, NULL);
+
+        FTerminal->ChangeFileProperties(DestFullName, NULL, &Properties);
       }
-      FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DirectoryName)));
+
+      if (FLAGSET(Params, cpDelete))
+      {
+        RemoveDir(ApiPath(DirectoryName));
+      }
+      else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
+      {
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          THROWOSIFFALSE(FileSetAttr(ApiPath(DirectoryName), Attrs & ~faArchive) == 0);
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DirectoryName)));
+      }
     }
   }
 }
@@ -5574,52 +5586,55 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(CREATE_DIR_ERROR, (DestFullName)));
 
-      TSinkFileParams SinkFileParams;
-      SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
-      SinkFileParams.CopyParam = CopyParam;
-      SinkFileParams.Params = Params;
-      SinkFileParams.OperationProgress = OperationProgress;
-      SinkFileParams.Skipped = false;
-      SinkFileParams.Flags = Flags & ~tfFirstLevel;
-
-      FTerminal->ProcessDirectory(FileName, SFTPSinkFile, &SinkFileParams);
-
-      if (CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
+      if (FLAGCLEAR(Params, cpNoRecurse))
       {
-        FTerminal->LogEvent(FORMAT(L"Preserving directory timestamp [%s]",
-          (StandardTimestamp(File->Modification))));
-        int SetFileTimeError = ERROR_SUCCESS;
-        // FILE_FLAG_BACKUP_SEMANTICS is needed to "open" directory
-        HANDLE LocalHandle = CreateFile(ApiPath(DestFullName).c_str(), GENERIC_WRITE,
-          FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
-        if (LocalHandle == INVALID_HANDLE_VALUE)
+        TSinkFileParams SinkFileParams;
+        SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
+        SinkFileParams.CopyParam = CopyParam;
+        SinkFileParams.Params = Params;
+        SinkFileParams.OperationProgress = OperationProgress;
+        SinkFileParams.Skipped = false;
+        SinkFileParams.Flags = Flags & ~tfFirstLevel;
+
+        FTerminal->ProcessDirectory(FileName, SFTPSinkFile, &SinkFileParams);
+
+        if (CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
         {
-          SetFileTimeError = GetLastError();
-        }
-        else
-        {
-          FILETIME AcTime = DateTimeToFileTime(File->LastAccess, FTerminal->SessionData->DSTMode);
-          FILETIME WrTime = DateTimeToFileTime(File->Modification, FTerminal->SessionData->DSTMode);
-          if (!SetFileTime(LocalHandle, NULL, &AcTime, &WrTime))
+          FTerminal->LogEvent(FORMAT(L"Preserving directory timestamp [%s]",
+            (StandardTimestamp(File->Modification))));
+          int SetFileTimeError = ERROR_SUCCESS;
+          // FILE_FLAG_BACKUP_SEMANTICS is needed to "open" directory
+          HANDLE LocalHandle = CreateFile(ApiPath(DestFullName).c_str(), GENERIC_WRITE,
+            FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+          if (LocalHandle == INVALID_HANDLE_VALUE)
           {
             SetFileTimeError = GetLastError();
           }
-          CloseHandle(LocalHandle);
+          else
+          {
+            FILETIME AcTime = DateTimeToFileTime(File->LastAccess, FTerminal->SessionData->DSTMode);
+            FILETIME WrTime = DateTimeToFileTime(File->Modification, FTerminal->SessionData->DSTMode);
+            if (!SetFileTime(LocalHandle, NULL, &AcTime, &WrTime))
+            {
+              SetFileTimeError = GetLastError();
+            }
+            CloseHandle(LocalHandle);
+          }
+
+          if (SetFileTimeError != ERROR_SUCCESS)
+          {
+            FTerminal->LogEvent(FORMAT(L"Preserving timestamp failed, ignoring: %s",
+              (SysErrorMessageForError(SetFileTimeError))));
+          }
         }
 
-        if (SetFileTimeError != ERROR_SUCCESS)
+        // Do not delete directory if some of its files were skip.
+        // Throw "skip file" for the directory to avoid attempt to deletion
+        // of any parent directory
+        if ((Params & cpDelete) && SinkFileParams.Skipped)
         {
-          FTerminal->LogEvent(FORMAT(L"Preserving timestamp failed, ignoring: %s",
-            (SysErrorMessageForError(SetFileTimeError))));
+          THROW_SKIP_FILE_NULL;
         }
-      }
-
-      // Do not delete directory if some of its files were skip.
-      // Throw "skip file" for the directory to avoid attempt to deletion
-      // of any parent directory
-      if ((Params & cpDelete) && SinkFileParams.Skipped)
-      {
-        THROW_SKIP_FILE_NULL;
       }
     }
     else
@@ -6084,6 +6099,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
 
   if (Params & cpDelete)
   {
+    DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
     ChildError = true;
     // If file is directory, do not delete it recursively, because it should be
     // empty already. If not, it should not be deleted (some files were

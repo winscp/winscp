@@ -1479,7 +1479,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
     CopyParamParams(CopyParam, Parameters);
     CheckParams(Parameters);
 
-    FTerminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
+    FTerminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params, NULL);
   }
   __finally
   {

@@ -1659,22 +1659,25 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(CREATE_DIR_ERROR, (DestFullName)));
 
-      TSinkFileParams SinkFileParams;
-      SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
-      SinkFileParams.CopyParam = CopyParam;
-      SinkFileParams.Params = Params;
-      SinkFileParams.OperationProgress = OperationProgress;
-      SinkFileParams.Skipped = false;
-      SinkFileParams.Flags = Flags & ~(tfFirstLevel | tfAutoResume);
-
-      FTerminal->ProcessDirectory(FileName, SinkFile, &SinkFileParams);
-
-      // Do not delete directory if some of its files were skip.
-      // Throw "skip file" for the directory to avoid attempt to deletion
-      // of any parent directory
-      if (FLAGSET(Params, cpDelete) && SinkFileParams.Skipped)
+      if (FLAGCLEAR(Params, cpNoRecurse))
       {
-        THROW_SKIP_FILE_NULL;
+        TSinkFileParams SinkFileParams;
+        SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
+        SinkFileParams.CopyParam = CopyParam;
+        SinkFileParams.Params = Params;
+        SinkFileParams.OperationProgress = OperationProgress;
+        SinkFileParams.Skipped = false;
+        SinkFileParams.Flags = Flags & ~(tfFirstLevel | tfAutoResume);
+
+        FTerminal->ProcessDirectory(FileName, SinkFile, &SinkFileParams);
+
+        // Do not delete directory if some of its files were skip.
+        // Throw "skip file" for the directory to avoid attempt to deletion
+        // of any parent directory
+        if (FLAGSET(Params, cpDelete) && SinkFileParams.Skipped)
+        {
+          THROW_SKIP_FILE_NULL;
+        }
       }
     }
     else
@@ -1762,6 +1765,7 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
 
   if (FLAGSET(Params, cpDelete))
   {
+    DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
     // If file is directory, do not delete it recursively, because it should be
     // empty already. If not, it should not be deleted (some files were
     // skipped or some new files were copied to it, while we were downloading)
@@ -2067,60 +2071,62 @@ void __fastcall TFTPFileSystem::DirectorySource(const UnicodeString DirectoryNam
 
   OperationProgress->SetFile(DirectoryName);
 
-  int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-  TSearchRecChecked SearchRec;
-  bool FindOK;
-
-  FILE_OPERATION_LOOP_BEGIN
-  {
-    FindOK =
-      (FindFirstChecked(DirectoryName + L"*.*", FindAttrs, SearchRec) == 0);
-  }
-  FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
-
   bool CreateDir = true;
-
-  try
+  if (FLAGCLEAR(Params, cpNoRecurse))
   {
-    while (FindOK && !OperationProgress->Cancel)
+    int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
+    TSearchRecChecked SearchRec;
+    bool FindOK;
+
+    FILE_OPERATION_LOOP_BEGIN
     {
-      UnicodeString FileName = DirectoryName + SearchRec.Name;
-      try
-      {
-        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
-        {
-          SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
-            Flags & ~(tfFirstLevel | tfAutoResume));
-          // if any file got uploaded (i.e. there were any file in the
-          // directory and at least one was not skipped),
-          // do not try to create the directory,
-          // as it should be already created by FZAPI during upload
-          CreateDir = false;
-        }
-      }
-      catch (EScpSkipFile &E)
-      {
-        // If ESkipFile occurs, just log it and continue with next file
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        // here a message to user was displayed, which was not appropriate
-        // when user refused to overwrite the file in subdirectory.
-        // hopefully it won't be missing in other situations.
-        if (!FTerminal->HandleException(&E))
-        {
-          throw;
-        }
-      }
-
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        FindOK = (FindNextChecked(SearchRec) == 0);
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
+      FindOK =
+        (FindFirstChecked(DirectoryName + L"*.*", FindAttrs, SearchRec) == 0);
     }
-  }
-  __finally
-  {
-    FindClose(SearchRec);
+    FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
+
+    try
+    {
+      while (FindOK && !OperationProgress->Cancel)
+      {
+        UnicodeString FileName = DirectoryName + SearchRec.Name;
+        try
+        {
+          if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+          {
+            SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
+              Flags & ~(tfFirstLevel | tfAutoResume));
+            // if any file got uploaded (i.e. there were any file in the
+            // directory and at least one was not skipped),
+            // do not try to create the directory,
+            // as it should be already created by FZAPI during upload
+            CreateDir = false;
+          }
+        }
+        catch (EScpSkipFile &E)
+        {
+          // If ESkipFile occurs, just log it and continue with next file
+          TSuspendFileOperationProgress Suspend(OperationProgress);
+          // here a message to user was displayed, which was not appropriate
+          // when user refused to overwrite the file in subdirectory.
+          // hopefully it won't be missing in other situations.
+          if (!FTerminal->HandleException(&E))
+          {
+            throw;
+          }
+        }
+
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          FindOK = (FindNextChecked(SearchRec) == 0);
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
+      }
+    }
+    __finally
+    {
+      FindClose(SearchRec);
+    }
   }
 
   if (CreateDir)
@@ -2164,6 +2170,7 @@ void __fastcall TFTPFileSystem::DirectorySource(const UnicodeString DirectoryNam
   /* TODO : Show error message on failure. */
   if (!OperationProgress->Cancel)
   {
+    DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
     if (FLAGSET(Params, cpDelete))
     {
       RemoveDir(ApiPath(DirectoryName));
@@ -2318,6 +2325,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcRemoveBOMUpload:
     case fcMoveToQueue:
     case fsSkipTransfer:
+    case fsParallelTransfers:
       return true;
 
     case fcPreservingTimestampUpload:

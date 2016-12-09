@@ -193,7 +193,6 @@ const coDisableSaveSettings = 0x040; // not used anymore
 const coDoNotUsePresets     = 0x080;
 const coAllowRemoteTransfer = 0x100;
 const coNoQueue             = 0x200;
-const coNoQueueIndividually = 0x400;
 const coShortCutHint        = 0x800;
 const coAllFiles            = 0x1000;
 const cooDoNotShowAgain     = 0x01;

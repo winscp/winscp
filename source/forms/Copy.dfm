@@ -96,15 +96,6 @@ object CopyDialog: TCopyDialog
     TabOrder = 4
     OnClick = ControlChange
   end
-  object QueueIndividuallyCheck: TCheckBox
-    Left = 312
-    Top = 112
-    Width = 193
-    Height = 17
-    Caption = '&Transfer each file individually'
-    TabOrder = 5
-    OnClick = ControlChange
-  end
   object HelpButton: TButton
     Left = 427
     Top = 136

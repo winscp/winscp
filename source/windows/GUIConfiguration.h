@@ -39,7 +39,7 @@ public:
 
   __property bool Queue = { read = FQueue, write = FQueue };
   __property bool QueueNoConfirmation = { read = FQueueNoConfirmation, write = FQueueNoConfirmation };
-  __property bool QueueIndividually = { read = FQueueIndividually, write = FQueueIndividually };
+  __property bool QueueParallel = { read = FQueueParallel, write = FQueueParallel };
 
 protected:
   void __fastcall GUIDefault();
@@ -48,7 +48,7 @@ protected:
 private:
   bool FQueue;
   bool FQueueNoConfirmation;
-  bool FQueueIndividually;
+  bool FQueueParallel;
 };
 //---------------------------------------------------------------------------
 struct TCopyParamRuleData

@@ -37,6 +37,7 @@ private:
   __int64 FTransferredSize;
   __int64 FSkippedSize;
   bool FInProgress;
+  bool FDone;
   bool FFileInProgress;
   TCancelStatus FCancel;
   int FCount;
@@ -49,12 +50,14 @@ private:
   unsigned long FCPSLimit;
   bool FTotalSizeSet;
   bool FSuspended;
+  TFileOperationProgressType * FParent;
 
   // when it was last time suspended (to calculate suspend time in Resume())
   unsigned int FSuspendTime;
   // when current file was started being transferred
   TDateTime FFileStartTime;
   int FFilesFinished;
+  int FFilesFinishedSuccessfully;
   TFileOperationProgressEvent FOnProgress;
   TFileOperationFinished FOnFinished;
   bool FReset;
@@ -63,11 +66,26 @@ private:
   bool FCounterSet;
   std::vector<unsigned long> FTicks;
   std::vector<__int64> FTotalTransferredThen;
+  TCriticalSection * FSection;
+  TCriticalSection * FUserSelectionsSection;
+
+  __int64 __fastcall GetTotalTransferred();
+  __int64 __fastcall GetTotalSize();
+  unsigned long __fastcall GetCPSLimit();
+  TBatchOverwrite __fastcall GetBatchOverwrite();
+  bool __fastcall GetSkipToAll();
 
 protected:
   void __fastcall ClearTransfer();
   inline void __fastcall DoProgress();
   int __fastcall OperationProgress();
+  void __fastcall AddTransferredToTotals(__int64 ASize);
+  void __fastcall AddSkipped(__int64 ASize);
+  void __fastcall AddTotalSize(__int64 ASize);
+  void __fastcall RollbackTransferFromTotals(__int64 ATransferredSize, __int64 ASkippedSize);
+  unsigned int __fastcall GetCPS();
+  void __fastcall Init();
+  static bool __fastcall PassCancelToParent(TCancelStatus ACancel);
 
 public:
   // common data
@@ -89,18 +107,19 @@ public:
   __property __int64 TransferredSize = { read = FTransferredSize };
   __property __int64 SkippedSize = { read = FSkippedSize };
   __property bool InProgress = { read = FInProgress };
+  __property bool Done = { read = FDone };
   __property bool FileInProgress = { read = FFileInProgress };
-  __property TCancelStatus Cancel = { read = FCancel };
+  __property TCancelStatus Cancel = { read = GetCancel };
   // when operation started
   __property TDateTime StartTime = { read = FStartTime };
   // bytes transferred
-  __property __int64 TotalTransferred = { read = FTotalTransferred };
-  __property __int64 TotalSkipped = { read = FTotalSkipped };
-  __property __int64 TotalSize = { read = FTotalSize };
+  __property __int64 TotalTransferred = { read = GetTotalTransferred };
+  __property __int64 TotalSize = { read = GetTotalSize };
+  __property int FilesFinishedSuccessfully = { read = FFilesFinishedSuccessfully };
 
-  __property TBatchOverwrite BatchOverwrite = { read = FBatchOverwrite };
-  __property bool SkipToAll = { read = FSkipToAll };
-  __property unsigned long CPSLimit = { read = FCPSLimit };
+  __property TBatchOverwrite BatchOverwrite = { read = GetBatchOverwrite };
+  __property bool SkipToAll = { read = GetSkipToAll };
+  __property unsigned long CPSLimit = { read = GetCPSLimit };
 
   __property bool TotalSizeSet = { read = FTotalSizeSet };
 
@@ -108,8 +127,10 @@ public:
 
   __fastcall TFileOperationProgressType();
   __fastcall TFileOperationProgressType(
-    TFileOperationProgressEvent AOnProgress, TFileOperationFinished AOnFinished);
+    TFileOperationProgressEvent AOnProgress, TFileOperationFinished AOnFinished,
+    TFileOperationProgressType * Parent = NULL);
   __fastcall ~TFileOperationProgressType();
+  void __fastcall Assign(const TFileOperationProgressType & Other);
   void __fastcall AssignButKeepSuspendState(const TFileOperationProgressType & Other);
   void __fastcall AddLocallyUsed(__int64 ASize);
   void __fastcall AddTransferred(__int64 ASize, bool AddToTotals = true);
@@ -142,7 +163,10 @@ public:
     TOperationSide ASide, int ACount, bool ATemp, const UnicodeString ADirectory,
     unsigned long ACPSLimit);
   void __fastcall Stop();
+  void __fastcall SetDone();
   void __fastcall Suspend();
+  void __fastcall LockUserSelections();
+  void __fastcall UnlockUserSelections();
   // whole operation
   TDateTime __fastcall TimeElapsed();
   // only current file
@@ -153,6 +177,7 @@ public:
   int __fastcall TotalTransferProgress();
   void __fastcall SetSpeedCounters();
   void __fastcall SetTransferringFile(bool ATransferringFile);
+  TCancelStatus __fastcall GetCancel();
   void __fastcall SetCancel(TCancelStatus ACancel);
   void __fastcall SetCancelAtLeast(TCancelStatus ACancel);
   bool __fastcall ClearCancelFile();

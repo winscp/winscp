@@ -679,6 +679,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     // instead of trying to open it as directory
     case fcResolveSymlink:
     case fsSkipTransfer:
+    case fsParallelTransfers:
       return true;
 
     case fcUserGroupListing:
@@ -1642,70 +1643,73 @@ void __fastcall TWebDAVFileSystem::DirectorySource(const UnicodeString Directory
 
   OperationProgress->SetFile(DirectoryName);
 
-  int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-  TSearchRecChecked SearchRec;
-  bool FindOK;
-
-  FILE_OPERATION_LOOP_BEGIN
+  if (FLAGCLEAR(Params, cpNoRecurse))
   {
-    FindOK =
-      (FindFirstChecked(DirectoryName + L"*.*", FindAttrs, SearchRec) == 0);
-  }
-  FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
+    int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
+    TSearchRecChecked SearchRec;
+    bool FindOK;
 
-  try
-  {
-    while (FindOK && !OperationProgress->Cancel)
+    FILE_OPERATION_LOOP_BEGIN
     {
-      UnicodeString FileName = DirectoryName + SearchRec.Name;
-      try
-      {
-        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
-        {
-          SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
-            Flags & ~(tfFirstLevel));
-        }
-      }
-      catch (EScpSkipFile & E)
-      {
-        // If ESkipFile occurs, just log it and continue with next file
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        // here a message to user was displayed, which was not appropriate
-        // when user refused to overwrite the file in subdirectory.
-        // hopefully it won't be missing in other situations.
-        if (!FTerminal->HandleException(&E))
-        {
-          throw;
-        }
-      }
-
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        FindOK = (FindNextChecked(SearchRec) == 0);
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
+      FindOK =
+        (FindFirstChecked(DirectoryName + L"*.*", FindAttrs, SearchRec) == 0);
     }
-  }
-  __finally
-  {
-    FindClose(SearchRec);
-  }
+    FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
 
-  // TODO : Delete also read-only directories.
-  // TODO : Show error message on failure.
-  if (!OperationProgress->Cancel)
-  {
-    if (FLAGSET(Params, cpDelete))
+    try
     {
-      RemoveDir(ApiPath(DirectoryName));
-    }
-    else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
-    {
-      FILE_OPERATION_LOOP_BEGIN
+      while (FindOK && !OperationProgress->Cancel)
       {
-        THROWOSIFFALSE(FileSetAttr(ApiPath(DirectoryName), Attrs & ~faArchive) == 0);
+        UnicodeString FileName = DirectoryName + SearchRec.Name;
+        try
+        {
+          if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+          {
+            SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
+              Flags & ~(tfFirstLevel));
+          }
+        }
+        catch (EScpSkipFile & E)
+        {
+          // If ESkipFile occurs, just log it and continue with next file
+          TSuspendFileOperationProgress Suspend(OperationProgress);
+          // here a message to user was displayed, which was not appropriate
+          // when user refused to overwrite the file in subdirectory.
+          // hopefully it won't be missing in other situations.
+          if (!FTerminal->HandleException(&E))
+          {
+            throw;
+          }
+        }
+
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          FindOK = (FindNextChecked(SearchRec) == 0);
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
       }
-      FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DirectoryName)));
+    }
+    __finally
+    {
+      FindClose(SearchRec);
+    }
+
+    // TODO : Delete also read-only directories.
+    // TODO : Show error message on failure.
+    if (!OperationProgress->Cancel)
+    {
+      if (FLAGSET(Params, cpDelete))
+      {
+        RemoveDir(ApiPath(DirectoryName));
+      }
+      else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
+      {
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          THROWOSIFFALSE(FileSetAttr(ApiPath(DirectoryName), Attrs & ~faArchive) == 0);
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DirectoryName)));
+      }
     }
   }
 }
@@ -2116,22 +2120,25 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(CREATE_DIR_ERROR, (DestFullName)));
 
-      TSinkFileParams SinkFileParams;
-      SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
-      SinkFileParams.CopyParam = CopyParam;
-      SinkFileParams.Params = Params;
-      SinkFileParams.OperationProgress = OperationProgress;
-      SinkFileParams.Skipped = false;
-      SinkFileParams.Flags = Flags & ~tfFirstLevel;
-
-      FTerminal->ProcessDirectory(FileName, SinkFile, &SinkFileParams);
-
-      // Do not delete directory if some of its files were skip.
-      // Throw "skip file" for the directory to avoid attempt to deletion
-      // of any parent directory
-      if (FLAGSET(Params, cpDelete) && SinkFileParams.Skipped)
+      if (FLAGCLEAR(Params, cpNoRecurse))
       {
-        THROW_SKIP_FILE_NULL;
+        TSinkFileParams SinkFileParams;
+        SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
+        SinkFileParams.CopyParam = CopyParam;
+        SinkFileParams.Params = Params;
+        SinkFileParams.OperationProgress = OperationProgress;
+        SinkFileParams.Skipped = false;
+        SinkFileParams.Flags = Flags & ~tfFirstLevel;
+
+        FTerminal->ProcessDirectory(FileName, SinkFile, &SinkFileParams);
+
+        // Do not delete directory if some of its files were skip.
+        // Throw "skip file" for the directory to avoid attempt to deletion
+        // of any parent directory
+        if (FLAGSET(Params, cpDelete) && SinkFileParams.Skipped)
+        {
+          THROW_SKIP_FILE_NULL;
+        }
       }
     }
     else
@@ -2260,6 +2267,7 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
 
   if (FLAGSET(Params, cpDelete))
   {
+    DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
     ChildError = true;
     // If file is directory, do not delete it recursively, because it should be
     // empty already. If not, it should not be deleted (some files were

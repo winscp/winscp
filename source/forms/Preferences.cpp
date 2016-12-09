@@ -394,7 +394,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     EnableQueueByDefaultCheck->Checked = WinConfiguration->EnableQueueByDefault;
     QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
     QueueCheck->Checked = GUIConfiguration->DefaultCopyParam.Queue;
-    QueueIndividuallyCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueIndividually;
+    QueueParallelCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueParallel;
     QueueNoConfirmationCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueNoConfirmation;
     if (!GUIConfiguration->QueueKeepDoneItems)
     {
@@ -746,7 +746,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->EnableQueueByDefault = EnableQueueByDefaultCheck->Checked;
     GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
     CopyParam.Queue = QueueCheck->Checked;
-    CopyParam.QueueIndividually = QueueIndividuallyCheck->Checked;
+    CopyParam.QueueParallel = QueueParallelCheck->Checked;
     CopyParam.QueueNoConfirmation = QueueNoConfirmationCheck->Checked;
     GUIConfiguration->QueueKeepDoneItems = (QueueKeepDoneItemsForCombo->ItemIndex != 0);
     switch (QueueKeepDoneItemsForCombo->ItemIndex)

@@ -192,7 +192,7 @@ __published:
   TRadioButton *UpdatesAutoCheck;
   TCheckBox *ConfirmTransferringCheck;
   TGroupBox *UpdatesOptionsGroup;
-  TCheckBox *QueueIndividuallyCheck;
+  TCheckBox *QueueParallelCheck;
   TCheckBox *SessionReopenAutoIdleCheck;
   TCheckBox *RenameWholeNameCheck;
   TCheckBox *TreeOnLeftCheck;

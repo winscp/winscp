@@ -1109,26 +1109,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
     Params |=
       (CopyParam.QueueNoConfirmation ? cpNoConfirmation : 0);
 
-    if (CopyParam.QueueIndividually)
-    {
-      for (int Index = 0; Index < FileList->Count; Index++)
-      {
-        TStrings * FileList1 = new TStringList();
-        try
-        {
-          FileList1->AddObject(FileList->Strings[Index], FileList->Objects[Index]);
-          AddQueueItem(Queue, Direction, FileList1, TargetDirectory, CopyParam, Params);
-        }
-        __finally
-        {
-          delete FileList1;
-        }
-      }
-    }
-    else
-    {
-      AddQueueItem(Queue, Direction, FileList, TargetDirectory, CopyParam, Params);
-    }
+    AddQueueItem(Queue, Direction, FileList, TargetDirectory, CopyParam, Params);
     Result = false;
 
     ClearTransferSourceSelection(Direction);
@@ -1155,7 +1136,7 @@ void __fastcall TCustomScpExplorerForm::ClearTransferSourceSelection(TTransferDi
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AddQueueItem(
   TTerminalQueue * Queue, TTransferDirection Direction, TStrings * FileList,
-  const UnicodeString TargetDirectory, const TCopyParamType & CopyParam,
+  const UnicodeString TargetDirectory, const TGUICopyParamType & CopyParam,
   int Params)
 {
   DebugAssert(Queue != NULL);
@@ -1179,7 +1160,7 @@ void __fastcall TCustomScpExplorerForm::AddQueueItem(
   if (Direction == tdToRemote)
   {
     QueueItem = new TUploadQueueItem(Terminal, FileList, TargetDirectory,
-      &CopyParam, Params, SingleFile);
+      &CopyParam, Params, SingleFile, CopyParam.QueueParallel);
   }
   else
   {
@@ -1996,7 +1977,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
                   std::unique_ptr<TStrings> TemporaryFilesList(new TStringList());
                   TemporaryFilesList->Add(FileName);
 
-                  FTerminal->CopyToRemote(TemporaryFilesList.get(), RemoteDir, &CopyParam, cpTemporary);
+                  FTerminal->CopyToRemote(TemporaryFilesList.get(), RemoteDir, &CopyParam, cpTemporary, NULL);
                 }
               }
             }
@@ -2368,7 +2349,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
               PermanentFileList = FileList;
 
               Params |= FLAGMASK(Temp, cpTemporary);
-              Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
+              Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params, NULL);
               if (Operation == foMove)
               {
                 ReloadLocalDirectory();
@@ -3427,7 +3408,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
 
     int Params = cpNoConfirmation | cpTemporary;
     TQueueItem * QueueItem = new TUploadQueueItem(Data->Terminal, FileList,
-      Data->RemoteDirectory, &CopyParam, Params, true);
+      Data->RemoteDirectory, &CopyParam, Params, true, false);
     QueueItem->CompleteEvent = UploadCompleteEvent;
     AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
   }
@@ -3829,7 +3810,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
 
           DebugAssert(!FAutoOperation);
           FAutoOperation = true;
-          FTerminal->CopyToRemote(TemporaryFilesList, Target, &CopyParam, cpTemporary);
+          FTerminal->CopyToRemote(TemporaryFilesList, Target, &CopyParam, cpTemporary, NULL);
         }
       }
       __finally

@@ -12,6 +12,18 @@
 //---------------------------------------------------------------------------
 class TBackgroundTerminal;
 //---------------------------------------------------------------------------
+class TParallelUploadQueueItem : public TLocatedQueueItem
+{
+public:
+  __fastcall TParallelUploadQueueItem(const TUploadQueueItem * ParentItem, TParallelOperation * ParallelOperation);
+
+protected:
+  virtual void __fastcall DoExecute(TTerminal * Terminal);
+
+private:
+  TParallelOperation * FParallelOperation;
+};
+//---------------------------------------------------------------------------
 class TUserAction
 {
 public:
@@ -589,10 +601,9 @@ void __fastcall TTerminalQueue::DeleteItem(TQueueItem * Item, bool CanKeep)
       FForcedItems->Remove(Item);
       // =0  do not keep
       // <0  infinity
-      if ((FKeepDoneItemsFor != 0) && CanKeep)
+      if ((FKeepDoneItemsFor != 0) && CanKeep && Item->Complete())
       {
         DebugAssert(Item->Status == TQueueItem::qsDone);
-        Item->Complete();
         FDoneItems->Add(Item);
       }
       else
@@ -1126,6 +1137,29 @@ bool __fastcall TTerminalQueue::GetIsEmpty()
   return (FItems->Count == 0);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalQueue::TryAddParallelOperation(TQueueItem * Item, bool Force)
+{
+  TGuard Guard(FItemsSection);
+
+  bool Result =
+    (FFreeTerminals > 0) ||
+    (Force && (FItemsInProcess < FTransfersLimit));
+
+  if (Result)
+  {
+    AddItem(DebugNotNull(Item->CreateParallelOperation()));
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalQueue::ContinueParallelOperation()
+{
+  TGuard Guard(FItemsSection);
+
+  return (FItems->Count <= FItemsInProcess);
+}
+//---------------------------------------------------------------------------
 // TBackgroundItem
 //---------------------------------------------------------------------------
 class TBackgroundTerminal : public TSecondaryTerminal
@@ -1548,6 +1582,8 @@ __fastcall TQueueItem::TQueueItem() :
   FSection = new TCriticalSection();
   FInfo = new TInfo();
   FInfo->SingleFile = false;
+  FInfo->Primary = true;
+  FInfo->GroupToken = this;
 }
 //---------------------------------------------------------------------------
 __fastcall TQueueItem::~TQueueItem()
@@ -1561,7 +1597,7 @@ __fastcall TQueueItem::~TQueueItem()
   delete FInfo;
 }
 //---------------------------------------------------------------------------
-void __fastcall TQueueItem::Complete()
+bool __fastcall TQueueItem::Complete()
 {
   TGuard Guard(FSection);
 
@@ -1570,6 +1606,8 @@ void __fastcall TQueueItem::Complete()
     SetEvent(FCompleteEvent);
     FCompleteEvent = INVALID_HANDLE_VALUE;
   }
+
+  return FInfo->Primary;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TQueueItem::IsUserActionStatus(TStatus Status)
@@ -1603,6 +1641,11 @@ void __fastcall TQueueItem::SetStatus(TStatus Status)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TQueueItem::ProgressUpdated()
+{
+  // noop
+}
+//---------------------------------------------------------------------------
 void __fastcall TQueueItem::SetProgress(
   TFileOperationProgressType & ProgressData)
 {
@@ -1618,9 +1661,10 @@ void __fastcall TQueueItem::SetProgress(
     }
 
     DebugAssert(FProgressData != NULL);
-    *FProgressData = ProgressData;
+    FProgressData->Assign(ProgressData);
     FProgressData->Reset();
   }
+  ProgressUpdated();
   FQueue->DoQueueItemUpdate(this);
 }
 //---------------------------------------------------------------------------
@@ -1631,7 +1675,7 @@ void __fastcall TQueueItem::GetData(TQueueItemProxy * Proxy)
   DebugAssert(Proxy->FProgressData != NULL);
   if (FProgressData != NULL)
   {
-    *Proxy->FProgressData = *FProgressData;
+    Proxy->FProgressData->Assign(*FProgressData);
   }
   else
   {
@@ -1681,6 +1725,23 @@ unsigned long __fastcall TQueueItem::GetCPSLimit()
     Result = DefaultCPSLimit();
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+TQueueItem * __fastcall TQueueItem::CreateParallelOperation()
+{
+  return NULL;
+}
+//---------------------------------------------------------------------------
+void __fastcall TQueueItem::InitParallelOperationInfo(TQueueItem * Item)
+{
+  // deliberately not copying the ModifiedLocal and ModifiedRemote, not to trigger panel refresh, when sub-item completes
+  FInfo->Operation = Item->FInfo->Operation;
+  FInfo->Side = Item->FInfo->Side;
+  FInfo->Source = Item->FInfo->Source;
+  FInfo->Destination = Item->FInfo->Destination;
+  FInfo->SingleFile = DebugAlwaysFalse(Item->FInfo->SingleFile);
+  FInfo->Primary = false;
+  FInfo->GroupToken = Item->FInfo->GroupToken;
 }
 //---------------------------------------------------------------------------
 // TQueueItemProxy
@@ -1875,7 +1936,22 @@ int __fastcall TTerminalQueueStatus::GetActiveAndPendingCount()
 void __fastcall TTerminalQueueStatus::Add(TQueueItemProxy * ItemProxy)
 {
   ItemProxy->FQueueStatus = this;
-  FList->Add(ItemProxy);
+
+  int Index = FList->Count;
+  if (!ItemProxy->Info->Primary)
+  {
+    for (int I = 0; I < FList->Count; I++)
+    {
+      if (Items[I]->Info->GroupToken == ItemProxy->Info->GroupToken)
+      {
+        Index = I + 1;
+      }
+    }
+
+    DebugAssert(Index >= 0);
+  }
+
+  FList->Insert(Index, ItemProxy);
   ResetStats();
 }
 //---------------------------------------------------------------------------
@@ -1920,7 +1996,13 @@ __fastcall TLocatedQueueItem::TLocatedQueueItem(TTerminal * Terminal) :
   FCurrentDir = Terminal->CurrentDirectory;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TLocatedQueueItem::StartupDirectory()
+__fastcall TLocatedQueueItem::TLocatedQueueItem(const TLocatedQueueItem & Source) :
+  TQueueItem()
+{
+  FCurrentDir = Source.FCurrentDir;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TLocatedQueueItem::StartupDirectory() const
 {
   return FCurrentDir;
 }
@@ -1979,7 +2061,7 @@ unsigned long __fastcall TTransferQueueItem::DefaultCPSLimit()
 //---------------------------------------------------------------------------
 __fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
   TStrings * FilesToCopy, const UnicodeString & TargetDir,
-  const TCopyParamType * CopyParam, int Params, bool SingleFile) :
+  const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel) :
   TTransferQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, osLocal, SingleFile)
 {
   if (FilesToCopy->Count > 1)
@@ -2017,6 +2099,8 @@ __fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
   FInfo->Destination =
     UnixIncludeTrailingBackslash(TargetDir) + CopyParam->FileMask;
   FInfo->ModifiedRemote = UnixIncludeTrailingBackslash(TargetDir);
+  FParallel = Parallel;
+  FLastParallelOperationAdded = GetTickCount();
 }
 //---------------------------------------------------------------------------
 void __fastcall TUploadQueueItem::DoExecute(TTerminal * Terminal)
@@ -2024,7 +2108,114 @@ void __fastcall TUploadQueueItem::DoExecute(TTerminal * Terminal)
   TTransferQueueItem::DoExecute(Terminal);
 
   DebugAssert(Terminal != NULL);
-  Terminal->CopyToRemote(FFilesToCopy, FTargetDir, FCopyParam, FParams);
+  TParallelOperation ParallelOperation;
+  FParallelOperation = &ParallelOperation;
+  try
+  {
+    Terminal->CopyToRemote(FFilesToCopy, FTargetDir, FCopyParam, FParams, &ParallelOperation);
+  }
+  __finally
+  {
+    FParallelOperation = NULL;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TUploadQueueItem::ProgressUpdated()
+{
+  TTransferQueueItem::ProgressUpdated();
+
+  if (FParallel)
+  {
+    bool Add = false;
+    bool Force = false;
+    DWORD LastParallelOperationAddedPrev = 0;
+
+    {
+      TGuard Guard(FSection);
+      // Move this to TTransferQueueItem once implemented for downloads too
+      DebugAssert(FParallelOperation != NULL);
+      DebugAssert((FProgressData->Operation == foCopy) || (FProgressData->Operation == foCalculateSize));
+      if (FProgressData->Operation == foCopy)
+      {
+        Add = FParallelOperation->ShouldAddClient();
+        if (Add)
+        {
+          DWORD Now = GetTickCount();
+          Force =
+            (Now - FLastParallelOperationAdded >= 5*1000) &&
+            (TimeToSeconds(FProgressData->TotalTimeLeft()) >= 20);
+          LastParallelOperationAddedPrev = FLastParallelOperationAdded;
+          // update now already to prevent race condition, but we will have to rollback it back,
+          // if we actually do not add the parallel operation
+          FLastParallelOperationAdded = Now;
+        }
+      }
+    }
+
+    if (Add)
+    {
+      if (!FQueue->TryAddParallelOperation(this, Force))
+      {
+        TGuard Guard(FSection);
+        FLastParallelOperationAdded = LastParallelOperationAddedPrev;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TQueueItem * __fastcall TUploadQueueItem::CreateParallelOperation()
+{
+  DebugAssert(FParallelOperation != NULL);
+
+  FParallelOperation->AddClient();
+  return new TParallelUploadQueueItem(this, FParallelOperation);
+}
+//---------------------------------------------------------------------------
+// TDownloadQueueItem
+//---------------------------------------------------------------------------
+__fastcall TParallelUploadQueueItem::TParallelUploadQueueItem(
+    const TUploadQueueItem * ParentItem, TParallelOperation * ParallelOperation) :
+  TLocatedQueueItem(*ParentItem),
+  FParallelOperation(ParallelOperation)
+{
+  InitParallelOperationInfo(ParentItem);
+}
+//---------------------------------------------------------------------------
+void __fastcall TParallelUploadQueueItem::DoExecute(TTerminal * Terminal)
+{
+  TLocatedQueueItem::DoExecute(Terminal);
+
+  TFileOperationProgressType OperationProgress(Terminal->OnProgress, Terminal->OnFinished, FParallelOperation->MainOperationProgress);
+  TFileOperation Operation = (FLAGSET(FParallelOperation->Params, cpDelete) ? foMove : foCopy);
+  bool Temp = FLAGSET(FParallelOperation->Params, cpTemporary);
+
+  OperationProgress.Start(
+    // CPS limit inherited from parent OperationProgress.
+    // Count not known and won't be needed as we will always have TotalSize as  we always transfer a single file at a time.
+    Operation, osLocal, -1, Temp, FParallelOperation->TargetDir, 0);
+
+  try
+  {
+    bool Continue = true;
+    do
+    {
+      int GotNext = Terminal->CopyToRemoteParallel(FParallelOperation, &OperationProgress);
+      if (GotNext < 0)
+      {
+        Continue = false;
+      }
+      else if (!FQueue->ContinueParallelOperation())
+      {
+        Continue = false;
+      }
+    }
+    while (Continue);
+  }
+  __finally
+  {
+    OperationProgress.Stop();
+    FParallelOperation->RemoveClient();
+  }
 }
 //---------------------------------------------------------------------------
 // TDownloadQueueItem

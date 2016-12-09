@@ -60,7 +60,7 @@ void __fastcall TGUICopyParamType::GUIAssign(const TGUICopyParamType * Source)
 {
   Queue = Source->Queue;
   QueueNoConfirmation = Source->QueueNoConfirmation;
-  QueueIndividually = Source->QueueIndividually;
+  QueueParallel = Source->QueueParallel;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUICopyParamType::Default()
@@ -74,7 +74,7 @@ void __fastcall TGUICopyParamType::GUIDefault()
 {
   Queue = false;
   QueueNoConfirmation = true;
-  QueueIndividually = false;
+  QueueParallel = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUICopyParamType::Load(THierarchicalStorage * Storage)
@@ -83,7 +83,7 @@ void __fastcall TGUICopyParamType::Load(THierarchicalStorage * Storage)
 
   Queue = Storage->ReadBool(L"Queue", Queue);
   QueueNoConfirmation = Storage->ReadBool(L"QueueNoConfirmation", QueueNoConfirmation);
-  QueueIndividually = Storage->ReadBool(L"QueueIndividually", QueueIndividually);
+  QueueParallel = Storage->ReadBool(L"QueueParallel", QueueParallel);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUICopyParamType::Save(THierarchicalStorage * Storage)
@@ -92,7 +92,7 @@ void __fastcall TGUICopyParamType::Save(THierarchicalStorage * Storage)
 
   Storage->WriteBool(L"Queue", Queue);
   Storage->WriteBool(L"QueueNoConfirmation", QueueNoConfirmation);
-  Storage->WriteBool(L"QueueIndividually", QueueIndividually);
+  Storage->WriteBool(L"QueueParallel", QueueParallel);
 }
 //---------------------------------------------------------------------------
 TGUICopyParamType & __fastcall TGUICopyParamType::operator =(const TCopyParamType & rhp)

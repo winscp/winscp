@@ -66,6 +66,8 @@ class TTerminalQueue : public TSignalThread
 {
 friend class TQueueItem;
 friend class TQueueItemProxy;
+friend class TUploadQueueItem; //???
+friend class TParallelUploadQueueItem; //???
 
 public:
   __fastcall TTerminalQueue(TTerminal * Terminal, TConfiguration * Configuration);
@@ -146,6 +148,9 @@ protected:
   void __fastcall SetKeepDoneItemsFor(int value);
   void __fastcall SetEnabled(bool value);
   bool __fastcall GetIsEmpty();
+
+  bool __fastcall TryAddParallelOperation(TQueueItem * Item, bool Force);
+  bool __fastcall ContinueParallelOperation();
 };
 //---------------------------------------------------------------------------
 class TQueueItem
@@ -166,6 +171,8 @@ public:
     UnicodeString ModifiedLocal;
     UnicodeString ModifiedRemote;
     bool SingleFile;
+    bool Primary;
+    void * GroupToken;
   };
 
   static bool __fastcall IsUserActionStatus(TStatus Status);
@@ -196,8 +203,11 @@ protected:
   void __fastcall SetCPSLimit(unsigned long CPSLimit);
   unsigned long __fastcall GetCPSLimit();
   virtual unsigned long __fastcall DefaultCPSLimit();
-  virtual UnicodeString __fastcall StartupDirectory() = 0;
-  void __fastcall Complete();
+  virtual UnicodeString __fastcall StartupDirectory() const = 0;
+  virtual void __fastcall ProgressUpdated();
+  virtual TQueueItem * __fastcall CreateParallelOperation();
+  void __fastcall InitParallelOperationInfo(TQueueItem * Item);
+  bool __fastcall Complete();
 };
 //---------------------------------------------------------------------------
 class TQueueItemProxy
@@ -284,9 +294,10 @@ class TLocatedQueueItem : public TQueueItem
 {
 protected:
   __fastcall TLocatedQueueItem(TTerminal * Terminal);
+  __fastcall TLocatedQueueItem(const TLocatedQueueItem & Source);
 
   virtual void __fastcall DoExecute(TTerminal * Terminal);
-  virtual UnicodeString __fastcall StartupDirectory();
+  virtual UnicodeString __fastcall StartupDirectory() const;
 
 private:
   UnicodeString FCurrentDir;
@@ -315,10 +326,16 @@ class TUploadQueueItem : public TTransferQueueItem
 public:
   __fastcall TUploadQueueItem(TTerminal * Terminal,
     TStrings * FilesToCopy, const UnicodeString & TargetDir,
-    const TCopyParamType * CopyParam, int Params, bool SingleFile);
+    const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel);
 
 protected:
+  bool FParallel;
+  DWORD FLastParallelOperationAdded;
+  TParallelOperation * FParallelOperation;
+
   virtual void __fastcall DoExecute(TTerminal * Terminal);
+  virtual void __fastcall ProgressUpdated();
+  virtual TQueueItem * __fastcall CreateParallelOperation();
 };
 //---------------------------------------------------------------------------
 class TDownloadQueueItem : public TTransferQueueItem

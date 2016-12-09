@@ -28,6 +28,7 @@ struct TSpaceAvailable;
 struct TFilesFindParams;
 class TTunnelUI;
 class TCallbackGuard;
+class TParallelOperation;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
   (TObject * Sender, const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
@@ -107,6 +108,7 @@ const int cpTemporary = 0x04;
 const int cpNoConfirmation = 0x08;
 const int cpAppend = 0x20;
 const int cpResume = 0x40;
+const int cpNoRecurse = 0x80;
 //---------------------------------------------------------------------------
 const int ccApplyToDirectories = 0x01;
 const int ccRecursive = 0x02;
@@ -297,7 +299,7 @@ protected:
   void __fastcall CalculateLocalFileSize(const UnicodeString FileName,
     const TSearchRec Rec, /*__int64*/ void * Size);
   bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
-    const TCopyParamType * CopyParam, bool AllowDirs);
+    const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files);
   TBatchOverwrite __fastcall EffectiveBatchOverwrite(
     const UnicodeString & SourceFullFileName, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, bool Special);
@@ -427,7 +429,8 @@ public:
   bool __fastcall CopyToLocal(TStrings * FilesToCopy,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params);
   bool __fastcall CopyToRemote(TStrings * FilesToCopy,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params);
+    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
+  int __fastcall CopyToRemoteParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
   void __fastcall CreateDirectory(const UnicodeString DirName,
     const TRemoteProperties * Properties = NULL);
   void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
@@ -621,6 +624,7 @@ struct TCalculateSizeParams
   const TCopyParamType * CopyParam;
   TCalculateSizeStats * Stats;
   bool AllowDirs;
+  TStrings * Files;
   bool Result;
 };
 //---------------------------------------------------------------------------
@@ -749,6 +753,47 @@ private:
   bool * FAnyTransfer;
   bool FPrevAnyTransfer;
   TDateTime FStart;
+};
+//---------------------------------------------------------------------------
+class TParallelOperation
+{
+public:
+  TParallelOperation();
+  ~TParallelOperation();
+
+  void Init(
+    TStrings * AFiles, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * MainOperationProgress);
+
+  void WaitFor();
+  bool ShouldAddClient();
+  void AddClient();
+  void RemoveClient();
+  int GetNext(TTerminal * Terminal, UnicodeString & FileName, UnicodeString & TargetDir, bool & Dir);
+  void Done(const UnicodeString & FileName, bool Dir, bool Success);
+
+  __property const TCopyParamType * CopyParam = { read = FCopyParam };
+  __property int Params = { read = FParams };
+  __property UnicodeString TargetDir = { read = FTargetDir };
+  __property TFileOperationProgressType * MainOperationProgress = { read = FMainOperationProgress };
+
+private:
+  struct TDirectoryData
+  {
+    UnicodeString RemotePath;
+    bool Exists;
+  };
+
+  std::unique_ptr<TStrings> FFileList;
+  typedef std::map<UnicodeString, TDirectoryData> TDirectories;
+  TDirectories FDirectories;
+  UnicodeString FTargetDir;
+  const TCopyParamType * FCopyParam;
+  int FParams;
+  bool FProbablyEmpty;
+  int FClients;
+  std::unique_ptr<TCriticalSection> FSection;
+  TFileOperationProgressType * FMainOperationProgress;
 };
 //---------------------------------------------------------------------------
 #endif

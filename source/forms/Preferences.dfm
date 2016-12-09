@@ -1468,13 +1468,13 @@ object PreferencesDialog: TPreferencesDialog
             Caption = '&No confirmations for background transfers'
             TabOrder = 4
           end
-          object QueueIndividuallyCheck: TCheckBox
+          object QueueParallelCheck: TCheckBox
             Left = 16
             Top = 98
             Width = 369
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Transfer each file individually on background by default'
+            Caption = '&Use multiple connections for single transfer'
             TabOrder = 3
           end
           object EnableQueueByDefaultCheck: TCheckBox

@@ -105,7 +105,7 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaul
       DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options,
         CopyParamAttrs, NULL, NULL))
   {
-    Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, 0);
+    Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, 0, NULL);
   }
 }
 //---------------------------------------------------------------------------

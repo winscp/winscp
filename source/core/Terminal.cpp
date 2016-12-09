@@ -6,6 +6,7 @@
 
 #include <SysUtils.hpp>
 #include <FileCtrl.hpp>
+#include <StrUtils.hpp>
 
 #include "Common.h"
 #include "PuttyTools.h"
@@ -676,6 +677,215 @@ bool TRetryOperationLoop::Retry()
 {
   bool Result = FRetry;
   FRetry = false;
+  return Result;
+}
+//---------------------------------------------------------------------------
+TParallelOperation::TParallelOperation()
+{
+  FCopyParam = NULL;
+  FParams = 0;
+  FProbablyEmpty = false;
+  FClients = 0;
+  FMainOperationProgress = NULL;
+}
+//---------------------------------------------------------------------------
+void TParallelOperation::Init(
+  TStrings * AFileList, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+  TFileOperationProgressType * MainOperationProgress)
+{
+  DebugAssert(FFileList.get() == NULL);
+  // More lists should really happen in scripting only, which does not support parallel transfers atm.
+  // But in general the code should work with more lists anyway, it just was not tested for it.
+  DebugAssert(AFileList->Count == 1);
+  FFileList.reset(AFileList);
+  FSection.reset(new TCriticalSection());
+  FTargetDir = TargetDir;
+  FCopyParam = CopyParam;
+  FParams = Params;
+  FMainOperationProgress = MainOperationProgress;
+}
+//---------------------------------------------------------------------------
+TParallelOperation::~TParallelOperation()
+{
+  WaitFor();
+}
+//---------------------------------------------------------------------------
+bool TParallelOperation::ShouldAddClient()
+{
+  bool Result;
+  // initialized already?
+  if (FSection.get() == NULL)
+  {
+    Result = false;
+  }
+  else
+  {
+    TGuard Guard(FSection.get());
+    Result = !FProbablyEmpty && (FMainOperationProgress->Cancel < csCancel);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TParallelOperation::AddClient()
+{
+  TGuard Guard(FSection.get());
+  FClients++;
+}
+//---------------------------------------------------------------------------
+void TParallelOperation::RemoveClient()
+{
+  TGuard Guard(FSection.get());
+  FClients--;
+}
+//---------------------------------------------------------------------------
+void TParallelOperation::WaitFor()
+{
+  bool Done;
+
+  do
+  {
+    {
+      TGuard Guard(FSection.get());
+      Done = (FClients == 0);
+    }
+
+    if (!Done)
+    {
+      // propagate the total progress incremented by the parallel operations
+      FMainOperationProgress->Progress();
+      Sleep(200);
+    }
+  }
+  while (!Done);
+
+  FProbablyEmpty = true;
+}
+//---------------------------------------------------------------------------
+void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Success)
+{
+  if (Dir)
+  {
+    TGuard Guard(FSection.get());
+
+    TDirectories::iterator DirectoryIterator = FDirectories.find(FileName);
+    if (DebugAlwaysTrue(DirectoryIterator != FDirectories.end()))
+    {
+      if (Success)
+      {
+        DebugAssert(!DirectoryIterator->second.Exists);
+        DirectoryIterator->second.Exists = true;
+      }
+      else
+      {
+        // This is actually not useful at the moment, as when creating directory fails and "Skip" is pressed,
+        // the current code in CopyToRemote/CreateDirectory will behave as, if it succedded, so Successs will be true here.
+        FDirectories.erase(DirectoryIterator);
+        if (FFileList->Count > 0)
+        {
+          UnicodeString FileNameWithSlash = IncludeTrailingBackslash(FileName);
+
+          // It can actually be a different list than the one the directory was taken from,
+          // but that does not maatter that much. It should not happen anyway, as more lists should be in scripting only.
+          TStrings * Files = DebugNotNull(dynamic_cast<TStrings *>(FFileList->Objects[0]));
+          for (int Index = 0; Index < Files->Count; Index++)
+          {
+            if (StartsText(Files->Strings[Index], FileNameWithSlash))
+            {
+              // We should add the file to "skip" counters in the OperationProgress,
+              // but an interactive foreground transfer is not doing that either yet.
+              FFileList->Delete(Index);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, UnicodeString & TargetDir, bool & Dir)
+{
+  int Result = 1;
+  TStrings * Files;
+  do
+  {
+    if (FFileList->Count > 0)
+    {
+      Files = DebugNotNull(dynamic_cast<TStrings *>(FFileList->Objects[0]));
+      // can happen if the file was excluded by file mask
+      if (Files->Count == 0)
+      {
+        FFileList->Delete(0);
+        Files = NULL;
+      }
+    }
+    else
+    {
+      Files = NULL;
+      Result = -1;
+    }
+  }
+  while ((Result == 1) && (Files == NULL));
+
+  if (Files != NULL)
+  {
+    UnicodeString RootPath = FFileList->Strings[0];
+
+    FileName = Files->Strings[0];
+    Dir = (FileName[FileName.Length()] == L'\\');
+    if (Dir)
+    {
+      FileName.SetLength(FileName.Length() - 1);
+    }
+    UnicodeString DirPath = ExtractFileDir(FileName);
+
+    bool FirstLevel = SamePaths(DirPath, RootPath);
+    if (FirstLevel)
+    {
+      TargetDir = FTargetDir;
+    }
+    else
+    {
+      TDirectories::const_iterator DirectoryIterator = FDirectories.find(DirPath);
+      if (DebugAlwaysFalse(DirectoryIterator == FDirectories.end()))
+      {
+        throw EInvalidOperation(L"Parent path not known");
+      }
+      const TDirectoryData & DirectoryData = DirectoryIterator->second;
+      if (!DirectoryData.Exists)
+      {
+        Result = 0; // wait for parent directory to be created
+      }
+      else
+      {
+        TargetDir = DirectoryData.RemotePath;
+      }
+    }
+
+    if (!TargetDir.IsEmpty())
+    {
+      if (Dir)
+      {
+        TDirectoryData DirectoryData;
+
+        UnicodeString OnlyFileName = ExtractFileName(FileName);
+        OnlyFileName = Terminal->ChangeFileName(FCopyParam, OnlyFileName, osRemote, FirstLevel);
+        DirectoryData.RemotePath = UnixCombinePaths(TargetDir, OnlyFileName);
+
+        DirectoryData.Exists = false;
+
+        FDirectories.insert(std::make_pair(FileName, DirectoryData));
+      }
+
+      Files->Delete(0);
+      if (Files->Count == 0)
+      {
+        FFileList->Delete(0);
+      }
+    }
+  }
+
+  FProbablyEmpty = (FFileList->Count == 0);
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -2335,7 +2545,17 @@ TBatchOverwrite __fastcall TTerminal::EffectiveBatchOverwrite(
 bool __fastcall TTerminal::CheckRemoteFile(
   const UnicodeString & FileName, const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress)
 {
-  return (EffectiveBatchOverwrite(FileName, CopyParam, Params, OperationProgress, true) != boAll);
+  bool Result;
+  OperationProgress->LockUserSelections();
+  try
+  {
+    Result = (EffectiveBatchOverwrite(FileName, CopyParam, Params, OperationProgress, true) != boAll);
+  }
+  __finally
+  {
+    OperationProgress->UnlockUserSelections();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
@@ -2345,84 +2565,102 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
   UnicodeString Message)
 {
   unsigned int Result;
-  // duplicated in TSFTPFileSystem::SFTPConfirmOverwrite
+  TBatchOverwrite BatchOverwrite;
   bool CanAlternateResume =
     (FileParams != NULL) &&
     (FileParams->DestSize < FileParams->SourceSize) &&
     !OperationProgress->AsciiTransfer;
-  TBatchOverwrite BatchOverwrite = EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, true);
-  bool Applicable = true;
-  switch (BatchOverwrite)
+
+  OperationProgress->LockUserSelections();
+  try
   {
-    case boOlder:
-      Applicable = (FileParams != NULL);
-      break;
+    // duplicated in TSFTPFileSystem::SFTPConfirmOverwrite
+    BatchOverwrite = EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, true);
+    bool Applicable = true;
+    switch (BatchOverwrite)
+    {
+      case boOlder:
+        Applicable = (FileParams != NULL);
+        break;
 
-    case boAlternateResume:
-      Applicable = CanAlternateResume;
-      break;
+      case boAlternateResume:
+        Applicable = CanAlternateResume;
+        break;
 
-    case boResume:
-      Applicable = CanAlternateResume;
-      break;
+      case boResume:
+        Applicable = CanAlternateResume;
+        break;
+    }
+
+    if (!Applicable)
+    {
+      TBatchOverwrite ABatchOverwrite = EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, false);
+      DebugAssert(BatchOverwrite != ABatchOverwrite);
+      BatchOverwrite = ABatchOverwrite;
+    }
+
+    if (BatchOverwrite == boNo)
+    {
+      // particularly with parallel transfers, the overal operation can be already cancelled by other parallel operation
+      if (OperationProgress->Cancel > csContinue)
+      {
+        Result = qaCancel;
+      }
+      else
+      {
+        if (Message.IsEmpty())
+        {
+          // Side refers to destination side here
+          Message = FMTLOAD((Side == osLocal ? LOCAL_FILE_OVERWRITE2 :
+            REMOTE_FILE_OVERWRITE2), (TargetFileName, TargetFileName));
+        }
+        if (FileParams != NULL)
+        {
+          Message = FMTLOAD(FILE_OVERWRITE_DETAILS, (Message,
+            FormatSize(FileParams->SourceSize),
+            UserModificationStr(FileParams->SourceTimestamp, FileParams->SourcePrecision),
+            FormatSize(FileParams->DestSize),
+            UserModificationStr(FileParams->DestTimestamp, FileParams->DestPrecision)));
+        }
+        if (DebugAlwaysTrue(QueryParams->HelpKeyword.IsEmpty()))
+        {
+          QueryParams->HelpKeyword = HELP_OVERWRITE;
+        }
+        Result = QueryUser(Message, NULL, Answers, QueryParams);
+        switch (Result)
+        {
+          case qaNeverAskAgain:
+            Configuration->ConfirmOverwriting = false;
+            Result = qaYes;
+            break;
+
+          case qaYesToAll:
+            BatchOverwrite = boAll;
+            break;
+
+          case qaAll:
+            BatchOverwrite = boOlder;
+            break;
+
+          case qaNoToAll:
+            BatchOverwrite = boNone;
+            break;
+        }
+
+        // we user has not selected another batch overwrite mode,
+        // keep the current one. note that we may get here even
+        // when batch overwrite was selected already, but it could not be applied
+        // to current transfer (see condition above)
+        if (BatchOverwrite != boNo)
+        {
+          OperationProgress->SetBatchOverwrite(BatchOverwrite);
+        }
+      }
+    }
   }
-
-  if (!Applicable)
+  __finally
   {
-    TBatchOverwrite ABatchOverwrite = EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, false);
-    DebugAssert(BatchOverwrite != ABatchOverwrite);
-    BatchOverwrite = ABatchOverwrite;
-  }
-
-  if (BatchOverwrite == boNo)
-  {
-    if (Message.IsEmpty())
-    {
-      // Side refers to destination side here
-      Message = FMTLOAD((Side == osLocal ? LOCAL_FILE_OVERWRITE2 :
-        REMOTE_FILE_OVERWRITE2), (TargetFileName, TargetFileName));
-    }
-    if (FileParams != NULL)
-    {
-      Message = FMTLOAD(FILE_OVERWRITE_DETAILS, (Message,
-        FormatSize(FileParams->SourceSize),
-        UserModificationStr(FileParams->SourceTimestamp, FileParams->SourcePrecision),
-        FormatSize(FileParams->DestSize),
-        UserModificationStr(FileParams->DestTimestamp, FileParams->DestPrecision)));
-    }
-    if (DebugAlwaysTrue(QueryParams->HelpKeyword.IsEmpty()))
-    {
-      QueryParams->HelpKeyword = HELP_OVERWRITE;
-    }
-    Result = QueryUser(Message, NULL, Answers, QueryParams);
-    switch (Result)
-    {
-      case qaNeverAskAgain:
-        Configuration->ConfirmOverwriting = false;
-        Result = qaYes;
-        break;
-
-      case qaYesToAll:
-        BatchOverwrite = boAll;
-        break;
-
-      case qaAll:
-        BatchOverwrite = boOlder;
-        break;
-
-      case qaNoToAll:
-        BatchOverwrite = boNone;
-        break;
-    }
-
-    // we user has not selected another batch overwrite mode,
-    // keep the current one. note that we may get here even
-    // when batch overwrite was selected already, but it could not be applied
-    // to current transfer (see condition above)
-    if (BatchOverwrite != boNo)
-    {
-      OperationProgress->SetBatchOverwrite(BatchOverwrite);
-    }
+    OperationProgress->UnlockUserSelections();
   }
 
   if (BatchOverwrite != boNo)
@@ -4289,27 +4527,35 @@ bool __fastcall TTerminal::DoCreateLocalFile(const UnicodeString FileName,
       {
         if (FLAGSET(FileAttr, faReadOnly))
         {
-          if (OperationProgress->BatchOverwrite == boNone)
+          OperationProgress->LockUserSelections();
+          try
           {
-            Result = false;
-          }
-          else if ((OperationProgress->BatchOverwrite != boAll) && !NoConfirmation)
-          {
-            unsigned int Answer;
-
+            if (OperationProgress->BatchOverwrite == boNone)
             {
-              TSuspendFileOperationProgress Suspend(OperationProgress);
-              Answer = QueryUser(
-                MainInstructions(FMTLOAD(READ_ONLY_OVERWRITE, (FileName))), NULL,
-                qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll, 0);
+              Result = false;
             }
+            else if ((OperationProgress->BatchOverwrite != boAll) && !NoConfirmation)
+            {
+              unsigned int Answer;
 
-            switch (Answer) {
-              case qaYesToAll: OperationProgress->SetBatchOverwrite(boAll); break;
-              case qaCancel: OperationProgress->SetCancel(csCancel); // continue on next case
-              case qaNoToAll: OperationProgress->SetBatchOverwrite(boNone);
-              case qaNo: Result = false; break;
+              {
+                TSuspendFileOperationProgress Suspend(OperationProgress);
+                Answer = QueryUser(
+                  MainInstructions(FMTLOAD(READ_ONLY_OVERWRITE, (FileName))), NULL,
+                  qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll, 0);
+              }
+
+              switch (Answer) {
+                case qaYesToAll: OperationProgress->SetBatchOverwrite(boAll); break;
+                case qaCancel: OperationProgress->SetCancel(csCancel); // continue on next case
+                case qaNoToAll: OperationProgress->SetBatchOverwrite(boNone);
+                case qaNo: Result = false; break;
+              }
             }
+          }
+          __finally
+          {
+            OperationProgress->UnlockUserSelections();
           }
         }
         else
@@ -4569,6 +4815,17 @@ void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
 
       if (AllowTransfer)
       {
+        if (AParams->Files != NULL)
+        {
+          UnicodeString FullFileName = ::ExpandFileName(FileName);
+          if (Dir)
+          {
+            FullFileName += L"\\";
+          }
+
+          AParams->Files->Add(FullFileName);
+        }
+
         if (!Dir)
         {
           AParams->Size += Size;
@@ -4587,7 +4844,7 @@ void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
-  __int64 & Size, const TCopyParamType * CopyParam, bool AllowDirs)
+  __int64 & Size, const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files)
 {
   bool Result = false;
   TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
@@ -4599,23 +4856,39 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
     Params.Size = 0;
     Params.Params = 0;
     Params.CopyParam = CopyParam;
+    Params.Files = NULL;
     Params.Result = true;
 
     DebugAssert(!FOperationProgress);
     FOperationProgress = &OperationProgress;
+    UnicodeString LastDirPath;
     for (int Index = 0; Params.Result && (Index < FileList->Count); Index++)
     {
       UnicodeString FileName = FileList->Strings[Index];
       TSearchRec Rec;
       if (FileSearchRec(FileName, Rec))
       {
-        if (FLAGSET(Rec.Attr, faDirectory) && !AllowDirs)
+        bool Dir = FLAGSET(Rec.Attr, faDirectory);
+        if (Dir && !AllowDirs)
         {
           Params.Result = false;
         }
         else
         {
+          if (Files != NULL)
+          {
+            UnicodeString FullFileName = ::ExpandFileName(FileName);
+            UnicodeString DirPath = ExtractFilePath(FullFileName);
+            if (DirPath != LastDirPath)
+            {
+              Params.Files = new TStringList();
+              LastDirPath = DirPath;
+              Files->AddObject(LastDirPath, Params.Files);
+            }
+          }
+
           CalculateLocalFileSize(FileName, Rec, &Params);
+
           OperationProgress.Finish(FileName, true, OnceDoneOperation);
         }
       }
@@ -5335,7 +5608,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
           }
 
           if ((UploadList->Count > 0) &&
-              !CopyToRemote(UploadList, Data.RemoteDirectory, &SyncCopyParam, CopyParams))
+              !CopyToRemote(UploadList, Data.RemoteDirectory, &SyncCopyParam, CopyParams, NULL))
           {
             Abort();
           }
@@ -5674,8 +5947,46 @@ bool __fastcall TTerminal::GetStoredCredentialsTried()
   return Result;
 }
 //---------------------------------------------------------------------------
+int __fastcall TTerminal::CopyToRemoteParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress)
+{
+  UnicodeString FileName;
+  UnicodeString TargetDir;
+  bool Dir;
+
+  int Result = ParallelOperation->GetNext(this, FileName, TargetDir, Dir);
+  if (Result > 0)
+  {
+    std::unique_ptr<TStrings> FilesToCopy(new TStringList());
+    FilesToCopy->Add(FileName);
+
+    UnicodeString UnlockedTargetDir = TranslateLockedPath(TargetDir, false);
+    // OnceDoneOperation is not supported
+    TOnceDoneOperation OnceDoneOperation = odoIdle;
+
+    int Params = ParallelOperation->Params;
+    if (Dir)
+    {
+      Params = Params | cpNoRecurse;
+    }
+
+    int Prev = OperationProgress->FilesFinishedSuccessfully;
+    try
+    {
+      FFileSystem->CopyToRemote(
+        FilesToCopy.get(), UnlockedTargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
+    }
+    __finally
+    {
+      bool Success = (Prev < OperationProgress->FilesFinishedSuccessfully);
+      ParallelOperation->Done(FileName, Dir, Success);
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
-  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params)
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation)
 {
   DebugAssert(FFileSystem);
   DebugAssert(FilesToCopy);
@@ -5687,12 +5998,24 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
   try
   {
     __int64 Size;
+    std::unique_ptr<TStringList> Files;
+    if ((ParallelOperation != NULL) &&
+        FFileSystem->IsCapable(fsParallelTransfers) &&
+        // parallel upload is not implemented for operations needed to be done on a folder
+        // after all its files are processed
+        FLAGCLEAR(Params, cpDelete) &&
+        !CopyParam->ClearArchive &&
+        (!CopyParam->PreserveTime || !CopyParam->PreserveTimeDirs))
+    {
+      Files.reset(new TStringList());
+      Files->OwnsObjects = true;
+    }
     // dirty trick: when moving, do not pass copy param to avoid exclude mask
     bool CalculatedSize =
       CalculateLocalFilesSize(
         FilesToCopy, Size,
         (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
-        CopyParam->CalculateSize);
+        CopyParam->CalculateSize, Files.get());
 
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
     OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osLocal,
@@ -5720,15 +6043,49 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
       BeginTransaction();
       try
       {
+        bool Parallel = CalculatedSize && (Files.get() != NULL);
         if (Log->Logging)
         {
           LogEvent(FORMAT(L"Copying %d files/directories to remote directory "
-            "\"%s\"", (FilesToCopy->Count, TargetDir)));
+            "\"%s\"%s", (FilesToCopy->Count, TargetDir, (Parallel ? L" in parallel" : L""))));
           LogEvent(CopyParam->LogStr);
         }
 
-        FFileSystem->CopyToRemote(FilesToCopy, UnlockedTargetDir,
-          CopyParam, Params, &OperationProgress, OnceDoneOperation);
+        if (Parallel)
+        {
+          // OnceDoneOperation is not supported
+          ParallelOperation->Init(Files.release(), UnlockedTargetDir, CopyParam, Params, &OperationProgress);
+
+          try
+          {
+            bool Continue = true;
+            do
+            {
+              int GotNext = CopyToRemoteParallel(ParallelOperation, &OperationProgress);
+              if (GotNext < 0)
+              {
+                Continue = false;
+              }
+              else if (GotNext == 0)
+              {
+                Sleep(100);
+              }
+            }
+            while (Continue);
+
+            Result = true;
+          }
+          __finally
+          {
+            OperationProgress.SetDone();
+            ParallelOperation->WaitFor();
+          }
+        }
+        else
+        {
+          FFileSystem->CopyToRemote(FilesToCopy, UnlockedTargetDir,
+            CopyParam, Params, &OperationProgress, OnceDoneOperation);
+        }
       }
       __finally
       {

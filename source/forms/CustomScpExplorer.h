@@ -274,7 +274,7 @@ private:
   void __fastcall QueueSplitterDblClick(TObject * Sender);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TTransferDirection Direction,
     TStrings * FileList, const UnicodeString TargetDirectory,
-    const TCopyParamType & CopyParam, int Params);
+    const TGUICopyParamType & CopyParam, int Params);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem, TTerminal * Terminal);
   void __fastcall ClearTransferSourceSelection(TTransferDirection Direction);
   void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect);

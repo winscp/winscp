@@ -63,6 +63,11 @@ UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString 
   return UnixExcludeTrailingBackslash(Path, true);
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const UnicodeString & Path2)
+{
+  return UnixIncludeTrailingBackslash(Path1) + Path2;
+}
+//---------------------------------------------------------------------------
 Boolean __fastcall UnixSamePath(const UnicodeString Path1, const UnicodeString Path2)
 {
   return (UnixIncludeTrailingBackslash(Path1) == UnixIncludeTrailingBackslash(Path2));
