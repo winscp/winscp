@@ -147,7 +147,6 @@ public:
   TDateTime __fastcall TimeElapsed();
   // only current file
   TDateTime __fastcall TimeExpected();
-  TDateTime __fastcall TotalTimeExpected();
   TDateTime __fastcall TotalTimeLeft();
   int __fastcall TransferProgress();
   int __fastcall OverallProgress();

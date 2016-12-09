@@ -551,22 +551,6 @@ TDateTime __fastcall TFileOperationProgressType::TimeExpected()
   }
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall TFileOperationProgressType::TotalTimeExpected()
-{
-  DebugAssert(TotalSizeSet);
-  unsigned int CurCps = CPS();
-  // sanity check
-  if ((CurCps > 0) && (TotalSize > TotalSkipped))
-  {
-    return TDateTime((double)((double)(TotalSize - TotalSkipped) / CurCps) /
-      SecsPerDay);
-  }
-  else
-  {
-    return 0;
-  }
-}
-//---------------------------------------------------------------------------
 TDateTime __fastcall TFileOperationProgressType::TotalTimeLeft()
 {
   DebugAssert(TotalSizeSet);
