@@ -769,16 +769,19 @@ static void FlipAnchors(TControl * Control)
 // Settings that must be set only after whole form is constructed
 void __fastcall UseSystemSettingsPost(TCustomForm * Control)
 {
-  UnicodeString FlipStr = LoadStr(FLIP_CHILDREN);
-  int FlipChildrenFlag =
-    AdjustLocaleFlag(FlipStr, WinConfiguration->FlipChildrenOverride, false, true, false);
-  if (static_cast<bool>(FlipChildrenFlag))
+  // When showing an early error message
+  if (WinConfiguration != NULL)
   {
-    Control->FlipChildren(true);
+    UnicodeString FlipStr = LoadStr(FLIP_CHILDREN);
+    int FlipChildrenFlag =
+      AdjustLocaleFlag(FlipStr, WinConfiguration->FlipChildrenOverride, false, true, false);
+    if (static_cast<bool>(FlipChildrenFlag))
+    {
+      Control->FlipChildren(true);
 
-    FlipAnchors(Control);
+      FlipAnchors(Control);
+    }
   }
-
   ResetSystemSettings(Control);
 };
 //---------------------------------------------------------------------------

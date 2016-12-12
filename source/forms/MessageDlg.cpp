@@ -1080,7 +1080,9 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       if (LabelFont != 0)
       {
         Message->Font->Handle = LabelFont;
-        if (DebugAlwaysTrue(LabelFont == MainInstructionFont))
+        if (DebugAlwaysTrue(LabelFont == MainInstructionFont) &&
+             // When showing an early error message
+            (Configuration != NULL))
         {
           Configuration->Usage->Set(L"ThemeMainInstructionFontSize", Message->Font->Size);
         }
