@@ -680,6 +680,7 @@ bool TRetryOperationLoop::Retry()
   return Result;
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 TParallelOperation::TParallelOperation()
 {
   FCopyParam = NULL;
