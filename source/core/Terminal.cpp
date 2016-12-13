@@ -785,7 +785,7 @@ void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Suc
           UnicodeString FileNameWithSlash = IncludeTrailingBackslash(FileName);
 
           // It can actually be a different list than the one the directory was taken from,
-          // but that does not maatter that much. It should not happen anyway, as more lists should be in scripting only.
+          // but that does not matter that much. It should not happen anyway, as more lists should be in scripting only.
           TStrings * Files = DebugNotNull(dynamic_cast<TStrings *>(FFileList->Objects[0]));
           for (int Index = 0; Index < Files->Count; Index++)
           {
