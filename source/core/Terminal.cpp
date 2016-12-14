@@ -6116,7 +6116,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
                 Sleep(100);
               }
             }
-            while (Continue);
+            while (Continue && !OperationProgress.Cancel);
 
             Result = true;
           }
