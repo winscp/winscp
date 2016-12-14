@@ -845,7 +845,6 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone) const
     COPY_FP(IsSymLink);
     COPY_FP(LinkTo);
     COPY_FP(Type);
-    COPY_FP(Selected);
     COPY_FP(CyclicLink);
     COPY_FP(HumanRights);
     #undef COPY_FP
@@ -1557,7 +1556,6 @@ TRemoteFile * __fastcall TRemoteFileList::FindFile(const UnicodeString &FileName
 __fastcall TRemoteDirectory::TRemoteDirectory(TTerminal * aTerminal, TRemoteDirectory * Template) :
   TRemoteFileList(), FTerminal(aTerminal)
 {
-  FSelectedFiles = NULL;
   FThisDirectory = NULL;
   FParentDirectory = NULL;
   if (Template == NULL)
@@ -1631,28 +1629,6 @@ void __fastcall TRemoteDirectory::DuplicateTo(TRemoteFileList * Copy)
 bool __fastcall TRemoteDirectory::GetLoaded()
 {
   return ((Terminal != NULL) && Terminal->Active && !Directory.IsEmpty());
-}
-//---------------------------------------------------------------------------
-TStrings * __fastcall TRemoteDirectory::GetSelectedFiles()
-{
-  if (!FSelectedFiles)
-  {
-    FSelectedFiles = new TStringList();
-  }
-  else
-  {
-    FSelectedFiles->Clear();
-  }
-
-  for (int Index = 0; Index < Count; Index ++)
-  {
-    if (Files[Index]->Selected)
-    {
-      FSelectedFiles->Add(Files[Index]->FullFileName);
-    }
-  }
-
-  return FSelectedFiles;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectory::SetIncludeParentDirectory(Boolean value)

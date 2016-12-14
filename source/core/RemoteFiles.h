@@ -101,7 +101,6 @@ private:
   UnicodeString FHumanRights;
   TTerminal *FTerminal;
   wchar_t FType;
-  bool FSelected;
   bool FCyclicLink;
   UnicodeString FFullFileName;
   int FIsHidden;
@@ -173,7 +172,6 @@ public:
   __property UnicodeString HumanRights = { read = FHumanRights, write = FHumanRights };
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property wchar_t Type = { read = GetType, write = SetType };
-  __property bool Selected  = { read=FSelected, write=FSelected };
   __property UnicodeString FullFileName  = { read = GetFullFileName, write = FFullFileName };
   __property bool HaveFullFileName  = { read = GetHaveFullFileName };
   __property int IconIndex = { read = GetIconIndex };
@@ -239,11 +237,9 @@ private:
   Boolean FIncludeParentDirectory;
   Boolean FIncludeThisDirectory;
   TTerminal * FTerminal;
-  TStrings * FSelectedFiles;
   TRemoteFile * FParentDirectory;
   TRemoteFile * FThisDirectory;
   virtual void __fastcall SetDirectory(UnicodeString value);
-  TStrings * __fastcall GetSelectedFiles();
   Boolean __fastcall GetLoaded();
   void __fastcall SetIncludeParentDirectory(Boolean value);
   void __fastcall SetIncludeThisDirectory(Boolean value);
@@ -255,7 +251,6 @@ public:
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
   virtual void __fastcall Reset();
   __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
-  __property TStrings * SelectedFiles  = { read=GetSelectedFiles };
   __property Boolean IncludeParentDirectory = { read = FIncludeParentDirectory, write = SetIncludeParentDirectory };
   __property Boolean IncludeThisDirectory = { read = FIncludeThisDirectory, write = SetIncludeThisDirectory };
   __property Boolean Loaded = { read = GetLoaded };

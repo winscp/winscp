@@ -6136,118 +6136,104 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
   // see scp.c: sink(), tolocal()
 
   bool Result = false;
-  bool OwnsFileList = (FilesToCopy == NULL);
+  DebugAssert(FilesToCopy != NULL);
   TOnceDoneOperation OnceDoneOperation = odoIdle;
 
+  BeginTransaction();
   try
   {
-    if (OwnsFileList)
-    {
-      FilesToCopy = new TStringList();
-      FilesToCopy->Assign(Files->SelectedFiles);
-    }
+    __int64 TotalSize;
+    bool TotalSizeKnown = false;
+    TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
 
-    BeginTransaction();
+    ExceptionOnFail = true;
     try
     {
-      __int64 TotalSize;
-      bool TotalSizeKnown = false;
-      TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
-
-      ExceptionOnFail = true;
-      try
+      // dirty trick: when moving, do not pass copy param to avoid exclude mask
+      if (CalculateFilesSize(
+           FilesToCopy, TotalSize, csIgnoreErrors,
+           (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
+           CopyParam->CalculateSize, NULL))
       {
-        // dirty trick: when moving, do not pass copy param to avoid exclude mask
-        if (CalculateFilesSize(
-             FilesToCopy, TotalSize, csIgnoreErrors,
-             (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
-             CopyParam->CalculateSize, NULL))
-        {
-          TotalSizeKnown = true;
-        }
-      }
-      __finally
-      {
-        ExceptionOnFail = false;
-      }
-
-      OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osRemote,
-        FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
-
-      FOperationProgress = &OperationProgress;
-      bool CollectingUsage = false;
-      try
-      {
-        if (TotalSizeKnown)
-        {
-          if (Configuration->Usage->Collect)
-          {
-            int CounterTotalSize = TUsage::CalculateCounterSize(TotalSize);
-            Configuration->Usage->Inc(L"Downloads");
-            Configuration->Usage->Inc(L"DownloadedBytes", CounterTotalSize);
-            Configuration->Usage->SetMax(L"MaxDownloadSize", CounterTotalSize);
-            CollectingUsage = true;
-          }
-
-          OperationProgress.SetTotalSize(TotalSize);
-        }
-
-        try
-        {
-          try
-          {
-            if (Log->Logging)
-            {
-              LogEvent(FORMAT(L"Copying %d files/directories to local directory "
-                "\"%s\"", (FilesToCopy->Count, TargetDir)));
-              LogEvent(CopyParam->LogStr);
-            }
-
-            FFileSystem->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params,
-              &OperationProgress, OnceDoneOperation);
-          }
-          __finally
-          {
-            if (Active)
-            {
-              ReactOnCommand(fsCopyToLocal);
-            }
-          }
-        }
-        catch (Exception &E)
-        {
-          CommandError(&E, MainInstructions(LoadStr(TOLOCAL_COPY_ERROR)));
-          OnceDoneOperation = odoIdle;
-        }
-
-        if (OperationProgress.Cancel == csContinue)
-        {
-          Result = true;
-        }
-      }
-      __finally
-      {
-        if (CollectingUsage)
-        {
-          int CounterTime = TimeToSeconds(OperationProgress.TimeElapsed());
-          Configuration->Usage->Inc(L"DownloadTime", CounterTime);
-          Configuration->Usage->SetMax(L"MaxDownloadTime", CounterTime);
-        }
-        FOperationProgress = NULL;
-        OperationProgress.Stop();
+        TotalSizeKnown = true;
       }
     }
     __finally
     {
-      // If session is still active (no fatal error) we reload directory
-      // by calling EndTransaction
-      EndTransaction();
+      ExceptionOnFail = false;
     }
 
+    OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osRemote,
+      FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
+
+    FOperationProgress = &OperationProgress;
+    bool CollectingUsage = false;
+    try
+    {
+      if (TotalSizeKnown)
+      {
+        if (Configuration->Usage->Collect)
+        {
+          int CounterTotalSize = TUsage::CalculateCounterSize(TotalSize);
+          Configuration->Usage->Inc(L"Downloads");
+          Configuration->Usage->Inc(L"DownloadedBytes", CounterTotalSize);
+          Configuration->Usage->SetMax(L"MaxDownloadSize", CounterTotalSize);
+          CollectingUsage = true;
+        }
+
+        OperationProgress.SetTotalSize(TotalSize);
+      }
+
+      try
+      {
+        try
+        {
+          if (Log->Logging)
+          {
+            LogEvent(FORMAT(L"Copying %d files/directories to local directory "
+              "\"%s\"", (FilesToCopy->Count, TargetDir)));
+            LogEvent(CopyParam->LogStr);
+          }
+
+          FFileSystem->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params,
+            &OperationProgress, OnceDoneOperation);
+        }
+        __finally
+        {
+          if (Active)
+          {
+            ReactOnCommand(fsCopyToLocal);
+          }
+        }
+      }
+      catch (Exception &E)
+      {
+        CommandError(&E, MainInstructions(LoadStr(TOLOCAL_COPY_ERROR)));
+        OnceDoneOperation = odoIdle;
+      }
+
+      if (OperationProgress.Cancel == csContinue)
+      {
+        Result = true;
+      }
+    }
+    __finally
+    {
+      if (CollectingUsage)
+      {
+        int CounterTime = TimeToSeconds(OperationProgress.TimeElapsed());
+        Configuration->Usage->Inc(L"DownloadTime", CounterTime);
+        Configuration->Usage->SetMax(L"MaxDownloadTime", CounterTime);
+      }
+      FOperationProgress = NULL;
+      OperationProgress.Stop();
+    }
   }
   __finally
   {
-    if (OwnsFileList) delete FilesToCopy;
+    // If session is still active (no fatal error) we reload directory
+    // by calling EndTransaction
+    EndTransaction();
   }
 
   if (OnceDoneOperation != odoIdle)
