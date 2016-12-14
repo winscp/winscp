@@ -6023,6 +6023,18 @@ int __fastcall TTerminal::CopyToRemoteParallel(TParallelOperation * ParallelOper
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::CanParallel(
+  const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation)
+{
+  return
+    (ParallelOperation != NULL) &&
+    FFileSystem->IsCapable(fsParallelTransfers) &&
+    // parallel transfer is not implemented for operations needed to be done on a folder
+    // after all its files are processed
+    FLAGCLEAR(Params, cpDelete) &&
+    (!CopyParam->PreserveTime || !CopyParam->PreserveTimeDirs);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
   const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation)
 {
@@ -6037,13 +6049,8 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
   {
     __int64 Size;
     std::unique_ptr<TStringList> Files;
-    if ((ParallelOperation != NULL) &&
-        FFileSystem->IsCapable(fsParallelTransfers) &&
-        // parallel upload is not implemented for operations needed to be done on a folder
-        // after all its files are processed
-        FLAGCLEAR(Params, cpDelete) &&
-        !CopyParam->ClearArchive &&
-        (!CopyParam->PreserveTime || !CopyParam->PreserveTimeDirs))
+    if (CanParallel(CopyParam, Params, ParallelOperation) &&
+        !CopyParam->ClearArchive)
     {
       Files.reset(new TStringList());
       Files->OwnsObjects = true;

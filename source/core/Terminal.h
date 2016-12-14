@@ -398,6 +398,7 @@ protected:
     const UnicodeString & FileName, TFileOperation Operation1, TFileOperation Operation2 = foNone);
   bool __fastcall CanRecurseToDirectory(const TRemoteFile * File);
   bool __fastcall DoOnCustomCommand(const UnicodeString & Command);
+  bool __fastcall CanParallel(const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
