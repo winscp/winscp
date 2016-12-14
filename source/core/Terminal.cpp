@@ -801,11 +801,11 @@ void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Suc
           TStrings * Files = DebugNotNull(dynamic_cast<TStrings *>(FFileList->Objects[0]));
           for (int Index = 0; Index < Files->Count; Index++)
           {
-            if (StartsText(Files->Strings[Index], FileNameWithSlash))
+            if (StartsText(FileNameWithSlash, Files->GetFileName(Index)))
             {
               // We should add the file to "skip" counters in the OperationProgress,
               // but an interactive foreground transfer is not doing that either yet.
-              FFileList->Delete(Index);
+              Files->Delete(Index);
             }
           }
         }
