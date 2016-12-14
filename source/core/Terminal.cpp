@@ -7,6 +7,7 @@
 #include <SysUtils.hpp>
 #include <FileCtrl.hpp>
 #include <StrUtils.hpp>
+#include <System.IOUtils.hpp>
 
 #include "Common.h"
 #include "PuttyTools.h"
@@ -681,13 +682,15 @@ bool TRetryOperationLoop::Retry()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-TParallelOperation::TParallelOperation()
+TParallelOperation::TParallelOperation(TOperationSide Side)
 {
   FCopyParam = NULL;
   FParams = 0;
   FProbablyEmpty = false;
   FClients = 0;
   FMainOperationProgress = NULL;
+  DebugAssert((Side == osLocal) || (Side == osRemote));
+  FSide = Side;
 }
 //---------------------------------------------------------------------------
 void TParallelOperation::Init(
@@ -783,7 +786,15 @@ void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Suc
         FDirectories.erase(DirectoryIterator);
         if (FFileList->Count > 0)
         {
-          UnicodeString FileNameWithSlash = IncludeTrailingBackslash(FileName);
+          UnicodeString FileNameWithSlash;
+          if (FSide == osLocal)
+          {
+            FileNameWithSlash = IncludeTrailingBackslash(FileName);
+          }
+          else
+          {
+            FileNameWithSlash = UnixIncludeTrailingBackslash(FileName);
+          }
 
           // It can actually be a different list than the one the directory was taken from,
           // but that does not matter that much. It should not happen anyway, as more lists should be in scripting only.
@@ -832,14 +843,25 @@ int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, 
     UnicodeString RootPath = FFileList->Strings[0];
 
     FileName = Files->Strings[0];
-    Dir = (FileName[FileName.Length()] == L'\\');
+    wchar_t Slash = ((FSide == osLocal) ? L'\\' : L'/');
+    Dir = (FileName[FileName.Length()] == Slash);
     if (Dir)
     {
       FileName.SetLength(FileName.Length() - 1);
     }
-    UnicodeString DirPath = ExtractFileDir(FileName);
+    UnicodeString DirPath;
+    bool FirstLevel;
+    if (FSide == osLocal)
+    {
+      DirPath = ExtractFileDir(FileName);
+      FirstLevel = SamePaths(DirPath, RootPath);
+    }
+    else
+    {
+      DirPath = UnixExtractFileDir(FileName);
+      FirstLevel = UnixSamePath(DirPath, RootPath);
+    }
 
-    bool FirstLevel = SamePaths(DirPath, RootPath);
     if (FirstLevel)
     {
       TargetDir = FTargetDir;
@@ -858,7 +880,7 @@ int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, 
       }
       else
       {
-        TargetDir = DirectoryData.RemotePath;
+        TargetDir = DirectoryData.OppositePath;
       }
     }
 
@@ -868,9 +890,24 @@ int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, 
       {
         TDirectoryData DirectoryData;
 
-        UnicodeString OnlyFileName = ExtractFileName(FileName);
+        UnicodeString OnlyFileName;
+        if (FSide == osLocal)
+        {
+          OnlyFileName = ExtractFileName(FileName);
+        }
+        else
+        {
+          OnlyFileName = UnixExtractFileName(FileName);
+        }
         OnlyFileName = Terminal->ChangeFileName(FCopyParam, OnlyFileName, osRemote, FirstLevel);
-        DirectoryData.RemotePath = UnixCombinePaths(TargetDir, OnlyFileName);
+        if (FSide == osLocal)
+        {
+          DirectoryData.OppositePath = UnixCombinePaths(TargetDir, OnlyFileName);
+        }
+        else
+        {
+          DirectoryData.OppositePath = TPath::Combine(TargetDir, OnlyFileName);
+        }
 
         DirectoryData.Exists = false;
 

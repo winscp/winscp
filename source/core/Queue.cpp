@@ -2108,7 +2108,7 @@ void __fastcall TUploadQueueItem::DoExecute(TTerminal * Terminal)
   TTransferQueueItem::DoExecute(Terminal);
 
   DebugAssert(Terminal != NULL);
-  TParallelOperation ParallelOperation;
+  TParallelOperation ParallelOperation(osLocal);
   FParallelOperation = &ParallelOperation;
   try
   {

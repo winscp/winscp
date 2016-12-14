@@ -758,7 +758,7 @@ private:
 class TParallelOperation
 {
 public:
-  TParallelOperation();
+  TParallelOperation(TOperationSide Side);
   ~TParallelOperation();
 
   void Init(
@@ -780,7 +780,7 @@ public:
 private:
   struct TDirectoryData
   {
-    UnicodeString RemotePath;
+    UnicodeString OppositePath;
     bool Exists;
   };
 
@@ -794,6 +794,7 @@ private:
   int FClients;
   std::unique_ptr<TCriticalSection> FSection;
   TFileOperationProgressType * FMainOperationProgress;
+  TOperationSide FSide;
 };
 //---------------------------------------------------------------------------
 #endif
