@@ -682,6 +682,51 @@ bool TRetryOperationLoop::Retry()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+TCollectedFileList::TCollectedFileList()
+{
+}
+//---------------------------------------------------------------------------
+int TCollectedFileList::Add(const UnicodeString & FileName, bool Dir)
+{
+  TFileData Data;
+  Data.FileName = FileName;
+  Data.Dir = Dir;
+  Data.Recursed = true;
+  FList.push_back(Data);
+  return Count() - 1;
+}
+//---------------------------------------------------------------------------
+void TCollectedFileList::DidNotRecurse(int Index)
+{
+  FList[Index].Recursed = false;
+}
+//---------------------------------------------------------------------------
+void TCollectedFileList::Delete(int Index)
+{
+  FList.erase(FList.begin() + Index);
+}
+//---------------------------------------------------------------------------
+int TCollectedFileList::Count() const
+{
+  return FList.size();
+}
+//---------------------------------------------------------------------------
+UnicodeString TCollectedFileList::GetFileName(int Index) const
+{
+  return FList[Index].FileName;
+}
+//---------------------------------------------------------------------------
+bool TCollectedFileList::IsDir(int Index) const
+{
+  return FList[Index].Dir;
+}
+//---------------------------------------------------------------------------
+bool TCollectedFileList::IsRecursed(int Index) const
+{
+  return FList[Index].Recursed;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 TParallelOperation::TParallelOperation(TOperationSide Side)
 {
   FCopyParam = NULL;
@@ -707,6 +752,7 @@ void TParallelOperation::Init(
   FCopyParam = CopyParam;
   FParams = Params;
   FMainOperationProgress = MainOperationProgress;
+  FIndex = 0;
 }
 //---------------------------------------------------------------------------
 TParallelOperation::~TParallelOperation()
@@ -798,14 +844,23 @@ void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Suc
 
           // It can actually be a different list than the one the directory was taken from,
           // but that does not matter that much. It should not happen anyway, as more lists should be in scripting only.
-          TStrings * Files = DebugNotNull(dynamic_cast<TStrings *>(FFileList->Objects[0]));
-          for (int Index = 0; Index < Files->Count; Index++)
+          TCollectedFileList * Files = DebugNotNull(dynamic_cast<TCollectedFileList *>(FFileList->Objects[0]));
+          int Index = 0;
+          while (Index < Files->Count())
           {
             if (StartsText(FileNameWithSlash, Files->GetFileName(Index)))
             {
               // We should add the file to "skip" counters in the OperationProgress,
               // but an interactive foreground transfer is not doing that either yet.
               Files->Delete(Index);
+              if (Index < FIndex)
+              {
+                FIndex--;
+              }
+            }
+            else
+            {
+              Index++;
             }
           }
         }
@@ -814,19 +869,29 @@ void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Suc
   }
 }
 //---------------------------------------------------------------------------
-int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, UnicodeString & TargetDir, bool & Dir)
+bool TParallelOperation::CheckEnd(TCollectedFileList * Files)
+{
+  bool Result = (FIndex >= Files->Count());
+  if (Result)
+  {
+    FFileList->Delete(0);
+    FIndex = 0;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, UnicodeString & TargetDir, bool & Dir, bool & Recursed)
 {
   int Result = 1;
-  TStrings * Files;
+  TCollectedFileList * Files;
   do
   {
     if (FFileList->Count > 0)
     {
-      Files = DebugNotNull(dynamic_cast<TStrings *>(FFileList->Objects[0]));
+      Files = DebugNotNull(dynamic_cast<TCollectedFileList *>(FFileList->Objects[0]));
       // can happen if the file was excluded by file mask
-      if (Files->Count == 0)
+      if (CheckEnd(Files))
       {
-        FFileList->Delete(0);
         Files = NULL;
       }
     }
@@ -842,13 +907,9 @@ int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, 
   {
     UnicodeString RootPath = FFileList->Strings[0];
 
-    FileName = Files->Strings[0];
-    wchar_t Slash = ((FSide == osLocal) ? L'\\' : L'/');
-    Dir = (FileName[FileName.Length()] == Slash);
-    if (Dir)
-    {
-      FileName.SetLength(FileName.Length() - 1);
-    }
+    FileName = Files->GetFileName(FIndex);
+    Dir = Files->IsDir(FIndex);
+    Recursed = Files->IsRecursed(FIndex);
     UnicodeString DirPath;
     bool FirstLevel;
     if (FSide == osLocal)
@@ -914,11 +975,8 @@ int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, 
         FDirectories.insert(std::make_pair(FileName, DirectoryData));
       }
 
-      Files->Delete(0);
-      if (Files->Count == 0)
-      {
-        FFileList->Delete(0);
-      }
+      FIndex++;
+      CheckEnd(Files);
     }
   }
 
@@ -4853,15 +4911,11 @@ void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
 
       if (AllowTransfer)
       {
+        int CollectionIndex = -1;
         if (AParams->Files != NULL)
         {
           UnicodeString FullFileName = ::ExpandFileName(FileName);
-          if (Dir)
-          {
-            FullFileName += L"\\";
-          }
-
-          AParams->Files->Add(FullFileName);
+          CollectionIndex = AParams->Files->Add(FullFileName, Dir);
         }
 
         if (!Dir)
@@ -4870,7 +4924,17 @@ void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
         }
         else
         {
-          ProcessLocalDirectory(FileName, CalculateLocalFileSize, Params);
+          try
+          {
+            ProcessLocalDirectory(FileName, CalculateLocalFileSize, Params);
+          }
+          catch (...)
+          {
+            if (CollectionIndex >= 0)
+            {
+              AParams->Files->DidNotRecurse(CollectionIndex);
+            }
+          }
         }
       }
     }
@@ -4919,7 +4983,7 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
             UnicodeString DirPath = ExtractFilePath(FullFileName);
             if (DirPath != LastDirPath)
             {
-              Params.Files = new TStringList();
+              Params.Files = new TCollectedFileList();
               LastDirPath = DirPath;
               Files->AddObject(LastDirPath, Params.Files);
             }
@@ -5990,8 +6054,9 @@ int __fastcall TTerminal::CopyToRemoteParallel(TParallelOperation * ParallelOper
   UnicodeString FileName;
   UnicodeString TargetDir;
   bool Dir;
+  bool Recursed;
 
-  int Result = ParallelOperation->GetNext(this, FileName, TargetDir, Dir);
+  int Result = ParallelOperation->GetNext(this, FileName, TargetDir, Dir, Recursed);
   if (Result > 0)
   {
     std::unique_ptr<TStrings> FilesToCopy(new TStringList());
@@ -6002,7 +6067,8 @@ int __fastcall TTerminal::CopyToRemoteParallel(TParallelOperation * ParallelOper
     TOnceDoneOperation OnceDoneOperation = odoIdle;
 
     int Params = ParallelOperation->Params;
-    if (Dir)
+    // If we failed to recurse the directory when enumerating, recurse now (typically only to show the recursion error)
+    if (Dir && Recursed)
     {
       Params = Params | cpNoRecurse;
     }

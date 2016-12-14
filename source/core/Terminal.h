@@ -29,6 +29,7 @@ struct TFilesFindParams;
 class TTunnelUI;
 class TCallbackGuard;
 class TParallelOperation;
+class TCollectedFileList;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
   (TObject * Sender, const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
@@ -625,7 +626,7 @@ struct TCalculateSizeParams
   const TCopyParamType * CopyParam;
   TCalculateSizeStats * Stats;
   bool AllowDirs;
-  TStrings * Files;
+  TCollectedFileList * Files;
   bool Result;
 };
 //---------------------------------------------------------------------------
@@ -756,6 +757,30 @@ private:
   TDateTime FStart;
 };
 //---------------------------------------------------------------------------
+class TCollectedFileList : public TObject
+{
+public:
+  TCollectedFileList();
+  int Add(const UnicodeString & FileName, bool Dir);
+  void DidNotRecurse(int Index);
+  void Delete(int Index);
+
+  int Count() const;
+  UnicodeString GetFileName(int Index) const;
+  bool IsDir(int Index) const;
+  bool IsRecursed(int Index) const;
+
+private:
+  struct TFileData
+  {
+    UnicodeString FileName;
+    bool Dir;
+    bool Recursed;
+  };
+  typedef std::vector<TFileData> TFileDataList;
+  TFileDataList FList;
+};
+//---------------------------------------------------------------------------
 class TParallelOperation
 {
 public:
@@ -770,7 +795,7 @@ public:
   bool ShouldAddClient();
   void AddClient();
   void RemoveClient();
-  int GetNext(TTerminal * Terminal, UnicodeString & FileName, UnicodeString & TargetDir, bool & Dir);
+  int GetNext(TTerminal * Terminal, UnicodeString & FileName, UnicodeString & TargetDir, bool & Dir, bool & Recursed);
   void Done(const UnicodeString & FileName, bool Dir, bool Success);
 
   __property const TCopyParamType * CopyParam = { read = FCopyParam };
@@ -786,6 +811,7 @@ private:
   };
 
   std::unique_ptr<TStrings> FFileList;
+  int FIndex;
   typedef std::map<UnicodeString, TDirectoryData> TDirectories;
   TDirectories FDirectories;
   UnicodeString FTargetDir;
@@ -796,6 +822,8 @@ private:
   std::unique_ptr<TCriticalSection> FSection;
   TFileOperationProgressType * FMainOperationProgress;
   TOperationSide FSide;
+
+  bool CheckEnd(TCollectedFileList * Files);
 };
 //---------------------------------------------------------------------------
 #endif
