@@ -447,6 +447,7 @@ public:
 
   void __fastcall FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword);
   inline void __fastcall Verify();
+  inline bool __fastcall Verify(Exception * E);
   void __fastcall Dismiss();
 
 private:
@@ -516,6 +517,18 @@ void __fastcall TCallbackGuard::Verify()
       throw ESshFatal(FFatalError, L"");
     }
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCallbackGuard::Verify(Exception * E)
+{
+  bool Result =
+    (dynamic_cast<ECallbackGuardAbort *>(E) != NULL);
+  if (Result)
+  {
+    DebugAssert(FGuarding && (FFatalError != NULL));
+    Verify();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -1539,8 +1552,18 @@ void __fastcall TTerminal::Closed()
   if (OnClose)
   {
     TCallbackGuard Guard(this);
-    OnClose(this);
-    Guard.Verify();
+    try
+    {
+      OnClose(this);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 
   FStatus = ssClosed;
@@ -1704,8 +1727,18 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
     if (OnPromptUser != NULL)
     {
       TCallbackGuard Guard(this);
-      OnPromptUser(this, Kind, Name, Instructions, Prompts, Results, AResult, NULL);
-      Guard.Verify();
+      try
+      {
+        OnPromptUser(this, Kind, Name, Instructions, Prompts, Results, AResult, NULL);
+        Guard.Verify();
+      }
+      catch (Exception & E)
+      {
+        if (!Guard.Verify(&E))
+        {
+          throw;
+        }
+      }
     }
 
     if (AResult && PasswordOrPassphrasePrompt &&
@@ -1735,8 +1768,18 @@ unsigned int __fastcall TTerminal::QueryUser(const UnicodeString Query,
   if (FOnQueryUser)
   {
     TCallbackGuard Guard(this);
-    FOnQueryUser(this, Query, MoreMessages, Answers, Params, Answer, QueryType, NULL);
-    Guard.Verify();
+    try
+    {
+      FOnQueryUser(this, Query, MoreMessages, Answers, Params, Answer, QueryType, NULL);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
   return Answer;
 }
@@ -1798,10 +1841,22 @@ void __fastcall TTerminal::DisplayBanner(const UnicodeString & Banner)
       bool NeverShowAgain = false;
       int Options =
         FLAGMASK(Configuration->ForceBanners, boDisableNeverShowAgain);
+
       TCallbackGuard Guard(this);
-      OnDisplayBanner(this, SessionData->SessionName, Banner,
-        NeverShowAgain, Options);
-      Guard.Verify();
+      try
+      {
+        OnDisplayBanner(this, SessionData->SessionName, Banner,
+          NeverShowAgain, Options);
+        Guard.Verify();
+      }
+      catch (Exception & E)
+      {
+        if (!Guard.Verify(&E))
+        {
+          throw;
+        }
+      }
+
       if (!Configuration->ForceBanners && NeverShowAgain)
       {
         Configuration->NeverShowBanner(SessionData->SessionKey, Banner);
@@ -1816,10 +1871,20 @@ void __fastcall TTerminal::HandleExtendedException(Exception * E)
   if (OnShowExtendedException != NULL)
   {
     TCallbackGuard Guard(this);
-    // the event handler may destroy 'this' ...
-    OnShowExtendedException(this, E, NULL);
-    // .. hence guard is dismissed from destructor, to make following call no-op
-    Guard.Verify();
+    try
+    {
+      // the event handler may destroy 'this' ...
+      OnShowExtendedException(this, E, NULL);
+      // .. hence guard is dismissed from destructor, to make following call no-op
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1838,8 +1903,18 @@ void __fastcall TTerminal::DoInformation(const UnicodeString & Str, bool Status,
   if (OnInformation)
   {
     TCallbackGuard Guard(this);
-    OnInformation(this, Str, Status, Phase);
-    Guard.Verify();
+    try
+    {
+      OnInformation(this, Str, Status, Phase);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1853,8 +1928,18 @@ void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
   if (OnProgress != NULL)
   {
     TCallbackGuard Guard(this);
-    OnProgress(ProgressData);
-    Guard.Verify();
+    try
+    {
+      OnProgress(ProgressData);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1864,8 +1949,18 @@ void __fastcall TTerminal::DoFinished(TFileOperation Operation, TOperationSide S
   if (OnFinished != NULL)
   {
     TCallbackGuard Guard(this);
-    OnFinished(Operation, Side, Temp, FileName, Success, OnceDoneOperation);
-    Guard.Verify();
+    try
+    {
+      OnFinished(Operation, Side, Temp, FileName, Success, OnceDoneOperation);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2326,8 +2421,18 @@ void __fastcall TTerminal::DoInitializeLog()
   if (FOnInitializeLog)
   {
     TCallbackGuard Guard(this);
-    FOnInitializeLog(this);
-    Guard.Verify();
+    try
+    {
+      FOnInitializeLog(this);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2336,8 +2441,18 @@ void __fastcall TTerminal::DoChangeDirectory()
   if (FOnChangeDirectory)
   {
     TCallbackGuard Guard(this);
-    FOnChangeDirectory(this);
-    Guard.Verify();
+    try
+    {
+      FOnChangeDirectory(this);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2346,8 +2461,18 @@ void __fastcall TTerminal::DoReadDirectory(bool ReloadOnly)
   if (FOnReadDirectory)
   {
     TCallbackGuard Guard(this);
-    FOnReadDirectory(this, ReloadOnly);
-    Guard.Verify();
+    try
+    {
+      FOnReadDirectory(this, ReloadOnly);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2356,8 +2481,18 @@ void __fastcall TTerminal::DoStartReadDirectory()
   if (FOnStartReadDirectory)
   {
     TCallbackGuard Guard(this);
-    FOnStartReadDirectory(this);
-    Guard.Verify();
+    try
+    {
+      FOnStartReadDirectory(this);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2366,14 +2501,34 @@ void __fastcall TTerminal::DoReadDirectoryProgress(int Progress, int ResolvedLin
   if (FReadingCurrentDirectory && (FOnReadDirectoryProgress != NULL))
   {
     TCallbackGuard Guard(this);
-    FOnReadDirectoryProgress(this, Progress, ResolvedLinks, Cancel);
-    Guard.Verify();
+    try
+    {
+      FOnReadDirectoryProgress(this, Progress, ResolvedLinks, Cancel);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
   if (FOnFindingFile != NULL)
   {
     TCallbackGuard Guard(this);
-    FOnFindingFile(this, L"", Cancel);
-    Guard.Verify();
+    try
+    {
+      FOnFindingFile(this, L"", Cancel);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
