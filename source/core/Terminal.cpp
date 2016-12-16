@@ -6204,7 +6204,7 @@ bool __fastcall TTerminal::GetStoredCredentialsTried()
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall TTerminal::CopyToRemoteParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress)
+int __fastcall TTerminal::CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress)
 {
   UnicodeString FileName;
   UnicodeString TargetDir;
@@ -6217,7 +6217,10 @@ int __fastcall TTerminal::CopyToRemoteParallel(TParallelOperation * ParallelOper
     std::unique_ptr<TStrings> FilesToCopy(new TStringList());
     FilesToCopy->Add(FileName);
 
-    UnicodeString UnlockedTargetDir = TranslateLockedPath(TargetDir, false);
+    if (ParallelOperation->Side == osLocal)
+    {
+      TargetDir = TranslateLockedPath(TargetDir, false);
+    }
     // OnceDoneOperation is not supported
     TOnceDoneOperation OnceDoneOperation = odoIdle;
 
@@ -6231,8 +6234,15 @@ int __fastcall TTerminal::CopyToRemoteParallel(TParallelOperation * ParallelOper
     int Prev = OperationProgress->FilesFinishedSuccessfully;
     try
     {
-      FFileSystem->CopyToRemote(
-        FilesToCopy.get(), UnlockedTargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
+      if (ParallelOperation->Side == osLocal)
+      {
+        FFileSystem->CopyToRemote(
+          FilesToCopy.get(), TargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
+      }
+      else
+      {
+        DebugFail();
+      }
     }
     __finally
     {
@@ -6254,6 +6264,32 @@ bool __fastcall TTerminal::CanParallel(
     // after all its files are processed
     FLAGCLEAR(Params, cpDelete) &&
     (!CopyParam->PreserveTime || !CopyParam->PreserveTimeDirs);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::CopyParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress)
+{
+  try
+  {
+    bool Continue = true;
+    do
+    {
+      int GotNext = CopyToParallel(ParallelOperation, OperationProgress);
+      if (GotNext < 0)
+      {
+        Continue = false;
+      }
+      else if (GotNext == 0)
+      {
+        Sleep(100);
+      }
+    }
+    while (Continue && !OperationProgress->Cancel);
+  }
+  __finally
+  {
+    OperationProgress->SetDone();
+    ParallelOperation->WaitFor();
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
@@ -6321,31 +6357,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
         {
           // OnceDoneOperation is not supported
           ParallelOperation->Init(Files.release(), UnlockedTargetDir, CopyParam, Params, &OperationProgress);
-
-          try
-          {
-            bool Continue = true;
-            do
-            {
-              int GotNext = CopyToRemoteParallel(ParallelOperation, &OperationProgress);
-              if (GotNext < 0)
-              {
-                Continue = false;
-              }
-              else if (GotNext == 0)
-              {
-                Sleep(100);
-              }
-            }
-            while (Continue && !OperationProgress.Cancel);
-
-            Result = true;
-          }
-          __finally
-          {
-            OperationProgress.SetDone();
-            ParallelOperation->WaitFor();
-          }
+          CopyParallel(ParallelOperation, &OperationProgress);
         }
         else
         {

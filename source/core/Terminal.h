@@ -400,6 +400,7 @@ protected:
   bool __fastcall CanRecurseToDirectory(const TRemoteFile * File);
   bool __fastcall DoOnCustomCommand(const UnicodeString & Command);
   bool __fastcall CanParallel(const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
+  void __fastcall CopyParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -432,7 +433,7 @@ public:
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params);
   bool __fastcall CopyToRemote(TStrings * FilesToCopy,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
-  int __fastcall CopyToRemoteParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
+  int __fastcall CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
   void __fastcall CreateDirectory(const UnicodeString DirName,
     const TRemoteProperties * Properties = NULL);
   void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
@@ -798,6 +799,7 @@ public:
   int GetNext(TTerminal * Terminal, UnicodeString & FileName, UnicodeString & TargetDir, bool & Dir, bool & Recursed);
   void Done(const UnicodeString & FileName, bool Dir, bool Success);
 
+  __property TOperationSide Side = { read = FSide };
   __property const TCopyParamType * CopyParam = { read = FCopyParam };
   __property int Params = { read = FParams };
   __property UnicodeString TargetDir = { read = FTargetDir };

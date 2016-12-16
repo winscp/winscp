@@ -2199,7 +2199,7 @@ void __fastcall TParallelUploadQueueItem::DoExecute(TTerminal * Terminal)
     bool Continue = true;
     do
     {
-      int GotNext = Terminal->CopyToRemoteParallel(FParallelOperation, &OperationProgress);
+      int GotNext = Terminal->CopyToParallel(FParallelOperation, &OperationProgress);
       if (GotNext < 0)
       {
         Continue = false;
