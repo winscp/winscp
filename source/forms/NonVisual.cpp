@@ -1030,7 +1030,8 @@ UnicodeString __fastcall TNonVisualDataModule::CustomCommandCaption(const TCusto
   UnicodeString Result = Command->Name;
   if (Toolbar)
   {
-    Result = EscapeHotkey(StripHotkey(Result));
+    Result = StripHotkey(Result);
+    Result = EscapeHotkey(Result);
   }
   return Result;
 }
@@ -1184,9 +1185,11 @@ bool __fastcall TNonVisualDataModule::CheckCustomCommandsToolbarList(TTBXToolbar
     TTBCustomItem * Item = Toolbar->Items->Items[Index];
     const TCustomCommandType * Command = List->Commands[CommandIndex];
 
+    UnicodeString Caption = CustomCommandCaption(Command, true);
+    UnicodeString Hint = CustomCommandHint(Command);
     Changed =
-      (Item->Caption != CustomCommandCaption(Command, true)) ||
-      (Item->Hint != CustomCommandHint(Command));
+      (Item->Caption != Caption) ||
+      (Item->Hint != Hint);
 
     Index++;
     CommandIndex++;
