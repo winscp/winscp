@@ -89,6 +89,9 @@ extern "C" {
 # ifdef PBE_UNICODE
 #  define PKCS12_key_gen PKCS12_key_gen_uni
 #  define PKCS12_add_friendlyname PKCS12_add_friendlyname_uni
+#  ifdef WINSCP
+#   define PKCS12_key_gen_uni PKCS12_key_gen_wrap
+#  endif
 # else
 #  define PKCS12_key_gen PKCS12_key_gen_asc
 #  define PKCS12_add_friendlyname PKCS12_add_friendlyname_asc

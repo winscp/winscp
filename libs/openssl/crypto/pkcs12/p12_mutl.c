@@ -93,15 +93,6 @@ int PKCS12_gen_mac(PKCS12 *p12, const char *pass, int passlen,
     md_size = EVP_MD_size(md_type);
     if (md_size < 0)
         return 0;
-    #if defined(WINSCP) && defined(PBE_UNICODE)
-    if (passlen < 0)
-    {
-      // PKCS12_key_gen_uni cannot handle -1 length (contrary to PKCS12_key_gen_asc).
-      // OPENSSL_asc2uni adds the trailing \0 to the length,
-      // even if input ascii password length does not include it.
-      passlen = (wcslen((wchar_t*)pass) * sizeof(wchar_t)) + sizeof(wchar_t);
-    }
-    #endif
     if (!PKCS12_key_gen(pass, passlen, salt, saltlen, PKCS12_MAC_ID, iter,
                         md_size, key, md_type)) {
         PKCS12err(PKCS12_F_PKCS12_GEN_MAC, PKCS12_R_KEY_GEN_ERROR);
