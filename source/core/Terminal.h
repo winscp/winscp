@@ -295,7 +295,9 @@ protected:
   bool __fastcall HandleException(Exception * E);
   void __fastcall CalculateFileSize(UnicodeString FileName,
     const TRemoteFile * File, /*TCalculateSizeParams*/ void * Size);
-  void __fastcall DoCalculateDirectorySize(const UnicodeString FileName,
+  void __fastcall DoCalculateFileSize(UnicodeString FileName,
+    const TRemoteFile * File, void * Param);
+  bool __fastcall DoCalculateDirectorySize(const UnicodeString FileName,
     const TRemoteFile * File, TCalculateSizeParams * Params);
   void __fastcall CalculateLocalFileSize(const UnicodeString FileName,
     const TSearchRec Rec, /*__int64*/ void * Size);
@@ -430,7 +432,7 @@ public:
   bool __fastcall FileExists(const UnicodeString FileName, TRemoteFile ** File = NULL);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(TStrings * FilesToCopy,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params);
+    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
   bool __fastcall CopyToRemote(TStrings * FilesToCopy,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
   int __fastcall CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
@@ -470,7 +472,7 @@ public:
     const UnicodeString FileMask);
   bool __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size,
     int Params, const TCopyParamType * CopyParam, bool AllowDirs,
-    TCalculateSizeStats * Stats);
+    TCalculateSizeStats & Stats);
   void __fastcall CalculateFilesChecksum(const UnicodeString & Alg, TStrings * FileList,
     TStrings * Checksums, TCalculatedChecksumEvent OnCalculatedChecksum);
   void __fastcall ClearCaches();
@@ -618,6 +620,7 @@ struct TCalculateSizeStats
   int Files;
   int Directories;
   int SymLinks;
+  TStrings * FoundFiles;
 };
 //---------------------------------------------------------------------------
 struct TCalculateSizeParams
@@ -628,6 +631,7 @@ struct TCalculateSizeParams
   TCalculateSizeStats * Stats;
   bool AllowDirs;
   TCollectedFileList * Files;
+  UnicodeString LastDirPath;
   bool Result;
 };
 //---------------------------------------------------------------------------
@@ -762,12 +766,13 @@ class TCollectedFileList : public TObject
 {
 public:
   TCollectedFileList();
-  int Add(const UnicodeString & FileName, bool Dir);
+  int Add(const UnicodeString & FileName, TObject * Object, bool Dir);
   void DidNotRecurse(int Index);
   void Delete(int Index);
 
   int Count() const;
   UnicodeString GetFileName(int Index) const;
+  TObject * GetObject(int Index) const;
   bool IsDir(int Index) const;
   bool IsRecursed(int Index) const;
 
@@ -775,6 +780,7 @@ private:
   struct TFileData
   {
     UnicodeString FileName;
+    TObject * Object;
     bool Dir;
     bool Recursed;
   };
@@ -796,7 +802,9 @@ public:
   bool ShouldAddClient();
   void AddClient();
   void RemoveClient();
-  int GetNext(TTerminal * Terminal, UnicodeString & FileName, UnicodeString & TargetDir, bool & Dir, bool & Recursed);
+  int GetNext(
+    TTerminal * Terminal, UnicodeString & FileName, TObject *& Object, UnicodeString & TargetDir,
+    bool & Dir, bool & Recursed);
   void Done(const UnicodeString & FileName, bool Dir, bool Success);
 
   __property TOperationSide Side = { read = FSide };

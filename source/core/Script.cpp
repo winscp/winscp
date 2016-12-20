@@ -1432,7 +1432,7 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     CopyParamParams(CopyParam, Parameters);
     CheckParams(Parameters);
 
-    FTerminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, Params);
+    FTerminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, Params, NULL);
   }
   __finally
   {

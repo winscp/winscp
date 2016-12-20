@@ -699,10 +699,11 @@ TCollectedFileList::TCollectedFileList()
 {
 }
 //---------------------------------------------------------------------------
-int TCollectedFileList::Add(const UnicodeString & FileName, bool Dir)
+int TCollectedFileList::Add(const UnicodeString & FileName, TObject * Object, bool Dir)
 {
   TFileData Data;
   Data.FileName = FileName;
+  Data.Object = Object;
   Data.Dir = Dir;
   Data.Recursed = true;
   FList.push_back(Data);
@@ -727,6 +728,11 @@ int TCollectedFileList::Count() const
 UnicodeString TCollectedFileList::GetFileName(int Index) const
 {
   return FList[Index].FileName;
+}
+//---------------------------------------------------------------------------
+TObject * TCollectedFileList::GetObject(int Index) const
+{
+  return FList[Index].Object;
 }
 //---------------------------------------------------------------------------
 bool TCollectedFileList::IsDir(int Index) const
@@ -893,7 +899,7 @@ bool TParallelOperation::CheckEnd(TCollectedFileList * Files)
   return Result;
 }
 //---------------------------------------------------------------------------
-int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, UnicodeString & TargetDir, bool & Dir, bool & Recursed)
+int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, TObject *& Object, UnicodeString & TargetDir, bool & Dir, bool & Recursed)
 {
   int Result = 1;
   TCollectedFileList * Files;
@@ -921,6 +927,7 @@ int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, 
     UnicodeString RootPath = FFileList->Strings[0];
 
     FileName = Files->GetFileName(FIndex);
+    Object = Files->GetObject(FIndex);
     Dir = Files->IsDir(FIndex);
     Recursed = Files->IsRecursed(FIndex);
     UnicodeString DirPath;
@@ -4128,6 +4135,26 @@ bool __fastcall TTerminal::LoadFilesProperties(TStrings * FileList)
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::DoCalculateFileSize(UnicodeString FileName,
+  const TRemoteFile * File, void * Param)
+{
+  TCalculateSizeParams * AParams = static_cast<TCalculateSizeParams*>(Param);
+
+  if (AParams->Stats->FoundFiles != NULL)
+  {
+    UnicodeString DirPath = UnixExtractFilePath(UnixExcludeTrailingBackslash(File->FullFileName));
+    if ((DirPath != AParams->LastDirPath) ||
+        (AParams->Files == NULL))
+    {
+      AParams->Files = new TCollectedFileList();
+      AParams->LastDirPath = DirPath;
+      AParams->Stats->FoundFiles->AddObject(AParams->LastDirPath, AParams->Files);
+    }
+  }
+
+  CalculateFileSize(FileName, File, Param);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
   const TRemoteFile * File, /*TCalculateSizeParams*/ void * Param)
 {
@@ -4163,6 +4190,13 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
 
   if (AllowTransfer)
   {
+    int CollectionIndex = -1;
+    if (AParams->Files != NULL)
+    {
+      UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
+      CollectionIndex = AParams->Files->Add(FullFileName, File->Duplicate(), File->IsDirectory);
+    }
+
     if (File->IsDirectory)
     {
       if (CanRecurseToDirectory(File))
@@ -4175,41 +4209,43 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
         {
           LogEvent(FORMAT(L"Getting size of directory \"%s\"", (FileName)));
           // pass in full path so we get it back in file list for AllowTransfer() exclusion
-          DoCalculateDirectorySize(File->FullFileName, File, AParams);
+          if (!DoCalculateDirectorySize(File->FullFileName, File, AParams))
+          {
+            if (CollectionIndex >= 0)
+            {
+              AParams->Files->DidNotRecurse(CollectionIndex);
+            }
+          }
         }
       }
 
-      if (AParams->Stats != NULL)
-      {
-        AParams->Stats->Directories++;
-      }
+      AParams->Stats->Directories++;
     }
     else
     {
       AParams->Size += File->Size;
 
-      if (AParams->Stats != NULL)
-      {
-        AParams->Stats->Files++;
-      }
+      AParams->Stats->Files++;
     }
 
-    if ((AParams->Stats != NULL) && File->IsSymLink)
+    if (File->IsSymLink)
     {
       AParams->Stats->SymLinks++;
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString FileName,
+bool __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString FileName,
   const TRemoteFile * /*File*/, TCalculateSizeParams * Params)
 {
+  bool Result = false;
   TRetryOperationLoop RetryLoop(this);
   do
   {
     try
     {
       ProcessDirectory(FileName, CalculateFileSize, Params);
+      Result = true;
     }
     catch(Exception & E)
     {
@@ -4221,11 +4257,12 @@ void __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString FileName
     }
   }
   while (RetryLoop.Retry());
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
   __int64 & Size, int Params, const TCopyParamType * CopyParam,
-  bool AllowDirs, TCalculateSizeStats * Stats)
+  bool AllowDirs, TCalculateSizeStats & Stats)
 {
   // With FTP protocol, we may use DSIZ command from
   // draft-peterson-streamlined-ftp-command-extensions-10
@@ -4238,10 +4275,11 @@ bool __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
   Param.Size = 0;
   Param.Params = Params;
   Param.CopyParam = CopyParam;
-  Param.Stats = Stats;
+  Param.Stats = &Stats;
   Param.AllowDirs = AllowDirs;
   Param.Result = true;
-  ProcessFiles(FileList, foCalculateSize, CalculateFileSize, &Param);
+  Param.Files = NULL;
+  ProcessFiles(FileList, foCalculateSize, DoCalculateFileSize, &Param);
   Size = Param.Size;
   return Param.Result;
 }
@@ -5070,7 +5108,7 @@ void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
         if (AParams->Files != NULL)
         {
           UnicodeString FullFileName = ::ExpandFileName(FileName);
-          CollectionIndex = AParams->Files->Add(FullFileName, Dir);
+          CollectionIndex = AParams->Files->Add(FullFileName, NULL, Dir);
         }
 
         if (!Dir)
@@ -5853,7 +5891,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
         else
         {
           if ((DownloadList->Count > 0) &&
-              !CopyToLocal(DownloadList, Data.LocalDirectory, &SyncCopyParam, CopyParams))
+              !CopyToLocal(DownloadList, Data.LocalDirectory, &SyncCopyParam, CopyParams, NULL))
           {
             Abort();
           }
@@ -6207,15 +6245,16 @@ bool __fastcall TTerminal::GetStoredCredentialsTried()
 int __fastcall TTerminal::CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress)
 {
   UnicodeString FileName;
+  TObject * Object;
   UnicodeString TargetDir;
   bool Dir;
   bool Recursed;
 
-  int Result = ParallelOperation->GetNext(this, FileName, TargetDir, Dir, Recursed);
+  int Result = ParallelOperation->GetNext(this, FileName, Object, TargetDir, Dir, Recursed);
   if (Result > 0)
   {
     std::unique_ptr<TStrings> FilesToCopy(new TStringList());
-    FilesToCopy->Add(FileName);
+    FilesToCopy->AddObject(FileName, Object);
 
     if (ParallelOperation->Side == osLocal)
     {
@@ -6234,20 +6273,23 @@ int __fastcall TTerminal::CopyToParallel(TParallelOperation * ParallelOperation,
     int Prev = OperationProgress->FilesFinishedSuccessfully;
     try
     {
+      FOperationProgress = OperationProgress;
       if (ParallelOperation->Side == osLocal)
       {
         FFileSystem->CopyToRemote(
           FilesToCopy.get(), TargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
       }
-      else
+      else if (DebugAlwaysTrue(ParallelOperation->Side == osRemote))
       {
-        DebugFail();
+        FFileSystem->CopyToLocal(
+          FilesToCopy.get(), TargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
       }
     }
     __finally
     {
       bool Success = (Prev < OperationProgress->FilesFinishedSuccessfully);
       ParallelOperation->Done(FileName, Dir, Success);
+      FOperationProgress = NULL;
     }
   }
 
@@ -6406,7 +6448,8 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
-  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params)
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
+  TParallelOperation * ParallelOperation)
 {
   DebugAssert(FFileSystem);
 
@@ -6423,14 +6466,23 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
     bool TotalSizeKnown = false;
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
 
+    std::unique_ptr<TStringList> Files;
+    if (CanParallel(CopyParam, Params, ParallelOperation))
+    {
+      Files.reset(new TStringList());
+      Files->OwnsObjects = true;
+    }
+
     ExceptionOnFail = true;
     try
     {
       // dirty trick: when moving, do not pass copy param to avoid exclude mask
+      TCalculateSizeStats Stats;
+      Stats.FoundFiles = Files.get();
       if (CalculateFilesSize(
            FilesToCopy, TotalSize, csIgnoreErrors,
            (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
-           CopyParam->CalculateSize, NULL))
+           CopyParam->CalculateSize, Stats))
       {
         TotalSizeKnown = true;
       }
@@ -6465,15 +6517,26 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
       {
         try
         {
+          bool Parallel = TotalSizeKnown && (Files.get() != NULL);
           if (Log->Logging)
           {
-            LogEvent(FORMAT(L"Copying %d files/directories to local directory "
-              "\"%s\"", (FilesToCopy->Count, TargetDir)));
+            LogEvent(FORMAT(
+              L"Copying %d files/directories to local directory \"%s\"%s",
+              (FilesToCopy->Count, TargetDir, (Parallel ? L" in parallel" : L""))));
             LogEvent(CopyParam->LogStr);
           }
 
-          FFileSystem->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params,
-            &OperationProgress, OnceDoneOperation);
+          if (Parallel)
+          {
+            // OnceDoneOperation is not supported
+            ParallelOperation->Init(Files.release(), TargetDir, CopyParam, Params, &OperationProgress);
+            CopyParallel(ParallelOperation, &OperationProgress);
+          }
+          else
+          {
+            FFileSystem->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params,
+              &OperationProgress, OnceDoneOperation);
+          }
         }
         __finally
         {

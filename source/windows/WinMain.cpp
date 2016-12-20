@@ -163,7 +163,7 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
 
       std::unique_ptr<TStrings> FileList(new TStringList());
       FileList->AddObject(FileName, File);
-      Terminal->CopyToLocal(FileList.get(), TargetDirectory, &CopyParam, 0);
+      Terminal->CopyToLocal(FileList.get(), TargetDirectory, &CopyParam, 0, NULL);
     }
 
     UnicodeString Directory = UnixExtractFilePath(FileName);

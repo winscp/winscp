@@ -1165,7 +1165,7 @@ void __fastcall TCustomScpExplorerForm::AddQueueItem(
   else
   {
     QueueItem = new TDownloadQueueItem(Terminal, FileList, TargetDirectory,
-      &CopyParam, Params, SingleFile);
+      &CopyParam, Params, SingleFile, CopyParam.QueueParallel);
   }
   AddQueueItem(Queue, QueueItem, Terminal);
 }
@@ -2371,8 +2371,8 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
 
               try
               {
-                Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam,
-                  Params);
+                Terminal->CopyToLocal(
+                  FileList, TargetDirectory, &CopyParam, Params, NULL);
               }
               __finally
               {
@@ -3045,8 +3045,8 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
     {
       // turn off confirmations, as for MDI editors we may possibly download
       // the same file over
-      Terminal->CopyToLocal(FileList, TempDir, &CopyParam,
-        cpNoConfirmation | cpTemporary);
+      Terminal->CopyToLocal(
+        FileList, TempDir, &CopyParam, cpNoConfirmation | cpTemporary, NULL);
 
       if (GetTargetNames)
       {
@@ -3946,7 +3946,7 @@ void __fastcall TCustomScpExplorerForm::CalculateSize(
   {
     try
     {
-      Terminal->CalculateFilesSize(FileList, Size, 0, NULL, true, &Stats);
+      Terminal->CalculateFilesSize(FileList, Size, 0, NULL, true, Stats);
     }
     catch(...)
     {
@@ -6891,7 +6891,7 @@ void __fastcall TCustomScpExplorerForm::DDDownload(TStrings * FilesToCopy,
   try
   {
     UpdateCopyParamCounters(*CopyParam);
-    Terminal->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params);
+    Terminal->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params, NULL);
     if (FLAGSET(Params, cpDelete) && (DropSourceControl == RemoteDriveView))
     {
       RemoteDriveView->UpdateDropSource();

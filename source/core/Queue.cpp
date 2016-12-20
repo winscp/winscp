@@ -12,10 +12,10 @@
 //---------------------------------------------------------------------------
 class TBackgroundTerminal;
 //---------------------------------------------------------------------------
-class TParallelUploadQueueItem : public TLocatedQueueItem
+class TParallelTransferQueueItem : public TLocatedQueueItem
 {
 public:
-  __fastcall TParallelUploadQueueItem(const TUploadQueueItem * ParentItem, TParallelOperation * ParallelOperation);
+  __fastcall TParallelTransferQueueItem(const TLocatedQueueItem * ParentItem, TParallelOperation * ParallelOperation);
 
 protected:
   virtual void __fastcall DoExecute(TTerminal * Terminal);
@@ -1732,18 +1732,6 @@ TQueueItem * __fastcall TQueueItem::CreateParallelOperation()
   return NULL;
 }
 //---------------------------------------------------------------------------
-void __fastcall TQueueItem::InitParallelOperationInfo(TQueueItem * Item)
-{
-  // deliberately not copying the ModifiedLocal and ModifiedRemote, not to trigger panel refresh, when sub-item completes
-  FInfo->Operation = Item->FInfo->Operation;
-  FInfo->Side = Item->FInfo->Side;
-  FInfo->Source = Item->FInfo->Source;
-  FInfo->Destination = Item->FInfo->Destination;
-  FInfo->SingleFile = DebugAlwaysFalse(Item->FInfo->SingleFile);
-  FInfo->Primary = false;
-  FInfo->GroupToken = Item->FInfo->GroupToken;
-}
-//---------------------------------------------------------------------------
 // TQueueItemProxy
 //---------------------------------------------------------------------------
 __fastcall TQueueItemProxy::TQueueItemProxy(TTerminalQueue * Queue,
@@ -2018,7 +2006,7 @@ void __fastcall TLocatedQueueItem::DoExecute(TTerminal * Terminal)
 __fastcall TTransferQueueItem::TTransferQueueItem(TTerminal * Terminal,
   TStrings * FilesToCopy, const UnicodeString & TargetDir,
   const TCopyParamType * CopyParam, int Params, TOperationSide Side,
-  bool SingleFile) :
+  bool SingleFile, bool Parallel) :
   TLocatedQueueItem(Terminal), FFilesToCopy(NULL), FCopyParam(NULL)
 {
   FInfo->Operation = (Params & cpDelete ? foMove : foCopy);
@@ -2040,6 +2028,10 @@ __fastcall TTransferQueueItem::TTransferQueueItem(TTerminal * Terminal,
   FCopyParam = new TCopyParamType(*CopyParam);
 
   FParams = Params;
+
+  FParallel = Parallel;
+  FLastParallelOperationAdded = GetTickCount();
+
 }
 //---------------------------------------------------------------------------
 __fastcall TTransferQueueItem::~TTransferQueueItem()
@@ -2057,62 +2049,16 @@ unsigned long __fastcall TTransferQueueItem::DefaultCPSLimit()
   return FCopyParam->CPSLimit;
 }
 //---------------------------------------------------------------------------
-// TUploadQueueItem
-//---------------------------------------------------------------------------
-__fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
-  TStrings * FilesToCopy, const UnicodeString & TargetDir,
-  const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel) :
-  TTransferQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, osLocal, SingleFile)
+void __fastcall TTransferQueueItem::DoExecute(TTerminal * Terminal)
 {
-  if (FilesToCopy->Count > 1)
-  {
-    if (FLAGSET(Params, cpTemporary))
-    {
-      FInfo->Source = L"";
-      FInfo->ModifiedLocal = L"";
-    }
-    else
-    {
-      ExtractCommonPath(FilesToCopy, FInfo->Source);
-      // this way the trailing backslash is preserved for root directories like D:\\
-      FInfo->Source = ExtractFileDir(IncludeTrailingBackslash(FInfo->Source));
-      FInfo->ModifiedLocal = FLAGCLEAR(Params, cpDelete) ? UnicodeString() :
-        IncludeTrailingBackslash(FInfo->Source);
-    }
-  }
-  else
-  {
-    if (FLAGSET(Params, cpTemporary))
-    {
-      FInfo->Source = ExtractFileName(FilesToCopy->Strings[0]);
-      FInfo->ModifiedLocal = L"";
-    }
-    else
-    {
-      DebugAssert(FilesToCopy->Count > 0);
-      FInfo->Source = FilesToCopy->Strings[0];
-      FInfo->ModifiedLocal = FLAGCLEAR(Params, cpDelete) ? UnicodeString() :
-        IncludeTrailingBackslash(ExtractFilePath(FInfo->Source));
-    }
-  }
-
-  FInfo->Destination =
-    UnixIncludeTrailingBackslash(TargetDir) + CopyParam->FileMask;
-  FInfo->ModifiedRemote = UnixIncludeTrailingBackslash(TargetDir);
-  FParallel = Parallel;
-  FLastParallelOperationAdded = GetTickCount();
-}
-//---------------------------------------------------------------------------
-void __fastcall TUploadQueueItem::DoExecute(TTerminal * Terminal)
-{
-  TTransferQueueItem::DoExecute(Terminal);
+  TLocatedQueueItem::DoExecute(Terminal);
 
   DebugAssert(Terminal != NULL);
-  TParallelOperation ParallelOperation(osLocal);
+  TParallelOperation ParallelOperation(FInfo->Side);
   FParallelOperation = &ParallelOperation;
   try
   {
-    Terminal->CopyToRemote(FFilesToCopy, FTargetDir, FCopyParam, FParams, &ParallelOperation);
+    DoTransferExecute(Terminal, FParallelOperation);
   }
   __finally
   {
@@ -2120,9 +2066,9 @@ void __fastcall TUploadQueueItem::DoExecute(TTerminal * Terminal)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TUploadQueueItem::ProgressUpdated()
+void __fastcall TTransferQueueItem::ProgressUpdated()
 {
-  TTransferQueueItem::ProgressUpdated();
+  TLocatedQueueItem::ProgressUpdated();
 
   if (FParallel)
   {
@@ -2163,25 +2109,81 @@ void __fastcall TUploadQueueItem::ProgressUpdated()
   }
 }
 //---------------------------------------------------------------------------
-TQueueItem * __fastcall TUploadQueueItem::CreateParallelOperation()
+TQueueItem * __fastcall TTransferQueueItem::CreateParallelOperation()
 {
   DebugAssert(FParallelOperation != NULL);
 
   FParallelOperation->AddClient();
-  return new TParallelUploadQueueItem(this, FParallelOperation);
+  return new TParallelTransferQueueItem(this, FParallelOperation);
 }
 //---------------------------------------------------------------------------
-// TDownloadQueueItem
+// TUploadQueueItem
 //---------------------------------------------------------------------------
-__fastcall TParallelUploadQueueItem::TParallelUploadQueueItem(
-    const TUploadQueueItem * ParentItem, TParallelOperation * ParallelOperation) :
+__fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
+  TStrings * FilesToCopy, const UnicodeString & TargetDir,
+  const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel) :
+  TTransferQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, osLocal, SingleFile, Parallel)
+{
+  if (FilesToCopy->Count > 1)
+  {
+    if (FLAGSET(Params, cpTemporary))
+    {
+      FInfo->Source = L"";
+      FInfo->ModifiedLocal = L"";
+    }
+    else
+    {
+      ExtractCommonPath(FilesToCopy, FInfo->Source);
+      // this way the trailing backslash is preserved for root directories like D:\\
+      FInfo->Source = ExtractFileDir(IncludeTrailingBackslash(FInfo->Source));
+      FInfo->ModifiedLocal = FLAGCLEAR(Params, cpDelete) ? UnicodeString() :
+        IncludeTrailingBackslash(FInfo->Source);
+    }
+  }
+  else
+  {
+    if (FLAGSET(Params, cpTemporary))
+    {
+      FInfo->Source = ExtractFileName(FilesToCopy->Strings[0]);
+      FInfo->ModifiedLocal = L"";
+    }
+    else
+    {
+      DebugAssert(FilesToCopy->Count > 0);
+      FInfo->Source = FilesToCopy->Strings[0];
+      FInfo->ModifiedLocal = FLAGCLEAR(Params, cpDelete) ? UnicodeString() :
+        IncludeTrailingBackslash(ExtractFilePath(FInfo->Source));
+    }
+  }
+
+  FInfo->Destination =
+    UnixIncludeTrailingBackslash(TargetDir) + CopyParam->FileMask;
+  FInfo->ModifiedRemote = UnixIncludeTrailingBackslash(TargetDir);
+}
+//---------------------------------------------------------------------------
+void __fastcall TUploadQueueItem::DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation)
+{
+  Terminal->CopyToRemote(FFilesToCopy, FTargetDir, FCopyParam, FParams, ParallelOperation);
+}
+//---------------------------------------------------------------------------
+// TParallelTransferQueueItem
+//---------------------------------------------------------------------------
+__fastcall TParallelTransferQueueItem::TParallelTransferQueueItem(
+    const TLocatedQueueItem * ParentItem, TParallelOperation * ParallelOperation) :
   TLocatedQueueItem(*ParentItem),
   FParallelOperation(ParallelOperation)
 {
-  InitParallelOperationInfo(ParentItem);
+  // deliberately not copying the ModifiedLocal and ModifiedRemote, not to trigger panel refresh, when sub-item completes
+  FInfo->Operation = ParentItem->FInfo->Operation;
+  FInfo->Side = ParentItem->FInfo->Side;
+  FInfo->Source = ParentItem->FInfo->Source;
+  FInfo->Destination = ParentItem->FInfo->Destination;
+  FInfo->SingleFile = DebugAlwaysFalse(ParentItem->FInfo->SingleFile);
+  FInfo->Primary = false;
+  FInfo->GroupToken = ParentItem->FInfo->GroupToken;
 }
 //---------------------------------------------------------------------------
-void __fastcall TParallelUploadQueueItem::DoExecute(TTerminal * Terminal)
+void __fastcall TParallelTransferQueueItem::DoExecute(TTerminal * Terminal)
 {
   TLocatedQueueItem::DoExecute(Terminal);
 
@@ -2192,7 +2194,7 @@ void __fastcall TParallelUploadQueueItem::DoExecute(TTerminal * Terminal)
   OperationProgress.Start(
     // CPS limit inherited from parent OperationProgress.
     // Count not known and won't be needed as we will always have TotalSize as  we always transfer a single file at a time.
-    Operation, osLocal, -1, Temp, FParallelOperation->TargetDir, 0);
+    Operation, FParallelOperation->Side, -1, Temp, FParallelOperation->TargetDir, 0);
 
   try
   {
@@ -2222,8 +2224,8 @@ void __fastcall TParallelUploadQueueItem::DoExecute(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 __fastcall TDownloadQueueItem::TDownloadQueueItem(TTerminal * Terminal,
   TStrings * FilesToCopy, const UnicodeString & TargetDir,
-  const TCopyParamType * CopyParam, int Params, bool SingleFile) :
-  TTransferQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, osRemote, SingleFile)
+  const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel) :
+  TTransferQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, osRemote, SingleFile, Parallel)
 {
   if (FilesToCopy->Count > 1)
   {
@@ -2265,12 +2267,9 @@ __fastcall TDownloadQueueItem::TDownloadQueueItem(TTerminal * Terminal,
   FInfo->ModifiedLocal = IncludeTrailingBackslash(TargetDir);
 }
 //---------------------------------------------------------------------------
-void __fastcall TDownloadQueueItem::DoExecute(TTerminal * Terminal)
+void __fastcall TDownloadQueueItem::DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation)
 {
-  TTransferQueueItem::DoExecute(Terminal);
-
-  DebugAssert(Terminal != NULL);
-  Terminal->CopyToLocal(FFilesToCopy, FTargetDir, FCopyParam, FParams);
+  Terminal->CopyToLocal(FFilesToCopy, FTargetDir, FCopyParam, FParams, ParallelOperation);
 }
 //---------------------------------------------------------------------------
 // TTerminalThread
