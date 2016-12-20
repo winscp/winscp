@@ -2814,7 +2814,7 @@ void __fastcall TWebDAVFileSystem::UpdateFromMain(TCustomFileSystem * AMainFileS
       }
     }
 
-    if (DebugAlwaysTrue(MainFileSystem->FNeonLockStore != NULL))
+    if (MainFileSystem->FNeonLockStore != NULL)
     {
       RequireLockStore();
       struct ne_lock * Lock = ne_lockstore_first(MainFileSystem->FNeonLockStore);
