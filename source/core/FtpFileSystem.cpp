@@ -2170,9 +2170,9 @@ void __fastcall TFTPFileSystem::DirectorySource(const UnicodeString DirectoryNam
   /* TODO : Show error message on failure. */
   if (!OperationProgress->Cancel)
   {
-    DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
     if (FLAGSET(Params, cpDelete))
     {
+      DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
       RemoveDir(ApiPath(DirectoryName));
     }
     else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
