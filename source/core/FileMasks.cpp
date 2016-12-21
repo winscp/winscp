@@ -1209,23 +1209,38 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
 
   if (SameText(Pattern, L"!s"))
   {
-    Replacement = FData.SessionData->GenerateSessionUrl(sufComplete);
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->GenerateSessionUrl(sufComplete);
+    }
   }
   else if (Pattern == L"!@")
   {
-    Replacement = FData.SessionData->HostNameExpanded;
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->HostNameExpanded;
+    }
   }
   else if (SameText(Pattern, L"!u"))
   {
-    Replacement = FData.SessionData->UserName;
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->UserName;
+    }
   }
   else if (SameText(Pattern, L"!p"))
   {
-    Replacement = FData.SessionData->Password;
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->Password;
+    }
   }
   else if (SameText(Pattern, L"!#"))
   {
-    Replacement = IntToStr(FData.SessionData->PortNumber);
+    if (FData.SessionData != NULL)
+    {
+      Replacement = IntToStr(FData.SessionData->PortNumber);
+    }
   }
   else if (Pattern == L"!/")
   {
@@ -1239,7 +1254,10 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
   }
   else if (SameText(Pattern, L"!n"))
   {
-    Replacement = FData.SessionData->SessionName;
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->SessionName;
+    }
   }
   else
   {
