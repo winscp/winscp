@@ -147,6 +147,7 @@ void __fastcall TSessionData::Default()
   FingerprintScan = false;
   FOverrideCachedHostKey = true;
   Note = L"";
+  WinTitle = L"";
 
   ProxyMethod = ::pmNone;
   ProxyHost = L"proxy";
@@ -397,6 +398,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(MinTlsVersion); \
   PROPERTY(MaxTlsVersion); \
   \
+  PROPERTY(WinTitle); \
   PROPERTY(CustomParam1); \
   PROPERTY(CustomParam2);
 #define META_PROPERTIES \
@@ -992,6 +994,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   if (PuttyExport)
   {
     WRITE_DATA_EX(String, L"Protocol", GetNormalizedPuttyProtocol(), );
+    WRITE_DATA_EX(String, L"WinTitle", WinTitle, );
   }
 
   if (!PuttyExport)
@@ -3620,6 +3623,11 @@ void __fastcall TSessionData::SetHostKey(UnicodeString value)
 void __fastcall TSessionData::SetNote(UnicodeString value)
 {
   SET_SESSION_PROPERTY(Note);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetWinTitle(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(WinTitle);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetInfoTip()

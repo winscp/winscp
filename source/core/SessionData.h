@@ -206,6 +206,7 @@ private:
   bool FFingerprintScan;
   bool FOverrideCachedHostKey;
   UnicodeString FNote;
+  UnicodeString FWinTitle;
 
   UnicodeString FOrigHostName;
   int FOrigPortNumber;
@@ -368,6 +369,7 @@ private:
   void __fastcall SetLink(UnicodeString value);
   void __fastcall SetHostKey(UnicodeString value);
   void __fastcall SetNote(UnicodeString value);
+  void __fastcall SetWinTitle(UnicodeString value);
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords);
   UnicodeString __fastcall GetLocalName();
@@ -602,6 +604,7 @@ public:
   __property bool FingerprintScan = { read = FFingerprintScan, write = FFingerprintScan };
   __property bool OverrideCachedHostKey = { read = FOverrideCachedHostKey };
   __property UnicodeString Note = { read = FNote, write = SetNote };
+  __property UnicodeString WinTitle = { read = FWinTitle, write = SetWinTitle };
   __property UnicodeString StorageKey = { read = GetStorageKey };
   __property UnicodeString SiteKey = { read = GetSiteKey };
   __property UnicodeString OrigHostName = { read = FOrigHostName };

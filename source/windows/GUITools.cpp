@@ -103,6 +103,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
             ExportData->Assign(SessionData);
             ExportData->Modified = true;
             ExportData->Name = GUIConfiguration->PuttySession;
+            ExportData->WinTitle = SessionData->SessionName;
             ExportData->Password = L"";
 
             if (SessionData->FSProtocol == fsFTP)
