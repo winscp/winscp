@@ -906,12 +906,6 @@ begin
     PrevVersion := Copy(PrevVersion, 1, 5);
   end;
 
-  Completeness := LanguageCompleteness(ActiveLanguage);
-  if (Completeness < 100) and (not WizardSilent) then
-  begin
-    ShowMessage(FmtMessage(CustomMessage('IncompleteTranslation'), [IntToStr(Completeness)]));
-  end;
-
   WizardForm.KeyPreview := True;
   WizardForm.OnKeyDown := @FormKeyDown;
   // to accomodate one more task
@@ -973,6 +967,13 @@ begin
         Log(Format('Falling back to local application user folder [%s]', [WizardForm.DirEdit.Text]));
       end;
     end;
+  end;
+
+  // Only after elevating, not to show the message twice
+  Completeness := LanguageCompleteness(ActiveLanguage);
+  if (Completeness < 100) and (not WizardSilent) then
+  begin
+    ShowMessage(FmtMessage(CustomMessage('IncompleteTranslation'), [IntToStr(Completeness)]));
   end;
 
   // installation type page
