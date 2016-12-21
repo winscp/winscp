@@ -818,39 +818,47 @@ var
   Params: string;
   S: string;
 begin
-  // Collect current instance parameters
-  for I := 1 to ParamCount do
+  Result := not CmdLineParamExists('/Elevated');
+  if not Result then
   begin
-    S := ParamStr(I);
-    // Unique log file name for the elevated instance
-    if CompareText(Copy(S, 1, 5), '/LOG=') = 0 then
-    begin
-      S := S + '-elevated';
-    end;
-    // Do not pass our /SL5 switch
-    if CompareText(Copy(S, 1, 5), '/SL5=') <> 0 then
-    begin
-      Params := Params + AddQuotes(S) + ' ';
-    end;
-  end;
-
-  // ... and add selected language
-  Params := Params + '/LANG=' + ActiveLanguage;
-
-  Log(Format('Elevating setup with parameters [%s]', [Params]));
-  RetVal := ShellExecute(0, 'runas', ExpandConstant('{srcexe}'), Params, '', SW_SHOW);
-  Log(Format('Running elevated setup returned [%d]', [RetVal]));
-  Result := (RetVal > 32);
-  // if elevated executing of this setup succeeded, then...
-  if Result then
-  begin
-    Log('Elevation succeeded');
-    // exit this non-elevated setup instance
-    ExitProcess(0);
+    Log('Elevation already attempted and silently failed, continuing unelevated');
   end
     else
   begin
-    Log(Format('Elevation failed [%s]', [SysErrorMessage(RetVal)]));
+    // Collect current instance parameters
+    for I := 1 to ParamCount do
+    begin
+      S := ParamStr(I);
+      // Unique log file name for the elevated instance
+      if CompareText(Copy(S, 1, 5), '/LOG=') = 0 then
+      begin
+        S := S + '-elevated';
+      end;
+      // Do not pass our /SL5 switch
+      if CompareText(Copy(S, 1, 5), '/SL5=') <> 0 then
+      begin
+        Params := Params + AddQuotes(S) + ' ';
+      end;
+    end;
+
+    // ... and add selected language
+    Params := Params + '/LANG=' + ActiveLanguage + ' /Elevated';
+
+    Log(Format('Elevating setup with parameters [%s]', [Params]));
+    RetVal := ShellExecute(0, 'runas', ExpandConstant('{srcexe}'), Params, '', SW_SHOW);
+    Log(Format('Running elevated setup returned [%d]', [RetVal]));
+    Result := (RetVal > 32);
+    // if elevated executing of this setup succeeded, then...
+    if Result then
+    begin
+      Log('Elevation succeeded');
+      // exit this non-elevated setup instance
+      ExitProcess(0);
+    end
+      else
+    begin
+      Log(Format('Elevation failed [%s]', [SysErrorMessage(RetVal)]));
+    end;
   end;
 end;
 
