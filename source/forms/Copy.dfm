@@ -65,7 +65,7 @@ object CopyDialog: TCopyDialog
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 7
+    TabOrder = 6
   end
   object CancelButton: TButton
     Left = 343
@@ -76,7 +76,7 @@ object CopyDialog: TCopyDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 8
+    TabOrder = 7
   end
   object LocalDirectoryBrowseButton: TButton
     Left = 427
@@ -103,7 +103,7 @@ object CopyDialog: TCopyDialog
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Help'
-    TabOrder = 9
+    TabOrder = 8
     OnClick = HelpButtonClick
   end
   object NeverShowAgainCheck: TCheckBox
@@ -121,7 +121,7 @@ object CopyDialog: TCopyDialog
     Width = 161
     Height = 25
     Caption = 'Transfer settin&gs...'
-    TabOrder = 6
+    TabOrder = 5
     OnClick = TransferSettingsButtonClick
     OnDropDownClick = TransferSettingsButtonDropDownClick
   end
@@ -157,7 +157,7 @@ object CopyDialog: TCopyDialog
     Align = alBottom
     BevelOuter = bvNone
     ParentBackground = False
-    TabOrder = 11
+    TabOrder = 9
     object ShortCutHintLabel: TLabel
       Left = 12
       Top = 3
