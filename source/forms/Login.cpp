@@ -1550,6 +1550,10 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
   {
     M->Result = 1;
   }
+  else if (M->Msg == WM_CAN_DISPLAY_UPDATES)
+  {
+    M->Result = 1;
+  }
   else if (M->Msg == CM_ACTIVATE)
   {
     // Called from TCustomForm.ShowModal

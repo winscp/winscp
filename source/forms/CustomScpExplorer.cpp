@@ -7805,7 +7805,13 @@ void __fastcall TCustomScpExplorerForm::UpdatesNoteClicked(TObject * /*Sender*/)
 {
   RestoreApp();
 
-  if (!NonVisualDataModule->Busy)
+  bool CanDisplay = !NonVisualDataModule->Busy;
+  if (!CanDisplay && (Screen->ActiveForm != NULL))
+  {
+    CanDisplay = (Screen->ActiveForm->Perform(WM_CAN_DISPLAY_UPDATES, 0, 0) != 0);
+  }
+
+  if (CanDisplay)
   {
     Configuration->Usage->Inc(L"UpdateNotificationsClicked");
     CheckForUpdates(true);
