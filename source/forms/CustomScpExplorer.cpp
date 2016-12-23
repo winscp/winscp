@@ -7782,6 +7782,10 @@ void __fastcall TCustomScpExplorerForm::UpdatesNoteClicked(TObject * /*Sender*/)
     Configuration->Usage->Inc(L"UpdateNotificationsClicked");
     CheckForUpdates(true);
   }
+  else
+  {
+    Configuration->Usage->Inc(L"UpdateNotificationsBusy");
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::GetTransferPresetAutoSelectData(
