@@ -134,7 +134,12 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
         delete SourceStorage;
       }
 
-      AddToList(PuttyParams, FORMAT(L"-load %s", (EscapePuttyCommandParam(SessionName))), L" ");
+      UnicodeString LoadSwitch = L"-load";
+      int P = Params.LowerCase().Pos(LoadSwitch + L" ");
+      if ((P == 0) || ((P > 1) && (Params[P - 1] != L' ')))
+      {
+        AddToList(PuttyParams, FORMAT(L"%s %s", (LoadSwitch, EscapePuttyCommandParam(SessionName))), L" ");
+      }
     }
 
     if (!Password.IsEmpty() && !RemoteCustomCommand.IsPasswordCommand(AParams))
