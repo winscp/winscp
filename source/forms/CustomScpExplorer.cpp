@@ -683,8 +683,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetQueueProgressTitle()
   UnicodeString Result;
   if (FQueueStatus != NULL)
   {
-    int ActiveAndPendingCount = FQueueStatus->ActiveAndPendingCount;
-    if ((ActiveAndPendingCount == 1) && (FQueueStatus->ActiveCount == 1))
+    if (FQueueStatus->IsOnlyOneActiveAndNoPending())
     {
       TFileOperationProgressType * ProgressData =
         FQueueStatus->Items[FQueueStatus->DoneCount]->ProgressData;
@@ -693,9 +692,9 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetQueueProgressTitle()
         Result = TProgressForm::ProgressStr(ProgressData);
       }
     }
-    else if (ActiveAndPendingCount > 1)
+    else if (FQueueStatus->ActiveAndPendingPrimaryCount > 1)
     {
-      Result = FMTLOAD(PROGRESS_IN_QUEUE, (ActiveAndPendingCount));
+      Result = FMTLOAD(PROGRESS_IN_QUEUE, (FQueueStatus->ActiveAndPendingPrimaryCount));
     }
   }
   return Result;
@@ -839,9 +838,9 @@ void __fastcall TCustomScpExplorerForm::SetQueueProgress()
 
   if ((FTaskbarList != NULL) && (FProgressForm == NULL))
   {
-    if ((FQueueStatus != NULL) && (FQueueStatus->ActiveCount > 0))
+    if ((FQueueStatus != NULL) && (FQueueStatus->ActiveAndPendingPrimaryCount > 0))
     {
-      if (FQueueStatus->ActiveCount == 1)
+      if (FQueueStatus->IsOnlyOneActiveAndNoPending())
       {
         TFileOperationProgressType * ProgressData = NULL;
         if (FQueueStatus->Items[FQueueStatus->DoneCount] != NULL)
@@ -878,10 +877,10 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueLabel()
   UnicodeString Caption = LoadStr(QUEUE_CAPTION);
   if (FQueueStatus != NULL)
   {
-    int ActiveAndPendingCount = FQueueStatus->ActiveAndPendingCount;
-    if (ActiveAndPendingCount > 0)
+    int ActiveAndPendingPrimaryCount = FQueueStatus->ActiveAndPendingPrimaryCount;
+    if (ActiveAndPendingPrimaryCount > 0)
     {
-      Caption = FORMAT("%s (%d)", (Caption, ActiveAndPendingCount));
+      Caption = FORMAT("%s (%d)", (Caption, ActiveAndPendingPrimaryCount));
     }
   }
   QueueLabel->Caption = Caption;
@@ -4374,11 +4373,11 @@ void __fastcall TCustomScpExplorerForm::ApplicationRestore(TObject * /*Sender*/)
   // When restoring maximized window from minimization,
   // rarely some controls do not align properly.
   // Two instances seen (both for Commander):
-  // - When restoring, window is temporarily narrower (not maximizer),
+  // - When restoring, window is temporarily narrower (not maximized),
   //   causing toolbars on TopDock to wrap and dock to expand horizontally.
   //   Once maximized already, top dock shinks back, but the session PageControl,
   //   do not align up, leaving space between TopDock and PageControl.
-  // - Similar issue seem with LocalDirView not aligning down to status bar.
+  // - Similar issue seen with LocalDirView not aligning down to status bar.
   for (int Index = 0; Index < ControlCount; Index++)
   {
     RealignControl(Controls[Index]);

@@ -1885,6 +1885,8 @@ __fastcall TTerminalQueueStatus::~TTerminalQueueStatus()
 void __fastcall TTerminalQueueStatus::ResetStats()
 {
   FActiveCount = -1;
+  FActivePrimaryCount = -1;
+  FActiveAndPendingPrimaryCount = -1;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalQueueStatus::SetDoneCount(int Value)
@@ -1893,21 +1895,36 @@ void __fastcall TTerminalQueueStatus::SetDoneCount(int Value)
   ResetStats();
 }
 //---------------------------------------------------------------------------
-int __fastcall TTerminalQueueStatus::GetActiveCount()
+void __fastcall TTerminalQueueStatus::NeedStats()
 {
   if (FActiveCount < 0)
   {
     FActiveCount = 0;
-
-    int Index = FDoneCount;
-    while ((Index < FList->Count) &&
-      (GetItem(Index)->Status != TQueueItem::qsPending))
+    FActivePrimaryCount = 0;
+    FActiveAndPendingPrimaryCount = 0;
+    for (int Index = DoneCount; Index < Count; Index++)
     {
-      FActiveCount++;
-      Index++;
+      bool Primary = GetItem(Index)->Info->Primary;
+
+      if (GetItem(Index)->Status != TQueueItem::qsPending)
+      {
+        FActiveCount++;
+        if (Primary)
+        {
+          FActivePrimaryCount++;
+        }
+      }
+      if (Primary)
+      {
+        FActiveAndPendingPrimaryCount++;
+      }
     }
   }
-
+}
+//---------------------------------------------------------------------------
+int __fastcall TTerminalQueueStatus::GetActiveCount()
+{
+  NeedStats();
   return FActiveCount;
 }
 //---------------------------------------------------------------------------
@@ -1916,9 +1933,21 @@ int __fastcall TTerminalQueueStatus::GetDoneAndActiveCount()
   return DoneCount + ActiveCount;
 }
 //---------------------------------------------------------------------------
-int __fastcall TTerminalQueueStatus::GetActiveAndPendingCount()
+int __fastcall TTerminalQueueStatus::GetActivePrimaryCount()
 {
-  return Count - DoneCount;
+  NeedStats();
+  return FActivePrimaryCount;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalQueueStatus::IsOnlyOneActiveAndNoPending()
+{
+  return (ActivePrimaryCount == 1) && (ActiveAndPendingPrimaryCount == 1);
+}
+//---------------------------------------------------------------------------
+int __fastcall TTerminalQueueStatus::GetActiveAndPendingPrimaryCount()
+{
+  NeedStats();
+  return FActiveAndPendingPrimaryCount;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalQueueStatus::Add(TQueueItemProxy * ItemProxy)

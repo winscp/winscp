@@ -267,8 +267,11 @@ public:
   __property int DoneCount = { read = FDoneCount };
   __property int ActiveCount = { read = GetActiveCount };
   __property int DoneAndActiveCount = { read = GetDoneAndActiveCount };
-  __property int ActiveAndPendingCount = { read = GetActiveAndPendingCount };
+  __property int ActivePrimaryCount = { read = GetActivePrimaryCount };
+  __property int ActiveAndPendingPrimaryCount = { read = GetActiveAndPendingPrimaryCount };
   __property TQueueItemProxy * Items[int Index] = { read = GetItem };
+
+  bool __fastcall IsOnlyOneActiveAndNoPending();
 
 protected:
   __fastcall TTerminalQueueStatus();
@@ -276,16 +279,20 @@ protected:
   void __fastcall Add(TQueueItemProxy * ItemProxy);
   void __fastcall Delete(TQueueItemProxy * ItemProxy);
   void __fastcall ResetStats();
+  void __fastcall NeedStats();
 
 private:
   TList * FList;
   int FDoneCount;
   int FActiveCount;
+  int FActivePrimaryCount;
+  int FActiveAndPendingPrimaryCount;
 
   int __fastcall GetCount();
   int __fastcall GetActiveCount();
   int __fastcall GetDoneAndActiveCount();
-  int __fastcall GetActiveAndPendingCount();
+  int __fastcall GetActivePrimaryCount();
+  int __fastcall GetActiveAndPendingPrimaryCount();
   void __fastcall SetDoneCount(int Value);
   TQueueItemProxy * __fastcall GetItem(int Index);
 };
