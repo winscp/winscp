@@ -168,6 +168,7 @@ private:
   void __fastcall ApplicationModalEnd(TObject * Sender);
   bool __fastcall HandleMouseWheel(WPARAM WParam, LPARAM LParam);
   void __fastcall DoConfigurationChange();
+  bool __fastcall ShouldDisplayQueueStatusOnAppTitle();
 };
 //---------------------------------------------------------------------------
 #endif

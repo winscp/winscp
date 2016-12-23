@@ -631,6 +631,18 @@ void __fastcall TTerminalManager::QueueStatusUpdated()
   UpdateAppTitle();
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::ShouldDisplayQueueStatusOnAppTitle()
+{
+  bool Result = IsApplicationMinimized();
+  if (!Result && (ScpExplorer != NULL))
+  {
+    HWND Window = GetActiveWindow();
+    Window = GetAncestor(Window, GA_ROOTOWNER);
+    Result = (ScpExplorer->Handle != Window);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::UpdateAppTitle()
 {
   if (ScpExplorer)
@@ -654,7 +666,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     {
       NewTitle = FProgressTitle + L" - " + NewTitle;
     }
-    else if ((ScpExplorer != NULL) && (ScpExplorer->Handle != GetAncestor(GetActiveWindow(), GA_ROOTOWNER)) &&
+    else if (ShouldDisplayQueueStatusOnAppTitle() &&
              !(QueueProgressTitle = ScpExplorer->GetQueueProgressTitle()).IsEmpty())
     {
       NewTitle = QueueProgressTitle + L" - " + NewTitle;
