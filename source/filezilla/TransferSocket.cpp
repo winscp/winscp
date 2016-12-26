@@ -354,7 +354,7 @@ void CTransferSocket::ConfigureSocket()
 
   // Following post claims that TCP_NODELAY
   // has to be set before connect()
-  // http://stackoverflow.com/questions/22583941/what-is-the-workaround-for-tcp-delayed-acknowledgment/25871250#25871250
+  // http://stackoverflow.com/q/22583941/850848#25871250
 
   int nodelay = GetOptionVal(OPTION_MPEXT_NODELAY);
   if (nodelay != 0)
