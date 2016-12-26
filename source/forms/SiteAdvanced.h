@@ -254,6 +254,9 @@ __published:
   TCheckBox *TrimVMSVersionsCheck;
   TComboBox *SshProtCombo2;
   TCheckBox *FollowDirectorySymlinksCheck;
+  TImageList *ColorImageList120;
+  TImageList *ColorImageList144;
+  TImageList *ColorImageList192;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

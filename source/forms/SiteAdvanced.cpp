@@ -102,6 +102,7 @@ void __fastcall TSiteAdvancedDialog::InitControls()
 
   UpdateNavigationTree();
 
+  SelectScaledImageList(ColorImageList);
   SetSessionColor((TColor)0);
 }
 //---------------------------------------------------------------------
