@@ -140,6 +140,8 @@ void __fastcall TLoginDialog::InitControls()
   CenterButtonImage(LoginButton);
 
   SelectScaledImageList(SessionImageList);
+  // have to recreate the site images
+  UpdateNodeImages();
   SelectScaledImageList(ActionImageList);
 
   // Generate button images.
@@ -317,6 +319,19 @@ TTreeNode * __fastcall TLoginDialog::AddSession(TSessionData * Data)
   UpdateNodeImage(Node);
 
   return Node;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::UpdateNodeImages()
+{
+  TTreeNode * Node = SessionTree->Items->GetFirstNode();
+  while (Node != NULL)
+  {
+    if (IsSiteNode(Node))
+    {
+      UpdateNodeImage(Node);
+    }
+    Node = Node->GetNext();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateNodeImage(TTreeNode * Node)
