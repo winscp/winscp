@@ -377,6 +377,7 @@ private:
   bool __fastcall IsCloneToNewSiteDefault();
   bool __fastcall IsDefaultResult(TModalResult Result);
   void __fastcall UpdateNodeImage(TTreeNode * Node);
+  void __fastcall UpdateNodeImages();
   int __fastcall GetSessionImageIndex(TSessionData * Data);
   void __fastcall SetNodeImage(TTreeNode * Node, int ImageIndex);
   void __fastcall CancelEditing();
