@@ -9,11 +9,8 @@ This class is layer class for CAsyncSocketEx. With this class you
 can connect through SOCKS4/5 and HTTP 1.1 proxies. This class works
 as semi-transparent layer between CAsyncSocketEx and the actual socket.
 This class is used in FileZilla, a powerful open-source FTP client.
-It can be found under http://sourceforge.net/projects/filezilla
-For more information about SOCKS4/5 goto
-http://www.socks.nec.com/socksprot.html
-For more information about HTTP 1.1 goto http://www.rfc-editor.org
-and search for RFC2616
+It can be found under https://sourceforge.net/projects/filezilla/
+For more information about HTTP 1.1 goto https://tools.ietf.org/html/rfc2616
 
 How to use?
 -----------

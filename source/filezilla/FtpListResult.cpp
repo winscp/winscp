@@ -10,7 +10,7 @@
 //#define LISTDEBUG
 #ifdef LISTDEBUG
   //It's the normal UNIX format (or even another nonstandard format)
-  //Some samples are from http://cr.yp.to/ftpparse/ftpparse.c
+  //Some samples are from https://cr.yp.to/ftpparse/ftpparse.c
   /* UNIX-style listing, without inum and without blocks */
 
   static char data[][110]={
@@ -1272,7 +1272,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   #ifdef _DEBUG
   USES_CONVERSION;
   #endif
-  // MLSD format as described here: http://www.ietf.org/internet-drafts/draft-ietf-ftpext-mlst-16.txt
+  // MLSD format as described here: https://tools.ietf.org/html/rfc3659
   // Parsing is done strict, abort on slightest error.
 
   // If we ever add some detection that entry is symlink,
@@ -1336,7 +1336,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
       // http://www.proftpd.org/docs/modules/mod_facts.html
       // They claim it's the correct one.
       // See also
-      // http://www.rfc-editor.org/errata_search.php?rfc=3659&eid=1500
+      // https://www.rfc-editor.org/errata_search.php?rfc=3659&eid=1500
       else if (!value.Left(15).CompareNoCase(L"OS.unix=symlink"))
       {
         direntry.dir = TRUE;
