@@ -1181,7 +1181,7 @@ void __fastcall TSCPFileSystem::CopyFile(const UnicodeString FileName,
     if (FTerminal->Active)
     {
       // The -T is GNU switch and may not be available on all platforms.
-      // http://lists.gnu.org/archive/html/bug-coreutils/2004-07/msg00000.html
+      // https://lists.gnu.org/archive/html/bug-coreutils/2004-07/msg00000.html
       FTerminal->LogEvent(FORMAT(L"Attempt with %s failed, trying without", (AdditionalSwitches)));
       ExecCommand(fsCopyFile, ARRAYOFCONST((L"", DelimitedFileName, DelimitedNewName)));
     }
