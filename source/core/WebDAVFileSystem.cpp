@@ -1237,7 +1237,7 @@ void TWebDAVFileSystem::NeonQuotaResult(
 void __fastcall TWebDAVFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & ASpaceAvailable)
 {
-  // RFC4331: http://tools.ietf.org/html/rfc4331
+  // RFC4331: https://tools.ietf.org/html/rfc4331
 
   // This is known to be supported by:
 
@@ -1770,8 +1770,8 @@ void TWebDAVFileSystem::NeonPreSend(
     // Needed by IIS server to make it download source code, not code output,
     // and mainly to even allow downloading file with unregistered extensions.
     // Without it files like .001 return 404 (Not found) HTTP code.
-    // http://msdn.microsoft.com/en-us/library/cc250098.aspx
-    // http://msdn.microsoft.com/en-us/library/cc250216.aspx
+    // https://msdn.microsoft.com/en-us/library/cc250098.aspx
+    // https://msdn.microsoft.com/en-us/library/cc250216.aspx
     // http://lists.manyfish.co.uk/pipermail/neon/2012-April/001452.html
     // It's also supported by Oracle server:
     // https://docs.oracle.com/cd/E19146-01/821-1828/gczya/index.html
@@ -2448,7 +2448,7 @@ int TWebDAVFileSystem::NeonRequestAuth(
   UnicodeString APassword;
   if (Result)
   {
-    // Some servers (Gallery2 on https://g2.pixi.me/w/webdav/)
+    // Some servers (Gallery2 on discontinued g2.pixi.me)
     // return authentication error (401) on PROPFIND request for
     // non-existing files.
     // When we already tried password before, do not try anymore.

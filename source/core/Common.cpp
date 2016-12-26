@@ -771,7 +771,7 @@ bool __fastcall IsReservedName(UnicodeString FileName)
 //---------------------------------------------------------------------------
 // ApiPath support functions
 // Inspired by
-// http://stackoverflow.com/questions/18580945/need-clarification-for-converting-paths-into-long-unicode-paths-or-the-ones-star
+// http://stackoverflow.com/q/18580945/850848
 // This can be reimplemented using PathCchCanonicalizeEx on Windows 8 and later
 enum PATH_PREFIX_TYPE
 {
@@ -3117,7 +3117,7 @@ UnicodeString __fastcall RtfSwitch(
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text)
 {
-  // Remove all tags HYPERLINK "http://www.example.com".
+  // Remove all tags HYPERLINK "https://www.example.com".
   // See also RtfEscapeParam
   int Index = 1;
   int P;

@@ -4187,7 +4187,7 @@ void __fastcall TSFTPFileSystem::SpaceAvailable(const UnicodeString Path,
   }
   else if (DebugAlwaysTrue(FSupportsStatVfsV2))
   {
-    // http://www.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL?rev=HEAD;content-type=text/plain
+    // https://github.com/openssh/openssh-portable/blob/master/PROTOCOL
     TSFTPPacket Packet(SSH_FXP_EXTENDED);
     Packet.AddString(SFTP_EXT_STATVFS);
     Packet.AddPathString(LocalCanonify(Path), FUtfStrings);
