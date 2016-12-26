@@ -10,7 +10,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 // Based on
-// http://www.codeproject.com/script/Articles/ViewDownloads.aspx?aid=6355
+// https://www.codeproject.com/Articles/6355/XP-Themes-Tab-Control-in-any-orientation
 //---------------------------------------------------------------------------
 //#define USE_DEFAULT_XP_TOPTAB     // XP top tab is drawn only for test purpose. To use default, uncoment this line
 //---------------------------------------------------------------------------

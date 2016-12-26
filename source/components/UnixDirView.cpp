@@ -430,8 +430,7 @@ void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item,
   if (OnDDFileOperation)
   {
     // Could be empty if the source application does not provide any files;
-    // or if the IDataObject fails GetData, like Visual Studio Code 0.8.0:
-    // https://code.visualstudio.com/issues/detail/19410
+    // or if the IDataObject fails GetData, like Visual Studio Code 0.8.0.
     if (DragDropFilesEx->FileList->Count > 0)
     {
       UnicodeString SourceDirectory;
