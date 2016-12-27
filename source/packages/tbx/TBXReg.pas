@@ -347,7 +347,6 @@ const
     '%s'#13#10 +
     '©2001–2004 Alex A. Denisov'#13#10 +
     'For conditions of distribution and use, see TBX documentation.'#13#10 +
-    'Visit http://g32.org/tbx/ for the latest versions of TBX'#13#10 +
     #13#10 +
     'Running on'#13#10 +
     '%s'#13#10 +
