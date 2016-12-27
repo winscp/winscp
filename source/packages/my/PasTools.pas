@@ -232,7 +232,7 @@ begin
 end;
 
 // WORKAROUND
-// http://stackoverflow.com/questions/9410485/how-do-i-use-class-helpers-to-access-strict-private-members-of-a-class
+// http://stackoverflow.com/q/9410485/850848
 
 type
   TFormHelper = class helper for TCustomForm

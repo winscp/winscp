@@ -40,5 +40,3 @@ liable for any damages arising from the use of this software.
 Alex A. Denisov
 
 alex@g32.org
-
-http://g32.org
