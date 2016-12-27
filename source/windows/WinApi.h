@@ -20,7 +20,7 @@ typedef HRESULT WINAPI (* GetDpiForMonitorProc)(
   HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT * dpiX, UINT * dpiY);
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-// Taken from http://www.codeproject.com/Articles/35197/Undocumented-List-View-Features
+// Taken from https://www.codeproject.com/Articles/35197/Undocumented-List-View-Features
 //---------------------------------------------------------------------------
 #define LVM_QUERYINTERFACE (LVM_FIRST + 189)
 //---------------------------------------------------------------------------

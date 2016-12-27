@@ -483,7 +483,7 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
   // application is registered for the protocol (i.e. RegisterProtocol would be enough)
   RegisterAsUrlHandler(RootKey, Protocol);
 
-  // see http://msdn.microsoft.com/en-us/library/windows/desktop/cc144154.aspx#registration
+  // see https://msdn.microsoft.com/en-us/library/windows/desktop/cc144154.aspx#registration
   std::unique_ptr<TRegistry> Registry(CreateRegistry(RootKey));
 
   // create capabilities record

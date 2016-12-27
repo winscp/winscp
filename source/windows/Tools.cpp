@@ -33,7 +33,7 @@
 // VCL includes wininet.h (even with NO_WIN32_LEAN_AND_MEAN)
 // and it cannot be combined with winhttp.h as of current Windows SDK.
 // This is hack to allow that.
-// http://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/8f468d9f-3f15-452c-803d-fc63ab3f684e/cannot-use-both-winineth-and-winhttph
+// https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/8f468d9f-3f15-452c-803d-fc63ab3f684e/cannot-use-both-winineth-and-winhttph
 #undef BOOLAPI
 #undef SECURITY_FLAG_IGNORE_CERT_DATE_INVALID
 #undef SECURITY_FLAG_IGNORE_CERT_CN_INVALID
@@ -936,7 +936,7 @@ static void __fastcall AcquireShutDownPrivileges()
   ZeroMemory(&Priv, sizeof(Priv));
   // Get the LUID for the shutdown privilege.
   // For hibernate/suspend, you need the same:
-  // http://stackoverflow.com/questions/959589/is-there-any-win32-api-to-trigger-the-hibernate-or-suspend-mode-in-windows
+  // http://stackoverflow.com/q/959589/850848
   Win32Check(LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &Priv.Privileges[0].Luid));
 
   Priv.PrivilegeCount = 1;  // one privilege to set
@@ -959,7 +959,7 @@ void __fastcall SuspendWindows()
 {
   AcquireShutDownPrivileges();
 
-  // http://msdn.microsoft.com/en-us/library/windows/desktop/aa373201.aspx
+  // https://msdn.microsoft.com/en-us/library/windows/desktop/aa373201.aspx
   Win32Check(SetSuspendState(false, false, false));
 }
 //---------------------------------------------------------------------------
@@ -1214,8 +1214,6 @@ bool __fastcall DetectSystemExternalEditor(
   }
   return Result;
 }
-//---------------------------------------------------------------------------
-// Code from http://gentoo.osuosl.org/distfiles/cl331.zip/io/
 //---------------------------------------------------------------------------
 // this was moved to global scope in past in some attempt to fix crashes,
 // not sure it really helped
