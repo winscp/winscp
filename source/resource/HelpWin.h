@@ -59,5 +59,6 @@
 #define HELP_DEBUGGING               "debugging"
 #define HELP_EXTENSION_OPTIONS       "ui_pref_commands"
 #define HELP_CHANGE_PASSWORD         "task_change_password"
+#define HELP_FILTER                  "ui_filter"
 
 #endif // TextsWin

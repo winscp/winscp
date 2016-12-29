@@ -6,6 +6,7 @@
 #include <FileMasks.h>
 #include <CoreMain.h>
 #include <TextsWin.h>
+#include <HelpWin.h>
 #include <Tools.h>
 #include <VCLCommon.h>
 
@@ -99,7 +100,7 @@ void __fastcall TSelectMaskDialog::Init(TMode Mode)
     case smFilter:
       CaptionStr = FILTER_MASK_CAPTION;
       ApplyToDirectoriesCheck->Hide();
-      HelpKeyword = L"ui_filter";
+      HelpKeyword = HELP_FILTER;
       break;
   }
   Caption = LoadStr(CaptionStr);
