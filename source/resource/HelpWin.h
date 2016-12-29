@@ -58,5 +58,6 @@
 #define HELP_TIPS                    "ui_tips"
 #define HELP_DEBUGGING               "debugging"
 #define HELP_EXTENSION_OPTIONS       "ui_pref_commands"
+#define HELP_FILTER                  "ui_filter"
 
 #endif // TextsWin
