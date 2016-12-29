@@ -291,7 +291,6 @@ UnicodeString __fastcall TMessageForm::GetFormText()
       }
       MoreMessages += DividerLine;
     }
-    // http://www.ssicom.org/js/x277333.htm
     MessageBrowser->DoCommand(L"UNSELECT");
   }
   UnicodeString MessageCaption = NormalizeNewLines(MessageText);
