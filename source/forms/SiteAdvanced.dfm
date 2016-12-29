@@ -81,7 +81,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object TimeDifferenceLabel: TLabel
             Left = 12
             Top = 68
-            Width = 81
+            Width = 84
             Height = 13
             Caption = 'Time &zone offset:'
             FocusControl = TimeDifferenceEdit
