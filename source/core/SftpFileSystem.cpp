@@ -720,10 +720,6 @@ public:
           GetCardinal(); // skip access time subseconds
         }
       }
-      else
-      {
-        File->LastAccess = Now();
-      }
       if (Flags & SSH_FILEXFER_ATTR_CREATETIME)
       {
         GetInt64(); // skip create time
@@ -739,10 +735,6 @@ public:
         {
           GetCardinal(); // skip modification time subseconds
         }
-      }
-      else
-      {
-        File->Modification = Now();
       }
       // SFTP-6
       if (Flags & SSH_FILEXFER_ATTR_CTIME)
@@ -5758,7 +5750,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
       ReceiveResponse(&RemoteFilePacket, &RemoteFilePacket);
       OperationProgress->Progress();
 
-      const TRemoteFile * AFile = File;
+      const TRemoteFile * AFile = NULL;
       try
       {
         // ignore errors
@@ -5769,18 +5761,16 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
             NULL, false);
         }
 
-        Modification = AFile->Modification;
-        AcTime = DateTimeToFileTime(AFile->LastAccess,
-          FTerminal->SessionData->DSTMode);
-        WrTime = DateTimeToFileTime(Modification,
-          FTerminal->SessionData->DSTMode);
+        Modification =
+          (AFile != NULL) && (AFile->Modification != TDateTime()) ? AFile->Modification : File->Modification;
+        TDateTime LastAccess =
+          (AFile != NULL) && (AFile->LastAccess != TDateTime()) ? AFile->LastAccess : File->LastAccess;
+        AcTime = DateTimeToFileTime(LastAccess, FTerminal->SessionData->DSTMode);
+        WrTime = DateTimeToFileTime(Modification, FTerminal->SessionData->DSTMode);
       }
       __finally
       {
-        if (AFile != File)
-        {
-          delete AFile;
-        }
+        delete AFile;
       }
 
       if ((Attrs >= 0) && !ResumeTransfer)
