@@ -5330,8 +5330,8 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
   Data.Checklist = Checklist;
 
   LogEvent(FORMAT(L"Collecting synchronization list for local directory '%s' and remote directory '%s', "
-    "mode = %s, params = 0x%x (%s)", (LocalDirectory, RemoteDirectory,
-    SynchronizeModeStr(Mode), int(Params), SynchronizeParamsStr(Params))));
+    "mode = %s, params = 0x%x (%s), file mask = '%s'", (LocalDirectory, RemoteDirectory,
+    SynchronizeModeStr(Mode), int(Params), SynchronizeParamsStr(Params), CopyParam->IncludeFileMask.Masks)));
 
   if (FLAGCLEAR(Params, spDelayProgress))
   {
