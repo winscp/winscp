@@ -1,4 +1,4 @@
-﻿param($installPath, $toolsPath, $package, $project)
+param($installPath, $toolsPath, $package, $project)
 
 $file1 = $project.ProjectItems.Item("WinSCP.exe")
 
