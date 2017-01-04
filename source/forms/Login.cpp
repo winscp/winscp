@@ -72,6 +72,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FSortEnablePending = false;
   FSiteSearch = ssSiteName;
   FLinkedForm = NULL;
+  FPrevPos = TPoint(-1, -1);
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -1540,11 +1541,16 @@ void __fastcall TLoginDialog::WMMoving(TMessage & Message)
 
   if (FLinkedForm != NULL)
   {
-    RECT & Rect = *reinterpret_cast<RECT*>(Message.LParam);
+    if (FPrevPos.X < 0)
+    {
+      FPrevPos = BoundsRect.TopLeft();
+    }
+    TRect Rect = *reinterpret_cast<RECT*>(Message.LParam);
     FLinkedForm->SetBounds(
-      FLinkedForm->Left + (Rect.left - Left),
-      FLinkedForm->Top + (Rect.top - Top),
+      FLinkedForm->Left + (Rect.Left - FPrevPos.X),
+      FLinkedForm->Top + (Rect.Top - FPrevPos.Y),
       FLinkedForm->Width, FLinkedForm->Height);
+    FPrevPos = Rect.TopLeft();
   }
 }
 //---------------------------------------------------------------------------

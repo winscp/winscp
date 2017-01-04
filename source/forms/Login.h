@@ -308,6 +308,7 @@ private:
   std::unique_ptr<TImageList> FButtonImageList;
   TSiteSearch FSiteSearch;
   TForm * FLinkedForm;
+  TPoint FPrevPos;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
