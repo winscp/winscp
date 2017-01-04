@@ -92,6 +92,7 @@ public:
   __property TFileOperation Operation = { read = FOperation };
   // on what side if operation being processed (local/remote), source of copy
   __property TOperationSide Side = { read = FSide };
+  __property int Count =  { read = FCount };
   __property UnicodeString FileName =  { read = FFileName };
   __property UnicodeString FullFileName = { read = FFullFileName };
   __property UnicodeString Directory = { read = FDirectory };
@@ -184,6 +185,7 @@ public:
   void __fastcall SetCPSLimit(unsigned long ACPSLimit);
   void __fastcall SetBatchOverwrite(TBatchOverwrite ABatchOverwrite);
   void __fastcall SetSkipToAll();
+  UnicodeString __fastcall GetLogStr();
 };
 //---------------------------------------------------------------------------
 class TSuspendFileOperationProgress

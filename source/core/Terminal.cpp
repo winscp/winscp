@@ -1212,6 +1212,7 @@ void __fastcall TTerminal::ResetConnection()
   }
 
   FFiles->Directory = L"";
+  FLastProgressLogged = GetTickCount();
   // note that we cannot clear contained files
   // as they can still be referenced in the GUI atm
 }
@@ -1932,6 +1933,17 @@ void __fastcall TTerminal::Information(const UnicodeString & Str, bool Status)
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
 {
+
+  if (Configuration->ActualLogProtocol >= 1)
+  {
+    DWORD Now = GetTickCount();
+    if (FLastProgressLogged - Now >= 1000)
+    {
+      LogEvent(ProgressData.GetLogStr());
+      FLastProgressLogged = Now;
+    }
+  }
+
   if (OnProgress != NULL)
   {
     TCallbackGuard Guard(this);
@@ -6334,6 +6346,36 @@ void __fastcall TTerminal::CopyParallel(TParallelOperation * ParallelOperation, 
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::LogTotalTransferDetails(
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam,
+  TFileOperationProgressType * OperationProgress, bool Parallel, TStrings * Files)
+{
+  if (Log->Logging)
+  {
+    UnicodeString TargetSide = ((OperationProgress->Side == osLocal) ? L"remote" : L"local");
+    UnicodeString S =
+      FORMAT(
+        L"Copying %d files/directories to %s directory \"%s\"",
+        (OperationProgress->Count, TargetSide, TargetDir));
+    if (Parallel && DebugAlwaysTrue(Files != NULL))
+    {
+      int Count = 0;
+      for (int Index = 0; Index < Files->Count; Index++)
+      {
+        TCollectedFileList * FileList = dynamic_cast<TCollectedFileList *>(Files->Objects[Index]);
+        Count += FileList->Count();
+      }
+      S += FORMAT(L" - in parallel, with %d total files", (Count));
+    }
+    if (OperationProgress->TotalSizeSet)
+    {
+      S += FORMAT(L" - total size: %s", (FormatSize(OperationProgress->TotalSize)));
+    }
+    LogEvent(S);
+    LogEvent(CopyParam->LogStr);
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
   const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation)
 {
@@ -6388,12 +6430,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
       try
       {
         bool Parallel = CalculatedSize && (Files.get() != NULL);
-        if (Log->Logging)
-        {
-          LogEvent(FORMAT(L"Copying %d files/directories to remote directory "
-            "\"%s\"%s", (FilesToCopy->Count, TargetDir, (Parallel ? L" in parallel" : L""))));
-          LogEvent(CopyParam->LogStr);
-        }
+        LogTotalTransferDetails(TargetDir, CopyParam, &OperationProgress, Parallel, Files.get());
 
         if (Parallel)
         {
@@ -6518,13 +6555,7 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
         try
         {
           bool Parallel = TotalSizeKnown && (Files.get() != NULL);
-          if (Log->Logging)
-          {
-            LogEvent(FORMAT(
-              L"Copying %d files/directories to local directory \"%s\"%s",
-              (FilesToCopy->Count, TargetDir, (Parallel ? L" in parallel" : L""))));
-            LogEvent(CopyParam->LogStr);
-          }
+          LogTotalTransferDetails(TargetDir, CopyParam, &OperationProgress, Parallel, Files.get());
 
           if (Parallel)
           {

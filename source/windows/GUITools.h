@@ -35,7 +35,6 @@ UnicodeString __fastcall GetDesktopFolder();
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const UnicodeString DirName);
-UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
 void __fastcall AddSessionColorImage(TCustomImageList * ImageList, TColor Color, int MaskIndex);
 void __fastcall SetSubmenu(TTBXCustomItem * Item);
 typedef int __fastcall (*TCalculateWidth)(UnicodeString Text, void * Arg);

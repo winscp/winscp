@@ -210,6 +210,7 @@ int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
 int __fastcall TimeToMSec(TDateTime T);
 int __fastcall TimeToSeconds(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);
+UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
 //---------------------------------------------------------------------------
 template<class MethodT>
 MethodT __fastcall MakeMethod(void * Data, void * Code)

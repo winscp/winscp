@@ -851,3 +851,19 @@ void __fastcall TFileOperationProgressType::UnlockUserSelections()
     FUserSelectionsSection->Leave();
   }
 }
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TFileOperationProgressType::GetLogStr()
+{
+  UnicodeString Transferred = FormatSize(TotalTransferred);
+  UnicodeString Left;
+  if (TotalSizeSet)
+  {
+    Left = FormatDateTimeSpan(Configuration->TimeFormat, TotalTimeLeft());
+  }
+  else
+  {
+    Left = L"n/a";
+  }
+  UnicodeString CPSStr = FormatSize(CPS());
+  return FORMAT(L"Transfer progress: Transferred: %s, Left: %s, CPS: %s/s", (Transferred, Left, CPSStr));
+}

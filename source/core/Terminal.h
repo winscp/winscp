@@ -213,6 +213,7 @@ private:
   bool FRememberedTunnelPasswordTried;
   int FNesting;
   UnicodeString FFingerprintScanned;
+  DWORD FLastProgressLogged;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -385,6 +386,9 @@ protected:
   UnicodeString __fastcall FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
   void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
   void __fastcall LogFileDone(TFileOperationProgressType * OperationProgress);
+  void __fastcall LogTotalTransferDetails(
+    const UnicodeString TargetDir, const TCopyParamType * CopyParam,
+    TFileOperationProgressType * OperationProgress, bool Parallel, TStrings * Files);
   virtual TTerminal * __fastcall GetPasswordSource();
   void __fastcall DoEndTransaction(bool Inform);
   bool  __fastcall VerifyCertificate(

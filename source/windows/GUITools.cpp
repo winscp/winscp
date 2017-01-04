@@ -428,19 +428,6 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
   return retval;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime)
-{
-  UnicodeString Result;
-  if (int(DateTime) > 0)
-  {
-    Result = IntToStr(int(DateTime)) + L", ";
-  }
-  // days are decremented, because when there are to many of them,
-  // "integer overflow" error occurs
-  Result += FormatDateTime(TimeFormat, DateTime - int(DateTime));
-  return Result;
-}
-//---------------------------------------------------------------------------
 void __fastcall AddSessionColorImage(
   TCustomImageList * ImageList, TColor Color, int MaskIndex)
 {
