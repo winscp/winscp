@@ -836,11 +836,7 @@ void __fastcall TTerminal::ResetConnection()
   FTunnelError = L"";
 
   FRememberedPasswordTried = false;
-  // Particularly to prevent reusing a wrong client certificate passphrase
-  // from a previous login attempt
-  FRememberedPassword = UnicodeString();
   FRememberedTunnelPasswordTried = false;
-  FRememberedTunnelPassword = UnicodeString();
 
   if (FDirectoryChangesCache != NULL)
   {
@@ -1044,6 +1040,10 @@ void __fastcall TTerminal::Open()
         {
           FFingerprintScanned = FFileSystem->GetSessionInfo().CertificateFingerprint;
         }
+        // Particularly to prevent reusing a wrong client certificate passphrase
+        // in the next login attempt
+        FRememberedPassword = UnicodeString();
+        FRememberedTunnelPassword = UnicodeString();
         throw;
       }
     }
