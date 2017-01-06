@@ -26,7 +26,7 @@
 #define HELP_OPEN_FILE_NO_PROCESS    HELP_EDITOR_EARLY_CLOSED
 #define HELP_ADD_BOOKMARK_CONFIRM    "task_navigate#bookmarks"
 #define HELP_PERFORM_ON_COMMAND_SESSION "shell_session"
-#define HELP_COPY_PARAM_AUTOSELECTED "transfer_settings#transfer_settings_presets"
+#define HELP_COPY_PARAM_AUTOSELECTED "transfer_settings#presets"
 #define HELP_CLEAN_TEMP_CONFIRM      "temp_folders"
 #define HELP_UPDATES                 "updates"
 #define HELP_COMPARE_NO_DIFFERENCES  "task_compare_directories"
