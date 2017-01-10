@@ -809,25 +809,34 @@ void TParallelOperation::RemoveClient()
 //---------------------------------------------------------------------------
 void TParallelOperation::WaitFor()
 {
-  bool Done;
-
-  do
+  // Even initialized?
+  // Won't be, when parallel transfers were not possible (like when preserving of directory timestamps is enabled)
+  if (FSection.get() != NULL)
   {
-    {
-      TGuard Guard(FSection.get());
-      Done = (FClients == 0);
-    }
+    bool Done;
 
-    if (!Done)
+    do
     {
-      // propagate the total progress incremented by the parallel operations
-      FMainOperationProgress->Progress();
-      Sleep(200);
+      {
+        TGuard Guard(FSection.get());
+        Done = (FClients == 0);
+      }
+
+      if (!Done)
+      {
+        // propagate the total progress incremented by the parallel operations
+        FMainOperationProgress->Progress();
+        Sleep(200);
+      }
     }
+    while (!Done);
+    FProbablyEmpty = true;
   }
-  while (!Done);
+  else
+  {
+    DebugAssert(FClients == 0);
+  }
 
-  FProbablyEmpty = true;
 }
 //---------------------------------------------------------------------------
 void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Success)
