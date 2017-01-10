@@ -10,6 +10,7 @@
 #include <TextsCore.h>
 #include <HelpWin.h>
 #include <VCLCommon.h>
+#include <limits>
 
 #include "WinInterface.h"
 #include "Login.h"
@@ -72,7 +73,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FSortEnablePending = false;
   FSiteSearch = ssSiteName;
   FLinkedForm = NULL;
-  FPrevPos = TPoint(-1, -1);
+  FPrevPos = TPoint(std::numeric_limits<LONG>::min(), std::numeric_limits<LONG>::min());
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -1541,7 +1542,7 @@ void __fastcall TLoginDialog::WMMoving(TMessage & Message)
 
   if (FLinkedForm != NULL)
   {
-    if (FPrevPos.X < 0)
+    if (FPrevPos.X == std::numeric_limits<LONG>::min())
     {
       FPrevPos = BoundsRect.TopLeft();
     }
