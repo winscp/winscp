@@ -1946,9 +1946,9 @@ void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
   if (Configuration->ActualLogProtocol >= 1)
   {
     DWORD Now = GetTickCount();
-    if (FLastProgressLogged - Now >= 1000)
+    if (Now - FLastProgressLogged >= 1000)
     {
-      LogEvent(ProgressData.GetLogStr());
+      LogEvent(L"Transfer progress: " + ProgressData.GetLogStr(false));
       FLastProgressLogged = Now;
     }
   }
