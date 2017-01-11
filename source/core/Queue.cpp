@@ -2216,6 +2216,7 @@ void __fastcall TParallelTransferQueueItem::DoExecute(TTerminal * Terminal)
 {
   TLocatedQueueItem::DoExecute(Terminal);
 
+  Terminal->LogParallelTransfer(FParallelOperation);
   TFileOperationProgressType OperationProgress(Terminal->OnProgress, Terminal->OnFinished, FParallelOperation->MainOperationProgress);
   TFileOperation Operation = (FLAGSET(FParallelOperation->Params, cpDelete) ? foMove : foCopy);
   bool Temp = FLAGSET(FParallelOperation->Params, cpTemporary);

@@ -441,6 +441,7 @@ public:
   bool __fastcall CopyToRemote(TStrings * FilesToCopy,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
   int __fastcall CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
+  void __fastcall LogParallelTransfer(TParallelOperation * ParallelOperation);
   void __fastcall CreateDirectory(const UnicodeString DirName,
     const TRemoteProperties * Properties = NULL);
   void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
@@ -801,7 +802,7 @@ public:
 
   void Init(
     TStrings * AFiles, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * MainOperationProgress);
+    TFileOperationProgressType * MainOperationProgress, const UnicodeString & MainName);
 
   void WaitFor();
   bool ShouldAddClient();
@@ -817,6 +818,7 @@ public:
   __property int Params = { read = FParams };
   __property UnicodeString TargetDir = { read = FTargetDir };
   __property TFileOperationProgressType * MainOperationProgress = { read = FMainOperationProgress };
+  __property UnicodeString MainName = { read = FMainName };
 
 private:
   struct TDirectoryData
@@ -837,6 +839,7 @@ private:
   std::unique_ptr<TCriticalSection> FSection;
   TFileOperationProgressType * FMainOperationProgress;
   TOperationSide FSide;
+  UnicodeString FMainName;
 
   bool CheckEnd(TCollectedFileList * Files);
 };

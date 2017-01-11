@@ -759,7 +759,7 @@ TParallelOperation::TParallelOperation(TOperationSide Side)
 //---------------------------------------------------------------------------
 void TParallelOperation::Init(
   TStrings * AFileList, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * MainOperationProgress)
+  TFileOperationProgressType * MainOperationProgress, const UnicodeString & MainName)
 {
   DebugAssert(FFileList.get() == NULL);
   // More lists should really happen in scripting only, which does not support parallel transfers atm.
@@ -771,6 +771,7 @@ void TParallelOperation::Init(
   FCopyParam = CopyParam;
   FParams = Params;
   FMainOperationProgress = MainOperationProgress;
+  FMainName = MainName;
   FIndex = 0;
 }
 //---------------------------------------------------------------------------
@@ -6355,6 +6356,13 @@ void __fastcall TTerminal::CopyParallel(TParallelOperation * ParallelOperation, 
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::LogParallelTransfer(TParallelOperation * ParallelOperation)
+{
+  LogEvent(
+    FORMAT("Adding a parallel transfer to the transfer started on the connection \"%s\"",
+    (ParallelOperation->MainName)));
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::LogTotalTransferDetails(
   const UnicodeString TargetDir, const TCopyParamType * CopyParam,
   TFileOperationProgressType * OperationProgress, bool Parallel, TStrings * Files)
@@ -6450,7 +6458,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
         if (Parallel)
         {
           // OnceDoneOperation is not supported
-          ParallelOperation->Init(Files.release(), UnlockedTargetDir, CopyParam, Params, &OperationProgress);
+          ParallelOperation->Init(Files.release(), UnlockedTargetDir, CopyParam, Params, &OperationProgress, Log->Name);
           CopyParallel(ParallelOperation, &OperationProgress);
         }
         else
@@ -6578,7 +6586,7 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
           if (Parallel)
           {
             // OnceDoneOperation is not supported
-            ParallelOperation->Init(Files.release(), TargetDir, CopyParam, Params, &OperationProgress);
+            ParallelOperation->Init(Files.release(), TargetDir, CopyParam, Params, &OperationProgress, Log->Name);
             CopyParallel(ParallelOperation, &OperationProgress);
           }
           else
