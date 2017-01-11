@@ -1217,7 +1217,6 @@ void __fastcall TTerminal::ResetConnection()
   }
 
   FFiles->Directory = L"";
-  FLastProgressLogged = GetTickCount();
   // note that we cannot clear contained files
   // as they can still be referenced in the GUI atm
 }
@@ -1943,7 +1942,8 @@ void __fastcall TTerminal::Information(const UnicodeString & Str, bool Status)
 void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
 {
 
-  if (Configuration->ActualLogProtocol >= 1)
+  if ((Configuration->ActualLogProtocol >= 1) &&
+      ((ProgressData.Operation == foCopy) || (ProgressData.Operation == foMove)))
   {
     DWORD Now = GetTickCount();
     if (Now - FLastProgressLogged >= 1000)
@@ -6417,6 +6417,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
         (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
         CopyParam->CalculateSize, Files.get());
 
+    FLastProgressLogged = GetTickCount();
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
     OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osLocal,
       FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
@@ -6517,6 +6518,7 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
   {
     __int64 TotalSize;
     bool TotalSizeKnown = false;
+    FLastProgressLogged = GetTickCount();
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
 
     std::unique_ptr<TStringList> Files;
