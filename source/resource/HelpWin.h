@@ -21,7 +21,7 @@
 #define HELP_KEEPUPTODATE_SYNCHRONIZE "task_keep_up_to_date"
 #define HELP_DND_DOWNLOAD_MOVE_WARNING "ui_pref_dragdrop#temporary_folder_mode"
 #define HELP_DD_WARN_LACK_OF_TEMP_SPACE HELP_DND_DOWNLOAD_MOVE_WARNING
-#define HELP_EDITOR_EARLY_CLOSED     "task_edit#problems_with_some_external_editors"
+#define HELP_EDITOR_EARLY_CLOSED     "task_edit#mdi"
 #define HELP_APP_EARLY_CLOSED        HELP_EDITOR_EARLY_CLOSED
 #define HELP_OPEN_FILE_NO_PROCESS    HELP_EDITOR_EARLY_CLOSED
 #define HELP_ADD_BOOKMARK_CONFIRM    "task_navigate#bookmarks"
