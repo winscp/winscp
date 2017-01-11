@@ -69,6 +69,7 @@ private:
   UnicodeString FPuttyRegistryStorageKey;
   UnicodeString FExternalIpAddress;
   bool FTryFtpWhenSshFails;
+  int FParallelDurationThreshold;
   bool FScripting;
 
   bool FDisablePasswordStoring;
@@ -137,6 +138,7 @@ private:
   void __fastcall UpdateActualLogProtocol();
   void __fastcall SetExternalIpAddress(UnicodeString value);
   void __fastcall SetTryFtpWhenSshFails(bool value);
+  void __fastcall SetParallelDurationThreshold(int value);
   bool __fastcall GetCollectUsage();
   void __fastcall SetCollectUsage(bool value);
   bool __fastcall GetIsUnofficial();
@@ -284,6 +286,7 @@ public:
   __property bool ShowFtpWelcomeMessage = { read = FShowFtpWelcomeMessage, write = SetShowFtpWelcomeMessage };
   __property UnicodeString ExternalIpAddress = { read = FExternalIpAddress, write = SetExternalIpAddress };
   __property bool TryFtpWhenSshFails = { read = FTryFtpWhenSshFails, write = SetTryFtpWhenSshFails };
+  __property int ParallelDurationThreshold = { read = FParallelDurationThreshold, write = SetParallelDurationThreshold };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage, write=SetStorage };

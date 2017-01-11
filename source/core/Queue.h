@@ -80,6 +80,7 @@ public:
   __property bool IsEmpty = { read = GetIsEmpty };
   __property int TransfersLimit = { read = FTransfersLimit, write = SetTransfersLimit };
   __property int KeepDoneItemsFor = { read = FKeepDoneItemsFor, write = SetKeepDoneItemsFor };
+  __property int ParallelDurationThreshold = { read = GetParallelDurationThreshold };
   __property bool Enabled = { read = FEnabled, write = SetEnabled };
   __property TQueryUserEvent OnQueryUser = { read = FOnQueryUser, write = FOnQueryUser };
   __property TPromptUserEvent OnPromptUser = { read = FOnPromptUser, write = FOnPromptUser };
@@ -139,6 +140,7 @@ protected:
   virtual void __fastcall ProcessEvent();
   void __fastcall TerminalFinished(TTerminalItem * TerminalItem);
   bool __fastcall TerminalFree(TTerminalItem * TerminalItem);
+  int __fastcall GetParallelDurationThreshold();
 
   void __fastcall DoQueueItemUpdate(TQueueItem * Item);
   void __fastcall DoListUpdate();

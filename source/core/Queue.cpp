@@ -544,6 +544,11 @@ bool __fastcall TTerminalQueue::TerminalFree(TTerminalItem * TerminalItem)
   return Result;
 }
 //---------------------------------------------------------------------------
+int __fastcall TTerminalQueue::GetParallelDurationThreshold()
+{
+  return FConfiguration->ParallelDurationThreshold;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalQueue::AddItem(TQueueItem * Item)
 {
   DebugAssert(!FTerminated);
@@ -2118,7 +2123,7 @@ void __fastcall TTransferQueueItem::ProgressUpdated()
           DWORD Now = GetTickCount();
           Force =
             (Now - FLastParallelOperationAdded >= 5*1000) &&
-            (TimeToSeconds(FProgressData->TotalTimeLeft()) >= 20);
+            (TimeToSeconds(FProgressData->TotalTimeLeft()) >= FQueue->ParallelDurationThreshold);
           LastParallelOperationAddedPrev = FLastParallelOperationAdded;
           // update now already to prevent race condition, but we will have to rollback it back,
           // if we actually do not add the parallel operation

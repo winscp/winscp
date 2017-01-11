@@ -100,6 +100,7 @@ void __fastcall TConfiguration::Default()
   FShowFtpWelcomeMessage = false;
   FExternalIpAddress = L"";
   FTryFtpWhenSshFails = true;
+  FParallelDurationThreshold = 10;
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -217,6 +218,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Bool,     ShowFtpWelcomeMessage); \
     KEY(String,   ExternalIpAddress); \
     KEY(Bool,     TryFtpWhenSshFails); \
+    KEY(Integer,  ParallelDurationThreshold); \
     KEY(Bool,     CollectUsage); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
@@ -1295,6 +1297,11 @@ void __fastcall TConfiguration::SetExternalIpAddress(UnicodeString value)
 void __fastcall TConfiguration::SetTryFtpWhenSshFails(bool value)
 {
   SET_CONFIG_PROPERTY(TryFtpWhenSshFails);
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::SetParallelDurationThreshold(int value)
+{
+  SET_CONFIG_PROPERTY(ParallelDurationThreshold);
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetPuttyRegistryStorageKey(UnicodeString value)
