@@ -852,18 +852,23 @@ void __fastcall TFileOperationProgressType::UnlockUserSelections()
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TFileOperationProgressType::GetLogStr()
+UnicodeString __fastcall TFileOperationProgressType::GetLogStr(bool Done)
 {
   UnicodeString Transferred = FormatSize(TotalTransferred);
   UnicodeString Left;
-  if (TotalSizeSet)
+  TDateTime Time;
+  UnicodeString TimeLabel;
+  if (!Done && TotalSizeSet)
   {
-    Left = FormatDateTimeSpan(Configuration->TimeFormat, TotalTimeLeft());
+    Time = TotalTimeLeft();
+    TimeLabel = L"Left";
   }
   else
   {
-    Left = L"n/a";
+    Time = TimeElapsed();
+    TimeLabel = L"Elapsed";
   }
+  UnicodeString TimeStr = FormatDateTimeSpan(Configuration->TimeFormat, Time);
   UnicodeString CPSStr = FormatSize(CPS());
-  return FORMAT(L"Transfer progress: Transferred: %s, Left: %s, CPS: %s/s", (Transferred, Left, CPSStr));
+  return FORMAT(L"Transferred: %s, %s: %s, CPS: %s/s", (Transferred, TimeLabel, TimeStr, CPSStr));
 }

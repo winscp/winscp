@@ -6385,6 +6385,11 @@ void __fastcall TTerminal::LogTotalTransferDetails(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::LogTotalTransferDone(TFileOperationProgressType * OperationProgress)
+{
+  LogEvent(L"Copying finished: " + OperationProgress->GetLogStr(true));
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
   const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation)
 {
@@ -6452,6 +6457,8 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
           FFileSystem->CopyToRemote(FilesToCopy, UnlockedTargetDir,
             CopyParam, Params, &OperationProgress, OnceDoneOperation);
         }
+
+        LogTotalTransferDone(&OperationProgress);
       }
       __finally
       {
@@ -6577,6 +6584,8 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
             FFileSystem->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params,
               &OperationProgress, OnceDoneOperation);
           }
+
+          LogTotalTransferDone(&OperationProgress);
         }
         __finally
         {

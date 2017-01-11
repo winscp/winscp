@@ -185,7 +185,7 @@ public:
   void __fastcall SetCPSLimit(unsigned long ACPSLimit);
   void __fastcall SetBatchOverwrite(TBatchOverwrite ABatchOverwrite);
   void __fastcall SetSkipToAll();
-  UnicodeString __fastcall GetLogStr();
+  UnicodeString __fastcall GetLogStr(bool Done);
 };
 //---------------------------------------------------------------------------
 class TSuspendFileOperationProgress

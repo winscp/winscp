@@ -389,6 +389,7 @@ protected:
   void __fastcall LogTotalTransferDetails(
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     TFileOperationProgressType * OperationProgress, bool Parallel, TStrings * Files);
+  void __fastcall LogTotalTransferDone(TFileOperationProgressType * OperationProgress);
   virtual TTerminal * __fastcall GetPasswordSource();
   void __fastcall DoEndTransaction(bool Inform);
   bool  __fastcall VerifyCertificate(
