@@ -2564,6 +2564,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 0
             OnChange = PuttyPathEditChange
+            OnExit = PuttyPathEditExit
           end
           object PuttyPasswordCheck2: TCheckBox
             Left = 24

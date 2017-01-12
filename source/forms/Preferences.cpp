@@ -2768,3 +2768,18 @@ void __fastcall TPreferencesDialog::LogMaxSizeComboExit(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PuttyPathEditExit(TObject * /*Sender*/)
+{
+  try
+  {
+    UnicodeString Program, AParams, Dir;
+    SplitCommand(PuttyPathEdit->Text, Program, AParams, Dir);
+  }
+  catch(...)
+  {
+    PuttyPathEdit->SelectAll();
+    PuttyPathEdit->SetFocus();
+    throw;
+  }
+}
+//---------------------------------------------------------------------------
