@@ -361,6 +361,7 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
     if (!OnlyLine)
     {
       Image = -1;
+      ProgressStr = L"";
     }
 
     // cannot use ProgressData->Temp as it is set only after the transfer actually starts
@@ -421,13 +422,14 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       {
         Values[2] =
           FormatPanelBytes(ProgressData->TransferredSize, WinConfiguration->FormatSizeBytes);
-        Values[5] = FORMAT(L"%d%%", (ProgressData->TransferProgress()));
+
+        if (ProgressStr.IsEmpty())
+        {
+          ProgressStr = FORMAT(L"%d%%", (ProgressData->TransferProgress()));
+        }
       }
     }
-    else
-    {
-      Values[0] = ProgressStr;
-    }
+    Values[5] = ProgressStr;
   }
 
   Item->StateIndex = (!BlinkHide ? State : -1);
