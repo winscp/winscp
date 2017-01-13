@@ -2,15 +2,6 @@
 #ifndef GUIToolsH
 #define GUIToolsH
 //---------------------------------------------------------------------------
-// from shlobj.h
-#define CSIDL_DESKTOP                   0x0000        // <desktop>
-#define CSIDL_SENDTO                    0x0009        // <user name>\SendTo
-#define CSIDL_DESKTOPDIRECTORY          0x0010        // <user name>\Desktop
-#define CSIDL_COMMON_DESKTOPDIRECTORY   0x0019        // All Users\Desktop
-#define CSIDL_APPDATA                   0x001a        // <user name>\Application Data
-#define CSIDL_PROGRAM_FILES             0x0026        // C:\Program Files
-#define CSIDL_PERSONAL                  0x0005        // My Documents
-//---------------------------------------------------------------------------
 #include <FileMasks.H>
 #include <Tbx.hpp>
 //---------------------------------------------------------------------------
@@ -30,8 +21,6 @@ bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData);
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
-UnicodeString __fastcall GetPersonalFolder();
-UnicodeString __fastcall GetDesktopFolder();
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const UnicodeString DirName);

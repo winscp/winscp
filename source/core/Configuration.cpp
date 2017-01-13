@@ -124,6 +124,7 @@ void __fastcall TConfiguration::Default()
   FActionsLogFileName = L"%TEMP%\\!S.xml";
   FPermanentActionsLogFileName = FActionsLogFileName;
   FProgramIniPathWrittable = -1;
+  FCustomIniFileStorageName = LoadCustomIniFileStorageName();
 
   Changed();
 }
@@ -139,6 +140,7 @@ __fastcall TConfiguration::~TConfiguration()
 void __fastcall TConfiguration::UpdateStaticUsage()
 {
   Usage->Set(L"ConfigurationIniFile", (Storage == stIniFile));
+  Usage->Set(L"ConfigurationIniFileCustom", !CustomIniFileStorageName.IsEmpty());
   Usage->Set("Unofficial", IsUnofficial);
 
   // this is called from here, because we are guarded from calling into
@@ -293,6 +295,25 @@ void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
   {
     CleanupIniFile();
   }
+
+  SaveCustomIniFileStorageName();
+
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SaveCustomIniFileStorageName()
+{
+  // Particularly, not to create an empty "Override" key, unless the custom INI file is ever set
+  if (CustomIniFileStorageName != LoadCustomIniFileStorageName())
+  {
+    std::unique_ptr<TRegistryStorage> RegistryStorage(new TRegistryStorage(GetRegistryStorageOverrideKey()));
+    RegistryStorage->AccessMode = smReadWrite;
+    RegistryStorage->Explicit = true;
+    if (RegistryStorage->OpenRootKey(true))
+    {
+      RegistryStorage->WriteString(L"IniFile", CustomIniFileStorageName);
+      RegistryStorage->CloseSubKey();
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Export(const UnicodeString & FileName)
@@ -403,6 +424,24 @@ void __fastcall TConfiguration::LoadFrom(THierarchicalStorage * Storage)
     LoadData(Storage);
     Storage->CloseSubKey();
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetRegistryStorageOverrideKey()
+{
+  return GetRegistryStorageKey() + L" Override";
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::LoadCustomIniFileStorageName()
+{
+  UnicodeString Result;
+  std::unique_ptr<TRegistryStorage> RegistryStorage(new TRegistryStorage(GetRegistryStorageOverrideKey()));
+  if (RegistryStorage->OpenRootKey(false))
+  {
+    Result = RegistryStorage->ReadString(L"IniFile", L"");
+    RegistryStorage->CloseSubKey();
+  }
+  RegistryStorage.reset(NULL);
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Load(THierarchicalStorage * Storage)
@@ -1023,6 +1062,14 @@ void __fastcall TConfiguration::SetIniFileStorageName(UnicodeString value)
   FStorage = stIniFile;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetDefaultIniFileExportPath()
+{
+  UnicodeString PersonalDirectory = GetPersonalFolder();
+  UnicodeString FileName = IncludeTrailingBackslash(PersonalDirectory) +
+    ExtractFileName(ExpandEnvironmentVariables(IniFileStorageName));
+  return FileName;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetIniFileStorageNameForReading()
 {
   return GetIniFileStorageName(true);
@@ -1033,72 +1080,81 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageNameForReadingWriting(
   return GetIniFileStorageName(false);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
+UnicodeString __fastcall TConfiguration::GetAutomaticIniFileStorageName(bool ReadingOnly)
 {
-  if (FIniFileStorageName.IsEmpty())
+  UnicodeString ProgramPath = ParamStr(0);
+
+  UnicodeString ProgramIniPath = ChangeFileExt(ProgramPath, L".ini");
+
+  UnicodeString IniPath;
+  if (FileExists(ApiPath(ProgramIniPath)))
   {
-    UnicodeString ProgramPath = ParamStr(0);
-
-    UnicodeString ProgramIniPath = ChangeFileExt(ProgramPath, L".ini");
-
-    UnicodeString IniPath;
-    if (FileExists(ApiPath(ProgramIniPath)))
-    {
-      IniPath = ProgramIniPath;
-    }
-    else
-    {
-      UnicodeString AppDataIniPath =
-        IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) +
-        ExtractFileName(ProgramIniPath);
-      if (FileExists(ApiPath(AppDataIniPath)))
-      {
-        IniPath = AppDataIniPath;
-      }
-      else
-      {
-        // avoid expensive test if we are interested in existing files only
-        if (!ReadingOnly && (FProgramIniPathWrittable < 0))
-        {
-          UnicodeString ProgramDir = ExtractFilePath(ProgramPath);
-          FProgramIniPathWrittable = IsDirectoryWriteable(ProgramDir) ? 1 : 0;
-        }
-
-        // does not really matter what we return when < 0
-        IniPath = (FProgramIniPathWrittable == 0) ? AppDataIniPath : ProgramIniPath;
-      }
-    }
-
-    // BACKWARD COMPATIBILITY with 4.x
-    if (FVirtualIniFileStorageName.IsEmpty() &&
-        TPath::IsDriveRooted(IniPath))
-    {
-      UnicodeString LocalAppDataPath = GetShellFolderPath(CSIDL_LOCAL_APPDATA);
-      // virtual store for non-system drives have a different virtual store,
-      // do not bother about them
-      if (TPath::IsDriveRooted(LocalAppDataPath) &&
-          SameText(ExtractFileDrive(IniPath), ExtractFileDrive(LocalAppDataPath)))
-      {
-        FVirtualIniFileStorageName =
-          IncludeTrailingBackslash(LocalAppDataPath) +
-          L"VirtualStore\\" +
-          IniPath.SubString(4, IniPath.Length() - 3);
-      }
-    }
-
-    if (!FVirtualIniFileStorageName.IsEmpty() &&
-        FileExists(ApiPath(FVirtualIniFileStorageName)))
-    {
-      return FVirtualIniFileStorageName;
-    }
-    else
-    {
-      return IniPath;
-    }
+    IniPath = ProgramIniPath;
   }
   else
   {
+    UnicodeString AppDataIniPath =
+      IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) +
+      ExtractFileName(ProgramIniPath);
+    if (FileExists(ApiPath(AppDataIniPath)))
+    {
+      IniPath = AppDataIniPath;
+    }
+    else
+    {
+      // avoid expensive test if we are interested in existing files only
+      if (!ReadingOnly && (FProgramIniPathWrittable < 0))
+      {
+        UnicodeString ProgramDir = ExtractFilePath(ProgramPath);
+        FProgramIniPathWrittable = IsDirectoryWriteable(ProgramDir) ? 1 : 0;
+      }
+
+      // does not really matter what we return when < 0
+      IniPath = (FProgramIniPathWrittable == 0) ? AppDataIniPath : ProgramIniPath;
+    }
+  }
+
+  // BACKWARD COMPATIBILITY with 4.x
+  if (FVirtualIniFileStorageName.IsEmpty() &&
+      TPath::IsDriveRooted(IniPath))
+  {
+    UnicodeString LocalAppDataPath = GetShellFolderPath(CSIDL_LOCAL_APPDATA);
+    // virtual store for non-system drives have a different virtual store,
+    // do not bother about them
+    if (TPath::IsDriveRooted(LocalAppDataPath) &&
+        SameText(ExtractFileDrive(IniPath), ExtractFileDrive(LocalAppDataPath)))
+    {
+      FVirtualIniFileStorageName =
+        IncludeTrailingBackslash(LocalAppDataPath) +
+        L"VirtualStore\\" +
+        IniPath.SubString(4, IniPath.Length() - 3);
+    }
+  }
+
+  if (!FVirtualIniFileStorageName.IsEmpty() &&
+      FileExists(ApiPath(FVirtualIniFileStorageName)))
+  {
+    return FVirtualIniFileStorageName;
+  }
+  else
+  {
+    return IniPath;
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
+{
+  if (!FIniFileStorageName.IsEmpty())
+  {
     return FIniFileStorageName;
+  }
+  else if (!FCustomIniFileStorageName.IsEmpty())
+  {
+    return FCustomIniFileStorageName;
+  }
+  else
+  {
+    return GetAutomaticIniFileStorageName(ReadingOnly);
   }
 }
 //---------------------------------------------------------------------------
@@ -1142,11 +1198,13 @@ UnicodeString __fastcall TConfiguration::GetRootKeyStr()
   return RootKeyToStr(HKEY_CURRENT_USER);
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::SetStorage(TStorage value)
+void __fastcall TConfiguration::MoveStorage(TStorage AStorage, const UnicodeString & ACustomIniFileStorageName)
 {
-  if (FStorage != value)
+  if ((FStorage != AStorage) ||
+      !IsPathToSameFile(FCustomIniFileStorageName, ACustomIniFileStorageName))
   {
     TStorage StorageBak = FStorage;
+    UnicodeString CustomIniFileStorageNameBak = FCustomIniFileStorageName;
     try
     {
       THierarchicalStorage * SourceStorage = NULL;
@@ -1157,7 +1215,8 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
         SourceStorage = CreateConfigStorage();
         SourceStorage->AccessMode = smRead;
 
-        FStorage = value;
+        FStorage = AStorage;
+        FCustomIniFileStorageName = ACustomIniFileStorageName;
 
         TargetStorage = CreateConfigStorage();
         TargetStorage->AccessMode = smReadWrite;
@@ -1185,9 +1244,17 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
       // - When removing INI file fails, when switching to registry
       //   (possible, when the INI file is in Program Files folder)
       FStorage = StorageBak;
+      FCustomIniFileStorageName = CustomIniFileStorageNameBak;
       throw;
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::ScheduleCustomIniFileStorageUse(const UnicodeString & ACustomIniFileStorageName)
+{
+  FStorage = stIniFile;
+  FCustomIniFileStorageName = ACustomIniFileStorageName;
+  SaveCustomIniFileStorageName();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Saved()

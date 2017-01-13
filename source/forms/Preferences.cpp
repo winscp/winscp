@@ -29,8 +29,9 @@
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
 #pragma link "ComboEdit"
-#ifndef NO_RESOURCES
 #pragma link "HistoryComboBox"
+#pragma link "PathLabel"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
@@ -121,6 +122,8 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 
   LinkLabel(UpdatesLink);
   LinkAppLabel(BackgroundConfirmationsLink);
+
+  AutomaticIniFileStorageLabel->Caption = ExpandEnvironmentVariables(Configuration->GetAutomaticIniFileStorageName(false));
 
   HideComponentsPanel(this);
 }
@@ -332,7 +335,18 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     // select none when stNul
     RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
-    IniFileStorageButton2->Checked = (Configuration->Storage == stIniFile);
+    AutomaticIniFileStorageButton->Checked = (Configuration->Storage == stIniFile) && Configuration->CustomIniFileStorageName.IsEmpty();
+    CustomIniFileStorageButton->Checked = (Configuration->Storage == stIniFile) && !Configuration->CustomIniFileStorageName.IsEmpty();
+    CustomIniFileStorageEdit->Text = Configuration->CustomIniFileStorageName;
+    if (Configuration->CustomIniFileStorageName.IsEmpty())
+    {
+      CustomIniFileStorageEdit->Text = Configuration->GetDefaultIniFileExportPath();
+    }
+    else
+    {
+      CustomIniFileStorageEdit->Text = Configuration->CustomIniFileStorageName;
+    }
+    FCustomIniFileStorageName = GetCustomIniFileStorageName();
 
     RandomSeedFileEdit->Text = Configuration->RandomSeedFile;
 
@@ -902,23 +916,35 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       }
       GUIConfiguration->Locale = Locale;
     }
-
-    // This possibly fails, make it last, so that the other settings are preserved.
-    // Do nothing when no option is selected (i.e. storage is stNul).
-    if (RegistryStorageButton->Checked)
-    {
-      Configuration->Storage = stRegistry;
-    }
-    else if (IniFileStorageButton2->Checked)
-    {
-      Configuration->Storage = stIniFile;
-    }
-
     #undef BOOLPROP
   }
   __finally
   {
     Configuration->EndUpdate();
+  }
+
+  bool MoveStorage = true;
+  TStorage Storage;
+  if (RegistryStorageButton->Checked)
+  {
+    Storage = stRegistry;
+  }
+  else if (AutomaticIniFileStorageButton->Checked)
+  {
+    Storage = stIniFile;
+  }
+  else if (CustomIniFileStorageButton->Checked)
+  {
+    Storage = stIniFile;
+  }
+  else
+  {
+    MoveStorage = false;
+  }
+
+  if (MoveStorage)
+  {
+    Configuration->MoveStorage(Storage, GetCustomIniFileStorageName());
   }
 }
 //---------------------------------------------------------------------------
@@ -1188,10 +1214,10 @@ void __fastcall TPreferencesDialog::UpdateControls()
     // allow only when some of the known storages is selected,
     // and particularly do not allow switching storage, when we start with stNul,
     // as that would destroy the stored configuration
-    EnableControl(StorageGroup, RegistryStorageButton->Checked || IniFileStorageButton2->Checked);
-    IniFileStorageButton2->Caption =
-      AnsiReplaceStr(IniFileStorageButton2->Caption, L"(winscp.ini)",
-        FORMAT(L"(%s)", (ExpandEnvironmentVariables(Configuration->IniFileStorageName))));
+    EnableControl(StorageGroup,
+      RegistryStorageButton->Checked || AutomaticIniFileStorageButton->Checked || CustomIniFileStorageButton->Checked);
+    AutomaticIniFileStorageLabel->UpdateStatus();
+    EnableControl(CustomIniFileStorageEdit, CustomIniFileStorageButton->Checked);
 
     EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
     bool EditorSelected = (EditorListView3->Selected != NULL);
@@ -2781,5 +2807,77 @@ void __fastcall TPreferencesDialog::PuttyPathEditExit(TObject * /*Sender*/)
     PuttyPathEdit->SetFocus();
     throw;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AutomaticIniFileStorageLabelGetStatus(TCustomPathLabel * /*Sender*/, bool & Active)
+{
+  Active = AutomaticIniFileStorageButton->Checked;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TPreferencesDialog::GetCustomIniFileStorageName()
+{
+  UnicodeString Result;
+  if (CustomIniFileStorageButton->Checked)
+  {
+    Result = CustomIniFileStorageEdit->Text;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
+{
+  UnicodeString CustomIniFileStorageName = GetCustomIniFileStorageName();
+  if (!CustomIniFileStorageName.IsEmpty() &&
+      !IsPathToSameFile(CustomIniFileStorageName, FCustomIniFileStorageName) &&
+      FileExists(CustomIniFileStorageName))
+  {
+    UnicodeString Message = FORMAT(LoadStrPart(CUSTOM_INI_FILE_OVERWRITE, 1), (CustomIniFileStorageName));
+    TMessageParams Params;
+    TQueryButtonAlias Aliases[2];
+    Aliases[0].Button = qaYes;
+    Aliases[0].Alias = LoadStrPart(CUSTOM_INI_FILE_OVERWRITE, 2);
+    Aliases[1].Button = qaNo;
+    Aliases[1].Alias = LoadStrPart(CUSTOM_INI_FILE_OVERWRITE, 3);
+    Params.Aliases = Aliases;
+    Params.AliasesCount = 2;
+    unsigned int Result = MessageDialog(Message, qtConfirmation, qaYes | qaNo | qaCancel, HELP_MOVE_CONFIGURATION, &Params);
+    if (Result == qaYes)
+    {
+      // noop
+    }
+    else if (Result == qaNo)
+    {
+      Configuration->ScheduleCustomIniFileStorageUse(GetCustomIniFileStorageName());
+      ExecuteNewInstance(L"");
+      TerminateApplication();
+    }
+    else
+    {
+      Abort();
+    }
+  }
+  FCustomIniFileStorageName = CustomIniFileStorageName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomIniFileStorageEditExit(TObject * /*Sender*/)
+{
+  CustomIniFileStorageChanged();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomIniFileStorageEditAfterDialog(TObject * Sender, UnicodeString & Name, bool & Action)
+{
+  PathEditAfterDialog(Sender, Name, Action);
+  if (Action)
+  {
+    CustomIniFileStorageEdit->Text = Name;
+    CustomIniFileStorageChanged();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomIniFileStorageButtonClick(TObject * /*Sender*/)
+{
+  UpdateControls();
+  // Focus to force validation
+  CustomIniFileStorageEdit->SetFocus();
 }
 //---------------------------------------------------------------------------

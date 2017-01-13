@@ -64,6 +64,8 @@ UnicodeString RemoveEmptyLines(const UnicodeString & S);
 bool IsNumber(const UnicodeString Str);
 UnicodeString __fastcall SystemTemporaryDirectory();
 UnicodeString __fastcall GetShellFolderPath(int CSIdl);
+UnicodeString __fastcall GetPersonalFolder();
+UnicodeString __fastcall GetDesktopFolder();
 UnicodeString __fastcall StripPathQuotes(const UnicodeString Path);
 UnicodeString __fastcall AddQuotes(UnicodeString Str);
 UnicodeString __fastcall AddPathQuotes(UnicodeString Path);

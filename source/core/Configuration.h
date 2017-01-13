@@ -56,6 +56,7 @@ private:
   int FSessionReopenBackground;
   int FSessionReopenTimeout;
   int FSessionReopenAutoStall;
+  UnicodeString FCustomIniFileStorageName;
   UnicodeString FIniFileStorageName;
   UnicodeString FVirtualIniFileStorageName;
   std::unique_ptr<TStrings> FOptionsStorage;
@@ -116,7 +117,6 @@ private:
   UnicodeString __fastcall GetActionsLogFileName();
   UnicodeString __fastcall GetDefaultLogFileName();
   UnicodeString __fastcall GetTimeFormat();
-  void __fastcall SetStorage(TStorage value);
   UnicodeString __fastcall GetRegistryStorageKey();
   UnicodeString __fastcall GetIniFileStorageNameForReadingWriting();
   UnicodeString __fastcall GetIniFileStorageNameForReading();
@@ -171,6 +171,9 @@ protected:
   void __fastcall SetAutoReadDirectoryAfterOp(bool value);
   virtual bool __fastcall GetRememberPassword();
   UnicodeString __fastcall GetReleaseType();
+  UnicodeString __fastcall LoadCustomIniFileStorageName();
+  void __fastcall SaveCustomIniFileStorageName();
+  UnicodeString __fastcall GetRegistryStorageOverrideKey();
 
   virtual UnicodeString __fastcall ModuleFileName();
 
@@ -198,8 +201,12 @@ public:
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save();
   void __fastcall SaveExplicit();
+  void __fastcall MoveStorage(TStorage AStorage, const UnicodeString & ACustomIniFileStorageName);
+  void __fastcall ScheduleCustomIniFileStorageUse(const UnicodeString & ACustomIniFileStorageName);
   void __fastcall SetNulStorage();
   void __fastcall SetDefaultStorage();
+  UnicodeString __fastcall GetAutomaticIniFileStorageName(bool ReadingOnly);
+  UnicodeString __fastcall GetDefaultIniFileExportPath();
   void __fastcall Export(const UnicodeString & FileName);
   void __fastcall Import(const UnicodeString & FileName);
   void __fastcall CleanupConfiguration();
@@ -289,8 +296,9 @@ public:
   __property int ParallelDurationThreshold = { read = FParallelDurationThreshold, write = SetParallelDurationThreshold };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
-  __property TStorage Storage  = { read=GetStorage, write=SetStorage };
+  __property TStorage Storage  = { read=GetStorage };
   __property UnicodeString RegistryStorageKey  = { read=GetRegistryStorageKey };
+  __property UnicodeString CustomIniFileStorageName  = { read=FCustomIniFileStorageName };
   __property UnicodeString IniFileStorageName  = { read=GetIniFileStorageNameForReadingWriting, write=SetIniFileStorageName };
   __property UnicodeString IniFileStorageNameForReading  = { read=GetIniFileStorageNameForReading };
   __property TStrings * OptionsStorage = { read = GetOptionsStorage, write = SetOptionsStorage };

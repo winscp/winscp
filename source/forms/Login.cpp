@@ -2472,17 +2472,9 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
   DataChange(Sender);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TLoginDialog::ImportExportIniFilePath()
-{
-  UnicodeString PersonalDirectory = GetPersonalFolder();
-  UnicodeString FileName = IncludeTrailingBackslash(PersonalDirectory) +
-    ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName));
-  return FileName;
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ExportActionExecute(TObject * /*Sender*/)
 {
-  UnicodeString FileName = ImportExportIniFilePath();
+  UnicodeString FileName = Configuration->GetDefaultIniFileExportPath();
   if (SaveDialog(LoadStr(EXPORT_CONF_TITLE), LoadStr(EXPORT_CONF_FILTER), L"ini", FileName))
   {
     Configuration->Export(FileName);
@@ -2498,7 +2490,7 @@ void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
     OpenDialog->Title = LoadStr(IMPORT_CONF_TITLE);
     OpenDialog->Filter = LoadStr(EXPORT_CONF_FILTER);
     OpenDialog->DefaultExt = L"ini";
-    OpenDialog->FileName = ImportExportIniFilePath();
+    OpenDialog->FileName = Configuration->GetDefaultIniFileExportPath();
 
     if (OpenDialog->Execute())
     {

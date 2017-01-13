@@ -20,6 +20,7 @@
 #include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
 #include <WinConfiguration.h>
+#include "PathLabel.hpp"
 //----------------------------------------------------------------------------
 class TCustomCommandList;
 class TEditorList;
@@ -105,7 +106,7 @@ __published:
   TTabSheet *StorageSheet;
   TGroupBox *StorageGroup;
   TRadioButton *RegistryStorageButton;
-  TRadioButton *IniFileStorageButton2;
+  TRadioButton *AutomaticIniFileStorageButton;
   TGroupBox *NotificationsGroup;
   TCheckBox *BeepOnFinishCheck;
   TUpDownEdit *BeepOnFinishAfterEdit;
@@ -315,6 +316,9 @@ __published:
   TCheckBox *LogMaxSizeCountCheck;
   TUpDownEdit *LogMaxSizeCountEdit;
   TLabel *LogMaxSizeCountFilesLabel;
+  TRadioButton *CustomIniFileStorageButton;
+  TFilenameEdit *CustomIniFileStorageEdit;
+  TPathLabel *AutomaticIniFileStorageLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -406,6 +410,10 @@ __published:
   void __fastcall LanguagesViewCustomDrawItem(TCustomListView * Sender, TListItem * Item, TCustomDrawState State, bool & DefaultDraw);
   void __fastcall LogMaxSizeComboExit(TObject *Sender);
   void __fastcall PuttyPathEditExit(TObject *Sender);
+  void __fastcall AutomaticIniFileStorageLabelGetStatus(TCustomPathLabel *Sender, bool &Active);
+  void __fastcall CustomIniFileStorageEditExit(TObject *Sender);
+  void __fastcall CustomIniFileStorageEditAfterDialog(TObject *Sender, UnicodeString &Name, bool &Action);
+  void __fastcall CustomIniFileStorageButtonClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -435,6 +443,7 @@ private:
   int FCustomCommandsHintItem;
   std::unique_ptr<TStrings> FAddedExtensions;
   std::unique_ptr<TStringList> FCustomCommandOptions;
+  UnicodeString FCustomIniFileStorageName;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
@@ -479,6 +488,8 @@ protected:
   void __fastcall AddEditCommand(bool Edit);
   void __fastcall AddExtension();
   void __fastcall ConfigureCommand();
+  void __fastcall CustomIniFileStorageChanged();
+  UnicodeString __fastcall GetCustomIniFileStorageName();
 };
 //----------------------------------------------------------------------------
 #endif

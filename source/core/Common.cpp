@@ -442,6 +442,79 @@ UnicodeString __fastcall GetShellFolderPath(int CSIdl)
   return Result;
 }
 //---------------------------------------------------------------------------
+static UnicodeString __fastcall GetWineHomeFolder()
+{
+  UnicodeString Result;
+
+  UnicodeString WineHostHome = GetEnvironmentVariable(L"WINE_HOST_HOME");
+  if (!WineHostHome.IsEmpty())
+  {
+    Result = L"Z:" + FromUnixPath(WineHostHome);
+  }
+  else
+  {
+    // Should we use WinAPI GetUserName() instead?
+    UnicodeString UserName = GetEnvironmentVariable(L"USERNAME");
+    if (!UserName.IsEmpty())
+    {
+      Result = L"Z:\\home\\" + UserName;
+    }
+  }
+
+  if (!DirectoryExists(Result))
+  {
+    Result = L"";
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetPersonalFolder()
+{
+  UnicodeString Result = GetShellFolderPath(CSIDL_PERSONAL);
+
+  if (IsWine())
+  {
+    UnicodeString WineHome = GetWineHomeFolder();
+
+    if (!WineHome.IsEmpty())
+    {
+      // if at least home exists, use it
+      Result = WineHome;
+
+      // but try to go deeper to "Documents"
+      UnicodeString WineDocuments =
+        IncludeTrailingBackslash(WineHome) + L"Documents";
+      if (DirectoryExists(WineDocuments))
+      {
+        Result = WineDocuments;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetDesktopFolder()
+{
+  UnicodeString Result = GetShellFolderPath(CSIDL_DESKTOPDIRECTORY);
+
+  if (IsWine())
+  {
+    UnicodeString WineHome = GetWineHomeFolder();
+
+    if (!WineHome.IsEmpty())
+    {
+      UnicodeString WineDesktop =
+        IncludeTrailingBackslash(WineHome) + L"Desktop";
+      if (DirectoryExists(WineHome))
+      {
+        Result = WineDesktop;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 // Particularly needed when using file name selected by TFilenameEdit,
 // as it wraps a path to double-quotes, when there is a space in the path.
 UnicodeString __fastcall StripPathQuotes(const UnicodeString Path)
