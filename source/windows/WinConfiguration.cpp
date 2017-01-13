@@ -770,7 +770,7 @@ bool __fastcall TWinConfiguration::CanWriteToStorage()
       Storage->AccessMode = smReadWrite;
       // This is actually not very good test, as we end up potentially with
       // the very same config, and TIniFileStorage file won't even try to
-      // write the file then. Lucliky, we use this for empty config only,
+      // write the file then. Luckily, we use this for empty config only,
       // so we end up with at least an empty section.
       if (Storage->OpenSubKey(ConfigurationSubKey, true))
       {
