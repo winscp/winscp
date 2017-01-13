@@ -19,7 +19,7 @@
 #define HELP_SYNCHRONIZE_SAVE_MODE   "ui_synchronize"
 #define HELP_PROGRESS_CANCEL         "ui_progress#controlling"
 #define HELP_KEEPUPTODATE_SYNCHRONIZE "task_keep_up_to_date"
-#define HELP_DND_DOWNLOAD_MOVE_WARNING "ui_pref_dragdrop#temporary_folder_mode"
+#define HELP_DND_DOWNLOAD_MOVE_WARNING "ui_pref_dragdrop#temporary"
 #define HELP_DD_WARN_LACK_OF_TEMP_SPACE HELP_DND_DOWNLOAD_MOVE_WARNING
 #define HELP_EDITOR_EARLY_CLOSED     "task_edit#mdi"
 #define HELP_APP_EARLY_CLOSED        HELP_EDITOR_EARLY_CLOSED
@@ -30,7 +30,7 @@
 #define HELP_CLEAN_TEMP_CONFIRM      "temp_folders"
 #define HELP_UPDATES                 "updates"
 #define HELP_COMPARE_NO_DIFFERENCES  "task_compare_directories"
-#define HELP_SYNC_DIR_BROWSE_ERROR   "task_navigate#synchronized_browsing"
+#define HELP_SYNC_DIR_BROWSE_ERROR   "task_navigate#synchronize_browsing"
 #define HELP_UNINSTALL_CLEANUP       "ui_cleanup"
 #define HELP_EDITOR_FIND             "ui_editor_find"
 #define HELP_EDITOR_REPLACE          "ui_editor_replace"
