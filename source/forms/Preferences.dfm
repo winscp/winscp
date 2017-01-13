@@ -1683,7 +1683,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 2
             Text = 'DDTemporaryDirectoryEdit'
-            OnClick = ControlChange
+            OnChange = ControlChange
           end
           object TemporaryDirectoryCleanupCheck: TCheckBox
             Left = 16
