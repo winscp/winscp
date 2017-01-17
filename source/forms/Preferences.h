@@ -254,7 +254,7 @@ __published:
   TLabel *LanguageChangeLabel;
   TButton *LanguagesGetMoreButton;
   TGroupBox *LoggingGroup;
-  TCheckBox *LogToFileCheck;
+  TLabel *LogFileNameLabel;
   TFilenameEdit *LogFileNameEdit3;
   TPanel *LogFilePanel;
   TRadioButton *LogFileAppendButton;

@@ -2,55 +2,6 @@ object NonVisualDataModule: TNonVisualDataModule
   OldCreateOrder = False
   Height = 502
   Width = 624
-  object LogActions: TActionList
-    Images = GlyphsModule.LogImages
-    OnExecute = LogActionsExecute
-    OnUpdate = LogActionsUpdate
-    Left = 32
-    Top = 104
-    object LogClearAction: TAction
-      Category = 'LogMemo'
-      Caption = 'C&lear'
-      Hint = 'Clear log'
-      ImageIndex = 0
-      ShortCut = 16430
-    end
-    object LogSelectAllAction2: TAction
-      Category = 'LogMemo'
-      Caption = 'Select &All'
-      Hint = 'Select all text'
-      ImageIndex = 2
-      ShortCut = 16449
-    end
-    object LogCopyAction: TAction
-      Category = 'LogMemo'
-      Caption = '&Copy'
-      Hint = 'Copy to clipboard'
-      ImageIndex = 1
-      ShortCut = 16451
-    end
-    object LogPreferencesAction2: TAction
-      Category = 'LogForm'
-      Caption = '&Preferences...'
-      Hint = 'Configure logging'
-      ImageIndex = 3
-    end
-  end
-  object LogMemoPopup: TTBXPopupMenu
-    Images = GlyphsModule.LogImages
-    Options = [tboShowHint]
-    Left = 32
-    Top = 152
-    object Clear1: TTBXItem
-      Action = LogClearAction
-    end
-    object Close1: TTBXItem
-      Action = LogCopyAction
-    end
-    object Selectall1: TTBXItem
-      Action = LogSelectAllAction2
-    end
-  end
   object RemoteFilePopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
     Options = [tboShowHint]
@@ -648,14 +599,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Custom Co&mmand Buttons'
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show custom commands toolbar'
-    end
-    object ViewLogAction: TAction
-      Tag = 15
-      Category = 'View'
-      Caption = 'Lo&g Window'
-      Hint = 'Show/hide log window'
-      ImageIndex = 24
-      Visible = False
     end
     object NewSessionAction: TAction
       Tag = 15

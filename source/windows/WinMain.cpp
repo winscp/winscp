@@ -4,7 +4,6 @@
 
 #include <CoreMain.h>
 
-#include <Log.h>
 #include <TextsWin.h>
 #include <TextsCore.h>
 #include <HelpWin.h>
@@ -799,8 +798,6 @@ int __fastcall Execute()
       GUIConfiguration->ChangeResourceModule(ResourceModule);
     }
     NonVisualDataModule = new TNonVisualDataModule(Application);
-
-    LogForm = NULL;
 
     // The default is 2.5s.
     // 20s is used by Office 2010 and Windows 10 Explorer.

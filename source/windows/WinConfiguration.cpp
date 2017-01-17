@@ -623,9 +623,6 @@ void __fastcall TWinConfiguration::Default()
   FUpdates.DotNetVersion = L"";
   FUpdates.ConsoleVersion = L"";
 
-  FLogWindowOnStartup = true;
-  FLogWindowParams = FormatDefaultWindowParams(500, 400);
-
   int ExplorerWidth = Min(WorkAreaWidthScaled - 40, 960);
   int ExplorerHeight = Min(WorkAreaHeightScaled - 30, 720);
   FScpExplorer.WindowParams = FormatDefaultWindowParams(ExplorerWidth, ExplorerHeight);
@@ -1085,10 +1082,6 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer, ScpCommander.RemotePanel.DriveViewHeightPixelsPerInch); \
     KEY(Integer, ScpCommander.RemotePanel.DriveViewWidth); \
     KEY(Integer, ScpCommander.RemotePanel.DriveViewWidthPixelsPerInch); \
-  ); \
-  BLOCK(L"Logging", CANCREATE, \
-    KEY(Bool,    LogWindowOnStartup); \
-    KEY(String,  LogWindowParams); \
   ); \
   BLOCK(L"Security", CANCREATE, \
     KEYEX(Bool,  FUseMasterPassword, L"UseMasterPassword"); \
@@ -1789,16 +1782,6 @@ void __fastcall TWinConfiguration::EndMasterPasswordSession()
     FMasterPasswordSession--;
   }
   FMasterPasswordSessionAsked = false;
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetLogWindowOnStartup(bool value)
-{
-  SET_CONFIG_PROPERTY(LogWindowOnStartup);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetLogWindowParams(UnicodeString value)
-{
-  SET_CONFIG_PROPERTY(LogWindowParams);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDAllowMove(bool value)

@@ -114,7 +114,6 @@ void __fastcall TConfiguration::Default()
   FPermanentLogMaxSize = FLogMaxSize;
   FLogMaxCount = 0;
   FPermanentLogMaxCount = FLogMaxCount;
-  FLogWindowLines = 100;
   FLogProtocol = 0;
   FPermanentLogProtocol = FLogProtocol;
   UpdateActualLogProtocol();
@@ -230,7 +229,6 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEYEX(Bool,  PermanentLogSensitive, L"LogSensitive"); \
     KEYEX(Int64, PermanentLogMaxSize, L"LogMaxSize"); \
     KEYEX(Integer, PermanentLogMaxCount, L"LogMaxCount"); \
-    KEY(Integer, LogWindowLines); \
     KEYEX(Integer,PermanentLogProtocol, L"LogProtocol"); \
     KEYEX(Bool,  PermanentLogActions, L"LogActions"); \
     KEYEX(String,PermanentActionsLogFileName, L"ActionsLogFileName"); \
@@ -1576,25 +1574,6 @@ int __fastcall TConfiguration::GetLogMaxCount()
 {
   TGuard Guard(FCriticalSection);
   return FPermanentLogMaxCount;
-}
-//---------------------------------------------------------------------
-void __fastcall TConfiguration::SetLogWindowLines(int value)
-{
-  SET_CONFIG_PROPERTY(LogWindowLines);
-}
-//---------------------------------------------------------------------
-void __fastcall TConfiguration::SetLogWindowComplete(bool value)
-{
-  if (value != LogWindowComplete)
-  {
-    LogWindowLines = value ? 0 : 50;
-    Changed();
-  }
-}
-//---------------------------------------------------------------------
-bool __fastcall TConfiguration::GetLogWindowComplete()
-{
-  return (bool)(LogWindowLines == 0);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetDefaultLogFileName()

@@ -9,7 +9,6 @@
 #include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm;
-class TLogMemo;
 class TTerminalQueue;
 class TAuthenticateForm;
 class ITaskbarList3;
@@ -70,7 +69,6 @@ public:
   __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex, write = SetActiveTerminalIndex };
   __property UnicodeString ActiveTerminalTitle = { read = GetActiveTerminalTitle };
   __property TStrings * TerminalList = { read = GetTerminalList };
-  __property TLogMemo * LogMemo = { read = FLogMemo };
   __property TNotifyEvent OnLastTerminalClosed = { read = FOnLastTerminalClosed, write = FOnLastTerminalClosed };
   __property TNotifyEvent OnTerminalListChanged = { read = FOnTerminalListChanged, write = FOnTerminalListChanged };
 
@@ -81,7 +79,6 @@ private:
   static TTerminalManager * FInstance;
   TCustomScpExplorerForm * FScpExplorer;
   TTerminal * FActiveTerminal;
-  TLogMemo * FLogMemo;
   bool FDestroying;
   TTerminalPendingAction FTerminalPendingAction;
   TNotifyEvent FOnLastTerminalClosed;
@@ -108,12 +105,9 @@ private:
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
   TTerminalQueue * __fastcall NewQueue(TTerminal * Terminal);
-  void __fastcall CreateLogMemo();
-  void __fastcall FreeLogMemo();
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
   void __fastcall DoSetActiveTerminal(TTerminal * value, bool AutoReconnect);
   void __fastcall SetActiveTerminal(TTerminal * value);
-  void __fastcall SetLogMemo(TLogMemo * value);
   void __fastcall UpdateAll();
   void __fastcall ApplicationException(TObject * Sender, Exception * E);
   void __fastcall ApplicationShowHint(UnicodeString & HintStr, bool & CanShow,

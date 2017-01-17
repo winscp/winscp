@@ -587,7 +587,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     // logging
     EnableLoggingCheck->Checked = Configuration->Logging;
     LogProtocolCombo->ItemIndex = Configuration->LogProtocol;
-    LogToFileCheck->Checked = Configuration->LogToFile;
     LogFileNameEdit3->Text =
       !Configuration->LogFileName.IsEmpty() ? Configuration->LogFileName : Configuration->DefaultLogFileName;
     if (Configuration->LogFileAppend)
@@ -879,9 +878,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     GUIConfiguration->SessionRememberPassword = SessionRememberPasswordCheck->Checked;
 
     // logging
-    Configuration->Logging = EnableLoggingCheck->Checked;
+    Configuration->Logging = EnableLoggingCheck->Checked && !LogFileNameEdit3->Text.IsEmpty();
     Configuration->LogProtocol = LogProtocolCombo->ItemIndex;
-    Configuration->LogFileName = LogToFileCheck->Checked ? LogFileNameEdit3->Text : UnicodeString();
+    Configuration->LogFileName = LogFileNameEdit3->Text;
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
     __int64 LogMaxSize;
     if (LogMaxSizeCheck->Checked && DebugAlwaysTrue(TryStrToSize(LogMaxSizeCombo->Text, LogMaxSize)))
@@ -1286,8 +1285,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     // logging
     EnableControl(LogProtocolCombo, EnableLoggingCheck->Checked);
-    EnableControl(LogToFileCheck, LogProtocolCombo->Enabled);
-    EnableControl(LogFileNameEdit3, LogToFileCheck->Enabled && LogToFileCheck->Checked);
+    EnableControl(LogFileNameEdit3, LogProtocolCombo->Enabled);
     EnableControl(LogFileNameHintText, LogFileNameEdit3->Enabled);
     EnableControl(LogFileAppendButton, LogFileNameEdit3->Enabled);
     EnableControl(LogFileOverwriteButton, LogFileNameEdit3->Enabled);

@@ -1522,8 +1522,7 @@ void __fastcall TTerminal::OpenTunnel()
 
     // The Started argument is not used with Parent being set
     FTunnelLog = new TSessionLog(this, TDateTime(), FTunnelData, Configuration);
-    FTunnelLog->Parent = FLog;
-    FTunnelLog->Name = L"Tunnel";
+    FTunnelLog->SetParent(FLog, L"Tunnel");
     FTunnelLog->ReflectSettings();
     FTunnelUI = new TTunnelUI(this);
     FTunnel = new TSecureShell(FTunnelUI, FTunnelData, FTunnelLog, Configuration);
@@ -6904,8 +6903,7 @@ __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
   TTerminal(ASessionData, Configuration),
   FMainTerminal(MainTerminal)
 {
-  Log->Parent = FMainTerminal->Log;
-  Log->Name = Name;
+  Log->SetParent(FMainTerminal->Log, Name);
   ActionLog->Enabled = false;
   SessionData->NonPersistant();
   DebugAssert(FMainTerminal != NULL);

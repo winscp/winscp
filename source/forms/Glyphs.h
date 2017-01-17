@@ -13,7 +13,6 @@ __published:
   TPngImageList *ExplorerImages;
   TPngImageList *SessionImages;
   TPngImageList *QueueImages;
-  TPngImageList *LogImages;
   TImageList *ButtonImages;
   TPngImageList *DialogImages;
 

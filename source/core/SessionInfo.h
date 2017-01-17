@@ -220,36 +220,25 @@ public:
   __fastcall TCwdSessionAction(TActionLog * Log, const UnicodeString & Path);
 };
 //---------------------------------------------------------------------------
-class TSessionLog : protected TStringList
+class TSessionLog
 {
 public:
   __fastcall TSessionLog(TSessionUI* UI, TDateTime Started, TSessionData * SessionData,
     TConfiguration * Configuration);
   __fastcall ~TSessionLog();
-  HIDESBASE void __fastcall Add(TLogLineType Type, const UnicodeString & Line);
+
+  void __fastcall SetParent(TSessionLog * Parent, const UnicodeString & Name);
+
+  void __fastcall Add(TLogLineType Type, const UnicodeString & Line);
   void __fastcall AddSystemInfo();
   void __fastcall AddStartupInfo();
   void __fastcall AddException(Exception * E);
   void __fastcall AddSeparator();
 
-  virtual void __fastcall Clear();
   void __fastcall ReflectSettings();
-  void __fastcall Lock();
-  void __fastcall Unlock();
 
-  __property TSessionLog * Parent = { read = FParent, write = FParent };
   __property bool Logging = { read = FLogging };
-  __property int BottomIndex = { read = GetBottomIndex };
-  __property UnicodeString Line[int Index]  = { read=GetLine };
-  __property TLogLineType Type[int Index]  = { read=GetType };
-  __property OnChange;
-  __property TNotifyEvent OnStateChange = { read = FOnStateChange, write = FOnStateChange };
-  __property UnicodeString CurrentFileName = { read = FCurrentFileName };
-  __property bool LoggingToFile = { read = GetLoggingToFile };
-  __property int TopIndex = { read = FTopIndex };
-  __property UnicodeString SessionName = { read = GetSessionName };
-  __property UnicodeString Name = { read = FName, write = FName };
-  __property Count;
+  __property UnicodeString Name = { read = FName };
 
 protected:
   void __fastcall CloseLogFile();
@@ -264,24 +253,14 @@ private:
   UnicodeString FCurrentLogFileName;
   UnicodeString FCurrentFileName;
   __int64 FCurrentFileSize;
-  int FLoggedLines;
-  int FTopIndex;
   TSessionUI * FUI;
   TSessionData * FSessionData;
   TDateTime FStarted;
   UnicodeString FName;
   bool FClosed;
-  TNotifyEvent FOnStateChange;
 
-  UnicodeString __fastcall GetLine(int Index);
-  TLogLineType __fastcall GetType(int Index);
-  void __fastcall DeleteUnnecessary();
-  void __fastcall StateChange();
   void __fastcall OpenLogFile();
-  int __fastcall GetBottomIndex();
   UnicodeString __fastcall GetLogFileName();
-  bool __fastcall GetLoggingToFile();
-  UnicodeString __fastcall GetSessionName();
   void __fastcall DoAdd(TLogLineType Type, UnicodeString Line,
     void __fastcall (__closure *f)(TLogLineType Type, const UnicodeString & Line));
   void __fastcall DoAddToParent(TLogLineType aType, const UnicodeString & aLine);

@@ -10,7 +10,6 @@
 #include <Tools.h>
 #include <Setup.h>
 
-#include <Log.h>
 #include <Interface.h>
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
@@ -94,40 +93,6 @@ __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
 //---------------------------------------------------------------------------
 __fastcall TNonVisualDataModule::~TNonVisualDataModule()
 {
-}
-//---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::LogActionsUpdate(
-      TBasicAction *Action, bool &Handled)
-{
-  TLogMemo * LogMemo = TTerminalManager::Instance()->LogMemo;
-  bool ValidLogMemo = LogMemo && LogMemo->Parent;
-  UPD(LogClearAction, ValidLogMemo && LogMemo->Lines->Count)
-  // removed potentially CPU intensive check for "all selected already"
-  UPD(LogSelectAllAction2, ValidLogMemo && LogMemo->Lines->Count)
-  UPD(LogCopyAction, ValidLogMemo && LogMemo->SelLength)
-
-  UPD(LogPreferencesAction2, true)
-  ;
-}
-//---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::LogActionsExecute(
-      TBasicAction *Action, bool &Handled)
-{
-
-  {
-    TAutoNestingCounter Counter(FBusy);
-
-    TLogMemo * LogMemo = TTerminalManager::Instance()->LogMemo;
-    DebugAssert(LogMemo && LogMemo->Parent);
-    EXE(LogClearAction, LogMemo->SessionLog->Clear())
-    EXE(LogSelectAllAction2, LogMemo->SelectAll())
-    EXE(LogCopyAction, LogMemo->CopyToClipboard())
-
-    EXE(LogPreferencesAction2, PreferencesDialog(pmLogging));
-    ;
-  }
-
-  DoIdle();
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
@@ -347,9 +312,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
 
   UPD(GoToCommandLineAction, true)
   UPD(GoToTreeAction, true)
-  UPDEX(ViewLogAction, Configuration->Logging && HasTerminal,
-    ViewLogAction->Checked = (WinConfiguration->LogView == lvWindow),
-    ViewLogAction->Checked = false )
   UPDEX(ShowHiddenFilesAction, true,
     ShowHiddenFilesAction->Checked = WinConfiguration->ShowHiddenFiles, )
   UPDEX(FormatSizeBytesNoneAction, true,
@@ -691,8 +653,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(GoToCommandLineAction, ScpExplorer->GoToCommandLine())
     EXE(GoToTreeAction, ScpExplorer->GoToTree())
 
-    EXE(ViewLogAction, WinConfiguration->LogView =
-      (WinConfiguration->LogView == lvNone ? lvWindow : lvNone) )
     EXE(ShowHiddenFilesAction, ScpExplorer->ToggleShowHiddenFiles())
     EXE(FormatSizeBytesNoneAction, ScpExplorer->SetFormatSizeBytes(fbNone))
     EXE(FormatSizeBytesKilobytesAction, ScpExplorer->SetFormatSizeBytes(fbKilobytes))

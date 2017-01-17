@@ -17,7 +17,6 @@
 #include <HelpWin.h>
 
 #include <VCLCommon.h>
-#include <Log.h>
 #include <Progress.h>
 #include <SynchronizeProgress.h>
 

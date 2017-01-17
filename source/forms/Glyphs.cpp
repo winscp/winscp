@@ -52,7 +52,6 @@ __fastcall TGlyphsModule::TGlyphsModule(TComponent* Owner)
       ExplorerImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(ExplorerImages->Name)));
       SessionImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(SessionImages->Name)));
       QueueImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(QueueImages->Name)));
-      LogImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(LogImages->Name)));
       ButtonImages = DebugNotNull(dynamic_cast<TImageList *>(FindComponent(ButtonImages->Name)));
       DialogImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(DialogImages->Name)));
     }

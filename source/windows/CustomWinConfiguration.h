@@ -8,7 +8,7 @@
 // WM_INTERUPT_IDLE = WM_WINSCP_USER + 3 (in windows/ConsoleRunner.cpp)
 // WM_COMPONENT_HIDE = WM_WINSCP_USER + 4 (forms/CustomScpExplorer.cpp)
 // WM_TRAY_ICON = WM_WINSCP_USER + 5 (forms/CustomScpExplorer.cpp)
-// WM_LOG_UPDATE = WM_WINSCP_USER + 6 (components/LogMemo.cpp)
+// WM_WINSCP_USER + 6 was WM_LOG_UPDATE
 #define WM_MANAGES_CAPTION (WM_WINSCP_USER + 7)
 #define WM_WANTS_MOUSEWHEEL (WM_WINSCP_USER + 8)
 #define WM_CAN_DISPLAY_UPDATES (WM_WINSCP_USER + 9)
@@ -43,7 +43,6 @@ class TCustomWinConfiguration : public TGUIConfiguration
 {
 static const int MaxHistoryCount = 50;
 private:
-  TLogView FLogView;
   TInterface FInterface;
   TInterface FAppliedInterface;
   TStringList * FHistory;
@@ -61,7 +60,6 @@ private:
   TNotifyEvent FOnMasterPasswordRecrypt;
 
   void __fastcall SetInterface(TInterface value);
-  void __fastcall SetLogView(TLogView value);
   void __fastcall SetHistory(const UnicodeString Index, TStrings * value);
   TStrings * __fastcall GetHistory(const UnicodeString Index);
   void __fastcall SetSynchronizeChecklist(TSynchronizeChecklistConfiguration value);
@@ -92,7 +90,6 @@ public:
   void __fastcall AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(TSessionData * SessionData);
   static UnicodeString __fastcall GetValidHistoryKey(UnicodeString Key);
 
-  __property TLogView LogView = { read = FLogView, write = SetLogView };
   __property TInterface Interface = { read = FInterface, write = SetInterface };
   __property TInterface AppliedInterface = { read = FAppliedInterface, write = FAppliedInterface };
   __property bool CanApplyInterfaceImmediately = { read = FCanApplyInterfaceImmediately, write = FCanApplyInterfaceImmediately };

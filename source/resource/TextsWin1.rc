@@ -290,10 +290,6 @@ BEGIN
         PASSWORD_CHANGED, "Password has been changed."
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
-        LOG_NOLOG, "No session log."
-        LOG_NOLOGFILE, "Logging to file disabled."
-        LOG_NOLOGCAPTION, "No log"
-        LOG_CAPTION, "Session '%s' log"
         COPY_FILE, "%s file '%s' to %s:"
         COPY_FILES, "%s %d files to %s:"
         COPY_TOLOCAL, "local directory"

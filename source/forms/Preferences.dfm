@@ -264,34 +264,33 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 203
+          Height = 196
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Session log'
           TabOrder = 0
           DesignSize = (
             389
-            203)
+            196)
           object LogMaxSizeCountFilesLabel: TLabel
             Left = 327
-            Top = 150
+            Top = 143
             Width = 19
             Height = 13
             Caption = 'files'
             FocusControl = LogMaxSizeCountEdit
           end
-          object LogToFileCheck: TCheckBox
-            Left = 16
+          object LogFileNameLabel: TLabel
+            Left = 40
             Top = 46
-            Width = 359
-            Height = 17
+            Width = 46
+            Height = 13
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Log to &file:'
-            TabOrder = 2
+            Caption = '&Log path:'
             OnClick = ControlChange
           end
           object LogFileNameEdit3: TFilenameEdit
             Left = 40
-            Top = 69
+            Top = 62
             Width = 335
             Height = 21
             AcceptFiles = True
@@ -304,18 +303,18 @@ object PreferencesDialog: TPreferencesDialog
             DialogTitle = 'Select file for session log'
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
-            TabOrder = 3
+            TabOrder = 2
             Text = 'LogFileNameEdit3'
             OnChange = ControlChange
           end
           object LogFilePanel: TPanel
             Left = 40
-            Top = 93
+            Top = 86
             Width = 265
             Height = 25
             Anchors = [akLeft, akTop, akRight]
             BevelOuter = bvNone
-            TabOrder = 5
+            TabOrder = 4
             object LogFileAppendButton: TRadioButton
               Left = 0
               Top = 4
@@ -351,14 +350,14 @@ object PreferencesDialog: TPreferencesDialog
           end
           object LogFileNameHintText: TStaticText
             Left = 293
-            Top = 91
+            Top = 84
             Width = 82
             Height = 16
             Alignment = taRightJustify
             Anchors = [akTop, akRight]
             AutoSize = False
             Caption = '&patterns'
-            TabOrder = 4
+            TabOrder = 3
             TabStop = True
           end
           object EnableLoggingCheck: TCheckBox
@@ -372,32 +371,32 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
           object LogSensitiveCheck: TCheckBox
-            Left = 16
-            Top = 174
-            Width = 359
+            Left = 40
+            Top = 167
+            Width = 335
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Log passwor&ds and other sensitive information'
-            TabOrder = 10
+            TabOrder = 9
             OnClick = ControlChange
           end
           object LogMaxSizeCheck: TCheckBox
             Left = 40
-            Top = 122
+            Top = 115
             Width = 210
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Roll log files after reaching'
-            TabOrder = 6
+            TabOrder = 5
             OnClick = ControlChange
           end
           object LogMaxSizeCombo: TComboBox
             Left = 256
-            Top = 120
+            Top = 113
             Width = 119
             Height = 21
             Anchors = [akTop, akRight]
-            TabOrder = 7
+            TabOrder = 6
             OnChange = ControlChange
             OnExit = LogMaxSizeComboExit
             Items.Strings = (
@@ -408,28 +407,28 @@ object PreferencesDialog: TPreferencesDialog
           end
           object LogMaxSizeCountCheck: TCheckBox
             Left = 64
-            Top = 149
+            Top = 142
             Width = 186
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Delete old log files, keep'
-            TabOrder = 8
+            TabOrder = 7
             OnClick = ControlChange
           end
           object LogMaxSizeCountEdit: TUpDownEdit
             Left = 256
-            Top = 147
+            Top = 140
             Width = 65
             Height = 21
             MaxValue = 999.000000000000000000
             MinValue = 1.000000000000000000
-            TabOrder = 9
+            TabOrder = 8
             OnChange = ControlChange
           end
         end
         object ActionsLoggingGroup: TGroupBox
           Left = 8
-          Top = 217
+          Top = 210
           Width = 389
           Height = 86
           Anchors = [akLeft, akTop, akRight]

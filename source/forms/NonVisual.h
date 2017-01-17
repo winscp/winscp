@@ -73,15 +73,6 @@
 class TNonVisualDataModule : public TDataModule
 {
 __published:    // IDE-managed Components
-  TActionList *LogActions;
-  TAction *LogClearAction;
-  TAction *LogSelectAllAction2;
-  TAction *LogCopyAction;
-  TTBXPopupMenu *LogMemoPopup;
-  TTBXItem *Clear1;
-  TTBXItem *Close1;
-  TTBXItem *Selectall1;
-  TAction *LogPreferencesAction2;
   TAction *LocalSortByNameAction;
   TAction *LocalSortAscendingAction;
   TAction *LocalSortBySizeAction;
@@ -117,7 +108,6 @@ __published:    // IDE-managed Components
   TAction *ExplorerSelectionBandAction;
   TAction *ClearSelectionAction;
   TTimer *SessionIdleTimer;
-  TAction *ViewLogAction;
   TAction *NewSessionAction;
   TAction *SiteManagerAction;
   TAction *CloseSessionAction;
@@ -620,8 +610,6 @@ __published:    // IDE-managed Components
   TAction *ChangePasswordAction;
   TAction *RemoteNewFileAction;
   TAction *LocalNewFileAction;
-  void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
-  void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

@@ -371,9 +371,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem13: TTBXItem
           Action = NonVisualDataModule.StatusBarAction
         end
-        object TBXItem14: TTBXItem
-          Action = NonVisualDataModule.ViewLogAction
-        end
         object TBXSubmenuItem14: TTBXSubmenuItem
           Caption = '&Queue'
           HelpKeyword = 'ui_queue'
@@ -800,9 +797,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem75: TTBXItem
           Action = NonVisualDataModule.CurrentReportAction
         end
-      end
-      object TBXItem127: TTBXItem
-        Action = NonVisualDataModule.ViewLogAction
       end
       object TBXSubmenuItem24: TTBXSubmenuItem
         Action = NonVisualDataModule.QueueToggleShowAction

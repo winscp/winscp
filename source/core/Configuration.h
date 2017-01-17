@@ -100,9 +100,6 @@ private:
   void __fastcall SetLogFileName(UnicodeString value);
   UnicodeString __fastcall GetLogFileName();
   bool __fastcall GetLogToFile();
-  void __fastcall SetLogWindowLines(int value);
-  void __fastcall SetLogWindowComplete(bool value);
-  bool __fastcall GetLogWindowComplete();
   void __fastcall SetLogFileAppend(bool value);
   void __fastcall SetLogSensitive(bool value);
   void __fastcall SetLogMaxSize(__int64 value);
@@ -274,8 +271,6 @@ public:
   __property bool LogActions  = { read=FLogActions, write=SetLogActions };
   __property bool LogActionsRequired  = { read=FLogActionsRequired, write=FLogActionsRequired };
   __property UnicodeString ActionsLogFileName  = { read=GetActionsLogFileName, write=SetActionsLogFileName };
-  __property int LogWindowLines  = { read=FLogWindowLines, write=SetLogWindowLines };
-  __property bool LogWindowComplete  = { read=GetLogWindowComplete, write=SetLogWindowComplete };
   __property UnicodeString DefaultLogFileName  = { read=GetDefaultLogFileName };
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property bool ConfirmOverwriting = { read = GetConfirmOverwriting, write = SetConfirmOverwriting};

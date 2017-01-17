@@ -6,11 +6,9 @@
 #include "TerminalManager.h"
 #include <Authenticate.h>
 #include "CustomScpExplorer.h"
-#include "LogMemo.h"
 #include "NonVisual.h"
 #include "WinConfiguration.h"
 #include "Tools.h"
-#include <Log.h>
 #include <Common.h>
 #include <CoreMain.h>
 #include <GUITools.h>
@@ -63,7 +61,6 @@ __fastcall TTerminalManager::TTerminalManager() :
   TTerminalList(Configuration)
 {
   FQueueSection = new TCriticalSection();
-  FLogMemo = NULL;
   FActiveTerminal = NULL;
   FScpExplorer = NULL;
   FDestroying = false;
@@ -577,14 +574,6 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
 
     if (ActiveTerminal)
     {
-      if (!PActiveTerminal)
-      {
-        CreateLogMemo();
-      }
-      DebugAssert(LogMemo);
-      LogMemo->SessionLog = ActiveTerminal->Log;
-      SwitchLogFormSessionLog();
-
       int Index = ActiveTerminalIndex;
       if (!ActiveTerminal->Active && !FTerminationMessages->Strings[Index].IsEmpty())
       {
@@ -612,7 +601,6 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
     }
     else
     {
-      FreeLogMemo();
       if (OnLastTerminalClosed)
       {
         OnLastTerminalClosed(this);
@@ -706,30 +694,6 @@ void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
       StoredSessions->Save(false, false);
     }
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TTerminalManager::CreateLogMemo()
-{
-  DebugAssert(!FLogMemo);
-  DebugAssert(ActiveTerminal);
-  FLogMemo = new TLogMemo(Application);
-  try
-  {
-    FLogMemo->SessionLog = ActiveTerminal->Log;
-    FLogMemo->PopupMenu = NonVisualDataModule->LogMemoPopup;
-  }
-  catch (...)
-  {
-    delete FLogMemo;
-    throw;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TTerminalManager::FreeLogMemo()
-{
-  DebugAssert(LogMemo);
-  LogMemo->PopupMenu = NULL;
-  SAFE_DESTROY(FLogMemo);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::HandleException(Exception * E)

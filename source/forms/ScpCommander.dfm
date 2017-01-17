@@ -553,9 +553,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem75: TTBXItem
           Action = NonVisualDataModule.StatusBarAction
         end
-        object TBXItem76: TTBXItem
-          Action = NonVisualDataModule.ViewLogAction
-        end
         object TBXSubmenuItem14: TTBXSubmenuItem
           Caption = '&Queue'
           HelpKeyword = 'ui_queue'
@@ -796,9 +793,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         Action = NonVisualDataModule.PreferencesAction
       end
       object TBXSeparatorItem36: TTBXSeparatorItem
-      end
-      object TBXItem127: TTBXItem
-        Action = NonVisualDataModule.ViewLogAction
       end
       object TBXSubmenuItem24: TTBXSubmenuItem
         Action = NonVisualDataModule.QueueToggleShowAction

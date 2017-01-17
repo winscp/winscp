@@ -340,8 +340,6 @@ private:
   bool FDeleteToRecycleBin;
   bool FDimmHiddenFiles;
   bool FRenameWholeName;
-  bool FLogWindowOnStartup;
-  UnicodeString FLogWindowParams;
   TScpCommanderConfiguration FScpCommander;
   TScpExplorerConfiguration FScpExplorer;
   bool FSelectDirectories;
@@ -452,8 +450,6 @@ private:
   void __fastcall SetDeleteToRecycleBin(bool value);
   void __fastcall SetDimmHiddenFiles(bool value);
   void __fastcall SetRenameWholeName(bool value);
-  void __fastcall SetLogWindowOnStartup(bool value);
-  void __fastcall SetLogWindowParams(UnicodeString value);
   void __fastcall SetScpCommander(TScpCommanderConfiguration value);
   void __fastcall SetScpExplorer(TScpExplorerConfiguration value);
   void __fastcall SetSelectDirectories(bool value);
@@ -641,11 +637,9 @@ public:
   __property bool DDAllowMove = { read = FDDAllowMove, write = SetDDAllowMove };
   __property bool DDAllowMoveInit = { read = FDDAllowMoveInit, write = SetDDAllowMoveInit };
   __property TAutoSwitch DDTransferConfirmation = { read = FDDTransferConfirmation, write = SetDDTransferConfirmation };
-  __property bool LogWindowOnStartup = { read = FLogWindowOnStartup, write = SetLogWindowOnStartup };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool DimmHiddenFiles = { read = FDimmHiddenFiles, write = SetDimmHiddenFiles };
   __property bool RenameWholeName = { read = FRenameWholeName, write = SetRenameWholeName };
-  __property UnicodeString LogWindowParams = { read = FLogWindowParams, write = SetLogWindowParams };
   __property bool ConfirmTransferring = { read = FConfirmTransferring, write = SetConfirmTransferring};
   __property bool ConfirmDeleting = { read = FConfirmDeleting, write = SetConfirmDeleting};
   __property bool ConfirmRecycling = { read = FConfirmRecycling, write = SetConfirmRecycling};

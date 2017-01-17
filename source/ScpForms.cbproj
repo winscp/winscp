@@ -220,13 +220,6 @@
 			<BuildOrder>7</BuildOrder>
 		</CppCompile>
 		<FormResources Include="forms\LocationProfiles.dfm"/>
-		<CppCompile Include="forms\Log.cpp">
-			<BuildOrder>77</BuildOrder>
-			<Form>LogForm</Form>
-			<DependentOn>forms\Log.h</DependentOn>
-			<BuildOrder>4</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Log.dfm"/>
 		<CppCompile Include="forms\Login.cpp">
 			<BuildOrder>80</BuildOrder>
 			<Form>LoginDialog</Form>

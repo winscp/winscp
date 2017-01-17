@@ -287,10 +287,6 @@
 #define PASSWORD_CHANGED        1576
 
 #define WIN_FORMS_STRINGS       1600
-#define LOG_NOLOG               1601
-#define LOG_NOLOGFILE           1602
-#define LOG_NOLOGCAPTION        1603
-#define LOG_CAPTION             1604
 #define COPY_FILE               1605
 #define COPY_FILES              1606
 #define COPY_TOLOCAL            1609
