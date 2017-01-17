@@ -434,7 +434,7 @@ private:
   TListViewScrollOnDragOver * FCustomCommandsScrollOnDragOver;
   TListViewScrollOnDragOver * FCopyParamScrollOnDragOver;
   TListViewScrollOnDragOver * FEditorScrollOnDragOver;
-  bool FNoUpdate;
+  int FNoUpdate;
   bool FLanguagesLoaded;
   std::unique_ptr<TPopupMenu> FColorPopupMenu;
   UnicodeString FVerifiedUpdatesAuthenticationEmail;
