@@ -376,7 +376,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 335
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Log passwor&ds and other sensitive information'
+            Caption = 'Log pass&words and other sensitive information'
             TabOrder = 9
             OnClick = ControlChange
           end
