@@ -2875,7 +2875,11 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageEditAfterDialog(TObject 
 void __fastcall TPreferencesDialog::CustomIniFileStorageButtonClick(TObject * /*Sender*/)
 {
   UpdateControls();
-  // Focus to force validation
-  CustomIniFileStorageEdit->SetFocus();
+  // Handler is shown also when Checked is set from LoadConfiguration
+  if (FNoUpdate == 0)
+  {
+    // Focus to force validation
+    CustomIniFileStorageEdit->SetFocus();
+  }
 }
 //---------------------------------------------------------------------------
