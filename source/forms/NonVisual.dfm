@@ -653,7 +653,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'View'
       Caption = 'Lo&g Window'
-      HelpKeyword = 'ui_log'
       Hint = 'Show/hide log window'
       ImageIndex = 24
       Visible = False
