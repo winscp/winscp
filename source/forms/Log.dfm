@@ -1,8 +1,6 @@
 object LogForm: TLogForm
   Left = 356
   Top = 178
-  HelpType = htKeyword
-  HelpKeyword = 'ui_log'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   Caption = 'Log'
   ClientHeight = 303
