@@ -4425,7 +4425,7 @@ void CFtpControlSocket::TransferFinished(bool preserveFileTimeForUploads)
       else
       {
         // Support for MDTM does not necessarily mean
-        // that the server supportsnon-standard hack
+        // that the server supports non-standard hack
         // of setting timestamp using
         // MFMT-like (two argument) call to MDTM.
         // IIS definitelly does.
