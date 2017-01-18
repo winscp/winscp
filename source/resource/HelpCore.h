@@ -4,7 +4,7 @@
 #define HELP_UNKNOWN_KEY                       "message_host_key"
 #define HELP_DIFFERENT_KEY                     "message_security_breach"
 #define HELP_RESUME_TRANSFER                   "resume"
-#define HELP_APPEND_OR_RESUME                  "resume#alternate_usage"
+#define HELP_APPEND_OR_RESUME                  "resume#manual"
 #define HELP_PARTIAL_BIGGER_THAN_SOURCE        HELP_RESUME_TRANSFER
 #define HELP_SYNCHRONIZE                       "task_synchronize_full"
 #define HELP_VERIFY_CERTIFICATE                "ftps"
