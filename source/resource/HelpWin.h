@@ -15,7 +15,7 @@
 #define HELP_LOCATION_PROFILE_MOVE   HELP_LOCATION_PROFILE_ADD
 #define HELP_LOCATION_PROFILE_DELETE HELP_LOCATION_PROFILE_ADD
 #define HELP_REMOTE_MOVE             "task_move_duplicate"
-#define HELP_CUSTOM_COMMAND_PARAM    "remote_command#custom_commands"
+#define HELP_CUSTOM_COMMAND_PARAM    "custom_command"
 #define HELP_SYNCHRONIZE_SAVE_MODE   "ui_synchronize"
 #define HELP_PROGRESS_CANCEL         "ui_progress#controlling"
 #define HELP_KEEPUPTODATE_SYNCHRONIZE "task_keep_up_to_date"
