@@ -269,7 +269,7 @@ namespace WinSCP
                         Thread.Sleep(50);
 
                         CheckForTimeout(
-                            string.Format(CultureInfo.CurrentCulture, "WinSCP has not responded in time.") +
+                            "WinSCP has not responded in time. " +
                             logExplanation);
 
                     } while (!File.Exists(XmlLogPath));
