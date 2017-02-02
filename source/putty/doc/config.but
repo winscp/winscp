@@ -934,6 +934,15 @@ setting you want if you have no better ideas.
 \dd PuTTY responds with the actual window title. This is dangerous for
 the reasons described above.
 
+\S{config-features-clearscroll} Disabling remote \i{scrollback clearing}
+
+\cfg{winhelp-topic}{features.clearscroll}
+
+PuTTY has the ability to clear the terminal's scrollback buffer in
+response to a command from the server. If you find PuTTY is doing this
+unexpectedly or inconveniently, you can tell PuTTY not to respond to
+that server command.
+
 \S{config-features-dbackspace} Disabling \i{destructive backspace}
 
 \cfg{winhelp-topic}{features.dbackspace}

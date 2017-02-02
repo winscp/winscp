@@ -27,6 +27,8 @@
 
 #include "winhelp.h"
 
+#define BUILDINFO_PLATFORM "Windows"
+
 struct Filename {
     char *path;
 };
@@ -482,6 +484,7 @@ void dll_hijacking_protection(void);
 BOOL init_winver(void);
 HMODULE load_system32_dll(const char *libname);
 const char *win_strerror(int error);
+void restrict_process_acl(void);
 
 /*
  * Exports from sizetip.c.
@@ -543,6 +546,7 @@ extern Backend serial_backend;
 void add_session_to_jumplist(const char * const sessionname);
 void remove_session_from_jumplist(const char * const sessionname);
 void clear_jumplist(void);
+BOOL set_explicit_app_user_model_id();
 
 /*
  * Extra functions in winstore.c over and above the interface in
