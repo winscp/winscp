@@ -723,6 +723,35 @@ void sk_getaddr(SockAddr addr, char *buf, int buflen)
     }
 }
 
+/*
+ * This constructs a SockAddr that points at one specific sub-address
+ * of a parent SockAddr. The returned SockAddr does not own all its
+ * own memory: it points into the old one's data structures, so it
+ * MUST NOT be used after the old one is freed, and it MUST NOT be
+ * passed to sk_addr_free. (The latter is why it's returned by value
+ * rather than dynamically allocated - that should clue in anyone
+ * writing a call to it that something is weird about it.)
+ */
+static struct SockAddr_tag sk_extractaddr_tmp(
+    SockAddr addr, const SockAddrStep *step)
+{
+    struct SockAddr_tag toret;
+    toret = *addr;                    /* structure copy */
+    toret.refcount = 1;
+
+#ifndef NO_IPV6
+    toret.ais = step->ai;
+#endif
+    if (SOCKADDR_FAMILY(addr, *step) == AF_INET
+#ifndef NO_IPV6
+        && !toret.ais
+#endif
+        )
+        toret.addresses += step->curraddr;
+
+    return toret;
+}
+
 int sk_addr_needs_port(SockAddr addr)
 {
     return addr->namedpipe ? FALSE : TRUE;
@@ -986,7 +1015,11 @@ static DWORD try_connect(Actual_Socket sock,
         p_closesocket(sock->s);
     }
 
-    plug_log(sock->plug, 0, sock->addr, sock->port, NULL, 0);
+    {
+        struct SockAddr_tag thisaddr = sk_extractaddr_tmp(
+            sock->addr, &sock->step);
+        plug_log(sock->plug, 0, &thisaddr, sock->port, NULL, 0);
+    }
 
     /*
      * Open socket.
@@ -1203,10 +1236,11 @@ static DWORD try_connect(Actual_Socket sock,
      */
     add234(sktree, sock);
 
-    if (err)
-	{
-	plug_log(sock->plug, 1, sock->addr, sock->port, sock->error, err);
-	}
+    if (err) {
+        struct SockAddr_tag thisaddr = sk_extractaddr_tmp(
+            sock->addr, &sock->step);
+	plug_log(sock->plug, 1, &thisaddr, sock->port, sock->error, err);
+    }
     return err;
 }
 
@@ -1693,9 +1727,11 @@ int select_result(WPARAM wParam, LPARAM lParam)
 	 * plug.
 	 */
 	if (s->addr) {
-	    plug_log(s->plug, 1, s->addr, s->port,
+            struct SockAddr_tag thisaddr = sk_extractaddr_tmp(
+                s->addr, &s->step);
+	    plug_log(s->plug, 1, &thisaddr, s->port,
 		     winsock_error_string(err), err);
-	    while (s->addr && sk_nextaddr(s->addr, &s->step)) {
+	    while (err && s->addr && sk_nextaddr(s->addr, &s->step)) {
 		err = try_connect(s
 #ifdef MPEXT
 		    , 0, 0
@@ -1880,9 +1916,9 @@ static char *sk_tcp_peer_info(Socket sock)
     struct sockaddr_in addr;
 #else
     struct sockaddr_storage addr;
+    char buf[INET6_ADDRSTRLEN];
 #endif
     int addrlen = sizeof(addr);
-    char buf[INET6_ADDRSTRLEN];
 
     if (p_getpeername(s->s, (struct sockaddr *)&addr, &addrlen) < 0)
         return NULL;
