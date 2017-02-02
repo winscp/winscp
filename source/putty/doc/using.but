@@ -1010,3 +1010,24 @@ connection. It expects a shell command string as an argument.
 
 See \k{config-proxy-type} for more information on this, and on other
 proxy settings.
+
+\S2{using-cmdline-restrict-acl} \i\c{-restrict-acl}: restrict the
+Windows process ACL
+
+This option (on Windows only) causes PuTTY to try to lock down the
+operating system's access control on its own process. If this
+succeeds, it should present an extra obstacle to malware that has
+managed to run under the same user id as the PuTTY process, by
+preventing it from attaching to PuTTY using the same interfaces
+debuggers use and either reading sensitive information out of its
+memory or hijacking its network session.
+
+This option is not enabled by default, because this form of
+interaction between Windows programs has many legitimate uses,
+including accessibility software such as screen readers. Also, it
+cannot provide full security against this class of attack in any case,
+because PuTTY can only lock down its own ACL \e{after} it has started
+up, and malware could still get in if it attacks the process between
+startup and lockdown. So it trades away noticeable convenience, and
+delivers less real security than you might want. However, if you do
+want to make that tradeoff anyway, the option is available.
