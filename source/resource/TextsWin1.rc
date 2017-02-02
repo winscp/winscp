@@ -593,7 +593,7 @@ BEGIN
         EXTENSION_SESSIONLOG_FILTER, "Session log files (*.log)|*.log|All files (*.*)|*.*"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000-2016 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000-2017 Martin Prikryl"
         HOMEPAGE_URL, "https://winscp.net/"
         HISTORY_URL, "https://winscp.net/eng/docs/history"
         FORUM_URL, "https://winscp.net/forum/"
