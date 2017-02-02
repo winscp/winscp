@@ -12,6 +12,7 @@
 #include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 char sshver[50];
+extern const char commitid[] = "";
 const int platform_uses_x11_unix_by_default = TRUE;
 CRITICAL_SECTION putty_section;
 bool SaveRandomSeed;
