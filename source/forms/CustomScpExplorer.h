@@ -377,6 +377,9 @@ protected:
   inline void __fastcall WMSysCommand(TMessage & Message);
   void __fastcall WMQueryEndSession(TMessage & Message);
   void __fastcall WMEndSession(TWMEndSession & Message);
+#ifdef _DEBUG
+  inline void __fastcall WMWindowPosChanged(TWMWindowPosMsg & Message);
+#endif
   void __fastcall WMCopyData(TMessage & Message);
   virtual void __fastcall SysResizing(unsigned int Cmd);
   DYNAMIC void __fastcall DoShow();
