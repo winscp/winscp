@@ -103,7 +103,7 @@ namespace WinSCP
                     switches.Add(Session.FormatSwitch("append"));
                     break;
                 default:
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", TransferMode));
+                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", OverwriteMode));
             }
 
             return string.Join(" ", switches.ToArray());
