@@ -4819,9 +4819,18 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
     {
       if (WinConfiguration->DoubleClickAction == dcaCopy)
       {
-        ExecuteFileOperation(foCopy,
-          (ADirView == DirView(osRemote) ? osRemote : osLocal),
-          true, !WinConfiguration->CopyOnDoubleClickConfirmation);
+        // To counter the lock in DirViewBusy (called from TCustomDirView.DoExecute)
+        UnlockWindow();
+        try
+        {
+          ExecuteFileOperation(foCopy,
+            (ADirView == DirView(osRemote) ? osRemote : osLocal),
+            true, !WinConfiguration->CopyOnDoubleClickConfirmation);
+        }
+        __finally
+        {
+          LockWindow();
+        }
         AllowExec = false;
       }
       else if (WinConfiguration->DoubleClickAction == dcaEdit)
@@ -9097,6 +9106,7 @@ void __fastcall TCustomScpExplorerForm::DirViewBusy(TObject * /*Sender*/, int Bu
     else
     {
       NonVisualDataModule->StartBusy();
+      // Will be countered for TCustomDirView.DoExecute in DoDirViewExecFile
       LockWindow();
     }
   }
