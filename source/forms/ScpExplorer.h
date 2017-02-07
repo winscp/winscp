@@ -151,7 +151,6 @@ __published:
   TTBXItem *TBXItem11;
   TTBXItem *TBXItem12;
   TTBXItem *TBXItem13;
-  TTBXItem *TBXItem14;
   TTBXItem *TBXItem15;
   TTBXSeparatorItem *TBXSeparatorItem3;
   TTBXItem *TBXItem16;
@@ -200,7 +199,6 @@ __published:
   TTBXToolbar *PreferencesToolbar;
   TTBXItem *TBXItem126;
   TTBXSeparatorItem *TBXSeparatorItem36;
-  TTBXItem *TBXItem127;
   TTBXSubmenuItem *TBXSubmenuItem24;
   TTBXItem *TBXItem128;
   TTBXItem *TBXItem129;
