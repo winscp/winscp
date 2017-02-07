@@ -1146,7 +1146,6 @@ end;
 
 procedure TCustomDirView.CreateWnd;
 begin
-  TraceStack;
   inherited;
 
   if Assigned(PopupMenu) then

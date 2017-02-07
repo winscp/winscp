@@ -295,7 +295,6 @@ end;
 
 procedure TCustomDriveView.CreateWnd;
 begin
-  TraceStack;
   inherited;
 
   if not Assigned(Images) then
