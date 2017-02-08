@@ -4960,7 +4960,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
       Synchronize(LocalDirectory, RemoteDirectory, smRemote, CopyParam,
         PParams, Checklist, Options);
     }
-    catch(Exception & E)
+    catch (Exception & E)
     {
       ShowExtendedExceptionEx(Terminal, &E);
       throw;
