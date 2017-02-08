@@ -4962,8 +4962,16 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
     }
     catch (Exception & E)
     {
-      ShowExtendedExceptionEx(Terminal, &E);
-      throw;
+      if (FLAGSET(Params.Options, soContinueOnError) && Terminal->Active &&
+          DebugAlwaysTrue(FOnFeedSynchronizeError != NULL))
+      {
+        // noop, already logged in MoreMessageDialog
+      }
+      else
+      {
+        ShowExtendedExceptionEx(Terminal, &E);
+        throw;
+      }
     }
   }
 }

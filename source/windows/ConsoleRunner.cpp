@@ -1728,8 +1728,23 @@ void __fastcall TConsoleRunner::SynchronizeControllerSynchronize(
 {
   if (!Full)
   {
-    FScript->Synchronize(LocalDirectory, RemoteDirectory, CopyParam,
-      Params.Params, Checklist);
+    try
+    {
+      FScript->Synchronize(LocalDirectory, RemoteDirectory, CopyParam,
+        Params.Params, Checklist);
+    }
+    catch (Exception & E)
+    {
+      if ((FScript->Batch == TScript::BatchContinue) &&
+          FScript->Terminal->Active)
+      {
+        // noop
+      }
+      else
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------

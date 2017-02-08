@@ -574,15 +574,22 @@ var
     // Notification signalled, so fire the OnChange event and then FindNext..
     // loop back to re-WaitFor... the thread
     Sleep(FChangeDelay);
-    FNotifiedDirectory := FDirectories[Directory];
-    FSubdirsChanged := False;
+    Result := WAIT_TIMEOUT;
+    // When deleting a tree, we may get notification about change in the directory
+    // before notification about deleting the directory.
+    // While this does not 100% protect against an attempt to synchronize the deleted directory,
+    // it may greatly reduce the risk (as checked after the sleep above).
+    // Though actually it's may not even be possible to delete the directory as we have it locked.
+    if DirectoryExists(FDirectories[Directory]) then
+    begin
+      FNotifiedDirectory := FDirectories[Directory];
+      FSubdirsChanged := False;
 
-    DoSynchronize(InformChange);
+      DoSynchronize(InformChange);
 
-    if FSubdirsChanged then
-      Result := UpdateSubDirectories(Directory)
-    else
-      Result := WAIT_TIMEOUT;
+      if FSubdirsChanged then
+        Result := UpdateSubDirectories(Directory)
+    end;
 
     FindNextChangeNotification(Handle);
   end;
