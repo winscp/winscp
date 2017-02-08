@@ -680,6 +680,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcResolveSymlink:
     case fsSkipTransfer:
     case fsParallelTransfers:
+    case fcRemoteCopy:
       return true;
 
     case fcUserGroupListing:
@@ -702,7 +703,6 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcGroupOwnerChangingByID:
     case fcRemoveCtrlZUpload:
     case fcRemoveBOMUpload:
-    case fcRemoteCopy:
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
     case fcChangePassword:
@@ -1161,10 +1161,26 @@ void __fastcall TWebDAVFileSystem::RenameFile(const UnicodeString FileName,
   DiscardLock(PathToNeon(Path));
 }
 //---------------------------------------------------------------------------
+int __fastcall TWebDAVFileSystem::CopyFileInternal(const UnicodeString & FileName,
+  const UnicodeString & NewName)
+{
+  // 0 = no overwrite
+  return ne_copy(FNeonSession, 0, NE_DEPTH_INFINITE, PathToNeon(FileName), PathToNeon(NewName));
+}
+//---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::CopyFile(const UnicodeString FileName,
     const UnicodeString NewName)
 {
-  DebugFail();
+  ClearNeonError();
+  TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
+
+  UnicodeString Path = FileName;
+  int NeonStatus = CopyFileInternal(Path, NewName);
+  if (IsValidRedirect(NeonStatus, Path))
+  {
+    NeonStatus = CopyFileInternal(Path, NewName);
+  }
+  CheckStatus(NeonStatus);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::CreateDirectory(const UnicodeString DirName)

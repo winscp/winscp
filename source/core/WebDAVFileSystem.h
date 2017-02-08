@@ -194,6 +194,7 @@ private:
   UnicodeString __fastcall ParsePathFromUrl(const UnicodeString & Url);
   int __fastcall ReadDirectoryInternal(const UnicodeString & Path, TRemoteFileList * FileList);
   int __fastcall RenameFileInternal(const UnicodeString & FileName, const UnicodeString & NewName);
+  int __fastcall CopyFileInternal(const UnicodeString & FileName, const UnicodeString & NewName);
   bool __fastcall IsValidRedirect(int NeonStatus, UnicodeString & Path);
   UnicodeString __fastcall DirectoryPath(UnicodeString Path);
   UnicodeString __fastcall FilePath(const TRemoteFile * File);
