@@ -1514,6 +1514,17 @@ void __fastcall TWebDAVFileSystem::Source(const UnicodeString FileName,
       // (not really true as we do not support changing file name on overwrite dialog)
       Action.Destination(DestFullName);
 
+      wchar_t * MimeOut = NULL;
+      if (FindMimeFromData(NULL, DestFileName.c_str(), NULL, 0, NULL, FMFD_URLASFILENAME, &MimeOut, 0) == S_OK)
+      {
+        FUploadMimeType = MimeOut;
+        CoTaskMemFree(MimeOut);
+      }
+      else
+      {
+        FUploadMimeType = L"";
+      }
+
       FILE_OPERATION_LOOP_BEGIN
       {
         SetFilePointer(File, 0, NULL, FILE_BEGIN);
@@ -1843,6 +1854,7 @@ void TWebDAVFileSystem::NeonPreSend(
     ne_buffer_zappend(Header, "Translate: f\r\n");
   }
 
+  const UnicodeString ContentTypeHeaderPrefix(L"Content-Type: ");
   if (FileSystem->FTerminal->Log->Logging)
   {
     const char * Buffer;
@@ -1851,7 +1863,7 @@ void TWebDAVFileSystem::NeonPreSend(
     {
       // all neon request types that use ne_add_request_header
       // use XML content-type, so it's text-based
-      DebugAssert(ContainsStr(HeaderBuf, L"Content-Type: " NE_XML_MEDIA_TYPE));
+      DebugAssert(ContainsStr(HeaderBuf, ContentTypeHeaderPrefix + NE_XML_MEDIA_TYPE));
       FileSystem->FTerminal->Log->Add(llInput, UnicodeString(UTF8String(Buffer, Size)));
     }
   }
@@ -1860,6 +1872,11 @@ void TWebDAVFileSystem::NeonPreSend(
   {
     ne_set_request_body_provider_pre(Request,
       FileSystem->NeonUploadBodyProvider, FileSystem);
+    if (!FileSystem->FUploadMimeType.IsEmpty())
+    {
+      UnicodeString ContentTypeHeader = ContentTypeHeaderPrefix + FileSystem->FUploadMimeType + L"\r\n";
+      ne_buffer_zappend(Header, AnsiString(ContentTypeHeader).c_str());
+    }
   }
 
   FileSystem->FResponse = L"";

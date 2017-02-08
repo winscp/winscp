@@ -163,6 +163,7 @@ private:
   bool FStoredPasswordTried;
   bool FUploading;
   bool FDownloading;
+  UnicodeString FUploadMimeType;
   ne_session_s * FNeonSession;
   ne_lock_store_s * FNeonLockStore;
   TCriticalSection * FNeonLockStoreSection;
