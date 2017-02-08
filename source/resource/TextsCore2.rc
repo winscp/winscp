@@ -330,7 +330,7 @@ BEGIN
     "examples:\n"
     "  synchronize remote -delete\n"
     "  synchronize both d:\\www /home/martin/public_html\n"
-  SCRIPT_KEEPUPTODATE_HELP4,
+  SCRIPT_KEEPUPTODATE_HELP5,
     "keepuptodate [ <local directory> [ <remote directory> ] ]\n"
     "  Watches for changes in local directory and reflects them on remote one.\n"
     "  When directories are not specified, current working directories are\n"
@@ -338,7 +338,6 @@ BEGIN
     "  Note: Overwrite confirmations are always off for the command.\n"
     "switches:\n"
     "  -delete             Delete obsolete files\n"
-    "  -continueonerror    Continue synchronizing when non-fatal error occurs\n"
     "  -permissions=<mode> Set permissions\n"
     "  -nopermissions      Keep default permissions\n"
     "  -speed=<kbps>       Limit transfer speed\n"
