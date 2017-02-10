@@ -188,6 +188,7 @@ type
     procedure WMAppCommand(var Message: TMessage); message WM_APPCOMMAND;
     procedure CMColorChanged(var Message: TMessage); message CM_COLORCHANGED;
     procedure LVMSetExtendedListViewStyle(var Message: TMessage); message LVM_SETEXTENDEDLISTVIEWSTYLE;
+    procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
 
     procedure DumbCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
@@ -1191,6 +1192,20 @@ begin
   DoAnimation(False);
   inherited;
 end;
+
+procedure TCustomDirView.CMRecreateWnd(var Message: TMessage);
+var
+  HadHandle: Boolean;
+begin
+  HadHandle := HandleAllocated;
+  inherited;
+  // See comment in TCustomDriveView.CMRecreateWnd
+  if HadHandle then
+  begin
+    HandleNeeded;
+  end;
+end;
+
 
 function TCustomDirView.CustomDrawItem(Item: TListItem; State: TCustomDrawState;
   Stage: TCustomDrawStage): Boolean;

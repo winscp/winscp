@@ -81,6 +81,7 @@ type
 
     procedure CNNotify(var Msg: TWMNotify); message CN_NOTIFY;
     procedure CMColorChanged(var Msg: TMessage); message CM_COLORCHANGED;
+    procedure CMRecreateWnd(var Msg: TMessage); message CM_RECREATEWND;
     procedure WMLButtonDown(var Msg: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMLButtonUp(var Msg: TWMLButtonDown); message WM_LBUTTONUP;
     procedure WMRButtonDown(var Msg: TWMRButtonDown); message WM_RBUTTONDOWN;
@@ -899,6 +900,21 @@ begin
     DropTarget := nil;
   end;
 end; {WMContextMenu}
+
+procedure TCustomDriveView.CMRecreateWnd(var Msg: TMessage);
+var
+  HadHandle: Boolean;
+begin
+  HadHandle := HandleAllocated;
+  inherited;
+  // If the control is not showing (e.g. because the machine is locked), the handle is not recreated.
+  // If contents is reloaded (LoadPath) without handle allocated, it crashes
+  // (as the handle is implicitly created somewhere in the middle of the reload and chaos ensures).
+  if HadHandle then
+  begin
+    HandleNeeded;
+  end;
+end;
 
 procedure TCustomDriveView.Delete(Node: TTreeNode);
 begin
