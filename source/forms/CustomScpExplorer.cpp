@@ -4882,7 +4882,7 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
   Params.RemoteDirectory = RemoteDirectory;
   int UnusedParams =
     (GUIConfiguration->SynchronizeParams &
-      (spPreviewChanges | spTimestamp | spNotByTime | spBySize));
+      (TTerminal::spPreviewChanges | TTerminal::spTimestamp | TTerminal::spNotByTime | TTerminal::spBySize));
   Params.Params = GUIConfiguration->SynchronizeParams & ~UnusedParams;
   Params.Options = GUIConfiguration->SynchronizeOptions;
   bool SaveSettings = false;
@@ -5042,7 +5042,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
 
     AChecklist = Terminal->SynchronizeCollect(LocalDirectory, RemoteDirectory,
       static_cast<TTerminal::TSynchronizeMode>(Mode),
-      &CopyParam, Params | spNoConfirmation, TerminalSynchronizeDirectory,
+      &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory,
       Options);
 
     SAFE_DESTROY(FSynchronizeProgressForm);
@@ -5060,7 +5060,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
 
     // No need to call if !AnyOperation
     Terminal->SynchronizeApply(AChecklist, LocalDirectory, RemoteDirectory,
-      &CopyParam, Params | spNoConfirmation, TerminalSynchronizeDirectory);
+      &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory);
   }
   __finally
   {
@@ -5100,7 +5100,7 @@ void __fastcall TCustomScpExplorerForm::SynchronizeSessionLog(const UnicodeStrin
 void __fastcall TCustomScpExplorerForm::GetSynchronizeOptions(
   int Params, TSynchronizeOptions & Options)
 {
-  if (FLAGSET(Params, spSelectedOnly) && SynchronizeAllowSelectedOnly())
+  if (FLAGSET(Params, TTerminal::spSelectedOnly) && SynchronizeAllowSelectedOnly())
   {
     Options.Filter = new TStringList();
     Options.Filter->CaseSensitive = false;
@@ -5166,7 +5166,7 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
 
         Checklist = Terminal->SynchronizeCollect(LocalDirectory, RemoteDirectory,
           static_cast<TTerminal::TSynchronizeMode>(Mode),
-          &CopyParam, Params | spNoConfirmation, TerminalSynchronizeDirectory,
+          &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory,
           &SynchronizeOptions);
       }
       __finally
@@ -5181,7 +5181,7 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
         MessageDialog(Message, qtInformation, qaOK,
           HELP_SYNCHRONIZE_NO_DIFFERENCES);
       }
-      else if (FLAGCLEAR(Params, spPreviewChanges) ||
+      else if (FLAGCLEAR(Params, TTerminal::spPreviewChanges) ||
                DoSynchronizeChecklistDialog(Checklist, Mode, Params,
                  LocalDirectory, RemoteDirectory, CustomCommandMenu))
       {
@@ -5190,7 +5190,7 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
         BatchStart(BatchStorage);
         FAutoOperation = true;
 
-        if (FLAGSET(Params, spPreviewChanges))
+        if (FLAGSET(Params, TTerminal::spPreviewChanges))
         {
           StartTime = Now();
         }
@@ -5201,7 +5201,7 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
           FSynchronizeProgressForm->Start();
 
           Terminal->SynchronizeApply(Checklist, LocalDirectory, RemoteDirectory,
-            &CopyParam, Params | spNoConfirmation, TerminalSynchronizeDirectory);
+            &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory);
         }
         __finally
         {

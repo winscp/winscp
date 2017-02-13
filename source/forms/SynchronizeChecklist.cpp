@@ -499,34 +499,34 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
 
       case TSynchronizeChecklist::saUploadNew:
         Possible = ((FMode == smRemote) || (FMode == smBoth)) &&
-          FLAGCLEAR(FParams, spTimestamp);
+          FLAGCLEAR(FParams, TTerminal::spTimestamp);
         break;
 
       case TSynchronizeChecklist::saDownloadNew:
         Possible = ((FMode == smLocal) || (FMode == smBoth)) &&
-          FLAGCLEAR(FParams, spTimestamp);
+          FLAGCLEAR(FParams, TTerminal::spTimestamp);
         break;
 
       case TSynchronizeChecklist::saUploadUpdate:
         Possible =
           ((FMode == smRemote) || (FMode == smBoth)) &&
-          (FLAGCLEAR(FParams, spNotByTime) || FLAGSET(FParams, spBySize));
+          (FLAGCLEAR(FParams, TTerminal::spNotByTime) || FLAGSET(FParams, TTerminal::spBySize));
         break;
 
       case TSynchronizeChecklist::saDownloadUpdate:
         Possible =
           ((FMode == smLocal) || (FMode == smBoth)) &&
-          (FLAGCLEAR(FParams, spNotByTime) || FLAGSET(FParams, spBySize));
+          (FLAGCLEAR(FParams, TTerminal::spNotByTime) || FLAGSET(FParams, TTerminal::spBySize));
         break;
 
       case TSynchronizeChecklist::saDeleteRemote:
         Possible = (FMode == smRemote) &&
-          FLAGCLEAR(FParams, spTimestamp);
+          FLAGCLEAR(FParams, TTerminal::spTimestamp);
         break;
 
       case TSynchronizeChecklist::saDeleteLocal:
         Possible = (FMode == smLocal) &&
-          FLAGCLEAR(FParams, spTimestamp);
+          FLAGCLEAR(FParams, TTerminal::spTimestamp);
         break;
 
       default:

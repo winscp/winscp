@@ -306,16 +306,6 @@ bool __fastcall DoFilterMaskDialog(TCustomDirView * Parent,
 // forms\EditMask.cpp
 bool __fastcall DoEditMaskDialog(TFileMasks & Mask);
 
-const spDelete = 0x01;
-const spNoConfirmation = 0x02;
-const spExistingOnly = 0x04;
-const spPreviewChanges = 0x40; // not used by core
-const spTimestamp = 0x100;
-const spNotByTime = 0x200;
-const spBySize = 0x400;
-const spSelectedOnly = 0x800;
-const spMirror = 0x1000;
-
 // forms\Synchronize.cpp
 const soDoNotUsePresets =  0x01;
 const soNoMinimize =       0x02;
