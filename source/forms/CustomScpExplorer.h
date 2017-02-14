@@ -299,6 +299,7 @@ private:
   bool __fastcall CanPasteToDirViewFromClipBoard();
   void __fastcall CMShowingChanged(TMessage & Message);
   void __fastcall WMClose(TMessage & Message);
+  void __fastcall WMDpiChanged(TMessage & Message);
 
 protected:
   TOperationSide FCurrentSide;

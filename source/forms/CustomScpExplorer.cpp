@@ -8158,10 +8158,19 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       WMClose(*M);
       break;
 
+    case WM_DPICHANGED:
+      WMDpiChanged(*M);
+      break;
+
     default:
       TForm::Dispatch(Message);
       break;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::WMDpiChanged(TMessage & /*Message*/)
+{
+  Configuration->Usage->Inc(L"PixelsPerInchChanged");
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMClose(TMessage & Message)
