@@ -4069,6 +4069,12 @@ bool __fastcall TTerminal::GetCommandSessionOpened()
     (FCommandSession->Status == ssOpened);
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::FillSessionDataForCode(TSessionData * Data)
+{
+  const TSessionInfo & SessionInfo = GetSessionInfo();
+  Data->HostKey = SessionInfo.HostKeyFingerprint;
+}
+//---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminal::GetCommandSession()
 {
   if ((FCommandSession != NULL) && !FCommandSession->Active)
