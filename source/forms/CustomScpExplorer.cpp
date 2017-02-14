@@ -8061,11 +8061,6 @@ bool __fastcall TCustomScpExplorerForm::GetLastCustomCommand(bool OnFocused,
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::WhatsThis()
-{
-  SendMessage(Handle, WM_SYSCOMMAND, SC_CONTEXTHELP, 0);
-}
-//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::BeforeAction()
 {
   if (RemoteDirView->ItemFocused != NULL)

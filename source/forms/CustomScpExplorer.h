@@ -668,7 +668,6 @@ public:
   void __fastcall FileListFromClipboard();
   void __fastcall SelectSameExt(bool Select);
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
-  void __fastcall WhatsThis();
   virtual void __fastcall BeforeAction();
   void __fastcall FileSystemInfo();
   void __fastcall SessionGenerateUrl();
