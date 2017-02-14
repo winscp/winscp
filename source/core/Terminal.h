@@ -512,6 +512,7 @@ public:
   void __fastcall CollectUsage();
   bool __fastcall IsThisOrChild(TTerminal * Terminal);
   TTerminal * __fastcall CreateSecondarySession(const UnicodeString & Name, TSessionData * SessionData);
+  void __fastcall FillSessionDataForCode(TSessionData * Data);
 
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);

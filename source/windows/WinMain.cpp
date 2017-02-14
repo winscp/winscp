@@ -98,11 +98,14 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaul
 
   TargetDirectory = UnixIncludeTrailingBackslash(Terminal->CurrentDirectory);
 
+  std::unique_ptr<TSessionData> Data(Terminal->SessionData->Clone());
+  Terminal->FillSessionDataForCode(Data.get());
+
   int Options = coDisableQueue;
   int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Upload;
   if (UseDefaults ||
       DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options,
-        CopyParamAttrs, NULL, NULL))
+        CopyParamAttrs, Data.get(), NULL))
   {
     Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, 0, NULL);
   }

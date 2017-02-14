@@ -8281,8 +8281,7 @@ void __fastcall TCustomScpExplorerForm::FileSystemInfo()
 TSessionData * __fastcall TCustomScpExplorerForm::SessionDataForCode()
 {
   std::unique_ptr<TSessionData> Data(CloneCurrentSessionData());
-  const TSessionInfo & SessionInfo = Terminal->GetSessionInfo();
-  Data->HostKey = SessionInfo.HostKeyFingerprint;
+  Terminal->FillSessionDataForCode(Data.get());
   return Data.release();
 }
 //---------------------------------------------------------------------------
