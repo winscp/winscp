@@ -111,6 +111,7 @@ private:
   UnicodeString FWindowParams;
   unsigned int FInstance;
   TEncoding * FEncoding;
+  TEncoding * FAnsiEncoding;
   UnicodeString FEncodingName;
   bool FSaving;
   bool FStandaloneEditor;

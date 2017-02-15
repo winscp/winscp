@@ -647,6 +647,16 @@ unsigned int TEditorForm::FInstances = 0;
 __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   : TForm(Owner)
 {
+  FAnsiEncoding = TEncoding::Default;
+  if (!FAnsiEncoding->IsSingleByte)
+  {
+    // We need the GetCharCount to fail for multibyte Ansi encoding (e.g. Japanese Shift-JIS CP592) like the
+    // TUTF8Encoding does, see the TUTF8Encoding.Create.
+    // We could use this for single-byte encodings too without any harm probably.
+    // But for now, try to limit an impact of this change.
+    // Based on TEncoding.GetANSI.
+    FAnsiEncoding = new TMBCSEncoding(GetACP(), MB_ERR_INVALID_CHARS, 0);
+  }
   EditorMemo = new TRichEdit20(this);
   EditorMemo->Parent = this;
   EditorMemo->Align = alClient;
@@ -718,6 +728,12 @@ __fastcall TEditorForm::~TEditorForm()
   {
     BackupSave();
     DoWindowClose(true);
+  }
+
+  if (FAnsiEncoding != TEncoding::Default)
+  {
+    delete FAnsiEncoding;
+    FAnsiEncoding = NULL;
   }
 
   if (FStandaloneEditor)
@@ -813,7 +829,7 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   else if (Action == DefaultEncodingAction)
   {
     DefaultEncodingAction->Enabled = true;
-    DefaultEncodingAction->Checked = (FEncoding == TEncoding::Default);
+    DefaultEncodingAction->Checked = (FEncoding == FAnsiEncoding);
   }
   else if (Action == UTF8EncodingAction)
   {
@@ -902,7 +918,7 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   }
   else if (Action == DefaultEncodingAction)
   {
-    ChangeEncoding(TEncoding::Default);
+    ChangeEncoding(FAnsiEncoding);
   }
   else if (Action == UTF8EncodingAction)
   {
@@ -1047,7 +1063,7 @@ void __fastcall TEditorForm::UpdateControls()
       {
         int Code;
         wchar_t Ch = Line[FCaretPos.x + 1];
-        if (FEncoding == TEncoding::Default)
+        if (FEncoding == FAnsiEncoding)
         {
           char Buf[10];
           BOOL UsedDefaultChar = FALSE;
@@ -1267,7 +1283,7 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
       switch (Encoding)
       {
         case CP_UTF8:
-          FEncoding = PrimaryEncoding ? TEncoding::UTF8 : TEncoding::Default;
+          FEncoding = PrimaryEncoding ? TEncoding::UTF8 : FAnsiEncoding;
           break;
 
         default:
@@ -1276,7 +1292,7 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
           // fallthru
 
         case CP_ACP:
-          FEncoding = PrimaryEncoding ? TEncoding::Default : TEncoding::UTF8;
+          FEncoding = PrimaryEncoding ? FAnsiEncoding : TEncoding::UTF8;
           break;
       }
     }
