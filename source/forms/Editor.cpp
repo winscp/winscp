@@ -329,7 +329,7 @@ void __fastcall TRichEdit20::WMPaste()
   }
 }
 //---------------------------------------------------------------------------
-// Copy from Vcl.ComCtrls.pas
+// VCLCOPY Vcl.ComCtrls.pas
 static int __fastcall AdjustLineBreaks(unsigned char * Dest, const TBytes & Source, int Start, int Len)
 {
   unsigned char * P = Dest;
@@ -387,7 +387,7 @@ struct TStreamLoadInfo
   TRichEdit20 * RichEdit;
 };
 //---------------------------------------------------------------------------
-// Copy from Vcl.ComCtrls.pas,
+// VCLCOPY Vcl.ComCtrls.pas,
 // WORKAROUND for bug in BCB XE2-XE6 VCL
 // Fixes conversion from UTF-8, when read buffer ends in the middle of UTF-8 char
 static unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead)
@@ -483,6 +483,7 @@ bool __stdcall TRichEdit20::StreamLoad(
 {
   WasRead = 0;
 
+  // VCLCOPY StreamLoad
   bool Result;
   try
   {
@@ -1205,7 +1206,7 @@ void __fastcall TEditorForm::FormShow(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-// copy from ComCtrls.pas
+// VCLCOPY ComCtrls.pas
 bool __fastcall TEditorForm::ContainsPreamble(TStream * Stream, const TBytes & Signature)
 {
   bool Result;
