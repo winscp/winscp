@@ -386,6 +386,7 @@ void __fastcall UpdateStaticUsage()
     // See TGUIConfiguration::GetAppliedLocaleHex()
     IntToHex(static_cast<int>(GetDefaultLCID()), 4));
   Configuration->Usage->Set(L"Locale", WinConfiguration->AppliedLocaleHex);
+  Configuration->Usage->Set(L"EncodingMultiByteAnsi", !TEncoding::Default->IsSingleByte);
   Configuration->Usage->Set(L"PixelsPerInch", Screen->PixelsPerInch);
 
   bool PixelsPerInchSystemDiffers = false;
