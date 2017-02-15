@@ -359,6 +359,7 @@ void __fastcall UpdateStaticUsage()
     IntToHex(static_cast<int>(GetDefaultLCID()), 4));
   Configuration->Usage->Set(L"Locale",
     IntToHex(static_cast<int>(WinConfiguration->Locale), 4));
+  Configuration->Usage->Set(L"EncodingMultiByteAnsi", !TEncoding::Default->IsSingleByte);
   Configuration->Usage->Set(L"PixelsPerInch", Screen->PixelsPerInch);
 
   bool PixelsPerInchSystemDiffers = false;
