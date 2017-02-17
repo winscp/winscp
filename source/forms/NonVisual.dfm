@@ -1377,7 +1377,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object DuplicateSessionAction: TAction
       Tag = 15
       Category = 'Session'
-      Caption = '&Duplicate Session'
+      Caption = 'Du&plicate Session'
       HelpKeyword = 'task_connections'
       Hint = 
         'Duplicate session|Opens the same session again (hold down Shift ' +
@@ -1459,7 +1459,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object FileSystemInfoAction: TAction
       Tag = 15
       Category = 'Command'
-      Caption = '&Server/Protocol Information'
+      Caption = 'Server/Protocol &Information'
       HelpKeyword = 'ui_fsinfo'
       Hint = 'Display server/protocol information'
       ImageIndex = 17
