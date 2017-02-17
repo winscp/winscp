@@ -484,10 +484,6 @@ void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value);
 TShortCut __fastcall GetShortCutCombo(TComboBox * ComboBox);
 bool __fastcall IsCustomShortCut(TShortCut ShortCut);
 
-class TAnimationsModule;
-TAnimationsModule * __fastcall GetAnimationsModule();
-void __fastcall ReleaseAnimationsModule();
-
 #ifdef _DEBUG
 void __fastcall ForceTracing();
 #endif

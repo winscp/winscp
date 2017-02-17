@@ -81,6 +81,9 @@ namespace Pngimagelist
 }
 using namespace Pngimagelist;
 //---------------------------------------------------------------------------
+TPngImageList * __fastcall GetAnimationsImages();
+void __fastcall ReleaseAnimationsModule();
+//---------------------------------------------------------------------------
 class TFrameAnimation
 {
 public:

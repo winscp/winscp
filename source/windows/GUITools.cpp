@@ -19,10 +19,14 @@
 #include <StrUtils.hpp>
 #include <limits>
 #include <Glyphs.h>
-#include <Animations.h>
 #include <PasTools.hpp>
 #include <VCLCommon.h>
 #include <Vcl.ScreenTips.hpp>
+
+#include "Animations96.h"
+#include "Animations120.h"
+#include "Animations144.h"
+#include "Animations192.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -910,6 +914,52 @@ bool __fastcall TLocalCustomCommand::IsFileCommand(const UnicodeString & Command
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+static TDataModule * AnimationsModule = NULL;
+static TPngImageList * AnimationsImages = NULL;
+//---------------------------------------------------------------------------
+TPngImageList * __fastcall GetAnimationsImages()
+{
+  if (AnimationsModule == NULL)
+  {
+    HANDLE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
+    try
+    {
+      int PixelsPerInch = Screen->PixelsPerInch;
+      if (PixelsPerInch >= 192)
+      {
+        AnimationsModule = new TAnimations192Module(Application);
+      }
+      else if (PixelsPerInch >= 144)
+      {
+        AnimationsModule = new TAnimations144Module(Application);
+      }
+      else if (PixelsPerInch >= 120)
+      {
+        AnimationsModule = new TAnimations120Module(Application);
+      }
+      else
+      {
+        AnimationsModule = new TAnimations96Module(Application);
+      }
+
+      AnimationsImages = DebugNotNull(dynamic_cast<TPngImageList *>(AnimationsModule->FindComponent(L"AnimationImages")));
+    }
+    __finally
+    {
+      GUIConfiguration->ChangeResourceModule(ResourceModule);
+    }
+  }
+  return AnimationsImages;
+}
+//---------------------------------------------------------------------------
+void __fastcall ReleaseAnimationsModule()
+{
+  if (AnimationsModule != NULL)
+  {
+    SAFE_DESTROY(AnimationsModule);
+  }
+}
+//---------------------------------------------------------------------------
 __fastcall TFrameAnimation::TFrameAnimation()
 {
   FFirstFrame = -1;
@@ -922,7 +972,7 @@ void __fastcall TFrameAnimation::Init(TPaintBox * PaintBox, const UnicodeString 
 //---------------------------------------------------------------------------
 void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name, bool Null)
 {
-  FImageList = (ImageList != NULL) ? ImageList : GetAnimationsModule()->AnimationImages;
+  FImageList = (ImageList != NULL) ? ImageList : GetAnimationsImages();
   FFirstFrame = -1;
   FFirstLoopFrame = -1;
   DebugAssert((PaintBox->OnPaint == NULL) || (PaintBox->OnPaint == PaintBoxPaint));
