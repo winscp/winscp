@@ -518,7 +518,7 @@ Socket new_connection(SockAddr addr, const char *hostname,
 
         {
             char addrbuf[256], *logmsg;
-            sk_getaddr(addr, addrbuf, lenof(addrbuf));
+            sk_getaddr(proxy_addr, addrbuf, lenof(addrbuf));
             logmsg = dupprintf("Connecting to %s proxy at %s port %d",
                                proxy_type, addrbuf,
                                conf_get_int(conf, CONF_proxy_port));

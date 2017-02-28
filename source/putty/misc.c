@@ -406,7 +406,7 @@ static char *dupvprintf_inner(char *buf, int oldlen, int oldsize,
     }
 
     while (1) {
-#if defined _WINDOWS && _MSC_VER < 1900 /* 1900 == VS2015 has real snprintf */
+#if defined _WINDOWS && !defined __WINE__ && _MSC_VER < 1900 /* 1900 == VS2015 has real snprintf */
 #define vsnprintf _vsnprintf
 #endif
 #ifdef va_copy
@@ -1184,6 +1184,17 @@ char *buildinfo(const char *newline)
     strbuf_catf(buf, ", unrecognised version");
 #endif
     strbuf_catf(buf, " (_MSC_VER=%d)", (int)_MSC_VER);
+#endif
+
+#ifdef BUILDINFO_GTK
+    {
+        char *gtk_buildinfo = buildinfo_gtk_version();
+        if (gtk_buildinfo) {
+            strbuf_catf(buf, "%sCompiled against GTK version %s",
+                        newline, gtk_buildinfo);
+            sfree(gtk_buildinfo);
+        }
+    }
 #endif
 
 #ifdef NO_SECURITY

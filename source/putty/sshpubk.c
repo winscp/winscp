@@ -946,6 +946,7 @@ unsigned char *rfc4716_loadpub(FILE *fp, char **algorithm,
             }
 
             *q = '\0';
+            sfree(comment);   /* *just* in case of multiple Comment headers */
             comment = dupstr(line);
         } else if (!strcmp(line, "Subject") ||
                    !strncmp(line, "x-", 2)) {
