@@ -96,8 +96,24 @@ struct FontSpec *fontspec_new(const char *name,
 #define BOXRESULT (DLGWINDOWEXTRA + sizeof(LONG_PTR))
 #define DF_END 0x0001
 
+#ifdef __WINE__
+#define NO_SECUREZEROMEMORY            /* winelib doesn't have this */
+#endif
+
 #ifndef NO_SECUREZEROMEMORY
 #define PLATFORM_HAS_SMEMCLR /* inhibit cross-platform one in misc.c */
+#endif
+
+#ifndef __WINE__
+/* Up-to-date Windows headers warn that the unprefixed versions of
+ * these names are deprecated. */
+#define stricmp _stricmp
+#define strnicmp _strnicmp
+#else
+/* Compiling with winegcc, _neither_ version of these functions
+ * exists. Use the POSIX names. */
+#define stricmp strcasecmp
+#define strnicmp strncasecmp
 #endif
 
 #define BROKEN_PIPE_ERROR_CODE ERROR_BROKEN_PIPE   /* used in sshshare.c */
@@ -278,12 +294,21 @@ DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAAsyncSelect,
 		      (SOCKET, HWND, u_int, long));
 DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEventSelect,
 		      (SOCKET, WSAEVENT, long));
-DECL_WINDOWS_FUNCTION(GLOBAL, int, select,
-		      (int, fd_set FAR *, fd_set FAR *,
-		       fd_set FAR *, const struct timeval FAR *));
 DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAGetLastError, (void));
 DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEnumNetworkEvents,
 		      (SOCKET, WSAEVENT, LPWSANETWORKEVENTS));
+#ifdef NEED_DECLARATION_OF_SELECT
+/* This declaration is protected by an ifdef for the sake of building
+ * against winelib, in which you have to include winsock2.h before
+ * stdlib.h so that the right fd_set type gets defined. It would be a
+ * pain to do that throughout this codebase, so instead I arrange that
+ * only a modules actually needing to use (or define, or initialise)
+ * this function pointer will see its declaration, and _those_ modules
+ * - which will be Windows-specific anyway - can take more care. */
+DECL_WINDOWS_FUNCTION(GLOBAL, int, select,
+		      (int, fd_set FAR *, fd_set FAR *,
+		       fd_set FAR *, const struct timeval FAR *));
+#endif
 
 extern int socket_writable(SOCKET skt);
 
@@ -492,6 +517,7 @@ BOOL init_winver(void);
 HMODULE load_system32_dll(const char *libname);
 const char *win_strerror(int error);
 void restrict_process_acl(void);
+GLOBAL int restricted_acl;
 
 /*
  * Exports from sizetip.c.

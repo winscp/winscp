@@ -5,11 +5,15 @@
  * unfix.org.
  */
 
+#include <winsock2.h> /* need to put this first, for winelib builds */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
 #define DEFINE_PLUG_METHOD_MACROS
+#define NEED_DECLARATION_OF_SELECT     /* in order to initialise it */
+
 #include "putty.h"
 #include "network.h"
 #include "tree234.h"
@@ -21,8 +25,15 @@
 #include <ws2tcpip.h>
 
 #ifndef NO_IPV6
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-braces"
+#endif
 const struct in6_addr in6addr_any = IN6ADDR_ANY_INIT;
 const struct in6_addr in6addr_loopback = IN6ADDR_LOOPBACK_INIT;
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #endif
 
 #define ipv4_is_loopback(addr) \
@@ -236,6 +247,13 @@ int sk_startup(int hi, int lo)
 #endif
     return TRUE;
 }
+
+/* Actually define this function pointer, which won't have been
+ * defined alongside all the others by PUTTY_DO_GLOBALS because of the
+ * annoying winelib header-ordering issue. (See comment in winstuff.h.) */
+DECL_WINDOWS_FUNCTION(/* empty */, int, select,
+		      (int, fd_set FAR *, fd_set FAR *,
+		       fd_set FAR *, const struct timeval FAR *));
 
 void sk_init(void)
 {
