@@ -1712,7 +1712,7 @@ const wchar_t KiloSize = L'K';
 const wchar_t MegaSize = L'M';
 const wchar_t GigaSize = L'G';
 //---------------------------------------------------------------------------
-// Keep consistent with parse_blocksize64
+// Keep consistent with parse_blocksize
 bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size)
 {
   int Index = 0;
