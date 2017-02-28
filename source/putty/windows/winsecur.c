@@ -102,17 +102,17 @@ PSID get_user_sid(void)
     return ret;
 }
 
-int getsids(char *error)
+int getsids(char **error)
 {
     SID_IDENTIFIER_AUTHORITY world_auth = SECURITY_WORLD_SID_AUTHORITY;
     SID_IDENTIFIER_AUTHORITY nt_auth = SECURITY_NT_AUTHORITY;
     int ret;
 
-    error=NULL;
+    *error = NULL;
 
     if (!usersid) {
         if ((usersid = get_user_sid()) == NULL) {
-            error = dupprintf("unable to construct SID for current user: %s",
+            *error = dupprintf("unable to construct SID for current user: %s",
                                win_strerror(GetLastError()));
             goto cleanup;
         }
@@ -121,7 +121,7 @@ int getsids(char *error)
     if (!worldsid) {
         if (!AllocateAndInitializeSid(&world_auth, 1, SECURITY_WORLD_RID,
                                       0, 0, 0, 0, 0, 0, 0, &worldsid)) {
-            error = dupprintf("unable to construct SID for world: %s",
+            *error = dupprintf("unable to construct SID for world: %s",
                                win_strerror(GetLastError()));
             goto cleanup;
         }
@@ -130,20 +130,16 @@ int getsids(char *error)
     if (!networksid) {
         if (!AllocateAndInitializeSid(&nt_auth, 1, SECURITY_NETWORK_RID,
                                       0, 0, 0, 0, 0, 0, 0, &networksid)) {
-            error = dupprintf("unable to construct SID for "
+            *error = dupprintf("unable to construct SID for "
                                "local same-user access only: %s",
                                win_strerror(GetLastError()));
             goto cleanup;
         }
     }
 
-    ret=TRUE;
+    ret = TRUE;
 
  cleanup:
-    if (ret) {
-      sfree(error);
-      error = NULL;
-    }
     return ret;
 }
   
@@ -162,7 +158,7 @@ int make_private_security_descriptor(DWORD permissions,
     *acl = NULL;
     *error = NULL;
 
-    if (!getsids(*error))
+    if (!getsids(error))
       goto cleanup;
 
     memset(ea, 0, sizeof(ea));
@@ -234,7 +230,7 @@ int make_private_security_descriptor(DWORD permissions,
     return ret;
 }
 
-int setprocessacl(char *error)
+static int really_restrict_process_acl(char **error)
 {
     EXPLICIT_ACCESS ea[2];
     int acl_err;
@@ -270,8 +266,8 @@ int setprocessacl(char *error)
     acl_err = p_SetEntriesInAclA(2, ea, NULL, &acl);
 
     if (acl_err != ERROR_SUCCESS || acl == NULL) {
-	error = dupprintf("unable to construct ACL: %s",
-			  win_strerror(acl_err));
+	*error = dupprintf("unable to construct ACL: %s",
+                           win_strerror(acl_err));
         goto cleanup;
     }
 
@@ -279,8 +275,8 @@ int setprocessacl(char *error)
         (GetCurrentProcess(), SE_KERNEL_OBJECT,
          OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
          usersid, NULL, acl, NULL)) {
-	error=dupprintf("Unable to set process ACL: %s",
-			win_strerror(GetLastError()));
+	*error = dupprintf("Unable to set process ACL: %s",
+                           win_strerror(GetLastError()));
 	goto cleanup;
     }
 		      
@@ -295,5 +291,37 @@ int setprocessacl(char *error)
         }
     }
     return ret;
-}  
+}
 #endif /* !defined NO_SECURITY */
+
+/*
+ * Lock down our process's ACL, to present an obstacle to malware
+ * trying to write into its memory. This can't be a full defence,
+ * because well timed malware could attack us before this code runs -
+ * even if it was unconditionally run at the very start of main(),
+ * which we wouldn't want to do anyway because it turns out in practie
+ * that interfering with other processes in this way has significant
+ * non-infringing uses on Windows (e.g. screen reader software).
+ *
+ * If we've been requested to do this and are unsuccessful, bomb out
+ * via modalfatalbox rather than continue in a less protected mode.
+ *
+ * This function is intentionally outside the #ifndef NO_SECURITY that
+ * covers the rest of this file, because when PuTTY is compiled
+ * without the ability to restrict its ACL, we don't want it to
+ * silently pretend to honour the instruction to do so.
+ */
+void restrict_process_acl(void)
+{
+    char *error = NULL;
+    int ret;
+
+#if !defined NO_SECURITY
+    ret = really_restrict_process_acl(&error);
+#else
+    ret = FALSE;
+    error = dupstr("ACL restrictions not compiled into this binary");
+#endif
+    if (!ret)
+        modalfatalbox("Could not restrict process ACL: %s", error);
+}

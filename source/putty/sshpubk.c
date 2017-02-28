@@ -309,6 +309,8 @@ int rsakey_pubblob(const Filename *filename, void **blob, int *bloblen,
             *commentptr = commentp ? dupstr(commentp) : NULL;
         *blob = rsa_public_blob(&key, bloblen);
         freersakey(&key);
+        sfree(line);
+        fclose(fp);
         return 1;
 
       not_public_either:
@@ -1089,6 +1091,7 @@ unsigned char *openssh_loadpub(FILE *fp, char **algorithm,
         *commentptr = comment;
     else
         sfree(comment);
+    sfree(line);
     return pubblob;
 
   error:

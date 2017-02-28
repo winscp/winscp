@@ -240,7 +240,7 @@ void random_add_noise(void *noise, int length)
 	length -= HASHINPUT - pool.incomingpos;
 	SHATransform((word32 *) pool.incoming, (word32 *) pool.incomingb);
 	for (i = 0; i < HASHSIZE; i++) {
-	    pool.pool[pool.poolpos++] ^= pool.incomingb[i];
+	    pool.pool[pool.poolpos++] ^= pool.incoming[i];
 	    if (pool.poolpos >= POOLSIZE)
 		pool.poolpos = 0;
 	}

@@ -56,6 +56,4 @@ int make_private_security_descriptor(DWORD permissions,
                                      PACL *acl,
                                      char **error);
 
-int setprocessacl(char *error);
-
 #endif
