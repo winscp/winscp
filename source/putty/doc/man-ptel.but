@@ -165,6 +165,27 @@ configuration box first.
 
 \dd Select the protocol \cw{puttytel} will use to make the connection.
 
+\dt \cw{\-proxycmd} \e{command}
+
+\dd Instead of making a TCP connection, use \e{command} as a proxy;
+network traffic will be redirected to the standard input and output
+of \e{command}. \e{command} must be a single word, so is likely to
+need quoting by the shell.
+
+\lcont{
+The special strings \cw{%host} and \cw{%port} in \e{command} will be
+replaced by the hostname and port number you want to connect to; to get
+a literal \c{%} sign, enter \c{%%}.
+
+Backslash escapes are also supported, such as sequences like \c{\\n}
+being replaced by a literal newline; to get a literal backslash,
+enter \c{\\\\}. (Further escaping may be required by the shell.)
+
+(See the main PuTTY manual for full details of the supported \cw{%}-
+and backslash-delimited tokens, although most of them are probably not
+very useful in this context.)
+}
+
 \dt \cw{\-l} \e{username}
 
 \dd Specify the username to use when logging in to the server.
@@ -172,6 +193,10 @@ configuration box first.
 \dt \cw{\-P} \e{port}
 
 \dd Specify the port to connect to the server on.
+
+\dt \cw{-4}, \cw{-6}
+
+\dd Force use of IPv4 or IPv6 for network connections.
 
 \S{puttytel-manpage-saved-sessions} SAVED SESSIONS
 

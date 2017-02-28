@@ -21,8 +21,7 @@
 
 \c{puttygen} is a tool to generate and manipulate SSH public and
 private key pairs. It is part of the PuTTY suite, although it can
-also interoperate with the private key formats used by some other
-SSH clients.
+also interoperate with the key formats used by some other SSH clients.
 
 When you run \c{puttygen}, it does three things. Firstly, it either
 loads an existing key file (if you specified \e{keyfile}), or
@@ -37,18 +36,29 @@ the following section.
 \S{puttygen-manpage-options} OPTIONS
 
 In the first phase, \c{puttygen} either loads or generates a key.
-Note that generating a key requires random data (from
-\c{/dev/random}), which can cause \c{puttygen} to pause, possibly for
-some time if your system does not have much randomness available.
+Note that generating a key requires random data, which can cause
+\c{puttygen} to pause, possibly for some time if your system does
+not have much randomness available.
 
 The options to control this phase are:
 
 \dt \e{keyfile}
 
-\dd Specify a private key file to be loaded. This private key file can
-be in the (de facto standard) SSH-1 key format, or in PuTTY's SSH-2
-key format, or in either of the SSH-2 private key formats used by
-OpenSSH and ssh.com's implementation.
+\dd Specify a key file to be loaded.
+
+\lcont{
+
+Usually this will be a private key, which can be in the (de facto
+standard) SSH-1 key format, or in PuTTY's SSH-2 key format, or in
+either of the SSH-2 private key formats used by OpenSSH and
+ssh.com's implementation.
+
+You can also specify a file containing only a \e{public} key here.
+The operations you can do are limited to outputting another public
+key format or a fingerprint. Public keys can be in RFC 4716 or
+OpenSSH format, or the standard SSH-1 format.
+
+}
 
 \dt \cw{\-t} \e{keytype}
 
@@ -70,6 +80,10 @@ and \c{rsa1} (to generate SSH-1 keys).
 (removing any trailing newline) and used as the old passphrase.
 \s{CAUTION:} If the passphrase is important, the file should be stored
 on a temporary filesystem or else securely erased after use.
+
+\dt \cw{\-\-random\-device} \e{device}
+
+\dd Specify device to read entropy from (default \c{/dev/random}).
 
 In the second phase, \c{puttygen} optionally alters properties of
 the key it has loaded or generated. The options to control this are:

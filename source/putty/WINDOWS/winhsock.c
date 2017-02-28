@@ -42,6 +42,8 @@ struct Socket_handle_tag {
     /* Data received from stderr_H, if we have one. */
     bufchain stderrdata;
 
+    int defer_close, deferred_close;   /* in case of re-entrance */
+
     char *error;
 
     Plug plug;
@@ -57,7 +59,7 @@ static int handle_gotdata(struct handle *h, void *data, int len)
     } else if (len == 0) {
 	return plug_closing(ps->plug, NULL, 0, 0);
     } else {
-        assert(ps->frozen != FREEZING && ps->frozen != THAWING);
+        assert(ps->frozen != FROZEN && ps->frozen != THAWING);
         if (ps->frozen == FREEZING) {
             /*
              * If we've received data while this socket is supposed to
@@ -66,6 +68,7 @@ static int handle_gotdata(struct handle *h, void *data, int len)
              * the data for when we unfreeze.
              */
             bufchain_add(&ps->inputdata, data, len);
+            ps->frozen = FROZEN;
 
             /*
              * And return a very large backlog, to prevent further
@@ -107,6 +110,11 @@ static Plug sk_handle_plug(Socket s, Plug p)
 static void sk_handle_close(Socket s)
 {
     Handle_Socket ps = (Handle_Socket) s;
+
+    if (ps->defer_close) {
+        ps->deferred_close = TRUE;
+        return;
+    }
 
     handle_free(ps->send_h);
     handle_free(ps->recv_h);
@@ -168,9 +176,17 @@ static void handle_socket_unfreeze(void *psv)
     assert(len > 0);
 
     /*
-     * Hand it off to the plug.
+     * Hand it off to the plug. Be careful of re-entrance - that might
+     * have the effect of trying to close this socket.
      */
+    ps->defer_close = TRUE;
     new_backlog = plug_receive(ps->plug, 0, data, len);
+    bufchain_consume(&ps->inputdata, len);
+    ps->defer_close = FALSE;
+    if (ps->deferred_close) {
+        sk_handle_close(ps);
+        return;
+    }
 
     if (bufchain_size(&ps->inputdata) > 0) {
         /*
@@ -307,6 +323,8 @@ Socket make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
     if (ret->stderr_H)
         ret->stderr_h = handle_input_new(ret->stderr_H, handle_stderr,
                                          ret, flags);
+
+    ret->defer_close = ret->deferred_close = FALSE;
 
     return (Socket) ret;
 }

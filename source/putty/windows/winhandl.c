@@ -533,7 +533,7 @@ void handle_write_eof(struct handle *h)
      * direction!
      */
     assert(h->type == HT_OUTPUT);
-    if (!h->u.o.outgoingeof == EOF_NO) {
+    if (h->u.o.outgoingeof == EOF_NO) {
         h->u.o.outgoingeof = EOF_PENDING;
         handle_try_output(&h->u.o);
     }

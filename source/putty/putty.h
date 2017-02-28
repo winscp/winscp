@@ -671,6 +671,7 @@ enum {
     BUSY_CPU	    /* Locally busy (e.g. crypto); user interaction suspended */
 };
 void set_busy_status(void *frontend, int status);
+int frontend_is_utf8(void *frontend);
 
 void cleanup_exit(int);
 

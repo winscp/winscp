@@ -934,7 +934,7 @@ int x11_send(struct X11Connection *xconn, char *data, int len)
          * Write a new connection header containing our replacement
          * auth data.
 	 */
-
+        socketdatalen = 0;             /* placate compiler warning */
         socketdata = sk_getxdmdata(xconn->s, &socketdatalen);
         if (socketdata && socketdatalen==6) {
             sprintf(new_peer_addr, "%d.%d.%d.%d", socketdata[0],

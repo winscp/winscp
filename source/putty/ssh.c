@@ -3954,6 +3954,7 @@ static void ssh_agentf_try_forward(struct ssh_channel *c)
          * straight on and go round this loop again.
          */
         ssh_agentf_got_response(c, reply, replylen);
+        sfree(reply);
     }
 
     /*
@@ -9444,21 +9445,25 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
                             goto done_agent_query;
                         }
                         bloblen = toint(GET_32BIT(q));
+                        lenleft -= 4;
+                        q += 4;
                         if (bloblen < 0 || bloblen > lenleft) {
                             logeventf(ssh, "Pageant response was truncated");
                             s->nkeys = 0;
                             goto done_agent_query;
                         }
-                        lenleft -= 4 + bloblen;
-                        q += 4 + bloblen;
+                        lenleft -= bloblen;
+                        q += bloblen;
                         commentlen = toint(GET_32BIT(q));
+                        lenleft -= 4;
+                        q += 4;
                         if (commentlen < 0 || commentlen > lenleft) {
                             logeventf(ssh, "Pageant response was truncated");
                             s->nkeys = 0;
                             goto done_agent_query;
                         }
-                        lenleft -= 4 + commentlen;
-                        q += 4 + commentlen;
+                        lenleft -= commentlen;
+                        q += commentlen;
                     }
                 }
 

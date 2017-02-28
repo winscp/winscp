@@ -53,6 +53,27 @@ to aid in verifying new files released by the PuTTY team.
 
 \dd Connect to port \e{port}.
 
+\dt \cw{\-proxycmd} \e{command}
+
+\dd Instead of making a TCP connection, use \e{command} as a proxy;
+network traffic will be redirected to the standard input and output
+of \e{command}. \e{command} must be a single word, so is likely to
+need quoting by the shell.
+
+\lcont{
+The special strings \cw{%host} and \cw{%port} in \e{command} will be
+replaced by the hostname and port number you want to connect to; to get
+a literal \c{%} sign, enter \c{%%}.
+
+Backslash escapes are also supported, such as sequences like \c{\\n}
+being replaced by a literal newline; to get a literal backslash,
+enter \c{\\\\}. (Further escaping may be required by the shell.)
+
+(See the main PuTTY manual for full details of the supported \cw{%}-
+and backslash-delimited tokens, although most of them are probably not
+very useful in this context.)
+}
+
 \dt \cw{-l} \e{user}
 
 \dd Set remote username to \e{user}.
@@ -75,6 +96,10 @@ commands such as \q{\c{w}}).
 
 \dd Force use of SSH protocol version 2.
 
+\dt \cw{-4}, \cw{-6}
+
+\dd Force use of IPv4 or IPv6 for network connections.
+
 \dt \cw{-C}
 
 \dd Enable SSH compression.
@@ -88,6 +113,15 @@ else's.
 \lcont{ If you are using an authentication agent, you can also specify
 a \e{public} key here (in RFC 4716 or OpenSSH format), to identify
 which of the agent's keys to use. }
+
+\dt \cw{\-noagent}
+
+\dd Don't try to use an authentication agent.
+
+\dt \cw{\-agent}
+
+\dd Allow use of an authentication agent. (This option is only necessary
+to override a setting in a saved session.)
 
 \dt \cw{\-hostkey} \e{key}
 

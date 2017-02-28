@@ -91,7 +91,7 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
 	if (ret == ERROR_SUCCESS && type == REG_SZ) {
 	    buffer = snewn(size + 20, char);
 	    ret = RegQueryValueEx(regkey, "InstallDir", NULL,
-				  &type, buffer, &size);
+				  &type, (LPBYTE)buffer, &size);
 	    if (ret == ERROR_SUCCESS && type == REG_SZ) {
 		strcat(buffer, "\\bin\\gssapi32.dll");
 		module = LoadLibrary(buffer);

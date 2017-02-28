@@ -156,12 +156,12 @@ const struct ssh_signkey *ec_alg_by_oid(int len, const void *oid,
                                         const struct ec_curve **curve);
 const unsigned char *ec_alg_oid(const struct ssh_signkey *alg, int *oidlen);
 extern const int ec_nist_curve_lengths[], n_ec_nist_curve_lengths;
-const int ec_nist_alg_and_curve_by_bits(int bits,
-                                        const struct ec_curve **curve,
-                                        const struct ssh_signkey **alg);
-const int ec_ed_alg_and_curve_by_bits(int bits,
-                                      const struct ec_curve **curve,
-                                      const struct ssh_signkey **alg);
+int ec_nist_alg_and_curve_by_bits(int bits,
+                                  const struct ec_curve **curve,
+                                  const struct ssh_signkey **alg);
+int ec_ed_alg_and_curve_by_bits(int bits,
+                                const struct ec_curve **curve,
+                                const struct ssh_signkey **alg);
 
 struct ssh_signkey;
 

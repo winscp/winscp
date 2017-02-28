@@ -39,7 +39,7 @@ use PSCP:
 
 \c Z:\owendadmin>pscp
 \c PuTTY Secure Copy client
-\c Release 0.67
+\c Release 0.68
 \c Usage: pscp [options] [user@]host:source target
 \c        pscp [options] source [source...] [user@]host:target
 \c        pscp [options] -ls [user@]host:filespec
@@ -63,6 +63,8 @@ use PSCP:
 \c   -hostkey aa:bb:cc:...
 \c             manually specify a host key (may be repeated)
 \c   -batch    disable all interactive prompts
+\c   -proxycmd command
+\c             use 'command' as local proxy
 \c   -unsafe   allow server-side wildcards (DANGEROUS)
 \c   -sftp     force use of SFTP protocol
 \c   -scp      force use of SCP protocol

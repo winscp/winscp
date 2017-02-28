@@ -41,7 +41,7 @@ use Plink:
 
 \c Z:\sysosd>plink
 \c Plink: command-line connection utility
-\c Release 0.67
+\c Release 0.68
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
@@ -54,6 +54,8 @@ use Plink:
 \c   -P port   connect to specified port
 \c   -l user   connect with specified username
 \c   -batch    disable all interactive prompts
+\c   -proxycmd command
+\c             use 'command' as local proxy
 \c   -sercfg configuration-string (e.g. 19200,8,n,1,X)
 \c             Specify the serial configuration (serial only)
 \c The following options only apply to SSH connections:
@@ -83,6 +85,8 @@ use Plink:
 \c   -sshlog file
 \c   -sshrawlog file
 \c             log protocol details to a file
+\c   -shareexists
+\c             test whether a connection-sharing upstream exists
 
 Once this works, you are ready to use Plink.
 
