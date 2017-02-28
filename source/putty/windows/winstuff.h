@@ -105,10 +105,14 @@ struct FontSpec *fontspec_new(const char *name,
 #endif
 
 #ifndef __WINE__
+#ifdef MPEXT
+/* use them as is in bcb */
+#else
 /* Up-to-date Windows headers warn that the unprefixed versions of
  * these names are deprecated. */
 #define stricmp _stricmp
 #define strnicmp _strnicmp
+#endif
 #else
 /* Compiling with winegcc, _neither_ version of these functions
  * exists. Use the POSIX names. */
