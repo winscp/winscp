@@ -184,7 +184,7 @@ namespace WinSCP
 
                 if (Opened)
                 {
-                    throw new InvalidOperationException("Session is already opened");
+                    throw Logger.WriteException(new InvalidOperationException("Session is already opened"));
                 }
 
                 try
@@ -261,9 +261,10 @@ namespace WinSCP
                             {
                                 exitCode = string.Format(CultureInfo.CurrentCulture, "{0} ({1:X})", exitCode, _process.ExitCode);
                             }
-                            throw new SessionLocalException(this,
-                                string.Format(CultureInfo.CurrentCulture, "WinSCP process terminated with exit code {0}. ", exitCode) +
-                                logExplanation);
+                            throw Logger.WriteException(
+                                new SessionLocalException(this,
+                                    string.Format(CultureInfo.CurrentCulture, "WinSCP process terminated with exit code {0}. ", exitCode) +
+                                    logExplanation));
                         }
 
                         Thread.Sleep(50);
@@ -342,7 +343,7 @@ namespace WinSCP
 
                 if (Opened)
                 {
-                    throw new InvalidOperationException("Session is already opened");
+                    throw Logger.WriteException(new InvalidOperationException("Session is already opened"));
                 }
 
                 try
@@ -377,7 +378,7 @@ namespace WinSCP
                     }
                     else
                     {
-                        throw new SessionRemoteException(this, output);
+                        throw Logger.WriteException(new SessionRemoteException(this, output));
                     }
                 }
                 catch (Exception e)
@@ -463,7 +464,7 @@ namespace WinSCP
                         // the "failure" is caught in "group" already, before the "ls".
                         groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
                         // only if not "failure", throw "files" not found
-                        throw SessionLocalException.CreateElementNotFound(this, "files");
+                        throw Logger.WriteException(SessionLocalException.CreateElementNotFound(this, "files"));
                     }
                 }
 
@@ -481,12 +482,12 @@ namespace WinSCP
 
             if (enumerateDirectories && !allDirectories)
             {
-                throw new ArgumentException("Cannot use enumeration option EnumerateDirectories without AllDirectories");
+                throw Logger.WriteException(new ArgumentException("Cannot use enumeration option EnumerateDirectories without AllDirectories"));
             }
 
             if (enumerateDirectories && matchDirectories)
             {
-                throw new ArgumentException("Cannot combine enumeration option EnumerateDirectories with MatchDirectories");
+                throw Logger.WriteException(new ArgumentException("Cannot combine enumeration option EnumerateDirectories with MatchDirectories"));
             }
 
             RemoteDirectoryInfo directoryInfo;
@@ -641,7 +642,7 @@ namespace WinSCP
                             {
                                 if (args == null)
                                 {
-                                    throw new InvalidOperationException("Tag chmod before tag upload");
+                                    throw Logger.WriteException(new InvalidOperationException("Tag chmod before tag upload"));
                                 }
                                 args.Chmod = ChmodEventArgs.Read(groupReader);
                             }
@@ -652,7 +653,7 @@ namespace WinSCP
                             {
                                 if (args == null)
                                 {
-                                    throw new InvalidOperationException("Tag touch before tag upload");
+                                    throw Logger.WriteException(new InvalidOperationException("Tag touch before tag upload"));
                                 }
                                 args.Touch = TouchEventArgs.Read(groupReader);
                             }
@@ -768,17 +769,17 @@ namespace WinSCP
 
                 if (removeFiles && (mode == SynchronizationMode.Both))
                 {
-                    throw new ArgumentException("Cannot delete files in synchronization mode Both");
+                    throw Logger.WriteException(new ArgumentException("Cannot delete files in synchronization mode Both"));
                 }
 
                 if (mirror && (mode == SynchronizationMode.Both))
                 {
-                    throw new ArgumentException("Cannot mirror files in synchronization mode Both");
+                    throw Logger.WriteException(new ArgumentException("Cannot mirror files in synchronization mode Both"));
                 }
 
                 if ((criteria != SynchronizationCriteria.Time) && (mode == SynchronizationMode.Both))
                 {
-                    throw new ArgumentException("Only Time criteria is allowed in synchronization mode Both");
+                    throw Logger.WriteException(new ArgumentException("Only Time criteria is allowed in synchronization mode Both"));
                 }
 
                 string modeName;
@@ -794,7 +795,7 @@ namespace WinSCP
                         modeName = "both";
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException("mode");
+                        throw Logger.WriteException(new ArgumentOutOfRangeException("mode"));
                 }
 
                 string criteriaName;
@@ -813,7 +814,7 @@ namespace WinSCP
                         criteriaName = "either";
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException("criteria");
+                        throw Logger.WriteException(new ArgumentOutOfRangeException("criteria"));
                 }
 
                 WriteCommand(
@@ -867,7 +868,7 @@ namespace WinSCP
                         {
                             if (transfer == null)
                             {
-                                throw new InvalidOperationException("Tag chmod before tag download");
+                                throw Logger.WriteException(new InvalidOperationException("Tag chmod before tag download"));
                             }
                             transfer.Chmod = ChmodEventArgs.Read(groupReader);
                         }
@@ -875,7 +876,7 @@ namespace WinSCP
                         {
                             if (transfer == null)
                             {
-                                throw new InvalidOperationException("Tag touch before tag download");
+                                throw Logger.WriteException(new InvalidOperationException("Tag touch before tag download"));
                             }
                             transfer.Touch = TouchEventArgs.Read(groupReader);
                         }
@@ -981,7 +982,7 @@ namespace WinSCP
                 if ((len % 2) != 0)
                 {
                     string error = string.Format(CultureInfo.CurrentCulture, "Invalid string representation of checksum - {0}", hex);
-                    throw new SessionLocalException(this, error);
+                    throw Logger.WriteException(new SessionLocalException(this, error));
                 }
 
                 int count = len / 2;
@@ -1023,7 +1024,7 @@ namespace WinSCP
                 {
                     if (!groupReader.TryWaitForNonEmptyElement("mv", LogReadFlags.ThrowFailures))
                     {
-                        throw new SessionRemoteException(this, string.Format(CultureInfo.CurrentCulture, "{0} not found.", sourcePath));
+                        throw Logger.WriteException(new SessionRemoteException(this, string.Format(CultureInfo.CurrentCulture, "{0} not found.", sourcePath)));
                     }
                     else
                     {
@@ -1042,7 +1043,7 @@ namespace WinSCP
         {
             if (fileMask == null)
             {
-                throw new ArgumentNullException("fileMask");
+                throw Logger.WriteException(new ArgumentNullException("fileMask"));
             }
             int lastSlash = fileMask.LastIndexOf('/');
             string path = lastSlash > 0 ? fileMask.Substring(0, lastSlash + 1) : string.Empty;
@@ -1056,17 +1057,17 @@ namespace WinSCP
         {
             if (remotePath == null)
             {
-                throw new ArgumentNullException("remotePath");
+                throw Logger.WriteException(new ArgumentNullException("remotePath"));
             }
 
             if (remoteRoot == null)
             {
-                throw new ArgumentNullException("remoteRoot");
+                throw Logger.WriteException(new ArgumentNullException("remoteRoot"));
             }
 
             if (localRoot == null)
             {
-                throw new ArgumentNullException("localRoot");
+                throw Logger.WriteException(new ArgumentNullException("localRoot"));
             }
 
             if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
@@ -1090,7 +1091,7 @@ namespace WinSCP
             {
                 if (!remotePath.StartsWith(remoteRoot, StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "{0} does not start with {1}", remotePath, remoteRoot));
+                    throw Logger.WriteException(new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "{0} does not start with {1}", remotePath, remoteRoot)));
                 }
 
                 string subPath = remotePath.Substring(remoteRoot.Length);
@@ -1109,17 +1110,17 @@ namespace WinSCP
         {
             if (localPath == null)
             {
-                throw new ArgumentNullException("localPath");
+                throw Logger.WriteException(new ArgumentNullException("localPath"));
             }
 
             if (localRoot == null)
             {
-                throw new ArgumentNullException("localRoot");
+                throw Logger.WriteException(new ArgumentNullException("localRoot"));
             }
 
             if (remoteRoot == null)
             {
-                throw new ArgumentNullException("remoteRoot");
+                throw Logger.WriteException(new ArgumentNullException("remoteRoot"));
             }
 
             if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
@@ -1143,7 +1144,7 @@ namespace WinSCP
             {
                 if (!localPath.StartsWith(localRoot, StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "{0} does not start with {1}", localPath, localRoot));
+                    throw Logger.WriteException(new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "{0} does not start with {1}", localPath, localRoot)));
                 }
 
                 string subPath = localPath.Substring(localRoot.Length);
@@ -1162,12 +1163,12 @@ namespace WinSCP
         {
             if (path1 == null)
             {
-                throw new ArgumentNullException("path1");
+                throw Logger.WriteException(new ArgumentNullException("path1"));
             }
 
             if (path2 == null)
             {
-                throw new ArgumentNullException("path2");
+                throw Logger.WriteException(new ArgumentNullException("path2"));
             }
 
             string result;
@@ -1373,7 +1374,7 @@ namespace WinSCP
                 {
                     if (sessionOptions.Protocol != Protocol.Webdav)
                     {
-                        throw new ArgumentException("SessionOptions.WebdavSecure is set, but SessionOptions.Protocol is not Protocol.Webdav.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.WebdavSecure is set, but SessionOptions.Protocol is not Protocol.Webdav."));
                     }
                 }
 
@@ -1404,7 +1405,7 @@ namespace WinSCP
                         break;
 
                     default:
-                        throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", sessionOptions.Protocol));
+                        throw Logger.WriteException(new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", sessionOptions.Protocol)));
                 }
 
                 bool hasUsername;
@@ -1428,7 +1429,7 @@ namespace WinSCP
                 {
                     if (!hasUsername)
                     {
-                        throw new ArgumentException("SessionOptions.Password is set, but SessionOptions.UserName is not.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.Password is set, but SessionOptions.UserName is not."));
                     }
                     url += ":" + UriEscape(sessionOptions.Password);
                     logUrl += ":***";
@@ -1443,7 +1444,7 @@ namespace WinSCP
 
                 if (string.IsNullOrEmpty(sessionOptions.HostName))
                 {
-                    throw new ArgumentException("SessionOptions.HostName is not set.");
+                    throw Logger.WriteException(new ArgumentException("SessionOptions.HostName is not set."));
                 }
 
                 // We should wrap IPv6 literals to square brackets, instead of URL-encoding them,
@@ -1459,7 +1460,7 @@ namespace WinSCP
                 {
                     if (sessionOptions.Protocol != Protocol.Webdav)
                     {
-                        throw new ArgumentException("SessionOptions.WebdavRoot is set, but SessionOptions.Protocol is not Protocol.Webdav.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.WebdavRoot is set, but SessionOptions.Protocol is not Protocol.Webdav."));
                     }
 
                     tail += sessionOptions.WebdavRoot;
@@ -1499,7 +1500,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsSsh)
                     {
-                        throw new ArgumentException("SessionOptions.SshHostKeyFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnySshHostKey is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.SshHostKeyFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnySshHostKey is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp."));
                     }
                     string sshHostKeyFingerprint = sessionOptions.SshHostKeyFingerprint;
                     if (sessionOptions.GiveUpSecurityAndAcceptAnySshHostKey)
@@ -1513,7 +1514,7 @@ namespace WinSCP
                 {
                     if (sessionOptions.IsSsh && DefaultConfigurationInternal && !scanFingerprint)
                     {
-                        throw new ArgumentException("SessionOptions.Protocol is Protocol.Sftp or Protocol.Scp, but SessionOptions.SshHostKeyFingerprint is not set.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.Protocol is Protocol.Sftp or Protocol.Scp, but SessionOptions.SshHostKeyFingerprint is not set."));
                     }
                 }
 
@@ -1521,7 +1522,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsSsh)
                     {
-                        throw new ArgumentException("SessionOptions.SshPrivateKeyPath is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.SshPrivateKeyPath is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp."));
                     }
                     switches.Add(FormatSwitch("privatekey", sessionOptions.SshPrivateKeyPath));
                 }
@@ -1530,7 +1531,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsTls)
                     {
-                        throw new ArgumentException("SessionOptions.TlsClientCertificatePath is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsClientCertificatePath is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled."));
                     }
                     switches.Add(FormatSwitch("clientcert", sessionOptions.TlsClientCertificatePath));
                 }
@@ -1539,7 +1540,7 @@ namespace WinSCP
                 {
                     if (sessionOptions.Protocol != Protocol.Ftp)
                     {
-                        throw new ArgumentException("SessionOptions.FtpSecure is not FtpSecure.None, but SessionOptions.Protocol is not Protocol.Ftp.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.FtpSecure is not FtpSecure.None, but SessionOptions.Protocol is not Protocol.Ftp."));
                     }
 
                     switch (sessionOptions.FtpSecure)
@@ -1553,7 +1554,7 @@ namespace WinSCP
                             break;
 
                         default:
-                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", sessionOptions.FtpSecure));
+                            throw Logger.WriteException(new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", sessionOptions.FtpSecure)));
                     }
                 }
 
@@ -1563,7 +1564,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsTls)
                     {
-                        throw new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled."));
                     }
                     string tlsHostCertificateFingerprint = sessionOptions.TlsHostCertificateFingerprint;
                     if (sessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate)
@@ -1587,7 +1588,7 @@ namespace WinSCP
                 {
                     if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
                     {
-                        throw new ArgumentException("SessionOptions.PrivateKeyPassphrase is set, but neither SessionOptions.SshPrivateKeyPath nor SessionOptions.TlsClientCertificatePath is set.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.PrivateKeyPassphrase is set, but neither SessionOptions.SshPrivateKeyPath nor SessionOptions.TlsClientCertificatePath is set."));
                     }
                     switches.Add(FormatSwitch("passphrase", sessionOptions.PrivateKeyPassphrase));
                     logSwitches.Add(FormatSwitch("passphrase", "***"));
@@ -1597,7 +1598,7 @@ namespace WinSCP
                 {
                     if (sessionOptions.SecurePassword == null)
                     {
-                        throw new ArgumentException("SessionOptions.SecureNewPassword is set, but SessionOptions.SecurePassword is not.");
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.SecureNewPassword is set, but SessionOptions.SecurePassword is not."));
                     }
                     switches.Add(FormatSwitch("newpassword", sessionOptions.NewPassword));
                     logSwitches.Add(FormatSwitch("newpassword", "***"));
@@ -1739,12 +1740,12 @@ namespace WinSCP
                 {
                     message += " - " + additional;
                 }
-                throw new TimeoutException(message);
+                throw Logger.WriteException(new TimeoutException(message));
             }
 
             if (_aborted)
             {
-                throw new SessionLocalException(this, "Aborted.");
+                throw Logger.WriteException(new SessionLocalException(this, "Aborted."));
             }
         }
 
@@ -1777,12 +1778,12 @@ namespace WinSCP
         {
             if (_disposed)
             {
-                throw new InvalidOperationException("Object is disposed");
+                throw Logger.WriteException(new InvalidOperationException("Object is disposed"));
             }
 
             if (_aborted)
             {
-                throw new InvalidOperationException("Session was aborted");
+                throw Logger.WriteException(new InvalidOperationException("Session was aborted"));
             }
         }
 
@@ -1790,7 +1791,7 @@ namespace WinSCP
         {
             if (!Opened)
             {
-                throw new InvalidOperationException("Session is not opened");
+                throw Logger.WriteException(new InvalidOperationException("Session is not opened"));
             }
         }
 
@@ -1798,7 +1799,7 @@ namespace WinSCP
         {
             if (Opened)
             {
-                throw new InvalidOperationException("Session is already opened");
+                throw Logger.WriteException(new InvalidOperationException("Session is already opened"));
             }
         }
 
@@ -1869,7 +1870,7 @@ namespace WinSCP
             {
                 if (_progressHandling <= 0)
                 {
-                    throw new InvalidOperationException("Progress handling not enabled");
+                    throw Logger.WriteException(new InvalidOperationException("Progress handling not enabled"));
                 }
 
                 // make sure we process all pending progress events
@@ -1902,7 +1903,7 @@ namespace WinSCP
                     Logger.WriteLine("Configured temporary file: {0} - Exists [{1}]", _xmlLogPath, exists);
                     if (exists)
                     {
-                        throw new SessionLocalException(this, string.Format(CultureInfo.CurrentCulture, "Configured temporary file {0} already exists", _xmlLogPath));
+                        throw Logger.WriteException(new SessionLocalException(this, string.Format(CultureInfo.CurrentCulture, "Configured temporary file {0} already exists", _xmlLogPath)));
                     }
                 }
                 else
@@ -2073,7 +2074,7 @@ namespace WinSCP
 
                     if (target == null)
                     {
-                        throw new ArgumentNullException("target");
+                        throw Logger.WriteException(new ArgumentNullException("target"));
                     }
 
                     Type type = target.GetType();
@@ -2101,7 +2102,7 @@ namespace WinSCP
 
                             if (args == null)
                             {
-                                throw new ArgumentNullException("args");
+                                throw Logger.WriteException(new ArgumentNullException("args"));
                             }
 
                             if (method != null)

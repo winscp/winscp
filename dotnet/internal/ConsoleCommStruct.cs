@@ -129,7 +129,7 @@ namespace WinSCP
                 _session.Logger.WriteLineLevel(1, "Releasing communication structure");
                 if (!UnsafeNativeMethods.UnmapViewOfFile(_ptr))
                 {
-                    throw new SessionLocalException(_session, "Cannot release file mapping");
+                    throw _session.Logger.WriteException(new SessionLocalException(_session, "Cannot release file mapping"));
                 }
                 _session.Logger.WriteLineLevel(1, "Released communication structure");
 
@@ -164,7 +164,7 @@ namespace WinSCP
 
             if (e != Event)
             {
-                throw new InvalidOperationException("Payload type does not match with event");
+                throw _session.Logger.WriteException(new InvalidOperationException("Payload type does not match with event"));
             }
 
             if (_payload == null)
@@ -179,7 +179,7 @@ namespace WinSCP
         {
             if (_ptr == IntPtr.Zero)
             {
-                throw new InvalidOperationException("Object is disposed");
+                throw _session.Logger.WriteException(new InvalidOperationException("Object is disposed"));
             }
         }
 

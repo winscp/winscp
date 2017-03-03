@@ -19,7 +19,6 @@ namespace WinSCP
             base(message, innerException)
         {
             Session = session;
-            session.Logger.WriteLine("Exception: {0}", this);
         }
     }
 }

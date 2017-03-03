@@ -24,7 +24,7 @@
 
             if (_read && !_disposing)
             {
-                throw new SessionLocalException(Session, "Session has unexpectedly closed");
+                throw Session.Logger.WriteException(new SessionLocalException(Session, "Session has unexpectedly closed"));
             }
 
             return result;

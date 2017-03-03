@@ -247,6 +247,13 @@ namespace WinSCP
             return new CallstackAndLock(this, _lock);
         }
 
+        public Exception WriteException(Exception e)
+        {
+            WriteLine("Exception: {0}", e);
+            WriteLine(e.StackTrace);
+            return e;
+        }
+
         private int GetIndent()
         {
             int indent;
@@ -318,7 +325,7 @@ namespace WinSCP
         {
             if ((value < 0) || (value > 2))
             {
-                throw new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range 0-2"));
+                throw WriteException(new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range 0-2")));
             }
             _logLevel = value;
         }
