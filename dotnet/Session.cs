@@ -473,6 +473,8 @@ namespace WinSCP
 
         private IEnumerable<RemoteFileInfo> DoEnumerateRemoteFiles(string path, Regex regex, EnumerationOptions options, bool throwReadErrors)
         {
+            Logger.WriteLine("Starting enumeration of {0} ...", path);
+
             bool allDirectories = ((options & EnumerationOptions.AllDirectories) == EnumerationOptions.AllDirectories);
             bool matchDirectories = ((options & EnumerationOptions.MatchDirectories) == EnumerationOptions.MatchDirectories);
             bool enumerateDirectories = ((options & EnumerationOptions.EnumerateDirectories) == EnumerationOptions.EnumerateDirectories);
@@ -551,6 +553,8 @@ namespace WinSCP
                     }
                 }
             }
+
+            Logger.WriteLine("Ended enumeration of {0}", path);
         }
 
         public IEnumerable<RemoteFileInfo> EnumerateRemoteFiles(string path, string mask, EnumerationOptions options)
