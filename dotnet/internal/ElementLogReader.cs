@@ -18,12 +18,13 @@ namespace WinSCP
 
             _localName = _parentReader.Reader.LocalName;
             _depth = _parentReader.Reader.Depth;
+            _token = _localName + "@" + _depth;
             _read = false;
         }
 
         public override void Dispose()
         {
-            using (Session.Logger.CreateCallstack())
+            using (Session.Logger.CreateCallstack(_token))
             {
                 try
                 {
@@ -61,7 +62,7 @@ namespace WinSCP
 
         public void ReadToEnd(LogReadFlags flags)
         {
-            using (Session.Logger.CreateCallstack())
+            using (Session.Logger.CreateCallstack(_token))
             {
                 if (!_read)
                 {
@@ -81,5 +82,6 @@ namespace WinSCP
         private readonly string _localName;
         private readonly int _depth;
         protected bool _read;
+        private string _token;
     }
 }

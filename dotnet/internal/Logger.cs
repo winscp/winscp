@@ -229,9 +229,9 @@ namespace WinSCP
             }
         }
 
-        public Callstack CreateCallstack()
+        public Callstack CreateCallstack(object token = null)
         {
-            return new Callstack(this);
+            return new Callstack(this, token);
         }
 
         public Callstack CreateCallstackAndLock()
