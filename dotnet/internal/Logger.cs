@@ -116,6 +116,14 @@ namespace WinSCP
             }
         }
 
+        public void WriteLineLevel(int level, string line, params object[] args)
+        {
+            if (LogLevel >= level)
+            {
+                WriteLine(line, args);
+            }
+        }
+
         private static int GetThread()
         {
             return Thread.CurrentThread.ManagedThreadId;

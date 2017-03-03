@@ -54,6 +54,7 @@ namespace WinSCP
                 (Depth == _depth))
             {
                 result = false;
+                Session.Logger.WriteLineLevel(1, "Element {0} read to the end", _token);
                 _read = true;
             }
 
