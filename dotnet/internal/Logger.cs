@@ -249,8 +249,17 @@ namespace WinSCP
 
         public Exception WriteException(Exception e)
         {
-            WriteLine("Exception: {0}", e);
-            WriteLine(e.StackTrace);
+            lock (_logLock)
+            {
+                if (Logging)
+                {
+                    DoWriteLine(string.Format(CultureInfo.CurrentCulture, "Exception: {0}", e));
+                    if (LogLevel >= 1)
+                    {
+                        DoWriteLine(new StackTrace().ToString());
+                    }
+                }
+            }
             return e;
         }
 
