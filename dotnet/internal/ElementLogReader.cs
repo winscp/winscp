@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Xml;
 
 namespace WinSCP
@@ -44,7 +45,9 @@ namespace WinSCP
         {
             if (_read)
             {
-                throw Session.Logger.WriteException(new InvalidOperationException("Element already read to the end"));
+                throw Session.Logger.WriteException(
+                    new InvalidOperationException(
+                        string.Format(CultureInfo.CurrentCulture, "Element {0} already read to the end", _token)));
             }
 
             bool result = _parentReader.Read(flags);
