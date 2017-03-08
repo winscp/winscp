@@ -81,6 +81,8 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
 
   FBasicGroupBaseHeight = BasicGroup->Height - BasicSshPanel->Height - BasicFtpPanel->Height;
   FNoteGroupOffset = NoteGroup->Top - (BasicGroup->Top + BasicGroup->Height);
+
+  FSiteButtonsPadding = SitesPanel->ClientHeight - ToolsMenuButton->Top - ToolsMenuButton->Height;
   HideComponentsPanel(this);
 }
 //---------------------------------------------------------------------
@@ -685,6 +687,12 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
   {
     Init();
   }
+
+  // WORKAROUND for a bug in the VCL layout code for bottom aligned controls
+  int Offset = (SitesPanel->ClientHeight - FSiteButtonsPadding - ToolsMenuButton->Height) - ToolsMenuButton->Top;
+  ToolsMenuButton->Top = ToolsMenuButton->Top + Offset;
+  ManageButton->Top = ManageButton->Top + Offset;
+  SessionTree->Height = SessionTree->Height + Offset;
 
   // among other this makes the expanded nodes look like expanded,
   // because the LoadState call in Execute would be too early,

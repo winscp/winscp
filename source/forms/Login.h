@@ -309,6 +309,7 @@ private:
   TSiteSearch FSiteSearch;
   TForm * FLinkedForm;
   TPoint FPrevPos;
+  int FSiteButtonsPadding;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
