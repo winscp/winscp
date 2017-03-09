@@ -8168,8 +8168,9 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::WMDpiChanged(TMessage & /*Message*/)
+void __fastcall TCustomScpExplorerForm::WMDpiChanged(TMessage & Message)
 {
+  TForm::Dispatch(&Message);
   Configuration->Usage->Inc(L"PixelsPerInchChanged");
 }
 //---------------------------------------------------------------------------
