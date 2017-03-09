@@ -167,7 +167,8 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
   }
   else
   {
-    Result = new TIniFileStorage(IniFileStorageName);
+    UnicodeString StorageName = IniFileStorageName;
+    Result = new TIniFileStorage(StorageName);
   }
 
   if ((FOptionsStorage.get() != NULL) && (FOptionsStorage->Count > 0))
@@ -1142,18 +1143,20 @@ UnicodeString __fastcall TConfiguration::GetAutomaticIniFileStorageName(bool Rea
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
 {
+  UnicodeString Result;
   if (!FIniFileStorageName.IsEmpty())
   {
-    return FIniFileStorageName;
+    Result = FIniFileStorageName;
   }
   else if (!FCustomIniFileStorageName.IsEmpty())
   {
-    return FCustomIniFileStorageName;
+    Result = FCustomIniFileStorageName;
   }
   else
   {
-    return GetAutomaticIniFileStorageName(ReadingOnly);
+    Result = GetAutomaticIniFileStorageName(ReadingOnly);
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetOptionsStorage(TStrings * value)
