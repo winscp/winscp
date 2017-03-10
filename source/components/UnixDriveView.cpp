@@ -170,12 +170,20 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
   TNodeData * Data = NodeData(Node);
   UnicodeString Path = Data->Directory;
 
-  if (FTerminal->DirectoryFileList(Path, Data->FileList, CanLoad) ||
+  TDateTime Timestamp = (Data->FileList != NULL) ? Data->FileList->Timestamp : TDateTime();
+  TRemoteFileList * FileList = FTerminal->DirectoryFileList(Path, Timestamp, CanLoad);
+  if ((FileList != NULL) ||
       ((Data->FileList != NULL) && Force))
   {
     TStringList * ChildrenDirs = new TStringList();
+    TRemoteFileList * OldFileList = NULL;
     try
     {
+      if (FileList != NULL)
+      {
+        OldFileList = Data->FileList;
+        Data->FileList = FileList;
+      }
       ChildrenDirs->Duplicates = Types::dupAccept;
       ChildrenDirs->CaseSensitive = true;
 
@@ -234,6 +242,8 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     __finally
     {
       delete ChildrenDirs;
+      // Relese only files only now, once they are no longer references in the tree
+      delete OldFileList; // if not NULL
     }
   }
   else if (Force)

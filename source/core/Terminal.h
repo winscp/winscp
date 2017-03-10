@@ -478,8 +478,7 @@ public:
   void __fastcall SpaceAvailable(const UnicodeString Path, TSpaceAvailable & ASpaceAvailable);
   void __fastcall LockFiles(TStrings * FileList);
   void __fastcall UnlockFiles(TStrings * FileList);
-  bool __fastcall DirectoryFileList(const UnicodeString Path,
-    TRemoteFileList *& FileList, bool CanLoad);
+  TRemoteFileList * __fastcall DirectoryFileList(const UnicodeString Path, TDateTime Timestamp, bool CanLoad);
   void __fastcall MakeLocalFileList(const UnicodeString FileName,
     const TSearchRec Rec, void * Param);
   bool __fastcall FileOperationLoopQuery(Exception & E,
