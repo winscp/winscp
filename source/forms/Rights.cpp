@@ -43,8 +43,6 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
   UpgradeSpeedButton(OwnerButton);
   UpgradeSpeedButton(GroupButton);
   UpgradeSpeedButton(OthersButton);
-
-  SelectScaledImageList(RightsImages);
 }
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::~TRightsFrame()
@@ -408,8 +406,8 @@ void __fastcall TRightsFrame::CreateWnd()
 {
   if (FPopup)
   {
-    Width += 2 * GetSystemMetrics(SM_CXBORDER);
-    Height += 2 * GetSystemMetrics(SM_CYBORDER);
+    Width += 2 * GetSystemMetricsForControl(Parent, SM_CXBORDER);
+    Height += 2 * GetSystemMetricsForControl(Parent, SM_CYBORDER);
   }
   TFrame::CreateWnd();
 }
@@ -627,6 +625,7 @@ void __fastcall TRightsFrame::RightsPopupPopup(TObject * /*Sender*/)
 void __fastcall TRightsFrame::FrameContextPopup(TObject * Sender,
   TPoint & MousePos, bool & Handled)
 {
+  SelectScaledImageList(RightsImages);
   MenuPopup(Sender, MousePos, Handled);
 }
 //---------------------------------------------------------------------------

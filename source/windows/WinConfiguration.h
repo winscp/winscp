@@ -433,7 +433,6 @@ private:
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
-  std::unique_ptr<TFont> FSystemIconFont;
   std::unique_ptr<TStringList> FCustomCommandOptions;
   bool FCustomCommandOptionsModified;
   int FLastMachineInstallations;
@@ -529,7 +528,6 @@ private:
   bool __fastcall GetHonorDrivePolicy();
   void __fastcall SetHonorDrivePolicy(bool value);
   bool __fastcall GetIsBeta();
-  TFont * __fastcall GetSystemIconFont();
   TStrings * __fastcall GetCustomCommandOptions();
   void __fastcall SetCustomCommandOptions(TStrings * value);
   void __fastcall SetLockedInterface(bool value);
@@ -546,7 +544,6 @@ private:
   void __fastcall SaveJumpList(THierarchicalStorage * Storage,
     UnicodeString Name, TStringList * List);
   void __fastcall TrimJumpList(TStringList * List);
-  void __fastcall UpdateSystemIconFont();
   void __fastcall UpdateIconFont();
 
 protected:
@@ -707,7 +704,6 @@ public:
   __property int RunsSinceLastTip = { read = FRunsSinceLastTip, write = SetRunsSinceLastTip };
   __property bool HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
-  __property TFont * SystemIconFont = { read = GetSystemIconFont };
   __property TStrings * CustomCommandOptions = { read = GetCustomCommandOptions, write = SetCustomCommandOptions };
   __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
   __property LCID DefaultLocale = { read = FDefaultLocale };

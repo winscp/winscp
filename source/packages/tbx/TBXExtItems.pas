@@ -91,7 +91,7 @@ type
     function  DoExecute: Boolean; override;
     function  HandleEditMessage(var Message: TMessage): Boolean; virtual;
     function  GetAccRole: Integer; override;
-    procedure GetItemInfo(out ItemInfo: TTBXItemInfo; IsHoverItem, IsPushed, UseMenuColor: Boolean); virtual;
+    procedure GetItemInfo(const Canvas: TCanvas; out ItemInfo: TTBXItemInfo; IsHoverItem, IsPushed, UseMenuColor: Boolean); virtual;
     function  GetEditControlClass: TEditClass; override;
     procedure GetEditInfo(out EditInfo: TTBXEditInfo; const ItemInfo: TTBXItemInfo); virtual;
     function  GetIndentBefore: Integer; virtual;
@@ -334,6 +334,7 @@ type
     constructor Create(AOwner: TComponent); override;
     procedure Loaded; override;
     property ItemIndex: Integer read GetItemIndex write SetItemIndex default -1;
+    procedure ChangeScale(M, D: Integer); override;
   published
     property AutoComplete: Boolean read FAutoComplete write FAutoComplete default True;
     property DropDownList;
@@ -505,7 +506,7 @@ type
 
 implementation
 
-uses TB2Common, TB2Consts, TypInfo, Math, ImgList, {MP}Menus, Forms {$IFNDEF JR_D5}, DsgnIntf{$ENDIF};
+uses TBXUtils, TB2Common, TB2Consts, TypInfo, Math, ImgList, {MP}Menus, Forms, PasTools {$IFNDEF JR_D5}, DsgnIntf{$ENDIF};
 
 const
   { Repeat intervals for spin edit items }
@@ -751,15 +752,22 @@ var
 begin
   if Self.Item is TTBXEditItem then with CurrentTheme do
   begin
-    B := EditFrameWidth;
+    B := GetIntegerMetrics(Self, TMI_EDIT_FRAMEWIDTH);
 
     AWidth := TTBXEditItem(Item).EditWidth;
     if not IsToolbarStyle then
     begin
       EditCaptionSize := MeasureEditCaption;
       W := EditCaptionSize.CX;
-      if W > 0 then Inc(W, MenuLeftCaptionMargin + MenuRightCaptionMargin + MenuImageTextSpace);
-      Inc(AWidth, GetPopupMargin(Self) + MenuImageTextSpace + W + EditMenuRightIndent);
+      if W > 0 then
+      begin
+        Inc(W,
+            GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) + GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN) +
+              GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE));
+      end;
+      Inc(AWidth,
+          GetPopupMargin(Self) + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) + W +
+            GetIntegerMetrics(Self, TMI_EDIT_MENURIGHTINDENT));
     end
     else
     begin
@@ -768,7 +776,7 @@ begin
     end;
 
     EditBoxHeight := MeasureTextHeight + 1;
-    Inc(EditBoxHeight, EditTextMarginVert * 2 + B * 2);
+    Inc(EditBoxHeight, GetIntegerMetrics(Self, TMI_EDIT_TEXTMARGINVERT) * 2 + B * 2);
     AHeight := Max(EditBoxHeight, EditCaptionSize.CY);
     if not IsToolbarStyle then AHeight := AHeight;
     if EditHeightEven then AHeight := (AHeight + 1) and not $01
@@ -805,7 +813,7 @@ begin
   else {$ENDIF} if Self is TTBXDropDownItemViewer then Result := ROLE_SYSTEM_COMBOBOX;
 end;
 
-procedure TTBXEditItemViewer.GetItemInfo(out ItemInfo: TTBXItemInfo; IsHoverItem, IsPushed, UseMenuColor: Boolean);
+procedure TTBXEditItemViewer.GetItemInfo(const Canvas: TCanvas; out ItemInfo: TTBXItemInfo; IsHoverItem, IsPushed, UseMenuColor: Boolean);
 const
   CToolbarStyle: array [Boolean] of Integer = (0, IO_TOOLBARSTYLE);
   CDesigning: array [Boolean] of Integer = (0, IO_DESIGNING);
@@ -815,6 +823,7 @@ begin
   Item := TTBXEditItem(Self.Item);
 
   FillChar(ItemInfo, SizeOf(TTBXItemInfo), 0);
+  ItemInfo.Control := View.Window;
   ItemInfo.ViewType := GetViewType(View);
   ItemInfo.ItemOptions := CToolbarStyle[IsToolbarStyle]
     or CDesigning[csDesigning in Item.ComponentState];
@@ -844,13 +853,19 @@ begin
     if not IsToolbarStyle then
     begin
       W := MeasureEditCaption.CX;
-      if W > 0 then Inc(W, MenuLeftCaptionMargin + MenuRightCaptionMargin + MenuImageTextSpace);
-      Inc(R.Left, GetPopupMargin(Self) + MenuImageTextSpace + W);
-      Dec(R.Right, EditMenuRightIndent);
+      if W > 0 then
+      begin
+        Inc(W,
+            GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) + GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN) +
+              GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE));
+      end;
+      Inc(R.Left, GetPopupMargin(Self) + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) + W);
+      Dec(R.Right, GetIntegerMetrics(Self, TMI_EDIT_MENURIGHTINDENT));
     end;
 
-    B := EditFrameWidth - TB2K_EDIT_BORDER;
-    InflateRect(R, -B - EditTextMarginHorz , -B - EditTextMarginVert);
+    B := GetIntegerMetrics(Self, TMI_EDIT_FRAMEWIDTH) - TB2K_EDIT_BORDER;
+    InflateRect(
+      R, -B - GetIntegerMetrics(Self, TMI_EDIT_TEXTMARGINHORZ) , -B - GetIntegerMetrics(Self, TMI_EDIT_TEXTMARGINVERT));
     Inc(R.Left, GetIndentBefore);
     Dec(R.Right, GetIndentAfter);
   end
@@ -922,7 +937,7 @@ var
 begin
   DC := Canvas.Handle;
   Item := TTBXEditItem(Self.Item);
-  GetItemInfo(ItemInfo, IsHoverItem, IsPushed, UseDisabledShadow);
+  GetItemInfo(Canvas, ItemInfo, IsHoverItem, IsPushed, UseDisabledShadow);
   GetEditInfo(EditInfo, ItemInfo);
   R := ClientAreaRect;
 
@@ -935,7 +950,11 @@ begin
       { measure EditCaption }
       Fnt := TTBXEditItem(Item).FontSettings.CreateTransformedFont(TTBViewAccess(View).GetFont.Handle, C);
       OldFnt := SelectObject(DC, Fnt);
-      W := GetTextWidth(DC, S, True) + MenuImageTextSpace + MenuLeftCaptionMargin + MenuRightCaptionMargin;
+      W :=
+        GetTextWidth(DC, S, True) +
+        GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) +
+        GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) +
+        GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN);
       SelectObject(DC, OldFnt);
     end
     else
@@ -946,14 +965,14 @@ begin
 
     M := GetPopupMargin(Self);
     if not EditMenuFullSelect then R.Right := M + W
-    else Dec(R.Right, EditMenuRightIndent);
+    else Dec(R.Right, GetIntegerMetrics(Self, TMI_EDIT_MENURIGHTINDENT));
     PaintMenuItemFrame(Canvas, R, ItemInfo);
-    Inc(R.Left, M + MenuImageTextSpace);
-    R.Right := ClientAreaRect.Right - EditMenuRightIndent;
+    Inc(R.Left, M + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE));
+    R.Right := ClientAreaRect.Right - GetIntegerMetrics(Self, TMI_EDIT_MENURIGHTINDENT);
 
     if Length(S) > 0 then
     begin
-      Inc(R.Left, MenuLeftCaptionMargin);
+      Inc(R.Left, GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN));
       C := ColorToRGB(GetItemTextColor(ItemInfo));
       OldFnt := SelectObject(DC, Fnt);
       OldColor := SetTextColor(DC, C);
@@ -962,13 +981,16 @@ begin
       W := GetTextWidth(DC, S, True);
       SelectObject(DC, OldFnt);
       DeleteObject(Fnt);
-      Inc(R.Left, W + MenuRightCaptionMargin + MenuImageTextSpace);
+      Inc(R.Left,
+          W + GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN) + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE));
     end;
   end;
 
-  CurrentTheme.PaintEditFrame(Canvas, R, ItemInfo, EditInfo);
-  W := CurrentTheme.EditFrameWidth;
-  InflateRect(R, -W - CurrentTheme.EditTextMarginHorz, -W - CurrentTheme.EditTextMarginVert);
+  CurrentTheme.PaintEditFrame(View.GetMonitor, Canvas, R, ItemInfo, EditInfo);
+  W := CurrentTheme.GetIntegerMetrics(Self, TMI_EDIT_FRAMEWIDTH);
+  InflateRect(
+    R, -W - CurrentTheme.GetIntegerMetrics(Self, TMI_EDIT_TEXTMARGINHORZ),
+    -W - CurrentTheme.GetIntegerMetrics(Self, TMI_EDIT_TEXTMARGINVERT));
 
   if ShowImage then
   begin
@@ -1191,8 +1213,8 @@ end;
 
 function TTBXDropDownItemViewer.GetIndentAfter: Integer;
 begin
-  if IsToolbarStyle then Result := CurrentTheme.EditBtnWidth
-  else Result := GetSystemMetrics(SM_CXMENUCHECK) + 2;
+  if IsToolbarStyle then Result := CurrentTheme.GetIntegerMetrics(Self, TMI_EDIT_BTNWIDTH)
+  else Result := GetSystemMetricsForControl(View.Window, SM_CXMENUCHECK) + 2;
 end;
 
 function TTBXDropDownItemViewer.HandleEditMessage(var Message: TMessage): Boolean;
@@ -1472,6 +1494,13 @@ begin
   FList.Strings := Value;
 end;
 
+procedure TTBXComboBoxItem.ChangeScale(M, D: Integer);
+begin
+  inherited;
+  MinListWidth := MulDiv(MinListWidth, M, D);
+  MaxListWidth := MulDiv(MaxListWidth, M, D);
+end;
+
 
 //============================================================================//
 
@@ -1670,8 +1699,9 @@ begin
 
         Inc(AWidth, Margins.LeftWidth + Margins.RightWidth);
         Inc(AWidth,
-          GetPopupMargin(Self) + CurrentTheme.MenuImageTextSpace +
-          CurrentTheme.MenuLeftCaptionMargin + CurrentTheme.MenuRightCaptionMargin);
+          GetPopupMargin(Self) + CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) +
+          CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) +
+          CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN));
         // + make sure it's always bit indented compared to menu items
         Inc(AWidth, 2 * 8);
 
@@ -1749,6 +1779,7 @@ var
   R: TRect;
 begin
   FillChar(ItemInfo, SizeOf(ItemInfo), 0);
+  ItemInfo.Control := View.Window;
   ItemInfo.ViewType := GetViewType(View);
   ItemInfo.ItemOptions := IO_TOOLBARSTYLE or CDesigning[csDesigning in Item.ComponentState];
   ItemInfo.Enabled := Item.Enabled or View.Customizing;
@@ -1770,7 +1801,7 @@ begin
   begin
     ItemInfo.PopupMargin := GetPopupMargin(Self);
     CurrentTheme.PaintMenuItem(Canvas, R, ItemInfo);
-    Inc(R.Left, ItemInfo.PopupMargin + CurrentTheme.MenuLeftCaptionMargin - 1);
+    Inc(R.Left, ItemInfo.PopupMargin + CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) - 1);
     Canvas.Brush.Color := CurrentTheme.GetViewColor(VT_SECTIONHEADER);
     Canvas.FillRect(R);
     Assert(not ItemInfo.IsVertical);
@@ -1884,7 +1915,7 @@ begin
       Size := 16;
     end;
     // do not have a canvas here to scale by text height
-    Size := MulDiv(Size, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+    Size := ScaleByPixelsPerInch(Size, View.GetMonitor);
     Result.CX := Size;
     Result.CY := Size;
   end;
@@ -2412,8 +2443,8 @@ end;
 
 function TTBXSpinEditViewer.GetIndentAfter: Integer;
 begin
-  if IsToolbarStyle then Result := CurrentTheme.EditBtnWidth  + 2
-  else Result := GetSystemMetrics(SM_CXMENUCHECK) + 2;
+  if IsToolbarStyle then Result := CurrentTheme.GetIntegerMetrics(Self, TMI_EDIT_BTNWIDTH)  + 2
+  else Result := GetSystemMetricsForControl(View.FWindow, SM_CXMENUCHECK) + 2;
 end;
 
 function TTBXSpinEditViewer.HandleEditMessage(var Message: TMessage): Boolean;

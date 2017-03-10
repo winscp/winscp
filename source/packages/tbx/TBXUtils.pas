@@ -38,7 +38,7 @@ procedure RGBtoHSL(RGB: TColor; out H, S, L : Single);
 function  HSLtoRGB(H, S, L: Single): TColor;
 function  GetBGR(C: TColorRef): Cardinal;
 
-function ScaleByTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
+function TBXScaleByTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
 
 { A few drawing functions }
 { these functions recognize clNone value of TColor }
@@ -664,7 +664,7 @@ var
   LastFontHeight: Integer = -1;
   LastTextHeight: Integer = -1;
 
-function ScaleByTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
+function TBXScaleByTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
 begin
   // This should be called from the GUI thread only.
   // See ScaleByTextHeightRunTime in PasTools.

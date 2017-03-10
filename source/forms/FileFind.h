@@ -92,6 +92,7 @@ protected:
   void __fastcall GlobalMinimize(TObject * Sender);
   void __fastcall UpdateControls();
   bool __fastcall IsFinding();
+  void __fastcall UpdateImages();
 
   virtual void __fastcall CreateParams(TCreateParams & Params);
   virtual void __fastcall Dispatch(void * Message);
@@ -108,7 +109,6 @@ private:
   TFocusFileEvent FOnFocusFile;
   TFileListOperationEvent FOnDeleteFiles;
   TFileListOperationEvent FOnDownloadFiles;
-  TImageList * FSystemImageList;
   TFrameAnimation FFrameAnimation;
   UnicodeString FFocusPath;
   typedef std::map<UnicodeString, TListItem *> TFileItemMap;
@@ -122,6 +122,7 @@ private:
   void __fastcall FocusFile();
   void __fastcall DoFocusFile(const UnicodeString & Path);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
+  void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall ClearItem(TListItem * Item);
   void __fastcall FileDeleteFinished(const UnicodeString & FileName, bool Success);
   void __fastcall FileDownloadFinished(const UnicodeString & FileName, bool Success);

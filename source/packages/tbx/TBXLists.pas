@@ -139,6 +139,7 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     procedure MakeVisible(AIndex: Integer);
+    procedure ChangeScale(M, D: Integer); override;
     property ItemIndex: Integer read FItemIndex write SetItemIndex default -1;
     property MaxVisibleItems: Integer read FMaxVisibleItems write FMaxVisibleItems default 8;
     property MaxWidth: Integer read FMaxWidth write FMaxWidth default 0;
@@ -247,7 +248,7 @@ type
 
 implementation
 
-uses Types;
+uses Types, PasTools;
 
 type TTBViewAccess = class(TTBView);
 
@@ -416,13 +417,16 @@ const
     ABS_RIGHTNORMAL, ABS_DOWNNORMAL);
 var
   StateFlags: Cardinal;
+  Theme: THandle;
 begin
   if USE_THEMES then
   begin
     StateFlags := DirectionXPFlags[Direction];
     if not Enabled then Inc(StateFlags, 3)
     else if Pushed then Inc(StateFlags, 2);
-    DrawThemeBackground(SCROLLBAR_THEME, Canvas.Handle, SBP_ARROWBTN, StateFlags, Rect, nil);
+    Theme := OpenThemeData(Handle, 'SCROLLBAR');
+    DrawThemeBackground(Theme, Canvas.Handle, SBP_ARROWBTN, StateFlags, Rect, nil);
+    CloseThemeData(Theme);
   end
   else
   begin
@@ -436,13 +440,16 @@ const
   PartXPFlags: array [TScrollBarKind] of Cardinal = (SBP_THUMBBTNHORZ, SBP_THUMBBTNVERT);
 var
   StateFlags: Cardinal;
+  Theme: THandle;
 begin
   if USE_THEMES then
   begin
     StateFlags := SCRBS_NORMAL;
     if not Enabled then Inc(StateFlags, 3)
     else if Pushed then Inc(StateFlags, 2);
-    DrawThemeBackground(SCROLLBAR_THEME, Canvas.Handle, PartXPFlags[Kind], StateFlags, Rect, nil);
+    Theme := OpenThemeData(Handle, 'SCROLLBAR');
+    DrawThemeBackground(Theme, Canvas.Handle, PartXPFlags[Kind], StateFlags, Rect, nil);
+    CloseThemeData(Theme);
   end
   else
   begin
@@ -500,14 +507,17 @@ const
     ((SBP_LOWERTRACKHORZ, SBP_LOWERTRACKVERT), (SBP_UPPERTRACKHORZ, SBP_UPPERTRACKVERT));
 var
   StateFlags: Cardinal;
+  Theme: THandle;
 begin
   if USE_THEMES then
   begin
     StateFlags := SCRBS_NORMAL;
     if not Enabled then Inc(StateFlags, 3)
     else if Pushed then Inc(StateFlags, 2);
-    DrawThemeBackground(SCROLLBAR_THEME, Canvas.Handle, PartXPFlags[IsNextZone, Kind],
+    Theme := OpenThemeData(Handle, 'SCROLLBAR');
+    DrawThemeBackground(Theme, Canvas.Handle, PartXPFlags[IsNextZone, Kind],
       StateFlags, Rect, nil);
+    CloseThemeData(Theme);
   end
   else
   begin
@@ -861,6 +871,13 @@ begin
   if Assigned(FOnChange) then FOnChange(Self);
 end;
 
+procedure TTBXCustomList.ChangeScale(M, D: Integer);
+begin
+  inherited;
+  MaxWidth := MulDiv(MaxWidth, M, D);
+  MinWidth := MulDiv(MinWidth, M, D);
+end;
+
 //----------------------------------------------------------------------------//
 
 { TTBXCustomListViewer }
@@ -874,6 +891,7 @@ procedure TTBXCustomListViewer.CalcSize(const Canvas: TCanvas; var AWidth, AHeig
 var
   Item: TTBXCustomList;
   I, W: Integer;
+  AView: TTBView;
 begin
   Item := TTBXCustomList(Self.Item);
   Canvas.Font := TTBViewAccess(View).GetFont;
@@ -893,8 +911,17 @@ begin
     if W > AWidth then AWidth := W;
   end;
 
-  if FItemCount > FVisibleItems then FScrollBarWidth := GetSystemMetrics(SM_CXVSCROLL)
-  else FScrollBarWidth := 0;
+  if FItemCount > FVisibleItems then
+  begin
+    // At this moment, this view window may not be parented yet, so use window of root view
+    AView := View;
+    while AView.ParentView <> nil do AView := AView.ParentView;
+    FScrollBarWidth := GetSystemMetricsForControl(AView.Window, SM_CXVSCROLL);
+  end
+    else
+  begin
+    FScrollBarWidth := 0;
+  end;
   Inc(AWidth, FScrollBarWidth);
 
   if AWidth < Item.MinWidth then AWidth := Item.MinWidth;

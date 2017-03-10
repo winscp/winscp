@@ -130,7 +130,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     CreateLabelPanel(ThirdPartyPanel, LoadStr(MESSAGE_DISPLAY_ERROR));
   }
 
-  int IconSize = DialogImageSize();
+  int IconSize = DialogImageSize(this);
   FIconHandle = (HICON)LoadImage(MainInstance, L"MAINICON", IMAGE_ICON, IconSize, IconSize, 0);
   IconPaintBox->Width = IconSize;
   IconPaintBox->Height = IconSize;
@@ -155,18 +155,24 @@ void __fastcall TAboutDialog::LoadData()
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LoadThirdParty()
 {
-  TWebBrowserEx * ThirdPartyWebBrowser =
-    CreateBrowserViewer(ThirdPartyPanel, L"");
+  FThirdPartyWebBrowser = CreateBrowserViewer(ThirdPartyPanel, L"");
 
-  reinterpret_cast<TLabel *>(ThirdPartyWebBrowser)->Color = clBtnFace;
+  reinterpret_cast<TLabel *>(FThirdPartyWebBrowser)->Color = clBtnFace;
 
-  ThirdPartyWebBrowser->Navigate(L"about:blank");
-  while (ThirdPartyWebBrowser->ReadyState < ::READYSTATE_INTERACTIVE)
+  NavigateBrowserToUrl(FThirdPartyWebBrowser, L"about:blank");
+  DoLoadThirdParty();
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::DoLoadThirdParty()
+{
+  while (FThirdPartyWebBrowser->ReadyState < ::READYSTATE_INTERACTIVE)
   {
     Application->ProcessMessages();
   }
 
   std::unique_ptr<TFont> DefaultFont(new TFont());
+  DefaultFont->Assign(Application->DefaultFont);
+  DefaultFont->Height = ScaleByPixelsPerInchFromSystem(DefaultFont->Height, this);
 
   UnicodeString ThirdParty;
 
@@ -268,7 +274,7 @@ void __fastcall TAboutDialog::LoadThirdParty()
     CreateLink(EXPAT_LICENSE_URL, LoadStr(ABOUT_THIRDPARTY_LICENSE)) + Br +
     CreateLink(LoadStr(EXPAT_URL)));
 
-  AddBrowserLinkHandler(ThirdPartyWebBrowser, EXPAT_LICENSE_URL, ExpatLicenceHandler);
+  AddBrowserLinkHandler(FThirdPartyWebBrowser, EXPAT_LICENSE_URL, ExpatLicenceHandler);
 
 #ifndef NO_COMPONENTS
 
@@ -310,12 +316,12 @@ void __fastcall TAboutDialog::LoadThirdParty()
 
   // For stream-loaded document, when set only after loading from OnDocumentComplete,
   // browser stops working
-  SetBrowserDesignModeOff(ThirdPartyWebBrowser);
+  SetBrowserDesignModeOff(FThirdPartyWebBrowser);
 
   TStreamAdapter * ThirdPartyStreamAdapter = new TStreamAdapter(ThirdPartyStream.get(), soReference);
   IPersistStreamInit * PersistStreamInit = NULL;
-  if (DebugAlwaysTrue(ThirdPartyWebBrowser->Document != NULL) &&
-      SUCCEEDED(ThirdPartyWebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
+  if (DebugAlwaysTrue(FThirdPartyWebBrowser->Document != NULL) &&
+      SUCCEEDED(FThirdPartyWebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
       DebugAlwaysTrue(PersistStreamInit != NULL))
   {
     PersistStreamInit->Load(static_cast<_di_IStream>(*ThirdPartyStreamAdapter));
@@ -398,5 +404,22 @@ void __fastcall TAboutDialog::IconPaintBoxPaint(TObject * /*Sender*/)
 {
   DrawIconEx(IconPaintBox->Canvas->Handle,
     0, 0, FIconHandle, IconPaintBox->Width, IconPaintBox->Height, 0, NULL, DI_NORMAL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == CM_DPICHANGED)
+  {
+    if (FThirdPartyWebBrowser != NULL)
+    {
+      DoLoadThirdParty();
+    }
+    TForm::Dispatch(Message);
+  }
+  else
+  {
+    TForm::Dispatch(Message);
+  }
 }
 //---------------------------------------------------------------------------

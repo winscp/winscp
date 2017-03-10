@@ -35,7 +35,7 @@ uses
 
 type
   TListSortExCompare = function(const Item1, Item2, ExtraData: Pointer): Integer;
-  THandleWMPrintNCPaintProc = procedure(Wnd: HWND; DC: HDC; AppData: Longint);
+  THandleWMPrintNCPaintProc = procedure(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 
 function AddToFrontOfList(var List: TList; Item: Pointer): Boolean;
 function AddToList(var List: TList; Item: Pointer): Boolean;
@@ -66,7 +66,7 @@ function GetRectOfMonitorContainingWindow(const W: HWND; const WorkArea: Boolean
 function GetRectOfPrimaryMonitor(const WorkArea: Boolean): TRect;
 function GetTextHeight(const DC: HDC): Integer;
 function GetTextWidth(const DC: HDC; S: String; const Prefix: Boolean): Integer;
-procedure HandleWMPrint(const Wnd: HWND; var Message: TMessage;
+procedure HandleWMPrint(Control: TControl; const Wnd: HWND; var Message: TMessage;
   const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: Longint);
 procedure HandleWMPrintClient(const Control: TWinControl;
   var Message: TMessage);
@@ -193,7 +193,7 @@ begin
   end;
 end;
 
-procedure HandleWMPrint(const Wnd: HWND; var Message: TMessage;
+procedure HandleWMPrint(Control: TControl; const Wnd: HWND; var Message: TMessage;
   const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: Longint);
 { note: AppData is an application-defined value which is passed to NCPaintFunc }
 var
@@ -210,7 +210,7 @@ begin
       if Message.LParam and PRF_NONCLIENT <> 0 then begin
         SaveIndex := SaveDC(DC);
         if Assigned(NCPaintFunc) then
-          NCPaintFunc(Wnd, DC, AppData);
+          NCPaintFunc(Control, Wnd, DC, AppData);
         RestoreDC(DC, SaveIndex);
       end;
       { Calculate the difference between the top-left corner of the window

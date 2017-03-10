@@ -32,10 +32,10 @@ void __fastcall ApplyTabs(
   TCalculateWidth CalculateWidth, void * CalculateWidthArg);
 TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Label);
 void __fastcall SelectScaledImageList(TImageList * ImageList);
-void __fastcall CopyDataModule(TDataModule * TargetModule, TDataModule * SourceModule);
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList);
 void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName);
-int __fastcall DialogImageSize();
+int __fastcall DialogImageSize(TForm * Form);
+int __fastcall NormalizePixelsPerInch(int PixelsPerInch);
 void __fastcall HideComponentsPanel(TForm * Form);
 namespace Webbrowserex
 {
@@ -81,8 +81,10 @@ namespace Pngimagelist
 }
 using namespace Pngimagelist;
 //---------------------------------------------------------------------------
-TPngImageList * __fastcall GetAnimationsImages();
-void __fastcall ReleaseAnimationsModule();
+TPngImageList * __fastcall GetAnimationsImages(TControl * Control);
+TImageList * __fastcall GetButtonImages(TControl * Control);
+TPngImageList * __fastcall GetDialogImages(TControl * Control);
+void __fastcall ReleaseImagesModules();
 //---------------------------------------------------------------------------
 class TFrameAnimation
 {
@@ -93,6 +95,7 @@ public:
   void __fastcall Stop();
 
 private:
+  UnicodeString FName;
   TPaintBox * FPaintBox;
   TPngImageList * FImageList;
   int FFirstFrame;
@@ -103,13 +106,15 @@ private:
   TTimer * FTimer;
   bool FPainted;
 
-  void __fastcall DoInit(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name, bool Null);
+  void __fastcall DoInit();
   void __fastcall PaintBoxPaint(TObject * Sender);
   void __fastcall CalculateNextFrameTick();
   TPngImageCollectionItem * __fastcall GetCurrentImage();
   void __fastcall Animate();
   void __fastcall Timer(TObject * Sender);
   void __fastcall Repaint();
+  void __fastcall Rescale();
+  static void __fastcall PaintBoxRescale(TComponent * Sender, TObject * Token);
 };
 //---------------------------------------------------------------------------
 class TScreenTipHintWindow : public THintWindow
@@ -132,6 +137,7 @@ private:
   UnicodeString FLongHint;
   TControl * FHintControl;
   bool FHintPopup;
+  std::unique_ptr<TFont> FScaledHintFont;
 
   UnicodeString __fastcall GetLongHintIfAny(const UnicodeString & AHint);
   static int __fastcall GetTextFlags(TControl * Control);

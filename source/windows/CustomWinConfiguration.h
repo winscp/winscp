@@ -12,6 +12,7 @@
 #define WM_MANAGES_CAPTION (WM_WINSCP_USER + 7)
 #define WM_WANTS_MOUSEWHEEL (WM_WINSCP_USER + 8)
 #define WM_CAN_DISPLAY_UPDATES (WM_WINSCP_USER + 9)
+// CM_DPICHANGED + 10 (packages/my/PasTools.pas)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration

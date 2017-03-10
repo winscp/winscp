@@ -299,6 +299,7 @@ private:
   bool __fastcall CanPasteToDirViewFromClipBoard();
   void __fastcall CMShowingChanged(TMessage & Message);
   void __fastcall WMClose(TMessage & Message);
+  void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall WMDpiChanged(TMessage & Message);
 
 protected:
@@ -323,7 +324,6 @@ protected:
   unsigned int FLockLevel;
   unsigned int FLockSuspendLevel;
   bool FDisabledOnLockSuspend;
-  TImageList * FSystemImageList;
   bool FAlternativeDelete;
   TDragDropFilesEx * FSessionsDragDropFilesEx;
   TDragDropFilesEx * FQueueDragDropFilesEx;
@@ -575,6 +575,9 @@ protected:
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
   TSessionData * __fastcall SessionDataForCode();
   void __fastcall RefreshPanel(const UnicodeString & Session, const UnicodeString & Path);
+  DYNAMIC void __fastcall ChangeScale(int M, int D);
+  virtual void __fastcall UpdateImages();
+  void __fastcall UpdatePixelsPerInchMainWindowCounter();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

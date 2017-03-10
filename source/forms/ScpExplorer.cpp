@@ -42,9 +42,6 @@
 __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)
 {
-  UnixPathComboBox->Images = FSystemImageList;
-  UnixPathComboBox->SubMenuImages = UnixPathComboBox->Images;
-
   BackButton->LinkSubitems = HistoryMenu(osRemote, true)->Items;
   ForwardButton->LinkSubitems = HistoryMenu(osRemote, false)->Items;
 
@@ -103,7 +100,8 @@ void __fastcall TScpExplorerForm::RestoreParams()
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
   RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
   RemoteDriveView->Width =
-    LoadDimension(WinConfiguration->ScpExplorer.DriveViewWidth, WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch);
+    LoadDimension(
+      WinConfiguration->ScpExplorer.DriveViewWidth, WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch, this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::StoreParams()
@@ -122,7 +120,7 @@ void __fastcall TScpExplorerForm::StoreParams()
     WinConfiguration->ScpExplorer.ViewStyle = RemoteDirView->ViewStyle;
     WinConfiguration->ScpExplorer.DriveView = RemoteDriveView->Visible;
     WinConfiguration->ScpExplorer.DriveViewWidth = RemoteDriveView->Width;
-    WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch = Screen->PixelsPerInch;
+    WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch = GetControlPixelsPerInch(this);
     TCustomScpExplorerForm::StoreParams();
   }
   __finally
@@ -371,5 +369,14 @@ void __fastcall TScpExplorerForm::GoToAddress()
 {
   AddressToolbar->View->Selected = AddressToolbar->View->Find(UnixPathComboBox);
   AddressToolbar->View->EnterToolbarLoop(TTBEnterToolbarLoopOptions() << tbetExecuteSelected);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::UpdateImages()
+{
+  TCustomScpExplorerForm::UpdateImages();
+
+  TImageList * ImageList = ShellImageListForControl(this, ilsSmall);
+  UnixPathComboBox->Images = ImageList;
+  UnixPathComboBox->SubMenuImages = ImageList;
 }
 //---------------------------------------------------------------------------

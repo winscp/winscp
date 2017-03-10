@@ -17,7 +17,7 @@ interface
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, Graphics, ImgList, Forms,
-  TB2Item, TB2Dock, TB2Toolbar, {$IFNDEF MPEXCLUDE}TB2ToolWindow,{$ENDIF} TB2Anim, TBXUtils, TBXThemes;
+  TB2Item, TB2Dock, TB2Toolbar, {$IFNDEF MPEXCLUDE}TB2ToolWindow,{$ENDIF} TB2Anim, TBXUtils, TBXThemes, PasTools;
 
 const
   TBXVersion = 2.1;
@@ -367,6 +367,8 @@ type
     procedure TBMThemeChange(var Message: TMessage); message TBM_THEMECHANGE;
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
+    procedure WMDpiChangedBeforeParent(var Message: TMessage); message WM_DPICHANGED_BEFOREPARENT;
+    procedure WMDpiChangedAfterParent(var Message: TMessage); message WM_DPICHANGED_AFTERPARENT;
   protected
     procedure DrawNCArea(const DrawToDC: Boolean; const ADC: HDC; const Clip: HRGN); override;
     function  GetChevronItemClass: TTBChevronItemClass; override;
@@ -376,6 +378,7 @@ type
     procedure Loaded; override; {vb+}
     procedure SetParent(AParent: TWinControl); override;
     procedure UpdateEffectiveColor;
+    procedure Rebuild;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -1361,7 +1364,7 @@ begin
 
     if CaptionShown then
     begin
-      Three := ScaleByTextHeightRunTime(Canvas, 3);
+      Three := ScaleByPixelsPerInch(3, View.GetMonitor);
       Inc(AWidth, TextSize.CX);
       Inc(AHeight, TextSize.CY);
       if not IsTextRotated then Inc(AWidth, 2 * Three)
@@ -1385,25 +1388,33 @@ begin
 
     if tbisSubmenu in TTBItemAccess(Item).ItemStyle then with CurrentTheme do
     begin
-      if tbisCombo in TTBItemAccess(Item).ItemStyle then Inc(AWidth, SplitBtnArrowWidth)
+      if tbisCombo in TTBItemAccess(Item).ItemStyle then Inc(AWidth, GetIntegerMetrics(Self, TMI_SPLITBTN_ARROWWIDTH))
       else if tboDropdownArrow in Item.EffectiveOptions then
       begin
         if (ItemLayout <> tbxlGlyphTop) or (ImgSize.CX = 0) or IsTextRotated then
         begin
-          Two := ScaleByTextHeightRunTime(Canvas, 2);
-          if View.Orientation <> tbvoVertical then Inc(AWidth, Two + DropdownArrowWidth)
-          else Inc(AHeight, DropdownArrowWidth + Two + DropdownArrowMargin);
+          Two := ScaleByPixelsPerInch(2, View.GetMonitor);
+          if View.Orientation <> tbvoVertical then
+          begin
+            Inc(AWidth, Two + GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH))
+          end
+            else
+          begin
+            Inc(AHeight,
+                GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) + Two +
+                GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWMARGIN));
+          end;
         end
         else
         begin
           if (ItemLayout = tbxlGlyphTop) and (IsTextRotated xor (View.Orientation <> tbvoVertical)) then
           begin
-            W := ImgSize.CX + DropDownArrowWidth + 2;
+            W := ImgSize.CX + GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) + 2;
             if W > AWidth - 7 then AWidth := W + 7;
           end
           else
           begin
-            H := ImgSize.CY + DropDownArrowWidth + 2;
+            H := ImgSize.CY + GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) + 2;
             if H > AHeight - 7 then AHeight := H + 7;
           end;
         end
@@ -1426,7 +1437,9 @@ begin
       Inc(AWidth, Margins.LeftWidth + Margins.RightWidth);
       Inc(AHeight, Margins.TopHeight + Margins.BottomHeight);
 
-      Inc(AWidth, GetPopupMargin(Self) + MenuImageTextSpace + MenuLeftCaptionMargin + MenuRightCaptionMargin);
+      Inc(AWidth,
+          GetPopupMargin(Self) + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) +
+            GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) + GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN));
       S := Item.GetShortCutText;
       if Length(S) > 0 then Inc(AWidth, (AHeight - 6) + GetTextWidth(Canvas.Handle, S, True));
       Inc(AWidth, AHeight); { Note: maybe this should be controlled by the theme }
@@ -1584,8 +1597,8 @@ begin
   Result := not (tbisSubmenu in TTBItemAccess(Item).ItemStyle);
   if (tbisCombo in TTBItemAccess(Item).ItemStyle) then
   begin
-    if IsToolbarStyle then W := CurrentTheme.SplitBtnArrowWidth
-    else W := GetSystemMetrics(SM_CXMENUCHECK);
+    if IsToolbarStyle then W := CurrentTheme.GetIntegerMetrics(Self, TMI_SPLITBTN_ARROWWIDTH)
+    else W := GetSystemMetricsForControl(View.Window, SM_CXMENUCHECK);
     Result := X < (BoundsRect.Right - BoundsRect.Left) - W;
   end;
 end;
@@ -1686,6 +1699,7 @@ begin
   IsSplit := tbisCombo in Item.ItemStyle;
 
   FillChar(ItemInfo, SizeOf(ItemInfo), 0);
+  ItemInfo.Control := View.Window;
   ItemInfo.ViewType := GetViewType(View);
   ItemInfo.ItemOptions := CToolbarStyle[ToolbarStyle] or CCombo[IsSplit] or
     CDesigning[csDesigning in Item.ComponentState] or CSubmenuItem[tbisSubmenu in Item.ItemStyle] or
@@ -1782,23 +1796,33 @@ begin
       begin
         ItemInfo.ComboPart := cpSplitLeft;
         ComboRect := R;
-        Dec(Right, SplitBtnArrowWidth);
+        Dec(Right, GetIntegerMetrics(Self, TMI_SPLITBTN_ARROWWIDTH));
         ComboRect.Left := Right;
       end
       else if not IsSpecialDropDown then
       begin
         if View.Orientation <> tbvoVertical then
-          ComboRect := Rect(Right - DropdownArrowWidth - DropdownArrowMargin, 0,
-            Right - DropdownArrowMargin, Bottom)
-        else
-          ComboRect := Rect(0, Bottom - DropdownArrowWidth - DropdownArrowMargin,
-            Right, Bottom - DropdownArrowMargin);
+        begin
+          ComboRect :=
+            Rect(
+              Right - GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) -
+                GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWMARGIN), 0,
+              Right - GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWMARGIN), Bottom);
+        end
+          else
+        begin
+          ComboRect :=
+            Rect(0,
+              Bottom - GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) -
+                GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWMARGIN),
+              Right, Bottom - GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWMARGIN));
+        end;
       end
       else
       begin
-        ImgAndArrowWidth := ImgSize.CX + DropdownArrowWidth + 2;
+        ImgAndArrowWidth := ImgSize.CX + GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) + 2;
         ComboRect.Right := (R.Left + R.Right + ImgAndArrowWidth + 2) div 2;
-        ComboRect.Left := ComboRect.Right - DropdownArrowWidth;
+        ComboRect.Left := ComboRect.Right - GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH);
         ComboRect.Top := (R.Top + R.Bottom - ImgSize.cy - 2 - TextSize.CY) div 2;
         ComboRect.Bottom := ComboRect.Top + ImgSize.CY;
       end;
@@ -1813,8 +1837,8 @@ begin
         PaintDropDownArrow(Canvas, ComboRect, ItemInfo);
         if not IsSpecialDropDown then
         begin
-          if View.Orientation <> tbvoVertical then Dec(R.Right, DropdownArrowWidth)
-          else Dec(R.Bottom, DropdownArrowWidth);
+          if View.Orientation <> tbvoVertical then Dec(R.Right, GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH))
+          else Dec(R.Bottom, GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH));
         end;
       end;
     end
@@ -1848,7 +1872,7 @@ begin
     begin
       CaptionRect := R;
       TextFlags := TextFlags or DT_CENTER or DT_VCENTER;
-      Three := ScaleByTextHeightRunTime(Canvas, 3);
+      Three := ScaleByPixelsPerInch(3, View.GetMonitor);
       if ImageIsShown then with CaptionRect do
         case ItemLayout of
         tbxlGlyphLeft:
@@ -1895,7 +1919,9 @@ begin
       GetTextMetrics(Canvas.Handle, TextMetrics);
 
       CaptionRect := R;
-      Inc(CaptionRect.Left, ItemInfo.PopupMargin + MenuImageTextSpace + MenuLeftCaptionMargin);
+      Inc(CaptionRect.Left,
+          ItemInfo.PopupMargin + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) +
+            GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN));
       with TextMetrics, CaptionRect do
         if (Bottom - Top) - (tmHeight + tmExternalLeading) = Margins.BottomHeight then Dec(Bottom);
       Inc(CaptionRect.Top, TextMetrics.tmExternalLeading);
@@ -1938,7 +1964,9 @@ begin
 
     if ToolBarStyle then
     begin
-      if IsSpecialDropDown then OffsetRect(ImageRect, (-CurrentTheme.DropdownArrowWidth + 1) div 2, 0);
+      if IsSpecialDropDown then
+        OffsetRect(ImageRect, (-CurrentTheme.GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) + 1) div 2, 0);
+
       if ItemLayout = tbxlGlyphLeft then ImageRect.Right := ImageRect.Left + ImgSize.CX + 2
       else
       begin
@@ -2033,8 +2061,8 @@ begin
   SZ := TTBXSeparatorItem(Item).Size;
   if SZ < 0 then
   begin
-    if not IsToolbarStyle then SZ := CurrentTheme.MenuSeparatorSize
-    else SZ := CurrentTheme.TlbrSeparatorSize;
+    if not IsToolbarStyle then SZ := CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_SEPARATORSIZE)
+    else SZ := CurrentTheme.GetIntegerMetrics(Self, TMI_TLBR_SEPARATORSIZE);
     if SZ < 0 then inherited CalcSize(Canvas, AWidth, AHeight)
     else
     begin
@@ -2294,7 +2322,7 @@ end;
 function TTBXPopupWindow.GetNCSize: TPoint;
 begin
   Result := inherited GetNCSize;
-  CurrentTheme.GetViewBorder(GetViewType(View), Result);
+  CurrentTheme.GetViewBorder(Self, GetViewType(View), Result);
 end;
 
 function TTBXPopupWindow.GetShowShadow: Boolean;
@@ -2400,7 +2428,7 @@ procedure TTBXPopupWindow.WMNCCalcSize(var Message: TWMNCCalcSize);
 var
   Sz: TPoint;
 begin
-  CurrentTheme.GetViewBorder(GetViewType(View), Sz);
+  CurrentTheme.GetViewBorder(Self, GetViewType(View), Sz);
   with Message.CalcSize_Params^.rgrc[0], Sz do
   begin
     Inc(Left, X);
@@ -2411,7 +2439,7 @@ begin
   Message.Result := 1;
 end;
 
-procedure TBXPopupNCPaintProc(Wnd: HWND; DC: HDC; AppData: Longint);
+procedure TBXPopupNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 var
   R, R2: TRect;
   Canvas: TCanvas;
@@ -2453,7 +2481,7 @@ begin
     end;
     GetWindowRect(Wnd, R);
     OffsetRect(R, -R.Left, -R.Top);
-    CurrentTheme.GetViewBorder(PopupInfo.ViewType, PopupInfo.BorderSize);
+    CurrentTheme.GetViewBorder(Control, PopupInfo.ViewType, PopupInfo.BorderSize);
     R2 := R;
     with PopupInfo.BorderSize do InflateRect(R2, -X, -Y);
     with R2 do ExcludeClipRect(Canvas.Handle, Left, Top, Right, Bottom);
@@ -2472,7 +2500,7 @@ begin
   try
     Assert(DC <> 0, 'TTBXPopupWindow.WMNCPaint');
     SelectNCUpdateRgn(Handle, DC, HRGN(Message.WParam));
-    TBXPopupNCPaintProc(Handle, DC, LongInt(Self.View));
+    TBXPopupNCPaintProc(Self, Handle, DC, LongInt(Self.View));
   finally
     ReleaseDC(Handle, DC);
   end;
@@ -2480,7 +2508,7 @@ end;
 
 procedure TTBXPopupWindow.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Handle, Message, TBXPopupNCPaintProc, LongInt(Self.View));
+  HandleWMPrint(Self, Handle, Message, TBXPopupNCPaintProc, LongInt(Self.View));
 end;
 
 procedure TTBXPopupWindow.WMTB2kPopupShowing(var Message: TMessage);
@@ -2648,7 +2676,7 @@ begin
         ACanvas.Brush.Style := bsSolid;
       end;
 
-      CurrentTheme.PaintToolbarNCArea(ACanvas, R, ToolbarInfo);
+      CurrentTheme.PaintToolbarNCArea(GetMonitorFromControl(Self), ACanvas, R, ToolbarInfo);
     finally
       ACanvas.Handle := 0;
       ACanvas.Free;
@@ -2670,7 +2698,7 @@ end;
 
 function TTBXToolbar.GetFloatingBorderSize: TPoint;
 begin
-  CurrentTheme.GetViewBorder(GetViewType(View) or TVT_FLOATING, Result);
+  CurrentTheme.GetViewBorder(Self, GetViewType(View) or TVT_FLOATING, Result);
 end;
 
 function TTBXToolbar.GetFloatingWindowParentClass: TTBFloatingWindowParentClass;
@@ -2696,7 +2724,7 @@ begin
     else if CloseButtonHover then ToolbarInfo.CloseButtonState := ToolbarInfo.CloseButtonState or CDBS_HOT;
   end;
   ToolbarInfo.BorderStyle := BorderStyle;
-  CurrentTheme.GetViewBorder(ToolbarInfo.ViewType, ToolbarInfo.BorderSize);
+  CurrentTheme.GetViewBorder(Self, ToolbarInfo.ViewType, ToolbarInfo.BorderSize);
   ToolbarInfo.EffectiveColor := EffectiveColor;
 end;
 
@@ -2752,6 +2780,14 @@ begin
   end;
 end;
 
+procedure TTBXToolbar.Rebuild;
+begin
+  if Floating then UpdateNCArea(TTBXFloatingWindowParent(Parent), GetWinViewType(Self))
+    else UpdateNCArea(Self, GetWinViewType(Self));
+  Invalidate;
+  Arrange;
+end;
+
 procedure TTBXToolbar.TBMThemeChange(var Message: TMessage);
 begin
   case Message.WParam of
@@ -2760,15 +2796,23 @@ begin
       begin
         EndUpdate;
         UpdateEffectiveColor;
-        if Floating then UpdateNCArea(TTBXFloatingWindowParent(Parent), GetWinViewType(Self))
-        else UpdateNCArea(Self, GetWinViewType(Self));
-        Invalidate;
-        Arrange;
+        Rebuild;
         UpdateChildColors;
       end;
     TSC_APPACTIVATE, TSC_APPDEACTIVATE:
       if MenuBar then Invalidate;
   end;
+end;
+
+procedure TTBXToolbar.WMDpiChangedBeforeParent(var Message: TMessage);
+begin
+  BeginUpdate;
+end;
+
+procedure TTBXToolbar.WMDpiChangedAfterParent(var Message: TMessage);
+begin
+  EndUpdate;
+  Rebuild;
 end;
 
 procedure TTBXToolbar.UpdateChildColors;
@@ -3012,6 +3056,7 @@ var
   I: Integer;
   MinWidth: Integer;
   Border: TPoint;
+  Control: TControl;
 begin
   ModalHandler := TTBModalHandler.Create(0);
   try
@@ -3020,7 +3065,8 @@ begin
     if not IsRectEmpty(ControlRect) then
     begin
       // see TTBPopupView.AutoSize and TTBXPopupWindow.GetNCSize
-      CurrentTheme.GetViewBorder(PVT_POPUPMENU, Border);
+      Control := FindVCLWindow(Point(ControlRect.Left, ControlRect.Top));
+      CurrentTheme.GetViewBorder(Control, PVT_POPUPMENU, Border);
       MinWidth := ControlRect.Width - (2*Border.X);
       for I := 0 to Count - 1 do
       begin
@@ -3140,6 +3186,7 @@ begin
       DockWindow := TTBCustomDockableWindowAccess(DockableWindow);
 
       FillChar(WindowInfo, SizeOf(WindowInfo), 0);
+      WindowInfo.ParentControl := Self;
       WindowInfo.ParentHandle := Handle;
       WindowInfo.WindowHandle := DockWindow.Handle;
       WindowInfo.ViewType := GetWinViewType(DockWindow);
@@ -3328,7 +3375,7 @@ begin
         ACanvas.Brush.Style := bsSolid;
       end;
 
-      CurrentTheme.PaintToolbarNCArea(ACanvas, R, ToolbarInfo);
+      CurrentTheme.PaintToolbarNCArea(GetMonitorFromControl(Self), ACanvas, R, ToolbarInfo);
     finally
       ACanvas.Handle := 0;
       ACanvas.Free;

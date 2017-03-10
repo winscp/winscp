@@ -78,6 +78,7 @@ type
     function IsCustomDrawn(Target: TCustomDrawTarget; Stage: TCustomDrawStage): Boolean; override;
     function CustomDrawItem(Node: TTreeNode; State: TCustomDrawState;
       Stage: TCustomDrawStage; var PaintImages: Boolean): Boolean; override;
+    procedure NeedImageLists(Recreate: Boolean);
 
     procedure CNNotify(var Msg: TWMNotify); message CN_NOTIFY;
     procedure CMColorChanged(var Msg: TMessage); message CM_COLORCHANGED;
@@ -86,6 +87,7 @@ type
     procedure WMLButtonUp(var Msg: TWMLButtonDown); message WM_LBUTTONUP;
     procedure WMRButtonDown(var Msg: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMContextMenu(var Msg: TWMContextMenu); message WM_CONTEXTMENU;
+    procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
 
     procedure Delete(Node: TTreeNode); override;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
@@ -276,9 +278,6 @@ begin
   if Assigned(Images) then
     Images.Free;
 
-  if Assigned(StateImages) then
-    StateImages.Free;
-
   if Assigned(FDragImageList) then
   begin
     if GlobalDragImageList = FDragImageList then
@@ -294,14 +293,47 @@ begin
   inherited Destroy;
 end;
 
+procedure TCustomDriveView.NeedImageLists(Recreate: Boolean);
+var
+  MinHeight: Integer;
+  AImages: TImageList;
+begin
+  if not Assigned(Images) then
+  begin
+    Images := TImageList.Create(Self);
+    Images.BkColor := Color;
+  end;
+
+  AImages := ShellImageListForControl(Self, ilsSmall);
+  if Images.Handle <> AImages.Handle then
+  begin
+    Images.Handle := AImages.Handle;
+  end;
+
+  if (not Assigned(FImageList)) or Recreate then
+  begin
+    if Assigned(FImageList) then
+      FImageList.Free;
+
+    FImageList := OverlayImageList(Images.Width);
+  end;
+
+  MinHeight := ScaleByTextHeight(Self, 18);
+  if TreeView_GetItemHeight(Handle) < MinHeight then
+    TreeView_SetItemHeight(Handle, MinHeight);
+end;
+
+procedure TCustomDriveView.CMDPIChanged(var Message: TMessage);
+begin
+  inherited;
+  NeedImageLists(True);
+end;
+
 procedure TCustomDriveView.CreateWnd;
 begin
   inherited;
 
-  if not Assigned(Images) then
-    Images := ShellImageList(Self, SHGFI_SMALLICON);
-  if not Assigned(StateImages) then
-    StateImages := ShellImageList(Self, SHGFI_OPENICON);
+  NeedImageLists(False);
 
   if not (csDesigning in ComponentState) then
     FDragImageList := TDragImageList.Create(Self);
@@ -311,11 +343,6 @@ begin
   FDragDropFilesEx.DragDropControl := Self;
   FParentForm := GetParentForm(Self);
 
-  if not Assigned(FImageList) then
-    FImageList := OverlayImageList(16);
-
-  if TreeView_GetItemHeight(Handle) < 18 then
-    TreeView_SetItemHeight(Handle, 18);
 end;
 
 procedure TCustomDriveView.Notification(AComponent: TComponent; Operation: TOperation);
@@ -823,8 +850,6 @@ begin
   inherited;
   if Assigned(Images) then
     Images.BkColor := Color;
-  if Assigned(StateImages) then
-    StateImages.BkColor := Color;
   ForceColorChange(Self);
 end;
 

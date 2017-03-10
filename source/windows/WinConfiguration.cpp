@@ -442,11 +442,9 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   FDontDecryptPasswords = 0;
   FMasterPasswordSession = 0;
   FMasterPasswordSessionAsked = false;
-  FSystemIconFont.reset(new TFont());
   FCustomCommandOptions.reset(new TStringList());
   FCustomCommandOptionsModified = false;
   FExtensionTranslations.reset(new TStringList());
-  UpdateSystemIconFont();
   Default();
 
   // This matters only if the translations are in the executable folder and auto-loaded by VCL (System.Pas - DelayLoadResourceModule)
@@ -1541,12 +1539,6 @@ bool __fastcall TWinConfiguration::GetIsBeta()
   return DoIsBeta(GetReleaseType());
 }
 //---------------------------------------------------------------------------
-TFont * __fastcall TWinConfiguration::GetSystemIconFont()
-{
-  // We should do live update from Screen->IconFont when custom panel font is not set
-  return FSystemIconFont.get();
-}
-//---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::GetAnyBetaInVersionHistory()
 {
   int From = 1;
@@ -2078,33 +2070,9 @@ void __fastcall TWinConfiguration::SetRefreshRemotePanelInterval(TDateTime value
   SET_CONFIG_PROPERTY(RefreshRemotePanelInterval);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::UpdateSystemIconFont()
-{
-  FSystemIconFont->Assign(Screen->IconFont);
-}
-//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::UpdateIconFont()
 {
-  if (!PanelFont.FontName.IsEmpty())
-  {
-    UpdateSystemIconFont();
-    std::unique_ptr<TFont> IconFont(new TFont());
-    RestoreFont(PanelFont, IconFont.get());
-    Screen->IconFont->Assign(IconFont.get());
-    // When using non-standard icon font, prevent resetting it back
-    // to standard one on WM_WININICHANGE. Unfortunatelly this prevents
-    // updating all other fonts.
-    Application->UpdateMetricSettings = false;
-  }
-  else
-  {
-    if (DebugAlwaysTrue(FSystemIconFont.get() != NULL) &&
-        !SameFont(Screen->IconFont, FSystemIconFont.get()))
-    {
-      Screen->IconFont->Assign(FSystemIconFont.get());
-    }
-    Application->UpdateMetricSettings = true;
-  }
+  UpdateDesktopFont();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetPanelFont(const TFontConfiguration & value)

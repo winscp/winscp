@@ -1219,12 +1219,24 @@ TComponent * __fastcall GetPopupComponent(TObject * Sender)
   return PopupMenu->PopupComponent;
 }
 //---------------------------------------------------------------------------
+static void __fastcall SetMenuButtonImages(TButton * Button)
+{
+  Button->Images = GetButtonImages(Button);
+}
+//---------------------------------------------------------------------------
+static void __fastcall MenuButtonRescale(TComponent * Sender, TObject * /*Token*/)
+{
+  TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
+  SetMenuButtonImages(Button);
+}
+//---------------------------------------------------------------------------
 void __fastcall MenuButton(TButton * Button)
 {
-  Button->Images = GlyphsModule->ButtonImages;
+  SetMenuButtonImages(Button);
   Button->ImageIndex = 0;
   Button->DisabledImageIndex = 1;
   Button->ImageAlignment = iaRight;
+  SetRescaleFunction(Button, MenuButtonRescale);
 }
 //---------------------------------------------------------------------------
 TRect __fastcall CalculatePopupRect(TButton * Button)

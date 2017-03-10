@@ -86,7 +86,7 @@ type
 implementation
 
 uses
-  SysUtils, CommCtrl, Windows, PasTools, Controls;
+  SysUtils, CommCtrl, Windows, PasTools, Controls, Forms;
 
 const
   DefaultListViewMaxWidth = 1000;
@@ -150,7 +150,7 @@ begin
     while (Value <> '') and (Index < Count) do
     begin
       ColStr := CutToChar(Value, ';', True);
-      Widths[Index] := LoadDimension(StrToInt(CutToChar(ColStr, ',', True)), PixelsPerInch);
+      Widths[Index] := LoadDimension(StrToInt(CutToChar(ColStr, ',', True)), PixelsPerInch, FListView);
       Visible[Index] := Boolean(StrToInt(CutToChar(ColStr, ',', True)));
       Inc(Index);
     end;
@@ -325,7 +325,7 @@ var
 begin
   S := CutToChar(Value, '|', True);
   WidthsStr := CutToChar(S, '@', True);
-  PixelsPerInch := LoadPixelsPerInch(S);
+  PixelsPerInch := LoadPixelsPerInch(S, FListView);
   SetWidthsStr(WidthsStr, PixelsPerInch);
   // Have to set order after visibility, otherwise we lost ordering of columns that are invisible by default,
   // but visible by configuration (as they would get ordered to the front)
@@ -487,7 +487,7 @@ begin
   // The new pixels-per-inch part is inserted after the widths part
   // as parsing of this was always robust to stop at "count" elements,
   // what order part was not (due to its logic of skipping hidden columns)
-  Result := Format('%s;@%s|%s', [GetWidthsStr, SavePixelsPerInch, GetOrderStr]);
+  Result := Format('%s;@%s|%s', [GetWidthsStr, SavePixelsPerInch(FListView), GetOrderStr]);
 end;
 
 function TCustomListViewColProperties.GetVisible(Index: Integer): Boolean;
@@ -525,9 +525,9 @@ begin
   begin
     Properties := TCustomListViewColProperty.Create(Index);
 
-    // We do not have list view handle yet to use ScaleByTextHeight
-    Properties.MaxWidth := ScaleByPixelsPerInch(DefaultListViewMaxWidth);
-    Properties.MinWidth := ScaleByPixelsPerInch(DefaultListViewMinWidth);
+    // We do not have list view handle yet to use ScaleByTextHeight, against primary monitor
+    Properties.MaxWidth := ScaleByPixelsPerInch(DefaultListViewMaxWidth, Screen.PrimaryMonitor);
+    Properties.MinWidth := ScaleByPixelsPerInch(DefaultListViewMinWidth, Screen.PrimaryMonitor);
     FProperties.Add(Properties);
   end;
 end;

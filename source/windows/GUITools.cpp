@@ -518,11 +518,11 @@ void __fastcall ApplyTabs(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall SelectScaledImageList(TImageList * ImageList)
+static void __fastcall DoSelectScaledImageList(TImageList * ImageList)
 {
   TImageList * MatchingList = NULL;
   int MachingPixelsPerInch = 0;
-  int PixelsPerInch = Screen->PixelsPerInch;
+  int PixelsPerInch = GetComponentPixelsPerInch(ImageList);
 
   for (int Index = 0; Index < ImageList->Owner->ComponentCount; Index++)
   {
@@ -548,12 +548,46 @@ void __fastcall SelectScaledImageList(TImageList * ImageList)
 
   if (MatchingList != NULL)
   {
+    UnicodeString ImageListBackupName = ImageList->Name + IntToStr(USER_DEFAULT_SCREEN_DPI);
+
+    if (ImageList->Owner->FindComponent(ImageListBackupName) == NULL)
+    {
+      TImageList * ImageListBackup;
+      TPngImageList * PngImageList = dynamic_cast<TPngImageList *>(ImageList);
+      if (PngImageList != NULL)
+      {
+        ImageListBackup = new TPngImageList(ImageList->Owner);
+      }
+      else
+      {
+        ImageListBackup = new TImageList(ImageList->Owner);
+      }
+
+      ImageListBackup->Name = ImageListBackupName;
+      ImageList->Owner->InsertComponent(ImageListBackup);
+      CopyImageList(ImageListBackup, ImageList);
+    }
+
     CopyImageList(ImageList, MatchingList);
   }
 }
 //---------------------------------------------------------------------------
+static void __fastcall ImageListRescale(TComponent * Sender, TObject * /*Token*/)
+{
+  TImageList * ImageList = DebugNotNull(dynamic_cast<TImageList *>(Sender));
+  DoSelectScaledImageList(ImageList);
+}
+//---------------------------------------------------------------------------
+void __fastcall SelectScaledImageList(TImageList * ImageList)
+{
+  DoSelectScaledImageList(ImageList);
+
+  SetRescaleFunction(ImageList, ImageListRescale);
+}
+//---------------------------------------------------------------------------
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList)
 {
+  // Maybe this is not necessary, once the TPngImageList::Assign was fixed
   TPngImageList * PngTargetList = dynamic_cast<TPngImageList *>(TargetList);
   TPngImageList * PngSourceList = dynamic_cast<TPngImageList *>(SourceList);
 
@@ -573,44 +607,12 @@ void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyDataModule(TDataModule * TargetModule, TDataModule * SourceModule)
+static bool __fastcall DoLoadDialogImage(TImage * Image, const UnicodeString & ImageName)
 {
-  DebugAssert(TargetModule->ComponentCount == SourceModule->ComponentCount);
-
-  typedef std::vector<std::pair<TComponent *, TComponent *> > TComponentPairs;
-  TComponentPairs ComponentPairs;
-
-  for (int Index = 0; Index < TargetModule->ComponentCount; Index++)
-  {
-    TComponent * TargetComponent = TargetModule->Components[Index];
-    TComponent * SourceComponent = SourceModule->FindComponent(TargetComponent->Name);
-    if (DebugAlwaysTrue(SourceComponent != NULL))
-    {
-      ComponentPairs.push_back(std::make_pair(TargetComponent, SourceComponent));
-    }
-  }
-
-  TComponentPairs::const_iterator Iterator = ComponentPairs.begin();
-  while (Iterator != ComponentPairs.end())
-  {
-    TComponent * TargetComponent = Iterator->first;
-    TComponent * SourceComponent = Iterator->second;
-
-    TargetModule->RemoveComponent(TargetComponent);
-    SourceModule->RemoveComponent(SourceComponent);
-
-    TargetModule->InsertComponent(SourceComponent);
-    SourceModule->InsertComponent(TargetComponent);
-
-    Iterator++;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
-{
+  bool Result = false;
   if (GlyphsModule != NULL)
   {
-    TPngImageList * DialogImages = GlyphsModule->DialogImages;
+    TPngImageList * DialogImages = GetDialogImages(Image);
 
     int Index;
     for (Index = 0; Index < DialogImages->PngImages->Count; Index++)
@@ -624,8 +626,10 @@ void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
     }
 
     DebugAssert(Index < DialogImages->PngImages->Count);
+    Result = true;
   }
-  // When showing an exception from wWinMain, the glyphs module does not exist anymore.
+  // When showing an exception from wWinMain, the images are released already.
+  // Non-existence of the glyphs module is just a good indication of that.
   // We expect errors only.
   else if (ImageName == L"Error")
   {
@@ -636,11 +640,35 @@ void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
   {
     Image->Picture->Icon->Handle = LoadIcon(0, IDI_APPLICATION);
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall DialogImageSize()
+class TDialogImageName : public TObject
 {
-  return ScaleByPixelsPerInch(32);
+public:
+  UnicodeString ImageName;
+};
+//---------------------------------------------------------------------------
+static void __fastcall DialogImageRescale(TComponent * Sender, TObject * Token)
+{
+  TImage * Image = DebugNotNull(dynamic_cast<TImage *>(Sender));
+  TDialogImageName * DialogImageName = DebugNotNull(dynamic_cast<TDialogImageName *>(Token));
+  DoLoadDialogImage(Image, DialogImageName->ImageName);
+}
+//---------------------------------------------------------------------------
+void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
+{
+  if (DoLoadDialogImage(Image, ImageName))
+  {
+    TDialogImageName * DialogImageName = new TDialogImageName();
+    DialogImageName->ImageName = ImageName;
+    SetRescaleFunction(Image, DialogImageRescale, DialogImageName, true);
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall DialogImageSize(TForm * Form)
+{
+  return ScaleByPixelsPerInch(32, Form);
 }
 //---------------------------------------------------------------------------
 void __fastcall HideComponentsPanel(TForm * Form)
@@ -650,6 +678,7 @@ void __fastcall HideComponentsPanel(TForm * Form)
   DebugAssert(Panel->Align == alBottom);
   int Offset = Panel->Height;
   Panel->Visible = false;
+  Panel->Height = 0;
   Form->Height -= Offset;
 
   for (int Index = 0; Index < Form->ControlCount; Index++)
@@ -914,50 +943,112 @@ bool __fastcall TLocalCustomCommand::IsFileCommand(const UnicodeString & Command
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-static TDataModule * AnimationsModule = NULL;
-static TPngImageList * AnimationsImages = NULL;
+typedef std::set<TDataModule *> TImagesModules;
+static TImagesModules ImagesModules;
+static std::map<int, TPngImageList *> AnimationsImages;
+static std::map<int, TImageList *> ButtonImages;
+static std::map<int, TPngImageList *> DialogImages;
 //---------------------------------------------------------------------------
-TPngImageList * __fastcall GetAnimationsImages()
+int __fastcall NormalizePixelsPerInch(int PixelsPerInch)
 {
-  if (AnimationsModule == NULL)
+  if (PixelsPerInch >= 192)
   {
+    PixelsPerInch = 192;
+  }
+  else if (PixelsPerInch >= 144)
+  {
+    PixelsPerInch = 144;
+  }
+  else if (PixelsPerInch >= 120)
+  {
+    PixelsPerInch = 120;
+  }
+  else
+  {
+    PixelsPerInch = 96;
+  }
+  return PixelsPerInch;
+}
+//---------------------------------------------------------------------------
+static int __fastcall NeedImagesModule(TControl * Control)
+{
+  int PixelsPerInch = NormalizePixelsPerInch(GetControlPixelsPerInch(Control));
+
+  if (AnimationsImages.find(PixelsPerInch) == AnimationsImages.end())
+  {
+    TDataModule * ImagesModule;
     HANDLE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
     try
     {
-      int PixelsPerInch = Screen->PixelsPerInch;
-      if (PixelsPerInch >= 192)
+      if (PixelsPerInch == 192)
       {
-        AnimationsModule = new TAnimations192Module(Application);
+        ImagesModule = new TAnimations192Module(Application);
       }
-      else if (PixelsPerInch >= 144)
+      else if (PixelsPerInch == 144)
       {
-        AnimationsModule = new TAnimations144Module(Application);
+        ImagesModule = new TAnimations144Module(Application);
       }
-      else if (PixelsPerInch >= 120)
+      else if (PixelsPerInch == 120)
       {
-        AnimationsModule = new TAnimations120Module(Application);
+        ImagesModule = new TAnimations120Module(Application);
       }
       else
       {
-        AnimationsModule = new TAnimations96Module(Application);
+        DebugAssert(PixelsPerInch == 96);
+        ImagesModule = new TAnimations96Module(Application);
       }
 
-      AnimationsImages = DebugNotNull(dynamic_cast<TPngImageList *>(AnimationsModule->FindComponent(L"AnimationImages")));
+      ImagesModules.insert(ImagesModule);
+
+      TPngImageList * AAnimationImages =
+        DebugNotNull(dynamic_cast<TPngImageList *>(ImagesModule->FindComponent(L"AnimationImages")));
+      AnimationsImages.insert(std::make_pair(PixelsPerInch, AAnimationImages));
+
+      TImageList * AButtonImages =
+        DebugNotNull(dynamic_cast<TImageList *>(ImagesModule->FindComponent(L"ButtonImages")));
+      ButtonImages.insert(std::make_pair(PixelsPerInch, AButtonImages));
+
+      TPngImageList * ADialogImages =
+        DebugNotNull(dynamic_cast<TPngImageList *>(ImagesModule->FindComponent(L"DialogImages")));
+      DialogImages.insert(std::make_pair(PixelsPerInch, ADialogImages));
     }
     __finally
     {
       GUIConfiguration->ChangeResourceModule(ResourceModule);
     }
   }
-  return AnimationsImages;
+
+  return PixelsPerInch;
 }
 //---------------------------------------------------------------------------
-void __fastcall ReleaseAnimationsModule()
+TPngImageList * __fastcall GetAnimationsImages(TControl * Control)
 {
-  if (AnimationsModule != NULL)
+  int PixelsPerInch = NeedImagesModule(Control);
+  return DebugNotNull(AnimationsImages[PixelsPerInch]);
+}
+//---------------------------------------------------------------------------
+TImageList * __fastcall GetButtonImages(TControl * Control)
+{
+  int PixelsPerInch = NeedImagesModule(Control);
+  return DebugNotNull(ButtonImages[PixelsPerInch]);
+}
+//---------------------------------------------------------------------------
+TPngImageList * __fastcall GetDialogImages(TControl * Control)
+{
+  int PixelsPerInch = NeedImagesModule(Control);
+  return DebugNotNull(DialogImages[PixelsPerInch]);
+}
+//---------------------------------------------------------------------------
+void __fastcall ReleaseImagesModules()
+{
+
+  TImagesModules::iterator i = ImagesModules.begin();
+  while (i != ImagesModules.end())
   {
-    SAFE_DESTROY(AnimationsModule);
+    delete (*i);
+    i++;
   }
+  ImagesModules.clear();
 }
 //---------------------------------------------------------------------------
 __fastcall TFrameAnimation::TFrameAnimation()
@@ -967,22 +1058,26 @@ __fastcall TFrameAnimation::TFrameAnimation()
 //---------------------------------------------------------------------------
 void __fastcall TFrameAnimation::Init(TPaintBox * PaintBox, const UnicodeString & Name)
 {
-  DoInit(PaintBox, NULL, Name, Name.IsEmpty());
-}
-//---------------------------------------------------------------------------
-void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name, bool Null)
-{
-  FImageList = (ImageList != NULL) ? ImageList : GetAnimationsImages();
-  FFirstFrame = -1;
-  FFirstLoopFrame = -1;
-  DebugAssert((PaintBox->OnPaint == NULL) || (PaintBox->OnPaint == PaintBoxPaint));
-  PaintBox->ControlStyle = PaintBox->ControlStyle << csOpaque;
-  PaintBox->OnPaint = PaintBoxPaint;
-  PaintBox->Width = FImageList->Width;
-  PaintBox->Height = FImageList->Height;
+  FName = Name;
   FPaintBox = PaintBox;
 
-  if (!Null)
+  FPaintBox->ControlStyle = FPaintBox->ControlStyle << csOpaque;
+  DebugAssert((FPaintBox->OnPaint == NULL) || (FPaintBox->OnPaint == PaintBoxPaint));
+  FPaintBox->OnPaint = PaintBoxPaint;
+  SetRescaleFunction(FPaintBox, PaintBoxRescale, reinterpret_cast<TObject *>(this));
+
+  DoInit();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::DoInit()
+{
+  FImageList = GetAnimationsImages(FPaintBox);
+  FFirstFrame = -1;
+  FFirstLoopFrame = -1;
+  FPaintBox->Width = FImageList->Width;
+  FPaintBox->Height = FImageList->Height;
+
+  if (!FName.IsEmpty())
   {
     int Frame = 0;
     while (Frame < FImageList->PngImages->Count)
@@ -991,7 +1086,7 @@ void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * Im
       UnicodeString FrameName;
       FrameName = CutToChar(FrameData, L'_', false);
 
-      if (SameText(Name, FrameName))
+      if (SameText(FName, FrameName))
       {
         int FrameIndex = StrToInt(CutToChar(FrameData, L'_', false));
         if (FFirstFrame < 0)
@@ -1020,6 +1115,22 @@ void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * Im
   }
 
   Stop();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::PaintBoxRescale(TComponent * /*Sender*/, TObject * Token)
+{
+  TFrameAnimation * FrameAnimation = reinterpret_cast<TFrameAnimation *>(Token);
+  FrameAnimation->Rescale();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::Rescale()
+{
+  bool Started = (FTimer != NULL) && FTimer->Enabled;
+  DoInit();
+  if (Started)
+  {
+    Start();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFrameAnimation::Start()
@@ -1063,10 +1174,8 @@ void __fastcall TFrameAnimation::PaintBoxPaint(TObject * Sender)
     TRect Rect(0, 0, Bitmap->Width, Bitmap->Height);
     Bitmap->Canvas->FillRect(Rect);
     TGraphic * Graphic = GetCurrentImage()->PngImage;
-    // Do not trigger assertion when animation size does not match scaled
-    // paint box as we do not have scaled animations available yet
-    DebugAssert((Graphic->Width == FPaintBox->Width) || (Screen->PixelsPerInch != USER_DEFAULT_SCREEN_DPI));
-    DebugAssert((Graphic->Height == FPaintBox->Height) || (Screen->PixelsPerInch != USER_DEFAULT_SCREEN_DPI));
+    DebugAssert(Graphic->Width == FPaintBox->Width);
+    DebugAssert(Graphic->Height == FPaintBox->Height);
     Bitmap->Canvas->Draw(0, 0, Graphic);
     FPaintBox->Canvas->Draw(0, 0, Bitmap.get());
   }
@@ -1076,7 +1185,7 @@ void __fastcall TFrameAnimation::PaintBoxPaint(TObject * Sender)
 void __fastcall TFrameAnimation::Repaint()
 {
   FPainted = false;
-  // Ff the form is not showing yet, the Paint() is not even called
+  // If the form is not showing yet, the Paint() is not even called
   FPaintBox->Repaint();
   if (!FPainted)
   {
@@ -1191,7 +1300,7 @@ int __fastcall TScreenTipHintWindow::GetMargin(TControl * HintControl, const Uni
     Result = 6;
   }
 
-  Result = ScaleByPixelsPerInch(Result);
+  Result = ScaleByTextHeight(HintControl, Result);
 
   return Result;
 }
@@ -1205,7 +1314,10 @@ TFont * __fastcall TScreenTipHintWindow::GetFont(TControl * HintControl, const U
   }
   else
   {
-    Result = Screen->HintFont;
+    FScaledHintFont.reset(new TFont());
+    FScaledHintFont->Assign(Screen->HintFont);
+    FScaledHintFont->Size = ScaleByPixelsPerInchFromSystem(FScaledHintFont->Size, HintControl);
+    Result = FScaledHintFont.get();
   }
   return Result;
 }
@@ -1225,8 +1337,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
 
   Canvas->Font->Assign(GetFont(HintControl, AHint));
 
-  // we do not have a parent form here, so we cannot scale by text height
-  const int ScreenTipTextOnlyWidth = ScaleByPixelsPerInch(cScreenTipTextOnlyWidth);
+  const int ScreenTipTextOnlyWidth = ScaleByTextHeight(HintControl, cScreenTipTextOnlyWidth);
 
   if (!LongHint.IsEmpty())
   {

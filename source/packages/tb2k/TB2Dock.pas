@@ -361,6 +361,8 @@ type
     procedure UpdateVisibility;
     procedure ReadSavedAtRunTime(Reader: TReader);
     procedure WriteSavedAtRunTime(Writer: TWriter);
+    function GetDragHandleSize: Integer;
+    function GetDragHandleXOffset: Integer;
 
     { Messages }
     procedure CMColorChanged(var Message: TMessage); message CM_COLORCHANGED;
@@ -577,7 +579,7 @@ implementation
 
 uses
   Registry, IniFiles, Consts, Menus,
-  TB2Common, TB2Hook, TB2Consts, Types;
+  TB2Common, TB2Hook, TB2Consts, Types, PasTools;
 
 type
   TControlAccess = class(TControl);
@@ -623,10 +625,10 @@ threadvar
 
 { Misc. functions }
 
-function GetSmallCaptionHeight: Integer;
+function GetSmallCaptionHeight(Control: TControl): Integer;
 { Returns height of the caption of a small window }
 begin
-  Result := GetSystemMetrics(SM_CYSMCAPTION);
+  Result := GetSystemMetricsForControl(Control, SM_CYSMCAPTION);
 end;
 
 function GetMDIParent(const Form: TTBCustomForm): TTBCustomForm;
@@ -1879,14 +1881,14 @@ begin
   DrawNCArea(False, 0, HRGN(Message.WParam));
 end;
 
-procedure DockNCPaintProc(Wnd: HWND; DC: HDC; AppData: Longint);
+procedure DockNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 begin
   TTBDock(AppData).DrawNCArea(True, DC, 0);
 end;
 
 procedure TTBDock.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Handle, Message, DockNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, DockNCPaintProc, Longint(Self));
 end;
 
 procedure TTBDock.WMPrintClient(var Message: TMessage);
@@ -2177,7 +2179,7 @@ end;
 function GetCaptionRect(const Control: TTBFloatingWindowParent;
   const AdjustForBorder, MinusCloseButton: Boolean): TRect;
 begin
-  Result := Rect(0, 0, Control.ClientWidth, GetSmallCaptionHeight-1);
+  Result := Rect(0, 0, Control.ClientWidth, GetSmallCaptionHeight(Control)-1);
   if MinusCloseButton then
     Dec(Result.Right, Result.Bottom);
   if AdjustForBorder then
@@ -2189,7 +2191,7 @@ function GetCloseButtonRect(const Control: TTBFloatingWindowParent;
   const AdjustForBorder: Boolean): TRect;
 begin
   Result := GetCaptionRect(Control, AdjustForBorder, False);
-  Result.Left := Result.Right - (GetSmallCaptionHeight-1);
+  Result.Left := Result.Right - (GetSmallCaptionHeight(Control)-1);
 end;
 
 procedure TTBFloatingWindowParent.WMNCCalcSize(var Message: TWMNCCalcSize);
@@ -2215,7 +2217,7 @@ begin
   DrawNCArea(False, 0, HRGN(Message.WParam), twrdAll);
 end;
 
-procedure FloatingWindowParentNCPaintProc(Wnd: HWND; DC: HDC; AppData: Longint);
+procedure FloatingWindowParentNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 begin
   with TTBFloatingWindowParent(AppData) do
     DrawNCArea(True, DC, 0, twrdAll);
@@ -2223,7 +2225,7 @@ end;
 
 procedure TTBFloatingWindowParent.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Handle, Message, FloatingWindowParentNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, FloatingWindowParentNCPaintProc, Longint(Self));
 end;
 
 procedure TTBFloatingWindowParent.WMPrintClient(var Message: TMessage);
@@ -2261,7 +2263,7 @@ begin
           if (P.X < Width) and (P.X >= Width-BorderSize.X-1) then Result := HTRIGHT;
         end
         else begin
-          C := BorderSize.X + (GetSmallCaptionHeight-1);
+          C := BorderSize.X + (GetSmallCaptionHeight(Self)-1);
           if (P.X >= 0) and (P.X < BorderSize.X) then begin
             Result := HTLEFT;
             if (P.Y < C) then Result := HTTOPLEFT else
@@ -2823,6 +2825,16 @@ begin
   Result := GetWindowLong(Wnd, GWL_EXSTYLE) and WS_EX_TOPMOST <> 0;
 end;
 
+function TTBCustomDockableWindow.GetDragHandleSize: Integer;
+begin
+  Result := ScaleByPixelsPerInch(DragHandleSizes[CloseButtonWhenDocked][DragHandleStyle], Self);
+end;
+
+function TTBCustomDockableWindow.GetDragHandleXOffset: Integer;
+begin
+  Result := ScaleByPixelsPerInch(DragHandleXOffsets[CloseButtonWhenDocked][DragHandleStyle], Self);
+end;
+
 procedure TTBCustomDockableWindow.UpdateTopmostFlag;
 const
   Wnds: array[Boolean] of HWND = (HWND_NOTOPMOST, HWND_TOPMOST);
@@ -3360,12 +3372,12 @@ begin
   BottomRight.X := Z;
   BottomRight.Y := Z;
   if not LeftRight then begin
-    Inc(TopLeft.X, DragHandleSizes[CloseButtonWhenDocked, DragHandleStyle]);
+    Inc(TopLeft.X, GetDragHandleSize);
     //if FShowChevron then
     //  Inc(BottomRight.X, tbChevronSize);
   end
   else begin
-    Inc(TopLeft.Y, DragHandleSizes[CloseButtonWhenDocked, DragHandleStyle]);
+    Inc(TopLeft.Y, GetDragHandleSize);
     //if FShowChevron then
     //  Inc(BottomRight.Y, tbChevronSize);
   end;
@@ -3379,8 +3391,8 @@ const
   XMetrics: array[Boolean] of Integer = (SM_CXDLGFRAME, SM_CXFRAME);
   YMetrics: array[Boolean] of Integer = (SM_CYDLGFRAME, SM_CYFRAME);
 begin
-  Result.X := GetSystemMetrics(XMetrics[Resizable]);
-  Result.Y := GetSystemMetrics(YMetrics[Resizable]);
+  Result.X := GetSystemMetricsForControl(Self, XMetrics[Resizable]);
+  Result.Y := GetSystemMetricsForControl(Self, YMetrics[Resizable]);
 end;
 
 procedure TTBCustomDockableWindow.GetFloatingNCArea(var TopLeft, BottomRight: TPoint);
@@ -3389,7 +3401,7 @@ begin
     TopLeft.X := X;
     TopLeft.Y := Y;
     if ShowCaption then
-      Inc(TopLeft.Y, GetSmallCaptionHeight);
+      Inc(TopLeft.Y, GetSmallCaptionHeight(Self));
     BottomRight.X := X;
     BottomRight.Y := Y;
   end;
@@ -3399,7 +3411,7 @@ function TTBCustomDockableWindow.GetDockedCloseButtonRect(LeftRight: Boolean): T
 var
   X, Y, Z: Integer;
 begin
-  Z := DragHandleSizes[CloseButtonWhenDocked, FDragHandleStyle] - 3;
+  Z := GetDragHandleSize - 3;
   if not LeftRight then begin
     X := DockedBorderSize+1;
     Y := DockedBorderSize;
@@ -3423,7 +3435,7 @@ begin
     Result.X := DockedBorderSize2;
     Result.Y := DockedBorderSize2;
     if CurrentDock.FAllowDrag then begin
-      Z := DragHandleSizes[FCloseButtonWhenDocked, FDragHandleStyle];
+      Z := GetDragHandleSize;
       if not(CurrentDock.Position in PositionLeftOrRight) then
         Inc(Result.X, Z)
       else
@@ -3442,7 +3454,7 @@ begin
     with Message.CalcSize_Params^ do begin
       InflateRect(rgrc[0], -DockedBorderSize, -DockedBorderSize);
       if CurrentDock.FAllowDrag then begin
-        Z := DragHandleSizes[FCloseButtonWhenDocked, FDragHandleStyle];
+        Z := GetDragHandleSize;
         if not(CurrentDock.Position in PositionLeftOrRight) then
           Inc(rgrc[0].Left, Z)
         else
@@ -3467,7 +3479,7 @@ begin
       I := P.X - R.Left
     else
       I := P.Y - R.Top;
-    if I < DockedBorderSize + DragHandleSizes[CloseButtonWhenDocked, DragHandleStyle] then begin
+    if I < DockedBorderSize + GetDragHandleSize then begin
       SetCursor(LoadCursor(0, IDC_SIZEALL));
       Message.Result := 1;
       Exit;
@@ -3583,10 +3595,10 @@ begin
       else
         Y2 := ClientWidth;
       Inc(Y2, DockedBorderSize);
-      S := DragHandleSizes[FCloseButtonWhenDocked, FDragHandleStyle];
+      S := GetDragHandleSize;
       if FDragHandleStyle <> dhNone then begin
         Y3 := Y2;
-        X := DockedBorderSize + DragHandleXOffsets[FCloseButtonWhenDocked, FDragHandleStyle];
+        X := DockedBorderSize + GetDragHandleXOffset;
         Y := DockedBorderSize;
         YO := Ord(FDragHandleStyle = dhSingle);
         if FCloseButtonWhenDocked then begin
@@ -3655,7 +3667,7 @@ begin
   DrawNCArea(False, 0, HRGN(Message.WParam));
 end;
 
-procedure DockableWindowNCPaintProc(Wnd: HWND; DC: HDC; AppData: Longint);
+procedure DockableWindowNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 begin
   with TTBCustomDockableWindow(AppData) do
     DrawNCArea(True, DC, 0)
@@ -3663,7 +3675,7 @@ end;
 
 procedure TTBCustomDockableWindow.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Handle, Message, DockableWindowNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, DockableWindowNCPaintProc, Longint(Self));
 end;
 
 procedure TTBCustomDockableWindow.WMPrintClient(var Message: TMessage);
@@ -5594,17 +5606,5 @@ begin
   end;
 end;
 
-var
-  B: Boolean;
-  Style: TTBDragHandleStyle;
 initialization
-  for B := False to True do
-  begin
-    for Style := Low(TTBDragHandleStyle) to High(TTBDragHandleStyle) do
-    begin
-      // DPI-scaling for a lack of better choice here
-      DragHandleSizes[B][Style] := MulDiv(DragHandleSizes[B][Style], Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
-      DragHandleXOffsets[B][Style] := MulDiv(DragHandleXOffsets[B][Style], Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
-    end;
-  end;
 end.

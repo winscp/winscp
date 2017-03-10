@@ -80,6 +80,7 @@ type
     procedure DDBeforeDrag;
     function CanEdit(Item: TListItem): Boolean; override;
     function GetPopupMenu: TPopupMenu; override;
+    procedure ChangeScale(M, D: Integer); override;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -1003,6 +1004,20 @@ begin
   end;
 
   Item.MakeVisible(False);
+end;
+
+procedure TCustomNortonLikeListView.ChangeScale(M, D: Integer);
+begin
+  if M <> D then
+  begin
+    // When font is scaled, while the control is being re-created, previous font is restored once
+    // read from the persistence data in TCustomListView.CreateWnd.
+    // Requiring handle, makes sure the re-create phase is closed.
+    // We could limit impact by checking ControlHasRecreationPersistenceData,
+    // but for now, we actually prefer larger impact to test this change better.
+    HandleNeeded;
+  end;
+  inherited;
 end;
 
 end.

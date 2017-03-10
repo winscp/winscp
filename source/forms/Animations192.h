@@ -11,6 +11,8 @@ class TAnimations192Module : public TDataModule
 {
 __published:
   TPngImageList *AnimationImages;
+  TImageList *ButtonImages;
+  TPngImageList *DialogImages;
 
 public:
   __fastcall TAnimations192Module(TComponent * Owner);

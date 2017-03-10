@@ -100,7 +100,7 @@ private:
   TFileClosedEvent FOnWindowClose;
   TNotifyEvent FOnSaveAll;
   TAnyModifiedEvent FOnAnyModified;
-  TCustomForm * FParentForm;
+  TForm * FParentForm;
   TFindDialog * FLastFindDialog;
   TPoint FCaretPos;
   TFindDialog * FFindDialog;
@@ -121,7 +121,6 @@ private:
 
   static unsigned int FInstances;
   void __fastcall SetFileName(const UnicodeString value);
-  void __fastcall SetParentForm(TCustomForm * value);
   void __fastcall SetBackgroundColor(TColor Color);
 public:
   __fastcall TEditorForm(TComponent* Owner);
@@ -138,7 +137,7 @@ public:
   __property TFileClosedEvent OnWindowClose = { read = FOnWindowClose, write = FOnWindowClose };
   __property TNotifyEvent OnSaveAll = { read = FOnSaveAll, write = FOnSaveAll };
   __property TAnyModifiedEvent OnAnyModified = { read = FOnAnyModified, write = FOnAnyModified };
-  __property TCustomForm * ParentForm = { read = FParentForm, write = SetParentForm };
+  __property TForm * ParentForm = { read = FParentForm, write = FParentForm };
   __property TColor BackgroundColor = { read = FBackgroundColor, write = SetBackgroundColor };
 protected:
   bool __fastcall CursorInUpperPart();
@@ -159,6 +158,8 @@ protected:
   void __fastcall BackupSave();
   void __fastcall CheckFileSize();
   void __fastcall UpdateBackgroundColor();
+  virtual void __fastcall Dispatch(void * Message);
+  void __fastcall CMDpiChanged(TMessage & Message);
 };
 //---------------------------------------------------------------------------
 #endif

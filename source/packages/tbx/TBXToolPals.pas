@@ -336,14 +336,20 @@ var
   CellWidth, CellHeight: Integer;
 begin
   if not IsToolbarStyle then with CurrentTheme do
-    Indent := GetPopupMargin(Self) + MenuImageTextSpace + MenuLeftCaptionMargin - 3
-  else
+  begin
+    Indent :=
+      GetPopupMargin(Self) + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) +
+      GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) - 3;
+  end
+    else
+  begin
     Indent := 0;
+  end;
   FColCount := TTBXCustomToolPalette(Item).ColCount;
   FRowCount := TTBXCustomToolPalette(Item).RowCount;
   CalcCellSize(Canvas, CellWidth, CellHeight);
   AWidth := Indent + CellWidth * ColCount;
-  if not IsToolbarStyle then Inc(AWidth, CurrentTheme.MenuRightCaptionMargin);
+  if not IsToolbarStyle then Inc(AWidth, CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN));
   AHeight := CellHeight * RowCount;
   if AWidth < 8 then AWidth := 8;
   if AHeight < 8 then AHeight := 8;
@@ -786,7 +792,7 @@ procedure TTBXColorPalette.DoCalcImageSize(Canvas: TCanvas; var AWidth, AHeight:
 begin
   if FImageSize < 0 then
   begin
-    FImageSize := ScaleByTextHeightRunTime(Canvas, 12);
+    FImageSize := TBXScaleByTextHeightRunTime(Canvas, 12);
   end;
 
   AWidth := FImageSize;

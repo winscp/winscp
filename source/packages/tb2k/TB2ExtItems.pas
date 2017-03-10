@@ -131,6 +131,7 @@ type
     constructor Create(AOwner: TComponent); override;
     procedure Clear;
     procedure Click; override;
+    procedure ChangeScale(M, D: Integer); override;
   published
     property Action;
     property AutoCheck;
@@ -553,6 +554,12 @@ begin
     Change(False);
     DoTextChanged(Reason);
   end;
+end;
+
+procedure TTBEditItem.ChangeScale(M, D: Integer);
+begin
+  inherited;
+  EditWidth := MulDiv(EditWidth, M, D);
 end;
 
 

@@ -31,12 +31,13 @@ __published:
   void __fastcall FormShow(TObject *Sender);
 private:
   TFileFilter FFileFilter;
+  TControl * FParent;
   void __fastcall SetFileFilter(TFileFilter value);
   TFileFilter __fastcall GetFileFilter();
 public:
   enum TMode { smSelect, smDeselect, smFilter };
   __fastcall TSelectMaskDialog(TComponent* Owner);
-  void __fastcall Init(TMode Mode);
+  void __fastcall Init(TMode Mode, TControl * Parent);
   bool __fastcall Execute();
   __property TFileFilter FileFilter = { read = GetFileFilter, write = SetFileFilter };
 };

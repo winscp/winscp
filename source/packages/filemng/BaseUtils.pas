@@ -53,7 +53,6 @@ procedure ReduceDateTimePrecision(var DateTime: TDateTime;
 function SpecialFolderLocation(Folder: Integer; var Path: string;
   var PIDL: PItemIDList): Boolean; overload;
 function SpecialFolderLocation(Folder: Integer; var Path: string): Boolean; overload;
-function ShellImageList(Owner: TComponent; Flags: UINT): TImageList;
 
 function FormatLastOSError(Message: string): string;
 
@@ -295,16 +294,6 @@ var
   PIDL: PItemIDList;
 begin
   Result := SpecialFolderLocation(Folder, Path, PIDL);
-end;
-
-function ShellImageList(Owner: TComponent; Flags: UINT): TImageList;
-var
-  FileInfo: TShFileInfo;
-begin
-  Result := TImageList.Create(Owner);
-  Result.Handle := SHGetFileInfo('', 0, FileInfo, SizeOf(FileInfo),
-      SHGFI_SYSICONINDEX or Flags);
-  Result.ShareImages := True;
 end;
 
 function FormatLastOSError(Message: string): string;

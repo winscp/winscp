@@ -58,8 +58,7 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner)
       LoadStr(PATH_MASK_HINT2), LoadStr(DIRECTORY_MASK_HINT),
       LoadStr(MASK_HELP))));
 
-  FSystemImageList = SharedSystemImageList(false);
-  FileView->SmallImages = FSystemImageList;
+  UpdateImages();
   FileView->ShowColumnIcon = false;
 
   UseDesktopFont(FileView);
@@ -83,9 +82,13 @@ __fastcall TFileFindDialog::~TFileFindDialog()
   CustomWinConfiguration->FindFile = FormConfiguration;
 
   Clear();
-  delete FSystemImageList;
   DebugAssert(FileFindDialog == this);
   FileFindDialog = NULL;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::UpdateImages()
+{
+  FileView->SmallImages = ShellImageListForControl(this, ilsSmall);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileFindDialog::IsFinding()
@@ -401,10 +404,20 @@ void __fastcall TFileFindDialog::Dispatch(void * Message)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
   }
+  else if (M->Msg == CM_DPICHANGED)
+  {
+    CMDpiChanged(*M);
+  }
   else
   {
     TForm::Dispatch(Message);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::CMDpiChanged(TMessage & Message)
+{
+  TForm::Dispatch(&Message);
+  UpdateImages();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::CMDialogKey(TWMKeyDown & Message)

@@ -596,3 +596,18 @@ void __fastcall TAuthenticateForm::FormResize(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::ChangeScale(int M, int D)
+{
+  TForm::ChangeScale(M, D);
+
+  // Recreate the list to re-measure the items according to the new font
+  if (DebugAlwaysTrue(LogView->HandleAllocated()) &&
+      (LogView->Items->Count > 0))
+  {
+    std::unique_ptr<TStrings> Items(new TStringList());
+    Items->AddStrings(LogView->Items);
+    LogView->Items->Clear();
+    LogView->Items->AddStrings(Items.get());
+    MakeLogItemVisible(LogView->Items->Count - 1);
+  }
+}

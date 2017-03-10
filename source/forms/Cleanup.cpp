@@ -82,6 +82,9 @@ __fastcall TCleanupDialog::TCleanupDialog(TComponent* AOwner)
 //---------------------------------------------------------------------
 void __fastcall TCleanupDialog::InitControls()
 {
+  // Particularly in response to WM_DPICHANGED, the form may re-show
+  DataListView->Items->Clear();
+
   for (int i = wdConfiguration; i <= wdTemporaryFolders; i++)
   {
     UnicodeString Caption;

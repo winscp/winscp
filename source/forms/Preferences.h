@@ -446,6 +446,7 @@ private:
   UnicodeString FCustomIniFileStorageName;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
+  void __fastcall CMDpiChanged(TMessage & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
   void __fastcall AddEditCopyParam(TCopyParamPresetMode Mode);
   const TCopyParamType * GetCopyParam(int Index);

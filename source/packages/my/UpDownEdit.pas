@@ -72,6 +72,7 @@ type
     procedure KeyPress(var Key: Char); override;
     procedure CreateParams(var Params: TCreateParams); override;
     procedure CreateWnd; override;
+    function DefBtnWidth: Integer;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -154,11 +155,6 @@ begin
   RegisterComponents('Martin', [TUpDownEdit]);
 end;
 
-function DefBtnWidth: Integer;
-begin
-  Result := Min(GetSystemMetrics(SM_CXVSCROLL), ScaleByPixelsPerInch(15));
-end;
-
 type
   TEmbededUpDown = class(TCustomUpDown)
   private
@@ -217,9 +213,12 @@ begin
 end;
 
 procedure TEmbededUpDown.WMSize(var Message: TWMSize);
+var
+  Def: Integer;
 begin
   inherited;
-  if Width <> DefBtnWidth then Width := DefBtnWidth;
+  Def := TUpDownEdit(Parent).DefBtnWidth;
+  if Width <> Def then Width := Def;
 end;
 
 { TUpDownEdit }
@@ -284,6 +283,16 @@ function TUpDownEdit.GetButtonWidth: Integer;
 begin
   if FUpDown.Visible then Result := FUpDown.Width
     else Result := 0;
+end;
+
+function TUpDownEdit.DefBtnWidth: Integer;
+begin
+  Result := 15;
+  if Parent <> nil then
+  begin
+    Result := ScaleByPixelsPerInch(Result, Self);
+    Result := Math.Min(GetSystemMetricsForControl(Self, SM_CXVSCROLL), Result);
+  end;
 end;
 
 procedure TUpDownEdit.ResizeButton;
@@ -368,6 +377,7 @@ end;
 procedure TUpDownEdit.CreateWnd;
 begin
   inherited CreateWnd;
+  ResizeButton; // now we know the scaling factor
   SetEditRect;
   SetValue(Value);
 end;
@@ -430,7 +440,7 @@ var
 begin
   GetTextHeight(I, H);
   if I > H then I := H;
-  Result := H + (GetSystemMetrics(SM_CYBORDER) * 4) + 1;
+  Result := H + (GetSystemMetricsForControl(Self, SM_CYBORDER) * 4) + 1;
 end;
 
 procedure TUpDownEdit.UpClick(Sender: TObject);

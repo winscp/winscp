@@ -88,8 +88,6 @@ void __fastcall TImportSessionsDialog::Init(TList * SessionListsList, TStrings *
     SourceComboBox->ItemIndex = 0;
   }
 
-  LoadSessions();
-
   int Offset = ScaleByTextHeight(this, 8);
   ErrorPanel->BoundsRect =
     TRect(
@@ -203,7 +201,8 @@ void __fastcall TImportSessionsDialog::SessionListView2KeyUp(
 //---------------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::FormShow(TObject * /*Sender*/)
 {
-  UpdateControls();
+  // Load only now, as earlier loading somehow breaks SessionListView2 layout on initial per-monitor DPI scaling
+  LoadSessions();
 }
 //---------------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::CheckAllButtonClick(TObject * /*Sender*/)

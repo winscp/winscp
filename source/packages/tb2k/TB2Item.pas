@@ -257,6 +257,7 @@ type
     procedure UnregisterNotification(ANotify: TTBItemChangedProc);
     procedure ViewBeginUpdate;
     procedure ViewEndUpdate;
+    procedure ChangeScale(M, D: Integer); virtual;
 
     property Action: TBasicAction read GetAction write SetAction;
     property AutoCheck: Boolean read FAutoCheck write FAutoCheck {$IFDEF JR_D6} stored IsAutoCheckStored {$ENDIF} default False;
@@ -541,6 +542,7 @@ type
     function UpdatePositions: TPoint;
     procedure ValidatePositions;
     function ViewerFromPoint(const P: TPoint): TTBItemViewer;
+    function GetMonitor: TMonitor; virtual;
 
     property BackgroundColor: TColor read FBackgroundColor write FBackgroundColor;
     property BaseSize: TPoint read FBaseSize;
@@ -688,6 +690,7 @@ type
   protected
     procedure AutoSize(AWidth, AHeight: Integer); override;
   public
+    function GetMonitor: TMonitor; override;
     function GetFont: TFont; override;
   end;
 
@@ -726,7 +729,7 @@ type
     procedure Cancel; dynamic;
   public
     constructor CreatePopupWindow(AOwner: TComponent; const AParentView: TTBView;
-      const AItem: TTBCustomItem; const ACustomizing: Boolean); virtual;
+      const AItem: TTBCustomItem; const ACustomizing: Boolean; const PopupPoint: TPoint); virtual;
     destructor Destroy; override;
     procedure BeforeDestruction; override;
 
@@ -861,9 +864,8 @@ const
   WM_TB2K_CLICKITEM = WM_USER + $100;
 
 procedure TBInitToolbarSystemFont;
-
-var
-  ToolbarFont: TFont;
+function GetToolbarFont(PixelsPerInch: Integer): TFont; overload;
+function GetToolbarFont(Control: TControl): TFont; overload;
 
 type
   TTBModalHandler = class
@@ -888,7 +890,7 @@ function ProcessDoneAction(const DoneActionData: TTBDoneActionData;
 implementation
 
 uses
-  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc, Winapi.oleacc, Types;
+  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc, Winapi.oleacc, Types, PasTools, Generics.Collections;
 
 var
   LastPos: TPoint;
@@ -1945,7 +1947,7 @@ begin
 
   Opposite := Assigned(ParentView) and (vsOppositePopup in ParentView.FState);
   Result := GetPopupWindowClass.CreatePopupWindow(nil, ParentView, ParentItem,
-    Customizing);
+    Customizing, APopupPoint);
   try
     if Assigned(ChevronParentView) then begin
       ChevronParentView.FreeNotification(Result.View);
@@ -2512,6 +2514,16 @@ begin
   if FVisible <> Value then begin
     FVisible := Value;
     Change(True);
+  end;
+end;
+
+procedure TTBCustomItem.ChangeScale(M, D: Integer);
+var
+  I: Integer;
+begin
+  for I := 0 to Count - 1 do
+  begin
+    Items[I].ChangeScale(M, D);
   end;
 end;
 
@@ -3100,8 +3112,8 @@ begin
   ShowEnabled := Item.Enabled or View.Customizing;
   HasArrow := (tbisSubmenu in Item.ItemStyle) and
     ((tbisCombo in Item.ItemStyle) or (tboDropdownArrow in Item.EffectiveOptions));
-  MenuCheckWidth := GetSystemMetrics(SM_CXMENUCHECK);
-  MenuCheckHeight := GetSystemMetrics(SM_CYMENUCHECK);
+  MenuCheckWidth := GetSystemMetricsForControl(View.FWindow, SM_CXMENUCHECK);
+  MenuCheckHeight := GetSystemMetricsForControl(View.FWindow, SM_CYMENUCHECK);
   ImgList := GetImageList;
   ImageIsShown := ImageShown and Assigned(ImgList);
   LeftMargin := 0;
@@ -3340,7 +3352,7 @@ begin
     if IsToolbarStyle then
       W := tbDropdownComboArrowWidth
     else
-      W := GetSystemMetrics(SM_CXMENUCHECK);
+      W := GetSystemMetricsForControl(View.FWindow, SM_CXMENUCHECK);
     Result := X < (BoundsRect.Right - BoundsRect.Left) - W;
   end;
 end;
@@ -5200,9 +5212,9 @@ end;
 
 function TTBView.GetFont: TFont;
 begin
-  if Assigned(ToolbarFont) then
-    Result := ToolbarFont
-  else begin
+  Result := GetToolbarFont(GetMonitorPixelsPerInch(GetMonitor));
+  if not Assigned(Result) then
+  begin
     { ToolbarFont is destroyed during unit finalization, but in rare cases
       this method may end up being called from ValidatePositions *after*
       unit finalization if Application.Run is never called; see the
@@ -5873,6 +5885,23 @@ begin
   FState := AState;
 end;
 
+function TTBView.GetMonitor: TMonitor;
+begin
+  if ParentView <> nil then
+  begin
+    Result := ParentView.GetMonitor;
+  end
+    else
+  if not IsRectEmpty(FMonitorRect) then
+  begin
+    Result := Screen.MonitorFromRect(FMonitorRect);
+  end
+    else
+  begin
+    Result := GetMonitorFromControl(Window);
+  end;
+end;
+
 { TTBModalHandler }
 
 const
@@ -6369,6 +6398,11 @@ begin
         AHeight + (Y * 2));
 end;
 
+function TTBPopupView.GetMonitor: TMonitor;
+begin
+  Result := Screen.MonitorFromRect(FWindow.BoundsRect);
+end;
+
 function TTBPopupView.GetFont: TFont;
 begin
   Result := (Owner as TTBPopupWindow).Font;
@@ -6379,11 +6413,11 @@ end;
 
 constructor TTBPopupWindow.CreatePopupWindow(AOwner: TComponent;
   const AParentView: TTBView; const AItem: TTBCustomItem;
-  const ACustomizing: Boolean);
+  const ACustomizing: Boolean; const PopupPoint: TPoint);
 begin
   inherited Create(AOwner);
   Visible := False;
-  SetBounds(0, 0, 320, 240);
+  SetBounds(PopupPoint.X, PopupPoint.Y, 320, 240);
   ControlStyle := ControlStyle - [csCaptureMouse];
   ShowHint := True;
   Color := tbMenuBkColor;
@@ -6396,7 +6430,7 @@ begin
   if Assigned(AParentView) then
     Font.Assign(AParentView.GetFont)
   else
-    Font.Assign(ToolbarFont);
+    Font.Assign(GetToolbarFont(GetMonitorPixelsPerInch(Screen.MonitorFromPoint(PopupPoint))));
 
   { Inherit the accelerator visibility state from the parent view. If there
     is no parent view (i.e. it's a standalone popup menu), then default to
@@ -6634,7 +6668,7 @@ begin
   inherited;
 end;
 
-procedure PopupWindowNCPaintProc(Wnd: HWND; DC: HDC; AppData: Longint);
+procedure PopupWindowNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 var
   R: TRect;
   {$IFNDEF TB2K_USE_STRICT_O2K_MENU_STYLE}
@@ -6668,7 +6702,7 @@ begin
   DC := GetWindowDC(Handle);
   try
     SelectNCUpdateRgn(Handle, DC, HRGN(Message.WParam));
-    PopupWindowNCPaintProc(Handle, DC, Longint(Self));
+    PopupWindowNCPaintProc(Self, Handle, DC, Longint(Self));
   finally
     ReleaseDC(Handle, DC);
   end;
@@ -6676,7 +6710,7 @@ end;
 
 procedure TTBPopupWindow.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Handle, Message, PopupWindowNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, PopupWindowNCPaintProc, Longint(Self));
 end;
 
 procedure TTBPopupWindow.WMPrintClient(var Message: TMessage);
@@ -7004,21 +7038,111 @@ end;
 
 { Initialization & finalization }
 
+var
+  ToolbarFonts: TDictionary<Integer, TFont>;
+  ToolbarFont: TFont;
+
+function CreateToolbarFont(PixelsPerInch: Integer): HFONT;
+var
+  NonClientMetrics: TNonClientMetrics;
+begin
+  FillChar(NonClientMetrics, SizeOf(NonClientMetrics), 0);
+  NonClientMetrics.cbSize := SizeOf(NonClientMetrics);
+  Assert(HasSystemParametersInfoForPixelsPerInch);
+  if SystemParametersInfoForPixelsPerInch(SPI_GETNONCLIENTMETRICS, SizeOf(NonClientMetrics), @NonClientMetrics, 0, PixelsPerInch) then
+  begin
+    Result := CreateFontIndirect(NonClientMetrics.lfMenuFont);
+  end
+    else
+  begin
+    Result := 0;
+  end;
+end;
+
+function GetToolbarFont(Control: TControl; PixelsPerInch: Integer): TFont; overload;
+var
+  H: HFONT;
+begin
+  // Temporary redundant legacy fallback to limit impact of per-monitor DPI change
+  if not HasSystemParametersInfoForPixelsPerInch then
+  begin
+    Result := ToolbarFont;
+  end
+    else
+  begin
+    // See the comment in TTBView.GetFont
+    if not Assigned(ToolbarFonts) then
+    begin
+      Result := nil;
+    end
+      else
+    begin
+      if PixelsPerInch < 0 then
+      begin
+        PixelsPerInch := GetControlPixelsPerInch(Control);
+      end;
+      if not ToolbarFonts.TryGetValue(PixelsPerInch, Result) then
+      begin
+        H := CreateToolbarFont(PixelsPerInch);
+        if H <> 0 then
+        begin
+          Result := TFont.Create;
+          Result.Handle := H;
+          ToolbarFonts.Add(PixelsPerInch, Result);
+        end
+          else
+        begin
+          Result := nil;
+        end;
+      end
+    end;
+  end;
+end;
+
+function GetToolbarFont(PixelsPerInch: Integer): TFont; overload;
+begin
+  Result := GetToolbarFont(nil, PixelsPerInch);
+end;
+
+function GetToolbarFont(Control: TControl): TFont; overload;
+begin
+  Result := GetToolbarFont(Control, -1);
+end;
+
 procedure TBInitToolbarSystemFont;
 var
   NonClientMetrics: TNonClientMetrics;
+  FontPair: TPair<Integer, TFont>;
 begin
   NonClientMetrics.cbSize := SizeOf(NonClientMetrics);
   if SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, @NonClientMetrics, 0) then
   begin
     ToolbarFont.Handle := CreateFontIndirect(NonClientMetrics.lfMenuFont);
   end;
+
+  for FontPair in ToolbarFonts do
+  begin
+    FontPair.Value.Handle := CreateToolbarFont(FontPair.Key);
+  end;
+end;
+
+procedure TBFinalizeToolbarSystemFont;
+var
+  Font: TFont;
+begin
+  for Font in ToolbarFonts.Values do
+  begin
+    Font.Free;
+  end;
 end;
 
 initialization
+  ToolbarFonts := TDictionary<Integer, TFont>.Create;
   ToolbarFont := TFont.Create;
   TBInitToolbarSystemFont;
 finalization
   DestroyClickWnd;
   FreeAndNil(ToolbarFont);
+  TBFinalizeToolbarSystemFont;
+  FreeAndNil(ToolbarFonts);
 end.

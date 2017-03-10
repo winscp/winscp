@@ -775,7 +775,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     }
     else
     {
-      FResultMemo41->ParentFont = true;
+      FResultMemo41->Font->Name = Font->Name;
     }
 
     if (!CounterName.IsEmpty() && !(*Counted))

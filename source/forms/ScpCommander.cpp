@@ -78,10 +78,6 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   FInternalDDDownloadList = new TStringList();
   FLocalPathComboBoxPaths = new TStringList();
 
-  RemotePathComboBox->Images = FSystemImageList;
-  RemotePathComboBox->SubMenuImages = FSystemImageList;
-  LocalPathComboBox->Images = FSystemImageList;
-  LocalPathComboBox->SubMenuImages = FSystemImageList;
   LocalPathComboUpdateDrives();
 
   LocalBackButton->LinkSubitems = HistoryMenu(osLocal, true)->Items;
@@ -170,9 +166,9 @@ void __fastcall TScpCommanderForm::RestoreParams()
     PANEL ## StatusBar->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar; \
     PANEL ## DriveView->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.DriveView; \
     if (PANEL ## DriveView->Align == alTop) \
-      PANEL ## DriveView->Height = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch); \
+      PANEL ## DriveView->Height = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch, this); \
     else \
-      PANEL ## DriveView->Width = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch)
+      PANEL ## DriveView->Width = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch, this)
   RESTORE_PANEL_PARAMS(Local);
   RESTORE_PANEL_PARAMS(Remote);
   #undef RESTORE_PANEL_PARAMS
@@ -208,12 +204,12 @@ void __fastcall TScpCommanderForm::StoreParams()
       if (PANEL ## DriveView->Align == alTop) \
       { \
         WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight = PANEL ## DriveView->Height; \
-        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch = Screen->PixelsPerInch; \
+        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch = GetControlPixelsPerInch(this); \
       } \
       else \
       { \
         WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth = PANEL ## DriveView->Width; \
-        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch = Screen->PixelsPerInch; \
+        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch = GetControlPixelsPerInch(this); \
       }
     STORE_PANEL_PARAMS(Local);
     STORE_PANEL_PARAMS(Remote);
@@ -1853,6 +1849,17 @@ void __fastcall TScpCommanderForm::BeforeAction()
 void __fastcall TScpCommanderForm::RemoteDirViewPathChange(TCustomDirView * /*Sender*/)
 {
   UpdateRemotePathComboBox(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::UpdateImages()
+{
+  TCustomScpExplorerForm::UpdateImages();
+
+  TImageList * ImageList = ShellImageListForControl(this, ilsSmall);
+  RemotePathComboBox->Images = ImageList;
+  RemotePathComboBox->SubMenuImages = ImageList;
+  LocalPathComboBox->Images = ImageList;
+  LocalPathComboBox->SubMenuImages = ImageList;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()

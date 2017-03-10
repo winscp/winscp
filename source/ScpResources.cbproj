@@ -30,7 +30,7 @@
 		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
-		<IncludePath>core\;forms\;windows\;packages\png;packages\tb2k;packages\tbx;$(BDS)\include\windows;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+		<IncludePath>core\;forms\;windows\;packages\my;packages\png;packages\tb2k;packages\tbx;$(BDS)\include\windows;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 		<Manifest_File>None</Manifest_File>
 		<Multithreaded>true</Multithreaded>

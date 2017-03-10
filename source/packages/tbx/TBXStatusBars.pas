@@ -223,7 +223,7 @@ type
 
 implementation
 
-uses TBXUtils, Types;
+uses TBXUtils, Types, PasTools;
 
 type TFontSettingsAccess = class(TFontSettings);
 
@@ -522,17 +522,14 @@ begin
 
   { MP }
   // For VCL status bars, this is implemented in ApplySystemSettingsOnControl
-  if sfWidth in ScalingFlags then
+  for I := 0 to Panels.Count - 1 do
   begin
-    for I := 0 to Panels.Count - 1 do
+    Panel := Panels[I];
+    if Panel.StretchPriority = 0 then
     begin
-      Panel := Panels[I];
-      if Panel.StretchPriority = 0 then
-      begin
-        Panel.Size := MulDiv(Panel.Size, M, D);
-      end;
-      Panel.MaxSize := MulDiv(Panel.MaxSize, M, D);
+      Panel.Size := MulDiv(Panel.Size, M, D);
     end;
+    Panel.MaxSize := MulDiv(Panel.MaxSize, M, D);
   end;
 
   inherited;
@@ -674,6 +671,8 @@ begin
   with Result do
   begin
     Inc(Top, 3);
+    // WORKAROUND: Should use GetSystemMetricsForControl, but as of now,
+    // the grip bitmap drawn by DrawThemeBackground(..., SP_GRIPPER, ...) is not scaled
     Left := Right - GetSystemMetrics(SM_CXVSCROLL);
   end;
 end;
@@ -758,13 +757,13 @@ var
 begin
   inherited;
   CR := ClientRect;
-  CurrentTheme.PaintStatusBar(Canvas, CR, SBP_BODY);
+  CurrentTheme.PaintStatusBar(Self, Canvas, CR, SBP_BODY);
   Inc(CR.Top, 2);
   if SimplePanel then
   begin
     if Length(SimpleText) > 0 then
     begin
-      if UseSystemFont then Canvas.Font := ToolbarFont
+      if UseSystemFont then Canvas.Font := GetToolbarFont(Self)
       else Canvas.Font := Self.Font;
       Canvas.Font.Color := GetTBXTextColor(CEnabledState[Enabled]);
       Canvas.Brush.Style := bsClear;
@@ -785,9 +784,9 @@ begin
         begin
           if Panel.CachedGripper then PartID := SBP_LASTPANE
           else PartID := SBP_PANE;
-          CurrentTheme.PaintStatusBar(Canvas, R, PartID);
+          CurrentTheme.PaintStatusBar(Self, Canvas, R, PartID);
         end;
-        if UseSystemFont then Canvas.Font := ToolbarFont
+        if UseSystemFont then Canvas.Font := GetToolbarFont(Self)
         else Canvas.Font := Self.Font;
         Canvas.Font.Color := GetTBXTextColor(CEnabledState[Panel.Enabled]);
         Panel.FontSettings.Apply(Canvas.Font);
@@ -797,7 +796,7 @@ begin
       end;
     end;
   if IsSizeGripVisible then
-    CurrentTheme.PaintStatusBar(Canvas, GetGripperRect, SBP_GRIPPER);
+    CurrentTheme.PaintStatusBar(Self, Canvas, GetGripperRect, SBP_GRIPPER);
 end;
 
 procedure TTBXCustomStatusBar.PaintPanel(ARect: TRect; APanel: TTBXStatusPanel; IsLast: Boolean);
@@ -809,7 +808,7 @@ var
   Flags: Integer;
   R: TRect;
 begin
-  InflateRect(ARect, ScaleByTextHeightRunTime(Canvas, -3), 0);
+  InflateRect(ARect, TBXScaleByTextHeightRunTime(Canvas, -3), 0);
   if (APanel.ImageIndex >= 0) and (Images <> nil) then
   begin
     R := ARect;
@@ -819,12 +818,12 @@ begin
       taLeftJustify:
         begin
           R.Right := R.Left + Images.Width;
-          ARect.Left := R.Right + ScaleByTextHeightRunTime(Canvas, 4);
+          ARect.Left := R.Right + TBXScaleByTextHeightRunTime(Canvas, 4);
         end;
       taRightJustify:
         begin
           R.Left := R.Right - Images.Width;
-          ARect.Right := R.Left - ScaleByTextHeightRunTime(Canvas, 4);
+          ARect.Right := R.Left - TBXScaleByTextHeightRunTime(Canvas, 4);
         end;
       taCenter:
         begin

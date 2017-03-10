@@ -261,15 +261,13 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   QueueSplitter->ShowHint = true;
   RemotePanelSplitter->ShowHint = true;
 
-  FSystemImageList = SharedSystemImageList(false);
-  FSystemImageList->DrawingStyle = dsTransparent;
+  UpdateImages();
 
   FCustomCommandMenu = CreateTBXPopupMenu(this);
   FCustomCommandLocalFileList = NULL;
   FCustomCommandRemoteFileList = NULL;
 
   FSessionColors = new TPngImageList(this);
-  FSessionColors->SetSize(GlyphsModule->ExplorerImages->Width, GlyphsModule->ExplorerImages->Height);
   FSessionColors->ColorDepth = cd32Bit;
   AddFixedSessionImages();
   SessionsPageControl->Images = FSessionColors;
@@ -293,9 +291,6 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
   delete FCustomCommandLocalFileList;
   delete FCustomCommandRemoteFileList;
   delete FCustomCommandMenu;
-
-  delete FSystemImageList;
-  FSystemImageList = NULL;
 
   delete FTrayIcon;
   FTrayIcon = NULL;
@@ -1198,7 +1193,8 @@ void __fastcall TCustomScpExplorerForm::RestoreParams()
 
   ConfigurationChanged();
 
-  QueuePanel->Height = LoadDimension(WinConfiguration->QueueView.Height, WinConfiguration->QueueView.HeightPixelsPerInch);
+  QueuePanel->Height =
+    LoadDimension(WinConfiguration->QueueView.Height, WinConfiguration->QueueView.HeightPixelsPerInch, this);
   LoadListViewStr(QueueView3, WinConfiguration->QueueView.Layout);
   QueueDock->Visible = WinConfiguration->QueueView.ToolBar;
   QueueLabel->Visible = WinConfiguration->QueueView.Label;
@@ -1207,7 +1203,7 @@ void __fastcall TCustomScpExplorerForm::RestoreParams()
 void __fastcall TCustomScpExplorerForm::StoreParams()
 {
   WinConfiguration->QueueView.Height = QueuePanel->Height;
-  WinConfiguration->QueueView.HeightPixelsPerInch = Screen->PixelsPerInch;
+  WinConfiguration->QueueView.HeightPixelsPerInch = GetControlPixelsPerInch(this);
   WinConfiguration->QueueView.Layout = GetListViewStr(QueueView3);
   WinConfiguration->QueueView.ToolBar = QueueDock->Visible;
   WinConfiguration->QueueView.Label = QueueLabel->Visible;
@@ -6053,7 +6049,7 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferLabel()
     try
     {
       Canvas->Handle = DC;
-      Canvas->Font = ToolbarFont;
+      Canvas->Font = GetToolbarFont(this);
 
       UnicodeString Name;
       if (FTransferListHoverIndex == 0)
@@ -6236,7 +6232,14 @@ void __fastcall TCustomScpExplorerForm::DoShow()
     StartingDisconnected();
   }
 
+  UpdatePixelsPerInchMainWindowCounter();
+
   FShowing = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdatePixelsPerInchMainWindowCounter()
+{
+  Configuration->Usage->Set(L"PixelsPerInchMainWindow", PixelsPerInch);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::StartingDisconnected()
@@ -8162,16 +8165,34 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       WMDpiChanged(*M);
       break;
 
+    case CM_DPICHANGED:
+      CMDpiChanged(*M);
+      break;
+
     default:
       TForm::Dispatch(Message);
       break;
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdateImages()
+{
+  // noop
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CMDpiChanged(TMessage & Message)
+{
+  TForm::Dispatch(&Message);
+  // regenerate session images
+  DoTerminalListChanged(true);
+  UpdateImages();
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMDpiChanged(TMessage & Message)
 {
   TForm::Dispatch(&Message);
   Configuration->Usage->Inc(L"PixelsPerInchChanged");
+  UpdatePixelsPerInchMainWindowCounter();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMClose(TMessage & Message)
@@ -8985,6 +9006,7 @@ int __fastcall TCustomScpExplorerForm::AddFixedSessionImage(int GlyphsSourceInde
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AddFixedSessionImages()
 {
+  FSessionColors->SetSize(GlyphsModule->ExplorerImages->Width, GlyphsModule->ExplorerImages->Height);
   FNewSessionTabImageIndex = AddFixedSessionImage(NonVisualDataModule->NewSessionAction->ImageIndex);
   FSessionTabImageIndex = AddFixedSessionImage(SiteImageIndex);
   FSessionColorMaskImageIndex = AddFixedSessionImage(SiteColorMaskImageIndex);
@@ -9183,4 +9205,11 @@ void __fastcall TCustomScpExplorerForm::ChangePassword()
   {
     Configuration->Usage->Inc(L"PasswordChangesFailed");
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ChangeScale(int M, int D)
+{
+  TForm::ChangeScale(M, D);
+  int APixelsPerInch = GetControlPixelsPerInch(this);
+  GlyphsModule->SetPixelsPerInch(APixelsPerInch);
 }

@@ -78,6 +78,7 @@ protected:
   int __fastcall LogItemHeight(int Index);
   void __fastcall RedrawLog();
   void __fastcall CMShowingChanged(TMessage & Message);
+  DYNAMIC void __fastcall ChangeScale(int M, int D);
 
 private:
   void * FShowAsModalStorage;

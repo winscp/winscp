@@ -91,8 +91,8 @@ bool __fastcall CheckSafe(TProgramParams * Params);
 void __fastcall CheckLogParam(TProgramParams * Params);
 bool __fastcall CheckXmlLogParam(TProgramParams * Params);
 
-UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent);
-void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString LayoutStr);
+UnicodeString __fastcall GetToolbarsLayoutStr(TControl * OwnerControl);
+void __fastcall LoadToolbarsLayoutStr(TControl * OwnerControl, UnicodeString LayoutStr);
 
 namespace Tb2item { class TTBCustomItem; }
 namespace Tbx { class TTBXSeparatorItem; }
@@ -350,7 +350,7 @@ typedef void __fastcall (__closure *TFileClosedEvent)
   (TObject * Sender, bool Forced);
 typedef void __fastcall (__closure *TAnyModifiedEvent)
   (TObject * Sender, bool & Modified);
-TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TCustomForm * ParentForm,
+TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
   TNotifyEvent OnSaveAll, TAnyModifiedEvent OnAnyModified,
   const UnicodeString Caption, bool StandaloneEditor, TColor Color);

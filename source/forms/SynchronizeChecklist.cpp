@@ -71,8 +71,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FOrigListViewWindowProc = ListView->WindowProc;
   ListView->WindowProc = ListViewWindowProc;
 
-  FSystemImageList = SharedSystemImageList(false);
-  ListView->SmallImages = FSystemImageList;
+  UpdateImages();
 
   CustomCommandsAction->Visible = (FOnCustomCommandMenu != NULL);
   // button visibility cannot be bound to action visibility
@@ -82,7 +81,6 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
 {
-  delete FSystemImageList;
   ListView->WindowProc = FOrigListViewWindowProc;
 }
 //---------------------------------------------------------------------
@@ -167,21 +165,6 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::CreateParams(TCreateParams & Params)
 {
-  if (!FFormRestored)
-  {
-    FFormRestored = True;
-    UnicodeString WindowParams = CustomWinConfiguration->SynchronizeChecklist.WindowParams;
-    bool CustomPos = (StrToIntDef(CutToChar(WindowParams, L';', true), 0) != 0);
-
-    if (!CustomPos && (Application->MainForm != NULL))
-    {
-      BoundsRect = Application->MainForm->BoundsRect;
-    }
-    else
-    {
-      RestoreForm(WindowParams, this);
-    }
-  }
   TForm::CreateParams(Params);
 }
 //---------------------------------------------------------------------------
@@ -407,6 +390,25 @@ __int64 __fastcall TSynchronizeChecklistDialog::GetItemSize(const TSynchronizeCh
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::FormShow(TObject * /*Sender*/)
 {
+  // Moved here form CreateParams (see also TEditorForm::CreateParams), because there it breaks per-monitor DPI.
+  // For example BoundsRect is matched to the main form too soon, so it gets rescaled later.
+  // Also it happens before constructor, what causes UseDesktopFont-flagged controls to rescale twice.
+  if (!FFormRestored)
+  {
+    FFormRestored = True;
+    UnicodeString WindowParams = CustomWinConfiguration->SynchronizeChecklist.WindowParams;
+    bool CustomPos = (StrToIntDef(CutToChar(WindowParams, L';', true), 0) != 0);
+
+    if (!CustomPos && (Application->MainForm != NULL))
+    {
+      BoundsRect = Application->MainForm->BoundsRect;
+    }
+    else
+    {
+      RestoreForm(WindowParams, this);
+    }
+  }
+
   ListView->ColProperties->ParamsStr = CustomWinConfiguration->SynchronizeChecklist.ListParams;
 
   LoadList();
@@ -1050,9 +1052,24 @@ void __fastcall TSynchronizeChecklistDialog::Dispatch(void * Message)
       TForm::Dispatch(Message);
     }
   }
+  if (M->Msg == CM_DPICHANGED)
+  {
+    CMDpiChanged(*M);
+  }
   else
   {
     TForm::Dispatch(Message);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::UpdateImages()
+{
+  ListView->SmallImages = ShellImageListForControl(this, ilsSmall);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CMDpiChanged(TMessage & Message)
+{
+  TForm::Dispatch(&Message);
+  UpdateImages();
 }
 //---------------------------------------------------------------------------

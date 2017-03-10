@@ -2,6 +2,8 @@
 #ifndef WinApiH
 #define WinApiH
 //---------------------------------------------------------------------------
+// For other API definitions, see also PasTools.pas
+//---------------------------------------------------------------------------
 #include <shlobj.h>
 //---------------------------------------------------------------------------
 typedef BOOL WINAPI (* ChangeWindowMessageFilterExProc)(

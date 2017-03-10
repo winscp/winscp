@@ -26,8 +26,7 @@ bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
   TSelectMaskDialog * Dialog = new TSelectMaskDialog(Application);
   try
   {
-    CenterFormOn(Dialog, Parent);
-    Dialog->Init(Select ? TSelectMaskDialog::smSelect : TSelectMaskDialog::smDeselect);
+    Dialog->Init(Select ? TSelectMaskDialog::smSelect : TSelectMaskDialog::smDeselect, Parent);
     DefaultFileFilter(*Filter);
     TWinConfiguration * WinConfiguration = DebugNotNull(dynamic_cast<TWinConfiguration *>(Configuration));
     Filter->Masks = WinConfiguration->SelectMask;
@@ -55,8 +54,7 @@ bool __fastcall DoFilterMaskDialog(TCustomDirView * Parent,
   TSelectMaskDialog * Dialog = new TSelectMaskDialog(Application);
   try
   {
-    CenterFormOn(Dialog, Parent);
-    Dialog->Init(TSelectMaskDialog::smFilter);
+    Dialog->Init(TSelectMaskDialog::smFilter, Parent);
     Dialog->FileFilter = *Filter;
     Result = Dialog->Execute();
     if (Result)
@@ -82,7 +80,7 @@ __fastcall TSelectMaskDialog::TSelectMaskDialog(TComponent* Owner)
       LoadStr(COMBINING_MASKS_HINT), LoadStr(MASK_HELP))));
 }
 //---------------------------------------------------------------------------
-void __fastcall TSelectMaskDialog::Init(TMode Mode)
+void __fastcall TSelectMaskDialog::Init(TMode Mode, TControl * Parent)
 {
   int CaptionStr;
   switch (Mode)
@@ -104,6 +102,7 @@ void __fastcall TSelectMaskDialog::Init(TMode Mode)
       break;
   }
   Caption = LoadStr(CaptionStr);
+  FParent = Parent;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::FormCloseQuery(TObject * /*Sender*/,
@@ -164,5 +163,7 @@ void __fastcall TSelectMaskDialog::ClearButtonClick(TObject * /*Sender*/)
 void __fastcall TSelectMaskDialog::FormShow(TObject * /*Sender*/)
 {
   InstallPathWordBreakProc(MaskEdit);
+  // Only now it is scaled
+  CenterFormOn(this, FParent);
 }
 //---------------------------------------------------------------------------

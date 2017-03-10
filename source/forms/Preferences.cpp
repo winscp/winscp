@@ -503,7 +503,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     }
     else
     {
-      FPanelFont->Assign(WinConfiguration->SystemIconFont);
+      // Default to system icon font, when starting customization
+      FPanelFont->Assign(Screen->IconFont);
     }
 
     // updates
@@ -1129,14 +1130,24 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(CopyOnDoubleClickConfirmationCheck,
       (DoubleClickActionCombo->ItemIndex == 1) && ConfirmTransferringCheck->Checked);
 
-    TFont * ActualPanelFont = PanelFontCheck->Checked ? FPanelFont.get() : WinConfiguration->SystemIconFont;
+    TFont * ActualPanelFont = PanelFontCheck->Checked ? FPanelFont.get() : Screen->IconFont;
+    std::unique_ptr<TFont> PanelFont(new TFont());
+    PanelFont->Assign(ActualPanelFont);
+    if (PanelFontCheck->Checked)
+    {
+      PanelFont->Height = ScaleByPixelsPerInchFromSystem(PanelFont->Height, this);
+    }
+    else
+    {
+      PanelFont->Height = ScaleByPixelsPerInchFromSystem(PanelFont->Height, this);
+    }
     UnicodeString PanelFontLabelText;
     PanelFontLabelText = FMTLOAD(EDITOR_FONT_FMT,
       (ActualPanelFont->Name, ActualPanelFont->Size));
     PanelFontLabel->Caption = PanelFontLabelText;
-    if (!SameFont(PanelFontLabel->Font, ActualPanelFont))
+    if (!SameFont(PanelFontLabel->Font, PanelFont.get()))
     {
-      PanelFontLabel->Font = ActualPanelFont;
+      PanelFontLabel->Font = PanelFont.get();
     }
 
     EnableControl(RefreshRemotePanelIntervalEdit, RefreshRemotePanelCheck->Checked);
@@ -1148,14 +1159,14 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EditorFontLabelText += TabSample(L"ABCD") + L"\n";
     EditorFontLabelText += TabSample(L"1234");
     EditorFontLabel->Caption = EditorFontLabelText;
-    TColor EditorFontColor = GetWindowTextColor(FEditorFont->Color);
-    if (!SameFont(EditorFontLabel->Font, FEditorFont.get()) ||
-        (EditorFontLabel->Font->Color != EditorFontColor))
+    std::unique_ptr<TFont> EditorFont(new TFont());
+    EditorFont->Assign(FEditorFont.get());
+    EditorFont->Color = GetWindowTextColor(FEditorFont->Color);
+    EditorFont->Size = ScaleByTextHeight(this, FEditorFont->Size);
+    if (!SameFont(EditorFontLabel->Font, EditorFont.get()) ||
+        (EditorFontLabel->Font->Color != EditorFont->Color))
     {
-      std::unique_ptr<TFont> Font(new TFont);
-      Font->Assign(FEditorFont.get());
-      Font->Color = EditorFontColor;
-      EditorFontLabel->Font = Font.get();
+      EditorFontLabel->Font = EditorFont.get();
     }
     EditorFontLabel->Color = GetWindowColor(FEditorBackgroundColor);
 
@@ -2010,6 +2021,14 @@ void __fastcall TPreferencesDialog::WMHelp(TWMHelp & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CMDpiChanged(TMessage & Message)
+{
+  // To update font sizes - Note that they get scaled automatically, but as we use our own algorithm,
+  // we may end up using a slightly different size, so apply it straight away for consistency
+  UpdateControls();
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::Dispatch(void *Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -2017,6 +2036,10 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   if (M->Msg == CM_DIALOGKEY)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
+  }
+  else if (M->Msg == CM_DPICHANGED)
+  {
+    CMDpiChanged(*M);
   }
   else if (M->Msg == WM_HELP)
   {

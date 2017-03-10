@@ -162,6 +162,7 @@ type
     procedure ResizeTrackAccept; override;
     procedure ResizeEnd; override;
     procedure SetChildOrder(Child: TComponent; Order: Integer); override;
+    procedure ChangeScale(M, D: Integer); override;
 
     property SystemFont: Boolean read FSystemFont write SetSystemFont default True;
     property OnShortCut: TShortCutEvent read FOnShortCut write FOnShortCut;
@@ -1709,6 +1710,13 @@ begin
   Dec(HookCount);
   if HookCount = 0 then
     Application.UnhookMainWindow(MainWindowHook);
+end;
+
+procedure TTBCustomToolbar.ChangeScale(M, D: Integer);
+begin
+  inherited;
+  Items.ChangeScale(M, D);
+  View.RecreateAllViewers;
 end;
 
 end.

@@ -101,8 +101,9 @@ int __fastcall FontStylesToInt(const TFontStyles value)
 bool __fastcall SameFont(TFont * Font1, TFont * Font2)
 {
   // keep in sync with TFontConfiguration::operator !=
-  return SameText(Font1->Name, Font2->Name) && (Font1->Size == Font2->Size) &&
-      (Font1->Charset == Font2->Charset) && (Font1->Style == Font2->Style);
+  return
+    SameText(Font1->Name, Font2->Name) && (Font1->Height == Font2->Height) &&
+    (Font1->Charset == Font2->Charset) && (Font1->Style == Font2->Style);
 }
 //---------------------------------------------------------------------------
 TColor __fastcall GetWindowTextColor(TColor Color)
@@ -146,21 +147,21 @@ UnicodeString __fastcall GetListViewStr(TListView * ListView)
   // stop at the comma, otherwise they try to parse the
   // "last-column-width;pixels-per-inch" as integer and throw.
   // For the other instance of this hack, see TCustomListViewColProperties.GetParamsStr
-  Result += L",;" + SavePixelsPerInch();
+  Result += L",;" + SavePixelsPerInch(ListView);
   return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
 {
   UnicodeString LayoutStr = CutToChar(ALayoutStr, L';', true);
-  int PixelsPerInch = LoadPixelsPerInch(CutToChar(ALayoutStr, L';', true));
+  int PixelsPerInch = LoadPixelsPerInch(CutToChar(ALayoutStr, L';', true), ListView);
   int Index = 0;
   while (!LayoutStr.IsEmpty() && (Index < ListView->Columns->Count))
   {
     int Width;
     if (TryStrToInt(CutToChar(LayoutStr, L',', true), Width))
     {
-      ListView->Column[Index]->Width = LoadDimension(Width, PixelsPerInch);
+      ListView->Column[Index]->Width = LoadDimension(Width, PixelsPerInch, ListView);
     }
     Index++;
   }
@@ -178,11 +179,11 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
     UnicodeString RightStr = CutToChar(Data, L';', true);
     UnicodeString BottomStr = CutToChar(Data, L';', true);
     TWindowState State = (TWindowState)StrToIntDef(CutToChar(Data, L';', true), (int)wsNormal);
-    int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L';', true));
+    int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L';', true), Form);
 
     TRect Bounds = Form->BoundsRect;
-    int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Bounds.Left);
-    int Top = StrToDimensionDef(TopStr, PixelsPerInch, Bounds.Top);
+    int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Form, Bounds.Left);
+    int Top = StrToDimensionDef(TopStr, PixelsPerInch, Form, Bounds.Top);
     bool DefaultPos = (Left == -1) && (Top == -1);
     if (!DefaultPos)
     {
@@ -194,8 +195,8 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
       Bounds.Left = 0;
       Bounds.Top = 0;
     }
-    Bounds.Right = StrToDimensionDef(RightStr, PixelsPerInch, Bounds.Right);
-    Bounds.Bottom = StrToDimensionDef(BottomStr, PixelsPerInch, Bounds.Bottom);
+    Bounds.Right = StrToDimensionDef(RightStr, PixelsPerInch, Form, Bounds.Right);
+    Bounds.Bottom = StrToDimensionDef(BottomStr, PixelsPerInch, Form, Bounds.Bottom);
     Form->WindowState = State;
     if (State == wsNormal)
     {
@@ -274,7 +275,7 @@ UnicodeString __fastcall StoreForm(TCustomForm * Form)
     // note that WindowState is wsNormal when window in minimized for some reason.
     // actually it is wsMinimized only when minimized by MSVDM
     (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState),
-    SavePixelsPerInch()));
+    SavePixelsPerInch(Form)));
 }
 //---------------------------------------------------------------------------
 void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form)
@@ -283,16 +284,16 @@ void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form)
   // See comment in ResizeForm.
   UnicodeString WidthStr = CutToChar(Data, L',', true);
   UnicodeString HeightStr = CutToChar(Data, L',', true);
-  int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L',', true));
+  int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L',', true), Form);
 
-  int Width = StrToDimensionDef(WidthStr, PixelsPerInch, Form->Width);
-  int Height = StrToDimensionDef(HeightStr, PixelsPerInch, Form->Height);
+  int Width = StrToDimensionDef(WidthStr, PixelsPerInch, Form, Form->Width);
+  int Height = StrToDimensionDef(HeightStr, PixelsPerInch, Form, Form->Height);
   ResizeForm(Form, Width, Height);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall StoreFormSize(TForm * Form)
 {
-  return FORMAT(L"%d,%d,%s", (Form->Width, Form->Height, SavePixelsPerInch()));
+  return FORMAT(L"%d,%d,%s", (Form->Width, Form->Height, SavePixelsPerInch(Form)));
 }
 //---------------------------------------------------------------------------
 static void __fastcall ExecuteProcessAndReadOutput(const

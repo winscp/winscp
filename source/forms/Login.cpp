@@ -148,6 +148,16 @@ void __fastcall TLoginDialog::InitControls()
   UpdateNodeImages();
   SelectScaledImageList(ActionImageList);
 
+  GenerateButtonImages();
+
+  if (SessionTree->Items->Count > 0)
+  {
+    SetNewSiteNodeLabel();
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::GenerateButtonImages()
+{
   // Generate button images.
   // The button does not support alpha channel,
   // so we have to copy the PNG's to BMP's and use plain transparent color
@@ -157,11 +167,6 @@ void __fastcall TLoginDialog::InitControls()
 
   LoginButton->ImageIndex = AddLoginButtonImage(true);
   LoginButton->DisabledImageIndex = AddLoginButtonImage(false);
-
-  if (SessionTree->Items->Count > 0)
-  {
-    SetNewSiteNodeLabel();
-  }
 }
 //---------------------------------------------------------------------
 int __fastcall TLoginDialog::AddLoginButtonImage(bool Enabled)
@@ -1563,6 +1568,12 @@ void __fastcall TLoginDialog::WMMoving(TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
+{
+  TForm::Dispatch(&Message);
+  GenerateButtonImages();
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -1604,6 +1615,10 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
   else if (M->Msg == WM_MOVING)
   {
     WMMoving(*M);
+  }
+  else if (M->Msg == CM_DPICHANGED)
+  {
+    CMDpiChanged(*M);
   }
   else
   {
@@ -3048,5 +3063,13 @@ void __fastcall TLoginDialog::SearchSiteNameActionExecute(TObject * /*Sender*/)
 void __fastcall TLoginDialog::SearchSiteActionExecute(TObject * /*Sender*/)
 {
   FSiteSearch = ssSite;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ChangeScale(int M, int D)
+{
+  TForm::ChangeScale(M, D);
+  FSiteButtonsPadding = MulDiv(FSiteButtonsPadding, M, D);
+  FBasicGroupBaseHeight = MulDiv(FBasicGroupBaseHeight, M, D);
+  FNoteGroupOffset = MulDiv(FNoteGroupOffset, M, D);
 }
 //---------------------------------------------------------------------------

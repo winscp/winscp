@@ -334,12 +334,12 @@ void __fastcall DoProductLicense()
 //---------------------------------------------------------------------------
 const UnicodeString PixelsPerInchKey = L"PixelsPerInch";
 //---------------------------------------------------------------------
-int __fastcall GetToolbarLayoutPixelsPerInch(TStrings * Storage)
+int __fastcall GetToolbarLayoutPixelsPerInch(TStrings * Storage, TControl * Control)
 {
   int Result;
   if (Storage->IndexOfName(PixelsPerInchKey))
   {
-    Result = LoadPixelsPerInch(Storage->Values[PixelsPerInchKey]);
+    Result = LoadPixelsPerInch(Storage->Values[PixelsPerInchKey], Control);
   }
   else
   {
@@ -452,15 +452,15 @@ static void __fastcall ToolbarWriteString(const UnicodeString ToolbarName,
   Storage->Values[ToolbarKey] = Data;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent)
+UnicodeString __fastcall GetToolbarsLayoutStr(TControl * OwnerControl)
 {
   UnicodeString Result;
   TStrings * Storage = new TStringList();
   try
   {
-    TBCustomSavePositions(OwnerComponent, ToolbarWriteInt, ToolbarWriteString,
+    TBCustomSavePositions(OwnerControl, ToolbarWriteInt, ToolbarWriteString,
       Storage);
-    Storage->Values[PixelsPerInchKey] = SavePixelsPerInch();
+    Storage->Values[PixelsPerInchKey] = SavePixelsPerInch(OwnerControl);
     Result = Storage->CommaText;
   }
   __finally
@@ -470,32 +470,32 @@ UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString LayoutStr)
+void __fastcall LoadToolbarsLayoutStr(TControl * OwnerControl, UnicodeString LayoutStr)
 {
   TStrings * Storage = new TStringList();
   try
   {
     Storage->CommaText = LayoutStr;
-    TBCustomLoadPositions(OwnerComponent, ToolbarReadInt, ToolbarReadString,
+    TBCustomLoadPositions(OwnerControl, ToolbarReadInt, ToolbarReadString,
       Storage);
-    int PixelsPerInch = GetToolbarLayoutPixelsPerInch(Storage);
+    int PixelsPerInch = GetToolbarLayoutPixelsPerInch(Storage, OwnerControl);
     // Scale toolbars stretched to the first other toolbar to the right
-    if ((PixelsPerInch > 0) && (PixelsPerInch != Screen->PixelsPerInch)) // optimization
+    if ((PixelsPerInch > 0) && (PixelsPerInch != GetControlPixelsPerInch(OwnerControl))) // optimization
     {
-      for (int Index = 0; Index < OwnerComponent->ComponentCount; Index++)
+      for (int Index = 0; Index < OwnerControl->ComponentCount; Index++)
       {
         TTBXToolbar * Toolbar =
-          dynamic_cast<TTBXToolbar *>(OwnerComponent->Components[Index]);
+          dynamic_cast<TTBXToolbar *>(OwnerControl->Components[Index]);
         if ((Toolbar != NULL) && Toolbar->Stretch &&
             (Toolbar->OnGetBaseSize != NULL) &&
             // we do not support floating of stretched toolbars
             DebugAlwaysTrue(!Toolbar->Floating))
         {
           TTBXToolbar * FollowingToolbar = NULL;
-          for (int Index2 = 0; Index2 < OwnerComponent->ComponentCount; Index2++)
+          for (int Index2 = 0; Index2 < OwnerControl->ComponentCount; Index2++)
           {
             TTBXToolbar * Toolbar2 =
-              dynamic_cast<TTBXToolbar *>(OwnerComponent->Components[Index2]);
+              dynamic_cast<TTBXToolbar *>(OwnerControl->Components[Index2]);
             if ((Toolbar2 != NULL) && !Toolbar2->Floating &&
                 (Toolbar2->Parent == Toolbar->Parent) &&
                 (Toolbar2->DockRow == Toolbar->DockRow) &&
@@ -508,7 +508,7 @@ void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString
 
           if (FollowingToolbar != NULL)
           {
-            int NewWidth = LoadDimension(Toolbar->Width, PixelsPerInch);
+            int NewWidth = LoadDimension(Toolbar->Width, PixelsPerInch, Toolbar);
             FollowingToolbar->DockPos += NewWidth - Toolbar->Width;
           }
         }

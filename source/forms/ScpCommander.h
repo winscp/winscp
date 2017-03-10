@@ -574,6 +574,7 @@ protected:
   virtual void __fastcall QueueLabelUpdateStatus();
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual void __fastcall StartingDisconnected();
+  virtual void __fastcall UpdateImages();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

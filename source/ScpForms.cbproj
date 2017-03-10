@@ -229,8 +229,11 @@
 		<FormResources Include="forms\Login.dfm"/>
 		<CppCompile Include="forms\MessageDlg.cpp">
 			<BuildOrder>8</BuildOrder>
+			<Form>MessageForm</Form>
+			<DependentOn>forms\MessageDlg.h</DependentOn>
 			<BuildOrder>25</BuildOrder>
 		</CppCompile>
+		<FormResources Include="forms\MessageDlg.dfm"/>
 		<CppCompile Include="forms\OpenDirectory.cpp">
 			<BuildOrder>86</BuildOrder>
 			<Form>OpenDirectoryDialog</Form>

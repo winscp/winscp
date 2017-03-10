@@ -189,6 +189,7 @@ type
     procedure CMColorChanged(var Message: TMessage); message CM_COLORCHANGED;
     procedure LVMSetExtendedListViewStyle(var Message: TMessage); message LVM_SETEXTENDEDLISTVIEWSTYLE;
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
+    procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
 
     procedure DumbCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
@@ -268,7 +269,6 @@ type
     procedure ExecuteFile(Item: TListItem); virtual; abstract;
     procedure FocusSomething; override;
     function GetIsRoot: Boolean; virtual; abstract;
-    procedure IconsSetImageList; virtual;
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
     function ItemColor(Item: TListItem): TColor; virtual;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
@@ -328,6 +328,8 @@ type
     procedure DoExecute(Item: TListItem);
     procedure DoExecuteParentDirectory;
     procedure Load(DoFocusSomething: Boolean); virtual;
+    procedure NeedImageLists(Recreate: Boolean);
+    procedure FreeImageLists;
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -761,20 +763,20 @@ function OverlayImageList(Size: Integer): TImageList;
     end;
   end; {GetOverlayBitmap}
 
-var
-  PixelsPerInch: Integer;
-  Factor: Integer;
 begin
   // Hardcoded according to sizes of overlays we have in resources
-  PixelsPerInch := Screen.PixelsPerInch;
-  if PixelsPerInch >= 192 then Factor := 200
+  if Size >= 64 then Size := 64
     else
-  if PixelsPerInch >= 144 then Factor := 150
+  if Size >= 48 then Size := 48
     else
-  if PixelsPerInch >= 120 then Factor := 124
-    else Factor := 100;
-
-  Size := MulDiv(Size, Factor, 100);
+  if Size >= 40 then Size := 40
+    else
+  if Size >= 32 then Size := 32
+    else
+  if Size >= 24 then Size := 24
+    else
+  if Size >= 20 then Size := 20
+    else Size := 16;
   Result := TImageList.CreateSize(Size, Size);
   Result.DrawingStyle := dsTransparent;
   Result.BkColor := clNone;
@@ -1145,6 +1147,39 @@ begin
   if Assigned(FDragDropFilesEx) then FDragDropFilesEx.TargetPopupMenu := Value;
 end;
 
+procedure TCustomDirView.NeedImageLists(Recreate: Boolean);
+begin
+  SmallImages := ShellImageListForControl(Self, ilsSmall);
+  LargeImages := ShellImageListForControl(Self, ilsLarge);
+
+  if (not Assigned(FImageList16)) or Recreate then
+  begin
+    FreeAndNil(FImageList16);
+    FImageList16 := OverlayImageList(SmallImages.Width);
+  end;
+
+  if (not Assigned(FImageList32)) or Recreate then
+  begin
+    FreeAndNil(FImageList32);
+    FImageList32 := OverlayImageList(LargeImages.Width);
+  end;
+end;
+
+procedure TCustomDirView.CMDPIChanged(var Message: TMessage);
+begin
+  inherited;
+  NeedImageLists(True);
+end;
+
+procedure TCustomDirView.FreeImageLists;
+begin
+  FreeAndNil(FImageList16);
+  FreeAndNil(FImageList32);
+
+  SmallImages := nil;
+  LargeImages := nil;
+end;
+
 procedure TCustomDirView.CreateWnd;
 begin
   inherited;
@@ -1153,11 +1188,7 @@ begin
     PopupMenu.Autopopup := False;
   FDragDropFilesEx.DragDropControl := Self;
 
-  if not Assigned(FImageList16) then
-    FImageList16 := OverlayImageList(16);
-  if not Assigned(FImageList32) then
-    FImageList32 := OverlayImageList(32);
-  IconsSetImageList;
+  NeedImageLists(False);
 end;
 
 procedure TCustomDirView.LVMSetExtendedListViewStyle(var Message: TMessage);
@@ -1257,19 +1288,7 @@ begin
   FreeAndNil(FHistoryPaths);
 
   FreeAndNil(FDragDropFilesEx);
-  FreeAndNil(FImageList16);
-  FreeAndNil(FImageList32);
-
-  if Assigned(SmallImages) then
-  begin
-    SmallImages.Free;
-    SmallImages := nil;
-  end;
-  if Assigned(LargeImages) then
-  begin
-    LargeImages.Free;
-    LargeImages := nil;
-  end;
+  FreeImageLists;
   FreeAndNil(FAnimation);
 
   inherited;
@@ -1374,14 +1393,6 @@ begin
   if Assigned(ItemFocused) then Result := ItemFileSize(ItemFocused)
     else Result := 0;
 end;
-
-procedure TCustomDirView.IconsSetImageList;
-begin
-  if not Assigned(SmallImages) then
-    SmallImages := ShellImageList(Self, SHGFI_SMALLICON);
-  if not Assigned(LargeImages) then
-    LargeImages := ShellImageList(Self, SHGFI_LARGEICON);
-end; {IconsSetImageList}
 
 function TCustomDirView.ItemIsRecycleBin(Item: TListItem): Boolean;
 begin
