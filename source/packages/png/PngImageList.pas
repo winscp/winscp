@@ -22,7 +22,6 @@ type
     FPngImages: TPngImageCollectionItems;
     FPngOptions: TPngOptions;
   class var
-    FIDE_WriteData_Hack: Boolean;
     function GetHeight: Integer;
     function GetWidth: Integer;
     procedure SetHeight(const Value: Integer);
@@ -50,6 +49,7 @@ type
     function AddImage(Value: TCustomImageList; Index: Integer): Integer; virtual;
     procedure AddImages(Value: TCustomImageList); virtual;
     function AddMasked(Image: TBitmap; MaskColor: TColor): Integer; virtual;
+    procedure Assign(Source: TPersistent); override;
     procedure BeginUpdate;
     procedure Clear; virtual;
     procedure Delete(Index: Integer); virtual;
@@ -63,9 +63,8 @@ type
     procedure Replace(Index: Integer; Image, Mask: TBitmap); virtual;
     procedure ReplaceIcon(Index: Integer; Image: TIcon); virtual;
     procedure ReplaceMasked(Index: Integer; NewImage: TBitmap; MaskColor: TColor); virtual;
-    class property IDE_WriteData_Hack: Boolean read FIDE_WriteData_Hack write
-        FIDE_WriteData_Hack;
   published
+    property ColorDepth default cd32Bit;
     property EnabledImages: Boolean read FEnabledImages write SetEnabledImages default True;
     property Height read GetHeight write SetHeight default 16;
     property PngImages: TPngImageCollectionItems read FPngImages write SetPngImages;
@@ -299,6 +298,7 @@ end;
 constructor TPngImageList.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
+  ColorDepth := cd32Bit;
   if ImageListCount = 0 then
     ApplyMethodPatches;
   Inc(ImageListCount);
@@ -492,12 +492,39 @@ begin
   end;
 end;
 
+procedure TPngImageList.Assign(Source: TPersistent);
+var
+  pngSource: TPngImageList;
+begin
+  if Source is TPngImageList then begin
+    pngSource := TPngImageList(Source);
+    BeginUpdate;
+    try
+      PngImages := pngSource.PngImages;
+      EnabledImages := pngSource.EnabledImages;
+      PngOptions := pngSource.PngOptions;
+    finally
+      EndUpdate(true);
+    end;
+  end;
+
+  if Source is TCustomImageList then begin
+    ColorDepth := TCustomImageList(Source).ColorDepth;
+  end;
+
+  inherited;
+end;
+
 procedure TPngImageList.AssignTo(Dest: TPersistent);
+var
+  pngDest: TPngImageList;
 begin
   inherited;
   if Dest is TPngImageList then begin
-    TPngImageList(Dest).PngImages := FPngImages;
-    TPngImageList(Dest).EnabledImages := FEnabledImages;
+    pngDest := TPngImageList(Dest);
+    pngDest.PngImages := PngImages;
+    pngDest.EnabledImages := EnabledImages;
+    pngDest.PngOptions := PngOptions;
   end;
 end;
 
@@ -986,8 +1013,8 @@ end;
 
 procedure TPngImageList.ReadData(Stream: TStream);
 begin
-//  if not (csReading in ComponentState) then
-//    inherited;
+  if not (csReading in ComponentState) then
+    inherited;
   //Make sure nothing gets read from the DFM
 end;
 
@@ -1138,7 +1165,7 @@ end;
 
 procedure TPngImageList.WriteData(Stream: TStream);
 begin
-  if IDE_WriteData_Hack and not (csWriting in ComponentState) then
+  if not (csWriting in ComponentState) then
     inherited;
   //Make sure nothing gets written to the DFM
 end;
