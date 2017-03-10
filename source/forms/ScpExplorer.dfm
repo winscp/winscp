@@ -148,7 +148,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.RemoteFindFilesAction
         end
         object QueueSubmenuItem: TTBXSubmenuItem
-          Caption = '&Queue'
+          Caption = 'Q&ueue'
           HelpKeyword = 'ui_queue#managing_the_queue'
           Hint = 'Queue list commands'
           OnPopup = QueueSubmenuItemPopup
