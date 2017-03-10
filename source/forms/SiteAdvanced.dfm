@@ -1203,7 +1203,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 266
             Height = 21
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 50
+            MaxLength = 255
             TabOrder = 3
             Text = 'ProxyHostEdit'
             OnChange = DataChange
@@ -1450,7 +1450,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 266
             Height = 21
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 100
+            MaxLength = 255
             TabOrder = 0
             Text = 'TunnelHostNameEdit'
             OnChange = DataChange

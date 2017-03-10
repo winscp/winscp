@@ -179,7 +179,7 @@ object LoginDialog: TLoginDialog
           Width = 236
           Height = 21
           Anchors = [akLeft, akTop, akRight]
-          MaxLength = 100
+          MaxLength = 255
           TabOrder = 5
           Text = 'HostNameEdit'
           OnChange = DataChange
