@@ -540,6 +540,7 @@ namespace WinSCP
 
                         if (enumerate)
                         {
+                            Logger.WriteLine("Enumerating {0}", fileInfo.FullName);
                             yield return fileInfo;
                         }
 
