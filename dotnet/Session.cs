@@ -454,6 +454,7 @@ namespace WinSCP
                             }
                         }
 
+                        lsReader.ReadToEnd(LogReadFlags.ThrowFailures);
                         groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
                     }
                     else
