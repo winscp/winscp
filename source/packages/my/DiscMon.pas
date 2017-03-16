@@ -579,7 +579,7 @@ var
     // before notification about deleting the directory.
     // While this does not 100% protect against an attempt to synchronize the deleted directory,
     // it may greatly reduce the risk (as checked after the sleep above).
-    // Though actually it's may not even be possible to delete the directory as we have it locked.
+    // Though actually it may not even be possible to delete the directory as we have it locked.
     if DirectoryExists(FDirectories[Directory]) then
     begin
       FNotifiedDirectory := FDirectories[Directory];
