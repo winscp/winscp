@@ -152,7 +152,7 @@ __published:
   TEdit *TunnelUserNameEdit;
   TPasswordEdit *TunnelPasswordEdit;
   TUpDownEdit *TunnelPortNumberEdit;
-  TFilenameEdit *TunnelPrivateKeyEdit2;
+  TFilenameEdit *TunnelPrivateKeyEdit3;
   TLabel *Label19;
   TComboBox *ReturnVarEdit;
   TLabel *Label20;
@@ -228,7 +228,7 @@ __published:
   TLabel *FtpAccountLabel;
   TEdit *FtpAccountEdit;
   TLabel *PrivateKeyLabel;
-  TFilenameEdit *PrivateKeyEdit2;
+  TFilenameEdit *PrivateKeyEdit3;
   TGroupBox *TunnelAuthenticationParamsGroup;
   TImageList *ColorImageList;
   TButton *ColorButton;
@@ -270,7 +270,7 @@ __published:
   void __fastcall AuthGSSAPICheck3Click(TObject *Sender);
   void __fastcall KexButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
-  void __fastcall PrivateKeyEdit2AfterDialog(TObject *Sender,
+  void __fastcall PrivateKeyEdit3AfterDialog(TObject *Sender,
     UnicodeString &Name, bool &Action);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall PathEditBeforeDialog(TObject *Sender, UnicodeString &Name,

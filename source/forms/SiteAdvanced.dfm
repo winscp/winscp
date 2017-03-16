@@ -1551,16 +1551,16 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 75
             Height = 13
             Caption = 'Private &key file:'
-            FocusControl = TunnelPrivateKeyEdit2
+            FocusControl = TunnelPrivateKeyEdit3
           end
-          object TunnelPrivateKeyEdit2: TFilenameEdit
+          object TunnelPrivateKeyEdit3: TFilenameEdit
             Left = 12
             Top = 35
             Width = 370
             Height = 21
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
-            OnAfterDialog = PrivateKeyEdit2AfterDialog
+            OnAfterDialog = PrivateKeyEdit3AfterDialog
             Filter = 
               'PuTTY Private Key Files (*.ppk)|*.ppk|All Private Key Files (*.p' +
               'pk;*.pem;*.key;id_*)|*.ppk;*.pem;*.key;id_*|All Files (*.*)|*.*'
@@ -1569,7 +1569,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 0
-            Text = 'TunnelPrivateKeyEdit2'
+            Text = 'TunnelPrivateKeyEdit3'
             OnChange = DataChange
           end
         end
@@ -2017,7 +2017,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 75
             Height = 13
             Caption = 'Private &key file:'
-            FocusControl = PrivateKeyEdit2
+            FocusControl = PrivateKeyEdit3
           end
           object AgentFwdCheck: TCheckBox
             Left = 12
@@ -2029,14 +2029,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 0
             OnClick = DataChange
           end
-          object PrivateKeyEdit2: TFilenameEdit
+          object PrivateKeyEdit3: TFilenameEdit
             Left = 12
             Top = 59
             Width = 372
             Height = 21
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
-            OnAfterDialog = PrivateKeyEdit2AfterDialog
+            OnAfterDialog = PrivateKeyEdit3AfterDialog
             Filter = 
               'PuTTY Private Key Files (*.ppk)|*.ppk|All Private Key Files (*.p' +
               'pk;*.pem;*.key;id_*)|*.ppk;*.pem;*.key;id_*|All Files (*.*)|*.*'
@@ -2045,7 +2045,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 1
-            Text = 'PrivateKeyEdit2'
+            Text = 'PrivateKeyEdit3'
             OnChange = DataChange
           end
         end
