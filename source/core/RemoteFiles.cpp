@@ -1487,10 +1487,11 @@ void __fastcall TRemoteFileList::AddFile(TRemoteFile * File)
 TStrings * __fastcall TRemoteFileList::CloneStrings(TStrings * List)
 {
   std::unique_ptr<TStringList> Result(new TStringList());
+  Result->OwnsObjects = true;
   for (int Index = 0; Index < List->Count; Index++)
   {
     TRemoteFile * File = static_cast<TRemoteFile *>(List->Objects[Index]);
-    Result->AddObject(List->Strings[Index], File);
+    Result->AddObject(List->Strings[Index], File->Duplicate(true));
   }
   return Result.release();
 }
