@@ -3078,23 +3078,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         if (!ParsePwdReply(pData->rawpwd))
           return;
 
-        if (m_pOwner->GetCurrentPath() != pData->transferfile.remotepath)
-        {
-          // More user-friendly message when the actual paths differ
-          if (m_pOwner->GetCurrentPath().GetPath() != pData->transferfile.remotepath.GetPath())
-          {
-            LogMessage(FZ_LOG_WARNING, L"Real path and requested remote path do not match: \"%s\"  \"%s\"", m_pOwner->GetCurrentPath().GetPath(), pData->transferfile.remotepath.GetPath());
-          }
-          else
-          {
-            LogMessage(FZ_LOG_WARNING, L"Real path and requested remote path do not match: \"%s\"  \"%s\"", m_pOwner->GetCurrentPath().GetSafePath(), pData->transferfile.remotepath.GetSafePath());
-          }
-          nReplyError = FZ_REPLY_CRITICALERROR;
-        }
-        else
-        {
-          m_Operation.nOpState = FileTransferListState(pData->transferfile.get);
-        }
+        m_Operation.nOpState = FileTransferListState(pData->transferfile.get);
       }
       break;
     case FILETRANSFER_LIST_MODE:
