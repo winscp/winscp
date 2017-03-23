@@ -18,7 +18,7 @@ Boolean __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
   Boolean Result;
   TCleanupDialog *CleanupDialog;
   try {
-    CleanupDialog = new TCleanupDialog(Application);
+    CleanupDialog = SafeFormCreate<TCleanupDialog>();
 
     CleanupDialog->SessionList = SessionList;
     CleanupDialog->Configuration = Configuration;
