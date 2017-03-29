@@ -565,7 +565,6 @@ void __fastcall TGUIConfiguration::Default()
   FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + L"PuTTY\\" + OriginalPuttyExecutable;
   FDefaultPuttyPath = L"%PROGRAMFILES%\\PuTTY\\" + OriginalPuttyExecutable;
   FPuttyPath = FormatCommand(FDefaultPuttyPath, L"");
-  PSftpPath = FormatCommand(L"%PROGRAMFILES%\\PuTTY\\psftp.exe", L"");
   FPuttyPassword = false;
   FTelnetForFtpInPutty = true;
   FPuttySession = L"WinSCP temporary session";
