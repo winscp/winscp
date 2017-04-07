@@ -6179,7 +6179,7 @@ void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
     Message.Result = TRUE;
   }
   // Do not call default handling as that triggers OnCloseQuery,
-  // where our implementation will popup configuration dialogs, what we do not want,
+  // where our implementation will popup confirmation dialogs, what we do not want,
   // as per Vista guidelines:
   // https://msdn.microsoft.com/en-us/library/ms700677.aspx
 }
