@@ -1758,7 +1758,9 @@ int select_result(WPARAM wParam, LPARAM lParam)
 	    }
 	}
 	if (err != 0)
+	{
 	    return plug_closing(s->plug, winsock_error_string(err), err, 0);
+	}
 	else
 	    return 1;
     }
@@ -1867,7 +1869,9 @@ int select_result(WPARAM wParam, LPARAM lParam)
 		if (ret)
 		    open &= plug_receive(s->plug, 0, buf, ret);
 		else
+		{
 		    open &= plug_closing(s->plug, NULL, 0, 0);
+		}
 	    }
 	} while (ret > 0);
 	return open;
