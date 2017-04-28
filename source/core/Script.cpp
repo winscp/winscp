@@ -2583,7 +2583,7 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
         TScriptCommands::CheckParams(Options, false);
       }
 
-      if (!Data->Name.IsEmpty() && (Batch != TScript::BatchOff))
+      if (!Session.IsEmpty() && !Data->Name.IsEmpty() && (Batch != TScript::BatchOff))
       {
         std::unique_ptr<TSessionData> DataWithFingerprint(Data->Clone());
         DataWithFingerprint->LookupLastFingerprint();
