@@ -94,7 +94,15 @@ static int handle_stderr(struct handle *h, void *data, int len)
 static void handle_sentdata(struct handle *h, int new_backlog)
 {
     Handle_Socket ps = (Handle_Socket) handle_get_privdata(h);
-    
+
+    if (new_backlog < 0) {
+        /* Special case: this is actually reporting an error writing
+         * to the underlying handle, and our input value is the error
+         * code itself, negated. */
+        plug_closing(ps->plug, win_strerror(-new_backlog), -new_backlog, 0);
+        return;
+    }
+
     plug_sent(ps->plug, new_backlog);
 }
 
@@ -274,7 +282,16 @@ static char *sk_handle_peer_info(Socket s)
 
     if (!kernel32_module) {
         kernel32_module = load_system32_dll("kernel32.dll");
-        GET_WINDOWS_FUNCTION(kernel32_module, GetNamedPipeClientProcessId);
+#if (defined _MSC_VER && _MSC_VER < 1900) || defined __MINGW32__
+        /* For older Visual Studio, and MinGW too (at least as of
+         * Ubuntu 16.04), this function isn't available in the header
+         * files to type-check */
+        GET_WINDOWS_FUNCTION_NO_TYPECHECK(
+            kernel32_module, GetNamedPipeClientProcessId);
+#else
+        GET_WINDOWS_FUNCTION(
+            kernel32_module, GetNamedPipeClientProcessId);
+#endif
     }
 
     /*

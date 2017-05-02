@@ -2507,7 +2507,7 @@ used:
 
 Disabling data-based rekeys entirely is a bad idea.  The \i{integrity},
 and to a lesser extent, \i{confidentiality} of the SSH-2 protocol depend
-in part on rekeys occuring before a 32-bit packet sequence number
+in part on rekeys occurring before a 32-bit packet sequence number
 wraps around.  Unlike time-based rekeys, data-based rekeys won't occur
 when the SSH connection is idle, so they shouldn't cause the same
 problems.  The SSH-1 protocol, incidentally, has even weaker integrity
@@ -2898,6 +2898,13 @@ the \q{User-supplied GSSAPI library path} field, and move the
 \q{User-supplied GSSAPI library} option in the preference list to
 make sure it is selected before anything else.
 
+On Windows, such libraries are files with a \I{DLL}\cw{.dll}
+extension, and must have been built in the same way as the PuTTY
+executable you're running; if you have a 32-bit DLL, you must run a
+32-bit version of PuTTY, and the same with 64-bit (see
+\k{faq-32bit-64bit}). On Unix, shared libraries generally have a
+\cw{.so} extension.
+
 \H{config-ssh-tty} The TTY panel
 
 The TTY panel lets you configure the remote pseudo-terminal.
@@ -2927,24 +2934,17 @@ the remote pseudo-terminal. These usually control the server's
 expectation of the local terminal's behaviour.
 
 If your server does not have sensible defaults for these modes, you
-may find that changing them here helps. If you don't understand any of
-this, it's safe to leave these settings alone.
+may find that changing them here helps, although the server is at
+liberty to ignore your changes. If you don't understand any of this,
+it's safe to leave these settings alone.
 
 (None of these settings will have any effect if no pseudo-terminal
 is requested or allocated.)
 
-You can add or modify a mode by selecting it from the drop-down list,
-choosing whether it's set automatically or to a specific value with
-the radio buttons and edit box, and hitting \q{Add}. A mode (or
-several) can be removed from the list by selecting them and hitting
-\q{Remove}. The effect of the mode list is as follows:
-
-\b If a mode is not on the list, it will not be specified to the
-server under any circumstances.
-
-\b If a mode is on the list:
-
-\lcont{
+You can change what happens for a particular mode by selecting it in
+the list, choosing one of the options and specifying the exact value
+if necessary, and hitting \q{Set}. The effect of the options is as
+follows:
 
 \b If the \q{Auto} option is selected, the PuTTY tools will decide
 whether to specify that mode to the server, and if so, will send
@@ -2959,11 +2959,12 @@ modes from the local terminal, if any.
 
 }
 
+\b If \q{Nothing} is selected, no value for the mode will not be
+specified to the server under any circumstances.
+
 \b If a value is specified, it will be sent to the server under all
 circumstances. The precise syntax of the value box depends on the
 mode.
-
-}
 
 By default, all of the available modes are listed as \q{Auto},
 which should do the right thing in most circumstances.
@@ -3001,18 +3002,22 @@ character or turn it off entirely.
 
 \b Boolean modes such as \cw{ECHO} and \cw{ICANON} can be specified in
 PuTTY in a variety of ways, such as \cw{true}/\cw{false},
-\cw{yes}/\cw{no}, and \cw{0}/\cw{1}.
+\cw{yes}/\cw{no}, and \cw{0}/\cw{1}. (Explicitly specifying a value of
+\cw{no} is different from not sending the mode at all.)
 
 \b The boolean mode \I{IUTF8 terminal mode}\cw{IUTF8} signals to the
 server whether the terminal character set is \i{UTF-8} or not.
-If this is set incorrectly, actions like backspace may behave
-incorrectly in some circumstances. However, setting this is not usually
+If this is set incorrectly, keys like backspace may do the wrong thing
+in some circumstances. However, setting this is not usually
 sufficient to cause servers to expect the terminal to be in UTF-8 mode;
 POSIX servers will generally require the locale to be set (by some
 server-dependent means), although many default to UTF-8. Also,
-\#{circa 2016} many servers (particularly older servers) do not honour
-this mode sent over SSH. When set to \q{Auto}, this follows the
-local configured character set (see \k{config-charset}).
+since this mode was added to the SSH protocol much later than the
+others, \#{circa 2016} many servers (particularly older servers) do
+not honour this mode sent over SSH; indeed, a few poorly-written
+servers object to its mere presence, so you may find you need to set
+it to not be sent at all. When set to \q{Auto}, this follows the local
+configured character set (see \k{config-charset}).
 
 \b Terminal speeds are configured elsewhere; see \k{config-termspeed}.
 
