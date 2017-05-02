@@ -394,19 +394,23 @@ int toint(unsigned u)
  *    directive we don't know about, we should panic and die rather
  *    than run any risk.
  */
-static char *dupvprintf_inner(char *buf, int oldlen, int oldsize,
+static char *dupvprintf_inner(char *buf, int oldlen, int *oldsize,
                               const char *fmt, va_list ap)
 {
-    int len, size;
+    int len, size, newsize;
 
-    size = oldsize - oldlen;
+    assert(*oldsize >= oldlen);
+    size = *oldsize - oldlen;
     if (size == 0) {
         size = 512;
-        buf = sresize(buf, oldlen + size, char);
+        newsize = oldlen + size;
+        buf = sresize(buf, newsize, char);
+    } else {
+        newsize = *oldsize;
     }
 
     while (1) {
-#if defined _WINDOWS && _MSC_VER < 1900 /* 1900 == VS2015 has real snprintf */
+#if defined _WINDOWS && !defined __WINE__ && _MSC_VER < 1900 /* 1900 == VS2015 has real snprintf */
 #define vsnprintf _vsnprintf
 #endif
 #ifdef va_copy
@@ -430,6 +434,7 @@ static char *dupvprintf_inner(char *buf, int oldlen, int oldsize,
 	if (len >= 0 && len < size) {
 	    /* This is the C99-specified criterion for snprintf to have
 	     * been completely successful. */
+            *oldsize = newsize;
 	    return buf;
 	} else if (len > 0) {
 	    /* This is the C99 error condition: the returned length is
@@ -440,13 +445,15 @@ static char *dupvprintf_inner(char *buf, int oldlen, int oldsize,
 	     * buffer wasn't big enough, so we enlarge it a bit and hope. */
 	    size += 512;
 	}
-	buf = sresize(buf, oldlen + size, char);
+        newsize = oldlen + size;
+        buf = sresize(buf, newsize, char);
     }
 }
 
 char *dupvprintf(const char *fmt, va_list ap)
 {
-    return dupvprintf_inner(NULL, 0, 0, fmt, ap);
+    int size = 0;
+    return dupvprintf_inner(NULL, 0, &size, fmt, ap);
 }
 char *dupprintf(const char *fmt, ...)
 {
@@ -488,7 +495,7 @@ char *strbuf_to_str(strbuf *buf)
 }
 void strbuf_catfv(strbuf *buf, const char *fmt, va_list ap)
 {
-    buf->s = dupvprintf_inner(buf->s, buf->len, buf->size, fmt, ap);
+    buf->s = dupvprintf_inner(buf->s, buf->len, &buf->size, fmt, ap);
     buf->len += strlen(buf->s + buf->len);
 }
 void strbuf_catf(strbuf *buf, const char *fmt, ...)
@@ -1181,6 +1188,17 @@ char *buildinfo(const char *newline)
     strbuf_catf(buf, ", unrecognised version");
 #endif
     strbuf_catf(buf, " (_MSC_VER=%d)", (int)_MSC_VER);
+#endif
+
+#ifdef BUILDINFO_GTK
+    {
+        char *gtk_buildinfo = buildinfo_gtk_version();
+        if (gtk_buildinfo) {
+            strbuf_catf(buf, "%sCompiled against GTK version %s",
+                        newline, gtk_buildinfo);
+            sfree(gtk_buildinfo);
+        }
+    }
 #endif
 
 #ifdef NO_SECURITY

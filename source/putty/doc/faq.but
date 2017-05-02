@@ -66,9 +66,8 @@ Yes. SSH-1 support has always been available in PuTTY.
 However, the SSH-1 protocol has many weaknesses and is no longer
 considered secure; you should use SSH-2 instead if at all possible.
 
-\#{XXX-REVIEW-BEFORE-RELEASE:
 As of 0.68, PuTTY will no longer fall back to SSH-1 if the server
-doesn't appear to support SSH-2; you must explicitly ask for SSH-1. }
+doesn't appear to support SSH-2; you must explicitly ask for SSH-1.
 
 \S{faq-localecho}{Question} Does PuTTY support \i{local echo}?
 
@@ -167,7 +166,7 @@ the wrong solution and we will not do it.
 
 If you have host keys available in the common \i\c{known_hosts} format,
 we have a script called 
-\W{http://tartarus.org/~simon-git/gitweb/?p=putty.git;a=blob;f=contrib/kh2reg.py;hb=HEAD}\c{kh2reg.py}
+\W{https://git.tartarus.org/?p=simon/putty.git;a=blob;f=contrib/kh2reg.py;hb=HEAD}\c{kh2reg.py}
 to convert them to a Windows .REG file, which can be installed ahead of
 time by double-clicking or using \c{REGEDIT}.
 
@@ -213,16 +212,16 @@ seems to be working so far.
 
 \S{faq-ports-general}{Question} What ports of PuTTY exist?
 
-Currently, release versions of PuTTY tools only run on full Win32
-systems and Unix. \q{\i{Win32}} includes versions of Windows from
-Windows 95 onwards (as opposed to the 16-bit Windows 3.1; see
-\k{faq-win31}), up to and including Windows 7; and we know of no
-reason why PuTTY should not continue to work on future versions
-of Windows.
+Currently, release versions of PuTTY tools only run on Windows
+systems and Unix.
 
-The Windows executables we provide are for the 32-bit \q{\i{x86}}
-processor architecture, but they should work fine on 64-bit
-processors that are backward-compatible with that architecture.
+As of 0.68, the supplied PuTTY executables run on versions of Windows
+from XP onwards, up to and including Windows 10; and we know of no
+reason why PuTTY should not continue to work on future versions of
+Windows. We provide 32-bit and 64-bit Windows executables; see
+\k{faq-32bit-64bit} for discussion of the compatibility issues around
+that.
+
 (We used to also provide executables for Windows for the Alpha
 processor, but stopped after 0.58 due to lack of interest.)
 
@@ -248,10 +247,9 @@ If you look at the source release, you should find a \c{unix}
 subdirectory. There are a couple of ways of building it,
 including the usual \c{configure}/\c{make}; see the file \c{README}
 in the source distribution. This should build you Unix
-ports of Plink, PuTTY itself, PuTTYgen, PSCP, PSFTP, and also
+ports of Plink, PuTTY itself, PuTTYgen, PSCP, PSFTP, Pageant, and also
 \i\c{pterm} - an \cw{xterm}-type program which supports the same
-terminal emulation as PuTTY. \#{XXX-REVIEW-BEFORE-RELEASE:}
-We do not yet have a Unix port of Pageant.
+terminal emulation as PuTTY.
 
 If you don't have \i{Gtk}, you should still be able to build the
 command-line tools.
@@ -280,12 +278,9 @@ expect our Unix port to be the right thing for everybody.
 
 \S{faq-wince}{Question} Will there be a port to Windows CE or PocketPC?
 
-We have done some work on such a port, but it only reached an early
+We once did some work on such a port, but it only reached an early
 stage, and certainly not a useful one. It's no longer being actively
 worked on.
-
-However, there's a third-party port at
-\W{http://www.pocketputty.net/}\c{http://www.pocketputty.net/}.
 
 \S{faq-win31}{Question} Is there a port to \i{Windows 3.1}?
 
@@ -421,7 +416,8 @@ put your chosen pathname in the Registry, at
 
 You can ask PuTTY to delete all this data; see \k{faq-cleanup}.
 
-On Unix, PuTTY stores all of this data in a directory \cw{~/.putty}.
+On Unix, PuTTY stores all of this data in a directory \cw{~/.putty}
+by default.
 
 \H{faq-howto} HOWTO questions
 
@@ -580,6 +576,28 @@ of quotes in the obvious way:
 
 \c pscp "local file" user@host:
 \c pscp user@host:"remote file" .
+
+\S{faq-32bit-64bit}{Question} Should I run the 32-bit or the
+64-bit version?
+
+If you're not sure, the \I{32-bit Windows}32-bit version is generally
+the safe option. It will run perfectly well on all processors and on
+all versions of Windows that PuTTY supports. PuTTY doesn't require to
+run as a 64-bit application to work well, and having a 32-bit PuTTY on
+a 64-bit system isn't likely to cause you any trouble.
+
+The 64-bit version (first released in 0.68) will only run if you have
+a 64-bit processor \e{and} a \I{64-bit Windows}64-bit edition of
+Windows (both of these things are likely to be true of any recent
+Windows PC). It will run somewhat faster (in particular, the
+cryptography will be faster, especially during link setup), but it
+will consume slightly more memory.
+
+If you need to use an external \i{DLL} for GSSAPI authentication, that
+DLL may only be available in a 32-bit or 64-bit form, and that will
+dictate the version of PuTTY you need to use. (You will probably know
+if you're doing this; see \k{config-ssh-auth-gssapi-libraries} in the
+documentation.)
 
 \H{faq-trouble} Troubleshooting
 
@@ -1045,7 +1063,7 @@ is triggered by PuTTY 0.58. This was fixed in 0.59. The
 \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/xp-wont-run}{\q{xp-wont-run}}
 entry in PuTTY's wishlist has more details.
 
-\S{faq-system32}{Question} When I put PuTTY in
+\S{faq-system32}{Question} When I put 32-bit PuTTY in
 \cw{C:\\WINDOWS\\\i{SYSTEM32}} on my \i{64-bit Windows} system,
 \i{\q{Duplicate Session}} doesn't work.
 
@@ -1053,7 +1071,7 @@ The short answer is not to put the PuTTY executables in that location.
 
 On 64-bit systems, \cw{C:\\WINDOWS\\SYSTEM32} is intended to contain
 only 64-bit binaries; Windows' 32-bit binaries live in
-\cw{C:\\WINDOWS\\SYSWOW64}. When a 32-bit program such as PuTTY runs
+\cw{C:\\WINDOWS\\SYSWOW64}. When a 32-bit PuTTY executable runs
 on a 64-bit system, it cannot by default see the \q{real}
 \cw{C:\\WINDOWS\\SYSTEM32} at all, because the
 \W{http://msdn.microsoft.com/en-us/library/aa384187(v=vs.85).aspx}{File
@@ -1083,15 +1101,21 @@ USB stick).
 I \i{clean up} after it?
 
 PuTTY will leave some Registry entries, and a random seed file, on
-the PC (see \k{faq-settings}). If you are using PuTTY on a public
-PC, or somebody else's PC, you might want to clean these up when you
-leave. You can do that automatically, by running the command
-\c{putty -cleanup}. (Note that this only removes settings for
-the currently logged-in user on \i{multi-user systems}.)
+the PC (see \k{faq-settings}). Windows 7 and up also remember some
+information about recently launched sessions for the \q{jump list}
+feature.
+
+If you are using PuTTY on a public PC, or somebody else's PC, you
+might want to clean this information up when you leave. You can do
+that automatically, by running the command \c{putty -cleanup}. See
+\k{using-cleanup} in the documentation for more detail. (Note that
+this only removes settings for the currently logged-in user on
+\i{multi-user systems}.)
 
 If PuTTY was installed from the installer package, it will also
-appear in \q{Add/Remove Programs}. Older versions of the uninstaller
-do not remove the above-mentioned registry entries and file.
+appear in \q{Add/Remove Programs}. Current versions of the installer
+do not offer to remove the above-mentioned items, so if you want them
+removed you should run \c{putty -cleanup} before uninstalling.
 
 \S{faq-dsa}{Question} How come PuTTY now supports \i{DSA}, when the
 website used to say how insecure it was?

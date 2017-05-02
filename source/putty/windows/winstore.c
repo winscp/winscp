@@ -110,7 +110,7 @@ void *open_settings_w(const char *sessionname, char **errmsg)
 void write_setting_s(void *handle, const char *key, const char *value)
 {
     if (handle)
-	RegSetValueEx((HKEY) handle, key, 0, REG_SZ, value,
+	RegSetValueEx((HKEY) handle, key, 0, REG_SZ, (CONST BYTE *)value,
 		      1 + strlen(value));
 }
 
@@ -168,7 +168,7 @@ char *read_setting_s(void *handle, const char *key)
     allocsize = size+1;         /* allow for an extra NUL if needed */
     ret = snewn(allocsize, char);
     if (RegQueryValueEx((HKEY) handle, key, 0,
-			&type, ret, &size) != ERROR_SUCCESS ||
+			&type, (BYTE *)ret, &size) != ERROR_SUCCESS ||
 	type != REG_SZ) {
         sfree(ret);
         return NULL;
@@ -372,7 +372,8 @@ int verify_host_key(const char *hostname, int port,
 
     readlen = len;
     otherstr = snewn(len, char);
-    ret = RegQueryValueEx(rkey, regname, NULL, &type, otherstr, &readlen);
+    ret = RegQueryValueEx(rkey, regname, NULL,
+                          &type, (BYTE *)otherstr, &readlen);
 
     if (ret != ERROR_SUCCESS && ret != ERROR_MORE_DATA &&
 	!strcmp(keytype, "rsa")) {
@@ -385,7 +386,7 @@ int verify_host_key(const char *hostname, int port,
 	char *oldstyle = snewn(len + 10, char);	/* safety margin */
 	readlen = len;
 	ret = RegQueryValueEx(rkey, justhost, NULL, &type,
-			      oldstyle, &readlen);
+			      (BYTE *)oldstyle, &readlen);
 
 	if (ret == ERROR_SUCCESS && type == REG_SZ) {
 	    /*
@@ -431,7 +432,7 @@ int verify_host_key(const char *hostname, int port,
 	     * wrong, and hyper-cautiously do nothing.
 	     */
 	    if (!strcmp(otherstr, key))
-		RegSetValueEx(rkey, regname, 0, REG_SZ, otherstr,
+		RegSetValueEx(rkey, regname, 0, REG_SZ, (BYTE *)otherstr,
 			      strlen(otherstr) + 1);
 	}
 
@@ -476,7 +477,7 @@ void store_host_key(const char *hostname, int port,
 
     if (RegCreateKey(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys",
 		     &rkey) == ERROR_SUCCESS) {
-	RegSetValueEx(rkey, regname, 0, REG_SZ, key, strlen(key) + 1);
+	RegSetValueEx(rkey, regname, 0, REG_SZ, (BYTE *)key, strlen(key) + 1);
 	RegCloseKey(rkey);
     } /* else key does not exist in registry */
 
@@ -536,7 +537,7 @@ static HANDLE access_random_seed(int action)
     if (RegOpenKey(HKEY_CURRENT_USER, PUTTY_REG_POS, &rkey) ==
 	ERROR_SUCCESS) {
 	int ret = RegQueryValueEx(rkey, "RandSeedFile",
-				  0, &type, seedpath, &size);
+				  0, &type, (BYTE *)seedpath, &size);
 	if (ret != ERROR_SUCCESS || type != REG_SZ)
 	    seedpath[0] = '\0';
 	RegCloseKey(rkey);
@@ -672,7 +673,7 @@ static int transform_jumplist_registry
     value_length = 200;
     old_value = snewn(value_length, char);
     ret = RegQueryValueEx(pjumplist_key, reg_jumplist_value, NULL, &type,
-                          old_value, &value_length);
+                          (BYTE *)old_value, &value_length);
     /* When the passed buffer is too small, ERROR_MORE_DATA is
      * returned and the required size is returned in the length
      * argument. */
@@ -680,7 +681,7 @@ static int transform_jumplist_registry
         sfree(old_value);
         old_value = snewn(value_length, char);
         ret = RegQueryValueEx(pjumplist_key, reg_jumplist_value, NULL, &type,
-                              old_value, &value_length);
+                              (BYTE *)old_value, &value_length);
     }
 
     if (ret == ERROR_FILE_NOT_FOUND) {
@@ -754,7 +755,7 @@ static int transform_jumplist_registry
 
         /* Save the new list to the registry. */
         ret = RegSetValueEx(pjumplist_key, reg_jumplist_value, 0, REG_MULTI_SZ,
-                            new_value, piterator_new - new_value);
+                            (BYTE *)new_value, piterator_new - new_value);
 
         sfree(old_value);
         old_value = new_value;

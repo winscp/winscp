@@ -607,7 +607,9 @@ use the \c{-load} option (described in \k{using-cmdline-load}).
 If invoked with the \c{-cleanup} option, rather than running as
 normal, PuTTY will remove its \I{removing registry entries}registry
 entries and \i{random seed file} from the local machine (after
-confirming with the user).
+confirming with the user). It will also attempt to remove information
+about recently launched sessions stored in the \q{jump list} on
+Windows 7 and up.
 
 Note that on \i{multi-user systems}, \c{-cleanup} only removes
 registry entries and files associated with the currently logged-in
@@ -1009,18 +1011,21 @@ on the local machine and using it as a proxy for the network
 connection. It expects a shell command string as an argument.
 
 See \k{config-proxy-type} for more information on this, and on other
-proxy settings.
+proxy settings. In particular, note that since the special sequences
+described there are understood in the argument string, literal
+backslashes must be doubled (if you want \c{\\} in your command, you
+must put \c{\\\\} on the command line).
 
 \S2{using-cmdline-restrict-acl} \i\c{-restrict-acl}: restrict the
-Windows process ACL
+\i{Windows process ACL}
 
-This option (on Windows only) causes PuTTY to try to lock down the
-operating system's access control on its own process. If this
-succeeds, it should present an extra obstacle to malware that has
-managed to run under the same user id as the PuTTY process, by
-preventing it from attaching to PuTTY using the same interfaces
-debuggers use and either reading sensitive information out of its
-memory or hijacking its network session.
+This option (on Windows only) causes PuTTY (or another PuTTY tool) to
+try to lock down the operating system's access control on its own
+process. If this succeeds, it should present an extra obstacle to
+malware that has managed to run under the same user id as the PuTTY
+process, by preventing it from attaching to PuTTY using the same
+interfaces debuggers use and either reading sensitive information out
+of its memory or hijacking its network session.
 
 This option is not enabled by default, because this form of
 interaction between Windows programs has many legitimate uses,
@@ -1031,3 +1036,9 @@ up, and malware could still get in if it attacks the process between
 startup and lockdown. So it trades away noticeable convenience, and
 delivers less real security than you might want. However, if you do
 want to make that tradeoff anyway, the option is available.
+
+A PuTTY process started with \c{-restrict-acl} will pass that on to
+any processes started with Duplicate Session, New Session etc.
+(However, if you're invoking PuTTY tools explicitly, for instance as a
+proxy command, you'll need to arrange to pass them the
+\c{-restrict-acl} option yourself, if that's what you want.)

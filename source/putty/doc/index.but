@@ -861,5 +861,17 @@ saved sessions from
 
 \IM{SYSTEM32} \cw{SYSTEM32} directory, on Windows
 
+\IM{32-bit Windows} 32-bit Windows
+\IM{32-bit Windows} Windows, 32-bit
+\IM{32-bit Windows} x86 (32-bit processor architecture)
 \IM{64-bit Windows} 64-bit Windows
 \IM{64-bit Windows} Windows, 64-bit
+
+\IM{Windows process ACL} Windows process ACL
+\IM{Windows process ACL} process ACL (Windows)
+\IM{Windows process ACL} ACL, process (Windows)
+
+\IM{proxy logging} proxy logging
+\IM{proxy logging} logging, proxy
+\IM{proxy logging} diagnostic, proxy
+\IM{proxy logging} standard error, proxy

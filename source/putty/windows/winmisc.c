@@ -101,6 +101,11 @@ char *get_username(void)
 	if (!tried_usernameex) {
 	    /* Not available on Win9x, so load dynamically */
 	    HMODULE secur32 = load_system32_dll("secur32.dll");
+	    /* If MIT Kerberos is installed, the following call to
+	       GET_WINDOWS_FUNCTION makes Windows implicitly load
+	       sspicli.dll WITHOUT proper path sanitizing, so better
+	       load it properly before */
+	    HMODULE sspicli = load_system32_dll("sspicli.dll");
 	    GET_WINDOWS_FUNCTION(secur32, GetUserNameExA);
 	    tried_usernameex = TRUE;
 	}
@@ -172,12 +177,21 @@ void dll_hijacking_protection(void)
 
     if (!kernel32_module) {
         kernel32_module = load_system32_dll("kernel32.dll");
+#if defined _MSC_VER && _MSC_VER < 1900
+        /* For older Visual Studio, this function isn't available in
+         * the header files to type-check */
+        GET_WINDOWS_FUNCTION_NO_TYPECHECK(
+            kernel32_module, SetDefaultDllDirectories);
+#else
         GET_WINDOWS_FUNCTION(kernel32_module, SetDefaultDllDirectories);
+#endif
     }
 
     if (p_SetDefaultDllDirectories) {
-        /* LOAD_LIBRARY_SEARCH_SYSTEM32 only */
-        p_SetDefaultDllDirectories(0x800);
+        /* LOAD_LIBRARY_SEARCH_SYSTEM32 and explicitly specified
+         * directories only */
+        p_SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 |
+                                   LOAD_LIBRARY_SEARCH_USER_DIRS);
     }
 }
 

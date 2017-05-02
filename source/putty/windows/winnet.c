@@ -5,11 +5,15 @@
  * unfix.org.
  */
 
+#include <winsock2.h> /* need to put this first, for winelib builds */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
 #define DEFINE_PLUG_METHOD_MACROS
+#define NEED_DECLARATION_OF_SELECT     /* in order to initialise it */
+
 #include "putty.h"
 #include "network.h"
 #include "tree234.h"
@@ -17,8 +21,15 @@
 #include <ws2tcpip.h>
 
 #ifndef NO_IPV6
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-braces"
+#endif
 const struct in6_addr in6addr_any = IN6ADDR_ANY_INIT;
 const struct in6_addr in6addr_loopback = IN6ADDR_LOOPBACK_INIT;
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #endif
 
 #define ipv4_is_loopback(addr) \
@@ -229,6 +240,13 @@ int sk_startup(int hi, int lo)
     return TRUE;
 }
 
+/* Actually define this function pointer, which won't have been
+ * defined alongside all the others by PUTTY_DO_GLOBALS because of the
+ * annoying winelib header-ordering issue. (See comment in winstuff.h.) */
+DECL_WINDOWS_FUNCTION(/* empty */, int, select,
+		      (int, fd_set FAR *, fd_set FAR *,
+		       fd_set FAR *, const struct timeval FAR *));
+
 void sk_init(void)
 {
 #ifndef NO_IPV6
@@ -250,7 +268,10 @@ void sk_init(void)
 	GET_WINDOWS_FUNCTION(winsock_module, getaddrinfo);
 	GET_WINDOWS_FUNCTION(winsock_module, freeaddrinfo);
 	GET_WINDOWS_FUNCTION(winsock_module, getnameinfo);
-	GET_WINDOWS_FUNCTION(winsock_module, gai_strerror);
+        /* This function would fail its type-check if we did one,
+         * because the VS header file provides an inline definition
+         * which is __cdecl instead of WINAPI. */
+        GET_WINDOWS_FUNCTION_NO_TYPECHECK(winsock_module, gai_strerror);
     } else {
 	/* Fall back to wship6.dll for Windows 2000 */
 	wship6_module = load_system32_dll("wship6.dll");
@@ -261,7 +282,8 @@ void sk_init(void)
 	    GET_WINDOWS_FUNCTION(wship6_module, getaddrinfo);
 	    GET_WINDOWS_FUNCTION(wship6_module, freeaddrinfo);
 	    GET_WINDOWS_FUNCTION(wship6_module, getnameinfo);
-	    GET_WINDOWS_FUNCTION(wship6_module, gai_strerror);
+            /* See comment above about type check */
+            GET_WINDOWS_FUNCTION_NO_TYPECHECK(winsock_module, gai_strerror);
 	} else {
 #ifdef NET_SETUP_DIAGNOSTICS
 	    logevent(NULL, "No IPv6 support detected");
@@ -292,7 +314,13 @@ void sk_init(void)
     GET_WINDOWS_FUNCTION(winsock_module, getservbyname);
     GET_WINDOWS_FUNCTION(winsock_module, inet_addr);
     GET_WINDOWS_FUNCTION(winsock_module, inet_ntoa);
+#if (defined _MSC_VER && _MSC_VER < 1900) || defined __MINGW32__
+    /* Older Visual Studio, and MinGW as of Ubuntu 16.04, don't know
+     * about this function at all, so can't type-check it */
+    GET_WINDOWS_FUNCTION_NO_TYPECHECK(winsock_module, inet_ntop);
+#else
     GET_WINDOWS_FUNCTION(winsock_module, inet_ntop);
+#endif
     GET_WINDOWS_FUNCTION(winsock_module, connect);
     GET_WINDOWS_FUNCTION(winsock_module, bind);
     GET_WINDOWS_FUNCTION(winsock_module, setsockopt);
@@ -756,6 +784,8 @@ static int ipv4_is_local_addr(struct in_addr addr)
 	SOCKET s = p_socket(AF_INET, SOCK_DGRAM, 0);
 	DWORD retbytes;
 
+	SetHandleInformation((HANDLE)s, HANDLE_FLAG_INHERIT, 0);
+
 	if (p_WSAIoctl &&
 	    p_WSAIoctl(s, SIO_GET_INTERFACE_LIST, NULL, 0,
 		       local_interfaces, sizeof(local_interfaces),
@@ -1003,6 +1033,8 @@ static DWORD try_connect(Actual_Socket sock)
 	sock->error = winsock_error_string(err);
 	goto ret;
     }
+
+	SetHandleInformation((HANDLE)s, HANDLE_FLAG_INHERIT, 0);
 
     if (sock->oobinline) {
 	BOOL b = TRUE;
@@ -1284,6 +1316,8 @@ Socket sk_newlistener(const char *srcaddr, int port, Plug plug,
 	ret->error = winsock_error_string(err);
 	return (Socket) ret;
     }
+
+	SetHandleInformation((HANDLE)s, HANDLE_FLAG_INHERIT, 0);
 
     ret->oobinline = 0;
 

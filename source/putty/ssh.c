@@ -1036,20 +1036,20 @@ static void parse_ttymodes(Ssh ssh,
     int i;
     const struct ssh_ttymode *mode;
     char *val;
-    char default_val[2];
-
-    strcpy(default_val, "A");
 
     for (i = 0; i < lenof(ssh_ttymodes); i++) {
         mode = ssh_ttymodes + i;
-        val = conf_get_str_str_opt(ssh->conf, CONF_ttymodes, mode->mode);
-        if (!val)
-            val = default_val;
+	/* Every mode known to the current version of the code should be
+	 * mentioned; this was ensured when settings were loaded. */
+        val = conf_get_str_str(ssh->conf, CONF_ttymodes, mode->mode);
 
 	/*
-	 * val[0] is either 'V', indicating that an explicit value
-	 * follows it, or 'A' indicating that we should pass the
-	 * value through from the local environment via get_ttymode.
+	 * val[0] can be
+	 *  - 'V', indicating that an explicit value follows it;
+	 *  - 'A', indicating that we should pass the value through from
+	 *    the local environment via get_ttymode; or
+	 *  - 'N', indicating that we should explicitly not send this
+	 *    mode.
 	 */
 	if (val[0] == 'A') {
 	    val = get_ttymode(ssh->frontend, mode->mode);
@@ -1057,8 +1057,9 @@ static void parse_ttymodes(Ssh ssh,
 		do_mode(data, mode, val);
 		sfree(val);
 	    }
-	} else
+	} else if (val[0] == 'V') {
             do_mode(data, mode, val + 1);              /* skip the 'V' */
+	} /* else 'N', or something from the future we don't understand */
     }
 }
 
@@ -3954,6 +3955,7 @@ static void ssh_agentf_try_forward(struct ssh_channel *c)
          * straight on and go round this loop again.
          */
         ssh_agentf_got_response(c, reply, replylen);
+        sfree(reply);
     }
 
     /*
@@ -9444,21 +9446,25 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
                             goto done_agent_query;
                         }
                         bloblen = toint(GET_32BIT(q));
+                        lenleft -= 4;
+                        q += 4;
                         if (bloblen < 0 || bloblen > lenleft) {
                             logeventf(ssh, "Pageant response was truncated");
                             s->nkeys = 0;
                             goto done_agent_query;
                         }
-                        lenleft -= 4 + bloblen;
-                        q += 4 + bloblen;
+                        lenleft -= bloblen;
+                        q += bloblen;
                         commentlen = toint(GET_32BIT(q));
+                        lenleft -= 4;
+                        q += 4;
                         if (commentlen < 0 || commentlen > lenleft) {
                             logeventf(ssh, "Pageant response was truncated");
                             s->nkeys = 0;
                             goto done_agent_query;
                         }
-                        lenleft -= 4 + commentlen;
-                        q += 4 + commentlen;
+                        lenleft -= commentlen;
+                        q += commentlen;
                     }
                 }
 
