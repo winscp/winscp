@@ -127,6 +127,9 @@
 			<BuildOrder>26</BuildOrder>
 			<BuildOrder>14</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\miscucs.c">
+			<BuildOrder>51</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\noshare.c">
 			<BuildOrder>41</BuildOrder>
 		</CppCompile>
@@ -278,6 +281,9 @@
 		<CppCompile Include="putty\windows\wintime.c">
 			<BuildOrder>12</BuildOrder>
 			<BuildOrder>110</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\WINDOWS\winucs.c">
+			<BuildOrder>52</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\x11fwd.c">
 			<BuildOrder>113</BuildOrder>
