@@ -32,6 +32,25 @@ extern const UnicodeString PuttygenTool = L"puttygen.exe";
 bool __fastcall FindFile(UnicodeString & Path)
 {
   bool Result = FileExists(ApiPath(Path));
+
+  if (!Result)
+  {
+    UnicodeString ProgramFiles32 = IncludeTrailingBackslash(GetEnvironmentVariable(L"ProgramFiles"));
+    UnicodeString ProgramFiles64 = IncludeTrailingBackslash(GetEnvironmentVariable(L"ProgramW6432"));
+    if (!ProgramFiles32.IsEmpty() &&
+        SameText(Path.SubString(1, ProgramFiles32.Length()), ProgramFiles32) &&
+        !ProgramFiles64.IsEmpty())
+    {
+      UnicodeString Path64 =
+        ProgramFiles64 + Path.SubString(ProgramFiles32.Length() + 1, Path.Length() - ProgramFiles32.Length());
+      if (FileExists(ApiPath(Path64)))
+      {
+        Path = Path64;
+        Result = true;
+      }
+    }
+  }
+
   if (!Result)
   {
     UnicodeString Paths = GetEnvironmentVariable(L"PATH");
