@@ -869,7 +869,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   THierarchicalStorage * Result;
   if (SessionList && !FTemporarySessionFile.IsEmpty())
   {
-    Result = new TIniFileStorage(FTemporarySessionFile);
+    Result = TIniFileStorage::CreateFromPath(FTemporarySessionFile);
     // This is session-list specific store, so the only instance,
     // we do not reset the SessionList argument
     // (compare TConfiguration::CreateScpStorage)

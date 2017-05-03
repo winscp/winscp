@@ -202,12 +202,13 @@ protected:
 class TIniFileStorage : public TCustomIniFileStorage
 {
 public:
-  __fastcall TIniFileStorage(const UnicodeString FileName);
+  static TIniFileStorage * __fastcall CreateFromPath(const UnicodeString AStorage);
   virtual __fastcall ~TIniFileStorage();
 
   virtual void __fastcall Flush();
 
 private:
+  __fastcall TIniFileStorage(const UnicodeString FileName, TCustomIniFile * IniFile);
   TStrings * FOriginal;
   void __fastcall ApplyOverrides();
 };

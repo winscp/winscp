@@ -3997,7 +3997,7 @@ void __fastcall TStoredSessionList::ImportFromFilezilla(
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Export(const UnicodeString FileName)
 {
-  THierarchicalStorage * Storage = new TIniFileStorage(FileName);
+  THierarchicalStorage * Storage = TIniFileStorage::CreateFromPath(FileName);
   try
   {
     Storage->AccessMode = smReadWrite;

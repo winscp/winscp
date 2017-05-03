@@ -163,12 +163,12 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
   }
   else if (Storage == stNul)
   {
-    Result = new TIniFileStorage(INI_NUL);
+    Result = TIniFileStorage::CreateFromPath(INI_NUL);
   }
   else
   {
     UnicodeString StorageName = IniFileStorageName;
-    Result = new TIniFileStorage(StorageName);
+    Result = TIniFileStorage::CreateFromPath(StorageName);
   }
 
   if ((FOptionsStorage.get() != NULL) && (FOptionsStorage->Count > 0))
@@ -327,7 +327,7 @@ void __fastcall TConfiguration::Export(const UnicodeString & FileName)
   THierarchicalStorage * ExportStorage = NULL;
   try
   {
-    ExportStorage = new TIniFileStorage(FileName);
+    ExportStorage = TIniFileStorage::CreateFromPath(FileName);
     ExportStorage->AccessMode = smReadWrite;
     ExportStorage->Explicit = true;
 
@@ -356,7 +356,7 @@ void __fastcall TConfiguration::Import(const UnicodeString & FileName)
   THierarchicalStorage * ImportStorage = NULL;
   try
   {
-    ImportStorage = new TIniFileStorage(FileName);
+    ImportStorage = TIniFileStorage::CreateFromPath(FileName);
     ImportStorage->AccessMode = smRead;
 
     Storage = CreateConfigStorage();
