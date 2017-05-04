@@ -63,7 +63,7 @@ private:
   TButton * __fastcall CreateButton(
     UnicodeString Name, UnicodeString Caption, unsigned int Answer,
     TNotifyEvent OnClick, bool IsTimeoutButton,
-    int GroupWith, TShiftState GrouppedShiftState, bool ElevationRequired,
+    int GroupWith, TShiftState GrouppedShiftState, bool ElevationRequired, bool MenuButton,
     TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidths);
 };
 //----------------------------------------------------------------------------

@@ -5000,7 +5000,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
         }
       }
 
-      FTerminal->LogFileDone(OperationProgress);
+      FTerminal->LogFileDone(OperationProgress, DestFullName);
     }
   }
   __finally
@@ -5673,6 +5673,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
     RawByteString RemoteHandle;
     UnicodeString LocalFileName = DestFullName;
     TSFTPOverwriteMode OverwriteMode = omOverwrite;
+    UnicodeString ExpandedDestFullName;
 
     try
     {
@@ -5844,7 +5845,8 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
         }
       }
 
-      Action.Destination(ExpandUNCFileName(DestFullName));
+      ExpandedDestFullName = ExpandUNCFileName(DestFullName);
+      Action.Destination(ExpandedDestFullName);
 
       // if not already opened (resume, append...), create new empty file
       if (!LocalHandle)
@@ -6084,7 +6086,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
       }
     }
 
-    FTerminal->LogFileDone(OperationProgress);
+    FTerminal->LogFileDone(OperationProgress, ExpandedDestFullName);
   }
 
   if (Params & cpDelete)

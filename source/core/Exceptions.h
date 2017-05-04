@@ -59,6 +59,7 @@ public:
   static ExtException * __fastcall CloneFrom(Exception * E);
 
   virtual ExtException * __fastcall Clone();
+  virtual void __fastcall Rethrow();
 
 protected:
   void __fastcall AddMoreMessages(Exception* E);
@@ -170,15 +171,22 @@ DERIVE_FATAL_EXCEPTION(ESshFatal, EFatal);
 class ESshTerminate : public EFatal
 {
 public:
-  inline __fastcall ESshTerminate(Exception* E, UnicodeString Msg, TOnceDoneOperation AOperation) :
+  inline __fastcall ESshTerminate(
+      Exception* E, UnicodeString Msg, TOnceDoneOperation AOperation,
+      const UnicodeString & ATargetLocalPath, const UnicodeString & ADestLocalFileName) :
     EFatal(E, Msg),
-    Operation(AOperation)
+    Operation(AOperation),
+    TargetLocalPath(ATargetLocalPath),
+    DestLocalFileName(ADestLocalFileName)
   {
   }
 
   virtual ExtException * __fastcall Clone();
+  virtual void __fastcall Rethrow();
 
   TOnceDoneOperation Operation;
+  UnicodeString TargetLocalPath;
+  UnicodeString DestLocalFileName;
 };
 //---------------------------------------------------------------------------
 class ECallbackGuardAbort : public EAbort

@@ -2750,14 +2750,16 @@ bool __fastcall TTerminal::HandleException(Exception * E)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CloseOnCompletion(TOnceDoneOperation Operation, const UnicodeString Message)
+void __fastcall TTerminal::CloseOnCompletion(
+  TOnceDoneOperation Operation, const UnicodeString & Message,
+  const UnicodeString & TargetLocalPath, const UnicodeString & DestLocalFileName)
 {
   Configuration->Usage->Inc(L"ClosesOnCompletion");
   LogEvent(L"Closing session after completed operation (as requested by user)");
   Close();
   throw ESshTerminate(NULL,
     Message.IsEmpty() ? UnicodeString(LoadStr(CLOSED_ON_COMPLETION)) : Message,
-    Operation);
+    Operation, TargetLocalPath, DestLocalFileName);
 }
 //---------------------------------------------------------------------------
 TBatchOverwrite __fastcall TTerminal::EffectiveBatchOverwrite(
@@ -3310,12 +3312,21 @@ void __fastcall TTerminal::LogFileDetails(const UnicodeString & FileName, TDateT
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::LogFileDone(TFileOperationProgressType * OperationProgress)
+void __fastcall TTerminal::LogFileDone(TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName)
 {
+  if (FDestFileName.IsEmpty())
+  {
+    FDestFileName = DestFileName;
+  }
+  else
+  {
+    FMultipleDestinationFiles = true;
+  }
+
   // optimization
   if (Log->Logging)
   {
-    LogEvent(FORMAT("Transfer done: '%s' [%s]", (OperationProgress->FullFileName, IntToStr(OperationProgress->TransferredSize))));
+    LogEvent(FORMAT("Transfer done: '%s' => '%s' [%s]", (OperationProgress->FullFileName, DestFileName, IntToStr(OperationProgress->TransferredSize))));
   }
 }
 //---------------------------------------------------------------------------
@@ -6503,6 +6514,9 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
   DebugAssert(FilesToCopy != NULL);
   TOnceDoneOperation OnceDoneOperation = odoIdle;
 
+  FDestFileName = L"";
+  FMultipleDestinationFiles = false;
+
   BeginTransaction();
   try
   {
@@ -6619,7 +6633,12 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
 
   if (OnceDoneOperation != odoIdle)
   {
-    CloseOnCompletion(OnceDoneOperation);
+    UnicodeString DestFileName;
+    if (!FMultipleDestinationFiles)
+    {
+      DestFileName = FDestFileName;
+    }
+    CloseOnCompletion(OnceDoneOperation, UnicodeString(), TargetDir, DestFileName);
   }
 
   return Result;

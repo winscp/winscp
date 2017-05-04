@@ -285,6 +285,8 @@
 #define USAGE_REFRESH           1574
 #define USAGE_LOGSIZE           1575
 #define PASSWORD_CHANGED        1576
+#define OPEN_TARGET_FOLDER      1577
+#define OPEN_DOWNLOADED_FILE    1578
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605

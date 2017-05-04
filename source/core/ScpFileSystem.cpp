@@ -1969,7 +1969,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
           Rights);
       }
 
-      FTerminal->LogFileDone(OperationProgress);
+      FTerminal->LogFileDone(OperationProgress, AbsoluteFileName);
     }
   }
   __finally
@@ -2667,7 +2667,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
             FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFileName)));
           }
 
-          FTerminal->LogFileDone(OperationProgress);
+          FTerminal->LogFileDone(OperationProgress, DestFileName);
         }
       }
     }

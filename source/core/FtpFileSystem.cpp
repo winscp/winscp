@@ -1744,7 +1744,8 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
       Attrs = FileGetAttrFix(ApiPath(DestFullName));
     }
 
-    Action.Destination(ExpandUNCFileName(DestFullName));
+    UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
+    Action.Destination(ExpandedDestFullName);
 
     if (Attrs == -1)
     {
@@ -1760,7 +1761,7 @@ void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
       FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFullName)));
     }
 
-    FTerminal->LogFileDone(OperationProgress);
+    FTerminal->LogFileDone(OperationProgress, ExpandedDestFullName);
   }
 
   if (FLAGSET(Params, cpDelete))
@@ -2031,7 +2032,7 @@ void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
       }
     }
 
-    FTerminal->LogFileDone(OperationProgress);
+    FTerminal->LogFileDone(OperationProgress, DestFullName);
   }
 
   /* TODO : Delete also read-only files. */

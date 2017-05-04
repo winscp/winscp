@@ -946,11 +946,7 @@ void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ExploreLocalDirectory()
 {
-  if ((int)ShellExecute(Application->Handle, L"explore",
-      (wchar_t*)LocalDirView->Path.data(), NULL, NULL, SW_SHOWNORMAL) <= 32)
-  {
-    throw Exception(FORMAT(EXPLORE_LOCAL_DIR_ERROR, (LocalDirView->Path)));
-  }
+  OpenFolderInExplorer(LocalDirView->Path);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDirViewExecFile(TObject *Sender,

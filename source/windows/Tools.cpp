@@ -650,6 +650,21 @@ void __fastcall OpenBrowser(UnicodeString URL)
   ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 //---------------------------------------------------------------------------
+void __fastcall OpenFolderInExplorer(const UnicodeString & Path)
+{
+  if ((int)ShellExecute(Application->Handle, L"explore",
+      (wchar_t*)Path.data(), NULL, NULL, SW_SHOWNORMAL) <= 32)
+  {
+    throw Exception(FMTLOAD(EXPLORE_LOCAL_DIR_ERROR, (Path)));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall OpenFileInExplorer(const UnicodeString & Path)
+{
+  PCIDLIST_ABSOLUTE Folder = ILCreateFromPathW(ApiPath(Path).c_str());
+  SHOpenFolderAndSelectItems(Folder, 0, NULL, 0);
+}
+//---------------------------------------------------------------------------
 void __fastcall ShowHelp(const UnicodeString & AHelpKeyword)
 {
   // see also AppendUrlParams

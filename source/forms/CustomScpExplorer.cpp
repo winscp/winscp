@@ -6679,9 +6679,9 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
     }
   }
 
-  if (!FDragDropSshTerminate.IsEmpty())
+  if (FDragDropSshTerminate.get() != NULL)
   {
-    throw ESshTerminate(NULL, FDragDropSshTerminate, FDragDropOnceDoneOperation);
+    FDragDropSshTerminate->Rethrow();
   }
 }
 //---------------------------------------------------------------------------
@@ -7420,8 +7420,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDDragDetect(
   FDDFileList = new TStringList();
   FDragTempDir = WinConfiguration->TemporaryDir();
   FDDTotalSize = 0;
-  FDragDropSshTerminate = L"";
-  FDragDropOnceDoneOperation = odoIdle;
+  FDragDropSshTerminate.reset(NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
@@ -7439,10 +7438,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
       }
       catch(ESshTerminate & E)
       {
-        DebugAssert(E.MoreMessages == NULL); // not supported
-        DebugAssert(!E.Message.IsEmpty());
-        FDragDropSshTerminate = E.Message;
-        FDragDropOnceDoneOperation = E.Operation;
+        FDragDropSshTerminate.reset(E.Clone());
       }
     }
     catch (Exception &E)

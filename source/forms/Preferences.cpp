@@ -1337,7 +1337,7 @@ void __fastcall TPreferencesDialog::EditorFontColorButtonClick(TObject * /*Sende
   // WORKAROUND: Compiler keeps crashing randomly (but frequently) with
   // "internal error" when passing menu directly to unique_ptr.
   // Splitting it to two statements seems to help.
-  // The same hack exists in TSiteAdvancedDialog::ColorButtonClick
+  // The same hack exists in TSiteAdvancedDialog::ColorButtonClick and TOpenLocalPathHandler::Open
   TPopupMenu * Menu = CreateColorPopupMenu(FEditorFont->Color, EditorFontColorChange);
   // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
   FColorPopupMenu.reset(Menu);

@@ -477,7 +477,7 @@ static UnicodeString __fastcall GetKeyNameStr(int Key)
 TButton * __fastcall TMessageForm::CreateButton(
   UnicodeString Name, UnicodeString Caption, unsigned int Answer,
   TNotifyEvent OnClick, bool IsTimeoutButton,
-  int GroupWith, TShiftState GrouppedShiftState, bool ElevationRequired,
+  int GroupWith, TShiftState GrouppedShiftState, bool ElevationRequired, bool MenuButton,
   TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidths)
 {
   UnicodeString MeasureCaption = Caption;
@@ -495,6 +495,10 @@ TButton * __fastcall TMessageForm::CreateButton(
   if (ElevationRequired && IsVista())
   {
     // Elevation icon
+    CurButtonWidth += ScaleByTextHeightRunTime(this, 16);
+  }
+  if (MenuButton)
+  {
     CurButtonWidth += ScaleByTextHeightRunTime(this, 16);
   }
 
@@ -610,6 +614,11 @@ TButton * __fastcall TMessageForm::CreateButton(
 
     Button->ElevationRequired = ElevationRequired;
     ButtonWidths += Button->Width;
+
+    if (MenuButton)
+    {
+      ::MenuButton(Button);
+    }
   }
 
   return Button;
@@ -846,6 +855,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       int GroupWith = -1;
       TShiftState GrouppedShiftState;
       bool ElevationRequired = false;
+      bool MenuButton = false;
       if (Aliases != NULL)
       {
         for (unsigned int i = 0; i < AliasesCount; i++)
@@ -860,6 +870,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
             GroupWith = Aliases[i].GroupWith;
             GrouppedShiftState = Aliases[i].GrouppedShiftState;
             ElevationRequired = Aliases[i].ElevationRequired;
+            MenuButton = Aliases[i].MenuButton;
             DebugAssert((OnClick == NULL) || (GrouppedShiftState == TShiftState()));
             break;
           }
@@ -895,7 +906,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
       TButton * Button = Result->CreateButton(
         Name, Caption, Answer,
-        OnClick, IsTimeoutButton, GroupWith, GrouppedShiftState, ElevationRequired,
+        OnClick, IsTimeoutButton, GroupWith, GrouppedShiftState, ElevationRequired, MenuButton,
         AnswerButtons, HasMoreMessages, ButtonWidths);
 
       if (Button != NULL)

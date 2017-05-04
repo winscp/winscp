@@ -288,6 +288,8 @@ BEGIN
         USAGE_REFRESH, "Reloads remote panel of all running instances of WinSCP. If session (and optionally a path) is specified, refreshes only the instances with that session (and path)."
         USAGE_LOGSIZE, "Enables log rotation and optionally deleting of old logs."
         PASSWORD_CHANGED, "Password has been changed."
+        OPEN_TARGET_FOLDER, "Open &Target Folder"
+        OPEN_DOWNLOADED_FILE, "Open &Downloaded File"
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"

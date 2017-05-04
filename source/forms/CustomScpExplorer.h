@@ -208,8 +208,7 @@ private:
   TTimer * FDelayedDeletionTimer;
   TStrings * FDDFileList;
   __int64 FDDTotalSize;
-  UnicodeString FDragDropSshTerminate;
-  TOnceDoneOperation FDragDropOnceDoneOperation;
+  std::unique_ptr<ExtException> FDragDropSshTerminate;
   HINSTANCE FOle32Library;
   HCURSOR FDragMoveCursor;
   UnicodeString FDragTempDir;

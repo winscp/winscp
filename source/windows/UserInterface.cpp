@@ -130,6 +130,57 @@ void __fastcall TerminateApplication()
   Application->Terminate();
 }
 //---------------------------------------------------------------------------
+struct TOpenLocalPathHandler
+{
+  UnicodeString LocalPath;
+  UnicodeString LocalFileName;
+
+  void __fastcall Open(TObject * Sender)
+  {
+    TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
+    // Reason for separate AMenu variable is given in TPreferencesDialog::EditorFontColorButtonClick
+    TPopupMenu * AMenu = new TPopupMenu(Application);
+    // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
+    Menu.reset(AMenu);
+    TMenuItem * Item;
+
+    Item = new TMenuItem(Menu.get());
+    Menu->Items->Add(Item);
+    Item->Caption = LoadStr(OPEN_TARGET_FOLDER);
+    Item->OnClick = OpenFolderClick;
+
+    if (!LocalFileName.IsEmpty())
+    {
+      Item = new TMenuItem(Menu.get());
+      Menu->Items->Add(Item);
+      Item->Caption = LoadStr(OPEN_DOWNLOADED_FILE);
+      Item->OnClick = OpenFileClick;
+    }
+
+    MenuPopup(Menu.get(), Button);
+  }
+
+private:
+  std::unique_ptr<TPopupMenu> Menu;
+
+  void __fastcall OpenFolderClick(TObject * /*Sender*/)
+  {
+    if (LocalFileName.IsEmpty())
+    {
+      OpenFolderInExplorer(LocalPath);
+    }
+    else
+    {
+      OpenFileInExplorer(LocalFileName);
+    }
+  }
+
+  void __fastcall OpenFileClick(TObject * /*Sender*/)
+  {
+    ExecuteShellChecked(LocalFileName, L"");
+  }
+};
+//---------------------------------------------------------------------------
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   Exception * E)
 {
@@ -165,130 +216,146 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   {
     TTerminalManager * Manager = TTerminalManager::Instance(false);
 
-    TQueryType Type;
     ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
     bool CloseOnCompletion = (Terminate != NULL);
-    Type = CloseOnCompletion ? qtInformation : qtError;
-    bool ConfirmExitOnCompletion =
-      CloseOnCompletion &&
-      ((Terminate->Operation == odoDisconnect) || (Terminate->Operation == odoSuspend)) &&
-      WinConfiguration->ConfirmExitOnCompletion;
 
-    if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
-        (Manager != NULL) && (Manager->ActiveTerminal == Terminal))
+    bool ForActiveTerminal =
+      E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
+      (Manager != NULL) && (Manager->ActiveTerminal == Terminal);
+
+    unsigned int Result;
+    if (CloseOnCompletion)
     {
-      int SessionReopenTimeout = 0;
-      TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Manager->ActiveTerminal);
-      if ((ManagedTerminal != NULL) &&
-          ((Configuration->SessionReopenTimeout == 0) ||
-           ((double)ManagedTerminal->ReopenStart == 0) ||
-           (int(double(Now() - ManagedTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
-      {
-        SessionReopenTimeout = GUIConfiguration->SessionReopenAutoIdle;
-      }
-
-      unsigned int Result;
-      if (CloseOnCompletion)
+      if (ForActiveTerminal)
       {
         Manager->DisconnectActiveTerminal();
+      }
 
-        if (Terminate->Operation == odoSuspend)
+      if (Terminate->Operation == odoSuspend)
+      {
+        // suspend, so that exit prompt is shown only after windows resume
+        SuspendWindows();
+      }
+
+      DebugAssert(Show);
+      bool ConfirmExitOnCompletion =
+        CloseOnCompletion &&
+        ((Terminate->Operation == odoDisconnect) || (Terminate->Operation == odoSuspend)) &&
+        WinConfiguration->ConfirmExitOnCompletion;
+
+      if (ConfirmExitOnCompletion)
+      {
+        TMessageParams Params(mpNeverAskAgainCheck);
+        unsigned int Answers = 0;
+        TQueryButtonAlias Aliases[1];
+        TOpenLocalPathHandler OpenLocalPathHandler;
+        if (!Terminate->TargetLocalPath.IsEmpty() && !ForActiveTerminal)
         {
-          // suspend, so that exit prompt is shown only after windows resume
-          SuspendWindows();
+          OpenLocalPathHandler.LocalPath = Terminate->TargetLocalPath;
+          OpenLocalPathHandler.LocalFileName = Terminate->DestLocalFileName;
+
+          Aliases[0].Button = qaIgnore;
+          Aliases[0].Alias = LoadStr(OPEN_BUTTON);
+          Aliases[0].OnClick = OpenLocalPathHandler.Open;
+          Aliases[0].MenuButton = true;
+          Answers |= Aliases[0].Button;
+          Params.Aliases = Aliases;
+          Params.AliasesCount = LENOF(Aliases);
         }
 
-        DebugAssert(Show);
-        if (ConfirmExitOnCompletion)
+        if (ForActiveTerminal)
         {
-          TMessageParams Params(mpNeverAskAgainCheck);
           UnicodeString MessageFormat =
             MainInstructions((Manager->Count > 1) ?
               FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
               LoadStr(EXIT_ON_COMPLETION));
-          Result = FatalExceptionMessageDialog(E, Type, 0,
+          Result = FatalExceptionMessageDialog(E, qtInformation, 0,
             MessageFormat,
-            qaYes | qaNo, HELP_NONE, &Params);
-
-          if (Result == qaNeverAskAgain)
-          {
-            Result = qaYes;
-            WinConfiguration->ConfirmExitOnCompletion = false;
-          }
+            Answers | qaYes | qaNo, HELP_NONE, &Params);
         }
         else
         {
-          Result = qaYes;
+          Result =
+            ExceptionMessageDialog(E, qtInformation, L"", Answers | qaOK, HELP_NONE, &Params);
         }
       }
       else
       {
-        if (Show)
-        {
-          Result = FatalExceptionMessageDialog(E, Type, SessionReopenTimeout);
-        }
-        else
-        {
-          Result = qaOK;
-        }
-      }
-
-      if (Result == qaYes)
-      {
-        DebugAssert(CloseOnCompletion);
-        DebugAssert(Terminate != NULL);
-        DebugAssert(Terminate->Operation != odoIdle);
-        TerminateApplication();
-
-        switch (Terminate->Operation)
-        {
-          case odoDisconnect:
-            break;
-
-          case odoSuspend:
-            // suspended before already
-            break;
-
-          case odoShutDown:
-            ShutDownWindows();
-            break;
-
-          default:
-            DebugFail();
-        }
-      }
-      else if (Result == qaRetry)
-      {
-        Manager->ReconnectActiveTerminal();
-      }
-      else
-      {
-        Manager->FreeActiveTerminal();
+        Result = qaYes;
       }
     }
     else
     {
-      // this should not happen as we never use Terminal->CloseOnCompletion
-      // on inactive terminal
-      if (CloseOnCompletion)
+      if (Show)
       {
-        DebugAssert(Show);
-        if (ConfirmExitOnCompletion)
+        if (ForActiveTerminal)
         {
-          TMessageParams Params(mpNeverAskAgainCheck);
-          if (ExceptionMessageDialog(E, Type, L"", qaOK, HELP_NONE, &Params) ==
-                qaNeverAskAgain)
+          int SessionReopenTimeout = 0;
+          TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Manager->ActiveTerminal);
+          if ((ManagedTerminal != NULL) &&
+              ((Configuration->SessionReopenTimeout == 0) ||
+               ((double)ManagedTerminal->ReopenStart == 0) ||
+               (int(double(Now() - ManagedTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
           {
-            WinConfiguration->ConfirmExitOnCompletion = false;
+            SessionReopenTimeout = GUIConfiguration->SessionReopenAutoIdle;
           }
+          Result = FatalExceptionMessageDialog(E, qtError, SessionReopenTimeout);
+        }
+        else
+        {
+          Result = ExceptionMessageDialog(E, qtError);
         }
       }
       else
       {
-        if (Show)
-        {
-          ExceptionMessageDialog(E, Type);
-        }
+        Result = qaOK;
+      }
+    }
+
+    if (Result == qaNeverAskAgain)
+    {
+      DebugAssert(CloseOnCompletion);
+      Result = qaYes;
+      WinConfiguration->ConfirmExitOnCompletion = false;
+    }
+
+    if (Result == qaYes)
+    {
+      DebugAssert(CloseOnCompletion);
+      DebugAssert(Terminate != NULL);
+      DebugAssert(Terminate->Operation != odoIdle);
+      TerminateApplication();
+
+      switch (Terminate->Operation)
+      {
+        case odoDisconnect:
+          break;
+
+        case odoSuspend:
+          // suspended before already
+          break;
+
+        case odoShutDown:
+          ShutDownWindows();
+          break;
+
+        default:
+          DebugFail();
+      }
+    }
+    else if (Result == qaRetry)
+    {
+      // qaRetry is used by FatalExceptionMessageDialog
+      if (DebugAlwaysTrue(ForActiveTerminal))
+      {
+        Manager->ReconnectActiveTerminal();
+      }
+    }
+    else
+    {
+      if (ForActiveTerminal)
+      {
+        Manager->FreeActiveTerminal();
       }
     }
   }

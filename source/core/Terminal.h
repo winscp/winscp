@@ -214,6 +214,8 @@ private:
   int FNesting;
   UnicodeString FFingerprintScanned;
   DWORD FLastProgressLogged;
+  UnicodeString FDestFileName;
+  bool FMultipleDestinationFiles;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -385,7 +387,7 @@ protected:
   void __fastcall LogRemoteFile(TRemoteFile * File);
   UnicodeString __fastcall FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
   void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
-  void __fastcall LogFileDone(TFileOperationProgressType * OperationProgress);
+  void __fastcall LogFileDone(TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName);
   void __fastcall LogTotalTransferDetails(
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     TFileOperationProgressType * OperationProgress, bool Parallel, TStrings * Files);
@@ -425,7 +427,9 @@ public:
   void __fastcall RecryptPasswords();
   bool __fastcall AllowedAnyCommand(const UnicodeString Command);
   void __fastcall AnyCommand(const UnicodeString Command, TCaptureOutputEvent OutputEvent);
-  void __fastcall CloseOnCompletion(TOnceDoneOperation Operation = odoDisconnect, const UnicodeString Message = L"");
+  void __fastcall CloseOnCompletion(
+    TOnceDoneOperation Operation = odoDisconnect, const UnicodeString & Message = L"",
+    const UnicodeString & TargetLocalPath = L"", const UnicodeString & DestLocalFileName = L"");
   UnicodeString __fastcall AbsolutePath(UnicodeString Path, bool Local);
   void __fastcall BeginTransaction();
   void __fastcall ReadCurrentDirectory();

@@ -1608,7 +1608,7 @@ void __fastcall TWebDAVFileSystem::Source(const UnicodeString FileName,
         }
       }
 
-      FTerminal->LogFileDone(OperationProgress);
+      FTerminal->LogFileDone(OperationProgress, DestFullName);
     }
   }
   __finally
@@ -2219,7 +2219,8 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
       FilePath = L"/";
     }
 
-    Action.Destination(ExpandUNCFileName(DestFullName));
+    UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
+    Action.Destination(ExpandedDestFullName);
 
     FILE_OPERATION_LOOP_BEGIN
     {
@@ -2295,7 +2296,7 @@ void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
       FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFullName)));
     }
 
-    FTerminal->LogFileDone(OperationProgress);
+    FTerminal->LogFileDone(OperationProgress, ExpandedDestFullName);
   }
 
   if (FLAGSET(Params, cpDelete))

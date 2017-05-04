@@ -90,6 +90,7 @@ struct TQueryButtonAlias
   int GroupWith;
   TShiftState GrouppedShiftState;
   bool ElevationRequired;
+  bool MenuButton;
 };
 
 typedef void __fastcall (__closure *TQueryParamsTimerEvent)(unsigned int & Result);
