@@ -1332,7 +1332,10 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
     if (FProgressForm->Cancel > csContinue)
     {
       ProgressData.SetCancelAtLeast(FProgressForm->Cancel);
-      ProgressData.ClearCancelFile();
+      if (FProgressForm->Cancel == csCancelFile)
+      {
+        FProgressForm->ClearCancel();
+      }
       // cancel cancels even the move
       FMoveToQueue = false;
     }

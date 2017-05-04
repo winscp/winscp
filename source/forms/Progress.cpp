@@ -674,14 +674,14 @@ void __fastcall TProgressForm::SpeedComboBoxItemClick(TObject * Sender)
   ClickToolbarItem(DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender)), false);
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::SetCancel(TCancelStatus value)
+void __fastcall TProgressForm::ClearCancel()
 {
-  if (DebugAlwaysTrue(FCancel == csCancelFile) &&
-      DebugAlwaysTrue(value == csContinue))
+  if (DebugAlwaysTrue(FCancel == csCancelFile))
   {
     FPendingSkip = true;
   }
-  FCancel = value;
+  FCancel = csContinue;
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::SetCancelLower(TCancelStatus ACancel)

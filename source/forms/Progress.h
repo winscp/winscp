@@ -130,7 +130,6 @@ protected:
   void __fastcall Minimize(TObject * Sender);
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall SetCancelLower(TCancelStatus ACancel);
-  void __fastcall SetCancel(TCancelStatus value);
 
   static bool __fastcall IsIndeterminateOperation(TFileOperation Operation);
 
@@ -140,7 +139,8 @@ public:
   virtual __fastcall TProgressForm(TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip);
   virtual __fastcall ~TProgressForm();
   void __fastcall SetProgressData(TFileOperationProgressType & AData);
-  __property TCancelStatus Cancel = { read = FCancel, write = SetCancel };
+  void __fastcall ClearCancel();
+  __property TCancelStatus Cancel = { read = FCancel };
   __property bool MoveToQueue = { read = FMoveToQueue };
   __property TOnceDoneOperation OnceDoneOperation = { read=GetOnceDoneOperation, write=SetOnceDoneOperation };
   __property bool AllowMinimize = { read=GetAllowMinimize, write=SetAllowMinimize };
