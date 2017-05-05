@@ -4255,8 +4255,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       return;
     }
     m_pTransferSocket->m_transferdata=pData->transferdata;
-    // not sure what happens when we active transfer socket immediately while resuming
-    // it can possibly make transfer socket start reading from a file before a file pointer is advanced
     if (GetOptionVal(OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELY) || !pData->bPasv)
     {
       m_pTransferSocket->SetActive();
