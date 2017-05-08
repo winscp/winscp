@@ -1725,6 +1725,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
 {
   TStrings * LocalFileList = NULL;
   TStrings * RemoteFileList = NULL;
+  TStrings * RemoteFileListFull = NULL;
   try
   {
     if (LocalFileCommand)
@@ -1790,6 +1791,23 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
           FLAGSET(ACommand.Params, ccRecursive) && !FileListCommand;
 
         ProcessLocalDirectory(TempDir, Terminal->MakeLocalFileList, &MakeFileListParam);
+
+        if (!MakeFileListParam.Recursive)
+        {
+          RemoteFileTimes.clear();
+
+          RemoteFileListFull = new TStringList();
+
+          MakeFileListParam.FileList = RemoteFileListFull;
+          MakeFileListParam.Recursive = true;
+          MakeFileListParam.IncludeDirs = false;
+
+          ProcessLocalDirectory(TempDir, Terminal->MakeLocalFileList, &MakeFileListParam);
+        }
+        else
+        {
+          RemoteFileListFull = RemoteFileList;
+        }
       }
 
       bool NonBlocking = FileListCommand && RemoteFiles && !POutput;
@@ -1898,12 +1916,11 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
       if (!RemoteFiles)
       {
         TempDir = IncludeTrailingBackslash(TempDir);
-        for (int Index = 0; Index < RemoteFileList->Count; Index++)
+        for (int Index = 0; Index < RemoteFileListFull->Count; Index++)
         {
-          UnicodeString FileName = RemoteFileList->Strings[Index];
+          UnicodeString FileName = RemoteFileListFull->Strings[Index];
           if (DebugAlwaysTrue(SameText(TempDir, FileName.SubString(1, TempDir.Length()))) &&
-              // Skip directories for now, they require recursion,
-              // and we do not have original nested files times available here yet.
+              // Skip directories, process only nested files.
               // The check is redundant as FileAge fails for directories anyway.
               !DirectoryExists(FileName))
           {
@@ -1948,6 +1965,10 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
     if (LocalFileList != ALocalFileList)
     {
       delete LocalFileList;
+    }
+    if (RemoteFileListFull != RemoteFileList)
+    {
+      delete RemoteFileListFull;
     }
   }
 }
