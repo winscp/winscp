@@ -1213,7 +1213,7 @@ begin
     else
       shAttr := SFGAO_DISPLAYATTRMASK;
 
-    // Resoving attributes make take ages, so we run it from a separate thread
+    // Resoving attributes may take ages, so we run it from a separate thread
     // and timeout waiting for the thread after a second.
     // But when running from IDE, it triggers starting/exiting the thread,
     // again taking ages. So in IDE we revert to single-thread approach
