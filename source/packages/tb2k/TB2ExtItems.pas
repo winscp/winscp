@@ -881,8 +881,12 @@ begin
       ActiveWnd := 0;
 
     FEditControlStatus := [ecsContinueLoop];
+    // During modal state of the toolbar, Windows logo key is not working.
+    // It should be fixed more generically, but here we fix it at least for the most obvious case (= while in edit box)
+    TTBModalHandler.UnlockForegroundWindow;
     ControlMessageLoop;
   finally
+    TTBModalHandler.LockForegroundWindow;
     S := FEditControl.Text;
     FreeAndNil(FEditControl);
   end;

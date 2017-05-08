@@ -882,6 +882,10 @@ type
       AFromMSAA, TrackRightButton: Boolean);
     property RootPopup: TTBPopupWindow read FRootPopup write FRootPopup;
     property Wnd: HWND read FWnd;
+
+    class procedure DoLockForegroundWindow(LockCode: Cardinal);
+    class procedure LockForegroundWindow;
+    class procedure UnlockForegroundWindow;
   end;
 
 function ProcessDoneAction(const DoneActionData: TTBDoneActionData;
@@ -5915,11 +5919,6 @@ var
 constructor TTBModalHandler.Create(AExistingWnd: HWND);
 begin
   inherited Create;
-  if not LockSetForegroundWindowInited then begin
-    LockSetForegroundWindow := GetProcAddress(GetModuleHandle(user32),
-      'LockSetForegroundWindow');
-    InterlockedExchange(Integer(LockSetForegroundWindowInited), Ord(True));
-  end;
   LastPos := SmallPointToPoint(TSmallPoint(GetMessagePos()));
   if AExistingWnd <> 0 then
     FWnd := AExistingWnd
@@ -5927,23 +5926,42 @@ begin
     FWnd := {$IFDEF JR_D6}Classes.{$ENDIF} AllocateHWnd(WndProc);
     FCreatedWnd := True;
   end;
-  if Assigned(LockSetForegroundWindow) then begin
-    { Like standard menus, don't allow other apps to steal the focus during
-      our modal loop. This also prevents us from losing activation when
-      "active window tracking" is enabled and the user moves the mouse over
-      another application's window. }
-    LockSetForegroundWindow(LSFW_LOCK);
-  end;
+  { Like standard menus, don't allow other apps to steal the focus during
+    our modal loop. This also prevents us from losing activation when
+    "active window tracking" is enabled and the user moves the mouse over
+    another application's window. }
+  LockForegroundWindow;
   SetCapture(FWnd);
   SetCursor(LoadCursor(0, IDC_ARROW));
   NotifyWinEvent(EVENT_SYSTEM_MENUSTART, FWnd, OBJID_CLIENT, CHILDID_SELF);
   FInited := True;
 end;
 
+class procedure TTBModalHandler.DoLockForegroundWindow(LockCode: Cardinal);
+begin
+  if not LockSetForegroundWindowInited then begin
+    LockSetForegroundWindow := GetProcAddress(GetModuleHandle(user32),
+      'LockSetForegroundWindow');
+    InterlockedExchange(Integer(LockSetForegroundWindowInited), Ord(True));
+  end;
+  { Should always, as supported since Windows 2000 }
+  if Assigned(LockSetForegroundWindow) then
+    LockSetForegroundWindow(LockCode);
+end;
+
+class procedure TTBModalHandler.LockForegroundWindow;
+begin
+  DoLockForegroundWindow(LSFW_LOCK);
+end;
+
+class procedure TTBModalHandler.UnlockForegroundWindow;
+begin
+  DoLockForegroundWindow(LSFW_UNLOCK);
+end;
+
 destructor TTBModalHandler.Destroy;
 begin
-  if Assigned(LockSetForegroundWindow) then
-    LockSetForegroundWindow(LSFW_UNLOCK);
+  UnlockForegroundWindow;
   if FWnd <> 0 then begin
     if GetCapture = FWnd then
       ReleaseCapture;
