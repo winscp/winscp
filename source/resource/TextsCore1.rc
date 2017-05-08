@@ -431,7 +431,7 @@ BEGIN
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"
   PUTTY_COPYRIGHT, "Copyright © 1997-2017 Simon Tatham"
-  PUTTY_URL, "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
+  PUTTY_URL, "https://www.chiark.greenend.org.uk/~sgtatham/putty/"
   FILEZILLA_BASED_ON2, "FTP code based on FileZilla"
   FILEZILLA_COPYRIGHT2, "Copyright © Tim Kosse"
   FILEZILLA_URL, "https://filezilla-project.org/"
@@ -444,7 +444,7 @@ BEGIN
   EXPAT_BASED_ON, "eXpat library %s"
   EXPAT_COPYRIGHT, "Copyright © 1998-2012 Expat maintainers"
   EXPAT_URL, "http://www.libexpat.org/"
-  PUTTY_LICENSE_URL, "http://www.chiark.greenend.org.uk/~sgtatham/putty/licence.html"
+  PUTTY_LICENSE_URL, "https://www.chiark.greenend.org.uk/~sgtatham/putty/licence.html"
   MAIN_MSG_TAG, "**"
   INTERACTIVE_MSG_TAG, "$$"
 END
