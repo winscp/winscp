@@ -946,7 +946,15 @@ namespace WinSCP
 
                 try
                 {
-                    DoGetFileInfo(path);
+                    _ignoreFailed = true;
+                    try
+                    {
+                        DoGetFileInfo(path);
+                    }
+                    finally
+                    {
+                        _ignoreFailed = false;
+                    }
                     return true;
                 }
                 catch (SessionRemoteException)
@@ -1765,7 +1773,7 @@ namespace WinSCP
         {
             Logger.WriteLine("Failed: [{0}]", e);
 
-            if (Failed != null)
+            if ((Failed != null) && !_ignoreFailed)
             {
                 Failed(this, new FailedEventArgs { Error = e });
             }
@@ -2223,5 +2231,6 @@ namespace WinSCP
         private string _executableProcessUserName;
         private SecureString _executableProcessPassword;
         private StringCollection _error;
+        private bool _ignoreFailed;
     }
 }
