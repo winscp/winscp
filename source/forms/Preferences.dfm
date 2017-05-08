@@ -492,7 +492,7 @@ object PreferencesDialog: TPreferencesDialog
           398)
         object InterfaceChangeLabel: TLabel
           Left = 8
-          Top = 216
+          Top = 222
           Width = 177
           Height = 13
           Caption = 'Changes will apply on the next start.'
