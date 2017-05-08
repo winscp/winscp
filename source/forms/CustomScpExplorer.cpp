@@ -1656,6 +1656,442 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteCustomCommand(
+  TStrings * FileList, const TCustomCommandType & ACommand,
+  const TCustomCommandData & Data, const UnicodeString & CommandCommand)
+{
+  if (EnsureCommandSessionFallback(fcShellAnyCommand))
+  {
+    TRemoteCustomCommand RemoteCustomCommand(Data, Terminal->CurrentDirectory);
+    TWinInteractiveCustomCommand InteractiveCustomCommand(
+      &RemoteCustomCommand, ACommand.Name, ACommand.HomePage);
+
+    UnicodeString Command = InteractiveCustomCommand.Complete(CommandCommand, false);
+
+    Configuration->Usage->Inc(L"RemoteCustomCommandRuns2");
+
+    bool Capture =
+      FLAGSET(ACommand.Params, ccShowResults) ||
+      FLAGSET(ACommand.Params, ccCopyResults) ||
+      FLAGSET(ACommand.Params, ccShowResultsInMsgBox);
+    TCaptureOutputEvent OutputEvent = NULL;
+
+    DebugAssert(FCapturedLog == NULL);
+    if (Capture)
+    {
+      FCapturedLog = new TStringList();
+      OutputEvent = TerminalCaptureLog;
+    }
+
+    try
+    {
+      if (!RemoteCustomCommand.IsFileCommand(Command))
+      {
+        Terminal->AnyCommand(RemoteCustomCommand.Complete(Command, true),
+          OutputEvent);
+      }
+      else
+      {
+        Terminal->CustomCommandOnFiles(Command, ACommand.Params, FileList, OutputEvent);
+      }
+
+      if ((FCapturedLog != NULL) && (FCapturedLog->Count > 0))
+      {
+        if (FLAGSET(ACommand.Params, ccCopyResults))
+        {
+          CopyToClipboard(FCapturedLog);
+        }
+
+        if (FLAGSET(ACommand.Params, ccShowResults))
+        {
+          DoConsoleDialog(Terminal, L"", FCapturedLog);
+        }
+        else if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox))
+        {
+          MessageDialog(FCapturedLog->Text, qtInformation, qaOK);
+        }
+      }
+    }
+    __finally
+    {
+      SAFE_DESTROY(FCapturedLog);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
+  TStrings * FileList, const TCustomCommandType & ACommand, const UnicodeString & Command, TStrings * ALocalFileList,
+  const TCustomCommandData & Data, bool LocalFileCommand, bool FileListCommand, UnicodeString * POutput)
+{
+  TStrings * LocalFileList = NULL;
+  TStrings * RemoteFileList = NULL;
+  try
+  {
+    if (LocalFileCommand)
+    {
+      if (ALocalFileList == NULL)
+      {
+        DebugAssert(HasDirView[osLocal]);
+        // Cannot have focus on both panels, so we have to call AnyFileSelected
+        // directly (instead of EnableSelectedOperation) to pass
+        // false to FocusedFileOnlyWhenFocused
+        DebugAssert(DirView(osLocal)->AnyFileSelected(false, false, false));
+        LocalFileList = DirView(osLocal)->CreateFileList(false, true, NULL);
+      }
+      else
+      {
+        LocalFileList = ALocalFileList;
+      }
+
+      if (FileListCommand)
+      {
+        if (LocalFileList->Count != 1)
+        {
+          throw Exception(LoadStr(CUSTOM_COMMAND_SELECTED_UNMATCH1));
+        }
+      }
+      else
+      {
+        if ((LocalFileList->Count != 1) &&
+            (FileList->Count != 1) &&
+            (LocalFileList->Count != FileList->Count))
+        {
+          throw Exception(LoadStr(CUSTOM_COMMAND_SELECTED_UNMATCH));
+        }
+      }
+    }
+
+    UnicodeString RootTempDir;
+    UnicodeString TempDir;
+
+    bool RemoteFiles = FLAGSET(ACommand.Params, ccRemoteFiles);
+    if (!RemoteFiles)
+    {
+      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, false, true);
+    }
+
+    try
+    {
+      TDateTimes RemoteFileTimes;
+
+      if (RemoteFiles)
+      {
+        RemoteFileList = FileList;
+      }
+      else
+      {
+        RemoteFileList = new TStringList();
+
+        TMakeLocalFileListParams MakeFileListParam;
+        MakeFileListParam.FileList = RemoteFileList;
+        MakeFileListParam.FileTimes = &RemoteFileTimes;
+        MakeFileListParam.IncludeDirs = FLAGSET(ACommand.Params, ccApplyToDirectories);
+        MakeFileListParam.Recursive =
+          FLAGSET(ACommand.Params, ccRecursive) && !FileListCommand;
+
+        ProcessLocalDirectory(TempDir, Terminal->MakeLocalFileList, &MakeFileListParam);
+      }
+
+      bool NonBlocking = FileListCommand && RemoteFiles && !POutput;
+
+      TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
+
+      if (!NonBlocking)
+      {
+        Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : FileList->Count);
+        DebugAssert(FProgressForm != NULL);
+        FProgressForm->ReadOnly = true;
+      }
+
+      try
+      {
+        if (FileListCommand)
+        {
+          UnicodeString LocalFile;
+          // MakeFileList does not delimit filenames
+          UnicodeString FileList = MakeFileList(RemoteFileList);
+
+          if (LocalFileCommand)
+          {
+            DebugAssert(LocalFileList->Count == 1);
+            LocalFile = LocalFileList->Strings[0];
+          }
+
+          TLocalCustomCommand CustomCommand(Data,
+            Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), L"", LocalFile, FileList);
+          UnicodeString ShellCommand = CustomCommand.Complete(Command, true);
+
+          if (NonBlocking)
+          {
+            DebugAssert(!POutput);
+            ExecuteShellChecked(ShellCommand);
+          }
+          else
+          {
+            ExecuteProcessCheckedAndWait(ShellCommand, HelpKeyword, POutput);
+          }
+        }
+        else if (LocalFileCommand)
+        {
+          if (LocalFileList->Count == 1)
+          {
+            UnicodeString LocalFile = LocalFileList->Strings[0];
+
+            for (int Index = 0; Index < RemoteFileList->Count; Index++)
+            {
+              UnicodeString FileName = RemoteFileList->Strings[Index];
+              TLocalCustomCommand CustomCommand(Data,
+                Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), FileName, LocalFile, L"");
+              ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+            }
+          }
+          else if (RemoteFileList->Count == 1)
+          {
+            UnicodeString FileName = RemoteFileList->Strings[0];
+
+            for (int Index = 0; Index < LocalFileList->Count; Index++)
+            {
+              TLocalCustomCommand CustomCommand(
+                Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
+                FileName, LocalFileList->Strings[Index], L"");
+              ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+            }
+          }
+          else
+          {
+            if (LocalFileList->Count != RemoteFileList->Count)
+            {
+              throw Exception(LoadStr(CUSTOM_COMMAND_PAIRS_DOWNLOAD_FAILED));
+            }
+
+            for (int Index = 0; Index < LocalFileList->Count; Index++)
+            {
+              UnicodeString FileName = RemoteFileList->Strings[Index];
+              TLocalCustomCommand CustomCommand(
+                Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
+                FileName, LocalFileList->Strings[Index], L"");
+              ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+            }
+          }
+        }
+        else
+        {
+          for (int Index = 0; Index < RemoteFileList->Count; Index++)
+          {
+            TLocalCustomCommand CustomCommand(Data,
+              Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
+              RemoteFileList->Strings[Index], L"", L"");
+            ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+          }
+        }
+      }
+      __finally
+      {
+        if (!NonBlocking)
+        {
+          Progress.Stop();
+        }
+      }
+
+      DebugAssert(!FAutoOperation);
+
+      if (!RemoteFiles)
+      {
+        TempDir = IncludeTrailingBackslash(TempDir);
+        for (int Index = 0; Index < RemoteFileList->Count; Index++)
+        {
+          UnicodeString FileName = RemoteFileList->Strings[Index];
+          if (DebugAlwaysTrue(SameText(TempDir, FileName.SubString(1, TempDir.Length()))) &&
+              // Skip directories for now, they require recursion,
+              // and we do not have original nested files times available here yet.
+              // The check is redundant as FileAge fails for directories anyway.
+              !DirectoryExists(FileName))
+          {
+            UnicodeString RemoteDir =
+              UnixExtractFileDir(
+                UnixIncludeTrailingBackslash(FTerminal->CurrentDirectory) +
+                ToUnixPath(FileName.SubString(TempDir.Length() + 1, FileName.Length() - TempDir.Length())));
+
+            TDateTime NewTime;
+            if (FileAge(FileName, NewTime) &&
+                (NewTime != RemoteFileTimes[Index]))
+            {
+              TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
+              TemporaryFileCopyParam(CopyParam);
+              CopyParam.FileMask = L"";
+
+              FAutoOperation = true;
+              std::unique_ptr<TStrings> TemporaryFilesList(new TStringList());
+              TemporaryFilesList->Add(FileName);
+
+              FTerminal->CopyToRemote(TemporaryFilesList.get(), RemoteDir, &CopyParam, cpTemporary, NULL);
+            }
+          }
+        }
+      }
+    }
+    __finally
+    {
+      FAutoOperation = false;
+      if (!RootTempDir.IsEmpty() && DebugAlwaysTrue(!RemoteFiles))
+      {
+        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+      }
+    }
+  }
+  __finally
+  {
+    if (RemoteFileList != FileList)
+    {
+      delete RemoteFileList;
+    }
+    if (LocalFileList != ALocalFileList)
+    {
+      delete LocalFileList;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::LocalCustomCommandWithRemoteFiles(
+  const TCustomCommandType & ACommand, const UnicodeString & Command, const TCustomCommandData & Data,
+  bool FileListCommand, UnicodeString * POutput)
+{
+  std::unique_ptr<TStrings> SelectedFileList(DirView(osLocal)->CreateFileList(false, true, NULL));
+
+  std::unique_ptr<TStrings> LocalFileList(new TStringList());
+
+  for (int Index = 0; Index < SelectedFileList->Count; Index++)
+  {
+    UnicodeString FileName = SelectedFileList->Strings[Index];
+    if (DirectoryExists(FileName))
+    {
+      if (FLAGSET(ACommand.Params, ccApplyToDirectories))
+      {
+        LocalFileList->Add(FileName);
+      }
+
+      if (FLAGSET(ACommand.Params, ccRecursive))
+      {
+        TMakeLocalFileListParams MakeFileListParam;
+        MakeFileListParam.FileList = LocalFileList.get();
+        MakeFileListParam.FileTimes = NULL;
+        MakeFileListParam.IncludeDirs = FLAGSET(ACommand.Params, ccApplyToDirectories);
+        MakeFileListParam.Recursive = true;
+
+        ProcessLocalDirectory(FileName, Terminal->MakeLocalFileList, &MakeFileListParam);
+      }
+    }
+    else
+    {
+      LocalFileList->Add(FileName);
+    }
+  }
+
+  if (FileListCommand)
+  {
+    UnicodeString FileList = MakeFileList(LocalFileList.get());
+    TLocalCustomCommand CustomCommand(
+      Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
+      L"", L"", FileList);
+    ExecuteProcessChecked(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+  }
+  else
+  {
+    TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
+
+    Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : LocalFileList->Count);
+    DebugAssert(FProgressForm != NULL);
+    FProgressForm->ReadOnly = true;
+
+    try
+    {
+      for (int Index = 0; Index < LocalFileList->Count; Index++)
+      {
+        UnicodeString FileName = LocalFileList->Strings[Index];
+        TLocalCustomCommand CustomCommand(
+          Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
+          FileName, L"", L"");
+        ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+      }
+    }
+    __finally
+    {
+      Progress.Stop();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::LocalCustomCommand(TStrings * FileList,
+  const TCustomCommandType & ACommand, TStrings * ALocalFileList,
+  const TCustomCommandData & Data, const UnicodeString & CommandCommand)
+{
+  TLocalCustomCommand LocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory());
+  TWinInteractiveCustomCommand InteractiveCustomCommand(
+    &LocalCustomCommand, ACommand.Name, ACommand.HomePage);
+
+  UnicodeString Command = InteractiveCustomCommand.Complete(CommandCommand, false);
+
+  bool FileListCommand = LocalCustomCommand.IsFileListCommand(Command);
+  bool LocalFileCommand = LocalCustomCommand.HasLocalFileName(Command);
+
+  Configuration->Usage->Inc(L"LocalCustomCommandRuns2");
+
+  std::unique_ptr<UnicodeString> POutput;
+  if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox) ||
+      FLAGSET(ACommand.Params, ccCopyResults))
+  {
+    POutput.reset(new UnicodeString());
+  }
+
+  if (!LocalCustomCommand.IsFileCommand(Command))
+  {
+    ExecuteProcessChecked(LocalCustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
+  }
+  // remote files?
+  else if ((FCurrentSide == osRemote) || LocalFileCommand)
+  {
+    LocalCustomCommandPure(FileList, ACommand, Command, ALocalFileList, Data, LocalFileCommand, FileListCommand, POutput.get());
+  }
+  // local files
+  else
+  {
+    LocalCustomCommandWithRemoteFiles(ACommand, Command, Data, FileListCommand, POutput.get());
+  }
+
+  if (POutput.get() != NULL)
+  {
+    // If the output is single-line, we do not want the trailing CRLF, as the CopyToClipboard(TStrings *) does
+    int P = POutput->Pos(sLineBreak);
+    if (P == POutput->Length() - static_cast<int>(strlen(sLineBreak)) + 1)
+    {
+      POutput->SetLength(P - 1);
+    }
+    // Copy even empty output to clipboard
+    if (FLAGSET(ACommand.Params, ccCopyResults))
+    {
+      CopyToClipboard(*POutput);
+    }
+    // But do not show an empty message box.
+    // This way the ShowResultsInMsgBox can be used to suppress a console window of commands with no output
+    if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox) &&
+        !POutput->IsEmpty())
+    {
+      TClipboardHandler ClipboardHandler;
+      ClipboardHandler.Text = *POutput;
+
+      TMessageParams Params;
+      TQueryButtonAlias Aliases[1];
+      Aliases[0].Button = qaRetry;
+      Aliases[0].Alias = LoadStr(URL_LINK_COPY); // misuse
+      Aliases[0].OnClick = &ClipboardHandler.Copy;
+      Params.Aliases = Aliases;
+      Params.AliasesCount = LENOF(Aliases);
+
+      MessageDialog(*POutput, qtInformation, qaOK | qaRetry, HelpKeyword, &Params);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   const TCustomCommandType & ACommand, TStrings * ALocalFileList)
 {
@@ -1688,419 +2124,11 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
   if (FLAGCLEAR(ACommand.Params, ccLocal))
   {
-    if (EnsureCommandSessionFallback(fcShellAnyCommand))
-    {
-      TRemoteCustomCommand RemoteCustomCommand(Data, Terminal->CurrentDirectory);
-      TWinInteractiveCustomCommand InteractiveCustomCommand(
-        &RemoteCustomCommand, ACommand.Name, ACommand.HomePage);
-
-      UnicodeString Command = InteractiveCustomCommand.Complete(CommandCommand, false);
-
-      Configuration->Usage->Inc(L"RemoteCustomCommandRuns2");
-
-      bool Capture =
-        FLAGSET(ACommand.Params, ccShowResults) ||
-        FLAGSET(ACommand.Params, ccCopyResults) ||
-        FLAGSET(ACommand.Params, ccShowResultsInMsgBox);
-      TCaptureOutputEvent OutputEvent = NULL;
-
-      DebugAssert(FCapturedLog == NULL);
-      if (Capture)
-      {
-        FCapturedLog = new TStringList();
-        OutputEvent = TerminalCaptureLog;
-      }
-
-      try
-      {
-        if (!RemoteCustomCommand.IsFileCommand(Command))
-        {
-          Terminal->AnyCommand(RemoteCustomCommand.Complete(Command, true),
-            OutputEvent);
-        }
-        else
-        {
-          Terminal->CustomCommandOnFiles(Command, ACommand.Params, FileList, OutputEvent);
-        }
-
-        if ((FCapturedLog != NULL) && (FCapturedLog->Count > 0))
-        {
-          if (FLAGSET(ACommand.Params, ccCopyResults))
-          {
-            CopyToClipboard(FCapturedLog);
-          }
-
-          if (FLAGSET(ACommand.Params, ccShowResults))
-          {
-            DoConsoleDialog(Terminal, L"", FCapturedLog);
-          }
-          else if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox))
-          {
-            MessageDialog(FCapturedLog->Text, qtInformation, qaOK);
-          }
-        }
-      }
-      __finally
-      {
-        SAFE_DESTROY(FCapturedLog);
-      }
-    }
+    RemoteCustomCommand(FileList, ACommand, Data, CommandCommand);
   }
   else
   {
-    TLocalCustomCommand LocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory());
-    TWinInteractiveCustomCommand InteractiveCustomCommand(
-      &LocalCustomCommand, ACommand.Name, ACommand.HomePage);
-
-    UnicodeString Command = InteractiveCustomCommand.Complete(CommandCommand, false);
-
-    bool FileListCommand = LocalCustomCommand.IsFileListCommand(Command);
-    bool LocalFileCommand = LocalCustomCommand.HasLocalFileName(Command);
-
-    Configuration->Usage->Inc(L"LocalCustomCommandRuns2");
-
-    std::unique_ptr<UnicodeString> POutput;
-    if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox) ||
-        FLAGSET(ACommand.Params, ccCopyResults))
-    {
-      POutput.reset(new UnicodeString());
-    }
-
-    if (!LocalCustomCommand.IsFileCommand(Command))
-    {
-      ExecuteProcessChecked(LocalCustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
-    }
-    // remote files?
-    else if ((FCurrentSide == osRemote) || LocalFileCommand)
-    {
-      TStrings * LocalFileList = NULL;
-      TStrings * RemoteFileList = NULL;
-      try
-      {
-        if (LocalFileCommand)
-        {
-          if (ALocalFileList == NULL)
-          {
-            DebugAssert(HasDirView[osLocal]);
-            // Cannot have focus on both panels, so we have to call AnyFileSelected
-            // directly (instead of EnableSelectedOperation) to pass
-            // false to FocusedFileOnlyWhenFocused
-            DebugAssert(DirView(osLocal)->AnyFileSelected(false, false, false));
-            LocalFileList = DirView(osLocal)->CreateFileList(false, true, NULL);
-          }
-          else
-          {
-            LocalFileList = ALocalFileList;
-          }
-
-          if (FileListCommand)
-          {
-            if (LocalFileList->Count != 1)
-            {
-              throw Exception(LoadStr(CUSTOM_COMMAND_SELECTED_UNMATCH1));
-            }
-          }
-          else
-          {
-            if ((LocalFileList->Count != 1) &&
-                (FileList->Count != 1) &&
-                (LocalFileList->Count != FileList->Count))
-            {
-              throw Exception(LoadStr(CUSTOM_COMMAND_SELECTED_UNMATCH));
-            }
-          }
-        }
-
-        UnicodeString RootTempDir;
-        UnicodeString TempDir;
-
-        bool RemoteFiles = FLAGSET(ACommand.Params, ccRemoteFiles);
-        if (!RemoteFiles)
-        {
-          TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, false, true);
-        }
-
-        try
-        {
-          TDateTimes RemoteFileTimes;
-
-          if (RemoteFiles)
-          {
-            RemoteFileList = FileList;
-          }
-          else
-          {
-            RemoteFileList = new TStringList();
-
-            TMakeLocalFileListParams MakeFileListParam;
-            MakeFileListParam.FileList = RemoteFileList;
-            MakeFileListParam.FileTimes = &RemoteFileTimes;
-            MakeFileListParam.IncludeDirs = FLAGSET(ACommand.Params, ccApplyToDirectories);
-            MakeFileListParam.Recursive =
-              FLAGSET(ACommand.Params, ccRecursive) && !FileListCommand;
-
-            ProcessLocalDirectory(TempDir, Terminal->MakeLocalFileList, &MakeFileListParam);
-          }
-
-          bool NonBlocking = FileListCommand && RemoteFiles && !POutput;
-
-          TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
-
-          if (!NonBlocking)
-          {
-            Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : FileList->Count);
-            DebugAssert(FProgressForm != NULL);
-            FProgressForm->ReadOnly = true;
-          }
-
-          try
-          {
-            if (FileListCommand)
-            {
-              UnicodeString LocalFile;
-              // MakeFileList does not delimit filenames
-              UnicodeString FileList = MakeFileList(RemoteFileList);
-
-              if (LocalFileCommand)
-              {
-                DebugAssert(LocalFileList->Count == 1);
-                LocalFile = LocalFileList->Strings[0];
-              }
-
-              TLocalCustomCommand CustomCommand(Data,
-                Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), L"", LocalFile, FileList);
-              UnicodeString ShellCommand = CustomCommand.Complete(Command, true);
-
-              if (NonBlocking)
-              {
-                DebugAssert(!POutput);
-                ExecuteShellChecked(ShellCommand);
-              }
-              else
-              {
-                ExecuteProcessCheckedAndWait(ShellCommand, HelpKeyword, POutput.get());
-              }
-            }
-            else if (LocalFileCommand)
-            {
-              if (LocalFileList->Count == 1)
-              {
-                UnicodeString LocalFile = LocalFileList->Strings[0];
-
-                for (int Index = 0; Index < RemoteFileList->Count; Index++)
-                {
-                  UnicodeString FileName = RemoteFileList->Strings[Index];
-                  TLocalCustomCommand CustomCommand(Data,
-                    Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), FileName, LocalFile, L"");
-                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
-                }
-              }
-              else if (RemoteFileList->Count == 1)
-              {
-                UnicodeString FileName = RemoteFileList->Strings[0];
-
-                for (int Index = 0; Index < LocalFileList->Count; Index++)
-                {
-                  TLocalCustomCommand CustomCommand(
-                    Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
-                    FileName, LocalFileList->Strings[Index], L"");
-                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
-                }
-              }
-              else
-              {
-                if (LocalFileList->Count != RemoteFileList->Count)
-                {
-                  throw Exception(LoadStr(CUSTOM_COMMAND_PAIRS_DOWNLOAD_FAILED));
-                }
-
-                for (int Index = 0; Index < LocalFileList->Count; Index++)
-                {
-                  UnicodeString FileName = RemoteFileList->Strings[Index];
-                  TLocalCustomCommand CustomCommand(
-                    Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
-                    FileName, LocalFileList->Strings[Index], L"");
-                  ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
-                }
-              }
-            }
-            else
-            {
-              for (int Index = 0; Index < RemoteFileList->Count; Index++)
-              {
-                TLocalCustomCommand CustomCommand(Data,
-                  Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
-                  RemoteFileList->Strings[Index], L"", L"");
-                ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
-              }
-            }
-          }
-          __finally
-          {
-            if (!NonBlocking)
-            {
-              Progress.Stop();
-            }
-          }
-
-          DebugAssert(!FAutoOperation);
-
-          if (!RemoteFiles)
-          {
-            TempDir = IncludeTrailingBackslash(TempDir);
-            for (int Index = 0; Index < RemoteFileList->Count; Index++)
-            {
-              UnicodeString FileName = RemoteFileList->Strings[Index];
-              if (DebugAlwaysTrue(SameText(TempDir, FileName.SubString(1, TempDir.Length()))) &&
-                  // Skip directories for now, they require recursion,
-                  // and we do not have original nested files times available here yet.
-                  // The check is redundant as FileAge fails for directories anyway.
-                  !DirectoryExists(FileName))
-              {
-                UnicodeString RemoteDir =
-                  UnixExtractFileDir(
-                    UnixIncludeTrailingBackslash(FTerminal->CurrentDirectory) +
-                    ToUnixPath(FileName.SubString(TempDir.Length() + 1, FileName.Length() - TempDir.Length())));
-
-                TDateTime NewTime;
-                if (FileAge(FileName, NewTime) &&
-                    (NewTime != RemoteFileTimes[Index]))
-                {
-                  TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-                  TemporaryFileCopyParam(CopyParam);
-                  CopyParam.FileMask = L"";
-
-                  FAutoOperation = true;
-                  std::unique_ptr<TStrings> TemporaryFilesList(new TStringList());
-                  TemporaryFilesList->Add(FileName);
-
-                  FTerminal->CopyToRemote(TemporaryFilesList.get(), RemoteDir, &CopyParam, cpTemporary, NULL);
-                }
-              }
-            }
-          }
-        }
-        __finally
-        {
-          FAutoOperation = false;
-          if (!RootTempDir.IsEmpty() && DebugAlwaysTrue(!RemoteFiles))
-          {
-            RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
-          }
-        }
-      }
-      __finally
-      {
-        if (RemoteFileList != FileList)
-        {
-          delete RemoteFileList;
-        }
-        if (LocalFileList != ALocalFileList)
-        {
-          delete LocalFileList;
-        }
-      }
-    }
-    // local files
-    else
-    {
-      std::unique_ptr<TStrings> SelectedFileList(DirView(osLocal)->CreateFileList(false, true, NULL));
-
-      std::unique_ptr<TStrings> LocalFileList(new TStringList());
-
-      for (int Index = 0; Index < SelectedFileList->Count; Index++)
-      {
-        UnicodeString FileName = SelectedFileList->Strings[Index];
-        if (DirectoryExists(FileName))
-        {
-          if (FLAGSET(ACommand.Params, ccApplyToDirectories))
-          {
-            LocalFileList->Add(FileName);
-          }
-
-          if (FLAGSET(ACommand.Params, ccRecursive))
-          {
-            TMakeLocalFileListParams MakeFileListParam;
-            MakeFileListParam.FileList = LocalFileList.get();
-            MakeFileListParam.FileTimes = NULL;
-            MakeFileListParam.IncludeDirs = FLAGSET(ACommand.Params, ccApplyToDirectories);
-            MakeFileListParam.Recursive = true;
-
-            ProcessLocalDirectory(FileName, Terminal->MakeLocalFileList, &MakeFileListParam);
-          }
-        }
-        else
-        {
-          LocalFileList->Add(FileName);
-        }
-      }
-
-      if (FileListCommand)
-      {
-        UnicodeString FileList = MakeFileList(LocalFileList.get());
-        TLocalCustomCommand CustomCommand(
-          Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
-          L"", L"", FileList);
-        ExecuteProcessChecked(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
-      }
-      else
-      {
-        TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
-
-        Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : LocalFileList->Count);
-        DebugAssert(FProgressForm != NULL);
-        FProgressForm->ReadOnly = true;
-
-        try
-        {
-          for (int Index = 0; Index < LocalFileList->Count; Index++)
-          {
-            UnicodeString FileName = LocalFileList->Strings[Index];
-            TLocalCustomCommand CustomCommand(
-              Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
-              FileName, L"", L"");
-            ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
-          }
-        }
-        __finally
-        {
-          Progress.Stop();
-        }
-      }
-    }
-
-    if (POutput.get() != NULL)
-    {
-      // If the output is single-line, we do not want the trailing CRLF, as the CopyToClipboard(TStrings *) does
-      int P = POutput->Pos(sLineBreak);
-      if (P == POutput->Length() - static_cast<int>(strlen(sLineBreak)) + 1)
-      {
-        POutput->SetLength(P - 1);
-      }
-      // Copy even empty output to clipboard
-      if (FLAGSET(ACommand.Params, ccCopyResults))
-      {
-        CopyToClipboard(*POutput);
-      }
-      // But do not show an empty message box.
-      // This way the ShowResultsInMsgBox can be used to suppress a console window of commands with no output
-      if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox) &&
-          !POutput->IsEmpty())
-      {
-        TClipboardHandler ClipboardHandler;
-        ClipboardHandler.Text = *POutput;
-
-        TMessageParams Params;
-        TQueryButtonAlias Aliases[1];
-        Aliases[0].Button = qaRetry;
-        Aliases[0].Alias = LoadStr(URL_LINK_COPY); // misuse
-        Aliases[0].OnClick = &ClipboardHandler.Copy;
-        Params.Aliases = Aliases;
-        Params.AliasesCount = LENOF(Aliases);
-
-        MessageDialog(*POutput, qtInformation, qaOK | qaRetry, HelpKeyword, &Params);
-      }
-    }
+    LocalCustomCommand(FileList, ACommand, ALocalFileList, Data, CommandCommand);
   }
 }
 //---------------------------------------------------------------------------

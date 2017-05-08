@@ -353,6 +353,18 @@ protected:
   bool __fastcall SetProperties(TOperationSide Side, TStrings * FileList);
   void __fastcall CustomCommand(TStrings * FileList,
     const TCustomCommandType & Command, TStrings * ALocalFileList);
+  void __fastcall RemoteCustomCommand(
+    TStrings * FileList, const TCustomCommandType & ACommand,
+    const TCustomCommandData & Data, const UnicodeString & CommandCommand);
+  void __fastcall LocalCustomCommandPure(
+    TStrings * FileList, const TCustomCommandType & ACommand, const UnicodeString & Command, TStrings * ALocalFileList,
+    const TCustomCommandData & Data, bool LocalFileCommand, bool FileListCommand, UnicodeString * POutput);
+  void __fastcall LocalCustomCommandWithRemoteFiles(
+    const TCustomCommandType & ACommand, const UnicodeString & Command, const TCustomCommandData & Data,
+    bool FileListCommand, UnicodeString * POutput);
+  void __fastcall LocalCustomCommand(TStrings * FileList,
+    const TCustomCommandType & ACommand, TStrings * ALocalFileList,
+    const TCustomCommandData & Data, const UnicodeString & CommandCommand);
   virtual void __fastcall TerminalChanging();
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall QueueChanged();
