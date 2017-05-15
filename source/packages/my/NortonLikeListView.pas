@@ -11,7 +11,6 @@ type
   TSelectMode = (smAll, smNone, smInvert);
   TNortonLikeMode = (nlOn, nlOff, nlKeyboard);
   TSelectMethod = (smNoneYet, smMouse, smKeyboard);
-  TSelectByMaskEvent = procedure(Control: TCustomNortonLikeListView; Select: Boolean) of object;
 
   TCustomNortonLikeListView = class(TCustomListView)
   private
@@ -21,7 +20,6 @@ type
     FDontUnSelectItem: Boolean;
     FSelCount: Integer;
     FNortonLike: TNortonLikeMode;
-    FOnSelectByMask: TSelectByMaskEvent;
     FLastDeletedItem: TListItem; // aby sme nepocitali smazany item 2x
     FFocusingItem: Boolean;
     FManageSelection: Boolean;
@@ -66,7 +64,6 @@ type
     procedure ItemsReordered;
     procedure ColRightClick(Column: TListColumn; Point: TPoint); override;
     procedure Delete(Item: TListItem); override;
-    function DoSelectByMask(Select: Boolean): Boolean; virtual;
     function ExCanChange(Item: TListItem; Change: Integer;
       NewState, OldState: Word): Boolean; dynamic;
     procedure InsertItem(Item: TListItem); override;
@@ -96,7 +93,6 @@ type
 
     property MultiSelect default True;
     property NortonLike: TNortonLikeMode read FNortonLike write FNortonLike default nlOn;
-    property OnSelectByMask: TSelectByMaskEvent read FOnSelectByMask write FOnSelectByMask;
     property MarkedCount: Integer read GetMarkedCount;
     property MarkedFile: TListItem read GetMarkedFile;
     property Valid: Boolean read GetValid;
@@ -240,16 +236,6 @@ begin
   FLastDeletedItem := Item;
   inherited;
   FLastDeletedItem := nil;
-end;
-
-function TCustomNortonLikeListView.DoSelectByMask(Select: Boolean): Boolean;
-begin
-  if Assigned(FOnSelectByMask) then
-  begin
-    FOnSelectByMask(Self, Select);
-    Result := True;
-  end
-    else Result := False;
 end;
 
 function TCustomNortonLikeListView.ExCanChange(Item: TListItem; Change: Integer;

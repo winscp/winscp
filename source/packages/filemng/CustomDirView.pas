@@ -340,7 +340,7 @@ type
     function CreateFileList(Focused: Boolean; FullPath: Boolean; FileList: TStrings = nil): TStrings;
     function AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean;
       FocusedFileOnlyWhenFocused: Boolean): Boolean;
-    function DoSelectByMask(Select: Boolean): Boolean; override;
+    function DoSelectByMask(Select: Boolean): Boolean;
     procedure SelectFiles(Filter: TFileFilter; Select: Boolean);
     procedure ExecuteHomeDirectory; virtual; abstract;
     procedure ExecuteParentDirectory; virtual; abstract;
@@ -1325,7 +1325,7 @@ function TCustomDirView.DoSelectByMask(Select: Boolean): Boolean;
 var
   Filter: TFileFilter;
 begin
-  Result := inherited DoSelectByMask(Select);
+  Result := False;
   if Assigned(FOnGetSelectFilter) then
   begin
     DefaultFileFilter(Filter);
