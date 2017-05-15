@@ -269,7 +269,7 @@ BEGIN
   NEW_PASSWORD_CURRENT_PROMPT, "&Current password:"
   NEW_PASSWORD_NEW_PROMPT, "&New password:"
   NEW_PASSWORD_CONFIRM_PROMPT, "Confirm new &password:"
-  TUNNEL_INSTRUCTION, "Tunnel session authentication"
+  TUNNEL_INSTRUCTION2, "Authenticating tunnel through %s"
   RENAME_TITLE, "Transfer under different name"
   RENAME_PROMPT2, "&New name:"
   VERIFY_CERT_PROMPT3, "**The server's certificate is not known. You have no guarantee that the server is the computer you think it is.**\n\nServer's certificate details follow:\n\n%s\n\nIf you trust this certificate, press Yes. To connect without storing certificate, press No. To abandon the connection press Cancel.\n\nContinue connecting and store the certificate?"

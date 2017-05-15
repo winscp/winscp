@@ -393,7 +393,8 @@ bool __fastcall TTunnelUI::PromptUser(TSessionData * Data, TPromptKind Kind,
   {
     if (IsAuthenticationPrompt(Kind))
     {
-      Instructions = LoadStr(TUNNEL_INSTRUCTION) +
+      Instructions =
+        FMTLOAD(TUNNEL_INSTRUCTION2, (Data->HostName)) +
         (Instructions.IsEmpty() ? L"" : L"\n") +
         Instructions;
     }
