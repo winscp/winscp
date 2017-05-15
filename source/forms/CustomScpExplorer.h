@@ -681,6 +681,9 @@ public:
   void __fastcall ToggleQueueVisibility();
   virtual UnicodeString __fastcall PathForCaption();
   void __fastcall FileListFromClipboard();
+  void __fastcall SelectAll(TOperationSide Side, TSelectMode Mode);
+  void __fastcall SelectByMask(TOperationSide Side, bool Select);
+  void __fastcall RestoreSelectedNames(TOperationSide Side);
   void __fastcall SelectSameExt(bool Select);
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
   virtual void __fastcall BeforeAction();

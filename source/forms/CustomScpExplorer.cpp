@@ -7601,6 +7601,29 @@ void __fastcall TCustomScpExplorerForm::FileListFromClipboard()
   // TBD
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SelectAll(TOperationSide Side, TSelectMode Mode)
+{
+  TCustomDirView * ADirView = DirView(Side);
+  ADirView->SelectAll(Mode);
+  ADirView->SetFocus();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SelectByMask(TOperationSide Side, bool Select)
+{
+  TCustomDirView * ADirView = DirView(Side);
+  if (ADirView->DoSelectByMask(Select))
+  {
+    ADirView->SetFocus();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RestoreSelectedNames(TOperationSide Side)
+{
+  TCustomDirView * ADirView = DirView(Side);
+  ADirView->RestoreSelectedNames();
+  ADirView->SetFocus();
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SelectSameExt(bool Select)
 {
   TCustomDirView * CurrentDirView = DirView(osCurrent);
