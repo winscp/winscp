@@ -40,8 +40,6 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms;
 
 type
-  TTBCustomForm = {$IFDEF JR_D3} TCustomForm {$ELSE} TForm {$ENDIF};
-
   { TTBDock }
 
   TTBDockBoundLinesValues = (blTop, blBottom, blLeft, blRight);
@@ -75,9 +73,6 @@ type
     FLimitToOneRow: Boolean;
     FOnInsertRemoveBar: TTBInsertRemoveEvent;
     FOnRequestDock: TTBRequestDockEvent;
-    {$IFNDEF JR_D4}
-    FOnResize: TNotifyEvent;
-    {$ENDIF}
 
     { Internal }
     FDisableArrangeToolbars: Integer;  { Increment to disable ArrangeToolbars }
@@ -120,9 +115,6 @@ type
     {$ENDIF}
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     procedure WMMove(var Message: TWMMove); message WM_MOVE;
-    {$IFNDEF JR_D4}
-    procedure WMSize(var Message: TWMSize); message WM_SIZE;
-    {$ENDIF}
     procedure WMNCCalcSize(var Message: TWMNCCalcSize); message WM_NCCALCSIZE;
     procedure WMNCPaint(var Message: TMessage); message WM_NCPAINT;
     procedure WMPrint(var Message: TMessage); message WM_PRINT;
@@ -179,22 +171,15 @@ type
     property LimitToOneRow: Boolean read FLimitToOneRow write FLimitToOneRow default False;
     property PopupMenu;
     property Position: TTBDockPosition read FPosition write SetPosition default dpTop;
-    //property Version: TToolbar97Version read GetVersion write SetVersion stored False;
     property Visible;
 
-    {$IFDEF JR_D5}
     property OnContextPopup;
-    {$ENDIF}
     property OnInsertRemoveBar: TTBInsertRemoveEvent read FOnInsertRemoveBar write FOnInsertRemoveBar;
     property OnMouseDown;
     property OnMouseMove;
     property OnMouseUp;
     property OnRequestDock: TTBRequestDockEvent read FOnRequestDock write FOnRequestDock;
-    {$IFDEF JR_D4}
     property OnResize;
-    {$ELSE}
-    property OnResize: TNotifyEvent read FOnResize write FOnResize;
-    {$ENDIF}
   end;
 
   { TTBFloatingWindowParent - internal }
@@ -207,7 +192,7 @@ type
   private
     FCloseButtonDown: Boolean; { True if Close button is currently depressed }
     FDockableWindow: TTBCustomDockableWindow;
-    FParentForm: TTBCustomForm;
+    FParentForm: TCustomForm;
     FShouldShow: Boolean;
 
     procedure SetCloseButtonState(Pushed: Boolean);
@@ -237,7 +222,7 @@ type
     property DockableWindow: TTBCustomDockableWindow read FDockableWindow;
     property CloseButtonDown: Boolean read FCloseButtonDown;
   public
-    property ParentForm: TTBCustomForm read FParentForm;
+    property ParentForm: TCustomForm read FParentForm;
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
   end;
@@ -284,7 +269,7 @@ type
     FCurrentSize: Integer;
     FFloating: Boolean;
     FOnClose, FOnDockChanged, FOnMove, FOnRecreated,
-      FOnRecreating, {$IFNDEF JR_D4} FOnResize, {$ENDIF}
+      FOnRecreating,
       FOnVisibleChanged: TNotifyEvent;
     FOnCloseQuery: TCloseQueryEvent;
     FOnDockChanging, FOnDockChangingHidden: TTBDockChangingEvent;
@@ -370,9 +355,7 @@ type
     procedure CMTextChanged(var Message: TMessage); message CM_TEXTCHANGED;
     procedure CMShowingChanged(var Message: TMessage); message CM_SHOWINGCHANGED;
     procedure CMVisibleChanged(var Message: TMessage); message CM_VISIBLECHANGED;
-    {$IFDEF JR_D5}
     procedure WMContextMenu(var Message: TWMContextMenu); message WM_CONTEXTMENU;
-    {$ENDIF}
     procedure WMEnable(var Message: TWMEnable); message WM_ENABLE;
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     procedure WMMove(var Message: TWMMove); message WM_MOVE;
@@ -388,9 +371,6 @@ type
     procedure WMPrint(var Message: TMessage); message WM_PRINT;
     procedure WMPrintClient(var Message: TMessage); message WM_PRINTCLIENT;
     procedure WMSetCursor(var Message: TWMSetCursor); message WM_SETCURSOR;
-    {$IFNDEF JR_D4}
-    procedure WMSize(var Message: TWMSize); message WM_SIZE;
-    {$ENDIF}
   protected
     property ActivateParent: Boolean read FActivateParent write FActivateParent default True;
     property AutoResize: Boolean read FAutoResize write SetAutoResize default True;
@@ -414,7 +394,6 @@ type
     property SmoothDrag: Boolean read FSmoothDrag write FSmoothDrag default True;
     property Stretch: Boolean read FStretch write SetStretch default False;
     property UseLastDock: Boolean read FUseLastDock write SetUseLastDock default True;
-    //property Version: TToolbar97Version read GetVersion write SetVersion stored False;
 
     property OnClose: TNotifyEvent read FOnClose write FOnClose;
     property OnCloseQuery: TCloseQueryEvent read FOnCloseQuery write FOnCloseQuery;
@@ -424,9 +403,6 @@ type
     property OnMove: TNotifyEvent read FOnMove write FOnMove;
     property OnRecreated: TNotifyEvent read FOnRecreated write FOnRecreated;
     property OnRecreating: TNotifyEvent read FOnRecreating write FOnRecreating;
-    {$IFNDEF JR_D4}
-    property OnResize: TNotifyEvent read FOnResize write FOnResize;
-    {$ENDIF}
     property OnVisibleChanged: TNotifyEvent read FOnVisibleChanged write FOnVisibleChanged;
 
     { Overridden methods }
@@ -493,7 +469,7 @@ type
     function HasParent: Boolean; override;
     procedure SetBounds(ALeft, ATop, AWidth, AHeight: Integer); override;
 
-    procedure AddDockForm(const Form: TTBCustomForm);
+    procedure AddDockForm(const Form: TCustomForm);
     procedure AddDockedNCAreaToSize(var S: TPoint; const LeftRight: Boolean);
     procedure AddFloatingNCAreaToSize(var S: TPoint);
     procedure BeginMoving(const InitX, InitY: Integer);
@@ -508,7 +484,7 @@ type
     function IsMovable: Boolean;
     procedure MoveOnScreen(const OnlyIfFullyOffscreen: Boolean);
     procedure ReadPositionData(const Data: TTBReadPositionData); dynamic;
-    procedure RemoveDockForm(const Form: TTBCustomForm);
+    procedure RemoveDockForm(const Form: TCustomForm);
     procedure WritePositionData(const Data: TTBWritePositionData); dynamic;
   published
     property Height stored IsWidthAndHeightStored;
@@ -571,9 +547,9 @@ procedure TBCustomSavePositions(const OwnerComponent: TComponent;
 
 function TBGetDockTypeOf(const Control: TTBDock; const Floating: Boolean): TTBDockType;
 function TBGetToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow):
-  TTBCustomForm;
+  TCustomForm;
 function TBValidToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow):
-  TTBCustomForm;
+  TCustomForm;
 
 implementation
 
@@ -631,7 +607,7 @@ begin
   Result := GetSystemMetricsForControl(Control, SM_CYSMCAPTION);
 end;
 
-function GetMDIParent(const Form: TTBCustomForm): TTBCustomForm;
+function GetMDIParent(const Form: TCustomForm): TCustomForm;
 { Returns the parent of the specified MDI child form. But, if Form isn't a
   MDI child, it simply returns Form. }
 var
@@ -639,7 +615,7 @@ var
 begin
   Result := Form;
   if Form = nil then Exit;
-  if {$IFDEF JR_D3} (Form is TForm) and {$ENDIF}
+  if (Form is TForm) and
      (TForm(Form).FormStyle = fsMDIChild) then
     for I := 0 to Screen.FormCount-1 do
       with Screen.Forms[I] do begin
@@ -667,15 +643,15 @@ begin
   end;
 end;
 
-function TBGetToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow): TTBCustomForm;
+function TBGetToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow): TCustomForm;
 var
   Ctl: TWinControl;
 begin
   Result := nil;
   Ctl := ToolWindow;
   while Assigned(Ctl.Parent) do begin
-    if Ctl.Parent is TTBCustomForm then
-      Result := TTBCustomForm(Ctl.Parent);
+    if Ctl.Parent is TCustomForm then
+      Result := TCustomForm(Ctl.Parent);
     Ctl := Ctl.Parent;
   end;
   { ^ for compatibility with ActiveX controls, that code is used instead of
@@ -685,19 +661,18 @@ begin
     Result := TTBFloatingWindowParent(Result).ParentForm;
 end;
 
-function TBValidToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow): TTBCustomForm;
+function TBValidToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow): TCustomForm;
 begin
   Result := TBGetToolWindowParentForm(ToolWindow);
   if Result = nil then
-    raise EInvalidOperation.{$IFDEF JR_D3}CreateFmt{$ELSE}CreateResFmt{$ENDIF}
-      (SParentRequired, [ToolWindow.Name]);
+    raise EInvalidOperation.CreateFmt(SParentRequired, [ToolWindow.Name]);
 end;
 
 procedure ToolbarHookProc(Code: THookProcCode; Wnd: HWND; WParam: WPARAM; LParam: LPARAM);
 var
   I: Integer;
   ToolWindow: TTBCustomDockableWindow;
-  Form: TTBCustomForm;
+  Form: TCustomForm;
 begin
   case Code of
     hpSendActivate,
@@ -1776,15 +1751,6 @@ begin
     InvalidateBackgrounds;
 end;
 
-{$IFNDEF JR_D4}
-procedure TTBDock.WMSize(var Message: TWMSize);
-begin
-  inherited;
-  if not(csLoading in ComponentState) and Assigned(FOnResize) then
-    FOnResize(Self);
-end;
-{$ENDIF}
-
 procedure TTBDock.WMNCCalcSize(var Message: TWMNCCalcSize);
 begin
   inherited;
@@ -2339,7 +2305,7 @@ end;
 
 procedure TTBFloatingWindowParent.WMClose(var Message: TWMClose);
 var
-  MDIParentForm: TTBCustomForm;
+  MDIParentForm: TCustomForm;
 begin
   { A floating toolbar does not use WM_CLOSE messages when its close button
     is clicked, but Windows still sends a WM_CLOSE message if the user
@@ -2355,7 +2321,7 @@ end;
 
 procedure TTBFloatingWindowParent.WMActivate(var Message: TWMActivate);
 var
-  ParentForm: TTBCustomForm;
+  ParentForm: TCustomForm;
 begin
   if csDesigning in ComponentState then begin
     inherited;
@@ -2394,7 +2360,7 @@ end;
 
 procedure TTBFloatingWindowParent.WMMouseActivate(var Message: TWMMouseActivate);
 var
-  ParentForm, MDIParentForm: TTBCustomForm;
+  ParentForm, MDIParentForm: TCustomForm;
 begin
   if csDesigning in ComponentState then begin
     inherited;
@@ -2679,15 +2645,6 @@ begin
   Moved;
 end;
 
-{$IFNDEF JR_D4}
-procedure TTBCustomDockableWindow.WMSize(var Message: TWMSize);
-begin
-  inherited;
-  if not(csLoading in ComponentState) and Assigned(FOnResize) then
-    FOnResize(Self);
-end;
-{$ENDIF}
-
 procedure TTBCustomDockableWindow.WMEnable(var Message: TWMEnable);
 begin
   inherited;
@@ -2784,7 +2741,7 @@ function TTBCustomDockableWindow.GetShowingState: Boolean;
 
 var
   HideFloatingToolbars: Boolean;
-  ParentForm: TTBCustomForm;
+  ParentForm: TCustomForm;
 begin
   Result := Showing and (FHidden = 0);
   if Floating and not(csDesigning in ComponentState) then begin
@@ -2887,7 +2844,7 @@ const
     SWP_NOSIZE or SWP_NOMOVE or SWP_NOZORDER or SWP_NOACTIVATE or SWP_SHOWWINDOW);
 var
   Show: Boolean;
-  Form: TTBCustomForm;
+  Form: TCustomForm;
 begin
   { inherited isn't called since TTBCustomDockableWindow handles CM_SHOWINGCHANGED
     itself. For reference, the original TWinControl implementation is:
@@ -3076,14 +3033,14 @@ begin
     Arrange;
 end;
 
-procedure TTBCustomDockableWindow.AddDockForm(const Form: TTBCustomForm);
+procedure TTBCustomDockableWindow.AddDockForm(const Form: TCustomForm);
 begin
   if Form = nil then Exit;
   if AddToList(FDockForms, Form) then
     Form.FreeNotification(Self);
 end;
 
-procedure TTBCustomDockableWindow.RemoveDockForm(const Form: TTBCustomForm);
+procedure TTBCustomDockableWindow.RemoveDockForm(const Form: TCustomForm);
 begin
   RemoveFromList(FDockForms, Form);
 end;
@@ -4086,7 +4043,7 @@ var
     end;
 
   var
-    ParentForm: TTBCustomForm;
+    ParentForm: TCustomForm;
     DockFormsList: TList;
     I, J: Integer;
   begin
@@ -4098,8 +4055,8 @@ var
     DockFormsList := TList.Create;
     try
       if Assigned(FDockForms) then begin
-        for I := 0 to Screen.{$IFDEF JR_D3}CustomFormCount{$ELSE}FormCount{$ENDIF}-1 do begin
-          J := FDockForms.IndexOf(Screen.{$IFDEF JR_D3}CustomForms{$ELSE}Forms{$ENDIF}[I]);
+        for I := 0 to Screen.CustomFormCount-1 do begin
+          J := FDockForms.IndexOf(Screen.CustomForms[I]);
           if (J <> -1) and (FDockForms[J] <> ParentForm) then
             DockFormsList.Add(FDockForms[J]);
         end;
@@ -4563,47 +4520,9 @@ begin
 end;
 
 procedure TTBCustomDockableWindow.ShowNCContextMenu(const Pos: TSmallPoint);
-
-  {$IFNDEF JR_D5}
-  { Note: this is identical to TControl.CheckMenuPopup (from Delphi 4),
-    except where noted.
-    TControl.CheckMenuPopup is unfortunately 'private', so it can't be called
-    outside of the Controls unit. }
-  procedure CheckMenuPopup;
-  var
-    Control: TControl;
-    PopupMenu: TPopupMenu;
-  begin
-    if csDesigning in ComponentState then Exit;
-    Control := Self;
-    while Control <> nil do
-    begin
-      { Added TControlAccess cast because GetPopupMenu is 'protected' }
-      PopupMenu := TControlAccess(Control).GetPopupMenu;
-      if (PopupMenu <> nil) then
-      begin
-        if not PopupMenu.AutoPopup then Exit;
-        SendCancelMode(nil);
-        PopupMenu.PopupComponent := Control;
-        { Changed the following. LPARAM of WM_NCRBUTTONUP is in screen
-          coordinates, not client coordinates }
-        {with ClientToScreen(SmallPointToPoint(Pos)) do
-          PopupMenu.Popup(X, Y);}
-        PopupMenu.Popup(Pos.X, Pos.Y);
-        Exit;
-      end;
-      Control := Control.Parent;
-    end;
-  end;
-  {$ENDIF}
-
 begin
-  {$IFDEF JR_D5}
   { Delphi 5 and later use the WM_CONTEXTMENU message for popup menus }
   SendMessage(Handle, WM_CONTEXTMENU, 0, LPARAM(Pos));
-  {$ELSE}
-  CheckMenuPopup;
-  {$ENDIF}
 end;
 
 procedure TTBCustomDockableWindow.WMNCRButtonUp(var Message: TWMNCRButtonUp);
@@ -4611,7 +4530,6 @@ begin
   ShowNCContextMenu(TSmallPoint(TMessage(Message).LParam));
 end;
 
-{$IFDEF JR_D5}
 procedure TTBCustomDockableWindow.WMContextMenu(var Message: TWMContextMenu);
 { Unfortunately TControl.WMContextMenu ignores clicks in the non-client area.
   On docked toolbars, we need right clicks on the border, part of the
@@ -4664,7 +4582,6 @@ begin
   if Message.Result = 0 then
     inherited;
 end;
-{$ENDIF}
 
 procedure TTBCustomDockableWindow.GetMinShrinkSize(var AMinimumSize: Integer);
 begin
@@ -5016,7 +4933,7 @@ end;
 
 procedure TTBCustomDockableWindow.SetFloating(Value: Boolean);
 var
-  ParentFrm: TTBCustomForm;
+  ParentFrm: TCustomForm;
   NewFloatParent: TTBFloatingWindowParent;
 begin
   if FFloating <> Value then begin

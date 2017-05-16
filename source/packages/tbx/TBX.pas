@@ -9,11 +9,6 @@ unit TBX;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
-
-{x$DEFINE TBX_NO_ANIMATION}
-  { Enabling the above define disables all menu animation. For debugging
-    purpose only. } {vb+}
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, Graphics, ImgList, Forms,
@@ -319,7 +314,7 @@ type
     FControlRect: TRect;
     FShadows: TShadows;
     procedure CMHintShow(var Message: TCMHintShow); message CM_HINTSHOW;
-    procedure CMShowingChanged(var Message: TMessage); message CM_SHOWINGCHANGED; {vb+}
+    procedure CMShowingChanged(var Message: TMessage); message CM_SHOWINGCHANGED;
     procedure TBMGetViewType(var Message: TMessage); message TBM_GETVIEWTYPE;
     procedure WMNCCalcSize(var Message: TWMNCCalcSize); message WM_NCCALCSIZE;
     procedure WMNCPaint(var Message: TMessage); message WM_NCPAINT;
@@ -334,7 +329,7 @@ type
     function  GetNCSize: TPoint; override;
     function  GetShowShadow: Boolean; virtual;
     function  GetViewClass: TTBViewClass; override;
-    procedure PaintScrollArrows; override; {vb+}
+    procedure PaintScrollArrows; override;
   public
     destructor Destroy; override;
     function  GetFillColor: TColor;
@@ -375,7 +370,7 @@ type
     function  GetFloatingWindowParentClass: TTBFloatingWindowParentClass; override;
     procedure GetToolbarInfo(out ToolbarInfo: TTBXToolbarInfo); virtual;
     function  GetViewClass: TTBToolbarViewClass; override;
-    procedure Loaded; override; {vb+}
+    procedure Loaded; override;
     procedure SetParent(AParent: TWinControl); override;
     procedure UpdateEffectiveColor;
     procedure Rebuild;
@@ -436,9 +431,7 @@ type
     property Color default clNone;
     property OnClose;
     property OnCloseQuery;
-    {$IFDEF JR_D5}
     property OnContextPopup;
-    {$ENDIF}
     property OnDragDrop;
     property OnDragOver;
     property OnMouseDown;
@@ -582,7 +575,7 @@ type
     property UseParentBackground: Boolean read FUseParentBackground write SetUseParentBackground default False;
   end;
 
-  { TTBXMenuAnimation } {vb+}
+  { TTBXMenuAnimation }
 
   TMenuAnimation = (maNone, maUnfold, maSlide, maFade);
   TAnimationMode = (amNone, amSysDefault, amRandom, amUnfold, amSlide, amFade);
@@ -604,15 +597,7 @@ type
 
 var
   CurrentTheme: TTBXTheme;
-  TBXMenuAnimation: TTBXMenuAnimation; { vb+ }
-
-{$IFNDEF JR_D6}
-var
-  clMoneyGreen: TColor = TColor($C0DCC0);
-  clSkyBlue: TColor = TColor($F0CAA6);
-  clCream: TColor = TColor($F0FBFF);
-  clMedGray: TColor = TColor($A4A0A0);
-{$ENDIF}
+  TBXMenuAnimation: TTBXMenuAnimation;
 
 procedure TBXSetTheme(const AThemeName: string);
 function TBXCurrentTheme: string;
@@ -642,8 +627,7 @@ implementation
 
 uses
   TBXExtItems, TBXLists, TB2Common, UxTheme, MultiMon, TBXOfficeXPTheme,
-  {ComCtrls, Menus;} {vb-}
-  ComCtrls, Menus, MMSystem, Types, UITypes; {vb+}
+  ComCtrls, Menus, MMSystem, Types, UITypes;
 
 type
   TTBItemAccess = class(TTBCustomItem);
@@ -658,7 +642,7 @@ type
   TControlAccess = class(TControl);
   TTBXThemeAccess = class(TTBXTheme);
   TDockAccess = class(TTBDock);
-  TTBPopupWindowAccess = class(TTBPopupWindow); {vb+}
+  TTBPopupWindowAccess = class(TTBPopupWindow);
 
   { TTBNexus }
   TTBXNexus = class
@@ -728,8 +712,8 @@ begin
     try
       SetWindowOrgEx(DC, Shift.X, Shift.Y, nil);
       Msg.Msg := WM_ERASEBKGND;
-      Msg.WParam := Integer(DC); {vb+}
-      Msg.LParam := Integer(DC); {vb+}
+      Msg.WParam := Integer(DC);
+      Msg.LParam := Integer(DC);
       Msg.Result := 0;
       Parent.Dispatch(Msg);
     finally
@@ -1643,7 +1627,6 @@ var
   View: TTBViewAccess;
   ItemInfo: TTBXItemInfo;
 
-  {M: Integer;} {vb-}
   R: TRect;
   ComboRect: TRect;
   CaptionRect: TRect;
@@ -1984,9 +1967,7 @@ begin
       Bottom := Top + CY;
       DrawItemImage(Canvas, ImageRect, ItemInfo);
     end
-    {else if not ToolbarStyle and Item.Checked then
-      CurrentTheme.PaintCheckMark(Canvas, ImageRect, ItemInfo);} {vb-}
-    else {vb+}
+    else
       if not ToolbarStyle and Item.Checked then
       begin
         if Item.RadioItem then
@@ -2197,7 +2178,7 @@ begin
   end;
 end;
 
-procedure TTBXPopupWindow.CMShowingChanged(var Message: TMessage); {vb+}
+procedure TTBXPopupWindow.CMShowingChanged(var Message: TMessage);
 const
   ShowFlags: array[Boolean] of UINT = (
     SWP_NOSIZE or SWP_NOMOVE or SWP_NOZORDER or SWP_NOACTIVATE or SWP_HIDEWINDOW,
@@ -2213,7 +2194,6 @@ begin
     Windows 95 and NT 4.0 because there's a difference in the way the
     SetWindowPos works on those versions. See the comment in the
     TBStartAnimation function of TB2Anim.pas. }
-  {$IFNDEF TBX_NO_ANIMATION}
   if ((View.ParentView = nil) or not(vsNoAnimation in View.ParentView.State)) and
      Showing and (View.Selected = nil) and not IsWindowVisible(WindowHandle) and
      (TBXMenuAnimation.AnimationMode <> amNone) then
@@ -2235,7 +2215,6 @@ begin
       end;
     end;
   end;
-  {$ENDIF}
 
   { No animation... }
   if not Showing then begin
@@ -2335,7 +2314,7 @@ begin
   Result := TTBXPopupView;
 end;
 
-procedure TTBXPopupWindow.PaintScrollArrows; {vb+}
+procedure TTBXPopupWindow.PaintScrollArrows;
 
   function _GetPopupMargin: Integer;
   begin
@@ -2739,7 +2718,7 @@ begin
   Invalidate;
 end;
 
-procedure TTBXToolbar.Loaded; {vb+}
+procedure TTBXToolbar.Loaded;
 begin
   inherited;
   UpdateEffectiveColor;
@@ -3118,13 +3097,7 @@ end;
 function TTBXPopupMenu.PopupEx(const ControlRect: TRect;
   ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
 begin
-  {$IFDEF JR_D5}
-  {$IFDEF JR_D9}
   SetPopupPoint(Point(ControlRect.Left, ControlRect.Bottom));
-  {$ELSE}
-  PPoint(@PopupPoint)^ := Point(ControlRect.Left, ControlRect.Bottom);
-  {$ENDIF}
-  {$ENDIF}
   Result := TTBXRootItem(Items).PopupEx(ControlRect, TrackButton = tbRightButton,
     TTBPopupAlignment(Alignment), ReturnClickedItemOnly);
 end;
@@ -3676,19 +3649,6 @@ begin
     Broadcast(TBM_THEMECHANGE, Message.WParam, 0);
 end;
 
-procedure InitAdditionalSysColors;
-begin
-{$IFNDEF JR_D7} {vb+}
-  AddTBXColor(clHotLight, 'clHotLight');
-{$ENDIF} {vb+}
-{$IFNDEF JR_D6}
-  AddTBXColor(clMoneyGreen, 'clMoneyGreen');
-  AddTBXColor(clSkyBlue, 'clSkyBlue');
-  AddTBXColor(clCream, 'clCream');
-  AddTBXColor(clMedGray, 'clMedGray');
-{$ENDIF}
-end;
-
 { TTBXDock }
 
 procedure TTBXDock.CMColorChanged(var Message: TMessage);
@@ -3851,7 +3811,7 @@ begin
   FResizing := False;
 end;
 
-{ TTBXMenuAnimation } {vb+}
+{ TTBXMenuAnimation }
 
 constructor TTBXMenuAnimation.Create(AAnimationMode: TAnimationMode = amSysDefault);
 begin
@@ -3911,7 +3871,7 @@ begin
   Result := SystemParametersInfo(Param, 0, @B, 0) and B;
 end;
 
-{ Work around delayed menu showing in Windows 2000+ } {vb+}
+{ Work around delayed menu showing in Windows 2000+ }
 var
   FixPlaySoundThreadHandle: Cardinal;
 
@@ -3937,18 +3897,14 @@ begin
 end;
 
 initialization
-  FixPlaySoundDelay; {vb+}
-  {CurrentTheme := nil;} {vb-}
+  FixPlaySoundDelay;
   RegisterTBXTheme('OfficeXP', TTBXOfficeXPTheme);
   TBXNexus := TTBXNexus.Create('OfficeXP');
-  TBXMenuAnimation := TTBXMenuAnimation.Create; {vb+}
-  {$IFNDEF JR_D7} {vb+}
-  InitAdditionalSysColors;
-  {$ENDIF} {vb+}
+  TBXMenuAnimation := TTBXMenuAnimation.Create;
 
 finalization
   TBXNexus.Free;
-  FreeAndNil(TBXMenuAnimation); {vb+}
+  FreeAndNil(TBXMenuAnimation);
   ColorRegistry := nil;
 
 end.

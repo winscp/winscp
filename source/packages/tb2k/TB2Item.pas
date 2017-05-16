@@ -105,9 +105,6 @@ type
   private
     FLastWidth, FLastHeight: Integer;
   end;
-  {$IFNDEF JR_D5}
-  TImageIndex = type Integer;
-  {$ENDIF}
   TTBPopupPositionRec = record
     PositionAsSubmenu: Boolean;
     Alignment: TTBPopupAlignment;
@@ -170,9 +167,7 @@ type
     procedure ImageListChangeHandler(Sender: TObject);
     procedure InternalNotify(Ancestor: TTBCustomItem; NestingLevel: Integer;
       Action: TTBItemChangedAction; Index: Integer; Item: TTBCustomItem);
-    {$IFDEF JR_D6}
     function IsAutoCheckStored: Boolean;
-    {$ENDIF}
     function IsCaptionStored: Boolean;
     function IsCheckedStored: Boolean;
     function IsEnabledStored: Boolean;
@@ -260,7 +255,7 @@ type
     procedure ChangeScale(M, D: Integer); virtual;
 
     property Action: TBasicAction read GetAction write SetAction;
-    property AutoCheck: Boolean read FAutoCheck write FAutoCheck {$IFDEF JR_D6} stored IsAutoCheckStored {$ENDIF} default False;
+    property AutoCheck: Boolean read FAutoCheck write FAutoCheck stored IsAutoCheckStored default False;
     property Caption: String read FCaption write SetCaption stored IsCaptionStored;
     property Count: Integer read FItemCount;
     property Checked: Boolean read FChecked write SetChecked stored IsCheckedStored default False;
@@ -294,9 +289,7 @@ type
   protected
     FClient: TTBCustomItem;
     procedure AssignClient(AClient: TObject); override;
-    {$IFDEF JR_D6}
     function IsAutoCheckLinked: Boolean; virtual;
-    {$ENDIF}
     function IsCaptionLinked: Boolean; override;
     function IsCheckedLinked: Boolean; override;
     function IsEnabledLinked: Boolean; override;
@@ -308,9 +301,7 @@ type
     function IsShortCutLinked: Boolean; override;
     function IsVisibleLinked: Boolean; override;
     function IsOnExecuteLinked: Boolean; override;
-    {$IFDEF JR_D6}
     procedure SetAutoCheck(Value: Boolean); override;
-    {$ENDIF}
     procedure SetCaption(const Value: String); override;
     procedure SetChecked(Value: Boolean); override;
     procedure SetEnabled(Value: Boolean); override;
@@ -771,9 +762,6 @@ type
     procedure SetLinkSubitems(Value: TTBCustomItem);
     procedure SetOptions(Value: TTBItemOptions);
   protected
-    {$IFNDEF JR_D5}
-    procedure DoPopup(Sender: TObject);
-    {$ENDIF}
     function GetRootItemClass: TTBRootItemClass; dynamic;
     procedure SetChildOrder(Child: TComponent; Order: Integer); override;
   public
@@ -924,7 +912,7 @@ const
 procedure DestroyClickWnd;
 begin
   if ClickWnd <> 0 then begin
-    {$IFDEF JR_D6}Classes.{$ENDIF} DeallocateHWnd(ClickWnd);
+    Classes.DeallocateHWnd(ClickWnd);
     ClickWnd := 0;
   end;
   FreeAndNil(ClickList);
@@ -949,7 +937,7 @@ var
   I: Integer;
 begin
   if ClickWnd = 0 then
-    ClickWnd := {$IFDEF JR_D6}Classes.{$ENDIF} AllocateHWnd(TTBCustomItem.ClickWndProc);
+    ClickWnd := Classes.AllocateHWnd(TTBCustomItem.ClickWndProc);
   if ClickList = nil then
     ClickList := TList.Create;
 
@@ -1070,12 +1058,10 @@ begin
   FClient := AClient as TTBCustomItem;
 end;
 
-{$IFDEF JR_D6}
 function TTBCustomItemActionLink.IsAutoCheckLinked: Boolean;
 begin
   Result := (FClient.AutoCheck = (Action as TCustomAction).AutoCheck);
 end;
-{$ENDIF}
 
 function TTBCustomItemActionLink.IsCaptionLinked: Boolean;
 begin
@@ -1141,12 +1127,10 @@ begin
     MethodsEqual(TMethod(FClient.OnClick), TMethod(Action.OnExecute));
 end;
 
-{$IFDEF JR_D6}
 procedure TTBCustomItemActionLink.SetAutoCheck(Value: Boolean);
 begin
   if IsAutoCheckLinked then FClient.AutoCheck := Value;
 end;
-{$ENDIF}
 
 procedure TTBCustomItemActionLink.SetCaption(const Value: string);
 begin
@@ -1249,12 +1233,10 @@ begin
   ReleaseClickWnd;
 end;
 
-{$IFDEF JR_D6}
 function TTBCustomItem.IsAutoCheckStored: Boolean;
 begin
   Result := (ActionLink = nil) or not FActionLink.IsAutoCheckLinked;
 end;
-{$ENDIF}
 
 function TTBCustomItem.IsCaptionStored: Boolean;
 begin
@@ -1325,10 +1307,8 @@ begin
   if Action is TCustomAction then
     with TCustomAction(Sender) do
     begin
-      {$IFDEF JR_D6}
       if not CheckDefaults or (Self.AutoCheck = False) then
         Self.AutoCheck := AutoCheck;
-      {$ENDIF}
       if not CheckDefaults or (Self.Caption = '') then
         Self.Caption := Caption;
       if not CheckDefaults or (Self.Checked = False) then
@@ -1529,12 +1509,8 @@ procedure TTBCustomItem.Click;
 begin
   if Enabled then begin
     { Following code based on D6's TMenuItem.Click }
-    {$IFDEF JR_D6}
     if (not Assigned(ActionLink) and AutoCheck) or
        (Assigned(ActionLink) and not ActionLink.IsAutoCheckLinked and AutoCheck) then
-    {$ELSE}
-    if AutoCheck then
-    {$ENDIF}
       Checked := not Checked;
     { Following code based on D4's TControl.Click }
     { Call OnClick if assigned and not equal to associated action's OnExecute.
@@ -1545,7 +1521,7 @@ begin
       FOnClick(Self)
     else
     if not(csDesigning in ComponentState) and (ActionLink <> nil) then
-      ActionLink.Execute {$IFDEF JR_D6}(Self){$ENDIF}
+      ActionLink.Execute(Self)
     else
     if Assigned(FOnClick) then
       FOnClick(Self);
@@ -5923,7 +5899,7 @@ begin
   if AExistingWnd <> 0 then
     FWnd := AExistingWnd
   else begin
-    FWnd := {$IFDEF JR_D6}Classes.{$ENDIF} AllocateHWnd(WndProc);
+    FWnd := Classes.AllocateHWnd(WndProc);
     FCreatedWnd := True;
   end;
   { Like standard menus, don't allow other apps to steal the focus during
@@ -5968,7 +5944,7 @@ begin
     if FInited then
       NotifyWinEvent(EVENT_SYSTEM_MENUEND, FWnd, OBJID_CLIENT, CHILDID_SELF);
     if FCreatedWnd then
-      {$IFDEF JR_D6}Classes.{$ENDIF} DeallocateHWnd(FWnd);
+      Classes.DeallocateHWnd(FWnd);
   end;
   inherited;
 end;
@@ -6866,13 +6842,6 @@ begin
   DoPopup(Sender);
 end;
 
-{$IFNDEF JR_D5}
-procedure TTBPopupMenu.DoPopup(Sender: TObject);
-begin
-  if Assigned(OnPopup) then OnPopup(Sender);
-end;
-{$ENDIF}
-
 procedure TTBPopupMenu.Popup(X, Y: Integer);
 begin
   PopupEx(X, Y, False);
@@ -6881,13 +6850,7 @@ end;
 function TTBPopupMenu.PopupEx(X, Y: Integer;
   ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
 begin
-  {$IFDEF JR_D5}
-  {$IFDEF JR_D9}
   SetPopupPoint(Point(X, Y));
-  {$ELSE}
-  PPoint(@PopupPoint)^ := Point(X, Y);
-  {$ENDIF}
-  {$ENDIF}
   Result := FItem.Popup(X, Y, TrackButton = tbRightButton,
     TTBPopupAlignment(Alignment), ReturnClickedItemOnly);
 end;

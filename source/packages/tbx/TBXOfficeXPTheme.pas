@@ -9,13 +9,9 @@ unit TBXOfficeXPTheme;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
 
 uses
   Windows, Messages, Graphics, TBXThemes, ImgList, Controls, TB2Item, Forms;
-
-{$DEFINE ALTERNATIVE_DISABLED_STYLE} // remove the asterisk to change appearance of disabled images
-{$DEFINE NO_IMAGE_DIMMING}
 
 type
   TItemPart = (ipBody, ipText, ipFrame);
@@ -781,27 +777,6 @@ begin
       Exit;
     end;
 
-{$IFNDEF ALTERNATIVE_DISABLED_STYLE}
-    if not Enabled then
-    begin
-      DrawTBXIconFlatShadow(Canvas, ARect, ImageList, ImageIndex,
-        BtnItemColors[bisDisabled, ipText]);
-    end
-    else if Selected or Pushed or (HoverKind <> hkNone) then
-    begin
-      if not (Selected or Pushed and not IsPopupParent) then
-      begin
-        OffsetRect(ARect, 1, 1);
-        DrawTBXIconFullShadow(Canvas, ARect, ImageList, ImageIndex, IconShadowColor);
-        OffsetRect(ARect, -2, -2);
-      end;
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex);
-    end
-    else if TBXLoColor then
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex)
-    else
-      HighlightTBXIcon(Canvas, ARect, ImageList, ImageIndex, clWindow, 178);
-{$ELSE}
     if not Enabled then
     begin
       HiContrast := ColorIntensity(GetItemImageBackground(ItemInfo)) < 80;
@@ -822,16 +797,7 @@ begin
       DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex);
     end
       else
-{$IFNDEF NO_IMAGE_DIMMING}
-    if TBXLoColor then
-{$ENDIF}
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex)
-{$IFNDEF NO_IMAGE_DIMMING}
-    else
-      HighlightTBXIcon(Canvas, ARect, ImageList, ImageIndex, clWindow, 178)
-{$ENDIF}
-    ;
-{$ENDIF}
+    DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex)
   end;
 end;
 

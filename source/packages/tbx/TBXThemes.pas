@@ -9,7 +9,6 @@ unit TBXThemes;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
 
 uses
   Windows, Messages, Classes, Forms, Graphics, ImgList, Controls, TB2Item;
@@ -668,14 +667,14 @@ begin
   FEnableVisualStyles := True;
   FFlatMenuStyle := FMS_AUTOMATIC;
   FNotifies := TList.Create;
-  FWindowHandle := {$IFDEF JR_D6}Classes.{$ENDIF}AllocateHWnd(WndProc);
+  FWindowHandle := Classes.AllocateHWnd(WndProc);
   UpdateVariables;
 end;
 
 destructor TTBXThemeManager.Destroy;
 begin
   VisualStylesClose;
-  {$IFDEF JR_D6}Classes.{$ENDIF}DeallocateHWnd(FWindowHandle);
+  Classes.DeallocateHWnd(FWindowHandle);
   FNotifies.Free;
   VisualStylesClose;
   inherited;
@@ -807,7 +806,6 @@ begin
     WM_DISPLAYCHANGE, WM_SYSCOLORCHANGE, WM_THEMECHANGED:
       begin
         UpdateVariables;
-        ResetBrushedFillCache;
         Notify;
       end;
     WM_ACTIVATEAPP:

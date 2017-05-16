@@ -32,11 +32,9 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Dialogs, ActnList, ImgList,
-  {$IFDEF JR_D6} DesignIntf, DesignEditors, VCLEditors, {$ELSE} DsgnIntf, {$ENDIF}
+  DesignIntf, DesignEditors, VCLEditors,
   TB2Toolbar, {$IFNDEF MPEXCLUDE}TB2ToolWindow,{$ENDIF} TB2Dock, TB2Item, TB2ExtItems, {$IFNDEF MPEXCLUDE} TB2MRU, TB2MDI, {$ENDIF}
   TB2DsgnItemEditor;
-
-{$IFDEF JR_D5}
 
 { TTBImageIndexPropertyEditor }
 
@@ -44,8 +42,7 @@ uses
   Delphi 6, so we have to use our own image index property editor class }
 
 type
-  TTBImageIndexPropertyEditor = class(TIntegerProperty
-    {$IFDEF JR_D6} , ICustomPropertyListDrawing {$ENDIF})
+  TTBImageIndexPropertyEditor = class(TIntegerProperty, ICustomPropertyListDrawing)
   public
     function GetAttributes: TPropertyAttributes; override;
     procedure GetValues(Proc: TGetStrProc); override;
@@ -53,11 +50,11 @@ type
 
     // ICustomPropertyListDrawing
     procedure ListMeasureHeight(const Value: string; ACanvas: TCanvas;
-      var AHeight: Integer); {$IFNDEF JR_D6} override; {$ENDIF}
+      var AHeight: Integer);
     procedure ListMeasureWidth(const Value: string; ACanvas: TCanvas;
-      var AWidth: Integer); {$IFNDEF JR_D6} override; {$ENDIF}
+      var AWidth: Integer);
     procedure ListDrawValue(const Value: string; ACanvas: TCanvas;
-      const ARect: TRect; ASelected: Boolean); {$IFNDEF JR_D6} override; {$ENDIF}
+      const ARect: TRect; ASelected: Boolean);
   end;
 
 { TTBItemImageIndexPropertyEditor }
@@ -68,16 +65,12 @@ type
     function GetImageListAt (Index: Integer): TCustomImageList; override;
   end;
 
-{$ENDIF}
-
 procedure Register;
 
 implementation
 
 uses
   ImgEdit, Actions, UITypes;
-
-{$IFDEF JR_D5}
 
 function TTBImageIndexPropertyEditor.GetAttributes: TPropertyAttributes;
 begin
@@ -163,8 +156,6 @@ begin
   end;
 end;
 
-{$ENDIF}
-
 { TTBCustomImageListEditor }
 
 type
@@ -218,9 +209,7 @@ begin
   RegisterComponents('Toolbar2000', [TTBDock, TTBToolbar, {$IFNDEF MPEXCLUDE}TTBToolWindow,{$ENDIF}
     TTBPopupMenu, TTBImageList, TTBItemContainer{$IFNDEF MPEXCLUDE}, TTBBackground, TTBMRUList,
     TTBMDIHandler{$ENDIF}]);
-  {$IFDEF JR_D4}
   RegisterActions('', [TTBEditAction], nil);
-  {$ENDIF}
   RegisterNoIcon([TTBItem, TTBGroupItem, TTBSubmenuItem, TTBSeparatorItem,
     TTBEditItem, {$IFNDEF MPEXCLUDE} TTBMRUListItem,{$ENDIF} TTBControlItem{$IFNDEF MPEXCLUDE}, TTBMDIWindowItem,
     TTBVisibilityToggleItem{$ENDIF}]);
@@ -233,16 +222,12 @@ begin
   RegisterComponentEditor(TTBPopupMenu, TTBItemsEditor);
   RegisterComponentEditor(TTBCustomImageList, TTBCustomImageListEditor);
   RegisterPropertyEditor(TypeInfo(TTBRootItem), nil, '', TTBItemsPropertyEditor);
-  {$IFDEF JR_D5}
   RegisterPropertyEditor(TypeInfo(TImageIndex), TTBCustomItem, 'ImageIndex',
     TTBItemImageIndexPropertyEditor);
-  {$ENDIF}
-  {$IFDEF JR_D6}
   { TShortCut properties show up like Integer properties in Delphi 6
     without this... }
   RegisterPropertyEditor(TypeInfo(TShortCut), TTBCustomItem, '',
     TShortCutProperty);
-  {$ENDIF}
 
   { Link in images for the toolbar buttons }
   {$R TB2DsgnItemEditor.res}

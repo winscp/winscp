@@ -9,7 +9,6 @@ unit TBXLists;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, Forms, Graphics, TB2Item, TBX,
@@ -192,8 +191,8 @@ type
     procedure Paint(const Canvas: TCanvas; const ClientAreaRect: TRect; IsHoverItem, IsPushed, UseDisabledShadow: Boolean); override;
     procedure UpdateItems;
     property HoverIndex: Integer read FHoverIndex write FHoverIndex;
-    property Offset: Integer read FOffset; {vb+}
-    property VisibleItems: Integer read FVisibleItems; {vb+}
+    property Offset: Integer read FOffset;
+    property VisibleItems: Integer read FVisibleItems;
   public
     constructor Create(AView: TTBView; AItem: TTBCustomItem; AGroupLevel: Integer); override;
     destructor Destroy; override;
@@ -279,7 +278,7 @@ end;
 
 procedure TTBXScrollBar.CreateWnd;
 begin
-  if FHandle = 0 then FHandle := {$IFDEF JR_D6}Classes.{$ENDIF}AllocateHWnd(SBWndProc);
+  if FHandle = 0 then FHandle := Classes.AllocateHWnd(SBWndProc);
 end;
 
 destructor TTBXScrollBar.Destroy;
@@ -292,7 +291,7 @@ procedure TTBXScrollBar.DestroyWnd;
 begin
   if FHandle <> 0 then
   begin
-    {$IFDEF JR_D6}Classes.{$ENDIF}DeallocateHWnd(FHandle);
+    Classes.DeallocateHWnd(FHandle);
     FHandle := 0;
   end;
 end;

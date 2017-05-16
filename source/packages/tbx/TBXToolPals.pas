@@ -13,7 +13,6 @@ uses
   TBXThemes;
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
 
 type
   TRowColCount = 1..100;

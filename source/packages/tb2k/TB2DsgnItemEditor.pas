@@ -34,11 +34,7 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, ExtCtrls, Buttons, ComCtrls, ImgList, Menus,
   TB2Item, TB2Toolbar, TB2Dock,
-  {$IFDEF JR_D6}
-    DesignWindows, DesignEditors, DesignIntf;
-  {$ELSE}
-    DsgnIntf, DsgnWnds, LibIntf;
-  {$ENDIF}
+  DesignWindows, DesignEditors, DesignIntf;
 
 type
   TTBItemEditForm = class(TDesignWindow)
@@ -126,11 +122,7 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    {$IFDEF JR_D6}
     function EditAction(Action: TEditAction): Boolean; override;
-    {$ELSE}
-    procedure EditAction(Action: TEditAction); override;
-    {$ENDIF}
     function GetEditState: TEditState; override;
   end;
 
@@ -166,14 +158,9 @@ uses
   TypInfo, CommCtrl, TB2Version, TB2Common, TB2DsgnConverter;
 
 type
-  {}TTBCustomItemAccess = class(TTBCustomItem);
-  {}TControlAccess = class(TControl);
-{$IFNDEF JR_D5}
-  TDesignerSelectionList = TComponentList;
-{$ENDIF}
-{$IFDEF JR_D6}
+  TTBCustomItemAccess = class(TTBCustomItem);
+  TControlAccess = class(TControl);
   TDesignerSelectionList = IDesignerSelections;
-{$ENDIF}
 
   PItemClassInfo = ^TItemClassInfo;
   TItemClassInfo = record
@@ -186,13 +173,6 @@ var
   ItemClasses: TList;
   ItemImageList: TImageList;
   EditFormHooks: TList;
-
-{$IFNDEF JR_D6}
-function CreateSelectionList: TDesignerSelectionList;
-begin
-  Result := TDesignerSelectionList.Create;
-end;
-{$ENDIF}
 
 procedure FreeItemClasses;
 var
@@ -288,7 +268,7 @@ begin
 end;
 
 procedure ShowEditForm(AParentComponent: TComponent; ARootItem: TTBCustomItem;
-  const ADesigner: {$IFDEF JR_D6} IDesigner {$ELSE} IFormDesigner {$ENDIF});
+  const ADesigner: IDesigner);
 var
   I: Integer;
   Form: TCustomForm;
@@ -326,9 +306,7 @@ begin
     EditForm.Caption := 'Editing ' + AParentComponent.Name;
     EditForm.RebuildTree;
     EditForm.RebuildList;
-    {$IFDEF JR_D9}
     EditForm.PopupMode := pmExplicit;
-    {$ENDIF}
     EditForm.Show;
   except
     EditForm.Free;
@@ -440,24 +418,16 @@ begin
   end;
 end;
 
-{$IFDEF JR_D6}
 function TTBItemEditForm.EditAction(Action: TEditAction): Boolean;
-{$ELSE}
-procedure TTBItemEditForm.EditAction(Action: TEditAction);
-{$ENDIF}
 begin
-  {$IFDEF JR_D6}
   Result := True;
-  {$ENDIF}
   case Action of
     eaCut: Cut;
     eaCopy: Copy;
     eaPaste: Paste;
     eaDelete: Delete;
-  {$IFDEF JR_D6}
   else
     Result := False;
-  {$ENDIF}
   end;
 end;
 
@@ -667,31 +637,9 @@ begin
       CompList2.Add(C);
     end;
   end;
-  if CompList1.Count = 0 then begin
-    {$IFNDEF JR_D6}
-    CompList1.Free;
-    CompList2.Free;
-    {$ENDIF}
-  end
-  else begin
+  if CompList1.Count <> 0 then
+  begin
     Designer.SetSelections(CompList1);
-    { Note: Never pass an empty list to SetSelection or Delphi will crash }
-    { History here:
-      - 1.34: SetSelection call remarked out because it fixed Delphi 6 issue
-        with random AV's after the editor was closed.
-      - 1.38: SetSelection call restored because without it, Ctrl+X/C/V didn't
-        work.
-      - 1.40: SetSelection call disabled on Delphi 6 only because AV problem
-        still seems to exist despite another change which I thought fixed it.
-        On D6 it isn't necessary to call SetSelection for Ctrl+X/C/V to work.
-        Note: Using "ComponentDesigner.SetSelection(Designer, nil, CompList2);"
-        instead seems to fix the AV problem, but for consistency with Delphi's
-        TMainMenu editor (which only selects items when its parent form is
-        focused), I decided not to call SetSelection at all on D6.
-    }
-    {$IFNDEF JR_D6}
-    SetSelection(CompList2);
-    {$ENDIF}
   end;
 end;
 
@@ -809,9 +757,6 @@ begin
     end;
     CopyComponents(FParentComponent.Owner, CompList);
   finally
-    {$IFNDEF JR_D6}
-    CompList.Free;
-    {$ENDIF}
     SelList.Free;
   end;
 end;
@@ -822,22 +767,15 @@ var
 begin
   if FSelParentItem = nil then Exit;
   CompList := CreateSelectionList;
-  try
-    PasteComponents(FParentComponent.Owner, FSelParentItem, CompList);
-    if CompList.Count <> 0 then
-      Designer.Modified;
-  finally
-    {$IFNDEF JR_D6}
-    CompList.Free;
-    {$ENDIF}
-  end;
+  PasteComponents(FParentComponent.Owner, FSelParentItem, CompList);
+  if CompList.Count <> 0 then
+    Designer.Modified;
 end;
 
 procedure TTBItemEditForm.DeleteItem(const Item: TTBCustomItem);
 begin
   if csAncestor in Item.ComponentState then
     raise EInvalidOperation.Create('Items introduced in an ancestor form cannot be deleted');
-  //Designer.ValidateRename(Item, Item.Name, '');
   Item.Free;
   Designer.Modified;
 end;
@@ -950,9 +888,7 @@ begin
         if MethodName = '' then begin
           MethodName := SelItem.Name + 'Click';
           Method := Designer.CreateMethod(MethodName, GetTypeData(PropInfo.PropType^));
-          SetMethodProp(SelItem,
-            {$IFDEF JR_D5} {MP}string(PropInfo.Name) {$ELSE} PropInfo {$ENDIF},
-            Method);
+          SetMethodProp(SelItem, string(PropInfo.Name), Method);
           Designer.Modified;
         end;
         if Designer.MethodExists(MethodName) then
@@ -1335,17 +1271,11 @@ end;
 
 procedure TTBItemsPropertyEditor.Edit;
 var
-  Editor: {$IFDEF JR_D6} IComponentEditor {$ELSE} TComponentEditor {$ENDIF};
+  Editor: IComponentEditor;
 begin
   if PropCount <> 1 then Exit;
   Editor := GetComponentEditor(GetComponent(0) as TComponent, Designer);
-  try
-    Editor.Edit;
-  finally
-    {$IFNDEF JR_D6}
-    Editor.Free;
-    {$ENDIF}
-  end;
+  Editor.Edit;
 end;
 
 function TTBItemsPropertyEditor.GetAttributes: TPropertyAttributes;

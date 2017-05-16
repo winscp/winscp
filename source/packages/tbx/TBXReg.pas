@@ -9,11 +9,10 @@ unit TBXReg;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
 
 uses
   Windows, Classes, Controls, SysUtils, Graphics, ImgList, Dialogs,
-  {$IFDEF JR_D6} DesignIntf, DesignEditors, VCLEditors, {$ELSE} DsgnIntf, {$ENDIF}
+  DesignIntf, DesignEditors, VCLEditors,
   TB2Reg, TB2Toolbar, TB2Item, TBX, {$IFNDEF MPEXCLUDE}TBXMDI, TBXSwitcher,{$ENDIF} TB2DsgnItemEditor,
   TBXExtItems, TBXLists, {$IFNDEF MPEXCLUDE}TBXDkPanels,{$ENDIF} TBXToolPals, TBXStatusBars;
 
@@ -30,31 +29,23 @@ type
     procedure Edit; override;
   end;
 
-{$IFDEF JR_D5}
   TTBXLinkImageIndexPropertyEditor = class(TTBImageIndexPropertyEditor)
   public
     function GetImageListAt(Index: Integer): TCustomImageList; override;
   end;
-{$ENDIF}
 
   TTBXColorProperty = class(TColorProperty)
   public
     function GetValue: string; override;
     procedure GetValues(Proc: TGetStrProc); override;
     procedure SetValue(const Value: string); override;
-{$IFDEF JR_D5}
     procedure ListDrawValue(const Value: string; ACanvas: TCanvas;
-      const ARect: TRect; ASelected: Boolean);{$IFNDEF JR_D6} override;{$ENDIF}
-{$ENDIF}
+      const ARect: TRect; ASelected: Boolean);
   end;
 
   TTBXStatusBarEditor = class(TDefaultEditor)
   protected
-{$IFDEF JR_D6}
     procedure GetPanelsProp(const Prop: IProperty);
-{$ELSE}
-    procedure GetPanelsProp(Prop: TPropertyEditor);
-{$ENDIF}
   public
     procedure Edit; override;
     procedure ExecuteVerb(Index: Integer); override;
@@ -187,7 +178,6 @@ begin
   Result := inherited GetAttributes + [paDialog];
 end;
 
-{$IFDEF JR_D5}
 { TTBXLinkImageIndexPropertyEditor }
 
 function TTBXLinkImageIndexPropertyEditor.GetImageListAt(Index: Integer): TCustomImageList;
@@ -205,7 +195,6 @@ begin
     Result := TTBXButtonAccess(C).Images;
   {$ENDIF}
 end;
-{$ENDIF}
 
 { TTBXColorProperty }
 
@@ -224,7 +213,6 @@ begin
   SetOrdValue(TBXStringToColor(Value));
 end;
 
-{$IFDEF JR_D5}
 procedure TTBXColorProperty.ListDrawValue(const Value: string; ACanvas: TCanvas;
   const ARect: TRect; ASelected: Boolean);
 
@@ -277,39 +265,16 @@ begin
     ACanvas.TextRect(R, R.Left + 1, R.Top + 1, Value);
   end;
 end;
-{$ENDIF}
 
 { TTBXStatusBarEditor }
 
 procedure TTBXStatusBarEditor.Edit;
 var
-{$IFDEF JR_D6}
   Components: IDesignerSelections;
-{$ELSE}
-  {$IFDEF JR_D5}
-  Components: TDesignerSelectionList;
-  {$ELSE}
-  Components: TComponentList;
-  {$ENDIF}
-{$ENDIF}
 begin
-{$IFDEF JR_D6}
   Components := CreateSelectionList;
-{$ELSE}
-  {$IFDEF JR_D5}
-  Components := TDesignerSelectionList.Create;
-  {$ELSE}
-  Components := TComponentList.Create;
-  {$ENDIF}
-{$ENDIF}
-  try
-    Components.Add(Component);
-    GetComponentProperties(Components, [tkClass], Designer, GetPanelsProp);
-  finally
-{$IFNDEF JR_D6}
-    Components.Free;
-{$ENDIF}
-  end;
+  Components.Add(Component);
+  GetComponentProperties(Components, [tkClass], Designer, GetPanelsProp);
 end;
 
 procedure TTBXStatusBarEditor.ExecuteVerb(Index: Integer);
@@ -327,17 +292,10 @@ begin
   Result := 1;
 end;
 
-{$IFDEF JR_D6}
 procedure TTBXStatusBarEditor.GetPanelsProp(const Prop: IProperty);
 begin
   if SameText(Prop.GetName, 'Panels') then Prop.Edit;
 end;
-{$ELSE}
-procedure TTBXStatusBarEditor.GetPanelsProp(Prop: TPropertyEditor);
-begin
-  if CompareText(Prop.GetName, 'Panels') = 0 then Prop.Edit;
-end;
-{$ENDIF}
 
 { TTBXItemsEditor }
 
@@ -422,17 +380,11 @@ begin
     {$IFNDEF MPEXCLUDE}TTBXVisibilityToggleItem,{$ENDIF} TTBXLabelItem, {$IFNDEF MPEXCLUDE}TTBXMRUListItem,{$ENDIF} TTBXColorItem,
     {$IFNDEF MPEXCLUDE}TTBXMDIWindowItem, TTBXEditItem, TTBXSpinEditItem,{$ENDIF} TTBXDropDownItem,
     TTBXComboBoxItem, TTBXStringList{$IFNDEF MPEXCLUDE}, TTBXUndoList, TTBXToolPalette{$ENDIF}, TTBXColorPalette]);
-{$IFDEF COMPATIBLE_CTL}
-  RegisterNoIcon([TTBXList, TTBXComboItem, TTBXComboList]);
-{$ENDIF}
 
   RegisterClasses([TTBXItem, TTBXSubMenuItem, TTBXSeparatorItem,
     {$IFNDEF MPEXCLUDE}TTBXVisibilityToggleItem,{$ENDIF} TTBXLabelItem, {$IFNDEF MPEXCLUDE}TTBXMRUListItem,{$ENDIF} TTBXColorItem,
     {$IFNDEF MPEXCLUDE}TTBXMDIWindowItem, TTBXEditItem, TTBXSpinEditItem,{$ENDIF} TTBXDropDownItem,
     TTBXComboBoxItem, TTBXStringList{$IFNDEF MPEXCLUDE}, TTBXUndoList, TTBXToolPalette{$ENDIF}, TTBXColorPalette]);
-{$IFDEF COMPATIBLE_CTL}
-  RegisterClasses([TTBXList, TTBXComboItem, TTBXComboList]);
-{$ENDIF}
 
 
   RegisterComponentEditor(TTBXToolbar, TTBXItemsEditor);
@@ -445,15 +397,11 @@ begin
   {$IFNDEF MPEXCLUDE}
   RegisterPropertyEditor(TypeInfo(string), TTBXSwitcher, 'Theme', TThemeProperty);
   {$ENDIF}
-{$IFDEF JR_D5}
   {$IFNDEF MPEXCLUDE}
   RegisterPropertyEditor(TypeInfo(TImageIndex), TTBXCustomLink, 'ImageIndex', TTBXLinkImageIndexPropertyEditor);
   RegisterPropertyEditor(TypeInfo(TImageIndex), TTBXCustomButton, 'ImageIndex', TTBXLinkImageIndexPropertyEditor);
   {$ENDIF}
-{$ENDIF}
-{$IFDEF NEWCOLORPROPERTY}
   RegisterPropertyEditor(TypeInfo(TColor), TPersistent, '', TTBXColorProperty);
-{$ENDIF}
 
   RegisterComponentEditor(TTBXStatusBar, TTBXStatusBarEditor);
 
@@ -481,11 +429,6 @@ begin
   TBRegisterItemClass(TTBXToolPalette, 'New TBX Tool Palette', HInstance);
   {$ENDIF}
   TBRegisterItemClass(TTBXColorPalette, 'New TBX Color Palette', HInstance);
-{$IFDEF COMPATIBLE_CTL}
-  TBRegisterItemClass(TTBXComboItem, 'New TBX Combo Item (use TBX DropDown instead)', HInstance);
-  TBRegisterItemClass(TTBXList, 'New TBX List (use TBX String List instead)', HInstance);
-  TBRegisterItemClass(TTBXComboList, 'New TBX Combo List (use TBX Combo Box Instead)', HInstance);
-{$ENDIF}
 
 end;
 

@@ -55,9 +55,6 @@ procedure DrawInvertRect(const DC: HDC; const NewRect, OldRect: PRect;
   const NewSize, OldSize: TSize; const Brush: HBRUSH; BrushLast: HBRUSH);
 function EscapeAmpersands(const S: String): String;
 function FindAccelChar(const S: String): Char;
-{$IFNDEF JR_D5}
-procedure FreeAndNil(var Obj);
-{$ENDIF}
 function GetInputLocaleCodePage: UINT;
 function GetMenuShowDelay: Integer;
 function GetRectOfMonitorContainingPoint(const P: TPoint; const WorkArea: Boolean): TRect;
@@ -101,26 +98,6 @@ function ApplicationIsActive: Boolean;
 begin
   Result := GetActiveWindow <> 0;
 end;
-
-{$IFNDEF JR_D3}
-function CopyPalette(Palette: HPALETTE): HPALETTE;
-var
-  PaletteSize: Integer;
-  LogPal: TMaxLogPalette;
-begin
-  Result := 0;
-  if Palette = 0 then Exit;
-  PaletteSize := 0;
-  if GetObject(Palette, SizeOf(PaletteSize), @PaletteSize) = 0 then Exit;
-  if PaletteSize = 0 then Exit;
-  with LogPal do begin
-    palVersion := $0300;
-    palNumEntries := PaletteSize;
-    GetPaletteEntries(Palette, 0, PaletteSize, palPalEntry);
-  end;
-  Result := CreatePalette(PLogPalette(@LogPal)^);
-end;
-{$ENDIF}
 
 procedure ListSortEx(const List: TList; const Compare: TListSortExCompare;
   const ExtraData: Pointer);
@@ -793,17 +770,6 @@ begin
   Track.dwHoverTime := 0;
   Result := TrackMouseEvent(Track);
 end;
-
-{$IFNDEF JR_D5}
-procedure FreeAndNil(var Obj);
-var
-  P: TObject;
-begin
-  P := TObject(Obj);
-  TObject(Obj) := nil;
-  P.Free;
-end;
-{$ENDIF}
 
 function EnumFontsProc(const lplf: TLogFont; const lptm: TTextMetric;
   dwType: DWORD; lpData: LPARAM): Integer; stdcall;

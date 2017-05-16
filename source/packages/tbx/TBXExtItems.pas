@@ -10,11 +10,6 @@ unit TBXExtItems;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
-
-{$IFNDEF MPEXCLUDE}
-{$DEFINE COMPATIBLE}
-{$ENDIF}
 
 uses
   Windows, Messages, Classes, SysUtils, Graphics, Controls, StdCtrls, ExtCtrls,
@@ -277,11 +272,6 @@ type
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
   end;
 
-{$IFDEF COMPATIBLE}
-  { For compatibility with previous versions }
-  TTBXComboItem = class(TTBXDropDownItem);
-{$ENDIF}
-
   { TTBXComboBoxItem }
   { A combination of dropdown combo with a stringlist subitem }
   TTBXComboBoxItem = class;
@@ -355,11 +345,6 @@ type
     {MP}
     property OnCancel;
   end;
-
-{$IFDEF COMPATIBLE}
-  { For compatibility with previous versions }
-  TTBXComboList = class(TTBXComboBoxItem);
-{$ENDIF}
 
   TTBXComboBoxItemViewer = class(TTBXDropDownItemViewer)
   protected
@@ -506,7 +491,7 @@ type
 
 implementation
 
-uses TBXUtils, TB2Common, TB2Consts, TypInfo, Math, ImgList, {MP}Menus, Forms, PasTools {$IFNDEF JR_D5}, DsgnIntf{$ENDIF};
+uses TBXUtils, TB2Common, TB2Consts, TypInfo, Math, ImgList, {MP}Menus, Forms, PasTools;
 
 const
   { Repeat intervals for spin edit items }
@@ -683,8 +668,7 @@ begin
         Edit.SelLength := Length(S2) - Length(S);
         S := S2;
       end;
-      {if S <> FLastEditChange then} {vb-}
-      if AnsiCompareText(S, FLastEditChange) <> 0 then {vb+}
+      if AnsiCompareText(S, FLastEditChange) <> 0 then
       begin
         DoChange(S); // note, Edit.Text may be different from Self.Text
         FLastEditChange := S;
@@ -1223,8 +1207,7 @@ begin
   begin
     if TWMKeyDown(Message).CharCode = VK_F4 then
     begin
-      {TTBViewAccess(View).OpenChildPopup(True);} {vb-}
-      if (View.OpenViewer = Self) // WasAlreadyOpen {vb+}
+      if (View.OpenViewer = Self) // WasAlreadyOpen
         then View.CloseChildPopups
         else View.OpenChildPopup(True);
       Result := True;
@@ -1513,7 +1496,7 @@ begin
     case Message.wParam of
       VK_UP:
         begin
-          if ItemIndex > 0 then {vb+}
+          if ItemIndex > 0 then
             ItemIndex := ItemIndex- 1;
           EditControl.Text := Text;
           EditControl.SelectAll;
@@ -1522,7 +1505,7 @@ begin
 
       VK_DOWN:
         begin
-          if ItemIndex < Strings.Count- 1 then {vb+}
+          if ItemIndex < Strings.Count- 1 then
             ItemIndex := ItemIndex+ 1;
           EditControl.Text := Text;
           EditControl.SelectAll;

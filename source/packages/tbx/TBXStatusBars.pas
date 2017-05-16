@@ -9,7 +9,6 @@ unit TBXStatusBars;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, Forms, Graphics, TBX,
@@ -203,9 +202,7 @@ type
     property Visible;
     property OnAdjustContentRect;
     property OnClick;
-{$IFDEF JR_D5}
     property OnContextPopup;
-{$ENDIF}
     property OnDblClick;
     property OnDragDrop;
     property OnDragOver;
