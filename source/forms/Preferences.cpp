@@ -2396,9 +2396,7 @@ void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject *
 {
   if (FVerifiedUpdatesAuthenticationEmail != UpdatesAuthenticationEmailEdit->Text)
   {
-    FVerifiedUpdatesAuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
-
-    if (!FVerifiedUpdatesAuthenticationEmail.IsEmpty())
+    if (!UpdatesAuthenticationEmailEdit->Text.IsEmpty())
     {
       TUpdatesConfiguration Updates = SaveUpdates();
 
@@ -2429,6 +2427,8 @@ void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject *
         }
       }
     }
+
+    FVerifiedUpdatesAuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
   }
 }
 //---------------------------------------------------------------------------
