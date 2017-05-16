@@ -45,9 +45,6 @@ const
   TMB_EDITHEIGHTEVEN         = 4; // forces the height of the edit item to be even number (otherwise it will be odd)
   TMB_PAINTDOCKBACKGROUND    = 5; // docks are painted by the theme instead of having a uniform color
   TMB_SOLIDTOOLBARNCAREA     = 6; // no transparency in NC area of toolbars
-  TMB_SOLIDTOOLBARCLIENTAREA = 7; // no transparency in client area of toolbars
-
-  TMB_SOLIDTOOLBARS          = TMB_SOLIDTOOLBARNCAREA; // for compatibility only
 
 { Margins Metric IDs}
 const
@@ -328,7 +325,6 @@ type
     property EditHeightEven: Boolean index TMB_EDITHEIGHTEVEN read GetBooleanMetrics;
     property PaintDockBackground: Boolean index TMB_PAINTDOCKBACKGROUND read GetBooleanMetrics;
     property SolidToolbarNCArea: Boolean index TMB_SOLIDTOOLBARNCAREA read GetBooleanMetrics;
-    property SolidToolbarClientArea: Boolean index TMB_SOLIDTOOLBARCLIENTAREA read GetBooleanMetrics;
 
     property Name: string read FName;
     property Tag: Integer read FTag write FTag;

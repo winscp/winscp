@@ -13,8 +13,8 @@ interface
 uses
   Windows, Classes, Controls, SysUtils, Graphics, ImgList, Dialogs,
   DesignIntf, DesignEditors, VCLEditors,
-  TB2Reg, TB2Toolbar, TB2Item, TBX, {$IFNDEF MPEXCLUDE}TBXMDI, TBXSwitcher,{$ENDIF} TB2DsgnItemEditor,
-  TBXExtItems, TBXLists, {$IFNDEF MPEXCLUDE}TBXDkPanels,{$ENDIF} TBXToolPals, TBXStatusBars;
+  TB2Reg, TB2Toolbar, TB2Item, TBX, TB2DsgnItemEditor,
+  TBXExtItems, TBXLists, TBXToolPals, TBXStatusBars;
 
 procedure Register;
 
@@ -27,11 +27,6 @@ type
   TMLStringProperty = class(TCaptionProperty)
     function GetAttributes: TPropertyAttributes; override;
     procedure Edit; override;
-  end;
-
-  TTBXLinkImageIndexPropertyEditor = class(TTBImageIndexPropertyEditor)
-  public
-    function GetImageListAt(Index: Integer): TCustomImageList; override;
   end;
 
   TTBXColorProperty = class(TColorProperty)
@@ -62,12 +57,6 @@ implementation
 
 uses
   Forms, TBXThemes, TBXStrEdit, TBXUtils, TypInfo, TB2Version;
-
-{$IFNDEF MPEXCLUDE}
-type
-  TTBXLinkAccess = class(TTBXCustomLink);
-  TTBXButtonAccess = class(TTBXCustomButton);
-{$ENDIF}
 
 { TThemeProperty }
 
@@ -176,24 +165,6 @@ end;
 function TMLStringProperty.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes + [paDialog];
-end;
-
-{ TTBXLinkImageIndexPropertyEditor }
-
-function TTBXLinkImageIndexPropertyEditor.GetImageListAt(Index: Integer): TCustomImageList;
-{$IFNDEF MPEXCLUDE}
-var
-  C: TPersistent;
-{$ENDIF}
-begin
-  Result := nil;
-  {$IFNDEF MPEXCLUDE}
-  C := GetComponent(Index);
-  if C is TTBXCustomLink then
-    Result := TTBXLinkAccess(C).Images
-  else if C is TTBXCustomButton then
-    Result := TTBXButtonAccess(C).Images;
-  {$ENDIF}
 end;
 
 { TTBXColorProperty }
@@ -372,19 +343,17 @@ end;
 
 procedure Register;
 begin
-  RegisterComponents('Toolbar2000', [TTBXDock, {$IFNDEF MPEXCLUDE}TTBXMultiDock,{$ENDIF} TTBXToolbar,
-    {$IFNDEF MPEXCLUDE}TTBXToolWindow, TTBXDockablePanel,{$ENDIF} TTBXPopupMenu, {$IFNDEF MPEXCLUDE}TTBXSwitcher, TTBXMRUList,
-    TTBXMDIHandler, TTBXPageScroller,{$ENDIF} TTBXColorSet, {$IFNDEF MPEXCLUDE}TTBXAlignmentPanel,
-    TTBXLabel, TTBXLink, TTBXButton, TTBXCheckBox, TTBXRadioButton,{$ENDIF} TTBXStatusBar]);
+  RegisterComponents('Toolbar2000', [TTBXDock, TTBXToolbar,
+    TTBXPopupMenu, TTBXColorSet, TTBXStatusBar]);
   RegisterNoIcon([TTBXItem, TTBXSubMenuItem, TTBXSeparatorItem,
-    {$IFNDEF MPEXCLUDE}TTBXVisibilityToggleItem,{$ENDIF} TTBXLabelItem, {$IFNDEF MPEXCLUDE}TTBXMRUListItem,{$ENDIF} TTBXColorItem,
-    {$IFNDEF MPEXCLUDE}TTBXMDIWindowItem, TTBXEditItem, TTBXSpinEditItem,{$ENDIF} TTBXDropDownItem,
-    TTBXComboBoxItem, TTBXStringList{$IFNDEF MPEXCLUDE}, TTBXUndoList, TTBXToolPalette{$ENDIF}, TTBXColorPalette]);
+    TTBXLabelItem, TTBXColorItem,
+    TTBXDropDownItem,
+    TTBXComboBoxItem, TTBXStringList, TTBXColorPalette]);
 
   RegisterClasses([TTBXItem, TTBXSubMenuItem, TTBXSeparatorItem,
-    {$IFNDEF MPEXCLUDE}TTBXVisibilityToggleItem,{$ENDIF} TTBXLabelItem, {$IFNDEF MPEXCLUDE}TTBXMRUListItem,{$ENDIF} TTBXColorItem,
-    {$IFNDEF MPEXCLUDE}TTBXMDIWindowItem, TTBXEditItem, TTBXSpinEditItem,{$ENDIF} TTBXDropDownItem,
-    TTBXComboBoxItem, TTBXStringList{$IFNDEF MPEXCLUDE}, TTBXUndoList, TTBXToolPalette{$ENDIF}, TTBXColorPalette]);
+    TTBXLabelItem, TTBXColorItem,
+    TTBXDropDownItem,
+    TTBXComboBoxItem, TTBXStringList, TTBXColorPalette]);
 
 
   RegisterComponentEditor(TTBXToolbar, TTBXItemsEditor);
@@ -394,13 +363,6 @@ begin
   RegisterPropertyEditor(TypeInfo(string), TTBXLabelItem, 'Caption', TCaptionProperty);
   RegisterPropertyEditor(TypeInfo(string), TTBToolbar, 'ChevronHint', TMLStringProperty);
   RegisterPropertyEditor(TypeInfo(string), TTBXToolbar, 'ChevronHint', TMLStringProperty);
-  {$IFNDEF MPEXCLUDE}
-  RegisterPropertyEditor(TypeInfo(string), TTBXSwitcher, 'Theme', TThemeProperty);
-  {$ENDIF}
-  {$IFNDEF MPEXCLUDE}
-  RegisterPropertyEditor(TypeInfo(TImageIndex), TTBXCustomLink, 'ImageIndex', TTBXLinkImageIndexPropertyEditor);
-  RegisterPropertyEditor(TypeInfo(TImageIndex), TTBXCustomButton, 'ImageIndex', TTBXLinkImageIndexPropertyEditor);
-  {$ENDIF}
   RegisterPropertyEditor(TypeInfo(TColor), TPersistent, '', TTBXColorProperty);
 
   RegisterComponentEditor(TTBXStatusBar, TTBXStatusBarEditor);
@@ -408,26 +370,11 @@ begin
   TBRegisterItemClass(TTBXItem, 'New &TBX Item', HInstance);
   TBRegisterItemClass(TTBXSubMenuItem, 'New TBX Submenu Item', HInstance);
   TBRegisterItemClass(TTBXSeparatorItem, 'New TBX Separator Item', HInstance);
-  {$IFNDEF MPEXCLUDE}
-  TBRegisterItemClass(TTBXVisibilityToggleItem, 'New TBX Visibility Toggle Item', HInstance);
-  {$ENDIF}
   TBRegisterItemClass(TTBXLabelItem, 'New TBX Label Item', HInstance);
-  {$IFNDEF MPEXCLUDE}
-  TBRegisterItemClass(TTBXMRUListItem, 'New TBX MRU List Item', HInstance);
-  {$ENDIF}
   TBRegisterItemClass(TTBXColorItem, 'New TBX Color Item', HInstance);
-  {$IFNDEF MPEXCLUDE}
-  TBRegisterItemClass(TTBXMDIWindowItem, 'New TBX MDI Window Item', HInstance);
-  TBRegisterItemClass(TTBXEditItem, 'New TBX Edit Item', HInstance);
-  TBRegisterItemClass(TTBXSpinEditItem, 'New TBX Spin Edit Item', HInstance);
-  {$ENDIF}
   TBRegisterItemClass(TTBXDropDownItem, 'New TBX Drop Down Item', HInstance);
   TBRegisterItemClass(TTBXComboBoxItem, 'New TBX Combo Box Item', HInstance);
   TBRegisterItemClass(TTBXStringList, 'New TBX String List', HInstance);
-  {$IFNDEF MPEXCLUDE}
-  TBRegisterItemClass(TTBXUndoList, 'New TBX Undo List', HInstance);
-  TBRegisterItemClass(TTBXToolPalette, 'New TBX Tool Palette', HInstance);
-  {$ENDIF}
   TBRegisterItemClass(TTBXColorPalette, 'New TBX Color Palette', HInstance);
 
 end;

@@ -227,24 +227,6 @@ type
 
   TTBXStringListClass = class of TTBXStringList;
 
-  {$IFNDEF MPEXCLUDE}
-
-  { TTBXUndoList }
-
-  TTBXUndoList = class(TTBXStringList)
-  protected
-    procedure DrawItem(ACanvas: TCanvas; AViewer: TTBXCustomListViewer; const ARect: TRect; AIndex, AHoverIndex: Integer); override;
-    function  GetItemViewerClass(AView: TTBView): TTBItemViewerClass; override;
-    procedure HandleHover(AIndex: Integer); override;
-  end;
-
-  TTBXUndoListViewer = class(TTBXCustomListViewer)
-  protected
-    procedure AdjustAutoScrollHover(var AIndex: Integer; Direction: Integer); override;
-    procedure HandleAutoScroll(var Direction, Interval: Integer); override;
-  end;
-  {$ENDIF}
-
 implementation
 
 uses Types, PasTools;
@@ -1378,68 +1360,5 @@ procedure TTBXStringList.SetStrings(Value: TStrings);
 begin
   FStrings.Assign(Value);
 end;
-
-
-//----------------------------------------------------------------------------//
-
-{$IFNDEF MPEXCLUDE}
-
-{ TTBXUndoList }
-
-procedure TTBXUndoList.DrawItem(ACanvas: TCanvas; AViewer: TTBXCustomListViewer;
-  const ARect: TRect; AIndex, AHoverIndex: Integer);
-const
-  FillColors: array [Boolean] of TColor = (clWindow, clHighlight);
-  TextColors: array [Boolean] of TColor = (clWindowText, clHighlightText);
-var
-  S: string;
-  R: TRect;
-begin
-  ACanvas.Brush.Color := FillColors[AIndex <= AHoverIndex];
-  ACanvas.FillRect(ARect);
-  S := Strings[AIndex];
-  if Length(S) > 0 then
-  begin
-    R := ARect;
-    InflateRect(R, -4, 1);
-    ACanvas.Font.Color := TextColors[AIndex <= AHoverIndex];
-    ACanvas.Brush.Style := bsClear;
-    DrawText(ACanvas.Handle, PChar(S), Length(S), R, DT_SINGLELINE or DT_VCENTER);
-    ACanvas.Brush.Style := bsSolid;
-  end;
-end;
-
-function TTBXUndoList.GetItemViewerClass(AView: TTBView): TTBItemViewerClass;
-begin
-  Result := TTBXUndoListViewer;
-end;
-
-procedure TTBXUndoList.HandleHover(AIndex: Integer);
-begin
-  ItemIndex := AIndex;
-end;
-
-
-//----------------------------------------------------------------------------//
-
-{ TTBXUndoListViewer }
-
-procedure TTBXUndoListViewer.AdjustAutoScrollHover(var AIndex: Integer; Direction: Integer);
-begin
-  if Direction < 0 then AIndex := FOffset
-  else if Direction > 0 then AIndex := FOffset + FVisibleItems - 1;
-end;
-
-procedure TTBXUndoListViewer.HandleAutoScroll(var Direction, Interval: Integer);
-begin
-  inherited;
-  if Direction < 0 then HoverIndex := FOffset
-  else if Direction > 0 then HoverIndex := FOffset + FVisibleItems - 1
-  else Exit;
-  TTBXCustomList(Item).HandleHover(HoverIndex);
-  UpdateItems;
-end;
-
-{$ENDIF}
 
 end.

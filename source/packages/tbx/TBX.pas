@@ -12,7 +12,7 @@ interface
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, Graphics, ImgList, Forms,
-  TB2Item, TB2Dock, TB2Toolbar, {$IFNDEF MPEXCLUDE}TB2ToolWindow,{$ENDIF} TB2Anim, TBXUtils, TBXThemes, PasTools;
+  TB2Item, TB2Dock, TB2Toolbar, TB2Anim, TBXUtils, TBXThemes, PasTools;
 
 const
   TBXVersion = 2.1;
@@ -269,44 +269,6 @@ type
     function  IsToolbarStyle: Boolean; override;
   end;
 
-  {$IFNDEF MPEXCLUDE}
-  TTBXVisibilityToggleItem = class(TTBXCustomItem)
-  private
-    FControl: TControl;
-    procedure SetControl (Value: TControl);
-    procedure UpdateProps;
-  protected
-    procedure Notification (AComponent: TComponent; Operation: TOperation); override;
-  public
-    procedure Click; override;
-    procedure InitiateAction; override;
-  published
-    property Caption;
-    property Control: TControl read FControl write SetControl;
-    property DisplayMode;
-    property Enabled;
-    property FontSettings;
-    property HelpContext;
-    { MP }
-    property HelpKeyword;
-    property Hint;
-    property ImageIndex;
-    property Images;
-    property InheritOptions;
-    property Layout;
-    property MaskOptions;
-    property MinHeight;
-    property MinWidth;
-    property Options;
-    property ShortCut;
-    property Stretch;
-    property Visible;
-    property OnAdjustFont;
-    property OnClick;
-    property OnSelect;
-  end;
-  {$ENDIF}
-
   { TTBXPopupWindow }
 
   TTBXPopupWindow = class(TTBPopupWindow)
@@ -361,7 +323,6 @@ type
     procedure TBMGetEffectiveColor(var Message: TMessage); message TBM_GETEFFECTIVECOLOR;
     procedure TBMThemeChange(var Message: TMessage); message TBM_THEMECHANGE;
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
-    procedure WMSize(var Message: TWMSize); message WM_SIZE;
     procedure WMDpiChangedBeforeParent(var Message: TMessage); message WM_DPICHANGED_BEFOREPARENT;
     procedure WMDpiChangedAfterParent(var Message: TMessage); message WM_DPICHANGED_AFTERPARENT;
   protected
@@ -518,38 +479,6 @@ type
     property SnapDistance: Integer read FSnapDistance write FSnapDistance default 0;
   end;
 
-  {$IFNDEF MPEXCLUDE}
-  TTBXToolWindow = class(TTBToolWindow)
-  private
-    FEffectiveColor: TColor;
-    FSnapDistance: Integer;
-    procedure CMColorChanged(var Message: TMessage); message CM_COLORCHANGED;
-    procedure CMControlChange(var Message: TCMControlChange); message CM_CONTROLCHANGE;
-    procedure CMTextChanged(var Message: TMessage); message CM_TEXTCHANGED;
-    procedure SetSnapDistance(Value: Integer);
-    procedure TBMGetEffectiveColor(var Message: TMessage); message TBM_GETEFFECTIVECOLOR;
-    procedure TBMGetViewType(var Message: TMessage); message TBM_GETVIEWTYPE;
-    procedure TBMThemeChange(var Message: TMessage); message TBM_THEMECHANGE;
-    procedure WMEraseBkgnd(var Message: TWmEraseBkgnd); message WM_ERASEBKGND;
-  protected
-    procedure DrawNCArea(const DrawToDC: Boolean; const ADC: HDC; const Clip: HRGN); override;
-    function  GetFloatingWindowParentClass: TTBFloatingWindowParentClass; override;
-    procedure GetToolbarInfo(out ToolbarInfo: TTBXToolbarInfo); virtual;
-    procedure SetParent(AParent: TWinControl); override;
-    procedure UpdateEffectiveColor;
-  public
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
-    function  GetFloatingBorderSize: TPoint; override;
-    procedure UpdateChildColors;
-    property EffectiveColor: TColor read FEffectiveColor;
-  published
-    property Color default clNone;
-    property DblClickUndock default False;
-    property SnapDistance: Integer read FSnapDistance write SetSnapDistance default 0;
-  end;
-  {$ENDIF}
-
   TTBXDock = class(TTBDock)
   private
     FMoving: Boolean;
@@ -636,9 +565,6 @@ type
   TTBFloatingWindowParentAccess = class(TTBFloatingWindowParent);
   TTBCustomDockableWindowAccess = class(TTBCustomDockableWindow);
   TTBXToolbarAccess = class(TTBXToolbar);
-  {$IFNDEF MPEXCLUDE}
-  TTBBackgroundAccess = class(TTBBackground);
-  {$ENDIF}
   TControlAccess = class(TControl);
   TTBXThemeAccess = class(TTBXTheme);
   TDockAccess = class(TTBDock);
@@ -2116,50 +2042,6 @@ end;
 
 //============================================================================//
 
-{$IFNDEF MPEXCLUDE}
-
-{ TTBXVisibilityToggleItem }
-
-procedure TTBXVisibilityToggleItem.Click;
-begin
-  if Assigned(FControl) then FControl.Visible := not FControl.Visible;
-  inherited;
-end;
-
-procedure TTBXVisibilityToggleItem.InitiateAction;
-begin
-  UpdateProps;
-end;
-
-procedure TTBXVisibilityToggleItem.Notification(AComponent: TComponent; Operation: TOperation);
-begin
-  inherited;
-  if (Operation = opRemove) and (AComponent = FControl) then Control := nil;
-end;
-
-procedure TTBXVisibilityToggleItem.SetControl(Value: TControl);
-begin
-  if FControl <> Value then
-  begin
-    FControl := Value;
-    if Assigned(Value) then
-    begin
-      Value.FreeNotification(Self);
-      if (Length(Caption) = 0) and not (csLoading in ComponentState) then
-        Caption := TControlAccess(Value).Caption;
-    end;
-    UpdateProps;
-  end;
-end;
-
-procedure TTBXVisibilityToggleItem.UpdateProps;
-begin
-  if (ComponentState * [csDesigning, csLoading, csDestroying] = []) then
-    Checked := Assigned(FControl) and FControl.Visible;
-end;
-
-{$ENDIF}
-
 //============================================================================//
 
 { TTBXPopupWindow }
@@ -2642,10 +2524,6 @@ begin
         R2 := CurrentDock.ClientRect;
         OffsetRect(R2, -Left, -Top);
         TDockAccess(CurrentDock).DrawBackground(DC, R2);
-        {$IFNDEF MPEXCLUDE}
-        if (Color = clNone) and CurrentDock.BackgroundOnToolbars then
-          ACanvas.Brush.Style := bsClear;
-        {$ENDIF}
       end
       else
       begin
@@ -2826,18 +2704,7 @@ begin
   Transparent := False;
   CR := ClientRect;
   if Color = clNone then
-    {$IFNDEF MPEXCLUDE}
-    if Docked and (TDockAccess(CurrentDock).UsingBackground) and CurrentDock.BackgroundOnToolbars
-      and not CurrentTheme.SolidToolbarClientArea then
-    begin
-      R := CurrentDock.ClientRect;
-      R.TopLeft := ScreenToClient(CurrentDock.ClientToScreen(R.TopLeft));
-      R.BottomRight := ScreenToClient(CurrentDock.ClientToScreen(R.BottomRight));
-      TDockAccess(CurrentDock).DrawBackground(Message.DC, R);
-      Message.Result := 1;
-      Transparent := True;
-    end
-    else {$ENDIF} if Embedded then
+    if Embedded then
     begin
       Transparent := True;
       DrawParentBackground(Self, Message.DC, CR);
@@ -2860,43 +2727,6 @@ begin
     Canvas.Free;
   end;
 end;
-
-procedure TTBXToolbar.WMSize(var Message: TWMSize);
-{$IFNDEF MPEXCLUDE}
-var
-  I: Integer;
-  V: TTBItemViewer;
-  R: TRect;
-{$ENDIF}
-begin
-  inherited;
-  {$IFNDEF MPEXCLUDE}
-  if Docked and TDockAccess(CurrentDock).UsingBackground and
-    TDockAccess(CurrentDock).BackgroundOnToolbars and
-    ((CurrentDock is TTBXDock) and not TTBXDock(CurrentDock).FResizing) then
-  begin
-    for I := 0 to View.ViewerCount - 1 do
-    begin
-      V := View.Viewers[I];
-      if V.Show and not IsRectEmpty(V.BoundsRect) and not (V.Item is TTBControlItem)
-      then View.Invalidate(V);
-    end;
-    Self.Update;
-    InvalidateRect(Handle, nil, True);
-    for I := 0 to View.ViewerCount - 1 do
-    begin
-      V := View.Viewers[I];
-      if V.Show and not IsRectEmpty(V.BoundsRect) and not (V.Item is TTBControlItem)
-      then
-      begin
-        R := V.BoundsRect;
-        ValidateRect(Handle, @R);
-      end;
-    end;
-  end;
-  {$ENDIF}
-end;
-
 
 //============================================================================//
 
@@ -3242,265 +3072,6 @@ end;
 
 //============================================================================//
 
-{$IFNDEF MPEXCLUDE}
-
-{ TTBXToolWindow }
-
-procedure TTBXToolWindow.CMColorChanged(var Message: TMessage);
-begin
-  UpdateEffectiveColor;
-  if Docked and HandleAllocated then
-    RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE or
-      RDW_ERASE or RDW_UPDATENOW or RDW_ALLCHILDREN);
-  UpdateChildColors;
-  Invalidate;
-end;
-
-procedure TTBXToolWindow.CMControlChange(var Message: TCMControlChange);
-begin
-  inherited;
-  if Message.Inserting and (Color = clNone) then
-    Message.Control.Perform(CM_PARENTCOLORCHANGED, 1, EffectiveColor);
-end;
-
-procedure TTBXToolWindow.CMTextChanged(var Message: TMessage);
-begin
-  inherited;
-  if HandleAllocated then
-  begin
-    if Docked then RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE)
-    else RedrawWindow(TTBXFloatingWindowParent(Parent).Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE);
-  end;
-end;
-
-constructor TTBXToolWindow.Create(AOwner: TComponent);
-begin
-  inherited;
-  AddThemeNotification(Self);
-  DblClickUndock := False;
-  FEffectiveColor := Color;
-  Color := clNone;
-end;
-
-destructor TTBXToolWindow.Destroy;
-begin
-  RemoveThemeNotification(Self);
-  inherited;
-end;
-
-procedure TTBXToolWindow.DrawNCArea(const DrawToDC: Boolean;
-  const ADC: HDC; const Clip: HRGN);
-var
-  DC: HDC;
-  R, CR, R2: TRect;
-  ACanvas: TCanvas;
-  ToolbarInfo: TTBXToolbarInfo;
-  UsingBackground: Boolean;
-begin
-  if not Docked or not HandleAllocated then Exit;
-
-  if not DrawToDC then DC := GetWindowDC(Handle)
-  else DC := ADC;
-
-  UsingBackground := TDockAccess(CurrentDock).UsingBackground;
-
-  try
-    GetToolbarInfo(ToolbarInfo);
-    GetWindowRect(Handle, R);
-    OffsetRect(R, -R.Left, -R.Top);
-    if not DrawToDC then
-    begin
-      SelectNCUpdateRgn(Handle, DC, Clip);
-      CR := R;
-      with ToolbarInfo.BorderSize, CR do
-      begin
-        InflateRect(CR, -X, -Y);
-        if ToolbarInfo.IsVertical then Inc(Top, GetTBXDragHandleSize(ToolbarInfo))
-        else Inc(Left, GetTBXDragHandleSize(ToolbarInfo));
-        ExcludeClipRect(DC, Left, Top, Right, Bottom);
-      end;
-    end;
-    ACanvas := TCanvas.Create;
-    try
-      ACanvas.Handle := DC;
-      ACanvas.Brush.Color := EffectiveColor;
-      if CurrentTheme.SolidToolbarNCArea then
-      begin
-        ACanvas.Brush.Color := EffectiveColor;
-        ACanvas.Brush.Style := bsSolid;
-      end
-      else if UsingBackground then
-      begin
-        ACanvas.Brush.Color := EffectiveColor;
-        R2 := CurrentDock.ClientRect;
-        OffsetRect(R2, -Left, -Top);
-        TDockAccess(CurrentDock).DrawBackground(DC, R2);
-        {$IFNDEF MPEXCLUDE}
-        if (Color = clNone) and CurrentDock.BackgroundOnToolbars then
-          ACanvas.Brush.Style := bsClear;
-        {$ENDIF}
-      end
-      else
-      begin
-        ACanvas.Brush.Color := GetEffectiveColor(CurrentDock);
-        ACanvas.FillRect(R);
-        ACanvas.Brush.Color := EffectiveColor;
-        ACanvas.Brush.Style := bsSolid;
-      end;
-
-      CurrentTheme.PaintToolbarNCArea(GetMonitorFromControl(Self), ACanvas, R, ToolbarInfo);
-    finally
-      ACanvas.Handle := 0;
-      ACanvas.Free;
-    end;
-  finally
-    if not DrawToDC then ReleaseDC(Handle, DC);
-  end;
-end;
-
-function TTBXToolWindow.GetFloatingBorderSize: TPoint;
-begin
-  CurrentTheme.GetViewBorder(GetWinViewType(Self) or TVT_FLOATING, Result);
-end;
-
-function TTBXToolWindow.GetFloatingWindowParentClass: TTBFloatingWindowParentClass;
-begin
-  Result := TTBXFloatingWindowParent;
-end;
-
-procedure TTBXToolWindow.GetToolbarInfo(out ToolbarInfo: TTBXToolbarInfo);
-begin
-  FillChar(ToolbarInfo, SizeOf(ToolbarInfo), 0);
-  ToolbarInfo.WindowHandle := WindowHandle;
-  ToolbarInfo.ViewType := GetWinViewType(Self);
-  if CurrentDock <> nil then
-    ToolbarInfo.IsVertical := CurrentDock.Position in [dpLeft,dpRight];
-  ToolbarInfo.AllowDrag := CurrentDock.AllowDrag;
-  ToolbarInfo.DragHandleStyle := Ord(DragHandleStyle);
-  ToolbarInfo.ClientWidth := ClientWidth;
-  ToolbarInfo.ClientHeight := ClientHeight;
-  if ToolbarInfo.AllowDrag and CloseButtonWhenDocked then
-  begin
-    ToolbarInfo.CloseButtonState := CDBS_VISIBLE;
-    if CloseButtonDown then ToolbarInfo.CloseButtonState := ToolbarInfo.CloseButtonState or CDBS_PRESSED;
-    if CloseButtonHover then ToolbarInfo.CloseButtonState := ToolbarInfo.CloseButtonState or CDBS_HOT;
-  end;
-  ToolbarInfo.BorderStyle := BorderStyle;
-  ToolbarInfo.EffectiveColor := EffectiveColor;
-  CurrentTheme.GetViewBorder(ToolbarInfo.ViewType, ToolbarInfo.BorderSize);
-end;
-
-procedure TTBXToolWindow.SetParent(AParent: TWinControl);
-begin
-  inherited;
-  if AParent is TTBXFloatingWindowParent then
-    TTBXFloatingWindowParent(AParent).SnapDistance := SnapDistance;
-end;
-
-procedure TTBXToolWindow.SetSnapDistance(Value: Integer);
-begin
-  if Value < 0 then Value := 0;
-  FSnapDistance := Value;
-  if (Parent <> nil) and (Parent is TTBXFloatingWindowParent) then
-    TTBXFloatingWindowParent(Parent).SnapDistance := Value;
-end;
-
-procedure TTBXToolWindow.TBMGetEffectiveColor(var Message: TMessage);
-begin
-  Message.WParam := EffectiveColor;
-  Message.Result := 1;
-end;
-
-procedure TTBXToolWindow.TBMGetViewType(var Message: TMessage);
-begin
-  Message.Result := TVT_TOOLWINDOW;
-  if Floating then Message.Result := Message.Result or TVT_FLOATING;
-  if Resizable then Message.Result := Message.Result or TVT_RESIZABLE;
-end;
-
-procedure TTBXToolWindow.TBMThemeChange(var Message: TMessage);
-begin
-  case Message.WParam of
-    TSC_BEFOREVIEWCHANGE: BeginUpdate;
-    TSC_AFTERVIEWCHANGE:
-      begin
-        EndUpdate;
-        UpdateEffectiveColor;
-        if HandleAllocated and not (csDestroying in ComponentState) then
-          if Parent is TTBXFloatingWindowParent then
-            UpdateNCArea(TTBXFloatingWindowParent(Parent), GetWinViewType(Self))
-          else
-            UpdateNCArea(Self, GetWinViewType(Self));
-        UpdateChildColors;
-        Invalidate;
-      end;
-  end;
-end;
-
-procedure TTBXToolWindow.UpdateChildColors;
-var
-  M: TMessage;
-begin
-  M.Msg := CM_PARENTCOLORCHANGED;
-  M.WParam := 1;
-  M.LParam := EffectiveColor;
-  M.Result := 0;
-  Broadcast(M);
-end;
-
-procedure TTBXToolWindow.UpdateEffectiveColor;
-begin
-  if Color = clNone then FEffectiveColor := CurrentTheme.GetViewColor(GetWinViewType(Self))
-  else FEffectiveColor := Color;
-end;
-
-procedure TTBXToolWindow.WMEraseBkgnd(var Message: TWmEraseBkgnd);
-var
-  Canvas: TCanvas;
-  R, CR: TRect;
-  Transparent: Boolean;
-begin
-  Transparent := False;
-  CR := ClientRect;
-  {$IFNDEF MPEXCLUDE}
-  if Color = clNone then
-    if Docked and (TDockAccess(CurrentDock).UsingBackground) and CurrentDock.BackgroundOnToolbars
-      and not CurrentTheme.SolidToolbarClientArea then
-    begin
-      R := CurrentDock.ClientRect;
-      R.TopLeft := ScreenToClient(CurrentDock.ClientToScreen(R.TopLeft));
-      R.BottomRight := ScreenToClient(CurrentDock.ClientToScreen(R.BottomRight));
-      SaveDC(Message.DC);
-      with CR do IntersectClipRect(Message.DC, Left, Top, Right, Bottom);
-      TDockAccess(CurrentDock).DrawBackground(Message.DC, R);
-      RestoreDC(Message.DC, -1);
-      Message.Result := 1;
-      Transparent := True;
-    end;
-  {$ENDIF}
-
-  Canvas := TCanvas.Create;
-  Canvas.Handle := Message.DC;
-  try
-    if Docked then
-    begin
-      R := CurrentDock.ClientRect;
-      R.TopLeft := ScreenToClient(CurrentDock.ClientToScreen(R.TopLeft));
-      R.BottomRight := ScreenToClient(CurrentDock.ClientToScreen(R.BottomRight));
-    end
-    else R := Rect(0, 0, 0, 0);
-    CurrentTheme.PaintBackgnd(Canvas, R, CR, CR, EffectiveColor, Transparent, GetWinViewType(Self));
-    Message.Result := 1;
-  finally
-    Canvas.Handle := 0;
-    Canvas.Free;
-  end;
-end;
-
-{$ENDIF}
-
-//============================================================================//
-
 { Additional system colors }
 
 type
@@ -3726,13 +3297,6 @@ begin
           end;
         end;
       end
-      {$IFNDEF MPEXCLUDE}
-      else if Toolbars[J] is TTBXToolWindow then with TTBXToolWindow(Toolbars[J]) do
-      begin
-        if HandleAllocated then
-          RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE or RDW_ERASE);
-      end;
-      {$ENDIF}
     end;
   end;
 end;
@@ -3768,7 +3332,7 @@ end;
 
 function TTBXDock.ThemedBackground: Boolean;
 begin
-  Result := {$IFNDEF MPEXCLUDE}(Background = nil) and{$ENDIF} (Color = clNone) and CurrentTheme.PaintDockBackground;
+  Result := (Color = clNone) and CurrentTheme.PaintDockBackground;
 end;
 
 function TTBXDock.UsingBackground: Boolean;

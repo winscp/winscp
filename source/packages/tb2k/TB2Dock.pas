@@ -49,9 +49,6 @@ type
   TTBDockableTo = set of TTBDockPosition;
 
   TTBCustomDockableWindow = class;
-  {$IFNDEF MPEXCLUDE}
-  TTBBasicBackground = class;
-  {$ENDIF}
 
   TTBInsertRemoveEvent = procedure(Sender: TObject; Inserting: Boolean;
     Bar: TTBCustomDockableWindow) of object;
@@ -64,9 +61,6 @@ type
     FPosition: TTBDockPosition;
     FAllowDrag: Boolean;
     FBoundLines: TTBDockBoundLines;
-    {$IFNDEF MPEXCLUDE}
-    FBackground: TTBBasicBackground;
-    {$ENDIF}
     FBkgOnToolbars: Boolean;
     FFixAlign: Boolean;
     FCommitNewPositions: Boolean;
@@ -82,10 +76,6 @@ type
     { Property access methods }
     //function GetVersion: TToolbar97Version;
     procedure SetAllowDrag(Value: Boolean);
-    {$IFNDEF MPEXCLUDE}
-    procedure SetBackground(Value: TTBBasicBackground);
-    procedure SetBackgroundOnToolbars(Value: Boolean);
-    {$ENDIF}
     procedure SetBoundLines(Value: TTBDockBoundLines);
     procedure SetFixAlign(Value: Boolean);
     procedure SetPosition(Value: TTBDockPosition);
@@ -95,9 +85,6 @@ type
     function GetToolbars(Index: Integer): TTBCustomDockableWindow;
 
     { Internal }
-    {$IFNDEF MPEXCLUDE}
-    procedure BackgroundChanged(Sender: TObject);
-    {$ENDIF}
     procedure ChangeDockList(const Insert: Boolean; const Bar: TTBCustomDockableWindow);
     procedure CommitPositions;
     procedure DrawNCArea(const DrawToDC: Boolean; const ADC: HDC;
@@ -110,9 +97,6 @@ type
     { Messages }
     procedure CMDialogChar(var Message: TCMDialogChar); message CM_DIALOGCHAR;
     procedure CMDialogKey(var Message: TCMDialogKey); message CM_DIALOGKEY;
-    {$IFNDEF MPEXCLUDE}
-    procedure CMSysColorChange(var Message: TMessage); message CM_SYSCOLORCHANGE;
-    {$ENDIF}
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     procedure WMMove(var Message: TWMMove); message WM_MOVE;
     procedure WMNCCalcSize(var Message: TWMNCCalcSize); message WM_NCCALCSIZE;
@@ -128,9 +112,6 @@ type
     procedure AlignControls(AControl: TControl; var Rect: TRect); override;
     procedure ChangeWidthHeight(const NewWidth, NewHeight: Integer);
     procedure DrawBackground(DC: HDC; const DrawRect: TRect); virtual;
-    {$IFNDEF MPEXCLUDE}
-    function GetPalette: HPALETTE; override;
-    {$ENDIF}
     function HasVisibleToolbars: Boolean;
     procedure InvalidateBackgrounds;
     procedure Loaded; override;
@@ -161,10 +142,6 @@ type
     property Toolbars[Index: Integer]: TTBCustomDockableWindow read GetToolbars;
   published
     property AllowDrag: Boolean read FAllowDrag write SetAllowDrag default True;
-    {$IFNDEF MPEXCLUDE}
-    property Background: TTBBasicBackground read FBackground write SetBackground;
-    property BackgroundOnToolbars: Boolean read FBkgOnToolbars write SetBackgroundOnToolbars default True;
-    {$ENDIF}
     property BoundLines: TTBDockBoundLines read FBoundLines write SetBoundLines default [];
     property Color default clBtnFace;
     property FixAlign: Boolean read FFixAlign write SetFixAlign default False;
@@ -490,44 +467,6 @@ type
     property Height stored IsWidthAndHeightStored;
     property Width stored IsWidthAndHeightStored;
   end;
-
-  {$IFNDEF MPEXCLUDE}
-  TTBBasicBackground = class(TComponent)
-  protected
-    procedure Draw(DC: HDC; const DrawRect: TRect); virtual; abstract;
-    function GetPalette: HPALETTE; virtual; abstract;
-    procedure RegisterChanges(Proc: TNotifyEvent); virtual; abstract;
-    procedure SysColorChanged; virtual; abstract;
-    procedure UnregisterChanges(Proc: TNotifyEvent); virtual; abstract;
-    function UsingBackground: Boolean; virtual; abstract;
-  end;
-
-  TTBBackground = class(TTBBasicBackground)
-  private
-    FBitmap, FBitmapCache: TBitmap;
-    FBkColor: TColor;
-    FNotifyList: TList;
-    FTransparent: Boolean;
-    procedure BitmapChanged(Sender: TObject);
-    procedure SetBitmap(Value: TBitmap);
-    procedure SetBkColor(Value: TColor);
-    procedure SetTransparent(Value: Boolean);
-  protected
-    procedure Draw(DC: HDC; const DrawRect: TRect); override;
-    function GetPalette: HPALETTE; override;
-    procedure RegisterChanges(Proc: TNotifyEvent); override;
-    procedure SysColorChanged; override;
-    procedure UnregisterChanges(Proc: TNotifyEvent); override;
-    function UsingBackground: Boolean; override;
-  public
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
-  published
-    property Bitmap: TBitmap read FBitmap write SetBitmap;
-    property BkColor: TColor read FBkColor write SetBkColor default clBtnFace;
-    property Transparent: Boolean read FTransparent write SetTransparent default False;
-  end;
-  {$ENDIF}
 
 procedure TBRegLoadPositions(const OwnerComponent: TComponent;
   const RootKey: DWORD; const BaseRegistryKey: String);
@@ -879,10 +818,6 @@ end;
 
 destructor TTBDock.Destroy;
 begin
-  {$IFNDEF MPEXCLUDE}
-  if Assigned(FBackground) then
-    FBackground.UnregisterChanges(BackgroundChanged);
-  {$ENDIF}
   inherited;
   DockVisibleList.Free;
   DockList.Free;
@@ -1678,27 +1613,12 @@ procedure TTBDock.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   inherited;
   if Operation = opRemove then begin
-    {$IFNDEF MPEXCLUDE}
-    if AComponent = FBackground then
-      Background := nil
-    else {$ENDIF} if AComponent is TTBCustomDockableWindow then begin
+    if AComponent is TTBCustomDockableWindow then begin
       DockList.Remove(AComponent);
       DockVisibleList.Remove(AComponent);
     end;
   end;
 end;
-
-{$IFNDEF MPEXCLUDE}
-function TTBDock.GetPalette: HPALETTE;
-begin
-  if UsingBackground and Assigned(FBackground) then
-    { ^ by default UsingBackground returns False if FBackground isn't assigned,
-      but UsingBackground may be overridden and return True when it isn't }
-    Result := FBackground.GetPalette
-  else
-    Result := 0;
-end;
-{$ENDIF}
 
 procedure TTBDock.WMEraseBkgnd(var Message: TWMEraseBkgnd);
 var
@@ -1862,15 +1782,6 @@ begin
   HandleWMPrintClient(Self, Message);
 end;
 
-{$IFNDEF MPEXCLUDE}
-procedure TTBDock.CMSysColorChange(var Message: TMessage);
-begin
-  inherited;
-  if Assigned(FBackground) then
-    FBackground.SysColorChanged;
-end;
-{$ENDIF}
-
 procedure TTBDock.RelayMsgToFloatingBars(var Message: TMessage);
 var
   I: Integer;
@@ -1924,18 +1835,12 @@ end;
 
 function TTBDock.UsingBackground: Boolean;
 begin
-  {$IFNDEF MPEXCLUDE}
-  Result := Assigned(FBackground) and FBackground.UsingBackground;
-  {$ELSE}
   Result := False;
-  {$ENDIF}
 end;
 
 procedure TTBDock.DrawBackground(DC: HDC; const DrawRect: TRect);
 begin
-  {$IFNDEF MPEXCLUDE}
-  FBackground.Draw(DC, DrawRect);
-  {$ENDIF}
+  { noop }
 end;
 
 procedure TTBDock.InvalidateBackgrounds;
@@ -1953,35 +1858,6 @@ begin
       InvalidateAll(T);
   end;
 end;
-
-{$IFNDEF MPEXCLUDE}
-procedure TTBDock.SetBackground(Value: TTBBasicBackground);
-begin
-  if FBackground <> Value then begin
-    if Assigned(FBackground) then
-      FBackground.UnregisterChanges(BackgroundChanged);
-    FBackground := Value;
-    if Assigned(Value) then begin
-      Value.FreeNotification(Self);
-      Value.RegisterChanges(BackgroundChanged);
-    end;
-    InvalidateBackgrounds;
-  end;
-end;
-
-procedure TTBDock.BackgroundChanged(Sender: TObject);
-begin
-  InvalidateBackgrounds;
-end;
-
-procedure TTBDock.SetBackgroundOnToolbars(Value: Boolean);
-begin
-  if FBkgOnToolbars <> Value then begin
-    FBkgOnToolbars := Value;
-    InvalidateBackgrounds;
-  end;
-end;
-{$ENDIF}
 
 procedure TTBDock.SetBoundLines(Value: TTBDockBoundLines);
 var
@@ -5058,211 +4934,6 @@ begin
       LastDock := FCurrentDock;
   end;
 end;
-
-(*function TTBCustomDockableWindow.GetVersion: TToolbar97Version;
-begin
-  Result := Toolbar97VersionPropText;
-end;
-
-procedure TTBCustomDockableWindow.SetVersion(const Value: TToolbar97Version);
-begin
-  { write method required for the property to show up in Object Inspector }
-end;*)
-
-
-{$IFNDEF MPEXCLUDE}
-
-{ TTBBackground }
-
-type
-  PNotifyEvent = ^TNotifyEvent;
-
-constructor TTBBackground.Create(AOwner: TComponent);
-begin
-  inherited;
-  FBkColor := clBtnFace;
-  FBitmap := TBitmap.Create;
-  FBitmap.OnChange := BitmapChanged;
-end;
-
-destructor TTBBackground.Destroy;
-var
-  I: Integer;
-begin
-  inherited;
-  FBitmapCache.Free;
-  FBitmap.Free;
-  if Assigned(FNotifyList) then begin
-    for I := FNotifyList.Count-1 downto 0 do
-      Dispose(PNotifyEvent(FNotifyList[I]));
-    FNotifyList.Free;
-  end;
-end;
-
-procedure TTBBackground.BitmapChanged(Sender: TObject);
-var
-  I: Integer;
-begin
-  { Erase the cache and notify }
-  FBitmapCache.Free;
-  FBitmapCache := nil;
-  if Assigned(FNotifyList) then
-    for I := 0 to FNotifyList.Count-1 do
-      PNotifyEvent(FNotifyList[I])^(Self);
-end;
-
-procedure TTBBackground.Draw(DC: HDC; const DrawRect: TRect);
-var
-  UseBmp: TBitmap;
-  R2: TRect;
-  SaveIndex: Integer;
-  DC2: HDC;
-  Brush: HBRUSH;
-  P: TPoint;
-begin
-  if FBitmapCache = nil then begin
-    FBitmapCache := TBitmap.Create;
-    FBitmapCache.Palette := CopyPalette(FBitmap.Palette);
-    FBitmapCache.Width := FBitmap.Width;
-    FBitmapCache.Height := FBitmap.Height;
-    if not FTransparent then begin
-      { Copy from a possible DIB to our DDB }
-      BitBlt(FBitmapCache.Canvas.Handle, 0, 0, FBitmapCache.Width,
-        FBitmapCache.Height, FBitmap.Canvas.Handle, 0, 0, SRCCOPY);
-    end
-    else begin
-      with FBitmapCache do begin
-        Canvas.Brush.Color := FBkColor;
-        R2 := Rect(0, 0, Width, Height);
-        Canvas.BrushCopy(R2, FBitmap, R2,
-          FBitmap.Canvas.Pixels[0, Height-1] or $02000000);
-      end;
-    end;
-    FBitmap.Dormant;
-  end;
-  UseBmp := FBitmapCache;
-
-  DC2 := 0;
-  SaveIndex := SaveDC(DC);
-  try
-    if UseBmp.Palette <> 0 then begin
-      SelectPalette(DC, UseBmp.Palette, True);
-      RealizePalette(DC);
-    end;
-    { Note: versions of Toolbar97 prior to 1.68 used 'UseBmp.Canvas.Handle'
-      instead of DC2 in the BitBlt call. This was changed because there
-      seems to be a bug in D2/BCB1's Graphics.pas: if you called
-      <dockname>.Background.LoadFromFile(<filename>) twice the background
-      would not be shown. }
-    if (UseBmp.Width = 8) and (UseBmp.Height = 8) then begin
-      { Use pattern brushes to draw 8x8 bitmaps.
-        Note: Win9x can't use bitmaps <8x8 in size for pattern brushes }
-      Brush := CreatePatternBrush(UseBmp.Handle);
-      GetWindowOrgEx(DC, P);
-      SetBrushOrgEx(DC, DrawRect.Left - P.X, DrawRect.Top - P.Y, nil);
-      FillRect(DC, DrawRect, Brush);
-      DeleteObject(Brush);
-    end
-    else begin
-      { BitBlt is faster than pattern brushes on large bitmaps }
-      DC2 := CreateCompatibleDC(DC);
-      SelectObject(DC2, UseBmp.Handle);
-      R2 := DrawRect;
-      while R2.Left < R2.Right do begin
-        while R2.Top < R2.Bottom do begin
-          BitBlt(DC, R2.Left, R2.Top, UseBmp.Width, UseBmp.Height,
-            DC2, 0, 0, SRCCOPY);
-          Inc(R2.Top, UseBmp.Height);
-        end;
-        R2.Top := DrawRect.Top;
-        Inc(R2.Left, UseBmp.Width);
-      end;
-    end;
-  finally
-    if DC2 <> 0 then
-      DeleteDC(DC2);
-    { Restore the palette and brush origin back }
-    RestoreDC(DC, SaveIndex);
-  end;
-end;
-
-function TTBBackground.GetPalette: HPALETTE;
-begin
-  Result := FBitmap.Palette;
-end;
-
-procedure TTBBackground.SysColorChanged;
-begin
-  if FTransparent and (FBkColor < 0) then
-    BitmapChanged(nil);
-end;
-
-function TTBBackground.UsingBackground: Boolean;
-begin
-  Result := (FBitmap.Width <> 0) and (FBitmap.Height <> 0);
-end;
-
-procedure TTBBackground.RegisterChanges(Proc: TNotifyEvent);
-var
-  I: Integer;
-  P: PNotifyEvent;
-begin
-  if FNotifyList = nil then
-    FNotifyList := TList.Create;
-  for I := 0 to FNotifyList.Count-1 do begin
-    P := FNotifyList[I];
-    if (TMethod(P^).Code = TMethod(Proc).Code) and
-       (TMethod(P^).Data = TMethod(Proc).Data) then
-      Exit;
-  end;
-  FNotifyList.Expand;
-  New(P);
-  P^ := Proc;
-  FNotifyList.Add(P);
-end;
-
-procedure TTBBackground.UnregisterChanges(Proc: TNotifyEvent);
-var
-  I: Integer;
-  P: PNotifyEvent;
-begin
-  if FNotifyList = nil then
-    Exit;
-  for I := 0 to FNotifyList.Count-1 do begin
-    P := FNotifyList[I];
-    if (TMethod(P^).Code = TMethod(Proc).Code) and
-       (TMethod(P^).Data = TMethod(Proc).Data) then begin
-      FNotifyList.Delete(I);
-      Dispose(P);
-      Break;
-    end;
-  end;
-end;
-
-procedure TTBBackground.SetBkColor(Value: TColor);
-begin
-  if FBkColor <> Value then begin
-    FBkColor := Value;
-    if FTransparent then
-      BitmapChanged(nil);
-  end;
-end;
-
-procedure TTBBackground.SetBitmap(Value: TBitmap);
-begin
-  FBitmap.Assign(Value);
-end;
-
-procedure TTBBackground.SetTransparent(Value: Boolean);
-begin
-  if FTransparent <> Value then begin
-    FTransparent := Value;
-    BitmapChanged(nil);
-  end;
-end;
-
-{$ENDIF}
-
 
 { Global procedures }
 

@@ -33,7 +33,7 @@ interface
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Dialogs, ActnList, ImgList,
   DesignIntf, DesignEditors, VCLEditors,
-  TB2Toolbar, {$IFNDEF MPEXCLUDE}TB2ToolWindow,{$ENDIF} TB2Dock, TB2Item, TB2ExtItems, {$IFNDEF MPEXCLUDE} TB2MRU, TB2MDI, {$ENDIF}
+  TB2Toolbar, TB2Dock, TB2Item, TB2ExtItems,
   TB2DsgnItemEditor;
 
 { TTBImageIndexPropertyEditor }
@@ -206,16 +206,13 @@ end;
 
 procedure Register;
 begin
-  RegisterComponents('Toolbar2000', [TTBDock, TTBToolbar, {$IFNDEF MPEXCLUDE}TTBToolWindow,{$ENDIF}
-    TTBPopupMenu, TTBImageList, TTBItemContainer{$IFNDEF MPEXCLUDE}, TTBBackground, TTBMRUList,
-    TTBMDIHandler{$ENDIF}]);
+  RegisterComponents('Toolbar2000', [TTBDock, TTBToolbar,
+    TTBPopupMenu, TTBImageList, TTBItemContainer]);
   RegisterActions('', [TTBEditAction], nil);
   RegisterNoIcon([TTBItem, TTBGroupItem, TTBSubmenuItem, TTBSeparatorItem,
-    TTBEditItem, {$IFNDEF MPEXCLUDE} TTBMRUListItem,{$ENDIF} TTBControlItem{$IFNDEF MPEXCLUDE}, TTBMDIWindowItem,
-    TTBVisibilityToggleItem{$ENDIF}]);
+    TTBEditItem, TTBControlItem]);
   RegisterClasses([TTBItem, TTBGroupItem, TTBSubmenuItem, TTBSeparatorItem,
-    TTBEditItem, {$IFNDEF MPEXCLUDE}TTBMRUListItem,{$ENDIF} TTBControlItem{$IFNDEF MPEXCLUDE}, TTBMDIWindowItem,
-    TTBVisibilityToggleItem{$ENDIF}]);
+    TTBEditItem, TTBControlItem]);
 
   RegisterComponentEditor(TTBCustomToolbar, TTBItemsEditor);
   RegisterComponentEditor(TTBItemContainer, TTBItemsEditor);
@@ -233,11 +230,6 @@ begin
   {$R TB2DsgnItemEditor.res}
   TBRegisterItemClass(TTBEditItem, 'New &Edit', HInstance);
   TBRegisterItemClass(TTBGroupItem, 'New &Group Item', HInstance);
-  {$IFNDEF MPEXCLUDE}
-  TBRegisterItemClass(TTBMRUListItem, 'New &MRU List Item', HInstance);
-  TBRegisterItemClass(TTBMDIWindowItem, 'New MDI &Windows List', HInstance);
-  TBRegisterItemClass(TTBVisibilityToggleItem, 'New &Visibility-Toggle Item', HInstance);
-  {$ENDIF}
 end;
 
 end.

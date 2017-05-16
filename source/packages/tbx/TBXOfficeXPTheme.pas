@@ -116,7 +116,6 @@ begin
     TMB_EDITMENUFULLSELECT:        Result := True;
     TMB_EDITHEIGHTEVEN:            Result := False;
     TMB_SOLIDTOOLBARNCAREA:        Result := False;
-    TMB_SOLIDTOOLBARCLIENTAREA:    Result := True;
   else
     Result := False;
   end;

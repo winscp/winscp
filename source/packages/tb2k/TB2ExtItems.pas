@@ -191,42 +191,6 @@ type
     property EditControl: TEdit read FEditControl;
   end;
 
-  {$IFNDEF MPEXCLUDE}
-  { TTBVisibilityToggleItem }
-
-  TTBVisibilityToggleItem = class(TTBCustomItem)
-  private
-    FControl: TControl;
-    procedure SetControl(Value: TControl);
-    procedure UpdateProps;
-  protected
-    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
-  public
-    procedure Click; override;
-    procedure InitiateAction; override;
-  published
-    property Caption;
-    property Control: TControl read FControl write SetControl;
-    property DisplayMode;
-    property Enabled;
-    property HelpContext;
-    { MP }
-    property HelpKeyword;
-    property Hint;
-    property ImageIndex;
-    property Images;
-    property InheritOptions;
-    property MaskOptions;
-    property Options;
-    property ShortCut;
-    property Visible;
-
-    property OnClick;
-    property OnSelect;
-  end;
-  {$ENDIF}
-
-
 implementation
 
 uses
@@ -979,51 +943,5 @@ begin
   Value := TTBEditItem(Item).Text;
   Result := True;
 end;
-
-
-{$IFNDEF MPEXCLUDE}
-
-{ TTBToolbarVisibilityItem }
-
-procedure TTBVisibilityToggleItem.Click;
-begin
-  if Assigned(FControl) then
-    FControl.Visible := not FControl.Visible;
-  inherited;
-end;
-
-procedure TTBVisibilityToggleItem.InitiateAction;
-begin
-  UpdateProps;
-end;
-
-procedure TTBVisibilityToggleItem.Notification(AComponent: TComponent;
-  Operation: TOperation);
-begin
-  inherited;
-  if (Operation = opRemove) and (AComponent = FControl) then
-    Control := nil;
-end;
-
-procedure TTBVisibilityToggleItem.SetControl(Value: TControl);
-begin
-  if FControl <> Value then begin
-    FControl := Value;
-    if Assigned(Value) then begin
-      Value.FreeNotification(Self);
-      if (Caption = '') and not(csLoading in ComponentState) then
-        Caption := TControlAccess(Value).Caption;
-    end;
-    UpdateProps;
-  end;
-end;
-
-procedure TTBVisibilityToggleItem.UpdateProps;
-begin
-  if (ComponentState * [csDesigning, csLoading, csDestroying] = []) then
-    Checked := Assigned(FControl) and FControl.Visible;
-end;
-
-{$ENDIF}
 
 end.
