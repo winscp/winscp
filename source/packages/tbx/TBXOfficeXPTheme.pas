@@ -782,8 +782,6 @@ begin
     end;
 
 {$IFNDEF ALTERNATIVE_DISABLED_STYLE}
-    HiContrast := IsDarkColor(GetItemImageBackground(ItemInfo), 64);
-
     if not Enabled then
     begin
       DrawTBXIconFlatShadow(Canvas, ARect, ImageList, ImageIndex,
@@ -797,16 +795,16 @@ begin
         DrawTBXIconFullShadow(Canvas, ARect, ImageList, ImageIndex, IconShadowColor);
         OffsetRect(ARect, -2, -2);
       end;
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex, HiContrast);
+      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex);
     end
-    else if HiContrast or TBXHiContrast or TBXLoColor then
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex, HiContrast)
+    else if TBXLoColor then
+      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex)
     else
       HighlightTBXIcon(Canvas, ARect, ImageList, ImageIndex, clWindow, 178);
 {$ELSE}
-    HiContrast := ColorIntensity(GetItemImageBackground(ItemInfo)) < 80;
     if not Enabled then
     begin
+      HiContrast := ColorIntensity(GetItemImageBackground(ItemInfo)) < 80;
       if not HiContrast then
         DrawTBXIconShadow(Canvas, ARect, ImageList, ImageIndex, 0)
       else
@@ -821,13 +819,13 @@ begin
         DrawTBXIconShadow(Canvas, ARect, ImageList, ImageIndex, 1);
         OffsetRect(ARect, -2, -2);
       end;
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex, HiContrast);
+      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex);
     end
       else
 {$IFNDEF NO_IMAGE_DIMMING}
-    if HiContrast or TBXHiContrast or TBXLoColor then
+    if TBXLoColor then
 {$ENDIF}
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex, HiContrast)
+      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex)
 {$IFNDEF NO_IMAGE_DIMMING}
     else
       HighlightTBXIcon(Canvas, ARect, ImageList, ImageIndex, clWindow, 178)

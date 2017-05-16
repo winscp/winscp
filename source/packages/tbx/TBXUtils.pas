@@ -84,7 +84,7 @@ procedure MoveLongword(const Source; var Dest; Count: Integer);
 
 { extended icon painting routines }
 procedure DrawTBXIcon(Canvas: TCanvas; const R: TRect;
-  ImageList: TCustomImageList; ImageIndex: Integer; HiContrast: Boolean);
+  ImageList: TCustomImageList; ImageIndex: Integer);
 procedure BlendTBXIcon(Canvas: TCanvas; const R: TRect;
   ImageList: TCustomImageList; ImageIndex: Integer; Opacity: Byte);
 procedure HighlightTBXIcon(Canvas: TCanvas; const R: TRect;
@@ -1002,66 +1002,9 @@ asm
 end;
 
 procedure DrawTBXIcon(Canvas: TCanvas; const R: TRect;
-  ImageList: TCustomImageList; ImageIndex: Integer; HiContrast: Boolean);
-{const
-  CWeirdColor = $00203241;} {vb -}
-var
-  ImageWidth, ImageHeight: Integer;
-  I, J: Integer;
-  Src, Dst: PColor;
-  S, C: TColor;
+  ImageList: TCustomImageList; ImageIndex: Integer);
 begin
-  if not HiContrast then
-  begin
-    ImageList.Draw(Canvas, R.Left, R.Top, ImageIndex);
-    Exit;
-  end;
-  ImageWidth := R.Right - R.Left;
-  ImageHeight := R.Bottom - R.Top;
-  with ImageList do
-  begin
-    if Width < ImageWidth then ImageWidth := Width;
-    if Height < ImageHeight then ImageHeight :=  Height;
-  end;
-
-  StockBitmap1.Width := ImageWidth;
-  StockBitmap1.Height := ImageHeight;
-  StockBitmap2.Width := ImageWidth;
-  StockBitmap2.Height := ImageHeight;
-
-  BitBlt(StockBitmap1.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
-    Canvas.Handle, R.Left, R.Top, SRCCOPY);
-  {for J := 0 to ImageHeight - 1 do
-    FillLongWord(StockBitmap2.ScanLine[J]^, ImageWidth, CWeirdColor);} {vb -}
-  BitBlt(StockBitmap2.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
-    Canvas.Handle, R.Left, R.Top, SRCCOPY); {vb +}
-  ImageList.Draw(StockBitmap2.Canvas, 0, 0, ImageIndex);
-
-  for J := 0 to ImageHeight - 1 do
-  begin
-    Src := StockBitmap2.ScanLine[J];
-    Dst := StockBitmap1.ScanLine[J];
-    for I := 0 to ImageWidth - 1 do
-    begin
-      {S := Src^ and $00FFFFFF;} {vb -}
-      S := Src^; {vb +}
-      {if S <> CWeirdColor then} {vb -}
-      if S <> Dst^ then {vb +}
-      begin
-        {C := (S and $FF0000) shr 16 * 76 + (S and $00FF00) shr 8 * 150 +
-          (S and $0000FF) * 29;} {vb -}
-        C := (S and $00FF0000) shr 16 * 76 + (S and $0000FF00) shr 8 * 150 +
-          (S and $000000FF) * 29; {vb +}
-        if C > $FD00 then S := $000000
-        else if C < $6400 then S := $FFFFFF;
-        Dst^ := Lighten(S, 32);
-      end;
-      Inc(Src);
-      Inc(Dst);
-    end;
-  end;
-  BitBlt(Canvas.Handle, R.Left, R.Top, ImageWidth, ImageHeight,
-    StockBitmap1.Canvas.Handle, 0, 0, SRCCOPY);
+  ImageList.Draw(Canvas, R.Left, R.Top, ImageIndex);
 end;
 
 procedure BlendTBXIcon(Canvas: TCanvas; const R: TRect;

@@ -377,8 +377,6 @@ var
 
   { Auxiliary flags corresponding to the system color scheme }
   TBXLoColor: Boolean;
-  TBXHiContrast: Boolean; // this can me removed in future
-  TBXNoBlending: Boolean; // TBXNoColor or TBXHiContrast
 
 var
   USE_FLATMENUS: Boolean;
@@ -729,8 +727,6 @@ begin
   DC := GetDC(0);
   try
     TBXLoColor := GetDeviceCaps(DC, BITSPIXEL) * GetDeviceCaps(DC, PLANES) < 12;
-    TBXHiContrast := GetSysColor(COLOR_BTNFACE) = $00FFFFFF;
-    TBXNoBlending := TBXLoColor or TBXHiContrast;
   finally
     ReleaseDC(0, DC);
   end;
