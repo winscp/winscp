@@ -478,7 +478,7 @@ namespace WinSCP
                 args.Directory = e.Directory;
                 args.OverallProgress = ((double)e.OverallProgress) / 100;
                 args.FileProgress = ((double)e.FileProgress) / 100;
-                args.CPS = (int) e.CPS;
+                args.CPS = (int)e.CPS;
                 _session.ProcessProgress(args);
             }
         }
