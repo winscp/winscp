@@ -2239,7 +2239,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
         TScriptProgress Progress;
         Progress.Operation = ProgressData.Operation;
         Progress.Side = ProgressData.Side;
-        Progress.FileName = ProgressData.FileName;
+        Progress.FileName = ProgressData.FullFileName;
         Progress.Directory = ProgressData.Directory;
         Progress.OverallProgress = ProgressData.OverallProgress();
         Progress.FileProgress = ProgressData.TransferProgress();
