@@ -17,6 +17,7 @@ namespace WinSCP
         public double OverallProgress { get; internal set; }
         public double FileProgress { get; internal set; }
         public int CPS { get; internal set; }
+        public bool Cancel { get; set; }
 
         internal FileTransferProgressEventArgs()
         {

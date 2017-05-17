@@ -77,6 +77,7 @@ namespace WinSCP
         public uint OverallProgress;
         public uint FileProgress;
         public uint CPS;
+        public bool Cancel; // since version 8
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -91,7 +92,7 @@ namespace WinSCP
 
     internal class ConsoleCommStruct : IDisposable
     {
-        public const int CurrentVersion = 0x0007;
+        public const int CurrentVersion = 0x0008;
 
         public ConsoleCommStruct(Session session, SafeFileHandle fileMapping)
         {

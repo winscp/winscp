@@ -448,38 +448,47 @@ namespace WinSCP
                     "File Name [{0}] - Directory [{1}] - Overall Progress [{2}] - File Progress [{3}] - CPS [{4}]",
                     e.FileName, e.Directory, e.OverallProgress, e.FileProgress, e.CPS);
 
-                FileTransferProgressEventArgs args = new FileTransferProgressEventArgs();
-
-                switch (e.Operation)
+                if (!_cancel)
                 {
-                    case ConsoleProgressEventStruct.ProgressOperation.Copy:
-                        args.Operation = ProgressOperation.Transfer;
-                        break;
+                    FileTransferProgressEventArgs args = new FileTransferProgressEventArgs();
 
-                    default:
-                        throw _logger.WriteException(new ArgumentOutOfRangeException("Unknown progress operation", (Exception)null));
+                    switch (e.Operation)
+                    {
+                        case ConsoleProgressEventStruct.ProgressOperation.Copy:
+                            args.Operation = ProgressOperation.Transfer;
+                            break;
+
+                        default:
+                            throw _logger.WriteException(new ArgumentOutOfRangeException("Unknown progress operation", (Exception)null));
+                    }
+
+                    switch (e.Side)
+                    {
+                        case ConsoleProgressEventStruct.ProgressSide.Local:
+                            args.Side = ProgressSide.Local;
+                            break;
+
+                        case ConsoleProgressEventStruct.ProgressSide.Remote:
+                            args.Side = ProgressSide.Remote;
+                            break;
+
+                        default:
+                            throw _logger.WriteException(new ArgumentOutOfRangeException("Unknown progress side", (Exception)null));
+                    }
+
+                    args.FileName = e.FileName;
+                    args.Directory = e.Directory;
+                    args.OverallProgress = ((double)e.OverallProgress) / 100;
+                    args.FileProgress = ((double)e.FileProgress) / 100;
+                    args.CPS = (int)e.CPS;
+                    args.Cancel = false;
+                    _session.ProcessProgress(args);
                 }
 
-                switch (e.Side)
+                if (_cancel)
                 {
-                    case ConsoleProgressEventStruct.ProgressSide.Local:
-                        args.Side = ProgressSide.Local;
-                        break;
-
-                    case ConsoleProgressEventStruct.ProgressSide.Remote:
-                        args.Side = ProgressSide.Remote;
-                        break;
-
-                    default:
-                        throw _logger.WriteException(new ArgumentOutOfRangeException("Unknown progress side", (Exception)null));
+                    e.Cancel = true;
                 }
-
-                args.FileName = e.FileName;
-                args.Directory = e.Directory;
-                args.OverallProgress = ((double)e.OverallProgress) / 100;
-                args.FileProgress = ((double)e.FileProgress) / 100;
-                args.CPS = (int)e.CPS;
-                _session.ProcessProgress(args);
             }
         }
 
@@ -685,6 +694,7 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
+                _cancel = false;
                 AddInput(command, log);
             }
         }
@@ -939,6 +949,11 @@ namespace WinSCP
             _logger.WriteLine("{0} - exists [{1}]", executablePath, File.Exists(executablePath));
         }
 
+        public void Cancel()
+        {
+            _cancel = true;
+        }
+
         private const int MaxAttempts = 10;
         private const string ConsoleMapping = "WinSCPConsoleMapping";
         private const string ConsoleEventRequest = "WinSCPConsoleEventRequest";
@@ -964,5 +979,6 @@ namespace WinSCP
         private readonly List<string> _log = new List<string>();
         private AutoResetEvent _inputEvent = new AutoResetEvent(false);
         private Job _job;
+        private bool _cancel;
     }
 }

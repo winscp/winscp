@@ -1900,6 +1900,11 @@ namespace WinSCP
             if ((_progressHandling >= 0) && WantsProgress)
             {
                 _fileTransferProgress(this, args);
+
+                if (args.Cancel)
+                {
+                    _process.Cancel();
+                }
             }
         }
 

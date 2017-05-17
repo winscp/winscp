@@ -55,7 +55,7 @@ public:
   virtual void __fastcall WaitBeforeExit() = 0;
   virtual bool __fastcall CommandLineOnly() = 0;
   virtual bool __fastcall WantsProgress() = 0;
-  virtual void __fastcall Progress(const TScriptProgress & Progress) = 0;
+  virtual void __fastcall Progress(TScriptProgress & Progress) = 0;
   virtual UnicodeString __fastcall FinalLogMessage() = 0;
 };
 //---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ public:
   virtual void __fastcall WaitBeforeExit();
   virtual bool __fastcall CommandLineOnly();
   virtual bool __fastcall WantsProgress();
-  virtual void __fastcall Progress(const TScriptProgress & Progress);
+  virtual void __fastcall Progress(TScriptProgress & Progress);
   virtual UnicodeString __fastcall FinalLogMessage();
 
 protected:
@@ -519,7 +519,7 @@ bool __fastcall TOwnConsole::WantsProgress()
   return false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TOwnConsole::Progress(const TScriptProgress & /*Progress*/)
+void __fastcall TOwnConsole::Progress(TScriptProgress & /*Progress*/)
 {
   DebugFail();
 }
@@ -547,7 +547,7 @@ public:
   virtual void __fastcall WaitBeforeExit();
   virtual bool __fastcall CommandLineOnly();
   virtual bool __fastcall WantsProgress();
-  virtual void __fastcall Progress(const TScriptProgress & Progress);
+  virtual void __fastcall Progress(TScriptProgress & Progress);
   virtual UnicodeString __fastcall FinalLogMessage();
 
 private:
@@ -875,15 +875,16 @@ bool __fastcall TExternalConsole::WantsProgress()
   return FWantsProgress;
 }
 //---------------------------------------------------------------------------
-void __fastcall TExternalConsole::Progress(const TScriptProgress & Progress)
+void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
 {
   TConsoleCommStruct * CommStruct = GetCommStruct();
+
+  typedef TConsoleCommStruct::TProgressEvent TProgressEvent;
+  TProgressEvent & ProgressEvent = CommStruct->ProgressEvent;
+
   try
   {
     CommStruct->Event = TConsoleCommStruct::PROGRESS;
-
-    typedef TConsoleCommStruct::TProgressEvent TProgressEvent;
-    TProgressEvent & ProgressEvent = CommStruct->ProgressEvent;
 
     switch (Progress.Operation)
     {
@@ -919,6 +920,7 @@ void __fastcall TExternalConsole::Progress(const TScriptProgress & Progress)
     ProgressEvent.OverallProgress = Progress.OverallProgress;
     ProgressEvent.FileProgress = Progress.FileProgress;
     ProgressEvent.CPS = Progress.CPS;
+    ProgressEvent.Cancel = Progress.Cancel;
   }
   __finally
   {
@@ -926,8 +928,15 @@ void __fastcall TExternalConsole::Progress(const TScriptProgress & Progress)
   }
   SendEvent(INFINITE);
 
-  // nothing to read from response, just wait for it
-  FreeCommStruct(GetCommStruct());
+  CommStruct = GetCommStruct();
+  try
+  {
+    Progress.Cancel = ProgressEvent.Cancel;
+  }
+  __finally
+  {
+    FreeCommStruct(CommStruct);
+  }
 }
 //---------------------------------------------------------------------------
 class TNullConsole : public TConsole
@@ -948,7 +957,7 @@ public:
   virtual bool __fastcall CommandLineOnly();
 
   virtual bool __fastcall WantsProgress();
-  virtual void __fastcall Progress(const TScriptProgress & Progress);
+  virtual void __fastcall Progress(TScriptProgress & Progress);
   virtual UnicodeString __fastcall FinalLogMessage();
 };
 //---------------------------------------------------------------------------
@@ -1027,7 +1036,7 @@ bool __fastcall TNullConsole::WantsProgress()
   return false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TNullConsole::Progress(const TScriptProgress & /*Progress*/)
+void __fastcall TNullConsole::Progress(TScriptProgress & /*Progress*/)
 {
   DebugFail();
 }
@@ -1105,7 +1114,7 @@ private:
   void __fastcall TimerTimer(TObject * Sender);
   UnicodeString ExpandCommand(UnicodeString Command, TStrings * ScriptParameters);
   void __fastcall Failed(bool & AnyError);
-  void __fastcall ScriptProgress(TScript * Script, const TScriptProgress & Progress);
+  void __fastcall ScriptProgress(TScript * Script, TScriptProgress & Progress);
   void __fastcall ConfigurationChange(TObject * Sender);
 };
 //---------------------------------------------------------------------------
@@ -1700,7 +1709,7 @@ void __fastcall TConsoleRunner::ScriptSynchronizeStartStop(TScript * /*Script*/,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleRunner::ScriptProgress(TScript * /*Script*/, const TScriptProgress & Progress)
+void __fastcall TConsoleRunner::ScriptProgress(TScript * /*Script*/, TScriptProgress & Progress)
 {
   FConsole->Progress(Progress);
 }

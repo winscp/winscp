@@ -2244,7 +2244,13 @@ void __fastcall TManagementScript::TerminalOperationProgress(
         Progress.OverallProgress = ProgressData.OverallProgress();
         Progress.FileProgress = ProgressData.TransferProgress();
         Progress.CPS = ProgressData.CPS();
+        Progress.Cancel = false;
         OnProgress(this, Progress);
+
+        if (Progress.Cancel)
+        {
+          ProgressData.SetCancel(csCancel);
+        }
       }
 
       if (!DoPrint && ((FLastProgressTime != Time) || ProgressData.IsTransferDone()))
