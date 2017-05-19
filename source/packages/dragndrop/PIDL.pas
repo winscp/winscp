@@ -50,6 +50,8 @@ function PIDL_GetFromParentFolder(pParentFolder: IShellFolder; pszFile: PChar): 
 procedure PIDL_Free(PIDL:PItemIDList);
 function PIDL_Equal(PIDL1,PIDL2:PItemIDList):boolean;
 
+procedure ParseDisplayNameWithTimeout(ParentFolder: IShellFolder; Path: string; var PIDL: PItemIDList);
+
 var ShellMalloc: IMalloc;
 
     CF_FILECONTENTS:UInt; // don't modify value
@@ -68,6 +70,8 @@ var ShellMalloc: IMalloc;
     CF_SHELLURL:UInt; // don't modify value
 
 implementation
+
+uses SysUtils, CompThread;
 
 const NullTerm=2;
 
@@ -280,6 +284,60 @@ begin
      //piDesktopFolder._Release; -> automaticly done by D4
 end;
 
+type
+  TParseDisplayNameThread = class(TCompThread)
+  private
+    FParentFolder: IShellFolder;
+    FPath: string;
+    FPIDL: PItemIDList;
+
+  protected
+    procedure Execute; override;
+
+  public
+    constructor Create(ParentFolder: IShellFolder; Path: string);
+
+    property PIDL: PItemIDList read FPIDL;
+  end;
+
+constructor TParseDisplayNameThread.Create(ParentFolder: IShellFolder; Path: string);
+begin
+  inherited Create(True);
+  FParentFolder := ParentFolder;
+  FPath := Path;
+end;
+
+procedure TParseDisplayNameThread.Execute;
+var
+  Eaten: ULONG;
+  ShAttr: ULONG;
+begin
+  ShAttr := 0;
+  if Failed(FParentFolder.ParseDisplayName(0, nil, PChar(FPath), Eaten, FPIDL, ShAttr)) then
+  begin
+    FPIDL := nil;
+  end;
+end;
+
+procedure ParseDisplayNameWithTimeout(ParentFolder: IShellFolder; Path: string; var PIDL: PItemIDList);
+var
+  Thread: TParseDisplayNameThread;
+begin
+  Thread := TParseDisplayNameThread.Create(ParentFolder, Path);
+  Thread.Resume;
+  if Thread.WaitFor(2 * MSecsPerSec) then
+  begin
+    PIDL := Thread.PIDL;
+    Thread.Free;
+  end
+    else
+  begin
+    // There's a chance for memory leak, if thread is terminated
+    // between WaitFor() and this line
+    Thread.FreeOnTerminate := True;
+  end;
+end;
+
 function PIDL_GetFromParentFolder(pParentFolder: IShellFolder; pszFile: PChar): PItemIDList;
 //  PURPOSE:    This routine takes a Shell folder for the parent and the FileName in the folder
 //  and converts that to a relative ITEMIDLIST.
@@ -289,19 +347,8 @@ function PIDL_GetFromParentFolder(pParentFolder: IShellFolder; pszFile: PChar): 
 //      pszFile       - file name in the folder.
 //  RETURN VALUE:
 //      Returns a relative ITEMIDLIST, or NULL if an error occurs.
-var chEaten, dwAttributes: ULONG;
-    NotResult: Boolean;
-    ErrorMode: Word;
 begin
-     ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
-     try
-       dwAttributes := 0;
-       NotResult := Failed(pParentFolder.ParseDisplayName(0, nil, pszFile, chEaten, Result,
-          dwAttributes));
-     finally
-       SetErrorMode(ErrorMode);
-     end;
-     if NotResult then Result:=nil;
+     ParseDisplayNameWithTimeout(pParentFolder, pszFile, Result);
 end;
 
 procedure PIDL_Free(PIDL:PItemIDList);
