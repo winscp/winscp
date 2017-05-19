@@ -77,13 +77,7 @@ type
   TSelAttr = (selDontCare, selYes, selNo);
   TFileFilter = record
     Masks: string;
-    IncludeAttr: Word; { see TSearchRec.Attr }
-    ExcludeAttr: Word;
     Directories: Boolean;
-    FileSizeFrom: Int64;
-    FileSizeTo: Int64;
-    ModificationFrom: TDateTime;
-    ModificationTo: TDateTime;
   end;
   TDirViewNotifyEvent = procedure(Sender: TCustomDirView) of object;
   TDVGetFilterEvent = procedure(Sender: TCustomDirView; Select: Boolean;
@@ -625,13 +619,7 @@ begin
   with Filter do
   begin
     SetLength(Masks, 0);
-    IncludeAttr := 0;
-    ExcludeAttr := 0;
     Directories := False;
-    FileSizeFrom := 0;
-    FileSizeTo := 0;
-    ModificationFrom := 0;
-    ModificationTo := 0;
   end;
 end;
 
