@@ -101,8 +101,6 @@ __published:
   void __fastcall ApplicationRestore(TObject * Sender);
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
     const TPoint &MousePos, bool &Handled);
-  void __fastcall RemoteDirViewGetSelectFilter(
-    TCustomDirView *Sender, bool Select, TFileFilter &Filter);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall RemoteDirViewDisplayProperties(TObject *Sender);
   void __fastcall DirViewColumnRightClick(TObject *Sender,

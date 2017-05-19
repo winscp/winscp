@@ -107,7 +107,6 @@ type
     FWantUseDragImages: Boolean;
     FDragDropFilesEx: TCustomizableDragDropFilesEx;
     FUseSystemContextMenu: Boolean;
-    FOnGetSelectFilter: TDVGetFilterEvent;
     FOnStartLoading: TNotifyEvent;
     FOnLoaded: TNotifyEvent;
     FDragDrive: TDrive;
@@ -334,7 +333,6 @@ type
     function CreateFileList(Focused: Boolean; FullPath: Boolean; FileList: TStrings = nil): TStrings;
     function AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean;
       FocusedFileOnlyWhenFocused: Boolean): Boolean;
-    function DoSelectByMask(Select: Boolean): Boolean;
     procedure SelectFiles(Filter: TFileFilter; Select: Boolean);
     procedure ExecuteHomeDirectory; virtual; abstract;
     procedure ExecuteParentDirectory; virtual; abstract;
@@ -416,7 +414,6 @@ type
     property Mask: string read FMask write SetMask;
 
     property OnContextPopup;
-    property OnGetSelectFilter: TDVGetFilterEvent read FOnGetSelectFilter write FOnGetSelectFilter;
     property OnStartLoading: TNotifyEvent read FOnStartLoading write FOnStartLoading;
     property OnLoaded: TNotifyEvent read FOnLoaded write FOnLoaded;
     {The mouse has entered the component window as a target of a drag&drop operation:}
@@ -1306,20 +1303,6 @@ begin
     Screen.Cursor := OldCursor;
     Items.EndUpdate;
     EndSelectionUpdate;
-  end;
-end;
-
-function TCustomDirView.DoSelectByMask(Select: Boolean): Boolean;
-var
-  Filter: TFileFilter;
-begin
-  Result := False;
-  if Assigned(FOnGetSelectFilter) then
-  begin
-    DefaultFileFilter(Filter);
-    FOnGetSelectFilter(Self, Select, Filter);
-    SelectFiles(Filter, Select);
-    Result := True;
   end;
 end;
 

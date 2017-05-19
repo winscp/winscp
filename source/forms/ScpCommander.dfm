@@ -1417,7 +1417,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       DirColProperties.ExtVisible = False
       PathLabel = LocalPathLabel
       OnUpdateStatusBar = LocalDirViewUpdateStatusBar
-      OnGetSelectFilter = RemoteDirViewGetSelectFilter
       AddParentDir = True
       OnSelectItem = DirViewSelectItem
       OnLoaded = DirViewLoaded

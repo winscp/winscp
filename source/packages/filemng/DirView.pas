@@ -319,7 +319,6 @@ type
     property DirColProperties: TDirViewColProperties read GetDirColProperties write SetDirColProperties;
     property PathLabel;
     property OnUpdateStatusBar;
-    property OnGetSelectFilter;
 
     property LoadAnimation;
     property DimmHiddenFiles;

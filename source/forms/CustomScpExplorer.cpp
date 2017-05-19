@@ -3969,20 +3969,6 @@ bool __fastcall TCustomScpExplorerForm::OpenBookmark(UnicodeString Local, Unicod
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemoteDirViewGetSelectFilter(
-      TCustomDirView *Sender, bool Select, TFileFilter &Filter)
-{
-  DebugAssert(Sender);
-  if (DoSelectMaskDialog(Sender, Select, &Filter, Configuration))
-  {
-    Configuration->Usage->Inc(L"MaskSelections");
-  }
-  else
-  {
-    Abort();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CalculateSize(
   TStrings * FileList, __int64 & Size, TCalculateSizeStats & Stats,
   bool & Close)
@@ -7611,8 +7597,13 @@ void __fastcall TCustomScpExplorerForm::SelectAll(TOperationSide Side, TSelectMo
 void __fastcall TCustomScpExplorerForm::SelectByMask(TOperationSide Side, bool Select)
 {
   TCustomDirView * ADirView = DirView(Side);
-  if (ADirView->DoSelectByMask(Select))
+
+  TFileFilter Filter;
+  DefaultFileFilter(Filter);
+  if (DoSelectMaskDialog(ADirView, Select, &Filter, Configuration))
   {
+    Configuration->Usage->Inc(L"MaskSelections");
+    ADirView->SelectFiles(Filter, Select);
     ADirView->SetFocus();
   }
 }
