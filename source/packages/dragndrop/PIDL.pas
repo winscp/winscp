@@ -34,15 +34,12 @@ interface
 
 uses ShlObj, Windows, ActiveX;
 
-function PIDL_GetNextItem(PIDL: PItemIDList):PItemIDList;
 function PIDL_GetSize(pidl: PITEMIDLIST): integer;
 function PIDL_Create(Size: UINT): PItemIDList;
 function PIDL_Concatenate(pidl1, pidl2: PItemIDList): PItemIDList;
 function PIDL_Copy(pidlSource: PItemIDList): PItemIDList;
 function PIDL_GetDisplayName(piFolder: IShellFolder; pidl: PItemIDList;
    dwFlags: DWORD; pszName: PChar; cchMax: UINT): boolean;
-function Pidl_GetFullyQualified(const PiParentFolder: IShellFolder;
-   pidl: PItemIDList): PItemIDList;
 procedure PIDL_GetRelative(var pidlFQ, ppidlRoot, ppidlItem: PItemIDList);
 function PIDL_GetFromPath(pszFile: PChar): PItemIDList;
 function PIDL_GetFileFolder(pidl: PItemIDList; var piFolder: IShellFolder):boolean;
@@ -54,20 +51,9 @@ procedure ParseDisplayNameWithTimeout(ParentFolder: IShellFolder; Path: string; 
 
 var ShellMalloc: IMalloc;
 
-    CF_FILECONTENTS:UInt; // don't modify value
-    CF_FILEDESCRIPTOR:UInt; // don't modify value
-    CF_FILENAME:UInt; // don't modify value
     CF_FILENAMEMAP:UInt; // don't modify value
     CF_FILENAMEMAPW:UInt; // don't modify value
-    CF_INDRAGLOOP:UInt; // don't modify value
-    CF_NETRESOURCES:UInt; // don't modify value
-    CF_PASTESUCCEEDED:UInt; // don't modify value
-    CF_PERFORMEDDROPEFFECT:UInt; // don't modify value
-    CF_PREFERREDDROPEFFECT:UInt; // don't modify value
-    CF_PRINTERGROUP:UInt; // don't modify value
     CF_SHELLIDLIST:UInt; // don't modify value
-    CF_SHELLIDLISTOFFSET:UInt; // don't modify value
-    CF_SHELLURL:UInt; // don't modify value
 
 implementation
 
@@ -186,31 +172,6 @@ begin
      end
      else Result:=FALSE;
      // piFolder._Release; -> automaticly done by D4
-end;
-
-function Pidl_GetFullyQualified(const PiParentFolder: IShellFolder;
-   pidl: PItemIDList): PItemIDList;
-//  PURPOSE:    Takes a relative PIDL and it's parent IShellFolder, and returns
-//      a fully qualified ITEMIDLIST.
-//  PARAMETERS:
-//      piParentFolder - Pointer to the IShellFolder of the parent folder.
-//  pidl           - ITEMIDLIST relative to piParentFolder
-//  RETURN VALUE:
-//      Returns a fully qualified ITEMIDLIST or NULL if there is a problem.
-var piDesktopFolder:IShellFolder;
-    szBuffer: array[1..Max_Path] of char;
-    szOleChar: array[1..Max_Path] of TOLECHAR;
-    ulEaten, ulAttribs:ULong;
-begin
-     Result:=nil;
-     if Failed(SHGetDesktopFolder(piDesktopFolder)) then exit;
-     if PIDL_GetDisplayName(piParentFolder, pidl, SHGDN_FORPARSING, @szBuffer, sizeof(szBuffer))=false then
-        exit;
-     MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, @szBuffer, -1, @szOleChar, sizeof(szOleChar));
-     ulAttribs := 0;
-     if Failed(piDesktopFolder.ParseDisplayName(0, nil, @szOleChar, ulEaten,
-        Result, ulAttribs)) then Result:=nil;
-     // piDesktopFolder._Release; automaticly done by D4
 end;
 
 procedure PIDL_GetRelative(var pidlFQ, ppidlRoot, ppidlItem: PItemIDList);
@@ -376,20 +337,9 @@ end;
 initialization
 
   SHGetMalloc(ShellMalloc);
-  CF_FILECONTENTS:=RegisterClipboardFormat('FileContents');
-  CF_FILEDESCRIPTOR:=RegisterClipboardFormat('FileGroupDescriptor');
-  CF_FILENAME:=RegisterClipboardFormat('FileName');
   CF_FILENAMEMAP:=RegisterClipboardFormat('FileNameMap');
   CF_FILENAMEMAPW:=RegisterClipboardFormat('FileNameMapW');
-  CF_INDRAGLOOP:=RegisterClipboardFormat('InShellDragLoop');
-  CF_NETRESOURCES:=RegisterClipboardFormat('Net Resource');
-  CF_PASTESUCCEEDED:=RegisterClipboardFormat('Paste Succeeded');
-  CF_PERFORMEDDROPEFFECT:=RegisterClipboardFormat('Performed DropEffect');
-  CF_PREFERREDDROPEFFECT:=RegisterClipboardFormat('Preferred DropEffect');
-  CF_PRINTERGROUP:=RegisterClipboardFormat('PrinterFriendlyName');
   CF_SHELLIDLIST:=RegisterClipboardFormat('Shell IDList Array');
-  CF_SHELLIDLISTOFFSET:=RegisterClipboardFormat('Shell Object Offsets');
-  CF_SHELLURL:=RegisterClipboardFormat('UniformResourceLocator');
 
 finalization
 
