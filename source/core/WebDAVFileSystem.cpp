@@ -969,7 +969,8 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
     File->Size = StrToInt64Def(ContentLength, 0);
   }
   const char * LastModified = GetProp(Results, PROP_LAST_MODIFIED);
-  if (DebugAlwaysTrue(LastModified != NULL))
+  // We've seen a server (t=24891) that does not set "getlastmodified" for the "this" folder entry.
+  if (LastModified != NULL)
   {
     char WeekDay[4] = { L'\0' };
     int Year = 0;
