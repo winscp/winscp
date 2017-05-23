@@ -374,7 +374,7 @@ begin
 end;
 
 // WORKAROUND
-// http://stackoverflow.com/q/9410485/850848
+// https://stackoverflow.com/q/9410485/850848
 
 type
   TFormHelper = class helper for TCustomForm

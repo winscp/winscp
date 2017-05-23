@@ -896,7 +896,7 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
   }
 
   // WORKAROUND for lack of public API so mimicking Explorer-style mouse selection
-  // See http://stackoverflow.com/q/15750842/850848
+  // See https://stackoverflow.com/q/15750842/850848
   if (IEListView != NULL)
   {
     // It should not be a problem to call the LVM_QUERYINTERFACE
