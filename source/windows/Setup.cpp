@@ -671,7 +671,7 @@ void __fastcall LaunchAdvancedAssociationUI()
   if (IsWin10())
   {
     // WORKAROUND: On Windows 10, the IApplicationAssociationRegistrationUI::LaunchAdvancedAssociationUI does not work.
-    // http://stackoverflow.com/q/32178986/850848
+    // https://stackoverflow.com/q/32178986/850848
     // This approach (IOpenControlPanel::Open) works on Windows 7 too, but not on Windows Vista.
     IOpenControlPanel * OpenControlPanel;
 

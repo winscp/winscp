@@ -2570,7 +2570,7 @@ TTreeNode * __fastcall TLoginDialog::GetNextNode(TTreeNode * Node, bool Reverse)
     if (Node == NULL)
     {
       // GetLastNode
-      // http://stackoverflow.com/q/6257348/850848
+      // https://stackoverflow.com/q/6257348/850848
       Node = SessionTree->Items->GetFirstNode();
       TTreeNode * Node2 = Node;
       if (Node2 != NULL)
