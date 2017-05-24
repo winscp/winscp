@@ -24,11 +24,13 @@ __published:
   TButton *HelpButton;
   TStaticText *HintText;
   TButton *ClearButton;
+  TButton *MaskButton;
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall MaskEditExit(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall ClearButtonClick(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
+  void __fastcall MaskButtonClick(TObject *Sender);
 private:
   TFileFilter FFileFilter;
   TControl * FParent;

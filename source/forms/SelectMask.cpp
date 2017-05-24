@@ -167,3 +167,12 @@ void __fastcall TSelectMaskDialog::FormShow(TObject * /*Sender*/)
   CenterFormOn(this, FParent);
 }
 //---------------------------------------------------------------------------
+void __fastcall TSelectMaskDialog::MaskButtonClick(TObject * /*Sender*/)
+{
+  TFileMasks Masks = MaskEdit->Text;
+  if (DoEditMaskDialog(Masks))
+  {
+    MaskEdit->Text = Masks.Masks;
+  }
+}
+//---------------------------------------------------------------------------
