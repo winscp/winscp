@@ -1440,7 +1440,7 @@ object FileFindDialog: TFileFindDialog
     end
     object MaskButton: TButton
       Left = 343
-      Top = 33
+      Top = 34
       Width = 80
       Height = 25
       Anchors = [akTop, akRight]
