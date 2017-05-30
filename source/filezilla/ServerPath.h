@@ -21,6 +21,7 @@ public:
   BOOL SetPath(CString & newpath, BOOL bIsFile);
   BOOL SetPath(CString newpath);
   const CString GetPath() const;
+  const CString GetPathUnterminated() const;
 
   CServerPath & operator=(const CServerPath & op);
 
@@ -37,6 +38,9 @@ protected:
   typedef std::list<CString>::const_iterator tConstIter;
   CString m_Prefix;
   int m_nServerType;
+
+private:
+  const CString DoGetPath(bool unterminated) const;
 };
 //---------------------------------------------------------------------------
 #endif // ServerPathH

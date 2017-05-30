@@ -2031,7 +2031,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
   if (m_Operation.nOpState == LIST_PWD)
     cmd=L"PWD";
   else if (m_Operation.nOpState==LIST_CWD)
-    cmd=L"CWD " + pData->path.GetPath(); //Command to retrieve the current directory
+    cmd=L"CWD " + pData->path.GetPathUnterminated(); //Command to retrieve the current directory
   else if (m_Operation.nOpState==LIST_PWD2)
     cmd=L"PWD";
   else if (m_Operation.nOpState==LIST_CWD2)
@@ -2047,7 +2047,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
       {
         CServerPath path = m_pOwner->GetCurrentPath();
         path.AddSubdir(pData->subdir);
-        cmd = L"CWD " + path.GetPath();
+        cmd = L"CWD " + path.GetPathUnterminated();
       }
       else
         cmd = L"CWD " + pData->subdir;
@@ -2413,7 +2413,7 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
     if (code == 2)
     {
       pData->direntry->dir = TRUE;
-      if (Send(L"CWD " + pData->pwd.GetPath()))
+      if (Send(L"CWD " + pData->pwd.GetPathUnterminated()))
       {
         m_Operation.nOpState = LISTFILE_CWD2;
       }
@@ -2950,7 +2950,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
             {
               pData->MKDSegments.push_front(pData->MKDCurrent.GetLastSegment());
               pData->MKDCurrent=pData->MKDCurrent.GetParent();
-              if (!Send(L"CWD "+pData->MKDCurrent.GetPath()))
+              if (!Send(L"CWD "+pData->MKDCurrent.GetPathUnterminated()))
                 return;
             }
           }
@@ -3048,7 +3048,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
             m_Operation.nOpState=FILETRANSFER_CWD2;
           else
           {
-            if (Send( L"CWD " + pData->MKDCurrent.GetPath()))
+            if (Send( L"CWD " + pData->MKDCurrent.GetPathUnterminated()))
               pData->nMKDOpState=MKD_MAKESUBDIRS;
             else
               return;
@@ -3792,7 +3792,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       bError = TRUE;
     break;
   case FILETRANSFER_CWD:
-    if (!Send(L"CWD "+pData->transferfile.remotepath.GetPath()))
+    if (!Send(L"CWD "+pData->transferfile.remotepath.GetPathUnterminated()))
       bError=TRUE;
     break;
   case FILETRANSFER_MKD:
@@ -3804,7 +3804,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         ResetOperation(FZ_REPLY_CRITICALERROR);
         return;
       }
-      if (!Send(L"CWD "+pData->transferfile.remotepath.GetParent().GetPath()))
+      if (!Send(L"CWD "+pData->transferfile.remotepath.GetParent().GetPathUnterminated()))
         bError=TRUE;
       pData->MKDCurrent=pData->transferfile.remotepath.GetParent();
       pData->MKDSegments.push_front(pData->transferfile.remotepath.GetLastSegment());
@@ -3812,7 +3812,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     }
     break;
   case FILETRANSFER_CWD2:
-    if (!Send(L"CWD "+pData->transferfile.remotepath.GetPath()))
+    if (!Send(L"CWD "+pData->transferfile.remotepath.GetPathUnterminated()))
       bError=TRUE;
     break;
   case FILETRANSFER_PWD2:
@@ -4782,7 +4782,7 @@ public:
       ShowStatus(L"Unable to concatenate path", FZ_LOG_ERROR);
       return;
     }
-    if (!Send(L"RMD "+ newPath.GetPath()))
+    if (!Send(L"RMD "+ newPath.GetPathUnterminated()))
       return;
     CRemoveDirData *data = new CRemoveDirData;
     data->m_DirName = dirname;
@@ -5111,7 +5111,7 @@ void CFtpControlSocket::MakeDir(const CServerPath &path)
     DebugAssert(m_Operation.nOpMode==CSMODE_NONE);
     DebugAssert(!m_Operation.pData);
     m_Operation.nOpMode = CSMODE_MKDIR;
-    if (!Send(L"CWD "+path.GetParent().GetPath()))
+    if (!Send(L"CWD "+path.GetParent().GetPathUnterminated()))
       return;
     CMakeDirData *data = new CMakeDirData;
     data->path = path;
@@ -5148,7 +5148,7 @@ void CFtpControlSocket::MakeDir(const CServerPath &path)
       {
         pData->Segments.push_front(pData->Current.GetLastSegment());
         pData->Current=pData->Current.GetParent();
-        if (!Send(L"CWD "+pData->Current.GetPath()))
+        if (!Send(L"CWD "+pData->Current.GetPathUnterminated()))
           return;
       }
     }
@@ -5254,7 +5254,7 @@ void CFtpControlSocket::MakeDir(const CServerPath &path)
       ResetOperation(FZ_REPLY_OK);
     else
     {
-      if (Send( L"CWD " + pData->Current.GetPath()))
+      if (Send( L"CWD " + pData->Current.GetPathUnterminated()))
         m_Operation.nOpState=MKD_MAKESUBDIRS;
       else
         return;

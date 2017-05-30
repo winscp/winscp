@@ -309,7 +309,7 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
   return TRUE;
 }
 
-const CString CServerPath::GetPath() const
+const CString CServerPath::DoGetPath(bool unterminated) const
 {
   if (m_bEmpty)
     return L"";
@@ -343,6 +343,13 @@ const CString CServerPath::GetPath() const
         path=L"/";
       for (iter=m_Segments.begin(); iter!=m_Segments.end(); iter++)
         path+=*iter + L"/";
+      if (unterminated)
+      {
+        if (path.GetLength() >= 2)
+        {
+          path.Delete(path.GetLength() - 1, 1);
+        }
+      }
       break;
     }
     break;
@@ -350,6 +357,16 @@ const CString CServerPath::GetPath() const
     DebugFail();
   }
   return path;
+}
+
+const CString CServerPath::GetPath() const
+{
+  return DoGetPath(false);
+}
+
+const CString CServerPath::GetPathUnterminated() const
+{
+  return DoGetPath(true);
 }
 
 CServerPath& CServerPath::operator=(const CServerPath &op)
