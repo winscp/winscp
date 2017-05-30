@@ -129,30 +129,6 @@ CServerPath::CServerPath(CString path, int nServerType, bool trim)
       break;
     }
     break;
-  case FZ_SERVERTYPE_LOCAL:
-    {
-      path.TrimRight( L"\\" );
-      while (path.Replace( L"\\\\", L"\\" ));
-      int pos = path.Find( L"\\" );
-      if (pos == -1)
-      {
-        m_Prefix = path;
-        return;
-      }
-      DebugAssert(pos == 2);
-      m_Prefix = path.Left(pos);
-      path = path.Mid(pos + 1);
-      pos = path.Find( L"\\" );
-      while (pos != -1)
-      {
-        m_Segments.push_back(path.Left(pos));
-        path=path.Mid(pos + 1);
-        pos=path.Find( L"\\" );
-      }
-      if (path != L"")
-        m_Segments.push_back(path);
-    }
-    break;
   default:
     DebugFail();
   }
@@ -327,43 +303,6 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
         break;
       }
       break;
-    case FZ_SERVERTYPE_LOCAL:
-    {
-      if (bIsFile)
-      {
-        if (path.Right(1)!= L"\\" )
-        {
-          int rpos=path.ReverseFind(L'\\');
-          if (rpos==-1)
-            return FALSE;
-
-          file=path.Mid(rpos+1);
-          path=path.Left(rpos);
-        }
-        else
-          return FALSE;
-      }
-      path.TrimRight( L"\\" );
-      while (path.Replace( L"\\\\", L"\\" ));
-      int pos=path.Find( L":\\" );
-      if (pos==-1 || pos!=1)
-        return FALSE;
-      else
-      {
-        m_Prefix=path.Left(pos+1);
-        path=path.Mid(pos+2);
-      }
-      pos=path.Find( L"\\" );
-      while (pos!=-1)
-      {
-        m_Segments.push_back(path.Left(pos));
-        path=path.Mid(pos+1);
-        pos=path.Find( L"\\" );
-      }
-      if (path!=L"")
-        m_Segments.push_back(path);
-    }
-    break;
   }
   if (bIsFile)
     newpath = file;
@@ -406,14 +345,6 @@ const CString CServerPath::GetPath() const
         path+=*iter + L"/";
       break;
     }
-    break;
-  case FZ_SERVERTYPE_LOCAL:
-    path=m_Prefix;
-    if (!m_Segments.empty())
-      path+=L"\\";
-    for (iter=m_Segments.begin(); iter!=m_Segments.end(); iter++)
-      path+=*iter + L"\\";
-
     break;
   default:
     DebugFail();
@@ -467,12 +398,6 @@ const bool CServerPath::operator==(const CServerPath &op) const
   return true;
 }
 
-const BOOL operator==(const CServerPath &a, const CString &b)
-{
-  CServerPath path(b);
-  return a==path;
-}
-
 const bool CServerPath::operator!=(const CServerPath &op) const
 {
   if (!this)
@@ -516,29 +441,6 @@ BOOL CServerPath::HasParent() const
 const BOOL CServerPath::IsEmpty() const
 {
   return m_bEmpty;
-}
-
-CString CServerPath::GetSafePath() const
-{
-  if (m_bEmpty)
-    return L"";
-
-  CString safepath;
-  safepath.Format(L"%d %d ", m_nServerType, m_Prefix.GetLength());
-  if (m_Prefix!=L"")
-    safepath+=m_Prefix+L" ";
-  tConstIter iter = m_Segments.begin();
-  while(iter!=m_Segments.end())
-  {
-    CString len;
-    len.Format(L"%d ", iter->GetLength());
-    safepath+=len;
-    safepath+=*iter;
-    iter++;
-    if (iter!=m_Segments.end())
-      safepath+=L" ";
-  }
-  return safepath;
 }
 
 BOOL CServerPath::AddSubdir(CString subdir)
@@ -627,16 +529,6 @@ CString CServerPath::FormatFilename(CString fn, bool omitPath /*=false*/) const
       path += fn;
       break;
     }
-    break;
-  case FZ_SERVERTYPE_LOCAL:
-    if (omitPath)
-      return fn;
-    path=m_Prefix;
-    if (!m_Segments.empty())
-      path+=L"\\";
-    for (iter=m_Segments.begin(); iter!=m_Segments.end(); iter++)
-      path+=*iter + L"\\";
-    path += fn;
     break;
   default:
     DebugFail();

@@ -6,7 +6,6 @@ class CServerPath
 {
 public:
   BOOL AddSubdir(CString subdir);
-  CString GetSafePath() const;
   const BOOL IsEmpty() const;
   CServerPath GetParent() const;
   BOOL HasParent() const;
@@ -39,7 +38,5 @@ protected:
   CString m_Prefix;
   int m_nServerType;
 };
-//---------------------------------------------------------------------------
-const BOOL operator==(const CServerPath & a, const CString & b);
 //---------------------------------------------------------------------------
 #endif // ServerPathH
