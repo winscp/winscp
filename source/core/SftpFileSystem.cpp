@@ -1156,53 +1156,53 @@ public:
     return SendRequests();
   }
 
-  virtual void __fastcall Dispose()
+  virtual void __fastcall Dispose(int ExpectedType, int AllowStatus)
   {
     DebugAssert(FFileSystem->FTerminal->Active);
-
-    TSFTPQueuePacket * Request;
-    TSFTPPacket * Response;
 
     while (FRequests->Count)
     {
       DebugAssert(FResponses->Count);
 
-      Request = static_cast<TSFTPQueuePacket*>(FRequests->Items[0]);
-      DebugAssert(Request);
+      std::unique_ptr<TSFTPQueuePacket> Request(DebugNotNull(static_cast<TSFTPQueuePacket*>(FRequests->Items[0])));
+      std::unique_ptr<TSFTPPacket> Response(DebugNotNull(static_cast<TSFTPPacket*>(FResponses->Items[0])));
 
-      Response = static_cast<TSFTPPacket*>(FResponses->Items[0]);
-      DebugAssert(Response);
+      // Particularly when ExpectedType >= 0, the ReceiveResponse may throw, and we have to remove the packets from queue
+      FRequests->Delete(0);
+      FResponses->Delete(0);
 
       try
       {
-        ReceiveResponse(Request, Response);
+        ReceiveResponse(Request.get(), Response.get(), ExpectedType, AllowStatus);
       }
       catch(Exception & E)
       {
-        if (FFileSystem->FTerminal->Active)
+        if (ExpectedType < 0)
         {
-          FFileSystem->FTerminal->LogEvent(L"Error while disposing the SFTP queue.");
-          FFileSystem->FTerminal->Log->AddException(&E);
+          if (FFileSystem->FTerminal->Active)
+          {
+            FFileSystem->FTerminal->LogEvent(L"Error while disposing the SFTP queue.");
+            FFileSystem->FTerminal->Log->AddException(&E);
+          }
+          else
+          {
+            FFileSystem->FTerminal->LogEvent(L"Fatal error while disposing the SFTP queue.");
+            throw;
+          }
         }
         else
         {
-          FFileSystem->FTerminal->LogEvent(L"Fatal error while disposing the SFTP queue.");
           throw;
         }
       }
-
-      FRequests->Delete(0);
-      delete Request;
-      FResponses->Delete(0);
-      delete Response;
     }
   }
 
-  void __fastcall DisposeSafe()
+  void __fastcall DisposeSafe(int ExpectedType = -1, int AllowStatus = -1)
   {
     if (FFileSystem->FTerminal->Active)
     {
-      Dispose();
+      Dispose(ExpectedType, AllowStatus);
     }
   }
 
@@ -1292,8 +1292,8 @@ protected:
   }
 
   virtual void __fastcall ReceiveResponse(
-    const TSFTPPacket * Packet, TSFTPPacket * Response, int ExpectedType = -1,
-    int AllowStatus = -1, bool TryOnly = false)
+    const TSFTPPacket * Packet, TSFTPPacket * Response, int ExpectedType,
+    int AllowStatus, bool TryOnly = false)
   {
     FFileSystem->ReceiveResponse(Packet, Response, ExpectedType, AllowStatus, TryOnly);
   }
@@ -1381,12 +1381,12 @@ public:
     UnregisterReceiveHandler();
   }
 
-  virtual void __fastcall Dispose()
+  virtual void __fastcall Dispose(int ExpectedType, int AllowStatus)
   {
     // we do not want to receive asynchronous notifications anymore,
     // while waiting synchronously for pending responses
     UnregisterReceiveHandler();
-    TSFTPQueue::Dispose();
+    TSFTPQueue::Dispose(ExpectedType, AllowStatus);
   }
 
   bool __fastcall Continue()
@@ -1523,6 +1523,11 @@ public:
     FConvertParams = ConvertParams;
 
     return TSFTPAsynchronousQueue::Init();
+  }
+
+  void __fastcall DisposeSafeWithErrorHandling()
+  {
+    DisposeSafe(SSH_FXP_STATUS);
   }
 
 protected:
@@ -4854,9 +4859,13 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
             SendPacket(&PropertiesRequest);
             ReserveResponse(&PropertiesRequest, &PropertiesResponse);
           }
+          // No error so far, processes pending responses and throw on first error
+          Queue.DisposeSafeWithErrorHandling();
         }
         __finally
         {
+          // Either queue is empty now (noop call then),
+          // or some error occured (in that case, process remaining responses, ignoring other errors)
           Queue.DisposeSafe();
         }
 
