@@ -1828,12 +1828,14 @@ void __fastcall TSecureShell::HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENT
 {
   static const struct { int Bit, Mask; const wchar_t * Desc; } EventTypes[] =
   {
-    { FD_READ_BIT, FD_READ, L"read" },
     { FD_WRITE_BIT, FD_WRITE, L"write" },
     { FD_OOB_BIT, FD_OOB, L"oob" },
     { FD_ACCEPT_BIT, FD_ACCEPT, L"accept" },
     { FD_CONNECT_BIT, FD_CONNECT, L"connect" },
     { FD_CLOSE_BIT, FD_CLOSE, L"close" },
+    // Read goes last, as it can cause an exception.
+    // Though a correct solution would be to process all events, even if one causes exception
+    { FD_READ_BIT, FD_READ, L"read" },
   };
 
   for (unsigned int Event = 0; Event < LENOF(EventTypes); Event++)
