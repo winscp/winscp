@@ -268,6 +268,8 @@ type
   public
     constructor Create(ParentFolder: IShellFolder; Path: string);
 
+    class procedure DoIt(ParentFolder: IShellFolder; Path: string; var PIDL: PItemIDList);
+
     property PIDL: PItemIDList read FPIDL;
   end;
 
@@ -278,22 +280,33 @@ begin
   FPath := Path;
 end;
 
-procedure TParseDisplayNameThread.Execute;
+class procedure TParseDisplayNameThread.DoIt(ParentFolder: IShellFolder; Path: string; var PIDL: PItemIDList);
 var
   Eaten: ULONG;
   ShAttr: ULONG;
 begin
   ShAttr := 0;
-  if Failed(FParentFolder.ParseDisplayName(0, nil, PChar(FPath), Eaten, FPIDL, ShAttr)) then
+  if Failed(ParentFolder.ParseDisplayName(0, nil, PChar(Path), Eaten, PIDL, ShAttr)) then
   begin
-    FPIDL := nil;
+    PIDL := nil;
   end;
 end;
 
+procedure TParseDisplayNameThread.Execute;
+begin
+  DoIt(FParentFolder, FPath, FPIDL);
+end;
+
 procedure ParseDisplayNameWithTimeout(ParentFolder: IShellFolder; Path: string; var PIDL: PItemIDList);
+{$IFNDEF IDE}
 var
   Thread: TParseDisplayNameThread;
+{$ENDIF}
 begin
+  { See comment in TDriveView.GetNodeShellAttr }
+  {$IFDEF IDE}
+  TParseDisplayNameThread.DoIt(ParentFolder, Path, PIDL);
+  {$ELSE}
   Thread := TParseDisplayNameThread.Create(ParentFolder, Path);
   Thread.Resume;
   if Thread.WaitFor(2 * MSecsPerSec) then
@@ -307,6 +320,7 @@ begin
     // between WaitFor() and this line
     Thread.FreeOnTerminate := True;
   end;
+  {$ENDIF}
 end;
 
 function PIDL_GetFromParentFolder(pParentFolder: IShellFolder; pszFile: PChar): PItemIDList;
