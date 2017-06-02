@@ -299,78 +299,81 @@ UnicodeString __fastcall StoreFormSize(TForm * Form)
 static void __fastcall ExecuteProcessAndReadOutput(const
   UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString & Output)
 {
-  SECURITY_ATTRIBUTES SecurityAttributes;
-  ZeroMemory(&SecurityAttributes, sizeof(SecurityAttributes));
-  SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
-  SecurityAttributes.bInheritHandle = TRUE;
-  SecurityAttributes.lpSecurityDescriptor = NULL;
-
-  HANDLE PipeRead = INVALID_HANDLE_VALUE;
-  HANDLE PipeWrite = INVALID_HANDLE_VALUE;
-
-  if (!CreatePipe(&PipeRead, &PipeWrite, &SecurityAttributes, 0) ||
-      !SetHandleInformation(PipeRead, HANDLE_FLAG_INHERIT, 0))
+  if (!CopyCommandToClipboard(Command))
   {
-    throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
-  }
+    SECURITY_ATTRIBUTES SecurityAttributes;
+    ZeroMemory(&SecurityAttributes, sizeof(SecurityAttributes));
+    SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
+    SecurityAttributes.bInheritHandle = TRUE;
+    SecurityAttributes.lpSecurityDescriptor = NULL;
 
-  PROCESS_INFORMATION ProcessInformation;
-  ZeroMemory(&ProcessInformation, sizeof(ProcessInformation));
+    HANDLE PipeRead = INVALID_HANDLE_VALUE;
+    HANDLE PipeWrite = INVALID_HANDLE_VALUE;
 
-  try
-  {
+    if (!CreatePipe(&PipeRead, &PipeWrite, &SecurityAttributes, 0) ||
+        !SetHandleInformation(PipeRead, HANDLE_FLAG_INHERIT, 0))
+    {
+      throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
+    }
+
+    PROCESS_INFORMATION ProcessInformation;
+    ZeroMemory(&ProcessInformation, sizeof(ProcessInformation));
+
     try
     {
-      STARTUPINFO StartupInfo;
-      ZeroMemory(&StartupInfo, sizeof(StartupInfo));
-      StartupInfo.cb = sizeof(STARTUPINFO);
-      StartupInfo.hStdError = PipeWrite;
-      StartupInfo.hStdOutput = PipeWrite;
-      StartupInfo.wShowWindow = SW_HIDE;
-      StartupInfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-
-      if (!CreateProcess(NULL, Command.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &ProcessInformation))
+      try
       {
-        throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
+        STARTUPINFO StartupInfo;
+        ZeroMemory(&StartupInfo, sizeof(StartupInfo));
+        StartupInfo.cb = sizeof(STARTUPINFO);
+        StartupInfo.hStdError = PipeWrite;
+        StartupInfo.hStdOutput = PipeWrite;
+        StartupInfo.wShowWindow = SW_HIDE;
+        StartupInfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+
+        if (!CreateProcess(NULL, Command.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &ProcessInformation))
+        {
+          throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
+        }
+      }
+      __finally
+      {
+        // If we do not close the handle here, the ReadFile below would get stuck once the app finishes writting,
+        // as it still sees that someone "can" write to the pipe.
+        CloseHandle(PipeWrite);
+      }
+
+      char Buffer[4096];
+      DWORD BytesRead;
+      while (ReadFile(PipeRead, Buffer, sizeof(Buffer), &BytesRead, NULL))
+      {
+        Output += UnicodeString(UTF8String(Buffer, BytesRead));
+        // Same as in ExecuteShellCheckedAndWait
+        Sleep(200);
+        Application->ProcessMessages();
+      }
+
+      DWORD ExitCode;
+      if (DebugAlwaysTrue(GetExitCodeProcess(ProcessInformation.hProcess, &ExitCode)) &&
+          (ExitCode != 0))
+      {
+        UnicodeString Buf = Output;
+        UnicodeString Buf2;
+        if (ExtractMainInstructions(Buf, Buf2))
+        {
+          throw ExtException(Output, UnicodeString(), HelpKeyword);
+        }
+        else
+        {
+          throw ExtException(MainInstructions(FMTLOAD(COMMAND_FAILED_CODEONLY, (static_cast<int>(ExitCode)))), Output, HelpKeyword);
+        }
       }
     }
     __finally
     {
-      // If we do not close the handle here, the ReadFile below would get stuck once the app finishes writting,
-      // as it still sees that someone "can" write to the pipe.
-      CloseHandle(PipeWrite);
+      CloseHandle(ProcessInformation.hProcess);
+      CloseHandle(ProcessInformation.hThread);
     }
-
-    char Buffer[4096];
-    DWORD BytesRead;
-    while (ReadFile(PipeRead, Buffer, sizeof(Buffer), &BytesRead, NULL))
-    {
-      Output += UnicodeString(UTF8String(Buffer, BytesRead));
-      // Same as in ExecuteShellCheckedAndWait
-      Sleep(200);
-      Application->ProcessMessages();
-    }
-
-    DWORD ExitCode;
-    if (DebugAlwaysTrue(GetExitCodeProcess(ProcessInformation.hProcess, &ExitCode)) &&
-        (ExitCode != 0))
-    {
-      UnicodeString Buf = Output;
-      UnicodeString Buf2;
-      if (ExtractMainInstructions(Buf, Buf2))
-      {
-        throw ExtException(Output, UnicodeString(), HelpKeyword);
-      }
-      else
-      {
-        throw ExtException(MainInstructions(FMTLOAD(COMMAND_FAILED_CODEONLY, (static_cast<int>(ExitCode)))), Output, HelpKeyword);
-      }
-    }
-  }
-  __finally
-  {
-    CloseHandle(ProcessInformation.hProcess);
-    CloseHandle(ProcessInformation.hThread);
   }
 }
 //---------------------------------------------------------------------------
