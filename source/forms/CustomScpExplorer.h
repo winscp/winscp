@@ -331,6 +331,7 @@ protected:
     TTransferType Type, bool Temp, TStrings * FileList,
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop, int Options);
+  virtual void __fastcall CopyParamDialogAfter(TTransferDirection Direction, bool Temp, const UnicodeString & TargetDirectory);
   virtual bool __fastcall RemoteTransferDialog(TTerminal *& Session,
     TStrings * FileList, UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy,
     bool NoConfirmation, bool Move);

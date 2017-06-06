@@ -134,6 +134,16 @@ UnicodeString __fastcall TScpExplorerForm::DefaultDownloadTargetDirectory()
   return WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::CopyParamDialogAfter(
+  TTransferDirection Direction, bool Temp, const UnicodeString & TargetDirectory)
+{
+  TCustomScpExplorerForm::CopyParamDialogAfter(Direction, Temp, TargetDirectory);
+  if ((Direction == tdToLocal) && !Temp)
+  {
+    WinConfiguration->ScpExplorer.LastLocalTargetDirectory = TargetDirectory;
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, Boolean Temp, TStrings * FileList,
   UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
@@ -147,10 +157,6 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
   bool Result = TCustomScpExplorerForm::CopyParamDialog(
     Direction, Type, Temp, FileList, TargetDirectory, CopyParam, Confirm,
     DragDrop, Options);
-  if (Result && (Direction == tdToLocal) && !Temp)
-  {
-    WinConfiguration->ScpExplorer.LastLocalTargetDirectory = TargetDirectory;
-  }
   return Result;
 }
 //---------------------------------------------------------------------------

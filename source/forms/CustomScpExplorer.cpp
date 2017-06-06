@@ -1016,6 +1016,12 @@ void __fastcall TCustomScpExplorerForm::EnableDDTransferConfirmation(TObject * /
   WinConfiguration->DDTransferConfirmation = asOn;
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CopyParamDialogAfter(
+  TTransferDirection /*Direction*/, bool /*Temp*/, const UnicodeString & /*TargetDirectory*/)
+{
+  // noop
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
   TTransferDirection Direction, TTransferType Type, bool Temp,
   TStrings * FileList, UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam,
@@ -1090,6 +1096,8 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
           WinConfiguration->DDTransferConfirmation = asOn;
         }
       }
+
+      CopyParamDialogAfter(Direction, Temp, TargetDirectory);
     }
   }
 

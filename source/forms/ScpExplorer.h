@@ -334,6 +334,7 @@ protected:
     TTransferType Type, bool Temp, TStrings * FileList,
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop, int Options);
+  virtual void __fastcall CopyParamDialogAfter(TTransferDirection Direction, bool Temp, const UnicodeString & TargetDirectory);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall ConfigurationChanged();
