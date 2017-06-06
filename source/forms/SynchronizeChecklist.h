@@ -136,6 +136,7 @@ protected:
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall UpdateImages();
   void __fastcall CMDpiChanged(TMessage & Message);
+  bool __fastcall GetWindowParams(UnicodeString & WindowParams);
   static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 };
 //----------------------------------------------------------------------------

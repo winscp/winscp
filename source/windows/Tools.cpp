@@ -167,7 +167,7 @@ void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
+void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
 {
   DebugAssert(Form);
   if (!Data.IsEmpty())
@@ -237,25 +237,34 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
         {
           // when positioning on non-primary monitor, we need
           // to handle that ourselves, so place window to center
-          Form->SetBounds(Monitor->Left + ((Monitor->Width - Bounds.Width()) / 2),
-            Monitor->Top + ((Monitor->Height - Bounds.Height()) / 2),
-            Bounds.Width(), Bounds.Height());
+          if (!PositionOnly)
+          {
+            Form->SetBounds(Monitor->Left + ((Monitor->Width - Bounds.Width()) / 2),
+              Monitor->Top + ((Monitor->Height - Bounds.Height()) / 2),
+              Bounds.Width(), Bounds.Height());
+          }
           Form->Position = poDesigned;
         }
       }
       else
       {
         Form->Position = poDesigned;
-        Form->BoundsRect = Bounds;
+        if (!PositionOnly)
+        {
+          Form->BoundsRect = Bounds;
+        }
       }
     }
     else if (State == wsMaximized)
     {
       Form->Position = poDesigned;
 
-      Bounds = Form->BoundsRect;
-      OffsetRect(Bounds, Monitor->Left, Monitor->Top);
-      Form->BoundsRect = Bounds;
+      if (!PositionOnly)
+      {
+        Bounds = Form->BoundsRect;
+        OffsetRect(Bounds, Monitor->Left, Monitor->Top);
+        Form->BoundsRect = Bounds;
+      }
     }
   }
   else if (Form->Position == poDesigned)

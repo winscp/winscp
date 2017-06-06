@@ -163,8 +163,21 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   SelectAllAction->Enabled = (ListView->SelCount < ListView->Items->Count);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSynchronizeChecklistDialog::GetWindowParams(UnicodeString & WindowParams)
+{
+  WindowParams = CustomWinConfiguration->SynchronizeChecklist.WindowParams;
+  bool CustomPos = (StrToIntDef(CutToChar(WindowParams, L';', true), 0) != 0);
+  return CustomPos || (Application->MainForm == NULL);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::CreateParams(TCreateParams & Params)
 {
+  UnicodeString WindowParams;
+  if (GetWindowParams(WindowParams))
+  {
+    // This is only to set correct TForm::Position. Actual bounds are set later after DPI scaling
+    RestoreForm(WindowParams, this, true);
+  }
   TForm::CreateParams(Params);
 }
 //---------------------------------------------------------------------------
@@ -393,19 +406,18 @@ void __fastcall TSynchronizeChecklistDialog::FormShow(TObject * /*Sender*/)
   // Moved here form CreateParams (see also TEditorForm::CreateParams), because there it breaks per-monitor DPI.
   // For example BoundsRect is matched to the main form too soon, so it gets rescaled later.
   // Also it happens before constructor, what causes UseDesktopFont-flagged controls to rescale twice.
+  // But Position is already set in the CreateParams, as it cannot be set here anymore.
   if (!FFormRestored)
   {
     FFormRestored = True;
-    UnicodeString WindowParams = CustomWinConfiguration->SynchronizeChecklist.WindowParams;
-    bool CustomPos = (StrToIntDef(CutToChar(WindowParams, L';', true), 0) != 0);
-
-    if (!CustomPos && (Application->MainForm != NULL))
+    UnicodeString WindowParams;
+    if (GetWindowParams(WindowParams))
     {
-      BoundsRect = Application->MainForm->BoundsRect;
+      RestoreForm(WindowParams, this);
     }
     else
     {
-      RestoreForm(WindowParams, this);
+      BoundsRect = Application->MainForm->BoundsRect;
     }
   }
 
