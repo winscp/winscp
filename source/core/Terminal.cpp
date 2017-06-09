@@ -912,6 +912,7 @@ bool TParallelOperation::CheckEnd(TCollectedFileList * Files)
 //---------------------------------------------------------------------------
 int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, TObject *& Object, UnicodeString & TargetDir, bool & Dir, bool & Recursed)
 {
+  TGuard Guard(FSection.get());
   int Result = 1;
   TCollectedFileList * Files;
   do
