@@ -189,6 +189,26 @@ bool __fastcall CutToken(const wchar_t*& Str, wchar_t* Token)
   return Result;
 }
 //---------------------------------------------------------------------------
+char* WideStringToString(const wchar_t* Message)
+{
+  char* Buffer;
+  int Size = WideCharToMultiByte(CP_UTF8, 0, Message, -1, 0, 0, 0, 0);
+  if (Size > 0)
+  {
+    Buffer = new char[(Size * 2) + 1];
+    if (WideCharToMultiByte(CP_UTF8, 0, Message, -1, Buffer, Size, 0, 0) > 0)
+    {
+      Buffer[Size] = '\0';
+    }
+    else
+    {
+      delete[] Buffer;
+      Buffer = NULL;
+    }
+  }
+  return Buffer;
+}
+//---------------------------------------------------------------------------
 void GetProductVersion(wchar_t* ProductVersion)
 {
   wchar_t Buffer[MAX_PATH];
@@ -337,7 +357,24 @@ void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HA
   }
   else
   {
-    throw runtime_error("Cannot start WinSCP application.");
+    size_t Len = MAX_PATH + 1024;
+    DWORD Error = GetLastError();
+    wchar_t * Buffer = NULL;
+    Len += FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, 0, Error, 0, (LPTSTR)&Buffer, 0, NULL);
+
+    wchar_t* Message = new wchar_t[Len];
+    wsprintf(Message, L"Cannot start WinSCP application \"%s\".", ChildPath);
+    if (Buffer != NULL)
+    {
+      wcscat(Message, L"\n");
+      wcscat(Message, Buffer);
+      LocalFree(Buffer);
+    }
+    char* MessageString = WideStringToString(Message);
+    delete[] Message;
+    std::string ErrorString(MessageString);
+    delete[] MessageString;
+    throw runtime_error(ErrorString);
   }
 }
 //---------------------------------------------------------------------------
@@ -375,23 +412,18 @@ inline void Flush()
 //---------------------------------------------------------------------------
 void Print(const wchar_t* Message)
 {
-  int Size = WideCharToMultiByte(CP_UTF8, 0, Message, -1, 0, 0, 0, 0);
-  if (Size > 0)
+  char* Buffer = WideStringToString(Message);
+  if (Buffer != NULL)
   {
-    char* Buffer = new char[(Size * 2) + 1];
-    if (WideCharToMultiByte(CP_UTF8, 0, Message, -1, Buffer, Size, 0, 0) > 0)
+    char* Ptr = Buffer;
+    while ((Ptr = strchr(Ptr, '\n')) != NULL)
     {
-      Buffer[Size] = '\0';
-      char* Ptr = Buffer;
-      while ((Ptr = strchr(Ptr, '\n')) != NULL)
-      {
-        memmove(Ptr + 1, Ptr, strlen(Ptr) + 1);
-        *Ptr = '\r';
-        Ptr += 2;
-      }
-      unsigned long Written;
-      WriteFile(ConsoleOutput, Buffer, strlen(Buffer), &Written, NULL);
+      memmove(Ptr + 1, Ptr, strlen(Ptr) + 1);
+      *Ptr = '\r';
+      Ptr += 2;
     }
+    unsigned long Written;
+    WriteFile(ConsoleOutput, Buffer, strlen(Buffer), &Written, NULL);
     delete[] Buffer;
   }
 }
