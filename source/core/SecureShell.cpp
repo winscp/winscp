@@ -2191,7 +2191,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
     UnicodeString StoredKey = CutToChar(Buf, HostKeyDelimiter, false);
     // skip leading ECDH subtype identification
     int P = StoredKey.Pos(L",");
-    // start from beginning or after the comma, if there 's any
+    // start from beginning or after the comma, if there's any
     bool Fingerprint = (StoredKey.SubString(P + 1, 2) != L"0x");
     // it's probably a fingerprint (stored by TSessionData::CacheHostKey)
     UnicodeString NormalizedExpectedKey;
