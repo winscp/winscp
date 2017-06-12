@@ -4263,22 +4263,24 @@ void __fastcall TStoredSessionList::SetDefaultSettings(TSessionData * value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TStoredSessionList::ImportHostKeys(const UnicodeString TargetKey,
+void __fastcall TStoredSessionList::ImportHostKeys(
   const UnicodeString SourceKey, TStoredSessionList * Sessions,
   bool OnlySelected)
 {
+  bool SessionList = false;
   TRegistryStorage * SourceStorage = NULL;
-  TRegistryStorage * TargetStorage = NULL;
+  THierarchicalStorage * TargetStorage = Configuration->CreateScpStorage(SessionList);
   TStringList * KeyList = NULL;
   try
   {
     SourceStorage = new TRegistryStorage(SourceKey);
-    TargetStorage = new TRegistryStorage(TargetKey);
+    TargetStorage->Explicit = true;
     TargetStorage->AccessMode = smReadWrite;
     KeyList = new TStringList();
 
     if (SourceStorage->OpenRootKey(false) &&
-        TargetStorage->OpenRootKey(true))
+        TargetStorage->OpenRootKey(true) &&
+        TargetStorage->OpenSubKey(Configuration->SshHostKeysSubKey, true))
     {
       SourceStorage->GetValueNames(KeyList);
 

@@ -50,13 +50,12 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
 
     if (ImportKeys)
     {
-      UnicodeString TargetKey = Configuration->RegistryStorageKey + L"\\" + Configuration->SshHostKeysSubKey;
       UnicodeString SourceKey = Configuration->PuttyRegistryStorageKey + L"\\" + Configuration->SshHostKeysSubKey;
 
-      TStoredSessionList::ImportHostKeys(TargetKey, SourceKey, PuttyImportSessionList.get(), true);
+      TStoredSessionList::ImportHostKeys(SourceKey, PuttyImportSessionList.get(), true);
 
       // Filezilla uses PuTTY's host key store
-      TStoredSessionList::ImportHostKeys(TargetKey, SourceKey, FilezillaImportSessionList.get(), true);
+      TStoredSessionList::ImportHostKeys(SourceKey, FilezillaImportSessionList.get(), true);
     }
   }
   return Result;
