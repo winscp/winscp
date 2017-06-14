@@ -4267,12 +4267,13 @@ void __fastcall TStoredSessionList::ImportHostKeys(
   const UnicodeString SourceKey, TStoredSessionList * Sessions,
   bool OnlySelected)
 {
-  bool SessionList = false;
   TRegistryStorage * SourceStorage = NULL;
-  THierarchicalStorage * TargetStorage = Configuration->CreateScpStorage(SessionList);
+  THierarchicalStorage * TargetStorage = NULL;
   TStringList * KeyList = NULL;
   try
   {
+    bool SessionList = false;
+    TargetStorage = Configuration->CreateScpStorage(SessionList);
     SourceStorage = new TRegistryStorage(SourceKey);
     TargetStorage->Explicit = true;
     TargetStorage->AccessMode = smReadWrite;
