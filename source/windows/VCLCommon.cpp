@@ -152,8 +152,8 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
         // Question is whether we should not shrink to min width instead.
         if ((ResizableWidth - ColumnToShrink->Width) < (Remaining - ColumnToShrinkMinWidth))
         {
-          ListView->Columns->Items[ColumnToShrinkIndex]->Width =
-            Remaining - (ResizableWidth - ListView->Columns->Items[ColumnToShrinkIndex]->Width);
+          int ColumnToShrinkWidth = Remaining - (ResizableWidth - ColumnToShrink->Width);
+          ColumnToShrink->Width = ColumnToShrinkWidth;
           ProportionalResize = false;
         }
       }
@@ -192,6 +192,10 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
   __finally
   {
     SendMessage(ListView->Handle, WM_SETREDRAW, true, 0);
+    // As recommended by documentation for WM_SETREDRAW.
+    // Without this, session list on Import dialog stops working after the list is reloaded while visible
+    // (i.e. when chaing import source)
+    RedrawWindow(ListView->Handle, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
   }
 }
 //---------------------------------------------------------------------------
