@@ -1528,6 +1528,7 @@ void __fastcall TSessionData::CacheHostKeyIfNotCached()
 {
   UnicodeString KeyType = KeyTypeFromFingerprint(HostKey);
 
+  // Should allow importing to INI file as ImportHostKeys
   UnicodeString TargetKey = Configuration->RegistryStorageKey + L"\\" + Configuration->SshHostKeysSubKey;
   std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(TargetKey));
   Storage->AccessMode = smReadWrite;
