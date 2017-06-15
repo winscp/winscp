@@ -3995,6 +3995,155 @@ void __fastcall TStoredSessionList::ImportFromFilezilla(
   }
 }
 //---------------------------------------------------------------------
+void __fastcall TStoredSessionList::ImportFromKnownHosts(TStrings * Lines)
+{
+  bool SessionList = false;
+  std::unique_ptr<THierarchicalStorage> HostKeyStorage(Configuration->CreateScpStorage(SessionList));
+  std::unique_ptr<TStrings> KeyList(new TStringList());
+  if (OpenHostKeysSubKey(HostKeyStorage.get(), false))
+  {
+    HostKeyStorage->GetValueNames(KeyList.get());
+  }
+  HostKeyStorage.reset(NULL);
+
+  UnicodeString FirstError;
+  for (int Index = 0; Index < Lines->Count; Index++)
+  {
+    try
+    {
+      UnicodeString Line = Lines->Strings[Index];
+      Line = Trim(Line);
+      if (!Line.IsEmpty() && (Line[1] != L';'))
+      {
+        int P = Pos(L' ', Line);
+        if (P > 0)
+        {
+          UnicodeString HostNameStr = Line.SubString(1, P - 1);
+          Line = Line.SubString(P + 1, Line.Length() - P);
+
+          UTF8String UtfLine = UTF8String(Line);
+          char * AlgorithmName = NULL;
+          int PubBlobLen = 0;
+          char * CommentPtr = NULL;
+          const char * ErrorStr = NULL;
+          unsigned char * PubBlob = openssh_loadpub_line(UtfLine.c_str(), &AlgorithmName, &PubBlobLen, &CommentPtr, &ErrorStr);
+          if (PubBlob == NULL)
+          {
+            throw Exception(UnicodeString(ErrorStr));
+          }
+          else
+          {
+            try
+            {
+              P = Pos(L',', HostNameStr);
+              if (P > 0)
+              {
+                HostNameStr.SetLength(P - 1);
+              }
+              P = Pos(L':', HostNameStr);
+              int PortNumber = -1;
+              if (P > 0)
+              {
+                UnicodeString PortNumberStr = HostNameStr.SubString(P + 1, HostNameStr.Length() - P);
+                PortNumber = StrToInt(PortNumberStr);
+                HostNameStr.SetLength(P - 1);
+              }
+              if ((HostNameStr.Length() >= 2) &&
+                  (HostNameStr[1] == L'[') && (HostNameStr[HostNameStr.Length()] == L']'))
+              {
+                HostNameStr = HostNameStr.SubString(2, HostNameStr.Length() - 2);
+              }
+
+              UnicodeString NameStr = HostNameStr;
+              if (PortNumber >= 0)
+              {
+                NameStr = FORMAT(L"%s:%d", (NameStr, PortNumber));
+              }
+
+              std::unique_ptr<TSessionData> SessionDataOwner;
+              TSessionData * SessionData = dynamic_cast<TSessionData *>(FindByName(NameStr));
+              if (SessionData == NULL)
+              {
+                SessionData = new TSessionData(L"");
+                SessionDataOwner.reset(SessionData);
+                SessionData->CopyData(DefaultSettings);
+                SessionData->Name = NameStr;
+                SessionData->HostName = HostNameStr;
+                if (PortNumber >= 0)
+                {
+                  SessionData->PortNumber = PortNumber;
+                }
+              }
+
+              const struct ssh_signkey * Algorithm = find_pubkey_alg(AlgorithmName);
+              if (Algorithm == NULL)
+              {
+                throw Exception(FORMAT(L"Unknown public key algorithm \"%s\".", (AlgorithmName)));
+              }
+
+              void * Key = Algorithm->newkey(Algorithm, reinterpret_cast<const char*>(PubBlob), PubBlobLen);
+              try
+              {
+                if (Key == NULL)
+                {
+                  throw Exception("Invalid public key.");
+                }
+                char * Fingerprint = Algorithm->fmtkey(Key);
+                UnicodeString KeyKey =
+                  FORMAT(L"%s@%d:%s", (Algorithm->keytype, SessionData->PortNumber, HostNameStr));
+                UnicodeString HostKey =
+                  FORMAT(L"%s:%s=%s", (Algorithm->name, KeyKey, Fingerprint));
+                sfree(Fingerprint);
+                UnicodeString HostKeyList = SessionData->HostKey;
+                AddToList(HostKeyList, HostKey, L";");
+                SessionData->HostKey = HostKeyList;
+                // If there's at least one unknown key type for this host, select it
+                if (KeyList->IndexOf(KeyKey) < 0)
+                {
+                  SessionData->Selected = true;
+                }
+              }
+              __finally
+              {
+                Algorithm->freekey(Key);
+              }
+
+              if (SessionDataOwner.get() != NULL)
+              {
+                Add(SessionDataOwner.release());
+              }
+            }
+            __finally
+            {
+              sfree(PubBlob);
+              sfree(AlgorithmName);
+              sfree(CommentPtr);
+            }
+          }
+        }
+      }
+    }
+    catch (Exception & E)
+    {
+      if (FirstError.IsEmpty())
+      {
+        FirstError = E.Message;
+      }
+    }
+  }
+
+  if (Count == 0)
+  {
+    UnicodeString Message = LoadStr(KNOWN_HOSTS_NO_SITES);
+    if (!FirstError.IsEmpty())
+    {
+      Message = FORMAT(L"%s\n(%s)", (Message, FirstError));
+    }
+
+    throw Exception(Message);
+  }
+}
+//---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Export(const UnicodeString FileName)
 {
   THierarchicalStorage * Storage = TIniFileStorage::CreateFromPath(FileName);
@@ -4263,6 +4412,26 @@ void __fastcall TStoredSessionList::SetDefaultSettings(TSessionData * value)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TStoredSessionList::OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate)
+{
+  return
+    Storage->OpenRootKey(CanCreate) &&
+    Storage->OpenSubKey(Configuration->SshHostKeysSubKey, CanCreate);
+}
+//---------------------------------------------------------------------------
+THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWritting()
+{
+  bool SessionList = false;
+  std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateScpStorage(SessionList));
+  Storage->Explicit = true;
+  Storage->AccessMode = smReadWrite;
+  if (!OpenHostKeysSubKey(Storage.get(), true))
+  {
+    Storage.reset(NULL);
+  }
+  return Storage.release();
+}
+//---------------------------------------------------------------------------
 void __fastcall TStoredSessionList::ImportHostKeys(
   const UnicodeString SourceKey, TStoredSessionList * Sessions,
   bool OnlySelected)
@@ -4272,16 +4441,12 @@ void __fastcall TStoredSessionList::ImportHostKeys(
   TStringList * KeyList = NULL;
   try
   {
-    bool SessionList = false;
-    TargetStorage = Configuration->CreateScpStorage(SessionList);
+    TargetStorage = CreateHostKeysStorageForWritting();
     SourceStorage = new TRegistryStorage(SourceKey);
-    TargetStorage->Explicit = true;
-    TargetStorage->AccessMode = smReadWrite;
     KeyList = new TStringList();
 
-    if (SourceStorage->OpenRootKey(false) &&
-        TargetStorage->OpenRootKey(true) &&
-        TargetStorage->OpenSubKey(Configuration->SshHostKeysSubKey, true))
+    if ((TargetStorage != NULL) &&
+        SourceStorage->OpenRootKey(false))
     {
       SourceStorage->GetValueNames(KeyList);
 
@@ -4314,6 +4479,31 @@ void __fastcall TStoredSessionList::ImportHostKeys(
     delete SourceStorage;
     delete TargetStorage;
     delete KeyList;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TStoredSessionList::ImportSelectedKnownHosts(TStoredSessionList * Sessions)
+{
+  std::unique_ptr<THierarchicalStorage> Storage(CreateHostKeysStorageForWritting());
+  if (Storage.get() != NULL)
+  {
+    for (int Index = 0; Index < Sessions->Count; Index++)
+    {
+      TSessionData * Session = Sessions->Sessions[Index];
+      if (Session->Selected)
+      {
+        UnicodeString Algs;
+        UnicodeString HostKeys = Session->HostKey;
+        while (!HostKeys.IsEmpty())
+        {
+          UnicodeString HostKey = CutToChar(HostKeys, L';', true);
+          // skip alg
+          CutToChar(HostKey, L':', true);
+          UnicodeString Key = CutToChar(HostKey, L'=', true);
+          Storage->WriteStringRaw(Key, HostKey);
+        }
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------

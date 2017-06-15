@@ -593,6 +593,7 @@
 #define USAGE_CAPTION           1983
 #define USAGE_FILTER            1984
 #define USAGE_COPY              1985
+#define IMPORT_KNOWNHOSTS_INFO_TIP 1986
 
 // 2xxx is reserved for TextsFileZilla.h
 

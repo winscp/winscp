@@ -238,6 +238,10 @@ public:
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
     TStoredSessionList * Sessions, UnicodeString & Error);
   bool __fastcall AnyFilezillaSessionForImport(TStoredSessionList * Sessions);
+  TStoredSessionList * __fastcall SelectKnownHostsSessionsForImport(
+    TStoredSessionList * Sessions, UnicodeString & Error);
+  TStoredSessionList * __fastcall SelectKnownHostsSessionsForImport(
+    TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error);
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };

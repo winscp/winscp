@@ -596,6 +596,7 @@ BEGIN
         USAGE_CAPTION, "Usage Statistics"
         USAGE_FILTER, "&Filter:"
         USAGE_COPY, "&Copy to Clipboard"
+        IMPORT_KNOWNHOSTS_INFO_TIP, "Host: %s\nHost key: %s"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2017 Martin Prikryl"

@@ -1078,16 +1078,13 @@ void __fastcall TLoginDialog::ReloadSessions(const UnicodeString & SelectSite)
 void __fastcall TLoginDialog::ImportSessionsActionExecute(TObject * /*Sender*/)
 {
   std::unique_ptr<TList> Imported(new TList());
-  if (DoImportSessionsDialog(Imported.get()))
+  if (DoImportSessionsDialog(Imported.get()) &&
+      // Can be empty when imported known_hosts
+      (Imported->Count > 0))
   {
-    UnicodeString SelectSite;
-    if (DebugAlwaysTrue(Imported->Count > 0))
-    {
-      // Focus the first imported session.
-      // We should also consider expanding all newly created folders
-      SelectSite = static_cast<TSessionData *>(Imported->Items[0])->Name;
-    }
-
+    // Focus the first imported session.
+    // We should also consider expanding all newly created folders
+    UnicodeString SelectSite = static_cast<TSessionData *>(Imported->Items[0])->Name;
     ReloadSessions(SelectSite);
 
     // Focus the tree with focused imported session(s).

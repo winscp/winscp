@@ -1326,6 +1326,54 @@ bool __fastcall TConfiguration::AnyFilezillaSessionForImport(TStoredSessionList 
     return false;
   }
 }
+//---------------------------------------------------------------------
+TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImport(
+  TStoredSessionList * Sessions, UnicodeString & Error)
+{
+  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
+  ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
+
+  UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
+  UnicodeString KnownHostsFile = IncludeTrailingBackslash(ProfilePath) + L".ssh\\known_hosts";
+
+  try
+  {
+    if (FileExists(ApiPath(KnownHostsFile)))
+    {
+      std::unique_ptr<TStrings> Lines(new TStringList());
+      LoadScriptFromFile(KnownHostsFile, Lines.get());
+      ImportSessionList->ImportFromKnownHosts(Lines.get());
+    }
+    else
+    {
+      throw Exception(LoadStr(KNOWN_HOSTS_NOT_FOUND));
+    }
+  }
+  catch (Exception & E)
+  {
+    Error = FORMAT(L"%s\n(%s)", (E.Message, KnownHostsFile));
+  }
+
+  return ImportSessionList.release();
+}
+//---------------------------------------------------------------------
+TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImport(
+  TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error)
+{
+  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
+  ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
+
+  try
+  {
+    ImportSessionList->ImportFromKnownHosts(Lines);
+  }
+  catch (Exception & E)
+  {
+    Error = E.Message;
+  }
+
+  return ImportSessionList.release();
+}
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetRandomSeedFile(UnicodeString value)
 {

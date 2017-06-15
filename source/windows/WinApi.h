@@ -8,6 +8,8 @@
 //---------------------------------------------------------------------------
 typedef BOOL WINAPI (* ChangeWindowMessageFilterExProc)(
   HWND hwnd, UINT message, DWORD action, PCHANGEFILTERSTRUCT pChangeFilterStruct);
+typedef BOOL WINAPI (* AddClipboardFormatListenerProc)(HWND hwnd);
+typedef BOOL WINAPI (* RemoveClipboardFormatListenerProc)(HWND hwnd);
 //---------------------------------------------------------------------------
 #define WM_DPICHANGED 0x02E0
 //---------------------------------------------------------------------------

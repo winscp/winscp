@@ -623,6 +623,7 @@ public:
   void __fastcall Save(bool All, bool Explicit);
   void __fastcall Saved();
   void __fastcall ImportFromFilezilla(const UnicodeString FileName, const UnicodeString ConfigurationFileName);
+  void __fastcall ImportFromKnownHosts(TStrings * Lines);
   void __fastcall Export(const UnicodeString FileName);
   void __fastcall Load(THierarchicalStorage * Storage, bool AsModified = false,
     bool UseDefaults = false, bool PuttyImport = false);
@@ -657,6 +658,7 @@ public:
   static void __fastcall ImportHostKeys(
     const UnicodeString SourceKey, TStoredSessionList * Sessions,
     bool OnlySelected);
+  static void __fastcall ImportSelectedKnownHosts(TStoredSessionList * Sessions);
 
 private:
   TSessionData * FDefaultSettings;
@@ -674,6 +676,8 @@ private:
   TSessionData * __fastcall CheckIsInFolderOrWorkspaceAndResolve(
     TSessionData * Data, const UnicodeString & Name);
   void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
+  static THierarchicalStorage * __fastcall CreateHostKeysStorageForWritting();
+  static bool __fastcall OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate);
 };
 //---------------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TDateTime Started, TSessionData * SessionData);
