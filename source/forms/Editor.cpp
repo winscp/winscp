@@ -200,7 +200,7 @@ void __fastcall TRichEdit20::ApplyFont()
 {
   std::unique_ptr<TFont> NewFont(new TFont());
   TWinConfiguration::RestoreFont(FFontConfiguration, NewFont.get());
-  NewFont->Height = ScaleByTextHeight(this, NewFont->Height);
+  NewFont->Size = ScaleByPixelsPerInchFromSystem(NewFont->Size, this);
   NewFont->Color = GetWindowTextColor(FFontColor);
   // setting DefAttributes may take quite time, even if the font attributes
   // do not change, so avoid that if not necessary

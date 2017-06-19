@@ -1162,7 +1162,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     std::unique_ptr<TFont> EditorFont(new TFont());
     EditorFont->Assign(FEditorFont.get());
     EditorFont->Color = GetWindowTextColor(FEditorFont->Color);
-    EditorFont->Size = ScaleByTextHeight(this, FEditorFont->Size);
+    EditorFont->Size = ScaleByPixelsPerInchFromSystem(FEditorFont->Size, this);
     if (!SameFont(EditorFontLabel->Font, EditorFont.get()) ||
         (EditorFontLabel->Font->Color != EditorFont->Color))
     {
