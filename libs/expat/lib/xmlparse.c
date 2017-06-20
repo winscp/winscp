@@ -833,7 +833,7 @@ generate_hash_secret_salt(XML_Parser parser)
     return ENTROPY_DEBUG("fallback(4)", entropy * 2147483647);
   } else {
     return ENTROPY_DEBUG("fallback(8)",
-        entropy * (unsigned long)2305843009213693951);
+        entropy * (unsigned long)2305843009213693951ULL);
   }
 #endif
 }
