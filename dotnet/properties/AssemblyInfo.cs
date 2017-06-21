@@ -21,6 +21,6 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyVersion("1.3.7.0")]
 [assembly: AssemblyFileVersion("1.3.7.0")]
-[assembly: AssemblyInformationalVersionAttribute("5.9.6.0")]
+[assembly: AssemblyInformationalVersionAttribute("5.9.7.0")]
 
 [assembly: CLSCompliant(true)]
