@@ -474,7 +474,6 @@
 #define NEON_COPYRIGHT          614
 #define NEON_URL                615
 #define EXPAT_BASED_ON          616
-#define EXPAT_COPYRIGHT         617
 #define EXPAT_URL               618
 #define PUTTY_LICENSE_URL       625
 #define MAIN_MSG_TAG            631
