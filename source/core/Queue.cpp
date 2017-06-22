@@ -2112,7 +2112,6 @@ void __fastcall TTransferQueueItem::ProgressUpdated()
 
     {
       TGuard Guard(FSection);
-      // Move this to TTransferQueueItem once implemented for downloads too
       DebugAssert(FParallelOperation != NULL);
       DebugAssert((FProgressData->Operation == foCopy) || (FProgressData->Operation == foCalculateSize));
       if (FProgressData->Operation == foCopy)
