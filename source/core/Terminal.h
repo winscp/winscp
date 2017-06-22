@@ -808,6 +808,7 @@ public:
     TStrings * AFiles, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * MainOperationProgress, const UnicodeString & MainName);
 
+  bool IsInitialized();
   void WaitFor();
   bool ShouldAddClient();
   void AddClient();

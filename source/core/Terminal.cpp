@@ -781,11 +781,16 @@ TParallelOperation::~TParallelOperation()
   WaitFor();
 }
 //---------------------------------------------------------------------------
+bool TParallelOperation::IsInitialized()
+{
+  return (FMainOperationProgress != NULL);
+}
+//---------------------------------------------------------------------------
 bool TParallelOperation::ShouldAddClient()
 {
   bool Result;
-  // initialized already?
-  if (FSection.get() == NULL)
+  // TTransferQueueItem::ProgressUpdated() already checks IsInitialized() before calling this
+  if (!IsInitialized())
   {
     Result = false;
   }

@@ -2113,20 +2113,25 @@ void __fastcall TTransferQueueItem::ProgressUpdated()
     {
       TGuard Guard(FSection);
       DebugAssert(FParallelOperation != NULL);
-      DebugAssert((FProgressData->Operation == foCopy) || (FProgressData->Operation == foCalculateSize));
-      if (FProgressData->Operation == foCopy)
+      // Won't be initialized, if the operation is not eligible for parallel transfers (like cpDelete).
+      // We can probably move the check outside of the guard.
+      if (FParallelOperation->IsInitialized())
       {
-        Add = FParallelOperation->ShouldAddClient();
-        if (Add)
+        DebugAssert((FProgressData->Operation == foCopy) || (FProgressData->Operation == foCalculateSize));
+        if (FProgressData->Operation == foCopy)
         {
-          DWORD Now = GetTickCount();
-          Force =
-            (Now - FLastParallelOperationAdded >= 5*1000) &&
-            (TimeToSeconds(FProgressData->TotalTimeLeft()) >= FQueue->ParallelDurationThreshold);
-          LastParallelOperationAddedPrev = FLastParallelOperationAdded;
-          // update now already to prevent race condition, but we will have to rollback it back,
-          // if we actually do not add the parallel operation
-          FLastParallelOperationAdded = Now;
+          Add = FParallelOperation->ShouldAddClient();
+          if (Add)
+          {
+            DWORD Now = GetTickCount();
+            Force =
+              (Now - FLastParallelOperationAdded >= 5*1000) &&
+              (TimeToSeconds(FProgressData->TotalTimeLeft()) >= FQueue->ParallelDurationThreshold);
+            LastParallelOperationAddedPrev = FLastParallelOperationAdded;
+            // update now already to prevent race condition, but we will have to rollback it back,
+            // if we actually do not add the parallel operation
+            FLastParallelOperationAdded = Now;
+          }
         }
       }
     }
