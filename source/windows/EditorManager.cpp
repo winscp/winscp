@@ -267,7 +267,7 @@ void __fastcall TEditorManager::Check()
         {
           if (!EarlyClose(Index))
           {
-            // CheckFileChange may fail (file is already being uploaded),
+            // CheckFileChange may fail,
             // but we want to close handles anyway
             CloseFile(Index, false, true);
           }
@@ -463,33 +463,35 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
     if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
     {
       FileData->Reupload = true;
-      Abort();
     }
-    FileData->UploadCompleteEvent = CreateEvent(NULL, false, false, NULL);
-    FUploadCompleteEvents.push_back(FileData->UploadCompleteEvent);
+    else
+    {
+      FileData->UploadCompleteEvent = CreateEvent(NULL, false, false, NULL);
+      FUploadCompleteEvents.push_back(FileData->UploadCompleteEvent);
 
-    FileData->Timestamp = NewTimestamp;
-    FileData->Saves++;
-    if (FileData->Saves == 1)
-    {
-      Configuration->Usage->Inc(L"RemoteFilesSaved");
-    }
-    Configuration->Usage->Inc(L"RemoteFileSaves");
-
-    try
-    {
-      DebugAssert(OnFileChange != NULL);
-      OnFileChange(FileData->FileName, FileData->Data,
-        FileData->UploadCompleteEvent);
-    }
-    catch(...)
-    {
-      // upload failed (was not even started)
-      if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
+      FileData->Timestamp = NewTimestamp;
+      FileData->Saves++;
+      if (FileData->Saves == 1)
       {
-        UploadComplete(Index);
+        Configuration->Usage->Inc(L"RemoteFilesSaved");
       }
-      throw;
+      Configuration->Usage->Inc(L"RemoteFileSaves");
+
+      try
+      {
+        DebugAssert(OnFileChange != NULL);
+        OnFileChange(FileData->FileName, FileData->Data,
+          FileData->UploadCompleteEvent);
+      }
+      catch(...)
+      {
+        // upload failed (was not even started)
+        if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
+        {
+          UploadComplete(Index);
+        }
+        throw;
+      }
     }
   }
 }
