@@ -9,6 +9,7 @@
 #include "WinConfiguration.h"
 #include "EditorManager.h"
 #include <algorithm>
+#include <DateUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -243,11 +244,16 @@ void __fastcall TEditorManager::Check()
     TDateTime NewTimestamp;
     if (HasFileChanged(Index, NewTimestamp))
     {
-      // let the editor finish writing to the file
+      TDateTime N = Now();
+      // Let the editor finish writing to the file
       // (first to avoid uploading partially saved file, second
-      // because the timestamp may change more than once during saving)
-      Sleep(GUIConfiguration->KeepUpToDateChangeDelay);
-      CheckFileChange(Index, false);
+      // because the timestamp may change more than once during saving).
+      // WORKAROUND WithinPastMilliSeconds seems buggy that it return true even if NewTimestamp is within future
+      if ((NewTimestamp <= N) &&
+          !WithinPastMilliSeconds(N, NewTimestamp, GUIConfiguration->KeepUpToDateChangeDelay))
+      {
+        CheckFileChange(Index, false);
+      }
     }
   }
 
