@@ -246,7 +246,7 @@ BOOL CServerPath::SetPath(CString &newpath, BOOL bIsFile /*=FALSE*/)
               return FALSE;
             else if (rpos!=(path.GetLength()-1) )
             {
-              file=file.Mid(rpos+1);
+              file=path.Mid(rpos+1);
               path=path.Left(rpos+1);
             }
             else
