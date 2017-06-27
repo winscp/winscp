@@ -370,6 +370,7 @@ void __fastcall TFTPFileSystem::Open()
 
   FWindowsServer = false;
   FMVS = false;
+  FVMS = false;
   FTransferActiveImmediately = (Data->FtpTransferActiveImmediately == asOn);
 
   FSessionInfo.LoginTime = Now();
@@ -770,6 +771,14 @@ void __fastcall TFTPFileSystem::CollectUsage()
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPMVS");
   }
+  // 220 xxx.xxx.xxx (xxx.xxx.xxx) FTP-OpenVMS FTPD V5.3-3 (c) 1998 Process Software Corporation
+  // ...
+  // SYST
+  // 215 VMS system type. VMS V5.5-2.
+  else if (FVMS)
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPVMS");
+  }
   else
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPOther");
@@ -855,6 +864,22 @@ UnicodeString __fastcall TFTPFileSystem::ActualCurrentDirectory()
   return UnixExcludeTrailingBackslash(CurrentPath);
 }
 //---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::EnsureLocation(const UnicodeString & Directory, bool Log)
+{
+  if (!UnixSamePath(ActualCurrentDirectory(), Directory))
+  {
+    if (Log)
+    {
+      FTerminal->LogEvent(FORMAT(L"Synchronizing current directory \"%s\".",
+        (Directory)));
+    }
+
+    DoChangeDirectory(Directory);
+    // make sure FZAPI is aware that we changed current working directory
+    FFileZillaIntf->SetCurrentPath(Directory.c_str());
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::EnsureLocation()
 {
   // if we do not know what's the current directory, do nothing
@@ -866,14 +891,7 @@ void __fastcall TFTPFileSystem::EnsureLocation()
     // 1) We did cached directory change
     // 2) Listing was requested for non-current directory, which
     // makes FZAPI change its current directory (and not restoring it back afterwards)
-    if (!UnixSamePath(ActualCurrentDirectory(), FCurrentDirectory))
-    {
-      FTerminal->LogEvent(FORMAT(L"Synchronizing current directory \"%s\".",
-        (FCurrentDirectory)));
-      DoChangeDirectory(FCurrentDirectory);
-      // make sure FZAPI is aware that we changed current working directory
-      FFileZillaIntf->SetCurrentPath(FCurrentDirectory.c_str());
-    }
+    EnsureLocation(FCurrentDirectory, true);
   }
 }
 //---------------------------------------------------------------------------
@@ -2258,7 +2276,16 @@ void __fastcall TFTPFileSystem::DeleteFile(const UnicodeString AFileName,
     }
     else
     {
-      FFileZillaIntf->Delete(FileNameOnly.c_str(), FilePath.c_str());
+      if ((FTerminal->SessionData->FtpDeleteFromCwd == asOn) ||
+          ((FTerminal->SessionData->FtpDeleteFromCwd == asAuto) && FVMS))
+      {
+        EnsureLocation(FilePath, false);
+        FFileZillaIntf->Delete(FileNameOnly.c_str(), L"", true);
+      }
+      else
+      {
+        FFileZillaIntf->Delete(FileNameOnly.c_str(), FilePath.c_str(), false);
+      }
     }
     GotReply(WaitForCommandReply(), REPLY_2XX_CODE);
   }
@@ -3826,6 +3853,8 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
           FTerminal->LogEvent(L"The server is probably running Windows, assuming that directory listing timestamps are affected by DST.");
           FWindowsServer = true;
         }
+        // VMS system type. VMS V5.5-2.
+        FVMS = (FSystem.SubString(1, 3) == L"VMS");
       }
       else
       {

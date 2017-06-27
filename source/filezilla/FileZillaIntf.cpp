@@ -188,11 +188,11 @@ bool __fastcall TFileZillaIntf::Chmod(int Value, const wchar_t* FileName,
   return Check(FFileZillaApi->Chmod(Value, FileName, Path), L"chmod");
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileZillaIntf::Delete(const wchar_t* FileName, const wchar_t* APath)
+bool __fastcall TFileZillaIntf::Delete(const wchar_t* FileName, const wchar_t* APath, bool FileNameOnly)
 {
   DebugAssert(FFileZillaApi != NULL);
   CServerPath Path(APath);
-  return Check(FFileZillaApi->Delete(FileName, Path), L"delete");
+  return Check(FFileZillaApi->Delete(FileName, Path, FileNameOnly), L"delete");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::RemoveDir(const wchar_t* FileName, const wchar_t* APath)

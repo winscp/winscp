@@ -118,7 +118,7 @@ BOOL CMainThread::OnThreadMessage(UINT Msg, WPARAM wParam, LPARAM lParam)
           break;
         case FZ_COMMAND_DELETE:
           DebugAssert(m_pControlSocket);
-          m_pControlSocket->Delete(pCommand->param1, pCommand->path);
+          m_pControlSocket->Delete(pCommand->param1, pCommand->path, (pCommand->param4 != 0));
           break;
         case FZ_COMMAND_REMOVEDIR:
           DebugAssert(m_pControlSocket);

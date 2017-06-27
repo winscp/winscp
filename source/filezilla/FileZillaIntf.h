@@ -187,7 +187,7 @@ public:
 
   bool __fastcall MakeDir(const wchar_t* Path);
   bool __fastcall Chmod(int Value, const wchar_t* FileName, const wchar_t* Path);
-  bool __fastcall Delete(const wchar_t* FileName, const wchar_t* Path);
+  bool __fastcall Delete(const wchar_t* FileName, const wchar_t* Path, bool FileNameOnly);
   bool __fastcall RemoveDir(const wchar_t* FileName, const wchar_t* Path);
   bool __fastcall Rename(const wchar_t* OldName, const wchar_t* NewName,
     const wchar_t* Path, const wchar_t* NewPath);

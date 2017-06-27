@@ -1350,7 +1350,7 @@ void CFtpControlSocket::ProcessReply()
   else if (m_Operation.nOpMode&CSMODE_LISTFILE)
     ListFile(L"", CServerPath());
   else if (m_Operation.nOpMode&CSMODE_DELETE)
-    Delete( L"",CServerPath());
+    Delete( L"",CServerPath(), false);
   else if (m_Operation.nOpMode&CSMODE_RMDIR)
     RemoveDir( L"",CServerPath());
   else if (m_Operation.nOpMode&CSMODE_MKDIR)
@@ -4659,7 +4659,7 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
   m_Operation.pData=0;
 }
 
-void CFtpControlSocket::Delete(CString filename, const CServerPath &path)
+void CFtpControlSocket::Delete(CString filename, const CServerPath &path, bool filenameOnly)
 {
   class CDeleteData : public CFtpControlSocket::t_operation::COpData
   {
@@ -4676,7 +4676,16 @@ public:
     DebugAssert(m_Operation.nOpState==-1);
     DebugAssert(!m_Operation.pData);
     m_Operation.nOpMode=CSMODE_DELETE;
-    if (!Send(L"DELE " + path.FormatFilename(filename)))
+    CString command = L"DELE ";
+    if (!filenameOnly)
+    {
+      command += path.FormatFilename(filename);
+    }
+    else
+    {
+      command += filename;
+    }
+    if (!Send(command))
       return;
     CDeleteData *data=new CDeleteData;
     data->m_FileName=filename;
