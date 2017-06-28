@@ -866,17 +866,18 @@ UnicodeString __fastcall TFTPFileSystem::ActualCurrentDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::EnsureLocation(const UnicodeString & Directory, bool Log)
 {
-  if (!UnixSamePath(ActualCurrentDirectory(), Directory))
+  UnicodeString ADirectory = UnixExcludeTrailingBackslash(Directory);
+  if (!UnixSamePath(ActualCurrentDirectory(), ADirectory))
   {
     if (Log)
     {
       FTerminal->LogEvent(FORMAT(L"Synchronizing current directory \"%s\".",
-        (Directory)));
+        (ADirectory)));
     }
 
-    DoChangeDirectory(Directory);
+    DoChangeDirectory(ADirectory);
     // make sure FZAPI is aware that we changed current working directory
-    FFileZillaIntf->SetCurrentPath(Directory.c_str());
+    FFileZillaIntf->SetCurrentPath(ADirectory.c_str());
   }
 }
 //---------------------------------------------------------------------------
