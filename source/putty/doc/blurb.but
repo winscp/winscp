@@ -7,17 +7,23 @@
 \cfg{xhtml-leaf-contains-contents}{true}
 \cfg{xhtml-body-end}{<p>If you want to provide feedback on this manual
 or on the PuTTY tools themselves, see the
-<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/feedback.html">Feedback
+<a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/feedback.html">Feedback
 page</a>.</p>}
 
 \cfg{html-template-fragment}{%k}{%b}
 
 \cfg{info-max-file-size}{0}
 
+\cfg{chm-contents-filename}{index.html}
+\cfg{chm-template-filename}{%k.html}
+\cfg{chm-head-end}{<link rel="stylesheet" type="text/css" href="chm.css">}
+\cfg{chm-extra-file}{chm.css}
+
 \cfg{xhtml-contents-filename}{index.html}
 \cfg{text-filename}{puttydoc.txt}
 \cfg{winhelp-filename}{putty.hlp}
 \cfg{info-filename}{putty.info}
+\cfg{chm-filename}{putty.chm}
 
 PuTTY is a free (MIT-licensed) Windows Telnet and SSH client. This
 manual documents PuTTY, and its companion utilities PSCP, PSFTP,

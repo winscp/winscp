@@ -41,7 +41,7 @@ use Plink:
 
 \c Z:\sysosd>plink
 \c Plink: command-line connection utility
-\c Release 0.69
+\c Release 0.70
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:

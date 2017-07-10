@@ -58,11 +58,9 @@ static int xdmseen_cmp(void *a, void *b)
  *      independent network.c or something */
 static void dummy_plug_log(Plug p, int type, SockAddr addr, int port,
 			   const char *error_msg, int error_code) { }
-static int dummy_plug_closing
-     (Plug p, const char *error_msg, int error_code, int calling_back)
-{ return 1; }
-static int dummy_plug_receive(Plug p, int urgent, char *data, int len)
-{ return 1; }
+static void dummy_plug_closing
+     (Plug p, const char *error_msg, int error_code, int calling_back) { }
+static void dummy_plug_receive(Plug p, int urgent, char *data, int len) { }
 static void dummy_plug_sent(Plug p, int bufsize) { }
 static int dummy_plug_accepting(Plug p, accept_fn_t constructor, accept_ctx_t ctx) { return 1; }
 static const struct plug_function_table dummy_plug = {
@@ -616,8 +614,8 @@ static void x11_log(Plug p, int type, SockAddr addr, int port,
 static void x11_send_init_error(struct X11Connection *conn,
                                 const char *err_message);
 
-static int x11_closing(Plug plug, const char *error_msg, int error_code,
-		       int calling_back)
+static void x11_closing(Plug plug, const char *error_msg, int error_code,
+			int calling_back)
 {
     struct X11Connection *xconn = (struct X11Connection *) plug;
 
@@ -646,11 +644,9 @@ static int x11_closing(Plug plug, const char *error_msg, int error_code,
         if (xconn->c)
             sshfwd_write_eof(xconn->c);
     }
-
-    return 1;
 }
 
-static int x11_receive(Plug plug, int urgent, char *data, int len)
+static void x11_receive(Plug plug, int urgent, char *data, int len)
 {
     struct X11Connection *xconn = (struct X11Connection *) plug;
 
@@ -659,8 +655,6 @@ static int x11_receive(Plug plug, int urgent, char *data, int len)
         xconn->no_data_sent_to_x_client = FALSE;
 	sk_set_frozen(xconn->s, 1);
     }
-
-    return 1;
 }
 
 static void x11_sent(Plug plug, int bufsize)
