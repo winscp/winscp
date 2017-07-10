@@ -1851,12 +1851,8 @@ void __fastcall TSecureShell::HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENT
       #pragma option push -w-prc
       LPARAM SelectEvent = WSAMAKESELECTREPLY(EventTypes[Event].Mask, Err);
       #pragma option pop
-      if (!select_result((WPARAM)Socket, SelectEvent))
-      {
-        // note that connection was closed definitely,
-        // so "check" is actually not required
-        CheckConnection();
-      }
+      select_result((WPARAM)Socket, SelectEvent);
+      CheckConnection();
     }
   }
 }
