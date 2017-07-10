@@ -331,7 +331,7 @@ local state structures \c{s} or \c{st} in each function, or the
 backend-wide structure \c{ssh}.
 
 See
-\W{http://www.chiark.greenend.org.uk/~sgtatham/coroutines.html}\c{http://www.chiark.greenend.org.uk/~sgtatham/coroutines.html}
+\W{https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html}\c{https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html}
 for a more in-depth discussion of what these macros are for and how
 they work.
 

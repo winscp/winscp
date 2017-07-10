@@ -53,19 +53,19 @@ The current issue of those keys are available for download from the
 PuTTY website, and are also available on PGP keyservers using the key
 IDs listed below.
 
-\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-2015.asc}{\s{Master Key}}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-2015.asc}{\s{Master Key}}
 
 \dd RSA, 4096-bit. Key ID: \cw{4096R/04676F7C} (long version:
 \cw{4096R/AB585DC604676F7C}). Fingerprint:
 \cw{440D\_E3B5\_B7A1\_CA85\_B3CC\_\_1718\_AB58\_5DC6\_0467\_6F7C}
 
-\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-2015.asc}{\s{Release Key}}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-2015.asc}{\s{Release Key}}
 
 \dd RSA, 2048-bit. Key ID: \cw{2048R/B43434E4} (long version:
 \cw{2048R/9DFE2648B43434E4}). Fingerprint:
 \cw{0054\_DDAA\_8ADA\_15D2\_768A\_\_6DE7\_9DFE\_2648\_B434\_34E4}
 
-\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/contact-2016.asc}{\s{Secure Contact Key}}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/contact-2016.asc}{\s{Secure Contact Key}}
 
 \dd RSA, 2048-bit. Main key ID: \cw{2048R/8A0AF00B} (long version:
 \cw{2048R/C4FCAAD08A0AF00B}). Encryption subkey ID:
@@ -73,7 +73,7 @@ IDs listed below.
 Fingerprint:
 \cw{8A26\_250E\_763F\_E359\_75F3\_\_118F\_C4FC\_AAD0\_8A0A\_F00B}
 
-\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-2015.asc}{\s{Snapshot Key}}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-2015.asc}{\s{Snapshot Key}}
 
 \dd RSA, 2048-bit. Key ID: \cw{2048R/D15F7E8A} (long version:
 \cw{2048R/EEF20295D15F7E8A}). Fingerprint:
@@ -179,37 +179,37 @@ Releases prior to the rollover are signed with the old Release Keys.
 
 For completeness, those old keys are given here:
 
-\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-rsa.asc}{\s{Master Key} (original RSA)}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-rsa.asc}{\s{Master Key} (original RSA)}
 
 \dd RSA, 1024-bit. Key ID: \cw{1024R/1E34AC41} (long version:
 \cw{1024R/9D5877BF1E34AC41}). Fingerprint:
 \cw{8F\_15\_97\_DA\_25\_30\_AB\_0D\_\_88\_D1\_92\_54\_11\_CF\_0C\_4C}
 
-\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-dsa.asc}{\s{Master Key} (original DSA)}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-dsa.asc}{\s{Master Key} (original DSA)}
 
 \dd DSA, 1024-bit. Key ID: \cw{1024D/6A93B34E} (long version:
 \cw{1024D/4F5E6DF56A93B34E}). Fingerprint:
 \cw{313C\_3E76\_4B74\_C2C5\_F2AE\_\_83A8\_4F5E\_6DF5\_6A93\_B34E}
 
-\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-rsa.asc}{\s{Release Key} (original RSA)}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-rsa.asc}{\s{Release Key} (original RSA)}
 
 \dd RSA, 1024-bit. Key ID: \cw{1024R/B41CAE29} (long version:
 \cw{1024R/EF39CCC0B41CAE29}). Fingerprint:
 \cw{AE\_65\_D3\_F7\_85\_D3\_18\_E0\_\_3B\_0C\_9B\_02\_FF\_3A\_81\_FE}
 
-\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-dsa.asc}{\s{Release Key} (original DSA)}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-dsa.asc}{\s{Release Key} (original DSA)}
 
 \dd DSA, 1024-bit. Key ID: \cw{1024D/08B0A90B} (long version:
 \cw{1024D/FECD6F3F08B0A90B}). Fingerprint:
 \cw{00B1\_1009\_38E6\_9800\_6518\_\_F0AB\_FECD\_6F3F\_08B0\_A90B}
 
-\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-rsa.asc}{\s{Snapshot Key} (original RSA)}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-rsa.asc}{\s{Snapshot Key} (original RSA)}
 
 \dd RSA, 1024-bit. Key ID: \cw{1024R/32B903A9} (long version:
 \cw{1024R/FAAED21532B903A9}). Fingerprint:
 \cw{86\_8B\_1F\_79\_9C\_F4\_7F\_BD\_\_8B\_1B\_D7\_8E\_C6\_4E\_4C\_03}
 
-\dt \W{http://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-dsa.asc}{\s{Snapshot Key} (original DSA)}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-dsa.asc}{\s{Snapshot Key} (original DSA)}
 
 \dd DSA, 1024-bit. Key ID: \cw{1024D/7D3E4A00} (long version:
 \cw{1024D/165E56F77D3E4A00}). Fingerprint:

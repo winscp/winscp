@@ -122,9 +122,7 @@ ridiculous amount of memory, and will terminate with an \q{Out of
 memory} error.
 
 This can happen in SSH-2, if PuTTY and the server have not enabled
-encryption in the same way (see \k{faq-outofmem} in the FAQ). Some
-versions of \i{OpenSSH} have a known problem with this: see
-\k{faq-openssh-bad-openssl}.
+encryption in the same way (see \k{faq-outofmem} in the FAQ).
 
 This can also happen in PSCP or PSFTP, if your \i{login scripts} on the
 server generate output: the client program will be expecting an SFTP
@@ -233,8 +231,13 @@ protection (such as HTTP) will manifest in more subtle failures (such
 as misdisplayed text or images in a web browser) which may not be
 noticed.
 
-A known server problem which can cause this error is described in
-\k{faq-openssh-bad-openssl} in the FAQ.
+Occasionally this has been caused by server bugs. An example is the
+bug described at \k{config-ssh-bug-hmac2}, although you're very
+unlikely to encounter that one these days. 
+
+In this context MAC stands for \ii{Message Authentication Code}. It's a
+cryptographic term, and it has nothing at all to do with Ethernet
+MAC (Media Access Control) addresses, or with the Apple computer.
 
 \H{errors-garbled} \q{Incoming packet was garbled on decryption}
 
@@ -247,10 +250,7 @@ in the server, or in between.
 If you get this error, one thing you could try would be to fiddle with
 the setting of \q{Miscomputes SSH-2 encryption keys} (see
 \k{config-ssh-bug-derivekey2}) or \q{Ignores SSH-2 maximum packet
-size} (see \k{config-ssh-bug-maxpkt2}) on the Bugs panel .
-
-Another known server problem which can cause this error is described
-in \k{faq-openssh-bad-openssl} in the FAQ.
+size} (see \k{config-ssh-bug-maxpkt2}) on the Bugs panel.
 
 \H{errors-x11-proxy} \q{PuTTY X11 proxy: \e{various errors}}
 

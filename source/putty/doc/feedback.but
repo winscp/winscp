@@ -112,7 +112,7 @@ If you think you have found a bug in PuTTY, your first steps should
 be:
 
 \b Check the
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/}{Wishlist
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/}{Wishlist
 page} on the PuTTY website, and see if we already know about the
 problem. If we do, it is almost certainly not necessary to mail us
 about it, unless you think you have extra information that might be
@@ -121,12 +121,12 @@ specific extra information about a particular bug, the Wishlist page
 will say so.)
 
 \b Check the
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html}{Change
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html}{Change
 Log} on the PuTTY website, and see if we have already fixed the bug
 in the \i{development snapshots}.
 
 \b Check the
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html}{FAQ}
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html}{FAQ}
 on the PuTTY website (also provided as \k{faq} in the manual), and
 see if it answers your question. The FAQ lists the most common
 things which people think are bugs, but which aren't bugs.
@@ -188,7 +188,7 @@ you haven't supplied us with full information about the actual bug,
 then we won't be able to find a better solution.
 
 \b
-\W{http://www.chiark.greenend.org.uk/~sgtatham/bugs.html}\cw{http://www.chiark.greenend.org.uk/~sgtatham/bugs.html}
+\W{https://www.chiark.greenend.org.uk/~sgtatham/bugs.html}\cw{https://www.chiark.greenend.org.uk/~sgtatham/bugs.html}
 is an article on how to report bugs effectively in general. If your
 bug report is \e{particularly} unclear, we may ask you to go away,
 read this article, and then report the bug again.
@@ -224,14 +224,14 @@ If you want to request a new feature in PuTTY, the very first things
 you should do are:
 
 \b Check the
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/}{Wishlist
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/}{Wishlist
 page} on the PuTTY website, and see if your feature is already on
 the list. If it is, it probably won't achieve very much to repeat
 the request. (But see \k{feedback-feature-priority} if you want to
 persuade us to give your particular feature higher priority.)
 
 \b Check the Wishlist and
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html}{Change
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html}{Change
 Log} on the PuTTY website, and see if we have already added your
 feature in the development snapshots. If it isn't clear, download
 the latest development snapshot and see if the feature is present.
@@ -350,7 +350,7 @@ Of course, if the web site has some other error (Connection Refused,
 If you want to report a problem with our web site, check that you're
 looking at our \e{real} web site and not a mirror. The real web site
 is at
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/}\c{http://www.chiark.greenend.org.uk/~sgtatham/putty/};
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/}\c{https://www.chiark.greenend.org.uk/~sgtatham/putty/};
 if that's not where you're reading this, then don't report the
 problem to us until you've checked that it's really a problem with
 the main site. If it's only a problem with the mirror, you should
@@ -399,7 +399,7 @@ setting up a mirror. You already have permission.
 
 If the mirror is in a country where we don't already have plenty of
 mirrors, we may be willing to add it to the list on our
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/mirrors.html}{mirrors
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/mirrors.html}{mirrors
 page}. Read the guidelines on that page, make sure your mirror
 works, and email us the information listed at the bottom of the
 page.
@@ -414,7 +414,7 @@ to be a cheap way to gain search rankings.
 
 If you have technical questions about the process of mirroring, then
 you might want to mail us before setting up the mirror (see also the
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/mirrors.html#guidelines}{guidelines on the Mirrors page});
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/mirrors.html#guidelines}{guidelines on the Mirrors page});
 but if you just want to ask for permission, you don't need to. You
 already have permission.
 

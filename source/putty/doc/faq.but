@@ -27,18 +27,18 @@ else.
 
 \I{supported features}In general, if you want to know if PuTTY supports
 a particular feature, you should look for it on the
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/}{PuTTY web site}.
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/}{PuTTY web site}.
 In particular:
 
 \b try the
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html}{changes
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html}{changes
 page}, and see if you can find the feature on there. If a feature is
 listed there, it's been implemented. If it's listed as a change made
 \e{since} the latest version, it should be available in the
 development snapshots, in which case testing will be very welcome.
 
 \b try the
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/}{Wishlist
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/}{Wishlist
 page}, and see if you can find the feature there. If it's on there,
 and not in the \q{Recently fixed} section, it probably \e{hasn't} been
 implemented.
@@ -54,7 +54,7 @@ version 0.52.
 \cw{ssh.com} SSH-2 private key files?
 
 PuTTY doesn't support this natively (see
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/key-formats-natively.html}{the wishlist entry}
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/key-formats-natively.html}{the wishlist entry}
 for reasons why not), but as of 0.53
 PuTTYgen can convert both OpenSSH and \cw{ssh.com} private key
 files into PuTTY's format.
@@ -236,7 +236,7 @@ port, or any other port of PuTTY, they were mistaken. We don't.
 
 There are some third-party ports to various platforms, mentioned
 on the 
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/links.html}{Links page of our website}.
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/links.html}{Links page of our website}.
 
 \S{faq-unix}{Question} \I{Unix version}Is there a port to Unix?
 
@@ -323,7 +323,7 @@ for, it might be a long time before any of us get round to learning
 a new system and doing the port for that.
 
 However, some of the work has been done by other people; see the
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/links.html}{Links page of our website}
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/links.html}{Links page of our website}
 for various third-party ports.
 
 \S{faq-iphone}{Question} Will there be a port to the iPhone?
@@ -351,7 +351,7 @@ Most of the code cleanup work would be a good thing to happen in
 general, so if anyone feels like helping, we wouldn't say no.
 
 See also
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/dll-frontend.html}{the wishlist entry}.
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/dll-frontend.html}{the wishlist entry}.
 
 \S{faq-vb}{Question} Is the SSH or Telnet code available as a Visual
 Basic component?
@@ -601,34 +601,6 @@ documentation.)
 
 \H{faq-trouble} Troubleshooting
 
-\S{faq-incorrect-mac}{Question} Why do I see \q{Incorrect MAC
-received on packet}?
-
-One possible cause of this that used to be common is a bug in old
-SSH-2 servers distributed by \cw{ssh.com}. (This is not the only
-possible cause; see \k{errors-crc} in the documentation.)
-Version 2.3.0 and below of their SSH-2 server
-constructs Message Authentication Codes in the wrong way, and
-expects the client to construct them in the same wrong way. PuTTY
-constructs the MACs correctly by default, and hence these old
-servers will fail to work with it.
-
-If you are using PuTTY version 0.52 or better, this should work
-automatically: PuTTY should detect the buggy servers from their
-version number announcement, and automatically start to construct
-its MACs in the same incorrect manner as they do, so it will be able
-to work with them.
-
-If you are using PuTTY version 0.51 or below, you can enable the
-workaround by going to the SSH panel and ticking the box labelled
-\q{Imitate SSH2 MAC bug}. It's possible that you might have to do
-this with 0.52 as well, if a buggy server exists that PuTTY doesn't
-know about.
-
-In this context MAC stands for \ii{Message Authentication Code}. It's a
-cryptographic term, and it has nothing at all to do with Ethernet
-MAC (Media Access Control) addresses.
-
 \S{faq-pscp-protocol}{Question} Why do I see \q{Fatal: Protocol
 error: Expected control record} in PSCP?
 
@@ -663,21 +635,6 @@ you should select \q{Default Foreground} and press \q{Modify}.
 Clicking on \q{ANSI Green} won't turn your session green; it will
 only allow you to adjust the \e{shade} of green used when PuTTY is
 instructed by the server to display green text.
-
-\S{faq-winsock2}{Question} Plink on \i{Windows 95} says it can't find
-\i\cw{WS2_32.DLL}.
-
-Plink requires the extended Windows network library, WinSock version
-2. This is installed as standard on Windows 98 and above, and on
-Windows NT, and even on later versions of Windows 95; but early
-Win95 installations don't have it.
-
-In order to use Plink on these systems, you will need to download
-the
-\W{http://www.microsoft.com/windows95/downloads/contents/wuadmintools/s_wunetworkingtools/w95sockets2/}{WinSock 2 upgrade}:
-
-\c http://www.microsoft.com/windows95/downloads/contents/
-\c   wuadmintools/s_wunetworkingtools/w95sockets2/
 
 \S{faq-outofmem}{Question} After trying to establish an SSH-2
 connection, PuTTY says \q{\ii{Out of memory}} and dies.
@@ -891,44 +848,9 @@ us \q{I wanted the F1 key to send \c{^[[11~}, but instead it's
 sending \c{^[OP}, can this be done?}, or something similar.
 
 You should still read the
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/feedback.html}{Feedback
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/feedback.html}{Feedback
 page} on the PuTTY website (also provided as \k{feedback} in the
 manual), and follow the guidelines contained in that.
-
-\S{faq-openssh-bad-openssl}{Question} Since my SSH server was upgraded
-to \i{OpenSSH} 3.1p1/3.4p1, I can no longer connect with PuTTY.
-
-There is a known problem when OpenSSH has been built against an
-incorrect version of OpenSSL; the quick workaround is to configure
-PuTTY to use SSH protocol 2 and the Blowfish cipher.
-
-For more details and OpenSSH patches, see
-\W{http://bugzilla.mindrot.org/show_bug.cgi?id=138}{bug 138} in the
-OpenSSH BTS.
-
-This is not a PuTTY-specific problem; if you try to connect with
-another client you'll likely have similar problems. (Although PuTTY's
-default cipher differs from many other clients.)
-
-\e{OpenSSH 3.1p1:} configurations known to be broken (and symptoms):
-
-\b SSH-2 with AES cipher (PuTTY says \q{Assertion failed! Expression:
-(len & 15) == 0} in \cw{sshaes.c}, or \q{Out of memory}, or crashes)
-
-\b SSH-2 with 3DES (PuTTY says \q{Incorrect MAC received on packet})
-
-\b SSH-1 with Blowfish (PuTTY says \q{Incorrect CRC received on
-packet})
-
-\b SSH-1 with 3DES
-
-\e{OpenSSH 3.4p1:} as of 3.4p1, only the problem with SSH-1 and
-Blowfish remains. Rebuild your server, apply the patch linked to from
-bug 138 above, or use another cipher (e.g., 3DES) instead.
-
-\e{Other versions:} we occasionally get reports of the same symptom
-and workarounds with older versions of OpenSSH, although it's not
-clear the underlying cause is the same.
 
 \S{faq-ssh2key-ssh1conn}{Question} Why do I see \q{Couldn't load
 private key from ...}? Why can PuTTYgen load my key but not PuTTY?
@@ -1060,7 +982,7 @@ still. We do not recommend it.)
 
 This is caused by a bug in certain versions of \i{Windows XP} which
 is triggered by PuTTY 0.58. This was fixed in 0.59. The
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/xp-wont-run}{\q{xp-wont-run}}
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/xp-wont-run}{\q{xp-wont-run}}
 entry in PuTTY's wishlist has more details.
 
 \S{faq-system32}{Question} When I put 32-bit PuTTY in

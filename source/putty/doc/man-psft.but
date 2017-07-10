@@ -159,7 +159,7 @@ at the \cw{psftp>} prompt.
 For more information on \cw{psftp} it's probably best to go and look at
 the manual on the PuTTY web page:
 
-\cw{http://www.chiark.greenend.org.uk/~sgtatham/putty/}
+\cw{https://www.chiark.greenend.org.uk/~sgtatham/putty/}
 
 \S{psftp-manpage-bugs} BUGS
 

@@ -44,18 +44,16 @@ INPUTS = $(patsubst %,%.but,$(CHAPTERS))
 HALIBUT = halibut
 
 index.html: $(INPUTS)
-	$(HALIBUT) --text --html --winhelp $(INPUTS)
+	$(HALIBUT) --text --html --winhelp --chm $(INPUTS)
 
-# During formal builds it's useful to be able to build this one alone.
+# During formal builds it's useful to be able to build these ones alone.
 putty.hlp: $(INPUTS)
 	$(HALIBUT) --winhelp $(INPUTS)
+putty.chm: $(INPUTS)
+	$(HALIBUT) --chm $(INPUTS)
 
 putty.info: $(INPUTS)
 	$(HALIBUT) --info $(INPUTS)
-
-chm: putty.hhp
-putty.hhp: $(INPUTS) chm.but
-	$(HALIBUT) --html $(INPUTS) chm.but
 
 MKMAN = $(HALIBUT) --man=$@ mancfg.but $<
 MANPAGES = putty.1 puttygen.1 plink.1 pscp.1 psftp.1 puttytel.1 pterm.1 \

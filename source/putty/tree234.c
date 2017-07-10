@@ -681,7 +681,7 @@ static void *delpos234_internal(tree234 * t, int index)
 	    LOG(("  moving to subtree %d\n", ki));
 	    sub = n->kids[ki];
 	    if (!sub->elems[1]) {
-		LOG(("  subtree has only one element!\n", ki));
+		LOG(("  subtree has only one element!\n"));
 		if (ki > 0 && n->kids[ki - 1]->elems[1]) {
 		    /*
 		     * Case 3a, left-handed variant. Child ki has

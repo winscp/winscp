@@ -260,7 +260,7 @@ exists, nonzero otherwise.
 For more information on plink, it's probably best to go and look at
 the manual on the PuTTY web page:
 
-\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/}\cw{http://www.chiark.greenend.org.uk/~sgtatham/putty/}
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/}\cw{https://www.chiark.greenend.org.uk/~sgtatham/putty/}
 
 \S{plink-manpage-bugs} BUGS
 

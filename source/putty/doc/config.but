@@ -499,8 +499,8 @@ instead of relying on the automatic detection.
 \cfg{winhelp-topic}{terminal.printing}
 
 A lot of VT100-compatible terminals support printing under control
-of the remote server. PuTTY supports this feature as well, but it is
-turned off by default.
+of the remote server (sometimes called \q{passthrough printing}).
+PuTTY supports this feature as well, but it is turned off by default.
 
 To enable remote-controlled printing, choose a printer from the
 \q{Printer to send ANSI printer output to} drop-down list box. This
@@ -2959,7 +2959,7 @@ modes from the local terminal, if any.
 
 }
 
-\b If \q{Nothing} is selected, no value for the mode will not be
+\b If \q{Nothing} is selected, no value for the mode will be
 specified to the server under any circumstances.
 
 \b If a value is specified, it will be sent to the server under all
@@ -3006,18 +3006,19 @@ PuTTY in a variety of ways, such as \cw{true}/\cw{false},
 \cw{no} is different from not sending the mode at all.)
 
 \b The boolean mode \I{IUTF8 terminal mode}\cw{IUTF8} signals to the
-server whether the terminal character set is \i{UTF-8} or not.
-If this is set incorrectly, keys like backspace may do the wrong thing
-in some circumstances. However, setting this is not usually
-sufficient to cause servers to expect the terminal to be in UTF-8 mode;
-POSIX servers will generally require the locale to be set (by some
-server-dependent means), although many default to UTF-8. Also,
-since this mode was added to the SSH protocol much later than the
-others, \#{circa 2016} many servers (particularly older servers) do
-not honour this mode sent over SSH; indeed, a few poorly-written
-servers object to its mere presence, so you may find you need to set
-it to not be sent at all. When set to \q{Auto}, this follows the local
-configured character set (see \k{config-charset}).
+server whether the terminal character set is \i{UTF-8} or not, for
+purposes such as basic line editing; if this is set incorrectly,
+the backspace key may erase the wrong amount of text, for instance.
+However, simply setting this is not usually sufficient for the server
+to use UTF-8; POSIX servers will generally also require the locale to
+be set (by some server-dependent means), although many newer
+installations default to UTF-8. Also, since this mode was added to the
+SSH protocol much later than the others, \#{circa 2016} many servers
+(particularly older servers) do not honour this mode sent over SSH;
+indeed, a few poorly-written servers object to its mere presence, so
+you may find you need to set it to not be sent at all. When set to
+\q{Auto}, this follows the local configured character set (see
+\k{config-charset}).
 
 \b Terminal speeds are configured elsewhere; see \k{config-termspeed}.
 
