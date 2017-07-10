@@ -445,7 +445,7 @@ static struct openssh_pem_key *load_openssh_pem_key(const Filename *filename,
 		if (!strcmp(p, "ENCRYPTED"))
 		    ret->encrypted = TRUE;
 	    } else if (!strcmp(line, "DEK-Info")) {
-		int i, j, ivlen;
+		int i, ivlen;
 
 		if (!strncmp(p, "DES-EDE3-CBC,", 13)) {
 		    ret->encryption = OP_E_3DES;
@@ -459,6 +459,7 @@ static struct openssh_pem_key *load_openssh_pem_key(const Filename *filename,
 		}
 		p = strchr(p, ',') + 1;/* always non-NULL, by above checks */
 		for (i = 0; i < ivlen; i++) {
+                    unsigned j;
 		    if (1 != sscanf(p, "%2x", &j)) {
 			errmsg = "expected more iv data in DEK-Info";
 			goto error;
