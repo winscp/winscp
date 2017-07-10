@@ -55,7 +55,7 @@ void putty_unmungestr(const char *in, char *out, int outlen);
 
 // from winnet.c
 
-int select_result(WPARAM wParam, LPARAM lParam);
+void select_result(WPARAM wParam, LPARAM lParam);
 
 // from sshzlib.c
 
