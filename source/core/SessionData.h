@@ -24,8 +24,8 @@ enum TSshProt { ssh1only, ssh1deprecated, ssh2deprecated, ssh2only };
 enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA, kexECDH };
 #define KEX_COUNT (kexECDH+1)
 enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
-  sbPKSessID2, sbRekey2, sbMaxPkt2, sbIgnore2, sbOldGex2, sbWinAdj };
-#define BUG_COUNT (sbWinAdj+1)
+  sbPKSessID2, sbRekey2, sbMaxPkt2, sbIgnore2, sbOldGex2, sbWinAdj, sbChanReq };
+#define BUG_COUNT (sbChanReq+1)
 enum TSftpBug { sbSymlink, sbSignedTS };
 #define SFTP_BUG_COUNT (sbSignedTS+1)
 extern const wchar_t * PingTypeNames;
