@@ -271,6 +271,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_int(conf, CONF_sshbug_ignore2, Data->Bug[sbIgnore2]);
   conf_set_int(conf, CONF_sshbug_winadj, Data->Bug[sbWinAdj]);
   conf_set_int(conf, CONF_sshbug_oldgex2, Data->Bug[sbOldGex2]);
+  conf_set_int(conf, CONF_sshbug_chanreq, Data->Bug[sbChanReq]);
 
   if (!Data->TunnelPortFwd.IsEmpty())
   {
