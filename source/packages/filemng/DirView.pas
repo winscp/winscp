@@ -750,7 +750,8 @@ begin
     else
   begin
     Result := UserDocumentDirectory;
-    if IsUNCPath(Result) then
+    if (Result = '') or // in rare case the CSIDL_PERSONAL cannot be resolved
+       IsUNCPath(Result) then
     begin
       Result := AnyValidPath;
     end;

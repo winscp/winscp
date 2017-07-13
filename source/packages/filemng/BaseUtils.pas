@@ -339,7 +339,14 @@ begin
   Result :=
     (not Failed(SHGetSpecialFolderLocation(Application.Handle, Folder, PIDL))) and
     SHGetPathFromIDList(PIDL, PChar(Path));
-  if Result then SetLength(Path, StrLen(PChar(Path)));
+  if Result then
+  begin
+    SetLength(Path, StrLen(PChar(Path)));
+  end
+    else
+  begin
+    Path := '';
+  end;
 end;
 
 function SpecialFolderLocation(Folder: Integer; var Path: string): Boolean;
