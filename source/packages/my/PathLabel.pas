@@ -198,7 +198,8 @@ begin
     HotPath := HotTrackPath;
     if HotPath <> '' then
     begin
-      if Copy(HotPath, Length(HotPath), 1) = GetSeparator then
+      if (Copy(HotPath, Length(HotPath), 1) = GetSeparator) and
+         (HotPath <> GetSeparator) then
         SetLength(HotPath, Length(HotPath) - 1);
 
       if HotPath = HotTrackMask then DoMaskClick
@@ -210,15 +211,19 @@ begin
         // The below is based on knowledge of MinimizeName algorithm
         RemainingPath := Copy(FDisplayPath, Length(HotPath) + 1,
           Length(FDisplayPath) - Length(HotPath));
+        // Contrary to stripping separator from HotPath above, we strip it even from bare /,
+        // as the Caption does not include it either
         if Copy(RemainingPath, Length(RemainingPath), 1) = GetSeparator then
           SetLength(RemainingPath, Length(RemainingPath) - 1);
 
+        // Part from ellipsis (inclusive)
         if RemainingPath = Copy(Caption, Length(Caption) - Length(RemainingPath) + 1,
              Length(RemainingPath)) then
         begin
           DoPathClick(Copy(Caption, 1, Length(Caption) - Length(RemainingPath)));
         end
           else
+        // Part before ellipsis
         if HotPath = Copy(Caption, 1, Length(HotPath)) then
         begin
           DoPathClick(HotPath);
