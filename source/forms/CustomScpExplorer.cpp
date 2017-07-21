@@ -4987,8 +4987,11 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
       int PParams = Params.Params;
       if (!Full)
       {
-        PParams |= TTerminal::spNoRecurse | TTerminal::spUseCache |
-          TTerminal::spDelayProgress | TTerminal::spSubDirs;
+        PParams |= TTerminal::spNoRecurse | TTerminal::spUseCache | TTerminal::spDelayProgress;
+        if (FLAGSET(Params.Options, soRecurse))
+        {
+          PParams |= TTerminal::spSubDirs;
+        }
       }
       else
       {
