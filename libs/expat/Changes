@@ -2,6 +2,56 @@ NOTE: We are looking for help with a few things:
       https://github.com/libexpat/libexpat/labels/help%20wanted
       If you can help, please get in touch.  Thanks!
 
+Release 2.2.2 Wed July 12 2017
+        Security fixes:
+             #43  Protect against compilation without any source of high
+                    quality entropy enabled, e.g. with CMake build system;
+                    commit ff0207e6076e9828e536b8d9cd45c9c92069b895
+             #60  Windows with _UNICODE:
+                    Unintended use of LoadLibraryW with a non-wide string
+                    resulted in failure to load advapi32.dll and degradation
+                    in quality of used entropy when compiled with _UNICODE for
+                    Windows; you can launch existing binaries with
+                    EXPAT_ENTROPY_DEBUG=1 in the environment to inspect the
+                    quality of entropy used during runtime; commits
+                    * 95b95032f907ef1cd17ee7a9a1768010a825d61d
+                    * 73a5a2e9c081f49f2d775cf7ced864158b68dc80
+   [MOX-006]      Fix non-NULL parser parameter validation in XML_Parse;
+                    resulted in NULL dereference, previously;
+                    commit ac256dafdffc9622ab0dc2c62fcecb0dfcfa71fe
+
+        Bug fixes:
+             #69  Fix improper use of unsigned long long integer literals
+
+        Other changes:
+             #73  Start requiring a C99 compiler
+             #49  Fix "==" Bashism in configure script
+             #50  Fix too eager getrandom detection for Debian GNU/kFreeBSD
+             #52    and macOS
+             #51  Address lack of stdint.h in Visual Studio 2003 to 2008
+             #58  Address compile warnings
+             #68  Fix "./buildconf.sh && ./configure" for some versions
+                    of Dash for /bin/sh
+             #72  CMake: Ease use of Expat in context of a parent project
+                    with multipe CMakeLists.txt files
+             #72  CMake: Resolve mistaken executable permissions
+             #76  Address compile warning with -DNDEBUG (not recommended!)
+             #77  Address compile warning about macro redefinition
+
+        Special thanks to:
+            Alexander Bluhm
+            Ben Boeckel
+            Cătălin Răceanu
+            Kerin Millar
+            László Böszörményi
+            S. P. Zeidler
+            Segev Finer
+            Václav Slavík
+            Victor Stinner
+            Viktor Szakats
+                 and
+            Radically Open Security
+
 Release 2.2.1 Sat June 17 2017
         Security fixes:
                   CVE-2017-9233 -- External entity infinite loop DoS
