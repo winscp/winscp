@@ -33,6 +33,18 @@
 #define XML_FMT_INT_MOD "l"
 #endif
 
+
+#if defined(NDEBUG)
+# error  \
+    The test suite relies on assert(...) at the moment. \
+    You have NDEBUG defined which removes that code so that failures in the \
+    test suite can go unnoticed. \
+    \
+    While we rely on assert(...), compiling the test suite with NDEBUG \
+    defined is not supported.
+#endif
+
+
 static XML_Parser parser = NULL;
 
 
@@ -247,7 +259,7 @@ START_TEST(test_siphash_spec)
     const char message[] = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09"
             "\x0a\x0b\x0c\x0d\x0e";
     const size_t len = sizeof(message) - 1;
-    const uint64_t expected = 0xa129ca6149be45e5U;
+    const uint64_t expected = _SIP_ULL(0xa129ca61U, 0x49be45e5U);
     struct siphash state;
     struct sipkey key;
     (void)sip_tobin;
@@ -489,9 +501,11 @@ START_TEST(test_utf8_auto_align)
         if (actualMovementInChars != cases[i].expectedMovementInChars) {
             size_t j = 0;
             success = false;
-            printf("[-] UTF-8 case %2lu: Expected movement by %2ld chars"
-                    ", actually moved by %2ld chars: \"",
-                    i + 1, cases[i].expectedMovementInChars, actualMovementInChars);
+            printf("[-] UTF-8 case %2u: Expected movement by %2d chars"
+                    ", actually moved by %2d chars: \"",
+                    (unsigned)(i + 1),
+                    (int)cases[i].expectedMovementInChars,
+                    (int)actualMovementInChars);
             for (; j < strlen(cases[i].input); j++) {
                 printf("\\x%02x", (unsigned char)cases[i].input[j]);
             }

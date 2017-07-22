@@ -167,7 +167,7 @@ tracking_report(void)
     for (entry = alloc_head; entry != NULL; entry = entry->next)
     {
         printf("Allocated %lu bytes at %p\n",
-               entry->num_bytes, entry->allocation);
+                (long unsigned)entry->num_bytes, entry->allocation);
     }
     return 0;
 }
