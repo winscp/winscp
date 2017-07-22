@@ -40,7 +40,7 @@ filemap(const char *name,
 {
   size_t nbytes;
   int fd;
-  int n;
+  ssize_t n;
   struct stat sb;
   void *p;
 
@@ -85,7 +85,7 @@ filemap(const char *name,
     close(fd);
     return 0;
   }
-  if (n != nbytes) {
+  if (n != (ssize_t)nbytes) {
     fprintf(stderr, "%s: read unexpected number of bytes\n", name);
     free(p);
     close(fd);

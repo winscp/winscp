@@ -1,10 +1,12 @@
 /* Copyright (c) 1998, 1999, 2000 Thai Open Source Software Center Ltd
    See the file COPYING for copying permission.
 
-   77fea421d361dca90041d0040ecf1dca651167fadf2af79e990e35168d70d933 (2.2.1+)
+   cd4063469a95eab9a93001afb109e3dee122cdda4635bbec36257fc01c327348 (2.2.2+)
 */
 
-#define _GNU_SOURCE                     /* syscall prototype */
+#if !defined(_GNU_SOURCE)
+# define _GNU_SOURCE 1                  /* syscall prototype */
+#endif
 
 #include <stddef.h>
 #include <string.h>                     /* memset(), memcpy() */
@@ -32,6 +34,46 @@
 #include "ascii.h"
 #include "expat.h"
 #include "siphash.h"
+
+#if defined(HAVE_GETRANDOM) || defined(HAVE_SYSCALL_GETRANDOM)
+# include <errno.h>
+# if defined(HAVE_GETRANDOM)
+#  include <sys/random.h>    /* getrandom */
+# else
+#  include <unistd.h>        /* syscall */
+#  include <sys/syscall.h>   /* SYS_getrandom */
+# endif
+#endif  /* defined(HAVE_GETRANDOM) || defined(HAVE_SYSCALL_GETRANDOM) */
+
+#if defined(HAVE_ARC4RANDOM_BUF) && defined(HAVE_LIBBSD)
+# include <bsd/stdlib.h>
+#endif
+
+
+#if !defined(HAVE_GETRANDOM) && !defined(HAVE_SYSCALL_GETRANDOM) \
+    && !defined(HAVE_ARC4RANDOM_BUF) && !defined(_WIN32) \
+    && !defined(XML_POOR_ENTROPY)
+# error  \
+    You do not have support for any sources of high quality entropy \
+    enabled.  For end user security, that is probably not what you want. \
+    \
+    Your options include: \
+      * Linux + glibc >=2.25 (getrandom): HAVE_GETRANDOM, \
+      * Linux + glibc <2.25 (syscall SYS_getrandom): HAVE_SYSCALL_GETRANDOM, \
+      * BSD / macOS (arc4random_buf): HAVE_ARC4RANDOM_BUF, \
+      * libbsd (arc4random_buf): HAVE_ARC4RANDOM_BUF + HAVE_LIBBSD, \
+      * Windows (RtlGenRandom): _WIN32. \
+    \
+    If insist on not using any of these, bypass this error by defining \
+    XML_POOR_ENTROPY; you have been warned. \
+    \
+    For CMake, one way to pass the define is: \
+        cmake -DCMAKE_C_FLAGS="-pipe -O2 -DHAVE_SYSCALL_GETRANDOM" . \
+    \
+    If you have reasons to patch this detection code away or need changes \
+    to the build system, please open a bug.  Thank you!
+#endif
+
 
 #ifdef XML_UNICODE
 #define XML_ENCODE_MAX XML_UTF16_ENCODE_MAX
@@ -436,6 +478,9 @@ static ELEMENT_TYPE *
 getElementType(XML_Parser parser, const ENCODING *enc,
                const char *ptr, const char *end);
 
+static XML_Char *copyString(const XML_Char *s,
+                            const XML_Memory_Handling_Suite *memsuite);
+
 static unsigned long generate_hash_secret_salt(XML_Parser parser);
 static XML_Bool startParsing(XML_Parser parser);
 
@@ -696,14 +741,6 @@ static const XML_Char implicitContext[] = {
 
 
 #if defined(HAVE_GETRANDOM) || defined(HAVE_SYSCALL_GETRANDOM)
-# include <errno.h>
-
-# if defined(HAVE_GETRANDOM)
-#  include <sys/random.h>    /* getrandom */
-# else
-#  include <unistd.h>        /* syscall */
-#  include <sys/syscall.h>   /* SYS_getrandom */
-# endif
 
 /* Obtain entropy on Linux 3.17+ */
 static int
@@ -749,7 +786,7 @@ typedef BOOLEAN (APIENTRY *RTLGENRANDOM_FUNC)(PVOID, ULONG);
 static int
 writeRandomBytes_RtlGenRandom(void * target, size_t count) {
   int success = 0;  /* full count bytes written? */
-  const HMODULE advapi32 = LoadLibrary("ADVAPI32.DLL");
+  const HMODULE advapi32 = LoadLibrary(TEXT("ADVAPI32.DLL"));
 
   if (advapi32) {
     const RTLGENRANDOM_FUNC RtlGenRandom
@@ -780,16 +817,17 @@ gather_time_entropy(void)
   int gettimeofday_res;
 
   gettimeofday_res = gettimeofday(&tv, NULL);
+
+#if defined(NDEBUG)
+  (void)gettimeofday_res;
+#else
   assert (gettimeofday_res == 0);
+#endif  /* defined(NDEBUG) */
 
   /* Microseconds time is <20 bits entropy */
   return tv.tv_usec;
 #endif
 }
-
-#if defined(HAVE_ARC4RANDOM_BUF) && defined(HAVE_LIBBSD)
-# include <bsd/stdlib.h>
-#endif
 
 static unsigned long
 ENTROPY_DEBUG(const char * label, unsigned long entropy) {
@@ -833,7 +871,7 @@ generate_hash_secret_salt(XML_Parser parser)
     return ENTROPY_DEBUG("fallback(4)", entropy * 2147483647);
   } else {
     return ENTROPY_DEBUG("fallback(8)",
-        entropy * (unsigned long)2305843009213693951);
+        entropy * (unsigned long)2305843009213693951ULL);
   }
 #endif
 }
@@ -962,6 +1000,8 @@ parserCreate(const XML_Char *encodingName,
   nsAttsVersion = 0;
   nsAttsPower = 0;
 
+  protocolEncodingName = NULL;
+
   poolInit(&tempPool, &(parser->m_mem));
   poolInit(&temp2Pool, &(parser->m_mem));
   parserInit(parser, encodingName);
@@ -988,9 +1028,9 @@ parserInit(XML_Parser parser, const XML_Char *encodingName)
 {
   processor = prologInitProcessor;
   XmlPrologStateInit(&prologState);
-  protocolEncodingName = (encodingName != NULL
-                          ? poolCopyString(&tempPool, encodingName)
-                          : NULL);
+  if (encodingName != NULL) {
+    protocolEncodingName = copyString(encodingName, &(parser->m_mem));
+  }
   curBase = NULL;
   XmlInitEncoding(&initEncoding, &encoding, 0);
   userData = NULL;
@@ -1103,6 +1143,8 @@ XML_ParserReset(XML_Parser parser, const XML_Char *encodingName)
     unknownEncodingRelease(unknownEncodingData);
   poolClear(&tempPool);
   poolClear(&temp2Pool);
+  FREE((void *)protocolEncodingName);
+  protocolEncodingName = NULL;
   parserInit(parser, encodingName);
   dtdReset(_dtd, &parser->m_mem);
   return XML_TRUE;
@@ -1119,10 +1161,16 @@ XML_SetEncoding(XML_Parser parser, const XML_Char *encodingName)
   */
   if (ps_parsing == XML_PARSING || ps_parsing == XML_SUSPENDED)
     return XML_STATUS_ERROR;
+
+  /* Get rid of any previous encoding name */
+  FREE((void *)protocolEncodingName);
+
   if (encodingName == NULL)
+    /* No new encoding name */
     protocolEncodingName = NULL;
   else {
-    protocolEncodingName = poolCopyString(&tempPool, encodingName);
+    /* Copy the new encoding name into allocated memory */
+    protocolEncodingName = copyString(encodingName, &(parser->m_mem));
     if (!protocolEncodingName)
       return XML_STATUS_ERROR;
   }
@@ -1357,6 +1405,7 @@ XML_ParserFree(XML_Parser parser)
   destroyBindings(inheritedBindings, parser);
   poolDestroy(&tempPool);
   poolDestroy(&temp2Pool);
+  FREE((void *)protocolEncodingName);
 #ifdef XML_DTD
   /* external parameter entity parsers share the DTD structure
      parser->m_dtd with the root parser, so we must not destroy it
@@ -1748,7 +1797,8 @@ enum XML_Status XMLCALL
 XML_Parse(XML_Parser parser, const char *s, int len, int isFinal)
 {
   if ((parser == NULL) || (len < 0) || ((s == NULL) && (len != 0))) {
-    errorCode = XML_ERROR_INVALID_ARGUMENT;
+    if (parser != NULL)
+      parser->m_errorCode = XML_ERROR_INVALID_ARGUMENT;
     return XML_STATUS_ERROR;
   }
   switch (ps_parsing) {
@@ -3734,6 +3784,7 @@ initializeEncoding(XML_Parser parser)
   const char *s;
 #ifdef XML_UNICODE
   char encodingBuf[128];
+  /* See comments abount `protoclEncodingName` in parserInit() */
   if (!protocolEncodingName)
     s = NULL;
   else {
@@ -6826,4 +6877,27 @@ getElementType(XML_Parser parser,
       return NULL;
   }
   return ret;
+}
+
+static XML_Char *
+copyString(const XML_Char *s,
+           const XML_Memory_Handling_Suite *memsuite)
+{
+    int charsRequired = 0;
+    XML_Char *result;
+
+    /* First determine how long the string is */
+    while (s[charsRequired] != 0) {
+      charsRequired++;
+    }
+    /* Include the terminator */
+    charsRequired++;
+
+    /* Now allocate space for the copy */
+    result = memsuite->malloc_fcn(charsRequired * sizeof(XML_Char));
+    if (result == NULL)
+        return NULL;
+    /* Copy the original into place */
+    memcpy(result, s, charsRequired * sizeof(XML_Char));
+    return result;
 }

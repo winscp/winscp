@@ -6,7 +6,7 @@ project(expat)
 cmake_minimum_required(VERSION 2.6)
 set(PACKAGE_BUGREPORT "expat-bugs@libexpat.org")
 set(PACKAGE_NAME "expat")
-set(PACKAGE_VERSION "2.2.1")
+set(PACKAGE_VERSION "2.2.2")
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 set(PACKAGE_TARNAME "${PACKAGE_NAME}")
 
@@ -37,7 +37,7 @@ if(BUILD_tests)
     enable_testing()
 endif(BUILD_tests)
 
-include(ConfigureChecks.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/ConfigureChecks.cmake)
 
 set(EXTRA_LINK_AND_COMPILE_FLAGS "-fno-strict-aliasing")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_LINK_AND_COMPILE_FLAGS}")
@@ -45,7 +45,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_LINK_AND_COMPILE_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_LINK_AND_COMPILE_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${EXTRA_LINK_AND_COMPILE_FLAGS}")
 
-include_directories(${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/lib)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -wd4996)
 endif(MSVC)
@@ -76,7 +76,7 @@ endif(BUILD_shared)
 add_library(expat ${_SHARED} ${expat_SRCS})
 
 set(LIBCURRENT 7)   # sync
-set(LIBREVISION 3)  # with
+set(LIBREVISION 4)  # with
 set(LIBAGE 6)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 

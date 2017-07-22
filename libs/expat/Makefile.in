@@ -181,15 +181,20 @@ run-benchmark: tests/benchmark/benchmark
 	tests/benchmark/benchmark@EXEEXT@ -n $(top_srcdir)/../testdata/largefiles/recset.xml 65535 3
 
 tests/xmlts.zip:
-	wget --output-document=tests/xmlts.zip \
-		https://www.w3.org/XML/Test/xmlts20080827.zip
+	if test "$(XMLTS_ZIP)" = ""; then \
+		wget --output-document=tests/xmlts.zip \
+			https://www.w3.org/XML/Test/xmlts20080827.zip; \
+	else \
+		cp $(XMLTS_ZIP) tests/xmlts.zip; \
+	fi
 
 tests/xmlconf: tests/xmlts.zip
 	cd tests && unzip -q xmlts.zip
 
 run-xmltest: xmlwf/xmlwf@EXEEXT@ tests/xmlconf
 	tests/xmltest.sh "$(PWD)/run.sh $(PWD)/xmlwf/xmlwf@EXEEXT@" 2>&1 | tee tests/xmltest.log
-	diff -u -b tests/xmltest.log.expected tests/xmltest.log
+	dos2unix tests/xmltest.log
+	diff -u tests/xmltest.log.expected tests/xmltest.log
 
 .PHONY: qa
 qa:
